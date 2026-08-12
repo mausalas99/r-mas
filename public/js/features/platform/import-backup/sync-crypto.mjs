@@ -1,5 +1,5 @@
 /** Encrypted sync bundle export/import and WebCrypto helpers. */
-import { patients } from '../../../app-state.mjs';
+import { getPatients } from '../../../app-state.mjs';
 import { formatDateSlug, downloadJsonPayload } from '../shared.mjs';
 import { addAuditEntry } from '../audit.mjs';
 import { getPlatformRuntime } from '../runtime.mjs';
@@ -69,7 +69,7 @@ async function decryptSyncPayload(payload, passphrase) {
 
 function collectSyncEntries() {
   var entries = [];
-  patients.forEach(function(p) {
+  getPatients().forEach(function(p) {
     var entry = buildPatientEntry(p.id);
     if (entry) entries.push(entry);
   });

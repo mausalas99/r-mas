@@ -10,7 +10,7 @@ import {
   getCloudSyncToken,
 } from './settings.mjs';
 import { CLOUD_PUSH_DEBOUNCE_MS, CLOUD_PUSH_FIRST_MS } from './cloud-sync-timing.mjs';
-import { patients, labHistory } from '../../app-state.mjs';
+import { getPatients, getLabHistory } from '../../app-state.mjs';
 import { stampCloudTodoRow, registroForPatientId } from '../../livesync-patient-ids.mjs';
 import { CLOUD_BATCH_MUTATION_ID, CLOUD_TOMBSTONES_MUTATION_ID } from './constants.mjs';
 import { recordCloudSyncError } from './cloud-sync-diagnostics.mjs';
@@ -60,6 +60,32 @@ export function configureCloudMutateBridge(deps) {
 
 export function isCloudMutateBridgeConfigured() {
   return !!(bridgeRuntime && bridgeRuntime.outbox);
+}
+
+/**
+ * Enqueue a single outbox mutation (projector / non-memory paths).
+ * Does not flush — caller batches then `flushCloudSyncOutbox()`.
+ * @param {string} clientMutationId
+ * @param {import('./mutate-bridge-ops.mjs').CloudSyncOp[]} ops
+ */
+export function enqueueCloudMutation(clientMutationId, ops) {
+  if (!bridgeRuntime?.outbox || !ops?.length) return;
+  const id = String(clientMutationId || '').trim();
+  if (!id) return;
+  const prepared = prepareOutboxOpsForEnqueue(id, ops);
+  if (!prepared.length) return;
+  bridgeRuntime.outbox.enqueue({
+    clientMutationId: id,
+    ops: prepared,
+    baseRevision: bridgeRuntime.getRevision?.() ?? 0,
+  });
+}
+
+/** Flush outbox without re-reading patient memory into ops. */
+export async function flushCloudSyncOutbox() {
+  if (!bridgeRuntime?.outbox) return;
+  bridgeRuntime.noteEditing?.();
+  await bridgeRuntime.flush?.();
 }
 
 /** @param {{ actorId?: string, getActorId?: () => string }} [meta] */
@@ -174,8 +200,8 @@ const CENSUS_SEED_CLOCK = '2000-01-01T00:00:00.000Z';
  * Must mutate `patients` (buildPatientEntry shallow-copies) so later pushes reuse the same clock.
  */
 function ensureLiveCensusClocks(_nowIso) {
-  for (let i = 0; i < patients.length; i += 1) {
-    const patient = patients[i];
+  for (let i = 0; i < getPatients().length; i += 1) {
+    const patient = getPatients()[i];
     if (!patient || typeof patient !== 'object') continue;
     if (!String(patient.lanUpdatedAt || '').trim()) patient.lanUpdatedAt = CENSUS_SEED_CLOCK;
   }
@@ -227,7 +253,7 @@ async function enqueueCloudBundleOps() {
     }
     const entryOps = countPatientEntryOps(ops);
     const otherOps = hasNonEntryCloudOps(ops);
-    if (!entryOps && !otherOps && patients.length > 0) {
+    if (!entryOps && !otherOps && getPatients().length > 0) {
       if (cloudCensusPushRetries < CLOUD_CENSUS_PUSH_MAX_RETRIES) {
         scheduleCloudCensusPushRetry();
         return false;
@@ -298,7 +324,7 @@ export async function pushCloudCensusNow() {
     return { ok: false, reason: 'bridge_inactive' };
   }
   if (!getCloudSyncRoomId()) return { ok: false, reason: 'no_room' };
-  if (!patients.length) return { ok: false, reason: 'no_local_patients' };
+  if (!getPatients().length) return { ok: false, reason: 'no_local_patients' };
 
   const meta = {
     actorId: resolveCloudActorId(bridgeRuntime),
@@ -320,7 +346,7 @@ export async function pushCloudCensusNow() {
     return {
       ok: false,
       reason: 'no_entry_ops',
-      localPatients: patients.length,
+      localPatients: getPatients().length,
       collectedEntries: entries.length,
     };
   }
@@ -438,7 +464,7 @@ export function enqueueCloudTodoUpsert(patientId, todo) {
     actorId: resolveCloudActorId(bridgeRuntime),
     updatedAt: String(todo.updatedAt || new Date().toISOString()),
   };
-  const row = stampCloudTodoRow(patientId, todo, patients);
+  const row = stampCloudTodoRow(patientId, todo, getPatients());
   enqueueEntityOps(`todos/${todo.id}`, [cloudOp({ path: `todos/${todo.id}`, value: row, ...meta })]);
 }
 
@@ -458,7 +484,7 @@ export function enqueueCloudTodoDelete(patientId, todoRef, updatedAt) {
     updatedAt: String(updatedAt || new Date().toISOString()),
   };
   const pid = String(patientId || '').trim();
-  const registro = registroForPatientId(patients, pid);
+  const registro = registroForPatientId(getPatients(), pid);
   const tomb = { id: eid, patientId: pid, _deleted: true, updatedAt: meta.updatedAt };
   if (registro) tomb.registro = registro;
   enqueueEntityOps(`todos/${eid}`, [
@@ -505,7 +531,7 @@ export function enqueueCloudLabSidecarsForPatient(patientId) {
   if (!isCloudSyncActive() || !bridgeRuntime?.outbox) return;
   const pid = String(patientId || '').trim();
   if (!pid || pid.indexOf('demo-') === 0) return;
-  const labs = Array.isArray(labHistory[pid]) ? labHistory[pid] : [];
+  const labs = Array.isArray(getLabHistory()[pid]) ? getLabHistory()[pid] : [];
   if (!labs.length) return;
   const meta = {
     actorId: resolveCloudActorId(bridgeRuntime),
@@ -513,7 +539,7 @@ export function enqueueCloudLabSidecarsForPatient(patientId) {
   };
   const ops = buildDirtyLabSidecarOpsForPatient(pid, labs, meta);
   if (!ops.length) return;
-  const patient = patients.find(function (p) {
+  const patient = getPatients().find(function (p) {
     return p && String(p.id) === pid;
   });
   void import('./cloud-census-sala-push.mjs').then(async function (mod) {

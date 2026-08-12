@@ -604,7 +604,7 @@ html.dark .btn-intro-skip:hover {
 #tour-dock-body ul:last-child { margin-bottom: 0; }
 #tour-dock-body li { margin-bottom: 4px; }
 #tour-dock-body li:last-child { margin-bottom: 0; }
-#tour-dock-body strong { color: var(--text); font-weight: 650; }
+#tour-dock-body strong { color: var(--text); font-weight: 600; }
 .tour-dock-hint { font-size: 12px !important; line-height: 1.45 !important; color: var(--text-muted) !important; margin-bottom: 8px !important; }
 /* Estado colapsado: solo encabezado y botón de expandir. */
 #tour-dock.tour-dock-collapsed { width: auto; }
@@ -1917,7 +1917,7 @@ html.dark .tend-group-drag-hovercard.tend-group-panel-card {
   max-height: 0;
   opacity: 0;
 }
-.tend-spark-placeholder { min-height: 56px; width: 100%; border-radius: var(--radius-field); background: rgba(0,0,0,0.03); }
+.tend-spark-placeholder { min-height: 40px; width: 100%; border-radius: var(--radius-field); background: rgba(0,0,0,0.03); }
 html.dark .tend-spark-placeholder { background: rgba(255,255,255,0.04); }
 .tend-toolbar-btn {
   font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: var(--radius-field); cursor: pointer;
@@ -1953,9 +1953,9 @@ html.dark .tend-hidden-chip:hover .tend-hidden-chip-eye { color: var(--success);
 .tend-grid,
 .tend-grid.tend-sort-zone {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 14px;
-  padding: 4px;
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+  gap: 10px;
+  padding: 2px;
   align-items: stretch;
 }
 .tend-sort-zone .tend-card {
@@ -1964,7 +1964,7 @@ html.dark .tend-hidden-chip:hover .tend-hidden-chip-eye { color: var(--success);
   min-width: 0;
   box-sizing: border-box;
   justify-self: stretch;
-  padding: 9px 11px 8px;
+  padding: 9px 10px 8px;
 }
 .tend-sort-zone .tend-card-header { margin-bottom: 4px; }
 .tend-card-header-end {
@@ -2000,25 +2000,49 @@ html.dark .tend-hidden-chip:hover .tend-hidden-chip-eye { color: var(--success);
 @media (hover: none) {
   .tend-card-hide-btn { opacity: 1; }
 }
+.tend-sort-zone .tend-card-title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  max-width: 58%;
+}
 .tend-sort-zone .tend-param-name {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
   line-height: 1.2;
+  color: var(--text);
 }
 .tend-sort-zone .tend-param-value {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.1;
 }
 .tend-sort-zone .tend-unit {
-  font-size: 10px;
-  margin-top: 1px;
+  font-size: 12px;
+  margin-top: 0;
   line-height: 1.2;
+  font-weight: 500;
 }
+.tend-sort-zone .tend-card-reading {
+  align-items: flex-end;
+}
+.tend-sort-zone .tend-card-header-end .tend-insight {
+  margin: 0;
+  gap: 0;
+}
+.tend-sort-zone .tend-insight {
+  margin: 0;
+  gap: 0.45rem;
+}
+.tend-sort-zone .tend-insight-delta {
+  font-size: 13px;
+}
+
 .tend-sort-zone .tend-spark-wrap {
   height: 40px;
-  margin-top: 5px;
+  margin-top: 4px;
 }
 .tend-sort-zone .tend-spark-placeholder { min-height: 40px; }
 .tend-sort-zone .tend-card.tend-card--sort-source {
@@ -2056,7 +2080,7 @@ html.dark body > .sortable-fallback {
   border-color: color-mix(in oklab, var(--action) 45%, var(--border)) !important;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45), 0 4px 16px rgba(79, 86, 255, 0.18) !important;
 }
-.tend-card  { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; cursor:grab; transition:box-shadow var(--dur-normal) ease, border-color var(--dur-normal) ease; overflow:visible; min-width:0; }
+.tend-card  { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:9px 10px 8px; cursor:grab; transition:box-shadow var(--dur-normal) ease, border-color var(--dur-normal) ease; overflow:visible; min-width:0; }
 .tend-card.sortable-chosen,
 .tend-card.sortable-drag,
 .tend-card.sortable-fallback,
@@ -2064,22 +2088,22 @@ html.dark body > .sortable-fallback {
 .tend-card:active { cursor: grabbing; }
 /* Modo cómodo: sidebar más ancha → menos columnas si usamos 1fr; capamos tarjetas para no inflar “cuadros”. */
 html.ui-density-normal .tend-grid:not(.tend-sort-zone) {
-  grid-template-columns: repeat(auto-fill, minmax(188px, 220px));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 200px));
+  gap: 10px;
   justify-content: start;
 }
 html.ui-density-normal .tend-grid,
 html.ui-density-normal .tend-grid.tend-sort-zone {
-  grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 10px;
 }
-html.ui-density-normal .tend-sort-zone .tend-param-value { font-size: 16px; }
-html.ui-density-normal .tend-sort-zone .tend-spark-wrap { height: 38px; }
-html.ui-density-normal .tend-sort-zone .tend-spark-placeholder { min-height: 38px; }
+html.ui-density-normal .tend-sort-zone .tend-param-value { font-size: 17px; }
+html.ui-density-normal .tend-sort-zone .tend-spark-wrap { height: 36px; }
+html.ui-density-normal .tend-sort-zone .tend-spark-placeholder { min-height: 36px; }
 html.ui-density-normal .tend-card {
-  max-width: 220px;
+  max-width: 200px;
   width: 100%;
-  padding: 10px;
+  padding: 9px 10px 8px;
   justify-self: start;
 }
 html.ui-density-normal .tend-sort-zone .tend-card {
@@ -2088,12 +2112,12 @@ html.ui-density-normal .tend-sort-zone .tend-card {
   justify-self: stretch;
 }
 html.ui-density-normal .tend-param-value { font-size: 16px; }
-html.ui-density-normal .tend-spark-wrap { height: 50px; margin-top: 6px; }
-html.ui-density-normal .tend-spark-placeholder { min-height: 50px; }
+html.ui-density-normal .tend-spark-wrap { height: 40px; margin-top: 4px; }
+html.ui-density-normal .tend-spark-placeholder { min-height: 40px; }
 html.ui-density-normal .tend-inline-controls { margin-bottom: 12px; }
 html.ui-density-normal .tend-section { margin-bottom: 14px; }
-.tend-card:hover { box-shadow: var(--shadow-md); border-color: rgba(37, 99, 235, 0.25); }
-html.dark .tend-card:hover { border-color: rgba(96, 165, 250, 0.35); }
+.tend-card:hover { box-shadow: var(--shadow-md); border-color: color-mix(in oklab, var(--color-ink) 18%, var(--border)); }
+html.dark .tend-card:hover { border-color: color-mix(in oklab, #fff 16%, var(--border)); }
 
 /* Gasometría extendida — modal y bloques */
 body.tend-gaso-ext-open { overflow: hidden; }
@@ -2595,7 +2619,7 @@ html.dark .tend-gaso-tip {
 .guardia-fin-turno-lead {
   margin: 0;
   font-size: 0.85rem;
-  font-weight: 650;
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -2635,7 +2659,7 @@ html.dark .tend-gaso-tip {
 
 .guardia-fin-turno-team {
   font-size: 0.9rem;
-  font-weight: 650;
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -2709,7 +2733,7 @@ html.dark .tend-gaso-tip {
 
 .guardia-patient-action-item__title {
   font-size: 0.92rem;
-  font-weight: 650;
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -2830,6 +2854,12 @@ html.dark .tend-gaso-tip {
   gap: 8px;
   margin-top: 4px;
 }
+.tend-detail-add-event-btn {
+  margin-top: 12px;
+}
+.tend-detail-events-slot:not(:empty) + .tend-detail-add-event-btn {
+  margin-top: 8px;
+}
 .tend-event-legend {
   display: flex;
   flex-direction: column;
@@ -2847,7 +2877,7 @@ html.dark .tend-gaso-tip {
   line-height: 1.35;
 }
 .tend-event-legend-date {
-  font-weight: 650;
+  font-weight: 600;
   color: var(--text);
 }
 .tend-event-legend-kind {

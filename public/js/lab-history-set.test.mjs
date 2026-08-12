@@ -66,14 +66,14 @@ describe('lab-history-set', () => {
     const history = ensureParsedLabHistory(PATIENT_ID);
     assert.equal(history.length, 1);
     assert.equal(history[0].hora, '02:40');
-    assert.equal(appState.labHistory[PATIENT_ID][0].hora, '02:40');
+    assert.equal(appState.getLabHistory()[PATIENT_ID][0].hora, '02:40');
   });
 
   it('rebuildEstudiosFromLabHistory termina con historial ya normalizado', () => {
     ensureParsedLabHistory(PATIENT_ID);
     rebuildEstudiosFromLabHistory(PATIENT_ID);
-    assert.match(String(appState.notes[PATIENT_ID].estudios || ''), /24\/05/);
-    assert.equal(appState.labHistory[PATIENT_ID][0].hora, '02:40');
+    assert.match(String(appState.getNotes()[PATIENT_ID].estudios || ''), /24\/05/);
+    assert.equal(appState.getLabHistory()[PATIENT_ID][0].hora, '02:40');
   });
 
   it('ensureParsedLabHistory readOnly sets fingerprint and skips re-parse', () => {
@@ -85,7 +85,7 @@ describe('lab-history-set', () => {
     assert.equal(again[0]._parseFingerprint, fp);
   });
 
-  it('ensureParsedLabHistory readOnly does not call saveState', () => {
+  it('ensureParsedLabHistory readOnly does not call persistClinicalState', () => {
     let saveCount = 0;
     appState.setSaveStateHooks({
       before: () => {
@@ -174,7 +174,7 @@ describe('lab-history-set', () => {
       ],
     });
     rebuildEstudiosFromLabHistory(PATIENT_ID);
-    const text = String(appState.notes[PATIENT_ID].estudios || '');
+    const text = String(appState.getNotes()[PATIENT_ID].estudios || '');
     assert.match(text, /12\.1/);
     assert.doesNotMatch(text, /Hb 10/);
   });

@@ -63,16 +63,20 @@ function mountSectionSparkCharts(sectionKey, history, chartAnim) {
       values2: setsAsc2.map(function (s) {
         return getSetTrendValueForSeries(s, sk2, fk2);
       }),
+      ref: idx.ref || null,
     });
   }
   if (!jobs.length) return;
+  var mountGen = tendStore.sparkMountGen;
   void loadChartJs().then(function (Chart) {
+    if (mountGen !== tendStore.sparkMountGen) return;
     var jobIndex = 0;
     var SPARK_BATCH = 8;
     function runBatch() {
+      if (mountGen !== tendStore.sparkMountGen) return;
       var end = Math.min(jobIndex + SPARK_BATCH, jobs.length);
       for (; jobIndex < end; jobIndex += 1) {
-        mountOneTrendSparkChart(jobs[jobIndex], history, chartAnim, Chart);
+        mountOneTrendSparkChart(jobs[jobIndex], history, chartAnim, Chart, mountGen);
       }
       if (jobIndex < jobs.length) scheduleIdle(runBatch, 24);
     }

@@ -90,6 +90,7 @@ export function wireConexionClicks(section, deps, ui) {
     getUserSala: deps.getUserSala,
     getCloudSyncToken: deps.getCloudSyncToken,
     setCloudSyncToken: deps.setCloudSyncToken,
+    getCloudSyncRemember: deps.getCloudSyncRemember,
     clearCloudSyncSession: deps.clearCloudSyncSession,
     getCloudSyncRoomId: deps.getCloudSyncRoomId,
     setCloudSyncRoomId: deps.setCloudSyncRoomId,
@@ -216,11 +217,22 @@ export function bootstrapConexionState(section, deps, ui) {
         ui.setCloudUser(null);
         ui.renderConnected(data.room || data);
       })
-      .catch(function () {
+      .catch(function (err) {
         if (!section.isConnected) return;
-        deps.clearCloudSyncSession();
+        const status = Number(err && err.status) || 0;
+        // Only drop Recuérdame / auth on real auth failures — network or
+        // missing-room errors must not wipe the persisted token.
+        if (status === 401 || status === 403) {
+          deps.clearCloudSyncSession();
+          deps.onCloudRoomChange?.(false);
+          ui.renderDisconnected();
+          return;
+        }
         deps.onCloudRoomChange?.(false);
         ui.renderDisconnected();
+        void ui.tryAutoEnsureTurnRoom?.().then(function (room) {
+          if (room && section.isConnected) ui.renderConnected(room);
+        });
       });
     return;
   }

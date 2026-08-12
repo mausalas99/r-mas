@@ -14,7 +14,7 @@ export function resolveTeamIdFromLocalTeams(raw) {
   return resolveTeamIdFromInviteCode(raw, clinicalSessionContext.teams || []);
 }
 
-export async function resolveTeamIdFromLanDirectory(raw) {
+export async function resolveTeamIdFromDirectory(raw) {
   try {
     const { pullClinicalOpsFromCloudRoom } = await import('./teams-guardia-bridge.mjs');
     await pullClinicalOpsFromCloudRoom({ timeoutMs: 8000, force: true });
@@ -42,7 +42,7 @@ export async function resolveTeamIdForInviteInput(codeOrId) {
   if (!raw) return '';
   await fetchClinicalTeamsFromDb();
   let teamId = resolveTeamIdFromLocalTeams(raw);
-  if (!teamId) teamId = await resolveTeamIdFromLanDirectory(raw);
+  if (!teamId) teamId = await resolveTeamIdFromDirectory(raw);
   if (!teamId) teamId = await resolveTeamIdFromDbCode(raw);
   return teamId;
 }

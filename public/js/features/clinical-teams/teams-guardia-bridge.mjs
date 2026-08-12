@@ -2,8 +2,8 @@
  * Mi rotación — self-serve teams and membership.
  */
 import {
-  isBenignLanPushSkipCode,
-  LAN_PROFILE_PUSH_FAILED_MSG,
+  isBenignPushSkipCode,
+  PROFILE_PUSH_FAILED_MSG,
 } from '../../clinical-profile-cloud-stubs.mjs';
 import { isCloudSyncActive } from '../cloud-sync/nube-sync-policy.mjs';
 import { getCloudSyncToken } from '../cloud-sync/settings.mjs';
@@ -11,7 +11,7 @@ import { normalizeCloudSala } from '../cloud-sync/sala-allowlist.mjs';
 import { dbApi, toast } from './shared.mjs';
 
 /** Push teams/membership to sala ⇄ (same path as @usuario; uses sticky room membership). */
-export async function publishClinicalTeamsToLan() {
+export async function publishClinicalTeamsToSync() {
   try {
     const mod = await import('../cloud-sync/mutate-bridge-clinical-ops.mjs');
     if (typeof mod.pushCloudClinicalOpsNow === 'function') {
@@ -24,7 +24,7 @@ export async function publishClinicalTeamsToLan() {
 }
 
 /** @param {{ ok?: boolean, code?: string }} lanPush */
-export function toastTeamLanPublishResult(lanPush, localOkMessage) {
+export function toastTeamPublishResult(lanPush, localOkMessage) {
   if (!lanPush) {
     toast(localOkMessage, 'success');
     return;
@@ -51,11 +51,11 @@ export function toastTeamLanPublishResult(lanPush, localOkMessage) {
     toast(localOkMessage, 'success');
     return;
   }
-  if (isBenignLanPushSkipCode(lanPush.code)) {
+  if (isBenignPushSkipCode(lanPush.code)) {
     toast(`${localOkMessage} (solo en esta Mac hasta conectar sala ⇄).`, 'info');
     return;
   }
-  toast(LAN_PROFILE_PUSH_FAILED_MSG, 'warn');
+  toast(PROFILE_PUSH_FAILED_MSG, 'warn');
 }
 
 const CLOUD_CLINICAL_OPS_PULL_MIN_MS = 12_000;
@@ -148,7 +148,7 @@ export async function refreshClinicalOpsDirectory(options = {}) {
     }
     return pulled || isCloudSyncActive();
   }
-  return pullClinicalOpsFromLanRoom(options);
+  return pullClinicalOpsFromRoom(options);
 }
 
 /** Push teams/membership to the team's Nube sala room (and LAN when applicable). */
@@ -167,16 +167,16 @@ export async function publishClinicalTeamsAfterChange(options = {}) {
       /* fall through to LAN */
     }
   }
-  return publishClinicalTeamsToLan();
+  return publishClinicalTeamsToSync();
 }
 
 /** Pull host clinicalOps into this Mac so partner @usuario and teams exist locally. */
-export async function pullClinicalOpsFromLanRoom(_options = {}) {
+export async function pullClinicalOpsFromRoom(_options = {}) {
   return false;
 }
 
 /** @param {string} handle — normalized @usuario without @ */
-export async function resolveLocalUserIdByLanHandle(handle) {
+export async function resolveLocalUserIdByHandle(handle) {
   const api = dbApi();
   if (!api || typeof api.dbClinicalUserLookup !== 'function') return '';
   const res = await api.dbClinicalUserLookup({ username: handle });

@@ -7,7 +7,7 @@ import {
   resolvePatientTeamIdFromAssignments,
   stampPatientClinicalSala,
 } from '../../clinico-access.mjs';
-import { patients, saveState } from '../../app-state.mjs';
+import { getPatients, persistClinicalState } from '../../app-state.mjs';
 import { isCloudSala, normalizeCloudSala } from './sala-allowlist.mjs';
 import { isCloudSyncActive } from './nube-sync-policy.mjs';
 import {
@@ -216,7 +216,7 @@ export async function repairCensusSalasFromTeamAssignments(opts = {}) {
   /** @type {Set<string>} */
   const clinicalOpsSalas = new Set();
 
-  for (const patient of patients || []) {
+  for (const patient of getPatients() || []) {
     if (!patient?.id || String(patient.id).indexOf('demo-') === 0) continue;
     const teamId = resolvePatientTeamIdFromAssignments(String(patient.id), assignments, now);
     if (!teamId) continue;
@@ -237,7 +237,7 @@ export async function repairCensusSalasFromTeamAssignments(opts = {}) {
     }
   }
 
-  if (stamped > 0) saveState({ immediate: true });
+  if (stamped > 0) persistClinicalState({ immediate: true });
 
   const { pushClinicalOpsForSala } = await import('./cloud-clinical-ops-sala.mjs');
   for (const sala of clinicalOpsSalas) {

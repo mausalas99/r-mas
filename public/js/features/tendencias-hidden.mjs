@@ -185,7 +185,6 @@ function buildTendInlineControlsHtml(hiddenCount, opts) {
     : '';
   return (
     '<div class="tend-inline-controls">' +
-    '<button type="button" class="tend-toolbar-btn" data-tend-action="add-event">+ Eventualidad</button>' +
     '<button type="button" class="tend-toolbar-toggle' +
     (on ? ' is-active' : '') +
     '" aria-pressed="' +

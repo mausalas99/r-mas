@@ -1,4 +1,4 @@
-import { patients, saveState } from '../app-state.mjs';
+import { getPatients, persistClinicalState } from '../app-state.mjs';
 import { syncHeaderContext } from './header-context.mjs';
 import { flushRecetaHuDraftIfMountedFor } from './receta-hu.mjs';
 import { stashMedInputForPatient } from './medications.mjs';
@@ -33,6 +33,7 @@ import {
   setRoundOverviewMode,
 } from './patients-round.mjs';
 import { syncPatientBulkBar } from './patients-bulk-bar.mjs';
+import { buildConfirmCardHtml, wrapApprovalInConflictModal } from '../ui-approval-card.mjs';
 
 /** @param {string} iso */
 function formatIncomingEffectiveLabel(iso) {
@@ -53,7 +54,7 @@ function formatIncomingEffectiveLabel(iso) {
  */
 function blockIncomingPreviewChartOpen(id) {
   if (!clinicalSessionContext.user) return false;
-  const patient = patients.find((p) => p && String(p.id) === String(id));
+  const patient = getPatients().find((p) => p && String(p.id) === String(id));
   const mapped = patient
     ? {
         id: String(patient.id),
@@ -215,9 +216,41 @@ function selectPatientCore(id) {
   }
 }
 
+function showPatientDeleteConfirm(question) {
+  return new Promise(function (resolve) {
+    var backdrop = document.createElement('div');
+    backdrop.className = 'lab-conflict-backdrop';
+    backdrop.id = 'patients-delete-confirm';
+    backdrop.innerHTML = wrapApprovalInConflictModal(
+      buildConfirmCardHtml({
+        question: question,
+        confirmLabel: 'Eliminar',
+        cancelLabel: 'Cancelar',
+      })
+    );
+    var finish = function (ok) {
+      backdrop.remove();
+      resolve(ok);
+    };
+    var confirmBtn = backdrop.querySelector('[data-approval-confirm]');
+    var cancelBtn = backdrop.querySelector('[data-approval-cancel]');
+    var dismiss = backdrop.querySelector('[data-approval-dismiss]');
+    if (confirmBtn) confirmBtn.addEventListener('click', function () { finish(true); });
+    if (cancelBtn) cancelBtn.addEventListener('click', function () { finish(false); });
+    if (dismiss) dismiss.addEventListener('click', function () { finish(false); });
+    backdrop.addEventListener('click', function (ev) {
+      if (ev.target === backdrop) finish(false);
+    });
+    document.body.appendChild(backdrop);
+    if (cancelBtn && typeof cancelBtn.focus === 'function') cancelBtn.focus();
+  });
+}
+
 function confirmPatientDelete(target) {
-  if (target && target.archived) return true;
-  return confirm('¿Eliminar este paciente y sus notas? No volverá desde otros equipos del turno.');
+  if (target && target.archived) return Promise.resolve(true);
+  return showPatientDeleteConfirm(
+    '¿Eliminar este paciente y sus notas? No volverá desde otros equipos del turno.'
+  );
 }
 
 function showEmptyPatientShell() {
@@ -229,7 +262,7 @@ function showEmptyPatientShell() {
 }
 
 function afterPatientDeletesCommitted(summary, auditLabel) {
-  saveState({ immediate: true });
+  persistClinicalState({ immediate: true });
   rt.addAuditEntry('patient-delete', 'ok', summary.ok || 0, auditLabel || '');
   patientsBridge.renderPatientList();
   syncPatientBulkBar();
@@ -250,17 +283,27 @@ export async function deletePatient(e, id) {
     syncPatientBulkBar();
     return;
   }
-  var target = patients.find(function (p) {
+  var target = getPatients().find(function (p) {
     return p.id === id;
   });
   if (!target) return;
-  if (!confirmPatientDelete(target)) return;
+  if (!(await confirmPatientDelete(target))) return;
   var label = 'Eliminar ' + (target.nombre || 'paciente');
   if (typeof rt.pushUndoSnapshot === 'function') rt.pushUndoSnapshot(label);
   var summary = await commitPatientDeletes([id]);
   afterPatientDeletesCommitted(
     summary,
     target.registro || target.nombre || ''
+  );
+}
+
+function showBulkDeleteApproval(n) {
+  return showPatientDeleteConfirm(
+    '¿Eliminar ' +
+      n +
+      ' paciente' +
+      (n === 1 ? '' : 's') +
+      ' y sus notas? No volverán desde otros equipos del turno.'
   );
 }
 
@@ -271,17 +314,8 @@ export async function confirmBulkDeletePatients() {
     return;
   }
   var n = getPatientBulkSelectedCount();
-  if (
-    !confirm(
-      '¿Eliminar ' +
-        n +
-        ' paciente' +
-        (n === 1 ? '' : 's') +
-        ' y sus notas? No volverán desde otros equipos del turno.'
-    )
-  ) {
-    return;
-  }
+  var ok = await showBulkDeleteApproval(n);
+  if (!ok) return;
   if (typeof rt.pushUndoSnapshot === 'function') {
     rt.pushUndoSnapshot('Eliminar ' + n + ' pacientes');
   }

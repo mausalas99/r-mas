@@ -95,8 +95,8 @@ async function claimUsernameIfNeeded(api, sessionUserId, username, sala, setting
   const needsClaim = shouldClaimClinicalUsername(currentHandle, username, getClientId());
   if (!needsClaim) return { ok: true, needsClaim: false, sessionUserId, settings };
 
-  const { assertLanRoomForUsernameRegister } = await import('../clinical-profile-cloud-stubs.mjs');
-  await assertLanRoomForUsernameRegister({ sala });
+  const { assertRoomForUsernameRegister } = await import('../clinical-profile-cloud-stubs.mjs');
+  await assertRoomForUsernameRegister({ sala });
 
   if (typeof api.dbClinicalUsernameClaim !== 'function') {
     return { ok: true, needsClaim: false, sessionUserId, settings };
@@ -152,21 +152,21 @@ async function connectShiftPinIfProvided(_shiftPin, _sala) {
 
 async function pushProfileToLanAndNotify(sala, needsClaim) {
   const {
-    flushClinicalProfileToLan,
-    LAN_PROFILE_PUSH_FAILED_MSG,
-    LAN_PROFILE_NEEDS_CONNECT_MSG,
-    isBenignLanPushSkipCode,
-    isLanProfileNeedsConnectCode,
-    notifyLanProfilePushResult,
+    flushClinicalProfileToCloud,
+    PROFILE_PUSH_FAILED_MSG,
+    PROFILE_NEEDS_CONNECT_MSG,
+    isBenignPushSkipCode,
+    isProfileNeedsConnectCode,
+    notifyProfilePushResult,
   } = await import('../clinical-profile-cloud-stubs.mjs');
-  const lanPush = await flushClinicalProfileToLan({
+  const lanPush = await flushClinicalProfileToCloud({
     sala: sala || clinicalSessionContext.user?.sala,
   });
-  notifyLanProfilePushResult(lanPush, toast);
+  notifyProfilePushResult(lanPush, toast);
 
   const localOnly = isClinicalLocalOnlyMode();
-  if (!localOnly && !lanPush.ok && isLanProfileNeedsConnectCode(lanPush.code)) {
-    toast(LAN_PROFILE_NEEDS_CONNECT_MSG, 'info');
+  if (!localOnly && !lanPush.ok && isProfileNeedsConnectCode(lanPush.code)) {
+    toast(PROFILE_NEEDS_CONNECT_MSG, 'info');
     const rot = await import('./clinical-rotation-entry.mjs');
     rot.syncClinicalRotationEntryChrome();
     return;
@@ -174,10 +174,10 @@ async function pushProfileToLanAndNotify(sala, needsClaim) {
 
   if (
     !lanPush.ok &&
-    !isBenignLanPushSkipCode(lanPush.code) &&
+    !isBenignPushSkipCode(lanPush.code) &&
     !(lanPush.channels && lanPush.channels.outbox)
   ) {
-    toast(LAN_PROFILE_PUSH_FAILED_MSG, 'warning');
+    toast(PROFILE_PUSH_FAILED_MSG, 'warning');
   } else if (lanPush.ok && needsClaim) {
     toast('@usuario publicado en la sala ⇄.', 'success');
   }

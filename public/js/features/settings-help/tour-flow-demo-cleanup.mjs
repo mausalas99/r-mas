@@ -1,7 +1,7 @@
 /** Tear down demo patients when tour ends. */
 import { limpiarReporte } from '../lab-panel.mjs';
 import { renderPatientList, selectPatient } from '../patients.mjs';
-import { patients, saveState } from '../../app-state.mjs';
+import { getPatients, persistClinicalState } from '../../app-state.mjs';
 import { isTourDemoPatientId } from '../../tour-demo-patient.mjs';
 import {
   closeLabBulkTourHintModal,
@@ -21,11 +21,11 @@ function destroyDemoAndClose() {
   tourState.guidedTourBranch = null;
   publishTourGuardContext();
   hideTourDock();
-  if (isTourDemoPatientId(rt.getActiveId(), patients)) {
-    rt.setActiveId(patients.length ? patients[0].id : null);
+  if (isTourDemoPatientId(rt.getActiveId(), getPatients())) {
+    rt.setActiveId(getPatients().length ? getPatients()[0].id : null);
   }
   limpiarReporte();
-  saveState();
+  persistClinicalState();
   renderPatientList();
   if (rt.getActiveId()) selectPatient(rt.getActiveId());
   else {

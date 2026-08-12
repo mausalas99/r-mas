@@ -1,5 +1,5 @@
 // Patient demographics pane (Datos tab)
-import { patients } from '../../app-state.mjs';
+import { getPatients } from '../../app-state.mjs';
 import { isModeSala } from '../../mode-features.mjs';
 import { buildPatientAccesosSectionHtml } from '../../patient-data-accesos-ui.mjs';
 import { buildPatientTeamAssignSectionHtml, wirePatientTeamAssignRefresh } from '../../patient-team-assign-ui.mjs';
@@ -57,7 +57,7 @@ function renderPatientDataPane(patientIdOverride) {
     wrap.innerHTML = '';
     return;
   }
-  var patient = patients.find(function (p) {
+  var patient = getPatients().find(function (p) {
     return String(p.id) === String(targetId);
   });
   if (!patient) {

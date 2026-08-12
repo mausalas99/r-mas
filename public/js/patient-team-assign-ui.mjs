@@ -8,7 +8,7 @@ import { hasElevatedTeamPrivileges } from './clinical-privileges.mjs';
 import { filterJoinedTeams } from './features/clinical-teams/shared.mjs';
 import { buildTeamSelectOptions } from './features/clinical-teams/team-select-options.mjs';
 import { resolveActiveTeamFilterId } from './features/clinical-census-filters-ui.mjs';
-import { patients, saveState } from './app-state.mjs';
+import { getPatients, persistClinicalState } from './app-state.mjs';
 
 import { esc } from './dom-escape.mjs';
 function dbApi() {
@@ -77,7 +77,7 @@ async function notifyPatientTeamAssigned(pid, tid) {
       /* Nube optional */
     }
   }
-  const patient = (patients || []).find((p) => String(p?.id || '') === String(pid || '').trim());
+  const patient = (getPatients() || []).find((p) => String(p?.id || '') === String(pid || '').trim());
   const { getClinicalScopeContextForEvaluate } = await import('./clinical-access-runtime.mjs');
   const scopeCtx = getClinicalScopeContextForEvaluate();
   try {
@@ -116,13 +116,13 @@ function syncLocalPatientSalaFromTeamAssignment(patientId, teamId) {
   const pid = String(patientId || '').trim();
   const tid = String(teamId || '').trim();
   if (!pid || !tid) return;
-  const patient = (patients || []).find((p) => String(p?.id) === pid);
+  const patient = (getPatients() || []).find((p) => String(p?.id) === pid);
   if (!patient) return;
   const team = (clinicalSessionContext.teams || []).find((t) => String(t?.team_id) === tid);
   if (!team) return;
   const prev = String(patient.sala || '').trim();
   stampPatientClinicalSala(patient, clinicalSessionContext.user, { team });
-  if (String(patient.sala || '').trim() !== prev) saveState();
+  if (String(patient.sala || '').trim() !== prev) persistClinicalState();
 }
 
 export async function assignPatientToTeamClinical(patientId, teamId) {

@@ -1,5 +1,5 @@
 import { esc } from '../dom-escape.mjs';
-import { notes, saveState } from '../app-state.mjs';
+import { getNotes, persistClinicalState } from '../app-state.mjs';
 import { labPanelBridge } from './lab-panel-bridge.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 import { runLabConsolidateUiRefresh } from './lab-panel-history-consolidate-refresh.mjs';
@@ -262,7 +262,7 @@ export function wireLabConsolidateModal(backdrop, opts) {
 export function finishLabConsolidateUi(patientId, mergedCount, opts) {
   runLabConsolidateUiRefresh(
     {
-      saveState: saveState,
+      persistClinicalState: persistClinicalState,
       setActiveLab: function (v) {
         labPanelBridge.setActiveLab(v);
       },
@@ -274,8 +274,8 @@ export function finishLabConsolidateUi(patientId, mergedCount, opts) {
       },
       syncEstudiosTextarea: function (pid) {
         var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
-        if (el && pid && notes[pid]) {
-          el.value = notes[pid].estudios || '';
+        if (el && pid && getNotes()[pid]) {
+          el.value = getNotes()[pid].estudios || '';
         }
       },
       addAuditEntry: function (action, status, n, detail) {

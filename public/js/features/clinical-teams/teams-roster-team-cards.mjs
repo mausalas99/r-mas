@@ -1,6 +1,6 @@
 /** Mi rotación — team card HTML fragments. */
 import { getClinicalScopeContextForEvaluate, clinicalSessionContext } from '../../clinical-access-runtime.mjs';
-import { patients } from '../../app-state.mjs';
+import { getPatients } from '../../app-state.mjs';
 import { resolvePatientTeamIdFromAssignments } from '../../clinico-access.mjs';
 import {
   getCycleLettersForTeamCreate,
@@ -19,7 +19,7 @@ export function countLocalCensusPatientsForTeam(teamId, assignments, now) {
   const tid = String(teamId || '');
   if (!tid) return 0;
   let count = 0;
-  for (const p of patients || []) {
+  for (const p of getPatients() || []) {
     if (!p?.id) continue;
     if (resolvePatientTeamIdFromAssignments(String(p.id), assignments, now) === tid) count += 1;
   }

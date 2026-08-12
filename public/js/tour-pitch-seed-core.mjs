@@ -13,6 +13,7 @@ import {
 import { deletePitchDemoPatientMaps } from './tour-pitch-clear-maps.mjs';
 import { resolvePitchDemoRestorePatients } from './tour-pitch-restore.mjs';
 import { applyPitchDemoClinicalSeed } from './tour-pitch-seed-data.mjs';
+import { setDemoPatients } from './clinical-read-model-demo.mjs';
 
 /** @param {Record<string, unknown>} state */
 export function seedPitchDemo(state) {
@@ -39,7 +40,7 @@ export function clearPitchDemo(state) {
     medRecetaByPatient,
     medNotaSelectionByPatient,
     recetaHuByPatient,
-    saveState,
+    persistClinicalState,
     renderPatientList,
     getActiveId,
     setActiveId,
@@ -47,6 +48,7 @@ export function clearPitchDemo(state) {
   } = state;
 
   setPitchPatientIsolation(false);
+  setDemoPatients([]);
   resolvePitchDemoRestorePatients(state);
   clearPitchPatientsBackup();
 
@@ -75,6 +77,6 @@ export function clearPitchDemo(state) {
   if (getActiveId() === PITCH_DEMO_PATIENT_ID || getActiveId() === PITCH_DEMO_PATIENT_ID_LEGACY) {
     setActiveId(patients.length ? patients[0].id : null);
   }
-  saveState();
+  persistClinicalState();
   renderPatientList();
 }

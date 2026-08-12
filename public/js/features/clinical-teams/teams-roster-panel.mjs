@@ -21,12 +21,12 @@ import {
   filterJoinedTeams,
 } from './shared.mjs';
 import { refreshClinicalOpsDirectory } from './teams-guardia-bridge.mjs';
-import { wireLanUsersDirectoryControls } from './teams-roster-lan.mjs';
+import { wireDirectoryUsersControls } from './teams-roster-users.mjs';
 import { renderCreateTeamSectionHtml, renderJoinWithCodeSectionHtml } from './teams-roster-create.mjs';
 import {
   resolveBrowseSala,
   renderDirectorySectionHtml,
-  resolveLanTeamMemberHintHtml,
+  resolveTeamMemberHintHtml,
 } from './teams-roster-directory.mjs';
 import { renderJoinedTeamCard } from './teams-roster-team-cards.mjs';
 import { isRotationRejoinPending } from '../clinical-rotation-rejoin-modal.mjs';
@@ -138,7 +138,7 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
   const profileSection = buildClinicalProfileSectionHtml(ctx, user);
   const browseSala = resolveBrowseSala(elevated, ctx.sala);
   const joinCodeSection = renderJoinWithCodeSectionHtml();
-  const lanMemberHint = await resolveLanTeamMemberHintHtml(joined);
+  const lanMemberHint = await resolveTeamMemberHintHtml(joined);
   const { html: directorySection, count: directoryCount } = await renderDirectorySectionHtml({
     userId,
     elevated,
@@ -205,7 +205,7 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
     });
   }
 
-  wireLanUsersDirectoryControls();
+  wireDirectoryUsersControls();
   syncRotationConfigButton();
   wireRotationConfigOpenControl(host);
   wireNuevaRotacionControl(host);

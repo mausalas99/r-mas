@@ -1,5 +1,5 @@
 // Cultivos antibiogram hover panels + cell HTML
-import { labHistory } from '../../app-state.mjs';
+import { getLabHistory } from '../../app-state.mjs';
 import {
   buildAtbRisSummaryHtml,
   extractSensCrudasForGermFromSource,
@@ -8,7 +8,7 @@ import { esc } from './expediente-runtime.mjs';
 
 export function buildCultivoAntibiogramCellHtmlForPatient(r, patientId) {
   if (!patientId) return '<pre class="cultivos-atb-fallback">—</pre>';
-  var sets = labHistory[patientId] || [];
+  var sets = getLabHistory()[patientId] || [];
   var set = sets.find(function (s) {
     return String(s.id) === String(r.labSetId);
   });

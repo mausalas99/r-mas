@@ -10,6 +10,7 @@ import { getTendSectionLabel, TEND_SECTION_ORDER } from './tendencias-constants.
 import { isAbgAnalysisHidden } from './tendencias-lab-prefs.mjs';
 import { tendAbnormalOnlyRead, tendHiddenSeriesRead, tendSectionIsExpanded, tendRefForSeries } from './tendencias-series.mjs';
 import * as tc from './tendencias-core.mjs';
+import { buildTendInsightHtml, previousValueFromSetsDesc } from './tendencias-insight.mjs';
 
 function buildTendRenderKey(patientId, revision, prefsHash, sectionsExpanded) {
   return [patientId, revision, prefsHash, sectionsExpanded].join('::');
@@ -109,6 +110,7 @@ function buildTendPatchJobs(seriesAvail, seriesIndex) {
       values2: setsAscP.map(function (s) {
         return getSetTrendValueForSeries(s, skP, fkP);
       }),
+      ref: idxP.ref || null,
     });
   }
   return patchJobs;
@@ -135,8 +137,14 @@ function buildTendenciaCardHtml(sectionKey, spec, seriesIndex, expanded) {
   var isAb = idxCard ? idxCard.isAbnormal : false;
   var domId = tc.trendSparkDomId(sectionKey, specFk);
   var labelParts = tc.tendCardLabelParts(sectionKey, specFk);
-  var unitHtml = labelParts.unit ? '<div class="tend-unit">' + tc.esc(labelParts.unit) + '</div>' : '';
+  var unitHtml = labelParts.unit
+    ? '<span class="tend-unit">' + tc.esc(labelParts.unit) + '</span>'
+    : '';
   var seriesKey = tc.tendCatalogSeriesKey(sectionKey, specFk);
+  var prev = idxCard
+    ? previousValueFromSetsDesc(idxCard.setsDescFull || idxCard.setsDesc, sectionKey, specFk, getSetTrendValueForSeries)
+    : null;
+  var insightHtml = buildTendInsightHtml(tc.esc, latest, prev, isAb, idxCard ? idxCard.ref : null);
   return (
     '<div class="tend-card" role="button" tabindex="0" data-series-key="' +
     tc.esc(seriesKey) +
@@ -144,19 +152,24 @@ function buildTendenciaCardHtml(sectionKey, spec, seriesIndex, expanded) {
     (isAb ? '1' : '0') +
     '">' +
     '<div class="tend-card-header">' +
+    '<span class="tend-card-title">' +
     '<span class="tend-param-name">' +
     tc.esc(labelParts.title) +
+    '</span>' +
+    unitHtml +
     '</span>' +
     '<span class="tend-card-header-end">' +
     '<button type="button" class="tend-card-hide-btn" title="Ocultar analito" aria-label="Ocultar analito">' +
     tc.tendEyeHideSvg() +
     '</button>' +
+    '<span class="tend-card-reading">' +
     '<span class="tend-param-value' +
     (isAb ? ' tend-abnormal' : '') +
     '">' +
     (latest != null ? latest : '—') +
+    '</span>' +
+    insightHtml +
     '</span></span></div>' +
-    unitHtml +
     '<div class="tend-spark-wrap"><div class="tend-spark-canvas-cell">' +
     (expanded
       ? '<canvas id="' + domId + '"></canvas>'
@@ -212,6 +225,8 @@ function paintTendenciasGrid(container, toolbarHtml, sectionsOrdered, bySection,
 
 export function renderTendenciasBody(container) {
   tc.destroyTendCardSortables();
+  // Invalidate in-flight spark rAF batches before tearing down canvases.
+  tc.tendStore.sparkMountGen += 1;
   Object.keys(tc.tendStore.sparkCharts).forEach(function (k) {
     tc.destroySparkChartEntry(k);
   });

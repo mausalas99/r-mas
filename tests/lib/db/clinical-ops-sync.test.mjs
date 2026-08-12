@@ -11,7 +11,7 @@ import {
   joinTeam,
   addTeamMember,
   removeTeamMember,
-  listLanDirectoryUsers,
+  listDirectoryUsers,
   setTeamGuardiaToday,
   upsertActiveGuardia,
   saveEntregaTemplateUser,
@@ -397,14 +397,14 @@ describe('clinical-ops-sync', () => {
     assert.equal(exported.sala, 'Sala 2');
   });
 
-  it('listLanDirectoryUsers includes registered user without sala', () => {
+  it('listDirectoryUsers includes registered user without sala', () => {
     const db = openDb();
     const user = ensureClinicalUser(db, {
       clientId: 'interconsultas-only',
       rank: 'R2',
       clinicalName: 'Dr. Interconsultas',
     });
-    const listed = listLanDirectoryUsers(db);
+    const listed = listDirectoryUsers(db);
     assert.ok(listed.some((u) => u.user_id === user.userId));
   });
 
@@ -512,7 +512,7 @@ describe('clinical-ops-sync', () => {
     assert.equal(row.username, 'keep_me');
   });
 
-  it('listLanDirectoryUsers includes active-team peer stubs', () => {
+  it('listDirectoryUsers includes active-team peer stubs', () => {
     const db = openDb();
     const leader = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'R2' });
     claimUsername(db, { userId: leader.userId, username: 'leader_dir' });
@@ -535,7 +535,7 @@ describe('clinical-ops-sync', () => {
       team_membership: [{ team_id: team.team_id, user_id: remoteUserId, sub_area_fraction: null }],
       clinical_users: [],
     });
-    const listed = listLanDirectoryUsers(db);
+    const listed = listDirectoryUsers(db);
     assert.ok(listed.some((u) => u.user_id === remoteUserId));
     const peer = listed.find((u) => u.user_id === remoteUserId);
     assert.equal(peer.lanDirectoryPending, true);

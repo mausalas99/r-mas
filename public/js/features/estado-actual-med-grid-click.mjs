@@ -9,7 +9,7 @@ function handleMedRemoveClick(ev, target, grid, mount, ctx, monitoreo, refreshBl
   const idx = Number(removeBtn.getAttribute('data-ea-med-idx'));
   if (rKey && Number.isFinite(idx)) {
     removeMedFieldItem(monitoreo, rKey, idx);
-    ctx.saveState();
+    ctx.persistClinicalState();
     ctx.syncTextarea();
     refreshBlock(mount, rKey, monitoreo);
   }
@@ -43,7 +43,7 @@ function handleMedSaveClick(target, grid, mount, ctx, monitoreo, refreshBlock) {
     addMedFieldItem(monitoreo, sKey, text);
     if (sInput && 'value' in sInput) sInput.value = '';
     if (sPanel) sPanel.hidden = true;
-    ctx.saveState();
+    ctx.persistClinicalState();
     ctx.syncTextarea();
     refreshBlock(mount, sKey, monitoreo);
   }

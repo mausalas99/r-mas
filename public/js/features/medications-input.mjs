@@ -1,4 +1,4 @@
-import { medRecetaByPatient, saveState } from "../app-state.mjs";
+import { getMedRecetaByPatient, persistClinicalState } from "../app-state.mjs";
 import { isDemoPatientId } from "./medications-utils.mjs";
 
 /** Guarda el pegado del textarea antes de cambiar de paciente. */
@@ -7,23 +7,23 @@ export function stashMedInputForPatient(patientId) {
   var ta = document.getElementById("med-input");
   if (!ta) return;
   var raw = ta.value || "";
-  var block = medRecetaByPatient[patientId];
+  var block = getMedRecetaByPatient()[patientId];
   if (!raw) {
     if (block) {
       delete block.pasteRaw;
-      if (!block.items || !block.items.length) delete medRecetaByPatient[patientId];
-      else saveState();
+      if (!block.items || !block.items.length) delete getMedRecetaByPatient()[patientId];
+      else persistClinicalState();
     }
     return;
   }
-  if (!block) medRecetaByPatient[patientId] = { pasteRaw: raw };
+  if (!block) getMedRecetaByPatient()[patientId] = { pasteRaw: raw };
   else block.pasteRaw = raw;
-  saveState();
+  persistClinicalState();
 }
 
 export function restoreMedInputForPatient(patientId) {
   var ta = document.getElementById("med-input");
   if (!ta) return;
-  var block = patientId ? medRecetaByPatient[patientId] : null;
+  var block = patientId ? getMedRecetaByPatient()[patientId] : null;
   ta.value = block && block.pasteRaw ? block.pasteRaw : "";
 }

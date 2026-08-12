@@ -2,7 +2,7 @@
  * Always-visible clinical context in the header (premium UI phase 2):
  * active patient (name · bed · dx) + current navigation path.
  */
-import { patients } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 import { resolveConsolidatedTarget } from '../expediente-tabs.mjs';
 import { GROUP_LABELS, SECTION_LABELS } from '../expediente-group-row.mjs';
 import { diagnosticosTextForCenso } from '../patient-diagnosticos.mjs';
@@ -66,7 +66,7 @@ export function syncHeaderContext(ctx) {
   var p =
     id == null
       ? null
-      : patients.find(function (x) {
+      : getPatients().find(function (x) {
           return String(x.id) === String(id);
         }) || null;
   var showPatient = !!(p && !sidebarShowsActivePatient());

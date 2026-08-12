@@ -1,7 +1,7 @@
 /** R+ Móvil: misma UI que escritorio en navegador (Safari/iPad), sin exportación Word. */
 
 import { isMobileWeb as isMobileWebFromFlags } from './mobile-web-detect.mjs';
-import { isMobileWebModePersisted } from './mobile-lan-query-persist.mjs';
+import { isMobileWebModePersisted } from './mobile-query-persist.mjs';
 
 function mobileRuntimeGlobal() {
   if (typeof globalThis !== 'undefined') return globalThis;

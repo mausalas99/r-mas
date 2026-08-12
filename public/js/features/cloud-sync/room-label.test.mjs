@@ -36,3 +36,10 @@ describe('connectStepHtml remember me', () => {
     assert.match(html, /Recuérdame en este dispositivo/);
   });
 });
+
+describe('connectStepHtml register remember me', () => {
+  it('includes Recuérdame checkbox on register', () => {
+    const html = connectStepHtml('https://example.workers.dev');
+    assert.match(html, /data-cloud-reg-remember/);
+  });
+});

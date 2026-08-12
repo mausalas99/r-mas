@@ -28,7 +28,7 @@ import { closeTendGroupModal } from '../tendencias.mjs';
 import { closeSOAPModal } from '../soap-estado.mjs';
 import { procesarLabs } from '../../labs.js';
 import { extractParsedValues } from '../diagrams-parse.mjs';
-import { patients, labHistory, listadoProblemas, saveState } from '../../app-state.mjs';
+import { getPatients, getLabHistory, getListadoProblemas, persistClinicalState } from '../../app-state.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
 import { settingsHelpBridge } from './bridges.mjs';
 import { closeSettingsDropdown, isSettingsDropdownOpen, toggleSettingsDropdown } from './settings-dropdown.mjs';
@@ -137,7 +137,7 @@ export function seedDemoTrendHistory(ref) {
     var bundle = getTourDemoDateBundle(ref);
     var older = procesarLabs(bundle.olderDemoSomeLabReport).resLabs;
     var newer = procesarLabs(bundle.demoSomeLabReport).resLabs;
-    labHistory[DEMO_PATIENT_ID] = [
+    getLabHistory()[DEMO_PATIENT_ID] = [
       {
         id: 'tour-trend-1',
         fecha: bundle.labFechaOlder,
@@ -155,7 +155,7 @@ export function seedDemoTrendHistory(ref) {
     ];
   } catch (_err) {
     void _err;
-    delete labHistory[DEMO_PATIENT_ID];
+    delete getLabHistory()[DEMO_PATIENT_ID];
   }
 }
 
@@ -177,8 +177,8 @@ export function seedDemoListadoProblemas() {
   var hora =
     String(today.getHours()).padStart(2, '0') + ':'
     + String(today.getMinutes()).padStart(2, '0');
-  listadoProblemas[demoId] = buildTourDemoListadoProblemas(fecha, hora);
-  saveState();
+  getListadoProblemas()[demoId] = buildTourDemoListadoProblemas(fecha, hora);
+  persistClinicalState();
 }
 
 export function ensureProfileExpandedForTour() {
@@ -219,7 +219,7 @@ export function getGuidedTourSteps() {
 export function demoLabAlreadyProcessedForTour() {
   if (tourState.tourDemoLabSessionProcessed) return true;
   if (!tourState.guidedTourActive) return false;
-  return tourDemoLabCompleteForTour(patients, labHistory);
+  return tourDemoLabCompleteForTour(getPatients(), getLabHistory());
 }
 
 export function seedDemoEventualidadesOnActivePatient() {

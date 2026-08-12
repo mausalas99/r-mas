@@ -400,10 +400,10 @@ html.dark .btn-add:hover {
   box-shadow: var(--shadow-sm);
 }
 .patient-card.active {
-  background: var(--color-accent-soft);
+  background: color-mix(in oklab, var(--color-ink) 6%, var(--surface));
   border: var(--border-hairline);
   border-left: 2.5px solid var(--color-ink);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 .patient-card--incomplete {
   border-color: color-mix(in srgb, var(--color-warn, #d97706) 55%, var(--border));
@@ -426,10 +426,10 @@ html.dark .patient-card:hover {
   box-shadow: var(--shadow);
 }
 html.dark .patient-card.active {
-  background: var(--color-accent-soft);
+  background: color-mix(in oklab, #fff 7%, var(--surface));
   border: var(--border-hairline);
   border-left: 2.5px solid var(--color-ink);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 .patient-card-toolbar {
   position: relative;
@@ -448,9 +448,10 @@ html.dark .patient-card.active {
   min-width: 0;
 }
 .patient-toolbar-chip--on {
-  background: color-mix(in oklab, var(--action) 24%, var(--surface));
-  border-color: color-mix(in oklab, var(--action) 48%, var(--border));
-  color: var(--action);
+  background: color-mix(in oklab, var(--color-ink) 8%, var(--surface));
+  border-color: transparent;
+  color: var(--text);
+  box-shadow: none;
 }
 aside.patient-sidebar .patient-toolbar-chip {
   min-height: 22px;
@@ -524,15 +525,15 @@ aside.patient-sidebar .btn-delete-card::after {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  background: color-mix(in oklab, var(--action) 18%, var(--surface));
-  color: var(--action);
+  background: color-mix(in oklab, var(--color-ink) 5%, var(--surface));
+  color: var(--text-muted);
   font-size: calc(10px * var(--density-font));
-  font-weight: 700;
-  letter-spacing: 0.28px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   padding: 2px 8px;
   min-height: 22px;
   border-radius: 999px;
-  border: 1px solid color-mix(in oklab, var(--action) 35%, var(--border));
+  border: 1px solid transparent;
   box-shadow: none;
   line-height: 1.15;
   flex-shrink: 0;
@@ -543,18 +544,18 @@ html.dark .patient-toolbar-chip {
   border-color: color-mix(in oklab, var(--border) 80%, transparent);
 }
 html.dark .patient-toolbar-chip--on {
-  background: color-mix(in oklab, var(--action) 22%, var(--surface));
-  border-color: color-mix(in oklab, var(--action) 40%, var(--border));
-  color: var(--color-accent-soft-text);
+  background: color-mix(in oklab, #fff 11%, var(--surface));
+  border-color: transparent;
+  color: var(--text);
 }
 .patient-toolbar-chip:active { cursor: grabbing; }
 .patient-toolbar-chip:hover {
-  background: color-mix(in oklab, var(--action) 27%, var(--surface));
-  border-color: color-mix(in oklab, var(--action) 52%, var(--border));
-  color: color-mix(in oklab, var(--action) 94%, var(--text));
+  background: color-mix(in oklab, var(--color-ink) 9%, var(--surface));
+  border-color: transparent;
+  color: var(--text);
 }
 .patient-toolbar-chip:focus-visible {
-  outline: 2px solid color-mix(in oklab, var(--action) 50%, transparent);
+  outline: 2px solid color-mix(in oklab, var(--color-ink) 28%, transparent);
   outline-offset: 1px;
 }
 .patient-toolbar-chip--icon {
@@ -565,14 +566,23 @@ html.dark .patient-toolbar-chip--on {
   display: block;
 }
 html.dark .patient-toolbar-chip:hover {
-  background: color-mix(in oklab, var(--action) 22%, var(--surface));
-  border-color: color-mix(in oklab, var(--action) 55%, var(--border));
-  color: var(--lab-chip-txt);
+  background: color-mix(in oklab, #fff 14%, var(--surface));
+  border-color: transparent;
+  color: var(--text);
 }
 .btn-pinned-text {
   font-size: calc(10px * var(--density-font));
-  font-weight: 700;
+  font-weight: 600;
   min-width: 50px;
+}
+.btn-pinned-text.patient-toolbar-chip--on {
+  background: color-mix(in oklab, var(--color-ink) 10%, var(--surface));
+  color: var(--text);
+  font-weight: 650;
+}
+html.dark .btn-pinned-text.patient-toolbar-chip--on {
+  background: color-mix(in oklab, #fff 13%, var(--surface));
+  color: var(--text);
 }
 .btn-archive-clean {
   display: inline-flex;

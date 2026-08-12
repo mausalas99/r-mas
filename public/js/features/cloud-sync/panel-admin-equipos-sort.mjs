@@ -1,8 +1,8 @@
-import { resolveLanUserPlacement } from '../clinical-teams/teams-roster-lan-render.mjs';
+import { resolveUserPlacement } from '../clinical-teams/teams-roster-directory-render.mjs';
 
 /** @param {string} userId @param {object[]} teams */
 function equiposAssignmentRank(userId, teams) {
-  return userId && resolveLanUserPlacement(userId, teams) ? 1 : 0;
+  return userId && resolveUserPlacement(userId, teams) ? 1 : 0;
 }
 
 /** @param {string} iso */

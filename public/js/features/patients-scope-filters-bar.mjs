@@ -37,7 +37,10 @@ function densitySpacePx() {
 function positionFiltersPopover(mount) {
   const home = filtersMountHomeEl();
   if (!home || !mount) return;
-  const rect = home.getBoundingClientRect();
+  // Anchor below the name search when present so Filtros censo never covers Buscar.
+  const search = document.querySelector('#patient-sidebar .patient-search-wrap');
+  const anchor = search || home;
+  const rect = anchor.getBoundingClientRect();
   const pad = 16 * densitySpacePx();
   mount.style.position = 'fixed';
   mount.style.top = `${Math.round(rect.bottom + 4)}px`;

@@ -11,7 +11,7 @@ import {
 import { dedupeConsolidatedLabRows } from '../lab-bulk-paste.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { normalizeLabHistoryPatientSets } from '../storage.js';
-import { patients, labHistory, saveState } from '../app-state.mjs';
+import { getPatients, getLabHistory, persistClinicalState } from '../app-state.mjs';
 import { bumpLabHistoryRevision, getLabHistoryRevision } from '../lab-history-cache.mjs';
 import {
   filterLabHistorySetsForMobileReference,
@@ -195,7 +195,7 @@ function syncLabHistoryDateSelect(opts) {
 }
 
 function buildLabHistoryReplayResult_(set) {
-  const patient = patients.find(function (p) { return p.id === rt.getActiveId(); });
+  const patient = getPatients().find(function (p) { return p.id === rt.getActiveId(); });
   const name = patient ? patient.nombre || '' : '';
   const reg = patient ? patient.registro || '' : '';
   return {
@@ -295,7 +295,7 @@ function deleteAllLabHistorySets() {
     rt.showToast('Selecciona un paciente primero', 'error');
     return;
   }
-  var sets = normalizeLabHistoryPatientSets(labHistory[pid]);
+  var sets = normalizeLabHistoryPatientSets(getLabHistory()[pid]);
   if (!sets.length) {
     rt.showToast('No hay estudios en el historial', 'info');
     return;
@@ -312,10 +312,10 @@ function deleteAllLabHistorySets() {
   ) {
     return;
   }
-  delete labHistory[pid];
+  delete getLabHistory()[pid];
   bumpLabHistoryRevision(pid);
   
-  saveState({ immediate: true });
+  persistClinicalState({ immediate: true });
   rt.addAuditEntry('lab-history-delete-all', 'ok', sets.length, String(pid));
   labPanelBridge.setActiveLab(null);
   clearLabHistoryDateSelectCache();
@@ -353,7 +353,7 @@ function collectReprocessSourceParts_(set, ctx) {
 function chartPatientForActiveId_() {
   const patientId = rt.getActiveId();
   if (!patientId) return null;
-  return patients.find(function (p) {
+  return getPatients().find(function (p) {
     return String(p.id) === String(patientId);
   }) || null;
 }
@@ -361,7 +361,7 @@ function chartPatientForActiveId_() {
 function priorRefsForActivePatient_(excludeSetId) {
   const pid = rt.getActiveId();
   if (!pid) return Object.create(null);
-  const others = sortLabHistoryChronological(labHistory[pid] || []).filter(function (s) {
+  const others = sortLabHistoryChronological(getLabHistory()[pid] || []).filter(function (s) {
     return !excludeSetId || String(s.id) !== String(excludeSetId);
   });
   return collectPriorRefsFromHistory(others);
@@ -401,7 +401,7 @@ function finalizeReprocessedLabSet_(set, repro, setId) {
   delete set._parseFingerprint;
   bumpLabHistoryRevision(rt.getActiveId());
   rt.rebuildEstudiosFromLabHistory(rt.getActiveId());
-  saveState({ immediate: true });
+  persistClinicalState({ immediate: true });
   renderLabHistoryPanel();
   rt.refreshTendenciasOrCultivosPanel();
   replayLabHistorySet(setId);
@@ -414,7 +414,7 @@ function reprocessLabHistorySet(setId) {
     rt.showToast('Selecciona un paciente primero', 'error');
     return;
   }
-  const sets = normalizeLabHistoryPatientSets(labHistory[rt.getActiveId()]);
+  const sets = normalizeLabHistoryPatientSets(getLabHistory()[rt.getActiveId()]);
   const set = findLabHistorySetByRef(sets, setId);
   if (!set) {
     rt.showToast('No se encontró ese estudio', 'error');
@@ -441,7 +441,7 @@ function reprocessLabHistorySet(setId) {
 function deleteLabHistorySet(setId) {
   var pid = rt.getActiveId();
   if (!pid) return;
-  var sets = normalizeLabHistoryPatientSets(labHistory[pid]);
+  var sets = normalizeLabHistoryPatientSets(getLabHistory()[pid]);
   if (!sets.length) return;
   if (!confirm('¿Eliminar este conjunto del historial? Las tendencias se recalcularán.')) return;
   var sid = String(setId == null ? '' : setId);
@@ -451,10 +451,10 @@ function deleteLabHistorySet(setId) {
   } else {
     sets = sets.filter(function (s) { return String(s.id) !== sid; });
   }
-  if (sets.length) labHistory[pid] = sets;
-  else delete labHistory[pid];
+  if (sets.length) getLabHistory()[pid] = sets;
+  else delete getLabHistory()[pid];
   bumpLabHistoryRevision(pid);
-  saveState({ immediate: true });
+  persistClinicalState({ immediate: true });
   rt.addAuditEntry('lab-history-delete', 'ok', 1, String(setId));
   labPanelBridge.setActiveLab(null);
   renderLabHistoryPanel();
@@ -468,7 +468,7 @@ function buildSameDaySerumContext(patientId, targetSet) {
   if (!patientId || !targetSet) return {};
   var dk = rt.dayKeyFromLabSet(targetSet);
   if (!dk || dk === 'unknown' || dk === 'Anterior') return {};
-  var sets = labHistory[patientId] || [];
+  var sets = getLabHistory()[patientId] || [];
   var extraSourceTexts = [];
   var extraResLabs = [];
   sets.forEach(function (other) {
@@ -484,7 +484,7 @@ function buildSameDaySerumContext(patientId, targetSet) {
 
 export function refreshSameDayAscitisForPatient(patientId, triggerSetId) {
   if (!patientId) return false;
-  var sets = labHistory[patientId];
+  var sets = getLabHistory()[patientId];
   if (!Array.isArray(sets) || !sets.length) return false;
   var trigger =
     triggerSetId != null

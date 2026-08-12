@@ -10,7 +10,7 @@ export const PITCH_DEMO_PATIENT_ID_LEGACY = 'demo-pitch-2';
 const PITCH_SANDBOX_SS_KEY = 'rpc-pitch-tour-sandbox-v1';
 export const PITCH_TOUR_ACTIVE_SS_KEY = 'rpc-pitch-tour-active';
 
-/** @type {typeof import('./app-state.mjs').patients | null} */
+/** @type {unknown[] | null} */
 let pitchPatientsBackup = null;
 
 export function readPitchSandboxBackup() {
@@ -73,7 +73,7 @@ export function restorePitchPatientsBackup() {
   return null;
 }
 
-/** Lista real para saveState mientras el pitch aísla la UI a demos. */
+/** Lista real para persistClinicalState mientras el pitch aísla la UI a demos. */
 export function clearPitchPatientsBackup() {
   pitchPatientsBackup = null;
 }
@@ -89,7 +89,7 @@ export function resolvePitchPersistPatients() {
  * @param {object} state — mismo shape que clearPitchDemo
  */
 export function tryRecoverPatientsFromPitchSandboxIfNeeded(state) {
-  const { patients, setPatients, saveState } = state;
+  const { patients, setPatients, persistClinicalState } = state;
   const sandbox = readPitchSandboxBackup();
   if (!sandbox || !Array.isArray(sandbox.patients) || !sandbox.patients.length) return false;
   const onlyDemos =
@@ -107,7 +107,7 @@ export function tryRecoverPatientsFromPitchSandboxIfNeeded(state) {
   markPitchTourSessionActive(false);
   setPitchPatientIsolation(false);
   pitchPatientsBackup = null;
-  saveState({ immediate: true });
+  persistClinicalState({ immediate: true });
   return true;
 }
 

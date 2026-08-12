@@ -6,7 +6,7 @@ import { generateWord, generateIndicaciones } from './features/notes-indicacione
 import { generateListado } from './features/expediente.mjs';
 import { incrementPendingJobs, decrementPendingJobs } from './features/platform/offline.mjs';
 import { formatDateSlug, downloadTextPayload } from './features/platform/shared.mjs';
-import { patients, notes, indicaciones, listadoProblemas } from './app-state.mjs';
+import { getPatients, getNotes, getIndicaciones, getListadoProblemas } from './app-state.mjs';
 import {
   escHtml,
   toLines,
@@ -45,14 +45,14 @@ export function slugFilePart(value, fallback) {
 }
 
 export function getCurrentPatientClinicalData() {
-  var patient = patients.find(function (p) {
+  var patient = getPatients().find(function (p) {
     return p.id === quickExportRt.getActiveId();
   });
   if (!patient) return null;
   return {
     patient: patient,
-    note: notes[quickExportRt.getActiveId()] || {},
-    indicacion: indicaciones[quickExportRt.getActiveId()] || {},
+    note: getNotes()[quickExportRt.getActiveId()] || {},
+    indicacion: getIndicaciones()[quickExportRt.getActiveId()] || {},
   };
 }
 
@@ -115,7 +115,7 @@ export function quickExportCurrentPatient() {
     format: format,
     appMode: isModeSala(quickExportRt.getSettings()) ? 'sala' : 'interconsulta',
     activeInner: quickExportRt.getActiveInner(),
-    listado: listadoProblemas[quickExportRt.getActiveId()] || null,
+    listado: getListadoProblemas()[quickExportRt.getActiveId()] || null,
   });
   switch (action.kind) {
     case 'html':

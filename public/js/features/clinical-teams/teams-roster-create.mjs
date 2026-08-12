@@ -20,7 +20,7 @@ import {
   CLINICAL_SALAS,
   renderClinicalTeamsCollapsible,
 } from './shared.mjs';
-import { renderLanUsersDirectoryTopButtonHtml } from './teams-roster-lan.mjs';
+import { renderDirectoryUsersTopButtonHtml } from './teams-roster-users.mjs';
 import { renderCycleSelectForRank } from './teams-roster-team-cards.mjs';
 
 function compositionHintForService(service) {
@@ -198,7 +198,7 @@ export function renderCreateTeamSectionHtml() {
   const user = clinicalSessionContext.user || {};
   const elevatedCreate = canManageTeamRoster(user);
   const openLabel = elevatedCreate ? 'Crear equipo vacío' : 'Crear nuevo equipo';
-  const lanDirBtn = renderLanUsersDirectoryTopButtonHtml(user);
+  const lanDirBtn = renderDirectoryUsersTopButtonHtml(user);
   const actionsClass = lanDirBtn
     ? 'clinical-teams-top-actions clinical-teams-top-actions--split'
     : 'clinical-teams-top-actions';

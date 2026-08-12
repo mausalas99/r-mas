@@ -27,7 +27,13 @@
 
   function hasRememberMeCloudToken() {
     try {
-      return !!String(localStorage.getItem('rpc-cloud-sync-token') || '').trim();
+      if (String(localStorage.getItem('rpc-cloud-sync-token') || '').trim()) return true;
+      var api = window.electronAPI;
+      if (api && typeof api.cloudSyncRememberGetSync === 'function') {
+        var snap = api.cloudSyncRememberGetSync();
+        return !!(snap && String(snap.token || '').trim());
+      }
+      return false;
     } catch (_e) {
       return false;
     }

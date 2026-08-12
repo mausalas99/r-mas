@@ -5,7 +5,7 @@ import {
   addDaysLocal,
   weekBoundsFromMonday,
 } from "../procedure-agenda-week.mjs";
-import { patients } from "../app-state.mjs";
+import { getPatients } from "../app-state.mjs";
 import { isPaseMode } from "./chrome.mjs";
 import { closeModalAnimated } from "../ui-motion.mjs";
 import { enqueueCloudAgendaUpsert, enqueueCloudAgendaDelete } from "./cloud-sync/mutate-bridge.mjs";
@@ -40,7 +40,7 @@ export function registerProcedureAgendaRuntime(ctx) {
 var procedureAgendaWeekOffset = 0;
 
 function agendaEligiblePatients() {
-  return patients.filter(function (p) {
+  return getPatients().filter(function (p) {
     if (!p) return false;
     if (p.isDemo) return false;
     if (String(p.id).indexOf("demo-") === 0) return false;

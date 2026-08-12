@@ -1,6 +1,6 @@
 /** EA panel render paths — extracted from estado-actual-panel-render.mjs */
-import { saveState } from '../app-state.mjs';
-import { medRecetaByPatient, medNotaSelectionByPatient } from '../app-state.mjs';
+import { persistClinicalState } from '../app-state.mjs';
+import { getMedRecetaByPatient, getMedNotaSelectionByPatient } from '../app-state.mjs';
 import {
   deriveSnapshot,
   balanceTurno,
@@ -31,11 +31,11 @@ import { buildEaActionBarButtons } from './estado-actual-panel-action-bar.mjs';
 import { syncEaCopyFab } from './estado-actual-panel-actions.mjs';
 
 export function buildEaShellKey(activeId, monitoreo) {
-  return String(activeId || '') + '|' + buildEaMonitoreoRevision(monitoreo, activeId, medRecetaByPatient);
+  return String(activeId || '') + '|' + buildEaMonitoreoRevision(monitoreo, activeId, getMedRecetaByPatient());
 }
 
 export function buildEaDataKey(monitoreo, activeId) {
-  return buildEaMonitoreoRevision(monitoreo, activeId, medRecetaByPatient);
+  return buildEaMonitoreoRevision(monitoreo, activeId, getMedRecetaByPatient());
 }
 
 export function renderEaEmptyPanel(mount, onReady) {
@@ -61,7 +61,7 @@ export function syncEaRecetaProposals(patient, activeId, monitoreo) {
   if (
     applyDietProposalFromRecetaBlock(
       monitoreo,
-      activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null
+      activeId && getMedRecetaByPatient() ? getMedRecetaByPatient()[activeId] : null
     )
   ) {
     changed = true;
@@ -70,8 +70,8 @@ export function syncEaRecetaProposals(patient, activeId, monitoreo) {
     syncRecetaProposalsFromSoapSelection(
       activeId,
       monitoreo,
-      medRecetaByPatient,
-      medNotaSelectionByPatient,
+      getMedRecetaByPatient(),
+      getMedNotaSelectionByPatient(),
       classifyMedicationSoapCategory
     )
   ) {
@@ -80,12 +80,12 @@ export function syncEaRecetaProposals(patient, activeId, monitoreo) {
   if (
     syncMonitoreoInsulinPumpFromReceta(
       monitoreo,
-      activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null
+      activeId && getMedRecetaByPatient() ? getMedRecetaByPatient()[activeId] : null
     )
   ) {
     changed = true;
   }
-  if (changed) saveState();
+  if (changed) persistClinicalState();
 }
 
 /**

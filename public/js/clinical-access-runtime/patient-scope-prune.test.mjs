@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { patients, notes, setPatients } from '../app-state.mjs';
+import { getPatients, getNotes, setPatients } from '../app-state.mjs';
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
 import { setCloudRoomConnected } from '../features/cloud-sync/nube-sync-policy.mjs';
 import { prunePatientsOutsideVisibleScope } from './patient-scope-prune.mjs';
@@ -10,7 +10,7 @@ function seedScope() {
     { id: 'p-mine', nombre: 'MIO', registro: 'R1', servicio: 'Sala', area: 'A', sala: 'Sala 2' },
     { id: 'p-other', nombre: 'AJENO', registro: 'R9', servicio: 'Sala', area: 'B', sala: 'Sala 2' },
   ]);
-  notes['p-other'] = { fecha: '01/01/2026' };
+  getNotes()['p-other'] = { fecha: '01/01/2026' };
   const team = {
     team_id: 't-mine',
     name: 'Mi equipo',
@@ -35,7 +35,7 @@ function seedScope() {
 
 function cleanup(prevMobile) {
   setPatients([]);
-  delete notes['p-other'];
+  delete getNotes()['p-other'];
   clinicalSessionContext.user = null;
   clinicalSessionContext.scopeContext = null;
   clinicalSessionContext.guardiasMap = new Map();
@@ -52,8 +52,8 @@ test('prunePatientsOutsideVisibleScope does not hard-delete on desktop Nube', ()
     seedScope();
     const removed = prunePatientsOutsideVisibleScope();
     assert.equal(removed, 0);
-    assert.equal(patients.length, 2);
-    assert.equal(notes['p-other']?.fecha, '01/01/2026');
+    assert.equal(getPatients().length, 2);
+    assert.equal(getNotes()['p-other']?.fecha, '01/01/2026');
   } finally {
     cleanup(prevMobile);
   }
@@ -67,9 +67,9 @@ test('prunePatientsOutsideVisibleScope removes foreign census on mobile team mir
     seedScope();
     const removed = prunePatientsOutsideVisibleScope();
     assert.equal(removed, 1);
-    assert.equal(patients.length, 1);
-    assert.equal(patients[0].id, 'p-mine');
-    assert.equal(notes['p-other'], undefined);
+    assert.equal(getPatients().length, 1);
+    assert.equal(getPatients()[0].id, 'p-mine');
+    assert.equal(getNotes()['p-other'], undefined);
   } finally {
     cleanup(prevMobile);
   }

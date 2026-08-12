@@ -9,10 +9,10 @@ import {
   wireAdminCodeModalControls,
 } from './shared.mjs';
 import {
-  closeLanUsersDirectoryModal,
-  lanUsersModalBackdropEl,
-  wireLanUsersDirectoryControls,
-} from './teams-roster-lan.mjs';
+  closeDirectoryUsersModal,
+  directoryUsersModalBackdropEl,
+  wireDirectoryUsersControls,
+} from './teams-roster-users.mjs';
 import { wireClinicalTeamsFormDelegation } from './teams-roster-form-delegation.mjs';
 
 function teamsModalBackdrop() {
@@ -51,9 +51,9 @@ export function wireClinicalTeamsModalChrome() {
     document._rpcClinicalTeamsEscapeWired = true;
     document.addEventListener('keydown', (ev) => {
       if (ev.key !== 'Escape') return;
-      const lanBd = lanUsersModalBackdropEl();
+      const lanBd = directoryUsersModalBackdropEl();
       if (lanBd?.classList.contains('open')) {
-        closeLanUsersDirectoryModal();
+        closeDirectoryUsersModal();
         return;
       }
       const adminBd = adminCodeModalBackdropEl();
@@ -68,7 +68,7 @@ export function wireClinicalTeamsModalChrome() {
     });
   }
 
-  wireLanUsersDirectoryControls();
+  wireDirectoryUsersControls();
   wireAdminCodeModalControls();
   void loadRoster().then((m) => m.wireTeamManageModalDelegation());
 }

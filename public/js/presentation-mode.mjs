@@ -10,18 +10,7 @@ import {
   tryRecoverPatientsFromPitchSandboxIfNeeded,
 } from './tour-pitch-demo-seed.mjs';
 import { setPersistPatientsResolver } from './app-state.mjs';
-import {
-  patients,
-  notes,
-  indicaciones,
-  labHistory,
-  listadoProblemas,
-  medRecetaByPatient,
-  medNotaSelectionByPatient,
-  recetaHuByPatient,
-  saveState,
-  setPatients,
-} from './app-state.mjs';
+import { getPatients, getNotes, getIndicaciones, getLabHistory, getListadoProblemas, getMedRecetaByPatient, getMedNotaSelectionByPatient, getRecetaHuByPatient, persistClinicalState, setPatients } from './app-state.mjs';
 import { renderPatientList, selectPatient } from './features/patients.mjs';
 import { invalidateCultivosTableCache } from './features/expediente.mjs';
 import { limpiarReporte } from './features/lab-panel.mjs';
@@ -47,16 +36,16 @@ export function isPresentationModeActive() {
 
 function getDemoState() {
   return {
-    patients,
-    notes,
-    indicaciones,
-    labHistory,
-    listadoProblemas,
-    medRecetaByPatient,
-    medNotaSelectionByPatient,
-    recetaHuByPatient,
+    patients: getPatients(),
+    notes: getNotes(),
+    indicaciones: getIndicaciones(),
+    labHistory: getLabHistory(),
+    listadoProblemas: getListadoProblemas(),
+    medRecetaByPatient: getMedRecetaByPatient(),
+    medNotaSelectionByPatient: getMedNotaSelectionByPatient(),
+    recetaHuByPatient: getRecetaHuByPatient(),
     setPatients,
-    saveState,
+    persistClinicalState,
     renderPatientList,
     selectPatient,
     getActiveId: function () {
@@ -135,7 +124,7 @@ export function recoverPresentationPatientsOnBoot() {
   syncPresentationBodyClass();
   renderPatientList();
   if (rt.getActiveId()) selectPatient(rt.getActiveId());
-  else if (patients.length) selectPatient(patients[0].id);
+  else if (getPatients().length) selectPatient(getPatients()[0].id);
   return true;
 }
 

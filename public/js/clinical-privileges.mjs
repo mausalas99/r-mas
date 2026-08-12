@@ -83,7 +83,7 @@ export function shouldShowClinicalCensusFilters(user) {
 }
 
 /** @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user */
-export function canViewLanUserDirectory(user) {
+export function canViewUserDirectory(user) {
   return hasElevatedTeamPrivileges(user);
 }
 
@@ -93,6 +93,6 @@ export function canManageTeamRoster(user) {
 }
 
 /** Remove LAN directory users from the clinical DB (R4, Admin, program admin). */
-export function canDeleteLanDirectoryUser(user) {
+export function canDeleteDirectoryUser(user) {
   return canManageTeamRoster(user);
 }

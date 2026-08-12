@@ -2,7 +2,7 @@
 import {
   effectiveClinicalRank,
   hasProgramAdminPrivileges,
-  canViewLanUserDirectory,
+  canViewUserDirectory,
   canConfigureRotation,
 } from '../../clinical-privileges.mjs';
 import {
@@ -50,7 +50,7 @@ export async function resolveClinicalTeamsPanelContext(user, joined) {
   const savedHandle = normalizeUsername(user.username || '');
   const rank = effectiveClinicalRank(user);
   const programAdmin = hasProgramAdminPrivileges(user);
-  const canViewLanUsers = canViewLanUserDirectory(user);
+  const canViewDirectoryUsers = canViewUserDirectory(user);
   const sala = String(user.sala || '').trim();
 
   return {
@@ -61,7 +61,7 @@ export async function resolveClinicalTeamsPanelContext(user, joined) {
     savedHandle,
     rank,
     programAdmin,
-    canViewLanUsers,
+    canViewDirectoryUsers,
     sala,
     joined,
   };
@@ -77,7 +77,7 @@ export function buildClinicalProfileSectionHtml(ctx, user) {
   const legacyBanner = ctx.legacyUsername
     ? '<p class="clinical-teams-legacy-banner">Registra tu @usuario (obligatorio). Sin esto no apareces en equipos ni entregas.</p>'
     : '';
-  const lanDirectoryNote = ctx.canViewLanUsers
+  const directoryNote = ctx.canViewDirectoryUsers
     ? ''
     : `<p class="clinical-teams-lan-directory-note">El directorio completo de usuarios lo abren <strong>R4</strong>, <strong>Admin</strong> o quien tenga <strong>privilegios de administración</strong>. Al registrar <strong>@usuario</strong> conéctate a <strong>R+ Cloud</strong> en ⇄; R+ publica tu perfil al guardar.</p>`;
   const profileHandleBanner = ctx.displayHandle
@@ -89,7 +89,7 @@ export function buildClinicalProfileSectionHtml(ctx, user) {
       <h5 class="clinical-teams-subsection-title">Mi perfil y rango</h5>
       ${legacyBanner}
       ${profileHandleBanner}
-      ${lanDirectoryNote}
+      ${directoryNote}
       <form id="clinical-profile-form" class="clinical-teams-create-form" novalidate>
         <div class="field-group">
           <label for="clinical-profile-username">Usuario (@usuario) *</label>

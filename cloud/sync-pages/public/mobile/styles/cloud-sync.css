@@ -994,6 +994,25 @@
   grid-column: 2;
 }
 
+.cloud-sync-equipo-embed
+  .clinical-teams-panel-body--embed:has(.clinical-teams-section--joined .clinical-teams-empty--section)
+  > .clinical-teams-section--directory {
+  grid-column: 1 / -1;
+}
+
+.cloud-sync-equipo-embed
+  .clinical-teams-panel-body--embed.clinical-teams-panel-body--has-joined
+  > .clinical-teams-section--joined,
+.cloud-sync-equipo-embed
+  .clinical-teams-panel-body--embed.clinical-teams-panel-body--has-joined
+  > .clinical-teams-section--directory {
+  grid-column: 1 / -1;
+}
+
+.cloud-sync-equipo-embed .clinical-teams-list--directory {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14.5rem), 1fr));
+}
+
 .cloud-sync-equipo-embed .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team {
   grid-template-columns: 1fr;
 }

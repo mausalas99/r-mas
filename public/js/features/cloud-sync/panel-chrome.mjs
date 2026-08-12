@@ -126,7 +126,7 @@ export const windowHandlers = {
   resetLanTurnConnectionFromUi: async function () {},
   dismissLanHostFirstTimeHint: function () {},
   dismissLanDisconnectBanner: function () {},
-  setLanHideDisconnectBannerFromUi: function () {},
+  setHideDisconnectBannerFromUi: function () {},
   joinLanRoom: async function () {},
   joinLanFromInviteUi: function () {},
   createLanRoomFromUi: async function () {},

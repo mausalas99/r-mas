@@ -1,11 +1,11 @@
 import { accesoFechaToDateInputValue } from './patient-date-fields.mjs';
 import { refreshRpcDateFields } from './rpc-date-picker.mjs';
 import { ensurePatientAccesos, syncLegacyAccesoFields } from './patient-accesos.mjs';
-import { patients, saveState } from './app-state.mjs';
+import { getPatients, persistClinicalState } from './app-state.mjs';
 
 import { esc } from './dom-escape.mjs';
 function activePatient(patientId) {
-  return patients.find(function (p) {
+  return getPatients().find(function (p) {
     return String(p.id) === String(patientId);
   });
 }
@@ -99,7 +99,7 @@ function touchAccesos(patient, mutator) {
   ensurePatientAccesos(patient);
   mutator(patient);
   syncLegacyAccesoFields(patient);
-  saveState();
+  persistClinicalState();
 }
 
 export function onPatientAccesoVia(index, value) {

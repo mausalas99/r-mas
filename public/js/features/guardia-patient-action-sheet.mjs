@@ -1,7 +1,7 @@
 /**
  * Guardia census — patient chip action sheet (expediente vs eventualidad).
  */
-import { patients } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 import { toClinicalHistoryText } from '../../../lib/clinical-text.mjs';
 import { getUiDensity, setUiDensity } from './chrome.mjs';
 import {
@@ -30,7 +30,7 @@ function bodyEl() {
 function findPatient(patientId) {
   const id = String(patientId || '');
   return (
-    patients.find(function (p) {
+    getPatients().find(function (p) {
       return p && String(p.id) === id;
     }) || null
   );

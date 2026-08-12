@@ -2,7 +2,7 @@
  * Resolve the user's active Nube room (server pointer + membership fallback).
  */
 import { createCloudSyncApi } from '../cloud-sync/api-client.mjs';
-import { patients } from '../../app-state.mjs';
+import { getPatients } from '../../app-state.mjs';
 import {
   getCloudSyncUrl,
   getCloudSyncToken,
@@ -84,7 +84,7 @@ export async function resolveCloudMobileActiveRoom(api) {
 
 /** @param {(msg: string, kind?: string) => void} [toast] */
 export async function notifyIfCloudMobileCensusEmpty(toast) {
-  if (!patients?.length) {
+  if (!getPatients()?.length) {
     toast?.(
       'Censo vacío en la nube. En Mac abre ⇄ → Conexión y confirma que la sala tenga pacientes sincronizados.',
       'info'
@@ -93,7 +93,7 @@ export async function notifyIfCloudMobileCensusEmpty(toast) {
 }
 
 export function showCloudMobileEmptyCensusBanner() {
-  if (patients?.length) {
+  if (getPatients()?.length) {
     const existing = document.getElementById('rpc-cloud-mobile-empty-census');
     if (existing) existing.hidden = true;
     return;

@@ -8,11 +8,11 @@ import {
   renderPatientList,
   renderRoundOverviewPanels,
 } from './features/patients.mjs';
-import { patients, saveState } from './app-state.mjs';
+import { getPatients, persistClinicalState } from './app-state.mjs';
 import { scheduleCloudSyncPush } from './features/cloud-sync/mutate-bridge.mjs';
 
 function touchPatientLanUpdatedAt(pid) {
-  const p = patients.find(function (row) {
+  const p = getPatients().find(function (row) {
     return String(row.id) === String(pid);
   });
   if (p) p.lanUpdatedAt = new Date().toISOString();
@@ -49,7 +49,7 @@ function applyPatientAccesoField(p, field, next) {
  */
 export function createPatientUpdateHandler(shellCtx, syncWorkContextChrome) {
   function refreshPatientChromeAfterUpdate() {
-    saveState();
+    persistClinicalState();
     renderPatientList();
     syncWorkContextChrome();
     if (!isPaseMode()) return;
@@ -67,7 +67,7 @@ export function createPatientUpdateHandler(shellCtx, syncWorkContextChrome) {
   function updatePatient(field, value) {
     if (shellCtx.getActiveId() == null) return;
     var pid = String(shellCtx.getActiveId());
-    var p = patients.find(function (pl) {
+    var p = getPatients().find(function (pl) {
       return String(pl.id) === pid;
     });
     if (!p) return;

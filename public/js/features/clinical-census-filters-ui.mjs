@@ -127,7 +127,10 @@ export function filterTeamsForCensusSala(teams, salaFilter) {
 export function reconcileCensusTeamFilterForSala(teamId, teamsForSala) {
   const tid = String(teamId || '');
   if (!tid || tid === CENSUS_TEAM_FILTER_UNASSIGNED) return tid;
-  if (isTeamIdInCensusCatalog(tid, teamsForSala)) return tid;
+  const catalog = teamsForSala || [];
+  // Keep the current equipo while the team catalog is briefly empty (sync race).
+  if (!catalog.length) return tid;
+  if (isTeamIdInCensusCatalog(tid, catalog)) return tid;
   return '';
 }
 

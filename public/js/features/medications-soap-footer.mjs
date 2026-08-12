@@ -1,4 +1,4 @@
-import { medRecetaByPatient } from "../app-state.mjs";
+import { getMedRecetaByPatient } from "../app-state.mjs";
 import { effectiveSoapCategory, classifyMedicationSoapCategory, shouldIncludeMedicationInSoap } from "../med-receta-core.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { medInstructionFragmentForSoap } from "./estado-actual-meds.mjs";
@@ -171,7 +171,7 @@ export function renderMedNotaFooter() {
   foot.hidden = false;
 
   var activeId = rt.getActiveId();
-  var block = activeId ? medRecetaByPatient[activeId] : null;
+  var block = activeId ? getMedRecetaByPatient()[activeId] : null;
   var sel = activeId ? getMedNotaSelMap(activeId) : {};
   var soapItems =
     block && block.items

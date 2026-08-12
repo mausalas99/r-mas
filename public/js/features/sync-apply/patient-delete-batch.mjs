@@ -2,14 +2,14 @@
  * Nube-native patient delete: local remove + local tombstone + cloud wipe.
  * Used by sidebar × and bulk selection.
  */
-import { patients } from '../../app-state.mjs';
+import { getPatients } from '../../app-state.mjs';
 import { removePatientLocally } from './patient-delete.mjs';
 import { rememberPatientDeleteTombstone } from './entity-versions-stub.mjs';
 import { enqueueCloudPatientDelete } from '../cloud-sync/mutate-bridge.mjs';
 
 function snapForId(patientId, list) {
   var pid = String(patientId || '').trim();
-  var found = (list || patients).find(function (p) {
+  var found = (list || getPatients()).find(function (p) {
     return p && String(p.id) === pid;
   });
   return found || { id: pid, registro: '' };
@@ -30,7 +30,7 @@ function resolveDeps(partial) {
     removeLocal: deps.removeLocal || removePatientLocally,
     rememberTombstone: deps.rememberTombstone || rememberPatientDeleteTombstone,
     enqueueCloudDelete: deps.enqueueCloudDelete || enqueueCloudPatientDelete,
-    patientsList: deps.patientsList || patients,
+    patientsList: deps.patientsList || getPatients(),
   };
 }
 

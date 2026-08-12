@@ -208,7 +208,7 @@ describe('applyConexionView', () => {
     assert.equal(lan.hidden, false);
 
     const orphan = makeNode();
-    orphan.className = 'lan-sync-diagnostics-panel';
+    orphan.className = 'cloud-sync-diagnostics-panel';
     root.appendChild(orphan);
     syncCloudSecondaryPanels(/** @type {any} */ (root), 'status');
     assert.equal(orphan.hidden, true);

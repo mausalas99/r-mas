@@ -1,4 +1,4 @@
-import { medPharmProfileByPatient, saveState } from '../app-state.mjs';
+import { getMedPharmProfileByPatient, persistClinicalState } from '../app-state.mjs';
 import {
   parseSomePharmMonthPaste,
   looksLikeSomePharmMonthPaste,
@@ -129,7 +129,7 @@ export function deleteMedPharmViewMonth() {
   var next = deleteMonthFromProfile(profile, mp.viewYear, mp.viewMonthIndex);
   persistMedPharmProfile(pid, next);
   closeModals();
-  saveState();
+  persistClinicalState();
   medPharmProfileBridge.renderMedPharmProfilePanel();
   mp.rt.showToast('Mes eliminado del perfil', 'success');
 }
@@ -153,9 +153,9 @@ export function deleteMedPharmProfileAll() {
   ) {
     return;
   }
-  delete medPharmProfileByPatient[pid];
+  delete getMedPharmProfileByPatient()[pid];
   closeModals();
-  saveState();
+  persistClinicalState();
   medPharmProfileBridge.renderMedPharmProfilePanel();
   mp.rt.showToast('Perfil farmacoterapéutico borrado', 'success');
 }
@@ -238,9 +238,9 @@ export function importMedPharmMonthPaste() {
     return;
   }
   var profile = getProfile(pid) || { months: {} };
-  medPharmProfileByPatient[pid] = applySomePasteToProfile(profile, parsed);
-  if (medPharmProfileByPatient[pid].draftPaste) delete medPharmProfileByPatient[pid].draftPaste;
-  saveState();
+  getMedPharmProfileByPatient()[pid] = applySomePasteToProfile(profile, parsed);
+  if (getMedPharmProfileByPatient()[pid].draftPaste) delete getMedPharmProfileByPatient()[pid].draftPaste;
+  persistClinicalState();
   if (ta) ta.value = '';
   closeModals();
   medPharmProfileBridge.renderMedPharmProfilePanel();

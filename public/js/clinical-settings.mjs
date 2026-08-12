@@ -6,6 +6,7 @@ import {
   isValidUsernameFormat,
   normalizeUsername,
 } from './clinical-username.mjs';
+import { readMigratedClientId } from './live-sync-room.mjs';
 
 /** Bump when every device must re-confirm LAN profile (admin directory / team assign). */
 export const CLINICAL_LAN_PROFILE_GATE_VERSION = '7.9.0';
@@ -110,15 +111,12 @@ export function readRpcSettings() {
   }
 }
 
-/** Device id for clinical bootstrap (rpc-settings → LAN id → desktop default). */
+/** Device id for clinical bootstrap (rpc-settings → client id → desktop default). */
 export function resolveClinicalClientId(settings = readRpcSettings()) {
   const fromSettings = String(settings?.clientId || '').trim();
   if (fromSettings) return fromSettings;
-  try {
-    const raw = localStorage.getItem('rpc-lan-client-id');
-    const fromLan = String(raw || '').trim();
-    if (fromLan) return fromLan;
-  } catch (_e) { void _e; }
+  const fromStorage = readMigratedClientId();
+  if (fromStorage) return fromStorage;
   return 'desktop-host';
 }
 

@@ -1,5 +1,5 @@
 /** EA panel cache + active patient lookup. */
-import { patients } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
 
 export var _eaPanelCache = { shellKey: '', dataKey: '' };
@@ -13,7 +13,7 @@ export function findActivePatient() {
   var activeId = getEaPanelRuntime().getActiveId();
   if (!activeId) return null;
   return (
-    patients.find(function (p) {
+    getPatients().find(function (p) {
       return String(p.id) === String(activeId);
     }) || null
   );

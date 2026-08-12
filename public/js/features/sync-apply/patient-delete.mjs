@@ -1,7 +1,7 @@
 /**
  * Local patient delete (transport-agnostic). Nube wipe is enqueueCloudPatientDelete.
  */
-import { patients, setPatients } from '../../app-state.mjs';
+import { getPatients, setPatients } from '../../app-state.mjs';
 import {
   clearPatientAgendaLocal,
   clearPatientLocalStateMaps,
@@ -25,12 +25,12 @@ export function configureLanPatientDelete(deps) {
 export function removePatientLocally(patientId) {
   var pid = String(patientId || '').trim();
   if (!pid || pid.indexOf('demo-') === 0) return false;
-  if (!patients.some(function (p) {
+  if (!getPatients().some(function (p) {
     return p && String(p.id) === pid;
   })) {
     return false;
   }
-  setPatients(patients.filter(function (p) {
+  setPatients(getPatients().filter(function (p) {
     return String(p.id) !== pid;
   }));
   clearPatientLocalStateMaps(pid);
@@ -38,7 +38,7 @@ export function removePatientLocally(patientId) {
   clearPatientAgendaLocal(pid);
   var rt = deleteDeps.runtime;
   if (rt && typeof rt.getActiveId === 'function' && rt.getActiveId() === pid) {
-    rt.setActiveId(patients.length ? patients[0].id : null);
+    rt.setActiveId(getPatients().length ? getPatients()[0].id : null);
   }
   return true;
 }

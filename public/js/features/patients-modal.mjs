@@ -1,4 +1,4 @@
-import { patients, notes, saveState } from '../app-state.mjs';
+import { getPatients, getNotes, persistClinicalState } from '../app-state.mjs';
 import { storage } from '../storage.js';
 import { validatePatientForSave, buildExpedienteAdvice } from '../patient-validation.mjs';
 import {
@@ -44,8 +44,8 @@ function _prefillServicioForSala() {
 }
 
 function _lastAdmissionLocationFromPatients() {
-  for (var i = patients.length - 1; i >= 0; i--) {
-    var p = patients[i];
+  for (var i = getPatients().length - 1; i >= 0; i--) {
+    var p = getPatients()[i];
     if (!p || p.isDemo) continue;
     var cuarto = String(p.cuarto || '').trim();
     var cama = String(p.cama || '').trim();
@@ -216,7 +216,7 @@ function setModalCompleteAdmissionMode(on, patient) {
 }
 
 export function openCompleteAdmissionModal(patientId) {
-  var patient = patients.find(function (p) {
+  var patient = getPatients().find(function (p) {
     return p && String(p.id) === String(patientId);
   });
   if (!patient) return;
@@ -421,7 +421,7 @@ function normalizeName(str) {
 
 function findDuplicatePatient(nombre, registro) {
   var nombreNorm = normalizeName(nombre);
-  return patients.find(function (p) {
+  return getPatients().find(function (p) {
     if (p.isDemo) return false;
     if (registro && p.registro && registro === p.registro) return true;
     return normalizeName(p.nombre) === nombreNorm;
@@ -429,7 +429,7 @@ function findDuplicatePatient(nombre, registro) {
 }
 
 function showDuplicateWarning(existing, onConfirm) {
-  var fecha = notes[existing.id] ? notes[existing.id].fecha : '';
+  var fecha = getNotes()[existing.id] ? getNotes()[existing.id].fecha : '';
   var body = '<strong>' + esc(existing.nombre) + '</strong>';
   body += '<br>Cto. ' + esc(existing.cuarto || '—') + ' Cama ' + esc(existing.cama || '—');
   if (existing.registro) body += '<br>Registro: ' + esc(existing.registro);
@@ -520,7 +520,7 @@ function validatePatientLocationFields(loc, isFromLab) {
 function saveCompleteAdmissionModal() {
   var patientId = modalCompleteAdmissionPatientId;
   if (!patientId) return false;
-  var patient = patients.find(function (p) {
+  var patient = getPatients().find(function (p) {
     return p && String(p.id) === String(patientId);
   });
   if (!patient) return false;
@@ -532,7 +532,7 @@ function saveCompleteAdmissionModal() {
   patient.cuarto = loc.cuarto;
   patient.cama = loc.cama;
   patient.lanUpdatedAt = new Date().toISOString();
-  saveState();
+  persistClinicalState();
   void assignPatientToTeamClinical(patient.id, readPatientRegistrationTeamId()).then(function () {
     patientsBridge.renderPatientList();
     rt.showToast('Ubicación guardada', 'success');

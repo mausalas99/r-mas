@@ -1,4 +1,4 @@
-import { patients, recetaHuByPatient, saveState } from '../app-state.mjs';
+import { getPatients, getRecetaHuByPatient, persistClinicalState } from '../app-state.mjs';
 import {
   formatRecetaHuFecha,
   normalizeRecetaHuConsultServices,
@@ -49,20 +49,20 @@ function aid() {
 
 function getDraft(pid) {
   if (!pid) return normalizeRecetaHuDraft(null);
-  if (!recetaHuByPatient[pid]) {
-    recetaHuByPatient[pid] = normalizeRecetaHuDraft({
+  if (!getRecetaHuByPatient()[pid]) {
+    getRecetaHuByPatient()[pid] = normalizeRecetaHuDraft({
       fecha: formatRecetaHuFecha(new Date()),
       meds: [],
       labs: [],
     });
   }
-  return normalizeRecetaHuDraft(recetaHuByPatient[pid]);
+  return normalizeRecetaHuDraft(getRecetaHuByPatient()[pid]);
 }
 
 function persistDraft(pid, draft) {
   if (!pid || pid.indexOf('demo-') === 0) return;
-  recetaHuByPatient[pid] = normalizeRecetaHuDraft(draft);
-  saveState();
+  getRecetaHuByPatient()[pid] = normalizeRecetaHuDraft(draft);
+  persistClinicalState();
 }
 
 function readStaticFieldsFromDom(draft) {
@@ -106,7 +106,7 @@ function saveConsultServices(list) {
 function activePatient() {
   var pid = aid();
   if (!pid) return null;
-  return patients.find(function (p) {
+  return getPatients().find(function (p) {
     return p.id === pid;
   }) || null;
 }

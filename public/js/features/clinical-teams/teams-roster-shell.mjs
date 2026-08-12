@@ -27,8 +27,8 @@ export function isClinicalTeamsPanelActive() {
  * @param {{ force?: boolean }} [opts] — force: re-render aunque haya borradores abiertos
  */
 export async function refreshTeamsUiAfterChange(opts = {}) {
-  const { isLanDirectoryModalOpen } = await import('./teams-roster-lan.mjs');
-  if (isLanDirectoryModalOpen()) return;
+  const { isDirectoryModalOpen } = await import('./teams-roster-users.mjs');
+  if (isDirectoryModalOpen()) return;
 
   const { refreshClinicalPatientListForScope } = await import('../../clinical-access-runtime.mjs');
   await refreshClinicalPatientListForScope({ allowLanPull: true });

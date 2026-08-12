@@ -1,5 +1,5 @@
 // Pase board cultivo antibiogram blocks
-import { labHistory } from '../../app-state.mjs';
+import { getLabHistory } from '../../app-state.mjs';
 import {
   buildAtbRisSummaryHtml,
   extractSensCrudasForGermFromSource,
@@ -15,7 +15,7 @@ function formatPaseCultivoResistenciasHtml(raw) {
 }
 
 function paseCultivoAtbBlockHtml(patientId, r) {
-  var sets = labHistory[patientId] || [];
+  var sets = getLabHistory()[patientId] || [];
   var set = sets.find(function (s) {
     return String(s.id) === String(r.labSetId);
   });

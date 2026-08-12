@@ -1,13 +1,5 @@
 /** Full, patient, and range backup export actions. */
-import {
-  patients,
-  notes,
-  indicaciones,
-  labHistory,
-  medRecetaByPatient,
-  medPharmProfileByPatient,
-  saveState,
-} from '../../../app-state.mjs';
+import { getPatients, getNotes, getIndicaciones, getLabHistory, getMedRecetaByPatient, getMedPharmProfileByPatient, persistClinicalState } from '../../../app-state.mjs';
 import { isTourDemoPatientId } from '../../../tour-demo-patient.mjs';
 import { formatDateSlug, downloadJsonPayload } from '../shared.mjs';
 import { addAuditEntry } from '../audit.mjs';
@@ -20,7 +12,7 @@ import { buildPatientEntry } from '../../patients.mjs';
 const rt = getPlatformRuntime();
 
 async function exportDataBackup() {
-  await saveState({ immediate: true });
+  await persistClinicalState({ immediate: true });
   var payload = buildFullBackupPayload();
   var n = (payload.data.patients || []).length;
   downloadJsonPayload(payload, 'R-plus-respaldo-' + formatDateSlug(new Date()) + '.json');
@@ -41,24 +33,24 @@ function exportActivePatientBackup() {
     rt.showToast('Selecciona un paciente en la lista.', 'error');
     return;
   }
-  if (isTourDemoPatientId(aid, patients)) {
+  if (isTourDemoPatientId(aid, getPatients())) {
     rt.showToast('El paciente de demostración no se exporta.', 'error');
     return;
   }
-  var patient = patients.find(function(p) { return p.id === aid; });
+  var patient = getPatients().find(function(p) { return p.id === aid; });
   if (!patient) return;
-  saveState();
+  persistClinicalState();
   var payload = {
     format: 'r-plus-patient-export',
     version: 1,
     exportedAt: new Date().toISOString(),
     appVersion: window.__RPC_APP_VERSION__ || null,
     patient: patient,
-    note: notes[aid] || null,
-    indicaciones: indicaciones[aid] || null,
-    labHistory: labHistory[aid] || [],
-    medReceta: medRecetaByPatient[aid] || null,
-    medPharmProfile: medPharmProfileByPatient[aid] || null,
+    note: getNotes()[aid] || null,
+    indicaciones: getIndicaciones()[aid] || null,
+    labHistory: getLabHistory()[aid] || [],
+    medReceta: getMedRecetaByPatient()[aid] || null,
+    medPharmProfile: getMedPharmProfileByPatient()[aid] || null,
   };
   downloadJsonPayload(payload, 'R-plus-paciente-' + safeExportSlug(patient.nombre) + '-' + formatDateSlug(new Date()) + '.json');
   addAuditEntry('backup-patient-export', 'ok', 1, String(patient.registro || ''));
@@ -74,7 +66,7 @@ function exportRangeBackupPrompt() {
     return;
   }
   var entries = [];
-  patients.forEach(function(p) {
+  getPatients().forEach(function(p) {
     var entry = buildPatientEntry(p.id);
     if (entry && patientInDateRange(entry, range)) entries.push(entry);
   });

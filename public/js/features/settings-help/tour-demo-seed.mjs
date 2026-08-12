@@ -16,17 +16,7 @@ import {
   findTourDemoPatientByRegistro,
 } from '../../tour-demo-patient.mjs';
 import { selectPatient } from '../patients.mjs';
-import {
-  patients,
-  notes,
-  indicaciones,
-  labHistory,
-  listadoProblemas,
-  medRecetaByPatient,
-  medNotaSelectionByPatient,
-  saveState,
-  setPatients,
-} from '../../app-state.mjs';
+import { getPatients, getNotes, getIndicaciones, getLabHistory, getListadoProblemas, getMedRecetaByPatient, getMedNotaSelectionByPatient, persistClinicalState, setPatients } from '../../app-state.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
 import { tourState } from './tour-state.mjs';
 
@@ -36,7 +26,7 @@ const rt = getSettingsHelpRuntime();
 function purgeTourDemoPatientsFromState() {
   var removedIds = [];
   setPatients(
-    patients.filter(function (p) {
+    getPatients().filter(function (p) {
       if (!p) return false;
       var reg = String(p.registro || '').trim();
       var isTourDemo =
@@ -55,12 +45,12 @@ function purgeTourDemoPatientsFromState() {
   removedIds.push(DEMO_PATIENT_ID, DEMO_PATIENT_ID_2);
   removedIds.forEach(function (id) {
     if (!id) return;
-    delete notes[id];
-    delete indicaciones[id];
-    delete labHistory[id];
-    delete medRecetaByPatient[id];
-    delete listadoProblemas[id];
-    if (medNotaSelectionByPatient[id]) delete medNotaSelectionByPatient[id];
+    delete getNotes()[id];
+    delete getIndicaciones()[id];
+    delete getLabHistory()[id];
+    delete getMedRecetaByPatient()[id];
+    delete getListadoProblemas()[id];
+    if (getMedNotaSelectionByPatient()[id]) delete getMedNotaSelectionByPatient()[id];
   });
   clearTourDemoTodos();
 }
@@ -82,10 +72,10 @@ var TOUR_STEPS_USE_DEMO_PEREZ = {
 
 function findTourDemoPerezPatient() {
   return (
-    patients.find(function (x) {
+    getPatients().find(function (x) {
       return x && x.id === DEMO_PATIENT_ID;
     }) ||
-    findTourDemoPatientByRegistro(patients, DEMO_REGISTRO)
+    findTourDemoPatientByRegistro(getPatients(), DEMO_REGISTRO)
   );
 }
 
@@ -108,8 +98,8 @@ function seedTourDemoPerezClinicalData() {
   if (!ev.length) {
     p.eventualidades = buildTourDemoEventualidades(today);
   }
-  if (!notes[pid] || !String((notes[pid].diagnosticos || [])[0] || '').trim()) {
-    notes[pid] = {
+  if (!getNotes()[pid] || !String((getNotes()[pid].diagnosticos || [])[0] || '').trim()) {
+    getNotes()[pid] = {
       fecha: fecha,
       hora: hora,
       interrogatorio: '',
@@ -126,8 +116,8 @@ function seedTourDemoPerezClinicalData() {
       profesor: '',
     };
   }
-  if (!indicaciones[pid]) {
-    indicaciones[pid] = {
+  if (!getIndicaciones()[pid]) {
+    getIndicaciones()[pid] = {
       fecha: fecha,
       hora: hora,
       medicos: '',
@@ -139,8 +129,8 @@ function seedTourDemoPerezClinicalData() {
       otros: [],
     };
   }
-  if (!medRecetaByPatient[pid]) {
-    medRecetaByPatient[pid] = {
+  if (!getMedRecetaByPatient()[pid]) {
+    getMedRecetaByPatient()[pid] = {
       fechaActualizacion: fecha,
       items: [
         {
@@ -163,10 +153,10 @@ function seedTourDemoPerezClinicalData() {
         },
       ],
     };
-    medNotaSelectionByPatient[pid] = { 'tour-med-1': true, 'tour-med-2': true };
+    getMedNotaSelectionByPatient()[pid] = { 'tour-med-1': true, 'tour-med-2': true };
   }
   seedTourDemoTodos(DEMO_PATIENT_ID);
-  saveState();
+  persistClinicalState();
   if (typeof rt.refreshAllTodoUIs === 'function') rt.refreshAllTodoUIs();
   return true;
 }
@@ -192,7 +182,7 @@ function applyTourDemoPatientBundle(patientId, registro) {
   var tourDates = getTourDemoDateBundle(today);
   var fecha = tourDates.fecha;
   var hora = tourDates.hora;
-  var p = patients.find(function (x) {
+  var p = getPatients().find(function (x) {
     return x && x.id === patientId;
   });
   if (p) {
@@ -204,7 +194,7 @@ function applyTourDemoPatientBundle(patientId, registro) {
   if (patientId === DEMO_PATIENT_ID) {
     seedTourDemoPerezClinicalData();
   } else if (patientId === DEMO_PATIENT_ID_2 || reg === DEMO_REGISTRO_2) {
-    notes[patientId] = {
+    getNotes()[patientId] = {
       fecha: fecha,
       hora: hora,
       interrogatorio: '',
@@ -220,7 +210,7 @@ function applyTourDemoPatientBundle(patientId, registro) {
       medico: '',
       profesor: '',
     };
-    indicaciones[patientId] = {
+    getIndicaciones()[patientId] = {
       fecha: fecha,
       hora: hora,
       medicos: '',
@@ -232,7 +222,7 @@ function applyTourDemoPatientBundle(patientId, registro) {
       otros: [],
     };
   }
-  saveState();
+  persistClinicalState();
 }
 
 function getTourDemoDateBundle(ref) {

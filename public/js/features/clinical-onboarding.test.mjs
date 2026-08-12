@@ -310,9 +310,9 @@ describe('clinical-onboarding helpers', () => {
       join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding-handlers.mjs'),
       'utf8'
     );
-    assert.match(handlersSrc, /LAN_PROFILE_NEEDS_CONNECT_MSG/);
-    assert.match(handlersSrc, /isLanProfileNeedsConnectCode\(lanPush\.code\)/);
-    assert.match(handlersSrc, /toast\(LAN_PROFILE_NEEDS_CONNECT_MSG, 'info'\)/);
+    assert.match(handlersSrc, /PROFILE_NEEDS_CONNECT_MSG/);
+    assert.match(handlersSrc, /isProfileNeedsConnectCode\(lanPush\.code\)/);
+    assert.match(handlersSrc, /toast\(PROFILE_NEEDS_CONNECT_MSG, 'info'\)/);
     assert.match(handlersSrc, /refreshMainClinicalOnboardingIfNeeded/);
     assert.match(handlersSrc, /finishRegistrationLanSideEffects/);
   });

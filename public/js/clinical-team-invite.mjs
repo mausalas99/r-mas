@@ -113,24 +113,6 @@ export function inviteCodeFailureMessage(diag) {
   }
 }
 
-/**
- * LAN host URL for optional hint (never localhost).
- */
-export function resolveClinicalInviteLanHostUrl() {
-  if (typeof window === 'undefined') return '';
-  try {
-    const cfg = JSON.parse(localStorage.getItem('rpc-lan-config') || '{}');
-    const host = String(cfg?.hostUrl || '')
-      .trim()
-      .replace(/\/+$/, '');
-    if (!host) return '';
-    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(host)) return '';
-    return host;
-  } catch {
-    return '';
-  }
-}
-
 export function isClinicalTeamJoinDesktopApp() {
   if (typeof window === 'undefined') return false;
   return !!(window.electronAPI || window.rplusDb);
@@ -143,7 +125,6 @@ export function buildClinicalTeamInviteMessage(team) {
   const name = String(team?.name || 'Equipo').trim();
   const sala = String(team?.sala || '').trim();
   const code = teamInviteCode(team?.team_id);
-  const lanHost = resolveClinicalInviteLanHostUrl();
   const lines = [
     `Invitación al equipo «${name}»${sala ? ` · ${sala}` : ''} en R+`,
     '',
@@ -154,11 +135,8 @@ export function buildClinicalTeamInviteMessage(team) {
     '2. «Unirte con código de equipo» → pega el código',
     '3. Elige tu subciclo (R1) o letra (R2) y confirma',
     '',
-    'El enlace web no une al equipo clínico; Safari/iPad solo sirve para censo LAN.',
+    'El enlace web no une al equipo clínico; Safari/iPad usan Nube (censo / MIP).',
   ];
-  if (lanHost) {
-    lines.push('', `Sala en vivo (opcional): ${lanHost}`);
-  }
   return lines.join('\n');
 }
 

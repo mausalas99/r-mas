@@ -12,9 +12,9 @@ import {
 import { dbApi, toast, currentUserId } from './shared.mjs';
 import {
   publishClinicalTeamsAfterChange,
-  toastTeamLanPublishResult,
-  pullClinicalOpsFromLanRoom,
-  resolveLocalUserIdByLanHandle,
+  toastTeamPublishResult,
+  pullClinicalOpsFromRoom,
+  resolveLocalUserIdByHandle,
 } from './teams-guardia-bridge.mjs';
 import { refreshTeamsUiAfterChange } from './teams-roster-shell.mjs';
 import { closeCreateTeamPanelAfterSuccess } from './teams-roster-panel-draft.mjs';
@@ -50,7 +50,7 @@ async function createElevatedTeam(api, { name, sala, userId }) {
   closeCreateTeamPanelAfterSuccess();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true, sala } }));
   const lanPush = await publishClinicalTeamsAfterChange({ sala });
-  toastTeamLanPublishResult(
+  toastTeamPublishResult(
     lanPush,
     'Equipo vacío creado. Asigna integrantes desde el directorio de usuarios.'
   );
@@ -101,7 +101,7 @@ async function createStandardTeam(api, { name, sala, userId }) {
   closeCreateTeamPanelAfterSuccess();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true, sala } }));
   const lanPush = await publishClinicalTeamsAfterChange({ sala });
-  toastTeamLanPublishResult(lanPush, 'Equipo creado.');
+  toastTeamPublishResult(lanPush, 'Equipo creado.');
   if (teamId) {
     markClinicalEverJoinedTeam();
   }
@@ -205,11 +205,11 @@ function parseAddMemberForm(form) {
 }
 
 async function resolvePartnerUserIdForAdd(handle) {
-  let partnerUserId = await resolveLocalUserIdByLanHandle(handle);
+  let partnerUserId = await resolveLocalUserIdByHandle(handle);
   if (partnerUserId) return partnerUserId;
-  await pullClinicalOpsFromLanRoom({ force: true });
+  await pullClinicalOpsFromRoom({ force: true });
   await fetchClinicalTeamsFromDb();
-  return resolveLocalUserIdByLanHandle(handle);
+  return resolveLocalUserIdByHandle(handle);
 }
 
 /**

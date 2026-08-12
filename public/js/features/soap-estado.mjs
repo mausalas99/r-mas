@@ -1,5 +1,5 @@
 // Built from app.js refactor — Plantilla SOAP (modal) + Estado Actual (Sala)
-import { patients, notes, saveState } from "../app-state.mjs";
+import { getPatients, getNotes, persistClinicalState } from "../app-state.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { closeModalAnimated } from "../ui-motion.mjs";
 import { ensureMonitoreo, migratePatientMonitoreo } from "./estado-actual-data.mjs";
@@ -80,7 +80,7 @@ export function openSOAPModal() {
     return;
   }
   var existing =
-    notes[activeId] && notes[activeId].evolucion ? notes[activeId].evolucion.trim() : "";
+    getNotes()[activeId] && getNotes()[activeId].evolucion ? getNotes()[activeId].evolucion.trim() : "";
   if (existing) {
     var backdrop = document.createElement("div");
     backdrop.className = "lab-conflict-backdrop";
@@ -174,7 +174,7 @@ export async function estadoActualOnlyGuardar() {
     }
   }
   var activeId = rt.getActiveId();
-  var patient = patients.find(function (p) {
+  var patient = getPatients().find(function (p) {
     return p.id === activeId;
   });
   if (!patient) return;
@@ -189,7 +189,7 @@ export async function estadoActualOnlyGuardar() {
     text: text,
     savedAt: new Date().toISOString(),
   };
-  saveState();
+  persistClinicalState();
   renderEstadoActualBar();
   rt.showToast("Estado Actual guardado ✓", "success");
   closeSOAPModal();
@@ -207,7 +207,7 @@ export async function estadoActualSaveAndCopy() {
       return;
     }
   }
-  var patient = patients.find(function (p) {
+  var patient = getPatients().find(function (p) {
     return p.id === activeId;
   });
   if (!patient) return;
@@ -218,7 +218,7 @@ export async function estadoActualSaveAndCopy() {
     text: text,
     savedAt: new Date().toISOString(),
   };
-  saveState();
+  persistClinicalState();
   renderEstadoActualBar();
   var ok = await copyToClipboardSafe(text);
   rt.showToast(
@@ -237,7 +237,7 @@ export function renderEstadoActualBar() {
     meta.textContent = "";
     return;
   }
-  var patient = patients.find(function (p) {
+  var patient = getPatients().find(function (p) {
     return p.id === activeId;
   });
   if (patient) {
@@ -437,9 +437,9 @@ export function insertSOAPText() {
     return;
   }
   var text = buildSOAPText();
-  if (!notes[activeId]) notes[activeId] = {};
-  notes[activeId].evolucion = text;
-  saveState();
+  if (!getNotes()[activeId]) getNotes()[activeId] = {};
+  getNotes()[activeId].evolucion = text;
+  persistClinicalState();
   var el = document.querySelector('#note-form textarea[oninput*="evolucion"]');
   if (el) el.value = text;
   closeSOAPModal();

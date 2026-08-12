@@ -350,6 +350,22 @@ export function closeOverlayAnimated(backdropEl, hideFn, opts) {
   setTimeout(settle, 220);
 }
 
+var _asyncElapsedTimers = new WeakMap();
+
+function clearAsyncElapsed(btn) {
+  var prev = _asyncElapsedTimers.get(btn);
+  if (prev) {
+    clearInterval(prev);
+    _asyncElapsedTimers.delete(btn);
+  }
+}
+
+function formatButtonElapsed(ms) {
+  var sec = Math.max(0, ms / 1000);
+  if (sec < 60) return sec.toFixed(0) + 's';
+  return Math.floor(sec / 60) + 'm ' + Math.floor(sec % 60) + 's';
+}
+
 export function setAsyncButtonLoading(btn, loading, opts) {
   if (!btn) return;
   opts = opts || {};
@@ -363,9 +379,20 @@ export function setAsyncButtonLoading(btn, loading, opts) {
     btn.disabled = true;
     btn.setAttribute('aria-busy', 'true');
     if (!prefersReducedMotion()) ensureButtonSpinner(btn);
-    swapLabelText(label, loadingText);
+    clearAsyncElapsed(btn);
+    if (opts.showElapsed) {
+      var started = Date.now();
+      var paint = function () {
+        swapLabelText(label, loadingText + ' · ' + formatButtonElapsed(Date.now() - started));
+      };
+      paint();
+      _asyncElapsedTimers.set(btn, setInterval(paint, 250));
+    } else {
+      swapLabelText(label, loadingText);
+    }
     return;
   }
+  clearAsyncElapsed(btn);
   btn.classList.remove('loading');
   btn.removeAttribute('aria-busy');
   removeButtonSpinner(btn);

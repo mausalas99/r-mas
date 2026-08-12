@@ -2,7 +2,7 @@
  * Guardia hoy modal — persist selections and wire interactions.
  */
 import { fetchClinicalScopeContextFromDb } from '../clinical-access-runtime.mjs';
-import { publishClinicalTeamsToLan, toastTeamLanPublishResult } from './clinical-teams/teams-guardia-bridge.mjs';
+import { publishClinicalTeamsToSync, toastTeamPublishResult } from './clinical-teams/teams-guardia-bridge.mjs';
 import { syncLanHostClinicalMetaToDisk } from '../host-meta-stub.mjs';
 
 function dbApi() {
@@ -47,8 +47,8 @@ export async function persistGuardiaSelections(selects) {
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
   if (activated) {
     await syncLanHostClinicalMetaToDisk();
-    const lanPush = await publishClinicalTeamsToLan();
-    toastTeamLanPublishResult(lanPush, 'Guardia hoy activada.');
+    const lanPush = await publishClinicalTeamsToSync();
+    toastTeamPublishResult(lanPush, 'Guardia hoy activada.');
   }
   return { ok: true, activated };
 }

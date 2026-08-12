@@ -1,4 +1,4 @@
-import { medPharmProfileByPatient, saveState } from '../app-state.mjs';
+import { getMedPharmProfileByPatient, persistClinicalState } from '../app-state.mjs';
 import { assignSomePharmCategories } from '../med-pharm-some-catalog.mjs';
 import {
   mergeRecetaIntoMonth,
@@ -57,7 +57,7 @@ function setMedPharmMedGroupHidden(pid, rowKeys, hidden) {
       else delete row.hidden;
     });
   });
-  saveState();
+  persistClinicalState();
   renderMedPharmProfilePanel();
   var fullEl = document.getElementById('med-pharm-modal-full');
   if (fullEl && fullEl.classList.contains('open')) openMedPharmFullModal();
@@ -220,8 +220,8 @@ export function onRecetaMergedToProfile(patientId, recetaBlock) {
   month = mergeRecetaIntoMonth(month, recetaBlock.items, fecha);
   month.rows = assignSomePharmCategories(month.rows);
   withMonth.months[key] = month;
-  medPharmProfileByPatient[patientId] = withMonth;
-  saveState();
+  getMedPharmProfileByPatient()[patientId] = withMonth;
+  persistClinicalState();
   if (mp.medSubview === 'perfil' && mp.viewYear === year && mp.viewMonthIndex === monthIndex) {
     renderMedPharmProfilePanel();
   }

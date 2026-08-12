@@ -68,3 +68,28 @@ describe('localRoomFromSession', () => {
     assert.doesNotMatch(fnBody, /mountEquipoTeamsPanel/);
   });
 });
+
+describe('bootstrapConexionState getRoom failures', () => {
+  it('source keeps Recuérdame token unless 401/403', () => {
+    const bootSrc = readFileSync(
+      new URL('./panel-conexion-bootstrap.mjs', import.meta.url),
+      'utf8'
+    );
+    const fnStart = bootSrc.indexOf('export function bootstrapConexionState');
+    assert.ok(fnStart >= 0);
+    const fnBody = bootSrc.slice(fnStart, fnStart + 1600);
+    assert.match(fnBody, /status === 401/);
+    assert.match(fnBody, /status === 403/);
+    assert.match(fnBody, /tryAutoEnsureTurnRoom/);
+    // Must not blanket-clear on every getRoom rejection.
+    const catchIdx = fnBody.indexOf('.catch(function');
+    assert.ok(catchIdx >= 0);
+    const catchBody = fnBody.slice(catchIdx, catchIdx + 700);
+    assert.match(catchBody, /clearCloudSyncSession/);
+    assert.ok(
+      catchBody.indexOf('clearCloudSyncSession') >
+        catchBody.indexOf('401'),
+      'clearCloudSyncSession must be gated on auth status'
+    );
+  });
+});

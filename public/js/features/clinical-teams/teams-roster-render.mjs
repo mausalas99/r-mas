@@ -28,7 +28,7 @@ export {
 } from './teams-roster-team-cards.mjs';
 
 export {
-  resolveLanTeamMemberHintHtml,
+  resolveTeamMemberHintHtml,
   resolveBrowseSala,
   renderDirectorySectionHtml,
 } from './teams-roster-directory.mjs';

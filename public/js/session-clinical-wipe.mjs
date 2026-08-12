@@ -11,8 +11,17 @@ export const SESSION_WEB_LS_KEYS = [
   'rpc-lan-shift-pin',
   'rpc-lan-ui-role',
   'rpc-lan-hide-disconnect-banner',
+  'rpc-lan-lww-overwrite-toast',
   'rpc-lan-room-snapshots',
   'rpc-lan-host-patient-map',
+  'rpc-lan-room-membership',
+  'rpc-lan-last-room',
+  'rpc-lan-client-id',
+  'rpc-lan-host-bundle-bases',
+  'rpc-room-membership',
+  'rpc-last-room',
+  'rpc-client-id',
+  'rpc-host-bundle-bases',
 ];
 
 /**

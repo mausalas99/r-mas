@@ -40,7 +40,7 @@ import {
   SOFT_MAX_TEAMS_PER_SALA,
   fetchOrphanActiveGuardias,
   resolveActiveGuardia,
-  getLanResolvedGuardias,
+  getResolvedGuardiasMeta,
   getClinicalScopeContext,
   fetchIncomingAssignments,
   assignPatientToTeam,
@@ -48,8 +48,8 @@ import {
   touchClinicalUserActivity,
   completeActiveGuardiaPendiente,
   listEntregaTemplates,
-  listLanDirectoryUsers,
-  deleteLanDirectoryUser,
+  listDirectoryUsers,
+  deleteDirectoryUser,
   saveEntregaTemplateUser,
   saveEntregaTemplateTeam,
   deleteEntregaTemplate,
@@ -638,7 +638,7 @@ describe('clinical-access-db', () => {
     });
     const res = resolveActiveGuardia(db, { patientId: 'p-tombstone' });
     assert.equal(res.resolved, true);
-    const tombstones = getLanResolvedGuardias(db);
+    const tombstones = getResolvedGuardiasMeta(db);
     assert.equal(tombstones.length, 1);
     assert.equal(tombstones[0].patient_id, 'p-tombstone');
     assert.ok(tombstones[0].assigned_at);
@@ -1056,7 +1056,7 @@ describe('clinical-access-db', () => {
     assert.doesNotThrow(() => getClinicalScopeContext(db));
   });
 
-  it('listLanDirectoryUsers includes registered handles and teammates pending @usuario', () => {
+  it('listDirectoryUsers includes registered handles and teammates pending @usuario', () => {
     const admin = ensureClinicalUser(db, {
       clientId: 'admin-dir',
       rank: 'R4',
@@ -1079,7 +1079,7 @@ describe('clinical-access-db', () => {
     });
     addTeamMember(db, team.team_id, legacy.userId);
 
-    const listed = listLanDirectoryUsers(db);
+    const listed = listDirectoryUsers(db);
     const adminRow = listed.find((u) => u.user_id === admin.userId);
     const legacyRow = listed.find((u) => u.user_id === legacy.userId);
     assert.ok(adminRow);
@@ -1088,7 +1088,7 @@ describe('clinical-access-db', () => {
     assert.equal(legacyRow.lanDirectoryPending, true);
   });
 
-  it('deleteLanDirectoryUser removes user and blocks listLanDirectoryUsers', () => {
+  it('deleteDirectoryUser removes user and blocks listDirectoryUsers', () => {
     const admin = ensureClinicalUser(db, {
       clientId: 'admin-del',
       rank: 'R4',
@@ -1112,7 +1112,7 @@ describe('clinical-access-db', () => {
     });
     joinTeam(db, team.team_id, target.userId);
 
-    deleteLanDirectoryUser(db, {
+    deleteDirectoryUser(db, {
       targetUserId: target.userId,
       callerUserId: admin.userId,
     });
@@ -1127,11 +1127,11 @@ describe('clinical-access-db', () => {
         .get(team.team_id, target.userId),
       undefined
     );
-    const listed = listLanDirectoryUsers(db);
+    const listed = listDirectoryUsers(db);
     assert.ok(!listed.some((u) => u.user_id === target.userId));
     assert.throws(
       () =>
-        deleteLanDirectoryUser(db, {
+        deleteDirectoryUser(db, {
           targetUserId: admin.userId,
           callerUserId: admin.userId,
         }),

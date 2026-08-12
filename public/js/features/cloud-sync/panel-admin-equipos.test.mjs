@@ -20,7 +20,7 @@ import {
   renderEquiposAssignTeamOptionsHtml,
   userSalaSelectOptionsHtml,
 } from './panel-admin-equipos-html.mjs';
-import { formatLanCycleOptionLabel } from '../clinical-teams/teams-roster-lan-render.mjs';
+import { formatCycleOptionLabel } from '../clinical-teams/teams-roster-directory-render.mjs';
 import {
   equiposPurgeConfirmMessage,
   resolveEquiposTeamSalaScope,
@@ -152,11 +152,11 @@ describe('userSalaSelectOptionsHtml', () => {
   });
 });
 
-describe('formatLanCycleOptionLabel rank labels', () => {
+describe('formatCycleOptionLabel rank labels', () => {
   it('labels Interconsultas R3 as Ciclo R3, not R2', () => {
-    assert.equal(formatLanCycleOptionLabel('A', 'R3'), 'Ciclo R3 · A');
-    assert.equal(formatLanCycleOptionLabel('B', 'R2'), 'Ciclo R2 · B');
-    assert.equal(formatLanCycleOptionLabel('A1', 'R1'), 'Subciclo R1 · A1');
+    assert.equal(formatCycleOptionLabel('A', 'R3'), 'Ciclo R3 · A');
+    assert.equal(formatCycleOptionLabel('B', 'R2'), 'Ciclo R2 · B');
+    assert.equal(formatCycleOptionLabel('A1', 'R1'), 'Subciclo R1 · A1');
   });
 
   it('cycleOptionsForTeam for Interconsultas R3 offers A–D as Ciclo R3', () => {

@@ -1,5 +1,5 @@
 /** Estado clínico general section + DOM sync. */
-import { patients, medRecetaByPatient, saveState, labHistory } from '../app-state.mjs';
+import { getPatients, getMedRecetaByPatient, persistClinicalState, getLabHistory } from '../app-state.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import {
   ensureMonitoreo,
@@ -32,7 +32,7 @@ import { DIET_PENDING_KEYS } from './estado-actual-meds.mjs';
  * @param {string | null} activeId
  */
 function eaManejoFechaOpts(activeId) {
-  var fechaActualizacion = resolveManejoFechaActualizacion(activeId, medRecetaByPatient);
+  var fechaActualizacion = resolveManejoFechaActualizacion(activeId, getMedRecetaByPatient());
   return fechaActualizacion ? { fechaActualizacion: fechaActualizacion } : {};
 }
 
@@ -52,7 +52,7 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
     dietWeight != null
       ? 'Peso para cálculo: ' + dietWeight + ' kg (datos del paciente)'
       : 'Peso para cálculo: — (captura peso en Datos del paciente)';
-  var medFieldsHtml = renderMedCategoryGrid(monitoreo, activeId, medRecetaByPatient);
+  var medFieldsHtml = renderMedCategoryGrid(monitoreo, activeId, getMedRecetaByPatient());
   var anyPending = hasPendingEaProposals(pend);
   var dietOptions = getDietOptions(monitoreo);
   var dietOptionSelected =
@@ -62,7 +62,7 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
     fr: snap && snap.vitals ? snap.vitals.fr : '',
     sat: snap && snap.vitals ? snap.vitals.sat : '',
     pesoKg: patient && patient.peso,
-    lab: resolveVentilatorioLabContext(activeId, labHistory),
+    lab: resolveVentilatorioLabContext(activeId, getLabHistory()),
   };
 
   return (
@@ -97,7 +97,7 @@ export function flushEaEstadoClinicoFieldsFromDom(patient, root) {
   if (!p) {
     var activeId = getEaPanelRuntime().getActiveId();
     if (!activeId) return false;
-    p = patients.find(function (x) { return x && x.id === activeId; }) || null;
+    p = getPatients().find(function (x) { return x && x.id === activeId; }) || null;
   }
   if (!p) return false;
   ensureMonitoreo(p);
@@ -137,7 +137,7 @@ export function flushEaEstadoClinicoFieldsFromDom(patient, root) {
 
 function persistEstadoClinicoAndRefresh(monitoreo, toastMsg, patient) {
   flushEaEstadoClinicoFieldsFromDom(patient);
-  saveState();
+  persistClinicalState();
   scheduleCloudSyncPush();
   eaPanelBridge.renderEstadoActualPanel({ dataOnly: true, refreshClinico: true, skipChartsSummary: true });
   if (toastMsg) getEaPanelRuntime().showToast(toastMsg, 'success');
@@ -145,7 +145,7 @@ function persistEstadoClinicoAndRefresh(monitoreo, toastMsg, patient) {
 
 function persistEstadoClinicoLight(_monitoreo, patient) {
   flushEaEstadoClinicoFieldsFromDom(patient);
-  saveState();
+  persistClinicalState();
   scheduleCloudSyncPush();
 }
 
@@ -192,9 +192,9 @@ function wireEstadoClinicoInteractions(mount, patient) {
   }
   wireMedCategoryGrid(mount, {
     patient: patient,
-    medRecetaByPatient: medRecetaByPatient,
+    medRecetaByPatient: getMedRecetaByPatient(),
     getActiveId: function () { return getEaPanelRuntime().getActiveId(); },
-    saveState: saveState,
+    persistClinicalState: persistClinicalState,
     syncTextarea: function () {},
   });
 }
@@ -207,7 +207,7 @@ function generateEstadoActualText(monitoreo, patient, activeId) {
   });
   if (monitoreo.estadoClinico) syncDietKcalFromWeight(monitoreo.estadoClinico, weightKg);
   var id = activeId != null ? activeId : getEaPanelRuntime().getActiveId();
-  var recetaBlock = id && medRecetaByPatient ? medRecetaByPatient[id] : null;
+  var recetaBlock = id && getMedRecetaByPatient() ? getMedRecetaByPatient()[id] : null;
   return buildEstadoActualText(
     estadoClinicoForText(monitoreo, eaManejoFechaOpts(id)),
     snapshot,

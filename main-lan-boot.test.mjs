@@ -83,12 +83,14 @@ test('preload: ensureLanServerReady no-op without dev ward flag', () => {
 test('main boot: production quit skips ward server teardown', () => {
   const quitStart = MAIN_SRC.indexOf("app.on('before-quit'");
   assert.ok(quitStart >= 0, 'before-quit handler');
-  const quitBlock = MAIN_SRC.slice(quitStart, quitStart + 700);
+  const quitBlock = MAIN_SRC.slice(quitStart, quitStart + 1200);
   assert.ok(quitBlock.includes('isDevWardServerEnabled()'), 'quit guarded by dev ward flag');
   assert.ok(
     !quitBlock.includes('lanNetworkWatch'),
     'LAN network watch removed from quit path'
   );
+  assert.ok(quitBlock.includes('flushRendererStorageAndDestroyWindows'), 'flushes Local Storage on quit');
+  assert.ok(MAIN_SRC.includes('flushStorageData'), 'calls session.flushStorageData');
 });
 
 test('main window.open uses http(s) allowlist', () => {
@@ -102,11 +104,17 @@ test('main window.open uses http(s) allowlist', () => {
 test('main quit: destroy windows before LAN server stop (dev ward only)', () => {
   const quitStart = MAIN_SRC.indexOf("app.on('before-quit'");
   assert.ok(quitStart >= 0, 'before-quit handler');
-  const quitBlock = MAIN_SRC.slice(quitStart, quitStart + 1100);
+  const quitBlock = MAIN_SRC.slice(quitStart, quitStart + 1600);
   assert.ok(quitBlock.includes('isDevWardServerEnabled()'), 'quit guarded by dev ward flag');
-  const destroyIdx = quitBlock.indexOf('destroyAllBrowserWindows');
+  const flushIdx = quitBlock.indexOf('flushRendererStorageAndDestroyWindows');
   const stopIdx = quitBlock.indexOf('stopLanServer');
-  assert.ok(destroyIdx >= 0, 'destroyAllBrowserWindows in quit path');
-  assert.ok(stopIdx > destroyIdx, 'destroy windows before stopLanServer when dev ward enabled');
+  assert.ok(flushIdx >= 0, 'flush+destroy in quit path');
+  assert.ok(stopIdx > flushIdx, 'flush/destroy windows before stopLanServer when dev ward enabled');
   assert.ok(quitBlock.includes('app.exit(0)'), 'hard exit after dev ward shutdown');
+});
+
+test('main boot: single-instance lock protects userData Recuérdame', () => {
+  assert.ok(MAIN_SRC.includes('requestSingleInstanceLock'), 'single instance lock');
+  assert.ok(MAIN_SRC.includes('cloud-sync-remember-get-sync'), 'durable remember IPC');
+  assert.ok(MAIN_SRC.includes('cloud-sync-remember-store.cjs'), 'remember store module');
 });

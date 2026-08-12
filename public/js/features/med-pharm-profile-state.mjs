@@ -1,4 +1,4 @@
-import { medPharmProfileByPatient, saveState, patients } from '../app-state.mjs';
+import { getPatients, getMedPharmProfileByPatient, persistClinicalState } from '../app-state.mjs';
 import {
   listSomePharmFilterLabels,
   isSomePharmCategoryLabel,
@@ -68,7 +68,7 @@ export function isToday(year, monthIndex, day) {
 }
 
 export function getProfile(pid) {
-  return medPharmProfileByPatient[pid] || null;
+  return getMedPharmProfileByPatient()[pid] || null;
 }
 
 export function getViewMonth(pid) {
@@ -78,7 +78,7 @@ export function getViewMonth(pid) {
 }
 
 function getFimiFechaForPatient(patientId) {
-  var patient = patients.find(function (p) {
+  var patient = getPatients().find(function (p) {
     return p.id === patientId;
   });
   return patient ? patient.fimiFecha : '';
@@ -137,7 +137,7 @@ export function reclassifyMonthIfLegacy(pid, month) {
     row.cat = next.cat;
     changed = true;
   });
-  if (changed) saveState();
+  if (changed) persistClinicalState();
   return month;
 }
 
@@ -240,9 +240,9 @@ export function renderFilterSelect(filtro) {
 
 export function persistMedPharmProfile(pid, profile) {
   if (!profile || (!profileHasMonthData(profile) && !profile.draftPaste)) {
-    delete medPharmProfileByPatient[pid];
+    delete getMedPharmProfileByPatient()[pid];
   } else {
-    medPharmProfileByPatient[pid] = profile;
+    getMedPharmProfileByPatient()[pid] = profile;
   }
 }
 

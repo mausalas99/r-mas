@@ -1,7 +1,7 @@
 /**
  * Panel VPO — plantillas EKG/Rx, escalas documentadas manualmente, copiar.
  */
-import { vpoByPatient, notes, medRecetaByPatient, patients, saveState } from '../app-state.mjs';
+import { getPatients, getVpoByPatient, getNotes, getMedRecetaByPatient, persistClinicalState } from '../app-state.mjs';
 import {
   ensureVpoState,
   ensureScaleResults,
@@ -47,7 +47,7 @@ function scheduleSave() {
   if (_saveTimer) clearTimeout(_saveTimer);
   _saveTimer = setTimeout(function () {
     _saveTimer = null;
-    saveState();
+    persistClinicalState();
   }, 400);
 }
 
@@ -150,7 +150,7 @@ function wireVpoCopyActions(mount, state) {
 
 function wireVpoImportActions(mount, state, patientId) {
   mount.querySelector('[data-vpo-action="tomar-estado"]')?.addEventListener('click', function () {
-    var patient = patients.find(function (p) {
+    var patient = getPatients().find(function (p) {
       return p.id === patientId;
     });
     if (!applyVitalsFromMonitoreo(state, patient || null)) {
@@ -163,7 +163,7 @@ function wireVpoImportActions(mount, state, patientId) {
   });
 
   mount.querySelector('[data-vpo-action="tomar-dx"]')?.addEventListener('click', function () {
-    var note = notes[patientId] || {};
+    var note = getNotes()[patientId] || {};
     if (state.diagnosticosTouched && (state.diagnosticosList || []).some(function (d) { return String(d).trim(); })) {
       rt.showToast('Diagnósticos ya editados — no se sobrescriben', 'error');
       return;
@@ -178,7 +178,7 @@ function wireVpoImportActions(mount, state, patientId) {
   });
 
   mount.querySelector('[data-vpo-action="push-dx-datos"]')?.addEventListener('click', function () {
-    var patient = patients.find(function (p) {
+    var patient = getPatients().find(function (p) {
       return p.id === patientId;
     });
     if (!patient) return;
@@ -190,12 +190,12 @@ function wireVpoImportActions(mount, state, patientId) {
       return;
     }
     pushDiagnosticosToPatient(patient, list);
-    saveState();
+    persistClinicalState();
     rt.showToast('Diagnósticos guardados en Datos del paciente', 'success');
   });
 
   mount.querySelector('[data-vpo-action="tomar-meds"]')?.addEventListener('click', function () {
-    var block = medRecetaByPatient[patientId];
+    var block = getMedRecetaByPatient()[patientId];
     if (!block || !block.items || !block.items.length) {
       rt.showToast('Procesa la receta en Medicamentos primero', 'error');
       return;
@@ -336,7 +336,7 @@ function renderDiagnosticosSection(state) {
 function liveVpoState(mount) {
   var pid = mount._vpoPatientId;
   if (!pid) return null;
-  return ensureVpoState(vpoByPatient, pid);
+  return ensureVpoState(getVpoByPatient(), pid);
 }
 
 
@@ -414,8 +414,8 @@ export function renderVpoPanel(mount, patientId) {
     mount.innerHTML = '<p class="overview-hint vpo-panel">Selecciona un paciente para valoración preoperatoria.</p>';
     return;
   }
-  var state = ensureVpoState(vpoByPatient, patientId);
-  var patient = patients.find(function (p) {
+  var state = ensureVpoState(getVpoByPatient(), patientId);
+  var patient = getPatients().find(function (p) {
     return p.id === patientId;
   });
   hydrateVpoPatientDefaults(state, patient || null);

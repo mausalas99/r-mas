@@ -5,6 +5,10 @@ import {
   compareIso,
   buildRoomSnapshotFromStorage,
   liveSyncDeletePatchesFromEntityMap,
+  CLIENT_ID_KEY,
+  LAN_CLIENT_ID_KEY,
+  LEGACY_CLIENT_ID_KEY,
+  readMigratedClientId,
 } from './live-sync-room.mjs';
 
 describe('live-sync-room merge by entity version', () => {
@@ -218,5 +222,26 @@ describe('buildRoomSnapshotFromStorage', () => {
       ['demo-a', 'p1']
     );
     assert.strictEqual(snap.agenda.length, 0);
+  });
+});
+
+
+describe('live-sync-room client id key (P3)', () => {
+  it('uses rpc-client-id with temporary LAN_CLIENT_ID_KEY alias', () => {
+    assert.strictEqual(CLIENT_ID_KEY, 'rpc-client-id');
+    assert.strictEqual(LAN_CLIENT_ID_KEY, CLIENT_ID_KEY);
+    assert.strictEqual(LEGACY_CLIENT_ID_KEY, 'rpc-lan-client-id');
+  });
+
+  it('readMigratedClientId migrates legacy key', () => {
+    const store = {
+      _d: { 'rpc-lan-client-id': 'legacy-client' },
+      getItem(k) { return this._d[k] ?? null; },
+      setItem(k, v) { this._d[k] = String(v); },
+      removeItem(k) { delete this._d[k]; },
+    };
+    assert.strictEqual(readMigratedClientId(store), 'legacy-client');
+    assert.strictEqual(store.getItem(CLIENT_ID_KEY), 'legacy-client');
+    assert.strictEqual(store.getItem(LEGACY_CLIENT_ID_KEY), null);
   });
 });

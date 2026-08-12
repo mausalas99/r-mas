@@ -300,8 +300,8 @@ async function showMainClinicalOnboardingBody() {
   }
 
   try {
-    const { flushPendingClinicalOpsLanSnapshot } = await import('../clinical-ops-lan.mjs');
-    const flushed = await flushPendingClinicalOpsLanSnapshot();
+    const { flushPendingClinicalOpsSnapshot } = await import('../clinical-ops-sync.mjs');
+    const flushed = await flushPendingClinicalOpsSnapshot();
     if (flushed.changed) {
       document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
     }

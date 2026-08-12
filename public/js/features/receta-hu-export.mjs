@@ -67,7 +67,7 @@ function selectRecetaHuOutputDir() {
 
 function runRecetaHuPdfExport(body) {
   var btn = document.getElementById('btn-receta-hu-export');
-  setAsyncButtonLoading(btn, true, { loadingText: 'Exportando…' });
+  setAsyncButtonLoading(btn, true, { showElapsed: true, loadingText: 'Exportando…' });
   rt.incrementPendingJobs();
 
   exportWithOutputDirFallback({

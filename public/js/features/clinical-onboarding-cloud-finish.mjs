@@ -37,6 +37,8 @@ export async function finishOnboardingCloudAndCutover(ctx) {
       displayName: ctx.name,
       sala,
       password,
+      // Desktop onboarding is personal-device by default (same as Recuérdame).
+      remember: true,
       toast: ctx.toast,
       setStatus,
     });

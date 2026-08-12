@@ -30,6 +30,18 @@ const {
 // Must run before app.ready — app://rplus serves public/ without :3738.
 registerRendererProtocolSchemes({ protocol });
 
+// One writer for userData Local Storage + cloud-sync-remember.json (npm start vs R+.app).
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+}
+app.on('second-instance', () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+});
+
 // Aceleración por hardware ACTIVADA por defecto: las animaciones del premium UI
 // (transform/opacity/backdrop-filter) componen en GPU; en software se ven
 // entrecortadas. Opt-out para equipos con muy poca RAM (~50-100 MB del proceso GPU):
@@ -661,6 +673,37 @@ ipcMain.handle('cloud-sync-fetch', async (_e, payload) => {
     };
   }
 });
+
+const {
+  readCloudSyncRememberStore,
+  writeCloudSyncRememberStore,
+  clearCloudSyncRememberStore,
+} = require('./lib/cloud-sync-remember-store.cjs');
+
+function cloudSyncRememberUserData() {
+  return app.getPath('userData');
+}
+
+ipcMain.on('cloud-sync-remember-get-sync', (event) => {
+  try {
+    event.returnValue = readCloudSyncRememberStore(cloudSyncRememberUserData());
+  } catch {
+    event.returnValue = null;
+  }
+});
+
+ipcMain.handle('cloud-sync-remember-get', () => {
+  return readCloudSyncRememberStore(cloudSyncRememberUserData());
+});
+
+ipcMain.handle('cloud-sync-remember-set', (_e, snapshot) => {
+  return writeCloudSyncRememberStore(cloudSyncRememberUserData(), snapshot || null);
+});
+
+ipcMain.handle('cloud-sync-remember-clear', () => {
+  clearCloudSyncRememberStore(cloudSyncRememberUserData());
+  return { ok: true };
+});
 function getTargetWebContents() {
   const focused = BrowserWindow.getFocusedWindow();
   if (focused && !focused.isDestroyed()) return focused.webContents;
@@ -761,6 +804,7 @@ async function unlockClinicalDbAtStartup(dbManager) {
 }
 
 app.whenReady().then(async () => {
+  if (!gotSingleInstanceLock) return;
   try {
     installElectronLanCors(session.defaultSession);
     if (!shouldUseLegacyHttpRenderer()) {
@@ -878,30 +922,46 @@ function destroyAllBrowserWindows() {
   }
 }
 
+/** Flush Chromium Local Storage before destroy — otherwise Recuérdame tokens stay in-memory only. */
+async function flushRendererStorageAndDestroyWindows() {
+  const wins = BrowserWindow.getAllWindows().filter((w) => w && !w.isDestroyed());
+  await Promise.all(
+    wins.map(async (win) => {
+      try {
+        if (win.webContents && !win.webContents.isDestroyed()) {
+          await win.webContents.session.flushStorageData();
+        }
+      } catch (_e) {
+        /* ignore */
+      }
+    })
+  );
+  destroyAllBrowserWindows();
+}
+
 let quitting = false;
 app.on('before-quit', (event) => {
   if (quitting) return;
   quitting = true;
-  if (!isDevWardServerEnabled()) {
-    destroyAllBrowserWindows();
-    return;
-  }
-  const lanServer = require('./server');
   event.preventDefault();
 
   const QUIT_DEADLINE_MS = 4000;
   const forceExitTimer = setTimeout(() => app.exit(0), QUIT_DEADLINE_MS);
   if (typeof forceExitTimer.unref === 'function') forceExitTimer.unref();
 
+  const finishQuit = () => {
+    clearTimeout(forceExitTimer);
+    app.exit(0);
+  };
+
+  if (!isDevWardServerEnabled()) {
+    void flushRendererStorageAndDestroyWindows().finally(finishQuit);
+    return;
+  }
+  const lanServer = require('./server');
   const flushCap = new Promise((r) => setTimeout(r, 3000));
   Promise.race([lanServer.flushHostStoreNow().catch(() => {}), flushCap])
-    .then(() => {
-      // Dev ward HTTP (:3738) — drop windows before httpServer.close().
-      destroyAllBrowserWindows();
-      return lanServer.stopLanServer();
-    })
-    .finally(() => {
-      clearTimeout(forceExitTimer);
-      app.exit(0);
-    });
+    .then(() => flushRendererStorageAndDestroyWindows())
+    .then(() => lanServer.stopLanServer())
+    .finally(finishQuit);
 });

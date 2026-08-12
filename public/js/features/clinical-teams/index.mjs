@@ -23,9 +23,9 @@ export {
 } from './teams-roster-render.mjs';
 
 export {
-  openLanUsersDirectoryModal,
-  closeLanUsersDirectoryModal,
-} from './teams-roster-lan.mjs';
+  openDirectoryUsersModal,
+  closeDirectoryUsersModal,
+} from './teams-roster-users.mjs';
 
 export { consumeClinicalTeamJoinFromUrl } from './teams-invite.mjs';
 

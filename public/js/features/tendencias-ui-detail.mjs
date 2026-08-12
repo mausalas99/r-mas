@@ -1,4 +1,4 @@
-import { notes } from '../app-state.mjs';
+import { getNotes } from '../app-state.mjs';
 import { dedupeTrendSetsForSeries, getSetTrendValueForSeries, buildTendChartLabels, parseFechaLabToMs, normalizeFechaLabHistory } from '../tend-core.mjs';
 import { cancelOverlayClose, closeOverlayAnimated } from '../ui-motion.mjs';
 import { TREND_DETAIL_DOWNSAMPLE } from '../lab-history-cache.mjs';
@@ -19,6 +19,12 @@ import {
   eventTooltipLinesForChartIndex,
 } from './tendencias-event-context.mjs';
 import { openTendEventComposeModal } from './tendencias-event-compose.mjs';
+import { alignSeriesToLabels, formatTendTooltipDelta } from './tendencias-insight.mjs';
+import {
+  createTendRefBandPlugin,
+  tendRefBandOptions,
+  yScaleBoundsForRef,
+} from './tendencias-ref-band.mjs';
 
 var _tendDetailControlsWired = false;
 
@@ -86,7 +92,7 @@ function tryInferDateFromLine(text) {
 }
 
 function inferAnteriorLabDateFromNote(patientId) {
-  var n = notes[patientId];
+  var n = getNotes()[patientId];
   if (!n || !n.estudios) return '';
   var lines = n.estudios.split('\n');
   for (var i = 0; i < 3 && i < lines.length; i++) {
@@ -101,124 +107,17 @@ function inferAnteriorLabDateFromNote(patientId) {
   return '';
 }
 
-function tendFinishRangeVbars(container, instant) {
-  if (!container) return;
-  var reduced = instant || rt.rpcPrefersReducedMotion();
-  var apply = function () {
-    var vbars = container.querySelectorAll('.tend-range-vbar');
-    for (var i = 0; i < vbars.length; i++) {
-      var vb = vbars[i];
-      vb.classList.add('tend-vbar-ready');
-      var m = vb.querySelector('.tend-range-vbar-marker');
-      if (m) {
-        var t = m.getAttribute('data-target-bottom');
-        if (t !== null && t !== '') {
-          m.style.bottom = 'max(2px, calc(' + t + '% - 5px))';
-        }
-      }
-    }
+function tendDetailChartOptions(title, unit, markerMap, primaryValues, ref) {
+  var yBounds = yScaleBoundsForRef(primaryValues, ref);
+  var yScale = {
+    ticks: { font: { size: 12 } },
+    title: { display: !!unit, text: unit, font: { size: 11 } },
+    grace: '5%',
   };
-  if (reduced) apply();
-  else {
-    requestAnimationFrame(function () {
-      requestAnimationFrame(apply);
-    });
+  if (yBounds) {
+    yScale.min = yBounds.min;
+    yScale.max = yBounds.max;
   }
-}
-
-/**
- * HTML de la barra de rango (modal de tendencia).
- * Con yBounds (eje Y del gráfico): misma escala que el chart; solo si el rango
- * orientativo intersecta lo visible; si no hay intersección, no se dibuja.
- */
-function computeVbarNormsFromYBounds(low, high, latestN, yBounds) {
-  var yMin = yBounds.min;
-  var yMax = yBounds.max;
-  var ySpan = yMax - yMin;
-  var visLow = Math.max(low, yMin);
-  var visHigh = Math.min(high, yMax);
-  if (visHigh <= visLow) return null;
-  return {
-    normBottom: ((visLow - yMin) / ySpan) * 100,
-    normTop: ((visHigh - yMin) / ySpan) * 100,
-    pos: ((latestN - yMin) / ySpan) * 100,
-  };
-}
-
-function computeVbarNormsFromSpan(low, high, latestN) {
-  var span = high - low;
-  var fullMin = low - span * 0.5;
-  var fullMax = high + span * 0.5;
-  if (fullMax <= fullMin) {
-    fullMin = low;
-    fullMax = high;
-  }
-  var range = fullMax - fullMin;
-  return {
-    normBottom: ((low - fullMin) / range) * 100,
-    normTop: ((high - fullMin) / range) * 100,
-    pos: ((latestN - fullMin) / range) * 100,
-  };
-}
-
-function clampVbarNorms(normBottom, normTop, pos) {
-  if (pos < 0) pos = 0;
-  if (pos > 100) pos = 100;
-  if (normBottom < 0) normBottom = 0;
-  if (normTop > 100) normTop = 100;
-  return { normBottom: normBottom, normTop: normTop, pos: pos };
-}
-
-function resolveVbarNorms(low, high, latestN, yBounds) {
-  if (yBounds && isFinite(yBounds.min) && isFinite(yBounds.max) && yBounds.max > yBounds.min) {
-    return computeVbarNormsFromYBounds(low, high, latestN, yBounds);
-  }
-  return computeVbarNormsFromSpan(low, high, latestN);
-}
-
-function tendRefVbarMarkup(ref, latest, delayMs, extraClass, yBounds) {
-  extraClass = extraClass || '';
-  if (!ref || !isFinite(ref[0]) || !isFinite(ref[1]) || ref[1] <= ref[0] || !isFinite(latest)) {
-    return '';
-  }
-  var low = Number(ref[0]);
-  var high = Number(ref[1]);
-  var latestN = Number(latest);
-  var isAb = latestN < low || latestN > high;
-  var norms = resolveVbarNorms(low, high, latestN, yBounds);
-  if (!norms) return '';
-  var clamped = clampVbarNorms(norms.normBottom, norms.normTop, norms.pos);
-  var normH = clamped.normTop - clamped.normBottom;
-  if (normH <= 0) return '';
-  var stateClass = isAb ? ' is-abnormal' : ' is-normal';
-  var d = delayMs != null ? delayMs : 0;
-  return (
-    '<div class="tend-range-vbar' +
-    extraClass +
-    stateClass +
-    '" style="--tend-vbar-delay:' +
-    d +
-    'ms" title="Rango de referencia (' +
-    low +
-    '–' +
-    high +
-    ') · último ' +
-    latest +
-    '">' +
-    '<div class="tend-range-vbar-track"></div>' +
-    '<div class="tend-range-vbar-norm" style="bottom:' +
-    clamped.normBottom.toFixed(2) +
-    '%;height:' +
-    normH.toFixed(2) +
-    '%"></div>' +
-    '<div class="tend-range-vbar-marker" data-target-bottom="' +
-    clamped.pos.toFixed(2) +
-    '"></div>' +
-    '</div>'
-  );
-}
-
-function tendDetailChartOptions(title, unit, markerMap) {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -234,7 +133,8 @@ function tendDetailChartOptions(title, unit, markerMap) {
       }
     },
     plugins: {
-      legend: { display: false },
+      legend: { display: false, position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
+      tendRefBand: tendRefBandOptions(ref, false),
       tooltip: {
         enabled: true,
         mode: 'index',
@@ -242,7 +142,14 @@ function tendDetailChartOptions(title, unit, markerMap) {
         position: 'nearest',
         callbacks: {
           label: function (ctx) {
-            return ctx.datasetIndex === 0 ? title + ': ' + ctx.parsed.y + ' ' + unit : null;
+            var lab = (ctx.dataset && ctx.dataset.label) || title;
+            var u = ctx.datasetIndex === 0 ? unit : (ctx.dataset && ctx.dataset.unit) || '';
+            var line = lab + ': ' + ctx.parsed.y + (u ? ' ' + u : '');
+            if (ctx.datasetIndex === 0) {
+              var dlt = formatTendTooltipDelta(primaryValues || ctx.dataset.data, ctx.dataIndex);
+              if (dlt) line += ' (' + dlt + ')';
+            }
+            return line;
           },
           afterBody: function (items) {
             if (!items || !items.length || !markerMap) return [];
@@ -253,11 +160,7 @@ function tendDetailChartOptions(title, unit, markerMap) {
     },
     scales: {
       x: { ticks: { font: { size: 12 } }, offset: true },
-      y: {
-        ticks: { font: { size: 12 } },
-        title: { display: !!unit, text: unit, font: { size: 11 } },
-        grace: '5%',
-      },
+      y: yScale,
     },
   };
 }
@@ -267,27 +170,21 @@ function updateTendDetailChartInPlace(labels, values, title, ref, latest, unit, 
   tendStore.detailChart.data.labels = labels;
   tendStore.detailChart.data.datasets[0].label = title;
   tendStore.detailChart.data.datasets[0].data = values;
-  tendStore.detailChart.options = tendDetailChartOptions(title, unit, markerMap);
+  tendStore.detailChart.options = tendDetailChartOptions(title, unit, markerMap, values, ref);
   tendStore.detailChart.update('none');
   syncTendDetailVbar(ref, latest);
   syncTendDetailEventsLegend(markerMap, labels);
   return true;
 }
 
-function tendDetailChartYBounds(chart) {
-  if (!chart || !chart.scales || !chart.scales.y) return null;
-  var y = chart.scales.y;
-  if (!isFinite(y.min) || !isFinite(y.max) || y.max <= y.min) return null;
-  return { min: y.min, max: y.max };
-}
-
 function syncTendDetailVbar(ref, latest) {
+  void ref;
+  void latest;
+  // Side column removed — normality is the chart horizontal band only.
   var vbarSlot = document.getElementById('tend-detail-vbar-slot');
   if (!vbarSlot) return;
-  var yBounds = tendDetailChartYBounds(tendStore.detailChart);
-  vbarSlot.innerHTML = tendRefVbarMarkup(ref, latest, 0, ' tend-detail-vbar', yBounds);
-  vbarSlot.setAttribute('aria-hidden', vbarSlot.innerHTML ? 'false' : 'true');
-  tendFinishRangeVbars(vbarSlot, true);
+  vbarSlot.innerHTML = '';
+  vbarSlot.setAttribute('aria-hidden', 'true');
 }
 
 function downsampleTrendChartSeries(labels, values, maxPoints) {
@@ -304,6 +201,146 @@ function downsampleTrendChartSeries(labels, values, maxPoints) {
     outV.push(values[idx]);
   }
   return { labels: outL, values: outV };
+}
+
+
+function siblingFieldKeys(sectionKey, fieldKey, history) {
+  var keys = {};
+  (history || []).forEach(function (set) {
+    var sec = set && set[sectionKey];
+    if (!sec || typeof sec !== 'object') return;
+    Object.keys(sec).forEach(function (k) {
+      if (k !== fieldKey) keys[k] = true;
+    });
+  });
+  return Object.keys(keys).sort();
+}
+
+function ensureTendDetailCompareSlot(
+  sectionKey,
+  fieldKey,
+  history,
+  labels,
+  values,
+  title,
+  unit,
+  ref,
+  latest,
+  markerMap
+) {
+  var modal = document.getElementById('tend-detail-modal');
+  if (!modal) return;
+  var slot = document.getElementById('tend-detail-compare-slot');
+  if (!slot) {
+    slot = document.createElement('div');
+    slot.id = 'tend-detail-compare-slot';
+    slot.className = 'tend-detail-compare-slot';
+    var titleEl = document.getElementById('tend-detail-title');
+    if (titleEl && titleEl.parentNode) {
+      titleEl.parentNode.insertBefore(slot, titleEl.nextSibling);
+    }
+  }
+  var siblings = siblingFieldKeys(sectionKey, fieldKey, history);
+  if (!siblings.length) {
+    slot.innerHTML = '';
+    slot.hidden = true;
+    tendStore.detailCompareFieldKey = null;
+    return;
+  }
+  slot.hidden = false;
+  var current = tendStore.detailCompareFieldKey;
+  if (current && siblings.indexOf(current) < 0) current = null;
+  var opts =
+    '<option value="">Sin comparar</option>' +
+    siblings
+      .map(function (k) {
+        return (
+          '<option value="' +
+          k.replace(/"/g, '&quot;') +
+          '"' +
+          (k === current ? ' selected' : '') +
+          '>' +
+          k +
+          '</option>'
+        );
+      })
+      .join('');
+  slot.innerHTML =
+    '<span class="tend-detail-compare-label">Comparar con</span>' +
+    '<select class="tend-detail-compare-select" id="tend-detail-compare-select" aria-label="Comparar con otro analito">' +
+    opts +
+    '</select>';
+  var sel = document.getElementById('tend-detail-compare-select');
+  if (!sel) return;
+  sel.onchange = function () {
+    tendStore.detailCompareFieldKey = sel.value || null;
+    applyTendDetailCompare(sectionKey, fieldKey, history, labels, values, title, unit, ref, latest, markerMap);
+  };
+  applyTendDetailCompare(sectionKey, fieldKey, history, labels, values, title, unit, ref, latest, markerMap);
+}
+
+function applyTendDetailCompare(
+  sectionKey,
+  fieldKey,
+  history,
+  labels,
+  values,
+  title,
+  unit,
+  ref,
+  latest,
+  markerMap
+) {
+  if (!tendStore.detailChart || !tendStore.detailChart.data) return;
+  var compareKey = tendStore.detailCompareFieldKey;
+  var datasets = [
+    {
+      label: title,
+      data: values,
+      borderColor: '#10b981',
+      backgroundColor: 'rgba(16,185,129,0.08)',
+      borderWidth: 2.5,
+      pointRadius: 5,
+      pointBackgroundColor: '#10b981',
+      tension: 0.3,
+      fill: false,
+      unit: unit,
+    },
+  ];
+  if (compareKey) {
+    var setsDesc = dedupeTrendSetsForSeries(
+      history.filter(function (s) {
+        return getSetTrendValueForSeries(s, sectionKey, compareKey) != null;
+      }),
+      sectionKey,
+      compareKey
+    );
+    var setsAsc = toTrendAscendingSets(setsDesc);
+    var cLabels = buildTendChartLabels(setsAsc);
+    var cValues = setsAsc.map(function (s) {
+      return getSetTrendValueForSeries(s, sectionKey, compareKey);
+    });
+    var aligned = alignSeriesToLabels(labels, cLabels, cValues);
+    var cParts = tendCardLabelParts(sectionKey, compareKey);
+    datasets.push({
+      label: cParts.title || compareKey,
+      data: aligned,
+      borderColor: '#3b82f6',
+      backgroundColor: 'rgba(59,130,246,0.08)',
+      borderWidth: 2,
+      pointRadius: 4,
+      pointBackgroundColor: '#3b82f6',
+      tension: 0.3,
+      fill: false,
+      unit: cParts.unit || '',
+      spanGaps: true,
+    });
+  }
+  tendStore.detailChart.data.datasets = datasets;
+  tendStore.detailChart.options = tendDetailChartOptions(title, unit, markerMap, values, ref);
+  tendStore.detailChart.options.plugins.legend.display = datasets.length > 1;
+  tendStore.detailChart.update('none');
+  syncTendDetailVbar(ref, latest);
 }
 
 function openTendDetail(sectionKey, fieldKey) {
@@ -344,6 +381,7 @@ function openTendDetailAsync(sectionKey, fieldKey) {
   ensureTendDetailControlsWired();
   document.getElementById('tend-detail-title').textContent =
     title + (labelParts.unit ? ' (' + labelParts.unit + ')' : '');
+  ensureTendDetailCompareSlot(sectionKey, fieldKey, history, labels, values, title, unit, ref, latest, markerMap);
   var vbarSlot = document.getElementById('tend-detail-vbar-slot');
   if (vbarSlot) {
     vbarSlot.innerHTML = '';
@@ -402,11 +440,12 @@ function mountTendDetailChart(Chart, canvas, labels, values, title, ref, latest,
     },
   ];
   var eventPlugin = createTendEventMarkerPlugin(markerMap, { compact: false });
+  var refPlugin = createTendRefBandPlugin();
   tendStore.detailChart = new Chart(canvas, {
     type: 'line',
-    plugins: [eventPlugin],
+    plugins: [refPlugin, eventPlugin],
     data: { labels: labels, datasets: datasets },
-    options: tendDetailChartOptions(title, unit, markerMap),
+    options: tendDetailChartOptions(title, unit, markerMap, values, ref),
   });
   syncTendDetailVbar(ref, latest);
   syncTendDetailEventsLegend(markerMap, labels);
@@ -437,11 +476,8 @@ export {
   formatDMYDate,
   inferFechaLabSetFromId,
   inferAnteriorLabDateFromNote,
-  tendFinishRangeVbars,
-  tendRefVbarMarkup,
   tendDetailChartOptions,
   updateTendDetailChartInPlace,
-  tendDetailChartYBounds,
   syncTendDetailVbar,
   downsampleTrendChartSeries,
   openTendDetail,

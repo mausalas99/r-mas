@@ -7,30 +7,31 @@ import { repairLabHistoryMapInPlace } from './lab-history-repair.mjs';
 import { migratePatientMonitoreo } from './features/estado-actual-data.mjs';
 import { migratePatientsClinicalSala } from './clinico-access.mjs';
 import { maybeStripAutoLabInterpretationsOnce } from './features/eventualidades-strip-auto-labs.mjs';
+import {
+  persistClinicalState,
+  flushPersistClinicalState,
+} from './clinical-repo-persist.mjs';
 
-export let patients = [];
-export let notes = {};
-export let indicaciones = {};
-export let labHistory = {};
-export let medRecetaByPatient = {};
-export let medPharmProfileByPatient = {};
-export let recetaHuByPatient = {};
-export let listadoProblemas = {};
-export let vpoByPatient = {};
-export let medNotaSelectionByPatient = {};
+/** Module-private clinical domains; use getX()/setX() live refs. */
+let patients = [];
+let notes = {};
+let indicaciones = {};
+let labHistory = {};
+let medRecetaByPatient = {};
+let medPharmProfileByPatient = {};
+let recetaHuByPatient = {};
+let listadoProblemas = {};
+let vpoByPatient = {};
+let medNotaSelectionByPatient = {};
 
 let _beforeSave = null;
 let _afterSave = null;
 let _onSaveResult = null;
 let _persistPatientsResolver = null;
-let _saveTimer = null;
-let _saveInFlight = null;
-let _flushSaveQueued = false;
-const SAVE_DEBOUNCE_MS = 400;
 
 /**
  * Durante el tour pitch la lista en memoria son solo demos; al persistir se usa el respaldo real.
- * @param {(() => import('./app-state.mjs').patients | undefined) | null} fn
+ * @param {(() => unknown[] | undefined) | null} fn
  */
 export function setPersistPatientsResolver(fn) {
   _persistPatientsResolver = typeof fn === 'function' ? fn : null;
@@ -51,8 +52,95 @@ function patientsForPersistence() {
   return patients;
 }
 
+let _setPatientsWarned = false;
 export function setPatients(next) {
-  patients = next;
+  if (!_setPatientsWarned) {
+    _setPatientsWarned = true;
+    console.warn('[reckoning] setPatients mutates the in-memory census; prefer clinical-repo commands');
+  }
+  patients = Array.isArray(next) ? next : [];
+}
+
+/** @internal */
+export function resetSetPatientsWarningForTests() {
+  _setPatientsWarned = false;
+}
+
+/**
+ * Live census array (temporary compat): in-place mutations (p.field=, push) keep working.
+ * Read-model getters in clinical-read-model.mjs stay defensive copies.
+ * @returns {Array}
+ */
+export function getPatients() {
+  return patients;
+}
+
+/** Live clinical map (temporary compat): in-place key mutations keep working. */
+export function getNotes() {
+  return notes;
+}
+
+export function getIndicaciones() {
+  return indicaciones;
+}
+
+export function getLabHistory() {
+  return labHistory;
+}
+
+export function getMedRecetaByPatient() {
+  return medRecetaByPatient;
+}
+
+export function getMedPharmProfileByPatient() {
+  return medPharmProfileByPatient;
+}
+
+export function getRecetaHuByPatient() {
+  return recetaHuByPatient;
+}
+
+export function getListadoProblemas() {
+  return listadoProblemas;
+}
+
+export function getVpoByPatient() {
+  return vpoByPatient;
+}
+
+export function getMedNotaSelectionByPatient() {
+  return medNotaSelectionByPatient;
+}
+
+/**
+ * @param {string} name
+ * @returns {unknown}
+ */
+export function getClinicalDomain(name) {
+  switch (String(name || '')) {
+    case 'patients':
+      return getPatients();
+    case 'notes':
+      return getNotes();
+    case 'indicaciones':
+      return getIndicaciones();
+    case 'labHistory':
+      return getLabHistory();
+    case 'medRecetaByPatient':
+      return getMedRecetaByPatient();
+    case 'medPharmProfileByPatient':
+      return getMedPharmProfileByPatient();
+    case 'recetaHuByPatient':
+      return getRecetaHuByPatient();
+    case 'listadoProblemas':
+      return getListadoProblemas();
+    case 'vpoByPatient':
+      return getVpoByPatient();
+    case 'medNotaSelectionByPatient':
+      return getMedNotaSelectionByPatient();
+    default:
+      return undefined;
+  }
 }
 
 /** Safari/iPad: drop ward census from memory (PHI is session-only until LAN sync). */
@@ -65,37 +153,49 @@ export function clearWebSessionClinicalMemory() {
   setMedRecetaByPatient({});
   setMedPharmProfileByPatient({});
   setRecetaHuByPatient({});
-  listadoProblemas = {};
-  vpoByPatient = {};
-  medNotaSelectionByPatient = {};
+  setListadoProblemas({});
+  setVpoByPatient({});
+  setMedNotaSelectionByPatient({});
+}
+
+function asPlainMap(next) {
+  return next && typeof next === 'object' && !Array.isArray(next) ? next : {};
 }
 
 export function setNotes(next) {
-  notes = next;
+  notes = asPlainMap(next);
 }
 
 export function setIndicaciones(next) {
-  indicaciones = next;
+  indicaciones = asPlainMap(next);
 }
 
 export function setLabHistory(next) {
-  labHistory = next;
+  labHistory = asPlainMap(next);
 }
 
 export function setMedRecetaByPatient(next) {
-  medRecetaByPatient = next;
+  medRecetaByPatient = asPlainMap(next);
 }
 
 export function setMedPharmProfileByPatient(next) {
-  medPharmProfileByPatient = next;
+  medPharmProfileByPatient = asPlainMap(next);
 }
 
 export function setVpoByPatient(next) {
-  vpoByPatient = next;
+  vpoByPatient = asPlainMap(next);
 }
 
 export function setRecetaHuByPatient(next) {
-  recetaHuByPatient = next;
+  recetaHuByPatient = asPlainMap(next);
+}
+
+export function setListadoProblemas(next) {
+  listadoProblemas = asPlainMap(next);
+}
+
+export function setMedNotaSelectionByPatient(next) {
+  medNotaSelectionByPatient = asPlainMap(next);
 }
 
 function clonePlainRecord(value) {
@@ -121,15 +221,49 @@ export function replaceAppStateFromBackupData(data) {
   setLabHistory(clonePlainRecord(data.labHistory));
   setMedRecetaByPatient(clonePlainRecord(data.medRecetaByPatient));
   setMedPharmProfileByPatient(clonePlainRecord(data.medPharmProfileByPatient));
-  listadoProblemas = clonePlainRecord(data.listadoProblemas);
-  vpoByPatient = clonePlainRecord(data.vpoByPatient);
-  medNotaSelectionByPatient = {};
+  setListadoProblemas(clonePlainRecord(data.listadoProblemas));
+  setVpoByPatient(clonePlainRecord(data.vpoByPatient));
+  setMedNotaSelectionByPatient({});
 }
 
 export function setSaveStateHooks({ before, after, onSaveResult } = {}) {
   if (before !== undefined) _beforeSave = before;
   if (after !== undefined) _afterSave = after;
   if (onSaveResult !== undefined) _onSaveResult = onSaveResult;
+}
+
+/** @internal — used by clinical-repo-persist */
+export function invokeBeforeSaveHook() {
+  if (_beforeSave) _beforeSave();
+}
+
+/** @internal — used by clinical-repo-persist */
+export function invokeAfterSaveHook() {
+  if (_afterSave) _afterSave();
+}
+
+/** @internal — used by clinical-repo-persist */
+export function notifySaveResultHook(result) {
+  if (_onSaveResult && result) _onSaveResult(result);
+}
+
+/**
+ * Snapshot of clinical domains for clinical.persistSnapshot / read-model apply.
+ * Uses patientsForPersistence() so pitch-tour demos do not overwrite real census.
+ * @returns {Record<string, unknown>}
+ */
+export function getClinicalPersistSnapshot() {
+  return {
+    patients: patientsForPersistence(),
+    notes,
+    indicaciones,
+    labHistory,
+    medRecetaByPatient,
+    medPharmProfileByPatient,
+    recetaHuByPatient,
+    listadoProblemas,
+    vpoByPatient,
+  };
 }
 
 export function repairLabHistoryInMemory() {
@@ -143,6 +277,14 @@ export function repairLabHistoryInMemory() {
 export async function bootHydrateFromDb() {
   await ensureStorageHydrated();
   initAppState();
+  try {
+    var repoHydrate = await import('./clinical-repo-hydrate.mjs');
+    if (repoHydrate && typeof repoHydrate.hydrateClinicalRepoIntoReadModel === 'function') {
+      await repoHydrate.hydrateClinicalRepoIntoReadModel();
+    }
+  } catch (err) {
+    console.warn('[R+] Clinical read-model hydrate:', err && err.message);
+  }
 }
 
 export function initAppState() {
@@ -156,13 +298,13 @@ export function initAppState() {
     setMedRecetaByPatient(storage.getMedRecetaByPatient());
     setMedPharmProfileByPatient(storage.getMedPharmProfileByPatient());
     setRecetaHuByPatient(storage.getRecetaHuByPatient());
-    listadoProblemas = storage.getListadoProblemas();
-    vpoByPatient = storage.getVpoByPatient();
+    setListadoProblemas(storage.getListadoProblemas());
+    setVpoByPatient(storage.getVpoByPatient());
   }
   var medCatalog = storage.getMedCatalog();
   applyMedCatalogOverlay(medCatalog);
   applySomePharmCatalogOverlay(medCatalog);
-  medNotaSelectionByPatient = {};
+  setMedNotaSelectionByPatient({});
   var monitoreoMigrated = false;
   for (var pi = 0; pi < patients.length; pi += 1) {
     if (migratePatientMonitoreo(patients[pi])) monitoreoMigrated = true;
@@ -176,11 +318,11 @@ export function initAppState() {
     }
   } catch (_e) { void _e; }
   if (repairLabHistoryInMemory() || monitoreoMigrated || salaMigrated > 0) {
-    saveState({ immediate: true });
+    void persistClinicalState({ immediate: true, source: 'boot-migrate' });
   }
   var stripLabs = maybeStripAutoLabInterpretationsOnce(patients);
   if (stripLabs.ran && stripLabs.patientsChanged > 0) {
-    saveState({ immediate: true });
+    void persistClinicalState({ immediate: true, source: 'boot-strip-labs' });
     try {
       import('./features/cloud-sync/mutate-bridge.mjs').then(function (m) {
         if (m && typeof m.scheduleCloudSyncPush === 'function') m.scheduleCloudSyncPush();
@@ -191,70 +333,18 @@ export function initAppState() {
   }
 }
 
-function notifySaveResult(result) {
-  if (_onSaveResult && result) _onSaveResult(result);
-}
-
-function runSaveNow() {
-  if (_beforeSave) _beforeSave();
-  var promise = storage.saveAll(
-    patientsForPersistence(),
-    notes,
-    indicaciones,
-    labHistory,
-    medRecetaByPatient,
-    listadoProblemas,
-    recetaHuByPatient,
-    vpoByPatient,
-    medPharmProfileByPatient
-  );
-  _saveInFlight = promise;
-  return promise
-    .then(function (result) {
-      notifySaveResult(result);
-      if (_afterSave) _afterSave();
-      return result;
-    })
-    .finally(function () {
-      if (_saveInFlight === promise) _saveInFlight = null;
-    });
-}
+export { persistClinicalState, flushPersistClinicalState };
 
 /**
- * @param {{ immediate?: boolean }} [opts] — immediate: true salta el debounce (cierre de app, import, etc.)
+ * @deprecated Use persistClinicalState. Forwards for tests / residual callers.
+ * @param {{ immediate?: boolean, source?: string }} [opts]
  */
 export function saveState(opts) {
-  var immediate = !!(opts && opts.immediate);
-  if (_saveTimer) {
-    clearTimeout(_saveTimer);
-    _saveTimer = null;
-  }
-  if (immediate) {
-    return runSaveNow();
-  }
-  return new Promise(function (resolve) {
-    _saveTimer = setTimeout(function () {
-      _saveTimer = null;
-      runSaveNow().then(resolve);
-    }, SAVE_DEBOUNCE_MS);
-  });
+  console.warn('[reckoning] saveState is deprecated; use persistClinicalState');
+  return persistClinicalState(opts);
 }
 
 /** Persiste de inmediato cualquier guardado pendiente (p. ej. antes de cerrar la app). */
 export function flushSaveState() {
-  if (_saveTimer) {
-    clearTimeout(_saveTimer);
-    _saveTimer = null;
-  }
-  if (_saveInFlight) {
-    _flushSaveQueued = true;
-    return _saveInFlight.then(function () {
-      if (_flushSaveQueued) {
-        _flushSaveQueued = false;
-        return runSaveNow();
-      }
-    });
-  }
-  _flushSaveQueued = false;
-  return runSaveNow();
+  return flushPersistClinicalState();
 }

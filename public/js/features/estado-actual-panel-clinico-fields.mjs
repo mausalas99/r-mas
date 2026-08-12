@@ -7,12 +7,12 @@ import {
 } from './estado-actual-data.mjs';
 import { DIET_PENDING_KEYS } from './estado-actual-meds.mjs';
 import { markDietAsManuallyConfirmed } from './estado-actual-meds-diet.mjs';
-import { saveState, patients } from '../app-state.mjs';
+import { getPatients, persistClinicalState } from '../app-state.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import { normalizeSoporteValue } from './estado-actual-ventilatorio.mjs';
 
 function touchPatientLanUpdatedAt(patientId) {
-  const p = patients.find(function (row) {
+  const p = getPatients().find(function (row) {
     return String(row.id) === String(patientId);
   });
   if (p) p.lanUpdatedAt = new Date().toISOString();
@@ -104,6 +104,6 @@ export function applyEstadoClinicoFieldChange(el, patient) {
   if (key === 'kcalKg') applyKcalKgFieldChange(monitoreo, patient);
   else if (key === 'kcal') applyKcalFieldChange(monitoreo, patient);
   if (patient.id) touchPatientLanUpdatedAt(String(patient.id));
-  saveState();
+  persistClinicalState();
   scheduleCloudSyncPush();
 }

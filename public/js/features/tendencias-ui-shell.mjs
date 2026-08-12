@@ -23,7 +23,6 @@ import {
   toggleTendAbnormalOnlyFilter,
 } from './tendencias-series.mjs';
 import { openTendDetail } from './tendencias-ui-detail.mjs';
-import { openTendEventComposeModal } from './tendencias-event-compose.mjs';
 
 var tendGroupModal = null;
 
@@ -231,11 +230,6 @@ function handleTendenciasToolbarClick(t, ev) {
   if (t.closest('[data-tend-action="gaso-extended"]')) {
     ev.preventDefault();
     openTendGasoExtendedModal();
-    return true;
-  }
-  if (t.closest('[data-tend-action="add-event"]')) {
-    ev.preventDefault();
-    openTendEventComposeModal();
     return true;
   }
   return false;

@@ -1,7 +1,7 @@
 /**
  * Fetch lab-repo results on culture date(s) to refresh antibiograma status.
  */
-import { patients, labHistory } from '../app-state.mjs';
+import { getPatients, getLabHistory } from '../app-state.mjs';
 import { parseFechaLabToMs, normalizeFechaLabHistory } from '../tend-core.mjs';
 import {
   labRepoFetchRangeFromDateInputs,
@@ -42,7 +42,7 @@ export function cultureDateRangeFromItems(items) {
 function patientById(patientId) {
   var pid = String(patientId || '').trim();
   if (!pid) return null;
-  var list = patients || [];
+  var list = getPatients() || [];
   for (var i = 0; i < list.length; i++) {
     if (list[i] && String(list[i].id) === pid) return list[i];
   }
@@ -52,7 +52,7 @@ function patientById(patientId) {
 function findPatientByRegistro(registro) {
   var reg = String(registro || '').trim();
   if (!reg) return null;
-  var list = patients || [];
+  var list = getPatients() || [];
   for (var i = 0; i < list.length; i++) {
     var p = list[i];
     if (p && String(p.registro || '').trim() === reg) return p;
@@ -68,7 +68,7 @@ function findPatientByRegistro(registro) {
 export function pendingAtbCultivoItemsForPatient(patientId, historyByPatient) {
   var pid = String(patientId || '').trim();
   if (!pid) return [];
-  var map = historyByPatient || labHistory;
+  var map = historyByPatient || getLabHistory();
   var candidates = extractCultivoFollowUpCandidates(map[pid] || []);
   return classifyCultivoFollowUps(candidates, null, normalizeFechaLabHistory);
 }

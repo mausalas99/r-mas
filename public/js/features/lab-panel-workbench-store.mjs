@@ -12,7 +12,7 @@ import {
 } from '../lab-bulk-paste.mjs';
 import { primaryTipoForLabSet } from '../lab-history-format.mjs';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory } from '../tend-core.mjs';
-import { notes, labHistory, saveState } from '../app-state.mjs';
+import { getNotes, getLabHistory, persistClinicalState } from '../app-state.mjs';
 import { bumpLabHistoryRevision } from '../lab-history-cache.mjs';
 import { enqueueCloudLabSidecarsForPatient } from './cloud-sync/mutate-bridge.mjs';
 
@@ -23,8 +23,8 @@ import { autoConsolidateLabHistoryForPatient } from './lab-panel-history-dedupe.
 
 function resolveLabHistoryFechaNorm(patientId, fecha) {
   var fechaNorm = normalizeFechaLabHistory(fecha) || String(fecha || '').trim();
-  if (!fechaNorm && notes[patientId] && notes[patientId].fecha) {
-    fechaNorm = normalizeFechaLabHistory(notes[patientId].fecha) || '';
+  if (!fechaNorm && getNotes()[patientId] && getNotes()[patientId].fecha) {
+    fechaNorm = normalizeFechaLabHistory(getNotes()[patientId].fecha) || '';
   }
   if (fechaNorm) return fechaNorm;
   var nd = new Date();
@@ -133,7 +133,7 @@ function applyUpsertMergePlan_(patientId, plan, draft) {
           return String(s.id);
         })
       );
-      labHistory[patientId] = labHistory[patientId].filter(function (s) {
+      getLabHistory()[patientId] = getLabHistory()[patientId].filter(function (s) {
         return !remove.has(String(s.id));
       });
     }
@@ -151,7 +151,7 @@ function applyUpsertMergePlan_(patientId, plan, draft) {
  */
 function upsertLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, refsBySection, idSeed) {
   if (!patientId || !resLabs || !resLabs.length) return { action: 'skipped', set: null };
-  if (!labHistory[patientId]) labHistory[patientId] = [];
+  if (!getLabHistory()[patientId]) getLabHistory()[patientId] = [];
   var draft = buildLabHistorySet(
     patientId,
     resLabs,
@@ -164,10 +164,10 @@ function upsertLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras,
   );
   if (!draft.resLabs || !draft.resLabs.length) return { action: 'skipped', set: null };
 
-  var plan = planLabHistoryDateTimeUpsert(labHistory[patientId], draft);
+  var plan = planLabHistoryDateTimeUpsert(getLabHistory()[patientId], draft);
   if (plan.action === 'skip') return { action: 'skipped', set: plan.keeper };
   if (plan.action === 'add') {
-    labHistory[patientId].push(draft);
+    getLabHistory()[patientId].push(draft);
     refreshSameDayAscitisForPatient(patientId, draft.id);
     bumpLabHistoryRevision(patientId);
     return { action: 'added', set: draft };
@@ -230,7 +230,7 @@ function pushLabHistoryFromBulkPayload(patientId, payload, idSeed) {
 }
 
 function isDuplicateInPatientHistory(patientId, payload) {
-  var list = labHistory[patientId] || [];
+  var list = getLabHistory()[patientId] || [];
   var incoming = {
     fecha: normalizeFechaLabHistory(payload.fecha) || String(payload.fecha || '').trim(),
     hora: normalizeHoraLabHistory(payload.hora),
@@ -346,7 +346,7 @@ function storeBulkLabBlocks(blocks, processable) {
     finalizeLabHistoryImport(patientId);
   });
   if (storedSets || mergedSets || skippedDupes) {
-    saveState({ immediate: true });
+    persistClinicalState({ immediate: true });
     renderLabHistoryPanel();
     rt.refreshTendenciasOrCultivosPanel();
   }

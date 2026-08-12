@@ -14,7 +14,7 @@ import {
   enqueueCloudPatientDelete,
 } from './mutate-bridge.mjs';
 import { buildLabSidecarOpsForPatient } from './mutate-bridge-ops.mjs';
-import { labHistory } from '../../app-state.mjs';
+import { getLabHistory } from '../../app-state.mjs';
 import { setCloudRoomConnected } from './nube-sync-policy.mjs';
 
 const meta = { actorId: 'user-1', updatedAt: '2026-08-02T12:00:00.000Z' };
@@ -250,7 +250,7 @@ describe('mutate-bridge op mapping', () => {
       getActorId: () => 'user-1',
     });
     const set = { id: 'lab-9', fecha: '2026-08-09', resLabs: ['Na 140'] };
-    labHistory.p1 = [set];
+    getLabHistory().p1 = [set];
     setCloudRoomConnected(true);
     globalThis.localStorage = {
       store: {},
@@ -269,7 +269,7 @@ describe('mutate-bridge op mapping', () => {
       noteCloudLabSidecarsFromState({ labSidecars: { p1: { 'lab-9': set } } });
       enqueueCloudLabSidecarsForPatient('p1');
       assert.equal(queued.length, 0);
-      labHistory.p1 = [
+      getLabHistory().p1 = [
         set,
         { id: 'lab-10', fecha: '2026-08-08', resLabs: ['Hb 11'] },
       ];
@@ -281,7 +281,7 @@ describe('mutate-bridge op mapping', () => {
       assert.ok(queued[0].ops.some((op) => op.path === 'labSidecars/p1/lab-10'));
       assert.equal(queued[0].ops.some((op) => op.path === 'labSidecars/p1/lab-9'), false);
     } finally {
-      delete labHistory.p1;
+      delete getLabHistory().p1;
       delete globalThis.localStorage;
       setCloudRoomConnected(false);
       configureCloudMutateBridge(null);
@@ -402,5 +402,13 @@ describe('mutate-bridge LAN decoupling (Phase 3)', () => {
       mutateBridgeSrc,
       /enqueueEntityOps\(`tombstones\/\$\{patient\.id\}`/
     );
+  });
+});
+
+describe('mutate-bridge projector facade', () => {
+  it('exports enqueueCloudMutation and flushCloudSyncOutbox (no patient globals)', () => {
+    assert.match(mutateBridgeSrc, /export function enqueueCloudMutation/);
+    assert.match(mutateBridgeSrc, /export async function flushCloudSyncOutbox/);
+    assert.match(mutateBridgeSrc, /Flush outbox without re-reading patient memory/);
   });
 });

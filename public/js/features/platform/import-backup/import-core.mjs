@@ -1,19 +1,5 @@
 /** Patient import conflict resolution and entry application. */
-import {
-  patients,
-  notes,
-  indicaciones,
-  labHistory,
-  medRecetaByPatient,
-  medPharmProfileByPatient,
-  setPatients,
-  setNotes,
-  setIndicaciones,
-  setLabHistory,
-  setMedRecetaByPatient,
-  setMedPharmProfileByPatient,
-  saveState,
-} from '../../../app-state.mjs';
+import { getPatients, getNotes, getIndicaciones, getLabHistory, getMedRecetaByPatient, getMedPharmProfileByPatient, setPatients, setNotes, setIndicaciones, setLabHistory, setMedRecetaByPatient, setMedPharmProfileByPatient, persistClinicalState } from '../../../app-state.mjs';
 import { mergePatientMonitoreoFromImported } from '../../estado-actual-data.mjs';
 import { mergeCensoPatientFields } from '../../../patient-diagnosticos.mjs';
 import { mergePatientRegistrationMeta } from '../../../patient-registration-meta.mjs';
@@ -41,13 +27,13 @@ function askConflictAction(label) {
 }
 
 function copyImportClinicalData(patientId, entry) {
-  notes[patientId] = entry.note || {};
-  indicaciones[patientId] = entry.indicaciones || {};
-  labHistory[patientId] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
-  if (entry.medReceta) medRecetaByPatient[patientId] = entry.medReceta;
-  else delete medRecetaByPatient[patientId];
-  if (entry.medPharmProfile) medPharmProfileByPatient[patientId] = entry.medPharmProfile;
-  else delete medPharmProfileByPatient[patientId];
+  getNotes()[patientId] = entry.note || {};
+  getIndicaciones()[patientId] = entry.indicaciones || {};
+  getLabHistory()[patientId] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
+  if (entry.medReceta) getMedRecetaByPatient()[patientId] = entry.medReceta;
+  else delete getMedRecetaByPatient()[patientId];
+  if (entry.medPharmProfile) getMedPharmProfileByPatient()[patientId] = entry.medPharmProfile;
+  else delete getMedPharmProfileByPatient()[patientId];
 }
 
 function applyImportOverwrite(existing, entry) {
@@ -84,7 +70,7 @@ function applyImportDuplicate(entry) {
   mergePatientMonitoreoFromImported(newPatient, entry.patient);
   mergeCensoPatientFields(newPatient, entry.patient);
   mergePatientRegistrationMeta(newPatient, entry.patient);
-  patients.unshift(newPatient);
+  getPatients().unshift(newPatient);
   copyImportClinicalData(newId, entry);
   return newId;
 }
@@ -96,12 +82,12 @@ function applyImportEntry(entry, action, existing) {
 
 function importEntriesWithConflicts(entries, actionLabel) {
   var out = { imported: 0, overwritten: 0, duplicated: 0, cancelled: false };
-  var patientsBefore = JSON.parse(JSON.stringify(patients));
-  var notesBefore = JSON.parse(JSON.stringify(notes));
-  var indicacionesBefore = JSON.parse(JSON.stringify(indicaciones));
-  var labHistoryBefore = JSON.parse(JSON.stringify(labHistory));
-  var medRecetaBefore = JSON.parse(JSON.stringify(medRecetaByPatient));
-  var medPharmBefore = JSON.parse(JSON.stringify(medPharmProfileByPatient));
+  var patientsBefore = JSON.parse(JSON.stringify(getPatients()));
+  var notesBefore = JSON.parse(JSON.stringify(getNotes()));
+  var indicacionesBefore = JSON.parse(JSON.stringify(getIndicaciones()));
+  var labHistoryBefore = JSON.parse(JSON.stringify(getLabHistory()));
+  var medRecetaBefore = JSON.parse(JSON.stringify(getMedRecetaByPatient()));
+  var medPharmBefore = JSON.parse(JSON.stringify(getMedPharmProfileByPatient()));
   for (var i = 0; i < entries.length; i += 1) {
     var entry = entries[i];
     if (!entry || !entry.patient) continue;
@@ -129,7 +115,7 @@ function importEntriesWithConflicts(entries, actionLabel) {
     setMedRecetaByPatient(medRecetaBefore);
     setMedPharmProfileByPatient(medPharmBefore);
   } else {
-    saveState();
+    persistClinicalState();
     renderPatientList();
   }
   addAuditEntry(actionLabel, out.cancelled ? 'cancelled' : 'ok', out.imported + out.overwritten + out.duplicated,
@@ -215,7 +201,7 @@ function importPatientExportPayloads(payloads, sourceLabel) {
   if (!confirm(msg)) return false;
 
   applySinglePatientExportPayload(payload);
-  saveState();
+  persistClinicalState();
   renderPatientList();
   if (rt.getActiveId()) selectPatient(rt.getActiveId());
   addAuditEntry('backup-patient-import', 'ok', 1, (sourceLabel || '') + registro);

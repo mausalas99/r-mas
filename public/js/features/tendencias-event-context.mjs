@@ -1,5 +1,5 @@
 import { esc } from '../dom-escape.mjs';
-import { patients } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 import { buildTrendAxisMeta, parseFechaLabToMs } from '../tend-core.mjs';
 import {
   dayKeyFromIso,
@@ -29,7 +29,7 @@ export function collectEventMarkersForPatient(patientId) {
   const map = new Map();
   const pid = String(patientId || '').trim();
   if (!pid) return map;
-  const patient = patients.find(function (row) {
+  const patient = getPatients().find(function (row) {
     return String(row.id) === pid;
   });
   const store = patient && patient.eventualidades;

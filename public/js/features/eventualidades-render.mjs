@@ -1,13 +1,18 @@
-import { patients, saveState } from '../app-state.mjs';
+import { getPatients, persistClinicalState } from '../app-state.mjs';
 import { touchClinicalSessionActivity } from '../clinical-access-runtime.mjs';
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
-import { isClinicalRepoEventualidadesEnabled } from '../clinical-repo-flag.mjs';
+import {
+  isClinicalRepoEventualidadesEnabled,
+  isClinicalRepoSyncProjectorEnabled,
+} from '../clinical-repo-flag.mjs';
 import { canExecuteClinicalCommand, executeClinicalCommand } from '../clinical-repo-client.mjs';
+import { drainClinicalSyncProjector } from '../clinical-repo-sync-drain.mjs';
+import { _applyPatientPatch } from '../clinical-read-model.mjs';
 import { tendenciasBridge } from './tendencias-bridge.mjs';
 
 function touchPatientLanUpdatedAt(patientId) {
-  const p = patients.find(function (row) {
+  const p = getPatients().find(function (row) {
     return String(row.id) === String(patientId);
   });
   if (p) p.lanUpdatedAt = new Date().toISOString();
@@ -28,6 +33,7 @@ import {
 import { buildEventualidadesPanelHtml } from './eventualidades-panel-html.mjs';
 
 let _editingEntryId = null;
+let _eventualidadesPanelGen = 0;
 /** @type {Map<string, boolean>} */
 const _dayOpenPrefs = new Map();
 
@@ -88,7 +94,7 @@ function wireEventualidadesUppercase(input) {
 function activePatient() {
   const id = rt.getActiveId();
   if (!id) return null;
-  return patients.find(function (p) {
+  return getPatients().find(function (p) {
     return String(p.id) === String(id);
   });
 }
@@ -132,6 +138,7 @@ export async function savePatientEventualidad(patient, text, atIso, kind, transf
     type: 'eventualidad.upsert',
     patientId: String(patient.id || ''),
     entry: {
+      id: added && added.id,
       text: added && added.text,
       at: added && added.at,
       kind: added && added.kind,
@@ -213,27 +220,107 @@ function shouldPersistViaClinicalRepo(command) {
   );
 }
 
+function mergeCommandPatientsIntoAppState(patientsArr, patientId, fallbackStore) {
+  if (!Array.isArray(patientsArr)) return fallbackStore;
+  const id = String(patientId || '').trim();
+  const live = getPatients();
+  let mergedStore = fallbackStore;
+  for (let i = 0; i < patientsArr.length; i += 1) {
+    const row = patientsArr[i];
+    if (!row || String(row.id) !== id) continue;
+    const idx = live.findIndex(function (p) {
+      return p && String(p.id) === id;
+    });
+    if (idx >= 0) {
+      // Keep the live object identity (UI closures) but take DB eventualidades.
+      live[idx].eventualidades = row.eventualidades;
+      if (row.lanUpdatedAt) live[idx].lanUpdatedAt = row.lanUpdatedAt;
+      mergedStore = row.eventualidades || fallbackStore;
+    }
+    break;
+  }
+  return mergedStore;
+}
+
+function eventualidadesMountEl(preferred) {
+  if (preferred && preferred.isConnected) return preferred;
+  return typeof document !== 'undefined'
+    ? document.getElementById('exp-pane-eventualidades')
+    : preferred;
+}
+
+function refreshEventualidadesPanelAfterPersist(preferred) {
+  _eventualidadesPanelGen += 1;
+  const gen = _eventualidadesPanelGen;
+  const mount = eventualidadesMountEl(preferred);
+  renderEventualidadesPanel(mount);
+  void import('./pase-board-inner-cache.mjs')
+    .then(function (m) {
+      if (gen !== _eventualidadesPanelGen) return;
+      if (m && typeof m.invalidateInnerTabRenderCache === 'function') {
+        m.invalidateInnerTabRenderCache('eventualidades');
+      }
+      // Second paint against the live node — covers remounts during IPC/drain.
+      if (gen === _eventualidadesPanelGen) {
+        renderEventualidadesPanel(eventualidadesMountEl(mount));
+      }
+    })
+    .catch(function () {});
+}
+
+async function executeEventualidadesCommandWithRetry(command) {
+  let res = await executeClinicalCommand(command, { source: 'ui' });
+  if (res && res.ok) return res;
+  const reason = String((res && res.error) || '');
+  // Census often lands in RAM via Nube before SQLCipher blob catch-up.
+  if (reason === 'patient_not_found') {
+    await persistClinicalState({ immediate: true });
+    res = await executeClinicalCommand(command, { source: 'ui' });
+  }
+  return res;
+}
+
 export async function persistEventualidades(patient, store, command) {
   const next = normalizeEventualidadesStore(store);
 
   if (shouldPersistViaClinicalRepo(command)) {
-    const res = await executeClinicalCommand(command, { source: 'ui' });
+    const res = await executeEventualidadesCommandWithRetry(command);
     if (!res || !res.ok) {
       return { ok: false, reason: (res && res.error) || 'repo_failed' };
     }
-    patient.eventualidades = next;
+    const authoritative = mergeCommandPatientsIntoAppState(
+      res.patients,
+      patient && patient.id,
+      next
+    );
+    patient.eventualidades = authoritative;
+    _applyPatientPatch(
+      patient.id,
+      { eventualidades: authoritative },
+      patient,
+      { source: 'eventualidades-persist' }
+    );
     touchPatientLanUpdatedAt(patient.id);
     touchClinicalSessionActivity({ force: true });
-    scheduleCloudSyncPush();
+    // Do not await projector/push before UI returns — a concurrent pull can
+    // remount the pane from stale cloud state and look like "needs patient switch".
+    if (isClinicalRepoSyncProjectorEnabled()) {
+      void drainClinicalSyncProjector().catch(function (err) {
+        console.warn('[eventualidades] sync projector failed', err);
+        scheduleCloudSyncPush();
+      });
+    } else {
+      scheduleCloudSyncPush();
+    }
     refreshTendenciasAfterEventualidades();
     return { ok: true, via: 'clinical-repo', changeId: res.changeId || null };
   }
 
   patient.eventualidades = next;
   touchPatientLanUpdatedAt(patient.id);
-  await saveState({ immediate: true });
+  await persistClinicalState({ immediate: true });
   touchClinicalSessionActivity({ force: true });
-  // Nube: mutation registry is LAN-gated; scheduleLiveSyncPush routes to cloud outbox.
+  // Nube: mutation registry routes clinical writes to the cloud outbox.
   scheduleCloudSyncPush();
   refreshTendenciasAfterEventualidades();
   return { ok: true };
@@ -271,16 +358,24 @@ function wireEventualidadesTimeline(mountEl, patient, store) {
       const row = findEventualidadEntry(store, delId);
       if (!confirm(deleteConfirmMessage(row))) return;
       void (async function () {
-        const next = removeEventualidad(store, delId);
+        const livePatient = activePatient() || patient;
+        const liveStore = ensureEventualidades(livePatient);
+        const next = removeEventualidad(liveStore, delId);
         if (_editingEntryId === delId) _editingEntryId = null;
-        const out = await persistEventualidades(patient, next, {
+        // Optimistic UI: drop the card immediately, then confirm via repo.
+        livePatient.eventualidades = next;
+        refreshEventualidadesPanelAfterPersist(mountEl);
+        const out = await persistEventualidades(livePatient, next, {
           type: 'eventualidad.delete',
-          patientId: String(patient.id || ''),
+          patientId: String(livePatient.id || ''),
           entryId: delId,
         });
         if (out && out.ok) {
           rt.showToast('Eventualidad eliminada.', 'success');
-          renderEventualidadesPanel(mountEl);
+          refreshEventualidadesPanelAfterPersist(mountEl);
+        } else {
+          rt.showToast('No se pudo eliminar la eventualidad.', 'error');
+          refreshEventualidadesPanelAfterPersist(mountEl);
         }
       })();
       return;
@@ -312,16 +407,24 @@ function wireEventualidadesCompose(mountEl, patient, store) {
   async function submitEntry() {
     const text = input.value;
     const atIso = readAtIso();
+    const livePatient = activePatient() || patient;
+    const liveStore = ensureEventualidades(livePatient);
+    const wasEdit = !!_editingEntryId;
     let next;
     if (_editingEntryId) {
-      next = updateEventualidad(store, _editingEntryId, { text: text, at: atIso });
+      next = updateEventualidad(liveStore, _editingEntryId, { text: text, at: atIso });
     } else {
-      next = appendEventualidad(store, text, '', atIso);
+      next = appendEventualidad(liveStore, text, '', atIso);
     }
-    const command = _editingEntryId
+    if (!wasEdit && next.entries.length === liveStore.entries.length) {
+      rt.showToast('Escribe la eventualidad antes de agregar.', 'error');
+      return;
+    }
+    const added = next.entries[next.entries.length - 1];
+    const command = wasEdit
       ? {
           type: 'eventualidad.upsert',
-          patientId: String(patient.id || ''),
+          patientId: String(livePatient.id || ''),
           entry: {
             id: _editingEntryId,
             text: text,
@@ -330,20 +433,30 @@ function wireEventualidadesCompose(mountEl, patient, store) {
         }
       : {
           type: 'eventualidad.upsert',
-          patientId: String(patient.id || ''),
+          patientId: String(livePatient.id || ''),
           entry: {
-            text: next.entries[next.entries.length - 1] && next.entries[next.entries.length - 1].text,
-            at: next.entries[next.entries.length - 1] && next.entries[next.entries.length - 1].at,
-            kind: next.entries[next.entries.length - 1] && next.entries[next.entries.length - 1].kind,
+            id: added && added.id,
+            text: added && added.text,
+            at: added && added.at,
+            kind: added && added.kind,
           },
         };
-    const out = await persistEventualidades(patient, next, command);
+    _editingEntryId = null;
+    livePatient.eventualidades = next;
+    refreshEventualidadesPanelAfterPersist(mountEl);
+    const out = await persistEventualidades(livePatient, next, command);
     if (out && out.ok) {
-      const wasEdit = !!_editingEntryId;
-      _editingEntryId = null;
       rt.showToast(wasEdit ? 'Eventualidad actualizada.' : 'Eventualidad guardada.', 'success');
-      renderEventualidadesPanel(mountEl);
+      refreshEventualidadesPanelAfterPersist(mountEl);
+      return;
     }
+    rt.showToast(
+      out && out.reason === 'empty'
+        ? 'Escribe la eventualidad antes de agregar.'
+        : 'No se pudo guardar la eventualidad. Intenta de nuevo.',
+      'error'
+    );
+    refreshEventualidadesPanelAfterPersist(mountEl);
   }
 
   addBtn.onclick = function () {

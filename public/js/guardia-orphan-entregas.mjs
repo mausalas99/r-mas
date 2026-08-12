@@ -1,7 +1,7 @@
 /**
  * Entregas activas cuyo expediente ya no está en el censo local (borrado o solo LAN).
  */
-import { patients, saveState } from './app-state.mjs';
+import { getPatients, persistClinicalState } from './app-state.mjs';
 import { clinicalSessionContext, refreshGuardiaCensusFromDb } from './clinical-access-runtime.mjs';
 import { vitalsMonitorAlertState } from './features/session-manager.mjs';
 
@@ -19,7 +19,7 @@ function toast(msg, type = 'info') {
 function patientInLocalCensus(patientId) {
   const id = String(patientId || '').trim();
   if (!id) return false;
-  return patients.some((p) => p && String(p.id) === id);
+  return getPatients().some((p) => p && String(p.id) === id);
 }
 
 /** @param {object} row */
@@ -193,7 +193,7 @@ async function removeOrphanPatientLocally(patientId) {
   if (typeof lanMod.removePatientLocally === 'function') {
     lanMod.removePatientLocally(patientId);
   }
-  saveState({ immediate: true });
+  persistClinicalState({ immediate: true });
 }
 
 /** @param {HTMLButtonElement} btn @param {Record<string, unknown>|null} settings */

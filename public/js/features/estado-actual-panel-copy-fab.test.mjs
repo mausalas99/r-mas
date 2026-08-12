@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { patients } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 import { registerEstadoActualPanelRuntime } from './estado-actual-panel-runtime.mjs';
 import { refreshEaCopyFabVisibility, syncEaCopyFab } from './estado-actual-panel-actions.mjs';
 
@@ -42,8 +42,8 @@ function stubEaRuntime(overrides) {
 test('refreshEaCopyFabVisibility — muestra FAB en Estado actual con paciente activo', () => {
   if (typeof document === 'undefined') return;
   const fab = setupEaCopyFabDom();
-  patients.length = 0;
-  patients.push({ id: 'p1', monitoreo: { estadoClinico: {}, historial: [] } });
+  getPatients().length = 0;
+  getPatients().push({ id: 'p1', monitoreo: { estadoClinico: {}, historial: [] } });
   stubEaRuntime();
 
   refreshEaCopyFabVisibility();
@@ -56,8 +56,8 @@ test('refreshEaCopyFabVisibility — muestra FAB en Estado actual con paciente a
 test('refreshEaCopyFabVisibility — oculta FAB fuera de Estado actual aunque haya paciente', () => {
   if (typeof document === 'undefined') return;
   const fab = setupEaCopyFabDom();
-  patients.length = 0;
-  patients.push({ id: 'p1', monitoreo: { estadoClinico: {}, historial: [] } });
+  getPatients().length = 0;
+  getPatients().push({ id: 'p1', monitoreo: { estadoClinico: {}, historial: [] } });
   stubEaRuntime({ getActiveInner() { return 'todo'; } });
 
   syncEaCopyFab(true);
@@ -69,8 +69,8 @@ test('refreshEaCopyFabVisibility — oculta FAB fuera de Estado actual aunque ha
 test('refreshEaCopyFabVisibility — restaura FAB al volver con caché fresca (inner ya en estadoActual)', () => {
   if (typeof document === 'undefined') return;
   const fab = setupEaCopyFabDom();
-  patients.length = 0;
-  patients.push({ id: 'p1', monitoreo: { estadoClinico: {}, historial: [] } });
+  getPatients().length = 0;
+  getPatients().push({ id: 'p1', monitoreo: { estadoClinico: {}, historial: [] } });
   stubEaRuntime({ getActiveInner() { return 'todo'; } });
 
   syncEaCopyFab(true);

@@ -24,6 +24,7 @@ import {
   labRepoBatchJobStatusLabel,
   jobStatusFromFetchKind,
 } from './lab-repo-batch-model.mjs';
+import { mountLoadingState, destroyLoadingState } from '../ui-loading-state.mjs';
 import {
   resolveActivePatientBatchRow,
   resolveBatchOpenMode,
@@ -35,6 +36,7 @@ import {
 var batchRows = [];
 /** @type {import('./lab-repo-batch-model.mjs').LabRepoBatchJob[]} */
 var batchJobs = [];
+var batchLoadingHost = null;
 var batchBusy = false;
 var batchAbort = false;
 var batchSinglePatientMode = false;
@@ -149,7 +151,18 @@ function setBatchProgress(text, visible) {
   var el = document.getElementById('lab-repo-batch-progress');
   if (!el) return;
   el.hidden = !visible;
-  el.textContent = text || '';
+  if (!visible) {
+    destroyLoadingState(batchLoadingHost);
+    batchLoadingHost = null;
+    el.textContent = '';
+    return;
+  }
+  if (!batchLoadingHost) {
+    el.textContent = '';
+    batchLoadingHost = mountLoadingState(el, { label: text || 'Importando…', variant: 'Dots' });
+  } else if (text) {
+    batchLoadingHost.label = text;
+  }
 }
 
 function jobStatusClass(status) {

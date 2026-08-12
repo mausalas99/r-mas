@@ -1,12 +1,6 @@
 import { isModeSala } from './mode-features.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
-import {
-  patients,
-  labHistory,
-  medRecetaByPatient,
-  vpoByPatient,
-  saveState,
-} from './app-state.mjs';
+import { getPatients, getLabHistory, getMedRecetaByPatient, getVpoByPatient, persistClinicalState } from './app-state.mjs';
 import { storage } from './storage.js';
 import { buildCensusPayload } from './censo-build.mjs';
 import { openCensoPreviewInApp } from './censo-preview-html.mjs';
@@ -79,7 +73,7 @@ function censoExportLoadingButtons() {
 
 function buildTodosMap() {
   var map = Object.create(null);
-  patients.forEach(function (p) {
+  getPatients().forEach(function (p) {
     if (!p || !p.id) return;
     map[p.id] = storage.getTodos(p.id);
   });
@@ -87,18 +81,18 @@ function buildTodosMap() {
 }
 
 function preparePatientsForCensus() {
-  patients.forEach(function (p) {
+  getPatients().forEach(function (p) {
     if (!p) return;
-    migratePatientDiagnosticosFromVpo(p, vpoByPatient[p.id]);
+    migratePatientDiagnosticosFromVpo(p, getVpoByPatient()[p.id]);
   });
-  saveState();
+  persistClinicalState();
 }
 
 function patientsForCensoExport() {
   if (typeof rt.getCensusPatients === 'function') {
     return rt.getCensusPatients();
   }
-  return patients;
+  return getPatients();
 }
 
 function ensureCensoModal() {
@@ -166,8 +160,8 @@ export function exportCensoPdf(includeArchived) {
     settings: rt.getSettings(),
     patients: censusPatients,
     includeArchived: !!includeArchived,
-    labHistoryByPatient: labHistory,
-    medRecetaByPatient: medRecetaByPatient,
+    labHistoryByPatient: getLabHistory(),
+    medRecetaByPatient: getMedRecetaByPatient(),
     todosByPatient: buildTodosMap(),
   });
   if (!payload.rows.length) {
@@ -176,7 +170,7 @@ export function exportCensoPdf(includeArchived) {
   }
   var exportBtns = censoExportLoadingButtons();
   exportBtns.forEach(function (btn) {
-    setAsyncButtonLoading(btn, true, { loadingText: 'Exportando…' });
+    setAsyncButtonLoading(btn, true, { showElapsed: true, loadingText: 'Exportando…' });
   });
   rt.incrementPendingJobs();
 
@@ -247,8 +241,8 @@ function previewCenso(includeArchived) {
     settings: rt.getSettings(),
     patients: censusPatients,
     includeArchived: !!includeArchived,
-    labHistoryByPatient: labHistory,
-    medRecetaByPatient: medRecetaByPatient,
+    labHistoryByPatient: getLabHistory(),
+    medRecetaByPatient: getMedRecetaByPatient(),
     todosByPatient: buildTodosMap(),
   });
   if (!payload.rows.length) {

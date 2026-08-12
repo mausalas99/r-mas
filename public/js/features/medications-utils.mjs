@@ -1,4 +1,4 @@
-import { medNotaSelectionByPatient } from "../app-state.mjs";
+import { getMedNotaSelectionByPatient } from "../app-state.mjs";
 import { isDemoPatientId } from '../demo-patient.mjs';
 
 import { esc } from '../dom-escape.mjs';
@@ -10,8 +10,8 @@ export function manejoDiaOpts(fechaActualizacion) {
 }
 
 export function getMedNotaSelMap(patientId) {
-  if (!medNotaSelectionByPatient[patientId]) medNotaSelectionByPatient[patientId] = {};
-  return medNotaSelectionByPatient[patientId];
+  if (!getMedNotaSelectionByPatient()[patientId]) getMedNotaSelectionByPatient()[patientId] = {};
+  return getMedNotaSelectionByPatient()[patientId];
 }
 
 export function isMedNotaSelected(patientId, itemId) {

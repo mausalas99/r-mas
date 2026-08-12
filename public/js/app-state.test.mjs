@@ -12,7 +12,16 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true,
   configurable: true,
 });
-globalThis.window = { localStorage: mockStorage };
+
+function desktopNoIpcWindow() {
+  return {
+    localStorage: mockStorage,
+    // Force non-web client so persist falls back to storage.saveAll without IPC.
+    __RPC_ELECTRON_DESKTOP__: true,
+  };
+}
+
+globalThis.window = desktopNoIpcWindow();
 
 const { storage } = await import('./storage.js');
 const appState = await import('./app-state.mjs');
@@ -20,18 +29,24 @@ const appState = await import('./app-state.mjs');
 describe('app-state', () => {
   beforeEach(() => {
     store = {};
-    appState.setSaveStateHooks({ before: null, after: null });
+    globalThis.window = desktopNoIpcWindow();
+    appState.setSaveStateHooks({ before: null, after: null, onSaveResult: null });
     appState.initAppState();
   });
 
   it('initAppState loads patients from storage', () => {
     store['rpc-patients'] = JSON.stringify([{ id: 'p1', name: 'Ana' }]);
     appState.initAppState();
-    assert.strictEqual(appState.patients.length, 1);
-    assert.strictEqual(appState.patients[0].id, 'p1');
+    assert.strictEqual(appState.getPatients().length, 1);
+    assert.strictEqual(appState.getPatients()[0].id, 'p1');
   });
 
-  it('saveState immediate calls storage.saveAll', async () => {
+  it('deprecated saveState warns and forwards to persistClinicalState', async () => {
+    const warnings = [];
+    const origWarn = console.warn;
+    console.warn = (...args) => {
+      warnings.push(args.join(' '));
+    };
     let calls = 0;
     const orig = storage.saveAll.bind(storage);
     storage.saveAll = (...args) => {
@@ -40,14 +55,29 @@ describe('app-state', () => {
     };
     appState.setPatients([{ id: 'p1', name: 'Test' }]);
     await appState.saveState({ immediate: true });
+    console.warn = origWarn;
+    storage.saveAll = orig;
+    assert.ok(warnings.some((w) => /saveState is deprecated/i.test(w)));
+    assert.strictEqual(calls, 1);
+  });
+
+  it('persistClinicalState immediate calls storage.saveAll without IPC', async () => {
+    let calls = 0;
+    const orig = storage.saveAll.bind(storage);
+    storage.saveAll = (...args) => {
+      calls += 1;
+      return orig(...args);
+    };
+    appState.setPatients([{ id: 'p1', name: 'Test' }]);
+    await appState.persistClinicalState({ immediate: true });
     assert.strictEqual(calls, 1);
     storage.saveAll = orig;
   });
 
-  it('saveState runs after hook on immediate save', async () => {
+  it('persistClinicalState runs after hook on immediate save', async () => {
     let ran = false;
     appState.setSaveStateHooks({ after() { ran = true; } });
-    await appState.saveState({ immediate: true });
+    await appState.persistClinicalState({ immediate: true });
     assert.strictEqual(ran, true);
   });
 
@@ -64,7 +94,7 @@ describe('app-state', () => {
 
   it('localStorage-only import is wiped by flushSaveState when memory is empty', async () => {
     store['rpc-patients'] = JSON.stringify([{ id: 'imported', nombre: 'X' }]);
-    assert.strictEqual(appState.patients.length, 0);
+    assert.strictEqual(appState.getPatients().length, 0);
     await appState.flushSaveState();
     assert.strictEqual(storage.getPatients().length, 0);
   });
@@ -85,7 +115,7 @@ describe('app-state', () => {
       return orig(...args);
     };
     appState.setPatients([{ id: 'p1', name: 'A' }]);
-    const first = appState.saveState({ immediate: true });
+    const first = appState.persistClinicalState({ immediate: true });
     appState.setPatients([{ id: 'p1', name: 'B' }]);
     const flushed = appState.flushSaveState();
     assert.ok(release);
@@ -103,10 +133,19 @@ describe('app-state', () => {
       return orig(...args);
     };
     appState.setPatients([{ id: 'p1', name: 'Test' }]);
-    appState.saveState();
+    void appState.persistClinicalState();
     await appState.flushSaveState();
     assert.ok(calls >= 1);
     storage.saveAll = orig;
+  });
+
+  it('getClinicalPersistSnapshot includes clinical domains', () => {
+    appState.setPatients([{ id: 'p1' }]);
+    appState.setNotes({ p1: 'n' });
+    const snap = appState.getClinicalPersistSnapshot();
+    assert.equal(snap.patients[0].id, 'p1');
+    assert.equal(snap.notes.p1, 'n');
+    assert.ok(snap.labHistory && typeof snap.labHistory === 'object');
   });
 
   it('bootHydrateFromDb loads patients from hydrated blob cache', async () => {
@@ -125,9 +164,9 @@ describe('app-state', () => {
     };
     appState.setPatients([]);
     await appState.bootHydrateFromDb();
-    assert.strictEqual(appState.patients.length, 1);
-    assert.strictEqual(appState.patients[0].id, 'boot1');
+    assert.strictEqual(appState.getPatients().length, 1);
+    assert.strictEqual(appState.getPatients()[0].id, 'boot1');
     clearBlobCacheForTests();
-    globalThis.window = { localStorage: mockStorage };
+    globalThis.window = desktopNoIpcWindow();
   });
 });

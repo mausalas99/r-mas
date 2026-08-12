@@ -23,16 +23,16 @@ const clinicalTeamsSrc = readFeatureSrc(featureDir, [
   'teams-roster-panel.mjs',
   'teams-roster-panel-build.mjs',
   'teams-roster-panel-draft.mjs',
-  'teams-roster-lan.mjs',
-  'teams-roster-lan-dom.mjs',
-  'teams-roster-lan-render.mjs',
-  'teams-roster-lan-filters.mjs',
-  'teams-roster-lan-state.mjs',
-  'teams-roster-lan-load.mjs',
-  'teams-roster-lan-modal.mjs',
-  'teams-roster-lan-assign.mjs',
-  'teams-roster-lan-wire.mjs',
-  'teams-roster-lan-row-html.mjs',
+  'teams-roster-users.mjs',
+  'teams-roster-directory-dom.mjs',
+  'teams-roster-directory-render.mjs',
+  'teams-roster-directory-filters.mjs',
+  'teams-roster-directory-state.mjs',
+  'teams-roster-directory-load.mjs',
+  'teams-roster-directory-modal.mjs',
+  'teams-roster-directory-assign.mjs',
+  'teams-roster-directory-wire.mjs',
+  'teams-roster-directory-row-html.mjs',
   'teams-roster-interactions.mjs',
   'teams-roster-modal-chrome.mjs',
   'teams-roster-join-handler.mjs',
@@ -99,11 +99,12 @@ describe('clinical-teams', () => {
     assert.equal(clinicalTeamsSrc.includes('handleGuardiaCheck'), false);
   });
 
-  it('pullClinicalOpsFromLanRoom is retired (always false)', () => {
-    const idx = clinicalTeamsSrc.indexOf('export async function pullClinicalOpsFromLanRoom');
+  it('pullClinicalOpsFromRoom is retired (always false)', () => {
+    const idx = clinicalTeamsSrc.indexOf('export async function pullClinicalOpsFromRoom');
     assert.ok(idx >= 0);
     const body = clinicalTeamsSrc.slice(idx, idx + 120);
     assert.match(body, /return false/);
+    assert.equal(clinicalTeamsSrc.includes('pullClinicalOpsFromLanRoom'), false);
   });
 
   it('refreshClinicalOpsDirectory pulls from Nube when cloud sync is active', () => {
@@ -150,15 +151,15 @@ describe('clinical-teams', () => {
   });
 
   it('Mi rotación opens LAN user directory in separate modal', () => {
-    assert.match(clinicalTeamsSrc, /canViewLanUserDirectory/);
-    assert.match(clinicalTeamsSrc, /openLanUsersDirectoryModal/);
-    assert.match(clinicalTeamsSrc, /clinical-lan-users-backdrop/);
-    assert.match(clinicalTeamsSrc, /renderLanUsersDirectoryTopButtonHtml/);
+    assert.match(clinicalTeamsSrc, /canViewUserDirectory/);
+    assert.match(clinicalTeamsSrc, /openDirectoryUsersModal/);
+    assert.match(clinicalTeamsSrc, /clinical-directory-users-backdrop/);
+    assert.match(clinicalTeamsSrc, /renderDirectoryUsersTopButtonHtml/);
     assert.match(clinicalTeamsSrc, /clinical-teams-top-actions/);
     assert.match(clinicalTeamsSrc, /Directorio LAN/);
     assert.match(clinicalTeamsSrc, /getClinicalTeamsPanelHost\(\)[\s\S]*_rpcLanDirOpenDelegated/);
-    assert.match(clinicalTeamsSrc, /clinical-lan-directory-open/);
-    assert.match(clinicalTeamsSrc, /clinical-lan-rank-group/);
+    assert.match(clinicalTeamsSrc, /clinical-directory-open/);
+    assert.match(clinicalTeamsSrc, /clinical-directory-rank-group/);
     assert.equal(clinicalTeamsSrc.includes('clinical-teams-lan-users-entry'), false);
     assert.equal(clinicalTeamsSrc.includes('section.lanUsers'), false);
   });
@@ -166,8 +167,8 @@ describe('clinical-teams', () => {
   it('elevated roster managers get empty team create flow', () => {
     assert.match(clinicalTeamsSrc, /canManageTeamRoster/);
     assert.match(clinicalTeamsSrc, /Crear equipo vacío/);
-    assert.match(clinicalTeamsSrc, /clinical-lan-assign-btn/);
-    assert.match(clinicalTeamsSrc, /clinical-lan-users-placement/);
+    assert.match(clinicalTeamsSrc, /clinical-directory-assign-btn/);
+    assert.match(clinicalTeamsSrc, /clinical-directory-users-placement/);
     assert.match(clinicalTeamsSrc, /resolveMembershipCycleForUser/);
     assert.match(clinicalTeamsSrc, /rpc-clinical-ops-synced/);
   });
@@ -263,37 +264,37 @@ describe('clinical-teams', () => {
   it('inherit patients modal stacks above Mi rotación backdrop', () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../styles/pase-board.css'), 'utf8');
     assert.match(css, /#inherit-patients-backdrop\.modal-backdrop\.open/);
-    assert.match(css, /z-index:\s*var\(--z-clinical-lan-users\)/);
+    assert.match(css, /z-index:\s*var\(--z-clinical-directory-users\)/);
   });
 
   it('LAN directorio preserves collapsed rank groups across background refresh', () => {
-    assert.match(clinicalTeamsSrc, /lanDirRt\.collapsedRanks/);
-    assert.match(clinicalTeamsSrc, /lanDirRt\.expandedRanks/);
-    assert.match(clinicalTeamsSrc, /shouldLanRankGroupOpen/);
-    assert.match(clinicalTeamsSrc, /captureLanDirectoryCollapseState/);
+    assert.match(clinicalTeamsSrc, /directoryRt\.collapsedRanks/);
+    assert.match(clinicalTeamsSrc, /directoryRt\.expandedRanks/);
+    assert.match(clinicalTeamsSrc, /shouldRankGroupOpen/);
+    assert.match(clinicalTeamsSrc, /captureDirectoryCollapseState/);
     assert.match(clinicalTeamsSrc, /data-lan-rank-group/);
-    assert.doesNotMatch(clinicalTeamsSrc, /clinical-lan-rank-group" open>/);
+    assert.doesNotMatch(clinicalTeamsSrc, /clinical-directory-rank-group" open>/);
   });
 
   it('LAN directorio uses compact cards with search and filters', () => {
     assert.match(clinicalTeamsSrc, /clinical-lan-user-card/);
-    assert.match(clinicalTeamsSrc, /clinical-lan-directory-toolbar/);
-    assert.match(clinicalTeamsSrc, /applyLanDirectoryFilters/);
-    assert.match(clinicalTeamsSrc, /bindLanDirectoryFilterControls/);
-    assert.match(clinicalTeamsSrc, /ensureLanDirectoryFilterDelegation/);
-    assert.match(clinicalTeamsSrc, /clinical-lan-directory-search/);
-    assert.match(clinicalTeamsSrc, /clinical-lan-directory-activity-filter/);
+    assert.match(clinicalTeamsSrc, /clinical-directory-toolbar/);
+    assert.match(clinicalTeamsSrc, /applyDirectoryFilters/);
+    assert.match(clinicalTeamsSrc, /bindDirectoryFilterControls/);
+    assert.match(clinicalTeamsSrc, /ensureDirectoryFilterDelegation/);
+    assert.match(clinicalTeamsSrc, /clinical-directory-search/);
+    assert.match(clinicalTeamsSrc, /clinical-directory-activity-filter/);
     assert.match(clinicalTeamsSrc, /last_activity_at/);
     assert.match(clinicalTeamsSrc, /clinical-lan-user-activity-chip/);
   });
 
   it('LAN directorio freezes auto-refresh while open (manual Actualizar)', () => {
-    assert.match(clinicalTeamsSrc, /lanDirRt\.freezeAutoRefresh/);
-    assert.match(clinicalTeamsSrc, /refreshLanDirectoryFromHostUi/);
-    assert.match(clinicalTeamsSrc, /clinical-lan-directory-refresh-btn/);
-    assert.match(clinicalTeamsSrc, /buildLanDirectoryFingerprint/);
-    assert.doesNotMatch(clinicalTeamsSrc, /rpc-clinical-ops-synced[\s\S]*scheduleLanDirectory/);
-    assert.doesNotMatch(clinicalTeamsSrc, /setInterval[\s\S]*scheduleLanDirectory/);
+    assert.match(clinicalTeamsSrc, /directoryRt\.freezeAutoRefresh/);
+    assert.match(clinicalTeamsSrc, /refreshDirectoryFromHostUi/);
+    assert.match(clinicalTeamsSrc, /clinical-directory-refresh-btn/);
+    assert.match(clinicalTeamsSrc, /buildDirectoryFingerprint/);
+    assert.doesNotMatch(clinicalTeamsSrc, /rpc-clinical-ops-synced[\s\S]*scheduleDirectory/);
+    assert.doesNotMatch(clinicalTeamsSrc, /setInterval[\s\S]*scheduleDirectory/);
   });
 
   it('skips Equipo UI refresh on cloud-hydrate to avoid flash', () => {

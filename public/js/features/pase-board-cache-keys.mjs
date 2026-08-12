@@ -2,7 +2,7 @@
  * Pase board summary cache key (invalidation).
  */
 import { storage } from '../storage.js';
-import { medRecetaByPatient } from '../app-state.mjs';
+import { getMedRecetaByPatient } from '../app-state.mjs';
 import { getLabHistoryRevision } from '../lab-history-cache.mjs';
 
 var _paseBoardCacheKey = '';
@@ -17,7 +17,7 @@ export function buildPaseBoardCacheKey(pid) {
   for (var i = 0; i < todos.length; i += 1) {
     if (todos[i].completed) done += 1;
   }
-  var med = (medRecetaByPatient[pid] && medRecetaByPatient[pid].items) || [];
+  var med = (getMedRecetaByPatient()[pid] && getMedRecetaByPatient()[pid].items) || [];
   var ag = getPaseAgendaForPatient(pid);
   return (
     String(pid) +

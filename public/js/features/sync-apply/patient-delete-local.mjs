@@ -1,29 +1,19 @@
 /**
  * Clear per-patient local state maps on delete.
  */
-import {
-  notes,
-  indicaciones,
-  labHistory,
-  medRecetaByPatient,
-  medPharmProfileByPatient,
-  vpoByPatient,
-  recetaHuByPatient,
-  listadoProblemas,
-  medNotaSelectionByPatient,
-} from '../../app-state.mjs';
+import { getNotes, getIndicaciones, getLabHistory, getMedRecetaByPatient, getMedPharmProfileByPatient, getVpoByPatient, getRecetaHuByPatient, getListadoProblemas, getMedNotaSelectionByPatient } from '../../app-state.mjs';
 import { storage } from '../../storage.js';
 
 const PATIENT_STATE_MAPS = [
-  () => notes,
-  () => indicaciones,
-  () => labHistory,
-  () => medRecetaByPatient,
-  () => medPharmProfileByPatient,
-  () => vpoByPatient,
-  () => recetaHuByPatient,
-  () => medNotaSelectionByPatient,
-  () => listadoProblemas,
+  () => getNotes(),
+  () => getIndicaciones(),
+  () => getLabHistory(),
+  () => getMedRecetaByPatient(),
+  () => getMedPharmProfileByPatient(),
+  () => getVpoByPatient(),
+  () => getRecetaHuByPatient(),
+  () => getMedNotaSelectionByPatient(),
+  () => getListadoProblemas(),
 ];
 
 /** @param {string} pid */

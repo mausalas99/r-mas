@@ -117,6 +117,10 @@ describe('clinical census team filter', () => {
     assert.equal(reconcileCensusTeamFilterForSala('__unassigned__', filterTeamsForCensusSala(teams, 'Sala 1')), '__unassigned__');
   });
 
+  it('reconcileCensusTeamFilterForSala keeps team when catalog is briefly empty', () => {
+    assert.equal(reconcileCensusTeamFilterForSala('t1', []), 't1');
+  });
+
   it('censusTeamCatalogForFilters on iPad shows all teams for Admin/R4', () => {
     const catalog = censusTeamCatalogForFilters(user, teams, '__all__');
     assert.equal(catalog.length, 2);

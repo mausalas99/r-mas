@@ -22,6 +22,8 @@ function trendSparkChartKey(sectionKey, fieldKey) {
 export const tendStore = {
   _tendCardSortables: [],
   sparkCharts: {},
+  /** Bumped on full remount so stale rAF/idle spark batches bail out. */
+  sparkMountGen: 0,
   detailChart: null,
   detailContext: null,
   detailSelectedIndex: null,

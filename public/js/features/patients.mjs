@@ -1,10 +1,5 @@
 // Patient list, ronda navigation, pin/archive, add/save modal, delete — barrel + sidebar chrome
-import {
-  patients,
-  notes,
-  indicaciones,
-  saveState,
-} from '../app-state.mjs';
+import { getPatients, getNotes, getIndicaciones, persistClinicalState } from '../app-state.mjs';
 import { applyProfileToNoteIfEmpty } from './notes-indicaciones.mjs';
 import { applyNotaFormatScaffoldIfEmpty } from '../profile-templates.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
@@ -81,26 +76,26 @@ export function registerPatientsRuntime(ctx) {
 }
 
 export function applyDefaultsToNewPatient(patientId) {
-  if (!notes[patientId]) return;
-  applyProfileToNoteIfEmpty(notes[patientId]);
-  applyNotaFormatScaffoldIfEmpty(notes[patientId], rt.getSettings() || {});
+  if (!getNotes()[patientId]) return;
+  applyProfileToNoteIfEmpty(getNotes()[patientId]);
+  applyNotaFormatScaffoldIfEmpty(getNotes()[patientId], rt.getSettings() || {});
 }
 
 export function applyDefaultsToNewIndicaciones(patientId) {
-  if (!indicaciones[patientId]) return;
+  if (!getIndicaciones()[patientId]) return;
   var st = rt.getSettings() || {};
-  if (st.defaultDieta && !indicaciones[patientId].dieta) indicaciones[patientId].dieta = st.defaultDieta;
-  if (st.defaultCuidados && !indicaciones[patientId].cuidados) {
-    indicaciones[patientId].cuidados = st.defaultCuidados;
+  if (st.defaultDieta && !getIndicaciones()[patientId].dieta) getIndicaciones()[patientId].dieta = st.defaultDieta;
+  if (st.defaultCuidados && !getIndicaciones()[patientId].cuidados) {
+    getIndicaciones()[patientId].cuidados = st.defaultCuidados;
   }
-  if (st.defaultMedicamentos && !indicaciones[patientId].medicamentos) {
-    indicaciones[patientId].medicamentos = st.defaultMedicamentos;
+  if (st.defaultMedicamentos && !getIndicaciones()[patientId].medicamentos) {
+    getIndicaciones()[patientId].medicamentos = st.defaultMedicamentos;
   }
-  if (st.defaultIndicacionesEstudios && !indicaciones[patientId].estudios) {
-    indicaciones[patientId].estudios = st.defaultIndicacionesEstudios;
+  if (st.defaultIndicacionesEstudios && !getIndicaciones()[patientId].estudios) {
+    getIndicaciones()[patientId].estudios = st.defaultIndicacionesEstudios;
   }
-  if (st.defaultIndicacionesInterconsultas && !indicaciones[patientId].interconsultas) {
-    indicaciones[patientId].interconsultas = st.defaultIndicacionesInterconsultas;
+  if (st.defaultIndicacionesInterconsultas && !getIndicaciones()[patientId].interconsultas) {
+    getIndicaciones()[patientId].interconsultas = st.defaultIndicacionesInterconsultas;
   }
 }
 
@@ -131,16 +126,16 @@ function patientSectionKey(p) {
 
 function movePatientBefore(targetId, beforeId) {
   if (!targetId || !beforeId || targetId === beforeId) return;
-  var from = patients.findIndex(function (p) {
+  var from = getPatients().findIndex(function (p) {
     return p.id === targetId;
   });
-  var to = patients.findIndex(function (p) {
+  var to = getPatients().findIndex(function (p) {
     return p.id === beforeId;
   });
   if (from < 0 || to < 0 || from === to) return;
-  var moved = patients.splice(from, 1)[0];
+  var moved = getPatients().splice(from, 1)[0];
   if (from < to) to -= 1;
-  patients.splice(to, 0, moved);
+  getPatients().splice(to, 0, moved);
 }
 
 export function toggleArchivedSection(ev) {
@@ -162,12 +157,12 @@ export function movePatientByOffset(ev, id, dir) {
     ev.preventDefault();
     ev.stopPropagation();
   }
-  var p = patients.find(function (x) {
+  var p = getPatients().find(function (x) {
     return x.id === id;
   });
   if (!p) return;
   var sec = patientSectionKey(p);
-  var ids = patients
+  var ids = getPatients()
     .filter(function (x) {
       return patientSectionKey(x) === sec;
     })
@@ -179,7 +174,7 @@ export function movePatientByOffset(ev, id, dir) {
   var next = idx + dir;
   if (next < 0 || next >= ids.length) return;
   movePatientBefore(id, ids[next]);
-  saveState();
+  persistClinicalState();
   patientsBridge.renderPatientList();
 }
 
@@ -188,13 +183,13 @@ export function togglePatientPinned(ev, id) {
     ev.preventDefault();
     ev.stopPropagation();
   }
-  var p = patients.find(function (x) {
+  var p = getPatients().find(function (x) {
     return x.id === id;
   });
   if (!p) return;
   p.pinned = !p.pinned;
   if (p.pinned) p.archived = false;
-  saveState();
+  persistClinicalState();
   patientsBridge.renderPatientList();
 }
 
@@ -203,14 +198,14 @@ export function togglePatientArchived(ev, id) {
     ev.preventDefault();
     ev.stopPropagation();
   }
-  var p = patients.find(function (x) {
+  var p = getPatients().find(function (x) {
     return x.id === id;
   });
   if (!p) return;
   p.archived = !p.archived;
   if (p.archived) p.pinned = false;
   if (!p.archived) setArchivedSectionCollapsed(false);
-  saveState();
+  persistClinicalState();
   patientsBridge.renderPatientList();
   if (isCloudSyncActive()) {
     scheduleCloudSyncPush();

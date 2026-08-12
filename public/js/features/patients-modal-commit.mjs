@@ -1,14 +1,4 @@
-import {
-  patients,
-  notes,
-  indicaciones,
-  labHistory,
-  medRecetaByPatient,
-  medPharmProfileByPatient,
-  listadoProblemas,
-  vpoByPatient,
-  saveState,
-} from '../app-state.mjs';
+import { getPatients, getNotes, getIndicaciones, getLabHistory, getMedRecetaByPatient, getMedPharmProfileByPatient, getListadoProblemas, getVpoByPatient, persistClinicalState } from '../app-state.mjs';
 import { storage } from '../storage.js';
 import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
 import { stampPatientClinicalSala } from '../clinico-access.mjs';
@@ -112,7 +102,7 @@ function buildPatientDraft(nombre, registro, edad, sexo, area, servicio, cuarto,
 }
 
 function initPatientNotesAndIndicaciones(patientId, fecha, hora) {
-  notes[patientId] = {
+  getNotes()[patientId] = {
     fecha: fecha,
     hora: hora,
     interrogatorio: '',
@@ -128,7 +118,7 @@ function initPatientNotesAndIndicaciones(patientId, fecha, hora) {
     medico: '',
     profesor: '',
   };
-  indicaciones[patientId] = {
+  getIndicaciones()[patientId] = {
     fecha: fecha,
     hora: hora,
     medicos: '',
@@ -143,7 +133,7 @@ function initPatientNotesAndIndicaciones(patientId, fecha, hora) {
 
 function handleDuplicateDemoPatient(patient) {
   if (!patient.isDemo) return false;
-  var existingDemo = patients.find(function (x) {
+  var existingDemo = getPatients().find(function (x) {
     return x && x.id === patient.id;
   });
   if (!existingDemo) return false;
@@ -162,19 +152,19 @@ function handleDuplicateDemoPatient(patient) {
 }
 
 function resolveTourActivePatientId(patientId) {
-  if (!shouldSelectTourPrimaryAfterLabCommit(patientId, patients)) return patientId;
-  var perez = findTourDemoPatientByRegistro(patients, DEMO_REGISTRO);
+  if (!shouldSelectTourPrimaryAfterLabCommit(patientId, getPatients())) return patientId;
+  var perez = findTourDemoPatientByRegistro(getPatients(), DEMO_REGISTRO);
   return perez ? perez.id : patientId;
 }
 
 async function finalizeMobilePatientCommit(patient, fromBulkPreview) {
   var assignRes = await assignTeamFromRegistrationModal(patient.id);
   if (!assignRes?.ok) {
-    var dropIdx = patients.findIndex(function (p) {
+    var dropIdx = getPatients().findIndex(function (p) {
       return p && String(p.id) === String(patient.id);
     });
-    if (dropIdx >= 0) patients.splice(dropIdx, 1);
-    saveState();
+    if (dropIdx >= 0) getPatients().splice(dropIdx, 1);
+    persistClinicalState();
     rt.showToast(
       'En R+ Móvil solo ves pacientes asignados a tu equipo (p. ej. Dra. Melissa). Regístralos en la Mac o asígnalos allí.',
       'warn'
@@ -239,8 +229,8 @@ export function commitPatientFromModal(nombre, registro, edad, sexo, area, servi
   initPatientNotesAndIndicaciones(patient.id, ts.fecha, ts.hora);
   rt.applyDefaultsToNewPatient(patient.id);
   rt.applyDefaultsToNewIndicaciones(patient.id);
-  patients.push(patient);
-  saveState();
+  getPatients().push(patient);
+  persistClinicalState();
   var onSaved = pendingAddPatientSavedCallback;
   var fromBulkPreview = pendingAddPatientFromBulkPreview;
   clearPendingAddPatientCallbacks();
@@ -334,7 +324,7 @@ export function commitStubPatientFromLab(labPatient, opts) {
   var adoptResult = adoptTourPatientOnCommit(patient, registro);
   patient = adoptResult.patient;
   if (handleDuplicateDemoPatient(patient)) {
-    return patients.find(function (x) {
+    return getPatients().find(function (x) {
       return x && x.id === patient.id;
     }) || null;
   }
@@ -354,8 +344,8 @@ export function commitStubPatientFromLab(labPatient, opts) {
   initPatientNotesAndIndicaciones(patient.id, ts.fecha, ts.hora);
   rt.applyDefaultsToNewPatient(patient.id);
   rt.applyDefaultsToNewIndicaciones(patient.id);
-  patients.push(patient);
-  saveState();
+  getPatients().push(patient);
+  persistClinicalState();
   patientsBridge.renderPatientList();
   finalizeStubPatientSidebar(patient, opts && opts.teamId);
   return patient;
@@ -366,7 +356,7 @@ export function generatePatientId() {
 }
 
 export function buildPatientEntry(patientId) {
-  var patient = patients.find(function (p) {
+  var patient = getPatients().find(function (p) {
     return p.id === patientId;
   });
   if (!patient || patient.id === DEMO_PATIENT_ID) return null;
@@ -377,13 +367,13 @@ export function buildPatientEntry(patientId) {
   }
   return {
     patient: patientSnap,
-    note: notes[patientId] || {},
-    indicaciones: indicaciones[patientId] || {},
-    labHistory: Array.isArray(labHistory[patientId]) ? labHistory[patientId] : [],
-    medReceta: medRecetaByPatient[patientId] || null,
-    medPharmProfile: medPharmProfileByPatient[patientId] || null,
-    vpo: vpoByPatient[patientId] || null,
-    listadoProblemas: listadoProblemas[patientId] || null,
+    note: getNotes()[patientId] || {},
+    indicaciones: getIndicaciones()[patientId] || {},
+    labHistory: Array.isArray(getLabHistory()[patientId]) ? getLabHistory()[patientId] : [],
+    medReceta: getMedRecetaByPatient()[patientId] || null,
+    medPharmProfile: getMedPharmProfileByPatient()[patientId] || null,
+    vpo: getVpoByPatient()[patientId] || null,
+    listadoProblemas: getListadoProblemas()[patientId] || null,
     todos: storage.getTodos(patientId),
   };
 }
@@ -400,13 +390,13 @@ export function findPatientByRegistro(registro) {
   var r = String(registro || '').trim();
   if (!r) return null;
   var exact =
-    patients.find(function (p) {
+    getPatients().find(function (p) {
       return String(p.registro || '').trim() === r;
     }) || null;
   if (exact) return exact;
   var base = registroBase_(r);
   if (!base || base === r) return null;
-  var fuzzy = patients.filter(function (p) {
+  var fuzzy = getPatients().filter(function (p) {
     return registroBase_(p.registro) === base;
   });
   return fuzzy.length === 1 ? fuzzy[0] : null;
@@ -415,14 +405,14 @@ export function findPatientByRegistro(registro) {
 export function ensureUniquePatientName(base) {
   var desired = String(base || '').trim() || 'PACIENTE SIN NOMBRE';
   var normalized = desired.toUpperCase();
-  var has = patients.some(function (p) {
+  var has = getPatients().some(function (p) {
     return String(p.nombre || '').trim().toUpperCase() === normalized;
   });
   if (!has) return desired;
   var i = 2;
   while (i < 9999) {
     var candidate = desired + ' (' + i + ')';
-    var exists = patients.some(function (p) {
+    var exists = getPatients().some(function (p) {
       return String(p.nombre || '').trim().toUpperCase() === candidate.toUpperCase();
     });
     if (!exists) return candidate;

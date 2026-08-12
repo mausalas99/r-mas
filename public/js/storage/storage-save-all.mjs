@@ -11,6 +11,7 @@ import {
   setBlobCache,
 } from './storage-core.mjs';
 import { isDbMode, persistSaveAll, appStateFieldsToBlobs } from '../db-storage-bridge.mjs';
+import { isSessionScopedWebClient } from '../session-clinical-wipe.mjs';
 import { buildSaveAllPersistPayload } from './storage-save-all-helpers.mjs';
 
 function buildSaveAllPayloadInput(
@@ -72,7 +73,8 @@ export async function storageSaveAll(
   vpoByPatient,
   medPharmProfileByPatient
 ) {
-  if (skipClinicalLocalPersist()) {
+  // Web session: memory-only. Desktop DB: fall through to isDbMode() (no clinical LS writes).
+  if (isSessionScopedWebClient()) {
     return { ok: true, level: 'ok' };
   }
   const payload = buildSaveAllPayloadInput(
@@ -99,5 +101,8 @@ export async function storageSaveAll(
     return persistSaveAllToDb(dbFields, level);
   }
 
+  if (skipClinicalLocalPersist()) {
+    return { ok: true, level: level === 'warn' ? 'warn' : 'ok' };
+  }
   return persistSaveAllToLocalStorage(localWrites, level);
 }

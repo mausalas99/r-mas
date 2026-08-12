@@ -3476,6 +3476,19 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   grid-column: 2;
 }
 
+/* Empty Mis equipos → Explorar spans full width for horizontal team grid */
+#clinical-teams-backdrop
+  .clinical-teams-panel-body:has(.clinical-teams-section--joined .clinical-teams-empty--section)
+  > .clinical-teams-section--directory {
+  grid-column: 1 / -1;
+}
+
+/* With membership → Explorar arriba, Mis equipos abajo (full width) */
+#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--has-joined > .clinical-teams-section--joined,
+#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--has-joined > .clinical-teams-section--directory {
+  grid-column: 1 / -1;
+}
+
 #clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--pick-team {
   grid-template-columns: 1fr;
 }
@@ -3523,8 +3536,6 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
 #clinical-teams-backdrop
   .clinical-teams-panel-body.clinical-teams-panel-body--pick-team
   .clinical-teams-list--directory {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
   gap: 12px;
 }
 
@@ -3891,19 +3902,19 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   display: block;
 }
 
-.clinical-lan-users-table-wrap {
+.clinical-directory-users-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
 }
 
-.clinical-lan-users-backdrop {
-  z-index: var(--z-clinical-lan-users);
+.clinical-directory-users-backdrop {
+  z-index: var(--z-clinical-directory-users);
   background: color-mix(in oklab, var(--color-ink) 48%, transparent);
 }
 
-.clinical-lan-users-backdrop.open {
+.clinical-directory-users-backdrop.open {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3911,11 +3922,11 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
 }
 
 /* Directorio LAN debe quedar encima de Mi rotación cuando ambos están abiertos */
-body.clinical-lan-directory-open #clinical-lan-users-backdrop.clinical-lan-users-backdrop.open {
-  z-index: var(--z-clinical-lan-directory);
+body.clinical-directory-open #clinical-directory-users-backdrop.clinical-directory-users-backdrop.open {
+  z-index: var(--z-clinical-directory);
 }
 
-body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdrop.open {
+body.clinical-directory-open #clinical-teams-backdrop.clinical-teams-backdrop.open {
   z-index: var(--z-clinical-teams-lower);
 }
 
@@ -3959,7 +3970,7 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   font-size: 0.88rem;
 }
 
-#clinical-lan-users-backdrop .modal.clinical-lan-users-modal {
+#clinical-directory-users-backdrop .modal.clinical-directory-users-modal {
   width: min(96vw, 1240px);
   max-width: none;
   max-height: min(86dvh, calc(var(--app-height) - 48px));
@@ -3975,7 +3986,7 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   box-shadow: var(--shadow-md);
 }
 
-.clinical-lan-users-modal-head {
+.clinical-directory-users-modal-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3985,13 +3996,13 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   flex-shrink: 0;
 }
 
-.clinical-lan-users-modal-head h3 {
+.clinical-directory-users-modal-head h3 {
   margin: 0;
   font-size: 1.0625rem;
   font-weight: 700;
 }
 
-.clinical-lan-users-panel-body {
+.clinical-directory-users-panel-body {
   overflow-y: auto;
   overscroll-behavior: contain;
   flex: 1;
@@ -3999,49 +4010,49 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   padding: 18px 20px 22px;
 }
 
-.clinical-lan-users-modal-lead {
+.clinical-directory-users-modal-lead {
   margin: 0;
   font-size: 0.8125rem;
   line-height: 1.45;
   color: var(--text-muted);
 }
 
-.clinical-lan-directory-head {
+.clinical-directory-head {
   display: flex;
   flex-direction: column;
   gap: 12px;
   margin-bottom: 14px;
 }
 
-.clinical-lan-directory-head .clinical-lan-directory-refresh-btn {
+.clinical-directory-head .clinical-directory-refresh-btn {
   margin-left: 8px;
   vertical-align: baseline;
 }
 
-.clinical-lan-directory-toolbar {
+.clinical-directory-toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) repeat(3, minmax(0, 0.72fr)) auto;
   gap: 10px;
   align-items: end;
 }
 
-.clinical-lan-directory-search-wrap {
+.clinical-directory-search-wrap {
   min-width: 0;
 }
 
-.clinical-lan-directory-search {
+.clinical-directory-search {
   width: 100%;
   min-height: 36px;
 }
 
-.clinical-lan-directory-filter {
+.clinical-directory-filter {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
 }
 
-.clinical-lan-directory-filter-label {
+.clinical-directory-filter-label {
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -4049,7 +4060,7 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   color: var(--text-muted);
 }
 
-.clinical-lan-directory-match-count {
+.clinical-directory-match-count {
   font-size: 0.75rem;
   color: var(--text-muted);
   white-space: nowrap;
@@ -4058,28 +4069,28 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
 }
 
 @media (max-width: 900px) {
-  .clinical-lan-directory-toolbar {
+  .clinical-directory-toolbar {
     grid-template-columns: 1fr 1fr;
   }
 
-  .clinical-lan-directory-search-wrap {
+  .clinical-directory-search-wrap {
     grid-column: 1 / -1;
   }
 
-  .clinical-lan-directory-match-count {
+  .clinical-directory-match-count {
     grid-column: 1 / -1;
     justify-self: start;
     padding-bottom: 0;
   }
 }
 
-.clinical-lan-rank-groups {
+.clinical-directory-rank-groups {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.clinical-lan-rank-group {
+.clinical-directory-rank-group {
   border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
   border-radius: var(--radius-lg);
   background: color-mix(in oklab, var(--surface) 96%, var(--bg));
@@ -4088,12 +4099,12 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
 
 .clinical-lan-user-card[hidden],
 .clinical-lan-user-card--filtered-out,
-.clinical-lan-rank-group[hidden],
-.clinical-lan-rank-group--filtered-out {
+.clinical-directory-rank-group[hidden],
+.clinical-directory-rank-group--filtered-out {
   display: none !important;
 }
 
-.clinical-lan-rank-group-summary {
+.clinical-directory-rank-group-summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -4107,36 +4118,36 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   border-bottom: 1px solid transparent;
 }
 
-.clinical-lan-rank-group[open] .clinical-lan-rank-group-summary {
+.clinical-directory-rank-group[open] .clinical-directory-rank-group-summary {
   border-bottom-color: color-mix(in oklab, var(--border) 75%, transparent);
 }
 
-.clinical-lan-rank-group-summary::-webkit-details-marker {
+.clinical-directory-rank-group-summary::-webkit-details-marker {
   display: none;
 }
-.clinical-lan-rank-group-summary::marker {
+.clinical-directory-rank-group-summary::marker {
   content: '';
   font-size: 0;
 }
 
-.clinical-lan-rank-group-summary::before {
+.clinical-directory-rank-group-summary::before {
   content: '▸';
   margin-right: 8px;
   color: var(--text-muted);
   transition: transform 0.15s ease;
 }
 
-.clinical-lan-rank-group[open] .clinical-lan-rank-group-summary::before {
+.clinical-directory-rank-group[open] .clinical-directory-rank-group-summary::before {
   transform: rotate(90deg);
 }
 
-.clinical-lan-rank-group-title {
+.clinical-directory-rank-group-title {
   flex: 1;
   font-size: 0.875rem;
   letter-spacing: 0.03em;
 }
 
-.clinical-lan-rank-group-count {
+.clinical-directory-rank-group-count {
   min-width: 1.75rem;
   padding: 2px 8px;
   border-radius: var(--radius-pill);
@@ -4243,7 +4254,7 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   text-overflow: ellipsis;
 }
 
-.clinical-lan-users-placement--none {
+.clinical-directory-users-placement--none {
   font-style: italic;
 }
 
@@ -4255,14 +4266,14 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   min-width: 0;
 }
 
-.clinical-lan-user-card-assign .clinical-lan-assign-team,
-.clinical-lan-user-card-assign .clinical-lan-assign-cycle {
+.clinical-lan-user-card-assign .clinical-directory-assign-team,
+.clinical-lan-user-card-assign .clinical-directory-assign-cycle {
   width: 100%;
   min-height: 34px;
   font-size: 0.8125rem;
 }
 
-.clinical-lan-assign-actions {
+.clinical-directory-assign-actions {
   display: inline-flex;
   align-items: stretch;
   justify-content: flex-end;
@@ -4274,8 +4285,8 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   background: color-mix(in oklab, var(--surface) 65%, var(--bg));
 }
 
-.clinical-lan-assign-actions .clinical-lan-assign-btn,
-.clinical-lan-assign-actions .clinical-lan-delete-user-btn {
+.clinical-directory-assign-actions .clinical-directory-assign-btn,
+.clinical-directory-assign-actions .clinical-directory-delete-user-btn {
   min-height: 32px;
   padding-inline: 12px;
   white-space: nowrap;
@@ -4283,11 +4294,11 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   box-shadow: none;
 }
 
-.clinical-lan-assign-actions .clinical-lan-assign-btn + .clinical-lan-delete-user-btn {
+.clinical-directory-assign-actions .clinical-directory-assign-btn + .clinical-directory-delete-user-btn {
   border-left: 1px solid color-mix(in oklab, var(--border) 80%, var(--action));
 }
 
-.clinical-lan-delete-user-btn--placeholder {
+.clinical-directory-delete-user-btn--placeholder {
   visibility: hidden;
   pointer-events: none;
 }
@@ -4301,61 +4312,61 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
     grid-template-columns: 1fr 1fr;
   }
 
-  .clinical-lan-assign-actions {
+  .clinical-directory-assign-actions {
     grid-column: 1 / -1;
     justify-self: stretch;
     min-width: 0;
   }
 
-  .clinical-lan-assign-actions .clinical-lan-assign-btn,
-  .clinical-lan-assign-actions .clinical-lan-delete-user-btn {
+  .clinical-directory-assign-actions .clinical-directory-assign-btn,
+  .clinical-directory-assign-actions .clinical-directory-delete-user-btn {
     flex: 1 1 0;
   }
 }
 
-.clinical-lan-rank-group .clinical-lan-users-table-wrap {
+.clinical-directory-rank-group .clinical-directory-users-table-wrap {
   border: none;
   border-radius: 0;
   background: transparent;
 }
 
-.clinical-lan-users-table--assign {
+.clinical-directory-users-table--assign {
   width: 100%;
   table-layout: auto;
   min-width: 980px;
 }
 
-.clinical-lan-users-table--assign .clinical-lan-users-col-handle {
+.clinical-directory-users-table--assign .clinical-directory-users-col-handle {
   width: 1%;
   white-space: nowrap;
 }
 
-.clinical-lan-users-table--assign .clinical-lan-users-col-name {
+.clinical-directory-users-table--assign .clinical-directory-users-col-name {
   width: 14%;
   min-width: 128px;
 }
 
-.clinical-lan-users-table--assign .clinical-lan-users-col-placement {
+.clinical-directory-users-table--assign .clinical-directory-users-col-placement {
   width: 24%;
   min-width: 220px;
 }
 
-.clinical-lan-users-table--assign .clinical-lan-users-col-sala {
+.clinical-directory-users-table--assign .clinical-directory-users-col-sala {
   width: 1%;
   white-space: nowrap;
 }
 
-.clinical-lan-users-table--assign .clinical-lan-users-col-team {
+.clinical-directory-users-table--assign .clinical-directory-users-col-team {
   width: 22%;
   min-width: 180px;
 }
 
-.clinical-lan-users-table--assign .clinical-lan-users-col-cycle {
+.clinical-directory-users-table--assign .clinical-directory-users-col-cycle {
   width: 16%;
   min-width: 148px;
 }
 
-.clinical-lan-users-table--assign .clinical-lan-users-col-action {
+.clinical-directory-users-table--assign .clinical-directory-users-col-action {
   width: 1%;
   white-space: nowrap;
   text-align: right;
@@ -4365,20 +4376,20 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   vertical-align: middle;
 }
 
-.clinical-lan-users-handle {
+.clinical-directory-users-handle {
   font-size: 0.8125rem;
   font-weight: 600;
   white-space: nowrap;
 }
 
-.clinical-lan-users-handle--pending {
+.clinical-directory-users-handle--pending {
   font-weight: 500;
   color: var(--text-muted);
   font-style: italic;
 }
 
-.clinical-lan-users-name,
-.clinical-lan-users-placement {
+.clinical-directory-users-name,
+.clinical-directory-users-placement {
   display: block;
   max-width: 100%;
   white-space: nowrap;
@@ -4386,30 +4397,30 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   text-overflow: ellipsis;
 }
 
-.clinical-lan-users-name {
+.clinical-directory-users-name {
   font-size: 0.8125rem;
   color: var(--text);
 }
 
-.clinical-lan-users-placement {
+.clinical-directory-users-placement {
   font-size: 0.75rem;
   color: var(--text-muted);
 }
 
-.clinical-lan-users-table--assign .clinical-lan-assign-team,
-.clinical-lan-users-table--assign .clinical-lan-assign-cycle {
+.clinical-directory-users-table--assign .clinical-directory-assign-team,
+.clinical-directory-users-table--assign .clinical-directory-assign-cycle {
   width: 100%;
   min-height: 34px;
   font-size: 0.8125rem;
 }
 
-.clinical-lan-users-table--assign .clinical-lan-assign-btn {
+.clinical-directory-users-table--assign .clinical-directory-assign-btn {
   min-height: 34px;
   padding-inline: 12px;
   white-space: nowrap;
 }
 
-.clinical-lan-users-action-row {
+.clinical-directory-users-action-row {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -4417,7 +4428,7 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   justify-content: flex-end;
 }
 
-.clinical-lan-users-table--assign .clinical-lan-delete-user-btn {
+.clinical-directory-users-table--assign .clinical-directory-delete-user-btn {
   min-height: 34px;
   padding-inline: 10px;
   white-space: nowrap;
@@ -4432,21 +4443,21 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   grid-column: 1 / -1;
 }
 
-.clinical-lan-users-table {
+.clinical-directory-users-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.8125rem;
 }
 
-.clinical-lan-users-table th,
-.clinical-lan-users-table td {
+.clinical-directory-users-table th,
+.clinical-directory-users-table td {
   padding: 8px 10px;
   text-align: left;
   border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
   vertical-align: top;
 }
 
-.clinical-lan-users-table th {
+.clinical-directory-users-table th {
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -4455,7 +4466,7 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
 }
 
-.clinical-lan-users-table tbody tr:last-child td {
+.clinical-directory-users-table tbody tr:last-child td {
   border-bottom: none;
 }
 
@@ -4562,9 +4573,33 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
 }
 
 .clinical-teams-list {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16.5rem), 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.clinical-teams-list--directory {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr));
+}
+
+.clinical-teams-list .clinical-teams-card {
+  min-height: 0;
+}
+
+.clinical-teams-list .clinical-teams-card-top--directory {
   flex-direction: column;
-  gap: 14px;
+  align-items: stretch;
+}
+
+.clinical-teams-list .clinical-teams-card-actions {
+  max-width: none;
+  justify-content: flex-start;
+  padding-top: 8px;
+}
+
+.clinical-teams-list .clinical-teams-manage-actions {
+  justify-content: flex-start;
 }
 
 .clinical-teams-card {
@@ -5152,15 +5187,15 @@ html.dark .clinical-teams-section--directory {
   background: color-mix(in oklab, var(--surface) 96%, var(--color-ink));
 }
 
-html.dark #clinical-lan-users-backdrop .modal.clinical-lan-users-modal {
+html.dark #clinical-directory-users-backdrop .modal.clinical-directory-users-modal {
   border-color: color-mix(in oklab, var(--border) 120%, transparent);
 }
 
-html.dark .clinical-lan-rank-group {
+html.dark .clinical-directory-rank-group {
   background: color-mix(in oklab, var(--surface) 94%, var(--color-ink));
 }
 
-html.dark .clinical-lan-rank-group-summary {
+html.dark .clinical-directory-rank-group-summary {
   background: color-mix(in oklab, var(--action) 8%, var(--surface));
 }
 
@@ -6117,7 +6152,7 @@ html.ui-density-guardia #btn-clinical-lan-connect {
 #inherit-patients-backdrop.modal-backdrop.open,
 #rotation-rejoin-backdrop.modal-backdrop.open,
 #guardia-rotation-config-backdrop.modal-backdrop.open {
-  z-index: var(--z-clinical-lan-users);
+  z-index: var(--z-clinical-directory-users);
 }
 
 .rotation-rejoin-modal {

@@ -1,4 +1,4 @@
-import { medRecetaByPatient } from "../app-state.mjs";
+import { getMedRecetaByPatient } from "../app-state.mjs";
 import { classifyMedicationSoapCategory } from "../med-receta-core.mjs";
 import { getMedSubview } from "./med-pharm-profile-panel.mjs";
 import { rt, medOutputTab } from "./medications-runtime-state.mjs";
@@ -13,7 +13,7 @@ import {
 } from "../insulin-prandial-display.mjs";
 
 export function medRecetaItemById(activeId, itemId) {
-  var block = activeId ? medRecetaByPatient[activeId] : null;
+  var block = activeId ? getMedRecetaByPatient()[activeId] : null;
   if (!block || !block.items) return null;
   var sid = String(itemId || "");
   return (
@@ -25,7 +25,7 @@ export function medRecetaItemById(activeId, itemId) {
 
 export function buildMedPanelCacheKey(activeId) {
   if (!activeId) return "";
-  var block = medRecetaByPatient[activeId];
+  var block = getMedRecetaByPatient()[activeId];
   if (!block || ((!block.items || !block.items.length) && (!block.dietas || !block.dietas.length))) {
     return String(activeId) + "|empty|" + medOutputTab;
   }
@@ -83,7 +83,7 @@ function syncRowSoapCheckbox(row, activeId, itemId) {
 }
 
 function patchInsulinRescateRowSoapUi(activeId, listEl) {
-  var block = medRecetaByPatient[activeId];
+  var block = getMedRecetaByPatient()[activeId];
   var items = block && block.items ? block.items : [];
   var row = listEl.querySelector('[data-med-item-id="' + INSULIN_RESCATE_GROUP_ID + '"]');
   if (!row) return false;
@@ -97,7 +97,7 @@ function patchInsulinRescateRowSoapUi(activeId, listEl) {
 }
 
 function patchInsulinPrandialRowSoapUi(activeId, listEl) {
-  var block = medRecetaByPatient[activeId];
+  var block = getMedRecetaByPatient()[activeId];
   var items = block && block.items ? block.items : [];
   var row = listEl.querySelector('[data-med-item-id="' + INSULIN_PRANDIAL_GROUP_ID + '"]');
   if (!row) return false;

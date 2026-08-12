@@ -1,4 +1,4 @@
-import { notes, patients } from '../app-state.mjs';
+import { getPatients, getNotes } from '../app-state.mjs';
 import { isModeSala } from '../mode-features.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { ensureParsedLabHistoryCached } from '../lab-history-set.mjs';
@@ -134,7 +134,7 @@ function buildRondaLabsFromHistory(patientId) {
 }
 
 function buildRondaLabsFromNote(patientId) {
-  var n = notes[patientId];
+  var n = getNotes()[patientId];
   if (!n || !n.estudios || !String(n.estudios).trim()) return '';
   var lines = String(n.estudios)
     .split('\n')
@@ -246,7 +246,7 @@ export function renderRoundOverviewPanels() {
   var titleEl = document.getElementById('patient-ronda-patient-label');
   var metaEl = document.getElementById('patient-ronda-patient-meta');
   var aid = rt.getActiveId();
-  var p = patients.find(function (x) {
+  var p = getPatients().find(function (x) {
     return String(x.id) === String(aid);
   });
   if (titleEl) titleEl.textContent = p ? p.nombre || 'Paciente' : 'Paciente';

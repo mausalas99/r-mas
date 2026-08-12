@@ -166,13 +166,13 @@ export async function handleClinicalRegistrationSubmit(deps) {
   }
 
   var {
-    assertLanRoomForUsernameRegister,
-    flushClinicalProfileToLan,
-    LAN_PROFILE_PUSH_FAILED_MSG,
-    isBenignLanPushSkipCode,
-    notifyLanProfilePushResult,
+    assertRoomForUsernameRegister,
+    flushClinicalProfileToCloud,
+    PROFILE_PUSH_FAILED_MSG,
+    isBenignPushSkipCode,
+    notifyProfilePushResult,
   } = await import('../clinical-profile-cloud-stubs.mjs');
-  var lanRoom = await assertLanRoomForUsernameRegister({ sala });
+  var lanRoom = await assertRoomForUsernameRegister({ sala });
 
   try {
     var savedUserId = await persistClinicalUserFromApi_(
@@ -216,14 +216,14 @@ export async function handleClinicalRegistrationSubmit(deps) {
 
   void (async () => {
     await connectShiftPinIfNeeded_(fields.shiftPin, sala, deps.runtime);
-    var lanPush = await flushClinicalProfileToLan({ sala, roomId: lanRoom.roomId });
-    notifyLanProfilePushResult(lanPush, (msg, kind) => deps.runtime.showToast(msg, kind));
+    var lanPush = await flushClinicalProfileToCloud({ sala, roomId: lanRoom.roomId });
+    notifyProfilePushResult(lanPush, (msg, kind) => deps.runtime.showToast(msg, kind));
     if (
       !lanPush.ok &&
-      !isBenignLanPushSkipCode(lanPush.code) &&
+      !isBenignPushSkipCode(lanPush.code) &&
       !(lanPush.channels && lanPush.channels.outbox)
     ) {
-      deps.runtime.showToast(LAN_PROFILE_PUSH_FAILED_MSG, 'warning');
+      deps.runtime.showToast(PROFILE_PUSH_FAILED_MSG, 'warning');
     }
   })();
 }

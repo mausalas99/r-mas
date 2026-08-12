@@ -11,7 +11,7 @@ import {
   unassignedOtrosSoapItems,
   incrementMedItemsDiaTratamiento,
 } from "../med-receta-core.mjs";
-import { medRecetaByPatient, medNotaSelectionByPatient, notes, patients, saveState } from "../app-state.mjs";
+import { getPatients, getMedRecetaByPatient, getMedNotaSelectionByPatient, getNotes, persistClinicalState } from "../app-state.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { isPaseMode } from "./chrome.mjs";
 import { mergeSoapMedField, openSOAPModalDirect } from "./soap-estado.mjs";
@@ -55,13 +55,13 @@ import { renderMedNotaFooter } from "./medications-soap-footer.mjs";
 
 export function toggleMedRecetaSuspendido(itemId, suspended) {
   var activeId = rt.getActiveId();
-  if (!activeId || !medRecetaByPatient[activeId] || !medRecetaByPatient[activeId].items) return;
-  var it = medRecetaByPatient[activeId].items.find(function (x) {
+  if (!activeId || !getMedRecetaByPatient()[activeId] || !getMedRecetaByPatient()[activeId].items) return;
+  var it = getMedRecetaByPatient()[activeId].items.find(function (x) {
     return String(x.id) === String(itemId);
   });
   if (!it) return;
   it.suspendido = !!suspended;
-  saveState();
+  persistClinicalState();
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
   renderMedRecetaPanel();
@@ -80,7 +80,7 @@ export function toggleMedRecetaParaNota(itemId, selected) {
 }
 
 function toggleInsulinRescateGroupSelection(activeId, selected) {
-  var block = medRecetaByPatient[activeId];
+  var block = getMedRecetaByPatient()[activeId];
   var items = block && Array.isArray(block.items) ? block.items : [];
   var m = getMedNotaSelMap(activeId);
   insulinRescateItemsFromList(items).forEach(function (it) {
@@ -92,7 +92,7 @@ function toggleInsulinRescateGroupSelection(activeId, selected) {
 }
 
 function toggleInsulinPrandialGroupSelection(activeId, selected) {
-  var block = medRecetaByPatient[activeId];
+  var block = getMedRecetaByPatient()[activeId];
   var items = block && Array.isArray(block.items) ? block.items : [];
   var m = getMedNotaSelMap(activeId);
   insulinPrandialItemsFromList(items).forEach(function (it) {
@@ -114,11 +114,11 @@ export function toggleMedRecetaInsulinRescateParaNota(selected) {
 
 export function toggleMedRecetaInsulinRescateSuspendido(suspended) {
   var activeId = rt.getActiveId();
-  if (!activeId || !medRecetaByPatient[activeId] || !medRecetaByPatient[activeId].items) return;
-  insulinRescateItemsFromList(medRecetaByPatient[activeId].items).forEach(function (it) {
+  if (!activeId || !getMedRecetaByPatient()[activeId] || !getMedRecetaByPatient()[activeId].items) return;
+  insulinRescateItemsFromList(getMedRecetaByPatient()[activeId].items).forEach(function (it) {
     it.suspendido = !!suspended;
   });
-  saveState();
+  persistClinicalState();
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
   renderMedRecetaPanel();
@@ -135,11 +135,11 @@ export function toggleMedRecetaInsulinPrandialParaNota(selected) {
 
 export function toggleMedRecetaInsulinPrandialSuspendido(suspended) {
   var activeId = rt.getActiveId();
-  if (!activeId || !medRecetaByPatient[activeId] || !medRecetaByPatient[activeId].items) return;
-  insulinPrandialItemsFromList(medRecetaByPatient[activeId].items).forEach(function (it) {
+  if (!activeId || !getMedRecetaByPatient()[activeId] || !getMedRecetaByPatient()[activeId].items) return;
+  insulinPrandialItemsFromList(getMedRecetaByPatient()[activeId].items).forEach(function (it) {
     it.suspendido = !!suspended;
   });
-  saveState();
+  persistClinicalState();
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
   renderMedRecetaPanel();
@@ -147,15 +147,15 @@ export function toggleMedRecetaInsulinPrandialSuspendido(suspended) {
 
 export function setMedRecetaSoapCategory(itemId, category) {
   var activeId = rt.getActiveId();
-  if (!activeId || !medRecetaByPatient[activeId] || !medRecetaByPatient[activeId].items) return;
-  var it = medRecetaByPatient[activeId].items.find(function (x) {
+  if (!activeId || !getMedRecetaByPatient()[activeId] || !getMedRecetaByPatient()[activeId].items) return;
+  var it = getMedRecetaByPatient()[activeId].items.find(function (x) {
     return String(x.id) === String(itemId);
   });
   if (!it) return;
   var cat = String(category || "").trim();
   if (!cat || SOAP_DESTINATION_KEYS.indexOf(cat) < 0) delete it.soapCatOverride;
   else it.soapCatOverride = cat;
-  saveState();
+  persistClinicalState();
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
   bustMedPanelCache();
@@ -195,21 +195,21 @@ export function limpiarManejoActual() {
     medToast("Selecciona un paciente", "error");
     return;
   }
-  var block = medRecetaByPatient[activeId];
+  var block = getMedRecetaByPatient()[activeId];
   if (!hasMedRecetaContent(block)) {
     medToast("No hay manejo importado", "error");
     return;
   }
-  delete medRecetaByPatient[activeId];
-  medNotaSelectionByPatient[activeId] = {};
+  delete getMedRecetaByPatient()[activeId];
+  getMedNotaSelectionByPatient()[activeId] = {};
   var ta = document.getElementById("med-input");
   if (ta) ta.value = "";
   discardMedMonitoreoProposals(
-    patients.find(function (p) {
+    getPatients().find(function (p) {
       return String(p.id) === String(activeId);
     })
   );
-  saveState();
+  persistClinicalState();
   bustMedPanelCache();
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
@@ -226,7 +226,7 @@ export function mediAnadirATratamiento() {
     medToast("Selecciona un paciente", "error");
     return;
   }
-  var block = medRecetaByPatient[activeId];
+  var block = getMedRecetaByPatient()[activeId];
   if (!block || !block.items || !block.items.length) {
     medToast("No hay medicamentos en la receta", "error");
     return;
@@ -241,26 +241,26 @@ export function mediAnadirATratamiento() {
       );
     })
     .map(function (it) {
-      var recBlock = medRecetaByPatient[activeId];
+      var recBlock = getMedRecetaByPatient()[activeId];
       return formatMedicationEgresoLine(it, manejoDiaOpts(recBlock && recBlock.fechaActualizacion));
     });
   if (!lines.length) {
     medToast('Marca «SOAP» en al menos un medicamento activo', "error");
     return;
   }
-  if (!notes[activeId]) notes[activeId] = {};
-  var tx = notes[activeId].tratamiento;
+  if (!getNotes()[activeId]) getNotes()[activeId] = {};
+  var tx = getNotes()[activeId].tratamiento;
   if (!Array.isArray(tx) || !tx.length) tx = [""];
   var firstEmpty = tx.length === 1 && !(tx[0] || "").trim();
   if (firstEmpty) {
-    notes[activeId].tratamiento = lines.slice();
+    getNotes()[activeId].tratamiento = lines.slice();
   } else {
     lines.forEach(function (L) {
       tx.push(L);
     });
-    notes[activeId].tratamiento = tx;
+    getNotes()[activeId].tratamiento = tx;
   }
-  saveState();
+  persistClinicalState();
   openPaseSectionInNormal("expediente");
   renderNoteForm();
   medToast(lines.length + " línea(s) añadidas a Tratamiento", "success");
@@ -268,7 +268,7 @@ export function mediAnadirATratamiento() {
 
 
 function mediLlevarASOAPToEstadoActual(activeId, buckets) {
-  var patient = patients.find(function (p) {
+  var patient = getPatients().find(function (p) {
     return p.id === activeId;
   });
   if (!patient) {
@@ -282,7 +282,7 @@ function mediLlevarASOAPToEstadoActual(activeId, buckets) {
     }
   });
   applyRecetaProposal(patient.monitoreo, buckets);
-  saveState();
+  persistClinicalState();
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
   if (typeof rt.navigateToEstadoActualPanel === "function") {
@@ -317,7 +317,7 @@ export function mediLlevarASOAP() {
     medToast("Selecciona un paciente", "error");
     return;
   }
-  var block = medRecetaByPatient[activeId];
+  var block = getMedRecetaByPatient()[activeId];
   var sel = getMedNotaSelMap(activeId);
   var hasReceta =
     block &&
@@ -382,9 +382,9 @@ function buildRecetaProcessToast(parsed) {
 }
 
 function applyDietFromParsedReceta(activeId) {
-  var block = medRecetaByPatient[activeId];
+  var block = getMedRecetaByPatient()[activeId];
   if (!block || !block.dietas || !block.dietas.length) return;
-  var patient = patients.find(function (p) {
+  var patient = getPatients().find(function (p) {
     return String(p.id) === String(activeId);
   });
   if (!patient) return;
@@ -393,18 +393,18 @@ function applyDietFromParsedReceta(activeId) {
 }
 
 function syncEaMedsFromProcessedReceta(activeId) {
-  var patient = patients.find(function (p) {
+  var patient = getPatients().find(function (p) {
     return String(p.id) === String(activeId);
   });
   if (!patient) return;
   ensureMonitoreo(patient);
   clearRecetaProposalDismissed(patient.monitoreo);
-  var block = medRecetaByPatient[activeId];
+  var block = getMedRecetaByPatient()[activeId];
   var items = block && Array.isArray(block.items) ? block.items : [];
   var fecha = block && block.fechaActualizacion ? String(block.fechaActualizacion).trim() : '';
   var monitoreo = patient.monitoreo;
   pruneEstadoClinicoMedsFromReceta(monitoreo, items, classifyMedicationSoapCategory, fecha);
-  var sel = medNotaSelectionByPatient[activeId] || {};
+  var sel = getMedNotaSelectionByPatient()[activeId] || {};
   applyRecetaProposal(monitoreo, bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory));
   syncMonitoreoInsulinPumpFromReceta(monitoreo, block);
 }
@@ -418,7 +418,7 @@ function commitProcessedReceta(activeId, raw, parsed) {
     "/" +
     today.getFullYear();
   var fecha = resolveFechaActualizacion(parsed.fechas, fallback);
-  medRecetaByPatient[activeId] = {
+  getMedRecetaByPatient()[activeId] = {
     fechaActualizacion: fecha,
     items: parsed.items,
     dietas: parsed.dietas,
@@ -428,11 +428,11 @@ function commitProcessedReceta(activeId, raw, parsed) {
   parsed.items.forEach(function (it) {
     if (shouldAutoSelectSoap(it)) sel[it.id] = true;
   });
-  medNotaSelectionByPatient[activeId] = sel;
+  getMedNotaSelectionByPatient()[activeId] = sel;
   applyDietFromParsedReceta(activeId);
   syncEaMedsFromProcessedReceta(activeId);
-  saveState();
-  onRecetaMergedToProfile(activeId, medRecetaByPatient[activeId]);
+  persistClinicalState();
+  onRecetaMergedToProfile(activeId, getMedRecetaByPatient()[activeId]);
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
   renderMedRecetaPanel();
@@ -477,7 +477,7 @@ export function incrementMedDiaTratamiento() {
     medToast("Selecciona un paciente primero", "error");
     return;
   }
-  var block = medRecetaByPatient[activeId];
+  var block = getMedRecetaByPatient()[activeId];
   if (!block || !block.items || !block.items.length) {
     medToast("No hay medicamentos procesados", "error");
     return;
@@ -488,7 +488,7 @@ export function incrementMedDiaTratamiento() {
     return;
   }
   block.items = res.items;
-  saveState();
+  persistClinicalState();
   renderMedRecetaPanel();
   medToast(
     res.count === 1
@@ -500,11 +500,11 @@ export function incrementMedDiaTratamiento() {
 
 export function copiarMedicamentosAlPortapapeles() {
   var activeId = rt.getActiveId();
-  if (!activeId || !medRecetaByPatient[activeId]) {
+  if (!activeId || !getMedRecetaByPatient()[activeId]) {
     medToast("No hay medicamentos procesados", "error");
     return;
   }
-  var block = medRecetaByPatient[activeId];
+  var block = getMedRecetaByPatient()[activeId];
   var items = block.items || [];
   var diaOpts = manejoDiaOpts(block.fechaActualizacion);
   var text = buildMedRecetaCopyText(items, diaOpts);

@@ -127,6 +127,7 @@
 <link rel="stylesheet" href="/styles/cloud-sync.css">
 <link rel="stylesheet" href="/styles/modals.css">
 <link rel="stylesheet" href="/styles/motion.css">
+<link rel="stylesheet" href="/styles/ui-patterns.css">
 <link rel="stylesheet" href="/styles/skeleton.css">
 <link rel="stylesheet" href="/styles/components.css">
 <link rel="stylesheet" href="/styles/workbench-tokens.css">
@@ -146,8 +147,6 @@
 <!-- @include partials/modals/root.html -->
 <script src="/js/clinical-onboarding-boot-progress.js"></script>
 <script src="/js/clinical-onboarding-early-boot.js"></script>
-<script src="/vendor/sortable.min.js"></script>
-<script src="/vendor/chart.umd.min.js"></script>
-<script type="module" src="/js/app.bundle.mjs"></script>
+<!-- app.bundle + vendors injected by clinical-onboarding-early-boot.js after sync-mode choice (or immediately if skipped) -->
 </body>
 </html>

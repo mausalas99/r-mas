@@ -179,18 +179,18 @@ function foldClinicalOpsFromOps(ops) {
 
 /** @param {unknown} clinicalOps */
 async function applyClinicalOpsSnapshot(clinicalOps) {
-  const { isClinicalOpsLanAvailable, applyClinicalOpsLanSnapshot } = await import(
+  const { isClinicalOpsSyncAvailable, applyClinicalOpsSnapshot } = await import(
     '../../clinical-ops-sync.mjs'
   );
-  if (isClinicalOpsLanAvailable()) {
-    await applyClinicalOpsLanSnapshot(clinicalOps);
+  if (isClinicalOpsSyncAvailable()) {
+    await applyClinicalOpsSnapshot(clinicalOps);
     return;
   }
   // iPad/PWA: no SQLCipher — hydrate session scope from the snapshot directly.
-  const { applyClinicalScopeFromLanOpsSnapshot } = await import(
+  const { applyClinicalScopeFromOpsSnapshot } = await import(
     '../../clinical-access-runtime.mjs'
   );
-  applyClinicalScopeFromLanOpsSnapshot(clinicalOps);
+  applyClinicalScopeFromOpsSnapshot(clinicalOps);
 }
 
 /** @param {string} sala */

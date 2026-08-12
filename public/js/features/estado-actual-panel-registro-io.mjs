@@ -9,7 +9,7 @@ import {
 import { patientHasInsulinRescatesInReceta } from './estado-actual-glu-rescue.mjs';
 import { patientHasInsulinPumpInReceta } from '../insulin-pump-some-detect.mjs';
 import { insulinPumpAlgorithmFromMonitoreo } from './estado-actual-insulin-pump.mjs';
-import { medRecetaByPatient } from '../app-state.mjs';
+import { getMedRecetaByPatient } from '../app-state.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
 
 /**
@@ -18,7 +18,7 @@ import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
 export function syncEaRegistroInsulinRescateFlag(form) {
   if (!form) return;
   var activeId = getEaPanelRuntime().getActiveId();
-  var block = activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null;
+  var block = activeId && getMedRecetaByPatient() ? getMedRecetaByPatient()[activeId] : null;
   var hasRescates = patientHasInsulinRescatesInReceta(block);
   form.classList.toggle('ea-form--no-insulin-rescates', !hasRescates);
 }
@@ -31,7 +31,7 @@ export function syncEaRegistroInsulinRescateFlag(form) {
 export function syncEaRegistroInsulinPumpFlag(form, monitoreo) {
   if (!form) return;
   var activeId = getEaPanelRuntime().getActiveId();
-  var block = activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null;
+  var block = activeId && getMedRecetaByPatient() ? getMedRecetaByPatient()[activeId] : null;
   var alg = insulinPumpAlgorithmFromMonitoreo(monitoreo);
   var hasPump = alg != null || patientHasInsulinPumpInReceta(block);
   form.classList.toggle('ea-form--insulin-pump-some', hasPump);

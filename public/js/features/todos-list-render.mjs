@@ -156,7 +156,41 @@ function buildTodoRow(t) {
   del.title = 'Eliminar';
   del.addEventListener('click', function () { deleteTodo(t.id); });
   actions.appendChild(del);
+  if (t.completed) {
+    var pill = document.createElement('span');
+    pill.className = 'todo-row-status-pill todo-row-status-pill--done';
+    pill.textContent = 'Hecho';
+    actions.insertBefore(pill, del);
+  }
+  var expand = document.createElement('button');
+  expand.type = 'button';
+  expand.className = 'todo-row-expand';
+  expand.setAttribute('aria-expanded', 'false');
+  expand.setAttribute('aria-label', 'Detalle del pendiente');
+  expand.textContent = '▾';
+  expand.addEventListener('click', function (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    var detail = row.querySelector('.todo-row-detail');
+    if (!detail) return;
+    var open = detail.classList.toggle('is-open');
+    expand.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  actions.appendChild(expand);
   row.appendChild(actions);
+
+  var detail = document.createElement('div');
+  detail.className = 'todo-row-detail';
+  var inner = document.createElement('div');
+  inner.className = 'todo-row-detail-inner';
+  var bits = [];
+  if (t.due) bits.push('Vence: ' + String(t.due));
+  bits.push(t.completed ? 'Estado: completado' : 'Estado: pendiente');
+  if (isTodoOverdue(t)) bits.push('Atrasado');
+  if (isHandoffTodo(t, getClinicalUsername())) bits.push('De entrega');
+  inner.textContent = bits.join(' · ');
+  detail.appendChild(inner);
+  row.appendChild(detail);
 
   return row;
 }
@@ -177,10 +211,11 @@ function appendTodoFilterBar(container) {
   var allTodos = storage.getTodos(aid());
   var handoffCount = countHandoffTodos(allTodos, getClinicalUsername());
   var filters = [
-    { id: TODO_FILTER_ALL, label: 'Todos' },
+    { id: TODO_FILTER_ALL, label: 'Todos', count: allTodos.length },
     {
       id: TODO_FILTER_HANDOFF,
-      label: handoffCount ? 'Entrega (' + handoffCount + ')' : 'Entrega',
+      label: 'Entrega',
+      count: handoffCount,
     },
   ];
 
@@ -191,7 +226,13 @@ function appendTodoFilterBar(container) {
     btn.dataset.filter = f.id;
     btn.setAttribute('role', 'tab');
     btn.setAttribute('aria-selected', listFilter === f.id ? 'true' : 'false');
-    btn.textContent = f.label;
+    btn.appendChild(document.createTextNode(f.label));
+    if (f.count != null) {
+      var countEl = document.createElement('span');
+      countEl.className = 'todo-filter-count';
+      countEl.textContent = String(f.count);
+      btn.appendChild(countEl);
+    }
     btn.addEventListener('click', function () {
       setListFilter(f.id);
       renderTodoListSection(container, null);

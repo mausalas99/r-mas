@@ -3,7 +3,7 @@ import {
   sortLabHistoryChronological,
   parseFechaLabToMs,
 } from '../tend-core.mjs';
-import { patients, labHistory } from '../app-state.mjs';
+import { getPatients, getLabHistory } from '../app-state.mjs';
 import { bumpLabHistoryRevision } from '../lab-history-cache.mjs';
 import { findExactDuplicateLabGroups, compareLabSetIdForDedupe } from '../lab-history-auto-store-core.mjs';
 import { resLabsHasGasometria } from '../lab-history-format.mjs';
@@ -113,16 +113,16 @@ function applyLabDedupeFromChecklist(mapByPatient) {
   var removedTotal = 0;
   Object.keys(mapByPatient).forEach(function (pid) {
     var ids = mapByPatient[pid];
-    if (!ids || !ids.length || !labHistory[pid]) return;
+    if (!ids || !ids.length || !getLabHistory()[pid]) return;
     var idSet = new Set(ids.map(String));
-    var before = labHistory[pid].length;
-    labHistory[pid] = labHistory[pid].filter(function (s) {
+    var before = getLabHistory()[pid].length;
+    getLabHistory()[pid] = getLabHistory()[pid].filter(function (s) {
       return !idSet.has(String(s.id));
     });
-    if (!labHistory[pid].length) delete labHistory[pid];
+    if (!getLabHistory()[pid].length) delete getLabHistory()[pid];
     rt.rebuildEstudiosFromLabHistory(pid);
-    removedTotal += before - (labHistory[pid] ? labHistory[pid].length : 0);
-    if (before !== (labHistory[pid] ? labHistory[pid].length : 0)) bumpLabHistoryRevision(pid);
+    removedTotal += before - (getLabHistory()[pid] ? getLabHistory()[pid].length : 0);
+    if (before !== (getLabHistory()[pid] ? getLabHistory()[pid].length : 0)) bumpLabHistoryRevision(pid);
   });
   return removedTotal;
 }
@@ -148,7 +148,7 @@ function openLabHistoryDedupeReview(scope) {
       rt.showToast('No hay duplicados ni coincidencias por fecha/valores en este paciente', 'success');
       return;
     }
-    var p = patients.find(function (x) {
+    var p = getPatients().find(function (x) {
       return x.id === rt.getActiveId();
     });
     showLabDedupeChecklistModal([
@@ -168,7 +168,7 @@ function openLabHistoryDedupeReview(scope) {
 }
 
 function runLabDedupeReviewAllPatients() {
-  var list = patients.filter(function (p) {
+  var list = getPatients().filter(function (p) {
     return p && !p.isDemo;
   });
   if (!list.length) {
@@ -289,7 +289,7 @@ function mergeLabHistorySetsCluster(patientId, setsToMerge, tipoGrupo) {
 
 function executeLabConsolidationMergeJobs(patientId, jobs) {
   var out = { merged: 0, removedIds: [], keeperIds: [] };
-  if (!patientId || !jobs || !jobs.length || !labHistory[patientId]) return out;
+  if (!patientId || !jobs || !jobs.length || !getLabHistory()[patientId]) return out;
 
   var todo = [];
   var keeperIds = [];
@@ -310,10 +310,10 @@ function executeLabConsolidationMergeJobs(patientId, jobs) {
   if (!todo.length) return out;
 
   var idRemove = new Set(todo);
-  labHistory[patientId] = labHistory[patientId].filter(function (s) {
+  getLabHistory()[patientId] = getLabHistory()[patientId].filter(function (s) {
     return !idRemove.has(String(s.id));
   });
-  if (!labHistory[patientId].length) delete labHistory[patientId];
+  if (!getLabHistory()[patientId].length) delete getLabHistory()[patientId];
   bumpLabHistoryRevision(patientId);
   clearLabHistoryDateSelectCache();
   out.merged = todo.length;
@@ -335,7 +335,7 @@ function dayLabelFromDayKey(dayKey) {
 
 function buildConsolidationCandidateRows(patientId) {
   rt.ensureParsedLabHistory(patientId);
-  var sets = labHistory[patientId] ? labHistory[patientId].slice() : [];
+  var sets = getLabHistory()[patientId] ? getLabHistory()[patientId].slice() : [];
   return listLabConsolidationCandidates(sets, labSetDayKey, labSetTipo).map(function (set) {
     var tipo = labSetTipo(set);
     return {
@@ -352,7 +352,7 @@ function buildConsolidationCandidateRows(patientId) {
 
 function setsByIdForPatient(patientId) {
   var map = Object.create(null);
-  (labHistory[patientId] || []).forEach(function (set) {
+  (getLabHistory()[patientId] || []).forEach(function (set) {
     if (set && set.id != null) map[String(set.id)] = set;
   });
   return map;
@@ -360,14 +360,14 @@ function setsByIdForPatient(patientId) {
 
 /** Auto (import): misma hora primero, luego ventana ≤2 h. Manual UI: grupos del usuario. */
 function runLabConsolidationForPatient(patientId, outlierGroupKeys) {
-  if (!patientId || !labHistory[patientId] || labHistory[patientId].length < 2) {
+  if (!patientId || !getLabHistory()[patientId] || getLabHistory()[patientId].length < 2) {
     return { merged: 0, removedIds: [], keeperIds: [] };
   }
   rt.ensureParsedLabHistory(patientId);
-  var sets = labHistory[patientId].slice();
+  var sets = getLabHistory()[patientId].slice();
   var sameDtJobs = buildSameDateTimeLabMergeJobs(sets, labSetTipo, labSetIsGasometriaOnly);
   var sameDtResult = executeLabConsolidationMergeJobs(patientId, sameDtJobs);
-  sets = labHistory[patientId] ? labHistory[patientId].slice() : [];
+  sets = getLabHistory()[patientId] ? getLabHistory()[patientId].slice() : [];
   var jobs =
     sets.length >= 2
       ? buildLabConsolidationMergeJobs(
@@ -386,7 +386,7 @@ function runLabConsolidationForPatient(patientId, outlierGroupKeys) {
 }
 
 function runManualLabConsolidationForPatient(patientId, groups) {
-  if (!patientId || !labHistory[patientId] || !groups || !groups.length) {
+  if (!patientId || !getLabHistory()[patientId] || !groups || !groups.length) {
     return { merged: 0, removedIds: [], keeperIds: [] };
   }
   rt.ensureParsedLabHistory(patientId);
@@ -454,7 +454,7 @@ function consolidateLabHistoryByDayAndTipo() {
     return;
   }
   var patientId = rt.getActiveId();
-  var list = labHistory[patientId];
+  var list = getLabHistory()[patientId];
   if (!list || list.length < 2) {
     rt.showToast('Se necesitan al menos 2 conjuntos en el historial', 'error');
     return;

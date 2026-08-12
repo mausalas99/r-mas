@@ -1,5 +1,5 @@
 // Shared helpers — toast, patient row, modal element
-import { patients } from '../../app-state.mjs';
+import { getPatients } from '../../app-state.mjs';
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 
 /** @param {object[]} users */
@@ -78,7 +78,7 @@ function resolveEntregaPatientRow(patientId) {
   const id = String(patientId || '');
   if (!id) return null;
   const row =
-    (patients || []).find((p) => String(p.id) === id) ||
+    (getPatients() || []).find((p) => String(p.id) === id) ||
     (clinicalSessionContext.scopeContext?.patients || []).find(
       (p) => String(p.id || p.patient_id) === id
     ) ||

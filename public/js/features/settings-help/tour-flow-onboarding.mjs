@@ -11,7 +11,7 @@ import {
 } from '../../tour-demo-patient.mjs';
 import { renderPatientList, selectPatient } from '../patients.mjs';
 import { limpiarReporte } from '../lab-panel.mjs';
-import { patients, labHistory, saveState } from '../../app-state.mjs';
+import { getPatients, getLabHistory, persistClinicalState } from '../../app-state.mjs';
 import { setUiDensity } from '../chrome.mjs';
 import { closeSettingsDropdown } from './settings-dropdown.mjs';
 import { getGuidedTourSteps, applyTourTargetForStep, clearAllTourSpotlights, persistTourProgressDebounced, showTourDock, hideTourDock, resetTourUiBeforeResume, hideTourIntroModal, openTutorialIntroFromSettings, syncTourActionNextButton } from './tour-engine.mjs';
@@ -44,8 +44,8 @@ function setupNonGuardiaTourMode() {
 }
 
 function resetTourDemoPatientSelection() {
-  if (!isTourDemoPatientId(rt.getActiveId(), patients)) return;
-  rt.setActiveId(patients.length ? patients[0].id : null);
+  if (!isTourDemoPatientId(rt.getActiveId(), getPatients())) return;
+  rt.setActiveId(getPatients().length ? getPatients()[0].id : null);
   if (rt.getActiveId()) {
     selectPatient(rt.getActiveId());
     return;
@@ -94,7 +94,7 @@ function startOnboarding(branch, opts) {
 function findTourDemoBlockForRegistro(blocks, registro) {
   var reg = String(registro || '').trim();
   if (!reg || !blocks) return null;
-  if (findTourDemoPatientByRegistro(patients, reg)) return null;
+  if (findTourDemoPatientByRegistro(getPatients(), reg)) return null;
   return (
     blocks.find(function (b) {
       if (!b || !b.okReportCount) return false;
@@ -118,7 +118,7 @@ function getTourLabPasteTextForRegistration() {
 
 function runTourDemoPatientRegistrationFromLab() {
   if (!tourState.guidedTourActive || tourState.tourStepId !== 'lab_parse') return;
-  if (tourDemoPatientsBothInCensus(patients)) return;
+  if (tourDemoPatientsBothInCensus(getPatients())) return;
   if (typeof rt.openAddModalFromLabPatient !== 'function') return;
   var text = getTourLabPasteTextForRegistration();
   if (!text) return;
@@ -138,7 +138,7 @@ function openNextTourDemoPatientFromBlocks(blocks) {
   var regs = [DEMO_REGISTRO, DEMO_REGISTRO_2];
   for (var i = 0; i < regs.length; i++) {
     var reg = regs[i];
-    if (findTourDemoPatientByRegistro(patients, reg)) continue;
+    if (findTourDemoPatientByRegistro(getPatients(), reg)) continue;
     var block = findTourDemoBlockForRegistro(blocks, reg);
     if (!block) continue;
     var labPatient = extractLabPatientFromBulkBlock(block);
@@ -154,7 +154,7 @@ function openNextTourDemoPatientFromBlocks(blocks) {
 
 function onboardingAdvanceAfterParse() {
   if (!tourState.guidedTourActive || tourState.tourStepId !== 'lab_parse') return;
-  if (!tourDemoLabCompleteForTour(patients, labHistory)) {
+  if (!tourDemoLabCompleteForTour(getPatients(), getLabHistory())) {
     syncTourActionNextButton();
     return;
   }
@@ -184,7 +184,7 @@ function onboardingAdvanceAfterSend() {
 
 function tourAfterBulkLabParse(_blocks) {
   if (!tourState.guidedTourActive || tourState.tourStepId !== 'lab_parse') return;
-  if (!tourDemoPatientsBothInCensus(patients)) {
+  if (!tourDemoPatientsBothInCensus(getPatients())) {
     if (typeof rt.isBulkLabPreviewModalOpen === 'function' && rt.isBulkLabPreviewModalOpen()) {
       return;
     }
@@ -197,7 +197,7 @@ function tourAfterBulkLabParse(_blocks) {
 
 function tourOnBulkPreviewPatientSaved() {
   if (!tourState.guidedTourActive || tourState.tourStepId !== 'lab_parse') return;
-  if (tourDemoPatientsBothInCensus(patients)) {
+  if (tourDemoPatientsBothInCensus(getPatients())) {
     rt.showToast('Pacientes demo listos. Pulsa Procesar todo en la vista previa.', 'success');
     return;
   }
@@ -221,9 +221,9 @@ function resetAndStartOnboarding() {
     hideTourDock();
     hideTourIntroModal();
     limpiarReporte();
-    saveState();
-    if (isTourDemoPatientId(rt.getActiveId(), patients)) {
-      rt.setActiveId(patients.length ? patients[0].id : null);
+    persistClinicalState();
+    if (isTourDemoPatientId(rt.getActiveId(), getPatients())) {
+      rt.setActiveId(getPatients().length ? getPatients()[0].id : null);
     }
     renderPatientList();
     if (rt.getActiveId()) selectPatient(rt.getActiveId());

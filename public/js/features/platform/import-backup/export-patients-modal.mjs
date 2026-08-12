@@ -1,5 +1,5 @@
 /** Modal to pick multiple patients for JSON export (Ajustes → Exportar pacientes…). */
-import { patients, saveState } from '../../../app-state.mjs';
+import { getPatients, persistClinicalState } from '../../../app-state.mjs';
 import { esc } from '../../../dom-escape.mjs';
 import { isTourDemoPatientId } from '../../../tour-demo-patient.mjs';
 import { patientsVisibleInSidebar } from '../../patients-scope.mjs';
@@ -15,10 +15,10 @@ const rt = getPlatformRuntime();
 
 function exportablePatientsForPicker() {
   var visible = patientsVisibleInSidebar();
-  var source = visible.length ? visible : patients;
+  var source = visible.length ? visible : getPatients();
   return sortPatientsForExportPicker(
     source.filter(function (p) {
-      return p && p.id && !isTourDemoPatientId(p.id, patients);
+      return p && p.id && !isTourDemoPatientId(p.id, getPatients());
     })
   );
 }
@@ -83,7 +83,7 @@ function buildExportPatientsListHtml(candidates, activeId) {
 }
 
 function runExportPatientsSelection(patientIds) {
-  saveState();
+  persistClinicalState();
   var payload = buildPatientsSelectionExportPayload(patientIds);
   if (!payload.entries.length) {
     rt.showToast('No hay pacientes exportables en la selección.', 'error');

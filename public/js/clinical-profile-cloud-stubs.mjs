@@ -1,27 +1,27 @@
 /**
  * Cloud-era stubs for retired clinical-profile LAN sync helpers.
  */
-export const LAN_PROFILE_PUSH_FAILED_MSG =
+export const PROFILE_PUSH_FAILED_MSG =
   'No se pudo sincronizar el perfil con la nube. Revisa ⇄ Conexión.';
 
-export async function assertLanRoomForUsernameRegister() {
+export async function assertRoomForUsernameRegister() {
   return { ok: true, roomId: '' };
 }
 
-export async function flushClinicalProfileToLan() {
+export async function flushClinicalProfileToCloud() {
   return { ok: true, code: 'cloud_only' };
 }
 
 export function rememberLiveSyncRoomMembership() {}
 
-export function isBenignLanPushSkipCode() {
+export function isBenignPushSkipCode() {
   return true;
 }
 
-export function notifyLanProfilePushResult() {}
+export function notifyProfilePushResult() {}
 
-export const LAN_PROFILE_NEEDS_CONNECT_MSG = 'Conecta Nube en ⇄ Conexión para sincronizar el perfil.';
+export const PROFILE_NEEDS_CONNECT_MSG = 'Conecta Nube en ⇄ Conexión para sincronizar el perfil.';
 
-export function isLanProfileNeedsConnectCode() {
+export function isProfileNeedsConnectCode() {
   return false;
 }

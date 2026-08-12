@@ -19,8 +19,6 @@ export const CLINICAL_LS_KEYS = [
   'rpc-medCatalog',
   'rpc-todos',
   'rpc-scheduled-procedures',
-  'rpc-lan-room-snapshots',
-  'rpc-lan-host-patient-map',
 ];
 
 export const APP_FIELD_TO_BLOB = {
@@ -36,8 +34,6 @@ export const APP_FIELD_TO_BLOB = {
   medCatalog: 'medCatalog',
   todos: 'todos',
   scheduledProcedures: 'scheduledProcedures',
-  lanRoomSnapshots: 'lanRoomSnapshots',
-  lanHostPatientMap: 'lanHostPatientMap',
 };
 
 export function isDbMode() {
@@ -111,8 +107,6 @@ export function mapBlobsToAppState(blobs) {
     medCatalog: parseBlobJson(b.medCatalog, null),
     todos: parseBlobJson(b.todos, {}),
     scheduledProcedures: parseBlobJson(b.scheduledProcedures, []),
-    lanRoomSnapshots: parseBlobJson(b.lanRoomSnapshots, {}),
-    lanHostPatientMap: parseBlobJson(b.lanHostPatientMap, {}),
   };
 }
 

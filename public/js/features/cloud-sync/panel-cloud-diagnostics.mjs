@@ -11,7 +11,7 @@ import {
 import { getCloudSyncRoomSnapshot, getCloudSyncSettings } from './settings.mjs';
 import { isCloudSyncActive } from './nube-sync-policy.mjs';
 import { isCloudMutateBridgeConfigured } from './mutate-bridge.mjs';
-import { patients } from '../../app-state.mjs';
+import { getPatients } from '../../app-state.mjs';
 import { getSharedNubeOutbox, getSharedNubeRuntime } from './panel-conexion-runtime.mjs';
 import { showCloudNubeFixModal } from './cloud-nube-fix-guides.mjs';
 import { pruneLabSidecarsFromOutbox } from './outbox-lab.mjs';
@@ -40,7 +40,7 @@ function readCloudDiagnosticsSettings() {
     roomId: settings.roomId,
     revision: settings.revision,
     roomSnapshot: getCloudSyncRoomSnapshot(),
-    localPatientCount: Array.isArray(patients) ? patients.length : 0,
+    localPatientCount: Array.isArray(getPatients()) ? getPatients().length : 0,
   };
 }
 
@@ -262,7 +262,7 @@ export function mountCloudSyncDiagnostics(host, deps) {
   technicalSummary.textContent = 'Informe técnico (soporte)';
   technical.appendChild(technicalSummary);
   const reportPre = document.createElement('pre');
-  reportPre.className = 'cloud-sync-diagnostics-pre lan-sync-diagnostics-pre';
+  reportPre.className = 'cloud-sync-diagnostics-pre';
   technical.appendChild(reportPre);
   wrap.appendChild(technical);
 

@@ -3,7 +3,7 @@ import {
   shouldUseElevatedPatientCensus,
 } from '../clinical-privileges.mjs';
 import { joinedTeamIdsForUser } from '../mobile-team-patient-scope.mjs';
-import { indicaciones, labHistory, notes, patients, setPatients, saveState } from '../app-state.mjs';
+import { getPatients, getIndicaciones, getLabHistory, getNotes, setPatients, persistClinicalState } from '../app-state.mjs';
 import { filterPatientsForClinicalSidebar } from '../features/patients-clinical-filter.mjs';
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
 import { getClinicalScopeContextForEvaluate } from './scope-evaluate.mjs';
@@ -11,9 +11,9 @@ import { getClinicalScopeContextForEvaluate } from './scope-evaluate.mjs';
 function dropPatientSidecars(pid) {
   const id = String(pid || '');
   if (!id) return;
-  if (notes[id]) delete notes[id];
-  if (indicaciones[id]) delete indicaciones[id];
-  if (labHistory[id]) delete labHistory[id];
+  if (getNotes()[id]) delete getNotes()[id];
+  if (getIndicaciones()[id]) delete getIndicaciones()[id];
+  if (getLabHistory()[id]) delete getLabHistory()[id];
 }
 
 /**
@@ -40,22 +40,22 @@ export function prunePatientsOutsideVisibleScope() {
   const user = clinicalSessionContext.user;
   const ctx = getClinicalScopeContextForEvaluate();
   const visible = filterPatientsForClinicalSidebar(
-    patients,
+    getPatients(),
     user,
     ctx,
     clinicalSessionContext.guardiasMap
   );
   const visibleIds = new Set(visible.map((p) => String(p?.id || '')).filter(Boolean));
-  const removed = Math.max(0, patients.length - visible.length);
+  const removed = Math.max(0, getPatients().length - visible.length);
   if (!removed) return 0;
-  for (const pid of Object.keys(notes)) {
+  for (const pid of Object.keys(getNotes())) {
     if (!visibleIds.has(pid)) dropPatientSidecars(pid);
   }
-  for (const p of patients) {
+  for (const p of getPatients()) {
     const pid = String(p?.id || '');
     if (pid && !visibleIds.has(pid)) dropPatientSidecars(pid);
   }
   setPatients(visible);
-  saveState({ immediate: true });
+  persistClinicalState({ immediate: true });
   return removed;
 }

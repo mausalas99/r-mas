@@ -73,6 +73,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   cloudSyncFetch: function(payload) {
     return ipcRenderer.invoke('cloud-sync-fetch', payload);
   },
+  cloudSyncRememberGetSync: function() {
+    return ipcRenderer.sendSync('cloud-sync-remember-get-sync');
+  },
+  cloudSyncRememberGet: function() {
+    return ipcRenderer.invoke('cloud-sync-remember-get');
+  },
+  cloudSyncRememberSet: function(snapshot) {
+    return ipcRenderer.invoke('cloud-sync-remember-set', snapshot);
+  },
+  cloudSyncRememberClear: function() {
+    return ipcRenderer.invoke('cloud-sync-remember-clear');
+  },
   setUpdateChannel: function(channel) {
     ipcRenderer.send('set-update-channel', channel);
   },
@@ -129,8 +141,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalSaveAll: function(payload) {
     return ipcRenderer.invoke('db:clinical-save-all', payload);
   },
+  dbClinicalDeleteBlobs: function(payload) {
+    return ipcRenderer.invoke('db:clinical-delete-blobs', payload || {});
+  },
   dbClinicalCommand: function(payload) {
     return ipcRenderer.invoke('db:clinical-command', payload);
+  },
+  dbClinicalProjectUnsynced: function(payload) {
+    return ipcRenderer.invoke('db:clinical-project-unsynced', payload || {});
+  },
+  dbClinicalMarkSynced: function(payload) {
+    return ipcRenderer.invoke('db:clinical-mark-synced', payload || {});
   },
   dbAuditVerify: function(opts) {
     return ipcRenderer.invoke('db:audit-verify', opts);

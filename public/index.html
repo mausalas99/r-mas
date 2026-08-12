@@ -128,6 +128,7 @@
 <link rel="stylesheet" href="/styles/cloud-sync.css">
 <link rel="stylesheet" href="/styles/modals.css">
 <link rel="stylesheet" href="/styles/motion.css">
+<link rel="stylesheet" href="/styles/ui-patterns.css">
 <link rel="stylesheet" href="/styles/skeleton.css">
 <link rel="stylesheet" href="/styles/components.css">
 <link rel="stylesheet" href="/styles/workbench-tokens.css">
@@ -2792,19 +2793,19 @@
   </div>
 </div>
 
-<div id="clinical-lan-users-backdrop" class="modal-backdrop clinical-lan-users-backdrop" aria-hidden="true">
-  <div class="modal clinical-lan-users-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-lan-users-title" onclick="event.stopPropagation()">
-    <header class="clinical-lan-users-modal-head">
-      <h3 id="clinical-lan-users-title">Directorio de usuarios</h3>
-      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-lan-users-close" aria-label="Cerrar">×</button>
+<div id="clinical-directory-users-backdrop" class="modal-backdrop clinical-directory-users-backdrop" aria-hidden="true">
+  <div class="modal clinical-directory-users-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-directory-users-title" onclick="event.stopPropagation()">
+    <header class="clinical-directory-users-modal-head">
+      <h3 id="clinical-directory-users-title">Directorio de usuarios</h3>
+      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-directory-users-close" aria-label="Cerrar">×</button>
     </header>
-    <div id="clinical-lan-users-panel-body" class="clinical-lan-users-panel-body"></div>
+    <div id="clinical-directory-users-panel-body" class="clinical-directory-users-panel-body"></div>
   </div>
 </div>
 
 <div id="clinical-admin-code-backdrop" class="modal-backdrop clinical-admin-code-backdrop" aria-hidden="true">
   <div class="modal clinical-admin-code-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-admin-code-title" onclick="event.stopPropagation()">
-    <header class="clinical-lan-users-modal-head">
+    <header class="clinical-directory-users-modal-head">
       <h3 id="clinical-admin-code-title">Privilegios de administración</h3>
       <button type="button" class="clinical-teams-dismiss" id="btn-clinical-admin-code-close" aria-label="Cerrar">×</button>
     </header>
@@ -2931,10 +2932,9 @@
       <div class="tend-detail-chart-cell">
         <canvas id="tend-detail-canvas"></canvas>
       </div>
-      <div id="tend-detail-vbar-slot" class="tend-detail-vbar-slot" aria-hidden="true"></div>
     </div>
     <div id="tend-detail-events-slot" class="tend-detail-events-slot" aria-hidden="true"></div>
-    <button type="button" class="tend-detail-add-event-btn" id="tend-detail-add-event" data-tend-action="add-event-day">Agregar evento este día</button>
+    <button type="button" class="ea-btn ea-btn--ghost tend-detail-add-event-btn" id="tend-detail-add-event" data-tend-action="add-event-day">Agregar evento este día</button>
   </div>
 </div>
 
@@ -2963,8 +2963,6 @@
 
 <script src="/js/clinical-onboarding-boot-progress.js"></script>
 <script src="/js/clinical-onboarding-early-boot.js"></script>
-<script src="/vendor/sortable.min.js"></script>
-<script src="/vendor/chart.umd.min.js"></script>
-<script type="module" src="/js/app.bundle.mjs"></script>
+<!-- app.bundle + vendors injected by clinical-onboarding-early-boot.js after sync-mode choice (or immediately if skipped) -->
 </body>
 </html>

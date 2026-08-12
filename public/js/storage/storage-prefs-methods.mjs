@@ -1,10 +1,4 @@
-import {
-  invalidateParsed,
-  readClinicalBlob,
-  skipClinicalLocalPersist,
-  safeParse,
-  safeParseObject,
-} from './storage-core.mjs';
+import { safeParseObject } from './storage-core.mjs';
 
 export const prefsStorageMethods = {
   getSettings() {
@@ -56,93 +50,5 @@ export const prefsStorageMethods = {
    */
   removeGuidedTourVersion() {
     localStorage.removeItem('rpc-guidedTourDone');
-  },
-
-  getLanConfig() {
-    return safeParse(localStorage.getItem('rpc-lan-config'), null) || null;
-  },
-
-  saveLanConfig(cfg) {
-    if (!cfg) {
-      localStorage.removeItem('rpc-lan-config');
-      return;
-    }
-    localStorage.setItem('rpc-lan-config', JSON.stringify(cfg));
-  },
-
-  /** Last ward shift PIN (6 digits) — used to re-find host after Wi‑Fi change. */
-  getLanShiftPin() {
-    try {
-      const pin = String(localStorage.getItem('rpc-lan-shift-pin') || '').trim();
-      return /^\d{6}$/.test(pin) ? pin : '';
-    } catch {
-      return '';
-    }
-  },
-
-  saveLanShiftPin(pin) {
-    const code = String(pin || '').trim();
-    try {
-      if (!/^\d{6}$/.test(code)) {
-        localStorage.removeItem('rpc-lan-shift-pin');
-        return;
-      }
-      localStorage.setItem('rpc-lan-shift-pin', code);
-    } catch (_e) { void _e; }
-  },
-
-  getHostPatientMap() {
-    return readClinicalBlob('lanHostPatientMap', 'rpc-lan-host-patient-map', safeParseObject);
-  },
-
-  saveHostPatientMap(map) {
-    if (skipClinicalLocalPersist()) return;
-    localStorage.setItem('rpc-lan-host-patient-map', JSON.stringify(map || {}));
-    invalidateParsed('lanHostPatientMap');
-  },
-
-  /** 'host' = esta R+ abre el servidor; 'client' = solo se une. */
-  getLanUiRole() {
-    var v = localStorage.getItem('rpc-lan-ui-role');
-    if (v === 'host' || v === 'client') return v;
-    return 'client';
-  },
-
-  saveLanUiRole(role) {
-    if (role === 'host' || role === 'client') {
-      localStorage.setItem('rpc-lan-ui-role', role);
-    }
-  },
-
-  /** Ocultar la franja «Sin conexión al host LAN» cuando se pierde el enlace. */
-  getLanHideDisconnectBanner() {
-    try {
-      return localStorage.getItem('rpc-lan-hide-disconnect-banner') === '1';
-    } catch {
-      return false;
-    }
-  },
-
-  saveLanHideDisconnectBanner(hide) {
-    try {
-      localStorage.setItem('rpc-lan-hide-disconnect-banner', hide ? '1' : '0');
-    } catch (_e) { void _e; }
-  },
-
-  /** Aviso no bloqueante cuando LWW sobrescribe un cambio concurrente en la sala. */
-  getLanLwwOverwriteToast() {
-    try {
-      var v = localStorage.getItem('rpc-lan-lww-overwrite-toast');
-      if (v === '0') return false;
-      return true;
-    } catch {
-      return true;
-    }
-  },
-
-  setLanLwwOverwriteToast(enabled) {
-    try {
-      localStorage.setItem('rpc-lan-lww-overwrite-toast', enabled ? '1' : '0');
-    } catch (_e) { void _e; }
   },
 };

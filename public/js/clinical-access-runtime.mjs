@@ -7,10 +7,10 @@ export { clinicalSessionContext } from './clinical-session-context.mjs';
 export { markClinicalAccessBootReady, waitForClinicalAccessReady } from './clinical-access-runtime/boot-ready.mjs';
 
 export {
-  isClinicalScopeReadyForLanPatientApply,
-  applyClinicalScopeFromLanOpsSnapshot,
+  isClinicalScopeReadyForPatientApply,
+  applyClinicalScopeFromOpsSnapshot,
   prunePatientsOutsideClinicalScope,
-} from './clinical-access-runtime/scope-lan.mjs';
+} from './clinical-access-runtime/scope-ops.mjs';
 
 export {
   fetchClinicalScopeContextFromDb,
@@ -47,7 +47,7 @@ export {
   ensureElevatedWardCensusOnDevice,
   refreshClinicalPatientListForScope,
   wireClinicalOpsSyncRefresh,
-} from './clinical-access-runtime/census-lan-pull.mjs';
+} from './clinical-access-runtime/census-nube-pull.mjs';
 
 export {
   initClinicalAccessRuntime,

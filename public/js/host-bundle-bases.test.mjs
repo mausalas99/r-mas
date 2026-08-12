@@ -78,3 +78,26 @@ test('host bundle PUT body includes labPanelOverlay when non-empty', () => {
   assert.equal(withOverlay.labPanelOverlay.length, 1);
 });
 
+
+test('host bundle bases migrates rpc-lan-host-bundle-bases to rpc-host-bundle-bases', () => {
+  global.localStorage = {
+    _d: {
+      'rpc-lan-host-bundle-bases': JSON.stringify({
+        r1: { revision: 9, entityVersions: { a: 1 } },
+      }),
+    },
+    getItem(k) {
+      return this._d[k] ?? null;
+    },
+    setItem(k, v) {
+      this._d[k] = String(v);
+    },
+    removeItem(k) {
+      delete this._d[k];
+    },
+  };
+  const bases = getHostBundleBases('r1');
+  assert.equal(bases.revision, 9);
+  assert.ok(localStorage.getItem('rpc-host-bundle-bases'));
+  assert.equal(localStorage.getItem('rpc-lan-host-bundle-bases'), null);
+});

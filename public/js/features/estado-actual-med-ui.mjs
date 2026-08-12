@@ -444,7 +444,7 @@ export function wireMedCategoryGrid(mount, ctx) {
     var monitoreo = liveMonitoreoFromCtx(ctx);
     addMedFieldItem(monitoreo, addKey, val);
     /** @type {HTMLSelectElement} */ (target).value = '';
-    ctx.saveState();
+    ctx.persistClinicalState();
     ctx.syncTextarea();
     refreshMedCategoryBlock(mount, addKey, monitoreo, ctx.getActiveId(), ctx.medRecetaByPatient);
   });

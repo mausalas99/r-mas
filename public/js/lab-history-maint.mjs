@@ -25,18 +25,7 @@ import {
   resolveEstudiosCopyOptions,
 } from './lab-history-format.mjs';
 import { sanitizeResLabsChunks } from './labs-reslabs-sanitize.mjs';
-import {
-  patients,
-  notes,
-  indicaciones,
-  labHistory,
-  medRecetaByPatient,
-  listadoProblemas,
-  recetaHuByPatient,
-  vpoByPatient,
-  medPharmProfileByPatient,
-  saveState,
-} from './app-state.mjs';
+import { getPatients, getNotes, getIndicaciones, getLabHistory, getMedRecetaByPatient, getListadoProblemas, getRecetaHuByPatient, getVpoByPatient, getMedPharmProfileByPatient, persistClinicalState } from './app-state.mjs';
 import { storage } from './storage.js';
 
 export function registerLabHistoryMaintRuntime(ctx) {
@@ -195,23 +184,26 @@ function processLabHistorySet(set, noteLines) {
 }
 
 function persistLabHistoryPatient(patientId, history) {
-  if (history.length) labHistory[patientId] = history;
-  else delete labHistory[patientId];
+  if (history.length) getLabHistory()[patientId] = history;
+  else delete getLabHistory()[patientId];
 }
 
-export function rebuildEstudiosFromLabHistory(patientId) {
+export function rebuildEstudiosFromLabHistory(patientId, options) {
   if (!patientId) return;
-  if (!notes[patientId]) notes[patientId] = {};
+  if (!getNotes()[patientId]) getNotes()[patientId] = {};
   var ordered = sortLabHistoryChronological(
-    ensureParsedLabHistory(patientId, { skipRebuildNota: true })
+    ensureParsedLabHistory(patientId, {
+      skipRebuildNota: true,
+      readOnly: !!(options && options.readOnly),
+    })
   );
   if (!ordered.length) {
-    notes[patientId].estudios = '';
+    getNotes()[patientId].estudios = '';
     return;
   }
   var settings =
     typeof maintRt.getSettings === 'function' ? maintRt.getSettings() : null;
-  notes[patientId].estudios = buildEstudiosCopyLinesFromLabSets(
+  getNotes()[patientId].estudios = buildEstudiosCopyLinesFromLabSets(
     ordered,
     resolveEstudiosCopyOptions(ordered, settings)
   ).join('\n');
@@ -220,11 +212,11 @@ export function rebuildEstudiosFromLabHistory(patientId) {
 export function ensureParsedLabHistory(patientId, options) {
   var skipRebuildNota = !!(options && options.skipRebuildNota);
   var readOnly = !!(options && options.readOnly);
-  var raw = labHistory[patientId];
+  var raw = getLabHistory()[patientId];
   var history = normalizeLabHistoryPatientSets(raw);
   var changed = !Array.isArray(raw) || raw !== history;
   var rebuildNota = false;
-  var noteLines = notes[patientId] && notes[patientId].estudios ? notes[patientId].estudios.split('\n') : [];
+  var noteLines = getNotes()[patientId] && getNotes()[patientId].estudios ? getNotes()[patientId].estudios.split('\n') : [];
 
   history.forEach(function (set) {
     var result = processLabHistorySet(set, noteLines);
@@ -232,16 +224,16 @@ export function ensureParsedLabHistory(patientId, options) {
     if (result.rebuildNota) rebuildNota = true;
   });
 
-  if (rebuildNota && patientId && notes[patientId] && !skipRebuildNota) {
+  if (rebuildNota && patientId && getNotes()[patientId] && !skipRebuildNota) {
     persistLabHistoryPatient(patientId, history);
-    rebuildEstudiosFromLabHistory(patientId);
+    rebuildEstudiosFromLabHistory(patientId, { readOnly: readOnly });
     changed = true;
   }
   if (!Array.isArray(raw) || raw !== history) {
     persistLabHistoryPatient(patientId, history);
     changed = true;
   }
-  if (changed && !readOnly) saveState();
+  if (changed && !readOnly) persistClinicalState();
   return history;
 }
 
@@ -282,9 +274,9 @@ export function runLabHistoryPostSaveMaintenance() {
     sameDateTimeConflicts: [],
   };
   var changed = false;
-  Object.keys(labHistory || {}).forEach(function (pid) {
+  Object.keys(getLabHistory() || {}).forEach(function (pid) {
     if (pid.indexOf('demo-') === 0) return;
-    var sets = labHistory[pid];
+    var sets = getLabHistory()[pid];
     if (!Array.isArray(sets) || !sets.length) return;
     sets.forEach(function (set) {
       if (!set.resLabs || !set.resLabs.length) return;
@@ -352,15 +344,15 @@ export function runLabHistoryPostSaveMaintenance() {
 
 function persistAllLabStateAfterMaint() {
   storage.saveAll(
-    patients,
-    notes,
-    indicaciones,
-    labHistory,
-    medRecetaByPatient,
-    listadoProblemas,
-    recetaHuByPatient,
-    vpoByPatient,
-    medPharmProfileByPatient
+    getPatients(),
+    getNotes(),
+    getIndicaciones(),
+    getLabHistory(),
+    getMedRecetaByPatient(),
+    getListadoProblemas(),
+    getRecetaHuByPatient(),
+    getVpoByPatient(),
+    getMedPharmProfileByPatient()
   );
 }
 
@@ -404,10 +396,10 @@ export function installLabHistoryAuditHook() {
   } catch {
     return;
   }
-  patients.forEach(function (p) {
+  getPatients().forEach(function (p) {
     try {
-      if (!notes[p.id] || !notes[p.id].estudios) return;
-      var lines = notes[p.id].estudios.split('\n');
+      if (!getNotes()[p.id] || !getNotes()[p.id].estudios) return;
+      var lines = getNotes()[p.id].estudios.split('\n');
       var anteriorLines = lines.slice(0, 3).filter(function (l) {
         return l.trim();
       });
@@ -429,19 +421,19 @@ export function installLabHistoryAuditHook() {
         var migratedRecentLabs = resLabsFromNoteLines(recentLines);
         sets.push({
           id: 'migrated-recent',
-          fecha: normalizeFechaLabHistory(recentLines[0] || notes[p.id].fecha || ''),
-          hora: notes[p.id].hora || '',
+          fecha: normalizeFechaLabHistory(recentLines[0] || getNotes()[p.id].fecha || ''),
+          hora: getNotes()[p.id].hora || '',
           resLabs: migratedRecentLabs,
           parsed: extractParsedValues(migratedRecentLabs),
         });
       }
-      if (sets.length) labHistory[p.id] = sets;
+      if (sets.length) getLabHistory()[p.id] = sets;
     } catch (e) {
       console.error('migrateLabHistory patient error:', p && p.id, e && e.message);
     }
   });
   try {
-    localStorage.setItem('rpc-labHistory', JSON.stringify(labHistory));
+    localStorage.setItem('rpc-labHistory', JSON.stringify(getLabHistory()));
   } catch (e) {
     console.error('migrateLabHistory write error:', e && e.message);
   }

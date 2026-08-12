@@ -5,8 +5,8 @@ import { isCloudSyncActive } from './nube-sync-policy.mjs';
 import { enqueueCloudClinicalOpsValue } from './mutate-bridge.mjs';
 import {
   getCachedClinicalOpsSnapshot,
-  isClinicalOpsLanAvailable,
-  prepareClinicalOpsForLanSync,
+  isClinicalOpsSyncAvailable,
+  prepareClinicalOpsForSync,
 } from '../../clinical-ops-sync.mjs';
 import { getCloudSyncRoomSnapshot } from './settings.mjs';
 
@@ -24,7 +24,7 @@ export async function snapshotClinicalOpsForCloud() {
       const res = await api.dbClinicalOpsExport({ sala });
       if (res?.snapshot) return res.snapshot;
     }
-    if (isClinicalOpsLanAvailable()) await prepareClinicalOpsForLanSync();
+    if (isClinicalOpsSyncAvailable()) await prepareClinicalOpsForSync();
     return getCachedClinicalOpsSnapshot();
   } catch {
     return null;

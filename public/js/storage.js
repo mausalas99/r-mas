@@ -17,7 +17,3 @@ const _origRemoveScheduled = storage.removeScheduledProceduresForPatient;
 storage.removeScheduledProceduresForPatient = function (patientId) {
   return _origRemoveScheduled.call(storage, patientId);
 };
-const _origGetLanSnapshot = storage.getLanRoomSnapshot;
-storage.getLanRoomSnapshot = function (roomId) {
-  return _origGetLanSnapshot.call(storage, roomId);
-};

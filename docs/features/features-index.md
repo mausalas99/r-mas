@@ -21,7 +21,7 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 | Preparar entrega (checklist) | `lib/entrega/entrega-prep-checklist.mjs`, `public/js/features/entrega-prep-panel.mjs` | Mi equipo: EA hoy / pendientes vencidos / cultivos sin seguimiento → 1 clic |
 | Cola cultivos (mi equipo) | `public/js/features/cultivo-queue-panel.mjs`, `cultivo-queue-model.mjs` | ATB pendiente / sin nota → Cultivos |
 | EA → clipboard indicaciones | `public/js/features/ea-indicaciones-clipboard.mjs` | Copiar meds confirmados + bomba a portapapeles |
-| Tendencias | `public/js/features/tendencias.mjs` | |
+| Tendencias | `public/js/features/tendencias.mjs` | Δ/anomaly strip + detail compare |
 | Expediente / tabs | `public/js/expediente-tabs.mjs` | |
 | Estado actual | `public/js/features/estado-actual-*.mjs` | [spec](../superpowers/specs/2026-05-26-estado-actual-monitoreo-design.md); Tab spine (skip +1/Alterada): [2026-08-03](../superpowers/specs/2026-08-03-ttd-retyping-tooltime-design.md) |
 | VPO | `public/js/features/vpo.mjs`, `vpo-*.mjs` | [spec](../superpowers/specs/2026-05-29-vpo-design.md) |

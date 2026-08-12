@@ -1,6 +1,6 @@
 /** Mi rotación — browse/directory section HTML. */
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
-import { canViewLanUserDirectory } from '../../clinical-privileges.mjs';
+import { canViewUserDirectory } from '../../clinical-privileges.mjs';
 import { isCloudSala } from '../cloud-sync/sala-allowlist.mjs';
 import { getCloudSyncToken } from '../cloud-sync/settings.mjs';
 import { isCloudSyncActive } from '../cloud-sync/nube-sync-policy.mjs';
@@ -11,7 +11,7 @@ import {
 } from './teams-roster-team-cards.mjs';
 
 /** Hint when ⇄ is live but roster still shows only you (not rotación nueva). */
-export async function resolveLanTeamMemberHintHtml(joinedTeams) {
+export async function resolveTeamMemberHintHtml(joinedTeams) {
   const teams = Array.isArray(joinedTeams) ? joinedTeams : [];
   if (!teams.length) return '';
   const soloTeams = teams.every((team) => {
@@ -26,7 +26,7 @@ export async function resolveLanTeamMemberHintHtml(joinedTeams) {
     if (!roomId) {
       return `<p class="clinical-teams-section-desc clinical-teams-lan-member-hint">Abre ⇄ y conéctate a <strong>R+ Cloud</strong> en la sala de guardia. Los residentes deben iniciar sesión Nube, unirse a la misma sala y registrar <strong>@usuario</strong> antes de que puedas asignarlos a un equipo.</p>`;
     }
-    const canDir = canViewLanUserDirectory(clinicalSessionContext.user || {});
+    const canDir = canViewUserDirectory(clinicalSessionContext.user || {});
     if (canDir) {
       return `<p class="clinical-teams-section-desc clinical-teams-lan-member-hint">Estás en sala Nube pero el directorio aún no lista a otros. Cada Mac debe entrar en ⇄ con R+ Cloud, misma sala y <strong>Guardar perfil</strong> con @usuario; después aparecen aquí y tú los asignas al equipo (no al revés).</p>`;
     }

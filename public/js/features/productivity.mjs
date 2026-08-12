@@ -1,20 +1,10 @@
 import { esc } from '../dom-escape.mjs';
 // Undo, focus mode, unified search, plantillas extra, atajos (Bloque F)
-import {
-  patients,
-  notes,
-  indicaciones,
-  labHistory,
-  medRecetaByPatient,
-  replaceAppStateFromBackupData,
-  saveState,
-} from "../app-state.mjs";
+import { getPatients, getNotes, getIndicaciones, getLabHistory, getMedRecetaByPatient, replaceAppStateFromBackupData, persistClinicalState } from "../app-state.mjs";
+import { getPatientsForDisplay } from "../clinical-read-model-demo.mjs";
 import { storage } from "../storage.js";
 import { isPaseMode } from "./chrome.mjs";
-import {
-  filterPatientsForPitchTour,
-  isPitchPatientIsolationActive,
-} from "../tour-pitch-demo-seed.mjs";
+import { isPitchPatientIsolationActive } from "../tour-pitch-demo-seed.mjs";
 
 let rt = {
   getActiveId() {
@@ -32,7 +22,7 @@ let rt = {
   switchInnerTab(_t) {
     void _t;
   },
-  saveState() {},
+  persistClinicalState() {},
   renderIndicaForm() {},
   closeSettingsDropdown() {},
   openAddModal() {},
@@ -67,11 +57,11 @@ function buildUndoSnapshotPayload(label) {
     theme: localStorage.getItem("theme") || "light",
     activeId: rt.getActiveId(),
     data: {
-      patients: cloneForUndo(patients) || [],
-      notes: cloneForUndo(notes) || {},
-      indicaciones: cloneForUndo(indicaciones) || {},
-      labHistory: cloneForUndo(labHistory) || {},
-      medRecetaByPatient: cloneForUndo(medRecetaByPatient) || [],
+      patients: cloneForUndo(getPatients()) || [],
+      notes: cloneForUndo(getNotes()) || {},
+      indicaciones: cloneForUndo(getIndicaciones()) || {},
+      labHistory: cloneForUndo(getLabHistory()) || {},
+      medRecetaByPatient: cloneForUndo(getMedRecetaByPatient()) || [],
       scheduledProcedures: cloneForUndo(storage.getScheduledProcedures()) || [],
       settings: cloneForUndo(rt.getSettings()) || {},
       medCatalog: cloneForUndo(storage.getMedCatalog()) || storage.getMedCatalog(),
@@ -137,7 +127,7 @@ export async function undoLastOperation() {
     storage.saveMedCatalog(snap.data.medCatalog);
   }
   if (snap.theme === "dark" || snap.theme === "light") localStorage.setItem("theme", snap.theme);
-  await saveState({ immediate: true });
+  await persistClinicalState({ immediate: true });
   rt.addAuditEntry("undo-restore", "ok", 0, snap.label || "");
   location.reload();
 }
@@ -244,7 +234,7 @@ function collectPatientSearchHits(p, q, metaStr, out, max) {
     });
     return out.length >= max;
   }
-  var nh = collectNoteHaystack(notes[p.id]);
+  var nh = collectNoteHaystack(getNotes()[p.id]);
   if (nh && nh.toLowerCase().indexOf(q) !== -1) {
     out.push({
       id: p.id,
@@ -257,7 +247,7 @@ function collectPatientSearchHits(p, q, metaStr, out, max) {
     });
     return out.length >= max;
   }
-  var ih = collectIndicaHaystack(indicaciones[p.id]);
+  var ih = collectIndicaHaystack(getIndicaciones()[p.id]);
   if (ih && ih.toLowerCase().indexOf(q) !== -1) {
     out.push({
       id: p.id,
@@ -311,7 +301,7 @@ export function updateUnifiedSearchResults() {
   }
   var out = [];
   var MAX = 40;
-  var searchPatients = filterPatientsForPitchTour(patients);
+  var searchPatients = getPatientsForDisplay(() => getPatients());
   for (var i = 0; i < searchPatients.length && out.length < MAX; i += 1) {
     var p = searchPatients[i];
     if (p.isDemo && !isPitchPatientIsolationActive()) continue;
@@ -520,7 +510,7 @@ function handleProductivityModShortcut(e, k) {
       rt.showToast('Selecciona un paciente primero', 'error');
       return true;
     }
-    rt.saveState();
+    rt.persistClinicalState();
     rt.addAuditEntry('quick-save', 'ok', 1, String(rt.getActiveId()));
     rt.showToast('Estado guardado ✓', 'success');
     return true;

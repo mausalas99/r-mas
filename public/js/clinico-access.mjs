@@ -1,24 +1,16 @@
 /**
- * Acceso a la guía clínica (Manejo): thin barrel — re-exports all public APIs.
+ * Acceso a la guía clínica (Manejo): renderer façade over lib/clinical-scope.
+ * Pure domain APIs live in lib/clinical-scope; unlock/modal, LS entrega default,
+ * and the team-filter kill-switch stay renderer-local.
  */
 
-import { runEvaluateClinicalScope } from './clinico-access-scope/evaluate-clinical-scope.mjs';
-
-export { normalizeServiceKey } from './clinico-access-shared.mjs';
-
-export {
-  CLINICO_UNLOCK_PHRASE,
-  normalizeClinicoUnlockPhrase,
-  matchesClinicoUnlockPhrase,
-  isClinicoUnlocked,
-  isClinicoAccessHidden,
-  openClinicoUnlockModal,
-  closeClinicoUnlockModal,
-  confirmClinicoUnlock,
-  clinicoAccessWindowHandlers,
-} from './clinico-access-unlock.mjs';
+import {
+  evaluateClinicalScope,
+  readEntregaPhaseActive as readEntregaPhaseActivePure,
+} from '../../lib/clinical-scope/index.mjs';
 
 export {
+  normalizeServiceKey,
   isSalaWardService,
   usesSalaR1LinePicker,
   getCycleLetterOptionsForRank,
@@ -29,9 +21,6 @@ export {
   isOnCallToday,
   activeCycleLetterForDate,
   isIncomingPreviewWindow,
-} from './clinico-access-cycle.mjs';
-
-export {
   extractSalaLetter,
   salaLetterForTeamOrArea,
   resolvePatientSala,
@@ -41,9 +30,6 @@ export {
   userOnCallForInterconsultasTeam,
   stampPatientClinicalSala,
   migratePatientsClinicalSala,
-} from './clinico-access-patient.mjs';
-
-export {
   patientMatchesTeam,
   getJoinedTeams,
   getJoinedTeamsForUser,
@@ -62,9 +48,6 @@ export {
   formatMemberCycleLabel,
   patientMatchesAnyJoinedTeam,
   r3ExtendedStructuralAccess,
-} from './clinico-access-teams.mjs';
-
-export {
   R4_GUARDIA_SECTOR_ORDER,
   resolveR4GuardiaSectorLabel,
   isR4MacroPatient,
@@ -76,9 +59,26 @@ export {
   salaOnCallR2,
   teamGuardiaOverride,
   canR2SalaAbcdefDeficitWrite,
-} from './clinico-access-guardia.mjs';
+  ENTREGA_PHASE_LS_KEY,
+  evaluateClinicalScope,
+} from '../../lib/clinical-scope/index.mjs';
 
-export { ENTREGA_PHASE_LS_KEY, readEntregaPhaseActive } from './clinico-access-entrega.mjs';
+export {
+  CLINICO_UNLOCK_PHRASE,
+  normalizeClinicoUnlockPhrase,
+  matchesClinicoUnlockPhrase,
+  isClinicoUnlocked,
+  isClinicoAccessHidden,
+  openClinicoUnlockModal,
+  closeClinicoUnlockModal,
+  confirmClinicoUnlock,
+  clinicoAccessWindowHandlers,
+} from './clinico-access-unlock.mjs';
+
+/** @param {Storage|undefined} storage */
+export function readEntregaPhaseActive(storage = globalThis.localStorage) {
+  return readEntregaPhaseActivePure(storage);
+}
 
 /**
  * TEMPORARY kill switch: when true, team-based patient scope is bypassed and every
@@ -92,23 +92,4 @@ export function isPatientReadableInClinicalScope(user, patient, activeGuardia = 
   if (TEMP_DISABLE_TEAM_BASED_FILTERING) return true;
   const scope = evaluateClinicalScope(user, patient, activeGuardia, context);
   return scope.readable === true;
-}
-
-/**
- * @param {{ user_id?: string, rank?: string, sala?: string }|null|undefined} currentUser
- * @param {{ id?: string, service?: string, sub_area?: string, interconsult_type?: string, sala?: string }|null|undefined} targetPatient
- * @param {{ covering_user_id?: string, source_team_id?: string }|null|undefined} activeGuardia
- * @param {{
- *   teams?: object[],
- *   guardias?: object[],
- *   cycle?: object|null,
- *   assignments?: object[],
- *   salaGuardiaToday?: object[],
- *   guardiaMode?: boolean,
- *   entregaPhaseActive?: boolean,
- *   now?: string|Date,
- * }|null|undefined} [context]
- */
-export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia = null, context = null) {
-  return runEvaluateClinicalScope(currentUser, targetPatient, activeGuardia, context);
 }

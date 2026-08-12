@@ -6,6 +6,15 @@ import { isValidUsernameFormat, normalizeUsername } from '../../clinical-usernam
 import { isCutoverPending } from './cutover-flags.mjs';
 import { userHasJoinedTeam } from './panel-conexion-html.mjs';
 import { showRecoveryCodeModal } from './recovery-modal.mjs';
+
+/** Prefer explicit checkbox; else sticky Recuérdame preference; else persist on desktop. */
+function resolveRememberFromSection(section, selector, deps) {
+  const el = section?.querySelector?.(selector);
+  if (el instanceof HTMLInputElement) return !!el.checked;
+  if (typeof deps?.getCloudSyncRemember === 'function') return !!deps.getCloudSyncRemember();
+  return true;
+}
+
 /** @param {object} deps @param {unknown} prevToken */
 function rebuildPanelOnAuthChange(deps, prevToken) {
   if (shouldForcePanelRebuildOnAuthChange(prevToken, deps.getCloudSyncToken())) {
@@ -86,7 +95,9 @@ export async function handleRegister(deps) {
   try {
     const data = await deps.getApi().register(form);
     const prevToken = deps.getCloudSyncToken();
-    deps.setCloudSyncToken(data.token);
+    deps.setCloudSyncToken(data.token, {
+      remember: resolveRememberFromSection(deps.section, '[data-cloud-reg-remember]', deps),
+    });
     await maybeShowRecoveryCodeModal(data);
     await afterAuthSuccess(deps, data.user || form);
     deps.toast('Cuenta creada. Sesión nube iniciada.', 'success');
@@ -184,7 +195,9 @@ export async function handleRecover(deps) {
       newPassword: form.password,
     });
     const prevToken = deps.getCloudSyncToken();
-    deps.setCloudSyncToken(data.token);
+    deps.setCloudSyncToken(data.token, {
+      remember: resolveRememberFromSection(deps.section, '[data-cloud-login-remember]', deps),
+    });
     await maybeShowRecoveryCodeModal(data);
     await afterAuthSuccess(deps, data.user || { username: form.username });
     deps.toast('Cuenta recuperada. Sesión nube iniciada.', 'success');
@@ -259,7 +272,13 @@ export async function handleLeaveRoom(deps) {
   try {
     if (roomId) await deps.getApi().leaveRoom(roomId);
   } catch { /* best-effort */ }
-  deps.clearCloudSyncSession();
+  // Keep Nube auth (Recuérdame); only clear room membership.
+  if (typeof deps.setCloudSyncRoomSnapshot === 'function') {
+    deps.setCloudSyncRoomSnapshot(null);
+  } else {
+    deps.setCloudSyncRoomId('');
+    deps.setCloudSyncRevision(0);
+  }
   deps.onCloudRoomChange?.(false);
   deps.toast('Saliste de la sala en la nube.', 'info');
   deps.renderDisconnected();

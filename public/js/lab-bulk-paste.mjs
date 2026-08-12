@@ -11,7 +11,7 @@ import {
   reprocessLabResultLines_,
   collectPriorRefsFromHistory,
 } from './labs.js';
-import { labHistory } from './app-state.mjs';
+import { getLabHistory } from './app-state.mjs';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory, parseFechaLabToMs, sortLabHistoryChronological } from './tend-core.mjs';
 import { normalizeLabLine } from './lab-history-auto-store-core.mjs';
 import { resLabsHasGasometria, primaryTipoForLabSet } from './lab-history-format.mjs';
@@ -222,7 +222,7 @@ function resolveChartPatientForReport_(reportText, findPatient) {
 
 function priorRefsForPatient_(patient) {
   if (!patient || !patient.id) return Object.create(null);
-  return collectPriorRefsFromHistory(sortLabHistoryChronological(labHistory[patient.id] || []));
+  return collectPriorRefsFromHistory(sortLabHistoryChronological(getLabHistory()[patient.id] || []));
 }
 
 function parseReportChunk(reportText, reportIndex, findPatient) {

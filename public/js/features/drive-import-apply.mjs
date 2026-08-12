@@ -1,4 +1,4 @@
-import { patients, saveState } from '../app-state.mjs';
+import { getPatients, persistClinicalState } from '../app-state.mjs';
 import { applyDefaultsToNewPatient } from '../app-shell.mjs';
 import { generatePatientId, selectPatient, ensureUniquePatientName } from './patients.mjs';
 import { applyDriveImportEventualidades } from './eventualidades-panel.mjs';
@@ -35,7 +35,7 @@ function createPatientFromDriveHeader(header) {
     fromLab: false,
   };
   applyDefaultsToNewPatient(patient);
-  patients.unshift(patient);
+  getPatients().unshift(patient);
   selectPatient(id);
   return patient;
 }
@@ -81,7 +81,7 @@ async function applyDriveImportInner(parsed, options) {
   if (evRes.lanDeferred) lanSyncDeferred = true;
 
   const labRes = await applyDriveLabSetsIfAny(patient, parsed);
-  await saveState({ immediate: true });
+  await persistClinicalState({ immediate: true });
 
   return {
     ok: true,

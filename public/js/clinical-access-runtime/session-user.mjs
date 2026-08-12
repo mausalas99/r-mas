@@ -1,4 +1,4 @@
-import { patients, saveState } from '../app-state.mjs';
+import { getPatients, persistClinicalState } from '../app-state.mjs';
 import { migratePatientsClinicalSala } from '../clinico-access.mjs';
 import { readRpcSettings } from '../clinical-settings.mjs';
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
@@ -12,9 +12,9 @@ export function migrateLocalPatientsClinicalSala() {
   if (!sala) return 0;
 
   const actor = user ? { ...user, sala } : { sala };
-  const migrated = migratePatientsClinicalSala(patients, actor);
+  const migrated = migratePatientsClinicalSala(getPatients(), actor);
   if (migrated > 0) {
-    void saveState({ immediate: true });
+    void persistClinicalState({ immediate: true });
     if (typeof document !== 'undefined') {
       void import('../features/patients.mjs')
         .then((mod) => mod.renderPatientList({ silent: true }))

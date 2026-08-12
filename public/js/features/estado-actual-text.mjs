@@ -8,7 +8,7 @@ import {
 import { normalizeEaTextInputs } from './estado-actual-text-inputs.mjs';
 import { patientHasInsulinRescatesInReceta } from './estado-actual-glu-rescue.mjs';
 import { detectInsulinPumpAlgorithmFromRecetaBlock } from '../insulin-pump-some-detect.mjs';
-import { labHistory } from '../app-state.mjs';
+import { getLabHistory } from '../app-state.mjs';
 import { resolveVentilatorioLabContext } from './estado-actual-ventilatorio-labs.mjs';
 
 /**
@@ -22,7 +22,7 @@ import { resolveVentilatorioLabContext } from './estado-actual-ventilatorio-labs
 export function buildEstadoActualText(estadoClinico, snapshot, balances, options) {
   options = options || {};
   var ctx = normalizeEaTextInputs(estadoClinico, snapshot, balances);
-  var labCtx = options.patientId ? resolveVentilatorioLabContext(options.patientId, labHistory) : null;
+  var labCtx = options.patientId ? resolveVentilatorioLabContext(options.patientId, getLabHistory()) : null;
   var soporte = resolveSoporteClause(ctx.ec, {
     fr: ctx.v.fr,
     sat: ctx.v.sat,

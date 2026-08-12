@@ -16,7 +16,7 @@ description: "SQLCipher clinical store — schema, migrations, outbox."
 | Schema bump / migration | `lib/db/schema.mjs`, `lib/db/schema.test.mjs` |
 | Open / unlock DB | `lib/db/db-manager.mjs`, `lib/db/crypto.mjs` |
 | Clinical session / roles | `lib/db/clinical-access-db.mjs`, `clinical-privileges.mjs` |
-| LAN SQL outbox | `lib/db/lan-sync-outbox.mjs` |
+| LAN SQL outbox | `lib/db/legacy-sync-outbox.mjs` |
 | Clinical ops sync | `lib/db/clinical-ops-sync.mjs` |
 | Forensic audit | `lib/db/forensic-audit.mjs`, `audit-hooks.mjs` |
 | IPC from renderer | `lib/db/ipc-handlers.mjs` — integration tests: `lib/db/ipc-handlers.test.mjs` (fake `ipcMain`, `createUnlockedDbManager`) |

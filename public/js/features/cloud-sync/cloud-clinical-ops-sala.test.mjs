@@ -36,8 +36,8 @@ describe('cloud-clinical-ops-sala', () => {
 
   it('pullClinicalOpsForSala hydrates iPad scope without SQLCipher merge', () => {
     assert.match(src, /async function applyClinicalOpsSnapshot/);
-    assert.match(src, /isClinicalOpsLanAvailable/);
-    assert.match(src, /applyClinicalScopeFromLanOpsSnapshot/);
+    assert.match(src, /isClinicalOpsSyncAvailable/);
+    assert.match(src, /applyClinicalScopeFromOpsSnapshot/);
     const start = src.indexOf('export async function pullClinicalOpsForSala');
     assert.ok(start >= 0);
     const body = src.slice(start, start + 900);

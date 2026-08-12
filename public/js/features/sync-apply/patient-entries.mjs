@@ -2,17 +2,7 @@
  * Neutral patient entry merge/apply for LAN/Nube census hydration.
  */
 import { storage } from '../../storage.js';
-import {
-  patients,
-  notes,
-  indicaciones,
-  labHistory,
-  medRecetaByPatient,
-  medPharmProfileByPatient,
-  vpoByPatient,
-  listadoProblemas,
-  saveState,
-} from '../../app-state.mjs';
+import { getPatients, getNotes, getIndicaciones, getLabHistory, getMedRecetaByPatient, getMedPharmProfileByPatient, getVpoByPatient, getListadoProblemas, persistClinicalState } from '../../app-state.mjs';
 import {
   mergeEventualidades,
   mergeLabHistorySets,
@@ -24,7 +14,7 @@ import { mergeTodoListsById } from '../../livesync-patient-ids.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import {
   getClinicalScopeContextForEvaluate,
-  isClinicalScopeReadyForLanPatientApply,
+  isClinicalScopeReadyForPatientApply,
 } from '../../clinical-access-runtime.mjs';
 import { shouldEnforceTeamPatientMirror } from '../../clinical-privileges.mjs';
 import { filterPatientEntriesForLanTeamScope } from '../../patient-team-scope.mjs';
@@ -44,7 +34,7 @@ function trimMobileLabHistorySets(sets) {
   return filterLabHistorySetsForMobileReference(sets);
 }
 
-export function configureLanPatientEntries(deps) {
+export function configurePatientEntries(deps) {
   if (deps && typeof deps === 'object') Object.assign(entryDeps, deps);
 }
 
@@ -149,7 +139,7 @@ function assignLanScalarIfChanged(target, key, incoming, fallback, takeIncoming)
 }
 
 function filterIncomingPatientEntriesForScope(entries) {
-  if (!isClinicalScopeReadyForLanPatientApply()) return [];
+  if (!isClinicalScopeReadyForPatientApply()) return [];
   var user = clinicalSessionContext.user;
   if (!user?.user_id) return [];
   return filterPatientEntriesForLanTeamScope(
@@ -161,7 +151,7 @@ function filterIncomingPatientEntriesForScope(entries) {
 }
 
 export function touchPatientLanUpdatedAt(patientId) {
-  var p = patients.find(function (x) {
+  var p = getPatients().find(function (x) {
     return x && x.id === patientId;
   });
   if (p) p.lanUpdatedAt = new Date().toISOString();
@@ -207,21 +197,21 @@ function applyLanPatientScalars(existing, p) {
 function applyLanPatientCharts(existing, entry) {
   var changed = false;
   var nextNote = entry.note || {};
-  if (!lanJsonEqual(notes[existing.id], nextNote)) {
-    notes[existing.id] = nextNote;
+  if (!lanJsonEqual(getNotes()[existing.id], nextNote)) {
+    getNotes()[existing.id] = nextNote;
     changed = true;
   }
   var nextInd = entry.indicaciones || {};
-  if (!lanJsonEqual(indicaciones[existing.id], nextInd)) {
-    indicaciones[existing.id] = nextInd;
+  if (!lanJsonEqual(getIndicaciones()[existing.id], nextInd)) {
+    getIndicaciones()[existing.id] = nextInd;
     changed = true;
   }
   var nextLabs = trimMobileLabHistorySets(Array.isArray(entry.labHistory) ? entry.labHistory : []);
   var mergedLabs = trimMobileLabHistorySets(
-    mergeLabHistorySets(labHistory[existing.id] || [], nextLabs)
+    mergeLabHistorySets(getLabHistory()[existing.id] || [], nextLabs)
   );
-  if (!lanJsonEqual(labHistory[existing.id], mergedLabs)) {
-    labHistory[existing.id] = mergedLabs;
+  if (!lanJsonEqual(getLabHistory()[existing.id], mergedLabs)) {
+    getLabHistory()[existing.id] = mergedLabs;
     changed = true;
   }
   return applyLanPatientMedArtifacts(existing, entry) || changed;
@@ -249,8 +239,8 @@ function applyLanPatientMedArtifacts(existing, entry) {
   changed = applyLanMedPharmField(existing, entry) || changed;
   changed = applyLanVpoField(existing, entry) || changed;
   if (entry.listadoProblemas) {
-    if (!lanJsonEqual(listadoProblemas[existing.id], entry.listadoProblemas)) {
-      listadoProblemas[existing.id] = entry.listadoProblemas;
+    if (!lanJsonEqual(getListadoProblemas()[existing.id], entry.listadoProblemas)) {
+      getListadoProblemas()[existing.id] = entry.listadoProblemas;
       changed = true;
     }
   }
@@ -260,35 +250,35 @@ function applyLanPatientMedArtifacts(existing, entry) {
 function applyLanMedRecetaField(existing, entry) {
   if (!Object.prototype.hasOwnProperty.call(entry, 'medReceta')) return false;
   if (entry.medReceta) {
-    if (lanJsonEqual(medRecetaByPatient[existing.id], entry.medReceta)) return false;
-    medRecetaByPatient[existing.id] = entry.medReceta;
+    if (lanJsonEqual(getMedRecetaByPatient()[existing.id], entry.medReceta)) return false;
+    getMedRecetaByPatient()[existing.id] = entry.medReceta;
     return true;
   }
-  if (!medRecetaByPatient[existing.id]) return false;
-  delete medRecetaByPatient[existing.id];
+  if (!getMedRecetaByPatient()[existing.id]) return false;
+  delete getMedRecetaByPatient()[existing.id];
   return true;
 }
 
 function applyLanMedPharmField(existing, entry) {
   if (!Object.prototype.hasOwnProperty.call(entry, 'medPharmProfile')) return false;
   if (entry.medPharmProfile) {
-    if (lanJsonEqual(medPharmProfileByPatient[existing.id], entry.medPharmProfile)) return false;
-    medPharmProfileByPatient[existing.id] = entry.medPharmProfile;
+    if (lanJsonEqual(getMedPharmProfileByPatient()[existing.id], entry.medPharmProfile)) return false;
+    getMedPharmProfileByPatient()[existing.id] = entry.medPharmProfile;
     return true;
   }
-  if (!medPharmProfileByPatient[existing.id]) return false;
-  delete medPharmProfileByPatient[existing.id];
+  if (!getMedPharmProfileByPatient()[existing.id]) return false;
+  delete getMedPharmProfileByPatient()[existing.id];
   return true;
 }
 
 function applyLanVpoField(existing, entry) {
   if (entry.vpo) {
-    if (lanJsonEqual(vpoByPatient[existing.id], entry.vpo)) return false;
-    vpoByPatient[existing.id] = entry.vpo;
+    if (lanJsonEqual(getVpoByPatient()[existing.id], entry.vpo)) return false;
+    getVpoByPatient()[existing.id] = entry.vpo;
     return true;
   }
-  if (!vpoByPatient[existing.id]) return false;
-  delete vpoByPatient[existing.id];
+  if (!getVpoByPatient()[existing.id]) return false;
+  delete getVpoByPatient()[existing.id];
   return true;
 }
 
@@ -305,7 +295,7 @@ function findExistingPatient(entry) {
   var reg = String(entry.patient.registro || '').trim();
   var existing = reg ? lanRuntime().findPatientByRegistro(reg) : null;
   if (!existing && entry.patient.id) {
-    existing = patients.find(function (p) {
+    existing = getPatients().find(function (p) {
       return p && p.id === entry.patient.id;
     });
   }
@@ -313,18 +303,18 @@ function findExistingPatient(entry) {
 }
 
 function seedNewPatientArtifacts(remoteId, entry) {
-  notes[remoteId] = entry.note || {};
-  indicaciones[remoteId] = entry.indicaciones || {};
-  labHistory[remoteId] = trimMobileLabHistorySets(
+  getNotes()[remoteId] = entry.note || {};
+  getIndicaciones()[remoteId] = entry.indicaciones || {};
+  getLabHistory()[remoteId] = trimMobileLabHistorySets(
     Array.isArray(entry.labHistory) ? entry.labHistory : []
   );
   if (Object.prototype.hasOwnProperty.call(entry, 'medReceta') && entry.medReceta) {
-    medRecetaByPatient[remoteId] = entry.medReceta;
+    getMedRecetaByPatient()[remoteId] = entry.medReceta;
   }
   if (Object.prototype.hasOwnProperty.call(entry, 'medPharmProfile') && entry.medPharmProfile) {
-    medPharmProfileByPatient[remoteId] = entry.medPharmProfile;
+    getMedPharmProfileByPatient()[remoteId] = entry.medPharmProfile;
   }
-  if (entry.vpo) vpoByPatient[remoteId] = entry.vpo;
+  if (entry.vpo) getVpoByPatient()[remoteId] = entry.vpo;
 }
 
 function attachOptionalPatientFields(newPat, patient) {
@@ -355,7 +345,7 @@ function createNewPatientShell(entry) {
   mergeCensoPatientFields(newPat, p);
   mergePatientRegistrationMeta(newPat, p);
   attachOptionalPatientFields(newPat, p);
-  patients.unshift(newPat);
+  getPatients().unshift(newPat);
   seedNewPatientArtifacts(remoteId, entry);
   return remoteId;
 }
@@ -364,7 +354,7 @@ function addLanPatientFromEntry(entry, opts) {
   var remoteId = String(entry.patient.id || '').trim();
   var idTaken =
     remoteId &&
-    patients.some(function (p) {
+    getPatients().some(function (p) {
       return p && p.id === remoteId;
     });
   var newId;
@@ -373,7 +363,7 @@ function addLanPatientFromEntry(entry, opts) {
   } else {
     newId = lanRuntime().applyImportEntry(entry, 'duplicate', null);
   }
-  if (entry.listadoProblemas && newId) listadoProblemas[newId] = entry.listadoProblemas;
+  if (entry.listadoProblemas && newId) getListadoProblemas()[newId] = entry.listadoProblemas;
   if (!opts.skipTodos) saveEntryTodosOnLocalPatient(newId, entry);
   return true;
 }
@@ -415,7 +405,7 @@ export function applyLanPatientEntries(entries, opts) {
     }
   }
   if (added || updated) {
-    saveState({ immediate: true });
+    persistClinicalState({ immediate: true });
     if (!shouldEnforceTeamPatientMirror()) {
       refreshLanPatientUiAfterApply();
     }

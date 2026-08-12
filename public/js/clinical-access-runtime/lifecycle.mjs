@@ -1,4 +1,4 @@
-import { patients } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 import { effectiveClinicalRank } from '../clinical-privileges.mjs';
 import { userIsOnGuardiaCallToday } from '../clinico-access.mjs';
 import { isGuardiaMode } from '../features/chrome.mjs';
@@ -9,7 +9,7 @@ import {
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
 import { markClinicalAccessBootReady } from './boot-ready.mjs';
 import { bootstrapClinicalAccess } from './bootstrap.mjs';
-import { wireClinicalOpsSyncRefresh } from './census-lan-pull.mjs';
+import { wireClinicalOpsSyncRefresh } from './census-nube-pull.mjs';
 import { electronApi } from './electron-api.mjs';
 import { renderGuardiaCensusGrid, syncGuardiaCensusPanelVisibility } from './guardia-grid.mjs';
 import {
@@ -54,7 +54,7 @@ export async function initClinicalAccessRuntime(settings, clientId) {
         return userIsOnGuardiaCallToday(uid, rank, teams, new Date(), salaGuardiaToday);
       },
       resolvePatientLabel: (patientId) => {
-        const p = patients.find((row) => String(row.id) === String(patientId));
+        const p = getPatients().find((row) => String(row.id) === String(patientId));
         if (!p) return '';
         const name = String(p.nombre || '').trim();
         const bed = [p.cuarto, p.cama].filter(Boolean).join('-');

@@ -1,4 +1,4 @@
-import { medRecetaByPatient } from "../app-state.mjs";
+import { getMedRecetaByPatient } from "../app-state.mjs";
 import {
   buildMedRecetaCopyText,
   buildMedRecetaNameOnlyText,
@@ -118,13 +118,13 @@ function handleMedPanelPatientChange(activeId) {
 function shouldSkipMedPanelCacheHit(activeId, cacheKey, els) {
   if (!activeId || getMedPanelCacheKey() !== cacheKey) return false;
   if (els.listEl.querySelector(".med-receta-wrap")) return true;
-  var cachedBlock = medRecetaByPatient[activeId];
+  var cachedBlock = getMedRecetaByPatient()[activeId];
   return (!cachedBlock || !cachedBlock.items || !cachedBlock.items.length) && !els.hintEl.hidden;
 }
 
 function renderMedPanelForActivePatient(activeId, cacheKey, els) {
   restoreMedInputForPatient(activeId);
-  var block = medRecetaByPatient[activeId];
+  var block = getMedRecetaByPatient()[activeId];
   var hasRecetaContent =
     block && ((block.items && block.items.length) || (block.dietas && block.dietas.length));
   if (!hasRecetaContent) {

@@ -37,6 +37,7 @@ export function setCloudSyncUrl(url) {
 
 export function getCloudSyncRemember() {
   try {
+    hydrateRememberFromDisk();
     return localStorage.getItem(REMEMBER_KEY) === '1';
   } catch {
     return false;
@@ -53,12 +54,113 @@ export function setCloudSyncRemember(remember) {
   }
 }
 
+/** @returns {any|null} */
+function rememberBridgeApi() {
+  try {
+    if (typeof window === 'undefined') return null;
+    return window.electronAPI || null;
+  } catch {
+    return null;
+  }
+}
+
+let rememberHydrated = false;
+
+/** Pull durable Recuérdame snapshot from userData into local/session storage. */
+function hydrateRememberFromDisk() {
+  if (rememberHydrated) return;
+  rememberHydrated = true;
+  const api = rememberBridgeApi();
+  if (!api || typeof api.cloudSyncRememberGetSync !== 'function') return;
+  let snap = null;
+  try {
+    snap = api.cloudSyncRememberGetSync();
+  } catch {
+    return;
+  }
+  if (!snap || !String(snap.token || '').trim()) return;
+  try {
+    localStorage.setItem(REMEMBER_KEY, '1');
+    sessionStorage.setItem(TOKEN_KEY, String(snap.token));
+    localStorage.setItem(TOKEN_KEY, String(snap.token));
+    if (snap.roomId) {
+      sessionStorage.setItem(ROOM_ID_KEY, String(snap.roomId));
+      localStorage.setItem(ROOM_ID_KEY, String(snap.roomId));
+    }
+    if (snap.revision != null) {
+      const rev = String(Number(snap.revision) || 0);
+      sessionStorage.setItem(REVISION_KEY, rev);
+      localStorage.setItem(REVISION_KEY, rev);
+    }
+    if (snap.roomMeta && snap.roomMeta.id) {
+      const meta = JSON.stringify(snap.roomMeta);
+      sessionStorage.setItem(ROOM_META_KEY, meta);
+      localStorage.setItem(ROOM_META_KEY, meta);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function persistRememberToDisk() {
+  const api = rememberBridgeApi();
+  if (!api) return;
+  if (!getCloudSyncRemember()) {
+    if (typeof api.cloudSyncRememberClear === 'function') {
+      void api.cloudSyncRememberClear();
+    }
+    return;
+  }
+  const token = (() => {
+    try {
+      return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY) || '';
+    } catch {
+      return '';
+    }
+  })();
+  if (!token) {
+    if (typeof api.cloudSyncRememberClear === 'function') {
+      void api.cloudSyncRememberClear();
+    }
+    return;
+  }
+  if (typeof api.cloudSyncRememberSet !== 'function') return;
+  let roomMeta = null;
+  try {
+    const raw = sessionStorage.getItem(ROOM_META_KEY) || localStorage.getItem(ROOM_META_KEY);
+    roomMeta = raw ? JSON.parse(raw) : null;
+  } catch {
+    roomMeta = null;
+  }
+  void api.cloudSyncRememberSet({
+    remember: true,
+    token,
+    roomId: (() => {
+      try {
+        return sessionStorage.getItem(ROOM_ID_KEY) || localStorage.getItem(ROOM_ID_KEY) || '';
+      } catch {
+        return '';
+      }
+    })(),
+    revision: (() => {
+      try {
+        const raw = sessionStorage.getItem(REVISION_KEY) || localStorage.getItem(REVISION_KEY) || '0';
+        return Number(raw) || 0;
+      } catch {
+        return 0;
+      }
+    })(),
+    roomMeta,
+  });
+}
+
 /**
  * @param {string} key
  * @returns {string}
  */
 function readDual(key) {
   try {
+    hydrateRememberFromDisk();
     const sessionVal = sessionStorage.getItem(key);
     if (sessionVal) return sessionVal;
     if (!getCloudSyncRemember()) return '';
@@ -85,9 +187,19 @@ function writeDual(key, value) {
   } catch {
     /* ignore */
   }
+  // Durable userData copy so quit/destroy cannot drop Recuérdame.
+  if (
+    key === TOKEN_KEY ||
+    key === ROOM_ID_KEY ||
+    key === REVISION_KEY ||
+    key === ROOM_META_KEY ||
+    key === REMEMBER_KEY
+  ) {
+    persistRememberToDisk();
+  }
 }
 
-// TODO: migrate token to safeStorage IPC (preload cloudSyncGetToken / cloudSyncSetToken)
+// Recuérdame also dual-writes to userData via cloudSyncRemember* IPC (survives abrupt quit).
 export function getCloudSyncToken() {
   return readDual(TOKEN_KEY);
 }
@@ -196,4 +308,8 @@ export function clearCloudSyncSession() {
   setCloudSyncRoomId('');
   setCloudSyncRevision(0);
   writeDual(ROOM_META_KEY, '');
+  const api = rememberBridgeApi();
+  if (api && typeof api.cloudSyncRememberClear === 'function') {
+    void api.cloudSyncRememberClear();
+  }
 }

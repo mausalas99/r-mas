@@ -12,7 +12,7 @@
  * or Modo Entrega. Active pendientes must not block heredar/traer or leave
  * team (leave resolves coverings in clinical-access-teams-membership).
  */
-import { patients } from '../../app-state.mjs';
+import { getPatients } from '../../app-state.mjs';
 import {
   clinicalSessionContext,
   fetchClinicalScopeContextFromDb,
@@ -31,7 +31,7 @@ import { toast } from './shared.mjs';
  * @param {string} teamId
  * @param {Array<object>} [localPatients]
  */
-export function listBringableLocalPatients(teamId, localPatients = patients) {
+export function listBringableLocalPatients(teamId, localPatients = getPatients()) {
   const tid = String(teamId || '').trim();
   if (!tid) return [];
   const user = clinicalSessionContext.user;

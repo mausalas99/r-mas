@@ -3,7 +3,7 @@
  */
 import { isModeSala } from '../mode-features.mjs';
 import { buildEaMonitoreoRevision } from './estado-actual-data.mjs';
-import { medRecetaByPatient, patients } from '../app-state.mjs';
+import { getPatients, getMedRecetaByPatient } from '../app-state.mjs';
 import { getLabHistoryRevision } from '../lab-history-cache.mjs';
 import { scheduleIdle } from '../deferred-work.mjs';
 import {
@@ -74,11 +74,11 @@ export function granularMountIsEmpty(tab) {
 }
 
 function estadoActualCacheSuffix(patientId) {
-  var p = patients.find(function (x) {
+  var p = getPatients().find(function (x) {
     return String(x.id) === String(patientId);
   });
   if (!p || !p.monitoreo) return "0";
-  return buildEaMonitoreoRevision(p.monitoreo, patientId, medRecetaByPatient);
+  return buildEaMonitoreoRevision(p.monitoreo, patientId, getMedRecetaByPatient());
 }
 
 function innerTabRenderCacheKey(tab) {

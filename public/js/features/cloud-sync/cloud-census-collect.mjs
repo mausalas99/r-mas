@@ -3,12 +3,12 @@
  * stub returns null on Nube boot until registerLanRuntime). Applies the same team
  * scope as LAN for R1–R3 so peers receive the charts they can see.
  */
-import { patients } from '../../app-state.mjs';
+import { getPatients } from '../../app-state.mjs';
 import { storage } from '../../storage.js';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import {
   getClinicalScopeContextForEvaluate,
-  isClinicalScopeReadyForLanPatientApply,
+  isClinicalScopeReadyForPatientApply,
 } from '../../clinical-access-runtime.mjs';
 import { shouldUseElevatedPatientCensus } from '../../clinical-privileges.mjs';
 import { filterPatientEntriesForLanTeamScope } from '../../patient-team-scope.mjs';
@@ -16,8 +16,8 @@ import { buildPatientEntry } from '../patients-modal-commit.mjs';
 
 /** @returns {boolean} */
 export function isLanPatientEntryCollectorReady() {
-  if (!patients.length) return true;
-  const first = patients.find(function (p) {
+  if (!getPatients().length) return true;
+  const first = getPatients().find(function (p) {
     return p && p.id && String(p.id).indexOf('demo-') !== 0;
   });
   if (!first?.id) return true;
@@ -28,8 +28,8 @@ export function isLanPatientEntryCollectorReady() {
 async function buildAllLocalPatientEntries() {
   const { buildPatientEntry } = await import('../patients-modal-commit.mjs');
   const out = [];
-  for (let i = 0; i < patients.length; i += 1) {
-    const p = patients[i];
+  for (let i = 0; i < getPatients().length; i += 1) {
+    const p = getPatients()[i];
     if (!p?.id || String(p.id).indexOf('demo-') === 0) continue;
     const entry = buildPatientEntry(p.id);
     if (entry) out.push(entry);
@@ -46,7 +46,7 @@ function scopeEntriesForCloudPush(entries) {
   if (!user?.user_id) return entries;
   if (shouldUseElevatedPatientCensus(user)) return entries;
   // Scope not ready yet — push full local census so the room is seeded; apply filters peers.
-  if (!isClinicalScopeReadyForLanPatientApply()) return entries;
+  if (!isClinicalScopeReadyForPatientApply()) return entries;
   return filterPatientEntriesForLanTeamScope(
     entries,
     user,
@@ -57,7 +57,7 @@ function scopeEntriesForCloudPush(entries) {
 
 /** @returns {Promise<object[]>} */
 export async function collectPatientEntriesForCloudPush() {
-  if (!patients.length) return [];
+  if (!getPatients().length) return [];
   const entries = await buildAllLocalPatientEntries();
   return scopeEntriesForCloudPush(entries);
 }
@@ -65,8 +65,8 @@ export async function collectPatientEntriesForCloudPush() {
 /** @returns {Record<string, unknown[]>} */
 export function collectTodosMapForCloudPush() {
   const out = {};
-  for (let i = 0; i < patients.length; i += 1) {
-    const p = patients[i];
+  for (let i = 0; i < getPatients().length; i += 1) {
+    const p = getPatients()[i];
     if (!p?.id || String(p.id).indexOf('demo-') === 0) continue;
     const list = storage.getTodos(p.id);
     if (list.length) out[p.id] = list;

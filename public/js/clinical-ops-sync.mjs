@@ -47,7 +47,7 @@ function dbApi() {
   return window.rplusDb || window.electronAPI || null;
 }
 
-export function isClinicalOpsLanAvailable() {
+export function isClinicalOpsSyncAvailable() {
   const api = dbApi();
   return !!(
     api &&
@@ -58,13 +58,13 @@ export function isClinicalOpsLanAvailable() {
 
 /** @returns {Promise<object|null>} */
 export async function refreshClinicalOpsSnapshotCache() {
-  cachedSnapshot = await collectClinicalOpsForLanSync();
+  cachedSnapshot = await collectClinicalOpsForSync();
   return cachedSnapshot;
 }
 
 /** Refresh export cache when sync bundles are built or clinical session starts. */
-export async function prepareClinicalOpsForLanSync() {
-  if (!isClinicalOpsLanAvailable()) return null;
+export async function prepareClinicalOpsForSync() {
+  if (!isClinicalOpsSyncAvailable()) return null;
   return refreshClinicalOpsSnapshotCache();
 }
 
@@ -74,7 +74,7 @@ export function getCachedClinicalOpsSnapshot() {
 }
 
 /** @returns {Promise<object|null>} */
-export async function collectClinicalOpsForLanSync(opts) {
+export async function collectClinicalOpsForSync(opts) {
   const api = dbApi();
   if (!api || typeof api.dbClinicalOpsExport !== 'function') return null;
   const sala = String(opts?.sala || '').trim();
@@ -99,7 +99,7 @@ export function clinicalOpsMergeHadChanges(mergeStats) {
   });
 }
 
-function deferClinicalOpsLanSnapshot(snapshot) {
+function deferClinicalOpsSnapshot(snapshot) {
   pendingClinicalOpsSnapshot = snapshot;
   recordClinicalOpsTrace('merge', {
     ok: false,
@@ -113,11 +113,11 @@ function deferClinicalOpsLanSnapshot(snapshot) {
 }
 
 /** Apply clinical-ops snapshot queued while SQLCipher was still locked. */
-export async function flushPendingClinicalOpsLanSnapshot() {
+export async function flushPendingClinicalOpsSnapshot() {
   if (!pendingClinicalOpsSnapshot) return { ok: true, changed: false };
   const snap = pendingClinicalOpsSnapshot;
   pendingClinicalOpsSnapshot = null;
-  return applyClinicalOpsLanSnapshot(snap);
+  return applyClinicalOpsSnapshot(snap);
 }
 
 function recordClinicalOpsMergeTrace(snapshot, res, ok, changed) {
@@ -149,7 +149,7 @@ function buildClinicalOpsMergeResult(res, ok, changed) {
 
 async function mergeClinicalOpsSnapshot(api, snapshot) {
   const res = await api.dbClinicalOpsMerge({ snapshot });
-  if (res?.code === 'DB_LOCKED') return deferClinicalOpsLanSnapshot(snapshot);
+  if (res?.code === 'DB_LOCKED') return deferClinicalOpsSnapshot(snapshot);
   const ok = res?.ok !== false;
   const changed = ok && clinicalOpsMergeHadChanges(res?.mergeStats);
   recordClinicalOpsMergeTrace(snapshot, res, ok, changed);
@@ -161,7 +161,7 @@ async function mergeClinicalOpsSnapshot(api, snapshot) {
  * @param {object|null} snapshot
  * @returns {Promise<{ ok: boolean, changed: boolean, code?: string, deferred?: boolean }>}
  */
-export async function applyClinicalOpsLanSnapshot(snapshot) {
+export async function applyClinicalOpsSnapshot(snapshot) {
   if (!snapshot || typeof snapshot !== 'object') return { ok: false, changed: false };
   const api = dbApi();
   if (!api || typeof api.dbClinicalOpsMerge !== 'function') return { ok: false, changed: false };

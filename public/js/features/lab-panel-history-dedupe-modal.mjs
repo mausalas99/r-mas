@@ -1,4 +1,4 @@
-import { notes, saveState } from '../app-state.mjs';
+import { getNotes, persistClinicalState } from '../app-state.mjs';
 
 import { labPanelBridge } from './lab-panel-bridge.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
@@ -124,12 +124,12 @@ export function wireLabDedupeModal(backdrop, onConfirm) {
       rt.pushUndoSnapshot('Eliminar duplicados de historial de labs (' + nSel + ')');
     }
     const removedTotal = onConfirm(mapByPatient);
-    saveState({ immediate: true });
+    persistClinicalState({ immediate: true });
     labPanelBridge.renderLabHistoryPanel();
     rt.refreshTendenciasOrCultivosPanel();
     const el = document.querySelector('#note-form textarea[oninput*="estudios"]');
-    if (el && rt.getActiveId() && notes[rt.getActiveId()]) {
-      el.value = notes[rt.getActiveId()].estudios || '';
+    if (el && rt.getActiveId() && getNotes()[rt.getActiveId()]) {
+      el.value = getNotes()[rt.getActiveId()].estudios || '';
     }
     rt.addAuditEntry('lab-history-dedupe', 'ok', removedTotal, Object.keys(mapByPatient).length + ' pacientes');
     rt.showToast('Eliminadas ' + removedTotal + ' entrada' + (removedTotal === 1 ? '' : 's') + ' ✓', 'success');

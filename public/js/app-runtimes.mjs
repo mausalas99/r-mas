@@ -2,7 +2,7 @@
  * Registro de runtimes de features (inyección de dependencias al cargar).
  */
 import { storage } from './storage.js';
-import { patients, saveState } from './app-state.mjs';
+import { getPatients, persistClinicalState } from './app-state.mjs';
 import { migrateToV3 } from './mode-features.mjs';
 import {
   splitResLabsByTipo,
@@ -37,7 +37,7 @@ import {
   enqueueCloudTodoUpsert,
 } from './features/cloud-sync/mutate-bridge.mjs';
 import { syncSettingsLanHostDiskSection } from './features/cloud-sync/panel-chrome.mjs';
-import { configureLanPatientEntries } from './features/sync-apply/patient-entries.mjs';
+import { configurePatientEntries } from './features/sync-apply/patient-entries.mjs';
 import {
   registerPatientsRuntime,
   filterPatientsForGuardiaCensus,
@@ -287,7 +287,7 @@ function buildRuntimeContextUiDeps() {
     normalizeFechaLabHistory,
     buildLabSetDateLine,
     getRoundOverviewMode,
-    saveState,
+    persistClinicalState,
     emitLiveSyncTodoUpsert: enqueueCloudTodoUpsert,
     requestDocumentJson,
     handleDocumentGenerateResponse,
@@ -332,7 +332,7 @@ function buildRuntimeContextFeatureDeps() {
       var id = rt.getActiveId();
       if (!id) return null;
       return (
-        patients.find(function (p) {
+        getPatients().find(function (p) {
           return String(p.id) === String(id);
         }) || null
       );
@@ -344,7 +344,7 @@ function buildRuntimeContextFeatureDeps() {
       var activeId = rt.getActiveId();
       var patient =
         activeId &&
-        patients.find(function (p) {
+        getPatients().find(function (p) {
           return p.id === activeId;
         });
       resetEaRegistroForm(patient || null);
@@ -418,7 +418,7 @@ export async function registerAllFeatureRuntimes() {
   const reminderScheduler = await import('./todos-reminder-scheduler.mjs');
   reminderScheduler.configureTodoReminderScheduler({
     getPatientLabel: function (pid) {
-      var p = patients.find(function (row) {
+      var p = getPatients().find(function (row) {
         return row.id === pid;
       });
       if (!p) return 'Paciente';
@@ -439,7 +439,7 @@ export async function registerAllFeatureRuntimes() {
   registerCensoRuntime(
     Object.assign({}, ctx, {
       getCensusPatients: function () {
-        return filterPatientsForGuardiaCensus(patients);
+        return filterPatientsForGuardiaCensus(getPatients());
       },
     })
   );
@@ -455,7 +455,7 @@ export async function registerAllFeatureRuntimes() {
   registerLabBulkPreviewModalRuntime(ctx);
   registerLabHistoryBatchCopyRuntime(ctx);
   registerProductivityRuntime(ctx);
-  configureLanPatientEntries({
+  configurePatientEntries({
     runtime: ctx,
     renderPatientListLanSilent: function () {
       if (typeof ctx.renderPatientList === 'function') ctx.renderPatientList();
@@ -463,6 +463,21 @@ export async function registerAllFeatureRuntimes() {
   });
   void import('./features/cloud-sync/nube-config-retire.mjs').then((mod) => {
     mod.runLanConfigRetireIfNeeded({ showToast: ctx?.showToast });
+  });
+  void import('./features/cloud-sync/lan-prefs-retire.mjs').then((mod) => {
+    mod.runLanPrefsRetireIfNeeded();
+  });
+  void import('./features/cloud-sync/lan-blob-retire.mjs').then((mod) => {
+    const pruneDbBlobs = async (keys) => {
+      if (
+        typeof window !== 'undefined' &&
+        window.electronAPI &&
+        typeof window.electronAPI.dbClinicalDeleteBlobs === 'function'
+      ) {
+        await window.electronAPI.dbClinicalDeleteBlobs({ keys });
+      }
+    };
+    void mod.runLanBlobRetireIfNeeded({ pruneDbBlobs });
   });
   void import('./equipos-cloud-config.mjs').then((mod) => {
     mod.runEquiposCloudBootIfNeeded();

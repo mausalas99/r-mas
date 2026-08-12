@@ -1,6 +1,6 @@
 import { parseDriveDocument } from '../../../../lib/drive-import/parse-drive-document.mjs';
 import { listHcPatchSectionKeys } from '../../../../lib/drive-import/map-universal-hc.mjs';
-import { labHistory } from '../../app-state.mjs';
+import { getLabHistory } from '../../app-state.mjs';
 import { getDriveImportRuntime } from './drive-import-state.mjs';
 import { getApplyMode, getTextarea } from './drive-import-dom.mjs';
 
@@ -13,7 +13,7 @@ export function getParsed() {
       ? patient.eventualidades.entries
       : [];
   const existingLabs =
-    patient && patient.id && labHistory[patient.id] ? labHistory[patient.id] : [];
+    patient && patient.id && getLabHistory()[patient.id] ? getLabHistory()[patient.id] : [];
   return parseDriveDocument(ta ? ta.value : '', {
     existingEventualidades: existing,
     existingLabHistory: existingLabs,
@@ -48,7 +48,7 @@ export function getReviewBuildOpts(_parsed) {
         ? patient.eventualidades.entries
         : [],
     existingLabHistory:
-      patient && patient.id && labHistory[patient.id] ? labHistory[patient.id] : [],
+      patient && patient.id && getLabHistory()[patient.id] ? getLabHistory()[patient.id] : [],
     createNew: !patient,
   };
 }

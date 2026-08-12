@@ -5,7 +5,7 @@ import { renderEntry, isLabSectionHeaderHtml } from '../labs.js';
 import { storage } from '../storage.js';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { dosisBeforeSlash, effectiveDiaTratamiento } from '../med-receta-core.mjs';
-import { patients, medRecetaByPatient } from '../app-state.mjs';
+import { getPatients, getMedRecetaByPatient } from '../app-state.mjs';
 import { isPaseMode } from './chrome.mjs';
 import {
   extractCultivoTableRowsFromHistory,
@@ -393,7 +393,7 @@ function buildPaseMedCardHtml(it, block) {
 }
 
 function buildPaseMedSectionHtml(pid) {
-  var block = medRecetaByPatient[pid];
+  var block = getMedRecetaByPatient()[pid];
   var medItems =
     block && block.items ? block.items.filter(function (it) { return !it.suspendido; }) : [];
   var body = !medItems.length
@@ -431,7 +431,7 @@ export function renderPaseBoard() {
       '<div class="pase-empty-screen" role="status">Selecciona un paciente en la lista para ver el resumen.</div>';
     return;
   }
-  var patient = patients.find(function (x) {
+  var patient = getPatients().find(function (x) {
     return String(x.id) === String(aid);
   });
   host.innerHTML = buildPaseBoardBodyHtml(aid, patient);

@@ -134,9 +134,9 @@
   --z-modal: 9000;
   --z-modal-nested: 9010;
   --z-clinical-teams-lower: 9005;
-  --z-clinical-lan-users: 9020;
+  --z-clinical-directory-users: 9020;
   --z-clinical-admin: 9030;
-  --z-clinical-lan-directory: 9040;
+  --z-clinical-directory: 9040;
   --z-header-backdrop: 9100;
   --z-header-dropdown: 9101;
   --z-header-dropdown-front: 9102;

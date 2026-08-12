@@ -8,7 +8,7 @@ import {
   mapPatientForGuardiaGrid,
   refreshGuardiaCensusFromDb,
 } from '../clinical-access-runtime.mjs';
-import { patients } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 import { elevatedPatientFilters } from './clinical-census-filters-state.mjs';
 import { filterPatientsForGuardiaCensus } from './patients-clinical-filter.mjs';
 import {
@@ -231,7 +231,7 @@ function wireRosterFooter(guardiasMap) {
 }
 
 function rosterScopePatients(guardiasMap) {
-  const basePatients = patients.filter((p) => p && p.id && !p.isDemo && !p.archived);
+  const basePatients = getPatients().filter((p) => p && p.id && !p.isDemo && !p.archived);
   const scopeContext =
     clinicalSessionContext.scopeContext || getClinicalScopeContextForEvaluate() || {};
   const scoped = filterPatientsForGuardiaCensus(

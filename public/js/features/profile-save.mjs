@@ -1,5 +1,5 @@
 /** Perfil — save settings from modal form. */
-import { notes, saveState } from "../app-state.mjs";
+import { getNotes, persistClinicalState } from "../app-state.mjs";
 import { renderNoteForm, applyProfileToNoteIfEmpty } from "./notes-indicaciones.mjs";
 import {
   getProfileRuntime,
@@ -34,10 +34,10 @@ export function saveSettings() {
   applyProfileFormToSettings(st);
   localStorage.setItem("rpc-settings", JSON.stringify(st));
   var backfill = false;
-  Object.keys(notes).forEach(function (pid) {
-    if (notes[pid] && applyProfileToNoteIfEmpty(notes[pid])) backfill = true;
+  Object.keys(getNotes()).forEach(function (pid) {
+    if (getNotes()[pid] && applyProfileToNoteIfEmpty(getNotes()[pid])) backfill = true;
   });
-  if (backfill) saveState();
+  if (backfill) persistClinicalState();
   loadSettings();
   if (getProfileRuntime().getActiveId()) renderNoteForm();
   getProfileRuntime().showToast("Perfil guardado ✓", "success");

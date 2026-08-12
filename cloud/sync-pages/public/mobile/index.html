@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<script>globalThis.__RPC_CLOUD_MOBILE__=true;globalThis.__RPC_MOBILE_WEB__=true;try{document.documentElement.dataset.cloudMobile="1";document.documentElement.classList.add("rpc-cloud-mobile");}catch(_e){}(function(){function g(){if(document.getElementById("rpc-cloud-mobile-gate"))return;var e=document.createElement("div");e.id="rpc-cloud-mobile-gate";e.className="rpc-cloud-mobile-gate ui-overlay-scrim";e.setAttribute("aria-live","polite");e.innerHTML='<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="dialog" aria-modal="true"><div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4><p class="rpc-cloud-mobile-modal__sub">Conectando al turno…</p></div><div class="rpc-cloud-mobile-modal__body rpc-cloud-mobile-modal__body--center"><span class="rpc-cloud-mobile-spinner" aria-hidden="true"></span></div></div>';document.body&&document.body.appendChild(e);document.body&&document.body.classList.add("rpc-cloud-mobile-gated")}document.body?g():document.addEventListener("DOMContentLoaded",g);setTimeout(function(){if(globalThis.__RPC_CLOUD_MOBILE_BUNDLE_BOOTED__)return;var g=document.getElementById("rpc-cloud-mobile-gate");if(!g||g.hidden)return;g.innerHTML='<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="alert"><div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4><p class="rpc-cloud-mobile-modal__sub">No se pudo cargar la app (v809-1786366201824).</p></div><div class="rpc-cloud-mobile-modal__body"><p>Cierra esta pestaña por completo y vuelve a abrir el enlace del turno.</p><button type="button" class="btn-save" onclick="location.reload()">Recargar</button></div></div>';},18000);})();</script>
+<script>globalThis.__RPC_CLOUD_MOBILE__=true;globalThis.__RPC_MOBILE_WEB__=true;try{document.documentElement.dataset.cloudMobile="1";document.documentElement.classList.add("rpc-cloud-mobile");}catch(_e){}(function(){function g(){if(document.getElementById("rpc-cloud-mobile-gate"))return;var e=document.createElement("div");e.id="rpc-cloud-mobile-gate";e.className="rpc-cloud-mobile-gate ui-overlay-scrim";e.setAttribute("aria-live","polite");e.innerHTML='<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="dialog" aria-modal="true"><div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4><p class="rpc-cloud-mobile-modal__sub">Conectando al turno…</p></div><div class="rpc-cloud-mobile-modal__body rpc-cloud-mobile-modal__body--center"><span class="rpc-cloud-mobile-spinner" aria-hidden="true"></span></div></div>';document.body&&document.body.appendChild(e);document.body&&document.body.classList.add("rpc-cloud-mobile-gated")}document.body?g():document.addEventListener("DOMContentLoaded",g);setTimeout(function(){if(globalThis.__RPC_CLOUD_MOBILE_BUNDLE_BOOTED__)return;var g=document.getElementById("rpc-cloud-mobile-gate");if(!g||g.hidden)return;g.innerHTML='<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="alert"><div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4><p class="rpc-cloud-mobile-modal__sub">No se pudo cargar la app (v810-1786488622825).</p></div><div class="rpc-cloud-mobile-modal__body"><p>Cierra esta pestaña por completo y vuelve a abrir el enlace del turno.</p><button type="button" class="btn-save" onclick="location.reload()">Recargar</button></div></div>';},18000);})();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' http: https: ws: wss:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
@@ -171,6 +171,7 @@
 <link rel="stylesheet" href="/mobile/styles/cloud-sync.css">
 <link rel="stylesheet" href="/mobile/styles/modals.css">
 <link rel="stylesheet" href="/mobile/styles/motion.css">
+<link rel="stylesheet" href="/mobile/styles/ui-patterns.css">
 <link rel="stylesheet" href="/mobile/styles/skeleton.css">
 <link rel="stylesheet" href="/mobile/styles/components.css">
 <link rel="stylesheet" href="/mobile/styles/workbench-tokens.css">
@@ -800,7 +801,7 @@
       </div>
       <div class="sidebar-header-actions">
         <div class="patient-filters-anchor" id="patient-filters-anchor">
-          <button type="button" class="btn-patient-filters" id="btn-patient-filters" hidden aria-expanded="false" aria-controls="clinical-census-filters-body" title="Filtros de pacientes" aria-label="Filtros de pacientes">
+          <button type="button" class="btn-patient-filters" id="btn-patient-filters" hidden aria-expanded="false" aria-controls="clinical-census-filters-body" title="Filtros de pacientes" aria-label="Filtros de pacientes" onclick="togglePatientCensusFilters(event)">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
             <span class="btn-patient-filters-badge" id="btn-patient-filters-badge" hidden aria-hidden="true"></span>
           </button>
@@ -2835,19 +2836,19 @@
   </div>
 </div>
 
-<div id="clinical-lan-users-backdrop" class="modal-backdrop clinical-lan-users-backdrop" aria-hidden="true">
-  <div class="modal clinical-lan-users-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-lan-users-title" onclick="event.stopPropagation()">
-    <header class="clinical-lan-users-modal-head">
-      <h3 id="clinical-lan-users-title">Directorio de usuarios</h3>
-      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-lan-users-close" aria-label="Cerrar">×</button>
+<div id="clinical-directory-users-backdrop" class="modal-backdrop clinical-directory-users-backdrop" aria-hidden="true">
+  <div class="modal clinical-directory-users-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-directory-users-title" onclick="event.stopPropagation()">
+    <header class="clinical-directory-users-modal-head">
+      <h3 id="clinical-directory-users-title">Directorio de usuarios</h3>
+      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-directory-users-close" aria-label="Cerrar">×</button>
     </header>
-    <div id="clinical-lan-users-panel-body" class="clinical-lan-users-panel-body"></div>
+    <div id="clinical-directory-users-panel-body" class="clinical-directory-users-panel-body"></div>
   </div>
 </div>
 
 <div id="clinical-admin-code-backdrop" class="modal-backdrop clinical-admin-code-backdrop" aria-hidden="true">
   <div class="modal clinical-admin-code-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-admin-code-title" onclick="event.stopPropagation()">
-    <header class="clinical-lan-users-modal-head">
+    <header class="clinical-directory-users-modal-head">
       <h3 id="clinical-admin-code-title">Privilegios de administración</h3>
       <button type="button" class="clinical-teams-dismiss" id="btn-clinical-admin-code-close" aria-label="Cerrar">×</button>
     </header>
@@ -2974,8 +2975,9 @@
       <div class="tend-detail-chart-cell">
         <canvas id="tend-detail-canvas"></canvas>
       </div>
-      <div id="tend-detail-vbar-slot" class="tend-detail-vbar-slot" aria-hidden="true"></div>
     </div>
+    <div id="tend-detail-events-slot" class="tend-detail-events-slot" aria-hidden="true"></div>
+    <button type="button" class="tend-detail-add-event-btn" id="tend-detail-add-event" data-tend-action="add-event-day">Agregar evento este día</button>
   </div>
 </div>
 

@@ -1,5 +1,5 @@
 /** File-input handlers for full, patient, range, and demo backup import. */
-import { saveState } from '../../../app-state.mjs';
+import { persistClinicalState } from '../../../app-state.mjs';
 import {
   describePatientImportRejection,
   parsePatientImportJsonText,
@@ -144,7 +144,7 @@ async function processFullBackupFile(rawPayload) {
   var n = (payload.data.patients || []).length;
   if (!confirm(buildFullBackupConfirmMsg(n))) return;
   if (typeof pushUndoSnapshot === 'function') rt.pushUndoSnapshot('Importar respaldo completo');
-  await saveState({ immediate: true });
+  await persistClinicalState({ immediate: true });
   try {
     localStorage.setItem('rpc-preimport-backup', JSON.stringify(buildFullBackupPayload()));
   } catch (_e) { void _e; }

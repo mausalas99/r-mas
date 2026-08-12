@@ -1,16 +1,6 @@
 /** In-memory backup snapshot and full payload persistence. */
 import { storage } from '../../../storage.js';
-import {
-  patients,
-  notes,
-  indicaciones,
-  labHistory,
-  medRecetaByPatient,
-  medPharmProfileByPatient,
-  listadoProblemas,
-  replaceAppStateFromBackupData,
-  saveState,
-} from '../../../app-state.mjs';
+import { getPatients, getNotes, getIndicaciones, getLabHistory, getMedRecetaByPatient, getMedPharmProfileByPatient, getListadoProblemas, replaceAppStateFromBackupData, persistClinicalState } from '../../../app-state.mjs';
 import { GUIDED_TOUR_LS_KEY } from '../../settings-help/tour-state.mjs';
 import { getPlatformRuntime } from '../runtime.mjs';
 
@@ -18,32 +8,32 @@ const rt = getPlatformRuntime();
 
 /** Snapshot for backup export — uses in-memory app state (what is on screen), not stale localStorage. */
 function buildBackupDataFromMemory() {
-  var filteredPatients = patients.filter(function (p) {
+  var filteredPatients = getPatients().filter(function (p) {
     return p && !p.isDemo;
   });
   var notesPersist = {};
-  Object.keys(notes || {}).forEach(function (k) {
-    if (notes[k] && !String(k).startsWith('demo-')) notesPersist[k] = notes[k];
+  Object.keys(getNotes() || {}).forEach(function (k) {
+    if (getNotes()[k] && !String(k).startsWith('demo-')) notesPersist[k] = getNotes()[k];
   });
   var indPersist = {};
-  Object.keys(indicaciones || {}).forEach(function (k) {
-    if (indicaciones[k] && !String(k).startsWith('demo-')) indPersist[k] = indicaciones[k];
+  Object.keys(getIndicaciones() || {}).forEach(function (k) {
+    if (getIndicaciones()[k] && !String(k).startsWith('demo-')) indPersist[k] = getIndicaciones()[k];
   });
   var lhPersist = {};
-  Object.keys(labHistory || {}).forEach(function (k) {
-    if (!String(k).startsWith('demo-')) lhPersist[k] = labHistory[k];
+  Object.keys(getLabHistory() || {}).forEach(function (k) {
+    if (!String(k).startsWith('demo-')) lhPersist[k] = getLabHistory()[k];
   });
   var medPersist = {};
-  Object.keys(medRecetaByPatient || {}).forEach(function (k) {
-    if (!String(k).startsWith('demo-')) medPersist[k] = medRecetaByPatient[k];
+  Object.keys(getMedRecetaByPatient() || {}).forEach(function (k) {
+    if (!String(k).startsWith('demo-')) medPersist[k] = getMedRecetaByPatient()[k];
   });
   var medPharmPersist = {};
-  Object.keys(medPharmProfileByPatient || {}).forEach(function (k) {
-    if (!String(k).startsWith('demo-')) medPharmPersist[k] = medPharmProfileByPatient[k];
+  Object.keys(getMedPharmProfileByPatient() || {}).forEach(function (k) {
+    if (!String(k).startsWith('demo-')) medPharmPersist[k] = getMedPharmProfileByPatient()[k];
   });
   var listPersist = {};
-  Object.keys(listadoProblemas || {}).forEach(function (k) {
-    if (listadoProblemas[k] && !String(k).startsWith('demo-')) listPersist[k] = listadoProblemas[k];
+  Object.keys(getListadoProblemas() || {}).forEach(function (k) {
+    if (getListadoProblemas()[k] && !String(k).startsWith('demo-')) listPersist[k] = getListadoProblemas()[k];
   });
   var settings = rt.getSettings();
   if (!settings || typeof settings !== 'object' || !Object.keys(settings).length) {
@@ -98,7 +88,7 @@ async function persistFullBackupPayload(payload) {
   } else {
     localStorage.removeItem(GUIDED_TOUR_LS_KEY);
   }
-  var result = await saveState({ immediate: true });
+  var result = await persistClinicalState({ immediate: true });
   if (!result || !result.ok) {
     throw new Error((result && result.code) || 'SAVE_FAILED');
   }

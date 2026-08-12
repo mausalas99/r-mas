@@ -1,5 +1,5 @@
 import { esc } from '../dom-escape.mjs';
-import { patients } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { cancelOverlayClose, closeOverlayAnimated } from '../ui-motion.mjs';
 import {
@@ -20,7 +20,7 @@ function findActivePatient() {
   const pid = rt.getActiveId();
   if (!pid) return null;
   return (
-    patients.find(function (row) {
+    getPatients().find(function (row) {
       return String(row.id) === String(pid);
     }) || null
   );

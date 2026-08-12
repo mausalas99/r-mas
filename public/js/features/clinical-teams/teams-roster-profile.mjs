@@ -1,8 +1,8 @@
 /** Mi rotación — clinical profile form submit from panel. */
 import { clinicalSessionContext, refreshClinicalUserProfile } from '../../clinical-access-runtime.mjs';
 import {
-  isBenignLanPushSkipCode,
-  LAN_PROFILE_PUSH_FAILED_MSG,
+  isBenignPushSkipCode,
+  PROFILE_PUSH_FAILED_MSG,
 } from '../../clinical-profile-cloud-stubs.mjs';
 import { hasProgramAdminPrivileges } from '../../clinical-privileges.mjs';
 import { isValidUsernameFormat, normalizeUsername } from '../../clinical-username.mjs';
@@ -58,10 +58,10 @@ async function resolveProgramAdminChange(adminCb, wasProgramAdmin) {
 }
 
 async function toastProfileSaveResult({ msg, usernameWillChange, sala }) {
-  const { flushClinicalProfileToLan } = await import('../../clinical-profile-cloud-stubs.mjs');
-  const lanPush = await flushClinicalProfileToLan({ sala });
-  if (!lanPush.ok && !isBenignLanPushSkipCode(lanPush.code)) {
-    toast(LAN_PROFILE_PUSH_FAILED_MSG, 'warning');
+  const { flushClinicalProfileToCloud } = await import('../../clinical-profile-cloud-stubs.mjs');
+  const lanPush = await flushClinicalProfileToCloud({ sala });
+  if (!lanPush.ok && !isBenignPushSkipCode(lanPush.code)) {
+    toast(PROFILE_PUSH_FAILED_MSG, 'warning');
   } else if (usernameWillChange && lanPush.ok) {
     toast(`${msg} @usuario publicado en la sala ⇄.`, 'success');
   } else {

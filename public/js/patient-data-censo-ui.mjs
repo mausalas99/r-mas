@@ -5,11 +5,11 @@ import {
   migratePatientDiagnosticosFromVpo,
 } from './patient-diagnosticos.mjs';
 import { formatCensoMedsFromReceta } from './censo-meds-format.mjs';
-import { patients, medRecetaByPatient, vpoByPatient, saveState } from './app-state.mjs';
+import { getPatients, getMedRecetaByPatient, getVpoByPatient, persistClinicalState } from './app-state.mjs';
 
 import { esc } from './dom-escape.mjs';
 function activePatient(patientId) {
-  return patients.find(function (p) {
+  return getPatients().find(function (p) {
     return String(p.id) === String(patientId);
   });
 }
@@ -45,7 +45,7 @@ function renderDxListHtml(patient) {
 
 /** @param {Record<string, unknown>} patient */
 export function buildPatientCensoDatosSectionsHtml(patient) {
-  migratePatientDiagnosticosFromVpo(patient, vpoByPatient[patient.id]);
+  migratePatientDiagnosticosFromVpo(patient, getVpoByPatient()[patient.id]);
   ensurePatientDiagnosticos(patient);
   return (
     '<div class="card" style="margin-top:10px;"><div class="card-header">Diagnósticos (censo)</div><div class="card-body">' +
@@ -89,7 +89,7 @@ export function onPatientDxInput(index, value) {
   if (!Array.isArray(patient.diagnosticosList)) patient.diagnosticosList = [''];
   patient.diagnosticosList[index] = String(value || '').toUpperCase();
   ensurePatientDiagnosticos(patient);
-  saveState();
+  persistClinicalState();
 }
 
 export function addPatientDxRow() {
@@ -98,7 +98,7 @@ export function addPatientDxRow() {
   if (!patient) return;
   if (!Array.isArray(patient.diagnosticosList)) patient.diagnosticosList = [''];
   patient.diagnosticosList.push('');
-  saveState();
+  persistClinicalState();
   refreshDxListDom(pid);
 }
 
@@ -109,7 +109,7 @@ export function removePatientDxRow(index) {
   if (patient.diagnosticosList.length <= 1) return;
   patient.diagnosticosList.splice(index, 1);
   applyPatientDiagnosticosList(patient, patient.diagnosticosList);
-  saveState();
+  persistClinicalState();
   refreshDxListDom(pid);
 }
 
@@ -121,7 +121,7 @@ export function splitPatientDxPaste() {
   var parsed = parseDiagnosticosText(ta.value);
   if (!parsed.length) return;
   applyPatientDiagnosticosList(patient, parsed.concat(['']));
-  saveState();
+  persistClinicalState();
   refreshDxListDom(pid);
 }
 
@@ -130,18 +130,18 @@ export function updatePatientCensoMeds(value) {
   var patient = activePatient(pid);
   if (!patient) return;
   patient.censoMedsText = String(value || '');
-  saveState();
+  persistClinicalState();
 }
 
 export function censoTomarDeMedicamentos() {
   var pid = currentPatientId();
   var patient = activePatient(pid);
   if (!patient) return;
-  var text = formatCensoMedsFromReceta(medRecetaByPatient[pid]);
+  var text = formatCensoMedsFromReceta(getMedRecetaByPatient()[pid]);
   patient.censoMedsText = text;
   var ta = document.getElementById('patient-censo-meds');
   if (ta) ta.value = text;
-  saveState();
+  persistClinicalState();
 }
 
 export const patientDataCensoWindowHandlers = {

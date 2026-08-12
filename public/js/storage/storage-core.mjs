@@ -39,9 +39,13 @@ function safeLocalStorageSet(key, value) {
   }
 }
 
-/** iPad/PWA: ward census lives in memory; persisting clinical blobs fills Safari localStorage. */
+/**
+ * Skip writing clinical keys to localStorage.
+ * iPad/PWA: in-memory session only.
+ * Desktop DB unlock: clinical durability is SQLCipher / clinical-repo — prefs-only LS.
+ */
 function skipClinicalLocalPersist() {
-  return isSessionScopedWebClient();
+  return isSessionScopedWebClient() || isDbMode();
 }
 
 function safeParse(raw, fallback) {
@@ -81,12 +85,10 @@ const WEB_SESSION_EMPTY_CLINICAL_BLOBS = new Set([
   'recetaHuByPatient',
   'vpoByPatient',
   'medPharmProfileByPatient',
-  'lanRoomSnapshots',
-  'lanHostPatientMap',
 ]);
 
 function readClinicalBlob(blobKey, lsKey, parseFromRaw) {
-  if (skipClinicalLocalPersist() && WEB_SESSION_EMPTY_CLINICAL_BLOBS.has(blobKey)) {
+  if (isSessionScopedWebClient() && WEB_SESSION_EMPTY_CLINICAL_BLOBS.has(blobKey)) {
     return blobKey === 'patients' ? [] : parseFromRaw('{}');
   }
   var raw;
@@ -110,7 +112,7 @@ function readTodosMap() {
 
 /** @param {Record<string, unknown>} map */
 function writeTodosMap(map) {
-  if (skipClinicalLocalPersist()) return;
+  if (isSessionScopedWebClient()) return;
   const json = JSON.stringify(map);
   if (_blobCache) {
     _blobCache.todos = json;
@@ -122,6 +124,10 @@ function writeTodosMap(map) {
       invalidateParsed('todos');
       return;
     }
+  }
+  if (skipClinicalLocalPersist()) {
+    invalidateParsed('todos');
+    return;
   }
   localStorage.setItem('rpc-todos', json);
   invalidateParsed('todos');

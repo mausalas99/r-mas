@@ -1,3 +1,4 @@
+import { conflictRowsToDiffTable } from '../ui-diff-table.mjs';
 import { pickDiffKeys, summarizeConflictFieldValue, formatFieldLabel } from '../clinical-conflict-silent-match.mjs';
 
 import { escHtml } from '../dom-escape.mjs';
@@ -45,7 +46,25 @@ export function buildConflictDiffParts({ conflictingKeys, localData, serverData 
       '</article>'
     );
   }).join('');
-  return { keyCount: keys.length, summaryHtml, detailHtml: '<div class="clinical-conflict-diff-cards">' + cards + '</div>' };
+  const tableHtml = conflictRowsToDiffTable({
+    title: 'Vista tabular',
+    keys: keys,
+    conflictingKeys: conflictingKeys,
+    localData: localData,
+    serverData: serverData,
+    formatLabel: formatFieldLabel,
+    formatValue: function (v, key) { return formatConflictValue(v, key); },
+  });
+  return {
+    keyCount: keys.length,
+    summaryHtml,
+    detailHtml:
+      '<div class="clinical-conflict-diff-cards">' +
+      cards +
+      '</div><div class="clinical-conflict-diff-table">' +
+      tableHtml +
+      '</div>',
+  };
 }
 
 export function buildConflictDiffHtml(opts) {

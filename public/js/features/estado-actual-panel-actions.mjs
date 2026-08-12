@@ -1,5 +1,5 @@
 /** EA panel actions — registro submit, guardar/copiar, propuestas. */
-import { saveState, medRecetaByPatient, notes } from '../app-state.mjs';
+import { persistClinicalState, getMedRecetaByPatient, getNotes } from '../app-state.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import {
   ensureMonitoreo,
@@ -56,6 +56,8 @@ import {
 } from './ea-indicaciones-clipboard.mjs';
 import { resolveEaNoteSend } from './estado-actual-send-note.mjs';
 import { isModeSala } from '../mode-features.mjs';
+import { buildRecommendationCardHtml } from '../ui-recommendation.mjs';
+import { wrapApprovalInConflictModal } from '../ui-approval-card.mjs';
 
 function parseFormMedicion() {
   var form = document.getElementById('ea-form');
@@ -125,7 +127,7 @@ export function registrarEstadoActualMedicion() {
       pesoRef: patient.monitoreo.estadoClinico && patient.monitoreo.estadoClinico.pesoRef,
     })
   );
-  saveState();
+  persistClinicalState();
   scheduleCloudSyncPush();
   resetEaRegistroForm(null);
   if (getEaPanelRuntime().invalidateInnerTabRenderCache) getEaPanelRuntime().invalidateInnerTabRenderCache('estadoActual');
@@ -158,7 +160,7 @@ export function eliminarEstadoActualMedicion(id) {
   if (!patient || !id) return;
   ensureMonitoreo(patient);
   removeMedicion(patient.monitoreo, id);
-  saveState();
+  persistClinicalState();
   scheduleCloudSyncPush();
   eaPanelBridge.renderEstadoActualPanel({ syncHeavy: true });
   getEaPanelRuntime().showToast('Medición eliminada', 'success');
@@ -174,7 +176,7 @@ function persistEstadoActualTexto(patient, text) {
     text: text,
     savedAt: new Date().toISOString(),
   };
-  saveState();
+  persistClinicalState();
   scheduleCloudSyncPush();
   renderEstadoActualBar();
   var meta = document.getElementById('ea-meta-guardado');
@@ -230,21 +232,44 @@ function showEaReplaceEvolucionConfirm(onReplace) {
   var backdrop = document.createElement('div');
   backdrop.className = 'lab-conflict-backdrop';
   backdrop.id = 'ea-note-confirm-backdrop';
-  backdrop.innerHTML =
-    '<div class="lab-conflict-modal">' +
-    '<h3>¿Reemplazar evolución?</h3>' +
-    '<p>La evolución ya tiene contenido. ¿Reemplazarlo con el estado actual?</p>' +
-    '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">' +
-    '<button type="button" data-ea-note-cancel style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Cancelar</button>' +
-    '<button type="button" data-ea-note-replace style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Reemplazar</button>' +
-    '</div></div>';
-  backdrop.querySelector('[data-ea-note-cancel]').addEventListener('click', function () {
-    backdrop.remove();
-  });
-  backdrop.querySelector('[data-ea-note-replace]').addEventListener('click', function () {
-    backdrop.remove();
-    onReplace();
-  });
+  var altsOpen = false;
+  function paint() {
+    var card = buildRecommendationCardHtml({
+      title: '¿Reemplazar evolución?',
+      bodyHtml: '<p>La evolución ya tiene contenido. ¿Reemplazarlo con el estado actual?</p>',
+      signal: 2,
+      tone: 'var(--color-accent)',
+      confidenceLabel: 'Revisión humana',
+      primaryLabel: 'Reemplazar',
+      alternativesLabel: 'Alternativas',
+      alternativesOpen: altsOpen,
+      alternatives: [
+        { key: 'keep', short: 'Conservar la evolución actual', label: 'Sin cambios', signal: 1 },
+      ],
+    });
+    backdrop.innerHTML = wrapApprovalInConflictModal(card);
+    var dismiss = function () { backdrop.remove(); };
+    var accept = backdrop.querySelector('[data-rec-accept]');
+    var altsBtn = backdrop.querySelector('[data-rec-alts]');
+    if (accept) {
+      accept.addEventListener('click', function () {
+        backdrop.remove();
+        onReplace();
+      });
+    }
+    if (altsBtn) {
+      altsBtn.addEventListener('click', function () {
+        altsOpen = !altsOpen;
+        paint();
+      });
+    }
+    var keep = backdrop.querySelector('[data-rec-alt="keep"]');
+    if (keep) keep.addEventListener('click', dismiss);
+    backdrop.addEventListener('click', function (ev) {
+      if (ev.target === backdrop) dismiss();
+    });
+  }
+  paint();
   document.body.appendChild(backdrop);
 }
 
@@ -253,8 +278,8 @@ function commitEstadoActualToNote(patient, replaceEvolucion) {
   if (!activeId) return;
   ensureMonitoreo(patient);
   flushEaEstadoClinicoFieldsFromDom(patient);
-  if (!notes[activeId]) notes[activeId] = {};
-  var note = notes[activeId];
+  if (!getNotes()[activeId]) getNotes()[activeId] = {};
+  var note = getNotes()[activeId];
   var result = resolveEaNoteSend(patient, note, {
     replaceEvolucion: replaceEvolucion,
     getEstadoActualText: getEstadoActualTextForPatient,
@@ -269,7 +294,7 @@ function commitEstadoActualToNote(patient, replaceEvolucion) {
     });
     return;
   }
-  saveState();
+  persistClinicalState();
   scheduleCloudSyncPush();
   navigateToNotasAfterEaSend();
   if (typeof getEaPanelRuntime().renderNoteForm === 'function') {
@@ -426,7 +451,7 @@ export function confirmEaDietProposal() {
   if (!patient) return;
   ensureMonitoreo(patient);
   var activeId = getEaPanelRuntime().getActiveId();
-  var recetaBlock = activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null;
+  var recetaBlock = activeId && getMedRecetaByPatient() ? getMedRecetaByPatient()[activeId] : null;
   backfillDietPendingMacrosFromReceta(patient.monitoreo, recetaBlock);
   confirmDietProposal(patient.monitoreo);
   persistEstadoClinicoAndRefresh(patient.monitoreo, 'Dieta confirmada', patient);

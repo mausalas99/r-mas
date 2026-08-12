@@ -2,7 +2,7 @@
  * R+ Móvil / Nube — diagnóstico del pipeline labSidecars → labHistory local.
  */
 import { isCloudMobileClient } from './origin.mjs';
-import { labHistory, patients } from '../../app-state.mjs';
+import { getLabHistory, getPatients } from '../../app-state.mjs';
 import { getCloudSyncRevision, getCloudSyncRoomId } from '../cloud-sync/settings.mjs';
 import { hasActiveCloudNetworkFailure } from '../cloud-sync/cloud-sync-diagnostics.mjs';
 import { MOBILE_LAB_HISTORY_DAYS } from '../../../../lib/lab-mobile-history-window.mjs';
@@ -117,17 +117,17 @@ export function recordLabPushAttempt(row) {
 export function summarizeLocalLabHistory(activePatientId) {
   let patientsWithLabs = 0;
   let totalSets = 0;
-  Object.keys(labHistory || {}).forEach(function (pid) {
-    const n = Array.isArray(labHistory[pid]) ? labHistory[pid].length : 0;
+  Object.keys(getLabHistory() || {}).forEach(function (pid) {
+    const n = Array.isArray(getLabHistory()[pid]) ? getLabHistory()[pid].length : 0;
     if (!n) return;
     patientsWithLabs += 1;
     totalSets += n;
   });
   const pid = String(activePatientId || '').trim();
-  const activeSets = pid && Array.isArray(labHistory[pid]) ? labHistory[pid].length : 0;
+  const activeSets = pid && Array.isArray(getLabHistory()[pid]) ? getLabHistory()[pid].length : 0;
   const activePatient =
     pid &&
-    patients.find(function (p) {
+    getPatients().find(function (p) {
       return p && String(p.id) === pid;
     });
   return {

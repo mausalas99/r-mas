@@ -5,7 +5,7 @@ import {
   LAB_BULK_PATIENT_SEPARATOR,
 } from '../lab-bulk-paste.mjs';
 import { sortLabHistoryChronological, normalizeFechaLabHistory } from '../tend-core.mjs';
-import { patients, notes, saveState } from '../app-state.mjs';
+import { getPatients, getNotes, persistClinicalState } from '../app-state.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 import { labPanelBridge } from './lab-panel-bridge.mjs';
 import {
@@ -67,7 +67,7 @@ function openLabPatientPicker(opts) {
   title.textContent = titleText;
   title.style.cssText = 'color:#f9fafb;font-size:14px;font-weight:600;margin-bottom:14px;';
   box.appendChild(title);
-  patients.forEach(function(p) {
+  getPatients().forEach(function(p) {
     var btn = document.createElement('button');
     btn.textContent = p.nombre + (p.registro ? '  •  ' + p.registro : '');
     btn.style.cssText = 'display:block;width:100%;text-align:left;background:#374151;color:#f3f4f6;border:none;border-radius:6px;padding:10px 12px;margin-bottom:8px;cursor:pointer;font-size:13px;';
@@ -109,8 +109,8 @@ export function enviarLabsANota() {
     rt.showToast('No hay resultados procesados', 'error'); return;
   }
   if (!rt.getActiveId()) {
-    if (!patients.length) { rt.showToast('Agrega un paciente primero', 'error'); return; }
-    if (patients.length === 1) { rt.selectPatient(patients[0].id); }
+    if (!getPatients().length) { rt.showToast('Agrega un paciente primero', 'error'); return; }
+    if (getPatients().length === 1) { rt.selectPatient(getPatients()[0].id); }
     else { openLabPatientPicker(); return; }
   }
   checkStudiosAndInsertLabs();
@@ -219,7 +219,7 @@ function applyLabPastePatientResolution(result) {
 
 function insertLabsAsRecent(_lines) {
   var activeLab = labPanelBridge.getActiveLab();
-  if (!notes[rt.getActiveId()]) notes[rt.getActiveId()] = {};
+  if (!getNotes()[rt.getActiveId()]) getNotes()[rt.getActiveId()] = {};
   pushLabHistory(
     rt.getActiveId(),
     activeLab.resLabs,
@@ -230,11 +230,11 @@ function insertLabsAsRecent(_lines) {
     activeLab.refsBySection
   );
   finalizeLabHistoryImport(rt.getActiveId());
-  saveState({ immediate: true });
+  persistClinicalState({ immediate: true });
   rt.refreshTendenciasOrCultivosPanel();
   renderLabHistoryPanel();
   var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
-  if (el) el.value = notes[rt.getActiveId()].estudios;
+  if (el) el.value = getNotes()[rt.getActiveId()].estudios;
   rt.onboardingAdvanceAfterSend();
   rt.showToast('Labs enviados a la nota ✓', 'success');
   rt.setMedTabAttention(true);
@@ -243,7 +243,7 @@ function insertLabsAsRecent(_lines) {
 
 function insertLabsAsAnteriorThenRecent(_newLines) {
   var activeLab = labPanelBridge.getActiveLab();
-  if (!notes[rt.getActiveId()]) notes[rt.getActiveId()] = {};
+  if (!getNotes()[rt.getActiveId()]) getNotes()[rt.getActiveId()] = {};
   pushLabHistory(
     rt.getActiveId(),
     activeLab.resLabs,
@@ -254,11 +254,11 @@ function insertLabsAsAnteriorThenRecent(_newLines) {
     activeLab.refsBySection
   );
   finalizeLabHistoryImport(rt.getActiveId());
-  saveState({ immediate: true });
+  persistClinicalState({ immediate: true });
   rt.refreshTendenciasOrCultivosPanel();
   renderLabHistoryPanel();
   var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
-  if (el) el.value = notes[rt.getActiveId()].estudios;
+  if (el) el.value = getNotes()[rt.getActiveId()].estudios;
   rt.onboardingAdvanceAfterSend();
   rt.showToast('Fecha anterior guardada + nuevos labs agregados ✓', 'success');
   rt.setMedTabAttention(true);
@@ -287,7 +287,7 @@ function showLabConflictModal(newLines, existingDate) {
   document.getElementById('btn-conflict-replace').onclick = function() {
     document.body.removeChild(backdrop);
     var activeLab = labPanelBridge.getActiveLab();
-    if (!notes[rt.getActiveId()]) notes[rt.getActiveId()] = {};
+    if (!getNotes()[rt.getActiveId()]) getNotes()[rt.getActiveId()] = {};
     pushLabHistory(
       rt.getActiveId(),
       activeLab.resLabs,
@@ -298,11 +298,11 @@ function showLabConflictModal(newLines, existingDate) {
       activeLab.refsBySection
     );
     finalizeLabHistoryImport(rt.getActiveId());
-    saveState({ immediate: true });
+    persistClinicalState({ immediate: true });
     rt.refreshTendenciasOrCultivosPanel();
     renderLabHistoryPanel();
     var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
-    if (el) el.value = notes[rt.getActiveId()].estudios;
+    if (el) el.value = getNotes()[rt.getActiveId()].estudios;
     rt.onboardingAdvanceAfterSend();
     rt.showToast('Fecha reciente reemplazada ✓', 'success');
     rt.setMedTabAttention(true);

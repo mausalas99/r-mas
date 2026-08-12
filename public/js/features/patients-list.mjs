@@ -1,8 +1,8 @@
-import { patients, saveState } from '../app-state.mjs';
+import { getPatients, persistClinicalState } from '../app-state.mjs';
 import {
   renderGuardiaCensusGrid,
   syncGuardiaCensusPanelVisibility,
-  isClinicalScopeReadyForLanPatientApply,
+  isClinicalScopeReadyForPatientApply,
 } from '../clinical-access-runtime.mjs';
 import { shouldEnforceTeamPatientMirror } from '../clinical-privileges.mjs';
 import { isCloudMobileClient } from './cloud-mobile/origin.mjs';
@@ -39,6 +39,7 @@ import {
   renderActiveSectionLabelHtml,
   renderArchivedToggleHtml,
 } from './patients-card-html.mjs';
+import { syncPatientListIndicator } from '../patient-list-indicator.mjs';
 import {
   renderPatientRoundRowHtml,
   setLastRondaNavIds,
@@ -50,8 +51,8 @@ var _patientListSortables = [];
 
 function ensurePatientUiState() {
   var changed = false;
-  for (var i = 0; i < patients.length; i++) {
-    var p = patients[i];
+  for (var i = 0; i < getPatients().length; i++) {
+    var p = getPatients()[i];
     if (!p) continue;
     if (typeof p.archived !== 'boolean') {
       p.archived = false;
@@ -62,7 +63,7 @@ function ensurePatientUiState() {
       changed = true;
     }
   }
-  if (changed) saveState();
+  if (changed) persistClinicalState();
 }
 
 function isArchivedSectionCollapsed() {
@@ -93,7 +94,7 @@ function destroyPatientListSortables() {
 function handlePatientSortZoneEnd(evt) {
   if (evt.oldIndex === evt.newIndex || evt.from !== evt.to) return;
   syncPatientsOrderFromDom();
-  saveState();
+  persistClinicalState();
 }
 
 function mountPatientListSortables() {
@@ -144,7 +145,7 @@ function syncPatientsOrderFromDom() {
   var rank = Object.create(null);
   for (var j = 0; j < order.length; j++) rank[order[j]] = j;
   var missingBase = order.length + 1000;
-  patients.sort(function (a, b) {
+  getPatients().sort(function (a, b) {
     var ra = Object.prototype.hasOwnProperty.call(rank, a.id) ? rank[a.id] : missingBase;
     var rb = Object.prototype.hasOwnProperty.call(rank, b.id) ? rank[b.id] : missingBase;
     if (ra !== rb) return ra - rb;
@@ -189,21 +190,25 @@ export function patchPatientListActiveHighlight(nextId) {
       var pid = el.getAttribute('data-patient-id');
       el.classList.toggle('active', String(pid) === String(nextId));
     });
+    syncPatientListIndicator(list, nextId);
     return true;
   }
-  var filtered = patients.filter(patientMatchesSearch);
+  // Must match sidebar census filters + search, not the raw patients array —
+  // otherwise Equipo/Sala filters make lengths diverge and every select forces a full remount.
+  var filtered = patientsVisibleInSidebar().filter(patientMatchesSearch);
   if (filtered.length !== cards.length) return false;
   cards.forEach(function (el) {
     var pid = el.getAttribute('data-patient-id');
     el.classList.toggle('active', String(pid) === String(nextId));
   });
+  syncPatientListIndicator(list, nextId);
   return true;
 }
 
-/** @param {{ silent?: boolean }|undefined} [opts] — silent: LAN/incremental (no list flash) */
+/** @param {{ silent?: boolean, force?: boolean }|undefined} [opts] — silent: LAN/incremental; force: flush now (Filtros censo) */
 export function renderPatientList(opts) {
   opts = normalizePatientListRenderOpts(opts);
-  if (opts.silent) {
+  if (opts.silent && !opts.force) {
     if (_patientListSilentTimer) clearTimeout(_patientListSilentTimer);
     _patientListSilentTimer = setTimeout(function () {
       _patientListSilentTimer = null;
@@ -214,6 +219,11 @@ export function renderPatientList(opts) {
   if (_patientListSilentTimer) {
     clearTimeout(_patientListSilentTimer);
     _patientListSilentTimer = null;
+  }
+  if (opts.force) {
+    _patientListRenderQueued = false;
+    renderPatientListNow({ silent: !!opts.silent });
+    return;
   }
   if (_patientListRenderQueued) return;
   _patientListRenderQueued = true;
@@ -366,7 +376,7 @@ function renderPatientListFullHtml(list, bundle, opts) {
 /** @param {{ silent?: boolean }|undefined} [opts] */
 function renderPatientListNow(opts) {
   opts = normalizePatientListRenderOpts(opts);
-  if (shouldEnforceTeamPatientMirror() && !isClinicalScopeReadyForLanPatientApply()) {
+  if (shouldEnforceTeamPatientMirror() && !isClinicalScopeReadyForPatientApply()) {
     var listBoot = document.getElementById('patient-list');
     if (listBoot) {
       const cloudMsg = isCloudMobileClient()
@@ -387,7 +397,6 @@ function renderPatientListNow(opts) {
   if (!list) return;
   var isRonda = isPaseMode();
   var visiblePatients = patientsVisibleInSidebar();
-  reselectIfActivePatientHidden(visiblePatients);
   if (!visiblePatients.length) {
     if (isCloudMobileClient()) {
       renderPatientListMessage(
@@ -395,19 +404,25 @@ function renderPatientListNow(opts) {
         'Sin pacientes en la nube. En el Mac del turno deja R+ abierto ~20 s y recarga esta página.',
         opts
       );
-      return;
+    } else {
+      renderPatientListMessage(list, 'Sin pacientes aún', opts);
     }
-    renderPatientListMessage(list, 'Sin pacientes aún', opts);
+    // Reselect after paint so a thrown patient-view remount cannot skip the empty state.
+    reselectIfActivePatientHidden(visiblePatients);
     return;
   }
   var filtered = visiblePatients.filter(patientMatchesSearch);
   if (!filtered.length) {
     renderPatientListMessage(list, 'Ningún paciente coincide con la búsqueda', opts);
+    reselectIfActivePatientHidden(visiblePatients);
     return;
   }
   var bundle = buildPatientListRenderBundle(filtered, isRonda);
-  if (trySilentPatientListUpdate(list, bundle, opts)) return;
-  renderPatientListFullHtml(list, bundle, opts);
+  if (!trySilentPatientListUpdate(list, bundle, opts)) {
+    renderPatientListFullHtml(list, bundle, opts);
+  }
+  // After the filtered DOM is on screen — never before (selectPatient can remount Tendencias).
+  reselectIfActivePatientHidden(visiblePatients);
 }
 
 var _patientListClickWired = false;
@@ -424,7 +439,7 @@ function ensurePatientListClickDelegation() {
     if (ev.target.closest('button, a[href], input, textarea, select')) return;
     var pid = card.getAttribute('data-patient-id');
     if (!pid) return;
-    var patient = patients.find(function (p) {
+    var patient = getPatients().find(function (p) {
       return p && String(p.id) === String(pid);
     });
     patientsBridge.selectPatient(pid);

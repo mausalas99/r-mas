@@ -2,11 +2,11 @@
  * Labs → Eventualidades autosend desactivado (ya no se interpretan labs en EV).
  * API conservada para no romper importadores; siempre no-op / skipped.
  */
-import { patients } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 
 function findPatientById(patientId) {
   var id = String(patientId || '');
-  return (patients || []).find(function (p) {
+  return (getPatients() || []).find(function (p) {
     return p && String(p.id) === id;
   });
 }

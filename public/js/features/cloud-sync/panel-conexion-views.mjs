@@ -242,7 +242,7 @@ export function syncCloudSecondaryPanels(root, view) {
   for (let i = 0; i < kids.length; i++) {
     const el = kids[i];
     const cls = String(el.className || '');
-    if (cls.split(/\s+/).includes('lan-sync-diagnostics-panel')) {
+    if (cls.split(/\s+/).includes('cloud-sync-diagnostics-panel')) {
       el.hidden = !showLan;
     }
   }

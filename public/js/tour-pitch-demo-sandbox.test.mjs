@@ -7,7 +7,8 @@ import {
   seedPitchDemo,
   setPitchPatientIsolation,
 } from './tour-pitch-demo-seed.mjs';
-import { patients, setPatients } from './app-state.mjs';
+import { getDemoPatients } from './clinical-read-model-demo.mjs';
+import { getPatients, setPatients } from './app-state.mjs';
 
 const PITCH_SANDBOX_SS_KEY = 'rpc-pitch-tour-sandbox-v1';
 const PITCH_TOUR_ACTIVE_SS_KEY = 'rpc-pitch-tour-active';
@@ -45,7 +46,7 @@ function installBrowserStorageMocks() {
 
 function makeState() {
   return {
-    patients,
+    patients: getPatients(),
     notes: {},
     indicaciones: {},
     labHistory: {},
@@ -54,7 +55,7 @@ function makeState() {
     medNotaSelectionByPatient: {},
     recetaHuByPatient: {},
     setPatients,
-    saveState() {},
+    persistClinicalState() {},
     renderPatientList() {},
     selectPatient() {},
     getActiveId() {
@@ -87,8 +88,10 @@ test('seedPitchDemo guarda respaldo en sessionStorage y resolvePitchPersistPatie
   const state = makeState();
   markPitchTourSessionActive(true);
   seedPitchDemo(state);
-  assert.equal(patients.length, 1);
-  assert.equal(patients[0].id, 'demo-pitch');
+  assert.equal(getPatients().length, 1);
+  assert.equal(getDemoPatients().length, 1);
+  assert.equal(getDemoPatients()[0].id, 'demo-pitch');
+  assert.equal(getPatients()[0].id, 'demo-pitch');
 
   const raw = sessionStorage.getItem(PITCH_SANDBOX_SS_KEY);
   assert.ok(raw);
@@ -108,8 +111,8 @@ test('clearPitchDemo never leaves empty list when sandbox had real patients', ()
   setPatients([]);
   setPitchPatientIsolation(true);
   clearPitchDemo(state);
-  assert.ok(patients.length >= 2);
-  assert.equal(patients[0].id, 'real-a');
+  assert.ok(getPatients().length >= 2);
+  assert.equal(getPatients()[0].id, 'real-a');
 });
 
 test('clearPitchDemo restaura pacientes reales aunque el respaldo en memoria se perdió', () => {
@@ -121,7 +124,7 @@ test('clearPitchDemo restaura pacientes reales aunque el respaldo en memoria se 
   setPitchPatientIsolation(false);
 
   clearPitchDemo(state);
-  assert.equal(patients.length, 2);
-  assert.equal(patients[0].id, 'real-a');
+  assert.equal(getPatients().length, 2);
+  assert.equal(getPatients()[0].id, 'real-a');
   assert.equal(sessionStorage.getItem(PITCH_SANDBOX_SS_KEY), null);
 });

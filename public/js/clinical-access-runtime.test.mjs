@@ -56,7 +56,7 @@ test('assertClinicalWriteAllowed allows Admin writes', () => {
 
 test('elevated ward census schedules full host reconcile', () => {
   const src = readFileSync(
-    join(dirname(fileURLToPath(import.meta.url)), 'clinical-access-runtime/census-lan-pull.mjs'),
+    join(dirname(fileURLToPath(import.meta.url)), 'clinical-access-runtime/census-nube-pull.mjs'),
     'utf8'
   );
   assert.match(src, /ensureElevatedWardCensusOnDevice/);
@@ -65,7 +65,7 @@ test('elevated ward census schedules full host reconcile', () => {
 
 test('ops-sync refresh debounces Nube census pull after clinicalOps merge', () => {
   const src = readFileSync(
-    join(dirname(fileURLToPath(import.meta.url)), 'clinical-access-runtime/census-lan-pull.mjs'),
+    join(dirname(fileURLToPath(import.meta.url)), 'clinical-access-runtime/census-nube-pull.mjs'),
     'utf8'
   );
   assert.match(src, /allowLanPull: false/);
@@ -75,7 +75,7 @@ test('ops-sync refresh debounces Nube census pull after clinicalOps merge', () =
 
 test('missing assigned patients trigger Nube sala-room syncCycle', () => {
   const src = readFileSync(
-    join(dirname(fileURLToPath(import.meta.url)), 'clinical-access-runtime/census-lan-pull.mjs'),
+    join(dirname(fileURLToPath(import.meta.url)), 'clinical-access-runtime/census-nube-pull.mjs'),
     'utf8'
   );
   assert.match(src, /scheduleLanPatientReconcile/);

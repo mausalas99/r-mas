@@ -3,7 +3,7 @@
  * Routes SOME text to census patients with one confirm when ambiguous.
  * Lab workbench loads on demand (no static boot import).
  */
-import { patients } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 import { findPatientByRegistro } from './patients-modal-commit.mjs';
 import { selectPatient } from './patients.mjs';
 import {
@@ -67,7 +67,7 @@ function loadLabPasteRuntime() {
  */
 export function processSmartPaste(text, opts) {
   var plan = planSmartPaste(text, {
-    patients: patients,
+    patients: getPatients(),
     findPatientByRegistro: findPatientByRegistro,
     quickLabOutput: getQuickLabOutput(),
   });
@@ -174,7 +174,7 @@ function openSmartPasteConfirm(plan, mode) {
   list.forEach(function (p) {
     var btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'paste-smart-choice';
+    btn.className = 'paste-smart-choice ui-approval-option';
     var nameEl = document.createElement('span');
     nameEl.className = 'paste-smart-choice-name';
     nameEl.textContent = p.nombre || 'Sin nombre';
@@ -224,7 +224,7 @@ function ensureConfirmDom() {
   });
 
   var panel = document.createElement('div');
-  panel.className = 'paste-smart-modal';
+  panel.className = 'paste-smart-modal ui-approval-modal';
   panel.id = 'paste-smart-modal';
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
@@ -240,7 +240,7 @@ function ensureConfirmDom() {
   head.appendChild(lead);
 
   var list = document.createElement('div');
-  list.className = 'paste-smart-list';
+  list.className = 'paste-smart-list ui-approval-options';
   list.setAttribute('role', 'list');
 
   var actions = document.createElement('div');

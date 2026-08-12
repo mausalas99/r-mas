@@ -1,9 +1,5 @@
 // Listado de problemas UI + docx export
-import {
-  listadoProblemas,
-  patients,
-  saveState,
-} from '../../app-state.mjs';
+import { getPatients, getListadoProblemas, persistClinicalState } from '../../app-state.mjs';
 import { setAsyncButtonLoading } from '../../ui-motion.mjs';
 import {
   exportWithOutputDirFallback,
@@ -39,7 +35,7 @@ function updateListadoMedico(field, value) {
   var lst = ensureListadoForActive(); if (!lst) return;
   if (!lst.medicos) lst.medicos = {};
   lst.medicos[field] = value;
-  saveState();
+  persistClinicalState();
 }
 
 // ── Listado sala ─────────────────────────────────────────────────────-
@@ -54,11 +50,11 @@ function _nowHHMM() {
 }
 function ensureListadoForActive() {
   if (!aid()) return null;
-  if (!listadoProblemas[aid()]) {
-    listadoProblemas[aid()] = emptyListado(_todayDDMMYYYY(), _nowHHMM());
+  if (!getListadoProblemas()[aid()]) {
+    getListadoProblemas()[aid()] = emptyListado(_todayDDMMYYYY(), _nowHHMM());
   }
   // Defensive: ensure arrays exist (en caso de datos corruptos).
-  var l = listadoProblemas[aid()];
+  var l = getListadoProblemas()[aid()];
   if (!Array.isArray(l.activos)) l.activos = [];
   if (!Array.isArray(l.inactivos)) l.inactivos = [];
   return l;
@@ -135,7 +131,7 @@ function syncListadoOrderFromDom(seccion) {
     if (id && byId[id]) newArr.push(byId[id]);
   });
   if (!newArr.length || newArr.length !== arr.length) return;
-  listadoProblemas[aid()] = Object.assign({}, lst, { [seccion]: newArr });
+  getListadoProblemas()[aid()] = Object.assign({}, lst, { [seccion]: newArr });
 }
 
 function refreshListadoRowNumbers(seccion) {
@@ -181,7 +177,7 @@ function mountListadoSortables() {
         if (evt.oldIndex === evt.newIndex && evt.from === evt.to) return;
         syncListadoOrderFromDom(seccion);
         refreshListadoRowNumbers(seccion);
-        saveState();
+        persistClinicalState();
       }
     });
     _listadoSortables.push(sortable);
@@ -193,7 +189,7 @@ function renderListadoForm() {
   if (!c) return;
   destroyListadoSortables();
   if (!aid()) { c.innerHTML = ''; return; }
-  var patient = patients.find(function(p){ return p.id === aid(); });
+  var patient = getPatients().find(function(p){ return p.id === aid(); });
   if (!patient) { c.innerHTML = ''; return; }
   var lst = ensureListadoForActive();
   c.innerHTML = (
@@ -229,7 +225,7 @@ function renderListadoForm() {
 function updateListadoMeta(field, value) {
   var lst = ensureListadoForActive(); if (!lst) return;
   lst[field] = value;
-  saveState();
+  persistClinicalState();
 }
 function updateProblemaField(seccion, id, field, value) {
   var lst = ensureListadoForActive(); if (!lst) return;
@@ -237,12 +233,12 @@ function updateProblemaField(seccion, id, field, value) {
   var p = arr.find(function(x){ return x.id === id; });
   if (!p) return;
   p[field] = value;
-  saveState();
+  persistClinicalState();
 }
 function addProblemaUI(seccion) {
   var lst = ensureListadoForActive(); if (!lst) return;
-  listadoProblemas[aid()] = listadoAddProblema(lst, seccion, { fecha: '', descripcion: '' });
-  saveState();
+  getListadoProblemas()[aid()] = listadoAddProblema(lst, seccion, { fecha: '', descripcion: '' });
+  persistClinicalState();
   renderListadoForm();
   setTimeout(function(){
     var rows = document.querySelectorAll('[data-seccion-rows="' + seccion + '"] .listado-row textarea');
@@ -251,8 +247,8 @@ function addProblemaUI(seccion) {
 }
 function removeProblemaUI(seccion, id) {
   var lst = ensureListadoForActive(); if (!lst) return;
-  listadoProblemas[aid()] = listadoRemoveProblema(lst, seccion, id);
-  saveState();
+  getListadoProblemas()[aid()] = listadoRemoveProblema(lst, seccion, id);
+  persistClinicalState();
   renderListadoForm();
 }
 function _renderListadoMedicosCard(lst) {
@@ -287,7 +283,7 @@ function generateListado() {
   if (rt.guardMobileDocExport()) return;
   if (guardDocExportBlocked({ isRpcOffline: rt.isRpcOffline, showToast: rt.showToast })) return;
   if (!aid()) { rt.showToast('Selecciona un paciente primero', 'error'); return; }
-  var patient = patients.find(function(p){ return p.id === aid(); });
+  var patient = getPatients().find(function(p){ return p.id === aid(); });
   if (!patient) return;
   var lst = ensureListadoForActive(); if (!lst) return;
   var hasProblems = (lst.activos && lst.activos.length) || (lst.inactivos && lst.inactivos.length);
@@ -297,7 +293,7 @@ function generateListado() {
   }
   var medicos = getMedicosForListado(lst);
   var btn = document.getElementById('btn-gen-listado');
-  setAsyncButtonLoading(btn, true, { loadingText: 'Generando…' });
+  setAsyncButtonLoading(btn, true, { showElapsed: true, loadingText: 'Generando…' });
   rt.incrementPendingJobs();
   function buildPayload() {
     return { patient: patient, listado: lst, medicos: medicos };

@@ -211,7 +211,7 @@ export function resolveEventualidadEntryText(text, kind) {
   return '';
 }
 
-export function appendEventualidad(store, text, clientId, atIso, kind, transfusionProduct) {
+export function appendEventualidad(store, text, clientId, atIso, kind, transfusionProduct, entryId) {
   const normalizedKind = normalizeEventualidadKind(kind);
   const normalizedProduct = normalizeTransfusionProduct(transfusionProduct);
   const t = resolveEventualidadEntryText(text, kind);
@@ -221,9 +221,10 @@ export function appendEventualidad(store, text, clientId, atIso, kind, transfusi
     atIso && String(atIso).trim()
       ? String(atIso).trim()
       : eventualidadDateToIso(toEventualidadDateValue(new Date()));
+  const stableId = entryId != null ? String(entryId).trim() : '';
   /** @type {{ id: string, at: string, text: string, clientId?: string, kind?: EventualidadKind, transfusionProduct?: TransfusionProduct }} */
   const entry = {
-    id: 'ev_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    id: stableId || 'ev_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     at: at,
     text: t,
     clientId: clientId || undefined,

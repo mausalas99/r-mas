@@ -1,4 +1,4 @@
-import { medPharmProfileByPatient, saveState } from '../app-state.mjs';
+import { getMedPharmProfileByPatient, persistClinicalState } from '../app-state.mjs';
 import { profileHasMonthData } from '../med-pharm-profile-core.mjs';
 import { getProfile, isDemoPatientId } from './med-pharm-profile-state.mjs';
 
@@ -12,13 +12,13 @@ export function stashMedPharmPasteForPatient(patientId) {
   if (!raw) {
     if (profile && profile.draftPaste) {
       delete profile.draftPaste;
-      if (!profileHasMonthData(profile)) delete medPharmProfileByPatient[patientId];
-      else saveState();
+      if (!profileHasMonthData(profile)) delete getMedPharmProfileByPatient()[patientId];
+      else persistClinicalState();
     }
     return;
   }
   if (!profile) profile = { months: {} };
   profile.draftPaste = raw;
-  medPharmProfileByPatient[patientId] = profile;
-  saveState();
+  getMedPharmProfileByPatient()[patientId] = profile;
+  persistClinicalState();
 }

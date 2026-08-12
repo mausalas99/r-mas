@@ -56,6 +56,11 @@ export function connectStepHtml(url) {
     '<p class="cloud-sync-hint">' + CLINICAL_LAN_DISPLAY_NAME_HINT_HTML + '</p></div>' +
     '<div class="cloud-sync-field"><label>Contraseña</label>' +
     '<input type="password" class="profile-input" data-cloud-reg-pass autocomplete="new-password" /></div>' +
+    '<label class="cloud-sync-remember">' +
+    '<input type="checkbox" data-cloud-reg-remember' +
+    (readCloudRememberChecked() ? ' checked' : '') +
+    ' /> Recuérdame en este dispositivo</label>' +
+    '<p class="cloud-sync-hint">Mantiene la sesión Nube al reiniciar R+. No uses esto en una Mac compartida.</p>' +
     '<button type="button" class="cloud-sync-btn ui-pressable" data-cloud-action="register">Crear cuenta</button></div>' +
     '<div class="cloud-sync-tab-panel" data-cloud-tab-panel="recover" role="tabpanel" hidden>' +
     '<div class="cloud-sync-field"><label>Usuario (@usuario)</label>' +

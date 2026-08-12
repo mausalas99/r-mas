@@ -3,7 +3,7 @@ import { isLegacyMachineUsername } from '../clinical-username.mjs';
 import { persistClinicalUserBinding, readRpcSettings } from '../clinical-settings.mjs';
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
 import { electronApi } from './electron-api.mjs';
-import { ensureElevatedWardCensusOnDevice } from './census-lan-pull.mjs';
+import { ensureElevatedWardCensusOnDevice } from './census-nube-pull.mjs';
 import { buildGuardiasMap } from './guardia-grid.mjs';
 import { fetchClinicalScopeContextFromDb, fetchClinicalTeamsFromDb } from './scope-db.mjs';
 import { refreshClinicalUserProfile } from './session-profile.mjs';
@@ -63,7 +63,7 @@ async function refreshBootstrapScopeAndCensus() {
   }
   if (typeof document !== 'undefined') {
     void import('../clinical-profile-cloud-stubs.mjs')
-      .then((mod) => mod.flushClinicalProfileToLan())
+      .then((mod) => mod.flushClinicalProfileToCloud())
       .catch(() => {});
   }
   migrateLocalPatientsClinicalSala();

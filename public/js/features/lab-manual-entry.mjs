@@ -3,7 +3,7 @@
  */
 import { listManualLabTypes, fieldsForManualLabType, getManualLabType } from '../labs-manual-catalog.mjs';
 import { synthesizeManualResLabs } from '../labs-manual-synthesize.mjs';
-import { saveState } from '../app-state.mjs';
+import { persistClinicalState } from '../app-state.mjs';
 import { esc } from '../dom-escape.mjs';
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { registerLabPanelRuntime, rt } from './lab-panel-runtime-state.mjs';
@@ -206,7 +206,7 @@ export function confirmLabManualEntry() {
   }
 
   finalizeLabHistoryImport(patientId);
-  saveState({ immediate: true });
+  persistClinicalState({ immediate: true });
   setLabHistorySelectedSetId(patientId, set.id);
   loadLabHistorySetIntoOutput(set.id, { silent: true });
   renderLabHistoryPanel();

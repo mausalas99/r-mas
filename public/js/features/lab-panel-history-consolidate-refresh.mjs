@@ -3,7 +3,7 @@
  * reloads the merged keeper without requiring a page refresh.
  *
  * @param {{
- *   saveState: (opts?: object) => void,
+ *   persistClinicalState: (opts?: object) => void,
  *   setActiveLab: (v: null) => void,
  *   renderLabHistoryPanel: () => void,
  *   refreshTendenciasOrCultivosPanel: () => void,
@@ -32,7 +32,7 @@ function toastConsolidateResult_(deps, patientId, mergedCount) {
 
 export function runLabConsolidateUiRefresh(deps, patientId, mergedCount, opts) {
   var d = deps || {};
-  if (typeof d.saveState === 'function') d.saveState({ immediate: true });
+  if (typeof d.persistClinicalState === 'function') d.persistClinicalState({ immediate: true });
   var preferSetId = opts && opts.preferSetId != null ? String(opts.preferSetId) : '';
   if (patientId && preferSetId && typeof d.setLabHistorySelectedSetId === 'function') {
     d.setLabHistorySelectedSetId(patientId, preferSetId);

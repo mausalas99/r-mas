@@ -1,7 +1,7 @@
 /**
  * Modo Guardia — census grid render orchestration.
  */
-import { patients } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 import { isGuardiaMode } from './chrome.mjs';
 import {
   buildGuardiasMap,
@@ -127,7 +127,7 @@ function buildGuardiaScopeContext() {
 }
 
 function buildGuardiaCensusPatients(guardiasMap, gridViewContext) {
-  let scopedPatients = patients.filter((p) => p && p.id && !p.isDemo && !p.archived);
+  let scopedPatients = getPatients().filter((p) => p && p.id && !p.isDemo && !p.archived);
   if (gridViewContext === 'GUARDIA') {
     scopedPatients = filterPatientsForGuardiaCensus(
       scopedPatients,
@@ -149,7 +149,7 @@ function buildGuardiaCensusPatients(guardiasMap, gridViewContext) {
 function renderGuardiaVitalsIfTurno(turnoActivo, censusPatientIds) {
   if (!turnoActivo) return;
   renderGuardiaVitalsFeed(
-    patients.filter((p) => p && p.id && !p.isDemo && !p.archived),
+    getPatients().filter((p) => p && p.id && !p.isDemo && !p.archived),
     censusPatientIds
   );
 }

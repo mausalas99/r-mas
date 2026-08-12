@@ -1,4 +1,4 @@
-import { medPharmProfileByPatient, saveState } from '../app-state.mjs';
+import { getMedPharmProfileByPatient, persistClinicalState } from '../app-state.mjs';
 import { formatFreqShort, formatViaShort } from '../med-pharm-profile-core.mjs';
 import {
   unifyRowsForWindow,
@@ -109,8 +109,8 @@ function onGridDayClick(rowKey, year, monthIndex, day) {
   var col = makeColumn(year, monthIndex, day);
   var profile = getProfile(pid) || { months: {} };
   profile = toggleNotAdminAtColumn(profile, rowKey, col);
-  medPharmProfileByPatient[pid] = profile;
-  saveState();
+  getMedPharmProfileByPatient()[pid] = profile;
+  persistClinicalState();
   refreshOpenMedPharmGrids();
   medPharmProfileBridge.renderMedPharmProfilePanel();
 }

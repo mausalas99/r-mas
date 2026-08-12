@@ -1,6 +1,7 @@
 import { storage } from './storage.js';
 import { seedPitchDemoTodos } from './tour-pitch-demo-todos.mjs';
 import { PITCH_DEMO_PATIENT_ID, capturePitchSandbox, setPitchPatientIsolation } from './tour-pitch-sandbox.mjs';
+import { setDemoPatients } from './clinical-read-model-demo.mjs';
 import { buildPitchDemoPatient, fillPitchDemoClinicalMaps } from './tour-pitch-seed-maps.mjs';
 
 /** @param {string} fecha */
@@ -49,7 +50,7 @@ export function applyPitchDemoClinicalSeed(state, today, fecha, hora) {
     recetaHuByPatient,
     patients,
     setPatients,
-    saveState,
+    persistClinicalState,
     selectPatient,
     renderPatientList,
   } = state;
@@ -70,9 +71,11 @@ export function applyPitchDemoClinicalSeed(state, today, fecha, hora) {
   savePitchDemoAgenda(fecha);
   capturePitchSandbox(patients);
   setPitchPatientIsolation(true);
-  setPatients([buildPitchDemoPatient(today)]);
+  var demoPatient = buildPitchDemoPatient(today);
+  setDemoPatients([demoPatient]);
+  setPatients([demoPatient]);
   seedPitchDemoTodos();
-  saveState();
+  persistClinicalState();
   renderPatientList();
   selectPatient(PITCH_DEMO_PATIENT_ID);
 }

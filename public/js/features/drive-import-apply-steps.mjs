@@ -1,4 +1,4 @@
-import { patients } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 import { applyDefaultsToNewPatient } from '../app-shell.mjs';
 import { generatePatientId, selectPatient, ensureUniquePatientName } from './patients.mjs';
 import {
@@ -26,7 +26,7 @@ export function createPatientFromDriveImport(parsed, createNew) {
     fromLab: false,
   };
   applyDefaultsToNewPatient(patient);
-  patients.unshift(patient);
+  getPatients().unshift(patient);
   selectPatient(id);
   return patient;
 }

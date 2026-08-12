@@ -1,5 +1,5 @@
 /** Scheduled auto-backup settings, scheduler, and settings UI. */
-import { saveState } from '../../../app-state.mjs';
+import { persistClinicalState } from '../../../app-state.mjs';
 import {
   AUTO_BACKUP_INDEX_KEY,
   AUTO_BACKUP_MAX,
@@ -89,7 +89,7 @@ function restartAutoBackupScheduler() {
 }
 
 async function runAutoBackupNow(isScheduled) {
-  await saveState({ immediate: true });
+  await persistClinicalState({ immediate: true });
   var cfg = getAutoBackupSettings();
   var payload = buildFullBackupPayload();
   payload.autoBackup = { scheduled: !!isScheduled };

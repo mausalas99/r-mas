@@ -134,7 +134,8 @@ describe('pull-apply cloud snapshot merge', () => {
 describe('pull-apply cloud todo registro remap', () => {
   it('applyCloudOps stores todos under local patient id by registro', async () => {
     const { storage } = await import('../../storage.js');
-    const { patients: patientList } = await import('../../app-state.mjs');
+    const { getPatients } = await import('../../app-state.mjs');
+    const patientList = getPatients();
     const saved = {};
     const origGet = storage.getTodos;
     const origSave = storage.saveTodos;
@@ -181,7 +182,8 @@ describe('pull-apply cloud todo registro remap', () => {
 describe('pull-apply tombstone guard', () => {
   it('shouldApplyCloudTombstone skips stale id when registro was re-admitted', async () => {
     const { shouldApplyCloudTombstone } = await import('./pull-apply.mjs');
-    const { patients: patientList } = await import('../../app-state.mjs');
+    const { getPatients } = await import('../../app-state.mjs');
+    const patientList = getPatients();
     const before = patientList.slice();
     patientList.length = 0;
     patientList.push({ id: 'p-new', registro: '2166042-4', nombre: 'REINGRESO' });
@@ -221,7 +223,7 @@ describe('pull-apply sync-apply wiring (Phase 3)', () => {
     assert.ok(start >= 0);
     const body = pullApplySrc.slice(start, start + 700);
     assert.match(body, /shouldEnforceTeamPatientMirror/);
-    assert.match(body, /isClinicalScopeReadyForLanPatientApply/);
+    assert.match(body, /isClinicalScopeReadyForPatientApply/);
     assert.match(body, /return true/);
     assert.doesNotMatch(body, /shouldUseElevatedPatientCensus/);
   });

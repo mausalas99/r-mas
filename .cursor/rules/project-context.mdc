@@ -44,16 +44,13 @@ lib/                  Node-side shared logic (importable from main/server)
   interno/            Mobile interno/guardia board, QR, vitals, scope
   drive-import/       Google Drive HC/labs import parsers
  lab-repo/           Intrahospital lab portal scraper (ASP.NET HTML parse, PDF fetch)
-
-lan-squad/            LAN sync host: WS hub, host-store (→ host-store/), conflict resolver,
-          auth-router, ticket-store, write-queue, team-code
-  persistence/        Host durability: CommitBarrier, JSON shards, lab sidecars, SQL v15 repos
+  clinical-scope/     Pure clinical access domain (sala/team/guardia/cycle/evaluate)
 
 public/js/            Renderer modules (pre-bundle)
   features/           UI feature modules (*.mjs) — primary place for new UI work
   app-state.mjs       Patient/state hydration
   clinical-access-runtime.mjs  Session + privileges (façade → clinical-access-runtime/)
-  clinico-access-*.mjs  Scope evaluators (cycle, entrega, guardia, patient, teams, unlock)
+  clinico-access.mjs    Thin façade → `lib/clinical-scope/` (+ unlock UI); patient shim if deep-imported
   storage.js          Legacy localStorage (non-DB paths; split helpers under storage/)
 
 public/interno/       Mobile web client (guardia/interno board)
@@ -76,16 +73,16 @@ docs/
 | Topic | Primary locations |
 |-------|-------------------|
 | Clinical DB / schema | `lib/db/schema.mjs`, `lib/db/db-manager.mjs`, `lib/db/ipc-handlers.mjs`, `lib/db/ipc-handlers.test.mjs` (fake `ipcMain` harness) |
-| Clinical repo / commands | `lib/clinical-repo/`, `public/js/clinical-repo-client.mjs`, `clinical-repo-flag.mjs`, IPC `db:clinical-command`; eventualidades flag (default off) |
-| Roles / privileges | `lib/db/clinical-privileges.mjs`, `lib/db/clinical-access-*.mjs` (teams, guardia, entrega, …), `public/js/clinical-privileges.mjs`, `public/js/clinico-access.mjs` + `clinico-access-scope/` + `clinico-access-*.mjs`; session bootstrap in `clinical-access-runtime/` |
-| LAN sync / rooms | `lan-squad/` (`host-store/` persistence submodules, `conflict-resolver.js`, `bundle-merge.js`), `public/js/features/lan/` — façade `orchestrator.mjs` + `conflicts.mjs`, `entity-versions.mjs`, `patient-delete.mjs`, `patient-delete-batch.mjs`, `patient-entries.mjs`, `historia-sync.mjs`, `host-patient-http.mjs`, `live-sync-emit.mjs`, `push`, `room`, `transport`, `panel`, `runtime`; thin `features/lan-sync.mjs` barrel; root `lan-host-registry.mjs`, `lan-ward-host-registry.mjs`, `lan-sync-{state,diagnostics,bundle-push}.mjs`, `lan-delta-client.mjs`; LWW → `docs/superpowers/specs/2026-06-03-lan-conflict-lww-design.md` |
-| Clinical teams / guardia | `public/js/features/clinical-teams/` (`teams-roster-{panel,manage,create,directory,submit,shell}`, `teams-roster-lan-*`, `teams-invite`, `teams-guardia-bridge`), barrel `clinical-teams.mjs`, `clinical-rotation.mjs` |
+| Clinical repo / commands | `lib/clinical-repo/`, `public/js/clinical-repo-client.mjs`, `clinical-repo-flag.mjs`, IPC `db:clinical-command`; eventualidades + sync projector flags (default on; opt-out `0`) |
+| Roles / privileges | `lib/clinical-scope/` (pure evaluate + sala/team/guardia/cycle), thin `public/js/clinico-access.mjs` + unlock; `lib/db/clinical-privileges.mjs`, `lib/db/clinical-access-*.mjs`; `public/js/clinical-privileges.mjs`; session bootstrap in `clinical-access-runtime/` (scope-ops = I/O adapter) |
+| LAN LiveSync (retired) | Removed in 8.0.5; P3 fossils cleared (`lan-blob-retire`, `ci:forbid-lan`). Dev ward: `R_PLUS_DEV_WARD_SERVER=1` + `server.js` |
+| Clinical teams / guardia | `public/js/features/clinical-teams/` (`teams-roster-{panel,manage,create,directory,submit,shell}`, `teams-roster-users-*`, `teams-invite`, `teams-guardia-bridge`), barrel `clinical-teams.mjs`, `clinical-rotation.mjs` |
 | Modo entrega | `lib/entrega/` (+ `entrega-prep-checklist.mjs`), `clinical-entrega.mjs`, `entrega-prep-panel.mjs`, `entrega-modal-ui.mjs` |
 | Interno mobile | `lib/interno/` (`host-store-db.cjs` census from SQLCipher), `public/interno/`, `server.js` interno routes |
 | Cloud sync (Nube) | `cloud/sync-worker/`, `public/js/features/cloud-sync/` (`autostart`, `mutate-bridge`, `cloud-ops-events`, `sync-apply` via `features/sync-apply/`), `clinical-ops-sync.mjs`, `cloud-mobile/`; LAN LiveSync HTTP off by default (`R_PLUS_ENABLE_LAN_SYNC`) | all clinical wards |
 | Equipos (Lumify/EKG/US) | `lib/equipos/`, `public/equipos/`, `cloud/equipos-worker/`, `equipos-cloud-config.mjs`, `features/equipos-{board,qr-panel}.mjs` | LAN `:3738` **or** Cloudflare Worker queue |
 | Estado actual / monitoreo | `public/js/features/estado-actual-*.mjs` |
-| Labs / tendencias | `public/js/labs*.mjs`, `labs-default-refs.mjs` (rangos estándar / previos si SOME sin refs), `labs-reslabs-sanitize.mjs` (whitelist paneles en resLabs), `labs-panel-defs.mjs` / `labs-panel-parse.mjs` / `labs-panel-overlay*.mjs` (paneles + overlay LAN), `cultivo-block-core.mjs`, `features/tendencias.mjs`, `lab-panel.mjs`, `features/lan/lab-panel-overlay-sync.mjs`, paste-anywhere `features/paste-smart*.mjs` |
+| Labs / tendencias | `public/js/labs*.mjs`, `labs-default-refs.mjs` (rangos estándar / previos si SOME sin refs), `labs-reslabs-sanitize.mjs` (whitelist paneles en resLabs), `labs-panel-defs.mjs` / `labs-panel-parse.mjs` / `labs-panel-overlay*.mjs` (paneles + overlay LAN), `cultivo-block-core.mjs`, `features/tendencias.mjs`, `lab-panel.mjs`, paste-anywhere `features/paste-smart*.mjs` |
 | Lab repo scraper | `lib/lab-repo/` (`portal-client.mjs`, `portal-html.mjs`, fixtures); spec `docs/superpowers/specs/2026-06-27-lab-repo-scraper-design.md` |
 | VPO (documentación) | `public/js/features/vpo.mjs`, `vpo-panel.mjs`, `vpo-data.mjs`, `vpo-text.mjs` |
 | Document export | `lib/doc-generators/`, `lib/doc-export-http.js`, `server.js` |
@@ -119,10 +116,10 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 ## Conventions
 
-- **ESM** in renderer and most `lib/` (`.mjs`); CommonJS in `main.js`, `server.js`, `lan-squad/`.
+- **ESM** in renderer and most `lib/` (`.mjs`); CommonJS in `main.js`, `server.js`.
 - **Features pattern**: module exports `windowHandlers`, registered in `app-runtimes.mjs`.
 - **IPC**: add channel in `preload.js` + handler in `main.js` or `lib/db/ipc-handlers.mjs`.
-- **LAN routes**: add to `lan-squad/host-router.js` or `server.js`; auth via `auth-router.js`.
+- **Ward HTTP (dev)**: `server.js` behind `R_PLUS_DEV_WARD_SERVER=1` only.
 - **Schema changes**: bump in `lib/db/schema.mjs`, migration + test in `lib/db/schema.test.mjs`.
 - **Spanish UI** copy; code/comments mix EN/ES like surrounding files.
 - **No scope creep**: match existing patterns; minimal diffs.
@@ -134,8 +131,17 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-08-12** `cloud-sync-remember`: durable Recuérdame in `userData` via IPC + quit flush + single-instance lock; `lib/cloud-sync-remember-store.cjs`.
+- **2026-08-12** `tendencias-ui`: simplify eTFG card label; style detail event CTA; remove toolbar + Eventualidad; `tendencias-constants.mjs`, `tendencias-hidden.mjs`.
+- **2026-08-11** `clinical-repo`: eventualidades + sync projector **default on** (SQLCipher-first + change-log drain); opt-out via LS/env `0`; `clinical-repo-flag.mjs`.
+
+- **2026-08-11** `clinical-scope`: unified pure access domain + evaluateClinicalScope; renderer façade; interno/Worker leaf imports; `lib/clinical-scope/`, thin `clinico-access.mjs`.
+- **2026-08-11** `lan-rename`: teams-roster-lan→directory/users, scope-lan→scope-ops, clinical-access-lan→directory, clinical-ops-lan shim removed.
+- **2026-08-11** `lan-graveyard-p3`: forbid-lan CI + blob/prefs retire + LS key migrate + Lan*→Directory/Sync symbol sweep; `lan-blob-retire`, `lan-prefs-retire`, `cloud-room-membership`, teams directory.
+- **2026-08-11** `clinical-repo-p2`: sync projector drains `clinical_change_log` → outbox; `lib/clinical-repo/sync/`, `clinical-repo-sync-drain.mjs`.
+- **2026-08-11** `workbench-ui-patterns`: shared loading/approval/diff/recommendation primitives + HITL/list/sidebar/tendencias polish; `public/js/ui-*.mjs`, `public/styles/ui-patterns.css`, tendencias insight compare/Δ.
 - **2026-08-11** `clinical-repo`: P1 canonical write path — schema **v23** `clinical_change_log` + `lib/clinical-repo/` commands; eventualidades behind `clinicalRepo.eventualidades` flag; `db:clinical-command` IPC.
-- **2026-08-10** `release-8.1.0`: censo **cross-sala** (expediente/labs al room de la sala del equipo) + reconciliación Nube post-asignación + **Tendencias eventualidades** (marcadores + alta con categoría) + KV revision cache eliminado; `cloud-census-sala-push.mjs`, `census-lan-pull.mjs`, `tendencias-event-*.mjs`, `cloud/sync-worker`.
+- **2026-08-10** `release-8.1.0`: censo **cross-sala** (expediente/labs al room de la sala del equipo) + reconciliación Nube post-asignación + **Tendencias eventualidades** (marcadores + alta con categoría) + KV revision cache eliminado; `cloud-census-sala-push.mjs`, `census-nube-pull.mjs`, `tendencias-event-*.mjs`, `cloud/sync-worker`.
 - **2026-08-09** `cloud-sync`: pull D1-before-KV (fix revision 3264 vs 3266) + reconcile revision + retry 503; DO notify no-await; seed único outbox; `sync.js`, `sync-runtime-cycle.mjs`.
 - **2026-08-08** `release-8.0.8`: EA **ventilatorio** (soporte, PaFi, ROX) + **dieta parenteral** (KAVIBEN/NPT) + diagnóstico Nube dashboard + Recuérdame sin logout al actualizar; `estado-actual-ventilatorio.mjs`, `med-receta-diet.mjs`, `panel-cloud-diagnostics.mjs`.
 - **2026-08-08** `cloud-sync`: KV **lite + pivot** — lectura en pull, un `put` solo en push (sin TTL/duplicados); circuit breaker al cupo diario → D1; `kv-revision-cache.mjs`, `sync.js`.
@@ -146,18 +152,3 @@ Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 - **2026-08-06** `release-8.0.3`: Eventualidades sin tab Labs (solo bitácora + compose) + reingreso Nube + admin Equipos + clinicalOps por sala + sync auto; `eventualidades-panel-html.mjs`, `eventualidades-render.mjs`, `cloud-census-collect.mjs`, `sync-runtime-cycle.mjs`.
 - **2026-08-06** `release-8.0.2`: Diagnóstico Nube (cola/errores/trazas) + sala `torre`→Torre HU + salir equipo resuelve guardias + todos `patientId`; `cloud-sync-diagnostics.mjs`, `panel-cloud-diagnostics.mjs`, `clinical-access-teams-membership.mjs`.
 - **2026-08-05** `release-8.0.1`: hotfix pull Nube (apply censo sin LAN wiring) + Worker push atómico con reintento; `orchestrator-boot.mjs`, `patient-entries.mjs`, `cloud/sync-worker/sync.js`.
-- **2026-08-05** `release-8.0.0`: Nube todas las salas + R+ Móvil + app://; LAN opt-in; tombstones LWW; `docs/RELEASE_NOTES_8.0.0.txt`, `cloud-mobile/`, `renderer-protocol`.
-- **2026-08-05** `release-7.9.8`: All clinical wards on Nube; LAN LiveSync off by default (`R_PLUS_ENABLE_LAN_SYNC=1`); `app://rplus` + `sync-apply` (Nube delete/bulk) + Worker LWW tombstone wipe; `docs/RELEASE_NOTES_7.9.8.txt`, `renderer-protocol`, `host-store-db`, `lww.js`.
-- **2026-08-05** `release-7.9.6`: Nube **Sala 1/2/E** rooms distintos + censo por alcance (R4/Admin sala-wide desktop; iPad por equipo) + prune fantasmas + EA monitoreo stub-safe; `sala-allowlist`, `pull-apply`, `patient-scope-prune`, `build:cloud-mobile`.
-- **2026-08-05** `cloud-sync`: Nube separa **Sala 1 / Sala 2 / Sala E** como rooms distintos (ya no bucket "Sala"); `sala-allowlist`, admin Salas, `ensure-turn`.
-- **2026-08-05** `release-7.9.5`: R+ Móvil Nube (`/mobile/`+QR) + sala mensual `YYYY-MM` + `active_room_id` + census autostart/seed + signos LWW + COAG + LAN restore; `docs/RELEASE_NOTES_7.9.5.txt`, `cloud-mobile/`, `autostart.mjs`, `004-active-room.sql`.
-- **2026-08-03** `hybrid-h`: Apple Hybrid UI materials/overlays/chrome onto main; tokens + ui-overlay + Conexión/labs/pase/eventualidades polish.
-- **2026-08-03** `ttd-tooltime`: Labs pane nav + EA Tab spine + Conexión light-switch; `doc-queue-nav.mjs`, `estado-actual-panel-registro-tab.mjs`, `panel-session-gate.mjs`.
-- **2026-08-03** `eventualidades-labs-timeline`: Labs view is auto timeline (`labsText`) — no Interpretación dock; autosend restored; local color soften on Guardia/Conexión/bulk/pendientes/EV; `lab-eventualidad-autosend.mjs`, `eventualidades-panel-html.mjs`.
-- **2026-08-03** `release-7.9.3`: Eventualidades Labs (`labsText`) + Nube LWW/slim/timing + EA registro limpio + consolidación labs misma hora; `eventualidades-labs-ui.mjs`, `cloud-op-slim.mjs`, `lan-patient-merge-eventualidades.mjs`, `docs/RELEASE_NOTES_7.9.3.txt`.
-- **2026-08-03** `release-7.9.2`: censo (rescates insulina + dieta suplemento) + Conexión status/Opciones + cultivos/EA; `censo-meds-format.mjs`, `panel-conexion-views.mjs`, `docs/RELEASE_NOTES_7.9.2.txt`.
-- **2026-08-03** `release-7.9.1`: recuperación Nube (códigos + Conexión por pasos) + borrado masivo pacientes; `docs/RELEASE_NOTES_7.9.1.txt`.
-- **2026-08-03** `patients-bulk-delete`: multi-select sidebar + batch delete (local + LAN/Nube purge); `patients-bulk-*.mjs`, `lan/patient-delete-batch.mjs`.
-- **2026-08-02** `cloud-sync`: rebuild ⇄ Conexión chrome on Nube login/logout (session gate); stepped UI token-without-room; `panel-session-gate.mjs`, `panel-conexion-handlers.mjs`.
-- **2026-08-02** `nube-recovery-ux`: recovery codes + admin reset; Conexión steps (Connect→Sala→Equipo→Más); logged-out shows only Connect; `cloud/sync-worker` auth-recovery, `public/js/features/cloud-sync/panel-steps-html.mjs`.
-- **2026-08-02** `cloud-sync-7.9`: Nube Free pilot for **Sala + Torre HU** only (overrides LAN); Inters/UX/Eme/Área A stay LAN; offline + uncapped labs; `cloud/sync-worker`, `public/js/features/cloud-sync/`.

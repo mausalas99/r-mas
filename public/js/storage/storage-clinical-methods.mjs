@@ -100,25 +100,6 @@ export const clinicalBlobStorageMethods = {
     return Object.keys(map);
   },
 
-  getLanRoomSnapshots() {
-    return readClinicalBlob('lanRoomSnapshots', 'rpc-lan-room-snapshots', safeParseObject);
-  },
-
-  getLanRoomSnapshot(roomId) {
-    const all = this.getLanRoomSnapshots();
-    const row = all[String(roomId || '')];
-    return row && typeof row === 'object' ? row : null;
-  },
-
-  saveLanRoomSnapshot(roomId, snapshot) {
-    if (skipClinicalLocalPersist()) return;
-    const rid = String(roomId || '');
-    if (!rid) return;
-    const all = this.getLanRoomSnapshots();
-    all[rid] = snapshot && typeof snapshot === 'object' ? snapshot : {};
-    localStorage.setItem('rpc-lan-room-snapshots', JSON.stringify(all));
-    invalidateParsed('lanRoomSnapshots');
-  },
 
   /**
    * Catálogo personalizado de medicamentos (acentos + tokens SOAP + categorías SOME perfil).

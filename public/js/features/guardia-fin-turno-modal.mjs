@@ -2,7 +2,7 @@
  * Fin de guardia sheet — open estudios grouped by source team; Enviar resolves coverings.
  * Ending the local clock never deletes pendientes (see finalizeGuardiaTurno).
  */
-import { patients } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 import {
   clinicalSessionContext,
   refreshGuardiaCensusFromDb,
@@ -108,7 +108,7 @@ async function sendGroupByTeamKey(teamKey, settings) {
   var uid = String(clinicalSessionContext.user?.user_id || '');
   var next = collectOpenPendientesBySourceTeam(
     clinicalSessionContext.guardias || [],
-    patients,
+    getPatients(),
     { coveringUserId: uid, teamLabelById: teamLabelById }
   );
   if (!next.length) {
@@ -159,7 +159,7 @@ export function finalizeGuardiaTurno(callbacks) {
   var uid = String(clinicalSessionContext.user?.user_id || '');
   var groups = collectOpenPendientesBySourceTeam(
     clinicalSessionContext.guardias || [],
-    patients,
+    getPatients(),
     { coveringUserId: uid, teamLabelById: teamLabelById }
   );
 

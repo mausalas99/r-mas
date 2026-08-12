@@ -19,7 +19,7 @@ describe('lab-panel-history-consolidate-refresh', () => {
     var calls = [];
     runLabConsolidateUiRefresh(
       {
-        saveState: function () {
+        persistClinicalState: function () {
           calls.push('save');
         },
         setLabHistorySelectedSetId: function (pid, sid) {

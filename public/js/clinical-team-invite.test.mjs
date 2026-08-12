@@ -36,6 +36,13 @@ describe('clinical-team-invite', () => {
     assert.match(msg, /Código de equipo: 2017936e/);
     assert.match(msg, /Mi rotación/);
     assert.doesNotMatch(msg, /localhost/);
+    assert.doesNotMatch(msg, /Sala en vivo/);
+    assert.doesNotMatch(msg, /rpc-lan-config/);
+  });
+
+  it('does not expose resolveClinicalInviteLanHostUrl', async () => {
+    const mod = await import('./clinical-team-invite.mjs');
+    assert.equal(typeof mod.resolveClinicalInviteLanHostUrl, 'undefined');
   });
 
   it('normalizeTeamInviteCode strips @ and dashes', () => {

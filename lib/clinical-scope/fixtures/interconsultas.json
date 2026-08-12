@@ -1,0 +1,145 @@
+[
+  {
+    "id": "ic-patient-by-service",
+    "fn": "isInterconsultasPatient",
+    "args": [
+      {
+        "service": "Interconsultas"
+      }
+    ],
+    "expected": true
+  },
+  {
+    "id": "ic-patient-by-sub-area",
+    "fn": "isInterconsultasPatient",
+    "args": [
+      {
+        "service": "Sala",
+        "sub_area": "Interconsultas A"
+      }
+    ],
+    "expected": true
+  },
+  {
+    "id": "ic-patient-by-interconsult-type",
+    "fn": "isInterconsultasPatient",
+    "args": [
+      {
+        "service": "Sala",
+        "interconsult_type": "Cardio"
+      }
+    ],
+    "expected": true
+  },
+  {
+    "id": "ic-patient-false-none",
+    "fn": "isInterconsultasPatient",
+    "args": [
+      {
+        "service": "UX",
+        "interconsult_type": "None"
+      }
+    ],
+    "expected": false
+  },
+  {
+    "id": "ic-patient-null",
+    "fn": "isInterconsultasPatient",
+    "args": [
+      null
+    ],
+    "expected": false
+  },
+  {
+    "id": "ux-off-call-interconsultas-rotation",
+    "fn": "userOffCallFromInterconsultasRotationServices",
+    "args": [
+      "r1-ux",
+      [
+        {
+          "team_id": "t-ux",
+          "service": "UX",
+          "sub_area_fraction": "A",
+          "members": [
+            {
+              "user_id": "r1-ux",
+              "rank": "R1"
+            }
+          ]
+        }
+      ],
+      "R1",
+      "2026-06-02T12:00:00Z"
+    ],
+    "expected": true
+  },
+  {
+    "id": "ux-on-call-not-off-call-rotation",
+    "fn": "userOffCallFromInterconsultasRotationServices",
+    "args": [
+      "r1-ux",
+      [
+        {
+          "team_id": "t-ux",
+          "service": "UX",
+          "sub_area_fraction": "A",
+          "members": [
+            {
+              "user_id": "r1-ux",
+              "rank": "R1"
+            }
+          ]
+        }
+      ],
+      "R1",
+      "2026-06-01T12:00:00Z"
+    ],
+    "expected": false
+  },
+  {
+    "id": "ic-team-on-call",
+    "fn": "userOnCallForInterconsultasTeam",
+    "args": [
+      "r2-ic",
+      [
+        {
+          "team_id": "t-ic",
+          "service": "Interconsultas",
+          "sub_area_fraction": "A",
+          "members": [
+            {
+              "user_id": "r2-ic",
+              "rank": "R2"
+            }
+          ]
+        }
+      ],
+      "R2",
+      "2026-06-01T12:00:00Z"
+    ],
+    "expected": true
+  },
+  {
+    "id": "ic-team-off-call",
+    "fn": "userOnCallForInterconsultasTeam",
+    "args": [
+      "r3-ic",
+      [
+        {
+          "team_id": "t-ic",
+          "service": "Interconsultas",
+          "sub_area_fraction": "B",
+          "members": [
+            {
+              "user_id": "r3-ic",
+              "rank": "R3"
+            }
+          ]
+        }
+      ],
+      "R3",
+      "2026-06-01T12:00:00Z"
+    ],
+    "expected": false
+  }
+]

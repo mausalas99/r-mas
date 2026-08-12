@@ -209,38 +209,36 @@ describe('storage todos', () => {
   });
 });
 
-describe('lan config', () => {
+describe('lan config (P3 retired)', () => {
   beforeEach(() => {
     for (const k of Object.keys(store)) delete store[k];
     clearBlobCacheForTests();
   });
 
-  it('persists and reads LAN config', () => {
-    const cfg = { hostUrl: 'http://192.168.1.10:3738', teamCode: 'testcode' };
-    storage.saveLanConfig(cfg);
-    assert.deepStrictEqual(storage.getLanConfig(), cfg);
+  it('host patient map APIs are retired (P3)', () => {
+    assert.equal(typeof storage.saveHostPatientMap, 'undefined');
+    assert.equal(typeof storage.getHostPatientMap, 'undefined');
   });
 
-  it('persists and reads host patient map', () => {
-    storage.saveHostPatientMap({ a: 'b' });
-    assert.deepStrictEqual(storage.getHostPatientMap(), { a: 'b' });
-  });
-
-  it('clears LAN config when saveLanConfig(null)', () => {
-    storage.saveLanConfig({ hostUrl: 'http://x', teamCode: 'y' });
-    storage.saveLanConfig(null);
-    assert.strictEqual(storage.getLanConfig(), null);
-  });
-
-  it('LAN UI role defaults to client', () => {
-    assert.strictEqual(storage.getLanUiRole(), 'client');
-  });
-
-  it('persists LAN UI role host or client', () => {
-    storage.saveLanUiRole('host');
-    assert.strictEqual(storage.getLanUiRole(), 'host');
-    storage.saveLanUiRole('client');
-    assert.strictEqual(storage.getLanUiRole(), 'client');
+  it('LAN prefs APIs are retired (P3)', () => {
+    for (const name of [
+      'getLanConfig',
+      'saveLanConfig',
+      'setLanConfig',
+      'getLanShiftPin',
+      'saveLanShiftPin',
+      'setLanShiftPin',
+      'getLanUiRole',
+      'saveLanUiRole',
+      'setLanUiRole',
+      'getLanHideDisconnectBanner',
+      'saveLanHideDisconnectBanner',
+      'setLanHideDisconnectBanner',
+      'getLanLwwOverwriteToast',
+      'setLanLwwOverwriteToast',
+    ]) {
+      assert.equal(typeof storage[name], 'undefined', name);
+    }
   });
 });
 

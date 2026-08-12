@@ -1,5 +1,5 @@
 import { esc } from '../../dom-escape.mjs';
-import { formatLanCycleOptionLabel } from '../clinical-teams/teams-roster-lan-render.mjs';
+import { formatCycleOptionLabel } from '../clinical-teams/teams-roster-directory-render.mjs';
 import { CLINICAL_SALAS } from '../clinical-teams/shared.mjs';
 import { getCycleLetterOptionsForRank } from '../../clinico-access.mjs';
 import { resolveMembershipCycleForUser } from '../../clinico-access.mjs';
@@ -120,7 +120,7 @@ export function cycleOptionsForTeam(team, userId, userRank, selectedCycle) {
   if (!letters.length) return '<option value="">Ciclo</option>';
   return letters
     .map((letter) => {
-      const label = formatLanCycleOptionLabel(letter, rank);
+      const label = formatCycleOptionLabel(letter, rank);
       const sel = letter === selected ? ' selected' : '';
       return '<option value="' + esc(letter) + '"' + sel + '>' + esc(label) + '</option>';
     })

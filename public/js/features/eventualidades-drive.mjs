@@ -1,4 +1,4 @@
-import { saveState } from '../app-state.mjs';
+import { persistClinicalState } from '../app-state.mjs';
 import { touchClinicalSessionActivity } from '../clinical-access-runtime.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import { isCloudSyncActive } from './cloud-sync/nube-sync-policy.mjs';
@@ -15,7 +15,7 @@ export async function applyDriveImportEventualidades(patient, incoming) {
   }
   if (!toAdd.length) return { ok: true, added: 0, skipped };
   patient.eventualidades = store;
-  await saveState({ immediate: true });
+  await persistClinicalState({ immediate: true });
   touchClinicalSessionActivity({ force: true });
   if (isCloudSyncActive()) scheduleCloudSyncPush();
   return { ok: true, added: toAdd.length, skipped };

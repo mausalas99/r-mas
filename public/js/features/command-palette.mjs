@@ -3,7 +3,7 @@
  * Keyboard-first glass overlay. Executes via existing globals/functions.
  * Heavy lab features load on demand (no static boot import).
  */
-import { patients } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 import { buildPaletteItems, rankPalette } from '../command-palette-model.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
 import { selectPatient } from './patients.mjs';
@@ -168,7 +168,7 @@ function syncSelection() {
 
 function renderResults(query) {
   var d = ensureDom();
-  var items = buildPaletteItems(settings(), patients);
+  var items = buildPaletteItems(settings(), getPatients());
   results = rankPalette(query, items, 12);
   selectedIndex = 0;
   d.list.textContent = '';
@@ -208,10 +208,12 @@ function renderResults(query) {
     empty.setAttribute('role', 'status');
     if (String(query || '').trim()) {
       empty.innerHTML =
+        '<span class="cmdk-empty-icon" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>' +
         '<span class="empty-state-title">Sin coincidencias</span>' +
         '<span class="empty-state-lead">Prueba con una acción (exportar, labs), el nombre del paciente o una sección.</span>';
     } else {
       empty.innerHTML =
+        '<span class="cmdk-empty-icon" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>' +
         '<span class="empty-state-title">Atajos del workbench</span>' +
         '<span class="empty-state-lead">Escribe para buscar acciones, pacientes o secciones del expediente.</span>';
     }

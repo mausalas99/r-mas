@@ -1,9 +1,9 @@
 import { esc } from '../../dom-escape.mjs';
 import { userActionsHtml } from './panel-admin-html.mjs';
 import {
-  formatLanCycleOptionLabel,
-  resolveLanUserPlacement,
-} from '../clinical-teams/teams-roster-lan-render.mjs';
+  formatCycleOptionLabel,
+  resolveUserPlacement,
+} from '../clinical-teams/teams-roster-directory-render.mjs';
 import { normalizeUsername } from '../../clinical-username.mjs';
 import {
   clinicalUserActivityTier,
@@ -179,7 +179,7 @@ function equiposRowPlacementLabelHtml(placement, userRank) {
     return '<span class="cloud-sync-admin-equipos-unassigned">Sin equipo</span>';
   }
   return esc(
-    [placement.teamName, placement.cycle ? formatLanCycleOptionLabel(placement.cycle, userRank) : '']
+    [placement.teamName, placement.cycle ? formatCycleOptionLabel(placement.cycle, userRank) : '']
       .filter(Boolean)
       .join(' · ')
   );
@@ -260,7 +260,7 @@ export function renderEquiposUserRow(row, teams) {
   const userRank = String(row.rank || 'R1');
   const handle = normalizeUsername(row.username || '');
   const name = esc(String(row.clinical_name || '').trim() || 'Sin nombre');
-  const placement = userId ? resolveLanUserPlacement(userId, teams) : null;
+  const placement = userId ? resolveUserPlacement(userId, teams) : null;
   const activity = equiposRowActivityParts(row);
   const cloudId = String(row.cloudId || '').trim();
   const resetPasswordBtn = equiposRowResetPasswordBtnHtml(cloudId, handle);

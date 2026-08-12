@@ -1,11 +1,6 @@
 import { esc } from '../dom-escape.mjs';
 // Expediente · nota evolución, indicaciones, Word
-import {
-  notes,
-  indicaciones,
-  patients,
-  saveState,
-} from "../app-state.mjs";
+import { getPatients, getNotes, getIndicaciones, persistClinicalState } from "../app-state.mjs";
 import { setAsyncButtonLoading } from "../ui-motion.mjs";
 import {
   applyNotaFormatScaffoldIfEmpty,
@@ -78,23 +73,23 @@ function renderNoteForm() {
     document.getElementById("note-form").innerHTML = buildNoteDefaultsEditorHtml(st);
     return;
   }
-  var patient = patients.find(function (p) {
+  var patient = getPatients().find(function (p) {
     return String(p.id) === String(aid());
   });
   if (!patient) return;
   if (aid()) {
-    if (!notes[aid()]) notes[aid()] = {};
-    var changed = applyProfileToNoteIfEmpty(notes[aid()]);
-    if (applyNotaFormatScaffoldIfEmpty(notes[aid()], rt.getSettings() || {})) changed = true;
-    if (changed) saveState();
+    if (!getNotes()[aid()]) getNotes()[aid()] = {};
+    var changed = applyProfileToNoteIfEmpty(getNotes()[aid()]);
+    if (applyNotaFormatScaffoldIfEmpty(getNotes()[aid()], rt.getSettings() || {})) changed = true;
+    if (changed) persistClinicalState();
   }
-  var note = notes[aid()] || {};
+  var note = getNotes()[aid()] || {};
   var pid = aid();
   if (pid) {
-    var pat = patients.find(function (p) {
+    var pat = getPatients().find(function (p) {
       return String(p.id) === String(pid);
     });
-    if (pat && preloadNoteDxFromPatient(note, pat)) saveState();
+    if (pat && preloadNoteDxFromPatient(note, pat)) persistClinicalState();
   }
   document.getElementById('note-form').innerHTML = (
     '<div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
@@ -137,20 +132,20 @@ function renderNoteForm() {
 }
 
 // ── Campos Dx/Tx ──────────────────────────────────────────────────────
-function updateNote(field, value) { if (!notes[aid()]) notes[aid()]={}; notes[aid()][field]=value; saveState(); if (field === 'estudios') rt.renderRoundOverviewPanels(); }
-function updateDx(i, val) { if (!notes[aid()]) return; notes[aid()].diagnosticos[i]=val.toUpperCase(); saveState(); }
-function addDx() { if (!notes[aid()]) return; notes[aid()].diagnosticos.push(''); saveState(); renderNoteForm(); }
-function removeDx(i) { if (!notes[aid()]||notes[aid()].diagnosticos.length<=1) return; notes[aid()].diagnosticos.splice(i,1); saveState(); renderNoteForm(); }
+function updateNote(field, value) { if (!getNotes()[aid()]) getNotes()[aid()]={}; getNotes()[aid()][field]=value; persistClinicalState(); if (field === 'estudios') rt.renderRoundOverviewPanels(); }
+function updateDx(i, val) { if (!getNotes()[aid()]) return; getNotes()[aid()].diagnosticos[i]=val.toUpperCase(); persistClinicalState(); }
+function addDx() { if (!getNotes()[aid()]) return; getNotes()[aid()].diagnosticos.push(''); persistClinicalState(); renderNoteForm(); }
+function removeDx(i) { if (!getNotes()[aid()]||getNotes()[aid()].diagnosticos.length<=1) return; getNotes()[aid()].diagnosticos.splice(i,1); persistClinicalState(); renderNoteForm(); }
 
 /** Pull patient censo diagnoses into the open note (asks before overwrite). */
 function syncNoteDxFromCenso() {
   var pid = aid();
-  if (!pid || !notes[pid]) return;
-  var pat = patients.find(function (p) {
+  if (!pid || !getNotes()[pid]) return;
+  var pat = getPatients().find(function (p) {
     return String(p.id) === String(pid);
   });
   if (!pat) return;
-  var note = notes[pid];
+  var note = getNotes()[pid];
   var hasNoteDx = (note.diagnosticos || []).some(function (d) {
     return String(d).trim();
   });
@@ -164,24 +159,24 @@ function syncNoteDxFromCenso() {
     rt.showToast('No hay diagnósticos en el censo de este paciente.', 'info');
     return;
   }
-  saveState();
+  persistClinicalState();
   renderNoteForm();
   rt.showToast('Diagnósticos del censo en la nota ✓', 'success');
 }
 
-function updateTx(i, val) { if (!notes[aid()]) return; notes[aid()].tratamiento[i]=val; saveState(); }
-function addTx() { if (!notes[aid()]) return; notes[aid()].tratamiento.push(''); saveState(); renderNoteForm(); }
-function removeTx(i) { if (!notes[aid()]||notes[aid()].tratamiento.length<=1) return; notes[aid()].tratamiento.splice(i,1); saveState(); renderNoteForm(); }
+function updateTx(i, val) { if (!getNotes()[aid()]) return; getNotes()[aid()].tratamiento[i]=val; persistClinicalState(); }
+function addTx() { if (!getNotes()[aid()]) return; getNotes()[aid()].tratamiento.push(''); persistClinicalState(); renderNoteForm(); }
+function removeTx(i) { if (!getNotes()[aid()]||getNotes()[aid()].tratamiento.length<=1) return; getNotes()[aid()].tratamiento.splice(i,1); persistClinicalState(); renderNoteForm(); }
 
 // ── Word nota ───────────────────────────────────────────────────────────
 function generateWord() {
   if (rt.guardMobileDocExport()) return;
   if (guardDocExportBlocked({ isRpcOffline: rt.isRpcOffline, showToast: rt.showToast })) return;
-  var patient = patients.find(function(p){ return p.id===aid(); }); if (!patient) return;
-  var note = notes[aid()]; if (!note) return;
-  if (ensureNoteDxFromPatientForExport(note, patient)) saveState();
+  var patient = getPatients().find(function(p){ return p.id===aid(); }); if (!patient) return;
+  var note = getNotes()[aid()]; if (!note) return;
+  if (ensureNoteDxFromPatientForExport(note, patient)) persistClinicalState();
   var btn = document.getElementById('btn-gen');
-  setAsyncButtonLoading(btn, true, { loadingText: 'Generando…' });
+  setAsyncButtonLoading(btn, true, { showElapsed: true, loadingText: 'Generando…' });
   rt.incrementPendingJobs();
   function buildPayload() {
     return { patient: patient, note: note };
@@ -231,14 +226,14 @@ function renderIndicaForm() {
     document.getElementById("indica-form").innerHTML = buildIndicaDefaultsEditorHtml(st);
     return;
   }
-  if (!patients.some(function (p) { return p.id === aid(); })) return;
-  if (!indicaciones[aid()]) {
+  if (!getPatients().some(function (p) { return p.id === aid(); })) return;
+  if (!getIndicaciones()[aid()]) {
     var today = new Date();
-    indicaciones[aid()] = { fecha:String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear(), hora:String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0'), medicos:'',dieta:'',cuidados:'',estudios:'',medicamentos:'',interconsultas:'',otros:[] };
-    applyIndicacionesFormatScaffoldIfEmpty(indicaciones[aid()], rt.getSettings() || {});
-    saveState();
+    getIndicaciones()[aid()] = { fecha:String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear(), hora:String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0'), medicos:'',dieta:'',cuidados:'',estudios:'',medicamentos:'',interconsultas:'',otros:[] };
+    applyIndicacionesFormatScaffoldIfEmpty(getIndicaciones()[aid()], rt.getSettings() || {});
+    persistClinicalState();
   }
-  var ind = indicaciones[aid()];
+  var ind = getIndicaciones()[aid()];
   var SECTIONS = [
     {key:'dieta',label:'Dieta',placeholder:'Escriba la dieta (una indicación por línea si aplica)…'},
     {key:'cuidados',label:'Cuidados',placeholder:'Signos vitales, balance, dispositivos, etc.…'},
@@ -266,22 +261,22 @@ function renderIndicaForm() {
   rt.syncOfflineButtonStates();
 }
 
-function updateIndica(field, value) { if (!indicaciones[aid()]) return; indicaciones[aid()][field]=value; saveState(); }
+function updateIndica(field, value) { if (!getIndicaciones()[aid()]) return; getIndicaciones()[aid()][field]=value; persistClinicalState(); }
 
-function updateOtro(i, field, value) { if (!indicaciones[aid()]) return; indicaciones[aid()].otros[i][field]=value; saveState(); }
+function updateOtro(i, field, value) { if (!getIndicaciones()[aid()]) return; getIndicaciones()[aid()].otros[i][field]=value; persistClinicalState(); }
 
 function addOtro() {
-  if (!indicaciones[aid()]) return;
-  indicaciones[aid()].otros = indicaciones[aid()].otros || [];
-  indicaciones[aid()].otros.push({ titulo:'', contenido:'' });
-  saveState();
+  if (!getIndicaciones()[aid()]) return;
+  getIndicaciones()[aid()].otros = getIndicaciones()[aid()].otros || [];
+  getIndicaciones()[aid()].otros.push({ titulo:'', contenido:'' });
+  persistClinicalState();
   renderIndicaForm();
 }
 
 function removeOtro(i) {
-  if (!indicaciones[aid()]) return;
-  indicaciones[aid()].otros.splice(i, 1);
-  saveState();
+  if (!getIndicaciones()[aid()]) return;
+  getIndicaciones()[aid()].otros.splice(i, 1);
+  persistClinicalState();
   renderIndicaForm();
 }
 
@@ -342,14 +337,14 @@ function applyIndicaTemplateFields(target, tmpl, mode) {
 function applyExtraTemplateFromIndica() {
   var sel = document.getElementById('indica-extra-tmpl-select');
   if (!sel || !sel.value) { rt.showToast('Elige una plantilla', 'error'); return; }
-  if (!aid() || !indicaciones[aid()]) { rt.showToast('Selecciona un paciente primero', 'error'); return; }
+  if (!aid() || !getIndicaciones()[aid()]) { rt.showToast('Selecciona un paciente primero', 'error'); return; }
   var tmpl = ((rt.getSettings() || {}).extraTemplates || []).find(function(t){ return t.id === sel.value; });
   if (!tmpl) return;
-  var target = indicaciones[aid()];
+  var target = getIndicaciones()[aid()];
   var mode = resolveExtraTemplateMergeMode(indicaHasExistingContent(target));
   if (!mode) return;
   applyIndicaTemplateFields(target, tmpl, mode);
-  saveState();
+  persistClinicalState();
   renderIndicaForm();
   rt.addAuditEntry('extra-template-apply', 'ok', 1, tmpl.label || '');
   rt.showToast('Plantilla aplicada: ' + (tmpl.label || ''), 'success');
@@ -359,10 +354,10 @@ function applyExtraTemplateFromIndica() {
 function generateIndicaciones() {
   if (rt.guardMobileDocExport()) return;
   if (guardDocExportBlocked({ isRpcOffline: rt.isRpcOffline, showToast: rt.showToast })) return;
-  var patient = patients.find(function(p){ return p.id===aid(); }); if (!patient) return;
-  var ind = indicaciones[aid()]; if (!ind) return;
+  var patient = getPatients().find(function(p){ return p.id===aid(); }); if (!patient) return;
+  var ind = getIndicaciones()[aid()]; if (!ind) return;
   var btn = document.getElementById('btn-gen-ind');
-  setAsyncButtonLoading(btn, true, { loadingText: 'Generando…' });
+  setAsyncButtonLoading(btn, true, { showElapsed: true, loadingText: 'Generando…' });
   rt.incrementPendingJobs();
   function buildPayload() {
     return { patient: patient, indicaciones: ind };

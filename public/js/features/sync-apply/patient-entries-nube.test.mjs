@@ -1,10 +1,10 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { patients } from '../../app-state.mjs';
+import { getPatients } from '../../app-state.mjs';
 import {
   applyLanPatientEntries,
   isPlaceholderPatientName,
-  configureLanPatientEntries,
+  configurePatientEntries,
 } from './patient-entries.mjs';
 
 describe('applyLanPatientEntries on Nube path', () => {
@@ -12,9 +12,9 @@ describe('applyLanPatientEntries on Nube path', () => {
   let patientsBefore;
 
   beforeEach(() => {
-    patientsBefore = patients.slice();
-    patients.length = 0;
-    configureLanPatientEntries({
+    patientsBefore = getPatients().slice();
+    getPatients().length = 0;
+    configurePatientEntries({
       ensureUniquePatientName(name) {
         return String(name || 'PACIENTE');
       },
@@ -28,11 +28,11 @@ describe('applyLanPatientEntries on Nube path', () => {
   });
 
   afterEach(() => {
-    patients.length = 0;
-    patients.push(...patientsBefore);
+    getPatients().length = 0;
+    getPatients().push(...patientsBefore);
   });
 
-  it('applies cloud census without configureLanPatientEntries wiring', () => {
+  it('applies cloud census without configurePatientEntries wiring', () => {
     assert.doesNotThrow(function () {
       const result = applyLanPatientEntries(
         [
@@ -51,8 +51,8 @@ describe('applyLanPatientEntries on Nube path', () => {
       );
       assert.equal(result.added, 1);
     });
-    assert.equal(patients.length, 1);
-    assert.equal(patients[0].nombre, 'PACIENTE NUBE');
+    assert.equal(getPatients().length, 1);
+    assert.equal(getPatients()[0].nombre, 'PACIENTE NUBE');
   });
 
   it('isPlaceholderPatientName detects default admit labels', () => {
@@ -62,7 +62,7 @@ describe('applyLanPatientEntries on Nube path', () => {
   });
 
   it('does not let PACIENTE SIN NOMBRE overwrite CYNTHIA when remote clock is newer', () => {
-    patients.push({
+    getPatients().push({
       id: 'p-cynthia',
       nombre: 'CYNTHIA',
       registro: '1',
@@ -85,11 +85,11 @@ describe('applyLanPatientEntries on Nube path', () => {
       { skipTeamScopeFilter: true }
     );
     assert.equal(result.updated, 1);
-    assert.equal(patients[0].nombre, 'CYNTHIA');
+    assert.equal(getPatients()[0].nombre, 'CYNTHIA');
   });
 
   it('accepts a real remote name when local is still the placeholder', () => {
-    patients.push({
+    getPatients().push({
       id: 'p-cynthia',
       nombre: 'PACIENTE SIN NOMBRE',
       registro: '1',
@@ -111,6 +111,6 @@ describe('applyLanPatientEntries on Nube path', () => {
       ],
       { skipTeamScopeFilter: true }
     );
-    assert.equal(patients[0].nombre, 'CYNTHIA LOPEZ');
+    assert.equal(getPatients()[0].nombre, 'CYNTHIA LOPEZ');
   });
 });

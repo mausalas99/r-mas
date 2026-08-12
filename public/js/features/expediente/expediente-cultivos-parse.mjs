@@ -1,5 +1,5 @@
 // Cultivo block parsing, copy, lab output fragments
-import { labHistory } from '../../app-state.mjs';
+import { getLabHistory } from '../../app-state.mjs';
 import { parseFechaLabToMs, normalizeFechaLabHistory } from '../../tend-core.mjs';
 import {
   renderEntry,
@@ -183,7 +183,7 @@ function copyCultivoCondensado(setId, organismo) {
     rt.showToast('Selecciona un paciente', 'error');
     return;
   }
-  var sets = labHistory[pid] || [];
+  var sets = getLabHistory()[pid] || [];
   var set = sets.find(function (s) {
     return String(s.id) === String(setId);
   });

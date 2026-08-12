@@ -1,12 +1,20 @@
-/** Tracks last known host sync-bundle revision per room (LAN cold storage). */
+/** Tracks last known host sync-bundle revision per room (cold storage). */
 
 import { collectKeysFromEnvelope } from './host-bundle-bases-keys.mjs';
 
-const BASES_KEY = 'rpc-lan-host-bundle-bases';
+const BASES_KEY = 'rpc-host-bundle-bases';
+const LEGACY_BASES_KEY = 'rpc-lan-host-bundle-bases';
 
 function readAll() {
   try {
-    const raw = localStorage.getItem(BASES_KEY);
+    let raw = localStorage.getItem(BASES_KEY);
+    if (!raw) {
+      raw = localStorage.getItem(LEGACY_BASES_KEY);
+      if (raw) {
+        localStorage.setItem(BASES_KEY, raw);
+        localStorage.removeItem(LEGACY_BASES_KEY);
+      }
+    }
     if (!raw) return {};
     const o = JSON.parse(raw);
     return o && typeof o === 'object' ? o : {};
@@ -17,6 +25,9 @@ function readAll() {
 
 function writeAll(map) {
   localStorage.setItem(BASES_KEY, JSON.stringify(map));
+  try {
+    localStorage.removeItem(LEGACY_BASES_KEY);
+  } catch (_e) { void _e; }
 }
 
 /** @param {string} roomId */

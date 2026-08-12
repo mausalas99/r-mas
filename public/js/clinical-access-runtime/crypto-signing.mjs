@@ -1,4 +1,4 @@
-import { patients } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 import { evaluateClinicalScope } from '../clinico-access.mjs';
 import { signClinicalChange, verifyIncomingPeerChange } from '../features/crypto-signer.mjs';
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
@@ -11,7 +11,7 @@ import { getClinicalScopeContextForEvaluate } from './scope-evaluate.mjs';
 export function assertClinicalWriteAllowed(patientId, settings) {
   void settings;
   const patient =
-    patients.find((p) => String(p.id) === String(patientId)) ||
+    getPatients().find((p) => String(p.id) === String(patientId)) ||
     (patientId ? { id: patientId } : null);
   const guardia = patientId ? clinicalSessionContext.guardiasMap.get(String(patientId)) : null;
   const scope = evaluateClinicalScope(

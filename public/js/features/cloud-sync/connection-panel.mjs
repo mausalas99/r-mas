@@ -87,6 +87,7 @@ export async function mountCloudConnectionPanel(root, deps) {
     setCloudSyncUrl: settings.setCloudSyncUrl,
     getCloudSyncToken: settings.getCloudSyncToken,
     setCloudSyncToken: settings.setCloudSyncToken,
+    getCloudSyncRemember: settings.getCloudSyncRemember,
     clearCloudSyncSession: settings.clearCloudSyncSession,
     getCloudSyncRoomId: settings.getCloudSyncRoomId,
     setCloudSyncRoomId: settings.setCloudSyncRoomId,

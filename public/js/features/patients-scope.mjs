@@ -1,10 +1,10 @@
-import { patients } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 import {
   ensureTeamAssignedPatientsOnDevice,
   renderGuardiaCensusGrid,
   clinicalSessionContext,
   getClinicalScopeContextForEvaluate,
-  isClinicalScopeReadyForLanPatientApply,
+  isClinicalScopeReadyForPatientApply,
 } from '../clinical-access-runtime.mjs';
 import { shouldEnforceTeamPatientMirror, shouldShowClinicalCensusFilters } from '../clinical-privileges.mjs';
 import {
@@ -20,7 +20,7 @@ import {
   togglePatientCensusFiltersCollapsed,
   wireCensusFilterInputs,
 } from './patients-scope-filters-bar.mjs';
-import { filterPatientsForPitchTour } from '../tour-pitch-demo-seed.mjs';
+import { getPatientsForDisplay } from '../clinical-read-model-demo.mjs';
 import { isGuardiaMode } from './chrome.mjs';
 import { rt } from './patients-runtime-state.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
@@ -61,8 +61,8 @@ export function patientMatchesSearch(p) {
 }
 
 export function patientsVisibleInSidebar() {
-  const base = filterPatientsForPitchTour(patients);
-  if (shouldEnforceTeamPatientMirror() && !isClinicalScopeReadyForLanPatientApply()) {
+  const base = getPatientsForDisplay(() => getPatients());
+  if (shouldEnforceTeamPatientMirror() && !isClinicalScopeReadyForPatientApply()) {
     return [];
   }
   return filterPatientsForGuardiaCensus(base);
@@ -138,7 +138,8 @@ export function togglePatientCensusFilters(event) {
 export function refreshCensusViewsAfterFilterChange() {
   const user = clinicalSessionContext.user;
   if (user) syncCensusScalarFilterInputs(user);
-  patientsBridge.renderPatientList();
+  // Force flush so coalesced rAF renders cannot drop Equipo/Sala/Servicio changes under load.
+  patientsBridge.renderPatientList({ force: true });
   if (isGuardiaMode()) renderGuardiaCensusGrid(rt.getSettings());
   if (shouldEnforceTeamPatientMirror()) return;
   void ensureTeamAssignedPatientsOnDevice({ allowLanPull: true, lanPullDelayMs: 5000 }).then(() => {
@@ -184,7 +185,7 @@ export function syncClinicalCensusFiltersBar() {
   let bar = document.getElementById('clinical-census-filters');
   if (
     !showFilters ||
-    (shouldEnforceTeamPatientMirror() && !isClinicalScopeReadyForLanPatientApply())
+    (shouldEnforceTeamPatientMirror() && !isClinicalScopeReadyForPatientApply())
   ) {
     if (bar) bar.remove();
     detachPatientFiltersPopover();
