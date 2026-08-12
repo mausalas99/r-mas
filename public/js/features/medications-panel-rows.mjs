@@ -6,6 +6,7 @@ import {
   SOAP_DESTINATION_KEYS,
   SOAP_DESTINATION_LABELS,
   shouldIncludeMedicationInSoap,
+  soapDestinationUiValue,
   isNutritionMedicationItem,
   listDietCandidates,
   buildDietProposalText,
@@ -76,13 +77,17 @@ export function buildMedDietHtml(dietas) {
   );
 }
 
-function buildMedRecetaDestCell(it, sid) {
-  var autoCat = classifyMedicationSoapCategory(it.nombreRaw, it.dosisRaw);
-  if (autoCat !== "otros") return "";
+function medRecetaDestPickerLabel(categoryKey) {
+  return categoryKey ? SOAP_DESTINATION_LABELS[categoryKey] || categoryKey : "Elegir destino…";
+}
+
+function buildMedRecetaDestCell(it, sid, soapEligible) {
+  if (!soapEligible) return "";
+  var current = soapDestinationUiValue(it, classifyMedicationSoapCategory);
   var opts =
     '<option value="">Elegir destino…</option>' +
     SOAP_DESTINATION_KEYS.map(function (k) {
-      var sel = it.soapCatOverride === k ? " selected" : "";
+      var sel = current === k ? " selected" : "";
       return (
         '<option value="' +
         esc(k) +
@@ -94,13 +99,18 @@ function buildMedRecetaDestCell(it, sid) {
       );
     }).join("");
   return (
-    '<select class="med-receta-dest" title="Destino en Estado Actual / SOAP"' +
+    '<label class="med-receta-dest-picker">' +
+    '<span class="med-receta-dest-label">' +
+    esc(medRecetaDestPickerLabel(current)) +
+    "</span>" +
+    '<select class="med-receta-dest" title="Destino en Estado Actual / SOAP (corrige auto-clasificación)"' +
     " onchange=\"setMedRecetaSoapCategory('" +
     safeAttrJsString(sid) +
     "', this.value)\"" +
     ">" +
     opts +
-    "</select>"
+    "</select>" +
+    "</label>"
   );
 }
 
@@ -194,7 +204,7 @@ function buildMedRecetaRowHtml(activeId, it, fechaActualizacion, allItems) {
   var soapEligible = shouldIncludeMedicationInSoap(it, classifyMedicationSoapCategory);
   var paraNota = soapEligible && isMedNotaSelected(activeId, sid) ? " checked" : "";
   var autoCat = classifyMedicationSoapCategory(it.nombreRaw, it.dosisRaw);
-  var destCell = buildMedRecetaDestCell(it, sid);
+  var destCell = buildMedRecetaDestCell(it, sid, soapEligible);
   var soapCell = soapEligible
     ? '<div class="med-receta-checkcell">' +
       '<input type="checkbox" data-med-soap-chk="1"' +
@@ -274,7 +284,7 @@ export function buildMedRecetaListHtml(activeId, block) {
     '<span title="Excluir del texto de egreso">Excl.</span>' +
     '<span title="Incluir en Estado Actual / SOAP">SOAP</span>' +
     "<span>Medicamento</span>" +
-    '<span title="Destino manual para «Otros»">Destino</span>' +
+    '<span title="Destino SOAP / Estado Actual (editable)">Destino</span>' +
     '<span title="Día de tratamiento (DIA#)">Día</span>' +
     "</div>" +
     rows.join("") +

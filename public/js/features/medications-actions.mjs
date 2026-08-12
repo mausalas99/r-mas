@@ -24,6 +24,7 @@ import {
   discardDietProposal,
   discardMedProposal,
   pruneEstadoClinicoMedsFromReceta,
+  syncConfirmedAbxFromReceta,
   syncRecetaProposalsFromSoapSelection,
 } from "./estado-actual-meds.mjs";
 import { clearRecetaProposalDismissed, clearRecetaProposalDismissedKey } from "./estado-actual-meds-core.mjs";
@@ -153,7 +154,8 @@ export function setMedRecetaSoapCategory(itemId, category) {
   });
   if (!it) return;
   var cat = String(category || "").trim();
-  if (!cat || SOAP_DESTINATION_KEYS.indexOf(cat) < 0) delete it.soapCatOverride;
+  var autoCat = classifyMedicationSoapCategory(it.nombreRaw, it.dosisRaw);
+  if (!cat || SOAP_DESTINATION_KEYS.indexOf(cat) < 0 || cat === autoCat) delete it.soapCatOverride;
   else it.soapCatOverride = cat;
   persistClinicalState();
   invalidateEaPanelCache();
@@ -405,7 +407,9 @@ function syncEaMedsFromProcessedReceta(activeId) {
   var monitoreo = patient.monitoreo;
   pruneEstadoClinicoMedsFromReceta(monitoreo, items, classifyMedicationSoapCategory, fecha);
   var sel = getMedNotaSelectionByPatient()[activeId] || {};
-  applyRecetaProposal(monitoreo, bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory));
+  var buckets = bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory);
+  applyRecetaProposal(monitoreo, buckets);
+  syncConfirmedAbxFromReceta(monitoreo, buckets);
   syncMonitoreoInsulinPumpFromReceta(monitoreo, block);
 }
 

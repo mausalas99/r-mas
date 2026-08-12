@@ -40,7 +40,10 @@ function handleMedSaveClick(target, grid, mount, ctx, monitoreo, refreshBlock) {
   const sInput = sPanel && sPanel.querySelector('[data-ea-med-manual-input="' + sKey + '"]');
   const text = sInput && 'value' in sInput ? String(sInput.value).trim() : '';
   if (text) {
-    addMedFieldItem(monitoreo, sKey, text);
+    addMedFieldItem(monitoreo, sKey, text, {
+      activeId: ctx.getActiveId(),
+      medRecetaByPatient: ctx.medRecetaByPatient,
+    });
     if (sInput && 'value' in sInput) sInput.value = '';
     if (sPanel) sPanel.hidden = true;
     ctx.persistClinicalState();

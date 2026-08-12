@@ -1,5 +1,5 @@
 import { MED_FIELD_KEYS, ensureMonitoreo } from './estado-actual-data.mjs';
-import { buildMedDropdownOptions, resolveManejoFechaActualizacion } from './estado-actual-meds.mjs';
+import { buildMedDropdownOptions, resolveEaAbxFechaActualizacion, ensureAbxDiaAnchorDate } from './estado-actual-meds.mjs';
 import { handleMedGridClick } from './estado-actual-med-grid-click.mjs';
 import { advanceAbxMedTextForManejoDate, classifyMedicationSoapCategory } from '../med-receta-core.mjs';
 import { partitionNmMedLines } from '../nm-antidiabetic-detect.mjs';
@@ -46,7 +46,7 @@ export function serializeMedFieldItems(items) {
     .join(' | ');
 }
 
-export function addMedFieldItem(monitoreo, key, text) {
+export function addMedFieldItem(monitoreo, key, text, ctx) {
   if (!monitoreo || !key || !text || !String(text).trim()) return;
   if (!monitoreo.estadoClinico || typeof monitoreo.estadoClinico !== 'object') {
     monitoreo.estadoClinico = {};
@@ -57,6 +57,9 @@ export function addMedFieldItem(monitoreo, key, text) {
   /** @type {Record<string, string>} */ (monitoreo.estadoClinico)[key] = serializeMedFieldItems(items);
   if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') monitoreo.confirmado = {};
   /** @type {Record<string, boolean>} */ (monitoreo.confirmado)[key] = true;
+  if (key === 'abx') {
+    ensureAbxDiaAnchorDate(monitoreo, ctx && ctx.activeId, ctx && ctx.medRecetaByPatient);
+  }
   if (monitoreo.pendienteReceta && typeof monitoreo.pendienteReceta === 'object') {
     /** @type {Record<string, string>} */ (monitoreo.pendienteReceta)[key] = '';
   }
@@ -80,8 +83,8 @@ function medCatPreviewText(items) {
   return short + ' (+' + (items.length - 1) + ')';
 }
 
-function displayAbxLine(text, activeId, medRecetaByPatient) {
-  var fecha = resolveManejoFechaActualizacion(activeId, medRecetaByPatient);
+function displayAbxLine(text, activeId, medRecetaByPatient, monitoreo) {
+  var fecha = resolveEaAbxFechaActualizacion(activeId, medRecetaByPatient, monitoreo);
   if (!fecha || !text) return text;
   return advanceAbxMedTextForManejoDate(String(text), fecha);
 }
@@ -93,9 +96,9 @@ function prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient) {
   var pendingVal = pend[key] != null ? String(pend[key]).trim() : '';
   if (key === 'abx') {
     items = items.map(function (line) {
-      return displayAbxLine(line, activeId, medRecetaByPatient);
+      return displayAbxLine(line, activeId, medRecetaByPatient, monitoreo);
     });
-    if (pendingVal) pendingVal = displayAbxLine(pendingVal, activeId, medRecetaByPatient);
+    if (pendingVal) pendingVal = displayAbxLine(pendingVal, activeId, medRecetaByPatient, monitoreo);
   }
   return { items: items, pendingVal: pendingVal };
 }
@@ -190,6 +193,22 @@ function renderNmMedItemsBodyHtml(key, items) {
   return antidiabeticHtml + otherHtml;
 }
 
+function medMoveTargetOptionsHtml(fromKey) {
+  return MED_FIELD_KEYS.filter(function (k) {
+    return k !== fromKey;
+  })
+    .map(function (k) {
+      return (
+        '<option value="' +
+        escAttr(k) +
+        '">' +
+        escHtml(EA_MED_FIELD_LABELS[k] || k) +
+        '</option>'
+      );
+    })
+    .join('');
+}
+
 function medPendingBlockHtml(key, pendingVal) {
   if (!pendingVal) return '';
   return (
@@ -204,7 +223,25 @@ function medPendingBlockHtml(key, pendingVal) {
     '<button type="button" class="ea-btn ea-btn--ghost" onclick="discardEaMedProposal(\'' +
     key +
     '\')">Descartar</button>' +
-    '</div></div>'
+    '<button type="button" class="ea-btn ea-btn--ghost" onclick="toggleEaMedReclassifyPanel(\'' +
+    key +
+    '\')" title="Corregir clasificación SOAP del medicamento">Reclasificar categoría</button>' +
+    '</div>' +
+    '<div class="ea-med-reclassify-panel" hidden data-ea-med-reclassify-panel="' +
+    escAttr(key) +
+    '">' +
+    '<span class="ea-med-reclassify-label">Categoría destino (SOAP)</span>' +
+    '<div class="ea-med-reclassify-controls">' +
+    '<select class="ea-input ea-med-reclassify-select" data-ea-med-reclassify-select="' +
+    escAttr(key) +
+    '">' +
+    '<option value="">Seleccionar categoría…</option>' +
+    medMoveTargetOptionsHtml(key) +
+    '</select>' +
+    '<button type="button" class="ea-btn ea-btn--ghost" onclick="applyEaMedReclassification(\'' +
+    key +
+    '\')">Aplicar reclasificación</button>' +
+    '</div></div></div>'
   );
 }
 
@@ -442,7 +479,10 @@ export function wireMedCategoryGrid(mount, ctx) {
     if (!addKey || !('value' in target) || !/** @type {HTMLSelectElement} */ (target).value) return;
     var val = String(/** @type {HTMLSelectElement} */ (target).value);
     var monitoreo = liveMonitoreoFromCtx(ctx);
-    addMedFieldItem(monitoreo, addKey, val);
+    addMedFieldItem(monitoreo, addKey, val, {
+      activeId: ctx.getActiveId(),
+      medRecetaByPatient: ctx.medRecetaByPatient,
+    });
     /** @type {HTMLSelectElement} */ (target).value = '';
     ctx.persistClinicalState();
     ctx.syncTextarea();

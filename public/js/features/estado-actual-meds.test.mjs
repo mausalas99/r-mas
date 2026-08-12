@@ -291,6 +291,46 @@ test('confirm bomba NM + sync pasivo no repropone (igual que dieta)', () => {
   assert.equal(m.pendienteReceta.nm, '');
 });
 
+test('syncRecetaProposalsFromSoapSelection actualiza abx confirmado desde receta', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.abx = 'MEROPENEM 1G IV C/8H DIA 10';
+  m.confirmado.abx = true;
+  const medRecetaByPatient = {
+    p1: {
+      fechaActualizacion: '11/08/2026',
+      items: [
+        {
+          id: '1',
+          nombreRaw: 'MEROPENEM 1 G',
+          viaRaw: 'VIA INTRAVENOSA',
+          dosisRaw: '1 G // *DIA# 12*',
+          frecuenciaRaw: 'CADA 8 HORAS',
+          diaTratamiento: 12,
+          suspendido: false,
+        },
+      ],
+    },
+  };
+  const sel = { '1': true };
+  syncRecetaProposalsFromSoapSelection(
+    'p1',
+    m,
+    medRecetaByPatient,
+    { p1: sel },
+    classifyMedicationSoapCategory
+  );
+  assert.match(m.estadoClinico.abx, /DIA 12/);
+});
+
+test('estadoClinicoForText avanza abx con abxDiaAnchorDate sin manejo', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.abx = 'MEROPENEM 1G IV C/8H DIA 10';
+  m.abxDiaAnchorDate = '10/08/2026';
+  const ref = new Date(2026, 7, 13);
+  const ec = estadoClinicoForText(m, { refDate: ref });
+  assert.match(ec.abx, /DIA 13/);
+});
+
 test('estadoClinicoForText avanza DIA de abx según fecha de Manejo', () => {
   const m = emptyMonitoreo();
   m.estadoClinico.abx = 'MEROPENEM 1G IV C/8H DIA 10';
@@ -370,4 +410,31 @@ test('buildMedDropdownOptions abx label avanza DIA, value conserva base', () => 
     /DIA 12/,
     'label muestra día efectivo para lectura en UI'
   );
+});
+
+test('reclassifyEaMedProposal — PREGABALINA de antiepilépticos a analgesia', async () => {
+  const { reclassifyEaMedProposal } = await import('./estado-actual-med-reclassify.mjs');
+  const m = emptyMonitoreo();
+  const items = [{ id: 'p1', nombreRaw: 'PREGABALINA', dosisRaw: '75MG VO C/24H' }];
+  const sel = { p1: true };
+  const medRecetaByPatient = { pat1: { items } };
+  const medNotaSelectionByPatient = { pat1: sel };
+  const buckets = bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory);
+  applyRecetaProposal(m, buckets);
+  assert.match(m.pendienteReceta.antiepilepticos, /PREGABALINA/i);
+  assert.equal(m.pendienteReceta.analgesia, '');
+
+  const ok = reclassifyEaMedProposal({
+    patientId: 'pat1',
+    fromKey: 'antiepilepticos',
+    toKey: 'analgesia',
+    monitoreo: m,
+    medRecetaByPatient,
+    medNotaSelectionByPatient,
+  });
+
+  assert.equal(ok, true);
+  assert.equal(m.pendienteReceta.antiepilepticos, '');
+  assert.match(m.pendienteReceta.analgesia, /PREGABALINA/i);
+  assert.equal(items[0].soapCatOverride, 'analgesia');
 });

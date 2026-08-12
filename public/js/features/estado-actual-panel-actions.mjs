@@ -1,5 +1,5 @@
 /** EA panel actions — registro submit, guardar/copiar, propuestas. */
-import { persistClinicalState, getMedRecetaByPatient, getNotes } from '../app-state.mjs';
+import { persistClinicalState, getMedRecetaByPatient, getMedNotaSelectionByPatient, getNotes } from '../app-state.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import {
   ensureMonitoreo,
@@ -34,6 +34,10 @@ import {
   discardDietProposal,
 } from './estado-actual-meds.mjs';
 import { backfillDietPendingMacrosFromReceta, selectDietOption } from './estado-actual-meds-diet.mjs';
+import { reclassifyEaMedProposal } from './estado-actual-med-reclassify.mjs';
+import { EA_MED_FIELD_LABELS } from './estado-actual-med-ui.mjs';
+import { bustMedPanelCache } from './medications-runtime-state.mjs';
+import { renderMedRecetaPanel } from './medications-panel-render.mjs';
 import { renderEstadoActualBar } from './soap-estado.mjs';
 import { migrateGranularInner } from '../expediente-tabs.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
@@ -412,11 +416,17 @@ export async function copiarEaIndicacionesClipboard() {
   }
   ensureMonitoreo(patient);
   flushEaEstadoClinicoFieldsFromDom(patient);
-  if (!hasEaIndicacionesClipboardContent(patient.monitoreo)) {
+  if (!hasEaIndicacionesClipboardContent(patient.monitoreo, {
+    activeId: patient.id,
+    medRecetaByPatient: getMedRecetaByPatient(),
+  })) {
     getEaPanelRuntime().showToast('No hay indicaciones confirmadas para copiar', 'error');
     return;
   }
-  var text = buildEaIndicacionesClipboardText(patient.monitoreo);
+  var text = buildEaIndicacionesClipboardText(patient.monitoreo, {
+    activeId: patient.id,
+    medRecetaByPatient: getMedRecetaByPatient(),
+  });
   var ok = await getEaPanelRuntime().copyToClipboardSafe(text);
   getEaPanelRuntime().showToast(
     ok ? 'Indicaciones copiadas al portapapeles ✓' : 'No se pudo copiar',
@@ -431,7 +441,10 @@ export function confirmEaMedField(key) {
   var patient = findActivePatient();
   if (!patient || !key) return;
   ensureMonitoreo(patient);
-  confirmMedField(patient.monitoreo, key);
+  confirmMedField(patient.monitoreo, key, {
+    patientId: patient.id,
+    medRecetaByPatient: getMedRecetaByPatient(),
+  });
   persistEstadoClinicoAndRefresh(patient.monitoreo, 'Propuesta confirmada', patient);
 }
 
@@ -486,6 +499,61 @@ export function toggleEaEstadoClinico() {
   if (details && 'open' in details) details.open = !details.open;
 }
 
+function eaMedReclassifyPanelEl(key) {
+  if (!key || typeof document === 'undefined') return null;
+  var escaped = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(String(key)) : String(key);
+  return document.querySelector('[data-ea-med-reclassify-panel="' + escaped + '"]');
+}
+
+function eaMedReclassifySelectEl(key) {
+  if (!key || typeof document === 'undefined') return null;
+  var escaped = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(String(key)) : String(key);
+  return document.querySelector('[data-ea-med-reclassify-select="' + escaped + '"]');
+}
+
+/**
+ * @param {string} key
+ */
+export function toggleEaMedReclassifyPanel(key) {
+  var panel = eaMedReclassifyPanelEl(key);
+  if (!panel) return;
+  panel.hidden = !panel.hidden;
+}
+
+/**
+ * @param {string} fromKey
+ */
+export function applyEaMedReclassification(fromKey) {
+  var patient = findActivePatient();
+  if (!patient || !fromKey) return;
+  var select = eaMedReclassifySelectEl(fromKey);
+  var toKey = select && 'value' in select ? String(select.value).trim() : '';
+  if (!toKey) {
+    getEaPanelRuntime().showToast('Selecciona una categoría destino', 'warn');
+    return;
+  }
+  ensureMonitoreo(patient);
+  var activeId = getEaPanelRuntime().getActiveId();
+  var ok = reclassifyEaMedProposal({
+    patientId: activeId,
+    fromKey: fromKey,
+    toKey: toKey,
+    monitoreo: patient.monitoreo,
+    medRecetaByPatient: getMedRecetaByPatient(),
+    medNotaSelectionByPatient: getMedNotaSelectionByPatient(),
+  });
+  if (!ok) {
+    getEaPanelRuntime().showToast('No se pudo reclasificar la propuesta', 'error');
+    return;
+  }
+  persistClinicalState();
+  scheduleCloudSyncPush();
+  bustMedPanelCache();
+  renderMedRecetaPanel();
+  var label = EA_MED_FIELD_LABELS[toKey] || toKey;
+  persistEstadoClinicoAndRefresh(patient.monitoreo, 'Categoría reclasificada: ' + label, patient);
+}
+
 export const windowHandlers = {
   registrarEstadoActualMedicion,
   eliminarEstadoActualMedicion,
@@ -496,6 +564,8 @@ export const windowHandlers = {
   copiarEaIndicacionesClipboard,
   confirmEaMedField,
   discardEaMedProposal,
+  toggleEaMedReclassifyPanel,
+  applyEaMedReclassification,
   confirmEaDietProposal,
   discardEaDietProposal,
   selectEaDietOption,

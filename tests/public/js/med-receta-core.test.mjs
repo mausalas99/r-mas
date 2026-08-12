@@ -24,6 +24,7 @@ import {
   incrementMedItemsDiaTratamiento,
   classifyMedicationSoapCategory,
   effectiveSoapCategory,
+  soapDestinationUiValue,
   unassignedOtrosSoapItems,
   applyMedCatalogOverlay,
   dosisBeforeSlash,
@@ -422,7 +423,7 @@ test('bloque dorado — 12 medicamentos del spec', () => {
   }
 });
 
-test('effectiveSoapCategory — otros requiere override manual', () => {
+test('effectiveSoapCategory — override manual gana sobre auto-clasificación', () => {
   const item = { nombreRaw: 'FARMACO SIN LISTA XYZ 500 MG' };
   assert.equal(classifyMedicationSoapCategory(item.nombreRaw), 'otros');
   assert.equal(effectiveSoapCategory(item, classifyMedicationSoapCategory), 'otros');
@@ -441,6 +442,39 @@ test('effectiveSoapCategory — otros requiere override manual', () => {
   assert.equal(
     effectiveSoapCategory({ nombreRaw: 'PARACETAMOL 1 G' }, classifyMedicationSoapCategory),
     'analgesia'
+  );
+  assert.equal(classifyMedicationSoapCategory('PREGABALINA 75 MG'), 'antiepilepticos');
+  assert.equal(
+    effectiveSoapCategory(
+      { nombreRaw: 'PREGABALINA 75 MG', soapCatOverride: 'analgesia' },
+      classifyMedicationSoapCategory
+    ),
+    'analgesia'
+  );
+  assert.equal(
+    effectiveSoapCategory(
+      { nombreRaw: 'HALOPERIDOL 5 MG', soapCatOverride: 'analgesia' },
+      classifyMedicationSoapCategory
+    ),
+    'analgesia'
+  );
+});
+
+test('soapDestinationUiValue — selector refleja auto o override', () => {
+  assert.equal(
+    soapDestinationUiValue({ nombreRaw: 'PREGABALINA 75 MG' }, classifyMedicationSoapCategory),
+    'antiepilepticos'
+  );
+  assert.equal(
+    soapDestinationUiValue(
+      { nombreRaw: 'PREGABALINA 75 MG', soapCatOverride: 'analgesia' },
+      classifyMedicationSoapCategory
+    ),
+    'analgesia'
+  );
+  assert.equal(
+    soapDestinationUiValue({ nombreRaw: 'FARMACO SIN LISTA XYZ' }, classifyMedicationSoapCategory),
+    ''
   );
 });
 
@@ -850,4 +884,19 @@ test('listDietCandidatesFromRecetaBlock — KAVIBEN y NPT como opciones distinta
   assert.match(candidates[0].descripcion, /KAVIBEN/i);
   assert.match(candidates[1].descripcion, /NPT central/i);
   assert.match(candidates[2].descripcion, /NPT calculada/i);
+});
+
+test('buildMedRecetaListHtml — dest picker visible for SOAP meds', async () => {
+  var { buildMedRecetaListHtml } = await import('../../../public/js/features/medications-panel-rows.mjs');
+  var html = buildMedRecetaListHtml('p1', {
+    fechaActualizacion: '11/08/2026',
+    items: [
+      { id: 'a', nombreRaw: 'PREGABALINA', dosisRaw: '75MG VO C/24H' },
+      { id: 'b', nombreRaw: 'LINEZOLID', dosisRaw: '600MG VO C/12H', diaTratamiento: 5 },
+    ],
+  });
+  assert.match(html, /med-receta-dest-picker/);
+  assert.match(html, /med-receta-dest-label/);
+  assert.match(html, /Antiepilépticos|Analgésicos/);
+  assert.equal((html.match(/med-receta-dest-picker/g) || []).length, 2);
 });

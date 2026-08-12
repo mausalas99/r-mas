@@ -11,6 +11,8 @@ import {
   soapMedCategorySegment,
   SOAP_EMPTY_MED_FALLBACK,
 } from './estado-actual-text-build.mjs';
+import { advanceAbxMedTextForManejoDate } from '../med-receta-core.mjs';
+import { resolveEaAbxFechaActualizacion } from './estado-actual-meds.mjs';
 import { insulinPumpAlgorithmFromMonitoreo } from './estado-actual-insulin-pump.mjs';
 import { formatInsulinPumpAlgoritmoLabel } from '../insulin-pump-some-detect.mjs';
 import { hasActiveDietProposal } from './estado-actual-meds-diet.mjs';
@@ -121,19 +123,31 @@ export function pruneEmptyIndicacionesLines(lines) {
 
 /**
  * @param {Record<string, unknown>|null|undefined} monitoreo
+ * @param {{ activeId?: string | null, medRecetaByPatient?: Record<string, { fechaActualizacion?: string }> } | undefined} [opts]
  * @returns {string}
  */
-export function buildEaIndicacionesClipboardText(monitoreo) {
+export function buildEaIndicacionesClipboardText(monitoreo, opts) {
   var ec = pickConfirmedEstadoClinico(monitoreo);
+  var fecha = resolveEaAbxFechaActualizacion(
+    opts && opts.activeId,
+    opts && opts.medRecetaByPatient,
+    monitoreo
+  );
+  if (fecha && ec.abx && String(ec.abx).trim()) {
+    ec = Object.assign({}, ec, {
+      abx: advanceAbxMedTextForManejoDate(String(ec.abx), fecha, opts && opts.refDate),
+    });
+  }
   var bomba = insulinPumpAlgorithmFromMonitoreo(monitoreo);
   return pruneEmptyIndicacionesLines(buildEaIndicacionesClipboardLines(ec, bomba)).join('\n');
 }
 
 /**
  * @param {Record<string, unknown>|null|undefined} monitoreo
+ * @param {{ activeId?: string | null, medRecetaByPatient?: Record<string, { fechaActualizacion?: string }> } | undefined} [opts]
  */
-export function hasEaIndicacionesClipboardContent(monitoreo) {
-  var text = buildEaIndicacionesClipboardText(monitoreo);
+export function hasEaIndicacionesClipboardContent(monitoreo, opts) {
+  var text = buildEaIndicacionesClipboardText(monitoreo, opts);
   if (!text.trim()) return false;
   // Forced "NINGUNO" lines alone are not copyable content.
   var fallback = SOAP_EMPTY_MED_FALLBACK.toLowerCase();

@@ -55,6 +55,7 @@ export {
   SOAP_DESTINATION_KEYS,
   SOAP_DESTINATION_LABELS,
   effectiveSoapCategory,
+  soapDestinationUiValue,
   unassignedOtrosSoapItems,
   classifyMedicationSoapCategory,
   shouldIncludeMedicationInSoap,

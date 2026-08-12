@@ -15,7 +15,7 @@ import {
   hasPendingEaProposals,
   estadoClinicoForDisplay,
   estadoClinicoForText,
-  resolveManejoFechaActualizacion,
+  resolveEaAbxFechaActualizacion,
 } from './estado-actual-meds.mjs';
 import { getDietOptions } from './estado-actual-meds-diet.mjs';
 import { renderMedCategoryGrid, wireMedCategoryGrid } from './estado-actual-med-ui.mjs';
@@ -31,15 +31,18 @@ import { DIET_PENDING_KEYS } from './estado-actual-meds.mjs';
 /**
  * @param {string | null} activeId
  */
-function eaManejoFechaOpts(activeId) {
-  var fechaActualizacion = resolveManejoFechaActualizacion(activeId, getMedRecetaByPatient());
-  return fechaActualizacion ? { fechaActualizacion: fechaActualizacion } : {};
+function eaManejoFechaOpts(activeId, monitoreo) {
+  var medRecetaByPatient = getMedRecetaByPatient();
+  var fechaActualizacion = resolveEaAbxFechaActualizacion(activeId, medRecetaByPatient, monitoreo);
+  return fechaActualizacion
+    ? { fechaActualizacion: fechaActualizacion, activeId: activeId, medRecetaByPatient: medRecetaByPatient }
+    : { activeId: activeId, medRecetaByPatient: medRecetaByPatient };
 }
 
 function renderEstadoClinicoSection(monitoreo, activeId, patient) {
   var pend = monitoreo.pendienteReceta || {};
   var dietPending = hasDietProposal(pend);
-  var ec = estadoClinicoForDisplay(monitoreo, eaManejoFechaOpts(activeId));
+  var ec = estadoClinicoForDisplay(monitoreo, eaManejoFechaOpts(activeId, monitoreo));
   var dietaSuplemento = isDietaSuplemento(ec.dieta);
   var dietaParenteral = isDietaParenteral(ec.dieta);
   var dietWeight = resolveDietWeightKg({ patientPeso: patient && patient.peso, pesoRef: ec.pesoRef });
@@ -209,7 +212,7 @@ function generateEstadoActualText(monitoreo, patient, activeId) {
   var id = activeId != null ? activeId : getEaPanelRuntime().getActiveId();
   var recetaBlock = id && getMedRecetaByPatient() ? getMedRecetaByPatient()[id] : null;
   return buildEstadoActualText(
-    estadoClinicoForText(monitoreo, eaManejoFechaOpts(id)),
+    estadoClinicoForText(monitoreo, eaManejoFechaOpts(id, monitoreo)),
     snapshot,
     { balanceTurno: balanceTurno(monitoreo) },
     {

@@ -24,6 +24,8 @@ import { stripDietaMacroSuffixFromLabel } from './estado-actual-data.mjs';
 import {
   DIET_PENDING_KEYS,
   resolveManejoFechaActualizacion,
+  resolveEaAbxFechaActualizacion,
+  ensureAbxDiaAnchorDate,
   hasPendingEaProposals,
   ensureRecetaProposalDismissed,
   isRecetaProposalDismissed,
@@ -43,6 +45,8 @@ import { buildMedDropdownOptions } from './estado-actual-meds-dropdown.mjs';
 export {
   DIET_PENDING_KEYS,
   resolveManejoFechaActualizacion,
+  resolveEaAbxFechaActualizacion,
+  ensureAbxDiaAnchorDate,
   hasPendingEaProposals,
   medInstructionFragmentForSoap,
   bucketsFromRecetaItems,
@@ -133,7 +137,10 @@ export function applyDietProposalFromRecetaBlock(monitoreo, recetaBlock, opts) {
  */
 export function estadoClinicoForDisplay(monitoreo, opts) {
   if (!monitoreo || typeof monitoreo !== 'object') return {};
-  var fechaActualizacion = opts && opts.fechaActualizacion ? String(opts.fechaActualizacion).trim() : '';
+  var fechaActualizacion =
+    opts && opts.fechaActualizacion
+      ? String(opts.fechaActualizacion).trim()
+      : resolveEaAbxFechaActualizacion(opts && opts.activeId, opts && opts.medRecetaByPatient, monitoreo);
   var refDate = opts && opts.refDate;
   var ec =
     monitoreo.estadoClinico && typeof monitoreo.estadoClinico === 'object'
@@ -179,7 +186,10 @@ function mergePendingMedsForText(ec, pend, conf, fechaActualizacion, refDate) {
 
 export function estadoClinicoForText(monitoreo, opts) {
   if (!monitoreo || typeof monitoreo !== 'object') return {};
-  var fechaActualizacion = opts && opts.fechaActualizacion ? String(opts.fechaActualizacion).trim() : '';
+  var fechaActualizacion =
+    opts && opts.fechaActualizacion
+      ? String(opts.fechaActualizacion).trim()
+      : resolveEaAbxFechaActualizacion(opts && opts.activeId, opts && opts.medRecetaByPatient, monitoreo);
   var refDate = opts && opts.refDate;
   var ec = estadoClinicoForDisplay(monitoreo, opts);
   var pend =
@@ -190,6 +200,24 @@ export function estadoClinicoForText(monitoreo, opts) {
     monitoreo.confirmado && typeof monitoreo.confirmado === 'object' ? monitoreo.confirmado : {};
   mergePendingMedsForText(ec, pend, conf, fechaActualizacion, refDate);
   return ec;
+}
+
+/**
+ * @param {Record<string, unknown>} monitoreo
+ * @param {Record<string, string>} buckets
+ * @returns {boolean}
+ */
+export function syncConfirmedAbxFromReceta(monitoreo, buckets) {
+  if (!monitoreo || !monitoreo.estadoClinico || typeof monitoreo.estadoClinico !== 'object') return false;
+  var conf =
+    monitoreo.confirmado && typeof monitoreo.confirmado === 'object' ? monitoreo.confirmado : {};
+  if (!conf.abx) return false;
+  var next = buckets && buckets.abx != null ? String(buckets.abx).trim() : '';
+  if (!next) return false;
+  var cur = String(monitoreo.estadoClinico.abx || '').trim();
+  if (cur === next) return false;
+  /** @type {Record<string, string>} */ (monitoreo.estadoClinico).abx = next;
+  return true;
 }
 
 /**
@@ -216,10 +244,11 @@ export function syncRecetaProposalsFromSoapSelection(
   var sel = medNotaSelectionByPatient && medNotaSelectionByPatient[patientId];
   var buckets = bucketsFromRecetaItems(items, sel || {}, classifyFn);
   applyRecetaProposal(monitoreo, buckets);
+  var syncedAbx = syncConfirmedAbxFromReceta(monitoreo, buckets);
   var hasAny = MED_FIELD_KEYS.some(function (k) {
     return buckets[k] && String(buckets[k]).trim();
   });
-  return pruned || hasAny;
+  return pruned || hasAny || syncedAbx;
 }
 
 /**
@@ -242,8 +271,9 @@ export function applyRecetaProposal(monitoreo, buckets) {
 /**
  * @param {Record<string, unknown>} monitoreo
  * @param {string} key
+ * @param {{ patientId?: string | null, medRecetaByPatient?: Record<string, { fechaActualizacion?: string }> } | undefined} [ctx]
  */
-export function confirmMedField(monitoreo, key) {
+export function confirmMedField(monitoreo, key, ctx) {
   if (!monitoreo || !MED_FIELD_KEYS.includes(/** @type {typeof MED_FIELD_KEYS[number]} */ (key))) return;
   if (!monitoreo.estadoClinico || typeof monitoreo.estadoClinico !== 'object') {
     monitoreo.estadoClinico = {};
@@ -254,6 +284,9 @@ export function confirmMedField(monitoreo, key) {
     monitoreo.pendienteReceta[key];
   if (pending != null && String(pending).trim()) {
     /** @type {Record<string, string>} */ (monitoreo.estadoClinico)[key] = String(pending).trim();
+  }
+  if (key === 'abx') {
+    ensureAbxDiaAnchorDate(monitoreo, ctx && ctx.patientId, ctx && ctx.medRecetaByPatient);
   }
   if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
     monitoreo.confirmado = {};

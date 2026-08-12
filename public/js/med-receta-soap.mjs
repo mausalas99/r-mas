@@ -55,7 +55,7 @@ function isAspirinNombre(n) {
   );
 }
 
-/** Destinos SOAP asignables manualmente cuando la clasificación automática es «otros». */
+/** Destinos SOAP asignables manualmente (corregir auto-clasificación o «otros»). */
 export const SOAP_DESTINATION_KEYS = [
   'analgesia',
   'antiemeticos',
@@ -97,22 +97,28 @@ export const SOAP_DESTINATION_LABELS = {
 };
 
 /**
- * Categoría efectiva para volcar a SOAP: auto-clasificación o override manual en «otros».
- * @param {{ nombreRaw?: string, soapCatOverride?: string }} item
- * @param {(nombreRaw: string) => string} classifyFn
+ * Categoría efectiva para volcar a SOAP: override manual gana sobre auto-clasificación.
+ * @param {{ nombreRaw?: string, dosisRaw?: string, frecuenciaRaw?: string, viaRaw?: string, soapCatOverride?: string }} item
+ * @param {(nombreRaw: string, dosisRaw?: string, frecuenciaRaw?: string, viaRaw?: string) => string} classifyFn
  */
 export function effectiveSoapCategory(item, classifyFn) {
   if (!item) return 'otros';
-  var auto = classifyFn(
-    item.nombreRaw,
-    item.dosisRaw,
-    item.frecuenciaRaw,
-    item.viaRaw
-  );
-  if (auto !== 'otros') return auto;
   var ov = trimStr(item.soapCatOverride);
   if (ov && SOAP_DESTINATION_KEYS.indexOf(ov) >= 0) return ov;
-  return 'otros';
+  return classifyFn(item.nombreRaw, item.dosisRaw, item.frecuenciaRaw, item.viaRaw);
+}
+
+/**
+ * Valor del selector «Destino» en Manejo (vacío si auto=otros sin override).
+ * @param {{ nombreRaw?: string, dosisRaw?: string, frecuenciaRaw?: string, viaRaw?: string, soapCatOverride?: string }} item
+ * @param {(nombreRaw: string, dosisRaw?: string, frecuenciaRaw?: string, viaRaw?: string) => string} classifyFn
+ */
+export function soapDestinationUiValue(item, classifyFn) {
+  if (!item) return '';
+  var ov = trimStr(item.soapCatOverride);
+  if (ov && SOAP_DESTINATION_KEYS.indexOf(ov) >= 0) return ov;
+  var auto = classifyFn(item.nombreRaw, item.dosisRaw, item.frecuenciaRaw, item.viaRaw);
+  return auto !== 'otros' ? auto : '';
 }
 
 /**

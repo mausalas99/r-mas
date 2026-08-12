@@ -1,5 +1,9 @@
 import { getMedRecetaByPatient } from "../app-state.mjs";
-import { classifyMedicationSoapCategory } from "../med-receta-core.mjs";
+import {
+  classifyMedicationSoapCategory,
+  SOAP_DESTINATION_LABELS,
+  soapDestinationUiValue,
+} from "../med-receta-core.mjs";
 import { getMedSubview } from "./med-pharm-profile-panel.mjs";
 import { rt, medOutputTab } from "./medications-runtime-state.mjs";
 import { getMedNotaSelMap } from "./medications-utils.mjs";
@@ -62,6 +66,7 @@ export function buildMedPanelCacheKey(activeId) {
     (block.dietas ? block.dietas.length : 0) +
     "|V" +
     getMedSubview() +
+    "|destUi3" +
     "|cal" +
     (function () {
       var n = new Date();
@@ -120,6 +125,17 @@ function patchRegularMedRecetaRowSoapUi(activeId, itemId, it, listEl) {
     "med-receta-row--needs-dest",
     autoCat === "otros" && !!getMedNotaSelMap(activeId)[sid] && !it.soapCatOverride
   );
+  var destSelect = row.querySelector(".med-receta-dest");
+  if (destSelect) {
+    var destVal = soapDestinationUiValue(it, classifyMedicationSoapCategory);
+    destSelect.value = destVal;
+    var labelEl = row.querySelector(".med-receta-dest-label");
+    if (labelEl) {
+      labelEl.textContent = destVal
+        ? SOAP_DESTINATION_LABELS[destVal] || destVal
+        : "Elegir destino…";
+    }
+  }
   return true;
 }
 

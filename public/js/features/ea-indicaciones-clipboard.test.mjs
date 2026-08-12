@@ -25,6 +25,24 @@ test('pickConfirmedEstadoClinico drops unconfirmed pending meds', () => {
   assert.equal(ec.abx, undefined);
 });
 
+test('buildEaIndicacionesClipboardText avanza DIA de abx confirmado', () => {
+  var ref = new Date(2026, 7, 13);
+  var text = buildEaIndicacionesClipboardText(
+    {
+      estadoClinico: {
+        abx: 'MEROPENEM 1G IV C/8H DIA 10',
+      },
+      confirmado: { abx: true },
+    },
+    {
+      activeId: 'p1',
+      medRecetaByPatient: { p1: { fechaActualizacion: '10/08/2026' } },
+      refDate: ref,
+    }
+  );
+  assert.match(text, /ANTIBIOTICOTERAPIA:.*DIA 13/);
+});
+
 test('buildEaIndicacionesClipboardText includes confirmed meds + bomba', () => {
   var text = buildEaIndicacionesClipboardText({
     estadoClinico: {
