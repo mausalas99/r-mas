@@ -1,0 +1,457 @@
+/* Patient dashboard glance — tokens only; no glass. Root: .patient-dash */
+
+.patient-dash {
+  container-type: size;
+  container-name: dash;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding: clamp(8px, 1.4cqh, 16px);
+}
+
+.patient-dash .dash,
+.patient-dash.dash {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 1.2cqh, 12px);
+  font-size: clamp(11.5px, 1.45cqi, 15px);
+}
+
+.patient-dash .idrow {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75em;
+  align-items: flex-start;
+  flex: 0 0 auto;
+  margin-bottom: 0;
+}
+
+.patient-dash .idrow h1 {
+  margin: 0;
+  font: 600 1.25em/1.25 var(--font-ui);
+}
+
+.patient-dash .meta {
+  color: var(--color-ink-muted);
+  font-size: 0.88em;
+  margin-top: 2px;
+}
+
+.patient-dash .chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.patient-dash .chip {
+  background: color-mix(in oklab, var(--color-ink) 8%, transparent);
+  border: 0;
+  border-radius: var(--radius-chip);
+  padding: 3px 8px;
+  font-size: 0.82em;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.patient-dash .btn-sec {
+  border: 1px solid color-mix(in oklab, var(--color-ink) 28%, var(--border));
+  background: color-mix(in oklab, var(--color-ink) 6%, var(--color-elevated));
+  border-radius: var(--radius-pill);
+  padding: 0.45em 1em;
+  font-weight: 600;
+  min-height: 2.6em;
+  font-size: 0.95em;
+  color: var(--color-ink);
+}
+
+.patient-dash .link {
+  border: 0;
+  background: none;
+  color: var(--color-ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0;
+}
+
+.patient-dash .link:hover {
+  color: var(--color-ink);
+}
+
+.patient-dash .ic-mod {
+  margin-top: 8px;
+}
+
+.patient-dash .ic-mod > small {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-ink-muted);
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+}
+
+.patient-dash .ic-mod .chips {
+  margin-top: 0;
+}
+
+.patient-dash .svc {
+  border: 0;
+  border-radius: var(--radius-chip);
+  padding: 3px 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: oklch(0.93 0.045 var(--h, 220));
+  color: oklch(0.36 0.09 var(--h, 220));
+}
+
+.patient-dash .svc.is-on {
+  outline: 1.5px solid oklch(0.5 0.1 var(--h, 220));
+}
+
+.patient-dash .svc-add {
+  border: 1px dashed color-mix(in oklab, var(--color-ink) 28%, transparent);
+  background: transparent;
+  color: var(--color-ink-muted);
+  border-radius: var(--radius-chip);
+  padding: 3px 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.patient-dash .ic-cat {
+  margin: 0 0 12px;
+}
+
+.patient-dash .ic-cat small {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-ink-muted);
+  margin-bottom: 6px;
+}
+
+.patient-dash .ic-pal {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+}
+
+.patient-dash .bento {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(6px, 1cqi, 12px);
+  flex: 0 0 auto;
+}
+
+.patient-dash .bento .vitals-card,
+.patient-dash .bento .labs-card {
+  grid-column: 1 / -1;
+}
+
+.patient-dash .bento.rest {
+  flex: 1 1 0;
+  min-height: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+  margin-top: 0;
+}
+
+.patient-dash .bento.rest > .card {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.patient-dash .bento.rest .card-b {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.patient-dash .card {
+  background: var(--color-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-container);
+  min-height: 0;
+}
+
+.patient-dash .card.clickable {
+  width: 100%;
+  text-align: left;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  color: inherit;
+}
+
+.patient-dash .card.clickable:hover {
+  border-color: color-mix(in oklab, var(--color-ink) 32%, transparent);
+}
+
+.patient-dash .card-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.45em 0.85em;
+  border-bottom: 1px solid var(--divider);
+  font-size: 0.88em;
+  font-weight: 700;
+}
+
+.patient-dash .card-b {
+  padding: 0.55em 0.85em;
+}
+
+.patient-dash .vitals {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.patient-dash .vital small {
+  display: block;
+  color: var(--color-ink-muted);
+  font-size: 0.72em;
+  font-weight: 600;
+}
+
+.patient-dash .vital b {
+  font: 600 1.2em/1.2 var(--font-mono);
+  color: var(--color-ink);
+}
+
+.patient-dash .vital.hi b {
+  color: var(--color-danger);
+}
+
+.patient-dash .labs-card,
+.patient-dash .labs-card .card-b {
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.patient-dash .labs-card .card-h {
+  padding: 6px 12px;
+}
+
+.patient-dash .labs-card .card-b {
+  padding: 4px 12px 8px;
+}
+
+.patient-dash .day-draws {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  align-items: stretch;
+}
+
+.patient-dash .draw {
+  border: 1px solid var(--border);
+  background: var(--color-content);
+  border-radius: 10px;
+  padding: 0.5em 0.65em;
+  text-align: left;
+  min-height: 0;
+  min-width: 0;
+  width: auto;
+  max-width: 100%;
+  flex: 1 1 12rem;
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  gap: 0.4em 0.75em;
+  color: inherit;
+}
+
+.patient-dash .draw.is-wide {
+  flex: 1 1 100%;
+}
+
+.patient-dash .draw:hover {
+  border-color: color-mix(in oklab, var(--color-ink) 32%, transparent);
+}
+
+.patient-dash .draw.is-on {
+  border-color: color-mix(in oklab, var(--color-ink) 40%, transparent);
+  background: var(--color-elevated);
+}
+
+.patient-dash .draw time {
+  font: 600 1em/1.2 var(--font-mono);
+  flex: 0 0 auto;
+}
+
+.patient-dash .draw-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  flex: 1 1 0;
+  align-items: center;
+  min-width: 0;
+}
+
+.patient-dash .draw-g,
+.patient-dash .draw-chip {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.patient-dash .draw-g .tipo {
+  font-size: 0.82em;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  flex: 0 0 auto;
+}
+
+.patient-dash .draw .vals {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+  font: 500 12px/1.3 var(--font-mono);
+}
+
+.patient-dash .draw .vals .abn {
+  flex: 1 1 auto;
+  min-width: max-content;
+}
+
+.patient-dash .abn {
+  color: var(--color-danger);
+  font-weight: 650;
+  background: color-mix(in oklab, var(--color-danger) 14%, transparent);
+  margin-right: 0;
+  white-space: nowrap;
+  text-align: center;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+}
+
+.patient-dash .ea-glance {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55em;
+  height: 100%;
+  min-height: 0;
+}
+
+.patient-dash .ea-kpis {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35em;
+}
+
+.patient-dash .ea-kpis div {
+  background: var(--color-content);
+  border-radius: 8px;
+  padding: 0.35em 0.45em;
+}
+
+.patient-dash .ea-kpis small {
+  display: block;
+  color: var(--color-ink-muted);
+  font-size: 0.7em;
+  font-weight: 600;
+}
+
+.patient-dash .ea-kpis b {
+  font: 600 1.05em/1.2 var(--font-mono);
+}
+
+.patient-dash .ea-soap {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5em 0.75em;
+  min-height: 0;
+  align-content: start;
+}
+
+.patient-dash .ea-soap small {
+  display: block;
+  color: var(--color-ink-muted);
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.3em;
+}
+
+.patient-dash .meds {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.patient-dash .med {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 11.5px;
+}
+
+.patient-dash .rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.patient-dash .rows time {
+  color: var(--color-ink-muted);
+  font: 500 11px var(--font-mono);
+  margin-right: 8px;
+}
+
+.patient-dash .due {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.patient-dash .placeholder {
+  background: var(--color-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-container);
+  padding: 20px;
+}
+
+.patient-dash .placeholder h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.patient-dash .placeholder p {
+  margin: 0;
+  color: var(--color-ink-muted);
+}
+
+.patient-dash .back {
+  margin-bottom: 12px;
+}
+
+/* Layout C: stack bento columns. Do not touch window chrome or dropdowns. */
+@media (max-width: 980px) {
+  .patient-dash .bento,
+  .patient-dash .bento.rest,
+  .patient-dash .vitals {
+    grid-template-columns: 1fr;
+  }
+
+  .patient-dash .bento .vitals-card,
+  .patient-dash .bento .labs-card {
+    grid-column: auto;
+  }
+}
