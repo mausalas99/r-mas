@@ -92,7 +92,7 @@ export function sectionEntries(settings) {
   getConsolidatedTabs(settings || {}).forEach(function (group) {
     if (group === 'paciente') {
       out.push({
-        section: 'todo',
+        section: 'resumen',
         label: GROUP_LABELS.paciente,
         groupLabel: GROUP_LABELS.paciente,
       });

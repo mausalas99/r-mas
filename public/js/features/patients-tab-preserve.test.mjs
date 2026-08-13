@@ -20,6 +20,10 @@ describe('patient switch preserves expediente tab', () => {
     assert.equal(innerAfterPatientSwitch('cult', INTER), 'cult');
   });
 
+  it('keeps resumen when switching patients', () => {
+    assert.equal(innerAfterPatientSwitch('resumen', SALA), 'resumen');
+  });
+
   it('keeps estadoActual in interconsulta when switching patients', () => {
     assert.equal(innerAfterPatientSwitch('estadoActual', INTER), 'estadoActual');
   });

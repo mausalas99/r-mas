@@ -19,24 +19,25 @@ test('buildPaletteItems: actions, sections, app tabs, patients, and combos', () 
   assert.ok(items.some((it) => it.kind === 'action' && it.actionId === 'lab-repo-batch'));
   assert.ok(items.some((it) => it.kind === 'action' && it.actionId === 'export-note'));
   assert.ok(items.some((it) => it.kind === 'action' && it.actionId === 'new-pendiente'));
-  assert.ok(items.some((it) => it.kind === 'section' && it.section === 'tend'));
+  assert.ok(items.some((it) => it.kind === 'section' && it.section === 'resumen'));
+  assert.ok(items.some((it) => it.kind === 'section' && it.section === 'estadoActual'));
   assert.ok(items.some((it) => it.kind === 'app-tab' && it.tab === 'lab'));
   assert.ok(items.some((it) => it.kind === 'patient' && it.patientId === 1 && it.pinned));
   assert.ok(
     items.some(
-      (it) => it.kind === 'patient-section' && it.patientId === 1 && it.section === 'tend'
+      (it) => it.kind === 'patient-section' && it.patientId === 1 && it.section === 'estadoActual'
     )
   );
   assert.equal(ACTION_ITEMS.length >= 6, true);
 });
 
-test('rankPalette: "tend gar" resolves to Tendencias of García', () => {
+test('rankPalette: "estado gar" resolves to Estado actual of García', () => {
   const items = buildPaletteItems(SALA, PATIENTS);
-  const top = rankPalette('tend gar', items, 12);
+  const top = rankPalette('estado gar', items, 12);
   assert.ok(top.length >= 1);
   assert.equal(top[0].kind, 'patient-section');
   assert.equal(top[0].patientId, 1);
-  assert.equal(top[0].section, 'tend');
+  assert.equal(top[0].section, 'estadoActual');
 });
 
 test('rankPalette: empty query lists actions, pinned patients, then others', () => {

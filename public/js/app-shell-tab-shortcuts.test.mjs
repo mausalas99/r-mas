@@ -22,20 +22,22 @@ describe('app-shell-tab-shortcuts', () => {
   });
 
   it('nextConsolidatedCompositeTab cycles visible tabs', () => {
-    var tabs = ['paciente', 'clinico', 'resultados', 'salida'];
+    var tabs = ['paciente', 'clinico', 'salida'];
     assert.equal(nextConsolidatedCompositeTab('paciente', tabs), 'clinico');
+    assert.equal(nextConsolidatedCompositeTab('clinico', tabs), 'salida');
     assert.equal(nextConsolidatedCompositeTab('salida', tabs), 'paciente');
     assert.equal(nextConsolidatedCompositeTab('unknown', tabs), 'paciente');
   });
 
   it('resolveExpedienteCompositeCycle en Interconsulta', () => {
     assert.equal(resolveExpedienteCompositeCycle('paciente', INTER), 'clinico');
-    assert.equal(resolveExpedienteCompositeCycle('resultados', INTER), 'salida');
+    assert.equal(resolveExpedienteCompositeCycle('clinico', INTER), 'salida');
     assert.equal(resolveExpedienteCompositeCycle('salida', INTER), 'paciente');
   });
 
   it('resolveExpedienteCompositeCycle includes salida en Sala', () => {
-    assert.equal(resolveExpedienteCompositeCycle('resultados', SALA), 'salida');
+    assert.equal(resolveExpedienteCompositeCycle('paciente', SALA), 'clinico');
+    assert.equal(resolveExpedienteCompositeCycle('clinico', SALA), 'salida');
     assert.equal(resolveExpedienteCompositeCycle('salida', SALA), 'paciente');
   });
 

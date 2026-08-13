@@ -38,8 +38,17 @@ test('resolveConsolidatedTarget maps listado and recetaHu to salida in sala', ()
   assert.deepEqual(resolveConsolidatedTarget('manejo', SALA), { tab: 'paciente', section: null });
 });
 
-test('CONSOLIDATED_TABS_SALA has no top-level estadoActual', () => {
-  assert.deepEqual(CONSOLIDATED_TABS_SALA, ['paciente', 'clinico', 'resultados', 'salida']);
+test('CONSOLIDATED_TABS_SALA has Resumen Clínico Salida (no Resultados)', () => {
+  assert.deepEqual(CONSOLIDATED_TABS_SALA, ['paciente', 'clinico', 'salida']);
+});
+
+test('default paciente granular is resumen', () => {
+  assert.equal(defaultGranularForConsolidatedTab('paciente', SALA), 'resumen');
+});
+
+test('resolveConsolidatedTarget resumen and todo both map to paciente', () => {
+  assert.deepEqual(resolveConsolidatedTarget('resumen', SALA), { tab: 'paciente', section: null });
+  assert.deepEqual(resolveConsolidatedTarget('todo', SALA), { tab: 'paciente', section: null });
 });
 
 test('resolveConsolidatedTarget estadoActual sala routes to clinico segment', () => {
@@ -61,17 +70,20 @@ test('estadoActual is not a consolidated top tab in either mode', () => {
   assert.equal(getConsolidatedTabs(SALA).includes('estadoActual'), false);
 });
 
-test('migrateGranularInner keeps known tabs and falls back to todo', () => {
+test('migrateGranularInner keeps known tabs and falls back to resumen', () => {
   assert.equal(migrateGranularInner('indica', INTER), 'indica');
-  assert.equal(migrateGranularInner('unknown', INTER), 'todo');
-  assert.equal(migrateGranularInner(null, INTER), 'todo');
+  assert.equal(migrateGranularInner('unknown', INTER), 'resumen');
+  assert.equal(migrateGranularInner(null, INTER), 'resumen');
   assert.equal(migrateGranularInner('notas', SALA), 'estadoActual');
   assert.equal(migrateGranularInner('recetaHu', SALA), 'recetaHu');
-  assert.equal(migrateGranularInner('listado', INTER), 'todo');
+  assert.equal(migrateGranularInner('listado', INTER), 'resumen');
   assert.equal(migrateGranularInner('estadoActual', SALA), 'estadoActual');
   assert.equal(migrateGranularInner('estadoActual', INTER), 'estadoActual');
-  assert.equal(migrateGranularInner('datos', INTER), 'todo');
-  assert.equal(migrateGranularInner('datos', SALA), 'todo');
+  assert.equal(migrateGranularInner('datos', INTER), 'resumen');
+  assert.equal(migrateGranularInner('datos', SALA), 'resumen');
+  assert.equal(migrateGranularInner('todo', INTER), 'todo');
+  assert.equal(migrateGranularInner('tend', SALA), 'tend');
+  assert.equal(migrateGranularInner('cult', INTER), 'cult');
 });
 
 test('resolveConsolidatedTarget estadoActual inter routes to clinico segment', () => {
@@ -82,7 +94,7 @@ test('resolveConsolidatedTarget estadoActual inter routes to clinico segment', (
 });
 
 test('defaultGranularForConsolidatedTab returns sensible defaults per mode', () => {
-  assert.equal(defaultGranularForConsolidatedTab('paciente', INTER), 'todo');
+  assert.equal(defaultGranularForConsolidatedTab('paciente', INTER), 'resumen');
   assert.equal(defaultGranularForConsolidatedTab('clinico', INTER), 'notas');
   assert.equal(defaultGranularForConsolidatedTab('resultados', INTER), 'tend');
   assert.equal(defaultGranularForConsolidatedTab('salida', INTER), 'recetaHu');

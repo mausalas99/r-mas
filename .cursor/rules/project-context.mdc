@@ -131,6 +131,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-08-13** `patient-dashboard`: expediente inner landing is Resumen; Resultados dropped from Paciente row (tend/cult stay mapped for Lab); `expediente-tabs.mjs`.
 - **2026-08-13** `census-delete`: desktop census via Filtros (no hard team hide); patient delete gated Admin/R4 vs team; remote Nube wipe confirm; EA reclassify persists; `patient-delete-auth.mjs`, `remote-patient-delete-confirm.mjs`.
 - **2026-08-12** `cloud-sync-remember`: durable Recuérdame in `userData` via IPC + quit flush + single-instance lock; `lib/cloud-sync-remember-store.cjs`.
 - **2026-08-12** `tendencias-ui`: simplify eTFG card label; style detail event CTA; remove toolbar + Eventualidad; `tendencias-constants.mjs`, `tendencias-hidden.mjs`.

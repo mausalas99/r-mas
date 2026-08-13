@@ -5,7 +5,7 @@ import { isMobileWeb } from './mobile-web.mjs';
 function migrateGranularMobile(granularTab, settings) {
   if (!isMobileWeb()) return null;
   if (granularTab === 'listado' || granularTab === 'recetaHu') {
-    return isModeSala(settings) ? 'estadoActual' : 'todo';
+    return isModeSala(settings) ? 'estadoActual' : 'resumen';
   }
   if (isModeSala(settings) && granularTab === 'vpo') return 'estadoActual';
   return null;
@@ -16,17 +16,17 @@ function migrateGranularSala(granularTab, settings) {
   if (isModeSala(settings) && (granularTab === 'notas' || granularTab === 'indica')) {
     return 'estadoActual';
   }
-  if (!isModeSala(settings) && granularTab === 'listado') return 'todo';
+  if (!isModeSala(settings) && granularTab === 'listado') return 'resumen';
   return null;
 }
 
 /** @param {string} granularTab @param {object} settings @param {Record<string, {tab:string, section?:string|null}>} granularMap */
 export function migrateGranularInner(granularTab, settings, granularMap) {
-  if (!granularTab) return 'todo';
+  if (!granularTab) return 'resumen';
   // Datos lives in a modal — never persist as active inner tab.
-  if (granularTab === 'datos') return 'todo';
+  if (granularTab === 'datos') return 'resumen';
   if (granularTab === 'manejo') return isModeSala(settings) ? 'todo' : 'notas';
-  if (!granularMap[granularTab]) return 'todo';
+  if (!granularMap[granularTab]) return 'resumen';
   const mobile = migrateGranularMobile(granularTab, settings);
   if (mobile) return mobile;
   const sala = migrateGranularSala(granularTab, settings);

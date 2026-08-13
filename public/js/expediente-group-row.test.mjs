@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   GROUP_LABELS,
   SECTION_LABELS,
+  LAB_INNER_SECTIONS,
   groupSections,
   buildGroupRowModel,
 } from './expediente-group-row.mjs';
@@ -26,14 +27,23 @@ test('groupSections: resultados and salida come from the existing maps', () => {
   assert.deepEqual(groupSections('salida', INTER), []);
 });
 
-test('buildGroupRowModel: active group and section reflect the granular target', () => {
-  const model = buildGroupRowModel('tend', SALA);
+test('buildGroupRowModel: ids are Resumen Clínico Salida (no Resultados)', () => {
+  const model = buildGroupRowModel('resumen', SALA);
   const ids = model.map((g) => g.id);
-  assert.deepEqual(ids, ['paciente', 'clinico', 'resultados', 'salida']);
-  const resultados = model.find((g) => g.id === 'resultados');
-  assert.equal(resultados.active, true);
-  assert.equal(resultados.sections.find((s) => s.id === 'tend').active, true);
-  assert.equal(resultados.sections.find((s) => s.id === 'cult').active, false);
+  assert.deepEqual(ids, ['paciente', 'clinico', 'salida']);
+  assert.equal(GROUP_LABELS.paciente, 'Resumen');
+  const pac = model.find((g) => g.id === 'paciente');
+  assert.equal(pac.active, true);
+  assert.equal(pac.label, 'Resumen');
+  assert.equal(model.some((g) => g.id === 'resultados'), false);
+});
+
+test('buildGroupRowModel: active group and section reflect the granular target', () => {
+  const model = buildGroupRowModel('estadoActual', SALA);
+  const clinico = model.find((g) => g.id === 'clinico');
+  assert.equal(clinico.active, true);
+  assert.equal(clinico.sections.find((s) => s.id === 'estadoActual').active, true);
+  assert.equal(clinico.sections.find((s) => s.id === 'eventualidades').active, false);
   assert.equal(model.find((g) => g.id === 'paciente').active, false);
 });
 
@@ -50,11 +60,19 @@ test('buildGroupRowModel: paciente is active for datos or todo without sub-pills
   assert.equal(pacDatos.leaf, true);
 });
 
+test('LAB_INNER_SECTIONS lists labs tend cult', () => {
+  assert.deepEqual(LAB_INNER_SECTIONS, ['labs', 'tend', 'cult']);
+  assert.equal(SECTION_LABELS.labs, 'Labs');
+});
+
 test('labels exist for every section that can appear', () => {
-  ['paciente', 'clinico', 'resultados', 'salida'].forEach((g) => {
+  ['paciente', 'clinico', 'salida'].forEach((g) => {
     assert.ok(GROUP_LABELS[g], 'group label ' + g);
     [SALA, INTER].forEach((st) => {
       groupSections(g, st).forEach((s) => assert.ok(SECTION_LABELS[s], 'section label ' + s));
     });
+  });
+  LAB_INNER_SECTIONS.forEach((s) => {
+    assert.ok(SECTION_LABELS[s], 'lab inner label ' + s);
   });
 });

@@ -4,8 +4,8 @@
 import { isModeSala } from './mode-features.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
 
-export const CONSOLIDATED_TABS_SALA = ['paciente', 'clinico', 'resultados', 'salida'];
-export const CONSOLIDATED_TABS_INTER = ['paciente', 'clinico', 'resultados', 'salida'];
+export const CONSOLIDATED_TABS_SALA = ['paciente', 'clinico', 'salida'];
+export const CONSOLIDATED_TABS_INTER = ['paciente', 'clinico', 'salida'];
 
 /** @deprecated alias of CONSOLIDATED_TABS_INTER for backward compatibility */
 export const CONSOLIDATED_TABS = CONSOLIDATED_TABS_INTER;
@@ -60,6 +60,7 @@ export const CLINICO_SECTIONS = CLINICO_SECTIONS_ALL;
 
 const GRANULAR_PANE_ORDER = [
   'datos',
+  'resumen',
   'notas',
   'indica',
   'tend',
@@ -78,6 +79,7 @@ function granularToConsolidatedMap(settings) {
   var sala = isModeSala(settings);
   var map = {
     datos: { tab: 'paciente', section: null },
+    resumen: { tab: 'paciente', section: null },
     todo: { tab: 'paciente', section: null },
     notas: { tab: 'clinico', section: 'notas' },
     indica: { tab: 'clinico', section: 'indica' },
@@ -104,6 +106,7 @@ function paneMountSpec(granularTab, settings) {
   }
   var map = {
     datos: { composite: null, selector: null },
+    resumen: { composite: 'paciente', selector: '#patient-dashboard-mount' },
     todo: { composite: 'paciente', selector: '.exp-pendientes-mount' },
     notas: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
     indica: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
@@ -169,7 +172,7 @@ export function defaultGranularForConsolidatedTab(compositeTab, settings) {
   var clinicoDefault = 'notas';
   if (sala) clinicoDefault = 'estadoActual';
   var defaults = {
-    paciente: 'todo',
+    paciente: 'resumen',
     clinico: clinicoDefault,
     resultados: 'tend',
     salida: isMobileWeb()
