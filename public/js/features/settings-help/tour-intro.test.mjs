@@ -146,7 +146,7 @@ describe('tour intro launch', () => {
   it('tourAfterBulkLabParse advances lab_parse when both demo patients are in census', () => {
     const onboarding = readFileSync(join(dir, 'tour-flow-onboarding.mjs'), 'utf8');
     assert.match(onboarding, /function tourAfterBulkLabParse/);
-    assert.match(onboarding, /if \(!tourDemoPatientsBothInCensus\(patients\)\)/);
+    assert.match(onboarding, /if \(!tourDemoPatientsBothInCensus\(getPatients\(\)\)\)/);
     assert.match(onboarding, /onboardingAdvanceAfterParse\(\)/);
     const labWorkbench = readFileSync(join(dir, '..', 'lab-panel-workbench.mjs'), 'utf8');
     assert.match(labWorkbench, /notifyTourAfterBulkLabStore/);
