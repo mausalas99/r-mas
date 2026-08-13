@@ -45,3 +45,15 @@ test('#patient-ronda-dashboard-host exists; old labs/todos mounts are absent', (
   assert.doesNotMatch(html, /id="patient-ronda-todos-mount"/);
 });
 
+test('lab-inner-nav uses folder inner-tab-bar, not boxed rpc-subtab', () => {
+  assert.match(html, /id="lab-inner-nav"[^>]*class="[^"]*inner-tab-bar/);
+  assert.doesNotMatch(html, /id="lab-inner-nav"[^>]*rpc-subtab-bar/);
+  assert.match(html, /class="[^"]*inner-tab[^"]*"[^>]*id="lab-inner-labs-btn"/);
+});
+
+test('lab-inner-nav lives inside lab-active-shell with the lab panels', () => {
+  const shell = html.indexOf('class="lab-active-shell"');
+  const nav = html.indexOf('id="lab-inner-nav"');
+  const labs = html.indexOf('id="lab-inner-labs"');
+  assert.ok(shell >= 0 && nav > shell && labs > nav);
+});

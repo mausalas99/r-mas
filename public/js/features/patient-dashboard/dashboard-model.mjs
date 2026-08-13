@@ -9,24 +9,14 @@ function resolveView(inner) {
   return inner === 'todo' ? 'pendientes' : 'resumen';
 }
 
-function buildIdentityMeta(patient) {
-  const parts = [];
-  const edad = patient?.edad != null ? String(patient.edad).trim() : '';
-  const sexo = patient?.sexo != null ? String(patient.sexo).trim() : '';
-  if (edad) parts.push(edad);
-  if (sexo) parts.push(sexo);
-  return parts.join(' · ');
-}
-
 function filterDiagnosticos(list) {
   if (!Array.isArray(list)) return [];
-  return list.map((item) => String(item).trim()).filter(Boolean);
+  return list.map((item) => String(item).trim()).filter(Boolean).slice(0, 3);
 }
 
 function buildIdentity(patient) {
   return {
     nombre: patient?.nombre != null ? String(patient.nombre) : '',
-    meta: buildIdentityMeta(patient),
     diagnosticos: filterDiagnosticos(patient?.diagnosticosList),
     interconsultServiceIds: Array.isArray(patient?.interconsultServiceIds)
       ? patient.interconsultServiceIds

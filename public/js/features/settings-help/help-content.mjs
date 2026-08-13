@@ -198,13 +198,13 @@ var HELP_ARTICLES = [
     html:
       '<p>Ahorra tiempo con estos atajos:</p>' +
       '<ul>' +
-      '<li><strong>Ctrl/⌘ + 1</strong> — Laboratorio · <strong>2</strong> — Paciente · <strong>3</strong> — Medicamentos · <strong>4</strong> — Agenda (<strong>Pase</strong>: abre la sección en vista Normal). <strong>Repite el mismo número</strong> para ciclar subvistas: <strong>2</strong> Resumen→Clínico→Salida · <strong>3</strong> Manejo↔Perfil · <strong>4</strong> semana actual</li>' +
+      '<li><strong>Ctrl/⌘ + 1</strong> — Paciente · <strong>2</strong> — Laboratorio · <strong>3</strong> — Manejo · <strong>4</strong> — Agenda (<strong>Pase</strong>: abre la sección en vista Normal). <strong>Repite el mismo número</strong> para ciclar subvistas: <strong>1</strong> Resumen→Clínico→Salida · <strong>2</strong> Labs→Tendencias→Cultivos · <strong>3</strong> Manejo↔Perfil · <strong>4</strong> semana actual</li>' +
       '<li><strong>Ctrl/⌘ + Shift + 3</strong> — Completa ↔ Nombre+Día (texto de egreso en Manejo actual)</li>' +
       '<li><strong>Ctrl/⌘ + [</strong> / <strong>]</strong> — Semana anterior / siguiente en Agenda</li>' +
       '<li><strong>Ctrl/⌘ + ,</strong> — Ajustes</li>' +
       '<li><strong>Ctrl/⌘ + N</strong> — Nuevo paciente</li>' +
       '<li><strong>Ctrl/⌘ + G</strong> — Modo Guardia · <strong>I</strong> — Interconsulta · <strong>P</strong> — Pase (repite para volver a Sala/Interconsulta) · <strong>S</strong> — Sala</li>' +
-      '<li><strong>Ctrl/⌘ + E</strong> — Estado actual (en EA → Eventualidades en Sala) · <strong>T</strong> — Tendencias (en tendencias → Cultivos) · <strong>D</strong> — Datos del paciente · <strong>M</strong> — Medicamentos (cicla subvistas) · <strong>A</strong> — Agenda (semana actual)</li>' +
+      '<li><strong>Ctrl/⌘ + E</strong> — Estado actual (en EA → Eventualidades en Sala) · <strong>T</strong> — Tendencias (en tendencias → Cultivos) · <strong>D</strong> — Datos del paciente · <strong>M</strong> — Manejo (cicla subvistas) · <strong>A</strong> — Agenda (semana actual)</li>' +
       '<li><strong>Ctrl/⌘ + Shift + S</strong> — Guardar estado del paciente activo</li>' +
       '<li><strong>Ctrl/⌘ + /</strong> — Mostrar la hoja de atajos (también el botón del encabezado)</li>' +
       '<li><strong>Ctrl/⌘ + K</strong> — Ir a sección o paciente</li>' +

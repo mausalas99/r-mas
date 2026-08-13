@@ -61,10 +61,12 @@ describe('dashboard html', () => {
     const html = renderDashboardHtml(modelWithVitals());
     assert.match(html, /class="[^"]*patient-dash/);
     assert.match(html, /PEREZ GOMEZ ANA/);
+    assert.match(html, /dash-name/);
+    assert.equal(html.includes('72'), false);
     assert.match(html, /Actualizar labs/);
     assert.match(html, /Servicios interconsultantes/);
     assert.match(html, /\+ Agregar/);
-    assert.match(html, /Labs de hoy/);
+    assert.match(html, /Labs: Solo alterados/);
     assert.match(html, /Reportes completos/);
     assert.match(html, /Estado clínico/);
     assert.match(html, /Eventualidades/);
@@ -87,11 +89,85 @@ describe('dashboard html', () => {
 
   it('puts four or fewer KPI cells inside .ea-kpis', () => {
     const html = renderDashboardHtml(modelWithVitals());
-    const kpis = html.match(/<div class="ea-kpis">([\s\S]*?)<\/div>\s*<div class="ea-soap">/);
+    const kpis = html.match(/<div class="ea-kpis">([\s\S]*?)<\/div>/);
     assert.ok(kpis);
     const children = kpis[1].match(/<div>/g) || [];
     assert.ok(children.length >= 1);
     assert.ok(children.length <= 4);
     assert.match(kpis[1], /Soporte/);
+    assert.equal(kpis[1].includes('Furosemida'), false);
+    assert.match(html, /Medicamentos/);
+    assert.match(html, /Furosemida/);
+    assert.equal(html.includes('Furosemida 40 mg'), false);
+  });
+
+  it('uses distinct empty copy for labs, eventualidades and pendientes', () => {
+    const html = renderDashboardHtml(
+      buildDashboardModel({
+        patient: {
+          nombre: 'X',
+          monitoreo: splitHistorialMonitoreo,
+        },
+        inner: 'resumen',
+        labSets: [],
+        eaInput: {},
+        eventualidades: [],
+        pendientes: [],
+        todayKey: '2026-8-13',
+      }),
+    );
+    assert.match(html, /Labs: Solo alterados/);
+    assert.match(html, /Sin labs de hoy/);
+    assert.match(html, /Sin eventualidades/);
+    assert.match(html, /Sin pendientes/);
+    assert.equal(html.includes('Sin registros'), false);
+  });
+
+  it('omits Medicamentos when SOAP is empty', () => {
+    const html = renderDashboardHtml(
+      buildDashboardModel({
+        patient: { nombre: 'X', monitoreo: splitHistorialMonitoreo },
+        inner: 'resumen',
+        eaInput: {},
+        todayKey: '2026-8-13',
+      }),
+    );
+    assert.equal(html.includes('Medicamentos'), false);
+    assert.equal(html.includes('ea-soap'), false);
+  });
+
+  it('marks out-of-range vitals with .hi using EA ranges', () => {
+    const model = modelWithVitals();
+    model.vitals = {
+      vitals: { tas: 128, tad: 93, fc: 84, fr: 20, temp: 36.7, sat: 99 },
+      glucometrias: [{ value: 114 }],
+      io: { ing: 0, egr: 10 },
+      alteredAt: {},
+    };
+    const html = renderDashboardHtml(model);
+    assert.match(html, /class="vital hi"><small>T\/A<\/small><b>128\/93<\/b>/);
+    assert.match(html, /class="vital"><small>FC<\/small><b>84<\/b>/);
+    assert.match(html, /class="vital"><small>FR<\/small><b>20<\/b>/);
+    assert.doesNotMatch(html, /class="vital hi"><small>Glu/);
+  });
+
+  it('marks hyperglycaemia on Glu', () => {
+    const model = modelWithVitals();
+    model.vitals = {
+      vitals: { fc: 84 },
+      glucometrias: [{ value: 240 }],
+      io: {},
+      alteredAt: {},
+    };
+    const html = renderDashboardHtml(model);
+    assert.match(html, /class="vital hi"><small>Glu<\/small><b>240<\/b>/);
+  });
+
+  it('colors SOAP chips and rest-card spines by category hue', () => {
+    const html = renderDashboardHtml(modelWithVitals());
+    assert.match(html, /class="med" style="--h:/);
+    assert.match(html, /class="ea-cat" style="--h:/);
+    assert.match(html, /data-dash-action="estadoActual" style="--spine-h:168"/);
+    assert.match(html, /data-dash-action="eventualidades" style="--spine-h:52"/);
   });
 });

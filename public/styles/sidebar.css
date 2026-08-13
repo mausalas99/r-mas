@@ -16,21 +16,22 @@ aside.patient-sidebar {
     transform var(--dur-normal) var(--ease-out);
 }
 .sidebar-hover-strip {
-  position: fixed;
+  position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
-  width: 14px;
-  z-index: 450;
+  width: 18px;
+  z-index: 900;
   display: none;
+  pointer-events: auto;
 }
 html.sidebar-auto-hide .sidebar-hover-strip { display: block; }
 html.sidebar-auto-hide:not(.sidebar-reveal) .sidebar-hover-strip::after {
   content: '';
   position: absolute;
   left: 0;
-  top: var(--shell-inset);
-  bottom: var(--shell-inset);
+  top: 0;
+  bottom: 0;
   width: var(--sidebar-rail-width, 5px);
   border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
   background: var(--sidebar-rail-color);

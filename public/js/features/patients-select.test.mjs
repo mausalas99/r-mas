@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { isRoundOverviewInner } from './patients-round.mjs';
+import { shouldRevealSidebarAt } from './patients.mjs';
 
 /** Mirrors selectPatientCore patientChanged detection. */
 function patientChanged(prevId, id) {
@@ -51,5 +52,15 @@ describe('isRoundOverviewInner', () => {
     assert.equal(isRoundOverviewInner('estadoActual'), false);
     assert.equal(isRoundOverviewInner('tend'), false);
     assert.equal(isRoundOverviewInner('notas'), false);
+  });
+});
+
+describe('shouldRevealSidebarAt', () => {
+  it('reveals when the pointer is on the left 18px of the workbench', () => {
+    assert.equal(shouldRevealSidebarAt(8, 0), true);
+    assert.equal(shouldRevealSidebarAt(18, 0), true);
+    assert.equal(shouldRevealSidebarAt(19, 0), false);
+    assert.equal(shouldRevealSidebarAt(90, 80), true);
+    assert.equal(shouldRevealSidebarAt(100, 80), false);
   });
 });

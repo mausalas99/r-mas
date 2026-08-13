@@ -75,7 +75,7 @@ function maybeShowTabShortcutsNudge(showToast) {
   nudgeShownThisSession = true;
   var mod = modKeyLabel();
   showToast(
-    '¿Muchos clics entre pestañas? Repite ' + mod + '+2 para cambiar sección del expediente.',
+    '¿Muchos clics entre pestañas? Repite ' + mod + '+1 para ciclar Resumen, Clínico y Salida.',
     'info',
     {
       durationMs: 6500,

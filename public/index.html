@@ -115,7 +115,6 @@
 <link rel="stylesheet" href="/styles/base.css">
 <link rel="stylesheet" href="/styles/layout.css">
 <link rel="stylesheet" href="/styles/pase-board.css">
-<link rel="stylesheet" href="/styles/patient-dashboard.css">
 <link rel="stylesheet" href="/styles/sidebar.css">
 <link rel="stylesheet" href="/styles/lab.css">
 <link rel="stylesheet" href="/styles/expediente.css">
@@ -136,6 +135,8 @@
 <link rel="stylesheet" href="/styles/soft-ui.css">
 <link rel="stylesheet" href="/styles/workbench-surfaces.css">
 <link rel="stylesheet" href="/styles/rams-tufte-workbench.css">
+<link rel="stylesheet" href="/styles/patient-dashboard.css">
+<link rel="stylesheet" href="/styles/lab-inner.css">
 <link rel="stylesheet" href="/styles/mobile.css">
 <link rel="stylesheet" href="/styles/rpc-date-picker.css">
 <link rel="stylesheet" href="/styles/overlays.css?v=hybrid-polish-3">
@@ -882,10 +883,11 @@
     </div>
 
     <div id="appcontent-lab" role="tabpanel" aria-labelledby="apptab-lab" aria-hidden="true" class="lab-panel-root app-tab-panel-hidden">
-      <div id="lab-inner-nav" class="lab-inner-nav exp-segment-bar rpc-subtab-bar" role="tablist" aria-label="Secciones de laboratorio">
-        <button type="button" class="exp-segment-btn rpc-subtab lab-inner-btn active" id="lab-inner-labs-btn" data-lab-inner="labs" role="tab" aria-selected="true" aria-controls="lab-inner-labs" onclick="switchLabInner('labs')">Labs</button>
-        <button type="button" class="exp-segment-btn rpc-subtab lab-inner-btn" id="lab-inner-tend-btn" data-lab-inner="tend" role="tab" aria-selected="false" aria-controls="lab-inner-tend-mount" onclick="switchLabInner('tend')">Tendencias</button>
-        <button type="button" class="exp-segment-btn rpc-subtab lab-inner-btn" id="lab-inner-cult-btn" data-lab-inner="cult" role="tab" aria-selected="false" aria-controls="lab-inner-cult-mount" onclick="switchLabInner('cult')">Cultivos</button>
+      <div class="lab-active-shell">
+      <div id="lab-inner-nav" class="lab-inner-nav inner-tab-bar" role="tablist" aria-label="Secciones de laboratorio">
+        <button type="button" class="inner-tab lab-inner-btn active" id="lab-inner-labs-btn" data-lab-inner="labs" role="tab" aria-selected="true" aria-controls="lab-inner-labs" onclick="switchLabInner('labs')">Labs</button>
+        <button type="button" class="inner-tab lab-inner-btn" id="lab-inner-tend-btn" data-lab-inner="tend" role="tab" aria-selected="false" aria-controls="lab-inner-tend-mount" onclick="switchLabInner('tend')">Tendencias</button>
+        <button type="button" class="inner-tab lab-inner-btn" id="lab-inner-cult-btn" data-lab-inner="cult" role="tab" aria-selected="false" aria-controls="lab-inner-cult-mount" onclick="switchLabInner('cult')">Cultivos</button>
       </div>
       <div class="main-work-scroll lab-work-scroll" id="lab-inner-labs">
 
@@ -991,6 +993,7 @@
       </div>
       <div id="lab-inner-tend-mount" class="lab-inner-panel" hidden></div>
       <div id="lab-inner-cult-mount" class="lab-inner-panel" hidden></div>
+      </div>
       <button type="button" id="lab-copy-fab" class="lab-copy-fab" hidden aria-label="Copiar resultados al portapapeles" title="Copiar resultados">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
       </button>

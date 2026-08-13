@@ -15,9 +15,9 @@ export const SHORTCUT_GROUPS = [
   {
     title: 'Pestañas principales',
     items: [
-      { keys: ['⌘', '1'], label: 'Laboratorio' },
-      { keys: ['⌘', '2'], label: 'Paciente', hint: 'Repite Resumen → Clínico → Salida' },
-      { keys: ['⌘', '3'], label: 'Medicamentos', hint: 'Repite Manejo ↔ Perfil' },
+      { keys: ['⌘', '1'], label: 'Paciente', hint: 'Repite Resumen → Clínico → Salida' },
+      { keys: ['⌘', '2'], label: 'Laboratorio', hint: 'Repite Labs → Tendencias → Cultivos' },
+      { keys: ['⌘', '3'], label: 'Manejo', hint: 'Repite Manejo ↔ Perfil' },
       { keys: ['⌘', '4'], label: 'Agenda', hint: 'Repite semana actual' },
       { keys: ['⌘', '⇧', '3'], label: 'Manejo: Completa ↔ Nombre+Día' },
       { keys: ['⌘', '['], label: 'Agenda · semana anterior' },
@@ -39,7 +39,7 @@ export const SHORTCUT_GROUPS = [
       { keys: ['⌘', 'E'], label: 'Estado actual' },
       { keys: ['⌘', 'T'], label: 'Tendencias / Cultivos' },
       { keys: ['⌘', 'D'], label: 'Datos del paciente' },
-      { keys: ['⌘', 'M'], label: 'Medicamentos' },
+      { keys: ['⌘', 'M'], label: 'Manejo' },
       { keys: ['⌘', 'A'], label: 'Agenda' },
       { keys: ['⌘', 'N'], label: 'Nuevo paciente' },
       { keys: ['⌘', '⇧', 'S'], label: 'Guardar paciente activo' },

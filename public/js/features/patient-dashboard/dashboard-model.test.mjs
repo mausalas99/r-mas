@@ -41,7 +41,7 @@ describe('dashboard identity', () => {
       inner: 'resumen',
     });
     assert.equal(model.identity.nombre, 'PEREZ GOMEZ ANA');
-    assert.match(model.identity.meta, /72/);
+    assert.equal(model.identity.meta, undefined);
     assert.equal(model.identity.cama, undefined);
     assert.equal(JSON.stringify(model.identity).includes('Cama'), false);
     assert.equal(JSON.stringify(model.identity).includes('"sala"'), false);
@@ -65,6 +65,17 @@ describe('dashboard identity', () => {
     });
     assert.deepEqual(model.identity.diagnosticos, ['ICC', 'DM2']);
     assert.deepEqual(model.identity.interconsultServiceIds, ['card', 'unknown-svc']);
+  });
+
+  it('keeps only the first three diagnosticos as primary chips', () => {
+    const model = buildDashboardModel({
+      patient: {
+        nombre: 'X',
+        diagnosticosList: ['IAMCEST', 'FEVI 35', 'Mobitz I', 'HAS', 'DM2', 'Obesidad'],
+      },
+      inner: 'resumen',
+    });
+    assert.deepEqual(model.identity.diagnosticos, ['IAMCEST', 'FEVI 35', 'Mobitz I']);
   });
 });
 

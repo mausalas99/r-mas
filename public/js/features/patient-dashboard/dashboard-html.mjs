@@ -2,6 +2,7 @@
  * Spanish HTML for the Paciente Resumen glance. Root class patient-dash.
  */
 import { escHtml, escAttr } from '../../dom-escape.mjs';
+import { isGlucometriaMarkedAltered, isVitalAltered } from '../estado-actual-ranges.mjs';
 import { serviceById, hueForService } from './interconsult-catalog.mjs';
 
 function numText(value) {
@@ -18,7 +19,6 @@ function readingsFromModel(model) {
     vitals: snap.vitals && typeof snap.vitals === 'object' ? snap.vitals : {},
     glucometrias: Array.isArray(snap.glucometrias) ? snap.glucometrias : [],
     io: snap.io && typeof snap.io === 'object' ? snap.io : {},
-    alteredAt: snap.alteredAt && typeof snap.alteredAt === 'object' ? snap.alteredAt : {},
   };
 }
 
@@ -59,15 +59,23 @@ function renderVitalsHtml(model) {
   var tas = numText(v.tas);
   var tad = numText(v.tad);
   var ta = tas || tad ? (tas || '—') + '/' + (tad || '—') : '';
-  var glu = lastGlu(r.glucometrias);
+  var gluList = r.glucometrias;
+  var gluLast = gluList.length ? gluList[gluList.length - 1] : null;
+  var glu = lastGlu(gluList);
   var io = ioBalance(r.io);
   var cells =
-    vitalCell('T/A', ta, !!(r.alteredAt.tas || r.alteredAt.tad)) +
-    vitalCell('FC', numText(v.fc), !!r.alteredAt.fc) +
-    vitalCell('FR', numText(v.fr), !!r.alteredAt.fr) +
-    vitalCell('Temp', numText(v.temp), !!r.alteredAt.temp) +
-    vitalCell('SatO₂', numText(v.sat) ? numText(v.sat) + '%' : '', !!r.alteredAt.sat) +
-    vitalCell('Glu', glu, false) +
+    vitalCell('T/A', ta, isVitalAltered('tas', v.tas) || isVitalAltered('tad', v.tad)) +
+    vitalCell('FC', numText(v.fc), isVitalAltered('fc', v.fc)) +
+    vitalCell('FR', numText(v.fr), isVitalAltered('fr', v.fr)) +
+    vitalCell('Temp', numText(v.temp), isVitalAltered('temp', v.temp)) +
+    vitalCell('SatO₂', numText(v.sat) ? numText(v.sat) + '%' : '', isVitalAltered('sat', v.sat)) +
+    vitalCell(
+      'Glu',
+      glu,
+      isGlucometriaMarkedAltered(
+        gluLast && typeof gluLast === 'object' ? gluLast : { value: glu },
+      ),
+    ) +
     vitalCell('I/O', io, false);
   return (
     '<button class="card clickable vitals-card" type="button" data-dash-action="estadoActual">' +
@@ -110,10 +118,9 @@ function renderIdentityHtml(model) {
     .join('');
   return (
     '<div class="idrow"><div>' +
-    '<h1><button class="chip" type="button" data-dash-action="datos">' +
+    '<h1><button class="dash-name" type="button" data-dash-action="datos">' +
     escHtml(idn.nombre || 'Paciente') +
     '</button></h1>' +
-    (idn.meta ? '<div class="meta">' + escHtml(idn.meta) + '</div>' : '') +
     (dxHtml ? '<div class="chips">' + dxHtml + '</div>' : '') +
     '<div class="ic-mod"><small>Servicios interconsultantes</small>' +
     '<div class="chips" id="ic-assigned">' +
@@ -159,10 +166,10 @@ function renderLabsHtml(model) {
   var envios = model && model.labs && Array.isArray(model.labs.envios) ? model.labs.envios : [];
   var body = envios.length
     ? '<div class="day-draws">' + envios.map(renderDrawHtml).join('') + '</div>'
-    : '<p class="meta">Sin labs de hoy</p>';
+    : '<p class="empty-hint">Sin labs de hoy</p>';
   return (
     '<div class="card labs-card">' +
-    '<div class="card-h">Labs de hoy · solo alteraciones ' +
+    '<div class="card-h">Labs: Solo alterados ' +
     '<button class="link" type="button" data-dash-action="labs-full">Reportes completos</button></div>' +
     '<div class="card-b">' +
     body +
@@ -188,13 +195,22 @@ function renderEaKpisHtml(kpis) {
 function renderEaSoapHtml(soap) {
   return (soap || [])
     .map(function (bucket) {
+      var hue = bucket.hue != null ? String(bucket.hue) : '220';
       var meds = (bucket.items || [])
         .map(function (item) {
-          return '<span class="med">' + escHtml(item) + '</span>';
+          return (
+            '<span class="med" style="--h:' +
+            hue +
+            '">' +
+            escHtml(item) +
+            '</span>'
+          );
         })
         .join('');
       return (
-        '<div><small>' +
+        '<div class="ea-cat" style="--h:' +
+        hue +
+        '"><small>' +
         escHtml(bucket.label || '') +
         '</small><div class="meds">' +
         meds +
@@ -207,14 +223,25 @@ function renderEaSoapHtml(soap) {
 function renderEaHtml(model) {
   var ea = (model && model.ea) || { kpis: [], soap: [] };
   return (
-    '<button class="card clickable" type="button" data-dash-action="estadoActual">' +
+    '<button class="card clickable" type="button" data-dash-action="estadoActual" style="--spine-h:168">' +
     '<div class="card-h">Estado clínico <span class="link">Abrir EA</span></div>' +
     '<div class="card-b"><div class="ea-glance">' +
     '<div class="ea-kpis">' +
-    (renderEaKpisHtml(ea.kpis) || '<p class="meta">Sin plan de cuidado</p>') +
-    '</div><div class="ea-soap">' +
-    renderEaSoapHtml(ea.soap) +
+    (renderEaKpisHtml(ea.kpis) || '<p class="empty-hint">Sin plan de cuidado</p>') +
     '</div></div></div></button>'
+  );
+}
+
+function renderMedsHtml(model) {
+  var soap = model && model.ea && model.ea.soap;
+  if (!soap || !soap.length) return '';
+  return (
+    '<div class="bento meds-band">' +
+    '<button class="card clickable meds-card" type="button" data-dash-action="estadoActual" style="--spine-h:32">' +
+    '<div class="card-h">Medicamentos <span class="link">Abrir EA</span></div>' +
+    '<div class="card-b"><div class="ea-soap">' +
+    renderEaSoapHtml(soap) +
+    '</div></div></button></div>'
   );
 }
 
@@ -238,9 +265,11 @@ function rowText(item) {
   return String(item.text || '');
 }
 
-function renderRowsHtml(items) {
+function renderRowsHtml(items, emptyText) {
   var list = Array.isArray(items) ? items : [];
-  if (!list.length) return '<p class="meta">Sin registros</p>';
+  if (!list.length) {
+    return '<p class="empty-hint">' + escHtml(emptyText || 'Sin registros') + '</p>';
+  }
   return (
     '<ul class="rows">' +
     list
@@ -258,16 +287,19 @@ function renderRowsHtml(items) {
   );
 }
 
-function renderListCardHtml(title, link, action, items) {
+function renderListCardHtml(title, link, action, items, emptyText, spineH) {
+  var hue = spineH != null ? String(spineH) : '220';
   return (
     '<button class="card clickable" type="button" data-dash-action="' +
     escAttr(action) +
+    '" style="--spine-h:' +
+    hue +
     '"><div class="card-h">' +
     escHtml(title) +
     ' <span class="link">' +
     escHtml(link) +
     '</span></div><div class="card-b">' +
-    renderRowsHtml(items) +
+    renderRowsHtml(items, emptyText) +
     '</div></button>'
   );
 }
@@ -287,9 +319,11 @@ export function renderDashboardHtml(model) {
     '</div>' +
     '<div class="bento rest">' +
     renderEaHtml(m) +
-    renderListCardHtml('Eventualidades', 'Ver todas', 'eventualidades', m.eventualidades) +
-    renderListCardHtml('Pendientes', 'Ver pendientes', 'pendientes', m.pendientes) +
-    '</div></div>'
+    renderListCardHtml('Eventualidades', 'Ver todas', 'eventualidades', m.eventualidades, 'Sin eventualidades', 52) +
+    renderListCardHtml('Pendientes', 'Ver pendientes', 'pendientes', m.pendientes, 'Sin pendientes', 245) +
+    '</div>' +
+    renderMedsHtml(m) +
+    '</div>'
   );
 }
 

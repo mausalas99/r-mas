@@ -8,6 +8,7 @@ import { groupSections, GROUP_LABELS, SECTION_LABELS } from './expediente-group-
 import { rankItems } from './fuzzy-match.mjs';
 
 export var APP_TAB_ITEMS = [
+  { kind: 'app-tab', tab: 'nota', label: 'Paciente', hint: '' },
   { kind: 'app-tab', tab: 'lab', label: 'Laboratorio', hint: '' },
   { kind: 'app-tab', tab: 'med', label: 'Manejo', hint: '' },
   { kind: 'app-tab', tab: 'agenda', label: 'Agenda', hint: '' },

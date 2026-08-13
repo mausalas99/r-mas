@@ -1,11 +1,10 @@
 /**
  * Paint and wire the Paciente Resumen glance.
  */
-import { getPatients, getLabHistory, persistClinicalState } from '../../app-state.mjs';
+import { getPatients, getLabHistory, getMedRecetaByPatient, persistClinicalState } from '../../app-state.mjs';
 import { storage } from '../../storage.js';
 import { openPatientDatosModal } from '../../patient-datos-modal.mjs';
-import { parseMedFieldItems } from '../estado-actual-med-ui.mjs';
-import { MED_FIELD_KEYS } from '../estado-actual-data-constants.mjs';
+import { collectEaGlanceSoap } from './ea-glance-meds.mjs';
 import { sortEntriesDesc, resolveEventualidadEntryText } from '../eventualidades-store.mjs';
 import { toggleInterconsultId } from './interconsult-catalog.mjs';
 import { buildDashboardModel } from './dashboard-model.mjs';
@@ -43,17 +42,17 @@ function activePatient() {
 }
 
 function buildEaInputFromPatient(patient) {
-  var ec = patient && patient.monitoreo && patient.monitoreo.estadoClinico;
-  if (!ec || typeof ec !== 'object') return {};
-  var soap = {};
-  MED_FIELD_KEYS.forEach(function (key) {
-    var items = parseMedFieldItems(ec[key]);
-    if (items.length) soap[key] = items;
+  var mon = patient && patient.monitoreo;
+  var ec = mon && mon.estadoClinico && typeof mon.estadoClinico === 'object' ? mon.estadoClinico : {};
+  var receta = patient && patient.id ? getMedRecetaByPatient()[patient.id] : null;
+  var soap = collectEaGlanceSoap({
+    estadoClinico: ec,
+    pendienteReceta: mon.pendienteReceta,
+    recetaItems: receta && receta.items,
   });
   var bombaOn = !!(
-    patient.monitoreo &&
-    Array.isArray(patient.monitoreo.historial) &&
-    patient.monitoreo.historial.some(function (row) {
+    Array.isArray(mon.historial) &&
+    mon.historial.some(function (row) {
       return row && Array.isArray(row.bombaInsulina) && row.bombaInsulina.length;
     })
   );

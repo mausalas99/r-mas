@@ -21,7 +21,12 @@ test('buildPaletteItems: actions, sections, app tabs, patients, and combos', () 
   assert.ok(items.some((it) => it.kind === 'action' && it.actionId === 'new-pendiente'));
   assert.ok(items.some((it) => it.kind === 'section' && it.section === 'resumen'));
   assert.ok(items.some((it) => it.kind === 'section' && it.section === 'estadoActual'));
+  assert.ok(items.some((it) => it.kind === 'app-tab' && it.tab === 'nota'));
   assert.ok(items.some((it) => it.kind === 'app-tab' && it.tab === 'lab'));
+  assert.equal(
+    items.find((it) => it.kind === 'app-tab' && it.tab === 'nota').label,
+    'Paciente'
+  );
   assert.ok(items.some((it) => it.kind === 'patient' && it.patientId === 1 && it.pinned));
   assert.ok(
     items.some(

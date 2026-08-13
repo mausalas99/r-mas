@@ -66,8 +66,8 @@ function ensureIcDom() {
     '<h3 id="patient-ic-title">Servicios interconsultantes</h3>' +
     '<div id="ic-picker"></div>' +
     '<button type="button" class="btn-med-secondary" data-ic-done>Listo</button>';
+  scrim.appendChild(panel);
   document.body.appendChild(scrim);
-  document.body.appendChild(panel);
   return { scrim: scrim, panel: panel };
 }
 

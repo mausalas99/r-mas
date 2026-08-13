@@ -8,6 +8,8 @@ import {
   consolidatedInnerTabButtonId,
   migrateGranularInner,
 } from './expediente-tabs.mjs';
+import { LAB_INNER_SECTIONS } from './expediente-group-row.mjs';
+import { currentLabInner, switchLabInner } from './features/patient-dashboard/lab-inner.mjs';
 import { switchAppTab } from './features/pase-board-app-tabs.mjs';
 import { switchConsolidatedTab, openPaseSectionInNormal } from './features/pase-board-navigation.mjs';
 import { getActiveInnerTab } from './features/pase-board.mjs';
@@ -21,16 +23,16 @@ import {
 } from './features/agenda.mjs';
 
 var DIGIT_APP_TABS = {
-  1: 'lab',
-  2: 'nota',
+  1: 'nota',
+  2: 'lab',
   3: 'med',
   4: 'agenda',
   5: 'agenda',
 };
 
 var PASE_DIGIT_SECTIONS = {
-  1: 'labs',
-  2: 'expediente',
+  1: 'resumen',
+  2: 'labs',
   3: 'med',
   4: 'agenda',
   5: 'agenda',
@@ -63,6 +65,14 @@ export function nextMedOutputTab(current) {
   return current === 'simple' ? 'full' : 'simple';
 }
 
+/** @param {string} current */
+export function nextLabInnerSection(current) {
+  var tabs = LAB_INNER_SECTIONS;
+  var idx = tabs.indexOf(current);
+  if (idx < 0) return tabs[0];
+  return tabs[(idx + 1) % tabs.length];
+}
+
 function currentExpedienteComposite(settings) {
   var inner = migrateGranularInner(getActiveInnerTab() || 'todo', settings);
   return consolidatedInnerTabButtonId(inner, settings).replace(/^itab-/, '');
@@ -92,6 +102,11 @@ function cycleExpedienteComposite() {
   switchConsolidatedTab(next);
 }
 
+function cycleLabInner() {
+  var next = nextLabInnerSection(currentLabInner());
+  if (next) switchLabInner(next);
+}
+
 function cycleMedSubview() {
   var next = nextMedSubview(getMedSubview());
   setMedSubview(next);
@@ -115,9 +130,12 @@ export function runTabDigitShortcut(key) {
   if (!digitKeyAppTab(key)) return false;
   leaveGuardiaForStandardNavigation();
   if (isOnDigitAppTab(key)) {
-    if (key === '1') return true;
-    if (key === '2') {
+    if (key === '1') {
       cycleExpedienteComposite();
+      return true;
+    }
+    if (key === '2') {
+      cycleLabInner();
       return true;
     }
     if (key === '3') {
@@ -149,7 +167,7 @@ export function runMedOutputTabShortcut() {
   return true;
 }
 
-/** ⌘M — Medicamentos tab + cycle subviews (alias of ⌘3). */
+/** ⌘M — Manejo tab + cycle subviews (alias of ⌘3). */
 export function runMedTabShortcut() {
   return runTabDigitShortcut('3');
 }

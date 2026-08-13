@@ -15,12 +15,14 @@ describe('shortcuts-data', () => {
     assert.ok(SHORTCUT_GROUPS[0].items.length > 0);
   });
 
-  it('⌘1 Laboratorio and ⌘2 Paciente (inner cycle Resumen → Clínico → Salida)', () => {
+  it('⌘1 Paciente and ⌘2 Laboratorio match the strip (inner cycles)', () => {
     var tabs = SHORTCUT_GROUPS[0].items;
-    assert.equal(tabs[0].label, 'Laboratorio');
-    assert.equal(tabs[1].label, 'Paciente');
-    assert.match(tabs[1].hint || '', /Resumen.*Clínico.*Salida/);
-    assert.doesNotMatch(tabs[1].hint || '', /Resultados/);
+    assert.equal(tabs[0].label, 'Paciente');
+    assert.equal(tabs[1].label, 'Laboratorio');
+    assert.equal(tabs[2].label, 'Manejo');
+    assert.match(tabs[0].hint || '', /Resumen.*Clínico.*Salida/);
+    assert.match(tabs[1].hint || '', /Labs.*Tendencias.*Cultivos/);
+    assert.doesNotMatch(tabs[0].hint || '', /Resultados/);
   });
 });
 

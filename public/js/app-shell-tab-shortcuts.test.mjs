@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   digitKeyAppTab,
   nextConsolidatedCompositeTab,
+  nextLabInnerSection,
   nextMedSubview,
   nextMedOutputTab,
   resolveExpedienteCompositeCycle,
@@ -12,13 +13,20 @@ const INTER = { appMode: 'interconsulta' };
 const SALA = { appMode: 'sala' };
 
 describe('app-shell-tab-shortcuts', () => {
-  it('digitKeyAppTab maps 1–4/5 to app tabs', () => {
-    assert.equal(digitKeyAppTab('1'), 'lab');
-    assert.equal(digitKeyAppTab('2'), 'nota');
+  it('digitKeyAppTab maps 1–4/5 to strip order Paciente → Laboratorio → Manejo → Agenda', () => {
+    assert.equal(digitKeyAppTab('1'), 'nota');
+    assert.equal(digitKeyAppTab('2'), 'lab');
     assert.equal(digitKeyAppTab('3'), 'med');
     assert.equal(digitKeyAppTab('4'), 'agenda');
     assert.equal(digitKeyAppTab('5'), 'agenda');
     assert.equal(digitKeyAppTab('9'), null);
+  });
+
+  it('nextLabInnerSection cycles Labs → Tendencias → Cultivos', () => {
+    assert.equal(nextLabInnerSection('labs'), 'tend');
+    assert.equal(nextLabInnerSection('tend'), 'cult');
+    assert.equal(nextLabInnerSection('cult'), 'labs');
+    assert.equal(nextLabInnerSection('unknown'), 'labs');
   });
 
   it('nextConsolidatedCompositeTab cycles visible tabs', () => {

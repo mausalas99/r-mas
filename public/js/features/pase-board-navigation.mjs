@@ -80,6 +80,7 @@ const PASE_SECTION_ROUTES = {
   receta_hu: { app: 'nota', inner: 'recetaHu' },
   expediente: { app: 'nota', inner: 'notas' },
   nota: { app: 'nota', inner: 'notas' },
+  resumen: { app: 'nota', inner: 'resumen' },
 };
 
 function navigatePaseSection(route) {

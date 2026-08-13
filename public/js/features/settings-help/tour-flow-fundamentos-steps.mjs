@@ -34,7 +34,7 @@ function getMapTabsCopy() {
       mod +
       '+1…4</strong> salta entre ellas; <strong>repite ' +
       mod +
-      '+2</strong> para ciclar Resumen → Clínico → Salida.</p>'
+      '+1</strong> para ciclar Resumen → Clínico → Salida.</p>'
     );
   }
   return (
@@ -42,7 +42,7 @@ function getMapTabsCopy() {
     mod +
     '+1…4</strong> cambia de pestaña; <strong>repite ' +
     mod +
-    '+2</strong> cicla Resumen → Clínico → Salida.</p>'
+    '+1</strong> cicla Resumen → Clínico → Salida.</p>'
   );
 }
 
@@ -104,7 +104,7 @@ function renderIcExpedienteTabs(bodyEl, nextBtn) {
     '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, <strong>Paciente</strong> abre en <strong>Resumen</strong>. Grupos: <strong>Resumen</strong>, <strong>Clínico</strong> (Nota, Indicaciones) y <strong>Salida</strong> (Receta HU en PDF). Labs, tendencias y cultivos viven en <strong>Laboratorio</strong>.</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Receta HU</strong> exporta el PDF oficial 000-061-R-06-12. Atajos: <strong>' +
     mod +
-    '+2</strong> cicla grupos · <strong>E/T/D</strong> saltan a EA, tendencias o datos.</p>';
+    '+1</strong> cicla grupos · <strong>E/T/D</strong> saltan a EA, tendencias o datos.</p>';
   showNext(nextBtn);
 }
 
@@ -114,7 +114,7 @@ function renderSalaExpedienteTabs(bodyEl, nextBtn) {
     '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, <strong>Paciente</strong> abre en <strong>Resumen</strong>. Grupos: <strong>Resumen</strong>, <strong>Clínico</strong> y <strong>Salida</strong>. Labs, tendencias y cultivos viven en <strong>Laboratorio</strong>.</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Clínico</strong>: <strong>Estado actual</strong> → Eventualidades. Atajos: <strong>' +
     mod +
-    '+2</strong> cicla grupos · <strong>E</strong> EA/Eventualidades · <strong>T</strong> tendencias/cultivos.</p>';
+    '+1</strong> cicla grupos · <strong>E</strong> EA/Eventualidades · <strong>T</strong> tendencias/cultivos.</p>';
   showNext(nextBtn);
 }
 

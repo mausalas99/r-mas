@@ -242,6 +242,11 @@ export function toggleSidebarAutoHide() {
   applySidebarAutoHideUi();
 }
 
+/** True when the pointer is on the left workbench edge (hidden-sidebar reveal). */
+export function shouldRevealSidebarAt(clientX, appLeft) {
+  return Number(clientX) <= Number(appLeft) + 18;
+}
+
 export function initSidebarAutoHide() {
   var strip = document.getElementById('sidebar-hover-strip');
   var aside = document.getElementById('patient-sidebar');
@@ -256,6 +261,10 @@ export function initSidebarAutoHide() {
   function hide() {
     document.documentElement.classList.remove('sidebar-reveal');
   }
+  function appLeft() {
+    var app = document.querySelector('.app');
+    return app ? app.getBoundingClientRect().left : 0;
+  }
   strip.addEventListener('mouseenter', reveal);
   aside.addEventListener('mouseenter', reveal);
   aside.addEventListener('mouseleave', hide);
@@ -263,6 +272,10 @@ export function initSidebarAutoHide() {
     var rel = e.relatedTarget;
     if (rel && (aside === rel || aside.contains(rel))) return;
     hide();
+  });
+  document.addEventListener('mousemove', function (e) {
+    if (!readSidebarAutoHide()) return;
+    if (shouldRevealSidebarAt(e.clientX, appLeft())) reveal();
   });
 }
 
