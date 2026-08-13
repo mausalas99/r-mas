@@ -140,7 +140,7 @@ function applyInnerTabOnSamePatient(settings, inner) {
 }
 
 function migrateInnerOnPatientChange(inner, settings) {
-  var migrated = migrateGranularInner(inner || 'todo', settings);
+  var migrated = migrateGranularInner(inner || 'resumen', settings);
   if (migrated !== inner) {
     rt.setActiveInner(migrated);
     return migrated;

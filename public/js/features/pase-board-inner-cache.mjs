@@ -23,6 +23,7 @@ import {
   renderListadoForm,
 } from './expediente.mjs';
 import { renderTodoForm } from './todos.mjs';
+import { renderPatientDashboard } from './patient-dashboard/dashboard-mount.mjs';
 import { renderRecetaHu } from './receta-hu.mjs';
 import { rt } from './pase-board-runtime.mjs';
 import {
@@ -59,6 +60,11 @@ export function granularMountIsEmpty(tab) {
     var tend = document.getElementById("tendencias-container");
     if (!tend) return true;
     return !tend.querySelector(".tend-grid, .tend-toolbar, .tend-empty");
+  }
+  if (tab === "resumen") {
+    var dash = document.getElementById("patient-dashboard-mount");
+    if (!dash) return true;
+    return !dash.querySelector(".dash");
   }
   if (tab === "todo") {
     var tf = document.getElementById("todo-form");
@@ -138,7 +144,7 @@ export function warmExpedienteHeavyTabs() {
     if (warmGen !== _expedienteWarmGen) return;
     if (!rt.getActiveId() || rt.getActiveAppTab() !== "nota") return;
     var settings = rt.getSettings();
-    var active = migrateGranularInner(rt.getActiveInner() || "todo", settings);
+    var active = migrateGranularInner(rt.getActiveInner() || "resumen", settings);
     ["estadoActual", "tend"].forEach(function (tab) {
       if (tab === active) return;
       if (isInnerTabContentFresh(tab, settings)) return;
@@ -231,7 +237,13 @@ function renderLightGranularTab(tab) {
   markInnerTabRendered(tab);
 }
 
+function renderResumenInnerTab(tab) {
+  renderPatientDashboard();
+  markInnerTabRendered(tab);
+}
+
 var GRANULAR_TAB_RENDERERS = {
+  resumen: renderResumenInnerTab,
   estadoActual: renderEstadoActualInnerTab,
   vpo: function (tab) {
     renderVpo();
@@ -266,7 +278,7 @@ export function renderGranularInnerTab(tab, opts) {
 
 export function syncInnerTabVisualOnly() {
   var settings = rt.getSettings();
-  var tab = migrateGranularInner(rt.getActiveInner() || "todo", settings);
+  var tab = migrateGranularInner(rt.getActiveInner() || "resumen", settings);
   syncConsolidatedInnerTabButtons(tab, settings);
   syncConsolidatedPaneVisibility(tab, settings);
   syncConsolidatedSegmentBars(tab, settings);

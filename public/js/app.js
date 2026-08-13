@@ -73,6 +73,7 @@ import { windowHandlers as driveImportWindowHandlers } from './features/drive-im
 import { windowHandlers as estadoActualRegistroWindowHandlers } from './features/estado-actual-registro-modal.mjs';
 import { windowHandlers as agendaWindowHandlers } from './features/agenda.mjs';
 import { windowHandlers as expedienteWindowHandlers } from './features/expediente.mjs';
+import { windowHandlers as patientDashboardWindowHandlers } from './features/patient-dashboard/dashboard-mount.mjs';
 import { windowHandlers as notesIndicacionesWindowHandlers } from './features/notes-indicaciones.mjs';
 import { productivityWindowHandlers } from './features/productivity.mjs';
 import {
@@ -138,6 +139,7 @@ const allWindowHandlers = Object.assign(
   chartsWindowHandlersLazy,
   agendaWindowHandlers,
   expedienteWindowHandlers,
+  patientDashboardWindowHandlers,
   notesIndicacionesWindowHandlers,
   productivityWindowHandlers,
   settingsHelpWindowHandlersLazy,
@@ -246,8 +248,8 @@ document.addEventListener('visibilitychange', function () {
 });
 
 var activeId = null;
-var activeInner = 'todo';
-var activeAppTab = 'lab';
+var activeInner = 'resumen';
+var activeAppTab = 'nota';
 var settings = hydrateProfileSettings(storage.getSettings());
 
 attachProfileSettingsGetter(function () {

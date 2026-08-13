@@ -9,10 +9,10 @@ let runtime = {
   scrollActiveRondaCardIntoView() {},
   renderProcedureAgendaPanel() {},
   getActiveAppTab() {
-    return 'lab';
+    return 'nota';
   },
   getActiveInner() {
-    return 'todo';
+    return 'resumen';
   },
   getActiveId() {
     return null;
@@ -81,7 +81,7 @@ const I18N_ES = {
   'theme.toggle': 'Cambiar tema claro u oscuro',
   'theme.toggleTitle': 'Cambiar tema',
   'appTab.lab': 'Laboratorio',
-  'appTab.nota': 'Expediente',
+  'appTab.nota': 'Paciente',
   'appTab.med': 'Manejo',
   'appTab.agenda': 'Agenda',
   'roundMode.hint': 'Ronda: paciente siguiente / anterior',

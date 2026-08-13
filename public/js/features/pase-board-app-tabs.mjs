@@ -44,7 +44,7 @@ function refreshExpedienteOnNotaAppTabEnter() {
   scheduleAfterPaint(function () {
     if (rt.getActiveAppTab() !== 'nota') return;
     var settings = rt.getSettings();
-    var inner = migrateGranularInner(rt.getActiveInner() || 'todo', settings);
+    var inner = migrateGranularInner(rt.getActiveInner() || 'resumen', settings);
     syncInnerTabVisualOnly();
     if (granularMountIsEmpty(inner) || !isInnerTabContentFresh(inner, settings)) {
       renderGranularInnerTab(inner, granularMountIsEmpty(inner) ? { force: true } : undefined);

@@ -2,7 +2,7 @@
  * Registro de runtimes de features (inyección de dependencias al cargar).
  */
 import { storage } from './storage.js';
-import { getPatients, persistClinicalState } from './app-state.mjs';
+import { getPatients, getLabHistory, persistClinicalState } from './app-state.mjs';
 import { migrateToV3 } from './mode-features.mjs';
 import {
   splitResLabsByTipo,
@@ -101,6 +101,7 @@ import {
   registerExpedienteRuntime,
 } from './features/expediente.mjs';
 import { registerEventualidadesRuntime } from './features/eventualidades-panel.mjs';
+import { registerPatientDashboardRuntime } from './features/patient-dashboard/dashboard-mount.mjs';
 import {
   extractParsedValues,
   buildParsedBySectionFromResLabs,
@@ -208,7 +209,7 @@ const rt = {
   setActiveId(_id) {},
   getActiveAppTab() { return 'lab'; },
   setActiveAppTab(_v) {},
-  getActiveInner() { return 'todo'; },
+  getActiveInner() { return 'resumen'; },
   setActiveInner(_v) {},
   getSettings() { return {}; },
   setSettingsRef(_s) {},
@@ -288,6 +289,8 @@ function buildRuntimeContextUiDeps() {
     buildLabSetDateLine,
     getRoundOverviewMode,
     persistClinicalState,
+    getPatients,
+    getLabHistory,
     emitLiveSyncTodoUpsert: enqueueCloudTodoUpsert,
     requestDocumentJson,
     handleDocumentGenerateResponse,
@@ -444,6 +447,15 @@ export async function registerAllFeatureRuntimes() {
     })
   );
   registerEventualidadesRuntime(ctx);
+  registerPatientDashboardRuntime(
+    Object.assign({}, ctx, {
+      openLabRepoBatchModal: function () {
+        if (typeof window !== 'undefined' && typeof window.openLabRepoBatchModal === 'function') {
+          window.openLabRepoBatchModal();
+        }
+      },
+    })
+  );
   registerExpedienteRuntime(ctx);
   registerNotesIndicacionesRuntime(ctx);
   registerProcedureAgendaRuntime(ctx);

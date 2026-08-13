@@ -61,8 +61,8 @@ if (typeof window !== 'undefined') {
 
 const shellCtx = {
   getActiveId() { return null; },
-  getActiveAppTab() { return 'lab'; },
-  getActiveInner() { return 'todo'; },
+  getActiveAppTab() { return 'nota'; },
+  getActiveInner() { return 'resumen'; },
   getSettings() { return {}; },
 };
 

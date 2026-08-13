@@ -357,5 +357,11 @@ export function syncConsolidatedPaneVisibility(granularTab, settings, opts) {
     datosPane.classList.toggle('active', datosInModal);
     datosPane.hidden = !datosInModal;
   }
-  if (todoPane) todoPane.classList.toggle('active', target.tab === 'paciente');
+  if (todoPane) todoPane.classList.toggle('active', granularTab === 'todo');
+  var dashMount = document.getElementById('patient-dashboard-mount');
+  var pendMount = document.querySelector('#itab-content-paciente .exp-pendientes-mount');
+  var pendHeader = document.getElementById('exp-pendientes-header');
+  if (dashMount) dashMount.hidden = granularTab !== 'resumen';
+  if (pendMount) pendMount.hidden = granularTab !== 'todo';
+  if (pendHeader) pendHeader.hidden = granularTab !== 'todo';
 }
