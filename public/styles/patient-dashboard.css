@@ -111,6 +111,15 @@
   outline: 1.5px solid oklch(0.5 0.1 var(--h, 220));
 }
 
+html.dark .patient-dash .svc {
+  background: oklch(0.32 0.06 var(--h, 220));
+  color: oklch(0.86 0.08 var(--h, 220));
+}
+
+html.dark .patient-dash .svc.is-on {
+  outline-color: oklch(0.72 0.1 var(--h, 220));
+}
+
 .patient-dash .svc-add {
   border: 1px dashed color-mix(in oklab, var(--color-ink) 28%, transparent);
   background: transparent;
@@ -161,6 +170,8 @@
 }
 
 .patient-dash .bento.rest > .card {
+  display: flex;
+  flex-direction: column;
   height: 100%;
   min-height: 0;
   overflow: hidden;
@@ -192,6 +203,14 @@
 
 .patient-dash .card.clickable:hover {
   border-color: color-mix(in oklab, var(--color-ink) 32%, transparent);
+}
+
+.patient-dash .card.clickable:focus-visible,
+.patient-dash .draw:focus-visible,
+.patient-dash .link:focus-visible,
+.patient-dash .btn-sec:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
 
 .patient-dash .card-h {
