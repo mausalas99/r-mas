@@ -40,11 +40,15 @@ describe('bundle-renderer', () => {
     );
   });
 
-  it('index.html carga Chart UMD antes del bundle (BN-09)', () => {
-    const html = fs.readFileSync(path.join(repoRoot, 'public/index.html'), 'utf8');
-    const chartIdx = html.indexOf('vendor/chart.umd.min.js');
-    const bundleIdx = html.indexOf('js/app.bundle.mjs');
-    assert.ok(chartIdx >= 0 && bundleIdx >= 0);
-    assert.ok(chartIdx < bundleIdx);
+  it('early-boot carga Chart UMD antes del bundle (BN-09)', () => {
+    const boot = fs.readFileSync(
+      path.join(repoRoot, 'public/js/clinical-onboarding-early-boot.js'),
+      'utf8'
+    );
+    assert.match(boot, /appendScript\('\/vendor\/chart\.umd\.min\.js'/);
+    assert.match(
+      boot,
+      /appendScript\('\/vendor\/chart\.umd\.min\.js', function \(\) \{[\s\S]*?injectAppBundle\(\)/
+    );
   });
 });
