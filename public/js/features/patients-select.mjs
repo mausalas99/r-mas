@@ -31,6 +31,7 @@ import {
   syncRoundExpedienteLayout,
   scrollActiveRondaCardIntoView,
   setRoundOverviewMode,
+  isRoundOverviewInner,
 } from './patients-round.mjs';
 import { syncPatientBulkBar } from './patients-bulk-bar.mjs';
 import { showConfirmDialog } from '../ui-approval-card.mjs';
@@ -119,23 +120,25 @@ function showPatientViewShell() {
   if (patientView) patientView.style.display = 'flex';
 }
 
-function switchInnerToTodo() {
+function switchInnerToResumen() {
   if (getUiDensity() === 'normal') {
-    rt.setActiveInner('todo');
+    rt.setActiveInner('resumen');
     rt.syncInnerTabVisualOnly();
   } else {
-    rt.switchInnerTab('todo');
+    rt.switchInnerTab('resumen');
   }
 }
 
 function applyInnerTabOnSamePatient(settings, inner) {
   if (isModeSala(settings) && (inner === 'notas' || inner === 'indica' || !inner)) {
-    switchInnerToTodo();
+    switchInnerToResumen();
+    inner = 'resumen';
   } else if (!isModeSala(settings) && inner === 'listado') {
-    switchInnerToTodo();
+    switchInnerToResumen();
+    inner = 'resumen';
   }
   if (isPaseMode() && rt.getActiveAppTab() === 'nota') {
-    setRoundOverviewMode(inner === 'todo' || !inner);
+    setRoundOverviewMode(isRoundOverviewInner(inner));
   }
 }
 
@@ -194,7 +197,7 @@ function selectPatientCore(id) {
   if (patientChanged) {
     inner = migrateInnerOnPatientChange(inner, settings);
     if (isPaseMode() && rt.getActiveAppTab() === 'nota') {
-      setRoundOverviewMode(inner === 'todo' || !inner);
+      setRoundOverviewMode(isRoundOverviewInner(inner));
     }
   } else {
     applyInnerTabOnSamePatient(settings, inner);

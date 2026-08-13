@@ -74,4 +74,14 @@ describe('labs glance', () => {
     assert.equal(ids.includes('labs'), true);
     assert.equal(ids.length, 1);
   });
+
+  it('returns no envíos when todayKey misses (does not fall back to another day)', () => {
+    const model = buildLabsGlanceForDay({
+      todayKey: '2026-8-13',
+      orderedSets: [
+        { id: 'yest', fecha: '12/08/2026', hora: '07:14', resLabs: ['BH\tHb 8.2*'] },
+      ],
+    });
+    assert.equal(model.envios.length, 0);
+  });
 });

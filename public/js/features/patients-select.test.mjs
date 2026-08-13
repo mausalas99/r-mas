@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { isRoundOverviewInner } from './patients-round.mjs';
 
 /** Mirrors selectPatientCore patientChanged detection. */
 function patientChanged(prevId, id) {
@@ -34,5 +35,21 @@ describe('selectPatient list refresh branch', () => {
 
   it('re-renders list when highlight patch cannot run silently', () => {
     assert.equal(shouldFullRenderPatientList(true, false), true);
+  });
+});
+
+describe('isRoundOverviewInner', () => {
+  it('treats resumen, todo, and empty as Pase overview', () => {
+    assert.equal(isRoundOverviewInner('resumen'), true);
+    assert.equal(isRoundOverviewInner('todo'), true);
+    assert.equal(isRoundOverviewInner(''), true);
+    assert.equal(isRoundOverviewInner(null), true);
+    assert.equal(isRoundOverviewInner(undefined), true);
+  });
+
+  it('does not treat other inners as overview', () => {
+    assert.equal(isRoundOverviewInner('estadoActual'), false);
+    assert.equal(isRoundOverviewInner('tend'), false);
+    assert.equal(isRoundOverviewInner('notas'), false);
   });
 });

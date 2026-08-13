@@ -26,6 +26,11 @@ export function setRoundOverviewMode(v) {
   _roundOverviewMode = !!v;
 }
 
+/** Resumen glance and Pendientes child stay on the Pase overview. */
+export function isRoundOverviewInner(inner) {
+  return inner === 'resumen' || inner === 'todo' || !inner;
+}
+
 export function setLastRondaNavIds(ids) {
   _lastRondaNavIds = ids;
 }

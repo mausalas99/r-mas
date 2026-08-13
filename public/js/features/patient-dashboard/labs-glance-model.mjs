@@ -18,8 +18,7 @@ function dayKeysMatch(left, right) {
 
 function pickDayGroup(groups, todayKey) {
   if (!groups.length) return null;
-  const match = groups.find((group) => dayKeysMatch(group.dayKey, todayKey));
-  return match || groups[0];
+  return groups.find((group) => dayKeysMatch(group.dayKey, todayKey)) || null;
 }
 
 function sectionLabelFromRow(row) {

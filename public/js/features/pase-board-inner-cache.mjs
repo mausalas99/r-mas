@@ -96,10 +96,10 @@ function innerTabRenderCacheKey(tab) {
     pid +
     "|M" +
     (settings && settings.appMode ? settings.appMode : "sala");
-  if (tab === "tend" || tab === "cult") {
+  if (tab === "tend" || tab === "cult" || tab === "resumen") {
     key += "|L" + getLabHistoryRevision(pid);
   }
-  if (tab === "estadoActual") {
+  if (tab === "estadoActual" || tab === "resumen") {
     key += "|E" + estadoActualCacheSuffix(pid);
   }
   return key;

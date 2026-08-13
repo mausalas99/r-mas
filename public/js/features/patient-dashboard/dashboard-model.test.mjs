@@ -81,13 +81,13 @@ describe('dashboard assembler', () => {
     assert.deepEqual(model.vitals.glucometrias, [{ value: 142, time: '10:10' }]);
   });
 
-  it('keeps last 3 eventualidades and pendientes when 4 are provided', () => {
+  it('keeps the 3 most recent eventualidades when collect is newest-first', () => {
     const model = buildDashboardModel({
       patient: { nombre: 'X' },
-      eventualidades: ['e1', 'e2', 'e3', 'e4'],
+      eventualidades: ['newest', 'mid', 'older', 'oldest'],
       pendientes: ['p1', 'p2', 'p3', 'p4'],
     });
-    assert.deepEqual(model.eventualidades, ['e2', 'e3', 'e4']);
+    assert.deepEqual(model.eventualidades, ['newest', 'mid', 'older']);
     assert.deepEqual(model.pendientes, ['p2', 'p3', 'p4']);
   });
 

@@ -44,6 +44,11 @@ function lastItems(items, count) {
   return items.slice(-count);
 }
 
+function firstItems(items, count) {
+  if (!Array.isArray(items) || !items.length) return [];
+  return items.slice(0, count);
+}
+
 function resolveVitalsSnapshot(monitoreo) {
   if (monitoreo == null || typeof monitoreo !== 'object') return null;
   return deriveSnapshot(monitoreo);
@@ -79,7 +84,7 @@ export function buildDashboardModel({
     vitals: resolveVitalsSnapshot(p.monitoreo),
     labs,
     ea: eaInput ? buildEaGlance(eaInput) : { kpis: [], soap: [] },
-    eventualidades: lastItems(eventualidades, 3),
+    eventualidades: firstItems(eventualidades, 3),
     pendientes: lastItems(pendientes, 3),
   };
 }
