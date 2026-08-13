@@ -1,34 +1,34 @@
-version: 8.1.0
+version: 8.1.1
 files:
-  - url: R+-8.1.0-x64.exe
-    sha512: wE+yv9ooDrZ32Dt+gjedQkUWg86MGYaUNp6zzgkIXB2zYKiEHy4OwkTLukB/GASyOuzowuCXqm6sitmWOdB0Ow==
-    size: 122393013
-path: R+-8.1.0-x64.exe
-sha512: wE+yv9ooDrZ32Dt+gjedQkUWg86MGYaUNp6zzgkIXB2zYKiEHy4OwkTLukB/GASyOuzowuCXqm6sitmWOdB0Ow==
-releaseDate: '2026-08-10T19:59:47.000Z'
+  - url: R+-8.1.1-x64.exe
+    sha512: tiBr+bY33Kq7r3hRzS1KiEPv/DXnx3YYagHPMcWmythhI/evITYBS72gb2TT7eQaenGwRtFrE1151Sev73PtKQ==
+    size: 122489695
+path: R+-8.1.1-x64.exe
+sha512: tiBr+bY33Kq7r3hRzS1KiEPv/DXnx3YYagHPMcWmythhI/evITYBS72gb2TT7eQaenGwRtFrE1151Sev73PtKQ==
+releaseDate: '2026-08-13T15:29:42.000Z'
 releaseNotes: |
-  8.1.0 corrige el censo cross-sala en Nube: expediente, labs y asignaciones van al room de la sala operativa del equipo (no solo la sala activa de la Mac). Tendencias muestra marcadores de eventualidades en las gráficas y permite alta con categoría/fecha. El Worker elimina la caché KV de revisión (pull solo D1). Incluye mejoras de filtros de censo, EA ventilatorio y roster de equipos.
+  8.1.1 lleva el censo de escritorio a Filtros (R1–R3 ven el censo completo y lo estrechan; iPad sigue en espejo de equipo), protege el borrado de pacientes (Admin/R4 vs equipo; confirmación si Nube lo quitó en otra Mac) y activa clinical-repo: escrituras SQLCipher-first con change-log hacia Nube (schema v23). Incluye SOAP/reclasificar en Estado Actual y Recuérdame durable.
   
-  Expediente al room correcto — Pacientes asignados a un equipo de otra sala (p. ej. Torre HU) sincronizan expediente, labs y censo al room Nube de esa sala, aunque la Mac esté en Sala 1/2/E.
+  Escritorio via Filtros — R1–R3 ya no ocultan el censo por equipo: ven el censo completo y lo estrechan con Filtros (sala + equipo por defecto). Evita que desaparezcan expedientes tras archivo de equipo o reasignación admin.
   
-  Asignación de equipo — Al asignar paciente a equipo de otra sala, se empuja censo y expediente al room destino.
+  iPad — Sigue el espejo duro de equipo (sin cambio de política móvil).
   
-  Reconciliación Nube — Tras asignaciones clinicalOps, si faltan expedientes en esta Mac, pull automático del room de la sala (reemplaza reconcile LAN).
+  Sala en Filtros — Preferencia persistente; R1–R3 default a su sala, Admin/R4 a Todas.
   
-  Worker — Eliminada caché KV de revisión; pull lee revisión solo en D1 (menos complejidad, menos cupo KV).
+  Quién puede borrar — Admin/R4: cualquier expediente. Resto: solo pacientes de su equipo (UI, toast y lote).
   
-  Marcadores en gráficas — Transfusión, biopsia, procedimiento y otro aparecen como puntos coloreados en Tendencias (un marcador por día).
+  Wipe remoto — Si un admin (u otro equipo) elimina en Nube, esta Mac pregunta antes de quitarlo localmente («Eliminar aquí» / «Conservar aquí»). Los borrados propios se aplican en silencio.
   
-  Alta desde Tendencias — Modal con categoría, fecha y detalle (producto en transfusiones).
+  Schema v23 — Tabla clinical_change_log; escrituras canónicas vía lib/clinical-repo/ y db:clinical-command.
   
-  Campo kind — Eventualidades guardan categoría explícita además del texto libre.
+  Projector — El change-log drena a la cola Nube (eventualidades + projector encendidos por defecto; opt-out 0).
   
-  Ventilatorio — Refinamientos en hints PaFi/ROX, aire ambiente y gasometría venosa.
+  Recuérdame durable — Token en userData (IPC + flush al salir); no se pierde al actualizar.
   
-  NM — Mejoras en grid de categorías y vacíos.
+  SOAP — Selector de destino al clasificar medicamentos.
   
-  Filtros de censo — Barra de filtros con popover anclado al sidebar; preferencias persisten al recrear la barra.
+  Reclasificar — Propuestas en EA que sobreviven al refresco del panel (soapCatOverride).
   
-  Roster equipos — UX de pick-team para residentes con equipos en directorio.
+  ABX — Sync desde receta.
   
-  Estilos actualizados para EA, expediente y workbench surfaces.
+  Etiqueta eTFG simplificada; CTA de eventualidad en el detalle; se quita la barra + Eventualidad del toolbar.
