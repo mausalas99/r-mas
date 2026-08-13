@@ -198,15 +198,32 @@ function wireDashboardOnce() {
   }
 }
 
+export function resolveDashboardPaintTargets(opts) {
+  opts = opts || {};
+  if (opts.hostEl) return [opts.hostEl];
+  var inner = opts.inner || 'resumen';
+  var targets = [];
+  if (opts.classic && inner === 'resumen') targets.push(opts.classic);
+  if (opts.ronda) targets.push(opts.ronda);
+  return targets;
+}
+
 export function renderPatientDashboard(hostEl) {
   wireDashboardOnce();
   var inner = rt.getActiveInner() || 'resumen';
   syncPacienteCompositeVisibility(inner);
-  var mount = hostEl || document.getElementById('patient-dashboard-mount');
-  if (!mount) return;
-  wireDashboardHost(mount);
-  if (!hostEl && inner !== 'resumen') return;
-  mount.innerHTML = renderDashboardHtml(collectDashboardModel(inner));
+  var targets = resolveDashboardPaintTargets({
+    hostEl: hostEl || null,
+    classic: document.getElementById('patient-dashboard-mount'),
+    ronda: document.getElementById('patient-ronda-dashboard-host'),
+    inner: inner,
+  });
+  if (!targets.length) return;
+  var html = renderDashboardHtml(collectDashboardModel(inner));
+  targets.forEach(function (mount) {
+    wireDashboardHost(mount);
+    mount.innerHTML = html;
+  });
 }
 
 export const windowHandlers = {

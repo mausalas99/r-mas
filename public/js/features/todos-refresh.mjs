@@ -3,25 +3,6 @@ import { isPaseMode } from './chrome.mjs';
 import { aid, getTodosRuntime } from './todos-runtime.mjs';
 import { renderTodoFormIn } from './todos-list-render.mjs';
 
-function refreshRondaTodoMount() {
-  var overview = document.getElementById('patient-ronda-overview');
-  var ronda = document.getElementById('patient-ronda-todos-mount');
-  if (!ronda) return;
-  var rt = getTodosRuntime();
-  var showRonda =
-    isPaseMode() &&
-    overview &&
-    overview.style.display !== 'none' &&
-    aid() &&
-    rt.getActiveAppTab() === 'nota' &&
-    rt.getRoundOverviewMode();
-  if (showRonda) {
-    renderTodoFormIn(ronda, 'ronda-');
-  } else {
-    while (ronda.firstChild) ronda.removeChild(ronda.firstChild);
-  }
-}
-
 /** LAN-scoped repaint: active patient todo form + pase board when sync touched one patient. */
 export function refreshTodoUIsForPatient(patientId, opts) {
   opts = opts || {};
@@ -31,7 +12,6 @@ export function refreshTodoUIsForPatient(patientId, opts) {
   if (aid() === pid) {
     var todoForm = document.getElementById('todo-form');
     if (todoForm) renderTodoFormIn(todoForm, '');
-    refreshRondaTodoMount();
   }
 
   if (isPaseMode() && !opts.skipPaseBoard) {
@@ -60,7 +40,6 @@ export function refreshTodoUIsForPatients(patientIds) {
 export function refreshAllTodoUIs() {
   var todoForm = document.getElementById('todo-form');
   if (todoForm) renderTodoFormIn(todoForm, '');
-  refreshRondaTodoMount();
   if (isPaseMode()) getTodosRuntime().renderPaseBoard();
 }
 

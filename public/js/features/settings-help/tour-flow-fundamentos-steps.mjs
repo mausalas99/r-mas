@@ -30,7 +30,7 @@ function getMapTabsCopy() {
   }
   if (tourState.guidedTourBranch === 'interconsulta') {
     return (
-      '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Paciente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong>. Atajo <strong>' +
+      '<p style="margin:0;line-height:1.5;">Arriba: <strong>Paciente</strong>, <strong>Laboratorio</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong>. Atajo <strong>' +
       mod +
       '+1…4</strong> salta entre ellas; <strong>repite ' +
       mod +
@@ -38,7 +38,7 @@ function getMapTabsCopy() {
     );
   }
   return (
-    '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Paciente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong>. <strong>' +
+    '<p style="margin:0;line-height:1.5;">Arriba: <strong>Paciente</strong>, <strong>Laboratorio</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong>. <strong>' +
     mod +
     '+1…4</strong> cambia de pestaña; <strong>repite ' +
     mod +

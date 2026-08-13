@@ -151,4 +151,14 @@ describe('tour intro launch', () => {
     const labWorkbench = readFileSync(join(dir, '..', 'lab-panel-workbench.mjs'), 'utf8');
     assert.match(labWorkbench, /notifyTourAfterBulkLabStore/);
   });
+
+  it('getMapTabsCopy lists Paciente before Laboratorio to match the strip', () => {
+    const src = readFileSync(join(dir, 'tour-flow-fundamentos-steps.mjs'), 'utf8');
+    const matches = [...src.matchAll(/Arriba: <strong>(\w+)<\/strong>, <strong>(\w+)<\/strong>/g)];
+    assert.ok(matches.length >= 1, 'expected Arriba: tab list in getMapTabsCopy');
+    matches.forEach((m) => {
+      assert.equal(m[1], 'Paciente');
+      assert.equal(m[2], 'Laboratorio');
+    });
+  });
 });

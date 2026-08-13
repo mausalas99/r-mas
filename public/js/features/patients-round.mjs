@@ -151,12 +151,6 @@ export function renderRoundOverviewPanels() {
   if (host) renderPatientDashboard(host);
 }
 
-export function closeRondaQuickMoreMenu() {
-  document.querySelectorAll(".ronda-quick-more[open]").forEach(function (d) {
-    d.removeAttribute("open");
-  });
-}
-
 export function returnToRoundOverview() {
   if (!isPaseMode()) return;
   _roundOverviewMode = true;

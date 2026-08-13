@@ -42,3 +42,13 @@ describe('patient switch preserves expediente tab', () => {
     assert.equal(t('appTab.nota'), 'Paciente');
   });
 });
+
+describe('chrome tab-order copy', () => {
+  it('density hint lists Paciente before Laboratorio (strip order)', () => {
+    const hint = t('settings.uiDensityHint');
+    const pac = hint.indexOf('Paciente');
+    const lab = hint.indexOf('Laboratorio');
+    assert.ok(pac >= 0 && lab > pac, hint);
+  });
+});
+

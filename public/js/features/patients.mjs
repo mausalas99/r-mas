@@ -31,7 +31,6 @@ import {
   setRoundOverviewMode,
   syncRoundExpedienteLayout,
   renderRoundOverviewPanels,
-  closeRondaQuickMoreMenu,
   returnToRoundOverview,
   openFullExpedienteFromRound,
   advanceRondaPatient,
@@ -109,7 +108,6 @@ export {
   togglePatientRoundSeen,
   syncRoundExpedienteLayout,
   renderRoundOverviewPanels,
-  closeRondaQuickMoreMenu,
   returnToRoundOverview,
   openFullExpedienteFromRound,
   advanceRondaPatient,
@@ -306,6 +304,5 @@ export const windowHandlers = {
   togglePatientCensusFilters,
   openFullExpedienteFromRound,
   returnToRoundOverview,
-  closeRondaQuickMoreMenu,
   ...patientRegistroModalWindowHandlers,
 };
