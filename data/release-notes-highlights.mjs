@@ -2291,6 +2291,39 @@ var RELEASE_NOTES_809 = [
   },
 ];
 
+var RELEASE_NOTES_811 = [
+  {
+    title: 'Censo por Filtros',
+    body:
+      'En escritorio, R1–R3 ven el censo completo y lo estrechan con <strong>Filtros</strong> (sala + equipo). El iPad sigue el espejo de equipo.',
+  },
+  {
+    title: 'Borrado con permiso',
+    body:
+      'Admin/R4 pueden quitar cualquier expediente; el resto solo pacientes de su equipo. Si Nube lo borró en otra Mac, esta pregunta antes de quitarlo aquí.',
+  },
+  {
+    title: 'Clinical-repo',
+    body:
+      'Escrituras locales primero (schema <strong>v23</strong>) y cola hacia Nube. Eventualidades y projector encendidos por defecto.',
+  },
+  {
+    title: 'Estado Actual / SOAP',
+    body:
+      'Destino SOAP al clasificar meds, reclasificar que sobrevive al refresco, y ABX alineado con receta.',
+  },
+  {
+    title: 'Recuérdame durable',
+    body:
+      'El token queda en el dispositivo (<strong>userData</strong>) y no se pierde al actualizar. No usar en Macs compartidas.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.1.1 en todas</strong> las Macs el mismo día. Sin wipe; la migración a v23 corre al abrir. Worker de 8.1.0 sigue vigente.',
+  },
+];
+
 var RELEASE_NOTES_810 = [
   {
     title: 'Censo cross-sala',
@@ -2325,9 +2358,10 @@ var RELEASE_NOTES_810 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_810;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_811;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.1.1': RELEASE_NOTES_811,
   '8.1.0': RELEASE_NOTES_810,
   '8.0.9': RELEASE_NOTES_809,
   '8.0.8': RELEASE_NOTES_808,

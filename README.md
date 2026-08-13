@@ -39,10 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.1.0](https://github.com/mausalas99/r-mas/releases/tag/v8.1.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.1.1](https://github.com/mausalas99/r-mas/releases/tag/v8.1.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 8.1.1 (censo Filtros + clinical-repo + wipe Nube)
+
+- **Censo por Filtros** — Escritorio: R1–R3 ven el censo completo y lo estrechan con Filtros (sala + equipo). iPad sigue el espejo de equipo.
+- **Borrado** — Admin/R4 cualquier expediente; resto solo su equipo. Wipe remoto en Nube pide confirmación en esta Mac.
+- **Clinical-repo** — Schema v23, escrituras SQLCipher-first y cola Nube (projector + eventualidades on).
+- **EA / SOAP** — Destino SOAP, reclasificar que sobrevive al refresco, ABX desde receta.
+- **Recuérdame durable** — Token en `userData`; no se pierde al actualizar.
+
+Notas: `docs/RELEASE_NOTES_8.1.1.txt`.
 
 ## R+ 8.1.0 (censo cross-sala + Tendencias eventualidades)
 
