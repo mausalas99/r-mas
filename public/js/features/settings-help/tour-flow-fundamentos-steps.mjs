@@ -30,19 +30,19 @@ function getMapTabsCopy() {
   }
   if (tourState.guidedTourBranch === 'interconsulta') {
     return (
-      '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong>. Atajo <strong>' +
+      '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Paciente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong>. Atajo <strong>' +
       mod +
       '+1…4</strong> salta entre ellas; <strong>repite ' +
       mod +
-      '+2</strong> para ciclar Paciente → Clínico → Resultados → Salida.</p>'
+      '+2</strong> para ciclar Resumen → Clínico → Salida.</p>'
     );
   }
   return (
-    '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong>. <strong>' +
+    '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Paciente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong>. <strong>' +
     mod +
     '+1…4</strong> cambia de pestaña; <strong>repite ' +
     mod +
-    '+2</strong> rota los grupos del expediente.</p>'
+    '+2</strong> cicla Resumen → Clínico → Salida.</p>'
   );
 }
 
@@ -101,7 +101,7 @@ function renderLabView(bodyEl, nextBtn) {
 function renderIcExpedienteTabs(bodyEl, nextBtn) {
   var mod = getWrapPaseShortcutKey();
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, el expediente se agrupa en cuatro pestañas: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Clínico</strong> (Nota, Indicaciones), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Receta HU en PDF).</p>' +
+    '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, <strong>Paciente</strong> abre en <strong>Resumen</strong>. Grupos: <strong>Resumen</strong>, <strong>Clínico</strong> (Nota, Indicaciones) y <strong>Salida</strong> (Receta HU en PDF). Labs, tendencias y cultivos viven en <strong>Laboratorio</strong>.</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Receta HU</strong> exporta el PDF oficial 000-061-R-06-12. Atajos: <strong>' +
     mod +
     '+2</strong> cicla grupos · <strong>E/T/D</strong> saltan a EA, tendencias o datos.</p>';
@@ -111,7 +111,7 @@ function renderIcExpedienteTabs(bodyEl, nextBtn) {
 function renderSalaExpedienteTabs(bodyEl, nextBtn) {
   var mod = getWrapPaseShortcutKey();
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, el expediente tiene cuatro pestañas: <strong>Paciente</strong>, <strong>Clínico</strong>, <strong>Resultados</strong> y <strong>Salida</strong>.</p>' +
+    '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, <strong>Paciente</strong> abre en <strong>Resumen</strong>. Grupos: <strong>Resumen</strong>, <strong>Clínico</strong> y <strong>Salida</strong>. Labs, tendencias y cultivos viven en <strong>Laboratorio</strong>.</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Clínico</strong>: <strong>Estado actual</strong> → Eventualidades. Atajos: <strong>' +
     mod +
     '+2</strong> cicla grupos · <strong>E</strong> EA/Eventualidades · <strong>T</strong> tendencias/cultivos.</p>';
@@ -139,7 +139,7 @@ function renderIcExports(bodyEl, nextBtn) {
 
 function renderSalaTend(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">En <strong>Expediente → Tendencias</strong> ves mini-gráficas cuando hay varios laboratorios en el tiempo.</p>';
+    '<p style="margin:0;line-height:1.5;">En <strong>Laboratorio → Tendencias</strong> ves mini-gráficas cuando hay varios laboratorios en el tiempo.</p>';
   showNext(nextBtn);
 }
 
@@ -207,21 +207,21 @@ function renderEventualidades(bodyEl, nextBtn) {
 
 function renderListadoProblemas(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;"><strong>Expediente → Salida → Listado</strong>: exporta problemas activos e inactivos a Word (título + incisos <strong>A) CLÍNICA</strong>, <strong>B) EXPLORACIÓN</strong>, etc.).</p>' +
+    '<p style="margin:0;line-height:1.5;"><strong>Paciente → Salida → Listado</strong>: exporta problemas activos e inactivos a Word (título + incisos <strong>A) CLÍNICA</strong>, <strong>B) EXPLORACIÓN</strong>, etc.).</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El demo trae un ejemplo. Pulsa <strong>Generar Listado</strong> (resaltado) o <strong>Siguiente</strong>.</p>';
   showNext(nextBtn);
 }
 
 function renderSalaVpo(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;"><strong>Expediente → Salida → VPO</strong>: documenta escalas de riesgo (ASA, RCRI, Gupta, ARISCAT, Caprini) con el resultado que obtengas en tu calculadora; EKG/Rx editables y texto copiable. Solo en <strong>Sala</strong>.</p>' +
+    '<p style="margin:0;line-height:1.5;"><strong>Paciente → Salida → VPO</strong>: documenta escalas de riesgo (ASA, RCRI, Gupta, ARISCAT, Caprini) con el resultado que obtengas en tu calculadora; EKG/Rx editables y texto copiable. Solo en <strong>Sala</strong>.</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Completa o revisa los campos resaltados y pulsa <strong>Siguiente</strong>.</p>';
   showNext(nextBtn);
 }
 
 function renderSalaRecetaHu(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;"><strong>Expediente → Salida → Receta HU</strong>: receta médica en formato oficial <strong>000-061-R-06-12</strong> (PDF). Medicamentos, estudios y cuidados; botón <strong>Exportar PDF</strong> cuando esté listo.</p>' +
+    '<p style="margin:0;line-height:1.5;"><strong>Paciente → Salida → Receta HU</strong>: receta médica en formato oficial <strong>000-061-R-06-12</strong> (PDF). Medicamentos, estudios y cuidados; botón <strong>Exportar PDF</strong> cuando esté listo.</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">En el tutorial no hace falta exportar; <strong>Siguiente</strong> para la <strong>Agenda</strong>.</p>';
   showNext(nextBtn);
 }

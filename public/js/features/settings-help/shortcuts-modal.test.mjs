@@ -14,6 +14,14 @@ describe('shortcuts-data', () => {
     assert.ok(SHORTCUT_GROUPS.length >= 4);
     assert.ok(SHORTCUT_GROUPS[0].items.length > 0);
   });
+
+  it('⌘1 Laboratorio and ⌘2 Paciente (inner cycle Resumen → Clínico → Salida)', () => {
+    var tabs = SHORTCUT_GROUPS[0].items;
+    assert.equal(tabs[0].label, 'Laboratorio');
+    assert.equal(tabs[1].label, 'Paciente');
+    assert.match(tabs[1].hint || '', /Resumen.*Clínico.*Salida/);
+    assert.doesNotMatch(tabs[1].hint || '', /Resultados/);
+  });
 });
 
 describe('shortcuts-modal DOM', () => {

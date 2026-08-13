@@ -15,7 +15,7 @@ export const SALA_CHAPTERS = [
   },
   {
     id: 'ch-chart',
-    title: 'Expediente · Clínico',
+    title: 'Paciente · Clínico',
     stepIds: [
       'sala_expediente_tabs',
       'estado_actual',
@@ -61,7 +61,7 @@ export const IC_CHAPTERS = [
   },
   {
     id: 'ch-ic-chart',
-    title: 'Expediente y clínico',
+    title: 'Paciente y clínico',
     stepIds: [
       'ic_expediente_tabs',
       'sala_tend',
@@ -163,7 +163,7 @@ export const GUARDIA_V7_HUB_MODULES = GUARDIA_V7_CHAPTERS.map((ch) => ({
 
 export const SALA_HUB_MODULES = [
   { id: 'mod-ch1', chapterId: 'ch-patient-lab', label: 'Laboratorio y pacientes', branch: 'sala' },
-  { id: 'mod-ch2', chapterId: 'ch-chart', label: 'Expediente · Clínico', branch: 'sala' },
+  { id: 'mod-ch2', chapterId: 'ch-chart', label: 'Paciente · Clínico', branch: 'sala' },
   { id: 'mod-ch3', chapterId: 'ch-results', label: 'Resultados (tendencias)', branch: 'sala' },
   { id: 'mod-ch4', chapterId: 'ch-salida', label: 'Medicamentos y salida', branch: 'sala' },
   { id: 'mod-ch5', chapterId: 'ch-agenda', label: 'Agenda del turno', branch: 'sala' },

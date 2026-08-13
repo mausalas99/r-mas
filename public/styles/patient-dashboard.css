@@ -571,3 +571,7 @@ html.dark .patient-dash .svc.is-on {
   min-height: 0;
   width: 100%;
 }
+
+#patient-ronda-dashboard-host {
+  min-width: 0;
+}

@@ -100,7 +100,7 @@ function getGuardiaV7StepBody(stepId) {
     gv7_guardia_toggle:
       '<p style="margin:0;line-height:1.5;"><strong>Censo: solo entregados</strong> filtra la grilla a pacientes que te entregaron en este turno, sin cambiar el modo Entrega.</p>',
     gv7_guardia_exit:
-      '<p style="margin:0;line-height:1.5;">Pulsa de nuevo <strong>Guardia</strong> para volver a la vista Normal (Laboratorio, Expediente, etc.).</p>',
+      '<p style="margin:0;line-height:1.5;">Pulsa de nuevo <strong>Guardia</strong> para volver a la vista Normal (Laboratorio, Paciente, etc.).</p>',
     gv7_entrega_phase:
       '<p style="margin:0;line-height:1.5;">Pulsa <strong>Entrega</strong> en la barra del censo para abrir el listado de handoff por paciente antes del turno activo.</p>',
     gv7_entrega_patient:

@@ -424,33 +424,7 @@
             </div>
           </header>
           <div class="ronda-overview-scroll">
-            <section class="ronda-overview-card" aria-labelledby="ronda-labs-heading">
-              <div class="ronda-overview-card-head">
-                <h3 id="ronda-labs-heading">Laboratorio reciente</h3>
-                <button type="button" class="ronda-link-btn" onclick="switchAppTab('lab')">Ir a Laboratorio</button>
-              </div>
-              <div id="patient-ronda-labs-body" class="ronda-overview-card-body"></div>
-            </section>
-            <section class="ronda-overview-card" aria-labelledby="ronda-todo-heading">
-              <div class="ronda-overview-card-head">
-                <h3 id="ronda-todo-heading">Pendientes</h3>
-                <button type="button" class="ronda-link-btn" onclick="openFullExpedienteFromRound('todo')">Ver en pestaña</button>
-              </div>
-              <div id="patient-ronda-todos-mount" class="ronda-overview-card-body rpc-form-stack-tight"></div>
-            </section>
-            <div class="ronda-overview-quick" role="group" aria-label="Accesos al expediente">
-              <button type="button" class="ronda-quick-primary" onclick="openFullExpedienteFromRound('notas')">Nota completa</button>
-              <details class="ronda-quick-more">
-                <summary class="ronda-quick-more-btn" aria-label="Más secciones del expediente">Más</summary>
-                <div class="ronda-quick-more-menu" role="menu">
-                  <button type="button" class="ronda-quick-more-item" role="menuitem" onclick="closeRondaQuickMoreMenu(); openFullExpedienteFromRound('indica');">Indicaciones</button>
-                  <button type="button" class="ronda-quick-more-item" role="menuitem" onclick="closeRondaQuickMoreMenu(); openFullExpedienteFromRound('tend');">Tendencias</button>
-                  <button type="button" class="ronda-quick-more-item" role="menuitem" onclick="closeRondaQuickMoreMenu(); openFullExpedienteFromRound('cult');">Cultivos</button>
-                  <button type="button" class="ronda-quick-more-item" id="ronda-quick-datos" role="menuitem" onclick="closeRondaQuickMoreMenu(); openFullExpedienteFromRound('datos');" style="display:none;">Datos</button>
-                  <button type="button" class="ronda-quick-more-item" id="ronda-quick-listado" role="menuitem" onclick="closeRondaQuickMoreMenu(); openFullExpedienteFromRound('listado');" style="display:none;">Listado de problemas</button>
-                </div>
-              </details>
-            </div>
+            <div id="patient-ronda-dashboard-host" class="patient-dash"></div>
           </div>
         </div>
         <div id="patient-expediente-classic" class="patient-expediente-classic">

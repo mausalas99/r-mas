@@ -1,7 +1,5 @@
-import { getPatients, getNotes } from '../app-state.mjs';
+import { getPatients } from '../app-state.mjs';
 import { isModeSala } from '../mode-features.mjs';
-import { sortLabHistoryChronological } from '../tend-core.mjs';
-import { ensureParsedLabHistoryCached } from '../lab-history-set.mjs';
 import { t, isPaseMode } from './chrome.mjs';
 import { rt } from './patients-runtime-state.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
@@ -14,6 +12,7 @@ import {
 } from './patients-bulk-select.mjs';
 import { isPatientAdmissionIncomplete } from '../patient-admission-incomplete.mjs';
 import { renderPatientSidebarBodyHtml } from '../patient-sidebar-card.mjs';
+import { renderPatientDashboard } from './patient-dashboard/dashboard-mount.mjs';
 
 var _lastRondaNavIds = [];
 var _roundOverviewMode = true;
@@ -88,108 +87,12 @@ export function togglePatientRoundSeen(ev, patientId) {
   patientsBridge.renderPatientList();
 }
 
-function buildRondaLabsMetaHtml(newest) {
-  var parts = ['<div class="ronda-labs-meta">'];
-  var rawFe =
-    newest.fecha === 'Anterior'
-      ? ''
-      : normalizeFechaForRonda(newest.fecha) || String(newest.fecha || '').trim() || '';
-  if (newest.id === 'migrated-anterior') {
-    parts.push('<span class="ronda-labs-date">' + esc(rawFe ? 'Anterior · ' + rawFe : 'Anterior') + '</span>');
-  } else {
-    parts.push('<span class="ronda-labs-date">' + esc(rawFe || '—') + '</span>');
-  }
-  if (newest.hora && String(newest.hora).trim()) {
-    parts.push('<span>' + esc(String(newest.hora).trim().slice(0, 8)) + '</span>');
-  }
-  var tipo = rt.primaryTipoForLabSet(newest.resLabs);
-  if (tipo && tipo !== 'labs') {
-    parts.push(
-      '<span>' +
-        esc(tipo === 'mixed' ? 'Mixto' : tipo === 'cultivo' ? 'Cultivo' : tipo) +
-        '</span>'
-    );
-  }
-  parts.push('</div>');
-  return parts.join('');
-}
-
-function buildRondaLabsLinesHtml(resLabs) {
-  var lines = ['<ul class="ronda-labs-lines">'];
-  resLabs.forEach(function (L) {
-    var line = String(L || '').trim();
-    if (!line) return;
-    lines.push('<li>' + esc(line) + '</li>');
-  });
-  lines.push('</ul>');
-  return lines.join('');
-}
-
-function buildRondaLabsFromHistory(patientId) {
-  var hist = sortLabHistoryChronological(ensureParsedLabHistoryCached(patientId));
-  if (!hist.length) return '';
-  var newest = hist[0];
-  if (!newest.resLabs || !newest.resLabs.length) return buildRondaLabsMetaHtml(newest);
-  return buildRondaLabsMetaHtml(newest) + buildRondaLabsLinesHtml(newest.resLabs);
-}
-
-function buildRondaLabsFromNote(patientId) {
-  var n = getNotes()[patientId];
-  if (!n || !n.estudios || !String(n.estudios).trim()) return '';
-  var lines = String(n.estudios)
-    .split('\n')
-    .map(function (l) {
-      return l.trim();
-    })
-    .filter(Boolean);
-  var skip = { laboratorio: 1, cultivos: 1 };
-  var body = [];
-  lines.forEach(function (L) {
-    if (skip[L.toLowerCase()]) return;
-    if (/^fecha|^----/i.test(L)) return;
-    body.push('<li>' + esc(L) + '</li>');
-  });
-  if (!body.length) return '';
-  return (
-    '<p class="ronda-labs-fallback-label">Desde nota · estudios auxiliares</p>' +
-    '<ul class="ronda-labs-lines">' +
-      body.join('') +
-      '</ul>'
-  );
-}
-
-function buildRondaRecentLabsBlockHtml(patientId) {
-  if (!patientId) {
-    return '<p class="ronda-panel-empty">Sin datos.</p>';
-  }
-  var fromHistory = buildRondaLabsFromHistory(patientId);
-  if (fromHistory) return fromHistory;
-  var fromNote = buildRondaLabsFromNote(patientId);
-  if (fromNote) return fromNote;
-  return (
-    '<p class="ronda-panel-empty">Sin laboratorios recientes. ' +
-    'Puedes cargar o enviar resultados desde la pestaña Laboratorio.</p>'
-  );
-}
-
-/** Lightweight fecha normalizer for ronda banner (delegates to app when available). */
-function normalizeFechaForRonda(fecha) {
-  if (typeof rt.normalizeFechaLabHistory === 'function') {
-    return rt.normalizeFechaLabHistory(fecha);
-  }
-  return String(fecha || '').trim();
-}
-
 function hideRoundOverviewLayout(overview, classic, fullbar) {
   overview.style.display = 'none';
   classic.style.display = 'flex';
   if (fullbar) {
     fullbar.classList.remove('is-visible');
     fullbar.setAttribute('aria-hidden', 'true');
-  }
-  var rm = document.getElementById('patient-ronda-todos-mount');
-  if (rm) {
-    while (rm.firstChild) rm.removeChild(rm.firstChild);
   }
   rt.syncWorkContextChrome();
 }
@@ -234,13 +137,6 @@ function formatRoundPatientMeta(p) {
   );
 }
 
-function syncRoundQuickButtons(gala) {
-  var qDatos = document.getElementById('ronda-quick-datos');
-  if (qDatos) qDatos.style.display = gala ? '' : 'none';
-  var qList = document.getElementById('ronda-quick-listado');
-  if (qList) qList.style.display = gala ? '' : 'none';
-}
-
 export function renderRoundOverviewPanels() {
   if (!isPaseMode() || !_roundOverviewMode || rt.getActiveAppTab() !== 'nota' || !rt.getActiveId()) return;
   var titleEl = document.getElementById('patient-ronda-patient-label');
@@ -251,10 +147,8 @@ export function renderRoundOverviewPanels() {
   });
   if (titleEl) titleEl.textContent = p ? p.nombre || 'Paciente' : 'Paciente';
   if (metaEl) metaEl.textContent = formatRoundPatientMeta(p);
-  var labsBody = document.getElementById('patient-ronda-labs-body');
-  if (labsBody) labsBody.innerHTML = buildRondaRecentLabsBlockHtml(aid);
-  rt.refreshAllTodoUIs();
-  syncRoundQuickButtons(isModeSala(rt.getSettings()));
+  var host = document.getElementById('patient-ronda-dashboard-host');
+  if (host) renderPatientDashboard(host);
 }
 
 export function closeRondaQuickMoreMenu() {

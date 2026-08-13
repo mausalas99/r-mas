@@ -170,21 +170,26 @@ function handleDashboardAction(action, el) {
   }
 }
 
-var dashWired = false;
+var dashWiredHosts = new Set();
+var dashBackWired = false;
+
+function wireDashboardHost(mount) {
+  if (!mount || dashWiredHosts.has(mount)) return;
+  dashWiredHosts.add(mount);
+  mount.addEventListener('click', function (ev) {
+    var t = ev.target;
+    if (!t || typeof t.closest !== 'function') return;
+    var btn = t.closest('[data-dash-action]');
+    if (!btn || !mount.contains(btn)) return;
+    handleDashboardAction(btn.getAttribute('data-dash-action'), btn);
+  });
+}
 
 function wireDashboardOnce() {
-  if (dashWired) return;
-  dashWired = true;
-  var mount = document.getElementById('patient-dashboard-mount');
-  if (mount) {
-    mount.addEventListener('click', function (ev) {
-      var t = ev.target;
-      if (!t || typeof t.closest !== 'function') return;
-      var btn = t.closest('[data-dash-action]');
-      if (!btn || !mount.contains(btn)) return;
-      handleDashboardAction(btn.getAttribute('data-dash-action'), btn);
-    });
-  }
+  wireDashboardHost(document.getElementById('patient-dashboard-mount'));
+  wireDashboardHost(document.getElementById('patient-ronda-dashboard-host'));
+  if (dashBackWired) return;
+  dashBackWired = true;
   var back = document.getElementById('btn-volver-al-resumen');
   if (back) {
     back.addEventListener('click', function () {
@@ -193,13 +198,14 @@ function wireDashboardOnce() {
   }
 }
 
-export function renderPatientDashboard() {
+export function renderPatientDashboard(hostEl) {
   wireDashboardOnce();
   var inner = rt.getActiveInner() || 'resumen';
   syncPacienteCompositeVisibility(inner);
-  if (inner !== 'resumen') return;
-  var mount = document.getElementById('patient-dashboard-mount');
+  var mount = hostEl || document.getElementById('patient-dashboard-mount');
   if (!mount) return;
+  wireDashboardHost(mount);
+  if (!hostEl && inner !== 'resumen') return;
   mount.innerHTML = renderDashboardHtml(collectDashboardModel(inner));
 }
 

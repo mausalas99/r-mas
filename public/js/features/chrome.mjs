@@ -53,7 +53,7 @@ const I18N_ES = {
   'settings.fontXLarge': 'Más grande',
   'settings.uiDensity': 'Modo de vista',
   'settings.uiDensityHint':
-    'Normal: Laboratorio, Expediente, Manejo y Agenda en pestañas completas (vista Ronda centrada). Pase: resumen del paciente en una columna; pulsa un título de sección para abrir el detalle en Normal. ⌘P o Ctrl+P abre Modo Pase.',
+    'Normal: Laboratorio, Paciente, Manejo y Agenda en pestañas completas (vista Ronda centrada). Pase: resumen del paciente en una columna; pulsa un título de sección para abrir el detalle en Normal. ⌘P o Ctrl+P abre Modo Pase.',
   'settings.densityNormal': 'Normal',
   'settings.densityPase': 'Pase',
   'settings.highContrast': 'Alto contraste',

@@ -18,10 +18,10 @@ description: "Primary happy-path flows from the clinician's perspective."
 
 ## Happy path — Magic moment (documentation)
 
-1. Select patient in sidebar.
+1. Select patient in sidebar → **Paciente → Resumen** (glance home).
 2. Open **Laboratorio** → paste SOME report → **Procesar**.
-3. Review structured results, tendencias, cultivos in **Expediente → Resultados**.
-4. Open **Clínico → Nota** (or Estado actual in Sala) → generate **`.docx`**.
+3. Review structured results, tendencias, cultivos under **Laboratorio** (Labs | Tendencias | Cultivos).
+4. Open **Paciente → Clínico → Nota** (or Estado actual in Sala) → generate **`.docx`**.
 5. Print or attach per hospital workflow.
 
 *North Star:* steps 2–4 complete in minimum wall-clock time (TTD metric).

@@ -16,7 +16,7 @@ export const SHORTCUT_GROUPS = [
     title: 'Pestañas principales',
     items: [
       { keys: ['⌘', '1'], label: 'Laboratorio' },
-      { keys: ['⌘', '2'], label: 'Expediente', hint: 'Repite para ciclar subvistas' },
+      { keys: ['⌘', '2'], label: 'Paciente', hint: 'Repite Resumen → Clínico → Salida' },
       { keys: ['⌘', '3'], label: 'Medicamentos', hint: 'Repite Manejo ↔ Perfil' },
       { keys: ['⌘', '4'], label: 'Agenda', hint: 'Repite semana actual' },
       { keys: ['⌘', '⇧', '3'], label: 'Manejo: Completa ↔ Nombre+Día' },
@@ -34,7 +34,7 @@ export const SHORTCUT_GROUPS = [
     ],
   },
   {
-    title: 'Expediente y acciones',
+    title: 'Paciente y acciones',
     items: [
       { keys: ['⌘', 'E'], label: 'Estado actual' },
       { keys: ['⌘', 'T'], label: 'Tendencias / Cultivos' },

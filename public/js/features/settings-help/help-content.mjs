@@ -13,7 +13,7 @@ var HELP_ARTICLES = [
     html:
       '<p><strong>Modo Guardia</strong> es una vista de trabajo centrada en el turno: censo, entrega y monitoreo. Se abre desde el botón <strong>Guardia</strong> en la barra superior.</p>' +
       '<ul>' +
-      '<li><strong>Chip Guardia</strong> — entra y sale sin bloquear Laboratorio ni Expediente.</li>' +
+      '<li><strong>Chip Guardia</strong> — entra y sale sin bloquear Laboratorio ni Paciente.</li>' +
       '<li><strong>Franja Nube · sala · equipo</strong> — confirma conexión Nube, sala del turno y equipo activo antes de confiar en el censo compartido.</li>' +
       '<li><strong>Alcance</strong> — R1 ve su equipo; R4 ve el censo de la sala (Filtros censo por sala; grilla subdividida por equipo). La barra de contexto resume sala y turno.</li>' +
       '<li><strong>Censo: todos / solo entregados</strong> — filtra la grilla (independiente del flujo Entrega).</li>' +
@@ -103,7 +103,7 @@ var HELP_ARTICLES = [
     title: 'Nota de evolución',
     keywords: 'nota evolucion docx generar expediente soap vitales diagnosticos plantilla',
     html:
-      '<p>En <strong>Expediente → Notas</strong> completa fecha, hora, signos vitales, interrogatorio, evolución, estudios, diagnósticos y tratamiento.</p>' +
+      '<p>En <strong>Paciente → Clínico → Notas</strong> completa fecha, hora, signos vitales, interrogatorio, evolución, estudios, diagnósticos y tratamiento.</p>' +
       '<ul>' +
       '<li>En modo <strong>Sala</strong>, el párrafo estructurado (N/V/HD/HI/NM) se arma en <strong>Estado actual</strong> y se copia a la nota.</li>' +
       '<li>En <strong>Interconsulta</strong>, desde <strong>Medicamentos</strong> puedes volcar dosis a la plantilla SOAP o al tratamiento.</li>' +
@@ -117,7 +117,7 @@ var HELP_ARTICLES = [
     title: 'Eventualidades (Sala)',
     keywords: 'eventualidades bitacora intercurrencia dia clinico sala registro',
     html:
-      '<p><strong>Expediente → Clínico → Eventualidades</strong> guarda hechos clínicos del turno con fecha y texto libre (orden cronológico).</p>' +
+      '<p><strong>Paciente → Clínico → Eventualidades</strong> guarda hechos clínicos del turno con fecha y texto libre (orden cronológico).</p>' +
       '<p style="font-size:13px;color:var(--text-muted);margin:0;">Complementa <strong>Estado actual</strong> (monitoreo estructurado). No sustituye la nota de evolución en Interconsulta.</p>'
   },
   {
@@ -125,7 +125,7 @@ var HELP_ARTICLES = [
     title: 'Estado actual y monitoreo (Sala)',
     keywords: 'estado actual monitoreo vitales glu glucometria insulina balance hidrico entradas salidas io tendencias medicamentos confirmacion sala clinico segmento',
     html:
-      '<p>En modo <strong>Sala</strong>, <strong>Expediente → Clínico → Estado actual</strong> concentra el <strong>monitoreo</strong> del turno antes de pasar todo a la nota.</p>' +
+      '<p>En modo <strong>Sala</strong>, <strong>Paciente → Clínico → Estado actual</strong> concentra el <strong>monitoreo</strong> del turno antes de pasar todo a la nota.</p>' +
       '<ul>' +
       '<li><strong>Signos vitales</strong> estructurados con resaltado si salen del rango esperado.</li>' +
       '<li><strong>Glucometrías / insulina</strong>: registro y lectura rápida en el mismo panel.</li>' +
@@ -140,7 +140,7 @@ var HELP_ARTICLES = [
     title: 'Indicaciones médicas',
     keywords: 'indicaciones dieta cuidados medicamentos estudios interconsultas otros docx',
     html:
-      '<p>En <strong>Expediente → Indicaciones</strong> arma la hoja por secciones (dieta, cuidados, medicamentos, estudios, interconsultas y otros).</p>' +
+      '<p>En <strong>Paciente → Indicaciones</strong> arma la hoja por secciones (dieta, cuidados, medicamentos, estudios, interconsultas y otros).</p>' +
       '<ul>' +
       '<li>Define <strong>plantillas por defecto</strong> en Mi Perfil para prellenar dieta, cuidados y medicamentos.</li>' +
       '<li><strong>Generar Indicaciones (.docx)</strong> produce la hoja final con el membrete del hospital.</li>' +
@@ -198,7 +198,7 @@ var HELP_ARTICLES = [
     html:
       '<p>Ahorra tiempo con estos atajos:</p>' +
       '<ul>' +
-      '<li><strong>Ctrl/⌘ + 1</strong> — Laboratorio · <strong>2</strong> — Expediente · <strong>3</strong> — Medicamentos · <strong>4</strong> — Agenda (<strong>Pase</strong>: abre la sección en vista Normal). <strong>Repite el mismo número</strong> para ciclar subvistas: <strong>2</strong> Paciente→Clínico→Resultados→Salida · <strong>3</strong> Manejo↔Perfil · <strong>4</strong> semana actual</li>' +
+      '<li><strong>Ctrl/⌘ + 1</strong> — Laboratorio · <strong>2</strong> — Paciente · <strong>3</strong> — Medicamentos · <strong>4</strong> — Agenda (<strong>Pase</strong>: abre la sección en vista Normal). <strong>Repite el mismo número</strong> para ciclar subvistas: <strong>2</strong> Resumen→Clínico→Salida · <strong>3</strong> Manejo↔Perfil · <strong>4</strong> semana actual</li>' +
       '<li><strong>Ctrl/⌘ + Shift + 3</strong> — Completa ↔ Nombre+Día (texto de egreso en Manejo actual)</li>' +
       '<li><strong>Ctrl/⌘ + [</strong> / <strong>]</strong> — Semana anterior / siguiente en Agenda</li>' +
       '<li><strong>Ctrl/⌘ + ,</strong> — Ajustes</li>' +

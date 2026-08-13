@@ -80,7 +80,7 @@ var LAB_MINI_TOUR_STEPS = [
   },
   {
     badge: 'Laboratorio · tendencias',
-    body: 'Cada laboratorio procesado con paciente activo se guarda con su fecha. Con dos o más labs aparecen mini-gráficas en <strong>Expediente → Tendencias</strong>.',
+    body: 'Cada laboratorio procesado con paciente activo se guarda con su fecha. Con dos o más labs aparecen mini-gráficas en <strong>Laboratorio → Tendencias</strong>.',
     before: function(){ rt.switchAppTab('lab'); }
   },
   {
@@ -90,7 +90,7 @@ var LAB_MINI_TOUR_STEPS = [
   },
   {
     badge: 'Evolución y medicamentos',
-    body: 'En <strong>Expediente → Notas</strong> completa la evolución. En modo <strong>Sala</strong>, el texto estructurado se arma en <strong>Estado actual</strong>. La pestaña <strong>Medicamentos</strong> importa la receta del hospital.',
+    body: 'En <strong>Paciente → Clínico → Notas</strong> completa la evolución. En modo <strong>Sala</strong>, el texto estructurado se arma en <strong>Estado actual</strong>. La pestaña <strong>Medicamentos</strong> importa la receta del hospital.',
     before: function(){ rt.switchAppTab('nota'); }
   }
 ];

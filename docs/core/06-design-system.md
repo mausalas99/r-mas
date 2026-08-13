@@ -29,7 +29,7 @@ description: "Pointer to Hybrid H UI tokens and conventions for R+."
 
 ## Layout modes
 
-- **Normal:** sidebar + main tabs (Laboratorio, Expediente, …)
+- **Normal:** sidebar + main tabs (Laboratorio, Paciente, …)
 - **Pase:** `appcontent-pase` round board
 - **Guardia:** compact metrics + phase bar (`guardia-board.mjs`)
 
