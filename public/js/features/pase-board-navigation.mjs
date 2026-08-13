@@ -28,6 +28,7 @@ import {
   consolidatedInnerTabButtonId,
   defaultGranularForConsolidatedTab,
   isClinicoCompositeVisible,
+  shouldShowConsolidatedTab,
   migrateGranularInner,
   resetExpedientePaneLayoutCache,
   syncConsolidatedPaneVisibility,
@@ -38,7 +39,6 @@ import {
   openPatientDatosModalForPatient,
   wirePatientDatosModalOnce,
 } from '../patient-datos-modal.mjs';
-import { isMobileWeb } from '../mobile-web.mjs';
 import {
   renderExpedienteGroupRow,
   wireGroupRowBreakpointResync,
@@ -286,32 +286,23 @@ export function switchInnerTab(tab, opts) {
 
 export function renderInnerTabs() {
   var settings = rt.getSettings();
-  var sala = isModeSala(settings);
-  function show(id, visible) {
-    var el = document.getElementById(id);
-    if (el) el.style.display = visible ? "" : "none";
-  }
   function setOrder(id, order) {
     var el = document.getElementById(id);
     if (el) el.style.order = String(order);
   }
   resetExpedientePaneLayoutCache();
   document.querySelectorAll(".exp-consolidated-tab").forEach(function (el) {
-    var hideSalida = isMobileWeb() && el.id === "itab-salida";
-    el.style.display = !hideSalida ? "" : "none";
+    el.style.display = shouldShowConsolidatedTab(el.id, settings) ? "" : "none";
   });
   applyExpedientePaneLayout(settings);
 
-  var showClinico = isClinicoCompositeVisible(settings);
-  show("itab-clinico", showClinico);
+  var showClinico = shouldShowConsolidatedTab("itab-clinico", settings);
   var clinicoPane = document.getElementById("itab-content-clinico");
   if (clinicoPane) clinicoPane.hidden = !showClinico;
   var order = 1;
   setOrder("itab-paciente", order++);
   if (showClinico) setOrder("itab-clinico", order++);
-  setOrder("itab-resultados", order++);
-  if (sala && !isMobileWeb()) setOrder("itab-salida", order++);
-  show("itab-salida", sala && !isMobileWeb());
+  if (shouldShowConsolidatedTab("itab-salida", settings)) setOrder("itab-salida", order++);
   wirePatientDatosModalOnce();
   wireGroupRowBreakpointResync(syncInnerTabVisualOnly);
   var activeInner = migrateGranularInner(rt.getActiveInner() || "resumen", settings);

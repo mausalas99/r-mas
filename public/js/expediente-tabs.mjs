@@ -50,6 +50,13 @@ export function getConsolidatedTabs(settings) {
   return tabs;
 }
 
+/** Classic inner pills below 1100px: only paciente / clinico / salida. */
+export function shouldShowConsolidatedTab(id, settings) {
+  var name = String(id || '').replace(/^itab-/, '');
+  if (!name) return false;
+  return getConsolidatedTabs(settings).indexOf(name) >= 0;
+}
+
 export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'vpo'];
 export const CLINICO_SECTIONS_SALA = ['estadoActual', 'eventualidades'];
 export const RESULTADOS_SECTIONS = ['tend', 'cult'];
@@ -257,6 +264,10 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
     var vpoSalidaBtn = salidaBar.querySelector('[data-exp-segment="vpo"]');
     if (vpoSalidaBtn) vpoSalidaBtn.style.display = sala ? '' : 'none';
   }
+  var resultadosBar = document.getElementById('exp-segment-resultados');
+  if (resultadosBar) resultadosBar.style.display = 'none';
+  var resultadosPane = document.getElementById('itab-content-resultados');
+  if (resultadosPane) resultadosPane.hidden = true;
   var estadoActualTab = document.getElementById('itab-estadoActual');
   if (estadoActualTab) estadoActualTab.style.display = 'none';
 }

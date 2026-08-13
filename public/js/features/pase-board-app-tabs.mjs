@@ -343,7 +343,7 @@ if (typeof document !== 'undefined') {
 (function setupMainAppTabKeyboard() {
   var list = document.getElementById('app-main-tablist');
   if (!list) return;
-  var order = isMobileWeb() ? ['lab', 'nota'] : ['lab', 'nota', 'med', 'agenda'];
+  var order = isMobileWeb() ? ['nota', 'lab'] : ['nota', 'lab', 'med', 'agenda'];
   list.addEventListener('keydown', function (e) {
     if (!isAppTabNavKey(e.key)) return;
     var cur = rt.getActiveAppTab() === 'lan' ? 'lab' : rt.getActiveAppTab();

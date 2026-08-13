@@ -8,6 +8,7 @@ import {
   defaultGranularForConsolidatedTab,
   consolidatedInnerTabButtonId,
   getConsolidatedTabs,
+  shouldShowConsolidatedTab,
   getClinicoSections,
   getSalidaSections,
   isClinicoTabHidden,
@@ -40,6 +41,15 @@ test('resolveConsolidatedTarget maps listado and recetaHu to salida in sala', ()
 
 test('CONSOLIDATED_TABS_SALA has Resumen Clínico Salida (no Resultados)', () => {
   assert.deepEqual(CONSOLIDATED_TABS_SALA, ['paciente', 'clinico', 'salida']);
+});
+
+test('shouldShowConsolidatedTab: Paciente inner groups exclude Resultados', () => {
+  assert.equal(shouldShowConsolidatedTab('itab-paciente', SALA), true);
+  assert.equal(shouldShowConsolidatedTab('itab-clinico', SALA), true);
+  assert.equal(shouldShowConsolidatedTab('itab-salida', SALA), true);
+  assert.equal(shouldShowConsolidatedTab('itab-resultados', SALA), false);
+  assert.equal(shouldShowConsolidatedTab('itab-resultados', INTER), false);
+  assert.equal(shouldShowConsolidatedTab('paciente', SALA), true);
 });
 
 test('default paciente granular is resumen', () => {
