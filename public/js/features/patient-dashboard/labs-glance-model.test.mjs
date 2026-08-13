@@ -44,4 +44,34 @@ describe('labs glance', () => {
     assert.equal(ids.includes('a') && ids.includes('b'), true);
     assert.equal(ids.length, 2);
   });
+
+  it('includes BH alteraciones when mixed with cultivo in one set', () => {
+    const model = buildLabsGlanceForDay({
+      todayKey: '2026-8-13',
+      orderedSets: [
+        set('mix', '09:00', ['BH\tHb 8.2*', 'UROCULTIVO: E. COLI', 'ATB S: CIPRO']),
+      ],
+    });
+    assert.equal(model.envios.length, 1);
+    const envio = model.envios[0];
+    assert.equal(envio.id, 'mix');
+    const chips = envio.groups.flatMap((g) => g.chips.map((c) => c.raw));
+    assert.ok(chips.some((t) => String(t).includes('8.2*')));
+    assert.equal(chips.some((t) => /urocultivo|e\. coli|cipro/i.test(String(t))), false);
+    assert.equal(JSON.stringify(envio).toLowerCase().includes('cultivo'), false);
+  });
+
+  it('omits cultivo-only sets from envíos', () => {
+    const model = buildLabsGlanceForDay({
+      todayKey: '2026-8-13',
+      orderedSets: [
+        set('cult', '10:00', ['UROCULTIVO: E. COLI', 'ATB S: CIPRO']),
+        set('labs', '11:00', ['BH\tHb 8.0*']),
+      ],
+    });
+    const ids = model.envios.map((e) => e.id);
+    assert.equal(ids.includes('cult'), false);
+    assert.equal(ids.includes('labs'), true);
+    assert.equal(ids.length, 1);
+  });
 });

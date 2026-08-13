@@ -93,6 +93,7 @@ function buildGroupsFromLabRows(labRows) {
 function buildEnvioFromSet(set) {
   const split = splitResLabsByTipo(set.resLabs || []);
   const labRows = split.labs.filter((row) => String(row == null ? '' : row).trim());
+  if (!labRows.length) return null;
   return {
     id: set.id,
     hora: normalizeHoraLabHistory(set.hora),
@@ -110,6 +111,6 @@ export function buildLabsGlanceForDay({ todayKey, orderedSets }) {
   const dayGroup = pickDayGroup(dayGroups, todayKey);
   if (!dayGroup) return { envios: [] };
   return {
-    envios: dayGroup.sets.map(buildEnvioFromSet),
+    envios: dayGroup.sets.map(buildEnvioFromSet).filter(Boolean),
   };
 }
