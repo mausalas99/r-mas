@@ -78,7 +78,7 @@ test('Admin guardia census includes all patients with Todos equipos filter on de
   assert.equal(out.length, 2);
 });
 
-test('R1 desktop guardia census mirrors joined team after team pick', () => {
+test('R1 desktop guardia census shows all; Filtros narrow by equipo', () => {
   const leslieTeam = {
     team_id: 't-leslie',
     name: 'Dra. Leslie',
@@ -99,7 +99,7 @@ test('R1 desktop guardia census mirrors joined team after team pick', () => {
   const census = [
     { id: 'p-leslie', servicio: 'Sala', area: 'A', sala: 'Sala 2' },
     { id: 'p-chris', servicio: 'Sala', area: 'B', sala: 'Sala 2' },
-    { id: 'p-other-sala', servicio: 'Sala', area: 'A', sala: 'Sala 1' },
+    { id: 'p-other-sala', servicio: 'Sala', area: 'Z', sala: 'Sala 1' },
   ];
   const scope = {
     teams: [leslieTeam, christianTeam],
@@ -113,24 +113,30 @@ test('R1 desktop guardia census mirrors joined team after team pick', () => {
     guardiaMode: false,
     onCallGuardiaReceiver: false,
   };
-  const mine = filterPatientsForGuardiaCensus(census, user, scope, null, {
+  const all = filterPatientsForGuardiaCensus(census, user, scope, null, {
     sala: '__all__',
     teamId: '',
     service: '',
   });
-  assert.deepEqual(mine.map((p) => p.id), ['p-leslie']);
+  assert.deepEqual(all.map((p) => p.id).sort(), ['p-chris', 'p-leslie', 'p-other-sala']);
   const christian = filterPatientsForGuardiaCensus(census, user, scope, null, {
     sala: '__all__',
     teamId: 't-chris',
     service: '',
   });
-  assert.deepEqual(christian.map((p) => p.id), []);
+  assert.deepEqual(christian.map((p) => p.id), ['p-chris']);
   const leslie = filterPatientsForGuardiaCensus(census, user, scope, null, {
     sala: '__all__',
     teamId: 't-leslie',
     service: '',
   });
   assert.deepEqual(leslie.map((p) => p.id), ['p-leslie']);
+  const sala2 = filterPatientsForGuardiaCensus(census, user, scope, null, {
+    sala: 'Sala 2',
+    teamId: '',
+    service: '',
+  });
+  assert.deepEqual(sala2.map((p) => p.id).sort(), ['p-chris', 'p-leslie']);
 });
 
 test('R4 sidebar includes all patients', () => {

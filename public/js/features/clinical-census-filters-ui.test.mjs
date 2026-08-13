@@ -16,6 +16,7 @@ import {
   reconcileCensusTeamFilterForSala,
   censusTeamCatalogForFilters,
   resolveCensusTeamFilterId,
+  resolveCensusSalaFilterId,
 } from './clinical-census-filters-ui.mjs';
 
 beforeEach(() => {
@@ -179,8 +180,24 @@ describe('clinical census team filter', () => {
     assert.equal(resolveCensusTeamFilterId(r1, oneTeam, '', storage), 't1');
     setCloudRoomConnected(false);
   });
-});
 
+  it('resolveCensusSalaFilterId defaults to profile sala for R1', () => {
+    const mem = new Map();
+    const storage = {
+      getItem: (k) => mem.get(k) ?? null,
+      setItem: (k, v) => mem.set(k, v),
+      removeItem: (k) => mem.delete(k),
+    };
+    assert.equal(
+      resolveCensusSalaFilterId({ user_id: 'u9', rank: 'R1', sala: 'Sala E' }, storage),
+      'Sala E'
+    );
+    assert.equal(
+      resolveCensusSalaFilterId({ user_id: 'u1', rank: 'R4', sala: 'Sala E' }, storage),
+      '__all__'
+    );
+  });
+});
 describe('clinical census filters collapse storage', () => {
   it('defaults collapsed (popover closed)', () => {
     const mem = new Map();

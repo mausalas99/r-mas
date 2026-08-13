@@ -6,7 +6,7 @@ import { partitionNmMedLines } from '../nm-antidiabetic-detect.mjs';
 
 /** @type {Record<string, string>} */
 export const EA_MED_FIELD_LABELS = {
-  analgesia: 'Analgesia',
+  analgesia: 'Analgésicos',
   antiemeticos: 'Antieméticos',
   sedacion: 'Sedación / delirium',
   antiepilepticos: 'Antiepilépticos',

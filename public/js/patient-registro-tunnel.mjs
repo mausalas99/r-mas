@@ -200,11 +200,14 @@ export async function admitPatientViaRegistroTunnel(registro, opts) {
 export async function admitPatientsViaRegistroTunnel(rawOrList, opts) {
   opts = opts || {};
   var list = Array.isArray(rawOrList)
-    ? rawOrList
-        .map(function (r) {
-          return String(r || '').trim();
-        })
-        .filter(Boolean)
+    ? parseRegistrosFromBulkInput(
+        rawOrList
+          .map(function (r) {
+            return String(r || '').trim();
+          })
+          .filter(Boolean)
+          .join('\n')
+      )
     : parseRegistrosFromBulkInput(rawOrList);
   if (!list.length) {
     rt.showToast('Indica al menos un registro', 'error');

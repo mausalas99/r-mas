@@ -2,7 +2,6 @@
 
 import { isWebClinicalClient } from './db-storage-bridge.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
-import { isCloudSyncActive } from './features/cloud-sync/nube-sync-policy.mjs';
 
 /** iPad/PWA or any browser LAN session — never full Admin/R4 ward census. */
 export function shouldEnforceTeamPatientMirror() {
@@ -10,19 +9,29 @@ export function shouldEnforceTeamPatientMirror() {
 }
 
 /**
- * Desktop + Nube: R1–R3 see joined-team patients only (not full sala census from cloud seed).
+ * Desktop Nube used to hard-hide non-joined-team charts (broke visibility after team
+ * archive + admin reassignment). Desktop now shows the full census and narrows via
+ * Filtros (default sala + equipo). Kept as a named policy hook for tests/callers.
  * @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} [user]
  */
-export function shouldUseCloudTeamPatientMirror(user) {
-  if (shouldEnforceTeamPatientMirror()) return false;
-  if (shouldUseElevatedPatientCensus(user)) return false;
-  return isCloudSyncActive();
+export function shouldUseCloudTeamPatientMirror(_user) {
+  return false;
 }
 
-/** Sidebar/census team scope — mobile web or desktop Nube non-elevated. */
+/** Sidebar hard team mirror — iPad/PWA only (desktop uses Filtros instead). */
 export function shouldFilterPatientsByJoinedTeam(user) {
   if (shouldEnforceTeamPatientMirror()) return true;
   return shouldUseCloudTeamPatientMirror(user);
+}
+
+/**
+ * Desktop: full patient list + Filtros censo (vs iPad hard team mirror).
+ * @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} [user]
+ */
+export function shouldUseDesktopCensusWithFilters(user) {
+  if (!user?.user_id) return false;
+  if (shouldEnforceTeamPatientMirror()) return false;
+  return true;
 }
 
 const CLINICAL_RANKS = new Set(['R1', 'R2', 'R3', 'R4']);
@@ -75,9 +84,10 @@ export function shouldUseElevatedPatientCensus(user) {
   return true;
 }
 
-/** Filtros censo toolbar — desktop elevated census or iPad/PWA team mirror. */
+/** Filtros censo toolbar — desktop always; iPad/PWA when team-mirrored. */
 export function shouldShowClinicalCensusFilters(user) {
   if (!user?.user_id) return false;
+  if (shouldUseDesktopCensusWithFilters(user)) return true;
   if (shouldUseElevatedPatientCensus(user)) return true;
   return shouldFilterPatientsByJoinedTeam(user);
 }

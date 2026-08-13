@@ -5,6 +5,11 @@ import {
   isPatientBulkSelected,
 } from './patients-bulk-select.mjs';
 import { isPatientAdmissionIncomplete } from '../patient-admission-incomplete.mjs';
+import { canDeletePatientChart } from '../patient-delete-auth.mjs';
+import {
+  clinicalSessionContext,
+  getClinicalScopeContextForEvaluate,
+} from '../clinical-access-runtime.mjs';
 import { rt } from './patients-runtime-state.mjs';
 
 function renderPatientBulkCheckHtml(p) {
@@ -32,6 +37,16 @@ export function renderPatientCardToolbarHtml(p, pinOn, archOn) {
   var archiveIcon = archOn
     ? '↩'
     : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
+  var canDelete = canDeletePatientChart(
+    clinicalSessionContext.user,
+    p.id,
+    getClinicalScopeContextForEvaluate()
+  );
+  var deleteBtn = canDelete
+    ? '<button type="button" class="btn-delete-card" onclick="deletePatient(event,\'' +
+      p.id +
+      '\')" aria-label="Eliminar">×</button>'
+    : '';
   return (
     '<div class="patient-card-toolbar">' +
     '<div class="patient-card-toolbar-left">' +
@@ -56,9 +71,7 @@ export function renderPatientCardToolbarHtml(p, pinOn, archOn) {
     (pinOn ? 'Fijado' : 'Fijar') +
     '</button>' +
     '</div>' +
-    '<button type="button" class="btn-delete-card" onclick="deletePatient(event,\'' +
-    p.id +
-    '\')" aria-label="Eliminar">×</button>' +
+    deleteBtn +
     '</div>'
   );
 }

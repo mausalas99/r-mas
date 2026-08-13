@@ -7,6 +7,7 @@ import { stashVpoForPatient } from './vpo.mjs';
 import { flushSaveState } from '../app-state.mjs';
 import { isModeSala } from '../mode-features.mjs';
 import { migrateGranularInner } from '../expediente-tabs.mjs';
+import { canDeletePatientChart } from '../patient-delete-auth.mjs';
 import {
   clinicalSessionContext,
   getClinicalScopeContextForEvaluate,
@@ -19,7 +20,6 @@ import {
 } from './sync-apply/patient-delete-batch.mjs';
 import {
   exitPatientBulkSelectMode,
-  getPatientBulkSelectedCount,
   getPatientBulkSelectedIds,
   isPatientBulkSelectMode,
   togglePatientBulkSelected,
@@ -33,7 +33,7 @@ import {
   setRoundOverviewMode,
 } from './patients-round.mjs';
 import { syncPatientBulkBar } from './patients-bulk-bar.mjs';
-import { buildConfirmCardHtml, wrapApprovalInConflictModal } from '../ui-approval-card.mjs';
+import { showConfirmDialog } from '../ui-approval-card.mjs';
 
 /** @param {string} iso */
 function formatIncomingEffectiveLabel(iso) {
@@ -216,41 +216,22 @@ function selectPatientCore(id) {
   }
 }
 
-function showPatientDeleteConfirm(question) {
-  return new Promise(function (resolve) {
-    var backdrop = document.createElement('div');
-    backdrop.className = 'lab-conflict-backdrop';
-    backdrop.id = 'patients-delete-confirm';
-    backdrop.innerHTML = wrapApprovalInConflictModal(
-      buildConfirmCardHtml({
-        question: question,
-        confirmLabel: 'Eliminar',
-        cancelLabel: 'Cancelar',
-      })
-    );
-    var finish = function (ok) {
-      backdrop.remove();
-      resolve(ok);
-    };
-    var confirmBtn = backdrop.querySelector('[data-approval-confirm]');
-    var cancelBtn = backdrop.querySelector('[data-approval-cancel]');
-    var dismiss = backdrop.querySelector('[data-approval-dismiss]');
-    if (confirmBtn) confirmBtn.addEventListener('click', function () { finish(true); });
-    if (cancelBtn) cancelBtn.addEventListener('click', function () { finish(false); });
-    if (dismiss) dismiss.addEventListener('click', function () { finish(false); });
-    backdrop.addEventListener('click', function (ev) {
-      if (ev.target === backdrop) finish(false);
-    });
-    document.body.appendChild(backdrop);
-    if (cancelBtn && typeof cancelBtn.focus === 'function') cancelBtn.focus();
+function showPatientDeleteConfirm(n) {
+  var many = n > 1;
+  return showConfirmDialog({
+    id: 'patients-delete-confirm',
+    title: many ? 'Eliminar ' + n + ' pacientes' : 'Eliminar paciente',
+    question: many
+      ? 'Se quitarán las notas de este turno. No volverán desde otros equipos.'
+      : 'Se quitarán las notas de este turno. No volverá desde otros equipos.',
+    confirmLabel: 'Eliminar',
+    cancelLabel: 'Cancelar',
   });
 }
 
 function confirmPatientDelete(target) {
   if (target && target.archived) return Promise.resolve(true);
-  return showPatientDeleteConfirm(
-    '¿Eliminar este paciente y sus notas? No volverá desde otros equipos del turno.'
-  );
+  return showPatientDeleteConfirm(1);
 }
 
 function showEmptyPatientShell() {
@@ -287,6 +268,18 @@ export async function deletePatient(e, id) {
     return p.id === id;
   });
   if (!target) return;
+  if (
+    !canDeletePatientChart(
+      clinicalSessionContext.user,
+      id,
+      getClinicalScopeContextForEvaluate()
+    )
+  ) {
+    if (typeof rt.showToast === 'function') {
+      rt.showToast('Solo puedes eliminar pacientes de tu equipo (Admin/R4: todos).', 'warn');
+    }
+    return;
+  }
   if (!(await confirmPatientDelete(target))) return;
   var label = 'Eliminar ' + (target.nombre || 'paciente');
   if (typeof rt.pushUndoSnapshot === 'function') rt.pushUndoSnapshot(label);
@@ -297,29 +290,39 @@ export async function deletePatient(e, id) {
   );
 }
 
-function showBulkDeleteApproval(n) {
-  return showPatientDeleteConfirm(
-    '¿Eliminar ' +
-      n +
-      ' paciente' +
-      (n === 1 ? '' : 's') +
-      ' y sus notas? No volverán desde otros equipos del turno.'
-  );
-}
-
 export async function confirmBulkDeletePatients() {
   var ids = getPatientBulkSelectedIds();
   if (!ids.length) {
     if (typeof rt.showToast === 'function') rt.showToast('Selecciona al menos un paciente', 'info');
     return;
   }
-  var n = getPatientBulkSelectedCount();
-  var ok = await showBulkDeleteApproval(n);
+  var scope = getClinicalScopeContextForEvaluate();
+  var user = clinicalSessionContext.user;
+  var allowed = ids.filter(function (pid) {
+    return canDeletePatientChart(user, pid, scope);
+  });
+  var skipped = ids.length - allowed.length;
+  if (!allowed.length) {
+    if (typeof rt.showToast === 'function') {
+      rt.showToast('Solo puedes eliminar pacientes de tu equipo (Admin/R4: todos).', 'warn');
+    }
+    return;
+  }
+  var n = allowed.length;
+  var ok = await showPatientDeleteConfirm(n);
   if (!ok) return;
   if (typeof rt.pushUndoSnapshot === 'function') {
     rt.pushUndoSnapshot('Eliminar ' + n + ' pacientes');
   }
-  var summary = await commitPatientDeletes(ids);
+  var summary = await commitPatientDeletes(allowed);
   exitPatientBulkSelectMode();
   afterPatientDeletesCommitted(summary, n + ' pacientes');
+  if (skipped > 0 && typeof rt.showToast === 'function') {
+    rt.showToast(
+      skipped === 1
+        ? '1 paciente de otro equipo no se eliminó.'
+        : skipped + ' pacientes de otro equipo no se eliminaron.',
+      'warn'
+    );
+  }
 }

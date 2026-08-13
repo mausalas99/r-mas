@@ -40,7 +40,7 @@
           <p class="profile-hint profile-hint--field" id="m-registro-manual-hint" hidden>Un expediente por caja.</p>
           <div class="vpo-dx-paste" id="m-registro-paste-wrap" hidden style="margin-top:8px;">
             <span class="ea-label">Pegar varios (uno por línea)</span>
-            <textarea class="ea-input" id="m-registro-paste" rows="2" placeholder="0000000-0&#10;0000001-0"></textarea>
+            <textarea class="ea-input" id="m-registro-paste" rows="2" placeholder="0000000-0&#10;0000001-0" oninput="onRegistroModalPasteAreaInput()"></textarea>
             <button type="button" class="btn-med-secondary" onclick="splitRegistroModalPaste()">Separar en cajas</button>
           </div>
         </div>

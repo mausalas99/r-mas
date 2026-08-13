@@ -11,6 +11,7 @@ import {
   filterPatientsForGuardiaCensus as filterPatientsForGuardiaCensusCore,
 } from './patients-clinical-filter.mjs';
 import { censusFiltersAreActive, elevatedPatientFilters } from './clinical-census-filters-state.mjs';
+import { resolveCensusSalaFilterId } from './clinical-census-filters-ui.mjs';
 import { syncClinicalContextBarVisibility } from './clinical-context-bar.mjs';
 import {
   createCensusFiltersBar,
@@ -200,6 +201,8 @@ export function syncClinicalCensusFiltersBar() {
     if (storedSala) {
       elevatedPatientFilters.sala = storedSala;
       localStorage.removeItem('clinical.censusFilterSala');
+    } else {
+      elevatedPatientFilters.sala = resolveCensusSalaFilterId(user);
     }
   } catch (_e) { void _e; }
   if (!bar) {

@@ -533,7 +533,7 @@ export function applyEaMedReclassification(fromKey) {
     return;
   }
   ensureMonitoreo(patient);
-  var activeId = getEaPanelRuntime().getActiveId();
+  var activeId = getEaPanelRuntime().getActiveId() || patient.id || null;
   var ok = reclassifyEaMedProposal({
     patientId: activeId,
     fromKey: fromKey,

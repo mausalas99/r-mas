@@ -6,7 +6,9 @@ import {
   readCensusFiltersCollapsed,
   writeCensusFiltersCollapsed,
   resolveCensusTeamFilterId,
+  resolveCensusSalaFilterId,
   writeElevatedTeamFilterPreference,
+  writeCensusSalaFilterPreference,
   CENSUS_TEAM_FILTER_UNASSIGNED,
   reconcileCensusTeamFilterForSala,
   censusTeamCatalogForFilters,
@@ -184,6 +186,7 @@ export function wireCensusFilterInputs(bar, refreshCensusViews) {
   if (salaSel) {
     salaSel.addEventListener('change', () => {
       elevatedPatientFilters.sala = String(salaSel.value || '__all__');
+      writeCensusSalaFilterPreference(elevatedPatientFilters.sala);
       syncCensusTeamFilterSelect(clinicalSessionContext.user);
       onFilterChange();
     });
@@ -253,6 +256,10 @@ export function syncCensusTeamFilterSelect(user) {
 export function syncCensusScalarFilterInputs(user) {
   const salaSel = document.getElementById('clinical-filter-sala');
   const serviceInp = document.getElementById('clinical-filter-service');
+  const salaFilterId = resolveCensusSalaFilterId(user);
+  if (elevatedPatientFilters.sala !== salaFilterId) {
+    elevatedPatientFilters.sala = salaFilterId;
+  }
   if (salaSel && salaSel.value !== elevatedPatientFilters.sala) {
     salaSel.value = elevatedPatientFilters.sala;
   }

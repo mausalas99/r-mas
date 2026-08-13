@@ -8,6 +8,7 @@ import {
 import {
   shouldEnforceTeamPatientMirror,
   shouldFilterPatientsByJoinedTeam,
+  shouldUseDesktopCensusWithFilters,
   shouldUseElevatedPatientCensus,
 } from '../clinical-privileges.mjs';
 import {
@@ -35,15 +36,17 @@ export function patientForScopeEvaluate(p) {
  */
 export function filterPatientsForClinicalSidebar(patients, user, scopeContext, guardiasMap) {
   if (!user?.user_id) return shouldFilterPatientsByJoinedTeam(user) ? [] : patients || [];
+  // Desktop: full list (Filtros apply in filterPatientsForGuardiaCensus).
+  if (shouldUseDesktopCensusWithFilters(user) || shouldUseElevatedPatientCensus(user)) {
+    return patients || [];
+  }
   if (shouldFilterPatientsByJoinedTeam(user)) {
-    // iPad/PWA: assignment-only mirror. Desktop Nube: keep unassigned structural matches
-    // so Actualizar labs → selectPatient → renderPatientList does not empty the sidebar.
+    // iPad/PWA: assignment-only mirror.
     if (shouldEnforceTeamPatientMirror()) {
       return filterPatientsForMobileTeamMirror(patients, user, scopeContext, guardiasMap);
     }
     return filterPatientsForDesktopCloudTeamScope(patients, user, scopeContext, guardiasMap);
   }
-  if (shouldUseElevatedPatientCensus(user)) return patients || [];
   return (patients || []).filter((p) => {
     if (!p) return false;
     const mapped = patientForScopeEvaluate(p);
@@ -210,7 +213,8 @@ export function filterPatientsForGuardiaCensus(
 ) {
   if (!user?.user_id) return basePatients || [];
   let visible;
-  if (shouldUseElevatedPatientCensus(user)) {
+  if (shouldUseElevatedPatientCensus(user) || shouldUseDesktopCensusWithFilters(user)) {
+    // Desktop: full census; Filtros (default sala + equipo) narrow the list.
     visible = basePatients || [];
   } else if (shouldFilterPatientsByJoinedTeam(user)) {
     visible = filterPatientsForClinicalSidebar(basePatients, user, scopeContext, guardiasMap);

@@ -1,14 +1,15 @@
 export const CLINICAL_CENSUS_FILTERS_COLLAPSED_LS = 'rpc.clinicalCensusFiltersCollapsed';
 export const CLINICAL_CENSUS_FILTER_TEAM_LS = 'rpc.clinicalCensusFilterTeam';
+export const CLINICAL_CENSUS_FILTER_SALA_LS = 'rpc.clinicalCensusFilterSala';
 import {
   hasElevatedTeamPrivileges,
   shouldEnforceTeamPatientMirror,
-  shouldFilterPatientsByJoinedTeam,
 } from '../clinical-privileges.mjs';
 import { filterJoinedTeams } from './clinical-teams/shared.mjs';
 
 export const CENSUS_TEAM_FILTER_ALL = '__all__';
 export const CENSUS_TEAM_FILTER_UNASSIGNED = '__unassigned__';
+export const CENSUS_SALA_FILTER_ALL = '__all__';
 
 /** @param {object[]} teams @param {object|null|undefined} user */
 function joinedTeamsForUser(teams, user) {
@@ -53,6 +54,40 @@ export function writeElevatedTeamFilterPreference(teamId, storage = globalThis.l
   } catch (_e) { void _e; }
 }
 
+/** @param {Storage|undefined} storage */
+export function readCensusSalaFilterPreference(storage = globalThis.localStorage) {
+  try {
+    const raw = storage?.getItem(CLINICAL_CENSUS_FILTER_SALA_LS);
+    if (raw != null && String(raw).trim() !== '') {
+      return { pinned: true, sala: String(raw) };
+    }
+  } catch (_e) { void _e; }
+  return { pinned: false, sala: CENSUS_SALA_FILTER_ALL };
+}
+
+/** @param {string} sala @param {Storage|undefined} storage */
+export function writeCensusSalaFilterPreference(sala, storage = globalThis.localStorage) {
+  try {
+    storage?.setItem(
+      CLINICAL_CENSUS_FILTER_SALA_LS,
+      String(sala || '').trim() || CENSUS_SALA_FILTER_ALL
+    );
+  } catch (_e) { void _e; }
+}
+
+/**
+ * Default sala for Filtros: R1–R3 → profile sala; Admin/R4 → Todas.
+ * @param {object|null|undefined} user
+ * @param {Storage|undefined} storage
+ */
+export function resolveCensusSalaFilterId(user, storage = globalThis.localStorage) {
+  const pref = readCensusSalaFilterPreference(storage);
+  if (pref.pinned) return pref.sala;
+  if (hasElevatedTeamPrivileges(user)) return CENSUS_SALA_FILTER_ALL;
+  const home = String(user?.sala || '').trim();
+  return home || CENSUS_SALA_FILTER_ALL;
+}
+
 /**
  * Census Equipo filter: default to active membership unless user chose Todos/another team.
  * @param {object|null|undefined} user
@@ -95,7 +130,8 @@ export function resolveCensusTeamFilterId(user, teamsForCatalog, priorTeamId = '
   const pref = readElevatedTeamFilterPreference(storage);
   if (pref.pinned) return pref.teamId;
   if (prior) return prior;
-  if (shouldFilterPatientsByJoinedTeam(user) && !hasElevatedTeamPrivileges(user)) {
+  // R1–R3: default Equipo to joined team. Admin/R4: Todos (narrow via dropdown).
+  if (!hasElevatedTeamPrivileges(user)) {
     return resolveActiveTeamFilterId(user, teamsForCatalog);
   }
   return resolveElevatedTeamFilterId(user, teamsForCatalog, storage);

@@ -5,6 +5,7 @@ import {
   buildApprovalPagerHtml,
   buildConfirmCardHtml,
   wrapApprovalInConflictModal,
+  wrapConfirmInConflictModal,
 } from './ui-approval-card.mjs';
 
 describe('ui-approval-card', () => {
@@ -53,9 +54,31 @@ describe('ui-approval-card', () => {
       cancelLabel: 'Cancelar',
     });
     assert.match(html, /ui-approval-card--confirm/);
+    assert.match(html, /ui-confirm-title/);
+    assert.match(html, /¿Eliminar este paciente\?/);
     assert.match(html, /data-approval-confirm/);
     assert.match(html, /data-approval-cancel/);
     assert.doesNotMatch(html, /data-approval-opt/);
     assert.doesNotMatch(html, /data-approval-primary/);
+    assert.doesNotMatch(html, /data-approval-dismiss/);
+  });
+
+  it('renders confirm title, lead and patient list', () => {
+    var html = buildConfirmCardHtml({
+      title: 'Quitar de esta Mac',
+      question: 'Un admin lo eliminó en Nube.',
+      items: ['Ana · 123'],
+      confirmLabel: 'Eliminar aquí',
+      cancelLabel: 'Conservar aquí',
+    });
+    assert.match(html, /Quitar de esta Mac/);
+    assert.match(html, /ui-confirm-lead/);
+    assert.match(html, /Un admin lo eliminó en Nube/);
+    assert.match(html, /<li>Ana · 123<\/li>/);
+    assert.match(html, /Eliminar aquí/);
+    var wrap = wrapConfirmInConflictModal(html);
+    assert.match(wrap, /ui-confirm-modal/);
+    assert.match(wrap, /material-glass/);
+    assert.match(wrap, /role="dialog"/);
   });
 });

@@ -21,6 +21,11 @@ import {
 } from './pull-apply-state.mjs';
 import { bumpLabHistoryRevision } from '../../lab-history-cache.mjs';
 import { getLabHistory } from '../../app-state.mjs';
+import {
+  partitionCloudTombstonesForConfirm,
+  scheduleRemotePatientDeleteConfirm,
+} from './remote-patient-delete-confirm.mjs';
+import { resolveCloudActorId } from './mutate-bridge.mjs';
 
 /** @type {Promise<typeof import('../cloud-mobile/lab-sync-diagnostics.mjs')> | null} */
 let _labSyncDiagMod = null;
@@ -136,13 +141,18 @@ export function shouldApplyCloudTombstone(patientId, tombstoneMeta) {
   });
 }
 
-/** @param {Record<string, unknown>} tombstones */
-function applyCloudTombstones(tombstones) {
+/** @param {Record<string, unknown>} tombstones @param {Record<string, { actorId?: string }>|null|undefined} [entityVersions] */
+function applyCloudTombstones(tombstones, entityVersions) {
+  const { silentIds, pendingConfirm } = partitionCloudTombstonesForConfirm(tombstones || {}, {
+    localActorId: resolveCloudActorId(),
+    entityVersions: entityVersions || {},
+    shouldApply: shouldApplyCloudTombstone,
+  });
   let removed = false;
-  for (const patientId of Object.keys(tombstones || {})) {
-    if (!shouldApplyCloudTombstone(patientId, tombstones[patientId])) continue;
+  for (const patientId of silentIds) {
     if (removePatientLocally(patientId)) removed = true;
   }
+  if (pendingConfirm.length) scheduleRemotePatientDeleteConfirm(pendingConfirm);
   return removed;
 }
 
@@ -278,7 +288,10 @@ export async function applyCloudState(state, opts) {
       idMap
     );
   }
-  const removed = applyCloudTombstones(snapshot.tombstones || {});
+  const removed = applyCloudTombstones(
+    snapshot.tombstones || {},
+    /** @type {Record<string, { actorId?: string }>|undefined} */ (snapshot.entityVersions)
+  );
   await finalizeCloudPullPatientScope();
   await refreshCloudTodoUIs(todoPatients);
   const prunedLabs = await pruneStoredMobileLabHistoryAfterPull();
@@ -290,29 +303,8 @@ export async function applyCloudState(state, opts) {
   return { ...patientSync, removed };
 }
 
-/** @param {unknown[]} ops */
-export async function applyCloudOps(ops) {
-  if (!Array.isArray(ops) || !ops.length) return { added: 0, updated: 0, removed: false };
-  const labWin = await loadMobileLabWindowMod();
-  let rawLabOps = 0;
-  for (let i = 0; i < ops.length; i += 1) {
-    if (String(ops[i]?.path || '').startsWith('labSidecars/')) rawLabOps += 1;
-  }
-  const trimmedOps = labWin.filterCloudPullOpsForMobileLabWindow(ops);
-  let filteredLabOps = 0;
-  for (let j = 0; j < trimmedOps.length; j += 1) {
-    if (String(trimmedOps[j]?.path || '').startsWith('labSidecars/')) filteredLabOps += 1;
-  }
-  if (!trimmedOps.length) {
-    const prunedLabs = await pruneStoredMobileLabHistoryAfterPull();
-    if (prunedLabs) persistClinicalState({ immediate: true });
-    return { added: 0, updated: 0, removed: false };
-  }
-  const fold = createOpFold();
-  for (let i = 0; i < trimmedOps.length; i += 1) {
-    foldCloudOp(fold, trimmedOps[i]);
-  }
-  labWin.filterOpFoldLabSidecarsForMobile(fold);
+/** @param {ReturnType<typeof createOpFold>} fold @param {{ rawLabOps: number, filteredLabOps: number }} labCounts */
+async function applyFoldedCloudPull(fold, labCounts) {
   await applyClinicalOpsSnapshot(fold.clinicalOps);
   const entries = opFoldToLanEntries(fold);
   const idMap = buildLiveSyncPatientIdMap(entries, getPatients(), {});
@@ -331,10 +323,38 @@ export async function applyCloudOps(ops) {
   }
   await recordLabPullDiagnostics(
     patientSync,
-    { patients: 0, sets: rawLabOps },
-    { patients: 0, sets: filteredLabOps }
+    { patients: 0, sets: labCounts.rawLabOps },
+    { patients: 0, sets: labCounts.filteredLabOps }
   );
   return { ...patientSync, removed };
+}
+
+function countLabSidecarOps(ops) {
+  let n = 0;
+  for (let i = 0; i < (ops || []).length; i += 1) {
+    if (String(ops[i]?.path || '').startsWith('labSidecars/')) n += 1;
+  }
+  return n;
+}
+
+/** @param {unknown[]} ops */
+export async function applyCloudOps(ops) {
+  if (!Array.isArray(ops) || !ops.length) return { added: 0, updated: 0, removed: false };
+  const labWin = await loadMobileLabWindowMod();
+  const rawLabOps = countLabSidecarOps(ops);
+  const trimmedOps = labWin.filterCloudPullOpsForMobileLabWindow(ops);
+  const filteredLabOps = countLabSidecarOps(trimmedOps);
+  if (!trimmedOps.length) {
+    const prunedLabs = await pruneStoredMobileLabHistoryAfterPull();
+    if (prunedLabs) persistClinicalState({ immediate: true });
+    return { added: 0, updated: 0, removed: false };
+  }
+  const fold = createOpFold();
+  for (let i = 0; i < trimmedOps.length; i += 1) {
+    foldCloudOp(fold, trimmedOps[i]);
+  }
+  labWin.filterOpFoldLabSidecarsForMobile(fold);
+  return applyFoldedCloudPull(fold, { rawLabOps, filteredLabOps });
 }
 
 /** @param {{ added?: number, updated?: number, removed?: boolean }} result */

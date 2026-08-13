@@ -111,13 +111,12 @@ test('Admin on iPad without team membership does not get sala-wide census', () =
   assert.deepEqual(out, []);
 });
 
-test('R1 desktop Nube mirrors joined team instead of full sala census', () => {
+test('R1 desktop Nube shows full census (Filtros narrow; no hard team hide)', () => {
   delete globalThis.__RPC_MOBILE_WEB__;
   delete globalThis.window;
   setCloudRoomConnected(true);
   const census = [
     { id: 'p-mine', servicio: 'Sala', area: 'A', sala: 'Sala 2' },
-    // Other slice, unassigned — must not appear (not structural match to equipo B)
     { id: 'p-sala', servicio: 'Sala', area: 'Sala A', sala: 'Sala 2' },
   ];
   const out = filterPatientsForClinicalSidebar(
@@ -125,7 +124,8 @@ test('R1 desktop Nube mirrors joined team instead of full sala census', () => {
     { user_id: 'u-r1', rank: 'R1', sala: 'Sala 2' },
     scopeFixture
   );
-  assert.deepEqual(out.map((p) => p.id), ['p-mine']);
+  // Sidebar hard-filter is off on desktop; Guardia census applies Filtros separately.
+  assert.deepEqual(out.map((p) => p.id).sort(), ['p-mine', 'p-sala']);
 });
 
 test('R1 desktop Nube keeps unassigned structural match after sidebar re-filter', () => {
@@ -148,7 +148,7 @@ test('R1 desktop Nube keeps unassigned structural match after sidebar re-filter'
       ],
     }
   );
-  assert.deepEqual(out.map((p) => p.id).sort(), ['p-mine', 'p-slice']);
+  assert.deepEqual(out.map((p) => p.id).sort(), ['p-mine', 'p-other', 'p-slice']);
 });
 
 test('R1 desktop LAN without Nube keeps same-sala census', () => {

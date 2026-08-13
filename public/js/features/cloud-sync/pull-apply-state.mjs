@@ -114,7 +114,15 @@ function foldAgendaList(fold, value) {
   }
 }
 
-/** @param {OpFold} fold @param {{ path: string, value: unknown }} op */
+/** @param {OpFold} fold @param {string} patientId @param {unknown} value @param {unknown} op */
+function foldTombstone(fold, patientId, value, op) {
+  const base = value && typeof value === 'object' ? { ...value } : {};
+  const actorId = String(/** @type {{ actorId?: string }} */ (op)?.actorId || '').trim();
+  if (actorId) base.actorId = actorId;
+  fold.tombstones[patientId] = base;
+}
+
+/** @param {OpFold} fold @param {{ path: string, value: unknown, actorId?: string }} op */
 export function foldCloudOp(fold, op) {
   const path = String(op?.path || '');
   const value = op?.value;
@@ -164,7 +172,7 @@ export function foldCloudOp(fold, op) {
 
   const tombstone = /^tombstones\/([^/]+)$/.exec(path);
   if (tombstone) {
-    fold.tombstones[tombstone[1]] = value;
+    foldTombstone(fold, tombstone[1], value, op);
   }
 }
 

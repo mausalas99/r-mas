@@ -228,51 +228,6 @@ html.motion-sobrio .ui-loading-cell {
   opacity: 0.4;
   cursor: default;
 }
-.ui-approval-card--confirm .ui-approval-question {
-  font-size: 0.95rem;
-  line-height: 1.45;
-  padding-right: 0.5rem;
-}
-.ui-approval-footer--confirm {
-  justify-content: flex-end;
-  gap: 0.5rem;
-  padding-top: 0.85rem;
-}
-.ui-approval-cancel {
-  appearance: none;
-  border: 1px solid var(--border, var(--color-border, #e5e7eb));
-  background: transparent;
-  color: var(--text, var(--color-ink));
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  padding: 0.45rem 0.85rem;
-  border-radius: var(--radius-field, 8px);
-  cursor: pointer;
-}
-.ui-approval-cancel:hover {
-  background: color-mix(in oklab, var(--text, #111) 6%, transparent);
-}
-.ui-approval-danger {
-  appearance: none;
-  border: none;
-  background: var(--error, var(--color-danger, #ef4444));
-  color: #fff;
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 650;
-  padding: 0.45rem 0.95rem;
-  border-radius: var(--radius-field, 8px);
-  cursor: pointer;
-}
-.ui-approval-danger:hover {
-  filter: brightness(1.06);
-}
-.ui-approval-modal .ui-approval-card--confirm {
-  min-width: min(100%, 22rem);
-  max-width: 26rem;
-  padding: 1rem 1.1rem 0.9rem;
-}
 .ui-approval-card--sent {
   align-items: center;
   justify-content: center;

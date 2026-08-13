@@ -438,3 +438,38 @@ test('reclassifyEaMedProposal — PREGABALINA de antiepilépticos a analgesia', 
   assert.match(m.pendienteReceta.analgesia, /PREGABALINA/i);
   assert.equal(items[0].soapCatOverride, 'analgesia');
 });
+
+test('reclassifyEaMedProposal — sin sel SOAP: override + re-select + sync sobrevive refresh', async () => {
+  const { reclassifyEaMedProposal } = await import('./estado-actual-med-reclassify.mjs');
+  const m = emptyMonitoreo();
+  const items = [{ id: 42, nombreRaw: 'PREGABALINA', dosisRaw: '75MG VO C/24H' }];
+  m.pendienteReceta.antiepilepticos = 'PREGABALINA 75MG VO C/24H';
+  const medRecetaByPatient = { pat1: { items } };
+  const medNotaSelectionByPatient = { pat1: {} };
+
+  const ok = reclassifyEaMedProposal({
+    patientId: 'pat1',
+    fromKey: 'antiepilepticos',
+    toKey: 'analgesia',
+    monitoreo: m,
+    medRecetaByPatient,
+    medNotaSelectionByPatient,
+  });
+
+  assert.equal(ok, true);
+  assert.equal(items[0].soapCatOverride, 'analgesia');
+  assert.equal(medNotaSelectionByPatient.pat1[42], true);
+  assert.equal(m.pendienteReceta.antiepilepticos, '');
+  assert.match(m.pendienteReceta.analgesia, /PREGABALINA/i);
+
+  // Same path as persistEstadoClinicoAndRefresh → syncEaRecetaProposals
+  syncRecetaProposalsFromSoapSelection(
+    'pat1',
+    m,
+    medRecetaByPatient,
+    medNotaSelectionByPatient,
+    classifyMedicationSoapCategory
+  );
+  assert.equal(m.pendienteReceta.antiepilepticos, '');
+  assert.match(m.pendienteReceta.analgesia, /PREGABALINA/i);
+});
