@@ -1,43 +1,49 @@
-version: 8.1.1
+version: 8.1.2
 files:
-  - url: R+-8.1.1-arm64.zip
-    sha512: o+haPoVvZuRy4u8Shla18tW6GqLVPD84+xl2fRbeNTj5lBMVoVH4GX0dbD7FD8ELcrK0GKQhXlVdk3EN6cb6+A==
-    size: 139668559
-  - url: R+-8.1.1-arm64.dmg
-    sha512: Ie0fLH7FmYSH/lRy16U9UIBzddqKtobO7iuFM4vyvevAVUUn7DncZuNSW2cJL/Fxtbot9gioqXOI1KiwcZM6bg==
-    size: 145512335
-  - url: R+-8.1.1-x64.zip
-    sha512: S1eDQer1HQrTwXzVQThjLqRzB569O8AYIvrFirPKUjeCAqKvycnGnAUScgWB8yZjSAygITsZ34JBZtOo4GZCAg==
-    size: 148042585
-  - url: R+-8.1.1-x64.dmg
-    sha512: IRkWatDiF5YQ3bvaCLK/ocguayR/iyNJZsjU70M2MJaNXtEqRFWpjd/HbYoZzt+YvB8wmN/FWEx+QMEP1C5ALA==
-    size: 153941923
-path: R+-8.1.1-arm64.zip
-sha512: o+haPoVvZuRy4u8Shla18tW6GqLVPD84+xl2fRbeNTj5lBMVoVH4GX0dbD7FD8ELcrK0GKQhXlVdk3EN6cb6+A==
-releaseDate: '2026-08-13T15:29:41.000Z'
+  - url: R+-8.1.2-arm64.zip
+    sha512: zBq8MGt3S9VSAQKWHoScmVHo0EZXDI15dxNB8AAvOjZHnIqjY61MwNTBDeFFzjjXCJO+91RUAA8Rw/4eGiJ8lA==
+    size: 139770719
+  - url: R+-8.1.2-arm64.dmg
+    sha512: OuU1BgpqZN5bzOP430quDOQwQtDXQJcD9zTVS43frwPu9Uc99/b36Xhq9HQnRy5ZR6k4MgONwW6HjBRpuixSiw==
+    size: 145645254
+  - url: R+-8.1.2-x64.zip
+    sha512: 9zjWCjbX0tAf4FddsSlyAlKXkylLwgZ/50w747PyQORpK+5EUc7YCJCMwEksXes+/GDBrskpbnACaWbyOUXkqg==
+    size: 148144777
+  - url: R+-8.1.2-x64.dmg
+    sha512: QCp9Hq6L9VN9WVd5IfsMZy7ESqLytXJlIPASEpc1B1dMdkGnEsLtZ4i5b17PfDK0KLaCJolYuK1ppCR1LXGVdA==
+    size: 154050150
+path: R+-8.1.2-arm64.zip
+sha512: zBq8MGt3S9VSAQKWHoScmVHo0EZXDI15dxNB8AAvOjZHnIqjY61MwNTBDeFFzjjXCJO+91RUAA8Rw/4eGiJ8lA==
+releaseDate: '2026-08-13T22:13:06.000Z'
 releaseNotes: |
-  8.1.1 lleva el censo de escritorio a Filtros (R1–R3 ven el censo completo y lo estrechan; iPad sigue en espejo de equipo), protege el borrado de pacientes (Admin/R4 vs equipo; confirmación si Nube lo quitó en otra Mac) y activa clinical-repo: escrituras SQLCipher-first con change-log hacia Nube (schema v23). Incluye SOAP/reclasificar en Estado Actual y Recuérdame durable.
+  8.1.2 abre el expediente en Paciente → Resumen (glance: estado, labs del día, medicamentos N/HD/HI). El historial de labs se navega por día. La receta SOAP usa el catálogo SOME (destino + packs IV→VO) y admite reposición de K mixta. Login Nube pinta sesión al instante; el buscador de actualizaciones es silencioso salvo desde Ajustes.
   
-  Escritorio via Filtros — R1–R3 ya no ocultan el censo por equipo: ven el censo completo y lo estrechan con Filtros (sala + equipo por defecto). Evita que desaparezcan expedientes tras archivo de equipo o reasignación admin.
+  Glance home — Al abrir un expediente caes en Resumen (KPIs de estado clínico, labs del día, medicamentos como lista N/HD/HI — sin pastillas).
   
-  iPad — Sigue el espejo duro de equipo (sin cambio de política móvil).
+  Laboratorio — Labs, Tendencias y Cultivos viven bajo Laboratorio. Resultados ya no es pestaña de Paciente.
   
-  Sala en Filtros — Preferencia persistente; R1–R3 default a su sala, Admin/R4 a Todas.
+  Pase — La ronda usa el mismo glance que Resumen.
   
-  Quién puede borrar — Admin/R4: cualquier expediente. Resto: solo pacientes de su equipo (UI, toast y lote).
+  Arranque — Tras hidratar el censo se selecciona al momento el último paciente (o fijado / primero visible), sin esperar a Nube.
   
-  Wipe remoto — Si un admin (u otro equipo) elimina en Nube, esta Mac pregunta antes de quitarlo localmente («Eliminar aquí» / «Conservar aquí»). Los borrados propios se aplican en silencio.
+  Catálogo SOME — Destino SOAP (N → V → HD → HI → NM) con grafías del formulario; paracetamol/metamizol = analgesia/antipiréticos; buprenorfina = analgesia. Amplía EA, no los filtros de Manejo.
   
-  Schema v23 — Tabla clinical_change_log; escrituras canónicas vía lib/clinical-repo/ y db:clinical-command.
+  IV → VO — Packs orales del catálogo (p. ej. dexametasona 8 mg IV → 2 tabletas de 4 mg); no inventa fracciones.
   
-  Projector — El change-log drena a la cola Nube (eventualidades + projector encendidos por defecto; opt-out 0).
+  Reposición de K — Una bolsa puede llevar KCl + KPO4 (mEq sumados).
   
-  Recuérdame durable — Token en userData (IPC + flush al salir); no se pierde al actualizar.
+  Sueros — Hartmann / NaCl 0.9% fuera de EA; hipertónico y KCl sí entran.
   
-  SOAP — Selector de destino al clasificar medicamentos.
+  Historial por día — Un renglón por fecha; dentro del día, ventanas horarias (mismas reglas que consolidar al pegar).
   
-  Reclasificar — Propuestas en EA que sobreviven al refresco del panel (soapCatOverride).
+  Panel FEB — Febriles (Tífico O/H, Paratífico A/B) en el overlay de paneles.
   
-  ABX — Sync desde receta.
+  Login session-first — El token y el panel Conexión se pintan en cuanto responde la API; código de recuperación y perfil/sala no bloquean ni deshacen la sesión.
   
-  Etiqueta eTFG simplificada; CTA de eventualidad en el detalle; se quita la barra + Eventualidad del toolbar.
+  Actualizaciones silenciosas — Chequeo al arrancar, al Actualizar labs y al cambiar de paciente (máx. cada 30 min). El toast «ya actualizado» solo aparece si buscaste desde Ajustes.
+  
+  Atajos — ⌘1 / ⌘E / ⌘T (y vecinos) ya no los come Chromium: Electron los reenvía al renderer.
+  
+  Pendientes huérfanos — Al borrar un expediente se limpian toasts de recordatorio de ese paciente.
+  
+  Curriculum v17 — Primero estructura de la app, + Agregar y completar cuarto/cama/servicio; Tendencias se enseña bajo Laboratorio.
