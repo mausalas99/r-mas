@@ -222,6 +222,19 @@ export const LAB_EXTENDED_PANEL_DEFS = [
     ],
   },
   {
+    sectionKey: 'FEB',
+    mode: 'qual',
+    gates: [/FEBRILES\s+COMPLETAS/i, /\bT[IÍ]FICO\s*["']?[OH]["']?/i, /PARAT[IÍ]FICO\s+[AB]\b/i],
+    fields: [
+      { key: 'TifO', patterns: [/\bT[IÍ]FICO\s*["']?O["']?/i] },
+      { key: 'TifH', patterns: [/\bT[IÍ]FICO\s*["']?H["']?/i] },
+      { key: 'ParaA', patterns: [/PARAT[IÍ]FICO\s+A\b/i] },
+      { key: 'ParaB', patterns: [/PARAT[IÍ]FICO\s+B\b/i] },
+      { key: 'Bru', patterns: [/\bBRUCELLA\b/i] },
+      { key: 'ProtX', patterns: [/\bPROTEUS\b/i] },
+    ],
+  },
+  {
     sectionKey: 'MICRO',
     mode: 'qual',
     gates: [

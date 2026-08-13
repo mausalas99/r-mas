@@ -317,7 +317,7 @@ async function registerFeatureRuntimesForBoot() {
   runInitialFeatureBoot();
 }
 
-appStateReady
+const runtimesReady = appStateReady
   .then(async function () {
     try {
       await registerFeatureRuntimesForBoot();
@@ -443,7 +443,7 @@ function wireOnboardingFinishedBootResume(finishPatientListBoot) {
 }
 
 function runDomBoot() {
-  appStateReady.then(function () {
+  runtimesReady.then(function () {
     runDomBootAfterState();
   }).catch(function () {
     runDomBootAfterState();
@@ -467,6 +467,23 @@ function runDomBootAfterState() {
     if (!onboardingBootActive) {
       runDeferredShellAfterOnboarding();
     }
+    function selectDefaultPatientAndLoadLabs() {
+      if (ensureActivePatientInSidebarScope()) return;
+      // Cold boot: the patient list can still be settling here, so the first pass
+      // sometimes sees zero visible patients — retry once after a paint.
+      requestAnimationFrame(function () {
+        ensureActivePatientInSidebarScope();
+      });
+      void ensureLabsLoaded().then(function (mod) {
+        mod.renderLabHistoryPanel();
+      });
+    }
+
+    if (!onboardingBootActive) {
+      renderPatientList();
+      selectDefaultPatientAndLoadLabs();
+    }
+
     function finishPatientListBoot() {
       if (isClinicalOnboardingBootActive()) {
         wireOnboardingFinishedBootResume(finishPatientListBoot);
@@ -474,19 +491,20 @@ function runDomBootAfterState() {
       }
       void import('./clinical-access-runtime.mjs')
         .then(function (mod) {
-          if (typeof mod.refreshClinicalPatientListForScope === 'function') {
-            return mod.refreshClinicalPatientListForScope();
-          }
           renderPatientList();
+          selectDefaultPatientAndLoadLabs();
+          if (typeof mod.refreshClinicalPatientListForScope === 'function') {
+            // Background team/LAN/Nube reconcile — must NOT block default-patient
+            // selection above: it does a network pull that can be slow or hang.
+            void mod
+              .refreshClinicalPatientListForScope()
+              .then(selectDefaultPatientAndLoadLabs)
+              .catch(function () {});
+          }
         })
         .catch(function () {
           renderPatientList();
-        })
-        .then(function () {
-          if (ensureActivePatientInSidebarScope()) return;
-          void ensureLabsLoaded().then(function (mod) {
-            mod.renderLabHistoryPanel();
-          });
+          selectDefaultPatientAndLoadLabs();
         })
         .then(function () {
           if (globalThis.__RPC_CLOUD_MOBILE__) return;

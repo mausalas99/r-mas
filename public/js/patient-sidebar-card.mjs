@@ -7,6 +7,19 @@ export function escSidebarHtml(s) {
   return escHtml(s);
 }
 
+/**
+ * First + last token only, so the sidebar column can stay narrow.
+ * Comma-separated "APELLIDOS, NOMBRE" records are already two logical parts — left as-is.
+ * @param {string} fullName
+ */
+export function shortenPatientDisplayName(fullName) {
+  const name = String(fullName || '').trim();
+  if (!name || name.includes(',')) return name;
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length <= 2) return name;
+  return `${parts[0]} ${parts[parts.length - 1]}`;
+}
+
 /** @param {{ cuarto?: string, cama?: string }} p */
 import { escHtml } from './dom-escape.mjs';
 
@@ -41,14 +54,11 @@ export function renderPatientSidebarBodyHtml(p, opts) {
   opts = opts || {};
   const showServicio = opts.showServicio !== false;
   const nombreRaw = String(p?.nombre || '').trim();
-  const nombreDisplay = nombreRaw || 'Sin nombre';
+  const nombreDisplay = shortenPatientDisplayName(nombreRaw) || 'Sin nombre';
   const registro = String(p?.registro || '').trim();
   const servicio = showServicio ? String(p?.servicio || '').trim() : '';
-  const nameTitleAttr = registro
-    ? ` title="${escSidebarHtml([registro, servicio].filter(Boolean).join(' · '))}"`
-    : servicio
-      ? ` title="${escSidebarHtml(servicio)}"`
-      : '';
+  const nameTitleParts = [nombreRaw !== nombreDisplay ? nombreRaw : '', registro, servicio].filter(Boolean);
+  const nameTitleAttr = nameTitleParts.length ? ` title="${escSidebarHtml(nameTitleParts.join(' · '))}"` : '';
 
   const metaParts = formatPatientBedMetaHtml(p);
   if (servicio) {

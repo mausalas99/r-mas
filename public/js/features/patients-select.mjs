@@ -35,6 +35,8 @@ import {
 } from './patients-round.mjs';
 import { syncPatientBulkBar } from './patients-bulk-bar.mjs';
 import { showConfirmDialog } from '../ui-approval-card.mjs';
+import { requestSilentUpdateCheck } from './platform/updater/silent-check.mjs';
+import { writeLastSelectedPatientId } from './patients-default-id.mjs';
 
 /** @param {string} iso */
 function formatIncomingEffectiveLabel(iso) {
@@ -186,6 +188,7 @@ function selectPatientCore(id) {
     rt.invalidateInnerTabRenderCache();
   }
   rt.setActiveId(id);
+  writeLastSelectedPatientId(id);
   if (!patientChanged || !patchPatientListActiveHighlight(id)) {
     patientsBridge.renderPatientList();
   }
@@ -217,6 +220,7 @@ function selectPatientCore(id) {
       scrollActiveRondaCardIntoView();
     });
   }
+  requestSilentUpdateCheck();
 }
 
 function showPatientDeleteConfirm(n) {

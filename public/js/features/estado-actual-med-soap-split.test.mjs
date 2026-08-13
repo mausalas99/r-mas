@@ -2,13 +2,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { partitionAnalgesiaForSoap, partitionNmMedsForSoap } from './estado-actual-med-soap-split.mjs';
 
-test('partitionAnalgesiaForSoap separa antieméticos', () => {
+test('partitionAnalgesiaForSoap separa antieméticos y antipiréticos', () => {
   var split = partitionAnalgesiaForSoap(
-    'KETOROLACO 30MG IV C/8H | ONDANSETRON 8MG IV C/8H | PARACETAMOL 1G IV C/8H'
+    'BUPRENORFINA 4 MCG/HORA IV | ONDANSETRON 8MG IV C/8H | PARACETAMOL 1G IV C/8H | METAMIZOL 1G IV PRN'
   );
-  assert.match(split.analgesia, /KETOROLACO/i);
-  assert.match(split.analgesia, /PARACETAMOL/i);
+  assert.match(split.analgesia, /BUPRENORFINA/i);
+  assert.doesNotMatch(split.analgesia, /PARACETAMOL/i);
+  assert.doesNotMatch(split.analgesia, /METAMIZOL/i);
   assert.doesNotMatch(split.analgesia, /ONDANSETRON/i);
+  assert.match(split.antipireticos, /PARACETAMOL/i);
+  assert.match(split.antipireticos, /METAMIZOL/i);
   assert.match(split.antiemeticos, /ONDANSETRON/i);
 });
 

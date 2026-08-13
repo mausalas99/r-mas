@@ -26,17 +26,10 @@ test('potassium repos — detección KCl, K phosphate y carrier NaCl', () => {
   assert.equal(isPotassiumReposCarrierMedicationItem(parsed.items[1], parsed.items), true);
 });
 
-test('potassiumReposNmSoapFragment — cláusula consolidada NM', () => {
+test('potassiumReposNmSoapFragment — mEq totales y horas, sin subdividir sales', () => {
   var parsed = parseIndicacionesPaste(K_REPOS_PASTE);
-  var sel = {};
-  parsed.items.forEach(function (it) {
-    sel[it.id] = true;
-  });
   var frag = potassiumReposNmSoapFragment(parsed.items, parsed.items);
-  assert.match(frag, /^REPOSICIÓN DE POTASIO:/);
-  assert.match(frag, /CLORURO DE POTASIO.*60.*MEQ.*IV/i);
-  assert.match(frag, /FOSFATO DE POTASIO.*20.*MEQ.*IV/i);
-  assert.match(frag, /\(PARA 20 HORAS\)$/);
+  assert.equal(frag, 'REPOSICIÓN DE POTASIO 80 MEQ A 20 HORAS');
 });
 
 test('bucketsFromRecetaItems — reposición K en NM sin diluyente NaCl', () => {
@@ -46,19 +39,18 @@ test('bucketsFromRecetaItems — reposición K en NM sin diluyente NaCl', () => 
     sel[it.id] = true;
   });
   var buckets = bucketsFromRecetaItems(parsed.items, sel, classifyMedicationSoapCategory);
-  assert.match(buckets.nm, /^REPOSICIÓN DE POTASIO:/);
+  assert.equal(buckets.nm, 'REPOSICIÓN DE POTASIO 80 MEQ A 20 HORAS');
   assert.doesNotMatch(buckets.nm, /CLORURO DE SODIO/i);
 });
 
 test('buildEstadoActualText — reposición K en línea NM', () => {
   var m = emptyMonitoreo();
-  m.estadoClinico.nm =
-    'REPOSICIÓN DE POTASIO: CLORURO DE POTASIO 60 MEQ IV, FOSFATO DE POTASIO 20 MEQ IV (PARA 20 HORAS)';
+  m.estadoClinico.nm = 'REPOSICIÓN DE POTASIO 80 MEQ A 20 HORAS';
   var text = buildEstadoActualText(m.estadoClinico, { vitals: {}, glucometrias: [], io: {} }, {}, {});
   var nmLine = text.split('\n').find(function (line) {
     return line.startsWith('NM:');
   });
-  assert.match(nmLine, /REPOSICIÓN DE POTASIO: CLORURO DE POTASIO 60 MEQ IV, FOSFATO DE POTASIO 20 MEQ IV \(PARA 20 HORAS\)/);
+  assert.match(nmLine, /REPOSICIÓN DE POTASIO 80 MEQ A 20 HORAS/);
 });
 
 test('potassiumReposNmSoapFragment — duración desde CC/HORA y volumen ML', () => {
@@ -68,5 +60,25 @@ test('potassiumReposNmSoapFragment — duración desde CC/HORA y volumen ML', ()
     '08/08/2026 11:40:10 a.m.\tMEDICAMENTOS P1\tFOSFATO DE POTASIO 20 MEQ SOL INY 10 ML (+)\tVIA INTRAVENOSA\t20 MEQ\t-\tNW';
   var parsed = parseIndicacionesPaste(paste);
   var frag = potassiumReposNmSoapFragment(parsed.items, parsed.items);
-  assert.match(frag, /\(PARA 20 HORAS\)$/);
+  assert.equal(frag, 'REPOSICIÓN DE POTASIO 80 MEQ A 20 HORAS');
+});
+
+var K_REPOS_MIXTA_150CC =
+  '13/08/2026 09:29:14 a.m.\tMEDICAMENTOS P1\tCLORURO DE POTASIO 20 MEQ SOL INY 5 ML (+)\tVIA INTRAVENOSA\t40 MEQ\t-\tNW\t\n' +
+  '13/08/2026 09:29:14 a.m.\tMEDICAMENTOS P1\tCLORURO DE SODIO 0.9 % SOL INY 250 ML\tVIA INTRAVENOSA\t150 ML / VEL.INF: A 75 CC HORA\tUNICA VEZ\tNW\t\n' +
+  '13/08/2026 09:29:14 a.m.\tMEDICAMENTOS P1\tFOSFATO DE POTASIO 20 MEQ SOL INY 10 ML (+)\tVIA INTRAVENOSA\t40 MEQ\t-\tNW';
+
+test('potassiumReposNmSoapFragment — 40 KCl + 40 KPO4 = 80 MEQ A 2 HORAS', () => {
+  var parsed = parseIndicacionesPaste(K_REPOS_MIXTA_150CC);
+  var frag = potassiumReposNmSoapFragment(parsed.items, parsed.items);
+  assert.equal(frag, 'REPOSICIÓN DE POTASIO 80 MEQ A 2 HORAS');
+});
+
+test('potassiumReposNmSoapFragment — solo KCl 40 MEQ A 2 HORAS', () => {
+  var paste =
+    '13/08/2026 09:29:14 a.m.\tMEDICAMENTOS P1\tCLORURO DE POTASIO 20 MEQ SOL INY 5 ML (+)\tVIA INTRAVENOSA\t40 MEQ\t-\tNW\n' +
+    '13/08/2026 09:29:14 a.m.\tMEDICAMENTOS P1\tCLORURO DE SODIO 0.9 % SOL INY 250 ML\tVIA INTRAVENOSA\t150 ML / VEL.INF: A 75 CC HORA\tUNICA VEZ\tNW';
+  var parsed = parseIndicacionesPaste(paste);
+  var frag = potassiumReposNmSoapFragment(parsed.items, parsed.items);
+  assert.equal(frag, 'REPOSICIÓN DE POTASIO 40 MEQ A 2 HORAS');
 });

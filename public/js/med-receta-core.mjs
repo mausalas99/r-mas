@@ -54,6 +54,9 @@ export { applyIvToOralForEgreso } from './med-receta-iv-oral.mjs';
 export {
   SOAP_DESTINATION_KEYS,
   SOAP_DESTINATION_LABELS,
+  SOAP_DESTINATION_GROUPS,
+  soapDestinationSelectOptionsHtml,
+  mapSoapDestKeyToEaField,
   effectiveSoapCategory,
   soapDestinationUiValue,
   unassignedOtrosSoapItems,

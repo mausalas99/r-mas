@@ -19,6 +19,7 @@ import {
   updateLabPatientBanner,
   attachSomeTablesParsed,
   appendResLabChunksToBox,
+  appendLabHourGroupHeader,
   syncLabOutputHistoryAfterRender,
   prepareLabOutputBox,
 } from './lab-panel-output-helpers.mjs';
@@ -108,7 +109,22 @@ export function renderOutput(result, opts) {
   var box = prepareLabOutputBox(fechaBanner, rt);
   var src = String(result.sourceText || '').trim();
   attachSomeTablesParsed(result, src);
-  appendResLabChunksToBox(box, resLabs, src, result, rt.getLabOutputPrefs(), rt);
+  var groups = opts && opts.dayGroups;
+  if (groups && groups.length) {
+    groups.forEach(function (group) {
+      if (groups.length > 1) appendLabHourGroupHeader(box, group);
+      appendResLabChunksToBox(
+        box,
+        group.resLabs,
+        group.sourceText || src,
+        result,
+        rt.getLabOutputPrefs(),
+        rt
+      );
+    });
+  } else {
+    appendResLabChunksToBox(box, resLabs, src, result, rt.getLabOutputPrefs(), rt);
+  }
   document.getElementById('lab-output-section').style.display = 'block';
   var labRoot = document.getElementById('appcontent-lab');
   if (labRoot) labRoot.classList.remove('is-lab-chunk-loading');

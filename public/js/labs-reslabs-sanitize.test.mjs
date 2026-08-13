@@ -24,6 +24,7 @@ const MANGLED_FOOTER =
 test('solo paneles clínicos son chunks válidos — el membrete no lo es', () => {
   assert.equal(looksLikeLabSectionChunk('BH\tHb 7.85*  Hto 24.5*'), true);
   assert.equal(looksLikeLabSectionChunk('QS\tGlu 145  Cr 1.2'), true);
+  assert.equal(looksLikeLabSectionChunk('FEB\tTifO neg TifH neg Bru neg'), true);
   assert.equal(looksLikeLabSectionChunk(LETTERHEAD_COLLAPSED), false);
   assert.equal(looksLikeLabSectionChunk(MANGLED_FOOTER), false);
 });

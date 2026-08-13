@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveDashboardPaintTargets } from './dashboard-mount.mjs';
+import { resolveDashboardPaintTargets, buildEaInputFromPatient } from './dashboard-mount.mjs';
 
 test('no-arg render targets both classic and ronda hosts', () => {
   var classic = { id: 'classic' };
@@ -34,4 +34,13 @@ test('ronda host still paints when inner is not resumen', () => {
     inner: 'clinico',
   });
   assert.deepEqual(targets, [ronda]);
+});
+
+test('buildEaInputFromPatient does not throw when the patient has no monitoreo (no active patient on boot)', () => {
+  assert.doesNotThrow(function () {
+    buildEaInputFromPatient({});
+  });
+  var result = buildEaInputFromPatient({});
+  assert.equal(result.soporte, undefined);
+  assert.equal(result.bombaOn, false);
 });

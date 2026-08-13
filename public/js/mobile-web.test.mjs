@@ -100,7 +100,7 @@ describe('mobile-web', () => {
       '<div class="card-header lab-output-card-header">' +
       '<span class="lab-output-card-title" style="display:flex;align-items:center;gap:8px;">Resultados</span>' +
       '<div class="lab-output-header-tools"><div class="lab-history-date-picker">' +
-      '<label class="lab-history-date-picker-label">Estudio</label></div></div>' +
+      '<label class="lab-history-date-picker-label">Día</label></div></div>' +
       '</div></div>';
     syncMobileLabReferenceChrome();
     assert.equal(document.getElementById('lab-input-section').style.display, 'none');
@@ -111,7 +111,7 @@ describe('mobile-web', () => {
     assert.equal(title.style.display, 'none');
     assert.equal(
       document.querySelector('.lab-history-date-picker-label').textContent,
-      'Estudio'
+      'Día'
     );
     var cardHeader = document.querySelector('#lab-output-section > .card-header');
     assert.equal(cardHeader.style.display, 'none');

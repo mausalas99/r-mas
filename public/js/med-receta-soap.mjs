@@ -26,6 +26,7 @@ import {
   classifyNmSupport_,
   classifyAntihta_,
 } from './med-receta-soap-families.mjs';
+import { classifyBySomeCatalog, isSuerosMedicationNombre } from './med-receta-soap-some-map.mjs';
 
 function escapeRegExp(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -56,28 +57,34 @@ function isAspirinNombre(n) {
 }
 
 /** Destinos SOAP asignables manualmente (corregir auto-clasificación o «otros»). */
-export const SOAP_DESTINATION_KEYS = [
-  'analgesia',
-  'antiemeticos',
-  'sedacion',
-  'antiepilepticos',
-  'antiparkinsonianos',
-  'antidotos',
-  'viaAerea',
-  'abx',
-  'transfusiones',
-  'antihta',
-  'diuretico',
-  'antitromboticos',
-  'anticoagulacion',
-  'antiarritmicos',
-  'estatinas',
-  'vasop',
-  'nm',
+export const SOAP_DESTINATION_GROUPS = [
+  {
+    label: 'N',
+    keys: ['analgesia', 'antiemeticos', 'sedacion', 'antiepilepticos', 'antiparkinsonianos', 'antidotos'],
+  },
+  { label: 'V', keys: ['viaAerea'] },
+  {
+    label: 'HD',
+    keys: [
+      'vasop',
+      'antihta',
+      'antitromboticos',
+      'anticoagulacion',
+      'antiarritmicos',
+      'diuretico',
+      'estatinas',
+    ],
+  },
+  { label: 'HI', keys: ['abx', 'transfusiones'] },
+  { label: 'NM', keys: ['nm'] },
 ];
 
+export const SOAP_DESTINATION_KEYS = SOAP_DESTINATION_GROUPS.reduce(function (acc, g) {
+  return acc.concat(g.keys);
+}, []);
+
 export const SOAP_DESTINATION_LABELS = {
-  analgesia: 'Analgésicos',
+  analgesia: 'Analgésicos / antipiréticos',
   antiemeticos: 'Antieméticos',
   sedacion: 'Sedación / delirium',
   antiepilepticos: 'Antiepilépticos',
@@ -95,6 +102,70 @@ export const SOAP_DESTINATION_LABELS = {
   vasop: 'Vasopresores / inotrópicos',
   nm: 'NM (soporte, crónicos, etc.)',
 };
+
+/**
+ * @param {string} soapKey
+ * @returns {string}
+ */
+export function mapSoapDestKeyToEaField(soapKey) {
+  return soapKey === 'diuretico' ? 'diureticos' : soapKey;
+}
+
+/**
+ * Options HTML grouped by SOAP zone (N / V / HD / HI / NM).
+ * @param {(s: string) => string} escFn
+ * @param {{
+ *   current?: string,
+ *   emptyLabel?: string,
+ *   omitEmpty?: boolean,
+ *   excludeKey?: string,
+ *   includeKeys?: string[],
+ *   mapKey?: (k: string) => string,
+ *   labels?: Record<string, string>,
+ * }} [opts]
+ * @returns {string}
+ */
+export function soapDestinationSelectOptionsHtml(escFn, opts) {
+  opts = opts || {};
+  var current = opts.current || '';
+  var labels = opts.labels || SOAP_DESTINATION_LABELS;
+  var mapKey =
+    opts.mapKey ||
+    function (k) {
+      return k;
+    };
+  var include = null;
+  if (opts.includeKeys && opts.includeKeys.length) {
+    include = {};
+    opts.includeKeys.forEach(function (k) {
+      include[k] = true;
+    });
+  }
+  var html = '';
+  if (!opts.omitEmpty) {
+    html += '<option value="">' + escFn(opts.emptyLabel || 'Elegir destino…') + '</option>';
+  }
+  SOAP_DESTINATION_GROUPS.forEach(function (g) {
+    var inner = '';
+    g.keys.forEach(function (soapKey) {
+      var k = mapKey(soapKey);
+      if (opts.excludeKey && k === opts.excludeKey) return;
+      if (include && !include[k]) return;
+      var sel = current === k ? ' selected' : '';
+      inner +=
+        '<option value="' +
+        escFn(k) +
+        '"' +
+        sel +
+        '>' +
+        escFn(labels[k] || labels[soapKey] || k) +
+        '</option>';
+    });
+    if (!inner) return;
+    html += '<optgroup label="' + escFn(g.label) + '">' + inner + '</optgroup>';
+  });
+  return html;
+}
 
 /**
  * Categoría efectiva para volcar a SOAP: override manual gana sobre auto-clasificación.
@@ -184,6 +255,7 @@ function classifyByNameHeuristics_(n) {
 export function shouldIncludeMedicationInSoap(item, classifyFn) {
   if (!item || item.suspendido) return false;
   if (isNutritionMedicationItem(item)) return false;
+  if (isSuerosMedicationNombre(item.nombreRaw)) return false;
   var blob = normalizeNombreForSoapClassify(
     [item.nombreRaw, item.dosisRaw, item.frecuenciaRaw].filter(Boolean).join(' ')
   );
@@ -217,5 +289,7 @@ export function classifyMedicationSoapCategory(nombreRaw, dosisRaw, frecuenciaRa
   if (fromCatalog) return fromCatalog;
   var fromHeuristic = classifyByNameHeuristics_(classifyBlob);
   if (fromHeuristic) return fromHeuristic;
+  var fromSome = classifyBySomeCatalog(n) || classifyBySomeCatalog(classifyBlob);
+  if (fromSome) return fromSome;
   return 'otros';
 }

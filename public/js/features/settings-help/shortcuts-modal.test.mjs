@@ -24,6 +24,13 @@ describe('shortcuts-data', () => {
     assert.match(tabs[1].hint || '', /Labs.*Tendencias.*Cultivos/);
     assert.doesNotMatch(tabs[0].hint || '', /Resultados/);
   });
+
+  it('does not bind ⌘A (Select All stays native)', () => {
+    var items = SHORTCUT_GROUPS.flatMap(function (g) { return g.items; });
+    assert.equal(items.some(function (it) {
+      return it.keys.length === 2 && it.keys[0] === '⌘' && it.keys[1] === 'A';
+    }), false);
+  });
 });
 
 describe('shortcuts-modal DOM', () => {

@@ -5,6 +5,7 @@
 
 /* ── Shared shell frames (Normal density) ─────────────────── */
 html.ui-density-normal #appcontent-lab > .main-work-scroll,
+html.ui-density-normal #appcontent-lab > .lab-active-shell,
 html.ui-density-normal #appcontent-agenda > .rpc-proc-agenda-root,
 html.ui-density-normal #appcontent-med > .med-active-shell,
 html.ui-density-normal .patient-expediente-classic {
@@ -13,6 +14,7 @@ html.ui-density-normal .patient-expediente-classic {
 }
 
 html.high-contrast.ui-density-normal #appcontent-lab > .main-work-scroll,
+html.high-contrast.ui-density-normal #appcontent-lab > .lab-active-shell,
 html.high-contrast.ui-density-normal #appcontent-agenda > .rpc-proc-agenda-root,
 html.high-contrast.ui-density-normal #appcontent-med > .med-active-shell,
 html.high-contrast.ui-density-normal .patient-expediente-classic {

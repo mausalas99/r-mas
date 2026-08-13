@@ -39,9 +39,20 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.1.1](https://github.com/mausalas99/r-mas/releases/tag/v8.1.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.1.2](https://github.com/mausalas99/r-mas/releases/tag/v8.1.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+
+## R+ 8.1.2 (Paciente Resumen + SOAP catálogo + labs del día)
+
+- **Paciente → Resumen** — Glance home (estado, labs del día, meds N/HD/HI). Labs / Tendencias / Cultivos bajo Laboratorio.
+- **Historial labs** — Navegación por día (ventanas horarias dentro del día). Panel FEB (febriles).
+- **SOAP / receta** — Destino y packs IV→VO desde catálogo SOME; reposición de K mixta (KCl + KPO4).
+- **Nube** — Login pinta sesión al instante; actualizaciones silenciosas salvo Ajustes.
+- **Onboarding v17** — Estructura + alta + incompletos primero; Tendencias bajo Laboratorio.
+
+Notas: `docs/RELEASE_NOTES_8.1.2.txt`.
 
 ## R+ 8.1.1 (censo Filtros + clinical-repo + wipe Nube)
 

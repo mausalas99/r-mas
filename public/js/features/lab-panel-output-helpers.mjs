@@ -93,6 +93,16 @@ function appendStandardResLabChunk(box, text) {
   });
 }
 
+export function appendLabHourGroupHeader(box, group) {
+  if (!box || !group) return;
+  var head = box.ownerDocument.createElement('div');
+  head.className = 'lab-hour-group-h';
+  var hora = String(group.hora || '').trim();
+  var tipo = String(group.tipoLabel || '').trim();
+  head.textContent = [hora, tipo].filter(Boolean).join(' · ') || 'Envío';
+  box.appendChild(head);
+}
+
 export function appendResLabChunksToBox(box, resLabs, src, result, labDisp, rt) {
   sortResLabsByClinicalOrder(resLabs || []).forEach(function (text) {
     if (labDisp.hideGasoAdvInterp && rt.isGasoInterpretacionResLabChunk(text)) return;

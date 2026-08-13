@@ -25,6 +25,9 @@ function clearTimeoutForKey(key) {
 }
 
 function fireReminder(patientId, todo) {
+  if (typeof deps.isKnownPatient === 'function' && !deps.isKnownPatient(patientId)) {
+    return;
+  }
   var label = deps.getPatientLabel(patientId);
   var text = String(todo && todo.text != null ? todo.text : '').trim();
   var msg = text
@@ -41,11 +44,16 @@ function fireReminder(patientId, todo) {
   }
 }
 
+function isLivePatient(patientId) {
+  return typeof deps.isKnownPatient !== 'function' || deps.isKnownPatient(patientId);
+}
+
 function scheduleTodoReminder(patientId, todo) {
   if (!todo || !todo.id) return;
   var key = scheduleKey(patientId, todo.id);
   clearTimeoutForKey(key);
 
+  if (!isLivePatient(patientId)) return;
   if (todo.completed) return;
 
   var reminderAt = computeReminderAt(todo);
@@ -83,7 +91,7 @@ function collectActiveKeysForPatient(patientId, activeKeys) {
 }
 
 /**
- * @param {{ getPatientLabel?: (patientId: string) => string, showToast?: (msg: string, type?: string) => void, onNotify?: (payload: object) => void }} newDeps
+ * @param {{ getPatientLabel?: (patientId: string) => string, showToast?: (msg: string, type?: string) => void, onNotify?: (payload: object) => void, isKnownPatient?: (patientId: string) => boolean }} newDeps
  */
 export function configureTodoReminderScheduler(newDeps) {
   if (newDeps && typeof newDeps === 'object') {
@@ -95,6 +103,9 @@ export function configureTodoReminderScheduler(newDeps) {
     }
     if (typeof newDeps.onNotify === 'function') {
       deps.onNotify = newDeps.onNotify;
+    }
+    if (typeof newDeps.isKnownPatient === 'function') {
+      deps.isKnownPatient = newDeps.isKnownPatient;
     }
   }
 }
@@ -121,10 +132,12 @@ export function rescheduleAllTodos(patientId) {
   var patientIds = storage.listTodoPatientIds();
   var allActive = new Set();
   patientIds.forEach(function (id) {
+    if (!isLivePatient(id)) return;
     collectActiveKeysForPatient(id, allActive);
   });
   cancelStaleKeys(allActive);
   patientIds.forEach(function (id) {
+    if (!isLivePatient(id)) return;
     storage.getTodos(id).forEach(function (t) {
       scheduleTodoReminder(id, t);
     });

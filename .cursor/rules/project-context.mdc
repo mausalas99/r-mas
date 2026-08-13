@@ -83,11 +83,11 @@ docs/
 | Equipos (Lumify/EKG/US) | `lib/equipos/`, `public/equipos/`, `cloud/equipos-worker/`, `equipos-cloud-config.mjs`, `features/equipos-{board,qr-panel}.mjs` | LAN `:3738` **or** Cloudflare Worker queue |
 | Patient dashboard | `public/js/features/patient-dashboard/` |
 | Estado actual / monitoreo | `public/js/features/estado-actual-*.mjs` |
-| Labs / tendencias | `public/js/labs*.mjs`, `labs-default-refs.mjs` (rangos estándar / previos si SOME sin refs), `labs-reslabs-sanitize.mjs` (whitelist paneles en resLabs), `labs-panel-defs.mjs` / `labs-panel-parse.mjs` / `labs-panel-overlay*.mjs` (paneles + overlay LAN), `cultivo-block-core.mjs`, `features/tendencias.mjs`, `lab-panel.mjs`, paste-anywhere `features/paste-smart*.mjs` |
+| Labs / tendencias | `public/js/labs*.mjs`, `labs-default-refs.mjs` (rangos estándar / previos si SOME sin refs), `labs-reslabs-sanitize.mjs` (whitelist paneles en resLabs), `labs-panel-defs.mjs` / `labs-panel-parse.mjs` / `labs-panel-overlay*.mjs` (paneles + overlay LAN; **FEB** febriles), `lab-history-day-*.mjs` (historial por día), `cultivo-block-core.mjs`, `features/tendencias.mjs`, `lab-panel.mjs`, paste-anywhere `features/paste-smart*.mjs` |
 | Lab repo scraper | `lib/lab-repo/` (`portal-client.mjs`, `portal-html.mjs`, fixtures); spec `docs/superpowers/specs/2026-06-27-lab-repo-scraper-design.md` |
 | VPO (documentación) | `public/js/features/vpo.mjs`, `vpo-panel.mjs`, `vpo-data.mjs`, `vpo-text.mjs` |
 | Document export | `lib/doc-generators/`, `lib/doc-export-http.js`, `server.js` |
-| Updates / downgrade | `lib/update-downgrade.mjs`, `stable-versions.json`, `min-version.json`, `main.js`, Ajustes |
+| Updates / downgrade | `lib/update-downgrade.mjs`, `stable-versions.json`, `min-version.json`, `main.js`, Ajustes; opportunistic silent check `features/platform/updater/silent-check.mjs` (labs batch + patient select, 30 min throttle) |
 | Debt metrics | `scripts/metrics/` (`lint-tier1.mjs`, `check.mjs`, `boot-graph.mjs`, `baseline.json`); `npm run lint:tier1` (changed paths), `npm run metrics:check` |
 | Onboarding / tour | `clinical-onboarding*.mjs`, `tour-targets.mjs`, `features/settings-help/` (tours, help, release notes), barrel `settings-help.mjs` |
 | UI shell / pase board | `app-shell.mjs` (chrome/toast/modals), `clinical-quick-export.mjs`, `document-export-client.mjs`, `features/pase-board.mjs`, `public/styles/pase-board.css` |
@@ -132,7 +132,10 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
-- **2026-08-13** `patient-dashboard`: Paciente → Resumen glance home; Resultados under Laboratorio (Labs | Tendencias | Cultivos); `public/js/features/patient-dashboard/`.
+- **2026-08-13** `release-8.1.2`: Paciente → Resumen glance + labs por día + SOAP/IV→VO SOME + K mixta + FEB + Nube session-first + silent updater; `patient-dashboard/`, `lab-history-day-*.mjs`, `med-receta-soap-some-map.mjs`, `silent-check.mjs`.
+- **2026-08-13** `onboarding`: curriculum v17 — structure + alta + incompletos first; tendencias under Laboratorio; `onboarding-curriculum.mjs`, `learn-hub.mjs`.
+- **2026-08-13** `guardia-wip`: SOAP dest from SOME catalog + IV→VO packs; mixed K repos; FEB panel; Nube login session-first; silent updater; `med-receta-soap-some-map.mjs`, `med-receta-iv-oral-some.mjs`, `silent-check.mjs`.
+- **2026-08-13** `patient-dashboard`: Paciente → Resumen glance home; Resultados under Laboratorio; SOAP meds as N/HD/HI list (no pills); `public/js/features/patient-dashboard/`.
 - **2026-08-13** `census-delete`: desktop census via Filtros (no hard team hide); patient delete gated Admin/R4 vs team; remote Nube wipe confirm; EA reclassify persists; `patient-delete-auth.mjs`, `remote-patient-delete-confirm.mjs`.
 - **2026-08-12** `cloud-sync-remember`: durable Recuérdame in `userData` via IPC + quit flush + single-instance lock; `lib/cloud-sync-remember-store.cjs`.
 - **2026-08-12** `tendencias-ui`: simplify eTFG card label; style detail event CTA; remove toolbar + Eventualidad; `tendencias-constants.mjs`, `tendencias-hidden.mjs`.
@@ -150,6 +153,3 @@ Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 - **2026-08-08** `cloud-sync`: KV **lite + pivot** — lectura en pull, un `put` solo en push (sin TTL/duplicados); circuit breaker al cupo diario → D1; `kv-revision-cache.mjs`, `sync.js`.
 - **2026-08-08** `release-8.0.7`: rotación **staging** (`rotation_active=0` hasta nueva rotación) + modal reingreso explícito + heredar pacientes en handoff + Recuérdame rehidrata perfil; `clinical-access-teams-core.mjs`, `teams-roster-inherit-gate.mjs`, `clinical-rotation-rejoin-modal.mjs`.
 - **2026-08-08** `release-8.0.6`: onboarding **Ya tengo cuenta** (login Nube + recuérdame + sync); modales Conexión apilados; `clinical-onboarding-existing-login.mjs`, `stacked-overlay.mjs`, `setup-sync.mjs`.
-- **2026-08-07** `release-8.0.5`: **LAN LiveSync retired** — `lan-squad/` + `features/lan/` removed; Nube-only sync (`cloud-sync/`); ward `server.js` dev-only (`R_PLUS_DEV_WARD_SERVER=1`); Historia clínica removed; Interno MIP + Equipos cloud-only; R+ Móvil dedicated bundle; docs/tours (`RELEASE_NOTES_8.0.5.txt`, `feat-interno-mip-nube.md`, `01-vision-north-star.md`).
-- **2026-08-07** `release-8.0.4`: Worker pull snapshot-before-SELECT + mutation prune; clinicalOps fuera del censo; iPad hidrata equipos tras censo; desktop Nube conserva matches estructurales; `pull-strategy.js`, `mutate-bridge.mjs`, `mobile-team-patient-scope.mjs`.
-- **2026-08-06** `release-8.0.3`: Eventualidades sin tab Labs (solo bitácora + compose) + reingreso Nube + admin Equipos + clinicalOps por sala + sync auto; `eventualidades-panel-html.mjs`, `eventualidades-render.mjs`, `cloud-census-collect.mjs`, `sync-runtime-cycle.mjs`.

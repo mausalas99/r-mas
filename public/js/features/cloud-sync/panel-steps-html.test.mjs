@@ -68,6 +68,22 @@ describe('connectedStepsHtml', () => {
     assert.doesNotMatch(html, /data-cloud-step="2"/);
   });
 
+  it('status home includes Cerrar sesión so Recuérdame can return to login', () => {
+    const html = connectedStepsHtml({
+      cloudUser: { username: 'r1', displayName: 'Ana' },
+      roomHtml: '<div data-cloud-room>Sala 1</div>',
+      equipoHtml: '<div></div>',
+      url: 'https://example.workers.dev',
+      hasCloudSession: true,
+    });
+    const statusStart = html.indexOf('data-cloud-view="status"');
+    const optionsStart = html.indexOf('data-cloud-view="options"');
+    assert.ok(statusStart >= 0 && optionsStart > statusStart);
+    const statusHtml = html.slice(statusStart, optionsStart);
+    assert.match(statusHtml, /data-cloud-action="logout"/);
+    assert.match(statusHtml, /Cerrar sesión/);
+  });
+
   it('options and nested views have no body nav bar (modal head owns chrome)', () => {
     const html = connectedStepsHtml({
       cloudUser: null,

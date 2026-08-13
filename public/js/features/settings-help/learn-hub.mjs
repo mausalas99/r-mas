@@ -221,7 +221,7 @@ function renderLearnHubQuickRouteCard(parts) {
     '<button type="button" class="learn-hub-module-hit learn-hub-module-hit--cta"' +
     ` data-learn-chapter="${escapeHtml(QUICK_ROUTE_HUB_MODULE.chapterId)}"` +
     ' data-learn-branch="quick-route"' +
-    ' title="Ruta rápida — lab, guardia, Nube y entrega">' +
+    ' title="Ruta rápida — mapa, alta, labs y turno">' +
     '<span class="learn-hub-module-index learn-hub-module-index--cta" aria-hidden="true">5′</span>' +
     '<span class="learn-hub-module-main">' +
     `<span class="learn-hub-module-title">${escapeHtml(QUICK_ROUTE_HUB_MODULE.label)}</span>` +
@@ -289,7 +289,7 @@ function renderLearnHubFundamentosTrack(parts, focusTrack, fundamentosProgress, 
   );
   parts.push('<div class="learn-hub-track-body">');
   parts.push(
-    '<p class="learn-hub-fundamentos-lead">Módulos por flujo clínico (~15 min, DEMO PÉREZ). Elige Sala o Interconsulta según tu rol.</p>'
+    '<p class="learn-hub-fundamentos-lead">Empieza por la estructura (Paciente · Laboratorio · Manejo), da de alta y completa cuarto/cama/servicio. DEMO PÉREZ en ~15 min. Elige Sala o Interconsulta según tu rol.</p>'
   );
   parts.push('<p class="learn-hub-fundamentos-sub">Sala</p>');
   parts.push('<div class="learn-hub-module-list">');

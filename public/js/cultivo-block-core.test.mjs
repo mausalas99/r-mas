@@ -46,6 +46,7 @@ describe('isLabSectionHeaderLine', () => {
   it('recognizes SEROL and HECES section headers', function () {
     assert.equal(isLabSectionHeaderLine('SEROL VIH'), true);
     assert.equal(isLabSectionHeaderLine('HECES copro'), true);
+    assert.equal(isLabSectionHeaderLine('FEB TifO neg'), true);
   });
 
   it('recognizes GS section header', function () {

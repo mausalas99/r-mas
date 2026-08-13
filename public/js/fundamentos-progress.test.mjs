@@ -25,6 +25,8 @@ test('markFundamentosChapterComplete tracks sala chapters only', () => {
   const r = markFundamentosChapterComplete('ch-patient-lab', storage);
   assert.equal(r.wasNew, true);
   assert.equal(isFundamentosChapterId('ch-patient-lab'), true);
+  assert.equal(isFundamentosChapterId('ch-map'), true);
+  assert.equal(isFundamentosChapterId('ch-results'), false);
   assert.equal(isFundamentosChapterId('ch-ic-lab'), false);
   const ignored = markFundamentosChapterComplete('ch-ic-lab', storage);
   assert.equal(ignored.wasNew, false);

@@ -254,7 +254,7 @@ export function openAddModal() {
   }, 120);
 }
 
-function openAddModalFullManual() {
+export function openAddModalFullManual() {
   document.getElementById('modal-title').textContent = 'Nuevo Paciente';
   modalCompleteAdmissionPatientId = null;
   setModalRegistroTunnelMode(false);

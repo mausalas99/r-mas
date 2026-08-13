@@ -10,8 +10,8 @@ import {
   getTourStepsForChapter,
 } from './onboarding-curriculum.mjs';
 
-test('CURRICULUM_VERSION is 16', () => {
-  assert.equal(CURRICULUM_VERSION, 16);
+test('CURRICULUM_VERSION is 17', () => {
+  assert.equal(CURRICULUM_VERSION, 17);
 });
 
 test('guardia-v7 has 5 chapters and 22 steps', () => {

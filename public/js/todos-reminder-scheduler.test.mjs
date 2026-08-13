@@ -137,6 +137,26 @@ test('reminder toast uses warn type', () => {
   assert.equal(calls[0].msg, 'Pendiente · Ana — Labs');
 });
 
+test('rescheduleAllTodos(patientId) after clearing that patient\'s todos cancels the pending reminder — patient delete', () => {
+  const toasts = [];
+  configureTodoReminderScheduler({
+    getPatientLabel: () => 'Paciente eliminado',
+    showToast: (msg) => toasts.push(msg),
+  });
+
+  const future = new Date(NOW.getTime() + 60 * 60 * 1000).toISOString();
+  seedTodos([todo({ reminderAt: future })]);
+  rescheduleAllTodos(PATIENT);
+
+  // Simulates patient delete: storage cleared for this patient, then rescheduled —
+  // must not fire the reminder for the now-deleted patient at its original time.
+  store['rpc-todos'] = JSON.stringify({});
+  rescheduleAllTodos(PATIENT);
+
+  mock.timers.tick(60 * 60 * 1000);
+  assert.equal(toasts.length, 0);
+});
+
 test('rescheduleAllTodos without patientId scans rpc-todos keys', () => {
   const toasts = [];
   configureTodoReminderScheduler({
@@ -154,4 +174,23 @@ test('rescheduleAllTodos without patientId scans rpc-todos keys', () => {
   assert.equal(toasts.length, 2);
   assert.ok(toasts.some((m) => m.includes('pat-a')));
   assert.ok(toasts.some((m) => m.includes('pat-b')));
+});
+
+test('does not fire reminders for patients missing from the census', () => {
+  const toasts = [];
+  configureTodoReminderScheduler({
+    getPatientLabel: () => 'Paciente',
+    showToast: (msg) => toasts.push(msg),
+    isKnownPatient: (pid) => pid === 'pat-live',
+  });
+
+  const past = new Date(NOW.getTime() - 1000).toISOString();
+  store['rpc-todos'] = JSON.stringify({
+    'pat-gone': [todo({ id: 'g1', text: 'DEXA', reminderAt: past })],
+    'pat-live': [todo({ id: 'l1', text: 'Labs', reminderAt: past })],
+  });
+
+  rescheduleAllTodos();
+  assert.equal(toasts.length, 1);
+  assert.equal(toasts[0], 'Pendiente · Paciente — Labs');
 });

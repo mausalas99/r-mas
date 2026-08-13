@@ -5,7 +5,7 @@ import { storage } from '../../storage.js';
 import { persistClinicalState } from '../../app-state.mjs';
 import { getPatients } from '../../app-state.mjs';
 import { applyLanPatientEntries } from '../sync-apply/patient-entries.mjs';
-import { removePatientLocally } from '../sync-apply/patient-delete.mjs';
+import { removePatientLocally, pruneOrphanTodos } from '../sync-apply/patient-delete.mjs';
 import { shouldEnforceTeamPatientMirror } from '../../clinical-privileges.mjs';
 import { isClinicalScopeReadyForPatientApply } from '../../clinical-access-runtime/scope-ops.mjs';
 import {
@@ -89,6 +89,13 @@ function mergeCloudTodoIntoMap(row, byPatient, map) {
   const registro = String(row.registro || '').trim();
   const pid = resolveCloudTodoLocalPatientId(remotePid, registro, getPatients(), map);
   if (!pid) return;
+  if (
+    !getPatients().some(function (p) {
+      return p && String(p.id) === String(pid);
+    })
+  ) {
+    return;
+  }
   if (!byPatient[pid]) byPatient[pid] = storage.getTodos(pid).slice();
   const idx = byPatient[pid].findIndex(function (t) {
     return t && String(t.id) === id;
@@ -292,6 +299,11 @@ export async function applyCloudState(state, opts) {
     snapshot.tombstones || {},
     /** @type {Record<string, { actorId?: string }>|undefined} */ (snapshot.entityVersions)
   );
+  pruneOrphanTodos(
+    getPatients().map(function (p) {
+      return p && p.id;
+    })
+  );
   await finalizeCloudPullPatientScope();
   await refreshCloudTodoUIs(todoPatients);
   const prunedLabs = await pruneStoredMobileLabHistoryAfterPull();
@@ -314,6 +326,11 @@ async function applyFoldedCloudPull(fold, labCounts) {
   const todoPatients = applyCloudTodosMap(fold.todos, idMap);
   applyCloudAgendaMap(fold.agenda, idMap);
   const removed = applyCloudTombstones(fold.tombstones);
+  pruneOrphanTodos(
+    getPatients().map(function (p) {
+      return p && p.id;
+    })
+  );
   await finalizeCloudPullPatientScope();
   await refreshCloudTodoUIs(todoPatients);
   const prunedLabs = await pruneStoredMobileLabHistoryAfterPull();

@@ -23,4 +23,17 @@ describe('connection-panel', () => {
     assert.match(src, /data-cloud-nube-fallback/);
     assert.match(src, /shouldShowNubePanel\(getUserSala\(\)\)/);
   });
+
+  it('toast runtime is the object runtime() returns, not a discarded function property', () => {
+    const src = readFileSync(join(here, 'connection-panel.mjs'), 'utf8');
+    const start = src.indexOf('export async function renderConnectionPanel');
+    assert.ok(start >= 0);
+    const body = src.slice(start, start + 1600);
+    assert.match(body, /opts\?\.runtime|opts && opts\.runtime/);
+    assert.doesNotMatch(
+      body,
+      /runtime\.showToast\s*=/,
+      'showToast must live on the object returned by runtime(), not on the function'
+    );
+  });
 });

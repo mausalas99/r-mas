@@ -415,3 +415,14 @@ test('buildEstadoActualText omite pico subfebril en turno', () => {
   assert.match(hiLine, /TEMPERATURA 36 °C/);
   assert.doesNotMatch(hiLine, /PICO/);
 });
+
+test('buildEstadoActualText — analgesia pura vs analgésico/antipirético', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.analgesia =
+    'BUPRENORFINA 4 MCG/HORA IV | PARACETAMOL 1G IV C/8H | METAMIZOL 1G IV PRN';
+  const text = buildEstadoActualText(m.estadoClinico, { vitals: {}, glucometrias: [], io: {} }, {}, {});
+  const nLine = text.split('\n').find((line) => line.startsWith('N:'));
+  assert.match(nLine, /ANALGESIA: BUPRENORFINA/);
+  assert.match(nLine, /ANALGESIA \/ ANTIPIRETICOS: PARACETAMOL.*METAMIZOL/);
+  assert.doesNotMatch(nLine, /ANALGESIA: BUPRENORFINA[^A]*PARACETAMOL/);
+});

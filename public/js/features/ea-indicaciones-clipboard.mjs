@@ -83,6 +83,7 @@ export function buildEaIndicacionesClipboardLines(ec, bombaAlgoritmo) {
 
   var lines = [
     soapMedCategorySegment('ANALGESIA', medsClauseOrEmpty(analgesiaSplit.analgesia)),
+    soapMedCategorySegment('ANALGESIA / ANTIPIRETICOS', medsClauseOrEmpty(analgesiaSplit.antipireticos)),
     soapMedCategorySegment(
       'ANTIEMETICOS',
       medsClauseOrEmpty(e.antiemeticos || analgesiaSplit.antiemeticos)

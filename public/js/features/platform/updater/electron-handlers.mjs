@@ -16,6 +16,10 @@ import {
 } from './modal-ui.mjs';
 import { installUpdate } from './check-actions.mjs';
 import { renderDowngradeFallback } from './downgrade.mjs';
+import {
+  shouldSurfaceUpdateCheckError,
+  updateNotAvailableToastKind,
+} from './silent-check.mjs';
 
 const rt = getPlatformRuntime();
 
@@ -178,11 +182,13 @@ function handleUpdateReady(payload) {
 function handleUpdateNotAvailable(payload) {
   resetUpdateCheckButtons();
   var wasRepair = updaterState.pendingRepairUpdateCheck;
+  var toastKind = updateNotAvailableToastKind(updaterState, payload);
   updaterState.pendingRepairUpdateCheck = false;
   updaterState.pendingUpdaterTargetVersion = null;
   updaterState.pendingUpdaterIsPrerelease = false;
+  updaterState.checkFeedback = false;
   syncUpdateModalChannelPill(false);
-  if (wasRepair || (payload && payload.reinstallFailed)) {
+  if (toastKind === 'repair-error' || wasRepair || (payload && payload.reinstallFailed)) {
     var v = payload && payload.version ? String(payload.version) : '';
     var detail = payload && payload.detail ? String(payload.detail) : '';
     var msg =
@@ -192,13 +198,16 @@ function handleUpdateNotAvailable(payload) {
     if (detail) msg += ' Detalle: ' + detail;
     msg += ' También puedes usar «Abrir instalador en GitHub» en Restaurar versión estable.';
     rt.showToast(msg, 'error');
-  } else {
+  } else if (toastKind === 'up-to-date') {
     rt.showToast('R+ está actualizado.', 'success');
   }
 }
 
 function handleUpdateError(msg) {
+  var show = shouldSurfaceUpdateCheckError(updaterState);
+  updaterState.checkFeedback = false;
   resetUpdateCheckButtons();
+  if (!show) return;
   try { sendUpdateTelemetry('fail'); } catch (_e) { void _e; }
   renderUpdateError(msg);
 }

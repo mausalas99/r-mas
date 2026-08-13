@@ -172,7 +172,7 @@ export function runMedTabShortcut() {
   return runTabDigitShortcut('3');
 }
 
-/** ⌘A — Agenda tab + reset to current week (alias of ⌘4). */
+/** Agenda tab + reset to current week (⌘4). */
 export function runAgendaTabShortcut() {
   return runTabDigitShortcut('4');
 }

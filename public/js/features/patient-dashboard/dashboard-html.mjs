@@ -4,6 +4,7 @@
 import { escHtml, escAttr } from '../../dom-escape.mjs';
 import { isGlucometriaMarkedAltered, isVitalAltered } from '../estado-actual-ranges.mjs';
 import { serviceById, hueForService } from './interconsult-catalog.mjs';
+import { packSoapCols } from './ea-glance-model.mjs';
 
 function numText(value) {
   if (value == null || value === '') return '';
@@ -118,9 +119,11 @@ function renderIdentityHtml(model) {
     .join('');
   return (
     '<div class="idrow"><div>' +
+    '<div class="id-name-row">' +
     '<h1><button class="dash-name" type="button" data-dash-action="datos">' +
     escHtml(idn.nombre || 'Paciente') +
     '</button></h1>' +
+    '</div>' +
     (dxHtml ? '<div class="chips">' + dxHtml + '</div>' : '') +
     '<div class="ic-mod"><small>Servicios interconsultantes</small>' +
     '<div class="chips" id="ic-assigned">' +
@@ -168,9 +171,8 @@ function renderLabsHtml(model) {
     ? '<div class="day-draws">' + envios.map(renderDrawHtml).join('') + '</div>'
     : '<p class="empty-hint">Sin labs de hoy</p>';
   return (
-    '<div class="card labs-card">' +
-    '<div class="card-h">Labs: Solo alterados ' +
-    '<button class="link" type="button" data-dash-action="labs-full">Reportes completos</button></div>' +
+    '<div class="card labs-card clickable" data-dash-action="labs-full">' +
+    '<div class="card-h">Labs: Solo alterados</div>' +
     '<div class="card-b">' +
     body +
     '</div></div>'
@@ -192,29 +194,57 @@ function renderEaKpisHtml(kpis) {
     .join('');
 }
 
+function medItemName(item) {
+  if (item == null) return '';
+  if (typeof item === 'string') return item;
+  return String(item.name || '');
+}
+
+function medItemToken(item) {
+  if (!item || typeof item === 'string') return '';
+  return String(item.token || '');
+}
+
+function renderMedItemHtml(item) {
+  var name = medItemName(item);
+  if (!name) return '';
+  var token = medItemToken(item);
+  var emphasis = item && typeof item === 'object' && item.emphasis;
+  return (
+    '<div class="med"><span class="name">' +
+    escHtml(name) +
+    '</span>' +
+    (token
+      ? '<span class="meta' + (emphasis ? ' is-key' : '') + '">' + escHtml(token) + '</span>'
+      : '') +
+    '</div>'
+  );
+}
+
+function renderSoapZoneHtml(zone, headingClass) {
+  var meds = (zone.items || []).map(renderMedItemHtml).join('');
+  return (
+    '<span class="' +
+    (headingClass || 'z') +
+    '">' +
+    escHtml(zone.letter || '') +
+    (zone.subtitle ? ' <em>' + escHtml(zone.subtitle) + '</em>' : '') +
+    '</span>' +
+    meds
+  );
+}
+
 function renderEaSoapHtml(soap) {
-  return (soap || [])
-    .map(function (bucket) {
-      var hue = bucket.hue != null ? String(bucket.hue) : '220';
-      var meds = (bucket.items || [])
-        .map(function (item) {
-          return (
-            '<span class="med" style="--h:' +
-            hue +
-            '">' +
-            escHtml(item) +
-            '</span>'
-          );
-        })
-        .join('');
+  return packSoapCols(soap || [])
+    .map(function (col) {
       return (
-        '<div class="ea-cat" style="--h:' +
-        hue +
-        '"><small>' +
-        escHtml(bucket.label || '') +
-        '</small><div class="meds">' +
-        meds +
-        '</div></div>'
+        '<section>' +
+        col
+          .map(function (zone, i) {
+            return renderSoapZoneHtml(zone, i === 0 ? 'z' : 'z2');
+          })
+          .join('') +
+        '</section>'
       );
     })
     .join('');
@@ -223,8 +253,8 @@ function renderEaSoapHtml(soap) {
 function renderEaHtml(model) {
   var ea = (model && model.ea) || { kpis: [], soap: [] };
   return (
-    '<button class="card clickable" type="button" data-dash-action="estadoActual" style="--spine-h:168">' +
-    '<div class="card-h">Estado clínico <span class="link">Abrir EA</span></div>' +
+    '<button class="card clickable" type="button" data-dash-action="estadoActual">' +
+    '<div class="card-h">Estado clínico</div>' +
     '<div class="card-b"><div class="ea-glance">' +
     '<div class="ea-kpis">' +
     (renderEaKpisHtml(ea.kpis) || '<p class="empty-hint">Sin plan de cuidado</p>') +
@@ -237,9 +267,9 @@ function renderMedsHtml(model) {
   if (!soap || !soap.length) return '';
   return (
     '<div class="bento meds-band">' +
-    '<button class="card clickable meds-card" type="button" data-dash-action="estadoActual" style="--spine-h:32">' +
-    '<div class="card-h">Medicamentos <span class="link">Abrir EA</span></div>' +
-    '<div class="card-b"><div class="ea-soap">' +
+    '<button class="card clickable meds-card" type="button" data-dash-action="estadoActual">' +
+    '<div class="card-h">Medicamentos</div>' +
+    '<div class="card-b"><div class="soap-pack">' +
     renderEaSoapHtml(soap) +
     '</div></div></button></div>'
   );
@@ -287,18 +317,13 @@ function renderRowsHtml(items, emptyText) {
   );
 }
 
-function renderListCardHtml(title, link, action, items, emptyText, spineH) {
-  var hue = spineH != null ? String(spineH) : '220';
+function renderListCardHtml(title, action, items, emptyText) {
   return (
     '<button class="card clickable" type="button" data-dash-action="' +
     escAttr(action) +
-    '" style="--spine-h:' +
-    hue +
     '"><div class="card-h">' +
     escHtml(title) +
-    ' <span class="link">' +
-    escHtml(link) +
-    '</span></div><div class="card-b">' +
+    '</div><div class="card-b">' +
     renderRowsHtml(items, emptyText) +
     '</div></button>'
   );
@@ -319,8 +344,8 @@ export function renderDashboardHtml(model) {
     '</div>' +
     '<div class="bento rest">' +
     renderEaHtml(m) +
-    renderListCardHtml('Eventualidades', 'Ver todas', 'eventualidades', m.eventualidades, 'Sin eventualidades', 52) +
-    renderListCardHtml('Pendientes', 'Ver pendientes', 'pendientes', m.pendientes, 'Sin pendientes', 245) +
+    renderListCardHtml('Eventualidades', 'eventualidades', m.eventualidades, 'Sin eventualidades') +
+    renderListCardHtml('Pendientes', 'pendientes', m.pendientes, 'Sin pendientes') +
     '</div>' +
     renderMedsHtml(m) +
     '</div>'

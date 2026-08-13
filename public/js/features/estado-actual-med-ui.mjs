@@ -1,12 +1,17 @@
 import { MED_FIELD_KEYS, ensureMonitoreo } from './estado-actual-data.mjs';
 import { buildMedDropdownOptions, resolveEaAbxFechaActualizacion, ensureAbxDiaAnchorDate } from './estado-actual-meds.mjs';
 import { handleMedGridClick } from './estado-actual-med-grid-click.mjs';
-import { advanceAbxMedTextForManejoDate, classifyMedicationSoapCategory } from '../med-receta-core.mjs';
+import {
+  advanceAbxMedTextForManejoDate,
+  classifyMedicationSoapCategory,
+  soapDestinationSelectOptionsHtml,
+  mapSoapDestKeyToEaField,
+} from '../med-receta-core.mjs';
 import { partitionNmMedLines } from '../nm-antidiabetic-detect.mjs';
 
 /** @type {Record<string, string>} */
 export const EA_MED_FIELD_LABELS = {
-  analgesia: 'Analgésicos',
+  analgesia: 'Analgésicos / antipiréticos',
   antiemeticos: 'Antieméticos',
   sedacion: 'Sedación / delirium',
   antiepilepticos: 'Antiepilépticos',
@@ -194,19 +199,12 @@ function renderNmMedItemsBodyHtml(key, items) {
 }
 
 function medMoveTargetOptionsHtml(fromKey) {
-  return MED_FIELD_KEYS.filter(function (k) {
-    return k !== fromKey;
-  })
-    .map(function (k) {
-      return (
-        '<option value="' +
-        escAttr(k) +
-        '">' +
-        escHtml(EA_MED_FIELD_LABELS[k] || k) +
-        '</option>'
-      );
-    })
-    .join('');
+  return soapDestinationSelectOptionsHtml(escHtml, {
+    omitEmpty: true,
+    excludeKey: fromKey,
+    mapKey: mapSoapDestKeyToEaField,
+    labels: EA_MED_FIELD_LABELS,
+  });
 }
 
 function medPendingBlockHtml(key, pendingVal) {
@@ -270,17 +268,12 @@ function renderMedCategoryPickOptions(keys) {
   }
   return (
     '<option value="">Tipo de medicamento…</option>' +
-    keys
-      .map(function (key) {
-        return (
-          '<option value="' +
-          escAttr(key) +
-          '">' +
-          escHtml(EA_MED_FIELD_LABELS[key] || key) +
-          '</option>'
-        );
-      })
-      .join('')
+    soapDestinationSelectOptionsHtml(escHtml, {
+      omitEmpty: true,
+      includeKeys: keys,
+      mapKey: mapSoapDestKeyToEaField,
+      labels: EA_MED_FIELD_LABELS,
+    })
   );
 }
 
@@ -309,7 +302,7 @@ function parseRevealedMedKeys(grid) {
   try {
     var parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
-  } catch (_e) {
+  } catch {
     return [];
   }
 }
@@ -321,7 +314,7 @@ function getShownMedCategoryKeys(grid) {
   }).filter(Boolean);
 }
 
-function syncMedCategoryAddBar(grid, monitoreo, activeId, medRecetaByPatient) {
+function syncMedCategoryAddBar(grid) {
   if (!grid) return;
   var addBar = grid.querySelector('.ea-med-add-category-row');
   if (!addBar) return;
@@ -353,7 +346,7 @@ function revealMedCategoryKey(mount, grid, key, ctx) {
   }
   var det = grid.querySelector('[data-ea-med-cat="' + key + '"]');
   if (det && 'open' in det) det.open = true;
-  syncMedCategoryAddBar(grid, monitoreo, ctx.getActiveId(), ctx.medRecetaByPatient);
+  syncMedCategoryAddBar(grid);
 }
 
 export function renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient, opts) {
@@ -443,7 +436,7 @@ export function refreshMedCategoryBlock(mount, key, monitoreo, activeId, medRece
   var isRevealed = revealed.indexOf(key) >= 0;
   if (!hasContent && !isRevealed) {
     if (existing) existing.remove();
-    syncMedCategoryAddBar(grid, monitoreo, activeId, medRecetaByPatient);
+    syncMedCategoryAddBar(grid);
     return;
   }
   var html = renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient, {
@@ -455,7 +448,7 @@ export function refreshMedCategoryBlock(mount, key, monitoreo, activeId, medRece
     var next = grid.querySelector('[data-ea-med-cat="' + key + '"]');
     if (next && (wasOpen || hasContent || isRevealed)) next.open = true;
   }
-  syncMedCategoryAddBar(grid, monitoreo, activeId, medRecetaByPatient);
+  syncMedCategoryAddBar(grid);
 }
 
 function liveMonitoreoFromCtx(ctx) {

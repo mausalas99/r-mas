@@ -1,6 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  onShellShortcut: function(cb) {
+    ipcRenderer.on('shell-shortcut', function(_e, payload) { cb(payload); });
+  },
   // true cuando main.js desactivó la aceleración por hardware (performance.json):
   // el renderer degrada efectos caros en software (glass blur → no-blur).
   isSoftwareRender: process.argv.includes('--rplus-sw-render'),

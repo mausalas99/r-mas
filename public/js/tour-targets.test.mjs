@@ -4,16 +4,21 @@ import {
   getTourTarget,
   getSalaTourSteps,
   getInterconsultaTourSteps,
+  getQuickRouteTourSteps,
   stepRequiresUserAction,
 } from './tour-targets.mjs';
 
-test('getSalaTourSteps orden overhaul: lab primero, clinico EA Eventualidades, salida VPO receta agenda', () => {
+test('getSalaTourSteps orden: mapa y alta primero, lab con tendencias, clínico, salida', () => {
   const steps = getSalaTourSteps();
-  assert.equal(steps.length, 21);
+  assert.equal(steps.length, 23);
   assert.ok(!steps.includes('lab_bulk_separator'));
   assert.ok(!steps.includes('sala_manejo'));
   assert.ok(!steps.includes('historia_clinica'));
-  assert.equal(steps.indexOf('servicio_default'), steps.indexOf('lab_view') + 1);
+  assert.equal(steps[0], 'map_tabs');
+  assert.equal(steps.indexOf('map_add_patient'), 2);
+  assert.equal(steps.indexOf('map_incomplete'), 3);
+  assert.equal(steps.indexOf('servicio_default'), 4);
+  assert.equal(steps.indexOf('sala_tend'), steps.indexOf('lab_view') + 1);
   assert.equal(steps.indexOf('estado_actual_registro'), steps.indexOf('estado_actual') + 1);
   assert.equal(steps.indexOf('estado_actual_review'), steps.indexOf('estado_actual_registro') + 1);
   assert.equal(steps.indexOf('eventualidades'), steps.indexOf('estado_actual_review') + 1);
@@ -30,7 +35,7 @@ test('getInterconsultaTourSteps no incluye pasos de Modo Pase', () => {
   const steps = getInterconsultaTourSteps();
   assert.ok(!steps.includes('pase_enter'));
   assert.ok(!steps.includes('pase_board'));
-  assert.equal(steps[1], 'map_tabs');
+  assert.equal(steps[1], 'map_sidebar');
   assert.ok(steps.includes('sala_tend_chart'));
 });
 
@@ -107,12 +112,20 @@ test('getTourTarget para servicio_default apunta a Mi Perfil', () => {
   assert.match(t.selector, /servicio|profile-default-servicio|profile-modal/i);
 });
 
-test('getTourTarget para sala_tend_chart resalta botón Gráfica', () => {
+test('getTourTarget para sala_tend_chart resalta botón Gráfica en Laboratorio', () => {
   const t = getTourTarget('sala_tend_chart', 'sala');
-  assert.equal(t.appTab, 'nota');
-  assert.equal(t.innerTab, 'tend');
+  assert.equal(t.appTab, 'lab');
+  assert.equal(t.labInner, 'tend');
   assert.match(t.selector, /tend-section-chart-btn/);
   assert.equal(t.spotlightClass, 'tour-spotlight-action');
+});
+
+test('getTourTarget para map_add_patient y map_incomplete', () => {
+  const add = getTourTarget('map_add_patient', 'sala');
+  assert.match(add.selector, /btn-add/);
+  const inc = getTourTarget('map_incomplete', 'sala');
+  assert.equal(inc.openAddModalFullManual, true);
+  assert.match(inc.selector, /m-cuarto/);
 });
 
 test('getTourTarget gv7 trust strip y fin turno en guardia', () => {
@@ -138,20 +151,30 @@ test('stepRequiresUserAction es false para pasos puramente narrativos', () => {
   assert.equal(stepRequiresUserAction('livesync_mobile'), false);
 });
 
-test('getInterconsultaTourSteps orden curriculum: 16 pasos, lab antes de expediente', () => {
+test('getInterconsultaTourSteps orden curriculum: 18 pasos, mapa antes de laboratorio', () => {
   const steps = getInterconsultaTourSteps();
-  assert.equal(steps.length, 16);
-  assert.equal(steps.indexOf('lab_parse'), 3);
+  assert.equal(steps.length, 18);
+  assert.equal(steps[0], 'map_tabs');
+  assert.ok(steps.includes('map_add_patient'));
+  assert.ok(steps.includes('map_incomplete'));
   assert.ok(!steps.includes('sala_casiopea_lab'));
   assert.ok(!steps.includes('sala_casiopea_trends'));
   assert.ok(!steps.includes('sala_manejo'));
   assert.ok(steps.includes('ic_expediente_tabs'));
-  assert.equal(steps.indexOf('ic_expediente_tabs'), steps.indexOf('lab_view') + 1);
-  assert.equal(steps.indexOf('sala_tend'), steps.indexOf('ic_expediente_tabs') + 1);
+  assert.equal(steps.indexOf('sala_tend'), steps.indexOf('lab_view') + 1);
+  assert.equal(steps.indexOf('ic_expediente_tabs'), steps.indexOf('sala_tend_chart') + 1);
 });
 
 test('getTourTarget for sala_expediente_tabs apunta a barra de pestañas', () => {
   const t = getTourTarget('sala_expediente_tabs', 'sala');
   assert.equal(t.appTab, 'nota');
   assert.equal(t.selector, '.inner-tab-bar');
+});
+
+test('every sala, IC and quick-route step has a target selector', () => {
+  const ids = [...getSalaTourSteps(), ...getInterconsultaTourSteps(), ...getQuickRouteTourSteps()];
+  for (const id of new Set(ids)) {
+    const t = getTourTarget(id, 'sala');
+    assert.ok(t.selector, `missing selector for ${id}`);
+  }
 });

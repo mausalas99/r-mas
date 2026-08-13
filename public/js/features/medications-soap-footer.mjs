@@ -22,6 +22,31 @@ import {
 import { rt } from "./medications-runtime-state.mjs";
 import { esc, getMedNotaSelMap } from "./medications-utils.mjs";
 
+function pushSpecialNmSoapChip(it, allItems, pumpAlg, flags, groups) {
+  if (pumpAlg != null && isInsulinIvMedicationItem(it)) {
+    if (!flags.pump) {
+      groups.nmAntidiabeticos.push({ _insulinPumpChip: true, _algorithm: pumpAlg });
+      flags.pump = true;
+    }
+    return true;
+  }
+  if (isInsulinRescateMedicationItem(it)) {
+    if (!flags.rescate) {
+      groups.nmAntidiabeticos.push({ _insulinRescateChip: true });
+      flags.rescate = true;
+    }
+    return true;
+  }
+  if (isInsulinPrandialMedicationItem(it)) {
+    if (!flags.prandial) {
+      groups.nmAntidiabeticos.push({ _insulinPrandialChip: true, _allItems: allItems });
+      flags.prandial = true;
+    }
+    return true;
+  }
+  return false;
+}
+
 function groupSoapPreviewItems(soapItems, allItems) {
   var groups = {
     analgesia: [],
@@ -45,33 +70,11 @@ function groupSoapPreviewItems(soapItems, allItems) {
     otros: [],
   };
   var pumpAlg = detectInsulinPumpAlgorithmFromRecetaItems(allItems || []);
-  var pumpChipAdded = false;
-  var rescateChipAdded = false;
-  var prandialChipAdded = false;
+  var flags = { pump: false, rescate: false, prandial: false };
   soapItems.forEach(function (it) {
     if (skipRecetaItemForInsulinPumpCarrier(it, allItems || [])) return;
     if (!shouldIncludeMedicationInSoap(it, classifyMedicationSoapCategory)) return;
-    if (pumpAlg != null && isInsulinIvMedicationItem(it)) {
-      if (!pumpChipAdded) {
-        groups.nmAntidiabeticos.push({ _insulinPumpChip: true, _algorithm: pumpAlg });
-        pumpChipAdded = true;
-      }
-      return;
-    }
-    if (isInsulinRescateMedicationItem(it)) {
-      if (!rescateChipAdded) {
-        groups.nmAntidiabeticos.push({ _insulinRescateChip: true });
-        rescateChipAdded = true;
-      }
-      return;
-    }
-    if (isInsulinPrandialMedicationItem(it)) {
-      if (!prandialChipAdded) {
-        groups.nmAntidiabeticos.push({ _insulinPrandialChip: true, _allItems: allItems || [] });
-        prandialChipAdded = true;
-      }
-      return;
-    }
+    if (pushSpecialNmSoapChip(it, allItems || [], pumpAlg, flags, groups)) return;
     var cat = effectiveSoapCategory(it, classifyMedicationSoapCategory);
     if (cat === "nm" && isAntidiabeticRecetaItem(it)) {
       groups.nmAntidiabeticos.push(it);
@@ -142,7 +145,7 @@ function buildSoapPreviewHtml(soapItems, allItems) {
   var groups = groupSoapPreviewItems(soapItems, allItems);
   return (
     '<div class="med-soap-preview">' +
-    soapPreviewSection("analgesia", "Analgésicos", groups) +
+    soapPreviewSection("analgesia", "Analgésicos / antipiréticos", groups) +
     soapPreviewSection("antiemeticos", "Antieméticos", groups) +
     soapPreviewSection("sedacion", "Sedación / delirium", groups) +
     soapPreviewSection("antiepilepticos", "Antiepilépticos", groups) +

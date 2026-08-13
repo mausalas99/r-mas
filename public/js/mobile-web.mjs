@@ -150,7 +150,7 @@ function syncMobileLabReferenceHeaderState() {
   }
   if (picker) picker.style.display = hasStudies ? '' : 'none';
   if (pickerLabel) {
-    pickerLabel.textContent = 'Estudio';
+    pickerLabel.textContent = 'Día';
     pickerLabel.classList.add('visually-hidden');
   }
   var outSec = document.getElementById('lab-output-section');

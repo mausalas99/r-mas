@@ -11,10 +11,11 @@ description: "Primary happy-path flows from the clinician's perspective."
 ## Onboarding (first shift)
 
 1. Install R+ from GitHub Releases (Mac `.dmg` / Windows `.exe`).
-2. Choose sync mode: **sala LAN** or **solo mi equipo**.
+2. Choose sync mode: **sala Nube** or **solo mi equipo**.
 3. Register **@usuario**, rango (R1–R4), sala/guardia.
 4. Unlock SQLCipher clinical DB (local-first).
-5. Optional: open **⇄** → PIN del turno or join host → turn sync live.
+5. Optional: open **⇄** → R+ Cloud login → join sala.
+6. Learn Hub / tutorial: **structure first** (Paciente | Laboratorio | Manejo | Agenda), then **+ Agregar** and complete **cuarto / cama / servicio** if the card is incomplete.
 
 ## Happy path — Magic moment (documentation)
 

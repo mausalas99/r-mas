@@ -140,6 +140,7 @@ describe('pull-apply cloud todo registro remap', () => {
     const origGet = storage.getTodos;
     const origSave = storage.saveTodos;
     const origAgenda = storage.saveScheduledProcedures;
+    const origList = storage.listTodoPatientIds;
     const before = patientList.slice();
     patientList.length = 0;
     patientList.push({ id: 'local_a', registro: 'REG1', nombre: 'A' });
@@ -148,6 +149,9 @@ describe('pull-apply cloud todo registro remap', () => {
     };
     storage.saveTodos = function (pid, list) {
       saved[pid] = list;
+    };
+    storage.listTodoPatientIds = function () {
+      return Object.keys(saved);
     };
     storage.saveScheduledProcedures = function () {};
     try {
@@ -173,6 +177,7 @@ describe('pull-apply cloud todo registro remap', () => {
       storage.getTodos = origGet;
       storage.saveTodos = origSave;
       storage.saveScheduledProcedures = origAgenda;
+      storage.listTodoPatientIds = origList;
       patientList.length = 0;
       patientList.push(...before);
     }
@@ -231,5 +236,13 @@ describe('pull-apply sync-apply wiring (Phase 3)', () => {
   it('remaps cloud todos by registro on pull apply', () => {
     assert.match(pullApplySrc, /resolveCloudTodoLocalPatientId/);
     assert.match(pullApplySrc, /buildLiveSyncPatientIdMap/);
+  });
+
+  it('does not apply cloud todos for patients missing from the local census', () => {
+    const start = pullApplySrc.indexOf('function mergeCloudTodoIntoMap');
+    assert.ok(start >= 0);
+    const body = pullApplySrc.slice(start, start + 900);
+    assert.match(body, /getPatients\(\)\.some/);
+    assert.match(pullApplySrc, /pruneOrphanTodos/);
   });
 });

@@ -59,6 +59,7 @@ function checkForAppUpdates() {
   if (typeof window.electronAPI.setUpdateChannel === 'function') {
     try { window.electronAPI.setUpdateChannel(getUpdateChannel()); } catch (_e) { void _e; }
   }
+  updaterState.checkFeedback = true;
   setAsyncButtonLoading(document.getElementById('settings-check-updates-btn'), true, {
     loadingText: 'Buscando…',
   });

@@ -146,6 +146,15 @@ describe('storage todos', () => {
       assert.strictEqual(store['rpc-todos'], undefined);
     });
 
+    it('removes the patient key when saving an empty list', () => {
+      storage.saveTodos('p1', [{ id: '1', text: 'a', completed: false, priority: 'media', createdAt: '' }]);
+      assert.ok(JSON.parse(store['rpc-todos']).p1);
+      storage.saveTodos('p1', []);
+      const obj = JSON.parse(store['rpc-todos'] || '{}');
+      assert.equal(obj.p1, undefined);
+      assert.equal(storage.getTodos('p1').length, 0);
+    });
+
     it('round-trips new optional fields', () => {
       const todos = [{
         id: '1',

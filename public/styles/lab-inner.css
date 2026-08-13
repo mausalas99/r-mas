@@ -78,6 +78,8 @@ html.tab-bar-indicators-ready html.dark .lab-inner-nav .inner-tab.active {
   overflow: auto;
   display: flex;
   flex-direction: column;
+  padding: calc(24px * var(--density-space, 1));
+  gap: calc(20px * var(--density-space, 1));
 }
 
 .lab-inner-panel[hidden],

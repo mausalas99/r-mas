@@ -1,7 +1,17 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { isRoundOverviewInner } from './patients-round.mjs';
-import { shouldRevealSidebarAt } from './patients.mjs';
+import { shouldKeepSidebarRevealed, shouldRevealSidebarAt } from './patients.mjs';
+
+function readSidebarCss() {
+  return readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '../../styles/sidebar.css'),
+    'utf8'
+  );
+}
 
 /** Mirrors selectPatientCore patientChanged detection. */
 function patientChanged(prevId, id) {
@@ -56,11 +66,30 @@ describe('isRoundOverviewInner', () => {
 });
 
 describe('shouldRevealSidebarAt', () => {
-  it('reveals when the pointer is on the left 18px of the workbench', () => {
+  it('reveals when the pointer is on the left 36px of the window or workbench', () => {
     assert.equal(shouldRevealSidebarAt(8, 0), true);
-    assert.equal(shouldRevealSidebarAt(18, 0), true);
-    assert.equal(shouldRevealSidebarAt(19, 0), false);
+    assert.equal(shouldRevealSidebarAt(36, 0), true);
+    assert.equal(shouldRevealSidebarAt(37, 0), false);
     assert.equal(shouldRevealSidebarAt(90, 80), true);
-    assert.equal(shouldRevealSidebarAt(100, 80), false);
+    assert.equal(shouldRevealSidebarAt(116, 80), true);
+    assert.equal(shouldRevealSidebarAt(117, 80), false);
+  });
+});
+
+describe('shouldKeepSidebarRevealed', () => {
+  it('keeps the census open across the sidebar column after reveal', () => {
+    assert.equal(shouldKeepSidebarRevealed(100, 0, 240), true);
+    assert.equal(shouldKeepSidebarRevealed(252, 0, 240), true);
+    assert.equal(shouldKeepSidebarRevealed(253, 0, 240), false);
+    assert.equal(shouldKeepSidebarRevealed(20, 80, 0), true);
+  });
+});
+
+describe('sidebar hover strip', () => {
+  it('is viewport-fixed with no-drag so it punches the macOS titlebar drag region', () => {
+    const css = readSidebarCss();
+    assert.match(css, /\.sidebar-hover-strip\s*\{[^}]*position:\s*fixed/s);
+    assert.match(css, /\.sidebar-hover-strip\s*\{[^}]*-webkit-app-region:\s*no-drag/s);
+    assert.equal(/\.sidebar-hover-strip\s*\{[^}]*position:\s*absolute/s.test(css), false);
   });
 });

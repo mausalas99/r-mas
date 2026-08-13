@@ -160,5 +160,8 @@ describe('tour intro launch', () => {
       assert.equal(m[1], 'Paciente');
       assert.equal(m[2], 'Laboratorio');
     });
+    assert.match(src, /<strong>Manejo<\/strong>/);
+    assert.match(src, /map_add_patient: renderMapAddPatient/);
+    assert.match(src, /map_incomplete: renderMapIncomplete/);
   });
 });

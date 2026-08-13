@@ -33,9 +33,15 @@ function resetTourNextButton(nextBtn) {
 
 function renderQuickRouteStepCopy(bodyEl, nextBtn) {
   var id = tourState.tourStepId;
-  if (id === 'map_lab_teaser') {
+  if (id === 'map_tabs') {
     bodyEl.innerHTML =
-      '<p style="margin:0;line-height:1.5;">Ruta rápida: primero <strong>laboratorio</strong>. El cuadro trae <strong>DEMO PÉREZ</strong> y <strong>DEMO GARCÍA</strong>. En el siguiente paso pulsa <strong>Procesar</strong> y agrega ambos al censo.</p>';
+      '<p style="margin:0;line-height:1.5;">Ruta rápida: arriba están <strong>Paciente</strong>, <strong>Laboratorio</strong>, <strong>Manejo</strong> y <strong>Agenda</strong>. Luego das de alta y procesas labs.</p>';
+    nextBtn.textContent = 'Siguiente';
+    return true;
+  }
+  if (id === 'map_add_patient') {
+    bodyEl.innerHTML =
+      '<p style="margin:0;line-height:1.5;"><strong>+ Agregar</strong> da de alta. Completa cuarto, cama y servicio para que la tarjeta no quede incompleta. En el siguiente paso procesas labs demo.</p>';
     nextBtn.textContent = 'Siguiente';
     return true;
   }

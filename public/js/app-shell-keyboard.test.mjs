@@ -5,6 +5,7 @@ import {
   shellWorkModeShortcutMap,
   runShellModifierKeydownForTests,
   isShellSlashShortcutForTests,
+  normalizeShellShortcutKey,
 } from './app-shell-keyboard.mjs';
 import { SHORTCUT_GROUPS } from './features/settings-help/shortcuts-data.mjs';
 
@@ -113,5 +114,13 @@ describe('app-shell-keyboard work mode shortcuts', () => {
     );
     assert.equal(prevented, true);
     assert.equal(globalThis.localStorage.getItem(UI_DENSITY_LS), 'guardia');
+  });
+
+  it('normalizeShellShortcutKey uses e.code when e.key is empty or dead', () => {
+    assert.equal(normalizeShellShortcutKey({ code: 'Digit1', key: '' }), '1');
+    assert.equal(normalizeShellShortcutKey({ code: 'KeyE', key: 'Dead' }), 'e');
+    assert.equal(normalizeShellShortcutKey({ code: 'KeyT', key: 'Meta' }), 't');
+    assert.equal(normalizeShellShortcutKey({ code: 'KeyK', key: 'k' }), 'k');
+    assert.equal(normalizeShellShortcutKey({ code: 'KeyA', key: 'a' }), 'a');
   });
 });

@@ -26,6 +26,8 @@ import { renderNoteForm, renderIndicaForm } from '../notes-indicaciones.mjs';
 import { closeLabSomeTablesModal } from '../lab-some-tables-modal.mjs';
 import { closeTendGroupModal } from '../tendencias.mjs';
 import { closeSOAPModal } from '../soap-estado.mjs';
+import { switchLabInner } from '../patient-dashboard/lab-inner.mjs';
+import { closeModal, openAddModalFullManual } from '../patients-modal.mjs';
 import { procesarLabs } from '../../labs.js';
 import { extractParsedValues } from '../diagrams-parse.mjs';
 import { getPatients, getLabHistory, getListadoProblemas, persistClinicalState } from '../../app-state.mjs';
@@ -479,6 +481,10 @@ function seedTourDemosForStep(id) {
 
 function applyTourTabsForStep(id, t) {
   if (t.appTab) rt.switchAppTab(t.appTab);
+  if (t.labInner) {
+    switchLabInner(t.labInner);
+    return;
+  }
   if (!t.innerTab) return;
   if (id === 'listado_problemas') {
     rt.switchInnerTab('listado', { forceRender: true });
@@ -494,6 +500,8 @@ function applyTourTabsForStep(id, t) {
 function applyTourOverlayChromeForStep(id, t) {
   if (t.openProfile) ensureProfileExpandedForTour();
   else rt.closeProfileModal();
+  if (t.openAddModalFullManual) openAddModalFullManual();
+  else if (id !== 'lab_parse') closeModal();
   if (t.openConnection) ensureConnectionExpandedForTour(id);
   else if (t.openSettings) ensureSettingsExpandedForTour();
   else {
@@ -556,7 +564,8 @@ export function applyTourTargetForStep(id) {
     });
   }
   if (!t.selector) return;
-  tourApplySpotlightForStep(id, t, id === 'listado_problemas' ? 280 : 140);
+  var spotlightDelay = id === 'listado_problemas' || id === 'map_incomplete' ? 280 : 140;
+  tourApplySpotlightForStep(id, t, spotlightDelay);
 }
 
 export { applyTourDemoIngresoDates };

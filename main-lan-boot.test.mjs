@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const MAIN_SRC = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8');
@@ -117,4 +118,29 @@ test('main boot: single-instance lock protects userData Recuérdame', () => {
   assert.ok(MAIN_SRC.includes('requestSingleInstanceLock'), 'single instance lock');
   assert.ok(MAIN_SRC.includes('cloud-sync-remember-get-sync'), 'durable remember IPC');
   assert.ok(MAIN_SRC.includes('cloud-sync-remember-store.cjs'), 'remember store module');
+});
+
+test('main forwards ⌘1 / ⌘E / ⌘T to renderer (Chromium would steal them)', () => {
+  assert.ok(MAIN_SRC.includes("require('./lib/shell-shortcut-input.cjs')"));
+  assert.ok(MAIN_SRC.includes("on('before-input-event'"));
+  assert.ok(MAIN_SRC.includes("send('shell-shortcut'"));
+  assert.ok(PRELOAD_SRC.includes('onShellShortcut'));
+  assert.ok(PRELOAD_SRC.includes("on('shell-shortcut'"));
+  const require = createRequire(import.meta.url);
+  const { isReservedShellShortcutInput } = require('./lib/shell-shortcut-input.cjs');
+  assert.equal(isReservedShellShortcutInput({ type: 'keyDown', meta: true, code: 'Digit1', key: '1' }), true);
+  assert.equal(isReservedShellShortcutInput({ type: 'keyDown', meta: true, code: 'KeyE', key: 'e' }), true);
+  assert.equal(isReservedShellShortcutInput({ type: 'keyDown', meta: true, code: 'KeyT', key: 't' }), true);
+  assert.equal(isReservedShellShortcutInput({ type: 'rawKeyDown', meta: true, code: 'Digit1', key: '1' }), true);
+  assert.equal(isReservedShellShortcutInput({ type: 'rawKeyDown', meta: true, code: 'KeyE', key: 'e' }), true);
+  assert.equal(isReservedShellShortcutInput({ type: 'rawKeyDown', meta: true, code: 'KeyT', key: 't' }), true);
+  assert.equal(isReservedShellShortcutInput({ type: 'rawKeyDown', modifiers: ['meta'], code: 'Digit1', key: '1' }), true);
+  assert.equal(isReservedShellShortcutInput({ type: 'keyDown', modifiers: ['cmd'], code: 'KeyT', key: 't' }), true);
+  assert.equal(isReservedShellShortcutInput({ type: 'keyUp', meta: true, code: 'Digit1', key: '1' }), false);
+  assert.equal(isReservedShellShortcutInput({ type: 'keyDown', meta: true, code: 'KeyA', key: 'a' }), false);
+  assert.equal(isReservedShellShortcutInput({ type: 'keyDown', meta: true, code: 'KeyC', key: 'c' }), false);
+  assert.equal(isReservedShellShortcutInput({ type: 'keyDown', meta: true, alt: true, code: 'KeyT', key: 't' }), false);
+  assert.ok(MAIN_SRC.includes("accelerator: 'CmdOrCtrl+1'"));
+  assert.ok(MAIN_SRC.includes("accelerator: 'CmdOrCtrl+E'"));
+  assert.ok(MAIN_SRC.includes("accelerator: 'CmdOrCtrl+T'"));
 });

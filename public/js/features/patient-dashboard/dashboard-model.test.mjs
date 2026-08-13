@@ -27,13 +27,14 @@ const splitHistorialMonitoreo = {
 };
 
 describe('dashboard identity', () => {
-  it('omits cama and sala (those live in the census sidebar)', () => {
+  it('exposes edad, sexo and bed; omits sala', () => {
     const model = buildDashboardModel({
       patient: {
         nombre: 'PEREZ GOMEZ ANA',
         edad: '72',
         sexo: 'F',
         cama: '12',
+        cuarto: '412',
         sala: '1',
         diagnosticosList: ['ICC'],
         interconsultServiceIds: ['card', 'nef'],
@@ -41,9 +42,10 @@ describe('dashboard identity', () => {
       inner: 'resumen',
     });
     assert.equal(model.identity.nombre, 'PEREZ GOMEZ ANA');
-    assert.equal(model.identity.meta, undefined);
-    assert.equal(model.identity.cama, undefined);
-    assert.equal(JSON.stringify(model.identity).includes('Cama'), false);
+    assert.equal(model.identity.edad, '72');
+    assert.equal(model.identity.sexo, 'F');
+    assert.equal(model.identity.cama, '12');
+    assert.equal(model.identity.cuarto, '412');
     assert.equal(JSON.stringify(model.identity).includes('"sala"'), false);
     assert.deepEqual(model.identity.interconsultServiceIds, ['card', 'nef']);
     assert.equal(model.view, 'resumen');

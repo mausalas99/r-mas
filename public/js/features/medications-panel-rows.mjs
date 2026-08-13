@@ -1,10 +1,9 @@
 import {
-  mergeDietaItems,
   formatMedicationSoapShort,
   classifyMedicationSoapCategory,
   effectiveDiaTratamiento,
-  SOAP_DESTINATION_KEYS,
   SOAP_DESTINATION_LABELS,
+  soapDestinationSelectOptionsHtml,
   shouldIncludeMedicationInSoap,
   soapDestinationUiValue,
   isNutritionMedicationItem,
@@ -84,20 +83,7 @@ function medRecetaDestPickerLabel(categoryKey) {
 function buildMedRecetaDestCell(it, sid, soapEligible) {
   if (!soapEligible) return "";
   var current = soapDestinationUiValue(it, classifyMedicationSoapCategory);
-  var opts =
-    '<option value="">Elegir destino…</option>' +
-    SOAP_DESTINATION_KEYS.map(function (k) {
-      var sel = current === k ? " selected" : "";
-      return (
-        '<option value="' +
-        esc(k) +
-        '"' +
-        sel +
-        ">" +
-        esc(SOAP_DESTINATION_LABELS[k] || k) +
-        "</option>"
-      );
-    }).join("");
+  var opts = soapDestinationSelectOptionsHtml(esc, { current: current });
   return (
     '<label class="med-receta-dest-picker">' +
     '<span class="med-receta-dest-label">' +

@@ -424,6 +424,7 @@ export const labPanelWindowHandlersLazy = buildLazyWindowHandlers(
     consolidateLabHistoryByDayAndTipo: 'consolidateLabHistoryByDayAndTipo',
     insertLabPatientSeparator: 'insertLabPatientSeparator',
     onLabHistoryDateChange: 'onLabHistoryDateChange',
+    stepLabHistoryDay: 'stepLabHistoryDay',
     reprocessSelectedLabHistorySet: 'reprocessSelectedLabHistorySet',
     deleteSelectedLabHistorySet: 'deleteSelectedLabHistorySet',
     deleteAllLabHistorySets: 'deleteAllLabHistorySets',

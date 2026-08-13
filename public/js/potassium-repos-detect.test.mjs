@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { potassiumReposDurationClause } from './potassium-repos-detect.mjs';
+import {
+  potassiumReposDurationClause,
+  potassiumReposTotalMeQ,
+} from './potassium-repos-detect.mjs';
 
 function carrierItem(dosisRaw) {
   return {
@@ -32,23 +35,44 @@ test('potassiumReposDurationClause — variantes de tasa CC/hora', () => {
     '800 ML / VEL.INF: 40 CC/HR',
     '800 ML VEL.INF: 40 CC POR HORA',
     '800 ML / VEL.INF:40ML/HR',
+    '150 ML / VEL.INF: A 75 CC HORA',
   ];
   cases.forEach(function (dosisRaw) {
-    assert.equal(potassiumReposDurationClause(kReposBlock(dosisRaw)), 'PARA 20 HORAS', dosisRaw);
+    var expected = /150 ML/.test(dosisRaw) ? 'A 2 HORAS' : 'A 20 HORAS';
+    assert.equal(potassiumReposDurationClause(kReposBlock(dosisRaw)), expected, dosisRaw);
   });
 });
 
 test('potassiumReposDurationClause — variantes de PARA X horas', () => {
   assert.equal(
     potassiumReposDurationClause(kReposBlock('800 ML / VEL.INF: PARA 20 HORAS')),
-    'PARA 20 HORAS'
+    'A 20 HORAS'
   );
   assert.equal(
     potassiumReposDurationClause(kReposBlock('800 ML / VEL.INF: para 12 hrs')),
-    'PARA 12 HORAS'
+    'A 12 HORAS'
   );
   assert.equal(
     potassiumReposDurationClause(kReposBlock('800 ML / VEL.INF: EN 6 HR')),
-    'PARA 6 HORAS'
+    'A 6 HORAS'
   );
+});
+
+test('potassiumReposTotalMeQ — suma KCl + KPO4 sin subdividir', () => {
+  var kcl = {
+    nombreRaw: 'CLORURO DE POTASIO 20 MEQ SOL INY 5 ML (+)',
+    viaRaw: 'VIA INTRAVENOSA',
+    dosisRaw: '40 MEQ',
+    frecuenciaRaw: '-',
+    suspendido: false,
+  };
+  var kphos = {
+    nombreRaw: 'FOSFATO DE POTASIO 20 MEQ SOL INY 10 ML (+)',
+    viaRaw: 'VIA INTRAVENOSA',
+    dosisRaw: '40 MEQ',
+    frecuenciaRaw: '-',
+    suspendido: false,
+  };
+  assert.equal(potassiumReposTotalMeQ([kcl, carrierItem('150 ML / VEL.INF: A 75 CC HORA'), kphos]), 80);
+  assert.equal(potassiumReposTotalMeQ([kcl, carrierItem('150 ML / VEL.INF: A 75 CC HORA')]), 40);
 });

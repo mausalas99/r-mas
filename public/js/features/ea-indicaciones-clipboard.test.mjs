@@ -91,7 +91,7 @@ test('buildEaIndicacionesClipboardLines keeps structure', () => {
     { analgesia: 'PARACETAMOL 1G IV C/8H | ONDANSETRON 8MG IV C/8H', abx: 'CEFTRIAXONA' },
     null
   );
-  assert.ok(lines.some((l) => /ANALGESIA:.*PARACETAMOL/i.test(l)));
+  assert.ok(lines.some((l) => /ANALGESIA \/ ANTIPIRETICOS:.*PARACETAMOL/i.test(l)));
   assert.ok(lines.some((l) => /ANTIEMETICOS:.*ONDANSETRON/i.test(l)));
   assert.ok(lines.some((l) => /ANTIBIOTICOTERAPIA:.*CEFTRIAXONA/i.test(l)));
   assert.ok(lines.some((l) => l === 'VASOPRESORES: NINGUNO'));

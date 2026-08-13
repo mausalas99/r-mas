@@ -23,7 +23,9 @@ function maybeMarkFundamentosChapterComplete(stepId) {
     if (!m.isFundamentosChapterId(chapter.id)) return;
     const result = m.markFundamentosChapterComplete(chapter.id);
     if (!result.wasNew) return;
-    if (chapter.id === 'ch-patient-lab') {
+    if (chapter.id === 'ch-map') {
+      rt.showToast('Ya sabes dónde está cada cosa y cómo dar de alta.', 'success');
+    } else if (chapter.id === 'ch-patient-lab') {
       rt.showToast('Listo: DEMO PÉREZ ya tiene laboratorio en R+.', 'success');
     } else {
       rt.showToast(`Módulo completado: ${chapter.title}`, 'success');

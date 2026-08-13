@@ -15,13 +15,11 @@ function resolveRememberFromSection(section, selector, deps) {
   return true;
 }
 
-/** @param {object} deps @param {unknown} prevToken */
+/** Refresh outer ⇄ chrome; never a substitute for in-place section render. */
 function rebuildPanelOnAuthChange(deps, prevToken) {
   if (shouldForcePanelRebuildOnAuthChange(prevToken, deps.getCloudSyncToken())) {
     deps.renderLanPanel?.({ force: true });
-    return true;
   }
-  return false;
 }
 const REGENERATE_CONFIRM = '¿Regenerar código? El anterior deja de funcionar.';
 
@@ -29,6 +27,34 @@ const REGENERATE_CONFIRM = '¿Regenerar código? El anterior deja de funcionar.'
 async function maybeShowRecoveryCodeModal(data) {
   const code = String(data?.recoveryCode || '').trim();
   if (code) await showRecoveryCodeModal({ code });
+}
+
+/** Persist token and show logged-in Conexión before recovery/profile work. */
+export function enterCloudSession(deps, token, remember, prevToken) {
+  const t = String(token || '').trim();
+  if (!t) {
+    const err = new Error('El servidor no devolvió sesión.');
+    err.data = { message: err.message };
+    throw err;
+  }
+  deps.setCloudSyncToken(t, { remember });
+  rebuildPanelOnAuthChange(deps, prevToken);
+  deps.renderAfterAuth();
+}
+
+/** Recovery modal + identity/room. Must not undo an already-entered session. */
+async function finishCloudAuthProfile(deps, data, user) {
+  try {
+    await maybeShowRecoveryCodeModal(data);
+    await afterAuthSuccess(deps, user);
+  } catch (postErr) {
+    deps.toast?.(
+      postErr?.data?.message ||
+        postErr?.message ||
+        'Sesión iniciada; no se pudo completar el perfil.',
+      'error'
+    );
+  }
 }
 
 /** @param {HTMLElement} section */
@@ -95,13 +121,14 @@ export async function handleRegister(deps) {
   try {
     const data = await deps.getApi().register(form);
     const prevToken = deps.getCloudSyncToken();
-    deps.setCloudSyncToken(data.token, {
-      remember: resolveRememberFromSection(deps.section, '[data-cloud-reg-remember]', deps),
-    });
-    await maybeShowRecoveryCodeModal(data);
-    await afterAuthSuccess(deps, data.user || form);
+    enterCloudSession(
+      deps,
+      data.token,
+      resolveRememberFromSection(deps.section, '[data-cloud-reg-remember]', deps),
+      prevToken
+    );
     deps.toast('Cuenta creada. Sesión nube iniciada.', 'success');
-    if (!rebuildPanelOnAuthChange(deps, prevToken)) deps.renderAfterAuth();
+    await finishCloudAuthProfile(deps, data, data.user || form);
   } catch (err) {
     toastRegisterError(err, deps.toast);
   }
@@ -143,16 +170,14 @@ export async function handleLogin(deps) {
       password: form.password,
     });
     const prevToken = deps.getCloudSyncToken();
-    deps.setCloudSyncToken(data.token, { remember: form.remember });
-    await maybeShowRecoveryCodeModal(data);
-    await afterAuthSuccess(deps, data.user || { username: form.username });
+    enterCloudSession(deps, data.token, form.remember, prevToken);
     deps.toast(
       form.remember
         ? 'Sesión nube iniciada (se recordará en este dispositivo).'
         : 'Sesión nube iniciada.',
       'success'
     );
-    if (!rebuildPanelOnAuthChange(deps, prevToken)) deps.renderAfterAuth();
+    await finishCloudAuthProfile(deps, data, data.user || { username: form.username });
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo iniciar sesión.', 'error');
   }
@@ -195,13 +220,14 @@ export async function handleRecover(deps) {
       newPassword: form.password,
     });
     const prevToken = deps.getCloudSyncToken();
-    deps.setCloudSyncToken(data.token, {
-      remember: resolveRememberFromSection(deps.section, '[data-cloud-login-remember]', deps),
-    });
-    await maybeShowRecoveryCodeModal(data);
-    await afterAuthSuccess(deps, data.user || { username: form.username });
+    enterCloudSession(
+      deps,
+      data.token,
+      resolveRememberFromSection(deps.section, '[data-cloud-login-remember]', deps),
+      prevToken
+    );
     deps.toast('Cuenta recuperada. Sesión nube iniciada.', 'success');
-    if (!rebuildPanelOnAuthChange(deps, prevToken)) deps.renderAfterAuth();
+    await finishCloudAuthProfile(deps, data, data.user || { username: form.username });
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo recuperar la cuenta.', 'error');
   }
@@ -292,7 +318,8 @@ export async function handleLogout(deps) {
   deps.clearCloudSyncSession();
   deps.setCloudUser(null);
   deps.onCloudRoomChange?.(false);
-  if (!rebuildPanelOnAuthChange(deps, prevToken)) deps.renderDisconnected();
+  rebuildPanelOnAuthChange(deps, prevToken);
+  deps.renderDisconnected();
 }
 
 /** @param {(msg: string, kind?: string) => void} toast */

@@ -180,7 +180,7 @@ export function dedupeSingletonSections_(rows) {
     'INTERPRETACIÓN ASCITIS:': 1,
     'INTERPRETACIÓN CITOQUÍMICO:': 1,
     TIR: 1, ENDO: 1, CARD: 1, FE: 1, INFL: 1, INM: 1, META: 1, NEF: 1, NIVEL: 1, TM: 1, NUT: 1,
-    GI: 1, TOX: 1, HEPB: 1, VIRAL: 1, MICRO: 1,
+    GI: 1, TOX: 1, HEPB: 1, VIRAL: 1, FEB: 1, MICRO: 1,
   };
   var list = (rows || []).filter(function (r) { return normalizeLabLine_(labRowText_(r)) !== ''; });
   var best = Object.create(null);

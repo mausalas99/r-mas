@@ -45,6 +45,13 @@ function normalizeInfusionCarrierBlob(parts) {
     .replace(/\bHR\b/gi, 'HORA')
     .replace(/\bPOR\s+HORA\b/gi, '/ HORA')
     .replace(/\bAL\s+HORA\b/gi, '/ HORA')
+    .replace(
+      new RegExp(
+        '\\bA\\s+(\\d+(?:[.,]\\d+)?)\\s*(' + CC_ML_RE + ')\\s*(?:\\/\\s*)?(?:POR\\s+)?' + HOUR_UNIT_RE + '\\b',
+        'gi'
+      ),
+      '$1 $2 / HORA'
+    )
     .replace(/\s+/g, ' ')
     .trim()
     .toUpperCase();
@@ -67,7 +74,7 @@ function formatPotassiumReposHours(hours) {
   if (!Number.isFinite(hours) || hours <= 0) return '';
   var rounded = Math.round(hours * 10) / 10;
   var label = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1).replace(/\.0$/, '');
-  return 'PARA ' + label + ' HORAS';
+  return 'A ' + label + ' HORAS';
 }
 
 /**
@@ -173,9 +180,47 @@ function potassiumReposDurationFromCarrierBlob(blob) {
  * @returns {boolean}
  */
 export function isPotassiumReposMedicationItem(item) {
-  if (!item || item.suspendido) return false;
+  return potassiumReposSaltKind(item) != null;
+}
+
+/**
+ * @param {{ nombreRaw?: unknown, suspendido?: boolean } | null | undefined} item
+ * @returns {'kcl' | 'kphos' | 'kacetate' | null}
+ */
+export function potassiumReposSaltKind(item) {
+  if (!item || item.suspendido) return null;
   var n = normalizeNombreForSoapClassify(item.nombreRaw);
-  return KCL_RE.test(n) || K_PHOS_RE.test(n) || K_ACETATE_RE.test(n);
+  if (KCL_RE.test(n)) return 'kcl';
+  if (K_PHOS_RE.test(n)) return 'kphos';
+  if (K_ACETATE_RE.test(n)) return 'kacetate';
+  return null;
+}
+
+/**
+ * Suma mEq de todas las sales de K (KCl, KPO4, acetato) sin subdividir.
+ * @param {unknown[]} items
+ * @returns {number | null}
+ */
+export function potassiumReposTotalMeQ(items) {
+  var total = 0;
+  var any = false;
+  potassiumReposItemsFromList(items).forEach(function (it) {
+    var n = potassiumItemMeQ(it);
+    if (n == null) return;
+    total += n;
+    any = true;
+  });
+  return any ? total : null;
+}
+
+/**
+ * @param {{ dosisRaw?: unknown } | null | undefined} item
+ * @returns {number | null}
+ */
+function potassiumItemMeQ(item) {
+  var m = String((item && item.dosisRaw) || '').match(/(\d+(?:[.,]\d+)?)\s*MEQ/i);
+  if (!m) return null;
+  return parseInfusionNum(m[1]);
 }
 
 /**
@@ -208,11 +253,27 @@ export function isPotassiumReposCarrierMedicationItem(item, allItems) {
   if (isPotassiumReposMedicationItem(item)) return false;
   var n = normalizeNombreForSoapClassify(/** @type {{ nombreRaw?: unknown }} */ (item).nombreRaw);
   if (!NACL_RE.test(n)) return false;
-  var blob = infusionCarrierBlob([
-    /** @type {{ dosisRaw?: unknown, frecuenciaRaw?: unknown }} */ (item).dosisRaw,
-    /** @type {{ frecuenciaRaw?: unknown }} */ (item).frecuenciaRaw,
-  ]);
-  return blobLooksLikeInfusionCarrier(blob);
+  return blobLooksLikeInfusionCarrier(carrierItemInfusionBlob(item));
+}
+
+/**
+ * @param {{ dosisRaw?: unknown, frecuenciaRaw?: unknown }} item
+ * @returns {string}
+ */
+function carrierItemInfusionBlob(item) {
+  return infusionCarrierBlob([item.dosisRaw, item.frecuenciaRaw]);
+}
+
+/**
+ * @param {unknown[]} items
+ * @returns {unknown | null}
+ */
+function findPotassiumReposCarrier(items) {
+  var list = Array.isArray(items) ? items : [];
+  for (var i = 0; i < list.length; i++) {
+    if (isPotassiumReposCarrierMedicationItem(list[i], list)) return list[i];
+  }
+  return null;
 }
 
 /**
@@ -221,16 +282,9 @@ export function isPotassiumReposCarrierMedicationItem(item, allItems) {
  * @returns {string}
  */
 export function potassiumReposDurationClause(items) {
-  var list = Array.isArray(items) ? items : [];
-  for (var i = 0; i < list.length; i++) {
-    var it = list[i];
-    if (!isPotassiumReposCarrierMedicationItem(it, list)) continue;
-    var blob = infusionCarrierBlob([
-      /** @type {{ dosisRaw?: unknown, frecuenciaRaw?: unknown }} */ (it).dosisRaw,
-      /** @type {{ frecuenciaRaw?: unknown }} */ (it).frecuenciaRaw,
-    ]);
-    var clause = potassiumReposDurationFromCarrierBlob(blob);
-    if (clause) return clause;
-  }
-  return '';
+  var carrier = findPotassiumReposCarrier(items);
+  if (!carrier) return '';
+  return potassiumReposDurationFromCarrierBlob(
+    carrierItemInfusionBlob(/** @type {{ dosisRaw?: unknown, frecuenciaRaw?: unknown }} */ (carrier))
+  );
 }

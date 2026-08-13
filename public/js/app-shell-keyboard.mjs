@@ -15,12 +15,47 @@ import {
   runTabDigitShortcut,
   runMedOutputTabShortcut,
   runMedTabShortcut,
-  runAgendaTabShortcut,
   runAgendaWeekNavShortcut,
 } from './app-shell-tab-shortcuts.mjs';
 import { markTabShortcutsAdopted } from './keyboard-shortcuts-nudge.mjs';
 
 var shellKeyboardWired = false;
+var lastShellShortcutAt = 0;
+var lastShellShortcutSig = '';
+
+var CODE_TO_KEY = {
+  Digit1: '1',
+  Digit2: '2',
+  Digit3: '3',
+  Digit4: '4',
+  Digit5: '5',
+  Numpad1: '1',
+  Numpad2: '2',
+  Numpad3: '3',
+  Numpad4: '4',
+  Numpad5: '5',
+  KeyE: 'e',
+  KeyT: 't',
+  KeyD: 'd',
+  KeyM: 'm',
+  KeyG: 'g',
+  KeyI: 'i',
+  KeyP: 'p',
+  KeyS: 's',
+  KeyK: 'k',
+  KeyN: 'n',
+  Slash: '/',
+  Comma: ',',
+  BracketLeft: '[',
+  BracketRight: ']',
+};
+
+/** Layout-safe: prefer e.code so ⌘1/⌘E/⌘T work when e.key is empty or dead. */
+export function normalizeShellShortcutKey(e) {
+  var code = e && e.code ? String(e.code) : '';
+  if (CODE_TO_KEY[code]) return CODE_TO_KEY[code];
+  return String((e && e.key) || '').toLowerCase();
+}
 
 var WORK_MODE_SHORTCUTS = {
   g: 'guardia',
@@ -117,12 +152,6 @@ function handleShellTabLetterShortcut(e, key) {
     runMedTabShortcut();
     return true;
   }
-  if (key === 'a') {
-    e.preventDefault();
-    noteTabNavigationShortcutUsed();
-    runAgendaTabShortcut();
-    return true;
-  }
   return false;
 }
 
@@ -185,13 +214,34 @@ function handleShellMedOutputShortcut(e, key) {
 
 /** @param {(msg: string, type?: string) => void} showToast */
 function onShellModifierKeydown(e, showToast) {
-  var key = e.key.toLowerCase();
+  var key = normalizeShellShortcutKey(e);
+  if (!key) return;
+
+  var sig = key + ':' + (e.shiftKey ? '1' : '0');
+  var now = Date.now();
+  if (sig === lastShellShortcutSig && now - lastShellShortcutAt < 80) return;
+  lastShellShortcutAt = now;
+  lastShellShortcutSig = sig;
 
   if (handleShellMedOutputShortcut(e, key)) return;
   if (handleShellAgendaNavShortcut(e, key)) return;
   if (handleShellDigitTabShortcut(e, key)) return;
   if (handleShellNamedShortcut(e, key)) return;
   handleShellCommaShortcut(e, showToast);
+}
+
+function payloadToKeyEvent(payload) {
+  return {
+    key: payload && payload.key,
+    code: payload && payload.code,
+    metaKey: true,
+    ctrlKey: !!(payload && payload.control),
+    shiftKey: !!(payload && payload.shift),
+    altKey: !!(payload && payload.alt),
+    preventDefault: function () {},
+    stopPropagation: function () {},
+    target: typeof document !== 'undefined' ? document.activeElement || document.body : {},
+  };
 }
 
 /** @param {(msg: string, type?: string) => void} showToast */
@@ -205,6 +255,12 @@ export function initShellKeyboardShortcuts(showToast) {
     },
     true
   );
+  var api = typeof window !== 'undefined' ? window.electronAPI : null;
+  if (api && typeof api.onShellShortcut === 'function') {
+    api.onShellShortcut(function (payload) {
+      onShellModifierKeydown(payloadToKeyEvent(payload), showToast);
+    });
+  }
 }
 
 /** @internal Tests only */

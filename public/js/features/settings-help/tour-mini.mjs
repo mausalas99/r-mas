@@ -8,6 +8,7 @@ import {
 import { registerTourDemoPatientHooks } from '../../tour-demo-patient.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
 import { settingsHelpBridge } from './bridges.mjs';
+import { switchLabInner } from '../patient-dashboard/lab-inner.mjs';
 import {
   closeSettingsDropdown,
   ensureSettingsDropdownOpen,
@@ -81,16 +82,16 @@ var LAB_MINI_TOUR_STEPS = [
   {
     badge: 'Laboratorio · tendencias',
     body: 'Cada laboratorio procesado con paciente activo se guarda con su fecha. Con dos o más labs aparecen mini-gráficas en <strong>Laboratorio → Tendencias</strong>.',
-    before: function(){ rt.switchAppTab('lab'); }
+    before: function(){ rt.switchAppTab('lab'); switchLabInner('tend'); }
   },
   {
     badge: 'Laboratorio · historial',
-    body: 'En <strong>Resultados</strong>, el selector de fechas cambia entre envíos guardados del paciente activo. El menú <strong>⋯</strong> permite copiar varios días, consolidar envíos del mismo día, reprocesar o eliminar una entrada.',
-    before: function(){ rt.switchAppTab('lab'); }
+    body: 'En <strong>Laboratorio → Labs</strong>, el selector de fechas cambia entre envíos guardados del paciente activo. El menú <strong>⋯</strong> permite copiar varios días, consolidar envíos del mismo día, reprocesar o eliminar una entrada.',
+    before: function(){ rt.switchAppTab('lab'); switchLabInner('labs'); }
   },
   {
     badge: 'Evolución y medicamentos',
-    body: 'En <strong>Paciente → Clínico → Notas</strong> completa la evolución. En modo <strong>Sala</strong>, el texto estructurado se arma en <strong>Estado actual</strong>. La pestaña <strong>Medicamentos</strong> importa la receta del hospital.',
+    body: 'En <strong>Paciente → Clínico → Notas</strong> completa la evolución. En modo <strong>Sala</strong>, el texto estructurado se arma en <strong>Estado actual</strong>. La pestaña <strong>Manejo</strong> importa la receta del hospital.',
     before: function(){ rt.switchAppTab('nota'); }
   }
 ];

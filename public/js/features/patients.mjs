@@ -227,7 +227,8 @@ function writeSidebarAutoHide(on) {
 function applySidebarAutoHideUi() {
   var on = readSidebarAutoHide();
   document.documentElement.classList.toggle('sidebar-auto-hide', on);
-  if (!on) document.documentElement.classList.remove('sidebar-reveal');
+  /* Reset reveal on every toggle: enabling starts collapsed, disabling has no reveal state to keep. */
+  document.documentElement.classList.remove('sidebar-reveal');
   var btn = document.getElementById('btn-sidebar-auto-hide');
   if (btn) {
     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -242,9 +243,20 @@ export function toggleSidebarAutoHide() {
   applySidebarAutoHideUi();
 }
 
-/** True when the pointer is on the left workbench edge (hidden-sidebar reveal). */
+/** True when the pointer is on the window or workbench left edge (hidden-sidebar reveal). */
 export function shouldRevealSidebarAt(clientX, appLeft) {
-  return Number(clientX) <= Number(appLeft) + 18;
+  var x = Number(clientX);
+  var left = Number(appLeft) || 0;
+  return x <= 36 || x <= left + 36;
+}
+
+/** Once open, keep the census visible until the pointer leaves the sidebar column. */
+export function shouldKeepSidebarRevealed(clientX, appLeft, sidebarWidth) {
+  var x = Number(clientX);
+  var left = Number(appLeft) || 0;
+  var w = Number(sidebarWidth);
+  if (!(w > 40)) w = 260;
+  return shouldRevealSidebarAt(x, left) || x <= left + w + 12;
 }
 
 export function initSidebarAutoHide() {
@@ -265,17 +277,25 @@ export function initSidebarAutoHide() {
     var app = document.querySelector('.app');
     return app ? app.getBoundingClientRect().left : 0;
   }
+  function asideWidth() {
+    var w = aside.getBoundingClientRect().width;
+    return w > 40 ? w : 260;
+  }
+  function pointerOverAside(node) {
+    return !!(aside && node && (aside === node || aside.contains(node)));
+  }
   strip.addEventListener('mouseenter', reveal);
   aside.addEventListener('mouseenter', reveal);
-  aside.addEventListener('mouseleave', hide);
-  strip.addEventListener('mouseleave', function (e) {
-    var rel = e.relatedTarget;
-    if (rel && (aside === rel || aside.contains(rel))) return;
-    hide();
-  });
   document.addEventListener('mousemove', function (e) {
     if (!readSidebarAutoHide()) return;
-    if (shouldRevealSidebarAt(e.clientX, appLeft())) reveal();
+    var left = appLeft();
+    var revealed = document.documentElement.classList.contains('sidebar-reveal');
+    if (shouldRevealSidebarAt(e.clientX, left) || pointerOverAside(e.target)) {
+      reveal();
+      return;
+    }
+    if (revealed && shouldKeepSidebarRevealed(e.clientX, left, asideWidth())) return;
+    hide();
   });
 }
 

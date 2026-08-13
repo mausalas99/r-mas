@@ -40,7 +40,6 @@ export const SHORTCUT_GROUPS = [
       { keys: ['⌘', 'T'], label: 'Tendencias / Cultivos' },
       { keys: ['⌘', 'D'], label: 'Datos del paciente' },
       { keys: ['⌘', 'M'], label: 'Manejo' },
-      { keys: ['⌘', 'A'], label: 'Agenda' },
       { keys: ['⌘', 'N'], label: 'Nuevo paciente' },
       { keys: ['⌘', '⇧', 'S'], label: 'Guardar paciente activo' },
     ],

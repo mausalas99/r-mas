@@ -12,27 +12,31 @@ import {
   migrateTourStepId,
 } from './onboarding-curriculum.mjs';
 
-test('CURRICULUM_VERSION is 16 after Conexión tour navigation fix', () => {
-  assert.equal(CURRICULUM_VERSION, 16);
+test('CURRICULUM_VERSION is 17 after structure-first onboarding', () => {
+  assert.equal(CURRICULUM_VERSION, 17);
 });
 
-test('getSalaTourSteps has 21 base steps without Historia clínica', () => {
+test('getSalaTourSteps has 23 steps: map first, then lab with tendencias', () => {
   const steps = getSalaTourSteps();
-  assert.equal(steps.length, 21);
+  assert.equal(steps.length, 23);
   assert.ok(!steps.includes('sala_manejo'));
   assert.ok(!steps.includes('sala_casiopea_lab'));
   assert.ok(!steps.includes('sala_casiopea_trends'));
   assert.ok(!steps.includes('estado_actual_snapshot'));
   assert.ok(!steps.includes('historia_clinica'));
   assert.ok(steps.includes('estado_actual_review'));
-  assert.equal(steps[0], 'map_sidebar');
-  assert.equal(steps.indexOf('lab_view'), 4);
-  assert.equal(steps.indexOf('servicio_default'), 5);
-  assert.equal(steps.indexOf('sala_expediente_tabs'), 6);
-  assert.equal(steps.indexOf('estado_actual'), 7);
-  assert.equal(steps.indexOf('estado_actual_registro'), 8);
-  assert.equal(steps.indexOf('estado_actual_review'), 9);
-  assert.equal(steps.indexOf('eventualidades'), 10);
+  assert.equal(steps[0], 'map_tabs');
+  assert.equal(steps[1], 'map_sidebar');
+  assert.equal(steps[2], 'map_add_patient');
+  assert.equal(steps[3], 'map_incomplete');
+  assert.equal(steps[4], 'servicio_default');
+  assert.equal(steps.indexOf('map_lab_teaser'), 5);
+  assert.equal(steps.indexOf('lab_parse'), 6);
+  assert.equal(steps.indexOf('lab_view'), 7);
+  assert.equal(steps.indexOf('sala_tend'), 8);
+  assert.equal(steps.indexOf('sala_tend_chart'), 9);
+  assert.equal(steps.indexOf('sala_expediente_tabs'), 10);
+  assert.equal(steps.indexOf('estado_actual'), 11);
   assert.ok(steps.indexOf('estado_actual_review') < steps.indexOf('eventualidades'));
   assert.ok(steps.includes('listado_problemas'));
   assert.ok(steps.includes('sala_vpo'));
@@ -42,18 +46,19 @@ test('getSalaTourSteps has 21 base steps without Historia clínica', () => {
   assert.equal(steps[steps.length - 1], 'wrap');
 });
 
-test('getQuickRouteTourSteps has 6 cross-track steps', () => {
+test('getQuickRouteTourSteps starts with map then alta', () => {
   const steps = getQuickRouteTourSteps();
   assert.equal(steps.length, 6);
-  assert.equal(steps[0], 'map_lab_teaser');
-  assert.equal(steps[1], 'lab_parse');
-  assert.equal(steps[2], 'gv7_guardia_chip');
+  assert.equal(steps[0], 'map_tabs');
+  assert.equal(steps[1], 'map_add_patient');
+  assert.equal(steps[2], 'lab_parse');
+  assert.equal(steps[3], 'gv7_guardia_chip');
   assert.equal(steps[steps.length - 1], 'quick_wrap');
 });
 
 test('getChapterProgressLabel quick-route uses linear index', () => {
   const label = getChapterProgressLabel('gv7_guardia_chip', 'quick-route');
-  assert.equal(label.stepInChapter, 3);
+  assert.equal(label.stepInChapter, 4);
   assert.equal(label.chapterSteps, 6);
   assert.match(label.chapterTitle, /Ruta rápida/i);
 });
@@ -69,13 +74,17 @@ test('migrateTourStepId maps legacy estado_actual substeps', () => {
   assert.equal(migrateTourStepId('lab_view', 'sala'), 'lab_view');
 });
 
-test('getChapterForStep maps servicio_default to ch-patient-lab', () => {
+test('getChapterForStep maps map and servicio_default to ch-map', () => {
   const ch = getChapterForStep('servicio_default', 'sala');
-  assert.equal(ch.id, 'ch-patient-lab');
-  assert.match(ch.title, /Paciente|laboratorio/i);
+  assert.equal(ch.id, 'ch-map');
+  assert.match(ch.title, /armada|estructura/i);
+  assert.equal(getChapterForStep('map_add_patient', 'sala').id, 'ch-map');
+  assert.equal(getChapterForStep('map_incomplete', 'sala').id, 'ch-map');
 });
 
-test('estado_actual is in ch-chart not ch-salida', () => {
+test('lab chapter includes tendencias; chart stays clínico', () => {
+  assert.equal(getChapterForStep('sala_tend', 'sala').id, 'ch-patient-lab');
+  assert.equal(getChapterForStep('lab_parse', 'sala').id, 'ch-patient-lab');
   assert.equal(getChapterForStep('estado_actual', 'sala').id, 'ch-chart');
   assert.equal(getChapterForStep('sala_vpo', 'sala').id, 'ch-salida');
   assert.equal(getChapterForStep('sala_agenda', 'sala').id, 'ch-agenda');
@@ -95,21 +104,27 @@ test('guardia-v7 censo chapter precedes entrega', () => {
   assert.ok(steps.indexOf('gv7_lan_rotacion') < steps.indexOf('gv7_rotacion_rejoin'));
 });
 
-test('getChapterProgressLabel for estado_actual in chapter 2', () => {
+test('getChapterProgressLabel for estado_actual in clínico chapter', () => {
   const label = getChapterProgressLabel('estado_actual', 'sala');
   assert.match(label.chapterTitle, /Clínico|Expediente/i);
   assert.ok(label.stepInChapter >= 1);
   assert.ok(label.chapterSteps >= 1);
 });
 
-test('HUB_MODULES includes agenda module without neo companion cards', () => {
+test('HUB_MODULES starts with structure and has no Resultados chapter', () => {
   assert.ok(!HUB_MODULES.some((m) => m.id === 'neo-lab'));
-  assert.ok(!HUB_MODULES.some((m) => m.id === 'neo-trends'));
+  assert.ok(!HUB_MODULES.some((m) => m.chapterId === 'ch-results'));
+  assert.equal(HUB_MODULES[0].chapterId, 'ch-map');
+  assert.match(HUB_MODULES[0].label, /armada/i);
   assert.ok(HUB_MODULES.some((m) => m.chapterId === 'ch-agenda'));
+  assert.ok(HUB_MODULES.some((m) => m.chapterId === 'ch-patient-lab'));
 });
 
-test('getInterconsultaTourSteps still lab-first and no Neo', () => {
+test('getInterconsultaTourSteps is map-first then lab then clínico', () => {
   const steps = getInterconsultaTourSteps();
+  assert.equal(steps[0], 'map_tabs');
   assert.equal(steps.indexOf('lab_parse'), steps.indexOf('map_lab_teaser') + 1);
+  assert.ok(steps.indexOf('map_add_patient') < steps.indexOf('lab_parse'));
+  assert.ok(steps.indexOf('sala_tend') < steps.indexOf('ic_expediente_tabs'));
   assert.ok(!steps.includes('sala_casiopea_lab'));
 });

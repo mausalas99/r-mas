@@ -196,7 +196,7 @@
   --density-space: 1;
   --density-font: 1;
   --density-gap-section: calc(12px * var(--density-space, 1));
-  --sidebar-width: 240px;
+  --sidebar-width: 220px;
   --sidebar-rail-width: 5px;
   --sidebar-rail-color: color-mix(in oklab, #5c4a52 18%, var(--color-paper));
 
@@ -225,7 +225,7 @@
 html.ui-density-normal {
   --density-space: 1.1;
   --density-font: 1.03;
-  --sidebar-width: min(280px, 34vw);
+  --sidebar-width: min(240px, 28vw);
 }
 
 html.dark {

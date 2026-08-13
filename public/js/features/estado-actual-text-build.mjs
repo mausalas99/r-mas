@@ -292,6 +292,7 @@ export function buildNmClause(ec, kcalDisplay, snapIo, btTurno, glSrc, bombaSrc,
 export function assembleSoapLines(ec, v, soporte, hiTemp, nmClause) {
   var analgesiaSplit = partitionAnalgesiaForSoap(ec.analgesia);
   var analgesiaClause = medsClauseOrEmpty(analgesiaSplit.analgesia);
+  var antipireticosClause = medsClauseOrEmpty(analgesiaSplit.antipireticos);
   var antiemeticosClause = medsClauseOrEmpty(ec.antiemeticos || analgesiaSplit.antiemeticos);
   var sedacionClause = medsClauseOrEmpty(ec.sedacion);
   var antiepilepticosClause = medsClauseOrEmpty(ec.antiepilepticos);
@@ -301,6 +302,7 @@ export function assembleSoapLines(ec, v, soporte, hiTemp, nmClause) {
   var vasopClause = medsClauseOrEmpty(ec.vasop);
   var nMeds = joinSoapMedSegments([
     soapMedCategorySegment('ANALGESIA', analgesiaClause),
+    soapMedCategorySegment('ANALGESIA / ANTIPIRETICOS', antipireticosClause),
     soapMedCategorySegment('ANTIEMETICOS', antiemeticosClause),
     soapMedCategorySegment('SEDACION', sedacionClause),
     soapMedCategorySegment('ANTIEPILEPTICOS', antiepilepticosClause),

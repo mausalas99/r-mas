@@ -63,15 +63,28 @@ var HELP_ARTICLES = [
       '<p style="font-size:13px;color:var(--text-muted);margin:0;">¿Censo vacío tras rotar? Confirma Nube en ⇄, revisa la franja sala/equipo en Guardia y abre <strong>Opciones → Equipo</strong>.</p>'
   },
   {
+    id: 'estructura',
+    title: 'Cómo está armada R+',
+    keywords: 'estructura pestañas paciente laboratorio manejo agenda resumen clinico salida labs tendencias cultivos censo alta incompleto',
+    html:
+      '<p>Cuatro pestañas arriba: <strong>Paciente</strong>, <strong>Laboratorio</strong>, <strong>Manejo</strong> y <strong>Agenda</strong>.</p>' +
+      '<ul>' +
+      '<li><strong>Paciente</strong> abre en <strong>Resumen</strong>. Grupos: Resumen · Clínico · Salida. Atajo <strong>⌘/Ctrl+1</strong> (repite para ciclar).</li>' +
+      '<li><strong>Laboratorio</strong>: Labs · Tendencias · Cultivos. Atajo <strong>⌘/Ctrl+2</strong> (repite para ciclar).</li>' +
+      '<li><strong>Manejo</strong> es la receta hospitalaria (no está dentro de Paciente). <strong>Agenda</strong> concentra procedimientos del turno.</li>' +
+      '<li>La columna izquierda es el <strong>censo</strong>. <strong>+ Agregar</strong> da de alta; sin cuarto, cama o servicio la tarjeta queda incompleta.</li>' +
+      '</ul>'
+  },
+  {
     id: 'primer-paciente',
     title: 'Tu primer paciente',
-    keywords: 'agregar paciente nuevo registro edad sexo cuarto cama duplicado',
+    keywords: 'agregar paciente nuevo registro edad sexo cuarto cama duplicado incompleto alta censo',
     html:
-      '<p>Agrega un paciente desde la barra lateral con <strong>+ Agregar</strong> o directamente desde un reporte de laboratorio procesado (<strong>Agregar paciente del lab</strong>).</p>' +
+      '<p>Agrega un paciente desde la barra lateral con <strong>+ Agregar</strong> o desde un reporte de laboratorio procesado (<strong>Agregar paciente</strong>).</p>' +
       '<ul>' +
-      '<li>Puedes capturar nombre, registro, edad, sexo, área / servicio, cuarto y cama.</li>' +
-      '<li>R+ avisa si detecta un paciente con el mismo nombre o registro para evitar duplicados.</li>' +
-      '<li>El paciente queda guardado solo en esta computadora; no se sube a la nube.</li>' +
+      '<li>Nombre y registro bastan para empezar. <strong>Cuarto</strong>, <strong>cama</strong> y <strong>servicio</strong> cierran el censo: si faltan, la tarjeta queda <strong>incompleta</strong> — ábrela y completa.</li>' +
+      '<li>R+ avisa si detecta el mismo nombre o registro para evitar duplicados.</li>' +
+      '<li>Con <strong>R+ Cloud</strong> conectado, el alta se comparte con el equipo de la sala. Sin Nube, queda en este equipo.</li>' +
       '</ul>'
   },
   {
@@ -89,13 +102,14 @@ var HELP_ARTICLES = [
   {
     id: 'laboratorio',
     title: 'Laboratorio: procesar',
-    keywords: 'lab laboratorio procesar reporte diagrama gamble bh quimica copiar',
+    keywords: 'lab laboratorio procesar reporte diagrama gamble bh quimica copiar labs tendencias cultivos historial',
     html:
       '<p>Pega el reporte del laboratorio en el cuadro de texto de la pestaña <strong>Laboratorio</strong> y pulsa <strong>Procesar</strong>. R+ reconoce biometría, química, electrolitos, gasometría, pruebas hepáticas y más.</p>' +
       '<ul>' +
+      '<li>Dentro de Laboratorio: <strong>Labs</strong> (diagramas y tabla), <strong>Tendencias</strong> (mini-gráficas en el tiempo) y <strong>Cultivos</strong>.</li>' +
       '<li>Cada diagrama tiene un botón <strong>Copiar</strong> para pegarlo como texto en otro sistema.</li>' +
       '<li>Los valores fuera de rango se resaltan en rojo.</li>' +
-      '<li>En <strong>Historial de labs</strong> ves cada envío guardado; puedes <strong>Ver en Laboratorio</strong> para recuperar diagramas o <strong>Eliminar</strong> un conjunto si fue un error.</li>' +
+      '<li>En <strong>Labs</strong> ves cada envío guardado; puedes cambiar de fecha, <strong>Consolidar</strong> envíos del mismo día o <strong>Eliminar</strong> un conjunto si fue un error.</li>' +
       '</ul>'
   },
   {
@@ -152,7 +166,7 @@ var HELP_ARTICLES = [
     title: 'Medicamentos (receta hospitalaria)',
     keywords: 'medicamentos receta tsv hospital soap tratamiento analgesia abx antihta vasopresores copiar',
     html:
-      '<p>En la pestaña <strong>Medicamentos</strong> pegas el listado copiado del sistema hospitalario (columnas separadas por tabulador) y pulsas <strong>Receta</strong>.</p>' +
+      '<p>En la pestaña <strong>Manejo</strong> pegas el listado copiado del sistema hospitalario (columnas separadas por tabulador) y pulsas <strong>Receta</strong>.</p>' +
       '<p>En <strong>SOME</strong>, para reutilizar el mismo bloque, copia normalmente <strong>desde la columna Fecha y hora</strong> hasta el <strong>final de la sección</strong> de medicamentos y pégalo en R+.</p>' +
       '<ul>' +
       '<li><strong>Excl.</strong> excluye el fármaco del texto de egreso; <strong>SOAP</strong> marca qué filas se volcarán a la plantilla SOAP o al tratamiento.</li>' +
@@ -183,9 +197,9 @@ var HELP_ARTICLES = [
     keywords:
       'actualizacion actualizar update instalar reiniciar rollback version downgrade restaurar estable reparacion native binding',
     html:
-      '<p>R+ busca nuevas versiones al iniciar. Cuando hay una disponible, la app muestra un modal con el progreso de descarga.</p>' +
+      '<p>R+ busca nuevas versiones al iniciar y, en silencio, al usar <strong>Actualizar labs</strong> o al cambiar de paciente (como máximo cada 30 min). Si hay una versión nueva, aparece el modal de descarga; si ya estás al día, no interrumpe.</p>' +
       '<ul>' +
-      '<li>Puedes buscar manualmente desde <strong>Ajustes → Buscar actualizaciones…</strong> o el menú nativo (Mac: R+; Windows: Aplicación).</li>' +
+      '<li>Puedes buscar manualmente desde <strong>Ajustes → Buscar actualizaciones…</strong> o el menú nativo (Mac: R+; Windows: Aplicación). Esa búsqueda sí avisa si R+ ya está actualizado.</li>' +
       '<li><strong>Restaurar versión estable</strong>: en Ajustes → Aplicación, elige una versión anterior curada y confirma. R+ intenta instalarla como una actualización; si falla (p. ej. firma en Mac), abre el instalador correcto en GitHub. Tus datos locales no se borran.</li>' +
       '<li>Si la versión elegida está por debajo del mínimo soportado, R+ bloquea la restauración automática.</li>' +
       '<li>Al detectar una versión nueva instalada, R+ muestra una ventana de <strong>Novedades</strong> con los cambios relevantes.</li>' +
@@ -204,7 +218,7 @@ var HELP_ARTICLES = [
       '<li><strong>Ctrl/⌘ + ,</strong> — Ajustes</li>' +
       '<li><strong>Ctrl/⌘ + N</strong> — Nuevo paciente</li>' +
       '<li><strong>Ctrl/⌘ + G</strong> — Modo Guardia · <strong>I</strong> — Interconsulta · <strong>P</strong> — Pase (repite para volver a Sala/Interconsulta) · <strong>S</strong> — Sala</li>' +
-      '<li><strong>Ctrl/⌘ + E</strong> — Estado actual (en EA → Eventualidades en Sala) · <strong>T</strong> — Tendencias (en tendencias → Cultivos) · <strong>D</strong> — Datos del paciente · <strong>M</strong> — Manejo (cicla subvistas) · <strong>A</strong> — Agenda (semana actual)</li>' +
+      '<li><strong>Ctrl/⌘ + E</strong> — Estado actual (en EA → Eventualidades en Sala) · <strong>T</strong> — Tendencias (en tendencias → Cultivos) · <strong>D</strong> — Datos del paciente · <strong>M</strong> — Manejo (cicla subvistas)</li>' +
       '<li><strong>Ctrl/⌘ + Shift + S</strong> — Guardar estado del paciente activo</li>' +
       '<li><strong>Ctrl/⌘ + /</strong> — Mostrar la hoja de atajos (también el botón del encabezado)</li>' +
       '<li><strong>Ctrl/⌘ + K</strong> — Ir a sección o paciente</li>' +

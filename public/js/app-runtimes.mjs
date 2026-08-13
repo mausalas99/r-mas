@@ -436,7 +436,18 @@ export async function registerAllFeatureRuntimes() {
       return nombre || bed || 'Paciente';
     },
     showToast: showToast,
+    isKnownPatient: function (pid) {
+      return getPatients().some(function (row) {
+        return row && String(row.id) === String(pid);
+      });
+    },
   });
+  const { pruneOrphanTodos } = await import('./features/sync-apply/patient-delete-local.mjs');
+  pruneOrphanTodos(
+    getPatients().map(function (p) {
+      return p && p.id;
+    })
+  );
   reminderScheduler.rescheduleAllTodos();
   registerVpoRuntime(ctx);
   registerRecetaHuRuntime(ctx);

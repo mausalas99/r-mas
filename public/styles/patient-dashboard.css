@@ -30,13 +30,23 @@
 
 .patient-dash .idrow h1 { margin: 0; }
 
+.patient-dash .id-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em 0.85em;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.patient-dash .id-name-row .meta { margin-top: 0; }
+
 .patient-dash .dash-name {
   margin: 0;
   padding: 0;
   border: 0;
   background: none;
-  font: 600 1.02em/1.25 var(--font-ui);
-  letter-spacing: -0.02em;
+  font: 600 0.86em/1.3 var(--font-ui);
+  letter-spacing: -0.01em;
   color: var(--color-ink);
   cursor: pointer;
   text-align: left;
@@ -184,10 +194,6 @@ html.dark .patient-dash .svc.is-on {
   grid-column: 1 / -1;
 }
 
-.patient-dash .labs-card {
-  border-top: 3px solid var(--color-danger);
-}
-
 .patient-dash .bento.rest {
   flex: 1 1 0;
   min-height: 0;
@@ -197,10 +203,14 @@ html.dark .patient-dash .svc.is-on {
 }
 
 .patient-dash:has(.bento.meds-band) .bento.rest {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 36cqh;
 }
 
 .patient-dash .bento.meds-band {
+  container-type: size;
+  container-name: medsband;
   flex: 1 1 0;
   min-height: 0;
   grid-template-columns: 1fr;
@@ -214,7 +224,6 @@ html.dark .patient-dash .svc.is-on {
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  border-top: 3px solid oklch(0.62 0.1 var(--spine-h, 220));
 }
 
 .patient-dash .bento.rest .card-b,
@@ -223,7 +232,7 @@ html.dark .patient-dash .svc.is-on {
   display: flex; flex-direction: column;
 }
 .patient-dash .bento.rest .card-b { overflow-x: hidden; overflow-y: auto; }
-.patient-dash .bento.meds-band .card-b { overflow: hidden; padding: 6px 10px 8px; }
+.patient-dash .bento.meds-band .card-b { overflow: hidden; padding: 4px 10px 10px; }
 .patient-dash .bento.meds-band .card-h { padding: 6px 12px; }
 
 .patient-dash .card,
@@ -232,7 +241,7 @@ html.dark .patient-dash .svc.is-on {
 .patient-expediente-classic .patient-dash button.card,
 #patient-ronda-dashboard-host .card {
   background: var(--color-elevated);
-  border: 1px solid color-mix(in oklab, var(--color-ink) 20%, transparent);
+  border: 0;
   border-radius: 12px;
   box-shadow: none;
   min-height: 0;
@@ -253,10 +262,11 @@ html.dark .patient-dash .svc.is-on {
   display: flex;
   flex-direction: column;
   color: inherit;
+  cursor: pointer;
 }
 
 .patient-dash .card.clickable:hover {
-  border-color: color-mix(in oklab, var(--color-ink) 32%, transparent);
+  background: color-mix(in oklab, var(--color-ink) 4%, var(--color-elevated));
 }
 
 .patient-dash .card.clickable:focus-visible,
@@ -447,53 +457,77 @@ html.dark .patient-dash .svc.is-on {
   text-transform: none;
 }
 
-.patient-dash .bento.meds-band .ea-soap {
+.patient-dash .bento.meds-band .soap-pack {
+  display: flex;
   flex: 1;
   min-height: 0;
-}
-
-.patient-dash .ea-soap {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: minmax(0, auto);
-  gap: clamp(0.12em, 0.65cqh, 0.4em) 0.85em;
   align-items: start;
-  align-content: start;
+  overflow: hidden;
+  mask-image: linear-gradient(#000 0, #000 calc(100% - 10px), transparent);
 }
-
-.patient-dash .ea-cat {
-  display: flex; flex-direction: column;
-  justify-content: flex-start; align-items: center;
-  gap: clamp(0.1em, 0.45cqh, 0.28em); min-width: 0; text-align: center;
+.patient-dash .bento.meds-band .soap-pack section {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 14px 0;
+  border-right: 1px solid var(--divider);
 }
-
-.patient-dash .ea-soap small {
-  margin: 0; text-decoration: none;
-  color: oklch(0.48 0.08 var(--h, 220));
-  font-size: 0.68em; font-weight: 700; letter-spacing: 0.03em;
-  text-transform: uppercase;
-  line-height: 1.15;
+.patient-dash .bento.meds-band .soap-pack section:first-child { padding-left: 4px; }
+.patient-dash .bento.meds-band .soap-pack section:last-child {
+  border-right: 0;
+  padding-right: 8px;
 }
-
-html.dark .patient-dash .ea-soap small { color: oklch(0.78 0.08 var(--h, 220)); }
-
-.patient-dash .meds {
-  display: flex; flex-direction: column; align-items: center;
-  gap: clamp(1px, 0.4cqh, 3px); min-width: 0;
+.patient-dash .bento.meds-band .soap-pack .z,
+.patient-dash .bento.meds-band .soap-pack .z2 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45em;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  color: var(--color-ink-muted);
+  padding: 2px 0 4px;
 }
-
-.patient-dash .med {
-  display: inline-flex;
-  border: 1px solid oklch(0.72 0.07 var(--h, 220));
-  border-radius: 999px; padding: clamp(1px, 0.32cqh, 3px) 8px;
-  font: 600 clamp(10px, 1.15cqi, 12px)/1.2 var(--font-ui);
-  background: oklch(0.94 0.045 var(--h, 220));
-  color: oklch(0.34 0.09 var(--h, 220));
+.patient-dash .bento.meds-band .soap-pack .z em,
+.patient-dash .bento.meds-band .soap-pack .z2 em {
+  font: 500 11px/1.2 var(--font-ui);
+  letter-spacing: 0;
+  font-style: normal;
+  color: color-mix(in oklab, var(--color-ink-muted) 72%, transparent);
 }
-
-html.dark .patient-dash .med {
-  background: oklch(0.34 0.055 var(--h, 220));
-  color: oklch(0.9 0.07 var(--h, 220)); border-color: oklch(0.5 0.07 var(--h, 220));
+.patient-dash .bento.meds-band .soap-pack .z2 {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--divider);
+}
+.patient-dash .bento.meds-band .soap-pack .med {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0 6px;
+  border-bottom: 1px solid var(--divider);
+  max-width: 100%;
+}
+.patient-dash .bento.meds-band .soap-pack .med:last-child,
+.patient-dash .bento.meds-band .soap-pack .med:has(+ .z2) { border-bottom: 0; }
+.patient-dash .bento.meds-band .soap-pack .name {
+  font: 590 13px/1.2 var(--font-ui);
+  letter-spacing: -0.016em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.patient-dash .bento.meds-band .soap-pack .meta {
+  flex-shrink: 0;
+  font: 500 11.5px/1.2 var(--font-ui);
+  letter-spacing: 0.01em;
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.patient-dash .bento.meds-band .soap-pack .meta.is-key {
+  color: var(--color-ink);
+  font-weight: 600;
 }
 
 .patient-dash .rows {

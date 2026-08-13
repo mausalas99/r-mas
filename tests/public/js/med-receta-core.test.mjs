@@ -23,6 +23,7 @@ import {
   setDiaTratamientoInDosis,
   incrementMedItemsDiaTratamiento,
   classifyMedicationSoapCategory,
+  shouldIncludeMedicationInSoap,
   effectiveSoapCategory,
   soapDestinationUiValue,
   unassignedOtrosSoapItems,
@@ -298,7 +299,7 @@ test('buildMedRecetaNameOnlyText incluye nombre, via+dosis, frecuencia y día', 
   var t = buildMedRecetaNameOnlyText(items);
   var lines = t.split('\n');
   assert.equal(lines[0], 'METRONIDAZOL 500MG VO C/8H DIA 3');
-  assert.equal(lines[1], 'OMEPRAZOL 40MG VO C/12H');
+  assert.equal(lines[1], 'OMEPRAZOL 40MG VO C/12H (2 CÁPSULAS DE 20MG)');
 });
 
 test('buildMedRecetaNameOnlyText agrega día de uso cuando existe', () => {
@@ -313,7 +314,7 @@ test('buildMedRecetaNameOnlyText agrega día de uso cuando existe', () => {
     },
   ];
   var t = buildMedRecetaNameOnlyText(items);
-  assert.equal(t, 'OMEPRAZOL 40MG VO C/12H DIA 4');
+  assert.equal(t, 'OMEPRAZOL 40MG VO C/12H (2 CÁPSULAS DE 20MG) DIA 4');
 });
 
 test('extractRecetaNameOnlyDose — infusión con VEL.INF MCG/MIN (norepinefrina)', () => {
@@ -407,9 +408,9 @@ test('bloque dorado — 12 medicamentos del spec', () => {
     'LOSARTÁN 50 MG TABLETA || TOMAR 1 TABLETA (50 MG) VÍA ORAL CADA 24 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
     'MAGALDRATO/DIMETICONA 800/100 MG GEL || TOMAR 15 ML VÍA ORAL CADA 8 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
     'METRONIDAZOL 500 MG TABLETA || TOMAR 1 TABLETA (500 MG) VÍA ORAL CADA 8 HORAS (DÍA 3 DE TRATAMIENTO).',
-    'OMEPRAZOL 40 MG TABLETA || TOMAR 1 TABLETA (40 MG) VÍA ORAL CADA 24 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
+    'OMEPRAZOL 20 MG CÁPSULA || TOMAR 2 CÁPSULAS (40 MG) VÍA ORAL CADA 24 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
     'ONDANSETRÓN 8 MG TABLETA || TOMAR 1 TABLETA (8 MG) VÍA ORAL CADA 8 HORAS EN CASO DE NÁUSEA O VÓMITO.',
-    'PARACETAMOL 500 MG TABLETA || TOMAR 1 TABLETA (500 MG) VÍA ORAL CADA 8 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
+    'PARACETAMOL 500 MG TABLETA || TOMAR 2 TABLETAS (1 G) VÍA ORAL CADA 8 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
     'POLIETILENGLICOL 3350 17 G POLVO || TOMAR 17 G VÍA ORAL CADA 12 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
     'PREGABALINA 75 MG CÁPSULA || TOMAR 1 CÁPSULA (75 MG) VÍA ORAL CADA 12 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
     'SENÓSIDOS A-B 8.6 MG TABLETA || TOMAR 1 TABLETA (8.6 MG) VÍA ORAL CADA 12 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
@@ -541,6 +542,18 @@ test('classifyMedicationSoapCategory — ejemplos hospitalarios', () => {
     'antitromboticos'
   );
   assert.equal(classifyMedicationSoapCategory('ASPIRINA 500 MG TABLETA', '500 MG'), 'analgesia');
+  assert.equal(classifyMedicationSoapCategory('KETOROLACO 30 MG'), 'analgesia');
+  assert.equal(classifyMedicationSoapCategory('CEFEPIMA 2 G'), 'abx');
+  assert.equal(classifyMedicationSoapCategory('DICLOXACILINA 500 MG'), 'abx');
+  assert.equal(classifyMedicationSoapCategory('ARIPIPRAZOL 10 MG'), 'sedacion');
+  assert.equal(classifyMedicationSoapCategory('ALPRAZOLAM 0.5 MG'), 'sedacion');
+  assert.equal(classifyMedicationSoapCategory('ZOLPIDEM 10 MG'), 'sedacion');
+  assert.equal(classifyMedicationSoapCategory('ACIDO VALPROICO 500 MG'), 'antiepilepticos');
+  assert.equal(classifyMedicationSoapCategory('DAPAGLIFOZINA 10 MG'), 'nm');
+  assert.equal(classifyMedicationSoapCategory('SIMVASTATINA 20 MG'), 'estatinas');
+  assert.equal(classifyMedicationSoapCategory('MONONITRATO DE ISOSORBIDA 20 MG'), 'antihta');
+  assert.equal(classifyMedicationSoapCategory('SOLUCION HARTMANN 1000 ML'), 'otros');
+  assert.equal(shouldIncludeMedicationInSoap({ nombreRaw: 'SOLUCION HARTMANN 1000 ML' }), false);
 });
 
 test('formatMedicationSoapShort — indicación compacta', () => {
@@ -562,7 +575,7 @@ test('formatMedicationSoapShort — indicación compacta', () => {
       frecuenciaRaw: 'CADA 8 HORAS',
       suspendido: false,
     }),
-    'PARACETAMOL 500MG VO C/8H'
+    'PARACETAMOL 1 G VO C/8H (2 TABLETAS DE 500MG)'
   );
   assert.equal(
     formatMedicationSoapShort({
@@ -897,6 +910,10 @@ test('buildMedRecetaListHtml — dest picker visible for SOAP meds', async () =>
   });
   assert.match(html, /med-receta-dest-picker/);
   assert.match(html, /med-receta-dest-label/);
-  assert.match(html, /Antiepilépticos|Analgésicos/);
+  assert.match(html, /optgroup label="N"/);
+  assert.match(html, /optgroup label="HD"/);
+  assert.match(html, /optgroup label="HI"/);
+  assert.match(html, /optgroup label="NM"/);
+  assert.match(html, /Analgésicos \/ antipiréticos/);
   assert.equal((html.match(/med-receta-dest-picker/g) || []).length, 2);
 });

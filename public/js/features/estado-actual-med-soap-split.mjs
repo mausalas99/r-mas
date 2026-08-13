@@ -37,20 +37,29 @@ function joinMedPipeItems(items) {
 var ANTIEMETIC_LINE_RE =
   /\b(ONDANSETRON|GRANISETRON|PALONOSETRON|METOCLOPRAMIDA|DROPERIDOL|DIMENHIDRINATO|BUTILHIOSCINA|BROMURO\s+DE\s+BUTILHIOSCINA|BUSCAPINA)\b/i;
 
+var ANTIPYRETIC_LINE_RE = /\b(PARACETAMOL|ACETAMINOFEN|METAMIZOL|DIPIRONA)\b/i;
+
 /**
  * @param {unknown} fieldVal
- * @returns {{ analgesia: string, antiemeticos: string }}
+ * @returns {{ analgesia: string, antipireticos: string, antiemeticos: string }}
  */
 export function partitionAnalgesiaForSoap(fieldVal) {
   /** @type {string[]} */
   var analgesia = [];
   /** @type {string[]} */
+  var antipireticos = [];
+  /** @type {string[]} */
   var antiemeticos = [];
   parseMedPipeItems(fieldVal).forEach(function (line) {
     if (ANTIEMETIC_LINE_RE.test(line)) antiemeticos.push(line);
+    else if (ANTIPYRETIC_LINE_RE.test(line)) antipireticos.push(line);
     else analgesia.push(line);
   });
-  return { analgesia: joinMedPipeItems(analgesia), antiemeticos: joinMedPipeItems(antiemeticos) };
+  return {
+    analgesia: joinMedPipeItems(analgesia),
+    antipireticos: joinMedPipeItems(antipireticos),
+    antiemeticos: joinMedPipeItems(antiemeticos),
+  };
 }
 
 /**

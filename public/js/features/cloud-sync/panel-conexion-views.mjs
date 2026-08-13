@@ -95,7 +95,9 @@ function statusIdentityHtml(cloudUser) {
     (display
       ? '<span class="cloud-sync-status-display">' + esc(display) + '</span>'
       : '') +
-    '</span></div></div>'
+    '</span></div>' +
+    '<button type="button" class="cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger" data-cloud-action="logout">Cerrar sesión</button>' +
+    '</div>'
   );
 }
 
@@ -298,6 +300,26 @@ function syncConexionModalChrome(view) {
   modal.classList.toggle('connection-dropdown-modal--equipo', view === 'equipo');
 }
 
+const CONEXION_VIEW_HOOK = {
+  admin: 'onAdmin',
+  mobile: 'onMobile',
+  nube: 'onNube',
+  equipo: 'onEquipo',
+};
+
+function syncConexionHead(section, next, hooks) {
+  const head = section.querySelector('.cloud-sync-conexion-head');
+  if (!head || !section.querySelector('[data-cloud-views]')) return;
+  head.hidden = next !== 'status';
+  if (next === 'status' && typeof hooks?.onStatusHome === 'function') hooks.onStatusHome();
+}
+
+function invokeConexionViewHook(next, hooks) {
+  const key = CONEXION_VIEW_HOOK[next];
+  const fn = key && hooks ? hooks[key] : null;
+  if (typeof fn === 'function') void fn();
+}
+
 /**
  * @param {HTMLElement} section
  * @param {string} view
@@ -312,15 +334,7 @@ export function applyConexionView(section, view, hooks) {
   section.querySelectorAll('[data-cloud-view]').forEach(function (el) {
     el.hidden = el.getAttribute('data-cloud-view') !== next;
   });
-  // Home chrome (Conexión + chip) only on status — subviews get a clean page.
-  const head = section.querySelector('.cloud-sync-conexion-head');
-  if (head && section.querySelector('[data-cloud-views]')) {
-    head.hidden = next !== 'status';
-    if (next === 'status' && typeof hooks?.onStatusHome === 'function') {
-      hooks.onStatusHome();
-    }
-  }
-  // Avoid "Conexión guardia" + body "Opciones" double chrome.
+  syncConexionHead(section, next, hooks);
   syncConexionModalChrome(next);
   syncCloudSecondaryPanels(resolveConexionPanelRoot(section), next);
   if (next !== 'equipo') setClinicalTeamsEmbedHost(null);
@@ -329,16 +343,5 @@ export function applyConexionView(section, view, hooks) {
       section.querySelector('[data-cloud-nube-diagnostics-host]')
     );
   }
-  if (next === 'admin' && typeof hooks?.onAdmin === 'function') {
-    void hooks.onAdmin();
-  }
-  if (next === 'mobile' && typeof hooks?.onMobile === 'function') {
-    void hooks.onMobile();
-  }
-  if (next === 'nube' && typeof hooks?.onNube === 'function') {
-    void hooks.onNube();
-  }
-  if (next === 'equipo' && typeof hooks?.onEquipo === 'function') {
-    void hooks.onEquipo();
-  }
+  invokeConexionViewHook(next, hooks);
 }

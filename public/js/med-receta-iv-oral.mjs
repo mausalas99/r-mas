@@ -5,6 +5,8 @@
 import { trimStr } from './med-receta-util.mjs';
 import { stripDiaMarkersFromDosis } from './med-receta-dates.mjs';
 import { normalizeNombreForSoapClassify } from './med-receta-nombre.mjs';
+import { isSuerosMedicationNombre } from './med-receta-soap-some-map.mjs';
+import { pickSomeOralPack } from './med-receta-iv-oral-some.mjs';
 
 function dosisBeforeSlash(dosisRaw) {
   var t = trimStr(dosisRaw);
@@ -34,12 +36,13 @@ function shouldSkipIvToOral(item) {
   if (isContinuousInfusionItem(item)) return true;
   var nombre = normalizeNombreForSoapClassify(item.nombreRaw);
   if (
-    /\b(DEXTROSA|GLUCOSA|INSULINA|HEPARINA|MEROPENEM|ERTAPENEM|IMIPENEM|VANCOMICINA|TEICOPLANINA|PIPERACILINA|CEFTRIAX|CEFEPIME|CEFTAZID|AMIKACINA|GENTAMICINA|TOBRAMICINA|FENTANILO|PROPOFOL|MIDAZOLAM|KETAMINA|CLORURO|POTASIO|MAGNESIO|FOSFATO|BICARBONATO|ALBUMINA|CONCENTRADO\s+ERITROCITARIO|PLASMA|PLAQUETAS|FIBRINOGENO|ROCURONIO|CISATRACURIO|VECURONIO|SUCCINILCOLINA)\b/.test(
+    /\b(DEXTROSA|GLUCOSA|INSULINA|HEPARINA|MEROPENEM|ERTAPENEM|IMIPENEM|VANCOMICINA|TEICOPLANINA|PIPERACILINA|CEFTRIAX|CEFEPIM|CEFTAZID|AMIKACINA|GENTAMICINA|TOBRAMICINA|FENTANILO|PROPOFOL|MIDAZOLAM|KETAMINA|CLORURO|POTASIO|MAGNESIO|FOSFATO|BICARBONATO|ALBUMINA|CONCENTRADO\s+ERITROCITARIO|PLASMA|PLAQUETAS|FIBRINOGENO|ROCURONIO|CISATRACURIO|VECURONIO|SUCCINILCOLINA)\b/.test(
       nombre
     )
   ) {
     return true;
   }
+  if (isSuerosMedicationNombre(item.nombreRaw)) return true;
   return false;
 }
 
@@ -74,107 +77,74 @@ function withPrnTail(dosisRaw, coreDose) {
   return coreDose + ' //' + trimStr(raw.slice(idx + 2));
 }
 
-function oralItemFrom(item, stem, oralMg, form) {
+function oralItemFrom(item, stem, oralMg, form, units, unitMg) {
   var doseLabel = formatMgLabel(oralMg);
+  var packUnits = units > 0 ? units : 1;
+  var packUnitMg = unitMg > 0 ? unitMg : oralMg;
   return Object.assign({}, item, {
-    nombreRaw: stem + ' ' + doseLabel + ' ' + form,
+    nombreRaw: stem + ' ' + formatMgLabel(packUnitMg) + ' ' + form,
     viaRaw: 'VIA ORAL',
     dosisRaw: withPrnTail(item.dosisRaw, doseLabel),
+    oralEquiv: { units: packUnits, unitMg: packUnitMg, form: form },
   });
+}
+
+const KNOWN_ORAL_SWITCH_RE =
+  /\b(PARACETAMOL|ACETAMINOFEN|METAMIZOL|DIPIRONA|KETOROLAC|OMEPRAZOL|PANTOPRAZOL|ESOMEPRAZOL|LANSOPRAZOL|RABEPRAZOL|ONDANSETRON|GRANISETRON|METOCLOPRAMIDA|DOMPERIDONA|METRONIDAZOL|DEXAMETASONA|HIDROCORTISONA|METILPREDNISOLONA|FUROSEMIDA|LEVETIRACETAM|VALPROATO|ACIDO\s+VALPROICO|TRAMADOL|IBUPROFENO|DICLOFENACO|NAPROXENO|MELOXICAM|CELECOXIB|CIPROFLOXACINO|LEVOFLOXACINO|MOXIFLOXACINO|LINEZOLID|CLARITROMICINA|AZITROMICINA|DOXICICLINA|MINOCICLINA|CLINDAMICINA|FLUCONAZOL|ACICLOVIR|HALOPERIDOL|FENITOINA|BUTILHIOSCINA)\b/;
+
+function steroidOralPrednisoneMg(nombre, doseMg) {
+  if (/\bHIDROCORTISONA\b/.test(nombre)) {
+    if (doseMg >= 100) return 25;
+    if (doseMg >= 50) return 12.5;
+    return 5;
+  }
+  if (/\bMETILPREDNISOLONA\b/.test(nombre)) {
+    if (doseMg >= 40) return 50;
+    if (doseMg >= 20) return 25;
+    return 10;
+  }
+  return 0;
+}
+
+function clinicalOralTarget(nombre, doseMg, stem) {
+  if (/\bKETOROLAC/.test(nombre)) {
+    return { stem: stem, mg: doseMg >= 15 ? 10 : doseMg };
+  }
+  if (/\bCIPROFLOXACINO\b/.test(nombre)) {
+    return { stem: stem, mg: doseMg >= 400 && doseMg < 500 ? 500 : doseMg };
+  }
+  if (/\bCLINDAMICINA\b/.test(nombre)) {
+    return { stem: stem, mg: doseMg >= 600 ? 300 : doseMg };
+  }
+  var pred = steroidOralPrednisoneMg(nombre, doseMg);
+  if (pred) return { stem: 'PREDNISONA', mg: pred };
+  return null;
 }
 
 /**
  * @param {{ nombreRaw?: string, viaRaw?: string, dosisRaw?: string, frecuenciaRaw?: string, diaTratamiento?: number | null, suspendido?: boolean }} item
  * @returns {typeof item}
  */
+function resolveOralPack(nombre, oralMg, outStem, clinical) {
+  var pack = pickSomeOralPack(nombre, oralMg) || pickSomeOralPack(outStem, oralMg);
+  if (pack) return pack;
+  if (clinical || KNOWN_ORAL_SWITCH_RE.test(nombre)) {
+    return { unitMg: oralMg, units: 1, form: 'TABLETA' };
+  }
+  return null;
+}
+
 function convertByDrugRules(item) {
   var nombre = normalizeNombreForSoapClassify(item.nombreRaw);
   var dose = parseFixedDoseMg(item.dosisRaw);
   if (!dose) return item;
   var stem = displayDrugStem(item.nombreRaw);
-
-  if (/\b(PARACETAMOL|ACETAMINOFEN)\b/.test(nombre)) {
-    if (dose.mg >= 1000) return oralItemFrom(item, stem, 500, 'TABLETA');
-    if (dose.mg >= 500) return oralItemFrom(item, stem, 500, 'TABLETA');
-    return oralItemFrom(item, stem, dose.mg, 'TABLETA');
-  }
-
-  if (/\b(METAMIZOL|DIPIRONA)\b/.test(nombre)) {
-    if (dose.mg >= 1000) return oralItemFrom(item, stem, 500, 'TABLETA');
-    return oralItemFrom(item, stem, dose.mg, 'TABLETA');
-  }
-
-  if (/\bKETOROLAC/.test(nombre)) {
-    if (dose.mg >= 30) return oralItemFrom(item, stem, 10, 'TABLETA');
-    if (dose.mg >= 15) return oralItemFrom(item, stem, 10, 'TABLETA');
-    return oralItemFrom(item, stem, dose.mg, 'TABLETA');
-  }
-
-  if (/\b(OMEPRAZOL|PANTOPRAZOL|ESOMEPRAZOL|LANSOPRAZOL|RABEPRAZOL)\b/.test(nombre)) {
-    return oralItemFrom(item, stem, dose.mg, 'TABLETA');
-  }
-
-  if (/\b(ONDANSETRON|GRANISETRON|METOCLOPRAMIDA|DOMPERIDONA)\b/.test(nombre)) {
-    return oralItemFrom(item, stem, dose.mg, 'TABLETA');
-  }
-
-  if (/\bMETRONIDAZOL\b/.test(nombre)) {
-    return oralItemFrom(item, stem, dose.mg, 'TABLETA');
-  }
-
-  if (/\bDEXAMETASONA\b/.test(nombre)) {
-    return oralItemFrom(item, stem, dose.mg, 'TABLETA');
-  }
-
-  if (/\bHIDROCORTISONA\b/.test(nombre)) {
-    var predMg = dose.mg >= 100 ? 25 : dose.mg >= 50 ? 12.5 : 5;
-    return oralItemFrom(item, 'PREDNISONA', predMg, 'TABLETA');
-  }
-
-  if (/\bMETILPREDNISOLONA\b/.test(nombre)) {
-    var predFromMp = dose.mg >= 40 ? 50 : dose.mg >= 20 ? 25 : 10;
-    return oralItemFrom(item, 'PREDNISONA', predFromMp, 'TABLETA');
-  }
-
-  if (/\bFUROSEMIDA\b/.test(nombre)) {
-    return oralItemFrom(item, stem, dose.mg, 'TABLETA');
-  }
-
-  if (/\bLEVETIRACETAM\b/.test(nombre)) {
-    return oralItemFrom(item, stem, dose.mg, 'TABLETA');
-  }
-
-  if (/\bVALPROATO\b/.test(nombre)) {
-    return oralItemFrom(item, stem, dose.mg, 'TABLETA');
-  }
-
-  if (/\bTRAMADOL\b/.test(nombre)) {
-    return oralItemFrom(item, stem, dose.mg, 'TABLETA');
-  }
-
-  if (/\b(IBUPROFENO|DICLOFENACO|NAPROXENO|MELOXICAM|CELECOXIB)\b/.test(nombre)) {
-    return oralItemFrom(item, stem, dose.mg, 'TABLETA');
-  }
-
-  if (/\bCIPROFLOXACINO\b/.test(nombre)) {
-    var ciproMg = dose.mg >= 400 ? 500 : dose.mg;
-    return oralItemFrom(item, stem, ciproMg, 'TABLETA');
-  }
-
-  if (/\b(LEVOFLOXACINO|MOXIFLOXACINO|LINEZOLID|CLARITROMICINA|AZITROMICINA|DOXICICLINA|MINOCICLINA)\b/.test(nombre)) {
-    return oralItemFrom(item, stem, dose.mg, 'TABLETA');
-  }
-
-  if (/\bCLINDAMICINA\b/.test(nombre)) {
-    var clindaMg = dose.mg >= 600 ? 300 : dose.mg;
-    return oralItemFrom(item, stem, clindaMg, 'CÁPSULA');
-  }
-
-  if (/\bFLUCONAZOL\b/.test(nombre)) {
-    return oralItemFrom(item, stem, dose.mg, 'TABLETA');
-  }
-
-  return item;
+  var clinical = clinicalOralTarget(nombre, dose.mg, stem);
+  var oralMg = clinical ? clinical.mg : dose.mg;
+  var outStem = clinical ? clinical.stem : stem;
+  var pack = resolveOralPack(nombre, oralMg, outStem, clinical);
+  if (!pack) return item;
+  return oralItemFrom(item, outStem, oralMg, pack.form, pack.units, pack.unitMg);
 }
 
 /**

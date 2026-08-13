@@ -748,8 +748,8 @@
   </div>
 </div>
 
+<div id="sidebar-hover-strip" class="sidebar-hover-strip" aria-hidden="true"></div>
 <div class="app">
-  <div id="sidebar-hover-strip" class="sidebar-hover-strip" aria-hidden="true"></div>
   <aside id="patient-sidebar" class="patient-sidebar">
     <div class="sidebar-header">
       <div class="sidebar-header-title-row">
@@ -949,8 +949,16 @@
             </span>
             <div class="lab-output-header-tools">
               <div class="lab-history-date-picker">
-                <label class="lab-history-date-picker-label" for="lab-history-date-select">Estudio</label>
-                <select id="lab-history-date-select" class="lab-history-date-select" hidden onchange="onLabHistoryDateChange(this.value)" aria-label="Fecha y tipo de estudio"></select>
+                <label class="lab-history-date-picker-label" for="lab-history-date-select">Día</label>
+                <div class="lab-history-day-nav">
+                  <button type="button" id="lab-history-day-prev" class="lab-history-day-nav-btn" onclick="stepLabHistoryDay(1)" aria-label="Día anterior" title="Día anterior">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <select id="lab-history-date-select" class="lab-history-date-select" hidden onchange="onLabHistoryDateChange(this.value)" aria-label="Día de laboratorio"></select>
+                  <button type="button" id="lab-history-day-next" class="lab-history-day-nav-btn" onclick="stepLabHistoryDay(-1)" aria-label="Día siguiente" title="Día siguiente">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
               </div>
               <details class="lab-output-more">
                 <summary class="lab-output-more-btn" aria-label="Más acciones del historial">

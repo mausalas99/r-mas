@@ -15,6 +15,7 @@ import {
 } from './insulin-pump-some-detect.mjs';
 import { formatRhzeComboSoapShort, isRhzeComboMedicationItem } from './med-receta-tb-combo.mjs';
 import { applyIvToOralForEgreso } from './med-receta-iv-oral.mjs';
+import { pluralizeOralForm } from './med-receta-iv-oral-some.mjs';
 
 /** Parte de dosis aplicada antes de comentarios del sistema (// …). Usado en receta y en tarjetas Pase. */
 export function dosisBeforeSlash(dosisRaw) {
@@ -162,8 +163,23 @@ function extractCadaHorasFromCrit(crit) {
   return m ? 'CADA ' + m[1] + ' HORAS' : '';
 }
 
-function formatTomarSolid_(verb, formLabel, amount, unit) {
-  return verb + ' 1 ' + formLabel + ' (' + amount.replace(',', '.') + ' ' + unit + ')';
+function formatTomarSolid_(verb, formLabel, amount, unit, count) {
+  var n = count > 1 ? count : 1;
+  return verb + ' ' + n + ' ' + pluralizeOralForm(formLabel, n) + ' (' + amount.replace(',', '.') + ' ' + unit + ')';
+}
+
+function oralEquivUnits_(item) {
+  var eq = item && item.oralEquiv;
+  return eq && eq.units > 1 ? eq.units : 0;
+}
+
+export function formatOralEquivSuffix(item) {
+  var eq = item && item.oralEquiv;
+  if (!eq || !(eq.units > 1)) return '';
+  var unitLabel = eq.unitMg >= 1000 && eq.unitMg % 1000 === 0
+    ? eq.unitMg / 1000 + 'G'
+    : String(eq.unitMg).replace(/\.0$/, '') + 'MG';
+  return ' (' + eq.units + ' ' + pluralizeOralForm(eq.form, eq.units) + ' DE ' + unitLabel + ')';
 }
 
 function formatTomarAmount_(mMl, mG) {
@@ -172,7 +188,7 @@ function formatTomarAmount_(mMl, mG) {
   return '';
 }
 
-function instructionAmountPhrase(_item, viaNorm, dosisPrincipal, nombreExpandido) {
+function instructionAmountPhrase(item, viaNorm, dosisPrincipal, nombreExpandido) {
   var verb = verbForVia(viaNorm);
   var isTab = /\bTABLETA\b/i.test(nombreExpandido);
   var isCap = /\bCÁPSULA\b/i.test(nombreExpandido);
@@ -180,11 +196,13 @@ function instructionAmountPhrase(_item, viaNorm, dosisPrincipal, nombreExpandido
   var mMl = dosisPrincipal.match(/^(\d+(?:[.,]\d+)?)\s*ML$/i);
   var mG = dosisPrincipal.match(/^(\d+(?:[.,]\d+)?)\s*G$/i);
 
+  var packUnits = oralEquivUnits_(item);
   if (mG && verb !== 'TOMAR') return verb + ' ' + mG[1].replace(',', '.') + ' G';
   if (verb === 'TOMAR') {
-    if (isTab && mMg) return formatTomarSolid_(verb, 'TABLETA', mMg[1], 'MG');
-    if (isCap && mMg) return formatTomarSolid_(verb, 'CÁPSULA', mMg[1], 'MG');
-    if (isTab && mG) return formatTomarSolid_(verb, 'TABLETA', mG[1], 'G');
+    if (isTab && mMg) return formatTomarSolid_(verb, 'TABLETA', mMg[1], 'MG', packUnits);
+    if (isCap && mMg) return formatTomarSolid_(verb, 'CÁPSULA', mMg[1], 'MG', packUnits);
+    if (isTab && mG) return formatTomarSolid_(verb, 'TABLETA', mG[1], 'G', packUnits);
+    if (isCap && mG) return formatTomarSolid_(verb, 'CÁPSULA', mG[1], 'G', packUnits);
     var tomarAmt = formatTomarAmount_(mMl, mG);
     if (tomarAmt) return tomarAmt;
   }
@@ -351,6 +369,19 @@ function formatSoapPrnPain_(nombre, dosisCompact, critRaw, freqNorm) {
   return parts.join(' ');
 }
 
+function formatSoapPrnLine_(nombre, dosisCompact, via, critRaw, freqNorm, prnSuffix) {
+  if (/HIPOGLUCEMIA/i.test(critRaw)) {
+    return formatSoapPrnHypo_(nombre, dosisCompact, via, critRaw) + prnSuffix;
+  }
+  if (/(NAUSEA|NÁUSEA|VÓMITO|VOMITO)/i.test(critRaw)) {
+    return formatSoapPrnNausea_(nombre, dosisCompact, via, critRaw) + prnSuffix;
+  }
+  if (/(DOLOR|FIEBRE)/i.test(critRaw)) {
+    return formatSoapPrnPain_(nombre, dosisCompact, critRaw, freqNorm) + prnSuffix;
+  }
+  return '';
+}
+
 export function formatMedicationSoapShort(item, opts) {
   if (!item) return '';
   item = applyIvToOralForEgreso(item, opts);
@@ -362,19 +393,23 @@ export function formatMedicationSoapShort(item, opts) {
 
   if (isPrnItem(item)) {
     var critRaw = extractPrnTail(item.dosisRaw) || freqNorm;
-    if (/HIPOGLUCEMIA/i.test(critRaw)) return formatSoapPrnHypo_(nombre, dosisCompact, via, critRaw);
-    if (/(NAUSEA|NÁUSEA|VÓMITO|VOMITO)/i.test(critRaw)) {
-      return formatSoapPrnNausea_(nombre, dosisCompact, via, critRaw);
-    }
-    if (/(DOLOR|FIEBRE)/i.test(critRaw)) {
-      return formatSoapPrnPain_(nombre, dosisCompact, critRaw, freqNorm);
-    }
+    var prnLine = formatSoapPrnLine_(
+      nombre,
+      dosisCompact,
+      via,
+      critRaw,
+      freqNorm,
+      formatOralEquivSuffix(item)
+    );
+    if (prnLine) return prnLine;
   }
 
   var parts = [nombre];
   if (dosisCompact) parts.push(dosisCompact);
   if (via) parts.push(soapViaShort(via));
   if (freqNorm) parts.push(soapFreqShort(freqNorm));
+  var equiv = formatOralEquivSuffix(item).trim();
+  if (equiv) parts.push(equiv);
   var dia =
     item.diaTratamiento != null
       ? effectiveDiaTratamiento(item.diaTratamiento, opts && opts.fechaActualizacion, opts && opts.refDate)

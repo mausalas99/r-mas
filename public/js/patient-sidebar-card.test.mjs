@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import {
   formatPatientBedLabel,
   renderPatientSidebarBodyHtml,
+  shortenPatientDisplayName,
 } from './patient-sidebar-card.mjs';
 
 describe('patient-sidebar-card', () => {
@@ -11,7 +12,16 @@ describe('patient-sidebar-card', () => {
     assert.equal(formatPatientBedLabel({}), '');
   });
 
-  it('renderPatientSidebarBodyHtml shows full name and Cto./Cama meta', () => {
+  it('shortenPatientDisplayName keeps only first and last token', () => {
+    assert.equal(shortenPatientDisplayName('GARCIA LOPEZ JUAN'), 'GARCIA JUAN');
+    assert.equal(shortenPatientDisplayName('JUAN PEREZ'), 'JUAN PEREZ');
+    assert.equal(shortenPatientDisplayName('JUAN'), 'JUAN');
+    assert.equal(shortenPatientDisplayName(''), '');
+    // Comma-separated "APELLIDOS, NOMBRE" records are already two logical parts.
+    assert.equal(shortenPatientDisplayName('PEREZ TRISTAN, ANGELITA'), 'PEREZ TRISTAN, ANGELITA');
+  });
+
+  it('renderPatientSidebarBodyHtml shows a shortened name (full name in the tooltip) and Cto./Cama meta', () => {
     const html = renderPatientSidebarBodyHtml({
       nombre: 'GARCIA LOPEZ JUAN',
       cuarto: '412',
@@ -19,7 +29,9 @@ describe('patient-sidebar-card', () => {
       registro: '12345',
       servicio: 'Medicina Interna',
     });
-    assert.match(html, /GARCIA LOPEZ JUAN/);
+    assert.match(html, /GARCIA JUAN/);
+    assert.doesNotMatch(html, />GARCIA LOPEZ JUAN</);
+    assert.match(html, /title="[^"]*GARCIA LOPEZ JUAN/);
     assert.match(html, /Cto\. 412/);
     assert.match(html, /Cama 2/);
     assert.match(html, /Medicina Interna/);

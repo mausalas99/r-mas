@@ -1,5 +1,9 @@
 import { getPatients } from '../app-state.mjs';
 import {
+  pickDefaultPatientId,
+  readLastSelectedPatientId,
+} from './patients-default-id.mjs';
+import {
   ensureTeamAssignedPatientsOnDevice,
   renderGuardiaCensusGrid,
   clinicalSessionContext,
@@ -70,24 +74,25 @@ export function patientsVisibleInSidebar() {
 }
 
 export function pickDefaultVisiblePatientId() {
-  const visible = patientsVisibleInSidebar();
-  if (!visible.length) return null;
-  const activeId = rt.getActiveId();
-  if (
-    activeId != null &&
-    visible.some(function (p) {
-      return String(p.id) === String(activeId);
-    })
-  ) {
-    return activeId;
-  }
-  return visible[0].id;
+  return pickDefaultPatientId(
+    patientsVisibleInSidebar(),
+    rt.getActiveId(),
+    readLastSelectedPatientId()
+  );
+}
+
+function patientViewIsOpen() {
+  var pv = document.getElementById('patient-view');
+  if (!pv) return false;
+  return pv.style.display !== 'none';
 }
 
 export function ensureActivePatientInSidebarScope() {
   const nextId = pickDefaultVisiblePatientId();
   if (nextId != null) {
-    patientsBridge.selectPatient(nextId);
+    var already =
+      String(rt.getActiveId()) === String(nextId) && patientViewIsOpen();
+    if (!already) patientsBridge.selectPatient(nextId);
     return true;
   }
   if (rt.getActiveId() == null) return false;

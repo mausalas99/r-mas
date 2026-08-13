@@ -10,6 +10,8 @@ var updaterState = {
   pendingUpdaterIsPrerelease: false,
   pendingDowngradeVersion: null,
   pendingRepairUpdateCheck: false,
+  /** True only after Ajustes → Buscar actualizaciones (toast if already current). */
+  checkFeedback: false,
   /** @type {'upgrade' | 'downgrade'} */
   updateModalMode: 'upgrade',
   minVersionGateKeydownBound: false,

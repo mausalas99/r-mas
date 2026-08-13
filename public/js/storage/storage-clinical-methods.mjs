@@ -87,8 +87,15 @@ export const clinicalBlobStorageMethods = {
     if (typeof patientId !== 'string') return;
     if (patientId.indexOf('demo-') === 0) return;
     const map = readTodosMap();
+    const rows = Array.isArray(todos) ? todos : [];
+    if (!rows.length) {
+      if (!(patientId in map)) return;
+      delete map[patientId];
+      writeTodosMap(map);
+      return;
+    }
     const now = new Date().toISOString();
-    map[patientId] = (Array.isArray(todos) ? todos : []).map(function (t) {
+    map[patientId] = rows.map(function (t) {
       return normalizeTodoRow(t, now);
     });
     writeTodosMap(map);

@@ -2357,10 +2357,44 @@ var RELEASE_NOTES_810 = [
   },
 ];
 
+var RELEASE_NOTES_812 = [
+  {
+    title: 'Paciente → Resumen',
+    body:
+      'Al abrir un expediente caes en <strong>Resumen</strong>: estado clínico, labs del día y medicamentos N/HD/HI. Labs, Tendencias y Cultivos viven bajo <strong>Laboratorio</strong>.',
+  },
+  {
+    title: 'Labs por día',
+    body:
+      'El historial se navega <strong>por fecha</strong> (no por cada envío). Dentro del día, ventanas horarias como al consolidar. Nuevo panel <strong>FEB</strong> (febriles).',
+  },
+  {
+    title: 'SOAP y receta SOME',
+    body:
+      'Destino SOAP y packs <strong>IV→VO</strong> desde el catálogo SOME. Reposición de K puede ir mixta (KCl + KPO4 en la misma bolsa).',
+  },
+  {
+    title: 'Nube y actualizaciones',
+    body:
+      'El login pinta la sesión en cuanto responde la API. Las búsquedas de update son <strong>silenciosas</strong> (arrancar / labs / paciente); el toast «ya actualizado» solo si buscaste en Ajustes.',
+  },
+  {
+    title: 'Learn Hub v17',
+    body:
+      'Primero la estructura de la app, <strong>+ Agregar</strong> y completar cuarto/cama/servicio. Tendencias se enseña bajo Laboratorio.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.1.2 en todas</strong> las Macs el mismo día. Sin wipe; schema v23 no cambia. Worker de 8.1.0 sigue vigente.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_811;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_812;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.1.2': RELEASE_NOTES_812,
   '8.1.1': RELEASE_NOTES_811,
   '8.1.0': RELEASE_NOTES_810,
   '8.0.9': RELEASE_NOTES_809,

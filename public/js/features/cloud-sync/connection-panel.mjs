@@ -115,25 +115,34 @@ export async function mountCloudConnectionPanel(root, deps) {
   }
 }
 
-export async function renderConnectionPanel(opts) {
-  const root = document.getElementById('lan-connection-panel-root');
-  if (!root) return;
-  const runtime = function () {
+function defaultConnectionRuntime() {
+  return function runtime() {
     return {
-      showToast() {},
-      closeSettingsDropdown() {},
+      showToast(msg, kind) {
+        void import('../../app-shell.mjs')
+          .then(function (m) {
+            m.showToast?.(msg, kind);
+          })
+          .catch(function () {});
+      },
+      closeSettingsDropdown() {
+        void import('../../app-shell.mjs')
+          .then(function (m) {
+            m.closeSettingsDropdown?.();
+          })
+          .catch(function () {});
+      },
       isMobileWeb() {
         return false;
       },
     };
   };
-  try {
-    const shell = await import('../../app-shell.mjs');
-    runtime.showToast = shell.showToast;
-    runtime.closeSettingsDropdown = shell.closeSettingsDropdown || function () {};
-  } catch {
-    /* optional */
-  }
+}
+
+export async function renderConnectionPanel(opts) {
+  const root = document.getElementById('lan-connection-panel-root');
+  if (!root) return;
+  const runtime =
+    typeof opts?.runtime === 'function' ? opts.runtime : defaultConnectionRuntime();
   await mountCloudConnectionPanel(root, { runtime });
-  void opts;
 }

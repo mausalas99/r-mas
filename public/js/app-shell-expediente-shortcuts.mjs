@@ -6,6 +6,7 @@ import { isGuardiaMode, toggleGuardiaMode } from './features/chrome.mjs';
 import { isModeSala } from './mode-features.mjs';
 import { switchAppTab } from './features/pase-board-app-tabs.mjs';
 import { getActiveInnerTab, switchInnerTab } from './features/pase-board.mjs';
+import { switchLabInner } from './features/patient-dashboard/lab-inner.mjs';
 import { openPatientDatosModal } from './patient-datos-modal.mjs';
 import { rt } from './features/pase-board-runtime.mjs';
 
@@ -55,6 +56,10 @@ export function runExpedienteShortcut(key) {
   if (!target) return false;
   if (k === 'd') {
     openPatientDatosModal();
+    return true;
+  }
+  if (k === 't') {
+    switchLabInner(target);
     return true;
   }
   if (target === migrateGranularInner(current || 'todo', settings)) return true;

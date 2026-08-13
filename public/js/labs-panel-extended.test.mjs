@@ -73,7 +73,13 @@ const FIXTURE_ALL =
   someQual('VDRL', 'NEGATIVO') +
   someQual('ANTICUERPOS IGM TOXOPLASMA', 'NEGATIVO') +
   someQual('ANTIGENO LEGIONELLA EN ORINA', 'NEGATIVO') +
-  someQual('SANGRE OCULTA EN HECES', 'NEGATIVO');
+  someQual('SANGRE OCULTA EN HECES', 'NEGATIVO') +
+  someQual('TIFICO "O"', 'NEGATIVO') +
+  someQual('TIFICO "H"', 'NEGATIVO') +
+  someQual('PARATIFICO A', 'NEGATIVO') +
+  someQual('PARATIFICO B', 'NEGATIVO') +
+  someQual('BRUCELLA', 'NEGATIVO') +
+  someQual('PROTEUS', 'NEGATIVO');
 
 function lineFor(sectionKey, lines) {
   return (lines || []).find(function (l) {
@@ -88,6 +94,7 @@ test('LAB_EXTENDED_SECTION_KEYS tiene los grupos scaffold', () => {
   assert.ok(LAB_EXTENDED_SECTION_KEYS.indexOf('TIR') >= 0);
   assert.ok(LAB_EXTENDED_SECTION_KEYS.indexOf('CARD') >= 0);
   assert.ok(LAB_EXTENDED_SECTION_KEYS.indexOf('HEPB') >= 0);
+  assert.ok(LAB_EXTENDED_SECTION_KEYS.indexOf('FEB') >= 0);
 });
 
 test('parseExtendedLabPanels_ emite TIR ENDO CARD FE', () => {
@@ -112,13 +119,19 @@ test('parseExtendedLabPanels_ emite INFL INM META NEF NIVEL TM NUT GI', () => {
   assert.match(lineFor('GI', lines), /\bCalpro 180\*/);
 });
 
-test('parseExtendedLabPanels_ emite paneles cualitativos HEPB VIRAL MICRO', () => {
+test('parseExtendedLabPanels_ emite paneles cualitativos HEPB VIRAL MICRO FEB', () => {
   var lines = parseExtendedLabPanels_(FIXTURE_ALL);
   assert.match(lineFor('HEPB', lines), /\bAntiHBs neg/);
   assert.match(lineFor('VIRAL', lines), /\bVDRL neg/);
   assert.match(lineFor('VIRAL', lines), /\bToxoIgM neg/);
   assert.match(lineFor('MICRO', lines), /\bLegAg neg/);
   assert.match(lineFor('GI', lines), /\bSOH neg/);
+  assert.match(lineFor('FEB', lines), /\bTifO neg/);
+  assert.match(lineFor('FEB', lines), /\bTifH neg/);
+  assert.match(lineFor('FEB', lines), /\bParaA neg/);
+  assert.match(lineFor('FEB', lines), /\bParaB neg/);
+  assert.match(lineFor('FEB', lines), /\bBru neg/);
+  assert.match(lineFor('FEB', lines), /\bProtX neg/);
 });
 
 test('parseExtendedLabPanels_ no inventa secciones sin marcadores', () => {
@@ -141,6 +154,76 @@ test('procesarLabs cablea paneles extendidos', () => {
   assert.ok(resLabs.some((l) => l.startsWith('TIR\t')));
   assert.ok(resLabs.some((l) => l.startsWith('CARD\t')));
   assert.ok(resLabs.some((l) => l.startsWith('HEPB\t')));
+  assert.ok(resLabs.some((l) => l.startsWith('FEB\t')));
+});
+
+const FIXTURE_FEBRILES_SOME = `Expediente:\t2239267-2\tSolicitud:\t2608130633
+Nombre:\tPRUDENCIO SALVADOR PEREZ\tFecha Registro:\tAug 13 2026 9:13AM
+Sexo:\tMASCULINO\tUbicación:\tMEDICINA INTERNA 2
+Edad:\t67\tMedico:\tA QUIEN CORRESPONDA
+
+SEROLOGIA
+FEBRILES COMPLETAS
+Estudio\t\tResultado\tUnidades\tValor de Referencia
+TIFICO "O"\t
+*
+NEGATIVO
+NEGATIVO
+TIFICO "H"\t
+*
+NEGATIVO
+NEGATIVO
+PARATIFICO A\t
+*
+NEGATIVO
+NEGATIVO
+PARATIFICO B\t
+*
+NEGATIVO
+NEGATIVO
+BRUCELLA\t
+*
+NEGATIVO
+NEGATIVO
+PROTEUS\t
+*
+NEGATIVO
+NEGATIVO
+OBSERVACIONES\t
+*
+`;
+
+test('parseExtendedLabPanels_ febriles SOME (resultado + referencia NEGATIVO)', () => {
+  var lines = parseExtendedLabPanels_(FIXTURE_FEBRILES_SOME);
+  var feb = lineFor('FEB', lines);
+  assert.ok(feb);
+  assert.match(feb, /\bTifO neg\b/);
+  assert.match(feb, /\bTifH neg\b/);
+  assert.match(feb, /\bParaA neg\b/);
+  assert.match(feb, /\bParaB neg\b/);
+  assert.match(feb, /\bBru neg\b/);
+  assert.match(feb, /\bProtX neg\b/);
+  assert.equal(lines.length, 1);
+});
+
+test('procesarLabs incluye FEB y no lo confunde con SEROL de banco', () => {
+  var { resLabs } = procesarLabs(FIXTURE_FEBRILES_SOME);
+  var feb = resLabs.find((l) => l.startsWith('FEB\t'));
+  assert.ok(feb);
+  assert.match(feb, /\bTifO neg\b/);
+  assert.equal(resLabs.some((l) => l.startsWith('SEROL\t')), false);
+});
+
+test('parseExtendedLabPanels_ marca febril positivo', () => {
+  var t =
+    'FEBRILES COMPLETAS\n' +
+    someQual('TIFICO "O"', 'POSITIVO') +
+    someQual('TIFICO "H"', 'NEGATIVO') +
+    someQual('BRUCELLA', 'NEGATIVO');
+  var feb = lineFor('FEB', parseExtendedLabPanels_(t));
+  assert.match(feb, /\bTifO pos\*/);
+  assert.match(feb, /\bTifH neg\b/);
+  assert.match(feb, /\bBru neg\b/);
 });
 
 

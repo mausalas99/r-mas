@@ -1,16 +1,26 @@
-export const CURRICULUM_VERSION = 16;
+export const CURRICULUM_VERSION = 17;
 
 export const SALA_CHAPTERS = [
   {
-    id: 'ch-patient-lab',
-    title: 'Paciente y laboratorio',
+    id: 'ch-map',
+    title: 'Cómo está armada R+',
     stepIds: [
-      'map_sidebar',
       'map_tabs',
+      'map_sidebar',
+      'map_add_patient',
+      'map_incomplete',
+      'servicio_default',
+    ],
+  },
+  {
+    id: 'ch-patient-lab',
+    title: 'Laboratorio',
+    stepIds: [
       'map_lab_teaser',
       'lab_parse',
       'lab_view',
-      'servicio_default',
+      'sala_tend',
+      'sala_tend_chart',
     ],
   },
   {
@@ -23,11 +33,6 @@ export const SALA_CHAPTERS = [
       'estado_actual_review',
       'eventualidades',
     ],
-  },
-  {
-    id: 'ch-results',
-    title: 'Resultados',
-    stepIds: ['sala_tend', 'sala_tend_chart'],
   },
   {
     id: 'ch-salida',
@@ -46,17 +51,27 @@ export const SALA_CHAPTERS = [
   },
 ];
 
-/** Interconsulta: lab block first (sin servicio_default en v1). */
+/** Interconsulta: mapa de la app primero; laboratorio incluye tendencias. */
 export const IC_CHAPTERS = [
   {
-    id: 'ch-ic-lab',
-    title: 'Paciente y laboratorio',
+    id: 'ch-ic-map',
+    title: 'Cómo está armada R+',
     stepIds: [
-      'map_sidebar',
       'map_tabs',
+      'map_sidebar',
+      'map_add_patient',
+      'map_incomplete',
+    ],
+  },
+  {
+    id: 'ch-ic-lab',
+    title: 'Laboratorio',
+    stepIds: [
       'map_lab_teaser',
       'lab_parse',
       'lab_view',
+      'sala_tend',
+      'sala_tend_chart',
     ],
   },
   {
@@ -64,8 +79,6 @@ export const IC_CHAPTERS = [
     title: 'Paciente y clínico',
     stepIds: [
       'ic_expediente_tabs',
-      'sala_tend',
-      'sala_tend_chart',
       'sala_med',
       'ic_nota',
       'ic_indica',
@@ -135,11 +148,11 @@ export const QUICK_ROUTE_CHAPTERS = [
     id: 'ch-quick-route',
     title: 'Ruta rápida',
     stepIds: [
-      'map_lab_teaser',
+      'map_tabs',
+      'map_add_patient',
       'lab_parse',
       'gv7_guardia_chip',
       'gv7_lan_wifi',
-      'gv7_entrega_phase',
       'quick_wrap',
     ],
   },
@@ -147,7 +160,7 @@ export const QUICK_ROUTE_CHAPTERS = [
 
 export const QUICK_ROUTE_HUB_MODULE = {
   id: 'ch-quick-route',
-  label: 'Ruta rápida · turno en 5 min',
+  label: 'Ruta rápida · mapa, alta y turno',
   chapterId: 'ch-quick-route',
   branch: 'quick-route',
   stepCount: QUICK_ROUTE_CHAPTERS[0].stepIds.length,
@@ -162,9 +175,9 @@ export const GUARDIA_V7_HUB_MODULES = GUARDIA_V7_CHAPTERS.map((ch) => ({
 }));
 
 export const SALA_HUB_MODULES = [
-  { id: 'mod-ch1', chapterId: 'ch-patient-lab', label: 'Laboratorio y pacientes', branch: 'sala' },
-  { id: 'mod-ch2', chapterId: 'ch-chart', label: 'Paciente · Clínico', branch: 'sala' },
-  { id: 'mod-ch3', chapterId: 'ch-results', label: 'Resultados (tendencias)', branch: 'sala' },
+  { id: 'mod-ch1', chapterId: 'ch-map', label: 'Cómo está armada R+', branch: 'sala' },
+  { id: 'mod-ch2', chapterId: 'ch-patient-lab', label: 'Laboratorio (Labs · Tendencias · Cultivos)', branch: 'sala' },
+  { id: 'mod-ch3', chapterId: 'ch-chart', label: 'Paciente · Clínico', branch: 'sala' },
   { id: 'mod-ch4', chapterId: 'ch-salida', label: 'Medicamentos y salida', branch: 'sala' },
   { id: 'mod-ch5', chapterId: 'ch-agenda', label: 'Agenda del turno', branch: 'sala' },
   { id: 'mod-ch6', chapterId: 'ch-team', label: 'Equipo (R+ Cloud + móvil)', branch: 'sala' },

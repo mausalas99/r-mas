@@ -1387,6 +1387,39 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
 .lab-history-date-picker:has(.lab-history-date-select[hidden]) {
   display: none;
 }
+.lab-history-day-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.lab-history-day-nav-btn {
+  appearance: none;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.lab-history-day-nav-btn:hover:not(:disabled) {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+}
+.lab-history-day-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.lab-history-day-nav-btn:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+}
 .lab-output-more {
   position: relative;
 }
@@ -2855,6 +2888,22 @@ html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36
   letter-spacing: 0.02em;
 }
 html.dark .lab-output-fecha { color: var(--color-accent-soft-text); border-bottom-color: rgba(148, 163, 184, 0.35); }
+
+.lab-hour-group-h {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 14px 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--divider);
+}
+.lab-hour-group-h:first-child {
+  margin-top: 0;
+}
+html.dark .lab-hour-group-h { border-bottom-color: rgba(148, 163, 184, 0.28); }
 
 .lab-some-tables-host {
   margin-bottom: 16px;

@@ -17,6 +17,13 @@ test('renderEntry preserves section label on first line', () => {
   assert.match(out[0], /Hb/);
 });
 
+test('renderEntry styles FEB like other lab sections', () => {
+  const out = renderEntry('FEB\tTifO neg TifH neg Bru neg');
+  assert.match(out[0], /section-lbl/);
+  assert.match(out[0], />FEB</);
+  assert.match(out[0], /TifO/);
+});
+
 test('renderEntry styles COAG like BH/QS', () => {
   const out = renderEntry('COAG\tTP 18.6*  TTP 39.4*');
   assert.match(out[0], /section-lbl/);

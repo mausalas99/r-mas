@@ -60,19 +60,20 @@ function readLabInnerCss() {
   );
 }
 
-test('SOAP meds are centered category stacks with pills, no left spines', () => {
+test('SOAP meds are a left-aligned zoned list, not centered pills', () => {
   const css = readDashboardCss();
-  assert.match(css, /\.ea-soap\s*\{[^}]*grid-template-columns:\s*repeat\(3/s);
-  assert.match(css, /\.ea-cat\s*\{[^}]*justify-content:\s*flex-start/s);
-  assert.equal(/\.ea-soap small \{[^}]*min-height:\s*2\.3em/s.test(css), false);
-  assert.match(css, /\.meds\s*\{[^}]*flex-direction:\s*column/s);
-  assert.match(css, /\.patient-dash \.med \{[^}]*border-radius:\s*999px/s);
+  assert.match(css, /\.soap-pack\s*\{[^}]*display:\s*flex/s);
+  assert.match(css, /\.soap-pack \.med\s*\{[^}]*justify-content:\s*space-between/s);
+  assert.equal(/border-radius:\s*999px/.test(css) && css.includes('.soap-pack .med'), false);
   assert.equal(/\.ea-cat\s*\{[^}]*border-left/s.test(css), false);
 });
 
-test('rest cards use a colored folder spine', () => {
+test('dashboard cards have no box outline', () => {
   const css = readDashboardCss();
-  assert.match(css, /\.bento\.rest\s*>\s*\.card[^}]*--spine-h/s);
+  assert.match(css, /\.patient-dash \.card[^}]*border:\s*0/s);
+  assert.equal(/\.labs-card\s*\{[^}]*border-top:\s*3px/s.test(css), false);
+  assert.equal(/\.bento\.rest\s*>\s*\.card[^}]*border-top:\s*3px/s.test(css), false);
+  assert.equal(/--spine-h/.test(css), false);
 });
 
 test('lab paste disclosure is a solid rail, not a dashed or native marker line', () => {
@@ -93,13 +94,19 @@ test('lab inner nav uses the same pill chrome as Paciente Resumen | Clínico | S
 
 test('dash-name stays compact, not a display heading', () => {
   const css = readDashboardCss();
-  assert.match(css, /\.dash-name\s*\{[^}]*font:\s*600\s+1\.02em/s);
+  assert.match(css, /\.dash-name\s*\{[^}]*font:\s*600\s+0\.86em/s);
   assert.equal(/\.dash-name\s*\{[^}]*1\.32em/s.test(css), false);
 });
 
-test('medicamentos band fills the leftover glance height', () => {
+test('medicamentos band fills leftover height; list does not scroll or shrink type', () => {
   const css = readDashboardCss();
   assert.match(css, /\.bento\.meds-band\s*\{[^}]*flex:\s*1\s+1\s+0/s);
-  assert.match(css, /\.bento\.meds-band \.ea-soap\s*\{[^}]*flex:\s*1/s);
+  assert.match(css, /\.bento\.meds-band\s*\{[^}]*container-type:\s*size/s);
+  assert.match(css, /\.bento\.meds-band \.soap-pack\s*\{[^}]*flex:\s*1/s);
+  assert.equal(/\.bento\.meds-band \.soap-pack\s*\{[^}]*font-size:\s*22px/s.test(css), false);
+  assert.match(css, /\.bento\.meds-band \.soap-pack\s*\{[^}]*display:\s*flex/s);
+  assert.match(css, /\.bento\.meds-band \.soap-pack section\s*\{[^}]*flex:\s*1/s);
   assert.match(css, /\.bento\.meds-band \.card-b\s*\{[^}]*overflow:\s*hidden/s);
+  assert.equal(/\.bento\.meds-band \.card-b\s*\{[^}]*overflow-y:\s*auto/s.test(css), false);
+  assert.match(css, /:has\(\.bento\.meds-band\) \.bento\.rest\s*\{[^}]*max-height:\s*36cqh/s);
 });

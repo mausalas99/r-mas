@@ -1,44 +1,42 @@
 /**
- * Pure model: estado clínico glance (plan-of-care KPIs + SOAP buckets).
+ * Pure model: estado clínico glance (plan-of-care KPIs + SOAP zones).
  */
-import { EA_MED_FIELD_LABELS } from '../estado-actual-med-ui.mjs';
 
-const SOAP_LABEL_OVERRIDES = {
-  diureticos: 'Diuréticos',
-  antihta: 'Antihipertensivos',
-  antitromboticos: 'Tromboprofilaxis',
-  nm: 'NM',
-};
+const SOAP_ZONES = [
+  {
+    letter: 'N',
+    subtitle: 'Neuro',
+    keys: ['analgesia', 'antiemeticos', 'sedacion', 'antiepilepticos', 'antiparkinsonianos', 'antidotos'],
+  },
+  { letter: 'V', subtitle: 'Vía aérea', keys: ['viaAerea'] },
+  {
+    letter: 'HD',
+    subtitle: 'Hemo',
+    keys: [
+      'vasop',
+      'antihta',
+      'antitromboticos',
+      'anticoagulacion',
+      'antiarritmicos',
+      'diureticos',
+      'diuretico',
+      'estatinas',
+    ],
+  },
+  { letter: 'HI', subtitle: 'Infeccioso', keys: ['abx', 'transfusiones'] },
+  { letter: 'NM', subtitle: 'Soporte', keys: ['nm'] },
+];
 
-const SOAP_HUE = {
-  analgesia: 12,
-  antiemeticos: 32,
-  sedacion: 230,
-  antiepilepticos: 200,
-  antiparkinsonianos: 145,
-  antidotos: 18,
-  viaAerea: 195,
-  vasop: 8,
-  antihta: 245,
-  antitromboticos: 200,
-  anticoagulacion: 25,
-  antiarritmicos: 350,
-  diureticos: 200,
-  estatinas: 145,
-  abx: 168,
-  transfusiones: 8,
-  nm: 52,
-};
+const SOAP_COL_LETTERS = [
+  ['N', 'V'],
+  ['HD'],
+  ['HI', 'NM'],
+];
 
 const KEEP_CAPS_RE = /^(ASA|AAS|NPH|NPT|NM|UTI|ORL|VO|IV|IM|SC|BH|QS|LCR|KCL)$/i;
 
 function hasText(value) {
   return value != null && String(value).trim() !== '';
-}
-
-function soapLabel(key) {
-  if (SOAP_LABEL_OVERRIDES[key]) return SOAP_LABEL_OVERRIDES[key];
-  return EA_MED_FIELD_LABELS[key] || key;
 }
 
 function buildSoporteValue(soporte, soporteLitros) {
@@ -96,38 +94,108 @@ export function glanceMedName(raw) {
   return prettyPhrase(s);
 }
 
-function nonEmptyItems(items) {
-  if (!Array.isArray(items)) return [];
-  return items.map((item) => glanceMedName(item)).filter(Boolean);
+/**
+ * Compact ronda token. Empty when the default (VO / c/24 h) is enough.
+ * @returns {{ text: string, emphasis: boolean }}
+ */
+export function glanceMedToken(raw) {
+  const s = String(raw || '');
+  const dia = s.match(/\bD[IÍ]A\s*(\d+)/i);
+  if (dia) return { text: 'día ' + dia[1], emphasis: true };
+  if (/\b(PRN|SOS|EN CASO)\b/i.test(s)) return { text: 'PRN', emphasis: false };
+  const rate = s.match(/(\d+(?:[.,]\d+)?)\s*mcg\s*\/\s*kg\s*\/\s*min/i);
+  if (rate) return { text: rate[1].replace(',', '.'), emphasis: true };
+  const freq = s.match(/\bC\/\s*(\d+)\s*H/i) || s.match(/\bCADA\s+(\d+)\s+HORAS?/i);
+  if (freq && freq[1] !== '24') {
+    const n = Number(freq[1]);
+    return { text: 'c/' + freq[1] + ' h', emphasis: n <= 12 };
+  }
+  if (/\bNEB(?:ULIZAR)?\b/i.test(s)) return { text: 'NEB', emphasis: false };
+  if (/\b(?:IV|EV|INTRAVENOS)/i.test(s) && !/\bVO\b/i.test(s) && !/\bORAL\b/i.test(s)) {
+    return { text: 'IV', emphasis: false };
+  }
+  const ui = s.match(/\b(\d+)\s*UI\b/i);
+  if (ui && /insulina/i.test(s)) return { text: ui[1] + ' UI', emphasis: false };
+  return { text: '', emphasis: false };
+}
+
+function glanceMedItem(raw) {
+  const name = glanceMedName(raw);
+  if (!name) return null;
+  const tok = glanceMedToken(raw);
+  return { name, token: tok.text, emphasis: tok.emphasis };
+}
+
+function dedupeItems(items) {
+  const seen = new Set();
+  const out = [];
+  (items || []).forEach((item) => {
+    if (!item || !item.name) return;
+    const key = item.name.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(item);
+  });
+  return out;
 }
 
 const BASAL_INSULIN_RE = /\b(glargina|lantus|toujeo|degludec|tresiba|detemir|levemir|nph|basal)\b/i;
 const RAPIDA_INSULIN_RE = /\b(r[aá]pida|lispro|aspart|glulisina|regular|preprandial|novorapid|humalog|apidra|fiasp)\b/i;
 
-function summarizeInsulinPlan(items) {
-  const list = Array.isArray(items) ? items : [];
-  const basal = list.filter((item) => BASAL_INSULIN_RE.test(item));
-  const rapida = list.filter((item) => RAPIDA_INSULIN_RE.test(item));
-  if (!basal.length || !rapida.length) return list;
-  const rest = list.filter(
-    (item) => !BASAL_INSULIN_RE.test(item) && !RAPIDA_INSULIN_RE.test(item),
-  );
-  return ['Plan Basal Bolo', ...rest];
+function summarizeNmItems(rawLines) {
+  const basal = [];
+  const rapida = [];
+  const rest = [];
+  (rawLines || []).forEach((raw) => {
+    const item = glanceMedItem(raw);
+    if (!item) return;
+    if (BASAL_INSULIN_RE.test(raw) || BASAL_INSULIN_RE.test(item.name)) basal.push({ raw, item });
+    else if (RAPIDA_INSULIN_RE.test(raw) || RAPIDA_INSULIN_RE.test(item.name)) rapida.push({ raw, item });
+    else rest.push(item);
+  });
+  if (!basal.length || !rapida.length) {
+    return dedupeItems([...basal.map((b) => b.item), ...rapida.map((r) => r.item), ...rest]);
+  }
+  const fromBasal = glanceMedToken(basal[0].raw);
+  const token = /\d+\s*UI/i.test(fromBasal.text) ? fromBasal.text : '';
+  return [{ name: 'Plan Basal Bolo', token, emphasis: false }, ...dedupeItems(rest)];
 }
 
-function buildSoapBuckets(soap) {
+function itemsFromRawList(rawList, isNm) {
+  const raw = (Array.isArray(rawList) ? rawList : []).map((line) => String(line)).filter(hasText);
+  if (isNm) return summarizeNmItems(raw);
+  return dedupeItems(raw.map(glanceMedItem));
+}
+
+function buildSoapZones(soap) {
   if (!soap || typeof soap !== 'object') return [];
-  const buckets = [];
-  for (const [key, items] of Object.entries(soap)) {
-    const list = key === 'nm' ? summarizeInsulinPlan(nonEmptyItems(items)) : nonEmptyItems(items);
-    if (!list.length) continue;
-    buckets.push({
-      label: soapLabel(key),
-      items: list,
-      hue: SOAP_HUE[key] || 220,
+  const zones = [];
+  SOAP_ZONES.forEach((def) => {
+    const raw = [];
+    def.keys.forEach((key) => {
+      const list = soap[key];
+      if (Array.isArray(list)) raw.push(...list);
     });
-  }
-  return buckets;
+    const items = itemsFromRawList(raw, def.letter === 'NM');
+    if (!items.length) return;
+    zones.push({ letter: def.letter, subtitle: def.subtitle, items });
+  });
+  return zones;
+}
+
+/**
+ * Stable 3-slot pack: N+V | HD | HI+NM. Empty slots omitted.
+ * @param {Array<{ letter?: string }>} zones
+ * @returns {Array<Array>}
+ */
+export function packSoapCols(zones) {
+  const byLetter = Object.create(null);
+  (zones || []).forEach((zone) => {
+    if (zone && zone.letter) byLetter[zone.letter] = zone;
+  });
+  return SOAP_COL_LETTERS.map((letters) => letters.map((letter) => byLetter[letter]).filter(Boolean)).filter(
+    (col) => col.length,
+  );
 }
 
 /**
@@ -140,7 +208,7 @@ function buildSoapBuckets(soap) {
  *   pafi?: number | null,
  *   soap?: Record<string, string[]>,
  * }} input
- * @returns {{ kpis: Array<{ label: string, value: string }>, soap: Array<{ label: string, items: string[] }> }}
+ * @returns {{ kpis: Array<{ label: string, value: string }>, soap: Array<{ letter: string, subtitle: string, items: Array<{ name: string, token: string, emphasis: boolean }> }> }}
  */
 export function buildEaGlance(input) {
   const kpis = [];
@@ -170,5 +238,5 @@ export function buildEaGlance(input) {
     });
   }
 
-  return { kpis, soap: buildSoapBuckets(soap) };
+  return { kpis, soap: buildSoapZones(soap) };
 }

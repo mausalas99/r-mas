@@ -41,9 +41,9 @@ function activePatient() {
   );
 }
 
-function buildEaInputFromPatient(patient) {
-  var mon = patient && patient.monitoreo;
-  var ec = mon && mon.estadoClinico && typeof mon.estadoClinico === 'object' ? mon.estadoClinico : {};
+export function buildEaInputFromPatient(patient) {
+  var mon = (patient && patient.monitoreo) || {};
+  var ec = mon.estadoClinico && typeof mon.estadoClinico === 'object' ? mon.estadoClinico : {};
   var receta = patient && patient.id ? getMedRecetaByPatient()[patient.id] : null;
   var soap = collectEaGlanceSoap({
     estadoClinico: ec,

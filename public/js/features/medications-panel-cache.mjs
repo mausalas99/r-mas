@@ -66,7 +66,7 @@ export function buildMedPanelCacheKey(activeId) {
     (block.dietas ? block.dietas.length : 0) +
     "|V" +
     getMedSubview() +
-    "|destUi3" +
+    "|destUi4" +
     "|cal" +
     (function () {
       var n = new Date();

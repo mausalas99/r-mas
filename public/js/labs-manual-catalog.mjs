@@ -154,6 +154,7 @@ var EXTENDED_LABELS = {
   TOX: 'Toxicología',
   HEPB: 'Hepatitis B',
   VIRAL: 'Serología viral',
+  FEB: 'Febriles',
   MICRO: 'Micro / Ag rápidos',
 };
 

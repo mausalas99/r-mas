@@ -16,16 +16,19 @@ aside.patient-sidebar {
     transform var(--dur-normal) var(--ease-out);
 }
 .sidebar-hover-strip {
-  position: absolute;
+  position: fixed;
   left: 0;
   top: 0;
   bottom: 0;
-  width: 18px;
-  z-index: 900;
+  width: 36px;
+  z-index: 1100;
   display: none;
   pointer-events: auto;
+  -webkit-app-region: no-drag;
 }
 html.sidebar-auto-hide .sidebar-hover-strip { display: block; }
+/* Once revealed, the real sidebar controls (incl. the auto-hide toggle) must own clicks — the strip must not sit on top of them. */
+html.sidebar-auto-hide.sidebar-reveal .sidebar-hover-strip { pointer-events: none; }
 html.sidebar-auto-hide:not(.sidebar-reveal) .sidebar-hover-strip::after {
   content: '';
   position: absolute;
@@ -52,6 +55,7 @@ html.sidebar-auto-hide:not(.sidebar-reveal) aside.patient-sidebar {
   border-right: none;
 }
 html.sidebar-auto-hide.sidebar-reveal aside.patient-sidebar {
+  width: var(--sidebar-width);
   opacity: 1;
   pointer-events: auto;
   box-shadow: var(--shadow);

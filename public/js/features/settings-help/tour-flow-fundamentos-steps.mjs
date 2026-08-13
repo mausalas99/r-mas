@@ -28,21 +28,14 @@ function getMapTabsCopy() {
       '+1…4</strong> para abrir el detalle en vista <strong>Normal</strong> (repite el número para ciclar subvistas).</p>'
     );
   }
-  if (tourState.guidedTourBranch === 'interconsulta') {
-    return (
-      '<p style="margin:0;line-height:1.5;">Arriba: <strong>Paciente</strong>, <strong>Laboratorio</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong>. Atajo <strong>' +
-      mod +
-      '+1…4</strong> salta entre ellas; <strong>repite ' +
-      mod +
-      '+1</strong> para ciclar Resumen → Clínico → Salida.</p>'
-    );
-  }
   return (
-    '<p style="margin:0;line-height:1.5;">Arriba: <strong>Paciente</strong>, <strong>Laboratorio</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong>. <strong>' +
+    '<p style="margin:0;line-height:1.5;">Arriba: <strong>Paciente</strong>, <strong>Laboratorio</strong>, <strong>Manejo</strong> y <strong>Agenda</strong>. <strong>' +
     mod +
-    '+1…4</strong> cambia de pestaña; <strong>repite ' +
+    '+1…4</strong> cambia de pestaña. <strong>Repite ' +
     mod +
-    '+1</strong> cicla Resumen → Clínico → Salida.</p>'
+    '+1</strong> cicla Resumen → Clínico → Salida; <strong>repite ' +
+    mod +
+    '+2</strong> cicla Labs → Tendencias → Cultivos.</p>'
   );
 }
 
@@ -70,7 +63,19 @@ function getWrapPaseShortcutKey() {
 
 function renderMapSidebar(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">La <strong>columna izquierda</strong> es tu censo. En este tour <strong>no hay pacientes precargados</strong>: registrarás a <strong>DEMO PÉREZ</strong> al procesar el laboratorio de ejemplo.</p>';
+    '<p style="margin:0;line-height:1.5;">La <strong>columna izquierda</strong> es tu censo del turno: eliges al paciente activo aquí. En este tour <strong>no hay pacientes precargados</strong>; los darás de alta en los siguientes pasos.</p>';
+  showNext(nextBtn);
+}
+
+function renderMapAddPatient(bodyEl, nextBtn) {
+  bodyEl.innerHTML =
+    '<p style="margin:0;line-height:1.5;"><strong>+ Agregar</strong> da de alta al censo. También puedes agregar desde un laboratorio procesado. Nombre y registro bastan para empezar; cuarto, cama y servicio cierran el censo.</p>';
+  showNext(nextBtn);
+}
+
+function renderMapIncomplete(bodyEl, nextBtn) {
+  bodyEl.innerHTML =
+    '<p style="margin:0;line-height:1.5;">Sin <strong>cuarto</strong>, <strong>cama</strong> o <strong>servicio</strong> la tarjeta queda <strong>incompleta</strong>. Completa esos campos aquí (o al tocar la tarjeta marcada). Con <strong>R+ Cloud</strong> el alta se comparte con el equipo.</p>';
   showNext(nextBtn);
 }
 
@@ -93,7 +98,7 @@ function renderLabParse(bodyEl, nextBtn) {
 
 function renderLabView(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">Revisa diagramas y tabla de resultados. En <strong>Resultados</strong>, el menú <strong>⋯</strong> incluye <strong>Consolidar</strong> para juntar envíos del mismo día (mismo tipo de dato).</p>' +
+    '<p style="margin:0;line-height:1.5;">Revisa diagramas y tabla. En <strong>Laboratorio → Labs</strong>, el menú <strong>⋯</strong> incluye <strong>Consolidar</strong> para juntar envíos del mismo día (mismo tipo de dato).</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para continuar el tour.</p>';
   showNext(nextBtn);
 }
@@ -268,6 +273,8 @@ function renderWrap(bodyEl, nextBtn) {
 const FUNDAMENTOS_STEP_HANDLERS = {
   map_sidebar: renderMapSidebar,
   map_tabs: renderMapTabs,
+  map_add_patient: renderMapAddPatient,
+  map_incomplete: renderMapIncomplete,
   map_lab_teaser: renderMapLabTeaser,
   lab_parse: renderLabParse,
   lab_view: renderLabView,

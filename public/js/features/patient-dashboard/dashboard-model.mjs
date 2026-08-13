@@ -17,6 +17,10 @@ function filterDiagnosticos(list) {
 function buildIdentity(patient) {
   return {
     nombre: patient?.nombre != null ? String(patient.nombre) : '',
+    edad: patient?.edad != null ? String(patient.edad).trim() : '',
+    sexo: patient?.sexo != null ? String(patient.sexo).trim() : '',
+    cuarto: patient?.cuarto != null ? String(patient.cuarto).trim() : '',
+    cama: patient?.cama != null ? String(patient.cama).trim() : '',
     diagnosticos: filterDiagnosticos(patient?.diagnosticosList),
     interconsultServiceIds: Array.isArray(patient?.interconsultServiceIds)
       ? patient.interconsultServiceIds

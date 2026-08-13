@@ -38,6 +38,8 @@ function modelWithVitals() {
       nombre: 'PEREZ GOMEZ ANA',
       edad: '72',
       sexo: 'F',
+      cuarto: '412',
+      cama: '2',
       diagnosticosList: ['ICC', 'DM2'],
       interconsultServiceIds: ['card', 'nef'],
       monitoreo: splitHistorialMonitoreo,
@@ -62,12 +64,17 @@ describe('dashboard html', () => {
     assert.match(html, /class="[^"]*patient-dash/);
     assert.match(html, /PEREZ GOMEZ ANA/);
     assert.match(html, /dash-name/);
-    assert.equal(html.includes('72'), false);
+    // Age/sex/cuarto/cama header meta was redundant with the sidebar card — dropped from the glance header.
+    assert.equal(html.includes('72 a'), false);
+    assert.equal(/Cama\s*2/.test(html), false);
     assert.match(html, /Actualizar labs/);
     assert.match(html, /Servicios interconsultantes/);
     assert.match(html, /\+ Agregar/);
     assert.match(html, /Labs: Solo alterados/);
-    assert.match(html, /Reportes completos/);
+    assert.equal(html.includes('Reportes completos'), false);
+    assert.equal(html.includes('Abrir EA'), false);
+    assert.equal(html.includes('Ver todas'), false);
+    assert.equal(html.includes('Ver pendientes'), false);
     assert.match(html, /Estado clínico/);
     assert.match(html, /Eventualidades/);
     assert.match(html, /Pendientes/);
@@ -98,6 +105,8 @@ describe('dashboard html', () => {
     assert.equal(kpis[1].includes('Furosemida'), false);
     assert.match(html, /Medicamentos/);
     assert.match(html, /Furosemida/);
+    assert.match(html, /soap-pack/);
+    assert.match(html, />HD </);
     assert.equal(html.includes('Furosemida 40 mg'), false);
   });
 
@@ -133,7 +142,7 @@ describe('dashboard html', () => {
       }),
     );
     assert.equal(html.includes('Medicamentos'), false);
-    assert.equal(html.includes('ea-soap'), false);
+    assert.equal(html.includes('soap-pack'), false);
   });
 
   it('marks out-of-range vitals with .hi using EA ranges', () => {
@@ -163,11 +172,11 @@ describe('dashboard html', () => {
     assert.match(html, /class="vital hi"><small>Glu<\/small><b>240<\/b>/);
   });
 
-  it('colors SOAP chips and rest-card spines by category hue', () => {
+  it('renders SOAP as a zoned list without category pills', () => {
     const html = renderDashboardHtml(modelWithVitals());
-    assert.match(html, /class="med" style="--h:/);
-    assert.match(html, /class="ea-cat" style="--h:/);
-    assert.match(html, /data-dash-action="estadoActual" style="--spine-h:168"/);
-    assert.match(html, /data-dash-action="eventualidades" style="--spine-h:52"/);
+    assert.match(html, /class="soap-pack"/);
+    assert.match(html, /class="name">Furosemida/);
+    assert.equal(html.includes('--spine-h'), false);
+    assert.equal(html.includes('ea-cat'), false);
   });
 });

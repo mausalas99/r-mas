@@ -17,6 +17,7 @@ const {
 } = require('./lib/update-downgrade.js');
 const { probeNativeRuntime } = require('./lib/native-runtime-probe.js');
 const { isAllowedExternalUrl } = require('./lib/window-open-policy.cjs');
+const { isReservedShellShortcutInput, hasCmdOrCtrl } = require('./lib/shell-shortcut-input.cjs');
 const { PERF_CONFIG_FILE, normalizePerfConfig, readPerfConfig, writePerfConfig } = require('./lib/perf-config.js');
 const { setLanDbManager, getLanDbManager } = require('./lib/db/lan-db-bridge.cjs');
 const { installElectronLanCors } = require('./lib/electron-lan-cors.cjs');
@@ -250,14 +251,32 @@ function createWindow() {
     return { action: 'deny' };
   });
 
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (!isReservedShellShortcutInput(input)) return;
+    event.preventDefault();
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    const isMac = process.platform === 'darwin';
+    const cmdOrCtrl = hasCmdOrCtrl(input);
+    mainWindow.webContents.send('shell-shortcut', {
+      key: input.key,
+      code: input.code,
+      shift: !!input.shift,
+      alt: !!input.alt,
+      meta: isMac ? cmdOrCtrl : !!input.meta,
+      control: isMac ? !!input.control : cmdOrCtrl,
+    });
+  });
+
   const showFallback = setTimeout(() => {
     if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+      mainWindow.maximize();
       mainWindow.show();
     }
   }, 5000);
 
   mainWindow.once('ready-to-show', () => {
     clearTimeout(showFallback);
+    mainWindow.maximize();
     mainWindow.show();
   });
 
@@ -725,6 +744,23 @@ function webContentsMenuAction(method) {
   };
 }
 
+/** Menu accelerators intercept before Chromium's own New Tab / tab-select bindings; forward as the same shell-shortcut IPC. */
+function sendShellShortcutFromMenu(key, code) {
+  return () => {
+    const wc = getTargetWebContents();
+    if (!wc || wc.isDestroyed()) return;
+    const isMac = process.platform === 'darwin';
+    wc.send('shell-shortcut', {
+      key,
+      code,
+      shift: false,
+      alt: false,
+      meta: isMac,
+      control: !isMac,
+    });
+  };
+}
+
 function buildMenu() {
   const version = app.getVersion();
   const isMac = process.platform === 'darwin';
@@ -750,8 +786,7 @@ function buildMenu() {
         { label: 'Cortar', accelerator: 'CmdOrCtrl+X', click: webContentsMenuAction('cut') },
         { label: 'Copiar', accelerator: 'CmdOrCtrl+C', click: webContentsMenuAction('copy') },
         { label: 'Pegar', accelerator: 'CmdOrCtrl+V', click: webContentsMenuAction('paste') },
-        // Sin accelerator: ⌘A es atajo de app → pestaña Agenda (app-shell-keyboard.mjs).
-        { label: 'Seleccionar todo', click: webContentsMenuAction('selectAll') },
+        { label: 'Seleccionar todo', accelerator: 'CmdOrCtrl+A', click: webContentsMenuAction('selectAll') },
       ],
     },
     {
@@ -760,6 +795,19 @@ function buildMenu() {
         { label: 'Herramientas de desarrollador', accelerator: 'Alt+CmdOrCtrl+I', click: webContentsMenuAction('toggleDevTools') },
         { label: 'Recargar', accelerator: 'CmdOrCtrl+R', click: webContentsMenuAction('reload') },
         { label: 'Forzar recarga', accelerator: 'Shift+CmdOrCtrl+R', click: webContentsMenuAction('reloadIgnoringCache') },
+      ],
+    },
+    {
+      label: 'Atajos',
+      visible: false,
+      submenu: [
+        { label: 'Pestaña 1', visible: false, accelerator: 'CmdOrCtrl+1', click: sendShellShortcutFromMenu('1', 'Digit1') },
+        { label: 'Pestaña 2', visible: false, accelerator: 'CmdOrCtrl+2', click: sendShellShortcutFromMenu('2', 'Digit2') },
+        { label: 'Pestaña 3', visible: false, accelerator: 'CmdOrCtrl+3', click: sendShellShortcutFromMenu('3', 'Digit3') },
+        { label: 'Pestaña 4', visible: false, accelerator: 'CmdOrCtrl+4', click: sendShellShortcutFromMenu('4', 'Digit4') },
+        { label: 'Pestaña 5', visible: false, accelerator: 'CmdOrCtrl+5', click: sendShellShortcutFromMenu('5', 'Digit5') },
+        { label: 'Estado actual', visible: false, accelerator: 'CmdOrCtrl+E', click: sendShellShortcutFromMenu('e', 'KeyE') },
+        { label: 'Tratamiento', visible: false, accelerator: 'CmdOrCtrl+T', click: sendShellShortcutFromMenu('t', 'KeyT') },
       ],
     },
     {

@@ -10,7 +10,7 @@ import {
 } from './med-receta-format.mjs';
 
 describe('med-receta-iv-oral', () => {
-  it('paracetamol 1g IV → 500mg VO', () => {
+  it('paracetamol 1g IV → 1g VO (2 tabletas de 500mg)', () => {
     var item = {
       nombreRaw: 'PARACETAMOL 1 G SOL INY 100 ML (*)',
       viaRaw: 'VIA INTRAVENOSA',
@@ -20,10 +20,12 @@ describe('med-receta-iv-oral', () => {
     var out = applyIvToOralForEgreso(item);
     assert.equal(out.viaRaw, 'VIA ORAL');
     assert.match(out.nombreRaw, /500\s*MG\s+TABLETA/i);
-    assert.match(out.dosisRaw, /500\s*MG/i);
+    assert.match(out.dosisRaw, /^1\s*G\b/i);
+    assert.equal(out.oralEquiv.units, 2);
+    assert.equal(out.oralEquiv.unitMg, 500);
     assert.equal(
       formatMedicationSoapShort(item),
-      'PARACETAMOL 500MG VO C/8H'
+      'PARACETAMOL 1 G VO C/8H (2 TABLETAS DE 500MG)'
     );
   });
 
@@ -34,8 +36,10 @@ describe('med-receta-iv-oral', () => {
       dosisRaw: '40 MG //',
       frecuenciaRaw: 'CADA 24 HORAS',
     });
-    assert.match(ome.nombreRaw, /OMEPRAZOL 40 MG TABLETA/i);
+    assert.match(ome.nombreRaw, /OMEPRAZOL 20 MG CÁPSULA/i);
     assert.equal(ome.viaRaw, 'VIA ORAL');
+    assert.match(ome.dosisRaw, /^40\s*MG\b/i);
+    assert.equal(ome.oralEquiv.units, 2);
 
     var metro = applyIvToOralForEgreso({
       nombreRaw: 'METRONIDAZOL 500 MG SOL INY 100 ML (*)',

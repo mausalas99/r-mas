@@ -6,7 +6,9 @@ import {
   clearPatientAgendaLocal,
   clearPatientLocalStateMaps,
   clearPatientTodosLocal,
+  pruneOrphanTodos,
 } from './patient-delete-local.mjs';
+import { rescheduleAllTodos } from '../../todos-reminder-scheduler.mjs';
 
 /** @type {{
  *   runtime?: { getActiveId?: () => string|null, setActiveId?: (id: string|null) => void },
@@ -36,9 +38,14 @@ export function removePatientLocally(patientId) {
   clearPatientLocalStateMaps(pid);
   clearPatientTodosLocal(pid);
   clearPatientAgendaLocal(pid);
+  // Cancel any already-scheduled reminder timers — clearing storage above doesn't
+  // touch in-flight setTimeouts, which would otherwise still fire with stale data.
+  rescheduleAllTodos(pid);
   var rt = deleteDeps.runtime;
   if (rt && typeof rt.getActiveId === 'function' && rt.getActiveId() === pid) {
     rt.setActiveId(getPatients().length ? getPatients()[0].id : null);
   }
   return true;
 }
+
+export { pruneOrphanTodos };

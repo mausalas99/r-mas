@@ -31,6 +31,7 @@ import {
   syncBatchModalModeUi,
   activePatientMissingRegistroMessage,
 } from './lab-repo-batch-mode.mjs';
+import { requestSilentUpdateCheck } from './platform/updater/silent-check.mjs';
 
 /** @type {import('./lab-repo-batch-model.mjs').LabRepoBatchRow[]} */
 var batchRows = [];
@@ -300,6 +301,7 @@ export function openLabRepoBatchModal() {
     rt.showToast('Actualización masiva solo en la app de escritorio', 'warn');
     return;
   }
+  requestSilentUpdateCheck();
   if (batchBusy) {
     rt.showToast('Ya hay una actualización en curso — mira la cola en la barra lateral', 'info');
     return;
