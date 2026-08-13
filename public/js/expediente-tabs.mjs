@@ -110,8 +110,8 @@ function paneMountSpec(granularTab, settings) {
     todo: { composite: 'paciente', selector: '.exp-pendientes-mount' },
     notas: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
     indica: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
-    tend: { composite: 'resultados', selector: '.exp-segment-body--resultados' },
-    cult: { composite: 'resultados', selector: '.exp-segment-body--resultados' },
+    tend: { composite: null, selector: '#lab-inner-tend-mount' },
+    cult: { composite: null, selector: '#lab-inner-cult-mount' },
     listado: sala ? { composite: 'salida', selector: '.exp-segment-body--salida' } : { composite: null, selector: null },
     recetaHu: { composite: 'salida', selector: '.exp-segment-body--salida' },
     estadoActual: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
@@ -203,11 +203,17 @@ function compositeEl(name) {
 function mountPaneInComposite(granularTab, settings) {
   var pane = paneEl(granularTab);
   var spec = paneMountSpec(granularTab, settings);
-  if (!pane || !spec || !spec.composite) return;
-  var composite = compositeEl(spec.composite);
-  if (!composite) return;
-  var mount = composite.querySelector(spec.selector);
-  if (mount && pane.parentElement !== mount) mount.appendChild(pane);
+  if (!pane || !spec || !spec.selector) return;
+  var mount = null;
+  if (spec.selector.charAt(0) === '#' && document.querySelector) {
+    mount = document.querySelector(spec.selector);
+  }
+  if (!mount && spec.composite) {
+    var composite = compositeEl(spec.composite);
+    if (composite) mount = composite.querySelector(spec.selector);
+  }
+  if (!mount) return;
+  if (pane.parentElement !== mount) mount.appendChild(pane);
   pane.classList.remove('tab-content');
   pane.classList.add('exp-segment-panel');
 }

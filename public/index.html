@@ -115,6 +115,7 @@
 <link rel="stylesheet" href="/styles/base.css">
 <link rel="stylesheet" href="/styles/layout.css">
 <link rel="stylesheet" href="/styles/pase-board.css">
+<link rel="stylesheet" href="/styles/patient-dashboard.css">
 <link rel="stylesheet" href="/styles/sidebar.css">
 <link rel="stylesheet" href="/styles/lab.css">
 <link rel="stylesheet" href="/styles/expediente.css">
@@ -827,13 +828,13 @@
     </div>
     <div class="app-tabs-row">
       <div class="app-tabs" id="app-main-tablist" role="tablist" aria-label="Secciones principales">
-      <button type="button" class="app-tab active" role="tab" id="apptab-lab" aria-selected="true" aria-controls="appcontent-lab" tabindex="0" onclick="switchAppTab('lab')" data-i18n-aria-label="appTab.lab" data-i18n-title="appTab.lab">
+      <button type="button" class="app-tab active" role="tab" id="apptab-nota" aria-selected="true" aria-controls="appcontent-nota" tabindex="0" onclick="switchAppTab('nota')" data-i18n-aria-label="appTab.nota" data-i18n-title="appTab.nota">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+        <span class="app-tab-label" data-i18n="appTab.nota">Paciente</span>
+      </button>
+      <button type="button" class="app-tab" role="tab" id="apptab-lab" aria-selected="false" aria-controls="appcontent-lab" tabindex="-1" onclick="switchAppTab('lab')" data-i18n-aria-label="appTab.lab" data-i18n-title="appTab.lab">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
         <span class="app-tab-label" data-i18n="appTab.lab">Laboratorio</span>
-      </button>
-      <button type="button" class="app-tab" role="tab" id="apptab-nota" aria-selected="false" aria-controls="appcontent-nota" tabindex="-1" onclick="switchAppTab('nota')" data-i18n-aria-label="appTab.nota" data-i18n-title="appTab.nota">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
-        <span class="app-tab-label" data-i18n="appTab.nota">Expediente</span>
       </button>
       <button type="button" class="app-tab" role="tab" id="apptab-med" aria-selected="false" aria-controls="appcontent-med" tabindex="-1" onclick="switchAppTab('med')" data-i18n-aria-label="appTab.med" data-i18n-title="appTab.med">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.5 4.04 3 5.5l7 7Z"/></svg>
@@ -880,8 +881,13 @@
       </div>
     </div>
 
-    <div id="appcontent-lab" role="tabpanel" aria-labelledby="apptab-lab" aria-hidden="false" class="lab-panel-root">
-      <div class="main-work-scroll lab-work-scroll">
+    <div id="appcontent-lab" role="tabpanel" aria-labelledby="apptab-lab" aria-hidden="true" class="lab-panel-root app-tab-panel-hidden">
+      <div id="lab-inner-nav" class="lab-inner-nav exp-segment-bar rpc-subtab-bar" role="tablist" aria-label="Secciones de laboratorio">
+        <button type="button" class="exp-segment-btn rpc-subtab lab-inner-btn active" id="lab-inner-labs-btn" data-lab-inner="labs" role="tab" aria-selected="true" aria-controls="lab-inner-labs" onclick="switchLabInner('labs')">Labs</button>
+        <button type="button" class="exp-segment-btn rpc-subtab lab-inner-btn" id="lab-inner-tend-btn" data-lab-inner="tend" role="tab" aria-selected="false" aria-controls="lab-inner-tend-mount" onclick="switchLabInner('tend')">Tendencias</button>
+        <button type="button" class="exp-segment-btn rpc-subtab lab-inner-btn" id="lab-inner-cult-btn" data-lab-inner="cult" role="tab" aria-selected="false" aria-controls="lab-inner-cult-mount" onclick="switchLabInner('cult')">Cultivos</button>
+      </div>
+      <div class="main-work-scroll lab-work-scroll" id="lab-inner-labs">
 
         <div id="lab-input-section" class="card" style="flex-shrink:0;">
           <div class="card-header card-header-row">
@@ -890,11 +896,14 @@
               Reporte de Laboratorio
             </span>
             <div class="card-header-actions lab-report-header-actions">
+              <button type="button" id="btn-lab-repo-batch" class="btn-med-secondary" onclick="openLabRepoBatchModal()" title="Actualiza labs desde el repositorio (paciente activo o mi equipo)">Actualizar labs</button>
               <button type="button" class="card-header-soft-btn btn-lab-display-prefs" onclick="openLabDisplayPrefsModal()" title="Vista de laboratorio (BH extendida, gasometría extendida, salida rápida)" aria-label="Opciones de vista de laboratorio">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               </button>
             </div>
           </div>
+          <details class="lab-paste-details">
+            <summary>Pegar SOME / Procesar</summary>
           <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
             <div class="field-group">
               <label for="lab-input">Pega reportes SOME (uno o varios días; separador entre pacientes distintos)</label>
@@ -905,12 +914,12 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 Procesar
               </button>
-              <button type="button" id="btn-lab-repo-batch" class="btn-med-secondary" onclick="openLabRepoBatchModal()" title="Actualiza labs desde el repositorio (paciente activo o mi equipo)">Actualizar labs</button>
               <button type="button" id="btn-lab-manual-entry" class="btn-med-secondary" onclick="openLabManualEntryModal()" title="Captura manual de un estudio (lab externo)">Labs externos</button>
               <button type="button" id="btn-lab-patient-separator" class="btn-med-secondary" onclick="insertLabPatientSeparator()">Separador de paciente</button>
               <button type="button" class="btn-med-secondary" onclick="limpiarReporte()">Limpiar</button>
             </div>
           </div>
+          </details>
         </div>
 
         <div id="lab-banner" class="card lab-banner--detected" style="display:none;flex-shrink:0;">
@@ -980,6 +989,8 @@
         </div>
 
       </div>
+      <div id="lab-inner-tend-mount" class="lab-inner-panel" hidden></div>
+      <div id="lab-inner-cult-mount" class="lab-inner-panel" hidden></div>
       <button type="button" id="lab-copy-fab" class="lab-copy-fab" hidden aria-label="Copiar resultados al portapapeles" title="Copiar resultados">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
       </button>
@@ -1140,7 +1151,7 @@
       </div>
     </div>
 
-    <div id="appcontent-nota" role="tabpanel" aria-labelledby="apptab-nota" aria-hidden="true" class="app-tab-panel-hidden" style="flex-direction:column;flex:1;overflow:hidden;">
+    <div id="appcontent-nota" role="tabpanel" aria-labelledby="apptab-nota" aria-hidden="false" style="flex-direction:column;flex:1;overflow:hidden;">
       <div class="empty-state" id="empty-state">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
         <h3 class="empty-state-title">Elige un paciente para ver el expediente</h3>
@@ -1227,7 +1238,11 @@
         </div>
         <div id="expediente-panes-host" class="expediente-panes-host">
           <div id="itab-content-paciente" class="tab-content exp-composite-pane">
-            <div class="exp-pendientes-mount"></div>
+            <div id="patient-dashboard-mount" class="patient-dash"></div>
+            <div id="exp-pendientes-header" class="exp-pendientes-header" hidden>
+              <button type="button" class="link back" id="btn-volver-al-resumen">Volver al resumen</button>
+            </div>
+            <div class="exp-pendientes-mount" hidden></div>
           </div>
           <div id="itab-content-clinico" class="tab-content exp-composite-pane">
             <div class="exp-segment-bar rpc-subtab-bar" id="exp-segment-clinico" role="tablist" aria-label="Secciones clínicas">
@@ -1266,7 +1281,7 @@
           <div id="itab-content-tend" class="tab-content"><div id="tendencias-container"></div></div>
           <div id="itab-content-cult" class="tab-content"><div id="cultivos-table-container"></div></div>
           <div id="itab-content-listado" class="tab-content"><div id="listado-form" class="rpc-form-stack"></div></div>
-          <div id="itab-content-todo" class="tab-content active"><div id="todo-form" class="rpc-form-stack-tight"></div></div>
+          <div id="itab-content-todo" class="tab-content"><div id="todo-form" class="rpc-form-stack-tight"></div></div>
           <div id="itab-content-vpo" class="tab-content"><div id="vpo-container" class="rpc-form-stack"></div></div>
           <div id="itab-content-recetaHu" class="tab-content"><div id="receta-hu-container"></div></div>
         </div>

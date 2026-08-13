@@ -48,6 +48,7 @@ import { cancelDeferredIdleWork, scheduleAfterPaint } from '../deferred-work.mjs
 import { rt } from './pase-board-runtime.mjs';
 import { renderPaseBoard } from './pase-board-render.mjs';
 import { switchAppTab } from './pase-board-app-tabs.mjs';
+import { syncLabInnerVisibility } from './patient-dashboard/lab-inner.mjs';
 import { invalidatePaseBoardCache } from './pase-board-cache-keys.mjs';
 import {
   cancelExpedienteWarm,
@@ -68,10 +69,10 @@ const PASE_SECTION_ROUTES = {
   pendientes: { app: 'nota', inner: 'todo' },
   todo: { app: 'nota', inner: 'todo' },
   agenda: { app: 'agenda' },
-  cultivos: { app: 'nota', inner: 'cult' },
-  cult: { app: 'nota', inner: 'cult' },
-  tend: { app: 'nota', inner: 'tend' },
-  tendencias: { app: 'nota', inner: 'tend' },
+  cultivos: { app: 'lab', inner: 'cult' },
+  cult: { app: 'lab', inner: 'cult' },
+  tend: { app: 'lab', inner: 'tend' },
+  tendencias: { app: 'lab', inner: 'tend' },
   med: { app: 'med' },
   medicamentos: { app: 'med' },
   recetahu: { app: 'nota', inner: 'recetaHu' },
@@ -162,6 +163,7 @@ export function switchConsolidatedTab(compositeTab) {
 
 var EXPEDIENTE_INNER_TABS = {
   datos: 1,
+  resumen: 1,
   notas: 1,
   indica: 1,
   tend: 1,
@@ -185,7 +187,11 @@ function tryPaseRecetaRedirect(tab) {
   return true;
 }
 
-function ensureNotaAppTabForInner(tab) {
+function ensureAppTabForInner(tab) {
+  if (tab === 'tend' || tab === 'cult') {
+    if (rt.getActiveAppTab() !== 'lab') switchAppTab('lab');
+    return;
+  }
   if (isExpedienteInnerTab(tab) && rt.getActiveAppTab() !== 'nota') {
     switchAppTab('nota');
   }
@@ -254,11 +260,12 @@ export function switchInnerTab(tab, opts) {
   var prevComposite = expedienteCompositeTab(prevInner, settings);
   var nextComposite = expedienteCompositeTab(tab, settings);
   if (tryPaseRecetaRedirect(tab)) return;
-  ensureNotaAppTabForInner(tab);
+  ensureAppTabForInner(tab);
   if (isPaseMode() && rt.getActiveAppTab() === 'nota' && !opts.preserveRoundOverview) {
     setRoundOverviewMode(false);
   }
   rt.setActiveInner(tab);
+  syncLabInnerVisibility();
   syncConsolidatedInnerTabButtons(tab, settings);
   syncConsolidatedPaneVisibility(tab, settings, opts);
   syncConsolidatedSegmentBars(tab, settings);

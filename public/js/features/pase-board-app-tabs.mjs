@@ -18,6 +18,7 @@ import {
   syncAppTabIndicator,
 } from '../ui-tab-motion.mjs';
 import { migrateGranularInner } from '../expediente-tabs.mjs';
+import { innerAfterLeavingLab, syncLabInnerVisibility } from './patient-dashboard/lab-inner.mjs';
 import { closePatientDatosModal } from '../patient-datos-modal.mjs';
 import { closeMedRecetaPasteModal } from './medications-paste-modal.mjs';
 import { syncHeaderContext } from './header-context.mjs';
@@ -44,7 +45,8 @@ function refreshExpedienteOnNotaAppTabEnter() {
   scheduleAfterPaint(function () {
     if (rt.getActiveAppTab() !== 'nota') return;
     var settings = rt.getSettings();
-    var inner = migrateGranularInner(rt.getActiveInner() || 'resumen', settings);
+    var inner = innerAfterLeavingLab(migrateGranularInner(rt.getActiveInner() || 'resumen', settings));
+    if (inner !== rt.getActiveInner()) rt.setActiveInner(inner);
     syncInnerTabVisualOnly();
     if (granularMountIsEmpty(inner) || !isInnerTabContentFresh(inner, settings)) {
       renderGranularInnerTab(inner, granularMountIsEmpty(inner) ? { force: true } : undefined);
@@ -170,6 +172,7 @@ function layoutStandardAppTab(dom, tab) {
   if (dom.guardiaRoot) hideAppTabPanel(dom.guardiaRoot);
   showStandardPanelForTab(dom, tab);
   scheduleStandardTabSideEffects(tab);
+  if (tab === 'lab') syncLabInnerVisibility();
 }
 
 function syncLabCopyFabVisibility(tab) {

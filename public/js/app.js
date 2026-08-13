@@ -74,6 +74,7 @@ import { windowHandlers as estadoActualRegistroWindowHandlers } from './features
 import { windowHandlers as agendaWindowHandlers } from './features/agenda.mjs';
 import { windowHandlers as expedienteWindowHandlers } from './features/expediente.mjs';
 import { windowHandlers as patientDashboardWindowHandlers } from './features/patient-dashboard/dashboard-mount.mjs';
+import { windowHandlers as labInnerWindowHandlers } from './features/patient-dashboard/lab-inner.mjs';
 import { windowHandlers as notesIndicacionesWindowHandlers } from './features/notes-indicaciones.mjs';
 import { productivityWindowHandlers } from './features/productivity.mjs';
 import {
@@ -140,6 +141,7 @@ const allWindowHandlers = Object.assign(
   agendaWindowHandlers,
   expedienteWindowHandlers,
   patientDashboardWindowHandlers,
+  labInnerWindowHandlers,
   notesIndicacionesWindowHandlers,
   productivityWindowHandlers,
   settingsHelpWindowHandlersLazy,

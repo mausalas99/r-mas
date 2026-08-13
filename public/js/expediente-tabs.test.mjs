@@ -259,12 +259,14 @@ function makeEl(id, className) {
   return el;
 }
 
-test('applyExpedientePaneLayout mounts Tendencias into Resultados (and remounts on 2nd call)', () => {
+test('applyExpedientePaneLayout mounts Tendencias into Laboratorio (and remounts on 2nd call)', () => {
   const host = makeEl('expediente-panes-host', 'expediente-panes-host');
   const resultados = makeEl('itab-content-resultados', 'tab-content exp-composite-pane');
   const body = makeEl('', 'exp-segment-body exp-segment-body--resultados');
   resultados._resultadosBody = body;
   body.parentElement = resultados;
+  const tendMount = makeEl('lab-inner-tend-mount', 'lab-inner-panel');
+  const cultMount = makeEl('lab-inner-cult-mount', 'lab-inner-panel');
   const tend = makeEl('itab-content-tend', 'tab-content');
   const cult = makeEl('itab-content-cult', 'tab-content');
   host.appendChild(resultados);
@@ -274,6 +276,8 @@ test('applyExpedientePaneLayout mounts Tendencias into Resultados (and remounts 
   const byId = {
     'expediente-panes-host': host,
     'itab-content-resultados': resultados,
+    'lab-inner-tend-mount': tendMount,
+    'lab-inner-cult-mount': cultMount,
     'itab-content-tend': tend,
     'itab-content-cult': cult,
     'itab-content-paciente': makeEl('itab-content-paciente', 'tab-content exp-composite-pane'),
@@ -292,22 +296,26 @@ test('applyExpedientePaneLayout mounts Tendencias into Resultados (and remounts 
     getElementById: function (id) {
       return byId[id] || null;
     },
+    querySelector: function (sel) {
+      if (sel && sel.charAt(0) === '#') return byId[sel.slice(1)] || null;
+      return null;
+    },
   };
 
   try {
     resetExpedientePaneLayoutCache();
     applyExpedientePaneLayout(SALA);
-    assert.equal(tend.parentElement, body);
+    assert.equal(tend.parentElement, tendMount);
     assert.equal(tend.classList.contains('tab-content'), false);
     assert.equal(tend.classList.contains('exp-segment-panel'), true);
-    assert.equal(cult.parentElement, body);
+    assert.equal(cult.parentElement, cultMount);
 
     // Simulate a DOM reset that orphans tend back under the host.
     host.appendChild(tend);
     tend.classList.add('tab-content');
     tend.classList.remove('exp-segment-panel');
     applyExpedientePaneLayout(SALA);
-    assert.equal(tend.parentElement, body, 'second apply must remount Tendencias');
+    assert.equal(tend.parentElement, tendMount, 'second apply must remount Tendencias');
     assert.equal(tend.classList.contains('exp-segment-panel'), true);
   } finally {
     resetExpedientePaneLayoutCache();

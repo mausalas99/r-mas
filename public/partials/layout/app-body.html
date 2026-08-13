@@ -133,7 +133,12 @@
     </div>
 
     <div id="appcontent-lab" role="tabpanel" aria-labelledby="apptab-lab" aria-hidden="true" class="lab-panel-root app-tab-panel-hidden">
-      <div class="main-work-scroll lab-work-scroll">
+      <div id="lab-inner-nav" class="lab-inner-nav exp-segment-bar rpc-subtab-bar" role="tablist" aria-label="Secciones de laboratorio">
+        <button type="button" class="exp-segment-btn rpc-subtab lab-inner-btn active" id="lab-inner-labs-btn" data-lab-inner="labs" role="tab" aria-selected="true" aria-controls="lab-inner-labs" onclick="switchLabInner('labs')">Labs</button>
+        <button type="button" class="exp-segment-btn rpc-subtab lab-inner-btn" id="lab-inner-tend-btn" data-lab-inner="tend" role="tab" aria-selected="false" aria-controls="lab-inner-tend-mount" onclick="switchLabInner('tend')">Tendencias</button>
+        <button type="button" class="exp-segment-btn rpc-subtab lab-inner-btn" id="lab-inner-cult-btn" data-lab-inner="cult" role="tab" aria-selected="false" aria-controls="lab-inner-cult-mount" onclick="switchLabInner('cult')">Cultivos</button>
+      </div>
+      <div class="main-work-scroll lab-work-scroll" id="lab-inner-labs">
 
         <div id="lab-input-section" class="card" style="flex-shrink:0;">
           <div class="card-header card-header-row">
@@ -142,11 +147,14 @@
               Reporte de Laboratorio
             </span>
             <div class="card-header-actions lab-report-header-actions">
+              <button type="button" id="btn-lab-repo-batch" class="btn-med-secondary" onclick="openLabRepoBatchModal()" title="Actualiza labs desde el repositorio (paciente activo o mi equipo)">Actualizar labs</button>
               <button type="button" class="card-header-soft-btn btn-lab-display-prefs" onclick="openLabDisplayPrefsModal()" title="Vista de laboratorio (BH extendida, gasometría extendida, salida rápida)" aria-label="Opciones de vista de laboratorio">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               </button>
             </div>
           </div>
+          <details class="lab-paste-details">
+            <summary>Pegar SOME / Procesar</summary>
           <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
             <div class="field-group">
               <label for="lab-input">Pega reportes SOME (uno o varios días; separador entre pacientes distintos)</label>
@@ -157,12 +165,12 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 Procesar
               </button>
-              <button type="button" id="btn-lab-repo-batch" class="btn-med-secondary" onclick="openLabRepoBatchModal()" title="Actualiza labs desde el repositorio (paciente activo o mi equipo)">Actualizar labs</button>
               <button type="button" id="btn-lab-manual-entry" class="btn-med-secondary" onclick="openLabManualEntryModal()" title="Captura manual de un estudio (lab externo)">Labs externos</button>
               <button type="button" id="btn-lab-patient-separator" class="btn-med-secondary" onclick="insertLabPatientSeparator()">Separador de paciente</button>
               <button type="button" class="btn-med-secondary" onclick="limpiarReporte()">Limpiar</button>
             </div>
           </div>
+          </details>
         </div>
 
         <div id="lab-banner" class="card lab-banner--detected" style="display:none;flex-shrink:0;">
@@ -232,6 +240,8 @@
         </div>
 
       </div>
+      <div id="lab-inner-tend-mount" class="lab-inner-panel" hidden></div>
+      <div id="lab-inner-cult-mount" class="lab-inner-panel" hidden></div>
       <button type="button" id="lab-copy-fab" class="lab-copy-fab" hidden aria-label="Copiar resultados al portapapeles" title="Copiar resultados">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
       </button>

@@ -530,3 +530,44 @@ html.dark .patient-dash .svc.is-on {
 #itab-content-paciente .exp-pendientes-mount[hidden] {
   display: none;
 }
+/* Laboratorio inner Labs | Tendencias | Cultivos */
+.lab-inner-nav {
+  flex: 0 0 auto;
+  padding: 6px 12px 0;
+}
+.lab-inner-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+.lab-inner-panel[hidden],
+#lab-inner-labs[hidden] {
+  display: none;
+}
+.lab-paste-details {
+  padding: 0 14px 12px;
+}
+.lab-paste-details > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  padding: 8px 0;
+  list-style: revert;
+}
+.lab-paste-details > summary:hover {
+  color: var(--color-ink);
+}
+.lab-inner-panel > .exp-segment-panel.active {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+}
+.lab-inner-panel > .exp-segment-panel.active > #tendencias-container,
+.lab-inner-panel > .exp-segment-panel.active > #cultivos-table-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}

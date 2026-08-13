@@ -363,7 +363,7 @@ function renderCultivosTable() {
 var _tendRefreshTimer = null;
 
 function refreshTendenciasOrCultivosPanel() {
-  if (rt.getActiveAppTab() !== 'nota') return;
+  if (rt.getActiveAppTab() !== 'nota' && rt.getActiveAppTab() !== 'lab') return;
   if (_tendRefreshTimer) clearTimeout(_tendRefreshTimer);
   _tendRefreshTimer = setTimeout(function () {
     _tendRefreshTimer = null;

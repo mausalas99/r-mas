@@ -102,6 +102,7 @@ import {
 } from './features/expediente.mjs';
 import { registerEventualidadesRuntime } from './features/eventualidades-panel.mjs';
 import { registerPatientDashboardRuntime } from './features/patient-dashboard/dashboard-mount.mjs';
+import { registerLabInnerRuntime } from './features/patient-dashboard/lab-inner.mjs';
 import {
   extractParsedValues,
   buildParsedBySectionFromResLabs,
@@ -456,6 +457,7 @@ export async function registerAllFeatureRuntimes() {
       },
     })
   );
+  registerLabInnerRuntime(ctx);
   registerExpedienteRuntime(ctx);
   registerNotesIndicacionesRuntime(ctx);
   registerProcedureAgendaRuntime(ctx);
