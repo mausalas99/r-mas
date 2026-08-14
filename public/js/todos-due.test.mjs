@@ -174,7 +174,7 @@ test('formatTodoDueLabel — Mañana for next local calendar day', () => {
 
 test('formatTodoDueLabel — date label for later days', () => {
   assert.equal(
-    formatTodoDueLabel('2026-08-15T14:30:00.000Z'),
+    formatTodoDueLabel('2026-08-15T14:30:00.000Z', NOW),
     formatLaterLabel('2026-08-15T14:30:00.000Z')
   );
 });
