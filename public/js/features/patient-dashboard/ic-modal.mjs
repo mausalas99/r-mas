@@ -80,6 +80,7 @@ function paintPicker(assignedIds) {
  * @param {{
  *   assignedIds: string[],
  *   onToggle: (id: string) => string[],
+ *   trigger?: HTMLElement,
  * }} opts
  */
 export function openInterconsultModal(opts) {
@@ -88,7 +89,12 @@ export function openInterconsultModal(opts) {
   var dom = ensureIcDom();
   paintPicker(assigned);
   if (icLayer && typeof icLayer.close === 'function') icLayer.close();
-  icLayer = openDialog({ panel: dom.panel, scrim: dom.scrim, nested: true });
+  icLayer = openDialog({
+    panel: dom.panel,
+    scrim: dom.scrim,
+    nested: true,
+    trigger: opts && opts.trigger,
+  });
   dom.panel.onclick = function (ev) {
     var t = ev.target;
     if (!t || typeof t.closest !== 'function') return;

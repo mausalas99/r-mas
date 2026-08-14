@@ -4,9 +4,10 @@
   container-type: size;
   container-name: dash;
   height: 100%;
+  max-height: 100%;
   min-height: 0;
   overflow: hidden;
-  padding: clamp(8px, 1.4cqh, 16px);
+  padding: clamp(6px, 1.2cqh, 12px);
 }
 
 .patient-dash .dash,
@@ -72,27 +73,28 @@
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .patient-dash .chip {
-  background: oklch(0.93 0.05 52);
+  background: var(--color-accent-soft);
   border: 0;
   border-radius: var(--radius-chip);
   padding: 3px 8px;
   font-size: 0.82em;
   font-weight: 600;
-  color: oklch(0.38 0.08 52);
+  color: var(--color-accent-soft-text);
 }
 
 html.dark .patient-dash .chip {
-  background: oklch(0.34 0.06 52); color: oklch(0.88 0.08 52);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-soft-text);
 }
 
 .patient-dash .btn-sec {
   border: 1px solid color-mix(in oklab, var(--color-ink) 28%, var(--border));
   background: color-mix(in oklab, var(--color-ink) 6%, var(--color-elevated));
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   padding: 0.45em 1em;
   font-weight: 600;
   min-height: 2.6em;
@@ -114,7 +116,7 @@ html.dark .patient-dash .chip {
 }
 
 .patient-dash .ic-mod {
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .patient-dash .ic-mod > small {
@@ -189,50 +191,73 @@ html.dark .patient-dash .svc.is-on {
   flex: 0 0 auto;
 }
 
-.patient-dash .bento .vitals-card,
-.patient-dash .bento .labs-card {
-  grid-column: 1 / -1;
+.patient-dash .bento.vitals-labs {
+  flex: 1 1 auto;
+  min-height: min-content;
+  align-items: stretch;
+  grid-template-rows: minmax(min-content, 1fr);
+  overflow: visible;
+}
+
+.patient-dash .bento.vitals-labs .vitals-card,
+.patient-dash .bento.vitals-labs .labs-card {
+  grid-column: auto;
+  min-width: 0;
+  min-height: min-content;
+  height: auto;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
 }
 
 .patient-dash .bento.rest {
-  flex: 1 1 0;
-  min-height: 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  flex: 0 0 auto;
+  min-height: min-content;
+  grid-template-columns: 1fr 1fr;
   grid-template-rows: auto;
   margin-top: 0;
 }
 
-.patient-dash:has(.bento.meds-band) .bento.rest {
-  flex: 0 1 auto;
-  min-height: 0;
-  max-height: 36cqh;
-}
-
 .patient-dash .bento.meds-band {
-  container-type: size;
-  container-name: medsband;
-  flex: 1 1 0;
-  min-height: 0;
+  flex: 0 0 auto;
+  min-height: min-content;
   grid-template-columns: 1fr;
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: auto;
 }
 
-.patient-dash .bento.rest > .card,
-.patient-dash .bento.meds-band > .card {
+.patient-dash .bento.rest > .card {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0;
+  height: auto;
+  min-height: min-content;
   overflow: hidden;
+}
+.patient-dash .bento.meds-band > .card,
+#patient-ronda-dashboard-host .bento.meds-band > .card {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  min-height: min-content;
+  overflow: visible;
 }
 
 .patient-dash .bento.rest .card-b,
 .patient-dash .bento.meds-band .card-b {
-  flex: 1; min-height: 0;
-  display: flex; flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
-.patient-dash .bento.rest .card-b { overflow-x: hidden; overflow-y: auto; }
-.patient-dash .bento.meds-band .card-b { overflow: hidden; padding: 4px 10px 10px; }
+.patient-dash .bento.rest .card-b {
+  flex: 0 0 auto;
+  min-height: min-content;
+  overflow: hidden;
+}
+.patient-dash .bento.meds-band .card-b {
+  flex: 0 0 auto;
+  min-height: min-content;
+  overflow: visible;
+  padding: 4px 10px 10px;
+}
 .patient-dash .bento.meds-band .card-h { padding: 6px 12px; }
 
 .patient-dash .card,
@@ -292,10 +317,46 @@ html.dark .patient-dash .svc.is-on {
   padding: 10px 12px 12px;
 }
 
+.patient-dash .vitals-card,
+.patient-dash button.vitals-card,
+.patient-dash .labs-card,
+#patient-ronda-dashboard-host .vitals-card,
+#patient-ronda-dashboard-host .labs-card {
+  overflow: visible;
+  height: auto;
+  min-height: min-content;
+}
+
+.patient-dash .vitals-card .card-h,
+.patient-dash .labs-card .card-h {
+  padding: 4px 10px;
+}
+
+.patient-dash .vitals-card .card-b {
+  flex: 1 1 auto;
+  min-height: min-content;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  padding: 8px 12px 10px;
+}
+
 .patient-dash .vitals {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: minmax(min-content, 1fr);
+  align-content: stretch;
+  gap: 6px 18px;
+  flex: 1 1 auto;
+  min-height: min-content;
+}
+
+.patient-dash .vital {
+  min-width: min-content;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .patient-dash .vital small {
@@ -303,11 +364,14 @@ html.dark .patient-dash .svc.is-on {
   color: var(--color-ink-muted);
   font-size: 0.72em;
   font-weight: 600;
+  line-height: 1.3;
 }
 
 .patient-dash .vital b {
-  font: 600 1.2em/1.2 var(--font-mono);
+  display: block;
+  font: 600 1.28em/1.2 var(--font-mono);
   color: var(--color-ink);
+  overflow: visible;
 }
 
 .patient-dash .vital.hi b {
@@ -317,45 +381,51 @@ html.dark .patient-dash .svc.is-on {
 .patient-dash .labs-card,
 .patient-dash .labs-card .card-b {
   height: auto;
-  flex: 0 0 auto;
+  min-height: min-content;
 }
 
 .patient-dash .labs-card .card-h {
-  padding: 6px 12px;
+  padding: 4px 10px;
 }
 
 .patient-dash .labs-card .card-b {
-  padding: 4px 12px 8px;
+  flex: 1 1 auto;
+  min-height: min-content;
+  overflow: visible;
+  padding: 4px 10px 8px;
 }
 
 .patient-dash .day-draws {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  flex-wrap: nowrap;
   gap: 6px;
   width: 100%;
-  align-items: stretch;
+  min-width: 0;
 }
 
 .patient-dash .draw {
   border: 1px solid color-mix(in oklab, var(--color-ink) 16%, transparent);
   background: color-mix(in oklab, var(--color-ink) 4%, var(--color-content));
   border-radius: 10px;
-  padding: 0.5em 0.65em;
+  padding: 0.4em 0.55em;
   text-align: left;
-  min-height: 0;
-  min-width: 0;
-  width: auto;
+  min-height: min-content;
+  width: 100%;
   max-width: 100%;
-  flex: 1 1 12rem;
-  display: flex;
-  flex-flow: row wrap;
-  align-items: center;
-  gap: 0.4em 0.75em;
+  flex: 1 1 100%;
+  display: grid;
+  grid-template-columns: 3.4em minmax(0, 1fr);
+  column-gap: 8px;
+  row-gap: 4px;
+  align-items: start;
   color: inherit;
+  overflow: hidden;
 }
 
 .patient-dash .draw.is-wide {
   flex: 1 1 100%;
+  width: 100%;
 }
 
 .patient-dash .draw:hover {
@@ -369,25 +439,23 @@ html.dark .patient-dash .svc.is-on {
 
 .patient-dash .draw time {
   font: 600 1em/1.2 var(--font-mono);
-  flex: 0 0 auto;
+  grid-column: 1;
+  padding-top: 3px;
 }
 
 .patient-dash .draw-groups {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 10px;
-  flex: 1 1 0;
-  align-items: center;
+  grid-column: 2;
+  display: grid;
+  gap: 4px;
   min-width: 0;
 }
 
 .patient-dash .draw-g,
 .patient-dash .draw-chip {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 6px;
-  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 4.2em minmax(0, 1fr);
+  column-gap: 8px;
+  align-items: start;
   min-width: 0;
 }
 
@@ -395,14 +463,14 @@ html.dark .patient-dash .svc.is-on {
   font-size: 0.82em;
   font-weight: 600;
   color: var(--color-ink-muted);
-  flex: 0 0 auto;
+  min-width: min-content;
+  padding-top: 3px;
 }
 
 .patient-dash .draw .vals {
-  display: inline-flex;
+  display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  flex: 1 1 auto;
   min-width: 0;
   font: 500 12px/1.3 var(--font-mono);
 }
@@ -426,49 +494,17 @@ html.dark .patient-dash .svc.is-on {
   border-radius: 8px;
 }
 
-.patient-dash .ea-glance {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4em;
-}
-
-.patient-dash .ea-kpis {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.35em;
-}
-
-.patient-dash .ea-kpis div {
-  background: color-mix(in oklab, var(--color-ink) 6%, var(--color-content));
-  border: 1px solid color-mix(in oklab, var(--color-ink) 12%, transparent);
-  border-radius: 8px;
-  padding: 6px 8px;
-}
-
-.patient-dash .ea-kpis small {
-  display: block;
-  color: var(--color-ink-muted);
-  font-size: 0.7em;
-  font-weight: 600;
-}
-
-.patient-dash .ea-kpis b {
-  font: 600 0.95em/1.3 var(--font-ui);
-  text-transform: none;
-}
-
 .patient-dash .bento.meds-band .soap-pack {
   display: flex;
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 auto;
+  min-height: min-content;
   align-items: start;
-  overflow: hidden;
-  mask-image: linear-gradient(#000 0, #000 calc(100% - 10px), transparent);
+  overflow: visible;
 }
 .patient-dash .bento.meds-band .soap-pack section {
   flex: 1;
   min-width: 0;
-  padding: 2px 14px 0;
+  padding: 2px 14px 8px;
   border-right: 1px solid var(--divider);
 }
 .patient-dash .bento.meds-band .soap-pack section:first-child { padding-left: 4px; }
@@ -487,12 +523,33 @@ html.dark .patient-dash .svc.is-on {
   color: var(--color-ink-muted);
   padding: 2px 0 4px;
 }
+.patient-dash .bento.meds-band .soap-pack [data-soap="N"] { --soap-h: 300; }
+.patient-dash .bento.meds-band .soap-pack [data-soap="V"] { --soap-h: 210; }
+.patient-dash .bento.meds-band .soap-pack [data-soap="HD"] { --soap-h: 18; }
+.patient-dash .bento.meds-band .soap-pack [data-soap="HI"] { --soap-h: 85; }
+.patient-dash .bento.meds-band .soap-pack [data-soap="NM"] { --soap-h: 160; }
+.patient-dash .bento.meds-band .soap-pack .z[data-soap],
+.patient-dash .bento.meds-band .soap-pack .z2[data-soap] {
+  color: oklch(0.42 0.12 var(--soap-h, 220));
+}
 .patient-dash .bento.meds-band .soap-pack .z em,
 .patient-dash .bento.meds-band .soap-pack .z2 em {
   font: 500 11px/1.2 var(--font-ui);
   letter-spacing: 0;
   font-style: normal;
   color: color-mix(in oklab, var(--color-ink-muted) 72%, transparent);
+}
+.patient-dash .bento.meds-band .soap-pack .z[data-soap] em,
+.patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
+  color: oklch(0.48 0.07 var(--soap-h, 220));
+}
+html.dark .patient-dash .bento.meds-band .soap-pack .z[data-soap],
+html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] {
+  color: oklch(0.84 0.1 var(--soap-h, 220));
+}
+html.dark .patient-dash .bento.meds-band .soap-pack .z[data-soap] em,
+html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
+  color: oklch(0.78 0.07 var(--soap-h, 220));
 }
 .patient-dash .bento.meds-band .soap-pack .z2 {
   margin-top: 10px;
@@ -504,7 +561,7 @@ html.dark .patient-dash .svc.is-on {
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  padding: 5px 0 6px;
+  padding: 3px 0 4px;
   border-bottom: 1px solid var(--divider);
   max-width: 100%;
 }
@@ -546,19 +603,6 @@ html.dark .patient-dash .svc.is-on {
 }
 
 .patient-dash .due { color: var(--color-danger); font-weight: 600; }
-
-@media (max-width: 980px) {
-  .patient-dash .bento,
-  .patient-dash .bento.rest,
-  .patient-dash .vitals {
-    grid-template-columns: 1fr;
-  }
-
-  .patient-dash .bento .vitals-card,
-  .patient-dash .bento .labs-card {
-    grid-column: auto;
-  }
-}
 
 .exp-pendientes-header {
   flex: 0 0 auto;

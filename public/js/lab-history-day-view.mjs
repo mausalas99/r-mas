@@ -14,6 +14,7 @@ import {
   resLabsHasGasometria,
 } from './lab-history-format.mjs';
 import { normalizeHoraLabHistory } from './tend-core.mjs';
+import { looksLikeSomeLabReport } from './labs-report-refs.mjs';
 
 export var LAB_HISTORY_DAY_VALUE_PREFIX = 'day:';
 
@@ -169,6 +170,30 @@ export function clusterDayLabSets(sets) {
  * @param {{ rows: Array<{ set: object }> }} day
  * @returns {{ view: ReturnType<typeof buildDayLabView>, newest: object, result: object } | null}
  */
+export function pickLabworkGroup(groups) {
+  var list = groups || [];
+  for (var i = 0; i < list.length; i++) {
+    if (list[i] && list[i].tipoLabel !== 'Cultivo' && list[i].resLabs && list[i].resLabs.length) {
+      return list[i];
+    }
+  }
+  return list[0] || null;
+}
+
+export function pickSomeSourceText(groups) {
+  var list = groups || [];
+  var i;
+  for (i = 0; i < list.length; i++) {
+    var some = String((list[i] && list[i].sourceText) || '').trim();
+    if (some && looksLikeSomeLabReport(some)) return some;
+  }
+  for (i = 0; i < list.length; i++) {
+    var any = String((list[i] && list[i].sourceText) || '').trim();
+    if (any) return any;
+  }
+  return '';
+}
+
 export function buildDayOutputPayload(day) {
   var sets = (day && day.rows ? day.rows : []).map(function (row) {
     return row.set;
@@ -176,15 +201,17 @@ export function buildDayOutputPayload(day) {
   var view = buildDayLabView(sets);
   if (!view.groups.length) return null;
   var newest = view.groups[0];
+  var labwork = pickLabworkGroup(view.groups) || newest;
   return {
     view: view,
     newest: newest,
+    labwork: labwork,
     result: {
       fecha: view.fecha || (newest.sets[0] && newest.sets[0].fecha) || '',
-      resLabs: newest.resLabs,
-      sourceText: newest.sourceText,
-      bhExtras: newest.bhExtras,
-      refsBySection: newest.refsBySection,
+      resLabs: labwork.resLabs,
+      sourceText: pickSomeSourceText(view.groups) || labwork.sourceText || newest.sourceText,
+      bhExtras: labwork.bhExtras,
+      refsBySection: labwork.refsBySection,
     },
   };
 }

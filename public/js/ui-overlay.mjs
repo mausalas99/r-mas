@@ -4,6 +4,7 @@
  */
 import { bindBackdropDismiss, createModalDismissRegistry } from './modal-dismiss.mjs';
 import { prefersReducedMotion, springTo, getReleaseVelocity } from './ui-motion.mjs';
+import { projectMomentum, rubberband } from './ui-physics.mjs';
 
 var FOCUSABLE =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -18,13 +19,15 @@ var wiredScrims = typeof WeakSet !== 'undefined' ? new WeakSet() : null;
 
 export function shouldDismissSheet(dragPx, height, velocity, threshold) {
   var v = threshold == null ? DEFAULT_DISMISS_VELOCITY : threshold;
-  if (typeof velocity === 'number' && velocity >= v) return true;
-  if (height > 0 && dragPx > height * SHEET_DISMISS_FRACTION) return true;
+  if (typeof velocity === 'number' && velocity < 0) return false;
+  var projected = dragPx + projectMomentum((velocity || 0) * 1000);
+  if (height > 0 && projected > height * SHEET_DISMISS_FRACTION) return true;
+  if (typeof velocity === 'number' && velocity >= v && dragPx > 0) return true;
   return false;
 }
 
-export function rubberBandSheetOffset(dragPx) {
-  if (dragPx <= 0) return dragPx * 0.25;
+export function rubberBandSheetOffset(dragPx, dimension) {
+  if (dragPx <= 0) return rubberband(dragPx, dimension || 400, 0.55);
   return dragPx;
 }
 
@@ -184,10 +187,11 @@ function hidePanel(panel) {
   panel.setAttribute('aria-hidden', 'true');
   panel.style.transform = '';
   panel.style.opacity = '';
+  panel.style.removeProperty('--ui-overlay-origin');
 }
 
 /**
- * @param {{ panel: HTMLElement, scrim?: HTMLElement, nested?: boolean, onClose?: () => void }} opts
+ * @param {{ panel: HTMLElement, scrim?: HTMLElement, nested?: boolean, trigger?: HTMLElement, onClose?: () => void }} opts
  */
 export function openDialog(opts) {
   var panel = opts.panel;
@@ -200,12 +204,13 @@ export function openDialog(opts) {
 
   applyPanelMaterial(panel, opts.nested, 'dialog');
   revealPanel(panel, scrim);
+  setOverlayOrigin(panel, opts.trigger);
   panel.style.opacity = '0';
   if (!reduced) panel.style.transform = 'scale(0.95)';
 
   var openKf = { opacity: [0, 1] };
   if (!reduced) openKf.transform = ['scale(0.95)', 'scale(1)'];
-  animControls = runSpring(panel, openKf, { bounce: 0.12, duration: 0.32 });
+  animControls = runSpring(panel, openKf, { bounce: 0, duration: 0.32 });
 
   wireScrimDismiss(scrim);
   var trap = wireFocusTrap(panel);
@@ -289,7 +294,8 @@ function wireSheetPointer(panel, reduced, dismissVelocity, requestClose) {
   function springSheetTo(targetPx, velocity) {
     if (animControls) animControls.stop();
     if (reduced) return;
-    var springOpts = { bounce: 0.06, duration: 0.34 };
+    var springOpts = { bounce: 0, duration: 0.34 };
+    if (typeof velocity === 'number' && Math.abs(velocity) > 0.15) springOpts.bounce = 0.08;
     if (velocity != null) springOpts.velocity = velocity;
     animControls = runSpring(panel, {
       transform: [sheetTransformY(dragPx), sheetTransformY(targetPx)],
@@ -312,7 +318,7 @@ function wireSheetPointer(panel, reduced, dismissVelocity, requestClose) {
     if (!dragging || reduced) return;
     pointerHistory.push({ t: ev.timeStamp, y: ev.clientY });
     var delta = ev.clientY - pointerHistory[0].y;
-    dragPx = rubberBandSheetOffset(delta);
+    dragPx = rubberBandSheetOffset(delta, sheetHeight);
     panel.style.transform = sheetTransformY(dragPx);
   }
 
@@ -373,7 +379,7 @@ export function openSheet(opts) {
   panel.style.transform = reduced ? 'none' : 'translateY(100%)';
 
   var openKf = reduced ? { opacity: [0, 1] } : { transform: ['translateY(100%)', 'translateY(0)'] };
-  animControls = runSpring(panel, openKf, { bounce: 0.08, duration: 0.38 });
+  animControls = runSpring(panel, openKf, { bounce: 0, duration: 0.38 });
 
   wireScrimDismiss(scrim);
   var trap = wireFocusTrap(panel);
@@ -416,13 +422,24 @@ export function openSheet(opts) {
   };
 }
 
+/**
+ * Panel-local transform-origin from trigger top-center.
+ * @param {{ left: number, top: number, width: number }} triggerRect
+ * @param {{ left: number, top: number }} panelRect
+ */
+export function overlayOriginFromRects(triggerRect, panelRect) {
+  if (!triggerRect || !panelRect) return '';
+  var ox = triggerRect.left + triggerRect.width / 2 - panelRect.left;
+  var oy = triggerRect.top - panelRect.top;
+  return ox + 'px ' + oy + 'px';
+}
+
 /** @param {HTMLElement} panel @param {HTMLElement|undefined} trigger */
-function setMenuOrigin(panel, trigger) {
+function setOverlayOrigin(panel, trigger) {
   if (!trigger || typeof trigger.getBoundingClientRect !== 'function') return;
-  var rect = trigger.getBoundingClientRect();
-  var ox = rect.left + rect.width / 2;
-  var oy = rect.top;
-  panel.style.setProperty('--ui-overlay-origin', ox + 'px ' + oy + 'px');
+  if (!panel || typeof panel.getBoundingClientRect !== 'function') return;
+  var origin = overlayOriginFromRects(trigger.getBoundingClientRect(), panel.getBoundingClientRect());
+  if (origin) panel.style.setProperty('--ui-overlay-origin', origin);
 }
 
 /**
@@ -437,16 +454,16 @@ export function openMenu(opts) {
   var previousFocus = typeof document !== 'undefined' ? document.activeElement : null;
 
   applyPanelMaterial(panel, opts.nested, 'menu');
-  setMenuOrigin(panel, opts.trigger);
   panel.hidden = false;
   panel.style.display = '';
   panel.setAttribute('aria-hidden', 'false');
+  setOverlayOrigin(panel, opts.trigger);
   panel.style.opacity = '0';
   if (!reduced) panel.style.transform = 'scale(0.95)';
 
   var openKf = { opacity: [0, 1] };
   if (!reduced) openKf.transform = ['scale(0.95)', 'scale(1)'];
-  animControls = runSpring(panel, openKf, { bounce: 0.14, duration: 0.26 });
+  animControls = runSpring(panel, openKf, { bounce: 0, duration: 0.26 });
 
   var trap = wireFocusTrap(panel);
   focusPanelFirst(panel);

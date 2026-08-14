@@ -27,6 +27,7 @@ import {
   acknowledgeHandoffTodo,
   updateTodoText,
 } from './todos-mutations.mjs';
+import { settlePasteSurface } from '../ui-motion.mjs';
 
 function getTodoFormDraftState(container, idPrefix) {
   if (!container) return null;
@@ -95,6 +96,73 @@ function appendTodoMainCell(row, todo, txtInput) {
   row.appendChild(cell);
 }
 
+export function todoRowDetailBits(t, opts) {
+  opts = opts || {};
+  var bits = [];
+  if (t && t.due) bits.push('Vence: ' + String(t.due));
+  if (t && isTodoOverdue(t)) bits.push('Atrasado');
+  if (opts.handoff) bits.push('De entrega');
+  return bits;
+}
+
+function appendTodoRowActions(row, t) {
+  var actions = document.createElement('div');
+  actions.className = 'todo-row-actions';
+  if (isHandoffTodo(t, getClinicalUsername())) {
+    var ack = document.createElement('button');
+    ack.type = 'button';
+    ack.className = 'todo-handoff-ack';
+    ack.textContent = 'Recibido';
+    ack.title = 'Marcar como recibido del turno anterior';
+    ack.addEventListener('click', function () { acknowledgeHandoffTodo(t.id); });
+    actions.appendChild(ack);
+  }
+  var del = document.createElement('button');
+  del.type = 'button';
+  del.className = 'todo-del';
+  del.textContent = '×';
+  del.title = 'Eliminar';
+  del.addEventListener('click', function () { deleteTodo(t.id); });
+  actions.appendChild(del);
+  if (t.completed) {
+    var pill = document.createElement('span');
+    pill.className = 'todo-row-status-pill todo-row-status-pill--done';
+    pill.textContent = 'Hecho';
+    actions.insertBefore(pill, del);
+  }
+  row.appendChild(actions);
+  return actions;
+}
+
+function appendTodoRowDetail(row, t, actions) {
+  var bits = todoRowDetailBits(t, {
+    handoff: isHandoffTodo(t, getClinicalUsername()),
+  });
+  if (!bits.length) return;
+  var expand = document.createElement('button');
+  expand.type = 'button';
+  expand.className = 'todo-row-expand';
+  expand.setAttribute('aria-expanded', 'false');
+  expand.setAttribute('aria-label', 'Detalle del pendiente');
+  expand.textContent = '▾';
+  expand.addEventListener('click', function (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    var detailEl = row.querySelector('.todo-row-detail');
+    if (!detailEl) return;
+    var open = detailEl.classList.toggle('is-open');
+    expand.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  actions.appendChild(expand);
+  var detail = document.createElement('div');
+  detail.className = 'todo-row-detail';
+  var inner = document.createElement('div');
+  inner.className = 'todo-row-detail-inner';
+  inner.textContent = bits.join(' · ');
+  detail.appendChild(inner);
+  row.appendChild(detail);
+}
+
 function buildTodoRow(t) {
   var prio = t.priority === 'alta' || t.priority === 'baja' ? t.priority : 'media';
   var row = document.createElement('div');
@@ -137,61 +205,7 @@ function buildTodoRow(t) {
     if (v !== String(t.text || '')) updateTodoText(t.id, v);
   });
   appendTodoMainCell(row, t, txtInput);
-
-  var actions = document.createElement('div');
-  actions.className = 'todo-row-actions';
-  if (isHandoffTodo(t, getClinicalUsername())) {
-    var ack = document.createElement('button');
-    ack.type = 'button';
-    ack.className = 'todo-handoff-ack';
-    ack.textContent = 'Recibido';
-    ack.title = 'Marcar como recibido del turno anterior';
-    ack.addEventListener('click', function () { acknowledgeHandoffTodo(t.id); });
-    actions.appendChild(ack);
-  }
-  var del = document.createElement('button');
-  del.type = 'button';
-  del.className = 'todo-del';
-  del.textContent = '×';
-  del.title = 'Eliminar';
-  del.addEventListener('click', function () { deleteTodo(t.id); });
-  actions.appendChild(del);
-  if (t.completed) {
-    var pill = document.createElement('span');
-    pill.className = 'todo-row-status-pill todo-row-status-pill--done';
-    pill.textContent = 'Hecho';
-    actions.insertBefore(pill, del);
-  }
-  var expand = document.createElement('button');
-  expand.type = 'button';
-  expand.className = 'todo-row-expand';
-  expand.setAttribute('aria-expanded', 'false');
-  expand.setAttribute('aria-label', 'Detalle del pendiente');
-  expand.textContent = '▾';
-  expand.addEventListener('click', function (ev) {
-    ev.preventDefault();
-    ev.stopPropagation();
-    var detail = row.querySelector('.todo-row-detail');
-    if (!detail) return;
-    var open = detail.classList.toggle('is-open');
-    expand.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
-  actions.appendChild(expand);
-  row.appendChild(actions);
-
-  var detail = document.createElement('div');
-  detail.className = 'todo-row-detail';
-  var inner = document.createElement('div');
-  inner.className = 'todo-row-detail-inner';
-  var bits = [];
-  if (t.due) bits.push('Vence: ' + String(t.due));
-  bits.push(t.completed ? 'Estado: completado' : 'Estado: pendiente');
-  if (isTodoOverdue(t)) bits.push('Atrasado');
-  if (isHandoffTodo(t, getClinicalUsername())) bits.push('De entrega');
-  inner.textContent = bits.join(' · ');
-  detail.appendChild(inner);
-  row.appendChild(detail);
-
+  appendTodoRowDetail(row, t, appendTodoRowActions(row, t));
   return row;
 }
 
@@ -306,14 +320,15 @@ export function renderTodoListSection(container, preserveTodoId) {
     none.setAttribute('role', 'status');
     if (listFilter === TODO_FILTER_HANDOFF) {
       none.innerHTML =
-        '<span class="empty-state-title">Sin pendientes del turno anterior para este paciente</span>' +
-        '<span class="empty-state-lead">Los que quedaron abiertos al cerrar el turno previo aparecerán aquí.</span>';
+        '<span class="empty-state-title">Sin pendientes del turno anterior</span>' +
+        '<span class="empty-state-lead">Los que quedaron abiertos al cerrar el turno previo aparecen aquí.</span>';
     } else {
       none.innerHTML =
         '<span class="empty-state-title">Sin pendientes</span>' +
-        '<span class="empty-state-lead">Usa el campo de arriba para agregar uno.</span>';
+        '<span class="empty-state-lead">Escribe uno arriba para agregarlo.</span>';
     }
     container.appendChild(none);
+    settlePasteSurface(none);
     return;
   }
 
@@ -327,6 +342,7 @@ export function renderTodoListSection(container, preserveTodoId) {
     list.appendChild(buildTodoRow(t));
   });
   container.appendChild(list);
+  settlePasteSurface(list);
 }
 
 export function renderTodoFormIn(container, idPrefix) {

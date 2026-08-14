@@ -9,6 +9,7 @@ const path = require('path');
 const RELEASE_STAGE_PATHS = [
   'package.json',
   'package-lock.json',
+  '.gitignore',
   'README.md',
   'docs/',
   'data/release-notes-highlights.mjs',
@@ -49,6 +50,15 @@ const RELEASE_STAGE_PATHS = [
   'scripts/lib/release-progress.js',
   'scripts/lib/electron-pack-files.js',
   'scripts/lib/electron-pack-files.test.js',
+  'scripts/lib/artifact-names.js',
+  'scripts/lib/artifact-names.test.js',
+  'scripts/lib/github-release-notes.js',
+  'scripts/lib/github-release-notes.test.js',
+  'cloud/',
+  'lib/clinical-repo/',
+  'lib/renderer-protocol.cjs',
+  'lib/renderer-protocol.test.mjs',
+  'design.md',
   'scripts/fetch-argon2-darwin-x64.mjs',
   'scripts/fetch-argon2-win.mjs',
   'scripts/fetch-sqlite-win.mjs',
@@ -59,6 +69,7 @@ const RELEASE_STAGE_PATHS = [
   'scripts/rebuild-native-db.mjs',
   'scripts/verify-release-natives.mjs',
   'scripts/lib/native-binary-format.mjs',
+  'scripts/metrics/README.md',
 ];
 
 function releasePathExists(root, rel) {
@@ -70,8 +81,22 @@ function existingReleaseStagePaths(root) {
   return RELEASE_STAGE_PATHS.filter((rel) => releasePathExists(root, rel));
 }
 
+function gitCheckIgnore(root, rel) {
+  const r = require('child_process').spawnSync(
+    'git',
+    ['check-ignore', '-q', '--no-index', '--', rel],
+    { cwd: root, stdio: 'pipe' }
+  );
+  return r.status === 0;
+}
+
+/** `.gitignore` match — `git add` exits 1 even if the file is already tracked. */
+function skipGitAddPath(root, rel) {
+  return gitCheckIgnore(root, rel);
+}
+
 function stageReleasePaths(execSync, root) {
-  const paths = existingReleaseStagePaths(root);
+  const paths = existingReleaseStagePaths(root).filter((rel) => !skipGitAddPath(root, rel));
   if (!paths.length) return;
   const r = require('child_process').spawnSync('git', ['add', '--', ...paths], {
     cwd: root,

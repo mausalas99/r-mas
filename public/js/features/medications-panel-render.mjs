@@ -27,7 +27,7 @@ import {
   setMedPanelCacheKey,
   bustMedPanelCache,
 } from "./medications-runtime-state.mjs";
-import { manejoDiaOpts, setMedActiveLeadVisible, setMedDiaBtnVisible } from "./medications-utils.mjs";
+import { manejoDiaOpts, setMedActiveLeadVisible } from "./medications-utils.mjs";
 
 function getMedPanelDom() {
   return {
@@ -44,7 +44,6 @@ function renderMedPanelEmptyNoPatient(els) {
   els.hintEl.hidden = false;
   els.hintEl.textContent = "Selecciona un paciente en la columna izquierda para ver su manejo.";
   setMedActiveLeadVisible(false);
-  setMedDiaBtnVisible(false);
   if (els.fechaEl) els.fechaEl.hidden = true;
   els.listEl.innerHTML = "";
   els.outPre.textContent = "";
@@ -59,7 +58,6 @@ function renderMedPanelEmptyNoContent(activeId, cacheKey, els) {
   els.hintEl.textContent =
     "Aún no hay medicamentos. Pulsa Importar SOME, pega el bloque del hospital y procesa la receta.";
   setMedActiveLeadVisible(false);
-  setMedDiaBtnVisible(false);
   if (els.fechaEl) els.fechaEl.hidden = true;
   els.listEl.innerHTML = "";
   els.outPre.textContent = "";
@@ -94,7 +92,6 @@ function renderMedPanelRecetaContent(activeId, block, cacheKey, els) {
   setMedPanelCacheKey(cacheKey);
   els.hintEl.hidden = true;
   setMedActiveLeadVisible(true);
-  setMedDiaBtnVisible(true);
   if (els.fechaEl) {
     els.fechaEl.hidden = false;
     var fechaTxt = block.fechaActualizacion || "—";

@@ -195,6 +195,126 @@ export function findDuplicateLabSetIdsToRemove(sets) {
 }
 
 /**
+ * Quita clones exactos (misma fecha, hora y líneas). Conserva el id más antiguo.
+ * @returns {{ sets: object[], removedIds: string[] }}
+ */
+export function stripExactDuplicateLabSets(sets) {
+  var list = sets || [];
+  var remove = new Set(findDuplicateLabSetIdsToRemove(list));
+  if (!remove.size) return { sets: list, removedIds: [] };
+  var removedIds = [];
+  var next = list.filter(function (s) {
+    if (!s || s.id == null) return true;
+    var id = String(s.id);
+    if (!remove.has(id)) return true;
+    removedIds.push(id);
+    return false;
+  });
+  return { sets: next, removedIds: removedIds };
+}
+
+/**
+ * Huella de analitos numéricos (sección.clave:valor). Cultivos sin números → ''.
+ */
+export function analyteFingerprintFromResLabs(resLabs) {
+  var pairs = [];
+  (resLabs || []).forEach(function (row) {
+    var line = String(row == null ? '' : row)
+      .split('\n')[0]
+      .trim()
+      .replace('\t', ' ');
+    if (!line) return;
+    var tokens = line.split(/\s+/).filter(Boolean);
+    if (tokens.length < 2) return;
+    var sec = tokens[0].replace(/:$/, '').toUpperCase();
+    var i = 1;
+    while (i < tokens.length) {
+      var tok = tokens[i];
+      var next = tokens[i + 1];
+      if (next !== undefined) {
+        var n = parseFloat(String(next).replace('*', '').replace(',', '.'));
+        if (isFinite(n)) {
+          pairs.push(sec + '.' + String(tok).toUpperCase() + ':' + n);
+          i += 2;
+          continue;
+        }
+      }
+      i += 1;
+    }
+  });
+  if (!pairs.length) return '';
+  pairs.sort();
+  return pairs.join('|');
+}
+
+function fechaKeyForAnalyteDedupe(set) {
+  return normalizeDateValue(set && set.fecha);
+}
+
+/**
+ * Misma fecha + mismos valores de analito (ids/hora/formato de línea pueden diferir).
+ */
+export function findAnalyteDuplicateLabGroups(sets) {
+  var list = (sets || []).filter(function (s) {
+    return s && s.id != null && String(s.id) !== '';
+  });
+  var by = Object.create(null);
+  list.forEach(function (s) {
+    var fecha = fechaKeyForAnalyteDedupe(s);
+    var fp = analyteFingerprintFromResLabs(s.resLabs || []);
+    if (!fecha || !fp) return;
+    var key = fecha + '\x01' + fp;
+    if (!by[key]) by[key] = [];
+    by[key].push(s);
+  });
+  var groups = [];
+  Object.keys(by).forEach(function (key) {
+    var arr = by[key];
+    if (arr.length < 2) return;
+    arr.sort(compareLabSetIdForDedupe);
+    groups.push({
+      kind: 'analyte',
+      keeperId: String(arr[0].id),
+      removeIds: arr.slice(1).map(function (x) {
+        return String(x.id);
+      }),
+    });
+  });
+  return groups;
+}
+
+function applyRemoveIds(sets, removeIds) {
+  var remove = new Set(removeIds || []);
+  if (!remove.size) return { sets: sets || [], removedIds: [] };
+  var removedIds = [];
+  var next = (sets || []).filter(function (s) {
+    if (!s || s.id == null) return true;
+    var id = String(s.id);
+    if (!remove.has(id)) return true;
+    removedIds.push(id);
+    return false;
+  });
+  return { sets: next, removedIds: removedIds };
+}
+
+/**
+ * Exactos primero, luego misma fecha + mismos analitos (Nube / re-paste).
+ * @returns {{ sets: object[], removedIds: string[] }}
+ */
+export function stripDuplicateLabSets(sets) {
+  var exact = stripExactDuplicateLabSets(sets);
+  var analyteIds = [];
+  findAnalyteDuplicateLabGroups(exact.sets).forEach(function (g) {
+    analyteIds = analyteIds.concat(g.removeIds);
+  });
+  var analyte = applyRemoveIds(exact.sets, analyteIds);
+  return {
+    sets: analyte.sets,
+    removedIds: exact.removedIds.concat(analyte.removedIds),
+  };
+}
+
+/**
  * Mismo informe pegado (sourceText normalizado) en varios ids del mismo paciente.
  */
 export function findNormalizedSourceDuplicateGroups(sets) {

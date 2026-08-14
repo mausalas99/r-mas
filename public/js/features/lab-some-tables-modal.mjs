@@ -36,7 +36,10 @@ export function syncLabSomeTablesBtn(show) {
 export function openLabSomeTablesModal() {
   if (rt.isPaseMode()) return;
   var parsed = rt.getParsed();
-  if (!parsed || !parsed.departments || !parsed.departments.length) return;
+  if (!parsed || !parsed.departments || !parsed.departments.length) {
+    rt.showToast('No hay tablas SOME para este día', 'info');
+    return;
+  }
   var backdrop = document.getElementById('lab-some-tables-backdrop');
   var body = document.getElementById('lab-some-tables-modal-body');
   if (!backdrop || !body) return;

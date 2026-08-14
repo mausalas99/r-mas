@@ -9,6 +9,7 @@ export {
   effectiveDiaTratamiento,
   setDiaTratamientoInDosis,
   incrementMedItemsDiaTratamiento,
+  rewriteAbxDisplayText,
 } from './med-receta-dates.mjs';
 
 export {

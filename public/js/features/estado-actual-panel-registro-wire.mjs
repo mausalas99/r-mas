@@ -1,7 +1,6 @@
 /** Registro form wiring — extracted from estado-actual-panel-registro.mjs */
 import { isVitalAltered } from './estado-actual-ranges.mjs';
 import { isTurnCloseHm } from './estado-actual-registro-defaults.mjs';
-import { eaPanelBridge } from './estado-actual-panel-bridge.mjs';
 import { buildGluRow, syncEaGluMode, buildBombaRow } from './estado-actual-panel-glu.mjs';
 import { syncGluRowAltered } from './estado-actual-panel-glu.mjs';
 import { expandVitalNextLayer, syncAllVitalAddButtonVisibility, vitalLayerBoxKey } from './estado-actual-panel-vitals.mjs';
@@ -115,11 +114,6 @@ export function wireFormInteractions(form) {
       handleFormInput(form, ev);
     });
     form.addEventListener('keydown', function (ev) {
-      if ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter') {
-        ev.preventDefault();
-        eaPanelBridge.registrarEstadoActualMedicion();
-        return;
-      }
       handleRegistroTabKeydown(form, ev);
     });
   }

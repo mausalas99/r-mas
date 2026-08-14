@@ -79,7 +79,28 @@ describe('EA glance', () => {
       },
     });
     assert.deepEqual(zoneNames(glance, 'N'), ['Paracetamol']);
-    assert.equal(zoneItem(glance, 'N', 'Paracetamol').token, 'PRN');
+    assert.equal(zoneItem(glance, 'N', 'Paracetamol').token, '');
+  });
+
+  it('strips glued form counts like 1tableta from the name', () => {
+    assert.equal(glanceMedName('CALCIO/VITAMINA D 1tableta'), 'Calcio/Vitamina D');
+    assert.equal(glanceMedName('CALCIO/VITAMINA D 1 TABLETA VO C/24H'), 'Calcio/Vitamina D');
+  });
+
+  it('lists every med as a name only — no frequency or dose tokens', () => {
+    const glance = buildEaGlance({
+      soap: {
+        antitromboticos: ['TICAGRELOR 90 MG VO C/12H', 'ASA 100 MG VO C/24H'],
+        nm: ['CALCIO/VITAMINA D 1tableta', 'GLUCONATO DE CALCIO 1 G'],
+      },
+    });
+    assert.deepEqual(zoneNames(glance, 'HD'), ['Ticagrelor', 'ASA']);
+    assert.deepEqual(zoneNames(glance, 'NM'), ['Calcio/Vitamina D', 'Gluconato de Calcio']);
+    glance.soap.forEach((zone) => {
+      zone.items.forEach((item) => {
+        assert.equal(item.token, '');
+      });
+    });
   });
 
   it('emits ronda tokens for día, PRN, c/12 h and vaso rate', () => {
@@ -172,7 +193,7 @@ describe('EA glance', () => {
       'Rescates de Insulina',
       'Gluconato de Calcio',
     ]);
-    assert.equal(zoneItem(glance, 'NM', 'Plan Basal Bolo').token, '20 UI');
+    assert.equal(zoneItem(glance, 'NM', 'Plan Basal Bolo').token, '');
   });
 
   it('does not invent Plan Basal Bolo when only glargina is present', () => {
@@ -180,6 +201,6 @@ describe('EA glance', () => {
       soap: { nm: ['INSULINA GLARGINA 20 UI'] },
     });
     assert.deepEqual(zoneNames(glance, 'NM'), ['Insulina Glargina']);
-    assert.equal(zoneItem(glance, 'NM', 'Insulina Glargina').token, '20 UI');
+    assert.equal(zoneItem(glance, 'NM', 'Insulina Glargina').token, '');
   });
 });

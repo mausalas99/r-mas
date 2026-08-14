@@ -122,5 +122,31 @@ describe('app-shell-keyboard work mode shortcuts', () => {
     assert.equal(normalizeShellShortcutKey({ code: 'KeyT', key: 'Meta' }), 't');
     assert.equal(normalizeShellShortcutKey({ code: 'KeyK', key: 'k' }), 'k');
     assert.equal(normalizeShellShortcutKey({ code: 'KeyA', key: 'a' }), 'a');
+    assert.equal(normalizeShellShortcutKey({ code: 'Enter', key: 'Enter' }), 'enter');
+  });
+
+  it('⌘↩ vuelve a Resumen even with focus in an input', () => {
+    var prevented = false;
+    var stopped = false;
+    runShellModifierKeydownForTests(
+      {
+        metaKey: true,
+        ctrlKey: false,
+        altKey: false,
+        shiftKey: false,
+        key: 'Enter',
+        code: 'Enter',
+        preventDefault() {
+          prevented = true;
+        },
+        stopPropagation() {
+          stopped = true;
+        },
+        target: { tagName: 'INPUT', isContentEditable: false },
+      },
+      function () {}
+    );
+    assert.equal(prevented, true);
+    assert.equal(stopped, true);
   });
 });

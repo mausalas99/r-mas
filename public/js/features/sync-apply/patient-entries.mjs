@@ -2,11 +2,13 @@
  * Neutral patient entry merge/apply for LAN/Nube census hydration.
  */
 import { storage } from '../../storage.js';
-import { getPatients, getNotes, getIndicaciones, getLabHistory, getMedRecetaByPatient, getMedPharmProfileByPatient, getVpoByPatient, getListadoProblemas, persistClinicalState } from '../../app-state.mjs';
+import { getPatients, getNotes, getIndicaciones, getLabHistory, getMedRecetaByPatient, getMedPharmProfileByPatient, getVpoByPatient, getListadoProblemas, persistClinicalState, scheduleIdleClinicalPersist } from '../../app-state.mjs';
 import {
   mergeEventualidades,
   mergeLabHistorySets,
 } from '../../patient-merge.mjs';
+import { reparseLabSetsFromSome } from '../../lab-history-some-reparse.mjs';
+import { bumpLabHistoryRevision } from '../../lab-history-cache.mjs';
 import { mergePatientMonitoreoFromImported } from '../estado-actual-data.mjs';
 import { mergeCensoPatientFields } from '../../patient-diagnosticos.mjs';
 import { mergePatientRegistrationMeta } from '../../patient-registration-meta.mjs';
@@ -210,8 +212,10 @@ function applyLanPatientCharts(existing, entry) {
   var mergedLabs = trimMobileLabHistorySets(
     mergeLabHistorySets(getLabHistory()[existing.id] || [], nextLabs)
   );
+  reparseLabSetsFromSome(mergedLabs);
   if (!lanJsonEqual(getLabHistory()[existing.id], mergedLabs)) {
     getLabHistory()[existing.id] = mergedLabs;
+    bumpLabHistoryRevision(existing.id);
     changed = true;
   }
   return applyLanPatientMedArtifacts(existing, entry) || changed;
@@ -305,9 +309,12 @@ function findExistingPatient(entry) {
 function seedNewPatientArtifacts(remoteId, entry) {
   getNotes()[remoteId] = entry.note || {};
   getIndicaciones()[remoteId] = entry.indicaciones || {};
-  getLabHistory()[remoteId] = trimMobileLabHistorySets(
+  var labs = trimMobileLabHistorySets(
     Array.isArray(entry.labHistory) ? entry.labHistory : []
   );
+  reparseLabSetsFromSome(labs);
+  getLabHistory()[remoteId] = labs;
+  if (labs.length) bumpLabHistoryRevision(remoteId);
   if (Object.prototype.hasOwnProperty.call(entry, 'medReceta') && entry.medReceta) {
     getMedRecetaByPatient()[remoteId] = entry.medReceta;
   }
@@ -372,17 +379,6 @@ function refreshLanPatientUiAfterApply() {
   if (typeof entryDeps.renderPatientListLanSilent === 'function') {
     entryDeps.renderPatientListLanSilent();
   }
-  if (lanRuntime().getActiveId()) {
-    try {
-      lanRuntime().renderNoteForm();
-    } catch { /* ignored */ }
-    try {
-      lanRuntime().renderLabHistoryPanel();
-    } catch { /* ignored */ }
-    try {
-      lanRuntime().renderEstadoActualPanel({ force: true, syncHeavy: true });
-    } catch { /* ignored */ }
-  }
 }
 
 export function applyLanPatientEntries(entries, opts) {
@@ -405,7 +401,8 @@ export function applyLanPatientEntries(entries, opts) {
     }
   }
   if (added || updated) {
-    persistClinicalState({ immediate: true });
+    persistClinicalState({ domains: ['patients'] });
+    scheduleIdleClinicalPersist();
     if (!shouldEnforceTeamPatientMirror()) {
       refreshLanPatientUiAfterApply();
     }

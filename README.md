@@ -39,10 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.1.2](https://github.com/mausalas99/r-mas/releases/tag/v8.1.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.1.3](https://github.com/mausalas99/r-mas/releases/tag/v8.1.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 8.1.3 (instrumento + SOME Nube + censo)
+
+- **Instrumento** — Botones ink, overlays desde el control (sin rebote), chips neutros; se quita **+1 día**.
+- **SOME Nube** — El turno manda el texto crudo; cada Mac reparsea. Historial por día más estable.
+- **Censo** — ↑/↓ recorre pacientes; toque en iPad selecciona la tarjeta.
+- **Nube** — Unirse no borra asignaciones de compañeros. Hay que **desplegar el Worker**.
+- **macOS** — Instalador con Developer ID + notarización (si el publish lleva las credenciales Apple).
+
+Notas: `docs/RELEASE_NOTES_8.1.3.txt`.
 
 ## R+ 8.1.2 (Paciente Resumen + SOAP catálogo + labs del día)
 
@@ -785,7 +794,7 @@ R+ is an Electron desktop app with SQLCipher clinical store, **Nube** turn sync 
 | Node shared logic | `lib/` | SQLCipher store (`lib/db/`), doc generators, interno, entrega |
 | LAN host | `lan-squad/` | Auth, host-store, persistence, conflict resolver |
 
-Mapa completo: `.cursor/rules/project-context.mdc` y `docs/core/04-directory-structure.md`.
+Mapa completo: `docs/core/00-system-index.md` y `docs/core/04-directory-structure.md`.
 
 ---
 

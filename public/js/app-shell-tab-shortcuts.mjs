@@ -11,7 +11,7 @@ import {
 import { LAB_INNER_SECTIONS } from './expediente-group-row.mjs';
 import { currentLabInner, switchLabInner } from './features/patient-dashboard/lab-inner.mjs';
 import { switchAppTab } from './features/pase-board-app-tabs.mjs';
-import { switchConsolidatedTab, openPaseSectionInNormal } from './features/pase-board-navigation.mjs';
+import { switchConsolidatedTab, openPaseSectionInNormal, switchInnerTab } from './features/pase-board-navigation.mjs';
 import { getActiveInnerTab } from './features/pase-board.mjs';
 import { rt } from './features/pase-board-runtime.mjs';
 import { getMedSubview, setMedSubview } from './features/med-pharm-profile-panel.mjs';
@@ -81,6 +81,29 @@ function currentExpedienteComposite(settings) {
 function leaveGuardiaForStandardNavigation() {
   if (!isGuardiaMode()) return;
   toggleGuardiaMode();
+}
+
+function dismissOverlaysForResumenHome() {
+  var win = typeof window !== 'undefined' ? window : null;
+  if (!win) return;
+  if (typeof win.closeEstadoActualRegistroModal === 'function') {
+    win.closeEstadoActualRegistroModal();
+  }
+  if (typeof win.closeCommandPalette === 'function') win.closeCommandPalette();
+  if (typeof win.closeShortcutsModal === 'function') win.closeShortcutsModal();
+}
+
+/** ⌘↩ — Paciente → Resumen from anywhere (modals and fields included). */
+export function runResumenHomeShortcut() {
+  leaveGuardiaForStandardNavigation();
+  dismissOverlaysForResumenHome();
+  if (typeof document === 'undefined') return true;
+  if (isPaseMode()) {
+    openPaseSectionInNormal('resumen');
+    return true;
+  }
+  switchInnerTab('resumen');
+  return true;
 }
 
 function openDigitTabFirst(key) {

@@ -17,6 +17,15 @@ test('expande R+- con productName', () => {
   assert.equal(expandArtifactPattern(p, '3.4.3', 'x64', 'exe', pkg), 'R+-3.4.3-x64.exe');
 });
 
+test('humanInstallAliases names DMGs so users can pick Silicon vs Intel', () => {
+  const { humanInstallAliases } = require('./artifact-names');
+  const aliases = humanInstallAliases('8.1.2', pkg);
+  const byFrom = Object.fromEntries(aliases.map((a) => [a.from, a.to]));
+  assert.equal(byFrom['R+-8.1.2-arm64.dmg'], 'R+-8.1.2-Mac-Apple-Silicon.dmg');
+  assert.equal(byFrom['R+-8.1.2-x64.dmg'], 'R+-8.1.2-Mac-Intel.dmg');
+  assert.equal(byFrom['R+-8.1.2-x64.exe'], 'R+-8.1.2-Windows.exe');
+});
+
 test('allReleaseArtifactNames incluye mac y win', () => {
   const a = allReleaseArtifactNames(pkg);
   assert.ok(a.mac.includes('R+-3.4.3-arm64.dmg'));

@@ -123,3 +123,24 @@ export function tryLegacyBulkLabBackfillAck(clientMutationId, ops, roomRevision,
     legacyBulkAck: true,
   });
 }
+
+/**
+ * Stale / rejected-only pushes must not rewrite the sala snapshot.
+ * Sala 2 was burning Free Worker CPU on empty `ops_json: []` commits.
+ * @param {unknown[]} applied
+ * @param {unknown[]} rejected
+ * @param {number} roomRevision
+ * @param {number} baseRevision
+ * @returns {Response | null}
+ */
+export function tryNoopMutationAck(applied, rejected, roomRevision, baseRevision) {
+  if (Array.isArray(applied) && applied.length) return null;
+  const revision = Number(roomRevision) || 0;
+  return Response.json({
+    revision,
+    applied: [],
+    rejected: Array.isArray(rejected) ? rejected : [],
+    needPull: Number(baseRevision) < revision,
+    noop: true,
+  });
+}

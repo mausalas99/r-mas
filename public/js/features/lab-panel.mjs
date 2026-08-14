@@ -191,15 +191,9 @@ export function syncLabOutputChrome() {
     closeLabSomeTablesModal();
     return;
   }
-  var hasSome = !!(
-    activeLab &&
-    activeLab.someTablesParsed &&
-    activeLab.someTablesParsed.departments &&
-    activeLab.someTablesParsed.departments.length
-  );
   var show = outputVisible && isLabAppTabActive();
   syncLabCopyFab(show);
-  syncLabSomeTablesBtn(show && hasSome);
+  syncLabSomeTablesBtn(show);
 }
 
 export { openLabSomeTablesModal, closeLabSomeTablesModal };

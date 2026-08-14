@@ -1,5 +1,7 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import {
   subscribeClinicalReadModel,
   getPatients,
@@ -102,6 +104,17 @@ describe('clinical-read-model', () => {
     assert.equal(p.nombre, 'Luis');
     assert.equal(p.sala, '1');
     assert.equal(p.eventualidades.entries[0].text, 'nuevo');
+  });
+
+  it('_applyPatientPatch does not deep-clone the cached patient or seed', () => {
+    const src = readFileSync(fileURLToPath(new URL('./clinical-read-model.mjs', import.meta.url)), 'utf8');
+    const start = src.indexOf('export function _applyPatientPatch');
+    const end = src.indexOf('export function resetClinicalReadModelForTests');
+    assert.ok(start >= 0 && end > start);
+    const fn = src.slice(start, end);
+    assert.match(fn, /cloneValue\(patch\)/);
+    assert.doesNotMatch(fn, /cloneValue\(_cache\.patients\[idx\]\)/);
+    assert.doesNotMatch(fn, /cloneValue\(seed\)/);
   });
 
   it('subscribe rejects non-functions', () => {

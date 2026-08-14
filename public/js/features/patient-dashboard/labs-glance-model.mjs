@@ -1,9 +1,11 @@
 /**
  * Pure model: labs-of-day glance (alteraciones-only bento chips per envío).
+ * Same-minute clones / complementary panels collapse; different hours stay split.
  */
-import { groupLabHistoryByDay } from '../../lab-history-format.mjs';
+import { dayKeyFromLabSet } from '../../lab-history-format.mjs';
 import { splitResLabsByTipo } from '../../cultivo-block-core.mjs';
 import { normalizeHoraLabHistory } from '../../tend-core.mjs';
+import { dedupeConsolidatedLabRows } from '../../lab-bulk-paste.mjs';
 
 function dayKeysMatch(left, right) {
   if (left === right) return true;
@@ -16,9 +18,13 @@ function dayKeysMatch(left, right) {
   return norm(left) === norm(right);
 }
 
-function pickDayGroup(groups, todayKey) {
-  if (!groups.length) return null;
-  return groups.find((group) => dayKeysMatch(group.dayKey, todayKey)) || null;
+function setsForDayKey(orderedSets, todayKey) {
+  const out = [];
+  (orderedSets || []).forEach((set) => {
+    if (!set || !set.resLabs || !set.resLabs.length) return;
+    if (dayKeysMatch(dayKeyFromLabSet(set), todayKey)) out.push(set);
+  });
+  return out;
 }
 
 function sectionLabelFromRow(row) {
@@ -37,6 +43,23 @@ function bodyTokensFromRow(row) {
     .replace('\t', ' ');
   const tokens = line.split(/\s+/).filter(Boolean);
   return tokens.slice(1);
+}
+
+function isNumericChipLabel(label) {
+  return /^[\d.,]+$/.test(String(label || '').replace(/\*$/, ''));
+}
+
+/**
+ * Glance chip copy: analyte + value (`Cr 1.4*`), never a bare number.
+ * @param {{ label?: string, value?: string, raw?: string }} chip
+ */
+export function formatAlteredChip(chip) {
+  const value = String((chip && (chip.value || chip.raw)) || '').trim();
+  const label = String((chip && chip.label) || '').trim();
+  if (!label || isNumericChipLabel(label)) return value;
+  if (!value) return label;
+  if (value === label || value.startsWith(label)) return value;
+  return label + ' ' + value;
 }
 
 function alteredChipsFromTokens(tokens) {
@@ -89,15 +112,59 @@ function buildGroupsFromLabRows(labRows) {
   return groups;
 }
 
-function buildEnvioFromSet(set) {
-  const split = splitResLabsByTipo(set.resLabs || []);
-  const labRows = split.labs.filter((row) => String(row == null ? '' : row).trim());
+function labRowsFromResLabs(resLabs) {
+  const split = splitResLabsByTipo(resLabs || []);
+  return split.labs.filter((row) => String(row == null ? '' : row).trim());
+}
+
+function horaKey(set) {
+  const h = normalizeHoraLabHistory(set && set.hora);
+  return h ? String(h).trim().slice(0, 5) : '';
+}
+
+function mergeClusterResLabs(sets) {
+  let merged = [];
+  (sets || []).forEach((set) => {
+    const rows = (set && set.resLabs) || [];
+    if (!rows.length) return;
+    if (merged.length) merged.push('');
+    merged = merged.concat(rows);
+  });
+  return dedupeConsolidatedLabRows(merged, 'labs');
+}
+
+function clusterSetsByHora(sets) {
+  const byHora = Object.create(null);
+  const order = [];
+  (sets || []).forEach((set) => {
+    const key = horaKey(set) || '\0' + String(set && set.id != null ? set.id : order.length);
+    if (!byHora[key]) {
+      byHora[key] = [];
+      order.push(key);
+    }
+    byHora[key].push(set);
+  });
+  return order.map((key) => {
+    const cluster = byHora[key];
+    return {
+      hora: key.charAt(0) === '\0' ? '' : key,
+      sets: cluster,
+      resLabs: mergeClusterResLabs(cluster),
+    };
+  });
+}
+
+function buildEnvioFromCluster(cluster) {
+  const keeper = (cluster.sets && cluster.sets[0]) || {};
+  const labRows = labRowsFromResLabs(cluster.resLabs);
   if (!labRows.length) return null;
+  const groups = buildGroupsFromLabRows(labRows);
+  if (!groups.length) return null;
   return {
-    id: set.id,
-    hora: normalizeHoraLabHistory(set.hora),
+    id: keeper.id,
+    hora: cluster.hora || horaKey(keeper),
     wide: countLabSections(labRows) >= 3,
-    groups: buildGroupsFromLabRows(labRows),
+    groups,
   };
 }
 
@@ -105,11 +172,10 @@ function buildEnvioFromSet(set) {
  * @param {{ todayKey: string, orderedSets: unknown[] }} params
  * @returns {{ envios: Array<{ id: string, hora: string, wide: boolean, groups: Array<{ tipo: string, chips: Array<{ raw: string, label: string, value: string }> }> }> }}
  */
-export function buildLabsGlanceForDay({ todayKey, orderedSets }) {
-  const dayGroups = groupLabHistoryByDay(orderedSets);
-  const dayGroup = pickDayGroup(dayGroups, todayKey);
-  if (!dayGroup) return { envios: [] };
+export function buildLabsGlanceForDay({ todayKey, orderedSets } = {}) {
+  const daySets = setsForDayKey(orderedSets, todayKey);
+  if (!daySets.length) return { envios: [] };
   return {
-    envios: dayGroup.sets.map(buildEnvioFromSet).filter(Boolean),
+    envios: clusterSetsByHora(daySets).map(buildEnvioFromCluster).filter(Boolean),
   };
 }

@@ -65,4 +65,37 @@ describe('collectEaGlanceSoap', () => {
     });
     assert.equal(soap.diureticos.length, 1);
   });
+
+  it('advances ATB DIA from the stored SOME day using calendar days since Manejo', () => {
+    const ref = new Date(2026, 7, 13);
+    const soap = collectEaGlanceSoap({
+      estadoClinico: { abx: 'LINEZOLID 600MG VO C/12H DIA 5' },
+      fechaActualizacion: '10/08/2026',
+      refDate: ref,
+    });
+    assert.equal(soap.abx.length, 1);
+    assert.match(soap.abx[0], /DIA 8/);
+    assert.equal(/DIA 5/.test(soap.abx[0]), false);
+  });
+
+  it('advances ATB DIA on receta items without reimporting SOME', () => {
+    const ref = new Date(2026, 7, 13);
+    const soap = collectEaGlanceSoap({
+      estadoClinico: {},
+      recetaItems: [
+        {
+          id: 'a',
+          nombreRaw: 'LINEZOLID 600 MG',
+          dosisRaw: '600 MG // *DIA# 5*',
+          viaRaw: 'VO',
+          frecuenciaRaw: 'CADA 12 HORAS',
+          diaTratamiento: 5,
+        },
+      ],
+      fechaActualizacion: '10/08/2026',
+      refDate: ref,
+    });
+    assert.ok(soap.abx && soap.abx.some((s) => /DIA 8/.test(s)));
+    assert.equal(JSON.stringify(soap.abx).includes('DIA 5'), false);
+  });
 });

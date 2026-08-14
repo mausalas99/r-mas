@@ -194,9 +194,9 @@ export function _applyPatientPatch(patientId, patch, seed, meta = {}) {
   const patchObj = patch && typeof patch === 'object' ? cloneValue(patch) : {};
   const idx = _cache.patients.findIndex((p) => p && String(p.id) === id);
   if (idx >= 0) {
-    _cache.patients[idx] = { ...cloneValue(_cache.patients[idx]), ...patchObj, id };
+    _cache.patients[idx] = { ..._cache.patients[idx], ...patchObj, id };
   } else {
-    const base = seed && typeof seed === 'object' ? cloneValue(seed) : { id };
+    const base = seed && typeof seed === 'object' ? { ...seed } : { id };
     _cache.patients = [..._cache.patients, { ...base, ...patchObj, id }];
   }
   notify({ source: meta.source || 'patient-patch' });

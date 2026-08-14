@@ -22,3 +22,16 @@ test('openInterconsultModal mounts the panel inside the scrim', () => {
   assert.equal(panel.parentElement, scrim);
   assert.equal(scrim.parentElement, document.body);
 });
+
+test('openInterconsultModal sets overlay origin from trigger', () => {
+  if (typeof document === 'undefined') return;
+  document.body.innerHTML =
+    '<button type="button" id="ic-tr" style="position:absolute;left:10px;top:20px;width:40px;height:20px"></button>';
+  openInterconsultModal({
+    assignedIds: [],
+    trigger: document.getElementById('ic-tr'),
+  });
+  const panel = document.getElementById('patient-ic-panel');
+  const origin = panel.style.getPropertyValue('--ui-overlay-origin');
+  assert.ok(origin.includes('px'));
+});

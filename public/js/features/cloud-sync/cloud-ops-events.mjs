@@ -24,11 +24,11 @@ export function wireCloudClinicalOpsSyncEvents(deps) {
     // stamped mutation every poll). Local create/join/admin still push below.
     if (String(ev?.detail?.source || '') === 'cloud-hydrate') return;
     void (async () => {
-      const { pushClinicalOpsForSala, pushClinicalOpsForSalas, listLocalTeamSalas } = await import(
+      const { syncClinicalOpsForSala, pushClinicalOpsForSalas, listLocalTeamSalas } = await import(
         './cloud-clinical-ops-sala.mjs'
       );
       const sala = normalizeCloudSala(ev?.detail?.sala || '');
-      if (sala) await pushClinicalOpsForSala(sala);
+      if (sala) await syncClinicalOpsForSala(sala);
       else await pushClinicalOpsForSalas(await listLocalTeamSalas());
     })().catch(function () {});
     maybeScheduleCloudSyncPush();

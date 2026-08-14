@@ -11,6 +11,7 @@ import { dedupeConsolidatedLabRows } from '../lab-bulk-paste.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { normalizeLabHistoryPatientSets } from '../storage.js';
 import { getPatients, getLabHistory, persistClinicalState } from '../app-state.mjs';
+import { applyExactLabHistoryDedupe } from '../lab-history-exact-prune.mjs';
 import { bumpLabHistoryRevision, getLabHistoryRevision } from '../lab-history-cache.mjs';
 import {
   filterLabHistorySetsForMobileReference,
@@ -28,6 +29,8 @@ import {
   findLabHistoryDayIndexForSet,
   stepLabHistoryDayIndex,
   latestSetIdInLabHistoryDay,
+  labHistoryDayArrowDelta,
+  canHandleLabHistoryDayArrow,
 } from '../lab-history-day-nav.mjs';
 import {
   buildDayOutputPayload,
@@ -77,6 +80,7 @@ function labSetIdForHistory(set, idx) {
 function getActivePatientLabHistory() {
   var pid = rt.getActiveId();
   if (!pid) return [];
+  if (applyExactLabHistoryDedupe(pid).length) persistClinicalState();
   var hist = sortLabHistoryChronological(
     rt.ensureParsedLabHistoryCached
       ? rt.ensureParsedLabHistoryCached(pid)
@@ -212,6 +216,35 @@ function stepLabHistoryDay(delta) {
   syncLabHistoryDateSelect({ preferSetId: nextValue });
 }
 
+function labHistoryDayArrowContext(ev) {
+  var tag = ev.target && ev.target.tagName ? ev.target.tagName.toUpperCase() : '';
+  var lab = document.getElementById('appcontent-lab');
+  var picker = document.getElementById('lab-history-date-select');
+  return {
+    key: ev.key,
+    modifier: !!(ev.metaKey || ev.ctrlKey || ev.altKey),
+    typing:
+      tag === 'INPUT' ||
+      tag === 'TEXTAREA' ||
+      tag === 'SELECT' ||
+      !!(ev.target && ev.target.isContentEditable),
+    labTabVisible: !!(lab && lab.style.display !== 'none' && !lab.hidden),
+    hasDayPicker: !!(picker && !picker.hidden),
+  };
+}
+
+var labHistoryDayKeysWired = false;
+
+function wireLabHistoryDayKeys() {
+  if (labHistoryDayKeysWired) return;
+  labHistoryDayKeysWired = true;
+  document.addEventListener('keydown', function (ev) {
+    if (!canHandleLabHistoryDayArrow(labHistoryDayArrowContext(ev))) return;
+    ev.preventDefault();
+    stepLabHistoryDay(labHistoryDayArrowDelta(ev.key));
+  });
+}
+
 function buildLabHistoryReplayResult_(set) {
   const patient = getPatients().find(function (p) { return p.id === rt.getActiveId(); });
   const name = patient ? patient.nombre || '' : '';
@@ -248,7 +281,9 @@ function loadLabHistorySetIntoOutput(setId, opts) {
     silent: !!(opts && opts.silent),
     dayGroups: payload.view.groups,
   });
-  if (!mobileLabReferenceMode()) rt.renderDiagramas(payload.newest.resLabs);
+  if (!mobileLabReferenceMode()) {
+    rt.renderDiagramas((payload.labwork || payload.newest).resLabs);
+  }
   if (!(opts && opts.silent)) announceLabHistoryReplay_(setId);
   return true;
 }
@@ -271,6 +306,7 @@ function maybeShowLabHistoryForActivePatient(opts) {
 }
 
 export function renderLabHistoryPanel() {
+  wireLabHistoryDayKeys();
   ensureMobileLabOutputShellVisible();
   var selectedId = syncLabHistoryDateSelect();
   if (selectedId && !labPanelBridge.getActiveLab()) {

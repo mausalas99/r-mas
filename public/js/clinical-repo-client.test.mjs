@@ -108,4 +108,42 @@ describe('clinical-repo-client', () => {
     assert.deepEqual(getLabHistory('p1'), [{ at: 't' }]);
     assert.equal(getIndicaciones('p1'), 'ind');
   });
+
+  it('forwards echoSnapshot: false in IPC meta', async () => {
+    let seen;
+    globalThis.window.electronAPI.dbClinicalCommand = async (payload) => {
+      seen = payload;
+      return { ok: true, changedKeys: ['patients'], changeId: 'chg_echo' };
+    };
+    await executeClinicalCommand(
+      { type: 'eventualidad.upsert', patientId: 'p1', entry: { text: 'x' } },
+      { source: 'ui', echoSnapshot: false }
+    );
+    assert.equal(seen.meta.echoSnapshot, false);
+    assert.equal(seen.meta.source, 'ui');
+  });
+
+  it('does not apply snapshot fields when echoSnapshot is false', async () => {
+    globalThis.window.electronAPI.dbClinicalCommand = async () => ({
+      ok: true,
+      changedKeys: ['patients'],
+      changeId: 'chg_no_echo',
+      patients: [{ id: 'p1', nombre: 'ShouldNotApply' }],
+    });
+    await executeClinicalCommand(
+      { type: 'eventualidad.upsert', patientId: 'p1', entry: { text: 'x' } },
+      { source: 'ui', echoSnapshot: false }
+    );
+    assert.equal(getPatientById('p1'), null);
+  });
+
+  it('forwards changeIds to project-unsynced IPC', async () => {
+    let seen;
+    globalThis.window.electronAPI.dbClinicalProjectUnsynced = async (payload) => {
+      seen = payload;
+      return { ok: true, mutations: [], skipIds: [] };
+    };
+    await projectUnsyncedClinicalChanges({ changeIds: ['chg_only'] });
+    assert.deepEqual(seen.changeIds, ['chg_only']);
+  });
 });

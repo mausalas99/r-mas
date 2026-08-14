@@ -45,25 +45,18 @@ import {
   setLastRondaNavIds,
   isPatientRoundSeen,
 } from './patients-round.mjs';
+import { patientCardIdFromEvent, shouldHandleTouchPointerUp } from './patients-list-click.mjs';
 
 var ARCHIVED_SECTION_COLLAPSED_LS = 'rpc-archived-section-collapsed';
 var _patientListSortables = [];
 
 function ensurePatientUiState() {
-  var changed = false;
   for (var i = 0; i < getPatients().length; i++) {
     var p = getPatients()[i];
     if (!p) continue;
-    if (typeof p.archived !== 'boolean') {
-      p.archived = false;
-      changed = true;
-    }
-    if (typeof p.pinned !== 'boolean') {
-      p.pinned = false;
-      changed = true;
-    }
+    if (typeof p.archived !== 'boolean') p.archived = false;
+    if (typeof p.pinned !== 'boolean') p.pinned = false;
   }
-  if (changed) persistClinicalState();
 }
 
 function isArchivedSectionCollapsed() {
@@ -172,7 +165,22 @@ function mountActiveZoneVirtualIfNeeded(list, active, cardHtml, listCtx) {
 
 var _patientListRenderQueued = false;
 var _patientListSilentTimer = null;
+var _censusFiltersBarSyncQueued = false;
 var PATIENT_LIST_SILENT_DEBOUNCE_MS = 220;
+
+function scheduleCensusFiltersBarSync() {
+  if (_censusFiltersBarSyncQueued) return;
+  _censusFiltersBarSyncQueued = true;
+  var run = function () {
+    _censusFiltersBarSyncQueued = false;
+    syncClinicalCensusFiltersBar();
+  };
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(run, { timeout: 1500 });
+  } else {
+    setTimeout(run, 0);
+  }
+}
 
 /** @param {{ silent?: boolean }|undefined} [opts] */
 function normalizePatientListRenderOpts(opts) {
@@ -392,7 +400,8 @@ function renderPatientListNow(opts) {
   }
   ensurePatientUiState();
   ensurePatientListClickDelegation();
-  if (!opts.silent) syncClinicalCensusFiltersBar();
+  if (opts.silent) scheduleCensusFiltersBarSync();
+  else syncClinicalCensusFiltersBar();
   var list = document.getElementById('patient-list');
   if (!list) return;
   var isRonda = isPaseMode();
@@ -427,26 +436,34 @@ function renderPatientListNow(opts) {
 
 var _patientListClickWired = false;
 
+var _lastPatientListSelect = { pid: '', at: 0 };
+
+function selectPatientFromListEvent(ev) {
+  var pid = patientCardIdFromEvent(ev);
+  if (!pid) return;
+  var now = Date.now();
+  if (pid === _lastPatientListSelect.pid && now - _lastPatientListSelect.at < 400) return;
+  _lastPatientListSelect = { pid: pid, at: now };
+  var patient = getPatients().find(function (p) {
+    return p && String(p.id) === String(pid);
+  });
+  patientsBridge.selectPatient(pid);
+  if (patient && isPatientAdmissionIncomplete(patient, rt.getSettings())) {
+    window.setTimeout(function () {
+      openCompleteAdmissionModal(pid);
+    }, 0);
+  }
+}
+
 /** Clic en tarjeta sin depender solo de onclick inline (módulos ES). */
 function ensurePatientListClickDelegation() {
   if (_patientListClickWired) return;
   var root = document.getElementById('patient-list');
   if (!root) return;
   _patientListClickWired = true;
-  root.addEventListener('click', function (ev) {
-    var card = ev.target && ev.target.closest ? ev.target.closest('.patient-card[data-patient-id]') : null;
-    if (!card) return;
-    if (ev.target.closest('button, a[href], input, textarea, select')) return;
-    var pid = card.getAttribute('data-patient-id');
-    if (!pid) return;
-    var patient = getPatients().find(function (p) {
-      return p && String(p.id) === String(pid);
-    });
-    patientsBridge.selectPatient(pid);
-    if (patient && isPatientAdmissionIncomplete(patient, rt.getSettings())) {
-      window.setTimeout(function () {
-        openCompleteAdmissionModal(pid);
-      }, 0);
-    }
+  root.addEventListener('click', selectPatientFromListEvent);
+  root.addEventListener('pointerup', function (ev) {
+    if (!shouldHandleTouchPointerUp(ev)) return;
+    selectPatientFromListEvent(ev);
   });
 }

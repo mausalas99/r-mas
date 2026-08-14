@@ -1,10 +1,9 @@
 // Lab panel — renderOutput helpers
 import {
-  looksLikeSomeLabReport,
   renderEntry,
   isLabSectionHeaderHtml,
 } from '../labs.js';
-import { parseSomeReportTables } from '../labs-some-table.mjs';
+import { parseSomeTablesFromSources } from '../labs-some-table.mjs';
 import { normalizeFechaLabHistory } from '../tend-core.mjs';
 import { sortResLabsByClinicalOrder } from '../labs-section-order.mjs';
 import {
@@ -46,13 +45,10 @@ export function updateLabPatientBanner(patient, fechaBanner, findPatientByRegist
   banner.style.display = 'block';
 }
 
-export function attachSomeTablesParsed(result, src) {
-  result.someTablesParsed = null;
-  if (!src || !looksLikeSomeLabReport(src)) return;
-  var someParsed = parseSomeReportTables(src);
-  if (someParsed.departments && someParsed.departments.length) {
-    result.someTablesParsed = someParsed;
-  }
+export function attachSomeTablesParsed(result, src, extraSources) {
+  var list = [src];
+  if (Array.isArray(extraSources)) list = list.concat(extraSources);
+  result.someTablesParsed = parseSomeTablesFromSources(list);
 }
 
 function appendBhExtendedLines(box, text, result, labDisp, rt) {

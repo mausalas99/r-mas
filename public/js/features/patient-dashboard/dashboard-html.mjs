@@ -5,6 +5,7 @@ import { escHtml, escAttr } from '../../dom-escape.mjs';
 import { isGlucometriaMarkedAltered, isVitalAltered } from '../estado-actual-ranges.mjs';
 import { serviceById, hueForService } from './interconsult-catalog.mjs';
 import { packSoapCols } from './ea-glance-model.mjs';
+import { formatAlteredChip } from './labs-glance-model.mjs';
 
 function numText(value) {
   if (value == null || value === '') return '';
@@ -139,7 +140,7 @@ function renderDrawHtml(envio) {
     .map(function (g) {
       var chips = (g.chips || [])
         .map(function (c) {
-          return '<span class="abn">' + escHtml(c.raw || c.value || '') + '</span>';
+          return '<span class="abn">' + escHtml(formatAlteredChip(c)) + '</span>';
         })
         .join('');
       if (!chips) return '';
@@ -165,33 +166,21 @@ function renderDrawHtml(envio) {
   );
 }
 
-function renderLabsHtml(model) {
+export function renderLabsHtml(model) {
+  var pending = !!(model && model.labs && model.labs.pending);
   var envios = model && model.labs && Array.isArray(model.labs.envios) ? model.labs.envios : [];
-  var body = envios.length
-    ? '<div class="day-draws">' + envios.map(renderDrawHtml).join('') + '</div>'
-    : '<p class="empty-hint">Sin labs de hoy</p>';
+  var body = pending
+    ? ''
+    : envios.length
+      ? '<div class="day-draws">' + envios.map(renderDrawHtml).join('') + '</div>'
+      : '<p class="empty-hint">Sin labs de hoy</p>';
   return (
-    '<div class="card labs-card clickable" data-dash-action="labs-full">' +
+    '<div class="card labs-card clickable" data-dash-labs data-dash-action="labs-full">' +
     '<div class="card-h">Labs: Solo alterados</div>' +
     '<div class="card-b">' +
     body +
     '</div></div>'
   );
-}
-
-function renderEaKpisHtml(kpis) {
-  return (kpis || [])
-    .slice(0, 4)
-    .map(function (k) {
-      return (
-        '<div><small>' +
-        escHtml(k.label || '') +
-        '</small><b>' +
-        escHtml(k.value || '') +
-        '</b></div>'
-      );
-    })
-    .join('');
 }
 
 function medItemName(item) {
@@ -223,11 +212,14 @@ function renderMedItemHtml(item) {
 
 function renderSoapZoneHtml(zone, headingClass) {
   var meds = (zone.items || []).map(renderMedItemHtml).join('');
+  var letter = String(zone.letter || '');
   return (
     '<span class="' +
     (headingClass || 'z') +
+    '" data-soap="' +
+    escAttr(letter) +
     '">' +
-    escHtml(zone.letter || '') +
+    escHtml(letter) +
     (zone.subtitle ? ' <em>' + escHtml(zone.subtitle) + '</em>' : '') +
     '</span>' +
     meds
@@ -248,18 +240,6 @@ function renderEaSoapHtml(soap) {
       );
     })
     .join('');
-}
-
-function renderEaHtml(model) {
-  var ea = (model && model.ea) || { kpis: [], soap: [] };
-  return (
-    '<button class="card clickable" type="button" data-dash-action="estadoActual">' +
-    '<div class="card-h">Estado clínico</div>' +
-    '<div class="card-b"><div class="ea-glance">' +
-    '<div class="ea-kpis">' +
-    (renderEaKpisHtml(ea.kpis) || '<p class="empty-hint">Sin plan de cuidado</p>') +
-    '</div></div></div></button>'
-  );
 }
 
 function renderMedsHtml(model) {
@@ -338,12 +318,11 @@ export function renderDashboardHtml(model) {
   return (
     '<div class="patient-dash dash">' +
     renderIdentityHtml(m) +
-    '<div class="bento">' +
+    '<div class="bento vitals-labs">' +
     renderVitalsHtml(m) +
     renderLabsHtml(m) +
     '</div>' +
     '<div class="bento rest">' +
-    renderEaHtml(m) +
     renderListCardHtml('Eventualidades', 'eventualidades', m.eventualidades, 'Sin eventualidades') +
     renderListCardHtml('Pendientes', 'pendientes', m.pendientes, 'Sin pendientes') +
     '</div>' +

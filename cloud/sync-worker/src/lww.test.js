@@ -256,6 +256,72 @@ describe('applyOps LWW', () => {
     assert.equal(s.tombstones.p1, undefined);
   });
 
+  it('all-stale ops keep the same state object (no snapshot clone)', () => {
+    let s = emptyState();
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'labSidecars/p1/s1',
+        value: { id: 's1' },
+        updatedAt: '2026-08-14T10:00:00.000Z',
+        actorId: 'a',
+      },
+    ]));
+    const stale = applyOps(s, [
+      {
+        path: 'labSidecars/p1/s1',
+        value: { id: 's1', resLabs: ['ignored'] },
+        updatedAt: '2026-08-14T09:00:00.000Z',
+        actorId: 'b',
+      },
+    ]);
+    assert.equal(stale.applied.length, 0);
+    assert.equal(stale.rejected.length, 1);
+    assert.equal(stale.rejected[0].reason, 'stale');
+    assert.equal(stale.state, s);
+  });
+
+  it('clinicalOps join snapshot without assignments keeps peer patient_team_assignment', () => {
+    let s = emptyState();
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'clinicalOps',
+        value: {
+          teams: [{ team_id: 't1', name: 'A', sala: 'Sala 1' }],
+          team_membership: [{ team_id: 't1', user_id: 'u-a' }],
+          patient_team_assignment: [
+            {
+              patient_id: 'p1',
+              team_id: 't1',
+              effective_at: '2026-08-13T10:00:00.000Z',
+            },
+          ],
+        },
+        updatedAt: '2026-08-13T10:00:00.000Z',
+        actorId: 'u-a',
+      },
+    ]));
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'clinicalOps',
+        value: {
+          teams: [{ team_id: 't1', name: 'A', sala: 'Sala 1' }],
+          team_membership: [{ team_id: 't1', user_id: 'u-b' }],
+          patient_team_assignment: [],
+        },
+        updatedAt: '2026-08-13T18:00:00.000Z',
+        actorId: 'u-b',
+      },
+    ]));
+    const assignments = s.clinicalOps?.patient_team_assignment || [];
+    assert.equal(assignments.length, 1);
+    assert.equal(assignments[0].patient_id, 'p1');
+    assert.equal(assignments[0].team_id, 't1');
+    const members = s.clinicalOps?.team_membership || [];
+    assert.equal(members.length, 2);
+    assert.ok(members.some((row) => row.user_id === 'u-a'));
+    assert.ok(members.some((row) => row.user_id === 'u-b'));
+  });
+
   it('new patient id with same registro clears tombstone on re-admit', () => {
     let s = emptyState();
     ({ state: s } = applyOps(s, [

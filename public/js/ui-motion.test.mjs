@@ -5,6 +5,7 @@ import {
   getReleaseVelocity,
   springTo,
   prefersReducedMotion,
+  settlePasteSurface,
 } from './ui-motion.mjs';
 
 test('resolvePatientFieldIds — nombre desde lab', () => {
@@ -85,6 +86,18 @@ test('springTo — invalid el returns null', () => {
   assert.equal(springTo({}, { opacity: 0 }), null);
 });
 
+test('prefersReducedMotion is true when html.motion-sobrio', () => {
+  const prevDoc = globalThis.document;
+  globalThis.document = {
+    documentElement: { classList: { contains: (c) => c === 'motion-sobrio' } },
+  };
+  try {
+    assert.equal(prefersReducedMotion(), true);
+  } finally {
+    globalThis.document = prevDoc;
+  }
+});
+
 test('springTo — reduced motion snaps opacity on HTMLElement', async () => {
   const prev = globalThis.matchMedia;
   globalThis.matchMedia = (q) => ({
@@ -106,6 +119,46 @@ test('springTo — reduced motion snaps opacity on HTMLElement', async () => {
     assert.equal(typeof ctrl.stop, 'function');
     await ctrl.finished;
     assert.equal(el.style.opacity, '0.2');
+  } finally {
+    globalThis.matchMedia = prev;
+  }
+});
+
+test('settlePasteSurface reduced motion snaps opacity', async () => {
+  const prev = globalThis.matchMedia;
+  globalThis.matchMedia = (q) => ({
+    matches: String(q).includes('prefers-reduced-motion'),
+    media: q,
+    addEventListener() {},
+    removeEventListener() {},
+  });
+  try {
+    if (typeof document === 'undefined') return;
+    const el = document.createElement('div');
+    el.style.opacity = '0';
+    const ctrl = settlePasteSurface(el);
+    assert.ok(ctrl);
+    await ctrl.finished;
+    assert.equal(el.style.opacity, '1');
+  } finally {
+    globalThis.matchMedia = prev;
+  }
+});
+
+test('settlePasteSurface reduced motion snaps opacity on fake el', async () => {
+  const prev = globalThis.matchMedia;
+  globalThis.matchMedia = (q) => ({
+    matches: String(q).includes('prefers-reduced-motion'),
+    media: q,
+    addEventListener() {},
+    removeEventListener() {},
+  });
+  try {
+    const el = { style: { opacity: '0', transform: 'x' } };
+    const ctrl = settlePasteSurface(el);
+    await ctrl.finished;
+    assert.equal(el.style.opacity, '1');
+    assert.equal(el.style.transform, '');
   } finally {
     globalThis.matchMedia = prev;
   }

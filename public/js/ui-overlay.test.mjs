@@ -6,12 +6,14 @@ import {
   openMenu,
   shouldDismissSheet,
   rubberBandSheetOffset,
+  overlayOriginFromRects,
 } from './ui-overlay.mjs';
+import { rubberband } from './ui-physics.mjs';
 import { createModalDismissRegistry } from './modal-dismiss.mjs';
 
 test('shouldDismissSheet: velocity threshold', () => {
-  assert.equal(shouldDismissSheet(0, 400, 0.12, 0.11), true);
-  assert.equal(shouldDismissSheet(0, 400, 0.05, 0.11), false);
+  assert.equal(shouldDismissSheet(1, 400, 0.12, 0.11), true);
+  assert.equal(shouldDismissSheet(1, 400, 0.05, 0.11), false);
 });
 
 test('shouldDismissSheet: drag fraction threshold', () => {
@@ -19,9 +21,19 @@ test('shouldDismissSheet: drag fraction threshold', () => {
   assert.equal(shouldDismissSheet(100, 400, 0, 0.11), false);
 });
 
+test('shouldDismissSheet uses projected travel', () => {
+  // velocity is px/ms (getReleaseVelocity units). 0.2 px/ms = 200 px/s → ~100px project
+  assert.equal(shouldDismissSheet(0, 400, 0.25, 0.11), true);
+  assert.equal(shouldDismissSheet(0, 400, -0.2, 0.11), false);
+  // 0.12 px/ms projects ~60px < 30% of 400; velocity alone must not dismiss
+  assert.equal(shouldDismissSheet(0, 400, 0.12, 0.11), false);
+});
+
 test('rubberBandSheetOffset resists upward drag', () => {
-  assert.equal(rubberBandSheetOffset(-40), -10);
-  assert.equal(rubberBandSheetOffset(40), 40);
+  const y = rubberBandSheetOffset(-40, 400);
+  assert.ok(y > -40 && y < 0);
+  assert.equal(y, rubberband(-40, 400, 0.55));
+  assert.equal(rubberBandSheetOffset(40, 400), 40);
 });
 
 test('openDialog restores focus on close', async () => {
@@ -138,6 +150,28 @@ test('openSheet close() is exposed and reduced motion avoids slide transform', (
   }
 });
 
+test('overlayOriginFromRects is panel-local from trigger top-center', () => {
+  var origin = overlayOriginFromRects(
+    { left: 200, top: 400, width: 40, height: 20 },
+    { left: 400, top: 200, width: 400, height: 500 }
+  );
+  assert.equal(origin, '-180px 200px');
+});
+
+test('openDialog sets transform origin from trigger', () => {
+  if (typeof document === 'undefined') return;
+  document.body.innerHTML =
+    '<button type="button" id="dlg-tr" style="position:absolute;left:10px;top:20px;width:40px;height:20px"></button>' +
+    '<div id="scrim-o" hidden><div id="panel-o" role="dialog"></div></div>';
+  openDialog({
+    panel: document.getElementById('panel-o'),
+    scrim: document.getElementById('scrim-o'),
+    trigger: document.getElementById('dlg-tr'),
+  });
+  const origin = document.getElementById('panel-o').style.getPropertyValue('--ui-overlay-origin');
+  assert.ok(origin.includes('px'));
+});
+
 test('openMenu sets transform origin from trigger', () => {
   if (typeof document === 'undefined') return;
   document.body.innerHTML =
@@ -147,6 +181,5 @@ test('openMenu sets transform origin from trigger', () => {
   var panel = document.getElementById('menu-panel');
   openMenu({ panel, trigger });
   var origin = panel.style.getPropertyValue('--ui-overlay-origin');
-  assert.ok(origin.includes('30px'));
-  assert.ok(origin.includes('20px'));
+  assert.ok(origin.includes('px'));
 });

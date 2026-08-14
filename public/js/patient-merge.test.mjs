@@ -241,6 +241,44 @@ test('mergeLabHistorySets gana el set m?s reciente con mismo id', () => {
   assert.match(String(out[0].resLabs), /nuevo/);
 });
 
+test('mergeLabHistorySets keeps SOME sourceText over newer parsed-only Nube', () => {
+  const some =
+    'Expediente: 1\nNombre: Ana\nFecha Registro: 13/08/2026 08:00\nHEMATOLOGÍA\n';
+  const out = mergeLabHistorySets(
+    [
+      {
+        id: '100',
+        fecha: '13/08/2026',
+        hora: '08:00',
+        sourceText: some,
+        resLabs: ['QS\tK 3.1*'],
+        updatedAt: '2026-08-13T08:00:00.000Z',
+      },
+    ],
+    [
+      {
+        id: '100',
+        fecha: '13/08/2026',
+        hora: '08:00',
+        resLabs: ['QS\tK 9.9*'],
+        updatedAt: '2026-08-13T09:00:00.000Z',
+      },
+    ]
+  );
+  assert.equal(out.length, 1);
+  assert.equal(out[0].sourceText, some);
+  assert.match(String(out[0].resLabs), /K 3\.1/);
+});
+
+test('mergeLabHistorySets drops Nube clones with the same analyte values', () => {
+  const out = mergeLabHistorySets(
+    [{ id: 'local', fecha: '13/08/2026', hora: '11:40', resLabs: ['COAG\tTP 12.9 TTP 39.3* INR 1.1'] }],
+    [{ id: 'nube', fecha: '13/08/2026', hora: '11:41', resLabs: ['COAG TP 12.9 TTP 39.3* INR 1.1'] }]
+  );
+  assert.equal(out.length, 1);
+  assert.equal(out[0].id, 'local');
+});
+
 test('mergePatientEntry fusiona pendientes por id', () => {
   const a = {
     patient: { id: 'p1', registro: 'R1' },

@@ -32,6 +32,21 @@ test('formatLabsForCensoCompact solo última fecha', () => {
   assert.doesNotMatch(lines.join('\n'), /28\/05/);
 });
 
+test('formatLabsForCensoCompact includes every set from the latest day', () => {
+  var lines = formatLabsForCensoCompact([
+    { fecha: '28/05/2026', hora: '08:00', resLabs: ['BH\nHb 6'] },
+    { fecha: '29/05/2026', hora: '07:14', resLabs: ['BH\nHb 5.8*'] },
+    { fecha: '29/05/2026', hora: '21:21', resLabs: ['QS\nK 3.1*'] },
+  ]);
+  var text = lines.join('\n');
+  assert.equal(lines[0], '29/05/2026');
+  assert.match(text, /5\.8/);
+  assert.match(text, /3\.1/);
+  assert.doesNotMatch(text, /07:14|21:21|07 · 14|21 · 21/);
+  assert.doesNotMatch(text, /28\/05/);
+  assert.doesNotMatch(text, /\bHb 6\b/);
+});
+
 test('formatLabsForCensoCompact incluye resLabs completos del día', () => {
   var lines = formatLabsForCensoCompact([
     {

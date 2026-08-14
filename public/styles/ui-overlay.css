@@ -19,7 +19,7 @@
 }
 .ui-overlay-dialog {
   border-radius: var(--radius-container);
-  transform-origin: center center;
+  transform-origin: var(--ui-overlay-origin, center center);
 }
 .ui-overlay-sheet {
   position: fixed;

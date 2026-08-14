@@ -483,7 +483,7 @@ export async function registerAllFeatureRuntimes() {
   configurePatientEntries({
     runtime: ctx,
     renderPatientListLanSilent: function () {
-      if (typeof ctx.renderPatientList === 'function') ctx.renderPatientList();
+      if (typeof ctx.renderPatientList === 'function') ctx.renderPatientList({ silent: true });
     },
   });
   void import('./features/cloud-sync/nube-config-retire.mjs').then((mod) => {

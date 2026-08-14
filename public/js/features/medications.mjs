@@ -18,7 +18,6 @@ import {
   mediLlevarASOAP,
   procesarRecetaMed,
   limpiarRecetaInput,
-  incrementMedDiaTratamiento,
   copiarMedicamentosAlPortapapeles,
   setMedOutputTab,
 } from "./medications-actions.mjs";
@@ -44,7 +43,6 @@ export {
   mediLlevarASOAP,
   procesarRecetaMed,
   limpiarRecetaInput,
-  incrementMedDiaTratamiento,
   copiarMedicamentosAlPortapapeles,
   setMedOutputTab,
 };
@@ -66,6 +64,5 @@ export const medicationsWindowHandlers = {
   limpiarManejoActual,
   mediAnadirATratamiento,
   mediLlevarASOAP,
-  incrementMedDiaTratamiento,
   ...medPharmProfileWindowHandlers,
 };

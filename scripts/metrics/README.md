@@ -1,6 +1,6 @@
 # Metrics & technical debt
 
-Debt accounting is defined in `.cursor/rules/technical-debt-accounting.mdc`.
+Debt accounting: `baseline.json` is the committed snapshot; PRs must not increase `totalScore`.
 
 | File | Role |
 |------|------|

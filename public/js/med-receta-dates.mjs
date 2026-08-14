@@ -27,13 +27,24 @@ export function extractDiaTratamiento(dosisRaw) {
   return m ? parseInt(m[1], 10) : null;
 }
 
-/** @param {string} fechaDMY dd/mm/yyyy */
+/** @param {string} fechaDMY dd/mm/yyyy, optionally with a time suffix or ISO yyyy-mm-dd */
 export function parseFechaDMYToLocalDate(fechaDMY) {
-  var m = trimStr(fechaDMY).match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-  if (!m) return null;
-  var day = parseInt(m[1], 10);
-  var mon = parseInt(m[2], 10) - 1;
-  var y = parseInt(m[3], 10);
+  var t = trimStr(fechaDMY);
+  var m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  var day;
+  var mon;
+  var y;
+  if (m) {
+    day = parseInt(m[1], 10);
+    mon = parseInt(m[2], 10) - 1;
+    y = parseInt(m[3], 10);
+  } else {
+    m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (!m) return null;
+    y = parseInt(m[1], 10);
+    mon = parseInt(m[2], 10) - 1;
+    day = parseInt(m[3], 10);
+  }
   if (y < 100) y += 2000;
   var d = new Date(y, mon, day);
   if (d.getFullYear() !== y || d.getMonth() !== mon || d.getDate() !== day) return null;
@@ -57,13 +68,13 @@ export function calendarDaysSinceFechaDMY(fechaDMY, refDate) {
   return diff > 0 ? diff : 0;
 }
 
-/** Suma dayOffset a cada marcador DIA n en texto SOAP (p. ej. MEROPENEM … DIA 10 → DIA 12). */
+/** Suma dayOffset a cada marcador DIA n en texto SOAP (DIA, DÍA, DIA#). */
 export function advanceDiaInMedSoapText(text, dayOffset) {
   var off = parseInt(dayOffset, 10);
   if (!Number.isFinite(off) || off <= 0 || text == null || !String(text).trim()) {
     return trimStr(text);
   }
-  return String(text).replace(/\bDIA\s+(\d+)\b/gi, function (_m, n) {
+  return String(text).replace(/\bD[IÍ]A\s*#?\s*(\d+)\b/gi, function (_m, n) {
     return 'DIA ' + (parseInt(n, 10) + off);
   });
 }
@@ -91,6 +102,51 @@ export function effectiveDiaTratamiento(baseDia, fechaActualizacion, refDate) {
   var fecha = trimStr(fechaActualizacion);
   if (!fecha) return baseDia;
   return baseDia + calendarDaysSinceFechaDMY(fecha, refDate);
+}
+
+function applyDiaToken(text, dia) {
+  if (dia == null || !Number.isFinite(dia)) return text;
+  if (/\bD[IÍ]A\s*#?\s*\d+\b/i.test(text)) {
+    return String(text).replace(/\bD[IÍ]A\s*#?\s*\d+\b/gi, 'DIA ' + dia);
+  }
+  return text;
+}
+
+function recetaItemMatchesAbxLine(line, item) {
+  if (!item || item.suspendido || item.diaTratamiento == null) return false;
+  var token = String(item.nombreRaw || '')
+    .trim()
+    .split(/\s+/)[0];
+  return token.length >= 4 && line.toUpperCase().indexOf(token.toUpperCase()) !== -1;
+}
+
+function recetaItemForAbxLine(line, items) {
+  var list = Array.isArray(items) ? items : [];
+  for (var i = 0; i < list.length; i += 1) {
+    if (recetaItemMatchesAbxLine(line, list[i])) return list[i];
+  }
+  return null;
+}
+
+/**
+ * Día efectivo en pantalla: ítem de receta (DIA#) si hay match; si no, avanza el texto SOAP.
+ * @param {string} text
+ * @param {string | null | undefined} fechaActualizacion
+ * @param {unknown[]} [recetaItems]
+ * @param {Date} [refDate]
+ */
+export function rewriteAbxDisplayText(text, fechaActualizacion, recetaItems, refDate) {
+  var base = trimStr(text);
+  if (!base) return base;
+  var fecha = trimStr(fechaActualizacion);
+  return base
+    .split(' | ')
+    .map(function (part) {
+      var item = recetaItemForAbxLine(part, recetaItems);
+      if (item) return applyDiaToken(part, effectiveDiaTratamiento(item.diaTratamiento, fecha, refDate));
+      return fecha ? advanceAbxMedTextForManejoDate(part, fecha, refDate) : part;
+    })
+    .join(' | ');
 }
 
 /** Reemplaza el primer marcador DIA# en dosisRaw conservando formato (*DIA# n*). */

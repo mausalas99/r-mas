@@ -4,7 +4,7 @@ Cloudflare Worker + D1 room authority for **all clinical wards** (Sala 1/2/E, To
 
 **Spec:** [`../../docs/superpowers/specs/2026-08-02-cloud-sync-free-pilot-design.md`](../../docs/superpowers/specs/2026-08-02-cloud-sync-free-pilot-design.md)
 
-> **Pilot warning:** This service stores encrypted room state server-side. Only opt in from the ⇄ LAN panel when your team accepts the trade-offs in the design spec. Cloudflare Free tier has daily request and D1 write caps — see [Pilot sizing](#pilot-sizing-free-tier).
+> **Pilot warning:** This service stores **plaintext JSON** room snapshots in D1 (HTTPS in transit; not E2EE). AES-GCM at rest was dropped on Free CPU — see [`docs/core/15-security.md`](../../docs/core/15-security.md). Only opt in from ⇄ when the team accepts that. Cloudflare Free has daily request and D1 write caps — see [Pilot sizing](#pilot-sizing-free-tier).
 
 ## Scope
 
@@ -13,6 +13,17 @@ Cloudflare Worker + D1 room authority for **all clinical wards** (Sala 1/2/E, To
 | **All clinical wards** — Sala 1, Sala 2, Sala E, Torre HU, Interconsultas, UX, Eme, Área A/Pensionistas | Nube (this worker) when connected |
 
 When Nube is connected, **cloud room authority** holds the turn (no host Mac required). **Offline** = local SQLCipher only — no LAN fallback. LAN LiveSync is being retired.
+
+## Hosting (production)
+
+| | |
+|--|--|
+| URL | `https://rplus-sync.rmas-workersdev.workers.dev` |
+| Cloudflare account | `Djsalas99@gmail.com's Account` (`c231c997bf7c4e51c7a9f51d30e89e79`) |
+| D1 | `rplus-sync` (`e8e36134-36a9-40d4-9c36-3f893e2b612c`), region **WNAM** |
+| At rest | **Target:** client-encrypted blobs. **Today:** plaintext JSON in `room_state` + `mutations.ops_json` — [15-security.md](../../docs/core/15-security.md) |
+
+No custom domain in `wrangler.toml`. Equipos is a **separate** Worker (`rmas-lista-de-espera`).
 
 ---
 
@@ -91,8 +102,8 @@ This will:
 1. `npm install` in this package
 2. Create D1 `rplus-sync` and patch `wrangler.toml`
 3. Apply `schema/001-init.sql` remotely
-4. Set secret `WORKER_DATA_KEY` (AES-GCM at-rest; auto-generated if you press Enter)
-5. `wrangler deploy` → `https://rplus-sync.<account>.workers.dev`
+4. Optionally set secret `WORKER_DATA_KEY` (legacy AES-GCM decrypt of old blobs only; new writes are plaintext JSON)
+5. `wrangler deploy` → production is `https://rplus-sync.rmas-workersdev.workers.dev`
 
 Verify:
 
@@ -113,7 +124,8 @@ npm install
 npx wrangler d1 create rplus-sync
 # paste database_id into wrangler.toml
 npm run db:migrate:remote
-openssl rand -hex 32 | npx wrangler secret put WORKER_DATA_KEY
+# optional: WORKER_DATA_KEY only needed to decrypt leftover AES blobs
+# openssl rand -hex 32 | npx wrangler secret put WORKER_DATA_KEY
 npm run deploy
 ```
 
@@ -148,7 +160,7 @@ Planning model: **~47 R1** (most edits) + **~10** R2/R3/R4 (mostly readers); **~
 
 ### Mutation retention (ops log)
 
-`room_state` (encrypted snapshot) is the source of truth. The `mutations` table is only an incremental tail for peers within ~100 revisions.
+`room_state` (JSON snapshot — plaintext on Free) is the source of truth. The `mutations` table is only an incremental tail for peers within ~100 revisions.
 
 - After each successful push, the Worker deletes mutations with `revision <= room.revision - 100`.
 - Pulls with a larger gap return `needSnapshot: true` **without** loading the full ops history (avoids D1 isolate OOM).
@@ -234,7 +246,7 @@ Adds `sala_interno_access` — per-sala Interno mobile access tokens for Nube (r
 
 | Secret | Purpose |
 |--------|---------|
-| `WORKER_DATA_KEY` | 64 hex chars — AES-256-GCM for `room_state` ciphertext |
+| `WORKER_DATA_KEY` | Optional. 64 hex chars — decrypt **legacy** AES-GCM `room_state` blobs only. New writes are plaintext JSON. |
 | `SYNC_ADMIN_KEY` | Bootstrap + break-glass admin API (`X-Sync-Admin-Key` header); optional if all admins use `role=admin` sessions |
 
 ## API smoke (curl)

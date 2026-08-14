@@ -11,8 +11,11 @@ export const TREND_REFRESH_DEBOUNCE_MS = 80;
 /** @type {Record<string, number>} */
 var _revisionByPatient = Object.create(null);
 
+var _listeners = [];
+
 export function resetLabHistoryCacheForTests() {
   _revisionByPatient = Object.create(null);
+  _listeners = [];
   invalidateTrendSeriesIndexCache();
 }
 
@@ -24,11 +27,28 @@ export function invalidateTrendSeriesIndexCache() {
   _trendSeriesIndexCache.index = null;
 }
 
+export function onLabHistoryRevision(fn) {
+  if (typeof fn !== 'function') return function () {};
+  _listeners.push(fn);
+  return function () {
+    _listeners = _listeners.filter(function (x) {
+      return x !== fn;
+    });
+  };
+}
+
 export function bumpLabHistoryRevision(patientId) {
   if (patientId == null || patientId === '') return;
   var k = String(patientId);
   _revisionByPatient[k] = (_revisionByPatient[k] || 0) + 1;
   invalidateTrendSeriesIndexCache();
+  for (var i = 0; i < _listeners.length; i += 1) {
+    try {
+      _listeners[i](k);
+    } catch (_e) {
+      void _e;
+    }
+  }
 }
 
 export function getLabHistoryRevision(patientId) {

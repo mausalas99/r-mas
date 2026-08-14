@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { deriveSnapshot } from '../estado-actual-data.mjs';
 import { buildDashboardModel } from './dashboard-model.mjs';
-import { renderDashboardHtml } from './dashboard-html.mjs';
+import { renderDashboardHtml, renderLabsHtml } from './dashboard-html.mjs';
 
 const splitHistorialMonitoreo = {
   estadoClinico: {
@@ -75,10 +75,13 @@ describe('dashboard html', () => {
     assert.equal(html.includes('Abrir EA'), false);
     assert.equal(html.includes('Ver todas'), false);
     assert.equal(html.includes('Ver pendientes'), false);
-    assert.match(html, /Estado clínico/);
     assert.match(html, /Eventualidades/);
+    assert.match(html, /Disnea al deambular/);
     assert.match(html, /Pendientes/);
+    assert.match(html, /Control K y ECG hoy/);
     assert.match(html, /Cardiología/);
+    assert.equal(html.includes('Estado clínico'), false);
+    assert.equal(html.includes('ea-kpis'), false);
     assert.equal(html.includes('Generar nota'), false);
   });
 
@@ -94,18 +97,16 @@ describe('dashboard html', () => {
     assert.match(html, />142</);
   });
 
-  it('puts four or fewer KPI cells inside .ea-kpis', () => {
+  it('puts SOAP under Medicamentos and omits Estado clínico', () => {
     const html = renderDashboardHtml(modelWithVitals());
-    const kpis = html.match(/<div class="ea-kpis">([\s\S]*?)<\/div>/);
-    assert.ok(kpis);
-    const children = kpis[1].match(/<div>/g) || [];
-    assert.ok(children.length >= 1);
-    assert.ok(children.length <= 4);
-    assert.match(kpis[1], /Soporte/);
-    assert.equal(kpis[1].includes('Furosemida'), false);
+    assert.equal(html.includes('Estado clínico'), false);
+    assert.equal(html.includes('ea-kpis'), false);
+    assert.equal(html.includes('Sin plan de cuidado'), false);
+    assert.match(html, /bento vitals-labs/);
     assert.match(html, /Medicamentos/);
     assert.match(html, /Furosemida/);
     assert.match(html, /soap-pack/);
+    assert.match(html, /data-soap="HD"/);
     assert.match(html, />HD </);
     assert.equal(html.includes('Furosemida 40 mg'), false);
   });
@@ -130,6 +131,13 @@ describe('dashboard html', () => {
     assert.match(html, /Sin eventualidades/);
     assert.match(html, /Sin pendientes/);
     assert.equal(html.includes('Sin registros'), false);
+  });
+
+  it('pending labs keep the card without claiming there are none', () => {
+    const html = renderLabsHtml({ labs: { envios: [], pending: true } });
+    assert.match(html, /data-dash-labs/);
+    assert.match(html, /Labs: Solo alterados/);
+    assert.equal(html.includes('Sin labs de hoy'), false);
   });
 
   it('omits Medicamentos when SOAP is empty', () => {
@@ -172,11 +180,46 @@ describe('dashboard html', () => {
     assert.match(html, /class="vital hi"><small>Glu<\/small><b>240<\/b>/);
   });
 
+  it('labels each altered lab chip with the analyte, not a bare number', () => {
+    const html = renderDashboardHtml(modelWithVitals());
+    assert.match(html, /class="abn">Hb 8\.2\*</);
+    assert.equal(/class="abn">8\.2\*</.test(html), false);
+  });
+
   it('renders SOAP as a zoned list without category pills', () => {
     const html = renderDashboardHtml(modelWithVitals());
     assert.match(html, /class="soap-pack"/);
     assert.match(html, /class="name">Furosemida/);
+    assert.match(html, /data-soap="HD"/);
     assert.equal(html.includes('--spine-h'), false);
     assert.equal(html.includes('ea-cat'), false);
+  });
+
+  it('does not paint dose or frequency on glance med rows', () => {
+    const model = modelWithVitals();
+    model.ea = {
+      kpis: model.ea.kpis,
+      soap: [
+        {
+          letter: 'HD',
+          subtitle: 'Hemo',
+          items: [
+            { name: 'Ticagrelor', token: '', emphasis: false },
+            { name: 'ASA', token: '', emphasis: false },
+          ],
+        },
+        {
+          letter: 'NM',
+          subtitle: 'Soporte',
+          items: [{ name: 'Calcio/Vitamina D', token: '', emphasis: false }],
+        },
+      ],
+    };
+    const html = renderDashboardHtml(model);
+    assert.match(html, /class="name">Ticagrelor/);
+    assert.match(html, /class="name">Calcio\/Vitamina D/);
+    assert.equal(html.includes('c/12'), false);
+    assert.equal(/1\s*tableta/i.test(html), false);
+    assert.equal(html.includes('class="meta"'), false);
   });
 });

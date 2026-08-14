@@ -2,6 +2,10 @@ name = "rplus-sync"
 main = "src/index.js"
 compatibility_date = "2026-06-01"
 
+# Workers Paid — 30s CPU (Free was 10ms). Needed for Sala snapshot LWW.
+[limits]
+cpu_ms = 30_000
+
 [[durable_objects.bindings]]
 name = "ROOM_SYNC_HUB"
 class_name = "RoomSyncHub"

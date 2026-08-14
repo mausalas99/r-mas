@@ -5,6 +5,7 @@ import { parseMedFieldItems } from '../estado-actual-med-ui.mjs';
 import { MED_FIELD_KEYS } from '../estado-actual-data-constants.mjs';
 import { bucketsFromRecetaItems } from '../estado-actual-meds-receta-buckets.mjs';
 import { classifyMedicationSoapCategory } from '../../med-receta-soap.mjs';
+import { rewriteAbxDisplayText } from '../../med-receta-dates.mjs';
 import { glanceMedName } from './ea-glance-model.mjs';
 
 function allActiveSelMap(items) {
@@ -44,11 +45,19 @@ function dedupeMedLines(lines) {
   return out;
 }
 
+function advanceAbxLines(lines, fechaActualizacion, recetaItems, refDate) {
+  const fecha = fechaActualizacion != null ? String(fechaActualizacion).trim() : '';
+  if (!lines || !lines.length) return lines;
+  return lines.map((line) => rewriteAbxDisplayText(line, fecha, recetaItems, refDate));
+}
+
 /**
  * @param {{
  *   estadoClinico?: Record<string, unknown>,
  *   pendienteReceta?: Record<string, unknown>,
  *   recetaItems?: unknown[],
+ *   fechaActualizacion?: string,
+ *   refDate?: Date,
  * }} input
  * @returns {Record<string, string[]>}
  */
@@ -65,5 +74,13 @@ export function collectEaGlanceSoap(input) {
     ]);
     if (lines.length) soap[key] = lines;
   });
+  if (soap.abx) {
+    soap.abx = advanceAbxLines(
+      soap.abx,
+      input && input.fechaActualizacion,
+      input && input.recetaItems,
+      input && input.refDate,
+    );
+  }
   return soap;
 }

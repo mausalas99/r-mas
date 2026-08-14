@@ -2,7 +2,7 @@ import { MED_FIELD_KEYS, ensureMonitoreo } from './estado-actual-data.mjs';
 import { buildMedDropdownOptions, resolveEaAbxFechaActualizacion, ensureAbxDiaAnchorDate } from './estado-actual-meds.mjs';
 import { handleMedGridClick } from './estado-actual-med-grid-click.mjs';
 import {
-  advanceAbxMedTextForManejoDate,
+  rewriteAbxDisplayText,
   classifyMedicationSoapCategory,
   soapDestinationSelectOptionsHtml,
   mapSoapDestKeyToEaField,
@@ -88,22 +88,24 @@ function medCatPreviewText(items) {
   return short + ' (+' + (items.length - 1) + ')';
 }
 
-function displayAbxLine(text, activeId, medRecetaByPatient, monitoreo) {
+function displayAbxLine(text, activeId, medRecetaByPatient, monitoreo, refDate) {
   var fecha = resolveEaAbxFechaActualizacion(activeId, medRecetaByPatient, monitoreo);
-  if (!fecha || !text) return text;
-  return advanceAbxMedTextForManejoDate(String(text), fecha);
+  var block = activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null;
+  return rewriteAbxDisplayText(text, fecha, block && block.items, refDate);
 }
 
-function prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient) {
+function prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient, refDate) {
   var ec = monitoreo.estadoClinico || {};
   var pend = monitoreo.pendienteReceta || {};
   var items = parseMedFieldItems(ec[key]);
   var pendingVal = pend[key] != null ? String(pend[key]).trim() : '';
   if (key === 'abx') {
     items = items.map(function (line) {
-      return displayAbxLine(line, activeId, medRecetaByPatient, monitoreo);
+      return displayAbxLine(line, activeId, medRecetaByPatient, monitoreo, refDate);
     });
-    if (pendingVal) pendingVal = displayAbxLine(pendingVal, activeId, medRecetaByPatient, monitoreo);
+    if (pendingVal) {
+      pendingVal = displayAbxLine(pendingVal, activeId, medRecetaByPatient, monitoreo, refDate);
+    }
   }
   return { items: items, pendingVal: pendingVal };
 }
@@ -114,8 +116,8 @@ function prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient) {
  * @param {string | null} activeId
  * @param {Record<string, { items?: unknown[] }>} medRecetaByPatient
  */
-export function medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatient) {
-  var block = prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient);
+export function medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatient, refDate) {
+  var block = prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient, refDate);
   return block.items.length > 0 || block.pendingVal.length > 0;
 }
 
@@ -351,11 +353,18 @@ function revealMedCategoryKey(mount, grid, key, ctx) {
 
 export function renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient, opts) {
   opts = opts || {};
-  var block = prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient);
+  var refDate = opts.refDate;
+  var block = prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient, refDate);
   var items = block.items;
   var pendingVal = block.pendingVal;
   var label = EA_MED_FIELD_LABELS[key] || key;
-  var options = buildMedDropdownOptions(activeId, key, medRecetaByPatient, classifyMedicationSoapCategory);
+  var options = buildMedDropdownOptions(
+    activeId,
+    key,
+    medRecetaByPatient,
+    classifyMedicationSoapCategory,
+    refDate
+  );
   var itemsHtml =
     key === 'nm' ? renderNmMedItemsBodyHtml(key, items) : medItemsListHtml(items, key);
   var openAttr = items.length || pendingVal || opts.forceOpen ? ' open' : '';
@@ -401,16 +410,23 @@ export function renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPati
  * @param {string[]} [revealedKeys]
  * @returns {string}
  */
-export function renderMedCategoryGrid(monitoreo, activeId, medRecetaByPatient, revealedKeys) {
+export function renderMedCategoryGrid(monitoreo, activeId, medRecetaByPatient, revealedKeys, refDate) {
   revealedKeys = Array.isArray(revealedKeys) ? revealedKeys : [];
   var shownKeys = MED_FIELD_KEYS.filter(function (key) {
-    return medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatient) || revealedKeys.indexOf(key) >= 0;
+    return (
+      medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatient, refDate) ||
+      revealedKeys.indexOf(key) >= 0
+    );
   });
   var blocks = shownKeys
     .map(function (key) {
       var forceOpen =
-        revealedKeys.indexOf(key) >= 0 && !medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatient);
-      return renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient, { forceOpen: forceOpen });
+        revealedKeys.indexOf(key) >= 0 &&
+        !medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatient, refDate);
+      return renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient, {
+        forceOpen: forceOpen,
+        refDate: refDate,
+      });
     })
     .join('');
   var hiddenKeys = MED_FIELD_KEYS.filter(function (key) {

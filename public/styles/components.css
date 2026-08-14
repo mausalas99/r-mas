@@ -7,29 +7,32 @@
 .btn-med-secondary:active:not(:disabled),
 .btn-primary:active:not(:disabled),
 .btn-add:active:not(:disabled),
-.btn-header-icon:active:not(:disabled) {
-  transform: scale(0.96);
-  transition:
-    transform 100ms var(--ease-out),
-    background var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out);
+.btn-header-icon:active:not(:disabled),
+.guided-empty-actions button:active:not(:disabled),
+.patient-dash .chip:active,
+.btn-sec:active:not(:disabled),
+.todo-add-btn:active:not(:disabled) {
+  transform: scale(var(--press-scale));
+  transition: transform var(--dur-press) var(--ease-out);
 }
 
-/* Census cards */
-.patient-card:active:not(.sortable-ghost):not(.sortable-chosen) {
-  transform: scale(0.985);
-  transition:
-    transform 100ms var(--ease-out),
-    background var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out);
-}
+/* Census / chip press scale is mouse-only: iOS drops click if layout
+   changes between touchstart and touchend. */
+@media (hover: hover) and (pointer: fine) {
+  .patient-card:active:not(.sortable-ghost):not(.sortable-chosen) {
+    transform: scale(0.985);
+    transition:
+      transform 100ms var(--ease-out),
+      background var(--dur-fast) var(--ease-out),
+      border-color var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out);
+  }
 
-/* Guardia / pase chips */
-.pase-mini-card:active,
-.guardia-census-chip:active {
-  transform: scale(0.96);
-  transition: transform 100ms var(--ease-out);
+  .pase-mini-card:active,
+  .guardia-census-chip:active {
+    transform: scale(0.96);
+    transition: transform 100ms var(--ease-out);
+  }
 }
 
 html.motion-sobrio .btn-generate:active:not(:disabled),

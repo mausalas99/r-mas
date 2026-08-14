@@ -679,7 +679,7 @@ html.dark .med-pharm-modal-legend {
 }
 
 .med-pharm-meta-row .med-pharm-dosis-line::before {
-  content: '·';
+  content: '\00B7';
   margin-right: 6px;
   color: var(--text-muted);
   opacity: 0.65;

@@ -10,6 +10,7 @@ import { maybeStripAutoLabInterpretationsOnce } from './features/eventualidades-
 import {
   persistClinicalState,
   flushPersistClinicalState,
+  scheduleIdleClinicalPersist,
 } from './clinical-repo-persist.mjs';
 
 /** Module-private clinical domains; use getX()/setX() live refs. */
@@ -333,7 +334,7 @@ export function initAppState() {
   }
 }
 
-export { persistClinicalState, flushPersistClinicalState };
+export { persistClinicalState, flushPersistClinicalState, scheduleIdleClinicalPersist };
 
 /**
  * @deprecated Use persistClinicalState. Forwards for tests / residual callers.

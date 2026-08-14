@@ -28,25 +28,44 @@ function appendParsedSection(lines, set) {
   });
 }
 
-/** @param {unknown[]} sets @returns {string[]} */
-export function formatLabsForCensoCompactBody(sets) {
-  var sorted = sortLabHistoryChronological(sets || []).slice(0, 1);
-  if (!sorted.length) return [];
-
-  var set = sorted[0];
-  var fecha = set.fecha && set.fecha !== 'Anterior' ? String(set.fecha).trim() : '';
-  var lines = [];
-  if (fecha) lines.push(fecha);
-
+function appendOneCensoLabSet(lines, set) {
   var cleanResLabs = sanitizeResLabsChunks(set.resLabs || []);
   var sp = splitResLabsByTipo(cleanResLabs);
   var hasLabChunks = sp.labs.some(function (r) {
     return String(r || '').trim();
   });
-
   if (hasLabChunks) appendLabChunks(lines, set, sp);
   else appendParsedSection(lines, set);
+}
 
-  if (!lines.length || (fecha && lines.length === 1)) return [];
+function censoDayFecha(set) {
+  if (!set || !set.fecha || set.fecha === 'Anterior') return '';
+  return String(set.fecha).trim();
+}
+
+function setsFromLatestCensoDay(sets) {
+  var sorted = sortLabHistoryChronological(sets || []);
+  if (!sorted.length) return { fecha: '', daySets: [] };
+  var fecha = censoDayFecha(sorted[0]);
+  var daySets = fecha
+    ? sorted.filter(function (s) {
+        return censoDayFecha(s) === fecha;
+      })
+    : [sorted[0]];
+  return { fecha: fecha, daySets: daySets.slice().reverse() };
+}
+
+/** @param {unknown[]} sets @returns {string[]} */
+export function formatLabsForCensoCompactBody(sets) {
+  var picked = setsFromLatestCensoDay(sets);
+  if (!picked.daySets.length) return [];
+
+  var lines = [];
+  if (picked.fecha) lines.push(picked.fecha);
+  picked.daySets.forEach(function (set) {
+    appendOneCensoLabSet(lines, set);
+  });
+
+  if (!lines.length || (picked.fecha && lines.length === 1)) return [];
   return reflowLabsForCensoDisplay(lines.map(normalizeCensoPanelLine));
 }

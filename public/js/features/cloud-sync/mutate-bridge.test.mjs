@@ -62,6 +62,30 @@ describe('mutate-bridge op mapping', () => {
     assert.ok(labOp?.value?.resLabs);
   });
 
+  it('maps SOME lab sourceText onto the sidecar so peers re-parse', () => {
+    const some =
+      'Expediente: 1\nNombre: Ana\nFecha Registro: 03/08/2026 08:00\nHEMATOLOGÍA\n';
+    const ops = mapPatientEntryToOps(
+      {
+        patient: { id: 'p1', nombre: 'PAC', registro: '12345' },
+        note: {},
+        indicaciones: {},
+        labHistory: [
+          {
+            id: 'lab-some',
+            fecha: '2026-08-01',
+            resLabs: ['BH\tHb 12'],
+            sourceText: some,
+          },
+        ],
+      },
+      meta
+    );
+    const labOp = ops.find((op) => op.path === 'labSidecars/p1/lab-some');
+    assert.equal(labOp?.value?.sourceText, some);
+    assert.ok(labOp?.value?.resLabs);
+  });
+
   it('seeds missing lanUpdatedAt with a floor clock (not Date.now)', () => {
     assert.match(mutateBridgeSrc, /CENSUS_SEED_CLOCK/);
     assert.match(mutateBridgeSrc, /2000-01-01T00:00:00\.000Z/);

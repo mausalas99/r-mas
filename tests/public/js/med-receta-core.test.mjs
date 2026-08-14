@@ -107,11 +107,21 @@ test('advanceAbxMedTextForManejoDate avanza DIA según fecha de Manejo', () => {
     ),
     'MEROPENEM 1G IV C/8H DIA 12 | VANCOMICINA 1.5G IV C/12H DIA 6'
   );
+  assert.equal(
+    advanceAbxMedTextForManejoDate('LINEZOLID 600MG VO C/12H DÍA 5', '10/08/2026', new Date(2026, 7, 13)),
+    'LINEZOLID 600MG VO C/12H DIA 8'
+  );
+  assert.equal(
+    advanceAbxMedTextForManejoDate('ERTAPENEM 1G IV C/24H DIA# 3', '10/08/2026', new Date(2026, 7, 13)),
+    'ERTAPENEM 1G IV C/24H DIA 6'
+  );
 });
 
 test('parseFechaDMYToLocalDate rechaza fechas inválidas', () => {
   assert.equal(parseFechaDMYToLocalDate('31/02/2026'), null);
   assert.deepEqual(parseFechaDMYToLocalDate('10/06/2026'), new Date(2026, 5, 10));
+  assert.deepEqual(parseFechaDMYToLocalDate('10/08/2026 08:31:38 a.m.'), new Date(2026, 7, 10));
+  assert.deepEqual(parseFechaDMYToLocalDate('2026-08-10'), new Date(2026, 7, 10));
 });
 
 test('advanceDiaInMedSoapText sin offset devuelve texto igual', () => {

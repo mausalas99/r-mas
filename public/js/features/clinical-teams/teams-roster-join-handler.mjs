@@ -39,7 +39,7 @@ export async function joinClinicalTeamByButton(teamId) {
   await fetchClinicalTeamsFromDb();
   closeClinicalTeamsPanel();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { sala } }));
-  void publishClinicalTeamsAfterChange({ sala });
+  await publishClinicalTeamsAfterChange({ sala });
   void import('../cloud-sync/ensure-turn-room.mjs').then(({ ensureTurnRoomAfterTeamJoin }) =>
     ensureTurnRoomAfterTeamJoin(toast)
   );

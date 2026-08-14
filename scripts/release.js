@@ -41,7 +41,8 @@ const { curatedConstName } = require('./lib/release-notes-body');
 
 const ROOT = path.join(__dirname, '..');
 const REPO = 'mausalas99/r-mas';
-const { allReleaseArtifactNames } = require('./lib/artifact-names');
+const { allReleaseArtifactNames, humanInstallAliases } = require('./lib/artifact-names');
+const { composeGithubReleaseNotes } = require('./lib/github-release-notes');
 const APP_JS = path.join(ROOT, 'public/js/app.js');
 const RELEASE_NOTES_HIGHLIGHTS = path.join(ROOT, 'data/release-notes-highlights.mjs');
 const README = path.join(ROOT, 'README.md');
@@ -170,10 +171,11 @@ TODO: resumen en una o dos frases.
 
 ## Instalación
 
-Descarga desde: https://github.com/${REPO}/releases/tag/v${version}
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
 
-- Mac: \`R+-${version}-arm64.dmg\`, \`R+-${version}-x64.dmg\` (y zip para auto-update).
-- Windows: \`R+-${version}-x64.exe\`.
+- Mac Apple Silicon (M1–M4): \`R+-${version}-Mac-Apple-Silicon.dmg\`
+- Mac Intel: \`R+-${version}-Mac-Intel.dmg\`
+- Windows: \`R+-${version}-Windows.exe\`
 
 Tras el build local: \`npm run build:mac\` / \`npm run build:win\` (incluye write-release-yml.js).
 `;
@@ -348,6 +350,42 @@ function distFiles(version, { macOnly, winOnly }) {
     names.push(win, `${win}.blockmap`, 'latest.yml');
   }
   return names.map((n) => path.join(ROOT, 'dist', n));
+}
+
+function copyHumanInstallers(version, opts) {
+  opts = opts || {};
+  const pkg = readJson('package.json');
+  humanInstallAliases(version, pkg).forEach(function (a) {
+    if (opts.macOnly && a.to.endsWith('.exe')) return;
+    if (opts.winOnly && !a.to.endsWith('.exe')) return;
+    const from = path.join(ROOT, 'dist', a.from);
+    const to = path.join(ROOT, 'dist', a.to);
+    if (!fs.existsSync(from)) return;
+    fs.copyFileSync(from, to);
+    console.log('Instalador legible:', path.relative(ROOT, to));
+  });
+}
+
+function distUploadFiles(version, opts) {
+  const pkg = readJson('package.json');
+  const files = distFiles(version, opts).slice();
+  humanInstallAliases(version, pkg).forEach(function (a) {
+    if (opts.macOnly && a.to.endsWith('.exe')) return;
+    if (opts.winOnly && !a.to.endsWith('.exe')) return;
+    const abs = path.join(ROOT, 'dist', a.to);
+    if (fs.existsSync(abs)) files.push(abs);
+  });
+  return files;
+}
+
+function writeGithubReleaseNotesFile(version) {
+  const notesFile = path.join(ROOT, 'docs', `RELEASE_NOTES_${version}.txt`);
+  const doc = fs.existsSync(notesFile) ? fs.readFileSync(notesFile, 'utf8') : '';
+  const composed = composeGithubReleaseNotes(doc, version, { repo: REPO });
+  const out = path.join(ROOT, 'dist', `GITHUB_RELEASE_NOTES_${version}.md`);
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, composed, 'utf8');
+  return out;
 }
 
 function assertDist(version, opts) {
@@ -709,7 +747,9 @@ async function cmdPublish(argv) {
 
     if (!skipGh) {
       progress.start('gh-release');
-      const assets = distFiles(version, { macOnly, winOnly }).map((f) => path.relative(ROOT, f));
+      copyHumanInstallers(version, { macOnly, winOnly });
+      const notesMd = writeGithubReleaseNotesFile(version);
+      const assets = distUploadFiles(version, { macOnly, winOnly }).map((f) => path.relative(ROOT, f));
       const uploadOnly = ghReleaseExists(spawnSync, REPO, version);
       const ghArgs = uploadOnly
         ? ['release', 'upload', tag, '--repo', REPO, ...assets, '--clobber']
@@ -722,7 +762,7 @@ async function cmdPublish(argv) {
             '--title',
             `R+ ${version}`,
             '--notes-file',
-            `docs/RELEASE_NOTES_${version}.txt`,
+            notesMd,
             ...assets,
           ];
       progress.logCommand(`gh ${ghArgs.join(' ')}`);
@@ -746,6 +786,13 @@ async function cmdPublish(argv) {
         progress.emitLog({ stream: 'stderr', line: `Si el release ya existe: ${hint}` });
         progress.fail('gh-release');
         process.exit(created.status || 1);
+      }
+      if (uploadOnly) {
+        spawnSync(
+          'gh',
+          ['release', 'edit', tag, '--repo', REPO, '--notes-file', notesMd],
+          { cwd: ROOT, stdio: progressJson ? 'pipe' : 'inherit', encoding: 'utf8' }
+        );
       }
       progress.complete('gh-release');
       try {

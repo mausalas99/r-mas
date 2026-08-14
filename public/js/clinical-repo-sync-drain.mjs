@@ -14,7 +14,9 @@ import {
 
 /**
  * Collect unsynced change_log → enqueue outbox → mark synced_at → flush.
- * @param {{ actorId?: string }} [opts]
+ * Pass `changeIds` to project only those rows (UI persist must not drain the
+ * full backlog — persistSnapshot blobs freeze the renderer for seconds).
+ * @param {{ actorId?: string, limit?: number, changeIds?: string[] }} [opts]
  */
 export async function drainClinicalSyncProjector(opts = {}) {
   if (!canProjectClinicalChanges()) {
@@ -24,7 +26,11 @@ export async function drainClinicalSyncProjector(opts = {}) {
     return { ok: false, error: 'bridge_inactive', projected: 0 };
   }
 
-  const preview = await projectUnsyncedClinicalChanges({ actorId: opts.actorId });
+  const preview = await projectUnsyncedClinicalChanges({
+    actorId: opts.actorId,
+    limit: opts.limit,
+    changeIds: opts.changeIds,
+  });
   if (!preview.ok) {
     return { ok: false, error: preview.error || 'project_failed', projected: 0 };
   }

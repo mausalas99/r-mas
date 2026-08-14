@@ -121,4 +121,15 @@ describe('dashboard assembler', () => {
     assert.ok(model.ea.kpis.length > 0);
     assert.ok(model.ea.soap.length > 0);
   });
+
+  it('skipLabs leaves glance pending without walking lab sets', () => {
+    const model = buildDashboardModel({
+      patient: { nombre: 'X' },
+      labSets: [{ id: 'a', fecha: '13/08/2026', hora: '07:14', resLabs: ['BH\tHb 8.2*'] }],
+      todayKey: '2026-8-13',
+      skipLabs: true,
+    });
+    assert.equal(model.labs.pending, true);
+    assert.deepEqual(model.labs.envios, []);
+  });
 });

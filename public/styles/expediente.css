@@ -126,28 +126,6 @@ html:not(.dark) .lab-history-toggle:hover { background: rgba(0,0,0,0.06); }
   justify-content: flex-end;
   margin-left: auto;
 }
-.med-active-btn-group {
-  display: inline-flex;
-  align-items: stretch;
-  gap: 2px;
-  padding: 3px;
-  border: var(--border-hairline, 1px solid var(--border));
-  border-radius: var(--radius-pill, 999px);
-  background: color-mix(in oklab, var(--surface) 65%, var(--bg));
-}
-.med-active-btn-group .btn-med-secondary {
-  border: none;
-  box-shadow: none;
-  min-height: 38px;
-  padding: 7px 14px;
-}
-.med-active-btn-group .btn-med-secondary:hover {
-  box-shadow: none;
-}
-.med-active-btn-group .btn-med-secondary + .btn-med-secondary {
-  border-left: 1px solid color-mix(in oklab, var(--border) 80%, var(--action));
-  padding-left: 12px;
-}
 .med-active-fecha {
   font-size: 11px;
   font-weight: 600;
@@ -157,7 +135,7 @@ html:not(.dark) .lab-history-toggle:hover { background: rgba(0,0,0,0.06); }
   padding: 4px 0;
 }
 .med-active-fecha:not([hidden])::before {
-  content: "·";
+  content: "\00B7";
   margin-right: 8px;
   color: color-mix(in oklab, var(--text-muted) 55%, transparent);
   font-weight: 400;
@@ -185,7 +163,6 @@ html:not(.dark) .lab-history-toggle:hover { background: rgba(0,0,0,0.06); }
   padding-top: calc(16px * var(--density-space));
   border-top: 1px solid var(--border);
 }
-#med-dia-btn[hidden],
 #med-import-open-btn[hidden] { display: none !important; }
 
 .med-active-header-actions .btn-med-secondary {

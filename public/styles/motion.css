@@ -220,9 +220,9 @@ textarea.field-shake {
 }
 
 .todo-prio-chip.prio-media:hover {
-  border-color: color-mix(in oklab, var(--todo-prio-media) 52%, var(--border));
-  background: color-mix(in oklab, var(--todo-prio-media) 24%, var(--surface));
-  color: color-mix(in oklab, var(--todo-prio-media) 90%, var(--color-ink));
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+  background: color-mix(in oklab, var(--action) 6%, var(--surface));
+  color: var(--text);
 }
 
 .todo-prio-chip.prio-baja:hover {
@@ -251,9 +251,9 @@ textarea.field-shake {
 }
 
 .todo-prio-chip.prio-media {
-  border-color: color-mix(in oklab, var(--todo-prio-media) 40%, var(--border));
-  color: color-mix(in oklab, var(--todo-prio-media) 85%, var(--color-ink));
-  background: color-mix(in oklab, var(--todo-prio-media) 16%, var(--surface));
+  border-color: var(--border);
+  color: var(--text);
+  background: color-mix(in oklab, var(--color-ink) 6%, var(--surface));
 }
 
 .todo-prio-chip.prio-baja {

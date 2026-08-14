@@ -23,6 +23,14 @@ import {
   syncLabOutputHistoryAfterRender,
   prepareLabOutputBox,
 } from './lab-panel-output-helpers.mjs';
+import { settlePasteSurface } from '../ui-motion.mjs';
+
+/** First show: section. Day / history replay: output box (same Pegar y estructurar settle). */
+export function labOutputSettleEl(wasHidden, opts, outSec, box) {
+  if (wasHidden) return outSec || box;
+  if (opts && opts.fromHistory) return box || outSec;
+  return null;
+}
 
 function runFinalizeWithFreshBlocks(text) {
   var admit = autoAdmitStubPatientsFromBulkText(text, rt.findPatientByRegistro, buildBulkLabPreview);
@@ -108,8 +116,14 @@ export function renderOutput(result, opts) {
   updateLabPatientBanner(patient, fechaBanner, rt.findPatientByRegistro);
   var box = prepareLabOutputBox(fechaBanner, rt);
   var src = String(result.sourceText || '').trim();
-  attachSomeTablesParsed(result, src);
+  var extras = [];
   var groups = opts && opts.dayGroups;
+  if (groups && groups.length) {
+    groups.forEach(function (group) {
+      extras.push(group.sourceText);
+    });
+  }
+  attachSomeTablesParsed(result, src, extras);
   if (groups && groups.length) {
     groups.forEach(function (group) {
       if (groups.length > 1) appendLabHourGroupHeader(box, group);
@@ -125,7 +139,11 @@ export function renderOutput(result, opts) {
   } else {
     appendResLabChunksToBox(box, resLabs, src, result, rt.getLabOutputPrefs(), rt);
   }
-  document.getElementById('lab-output-section').style.display = 'block';
+  var outSec = document.getElementById('lab-output-section');
+  var wasHidden = !outSec || outSec.style.display === 'none';
+  if (outSec) outSec.style.display = 'block';
+  var settleEl = labOutputSettleEl(wasHidden, opts, outSec, box);
+  if (settleEl) settlePasteSurface(settleEl);
   var labRoot = document.getElementById('appcontent-lab');
   if (labRoot) labRoot.classList.remove('is-lab-chunk-loading');
   syncLabOutputHistoryAfterRender(opts, result, rt);

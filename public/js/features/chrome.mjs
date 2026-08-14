@@ -84,7 +84,7 @@ const I18N_ES = {
   'appTab.nota': 'Paciente',
   'appTab.med': 'Manejo',
   'appTab.agenda': 'Agenda',
-  'roundMode.hint': 'Ronda: paciente siguiente / anterior',
+  'roundMode.hint': '↑ / ↓ · paciente siguiente / anterior',
   'roundMode.seenTitle': 'Visto en ronda (se reinicia cada día)',
   'roundMode.sectionNota': 'Nota e indicaciones',
   'roundMode.sectionLabs': 'Laboratorio reciente',

@@ -10,7 +10,7 @@ describe('cloud-ops-events', () => {
   it('wires teams-changed to sala-scoped cloud clinical-ops push when Nube active', () => {
     assert.match(src, /export function wireCloudClinicalOpsSyncEvents/);
     assert.match(src, /isCloudSyncActive/);
-    assert.match(src, /rpc-clinical-teams-changed[\s\S]*pushClinicalOpsForSala/);
+    assert.match(src, /rpc-clinical-teams-changed[\s\S]*syncClinicalOpsForSala/);
     assert.match(src, /maybeScheduleCloudSyncPush/);
     assert.match(src, /cloud-hydrate/);
   });

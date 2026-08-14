@@ -10,6 +10,8 @@ import { mergePatientRegistrationMeta } from './patient-registration-meta.mjs';
 import { mergeCensoPatientFieldsFromBoth } from './patient-diagnosticos.mjs';
 import { isDemoPatientId } from './demo-patient.mjs';
 import { eventualidadesUpdatedAt, mergeEventualidades } from './patient-merge-eventualidades.mjs';
+import { stripDuplicateLabSets } from './lab-history-auto-store-core.mjs';
+import { looksLikeSomeLabReport } from './labs-report-refs.mjs';
 
 export { isDemoPatientId, eventualidadesUpdatedAt, mergeEventualidades };
 
@@ -204,6 +206,36 @@ export function entryUpdatedAt(entry) {
   return best;
 }
 
+function labSetHasSomeSource(set) {
+  return looksLikeSomeLabReport(String((set && set.sourceText) || ''));
+}
+
+function pickSomeSourceText(a, b) {
+  const as = labSetHasSomeSource(a) ? String(a.sourceText || '') : '';
+  const bs = labSetHasSomeSource(b) ? String(b.sourceText || '') : '';
+  if (as && bs) {
+    return compareIso(labSetTimestamp(b), labSetTimestamp(a)) >= 0 ? bs : as;
+  }
+  return as || bs;
+}
+
+/** LWW by timestamp, but a SOME report always beats parsed-only Nube values. */
+function mergeLabSetPreferSome(cur, incoming) {
+  if (!cur) return { ...incoming };
+  const incomingNewer = compareIso(labSetTimestamp(incoming), labSetTimestamp(cur)) >= 0;
+  const newer = incomingNewer ? incoming : cur;
+  const older = incomingNewer ? cur : incoming;
+  const out = { ...newer };
+  const src = pickSomeSourceText(cur, incoming);
+  if (!src) return out;
+  out.sourceText = src;
+  if (!labSetHasSomeSource(newer) && labSetHasSomeSource(older)) {
+    if (Array.isArray(older.resLabs)) out.resLabs = older.resLabs;
+    if (older.bhExtras) out.bhExtras = older.bhExtras;
+  }
+  return out;
+}
+
 /** @param {object[]} a @param {object[]} b */
 export function mergeLabHistorySets(a, b) {
   const map = new Map();
@@ -215,11 +247,9 @@ export function mergeLabHistorySets(a, b) {
     if (!s || !s.id) continue;
     const id = String(s.id);
     const cur = map.get(id);
-    if (!cur || compareIso(labSetTimestamp(s), labSetTimestamp(cur)) >= 0) {
-      map.set(id, { ...s });
-    }
+    map.set(id, mergeLabSetPreferSome(cur, s));
   }
-  return Array.from(map.values());
+  return stripDuplicateLabSets(Array.from(map.values())).sets;
 }
 
 function mergeProblemaLists(aList, bList) {

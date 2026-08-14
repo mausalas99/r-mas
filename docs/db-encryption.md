@@ -1,6 +1,8 @@
 # Base de datos cifrada (SQLCipher)
 
-R+ guarda datos clínicos y estado LAN del host en una base SQLite cifrada con SQLCipher (`rplus-clinical.db`), en el proceso principal de Electron. Esta nota es para operaciones y soporte.
+R+ guarda datos clínicos en una base SQLite cifrada con SQLCipher (`rplus-clinical.db`), en el proceso principal de Electron. Esta nota es para operaciones y soporte **en el Mac**.
+
+**Nube (Cloudflare D1) no usa SQLCipher.** Room snapshots there are plaintext JSON over HTTPS. See [docs/core/15-security.md](./core/15-security.md).
 
 ## Recompilar el módulo nativo
 

@@ -1,6 +1,7 @@
 /** Stacked toast notifications — Hybrid H glass, swipe dismiss, pause on hidden. */
 
 import { prefersReducedMotion, getReleaseVelocity } from './ui-motion.mjs';
+import { projectMomentum, rubberband } from './ui-physics.mjs';
 
 const MAX_TOASTS = 3;
 const TOAST_MS = 3500;
@@ -86,8 +87,9 @@ function resumeToastTimer(entry) {
   }, remaining);
 }
 
-export function shouldDismissToastSwipe(velocityX) {
-  return Number(velocityX) >= TOAST_SWIPE_DISMISS_VELOCITY;
+export function shouldDismissToastSwipe(velocityX, dragX) {
+  var projected = (Number(dragX) || 0) + projectMomentum((Number(velocityX) || 0) * 1000);
+  return projected > 80 || Number(velocityX) >= TOAST_SWIPE_DISMISS_VELOCITY;
 }
 
 function buildToastEl(msg, kind, id, action) {
@@ -218,6 +220,8 @@ function wireSwipeDismiss(el) {
     pointerHistory.push({ t: ev.timeStamp, x: ev.clientX, y: ev.clientY });
     if (dragX > 0) {
       el.style.transform = 'translateX(' + dragX + 'px)';
+    } else if (dragX < 0 && !prefersReducedMotion()) {
+      el.style.transform = 'translateX(' + rubberband(dragX, 220) + 'px)';
     }
   }
 
@@ -229,7 +233,7 @@ function wireSwipeDismiss(el) {
     }
     pointerHistory.push({ t: ev.timeStamp, x: ev.clientX, y: ev.clientY });
     const velocity = getReleaseVelocity(pointerHistory, { axis: 'x', now: ev.timeStamp });
-    if (shouldDismissToastSwipe(velocity) || dragX > 80) {
+    if (shouldDismissToastSwipe(velocity, dragX)) {
       removeToastEl(el, false);
       return;
     }

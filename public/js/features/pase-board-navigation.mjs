@@ -124,16 +124,17 @@ export function refreshExpedienteForAppModeChange() {
 export function refreshExpedienteAfterPatientSelect(opts) {
   opts = opts || {};
   cancelExpedienteWarm();
-  cancelDeferredIdleWork();
   invalidatePaseBoardCache();
   invalidateEaPanelCache();
   var settings = rt.getSettings();
   var tab = migrateGranularInner(rt.getActiveInner() || "resumen", settings);
   var forceRender = !!opts.patientChanged || granularMountIsEmpty(tab);
   if (forceRender || !isInnerTabContentFresh(tab, settings)) {
-    renderGranularInnerTab(tab, forceRender ? { force: true } : undefined);
+    renderGranularInnerTab(
+      tab,
+      forceRender ? { force: true, deferLabs: !!opts.patientChanged } : undefined
+    );
   }
-  warmExpedienteHeavyTabs();
 }
 
 export function switchConsolidatedTab(compositeTab) {

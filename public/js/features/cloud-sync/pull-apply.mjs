@@ -2,7 +2,7 @@
  * Apply cloud pull results into local patient/note/lab state (LAN hydration paths).
  */
 import { storage } from '../../storage.js';
-import { persistClinicalState } from '../../app-state.mjs';
+import { persistClinicalState, scheduleIdleClinicalPersist } from '../../app-state.mjs';
 import { getPatients } from '../../app-state.mjs';
 import { applyLanPatientEntries } from '../sync-apply/patient-entries.mjs';
 import { removePatientLocally, pruneOrphanTodos } from '../sync-apply/patient-delete.mjs';
@@ -309,7 +309,8 @@ export async function applyCloudState(state, opts) {
   const prunedLabs = await pruneStoredMobileLabHistoryAfterPull();
 
   if (patientSync.added || patientSync.updated || removed || prunedLabs) {
-    persistClinicalState({ immediate: true });
+    persistClinicalState({ domains: ['patients'] });
+    scheduleIdleClinicalPersist();
   }
   await recordLabPullDiagnostics(patientSync, rawCounts, filteredCounts);
   return { ...patientSync, removed };
@@ -336,7 +337,8 @@ async function applyFoldedCloudPull(fold, labCounts) {
   const prunedLabs = await pruneStoredMobileLabHistoryAfterPull();
 
   if (patientSync.added || patientSync.updated || removed || prunedLabs) {
-    persistClinicalState({ immediate: true });
+    persistClinicalState({ domains: ['patients'] });
+    scheduleIdleClinicalPersist();
   }
   await recordLabPullDiagnostics(
     patientSync,
@@ -363,7 +365,7 @@ export async function applyCloudOps(ops) {
   const filteredLabOps = countLabSidecarOps(trimmedOps);
   if (!trimmedOps.length) {
     const prunedLabs = await pruneStoredMobileLabHistoryAfterPull();
-    if (prunedLabs) persistClinicalState({ immediate: true });
+    if (prunedLabs) scheduleIdleClinicalPersist();
     return { added: 0, updated: 0, removed: false };
   }
   const fold = createOpFold();

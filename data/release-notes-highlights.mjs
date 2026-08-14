@@ -2390,10 +2390,44 @@ var RELEASE_NOTES_812 = [
   },
 ];
 
+var RELEASE_NOTES_813 = [
+  {
+    title: 'Instrumento',
+    body:
+      'Botones ink, overlays que crecen desde el control (sin rebote) y chips neutros. Se quita la cápsula <strong>+1 día</strong> junto a Importar SOME.',
+  },
+  {
+    title: 'SOME por Nube',
+    body:
+      'El turno envía el texto crudo; cada Mac reparsea si el set llega vacío. El historial por día deja menos duplicados.',
+  },
+  {
+    title: 'Censo ↑/↓',
+    body:
+      'Flechas recorren el censo visible (no al escribir). En iPad, soltar sobre la tarjeta selecciona al paciente.',
+  },
+  {
+    title: 'Nube / equipos',
+    body:
+      'Unirse o actualizar el perfil <strong>no borra</strong> asignaciones que el compañero aún no había bajado. Hay que desplegar el Worker de 8.1.3.',
+  },
+  {
+    title: 'macOS firmado',
+    body:
+      'El <code>.dmg</code> se firma con Developer ID y se notariza. En una Mac limpia no debería hacer falta clic derecho → Abrir.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.1.3 en todas</strong> las Macs el mismo día y despliega el Worker. Sin wipe; schema v23 no cambia.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_812;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_813;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.1.3': RELEASE_NOTES_813,
   '8.1.2': RELEASE_NOTES_812,
   '8.1.1': RELEASE_NOTES_811,
   '8.1.0': RELEASE_NOTES_810,

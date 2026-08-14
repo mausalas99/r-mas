@@ -208,14 +208,16 @@ var HELP_ARTICLES = [
   {
     id: 'atajos',
     title: 'Atajos de teclado',
-    keywords: 'atajos shortcuts teclado ctrl cmd escape tab',
+    keywords: 'atajos shortcuts teclado ctrl cmd escape tab flechas censo paciente',
     html:
       '<p>Ahorra tiempo con estos atajos:</p>' +
       '<ul>' +
+      '<li><strong>Ctrl/⌘ + ↩</strong> — Volver a Resumen (desde cualquier sitio, incluso con un campo o modal abierto)</li>' +
       '<li><strong>Ctrl/⌘ + 1</strong> — Paciente · <strong>2</strong> — Laboratorio · <strong>3</strong> — Manejo · <strong>4</strong> — Agenda (<strong>Pase</strong>: abre la sección en vista Normal). <strong>Repite el mismo número</strong> para ciclar subvistas: <strong>1</strong> Resumen→Clínico→Salida · <strong>2</strong> Labs→Tendencias→Cultivos · <strong>3</strong> Manejo↔Perfil · <strong>4</strong> semana actual</li>' +
       '<li><strong>Ctrl/⌘ + Shift + 3</strong> — Completa ↔ Nombre+Día (texto de egreso en Manejo actual)</li>' +
       '<li><strong>Ctrl/⌘ + [</strong> / <strong>]</strong> — Semana anterior / siguiente en Agenda</li>' +
       '<li><strong>Ctrl/⌘ + ,</strong> — Ajustes</li>' +
+      '<li><strong>↓</strong> / <strong>↑</strong> — Paciente siguiente / anterior en el censo (no aplica al escribir en un campo)</li>' +
       '<li><strong>Ctrl/⌘ + N</strong> — Nuevo paciente</li>' +
       '<li><strong>Ctrl/⌘ + G</strong> — Modo Guardia · <strong>I</strong> — Interconsulta · <strong>P</strong> — Pase (repite para volver a Sala/Interconsulta) · <strong>S</strong> — Sala</li>' +
       '<li><strong>Ctrl/⌘ + E</strong> — Estado actual (en EA → Eventualidades en Sala) · <strong>T</strong> — Tendencias (en tendencias → Cultivos) · <strong>D</strong> — Datos del paciente · <strong>M</strong> — Manejo (cicla subvistas)</li>' +

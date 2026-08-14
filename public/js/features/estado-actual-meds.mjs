@@ -1,5 +1,5 @@
 import {
-  advanceAbxMedTextForManejoDate,
+  rewriteAbxDisplayText,
   collectDietasFromRecetaBlock,
 } from '../med-receta-core.mjs';
 import {
@@ -55,25 +55,22 @@ export {
   buildMedDropdownOptions,
 };
 
-/**
- * @param {string} text
- * @param {string | null | undefined} fechaActualizacion
- * @param {Date} [refDate]
- */
-function advanceAbxTextForEa(text, fechaActualizacion, refDate) {
-  if (!text || !fechaActualizacion) return text;
-  return advanceAbxMedTextForManejoDate(String(text), fechaActualizacion, refDate);
+function recetaItemsFromOpts(opts) {
+  var id = opts && opts.activeId;
+  var map = opts && opts.medRecetaByPatient;
+  var block = id && map ? map[id] : null;
+  return block && Array.isArray(block.items) ? block.items : [];
 }
 
-/**
- * @param {Record<string, unknown>} ec
- * @param {string} fechaActualizacion
- * @param {Date} [refDate]
- */
-function withAdvancedAbxEc(ec, fechaActualizacion, refDate) {
-  if (!fechaActualizacion || !ec || !ec.abx || !String(ec.abx).trim()) return ec;
+function advanceAbxTextForEa(text, fechaActualizacion, refDate, recetaItems) {
+  if (!text) return text;
+  return rewriteAbxDisplayText(String(text), fechaActualizacion, recetaItems, refDate);
+}
+
+function withAdvancedAbxEc(ec, fechaActualizacion, refDate, recetaItems) {
+  if (!ec || !ec.abx || !String(ec.abx).trim()) return ec;
   var next = Object.assign({}, ec);
-  next.abx = advanceAbxTextForEa(String(ec.abx), fechaActualizacion, refDate);
+  next.abx = advanceAbxTextForEa(String(ec.abx), fechaActualizacion, refDate, recetaItems);
   return next;
 }
 
@@ -153,7 +150,7 @@ export function estadoClinicoForDisplay(monitoreo, opts) {
   var conf =
     monitoreo.confirmado && typeof monitoreo.confirmado === 'object' ? monitoreo.confirmado : {};
   mergePendingDietProposal(ec, pend, conf);
-  return withAdvancedAbxEc(ec, fechaActualizacion, refDate);
+  return withAdvancedAbxEc(ec, fechaActualizacion, refDate, recetaItemsFromOpts(opts));
 }
 
 /**
@@ -161,25 +158,18 @@ export function estadoClinicoForDisplay(monitoreo, opts) {
  * @param {string} fechaActualizacion
  * @param {Date} [refDate]
  */
-function pendingMedValueForText(key, pending, fechaActualizacion, refDate) {
+function pendingMedValueForText(key, pending, fechaActualizacion, refDate, recetaItems) {
   var val = String(pending).trim();
-  return key === 'abx' ? advanceAbxTextForEa(val, fechaActualizacion, refDate) : val;
+  return key === 'abx' ? advanceAbxTextForEa(val, fechaActualizacion, refDate, recetaItems) : val;
 }
 
-/**
- * @param {Record<string, unknown>} ec
- * @param {Record<string, unknown>} pend
- * @param {Record<string, unknown>} conf
- * @param {string} fechaActualizacion
- * @param {Date} [refDate]
- */
-function mergePendingMedsForText(ec, pend, conf, fechaActualizacion, refDate) {
+function mergePendingMedsForText(ec, pend, conf, fechaActualizacion, refDate, recetaItems) {
   for (var k of MED_FIELD_KEYS) {
     if (conf[k]) continue;
     var pending = pend[k];
     if (pending == null || !String(pending).trim()) continue;
     if (!ec[k] || !String(ec[k]).trim()) {
-      ec[k] = pendingMedValueForText(k, String(pending), fechaActualizacion, refDate);
+      ec[k] = pendingMedValueForText(k, String(pending), fechaActualizacion, refDate, recetaItems);
     }
   }
 }
@@ -198,7 +188,7 @@ export function estadoClinicoForText(monitoreo, opts) {
       : {};
   var conf =
     monitoreo.confirmado && typeof monitoreo.confirmado === 'object' ? monitoreo.confirmado : {};
-  mergePendingMedsForText(ec, pend, conf, fechaActualizacion, refDate);
+  mergePendingMedsForText(ec, pend, conf, fechaActualizacion, refDate, recetaItemsFromOpts(opts));
   return ec;
 }
 

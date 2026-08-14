@@ -1,12 +1,19 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildLabsGlanceForDay } from './labs-glance-model.mjs';
+import { buildLabsGlanceForDay, formatAlteredChip } from './labs-glance-model.mjs';
 
 function set(id, hora, resLabs) {
   return { id, fecha: '13/08/2026', hora, resLabs };
 }
 
 describe('labs glance', () => {
+  it('formatAlteredChip keeps analyte + value', () => {
+    assert.equal(formatAlteredChip({ label: 'Cr', value: '1.4*', raw: '1.4*' }), 'Cr 1.4*');
+    assert.equal(formatAlteredChip({ label: 'Hb', value: '8.2*', raw: '8.2*' }), 'Hb 8.2*');
+    assert.equal(formatAlteredChip({ label: '8.2', value: '8.2*', raw: '8.2*' }), '8.2*');
+    assert.equal(formatAlteredChip({ label: 'Hb', value: 'Hb 8.2*', raw: 'Hb 8.2*' }), 'Hb 8.2*');
+  });
+
   it('keeps each envío separate and only altered chips', () => {
     const model = buildLabsGlanceForDay({
       todayKey: '2026-8-13',
@@ -16,7 +23,7 @@ describe('labs glance', () => {
         set('c', '18:05', ['BH\tHb 8.0*']),
       ],
     });
-    assert.equal(model.envios.length, 3);
+    assert.equal(model.envios.length, 2);
     const dense = model.envios.find((e) => e.id === 'a');
     const sparseGaso = model.envios.find((e) => e.id === 'b');
     const sparseBh = model.envios.find((e) => e.id === 'c');
@@ -27,9 +34,42 @@ describe('labs glance', () => {
     assert.ok(chips.some((t) => String(t).endsWith('*')));
     assert.equal(chips.some((t) => t === 'Cr' || String(t).includes('1.1')), false);
     assert.equal(chips.some((t) => /pafi/i.test(String(t))), false);
-    assert.equal(sparseGaso.groups.length, 0);
-    assert.equal(sparseGaso.wide, false);
+    assert.equal(sparseGaso, undefined);
     assert.equal(sparseBh.wide, false);
+  });
+
+  it('collapses same-hour clones into one envío and omits all-normal FEB', () => {
+    const model = buildLabsGlanceForDay({
+      todayKey: '2026-8-13',
+      orderedSets: [
+        set('coag-a', '11:40', ['COAG\tTP 12.9 TTP 39.3* INR 1.1']),
+        set('coag-b', '11:40', ['COAG\tTP 12.9 TTP 39.3* INR 1.1']),
+        set('feb-a', '09:13', ['FEB\tTifO neg TifH neg ParaA neg']),
+        set('feb-b', '09:13', ['FEB\tTifO neg TifH neg ParaA neg']),
+        set('am-a', '04:23', ['BH\tHb 12.3*', 'QS\tCr 1.6*', 'ESC\tK 3.4*', 'PFHs\tAST 110*']),
+        set('am-b', '04:23', ['BH\tHb 12.3*', 'QS\tCr 1.6*', 'ESC\tK 3.4*', 'PFHs\tAST 110*']),
+      ],
+    });
+    const horas = model.envios.map((e) => String(e.hora).slice(0, 5));
+    assert.deepEqual(horas, ['11:40', '04:23']);
+    assert.equal(model.envios.length, 2);
+    const am = model.envios.find((e) => String(e.hora).slice(0, 5) === '04:23');
+    assert.equal(am.wide, true);
+    assert.equal(am.groups.length, 4);
+  });
+
+  it('merges complementary panels at the same hour into one envío', () => {
+    const model = buildLabsGlanceForDay({
+      todayKey: '2026-8-13',
+      orderedSets: [
+        set('coag', '04:23', ['COAG\tTTP 39.3*']),
+        set('qs', '04:23', ['QS\tCr 1.6*']),
+      ],
+    });
+    assert.equal(model.envios.length, 1);
+    assert.equal(String(model.envios[0].hora).slice(0, 5), '04:23');
+    const tipos = model.envios[0].groups.map((g) => g.tipo);
+    assert.equal(tipos.includes('COAG') && tipos.includes('QS'), true);
   });
 
   it('does not merge different hours on the same day', () => {
@@ -83,5 +123,25 @@ describe('labs glance', () => {
       ],
     });
     assert.equal(model.envios.length, 0);
+  });
+
+  it('ignores other days without grouping the full history', () => {
+    const others = [];
+    for (let i = 0; i < 80; i += 1) {
+      others.push({
+        id: 'old-' + i,
+        fecha: '01/08/2026',
+        hora: '07:00',
+        resLabs: ['BH\tHb 12.0*'],
+      });
+    }
+    const model = buildLabsGlanceForDay({
+      todayKey: '2026-8-13',
+      orderedSets: others.concat([
+        { id: 'today', fecha: '13/08/2026', hora: '08:00', resLabs: ['BH\tHb 8.2*'] },
+      ]),
+    });
+    assert.equal(model.envios.length, 1);
+    assert.equal(model.envios[0].id, 'today');
   });
 });

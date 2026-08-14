@@ -6,6 +6,9 @@ import {
   isDuplicateAgainstLatest,
   areDuplicateLabSets,
   findDuplicateLabSetIdsToRemove,
+  stripExactDuplicateLabSets,
+  analyteFingerprintFromResLabs,
+  stripDuplicateLabSets,
   findNormalizedSourceDuplicateGroups,
   findConflictingSameDateTimeGroups,
   findLabSetsByDateTime,
@@ -72,6 +75,41 @@ test('findDuplicateLabSetIdsToRemove vacío si hora distinta', () => {
     { id: '200', fecha: '01/01/2026', hora: '11:00', resLabs: ['Hb 12.1'] },
   ];
   assert.deepEqual(findDuplicateLabSetIdsToRemove(sets), []);
+});
+
+test('stripExactDuplicateLabSets deja un set por firma y no toca horas distintas', () => {
+  var stripped = stripExactDuplicateLabSets([
+    { id: '200', fecha: '13/08/2026', hora: '11:40', resLabs: ['COAG\tTTP 39.3*'] },
+    { id: '100', fecha: '13/08/2026', hora: '11:40', resLabs: ['COAG\tTTP 39.3*'] },
+    { id: '300', fecha: '13/08/2026', hora: '09:13', resLabs: ['FEB\tTifO neg'] },
+  ]);
+  assert.deepEqual(stripped.removedIds, ['200']);
+  assert.equal(stripped.sets.length, 2);
+  assert.equal(stripped.sets[0].id, '100');
+  assert.equal(stripped.sets[1].id, '300');
+});
+
+test('analyteFingerprintFromResLabs ignora formato de línea y cultivos sin números', () => {
+  var a = analyteFingerprintFromResLabs(['COAG\tTP 12.9 TTP 39.3* INR 1.1']);
+  var b = analyteFingerprintFromResLabs(['COAG TP 12.9 TTP 39.3* INR 1.1']);
+  assert.equal(a, b);
+  assert.match(a, /COAG\.TTP:39\.3/);
+  assert.equal(analyteFingerprintFromResLabs(['UROCULTIVO: NEGATIVO A LA FECHA']), '');
+});
+
+test('stripDuplicateLabSets une clones de Nube con mismo analito y otra hora/id', () => {
+  var stripped = stripDuplicateLabSets([
+    { id: 'nube', fecha: '13/08/2026', hora: '11:41', resLabs: ['COAG\tTP 12.9 TTP 39.3* INR 1.1'] },
+    { id: 'local', fecha: '13/08/2026', hora: '11:40', resLabs: ['COAG TP 12.9 TTP 39.3* INR 1.1'] },
+    { id: 'am', fecha: '13/08/2026', hora: '04:23', resLabs: ['BH\tHb 12.3* Hto 36.8*'] },
+  ]);
+  assert.equal(stripped.sets.length, 2);
+  assert.deepEqual(
+    stripped.sets.map(function (s) {
+      return s.id;
+    }).sort(),
+    ['am', 'local'],
+  );
 });
 
 test('findNormalizedSourceDuplicateGroups mismo sourceText distinto id', () => {

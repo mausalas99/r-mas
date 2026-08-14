@@ -5,6 +5,7 @@ import { isModeSala } from '../mode-features.mjs';
 import { buildEaMonitoreoRevision } from './estado-actual-data.mjs';
 import { getPatients, getMedRecetaByPatient } from '../app-state.mjs';
 import { getLabHistoryRevision } from '../lab-history-cache.mjs';
+import { storage } from '../storage.js';
 import { scheduleIdle } from '../deferred-work.mjs';
 import {
   consolidatedTabForGranular,
@@ -24,6 +25,7 @@ import {
 } from './expediente.mjs';
 import { renderTodoForm } from './todos.mjs';
 import { renderPatientDashboard } from './patient-dashboard/dashboard-mount.mjs';
+import { resumenGlanceCacheSuffix } from './pase-board-resumen-cache.mjs';
 import { renderRecetaHu } from './receta-hu.mjs';
 import { rt } from './pase-board-runtime.mjs';
 import {
@@ -102,6 +104,18 @@ function innerTabRenderCacheKey(tab) {
   if (tab === "estadoActual" || tab === "resumen") {
     key += "|E" + estadoActualCacheSuffix(pid);
   }
+  if (tab === "resumen") {
+    var patient = getPatients().find(function (x) {
+      return String(x.id) === pid;
+    });
+    var todos = [];
+    try {
+      todos = storage.getTodos(pid) || [];
+    } catch {
+      todos = [];
+    }
+    key += resumenGlanceCacheSuffix(patient, todos);
+  }
   return key;
 }
 
@@ -145,12 +159,18 @@ export function warmExpedienteHeavyTabs() {
     if (!rt.getActiveId() || rt.getActiveAppTab() !== "nota") return;
     var settings = rt.getSettings();
     var active = migrateGranularInner(rt.getActiveInner() || "resumen", settings);
-    ["estadoActual", "tend"].forEach(function (tab) {
-      if (tab === active) return;
-      if (isInnerTabContentFresh(tab, settings)) return;
-      renderGranularInnerTab(tab);
+    var rest = ["estadoActual", "tend"].filter(function (tab) {
+      return tab !== active && !isInnerTabContentFresh(tab, settings);
     });
-  }, 1200);
+    function warmNext() {
+      if (warmGen !== _expedienteWarmGen) return;
+      var tab = rest.shift();
+      if (!tab) return;
+      renderGranularInnerTab(tab);
+      if (rest.length) scheduleIdle(warmNext, 8000);
+    }
+    warmNext();
+  }, 8000);
 }
 
 function resolvePreloadGranularTab(el) {
@@ -237,8 +257,8 @@ function renderLightGranularTab(tab) {
   markInnerTabRendered(tab);
 }
 
-function renderResumenInnerTab(tab) {
-  renderPatientDashboard();
+function renderResumenInnerTab(tab, opts) {
+  renderPatientDashboard(null, { deferLabs: !!(opts && opts.deferLabs) });
   markInnerTabRendered(tab);
 }
 

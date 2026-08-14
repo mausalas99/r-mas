@@ -1,6 +1,12 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { getPatients } from '../../app-state.mjs';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { getPatients, getLabHistory } from '../../app-state.mjs';
+import {
+  getLabHistoryRevision,
+  resetLabHistoryCacheForTests,
+} from '../../lab-history-cache.mjs';
 import {
   applyLanPatientEntries,
   isPlaceholderPatientName,
@@ -30,6 +36,7 @@ describe('applyLanPatientEntries on Nube path', () => {
   afterEach(() => {
     getPatients().length = 0;
     getPatients().push(...patientsBefore);
+    resetLabHistoryCacheForTests();
   });
 
   it('applies cloud census without configurePatientEntries wiring', () => {
@@ -112,5 +119,53 @@ describe('applyLanPatientEntries on Nube path', () => {
       { skipTeamScopeFilter: true }
     );
     assert.equal(getPatients()[0].nombre, 'CYNTHIA LOPEZ');
+  });
+
+  it('bumps lab history revision when Nube labs land on an existing patient', () => {
+    resetLabHistoryCacheForTests();
+    getPatients().push({
+      id: 'p-labs',
+      nombre: 'HIPOLITO',
+      registro: '9',
+    });
+    getLabHistory()['p-labs'] = [];
+    const before = getLabHistoryRevision('p-labs');
+    applyLanPatientEntries(
+      [
+        {
+          patient: { id: 'p-labs', nombre: 'HIPOLITO', registro: '9' },
+          note: {},
+          indicaciones: {},
+          labHistory: [
+            {
+              id: 's1',
+              fecha: '13/08/2026',
+              hora: '08:00',
+              resLabs: ['QS\tK 3.1*'],
+            },
+          ],
+        },
+      ],
+      { skipTeamScopeFilter: true }
+    );
+    assert.ok(getLabHistoryRevision('p-labs') > before);
+    assert.equal(getLabHistory()['p-labs'].length, 1);
+  });
+});
+
+describe('applyLanPatientEntries UI persist', () => {
+  it('debounces SQLCipher persist and does not remount lab/EA panels', () => {
+    const text = readFileSync(fileURLToPath(new URL('./patient-entries.mjs', import.meta.url)), 'utf8');
+    const applyStart = text.indexOf('export function applyLanPatientEntries');
+    const applyFn = text.slice(applyStart, applyStart + 900);
+    assert.match(applyFn, /persistClinicalState\(\{ domains: \['patients'\] \}\)/);
+    assert.match(applyFn, /scheduleIdleClinicalPersist/);
+    assert.doesNotMatch(applyFn, /persistClinicalState\(\{ immediate: true \}\)/);
+    const refreshStart = text.indexOf('function refreshLanPatientUiAfterApply');
+    const refreshEnd = text.indexOf('export function applyLanPatientEntries');
+    const refresh = text.slice(refreshStart, refreshEnd);
+    assert.match(refresh, /renderPatientListLanSilent/);
+    assert.doesNotMatch(refresh, /renderLabHistoryPanel/);
+    assert.doesNotMatch(refresh, /syncHeavy/);
   });
 });

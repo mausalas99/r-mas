@@ -2,10 +2,12 @@
  * Slim cloud mutation ops so lab sidecars fit Free-pilot quotas.
  * Keep in sync with cloud/sync-worker/src/quotas.js
  *
- * Lab pipeline: PDF → parse → discard PDF. Nube carries **parsed** labs only
- * (`resLabs` + `bhExtras` + fecha/hora/id) — never raw SOME `sourceText`.
+ * Lab pipeline: PDF → parse → discard PDF. Nube prefers SOME `sourceText`
+ * so every client quietly re-parses; `resLabs` is the fallback when SOME
+ * is missing or over quota.
  */
 import { markCloudLabOpPoison } from './cloud-lab-sidecar-index.mjs';
+import { looksLikeSomeLabReport } from '../../labs-report-refs.mjs';
 
 export const CLOUD_LAB_MUTATION_MAX_BYTES = 512 * 1024;
 export const CLOUD_NOTE_MAX_BYTES = 256 * 1024;
@@ -13,24 +15,8 @@ export const CLOUD_NOTE_MAX_BYTES = 256 * 1024;
 export const CLOUD_PUSH_WARN_BODY_BYTES = 200 * 1024;
 export const CLOUD_PUSH_WARN_OP_BYTES = 180 * 1024;
 
-/** Parsed lab sidecar fields allowed on Nube (no raw paste text). */
-export const CLOUD_LAB_SET_ALLOWLIST = ['id', 'fecha', 'hora', 'resLabs', 'bhExtras'];
-
-/** Binary / temp artifacts — never sync (PDF is parse-only and deleted locally). */
-const LAB_DROP_KEYS = new Set([
-  'pdf',
-  'pdfBase64',
-  'pdfData',
-  'pdfBytes',
-  'rawHtml',
-  'html',
-  '_raw',
-  'sourceText',
-  'textoBruto',
-  'labsText',
-  'reportText',
-  'parsedBySection',
-]);
+/** Lab sidecar fields allowed on Nube. */
+export const CLOUD_LAB_SET_ALLOWLIST = ['id', 'fecha', 'hora', 'resLabs', 'bhExtras', 'sourceText'];
 
 /** @param {unknown} value */
 export function utf8JsonBytes(value) {
@@ -42,7 +28,7 @@ export function utf8JsonBytes(value) {
 }
 
 /**
- * Parsed lab set for Nube — strips raw SOME paste and derived blobs.
+ * SOME report when present; otherwise parsed labs. Non-SOME paste stays local.
  * @param {unknown} set
  */
 export function slimLabSetForCloud(set) {
@@ -51,9 +37,12 @@ export function slimLabSetForCloud(set) {
   /** @type {Record<string, unknown>} */
   const out = {};
   for (const key of CLOUD_LAB_SET_ALLOWLIST) {
+    if (key === 'sourceText') continue;
     if (!(key in src)) continue;
     out[key] = src[key];
   }
+  const some = String(src.sourceText || '');
+  if (some.trim() && looksLikeSomeLabReport(some)) out.sourceText = some;
   return out;
 }
 
@@ -94,6 +83,14 @@ export function fitLabSetToQuota(set, maxBytes = CLOUD_LAB_MUTATION_MAX_BYTES) {
   if (utf8JsonBytes(out) <= maxBytes) return out;
 
   const row = /** @type {Record<string, unknown>} */ ({ ...out });
+  if (row.sourceText) {
+    const someOnly = { ...row };
+    delete someOnly.resLabs;
+    delete someOnly.bhExtras;
+    if (utf8JsonBytes(someOnly) <= maxBytes) return someOnly;
+    delete row.sourceText;
+    if (utf8JsonBytes(row) <= maxBytes) return row;
+  }
   if (row.bhExtras) {
     delete row.bhExtras;
     if (utf8JsonBytes(row) <= maxBytes) return row;

@@ -2,12 +2,13 @@
 
 **Genre:** utilitarian clinical · **Theme:** Hybrid H (solid workbench + glass floating)  
 **Program:** `docs/superpowers/specs/2026-08-03-apple-hybrid-ui-overhaul-program.md`  
-**Última actualización:** Hybrid H complete (2026-08-03)
+**Spec:** `docs/superpowers/specs/2026-08-13-warm-instrument-ui-design.md`  
+**Última actualización:** Warm instrument (2026-08-13)
 
 ## Principios
 
 - Densidad alta sin ruido: bordes y tipografía antes que color.
-- Acento **ink** (`--color-accent` = `--color-ink`); éxito/error semánticos, no segundo brand.
+- Acento: **ink** en claro (`--color-accent` = `--color-ink`); en oscuro `#6eb6ff` en primarios; chips / `--color-accent-soft` = elevated en claro, lavado azul clínico en oscuro (sin ocre). Éxito/error semánticos, no segundo brand.
 - **Solid** para sidebar, tabs, contenido, tablas labs, Pase; **glass** solo en capas flotantes (sheets, dialogs, menús, toasts, ⌘K).
 - Nunca glass-on-glass: overlay anidado = superficie elevated sólida.
 - Sin gradientes en chrome/CTAs; sin glow índigo/púrpura.
@@ -22,7 +23,8 @@ Archivo: `public/tokens.css`
 | --- | --- |
 | `--color-paper` / `--color-surface` / `--color-content` / `--color-elevated` | App gap, chrome, well, cards/tables |
 | `--color-ink` / `--color-ink-muted` | Texto |
-| `--color-accent` | Acciones / tab activa (= ink) |
+| `--color-accent` | Acciones / tab activa: ink en claro; `#6eb6ff` en oscuro (primarios) |
+| `--color-accent-soft` / `--color-accent-soft-text` | Chips: elevated (light) / clinical blue wash (dark); never ochre |
 | `--color-danger` / `--color-success` | Alterados / LiveSync live |
 | `--material-glass-*` | Floating layers only |
 | `--ease-out` / `--ease-in-out` / `--ease-drawer` | Emil curves |
@@ -42,7 +44,7 @@ Legacy aliases (`--action`, `--surface`, `--text`, `--overlay-bg`, …) apuntan 
 | Frecuencia | Política |
 | --- | --- |
 | ⌘K, J/K paciente, tabs teclado | Sin animación |
-| Press | `.ui-pressable` → `--press-scale` |
+| Press | Action buttons + `.ui-pressable` → `--press-scale` |
 | Toast / sheet / dialog | Spec B; springs `springTo` |
 | Reduced motion | Opacity snap / cross-fade only |
 
@@ -59,6 +61,9 @@ Legacy aliases (`--action`, `--surface`, `--text`, `--overlay-bg`, …) apuntan 
 - Gradientes en botones/cards; multi-layer glow.
 - Hex sueltos en CSS nuevo: siempre `var(--…)`.
 - Animar navegación de alta frecuencia.
+- Primary relleno blanco en oscuro.
+- `999px` en action buttons (`--radius-control` 8px).
+- Voseo en copy UI (tú o impersonal).
 
 ## Stamp (CSS)
 
@@ -71,7 +76,7 @@ Legacy aliases (`--action`, `--surface`, `--text`, `--overlay-bg`, …) apuntan 
 
 ## Estado del programa
 
-**Hybrid H: completo** (Specs A–D, 2026-08-03). Hallmark / Quiet workbench queda como referencia histórica.
+**Hybrid H: completo** (Specs A–D, 2026-08-03). **Warm instrument** (2026-08-13): craft sobre Hybrid H — ver spec. Hallmark / Quiet workbench queda como referencia histórica.
 
 ### Excepciones documentadas (no brand accent)
 

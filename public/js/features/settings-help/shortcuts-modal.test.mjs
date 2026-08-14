@@ -18,10 +18,12 @@ describe('shortcuts-data', () => {
   it('⌘1 Paciente and ⌘2 Laboratorio match the strip (inner cycles)', () => {
     var tabs = SHORTCUT_GROUPS[0].items;
     assert.equal(tabs[0].label, 'Paciente');
-    assert.equal(tabs[1].label, 'Laboratorio');
-    assert.equal(tabs[2].label, 'Manejo');
+    assert.equal(tabs[1].label, 'Volver a Resumen');
+    assert.equal(tabs[1].keys.join(''), '⌘↩');
+    assert.equal(tabs[2].label, 'Laboratorio');
+    assert.equal(tabs[3].label, 'Manejo');
     assert.match(tabs[0].hint || '', /Resumen.*Clínico.*Salida/);
-    assert.match(tabs[1].hint || '', /Labs.*Tendencias.*Cultivos/);
+    assert.match(tabs[2].hint || '', /Labs.*Tendencias.*Cultivos/);
     assert.doesNotMatch(tabs[0].hint || '', /Resultados/);
   });
 
@@ -30,6 +32,20 @@ describe('shortcuts-data', () => {
     assert.equal(items.some(function (it) {
       return it.keys.length === 2 && it.keys[0] === '⌘' && it.keys[1] === 'A';
     }), false);
+  });
+
+  it('lists ↑/↓ census walk and keeps ⌘N nuevo paciente', () => {
+    var items = SHORTCUT_GROUPS.flatMap(function (g) { return g.items; });
+    var arrows = items.filter(function (it) {
+      return it.keys.length === 1 && (it.keys[0] === '↓' || it.keys[0] === '↑');
+    });
+    assert.equal(arrows.length, 2);
+    assert.match(arrows[0].hint || arrows[1].hint || '', /escribir/i);
+    var nuevo = items.find(function (it) {
+      return it.keys.join('') === '⌘N';
+    });
+    assert.ok(nuevo);
+    assert.match(nuevo.label, /Nuevo paciente/i);
   });
 });
 

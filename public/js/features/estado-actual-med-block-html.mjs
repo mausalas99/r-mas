@@ -1,6 +1,6 @@
 import { EA_MED_FIELD_LABELS, parseMedFieldItems } from './estado-actual-med-ui.mjs';
 import { buildMedDropdownOptions, resolveEaAbxFechaActualizacion } from './estado-actual-meds.mjs';
-import { advanceAbxMedTextForManejoDate, classifyMedicationSoapCategory } from '../med-receta-core.mjs';
+import { rewriteAbxDisplayText, classifyMedicationSoapCategory } from '../med-receta-core.mjs';
 
 import { escHtml, escAttr } from '../dom-escape.mjs';
 function medCatPreviewText(items) {
@@ -10,10 +10,10 @@ function medCatPreviewText(items) {
   return short + ' (+' + (items.length - 1) + ')';
 }
 
-function displayAbxLine(text, activeId, medRecetaByPatient, monitoreo) {
+function displayAbxLine(text, activeId, medRecetaByPatient, monitoreo, refDate) {
   const fecha = resolveEaAbxFechaActualizacion(activeId, medRecetaByPatient, monitoreo);
-  if (!fecha || !text) return text;
-  return advanceAbxMedTextForManejoDate(String(text), fecha);
+  const block = activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null;
+  return rewriteAbxDisplayText(text, fecha, block && block.items, refDate);
 }
 
 function buildMedCategoryBadge(pendingVal, monitoreo, key, items) {

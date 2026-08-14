@@ -50,8 +50,11 @@ function buildSoporteValue(soporte, soporteLitros) {
 const DOSE_CUT_RE =
   /\s+\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)?\s*(?:MCG|MG|G|ML|UI|U|MEQ)(?:\/H)?\b/i;
 const VIA_CUT_RE = /\s+\b(?:VO|IV|IM|SC|SL|NEB|INH|EV|C\/\d|CADA|DIA|DÍA|EN CASO|PRN|SOS)\b/i;
-const FORM_CUT_RE =
-  /\s+\b(?:SOLUCI[OÓ]N(?:ES)?|SUSPENSI[OÓ]N(?:ES)?|TABLETAS?|COMPRIMIDOS?|C[AÁ]PSULAS?|AMPOLLETAS?|INYECTABLE)\b.*$/i;
+const FORM_WORD =
+  '(?:SOLUCI[OÓ]N(?:ES)?|SUSPENSI[OÓ]N(?:ES)?|TABLETAS?|COMPRIMIDOS?|C[AÁ]PSULAS?|AMPOLLETAS?|INYECTABLE|SOBRES?)';
+const GLUED_COUNT_FORM_RE = new RegExp('\\s+\\d+(?:[.,]\\d+)?' + FORM_WORD + '\\b.*$', 'i');
+const COUNT_FORM_RE = new RegExp('\\s+\\d+(?:[.,]\\d+)?\\s+' + FORM_WORD + '\\b.*$', 'i');
+const FORM_CUT_RE = new RegExp('\\s+' + FORM_WORD + '\\b.*$', 'i');
 
 const PARTICLE_RE = /^(de|del|la|el|los|las|en|y|o|u|a)$/i;
 
@@ -90,7 +93,9 @@ export function glanceMedName(raw) {
   if (doseAt > 0) s = s.slice(0, doseAt);
   const viaAt = s.search(VIA_CUT_RE);
   if (viaAt > 0) s = s.slice(0, viaAt);
-  s = s.replace(FORM_CUT_RE, '').trim() || String(raw).trim();
+  s = s.replace(GLUED_COUNT_FORM_RE, '').trim() || s;
+  s = s.replace(COUNT_FORM_RE, '').trim() || s;
+  s = s.replace(FORM_CUT_RE, '').trim() || s;
   return prettyPhrase(s);
 }
 
@@ -122,8 +127,7 @@ export function glanceMedToken(raw) {
 function glanceMedItem(raw) {
   const name = glanceMedName(raw);
   if (!name) return null;
-  const tok = glanceMedToken(raw);
-  return { name, token: tok.text, emphasis: tok.emphasis };
+  return { name, token: '', emphasis: false };
 }
 
 function dedupeItems(items) {
@@ -156,9 +160,7 @@ function summarizeNmItems(rawLines) {
   if (!basal.length || !rapida.length) {
     return dedupeItems([...basal.map((b) => b.item), ...rapida.map((r) => r.item), ...rest]);
   }
-  const fromBasal = glanceMedToken(basal[0].raw);
-  const token = /\d+\s*UI/i.test(fromBasal.text) ? fromBasal.text : '';
-  return [{ name: 'Plan Basal Bolo', token, emphasis: false }, ...dedupeItems(rest)];
+  return [{ name: 'Plan Basal Bolo', token: '', emphasis: false }, ...dedupeItems(rest)];
 }
 
 function itemsFromRawList(rawList, isNm) {

@@ -44,6 +44,19 @@ describe('cloud-clinical-ops-sala', () => {
     assert.match(body, /applyClinicalOpsSnapshot/);
   });
 
+  it('syncClinicalOpsForSala pulls a full clinicalOps snapshot before LWW push', () => {
+    assert.match(src, /export async function syncClinicalOpsForSala/);
+    const start = src.indexOf('export async function syncClinicalOpsForSala');
+    assert.ok(start >= 0);
+    const body = src.slice(start, start + 700);
+    assert.match(body, /pullClinicalOpsForSala/);
+    assert.match(body, /since:\s*0/);
+    assert.match(body, /pushClinicalOpsForSala/);
+    const pullAt = body.indexOf('pullClinicalOpsForSala');
+    const pushAt = body.indexOf('pushClinicalOpsForSala');
+    assert.ok(pullAt >= 0 && pushAt > pullAt);
+  });
+
   it('syncCloudClinicalOpsOnConnect pulls then pushes local team salas', () => {
     const start = src.indexOf('export async function syncCloudClinicalOpsOnConnect');
     assert.ok(start >= 0);

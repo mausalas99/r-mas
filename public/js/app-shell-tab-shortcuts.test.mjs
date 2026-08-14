@@ -7,6 +7,7 @@ import {
   nextMedSubview,
   nextMedOutputTab,
   resolveExpedienteCompositeCycle,
+  runResumenHomeShortcut,
 } from './app-shell-tab-shortcuts.mjs';
 
 const INTER = { appMode: 'interconsulta' };
@@ -57,5 +58,9 @@ describe('app-shell-tab-shortcuts', () => {
   it('nextMedOutputTab alternates full and simple', () => {
     assert.equal(nextMedOutputTab('full'), 'simple');
     assert.equal(nextMedOutputTab('simple'), 'full');
+  });
+
+  it('runResumenHomeShortcut is the home jump used by ⌘↩', () => {
+    assert.equal(typeof runResumenHomeShortcut, 'function');
   });
 });

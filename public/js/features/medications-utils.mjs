@@ -22,8 +22,3 @@ export function setMedActiveLeadVisible(visible) {
   var lead = document.getElementById("med-active-lead");
   if (lead) lead.hidden = !visible;
 }
-
-export function setMedDiaBtnVisible(visible) {
-  var btn = document.getElementById("med-dia-btn");
-  if (btn) btn.hidden = !visible;
-}

@@ -3,8 +3,8 @@ import { esc } from '../dom-escape.mjs';
 import { getPatients, getNotes, getIndicaciones, getLabHistory, getMedRecetaByPatient, replaceAppStateFromBackupData, persistClinicalState } from "../app-state.mjs";
 import { getPatientsForDisplay } from "../clinical-read-model-demo.mjs";
 import { storage } from "../storage.js";
-import { isPaseMode } from "./chrome.mjs";
 import { isPitchPatientIsolationActive } from "../tour-pitch-demo-seed.mjs";
+import { handleCensusWalkKeydown } from "./patients-census-walk.mjs";
 
 let rt = {
   getActiveId() {
@@ -490,14 +490,6 @@ export function deleteExtraTemplate(id) {
   if (rt.getActiveId()) rt.renderIndicaForm();
 }
 
-function isTypingContext(target) {
-  if (!target) return false;
-  var tag = (target.tagName || "").toUpperCase();
-  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
-  if (target.isContentEditable) return true;
-  return false;
-}
-
 function handleProductivityModShortcut(e, k) {
   if (k === 'n') {
     e.preventDefault();
@@ -518,14 +510,8 @@ function handleProductivityModShortcut(e, k) {
   return false;
 }
 
-function handlePaseRoundShortcut(e) {
-  if (!isPaseMode() || !document.body || document.body.classList.contains('focus-mode')) return false;
-  if (isTypingContext(e.target) || e.metaKey || e.ctrlKey || e.altKey) return false;
-  var roundKey = (e.key || '').toLowerCase();
-  if (roundKey !== 'j' && roundKey !== 'k') return false;
-  e.preventDefault();
-  rt.advanceRondaPatient(roundKey === 'j' ? 1 : -1);
-  return true;
+function censusWalkFocusMode() {
+  return !!(document.body && document.body.classList.contains('focus-mode'));
 }
 
 function onProductivityKeydown(e) {
@@ -534,7 +520,13 @@ function onProductivityKeydown(e) {
     toggleFocusMode();
     return;
   }
-  if (handlePaseRoundShortcut(e)) return;
+  if (
+    handleCensusWalkKeydown(e, rt.advanceRondaPatient, {
+      focusMode: censusWalkFocusMode(),
+    })
+  ) {
+    return;
+  }
   var mod = e.metaKey || e.ctrlKey;
   if (!mod || e.altKey) return;
   var k = (e.key || '').toLowerCase();

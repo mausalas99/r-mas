@@ -15,6 +15,7 @@ import { QUOTAS } from './quotas.js';
 import {
   checkMutationPushRateLimit,
   tryLegacyBulkLabBackfillAck,
+  tryNoopMutationAck,
   validateMutationRequest,
 } from './mutation-guard.mjs';
 import { notifyRoomRevision } from './room-sync-notify.js';
@@ -291,6 +292,13 @@ async function handleMutations(request, env, db, roomId) {
     }
     lastApplied = [...appliedResult.applied, ...sidecarApplied];
     lastRejected = appliedResult.rejected;
+    const noopAck = tryNoopMutationAck(
+      lastApplied,
+      lastRejected,
+      expectedRevision,
+      baseRevision
+    );
+    if (noopAck) return noopAck;
     const nextRevision = expectedRevision + 1;
     const committed = await commitMutationBatch(env, db, {
       roomId,

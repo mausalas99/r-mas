@@ -39,6 +39,22 @@ export function findLabHistoryDayIndexForSet(days, idFn, setId) {
   return days.length ? days.length - 1 : -1;
 }
 
+/** ArrowLeft = older day (+1 in newest-first list). ArrowRight = newer (−1). */
+export function labHistoryDayArrowDelta(key) {
+  if (key === 'ArrowLeft') return 1;
+  if (key === 'ArrowRight') return -1;
+  return 0;
+}
+
+/**
+ * @param {{ key?: string, modifier?: boolean, typing?: boolean, labTabVisible?: boolean, hasDayPicker?: boolean }} opts
+ */
+export function canHandleLabHistoryDayArrow(opts) {
+  var o = opts || {};
+  if (o.modifier || o.typing || !o.labTabVisible || !o.hasDayPicker) return false;
+  return labHistoryDayArrowDelta(o.key) !== 0;
+}
+
 /** Clamped day step — stays at either end instead of wrapping. */
 export function stepLabHistoryDayIndex(days, currentIndex, delta) {
   if (!days || !days.length) return -1;

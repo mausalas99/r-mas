@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildEventualidadesPanelHtml } from './eventualidades-panel-html.mjs';
+import { buildEventualidadesPanelHtml, removeEventualidadCardEl } from './eventualidades-panel-html.mjs';
 
 const emptyCtx = {
   editingEntryId: null,
@@ -50,4 +50,53 @@ test('buildEventualidadesPanelHtml empty: compose visible, no Labs copy', () => 
   assert.doesNotMatch(html, /ev-mode-switch/);
   assert.doesNotMatch(html, />Labs</);
   assert.doesNotMatch(html, /interpretaciones/i);
+});
+
+test('removeEventualidadCardEl drops one card and keeps the other', { skip: typeof document === 'undefined' }, () => {
+  const mount = document.createElement('div');
+  mount.innerHTML = buildEventualidadesPanelHtml(
+    [
+      {
+        day: '2026-08-03',
+        label: 'Hoy',
+        isToday: true,
+        entries: [
+          { id: 'ev_1', at: '2026-08-03T10:00:00.000Z', text: 'NAUSEA' },
+          { id: 'ev_2', at: '2026-08-03T11:00:00.000Z', text: 'FIEBRE' },
+        ],
+      },
+    ],
+    true,
+    null,
+    { entries: [], labsText: '' },
+    'note',
+    emptyCtx
+  );
+  assert.equal(removeEventualidadCardEl(mount, 'ev_1'), true);
+  assert.equal(mount.querySelector('[data-entry-id="ev_1"]'), null);
+  assert.ok(mount.querySelector('[data-entry-id="ev_2"]'));
+  assert.ok(mount.querySelector('.ev-day'));
+});
+
+test('removeEventualidadCardEl shows empty timeline when last card is removed', { skip: typeof document === 'undefined' }, () => {
+  const mount = document.createElement('div');
+  mount.innerHTML = buildEventualidadesPanelHtml(
+    [
+      {
+        day: '2026-08-03',
+        label: 'Hoy',
+        isToday: true,
+        entries: [{ id: 'ev_1', at: '2026-08-03T10:00:00.000Z', text: 'NAUSEA' }],
+      },
+    ],
+    true,
+    null,
+    { entries: [], labsText: '' },
+    'note',
+    emptyCtx
+  );
+  assert.equal(removeEventualidadCardEl(mount, 'ev_1'), true);
+  assert.equal(mount.querySelector('[data-entry-id]'), null);
+  assert.ok(mount.querySelector('.ev-timeline--empty'));
+  assert.match(mount.innerHTML, /Aún no hay eventualidades/);
 });

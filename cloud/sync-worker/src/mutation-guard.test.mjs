@@ -5,6 +5,7 @@ import { syncErrorStatus } from './errors.js';
 import {
   checkMutationPushRateLimit,
   tryLegacyBulkLabBackfillAck,
+  tryNoopMutationAck,
   summarizeMutationOpsJson,
   validateMutationRequest,
 } from './mutation-guard.mjs';
@@ -53,6 +54,26 @@ describe('mutation-guard', () => {
     );
     assert.equal(
       tryLegacyBulkLabBackfillAck('labSidecars/p1', [{ path: 'a', value: 1 }, { path: 'b', value: 2 }], 1, 1),
+      null
+    );
+  });
+
+  it('acks all-rejected mutations without a revision bump', async () => {
+    const res = tryNoopMutationAck(
+      [],
+      [{ op: { path: 'labSidecars/p1/s1' }, reason: 'stale' }],
+      6535,
+      6534
+    );
+    assert.ok(res instanceof Response);
+    const body = await res.json();
+    assert.equal(body.revision, 6535);
+    assert.equal(body.applied.length, 0);
+    assert.equal(body.rejected.length, 1);
+    assert.equal(body.needPull, true);
+    assert.equal(body.noop, true);
+    assert.equal(
+      tryNoopMutationAck([{ path: 'entries/p1/fields' }], [], 10, 9),
       null
     );
   });

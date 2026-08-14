@@ -56,7 +56,7 @@ export function formatLabsForCenso(sets, maxDates) {
 }
 
 /**
- * Laboratorios del día más reciente: texto completo (sin resumen ni truncado).
+ * Laboratorios de todo el día más reciente: texto completo (sin resumen ni truncado).
  * @param {unknown[]} sets
  * @returns {string[]}
  */

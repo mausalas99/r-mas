@@ -155,12 +155,12 @@ export async function refreshClinicalOpsDirectory(options = {}) {
 export async function publishClinicalTeamsAfterChange(options = {}) {
   if (isCloudSyncActive()) {
     try {
-      const { pushClinicalOpsForSala, pushClinicalOpsForSalas, listLocalTeamSalas } = await import(
+      const { syncClinicalOpsForSala, pushClinicalOpsForSalas, listLocalTeamSalas } = await import(
         '../cloud-sync/cloud-clinical-ops-sala.mjs'
       );
       const sala = normalizeCloudSala(options.sala || '');
       const push = sala
-        ? await pushClinicalOpsForSala(sala)
+        ? await syncClinicalOpsForSala(sala)
         : await pushClinicalOpsForSalas(await listLocalTeamSalas());
       if (push?.ok) return { ok: true, channel: 'nube' };
     } catch {

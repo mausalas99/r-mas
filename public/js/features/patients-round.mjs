@@ -13,6 +13,7 @@ import {
 import { isPatientAdmissionIncomplete } from '../patient-admission-incomplete.mjs';
 import { renderPatientSidebarBodyHtml } from '../patient-sidebar-card.mjs';
 import { renderPatientDashboard } from './patient-dashboard/dashboard-mount.mjs';
+import { nextCensusPatientId } from './patients-census-walk.mjs';
 
 var _lastRondaNavIds = [];
 var _roundOverviewMode = true;
@@ -93,6 +94,11 @@ export function togglePatientRoundSeen(ev, patientId) {
 }
 
 function hideRoundOverviewLayout(overview, classic, fullbar) {
+  var alreadyClassic =
+    overview.style.display === 'none' && classic.style.display === 'flex';
+  if (alreadyClassic && !(fullbar && fullbar.classList.contains('is-visible'))) {
+    return;
+  }
   overview.style.display = 'none';
   classic.style.display = 'flex';
   if (fullbar) {
@@ -175,20 +181,12 @@ export function openFullExpedienteFromRound(tab) {
   rt.switchInnerTab(tname);
 }
 
+/** ↑/↓ (and Pase ronda) — walk the rendered census in any work mode. */
 export function advanceRondaPatient(delta) {
-  if (!isPaseMode()) return;
   if (isPatientBulkSelectMode()) return;
-  if (!_lastRondaNavIds.length) return;
-  var cur = rt.getActiveId() != null ? String(rt.getActiveId()) : '';
-  var idx = _lastRondaNavIds.indexOf(cur);
-  if (idx < 0) {
-    patientsBridge.selectPatient(_lastRondaNavIds[delta > 0 ? 0 : _lastRondaNavIds.length - 1]);
-    return;
-  }
-  var next = idx + delta;
-  if (next < 0) next = _lastRondaNavIds.length - 1;
-  if (next >= _lastRondaNavIds.length) next = 0;
-  patientsBridge.selectPatient(_lastRondaNavIds[next]);
+  var next = nextCensusPatientId(_lastRondaNavIds, rt.getActiveId(), delta);
+  if (next == null) return;
+  patientsBridge.selectPatient(next);
 }
 
 export function scrollActiveRondaCardIntoView() {

@@ -56,7 +56,7 @@ function pickSnapshotFields(res) {
 
 /**
  * @param {{ type: string } & Record<string, unknown>} command
- * @param {{ actorId?: string, source?: string }} [meta]
+ * @param {{ actorId?: string, source?: string, echoSnapshot?: boolean }} [meta]
  * @returns {Promise<{ ok: boolean, error?: string, changedKeys?: string[], changeId?: string|null } & Record<string, unknown>>}
  */
 export async function executeClinicalCommand(command, meta = {}) {
@@ -68,6 +68,7 @@ export async function executeClinicalCommand(command, meta = {}) {
     meta: {
       actorId: meta.actorId,
       source: meta.source || 'ui',
+      echoSnapshot: meta.echoSnapshot,
     },
   });
   if (!res || typeof res !== 'object') {
@@ -81,16 +82,18 @@ export async function executeClinicalCommand(command, meta = {}) {
     changedKeys: Array.isArray(res.changedKeys) ? res.changedKeys : [],
     changeId: res.changeId != null ? String(res.changeId) : null,
   };
-  const snapshot = pickSnapshotFields(res);
-  if (Object.keys(snapshot).length) {
-    _applyRepoSnapshot(snapshot, { source: 'clinical-command' });
-    Object.assign(out, snapshot);
+  if (meta.echoSnapshot !== false) {
+    const snapshot = pickSnapshotFields(res);
+    if (Object.keys(snapshot).length) {
+      _applyRepoSnapshot(snapshot, { source: 'clinical-command' });
+      Object.assign(out, snapshot);
+    }
   }
   return out;
 }
 
 /**
- * @param {{ actorId?: string, limit?: number }} [opts]
+ * @param {{ actorId?: string, limit?: number, changeIds?: string[] }} [opts]
  * @returns {Promise<{ ok: boolean, error?: string, mutations?: { clientMutationId: string, ops: unknown[] }[], skipIds?: string[] }>}
  */
 export async function projectUnsyncedClinicalChanges(opts = {}) {
@@ -100,6 +103,7 @@ export async function projectUnsyncedClinicalChanges(opts = {}) {
   const res = await window.electronAPI.dbClinicalProjectUnsynced({
     actorId: opts.actorId,
     limit: opts.limit,
+    changeIds: Array.isArray(opts.changeIds) ? opts.changeIds : undefined,
   });
   if (!res || typeof res !== 'object' || res.ok === false) {
     return { ok: false, error: String(res?.error || 'project_failed') };

@@ -231,6 +231,18 @@ export async function pullClinicalOpsForSala(sala, opts = {}) {
   return { ok: true, sala: normalized, ops: ops.length };
 }
 
+/**
+ * Pull remote clinicalOps (full snapshot) then push local SQLCipher export.
+ * Join/create/profile must do this — a stale LWW snapshot wipes peer assignments.
+ * @param {string} sala
+ */
+export async function syncClinicalOpsForSala(sala) {
+  const normalized = normalizeCloudSala(sala);
+  if (!isCloudSala(normalized)) return { ok: false, reason: 'invalid_sala' };
+  await pullClinicalOpsForSala(normalized, { since: 0 }).catch(() => null);
+  return pushClinicalOpsForSala(normalized);
+}
+
 /** @param {string[]} salas */
 export async function pushClinicalOpsForSalas(salas) {
   const targets = [
@@ -243,7 +255,7 @@ export async function pushClinicalOpsForSalas(salas) {
   if (!targets.length) return { ok: false, reason: 'no_salas' };
   let last = { ok: false, reason: 'no_push' };
   for (const sala of targets) {
-    last = await pushClinicalOpsForSala(sala);
+    last = await syncClinicalOpsForSala(sala);
   }
   return last;
 }

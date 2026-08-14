@@ -16,6 +16,7 @@ import {
   runMedOutputTabShortcut,
   runMedTabShortcut,
   runAgendaWeekNavShortcut,
+  runResumenHomeShortcut,
 } from './app-shell-tab-shortcuts.mjs';
 import { markTabShortcutsAdopted } from './keyboard-shortcuts-nudge.mjs';
 
@@ -48,6 +49,8 @@ var CODE_TO_KEY = {
   Comma: ',',
   BracketLeft: '[',
   BracketRight: ']',
+  Enter: 'enter',
+  NumpadEnter: 'enter',
 };
 
 /** Layout-safe: prefer e.code so ⌘1/⌘E/⌘T work when e.key is empty or dead. */
@@ -212,6 +215,16 @@ function handleShellMedOutputShortcut(e, key) {
   return true;
 }
 
+function handleShellResumenHomeShortcut(e, key) {
+  if (e.shiftKey || e.altKey) return false;
+  if (key !== 'enter') return false;
+  e.preventDefault();
+  e.stopPropagation();
+  noteTabNavigationShortcutUsed();
+  runResumenHomeShortcut();
+  return true;
+}
+
 /** @param {(msg: string, type?: string) => void} showToast */
 function onShellModifierKeydown(e, showToast) {
   var key = normalizeShellShortcutKey(e);
@@ -223,6 +236,7 @@ function onShellModifierKeydown(e, showToast) {
   lastShellShortcutAt = now;
   lastShellShortcutSig = sig;
 
+  if (handleShellResumenHomeShortcut(e, key)) return;
   if (handleShellMedOutputShortcut(e, key)) return;
   if (handleShellAgendaNavShortcut(e, key)) return;
   if (handleShellDigitTabShortcut(e, key)) return;

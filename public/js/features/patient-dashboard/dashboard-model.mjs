@@ -57,6 +57,7 @@ function resolveVitalsSnapshot(monitoreo) {
  *   eventualidades?: unknown[],
  *   pendientes?: unknown[],
  *   todayKey?: string,
+ *   skipLabs?: boolean,
  * }} params
  */
 export function buildDashboardModel({
@@ -67,11 +68,14 @@ export function buildDashboardModel({
   eventualidades,
   pendientes,
   todayKey,
+  skipLabs,
 } = {}) {
   const p = patient ?? {};
-  const labs = labSets
-    ? buildLabsGlanceForDay({ todayKey: todayKey ?? localTodayKey(), orderedSets: labSets })
-    : { envios: [] };
+  const labs = skipLabs
+    ? { envios: [], pending: true }
+    : labSets
+      ? buildLabsGlanceForDay({ todayKey: todayKey ?? localTodayKey(), orderedSets: labSets })
+      : { envios: [] };
   return {
     view: resolveView(inner),
     identity: buildIdentity(p),

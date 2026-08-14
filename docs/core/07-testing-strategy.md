@@ -55,4 +55,4 @@ Los hooks `pretest` / `posttest` hacen esto automáticamente cuando corres `npm 
 
 - Mapa de dominios y parsers: `docs/logic/logic-index.md`
 - Índice de features: `docs/features/features-index.md`
-- Mapa de código: `.cursor/rules/project-context.mdc`
+- Mapa de código: `docs/core/04-directory-structure.md`

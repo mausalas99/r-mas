@@ -4,6 +4,8 @@ import {
   clusterDayLabSets,
   buildDayLabView,
   buildDayOutputPayload,
+  pickLabworkGroup,
+  pickSomeSourceText,
   buildLabHistoryDayOptionsHtml,
   daySelectValue,
   parseDaySelectValue,
@@ -100,6 +102,55 @@ describe('buildDayLabView', () => {
     assert.ok(payload.result.resLabs.some(function (row) {
       return /BH/.test(String(row));
     }));
+  });
+
+  it('keeps Tablas/diagramas on a labwork group when newest is cultivo', () => {
+    var some =
+      'Expediente: 1\nNombre: X\nHEMATOLOGÍA\nBH Hb 12.3';
+    var payload = buildDayOutputPayload({
+      rows: [
+        {
+          set: {
+            id: 'cult',
+            fecha: '11/08/2026',
+            hora: '21:21',
+            resLabs: ['UROCULTIVO: NEGATIVO'],
+            sourceText: 'cultivo crudo',
+          },
+        },
+        {
+          set: {
+            id: 'labs',
+            fecha: '11/08/2026',
+            hora: '09:32',
+            resLabs: ['BH\tHb 12.3*'],
+            sourceText: some,
+          },
+        },
+      ],
+    });
+    assert.ok(payload);
+    assert.equal(payload.newest.tipoLabel, 'Cultivo');
+    assert.equal(payload.labwork.tipoLabel, 'Labs');
+    assert.match(payload.result.sourceText, /Expediente/);
+    assert.ok(payload.result.resLabs.some(function (row) {
+      return /BH/.test(String(row));
+    }));
+  });
+});
+
+describe('pickLabworkGroup / pickSomeSourceText', () => {
+  it('skips cultivo for diagrams and prefers a SOME source', () => {
+    var groups = [
+      { tipoLabel: 'Cultivo', resLabs: ['UROCULTIVO: NEGATIVO'], sourceText: 'cultivo' },
+      {
+        tipoLabel: 'Labs',
+        resLabs: ['BH\tHb 8'],
+        sourceText: 'Expediente: 1\nNombre: X\nHEMATOLOGÍA',
+      },
+    ];
+    assert.equal(pickLabworkGroup(groups).tipoLabel, 'Labs');
+    assert.match(pickSomeSourceText(groups), /Expediente/);
   });
 });
 

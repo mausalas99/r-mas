@@ -7,6 +7,7 @@ import {
   buildTrendSeriesIndex,
   getLabHistoryRevision,
   getTrendRenderWindow,
+  onLabHistoryRevision,
   resetLabHistoryCacheForTests,
   trendCatalogSeriesKey,
 } from './lab-history-cache.mjs';
@@ -34,6 +35,19 @@ test('getTrendRenderWindow catalog returns last 12 or shorter', () => {
   assert.deepEqual(getTrendRenderWindow(short, 'catalog'), short);
   var long = Array.from({ length: 20 }, (_, i) => ({ id: String(i) }));
   assert.equal(getTrendRenderWindow(long, 'catalog').length, 12);
+});
+
+test('bumpLabHistoryRevision notifies listeners', () => {
+  resetLabHistoryCacheForTests();
+  var seen = [];
+  var off = onLabHistoryRevision(function (pid) {
+    seen.push(pid);
+  });
+  bumpLabHistoryRevision('p1');
+  assert.deepEqual(seen, ['p1']);
+  off();
+  bumpLabHistoryRevision('p1');
+  assert.deepEqual(seen, ['p1']);
 });
 
 test('bumpLabHistoryRevision is monotonic per patient', () => {

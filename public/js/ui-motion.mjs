@@ -4,6 +4,10 @@ import { animate } from 'motion';
 
 export function prefersReducedMotion() {
   try {
+    if (typeof document !== 'undefined' && document.documentElement
+        && document.documentElement.classList.contains('motion-sobrio')) {
+      return true;
+    }
     var media = globalThis.matchMedia;
     if (!media && typeof window !== 'undefined') media = window.matchMedia;
     if (!media) return false;
@@ -74,6 +78,20 @@ export function springTo(el, keyframes, options) {
     },
     finished: controls.finished || Promise.resolve(),
   };
+}
+
+export function settlePasteSurface(el) {
+  if (!el || typeof el.style !== 'object') return { stop: function () {}, finished: Promise.resolve() };
+  if (prefersReducedMotion()) {
+    el.style.opacity = '1';
+    el.style.transform = '';
+    return { stop: function () {}, finished: Promise.resolve() };
+  }
+  el.style.opacity = '0';
+  return springTo(el, { opacity: [0, 1], transform: ['translateY(8px)', 'translateY(0)'] }, {
+    bounce: 0,
+    duration: 0.3,
+  });
 }
 
 export function shakeField(el) {

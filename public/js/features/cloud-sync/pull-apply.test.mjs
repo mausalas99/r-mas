@@ -223,6 +223,12 @@ describe('pull-apply sync-apply wiring (Phase 3)', () => {
     assert.match(pullApplySrc, /renderPatientList/);
   });
 
+  it('debounces SQLCipher persist after census pull', () => {
+    assert.match(pullApplySrc, /persistClinicalState\(\{ domains: \['patients'\] \}\)/);
+    assert.match(pullApplySrc, /scheduleIdleClinicalPersist/);
+    assert.doesNotMatch(pullApplySrc, /persistClinicalState\(\{ immediate: true \}\)/);
+  });
+
   it('desktop Nube applies full sala census; mobile keeps entries until team scope is ready', () => {
     const start = pullApplySrc.indexOf('function shouldSkipTeamScopeFilterOnCloudPull');
     assert.ok(start >= 0);

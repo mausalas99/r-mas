@@ -16,9 +16,11 @@
   flex: 1;
   min-height: 0;
   margin-top: 0;
+  padding: calc(12px * var(--density-space, 1));
   border: none;
   border-radius: 0;
   box-shadow: none;
+  background: transparent;
 }
 
 .lab-inner-nav.inner-tab-bar {
@@ -27,7 +29,8 @@
   align-items: center;
   gap: calc(8px * var(--density-space, 1));
   margin: 0;
-  padding: calc(6px * var(--density-space, 1)) calc(16px * var(--density-space, 1));
+  padding: calc(6px * var(--density-space, 1)) calc(8px * var(--density-space, 1)) calc(6px * var(--density-space, 1))
+    calc(16px * var(--density-space, 1));
   min-height: calc(36px * var(--density-space, 1));
   background: var(--surface);
   border: 0;
@@ -78,7 +81,7 @@ html.tab-bar-indicators-ready html.dark .lab-inner-nav .inner-tab.active {
   overflow: auto;
   display: flex;
   flex-direction: column;
-  padding: calc(24px * var(--density-space, 1));
+  padding: calc(12px * var(--density-space, 1));
   gap: calc(20px * var(--density-space, 1));
 }
 
@@ -89,6 +92,12 @@ html.tab-bar-indicators-ready html.dark .lab-inner-nav .inner-tab.active {
 
 #appcontent-lab #lab-input-section.card {
   border-radius: 12px !important;
+}
+
+#appcontent-lab #lab-input-section > .card-header,
+#appcontent-lab .lab-active-shell .card > .card-header {
+  padding-left: calc(12px * var(--density-space, 1));
+  padding-right: calc(12px * var(--density-space, 1));
 }
 
 #appcontent-lab #lab-input-section > .card-header {

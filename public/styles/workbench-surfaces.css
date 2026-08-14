@@ -540,8 +540,9 @@ html.dark .exp-pendientes-mount .todo-composer .todo-add-btn:hover {
    2 · LABORATORIO WORKBENCH
    ═══════════════════════════════════════════════════════════ */
 
-#appcontent-lab > .main-work-scroll {
-  background: color-mix(in oklab, var(--bg) 94%, var(--surface));
+#appcontent-lab > .main-work-scroll,
+#appcontent-lab > .lab-active-shell > .main-work-scroll {
+  background: transparent;
 }
 
 /* Lab cards: one radius tier (lg) — overrides soft-ui xl blanket + base .card xl */

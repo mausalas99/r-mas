@@ -14,6 +14,7 @@ import { canExecuteClinicalCommand, executeClinicalCommand } from './clinical-re
 import { _applyRepoSnapshot } from './clinical-read-model.mjs';
 import { isWebClinicalClient } from './db-storage-bridge.mjs';
 import { storage } from './storage.js';
+import { scheduleIdle } from './deferred-work.mjs';
 import {
   getClinicalPersistSnapshot,
   invokeBeforeSaveHook,
@@ -31,6 +32,27 @@ let _flushQueued = false;
 /** @type {Array<(value: unknown) => void>} */
 let _debounceResolvers = [];
 const PERSIST_DEBOUNCE_MS = 400;
+const IDLE_FULL_PERSIST_MS = 8000;
+
+let _idleFullPersistQueued = false;
+
+/**
+ * @param {{ domains?: string[] }} [opts]
+ * @returns {Record<string, unknown>}
+ */
+function snapshotForPersist(opts = {}) {
+  const full = getClinicalPersistSnapshot();
+  const domains = opts && Array.isArray(opts.domains) ? opts.domains : null;
+  if (!domains || !domains.length) return full;
+  /** @type {Record<string, unknown>} */
+  const out = {};
+  for (let i = 0; i < domains.length; i += 1) {
+    const key = String(domains[i] || '');
+    if (!key || full[key] === undefined) continue;
+    out[key] = full[key];
+  }
+  return Object.keys(out).length ? out : full;
+}
 
 /**
  * @param {Record<string, unknown>} snapshot
@@ -73,7 +95,7 @@ function resolveDebounceWaiters(resultPromise) {
 async function runPersistNow(opts = {}) {
   invokeBeforeSaveHook();
   // Snapshot at start of the actual run (not when a coalesced call was queued).
-  const snapshot = getClinicalPersistSnapshot();
+  const snapshot = snapshotForPersist(opts);
   const source = opts.source || 'ui';
 
   /** @type {Promise<{ ok: boolean, error?: string } & Record<string, unknown>>} */
@@ -82,7 +104,7 @@ async function runPersistNow(opts = {}) {
   if (canExecuteClinicalCommand()) {
     promise = executeClinicalCommand(
       { type: 'clinical.persistSnapshot', ...snapshot },
-      { source }
+      { source, echoSnapshot: false }
     ).then((res) => {
       if (!res || res.ok === false) {
         return { ok: false, error: String(res?.error || 'persist_failed') };
@@ -137,7 +159,7 @@ function enqueueCoalescedFollowUp(opts = {}) {
 /**
  * Persist current clinical domains.
  *
- * @param {{ immediate?: boolean, source?: string }} [opts]
+ * @param {{ immediate?: boolean, source?: string, domains?: string[] }} [opts]
  * @returns {Promise<{ ok: boolean, error?: string } & Record<string, unknown>>}
  */
 export function persistClinicalState(opts = {}) {
@@ -181,6 +203,19 @@ export async function flushPersistClinicalState() {
   return run;
 }
 
+/**
+ * Full snapshot persist on idle so census apply does not clone labHistory
+ * on the first click after patients load (~1s INP).
+ */
+export function scheduleIdleClinicalPersist() {
+  if (_idleFullPersistQueued) return;
+  _idleFullPersistQueued = true;
+  scheduleIdle(function () {
+    _idleFullPersistQueued = false;
+    persistClinicalState();
+  }, IDLE_FULL_PERSIST_MS);
+}
+
 /** @internal */
 export function resetPersistClinicalStateForTests() {
   clearPersistTimer();
@@ -188,4 +223,5 @@ export function resetPersistClinicalStateForTests() {
   _coalesceTail = null;
   _flushQueued = false;
   _debounceResolvers = [];
+  _idleFullPersistQueued = false;
 }

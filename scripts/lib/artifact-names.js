@@ -45,6 +45,20 @@ function winArtifactName(version, pattern, pkg) {
   return expandArtifactPattern(pattern, version, 'x64', 'exe', pkg);
 }
 
+/**
+ * Copies of the installers with names a person can pick without knowing arm64/x64.
+ * Canonical names stay for auto-update (zip) and latest-*.yml.
+ */
+function humanInstallAliases(version, pkg) {
+  const pn = productName(pkg || {});
+  const v = String(version || '');
+  return [
+    { from: `${pn}-${v}-arm64.dmg`, to: `${pn}-${v}-Mac-Apple-Silicon.dmg` },
+    { from: `${pn}-${v}-x64.dmg`, to: `${pn}-${v}-Mac-Intel.dmg` },
+    { from: `${pn}-${v}-x64.exe`, to: `${pn}-${v}-Windows.exe` },
+  ];
+}
+
 function allReleaseArtifactNames(pkg) {
   const version = getVersion(pkg);
   const pattern = getArtifactPattern(pkg);
@@ -64,5 +78,6 @@ module.exports = {
   getArtifactPattern,
   macArtifactNames,
   winArtifactName,
+  humanInstallAliases,
   allReleaseArtifactNames,
 };

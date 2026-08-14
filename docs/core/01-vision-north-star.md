@@ -48,7 +48,7 @@ When faced with competing priorities or feature requests, the team should use th
 ## 🚫 Out of Bounds (Anti-Goals)
 To maintain focus, we explicitly say **NO** to:
 
-- **Unmanaged public EMR SaaS:** R+ is not a hospital system of record in the vendor cloud; the **7.9 Nube pilot** may store **encrypted-at-rest turn data** on Cloudflare Free for opted-in rooms only—not a general-purpose cloud expediente product.
+- **Unmanaged public EMR SaaS:** R+ is not a hospital system of record in the vendor cloud; the **Nube Free pilot** stores **opt-in turn rooms** on Cloudflare. **Target:** client encrypt → opaque D1 → client decrypt. **Today:** HTTPS in transit, **plaintext JSON in D1**, not E2EE — see [15-security.md](./15-security.md). Not a general-purpose cloud expediente product.
 - **EMR replacement:** R+ is not the system of record; formal boundary with the hospital EMR stays explicit.
 - **Autonomous clinical decisions:** No opaque diagnostic or treatment engines; Manejo automático-style suggestions remain retired.
 - **Forced cloud:** Nube is **opt-in**; offline device unlock (local SQLCipher only) must keep working without an account.
@@ -67,7 +67,7 @@ To maintain focus, we explicitly say **NO** to:
 To guide the Product Owner's backlog, our roadmap is bucketed into three horizons:
 
 - **📍 NOW (Current Focus):** **8.0.5 Nube estable** — **all clinical wards** sync on Cloudflare; Nube is room authority and **LAN LiveSync is retired**; Interno MIP + Equipos en Nube; offline + uncapped labs; Free-tier HTTP sync (no WebSockets yet).
-- **🚀 NEXT (Growth):** **Paid/realtime upgrade path** — Durable Object WebSockets, envelope DEKs, stronger tenancy; continue workbench maturity (entrega, teams, onboarding).
+- **🚀 NEXT (Growth):** **Paid/realtime upgrade path** — Durable Object WebSockets, **envelope DEKs** (encrypt on the client, Cloudflare stores ciphertext only, peers decrypt locally), stronger tenancy; continue workbench maturity (entrega, teams, onboarding).
 - **🔭 LATER (Visionary):** **Institutional readiness** — RBAC, formal adjunct-vs-EMR boundary, hospital IT/legal evaluation (not claimed by software alone).
 
 ---
@@ -86,7 +86,6 @@ R+ is succeeding when we see an increase in:
 - **User happy path:** [03-user-journey.md](./03-user-journey.md)
 - **Code map:** [04-directory-structure.md](./04-directory-structure.md)
 - **Architecture:** [08-core-architecture.md](./08-core-architecture.md)
-- **Agent code map (fast):** `.cursor/rules/project-context.mdc`
 
 > [!IMPORTANT]
 > This document is a living artifact. If a proposed feature or architectural change does not actively serve the North Star or violates our Core Principles, it does not belong in R+.

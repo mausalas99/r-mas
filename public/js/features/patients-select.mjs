@@ -4,7 +4,7 @@ import { flushRecetaHuDraftIfMountedFor } from './receta-hu.mjs';
 import { stashMedInputForPatient } from './medications.mjs';
 import { stashMedPharmPasteForPatient } from './med-pharm-profile-panel.mjs';
 import { stashVpoForPatient } from './vpo.mjs';
-import { flushSaveState } from '../app-state.mjs';
+import { cancelDeferredIdleWork, scheduleTrailing } from '../deferred-work.mjs';
 import { isModeSala } from '../mode-features.mjs';
 import { migrateGranularInner } from '../expediente-tabs.mjs';
 import { canDeletePatientChart } from '../patient-delete-auth.mjs';
@@ -108,11 +108,11 @@ export function selectPatient(id, opts) {
 }
 
 function stashPatientDraftsOnChange(prevId) {
+  if (prevId == null || prevId === '') return;
   flushRecetaHuDraftIfMountedFor(prevId);
   stashMedInputForPatient(prevId);
   stashMedPharmPasteForPatient(prevId);
   stashVpoForPatient(prevId);
-  flushSaveState();
 }
 
 function showPatientViewShell() {
@@ -178,6 +178,47 @@ function handleLabTabAfterPatientChange(wasOnLab, patientChanged) {
   return true;
 }
 
+function inputPending() {
+  var sched = typeof navigator !== 'undefined' ? navigator.scheduling : null;
+  return !!(sched && typeof sched.isInputPending === 'function' && sched.isInputPending());
+}
+
+function scheduleSelectedPatientChart(id, ctx) {
+  cancelDeferredIdleWork();
+  scheduleTrailing(function () {
+    if (String(rt.getActiveId() || '') !== String(id)) return;
+    if (inputPending()) {
+      scheduleSelectedPatientChart(id, ctx);
+      return;
+    }
+    paintSelectedPatientChart(id, ctx);
+  }, 120);
+}
+
+/**
+ * Heavy chart work after census arrows have paused.
+ * Bails if arrows already moved on to another patient.
+ * Persist waits until here so a labHistory clone cannot overlap the cold Resumen.
+ */
+function paintSelectedPatientChart(id, ctx) {
+  if (String(rt.getActiveId() || '') !== String(id)) return;
+  rt.refreshExpedienteAfterPatientSelect({ patientChanged: ctx.patientChanged });
+  if (ctx.appTab === 'lab') rt.renderLabHistoryPanel();
+  if (ctx.appTab === 'med') rt.renderMedRecetaPanel();
+  handleLabTabAfterPatientChange(ctx.wasOnLab, ctx.patientChanged);
+  syncRoundExpedienteLayout();
+  rt.refreshTendenciasOrCultivosPanel();
+  if (isPaseMode()) rt.renderPaseBoard();
+  if (rt.getActiveId()) {
+    requestAnimationFrame(function () {
+      if (String(rt.getActiveId() || '') !== String(id)) return;
+      scrollActiveRondaCardIntoView();
+    });
+  }
+  requestSilentUpdateCheck();
+  if (ctx.patientChanged && ctx.prevId != null && ctx.prevId !== '') persistClinicalState();
+}
+
 function selectPatientCore(id) {
   var prevId = rt.getActiveId();
   var wasOnLab = rt.getActiveAppTab() === 'lab';
@@ -206,21 +247,12 @@ function selectPatientCore(id) {
     applyInnerTabOnSamePatient(settings, inner);
   }
   rt.syncInnerTabVisualOnly();
-  rt.refreshExpedienteAfterPatientSelect({ patientChanged: patientChanged });
-  if (appTab === 'lab') rt.renderLabHistoryPanel();
-  if (appTab === 'med') rt.renderMedRecetaPanel();
-  if (!handleLabTabAfterPatientChange(wasOnLab, patientChanged)) {
-    rt.syncWorkContextChrome();
-  }
-  syncRoundExpedienteLayout();
-  rt.refreshTendenciasOrCultivosPanel();
-  if (isPaseMode()) rt.renderPaseBoard();
-  if (rt.getActiveId()) {
-    requestAnimationFrame(function () {
-      scrollActiveRondaCardIntoView();
-    });
-  }
-  requestSilentUpdateCheck();
+  scheduleSelectedPatientChart(id, {
+    patientChanged: patientChanged,
+    prevId: prevId,
+    wasOnLab: wasOnLab,
+    appTab: appTab,
+  });
 }
 
 function showPatientDeleteConfirm(n) {

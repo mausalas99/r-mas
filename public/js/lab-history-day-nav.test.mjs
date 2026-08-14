@@ -5,6 +5,8 @@ import {
   findLabHistoryDayIndexForSet,
   stepLabHistoryDayIndex,
   latestSetIdInLabHistoryDay,
+  labHistoryDayArrowDelta,
+  canHandleLabHistoryDayArrow,
 } from './lab-history-day-nav.mjs';
 
 function idFn(set, idx) {
@@ -66,6 +68,42 @@ describe('findLabHistoryDayIndexForSet', () => {
 
   it('returns -1 for an empty day list', () => {
     assert.equal(findLabHistoryDayIndexForSet([], idFn, 'x'), -1);
+  });
+});
+
+describe('lab history day arrow keys', () => {
+  it('maps left to older and right to newer', () => {
+    assert.equal(labHistoryDayArrowDelta('ArrowLeft'), 1);
+    assert.equal(labHistoryDayArrowDelta('ArrowRight'), -1);
+    assert.equal(labHistoryDayArrowDelta('ArrowUp'), 0);
+  });
+
+  it('ignores typing fields, modifiers, and hidden lab tab', () => {
+    assert.equal(
+      canHandleLabHistoryDayArrow({
+        key: 'ArrowLeft',
+        labTabVisible: true,
+        hasDayPicker: true,
+      }),
+      true,
+    );
+    assert.equal(
+      canHandleLabHistoryDayArrow({
+        key: 'ArrowLeft',
+        labTabVisible: true,
+        hasDayPicker: true,
+        typing: true,
+      }),
+      false,
+    );
+    assert.equal(
+      canHandleLabHistoryDayArrow({
+        key: 'ArrowLeft',
+        labTabVisible: false,
+        hasDayPicker: true,
+      }),
+      false,
+    );
   });
 });
 

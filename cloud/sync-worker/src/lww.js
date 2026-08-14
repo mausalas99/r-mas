@@ -1,4 +1,5 @@
 import { QUOTAS } from './quotas.js';
+import { mergeClinicalOpsLww } from './clinical-ops-lww.js';
 
 /** @returns {import('./lww.js').RoomSyncState} */
 export function emptyState() {
@@ -197,7 +198,7 @@ function applyOpToState(state, op) {
   }
 
   if (path === 'clinicalOps') {
-    state.clinicalOps = value;
+    state.clinicalOps = mergeClinicalOpsLww(state.clinicalOps, value);
     return;
   }
 
@@ -268,6 +269,21 @@ export class QuotaExceededError extends Error {
  * @returns {{ state: RoomSyncState, applied: SyncOp[], rejected: RejectedOp[] }}
  */
 export function applyOps(state, ops) {
+  const list = Array.isArray(ops) ? ops : [];
+  /** @type {RejectedOp[]} */
+  const staleRejected = [];
+  let hasFresh = false;
+  for (const op of list) {
+    if (!isNewerVersion(op, state.entityVersions[op.path])) {
+      staleRejected.push({ op, reason: 'stale' });
+    } else {
+      hasFresh = true;
+    }
+  }
+  if (!hasFresh) {
+    return { state, applied: [], rejected: staleRejected };
+  }
+
   const next = {
     ...state,
     entries: state.entries.map((e) => ({ ...e })),
@@ -290,7 +306,7 @@ export function applyOps(state, ops) {
   /** @type {RejectedOp[]} */
   const rejected = [];
 
-  for (const op of ops) {
+  for (const op of list) {
     try {
       const current = next.entityVersions[op.path];
       if (!isNewerVersion(op, current)) {

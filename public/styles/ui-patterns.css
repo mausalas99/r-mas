@@ -221,8 +221,8 @@ html.motion-sobrio .ui-loading-cell {
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
-  background: var(--color-ink);
-  color: var(--color-surface, #fff);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
 }
 .ui-approval-primary:disabled {
   opacity: 0.4;

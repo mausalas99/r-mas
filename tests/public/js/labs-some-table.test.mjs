@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   parseSomeReportTables,
+  parseSomeTablesFromSources,
   buildSomeGroupTsv,
   buildSomeGroupExportModel,
   formatSomeResultado,
@@ -660,4 +661,18 @@ OSMOLARIDAD
   assert.equal(osm.estudio, 'OSMOLARIDAD');
   assert.equal(osm.resultado, '277.0');
   assert.equal(/Expediente|Solicitud/i.test(String(osm.resultado || osm.ref)), false);
+});
+
+test('parseSomeTablesFromSources skips junk and uses a later SOME report', () => {
+  const parsed = parseSomeTablesFromSources([
+    'BH\tHb 12.1',
+    '',
+    MUESTRA_LUNA,
+  ]);
+  assert.ok(parsed);
+  assert.ok(parsed.departments.length >= 1);
+});
+
+test('parseSomeTablesFromSources is null when nothing looks like SOME', () => {
+  assert.equal(parseSomeTablesFromSources(['BH\tHb 12.1', 'QS\tCr 1.1']), null);
 });

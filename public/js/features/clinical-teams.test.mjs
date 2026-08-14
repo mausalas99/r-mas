@@ -107,6 +107,22 @@ describe('clinical-teams', () => {
     assert.equal(clinicalTeamsSrc.includes('pullClinicalOpsFromLanRoom'), false);
   });
 
+  it('publishClinicalTeamsAfterChange pulls clinicalOps before LWW push', () => {
+    const idx = clinicalTeamsSrc.indexOf('export async function publishClinicalTeamsAfterChange');
+    assert.ok(idx >= 0);
+    const body = clinicalTeamsSrc.slice(idx, idx + 900);
+    assert.match(body, /syncClinicalOpsForSala/);
+    assert.doesNotMatch(body, /await pushClinicalOpsForSala\(sala\)/);
+  });
+
+  it('joining a team awaits Nube clinicalOps pull-then-push', () => {
+    const joinHandlerSrc = readFileSync(join(featureDir, 'teams-roster-join-handler.mjs'), 'utf8');
+    const inviteSrc = readFileSync(join(featureDir, 'teams-invite.mjs'), 'utf8');
+    assert.match(joinHandlerSrc, /await publishClinicalTeamsAfterChange/);
+    assert.doesNotMatch(joinHandlerSrc, /void publishClinicalTeamsAfterChange/);
+    assert.match(inviteSrc, /await publishClinicalTeamsAfterChange/);
+  });
+
   it('refreshClinicalOpsDirectory pulls from Nube when cloud sync is active', () => {
     assert.match(clinicalTeamsSrc, /export async function pullClinicalOpsFromCloudRoom/);
     assert.match(clinicalTeamsSrc, /export async function refreshClinicalOpsDirectory/);

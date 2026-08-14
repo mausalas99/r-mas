@@ -11,15 +11,25 @@ function readDashboardCss() {
   );
 }
 
-test('EA KPIs are a 2x2 grid, not 3+1', () => {
+test('vitals and labs share one row and do not clip', () => {
   const css = readDashboardCss();
-  assert.match(css, /\.ea-kpis\s*\{[^}]*grid-template-columns:\s*1fr\s+1fr/s);
-  assert.equal(/grid-template-columns:\s*1fr\s+1fr\s+1fr/.test(css) && css.includes('.ea-kpis'), false);
+  assert.match(css, /\.bento\.vitals-labs\s*\{[^}]*min-height:\s*min-content/s);
+  assert.match(css, /\.bento\.vitals-labs \.vitals-card[\s\S]*?overflow:\s*visible/s);
+  assert.match(css, /\.bento\.vitals-labs \.labs-card[\s\S]*?overflow:\s*visible/s);
+  assert.match(css, /\.vitals\s*\{[^}]*grid-template-columns:\s*1fr\s+1fr/s);
+  assert.match(css, /\.vitals\s*\{[^}]*minmax\(\s*min-content/s);
+  assert.match(css, /\.labs-card \.card-b\s*\{[^}]*overflow:\s*visible/s);
+  assert.equal(/grid-column:\s*1\s*\/\s*-1/.test(css), false);
+  assert.match(css, /\.vital\s*\{[^}]*min-width:\s*min-content/s);
 });
 
-test('wide lab draws take a full row', () => {
+test('altered lab chips align on a tipo column', () => {
   const css = readDashboardCss();
-  assert.match(css, /\.draw\.is-wide\s*\{[^}]*(?:flex:\s*1\s+1\s+100%|flex-basis:\s*100%)/s);
+  assert.match(css, /\.day-draws\s*\{[^}]*flex-direction:\s*column/s);
+  assert.match(css, /\.draw\s*\{[^}]*grid-template-columns:\s*3\.4em/s);
+  assert.match(css, /\.draw-g[\s\S]*?grid-template-columns:\s*4\.2em/s);
+  assert.match(css, /\.draw-g \.tipo\s*\{[^}]*min-width:\s*min-content/s);
+  assert.match(css, /\.draw\.is-wide\s*\{[^}]*(?:flex:\s*1\s+1\s+100%|flex-basis:\s*100%|width:\s*100%)/s);
 });
 test('rest bento cards are flex columns without .clickable', () => {
   const css = readDashboardCss();
@@ -37,6 +47,11 @@ test('clickable cards, draws, links, and buttons have focus-visible rings', () =
   assert.match(css, /\.btn-sec:focus-visible/);
   assert.match(css, /outline:\s*2px\s+solid\s+var\(--color-focus-ring\)/);
   assert.match(css, /outline-offset:\s*2px/);
+});
+
+test('dashboard secondary buttons use --radius-control, not pill', () => {
+  const css = readDashboardCss();
+  assert.match(css, /\.patient-dash \.btn-sec\s*\{[^}]*border-radius:\s*var\(--radius-control\)/s);
 });
 
 test('dark mode IC chips invert lightness', () => {
@@ -92,21 +107,70 @@ test('lab inner nav uses the same pill chrome as Paciente Resumen | Clínico | S
   assert.equal(/border-bottom-color:\s*var\(--color-accent\)/.test(css), false);
 });
 
+test('lab workbench inset matches Paciente glance, not a nested 24px well', () => {
+  const css = readLabInnerCss();
+  assert.match(css, /\.lab-inner-nav\.inner-tab-bar\s*\{[^}]*padding:[^}]*16px/s);
+  assert.match(css, /\.lab-active-shell\s*>\s*\.main-work-scroll\s*\{[^}]*padding:\s*calc\(12px/s);
+  assert.match(css, /\.lab-inner-panel\s*\{[^}]*padding:\s*calc\(12px/s);
+  assert.match(
+    css,
+    /#appcontent-lab \.lab-active-shell \.card\s*>\s*\.card-header\s*\{[^}]*padding-left:\s*calc\(12px/s
+  );
+  assert.equal(/\.lab-inner-panel\s*\{[^}]*padding:\s*calc\(24px/s.test(css), false);
+});
+
 test('dash-name stays compact, not a display heading', () => {
   const css = readDashboardCss();
   assert.match(css, /\.dash-name\s*\{[^}]*font:\s*600\s+0\.86em/s);
   assert.equal(/\.dash-name\s*\{[^}]*1\.32em/s.test(css), false);
 });
 
-test('medicamentos band fills leftover height; list does not scroll or shrink type', () => {
+test('dashboard chips use accent-soft tokens', () => {
   const css = readDashboardCss();
-  assert.match(css, /\.bento\.meds-band\s*\{[^}]*flex:\s*1\s+1\s+0/s);
-  assert.match(css, /\.bento\.meds-band\s*\{[^}]*container-type:\s*size/s);
-  assert.match(css, /\.bento\.meds-band \.soap-pack\s*\{[^}]*flex:\s*1/s);
-  assert.equal(/\.bento\.meds-band \.soap-pack\s*\{[^}]*font-size:\s*22px/s.test(css), false);
-  assert.match(css, /\.bento\.meds-band \.soap-pack\s*\{[^}]*display:\s*flex/s);
-  assert.match(css, /\.bento\.meds-band \.soap-pack section\s*\{[^}]*flex:\s*1/s);
-  assert.match(css, /\.bento\.meds-band \.card-b\s*\{[^}]*overflow:\s*hidden/s);
+  assert.match(
+    css,
+    /\.patient-dash \.chip\s*\{[^}]*background:\s*var\(--color-accent-soft\)/s
+  );
+  assert.match(
+    css,
+    /\.patient-dash \.chip\s*\{[^}]*color:\s*var\(--color-accent-soft-text\)/s
+  );
+  assert.match(
+    css,
+    /html\.dark \.patient-dash \.chip\s*\{[^}]*background:\s*var\(--color-accent-soft\)/s
+  );
+  assert.match(
+    css,
+    /html\.dark \.patient-dash \.chip\s*\{[^}]*color:\s*var\(--color-accent-soft-text\)/s
+  );
+});
+
+test('medicamentos sizes to the list; no inner scrollbar', () => {
+  const css = readDashboardCss();
+  assert.match(css, /\.bento\.meds-band\s*\{[^}]*flex:\s*0\s+0\s+auto/s);
+  assert.match(css, /\.bento\.meds-band\s*\{[^}]*min-height:\s*min-content/s);
+  assert.match(css, /\.bento\.meds-band \.card-b\s*\{[^}]*overflow:\s*visible/s);
+  assert.match(css, /\.bento\.meds-band \.soap-pack\s*\{[^}]*overflow:\s*visible/s);
+  assert.equal(/\.bento\.meds-band \.soap-pack\s*\{[^}]*overflow-y:\s*auto/s.test(css), false);
   assert.equal(/\.bento\.meds-band \.card-b\s*\{[^}]*overflow-y:\s*auto/s.test(css), false);
-  assert.match(css, /:has\(\.bento\.meds-band\) \.bento\.rest\s*\{[^}]*max-height:\s*36cqh/s);
+  assert.equal(/mask-image/.test(css), false);
+  assert.equal(/\.bento\.meds-band \.soap-pack\s*\{[^}]*font-size:\s*22px/s.test(css), false);
+});
+
+test('eventualidades and pendientes stay two columns and do not shrink', () => {
+  const css = readDashboardCss();
+  assert.match(css, /\.bento\.rest\s*\{[^}]*flex:\s*0\s+0\s+auto/s);
+  assert.match(css, /\.bento\.rest\s*\{[^}]*grid-template-columns:\s*1fr\s+1fr/s);
+  assert.match(css, /\.bento\.rest\s*>\s*\.card[^}]*min-height:\s*min-content/s);
+  assert.equal(/repeat\(\s*3/.test(css), false);
+});
+
+test('SOAP zone headings use a hue token per letter', () => {
+  const css = readDashboardCss();
+  assert.match(css, /\[data-soap="N"\]\s*\{[^}]*--soap-h:\s*300/s);
+  assert.match(css, /\[data-soap="V"\]\s*\{[^}]*--soap-h:\s*210/s);
+  assert.match(css, /\[data-soap="HD"\]\s*\{[^}]*--soap-h:\s*18/s);
+  assert.match(css, /\[data-soap="HI"\]\s*\{[^}]*--soap-h:\s*85/s);
+  assert.match(css, /\[data-soap="NM"\]\s*\{[^}]*--soap-h:\s*160/s);
+  assert.match(css, /\.soap-pack \.z\[data-soap\][^}]*oklch\([^)]*var\(--soap-h/s);
 });

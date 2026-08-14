@@ -7,7 +7,7 @@ description: "Master documentation hub for R+ — start here for strategy, archi
 
 # R+ Documentation Hub
 
-**Agent entry point:** Read this file, then [01-vision-north-star.md](./01-vision-north-star.md) for product trade-offs. For code locations, prefer `.cursor/rules/project-context.mdc` (always-on).
+**Agent entry point:** Read this file, then [01-vision-north-star.md](./01-vision-north-star.md) for product trade-offs. For code locations, see [04-directory-structure.md](./04-directory-structure.md).
 
 ## Product principles (summary)
 
@@ -15,7 +15,7 @@ description: "Master documentation hub for R+ — start here for strategy, archi
 |-----------|----------|
 | North Star | Paste SOME → structured labs → `.docx` note in minimum TTD |
 | Ideal user | R1/R2 on 24h high-intensity guardia |
-| Architecture | Electron + offline SQLCipher; LAN LiveSync (:3738); opt-in Nube (Cloudflare Free pilot) |
+| Architecture | Electron + offline SQLCipher; opt-in Nube (Cloudflare Worker + D1; HTTPS, **not** encrypted at rest); LAN LiveSync retired |
 | Scope | Adjunct documentation tool — **not** institutional EMR |
 
 ## Architecture (data flow)
@@ -41,7 +41,7 @@ flowchart LR
 | 04 | [directory-structure](./04-directory-structure.md) | stable | Where every file type lives |
 | 06 | [design-system](./06-design-system.md) | stable | UI tokens (→ `design.md`) |
 | 08 | [core-architecture](./08-core-architecture.md) | stable | Electron, LAN, DB, sync |
-| 15 | [security](./15-security.md) | stable | LAN + clinical safety perimeter |
+| 15 | [security](./15-security.md) | stable | SQLCipher + Nube (Cloudflare D1 plaintext JSON) + leftover LAN |
 | 16 | [glossary-of-terms](./16-glossary-of-terms.md) | in-progress | Domain lexicon |
 | 17 | [docs-blueprint](./17-docs-blueprint.md) | stable | Documentation standard |
 | 18 | [knowledge-capture](./18-knowledge-capture.md) | stable | Decision log |

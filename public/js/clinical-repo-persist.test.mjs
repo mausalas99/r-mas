@@ -54,10 +54,14 @@ describe('clinical-repo-persist', () => {
         dbClinicalCommand: async (payload) => {
           commands.push(payload);
           const cmd = payload.command || {};
-          return {
+          const base = {
             ok: true,
             changedKeys: ['patients', 'notes'],
             changeId: 'chg_persist',
+          };
+          if (payload?.meta?.echoSnapshot === false) return base;
+          return {
+            ...base,
             patients: cmd.patients,
             notes: cmd.notes,
             indicaciones: cmd.indicaciones,
@@ -86,16 +90,33 @@ describe('clinical-repo-persist', () => {
     assert.equal(commands.length, 1);
     assert.equal(commands[0].command.type, 'clinical.persistSnapshot');
     assert.equal(commands[0].meta.source, 'ui-test');
+    assert.equal(commands[0].meta.echoSnapshot, false);
     assert.equal(commands[0].command.patients[0].id, 'p1');
     assert.equal(commands[0].command.notes.p1.estudios, 'rx');
   });
 
-  it('persistClinicalState updates read model from command success', async () => {
+  it('persistClinicalState domains sends only those snapshot keys', async () => {
+    appState.setPatients([{ id: 'p1', nombre: 'Ana' }]);
+    appState.setNotes({ p1: { estudios: 'rx' } });
+    appState.setLabHistory({ p1: [{ id: 'l1' }] });
+    const res = await persistClinicalState({
+      immediate: true,
+      source: 'domains-test',
+      domains: ['patients'],
+    });
+    assert.equal(res.ok, true);
+    assert.ok(commands[0].command.patients);
+    assert.equal(commands[0].command.notes, undefined);
+    assert.equal(commands[0].command.labHistory, undefined);
+  });
+
+  it('persistClinicalState does not echo snapshot blobs into the read model', async () => {
     appState.setPatients([{ id: 'p1', nombre: 'Ana' }]);
     appState.setNotes({ p1: 'nota' });
     await persistClinicalState({ immediate: true });
-    assert.equal(getPatients()[0].id, 'p1');
-    assert.equal(getNotes('p1'), 'nota');
+    assert.equal(commands[0].meta.echoSnapshot, false);
+    assert.equal(getPatients().length, 0);
+    assert.deepEqual(getNotes(), {});
   });
 
   it('persistClinicalState does not require isClinicalRepoPersistEnabled', async () => {

@@ -4,7 +4,6 @@ import test, { mock } from 'node:test';
 import {
   showToast,
   shouldDismissToastSwipe,
-  TOAST_SWIPE_DISMISS_VELOCITY,
 } from './ui-toast.mjs';
 import { getReleaseVelocity } from './ui-motion.mjs';
 
@@ -82,13 +81,13 @@ test('optional action button renders and invokes onClick', () => {
   assert.equal(stack.children.length, 0);
 });
 
-test('swipe dismiss uses getReleaseVelocity threshold 0.11', () => {
+test('swipe dismiss uses velocity or projected travel', () => {
   const history = [
     { t: 0, x: 0, y: 0 },
     { t: 50, x: 8, y: 0 },
   ];
   const velocity = getReleaseVelocity(history, { axis: 'x', now: 50 });
-  assert.ok(velocity >= TOAST_SWIPE_DISMISS_VELOCITY);
-  assert.equal(shouldDismissToastSwipe(velocity), true);
-  assert.equal(shouldDismissToastSwipe(0.05), false);
+  assert.equal(shouldDismissToastSwipe(velocity, 0), true);
+  assert.equal(shouldDismissToastSwipe(0.05, 0), false);
+  assert.equal(shouldDismissToastSwipe(0.02, 90), true);
 });

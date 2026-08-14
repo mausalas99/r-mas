@@ -34,7 +34,7 @@ describe('cloud-lab-sidecar-index', () => {
     delete globalThis.localStorage;
   });
 
-  it('fingerprint ignores sourceText and matches slim payload', () => {
+  it('fingerprint ignores non-SOME paste and matches slim payload', () => {
     const fp = cloudLabSidecarFingerprint({
       id: 'lab-1',
       fecha: '2026-08-09',
@@ -48,6 +48,24 @@ describe('cloud-lab-sidecar-index', () => {
       sourceText: 'OTHER RAW',
     });
     assert.equal(fp, fp2);
+  });
+
+  it('fingerprint includes SOME sourceText', () => {
+    const some =
+      'Expediente: 1\nNombre: Ana\nFecha Registro: 03/08/2026 08:00\nHEMATOLOGÍA\n';
+    const fp = cloudLabSidecarFingerprint({
+      id: 'lab-1',
+      fecha: '2026-08-09',
+      resLabs: ['Hb 12'],
+      sourceText: some,
+    });
+    const fp2 = cloudLabSidecarFingerprint({
+      id: 'lab-1',
+      fecha: '2026-08-09',
+      resLabs: ['Hb 12'],
+      sourceText: some + 'QS\n',
+    });
+    assert.notEqual(fp, fp2);
   });
 
   it('shouldSkipCloudLabSidecarPush after pull index', () => {

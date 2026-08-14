@@ -57,3 +57,9 @@ test('lab-inner-nav lives inside lab-active-shell with the lab panels', () => {
   const labs = html.indexOf('id="lab-inner-labs"');
   assert.ok(shell >= 0 && nav > shell && labs > nav);
 });
+
+test('#apptab-lab icon shares Paciente optical bounds (grid from y=5, not table y=3)', () => {
+  const block = buttonBlock('apptab-lab');
+  assert.match(block, /<rect x="5" y="5"/);
+  assert.doesNotMatch(block, /M9 3H5a2 2 0 00-2 2v4/);
+});

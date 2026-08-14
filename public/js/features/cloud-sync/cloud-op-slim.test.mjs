@@ -10,7 +10,7 @@ import {
 } from './cloud-op-slim.mjs';
 
 describe('slimLabSetForCloud', () => {
-  it('keeps parsed fields only (no raw SOME sourceText)', () => {
+  it('drops non-SOME paste and keeps parsed fields', () => {
     const slim = slimLabSetForCloud({
       id: 'lab-1',
       fecha: '03/08/2026',
@@ -26,7 +26,21 @@ describe('slimLabSetForCloud', () => {
     assert.equal(slim.sourceText, undefined);
     assert.equal(slim.parsedBySection, undefined);
     assert.deepEqual(slim.resLabs, ['BH\tHb 12']);
-    assert.equal(CLOUD_LAB_SET_ALLOWLIST.includes('sourceText'), false);
+  });
+
+  it('sends SOME sourceText so peers re-parse locally', () => {
+    const some =
+      'Expediente: 1\nNombre: Ana\nFecha Registro: 03/08/2026 08:00\nHEMATOLOGÍA\n';
+    const slim = slimLabSetForCloud({
+      id: 'lab-1',
+      fecha: '03/08/2026',
+      hora: '08:30',
+      resLabs: ['BH\tHb 12'],
+      sourceText: some,
+    });
+    assert.equal(slim.sourceText, some);
+    assert.deepEqual(slim.resLabs, ['BH\tHb 12']);
+    assert.equal(CLOUD_LAB_SET_ALLOWLIST.includes('sourceText'), true);
   });
 });
 
@@ -41,6 +55,23 @@ describe('fitLabSetToQuota', () => {
     assert.ok(Array.isArray(fitted.resLabs));
     assert.ok(fitted.resLabs.length >= 1);
     assert.equal(fitted.sourceText, undefined);
+  });
+
+  it('keeps SOME and drops resLabs when the pair exceeds quota', () => {
+    const some =
+      'Expediente: 1\nNombre: Ana\nFecha Registro: 03/08/2026 08:00\nHEMATOLOGÍA\n';
+    const fitted = fitLabSetToQuota(
+      {
+        id: 'x',
+        sourceText: some,
+        resLabs: ['BH\t' + 'Hb 8 '.repeat(400)],
+      },
+      400
+    );
+    assert.ok(fitted);
+    assert.equal(fitted.sourceText, some);
+    assert.equal(fitted.resLabs, undefined);
+    assert.ok(utf8JsonBytes(fitted) <= 400);
   });
 });
 

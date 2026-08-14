@@ -13,6 +13,13 @@ function readSidebarCss() {
   );
 }
 
+function selectPatientSrc() {
+  return readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), 'patients-select.mjs'),
+    'utf8'
+  );
+}
+
 /** Mirrors selectPatientCore patientChanged detection. */
 function patientChanged(prevId, id) {
   return String(prevId ?? '') !== String(id);
@@ -46,6 +53,57 @@ describe('selectPatient list refresh branch', () => {
 
   it('re-renders list when highlight patch cannot run silently', () => {
     assert.equal(shouldFullRenderPatientList(true, false), true);
+  });
+});
+
+describe('selectPatient draft flush', () => {
+  it('stashes drafts in memory without cloning a snapshot on the key', () => {
+    const src = selectPatientSrc();
+    const start = src.indexOf('function stashPatientDraftsOnChange');
+    const end = src.indexOf('function showPatientViewShell');
+    assert.ok(start >= 0 && end > start);
+    const fn = src.slice(start, end);
+    assert.match(fn, /prevId == null \|\| prevId === ''/);
+    assert.doesNotMatch(fn, /persistClinicalState/);
+    assert.doesNotMatch(fn, /flushSaveState/);
+  });
+});
+
+describe('selectPatient chart paint', () => {
+  it('coalesces chart paint until census arrows pause', () => {
+    const src = selectPatientSrc();
+    const start = src.indexOf('function scheduleSelectedPatientChart');
+    const end = src.indexOf('function paintSelectedPatientChart');
+    assert.ok(start >= 0 && end > start);
+    const fn = src.slice(start, end);
+    assert.match(fn, /cancelDeferredIdleWork\(\)/);
+    assert.match(fn, /scheduleTrailing\(/);
+    assert.match(fn, /,\s*120\)/);
+    assert.match(fn, /inputPending\(\)/);
+  });
+
+  it('paints the census highlight first, then idles the chart so startup INP is not the cold Resumen', () => {
+    const src = selectPatientSrc();
+    const start = src.indexOf('function selectPatientCore');
+    const end = src.indexOf('function showPatientDeleteConfirm');
+    assert.ok(start >= 0 && end > start);
+    const fn = src.slice(start, end);
+    assert.match(fn, /scheduleSelectedPatientChart\(/);
+    assert.doesNotMatch(fn, /scheduleAfterPaintThenIdle\(/);
+    assert.doesNotMatch(fn, /scheduleIdle\(/);
+    assert.doesNotMatch(fn, /refreshExpedienteAfterPatientSelect/);
+  });
+
+  it('skips a stale deferred paint after a newer patient is selected', () => {
+    const src = selectPatientSrc();
+    const start = src.indexOf('function paintSelectedPatientChart');
+    const end = src.indexOf('function selectPatientCore');
+    assert.ok(start >= 0 && end > start);
+    const fn = src.slice(start, end);
+    assert.match(fn, /rt\.getActiveId\(\)/);
+    assert.match(fn, /refreshExpedienteAfterPatientSelect/);
+    assert.match(fn, /persistClinicalState\(\)/);
+    assert.match(fn, /ctx\.prevId/);
   });
 });
 

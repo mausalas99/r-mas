@@ -2,14 +2,18 @@
  * Paint and wire the Paciente Resumen glance.
  */
 import { getPatients, getLabHistory, getMedRecetaByPatient, persistClinicalState } from '../../app-state.mjs';
+import { scheduleAfterPaintThenIdle } from '../../deferred-work.mjs';
 import { storage } from '../../storage.js';
 import { openPatientDatosModal } from '../../patient-datos-modal.mjs';
+import { resolveEaAbxFechaActualizacion } from '../estado-actual-meds-core.mjs';
 import { collectEaGlanceSoap } from './ea-glance-meds.mjs';
 import { sortEntriesDesc, resolveEventualidadEntryText } from '../eventualidades-store.mjs';
 import { toggleInterconsultId } from './interconsult-catalog.mjs';
 import { buildDashboardModel } from './dashboard-model.mjs';
-import { renderDashboardHtml } from './dashboard-html.mjs';
+import { renderDashboardHtml, renderLabsHtml } from './dashboard-html.mjs';
+import { buildLabsGlanceForDay } from './labs-glance-model.mjs';
 import { openInterconsultModal } from './ic-modal.mjs';
+import { onLabHistoryRevision, TREND_REFRESH_DEBOUNCE_MS } from '../../lab-history-cache.mjs';
 
 var rt = {
   getActiveId() {
@@ -17,6 +21,9 @@ var rt = {
   },
   getActiveInner() {
     return 'resumen';
+  },
+  getActiveAppTab() {
+    return 'nota';
   },
   switchAppTab() {},
   switchInnerTab() {},
@@ -29,6 +36,7 @@ var rt = {
 
 export function registerPatientDashboardRuntime(ctx) {
   if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
+  wireDashboardLabRefresh();
 }
 
 function activePatient() {
@@ -41,14 +49,18 @@ function activePatient() {
   );
 }
 
-export function buildEaInputFromPatient(patient) {
+export function buildEaInputFromPatient(patient, opts) {
+  opts = opts && typeof opts === 'object' ? opts : {};
   var mon = (patient && patient.monitoreo) || {};
   var ec = mon.estadoClinico && typeof mon.estadoClinico === 'object' ? mon.estadoClinico : {};
-  var receta = patient && patient.id ? getMedRecetaByPatient()[patient.id] : null;
+  var recetaMap = opts.medRecetaByPatient || getMedRecetaByPatient();
+  var receta = patient && patient.id ? recetaMap[patient.id] : null;
   var soap = collectEaGlanceSoap({
     estadoClinico: ec,
     pendienteReceta: mon.pendienteReceta,
     recetaItems: receta && receta.items,
+    fechaActualizacion: resolveEaAbxFechaActualizacion(patient && patient.id, recetaMap, mon),
+    refDate: opts.refDate,
   });
   var bombaOn = !!(
     Array.isArray(mon.historial) &&
@@ -82,16 +94,18 @@ function collectPendientes(patientId) {
   });
 }
 
-function collectDashboardModel(inner) {
+function collectDashboardModel(inner, opts) {
   var patient = activePatient() || {};
   var pid = patient.id;
+  var skipLabs = !!(opts && opts.skipLabs);
   return buildDashboardModel({
     patient: patient,
     inner: inner || rt.getActiveInner(),
-    labSets: pid ? getLabHistory()[pid] || [] : [],
+    labSets: skipLabs ? null : pid ? getLabHistory()[pid] || [] : [],
     eaInput: buildEaInputFromPatient(patient),
     eventualidades: collectEventualidades(patient),
     pendientes: collectPendientes(pid),
+    skipLabs: skipLabs,
   });
 }
 
@@ -129,14 +143,26 @@ function openLabs(setId) {
   }
 }
 
+function openLabsRepoModal() {
+  if (typeof rt.openLabRepoBatchModal === 'function') rt.openLabRepoBatchModal();
+  else if (typeof window.openLabRepoBatchModal === 'function') window.openLabRepoBatchModal();
+}
+
+function switchDashInner(tab) {
+  if (tab === 'estadoActual' && typeof rt.navigateToEstadoActualPanel === 'function') {
+    rt.navigateToEstadoActualPanel();
+    return;
+  }
+  if (typeof rt.switchInnerTab === 'function') rt.switchInnerTab(tab);
+}
+
 function handleDashboardAction(action, el) {
   if (action === 'datos') {
     openPatientDatosModal();
     return;
   }
   if (action === 'actualizar-labs') {
-    if (typeof rt.openLabRepoBatchModal === 'function') rt.openLabRepoBatchModal();
-    else if (typeof window.openLabRepoBatchModal === 'function') window.openLabRepoBatchModal();
+    openLabsRepoModal();
     return;
   }
   if (action === 'ic-add') {
@@ -144,6 +170,7 @@ function handleDashboardAction(action, el) {
     openInterconsultModal({
       assignedIds: (p && p.interconsultServiceIds) || [],
       onToggle: persistIcToggle,
+      trigger: el,
     });
     return;
   }
@@ -155,22 +182,53 @@ function handleDashboardAction(action, el) {
     openLabs(el.getAttribute('data-lab-set-id'));
     return;
   }
-  if (action === 'estadoActual') {
-    if (typeof rt.navigateToEstadoActualPanel === 'function') rt.navigateToEstadoActualPanel();
-    else if (typeof rt.switchInnerTab === 'function') rt.switchInnerTab('estadoActual');
-    return;
-  }
-  if (action === 'eventualidades') {
-    if (typeof rt.switchInnerTab === 'function') rt.switchInnerTab('eventualidades');
-    return;
-  }
-  if (action === 'pendientes') {
-    if (typeof rt.switchInnerTab === 'function') rt.switchInnerTab('todo');
-  }
+  if (action === 'estadoActual') switchDashInner('estadoActual');
+  else if (action === 'eventualidades') switchDashInner('eventualidades');
+  else if (action === 'pendientes') switchDashInner('todo');
 }
 
 var dashWiredHosts = new Set();
 var dashBackWired = false;
+var dashLabWired = false;
+var dashLabTimer = null;
+var dashPainting = false;
+
+export function shouldRefreshDashboardForLabs(appTab, inner, rondaHost) {
+  if (appTab && appTab !== 'nota') return false;
+  if (inner === 'resumen') return true;
+  return !!(rondaHost && !rondaHost.hidden);
+}
+
+function paintDashboardFromLabRevision(patientId) {
+  if (dashPainting) return;
+  if (String(patientId || '') !== String(rt.getActiveId() || '')) return;
+  var appTab = typeof rt.getActiveAppTab === 'function' ? rt.getActiveAppTab() : 'nota';
+  var inner = rt.getActiveInner() || 'resumen';
+  var ronda =
+    typeof document !== 'undefined' ? document.getElementById('patient-ronda-dashboard-host') : null;
+  if (!shouldRefreshDashboardForLabs(appTab, inner, ronda)) return;
+  dashPainting = true;
+  try {
+    renderPatientDashboard(null, { settle: false });
+  } finally {
+    dashPainting = false;
+  }
+}
+
+function scheduleDashboardLabRefresh(patientId) {
+  if (String(patientId || '') !== String(rt.getActiveId() || '')) return;
+  if (dashLabTimer) clearTimeout(dashLabTimer);
+  dashLabTimer = setTimeout(function () {
+    dashLabTimer = null;
+    paintDashboardFromLabRevision(patientId);
+  }, TREND_REFRESH_DEBOUNCE_MS);
+}
+
+function wireDashboardLabRefresh() {
+  if (dashLabWired) return;
+  dashLabWired = true;
+  onLabHistoryRevision(scheduleDashboardLabRefresh);
+}
 
 function wireDashboardHost(mount) {
   if (!mount || dashWiredHosts.has(mount)) return;
@@ -185,6 +243,7 @@ function wireDashboardHost(mount) {
 }
 
 function wireDashboardOnce() {
+  wireDashboardLabRefresh();
   wireDashboardHost(document.getElementById('patient-dashboard-mount'));
   wireDashboardHost(document.getElementById('patient-ronda-dashboard-host'));
   if (dashBackWired) return;
@@ -197,17 +256,53 @@ function wireDashboardOnce() {
   }
 }
 
+export function dashboardHostIsPaintable(el, wrapEl) {
+  if (!el) return false;
+  if (el.hidden) return false;
+  if (wrapEl && (wrapEl.hidden || (wrapEl.style && wrapEl.style.display === 'none'))) {
+    return false;
+  }
+  return true;
+}
+
 export function resolveDashboardPaintTargets(opts) {
   opts = opts || {};
   if (opts.hostEl) return [opts.hostEl];
   var inner = opts.inner || 'resumen';
   var targets = [];
-  if (opts.classic && inner === 'resumen') targets.push(opts.classic);
-  if (opts.ronda) targets.push(opts.ronda);
+  if (opts.classic && inner === 'resumen' && dashboardHostIsPaintable(opts.classic, opts.classicWrap)) {
+    targets.push(opts.classic);
+  }
+  if (opts.ronda && dashboardHostIsPaintable(opts.ronda, opts.rondaWrap)) {
+    targets.push(opts.ronda);
+  }
   return targets;
 }
 
-export function renderPatientDashboard(hostEl) {
+function localTodayKey() {
+  var d = new Date();
+  return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+}
+
+function fillDashboardLabs(targets, pid) {
+  if (String(rt.getActiveId() || '') !== String(pid || '')) return;
+  var html = renderLabsHtml({
+    labs: pid
+      ? buildLabsGlanceForDay({
+          todayKey: localTodayKey(),
+          orderedSets: getLabHistory()[pid] || [],
+        })
+      : { envios: [] },
+  });
+  targets.forEach(function (mount) {
+    if (!mount || !mount.isConnected) return;
+    var slot = mount.querySelector('[data-dash-labs]');
+    if (slot) slot.outerHTML = html;
+  });
+}
+
+export function renderPatientDashboard(hostEl, opts) {
+  opts = opts || {};
   wireDashboardOnce();
   var inner = rt.getActiveInner() || 'resumen';
   syncPacienteCompositeVisibility(inner);
@@ -215,13 +310,21 @@ export function renderPatientDashboard(hostEl) {
     hostEl: hostEl || null,
     classic: document.getElementById('patient-dashboard-mount'),
     ronda: document.getElementById('patient-ronda-dashboard-host'),
+    classicWrap: document.getElementById('patient-expediente-classic'),
+    rondaWrap: document.getElementById('patient-ronda-overview'),
     inner: inner,
   });
   if (!targets.length) return;
-  var html = renderDashboardHtml(collectDashboardModel(inner));
+  var deferLabs = !!opts.deferLabs;
+  var pid = rt.getActiveId();
+  var html = renderDashboardHtml(collectDashboardModel(inner, { skipLabs: deferLabs }));
   targets.forEach(function (mount) {
     wireDashboardHost(mount);
     mount.innerHTML = html;
+  });
+  if (!deferLabs) return;
+  scheduleAfterPaintThenIdle(function () {
+    fillDashboardLabs(targets, pid);
   });
 }
 
