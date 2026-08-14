@@ -1,49 +1,43 @@
-version: 8.1.2
+version: 8.1.3
 files:
-  - url: R+-8.1.2-arm64.zip
-    sha512: zBq8MGt3S9VSAQKWHoScmVHo0EZXDI15dxNB8AAvOjZHnIqjY61MwNTBDeFFzjjXCJO+91RUAA8Rw/4eGiJ8lA==
-    size: 139770719
-  - url: R+-8.1.2-arm64.dmg
-    sha512: OuU1BgpqZN5bzOP430quDOQwQtDXQJcD9zTVS43frwPu9Uc99/b36Xhq9HQnRy5ZR6k4MgONwW6HjBRpuixSiw==
-    size: 145645254
-  - url: R+-8.1.2-x64.zip
-    sha512: 9zjWCjbX0tAf4FddsSlyAlKXkylLwgZ/50w747PyQORpK+5EUc7YCJCMwEksXes+/GDBrskpbnACaWbyOUXkqg==
-    size: 148144777
-  - url: R+-8.1.2-x64.dmg
-    sha512: QCp9Hq6L9VN9WVd5IfsMZy7ESqLytXJlIPASEpc1B1dMdkGnEsLtZ4i5b17PfDK0KLaCJolYuK1ppCR1LXGVdA==
-    size: 154050150
-path: R+-8.1.2-arm64.zip
-sha512: zBq8MGt3S9VSAQKWHoScmVHo0EZXDI15dxNB8AAvOjZHnIqjY61MwNTBDeFFzjjXCJO+91RUAA8Rw/4eGiJ8lA==
-releaseDate: '2026-08-13T22:13:06.000Z'
+  - url: R+-8.1.3-arm64.zip
+    sha512: c1uoOCRkx1vvSpsOM1PCX3Z59LTJ2C2HdW2ngOSrdSZ45Mu5zZo9QZHa3fI1rEPDepMltC+6YJbFjJh4BvCn1g==
+    size: 139820884
+  - url: R+-8.1.3-arm64.dmg
+    sha512: U+/i2yPrPNjF0lcYZrQ3g+fuMN+118kWZJkTwLA8R5yCGBiovJPG90oLZbLck6KVTeSWnSkrYIBrdp0ijj7Fmw==
+    size: 145684962
+  - url: R+-8.1.3-x64.zip
+    sha512: /sej6yYaGOqUBTAnYXmXQl6QANBqHi1gnhd/8nuRRYA5wHTv5w9aYfZN4sHRpxfwZ0tK8awQBSLPnM6+cLth2w==
+    size: 148194350
+  - url: R+-8.1.3-x64.dmg
+    sha512: hpp2wN1Ux+KATCJVSXV9F0ldfDLkqgB9kVypMKR3FCRPEFImufW9GGfb248r06op5EiXaD58sIaMUqlma/54wg==
+    size: 154121529
+path: R+-8.1.3-arm64.zip
+sha512: c1uoOCRkx1vvSpsOM1PCX3Z59LTJ2C2HdW2ngOSrdSZ45Mu5zZo9QZHa3fI1rEPDepMltC+6YJbFjJh4BvCn1g==
+releaseDate: '2026-08-14T17:38:54.000Z'
 releaseNotes: |
-  8.1.2 abre el expediente en Paciente → Resumen (glance: estado, labs del día, medicamentos N/HD/HI). El historial de labs se navega por día. La receta SOAP usa el catálogo SOME (destino + packs IV→VO) y admite reposición de K mixta. Login Nube pinta sesión al instante; el buscador de actualizaciones es silencioso salvo desde Ajustes.
+  8.1.3 afina el instrumento (botones ink, overlays desde el control, chips neutros), manda el SOME crudo por Nube para que cada Mac reparsee, y deja recorrer el censo con ↑/↓. Unirse a un equipo ya no borra asignaciones que el compañero aún no había bajado.
   
-  Glance home — Al abrir un expediente caes en Resumen (KPIs de estado clínico, labs del día, medicamentos como lista N/HD/HI — sin pastillas).
+  Botones — Primarios ink (claro) / azul clínico (oscuro); radio 8px; sin pastillas 999px. Se quita la cápsula +1 día junto a Importar SOME.
   
-  Laboratorio — Labs, Tendencias y Cultivos viven bajo Laboratorio. Resultados ya no es pestaña de Paciente.
+  Overlays — Abren desde el botón que los disparó, sin rebote. Tras un flick, el sheet cede (rubberband) en vez de pegarse al borde.
   
-  Pase — La ronda usa el mismo glance que Resumen.
+  Chips / shell — Acento suave ink-neutral (sin ocre). El pegado SOME asienta el panel.
   
-  Arranque — Tras hidratar el censo se selecciona al momento el último paciente (o fijado / primero visible), sin esperar a Nube.
+  SOME en Nube — El turno envía sourceText; cada Mac reparsea localmente si resLabs viene vacío. No se pisa un set que ya tiene filas.
   
-  Catálogo SOME — Destino SOAP (N → V → HD → HI → NM) con grafías del formulario; paracetamol/metamizol = analgesia/antipiréticos; buprenorfina = analgesia. Amplía EA, no los filtros de Manejo.
+  Historial — Navegación por día más estable (prune de duplicados exactos; settle al pegar).
   
-  IV → VO — Packs orales del catálogo (p. ej. dexametasona 8 mg IV → 2 tabletas de 4 mg); no inventa fracciones.
+  ↑ / ↓ — Recorre el censo visible (fija → activos → archivo). No aplica al escribir, ni con un diálogo/menú abierto.
   
-  Reposición de K — Una bolsa puede llevar KCl + KPO4 (mEq sumados).
+  Toque — En iPad/puntero, soltar sobre la tarjeta selecciona el paciente (el :active ya no se come el click).
   
-  Sueros — Hartmann / NaCl 0.9% fuera de EA; hipertónico y KCl sí entran.
+  Pase — El glance de Resumen se invalida cuando cambian pendientes o eventualidades.
   
-  Historial por día — Un renglón por fecha; dentro del día, ventanas horarias (mismas reglas que consolidar al pegar).
+  Asignaciones — Un push de join/perfil une filas de clinicalOps (no last-write-wins a ciegas): no se pierden patient_team_assignment que el emisor aún no había bajado.
   
-  Panel FEB — Febriles (Tífico O/H, Paratífico A/B) en el overlay de paneles.
+  Cupo — Más margen de mutaciones por sala y minuto (guardia con varias Macs + labs).
   
-  Login session-first — El token y el panel Conexión se pintan en cuanto responde la API; código de recuperación y perfil/sala no bloquean ni deshacen la sesión.
+  CPU Worker — Límite 30 s (Paid) para el snapshot LWW de sala.
   
-  Actualizaciones silenciosas — Chequeo al arrancar, al Actualizar labs y al cambiar de paciente (máx. cada 30 min). El toast «ya actualizado» solo aparece si buscaste desde Ajustes.
-  
-  Atajos — ⌘1 / ⌘E / ⌘T (y vecinos) ya no los come Chromium: Electron los reenvía al renderer.
-  
-  Pendientes huérfanos — Al borrar un expediente se limpian toasts de recordatorio de ese paciente.
-  
-  Curriculum v17 — Primero estructura de la app, + Agregar y completar cuarto/cama/servicio; Tendencias se enseña bajo Laboratorio.
+  Firma — El .dmg se firma con Developer ID Application y se notariza cuando el publish tiene APPLE_ID / APPLE_TEAM_ID / contraseña de app. En una Mac limpia no debería hacer falta clic derecho → Abrir.
