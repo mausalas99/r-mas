@@ -1,6 +1,8 @@
 /**
  * Preparación de firma Mac para publish sin TTY (consola Release o CI).
  * Lee RELEASE_KEYCHAIN_* y variables APPLE_* / CSC_* del entorno.
+ *
+ * electron-builder rejects CSC_NAME that starts with "Developer ID Application:".
  */
 const fs = require('fs');
 const path = require('path');
@@ -8,12 +10,23 @@ const os = require('os');
 const { execSync } = require('child_process');
 
 const DEFAULT_KEYCHAIN = path.join(os.homedir(), 'Library/Keychains/login.keychain-db');
+const CSC_NAME_PREFIX = /^Developer ID Application:\s*/i;
 
 function shellQuote(arg) {
   if (process.platform === 'win32') {
     return `"${String(arg).replace(/"/g, '""')}"`;
   }
   return `'${String(arg).replace(/'/g, `'\\''`)}'`;
+}
+
+function normalizeCscName(name) {
+  return String(name || '').replace(CSC_NAME_PREFIX, '').trim();
+}
+
+function applyCscName(env) {
+  const e = env || process.env;
+  if (e.CSC_NAME == null || e.CSC_NAME === '') return;
+  e.CSC_NAME = normalizeCscName(e.CSC_NAME);
 }
 
 function unlockMacKeychainFromEnv(env) {
@@ -41,8 +54,9 @@ function unlockMacKeychainFromEnv(env) {
 }
 
 function prepareMacSigning(env) {
-  if (process.platform !== 'darwin') return { unlocked: false };
   const e = env || process.env;
+  applyCscName(e);
+  if (process.platform !== 'darwin') return { unlocked: false };
   const unlocked = unlockMacKeychainFromEnv(e);
   const signed =
     !!String(e.CSC_LINK || '').trim() ||
@@ -56,4 +70,9 @@ function prepareMacSigning(env) {
   return { unlocked, signed, notarize };
 }
 
-module.exports = { prepareMacSigning, unlockMacKeychainFromEnv };
+module.exports = {
+  prepareMacSigning,
+  unlockMacKeychainFromEnv,
+  normalizeCscName,
+  applyCscName,
+};

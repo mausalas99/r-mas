@@ -50,6 +50,8 @@ const RELEASE_STAGE_PATHS = [
   'scripts/lib/release-progress.js',
   'scripts/lib/electron-pack-files.js',
   'scripts/lib/electron-pack-files.test.js',
+  'scripts/lib/mac-signing-prep.js',
+  'scripts/lib/mac-signing-prep.test.js',
   'scripts/lib/artifact-names.js',
   'scripts/lib/artifact-names.test.js',
   'scripts/lib/github-release-notes.js',

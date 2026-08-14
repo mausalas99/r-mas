@@ -770,6 +770,7 @@ Para **notarizar** tras firmar, exporta en la misma terminal antes de `build:mac
 - `APPLE_ID` — Apple ID
 - `APPLE_APP_SPECIFIC_PASSWORD` — contraseña específica de app
 - `APPLE_TEAM_ID` — identificador del equipo (10 caracteres)
+- `CSC_NAME` — opcional si hay más de un certificado. Solo el nombre, **sin** el prefijo `Developer ID Application:` (p. ej. `Mauricio Salas Garza (N78U9QC783)`). `release:publish` quita el prefijo si lo pegas entero.
 
 Y en `package.json`, dentro de `build.mac`, añade `"notarize": true` (sin eso, el build firmado no pasa por notarización automática de electron-builder).
 
