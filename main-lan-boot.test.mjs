@@ -1,6 +1,6 @@
 /**
- * Static checks for main-process boot: clinical DB unlock before window;
- * ward server :3738 only when R_PLUS_DEV_WARD_SERVER=1.
+ * Static checks for main-process boot: clinical DB IPC registered before window;
+ * DB unlock runs in parallel; ward server :3738 only when R_PLUS_DEV_WARD_SERVER=1.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -21,18 +21,28 @@ function whenReadyBody(src) {
   return src.slice(start, end);
 }
 
-test('main boot: clinical DB unlock finishes before createWindow', () => {
+test('main boot: DB IPC registered before window; unlock runs in parallel', () => {
   const body = whenReadyBody(MAIN_SRC);
   const createIdx = body.indexOf('createWindow()');
   assert.ok(createIdx >= 0, 'createWindow in whenReady');
-  assert.ok(MAIN_SRC.includes('unlockClinicalDbAtStartup'), 'clinical DB unlock helper defined');
-  assert.ok(
-    MAIN_SRC.includes('await dbManager.ensureUnlocked'),
-    'ensureUnlocked invoked from startup helper'
-  );
-  assert.ok(body.includes('unlockClinicalDbAtStartup(dbManager)'), 'helper used in whenReady');
-  const awaitUnlock = body.indexOf('await unlockPromise');
-  assert.ok(awaitUnlock >= 0 && awaitUnlock < createIdx, 'await unlockPromise before createWindow');
+
+  const registerIdx = body.indexOf('registerDbIpcHandlers(');
+  assert.ok(registerIdx >= 0 && registerIdx < createIdx,
+    'db IPC handlers registered before the window can call them');
+
+  const assignIdx = body.indexOf('unlockPromise = unlockClinicalDbAtStartup(dbManager)');
+  assert.ok(assignIdx >= 0 && assignIdx < createIdx, 'unlock starts before createWindow');
+
+  const awaitIdx = body.indexOf('await unlockPromise');
+  if (awaitIdx >= 0) {
+    const recoverIdx = body.indexOf("R_PLUS_RECOVER_CENSUS");
+    assert.ok(recoverIdx >= 0 && awaitIdx > recoverIdx,
+      'the only await on unlockPromise is inside the recover-census branch');
+  }
+  assert.match(body, /unlockPromise\.catch\(/,
+    'unlock rejection handled — otherwise it is an unhandled rejection');
+  assert.ok(MAIN_SRC.includes('await dbManager.ensureUnlocked'),
+    'ensureUnlocked invoked from startup helper');
 });
 
 test('main boot: production skips ward server listener on :3738', () => {

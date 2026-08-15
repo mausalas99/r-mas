@@ -927,6 +927,11 @@ app.whenReady().then(async () => {
     bootMark('db-ipc');
 
     unlockPromise = unlockClinicalDbAtStartup(dbManager);
+    unlockPromise.catch((unlockErr) => {
+      // The renderer surfaces this through db:status + the unlock overlay
+      // (public/js/features/db-unlock-boot.mjs). Log only — do not quit here.
+      console.error('[R+ boot] clinical DB unlock failed:', unlockErr && unlockErr.message);
+    });
 
     if (isDevWardServerEnabled()) {
       const lanServer = require('./server');
@@ -946,10 +951,9 @@ app.whenReady().then(async () => {
         }
       }
     }
-    if (unlockPromise) await unlockPromise;
-
     if (process.env.R_PLUS_RECOVER_CENSUS === '1') {
       try {
+        await unlockPromise;
         const { runRecoverCensusExport } = await import('./lib/db/recover-census-export.mjs');
         const result = await runRecoverCensusExport({ app, dbManager });
         dialog.showMessageBox({
