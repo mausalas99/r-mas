@@ -3,6 +3,9 @@ import {
   RELEASE_NOTES_HIGHLIGHTS,
   RELEASE_NOTES_HIGHLIGHTS_DEFAULT,
 } from './release-notes-curated.mjs';
+import { closeReleaseNotes } from './release-notes-close.mjs';
+
+export { closeReleaseNotes };
 
 // ── Bloque L · Novedades in-app (release notes) ────────────────────
 /** TEMP: true = mostrar novedades en cada arranque (pruebas UX). Poner false antes de publicar. */
@@ -102,7 +105,7 @@ function wireReleaseNotesDismiss() {
     if (!bd.classList.contains('open')) return;
     var panel = bd.querySelector('.release-notes-modal');
     if (panel && panel.contains(ev.target)) return;
-    closeReleaseNotes();
+    closeReleaseNotes(RELEASE_NOTES_DEV_FORCE_SHOW);
   });
   document.addEventListener(
     'keydown',
@@ -111,7 +114,7 @@ function wireReleaseNotesDismiss() {
       if (!bd.classList.contains('open')) return;
       ev.preventDefault();
       ev.stopPropagation();
-      closeReleaseNotes();
+      closeReleaseNotes(RELEASE_NOTES_DEV_FORCE_SHOW);
     },
     true
   );
@@ -143,7 +146,7 @@ function syncReleaseNotesGuardiaCta() {
       btn.id = 'release-notes-open-guardia-guide';
       btn.textContent = 'Abrir guía de guardia';
       btn.addEventListener('click', function () {
-        closeReleaseNotes();
+        closeReleaseNotes(RELEASE_NOTES_DEV_FORCE_SHOW);
         void import('./learn-hub.mjs').then(function (hub) {
           if (typeof hub.openLearnHub === 'function') {
             hub.openLearnHub({ focusTrack: 'guardia-v7' });
@@ -191,13 +194,3 @@ function showReleaseNotesModal(version) {
   }, 50);
 }
 
-export function closeReleaseNotes() {
-  var el = document.getElementById('release-notes-backdrop');
-  if (!el) return;
-  var v = el.getAttribute('data-version');
-  el.classList.remove('open');
-  el.setAttribute('aria-hidden', 'true');
-  if (v && !RELEASE_NOTES_DEV_FORCE_SHOW) {
-    try { localStorage.setItem(RELEASE_NOTES_SEEN_PREFIX + v, '1'); } catch { /* localStorage unavailable */ }
-  }
-}

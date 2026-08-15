@@ -27,7 +27,7 @@ import {
 import { closeConnectionDropdown } from './features/cloud-sync/panel-chrome.mjs';
 import { closeQuickHelp } from './features/settings-help/help-content.mjs';
 import { closeShortcutsModal } from './features/settings-help/shortcuts-modal.mjs';
-import { closeReleaseNotes } from './features/settings-help/release-notes.mjs';
+import { closeReleaseNotes } from './features/settings-help/release-notes-close.mjs';
 import { hideUpdateModal } from './features/platform/updater.mjs';
 import { closeWipeDataModal } from './features/platform/offline.mjs';
 import {
