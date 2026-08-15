@@ -1,20 +1,20 @@
 version: 8.1.4
 files:
   - url: R+-8.1.4-autoupdate-mac-arm64.zip
-    sha512: IwLVosyKoW3+AF2/i+Zx3RWKcn3jyGGrGj5ITudqIUO2TXYY+pG95LFQtERLfEyTS29sZOGjP1uaevOfioCTqw==
-    size: 139828437
+    sha512: Zp868tTApdEwv7fwmYjcNI2Ti8V6LY6BDt2ajeulgnPyHQFK7Jxk81OrIn/GXbAvO1Wyf2bmd56fpFZI2LpTZw==
+    size: 139828439
   - url: R+-8.1.4-arm64.dmg
-    sha512: FCmZFjMqVDcjz3FAibyIGaoWpcw3Yj5ucWCyMH/VzWmi4aayuLISVBTeu6ZgmpH4SZ60a38JDVt02yQ/h29EKQ==
-    size: 145678341
+    sha512: UfXGYJLTRofvJqgnDtbsrvhXu/1wi+TEd4EU33JaM8AE6ltDfvY1tjFExFcj7me8vwpWHhXVSBHyh+CiqQVWoQ==
+    size: 145675017
   - url: R+-8.1.4-autoupdate-mac-x64.zip
-    sha512: uzg4hvICSe+0CBrbX2xG9+Y52C1UVAqzwErBQ1HUjy4i7HYh7Y/jAewUvTcvx8tjfFXLCkSRXHmId3OvYXsL/g==
-    size: 148201960
+    sha512: t7nutudfWOUAhvwXGQP8gkxPOcjXTAmpNVMLsD0iuekCDBybsF1ihOO9dbbbT2wtUU7BRgPIhgHJ15wFuHYTDg==
+    size: 148201926
   - url: R+-8.1.4-x64.dmg
-    sha512: M+3LId5LcY1Hk5HxE9fAvuRAFxWVkPidczTJwqaVHyPyyPyckQ8CO8CgCng8ojdjxKxf+jFkWlrGRefb6sVjTw==
-    size: 154106201
+    sha512: 3XDYWKUF5HWRqXJbFmX3OEj7500DrikZdVqedhHIgUYVLyfBz4Vgh2sntyY4xIWYOTf2xsZ35MFwN8YbiczRzA==
+    size: 154109703
 path: R+-8.1.4-autoupdate-mac-arm64.zip
-sha512: IwLVosyKoW3+AF2/i+Zx3RWKcn3jyGGrGj5ITudqIUO2TXYY+pG95LFQtERLfEyTS29sZOGjP1uaevOfioCTqw==
-releaseDate: '2026-08-15T02:24:35.000Z'
+sha512: Zp868tTApdEwv7fwmYjcNI2Ti8V6LY6BDt2ajeulgnPyHQFK7Jxk81OrIn/GXbAvO1Wyf2bmd56fpFZI2LpTZw==
+releaseDate: '2026-08-15T02:49:15.000Z'
 releaseNotes: |
   Cifrado AES-256-GCM en Nube, botón de descarga directa en el modal de versión mínima, deduplicación de secciones SOME en pegado múltiple de gases, y correcciones de sincronización de campos censo.
   
