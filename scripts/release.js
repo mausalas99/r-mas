@@ -34,8 +34,6 @@ const {
   hasStagedChanges,
   assertPublishPreflight,
   ghReleaseExists,
-  glabReleaseExists,
-  ensureGitlabRemote,
   tagExists,
 } = require('./lib/release-git');
 const { ensureElectronPackFiles } = require('./lib/electron-pack-files');
@@ -43,7 +41,6 @@ const { curatedConstName } = require('./lib/release-notes-body');
 
 const ROOT = path.join(__dirname, '..');
 const REPO = 'mausalas99/r-mas';
-const REPO_GITLAB = 'rmas-group1/rmas';
 const {
   allReleaseArtifactNames,
   humanInstallAliases,
@@ -576,7 +573,6 @@ async function cmdPublish(argv) {
   const skipBuild = hasFlag(argv, '--skip-build');
   const skipPush = hasFlag(argv, '--skip-push');
   const skipGh = hasFlag(argv, '--no-gh');
-  const skipGlab = hasFlag(argv, '--no-glab');
   const macOnly = hasFlag(argv, '--mac-only');
   const winOnly = hasFlag(argv, '--win-only');
   const noManifestCommit = hasFlag(argv, '--no-manifest-commit');
@@ -661,7 +657,6 @@ async function cmdPublish(argv) {
       macOnly,
       winOnly,
       skipGh,
-      skipGlab,
       noManifestCommit,
     }),
     { jsonMode: progressJson }
@@ -674,9 +669,6 @@ async function cmdPublish(argv) {
     const line = `Versión ${version} · tag ${tag} libre · notas en ${path.relative(ROOT, notesFile)}`;
     if (progressJson) progress.emitLog({ stream: 'meta', line });
     else console.log(line);
-    if (!skipGlab || !skipPush) {
-      ensureGitlabRemote(execSync, spawnSync, ROOT, REPO_GITLAB);
-    }
     progress.complete('preflight');
 
     progress.start('pack-files');
@@ -736,7 +728,6 @@ async function cmdPublish(argv) {
 
     if (!skipPush) {
       await runPublishCmd(progress, 'git-push', 'git push origin main');
-      if (!skipGlab) await runPublishCmd(progress, 'git-push', 'git push gitlab main');
     }
 
     if (!skipBuild) {
@@ -791,25 +782,18 @@ async function cmdPublish(argv) {
     if (!skipPush && tagCreated) {
       const pushTagCmd = tagForcePush ? `git push origin ${tag} --force` : `git push origin ${tag}`;
       await runPublishCmd(progress, 'git-push-tag', pushTagCmd);
-      if (!skipGlab) {
-        const pushTagCmdGitlab = tagForcePush
-          ? `git push gitlab ${tag} --force`
-          : `git push gitlab ${tag}`;
-        await runPublishCmd(progress, 'git-push-tag', pushTagCmdGitlab);
-      }
     } else if (!skipPush) {
       progress.skip('git-push-tag');
     }
 
-    if (!skipGh || !skipGlab) {
+    if (!skipGh) {
       copyHumanInstallers(version, { macOnly, winOnly });
       copyUpdaterPublishAliases(version, { macOnly, winOnly });
     }
-    const sharedNotesMd = !skipGh || !skipGlab ? writeGithubReleaseNotesFile(version) : null;
-    const sharedAssets =
-      !skipGh || !skipGlab
-        ? distUploadFiles(version, { macOnly, winOnly }).map((f) => path.relative(ROOT, f))
-        : null;
+    const sharedNotesMd = !skipGh ? writeGithubReleaseNotesFile(version) : null;
+    const sharedAssets = !skipGh
+      ? distUploadFiles(version, { macOnly, winOnly }).map((f) => path.relative(ROOT, f))
+      : null;
 
     if (!skipGh) {
       progress.start('gh-release');
@@ -878,50 +862,6 @@ async function cmdPublish(argv) {
       }
     }
 
-    if (!skipGlab) {
-      progress.start('glab-release');
-      const notesMd = sharedNotesMd;
-      const assets = sharedAssets;
-      const uploadOnlyGlab = glabReleaseExists(spawnSync, REPO_GITLAB, tag);
-      const glabArgs = uploadOnlyGlab
-        ? ['release', 'upload', tag, ...assets, '-R', REPO_GITLAB]
-        : [
-            'release',
-            'create',
-            tag,
-            ...assets,
-            '-R',
-            REPO_GITLAB,
-            '--name',
-            `R+ ${version}`,
-            '--notes-file',
-            notesMd,
-          ];
-      progress.logCommand(`glab ${glabArgs.join(' ')}`);
-      const createdGlab = spawnSync('glab', glabArgs, {
-        cwd: ROOT,
-        stdio: progressJson ? 'pipe' : 'inherit',
-        encoding: 'utf8',
-      });
-      if (progressJson && createdGlab.stdout) {
-        for (const line of String(createdGlab.stdout).split('\n')) {
-          if (line.trim()) progress.emitLog({ stream: 'stdout', line });
-        }
-      }
-      if (progressJson && createdGlab.stderr) {
-        for (const line of String(createdGlab.stderr).split('\n')) {
-          if (line.trim()) progress.emitLog({ stream: 'stderr', line });
-        }
-      }
-      if (createdGlab.status !== 0) {
-        const hint = `glab release upload ${tag} ${assets.join(' ')} -R ${REPO_GITLAB}`;
-        progress.emitLog({ stream: 'stderr', line: `Si el release ya existe: ${hint}` });
-        progress.fail('glab-release');
-        process.exit(createdGlab.status || 1);
-      }
-      progress.complete('glab-release');
-    }
-
     if (!noManifestCommit && !skipPush) {
       const hasYml =
         fs.existsSync(path.join(ROOT, 'dist', 'latest-mac.yml')) ||
@@ -957,11 +897,10 @@ function main() {
   if (!sub || sub === '--help' || sub === '-h') {
     console.log(`Uso:
   node scripts/release.js bump [VERSION|patch|minor|major] [--title "estable — …"]
-  node scripts/release.js publish [--yes] [--progress-json] [--mac-only|--win-only] [--skip-build] [--skip-push] [--no-gh] [--no-glab]
+  node scripts/release.js publish [--yes] [--progress-json] [--mac-only|--win-only] [--skip-build] [--skip-push] [--no-gh]
     [--skip-pre-commit] [--allow-existing-gh]
 
-Publica en GitHub (${REPO}) y GitLab (${REPO_GITLAB}) por defecto. --no-gh omite GitHub (p. ej. si publicas ahí a mano),
---no-glab omite GitLab. git push y el tag se espejan a ambos remotos salvo --skip-push.
+Publica en GitHub (${REPO}). --no-gh omite GitHub (p. ej. si publicas ahí a mano).
 
 npm:
   npm run release:bump -- 6.4.1 --commit
