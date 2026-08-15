@@ -10,6 +10,7 @@ public/js/app.bundle.mjs
 public/js/app.bundle.mjs.map
 public/js/app.bundle.meta.json
 public/js/chunks/
+public/styles/app.bundle.css
 .worktrees/
 .opencode/
 .repowise/

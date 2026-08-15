@@ -3,6 +3,7 @@ import {
   RELEASE_NOTES_HIGHLIGHTS,
   RELEASE_NOTES_HIGHLIGHTS_DEFAULT,
 } from './release-notes-curated.mjs';
+
 import { closeReleaseNotes } from './release-notes-close.mjs';
 
 export { closeReleaseNotes };

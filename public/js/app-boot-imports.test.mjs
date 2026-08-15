@@ -144,17 +144,33 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
 const EAGER_BOOT_BUDGET_BYTES = 3368019;
 const EAGER_BOOT_BUDGET_FILES = 86;
 
+/**
+ * Pre-existing eager/lazy-only conflicts, not introduced by the startup-lag
+ * pass (docs/superpowers/plans/2026-08-15-startup-lag-optimization.md).
+ * Each needs its own edge fix (see that plan's Step 6 for the pattern:
+ * extract the boot-needed piece to a leaf module). Do not add to this list
+ * to silence a *new* violation — fix the import instead.
+ */
+const KNOWN_EAGER_LAZY_ONLY = new Set([
+  'features/clinical-entrega.mjs',
+  'features/lab-panel.mjs',
+  'features/platform/audit.mjs',
+  'features/platform/import-backup.mjs',
+  'features/platform/offline.mjs',
+  'features/settings-help/settings-dropdown.mjs',
+]);
+
 test('boot bundle: no lazy-only feature is statically reachable (BN-12 transitive)', () => {
   const eager = collectEagerBundleSet(REPO_ROOT);
   const hits = findEagerLazyOnlyModules(eager.modules);
-  if (hits.length > 0) {
-    // Known lazy-only modules still in eager set; requires individual edge fixes
-    console.log('\n⚠ Known eager lazy-only modules:');
-    hits.forEach(h => console.log(`  ${h.module} (${h.banned})`));
-    console.log('  Run: node scripts/metrics/why-eager.mjs <module> to find edge\n');
-  }
-  // TODO: fix these transitive imports in a future pass
-  assert.ok(true);
+  const newHits = hits.filter((h) => !KNOWN_EAGER_LAZY_ONLY.has(h.banned));
+  assert.equal(
+    newHits.length,
+    0,
+    newHits
+      .map((h) => `${h.module} is eager but listed lazy-only (${h.banned}) — new regression`)
+      .join('\n') + '\nRun: node scripts/metrics/why-eager.mjs <module> to find the edge.'
+  );
 });
 
 test('boot bundle: eager payload stays inside budget', () => {
