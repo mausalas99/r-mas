@@ -46,6 +46,7 @@ Do not auto-load skill `graph-memory`. Call it only when ingesting or querying t
 | Plan | Path |
 |------|------|
 | Nube client-encryption compliance review | `docs/superpowers/plans/2026-08-14-nube-client-encryption-compliance.md` |
+| Startup lag optimization (steps 0-8, step 9 outline only) | `docs/superpowers/plans/2026-08-15-startup-lag-optimization.md` |
 
 ---
 
