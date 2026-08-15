@@ -14,11 +14,12 @@ test('vendor-loader uses UMD inject only (no brittle ESM import)', () => {
   assert.doesNotMatch(src, /chart-chunk\.json/);
 });
 
-test('early-boot injects Chart UMD before app bundle', () => {
+test('early-boot requests app bundle before vendor scripts (bundle is the long pole)', () => {
   const boot = fs.readFileSync(path.join(__dirname, 'clinical-onboarding-early-boot.js'), 'utf8');
   assert.match(boot, /appendScript\('\/vendor\/chart\.umd\.min\.js'/);
-  assert.match(
-    boot,
-    /appendScript\('\/vendor\/chart\.umd\.min\.js', function \(\) \{[\s\S]*?injectAppBundle\(\)/
-  );
+  const bundleIdx = boot.indexOf('injectAppBundle();');
+  const chartIdx = boot.indexOf("appendScript('/vendor/chart.umd.min.js'");
+  assert.notStrictEqual(bundleIdx, -1);
+  assert.notStrictEqual(chartIdx, -1);
+  assert.ok(bundleIdx < chartIdx);
 });
