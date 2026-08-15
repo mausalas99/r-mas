@@ -118,4 +118,20 @@ describe('cloud-lab-sidecar-index', () => {
     ]);
     assert.ok(globalThis.localStorage.getItem(CLOUD_LAB_FP_INDEX_KEY));
   });
+
+  it('buildDirtyLabSidecarOpsForPatient reads fingerprint index once, not per set', () => {
+    let getItemCalls = 0;
+    const origGetItem = globalThis.localStorage.getItem.bind(globalThis.localStorage);
+    globalThis.localStorage.getItem = function (key) {
+      getItemCalls += 1;
+      return origGetItem(key);
+    };
+    const labs = Array.from({ length: 20 }, (_, i) => ({
+      id: `lab-${i}`,
+      fecha: '2026-08-09',
+      resLabs: [`K ${i}`],
+    }));
+    buildDirtyLabSidecarOpsForPatient('p1', labs, meta);
+    assert.ok(getItemCalls <= 4, `expected O(1) localStorage reads, got ${getItemCalls}`);
+  });
 });

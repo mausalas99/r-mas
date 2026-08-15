@@ -82,23 +82,28 @@ export function markCloudLabOpPoison(path) {
   writeLabPoisonPaths(set);
 }
 
-/** @param {string} path */
-export function isCloudLabOpPoison(path) {
-  return readLabPoisonPaths().has(String(path || '').trim());
+/**
+ * @param {string} path
+ * @param {Set<string>} [poisonSet]
+ */
+export function isCloudLabOpPoison(path, poisonSet) {
+  const set = poisonSet || readLabPoisonPaths();
+  return set.has(String(path || '').trim());
 }
 
 /**
  * @param {string} patientId
  * @param {unknown} set
  * @param {string} [setId]
+ * @param {Record<string, { fp: string, at: number, src?: string }>} [index]
  */
-export function shouldSkipCloudLabSidecarPush(patientId, set, setId) {
+export function shouldSkipCloudLabSidecarPush(patientId, set, setId, index) {
   const sid = String(setId || labSetId(set, 0) || '').trim();
   const pid = String(patientId || '').trim();
   if (!pid || !sid) return true;
   const path = `labSidecars/${pid}/${sid}`;
   const fp = cloudLabSidecarFingerprint(set);
-  const idx = readLabFingerprintIndex();
+  const idx = index || readLabFingerprintIndex();
   return idx[path]?.fp === fp;
 }
 
@@ -112,13 +117,15 @@ export function buildDirtyLabSidecarOpsForPatient(patientId, labs, meta) {
   const actorId = meta.actorId;
   const batchAt = meta.updatedAt;
   const list = Array.isArray(labs) ? labs : [];
+  const idx = readLabFingerprintIndex();
+  const poisonPaths = readLabPoisonPaths();
   for (let i = 0; i < list.length; i += 1) {
     const set = list[i];
     const setId = labSetId(set, i);
     if (!setId) continue;
     const opPath = `labSidecars/${patientId}/${setId}`;
-    if (isCloudLabOpPoison(opPath)) continue;
-    if (shouldSkipCloudLabSidecarPush(patientId, set, setId)) continue;
+    if (isCloudLabOpPoison(opPath, poisonPaths)) continue;
+    if (shouldSkipCloudLabSidecarPush(patientId, set, setId, idx)) continue;
     const labAt = String(labSetTimestamp(set) || '').trim() || batchAt;
     ops.push(
       cloudOp({
