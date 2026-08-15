@@ -40,15 +40,19 @@ describe('bundle-renderer', () => {
     );
   });
 
-  it('early-boot carga Chart UMD antes del bundle (BN-09)', () => {
+  it('early-boot solicita app.bundle antes que los scripts vendor (BN-09)', () => {
     const boot = fs.readFileSync(
       path.join(repoRoot, 'public/js/clinical-onboarding-early-boot.js'),
       'utf8'
     );
     assert.match(boot, /appendScript\('\/vendor\/chart\.umd\.min\.js'/);
-    assert.match(
-      boot,
-      /appendScript\('\/vendor\/chart\.umd\.min\.js', function \(\) \{[\s\S]*?injectAppBundle\(\)/
+    const bundleIdx = boot.indexOf('injectAppBundle();');
+    const chartIdx = boot.indexOf("appendScript('/vendor/chart.umd.min.js'");
+    assert.notStrictEqual(bundleIdx, -1);
+    assert.notStrictEqual(chartIdx, -1);
+    assert.ok(
+      bundleIdx < chartIdx,
+      'app.bundle.mjs es el cuello de botella — debe solicitarse antes que los scripts vendor'
     );
   });
 });
