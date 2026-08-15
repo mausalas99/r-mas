@@ -164,12 +164,15 @@
   function loadAppScripts() {
     if (window.__RPC_APP_SCRIPTS_LOADING__ || window.__RPC_APP_SCRIPTS_LOADED__) return;
     window.__RPC_APP_SCRIPTS_LOADING__ = true;
-    appendScript('/vendor/sortable.min.js', function () {
-      appendScript('/vendor/chart.umd.min.js', function () {
-        window.__RPC_APP_SCRIPTS_LOADED__ = true;
-        injectAppBundle();
-      });
-    });
+    // The module bundle is the long pole — request it first.
+    injectAppBundle();
+    var pending = 2;
+    function done() {
+      pending -= 1;
+      if (pending === 0) window.__RPC_APP_SCRIPTS_LOADED__ = true;
+    }
+    appendScript('/vendor/sortable.min.js', done);
+    appendScript('/vendor/chart.umd.min.js', done);
   }
 
   function scheduleAppScriptsLoad() {
