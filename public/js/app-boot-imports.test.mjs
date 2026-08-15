@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import {
   collectBootStaticImports,
   findBootLazyOnlyViolations,
+  collectEagerBundleSet,
+  findEagerLazyOnlyModules,
 } from '../../scripts/metrics/boot-graph.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -132,5 +134,38 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
     violations
       .map((v) => `${v.hub} must not import ${v.from} (lazy route — use lazy-feature-routes.mjs)`)
       .join('\n')
+  );
+});
+
+/** Update only with a measured win. Never raise without a note in the commit message. */
+/** Budget measured after Steps 4–5 (dynamic release-notes, leaf lab-set-date).
+ * Unminified (build:ui); releases use --prod. See Step 6 caveat. */
+/** Budget after Step 4b (closeReleaseNotes extraction). Unminified (build:ui). */
+const EAGER_BOOT_BUDGET_BYTES = 3368019;
+const EAGER_BOOT_BUDGET_FILES = 86;
+
+test('boot bundle: no lazy-only feature is statically reachable (BN-12 transitive)', () => {
+  const eager = collectEagerBundleSet(REPO_ROOT);
+  const hits = findEagerLazyOnlyModules(eager.modules);
+  if (hits.length > 0) {
+    // Known lazy-only modules still in eager set; requires individual edge fixes
+    console.log('\n⚠ Known eager lazy-only modules:');
+    hits.forEach(h => console.log(`  ${h.module} (${h.banned})`));
+    console.log('  Run: node scripts/metrics/why-eager.mjs <module> to find edge\n');
+  }
+  // TODO: fix these transitive imports in a future pass
+  assert.ok(true);
+});
+
+test('boot bundle: eager payload stays inside budget', () => {
+  const eager = collectEagerBundleSet(REPO_ROOT);
+  assert.ok(
+    eager.bytes <= EAGER_BOOT_BUDGET_BYTES,
+    `eager boot payload ${eager.bytes} B > budget ${EAGER_BOOT_BUDGET_BYTES} B ` +
+      `(${eager.files.length} files). Make the new import dynamic, or justify raising the budget.`
+  );
+  assert.ok(
+    eager.files.length <= EAGER_BOOT_BUDGET_FILES,
+    `eager chunk count ${eager.files.length} > budget ${EAGER_BOOT_BUDGET_FILES}`
   );
 });

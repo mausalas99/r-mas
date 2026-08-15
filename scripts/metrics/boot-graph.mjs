@@ -84,3 +84,58 @@ export function bootGraphDebtDelta(currentImports, baselineImports) {
   }
   return added * BOOT_GRAPH_DEBT_PER_IMPORT;
 }
+
+const META_REL = 'public/js/app.bundle.meta.json';
+
+/**
+ * Eager boot payload from the esbuild metafile: entry chunk plus every chunk
+ * reachable by `import-statement` (not `dynamic-import`).
+ * @returns {{ files: string[], modules: string[], bytes: number }}
+ */
+export function collectEagerBundleSet(root) {
+  const metaPath = path.join(root, META_REL);
+  if (!fs.existsSync(metaPath)) {
+    throw new Error(`${META_REL} missing — run: npm run build:ui`);
+  }
+  const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+  const outputs = meta.outputs || {};
+  const entry = Object.keys(outputs).find(
+    (k) => k.endsWith('app.bundle.js') || k.endsWith('app.bundle.mjs')
+  );
+  if (!entry) throw new Error('app.bundle entry not found in metafile');
+
+  const files = new Set([entry]);
+  const stack = [entry];
+  while (stack.length) {
+    const cur = stack.pop();
+    for (const imp of (outputs[cur] || {}).imports || []) {
+      if (imp.kind !== 'import-statement') continue;
+      if (files.has(imp.path)) continue;
+      files.add(imp.path);
+      stack.push(imp.path);
+    }
+  }
+
+  const modules = new Set();
+  let bytes = 0;
+  for (const f of files) {
+    bytes += (outputs[f] || {}).bytes || 0;
+    for (const input of Object.keys((outputs[f] || {}).inputs || {})) modules.add(input);
+  }
+  return { files: [...files].sort(), modules: [...modules].sort(), bytes };
+}
+
+/**
+ * Lazy-only modules that are nonetheless statically reachable at boot.
+ * @param {string[]} eagerModules
+ */
+export function findEagerLazyOnlyModules(eagerModules, denylist = BOOT_LAZY_ONLY_SUFFIXES) {
+  const hits = [];
+  for (const mod of eagerModules) {
+    const norm = normalizeBootImportPath(mod);
+    for (const banned of denylist) {
+      if (norm === banned || norm.endsWith('/' + banned)) hits.push({ module: mod, banned });
+    }
+  }
+  return hits;
+}
