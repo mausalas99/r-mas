@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { writeApprovedOutputDir } = require('./lib/output-dir-policy.js');
-const { autoUpdater } = require('electron-updater');
+// autoUpdater loaded lazily via getAutoUpdater()
 const {
   buildGenericFeedUrl,
   buildManualInstallerUrl,
@@ -63,10 +63,6 @@ if (!perfConfig.hardwareAcceleration) {
   app.disableHardwareAcceleration();
 }
 
-autoUpdater.autoDownload = true;
-autoUpdater.autoInstallOnAppQuit = true;
-autoUpdater.allowPrerelease = false;
-
 const UPDATE_CHANNEL_FILE = 'update-channel.json';
 
 function normalizeUpdateChannel(channel) {
@@ -97,9 +93,9 @@ function writeUpdateChannelToDisk(channel) {
 /** Aplica canal Estable (GitHub /releases/latest) vs Pre-releases (feed + borradores). */
 function applyUpdateChannel(channel) {
   const normalized = normalizeUpdateChannel(channel);
-  autoUpdater.allowPrerelease = normalized === 'beta';
-  autoUpdater.channel = null;
-  if (normalized === 'estable') autoUpdater.allowDowngrade = false;
+  getAutoUpdater().allowPrerelease = normalized === 'beta';
+  getAutoUpdater().channel = null;
+  if (normalized === 'estable') getAutoUpdater().allowDowngrade = false;
   return normalized;
 }
 
@@ -110,7 +106,7 @@ let defaultUpdaterFeed = null;
 function clearReinstallSession() {
   if (!reinstallSession) return;
   if (reinstallSession.originalIsUpdateAvailable) {
-    autoUpdater.isUpdateAvailable = reinstallSession.originalIsUpdateAvailable;
+    getAutoUpdater().isUpdateAvailable = reinstallSession.originalIsUpdateAvailable;
   }
   reinstallSession = null;
 }
@@ -121,10 +117,10 @@ function beginReinstallCurrentVersion() {
   const current = app.getVersion();
   reinstallSession = {
     version: current,
-    originalIsUpdateAvailable: autoUpdater.isUpdateAvailable.bind(autoUpdater),
+    originalIsUpdateAvailable: getAutoUpdater().isUpdateAvailable.bind(autoUpdater),
   };
   const originalIsUpdateAvailable = reinstallSession.originalIsUpdateAvailable;
-  autoUpdater.isUpdateAvailable = async function (updateInfo) {
+  getAutoUpdater().isUpdateAvailable = async function (updateInfo) {
     const session = reinstallSession;
     const remote = String((updateInfo && updateInfo.version) || '').replace(/^v/i, '');
     if (session && remote && remote === session.version) {
@@ -135,9 +131,9 @@ function beginReinstallCurrentVersion() {
     }
     return false;
   };
-  autoUpdater.allowDowngrade = true;
-  autoUpdater.autoDownload = true;
-  autoUpdater.setFeedURL({
+  getAutoUpdater().allowDowngrade = true;
+  getAutoUpdater().autoDownload = true;
+  getAutoUpdater().setFeedURL({
     provider: 'generic',
     url: buildGenericFeedUrl(current),
   });
@@ -146,7 +142,7 @@ function beginReinstallCurrentVersion() {
 function captureDefaultUpdaterFeed() {
   if (defaultUpdaterFeed) return defaultUpdaterFeed;
   try {
-    defaultUpdaterFeed = autoUpdater.getFeedURL();
+    defaultUpdaterFeed = getAutoUpdater().getFeedURL();
   } catch (_e) {
     defaultUpdaterFeed = null;
   }
@@ -156,12 +152,12 @@ function captureDefaultUpdaterFeed() {
 function resetUpdaterFeedToDefault() {
   downgradeSession = null;
   clearReinstallSession();
-  autoUpdater.allowDowngrade = false;
+  getAutoUpdater().allowDowngrade = false;
   applyUpdateChannel(readUpdateChannelFromDisk());
   const feed = captureDefaultUpdaterFeed();
   if (feed) {
     try {
-      autoUpdater.setFeedURL(feed);
+      getAutoUpdater().setFeedURL(feed);
     } catch (_e) { /* noop */ }
   }
 }
@@ -173,9 +169,9 @@ function beginDowngradeToVersion(version) {
     throw new Error(`No se puede restaurar v${target} desde v${current}`);
   }
   downgradeSession = { version: target };
-  autoUpdater.allowDowngrade = true;
-  autoUpdater.autoDownload = true;
-  autoUpdater.setFeedURL({
+  getAutoUpdater().allowDowngrade = true;
+  getAutoUpdater().autoDownload = true;
+  getAutoUpdater().setFeedURL({
     provider: 'generic',
     url: buildGenericFeedUrl(target),
   });
@@ -321,6 +317,22 @@ function createWindow() {
 }
 
 // ── Auto-updater events ───────────────────────────────────────────
+let _autoUpdater = null;
+function getAutoUpdater() {
+  if (!_autoUpdater) {
+    _autoUpdater = require('electron-updater').autoUpdater;
+    _autoUpdater.autoDownload = true;
+    _autoUpdater.autoInstallOnAppQuit = true;
+    _autoUpdater.allowPrerelease = false;
+    _autoUpdater.on('update-available', onUpdateAvailable);
+    _autoUpdater.on('download-progress', onDownloadProgress);
+    _autoUpdater.on('update-downloaded', onUpdateDownloaded);
+    _autoUpdater.on('update-not-available', onUpdateNotAvailable);
+    _autoUpdater.on('error', onUpdaterError);
+  }
+  return _autoUpdater;
+}
+
 function safeSendToRenderer(channel, payload) {
   try {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -331,7 +343,7 @@ function safeSendToRenderer(channel, payload) {
   }
 }
 
-autoUpdater.on('update-available', (info) => {
+function onUpdateAvailable(info) {
   try {
     const releaseNotes = serializeReleaseNotes(info);
     const version = info && info.version ? info.version : '';
@@ -341,9 +353,9 @@ autoUpdater.on('update-available', (info) => {
   } catch (e) {
     console.error('update-available handler error:', e && e.message);
   }
-});
+}
 
-autoUpdater.on('download-progress', (p) => {
+function onDownloadProgress(p) {
   try {
     const payload = {
       percent: Math.round((p && p.percent) || 0),
@@ -356,9 +368,9 @@ autoUpdater.on('download-progress', (p) => {
   } catch (e) {
     console.error('download-progress handler error:', e && e.message);
   }
-});
+}
 
-autoUpdater.on('update-downloaded', (info) => {
+function onUpdateDownloaded(info) {
   try {
     const version = info && info.version ? info.version : '';
     pendingUpdate = { type: 'ready', version };
@@ -366,9 +378,9 @@ autoUpdater.on('update-downloaded', (info) => {
   } catch (e) {
     console.error('update-downloaded handler error:', e && e.message);
   }
-});
+}
 
-autoUpdater.on('update-not-available', () => {
+function onUpdateNotAvailable() {
   try {
     if (downgradeSession) {
       sendDowngradeFailedFromSession(
@@ -388,9 +400,9 @@ autoUpdater.on('update-not-available', () => {
   } catch (e) {
     console.error('update-not-available handler error:', e && e.message);
   }
-});
+}
 
-autoUpdater.on('error', (err) => {
+function onUpdaterError(err) {
   try {
     const baseMsg = (err && err.message) ? err.message : String(err || 'Error desconocido');
     console.error('AutoUpdater error:', baseMsg);
@@ -414,11 +426,11 @@ autoUpdater.on('error', (err) => {
   } catch (e) {
     console.error('updater error handler crashed:', e && e.message);
   }
-});
+}
 
 ipcMain.on('install-update', () => {
   clearReinstallSession();
-  autoUpdater.quitAndInstall();
+  getAutoUpdater().quitAndInstall();
 });
 
 ipcMain.on('reinstall-current-release', () => {
@@ -439,7 +451,7 @@ function scheduleUpdateCheck(delayMs) {
     updateCheckTimer = null;
     if (!mainWindow || mainWindow.isDestroyed()) return;
     try {
-      autoUpdater.checkForUpdates().catch(function (err) {
+      getAutoUpdater().checkForUpdates().catch(function (err) {
         // intentional: ignore if window closed or updater busy during scheduled check
         if (process.env.R_PLUS_DEBUG_UPDATER === '1') {
           console.warn('[updater] scheduled check failed:', err && err.message);
