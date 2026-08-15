@@ -71,7 +71,7 @@ function parseCultivoNegativo_(tNorm, tUpper, sitio, fechaC) {
   var pEst = tUpper.indexOf('ESTADO');
   if (pEst !== -1) {
     var fEst = tNorm.substring(pEst + 17, pEst + 80).split('*')[1] || tNorm.substring(pEst + 17, pEst + 80);
-    estado = fEst.split('MICRO')[0].split('PRODUCTO')[0].trim().toUpperCase();
+    estado = fEst.split('MICROORGANISMO')[0].split('PRODUCTO')[0].trim().toUpperCase();
   }
   return sitio + ' ' + fechaC + ': ' + estado;
 }

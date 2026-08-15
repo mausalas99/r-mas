@@ -5,7 +5,9 @@ import {
   isBlockedByMinVersion,
   resolveDowngradeEntries,
   filterEntriesWithGitHubReleases,
+  fetchStableVersionsCatalog,
 } from './stable-downgrade-ui.mjs';
+import { UPDATE_WORKER_URL } from '../../lib/update-feed.mjs';
 
 test('pickDefaultDowngradeVersion elige recommended', () => {
   const v = pickDefaultDowngradeVersion([
@@ -51,4 +53,50 @@ test('filterEntriesWithGitHubReleases oculta tags borrados en GitHub', () => {
     out.map((e) => e.version),
     ['6.5.0', '6.4.2']
   );
+});
+
+test('fetchStableVersionsCatalog probes the update Worker before GitHub raw', async () => {
+  const prevFetch = globalThis.fetch;
+  const requested = [];
+  globalThis.fetch = async (url) => {
+    requested.push(url);
+    return { ok: false };
+  };
+  try {
+    await fetchStableVersionsCatalog();
+    const workerIdx = requested.indexOf(`${UPDATE_WORKER_URL}stable-versions.json`);
+    const githubRawIdx = requested.indexOf(
+      'https://raw.githubusercontent.com/mausalas99/r-mas/main/stable-versions.json'
+    );
+    assert.ok(workerIdx >= 0, 'Worker catalog URL should be requested');
+    assert.ok(githubRawIdx >= 0, 'GitHub raw catalog URL should be requested as fallback');
+    assert.ok(workerIdx < githubRawIdx, 'Worker must be probed before GitHub raw');
+  } finally {
+    globalThis.fetch = prevFetch;
+  }
+});
+
+test('fetchStableVersionsCatalog uses the Worker catalog when it answers', async () => {
+  const prevFetch = globalThis.fetch;
+  const prevWindow = globalThis.window;
+  globalThis.window = { electronAPI: { getAppVersion: async () => '9.9.9' } };
+  globalThis.fetch = async (url) => {
+    if (url === `${UPDATE_WORKER_URL}stable-versions.json`) {
+      return {
+        ok: true,
+        json: async () => ({
+          entries: [{ version: '6.5.3', label: '6.5.3', recommended: true }],
+        }),
+      };
+    }
+    return { ok: false };
+  };
+  try {
+    const result = await fetchStableVersionsCatalog();
+    assert.equal(result.source, 'remote');
+    assert.ok(result.entries.some((e) => e.version === '6.5.3'));
+  } finally {
+    globalThis.fetch = prevFetch;
+    globalThis.window = prevWindow;
+  }
 });

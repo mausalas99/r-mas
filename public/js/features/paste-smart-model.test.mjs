@@ -25,6 +25,7 @@ const {
   matchPatientsByNombre,
   matchPatientByRegistro,
   looksLikeSmartPasteCandidate,
+  looksLikeIndicasPasteCandidate,
   shouldSkipGlobalSmartPaste,
   planSmartPaste,
   assignPatientToBulkBlock,
@@ -66,6 +67,10 @@ describe('paste-smart-model', () => {
     assert.equal(hits[0].patient.id, 'p1');
   });
 
+  const INDICAS_SAMPLE =
+    '15/08/2026 08:19:14 a.m.\tCUIDADOS\tVIGILAR DOLOR ABDOMINAL\t\tDOLOR TORACICO Y DISNEA\t\tNW\n' +
+    '15/08/2026 08:17:07 a.m.\tMEDICAMENTOS\tLINEZOLID 600 MG SOL INY 300 ML\tVIA INTRAVENOSA\t600 MG // *DIA# 9*\tCADA 12 HORAS\tNW';
+
   it('looksLikeSmartPasteCandidate detecta SOME', () => {
     assert.equal(looksLikeSmartPasteCandidate(GASO_VENOSA_SOLO), true);
     assert.equal(looksLikeSmartPasteCandidate('hola mundo corto'), false);
@@ -75,6 +80,23 @@ describe('paste-smart-model', () => {
       ),
       true
     );
+  });
+
+  it('looksLikeSmartPasteCandidate detecta Indicas SOME', () => {
+    assert.equal(looksLikeSmartPasteCandidate(INDICAS_SAMPLE), true);
+    assert.equal(looksLikeSmartPasteCandidate('METRONIDAZOL 500 MG sin tabs'), false);
+  });
+
+  it('looksLikeIndicasPasteCandidate detecta TSV de indicaciones', () => {
+    assert.equal(looksLikeIndicasPasteCandidate(INDICAS_SAMPLE), true);
+    assert.equal(looksLikeIndicasPasteCandidate(GASO_VENOSA_SOLO), false);
+    assert.equal(looksLikeIndicasPasteCandidate(''), false);
+  });
+
+  it('planSmartPaste: Indicas → kind indicas', () => {
+    const plan = planSmartPaste(INDICAS_SAMPLE, { patients: CENSUS });
+    assert.equal(plan.kind, 'indicas');
+    assert.equal(plan.sourceText, INDICAS_SAMPLE);
   });
 
   it('shouldSkipGlobalSmartPaste en lab-input y password', () => {

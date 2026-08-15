@@ -470,6 +470,28 @@ export function procesarRecetaMed() {
   }
 }
 
+export function procesarRecetaFromText(raw) {
+  var activeId = rt.getActiveId();
+  if (!activeId) {
+    medToast("Selecciona un paciente primero", "error");
+    return false;
+  }
+  try {
+    var parsed = parseIndicacionesPaste(raw || "");
+    if (toastParseRecetaFailure(raw, parsed)) return false;
+    commitProcessedReceta(activeId, raw, parsed);
+    medToast(buildRecetaProcessToast(parsed), "success");
+    return true;
+  } catch (err) {
+    console.error("[R+] procesarRecetaFromText:", err);
+    medToast(
+      "No se pudo procesar la receta. Si persiste, reinicia la app (⌘R) y vuelve a pegar desde SOME.",
+      "error"
+    );
+    return false;
+  }
+}
+
 export function limpiarRecetaInput() {
   var ta = document.getElementById("med-input");
   if (ta) ta.value = "";

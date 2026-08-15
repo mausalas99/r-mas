@@ -13,6 +13,7 @@ Records key decisions so agents and humans stay aligned with [01-vision-north-st
 
 | Date | Theme | Decision / Suggestion | Impact |
 | :--- | :--- | :--- | :--- |
+| 2026-08-15 | Architecture | **Update feed:** one Worker URL; probe GitHub then GitLab; rewrite yml to absolute asset URLs; do not proxy zips. New builds only. Revert = re-upload GitHub Releases (Worker already prefers GitHub). No second GitHub account. Not on `rplus-sync`. | [spec](../superpowers/specs/2026-08-15-update-feed-worker-design.md), [handoff](./20-claude-code-handoff.md) |
 | 2026-08-14 | Architecture & Patterns | **Agent graph memory:** cheap cached extraction vs expensive subgraph reasoning. Schema-first prompt caching, Batch API for historical backfills, validate-before-write, temporal edges. Not a product feature; never ingest PHI. | `scripts/graph-memory/`, `docs/core/19-agent-graph-memory.md` |
 | 2026-08-14 | Architecture | **clinicalOps LWW is union-on-join**, not whole-doc replace: a join/profile push must not drop `patient_team_assignment` the sender has not pulled yet. Worker Paid 30s CPU for sala snapshot. | `cloud/sync-worker/src/clinical-ops-lww.js`, `wrangler.toml` |
 | 2026-08-14 | Security | **Nube V1 crypto is accepted:** D1 holds plaintext JSON; passwords PBKDF2-SHA-256 50k. Not E2EE. Do not treat envelope-DEK / client-encrypt as current work. | `docs/core/15-security.md` |

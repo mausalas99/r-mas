@@ -1,0 +1,7 @@
+name = "rmas-update-feed"
+main = "src/index.mjs"
+compatibility_date = "2026-06-01"
+
+# Stateless: fetch + rewrite only. No D1/DO/R2/KV bindings.
+# GitHub (mausalas99/r-mas) and GitLab (rmas-group1/rmas) are both public repos —
+# no auth headers, no tokens, no PHI ever touches this Worker.

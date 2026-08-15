@@ -41,6 +41,9 @@ function buildPublishSteps(opts) {
   if (!opts.skipGh) {
     steps.push({ id: 'gh-release', label: 'GitHub Release + assets', weight: 10 });
   }
+  if (!opts.skipGlab) {
+    steps.push({ id: 'glab-release', label: 'GitLab Release + assets', weight: 10 });
+  }
   if (!opts.noManifestCommit && !opts.skipPush) {
     steps.push({ id: 'manifest-commit', label: 'Manifests latest*.yml (opcional)', weight: 2 });
   }

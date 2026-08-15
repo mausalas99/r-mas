@@ -7,6 +7,7 @@ import {
   buildBulkLabPreview,
   shouldShowBulkLabPreview,
 } from '../lab-bulk-paste.mjs';
+import { looksLikeSomeIndicacionesPaste } from '../med-receta-parse.mjs';
 
 var NAME_STOP = Object.create(null);
 ['de', 'del', 'la', 'las', 'los', 'y', 'e', 'da', 'do', 'dos', 'das'].forEach(function (w) {
@@ -155,8 +156,16 @@ export function assignPatientToBulkBlock(block, patient) {
 }
 
 /**
- * @typedef {'not-some'|'empty'|'ready'|'confirm-single'|'ambiguous'|'preview'} SmartPasteKind
+ * @typedef {'not-some'|'empty'|'ready'|'confirm-single'|'ambiguous'|'preview'|'indicas'} SmartPasteKind
  */
+
+/**
+ * @param {string} text
+ * @returns {boolean}
+ */
+export function looksLikeIndicasPasteCandidate(text) {
+  return looksLikeSomeIndicacionesPaste(text);
+}
 
 /**
  * Plan routing for paste-anywhere. Pure — no DOM.
@@ -173,6 +182,10 @@ export function planSmartPaste(text, opts) {
   var findByReg = resolveFindByRegistro(opts, patients);
 
   if (!sourceText) return emptyPlan('empty', 'Pega un reporte SOME primero');
+
+  if (looksLikeIndicasPasteCandidate(sourceText)) {
+    return Object.assign(emptyPlan('indicas', ''), { sourceText: sourceText });
+  }
 
   var blocks = buildBulkLabPreview(sourceText, { findPatientByRegistro: findByReg });
   var totalOk = sumOkReports(blocks);
@@ -303,6 +316,7 @@ function decideSmartPastePlan(ctx) {
 export function looksLikeSmartPasteCandidate(text) {
   var s = String(text || '');
   if (s.length < 40) return false;
+  if (looksLikeIndicasPasteCandidate(s)) return true;
   if (!/Expediente\s*:/i.test(s)) return false;
   return /Nombre\s*:/i.test(s) || /GASOMETR|BIOMETRIA|QUIMICA|HEMOGLOBINA|BH\b|EGO\b/i.test(s);
 }
@@ -332,8 +346,8 @@ export function isPasteTargetEditable(target) {
 export function shouldSkipGlobalSmartPaste(target) {
   if (!target || typeof target !== 'object') return false;
   var el = /** @type {HTMLElement} */ (target);
-  if (el.id === 'lab-input') return true;
-  if (el.closest && el.closest('#lab-input, .lab-input-wrap, #db-unlock-modal, #clinical-login-modal')) {
+  if (el.id === 'lab-input' || el.id === 'med-input') return true;
+  if (el.closest && el.closest('#lab-input, .lab-input-wrap, #med-receta-paste-modal, #db-unlock-modal, #clinical-login-modal')) {
     return true;
   }
   var tag = String(el.tagName || '').toUpperCase();

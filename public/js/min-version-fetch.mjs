@@ -1,4 +1,6 @@
-/** Fetch min-version policy: local static file first, then GitHub main. */
+/** Fetch min-version policy: local static file, then update Worker, then GitHub main. */
+
+import { UPDATE_WORKER_URL } from '../../lib/update-feed.mjs';
 
 const REMOTE_MIN_VERSION_URL =
   'https://raw.githubusercontent.com/mausalas99/r-mas/main/min-version.json';
@@ -8,7 +10,7 @@ const REMOTE_MIN_VERSION_URL =
  */
 export async function fetchMinVersionPayload() {
   if (typeof fetch !== 'function') return null;
-  const urls = ['/min-version.json', REMOTE_MIN_VERSION_URL];
+  const urls = ['/min-version.json', `${UPDATE_WORKER_URL}min-version.json`, REMOTE_MIN_VERSION_URL];
   for (const url of urls) {
     try {
       const res = await fetch(url, { cache: 'no-store' });

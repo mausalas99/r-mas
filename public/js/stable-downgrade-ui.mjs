@@ -4,6 +4,7 @@ import {
   compareSemverCore,
   buildManualInstallerUrl,
 } from '../../lib/update-downgrade.mjs';
+import { UPDATE_WORKER_URL } from '../../lib/update-feed.mjs';
 
 import { showSettingsPanel } from './features/settings-help/settings-dropdown.mjs';
 import { fetchMinVersionPayload } from './min-version-fetch.mjs';
@@ -128,14 +129,20 @@ export async function fetchStableVersionsCatalog() {
   }
 
   let resolved = null;
-  try {
-    const res = await fetch(STABLE_VERSIONS_RAW_URL, { cache: 'no-store' });
-    if (!res.ok) throw new Error('catalog HTTP ' + res.status);
-    const raw = await res.json();
-    const remote = resolveDowngradeEntries(raw, current, 'remote');
-    if (remote.entries.length) resolved = remote;
-  } catch {
-    /* fall through */
+  const catalogUrls = [`${UPDATE_WORKER_URL}stable-versions.json`, STABLE_VERSIONS_RAW_URL];
+  for (const url of catalogUrls) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) continue;
+      const raw = await res.json();
+      const remote = resolveDowngradeEntries(raw, current, 'remote');
+      if (remote.entries.length) {
+        resolved = remote;
+        break;
+      }
+    } catch {
+      /* try next */
+    }
   }
   if (!resolved) {
     resolved = resolveDowngradeEntries(EMBEDDED_STABLE_CATALOG, current, 'embedded');

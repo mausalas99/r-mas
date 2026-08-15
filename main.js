@@ -15,6 +15,7 @@ const {
   isValidDowngradeTargetVersion,
   pickMacArch,
 } = require('./lib/update-downgrade.js');
+const { UPDATE_FEED_MODE, UPDATE_WORKER_URL } = require('./lib/update-feed.js');
 const { probeNativeRuntime } = require('./lib/native-runtime-probe.js');
 const { isAllowedExternalUrl } = require('./lib/window-open-policy.cjs');
 const { isReservedShellShortcutInput, hasCmdOrCtrl } = require('./lib/shell-shortcut-input.cjs');
@@ -324,6 +325,15 @@ function getAutoUpdater() {
     _autoUpdater.autoDownload = true;
     _autoUpdater.autoInstallOnAppQuit = true;
     _autoUpdater.allowPrerelease = false;
+    // Default feed for this build. 'worker' overrides electron-builder's baked-in
+    // GitHub feed with the rmas-update-feed Worker (GitHub-first, GitLab fallback —
+    // see cloud/update-worker/README.md). 'github' leaves today's behavior unchanged.
+    // Downgrade/reinstall paths stay on GitHub tag folders regardless (buildGenericFeedUrl).
+    if (UPDATE_FEED_MODE === 'worker') {
+      try {
+        _autoUpdater.setFeedURL({ provider: 'generic', url: UPDATE_WORKER_URL });
+      } catch (_e) { /* noop — falls back to electron-builder's baked-in feed */ }
+    }
     _autoUpdater.on('update-available', onUpdateAvailable);
     _autoUpdater.on('download-progress', onDownloadProgress);
     _autoUpdater.on('update-downloaded', onUpdateDownloaded);

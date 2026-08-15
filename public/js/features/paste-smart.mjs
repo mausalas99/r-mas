@@ -12,6 +12,7 @@ import {
   assignPatientToBulkBlock,
   shouldSkipGlobalSmartPaste,
 } from './paste-smart-model.mjs';
+import { procesarRecetaFromText } from './medications-actions.mjs';
 import { cancelOverlayClose, closeOverlayAnimated } from '../ui-motion.mjs';
 
 var wired = false;
@@ -74,6 +75,11 @@ export function processSmartPaste(text, opts) {
 
   if (plan.kind === 'empty' || plan.kind === 'not-some') {
     if (opts && opts.force) showToast(plan.message || 'No hay reporte SOME', 'error');
+    return plan;
+  }
+
+  if (plan.kind === 'indicas') {
+    procesarRecetaFromText(plan.sourceText);
     return plan;
   }
 

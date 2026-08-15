@@ -149,6 +149,25 @@ function ghReleaseExists(spawnSync, repo, version) {
   return r.status === 0;
 }
 
+function glabReleaseExists(spawnSync, repoGitlab, tag) {
+  const r = spawnSync('glab', ['release', 'view', tag, '-R', repoGitlab], {
+    encoding: 'utf8',
+    stdio: 'pipe',
+  });
+  return r.status === 0;
+}
+
+function ensureGitlabRemote(execSync, spawnSync, root, repoGitlab) {
+  const remotes = execSync('git remote', { cwd: root, encoding: 'utf8' });
+  if (remotes.split('\n').includes('gitlab')) return;
+  const r = spawnSync(
+    'git',
+    ['remote', 'add', 'gitlab', `https://gitlab.com/${repoGitlab}.git`],
+    { cwd: root, stdio: 'inherit' }
+  );
+  if (r.status !== 0) process.exit(r.status || 1);
+}
+
 /**
  * @param {{ fs: typeof import('fs'), path: typeof import('path'), execSync: Function, spawnSync: Function, root: string, repo: string, version: string, allowExistingGh?: boolean }} ctx
  */
@@ -179,5 +198,7 @@ module.exports = {
   assertReleaseNotesExist,
   tagExists,
   ghReleaseExists,
+  glabReleaseExists,
+  ensureGitlabRemote,
   assertPublishPreflight,
 };

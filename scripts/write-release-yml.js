@@ -17,7 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { macArtifactNames, winArtifactName, getArtifactPattern } = require('./lib/artifact-names');
+const { macArtifactNames, winArtifactName, getArtifactPattern, githubAssetName } = require('./lib/artifact-names');
 const { releaseNotesPlainFromDoc } = require('./lib/release-notes-plain');
 
 const argv = process.argv.slice(2);
@@ -75,15 +75,16 @@ if (!winOnly) {
   const lines = [];
   lines.push(`version: ${ver}`);
   lines.push('files:');
-  for (const url of macNames) {
-    const abs = need(url);
+  for (const disk of macNames) {
+    const abs = need(disk);
+    const url = githubAssetName(disk, ver, pkg);
     lines.push(`  - url: ${url}`);
     lines.push(`    sha512: ${sha512b64(abs)}`);
     lines.push(`    size: ${fs.statSync(abs).size}`);
   }
-  const zipPrimary = macNames.find((n) => n.endsWith('-arm64.zip')) || macNames.find((n) => n.endsWith('.zip'));
-  const zipAbs = need(zipPrimary);
-  lines.push(`path: ${zipPrimary}`);
+  const zipPrimaryDisk = macNames.find((n) => n.endsWith('-arm64.zip')) || macNames.find((n) => n.endsWith('.zip'));
+  const zipAbs = need(zipPrimaryDisk);
+  lines.push(`path: ${githubAssetName(zipPrimaryDisk, ver, pkg)}`);
   lines.push(`sha512: ${sha512b64(zipAbs)}`);
   lines.push(`releaseDate: '${isoDate()}'`);
   const releaseNotes = releaseNotesPlainFromDoc(root, ver);

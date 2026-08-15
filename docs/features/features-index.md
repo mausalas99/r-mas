@@ -42,5 +42,6 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 | Equipos (Lumify/EKG/US) | `lib/equipos/`, `public/equipos/`, `cloud/equipos-worker/`, `equipos-cloud-config.mjs` | [spec](../superpowers/specs/2026-06-23-equipos-tracking-design.md); cloud deploy: `cloud/equipos-worker/README.md` |
 | Settings / tours | `public/js/features/settings-help/` | |
 | Platform / backup | `public/js/features/platform/` | Silent updater: `updater/silent-check.mjs` (Actualizar labs + cambio de paciente, throttle 30 min) |
+| Update feed (GitHub / GitLab) | `lib/update-feed.mjs`, `cloud/update-worker/`, `main.js` `setFeedURL` | [spec](../superpowers/specs/2026-08-15-update-feed-worker-design.md): Worker serves yml; GitHub first, GitLab fallback |
 
 **Hub:** [docs/core/00-system-index.md](../core/00-system-index.md)
