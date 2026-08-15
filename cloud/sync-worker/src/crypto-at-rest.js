@@ -1,12 +1,11 @@
 /**
  * Room snapshot codec for D1 `room_state`.
  *
- * Free Workers (~10ms CPU / 128MB) cannot AES-GCM + hex the full sala snapshot on
- * every push. New writes store UTF-8 JSON (transit still TLS; desktop SQLCipher is
- * the local at-rest layer). Legacy AES-GCM blobs still decrypt when `iv` is present.
+ * Paid Workers (30s CPU) encrypt every snapshot with AES-256-GCM using WORKER_DATA_KEY.
+ * Legacy plaintext JSON blobs (empty IV) still decode for backward compatibility.
  */
 const IV_BYTES = 12;
-/** Empty IV marks plaintext JSON storage. */
+/** Empty IV marks legacy plaintext JSON storage (backward compat decode only). */
 const PLAINTEXT_IV = new Uint8Array(0);
 
 /** @type {CryptoKey | null} */
@@ -77,12 +76,6 @@ export async function decodeRoomState(env, ciphertextBlob, ivBlob) {
   if (!iv.length || looksLikeJsonObject(ciphertext)) {
     return JSON.parse(new TextDecoder().decode(ciphertext));
   }
-  // Free Workers (~10ms) cannot AES-GCM decrypt multi‑MB snapshots.
-  if (ciphertext.byteLength > 256 * 1024) {
-    throw new Error(
-      `room_state legacy AES too large for Free Worker (${ciphertext.byteLength} bytes); migrate to plaintext JSON`
-    );
-  }
   const key = await importDataKey(env);
   const plaintext = await crypto.subtle.decrypt(
     { name: 'AES-GCM', iv },
@@ -138,15 +131,21 @@ async function importDataKey(env) {
 }
 
 /**
- * Persist room state for Free-tier CPU — UTF-8 JSON bytes, no Worker AES.
+ * Encrypt room state with AES-256-GCM using WORKER_DATA_KEY.
+ * @param {{ WORKER_DATA_KEY?: string }} env
  * @param {unknown} obj
- * @returns {{ ciphertext: Uint8Array, iv: Uint8Array, storageBytes: number }}
+ * @returns {Promise<{ ciphertext: Uint8Array, iv: Uint8Array, storageBytes: number }>}
  */
-export function encodeRoomState(obj) {
-  const ciphertext = new TextEncoder().encode(JSON.stringify(obj ?? null));
+export async function encodeRoomState(env, obj) {
+  const key = await importDataKey(env);
+  const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
+  const plaintext = new TextEncoder().encode(JSON.stringify(obj ?? null));
+  const ciphertext = new Uint8Array(
+    await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plaintext)
+  );
   return {
     ciphertext,
-    iv: PLAINTEXT_IV,
+    iv,
     storageBytes: ciphertext.byteLength,
   };
 }

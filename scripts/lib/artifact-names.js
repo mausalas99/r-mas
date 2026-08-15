@@ -47,7 +47,7 @@ function winArtifactName(version, pattern, pkg) {
 
 /**
  * Copies of the installers with names a person can pick without knowing arm64/x64.
- * Canonical names stay for auto-update (zip) and latest-*.yml.
+ * Canonical names stay on disk; GitHub Assets use these plus updaterPublishAliases.
  */
 function humanInstallAliases(version, pkg) {
   const pn = productName(pkg || {});
@@ -57,6 +57,28 @@ function humanInstallAliases(version, pkg) {
     { from: `${pn}-${v}-x64.dmg`, to: `${pn}-${v}-Mac-Intel.dmg` },
     { from: `${pn}-${v}-x64.exe`, to: `${pn}-${v}-Windows.exe` },
   ];
+}
+
+/**
+ * Zip + zip.blockmap names on GitHub. "autoupdate" so Assets is not mistaken for installers.
+ * electron-builder still writes the canonical zip on disk.
+ */
+function updaterPublishAliases(version, pkg) {
+  const pn = productName(pkg || {});
+  const v = String(version || '');
+  const aliases = [];
+  for (const arch of ['arm64', 'x64']) {
+    const fromZip = `${pn}-${v}-${arch}.zip`;
+    const toZip = `${pn}-${v}-autoupdate-mac-${arch}.zip`;
+    aliases.push({ from: fromZip, to: toZip });
+    aliases.push({ from: `${fromZip}.blockmap`, to: `${toZip}.blockmap` });
+  }
+  return aliases;
+}
+
+function githubAssetName(builderName, version, pkg) {
+  const hit = updaterPublishAliases(version, pkg).find((a) => a.from === builderName);
+  return hit ? hit.to : builderName;
 }
 
 function allReleaseArtifactNames(pkg) {
@@ -79,5 +101,7 @@ module.exports = {
   macArtifactNames,
   winArtifactName,
   humanInstallAliases,
+  updaterPublishAliases,
+  githubAssetName,
   allReleaseArtifactNames,
 };

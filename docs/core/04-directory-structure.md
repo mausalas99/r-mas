@@ -38,6 +38,7 @@ R+/
 | IPC channel | `preload.js` + `main.js` or `lib/db/ipc-handlers.mjs` |
 | DB schema change | `lib/db/schema.mjs` + `schema.test.mjs` (bump version) |
 | Feature documentation | `docs/features/feat-*.md` + update `features-index.md` |
+| Agent graph memory | `scripts/graph-memory/` (not shipped in Electron; see [19-agent-graph-memory.md](./19-agent-graph-memory.md)) |
 
 ## Generated — do not hand-edit
 

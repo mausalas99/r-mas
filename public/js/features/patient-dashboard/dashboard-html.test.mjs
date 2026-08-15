@@ -140,6 +140,14 @@ describe('dashboard html', () => {
     assert.equal(html.includes('Sin labs de hoy'), false);
   });
 
+  it('shows at most 2 lab draws in resumen', () => {
+    const draw = (time) => ({ time, groups: [] });
+    const html = renderLabsHtml({
+      labs: { envios: [draw('01:00'), draw('07:00'), draw('15:00')], pending: false },
+    });
+    assert.equal((html.match(/data-dash-action="labs-envio"/g) || []).length, 2);
+  });
+
   it('omits Medicamentos when SOAP is empty', () => {
     const html = renderDashboardHtml(
       buildDashboardModel({

@@ -2,6 +2,7 @@ import { handleAdmin } from './admin.js';
 import { handleAuth } from './auth.js';
 import { SyncError, jsonSyncError, syncErrorStatus } from './errors.js';
 import { handleInternoApiRoute } from './interno/routes.js';
+import { handlePaseLabs } from './pase-labs.js';
 import { handleRooms } from './rooms.js';
 
 export const API_PREFIX = '/api/sync/v1';
@@ -39,6 +40,10 @@ export async function handleApiRoute(request, env) {
     if (subpath === '/rooms' || subpath.startsWith('/rooms/')) {
       const roomsSub = subpath === '/rooms' ? '/' : subpath.slice('/rooms'.length) || '/';
       return await handleRooms(request, env, roomsSub);
+    }
+
+    if (subpath === '/pase-labs') {
+      return await handlePaseLabs(request, env);
     }
 
     if (subpath === '/admin' || subpath.startsWith('/admin/')) {

@@ -184,7 +184,7 @@ function applyLanPatientScalars(existing, p) {
     changed = true;
   }
   var censoBefore = JSON.stringify(existing);
-  mergeCensoPatientFields(existing, p);
+  mergeCensoPatientFields(existing, p, { keepLocalWhenPresent: !takeIncoming });
   if (JSON.stringify(existing) !== censoBefore) changed = true;
   const regBefore = existing.registeredByUserId;
   mergePatientRegistrationMeta(existing, p);

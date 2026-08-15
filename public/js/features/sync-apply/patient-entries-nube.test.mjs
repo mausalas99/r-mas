@@ -121,6 +121,69 @@ describe('applyLanPatientEntries on Nube path', () => {
     assert.equal(getPatients()[0].nombre, 'CYNTHIA LOPEZ');
   });
 
+  it('does not let older remote diagnoses overwrite newer local ones', () => {
+    getPatients().push({
+      id: 'p-dx',
+      nombre: 'CYNTHIA',
+      registro: '7',
+      diagnosticosList: ['CHOQUE SÉPTICO', ''],
+      diagnosticosText: '1. CHOQUE SÉPTICO',
+      lanUpdatedAt: '2026-08-14T18:00:00.000Z',
+    });
+    applyLanPatientEntries(
+      [
+        {
+          patient: {
+            id: 'p-dx',
+            nombre: 'CYNTHIA',
+            registro: '7',
+            diagnosticosList: ['NAC', ''],
+            diagnosticosText: '1. NAC',
+            lanUpdatedAt: '2026-08-14T10:00:00.000Z',
+          },
+          note: {},
+          indicaciones: {},
+          labHistory: [],
+        },
+      ],
+      { skipTeamScopeFilter: true }
+    );
+    assert.deepEqual(
+      (getPatients()[0].diagnosticosList || []).filter(Boolean),
+      ['CHOQUE SÉPTICO']
+    );
+  });
+
+  it('takes remote diagnoses when the remote clock is newer', () => {
+    getPatients().push({
+      id: 'p-dx',
+      nombre: 'CYNTHIA',
+      registro: '7',
+      diagnosticosList: ['CHOQUE SÉPTICO', ''],
+      diagnosticosText: '1. CHOQUE SÉPTICO',
+      lanUpdatedAt: '2026-08-14T10:00:00.000Z',
+    });
+    applyLanPatientEntries(
+      [
+        {
+          patient: {
+            id: 'p-dx',
+            nombre: 'CYNTHIA',
+            registro: '7',
+            diagnosticosList: ['NAC', ''],
+            diagnosticosText: '1. NAC',
+            lanUpdatedAt: '2026-08-14T18:00:00.000Z',
+          },
+          note: {},
+          indicaciones: {},
+          labHistory: [],
+        },
+      ],
+      { skipTeamScopeFilter: true }
+    );
+    assert.deepEqual((getPatients()[0].diagnosticosList || []).filter(Boolean), ['NAC']);
+  });
+
   it('bumps lab history revision when Nube labs land on an existing patient', () => {
     resetLabHistoryCacheForTests();
     getPatients().push({

@@ -9,13 +9,14 @@ import {
 } from './crypto-at-rest.js';
 
 describe('crypto-at-rest', () => {
-  it('encodeRoomState stores plaintext JSON (Free CPU path)', async () => {
+  it('encodeRoomState round-trips AES-256-GCM', async () => {
+    const env = { WORKER_DATA_KEY: 'ab'.repeat(32) };
     const obj = { hello: 'world', n: 1 };
-    const { ciphertext, iv, storageBytes } = encodeRoomState(obj);
-    assert.equal(iv.byteLength, 0);
+    const { ciphertext, iv, storageBytes } = await encodeRoomState(env, obj);
+    assert.equal(iv.byteLength, 12);
     assert.ok(storageBytes > 0);
-    assert.equal(ciphertext[0], 0x7b);
-    const decoded = await decodeRoomState({}, ciphertext, iv);
+    assert.notEqual(ciphertext[0], 0x7b); // not plain JSON
+    const decoded = await decodeRoomState(env, ciphertext, iv);
     assert.deepEqual(decoded, obj);
   });
 
@@ -48,14 +49,4 @@ describe('crypto-at-rest', () => {
     assert.deepEqual(decoded, obj);
   });
 
-  it('rejects oversized legacy AES on Free path', async () => {
-    const env = { WORKER_DATA_KEY: 'ab'.repeat(32) };
-    const huge = new Uint8Array(300 * 1024);
-    huge[0] = 0x00;
-    const iv = new Uint8Array(12);
-    await assert.rejects(
-      () => decodeRoomState(env, huge, iv),
-      /legacy AES too large/
-    );
-  });
 });

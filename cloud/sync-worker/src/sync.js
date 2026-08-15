@@ -108,7 +108,7 @@ export async function commitMutationBatch(env, db, opts) {
     applied,
     nextState,
   } = opts;
-  const { ciphertext, iv, storageBytes } = encodeRoomState(nextState);
+  const { ciphertext, iv, storageBytes } = await encodeRoomState(env, nextState);
   if (storageBytes > QUOTAS.storageHardBytes) {
     throw new SyncError(
       'payload_too_large',

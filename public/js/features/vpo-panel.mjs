@@ -11,7 +11,7 @@ import {
   setDiagnosticosList,
 } from '../vpo-data.mjs';
 import { formatDiagnosticosCopy } from '../patient-diagnosticos.mjs';
-import { pushDiagnosticosToPatient } from '../patient-diagnosticos.mjs';
+import { pushDiagnosticosToPatient, stampCensoFieldsClock } from '../patient-diagnosticos.mjs';
 import {
   buildVpoFullCopyText,
   buildFarmacosCopyText,
@@ -190,6 +190,7 @@ function wireVpoImportActions(mount, state, patientId) {
       return;
     }
     pushDiagnosticosToPatient(patient, list);
+    stampCensoFieldsClock(patient);
     persistClinicalState();
     rt.showToast('Diagnósticos guardados en Datos del paciente', 'success');
   });

@@ -169,10 +169,11 @@ function renderDrawHtml(envio) {
 export function renderLabsHtml(model) {
   var pending = !!(model && model.labs && model.labs.pending);
   var envios = model && model.labs && Array.isArray(model.labs.envios) ? model.labs.envios : [];
+  var visibleEnvios = envios.slice(-2);
   var body = pending
     ? ''
-    : envios.length
-      ? '<div class="day-draws">' + envios.map(renderDrawHtml).join('') + '</div>'
+    : visibleEnvios.length
+      ? '<div class="day-draws">' + visibleEnvios.map(renderDrawHtml).join('') + '</div>'
       : '<p class="empty-hint">Sin labs de hoy</p>';
   return (
     '<div class="card labs-card clickable" data-dash-labs data-dash-action="labs-full">' +

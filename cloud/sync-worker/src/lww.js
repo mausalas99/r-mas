@@ -198,7 +198,12 @@ function applyOpToState(state, op) {
   }
 
   if (path === 'clinicalOps') {
-    state.clinicalOps = mergeClinicalOpsLww(state.clinicalOps, value);
+    // Encrypted envelope: client already merged before push; Worker stores opaque blob.
+    if (value !== null && typeof value === 'object' && value.enc === 1) {
+      state.clinicalOps = value;
+    } else {
+      state.clinicalOps = mergeClinicalOpsLww(state.clinicalOps, value);
+    }
     return;
   }
 

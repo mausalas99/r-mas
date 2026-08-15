@@ -2423,10 +2423,39 @@ var RELEASE_NOTES_813 = [
   },
 ];
 
+var RELEASE_NOTES_814 = [
+  {
+    title: 'Nube — cifrado AES-256-GCM',
+    body:
+      'Cada snapshot se almacena cifrado en el Worker con <strong>AES-256-GCM</strong>. Blobs anteriores siguen siendo compatibles.',
+  },
+  {
+    title: 'Actualización bloqueante — descarga directa',
+    body:
+      'El modal de versión mínima ahora muestra un botón con el instalador correcto según plataforma: <strong>Mac Apple Silicon</strong>, <strong>Mac Intel</strong> o <strong>Windows</strong>.',
+  },
+  {
+    title: 'Pegado de labs — sin duplicados SOME',
+    body:
+      'Al pegar múltiples tomas de gases del mismo día, las secciones compartidas (EGO, etc.) ya no se repiten entre envíos.',
+  },
+  {
+    title: 'Censo — sync sin rechazos',
+    body:
+      'Diagnósticos y medicamentos ahora estampan el reloj al guardar; la Nube ya no rechaza la operación como obsoleta al hacer pull.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.1.4 en todas</strong> las Macs y PCs del turno el mismo día.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_813;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_814;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.1.4': RELEASE_NOTES_814,
   '8.1.3': RELEASE_NOTES_813,
   '8.1.2': RELEASE_NOTES_812,
   '8.1.1': RELEASE_NOTES_811,

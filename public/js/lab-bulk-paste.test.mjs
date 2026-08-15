@@ -293,6 +293,36 @@ SEG\t29.1 - 38.4`;
     assert.match(String(withBh[0].hora || ''), /^06:00/);
   });
 
+  it('mergeBulkParseResults quita EGO duplicado entre reportes con GASES a distintas horas', () => {
+    // SOME incluye EGO en cada reporte del día. Al pegar GASES(07:57)+EGO y GASES(15:28)+EGO,
+    // el EGO debe quedar solo en el primer cluster.
+    var egoChunk = 'EGO:\n  AMAR TURBIA pH 5.5 D 1.025\n  Prot 30+ Leuco 59-62+ Eri >100';
+    var gases07 = 'GASES\tpH 7.36 pCO2 32* pO2 41* Bica 18.1*';
+    var gases15 = 'GASES\tpH 7.39 pCO2 31* pO2 49* Bica 18.8*';
+    var makeItem = function (hora, gasesChunk) {
+      return {
+        result: {
+          patient: { expediente: '0008421-7', name: 'TEST', fecha: '14/08/2026', hora: hora },
+          resLabs: [gasesChunk, egoChunk],
+          bhExtras: {},
+          refsBySection: {},
+        },
+        reportText: 'Expediente:\t0008421-7\tFecha Registro:\tAug 14 2026 ' + hora,
+      };
+    };
+    var items = [makeItem('07:57', gases07), makeItem('15:28', gases15)];
+    var merged = mergeBulkParseResults(items);
+    assert.equal(merged.length, 2, 'GASES a distintas horas → 2 conjuntos');
+    var egoCount = merged.reduce(function (acc, p) {
+      return acc + (p.resLabs || []).filter(function (c) { return /^EGO\b/i.test(String(c || '').trim()); }).length;
+    }, 0);
+    assert.equal(egoCount, 1, 'EGO debe aparecer solo en el primer conjunto');
+    assert.ok(
+      (merged[0].resLabs || []).some(function (c) { return /^EGO\b/i.test(String(c || '').trim()); }),
+      'EGO debe estar en el primer conjunto (07:57)'
+    );
+  });
+
   it('mergeBulkParseResults mantiene días distintos separados', () => {
     var block = DEMO_SOME_LAB_REPORT + '\n\n' + OLDER_DEMO_SOME_LAB_REPORT;
     var preview = buildBulkLabPreview(block, { findPatientByRegistro: function () { return null; } });

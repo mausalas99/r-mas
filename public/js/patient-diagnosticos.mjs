@@ -151,13 +151,34 @@ function diagnosticosListHasContent(list) {
   });
 }
 
-/** @param {Record<string, unknown>} target @param {Record<string, unknown>|undefined} source */
-export function mergeCensoPatientFields(target, source) {
+/**
+ * Stamp the censo fields clock. Diagnoses and censo meds ride the single
+ * `entries/<id>/fields` LWW path — without this stamp the Nube rejects the op
+ * as stale and the old remote value comes back on the next pull.
+ * @param {Record<string, unknown>|null|undefined} patient
+ * @param {string} [now]
+ */
+export function stampCensoFieldsClock(patient, now) {
+  if (!patient) return;
+  patient.lanUpdatedAt = String(now || new Date().toISOString());
+}
+
+/**
+ * @param {Record<string, unknown>} target
+ * @param {Record<string, unknown>|undefined} source
+ * @param {{ keepLocalWhenPresent?: boolean }} [options] — set when the incoming
+ *   clock is behind the local one; then local non-empty values win.
+ */
+export function mergeCensoPatientFields(target, source, options) {
   if (!target || !source) return;
+  var keepLocal = !!(options && options.keepLocalWhenPresent);
   mergeAccesosPatientFields(target, source);
-  if (source.censoMedsText) target.censoMedsText = source.censoMedsText;
+  if (source.censoMedsText && !(keepLocal && String(target.censoMedsText || '').trim())) {
+    target.censoMedsText = source.censoMedsText;
+  }
   // Never clobber real diagnoses with placeholder [''] from ensurePatientDiagnosticos.
   if (!diagnosticosListHasContent(source.diagnosticosList)) return;
+  if (keepLocal && diagnosticosListHasContent(target.diagnosticosList)) return;
   target.diagnosticosList = source.diagnosticosList;
   if (source.diagnosticosText) target.diagnosticosText = source.diagnosticosText;
   else ensurePatientDiagnosticos(target);

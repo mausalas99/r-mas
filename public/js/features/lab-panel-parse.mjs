@@ -110,6 +110,8 @@ export function procesarReporte() {
 export function renderOutput(result, opts) {
   var patient = result.patient;
   var resLabs = result.resLabs;
+  var groups = opts && opts.dayGroups;
+  if (groups && groups.length > 1) result.dayGroups = groups;
   labPanelBridge.setActiveLab(result);
   if (!(opts && opts.fromHistory)) rt.onboardingAdvanceAfterParse();
   var fechaBanner = resolveLabOutputFechaBanner(patient);
@@ -117,7 +119,6 @@ export function renderOutput(result, opts) {
   var box = prepareLabOutputBox(fechaBanner, rt);
   var src = String(result.sourceText || '').trim();
   var extras = [];
-  var groups = opts && opts.dayGroups;
   if (groups && groups.length) {
     groups.forEach(function (group) {
       extras.push(group.sourceText);

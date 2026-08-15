@@ -135,26 +135,56 @@ function buildLabLines() {
       lines.push(fechaDm.length >= 5 && fechaDm.indexOf('/') !== -1 ? fechaDm.slice(0, 5) : fechaDm);
     }
   }
-  var bhExtDone = false;
-  activeLab.resLabs.forEach(function(entry) {
-    if (prefs.hideGasoAdvInterp && rt.isGasoInterpretacionResLabChunk(entry)) return;
-    if (rt.isCitoquimInterpretacionResLabChunk && rt.isCitoquimInterpretacionResLabChunk(entry)) return;
-    if (rt.isAscitisInterpretacionResLabChunk(entry)) return;
-    entry.split(/\r?\n/).forEach(function(subline) {
-      var cleaned = subline.replace(/\t/g, ' ').replace(/  +/g, ' ').trim();
-      if (cleaned) lines.push(cleaned);
-    });
-    if (prefs.showBhExtendedLine && !bhExtDone && activeLab.bhExtras && rt.isBhMainResLabChunk(entry)) {
-      var extPlain = rt.formatBhExtendedTabLine(activeLab.bhExtras, activeLab.sourceText);
-      if (extPlain) {
-        extPlain.split(/\r?\n/).forEach(function(subline) {
-          var cleanedExt = subline.replace(/\t/g, ' ').replace(/  +/g, ' ').trim();
-          if (cleanedExt) lines.push(cleanedExt);
+  var dayGroups = activeLab.dayGroups;
+  if (dayGroups && dayGroups.length > 1) {
+    dayGroups.forEach(function(group) {
+      var hora = String(group.hora || '').trim();
+      var tipo = String(group.tipoLabel || '').trim();
+      lines.push([hora, tipo].filter(Boolean).join(' · ') || 'Envío');
+      var bhExtDone = false;
+      (group.resLabs || []).forEach(function(entry) {
+        if (prefs.hideGasoAdvInterp && rt.isGasoInterpretacionResLabChunk(entry)) return;
+        if (rt.isCitoquimInterpretacionResLabChunk && rt.isCitoquimInterpretacionResLabChunk(entry)) return;
+        if (rt.isAscitisInterpretacionResLabChunk(entry)) return;
+        entry.split(/\r?\n/).forEach(function(subline) {
+          var cleaned = subline.replace(/\t/g, ' ').replace(/  +/g, ' ').trim();
+          if (cleaned) lines.push(cleaned);
         });
-        bhExtDone = true;
+        if (prefs.showBhExtendedLine && !bhExtDone && group.bhExtras && rt.isBhMainResLabChunk(entry)) {
+          var extPlain = rt.formatBhExtendedTabLine(group.bhExtras, group.sourceText);
+          if (extPlain) {
+            extPlain.split(/\r?\n/).forEach(function(subline) {
+              var cleanedExt = subline.replace(/\t/g, ' ').replace(/  +/g, ' ').trim();
+              if (cleanedExt) lines.push(cleanedExt);
+            });
+            bhExtDone = true;
+          }
+        }
+      });
+      lines.push('');
+    });
+  } else {
+    var bhExtDone = false;
+    activeLab.resLabs.forEach(function(entry) {
+      if (prefs.hideGasoAdvInterp && rt.isGasoInterpretacionResLabChunk(entry)) return;
+      if (rt.isCitoquimInterpretacionResLabChunk && rt.isCitoquimInterpretacionResLabChunk(entry)) return;
+      if (rt.isAscitisInterpretacionResLabChunk(entry)) return;
+      entry.split(/\r?\n/).forEach(function(subline) {
+        var cleaned = subline.replace(/\t/g, ' ').replace(/  +/g, ' ').trim();
+        if (cleaned) lines.push(cleaned);
+      });
+      if (prefs.showBhExtendedLine && !bhExtDone && activeLab.bhExtras && rt.isBhMainResLabChunk(entry)) {
+        var extPlain = rt.formatBhExtendedTabLine(activeLab.bhExtras, activeLab.sourceText);
+        if (extPlain) {
+          extPlain.split(/\r?\n/).forEach(function(subline) {
+            var cleanedExt = subline.replace(/\t/g, ' ').replace(/  +/g, ' ').trim();
+            if (cleanedExt) lines.push(cleanedExt);
+          });
+          bhExtDone = true;
+        }
       }
-    }
-  });
+    });
+  }
   return lines;
 }
 

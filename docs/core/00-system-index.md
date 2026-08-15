@@ -45,6 +45,8 @@ flowchart LR
 | 16 | [glossary-of-terms](./16-glossary-of-terms.md) | in-progress | Domain lexicon |
 | 17 | [docs-blueprint](./17-docs-blueprint.md) | stable | Documentation standard |
 | 18 | [knowledge-capture](./18-knowledge-capture.md) | stable | Decision log |
+| 19 | [agent-graph-memory](./19-agent-graph-memory.md) | stable | Cached extraction vs subgraph reasoning (agent memory, not product) |
+| 20 | [claude-code-handoff](./20-claude-code-handoff.md) | in-progress | Resume point for Claude Code (2026-08-14) |
 
 *Slots 05, 07, 09–14: placeholders created (see directory).*
 
@@ -59,9 +61,11 @@ flowchart LR
 
 ## Read order
 
-1. [01-vision-north-star.md](./01-vision-north-star.md) — *should we build this?*
-2. [04-directory-structure.md](./04-directory-structure.md) — *where is the code / where do I put new files?*
-3. Relevant category index if touching a large feature
+1. [20-claude-code-handoff.md](./20-claude-code-handoff.md) — *resume in Claude Code*
+2. [01-vision-north-star.md](./01-vision-north-star.md) — *should we build this?*
+3. [04-directory-structure.md](./04-directory-structure.md) — *where is the code / where do I put new files?*
+4. [19-agent-graph-memory.md](./19-agent-graph-memory.md) — *agent memory economics (not a product feature)*
+5. Relevant category index if touching a large feature
 
 ## User-facing docs
 

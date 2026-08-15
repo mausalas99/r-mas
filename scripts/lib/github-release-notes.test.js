@@ -27,6 +27,8 @@ test('release.js injects the GitHub download banner on every publish', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '../release.js'), 'utf8');
   assert.match(src, /composeGithubReleaseNotes/);
   assert.match(src, /copyHumanInstallers/);
+  assert.match(src, /copyUpdaterPublishAliases/);
   assert.match(src, /writeGithubReleaseNotesFile/);
   assert.match(src, /humanInstallAliases/);
+  assert.match(src, /updaterPublishAliases/);
 });

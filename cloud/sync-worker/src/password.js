@@ -1,5 +1,5 @@
-/** Free Workers ~10ms CPU — 50k PBKDF2-SHA-256 for pilot. Raise on Paid. */
-const ITERATIONS = 50_000;
+/** Paid Workers 30s CPU — 310k PBKDF2-SHA-256 per NIST SP 800-132. */
+const ITERATIONS = 310_000;
 const HASH_BYTES = 32;
 const SALT_BYTES = 16;
 

@@ -47,5 +47,5 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
     rescatesInSome: rescatesInSome,
     bombaAlgoritmo: bombaAlgoritmo,
   });
-  return assembleSoapLines(ctx.ec, ctx.v, soporte, hiTemp, nmClause).join('\n');
+  return assembleSoapLines(ctx.ec, ctx.v, soporte, hiTemp, nmClause).join('\n\n');
 }

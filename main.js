@@ -501,6 +501,7 @@ ipcMain.on('set-update-channel', (_e, channel) => {
 });
 
 ipcMain.handle('get-platform', () => process.platform);
+ipcMain.handle('get-arch', () => process.arch);
 
 ipcMain.handle('open-external', async (_e, url) => {
   if (!isAllowedExternalUrl(url)) return false;

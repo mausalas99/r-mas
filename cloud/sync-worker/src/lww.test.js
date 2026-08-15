@@ -322,6 +322,46 @@ describe('applyOps LWW', () => {
     assert.ok(members.some((row) => row.user_id === 'u-b'));
   });
 
+  it('encrypted clinicalOps envelope stored as-is without merge', () => {
+    let s = emptyState();
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'clinicalOps',
+        value: { teams: [{ team_id: 't1' }], patient_team_assignment: [{ patient_id: 'p1', team_id: 't1' }] },
+        updatedAt: '2026-08-13T10:00:00.000Z',
+        actorId: 'u-a',
+      },
+    ]));
+    const envelope = { enc: 1, alg: 'A256GCM', iv: 'aaaaaa', ct: 'ciphertext' };
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'clinicalOps',
+        value: envelope,
+        updatedAt: '2026-08-14T10:00:00.000Z',
+        actorId: 'u-b',
+      },
+    ]));
+    assert.deepEqual(s.clinicalOps, envelope);
+  });
+
+  it('encrypted clinicalOps LWW: newer timestamp wins', () => {
+    let s = emptyState();
+    const old = { enc: 1, alg: 'A256GCM', iv: 'old', ct: 'old-ct' };
+    const fresh = { enc: 1, alg: 'A256GCM', iv: 'new', ct: 'new-ct' };
+    ({ state: s } = applyOps(s, [
+      { path: 'clinicalOps', value: old, updatedAt: '2026-08-14T08:00:00.000Z', actorId: 'u-a' },
+    ]));
+    ({ state: s } = applyOps(s, [
+      { path: 'clinicalOps', value: fresh, updatedAt: '2026-08-14T09:00:00.000Z', actorId: 'u-b' },
+    ]));
+    assert.deepEqual(s.clinicalOps, fresh);
+    // stale push must not overwrite
+    ({ state: s } = applyOps(s, [
+      { path: 'clinicalOps', value: old, updatedAt: '2026-08-14T08:00:00.000Z', actorId: 'u-a' },
+    ]));
+    assert.deepEqual(s.clinicalOps, fresh);
+  });
+
   it('new patient id with same registro clears tombstone on re-admit', () => {
     let s = emptyState();
     ({ state: s } = applyOps(s, [

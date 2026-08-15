@@ -199,7 +199,7 @@ async function handleCreateRoom(env, db, request) {
   const code = await generateUniqueRoomCode(db);
   const now = new Date().toISOString();
   const state = emptyRoomState();
-  const { ciphertext, iv, storageBytes } = encodeRoomState(state);
+  const { ciphertext, iv, storageBytes } = await encodeRoomState(env, state);
 
   await db.batch([
     db
@@ -424,7 +424,7 @@ async function handleEnsureTurn(env, db, request) {
   const code = await generateUniqueRoomCode(db);
   const now = new Date().toISOString();
   const state = emptyRoomState();
-  const { ciphertext, iv, storageBytes } = encodeRoomState(state);
+  const { ciphertext, iv, storageBytes } = await encodeRoomState(env, state);
 
   await db.batch([
     db

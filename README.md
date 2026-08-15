@@ -39,10 +39,16 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.1.3](https://github.com/mausalas99/r-mas/releases/tag/v8.1.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.1.4](https://github.com/mausalas99/r-mas/releases/tag/v8.1.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 8.1.4 (estable — release 8.1.4)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_8.1.4.txt`.
 ## R+ 8.1.3 (instrumento + SOME Nube + censo)
 
 - **Instrumento** — Botones ink, overlays desde el control (sin rebote), chips neutros; se quita **+1 día**.

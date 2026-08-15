@@ -94,6 +94,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPlatform: function() {
     return ipcRenderer.invoke('get-platform');
   },
+  getArch: function() {
+    return ipcRenderer.invoke('get-arch');
+  },
   /** Información síncrona del chrome de ventana (sin IPC). */
   getWindowChromeFlags: function() {
     return {
@@ -161,6 +164,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   dbAuditExport: function(opts) {
     return ipcRenderer.invoke('db:audit-export', opts);
+  },
+  dbAuditAppend: function(payload) {
+    return ipcRenderer.invoke('db:audit-append', payload);
   },
   dbBackupExportJson: function() {
     return ipcRenderer.invoke('db:backup-export-json');

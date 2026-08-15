@@ -3,6 +3,7 @@ import {
   ensurePatientDiagnosticos,
   applyPatientDiagnosticosList,
   migratePatientDiagnosticosFromVpo,
+  stampCensoFieldsClock,
 } from './patient-diagnosticos.mjs';
 import { formatCensoMedsFromReceta } from './censo-meds-format.mjs';
 import { getPatients, getMedRecetaByPatient, getVpoByPatient, persistClinicalState } from './app-state.mjs';
@@ -89,6 +90,7 @@ export function onPatientDxInput(index, value) {
   if (!Array.isArray(patient.diagnosticosList)) patient.diagnosticosList = [''];
   patient.diagnosticosList[index] = String(value || '').toUpperCase();
   ensurePatientDiagnosticos(patient);
+  stampCensoFieldsClock(patient);
   persistClinicalState();
 }
 
@@ -98,6 +100,7 @@ export function addPatientDxRow() {
   if (!patient) return;
   if (!Array.isArray(patient.diagnosticosList)) patient.diagnosticosList = [''];
   patient.diagnosticosList.push('');
+  stampCensoFieldsClock(patient);
   persistClinicalState();
   refreshDxListDom(pid);
 }
@@ -109,6 +112,7 @@ export function removePatientDxRow(index) {
   if (patient.diagnosticosList.length <= 1) return;
   patient.diagnosticosList.splice(index, 1);
   applyPatientDiagnosticosList(patient, patient.diagnosticosList);
+  stampCensoFieldsClock(patient);
   persistClinicalState();
   refreshDxListDom(pid);
 }
@@ -121,6 +125,7 @@ export function splitPatientDxPaste() {
   var parsed = parseDiagnosticosText(ta.value);
   if (!parsed.length) return;
   applyPatientDiagnosticosList(patient, parsed.concat(['']));
+  stampCensoFieldsClock(patient);
   persistClinicalState();
   refreshDxListDom(pid);
 }
@@ -130,6 +135,7 @@ export function updatePatientCensoMeds(value) {
   var patient = activePatient(pid);
   if (!patient) return;
   patient.censoMedsText = String(value || '');
+  stampCensoFieldsClock(patient);
   persistClinicalState();
 }
 
@@ -139,6 +145,7 @@ export function censoTomarDeMedicamentos() {
   if (!patient) return;
   var text = formatCensoMedsFromReceta(getMedRecetaByPatient()[pid]);
   patient.censoMedsText = text;
+  stampCensoFieldsClock(patient);
   var ta = document.getElementById('patient-censo-meds');
   if (ta) ta.value = text;
   persistClinicalState();

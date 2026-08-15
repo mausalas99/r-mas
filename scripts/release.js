@@ -41,7 +41,12 @@ const { curatedConstName } = require('./lib/release-notes-body');
 
 const ROOT = path.join(__dirname, '..');
 const REPO = 'mausalas99/r-mas';
-const { allReleaseArtifactNames, humanInstallAliases } = require('./lib/artifact-names');
+const {
+  allReleaseArtifactNames,
+  humanInstallAliases,
+  updaterPublishAliases,
+  githubAssetName,
+} = require('./lib/artifact-names');
 const { composeGithubReleaseNotes } = require('./lib/github-release-notes');
 const APP_JS = path.join(ROOT, 'public/js/app.js');
 const RELEASE_NOTES_HIGHLIGHTS = path.join(ROOT, 'data/release-notes-highlights.mjs');
@@ -352,23 +357,53 @@ function distFiles(version, { macOnly, winOnly }) {
   return names.map((n) => path.join(ROOT, 'dist', n));
 }
 
-function copyHumanInstallers(version, opts) {
-  opts = opts || {};
-  const pkg = readJson('package.json');
-  humanInstallAliases(version, pkg).forEach(function (a) {
-    if (opts.macOnly && a.to.endsWith('.exe')) return;
-    if (opts.winOnly && !a.to.endsWith('.exe')) return;
+function copyDistAliases(aliases, logPrefix) {
+  aliases.forEach(function (a) {
     const from = path.join(ROOT, 'dist', a.from);
     const to = path.join(ROOT, 'dist', a.to);
     if (!fs.existsSync(from)) return;
     fs.copyFileSync(from, to);
-    console.log('Instalador legible:', path.relative(ROOT, to));
+    console.log(logPrefix, path.relative(ROOT, to));
   });
+}
+
+function copyHumanInstallers(version, opts) {
+  opts = opts || {};
+  const pkg = readJson('package.json');
+  copyDistAliases(
+    humanInstallAliases(version, pkg).filter(function (a) {
+      if (opts.macOnly && a.to.endsWith('.exe')) return false;
+      if (opts.winOnly && !a.to.endsWith('.exe')) return false;
+      return true;
+    }),
+    'Instalador legible:'
+  );
+}
+
+function copyUpdaterPublishAliases(version, opts) {
+  opts = opts || {};
+  if (opts.winOnly) return;
+  const pkg = readJson('package.json');
+  copyDistAliases(updaterPublishAliases(version, pkg), 'Actualizador:');
 }
 
 function distUploadFiles(version, opts) {
   const pkg = readJson('package.json');
-  const files = distFiles(version, opts).slice();
+  const skipBuilder = new Set(
+    updaterPublishAliases(version, pkg).map((a) => path.join(ROOT, 'dist', a.from))
+  );
+  const files = [];
+  for (const abs of distFiles(version, opts)) {
+    const base = path.basename(abs);
+    if (base.endsWith('.dmg.blockmap')) continue;
+    if (skipBuilder.has(abs)) continue;
+    files.push(abs);
+  }
+  updaterPublishAliases(version, pkg).forEach(function (a) {
+    if (opts.winOnly) return;
+    const abs = path.join(ROOT, 'dist', a.to);
+    if (fs.existsSync(abs)) files.push(abs);
+  });
   humanInstallAliases(version, pkg).forEach(function (a) {
     if (opts.macOnly && a.to.endsWith('.exe')) return;
     if (opts.winOnly && !a.to.endsWith('.exe')) return;
@@ -400,7 +435,11 @@ function assertDist(version, opts) {
 function verifyYmlNames(version) {
   const pkg = readJson('package.json');
   const { mac, win } = allReleaseArtifactNames(pkg);
-  const expectZip = mac.find((n) => n.endsWith('-arm64.zip'));
+  const expectZip = githubAssetName(
+    mac.find((n) => n.endsWith('-arm64.zip')) || '',
+    version,
+    pkg
+  );
   const macYml = path.join(ROOT, 'dist', 'latest-mac.yml');
   const winYml = path.join(ROOT, 'dist', 'latest.yml');
   if (fs.existsSync(macYml)) {
@@ -748,6 +787,7 @@ async function cmdPublish(argv) {
     if (!skipGh) {
       progress.start('gh-release');
       copyHumanInstallers(version, { macOnly, winOnly });
+      copyUpdaterPublishAliases(version, { macOnly, winOnly });
       const notesMd = writeGithubReleaseNotesFile(version);
       const assets = distUploadFiles(version, { macOnly, winOnly }).map((f) => path.relative(ROOT, f));
       const uploadOnly = ghReleaseExists(spawnSync, REPO, version);

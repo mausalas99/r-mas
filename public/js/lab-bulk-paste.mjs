@@ -417,6 +417,41 @@ function timestampMsFromParsedItem(item) {
  * Agrupa reportes del mismo día y tipo homogéneo si caen en ventana de 2 h consecutiva.
  * @param {{ result: object, reportText: string }[]} parsedItems
  */
+function isGasoChunk(chunk) {
+  var s = String(chunk || '').trim();
+  return /^GASES\b/i.test(s) || /^INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A\s*:/i.test(s);
+}
+
+/**
+ * El sistema SOME incluye secciones como EGO en TODOS los reportes del día
+ * (uno por toma de gases). Al guardar, cada cluster retiene esas secciones y
+ * las secciones no-GASES quedan duplicadas entre sets del mismo día.
+ * Esta función elimina, de los payloads posteriores, los chunks no-GASES cuyo
+ * contenido normalizado ya aparece en un payload anterior del mismo día.
+ * @param {object[]} payloads
+ * @returns {object[]}
+ */
+function stripDuplicateNonGasoChunksAcrossPayloads(payloads) {
+  if (!payloads || payloads.length < 2) return payloads;
+  var seenByDay = Object.create(null);
+  return payloads.map(function (payload) {
+    var dk = normalizeFechaLabHistory(payload.fecha) || String(payload.fecha || '').trim();
+    if (!dk) return payload;
+    if (!seenByDay[dk]) seenByDay[dk] = Object.create(null);
+    var seen = seenByDay[dk];
+    var filtered = (payload.resLabs || []).filter(function (chunk) {
+      if (isGasoChunk(chunk)) return true;
+      var norm = normalizeLabLine(String(chunk || ''));
+      if (!norm) return true;
+      if (seen[norm]) return false;
+      seen[norm] = true;
+      return true;
+    });
+    if (filtered.length === payload.resLabs.length) return payload;
+    return Object.assign({}, payload, { resLabs: filtered });
+  });
+}
+
 export function mergeBulkParseResults(parsedItems) {
   var clusters = clusterByDayTipoAndTimeWindow(
     (parsedItems || []).filter(function (item) {
@@ -434,10 +469,11 @@ export function mergeBulkParseResults(parsedItems) {
       return resLabsHasGasometria(item.result.resLabs || []);
     }
   );
-  return clusters.map(function (cluster) {
+  var payloads = clusters.map(function (cluster) {
     var tipo = primaryTipoForResLabs(cluster[0].result.resLabs || []);
     return buildMergedPayloadFromGroup(cluster, tipo);
   });
+  return stripDuplicateNonGasoChunksAcrossPayloads(payloads);
 }
 
 /**
