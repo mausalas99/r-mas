@@ -73,16 +73,27 @@ export async function decodeRoomState(env, ciphertextBlob, ivBlob) {
       `room_state ciphertext empty ${JSON.stringify(blobShape(ciphertextBlob))}`
     );
   }
-  if (!iv.length || looksLikeJsonObject(ciphertext)) {
+  if (!iv.length) {
     return JSON.parse(new TextDecoder().decode(ciphertext));
   }
-  const key = await importDataKey(env);
-  const plaintext = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    ciphertext
-  );
-  return JSON.parse(new TextDecoder().decode(plaintext));
+  if (iv.length === IV_BYTES) {
+    try {
+      const key = await importDataKey(env);
+      const plaintext = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        ciphertext
+      );
+      return JSON.parse(new TextDecoder().decode(plaintext));
+    } catch (err) {
+      // Legacy row: iv column has stray bytes but ciphertext is really plaintext JSON.
+      if (looksLikeJsonObject(ciphertext)) {
+        return JSON.parse(new TextDecoder().decode(ciphertext));
+      }
+      throw err;
+    }
+  }
+  return JSON.parse(new TextDecoder().decode(ciphertext));
 }
 
 /** @param {string} hex */

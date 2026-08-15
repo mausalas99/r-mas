@@ -145,7 +145,9 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * paste-smart.mjs, medications-actions.mjs), min-version-fetch Worker awareness,
  * labs-cultivo MICROORGANISMO truncation fix, stable-downgrade-ui fallback change.
  * All eager, none of it lazy-loadable (core paste/labs paths). +269 B over prior budget. */
-const EAGER_BOOT_BUDGET_BYTES = 3368288;
+/** +248 B: cloud-lab-sidecar-index batches fingerprint/poison index reads
+ * (O(1) instead of per-lab-set) in buildDirtyLabSidecarOpsForPatient. Eager path. */
+const EAGER_BOOT_BUDGET_BYTES = 3368536;
 const EAGER_BOOT_BUDGET_FILES = 86;
 
 /**
