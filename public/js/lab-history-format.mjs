@@ -10,7 +10,7 @@ import {
   normalizeFechaLabHistory,
   normalizeHoraLabHistory,
 } from './tend-core.mjs';
-import { inferFechaLabSetFromId } from './features/tendencias.mjs';
+import { inferFechaLabSetFromId } from './lab-set-date.mjs';
 import { isModeSala } from './mode-features.mjs';
 import { looksLikeLabSectionChunk } from './labs-reslabs-sanitize.mjs';
 import { isCultivoBlockStartLine } from './cultivo-block-core.mjs';

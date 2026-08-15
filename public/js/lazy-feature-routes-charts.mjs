@@ -33,18 +33,7 @@ export function bindLazyChartsRuntimeCtx(ctx) {
   chartsRuntimeCtx = ctx;
 }
 
-function inferFechaLabSetFromIdFallback(set) {
-  if (!set || set.fecha === 'Anterior') return '';
-  var id = String(set.id || '');
-  if (!/^\d{10,}$/.test(id)) return '';
-  var ms = parseInt(id, 10);
-  if (id.length === 10) ms *= 1000;
-  var d = new Date(ms);
-  var dd = String(d.getDate()).padStart(2, '0');
-  var mm = String(d.getMonth() + 1).padStart(2, '0');
-  var yyyy = d.getFullYear();
-  return dd + '/' + mm + '/' + yyyy;
-}
+import { inferFechaLabSetFromId as inferFechaLabSetFromIdFallback } from './lab-set-date.mjs';
 
 function getLabOutputPrefsFallback() {
   return {

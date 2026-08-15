@@ -14,7 +14,7 @@ export { isLabSectionHeaderLine, isCultivoBlockStartLine, splitResLabsByTipo } f
 import { findExactDuplicateLabGroups, findNormalizedSourceDuplicateGroups, findConflictingSameDateTimeGroups, areLabSetsEquivalent } from './lab-history-auto-store-core.mjs';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory, sortLabHistoryChronological } from './tend-core.mjs';
 import { extractParsedValues, buildParsedBySectionFromResLabs } from './features/diagrams.mjs';
-import { inferFechaLabSetFromId } from './features/tendencias.mjs';
+import { inferFechaLabSetFromId } from './lab-set-date.mjs';
 import { normalizeLabHistoryPatientSets } from './storage.js';
 import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
 import { maintRt } from './lab-history-runtime.mjs';
