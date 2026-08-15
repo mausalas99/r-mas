@@ -27,6 +27,13 @@ const {
   rendererAppIndexUrl,
   shouldUseLegacyHttpRenderer,
 } = require('./lib/renderer-protocol.cjs');
+// Boot timing. Enable with R_PLUS_BOOT_PERF=1.
+const BOOT_T0 = process.hrtime.bigint();
+function bootMark(label) {
+  if (process.env.R_PLUS_BOOT_PERF !== '1') return;
+  const ms = Number(process.hrtime.bigint() - BOOT_T0) / 1e6;
+  console.log(`[R+ boot] ${label}: ${ms.toFixed(1)}ms`);
+}
 
 // Must run before app.ready — app://rplus serves public/ without :3738.
 registerRendererProtocolSchemes({ protocol });
@@ -275,6 +282,7 @@ function createWindow() {
   }, 5000);
 
   mainWindow.once('ready-to-show', () => {
+    bootMark('ready-to-show');
     clearTimeout(showFallback);
     mainWindow.maximize();
     mainWindow.show();
@@ -282,6 +290,7 @@ function createWindow() {
 
   // Wait for renderer JS to fully load before checking for updates
   mainWindow.webContents.once('did-finish-load', () => {
+    bootMark('did-finish-load');
     try {
       // Replay any update events that fired before the renderer was ready
       if (pendingUpdate) {
@@ -862,10 +871,12 @@ app.whenReady().then(async () => {
     process.env.R_PLUS_USER_DATA = app.getPath('userData');
     applyUpdateChannel(readUpdateChannelFromDisk());
     captureDefaultUpdaterFeed();
+    bootMark('updater-feed');
 
     const { loadNativeDatabase } = await import('./lib/db/native-load.mjs');
     try {
       loadNativeDatabase();
+      bootMark('native-db');
     } catch (nativeErr) {
       const detail =
         nativeErr && nativeErr.message
@@ -893,6 +904,7 @@ app.whenReady().then(async () => {
       safeStorage,
       getClientId: () => 'desktop-host',
     });
+    bootMark('db-ipc');
 
     unlockPromise = unlockClinicalDbAtStartup(dbManager);
 
@@ -953,6 +965,7 @@ app.whenReady().then(async () => {
     app.quit();
     return;
   }
+  bootMark('pre-window');
   createWindow();
   buildMenu();
 
