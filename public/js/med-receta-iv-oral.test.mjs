@@ -23,10 +23,7 @@ describe('med-receta-iv-oral', () => {
     assert.match(out.dosisRaw, /^1\s*G\b/i);
     assert.equal(out.oralEquiv.units, 2);
     assert.equal(out.oralEquiv.unitMg, 500);
-    assert.equal(
-      formatMedicationSoapShort(item),
-      'PARACETAMOL 1 G VO C/8H (2 TABLETAS DE 500MG)'
-    );
+    assert.equal(formatMedicationSoapShort(item), 'PARACETAMOL 1 G VO C/8H');
   });
 
   it('omeprazol y metronidazol IV → VO misma dosis', () => {

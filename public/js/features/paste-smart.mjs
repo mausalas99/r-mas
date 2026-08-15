@@ -11,6 +11,7 @@ import {
   planSmartPaste,
   assignPatientToBulkBlock,
   shouldSkipGlobalSmartPaste,
+  appTabForSmartPasteKind,
 } from './paste-smart-model.mjs';
 import { procesarRecetaFromText } from './medications-actions.mjs';
 import { cancelOverlayClose, closeOverlayAnimated } from '../ui-motion.mjs';
@@ -24,6 +25,10 @@ function showToast(msg, type) {
 
 function switchToLabTab() {
   if (typeof window.switchAppTab === 'function') window.switchAppTab('lab');
+}
+
+function switchToMedTab() {
+  if (typeof window.switchAppTab === 'function') window.switchAppTab('med');
 }
 
 function fillLabInput(text) {
@@ -79,6 +84,7 @@ export function processSmartPaste(text, opts) {
   }
 
   if (plan.kind === 'indicas') {
+    if (appTabForSmartPasteKind(plan.kind) === 'med') switchToMedTab();
     procesarRecetaFromText(plan.sourceText);
     return plan;
   }

@@ -390,17 +390,13 @@ export function formatMedicationSoapShort(item, opts) {
   var via = normalizeVia(item.viaRaw);
   var freqNorm = normalizeFrecuencia(item.frecuenciaRaw);
   var dosisCompact = extractRecetaNameOnlyDose(item.dosisRaw);
+  // Suffix de conversión IV→VO (p.ej. "2 TABLETAS DE 500MG") es contenido de receta,
+  // no de Estado Actual. Solo se incluye cuando el llamador lo pide explícitamente.
+  var equivSuffix = opts && opts.includeOralEquiv ? formatOralEquivSuffix(item) : '';
 
   if (isPrnItem(item)) {
     var critRaw = extractPrnTail(item.dosisRaw) || freqNorm;
-    var prnLine = formatSoapPrnLine_(
-      nombre,
-      dosisCompact,
-      via,
-      critRaw,
-      freqNorm,
-      formatOralEquivSuffix(item)
-    );
+    var prnLine = formatSoapPrnLine_(nombre, dosisCompact, via, critRaw, freqNorm, equivSuffix);
     if (prnLine) return prnLine;
   }
 
@@ -408,7 +404,7 @@ export function formatMedicationSoapShort(item, opts) {
   if (dosisCompact) parts.push(dosisCompact);
   if (via) parts.push(soapViaShort(via));
   if (freqNorm) parts.push(soapFreqShort(freqNorm));
-  var equiv = formatOralEquivSuffix(item).trim();
+  var equiv = equivSuffix.trim();
   if (equiv) parts.push(equiv);
   var dia =
     item.diaTratamiento != null
@@ -434,10 +430,11 @@ export function buildMedRecetaNameOnlyText(items, opts) {
   var list = all.filter(function (it) {
     return it && !it.suspendido && !isInsulinPumpCarrierMedicationItem(it, all);
   });
+  var soapOpts = Object.assign({}, opts, { includeOralEquiv: true });
   var lines = list.map(function (it) {
     var alg = insulinPumpAlgorithmForMedicationItem(all, it);
     if (alg != null) return formatInsulinPumpAlgoritmoLabel(alg);
-    return formatMedicationSoapShort(it, opts);
+    return formatMedicationSoapShort(it, soapOpts);
   });
   return lines.join('\n');
 }

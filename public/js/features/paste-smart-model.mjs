@@ -168,6 +168,16 @@ export function looksLikeIndicasPasteCandidate(text) {
 }
 
 /**
+ * Which app tab paste-anywhere should jump to for a given plan kind.
+ * @param {SmartPasteKind} kind
+ * @returns {'lab'|'med'|null}
+ */
+export function appTabForSmartPasteKind(kind) {
+  if (kind === 'indicas') return 'med';
+  return null;
+}
+
+/**
  * Plan routing for paste-anywhere. Pure — no DOM.
  * @param {string} text
  * @param {{

@@ -57,7 +57,7 @@ describe('applyIvToOralForEgreso — equivalencias SOME', () => {
         dosisRaw: '8 MG //',
         frecuenciaRaw: 'CADA 24 HORAS',
       }),
-      'DEXAMETASONA 8MG VO C/24H (2 TABLETAS DE 4MG)'
+      'DEXAMETASONA 8MG VO C/24H'
     );
   });
 

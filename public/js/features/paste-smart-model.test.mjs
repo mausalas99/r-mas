@@ -26,6 +26,7 @@ const {
   matchPatientByRegistro,
   looksLikeSmartPasteCandidate,
   looksLikeIndicasPasteCandidate,
+  appTabForSmartPasteKind,
   shouldSkipGlobalSmartPaste,
   planSmartPaste,
   assignPatientToBulkBlock,
@@ -97,6 +98,12 @@ describe('paste-smart-model', () => {
     const plan = planSmartPaste(INDICAS_SAMPLE, { patients: CENSUS });
     assert.equal(plan.kind, 'indicas');
     assert.equal(plan.sourceText, INDICAS_SAMPLE);
+  });
+
+  it('appTabForSmartPasteKind: indicas → med, otros → null', () => {
+    assert.equal(appTabForSmartPasteKind('indicas'), 'med');
+    assert.equal(appTabForSmartPasteKind('ready'), null);
+    assert.equal(appTabForSmartPasteKind('preview'), null);
   });
 
   it('shouldSkipGlobalSmartPaste en lab-input y password', () => {

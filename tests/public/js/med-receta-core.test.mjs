@@ -585,7 +585,7 @@ test('formatMedicationSoapShort — indicación compacta', () => {
       frecuenciaRaw: 'CADA 8 HORAS',
       suspendido: false,
     }),
-    'PARACETAMOL 1 G VO C/8H (2 TABLETAS DE 500MG)'
+    'PARACETAMOL 1 G VO C/8H'
   );
   assert.equal(
     formatMedicationSoapShort({
