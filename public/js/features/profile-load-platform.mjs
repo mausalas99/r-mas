@@ -1,9 +1,4 @@
 /** Perfil — async platform blocks in settings modal. */
-import {
-  maybeShowReleaseNotesFor,
-  initReleaseNotesDevPreviewIfEnabled,
-  RELEASE_NOTES_DEV_FORCE_SHOW,
-} from "./settings-help/release-notes.mjs";
 import { getProfileRuntime } from "./profile-runtime.mjs";
 
 export function populateProfileVersionBlock() {
@@ -15,19 +10,25 @@ export function populateProfileVersionBlock() {
   }
   window.electronAPI
     .getAppVersion()
-    .then(function (v) {
+    .then(async function (v) {
       verEl.textContent = v || "—";
       var LAST_SEEN_VERSION_KEY = "rplus-last-seen-app-version";
       var prev = localStorage.getItem(LAST_SEEN_VERSION_KEY);
       if (prev) window.__RPC_PREV_APP_VERSION__ = prev;
-      if (RELEASE_NOTES_DEV_FORCE_SHOW) {
-        initReleaseNotesDevPreviewIfEnabled(v);
-      } else if (prev && v && prev !== v) {
+      var versionChanged = !!(prev && v && prev !== v);
+      if (versionChanged) {
         getProfileRuntime().showToast(
           "Actualizado a v" + v + ". Consulta Ajustes o el menú para buscar actualizaciones.",
           "success"
         );
-        maybeShowReleaseNotesFor(v, prev);
+      }
+      if (versionChanged || window.__RPC_RELEASE_NOTES_DEV__) {
+        var notes = await import("./settings-help/release-notes.mjs");
+        if (notes.RELEASE_NOTES_DEV_FORCE_SHOW) {
+          notes.initReleaseNotesDevPreviewIfEnabled(v);
+        } else if (versionChanged) {
+          notes.maybeShowReleaseNotesFor(v, prev);
+        }
       }
       if (v) localStorage.setItem(LAST_SEEN_VERSION_KEY, v);
     })
