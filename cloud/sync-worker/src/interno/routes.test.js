@@ -104,7 +104,7 @@ function createInternoDb(opts = {}) {
       return results;
     },
     async setState(state) {
-      const { ciphertext, iv } = encodeRoomState(state);
+      const { ciphertext, iv } = await encodeRoomState(TEST_KEY, state);
       roomState = {
         ciphertext,
         iv,
