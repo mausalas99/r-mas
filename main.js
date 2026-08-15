@@ -590,10 +590,18 @@ ipcMain.handle('save-exported-document', async (_e, { fileName, buffer }) => {
   return { success: true, path: resolvedFile };
 });
 
-const docExport = require('./lib/doc-export-service.js');
-const { logDocExport } = require('./lib/doc-export-audit.js');
+let docExportModule = null;
+let logDocExportFn = null;
+function loadDocExport() {
+  if (!docExportModule) {
+    docExportModule = require('./lib/doc-export-service.js');
+    logDocExportFn = require('./lib/doc-export-audit.js').logDocExport;
+  }
+  return { docExport: docExportModule, logDocExport: logDocExportFn };
+}
 
 ipcMain.handle('generate-document', async (_e, { kind, payload }) => {
+  const { docExport, logDocExport } = loadDocExport();
   const paths = {
     userDataPath: app.getPath('userData'),
     downloadsPath: app.getPath('downloads'),
