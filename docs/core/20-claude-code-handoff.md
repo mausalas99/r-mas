@@ -1,11 +1,13 @@
 ---
 type: "core"
 name: "Claude Code Handoff"
-status: "in-progress"
-description: "Resume here in Claude Code. Job: update-feed Worker (GitHub first, GitLab fallback). GitHub account lock 2026-08-14."
+status: "done"
+description: "update-feed Worker (GitHub first, GitLab fallback) is built and tested. GitHub account lock 2026-08-14."
 ---
 
-# Handoff — update feed (GitHub lock)
+# Handoff — update feed (GitHub lock) — DONE
+
+Worker, `lib/update-feed.mjs`/`.js`, `main.js` wiring, and worker-first `min-version`/`stable-versions` fetchers were already built and committed in `b895b96f` ("chore(release): prepare 8.1.4"), before this session started. 32/32 related tests pass (`npm run test:one -- cloud/update-worker/src/feed.test.mjs cloud/update-worker/src/index.test.mjs lib/update-feed.test.mjs public/js/min-version-fetch.test.mjs public/js/stable-downgrade-ui.test.mjs main-update-feed.test.mjs`). See spec acceptance checklist for details.
 
 **Date:** 2026-08-15  
 **From:** Cursor (Grok 4.6)  
