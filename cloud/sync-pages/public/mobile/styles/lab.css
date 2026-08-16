@@ -348,10 +348,6 @@ html.dark .todo-text-input:focus {
   filter: brightness(1.05);
 }
 
-.todo-add-btn:active {
-  transform: scale(0.96);
-}
-
 .todo-cell-main {
   display: flex;
   flex-direction: column;
@@ -1037,10 +1033,10 @@ html.dark .todo-text-input:focus {
 html.dark .tab-content {
   background: var(--bg);
 }
-#main-area > div[id^="appcontent-"] > div:first-child {
+#main-area > div[id^="appcontent-"] > div:first-child:not(.lab-active-shell):not(.med-active-shell) {
   background: var(--bg);
 }
-html.dark #main-area > div[id^="appcontent-"] > div:first-child {
+html.dark #main-area > div[id^="appcontent-"] > div:first-child:not(.lab-active-shell):not(.med-active-shell) {
   background: var(--bg);
 }
 .tab-content.active { display: flex; }
@@ -1204,12 +1200,12 @@ input[type="checkbox"]:focus-visible {
 .field-readonly { border: none !important; background: var(--input-fill) !important; color: var(--text-muted) !important; box-shadow: none !important; cursor: default; }
 .vitals-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: calc(10px * var(--density-space)); }
 .vital-box {
-  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md); overflow: hidden; text-align: center;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 .vital-label {
-  background: color-mix(in oklab, var(--lab-chip-bg) 92%, transparent);
+  background: color-mix(in oklab, var(--color-ink) 8%, var(--surface));
   padding: calc(6px * var(--density-space));
   font-size: calc(11px * var(--density-font));
   font-weight: 600;
@@ -1219,7 +1215,8 @@ input[type="checkbox"]:focus-visible {
   border-bottom: 1px solid var(--divider);
 }
 .vital-box input { border: none; padding: calc(10px * var(--density-space)) calc(8px * var(--density-space)); font-size: calc(16px * var(--density-font)); font-weight: 700; text-align: center; width: 100%; background: var(--surface); color: var(--text); font-family: inherit; }
-.vital-box input:focus { outline: none; background: color-mix(in oklab, var(--lab-chip-bg) 35%, var(--surface)); }
+.vital-box input:focus { outline: none; background: var(--surface); }
+.vital-box input:focus::placeholder { color: transparent; opacity: 0; }
 .list-rows { display: flex; flex-direction: column; gap: calc(8px * var(--density-space)); }
 .list-row { display: flex; gap: calc(8px * var(--density-space)); align-items: center; }
 .list-row input {
@@ -1386,6 +1383,39 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
 .lab-history-date-select[hidden],
 .lab-history-date-picker:has(.lab-history-date-select[hidden]) {
   display: none;
+}
+.lab-history-day-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.lab-history-day-nav-btn {
+  appearance: none;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.lab-history-day-nav-btn:hover:not(:disabled) {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+}
+.lab-history-day-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.lab-history-day-nav-btn:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
 }
 .lab-output-more {
   position: relative;
@@ -1947,7 +1977,7 @@ html.dark .btn-generate--success:hover { background: var(--color-success-emphasi
   background: color-mix(in oklab, var(--lab-chip-bg) 88%, var(--surface));
   border: 1px solid color-mix(in oklab, var(--action) 32%, var(--border));
   color: var(--primary);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   padding: calc(9px * var(--density-space)) calc(16px * var(--density-space));
   font-size: calc(13px * var(--density-font));
   font-weight: 600;
@@ -1965,19 +1995,9 @@ html.dark .btn-generate--success:hover { background: var(--color-success-emphasi
   border-color: color-mix(in oklab, var(--action) 48%, var(--border));
   box-shadow: 0 4px 14px color-mix(in oklab, var(--color-accent) 14%, transparent);
 }
-.btn-med-secondary:active { transform: scale(0.96); }
 .btn-med-secondary:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent) 20%, transparent), 0 2px 8px color-mix(in oklab, var(--color-accent) 10%, transparent);
-}
-.btn-med-secondary--dia {
-  color: color-mix(in oklab, var(--action) 88%, var(--primary));
-  border-color: color-mix(in oklab, var(--action) 42%, var(--border));
-  background: color-mix(in oklab, var(--lab-chip-bg) 75%, var(--surface));
-}
-.btn-med-secondary--dia .btn-med-secondary-icon {
-  background: color-mix(in oklab, var(--action) 14%, transparent);
-  color: var(--action);
 }
 .btn-med-secondary-icon {
   display: inline-flex;
@@ -1989,18 +2009,15 @@ html.dark .btn-generate--success:hover { background: var(--color-success-emphasi
   flex-shrink: 0;
 }
 html.dark .btn-med-secondary {
-  background: rgba(96, 165, 250, 0.1);
-  border-color: rgba(96, 165, 250, 0.28);
-  color: var(--text);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  background: var(--color-elevated);
+  border: 1px solid color-mix(in oklab, var(--color-ink) 42%, transparent);
+  color: var(--color-ink);
+  border-radius: var(--radius-control);
 }
 html.dark .btn-med-secondary:hover {
-  background: rgba(96, 165, 250, 0.16);
-  border-color: rgba(96, 165, 250, 0.42);
-}
-html.dark .btn-med-secondary--dia .btn-med-secondary-icon {
-  background: rgba(96, 165, 250, 0.2);
-  color: var(--color-accent-soft-text);
+  background: var(--color-elevated);
+  border-color: color-mix(in oklab, var(--color-ink) 58%, transparent);
+  color: var(--color-ink);
 }
 .btn-med-secondary--muted {
   color: var(--text-muted);
@@ -2448,7 +2465,7 @@ html.dark .btn-med-secondary--muted:hover {
   color: var(--text-muted);
 }
 .lab-repo-batch-row-loc::before {
-  content: '·';
+  content: '\00B7';
   margin-right: 6px;
   opacity: 0.7;
 }
@@ -2855,6 +2872,22 @@ html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36
   letter-spacing: 0.02em;
 }
 html.dark .lab-output-fecha { color: var(--color-accent-soft-text); border-bottom-color: rgba(148, 163, 184, 0.35); }
+
+.lab-hour-group-h {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 14px 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--divider);
+}
+.lab-hour-group-h:first-child {
+  margin-top: 0;
+}
+html.dark .lab-hour-group-h { border-bottom-color: rgba(148, 163, 184, 0.28); }
 
 .lab-some-tables-host {
   margin-bottom: 16px;

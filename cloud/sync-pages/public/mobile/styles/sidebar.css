@@ -20,17 +20,21 @@ aside.patient-sidebar {
   left: 0;
   top: 0;
   bottom: 0;
-  width: 14px;
-  z-index: 450;
+  width: 36px;
+  z-index: 1100;
   display: none;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
 }
 html.sidebar-auto-hide .sidebar-hover-strip { display: block; }
+/* Once revealed, the real sidebar controls (incl. the auto-hide toggle) must own clicks — the strip must not sit on top of them. */
+html.sidebar-auto-hide.sidebar-reveal .sidebar-hover-strip { pointer-events: none; }
 html.sidebar-auto-hide:not(.sidebar-reveal) .sidebar-hover-strip::after {
   content: '';
   position: absolute;
   left: 0;
-  top: var(--shell-inset);
-  bottom: var(--shell-inset);
+  top: 0;
+  bottom: 0;
   width: var(--sidebar-rail-width, 5px);
   border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
   background: var(--sidebar-rail-color);
@@ -51,6 +55,7 @@ html.sidebar-auto-hide:not(.sidebar-reveal) aside.patient-sidebar {
   border-right: none;
 }
 html.sidebar-auto-hide.sidebar-reveal aside.patient-sidebar {
+  width: var(--sidebar-width);
   opacity: 1;
   pointer-events: auto;
   box-shadow: var(--shadow);
@@ -410,7 +415,7 @@ html.dark .btn-add:hover {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-warn, #d97706) 25%, transparent);
 }
 .patient-card--incomplete .p-name::after {
-  content: ' · incompleto';
+  content: ' \00B7 incompleto';
   font-size: 10px;
   font-weight: 600;
   color: var(--color-warn, #d97706);
@@ -504,7 +509,7 @@ aside.patient-sidebar .btn-delete-card::after {
   line-height: 1.22;
 }
 .patient-card .p-meta > span:not(:last-child)::after {
-  content: '·';
+  content: '\00B7';
   margin: 0 calc(5px * var(--density-space));
   opacity: 0.45;
   font-weight: 400;

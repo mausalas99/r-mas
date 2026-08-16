@@ -386,4 +386,73 @@ describe('applyOps LWW', () => {
     assert.equal(s.entries[0].id, 'p-new');
     assert.equal(s.tombstones['p-old'], undefined);
   });
+
+  it('monitoreo merges historial by id instead of the newer push wiping the older one', () => {
+    let s = emptyState();
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p1/monitoreo',
+        value: {
+          historial: [
+            { id: 'm1', recordedAt: '2026-08-01T08:00:00.000Z', tas: 120 },
+            { id: 'm2', recordedAt: '2026-08-01T09:00:00.000Z', tas: 122 },
+          ],
+        },
+        updatedAt: '2026-08-01T09:00:00.000Z',
+        actorId: 'desktop',
+      },
+    ]));
+    // iPad pushes later with a newer clock but a shorter local history (only today's reading).
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p1/monitoreo',
+        value: {
+          historial: [{ id: 'm3', recordedAt: '2026-08-01T10:00:00.000Z', tas: 118 }],
+        },
+        updatedAt: '2026-08-01T10:00:00.000Z',
+        actorId: 'ipad',
+      },
+    ]));
+    const ids = s.entries
+      .find((e) => e.id === 'p1')
+      .monitoreo.historial.map((row) => row.id)
+      .sort();
+    assert.deepEqual(ids, ['m1', 'm2', 'm3']);
+  });
+
+  it('monitoreo keeps the newest row per id when both sides edited the same reading', () => {
+    let s = emptyState();
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p1/monitoreo',
+        value: { historial: [{ id: 'm1', recordedAt: '2026-08-01T08:00:00.000Z', tas: 120 }] },
+        updatedAt: '2026-08-01T08:00:00.000Z',
+        actorId: 'desktop',
+      },
+    ]));
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p1/monitoreo',
+        value: { historial: [{ id: 'm1', recordedAt: '2026-08-01T08:05:00.000Z', tas: 130 }] },
+        updatedAt: '2026-08-01T08:05:00.000Z',
+        actorId: 'ipad',
+      },
+    ]));
+    const hist = s.entries.find((e) => e.id === 'p1').monitoreo.historial;
+    assert.equal(hist.length, 1);
+    assert.equal(hist[0].tas, 130);
+  });
+
+  it('a brand-new patient monitoreo push still lands with no prior entry to merge against', () => {
+    let s = emptyState();
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p-new/monitoreo',
+        value: { historial: [{ id: 'm1', recordedAt: '2026-08-01T08:00:00.000Z', tas: 120 }] },
+        updatedAt: '2026-08-01T08:00:00.000Z',
+        actorId: 'ipad',
+      },
+    ]));
+    assert.equal(s.entries.find((e) => e.id === 'p-new').monitoreo.historial.length, 1);
+  });
 });

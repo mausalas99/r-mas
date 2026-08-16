@@ -1,4 +1,14 @@
 import {
+  productivityWindowHandlers,
+  pushUndoSnapshot,
+  registerProductivityRuntime
+} from "/mobile/js/chunks/chunk-Q76N4NXT.js";
+import {
+  registerProcedureAgendaRuntime,
+  renderProcedureAgendaPanel,
+  windowHandlers as windowHandlers12
+} from "/mobile/js/chunks/chunk-PEXPCXQA.js";
+import {
   appShellWindowHandlers,
   initModalDismiss,
   registerAppShellContext,
@@ -8,98 +18,69 @@ import {
   setMedTabAttention,
   showToast,
   syncWorkContextChrome
-} from "/mobile/js/chunks/chunk-6BBSK3WW.js";
-import {
-  productivityWindowHandlers,
-  pushUndoSnapshot,
-  registerProductivityRuntime
-} from "/mobile/js/chunks/chunk-APA4E2NS.js";
-import {
-  registerProcedureAgendaRuntime,
-  renderProcedureAgendaPanel,
-  windowHandlers as windowHandlers12
-} from "/mobile/js/chunks/chunk-5KRETQAF.js";
+} from "/mobile/js/chunks/chunk-EWWNT4SH.js";
 import {
   recoverPresentationPatientsOnBoot
-} from "/mobile/js/chunks/chunk-3XVRHISX.js";
+} from "/mobile/js/chunks/chunk-U2BBNPIU.js";
+import "/mobile/js/chunks/chunk-2V2QEUUT.js";
+import {
+  openEstadoActualRegistroModal,
+  registerEstadoActualPasteModalRuntime,
+  registerEstadoActualRegistroModalRuntime,
+  windowHandlers as windowHandlers6,
+  windowHandlers2 as windowHandlers7,
+  wireEaModalDismiss,
+  wireEstadoActualPasteModal
+} from "/mobile/js/chunks/chunk-CLUUFMVT.js";
+import {
+  windowHandlers as windowHandlers11
+} from "/mobile/js/chunks/chunk-AV4QDC2I.js";
+import {
+  buildParsedBySectionFromResLabs,
+  extractParsedValues,
+  parsearSecciones
+} from "/mobile/js/chunks/chunk-E2PTZLNF.js";
+import "/mobile/js/chunks/chunk-2DZ4BCVC.js";
 import {
   advanceRondaPatient,
   applyDefaultsToNewIndicaciones,
   applyDefaultsToNewPatient,
-  applyDriveImportEventualidades,
-  applyDriveImportLabSets,
   applyEstadoActualParsedToForm,
   attachProfileSettingsGetter,
-  buildBulkLabPreview,
   buildCultivoOutputHtmlFragments,
-  buildEstudiosCopyLinesFromLabSets,
-  buildLabSetDateLine,
-  buildPatientEntry,
   closeProfileModal,
-  configurePatientEntries,
-  copyToClipboardSafe,
-  dayKeyFromLabSet,
-  ensureActivePatientInSidebarScope,
   ensureEaRegistroModalForm,
-  ensureParsedLabHistory,
-  ensureParsedLabHistoryCached,
-  ensureUniquePatientName,
-  filterPatientsForGuardiaCensus,
-  findPatientByRegistro,
-  formatLabHistoryDateSelectLabel,
-  formatLabHistoryListMeta,
-  generatePatientId,
-  getBulkLabPreviewSourceText,
   getRoundOverviewMode,
-  groupLabHistoryByDay,
   guardMobileDocExport,
   handleDocumentGenerateResponse,
   hydrateProfileSettings,
-  initClinicalAccessRuntime,
   initPatientModalEnterSave,
   initSidebarAutoHide,
   initTabBarMotion,
-  installLabHistoryAuditHook,
-  invalidateEventualidadesPanel,
   invalidateInnerTabRenderCache,
-  isBulkLabPreviewModalOpen,
   isResLabChunkPureCultivo,
-  labSetIsFromSome,
   loadSettings,
   medicationsWindowHandlers,
   navigateToEstadoActualPanel,
   openAddModal,
   openAddModalFromLabPatient,
-  openEstadoActualRegistroModal,
   openPaseSectionInNormal,
   openProfileModal,
-  primaryTipoForLabSet,
   profileWindowHandlers,
-  rebuildEstudiosFromLabHistory,
   recetaHuWindowHandlers,
   refreshExpedienteAfterPatientSelect,
   refreshTendenciasOrCultivosPanel,
   registerCensoRuntime,
-  registerEstadoActualPasteModalRuntime,
-  registerEstadoActualRegistroModalRuntime,
   registerExpedienteRuntime,
-  registerLabBulkPreviewModalRuntime,
-  registerLabHistoryMaintRuntime,
   registerMedPharmProfileRuntime,
   registerMedicationsRuntime,
   registerNotesIndicacionesRuntime,
   registerPatientsRuntime,
   registerProfileRuntime,
   registerRecetaHuRuntime,
-  registerSoapEstadoRuntime,
   registerVpoRuntime,
   removeAtbRisPanelsFromBody,
-  renderDiagramas,
-  renderEstadoActualBar,
-  renderEstadoActualButton,
   renderEstadoActualPanel,
-  renderEventualidadesPanel,
-  renderGuardiaBoard,
   renderIndicaForm,
   renderInnerTabs,
   renderListadoForm,
@@ -113,59 +94,35 @@ import {
   renderVpo,
   requestDocumentJson,
   resetEaRegistroForm,
-  resumeClinicalSession,
   scrollActiveRondaCardIntoView,
   selectPatient,
   setRoundOverviewMode,
-  splitResLabsByTipo,
-  suspendLabBulkPreviewModal,
   switchAppTab,
   switchConsolidatedTab,
   switchInnerTab,
   syncCensoExportButtonVisibility,
-  syncClinicalRotationEntryChrome,
   syncEaRegistroGluMode,
-  syncGuardiaModeButtonVisibility,
   syncInnerTabVisualOnly,
-  syncLabDiagramsCollapseUI,
   syncMainAppTabA11y,
   syncProfileSectionVisibility,
-  syncSettingsLanHostDiskSection,
   todosWindowHandlers,
-  toggleLabDiagramsSection,
-  tryMountClinicalTeamInviteBrowserGate,
   windowHandlers,
-  windowHandlers10 as windowHandlers9,
-  windowHandlers11 as windowHandlers10,
-  windowHandlers12 as windowHandlers11,
-  windowHandlers13,
-  windowHandlers2,
-  windowHandlers3,
-  windowHandlers4,
-  windowHandlers5,
-  windowHandlers7 as windowHandlers6,
-  windowHandlers8 as windowHandlers7,
-  windowHandlers9 as windowHandlers8,
-  wireAtbRisHoverPanels,
-  wireClinicalRotationEntryControls,
-  wireClinicalTeamsControls,
-  wireEaModalDismiss,
-  wireEstadoActualPasteModal
-} from "/mobile/js/chunks/chunk-NGYHUPLR.js";
+  windowHandlers2 as windowHandlers4,
+  windowHandlers3 as windowHandlers5,
+  windowHandlers4 as windowHandlers8,
+  windowHandlers5 as windowHandlers13,
+  wireAtbRisHoverPanels
+} from "/mobile/js/chunks/chunk-46QO3ZUY.js";
+import "/mobile/js/chunks/chunk-IXAK2IU3.js";
 import {
-  buildParsedBySectionFromResLabs,
-  extractParsedValues
-} from "/mobile/js/chunks/chunk-WKKCGK2F.js";
-import "/mobile/js/chunks/chunk-NIWULNNS.js";
-import {
-  dbUnlockWindowHandlers,
-  describeClinicalDbBootFailure,
-  ensureClinicalDbUnlocked
-} from "/mobile/js/chunks/chunk-2EVCQOXR.js";
-import "/mobile/js/chunks/chunk-KYQCLTVP.js";
+  syncClinicalRotationEntryChrome,
+  windowHandlers as windowHandlers10,
+  wireClinicalRotationEntryControls
+} from "/mobile/js/chunks/chunk-AIIT754E.js";
+import "/mobile/js/chunks/chunk-CXMRZLXS.js";
 import {
   registerEstadoActualPanelRuntime
-} from "/mobile/js/chunks/chunk-CWXF5HCJ.js";
+} from "/mobile/js/chunks/chunk-AS6TAICA.js";
 import {
   bindLazyChartsRuntimeCtx,
   bindLazyEaVitalHistoryRuntimeCtx,
@@ -185,80 +142,186 @@ import {
   registerLazyFeatureRuntimes,
   settingsHelpRuntimeProxies,
   settingsHelpWindowHandlersLazy
-} from "/mobile/js/chunks/chunk-HUK4RQZ3.js";
-import "/mobile/js/chunks/chunk-DLYFNQTQ.js";
-import "/mobile/js/chunks/chunk-EQKSFX4S.js";
+} from "/mobile/js/chunks/chunk-K45GC3VK.js";
+import "/mobile/js/chunks/chunk-VOW7QFKJ.js";
+import "/mobile/js/chunks/chunk-RJIPR6CF.js";
+import "/mobile/js/chunks/chunk-2JKGABV2.js";
+import "/mobile/js/chunks/chunk-2VZA33PI.js";
 import {
-  isMobileWeb
-} from "/mobile/js/chunks/chunk-WTQUTVWF.js";
-import "/mobile/js/chunks/chunk-PZEHK5VE.js";
-import "/mobile/js/chunks/chunk-AKP3FGXS.js";
-import "/mobile/js/chunks/chunk-YQDSERQQ.js";
-import "/mobile/js/chunks/chunk-4SRKXA7H.js";
+  syncSettingsLanHostDiskSection,
+  windowHandlers as windowHandlers9
+} from "/mobile/js/chunks/chunk-EPFF77ND.js";
+import "/mobile/js/chunks/chunk-UTZ3BFGA.js";
+import "/mobile/js/chunks/chunk-3RXBEWAZ.js";
+import "/mobile/js/chunks/chunk-XS64SPAO.js";
+import "/mobile/js/chunks/chunk-LOGJB72W.js";
+import "/mobile/js/chunks/chunk-44QBSWO4.js";
+import "/mobile/js/chunks/chunk-KEFN326O.js";
 import "/mobile/js/chunks/chunk-6KV6OYKI.js";
+import {
+  ensureActivePatientInSidebarScope,
+  filterPatientsForGuardiaCensus
+} from "/mobile/js/chunks/chunk-5DAE7PK3.js";
+import "/mobile/js/chunks/chunk-6A62XDR6.js";
+import "/mobile/js/chunks/chunk-MOSUQW6R.js";
+import {
+  getBulkLabPreviewSourceText,
+  isBulkLabPreviewModalOpen,
+  registerLabBulkPreviewModalRuntime,
+  suspendLabBulkPreviewModal,
+  windowHandlers as windowHandlers3
+} from "/mobile/js/chunks/chunk-BGYDWUEW.js";
+import {
+  applyDriveImportLabSets
+} from "/mobile/js/chunks/chunk-7EPXWU6A.js";
+import {
+  buildBulkLabPreview
+} from "/mobile/js/chunks/chunk-JIKZNXZR.js";
+import "/mobile/js/chunks/chunk-AIC37VNN.js";
+import "/mobile/js/chunks/chunk-TR2JMMVG.js";
+import "/mobile/js/chunks/chunk-23D7ZB6I.js";
 import {
   refreshAllTodoUIs,
   refreshTodoUIsForPatient,
   refreshTodoUIsForPatients,
   registerTodosRuntime,
   renderTodoForm
-} from "/mobile/js/chunks/chunk-J5DWHQ6X.js";
+} from "/mobile/js/chunks/chunk-AYK2RJF5.js";
+import {
+  configurePatientEntries
+} from "/mobile/js/chunks/chunk-CPLU2I7R.js";
+import "/mobile/js/chunks/chunk-U3XNJFTE.js";
+import "/mobile/js/chunks/chunk-7TWBBTNK.js";
+import "/mobile/js/chunks/chunk-AA7ORONM.js";
+import "/mobile/js/chunks/chunk-YVT3SP6T.js";
+import "/mobile/js/chunks/chunk-N3UTXQGG.js";
+import "/mobile/js/chunks/chunk-OXN2ZL25.js";
+import "/mobile/js/chunks/chunk-YUEMH3I3.js";
+import "/mobile/js/chunks/chunk-IGOCX3DQ.js";
+import {
+  buildPatientEntry,
+  ensureUniquePatientName,
+  findPatientByRegistro,
+  generatePatientId
+} from "/mobile/js/chunks/chunk-M6MLPK4W.js";
+import "/mobile/js/chunks/chunk-4QI24DFU.js";
+import "/mobile/js/chunks/chunk-ZVJAFSHG.js";
+import "/mobile/js/chunks/chunk-ZQ44CCKF.js";
+import {
+  applyDriveImportEventualidades,
+  copyToClipboardSafe,
+  initClinicalAccessRuntime,
+  invalidateEventualidadesPanel,
+  registerSoapEstadoRuntime,
+  renderEstadoActualBar,
+  renderEstadoActualButton,
+  renderEventualidadesPanel,
+  renderGuardiaBoard,
+  resumeClinicalSession,
+  syncGuardiaModeButtonVisibility,
+  tryMountClinicalTeamInviteBrowserGate,
+  windowHandlers as windowHandlers2,
+  wireClinicalTeamsControls
+} from "/mobile/js/chunks/chunk-AVZ5WV63.js";
+import {
+  dbUnlockWindowHandlers,
+  describeClinicalDbBootFailure,
+  ensureClinicalDbUnlocked
+} from "/mobile/js/chunks/chunk-NPWWQWKW.js";
+import "/mobile/js/chunks/chunk-KESF4FLC.js";
+import "/mobile/js/chunks/chunk-PAAJVTB4.js";
+import "/mobile/js/chunks/chunk-3PL7T3ZN.js";
+import "/mobile/js/chunks/chunk-AKP3FGXS.js";
+import {
+  buildEstudiosCopyLinesFromLabSets,
+  buildLabSetDateLine,
+  dayKeyFromLabSet,
+  extractLabDataLines,
+  formatLabHistoryDateSelectLabel,
+  formatLabHistoryListMeta,
+  groupLabHistoryByDay,
+  labSetIsFromSome,
+  labSetParseFingerprint,
+  primaryTipoForLabSet,
+  resolveEstudiosCopyOptions,
+  splitResLabsByTipo
+} from "/mobile/js/chunks/chunk-7FIP2ETS.js";
+import {
+  escTxt,
+  procesarLabs,
+  sanitizeResLabsChunks
+} from "/mobile/js/chunks/chunk-CZ2M277B.js";
+import {
+  inferFechaLabSetFromId
+} from "/mobile/js/chunks/chunk-US2NRS5S.js";
+import {
+  isMobileWeb
+} from "/mobile/js/chunks/chunk-JBHSWL2Z.js";
+import "/mobile/js/chunks/chunk-P2TSIQM4.js";
 import {
   initRpcDatePicker
-} from "/mobile/js/chunks/chunk-TDVHJVR3.js";
+} from "/mobile/js/chunks/chunk-BUGU4R5K.js";
 import {
   initChromeAppearance,
   launchConfetti,
   registerChromeRuntime,
   windowHandlers as windowHandlers14
-} from "/mobile/js/chunks/chunk-KOO75KII.js";
+} from "/mobile/js/chunks/chunk-4SMSHN53.js";
 import {
   migrateToV3
 } from "/mobile/js/chunks/chunk-BURG7PNJ.js";
-import "/mobile/js/chunks/chunk-3BAWU2QN.js";
-import "/mobile/js/chunks/chunk-YR5I2T5V.js";
-import "/mobile/js/chunks/chunk-SFXEUBWR.js";
-import {
-  resolveClinicalClientId
-} from "/mobile/js/chunks/chunk-4RTTJZJK.js";
-import "/mobile/js/chunks/chunk-2KZNYZG7.js";
-import "/mobile/js/chunks/chunk-3QKGKUYY.js";
-import "/mobile/js/chunks/chunk-X6BDSFTA.js";
-import "/mobile/js/chunks/chunk-V25HP6NK.js";
-import "/mobile/js/chunks/chunk-23D7ZB6I.js";
-import "/mobile/js/chunks/chunk-ZQ44CCKF.js";
-import "/mobile/js/chunks/chunk-ZCN4RDXQ.js";
-import "/mobile/js/chunks/chunk-WIYWDVMU.js";
-import "/mobile/js/chunks/chunk-CZEKXCNB.js";
 import {
   enqueueCloudTodoUpsert,
   scheduleCloudSyncPush
-} from "/mobile/js/chunks/chunk-7IBNSPMB.js";
-import "/mobile/js/chunks/chunk-3TVMEDT5.js";
+} from "/mobile/js/chunks/chunk-P7EHNYUF.js";
+import "/mobile/js/chunks/chunk-S2E4QGRL.js";
+import {
+  resolveClinicalClientId
+} from "/mobile/js/chunks/chunk-7TJEM4JY.js";
+import "/mobile/js/chunks/chunk-ZQE77EGT.js";
 import {
   bootHydrateFromDb,
   clearWebSessionClinicalMemory,
   flushSaveState,
+  getIndicaciones,
+  getLabHistory,
+  getListadoProblemas,
+  getMedPharmProfileByPatient,
+  getMedRecetaByPatient,
+  getNotes,
+  getPatients,
+  getRecetaHuByPatient,
+  getVpoByPatient,
   initAppState,
-  labHistory,
-  patients,
+  persistClinicalState,
   registerEventualidadesRuntime,
-  saveState,
   setSaveStateHooks
-} from "/mobile/js/chunks/chunk-3MF5KBNS.js";
+} from "/mobile/js/chunks/chunk-NC6VRD7M.js";
 import {
+  normalizeLabHistoryPatientSets,
   storage
-} from "/mobile/js/chunks/chunk-ID2H6AJR.js";
+} from "/mobile/js/chunks/chunk-5RUR3UQW.js";
+import "/mobile/js/chunks/chunk-C4OBKXWW.js";
 import "/mobile/js/chunks/chunk-G6B5EEF6.js";
-import "/mobile/js/chunks/chunk-KYGE5G3V.js";
-import "/mobile/js/chunks/chunk-HT2CLYXO.js";
 import "/mobile/js/chunks/chunk-6CYAI7OE.js";
-import "/mobile/js/chunks/chunk-SRMOQLQ5.js";
+import "/mobile/js/chunks/chunk-VVADIT4K.js";
 import {
+  areLabSetsEquivalent,
+  buildRefsBySectionFromReport,
+  bumpLabHistoryRevision,
+  collectPriorRefsFromHistory,
+  extractLabReportHora,
   filterNewEventualidades,
+  findConflictingSameDateTimeGroups,
+  findExactDuplicateLabGroups,
+  findNormalizedSourceDuplicateGroups,
+  looksLikeSomeLabReport,
+  mergeGasRefs_,
   normalizeFechaLabHistory,
+  normalizeHoraLabHistory,
+  reprocessLabResultLines_,
   sortLabHistoryChronological
-} from "/mobile/js/chunks/chunk-RHISJ2VG.js";
+} from "/mobile/js/chunks/chunk-HDD2EUC6.js";
 import {
   getDefaultRegistroRecordedAt,
   toDatetimeLocalValue
@@ -267,20 +330,649 @@ import {
   esc,
   escapeHtml
 } from "/mobile/js/chunks/chunk-64IP3Y67.js";
+import "/mobile/js/chunks/chunk-WAILSXBQ.js";
+import "/mobile/js/chunks/chunk-VRNWC4P2.js";
+import "/mobile/js/chunks/chunk-UDWVBKE4.js";
+import "/mobile/js/chunks/chunk-KZT7D6I2.js";
 import {
   registerPaseBoardRuntime
 } from "/mobile/js/chunks/chunk-3YCJDDNO.js";
-import "/mobile/js/chunks/chunk-XKV6IPP7.js";
+import "/mobile/js/chunks/chunk-EE5CSOUC.js";
+import "/mobile/js/chunks/chunk-WTVHUFEL.js";
+import "/mobile/js/chunks/chunk-FSGBGJHB.js";
 import {
   isDbMode,
   isElectronDesktopShell,
   isWebClinicalClient
-} from "/mobile/js/chunks/chunk-TTNY5OXP.js";
+} from "/mobile/js/chunks/chunk-75QM3TGW.js";
 import "/mobile/js/chunks/chunk-A7GKLJFV.js";
-import "/mobile/js/chunks/chunk-WTVHUFEL.js";
-import "/mobile/js/chunks/chunk-CAVI7UGR.js";
 import "/mobile/js/chunks/chunk-N2POLXHZ.js";
-import "/mobile/js/chunks/chunk-KLMIZH6A.js";
+import "/mobile/js/chunks/chunk-NPUSZB5W.js";
+
+// public/js/features/diagrams-gamble-pfh.mjs
+var DIAGRAM_LINE = 'stroke="var(--diagram-line)" stroke-width="1.5"';
+function diagramSpBlock(x, cy, lbl, obj, anchor) {
+  anchor = anchor || "middle";
+  const ax = anchor === "start" ? "start" : anchor === "end" ? "end" : "middle";
+  const isAb = obj && obj.ab;
+  const vc = isAb ? "var(--error)" : "var(--diagram-value)";
+  const vt = obj ? escTxt(obj.val) : "\u2014";
+  const dec = isAb ? ' text-decoration="underline"' : "";
+  return '<g transform="translate(' + x + "," + cy + ')"><text x="0" y="-9" text-anchor="' + ax + '" dominant-baseline="middle" font-size="10" fill="var(--diagram-label)" font-family="Arial,sans-serif">' + lbl + '</text><text x="0" y="11" text-anchor="' + ax + '" dominant-baseline="middle" font-size="14" fill="' + vc + '" font-weight="bold" font-family="Arial,sans-serif"' + dec + ">" + vt + "</text></g>";
+}
+function diagramGambleCell(x, lbl, obj, isTop) {
+  const cy = isTop ? 40 : 92;
+  const vc = obj && obj.ab ? "var(--error)" : "var(--diagram-value)";
+  const vt = obj ? escTxt(obj.val) : "\u2014";
+  const dec = obj && obj.ab ? ' text-decoration="underline"' : "";
+  return '<g transform="translate(' + x + "," + cy + ')"><text x="0" y="-10" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="var(--diagram-label)" font-family="Arial,sans-serif">' + lbl + '</text><text x="0" y="11" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="' + vc + '" font-weight="bold" font-family="Arial,sans-serif"' + dec + ">" + vt + "</text></g>";
+}
+function diagramPfhCell(x, lbl, obj, y_lbl) {
+  const cy = y_lbl + 7.5;
+  const vc = obj && obj.ab ? "var(--error)" : "var(--diagram-value)";
+  const vt = obj ? escTxt(obj.val) : "\u2014";
+  const dec = obj && obj.ab ? ' text-decoration="underline"' : "";
+  return '<g transform="translate(' + x + "," + cy + ')"><text x="0" y="-10" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="var(--diagram-label)" font-family="Arial,sans-serif">' + lbl + '</text><text x="0" y="11" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="' + vc + '" font-weight="bold" font-family="Arial,sans-serif"' + dec + ">" + vt + "</text></g>";
+}
+function buildSvgGamble(secs, g2) {
+  const na = g2(secs, "ESC", "Na");
+  const k = g2(secs, "ESC", "K");
+  const cl = g2(secs, "ESC", "Cl");
+  const hco3 = g2(secs, "GASES", "Bica") || g2(secs, "ESC", "HCO3");
+  const f = g2(secs, "ESC", "F");
+  const ca = g2(secs, "ESC", "Ca");
+  const bun = g2(secs, "QS", "BUN");
+  const cr = g2(secs, "QS", "Cr");
+  const glu = g2(secs, "QS", "Glu");
+  if (!na && !k && !cl && !bun && !cr && !glu) return null;
+  const sy = 65;
+  const dT = 12;
+  const dB = 118;
+  const d1 = 104;
+  const d2 = 192;
+  const d3 = 280;
+  const forkX = 365;
+  const c1 = 61;
+  const c2 = 148;
+  const c3 = 236;
+  const c4 = 323;
+  return '<svg viewBox="0 0 470 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;"><line x1="18" y1="' + sy + '" x2="' + forkX + '" y2="' + sy + '" ' + DIAGRAM_LINE + '/><line x1="' + d1 + '" y1="' + dT + '" x2="' + d1 + '" y2="' + dB + '" ' + DIAGRAM_LINE + '/><line x1="' + d2 + '" y1="' + dT + '" x2="' + d2 + '" y2="' + dB + '" ' + DIAGRAM_LINE + '/><line x1="' + d3 + '" y1="' + dT + '" x2="' + d3 + '" y2="' + dB + '" ' + DIAGRAM_LINE + '/><line x1="' + forkX + '" y1="' + sy + '" x2="448" y2="18" ' + DIAGRAM_LINE + '/><line x1="' + forkX + '" y1="' + sy + '" x2="448" y2="112" ' + DIAGRAM_LINE + "/>" + diagramGambleCell(c1, "Na", na, true) + diagramGambleCell(c2, "Cl", cl, true) + diagramGambleCell(c3, "P", f, true) + diagramGambleCell(c4, "BUN", bun, true) + diagramGambleCell(c1, "K", k, false) + diagramGambleCell(c2, "HCO3", hco3, false) + diagramGambleCell(c3, "Ca", ca, false) + diagramGambleCell(c4, "Cr", cr, false) + diagramSpBlock(418, 65, "Glu", glu, "middle") + "</svg>";
+}
+function buildSvgPFH(secs, g2) {
+  const ca = g2(secs, "ESC", "Ca");
+  const ast = g2(secs, "PFHs", "AST");
+  const ldh = g2(secs, "PFHs", "LDH");
+  const pcr = g2(secs, "QS", "PCR");
+  const alt = g2(secs, "PFHs", "ALT");
+  const alb = g2(secs, "PFHs", "Alb");
+  const fa = g2(secs, "PFHs", "FA");
+  const bt = g2(secs, "PFHs", "BT");
+  const bd = g2(secs, "PFHs", "BD");
+  const bi = g2(secs, "PFHs", "BI");
+  if (!ast && !alt && !fa && !bt && !alb) return null;
+  const cx = 135;
+  const lx = 67;
+  const rx = 202;
+  const midLeft = pcr || ldh;
+  const midLbl = pcr ? "Prot" : "LDH";
+  return '<svg viewBox="0 0 270 230" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;"><line x1="' + cx + '" y1="10" x2="' + cx + '" y2="145" ' + DIAGRAM_LINE + '/><line x1="22" y1="52" x2="248" y2="52" ' + DIAGRAM_LINE + '/><line x1="22" y1="104" x2="248" y2="104" ' + DIAGRAM_LINE + '/><line x1="22" y1="145" x2="248" y2="145" ' + DIAGRAM_LINE + '/><line x1="' + cx + '" y1="145" x2="45" y2="210" ' + DIAGRAM_LINE + '/><line x1="' + cx + '" y1="145" x2="225" y2="210" ' + DIAGRAM_LINE + "/>" + diagramPfhCell(lx, "Ca", ca, 20) + diagramPfhCell(rx, "AST", ast, 20) + (midLeft ? diagramPfhCell(lx, midLbl, midLeft, 65) : "") + diagramPfhCell(rx, "ALT", alt, 65) + diagramPfhCell(lx, "Alb", alb, 117) + diagramPfhCell(rx, "FA", fa, 117) + diagramPfhCell(cx, "BT", bt, 165) + diagramPfhCell(cx - 35, "BD", bd, 195) + diagramPfhCell(cx + 35, "BI", bi, 195) + "</svg>";
+}
+
+// public/js/features/diagrams-render.mjs
+function g(secs, sec, key) {
+  var s = secs[sec];
+  if (!s) return null;
+  var v = s[key];
+  if (!v || v.val === "---") return null;
+  return v;
+}
+var LINE = 'stroke="var(--diagram-line)" stroke-width="1.5"';
+function spBlock(x, cy, lbl, obj, anchor) {
+  anchor = anchor || "middle";
+  var ax = anchor === "start" ? "start" : anchor === "end" ? "end" : "middle";
+  var isAb = obj && obj.ab;
+  var vc = isAb ? "var(--error)" : "var(--diagram-value)";
+  var vt = obj ? escTxt(obj.val) : "\u2014";
+  var dec = isAb ? ' text-decoration="underline"' : "";
+  return '<g transform="translate(' + x + "," + cy + ')"><text x="0" y="-9" text-anchor="' + ax + '" dominant-baseline="middle" font-size="10" fill="var(--diagram-label)" font-family="Arial,sans-serif">' + lbl + '</text><text x="0" y="10" text-anchor="' + ax + '" dominant-baseline="middle" font-size="13" fill="' + vc + '" font-weight="bold" font-family="Arial,sans-serif"' + dec + ">" + vt + "</text></g>";
+}
+function svgBH(secs) {
+  var hb = g(secs, "BH", "Hb"), hto = g(secs, "BH", "Hto");
+  var leu = g(secs, "BH", "Leu"), neu = g(secs, "BH", "Neu");
+  var plt = g(secs, "BH", "Plt");
+  if (!hb) return null;
+  return '<svg viewBox="0 0 300 192" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;"><line x1="50"  y1="18"  x2="250" y2="182" ' + LINE + '/><line x1="250" y1="18"  x2="50"  y2="182" ' + LINE + "/>" + spBlock(150, 46, "HB", hb, "middle") + spBlock(150, 155, "HCTO", hto, "middle") + spBlock(212, 100, "PLT", plt, "start") + spBlock(76, 62, "LEU", leu, "end") + '<line x1="26" y1="87" x2="86" y2="87" ' + LINE + "/>" + spBlock(76, 112, "NEU", neu, "end") + "</svg>";
+}
+function svgGamble(secs) {
+  return buildSvgGamble(secs, g);
+}
+function svgPFH(secs) {
+  return buildSvgPFH(secs, g);
+}
+function svgGases(secs) {
+  var ph = g(secs, "GASES", "pH");
+  var pco2 = g(secs, "GASES", "pCO2");
+  var po2 = g(secs, "GASES", "pO2");
+  var lac = g(secs, "GASES", "Lactato");
+  var bica = g(secs, "GASES", "Bica");
+  if (!ph) return null;
+  var cx = 135, lx = 67, rx = 202;
+  var jY = 65;
+  function gcell(x, lbl, obj, y_lbl) {
+    var cy = y_lbl + 7.5;
+    var vc = obj && obj.ab ? "var(--error)" : "var(--diagram-value)";
+    var vt = obj ? escTxt(obj.val) : "\u2014";
+    var dec = obj && obj.ab ? ' text-decoration="underline"' : "";
+    return '<g transform="translate(' + x + "," + cy + ')"><text x="0" y="-10" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="var(--diagram-label)" font-family="Arial,sans-serif">' + lbl + '</text><text x="0" y="11" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="' + vc + '" font-weight="bold" font-family="Arial,sans-serif"' + dec + ">" + vt + "</text></g>";
+  }
+  return '<svg viewBox="0 0 270 162" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;"><line x1="' + cx + '" y1="' + jY + '" x2="22"  y2="10" ' + LINE + '/><line x1="' + cx + '" y1="' + jY + '" x2="248" y2="10" ' + LINE + '/><line x1="' + cx + '" y1="' + jY + '" x2="' + cx + '" y2="158" ' + LINE + '/><line x1="22" y1="' + jY + '"  x2="248" y2="' + jY + '"  ' + LINE + '/><line x1="22" y1="118" x2="248" y2="118" ' + LINE + "/>" + gcell(cx, "pH", ph, 20) + gcell(lx, "pCO2", pco2, 76) + gcell(rx, "pO2", po2, 76) + gcell(lx, "Lact", lac, 126) + gcell(rx, "HCO3", bica, 126) + "</svg>";
+}
+function svgCoag(secs) {
+  var tp = g(secs, "BH", "TP") || g(secs, "COAG", "TP");
+  var ttp = g(secs, "BH", "TTP") || g(secs, "COAG", "TTP");
+  var inr = g(secs, "BH", "INR") || g(secs, "COAG", "INR");
+  if (!tp && !ttp && !inr) return null;
+  var cx = 135, jY = 86, R = 50;
+  var k = 0.8660254037844386;
+  var tx = cx, ty = jY - R;
+  var lx = cx - R * k, ly = jY + R * 0.5;
+  var rx = cx + R * k, ry = jY + R * 0.5;
+  var Jx = cx, Jy = jY;
+  var uTx = 0, uTy = -1;
+  var uLx = -k, uLy = 0.5;
+  var uRx = k, uRy = 0.5;
+  var nL = Math.sqrt((uTx + uLx) * (uTx + uLx) + (uTy + uLy) * (uTy + uLy));
+  var bLx = (uTx + uLx) / nL, bLy = (uTy + uLy) / nL;
+  var nR = Math.sqrt((uTx + uRx) * (uTx + uRx) + (uTy + uRy) * (uTy + uRy));
+  var bRx = (uTx + uRx) / nR, bRy = (uTy + uRy) / nR;
+  var rLbl = R * 0.82;
+  var tpCx = Jx + rLbl * bLx, tpCy = Jy + rLbl * bLy;
+  var ttpCx = Jx + rLbl * bRx, ttpCy = Jy + rLbl * bRy;
+  var inrCx = cx;
+  var inrCy = ly + 16;
+  return '<svg viewBox="0 0 270 172" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;"><line x1="' + Jx + '" y1="' + Jy + '" x2="' + tx + '" y2="' + ty + '" ' + LINE + '/><line x1="' + Jx + '" y1="' + Jy + '" x2="' + lx + '" y2="' + ly + '" ' + LINE + '/><line x1="' + Jx + '" y1="' + Jy + '" x2="' + rx + '" y2="' + ry + '" ' + LINE + "/>" + spBlock(tpCx, tpCy, "TP", tp, "middle") + spBlock(ttpCx, ttpCy, "TTP", ttp, "middle") + spBlock(inrCx, inrCy, "INR", inr, "middle") + "</svg>";
+}
+function copiarDiagrama(svgStr, vw, vh, title, btn) {
+  var SCALE = 2;
+  var TITLE_H = 18, MARGIN = 12;
+  var cw = vw + MARGIN * 2, ch = vh + TITLE_H + MARGIN * 2;
+  var canvas = document.createElement("canvas");
+  canvas.width = cw * SCALE;
+  canvas.height = ch * SCALE;
+  var ctx = canvas.getContext("2d");
+  ctx.scale(SCALE, SCALE);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, cw, ch);
+  var fixedSvg = svgStr.replace(/style="width:100%;display:block;"/, 'width="' + vw + '" height="' + vh + '"');
+  var blob = new Blob([fixedSvg], { type: "image/svg+xml;charset=utf-8" });
+  var url = URL.createObjectURL(blob);
+  var img = new Image();
+  img.onload = function() {
+    ctx.font = "bold 9px Arial,sans-serif";
+    ctx.fillStyle = "#aaaaaa";
+    ctx.textAlign = "left";
+    ctx.fillText(title.toUpperCase(), MARGIN, MARGIN + 9);
+    ctx.drawImage(img, MARGIN, MARGIN + TITLE_H, vw, vh);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(function(pngBlob) {
+      if (!pngBlob) return;
+      if (navigator.clipboard && window.ClipboardItem) {
+        navigator.clipboard.write([new ClipboardItem({ "image/png": pngBlob })]).then(function() {
+          btn.textContent = "Copiado \u2713";
+          btn.classList.add("copied");
+          setTimeout(function() {
+            btn.textContent = "Copiar";
+            btn.classList.remove("copied");
+          }, 2e3);
+        }).catch(function() {
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(pngBlob);
+          a.download = title.replace(/\s+/g, "-").toLowerCase() + ".png";
+          a.click();
+        });
+      } else {
+        var a2 = document.createElement("a");
+        a2.href = URL.createObjectURL(pngBlob);
+        a2.download = title.replace(/\s+/g, "-").toLowerCase() + ".png";
+        a2.click();
+      }
+    }, "image/png");
+  };
+  img.onerror = function() {
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
+var LAB_DIAGRAMS_COLLAPSED_KEY = "rpc-lab-diagrams-collapsed-v1";
+function labDiagramsIsCollapsed() {
+  try {
+    return localStorage.getItem(LAB_DIAGRAMS_COLLAPSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+function setLabDiagramsCollapsed(collapsed) {
+  try {
+    localStorage.setItem(LAB_DIAGRAMS_COLLAPSED_KEY, collapsed ? "1" : "0");
+  } catch (_e) {
+    void _e;
+  }
+  syncLabDiagramsCollapseUI();
+}
+function toggleLabDiagramsSection() {
+  setLabDiagramsCollapsed(!labDiagramsIsCollapsed());
+}
+function syncLabDiagramsCollapseUI() {
+  var sec = document.getElementById("lab-diagrams-section");
+  var btn = document.querySelector(".lab-diagrams-toggle");
+  if (!sec) return;
+  var collapsed = labDiagramsIsCollapsed();
+  sec.classList.toggle("is-collapsed", collapsed);
+  if (btn) btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+}
+function renderDiagramas(resLabs) {
+  var secs = parsearSecciones(resLabs);
+  var grid = document.getElementById("diagrams-grid");
+  grid.innerHTML = "";
+  var cards = [
+    { title: "Biometr\xEDa Hem\xE1tica", svg: svgBH(secs), w: 260, vw: 300, vh: 192 },
+    { title: "Coagulaci\xF3n", svg: svgCoag(secs), w: 240, vw: 270, vh: 172 },
+    { title: "Electrolitos / QS", svg: svgGamble(secs), w: 480, vw: 470, vh: 130 },
+    { title: "Funci\xF3n Hep\xE1tica", svg: svgPFH(secs), w: 220, vw: 270, vh: 230 },
+    { title: "Gasometr\xEDa", svg: svgGases(secs), w: 240, vw: 270, vh: 162 }
+  ];
+  var any = false;
+  cards.forEach(function(c) {
+    if (!c.svg) return;
+    any = true;
+    var div = document.createElement("div");
+    div.className = "dcard";
+    div.style.width = c.w + "px";
+    var btn = document.createElement("button");
+    btn.className = "dcard-copy";
+    btn.textContent = "Copiar";
+    var svgStr = c.svg, vw = c.vw, vh = c.vh, title = c.title;
+    btn.onclick = function() {
+      copiarDiagrama(svgStr, vw, vh, title, btn);
+    };
+    div.innerHTML = '<div class="dcard-title">' + c.title + "</div>" + c.svg;
+    div.appendChild(btn);
+    grid.appendChild(div);
+  });
+  document.getElementById("lab-diagrams-section").style.display = any ? "block" : "none";
+  syncLabDiagramsCollapseUI();
+}
+
+// public/js/lab-history-runtime.mjs
+var maintRt = {
+  getActiveId() {
+    return null;
+  },
+  renderLabHistoryPanel() {
+  },
+  refreshTendenciasOrCultivosPanel() {
+  },
+  getSettings() {
+    return null;
+  }
+};
+
+// public/js/lab-history-maint.mjs
+function registerLabHistoryMaintRuntime(ctx) {
+  if (ctx && typeof ctx === "object") Object.assign(maintRt, ctx);
+}
+function resLabsFromNoteLines(noteLines) {
+  var lines = noteLines || [];
+  var text = lines.join("\n");
+  if (looksLikeSomeLabReport(text)) {
+    try {
+      var parsed = procesarLabs(text);
+      if (parsed && parsed.resLabs && parsed.resLabs.length) {
+        return sanitizeResLabsChunks(parsed.resLabs);
+      }
+    } catch (_e) {
+      void _e;
+    }
+  }
+  return sanitizeResLabsChunks(extractLabDataLines(lines));
+}
+function applyMigratedResLabs(set, noteLines) {
+  if (set.resLabs && set.resLabs.length) return false;
+  if (set.id === "migrated-anterior") {
+    set.resLabs = resLabsFromNoteLines(noteLines.slice(0, 3));
+    return true;
+  }
+  if (set.id === "migrated-recent") {
+    set.resLabs = resLabsFromNoteLines(noteLines.slice(3));
+    return true;
+  }
+  return false;
+}
+function ensureSetBhExtras(set) {
+  if (set.bhExtras || !set.sourceText) return false;
+  try {
+    var reParse = procesarLabs(set.sourceText);
+    set.bhExtras = reParse && reParse.bhExtras ? reParse.bhExtras : {};
+  } catch {
+    set.bhExtras = {};
+  }
+  return true;
+}
+function setParsedBySectionIfChanged(set, pbNext) {
+  var pbStr = "";
+  try {
+    pbStr = JSON.stringify(pbNext);
+  } catch {
+    set.parsedBySection = pbNext;
+    return true;
+  }
+  if (pbStr != null && JSON.stringify(set.parsedBySection || null) !== pbStr) {
+    set.parsedBySection = pbNext;
+    return true;
+  }
+  return false;
+}
+function syncSetParsedFields(set) {
+  var changed = false;
+  var fp = labSetParseFingerprint(set);
+  if (set._parseFingerprint === fp && set.parsedBySection && Object.keys(set.parsedBySection).length) {
+    return { changed: false, rebuildNota: false };
+  }
+  var needsParse = !set.parsed || !Object.keys(set.parsed).length;
+  if (needsParse) {
+    if (!set.resLabs || !set.resLabs.length) {
+      set.parsed = {};
+    } else {
+      set.parsed = extractParsedValues(set.resLabs);
+    }
+    changed = true;
+  }
+  if (set.resLabs && set.resLabs.length) {
+    if (setParsedBySectionIfChanged(set, buildParsedBySectionFromResLabs(set.resLabs, set.bhExtras))) {
+      changed = true;
+    }
+  } else if (set.parsedBySection && Object.keys(set.parsedBySection).length) {
+    set.parsedBySection = {};
+    changed = true;
+  }
+  set._parseFingerprint = labSetParseFingerprint(set);
+  return { changed, rebuildNota: false };
+}
+function normalizeSetFechaHora(set) {
+  var changed = false;
+  var nf = normalizeFechaLabHistory(set.fecha);
+  if (nf && nf !== set.fecha && set.fecha !== "Anterior") {
+    set.fecha = nf;
+    changed = true;
+  }
+  var nh = normalizeHoraLabHistory(set.hora);
+  if (nh !== (set.hora || "")) {
+    set.hora = nh;
+    changed = true;
+  }
+  return changed;
+}
+function syncSetRefsAndHora(set) {
+  if (!set.sourceText) return { changed: false, rebuildNota: false };
+  var changed = false;
+  var rebuildNota = false;
+  if (!set.refsBySection || !Object.keys(set.refsBySection).length) {
+    var refsNext = buildRefsBySectionFromReport(set.sourceText);
+    if (refsNext && Object.keys(refsNext).length) {
+      set.refsBySection = refsNext;
+      changed = true;
+    }
+  }
+  var horaFromSrc = normalizeHoraLabHistory(extractLabReportHora(set.sourceText));
+  var normStoredHora = normalizeHoraLabHistory(set.hora);
+  if (horaFromSrc && horaFromSrc !== normStoredHora) {
+    set.hora = horaFromSrc;
+    changed = true;
+    rebuildNota = true;
+  }
+  return { changed, rebuildNota };
+}
+function inferSetFechaIfMissing(set) {
+  if (set.fecha && String(set.fecha).trim()) return false;
+  if (set.fecha === "Anterior") return false;
+  var inferred = inferFechaLabSetFromId(set);
+  if (!inferred) return false;
+  set.fecha = inferred;
+  return true;
+}
+function processLabHistorySet(set, noteLines) {
+  if (!set) return { changed: false, rebuildNota: false };
+  var changed = false;
+  var rebuildNota = false;
+  if (applyMigratedResLabs(set, noteLines)) changed = true;
+  if (ensureSetBhExtras(set)) changed = true;
+  var parsed = syncSetParsedFields(set);
+  if (parsed.changed) changed = true;
+  if (normalizeSetFechaHora(set)) changed = true;
+  var refs = syncSetRefsAndHora(set);
+  if (refs.changed) changed = true;
+  if (refs.rebuildNota) rebuildNota = true;
+  if (inferSetFechaIfMissing(set)) changed = true;
+  return { changed, rebuildNota };
+}
+function persistLabHistoryPatient(patientId, history) {
+  if (history.length) getLabHistory()[patientId] = history;
+  else delete getLabHistory()[patientId];
+}
+function rebuildEstudiosFromLabHistory(patientId, options) {
+  if (!patientId) return;
+  if (!getNotes()[patientId]) getNotes()[patientId] = {};
+  var ordered = sortLabHistoryChronological(
+    ensureParsedLabHistory(patientId, {
+      skipRebuildNota: true,
+      readOnly: !!(options && options.readOnly)
+    })
+  );
+  if (!ordered.length) {
+    getNotes()[patientId].estudios = "";
+    return;
+  }
+  var settings2 = typeof maintRt.getSettings === "function" ? maintRt.getSettings() : null;
+  getNotes()[patientId].estudios = buildEstudiosCopyLinesFromLabSets(
+    ordered,
+    resolveEstudiosCopyOptions(ordered, settings2)
+  ).join("\n");
+}
+function ensureParsedLabHistory(patientId, options) {
+  var skipRebuildNota = !!(options && options.skipRebuildNota);
+  var readOnly = !!(options && options.readOnly);
+  var raw = getLabHistory()[patientId];
+  var history = normalizeLabHistoryPatientSets(raw);
+  var changed = !Array.isArray(raw) || raw !== history;
+  var rebuildNota = false;
+  var noteLines = getNotes()[patientId] && getNotes()[patientId].estudios ? getNotes()[patientId].estudios.split("\n") : [];
+  history.forEach(function(set) {
+    var result = processLabHistorySet(set, noteLines);
+    if (result.changed) changed = true;
+    if (result.rebuildNota) rebuildNota = true;
+  });
+  if (rebuildNota && patientId && getNotes()[patientId] && !skipRebuildNota) {
+    persistLabHistoryPatient(patientId, history);
+    rebuildEstudiosFromLabHistory(patientId, { readOnly });
+    changed = true;
+  }
+  if (!Array.isArray(raw) || raw !== history) {
+    persistLabHistoryPatient(patientId, history);
+    changed = true;
+  }
+  if (changed && !readOnly) persistClinicalState();
+  return history;
+}
+function ensureParsedLabHistoryCached(patientId, options) {
+  var opts = options && typeof options === "object" ? Object.assign({}, options) : {};
+  if (opts.readOnly == null) opts.readOnly = true;
+  return ensureParsedLabHistory(patientId, opts);
+}
+function refreshLabHistoryUiAfterMaint() {
+  var aid = maintRt.getActiveId();
+  if (aid) {
+    try {
+      maintRt.renderLabHistoryPanel();
+    } catch (_e) {
+      void _e;
+    }
+  }
+  try {
+    maintRt.refreshTendenciasOrCultivosPanel();
+  } catch (_e) {
+    void _e;
+  }
+}
+function runLabHistoryPostSaveMaintenance() {
+  var report = {
+    at: (/* @__PURE__ */ new Date()).toISOString(),
+    reprocessedSetCount: 0,
+    patientsReprocessed: [],
+    exactDuplicates: [],
+    sourceDuplicates: [],
+    sameDateTimeConflicts: []
+  };
+  var changed = false;
+  Object.keys(getLabHistory() || {}).forEach(function(pid) {
+    if (pid.indexOf("demo-") === 0) return;
+    var sets = getLabHistory()[pid];
+    if (!Array.isArray(sets) || !sets.length) return;
+    sets.forEach(function(set) {
+      if (!set.resLabs || !set.resLabs.length) return;
+      var priorRefs = collectPriorRefsFromHistory(
+        sortLabHistoryChronological(sets).filter(function(s) {
+          return String(s.id) !== String(set.id);
+        })
+      );
+      var repro = sanitizeResLabsChunks(
+        reprocessLabResultLines_(set.resLabs, {
+          gasRefs: mergeGasRefs_(
+            priorRefs.GASES,
+            set.refsBySection && set.refsBySection.GASES
+          )
+        })
+      );
+      if (!repro || !repro.length) return;
+      if (!areLabSetsEquivalent(set.resLabs, repro)) {
+        set.resLabs = repro.slice();
+        set.parsed = extractParsedValues(repro);
+        set.parsedBySection = buildParsedBySectionFromResLabs(repro, set.bhExtras);
+        delete set._parseFingerprint;
+        changed = true;
+        report.reprocessedSetCount++;
+        if (report.patientsReprocessed.indexOf(pid) === -1) report.patientsReprocessed.push(pid);
+      }
+    });
+    var ex = findExactDuplicateLabGroups(sets);
+    if (ex.length) {
+      report.exactDuplicates.push({ patientId: pid, groups: ex });
+    }
+    var src = findNormalizedSourceDuplicateGroups(sets);
+    if (src.length) {
+      report.sourceDuplicates.push({ patientId: pid, groups: src });
+    }
+    var ct = findConflictingSameDateTimeGroups(sets);
+    if (ct.length) {
+      report.sameDateTimeConflicts.push({ patientId: pid, groups: ct });
+    }
+  });
+  try {
+    window.__rpcLabAudit = report;
+  } catch (_e) {
+    void _e;
+  }
+  var noise = report.reprocessedSetCount > 0 || report.exactDuplicates.length > 0 || report.sourceDuplicates.length > 0 || report.sameDateTimeConflicts.length > 0;
+  if (noise) {
+    try {
+      if (localStorage.getItem("rplus.debug-labs") === "1") {
+        console.info("[R+ Laboratorio] Auditor\xEDa tras guardado \u2014 revisa window.__rpcLabAudit:", report);
+      }
+    } catch (_dbg) {
+      void _dbg;
+    }
+  }
+  if (changed && report.patientsReprocessed.length) {
+    report.patientsReprocessed.forEach(function(pid) {
+      bumpLabHistoryRevision(pid);
+    });
+  }
+  return changed;
+}
+function persistAllLabStateAfterMaint() {
+  storage.saveAll(
+    getPatients(),
+    getNotes(),
+    getIndicaciones(),
+    getLabHistory(),
+    getMedRecetaByPatient(),
+    getListadoProblemas(),
+    getRecetaHuByPatient(),
+    getVpoByPatient(),
+    getMedPharmProfileByPatient()
+  );
+}
+function installLabHistoryAuditHook() {
+  try {
+    window.runRpcLabAuditNow = function() {
+      var ch = runLabHistoryPostSaveMaintenance();
+      if (ch) {
+        persistAllLabStateAfterMaint();
+        refreshLabHistoryUiAfterMaint();
+      }
+      return window.__rpcLabAudit;
+    };
+  } catch (_e) {
+    void _e;
+  }
+}
+(function migrateLabHistory() {
+  try {
+    if (localStorage.getItem("rpc-labHistory")) return;
+  } catch {
+    return;
+  }
+  getPatients().forEach(function(p) {
+    try {
+      if (!getNotes()[p.id] || !getNotes()[p.id].estudios) return;
+      var lines = getNotes()[p.id].estudios.split("\n");
+      var anteriorLines = lines.slice(0, 3).filter(function(l) {
+        return l.trim();
+      });
+      var recentLines = lines.slice(3).filter(function(l) {
+        return l.trim();
+      });
+      var sets = [];
+      if (anteriorLines.length) {
+        var migratedAnteriorLabs = resLabsFromNoteLines(anteriorLines);
+        sets.push({
+          id: "migrated-anterior",
+          fecha: "Anterior",
+          hora: "",
+          resLabs: migratedAnteriorLabs,
+          parsed: extractParsedValues(migratedAnteriorLabs)
+        });
+      }
+      if (recentLines.length) {
+        var migratedRecentLabs = resLabsFromNoteLines(recentLines);
+        sets.push({
+          id: "migrated-recent",
+          fecha: normalizeFechaLabHistory(recentLines[0] || getNotes()[p.id].fecha || ""),
+          hora: getNotes()[p.id].hora || "",
+          resLabs: migratedRecentLabs,
+          parsed: extractParsedValues(migratedRecentLabs)
+        });
+      }
+      if (sets.length) getLabHistory()[p.id] = sets;
+    } catch (e) {
+      console.error("migrateLabHistory patient error:", p && p.id, e && e.message);
+    }
+  });
+  try {
+    localStorage.setItem("rpc-labHistory", JSON.stringify(getLabHistory()));
+  } catch (e) {
+    console.error("migrateLabHistory write error:", e && e.message);
+  }
+})();
 
 // public/js/features/lab-history-batch-copy-modal.mjs
 var rt = {
@@ -2201,7 +2893,7 @@ function getParsed() {
   const rt4 = getDriveImportRuntime();
   const patient = rt4.getActivePatient();
   const existing = patient && patient.eventualidades && Array.isArray(patient.eventualidades.entries) ? patient.eventualidades.entries : [];
-  const existingLabs = patient && patient.id && labHistory[patient.id] ? labHistory[patient.id] : [];
+  const existingLabs = patient && patient.id && getLabHistory()[patient.id] ? getLabHistory()[patient.id] : [];
   return parseDriveDocument(ta ? ta.value : "", {
     existingEventualidades: existing,
     existingLabHistory: existingLabs,
@@ -2229,7 +2921,7 @@ function getReviewBuildOpts(_parsed) {
   return {
     applyMode: getApplyMode(),
     existingEventualidades: patient && patient.eventualidades && Array.isArray(patient.eventualidades.entries) ? patient.eventualidades.entries : [],
-    existingLabHistory: patient && patient.id && labHistory[patient.id] ? labHistory[patient.id] : [],
+    existingLabHistory: patient && patient.id && getLabHistory()[patient.id] ? getLabHistory()[patient.id] : [],
     createNew: !patient
   };
 }
@@ -2839,7 +3531,7 @@ function createPatientFromDriveHeader(header) {
     fromLab: false
   };
   applyDefaultsToNewPatient(patient);
-  patients.unshift(patient);
+  getPatients().unshift(patient);
   selectPatient(id);
   return patient;
 }
@@ -2877,7 +3569,7 @@ async function applyDriveImportInner(parsed, options) {
   const evRes = await applyDriveEventualidadesSection(patient, parsed);
   if (evRes.lanDeferred) lanSyncDeferred = true;
   const labRes = await applyDriveLabSetsIfAny(patient, parsed);
-  await saveState({ immediate: true });
+  await persistClinicalState({ immediate: true });
   return {
     ok: true,
     navigateTo: resolveDriveImportNavigateTo(mode, parsed, labRes),
@@ -3248,7 +3940,7 @@ var rt3 = {
   setActiveAppTab(_v) {
   },
   getActiveInner() {
-    return "todo";
+    return "resumen";
   },
   setActiveInner(_v) {
   },
@@ -3324,7 +4016,9 @@ function buildRuntimeContextUiDeps() {
     normalizeFechaLabHistory,
     buildLabSetDateLine,
     getRoundOverviewMode,
-    saveState,
+    persistClinicalState,
+    getPatients,
+    getLabHistory,
     emitLiveSyncTodoUpsert: enqueueCloudTodoUpsert,
     requestDocumentJson,
     handleDocumentGenerateResponse,
@@ -3366,7 +4060,7 @@ function buildRuntimeContextFeatureDeps() {
     getActivePatient: function() {
       var id = rt3.getActiveId();
       if (!id) return null;
-      return patients.find(function(p) {
+      return getPatients().find(function(p) {
         return String(p.id) === String(id);
       }) || null;
     },
@@ -3375,7 +4069,7 @@ function buildRuntimeContextFeatureDeps() {
     syncGluMode: syncEaRegistroGluMode,
     resetForm: function() {
       var activeId2 = rt3.getActiveId();
-      var patient = activeId2 && patients.find(function(p) {
+      var patient = activeId2 && getPatients().find(function(p) {
         return p.id === activeId2;
       });
       resetEaRegistroForm(patient || null);
@@ -3439,10 +4133,10 @@ async function registerAllFeatureRuntimes() {
   registerLabHistoryMaintRuntime(ctx);
   installLabHistoryAuditHook();
   registerTodosRuntime(ctx);
-  const reminderScheduler = await import("/mobile/js/chunks/todos-reminder-scheduler-R6RBNTQH.js");
+  const reminderScheduler = await import("/mobile/js/chunks/todos-reminder-scheduler-WAOPW6FN.js");
   reminderScheduler.configureTodoReminderScheduler({
     getPatientLabel: function(pid) {
-      var p = patients.find(function(row) {
+      var p = getPatients().find(function(row) {
         return row.id === pid;
       });
       if (!p) return "Paciente";
@@ -3453,19 +4147,42 @@ async function registerAllFeatureRuntimes() {
       if (nombre && bed) return nombre + " \xB7 " + bed;
       return nombre || bed || "Paciente";
     },
-    showToast
+    showToast,
+    isKnownPatient: function(pid) {
+      return getPatients().some(function(row) {
+        return row && String(row.id) === String(pid);
+      });
+    }
   });
+  const { pruneOrphanTodos } = await import("/mobile/js/chunks/patient-delete-local-ZMIJ6STZ.js");
+  pruneOrphanTodos(
+    getPatients().map(function(p) {
+      return p && p.id;
+    })
+  );
   reminderScheduler.rescheduleAllTodos();
   registerVpoRuntime(ctx);
   registerRecetaHuRuntime(ctx);
   registerCensoRuntime(
     Object.assign({}, ctx, {
       getCensusPatients: function() {
-        return filterPatientsForGuardiaCensus(patients);
+        return filterPatientsForGuardiaCensus(getPatients());
       }
     })
   );
   registerEventualidadesRuntime(ctx);
+  const { registerPatientDashboardRuntime } = await import("/mobile/js/chunks/dashboard-mount-JMZJKRII.js");
+  registerPatientDashboardRuntime(
+    Object.assign({}, ctx, {
+      openLabRepoBatchModal: function() {
+        if (typeof window !== "undefined" && typeof window.openLabRepoBatchModal === "function") {
+          window.openLabRepoBatchModal();
+        }
+      }
+    })
+  );
+  const { registerLabInnerRuntime } = await import("/mobile/js/chunks/lab-inner-DHZYPFZU.js");
+  registerLabInnerRuntime(ctx);
   registerExpedienteRuntime(ctx);
   registerNotesIndicacionesRuntime(ctx);
   registerProcedureAgendaRuntime(ctx);
@@ -3480,11 +4197,14 @@ async function registerAllFeatureRuntimes() {
   configurePatientEntries({
     runtime: ctx,
     renderPatientListLanSilent: function() {
-      if (typeof ctx.renderPatientList === "function") ctx.renderPatientList();
+      if (typeof ctx.renderPatientList === "function") ctx.renderPatientList({ silent: true });
     }
   });
   void import("/mobile/js/chunks/cloud-mobile-lan-strip-ZXR3OTYP.js").then((mod) => {
     mod.runLanConfigRetireIfNeeded({ showToast: ctx?.showToast });
+  });
+  void import("/mobile/js/chunks/lan-prefs-retire-ZUIGQTUG.js").then((mod) => {
+    mod.runLanPrefsRetireIfNeeded();
   });
   void import("/mobile/js/chunks/lan-blob-retire-QVYHGNGT.js").then((mod) => {
     const pruneDbBlobs = async (keys) => {
@@ -3494,7 +4214,7 @@ async function registerAllFeatureRuntimes() {
     };
     void mod.runLanBlobRetireIfNeeded({ pruneDbBlobs });
   });
-  void import("/mobile/js/chunks/equipos-cloud-config-R475EEOQ.js").then((mod) => {
+  void import("/mobile/js/chunks/equipos-cloud-config-FIN6GERW.js").then((mod) => {
     mod.runEquiposCloudBootIfNeeded();
   });
 }
@@ -3508,7 +4228,7 @@ function runInitialFeatureBoot() {
 
 // public/js/app.js
 if (typeof globalThis !== "undefined" && globalThis.__RPC_CLOUD_MOBILE__) {
-  void import("/mobile/js/chunks/boot-5TSM6ID5.js").then(function(mod) {
+  void import("/mobile/js/chunks/boot-SQKWES6H.js").then(function(mod) {
     return mod.initCloudMobileBoot();
   }).catch(function(err) {
     console.error("[R+ M\xF3vil] boot failed:", err);
@@ -3533,10 +4253,28 @@ void import("/mobile/js/chunks/perf-markers-YJ2GH5P6.js").then(function(perf) {
     });
   }
 });
+function lazyWindowHandler(exportName, loader) {
+  return function lazyHandlerProxy() {
+    var args = arguments;
+    void loader().then(function(mod) {
+      mod[exportName].apply(null, args);
+    });
+  };
+}
+var patientDashboardWindowHandlers = {
+  renderPatientDashboard: lazyWindowHandler("renderPatientDashboard", function() {
+    return import("/mobile/js/chunks/dashboard-mount-JMZJKRII.js");
+  })
+};
+var labInnerWindowHandlers = {
+  switchLabInner: lazyWindowHandler("switchLabInner", function() {
+    return import("/mobile/js/chunks/lab-inner-DHZYPFZU.js");
+  })
+};
 function isMobileWeb2() {
-  var g = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : null;
-  if (!g) return false;
-  return !!(g.__RPC_MOBILE_WEB__ || typeof document !== "undefined" && document.documentElement && document.documentElement.classList.contains("rpc-mobile-web"));
+  var g2 = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : null;
+  if (!g2) return false;
+  return !!(g2.__RPC_MOBILE_WEB__ || typeof document !== "undefined" && document.documentElement && document.documentElement.classList.contains("rpc-mobile-web"));
 }
 var allWindowHandlers = Object.assign(
   {},
@@ -3545,24 +4283,26 @@ var allWindowHandlers = Object.assign(
   windowHandlers9,
   windowHandlers13,
   labPanelWindowHandlersLazy,
-  windowHandlers2,
-  windowHandlers15,
-  windowHandlers8,
   windowHandlers3,
+  windowHandlers15,
+  windowHandlers2,
   windowHandlers4,
+  windowHandlers6,
   windowHandlers16,
-  windowHandlers5,
+  windowHandlers7,
   eaVitalHistoryWindowHandlersLazy,
   chartsWindowHandlersLazy,
   windowHandlers12,
-  windowHandlers7,
+  windowHandlers8,
+  patientDashboardWindowHandlers,
+  labInnerWindowHandlers,
   windowHandlers,
   productivityWindowHandlers,
   settingsHelpWindowHandlersLazy,
   platformWindowHandlersLazy,
   todosWindowHandlers,
   recetaHuWindowHandlers,
-  windowHandlers6,
+  windowHandlers5,
   commandPaletteWindowHandlersLazy,
   medicationsWindowHandlers,
   profileWindowHandlers,
@@ -3594,7 +4334,7 @@ var appStateReady = (async function loadClinicalStateOnBoot() {
   }
   if (isWebClinicalClient()) {
     try {
-      const { wipeSessionClinicalStorage } = await import("/mobile/js/chunks/session-clinical-wipe-UZKS7ILC.js");
+      const { wipeSessionClinicalStorage } = await import("/mobile/js/chunks/session-clinical-wipe-4CHI5QYB.js");
       wipeSessionClinicalStorage({ includeLanSession: false });
     } catch (_wipeBoot) {
       void _wipeBoot;
@@ -3645,7 +4385,7 @@ setSaveStateHooks({
     }
   }
 });
-void import("/mobile/js/chunks/session-clinical-wipe-UZKS7ILC.js").then(function(mod) {
+void import("/mobile/js/chunks/session-clinical-wipe-4CHI5QYB.js").then(function(mod) {
   mod.installSessionClinicalWipeOnExit();
 });
 window.addEventListener("beforeunload", function() {
@@ -3655,8 +4395,8 @@ document.addEventListener("visibilitychange", function() {
   if (document.visibilityState === "hidden") flushSaveState();
 });
 var activeId = null;
-var activeInner = "todo";
-var activeAppTab = "lab";
+var activeInner = "resumen";
+var activeAppTab = "nota";
 var settings = hydrateProfileSettings(storage.getSettings());
 attachProfileSettingsGetter(function() {
   return settings;
@@ -3716,7 +4456,7 @@ async function registerFeatureRuntimesForBoot() {
   await registerAllFeatureRuntimes();
   runInitialFeatureBoot();
 }
-appStateReady.then(async function() {
+var runtimesReady = appStateReady.then(async function() {
   try {
     await registerFeatureRuntimesForBoot();
   } catch (bootErr) {
@@ -3759,7 +4499,7 @@ var CLINICAL_DB_BOOT_STEPS = [
     id: "onboarding-dynamic-import",
     async run() {
       loadSettings();
-      const mod = await import("/mobile/js/chunks/clinical-onboarding-main-ZRF46NME.js");
+      const mod = await import("/mobile/js/chunks/clinical-onboarding-main-H75X5GZK.js");
       if (typeof mod.showEarlySyncModeOnboardingIfNeeded === "function") {
         mod.showEarlySyncModeOnboardingIfNeeded();
       }
@@ -3785,7 +4525,7 @@ var CLINICAL_DB_BOOT_STEPS = [
       wireClinicalTeamsControls();
       syncClinicalRotationEntryChrome();
       syncGuardiaModeButtonVisibility();
-      ctx.teamsMod = await import("/mobile/js/chunks/clinical-teams-BCHWZKUS.js");
+      ctx.teamsMod = await import("/mobile/js/chunks/clinical-teams-7MP6IW2K.js");
     }
   },
   {
@@ -3829,7 +4569,7 @@ function wireOnboardingFinishedBootResume(finishPatientListBoot) {
   );
 }
 function runDomBoot() {
-  appStateReady.then(function() {
+  runtimesReady.then(function() {
     runDomBootAfterState();
   }).catch(function() {
     runDomBootAfterState();
@@ -3837,27 +4577,33 @@ function runDomBoot() {
 }
 function runDomBootAfterState() {
   try {
-    let finishPatientListBoot = function() {
+    let selectDefaultPatientAndLoadLabs = function() {
+      if (ensureActivePatientInSidebarScope()) return;
+      requestAnimationFrame(function() {
+        ensureActivePatientInSidebarScope();
+      });
+      void ensureLabsLoaded().then(function(mod) {
+        mod.renderLabHistoryPanel();
+      });
+    }, finishPatientListBoot = function() {
       if (isClinicalOnboardingBootActive()) {
         wireOnboardingFinishedBootResume(finishPatientListBoot);
         return;
       }
-      void import("/mobile/js/chunks/clinical-access-runtime-MMQJFJHY.js").then(function(mod) {
-        if (typeof mod.refreshClinicalPatientListForScope === "function") {
-          return mod.refreshClinicalPatientListForScope();
-        }
+      void import("/mobile/js/chunks/clinical-access-runtime-AIZQAPAG.js").then(function(mod) {
         renderPatientList();
+        selectDefaultPatientAndLoadLabs();
+        if (typeof mod.refreshClinicalPatientListForScope === "function") {
+          void mod.refreshClinicalPatientListForScope().then(selectDefaultPatientAndLoadLabs).catch(function() {
+          });
+        }
       }).catch(function() {
         renderPatientList();
-      }).then(function() {
-        if (ensureActivePatientInSidebarScope()) return;
-        void ensureLabsLoaded().then(function(mod) {
-          mod.renderLabHistoryPanel();
-        });
+        selectDefaultPatientAndLoadLabs();
       }).then(function() {
         if (globalThis.__RPC_CLOUD_MOBILE__) return;
         _rpcDeferInit(function() {
-          void import("/mobile/js/chunks/autostart-W5TDXAPS.js").then(function(mod) {
+          void import("/mobile/js/chunks/autostart-P2DKHQBJ.js").then(function(mod) {
             return mod.autostartCloudSyncIfConfigured({ toast: showToast });
           });
         });
@@ -3877,6 +4623,10 @@ function runDomBootAfterState() {
     loadSettings();
     if (!onboardingBootActive) {
       runDeferredShellAfterOnboarding();
+    }
+    if (!onboardingBootActive) {
+      renderPatientList();
+      selectDefaultPatientAndLoadLabs();
     }
     if (isDbMode()) {
       void import("/mobile/js/chunks/boot-steps-ZL3WGQMJ.js").then(function(boot) {
@@ -3902,7 +4652,7 @@ function runEarlyClinicalOnboarding() {
     return;
   }
   if (!isDbMode()) return;
-  void import("/mobile/js/chunks/clinical-onboarding-main-ZRF46NME.js").then(function(mod) {
+  void import("/mobile/js/chunks/clinical-onboarding-main-H75X5GZK.js").then(function(mod) {
     if (typeof mod.showEarlySyncModeOnboardingIfNeeded === "function") {
       mod.showEarlySyncModeOnboardingIfNeeded();
     }

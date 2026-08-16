@@ -5,6 +5,7 @@
 
 /* ── Shared shell frames (Normal density) ─────────────────── */
 html.ui-density-normal #appcontent-lab > .main-work-scroll,
+html.ui-density-normal #appcontent-lab > .lab-active-shell,
 html.ui-density-normal #appcontent-agenda > .rpc-proc-agenda-root,
 html.ui-density-normal #appcontent-med > .med-active-shell,
 html.ui-density-normal .patient-expediente-classic {
@@ -13,6 +14,7 @@ html.ui-density-normal .patient-expediente-classic {
 }
 
 html.high-contrast.ui-density-normal #appcontent-lab > .main-work-scroll,
+html.high-contrast.ui-density-normal #appcontent-lab > .lab-active-shell,
 html.high-contrast.ui-density-normal #appcontent-agenda > .rpc-proc-agenda-root,
 html.high-contrast.ui-density-normal #appcontent-med > .med-active-shell,
 html.high-contrast.ui-density-normal .patient-expediente-classic {
@@ -241,7 +243,7 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 
 .exp-pendientes-mount #todo-form.todo-shell,
 .exp-pendientes-mount .todo-shell {
-  --todo-grid-prio: 5rem;
+  --todo-grid-prio: 5.75rem;
   --todo-grid-check: 1.375rem;
   --todo-grid-actions: 5.25rem;
   display: flex;
@@ -253,8 +255,9 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   border-radius: var(--radius-lg);
   background: var(--surface);
   box-shadow: 0 1px 0 color-mix(in oklab, var(--border) 45%, transparent);
-  overflow: visible;
-  padding: 10px 12px 12px;
+  /* Clip full-bleed composer so its square corners don't poke through radius-lg. */
+  overflow: hidden;
+  padding: 0 0 12px;
 }
 
 .exp-pendientes-mount .todo-toolbar {
@@ -264,14 +267,13 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   justify-content: flex-start;
   min-height: 2rem;
   margin-bottom: 2px;
-  padding: 0 2px;
+  padding: 8px 14px 0;
 }
 
 .exp-pendientes-mount .todo-composer {
   flex-shrink: 0;
-  /* Full-bleed strip (cancel shell 12px), but keep grid gutters = todo-row (shell 12 + row 12). */
-  margin-left: -12px;
-  margin-right: -12px;
+  /* Full-bleed under shell radius (overflow:hidden clips). Grid gutters = todo-row. */
+  margin: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -289,7 +291,7 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 0;
+  padding: 0 12px;
 }
 
 .exp-pendientes-mount .todo-empty {
@@ -297,6 +299,8 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   flex: 0 0 auto;
   min-height: 0;
   overflow: visible;
+  padding-left: 12px;
+  padding-right: 12px;
 }
 
 .exp-pendientes-mount .todo-composer > .todo-add-row {
@@ -536,8 +540,9 @@ html.dark .exp-pendientes-mount .todo-composer .todo-add-btn:hover {
    2 · LABORATORIO WORKBENCH
    ═══════════════════════════════════════════════════════════ */
 
-#appcontent-lab > .main-work-scroll {
-  background: color-mix(in oklab, var(--bg) 94%, var(--surface));
+#appcontent-lab > .main-work-scroll,
+#appcontent-lab > .lab-active-shell > .main-work-scroll {
+  background: transparent;
 }
 
 /* Lab cards: one radius tier (lg) — overrides soft-ui xl blanket + base .card xl */

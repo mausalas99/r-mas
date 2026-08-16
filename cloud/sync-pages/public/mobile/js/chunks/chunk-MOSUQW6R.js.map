@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../../../../public/js/features/clinical-context-bar.mjs"],
+  "sourcesContent": ["import { isGuardiaMode } from './chrome.mjs';\n\n/** @returns {HTMLElement | null} */\nexport function clinicalContextBarEl() {\n  return document.getElementById('clinical-context-bar');\n}\n\n/** Show the top clinical bar when Mi rotaci\u00F3n is visible. */\nexport function syncClinicalContextBarVisibility() {\n  const bar = clinicalContextBarEl();\n  if (!bar) return;\n  const rotation = document.getElementById('clinical-rotation-section');\n  const hasRotation = rotation && !rotation.hidden && !isGuardiaMode();\n  bar.hidden = !hasRotation;\n}\n"],
+  "mappings": ";;;;;AAGO,SAAS,uBAAuB;AACrC,SAAO,SAAS,eAAe,sBAAsB;AACvD;AAGO,SAAS,mCAAmC;AACjD,QAAM,MAAM,qBAAqB;AACjC,MAAI,CAAC,IAAK;AACV,QAAM,WAAW,SAAS,eAAe,2BAA2B;AACpE,QAAM,cAAc,YAAY,CAAC,SAAS,UAAU,CAAC,cAAc;AACnE,MAAI,SAAS,CAAC;AAChB;",
+  "names": []
+}

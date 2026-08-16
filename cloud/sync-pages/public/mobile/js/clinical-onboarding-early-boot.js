@@ -27,7 +27,13 @@
 
   function hasRememberMeCloudToken() {
     try {
-      return !!String(localStorage.getItem('rpc-cloud-sync-token') || '').trim();
+      if (String(localStorage.getItem('rpc-cloud-sync-token') || '').trim()) return true;
+      var api = window.electronAPI;
+      if (api && typeof api.cloudSyncRememberGetSync === 'function') {
+        var snap = api.cloudSyncRememberGetSync();
+        return !!(snap && String(snap.token || '').trim());
+      }
+      return false;
     } catch (_e) {
       return false;
     }
@@ -151,19 +157,22 @@
     window.__RPC_APP_BUNDLE_REQUESTED__ = true;
     var mod = document.createElement('script');
     mod.type = 'module';
-    mod.src = '/mobile/js/app.bundle.mjs?v=810-1786488622825';
+    mod.src = '/mobile/js/app.bundle.mjs?v=815-1786902557502';
     mod.onerror=function(){try{var g=document.getElementById("rpc-cloud-mobile-gate");if(g){g.innerHTML='<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="alert"><div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4><p class="rpc-cloud-mobile-modal__sub">Error al cargar la app.</p></div><div class="rpc-cloud-mobile-modal__body"><button type="button" class="btn-save" onclick="location.reload()">Recargar</button></div></div>';}}catch(_e){}};document.head.appendChild(mod);
   }
 
   function loadAppScripts() {
     if (window.__RPC_APP_SCRIPTS_LOADING__ || window.__RPC_APP_SCRIPTS_LOADED__) return;
     window.__RPC_APP_SCRIPTS_LOADING__ = true;
-    appendScript('/mobile/vendor/sortable.min.js', function () {
-      appendScript('/mobile/vendor/chart.umd.min.js', function () {
-        window.__RPC_APP_SCRIPTS_LOADED__ = true;
-        injectAppBundle();
-      });
-    });
+    // The module bundle is the long pole — request it first.
+    injectAppBundle();
+    var pending = 2;
+    function done() {
+      pending -= 1;
+      if (pending === 0) window.__RPC_APP_SCRIPTS_LOADED__ = true;
+    }
+    appendScript('/mobile/vendor/sortable.min.js', done);
+    appendScript('/mobile/vendor/chart.umd.min.js', done);
   }
 
   function scheduleAppScriptsLoad() {

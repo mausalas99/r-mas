@@ -1,5 +1,6 @@
 import { QUOTAS } from './quotas.js';
 import { mergeClinicalOpsLww } from './clinical-ops-lww.js';
+import { mergeMonitoreoLww } from './monitoreo-lww.js';
 
 /** @returns {import('./lww.js').RoomSyncState} */
 export function emptyState() {
@@ -139,6 +140,26 @@ function setEntryField(state, patientId, field, value) {
   state.entries[idx] = { ...state.entries[idx], [field]: value };
 }
 
+/**
+ * monitoreo carries vitals historial + estado actual — a blind LWW replace wipes
+ * whichever side loses the updatedAt race. Merge instead of overwrite.
+ * @param {RoomSyncState} state @param {string} patientId @param {unknown} value
+ */
+function setMonitoreoField(state, patientId, value) {
+  if (isTombstoned(state, patientId)) return;
+  const idx = findEntryIndex(state, patientId);
+  if (idx < 0) {
+    if (countLivePatients(state) >= QUOTAS.maxLivePatients) {
+      throw new QuotaExceededError('quota_exceeded', `Límite de pacientes en sala (${QUOTAS.maxLivePatients}).`);
+    }
+    state.entries.push({ id: patientId, monitoreo: value });
+    return;
+  }
+  const current = state.entries[idx].monitoreo;
+  const merged = current ? mergeMonitoreoLww(current, value) : value;
+  state.entries[idx] = { ...state.entries[idx], monitoreo: merged };
+}
+
 /** @param {RoomSyncState} state @param {string} itemId @param {unknown} value */
 function upsertAgendaItem(state, itemId, value) {
   const idx = state.agenda.findIndex((item) => item && item.id === itemId);
@@ -220,7 +241,12 @@ function applyOpToState(state, op) {
       path
     );
   if (entryField) {
-    setEntryField(state, entryField[1], entryField[2], value);
+    const [, entryPatientId, field] = entryField;
+    if (field === 'monitoreo') {
+      setMonitoreoField(state, entryPatientId, value);
+    } else {
+      setEntryField(state, entryPatientId, field, value);
+    }
     return;
   }
 

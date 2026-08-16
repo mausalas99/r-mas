@@ -380,7 +380,7 @@ html.rpc-mobile-web .exp-pendientes-mount > .exp-segment-panel.active > #todo-fo
 html.rpc-mobile-web .exp-pendientes-mount #todo-form.todo-shell,
 html.rpc-mobile-web .exp-pendientes-mount .todo-shell {
   flex: 0 1 auto;
-  overflow: visible;
+  overflow: hidden;
   margin-top: 0;
 }
 

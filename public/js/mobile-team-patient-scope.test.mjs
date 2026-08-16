@@ -62,13 +62,23 @@ describe('mobile-team-patient-scope', () => {
     assert.deepEqual(out.map((p) => p.id), ['p-mine']);
   });
 
-  it('does not include structural slice matches without assignment', () => {
+  it('includes unassigned structural slice matches on joined team, same as desktop', () => {
     const census = [
       { id: 'p-mine', servicio: 'Sala', area: 'Sala B', sala: 'Sala 2' },
       { id: 'p-slice', servicio: 'Sala', area: 'Sala B', sala: 'Sala 2' },
       { id: 'p-other', servicio: 'Sala', area: 'Sala A', sala: 'Sala 2' },
     ];
     const user = { user_id: 'u1', rank: 'Admin', is_program_admin: 1, sala: 'Sala 2' };
+    const out = filterPatientsForMobileTeamMirror(census, user, scope, null);
+    assert.deepEqual(out.map((p) => p.id).sort(), ['p-mine', 'p-slice']);
+  });
+
+  it('still hides patients assigned to another team even when structurally matching', () => {
+    const census = [
+      { id: 'p-mine', servicio: 'Sala', area: 'Sala B', sala: 'Sala 2' },
+      { id: 'p-other', servicio: 'Sala', area: 'Sala B', sala: 'Sala 2' },
+    ];
+    const user = { user_id: 'u1', rank: 'R1', sala: 'Sala 2' };
     const out = filterPatientsForMobileTeamMirror(census, user, scope, null);
     assert.deepEqual(out.map((p) => p.id), ['p-mine']);
   });

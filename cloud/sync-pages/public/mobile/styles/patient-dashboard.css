@@ -1,0 +1,685 @@
+/* Patient dashboard glance — tokens only; no glass. Root: .patient-dash */
+
+.patient-dash {
+  container-type: size;
+  container-name: dash;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding: clamp(6px, 1.2cqh, 12px);
+}
+
+.patient-dash .dash,
+.patient-dash.dash {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 1.2cqh, 12px);
+  font-size: clamp(11.5px, 1.45cqi, 15px);
+  overflow-y: auto;
+}
+
+.patient-dash .idrow {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75em;
+  align-items: flex-start;
+  flex: 0 0 auto;
+  margin-bottom: 0;
+}
+
+.patient-dash .idrow h1 { margin: 0; }
+
+.patient-dash .id-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em 0.85em;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.patient-dash .id-name-row .meta { margin-top: 0; }
+
+.patient-dash .dash-name {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 600 0.86em/1.3 var(--font-ui);
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.patient-dash .dash-name:hover { color: var(--color-accent); }
+
+.patient-dash .meta {
+  color: var(--color-ink-muted);
+  font-size: 0.88em;
+  margin-top: 2px;
+}
+
+.patient-dash .empty-hint {
+  margin: 0;
+  padding: 2px 0 4px;
+  color: var(--color-ink-muted);
+  font: 500 13px/1.45 var(--font-ui);
+  text-align: left;
+}
+
+.patient-dash .chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.patient-dash .chip {
+  background: var(--color-accent-soft);
+  border: 0;
+  border-radius: var(--radius-chip);
+  padding: 3px 8px;
+  font-size: 0.82em;
+  font-weight: 600;
+  color: var(--color-accent-soft-text);
+}
+
+html.dark .patient-dash .chip {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-soft-text);
+}
+
+.patient-dash .btn-sec {
+  border: 1px solid color-mix(in oklab, var(--color-ink) 28%, var(--border));
+  background: color-mix(in oklab, var(--color-ink) 6%, var(--color-elevated));
+  border-radius: var(--radius-control);
+  padding: 0.45em 1em;
+  font-weight: 600;
+  min-height: 2.6em;
+  font-size: 0.95em;
+  color: var(--color-ink);
+}
+
+.patient-dash .link {
+  border: 0;
+  background: none;
+  color: var(--color-ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0;
+}
+
+.patient-dash .link:hover {
+  color: var(--color-ink);
+}
+
+.patient-dash .ic-mod {
+  margin-top: 4px;
+}
+
+.patient-dash .ic-mod > small {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-ink-muted);
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+}
+
+.patient-dash .ic-mod .chips {
+  margin-top: 0;
+}
+
+.patient-dash .svc {
+  border: 0;
+  border-radius: var(--radius-chip);
+  padding: 3px 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: oklch(0.93 0.045 var(--h, 220));
+  color: oklch(0.36 0.09 var(--h, 220));
+}
+
+.patient-dash .svc.is-on {
+  outline: 1.5px solid oklch(0.5 0.1 var(--h, 220));
+}
+
+html.dark .patient-dash .svc {
+  background: oklch(0.32 0.06 var(--h, 220));
+  color: oklch(0.86 0.08 var(--h, 220));
+}
+
+html.dark .patient-dash .svc.is-on {
+  outline-color: oklch(0.72 0.1 var(--h, 220));
+}
+
+.patient-dash .svc-add {
+  border: 1px solid color-mix(in oklab, var(--color-ink) 22%, transparent);
+  background: transparent;
+  color: var(--color-ink-muted);
+  border-radius: var(--radius-chip);
+  padding: 3px 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.patient-dash .ic-cat {
+  margin: 0 0 12px;
+}
+
+.patient-dash .ic-cat small {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-ink-muted);
+  margin-bottom: 6px;
+}
+
+.patient-dash .ic-pal {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+}
+
+.patient-dash .bento {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(6px, 1cqi, 12px);
+  flex: 0 0 auto;
+}
+
+.patient-dash .bento.vitals-labs {
+  flex: 0 0 auto;
+  min-height: min-content;
+  align-items: stretch;
+  grid-template-rows: auto;
+  overflow: visible;
+}
+
+.patient-dash .bento.vitals-labs .vitals-card,
+.patient-dash .bento.vitals-labs .labs-card {
+  grid-column: auto;
+  min-width: 0;
+  min-height: min-content;
+  height: auto;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+}
+
+.patient-dash .bento.rest {
+  flex: 0 0 auto;
+  min-height: min-content;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto;
+  margin-top: 0;
+}
+
+.patient-dash .bento.meds-band {
+  flex: 0 0 auto;
+  min-height: min-content;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto;
+}
+
+.patient-dash .bento.rest > .card {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  min-height: min-content;
+  overflow: hidden;
+}
+.patient-dash .bento.meds-band > .card,
+#patient-ronda-dashboard-host .bento.meds-band > .card {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  min-height: min-content;
+  overflow: visible;
+}
+
+.patient-dash .bento.rest .card-b,
+.patient-dash .bento.meds-band .card-b {
+  display: flex;
+  flex-direction: column;
+}
+.patient-dash .bento.rest .card-b {
+  flex: 0 0 auto;
+  min-height: min-content;
+  overflow: hidden;
+}
+.patient-dash .bento.meds-band .card-b {
+  flex: 0 0 auto;
+  min-height: min-content;
+  overflow: visible;
+  padding: 4px 10px 10px;
+}
+.patient-dash .bento.meds-band .card-h { padding: 6px 12px; }
+
+.patient-dash .card,
+.patient-dash button.card,
+.patient-expediente-classic .patient-dash .card,
+.patient-expediente-classic .patient-dash button.card,
+#patient-ronda-dashboard-host .card {
+  background: var(--color-elevated);
+  border: 0;
+  border-radius: 12px;
+  box-shadow: none;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.patient-dash .card:hover,
+.patient-dash button.card:hover,
+.patient-expediente-classic .patient-dash .card:hover,
+#patient-ronda-dashboard-host .card:hover {
+  box-shadow: none;
+}
+
+.patient-dash .card.clickable {
+  width: 100%;
+  text-align: left;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  color: inherit;
+  cursor: pointer;
+}
+
+.patient-dash .card.clickable:hover {
+  background: color-mix(in oklab, var(--color-ink) 4%, var(--color-elevated));
+}
+
+.patient-dash .card.clickable:focus-visible,
+.patient-dash .draw:focus-visible,
+.patient-dash .link:focus-visible,
+.patient-dash .btn-sec:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.patient-dash .card-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--divider);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.patient-dash .card-b {
+  padding: 10px 12px 12px;
+}
+
+.patient-dash .vitals-card,
+.patient-dash button.vitals-card,
+.patient-dash .labs-card,
+#patient-ronda-dashboard-host .vitals-card,
+#patient-ronda-dashboard-host .labs-card {
+  overflow: visible;
+  height: auto;
+  min-height: min-content;
+}
+
+.patient-dash .vitals-card .card-h,
+.patient-dash .labs-card .card-h {
+  padding: 4px 10px;
+}
+
+.patient-dash .vitals-card .card-b {
+  flex: 1 1 auto;
+  min-height: min-content;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  padding: 8px 12px 10px;
+}
+
+.patient-dash .bento.vitals-labs .vitals-card.vitals-card--empty {
+  align-self: start;
+}
+
+.patient-dash .vitals-card--empty .card-b {
+  flex: 0 0 auto;
+}
+
+.patient-dash .vitals {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: minmax(min-content, 1fr);
+  align-content: stretch;
+  gap: 6px 18px;
+  flex: 1 1 auto;
+  min-height: min-content;
+}
+
+.patient-dash .vital {
+  min-width: min-content;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.patient-dash .vital small {
+  display: block;
+  color: var(--color-ink-muted);
+  font-size: 0.72em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.patient-dash .vital b {
+  display: block;
+  font: 600 1.28em/1.2 var(--font-mono);
+  color: var(--color-ink);
+  overflow: visible;
+}
+
+.patient-dash .vital.hi b {
+  color: var(--color-danger);
+}
+
+.patient-dash .labs-card,
+.patient-dash .labs-card .card-b {
+  height: auto;
+  min-height: min-content;
+}
+
+.patient-dash .labs-card .card-h {
+  padding: 4px 10px;
+}
+
+.patient-dash .labs-card .card-b {
+  flex: 1 1 auto;
+  min-height: min-content;
+  overflow: visible;
+  padding: 4px 10px 8px;
+}
+
+.patient-dash .day-draws {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.patient-dash .draw {
+  border: 1px solid color-mix(in oklab, var(--color-ink) 16%, transparent);
+  background: color-mix(in oklab, var(--color-ink) 4%, var(--color-content));
+  border-radius: 10px;
+  padding: 0.4em 0.55em;
+  text-align: left;
+  min-height: min-content;
+  width: 100%;
+  max-width: 100%;
+  flex: 1 1 100%;
+  display: grid;
+  grid-template-columns: 3.4em minmax(0, 1fr);
+  column-gap: 8px;
+  row-gap: 4px;
+  align-items: start;
+  color: inherit;
+  overflow: hidden;
+}
+
+.patient-dash .draw.is-wide {
+  flex: 1 1 100%;
+  width: 100%;
+}
+
+.patient-dash .draw:hover {
+  border-color: color-mix(in oklab, var(--color-ink) 32%, transparent);
+}
+
+.patient-dash .draw.is-on {
+  border-color: color-mix(in oklab, var(--color-ink) 40%, transparent);
+  background: var(--color-elevated);
+}
+
+.patient-dash .draw time {
+  font: 600 1em/1.2 var(--font-mono);
+  grid-column: 1;
+  padding-top: 3px;
+}
+
+.patient-dash .draw-groups {
+  grid-column: 2;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.patient-dash .draw-g,
+.patient-dash .draw-chip {
+  display: grid;
+  grid-template-columns: 4.2em minmax(0, 1fr);
+  column-gap: 8px;
+  align-items: start;
+  min-width: 0;
+}
+
+.patient-dash .draw-g .tipo {
+  font-size: 0.82em;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  min-width: min-content;
+  padding-top: 3px;
+}
+
+.patient-dash .draw .vals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  font: 500 12px/1.3 var(--font-mono);
+}
+
+.patient-dash .draw .vals .abn {
+  flex: 0 0 auto;
+}
+
+.patient-dash .abn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-danger);
+  font-weight: 650;
+  line-height: 1.25;
+  background: color-mix(in oklab, var(--color-danger) 14%, transparent);
+  margin-right: 0;
+  white-space: nowrap;
+  text-align: center;
+  padding: 3px 8px;
+  border-radius: 8px;
+}
+
+.patient-dash .bento.meds-band .soap-pack {
+  display: flex;
+  flex: 0 0 auto;
+  min-height: min-content;
+  align-items: start;
+  overflow: visible;
+}
+.patient-dash .bento.meds-band .soap-pack section {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 14px 8px;
+  border-right: 1px solid var(--divider);
+}
+.patient-dash .bento.meds-band .soap-pack section:first-child { padding-left: 4px; }
+.patient-dash .bento.meds-band .soap-pack section:last-child {
+  border-right: 0;
+  padding-right: 8px;
+}
+.patient-dash .bento.meds-band .soap-pack .z,
+.patient-dash .bento.meds-band .soap-pack .z2 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45em;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  color: var(--color-ink-muted);
+  padding: 2px 0 4px;
+}
+.patient-dash .bento.meds-band .soap-pack [data-soap="N"] { --soap-h: 300; }
+.patient-dash .bento.meds-band .soap-pack [data-soap="V"] { --soap-h: 210; }
+.patient-dash .bento.meds-band .soap-pack [data-soap="HD"] { --soap-h: 18; }
+.patient-dash .bento.meds-band .soap-pack [data-soap="HI"] { --soap-h: 85; }
+.patient-dash .bento.meds-band .soap-pack [data-soap="NM"] { --soap-h: 160; }
+.patient-dash .bento.meds-band .soap-pack .z[data-soap],
+.patient-dash .bento.meds-band .soap-pack .z2[data-soap] {
+  color: oklch(0.42 0.12 var(--soap-h, 220));
+}
+.patient-dash .bento.meds-band .soap-pack .z em,
+.patient-dash .bento.meds-band .soap-pack .z2 em {
+  font: 500 11px/1.2 var(--font-ui);
+  letter-spacing: 0;
+  font-style: normal;
+  color: color-mix(in oklab, var(--color-ink-muted) 72%, transparent);
+}
+.patient-dash .bento.meds-band .soap-pack .z[data-soap] em,
+.patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
+  color: oklch(0.48 0.07 var(--soap-h, 220));
+}
+html.dark .patient-dash .bento.meds-band .soap-pack .z[data-soap],
+html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] {
+  color: oklch(0.84 0.1 var(--soap-h, 220));
+}
+html.dark .patient-dash .bento.meds-band .soap-pack .z[data-soap] em,
+html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
+  color: oklch(0.78 0.07 var(--soap-h, 220));
+}
+.patient-dash .bento.meds-band .soap-pack .z2 {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--divider);
+}
+.patient-dash .bento.meds-band .soap-pack .med {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 0 4px;
+  border-bottom: 1px solid var(--divider);
+  max-width: 100%;
+}
+.patient-dash .bento.meds-band .soap-pack .med:last-child,
+.patient-dash .bento.meds-band .soap-pack .med:has(+ .z2) { border-bottom: 0; }
+.patient-dash .bento.meds-band .soap-pack .name {
+  font: 590 13px/1.2 var(--font-ui);
+  letter-spacing: -0.016em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.patient-dash .bento.meds-band .soap-pack .meta {
+  flex-shrink: 0;
+  font: 500 11.5px/1.2 var(--font-ui);
+  letter-spacing: 0.01em;
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.patient-dash .bento.meds-band .soap-pack .meta.is-key {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.patient-dash .rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.patient-dash .rows time {
+  color: var(--color-ink-muted);
+  font: 500 11px var(--font-mono);
+  margin-right: 8px;
+}
+
+.patient-dash .due { color: var(--color-danger); font-weight: 600; }
+
+.exp-pendientes-header {
+  flex: 0 0 auto;
+  padding: 8px 12px 0;
+}
+.exp-pendientes-header .link.back {
+  border: 0;
+  background: none;
+  color: var(--color-ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0;
+  cursor: pointer;
+}
+.exp-pendientes-header .link.back:hover {
+  color: var(--color-ink);
+}
+
+#patient-ic-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(in oklab, var(--color-ink) 52%, transparent);
+  box-sizing: border-box;
+}
+#patient-ic-scrim[hidden] {
+  display: none !important;
+}
+#patient-ic-panel.patient-dash,
+#patient-ic-panel.patient-dash-ic-modal {
+  position: relative;
+  width: min(420px, 100%);
+  max-height: min(80vh, 560px);
+  height: auto;
+  overflow: auto;
+  padding: 20px;
+  margin: 0;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--color-elevated);
+  box-shadow: var(--elev-overlay, var(--shadow-md));
+  z-index: 10001;
+  container-type: normal;
+}
+#patient-ic-panel.patient-dash-ic-modal h3 {
+  margin: 0 0 8px;
+  font: 600 1.05em/1.3 var(--font-ui);
+}
+#patient-ic-panel.patient-dash-ic-modal [data-ic-done] {
+  margin-top: 12px;
+}
+
+#itab-content-paciente:has(#patient-dashboard-mount:not([hidden])) {
+  padding: 0;
+  gap: 0;
+}
+#patient-dashboard-mount {
+  flex: 1;
+  min-height: 0;
+}
+#patient-dashboard-mount[hidden],
+#exp-pendientes-header[hidden],
+#itab-content-paciente .exp-pendientes-mount[hidden] {
+  display: none;
+}
+
+#patient-ronda-dashboard-host { min-width: 0; }

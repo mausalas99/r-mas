@@ -1,10 +1,9 @@
 /**
- * iPad/PWA: mirror only patients explicitly assigned to one of the user's joined teams
- * (plus active guardia handoffs). Ignores rank, sala-wide, and structural team slices.
- *
- * Desktop Nube: same assignment/guardia rules, plus unassigned locals that structurally
- * match a joined team — so missing patient_team_assignment rows do not empty the sidebar
- * after a re-render (e.g. selectPatient during Actualizar labs).
+ * iPad/PWA and Desktop Nube share one team-scope rule: assignment/guardia match,
+ * plus unassigned locals that structurally match a joined team — so a patient
+ * admitted moments ago (patient_team_assignment row not synced yet) is not hidden
+ * on either device (e.g. selectPatient during Actualizar labs, or a brand-new
+ * admission that hasn't round-tripped its assignment op yet).
  */
 import {
   getJoinedTeams,
@@ -61,7 +60,8 @@ export function isPatientVisibleOnMobileTeamMirror(user, patient, scopeContext, 
   if (isPatientAssignedToJoinedTeam(pid, scopeContext, user)) return true;
   if (activeGuardia && isActiveGuardiaCoveringUser(userId, activeGuardia)) return true;
   const guardias = Array.isArray(scopeContext?.guardias) ? scopeContext.guardias : [];
-  return patientCoveredByGuardia(pid, userId, guardias);
+  if (patientCoveredByGuardia(pid, userId, guardias)) return true;
+  return isUnassignedStructuralMatchOnJoinedTeam(user, patient, scopeContext);
 }
 
 /**
@@ -107,17 +107,15 @@ function isUnassignedStructuralMatchOnJoinedTeam(user, patient, scopeContext) {
 }
 
 /**
- * Desktop Nube team scope: keep assigned/guardia charts, hide foreign-team assignments,
- * and keep unassigned locals that structurally match a joined team.
+ * Desktop Nube team scope — now identical to the iPad/PWA mirror; kept as a named
+ * alias since both call sites (patients-clinical-filter.mjs) predate the unification.
  * @param {object|null|undefined} user
  * @param {{ id?: string, servicio?: string, service?: string, area?: string, sub_area?: string, sala?: string }} patient
  * @param {object|null|undefined} scopeContext
  * @param {object|null|undefined} activeGuardia
  */
 export function isPatientVisibleOnDesktopCloudTeamScope(user, patient, scopeContext, activeGuardia) {
-  if (!user?.user_id || !patient?.id) return false;
-  if (isPatientVisibleOnMobileTeamMirror(user, patient, scopeContext, activeGuardia)) return true;
-  return isUnassignedStructuralMatchOnJoinedTeam(user, patient, scopeContext);
+  return isPatientVisibleOnMobileTeamMirror(user, patient, scopeContext, activeGuardia);
 }
 
 /**

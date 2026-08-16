@@ -788,7 +788,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
 .lan-panel-group--admin .equipos-qr-compact-card {
   border-radius: 10px;
 }
-.lan-panel-group--admin .lan-sync-diagnostics-panel > .rpc-disclosure__summary,
+.lan-panel-group--admin .cloud-sync-diagnostics-panel > .rpc-disclosure__summary,
 .lan-panel-group--admin .lan-hub-interno-details > .lan-settings-card-summary {
   min-height: 44px;
   padding: 10px 32px 10px 14px;
@@ -1408,7 +1408,7 @@ body.connection-dropdown-open {
   gap: 8px;
   align-items: start;
 }
-.lan-panel-group--admin .lan-sync-diagnostics-panel[open],
+.lan-panel-group--admin .cloud-sync-diagnostics-panel[open],
 .lan-panel-group--admin .lan-hub-interno-details[open] {
   grid-column: 1 / -1;
 }
@@ -1512,7 +1512,7 @@ body.connection-dropdown-open {
 .lan-panel-group__body > .lan-shift-pin-card,
 .lan-panel-group__body > .lan-turn-reset-card,
 .lan-panel-group__body > .equipos-qr-compact-card,
-.lan-panel-group__body > .lan-sync-diagnostics-panel,
+.lan-panel-group__body > .cloud-sync-diagnostics-panel,
 .lan-panel-group__body > .lan-host-patients-panel,
 .lan-panel-group__body > .lan-known-sessions-card,
 .lan-panel-group__body > .lan-panel-span-full {
@@ -1533,7 +1533,7 @@ body.connection-dropdown-open {
     margin-top: 0;
   }
 }
-.lan-sync-diagnostics-pre {
+.cloud-sync-diagnostics-pre {
   font-size: 11px;
   white-space: pre-wrap;
   margin: 0;

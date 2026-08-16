@@ -738,6 +738,36 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   gap: 6px;
 }
 
+.ea-med-reclassify-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--surface) 92%, var(--lab-chip-bg));
+}
+
+.ea-med-reclassify-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ea-med-reclassify-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ea-med-reclassify-controls .ea-med-reclassify-select {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
 .ea-clinico-med-actions,
 .ea-clinico-text-actions {
   display: flex;
@@ -1167,7 +1197,12 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-vital-input:focus {
   outline: none;
-  background: color-mix(in oklab, var(--lab-chip-bg, var(--color-accent-soft)) 35%, var(--surface));
+  background: var(--surface);
+}
+
+.ea-vital-input:focus::placeholder {
+  color: transparent;
+  opacity: 0;
 }
 
 .ea-vital-box--altered {
@@ -2422,8 +2457,13 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-registro-modal .ea-vital-value-wrap .ea-vital-input:focus {
   outline: none;
-  background: color-mix(in oklab, var(--lab-chip-bg, var(--color-accent-soft)) 28%, transparent);
-  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ea-registro-modal .ea-vital-value-wrap .ea-vital-input:focus::placeholder {
+  color: transparent;
+  opacity: 0;
 }
 
 .ea-registro-modal .ea-vital-chip .ea-altered-label {

@@ -61,6 +61,87 @@
 .clinical-conflict-backdrop { z-index: var(--z-modal-nested); }
 /* Child dialogs opened from Conexión (--z-modal-nested) */
 .lab-conflict-backdrop--stacked { z-index: calc(var(--z-modal-nested) + 10); }
+.lab-conflict-modal.ui-confirm-modal {
+  width: min(92vw, 22.5rem);
+  max-width: 22.5rem;
+  padding: 1.15rem 1.2rem 1.05rem;
+  gap: 0;
+  border-radius: var(--radius-container, 12px);
+}
+.ui-confirm-modal .ui-confirm-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: var(--color-ink);
+  text-wrap: balance;
+}
+.ui-confirm-modal .ui-confirm-lead {
+  margin: 0.4rem 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-ink-muted);
+  text-wrap: pretty;
+}
+.ui-confirm-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0.12rem 0.75rem;
+  max-height: 9.5rem;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-field, 8px);
+  background: var(--color-elevated);
+}
+.ui-confirm-list li {
+  margin: 0;
+  padding: 0.42rem 0;
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.35;
+  color: var(--color-ink);
+}
+.ui-confirm-list li + li {
+  border-top: 1px solid var(--divider);
+}
+.ui-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin-top: 1.05rem;
+}
+.ui-confirm-btn {
+  appearance: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 34px;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-field, 8px);
+  cursor: pointer;
+}
+.ui-confirm-btn:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+.ui-confirm-btn--ghost {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-ink-muted);
+}
+.ui-confirm-btn--ghost:hover {
+  background: color-mix(in oklab, var(--color-ink) 6%, transparent);
+  color: var(--color-ink);
+}
+.ui-confirm-btn--danger {
+  border: 1px solid color-mix(in oklab, var(--color-danger) 35%, var(--border));
+  background: color-mix(in oklab, var(--color-danger) 10%, var(--color-elevated));
+  color: var(--color-danger);
+}
+.ui-confirm-btn--danger:hover {
+  background: color-mix(in oklab, var(--color-danger) 16%, var(--color-elevated));
+}
 .clinical-conflict-modal {
   width: min(94vw, 760px);
   max-width: min(94vw, 760px);
@@ -2005,7 +2086,11 @@ html.dark .tend-hidden-chip:hover .tend-hidden-chip-eye { color: var(--success);
   align-items: baseline;
   gap: 6px;
   min-width: 0;
-  max-width: 58%;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+}
+.tend-sort-zone .tend-card-header-end {
+  flex: 0 0 auto;
 }
 .tend-sort-zone .tend-param-name {
   font-size: 16px;
@@ -2013,6 +2098,7 @@ html.dark .tend-hidden-chip:hover .tend-hidden-chip-eye { color: var(--success);
   letter-spacing: 0.01em;
   line-height: 1.2;
   color: var(--text);
+  overflow-wrap: break-word;
 }
 .tend-sort-zone .tend-param-value {
   font-size: 18px;
@@ -2853,6 +2939,12 @@ html.dark .tend-gaso-tip {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 4px;
+}
+.tend-detail-add-event-btn {
+  margin-top: 12px;
+}
+.tend-detail-events-slot:not(:empty) + .tend-detail-add-event-btn {
+  margin-top: 8px;
 }
 .tend-event-legend {
   display: flex;

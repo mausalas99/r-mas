@@ -32,6 +32,7 @@
   gap: 0 !important;
 }
 
+html.ui-density-normal #appcontent-lab > .lab-active-shell,
 html.ui-density-normal #appcontent-lab > .main-work-scroll,
 html.ui-density-normal #appcontent-agenda > .rpc-proc-agenda-root,
 html.ui-density-normal #appcontent-med > .med-active-shell,
