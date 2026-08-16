@@ -1,5 +1,9 @@
-/** Paid Workers 30s CPU — 310k PBKDF2-SHA-256 per NIST SP 800-132. */
-const ITERATIONS = 310_000;
+/** Cloudflare Workers WebCrypto hard-caps PBKDF2 at 100k iterations — not a CPU-time
+ * limit, a platform rule (paid plan does not raise it). Do not change this value:
+ * password_hash rows have no per-record iteration count, so any change breaks every
+ * existing user's login. 50k restored 2026-08-16 after an accidental bump to 310k
+ * (2026-08-14, 5d3ee570) crashed every hash/verify call for two weeks. */
+const ITERATIONS = 50_000;
 const HASH_BYTES = 32;
 const SALT_BYTES = 16;
 
