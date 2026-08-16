@@ -1,31 +1,31 @@
-version: 8.1.4
+version: 8.1.5
 files:
-  - url: R+-8.1.4-autoupdate-mac-arm64.zip
-    sha512: nCtopmupxe+ALlrprKDFrpiqU3XfvzltfD+Y1R1vrGxon+e3Y5nVaA1KGPnKXwaXitB6U0vNIdcpw/UbrvAsQA==
-    size: 139992117
-  - url: R+-8.1.4-arm64.dmg
-    sha512: 4rwttMOYR5CEijMmHV9Up4mK0UiWZB4zEBgeQsWzkakGnJW9fjotPF7rr2FMrGhQB0BOpfFq7vrD4/R3GFzcfw==
-    size: 145864397
-  - url: R+-8.1.4-autoupdate-mac-x64.zip
-    sha512: BkGj/hlE4FSNQzmFF6QuO5OwJbgW0an7FDTNGyS67Dz4cQbtjQz6PqD6cyE4ZnLoPxxBSr5+zF/nMcQk8WFNNw==
-    size: 148365574
-  - url: R+-8.1.4-x64.dmg
-    sha512: YOQDWSotw9FyqeRiB1HL4YMs/oqwJyI6TFfvS+HoFSg4DSnOaGvLne1yxRlJFIxffYOIJNkVam5avkYqOwbTgQ==
-    size: 154296741
-path: R+-8.1.4-autoupdate-mac-arm64.zip
-sha512: nCtopmupxe+ALlrprKDFrpiqU3XfvzltfD+Y1R1vrGxon+e3Y5nVaA1KGPnKXwaXitB6U0vNIdcpw/UbrvAsQA==
-releaseDate: '2026-08-15T20:04:06.000Z'
+  - url: R+-8.1.5-autoupdate-mac-arm64.zip
+    sha512: lSyUVb1yQT+tAUFGpKA3zx0WxWw154YwnS/w6DY/soE8ErENVe/tnfpwpsfns8/kFNGA69sgchXJ5Q+CBbPgNA==
+    size: 140023347
+  - url: R+-8.1.5-arm64.dmg
+    sha512: iHfLUwIyZEAvSn+fodb2wWSx3YCg10OS5hEXPh4kDlIPcy3ICMyIqJR+/eHSlmylWexR2HkhX8FrJ8ZWQZBkrg==
+    size: 145897066
+  - url: R+-8.1.5-autoupdate-mac-x64.zip
+    sha512: UIX9OeeTDXLT1ZMSiZvAvkB35RNM95/89LQQP9vgHzDj2AZBZhEdgaJPtyWe+jyrdpjmy+nkPnx3A/ieYKIycg==
+    size: 148396824
+  - url: R+-8.1.5-x64.dmg
+    sha512: 4qmdeDYzeo1T2ebN7LF166xsM9r1LSLgMcaY7TAL5SdSMh11re0kziYtqyFNofr07+lSCRbgcpjwo2hUL2j+0w==
+    size: 154341217
+path: R+-8.1.5-autoupdate-mac-arm64.zip
+sha512: lSyUVb1yQT+tAUFGpKA3zx0WxWw154YwnS/w6DY/soE8ErENVe/tnfpwpsfns8/kFNGA69sgchXJ5Q+CBbPgNA==
+releaseDate: '2026-08-16T18:36:01.000Z'
 releaseNotes: |
-  Cifrado AES-256-GCM en Nube, botón de descarga directa en el modal de versión mínima, deduplicación de secciones SOME en pegado múltiple de gases, y correcciones de sincronización de campos censo.
+  Corrige el dashboard de paciente en iPad, agrega un atajo para copiar labs del equipo, y hace la sincronización en Nube más resistente a un item atascado.
   
-  Nube — cifrado AES-256-GCM reactivado: cada snapshot se almacena cifrado en el Worker. Blobs anteriores siguen siendo compatibles.
+  iPad — Vista ronda ya no esconde contenido: en el dashboard de paciente, Estado actual y Eventualidades quedaban ocultos debajo de labs porque el panel tenía altura fija y cortaba lo que no cabía. Ahora el panel hace scroll y se ve todo.
   
-  Actualización bloqueante — descarga directa: el modal de versión mínima ahora muestra un botón con el instalador correcto según plataforma (Mac Apple Silicon, Mac Intel, Windows).
+  Atajo ⌘⇧C — copia según la pestaña activa: copia los labs de hoy de los pacientes fijados; si estás en la pestaña de Estado actual, copia el estado actual en su lugar.
   
-  Pegado de labs — deduplicación SOME: al pegar múltiples tomas de gases del mismo día, las secciones no-gasométricas (EGO, etc.) ya no se duplican entre envíos.
+  Nube — un item atascado ya no detiene la cola: si un cambio falla al enviarse, los demás cambios pendientes se siguen enviando; antes toda la cola se congelaba en el primer error.
   
-  Workbench labs — multi-envío: cuando hay más de un grupo de resultados en el día, cada grupo muestra su hora y tipo como encabezado.
+  Nube — límite de tamaño de labs más seguro: se bajó el máximo de un op de labs para que siempre quepa en un envío; antes un op grande podía quedar atascado para siempre en la cola de salida.
   
-  Censo — reloj de campos: se estampa lanUpdatedAt al guardar diagnósticos y medicamentos para que la Nube no rechace la operación como obsoleta.
+  Dashboard de paciente: la tarjeta de signos vitales se ve más compacta cuando no hay datos.
   
-  Fusión censo — opción local gana: mergeCensoPatientFields preserva valores locales cuando el reloj remoto es anterior.
+  Lista de pacientes: el orden de "siguiente paciente" se actualiza al arrastrar y reordenar en la barra lateral.
