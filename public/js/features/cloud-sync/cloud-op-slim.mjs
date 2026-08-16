@@ -16,6 +16,8 @@ import { looksLikeSomeLabReport } from '../../labs-report-refs.mjs';
  */
 export const CLOUD_LAB_MUTATION_MAX_BYTES = 150 * 1024;
 export const CLOUD_NOTE_MAX_BYTES = 256 * 1024;
+/** Same chunk-safety margin as labs — monitoreo pushes the whole vitals historial each time. */
+export const CLOUD_MONITOREO_MAX_BYTES = 150 * 1024;
 /** Align with cloud/sync-worker/src/quotas.js maxMutationBodyBytes (220KB). */
 export const CLOUD_PUSH_WARN_BODY_BYTES = 200 * 1024;
 export const CLOUD_PUSH_WARN_OP_BYTES = 180 * 1024;
@@ -104,10 +106,47 @@ export function fitLabSetToQuota(set, maxBytes = CLOUD_LAB_MUTATION_MAX_BYTES) {
 }
 
 /** @param {string} path */
+function isMonitoreoPath(path) {
+  return /^entries\/[^/]+\/monitoreo$/.test(String(path || ''));
+}
+
+/** @param {string} path */
 function maxBytesForPath(path) {
-  return String(path || '').startsWith('labSidecars/')
-    ? CLOUD_LAB_MUTATION_MAX_BYTES
-    : CLOUD_NOTE_MAX_BYTES;
+  const p = String(path || '');
+  if (p.startsWith('labSidecars/')) return CLOUD_LAB_MUTATION_MAX_BYTES;
+  if (isMonitoreoPath(p)) return CLOUD_MONITOREO_MAX_BYTES;
+  return CLOUD_NOTE_MAX_BYTES;
+}
+
+/**
+ * Drop oldest vitals readings (historial is merged by id on receive, newest wins)
+ * until monitoreo fits maxBytes. Mirrors fitLabSetToQuota so a big vitals history
+ * shrinks instead of getting silently dropped whole every push.
+ * @param {unknown} value
+ * @param {number} maxBytes
+ */
+export function fitMonitoreoToQuota(value, maxBytes = CLOUD_MONITOREO_MAX_BYTES) {
+  if (!value || typeof value !== 'object') return value;
+  if (utf8JsonBytes(value) <= maxBytes) return value;
+  const src = /** @type {Record<string, unknown>} */ (value);
+  const historial = Array.isArray(src.historial) ? src.historial : [];
+  if (!historial.length) return null;
+
+  let lo = 0;
+  let hi = historial.length;
+  let best = 0;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const trial = { ...src, historial: historial.slice(historial.length - mid) };
+    if (utf8JsonBytes(trial) <= maxBytes) {
+      best = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  if (!best) return null;
+  return { ...src, historial: historial.slice(historial.length - best) };
 }
 
 /**
@@ -116,10 +155,17 @@ function maxBytesForPath(path) {
 export function slimCloudOp(op) {
   if (!op || typeof op !== 'object') return op;
   const path = String(op.path || '');
-  if (!path.startsWith('labSidecars/')) return op;
-  const fitted = fitLabSetToQuota(op.value, CLOUD_LAB_MUTATION_MAX_BYTES);
-  if (fitted == null) return null;
-  return { ...op, value: fitted };
+  if (path.startsWith('labSidecars/')) {
+    const fitted = fitLabSetToQuota(op.value, CLOUD_LAB_MUTATION_MAX_BYTES);
+    if (fitted == null) return null;
+    return { ...op, value: fitted };
+  }
+  if (isMonitoreoPath(path)) {
+    const fitted = fitMonitoreoToQuota(op.value, CLOUD_MONITOREO_MAX_BYTES);
+    if (fitted == null) return null;
+    return { ...op, value: fitted };
+  }
+  return op;
 }
 
 /**
