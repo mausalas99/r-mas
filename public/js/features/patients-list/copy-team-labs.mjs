@@ -1,6 +1,6 @@
 /**
- * ⌘⇧C — copia al portapapeles los laboratorios del día más reciente
- * de todos los pacientes fijados (equipo del turno).
+ * ⌘⇧C (fuera de la pestaña estado actual) — copia al portapapeles los
+ * laboratorios del día más reciente de todos los pacientes fijados (equipo del turno).
  */
 import { getPatients, getLabHistory } from '../../clinical-read-model.mjs';
 import { formatLabsForCensoCompact } from '../../censo-labs-format.mjs';
