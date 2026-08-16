@@ -179,6 +179,7 @@ function copyDir(srcDir, destDir) {
   fs.mkdirSync(destDir, { recursive: true });
   for (const name of fs.readdirSync(srcDir)) {
     if (name === '.DS_Store') continue;
+    if (name.endsWith('.test.mjs') || name.endsWith('.test.js')) continue;
     const src = path.join(srcDir, name);
     const dest = path.join(destDir, name);
     const st = fs.statSync(src);
