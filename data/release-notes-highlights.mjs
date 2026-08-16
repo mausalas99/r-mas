@@ -2453,6 +2453,11 @@ var RELEASE_NOTES_814 = [
 
 var RELEASE_NOTES_815 = [
   {
+    title: 'iPad — Vista ronda ya no esconde contenido',
+    body:
+      'Estado actual y Eventualidades ya no quedan ocultos debajo de labs. El panel ahora hace scroll en vez de cortar el contenido.',
+  },
+  {
     title: 'Atajo ⌘⇧C — copiar labs del equipo',
     body: 'Copia los labs de hoy de los pacientes fijados con un solo atajo de teclado.',
   },
@@ -2468,8 +2473,7 @@ var RELEASE_NOTES_815 = [
   },
   {
     title: 'Dashboard de paciente más compacto',
-    body:
-      'La tarjeta de signos vitales se ve mejor sin datos, y el panel hace scroll si el contenido no cabe.',
+    body: 'La tarjeta de signos vitales se ve mejor sin datos.',
   },
   {
     title: 'Actualiza el turno',

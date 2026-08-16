@@ -47,10 +47,11 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ## R+ 8.1.5 (estable — release 8.1.5)
 
+- **iPad:** Vista ronda ya no esconde Estado actual ni Eventualidades debajo de labs.
 - **Atajo ⌘⇧C:** copia labs de hoy de los pacientes fijados.
 - **Nube:** un item atascado ya no detiene toda la cola de sincronización.
 - **Nube:** límite de tamaño de labs más bajo, para que un op nunca quede atascado.
-- **Dashboard de paciente:** tarjeta de vitales más compacta, scroll cuando no cabe.
+- **Dashboard de paciente:** tarjeta de vitales más compacta.
 
 Notas: `docs/RELEASE_NOTES_8.1.5.txt`.
 ## R+ 8.1.4 (estable — release 8.1.4)

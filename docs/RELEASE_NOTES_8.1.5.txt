@@ -5,14 +5,15 @@ Fecha: 2026-08-16
 
 ## Resumen
 
-Atajo nuevo para copiar labs del equipo, sincronización en Nube más resistente a un item atascado, y ajustes de tamaño en el dashboard de paciente.
+Corrige el dashboard de paciente en iPad, agrega un atajo para copiar labs del equipo, y hace la sincronización en Nube más resistente a un item atascado.
 
 ## Nuevo / mejorado
 
+- **iPad — Vista ronda ya no esconde contenido:** en el dashboard de paciente, Estado actual y Eventualidades quedaban ocultos debajo de labs porque el panel tenía altura fija y cortaba lo que no cabía. Ahora el panel hace scroll y se ve todo.
 - **Atajo ⌘⇧C — copiar labs del equipo:** copia los labs de hoy de los pacientes fijados con un atajo de teclado.
 - **Nube — un item atascado ya no detiene la cola:** si un cambio falla al enviarse, los demás cambios pendientes se siguen enviando; antes toda la cola se congelaba en el primer error.
 - **Nube — límite de tamaño de labs más seguro:** se bajó el máximo de un op de labs para que siempre quepa en un envío; antes un op grande podía quedar atascado para siempre en la cola de salida.
-- **Dashboard de paciente:** la tarjeta de signos vitales se ve más compacta cuando no hay datos, y el panel hace scroll si el contenido no cabe.
+- **Dashboard de paciente:** la tarjeta de signos vitales se ve más compacta cuando no hay datos.
 - **Lista de pacientes:** el orden de "siguiente paciente" se actualiza al arrastrar y reordenar en la barra lateral.
 
 ## Instalación
