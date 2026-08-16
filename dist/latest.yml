@@ -1,11 +1,11 @@
 version: 8.1.4
 files:
   - url: R+-8.1.4-x64.exe
-    sha512: LL8KltAzwKrAbEQNGNSYWzCKf3yCo66SrBw+4ECk23+hdtEw5jreo62Ce7IW2xeaB4Tou9ngf1b+eKgjx9adtw==
-    size: 122629837
+    sha512: THEeq5PGMV4NSjrbWwK4Pd6Pn1ar34awjOUUQT0d9B5vedmGSHlFvL0a4T4zQnCRuLp07rISqAzT+wNMKkGeOg==
+    size: 122637998
 path: R+-8.1.4-x64.exe
-sha512: LL8KltAzwKrAbEQNGNSYWzCKf3yCo66SrBw+4ECk23+hdtEw5jreo62Ce7IW2xeaB4Tou9ngf1b+eKgjx9adtw==
-releaseDate: '2026-08-15T02:49:15.000Z'
+sha512: THEeq5PGMV4NSjrbWwK4Pd6Pn1ar34awjOUUQT0d9B5vedmGSHlFvL0a4T4zQnCRuLp07rISqAzT+wNMKkGeOg==
+releaseDate: '2026-08-15T20:04:06.000Z'
 releaseNotes: |
   Cifrado AES-256-GCM en Nube, botón de descarga directa en el modal de versión mínima, deduplicación de secciones SOME en pegado múltiple de gases, y correcciones de sincronización de campos censo.
   

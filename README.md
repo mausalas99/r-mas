@@ -39,11 +39,20 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.1.4](https://github.com/mausalas99/r-mas/releases/tag/v8.1.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.1.5](https://github.com/mausalas99/r-mas/releases/tag/v8.1.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
 
+
+## R+ 8.1.5 (estable — release 8.1.5)
+
+- **Atajo ⌘⇧C:** copia labs de hoy de los pacientes fijados.
+- **Nube:** un item atascado ya no detiene toda la cola de sincronización.
+- **Nube:** límite de tamaño de labs más bajo, para que un op nunca quede atascado.
+- **Dashboard de paciente:** tarjeta de vitales más compacta, scroll cuando no cabe.
+
+Notas: `docs/RELEASE_NOTES_8.1.5.txt`.
 ## R+ 8.1.4 (estable — release 8.1.4)
 
 - **TODO:** completar bullets en README.

@@ -79,8 +79,12 @@ function renderVitalsHtml(model) {
       ),
     ) +
     vitalCell('I/O', io, false);
+  var hasCoreVitals = !!(ta || numText(v.fc) || numText(v.fr) || numText(v.temp) || numText(v.sat) || glu);
+  var emptyClass = hasCoreVitals ? '' : ' vitals-card--empty';
   return (
-    '<button class="card clickable vitals-card" type="button" data-dash-action="estadoActual">' +
+    '<button class="card clickable vitals-card' +
+    emptyClass +
+    '" type="button" data-dash-action="estadoActual">' +
     '<div class="card-h">Signos vitales</div>' +
     '<div class="card-b"><div class="vitals">' +
     (cells || '<p class="meta">Sin signos vitales</p>') +

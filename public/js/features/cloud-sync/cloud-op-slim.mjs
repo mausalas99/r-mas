@@ -9,7 +9,12 @@
 import { markCloudLabOpPoison } from './cloud-lab-sidecar-index.mjs';
 import { looksLikeSomeLabReport } from '../../labs-report-refs.mjs';
 
-export const CLOUD_LAB_MUTATION_MAX_BYTES = 512 * 1024;
+/**
+ * Must stay under cloud-push-direct.mjs CHUNK_BUDGET_BYTES (180KB) so any single
+ * slimmed op always fits alone in a push chunk. A larger value here can produce
+ * an op that can never be sent — permanent «payload_too_large», stuck outbox.
+ */
+export const CLOUD_LAB_MUTATION_MAX_BYTES = 150 * 1024;
 export const CLOUD_NOTE_MAX_BYTES = 256 * 1024;
 /** Align with cloud/sync-worker/src/quotas.js maxMutationBodyBytes (220KB). */
 export const CLOUD_PUSH_WARN_BODY_BYTES = 200 * 1024;

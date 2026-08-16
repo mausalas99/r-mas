@@ -249,6 +249,8 @@ function createPullPushOps(ctx) {
     const pending = outbox.list();
     if (pending.length === 0) return;
     setStatus('syncing');
+    /** One stuck row (e.g. one patient's oversized batch) must not block every other row. */
+    let firstErr = null;
     for (const item of pending) {
       const sanitized = sanitizeOpsForCloudPush(item.ops);
       if (sanitized.dropped > 0) {
@@ -279,15 +281,17 @@ function createPullPushOps(ctx) {
           return String(row?.clientMutationId || '') === String(item.clientMutationId || '');
         });
         if (!stillPending) continue;
-        const msg = cloudSyncErrorMessage(err, 'No se pudo enviar un cambio a la nube.');
         recordCloudSyncError({
           op: 'push',
           code: cloudSyncErrorCode(err),
-          message: msg,
+          message: cloudSyncErrorMessage(err, 'No se pudo enviar un cambio a la nube.'),
         });
-        setStatus('error', msg);
-        throw err;
+        if (!firstErr) firstErr = err;
       }
+    }
+    if (firstErr) {
+      setStatus('error', cloudSyncErrorMessage(firstErr, 'No se pudo enviar un cambio a la nube.'));
+      throw firstErr;
     }
   }
 

@@ -46,14 +46,16 @@ describe('slimLabSetForCloud', () => {
 
 describe('fitLabSetToQuota', () => {
   it('trims resLabs lines when parsed payload is still too large', () => {
-    const fitted = fitLabSetToQuota({
-      id: 'big',
-      resLabs: ['BH\t' + 'Hb 8 '.repeat(80_000), 'QS\tNa 140'],
-    });
+    const bigLines = Array.from(
+      { length: 30 },
+      (_, i) => `BH${i}\t` + 'Hb 8 '.repeat(2_000)
+    );
+    const fitted = fitLabSetToQuota({ id: 'big', resLabs: bigLines });
     assert.ok(fitted);
     assert.ok(utf8JsonBytes(fitted) <= CLOUD_LAB_MUTATION_MAX_BYTES);
     assert.ok(Array.isArray(fitted.resLabs));
     assert.ok(fitted.resLabs.length >= 1);
+    assert.ok(fitted.resLabs.length < bigLines.length);
     assert.equal(fitted.sourceText, undefined);
   });
 

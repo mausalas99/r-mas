@@ -88,6 +88,9 @@ function handlePatientSortZoneEnd(evt) {
   if (evt.oldIndex === evt.newIndex || evt.from !== evt.to) return;
   syncPatientsOrderFromDom();
   persistClinicalState();
+  var filtered = patientsVisibleInSidebar().filter(patientMatchesSearch);
+  var zones = buildPatientListZones(filtered, { sortByBed: isMobileWeb() });
+  setLastRondaNavIds(buildRondaNavIds(zones));
 }
 
 function mountPatientListSortables() {

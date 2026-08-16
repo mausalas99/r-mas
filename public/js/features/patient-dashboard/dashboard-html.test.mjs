@@ -176,6 +176,30 @@ describe('dashboard html', () => {
     assert.doesNotMatch(html, /class="vital hi"><small>Glu/);
   });
 
+  it('marks the vitals card compact when only I/O has a value and no vitals are recorded', () => {
+    const model = modelWithVitals();
+    model.vitals = {
+      vitals: {},
+      glucometrias: [],
+      io: { ing: 0, egr: 0 },
+      alteredAt: {},
+    };
+    const html = renderDashboardHtml(model);
+    assert.match(html, /class="card clickable vitals-card vitals-card--empty"/);
+  });
+
+  it('does not mark the vitals card compact when core vitals are recorded', () => {
+    const model = modelWithVitals();
+    model.vitals = {
+      vitals: { fc: 84 },
+      glucometrias: [],
+      io: {},
+      alteredAt: {},
+    };
+    const html = renderDashboardHtml(model);
+    assert.match(html, /class="card clickable vitals-card" type="button"/);
+  });
+
   it('marks hyperglycaemia on Glu', () => {
     const model = modelWithVitals();
     model.vitals = {

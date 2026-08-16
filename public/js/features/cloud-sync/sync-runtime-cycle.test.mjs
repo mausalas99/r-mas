@@ -173,6 +173,41 @@ describe('createSyncRuntimeCycle status', () => {
     assert.ok(!statuses.slice(errorIdx + 1).some((s) => s.status === 'pending'));
   });
 
+  it('does not block other patients when one outbox row keeps failing', async () => {
+    const statuses = [];
+    const outbox = makeOutbox([
+      { clientMutationId: 'labSidecars/p1', ops: [{ t: 1 }], baseRevision: 0, enqueuedAt: 1 },
+      { clientMutationId: 'labSidecars/p2', ops: [{ t: 2 }], baseRevision: 0, enqueuedAt: 2 },
+    ]);
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => ({ revision: 1 }),
+        push: async (roomId, body) => {
+          if (String(body.clientMutationId).startsWith('labSidecars/p1')) {
+            const err = new Error('push_failed');
+            err.data = { error: 'payload_too_large', message: 'El cambio es demasiado grande.' };
+            throw err;
+          }
+          return { revision: 2, needPull: false };
+        },
+      },
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => 0,
+      setRevision: () => {},
+      onStatus(status, detail) {
+        statuses.push({ status, detail });
+      },
+    });
+
+    await runtime.syncCycle();
+    runtime.stop();
+
+    const remaining = outbox.list().map((r) => r.clientMutationId);
+    assert.deepEqual(remaining, ['labSidecars/p1']);
+    assert.equal(statuses[statuses.length - 1].status, 'error');
+  });
+
   it('reports configured-client error when api.push is missing', async () => {
     const statuses = [];
     const outbox = makeOutbox([

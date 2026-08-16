@@ -2451,10 +2451,38 @@ var RELEASE_NOTES_814 = [
   },
 ];
 
+var RELEASE_NOTES_815 = [
+  {
+    title: 'Atajo ⌘⇧C — copiar labs del equipo',
+    body: 'Copia los labs de hoy de los pacientes fijados con un solo atajo de teclado.',
+  },
+  {
+    title: 'Nube — un item atascado ya no detiene la cola',
+    body:
+      'Si un cambio falla al enviarse, los demás cambios pendientes se siguen enviando en vez de congelar toda la cola.',
+  },
+  {
+    title: 'Nube — labs grandes ya no se atascan',
+    body:
+      'Se bajó el máximo de tamaño de un op de labs para que siempre quepa en un envío a la Nube.',
+  },
+  {
+    title: 'Dashboard de paciente más compacto',
+    body:
+      'La tarjeta de signos vitales se ve mejor sin datos, y el panel hace scroll si el contenido no cabe.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.1.5 en todas</strong> las Macs y PCs del turno el mismo día.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_814;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_815;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.1.5': RELEASE_NOTES_815,
   '8.1.4': RELEASE_NOTES_814,
   '8.1.3': RELEASE_NOTES_813,
   '8.1.2': RELEASE_NOTES_812,

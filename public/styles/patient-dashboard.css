@@ -18,6 +18,7 @@
   flex-direction: column;
   gap: clamp(6px, 1.2cqh, 12px);
   font-size: clamp(11.5px, 1.45cqi, 15px);
+  overflow-y: auto;
 }
 
 .patient-dash .idrow {
@@ -192,10 +193,10 @@ html.dark .patient-dash .svc.is-on {
 }
 
 .patient-dash .bento.vitals-labs {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: min-content;
   align-items: stretch;
-  grid-template-rows: minmax(min-content, 1fr);
+  grid-template-rows: auto;
   overflow: visible;
 }
 
@@ -339,6 +340,14 @@ html.dark .patient-dash .svc.is-on {
   flex-direction: column;
   overflow: visible;
   padding: 8px 12px 10px;
+}
+
+.patient-dash .bento.vitals-labs .vitals-card.vitals-card--empty {
+  align-self: start;
+}
+
+.patient-dash .vitals-card--empty .card-b {
+  flex: 0 0 auto;
 }
 
 .patient-dash .vitals {

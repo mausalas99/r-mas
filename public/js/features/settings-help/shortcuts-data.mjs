@@ -45,6 +45,7 @@ export const SHORTCUT_GROUPS = [
       { keys: ['⌘', 'D'], label: 'Datos del paciente' },
       { keys: ['⌘', 'M'], label: 'Manejo' },
       { keys: ['⌘', '⇧', 'S'], label: 'Guardar paciente activo' },
+      { keys: ['⌘', '⇧', 'C'], label: 'Copiar labs del equipo', hint: 'Solo pacientes fijados' },
     ],
   },
   {

@@ -148,7 +148,7 @@ test('main forwards ⌘1 / ⌘E / ⌘T to renderer (Chromium would steal them)',
   assert.equal(isReservedShellShortcutInput({ type: 'keyDown', modifiers: ['cmd'], code: 'KeyT', key: 't' }), true);
   assert.equal(isReservedShellShortcutInput({ type: 'keyUp', meta: true, code: 'Digit1', key: '1' }), false);
   assert.equal(isReservedShellShortcutInput({ type: 'keyDown', meta: true, code: 'KeyA', key: 'a' }), false);
-  assert.equal(isReservedShellShortcutInput({ type: 'keyDown', meta: true, code: 'KeyC', key: 'c' }), false);
+  assert.equal(isReservedShellShortcutInput({ type: 'keyDown', meta: true, shift: true, code: 'KeyC', key: 'c' }), true);
   assert.equal(isReservedShellShortcutInput({ type: 'keyDown', meta: true, alt: true, code: 'KeyT', key: 't' }), false);
   assert.ok(MAIN_SRC.includes("accelerator: 'CmdOrCtrl+1'"));
   assert.ok(MAIN_SRC.includes("accelerator: 'CmdOrCtrl+E'"));

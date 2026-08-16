@@ -19,6 +19,7 @@ import {
   runResumenHomeShortcut,
 } from './app-shell-tab-shortcuts.mjs';
 import { markTabShortcutsAdopted } from './keyboard-shortcuts-nudge.mjs';
+import { copyTeamLabsForToday } from './features/patients-list/copy-team-labs.mjs';
 
 var shellKeyboardWired = false;
 var lastShellShortcutAt = 0;
@@ -45,6 +46,7 @@ var CODE_TO_KEY = {
   KeyS: 's',
   KeyK: 'k',
   KeyN: 'n',
+  KeyC: 'c',
   Slash: '/',
   Comma: ',',
   BracketLeft: '[',
@@ -137,6 +139,14 @@ function handleShellPaletteShortcut(e, key) {
   if (key !== 'k' || e.shiftKey || e.altKey) return false;
   e.preventDefault();
   openCommandPaletteFromShell();
+  return true;
+}
+
+/** @param {(msg: string, type?: string) => void} showToast */
+function handleShellCopyTeamLabsShortcut(e, key, showToast) {
+  if (key !== 'c' || !e.shiftKey || e.altKey) return false;
+  e.preventDefault();
+  copyTeamLabsForToday(showToast);
   return true;
 }
 
@@ -240,6 +250,7 @@ function onShellModifierKeydown(e, showToast) {
   if (handleShellMedOutputShortcut(e, key)) return;
   if (handleShellAgendaNavShortcut(e, key)) return;
   if (handleShellDigitTabShortcut(e, key)) return;
+  if (handleShellCopyTeamLabsShortcut(e, key, showToast)) return;
   if (handleShellNamedShortcut(e, key)) return;
   handleShellCommaShortcut(e, showToast);
 }

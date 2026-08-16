@@ -12,6 +12,10 @@ const { execSync } = require('child_process');
 const DEFAULT_KEYCHAIN = path.join(os.homedir(), 'Library/Keychains/login.keychain-db');
 const CSC_NAME_PREFIX = /^Developer ID Application:\s*/i;
 
+const DEFAULT_APPLE_ID = 'djsalas99@gmail.com';
+const DEFAULT_APPLE_TEAM_ID = 'N78U9QC783';
+const NOTARIZE_KEYCHAIN_SERVICE = 'rplus-notarize';
+
 function shellQuote(arg) {
   if (process.platform === 'win32') {
     return `"${String(arg).replace(/"/g, '""')}"`;
@@ -53,10 +57,38 @@ function unlockMacKeychainFromEnv(env) {
   return true;
 }
 
+function readKeychainPassword(account, service) {
+  try {
+    const out = execSync(
+      `security find-generic-password -a ${shellQuote(account)} -s ${shellQuote(service)} -w`,
+      { stdio: ['ignore', 'pipe', 'ignore'] }
+    );
+    return String(out).trim();
+  } catch (_e) {
+    return '';
+  }
+}
+
+/**
+ * Fills in Apple ID / Team ID with this project's known values, and pulls the
+ * app-specific password from the macOS login keychain, so `npm run release:publish`
+ * doesn't need APPLE_* exported by hand every time. Never overrides an explicit env var.
+ */
+function applyAppleDefaults(env) {
+  const e = env || process.env;
+  if (!String(e.APPLE_ID || '').trim()) e.APPLE_ID = DEFAULT_APPLE_ID;
+  if (!String(e.APPLE_TEAM_ID || '').trim()) e.APPLE_TEAM_ID = DEFAULT_APPLE_TEAM_ID;
+  if (!String(e.APPLE_APP_SPECIFIC_PASSWORD || '').trim() && process.platform === 'darwin') {
+    const pw = readKeychainPassword(e.APPLE_ID, NOTARIZE_KEYCHAIN_SERVICE);
+    if (pw) e.APPLE_APP_SPECIFIC_PASSWORD = pw;
+  }
+}
+
 function prepareMacSigning(env) {
   const e = env || process.env;
   applyCscName(e);
   if (process.platform !== 'darwin') return { unlocked: false };
+  applyAppleDefaults(e);
   const unlocked = unlockMacKeychainFromEnv(e);
   const signed =
     !!String(e.CSC_LINK || '').trim() ||
@@ -75,4 +107,8 @@ module.exports = {
   unlockMacKeychainFromEnv,
   normalizeCscName,
   applyCscName,
+  applyAppleDefaults,
+  NOTARIZE_KEYCHAIN_SERVICE,
+  DEFAULT_APPLE_ID,
+  DEFAULT_APPLE_TEAM_ID,
 };

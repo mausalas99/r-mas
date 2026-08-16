@@ -34,4 +34,13 @@ describe('patient list filter startup', () => {
     const fn = runtimesSrc.slice(start, start + 220);
     assert.match(fn, /silent:\s*true/);
   });
+
+  it('refreshes ronda nav ids after a FIJADOS drag reorder', () => {
+    const start = listSrc.indexOf('function handlePatientSortZoneEnd');
+    const end = listSrc.indexOf('function mountPatientListSortables');
+    assert.ok(start >= 0 && end > start);
+    const fn = listSrc.slice(start, end);
+    assert.match(fn, /syncPatientsOrderFromDom\(\)/);
+    assert.match(fn, /setLastRondaNavIds\(buildRondaNavIds\(zones\)\)/);
+  });
 });
