@@ -19,6 +19,7 @@ const { UPDATE_FEED_MODE, UPDATE_WORKER_URL } = require('./lib/update-feed.js');
 const { probeNativeRuntime } = require('./lib/native-runtime-probe.js');
 const { isAllowedExternalUrl } = require('./lib/window-open-policy.cjs');
 const { isReservedShellShortcutInput, hasCmdOrCtrl } = require('./lib/shell-shortcut-input.cjs');
+const { cleanupLegacyAppIdFiles } = require('./lib/legacy-appid-cleanup.js');
 const { PERF_CONFIG_FILE, normalizePerfConfig, readPerfConfig, writePerfConfig } = require('./lib/perf-config.js');
 const { setLanDbManager, getLanDbManager } = require('./lib/db/lan-db-bridge.cjs');
 const { installElectronLanCors } = require('./lib/electron-lan-cors.cjs');
@@ -899,6 +900,12 @@ app.whenReady().then(async () => {
       attachRendererProtocolHandler({ protocol, net }, path.join(__dirname, 'public'));
     }
     process.env.R_PLUS_USER_DATA = app.getPath('userData');
+    // One-time sweep of OS-level leftovers under the retired hospital-name appId
+    // (com.hospitaluniversitario.rplusclinical → com.rmas.rplusclinical). No patient
+    // data lives there — safe to run every launch, no-ops once the files are gone.
+    try {
+      cleanupLegacyAppIdFiles(fs, os.homedir(), process.platform);
+    } catch (_e) { /* best-effort, never block startup */ }
     applyUpdateChannel(readUpdateChannelFromDisk());
     captureDefaultUpdaterFeed();
     bootMark('updater-feed');
