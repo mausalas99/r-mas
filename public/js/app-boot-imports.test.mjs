@@ -147,8 +147,12 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * All eager, none of it lazy-loadable (core paste/labs paths). +269 B over prior budget. */
 /** +248 B: cloud-lab-sidecar-index batches fingerprint/poison index reads
  * (O(1) instead of per-lab-set) in buildDirtyLabSidecarOpsForPatient. Eager path. */
-const EAGER_BOOT_BUDGET_BYTES = 3368536;
-const EAGER_BOOT_BUDGET_FILES = 86;
+/** Budget for 8.1.5: ⌘⇧C copy-team-labs.mjs and copy-team-estado-actual.mjs
+ * (patients-list shortcuts, app-shell-keyboard.mjs). Both eager — invoked from
+ * the always-mounted shell keyboard handler, same tier as the other named
+ * shortcuts in that file. +14376 B / +4 files over prior budget. */
+const EAGER_BOOT_BUDGET_BYTES = 3382912;
+const EAGER_BOOT_BUDGET_FILES = 90;
 
 /**
  * Pre-existing eager/lazy-only conflicts, not introduced by the startup-lag

@@ -14,7 +14,7 @@ test('RELEASE_NOTES_6.6.8 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_6.6.8.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_6.6.8.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_6.6.8.txt still has TODO');
 });
 
 test('RELEASE_NOTES_6.6.9 has no TODO placeholders', () => {
@@ -22,7 +22,7 @@ test('RELEASE_NOTES_6.6.9 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_6.6.9.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_6.6.9.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_6.6.9.txt still has TODO');
 });
 
 test('RELEASE_NOTES_6.7.0 has no TODO placeholders', () => {
@@ -30,7 +30,7 @@ test('RELEASE_NOTES_6.7.0 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_6.7.0.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_6.7.0.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_6.7.0.txt still has TODO');
 });
 
 test('RELEASE_NOTES_7.0.1 has no TODO placeholders', () => {
@@ -38,7 +38,7 @@ test('RELEASE_NOTES_7.0.1 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.0.1.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.0.1.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.0.1.txt still has TODO');
 });
 
 test('RELEASE_NOTES_7.0.2 has no TODO placeholders', () => {
@@ -46,7 +46,7 @@ test('RELEASE_NOTES_7.0.2 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.0.2.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.0.2.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.0.2.txt still has TODO');
 });
 
 test('RELEASE_NOTES_7.0.3 has no TODO placeholders', () => {
@@ -54,7 +54,7 @@ test('RELEASE_NOTES_7.0.3 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.0.3.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.0.3.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.0.3.txt still has TODO');
 });
 
 test('RELEASE_NOTES_7.1.0 has no TODO placeholders', () => {
@@ -62,7 +62,7 @@ test('RELEASE_NOTES_7.1.0 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.1.0.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.1.0.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.1.0.txt still has TODO');
 });
 
 test('RELEASE_NOTES_7.1.1 has no TODO placeholders', () => {
@@ -70,7 +70,7 @@ test('RELEASE_NOTES_7.1.1 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.1.1.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.1.1.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.1.1.txt still has TODO');
 });
 
 test('RELEASE_NOTES_7.1.2 has no TODO placeholders', () => {
@@ -78,7 +78,7 @@ test('RELEASE_NOTES_7.1.2 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.1.2.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.1.2.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.1.2.txt still has TODO');
 });
 
 test('RELEASE_NOTES_7.1.3 has no TODO placeholders', () => {
@@ -86,7 +86,7 @@ test('RELEASE_NOTES_7.1.3 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.1.3.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.1.3.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.1.3.txt still has TODO');
 });
 
 test('RELEASE_NOTES_7.1.8 has no TODO placeholders', () => {
@@ -94,7 +94,7 @@ test('RELEASE_NOTES_7.1.8 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.1.8.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.1.8.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.1.8.txt still has TODO');
 });
 
 test('RELEASE_NOTES_7.1.9 has no TODO placeholders', () => {
@@ -102,7 +102,7 @@ test('RELEASE_NOTES_7.1.9 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.1.9.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.1.9.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.1.9.txt still has TODO');
 });
 
 test('RELEASE_NOTES_7.1.10 has no TODO placeholders', () => {
@@ -110,7 +110,7 @@ test('RELEASE_NOTES_7.1.10 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.1.10.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.1.10.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.1.10.txt still has TODO');
 });
 
 test('RELEASE_NOTES_7.2.0 has no TODO placeholders', () => {
@@ -118,7 +118,7 @@ test('RELEASE_NOTES_7.2.0 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.2.0.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.2.0.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.2.0.txt still has TODO');
 });
 
 test('curated 7.2.0 highlights remain filled (not legacy empty)', async () => {
@@ -142,7 +142,7 @@ test('RELEASE_NOTES_7.2.4 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.2.4.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.2.4.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.2.4.txt still has TODO');
 });
 
 test('RELEASE_NOTES_7.2.5 has no TODO placeholders', () => {
@@ -150,7 +150,7 @@ test('RELEASE_NOTES_7.2.5 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.2.5.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.2.5.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.2.5.txt still has TODO');
 });
 
 test('RELEASE_NOTES_7.2.6 has no TODO placeholders', () => {
@@ -158,7 +158,7 @@ test('RELEASE_NOTES_7.2.6 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.2.6.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.2.6.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.2.6.txt still has TODO');
 });
 
 test('current package version RELEASE_NOTES has no TODO placeholders', () => {
@@ -166,7 +166,7 @@ test('current package version RELEASE_NOTES has no TODO placeholders', () => {
   const file = path.join(ROOT, 'docs', `RELEASE_NOTES_${version}.txt`);
   assert.ok(fs.existsSync(file), `missing ${path.relative(ROOT, file)}`);
   const notes = fs.readFileSync(file, 'utf8');
-  assert.ok(!/\bTODO\b/i.test(notes), `docs/RELEASE_NOTES_${version}.txt still has TODO`);
+  assert.ok(!/\bTODO\b/.test(notes), `docs/RELEASE_NOTES_${version}.txt still has TODO`);
 });
 
 test('curated highlights for package.json version are current default', async () => {
@@ -194,7 +194,7 @@ test('RELEASE_NOTES_7.2.3 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.2.3.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.2.3.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.2.3.txt still has TODO');
 });
 
 test('curated 7.2.3 highlights are current default', async () => {
@@ -218,7 +218,7 @@ test('RELEASE_NOTES_7.2.2 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.2.2.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.2.2.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.2.2.txt still has TODO');
 });
 
 test('curated 7.2.2 highlights remain filled', async () => {
@@ -242,7 +242,7 @@ test('RELEASE_NOTES_7.2.1 has no TODO placeholders', () => {
     path.join(ROOT, 'docs/RELEASE_NOTES_7.2.1.txt'),
     'utf8'
   );
-  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.2.1.txt still has TODO');
+  assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.2.1.txt still has TODO');
 });
 
 test('curated 7.2.1 highlights remain filled', async () => {

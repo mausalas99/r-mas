@@ -77,7 +77,7 @@ test('Admin on iPad sidebar filters by joined team', () => {
   assert.deepEqual(out.map((p) => p.id), ['p-mine']);
 });
 
-test('Admin on Safari LAN (no mobile flag) still filters by team assignment', () => {
+test('Admin on Safari LAN (no mobile flag) sees team-matched patients plus ones they registered themselves', () => {
   delete globalThis.__RPC_MOBILE_WEB__;
   const census = [
     { id: 'p-mine', servicio: 'Sala', area: 'Sala B', sala: 'Sala 2' },
@@ -89,7 +89,7 @@ test('Admin on Safari LAN (no mobile flag) still filters by team assignment', ()
     { user_id: 'u-admin', rank: 'Admin', is_program_admin: 1, sala: 'Sala 2' },
     scopeFixture
   );
-  assert.deepEqual(out.map((p) => p.id), ['p-mine']);
+  assert.deepEqual(out.map((p) => p.id), ['p-mine', 'p-reg']);
 });
 
 test('Admin on iPad without team membership does not get sala-wide census', () => {
