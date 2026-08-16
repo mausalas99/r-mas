@@ -251,6 +251,32 @@ describe('mutate-bridge op mapping', () => {
     assert.equal(ops.some((op) => op.path === 'entries/p1/note'), false);
   });
 
+  it('mapBundleEnvelopeToOps still pushes monitoreo when it has no resolvable content clock (falls back to batch clock instead of dropping the vitals silently)', () => {
+    const ops = mapBundleEnvelopeToOps(
+      {
+        entries: [
+          {
+            patient: {
+              id: 'p1',
+              nombre: 'PAC',
+              lanUpdatedAt: '2026-08-03T09:00:00.000Z',
+              monitoreo: {
+                historial: [{ id: 'm1', vitals: { fc: '80' } }],
+              },
+            },
+            note: {},
+            indicaciones: {},
+            labHistory: [],
+          },
+        ],
+      },
+      meta
+    );
+    const monOp = ops.find((op) => op.path === 'entries/p1/monitoreo');
+    assert.ok(monOp);
+    assert.equal(monOp.updatedAt, meta.updatedAt);
+  });
+
   it('buildLabSidecarOpsForPatient maps lab history to sidecar paths', () => {
     const ops = buildLabSidecarOpsForPatient(
       'p1',

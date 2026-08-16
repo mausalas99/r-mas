@@ -85,8 +85,10 @@ export function pushCensusFieldsOp(ops, patientId, patient, actorId) {
 
 /** Monitoreo + eventualidades only (no HC) — fits debounced Nube bundle without note/lab quota blow-up. */
 export function pushCloudLiveClinicalOps(ops, patientId, patient, actorId, batchAt) {
-  const monAt = monitoreoOpUpdatedAt(patient.monitoreo);
-  if (monAt && patient.monitoreo) {
+  if (patient.monitoreo) {
+    // Fall back to batchAt so a vitals row with no resolvable content clock still
+    // reaches the cloud instead of being silently dropped (was: skipped when monAt was empty).
+    const monAt = monitoreoOpUpdatedAt(patient.monitoreo) || batchAt;
     ops.push(
       cloudOp({
         path: `entries/${patientId}/monitoreo`,
