@@ -1,48 +1,21 @@
 import { esc } from '../dom-escape.mjs';
 // Lab panel — historial, dedupe, consolidación
-import {
-  procesarLabs,
-  reprocessLabResultLines_,
-  collectPriorRefsFromHistory,
-  mergeGasRefs_,
-  refreshCitoquimicoInterpretacionInResLabs_,
-} from '../labs.js';
+import { procesarLabs, reprocessLabResultLines_, collectPriorRefsFromHistory, mergeGasRefs_, refreshCitoquimicoInterpretacionInResLabs_ } from '../labs.js';
 import { dedupeConsolidatedLabRows } from '../lab-bulk-paste.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { normalizeLabHistoryPatientSets } from '../storage.js';
 import { getPatients, getLabHistory, persistClinicalState } from '../app-state.mjs';
 import { applyExactLabHistoryDedupe } from '../lab-history-exact-prune.mjs';
 import { bumpLabHistoryRevision, getLabHistoryRevision } from '../lab-history-cache.mjs';
-import {
-  filterLabHistorySetsForMobileReference,
-  shouldApplyMobileLabHistoryWindow,
-} from './cloud-mobile/lab-history-window.mjs';
+import { filterLabHistorySetsForMobileReference, shouldApplyMobileLabHistoryWindow } from './cloud-mobile/lab-history-window.mjs';
 import { isMobileWeb, syncMobileLabReferenceChrome } from '../mobile-web.mjs';
-
 import { sanitizeResLabsChunks } from '../labs-reslabs-sanitize.mjs';
 import { isPaseMode } from './chrome.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 import { labPanelBridge } from './lab-panel-bridge.mjs';
 import { buildSameDaySerumContext, refreshSameDayAscitisForPatient } from './lab-panel-history-same-day.mjs';
-import {
-  groupLabHistoryByDay,
-  findLabHistoryDayIndexForSet,
-  stepLabHistoryDayIndex,
-  latestSetIdInLabHistoryDay,
-  labHistoryDayArrowDelta,
-  canHandleLabHistoryDayArrow,
-} from '../lab-history-day-nav.mjs';
-import {
-  buildDayOutputPayload,
-  buildLabHistoryDayOptionsHtml,
-  daySelectValue,
-  findDayForHistoryRef,
-  resolveSelectedDayKey,
-  filterOutDaySets,
-} from '../lab-history-day-view.mjs';
-
-
-
+import { groupLabHistoryByDay, findLabHistoryDayIndexForSet, stepLabHistoryDayIndex, latestSetIdInLabHistoryDay, labHistoryDayArrowDelta, canHandleLabHistoryDayArrow } from '../lab-history-day-nav.mjs';
+import { buildDayOutputPayload, buildLabHistoryDayOptionsHtml, daySelectValue, findDayForHistoryRef, resolveSelectedDayKey, filterOutDaySets } from '../lab-history-day-view.mjs';
 
 export function setLabHistoryPanelCollapsed() {}
 
@@ -129,52 +102,44 @@ function syncLabHistoryDayNavButtons(hist, selectedId) {
   if (nextBtn) nextBtn.disabled = idx <= 0;
 }
 
-function syncLabHistoryDateSelect(opts) {
+function handleLabHistoryNoPatientSelect_(selectEl, hintEl, moreMenu) {
+  _labHistoryDateSelectCacheKey = '';
+  selectEl.hidden = true;
+  selectEl.innerHTML = '';
+  if (hintEl) {
+    setLabOutputHistoryHint(
+      hintEl,
+      'Selecciona un paciente en la columna izquierda para ver los estudios guardados.',
+      { mobileReference: mobileLabReferenceMode() }
+    );
+  }
+  if (moreMenu) moreMenu.hidden = true;
+  syncLabHistoryDayNavButtons([], '');
+  if (mobileLabReferenceMode()) syncMobileLabReferenceChrome();
+  return '';
+}
+
+function handleLabHistoryEmptySelect_(selectEl, hintEl, moreMenu, cacheKey) {
+  _labHistoryDateSelectCacheKey = cacheKey;
+  selectEl.hidden = true;
+  selectEl.innerHTML = '';
+  if (hintEl) {
+    setLabOutputHistoryHint(
+      hintEl,
+      shouldApplyMobileLabHistoryWindow()
+        ? 'Sin estudios en los últimos 3 días. En escritorio se procesan labs y sincronizan aquí para referencia rápida.'
+        : 'Al procesar un reporte con paciente activo, cada conjunto queda guardado aquí (sirve para Tendencias y diagramas).',
+      { mobileReference: mobileLabReferenceMode() && shouldApplyMobileLabHistoryWindow() }
+    );
+  }
+  if (moreMenu) moreMenu.hidden = true;
+  syncLabHistoryDayNavButtons([], '');
   ensureMobileLabOutputShellVisible();
-  var selectEl = document.getElementById('lab-history-date-select');
-  var hintEl = document.getElementById('lab-output-history-hint');
-  var moreMenu = document.querySelector('.lab-output-more');
-  if (!selectEl) return '';
-  var pid = rt.getActiveId();
-  if (!pid) {
-    _labHistoryDateSelectCacheKey = '';
-    selectEl.hidden = true;
-    selectEl.innerHTML = '';
-    if (hintEl) {
-      setLabOutputHistoryHint(
-        hintEl,
-        'Selecciona un paciente en la columna izquierda para ver los estudios guardados.',
-        { mobileReference: mobileLabReferenceMode() }
-      );
-    }
-    if (moreMenu) moreMenu.hidden = true;
-    syncLabHistoryDayNavButtons([], '');
-    if (mobileLabReferenceMode()) syncMobileLabReferenceChrome();
-    return '';
-  }
-  var hist = getActivePatientLabHistory();
-  var cacheKey = String(pid) + '|L' + getLabHistoryRevision(pid) + '|N' + hist.length;
-  if (!hist.length) {
-    _labHistoryDateSelectCacheKey = cacheKey;
-    selectEl.hidden = true;
-    selectEl.innerHTML = '';
-    if (hintEl) {
-      setLabOutputHistoryHint(
-        hintEl,
-        shouldApplyMobileLabHistoryWindow()
-          ? 'Sin estudios en los últimos 3 días. En escritorio se procesan labs y sincronizan aquí para referencia rápida.'
-          : 'Al procesar un reporte con paciente activo, cada conjunto queda guardado aquí (sirve para Tendencias y diagramas).',
-        { mobileReference: mobileLabReferenceMode() && shouldApplyMobileLabHistoryWindow() }
-      );
-    }
-    if (moreMenu) moreMenu.hidden = true;
-    syncLabHistoryDayNavButtons([], '');
-    ensureMobileLabOutputShellVisible();
-    if (mobileLabReferenceMode()) syncMobileLabReferenceChrome();
-    return '';
-  }
-  if (hintEl) hintEl.style.display = 'none';
-  if (moreMenu) moreMenu.hidden = mobileLabReferenceMode() ? true : false;
+  if (mobileLabReferenceMode()) syncMobileLabReferenceChrome();
+  return '';
+}
+
+function populateLabHistoryDateSelect_(selectEl, hist, pid, cacheKey, opts) {
   var days = groupLabHistoryByDay(hist);
   var selectedDayKey = resolveSelectedDayKey(
     days,
@@ -197,6 +162,22 @@ function syncLabHistoryDateSelect(opts) {
   syncLabHistoryDayNavButtons(hist, navSetId);
   if (mobileLabReferenceMode()) syncMobileLabReferenceChrome();
   return selectedValue;
+}
+
+function syncLabHistoryDateSelect(opts) {
+  ensureMobileLabOutputShellVisible();
+  var selectEl = document.getElementById('lab-history-date-select');
+  var hintEl = document.getElementById('lab-output-history-hint');
+  var moreMenu = document.querySelector('.lab-output-more');
+  if (!selectEl) return '';
+  var pid = rt.getActiveId();
+  if (!pid) return handleLabHistoryNoPatientSelect_(selectEl, hintEl, moreMenu);
+  var hist = getActivePatientLabHistory();
+  var cacheKey = String(pid) + '|L' + getLabHistoryRevision(pid) + '|N' + hist.length;
+  if (!hist.length) return handleLabHistoryEmptySelect_(selectEl, hintEl, moreMenu, cacheKey);
+  if (hintEl) hintEl.style.display = 'none';
+  if (moreMenu) moreMenu.hidden = mobileLabReferenceMode() ? true : false;
+  return populateLabHistoryDateSelect_(selectEl, hist, pid, cacheKey, opts);
 }
 
 /** Prev/next-day arrow buttons flanking the Día picker. */

@@ -303,13 +303,7 @@ function finalizeStubPatientSidebar(patient, teamId) {
   });
 }
 
-export function commitStubPatientFromLab(labPatient, opts) {
-  if (!labPatient) return null;
-  var registro = String(labPatient.expediente || labPatient.registro || '').trim();
-  if (!registro) return null;
-  var existing = findPatientByRegistro(registro);
-  if (existing) return existing;
-
+function buildStubPatientDraft(labPatient, registro) {
   var nombreRaw = String(labPatient.name || '').trim().toUpperCase();
   var nombre = nombreRaw || ensureUniquePatientName('PACIENTE SIN NOMBRE');
   var edadNum = parseInt(String(labPatient.edad || '').trim(), 10);
@@ -318,17 +312,10 @@ export function commitStubPatientFromLab(labPatient, opts) {
       ? String(edadNum)
       : String(labPatient.edad || '').trim();
   var sexo = labPatient.sexo === 'M' ? 'M' : 'F';
-  var ts = patientAdmissionTimestamp();
+  return buildPatientDraft(nombre, registro, edad, sexo, '', '', '', '', true);
+}
 
-  var patient = buildPatientDraft(nombre, registro, edad, sexo, '', '', '', '', true);
-  var adoptResult = adoptTourPatientOnCommit(patient, registro);
-  patient = adoptResult.patient;
-  if (handleDuplicateDemoPatient(patient)) {
-    return getPatients().find(function (x) {
-      return x && x.id === patient.id;
-    }) || null;
-  }
-
+function stampStubPatientTeamAndSala(patient) {
   stampPatientClinicalSala(patient, clinicalSessionContext.user, {
     teamId: readPatientRegistrationTeamId(),
     teams: clinicalSessionContext.teams || [],
@@ -338,6 +325,26 @@ export function commitStubPatientFromLab(labPatient, opts) {
     var registrationSala = readPatientRegistrationSala();
     if (registrationSala) patient.sala = registrationSala;
   }
+}
+
+export function commitStubPatientFromLab(labPatient, opts) {
+  if (!labPatient) return null;
+  var registro = String(labPatient.expediente || labPatient.registro || '').trim();
+  if (!registro) return null;
+  var existing = findPatientByRegistro(registro);
+  if (existing) return existing;
+
+  var ts = patientAdmissionTimestamp();
+  var patient = buildStubPatientDraft(labPatient, registro);
+  var adoptResult = adoptTourPatientOnCommit(patient, registro);
+  patient = adoptResult.patient;
+  if (handleDuplicateDemoPatient(patient)) {
+    return getPatients().find(function (x) {
+      return x && x.id === patient.id;
+    }) || null;
+  }
+
+  stampStubPatientTeamAndSala(patient);
   stampPatientRegistrationMeta(patient, clinicalSessionContext.user);
   clearPatientDeleteTombstoneForAdmit(patient.id, patient.registro);
   enqueueCloudPatientAdmit(patient);

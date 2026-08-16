@@ -101,21 +101,37 @@ function collectItemsToReclassify(items, sel, fromKey, classifyFn, lines) {
  * }} ctx
  * @returns {boolean}
  */
-export function reclassifyEaMedProposal(ctx) {
-  var fromKey = String(ctx.fromKey || '').trim();
-  var toKey = String(ctx.toKey || '').trim();
+function isValidFieldKeyPair(fromKey, toKey) {
   if (!fromKey || !toKey || fromKey === toKey) return false;
   if (MED_FIELD_KEYS.indexOf(/** @type {typeof MED_FIELD_KEYS[number]} */ (fromKey)) < 0) return false;
   if (MED_FIELD_KEYS.indexOf(/** @type {typeof MED_FIELD_KEYS[number]} */ (toKey)) < 0) return false;
+  return true;
+}
+
+function recetaItemsForPatient(medRecetaByPatient, patientId) {
+  var block = patientId && medRecetaByPatient ? medRecetaByPatient[patientId] : null;
+  return block && Array.isArray(block.items) ? block.items : [];
+}
+
+function resolveSelectionBucket(medNotaSelectionByPatient, patientId) {
+  if (
+    !medNotaSelectionByPatient[patientId] ||
+    typeof medNotaSelectionByPatient[patientId] !== 'object'
+  ) {
+    medNotaSelectionByPatient[patientId] = {};
+  }
+  return medNotaSelectionByPatient[patientId];
+}
+
+export function reclassifyEaMedProposal(ctx) {
+  var fromKey = String(ctx.fromKey || '').trim();
+  var toKey = String(ctx.toKey || '').trim();
+  if (!isValidFieldKeyPair(fromKey, toKey)) return false;
 
   var patientId = ctx.patientId;
-  var block = patientId && ctx.medRecetaByPatient ? ctx.medRecetaByPatient[patientId] : null;
-  var items = block && Array.isArray(block.items) ? block.items : [];
   if (!patientId || !ctx.medNotaSelectionByPatient) return false;
-  if (!ctx.medNotaSelectionByPatient[patientId] || typeof ctx.medNotaSelectionByPatient[patientId] !== 'object') {
-    ctx.medNotaSelectionByPatient[patientId] = {};
-  }
-  var sel = ctx.medNotaSelectionByPatient[patientId];
+  var items = recetaItemsForPatient(ctx.medRecetaByPatient, patientId);
+  var sel = resolveSelectionBucket(ctx.medNotaSelectionByPatient, patientId);
   var classifyFn = classifyMedicationSoapCategory;
   var lines = pendingLines(ctx.monitoreo, fromKey);
   var targets = collectItemsToReclassify(items, sel, fromKey, classifyFn, lines);

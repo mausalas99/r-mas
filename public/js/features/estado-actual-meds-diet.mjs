@@ -227,22 +227,44 @@ function getPendienteReceta(monitoreo) {
  * @param {Record<string, unknown>} monitoreo
  * @param {{ descripcion?: string, kcal?: unknown, proteinG?: unknown }} merged
  */
-export function writeDietProposal(monitoreo, merged) {
+function ensurePendienteRecetaObject(monitoreo) {
   if (!monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== 'object') {
     monitoreo.pendienteReceta = {};
   }
+  return monitoreo.pendienteReceta;
+}
+
+/**
+ * @param {{ descripcion?: string, kcal?: unknown, proteinG?: unknown }} merged
+ */
+function resolveDietProposalText(merged) {
   var dietaText = String(merged.descripcion || '').trim() || buildDietProposalText(merged);
   dietaText = stripDietaMacroSuffixFromLabel(dietaText) || String(dietaText || '').trim();
   if (isDietaSuplemento(dietaText)) dietaText = 'SUPLEMENTO';
-  monitoreo.pendienteReceta.dieta = dietaText;
-  if (!applyDietaSuplementoPolicy(monitoreo.pendienteReceta) && !isDietaParenteral(dietaText)) {
-    monitoreo.pendienteReceta.kcal = merged.kcal != null ? String(merged.kcal) : '';
-    monitoreo.pendienteReceta.proteinG = merged.proteinG != null ? String(merged.proteinG) : '';
+  return dietaText;
+}
+
+/**
+ * @param {Record<string, unknown>} pendienteReceta
+ * @param {{ kcal?: unknown, proteinG?: unknown }} merged
+ * @param {string} dietaText
+ */
+function writeDietProposalMacros(pendienteReceta, merged, dietaText) {
+  if (!applyDietaSuplementoPolicy(pendienteReceta) && !isDietaParenteral(dietaText)) {
+    pendienteReceta.kcal = merged.kcal != null ? String(merged.kcal) : '';
+    pendienteReceta.proteinG = merged.proteinG != null ? String(merged.proteinG) : '';
   } else if (isDietaParenteral(dietaText)) {
-    monitoreo.pendienteReceta.kcal = merged.kcal != null ? String(merged.kcal) : '';
-    monitoreo.pendienteReceta.proteinG = merged.proteinG != null ? String(merged.proteinG) : '';
-    monitoreo.pendienteReceta.kcalKg = '';
+    pendienteReceta.kcal = merged.kcal != null ? String(merged.kcal) : '';
+    pendienteReceta.proteinG = merged.proteinG != null ? String(merged.proteinG) : '';
+    pendienteReceta.kcalKg = '';
   }
+}
+
+export function writeDietProposal(monitoreo, merged) {
+  var pendienteReceta = ensurePendienteRecetaObject(monitoreo);
+  var dietaText = resolveDietProposalText(merged);
+  pendienteReceta.dieta = dietaText;
+  writeDietProposalMacros(pendienteReceta, merged, dietaText);
   if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
     monitoreo.confirmado = {};
   }

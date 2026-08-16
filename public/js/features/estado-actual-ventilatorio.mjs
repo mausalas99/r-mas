@@ -160,6 +160,88 @@ export function ventilatorioLabHintsEligible(ec) {
  * @param {Record<string, unknown>} ec
  * @param {{ fr?: unknown, sat?: unknown, pesoKg?: unknown, lab?: { kind?: string | null, pO2?: number | null, pCO2?: number | null, pH?: number | null, sourceLabel?: string } | null }} [ctx]
  */
+/**
+ * @returns {{ hints: string[], pafi: number | null }}
+ */
+function resolvePafiForHints(labHintsOn, lab, fio2) {
+  if (!labHintsOn) return { hints: [], pafi: null };
+  var hints = [];
+  var pao2ForPafi = null;
+  if (lab && gasometryKindSupportsPafi(lab.kind)) {
+    pao2ForPafi = lab.pO2;
+  } else if (lab && lab.kind === 'venous') {
+    hints.push('Gaso venosa: PaFi no válida — usar SpO₂/FiO₂');
+  } else if (lab && lab.kind === 'unknown' && lab.pO2 != null) {
+    hints.push('Tipo de gaso no identificado — PaFi omitida');
+  }
+
+  var pafi = computePafi(pao2ForPafi, fio2);
+  if (pafi != null) {
+    var sev = classifySiraSeverity(pafi);
+    hints.push('PaFi ' + pafi + (sev ? ' (' + sev + ')' : ''));
+    if (pafi < 150) hints.push('PaFi <150: valorar prono');
+    if (pafi < 100) hints.push('PaFi <100: SIRA severo');
+  }
+  return { hints: hints, pafi: pafi };
+}
+
+function resolveSpo2Fio2Hints(labHintsOn, sat, fio2, pafi, soporte) {
+  if (!labHintsOn) return [];
+  var hints = [];
+  var sf = computeSpo2Fio2(sat, fio2);
+  if (sf != null) {
+    hints.push('SpO₂/FiO₂ ' + sf);
+    if (pafi == null && sf < 315) hints.push('SpO₂/FiO₂ <315: sospecha SIRA');
+  } else if (sat != null && fio2 == null && soporteTier(soporte) != null) {
+    hints.push('SatO₂ ' + sat + '% — falta FiO₂');
+  }
+  return hints;
+}
+
+function resolveDrivingPressureHints(pmeseta, peep) {
+  var hints = [];
+  var dp = computeDrivingPressure(pmeseta, peep);
+  if (dp != null) {
+    hints.push('Driving pressure ' + dp + ' cmH₂O');
+    if (dp >= 15) hints.push('Driving pressure ≥15: strain elevado');
+  }
+  if (pmeseta != null && pmeseta >= 30) hints.push('P meseta ≥30: ventilación no protectora');
+  return hints;
+}
+
+function resolveRoxAndFio2HintsHfnc(sat, fio2, fr, soporte) {
+  var hints = [];
+  var isHfnc = soporteTier(soporte) === 'hfnc';
+  var rox = computeRox(sat, fio2, fr);
+  if (rox != null && isHfnc) hints.push('ROX ' + rox);
+  if (fio2 != null && fio2 > 60 && isHfnc) {
+    hints.push('FiO₂ >60% en alto flujo: valorar intubación');
+  }
+  return hints;
+}
+
+function resolveVtMlKgHints(vt, peso) {
+  var hints = [];
+  var mlKg = computeVtMlKg(vt, peso);
+  if (mlKg != null) {
+    hints.push('VT ' + mlKg + ' ml/kg');
+    if (mlKg > 8) hints.push('VT >8 ml/kg: revisar protección pulmonar');
+    if (mlKg > 6 && mlKg <= 8) hints.push('VT 6–8 ml/kg (pulmón normal)');
+    if (mlKg <= 6) hints.push('VT ≤6 ml/kg (estrategia ARDS)');
+  }
+  return hints;
+}
+
+function resolveTobinRrsHints(fr, vt, soporte) {
+  var hints = [];
+  var rrs = computeTobinRrs(fr, vt);
+  if (rrs != null && soporteTier(soporte) === 'vm') {
+    hints.push('Tobin RRS ' + rrs);
+    if (rrs > 105) hints.push('RRS >105: alto riesgo de falla de destete');
+  }
+  return hints;
+}
+
 export function buildVentilatorioCalcHints(ec, ctx) {
   ctx = ctx || {};
   var lab = ctx.lab && typeof ctx.lab === 'object' ? ctx.lab : null;
@@ -170,63 +252,18 @@ export function buildVentilatorioCalcHints(ec, ctx) {
   var fr = parseVentNum(ctx.fr);
   var sat = parseVentNum(ctx.sat);
   var peso = resolveIdealWeightKg(ctx.pesoKg);
-
-  var hints = [];
   var labHintsOn = ventilatorioLabHintsEligible(ec);
 
-  var pao2ForPafi = null;
-  var pafi = null;
-  if (labHintsOn) {
-    if (lab && gasometryKindSupportsPafi(lab.kind)) {
-      pao2ForPafi = lab.pO2;
-    } else if (lab && lab.kind === 'venous') {
-      hints.push('Gaso venosa: PaFi no válida — usar SpO₂/FiO₂');
-    } else if (lab && lab.kind === 'unknown' && lab.pO2 != null) {
-      hints.push('Tipo de gaso no identificado — PaFi omitida');
-    }
+  var pafiResult = resolvePafiForHints(labHintsOn, lab, fio2);
 
-    pafi = computePafi(pao2ForPafi, fio2);
-    if (pafi != null) {
-      var sev = classifySiraSeverity(pafi);
-      hints.push('PaFi ' + pafi + (sev ? ' (' + sev + ')' : ''));
-      if (pafi < 150) hints.push('PaFi <150: valorar prono');
-      if (pafi < 100) hints.push('PaFi <100: SIRA severo');
-    }
-  }
-
-  if (labHintsOn) {
-    var sf = computeSpo2Fio2(sat, fio2);
-    if (sf != null) {
-      hints.push('SpO₂/FiO₂ ' + sf);
-      if (pafi == null && sf < 315) hints.push('SpO₂/FiO₂ <315: sospecha SIRA');
-    } else if (sat != null && fio2 == null && soporteTier(ec.soporte) != null) {
-      hints.push('SatO₂ ' + sat + '% — falta FiO₂');
-    }
-  }
-  var dp = computeDrivingPressure(pmeseta, peep);
-  if (dp != null) {
-    hints.push('Driving pressure ' + dp + ' cmH₂O');
-    if (dp >= 15) hints.push('Driving pressure ≥15: strain elevado');
-  }
-  if (pmeseta != null && pmeseta >= 30) hints.push('P meseta ≥30: ventilación no protectora');
-  var rox = computeRox(sat, fio2, fr);
-  if (rox != null && soporteTier(ec.soporte) === 'hfnc') hints.push('ROX ' + rox);
-  if (fio2 != null && fio2 > 60 && soporteTier(ec.soporte) === 'hfnc') {
-    hints.push('FiO₂ >60% en alto flujo: valorar intubación');
-  }
-  var mlKg = computeVtMlKg(vt, peso);
-  if (mlKg != null) {
-    hints.push('VT ' + mlKg + ' ml/kg');
-    if (mlKg > 8) hints.push('VT >8 ml/kg: revisar protección pulmonar');
-    if (mlKg > 6 && mlKg <= 8) hints.push('VT 6–8 ml/kg (pulmón normal)');
-    if (mlKg <= 6) hints.push('VT ≤6 ml/kg (estrategia ARDS)');
-  }
-  var rrs = computeTobinRrs(fr, vt);
-  if (rrs != null && soporteTier(ec.soporte) === 'vm') {
-    hints.push('Tobin RRS ' + rrs);
-    if (rrs > 105) hints.push('RRS >105: alto riesgo de falla de destete');
-  }
-  return hints;
+  return [].concat(
+    pafiResult.hints,
+    resolveSpo2Fio2Hints(labHintsOn, sat, fio2, pafiResult.pafi, ec.soporte),
+    resolveDrivingPressureHints(pmeseta, peep),
+    resolveRoxAndFio2HintsHfnc(sat, fio2, fr, ec.soporte),
+    resolveVtMlKgHints(vt, peso),
+    resolveTobinRrsHints(fr, vt, ec.soporte)
+  );
 }
 
 /**
@@ -241,70 +278,87 @@ function fmtNum(n) {
 /**
  * @param {Record<string, unknown>} ec
  */
-export function formatSoporteVentilatorioClause(ec) {
-  var soporte = normalizeSoporteValue(ec.soporte);
-  var tier = soporteTier(soporte);
-  var litros = parseVentNum(ec.soporteLitros);
-  var flujo = parseVentNum(ec.soporteFlujoLmin);
-  var fio2 = parseVentNum(ec.soporteFio2);
-  var fio2Clause = fio2 != null ? ' FI O2 ' + fmtNum(fio2) + '%' : '';
+function formatSoporteTraqueostomiaClause(fio2) {
+  var tqt = 'CON TRAQUEOSTOMÍA';
+  if (fio2 != null) tqt += ' FI O2 ' + fmtNum(fio2) + '%';
+  return tqt;
+}
 
-  if (!soporte || soporte === 'Aire ambiente') return 'AL AIRE AMBIENTE';
-  if (soporte === 'Traqueostomía') {
-    var tqt = 'CON TRAQUEOSTOMÍA';
-    if (fio2 != null) tqt += ' FI O2 ' + fmtNum(fio2) + '%';
-    return tqt;
-  }
+function formatSoporteLitrosClause(soporte, litros) {
+  var litClause = litros != null ? ' A ' + fmtNum(litros) + ' L/MIN' : '';
+  if (soporte === 'Puntillas nasales') return 'POR PUNTILLAS NASALES' + litClause;
+  if (soporte === 'Mascarilla simple') return 'POR MASCARILLA SIMPLE' + litClause;
+  if (soporte === 'Mascarilla reservorio') return 'POR MASCARILLA CON RESERVORIO' + litClause;
+  return null;
+}
 
-  if (tier === 'litros') {
-    var litClause = litros != null ? ' A ' + fmtNum(litros) + ' L/MIN' : '';
-    if (soporte === 'Puntillas nasales') return 'POR PUNTILLAS NASALES' + litClause;
-    if (soporte === 'Mascarilla simple') return 'POR MASCARILLA SIMPLE' + litClause;
-    if (soporte === 'Mascarilla reservorio') return 'POR MASCARILLA CON RESERVORIO' + litClause;
-  }
-  if (tier === 'hfnc') {
-    var hf = 'POR ALTO FLUJO';
-    if (flujo != null) hf += ' ' + fmtNum(flujo) + ' L/MIN';
-    if (fio2 != null) hf += ' FI O2 ' + fmtNum(fio2) + '%';
-    return hf;
-  }
-  if (tier === 'vmni') {
-    var epap = parseVentNum(ec.vmPeep);
-    var ps = parseVentNum(ec.vmPsoporte);
-    var vmni = 'CON VMNI';
-    if (ps != null) vmni += ' PS ' + fmtNum(ps);
-    if (epap != null) vmni += ' EPAP ' + fmtNum(epap);
-    if (fio2 != null) vmni += ' FI O2 ' + fmtNum(fio2) + '%';
-    return vmni;
-  }
-  if (tier === 'vm') {
-    var modo = ec.vmModo != null ? String(ec.vmModo).trim() : '';
-    var modoLabel =
-      modo === 'VCV'
-        ? 'VCV'
-        : modo === 'PCV'
-          ? 'PCV'
-          : modo === 'PSV'
-            ? 'PSV'
-            : '';
-    var vm = 'CON VENTILACIÓN MECÁNICA';
-    if (modoLabel) vm += ' ' + modoLabel;
-    var peep = parseVentNum(ec.vmPeep);
-    var vt = parseVentNum(ec.vmVt);
-    var vmFlujo = parseVentNum(ec.vmFlujo);
-    if (vt != null) vm += ' VT ' + fmtNum(vt) + ' ML';
-    if (peep != null) vm += ' PEEP ' + fmtNum(peep);
-    if (fio2 != null) vm += ' FI O2 ' + fmtNum(fio2) + '%';
-    if (vmFlujo != null) vm += ' FLUJO ' + fmtNum(vmFlujo) + ' L/MIN';
-    return vm;
-  }
+function formatSoporteHfncClause(flujo, fio2) {
+  var hf = 'POR ALTO FLUJO';
+  if (flujo != null) hf += ' ' + fmtNum(flujo) + ' L/MIN';
+  if (fio2 != null) hf += ' FI O2 ' + fmtNum(fio2) + '%';
+  return hf;
+}
 
+function formatSoporteVmniClause(ec, fio2) {
+  var epap = parseVentNum(ec.vmPeep);
+  var ps = parseVentNum(ec.vmPsoporte);
+  var vmni = 'CON VMNI';
+  if (ps != null) vmni += ' PS ' + fmtNum(ps);
+  if (epap != null) vmni += ' EPAP ' + fmtNum(epap);
+  if (fio2 != null) vmni += ' FI O2 ' + fmtNum(fio2) + '%';
+  return vmni;
+}
+
+function resolveVmModoLabel(modo) {
+  if (modo === 'VCV') return 'VCV';
+  if (modo === 'PCV') return 'PCV';
+  if (modo === 'PSV') return 'PSV';
+  return '';
+}
+
+function formatSoporteVmClause(ec, fio2) {
+  var modo = ec.vmModo != null ? String(ec.vmModo).trim() : '';
+  var modoLabel = resolveVmModoLabel(modo);
+  var vm = 'CON VENTILACIÓN MECÁNICA';
+  if (modoLabel) vm += ' ' + modoLabel;
+  var peep = parseVentNum(ec.vmPeep);
+  var vt = parseVentNum(ec.vmVt);
+  var vmFlujo = parseVentNum(ec.vmFlujo);
+  if (vt != null) vm += ' VT ' + fmtNum(vt) + ' ML';
+  if (peep != null) vm += ' PEEP ' + fmtNum(peep);
+  if (fio2 != null) vm += ' FI O2 ' + fmtNum(fio2) + '%';
+  if (vmFlujo != null) vm += ' FLUJO ' + fmtNum(vmFlujo) + ' L/MIN';
+  return vm;
+}
+
+function formatSoporteFallbackClause(soporte) {
   var fallback = {
     'Puntillas nasales': 'POR PUNTILLAS NASALES',
     'Alto flujo': 'POR ALTO FLUJO',
     VMNI: 'CON VMNI',
   };
   return fallback[soporte] || 'AL AIRE AMBIENTE';
+}
+
+export function formatSoporteVentilatorioClause(ec) {
+  var soporte = normalizeSoporteValue(ec.soporte);
+  var tier = soporteTier(soporte);
+  var litros = parseVentNum(ec.soporteLitros);
+  var flujo = parseVentNum(ec.soporteFlujoLmin);
+  var fio2 = parseVentNum(ec.soporteFio2);
+
+  if (!soporte || soporte === 'Aire ambiente') return 'AL AIRE AMBIENTE';
+  if (soporte === 'Traqueostomía') return formatSoporteTraqueostomiaClause(fio2);
+
+  if (tier === 'litros') {
+    var litrosClause = formatSoporteLitrosClause(soporte, litros);
+    if (litrosClause != null) return litrosClause;
+  }
+  if (tier === 'hfnc') return formatSoporteHfncClause(flujo, fio2);
+  if (tier === 'vmni') return formatSoporteVmniClause(ec, fio2);
+  if (tier === 'vm') return formatSoporteVmClause(ec, fio2);
+
+  return formatSoporteFallbackClause(soporte);
 }
 
 /**

@@ -50,6 +50,46 @@ export function tendRefBandOptions(ref, compact) {
   };
 }
 
+function resolveTendRefBandGeometry_(chart, cfg) {
+  var lo = Number(cfg.lo);
+  var hi = Number(cfg.hi);
+  if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi <= lo) return null;
+  var yScale = chart.scales && chart.scales.y;
+  var xScale = chart.scales && chart.scales.x;
+  if (!yScale || !xScale) return null;
+  var top = yScale.getPixelForValue(hi);
+  var bottom = yScale.getPixelForValue(lo);
+  if (!Number.isFinite(top) || !Number.isFinite(bottom)) return null;
+  if (bottom < top) {
+    var swap = top;
+    top = bottom;
+    bottom = swap;
+  }
+  var h = bottom - top;
+  if (h < 1) return null;
+  return { top: top, bottom: bottom, left: xScale.left, right: xScale.right, h: h };
+}
+
+function drawTendRefBandFill_(ctx, geo, compact) {
+  ctx.beginPath();
+  ctx.rect(geo.left, geo.top, geo.right - geo.left, geo.h);
+  ctx.fillStyle = compact ? 'rgba(52, 211, 153, 0.10)' : 'rgba(52, 211, 153, 0.14)';
+  ctx.fill();
+}
+
+function drawTendRefBandLines_(ctx, geo) {
+  ctx.strokeStyle = 'rgba(52, 211, 153, 0.35)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(geo.left, geo.top);
+  ctx.lineTo(geo.right, geo.top);
+  ctx.moveTo(geo.left, geo.bottom);
+  ctx.lineTo(geo.right, geo.bottom);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
 /**
  * Draw a soft band between lo/hi on the Y scale (before datasets).
  * @returns {object} Chart.js plugin
@@ -60,45 +100,13 @@ export function createTendRefBandPlugin() {
     beforeDatasetsDraw: function (chart) {
       var cfg = chart.options && chart.options.plugins && chart.options.plugins.tendRefBand;
       if (!cfg || cfg.display === false) return;
-      var lo = Number(cfg.lo);
-      var hi = Number(cfg.hi);
-      if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi <= lo) return;
-      var yScale = chart.scales && chart.scales.y;
-      var xScale = chart.scales && chart.scales.x;
-      if (!yScale || !xScale) return;
-      var top = yScale.getPixelForValue(hi);
-      var bottom = yScale.getPixelForValue(lo);
-      if (!Number.isFinite(top) || !Number.isFinite(bottom)) return;
-      if (bottom < top) {
-        var swap = top;
-        top = bottom;
-        bottom = swap;
-      }
-      var left = xScale.left;
-      var right = xScale.right;
-      var h = bottom - top;
-      if (h < 1) return;
+      var geo = resolveTendRefBandGeometry_(chart, cfg);
+      if (!geo) return;
       var ctx = chart.ctx;
       var compact = !!cfg.compact;
       ctx.save();
-      ctx.beginPath();
-      ctx.rect(left, top, right - left, h);
-      ctx.fillStyle = compact
-        ? 'rgba(52, 211, 153, 0.10)'
-        : 'rgba(52, 211, 153, 0.14)';
-      ctx.fill();
-      if (!compact) {
-        ctx.strokeStyle = 'rgba(52, 211, 153, 0.35)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 3]);
-        ctx.beginPath();
-        ctx.moveTo(left, top);
-        ctx.lineTo(right, top);
-        ctx.moveTo(left, bottom);
-        ctx.lineTo(right, bottom);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
+      drawTendRefBandFill_(ctx, geo, compact);
+      if (!compact) drawTendRefBandLines_(ctx, geo);
       ctx.restore();
     },
   };

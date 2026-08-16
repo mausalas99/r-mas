@@ -242,24 +242,50 @@ export function getCloudNubeFixGuide(id) {
   return FIX_GUIDES[key] || null;
 }
 
+/** @param {string} code @param {string} explain */
+function matchRevisionStaleFixId(code, explain) {
+  if (code === 'revision_stale' || explain.includes('desactualizada')) return 'revision_stale';
+  return null;
+}
+
+/** @param {string} code */
+function matchInvalidTokenFixId(code) {
+  if (code === 'invalid_token' || code === 'unauthorized' || code === '401' || code === '403') {
+    return 'invalid_token';
+  }
+  return null;
+}
+
+/** @param {string} explain */
+function matchSyncClientNotReadyFixId(explain) {
+  if (/enlace con nube|cliente nube|no está listo|no configurado/i.test(explain)) {
+    return 'sync_client_not_ready';
+  }
+  return null;
+}
+
+/** @param {{ op?: string }} entry */
+function matchOpFixId(entry) {
+  const op = String(entry?.op || '').toLowerCase();
+  if (op.includes('envío') || entry?.op === 'push') return 'push_failed';
+  if (op.includes('descarga') || entry?.op === 'pull') return 'pull_failed';
+  if (entry?.op === 'cycle') return 'cycle_failed';
+  return null;
+}
+
 /**
  * @param {{ op?: string, code?: string, message?: string, explain?: string }} entry
  */
 export function resolveCloudErrorFixId(entry) {
   const code = String(entry?.code || '').trim();
   const explain = String(entry?.explain || entry?.message || '').toLowerCase();
-  if (code === 'revision_stale' || explain.includes('desactualizada')) return 'revision_stale';
-  if (code === 'invalid_token' || code === 'unauthorized' || code === '401' || code === '403') {
-    return 'invalid_token';
-  }
-  if (/enlace con nube|cliente nube|no está listo|no configurado/i.test(explain)) {
-    return 'sync_client_not_ready';
-  }
-  const op = String(entry?.op || '').toLowerCase();
-  if (op.includes('envío') || entry?.op === 'push') return 'push_failed';
-  if (op.includes('descarga') || entry?.op === 'pull') return 'pull_failed';
-  if (entry?.op === 'cycle') return 'cycle_failed';
-  return 'generic_sync_error';
+  return (
+    matchRevisionStaleFixId(code, explain) ||
+    matchInvalidTokenFixId(code) ||
+    matchSyncClientNotReadyFixId(explain) ||
+    matchOpFixId(entry) ||
+    'generic_sync_error'
+  );
 }
 
 /**

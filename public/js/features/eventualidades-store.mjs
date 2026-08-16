@@ -236,28 +236,21 @@ export function appendEventualidad(store, text, clientId, atIso, kind, transfusi
   return touchEventualidadesMeta_(base);
 }
 
-export function updateEventualidad(store, entryId, patch) {
-  const id = String(entryId || '').trim();
-  const base = cloneStoreShell_(store);
-  if (!id) return base;
-  const idx = base.entries.findIndex(function (e) {
-    return e && String(e.id) === id;
-  });
-  if (idx === -1) return base;
-  const cur = base.entries[idx];
-  const patchKind =
-    patch && patch.kind != null ? normalizeEventualidadKind(patch.kind) : normalizeEventualidadKind(cur.kind);
-  const text =
-    patch && patch.text != null
-      ? resolveEventualidadEntryText(patch.text, patchKind || cur.kind)
-      : resolveEventualidadEntryText(cur.text, patchKind || cur.kind);
-  if (!text) return base;
-  const at =
-    patch && patch.at != null && String(patch.at).trim()
-      ? String(patch.at).trim()
-      : cur.at;
-  /** @type {{ text: string, at: string, kind?: EventualidadKind, transfusionProduct?: TransfusionProduct }} */
-  const nextEntry = Object.assign({}, cur, { text: text, at: at });
+function resolveUpdateEventualidadKind_(patch, cur) {
+  return patch && patch.kind != null ? normalizeEventualidadKind(patch.kind) : normalizeEventualidadKind(cur.kind);
+}
+
+function resolveUpdateEventualidadText_(patch, cur, patchKind) {
+  return patch && patch.text != null
+    ? resolveEventualidadEntryText(patch.text, patchKind || cur.kind)
+    : resolveEventualidadEntryText(cur.text, patchKind || cur.kind);
+}
+
+function resolveUpdateEventualidadAt_(patch, cur) {
+  return patch && patch.at != null && String(patch.at).trim() ? String(patch.at).trim() : cur.at;
+}
+
+function applyUpdateEventualidadPatchExtras_(nextEntry, patch) {
   if (patch && patch.kind != null) {
     const normalizedKind = normalizeEventualidadKind(patch.kind);
     if (normalizedKind) nextEntry.kind = normalizedKind;
@@ -270,6 +263,24 @@ export function updateEventualidad(store, entryId, patch) {
   } else if (nextEntry.kind !== 'transfusion') {
     delete nextEntry.transfusionProduct;
   }
+}
+
+export function updateEventualidad(store, entryId, patch) {
+  const id = String(entryId || '').trim();
+  const base = cloneStoreShell_(store);
+  if (!id) return base;
+  const idx = base.entries.findIndex(function (e) {
+    return e && String(e.id) === id;
+  });
+  if (idx === -1) return base;
+  const cur = base.entries[idx];
+  const patchKind = resolveUpdateEventualidadKind_(patch, cur);
+  const text = resolveUpdateEventualidadText_(patch, cur, patchKind);
+  if (!text) return base;
+  const at = resolveUpdateEventualidadAt_(patch, cur);
+  /** @type {{ text: string, at: string, kind?: EventualidadKind, transfusionProduct?: TransfusionProduct }} */
+  const nextEntry = Object.assign({}, cur, { text: text, at: at });
+  applyUpdateEventualidadPatchExtras_(nextEntry, patch);
   base.entries[idx] = nextEntry;
   return touchEventualidadesMeta_(base);
 }

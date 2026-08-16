@@ -98,32 +98,46 @@ export function noteCloudSyncWsSignal(revision) {
   recordCloudSyncTrace('ws_revision', { revision: Number(revision) || 0 });
 }
 
+function handleCloudSyncWsOpen(url) {
+  if (url) lastWsUrl = url;
+  clearCloudSyncWsFaults();
+  recordCloudSyncTrace('ws_open', { url: url || lastWsUrl || '' });
+}
+
+/**
+ * @param {{ message?: string }} info
+ */
+function handleCloudSyncWsError(info) {
+  if (!info?.message) return;
+  lastWsError = String(info.message);
+  recordCloudSyncTrace('ws_error', { message: lastWsError });
+}
+
+/**
+ * @param {{ code?: number, reason?: string }} info
+ */
+function handleCloudSyncWsClose(info) {
+  if (info?.code == null && !info?.reason) return;
+  const payload = {
+    code: Number(info.code) || 0,
+    reason: String(info.reason || ''),
+  };
+  lastWsClose = JSON.stringify(payload);
+  recordCloudSyncTrace('ws_close', payload);
+}
+
 /**
  * @param {{ url?: string, code?: number, reason?: string, message?: string }} info
  */
 export function noteCloudSyncWsLifecycle(info) {
   const url = String(info?.url || '').trim();
   if (info?.open) {
-    if (url) lastWsUrl = url;
-    clearCloudSyncWsFaults();
-    recordCloudSyncTrace('ws_open', { url: url || lastWsUrl || '' });
+    handleCloudSyncWsOpen(url);
     return;
   }
   if (url) lastWsUrl = url;
-  if (info?.message) {
-    lastWsError = String(info.message);
-    recordCloudSyncTrace('ws_error', { message: lastWsError });
-  }
-  if (info?.code != null || info?.reason) {
-    lastWsClose = JSON.stringify({
-      code: Number(info.code) || 0,
-      reason: String(info.reason || ''),
-    });
-    recordCloudSyncTrace('ws_close', {
-      code: Number(info.code) || 0,
-      reason: String(info.reason || ''),
-    });
-  }
+  handleCloudSyncWsError(info);
+  handleCloudSyncWsClose(info);
 }
 
 export function clearCloudSyncDiagnostics() {

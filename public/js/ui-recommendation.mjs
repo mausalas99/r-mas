@@ -31,30 +31,24 @@ export function buildConfidenceMeterHtml(signal, toneCssVar) {
  *   acceptedLabel?: string,
  * }} opts
  */
-export function buildRecommendationCardHtml(opts) {
-  opts = opts || {};
-  var signal = opts.signal != null ? opts.signal : 2;
-  var tone = opts.tone || 'var(--color-accent)';
-  var alts = opts.alternatives || [];
-  var open = !!opts.alternativesOpen;
-  var accepted = !!opts.accepted;
-  var altRows = alts
-    .map(function (a) {
-      return (
-        '<button type="button" class="ui-rec-alt" data-rec-alt="' +
-        escHtml(a.key) +
-        '">' +
-        buildConfidenceMeterHtml(a.signal != null ? a.signal : 1, a.tone || 'var(--color-ink-muted)') +
-        '<span class="ui-rec-alt-short">' +
-        escHtml(a.short) +
-        '</span>' +
-        '<span class="ui-rec-alt-label">' +
-        escHtml(a.label || '') +
-        '</span></button>'
-      );
-    })
-    .join('');
-  var drawer =
+function buildRecAltRowHtml_(a) {
+  return (
+    '<button type="button" class="ui-rec-alt" data-rec-alt="' +
+    escHtml(a.key) +
+    '">' +
+    buildConfidenceMeterHtml(a.signal != null ? a.signal : 1, a.tone || 'var(--color-ink-muted)') +
+    '<span class="ui-rec-alt-short">' +
+    escHtml(a.short) +
+    '</span>' +
+    '<span class="ui-rec-alt-label">' +
+    escHtml(a.label || '') +
+    '</span></button>'
+  );
+}
+
+function buildRecDrawerHtml_(open, alts) {
+  var altRows = alts.map(buildRecAltRowHtml_).join('');
+  return (
     '<div class="ui-rec-drawer" style="grid-template-rows:' +
     (open ? '1fr' : '0fr') +
     ';opacity:' +
@@ -62,17 +56,12 @@ export function buildRecommendationCardHtml(opts) {
     '"><div class="ui-rec-drawer-inner">' +
     '<p class="ui-rec-drawer-lead">Otras opciones</p>' +
     altRows +
-    '</div></div>';
+    '</div></div>'
+  );
+}
+
+function buildRecFooterHtml_(opts, signal, tone, open, accepted) {
   return (
-    '<div class="ui-rec-card">' +
-    '<div class="ui-rec-pad">' +
-    '<p class="ui-rec-title">' +
-    escHtml(opts.title || '') +
-    '</p>' +
-    '<div class="ui-rec-body">' +
-    (opts.bodyHtml || '') +
-    '</div></div>' +
-    drawer +
     '<div class="ui-rec-footer">' +
     '<span class="ui-rec-confidence">' +
     buildConfidenceMeterHtml(signal, tone) +
@@ -89,6 +78,28 @@ export function buildRecommendationCardHtml(opts) {
     (accepted ? ' is-accepted' : '') +
     '" data-rec-accept>' +
     escHtml(accepted ? opts.acceptedLabel || 'Aceptado' : opts.primaryLabel || 'Aceptar') +
-    '</button></span></div></div>'
+    '</button></span></div>'
+  );
+}
+
+export function buildRecommendationCardHtml(opts) {
+  opts = opts || {};
+  var signal = opts.signal != null ? opts.signal : 2;
+  var tone = opts.tone || 'var(--color-accent)';
+  var alts = opts.alternatives || [];
+  var open = !!opts.alternativesOpen;
+  var accepted = !!opts.accepted;
+  return (
+    '<div class="ui-rec-card">' +
+    '<div class="ui-rec-pad">' +
+    '<p class="ui-rec-title">' +
+    escHtml(opts.title || '') +
+    '</p>' +
+    '<div class="ui-rec-body">' +
+    (opts.bodyHtml || '') +
+    '</div></div>' +
+    buildRecDrawerHtml_(open, alts) +
+    buildRecFooterHtml_(opts, signal, tone, open, accepted) +
+    '</div>'
   );
 }

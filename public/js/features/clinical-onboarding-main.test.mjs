@@ -52,8 +52,13 @@ describe('clinical-onboarding-main', () => {
     const body = mainSrc.slice(start, start + 900);
     assert.match(body, /needsClinicalSyncModeChoice/);
     const syncIdx = body.indexOf('needsClinicalSyncModeChoice');
-    const fetchIdx = body.indexOf('fetchClinicalTeamsFromDb');
-    assert.ok(syncIdx >= 0 && fetchIdx > syncIdx);
+    const reloadTeamsIdx = body.indexOf('reloadClinicalTeamsBeforeGate');
+    assert.ok(syncIdx >= 0 && reloadTeamsIdx > syncIdx);
+
+    const helperStart = mainSrc.indexOf('async function reloadClinicalTeamsBeforeGate');
+    assert.ok(helperStart >= 0);
+    const helperBody = mainSrc.slice(helperStart, helperStart + 300);
+    assert.match(helperBody, /fetchClinicalTeamsFromDb/);
   });
 
   it('showMainClinicalOnboarding animates boot progress before rendering form', async () => {

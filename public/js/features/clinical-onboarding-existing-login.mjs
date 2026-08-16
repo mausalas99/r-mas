@@ -176,6 +176,65 @@ export async function finishExistingAccountProfile(ctx) {
   return { ok: true };
 }
 
+function validateExistingLoginFields(fields, errEl) {
+  if (!isValidUsernameFormat(fields.username)) {
+    showExistingLoginError(errEl, 'Usuario inválido: minúsculas, 3–32 caracteres, p. ej. drmendoza.');
+    return false;
+  }
+  if (!fields.password) {
+    showExistingLoginError(errEl, 'Ingresa tu contraseña de Nube.');
+    return false;
+  }
+  if (!fields.sala) {
+    showExistingLoginError(errEl, 'Selecciona tu rotación.');
+    return false;
+  }
+  if (!isCloudSala(fields.sala)) {
+    showExistingLoginError(errEl, 'La rotación elegida no usa Nube. Elige Sala o Torre HU.');
+    return false;
+  }
+  return true;
+}
+
+async function runExistingAccountLogin(fields, { errEl, toast, setStatus }) {
+  const loginOut = await loginCloudDuringOnboarding({
+    username: fields.username,
+    password: fields.password,
+    remember: fields.remember,
+    setStatus,
+  });
+  if (!loginOut.ok) {
+    showExistingLoginError(errEl, loginOut.error || 'No se pudo iniciar sesión.');
+    return false;
+  }
+
+  const displayName =
+    String(loginOut.displayName || clinicalSessionContext.user?.clinical_name || '').trim() ||
+    fields.username;
+  const rank = String(loginOut.rank || clinicalSessionContext.user?.rank || 'R1');
+
+  const finishOut = await finishExistingAccountProfile({
+    username: fields.username,
+    displayName,
+    sala: fields.sala,
+    rank,
+    toast,
+    setStatus,
+  });
+  if (!finishOut.ok) {
+    showExistingLoginError(errEl, finishOut.error || 'No se pudo sincronizar.');
+    return false;
+  }
+
+  toast(
+    fields.remember
+      ? 'Sesión iniciada y sincronizada (se recordará en este dispositivo).'
+      : 'Sesión iniciada y sincronizada.',
+    'success'
+  );
+  return true;
+}
+
 export async function handleExistingAccountLoginSubmit(ev) {
   ev.preventDefault();
   const errEl = document.getElementById('onboard-existing-error');
@@ -191,69 +250,55 @@ export async function handleExistingAccountLoginSubmit(ev) {
   };
 
   const fields = readExistingLoginFields();
-  if (!isValidUsernameFormat(fields.username)) {
-    showExistingLoginError(errEl, 'Usuario inválido: minúsculas, 3–32 caracteres, p. ej. drmendoza.');
-    return;
-  }
-  if (!fields.password) {
-    showExistingLoginError(errEl, 'Ingresa tu contraseña de Nube.');
-    return;
-  }
-  if (!fields.sala) {
-    showExistingLoginError(errEl, 'Selecciona tu rotación.');
-    return;
-  }
-  if (!isCloudSala(fields.sala)) {
-    showExistingLoginError(errEl, 'La rotación elegida no usa Nube. Elige Sala o Torre HU.');
-    return;
-  }
+  if (!validateExistingLoginFields(fields, errEl)) return;
 
   const submitBtn = ev.target?.querySelector?.('button[type="submit"]');
   if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = true;
 
   try {
-    const loginOut = await loginCloudDuringOnboarding({
-      username: fields.username,
-      password: fields.password,
-      remember: fields.remember,
-      setStatus,
-    });
-    if (!loginOut.ok) {
-      showExistingLoginError(errEl, loginOut.error || 'No se pudo iniciar sesión.');
-      return;
-    }
-
-    const displayName =
-      String(loginOut.displayName || clinicalSessionContext.user?.clinical_name || '').trim() ||
-      fields.username;
-    const rank = String(loginOut.rank || clinicalSessionContext.user?.rank || 'R1');
-
-    const finishOut = await finishExistingAccountProfile({
-      username: fields.username,
-      displayName,
-      sala: fields.sala,
-      rank,
-      toast,
-      setStatus,
-    });
-    if (!finishOut.ok) {
-      showExistingLoginError(errEl, finishOut.error || 'No se pudo sincronizar.');
-      return;
-    }
-
-    toast(
-      fields.remember
-        ? 'Sesión iniciada y sincronizada (se recordará en este dispositivo).'
-        : 'Sesión iniciada y sincronizada.',
-      'success'
-    );
-
+    const ok = await runExistingAccountLogin(fields, { errEl, toast, setStatus });
+    if (!ok) return;
     const { refreshMainClinicalOnboardingIfNeeded } = await import('./clinical-onboarding-main.mjs');
     await refreshMainClinicalOnboardingIfNeeded();
   } catch (err) {
     showExistingLoginError(errEl, err instanceof Error ? err.message : 'Error al iniciar sesión.');
   } finally {
     if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;
+  }
+}
+
+function readStoredCloudTokenIdentity(settings) {
+  return {
+    clientId: resolveClinicalClientId(settings),
+    username: normalizeUsername(
+      String(settings.clinicalUsername || clinicalSessionContext.user?.username || '')
+    ),
+    displayName: String(
+      settings.clinicalDisplayName || clinicalSessionContext.user?.clinical_name || ''
+    ).trim(),
+    rank: String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'R1'),
+  };
+}
+
+/** Resolves username/displayName via cloud /me when the local handle is missing or a legacy machine id. */
+async function resolveStoredCloudTokenHandle(identity) {
+  const isInvalid =
+    !isValidUsernameFormat(identity.username) || isLegacyMachineUsername(identity.username, identity.clientId);
+  if (!isInvalid) return identity;
+
+  try {
+    const client = createCloudSyncApi({ getBaseUrl: getCloudSyncUrl, getToken: getCloudSyncToken });
+    const data = await client.me();
+    const cloudUser = data?.user || {};
+    const cloudHandle = normalizeUsername(String(cloudUser.username || ''));
+    if (!isValidUsernameFormat(cloudHandle)) return null;
+    return {
+      ...identity,
+      username: cloudHandle,
+      displayName: identity.displayName || String(cloudUser.displayName || '').trim(),
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -266,44 +311,14 @@ export async function tryResumeOnboardingFromStoredCloudToken() {
   const sala = String(settings.clinicalSala || clinicalSessionContext.user?.sala || '').trim();
   if (!isCloudSala(sala)) return false;
 
-  const clientId = resolveClinicalClientId(settings);
-  let username = normalizeUsername(
-    String(settings.clinicalUsername || clinicalSessionContext.user?.username || '')
-  );
-  let displayName = String(
-    settings.clinicalDisplayName || clinicalSessionContext.user?.clinical_name || ''
-  ).trim();
-  const rank = String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'R1');
-
-  const handleInvalid =
-    !isValidUsernameFormat(username) || isLegacyMachineUsername(username, clientId);
-
-  if (handleInvalid) {
-    try {
-      const client = createCloudSyncApi({
-        getBaseUrl: getCloudSyncUrl,
-        getToken: getCloudSyncToken,
-      });
-      const data = await client.me();
-      const cloudUser = data?.user || {};
-      const cloudHandle = normalizeUsername(String(cloudUser.username || ''));
-      if (!isValidUsernameFormat(cloudHandle)) return false;
-      username = cloudHandle;
-      if (!displayName) {
-        displayName = String(cloudUser.displayName || '').trim();
-      }
-    } catch {
-      return false;
-    }
-  }
-
-  if (!isValidUsernameFormat(username)) return false;
+  let identity = await resolveStoredCloudTokenHandle(readStoredCloudTokenIdentity(settings));
+  if (!identity || !isValidUsernameFormat(identity.username)) return false;
 
   const out = await finishExistingAccountProfile({
-    username,
-    displayName: displayName || username,
+    username: identity.username,
+    displayName: identity.displayName || identity.username,
     sala,
-    rank,
+    rank: identity.rank,
     toast: () => {},
     setStatus: () => {},
   });

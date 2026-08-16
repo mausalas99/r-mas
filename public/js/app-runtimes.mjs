@@ -101,8 +101,6 @@ import {
   registerExpedienteRuntime,
 } from './features/expediente.mjs';
 import { registerEventualidadesRuntime } from './features/eventualidades-panel.mjs';
-import { registerPatientDashboardRuntime } from './features/patient-dashboard/dashboard-mount.mjs';
-import { registerLabInnerRuntime } from './features/patient-dashboard/lab-inner.mjs';
 import {
   extractParsedValues,
   buildParsedBySectionFromResLabs,
@@ -459,6 +457,7 @@ export async function registerAllFeatureRuntimes() {
     })
   );
   registerEventualidadesRuntime(ctx);
+  const { registerPatientDashboardRuntime } = await import('./features/patient-dashboard/dashboard-mount.mjs');
   registerPatientDashboardRuntime(
     Object.assign({}, ctx, {
       openLabRepoBatchModal: function () {
@@ -468,6 +467,7 @@ export async function registerAllFeatureRuntimes() {
       },
     })
   );
+  const { registerLabInnerRuntime } = await import('./features/patient-dashboard/lab-inner.mjs');
   registerLabInnerRuntime(ctx);
   registerExpedienteRuntime(ctx);
   registerNotesIndicacionesRuntime(ctx);

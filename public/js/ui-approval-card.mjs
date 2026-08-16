@@ -62,38 +62,37 @@ export function buildApprovalPagerHtml(count, current, sent) {
  *   sentLabel?: string,
  * }} opts
  */
-export function buildApprovalCardHtml(opts) {
-  opts = opts || {};
-  if (opts.sent) {
-    return (
-      '<div class="ui-approval-card ui-approval-card--sent">' +
-      '<span class="ui-approval-sent-check" aria-hidden="true"></span>' +
-      '<p class="ui-approval-sent-label">' +
-      escHtml(opts.sentLabel || 'Listo') +
-      '</p></div>'
-    );
-  }
-  var type = opts.type === 'check' ? 'check' : 'radio';
-  var selected = Array.isArray(opts.selected) ? opts.selected : [];
-  var options = opts.options || [];
-  var qi = opts.questionIndex != null ? opts.questionIndex : 0;
-  var qc = opts.questionCount != null ? opts.questionCount : 1;
+function buildApprovalSentCardHtml_(opts) {
+  return (
+    '<div class="ui-approval-card ui-approval-card--sent">' +
+    '<span class="ui-approval-sent-check" aria-hidden="true"></span>' +
+    '<p class="ui-approval-sent-label">' +
+    escHtml(opts.sentLabel || 'Listo') +
+    '</p></div>'
+  );
+}
+
+function buildApprovalCustomInputHtml_(opts) {
+  if (opts.customPlaceholder == null) return '';
+  return (
+    '<label class="ui-approval-custom"><span class="ui-approval-mark-spacer" aria-hidden="true"></span>' +
+    '<input type="text" class="ui-approval-custom-input" data-approval-custom ' +
+    'placeholder="' +
+    escHtml(opts.customPlaceholder) +
+    '" value="' +
+    escHtml(opts.customValue || '') +
+    '" aria-label="Respuesta personalizada" /></label>'
+  );
+}
+
+function buildApprovalCardBody_(opts, type, selected, options, qi, qc) {
   var title = opts.title ? '<h3 class="ui-approval-title">' + escHtml(opts.title) + '</h3>' : '';
   var optsHtml = options
     .map(function (o, i) {
       return buildApprovalOptionHtml(o, i, selected, type);
     })
     .join('');
-  var custom =
-    opts.customPlaceholder != null
-      ? '<label class="ui-approval-custom"><span class="ui-approval-mark-spacer" aria-hidden="true"></span>' +
-        '<input type="text" class="ui-approval-custom-input" data-approval-custom ' +
-        'placeholder="' +
-        escHtml(opts.customPlaceholder) +
-        '" value="' +
-        escHtml(opts.customValue || '') +
-        '" aria-label="Respuesta personalizada" /></label>'
-      : '';
+  var custom = buildApprovalCustomInputHtml_(opts);
   var hasAnswer = selected.length > 0 || Boolean(String(opts.customValue || '').trim());
   return (
     '<div class="ui-approval-card" data-approval-type="' +
@@ -119,6 +118,17 @@ export function buildApprovalCardHtml(opts) {
     escHtml(opts.primaryLabel || 'Continuar') +
     '</button></div></div>'
   );
+}
+
+export function buildApprovalCardHtml(opts) {
+  opts = opts || {};
+  if (opts.sent) return buildApprovalSentCardHtml_(opts);
+  var type = opts.type === 'check' ? 'check' : 'radio';
+  var selected = Array.isArray(opts.selected) ? opts.selected : [];
+  var options = opts.options || [];
+  var qi = opts.questionIndex != null ? opts.questionIndex : 0;
+  var qc = opts.questionCount != null ? opts.questionCount : 1;
+  return buildApprovalCardBody_(opts, type, selected, options, qi, qc);
 }
 
 export function wrapApprovalInConflictModal(innerHtml) {

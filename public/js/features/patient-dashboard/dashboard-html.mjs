@@ -55,17 +55,8 @@ function vitalCell(label, value, hi) {
   );
 }
 
-function renderVitalsHtml(model) {
-  var r = readingsFromModel(model);
-  var v = r.vitals;
-  var tas = numText(v.tas);
-  var tad = numText(v.tad);
-  var ta = tas || tad ? (tas || '—') + '/' + (tad || '—') : '';
-  var gluList = r.glucometrias;
-  var gluLast = gluList.length ? gluList[gluList.length - 1] : null;
-  var glu = lastGlu(gluList);
-  var io = ioBalance(r.io);
-  var cells =
+function buildVitalsCellsHtml(v, ta, glu, gluLast, io) {
+  return (
     vitalCell('T/A', ta, isVitalAltered('tas', v.tas) || isVitalAltered('tad', v.tad)) +
     vitalCell('FC', numText(v.fc), isVitalAltered('fc', v.fc)) +
     vitalCell('FR', numText(v.fr), isVitalAltered('fr', v.fr)) +
@@ -78,7 +69,21 @@ function renderVitalsHtml(model) {
         gluLast && typeof gluLast === 'object' ? gluLast : { value: glu },
       ),
     ) +
-    vitalCell('I/O', io, false);
+    vitalCell('I/O', io, false)
+  );
+}
+
+function renderVitalsHtml(model) {
+  var r = readingsFromModel(model);
+  var v = r.vitals;
+  var tas = numText(v.tas);
+  var tad = numText(v.tad);
+  var ta = tas || tad ? (tas || '—') + '/' + (tad || '—') : '';
+  var gluList = r.glucometrias;
+  var gluLast = gluList.length ? gluList[gluList.length - 1] : null;
+  var glu = lastGlu(gluList);
+  var io = ioBalance(r.io);
+  var cells = buildVitalsCellsHtml(v, ta, glu, gluLast, io);
   var hasCoreVitals = !!(ta || numText(v.fc) || numText(v.fr) || numText(v.temp) || numText(v.sat) || glu);
   var emptyClass = hasCoreVitals ? '' : ' vitals-card--empty';
   return (

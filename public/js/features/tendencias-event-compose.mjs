@@ -68,17 +68,23 @@ function buildKindFieldsHtml() {
   );
 }
 
+function composePayloadRequirementReason(kind, dateValue, transfusionProduct, detail) {
+  if (!kind) return 'kind';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) return 'date';
+  if (kind === 'transfusion' && !transfusionProduct) return 'transfusionProduct';
+  if (kind === 'biopsia' && !detail) return 'biopsiaSite';
+  if (kind === 'procedimiento' && !detail) return 'procedimientoText';
+  return '';
+}
+
 /** @param {{ kind?: string, dateValue?: string, transfusionProduct?: string, detail?: string }} payload */
 export function validateTendEventComposePayload(payload) {
   const kind = normalizeEventualidadKind(payload && payload.kind);
   const dateValue = String((payload && payload.dateValue) || '').trim();
   const detail = String((payload && payload.detail) || '').trim();
   const transfusionProduct = String((payload && payload.transfusionProduct) || '').trim();
-  if (!kind) return { ok: false, reason: 'kind' };
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) return { ok: false, reason: 'date' };
-  if (kind === 'transfusion' && !transfusionProduct) return { ok: false, reason: 'transfusionProduct' };
-  if (kind === 'biopsia' && !detail) return { ok: false, reason: 'biopsiaSite' };
-  if (kind === 'procedimiento' && !detail) return { ok: false, reason: 'procedimientoText' };
+  const reason = composePayloadRequirementReason(kind, dateValue, transfusionProduct, detail);
+  if (reason) return { ok: false, reason: reason };
   const text = buildEventualidadComposeText({
     kind: kind,
     transfusionProduct: transfusionProduct,

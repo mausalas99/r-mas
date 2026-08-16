@@ -113,25 +113,7 @@ async function maybeRefreshClinicalOpsDirectory(skipPull, browseSala, homeSala) 
   void renderClinicalTeamsPanel({ silent: true, skipLanPull: true, preserveDraft: true });
 }
 
-export async function renderClinicalTeamsPanelInto(host, opts = {}) {
-  const userId = currentUserId();
-  if (!userId) {
-    host.innerHTML =
-      '<p class="clinical-teams-lead">Activa la sesión clínica para gestionar equipos.</p>';
-    return;
-  }
-
-  const draft = opts.preserveDraft ? captureClinicalTeamsPanelDraft(host) : null;
-
-  const user = clinicalSessionContext.user || {};
-  const preBrowseSala = resolveBrowseSala(hasElevatedTeamPrivileges(user), String(user.sala || ''));
-  await maybeRefreshClinicalOpsDirectory(opts.skipLanPull, preBrowseSala, String(user.sala || ''));
-  await fetchClinicalTeamsFromDb();
-  await tryReconcileTeamMemberships();
-  const joined = filterJoinedTeams(clinicalSessionContext.teams, user);
-  const ctx = await resolveClinicalTeamsPanelContext(user, joined);
-  const elevated = hasElevatedTeamPrivileges(user);
-
+async function resolveClinicalTeamsPanelSections(userId, user, joined, ctx, elevated) {
   const joinedHtml = joined.length
     ? joined.map((team) => renderJoinedTeamCard(team)).join('')
     : buildJoinedTeamsEmptyHtml(ctx.displayHandle, false);
@@ -146,7 +128,6 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
     homeSala: ctx.sala,
   });
 
-  const hasJoinedTeam = joined.length > 0;
   const pickTeamLayout = shouldUsePickTeamPanelLayout(joined.length, directoryCount, elevated);
   const rejoinPending = isRotationRejoinPending();
   const pickBanner = buildPickTeamsBannerHtml({
@@ -158,14 +139,28 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
 
   const joinedContentHtml = joined.length ? joinedHtml : buildJoinedTeamsEmptyHtml(ctx.displayHandle, pickTeamLayout);
   const joinedSection = buildJoinedTeamsSectionHtml(ctx, joinedContentHtml, lanMemberHint);
-
-  host.classList.toggle('clinical-teams-panel-body--pick-team', pickTeamLayout);
-  host.classList.toggle('clinical-teams-panel-body--has-joined', hasJoinedTeam);
-
   const createSection = renderCreateTeamSectionHtml();
   const rotationSection = buildRotationAdminSectionHtml(user);
   const configSection = buildClinicalTeamsConfigSectionHtml(profileSection);
   const handleHint = buildClinicalTeamsHandleHint(ctx);
+
+  return {
+    pickTeamLayout,
+    pickBanner,
+    directorySection,
+    handleHint,
+    joinedSection,
+    createSection,
+    joinCodeSection,
+    configSection,
+    rotationSection,
+  };
+}
+
+function renderClinicalTeamsPanelBody(host, sections, hasJoinedTeam) {
+  const { pickTeamLayout, pickBanner, directorySection, handleHint, joinedSection, createSection, joinCodeSection, configSection, rotationSection } = sections;
+  host.classList.toggle('clinical-teams-panel-body--pick-team', pickTeamLayout);
+  host.classList.toggle('clinical-teams-panel-body--has-joined', hasJoinedTeam);
 
   if (pickTeamLayout) {
     host.innerHTML = `
@@ -204,6 +199,29 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
       });
     });
   }
+}
+
+export async function renderClinicalTeamsPanelInto(host, opts = {}) {
+  const userId = currentUserId();
+  if (!userId) {
+    host.innerHTML =
+      '<p class="clinical-teams-lead">Activa la sesión clínica para gestionar equipos.</p>';
+    return;
+  }
+
+  const draft = opts.preserveDraft ? captureClinicalTeamsPanelDraft(host) : null;
+
+  const user = clinicalSessionContext.user || {};
+  const preBrowseSala = resolveBrowseSala(hasElevatedTeamPrivileges(user), String(user.sala || ''));
+  await maybeRefreshClinicalOpsDirectory(opts.skipLanPull, preBrowseSala, String(user.sala || ''));
+  await fetchClinicalTeamsFromDb();
+  await tryReconcileTeamMemberships();
+  const joined = filterJoinedTeams(clinicalSessionContext.teams, user);
+  const ctx = await resolveClinicalTeamsPanelContext(user, joined);
+  const elevated = hasElevatedTeamPrivileges(user);
+
+  const sections = await resolveClinicalTeamsPanelSections(userId, user, joined, ctx, elevated);
+  renderClinicalTeamsPanelBody(host, sections, joined.length > 0);
 
   wireDirectoryUsersControls();
   syncRotationConfigButton();

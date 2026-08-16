@@ -66,6 +66,19 @@ export function reflowLabsForCensoDisplay(lines) {
   return out;
 }
 
+function classifyCensoPacienteLine(s) {
+  if (/^\d/.test(s) || /\baños\b/i.test(s) || /^FIUX:/i.test(s) || /^[A-Z]{2,4}:/.test(s)) {
+    return 'muted';
+  }
+  return 'emphasis';
+}
+
+function classifyCensoLabsLine(s) {
+  if (LAB_DATE_RE.test(s)) return 'lab-date';
+  if (LAB_PANEL_LINE_RE.test(s)) return 'lab-panel';
+  return 'default';
+}
+
 /**
  * Rol visual de una línea en la tabla del censo.
  * @param {string} line
@@ -77,17 +90,8 @@ export function classifyCensoTableLine(line, colKey, lineIndex) {
   var s = String(line || '').trim();
   if (!s || s === '—') return 'default';
 
-  if (colKey === 'paciente') {
-    if (/^\d/.test(s) || /\baños\b/i.test(s) || /^FIUX:/i.test(s) || /^[A-Z]{2,4}:/.test(s)) {
-      return 'muted';
-    }
-    return 'emphasis';
-  }
-  if (colKey === 'labs') {
-    if (LAB_DATE_RE.test(s)) return 'lab-date';
-    if (LAB_PANEL_LINE_RE.test(s)) return 'lab-panel';
-    return 'default';
-  }
+  if (colKey === 'paciente') return classifyCensoPacienteLine(s);
+  if (colKey === 'labs') return classifyCensoLabsLine(s);
   if ((colKey === 'signos' || colKey === 'io') && SIGNOS_LABEL_RE.test(s)) {
     return 'label-led';
   }

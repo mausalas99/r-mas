@@ -148,6 +148,64 @@ function buildCloudNetworkLabIssues() {
 }
 
 /**
+ * @param {Record<string, unknown>} ingress
+ * @param {boolean} networkBlocking
+ * @param {string[]} issues
+ */
+function addPullMissingIssue(ingress, networkBlocking, issues) {
+  if (!ingress.at) {
+    if (!networkBlocking) issues.push('Aún no hay un pull Nube registrado en esta sesión.');
+    return;
+  }
+  if (
+    !networkBlocking &&
+    Number(ingress.labOpsInPayload || 0) === 0 &&
+    Number(ingress.rawSidecars?.sets || 0) === 0
+  ) {
+    issues.push(
+      'El último pull no trajo labSidecars. En escritorio: reinicia R+ con el código nuevo, reconecta Nube y procesa o re-sincroniza labs.'
+    );
+  }
+}
+
+/**
+ * @param {Record<string, unknown>} ingress
+ * @param {string[]} issues
+ */
+function addPullFilteredIssue(ingress, issues) {
+  if (!ingress.at) return;
+  const raw = Number(ingress.rawSidecars?.sets || 0);
+  const filtered = Number(ingress.filteredSidecars?.sets || 0);
+  if (raw <= filtered) return;
+  issues.push(
+    'El worker filtró ' + (raw - filtered) + ' estudio(s) por ventana móvil (' + MOBILE_LAB_HISTORY_DAYS + ' días).'
+  );
+}
+
+/**
+ * @param {ReturnType<typeof summarizeLocalLabHistory>} local
+ * @param {Record<string, unknown>} apply
+ * @param {string[]} issues
+ */
+function addLocalHistoryIssues(local, apply, issues) {
+  if (local.totalSets > 0 && local.activeSets === 0 && local.activePatientId) {
+    issues.push(
+      'Hay labs en el dispositivo para otros pacientes, pero el paciente activo no tiene estudios en ventana móvil.'
+    );
+  }
+  if (apply.at && Number(apply.labSetsReceived || 0) > 0 && local.activeSets === 0 && local.activePatientId) {
+    issues.push('Se aplicaron labSidecars en pull pero el paciente activo sigue sin historial local.');
+  }
+}
+
+/** @param {string[]} issues */
+function addPushFailedIssue(issues) {
+  if (lastPush.at && !lastPush.ok) {
+    issues.push('Último push de labs desde escritorio falló: ' + (lastPush.reason || 'desconocido') + '.');
+  }
+}
+
+/**
  * @param {{ activePatientId?: string | null }} [opts]
  */
 export function buildLabSyncDiagnosticsIssues(opts) {
@@ -158,43 +216,10 @@ export function buildLabSyncDiagnosticsIssues(opts) {
   const apply = lastApply;
   const networkBlocking = issues.length > 0;
 
-  if (!ingress.at) {
-    if (!networkBlocking) {
-      issues.push('Aún no hay un pull Nube registrado en esta sesión.');
-    }
-  } else if (
-    !networkBlocking &&
-    Number(ingress.labOpsInPayload || 0) === 0 &&
-    Number(ingress.rawSidecars?.sets || 0) === 0
-  ) {
-    issues.push(
-      'El último pull no trajo labSidecars. En escritorio: reinicia R+ con el código nuevo, reconecta Nube y procesa o re-sincroniza labs.'
-    );
-  }
-
-  if (ingress.at && Number(ingress.rawSidecars?.sets || 0) > Number(ingress.filteredSidecars?.sets || 0)) {
-    issues.push(
-      'El worker filtró ' +
-        (Number(ingress.rawSidecars.sets) - Number(ingress.filteredSidecars.sets)) +
-        ' estudio(s) por ventana móvil (' +
-        MOBILE_LAB_HISTORY_DAYS +
-        ' días).'
-    );
-  }
-
-  if (local.totalSets > 0 && local.activeSets === 0 && local.activePatientId) {
-    issues.push(
-      'Hay labs en el dispositivo para otros pacientes, pero el paciente activo no tiene estudios en ventana móvil.'
-    );
-  }
-
-  if (apply.at && Number(apply.labSetsReceived || 0) > 0 && local.activeSets === 0 && local.activePatientId) {
-    issues.push('Se aplicaron labSidecars en pull pero el paciente activo sigue sin historial local.');
-  }
-
-  if (lastPush.at && !lastPush.ok) {
-    issues.push('Último push de labs desde escritorio falló: ' + (lastPush.reason || 'desconocido') + '.');
-  }
+  addPullMissingIssue(ingress, networkBlocking, issues);
+  addPullFilteredIssue(ingress, issues);
+  addLocalHistoryIssues(local, apply, issues);
+  addPushFailedIssue(issues);
 
   if (!issues.length && local.activeSets === 0 && local.activePatientId) {
     issues.push('Sin estudios locales para el paciente activo tras el último pull.');

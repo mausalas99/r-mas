@@ -171,43 +171,58 @@ export function renderSoporteVentilatorioBlockHtml(ec, vitalsCtx) {
  * @param {HTMLElement | null} mount
  * @param {string | null | undefined} soporte
  */
-export function syncSoporteParamsVisibility(mount, soporte) {
-  if (!mount) return;
-  var block = mount.querySelector('[data-ea-soporte-params]');
-  if (!block) return;
-  var tier = soporteTier(soporte != null ? String(soporte) : '');
+function resolveSoporteTierFlags(tier) {
   var litros = tier === 'litros';
   var hfnc = tier === 'hfnc';
   var vmni = tier === 'vmni';
   var vm = tier === 'vm';
   var tqt = tier === 'tqt';
-  var needsFio2 = hfnc || vmni || vm || tqt;
+  return {
+    litros: litros,
+    hfnc: hfnc,
+    vmni: vmni,
+    vm: vm,
+    tqt: tqt,
+    needsFio2: hfnc || vmni || vm || tqt,
+    showInsights: hfnc || vmni || vm || tqt,
+  };
+}
 
+function syncSoporteTierBlockVisibility(block, flags) {
   block.querySelectorAll('.ea-soporte-tier-litros').forEach(function (el) {
-    el.style.display = litros ? '' : 'none';
+    el.style.display = flags.litros ? '' : 'none';
   });
   block.querySelectorAll('.ea-soporte-tier-hfnc').forEach(function (el) {
-    el.style.display = hfnc ? '' : 'none';
+    el.style.display = flags.hfnc ? '' : 'none';
   });
   block.querySelectorAll('.ea-soporte-tier-vmni').forEach(function (el) {
     var isPeep = el.querySelector('[data-ea-ec="vmPeep"]');
-    if (isPeep) el.style.display = vmni || vm ? '' : 'none';
-    else el.style.display = vmni ? '' : 'none';
+    if (isPeep) el.style.display = flags.vmni || flags.vm ? '' : 'none';
+    else el.style.display = flags.vmni ? '' : 'none';
   });
   block.querySelectorAll('.ea-soporte-tier-vm').forEach(function (el) {
-    el.style.display = vm ? '' : 'none';
+    el.style.display = flags.vm ? '' : 'none';
   });
   block.querySelectorAll('.ea-soporte-tier-fio2').forEach(function (el) {
-    el.style.display = needsFio2 ? '' : 'none';
+    el.style.display = flags.needsFio2 ? '' : 'none';
   });
+}
 
+function syncSoporteCalcAndInsightsVisibility(mount, tier, showInsights) {
   var calc = mount.querySelector('[data-ea-soporte-calc]');
   if (calc) calc.style.display = tier ? '' : 'none';
   var insights = mount.querySelector('.ea-soporte-insights');
-  if (insights) {
-    insights.style.display =
-      tier === 'hfnc' || tier === 'vmni' || tier === 'vm' || tier === 'tqt' ? '' : 'none';
-  }
+  if (insights) insights.style.display = showInsights ? '' : 'none';
   var wrap = mount.querySelector('.ea-soporte-vent-block');
   if (wrap) wrap.style.display = tier ? '' : 'none';
+}
+
+export function syncSoporteParamsVisibility(mount, soporte) {
+  if (!mount) return;
+  var block = mount.querySelector('[data-ea-soporte-params]');
+  if (!block) return;
+  var tier = soporteTier(soporte != null ? String(soporte) : '');
+  var flags = resolveSoporteTierFlags(tier);
+  syncSoporteTierBlockVisibility(block, flags);
+  syncSoporteCalcAndInsightsVisibility(mount, tier, flags.showInsights);
 }

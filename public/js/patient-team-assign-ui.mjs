@@ -58,58 +58,70 @@ export function activePatientTeamId(patientId) {
  * @param {string} patientId
  * @param {string} teamId
  */
-async function notifyPatientTeamAssigned(pid, tid) {
-  syncLocalPatientSalaFromTeamAssignment(pid, tid);
-  await fetchClinicalScopeContextFromDb();
+function resolveTeamSalaById(tid) {
   const team = (clinicalSessionContext.teams || []).find(
     (t) => String(t?.team_id || '') === String(tid || '').trim()
   );
-  const teamSala = String(team?.sala || '').trim();
+  return String(team?.sala || '').trim();
+}
+
+async function pushClinicalOpsAfterTeamAssign(teamSala) {
   const lan = await import('./features/cloud-sync/mutate-bridge.mjs').catch(() => null);
   if (lan?.pushClinicalOpsLanNow) await lan.pushClinicalOpsLanNow();
-  if (teamSala) {
-    try {
-      const { pushClinicalOpsForSala } = await import(
-        './features/cloud-sync/cloud-clinical-ops-sala.mjs'
-      );
-      await pushClinicalOpsForSala(teamSala);
-    } catch {
-      /* Nube optional */
-    }
+  if (!teamSala) return;
+  try {
+    const { pushClinicalOpsForSala } = await import('./features/cloud-sync/cloud-clinical-ops-sala.mjs');
+    await pushClinicalOpsForSala(teamSala);
+  } catch {
+    /* Nube optional */
   }
+}
+
+async function mirrorAssignedPatientToCloud(pid) {
   const patient = (getPatients() || []).find((p) => String(p?.id || '') === String(pid || '').trim());
   const { getClinicalScopeContextForEvaluate } = await import('./clinical-access-runtime.mjs');
   const scopeCtx = getClinicalScopeContextForEvaluate();
   try {
     const cloud = await import('./features/cloud-sync/mutate-bridge.mjs');
-    if (patient) {
-      const { mirrorPatientCensusToOperationalSala, patientBelongsToActiveCloudRoom } = await import(
-        './features/cloud-sync/cloud-census-sala-push.mjs'
-      );
-      await mirrorPatientCensusToOperationalSala(patient, {
-        actorId: cloud.resolveCloudActorId?.(),
-        context: scopeCtx,
-      });
-      if (
-        patientBelongsToActiveCloudRoom(patient, scopeCtx) &&
-        typeof cloud.scheduleCloudSyncPush === 'function'
-      ) {
-        cloud.scheduleCloudSyncPush();
-      }
-    } else if (typeof cloud.scheduleCloudSyncPush === 'function') {
+    if (!patient) {
+      if (typeof cloud.scheduleCloudSyncPush === 'function') cloud.scheduleCloudSyncPush();
+      return;
+    }
+    const { mirrorPatientCensusToOperationalSala, patientBelongsToActiveCloudRoom } = await import(
+      './features/cloud-sync/cloud-census-sala-push.mjs'
+    );
+    await mirrorPatientCensusToOperationalSala(patient, {
+      actorId: cloud.resolveCloudActorId?.(),
+      context: scopeCtx,
+    });
+    if (
+      patientBelongsToActiveCloudRoom(patient, scopeCtx) &&
+      typeof cloud.scheduleCloudSyncPush === 'function'
+    ) {
       cloud.scheduleCloudSyncPush();
     }
   } catch {
     /* Nube optional */
   }
-  if (typeof document !== 'undefined') {
-    document.dispatchEvent(new CustomEvent('rpc-patient-team-assigned', { detail: { patientId: pid, teamId: tid } }));
-    document.dispatchEvent(
-      new CustomEvent('rpc-clinical-teams-changed', {
-        detail: { source: 'patient-team-assign', sala: teamSala || clinicalSessionContext.user?.sala },
-      })
-    );
-  }
+}
+
+function dispatchPatientTeamAssignedEvents(pid, tid, teamSala) {
+  if (typeof document === 'undefined') return;
+  document.dispatchEvent(new CustomEvent('rpc-patient-team-assigned', { detail: { patientId: pid, teamId: tid } }));
+  document.dispatchEvent(
+    new CustomEvent('rpc-clinical-teams-changed', {
+      detail: { source: 'patient-team-assign', sala: teamSala || clinicalSessionContext.user?.sala },
+    })
+  );
+}
+
+async function notifyPatientTeamAssigned(pid, tid) {
+  syncLocalPatientSalaFromTeamAssignment(pid, tid);
+  await fetchClinicalScopeContextFromDb();
+  const teamSala = resolveTeamSalaById(tid);
+  await pushClinicalOpsAfterTeamAssign(teamSala);
+  await mirrorAssignedPatientToCloud(pid);
+  dispatchPatientTeamAssignedEvents(pid, tid, teamSala);
 }
 
 function syncLocalPatientSalaFromTeamAssignment(patientId, teamId) {

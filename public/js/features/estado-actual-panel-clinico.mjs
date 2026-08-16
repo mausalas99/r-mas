@@ -39,6 +39,34 @@ function eaManejoFechaOpts(activeId, monitoreo) {
     : { activeId: activeId, medRecetaByPatient: medRecetaByPatient };
 }
 
+function resolveKcalDisplay(ec, pend, dietPending, dietWeight, dietaParenteral) {
+  if ((dietPending && String(pend.kcal || '').trim()) || dietWeight == null || dietaParenteral) {
+    return ec.kcal;
+  }
+  var kcalComputed = computeDietKcalTotal(ec.kcalKg, dietWeight);
+  return kcalComputed != null ? String(kcalComputed) : ec.kcal;
+}
+
+function buildDietWeightHint(dietWeight) {
+  return dietWeight != null
+    ? 'Peso para cálculo: ' + dietWeight + ' kg (datos del paciente)'
+    : 'Peso para cálculo: — (captura peso en Datos del paciente)';
+}
+
+function resolveDietOptionSelected(monitoreo) {
+  return monitoreo && monitoreo.dietOptionSelected != null ? Number(monitoreo.dietOptionSelected) : 0;
+}
+
+function buildVitalsCtx(monitoreo, activeId, patient) {
+  var snap = deriveSnapshot(monitoreo);
+  return {
+    fr: snap && snap.vitals ? snap.vitals.fr : '',
+    sat: snap && snap.vitals ? snap.vitals.sat : '',
+    pesoKg: patient && patient.peso,
+    lab: resolveVentilatorioLabContext(activeId, getLabHistory()),
+  };
+}
+
 function renderEstadoClinicoSection(monitoreo, activeId, patient) {
   var pend = monitoreo.pendienteReceta || {};
   var dietPending = hasDietProposal(pend);
@@ -46,27 +74,13 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
   var dietaSuplemento = isDietaSuplemento(ec.dieta);
   var dietaParenteral = isDietaParenteral(ec.dieta);
   var dietWeight = resolveDietWeightKg({ patientPeso: patient && patient.peso, pesoRef: ec.pesoRef });
-  var kcalDisplay = ec.kcal;
-  if ((!dietPending || !String(pend.kcal || '').trim()) && dietWeight != null && !dietaParenteral) {
-    var kcalComputed = computeDietKcalTotal(ec.kcalKg, dietWeight);
-    if (kcalComputed != null) kcalDisplay = String(kcalComputed);
-  }
-  var dietWeightHint =
-    dietWeight != null
-      ? 'Peso para cálculo: ' + dietWeight + ' kg (datos del paciente)'
-      : 'Peso para cálculo: — (captura peso en Datos del paciente)';
+  var kcalDisplay = resolveKcalDisplay(ec, pend, dietPending, dietWeight, dietaParenteral);
+  var dietWeightHint = buildDietWeightHint(dietWeight);
   var medFieldsHtml = renderMedCategoryGrid(monitoreo, activeId, getMedRecetaByPatient());
   var anyPending = hasPendingEaProposals(pend);
   var dietOptions = getDietOptions(monitoreo);
-  var dietOptionSelected =
-    monitoreo && monitoreo.dietOptionSelected != null ? Number(monitoreo.dietOptionSelected) : 0;
-  var snap = deriveSnapshot(monitoreo);
-  var vitalsCtx = {
-    fr: snap && snap.vitals ? snap.vitals.fr : '',
-    sat: snap && snap.vitals ? snap.vitals.sat : '',
-    pesoKg: patient && patient.peso,
-    lab: resolveVentilatorioLabContext(activeId, getLabHistory()),
-  };
+  var dietOptionSelected = resolveDietOptionSelected(monitoreo);
+  var vitalsCtx = buildVitalsCtx(monitoreo, activeId, patient);
 
   return (
     '<details class="ea-estado-clinico"' +

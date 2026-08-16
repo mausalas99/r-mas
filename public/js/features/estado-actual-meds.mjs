@@ -263,28 +263,47 @@ export function applyRecetaProposal(monitoreo, buckets) {
  * @param {string} key
  * @param {{ patientId?: string | null, medRecetaByPatient?: Record<string, { fechaActualizacion?: string }> } | undefined} [ctx]
  */
-export function confirmMedField(monitoreo, key, ctx) {
-  if (!monitoreo || !MED_FIELD_KEYS.includes(/** @type {typeof MED_FIELD_KEYS[number]} */ (key))) return;
+function pendingRecetaValueForKey(monitoreo, key) {
+  return (
+    monitoreo.pendienteReceta &&
+    typeof monitoreo.pendienteReceta === 'object' &&
+    monitoreo.pendienteReceta[key]
+  );
+}
+
+function ensureEstadoClinicoObject(monitoreo) {
   if (!monitoreo.estadoClinico || typeof monitoreo.estadoClinico !== 'object') {
     monitoreo.estadoClinico = {};
   }
-  var pending =
-    monitoreo.pendienteReceta &&
-    typeof monitoreo.pendienteReceta === 'object' &&
-    monitoreo.pendienteReceta[key];
+  return monitoreo.estadoClinico;
+}
+
+function ensureConfirmadoObject(monitoreo) {
+  if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
+    monitoreo.confirmado = {};
+  }
+  return monitoreo.confirmado;
+}
+
+function clearPendingRecetaKey(monitoreo, key) {
+  if (monitoreo.pendienteReceta && typeof monitoreo.pendienteReceta === 'object') {
+    monitoreo.pendienteReceta[key] = '';
+  }
+}
+
+export function confirmMedField(monitoreo, key, ctx) {
+  if (!monitoreo || !MED_FIELD_KEYS.includes(/** @type {typeof MED_FIELD_KEYS[number]} */ (key))) return;
+  var estadoClinico = ensureEstadoClinicoObject(monitoreo);
+  var pending = pendingRecetaValueForKey(monitoreo, key);
   if (pending != null && String(pending).trim()) {
-    /** @type {Record<string, string>} */ (monitoreo.estadoClinico)[key] = String(pending).trim();
+    /** @type {Record<string, string>} */ (estadoClinico)[key] = String(pending).trim();
   }
   if (key === 'abx') {
     ensureAbxDiaAnchorDate(monitoreo, ctx && ctx.patientId, ctx && ctx.medRecetaByPatient);
   }
-  if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
-    monitoreo.confirmado = {};
-  }
-  /** @type {Record<string, boolean>} */ (monitoreo.confirmado)[key] = true;
-  if (monitoreo.pendienteReceta && typeof monitoreo.pendienteReceta === 'object') {
-    monitoreo.pendienteReceta[key] = '';
-  }
+  var confirmado = ensureConfirmadoObject(monitoreo);
+  /** @type {Record<string, boolean>} */ (confirmado)[key] = true;
+  clearPendingRecetaKey(monitoreo, key);
   clearRecetaProposalDismissedKey(monitoreo, key);
 }
 

@@ -196,6 +196,66 @@ export function partitionPatientEntriesByOperationalSala(entries, activeSala, co
 }
 
 /**
+ * @param {object} patient
+ * @param {{ teams: object[], assignments: object[], now: string, user: object, actorId: string, context: object }} rctx
+ * @param {Set<string>} clinicalOpsSalas
+ * @returns {Promise<{ stamped: boolean, mirrored: boolean }>}
+ */
+async function repairOnePatientCensusSala(patient, rctx, clinicalOpsSalas) {
+  const { teams, assignments, now, user, actorId, context } = rctx;
+  const teamId = resolvePatientTeamIdFromAssignments(String(patient.id), assignments, now);
+  if (!teamId) return { stamped: false, mirrored: false };
+  const team = teams.find((t) => String(t?.team_id || '') === teamId);
+  const prev = String(patient.sala || '').trim();
+  stampPatientClinicalSala(patient, user, { team, teams });
+  const stamped = String(patient.sala || '').trim() !== prev;
+
+  const teamSala = normalizeCloudSala(team?.sala);
+  if (teamSala) clinicalOpsSalas.add(teamSala);
+
+  let mirrored = false;
+  if (!patientBelongsToActiveCloudRoom(patient, context)) {
+    const res = await mirrorPatientCensusToOperationalSala(patient, { actorId, context });
+    mirrored = !!res?.ok;
+  }
+  return { stamped, mirrored };
+}
+
+/** @param {Iterable<string>} clinicalOpsSalas */
+async function pushClinicalOpsForRepairedSalas(clinicalOpsSalas) {
+  const { pushClinicalOpsForSala } = await import('./cloud-clinical-ops-sala.mjs');
+  for (const sala of clinicalOpsSalas) {
+    await pushClinicalOpsForSala(sala).catch(() => null);
+  }
+}
+
+async function scheduleCloudSyncPushAfterRepair() {
+  try {
+    const bridge = await import('./mutate-bridge.mjs');
+    if (typeof bridge.scheduleCloudSyncPush === 'function') bridge.scheduleCloudSyncPush();
+  } catch {
+    /* optional */
+  }
+}
+
+/**
+ * @param {{ teams: object[], assignments: object[], now: string, user: object, actorId: string, context: object }} rctx
+ * @param {Set<string>} clinicalOpsSalas
+ * @returns {Promise<{ stamped: number, mirrored: number }>}
+ */
+async function repairAllPatientsCensusSalas(rctx, clinicalOpsSalas) {
+  let stamped = 0;
+  let mirrored = 0;
+  for (const patient of getPatients() || []) {
+    if (!patient?.id || String(patient.id).indexOf('demo-') === 0) continue;
+    const result = await repairOnePatientCensusSala(patient, rctx, clinicalOpsSalas);
+    if (result.stamped) stamped += 1;
+    if (result.mirrored) mirrored += 1;
+  }
+  return { stamped, mirrored };
+}
+
+/**
  * Backfill sala + Nube census for patients already assigned to teams (pre-cross-sala fix).
  * @param {{ actorId?: string, user?: object }} [opts]
  */
@@ -205,51 +265,22 @@ export async function repairCensusSalasFromTeamAssignments(opts = {}) {
   const { getClinicalScopeContextForEvaluate } = await import('../../clinical-access-runtime.mjs');
   const { clinicalSessionContext } = await import('../../clinical-session-context.mjs');
   const context = getClinicalScopeContextForEvaluate();
-  const teams = Array.isArray(context.teams) ? context.teams : [];
-  const assignments = Array.isArray(context.assignments) ? context.assignments : [];
-  const now = context.now || new Date().toISOString();
-  const user = opts.user || clinicalSessionContext.user;
-  const actorId = String(opts.actorId || 'local');
+  const rctx = {
+    teams: Array.isArray(context.teams) ? context.teams : [],
+    assignments: Array.isArray(context.assignments) ? context.assignments : [],
+    now: context.now || new Date().toISOString(),
+    user: opts.user || clinicalSessionContext.user,
+    actorId: String(opts.actorId || 'local'),
+    context,
+  };
 
-  let stamped = 0;
-  let mirrored = 0;
   /** @type {Set<string>} */
   const clinicalOpsSalas = new Set();
-
-  for (const patient of getPatients() || []) {
-    if (!patient?.id || String(patient.id).indexOf('demo-') === 0) continue;
-    const teamId = resolvePatientTeamIdFromAssignments(String(patient.id), assignments, now);
-    if (!teamId) continue;
-    const team = teams.find((t) => String(t?.team_id || '') === teamId);
-    const prev = String(patient.sala || '').trim();
-    stampPatientClinicalSala(patient, user, { team, teams });
-    if (String(patient.sala || '').trim() !== prev) stamped += 1;
-
-    const teamSala = normalizeCloudSala(team?.sala);
-    if (teamSala) clinicalOpsSalas.add(teamSala);
-
-    if (!patientBelongsToActiveCloudRoom(patient, context)) {
-      const res = await mirrorPatientCensusToOperationalSala(patient, {
-        actorId,
-        context,
-      });
-      if (res?.ok) mirrored += 1;
-    }
-  }
+  const { stamped, mirrored } = await repairAllPatientsCensusSalas(rctx, clinicalOpsSalas);
 
   if (stamped > 0) persistClinicalState({ immediate: true });
-
-  const { pushClinicalOpsForSala } = await import('./cloud-clinical-ops-sala.mjs');
-  for (const sala of clinicalOpsSalas) {
-    await pushClinicalOpsForSala(sala).catch(() => null);
-  }
-
-  try {
-    const bridge = await import('./mutate-bridge.mjs');
-    if (typeof bridge.scheduleCloudSyncPush === 'function') bridge.scheduleCloudSyncPush();
-  } catch {
-    /* optional */
-  }
+  await pushClinicalOpsForRepairedSalas(clinicalOpsSalas);
+  await scheduleCloudSyncPushAfterRepair();
 
   return { ok: true, stamped, mirrored, salas: [...clinicalOpsSalas] };
 }

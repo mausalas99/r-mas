@@ -382,6 +382,21 @@ function formatSoapPrnLine_(nombre, dosisCompact, via, critRaw, freqNorm, prnSuf
   return '';
 }
 
+function buildSoapStandardLine_(nombre, dosisCompact, via, freqNorm, equivSuffix, item, opts) {
+  var parts = [nombre];
+  if (dosisCompact) parts.push(dosisCompact);
+  if (via) parts.push(soapViaShort(via));
+  if (freqNorm) parts.push(soapFreqShort(freqNorm));
+  var equiv = equivSuffix.trim();
+  if (equiv) parts.push(equiv);
+  var dia =
+    item.diaTratamiento != null
+      ? effectiveDiaTratamiento(item.diaTratamiento, opts && opts.fechaActualizacion, opts && opts.refDate)
+      : null;
+  if (dia != null) parts.push('DIA ' + dia);
+  return parts.join(' ');
+}
+
 export function formatMedicationSoapShort(item, opts) {
   if (!item) return '';
   item = applyIvToOralForEgreso(item, opts);
@@ -400,18 +415,7 @@ export function formatMedicationSoapShort(item, opts) {
     if (prnLine) return prnLine;
   }
 
-  var parts = [nombre];
-  if (dosisCompact) parts.push(dosisCompact);
-  if (via) parts.push(soapViaShort(via));
-  if (freqNorm) parts.push(soapFreqShort(freqNorm));
-  var equiv = equivSuffix.trim();
-  if (equiv) parts.push(equiv);
-  var dia =
-    item.diaTratamiento != null
-      ? effectiveDiaTratamiento(item.diaTratamiento, opts && opts.fechaActualizacion, opts && opts.refDate)
-      : null;
-  if (dia != null) parts.push('DIA ' + dia);
-  return parts.join(' ');
+  return buildSoapStandardLine_(nombre, dosisCompact, via, freqNorm, equivSuffix, item, opts);
 }
 
 /**

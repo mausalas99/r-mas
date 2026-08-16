@@ -248,45 +248,32 @@ export async function showMainClinicalOnboarding() {
   return showMainClinicalOnboardingInflight;
 }
 
-async function showMainClinicalOnboardingBody() {
-  wireTeamsChangedListenerOnce();
-
-  if (needsClinicalSyncModeChoice()) {
-    const host = ensureOnboardingMainHost();
-    if (host) mountSyncModeChoiceOnboarding(host);
-    return;
-  }
-
-  // Load memberships before gating — a joined team must suppress registro / paso 3.
+/** Load memberships before gating — a joined team must suppress registro / paso 3. */
+async function reloadClinicalTeamsBeforeGate() {
   try {
     const { fetchClinicalTeamsFromDb } = await import('../clinical-access-runtime.mjs');
     await fetchClinicalTeamsFromDb();
   } catch {
     /* session optional */
   }
+}
 
+async function resumeStoredCloudTokenIfPresent() {
   try {
     const { getCloudSyncToken } = await import('./cloud-sync/settings.mjs');
-    if (getCloudSyncToken()) {
-      const { tryResumeOnboardingFromStoredCloudToken } = await import(
-        './clinical-onboarding-existing-login.mjs'
-      );
-      await tryResumeOnboardingFromStoredCloudToken();
-      const { fetchClinicalTeamsFromDb } = await import('../clinical-access-runtime.mjs');
-      await fetchClinicalTeamsFromDb();
-    }
+    if (!getCloudSyncToken()) return;
+    const { tryResumeOnboardingFromStoredCloudToken } = await import(
+      './clinical-onboarding-existing-login.mjs'
+    );
+    await tryResumeOnboardingFromStoredCloudToken();
+    await reloadClinicalTeamsBeforeGate();
   } catch {
     /* resume optional */
   }
+}
 
-  if (!needsOnboardingShell()) {
-    hideMainClinicalOnboarding();
-    return;
-  }
-
-  const host = ensureOnboardingMainHost();
-  if (!host) return;
-
+/** @returns {Promise<boolean>} true when the host is ready for the DB unlock + session steps */
+async function ensureOnboardingDbUnlockedAndFlushed(host) {
   ensureOnboardingBootLoading(host, {
     title: 'Preparando R+',
     message: 'Preparando almacenamiento local…',
@@ -296,7 +283,7 @@ async function showMainClinicalOnboardingBody() {
   if (!dbReady.unlocked) {
     host.innerHTML = await buildOnboardingSessionBlockHtml();
     wireOnboardingSessionRecoveryOnce(host);
-    return;
+    return false;
   }
 
   try {
@@ -307,6 +294,11 @@ async function showMainClinicalOnboardingBody() {
     }
   } catch (_e) { void _e; }
 
+  return true;
+}
+
+/** @returns {Promise<boolean>} true when a clinical panel session is confirmed */
+async function ensureOnboardingPanelSession(host) {
   let sessionOk = await ensureClinicalPanelSession();
   if (!sessionOk) {
     await ensureClinicalDbUnlocked();
@@ -315,9 +307,12 @@ async function showMainClinicalOnboardingBody() {
   if (!sessionOk) {
     host.innerHTML = await buildOnboardingSessionBlockHtml();
     wireOnboardingSessionRecoveryOnce(host);
-    return;
+    return false;
   }
+  return true;
+}
 
+async function renderOnboardingRegistrationForm(host) {
   ensureOnboardingBootLoading(host, {
     title: 'Preparando R+',
     message: 'Cargando formulario…',
@@ -338,6 +333,31 @@ async function showMainClinicalOnboardingBody() {
   } catch (err) {
     host.innerHTML = `<p class="clinical-registration-error">${escapeHtml(err instanceof Error ? err.message : 'Error al cargar.')}</p>`;
   }
+}
+
+async function showMainClinicalOnboardingBody() {
+  wireTeamsChangedListenerOnce();
+
+  if (needsClinicalSyncModeChoice()) {
+    const host = ensureOnboardingMainHost();
+    if (host) mountSyncModeChoiceOnboarding(host);
+    return;
+  }
+
+  await reloadClinicalTeamsBeforeGate();
+  await resumeStoredCloudTokenIfPresent();
+
+  if (!needsOnboardingShell()) {
+    hideMainClinicalOnboarding();
+    return;
+  }
+
+  const host = ensureOnboardingMainHost();
+  if (!host) return;
+
+  if (!(await ensureOnboardingDbUnlockedAndFlushed(host))) return;
+  if (!(await ensureOnboardingPanelSession(host))) return;
+  await renderOnboardingRegistrationForm(host);
 }
 
 async function syncChromeAfterOnboardingChange() {

@@ -2,18 +2,11 @@
  * Cloud sync mutation bridge — maps local clinical state to worker LWW ops.
  */
 import { isCloudSyncActive } from './nube-sync-policy.mjs';
-import {
-  getCloudSyncRoomId,
-  getCloudSyncRevision,
-  setCloudSyncRevision,
-  getCloudSyncUrl,
-  getCloudSyncToken,
-} from './settings.mjs';
+import { getCloudSyncRoomId } from './settings.mjs';
 import { CLOUD_PUSH_DEBOUNCE_MS, CLOUD_PUSH_FIRST_MS } from './cloud-sync-timing.mjs';
 import { getPatients, getLabHistory } from '../../app-state.mjs';
 import { stampCloudTodoRow, registroForPatientId } from '../../livesync-patient-ids.mjs';
 import { CLOUD_BATCH_MUTATION_ID, CLOUD_TOMBSTONES_MUTATION_ID } from './constants.mjs';
-import { recordCloudSyncError } from './cloud-sync-diagnostics.mjs';
 import {
   cloudOp,
   countPatientEntryOps,
@@ -37,6 +30,7 @@ import {
 
 export { CLOUD_BATCH_MUTATION_ID };
 export { pushCloudClinicalOpsNow } from './mutate-bridge-clinical-ops.mjs';
+export { pushCloudCensusNow, pushCloudLabSidecarsNow } from './mutate-bridge-direct-push.mjs';
 export {
   labSetId,
   pickCensusFields,
@@ -199,12 +193,72 @@ const CENSUS_SEED_CLOCK = '2000-01-01T00:00:00.000Z';
  * One-time census clock on live patients so empty-room seed can emit `fields`.
  * Must mutate `patients` (buildPatientEntry shallow-copies) so later pushes reuse the same clock.
  */
-function ensureLiveCensusClocks(_nowIso) {
+export function ensureLiveCensusClocks(_nowIso) {
   for (let i = 0; i < getPatients().length; i += 1) {
     const patient = getPatients()[i];
     if (!patient || typeof patient !== 'object') continue;
     if (!String(patient.lanUpdatedAt || '').trim()) patient.lanUpdatedAt = CENSUS_SEED_CLOCK;
   }
+}
+
+/** @param {{ actorId: string, updatedAt: string }} meta */
+async function collectCloudBundleOps(meta) {
+  const {
+    collectPatientEntriesForCloudPush,
+    collectTodosMapForCloudPush,
+    collectAgendaForCloudPush,
+  } = await import('./cloud-census-collect.mjs');
+  const entries = await collectPatientEntriesForCloudPush();
+  const todosMap = collectTodosMapForCloudPush();
+  const agenda = collectAgendaForCloudPush();
+  const {
+    getActiveCloudSala,
+    partitionPatientEntriesByOperationalSala,
+    pushOpsToSalaRoom,
+  } = await import('./cloud-census-sala-push.mjs');
+  const { getClinicalScopeContextForEvaluate } = await import('../../clinical-access-runtime.mjs');
+  const scopeCtx = getClinicalScopeContextForEvaluate();
+  const { active, crossBySala } = partitionPatientEntriesByOperationalSala(
+    entries,
+    getActiveCloudSala(),
+    scopeCtx
+  );
+  const ops = mapBundleEnvelopeToOps({ entries: active, todos: todosMap, agenda }, meta);
+  pushCrossSalaBundleOps(crossBySala, meta, pushOpsToSalaRoom);
+  return ops;
+}
+
+/**
+ * @param {Map<string, unknown[]>} crossBySala
+ * @param {{ actorId: string, updatedAt: string }} meta
+ * @param {(sala: string, ops: unknown[]) => Promise<unknown>} pushOpsToSalaRoom
+ */
+function pushCrossSalaBundleOps(crossBySala, meta, pushOpsToSalaRoom) {
+  for (const [sala, salaEntries] of crossBySala) {
+    const salaOps = [];
+    for (let i = 0; i < salaEntries.length; i += 1) {
+      salaOps.push(...mapPatientEntryToCloudBundleOps(salaEntries[i], meta));
+    }
+    if (salaOps.length) void pushOpsToSalaRoom(sala, salaOps);
+  }
+}
+
+/**
+ * @param {import('./mutate-bridge-ops.mjs').CloudSyncOp[]} ops
+ * @returns {boolean} true when the caller should bail out (retry scheduled)
+ */
+function shouldRetryEmptyCensusPush(ops) {
+  const entryOps = countPatientEntryOps(ops);
+  const otherOps = hasNonEntryCloudOps(ops);
+  if (!entryOps && !otherOps && getPatients().length > 0) {
+    if (cloudCensusPushRetries < CLOUD_CENSUS_PUSH_MAX_RETRIES) {
+      scheduleCloudCensusPushRetry();
+      return true;
+    }
+    return false;
+  }
+  cloudCensusPushRetries = 0;
+  return false;
 }
 
 async function enqueueCloudBundleOps() {
@@ -216,51 +270,8 @@ async function enqueueCloudBundleOps() {
       updatedAt: new Date().toISOString(),
     };
     ensureLiveCensusClocks(meta.updatedAt);
-    const {
-      collectPatientEntriesForCloudPush,
-      collectTodosMapForCloudPush,
-      collectAgendaForCloudPush,
-    } = await import('./cloud-census-collect.mjs');
-    const entries = await collectPatientEntriesForCloudPush();
-    const todosMap = collectTodosMapForCloudPush();
-    const agenda = collectAgendaForCloudPush();
-    const {
-      getActiveCloudSala,
-      partitionPatientEntriesByOperationalSala,
-      pushOpsToSalaRoom,
-    } = await import('./cloud-census-sala-push.mjs');
-    const { getClinicalScopeContextForEvaluate } = await import('../../clinical-access-runtime.mjs');
-    const scopeCtx = getClinicalScopeContextForEvaluate();
-    const { active, crossBySala } = partitionPatientEntriesByOperationalSala(
-      entries,
-      getActiveCloudSala(),
-      scopeCtx
-    );
-    const ops = mapBundleEnvelopeToOps(
-      {
-        entries: active,
-        todos: todosMap,
-        agenda,
-      },
-      meta
-    );
-    for (const [sala, salaEntries] of crossBySala) {
-      const salaOps = [];
-      for (let i = 0; i < salaEntries.length; i += 1) {
-        salaOps.push(...mapPatientEntryToCloudBundleOps(salaEntries[i], meta));
-      }
-      if (salaOps.length) void pushOpsToSalaRoom(sala, salaOps);
-    }
-    const entryOps = countPatientEntryOps(ops);
-    const otherOps = hasNonEntryCloudOps(ops);
-    if (!entryOps && !otherOps && getPatients().length > 0) {
-      if (cloudCensusPushRetries < CLOUD_CENSUS_PUSH_MAX_RETRIES) {
-        scheduleCloudCensusPushRetry();
-        return false;
-      }
-    } else {
-      cloudCensusPushRetries = 0;
-    }
+    const ops = await collectCloudBundleOps(meta);
+    if (shouldRetryEmptyCensusPush(ops)) return false;
     if (!ops.length) return false;
     enqueueOps(ops);
     return true;
@@ -316,142 +327,6 @@ export async function scheduleInitialCloudSeed() {
   await enqueueCloudBundleOps();
   await enqueueCloudLabSidecarsBackfill();
   await bridgeRuntime.flush?.();
-}
-
-/** Direct census seed — bypasses LAN bundle timing; used on desktop boot / ⇄ connect. */
-export async function pushCloudCensusNow() {
-  if (!isCloudSyncActive() || !bridgeRuntime?.outbox) {
-    return { ok: false, reason: 'bridge_inactive' };
-  }
-  if (!getCloudSyncRoomId()) return { ok: false, reason: 'no_room' };
-  if (!getPatients().length) return { ok: false, reason: 'no_local_patients' };
-
-  const meta = {
-    actorId: resolveCloudActorId(bridgeRuntime),
-    updatedAt: new Date().toISOString(),
-  };
-  ensureLiveCensusClocks(meta.updatedAt);
-
-  const { collectPatientEntriesForCloudPush } = await import('./cloud-census-collect.mjs');
-  const entries = await collectPatientEntriesForCloudPush();
-  /** @type {import('./mutate-bridge-ops.mjs').CloudSyncOp[]} */
-  const ops = [];
-  for (let i = 0; i < entries.length; i += 1) {
-    const entry = entries[i];
-    ops.push(...mapPatientEntryToCloudBundleOps(entry, meta));
-  }
-
-  const entryOps = countPatientEntryOps(ops);
-  if (!entryOps) {
-    return {
-      ok: false,
-      reason: 'no_entry_ops',
-      localPatients: getPatients().length,
-      collectedEntries: entries.length,
-    };
-  }
-
-  try {
-    const { createCloudSyncApi } = await import('./api-client.mjs');
-    const { pushCloudOpsDirect } = await import('./cloud-push-direct.mjs');
-    const api = createCloudSyncApi({
-      getBaseUrl: getCloudSyncUrl,
-      getToken: getCloudSyncToken,
-    });
-    const pushed = await pushCloudOpsDirect(
-      api,
-      getCloudSyncRoomId(),
-      ops,
-      getCloudSyncRevision,
-      setCloudSyncRevision
-    );
-    return { ok: true, entryOps, totalOps: ops.length, pushed };
-  } catch (err) {
-    const message = err?.message || String(err);
-    void import('../cloud-mobile/lab-sync-diagnostics.mjs')
-      .then(function (labDiag) {
-        labDiag.recordLabPushAttempt({ setCount: ops.length, ok: false, reason: message, totalOps: ops.length });
-      })
-      .catch(function () {
-        /* optional */
-      });
-    recordCloudSyncError({
-      op: 'census',
-      code: 'push_failed',
-      message,
-    });
-    return { ok: false, reason: 'push_failed', message };
-  }
-}
-
-/** Push all lab sidecars now (backfill for R+ Móvil). */
-export async function pushCloudLabSidecarsNow() {
-  if (!isCloudSyncActive() || !bridgeRuntime?.outbox) {
-    return { ok: false, reason: 'bridge_inactive' };
-  }
-  if (!getCloudSyncRoomId()) return { ok: false, reason: 'no_room' };
-
-  const meta = {
-    actorId: resolveCloudActorId(bridgeRuntime),
-    updatedAt: new Date().toISOString(),
-  };
-  const { collectPatientEntriesForCloudPush } = await import('./cloud-census-collect.mjs');
-  const entries = await collectPatientEntriesForCloudPush();
-  /** @type {import('./mutate-bridge-ops.mjs').CloudSyncOp[]} */
-  const ops = [];
-  for (let i = 0; i < entries.length; i += 1) {
-    const entry = entries[i];
-    const patientId = String(entry?.patient?.id || '').trim();
-    if (!patientId) continue;
-    ops.push(
-      ...buildDirtyLabSidecarOpsForPatient(
-        patientId,
-        Array.isArray(entry.labHistory) ? entry.labHistory : [],
-        meta
-      )
-    );
-  }
-  if (!ops.length) return { ok: false, reason: 'no_lab_ops' };
-
-  try {
-    const { createCloudSyncApi } = await import('./api-client.mjs');
-    const { pushCloudOpsDirect } = await import('./cloud-push-direct.mjs');
-    const api = createCloudSyncApi({
-      getBaseUrl: getCloudSyncUrl,
-      getToken: getCloudSyncToken,
-    });
-    const pushed = await pushCloudOpsDirect(
-      api,
-      getCloudSyncRoomId(),
-      ops,
-      getCloudSyncRevision,
-      setCloudSyncRevision
-    );
-    void import('../cloud-mobile/lab-sync-diagnostics.mjs').then(function (labDiag) {
-      labDiag.recordLabPushAttempt({
-        setCount: ops.length,
-        ok: true,
-        totalOps: ops.length,
-      });
-    });
-    return { ok: true, labOps: ops.length, totalOps: ops.length, pushed };
-  } catch (err) {
-    const message = err?.message || String(err);
-    void import('../cloud-mobile/lab-sync-diagnostics.mjs').then(function (labDiag) {
-      labDiag.recordLabPushAttempt({
-        setCount: ops.length,
-        ok: false,
-        reason: message,
-        totalOps: ops.length,
-      });
-    });
-    recordCloudSyncError({
-      op: 'labSidecars',
-      code: 'push_failed',
-      message,
-    });
-    return { ok: false, reason: 'push_failed', message };
-  }
 }
 
 /**

@@ -1,6 +1,6 @@
-import { getPatients, getNotes, persistClinicalState } from '../app-state.mjs';
+import { getPatients, persistClinicalState } from '../app-state.mjs';
 import { storage } from '../storage.js';
-import { validatePatientForSave, buildExpedienteAdvice } from '../patient-validation.mjs';
+import { validatePatientForSave } from '../patient-validation.mjs';
 import {
   shakePatientFieldsForError,
   closeModalAnimated,
@@ -24,18 +24,21 @@ import {
 } from '../patient-sala-ui.mjs';
 import { rt } from './patients-runtime-state.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
-import { esc } from './patients-html.mjs';
-import { escTxtSafe } from './patients-html.mjs';
 import { commitPatientFromModal, clearPendingAddPatientCallbacks, setPendingAddPatientFromBulkPreview, setPendingAddPatientSavedCallback, getPendingAddPatientFromBulkPreview } from './patients-modal-commit.mjs';
+import { findDuplicatePatient, showDuplicateWarning, showExpedienteAdvice } from './patients-modal-dialogs.mjs';
+import {
+  readPatientModalFields,
+  validatePatientAge,
+  readPatientLocationFields,
+  validatePatientLocationFields,
+} from './patients-modal-fields.mjs';
 import { resumeLabBulkPreviewModalIfSuspended, suspendLabBulkPreviewModal } from './lab-bulk-preview-modal.mjs';
 import { admitPatientsViaRegistroTunnel, admitPatientViaRegistroTunnel } from '../patient-registro-tunnel.mjs';
 import {
   initRegistroModalRows,
   setRegistroModalMultiMode,
   collectRegistroModalRegistros,
-  readRegistroModalPrimary,
   focusRegistroModalFirst,
-  focusRegistroModalAny,
 } from '../patient-registro-modal-ui.mjs';
 
 function _prefillServicioForSala() {
@@ -134,12 +137,9 @@ function bedLocationGridEl() {
   return cuarto.parentElement.parentElement || null;
 }
 
-function setModalRegistroTunnelMode(on) {
-  modalRegistroTunnelMode = !!on;
-  if (on) modalCompleteAdmissionPatientId = null;
+function applyRegistroTunnelFieldVisibility(on) {
   var prefilled = document.getElementById('modal-prefilled');
   var manualFull = document.getElementById('modal-manual-full');
-  var saveBtn = document.querySelector('#modal .btn-save');
   var nombreGroup = document.getElementById('m-nombre-manual');
   if (nombreGroup && nombreGroup.parentElement) {
     setElementDisplay(nombreGroup.parentElement, !on);
@@ -156,30 +156,38 @@ function setModalRegistroTunnelMode(on) {
     setElementDisplay(document.getElementById(id), !on && !modalCompleteAdmissionPatientId);
   });
   setElementDisplay(bedLocationGridEl(), !on && modalCompleteAdmissionPatientId);
-  if (saveBtn) {
-    saveBtn.textContent = on
-      ? 'Buscar registros'
-      : modalCompleteAdmissionPatientId
-        ? 'Guardar'
-        : 'Agregar Paciente';
-  }
+}
+
+function applyRegistroTunnelSaveButtonText(on) {
+  var saveBtn = document.querySelector('#modal .btn-save');
+  if (!saveBtn) return;
+  saveBtn.textContent = on
+    ? 'Buscar registros'
+    : modalCompleteAdmissionPatientId
+      ? 'Guardar'
+      : 'Agregar Paciente';
+}
+
+function applyRegistroTunnelLabels(on) {
   var regLabel = document.getElementById('m-registro-manual-label');
   var regHint = document.getElementById('m-registro-manual-hint');
   setRegistroModalMultiMode(on);
   if (regLabel) regLabel.textContent = on ? 'Registro(s)' : 'Registro';
   setElementDisplay(regHint, on);
+}
+
+function setModalRegistroTunnelMode(on) {
+  modalRegistroTunnelMode = !!on;
+  if (on) modalCompleteAdmissionPatientId = null;
+  applyRegistroTunnelFieldVisibility(on);
+  applyRegistroTunnelSaveButtonText(on);
+  applyRegistroTunnelLabels(on);
   if (!on && !modalCompleteAdmissionPatientId) _syncPatientModalModeFields();
 }
 
 var modalCompleteAdmissionPatientId = null;
 
-function setModalCompleteAdmissionMode(on, patient) {
-  if (!on) {
-    modalCompleteAdmissionPatientId = null;
-    return;
-  }
-  modalCompleteAdmissionPatientId = patient && patient.id ? String(patient.id) : null;
-  modalRegistroTunnelMode = false;
+function hideCompleteAdmissionManualFields() {
   var prefilled = document.getElementById('modal-prefilled');
   var manualFull = document.getElementById('modal-manual-full');
   if (prefilled) prefilled.style.display = 'none';
@@ -192,27 +200,47 @@ function setModalCompleteAdmissionMode(on, patient) {
   }
   var registroWrap = document.getElementById('m-registro-manual-wrap');
   setElementDisplay(registroWrap, false);
+}
+
+function applyCompleteAdmissionFieldVisibility(on) {
   ['m-area-group', 'm-servicio-group', 'm-sala-group'].forEach(function (id) {
     setElementDisplay(document.getElementById(id), on);
   });
   setElementDisplay(bedLocationGridEl(), on);
   var saveBtn = document.querySelector('#modal .btn-save');
   if (saveBtn) saveBtn.textContent = on ? 'Guardar ubicación' : 'Agregar Paciente';
-  if (on) _syncPatientModalModeFields();
-  if (on && patient) {
-    var areaEl = document.getElementById('m-area');
-    var servicioEl = document.getElementById('m-servicio');
-    var cuartoEl = document.getElementById('m-cuarto');
-    var camaEl = document.getElementById('m-cama');
-    if (areaEl) areaEl.value = String(patient.area || '');
-    if (servicioEl) servicioEl.value = String(patient.servicio || '');
-    if (cuartoEl) cuartoEl.value = String(patient.cuarto || '');
-    if (camaEl) camaEl.value = String(patient.cama || '');
-    if (!String(patient.servicio || '').trim()) _prefillServicioForSala();
-    if (!String(patient.cuarto || '').trim() || !String(patient.cama || '').trim()) {
-      _prefillCuartoCamaForSala(patient.registro || '');
-    }
+}
+
+function fillCompleteAdmissionLocationInputs(patient) {
+  var areaEl = document.getElementById('m-area');
+  var servicioEl = document.getElementById('m-servicio');
+  var cuartoEl = document.getElementById('m-cuarto');
+  var camaEl = document.getElementById('m-cama');
+  if (areaEl) areaEl.value = String(patient.area || '');
+  if (servicioEl) servicioEl.value = String(patient.servicio || '');
+  if (cuartoEl) cuartoEl.value = String(patient.cuarto || '');
+  if (camaEl) camaEl.value = String(patient.cama || '');
+}
+
+function prefillCompleteAdmissionPatientFields(patient) {
+  fillCompleteAdmissionLocationInputs(patient);
+  if (!String(patient.servicio || '').trim()) _prefillServicioForSala();
+  if (!String(patient.cuarto || '').trim() || !String(patient.cama || '').trim()) {
+    _prefillCuartoCamaForSala(patient.registro || '');
   }
+}
+
+function setModalCompleteAdmissionMode(on, patient) {
+  if (!on) {
+    modalCompleteAdmissionPatientId = null;
+    return;
+  }
+  modalCompleteAdmissionPatientId = patient && patient.id ? String(patient.id) : null;
+  modalRegistroTunnelMode = false;
+  hideCompleteAdmissionManualFields();
+  applyCompleteAdmissionFieldVisibility(on);
+  if (on) _syncPatientModalModeFields();
+  if (on && patient) prefillCompleteAdmissionPatientFields(patient);
 }
 
 export function openCompleteAdmissionModal(patientId) {
@@ -410,113 +438,6 @@ export function confirmCloseAddPatientModal() {
   return true;
 }
 
-function normalizeName(str) {
-  return (str || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function findDuplicatePatient(nombre, registro) {
-  var nombreNorm = normalizeName(nombre);
-  return getPatients().find(function (p) {
-    if (p.isDemo) return false;
-    if (registro && p.registro && registro === p.registro) return true;
-    return normalizeName(p.nombre) === nombreNorm;
-  });
-}
-
-function showDuplicateWarning(existing, onConfirm) {
-  var fecha = getNotes()[existing.id] ? getNotes()[existing.id].fecha : '';
-  var body = '<strong>' + esc(existing.nombre) + '</strong>';
-  body += '<br>Cto. ' + esc(existing.cuarto || '—') + ' Cama ' + esc(existing.cama || '—');
-  if (existing.registro) body += '<br>Registro: ' + esc(existing.registro);
-  if (fecha) body += '<br>Ingreso: ' + esc(fecha);
-  var backdrop = document.createElement('div');
-  backdrop.className = 'lab-conflict-backdrop';
-  backdrop.id = 'dup-confirm-backdrop';
-  backdrop.innerHTML =
-    '<div class="lab-conflict-modal">' +
-    '<h3>Paciente similar encontrado</h3>' +
-    '<p>' +
-    body +
-    '</p>' +
-    '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">' +
-    '<button onclick="document.getElementById(\'dup-confirm-backdrop\').remove()" style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:#1f2937;">Cancelar</button>' +
-    '<button id="dup-confirm-btn" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Agregar de todas formas</button>' +
-    '</div></div>';
-  document.body.appendChild(backdrop);
-  document.getElementById('dup-confirm-btn').onclick = function () {
-    document.getElementById('dup-confirm-backdrop').remove();
-    onConfirm();
-  };
-}
-
-function readPatientModalFields(isFromLab) {
-  if (isFromLab) {
-    return {
-      nombre: (document.getElementById('m-nombre').value || '').trim().toUpperCase(),
-      registro: (document.getElementById('m-registro').value || '').trim(),
-      edadNum: (document.getElementById('m-edad-num').value || '').trim(),
-      edadUnit: document.getElementById('m-edad-unit').value || 'años',
-      sexo: document.getElementById('m-sexo-ro').value || 'F',
-    };
-  }
-  return {
-    nombre: (document.getElementById('m-nombre-manual').value || '').trim().toUpperCase(),
-    registro: readRegistroModalPrimary(),
-    edadNum: (document.getElementById('m-edad-num-manual').value || '').trim(),
-    edadUnit: document.getElementById('m-edad-unit-manual').value || 'años',
-    sexo: document.getElementById('m-sexo').value,
-  };
-}
-
-function validatePatientAge(edadNum, isFromLab) {
-  if (!edadNum) {
-    rt.showToast('Ingresa la edad', 'error');
-    shakePatientFieldsForError('Ingresa la edad', isFromLab);
-    return null;
-  }
-  var ageInt = parseInt(edadNum, 10);
-  if (isNaN(ageInt) || ageInt < 0 || ageInt > 120) {
-    rt.showToast('Edad inválida', 'error');
-    shakePatientFieldsForError('Edad inválida', isFromLab);
-    return null;
-  }
-  return String(ageInt);
-}
-
-function readPatientLocationFields(settings) {
-  var salaMode = isModeSala(settings);
-  var servicio = (document.getElementById('m-servicio').value || '').trim().toUpperCase();
-  var area = salaMode ? servicio : (document.getElementById('m-area').value || '').trim().toUpperCase();
-  var cuarto = (document.getElementById('m-cuarto').value || '').trim();
-  var cama = (document.getElementById('m-cama').value || '').trim();
-  return { salaMode: salaMode, servicio: servicio, area: area, cuarto: cuarto, cama: cama };
-}
-
-function validatePatientLocationFields(loc, isFromLab) {
-  if (!loc.servicio) {
-    var servicioMsg = loc.salaMode ? 'Ingresa Área / Servicio' : 'Ingresa servicio';
-    rt.showToast(servicioMsg, 'error');
-    shakePatientFieldsForError(servicioMsg, isFromLab);
-    return false;
-  }
-  if (!loc.salaMode && !loc.area) {
-    rt.showToast('Ingresa área / departamento', 'error');
-    shakePatientFieldsForError('Ingresa área / departamento', isFromLab);
-    return false;
-  }
-  if (!loc.cuarto || !loc.cama) {
-    rt.showToast('Ingresa cuarto y cama', 'error');
-    shakePatientFieldsForError('Ingresa cuarto y cama', isFromLab);
-    return false;
-  }
-  return true;
-}
-
 function saveCompleteAdmissionModal() {
   var patientId = modalCompleteAdmissionPatientId;
   if (!patientId) return false;
@@ -610,45 +531,6 @@ export function savePatient() {
     return;
   }
   commit();
-}
-
-function showExpedienteAdvice(onConfirm) {
-  var prev = document.getElementById('exp-advice-backdrop');
-  if (prev) prev.remove();
-  var advice = buildExpedienteAdvice();
-  var b = document.createElement('div');
-  b.className = 'lab-conflict-backdrop';
-  b.id = 'exp-advice-backdrop';
-  b.innerHTML =
-    '<div class="lab-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="exp-advice-title">' +
-    '<h3 id="exp-advice-title">' +
-    escTxtSafe(advice.title) +
-    '</h3>' +
-    '<p>' +
-    escTxtSafe(advice.body) +
-    '</p>' +
-    '<div class="lab-conflict-actions" style="flex-direction:row;justify-content:flex-end;gap:8px;">' +
-    '<button type="button" class="btn-cancel" id="exp-advice-cancel">' +
-    escTxtSafe(advice.cancelLabel) +
-    '</button>' +
-    '<button type="button" class="btn-conflict-primary" id="exp-advice-confirm">' +
-    escTxtSafe(advice.confirmLabel) +
-    '</button>' +
-    '</div>' +
-    '</div>';
-  document.body.appendChild(b);
-  var close = function () {
-    var x = document.getElementById('exp-advice-backdrop');
-    if (x) x.remove();
-  };
-  document.getElementById('exp-advice-cancel').onclick = function () {
-    close();
-    focusRegistroModalAny();
-  };
-  document.getElementById('exp-advice-confirm').onclick = function () {
-    close();
-    onConfirm();
-  };
 }
 
 export function initPatientModalEnterSave() {

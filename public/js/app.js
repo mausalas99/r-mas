@@ -73,8 +73,6 @@ import { windowHandlers as driveImportWindowHandlers } from './features/drive-im
 import { windowHandlers as estadoActualRegistroWindowHandlers } from './features/estado-actual-registro-modal.mjs';
 import { windowHandlers as agendaWindowHandlers } from './features/agenda.mjs';
 import { windowHandlers as expedienteWindowHandlers } from './features/expediente.mjs';
-import { windowHandlers as patientDashboardWindowHandlers } from './features/patient-dashboard/dashboard-mount.mjs';
-import { windowHandlers as labInnerWindowHandlers } from './features/patient-dashboard/lab-inner.mjs';
 import { windowHandlers as notesIndicacionesWindowHandlers } from './features/notes-indicaciones.mjs';
 import { productivityWindowHandlers } from './features/productivity.mjs';
 import {
@@ -110,6 +108,23 @@ import { wireClinicalTeamsControls } from './features/clinical-teams.mjs';
 import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
 import { syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
 import { resolveClinicalClientId } from './clinical-settings.mjs';
+
+function lazyWindowHandler(exportName, loader) {
+  return function lazyHandlerProxy() {
+    var args = arguments;
+    void loader().then(function (mod) { mod[exportName].apply(null, args); });
+  };
+}
+const patientDashboardWindowHandlers = {
+  renderPatientDashboard: lazyWindowHandler('renderPatientDashboard', function () {
+    return import('./features/patient-dashboard/dashboard-mount.mjs');
+  }),
+};
+const labInnerWindowHandlers = {
+  switchLabInner: lazyWindowHandler('switchLabInner', function () {
+    return import('./features/patient-dashboard/lab-inner.mjs');
+  }),
+};
 
 function isMobileWeb() {
   var g = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : null;
@@ -536,7 +551,6 @@ function runDomBootAfterState() {
     console.error('[R+] Error en arranque de UI:', domErr);
   }
 }
-
 
 function runEarlyClinicalOnboarding() {
   if (typeof window.rpcMountEarlySyncModeOnboardingIfNeeded === 'function') {

@@ -71,6 +71,49 @@ export function drainSyncedLabOpsFromOutboxRows(rows) {
   return { rows: next, removedOps, removedEntries };
 }
 
+/** @param {unknown[]} ops @returns {Record<string, unknown[]>} */
+function groupLabBackfillOpsByPatient(ops) {
+  /** @type {Record<string, unknown[]>} */
+  const byPatient = {};
+  for (let j = 0; j < ops.length; j += 1) {
+    const op = ops[j];
+    const path = String(op?.path || '');
+    const parsed = parseCloudLabSidecarPath(path);
+    if (!parsed) continue;
+    const pid = parsed.patientId;
+    if (!byPatient[pid]) byPatient[pid] = [];
+    byPatient[pid].push(op);
+  }
+  return byPatient;
+}
+
+/**
+ * @param {{ clientMutationId?: string, ops?: unknown[], enqueuedAt?: number, baseRevision?: number }} row
+ * @returns {{ rows: unknown[], splitOps: number } | null} null when the row is not a lab-backfill row
+ */
+function splitOneLabBackfillRow(row) {
+  const id = String(row?.clientMutationId || '');
+  if (id !== CLOUD_LAB_BACKFILL_MUTATION_ID) return null;
+  const ops = Array.isArray(row.ops) ? row.ops : [];
+  if (!ops.length) return { rows: [], splitOps: 0 };
+  const byPatient = groupLabBackfillOpsByPatient(ops);
+  const patientIds = Object.keys(byPatient);
+  if (!patientIds.length) return { rows: [], splitOps: 0 };
+  const rows = [];
+  for (let k = 0; k < patientIds.length; k += 1) {
+    const pid = patientIds[k];
+    const patientOps = byPatient[pid];
+    if (!patientOps.length) continue;
+    rows.push({
+      clientMutationId: `labSidecars/${pid}`,
+      ops: patientOps,
+      enqueuedAt: row.enqueuedAt,
+      baseRevision: row.baseRevision,
+    });
+  }
+  return { rows, splitOps: ops.length };
+}
+
 /**
  * Legacy single-row lab backfill blocks partial retry — split into per-patient rows.
  * @param {Array<{ clientMutationId?: string, ops?: unknown[], enqueuedAt?: number, baseRevision?: number }>} rows
@@ -83,38 +126,13 @@ export function splitLabBackfillOutboxRows(rows) {
 
   for (let i = 0; i < input.length; i += 1) {
     const row = input[i];
-    const id = String(row?.clientMutationId || '');
-    if (id !== CLOUD_LAB_BACKFILL_MUTATION_ID) {
+    const split = splitOneLabBackfillRow(row);
+    if (!split) {
       next.push(row);
       continue;
     }
-    const ops = Array.isArray(row.ops) ? row.ops : [];
-    if (!ops.length) continue;
-    /** @type {Record<string, unknown[]>} */
-    const byPatient = {};
-    for (let j = 0; j < ops.length; j += 1) {
-      const op = ops[j];
-      const path = String(op?.path || '');
-      const parsed = parseCloudLabSidecarPath(path);
-      if (!parsed) continue;
-      const pid = parsed.patientId;
-      if (!byPatient[pid]) byPatient[pid] = [];
-      byPatient[pid].push(op);
-    }
-    const patientIds = Object.keys(byPatient);
-    if (!patientIds.length) continue;
-    splitOps += ops.length;
-    for (let k = 0; k < patientIds.length; k += 1) {
-      const pid = patientIds[k];
-      const patientOps = byPatient[pid];
-      if (!patientOps.length) continue;
-      next.push({
-        clientMutationId: `labSidecars/${pid}`,
-        ops: patientOps,
-        enqueuedAt: row.enqueuedAt,
-        baseRevision: row.baseRevision,
-      });
-    }
+    next.push(...split.rows);
+    splitOps += split.splitOps;
   }
 
   return { rows: next, splitOps };
