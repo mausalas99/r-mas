@@ -2458,8 +2458,9 @@ var RELEASE_NOTES_815 = [
       'Estado actual y Eventualidades ya no quedan ocultos debajo de labs. El panel ahora hace scroll en vez de cortar el contenido.',
   },
   {
-    title: 'Atajo ⌘⇧C — copiar labs del equipo',
-    body: 'Copia los labs de hoy de los pacientes fijados con un solo atajo de teclado.',
+    title: 'Atajo ⌘⇧C — copia según la pestaña activa',
+    body:
+      'Copia los labs de hoy de los pacientes fijados, o el estado actual si estás en esa pestaña, con un solo atajo de teclado.',
   },
   {
     title: 'Nube — un item atascado ya no detiene la cola',

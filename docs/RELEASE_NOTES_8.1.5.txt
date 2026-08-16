@@ -10,7 +10,7 @@ Corrige el dashboard de paciente en iPad, agrega un atajo para copiar labs del e
 ## Nuevo / mejorado
 
 - **iPad — Vista ronda ya no esconde contenido:** en el dashboard de paciente, Estado actual y Eventualidades quedaban ocultos debajo de labs porque el panel tenía altura fija y cortaba lo que no cabía. Ahora el panel hace scroll y se ve todo.
-- **Atajo ⌘⇧C — copiar labs del equipo:** copia los labs de hoy de los pacientes fijados con un atajo de teclado.
+- **Atajo ⌘⇧C — copia según la pestaña activa:** copia los labs de hoy de los pacientes fijados; si estás en la pestaña de Estado actual, copia el estado actual en su lugar.
 - **Nube — un item atascado ya no detiene la cola:** si un cambio falla al enviarse, los demás cambios pendientes se siguen enviando; antes toda la cola se congelaba en el primer error.
 - **Nube — límite de tamaño de labs más seguro:** se bajó el máximo de un op de labs para que siempre quepa en un envío; antes un op grande podía quedar atascado para siempre en la cola de salida.
 - **Dashboard de paciente:** la tarjeta de signos vitales se ve más compacta cuando no hay datos.
