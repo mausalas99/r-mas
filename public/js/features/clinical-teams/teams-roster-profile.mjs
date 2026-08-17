@@ -111,11 +111,13 @@ export async function handleProfileFormSubmit(ev) {
       : 'Perfil guardado.';
   await toastProfileSaveResult({ msg, usernameWillChange, sala: fields.sala });
   syncRotationConfigButton();
-  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true } }));
-  void import('../cloud-sync/mutate-bridge-clinical-ops.mjs')
-    .then((mod) => {
-      if (typeof mod.pushCloudClinicalOpsNow === 'function') void mod.pushCloudClinicalOpsNow();
-    })
+  // Sala must ride the event/push — otherwise switching to a rotation with no
+  // local team yet never syncs (push targets only already-known team salas).
+  document.dispatchEvent(
+    new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true, sala: fields.sala } })
+  );
+  void import('./teams-guardia-bridge.mjs')
+    .then((mod) => mod.publishClinicalTeamsAfterChange({ sala: fields.sala }))
     .catch(() => {});
   void import('../patients.mjs')
     .then((m) => m.renderPatientList())

@@ -128,14 +128,23 @@ export async function handleCloudEquiposBulkSave(root, teams, getApi, toast) {
     }
     for (const warning of result.warnings || []) toast(warning, 'warn');
 
+    // Push to the sala(s) just assigned, not only the admin's own teams —
+    // otherwise a rotation change never reaches the target sala's room.
+    const changedSalas = [...new Set(drafts.map((d) => d.sala).filter(Boolean))];
     try {
-      await publishClinicalTeamsAfterChange();
+      if (changedSalas.length) {
+        for (const sala of changedSalas) await publishClinicalTeamsAfterChange({ sala });
+      } else {
+        await publishClinicalTeamsAfterChange();
+      }
     } catch {
       /* best-effort */
     }
 
     document.dispatchEvent(
-      new CustomEvent('rpc-clinical-teams-changed', { detail: { source: 'admin-equipos-bulk' } })
+      new CustomEvent('rpc-clinical-teams-changed', {
+        detail: { source: 'admin-equipos-bulk', sala: changedSalas[0] },
+      })
     );
     toast(
       'Guardado: ' +

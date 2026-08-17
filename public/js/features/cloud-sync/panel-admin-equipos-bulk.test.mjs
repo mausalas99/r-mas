@@ -91,6 +91,18 @@ describe('equipos bulk selection helpers', () => {
   });
 });
 
+describe('handleCloudEquiposBulkSave sala push', () => {
+  it('pushes to the sala(s) just assigned, not only the admin\'s own teams', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('./panel-admin-equipos-bulk.mjs', import.meta.url), 'utf8');
+    const idx = src.indexOf('export async function handleCloudEquiposBulkSave');
+    assert.ok(idx >= 0);
+    const body = src.slice(idx);
+    assert.match(body, /changedSalas\s*=\s*\[\.\.\.new Set\(drafts\.map\(\(d\) => d\.sala\)/);
+    assert.match(body, /for \(const sala of changedSalas\) await publishClinicalTeamsAfterChange\(\{ sala \}\)/);
+  });
+});
+
 describe('equipos bulk purge helpers', () => {
   it('reads purge targets from row data attributes', () => {
     const row = {

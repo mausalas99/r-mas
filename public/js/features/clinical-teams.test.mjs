@@ -157,6 +157,14 @@ describe('clinical-teams', () => {
     assert.match(body, /rpc-clinical-teams-changed/);
   });
 
+  it('handleProfileFormSubmit pushes to the newly picked sala, not just joined teams', () => {
+    const idx = clinicalTeamsSrc.indexOf('export async function handleProfileFormSubmit');
+    assert.ok(idx >= 0);
+    const body = clinicalTeamsSrc.slice(idx, idx + 2200);
+    assert.match(body, /rpc-clinical-teams-changed[\s\S]*sala:\s*fields\.sala/);
+    assert.match(body, /publishClinicalTeamsAfterChange\(\{\s*sala:\s*fields\.sala\s*\}\)/);
+  });
+
   it('renderJoinedTeamCard defines user before cycle edit block', () => {
     const fnStart = clinicalTeamsSrc.indexOf('function renderJoinedTeamCard(team)');
     assert.ok(fnStart >= 0);
