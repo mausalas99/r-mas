@@ -437,11 +437,12 @@ async function handleResetPassword(db, userId, request) {
 
   validatePassword(temporaryPassword);
 
-  const { salt, hash } = await hashPassword(temporaryPassword);
+  const { salt, hash, iterations } = await hashPassword(temporaryPassword);
   const now = new Date().toISOString();
   await db.batch([
-    db.prepare('UPDATE users SET password_salt = ?, password_hash = ?, updated_at = ? WHERE id = ?')
-      .bind(salt, hash, now, userId),
+    db.prepare(
+      'UPDATE users SET password_salt = ?, password_hash = ?, password_iterations = ?, updated_at = ? WHERE id = ?'
+    ).bind(salt, hash, iterations, now, userId),
     db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(userId),
   ]);
 

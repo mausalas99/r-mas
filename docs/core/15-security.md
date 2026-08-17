@@ -9,9 +9,18 @@ description: "Local SQLCipher, opt-in Nube (Cloudflare), and leftover LAN perime
 
 R+ is **local-first** with optional **Nube** (Cloudflare) room sync. It is not a certified EMR.
 
-**Intended Nube crypto** (not implemented): encrypt on the client → Cloudflare stores opaque ciphertext → peers decrypt locally. Cloudflare must not read PHI.
+**Client E2EE (built 2026-08-17, NOT YET DEPLOYED):** clinical *content* — nota, indicaciones,
+historia clínica, eventualidades, monitoreo/vitals, labs, todos, clinicalOps — is encrypted on
+the client (AES-256-GCM, one DEK per room) before it ever leaves the Mac. Cloudflare stores only
+opaque ciphertext for those fields. Patient *identity* fields (nombre, cama, servicio, registro,
+diagnósticos — the `entries/{id}` root and `entries/{id}/fields`) are **still plaintext**: Interno's
+phone board and the admin census view both read those server-side today, and moving them to
+bed/alias-only is a separate, larger follow-up, not done yet. See "What is encrypted now" below.
 
-**Production:** HTTPS only. Room JSON is plaintext in D1. The Worker applies LWW in the clear.
+**Production (currently live):** unchanged from before this work — HTTPS only, room JSON plaintext
+in D1, Worker applies LWW in the clear. The E2EE code above exists in the repo and is fully unit
+tested, but nothing has been deployed (`wrangler deploy`) — see "Deploy status" below before
+telling anyone Nube is encrypted.
 
 Canonical code: `cloud/sync-worker/src/crypto-at-rest.js`, `public/js/features/cloud-sync/`, `lib/db/crypto.mjs`.  
 Pilot spec: [2026-08-02-cloud-sync-free-pilot-design.md](../superpowers/specs/2026-08-02-cloud-sync-free-pilot-design.md) (V1 deferred true E2EE; at-rest AES also dropped).
@@ -68,7 +77,33 @@ Room DEK stays on enrolled devices (wrapped by the user’s Nube password or a w
 
 **Why V1 did not ship this:** Worker-side last-write-wins (`cloud/sync-worker/src/lww.js`) and Interno MIP board assembly need to **read** the snapshot. True E2EE forces merge + Interno onto clients (or a decrypting Worker, which is not E2EE). The 7.9 spec listed true E2EE as a **non-goal** and substituted Worker AES-GCM (`WORKER_DATA_KEY`). That Worker AES was later dropped for Free CPU — leaving plaintext JSON.
 
-Until envelope DEKs land, do not describe Nube as “encrypted to Cloudflare.”
+**How the 2026-08-17 build resolves this without moving merge to clients:** LWW only ever reads
+`path`, `updatedAt`, `actorId`, and a revision number — never the field **value** (confirmed by
+reading `cloud/sync-worker/src/lww.js`). So content fields can be encrypted while merge metadata
+stays plaintext, and `applyOps` keeps working server-side unchanged. The one exception was
+`monitoreo`, whose merge (`mergeMonitoreoLww`) needs to read vitals historial to merge two devices'
+readings — when a `monitoreo` value is an encrypted envelope, the Worker now skips that merge and
+does a plain LWW replace instead (same pattern already used for `clinicalOps`). Interno was left
+out of scope entirely by *not* encrypting the identity fields it depends on (see above) — cheaper
+than redesigning it tonight, at the cost of names/beds staying visible server-side for now.
+
+Until this ships to production and Interno is redesigned, do not describe Nube as fully
+"encrypted to Cloudflare" — say "clinical content is encrypted; patient names and bed/service are
+not yet."
+
+### Deploy status (2026-08-17)
+
+Built, unit tested, **nothing deployed**. This workstream was previously flagged "do not start" in
+`docs/core/20-claude-code-handoff.md` after a 2026-08-14 PBKDF2 change broke every Nube login for
+two days (see `password.js` history and `08155435`). Before running `wrangler deploy` for any of
+this:
+
+- Run `wrangler d1 migrations apply rplus-sync` for schema/006 (room DEK columns) and schema/007
+  (`password_iterations`) against a **local** D1 first, then staging if one exists.
+- The personal-Cloudflare-account and no-DPA gaps below are unchanged by this work — it closes the
+  plaintext-content gap, not the account-ownership or paperwork gaps.
+- Interno's phone board still reads patient names server-side — unaffected by this change, still a
+  real plaintext PHI path, tracked as a separate follow-up.
 
 ---
 
@@ -92,24 +127,31 @@ JSON ops over HTTPS, then a full room snapshot in D1:
 
 **Not sent:** historia clínica; VPO / listado / receta HU / med receta & pharm profile; demo patients; device-unlock passphrase.
 
+Of the above, once E2EE is deployed: monitoreo/eventualidades, notes/indicaciones, lab sidecars,
+todos, and `clinicalOps` travel and store as ciphertext. Census (name/registro/bed/service/
+diagnoses), agenda, and tombstones are unaffected — still plaintext, see "Encryption layers" below.
+
 ### Encryption layers
 
 | Layer | Choice |
 |-------|--------|
-| In transit | HTTPS to Workers. No certificate pinning. A passive sniffer sees TLS; a trusted-CA MITM (hospital proxy) sees JSON. |
-| At rest in D1 | **UTF-8 JSON.** `encodeRoomState` writes `{…}` with an empty IV. Column `room_state.ciphertext` is a leftover name. `mutations.ops_json` is plaintext for ~100 revisions. |
-| Legacy AES-GCM (Worker) | V1 substitute: Worker encrypts with `WORKER_DATA_KEY` after it already has plaintext. **Not** client E2EE. Dropped — Free CPU cannot AES multi‑MB snapshots. Small legacy blobs still decrypt when `iv` is present. |
-| Client E2EE | **Not implemented.** No encrypt-before-push / decrypt-after-pull in `public/js/features/cloud-sync/`. Envelope DEKs are NEXT. |
-| Passwords | PBKDF2-SHA-256, **50k** iterations, min 10 chars. Hashes in D1. |
+| In transit | HTTPS to Workers. No certificate pinning. A passive sniffer sees TLS; a trusted-CA MITM (hospital proxy) sees JSON (or ciphertext, once deployed — see below). |
+| At rest in D1, identity fields | **Still plaintext.** `entries/{id}` root + `entries/{id}/fields` (nombre, cama, servicio, registro, diagnósticos) — Interno + admin census read these server-side. |
+| At rest in D1, content fields | **Built, not deployed.** `public/js/features/cloud-sync/crypto.mjs` encrypts note, indicaciones, historiaClinica, eventualidades, monitoreo, labSidecars, todos, clinicalOps with AES-256-GCM (one DEK per room) before push. The Worker stores and relays ciphertext without ever holding the DEK. |
+| Legacy AES-GCM (Worker) | V1 substitute: Worker encrypts with `WORKER_DATA_KEY` after it already has plaintext. **Not** client E2EE. Dropped — Free CPU cannot AES multi‑MB snapshots. Kept only as a decode path for old rows. |
+| Room DEK wrapping | AES-256-GCM key wrapped with a key derived from the user's Nube password (PBKDF2-SHA-256, 210k iterations, client-side — not subject to the Worker's 100k platform cap). Wrapped blob stored server-side (`rooms.wrapped_dek_*`, schema/006); only the room owner can set it; any member can fetch it but still needs the password to unwrap. `public/js/features/cloud-sync/room-dek.mjs`. |
+| DEK persistence | In-memory only for now — does not survive an app restart. Recuérdame restores the session token but not the password, so there's nothing to re-derive the wrap key from until app relaunch. Known gap; extending the durable Recuérdame store to also hold the unwrapped DEK is a follow-up. |
+| Password recovery vs. DEK | Recovering an account sets a new password but does **not** re-wrap that user's existing room DEKs — a follow-up, not handled yet. |
+| Passwords | PBKDF2-SHA-256. **Per-row iteration count now** (`users.password_iterations`, schema/007) instead of one hardcoded constant — this is what a 2026-08-14 bump to 310k broke for two days, because every row was verified against the same hardcoded number regardless of how it was hashed. New hashes: 100k (the Cloudflare Workers WebCrypto hard cap — a platform rule, not a CPU-time limit; paid plans don't raise it). Existing rows: unchanged at 50k via the column's default, and verify correctly. Built and tested; **not deployed**. |
 | Sessions | 32-byte token, SHA-256 at rest, ~14-day TTL. |
 
 ### If someone intercepts
 
-| Attacker | Production (today) | Intended E2EE |
+| Attacker | Production (today, nothing deployed) | Once E2EE deploys |
 |----------|-------------------|----------------|
 | Passive Wi‑Fi / span, no TLS break | Hostnames, sizes, timing | Same |
-| TLS MITM (trusted CA / proxy) | Full clinical JSON; login password in POST | Ciphertext ops + still the login password (auth is not E2EE) |
-| Cloudflare / D1 dump / Wrangler | Full monthly room as readable JSON | Opaque blobs; no PHI without a client DEK |
+| TLS MITM (trusted CA / proxy) | Full clinical JSON; login password in POST | Ciphertext for content fields; identity fields (name, bed) and the login password still readable — auth and Interno are not E2EE |
+| Cloudflare / D1 dump / Wrangler | Full monthly room as readable JSON | Content fields (notes, labs, indicaciones, vitals) opaque without a client DEK; patient names/beds/diagnoses still readable |
 | Stolen Recuérdame file or Interno QR | Pull (or Interno board + vitals) until rotate / expiry | Still a live client — they can decrypt if they have the DEK |
 
 ---
@@ -145,9 +187,11 @@ The `'r+123'` recovery path remains for field support. Sunset when `legacy: true
 
 | Gap | Mitigation today | Roadmap |
 |-----|------------------|---------|
-| Nube D1 is plaintext JSON (not client E2EE) | HTTPS + account access control; opt-in rooms; trusted cohort | Encrypt on client, opaque D1, decrypt on client; LWW + Interno move off Worker plaintext |
-| Personal Cloudflare Free tenant | Small program; Wrangler secrets | Hospital-controlled account / jurisdiction |
-| PBKDF2 50k | Free Worker CPU budget | Raise iterations on Paid `cpu_ms` |
+| Nube content encryption built but **not deployed** | Code + tests exist (`crypto.mjs`, `room-dek.mjs`, schema/006-007); production Worker still plaintext until `wrangler deploy` runs | Deploy, then verify against a real D1 (see "Deploy status" above) |
+| Patient identity (nombre, cama, servicio, registro) stays plaintext even after deploy | Interno board + admin census need it server-side | Redesign Interno to bed/alias-only, then encrypt identity fields too |
+| DEK does not survive app restart | Re-enter Nube password once per app launch | Extend durable Recuérdame store to also hold the unwrapped DEK |
+| Password recovery doesn't re-wrap existing room DEKs | None yet — a recovered account may lose read access to old encrypted rooms | Re-wrap flow on password recovery |
+| Personal Cloudflare Free tenant | Small program; Wrangler secrets | Hospital-controlled account / jurisdiction + signed DPA (`docs/superpowers/plans/2026-08-14-nube-client-encryption-compliance.md`) |
 | Interno token in URL `?t=` | Rotate from ⇄; sala-scoped | Header-only tokens |
 | Recuérdame token on disk | File mode `0600` | Electron `safeStorage` |
 | HTTP without TLS on LAN :3738 | Dev-only / accepted LAN table | WSS + IT certs |
@@ -156,7 +200,7 @@ The `'r+123'` recovery path remains for field support. Sunset when `legacy: true
 
 ## Anti-goals (security-related)
 
-See [01-vision-north-star.md](./01-vision-north-star.md#-out-of-bounds-anti-goals): no unmanaged public EMR SaaS; Nube is opt-in turn sync, not a general-purpose cloud expediente. Do **not** claim client-encrypted PHI or encrypted-at-rest on Cloudflare until envelope DEKs ship.
+See [01-vision-north-star.md](./01-vision-north-star.md#-out-of-bounds-anti-goals): no unmanaged public EMR SaaS; Nube is opt-in turn sync, not a general-purpose cloud expediente. Envelope DEK code exists and is tested (2026-08-17) but is **not deployed** — until it is deployed, do not claim Nube is encrypted at all. Even after deploy, do **not** claim full PHI protection: patient names, beds, services, and diagnoses stay plaintext server-side until Interno is redesigned off that dependency — say "clinical content is encrypted; patient identity is not yet."
 
 ## Related
 

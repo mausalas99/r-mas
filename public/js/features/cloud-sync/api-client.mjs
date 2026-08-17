@@ -1,6 +1,8 @@
 const API_PREFIX = '/api/sync/v1';
 
 import { cloudSyncHttpFetch } from './api-transport.mjs';
+import { getCachedRoomDek } from './room-dek.mjs';
+import { encryptOpsForPush, decryptOpsFromPull, decryptRoomStateFromPull } from './cloud-sync-crypto-wire.mjs';
 
 /** @param {Response} res @param {Record<string, unknown>} data */
 function httpErrorFromResponse(res, data) {
@@ -34,9 +36,10 @@ function assertCloudBaseUrl(baseUrl) {
  *   getBaseUrl: () => string,
  *   getToken: () => string,
  *   getAdminKey?: () => string,
+ *   getRoomDek?: (roomId: string) => CryptoKey | null,
  * }} deps
  */
-export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey }) {
+export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomDek = getCachedRoomDek }) {
   /**
    * @param {string} path
    * @param {{ method?: string, body?: unknown }} [opts]
@@ -79,12 +82,29 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey }) {
     activeRoom: () => req('/rooms/active'),
     getRoom: (roomId) => req(`/rooms/${roomId}`),
     leaveRoom: (roomId) => req(`/rooms/${roomId}/leave`, { method: 'POST', body: {} }),
-    pull: (roomId, since, opts) => {
+    getRoomDek: (roomId) => req(`/rooms/${roomId}/dek`),
+    setRoomDek: (roomId, body) => req(`/rooms/${roomId}/dek`, { method: 'PUT', body }),
+    pull: async (roomId, since, opts) => {
       const q = new URLSearchParams({ since: String(since ?? 0) });
       if (opts?.mobile) q.set('mobile', '1');
-      return req(`/rooms/${roomId}/pull?${q.toString()}`);
+      const data = await req(`/rooms/${roomId}/pull?${q.toString()}`);
+      const dek = getRoomDek(roomId);
+      if (Array.isArray(data?.ops)) {
+        data.ops = await decryptOpsFromPull(dek, data.ops);
+      }
+      if (data?.state) {
+        data.state = await decryptRoomStateFromPull(dek, data.state);
+      }
+      return data;
     },
-    push: (roomId, body) => req(`/rooms/${roomId}/mutations`, { method: 'POST', body }),
+    push: async (roomId, body) => {
+      const dek = getRoomDek(roomId);
+      const encryptedBody =
+        dek && Array.isArray(body?.ops)
+          ? { ...body, ops: await encryptOpsForPush(dek, body.ops) }
+          : body;
+      return req(`/rooms/${roomId}/mutations`, { method: 'POST', body: encryptedBody });
+    },
 
     adminOverview: () => req('/admin/overview'),
     adminRooms: () => req('/admin/rooms'),

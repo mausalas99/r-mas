@@ -73,11 +73,13 @@ export async function handleRecover(db, request, ip) {
 
   validatePassword(newPassword);
 
-  const { salt, hash } = await hashPassword(newPassword);
+  const { salt, hash, iterations } = await hashPassword(newPassword);
   const now = new Date().toISOString();
   await db
-    .prepare(`UPDATE users SET password_salt = ?, password_hash = ?, updated_at = ? WHERE id = ?`)
-    .bind(salt, hash, now, row.id)
+    .prepare(
+      `UPDATE users SET password_salt = ?, password_hash = ?, password_iterations = ?, updated_at = ? WHERE id = ?`
+    )
+    .bind(salt, hash, iterations, now, row.id)
     .run();
 
   await db.prepare(`DELETE FROM sessions WHERE user_id = ?`).bind(row.id).run();

@@ -44,17 +44,17 @@ async function handleRegister(db, request, ip) {
     throw new SyncError('conflict', 'Ese usuario ya existe.');
   }
 
-  const { salt, hash } = await hashPassword(password);
+  const { salt, hash, iterations } = await hashPassword(password);
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
 
   try {
     await db
       .prepare(
-        `INSERT INTO users (id, username, password_salt, password_hash, display_name, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO users (id, username, password_salt, password_hash, password_iterations, display_name, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      .bind(id, username, salt, hash, displayName, now, now)
+      .bind(id, username, salt, hash, iterations, displayName, now, now)
       .run();
   } catch (err) {
     if (String(err?.message || '').includes('UNIQUE')) {
@@ -91,7 +91,7 @@ async function handleLogin(db, request, ip) {
 
   const row = await db
     .prepare(
-      `SELECT id, username, display_name, password_salt, password_hash, recovery_hash, disabled
+      `SELECT id, username, display_name, password_salt, password_hash, password_iterations, recovery_hash, disabled
        FROM users WHERE username = ? COLLATE NOCASE`
     )
     .bind(username)
@@ -104,7 +104,7 @@ async function handleLogin(db, request, ip) {
 
   const saltHex = dbBlobToHex(row.password_salt);
   const hashHex = dbBlobToHex(row.password_hash);
-  const ok = await verifyPassword(password, saltHex, hashHex);
+  const ok = await verifyPassword(password, saltHex, hashHex, Number(row.password_iterations) || undefined);
   if (!ok) {
     recordFailure(rlKey);
     throw new SyncError('invalid_credentials', 'Usuario o contraseña incorrectos.');

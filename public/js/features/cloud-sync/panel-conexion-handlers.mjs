@@ -6,6 +6,7 @@ import { isValidUsernameFormat, normalizeUsername } from '../../clinical-usernam
 import { isCutoverPending } from './cutover-flags.mjs';
 import { userHasJoinedTeam } from './panel-conexion-html.mjs';
 import { showRecoveryCodeModal } from './recovery-modal.mjs';
+import { cacheSessionPassword, clearRoomDekCache, ensureRoomDek, loadRoomDek } from './room-dek.mjs';
 
 /** Prefer explicit checkbox; else sticky Recuérdame preference; else persist on desktop. */
 function resolveRememberFromSection(section, selector, deps) {
@@ -169,6 +170,7 @@ export async function handleLogin(deps) {
       username: form.username,
       password: form.password,
     });
+    cacheSessionPassword(form.password);
     const prevToken = deps.getCloudSyncToken();
     enterCloudSession(deps, data.token, form.remember, prevToken);
     deps.toast(
@@ -219,6 +221,7 @@ export async function handleRecover(deps) {
       recoveryCode: form.recoveryCode,
       newPassword: form.password,
     });
+    cacheSessionPassword(form.password);
     const prevToken = deps.getCloudSyncToken();
     enterCloudSession(
       deps,
@@ -260,6 +263,7 @@ export async function handleCreateRoom(deps) {
     const data = await deps.getApi().createRoom({ name, sala: deps.normalizedSala });
     const room = data.room;
     persistCloudRoom(deps, room);
+    await ensureRoomDek(deps.getApi(), room.id).catch(() => {});
     deps.renderConnected(room);
     deps.toast('Sala creada: ' + room.code, 'success');
   } catch (err) {
@@ -284,6 +288,7 @@ export async function handleJoinRoom(deps) {
     const data = await deps.getApi().joinRoom({ code });
     const room = data.room;
     persistCloudRoom(deps, room);
+    await loadRoomDek(deps.getApi(), room.id);
     deps.renderConnected(room);
     deps.toast('Unido a la sala ' + room.code + '.', 'success');
   } catch (err) {
@@ -315,6 +320,7 @@ export async function handleLogout(deps) {
   const prevToken = deps.getCloudSyncToken();
   deps.stopRuntime();
   try { await deps.getApi().logout(); } catch { /* ignore */ }
+  clearRoomDekCache();
   deps.clearCloudSyncSession();
   deps.setCloudUser(null);
   deps.onCloudRoomChange?.(false);

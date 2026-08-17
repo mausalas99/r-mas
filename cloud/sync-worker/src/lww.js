@@ -140,9 +140,17 @@ function setEntryField(state, patientId, field, value) {
   state.entries[idx] = { ...state.entries[idx], [field]: value };
 }
 
+/** @param {unknown} value */
+function isEncryptedEnvelope(value) {
+  return !!value && typeof value === 'object' && /** @type {any} */ (value).enc === 1;
+}
+
 /**
  * monitoreo carries vitals historial + estado actual — a blind LWW replace wipes
  * whichever side loses the updatedAt race. Merge instead of overwrite.
+ *
+ * Encrypted envelope: the Worker cannot read either side to merge historial —
+ * same bypass as clinicalOps in applyOpToState below. Newest op replaces whole.
  * @param {RoomSyncState} state @param {string} patientId @param {unknown} value
  */
 function setMonitoreoField(state, patientId, value) {
@@ -156,7 +164,10 @@ function setMonitoreoField(state, patientId, value) {
     return;
   }
   const current = state.entries[idx].monitoreo;
-  const merged = current ? mergeMonitoreoLww(current, value) : value;
+  const merged =
+    current && !isEncryptedEnvelope(value) && !isEncryptedEnvelope(current)
+      ? mergeMonitoreoLww(current, value)
+      : value;
   state.entries[idx] = { ...state.entries[idx], monitoreo: merged };
 }
 
@@ -220,7 +231,7 @@ function applyOpToState(state, op) {
 
   if (path === 'clinicalOps') {
     // Encrypted envelope: client already merged before push; Worker stores opaque blob.
-    if (value !== null && typeof value === 'object' && value.enc === 1) {
+    if (isEncryptedEnvelope(value)) {
       state.clinicalOps = value;
     } else {
       state.clinicalOps = mergeClinicalOpsLww(state.clinicalOps, value);

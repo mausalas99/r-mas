@@ -455,4 +455,26 @@ describe('applyOps LWW', () => {
     ]));
     assert.equal(s.entries.find((e) => e.id === 'p-new').monitoreo.historial.length, 1);
   });
+
+  it('encrypted monitoreo bypasses historial merge — Worker cannot read ciphertext, newest wins whole', () => {
+    let s = emptyState();
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p1/monitoreo',
+        value: { historial: [{ id: 'm1', recordedAt: '2026-08-01T08:00:00.000Z', tas: 120 }] },
+        updatedAt: '2026-08-01T08:00:00.000Z',
+        actorId: 'desktop',
+      },
+    ]));
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p1/monitoreo',
+        value: { enc: 1, iv: 'AAAA', ct: 'BBBB' },
+        updatedAt: '2026-08-01T09:00:00.000Z',
+        actorId: 'ipad',
+      },
+    ]));
+    const row = s.entries.find((e) => e.id === 'p1');
+    assert.deepEqual(row.monitoreo, { enc: 1, iv: 'AAAA', ct: 'BBBB' });
+  });
 });

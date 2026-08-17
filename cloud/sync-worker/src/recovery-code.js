@@ -1,5 +1,10 @@
 // cloud/sync-worker/src/recovery-code.js
-import { hashPassword, verifyPassword } from './password.js';
+import { hashPassword, verifyPassword, LEGACY_ITERATIONS } from './password.js';
+
+/** recovery_hash rows have no per-record iteration column (unlike password_hash /
+ * schema/007) — pin both sides to the same fixed constant so hash and verify never
+ * drift apart. Recovery codes are high-entropy random strings, not user-chosen
+ * passwords, so they don't need the same PBKDF2 hardening as password_hash. */
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CODE_RE = /^R\+[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/;
@@ -33,11 +38,11 @@ export function normalizeRecoveryCode(raw) {
 export async function hashRecoveryCode(code) {
   const normalized = normalizeRecoveryCode(code);
   if (!normalized) throw new Error('invalid_recovery_code');
-  return hashPassword(normalized);
+  return hashPassword(normalized, LEGACY_ITERATIONS);
 }
 
 export async function verifyRecoveryCode(code, saltHex, hashHex) {
   const normalized = normalizeRecoveryCode(code);
   if (!normalized || !saltHex || !hashHex) return false;
-  return verifyPassword(normalized, saltHex, hashHex);
+  return verifyPassword(normalized, saltHex, hashHex, LEGACY_ITERATIONS);
 }

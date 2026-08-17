@@ -46,7 +46,8 @@ Plan a hard task: new session `claude --agent ceo-fable --effort high` (or `/mod
 | Plan | Path |
 |------|------|
 | **Update feed Worker (this job)** | `docs/superpowers/specs/2026-08-15-update-feed-worker-design.md` |
-| Nube client-encryption compliance review | `docs/superpowers/plans/2026-08-14-nube-client-encryption-compliance.md` — **do not start** |
+| Nube client-encryption compliance review | `docs/superpowers/plans/2026-08-14-nube-client-encryption-compliance.md` |
+| Nube E2EE implementation | `docs/superpowers/plans/2026-08-17-nube-e2ee.md` — **built + tested 2026-08-17, by explicit user request overriding the "do not start" below. NOT DEPLOYED.** Content fields (notes/labs/indicaciones/monitoreo/clinicalOps) encrypt client-side; patient identity (name/bed/service) stays plaintext — Interno redesign deferred. Password iteration versioning (schema/007) also built, not deployed. See `docs/core/15-security.md` "Deploy status". Before deploying: resolve the personal-Cloudflare-account + no-DPA gaps in the compliance review above, and re-verify PBKDF2 iteration values against a real D1 migration — the 2026-08-14 incident that broke Nube login for two days was exactly this kind of change. |
 | Startup lag optimization | `docs/superpowers/plans/2026-08-15-startup-lag-optimization.md` — **do not start** |
 
 ---
