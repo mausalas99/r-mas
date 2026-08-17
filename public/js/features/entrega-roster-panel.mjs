@@ -35,7 +35,7 @@ const STATUS_LABELS = {
   unstable: 'Inestable',
   stable: 'Estable',
   postop: 'Postoperatorio',
-  '': '—',
+  '': 'Estable',
 };
 
 const STATUS_CLASS = {
@@ -43,7 +43,7 @@ const STATUS_CLASS = {
   unstable: 'roster-sbadge--unstable',
   stable: 'roster-sbadge--stable',
   postop: 'roster-sbadge--stable',
-  '': 'roster-sbadge--none',
+  '': 'roster-sbadge--stable',
 };
 
 /** @param {object} g — guardia map entry */
@@ -110,7 +110,7 @@ function renderRosterRow(p, guardiasMap) {
   const summary = rowContextSummary(g);
   const icons = rowIcons(g);
   const status = rowStatus(g);
-  const label = STATUS_LABELS[status] || '—';
+  const label = STATUS_LABELS[status] || 'Estable';
   const cls = STATUS_CLASS[status] || 'roster-sbadge--none';
   const hasCtx = !!summary;
 

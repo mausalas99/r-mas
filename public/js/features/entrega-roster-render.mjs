@@ -17,7 +17,7 @@ export const ROSTER_STATUS_LABELS = {
   unstable: 'Inestable',
   stable: 'Estable',
   postop: 'Postoperatorio',
-  '': '—',
+  '': 'Estable',
 };
 
 export const ROSTER_STATUS_CLASS = {
@@ -25,7 +25,7 @@ export const ROSTER_STATUS_CLASS = {
   unstable: 'roster-sbadge--unstable',
   stable: 'roster-sbadge--stable',
   postop: 'roster-sbadge--stable',
-  '': 'roster-sbadge--none',
+  '': 'roster-sbadge--stable',
 };
 
 /** @param {object} g */
@@ -71,7 +71,7 @@ export function renderEntregaRosterRowHtml(p, guardiasMap) {
   const summary = entregaRosterRowContextSummary(g);
   const icons = entregaRosterRowIcons(g);
   const status = entregaRosterRowStatus(g);
-  const label = ROSTER_STATUS_LABELS[status] || '—';
+  const label = ROSTER_STATUS_LABELS[status] || 'Estable';
   const cls = ROSTER_STATUS_CLASS[status] || 'roster-sbadge--none';
   const hasCtx = !!summary;
   return `
