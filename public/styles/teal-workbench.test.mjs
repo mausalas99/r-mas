@@ -7,11 +7,18 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const read = (rel) => readFileSync(join(root, rel), 'utf8');
 
-test('accent-soft chips are elevated in light and clinical blue in dark, not ochre', () => {
+test('accent is teal, the only non-clinical brand color', () => {
   const css = read('public/tokens.css');
-  assert.match(css, /:root\s*\{[^}]*--color-accent-soft:\s*color-mix\(in oklab,\s*var\(--color-ink\) 8%,\s*var\(--color-elevated\)/s);
+  assert.match(css, /:root\s*\{[^}]*--color-accent:\s*oklch\(0\.52 0\.09 195\)/s);
+  assert.match(css, /html\.dark\s*\{[^}]*--color-accent:\s*oklch\(0\.62 0\.09 195\)/s);
+  assert.equal(/:root\s*\{[^}]*--color-accent:\s*var\(--color-ink\)/s.test(css), false);
+});
+
+test('accent-soft chips carry the teal accent, not ochre or plain ink', () => {
+  const css = read('public/tokens.css');
+  assert.match(css, /:root\s*\{[^}]*--color-accent-soft:\s*color-mix\(in oklab,\s*var\(--color-accent\) 12%,\s*var\(--color-elevated\)/s);
   assert.match(css, /html\.dark\s*\{[^}]*--color-accent-soft:\s*color-mix\(in oklab,\s*var\(--color-accent\) 18%/s);
-  assert.match(css, /--color-accent-soft-text:\s*var\(--color-ink\)/);
+  assert.match(css, /--color-accent-soft-text:\s*var\(--color-accent\)/);
   assert.equal(/:root\s*\{[^}]*--color-accent-soft:[^;]*--color-warm/s.test(css), false);
   assert.equal(/html\.dark\s*\{[^}]*--color-accent-soft:[^;]*--color-warm/s.test(css), false);
   assert.equal(/html\.dark\s*\{[^}]*--shell-gap:[^;]*#3d2430/s.test(css), false);

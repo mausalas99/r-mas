@@ -1,4 +1,4 @@
-/* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
+/* Teal workbench · utilitarian clinical · theme: docs/superpowers/specs/2026-08-17-teal-workbench-ui-design.md */
 /* R+ micro-interactions (transitions.dev-inspired, vanilla CSS) */
 
 @keyframes fade-in {
@@ -437,5 +437,34 @@ html.motion-sobrio .todo-prio-chip.todo-prio-chip--pulse {
   .ui-pressable:active {
     transform: none;
     transition: none;
+  }
+}
+
+/* ── Value alert pulse — a monitored value crosses out of range ────────
+   Teal workbench spec §11c "om-pulse": two reps, then stops. Never a
+   permanent blink — clinical values must stay readable without motion. */
+@keyframes value-alert-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--color-danger-ring); }
+  45% { box-shadow: 0 0 0 5px var(--color-danger-ring); }
+}
+
+.value-alert-pulse {
+  animation: value-alert-pulse 1.4s var(--ease-out) 2;
+}
+
+/* ── Progress sweep — vitals-round progress bar fill, on value change only ── */
+@keyframes progress-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.progress-sweep-fill {
+  animation: progress-sweep 0.5s var(--ease-out) 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .value-alert-pulse,
+  .progress-sweep-fill {
+    animation: none !important;
   }
 }

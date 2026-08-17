@@ -2,18 +2,18 @@
 type: "core"
 name: "Design System"
 status: "stable"
-description: "Pointer to Hybrid H UI tokens and conventions for R+."
+description: "Pointer to Teal workbench UI tokens and conventions for R+."
 ---
 
 # Design System
 
 **Source of truth:** [`design.md`](../../design.md) and [`public/tokens.css`](../../public/tokens.css).  
-**Program:** Apple Hybrid UI overhaul — Spec A foundation landed; Spec B+ for chrome/overlays/clinical surfaces.
+**Program:** Teal workbench (2026-08-17) — phase 1 (tokens + pilot screen) in progress. See `docs/superpowers/plans/2026-08-17-teal-workbench-ui-redesign.md`. Supersedes the Hybrid H / Warm instrument program below, now historical.
 
 ## Principles (summary)
 
 - High information density; borders and type over color.
-- Ink accent (`--color-accent` = `--color-ink`); semantic danger/success only.
+- Teal accent (`--color-accent` = `oklch(0.52 0.09 195)` light / `oklch(0.62 0.09 195)` dark); red/amber/green reserved for clinical values and status only.
 - Solid workbench + glass floating layers only (never glass-on-glass).
 - System UI for chrome; IBM Plex Mono for labs/values.
 - Dark is first-class; honor reduced motion/transparency.
@@ -40,6 +40,6 @@ description: "Pointer to Hybrid H UI tokens and conventions for R+."
 - Shell: `public/js/app-shell.mjs`
 
 
-## Hybrid H
+## Historial
 
-**Spec D complete (2026-08-03):** Full desktop adoption per `design.md` and program spec `2026-08-03-apple-hybrid-ui-overhaul-program.md`.
+- **Hybrid H:** Spec D complete (2026-08-03), full desktop adoption. Superseded by Warm instrument (2026-08-13), then by Teal workbench (2026-08-17). See `design.md` "Historial".
