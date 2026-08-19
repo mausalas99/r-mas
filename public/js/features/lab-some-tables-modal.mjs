@@ -8,9 +8,6 @@ let rt = {
   getParsed() {
     return null;
   },
-  isPaseMode() {
-    return false;
-  },
   syncLabCopyFab() {},
   syncLabOutputChrome() {},
 };
@@ -34,7 +31,6 @@ export function syncLabSomeTablesBtn(show) {
 }
 
 export function openLabSomeTablesModal() {
-  if (rt.isPaseMode()) return;
   var parsed = rt.getParsed();
   if (!parsed || !parsed.departments || !parsed.departments.length) {
     rt.showToast('No hay tablas SOME para este día', 'info');
@@ -70,9 +66,14 @@ export function closeLabSomeTablesModal() {
   var backdrop = document.getElementById('lab-some-tables-backdrop');
   var body = document.getElementById('lab-some-tables-modal-body');
   if (!backdrop) return;
+  // Only sync chrome if this call actually closed an open modal — syncLabOutputChrome()
+  // calls back into closeLabSomeTablesModal(), and re-syncing on an already-closed modal
+  // was an unconditional cycle (infinite recursion once this modal's DOM had been mounted
+  // at least once).
+  var wasOpen = backdrop.classList.contains('open');
   backdrop.classList.remove('open');
   backdrop.setAttribute('aria-hidden', 'true');
   document.documentElement.classList.remove('lab-some-tables-modal-open');
   if (body) body.innerHTML = '';
-  rt.syncLabOutputChrome();
+  if (wasOpen) rt.syncLabOutputChrome();
 }

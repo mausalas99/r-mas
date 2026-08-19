@@ -96,12 +96,9 @@ function resolveGlobalFn(name) {
 function openPatientChart(patientId) {
   const selectFn = resolveGlobalFn('selectPatient');
   if (selectFn) selectFn(patientId);
-  const openSectionFn = resolveGlobalFn('openPaseSectionInNormal');
-  if (openSectionFn) {
-    openSectionFn('expediente');
-    return;
-  }
   if (getUiDensity() === 'guardia') setUiDensity('normal');
+  const switchInnerTabFn = resolveGlobalFn('switchInnerTab');
+  if (switchInnerTabFn) switchInnerTabFn('notas');
 }
 
 function renderMenuStep(patientId, patientLabel) {

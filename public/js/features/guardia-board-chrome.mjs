@@ -27,7 +27,17 @@ import {
 import { vitalsStructuredMonitoringEnabled } from '../../../lib/entrega/entrega-vitals-plan.mjs';
 import { isGuardiaChipCritical } from '../../../lib/entrega/guardia-chip-critical.mjs';
 import { wireGuardiaPatientActionSheetDismiss } from './guardia-patient-action-sheet.mjs';
+import {
+  alteradosForPatient,
+  patientPendientes,
+  isPatientAdmittedToday,
+} from './guardia-census-table.mjs';
+import { isPatientAdmissionIncomplete } from '../patient-admission-incomplete.mjs';
 import { renderGuardiaBoard } from './guardia-board-render.mjs';
+import { mountModeFrame } from './workbench/mode-frame.mjs';
+import { mountCountersBand } from './workbench/counters-band.mjs';
+import { mountEmptyState } from './workbench/empty-state.mjs';
+import { openCommandPaletteFromShell } from '../app-shell-lazy-panels.mjs';
 import {
   isAppShellInstalled,
   isEntregaClickBusy,
@@ -42,6 +52,51 @@ export function resolveGuardiaGridRank(user) {
   const raw = String(user?.rank || '').trim();
   if (raw === 'R4') return 'R4';
   return effectiveClinicalRank(user);
+}
+
+/**
+ * Mode frame (workbench kit band 1) for the Guardia pane — mode name + one teal
+ * primary ("Entregar guardia") + Censo PDF secondary + the ⌘/ shortcut.
+ * The primary button keeps the `btn-guardia-entrega-phase` id so the existing
+ * entrega-phase click/state wiring (wireGuardiaEntregaPhaseButton, below) still
+ * finds it after each remount — it is NOT wired here to avoid a double listener.
+ */
+export function renderGuardiaModeFrame() {
+  const host = document.getElementById('guardia-mode-frame');
+  if (!host) return;
+  mountModeFrame(host, {
+    modeName: 'Guardia',
+    secondaryActions: [
+      {
+        label: 'Censo PDF',
+        title: 'Generar PDF del censo de guardia',
+        onClick: () => {
+          if (typeof window !== 'undefined' && typeof window.exportCensoPdfFromHelp === 'function') {
+            window.exportCensoPdfFromHelp();
+          }
+        },
+      },
+    ],
+    onShortcut: openCommandPaletteFromShell,
+    primaryAction: { label: 'Entregar guardia' },
+  });
+  const primaryBtn = host.querySelector('[data-wb-primary]');
+  if (primaryBtn) primaryBtn.id = 'btn-guardia-entrega-phase';
+}
+
+/**
+ * Right column "Signos recibidos" card (screen 6a/6b) — there is no intern
+ * vitals-capture pipeline feeding Guardia yet (Phase 11, deferred). Render the
+ * shared empty state instead of a fake panel or a bare zero.
+ */
+export function renderGuardiaSignosRecibidosPanel() {
+  const host = document.getElementById('guardia-signos-recibidos');
+  if (!host) return;
+  mountEmptyState(host, {
+    label: 'Signos recibidos',
+    missing: 'Todavía no hay una captura de signos de internos conectada a Guardia.',
+    whenArrives: 'Llega con el Interno móvil (fase 11), pendiente de las decisiones de Nube y PHI.',
+  });
 }
 
 /** @param {Record<string, unknown>|null|undefined} settings */
@@ -150,7 +205,9 @@ export function syncEntregaPhaseChrome(opts = {}) {
     btn.hidden = !!rosterOpen;
     btn.classList.toggle('is-active', active);
     btn.setAttribute('aria-pressed', String(active));
-    btn.textContent = 'Entrega';
+    // One teal primary, top right (screen 6a/6b) — the label stays fixed;
+    // state is conveyed by title + the status line below, not by re-labeling it.
+    btn.textContent = 'Entregar guardia';
     btn.title = active
       ? 'Continuar entrega — listado de pacientes'
       : opts.turnoActivo
@@ -161,7 +218,7 @@ export function syncEntregaPhaseChrome(opts = {}) {
   if (status) {
     if (active && phase?.coveringLabel && !rosterOpen) {
       status.hidden = false;
-      status.textContent = `Entregando a ${phase.coveringLabel} · pulsa Entrega para abrir el listado`;
+      status.textContent = `Entregando a ${phase.coveringLabel} · pulsa "Entregar guardia" para abrir el listado`;
     } else {
       status.hidden = true;
       status.textContent = '';
@@ -240,6 +297,25 @@ export function enrichPatientForGuardiaCard(p, guardiasMap, teamCtx = {}) {
   };
 }
 
+function isToday(iso) {
+  if (!iso) return false;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return false;
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
+
+function lastVitalsRecordedAt(p) {
+  const hist = Array.isArray(p?.monitoreo?.historial) ? p.monitoreo.historial : [];
+  if (!hist.length) return null;
+  const last = hist[hist.length - 1];
+  return String(last?.recordedAt || last?.registeredAt || last?.createdAt || '') || null;
+}
+
 /**
  * @param {Array<ReturnType<typeof enrichPatientForGuardiaCard>>} censusPatients
  * @param {Map<string, object>} guardiasMap
@@ -250,6 +326,12 @@ export function computeGuardiaSummary(censusPatients, guardiasMap) {
   let vitalsMonitored = 0;
   let vitalsOverdue = 0;
   let vitalsDueSoon = 0;
+  let vitalsReceivedToday = 0;
+  let vitalsOutOfRange = 0;
+  let pendientesOpen = 0;
+  let pendientesOverdue = 0;
+  let admissionsToday = 0;
+  let admissionsEnValoracion = 0;
   censusPatients.forEach((p) => {
     const meta = guardiasMap.get(p.id) || p.guardiaMeta || {};
     if (p.isCritical) critical += 1;
@@ -259,6 +341,17 @@ export function computeGuardiaSummary(censusPatients, guardiasMap) {
     const banner = vitalsBannerForGuardia(meta);
     if (banner.cls === 'breached') vitalsOverdue += 1;
     else if (banner.cls === 'warning') vitalsDueSoon += 1;
+    if (isToday(lastVitalsRecordedAt(p))) {
+      vitalsReceivedToday += 1;
+      if (alteradosForPatient(p).chips.length > 0) vitalsOutOfRange += 1;
+    }
+    const pendientes = patientPendientes(p.id);
+    pendientesOpen += pendientes.open.length;
+    pendientesOverdue += pendientes.overdue.length;
+    if (isPatientAdmittedToday(p)) {
+      admissionsToday += 1;
+      if (isPatientAdmissionIncomplete(p)) admissionsEnValoracion += 1;
+    }
   });
   return {
     total: censusPatients.length,
@@ -267,61 +360,72 @@ export function computeGuardiaSummary(censusPatients, guardiasMap) {
     vitalsMonitored,
     vitalsOverdue,
     vitalsDueSoon,
+    vitalsReceivedToday,
+    vitalsOutOfRange,
+    pendientesOpen,
+    pendientesOverdue,
+    admissionsToday,
+    admissionsEnValoracion,
   };
+}
+
+function guardiaVitalsCounterDetail(summary) {
+  if (summary.vitalsOutOfRange > 0) return `${summary.vitalsOutOfRange} fuera de rango sin revisar`;
+  if (summary.vitalsOverdue > 0) return `${summary.vitalsOverdue} vencido${summary.vitalsOverdue === 1 ? '' : 's'}`;
+  if (summary.vitalsDueSoon > 0) return `${summary.vitalsDueSoon} pronto`;
+  return '';
+}
+
+/**
+ * Counters band (workbench kit) — Toma de signos (progress) / Pendientes (alert
+ * cell) / Ingresos, in that exact order (screen 6a/6b).
+ * @param {ReturnType<typeof computeGuardiaSummary>} summary
+ * @returns {import('./workbench/counters-band.mjs').CounterCell[]}
+ */
+function guardiaCounterCells(summary) {
+  const vitalsPercent =
+    summary.vitalsMonitored > 0
+      ? Math.round((summary.vitalsReceivedToday / summary.vitalsMonitored) * 100)
+      : 0;
+  const pendientesDetail =
+    summary.pendientesOverdue > 0
+      ? `${summary.pendientesOverdue} vencido${summary.pendientesOverdue === 1 ? '' : 's'}`
+      : '';
+  const ingresosDetail =
+    summary.admissionsEnValoracion > 0 ? `${summary.admissionsEnValoracion} en valoración` : '';
+  return [
+    {
+      label: 'Toma de signos · 08:00',
+      figure:
+        summary.vitalsMonitored > 0
+          ? `${summary.vitalsReceivedToday} de ${summary.vitalsMonitored} recibidos`
+          : 'Sin plan de signos',
+      detail: guardiaVitalsCounterDetail(summary),
+      progress: { percent: vitalsPercent },
+    },
+    {
+      label: 'Pendientes',
+      figure: `${summary.pendientesOpen} abierto${summary.pendientesOpen === 1 ? '' : 's'}`,
+      detail: pendientesDetail,
+      tone: 'alert',
+    },
+    {
+      label: 'Ingresos',
+      figure: `${summary.admissionsToday} nuevo${summary.admissionsToday === 1 ? '' : 's'}`,
+      detail: ingresosDetail,
+    },
+  ];
 }
 
 /**
  * @param {ReturnType<typeof computeGuardiaSummary>} summary
- * @param {{ turnoActivo?: boolean }} opts
+ * @param {{ turnoActivo?: boolean }} [opts] unused — kept for call-site compatibility
  */
 export function renderGuardiaSummaryTiles(summary, opts = {}) {
+  void opts;
   const host = document.getElementById('guardia-summary');
   if (!host) return;
-
-  const vitalsTitle =
-    summary.vitalsMonitored > 0
-      ? `${summary.vitalsMonitored} con monitoreo de signos` +
-        (summary.vitalsOverdue > 0
-          ? ` · ${summary.vitalsOverdue} vencido${summary.vitalsOverdue === 1 ? '' : 's'}`
-          : summary.vitalsDueSoon > 0
-            ? ` · ${summary.vitalsDueSoon} pronto`
-            : '')
-      : 'Sin plan de signos en entregas guardadas';
-
-  const stats = [
-    {
-      value: summary.total,
-      label: 'censo',
-      title: opts.turnoActivo ? 'En censo — turno activo' : 'En censo — tu alcance',
-    },
-    {
-      value: summary.critical,
-      label: 'críticos',
-      hot: summary.critical > 0,
-      title: 'Críticos — revisar primero',
-    },
-    {
-      value: summary.vitalsMonitored || 0,
-      label: 'signos',
-      hot: summary.vitalsOverdue > 0,
-      warn: !summary.vitalsOverdue && summary.vitalsDueSoon > 0,
-      title: vitalsTitle,
-    },
-    {
-      value: summary.pending,
-      label: 'estudios',
-      title: 'Estudios pendientes de entrega',
-    },
-  ];
-
-  host.innerHTML = stats
-    .map((stat) => {
-      const classes = ['guardia-stat'];
-      if (stat.hot) classes.push('guardia-stat--hot');
-      else if (stat.warn) classes.push('guardia-stat--warn');
-      return `<div class="${classes.join(' ')}" title="${stat.title}"><span class="guardia-stat-value">${stat.value}</span><span class="guardia-stat-label">${stat.label}</span></div>`;
-    })
-    .join('');
+  mountCountersBand(host, guardiaCounterCells(summary));
 }
 
 /**
@@ -344,13 +448,13 @@ export function renderGuardiaCensusHead(count, state) {
       ? 'Agrupados por equipo · críticos e inestables arriba · por cama'
       : 'Orden por cama · críticos e inestables arriba';
 
+  // The patient count now lives on the census table's own card header
+  // ("Censo · N pacientes", guardia-census-table.mjs) — this strip keeps only
+  // the triage sort hint and the learn nudge, so the count is never duplicated.
+  void count;
   host.innerHTML = `
     <div class="guardia-census-head-inner">
       <div class="guardia-census-head-main">
-        <h2 class="guardia-section-title">
-          <span class="guardia-section-title-label">Pacientes</span>
-          <span class="guardia-census-count">${count}</span>
-        </h2>
         <p class="guardia-section-sub">${sortHint}</p>
       </div>
     </div>`;

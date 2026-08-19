@@ -21,10 +21,9 @@ import {
   buildLabRepoBatchJobs,
   setLabRepoBatchJobStatus,
   abortPendingLabRepoBatchJobs,
-  labRepoBatchJobStatusLabel,
   jobStatusFromFetchKind,
 } from './lab-repo-batch-model.mjs';
-import { mountLoadingState, destroyLoadingState } from '../ui-loading-state.mjs';
+import { buildLabChemistrySkeletonHtml } from '../ui-skeleton.mjs';
 import {
   resolveActivePatientBatchRow,
   resolveBatchOpenMode,
@@ -37,7 +36,6 @@ import { requestSilentUpdateCheck } from './platform/updater/silent-check.mjs';
 var batchRows = [];
 /** @type {import('./lab-repo-batch-model.mjs').LabRepoBatchJob[]} */
 var batchJobs = [];
-var batchLoadingHost = null;
 var batchBusy = false;
 var batchAbort = false;
 var batchSinglePatientMode = false;
@@ -148,39 +146,26 @@ function syncBatchCount() {
   syncConfirmButtonLabel();
 }
 
-function setBatchProgress(text, visible) {
+/**
+ * Teal workbench §11c "Cargando labs": while the single-patient "Actualizar
+ * labs" flow is fetching/parsing, show the K/Cr/BUN/Hb chemistry-grid
+ * skeleton inline (never a full-screen spinner or a generic dots label).
+ */
+function setBatchProgress(_text, visible) {
   var el = document.getElementById('lab-repo-batch-progress');
   if (!el) return;
   el.hidden = !visible;
-  if (!visible) {
-    destroyLoadingState(batchLoadingHost);
-    batchLoadingHost = null;
-    el.textContent = '';
-    return;
-  }
-  if (!batchLoadingHost) {
-    el.textContent = '';
-    batchLoadingHost = mountLoadingState(el, { label: text || 'Importando…', variant: 'Dots' });
-  } else if (text) {
-    batchLoadingHost.label = text;
-  }
-}
-
-function jobStatusClass(status) {
-  if (status === 'ok') return 'lab-repo-batch-job--ok';
-  if (status === 'empty') return 'lab-repo-batch-job--empty';
-  if (status === 'error') return 'lab-repo-batch-job--error';
-  if (status === 'running') return 'lab-repo-batch-job--running';
-  if (status === 'aborted') return 'lab-repo-batch-job--aborted';
-  return 'lab-repo-batch-job--pending';
+  el.innerHTML = visible ? buildLabChemistrySkeletonHtml() : '';
 }
 
 function renderSidebarQueue() {
   var root = document.getElementById('lab-repo-batch-queue');
-  var list = document.getElementById('lab-repo-batch-queue-list');
+  var fill = document.getElementById('lab-repo-batch-queue-fill');
   var meta = document.getElementById('lab-repo-batch-queue-meta');
   var stopBtn = document.getElementById('lab-repo-batch-queue-stop');
-  if (!root || !list) return;
+  var spinner = document.getElementById('lab-repo-batch-queue-spinner');
+  var btnLabel = document.getElementById('lab-repo-batch-queue-btn-label');
+  if (!root) return;
 
   if (!batchJobs.length) {
     root.hidden = true;
@@ -188,33 +173,31 @@ function renderSidebarQueue() {
   }
 
   root.hidden = false;
+  var total = batchJobs.length;
   var done = batchJobs.filter(function (j) {
     return j.status !== 'pending' && j.status !== 'running';
   }).length;
+
+  // Teal workbench §11c "Actualizando pacientes": one button + one thin
+  // progress bar + one caption ("N de M · ..."), never a per-patient row
+  // list. The button's size/position never changes — only the spinner
+  // (class toggle, not `hidden`) and label text update.
+  if (fill) {
+    fill.style.width = (total ? Math.round((done / total) * 100) : 0) + '%';
+  }
   if (meta) {
-    meta.textContent = done + '/' + batchJobs.length;
+    meta.textContent = done + ' de ' + total + ' · los que ya llegaron se ven de inmediato';
+  }
+  if (spinner) {
+    spinner.classList.toggle('lab-repo-batch-queue-spinner--active', batchBusy);
+  }
+  if (btnLabel) {
+    btnLabel.textContent = batchBusy ? 'Actualizando' : 'Listo';
   }
   if (stopBtn) {
-    stopBtn.hidden = !batchBusy;
+    stopBtn.classList.toggle('lab-repo-batch-queue-stop--inactive', !batchBusy);
     stopBtn.disabled = !batchBusy;
   }
-
-  list.innerHTML = batchJobs
-    .map(function (j) {
-      return (
-        '<li class="lab-repo-batch-job ' +
-        jobStatusClass(j.status) +
-        '">' +
-        '<span class="lab-repo-batch-job-name">' +
-        esc(j.nombre) +
-        '</span>' +
-        '<span class="lab-repo-batch-job-status">' +
-        esc(labRepoBatchJobStatusLabel(j.status)) +
-        '</span>' +
-        '</li>'
-      );
-    })
-    .join('');
 }
 
 function showSidebarQueue(jobs) {
@@ -503,13 +486,21 @@ export async function confirmLabRepoBatchImport() {
   clearQueueAutoDismiss();
   batchAbort = false;
   showSidebarQueue(buildLabRepoBatchJobs(start.selected));
-  hideBatchModal();
+  if (batchSinglePatientMode) {
+    // Keep the modal open and show the chemistry-grid skeleton inline —
+    // only one patient's values are refreshing, no need to hand off to the
+    // sidebar dock (that stays for the multi-patient "Actualizando
+    // pacientes" run).
+    setBatchProgress('', true);
+  } else {
+    hideBatchModal();
+  }
   setBatchBusy(true);
   try {
     var totals = await runBatchFetches(start.selected, start.range);
     var applied = { needsReview: false, importedPatients: 0 };
     if (totals.groups.length) {
-      setBatchProgress('Procesando resultados…', true);
+      setBatchProgress('', true);
       applied = applyBatchStudyGroups(totals.groups, rt);
     }
     finishBatchRun(start.selected, totals, applied);
@@ -518,6 +509,7 @@ export async function confirmLabRepoBatchImport() {
     batchAbort = false;
     setBatchBusy(false);
     setBatchProgress('', false);
+    if (batchSinglePatientMode) hideBatchModal();
     renderSidebarQueue();
     scheduleQueueAutoDismiss();
   }

@@ -4,7 +4,7 @@ import {
   isLabSectionHeaderHtml,
 } from '../labs.js';
 import { parseSomeTablesFromSources } from '../labs-some-table.mjs';
-import { normalizeFechaLabHistory } from '../tend-core.mjs';
+import { normalizeFechaLabHistory, parseFechaLabToMs } from '../tend-core.mjs';
 import { sortResLabsByClinicalOrder } from '../labs-section-order.mjs';
 import {
   getActivePatientLabHistory,
@@ -13,6 +13,7 @@ import {
   setLabHistorySelectedSetId,
 } from './lab-panel-history.mjs';
 import { findDisplayLabHistorySetId } from './lab-panel-history-dedupe.mjs';
+import { buildLabTrendLookup } from './lab-trend-arrows.mjs';
 
 export function resolveLabOutputFechaBanner(patient) {
   if (!patient || !patient.fecha) return '';
@@ -80,13 +81,35 @@ function appendCultivoChunk(box, text, src, rt) {
   box.appendChild(wrap);
 }
 
-function appendStandardResLabChunk(box, text) {
-  renderEntry(text).forEach(function (html, idx) {
+function appendStandardResLabChunk(box, text, trendLookup) {
+  renderEntry(text, trendLookup).forEach(function (html, idx) {
     var div = document.createElement('div');
     div.className = idx === 0 || isLabSectionHeaderHtml(html) ? 'out-line' : 'out-indent';
     div.innerHTML = html;
     box.appendChild(div);
   });
+}
+
+/** Toma representativa (fecha/hora) de un grupo de clusterDayLabSets, para comparar tendencia. */
+export function representativeFechaHoraForGroup_(group) {
+  var sets = (group && group.sets) || [];
+  var best = null;
+  var bestMs = -Infinity;
+  sets.forEach(function (s) {
+    var ms = parseFechaLabToMs(s && s.fecha, s && s.hora);
+    if (typeof ms === 'number' && isFinite(ms) && ms > bestMs) {
+      bestMs = ms;
+      best = s;
+    }
+  });
+  return best || sets[0] || {};
+}
+
+/** Fase 5 — flechas de tendencia (Laboratorio). Ausente en otros consumidores de renderEntry. */
+function buildLabOutputTrendLookup_(currentSet) {
+  var history = getActivePatientLabHistory();
+  if (!history.length) return null;
+  return buildLabTrendLookup(history, currentSet);
 }
 
 export function appendLabHourGroupHeader(box, group) {
@@ -99,7 +122,22 @@ export function appendLabHourGroupHeader(box, group) {
   box.appendChild(head);
 }
 
-export function appendResLabChunksToBox(box, resLabs, src, result, labDisp, rt) {
+/**
+ * @param {object} [group] cuando resLabs viene de un grupo de clusterDayLabSets (sin parsedBySection propio).
+ *   Se reconstruye aquí para la toma actual; ausente = reporte plano (result.resLabs).
+ */
+export function appendResLabChunksToBox(box, resLabs, src, result, labDisp, rt, group) {
+  var currentSet = group
+    ? Object.assign(
+        { parsedBySection: rt.buildParsedBySectionFromResLabs(group.resLabs, group.bhExtras) },
+        representativeFechaHoraForGroup_(group)
+      )
+    : {
+        fecha: result && result.patient && result.patient.fecha,
+        hora: result && result.patient && result.patient.hora,
+        parsedBySection: rt.buildParsedBySectionFromResLabs(resLabs, result && result.bhExtras),
+      };
+  var trendLookup = buildLabOutputTrendLookup_(currentSet);
   sortResLabsByClinicalOrder(resLabs || []).forEach(function (text) {
     if (labDisp.hideGasoAdvInterp && rt.isGasoInterpretacionResLabChunk(text)) return;
     if (
@@ -113,7 +151,7 @@ export function appendResLabChunksToBox(box, resLabs, src, result, labDisp, rt) 
       appendCultivoChunk(box, text, src, rt);
       return;
     }
-    appendStandardResLabChunk(box, text);
+    appendStandardResLabChunk(box, text, trendLookup);
     appendBhExtendedLines(box, text, result, labDisp, rt);
   });
 }

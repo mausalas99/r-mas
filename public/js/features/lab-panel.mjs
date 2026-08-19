@@ -3,7 +3,6 @@ import {
   copyLabMobileSyncDiag,
   forceLabMobileSyncPull,
 } from './cloud-mobile/lab-sync-diagnostics.mjs';
-import { isPaseMode } from './chrome.mjs';
 import {
   closeLabSomeTablesModal,
   openLabSomeTablesModal,
@@ -175,7 +174,6 @@ registerLabSomeTablesModalRuntime({
   getParsed: function () {
     return activeLab && activeLab.someTablesParsed ? activeLab.someTablesParsed : null;
   },
-  isPaseMode: isPaseMode,
   syncLabCopyFab: syncLabCopyFab,
   syncLabOutputChrome: function () {
     syncLabOutputChrome();
@@ -185,12 +183,6 @@ registerLabSomeTablesModalRuntime({
 export function syncLabOutputChrome() {
   var sec = document.getElementById('lab-output-section');
   var outputVisible = !!(sec && sec.style.display !== 'none');
-  if (isPaseMode()) {
-    syncLabCopyFab(false);
-    syncLabSomeTablesBtn(false);
-    closeLabSomeTablesModal();
-    return;
-  }
   var show = outputVisible && isLabAppTabActive();
   syncLabCopyFab(show);
   syncLabSomeTablesBtn(show);

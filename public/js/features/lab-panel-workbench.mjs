@@ -268,7 +268,7 @@ function insertLabsAsRecent(_lines) {
   rt.onboardingAdvanceAfterSend();
   rt.showToast('Labs enviados a la nota ✓', 'success');
   rt.setMedTabAttention(true);
-  rt.openPaseSectionInNormal('expediente');
+  rt.switchInnerTab('notas');
 }
 
 function insertLabsAsAnteriorThenRecent(_newLines) {
@@ -292,7 +292,7 @@ function insertLabsAsAnteriorThenRecent(_newLines) {
   rt.onboardingAdvanceAfterSend();
   rt.showToast('Fecha anterior guardada + nuevos labs agregados ✓', 'success');
   rt.setMedTabAttention(true);
-  rt.openPaseSectionInNormal('expediente');
+  rt.switchInnerTab('notas');
 }
 
 function showLabConflictModal(newLines, existingDate) {
@@ -336,7 +336,7 @@ function showLabConflictModal(newLines, existingDate) {
     rt.onboardingAdvanceAfterSend();
     rt.showToast('Fecha reciente reemplazada ✓', 'success');
     rt.setMedTabAttention(true);
-    rt.openPaseSectionInNormal('expediente');
+    rt.switchInnerTab('notas');
   };
   document.getElementById('btn-conflict-cancel').onclick = function() {
     document.body.removeChild(backdrop);

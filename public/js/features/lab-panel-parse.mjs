@@ -24,6 +24,7 @@ import {
   prepareLabOutputBox,
 } from './lab-panel-output-helpers.mjs';
 import { settlePasteSurface } from '../ui-motion.mjs';
+import { syncLabResultsCardChrome } from './lab-results-card.mjs';
 
 /** First show: section. Day / history replay: output box (same Pegar y estructurar settle). */
 export function labOutputSettleEl(wasHidden, opts, outSec, box) {
@@ -134,7 +135,8 @@ export function renderOutput(result, opts) {
         group.sourceText || src,
         result,
         rt.getLabOutputPrefs(),
-        rt
+        rt,
+        group
       );
     });
   } else {
@@ -147,6 +149,7 @@ export function renderOutput(result, opts) {
   if (settleEl) settlePasteSurface(settleEl);
   var labRoot = document.getElementById('appcontent-lab');
   if (labRoot) labRoot.classList.remove('is-lab-chunk-loading');
+  syncLabResultsCardChrome();
   syncLabOutputHistoryAfterRender(opts, result, rt);
   labPanelBridge.syncLabOutputChrome();
   rt.wireAtbRisHoverPanels(box);

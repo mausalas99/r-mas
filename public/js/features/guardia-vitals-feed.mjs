@@ -114,6 +114,54 @@ function collectRecentVitals(patients, turnoStart) {
     });
 }
 
+/**
+ * Teal workbench §11c "Llegó un signo fuera de rango": a newly-altered value
+ * pulses once when it arrives, but the row must NOT jump position on its own
+ * ("La fila no se reordena sola"). We keep a committed display order across
+ * renders and only fold in the alert-priority order when the caller commits
+ * a pending reorder (see `commitVitalsFeedReorder`).
+ * @type {{ order: string[], alertState: Record<string, boolean> }}
+ */
+let feedOrderState = { order: [], alertState: {} };
+let pendingReorderIds = [];
+let lastNaturalIds = [];
+
+/**
+ * @param {Array<{ id: string, hasAlerts: boolean }>} naturalItems items already
+ *   sorted by alert-priority — the order the list WOULD have if resorted now.
+ * @returns {{ orderedIds: string[], newlyAlerted: string[], pendingCount: number }}
+ */
+function stabilizeVitalsFeedOrder(naturalItems) {
+  const naturalIds = naturalItems.map((it) => it.id);
+  const naturalSet = new Set(naturalIds);
+  const prevOrder = feedOrderState.order.filter((id) => naturalSet.has(id));
+  const newIds = naturalIds.filter((id) => prevOrder.indexOf(id) === -1);
+  const committedOrder = prevOrder.concat(newIds);
+
+  const newlyAlerted = [];
+  naturalItems.forEach((it) => {
+    const wasAlerted = feedOrderState.alertState[it.id] === true;
+    if (it.hasAlerts && !wasAlerted) newlyAlerted.push(it.id);
+  });
+
+  feedOrderState = {
+    order: committedOrder,
+    alertState: Object.fromEntries(naturalItems.map((it) => [it.id, it.hasAlerts])),
+  };
+  lastNaturalIds = naturalIds;
+
+  const reordersDiffer = committedOrder.some((id, idx) => id !== naturalIds[idx]);
+  pendingReorderIds = reordersDiffer ? newlyAlerted.slice() : [];
+
+  return { orderedIds: committedOrder, newlyAlerted, pendingCount: pendingReorderIds.length };
+}
+
+/** Applies the natural (alert-priority) order — call when the user taps "N nuevos". */
+export function commitVitalsFeedReorder() {
+  feedOrderState = { order: lastNaturalIds.slice(), alertState: feedOrderState.alertState };
+  pendingReorderIds = [];
+}
+
 /** @param {string} patientId */
 function scrollToPatientChip(patientId) {
   const card = document.querySelector(`.patient-chip-card[data-patient-id="${patientId}"]`);
@@ -125,10 +173,18 @@ function scrollToPatientChip(patientId) {
 
 let vitalsFeedWired = false;
 
+let lastRenderArgs = null;
+
 function wireVitalsFeedClicks() {
   if (vitalsFeedWired || typeof document === 'undefined') return;
   vitalsFeedWired = true;
   document.addEventListener('click', (ev) => {
+    const reorderBtn = ev.target?.closest?.('[data-vfeed-reorder]');
+    if (reorderBtn) {
+      commitVitalsFeedReorder();
+      if (lastRenderArgs) renderGuardiaVitalsFeed(lastRenderArgs.patients, lastRenderArgs.censusIds);
+      return;
+    }
     const chip = ev.target?.closest?.('.vfeed-chip[data-patient-id]');
     if (!chip) return;
     scrollToPatientChip(String(chip.getAttribute('data-patient-id') || ''));
@@ -141,14 +197,17 @@ function wireVitalsFeedClicks() {
  */
 export function renderGuardiaVitalsFeed(patients, censusIds = []) {
   wireVitalsFeedClicks();
+  lastRenderArgs = { patients, censusIds };
   const host = document.getElementById('guardia-vitals-feed');
   if (!host) return;
 
   const turnoStart = getTurnoStartedAt();
-  const items = collectRecentVitals(patients, turnoStart);
+  const naturalItems = collectRecentVitals(patients, turnoStart);
   const censusCount = censusIds.length;
 
-  if (!items.length) {
+  if (!naturalItems.length) {
+    feedOrderState = { order: [], alertState: {} };
+    pendingReorderIds = [];
     host.innerHTML = `
       <div class="vfeed-header">
         ${VITALS_SVG}
@@ -161,10 +220,17 @@ export function renderGuardiaVitalsFeed(patients, censusIds = []) {
     return;
   }
 
+  const byId = Object.fromEntries(naturalItems.map((it) => [it.id, it]));
+  const { orderedIds, newlyAlerted, pendingCount } = stabilizeVitalsFeedOrder(naturalItems);
+  const items = orderedIds.map((id) => byId[id]).filter(Boolean);
+
   const chips = items
-    .map(
-      (item) => `
-    <button type="button" class="vfeed-chip${item.hasAlerts ? ' vfeed-chip--alert' : ''}" data-patient-id="${item.id}" title="Ir a ${item.name}">
+    .map((item) => {
+      // Teal workbench §11c: pulses once on arrival, never on every render —
+      // only items that JUST crossed into alert this render get the class.
+      const pulseCls = newlyAlerted.indexOf(item.id) !== -1 ? ' value-alert-pulse' : '';
+      return `
+    <button type="button" class="vfeed-chip${item.hasAlerts ? ' vfeed-chip--alert' : ''}${pulseCls}" data-patient-id="${item.id}" title="Ir a ${item.name}">
       <span class="vfeed-chip-bed">Cama ${item.bed}</span>
       <span class="vfeed-chip-name">${item.name}</span>
       <span class="vfeed-chip-vals">${item.line}</span>
@@ -172,15 +238,21 @@ export function renderGuardiaVitalsFeed(patients, censusIds = []) {
         ${item.hasAlerts ? `<span class="vfeed-chip-alert">${ALERT_SVG}</span>` : ''}
         <span class="vfeed-chip-time">hace ${timeAgo(item.registeredAt)}</span>
       </span>
-    </button>`
-    )
+    </button>`;
+    })
     .join('');
+
+  const reorderPillHtml =
+    pendingCount > 0
+      ? `<button type="button" class="vfeed-reorder-pill" data-vfeed-reorder title="Actualizar el orden por prioridad">${pendingCount} nuevo${pendingCount === 1 ? '' : 's'}</button>`
+      : '';
 
   host.innerHTML = `
     <div class="vfeed-header">
       ${VITALS_SVG}
       <span class="vfeed-title">Signos en este turno</span>
       <span class="vfeed-count">${items.length} registro${items.length === 1 ? '' : 's'}</span>
+      ${reorderPillHtml}
       <span class="vfeed-live-dot" aria-hidden="true" title="Actualización en vivo"></span>
     </div>
     <div class="vfeed-strip" role="list">${chips}</div>

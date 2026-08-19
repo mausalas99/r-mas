@@ -7,23 +7,36 @@ import {
 
 describe('openPatientChart', () => {
   const originalSelect = globalThis.selectPatient;
-  const originalOpenSection = globalThis.openPaseSectionInNormal;
+  const originalSwitchInnerTab = globalThis.switchInnerTab;
+  const originalLocalStorage = globalThis.localStorage;
+
+  function memoryStore() {
+    const map = new Map();
+    return {
+      getItem: (key) => (map.has(key) ? map.get(key) : null),
+      setItem: (key, value) => map.set(key, String(value)),
+      removeItem: (key) => map.delete(key),
+    };
+  }
 
   afterEach(() => {
     if (originalSelect) globalThis.selectPatient = originalSelect;
     else delete globalThis.selectPatient;
-    if (originalOpenSection) globalThis.openPaseSectionInNormal = originalOpenSection;
-    else delete globalThis.openPaseSectionInNormal;
+    if (originalSwitchInnerTab) globalThis.switchInnerTab = originalSwitchInnerTab;
+    else delete globalThis.switchInnerTab;
+    if (originalLocalStorage === undefined) delete globalThis.localStorage;
+    else globalThis.localStorage = originalLocalStorage;
   });
 
-  it('selects patient and opens expediente in normal view', () => {
+  it('selects patient and opens expediente notas tab', () => {
+    globalThis.localStorage = memoryStore();
     const calls = [];
     globalThis.selectPatient = (id) => calls.push(['select', id]);
-    globalThis.openPaseSectionInNormal = (section) => calls.push(['section', section]);
+    globalThis.switchInnerTab = (tab) => calls.push(['tab', tab]);
     openPatientChart('pat-1');
     assert.deepEqual(calls, [
       ['select', 'pat-1'],
-      ['section', 'expediente'],
+      ['tab', 'notas'],
     ]);
   });
 });

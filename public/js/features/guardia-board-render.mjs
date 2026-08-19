@@ -12,7 +12,7 @@ import {
 } from '../clinical-access-runtime.mjs';
 import { userIsOnGuardiaCallToday } from '../clinico-access.mjs';
 import { effectiveClinicalRank, hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
-import { UnifiedPatientGridBoard } from './unified-patient-grid-board.mjs';
+import { mountGuardiaCensusTable } from './guardia-census-table.mjs';
 import { syncGuardiaIncomingStrip, syncGuardiaRotationToolbar } from './clinical-rotation.mjs';
 import { wireClinicalTeamsControls } from './clinical-teams.mjs';
 import { isEntregaPhaseActive, loadGuardiaGridViewContext, openEntregaModal } from './clinical-entrega.mjs';
@@ -37,6 +37,8 @@ import {
   enrichPatientForGuardiaCard,
   installGuardiaAppShell,
   renderGuardiaCensusHead,
+  renderGuardiaModeFrame,
+  renderGuardiaSignosRecibidosPanel,
   renderGuardiaSummaryTiles,
   resolveGuardiaGridRank,
   syncEntregaPhaseChrome,
@@ -45,11 +47,9 @@ import {
   wireGuardiaModeToggle,
 } from './guardia-board-chrome.mjs';
 import {
-  getGridBoard,
   isElevatedFullWardPullScheduled,
   isGuardiaViewBootstrapped,
   markElevatedFullWardPullScheduled,
-  setGridBoard,
   setGuardiaViewBootstrapped,
 } from './guardia-board-state.mjs';
 
@@ -61,6 +61,9 @@ function clearInactiveGuardiaBoard() {
 
 function ensureGuardiaBoardBootstrapped(settings) {
   installGuardiaAppShell();
+  // Must render before wireGuardiaEntregaPhaseButton below — it (re)creates the
+  // #btn-guardia-entrega-phase node that function wires and syncs.
+  renderGuardiaModeFrame();
   void import('./clinical-rotation-entry.mjs').then((mod) => {
     mod.syncClinicalRotationEntryChrome?.();
   });
@@ -154,15 +157,6 @@ function renderGuardiaVitalsIfTurno(turnoActivo, censusPatientIds) {
   );
 }
 
-function ensureGuardiaGridBoard(gridViewContext) {
-  const board = getGridBoard();
-  if (!board) {
-    setGridBoard(new UnifiedPatientGridBoard('guardia-census-grid', gridViewContext));
-    return;
-  }
-  board.setViewContext(gridViewContext);
-}
-
 function wireGuardiaGridBoard({
   censusPatients,
   guardiasMap,
@@ -173,18 +167,17 @@ function wireGuardiaGridBoard({
   onCallGuardiaReceiver,
   settings,
 }) {
-  const board = getGridBoard();
-  if (!board) return;
+  const container = document.getElementById('guardia-census-grid');
+  if (!container) return;
   const showPatientActionMenu = shouldShowGuardiaPatientActionMenu({
     turnoActivo,
     entregaActive,
     onCallGuardiaReceiver,
     gridViewContext,
   });
-  board.chipOpensEntrega = !turnoActivo;
-  board.chipGuardiaPatientMenu = showPatientActionMenu;
-  board.onChipClick = (patientId) => {
-    if (!turnoActivo) {
+  const opensEntrega = gridViewContext === 'HANDOFF' || !turnoActivo;
+  const onRowClick = (patientId) => {
+    if (opensEntrega) {
       const guardia = guardiasMap.get(patientId);
       openEntregaModal({
         patientId,
@@ -201,26 +194,38 @@ function wireGuardiaGridBoard({
         patientId,
         patientLabel: row?.name ? String(row.name) : undefined,
       });
+      return;
     }
+    const selectFn =
+      (typeof window !== 'undefined' && typeof window.selectPatient === 'function'
+        ? window.selectPatient
+        : null) ||
+      (typeof globalThis.selectPatient === 'function' ? globalThis.selectPatient : null);
+    if (selectFn) selectFn(patientId);
   };
   if (!censusPatients.length) {
-    renderGuardiaCensusEmpty(board.container, {
+    renderGuardiaCensusEmpty(container, {
       // clinicalSessionContext.guardiaMode = census filter «solo entregados» (not Guardia view).
       filterOn: !!clinicalSessionContext.guardiaMode,
       onShowAll: () => {
         setGuardiaMode(false, { settings, renderGuardiaBoard, rerenderBoard: true });
       },
     });
-    board.stopVitalsTicker();
     return;
   }
   const scope = clinicalSessionContext.scopeContext || getClinicalScopeContextForEvaluate();
-  board.drawCensusGrid(censusPatients, guardiasMap, gridRank, {
-    teams: scope.teams || clinicalSessionContext.teams || [],
-    assignments: scope.assignments || [],
-    now: scope.now || new Date().toISOString(),
-  });
-  board.startVitalsTicker();
+  mountGuardiaCensusTable(
+    container,
+    censusPatients,
+    guardiasMap,
+    gridRank,
+    {
+      teams: scope.teams || clinicalSessionContext.teams || [],
+      assignments: scope.assignments || [],
+      now: scope.now || new Date().toISOString(),
+    },
+    onRowClick
+  );
 }
 
 export function renderGuardiaBoard(settings) {
@@ -265,6 +270,7 @@ export function renderGuardiaBoard(settings) {
     vitalsOverdue: summary.vitalsOverdue,
     critical: summary.critical,
   });
+  renderGuardiaSignosRecibidosPanel();
   renderGuardiaVitalsIfTurno(
     turnoActivo,
     censusPatients.map((p) => p.id)
@@ -274,7 +280,6 @@ export function renderGuardiaBoard(settings) {
   syncOrphanEntregasStrip(settings);
   wireClinicalTeamsControls();
 
-  ensureGuardiaGridBoard(gridViewContext);
   wireGuardiaGridBoard({
     censusPatients,
     guardiasMap,

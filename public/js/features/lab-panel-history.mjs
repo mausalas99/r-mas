@@ -10,12 +10,12 @@ import { bumpLabHistoryRevision, getLabHistoryRevision } from '../lab-history-ca
 import { filterLabHistorySetsForMobileReference, shouldApplyMobileLabHistoryWindow } from './cloud-mobile/lab-history-window.mjs';
 import { isMobileWeb, syncMobileLabReferenceChrome } from '../mobile-web.mjs';
 import { sanitizeResLabsChunks } from '../labs-reslabs-sanitize.mjs';
-import { isPaseMode } from './chrome.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 import { labPanelBridge } from './lab-panel-bridge.mjs';
 import { buildSameDaySerumContext, refreshSameDayAscitisForPatient } from './lab-panel-history-same-day.mjs';
 import { groupLabHistoryByDay, findLabHistoryDayIndexForSet, stepLabHistoryDayIndex, latestSetIdInLabHistoryDay, labHistoryDayArrowDelta, canHandleLabHistoryDayArrow } from '../lab-history-day-nav.mjs';
 import { buildDayOutputPayload, buildLabHistoryDayOptionsHtml, daySelectValue, findDayForHistoryRef, resolveSelectedDayKey, filterOutDaySets } from '../lab-history-day-view.mjs';
+import { openConfirm } from './workbench/confirm.mjs';
 
 export function setLabHistoryPanelCollapsed() {}
 
@@ -298,8 +298,6 @@ export function renderLabHistoryPanel() {
     else ensureMobileLabOutputShellVisible();
     labPanelBridge.syncLabOutputChrome();
   }
-  rt.renderRoundOverviewPanels();
-  if (isPaseMode()) rt.renderPaseBoard();
 }
 
 function onLabHistoryDateChange(setId) {
@@ -331,7 +329,7 @@ function reprocessSelectedLabHistorySet() {
   reprocessLabHistorySet(ids[0]);
 }
 
-function deleteSelectedLabHistorySet() {
+async function deleteSelectedLabHistorySet() {
   var selectEl = document.getElementById('lab-history-date-select');
   if (!selectEl || selectEl.hidden || !selectEl.value) {
     rt.showToast('No hay estudio seleccionado', 'error');
@@ -344,13 +342,13 @@ function deleteSelectedLabHistorySet() {
     return;
   }
   if (day.rows.length === 1) {
-    deleteLabHistorySet(labSetIdForHistory(day.rows[0].set, day.rows[0].idx));
+    await deleteLabHistorySet(labSetIdForHistory(day.rows[0].set, day.rows[0].idx));
     return;
   }
-  deleteLabHistoryDay_(day);
+  await deleteLabHistoryDay_(day);
 }
 
-function deleteAllLabHistorySets() {
+async function deleteAllLabHistorySets() {
   var pid = rt.getActiveId();
   if (!pid) {
     rt.showToast('Selecciona un paciente primero', 'error');
@@ -361,16 +359,18 @@ function deleteAllLabHistorySets() {
     rt.showToast('No hay estudios en el historial', 'info');
     return;
   }
-  if (
-    !confirm(
-      '¿Eliminar todos los estudios de laboratorio de este paciente?\n\n' +
-        'Se borrarán ' +
-        sets.length +
-        ' conjunto' +
-        (sets.length === 1 ? '' : 's') +
-        ' del historial. Las tendencias y diagramas se recalcularán.'
-    )
-  ) {
+  var result = await openConfirm({
+    weight: 'destructive',
+    title: '¿Eliminar todos los estudios de laboratorio de este paciente?',
+    message:
+      'Se borrarán ' +
+      sets.length +
+      ' conjunto' +
+      (sets.length === 1 ? '' : 's') +
+      ' del historial. Las tendencias y diagramas se recalcularán.',
+    confirmLabel: 'Eliminar',
+  });
+  if (result !== 'confirm') {
     return;
   }
   delete getLabHistory()[pid];
@@ -398,7 +398,7 @@ function replayLabHistorySet(setId) {
     return;
   }
   syncLabHistoryDateSelect({ preferSetId: setId });
-  rt.openPaseSectionInNormal('labs');
+  rt.switchAppTab('lab');
 }
 
 function collectReprocessSourceParts_(set, ctx) {
@@ -498,12 +498,17 @@ function reprocessLabHistorySet(setId) {
   }
 }
 
-function deleteLabHistorySet(setId) {
+async function deleteLabHistorySet(setId) {
   var pid = rt.getActiveId();
   if (!pid) return;
   var sets = normalizeLabHistoryPatientSets(getLabHistory()[pid]);
   if (!sets.length) return;
-  if (!confirm('¿Eliminar este conjunto del historial? Las tendencias se recalcularán.')) return;
+  var result = await openConfirm({
+    weight: 'destructive',
+    title: '¿Eliminar este conjunto del historial? Las tendencias se recalcularán.',
+    confirmLabel: 'Eliminar',
+  });
+  if (result !== 'confirm') return;
   var sid = String(setId == null ? '' : setId);
   if (sid.indexOf('__idx_') === 0) {
     var idx = parseInt(sid.slice(6), 10);
@@ -522,17 +527,17 @@ function deleteLabHistorySet(setId) {
   rt.showToast('Eliminado del historial', 'success');
 }
 
-function deleteLabHistoryDay_(day) {
+async function deleteLabHistoryDay_(day) {
   var pid = rt.getActiveId();
   if (!pid || !day || !day.rows.length) return;
   var n = day.rows.length;
-  if (
-    !confirm(
-      '¿Eliminar los ' +
-        n +
-        ' conjuntos de este día?\n\nLas tendencias se recalcularán.'
-    )
-  ) {
+  var result = await openConfirm({
+    weight: 'destructive',
+    title: '¿Eliminar los ' + n + ' conjuntos de este día?',
+    message: 'Las tendencias se recalcularán.',
+    confirmLabel: 'Eliminar',
+  });
+  if (result !== 'confirm') {
     return;
   }
   var sets = filterOutDaySets(normalizeLabHistoryPatientSets(getLabHistory()[pid]), day);

@@ -9,9 +9,7 @@ var rt = {
   },
   setActiveId() {},
   selectPatient() {},
-  renderRoundOverviewPanels() {},
   refreshTendenciasOrCultivosPanel() {},
-  renderPaseBoard() {},
   onboardingAdvanceAfterParse() {},
   onboardingAdvanceAfterSend() {},
   tourAfterBulkLabParse() {},
@@ -19,11 +17,11 @@ var rt = {
     return null;
   },
   addAuditEntry() {},
-  openPaseSectionInNormal() {},
   renderDiagramas() {},
   pushUndoSnapshot() {},
   setMedTabAttention() {},
   switchAppTab() {},
+  switchInnerTab() {},
   closeSettingsDropdown() {},
   extractParsedValues(_resLabs) {
     return {};
