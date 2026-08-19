@@ -30,13 +30,19 @@ try {
   const page = await app.firstWindow();
 
   // Move every window far off-screen so it never appears on the user's display or steals focus,
-  // and size it to the real primary display's work area (not the 1280x900 dev default) so layout
-  // checks reflect what the user actually sees on a full-size window, not a cramped one.
-  await app.evaluate(({ BrowserWindow, screen }) => {
+  // and size it to the real primary display's work area — floored to a normal desktop size
+  // (1440x900) because sandboxed/headless verify runs can report a tiny virtual display
+  // (e.g. 960x700), which would silently shrink layout checks below any real user's window
+  // and hide things like two-column breakpoints. Never shrink below the floor, only grow past it.
+  const FLOOR_WIDTH = 1440;
+  const FLOOR_HEIGHT = 900;
+  await app.evaluate(({ BrowserWindow, screen }, floor) => {
     const work = screen.getPrimaryDisplay().workAreaSize;
+    const width = Math.max(work.width, floor.width);
+    const height = Math.max(work.height, floor.height);
     for (const win of BrowserWindow.getAllWindows()) {
       try {
-        win.setSize(work.width, work.height);
+        win.setSize(width, height);
         win.setPosition(-32000, -32000);
         win.blur();
         win.setSkipTaskbar(true);
@@ -44,7 +50,7 @@ try {
         /* best effort */
       }
     }
-  }).catch(() => {});
+  }, { width: FLOOR_WIDTH, height: FLOOR_HEIGHT }).catch(() => {});
 
   await page.waitForLoadState('domcontentloaded');
   await page.waitForTimeout(waitMs);
