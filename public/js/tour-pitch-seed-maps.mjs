@@ -107,6 +107,28 @@ function fillPitchDemoMedMaps(maps, fecha) {
         suspendido: false,
         diaTratamiento: 2,
       },
+      // Apoyo (non-medication support) item so the Manejo header's "más N apoyo (O₂)"
+      // split-count callout has real data to render against — see med-receta-apoyo.mjs.
+      {
+        id: 'pitch-med-3-apoyo-o2',
+        nombreRaw: 'OXIGENO · MASCARILLA RESERVORIO 10 L/MIN',
+        viaRaw: '',
+        dosisRaw: '',
+        frecuenciaRaw: 'CONTINUA',
+        suspendido: false,
+        diaTratamiento: null,
+      },
+    ],
+    // Diet entry so the "Dieta detectada" card has real data to render — see med-receta-diet.mjs.
+    dietas: [
+      {
+        id: 'pitch-dieta-1',
+        descripcionRaw: 'Dieta renal, restricción de K y P',
+        detalleRaw: 'Vía oral',
+        kcal: 1400,
+        proteinG: 60,
+        suspendido: false,
+      },
     ],
   };
   medNotaSelectionByPatient[PITCH_DEMO_PATIENT_ID] = {
