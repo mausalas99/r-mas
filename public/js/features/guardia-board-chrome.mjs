@@ -294,6 +294,14 @@ export function enrichPatientForGuardiaCard(p, guardiasMap, teamCtx = {}) {
     sala: p.sala,
     servicio: p.servicio,
     area: p.area,
+    // guardia-census-table.mjs's alteradosForPatient()/admissionDateForPatient()
+    // read these straight off the patient object (not off the `base` grid-card
+    // shape above) — without them every row silently read as "sin toma 08:00"
+    // and the Ingresos (D3a) counter stayed at 0 no matter what was seeded.
+    monitoreo: p.monitoreo,
+    registeredAt: p.registeredAt,
+    fimiFecha: p.fimiFecha,
+    fiuxFecha: p.fiuxFecha,
   };
 }
 

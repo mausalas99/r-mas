@@ -8,6 +8,15 @@
  * screenshot-verified against `Paciente Rediseño.dc.html` #6a/#6b instead of showing
  * the (correct, but unverifiable) empty state. Fake data only — no PHI.
  *
+ * Deliberately NOT marked `isDemo: true` (unlike DEMO PÉREZ): Guardia's own census
+ * builder (`buildGuardiaCensusPatients` in guardia-board-render.mjs) filters
+ * `getPatients()` by `!p.isDemo`, so an `isDemo` fixture is invisible in Modo Guardia
+ * no matter what — that was the Phase 2 gap. Being ordinary (non-demo) patients also
+ * means `persistClinicalState()` writes them for real through the normal SQLCipher
+ * blob path (`patientsForPersistence()` only strips `isDemo`/`demo-pitch*` rows) —
+ * this fixture is reachable only from the hidden dev/verify button
+ * (`seedPitchGuardiaCensusFromHelp`, never shown in the real UI), so that is safe.
+ *
  * Patient ids deliberately avoid the `demo-` prefix so `storage.saveTodos` (which
  * silently skips `demo-*` ids) works normally for their pendientes.
  */
@@ -159,7 +168,6 @@ function buildPatientFromSpec(spec, today) {
     servicio: 'MEDICINA INTERNA',
     cuarto: spec.cuarto,
     cama: spec.cama,
-    isDemo: true,
     monitoreo: { historial },
   };
   if (spec.registeredAt) patient.registeredAt = spec.registeredAt;
@@ -231,6 +239,11 @@ export function seedPitchGuardiaCensusTodos(ref) {
  * right after `startPresentationMode()` has already seeded DEMO PÉREZ — this adds
  * 24 more patients on top rather than replacing the array, so the mockup's ~25-row
  * scale is reachable without touching the existing single-patient pitch tour.
+ *
+ * The 24 extra patients are ordinary (non-demo) rows, so they belong only in the
+ * real `patients` array — NOT in the `setDemoPatients` display bucket, which would
+ * double them up in the sidebar (`getPatientsForDisplay` unions demoPatients with
+ * `list.filter(!isDemo)`, and these rows now pass that filter on their own).
  * @param {{
  *   getPatients: () => object[],
  *   setPatients: (list: object[]) => void,
@@ -249,12 +262,6 @@ export function extendPresentationModeWithGuardiaCensus(state, ref) {
   );
   const merged = [...existing, ...extra];
   state.setPatients(merged);
-  if (typeof state.setDemoPatients === 'function') {
-    const existingDemo = (
-      typeof state.getDemoPatients === 'function' ? state.getDemoPatients() : existing
-    ).filter((p) => !extra.some((e) => e.id === p.id));
-    state.setDemoPatients([...existingDemo, ...extra]);
-  }
   seedPitchGuardiaCensusTodos(today);
   state.persistClinicalState();
   state.renderPatientList();

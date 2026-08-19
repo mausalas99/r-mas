@@ -42,6 +42,11 @@ describe('buildPitchGuardiaCensusPatients', () => {
     patients.forEach((p) => assert.equal(p.id.indexOf('demo-'), -1));
   });
 
+  it('does not mark patients isDemo, so Modo Guardia\'s !p.isDemo census filter keeps them', () => {
+    const patients = buildPitchGuardiaCensusPatients(new Date('2026-08-19T10:00:00.000Z'));
+    patients.forEach((p) => assert.ok(!p.isDemo, `${p.nombre} should not be isDemo`));
+  });
+
   it('gives every patient a bed and a vitals-capable monitoreo shape', () => {
     const patients = buildPitchGuardiaCensusPatients(new Date());
     patients.forEach((p) => {
@@ -100,7 +105,8 @@ describe('seedPitchGuardiaCensusTodos', () => {
 
 describe('extendPresentationModeWithGuardiaCensus', () => {
   it('appends the fixture on top of the existing (demo) census without duplicating', () => {
-    let patients = [{ id: 'demo-pitch', nombre: 'DEMO PÉREZ' }];
+    let patients = [{ id: 'demo-pitch', nombre: 'DEMO PÉREZ', isDemo: true }];
+    let demoPatients = [{ id: 'demo-pitch', nombre: 'DEMO PÉREZ', isDemo: true }];
     let persisted = false;
     let rendered = false;
     const state = {
@@ -108,9 +114,9 @@ describe('extendPresentationModeWithGuardiaCensus', () => {
       setPatients: (list) => {
         patients = list;
       },
-      getDemoPatients: () => patients,
+      getDemoPatients: () => demoPatients,
       setDemoPatients: (list) => {
-        patients = list;
+        demoPatients = list;
       },
       persistClinicalState: () => {
         persisted = true;
@@ -124,6 +130,12 @@ describe('extendPresentationModeWithGuardiaCensus', () => {
     assert.ok(patients.some((p) => p.id === 'demo-pitch'));
     assert.ok(persisted);
     assert.ok(rendered);
+    // The 24 extra patients are non-demo — they must land only in the real
+    // patients array, never in the demoPatients display bucket (would double
+    // them up in the sidebar, since it unions demoPatients with
+    // patients.filter(!isDemo)).
+    assert.equal(demoPatients.length, 1);
+    assert.equal(patients.filter((p) => !p.isDemo).length, 24);
 
     // Calling twice must not duplicate the fixture rows.
     extendPresentationModeWithGuardiaCensus(state, new Date('2026-08-19T10:00:00.000Z'));
