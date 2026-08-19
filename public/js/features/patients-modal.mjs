@@ -23,6 +23,7 @@ import {
   wirePatientRegistrationSalaControls,
 } from '../patient-sala-ui.mjs';
 import { rt } from './patients-runtime-state.mjs';
+import { openConfirm } from './workbench/confirm.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
 import { commitPatientFromModal, clearPendingAddPatientCallbacks, setPendingAddPatientFromBulkPreview, setPendingAddPatientSavedCallback, getPendingAddPatientFromBulkPreview } from './patients-modal-commit.mjs';
 import { findDuplicatePatient, showDuplicateWarning, showExpedienteAdvice } from './patients-modal-dialogs.mjs';
@@ -434,7 +435,16 @@ export function confirmCloseAddPatientModal() {
     var el = document.getElementById(id);
     return el && el.value.trim();
   });
-  if (hasData && !confirm('¿Cerrar sin guardar?')) return false;
+  if (hasData) {
+    void openConfirm({
+      weight: 'consequence',
+      title: '¿Cerrar sin guardar?',
+      confirmLabel: 'Cerrar sin guardar',
+      cancelLabel: 'Seguir editando',
+      onConfirm: closeModal,
+    });
+    return false;
+  }
   return true;
 }
 

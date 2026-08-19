@@ -6,9 +6,9 @@ import {
   weekBoundsFromMonday,
 } from "../procedure-agenda-week.mjs";
 import { getPatients } from "../app-state.mjs";
-import { isPaseMode } from "./chrome.mjs";
 import { closeModalAnimated } from "../ui-motion.mjs";
 import { enqueueCloudAgendaUpsert, enqueueCloudAgendaDelete } from "./cloud-sync/mutate-bridge.mjs";
+import { openConfirm } from "./workbench/confirm.mjs";
 import {
   buildAgendaBoardHead,
   buildAgendaTimesColumn,
@@ -28,7 +28,6 @@ let rt = {
     return null;
   },
   showToast() {},
-  renderPaseBoard() {},
 };
 
 export function registerProcedureAgendaRuntime(ctx) {
@@ -133,7 +132,6 @@ export function renderProcedureAgendaPanel() {
   board.appendChild(bodyRow);
   mount.innerHTML = "";
   mount.appendChild(board);
-  if (isPaseMode()) rt.renderPaseBoard();
 }
 
 export function openProcedureAgendaModal(editEventId) {
@@ -211,15 +209,15 @@ export function saveProcedureAgendaFromModal() {
   renderProcedureAgendaPanel();
 }
 
-export function deleteProcedureAgendaFromModal() {
+export async function deleteProcedureAgendaFromModal() {
   var editId = (document.getElementById("pa-edit-id").value || "").trim();
   if (!editId) return;
-  if (
-    !confirm(
-      "¿Eliminar este procedimiento de la agenda? No se puede deshacer desde aquí."
-    )
-  )
-    return;
+  var result = await openConfirm({
+    weight: "destructive",
+    title: "¿Eliminar este procedimiento de la agenda? No se puede deshacer desde aquí.",
+    confirmLabel: "Eliminar",
+  });
+  if (result !== "confirm") return;
   var delAt = new Date().toISOString();
   var arr = storage.getScheduledProcedures().filter(function (e) {
     return e.id !== editId;

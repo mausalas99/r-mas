@@ -62,8 +62,14 @@ export function formatAlteredChip(chip) {
   return label + ' ' + value;
 }
 
-function alteredChipsFromTokens(tokens) {
+/**
+ * One pass over a row's tokens: altered chips (label + value with `*`) plus a
+ * count of in-range numeric values and a label→value map for trend lookups.
+ */
+function tokenStatsFromTokens(tokens) {
   const chips = [];
+  const valuesByLabel = Object.create(null);
+  let normalCount = 0;
   let i = 0;
   while (i < tokens.length) {
     const tok = tokens[i];
@@ -74,6 +80,7 @@ function alteredChipsFromTokens(tokens) {
     const next = tokens[i + 1];
     if (next !== undefined && next.endsWith('*')) {
       chips.push({ raw: next, label: tok, value: next });
+      valuesByLabel[tok.toUpperCase()] = next.replace(/\*$/, '');
       i += 2;
       continue;
     }
@@ -84,12 +91,18 @@ function alteredChipsFromTokens(tokens) {
       continue;
     }
     if (next !== undefined && !Number.isNaN(parseFloat(String(next).replace('*', '')))) {
+      valuesByLabel[tok.toUpperCase()] = next;
+      normalCount += 1;
       i += 2;
     } else {
       i += 1;
     }
   }
-  return chips;
+  return { chips, normalCount, valuesByLabel };
+}
+
+function alteredChipsFromTokens(tokens) {
+  return tokenStatsFromTokens(tokens).chips;
 }
 
 function countLabSections(labRows) {
@@ -101,15 +114,26 @@ function countLabSections(labRows) {
   return seen.size;
 }
 
+/**
+ * Groups altered chips per lab section (unchanged shape) plus the in-range
+ * value count and a tipo|label → value map, used to render the "en rango"
+ * one-liner and the fuera-de-rango trend column.
+ */
 function buildGroupsFromLabRows(labRows) {
   const groups = [];
+  let normalCount = 0;
+  const valuesByKey = Object.create(null);
   labRows.forEach((row) => {
     const tipo = sectionLabelFromRow(row);
-    const chips = alteredChipsFromTokens(bodyTokensFromRow(row));
-    if (!chips.length) return;
-    groups.push({ tipo, chips });
+    const stats = tokenStatsFromTokens(bodyTokensFromRow(row));
+    normalCount += stats.normalCount;
+    Object.keys(stats.valuesByLabel).forEach((label) => {
+      valuesByKey[tipo.toUpperCase() + '|' + label] = stats.valuesByLabel[label];
+    });
+    if (!stats.chips.length) return;
+    groups.push({ tipo, chips: stats.chips });
   });
-  return groups;
+  return { groups, normalCount, valuesByKey };
 }
 
 function labRowsFromResLabs(resLabs) {
@@ -158,24 +182,70 @@ function buildEnvioFromCluster(cluster) {
   const keeper = (cluster.sets && cluster.sets[0]) || {};
   const labRows = labRowsFromResLabs(cluster.resLabs);
   if (!labRows.length) return null;
-  const groups = buildGroupsFromLabRows(labRows);
-  if (!groups.length) return null;
+  const built = buildGroupsFromLabRows(labRows);
   return {
     id: keeper.id,
     hora: cluster.hora || horaKey(keeper),
     wide: countLabSections(labRows) >= 3,
-    groups,
+    groups: built.groups,
+    normalCount: built.normalCount,
+    valuesByKey: built.valuesByKey,
   };
+}
+
+function chronoSortKey(hora, idx) {
+  return (hora || '99:99') + '_' + String(idx).padStart(6, '0');
+}
+
+/**
+ * Fills in `chip.delta` / `chip.trend` ('up'|'down'|'flat') for altered chips
+ * by comparing against the most recent earlier envío of the same day with a
+ * value for that tipo+label, walked in chronological (not array) order.
+ */
+function attachTrend(candidates) {
+  const indexed = candidates.map((c, i) => ({ c, i }));
+  indexed.sort((a, b) => {
+    const ka = chronoSortKey(a.c.hora, a.i);
+    const kb = chronoSortKey(b.c.hora, b.i);
+    return ka < kb ? -1 : ka > kb ? 1 : 0;
+  });
+  const running = Object.create(null);
+  indexed.forEach(({ c }) => {
+    c.groups.forEach((g) => {
+      const tipoKey = String(g.tipo || '').toUpperCase();
+      g.chips.forEach((chip) => {
+        const key = tipoKey + '|' + String(chip.label || '').toUpperCase();
+        const prevRaw = running[key];
+        if (prevRaw === undefined) return;
+        const prevNum = parseFloat(prevRaw);
+        const curNum = parseFloat(String(chip.value).replace('*', ''));
+        if (Number.isNaN(prevNum) || Number.isNaN(curNum)) return;
+        const diff = Math.round((curNum - prevNum) * 100) / 100;
+        chip.trend = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat';
+        chip.delta = (diff > 0 ? '+' : diff < 0 ? '-' : '') + Math.abs(diff);
+      });
+    });
+    Object.keys(c.valuesByKey).forEach((key) => {
+      running[key] = c.valuesByKey[key];
+    });
+  });
 }
 
 /**
  * @param {{ todayKey: string, orderedSets: unknown[] }} params
- * @returns {{ envios: Array<{ id: string, hora: string, wide: boolean, groups: Array<{ tipo: string, chips: Array<{ raw: string, label: string, value: string }> }> }> }}
+ * @returns {{
+ *   envios: Array<{ id: string, hora: string, wide: boolean, groups: Array<{ tipo: string, chips: Array<{ raw: string, label: string, value: string, delta?: string, trend?: string }> }> }>,
+ *   enRangoCount: number,
+ * }}
  */
 export function buildLabsGlanceForDay({ todayKey, orderedSets } = {}) {
   const daySets = setsForDayKey(orderedSets, todayKey);
-  if (!daySets.length) return { envios: [] };
-  return {
-    envios: clusterSetsByHora(daySets).map(buildEnvioFromCluster).filter(Boolean),
-  };
+  if (!daySets.length) return { envios: [], enRangoCount: 0 };
+  const candidates = clusterSetsByHora(daySets).map(buildEnvioFromCluster).filter(Boolean);
+  attachTrend(candidates);
+  const enRangoCount = candidates.reduce((sum, c) => sum + c.normalCount, 0);
+  const envios = candidates
+    .filter((c) => c.groups.length > 0)
+    .map((c) => ({ id: c.id, hora: c.hora, wide: c.wide, groups: c.groups }));
+  return { envios, enRangoCount };
 }

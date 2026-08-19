@@ -1,6 +1,5 @@
 /**
  * High-density Guardia census grid with elevated team partitioning.
- * Separate from pase-board.mjs (single-patient Pase summary view).
  */
 import { calcVitalsBanner, calcVitalsBannerForSpec } from '../../../lib/interno/vitals-banner.mjs';
 import { sortPatientsByPriorityThenBed } from '../../../lib/patient-priority-sort.mjs';

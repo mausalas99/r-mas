@@ -26,13 +26,6 @@ import {
 import { setArchivedSectionCollapsed } from './patients-list.mjs';
 import {
   onPatientSearchInput,
-  togglePatientRoundSeen,
-  getRoundOverviewMode,
-  setRoundOverviewMode,
-  syncRoundExpedienteLayout,
-  renderRoundOverviewPanels,
-  returnToRoundOverview,
-  openFullExpedienteFromRound,
   advanceRondaPatient,
   scrollActiveRondaCardIntoView,
 } from './patients-round.mjs';
@@ -102,14 +95,7 @@ var ARCHIVED_SECTION_COLLAPSED_LS = 'rpc-archived-section-collapsed';
 var SIDEBAR_AUTO_HIDE_LS = 'rpc-sidebar-auto-hide';
 
 export {
-  getRoundOverviewMode,
-  setRoundOverviewMode,
   onPatientSearchInput,
-  togglePatientRoundSeen,
-  syncRoundExpedienteLayout,
-  renderRoundOverviewPanels,
-  returnToRoundOverview,
-  openFullExpedienteFromRound,
   advanceRondaPatient,
   scrollActiveRondaCardIntoView,
 };
@@ -320,7 +306,6 @@ export const windowHandlers = {
   focusPatientSearchInput,
   togglePatientPinned,
   togglePatientArchived,
-  togglePatientRoundSeen,
   movePatientByOffset,
   toggleArchivedSection,
   toggleSidebarAutoHide,
@@ -335,7 +320,5 @@ export const windowHandlers = {
   cancelPatientBulkSelect,
   confirmBulkDeletePatients,
   togglePatientCensusFilters,
-  openFullExpedienteFromRound,
-  returnToRoundOverview,
   ...patientRegistroModalWindowHandlers,
 };

@@ -2,7 +2,6 @@
 import { sortLabHistoryChronological } from '../../tend-core.mjs';
 import { getLabHistoryRevision, TREND_REFRESH_DEBOUNCE_MS } from '../../lab-history-cache.mjs';
 import { scheduleIdle } from '../../deferred-work.mjs';
-import { isPaseMode } from '../chrome.mjs';
 import { rt, aid, esc } from './expediente-runtime.mjs';
 import {
   parseCultureBlockFromLineArray,
@@ -96,7 +95,7 @@ function groupCultivoRowsByTipoChronologic(rows) {
   });
 }
 
-/** Modo Pase: positivos siempre; negativos solo si hay cambio de signo vs. otro resultado del mismo tipo+muestra (cronológico). */
+/** Resumen: positivos siempre; negativos solo si hay cambio de signo vs. otro resultado del mismo tipo+muestra (cronológico). */
 function filterCultivoRowsSignificantFlip(rows) {
   function seriesKey(r) {
     return (
@@ -306,14 +305,12 @@ function renderCultivosTable() {
   removeAtbRisPanelsFromBody();
   if (!aid()) {
     container.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
-    if (isPaseMode()) rt.renderPaseBoard();
     return;
   }
   var flatRows = extractCultivoTableRowsFromHistory(aid());
   if (!flatRows.length) {
     container.innerHTML =
       '<p class="tend-empty">No hay cultivos en el historial. Aparecen urocultivos, hemocultivos, tinción Gram y cultivos de catéter enviados desde Laboratorio.</p>';
-    if (isPaseMode()) rt.renderPaseBoard();
     return;
   }
   var groups = groupCultivoRowsByTipoChronologic(flatRows);
@@ -337,7 +334,6 @@ function renderCultivosTable() {
   var built = collectCultivoTableRowChunks(groups, rowFechaDisplay);
   var finishTable = function () {
     wireAtbRisHoverPanels(container);
-    if (isPaseMode()) rt.renderPaseBoard();
   };
   if (built.totalRows > CULTIVOS_CHUNKED_THRESHOLD) {
     var shellHtml =

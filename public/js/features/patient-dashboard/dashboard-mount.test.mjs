@@ -5,62 +5,45 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveDashboardPaintTargets, buildEaInputFromPatient, shouldRefreshDashboardForLabs } from './dashboard-mount.mjs';
 
-test('no-arg render targets both classic and ronda hosts', () => {
+test('no-arg render targets the classic host on Resumen', () => {
   var classic = { id: 'classic' };
-  var ronda = { id: 'ronda' };
   var targets = resolveDashboardPaintTargets({
     classic: classic,
-    ronda: ronda,
     inner: 'resumen',
   });
-  assert.deepEqual(targets, [classic, ronda]);
+  assert.deepEqual(targets, [classic]);
 });
 
-test('skips a host whose wrap is display none', () => {
+test('skips the classic host when its wrap is display none', () => {
   var classic = { id: 'classic' };
-  var ronda = { id: 'ronda' };
-  var hiddenOverview = { style: { display: 'none' } };
   assert.deepEqual(
     resolveDashboardPaintTargets({
       classic: classic,
-      ronda: ronda,
-      rondaWrap: hiddenOverview,
-      inner: 'resumen',
-    }),
-    [classic]
-  );
-  assert.deepEqual(
-    resolveDashboardPaintTargets({
-      classic: classic,
-      ronda: ronda,
       classicWrap: { style: { display: 'none' } },
       inner: 'resumen',
     }),
-    [ronda]
+    []
   );
 });
 
 test('explicit host paints only that host', () => {
   var classic = { id: 'classic' };
-  var ronda = { id: 'ronda' };
+  var explicit = { id: 'explicit' };
   var targets = resolveDashboardPaintTargets({
-    hostEl: ronda,
+    hostEl: explicit,
     classic: classic,
-    ronda: ronda,
     inner: 'resumen',
   });
-  assert.deepEqual(targets, [ronda]);
+  assert.deepEqual(targets, [explicit]);
 });
 
-test('ronda host still paints when inner is not resumen', () => {
+test('classic host does not paint when inner is not resumen', () => {
   var classic = { id: 'classic' };
-  var ronda = { id: 'ronda' };
   var targets = resolveDashboardPaintTargets({
     classic: classic,
-    ronda: ronda,
     inner: 'clinico',
   });
-  assert.deepEqual(targets, [ronda]);
+  assert.deepEqual(targets, []);
 });
 
 test('buildEaInputFromPatient does not throw when the patient has no monitoreo (no active patient on boot)', () => {
@@ -90,11 +73,10 @@ test('buildEaInputFromPatient advances ATB día from receta fechaActualizacion',
 });
 
 test('shouldRefreshDashboardForLabs paints Paciente Resumen, not Laboratorio', () => {
-  assert.equal(shouldRefreshDashboardForLabs('nota', 'resumen', null), true);
-  assert.equal(shouldRefreshDashboardForLabs('lab', 'resumen', null), false);
-  assert.equal(shouldRefreshDashboardForLabs('nota', 'todo', null), false);
-  assert.equal(shouldRefreshDashboardForLabs('nota', 'clinico', { hidden: false }), true);
-  assert.equal(shouldRefreshDashboardForLabs('nota', 'clinico', { hidden: true }), false);
+  assert.equal(shouldRefreshDashboardForLabs('nota', 'resumen'), true);
+  assert.equal(shouldRefreshDashboardForLabs('lab', 'resumen'), false);
+  assert.equal(shouldRefreshDashboardForLabs('nota', 'todo'), false);
+  assert.equal(shouldRefreshDashboardForLabs('nota', 'clinico'), false);
 });
 
 test('Resumen glance does not settle-fade or persist on collect', () => {
@@ -116,25 +98,25 @@ test('patient select defers labs glance until after identity paints', () => {
   assert.match(renderFn, /deferLabs/);
   assert.match(renderFn, /scheduleAfterPaintThenIdle/);
   assert.match(renderFn, /fillDashboardLabs/);
-  const nav = readFileSync(join(dir, '../pase-board-navigation.mjs'), 'utf8');
+  const nav = readFileSync(join(dir, '../expediente-navigation.mjs'), 'utf8');
   const refreshFn = nav.slice(
     nav.indexOf('export function refreshExpedienteAfterPatientSelect'),
     nav.indexOf('export function switchConsolidatedTab')
   );
   assert.match(refreshFn, /deferLabs: !!opts\.patientChanged/);
-  const cache = readFileSync(join(dir, '../pase-board-inner-cache.mjs'), 'utf8');
+  const cache = readFileSync(join(dir, '../expediente-inner-cache.mjs'), 'utf8');
   assert.match(cache, /deferLabs: !!\(opts && opts\.deferLabs\)/);
 });
 
 test('patient select does not force-warm EA/Tendencias at 1.2s', () => {
   const dir = dirname(fileURLToPath(import.meta.url));
-  const nav = readFileSync(join(dir, '../pase-board-navigation.mjs'), 'utf8');
+  const nav = readFileSync(join(dir, '../expediente-navigation.mjs'), 'utf8');
   const warmFn = nav.slice(
     nav.indexOf('export function refreshExpedienteAfterPatientSelect'),
     nav.indexOf('export function switchConsolidatedTab')
   );
   assert.doesNotMatch(warmFn, /warmExpedienteHeavyTabs/);
-  const cache = readFileSync(join(dir, '../pase-board-inner-cache.mjs'), 'utf8');
+  const cache = readFileSync(join(dir, '../expediente-inner-cache.mjs'), 'utf8');
   assert.match(cache, /scheduleIdle\(warmNext, 8000\)/);
   assert.doesNotMatch(cache, /, 1200\)/);
 });

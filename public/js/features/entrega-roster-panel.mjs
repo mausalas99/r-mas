@@ -24,6 +24,8 @@ import {
   patientClinicalPriorityRank,
   sortPatientsByPriorityThenBed,
 } from '../../../lib/patient-priority-sort.mjs';
+import { storage } from '../storage.js';
+import { openConfirm } from './workbench/confirm.mjs';
 
 const PANEL_ID = 'entrega-roster-panel';
 const WARN_SVG = `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`;
@@ -188,7 +190,7 @@ function wireRosterRows(host, guardiasMap, rosterPatientIds, settings) {
 }
 
 /** @param {Map<string, object>} guardiasMap */
-function rosterHasSavedEntregas(guardiasMap) {
+export function rosterHandoffCounts(guardiasMap) {
   let totalEstudios = 0;
   let patientsWithSignos = 0;
   for (const g of guardiasMap.values()) {
@@ -197,10 +199,45 @@ function rosterHasSavedEntregas(guardiasMap) {
     totalEstudios += listActiveProcedimientos(doc).length;
     if (vitalsStructuredMonitoringEnabled(doc.vitalsPlan)) patientsWithSignos += 1;
   }
+  return { totalEstudios, patientsWithSignos };
+}
+
+/** @param {Map<string, object>} guardiasMap */
+function rosterHasSavedEntregas(guardiasMap) {
+  const { totalEstudios, patientsWithSignos } = rosterHandoffCounts(guardiasMap);
   return totalEstudios > 0 || patientsWithSignos > 0;
 }
 
-function wireRosterFooter(guardiasMap) {
+/** @param {object[]} censusPatients */
+export function rosterPendingTodoCount(censusPatients) {
+  return censusPatients.reduce(
+    (sum, p) => sum + storage.getTodos(p.id).filter((t) => !t.completed).length,
+    0
+  );
+}
+
+/**
+ * Builds the one-sentence consequence text for the "Confirmar entrega" modal,
+ * using the real counts for this shift's roster — README 11a `consequence`
+ * weight requires the effect to be stated, not just implied.
+ * @param {object[]} censusPatients @param {Map<string, object>} guardiasMap
+ */
+export function buildEntregaConsequenceText(censusPatients, guardiasMap) {
+  const { totalEstudios, patientsWithSignos } = rosterHandoffCounts(guardiasMap);
+  const pendientes = rosterPendingTodoCount(censusPatients);
+  const parts = [
+    `${censusPatients.length} paciente${censusPatients.length === 1 ? '' : 's'}`,
+    `${pendientes} pendiente${pendientes === 1 ? '' : 's'} abierto${pendientes === 1 ? '' : 's'}`,
+    `${patientsWithSignos} con signos vitales por tomar`,
+  ];
+  if (totalEstudios > 0) {
+    parts.push(`${totalEstudios} estudio${totalEstudios === 1 ? '' : 's'} pendiente${totalEstudios === 1 ? '' : 's'}`);
+  }
+  return `Vas a entregar la guardia de ${parts.join(', ')}.`;
+}
+
+/** @param {Map<string, object>} guardiasMap @param {object[]} censusPatients */
+function wireRosterFooter(guardiasMap, censusPatients) {
   document.getElementById('roster-btn-cancel')?.addEventListener('click', () => {
     void (async () => {
       closeEntregaRosterPanel();
@@ -212,14 +249,19 @@ function wireRosterFooter(guardiasMap) {
 
   document.getElementById('roster-btn-confirm')?.addEventListener('click', () => {
     void (async () => {
-      if (!rosterHasSavedEntregas(guardiasMap)) {
-        const proceed = window.confirm(
-          'No hay entregas guardadas con signos vitales ni estudios.\n\n' +
-            'Los internos (MIP) solo ven pacientes entregados al R1 de guardia. Abre cada paciente, configura signos (y procedimientos si aplica) y pulsa Guardar entrega.\n\n' +
-            '¿Iniciar turno activo de todos modos?'
-        );
-        if (!proceed) return;
-      }
+      const hasSaved = rosterHasSavedEntregas(guardiasMap);
+      const consequenceText = buildEntregaConsequenceText(censusPatients, guardiasMap);
+      const result = await openConfirm({
+        weight: 'consequence',
+        title: '¿Confirmar entrega de guardia?',
+        consequenceText: hasSaved
+          ? consequenceText
+          : consequenceText +
+            ' No hay entregas guardadas con signos vitales ni estudios: los internos (MIP) solo ven pacientes entregados al R1 de guardia.',
+        confirmLabel: 'Confirmar entrega',
+        cancelLabel: 'Cancelar',
+      });
+      if (result !== 'confirm') return;
 
       closeEntregaRosterPanel();
       const { endEntregaPhase } = await import('./clinical-entrega.mjs');
@@ -264,7 +306,7 @@ export async function openEntregaRosterPanel(settings) {
   host.innerHTML = buildRosterPanelHtml(censusPatients, critical, stable, guardiasMap);
   const rosterPatientIds = censusPatients.map((p) => String(p.id));
   wireRosterRows(host, guardiasMap, rosterPatientIds, settings);
-  wireRosterFooter(guardiasMap);
+  wireRosterFooter(guardiasMap, censusPatients);
 }
 
 export function closeEntregaRosterPanel() {

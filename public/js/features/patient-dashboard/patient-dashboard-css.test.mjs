@@ -16,20 +16,33 @@ test('vitals and labs share one row and do not clip', () => {
   assert.match(css, /\.bento\.vitals-labs\s*\{[^}]*min-height:\s*min-content/s);
   assert.match(css, /\.bento\.vitals-labs \.vitals-card[\s\S]*?overflow:\s*visible/s);
   assert.match(css, /\.bento\.vitals-labs \.labs-card[\s\S]*?overflow:\s*visible/s);
-  assert.match(css, /\.vitals\s*\{[^}]*grid-template-columns:\s*1fr\s+1fr/s);
-  assert.match(css, /\.vitals\s*\{[^}]*minmax\(\s*min-content/s);
+  assert.match(css, /\.vitals\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit/s);
+  assert.match(css, /\.vitals\s*\{[^}]*grid-auto-rows:\s*minmax\(\s*min-content/s);
   assert.match(css, /\.labs-card \.card-b\s*\{[^}]*overflow:\s*visible/s);
   assert.equal(/grid-column:\s*1\s*\/\s*-1/.test(css), false);
   assert.match(css, /\.vital\s*\{[^}]*min-width:\s*min-content/s);
 });
 
-test('altered lab chips align on a tipo column', () => {
+test('fuera-de-rango draws sit in a horizontal row, not stacked', () => {
   const css = readDashboardCss();
-  assert.match(css, /\.day-draws\s*\{[^}]*flex-direction:\s*column/s);
-  assert.match(css, /\.draw\s*\{[^}]*grid-template-columns:\s*3\.4em/s);
-  assert.match(css, /\.draw-g[\s\S]*?grid-template-columns:\s*4\.2em/s);
-  assert.match(css, /\.draw-g \.tipo\s*\{[^}]*min-width:\s*min-content/s);
+  assert.match(css, /\.day-draws\s*\{[^}]*flex-direction:\s*row/s);
+  assert.match(css, /\.day-draws\s*\{[^}]*flex-wrap:\s*wrap/s);
+  assert.match(css, /\.draw-head\s*\{[^}]*background:\s*var\(--color-danger-tint-strong\)/s);
+  assert.match(css, /\.draw-grid\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit/s);
+  assert.match(css, /\.draw-cell\s*\{[^}]*display:\s*flex/s);
   assert.match(css, /\.draw\.is-wide\s*\{[^}]*(?:flex:\s*1\s+1\s+100%|flex-basis:\s*100%|width:\s*100%)/s);
+});
+
+test('labs en-rango summary uses the dense metadata type token', () => {
+  const css = readDashboardCss();
+  assert.match(css, /\.labs-en-rango\s*\{[^}]*font:\s*var\(--type-wb-metadata\)/s);
+});
+
+test('section headers and row metadata use the dense workbench type scale', () => {
+  const css = readDashboardCss();
+  assert.match(css, /\.patient-dash \.card-h\s*\{[^}]*font:\s*var\(--type-wb-section-label\)/s);
+  assert.match(css, /\.patient-dash \.card-h-meta\s*\{[^}]*font:\s*var\(--type-wb-metadata\)/s);
+  assert.match(css, /\.patient-dash \.rows time\s*\{[^}]*font:\s*var\(--type-wb-mono\)/s);
 });
 test('rest bento cards are flex columns without .clickable', () => {
   const css = readDashboardCss();

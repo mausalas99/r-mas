@@ -48,6 +48,16 @@ function resolveVitalsSnapshot(monitoreo) {
   return deriveSnapshot(monitoreo);
 }
 
+function lastVitalsAt(monitoreo) {
+  var hist = monitoreo && Array.isArray(monitoreo.historial) ? monitoreo.historial : [];
+  var latest = '';
+  for (var i = 0; i < hist.length; i++) {
+    var at = hist[i] && typeof hist[i] === 'object' ? hist[i].recordedAt : null;
+    if (at != null && String(at) > latest) latest = String(at);
+  }
+  return latest || null;
+}
+
 /**
  * @param {{
  *   patient?: Record<string, unknown>,
@@ -72,14 +82,15 @@ export function buildDashboardModel({
 } = {}) {
   const p = patient ?? {};
   const labs = skipLabs
-    ? { envios: [], pending: true }
+    ? { envios: [], pending: true, enRangoCount: 0 }
     : labSets
       ? buildLabsGlanceForDay({ todayKey: todayKey ?? localTodayKey(), orderedSets: labSets })
-      : { envios: [] };
+      : { envios: [], enRangoCount: 0 };
   return {
     view: resolveView(inner),
     identity: buildIdentity(p),
     vitals: resolveVitalsSnapshot(p.monitoreo),
+    vitalsAt: lastVitalsAt(p.monitoreo),
     labs,
     ea: eaInput ? buildEaGlance(eaInput) : { kpis: [], soap: [] },
     eventualidades: firstItems(eventualidades, 3),

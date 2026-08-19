@@ -144,4 +144,39 @@ describe('labs glance', () => {
     assert.equal(model.envios.length, 1);
     assert.equal(model.envios[0].id, 'today');
   });
+
+  it('counts en-rango values across the whole day, including all-normal sets', () => {
+    const model = buildLabsGlanceForDay({
+      todayKey: '2026-8-13',
+      orderedSets: [
+        set('a', '07:14', ['BH\tHb 8.2* Hto 36', 'QS\tCr 1.1 Na 138']),
+        set('b', '14:20', ['GASES\tpH 7.40 PaO2 90']),
+      ],
+    });
+    // Hto 36, Cr 1.1, Na 138, pH 7.40, PaO2 90 = 5 en-rango values.
+    assert.equal(model.enRangoCount, 5);
+  });
+
+  it('marks trend on an altered chip vs. the same analyte in an earlier envío', () => {
+    const model = buildLabsGlanceForDay({
+      todayKey: '2026-8-13',
+      orderedSets: [
+        set('a', '04:00', ['QS\tK 3.9']),
+        set('b', '11:00', ['QS\tK 2.9*']),
+      ],
+    });
+    const later = model.envios.find((e) => e.id === 'b');
+    const kChip = later.groups[0].chips.find((c) => c.label === 'K');
+    assert.equal(kChip.trend, 'down');
+    assert.equal(kChip.delta, '-1');
+  });
+
+  it('leaves trend unset for the first reading of the day', () => {
+    const model = buildLabsGlanceForDay({
+      todayKey: '2026-8-13',
+      orderedSets: [set('a', '04:00', ['QS\tK 2.9*'])],
+    });
+    const kChip = model.envios[0].groups[0].chips.find((c) => c.label === 'K');
+    assert.equal(kChip.trend, undefined);
+  });
 });

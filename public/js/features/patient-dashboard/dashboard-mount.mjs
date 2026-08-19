@@ -15,6 +15,18 @@ import { buildLabsGlanceForDay } from './labs-glance-model.mjs';
 import { openInterconsultModal } from './ic-modal.mjs';
 import { onLabHistoryRevision, TREND_REFRESH_DEBOUNCE_MS } from '../../lab-history-cache.mjs';
 
+/**
+ * Loaded lazily (not a top-level import) so the 10b Interconsulta chrome
+ * stays out of the eager boot payload — dashboard-mount.mjs itself is
+ * eager (imported by expediente-inner-cache.mjs), but
+ * the interconsulta chrome only matters once a user is in that mode.
+ */
+function syncInterconsultaModeChrome() {
+  import('../interconsulta-mode-chrome.mjs').then(function (mod) {
+    mod.syncInterconsultaModeChrome();
+  });
+}
+
 var rt = {
   getActiveId() {
     return null;
@@ -193,10 +205,9 @@ var dashLabWired = false;
 var dashLabTimer = null;
 var dashPainting = false;
 
-export function shouldRefreshDashboardForLabs(appTab, inner, rondaHost) {
+export function shouldRefreshDashboardForLabs(appTab, inner) {
   if (appTab && appTab !== 'nota') return false;
-  if (inner === 'resumen') return true;
-  return !!(rondaHost && !rondaHost.hidden);
+  return inner === 'resumen';
 }
 
 function paintDashboardFromLabRevision(patientId) {
@@ -204,9 +215,7 @@ function paintDashboardFromLabRevision(patientId) {
   if (String(patientId || '') !== String(rt.getActiveId() || '')) return;
   var appTab = typeof rt.getActiveAppTab === 'function' ? rt.getActiveAppTab() : 'nota';
   var inner = rt.getActiveInner() || 'resumen';
-  var ronda =
-    typeof document !== 'undefined' ? document.getElementById('patient-ronda-dashboard-host') : null;
-  if (!shouldRefreshDashboardForLabs(appTab, inner, ronda)) return;
+  if (!shouldRefreshDashboardForLabs(appTab, inner)) return;
   dashPainting = true;
   try {
     renderPatientDashboard(null, { settle: false });
@@ -245,7 +254,6 @@ function wireDashboardHost(mount) {
 function wireDashboardOnce() {
   wireDashboardLabRefresh();
   wireDashboardHost(document.getElementById('patient-dashboard-mount'));
-  wireDashboardHost(document.getElementById('patient-ronda-dashboard-host'));
   if (dashBackWired) return;
   dashBackWired = true;
   var back = document.getElementById('btn-volver-al-resumen');
@@ -272,9 +280,6 @@ export function resolveDashboardPaintTargets(opts) {
   var targets = [];
   if (opts.classic && inner === 'resumen' && dashboardHostIsPaintable(opts.classic, opts.classicWrap)) {
     targets.push(opts.classic);
-  }
-  if (opts.ronda && dashboardHostIsPaintable(opts.ronda, opts.rondaWrap)) {
-    targets.push(opts.ronda);
   }
   return targets;
 }
@@ -309,9 +314,7 @@ export function renderPatientDashboard(hostEl, opts) {
   var targets = resolveDashboardPaintTargets({
     hostEl: hostEl || null,
     classic: document.getElementById('patient-dashboard-mount'),
-    ronda: document.getElementById('patient-ronda-dashboard-host'),
     classicWrap: document.getElementById('patient-expediente-classic'),
-    rondaWrap: document.getElementById('patient-ronda-overview'),
     inner: inner,
   });
   if (!targets.length) return;
@@ -322,6 +325,7 @@ export function renderPatientDashboard(hostEl, opts) {
     wireDashboardHost(mount);
     mount.innerHTML = html;
   });
+  syncInterconsultaModeChrome();
   if (!deferLabs) return;
   scheduleAfterPaintThenIdle(function () {
     fillDashboardLabs(targets, pid);

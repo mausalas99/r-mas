@@ -7,7 +7,6 @@ import {
 import { shouldEnforceTeamPatientMirror } from '../clinical-privileges.mjs';
 import { isCloudMobileClient } from './cloud-mobile/origin.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
-import { isPaseMode } from './chrome.mjs';
 import { isModeSala } from '../mode-features.mjs';
 import { isPatientBulkSelectMode } from './patients-bulk-select.mjs';
 import {
@@ -40,11 +39,7 @@ import {
   renderArchivedToggleHtml,
 } from './patients-card-html.mjs';
 import { syncPatientListIndicator } from '../patient-list-indicator.mjs';
-import {
-  renderPatientRoundRowHtml,
-  setLastRondaNavIds,
-  isPatientRoundSeen,
-} from './patients-round.mjs';
+import { setLastRondaNavIds } from './patients-round.mjs';
 import { patientCardIdFromEvent, shouldHandleTouchPointerUp } from './patients-list-click.mjs';
 
 var ARCHIVED_SECTION_COLLAPSED_LS = 'rpc-archived-section-collapsed';
@@ -259,14 +254,13 @@ function renderPatientListMessage(list, msg, opts) {
   }
 }
 
-function buildPatientListRenderBundle(filtered, isRonda) {
+function buildPatientListRenderBundle(filtered) {
   var zones = buildPatientListZones(filtered, { sortByBed: isMobileWeb() });
-  var cardHtml = isRonda ? renderPatientRoundRowHtml : renderPatientCardHtml;
+  var cardHtml = renderPatientCardHtml;
   var archivedCollapsed = isArchivedSectionCollapsed();
   var listCtx = {
     activeId: rt.getActiveId(),
-    isRonda: isRonda,
-    isRoundSeen: isPatientRoundSeen,
+    isRonda: false,
     showServicioInCard: !isModeSala(rt.getSettings()),
   };
   var onRondaNav = function (z) {
@@ -407,7 +401,6 @@ function renderPatientListNow(opts) {
   else syncClinicalCensusFiltersBar();
   var list = document.getElementById('patient-list');
   if (!list) return;
-  var isRonda = isPaseMode();
   var visiblePatients = patientsVisibleInSidebar();
   if (!visiblePatients.length) {
     if (isCloudMobileClient()) {
@@ -429,7 +422,7 @@ function renderPatientListNow(opts) {
     reselectIfActivePatientHidden(visiblePatients);
     return;
   }
-  var bundle = buildPatientListRenderBundle(filtered, isRonda);
+  var bundle = buildPatientListRenderBundle(filtered);
   if (!trySilentPatientListUpdate(list, bundle, opts)) {
     renderPatientListFullHtml(list, bundle, opts);
   }

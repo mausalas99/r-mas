@@ -7,7 +7,7 @@ const INTER = { appMode: 'interconsulta' };
 
 afterEach(() => {
   if (typeof document !== 'undefined' && document.documentElement) {
-    document.documentElement.classList.remove('ui-density-guardia', 'ui-density-pase');
+    document.documentElement.classList.remove('ui-density-guardia');
   }
 });
 
@@ -16,7 +16,6 @@ test('buildHeaderPath: app tabs map to their names', () => {
   assert.equal(buildHeaderPath('med', 'todo', SALA), 'Manejo');
   assert.equal(buildHeaderPath('agenda', 'todo', SALA), 'Agenda');
   assert.equal(buildHeaderPath('guardia', 'historia', SALA), 'Guardia');
-  assert.equal(buildHeaderPath('pase', 'todo', SALA), 'Pase');
 });
 
 test('buildHeaderPath: Guardia density overrides lab tab label', () => {

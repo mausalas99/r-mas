@@ -45,7 +45,6 @@ let rt = {
   refreshAllTodoUIs() {},
   renderManejo() {},
   renderRecetaHu() {},
-  renderPaseBoard() {},
   pushUndoSnapshot() {},
   addAuditEntry() {},
   applyDefaultsToNewPatient() {},

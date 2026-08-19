@@ -19,10 +19,6 @@ import {
 } from './expediente/expediente-cultivos-table.mjs';
 import { wireAtbRisHoverPanels, removeAtbRisPanelsFromBody } from './expediente/expediente-cultivos-atb-ui.mjs';
 import {
-  formatPaseCultivoResistenciasHtml,
-  paseCultivoAtbBlockHtml,
-} from './expediente/expediente-cultivos-pase.mjs';
-import {
   renderListadoForm,
   generateListado,
   updateListadoMeta,
@@ -50,8 +46,6 @@ export {
   isResLabChunkPureCultivo,
   extractCultivoTableRowsFromHistory,
   filterCultivoRowsSignificantFlip,
-  formatPaseCultivoResistenciasHtml,
-  paseCultivoAtbBlockHtml,
   buildPatientDemographicsCardHtml,
   renderPatientDataPane,
   copyCultivoCondensado,

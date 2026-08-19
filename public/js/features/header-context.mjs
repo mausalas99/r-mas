@@ -12,7 +12,6 @@ function densityPathOverride() {
   if (typeof document === 'undefined' || !document.documentElement) return '';
   var cls = document.documentElement.classList;
   if (cls.contains('ui-density-guardia')) return 'Guardia';
-  if (cls.contains('ui-density-pase')) return 'Pase';
   return '';
 }
 
@@ -24,7 +23,6 @@ export function buildHeaderPath(appTab, inner, settings) {
   if (appTab === 'med') return 'Manejo';
   if (appTab === 'agenda') return 'Agenda';
   if (appTab === 'guardia') return 'Guardia';
-  if (appTab === 'pase') return 'Pase';
   var granular = inner || 'todo';
   var target = resolveConsolidatedTarget(granular, settings || {});
   var path = GROUP_LABELS[target.tab] || 'Expediente';

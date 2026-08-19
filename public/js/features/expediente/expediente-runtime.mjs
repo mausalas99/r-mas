@@ -8,7 +8,6 @@ let rt = {
   getSettings() { return /** @type {any} */ ({}); },
   showToast() {},
   renderTendencias() {},
-  renderPaseBoard() {},
   splitResLabsByTipo(rows) { void rows; return { labs: [], cultivo: [] }; },
   buildLabSetDateLine(set) { void set; return ''; },
   ensureParsedLabHistory(pid) { void pid; return []; },

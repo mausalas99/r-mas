@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isRoundOverviewInner } from './patients-round.mjs';
 import { shouldKeepSidebarRevealed, shouldRevealSidebarAt } from './patients.mjs';
 
 function readSidebarCss() {
@@ -104,22 +103,6 @@ describe('selectPatient chart paint', () => {
     assert.match(fn, /refreshExpedienteAfterPatientSelect/);
     assert.match(fn, /persistClinicalState\(\)/);
     assert.match(fn, /ctx\.prevId/);
-  });
-});
-
-describe('isRoundOverviewInner', () => {
-  it('treats resumen, todo, and empty as Pase overview', () => {
-    assert.equal(isRoundOverviewInner('resumen'), true);
-    assert.equal(isRoundOverviewInner('todo'), true);
-    assert.equal(isRoundOverviewInner(''), true);
-    assert.equal(isRoundOverviewInner(null), true);
-    assert.equal(isRoundOverviewInner(undefined), true);
-  });
-
-  it('does not treat other inners as overview', () => {
-    assert.equal(isRoundOverviewInner('estadoActual'), false);
-    assert.equal(isRoundOverviewInner('tend'), false);
-    assert.equal(isRoundOverviewInner('notas'), false);
   });
 });
 

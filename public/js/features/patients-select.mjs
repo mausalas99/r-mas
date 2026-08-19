@@ -13,7 +13,7 @@ import {
   getClinicalScopeContextForEvaluate,
 } from '../clinical-access-runtime.mjs';
 import { evaluateClinicalScope } from '../clinico-access.mjs';
-import { getUiDensity, isPaseMode } from './chrome.mjs';
+import { getUiDensity } from './chrome.mjs';
 import {
   commitPatientDeletes,
   formatPatientDeleteSummary,
@@ -27,12 +27,7 @@ import {
 import { rt } from './patients-runtime-state.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
 import { patchPatientListActiveHighlight } from './patients-list.mjs';
-import {
-  syncRoundExpedienteLayout,
-  scrollActiveRondaCardIntoView,
-  setRoundOverviewMode,
-  isRoundOverviewInner,
-} from './patients-round.mjs';
+import { scrollActiveRondaCardIntoView } from './patients-round.mjs';
 import { syncPatientBulkBar } from './patients-bulk-bar.mjs';
 import { showConfirmDialog } from '../ui-approval-card.mjs';
 import { requestSilentUpdateCheck } from './platform/updater/silent-check.mjs';
@@ -139,9 +134,6 @@ function applyInnerTabOnSamePatient(settings, inner) {
     switchInnerToResumen();
     inner = 'resumen';
   }
-  if (isPaseMode() && rt.getActiveAppTab() === 'nota') {
-    setRoundOverviewMode(isRoundOverviewInner(inner));
-  }
 }
 
 function migrateInnerOnPatientChange(inner, settings) {
@@ -169,10 +161,6 @@ function handleLabTabAfterPatientChange(wasOnLab, patientChanged) {
   if (!wasOnLab || !patientChanged) return false;
   rt.limpiarReporte();
   rt.renderLabHistoryPanel();
-  if (isPaseMode()) {
-    rt.syncWorkContextChrome();
-    return true;
-  }
   rt.switchAppTab('lab');
   scrollLabOutputIntoView();
   return true;
@@ -206,9 +194,7 @@ function paintSelectedPatientChart(id, ctx) {
   if (ctx.appTab === 'lab') rt.renderLabHistoryPanel();
   if (ctx.appTab === 'med') rt.renderMedRecetaPanel();
   handleLabTabAfterPatientChange(ctx.wasOnLab, ctx.patientChanged);
-  syncRoundExpedienteLayout();
   rt.refreshTendenciasOrCultivosPanel();
-  if (isPaseMode()) rt.renderPaseBoard();
   if (rt.getActiveId()) {
     requestAnimationFrame(function () {
       if (String(rt.getActiveId() || '') !== String(id)) return;
@@ -240,9 +226,6 @@ function selectPatientCore(id) {
   var inner = rt.getActiveInner();
   if (patientChanged) {
     inner = migrateInnerOnPatientChange(inner, settings);
-    if (isPaseMode() && rt.getActiveAppTab() === 'nota') {
-      setRoundOverviewMode(isRoundOverviewInner(inner));
-    }
   } else {
     applyInnerTabOnSamePatient(settings, inner);
   }
