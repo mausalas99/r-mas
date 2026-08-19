@@ -3057,6 +3057,14 @@ html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36
   letter-spacing: 0.02em;
 }
 html.dark .lab-output-fecha { color: var(--color-accent-soft-text); border-bottom-color: rgba(148, 163, 184, 0.35); }
+/* Fase 5 (2a/2b) — cuando el Día-nav ya muestra la fecha ("18/08/2026" en el picker), el
+   encabezado de fecha repetido dentro de la tarjeta Resultados es ruido que el mockup no
+   tiene (L2486/L2676 empiezan directo en el primer grupo de hora). Solo se oculta cuando el
+   picker tiene historial real (select visible); el reporte recién pegado -sin Día-nav útil-
+   conserva la fecha como único indicador. */
+#lab-output-section:has(.lab-history-date-select:not([hidden])) .lab-output-fecha {
+  display: none;
+}
 
 .lab-hour-group-h {
   font-family: inherit;
