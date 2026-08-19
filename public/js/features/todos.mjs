@@ -8,6 +8,7 @@ import {
 import { renderTodoFormIn } from './todos-list-render.mjs';
 import {
   addTodo,
+  addTodoWithFields,
   toggleTodo,
   deleteTodo,
   setTodoPriority,
@@ -25,6 +26,7 @@ export {
   refreshTodoUIsForPatients,
   refreshAllTodoUIs,
   addTodo,
+  addTodoWithFields,
   toggleTodo,
   deleteTodo,
   setTodoPriority,

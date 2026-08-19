@@ -1,11 +1,9 @@
 /** Pendientes — UI refresh after storage/LAN changes. */
-import { isPaseMode } from './chrome.mjs';
-import { aid, getTodosRuntime } from './todos-runtime.mjs';
+import { aid } from './todos-runtime.mjs';
 import { renderTodoFormIn } from './todos-list-render.mjs';
 
-/** LAN-scoped repaint: active patient todo form + pase board when sync touched one patient. */
-export function refreshTodoUIsForPatient(patientId, opts) {
-  opts = opts || {};
+/** LAN-scoped repaint: active patient todo form when sync touched one patient. */
+export function refreshTodoUIsForPatient(patientId) {
   var pid = String(patientId || '').trim();
   if (!pid) return;
 
@@ -13,13 +11,9 @@ export function refreshTodoUIsForPatient(patientId, opts) {
     var todoForm = document.getElementById('todo-form');
     if (todoForm) renderTodoFormIn(todoForm, '');
   }
-
-  if (isPaseMode() && !opts.skipPaseBoard) {
-    getTodosRuntime().renderPaseBoard();
-  }
 }
 
-/** Batch LAN refresh — one pase-board repaint for many touched patients. */
+/** Batch LAN refresh for many touched patients. */
 export function refreshTodoUIsForPatients(patientIds) {
   var seen = Object.create(null);
   var unique = [];
@@ -30,17 +24,13 @@ export function refreshTodoUIsForPatients(patientIds) {
     unique.push(id);
   });
   unique.forEach(function (pid) {
-    refreshTodoUIsForPatient(pid, { skipPaseBoard: true });
+    refreshTodoUIsForPatient(pid);
   });
-  if (unique.length && isPaseMode()) {
-    getTodosRuntime().renderPaseBoard();
-  }
 }
 
 export function refreshAllTodoUIs() {
   var todoForm = document.getElementById('todo-form');
   if (todoForm) renderTodoFormIn(todoForm, '');
-  if (isPaseMode()) getTodosRuntime().renderPaseBoard();
 }
 
 export function renderTodoForm() {

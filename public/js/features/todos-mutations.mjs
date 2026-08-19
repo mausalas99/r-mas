@@ -10,18 +10,18 @@ import {
 import { aid, getClinicalUsername } from './todos-runtime.mjs';
 import { refreshAllTodoUIs } from './todos-refresh.mjs';
 
-export function addTodo(idPrefix, priorityOverride, dueFields) {
-  if (idPrefix === undefined || idPrefix === null) idPrefix = '';
-  if (typeof idPrefix !== 'string') idPrefix = '';
-  if (!aid()) return;
-  var input = document.getElementById(idPrefix + 'todo-input');
-  if (!input) return;
-  var text = String(input.value || '').trim();
-  if (!text) return;
-  var chip = document.getElementById(idPrefix + 'todo-priority-chip');
-  var priority = normalizeTodoPriority(
-    priorityOverride || (chip && chip.dataset.priority) || 'media'
-  );
+/**
+ * Creates and persists a pendiente for the active patient from plain field
+ * values (no DOM reads) — shared by the inline add-row (`addTodo`) and the
+ * kit-styled "Nuevo pendiente" modal (`todos-add-modal.mjs`).
+ * @param {{ text: string, priority?: string, dueFields?: { dueDate?: string, reminderAt?: string } }} fields
+ * @returns {boolean} whether a pendiente was created
+ */
+export function addTodoWithFields(fields) {
+  if (!aid()) return false;
+  var text = String((fields && fields.text) || '').trim();
+  if (!text) return false;
+  var priority = normalizeTodoPriority((fields && fields.priority) || 'media');
   var nowIso = new Date().toISOString();
   var todos = storage.getTodos(aid());
   var row = {
@@ -34,6 +34,7 @@ export function addTodo(idPrefix, priorityOverride, dueFields) {
   };
   var username = getClinicalUsername();
   if (username) row.createdBy = username;
+  var dueFields = fields && fields.dueFields;
   if (dueFields && dueFields.dueDate) {
     row.dueDate = dueFields.dueDate;
     if (dueFields.reminderAt) row.reminderAt = dueFields.reminderAt;
@@ -42,8 +43,19 @@ export function addTodo(idPrefix, priorityOverride, dueFields) {
   storage.saveTodos(aid(), todos);
   enqueueCloudTodoUpsert(aid(), row);
   rescheduleAllTodos(aid());
-  input.value = '';
   refreshAllTodoUIs();
+  return true;
+}
+
+export function addTodo(idPrefix, priorityOverride, dueFields) {
+  if (idPrefix === undefined || idPrefix === null) idPrefix = '';
+  if (typeof idPrefix !== 'string') idPrefix = '';
+  var input = document.getElementById(idPrefix + 'todo-input');
+  if (!input) return;
+  var chip = document.getElementById(idPrefix + 'todo-priority-chip');
+  var priority = priorityOverride || (chip && chip.dataset.priority) || 'media';
+  var ok = addTodoWithFields({ text: input.value, priority: priority, dueFields: dueFields });
+  if (ok) input.value = '';
 }
 
 export function toggleTodo(id) {

@@ -12,13 +12,9 @@ var rt = {
   getActiveAppTab() {
     return 'lab';
   },
-  getRoundOverviewMode() {
-    return false;
-  },
   getSettings() {
     return {};
   },
-  renderPaseBoard() {},
 };
 
 export function registerTodosRuntime(ctx) {
