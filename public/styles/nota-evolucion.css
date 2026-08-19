@@ -1,7 +1,11 @@
 /* ── Nota de evolución (SOAP) — screen 9a ─────────────────────────────
- * S: texto libre + autosave reversible (om-rise). O: derivado por zona, el
- * residente confirma, no teclea. A: campo más grande de la pantalla.
- * P: por zona, marcas mono cortas (novo / sin cambio / suspende).
+ * Top bar: shared wb-mode-frame (workbench-kit.css) — identity + día N +
+ * borrador/firmada status, Copiar nota de ayer, Vista de impresión, and the
+ * one teal primary (Firmar y cerrar). S: texto libre + autosave reversible
+ * (om-rise). O: derivado en vivo por zona — el residente lo revisa, no lo
+ * teclea; se firma junto con toda la nota, no por separado. A: campo más
+ * grande de la pantalla. P: por zona, marcas mono cortas (nuevo / sin
+ * cambio / pendiente / suspende).
  * Reuses .soap-modal-backdrop / .soap-modal / .soap-section shell (modals.css).
  */
 
@@ -13,6 +17,10 @@
   flex-direction: column;
   gap: 10px;
   container-type: inline-size;
+}
+
+.ne-modal-body .wb-mode-frame {
+  flex-shrink: 0;
 }
 
 /* The primary-tab mount (nota-evolucion-primary-tab.mjs) sits inside the
@@ -172,7 +180,33 @@
   border-bottom: none;
 }
 
-/* Objetivo — derivado, solo lectura, se confirma en lugar de teclearse. */
+/* Per-zone accent (N/V/HD/HI/NM) — mockup #9a colors each zone's mono id a
+ * distinct hue for fast scanning; this is data classification, not a brand
+ * action color, so it does not count against the one-teal-primary rule
+ * (same reasoning as Guardia's VENCIDO/EN CURSO status colors). Values match
+ * the mockup's literal oklch() figures. */
+.ne-objetivo-zone[data-ne-objetivo-zone='N'] .ne-zone-label,
+.ne-plan-zone[data-ne-plan-zone='N'] .ne-zone-label {
+  color: var(--ne-zone-n, oklch(0.42 0.12 300));
+}
+.ne-objetivo-zone[data-ne-objetivo-zone='V'] .ne-zone-label,
+.ne-plan-zone[data-ne-plan-zone='V'] .ne-zone-label {
+  color: var(--ne-zone-v, oklch(0.42 0.12 210));
+}
+.ne-objetivo-zone[data-ne-objetivo-zone='HD'] .ne-zone-label,
+.ne-plan-zone[data-ne-plan-zone='HD'] .ne-zone-label {
+  color: var(--ne-zone-hd, oklch(0.42 0.12 18));
+}
+.ne-objetivo-zone[data-ne-objetivo-zone='HI'] .ne-zone-label,
+.ne-plan-zone[data-ne-plan-zone='HI'] .ne-zone-label {
+  color: var(--ne-zone-hi, oklch(0.42 0.12 85));
+}
+.ne-objetivo-zone[data-ne-objetivo-zone='NM'] .ne-zone-label,
+.ne-plan-zone[data-ne-plan-zone='NM'] .ne-zone-label {
+  color: var(--ne-zone-nm, oklch(0.42 0.12 160));
+}
+
+/* Objetivo — derivado en vivo, solo lectura; se firma con toda la nota. */
 .ne-section-hint {
   font-weight: 500;
   color: var(--color-ink-muted, var(--text-muted));
@@ -235,45 +269,6 @@
   padding: 8px 0;
 }
 
-.ne-objetivo-footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 12px;
-  margin-top: 4px;
-  padding-top: 10px;
-  border-top: 1px solid var(--divider);
-}
-
-.ne-objetivo-confirmed {
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 11px;
-  color: var(--color-success, var(--primary));
-}
-
-.ne-objetivo-pending {
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 11px;
-  color: var(--color-ink-muted, var(--text-muted));
-}
-
-.ne-btn {
-  appearance: none;
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 6px 14px;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.ne-btn-confirm {
-  background: var(--color-success-emphasis);
-  color: var(--color-on-success);
-}
-
 /* Análisis — el campo más grande de la pantalla. */
 .ne-section-a {
   flex: 1 1 auto;
@@ -294,7 +289,7 @@
   resize: vertical;
 }
 
-/* Plan — por zona, marcas mono cortas: novo / sin cambio / suspende. */
+/* Plan — por zona, marcas mono cortas: nuevo / sin cambio / pendiente / suspende. */
 .ne-plan-zones {
   display: flex;
   flex-direction: column;
@@ -328,30 +323,32 @@
   cursor: pointer;
 }
 
+/* Mockup #9a L888-946: marks are plain mono text, weight per mark — no chip
+ * pill, no background tint (per senior-dev ruling 2026-08-19: the mockup
+ * renders these as bare text, not a pill; a prior pass had wrongly styled
+ * them as filled chips). */
 .ne-plan-mark {
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 11px;
-  font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: lowercase;
-  padding: 2px 8px;
-  border-radius: var(--radius-chip, 10px);
   white-space: nowrap;
 }
 
-.ne-plan-mark--novo {
-  color: var(--color-success, #0a7d3c);
-  background: var(--color-success-tint, color-mix(in oklab, var(--color-success, #0a7d3c) 12%, transparent));
+.ne-plan-mark--pendiente,
+.ne-plan-mark--sin-cambio {
+  font-weight: 500;
+  color: var(--color-ink-muted, var(--text-muted));
 }
 
-.ne-plan-mark--sin-cambio {
-  color: var(--color-ink-muted, var(--text-muted));
-  background: color-mix(in oklab, var(--color-ink, var(--text)) 8%, transparent);
+.ne-plan-mark--nuevo {
+  font-weight: 600;
+  color: var(--color-warn);
 }
 
 .ne-plan-mark--suspende {
+  font-weight: 600;
   color: var(--color-danger, #d70015);
-  background: var(--color-danger-tint, color-mix(in oklab, var(--color-danger, #d70015) 12%, transparent));
 }
 
 .ne-plan-row-remove {
@@ -376,4 +373,27 @@
 
 html.dark .ne-objetivo-item--alert {
   color: var(--color-danger, #ff453a);
+}
+
+/* Zone accents at 0.42 lightness read as near-black on a dark surface — lift
+ * lightness for dark mode while keeping each zone's hue and chroma. */
+html.dark .ne-objetivo-zone[data-ne-objetivo-zone='N'] .ne-zone-label,
+html.dark .ne-plan-zone[data-ne-plan-zone='N'] .ne-zone-label {
+  color: var(--ne-zone-n-dark, oklch(0.78 0.1 300));
+}
+html.dark .ne-objetivo-zone[data-ne-objetivo-zone='V'] .ne-zone-label,
+html.dark .ne-plan-zone[data-ne-plan-zone='V'] .ne-zone-label {
+  color: var(--ne-zone-v-dark, oklch(0.78 0.1 210));
+}
+html.dark .ne-objetivo-zone[data-ne-objetivo-zone='HD'] .ne-zone-label,
+html.dark .ne-plan-zone[data-ne-plan-zone='HD'] .ne-zone-label {
+  color: var(--ne-zone-hd-dark, oklch(0.78 0.1 18));
+}
+html.dark .ne-objetivo-zone[data-ne-objetivo-zone='HI'] .ne-zone-label,
+html.dark .ne-plan-zone[data-ne-plan-zone='HI'] .ne-zone-label {
+  color: var(--ne-zone-hi-dark, oklch(0.78 0.1 85));
+}
+html.dark .ne-objetivo-zone[data-ne-objetivo-zone='NM'] .ne-zone-label,
+html.dark .ne-plan-zone[data-ne-plan-zone='NM'] .ne-zone-label {
+  color: var(--ne-zone-nm-dark, oklch(0.78 0.1 160));
 }

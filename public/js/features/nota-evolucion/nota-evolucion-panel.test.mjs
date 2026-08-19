@@ -38,3 +38,22 @@ test('buildRenderModel exposes S/O/A/P derived from the patient state', () => {
   assert.deepEqual(model.objetivo, { zones: [] });
   assert.equal(model.plan.length, 5); // N, V, HD, HI, NM
 });
+
+test('buildRenderModel header: draft status before signing, "firmada" after', () => {
+  registerNotaEvolucionRuntime({ getActiveId: () => 'p1', getPatients: () => [], showToast: () => {} });
+  const patient = { nombre: 'Pérez García, Juan M.', cuarto: '214-B', monitoreo: {} };
+  const draftModel = buildRenderModel(patient);
+  assert.equal(draftModel.header.signed, false);
+  assert.match(draftModel.header.context, /Pérez García/);
+  assert.match(draftModel.header.metadata, /borrador/);
+
+  const state = patient.monitoreo.notaEvolucion;
+  const signedAt = '2026-08-19T08:11:00.000Z';
+  state.signedAt = signedAt;
+  const d = new Date(signedAt);
+  const pad = (n) => String(n).padStart(2, '0');
+  const expectedHHMM = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const signedModel = buildRenderModel(patient);
+  assert.equal(signedModel.header.signed, true);
+  assert.equal(signedModel.header.metadata, `firmada ${expectedHHMM}`);
+});

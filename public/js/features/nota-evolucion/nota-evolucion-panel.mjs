@@ -1,10 +1,12 @@
 /**
  * Nota de evolución (SOAP) — screen 9a, montaje en DOM.
- * S: autosave con toast `om-rise` reversible (Deshacer). O: derivado, el
- * residente confirma. A: campo más grande. P: por zona con marcas mono.
+ * S: autosave con toast `om-rise` reversible (Deshacer). O: derivado en vivo,
+ * el residente lo revisa (no lo teclea); se firma junto con toda la nota.
+ * A: campo más grande. P: por zona con marcas mono.
  */
 import { persistClinicalState } from '../../app-state.mjs';
 import { showUndoToast } from '../workbench/undo-toast.mjs';
+import { shortenPatientDisplayName, formatPatientBedLabel } from '../../patient-sidebar-card.mjs';
 import { nextPlanMark } from './nota-evolucion-html.mjs';
 import { buildNotaEvolucionHtml } from './nota-evolucion-html.mjs';
 import {
@@ -13,7 +15,9 @@ import {
   removePlanItem,
   cyclePlanItemMark,
   planZonesForRender,
-  confirmObjetivoForPatient,
+  objetivoPreviewForPatient,
+  signNoteForPatient,
+  dayOfStayForPatient,
 } from './nota-evolucion-state.mjs';
 
 const AUTOSAVE_DEBOUNCE_MS = 900;
@@ -45,6 +49,39 @@ function activePatient() {
 /** @type {ReturnType<typeof setTimeout>|null} */
 let autosaveTimer = null;
 
+/** @param {string|null} iso */
+function formatTimeHHMM(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/**
+ * Top identity/action bar model (mockup #9a L803-812): patient · bed ·
+ * día N on the left (mono), draft/signed status on the right. Fields with
+ * no real data (no admission date on record → no día N) are simply omitted,
+ * never fabricated.
+ * @param {Record<string, unknown>} patient
+ * @param {import('./nota-evolucion-state.mjs').NotaEvolucionState} state
+ * @returns {{ context: string, metadata: string, signed: boolean }}
+ */
+function buildHeaderModel(patient, state) {
+  const p = /** @type {any} */ (patient);
+  const nombre = shortenPatientDisplayName(String(p?.nombre || '')) || 'Sin nombre';
+  const bed = formatPatientBedLabel(p);
+  const day = dayOfStayForPatient(p);
+  const contextParts = [nombre, bed, day != null ? `día ${day}` : ''].filter(Boolean);
+  const signed = !!state.signedAt;
+  const metadata = signed
+    ? `firmada ${formatTimeHHMM(state.signedAt)}`
+    : state.lastSavedAt
+      ? `borrador · guardado ${formatTimeHHMM(state.lastSavedAt)}`
+      : 'borrador · sin guardar';
+  return { context: contextParts.join(' · '), metadata, signed };
+}
+
 /**
  * `insertables` (screen 9a right column, "Sin insertar") and `cambios`
  * ("Cambió desde ayer") have no wired data source yet — the app has no
@@ -53,17 +90,23 @@ let autosaveTimer = null;
  * exists is intentional; see `objetivoInputFromPatient` for the same rule
  * applied to labs.
  * @param {Record<string, unknown>} patient
- * @returns {{ subjetivo: string, objetivo: unknown, analisis: string, plan: unknown[], insertables: unknown[], cambios: unknown[] }}
+ * @returns {{ subjetivo: string, objetivo: unknown, analisis: string, plan: unknown[], insertables: unknown[], cambios: unknown[], header: unknown }}
  */
 export function buildRenderModel(patient) {
   const state = ensureNotaEvolucion(patient);
+  // O · Objetivo is always the live derivation from today's real vitals/labs
+  // until the note is signed, at which point the signed snapshot — not a
+  // moving target — is what the resident committed to (see
+  // `signNoteForPatient` / README: "se guarda el snapshot que se firmó").
+  const objetivo = state.signedAt && state.objetivo ? state.objetivo : objetivoPreviewForPatient(patient);
   return {
     subjetivo: state.subjetivo,
-    objetivo: state.objetivo || { zones: [] },
+    objetivo,
     analisis: state.analisis,
     plan: planZonesForRender(state),
     insertables: [],
     cambios: [],
+    header: buildHeaderModel(patient, state),
   };
 }
 
@@ -92,18 +135,10 @@ function wireEvents(mount, patient) {
     aEl.addEventListener('input', () => {
       const state = ensureNotaEvolucion(patient);
       state.analisis = aEl.value;
-      persistClinicalState();
+      persistNotaChange(state);
     });
   }
-  const confirmBtn = mount.querySelector('[data-ne-confirm-objetivo]');
-  if (confirmBtn) {
-    confirmBtn.addEventListener('click', () => {
-      confirmObjetivoForPatient(patient);
-      persistClinicalState();
-      rt.showToast('Objetivo confirmado ✓', 'success');
-      render(mount);
-    });
-  }
+  wireHeaderActions(mount, patient);
   mount.querySelectorAll('[data-ne-plan-cycle]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const zoneEl = btn.closest('[data-ne-plan-zone]');
@@ -112,7 +147,7 @@ function wireEvents(mount, patient) {
       if (!zoneId || !itemId) return;
       const state = ensureNotaEvolucion(patient);
       cyclePlanItemMark(state, zoneId, itemId, nextPlanMark);
-      persistClinicalState();
+      persistNotaChange(state);
       render(mount);
     });
   });
@@ -124,7 +159,7 @@ function wireEvents(mount, patient) {
       if (!zoneId || !itemId) return;
       const state = ensureNotaEvolucion(patient);
       removePlanItem(state, zoneId, itemId);
-      persistClinicalState();
+      persistNotaChange(state);
       render(mount);
     });
   });
@@ -136,7 +171,7 @@ function wireEvents(mount, patient) {
       if (!zoneId || !value.trim()) return;
       const state = ensureNotaEvolucion(patient);
       addPlanItem(state, zoneId, value);
-      persistClinicalState();
+      persistNotaChange(state);
       render(mount);
     });
   });
@@ -164,6 +199,17 @@ function wireEvents(mount, patient) {
 }
 
 /**
+ * Stamps `lastSavedAt` and persists — every nota mutation goes through this
+ * so the header's "borrador · guardado HH:MM" status (mockup #9a L811) is
+ * real, not decorative.
+ * @param {import('./nota-evolucion-state.mjs').NotaEvolucionState} state
+ */
+function persistNotaChange(state) {
+  state.lastSavedAt = new Date().toISOString();
+  persistClinicalState();
+}
+
+/**
  * @param {Record<string, unknown>} patient
  * @param {string} text
  */
@@ -172,7 +218,40 @@ function appendToAnalisis(patient, text) {
   if (!t) return;
   const state = ensureNotaEvolucion(patient);
   state.analisis = state.analisis ? `${state.analisis}\n${t}` : t;
-  persistClinicalState();
+  persistNotaChange(state);
+}
+
+/**
+ * Header actions (mockup #9a L809-812) — "Copiar nota de ayer" (honestly
+ * disabled: the app keeps one live note per patient, not a per-day archive,
+ * so there is no real "yesterday's note" to copy), "Vista de impresión"
+ * (real browser print), "Firmar y cerrar" (the note-level sign action —
+ * see `signNoteForPatient`).
+ * @param {HTMLElement} mount
+ * @param {Record<string, unknown>} patient
+ */
+function wireHeaderActions(mount, patient) {
+  const copyBtn = mount.querySelector('[data-wb-secondary="0"]');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      rt.showToast('Sin nota de ayer registrada', 'info');
+    });
+  }
+  const printBtn = mount.querySelector('[data-wb-secondary="1"]');
+  if (printBtn) {
+    printBtn.addEventListener('click', () => {
+      if (typeof window !== 'undefined' && typeof window.print === 'function') window.print();
+    });
+  }
+  const signBtn = mount.querySelector('[data-wb-primary]');
+  if (signBtn) {
+    signBtn.addEventListener('click', () => {
+      signNoteForPatient(patient);
+      persistClinicalState();
+      rt.showToast('Nota firmada ✓', 'success');
+      render(mount);
+    });
+  }
 }
 
 /**
@@ -189,14 +268,14 @@ function scheduleSubjetivoAutosave(patient, nextText, mount) {
     const previous = state.subjetivo;
     if (previous === nextText) return;
     state.subjetivo = nextText;
-    persistClinicalState();
+    persistNotaChange(state);
     showUndoToast({
       message: 'Subjetivo guardado',
       undoLabel: 'Deshacer',
       onUndo: () => {
         const s = ensureNotaEvolucion(patient);
         s.subjetivo = previous;
-        persistClinicalState();
+        persistNotaChange(s);
         const el = /** @type {HTMLTextAreaElement|null} */ (mount.querySelector('[data-ne-subjetivo]'));
         if (el) el.value = previous;
       },

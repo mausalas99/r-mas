@@ -8,9 +8,13 @@ import {
   cyclePlanItemMark,
   planZonesForRender,
   objetivoInputFromPatient,
+  objetivoPreviewForPatient,
   confirmObjetivoForPatient,
+  signNoteForPatient,
+  dayOfStayForPatient,
 } from './nota-evolucion-state.mjs';
 import { nextPlanMark } from './nota-evolucion-html.mjs';
+import * as appState from '../../app-state.mjs';
 
 test('ensureNotaEvolucion initializes state with one plan bucket per zone', () => {
   const patient = {};
@@ -33,11 +37,11 @@ test('ensureNotaEvolucion returns null for a non-object patient', () => {
   assert.equal(ensureNotaEvolucion(null), null);
 });
 
-test('addPlanItem appends a new item marked novo and ignores blank text', () => {
+test('addPlanItem appends a new item marked nuevo and ignores blank text', () => {
   const state = emptyNotaEvolucion();
   const item = addPlanItem(state, 'HD', '  Suspender furosemida  ');
   assert.equal(item.text, 'Suspender furosemida');
-  assert.equal(item.mark, 'novo');
+  assert.equal(item.mark, 'nuevo');
   assert.equal(state.planZones.HD.length, 1);
   assert.equal(addPlanItem(state, 'HD', '   '), null);
 });
@@ -54,7 +58,7 @@ test('removePlanItem removes only the matching item', () => {
 test('cyclePlanItemMark advances the mark using the supplied cycle function', () => {
   const state = emptyNotaEvolucion();
   const item = addPlanItem(state, 'V', 'Retirar alto flujo');
-  assert.equal(item.mark, 'novo');
+  assert.equal(item.mark, 'nuevo');
   const next = cyclePlanItemMark(state, 'V', item.id, nextPlanMark);
   assert.equal(next, 'sin cambio');
   assert.equal(state.planZones.V[0].mark, 'sin cambio');
@@ -109,4 +113,70 @@ test('confirmObjetivoForPatient with no real data yields an empty, non-fabricate
   const snapshot = confirmObjetivoForPatient(patient);
   assert.deepEqual(snapshot.zones, []);
   assert.equal(snapshot.text, '');
+});
+
+/** DD/MM/YYYY for the real current day — labHistory day-matching runs off the real clock (see dayKeyFromLabSet). */
+function todayFechaLab() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+}
+
+test('objetivoInputFromPatient wires today\'s real altered lab values (paste-parsed "*" convention), never in-range ones by name', () => {
+  const patient = { id: 'nota-lab-patient-1', monitoreo: {} };
+  appState.setLabHistory({
+    'nota-lab-patient-1': [
+      { id: 'set-1', fecha: todayFechaLab(), hora: '08:00', resLabs: ['QS\tGlucosa 142* K 3.1*', 'BH\tHb 12.1'] },
+    ],
+  });
+  try {
+    const input = objetivoInputFromPatient(patient);
+    const glucosa = input.labs.find((l) => /glucosa/i.test(l.label));
+    assert.ok(glucosa, 'altered Glucosa lab should be wired in');
+    assert.equal(glucosa.altered, true);
+    assert.equal(glucosa.value, '142');
+    assert.equal(input.labs.some((l) => /^hb$/i.test(l.label)), false, 'in-range Hb has no label to itemize, so it must not appear');
+  } finally {
+    appState.setLabHistory({});
+  }
+});
+
+test('objetivoInputFromPatient labs-wiring makes the Objetivo zone actually populate (no more forced empty state)', () => {
+  const patient = { id: 'nota-lab-patient-2', monitoreo: {} };
+  appState.setLabHistory({
+    'nota-lab-patient-2': [{ id: 'set-1', fecha: todayFechaLab(), hora: '08:00', resLabs: ['QS\tK 2.9*'] }],
+  });
+  try {
+    const preview = objetivoPreviewForPatient(patient);
+    const nm = preview.zones.find((z) => z.id === 'NM');
+    assert.ok(nm, 'NM zone should populate from the altered K lab alone, with zero vitals');
+    assert.equal(nm.items[0].altered, true);
+  } finally {
+    appState.setLabHistory({});
+  }
+});
+
+test('objetivoPreviewForPatient is a pure live read — never mutates or persists state', () => {
+  const patient = { monitoreo: { historial: [{ id: '1', recordedAt: new Date().toISOString(), vitals: { fc: 120 } }] } };
+  const preview = objetivoPreviewForPatient(patient);
+  assert.ok(preview.zones.some((z) => z.id === 'HD'));
+  assert.equal(patient.monitoreo.notaEvolucion, undefined, 'preview must not create/write notaEvolucion state');
+});
+
+test('signNoteForPatient snapshots the live Objetivo and stamps signedAt', () => {
+  const fixed = new Date('2026-08-18T09:00:00.000Z');
+  const patient = { monitoreo: { historial: [{ id: '1', recordedAt: '2026-08-18T08:00:00.000Z', vitals: { fc: 130 } }] } };
+  const state = signNoteForPatient(patient, { now: () => fixed });
+  assert.equal(state.signedAt, fixed.toISOString());
+  assert.ok(state.objetivo.zones.some((z) => z.id === 'HD'));
+});
+
+test('dayOfStayForPatient computes from the real admission date, and is null without one (never fabricated)', () => {
+  assert.equal(dayOfStayForPatient({}), null);
+  // Noon UTC keeps this unambiguous across any real machine timezone.
+  const now = new Date('2026-08-19T12:00:00.000Z');
+  const admittedThreeDaysAgo = { registeredAt: '2026-08-17T12:00:00.000Z' };
+  assert.equal(dayOfStayForPatient(admittedThreeDaysAgo, { now: () => now }), 3);
+  const admittedToday = { registeredAt: '2026-08-19T12:00:00.000Z' };
+  assert.equal(dayOfStayForPatient(admittedToday, { now: () => now }), 1);
 });

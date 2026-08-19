@@ -5,9 +5,18 @@
  * marcas mono cortas (novo / sin cambio / suspende).
  */
 import { escHtml, escAttr } from '../../dom-escape.mjs';
+import { buildModeFrameHtml } from '../workbench/mode-frame.mjs';
 
-/** Marks a Plan line can carry, in cycle order. Labels, not icons. */
-export const PLAN_MARKS = ['novo', 'sin cambio', 'suspende'];
+/**
+ * Marks a Plan line can carry, in cycle order. Labels, not icons. Verbatim
+ * against `Paciente Rediseño.dc.html` #9a P·Plan rows (L888-946): "pendiente"
+ * (an order not yet actioned, e.g. an imaging study), "sin cambio", "nuevo"
+ * (spelled with the correct Spanish word — README's data-model enum spells
+ * it "novo", which is not Spanish and does not match the rendered mockup
+ * copy; per senior-dev ruling 2026-08-19 the pixel mockup + Spanish
+ * user-facing-copy rule wins), "suspende".
+ */
+export const PLAN_MARKS = ['nuevo', 'sin cambio', 'pendiente', 'suspende'];
 
 /** @param {string} mark */
 export function nextPlanMark(mark) {
@@ -45,41 +54,31 @@ export function buildObjetivoZoneHtml(zone) {
 }
 
 /**
+ * O · Objetivo — always shows the *live* derivation from today's real
+ * vitals/labs (mockup #9a L831-921 has no per-section confirm control at
+ * all: the subtitle "armado con los signos de 08:00 y labs 11:44 · por
+ * zona" is the only status text). The resident reviews it in place; signing
+ * happens once for the whole note via the top "Firmar y cerrar" action
+ * (see `buildNotaHeaderHtml`), which snapshots this same derivation — it is
+ * never a separate per-section step.
  * @param {{
  *   zones: Array<{ id: string, label: string, items: Array<{ text: string, altered: boolean }> }>,
- *   confirmedAt?: string|null,
  * }} objetivo
  * @returns {string}
  */
 export function buildObjetivoSectionHtml(objetivo) {
   const zones = (objetivo && objetivo.zones) || [];
-  const confirmedAt = objetivo && objetivo.confirmedAt;
   const body = zones.length
     ? zones.map(buildObjetivoZoneHtml).join('')
     : '<div class="ne-empty-hint">Sin signos vitales ni laboratorio de hoy para derivar.</div>';
-  const stamp = confirmedAt
-    ? `<span class="ne-objetivo-confirmed">Confirmado ${escHtml(formatConfirmedAt(confirmedAt))}</span>`
-    : '<span class="ne-objetivo-pending">Sin confirmar</span>';
   return (
     '<div class="soap-section ne-section-o">' +
     '<div class="soap-section-header">O · Objetivo <span class="ne-section-hint">(derivado, no se teclea)</span></div>' +
     '<div class="soap-section-body">' +
     `<div class="ne-objetivo-zones">${body}</div>` +
-    '<div class="ne-objetivo-footer">' +
-    stamp +
-    '<button type="button" class="ne-btn ne-btn-confirm" data-ne-confirm-objetivo>Confirmar</button>' +
-    '</div>' +
     '</div>' +
     '</div>'
   );
-}
-
-/** @param {string} iso */
-function formatConfirmedAt(iso) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 /**
@@ -188,6 +187,28 @@ export function buildCambiosPanelHtml(cambios) {
 }
 
 /**
+ * Top identity/action bar — mockup #9a L803-812. Reuses the shared workbench
+ * "band 1" component (`wb-mode-frame`) so this screen gets the exact same
+ * chrome rules (one teal primary, max two secondary actions) as Guardia/
+ * Inicio de turno instead of a bespoke header.
+ * @param {{ context?: string, metadata?: string, signed?: boolean }} header
+ * @returns {string}
+ */
+export function buildNotaHeaderHtml(header) {
+  const h = header || {};
+  return buildModeFrameHtml({
+    modeName: 'Nota de evolución',
+    context: h.context || '',
+    metadata: h.metadata || '',
+    secondaryActions: [
+      { label: 'Copiar nota de ayer', title: 'Copiar nota de ayer' },
+      { label: 'Vista de impresión', title: 'Vista de impresión' },
+    ],
+    primaryAction: { label: 'Firmar y cerrar' },
+  });
+}
+
+/**
  * @param {{
  *   subjetivo?: string,
  *   objetivo?: { zones: Array<{ id: string, label: string, items: Array<{ text: string, altered: boolean }> }>, confirmedAt?: string|null },
@@ -195,11 +216,13 @@ export function buildCambiosPanelHtml(cambios) {
  *   plan?: Array<{ id: string, label: string, items: Array<{ id: string, text: string, mark: string }> }>,
  *   insertables?: Array<{ id: string, title: string, subtitle?: string }>,
  *   cambios?: Array<{ id: string, text: string }>,
+ *   header?: { context?: string, metadata?: string, signed?: boolean },
  * }} note
  * @returns {string}
  */
 export function buildNotaEvolucionHtml(note) {
   const n = note || {};
+  const headerHtml = buildNotaHeaderHtml(n.header || {});
   const main =
     '<div class="soap-section ne-section-s" style="flex-shrink:0;">' +
     '<div class="soap-section-header">S · Subjetivo</div>' +
@@ -218,6 +241,7 @@ export function buildNotaEvolucionHtml(note) {
   const aside = buildInsertarPanelHtml(n.insertables || []) + buildCambiosPanelHtml(n.cambios || []);
   return (
     '<div class="ne-modal-body">' +
+    headerHtml +
     '<div class="ne-layout">' +
     `<div class="ne-layout-main">${main}</div>` +
     `<div class="ne-layout-aside">${aside}</div>` +

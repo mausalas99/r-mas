@@ -10,6 +10,7 @@ import {
   buildPlanSectionHtml,
   buildInsertarPanelHtml,
   buildCambiosPanelHtml,
+  buildNotaHeaderHtml,
   buildNotaEvolucionHtml,
 } from './nota-evolucion-html.mjs';
 
@@ -23,17 +24,18 @@ import {
  *   L929/936/943/950 "Insertar"   L957 "Cambió desde ayer"
  */
 
-test('nextPlanMark cycles novo -> sin cambio -> suspende -> novo', () => {
-  assert.equal(nextPlanMark('novo'), 'sin cambio');
-  assert.equal(nextPlanMark('sin cambio'), 'suspende');
-  assert.equal(nextPlanMark('suspende'), 'novo');
+test('nextPlanMark cycles nuevo -> sin cambio -> pendiente -> suspende -> nuevo', () => {
+  assert.equal(nextPlanMark('nuevo'), 'sin cambio');
+  assert.equal(nextPlanMark('sin cambio'), 'pendiente');
+  assert.equal(nextPlanMark('pendiente'), 'suspende');
+  assert.equal(nextPlanMark('suspende'), 'nuevo');
   assert.equal(nextPlanMark('unknown'), PLAN_MARKS[0]);
 });
 
 test('buildPlanMarkHtml renders a mono label, not an icon', () => {
-  const html = buildPlanMarkHtml('novo');
-  assert.match(html, /ne-plan-mark--novo/);
-  assert.match(html, />novo</);
+  const html = buildPlanMarkHtml('nuevo');
+  assert.match(html, /ne-plan-mark--nuevo/);
+  assert.match(html, />nuevo</);
 });
 
 test('buildObjetivoZoneHtml marks out-of-range items with the alert class', () => {
@@ -52,15 +54,26 @@ test('buildObjetivoZoneHtml marks out-of-range items with the alert class', () =
 test('buildObjetivoSectionHtml shows an empty hint when there are no zones', () => {
   const html = buildObjetivoSectionHtml({ zones: [] });
   assert.match(html, /Sin signos vitales ni laboratorio de hoy/);
-  assert.match(html, /Sin confirmar/);
 });
 
-test('buildObjetivoSectionHtml shows the confirmed stamp once signed', () => {
+test('buildObjetivoSectionHtml renders zones live, with no per-section confirm control (mockup #9a has none — signing is note-level, see buildNotaHeaderHtml)', () => {
   const html = buildObjetivoSectionHtml({
     zones: [{ id: 'HD', label: 'Hemodinámico', items: [{ text: 'FC 88 lpm', altered: false }] }],
-    confirmedAt: '2026-08-18T12:00:00.000Z',
   });
-  assert.match(html, /ne-objetivo-confirmed">Confirmado/);
+  assert.match(html, /FC 88 lpm/);
+  assert.doesNotMatch(html, /data-ne-confirm-objetivo/);
+  assert.doesNotMatch(html, /Confirmar/);
+});
+
+test('buildNotaHeaderHtml renders the shared mode-frame with one teal primary and at most two secondary actions', () => {
+  const html = buildNotaHeaderHtml({ context: 'Pérez García, Juan M. · 214-B · día 3', metadata: 'borrador · guardado 08:11' });
+  assert.match(html, /wb-mode-frame/);
+  assert.match(html, />Nota de evolución</);
+  assert.match(html, /Pérez García, Juan M\. · 214-B · día 3/);
+  assert.match(html, /borrador · guardado 08:11/);
+  assert.match(html, /Copiar nota de ayer/);
+  assert.match(html, /Vista de impresión/);
+  assert.match(html, /data-wb-primary[^>]*>Firmar y cerrar</);
 });
 
 test('buildPlanZoneHtml renders one row per plan item with its mark and a remove control', () => {

@@ -16,7 +16,8 @@ import {
 import { renderEstadoActualPanel } from './estado-actual-panel.mjs';
 import { renderVpo } from './vpo.mjs';
 import { ensureChartsLoaded } from '../lazy-feature-routes.mjs';
-import { renderNoteForm, renderIndicaForm } from './notes-indicaciones.mjs';
+import { renderIndicaForm } from './notes-indicaciones.mjs';
+import { renderNotaEvolucionPrimaryTab } from './nota-evolucion/nota-evolucion-primary-tab.mjs';
 import { renderEventualidadesPanel } from './eventualidades-panel.mjs';
 import {
   renderPatientDataPane,
@@ -270,8 +271,16 @@ var GRANULAR_TAB_RENDERERS = {
     markInnerTabRendered(tab);
   },
   tend: renderTendInnerTab,
+  // Screen 9a (Nota de evolución) is the primary content of this tab in
+  // both Sala and Interconsulta — `renderNotaEvolucionPrimaryTab` owns the
+  // toggle back to the legacy free-text template ("Plantilla clásica")
+  // itself. Before 2026-08-19 this pointed straight at the legacy
+  // `renderNoteForm()`, so clicking this tab silently clobbered the S/O/A/P
+  // screen any time it had been rendered by the Interconsulta mode-switch
+  // side effect (`applyAppModeSwitchEffects` in profile-app-mode.mjs) —
+  // reachable only by accident, never by clicking the tab itself.
   notas: function (tab) {
-    renderNoteForm();
+    renderNotaEvolucionPrimaryTab();
     markInnerTabRendered(tab);
   },
   indica: function (tab) {
