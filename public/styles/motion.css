@@ -38,6 +38,15 @@
   to { transform: rotate(360deg); }
 }
 
+/* Teal workbench spec §11c "om-sweep": a glossy highlight sweeps across the
+   "Actualizando pacientes" progress fill while a batch lab-repo run is in
+   flight. The fill's *width* still reflects real N-of-M progress — only the
+   gloss position is animated. */
+@keyframes om-sweep {
+  0% { background-position: -60px 0; }
+  100% { background-position: calc(100% + 60px) 0; }
+}
+
 @keyframes toast-in {
   from {
     opacity: 0;
@@ -58,6 +67,34 @@
     opacity: 0;
     transform: translateY(-6px) scale(0.98);
   }
+}
+
+/* Teal workbench spec §11c "om-rise" — ephemeral save/undo toast.
+ * A self-contained 4.2s cycle (enter +10px→0, hold ~76%, exit), distinct
+ * from `toast-in` above (which drops from above with scale and has no
+ * built-in hold/exit — it needs a paired JS-driven `toast-out`). Apply
+ * `.om-rise` to run start-to-finish without a class swap. */
+@keyframes om-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  86% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+}
+
+.om-rise {
+  animation: om-rise 4.2s var(--ease-out) 1;
 }
 
 
@@ -124,6 +161,13 @@ textarea.field-shake {
   @keyframes toast-out {
     from { opacity: 1; }
     to { opacity: 0; }
+  }
+
+  @keyframes om-rise {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    86% { opacity: 1; }
+    100% { opacity: 0; }
   }
 
   @keyframes todo-prio-pulse {

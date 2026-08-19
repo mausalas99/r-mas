@@ -64,7 +64,10 @@
 
 .patient-dash .empty-hint {
   margin: 0;
-  padding: 2px 0 4px;
+  padding: 8px 10px;
+  border: 1px dashed var(--color-border-dashed);
+  border-radius: var(--radius-control);
+  background: var(--color-empty-fill);
   color: var(--color-ink-muted);
   font: 500 13px/1.45 var(--font-ui);
   text-align: left;
@@ -79,7 +82,7 @@
 
 .patient-dash .chip {
   background: var(--color-accent-soft);
-  border: 0;
+  border: 1px solid color-mix(in oklab, var(--color-accent) 24%, transparent);
   border-radius: var(--radius-chip);
   padding: 3px 8px;
   font-size: 0.82em;
@@ -89,6 +92,7 @@
 
 html.dark .patient-dash .chip {
   background: var(--color-accent-soft);
+  border-color: color-mix(in oklab, var(--color-accent) 30%, transparent);
   color: var(--color-accent-soft-text);
 }
 
@@ -116,26 +120,9 @@ html.dark .patient-dash .chip {
   color: var(--color-ink);
 }
 
-.patient-dash .ic-mod {
-  margin-top: 4px;
-}
-
-.patient-dash .ic-mod > small {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-ink-muted);
-  letter-spacing: 0.02em;
-  margin-bottom: 4px;
-}
-
-.patient-dash .ic-mod .chips {
-  margin-top: 0;
-}
-
 .patient-dash .svc {
   border: 0;
-  border-radius: var(--radius-chip);
+  border-radius: var(--radius-badge);
   padding: 3px 8px;
   font-size: 11.5px;
   font-weight: 600;
@@ -160,7 +147,7 @@ html.dark .patient-dash .svc.is-on {
   border: 1px solid color-mix(in oklab, var(--color-ink) 22%, transparent);
   background: transparent;
   color: var(--color-ink-muted);
-  border-radius: var(--radius-chip);
+  border-radius: var(--radius-badge);
   padding: 3px 8px;
   font-size: 11.5px;
   font-weight: 600;
@@ -193,6 +180,7 @@ html.dark .patient-dash .svc.is-on {
 }
 
 .patient-dash .bento.vitals-labs {
+  grid-template-columns: 1fr;
   flex: 0 0 auto;
   min-height: min-content;
   align-items: stretch;
@@ -209,7 +197,7 @@ html.dark .patient-dash .svc.is-on {
   overflow: visible;
   display: flex;
   flex-direction: column;
-  align-self: stretch;
+  align-self: start;
 }
 
 .patient-dash .bento.rest {
@@ -274,6 +262,17 @@ html.dark .patient-dash .svc.is-on {
   overflow: hidden;
 }
 
+/* Signos vitales / Labs read as ruled sections, not boxed cards — the rest of the
+   dashboard (Pendientes, Eventualidades, Medicamentos) keeps the boxed look above. */
+.patient-dash .vitals-card,
+.patient-dash button.vitals-card,
+.patient-dash .labs-card,
+#patient-ronda-dashboard-host .vitals-card,
+#patient-ronda-dashboard-host .labs-card {
+  background: none;
+  border-radius: 0;
+}
+
 .patient-dash .card:hover,
 .patient-dash button.card:hover,
 .patient-expediente-classic .patient-dash .card:hover,
@@ -309,8 +308,10 @@ html.dark .patient-dash .svc.is-on {
   align-items: center;
   padding: 8px 12px;
   border-bottom: 1px solid var(--divider);
-  font-size: 12px;
-  font-weight: 700;
+  font: var(--type-wb-section-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink);
   line-height: 1.3;
 }
 
@@ -352,12 +353,26 @@ html.dark .patient-dash .svc.is-on {
 
 .patient-dash .vitals {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
   grid-auto-rows: minmax(min-content, 1fr);
   align-content: stretch;
   gap: 6px 18px;
   flex: 1 1 auto;
   min-height: min-content;
+}
+
+.patient-dash .card-h-meta {
+  font: var(--type-wb-metadata);
+  font-family: var(--font-mono);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+.patient-dash .card-h-meta .vitals-alert-count {
+  color: var(--color-danger);
+  font-weight: 600;
 }
 
 .patient-dash .vital {
@@ -406,29 +421,26 @@ html.dark .patient-dash .svc.is-on {
 
 .patient-dash .day-draws {
   display: flex;
-  flex-direction: column;
-  flex-wrap: nowrap;
-  gap: 6px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
   width: 100%;
   min-width: 0;
 }
 
 .patient-dash .draw {
-  border: 1px solid color-mix(in oklab, var(--color-ink) 16%, transparent);
-  background: color-mix(in oklab, var(--color-ink) 4%, var(--color-content));
-  border-radius: 10px;
-  padding: 0.4em 0.55em;
+  border: 1px solid color-mix(in oklab, var(--color-danger) 22%, transparent);
+  border-radius: 12px;
+  padding: 0;
   text-align: left;
   min-height: min-content;
-  width: 100%;
+  width: auto;
   max-width: 100%;
-  flex: 1 1 100%;
-  display: grid;
-  grid-template-columns: 3.4em minmax(0, 1fr);
-  column-gap: 8px;
-  row-gap: 4px;
-  align-items: start;
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
   color: inherit;
+  background: var(--color-elevated);
   overflow: hidden;
 }
 
@@ -438,69 +450,79 @@ html.dark .patient-dash .svc.is-on {
 }
 
 .patient-dash .draw:hover {
-  border-color: color-mix(in oklab, var(--color-ink) 32%, transparent);
+  border-color: color-mix(in oklab, var(--color-danger) 40%, transparent);
 }
 
-.patient-dash .draw.is-on {
-  border-color: color-mix(in oklab, var(--color-ink) 40%, transparent);
-  background: var(--color-elevated);
-}
-
-.patient-dash .draw time {
-  font: 600 1em/1.2 var(--font-mono);
-  grid-column: 1;
-  padding-top: 3px;
-}
-
-.patient-dash .draw-groups {
-  grid-column: 2;
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.patient-dash .draw-g,
-.patient-dash .draw-chip {
-  display: grid;
-  grid-template-columns: 4.2em minmax(0, 1fr);
-  column-gap: 8px;
-  align-items: start;
-  min-width: 0;
-}
-
-.patient-dash .draw-g .tipo {
-  font-size: 0.82em;
-  font-weight: 600;
-  color: var(--color-ink-muted);
-  min-width: min-content;
-  padding-top: 3px;
-}
-
-.patient-dash .draw .vals {
+.patient-dash .draw-head {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  min-width: 0;
-  font: 500 12px/1.3 var(--font-mono);
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0.5em 0.7em;
+  background: var(--color-danger-tint-strong);
+  border-bottom: 1px solid color-mix(in oklab, var(--color-danger) 14%, var(--divider));
 }
 
-.patient-dash .draw .vals .abn {
-  flex: 0 0 auto;
+.patient-dash .draw-head-label {
+  font: 700 11px/1 var(--font-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-danger);
+}
+
+.patient-dash .draw-head-caption {
+  font: var(--type-wb-mono);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+.patient-dash .draw-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+  gap: 1px;
+  background: var(--divider);
+}
+
+.patient-dash .draw-cell {
+  background: var(--color-elevated);
+  padding: 0.55em 0.6em 0.6em;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.patient-dash .draw-label {
+  font: var(--type-wb-section-label);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--color-ink-muted);
+}
+
+.patient-dash .draw-value {
+  font: 600 1.35em/1 var(--font-mono);
+}
+
+.patient-dash .draw-delta {
+  font: var(--type-wb-mono);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+.patient-dash .draw-trend.is-up,
+.patient-dash .draw-trend.is-down {
+  color: var(--color-danger);
 }
 
 .patient-dash .abn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   color: var(--color-danger);
   font-weight: 650;
-  line-height: 1.25;
-  background: color-mix(in oklab, var(--color-danger) 14%, transparent);
-  margin-right: 0;
-  white-space: nowrap;
-  text-align: center;
-  padding: 3px 8px;
-  border-radius: 8px;
+}
+
+.patient-dash .labs-en-rango {
+  margin: 4px 0 0;
+  font: var(--type-wb-metadata);
+  color: var(--color-ink-muted);
 }
 
 .patient-dash .bento.meds-band .soap-pack {
@@ -607,8 +629,23 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
 
 .patient-dash .rows time {
   color: var(--color-ink-muted);
-  font: 500 11px var(--font-mono);
+  font: var(--type-wb-mono);
   margin-right: 8px;
+}
+
+.patient-dash .rows li.is-overdue {
+  background: var(--color-danger-tint);
+  border-radius: 7px;
+  padding: 3px 6px;
+  margin: -3px -6px;
+}
+
+.patient-dash .rows li.is-overdue .due-tag {
+  color: var(--color-danger-deep);
+  font: 700 10px/1.3 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 6px;
 }
 
 .patient-dash .due { color: var(--color-danger); font-weight: 600; }
@@ -683,3 +720,47 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
 }
 
 #patient-ronda-dashboard-host { min-width: 0; }
+
+/* ── Interconsulta consult band (screen 10b) ───────────────────────
+ * Shown above the same Resumen used by Sala when appMode=interconsulta.
+ */
+.ic-consult-band {
+  display: flex;
+  gap: 24px;
+  padding: 10px 24px;
+  background: var(--color-elevated);
+  border-bottom: 1px solid var(--border);
+}
+.ic-consult-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ic-consult-field--reason {
+  flex: 1;
+}
+.ic-consult-label {
+  font: var(--type-wb-metadata, 500 10px/1.2 var(--font-ui));
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-tertiary);
+}
+.ic-consult-value {
+  font: var(--type-wb-mono, 500 12.5px/1.4 var(--font-mono));
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ic-consult-empty {
+  color: var(--color-ink-tertiary);
+  font-style: italic;
+}
+.ic-consult-status--en_curso { color: var(--warn, #8a4208); }
+.ic-consult-status--resuelta { color: var(--color-ink-muted); }
+.ic-consult-status--pendiente { color: var(--color-ink); }
+#interconsulta-mode-frame[hidden],
+#interconsulta-consult-band[hidden] {
+  display: none;
+}

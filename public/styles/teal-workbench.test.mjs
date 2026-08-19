@@ -26,12 +26,79 @@ test('accent-soft chips carry the teal accent, not ochre or plain ink', () => {
   assert.equal(/--sidebar-rail-color:[^;]*#6b4456/.test(css), false);
 });
 
-test('scrim dims with black, not light ink, and stays below half opacity', () => {
+test('scrim dims with black, not light ink, and stays at spec 42% (rgba(28,28,30,.42))', () => {
   const css = read('public/tokens.css');
   assert.match(css, /--color-scrim:\s*oklch\(\s*0\s+0\s+0\s*\)/);
-  assert.match(css, /--scrim-bg:\s*color-mix\(in oklab,\s*var\(--color-scrim\)\s*32%/);
+  assert.match(css, /--scrim-bg:\s*color-mix\(in oklab,\s*var\(--color-scrim\)\s*42%/);
   assert.match(css, /html\.dark\s*\{[^}]*--scrim-bg:\s*color-mix\(in oklab,\s*var\(--color-scrim\)\s*42%/s);
   assert.equal(/html\.dark\s*\{[^}]*--scrim-bg:[^;]*--color-ink/s.test(css), false);
+});
+
+test('Phase 0: chip radius is a true 999px pill, badges and row buttons get their own tokens', () => {
+  const css = read('public/tokens.css');
+  assert.match(css, /--radius-chip:\s*999px/);
+  assert.match(css, /--radius-badge:\s*6px/);
+  assert.match(css, /--radius-row-btn:\s*7px/);
+  const dash = read('public/styles/patient-dashboard.css');
+  assert.match(dash, /\.patient-dash \.chip\s*\{[^}]*border-radius:\s*var\(--radius-chip\)/s);
+  assert.match(dash, /\.patient-dash \.svc\s*\{[^}]*border-radius:\s*var\(--radius-badge\)/s);
+  assert.match(dash, /\.patient-dash \.svc-add\s*\{[^}]*border-radius:\s*var\(--radius-badge\)/s);
+  const settings = read('public/styles/settings.css');
+  assert.match(settings, /\.btn-settings-row\s*\{[^}]*border-radius:\s*var\(--radius-row-btn\)/s);
+});
+
+test('Phase 0: panel-header and table-head are their own tokens, not overloaded --color-content', () => {
+  const css = read('public/tokens.css');
+  assert.match(css, /--color-panel-header:\s*rgb\(242,\s*240,\s*236\)/);
+  assert.match(css, /--color-table-head:\s*rgb\(249,\s*248,\s*245\)/);
+  assert.match(css, /html\.dark\s*\{[^}]*--color-panel-header:/s);
+  assert.match(css, /html\.dark\s*\{[^}]*--color-table-head:/s);
+});
+
+test('Phase 0: hairline and border retuned to spec ranges', () => {
+  const css = read('public/tokens.css');
+  assert.match(css, /--divider:\s*color-mix\(in oklab,\s*var\(--color-ink\)\s*6%/);
+  assert.match(css, /--border:\s*color-mix\(in oklab,\s*var\(--color-ink\)\s*11%/);
+});
+
+test('Phase 0: window/modal/counter-alert shadow tokens exist', () => {
+  const css = read('public/tokens.css');
+  assert.match(css, /--shadow-window:\s*0 18px 48px rgba\(28,\s*28,\s*30,\s*0\.16\)/);
+  assert.match(css, /--shadow-modal:\s*0 24px 64px rgba\(28,\s*28,\s*30,\s*0\.28\)/);
+  assert.match(css, /--shadow-counter-alert:\s*inset 0 -2px 0 var\(--color-danger\)/);
+});
+
+test('Phase 0: dense workbench data type scale is defined', () => {
+  const css = read('public/tokens.css');
+  assert.match(css, /--type-wb-section-label:\s*700 11px\/1/);
+  assert.match(css, /--type-wb-counter-label:\s*700 10px\/1/);
+  assert.match(css, /--type-wb-column-head:\s*700 9\.5px\/1/);
+  assert.match(css, /--type-wb-counter-figure:\s*600 13px\/1\.2/);
+  assert.match(css, /--type-wb-patient-name:\s*600 12\.5px\/1\.35/);
+  assert.match(css, /--type-wb-row:\s*500 12px\/1\.35/);
+  assert.match(css, /--type-wb-mono:\s*500 11\.5px\/1\.3 var\(--font-mono\)/);
+  assert.match(css, /--type-wb-status-label:\s*600 10\.5px\/1 var\(--font-mono\)/);
+  assert.match(css, /--type-wb-button:\s*600 11\.5px\/1/);
+  assert.match(css, /--type-wb-metadata:\s*500 11\.5px\/1/);
+});
+
+test('Phase 0: om-rise is a true self-contained enter/hold/exit cycle, distinct from toast-in', () => {
+  const css = read('public/styles/motion.css');
+  assert.match(css, /@keyframes om-rise\s*\{/);
+  const kf = css.match(/@keyframes om-rise\s*\{[\s\S]*?\n\}/);
+  assert.ok(kf);
+  assert.match(kf[0], /0%\s*\{[^}]*opacity:\s*0;[^}]*transform:\s*translateY\(10px\)/s);
+  assert.match(kf[0], /86%/);
+  assert.match(kf[0], /100%\s*\{[^}]*opacity:\s*0/s);
+  assert.match(css, /\.om-rise\s*\{[^}]*animation:\s*om-rise 4\.2s/s);
+  // still distinct from the pre-existing (wrong-direction) toast-in
+  assert.match(css, /@keyframes toast-in\s*\{/);
+});
+
+test('Phase 0: skeleton shimmer retimed to ~1.1s', () => {
+  const css = read('public/styles/skeleton.css');
+  assert.match(css, /animation:\s*skel-shimmer 1\.1s linear infinite/);
+  assert.equal(/animation:\s*skel-shimmer 1\.4s/.test(css), false);
 });
 
 test('vital wells are ink-neutral, not warm chip fill', () => {

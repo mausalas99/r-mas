@@ -1,0 +1,379 @@
+/* ── Nota de evolución (SOAP) — screen 9a ─────────────────────────────
+ * S: texto libre + autosave reversible (om-rise). O: derivado por zona, el
+ * residente confirma, no teclea. A: campo más grande de la pantalla.
+ * P: por zona, marcas mono cortas (novo / sin cambio / suspende).
+ * Reuses .soap-modal-backdrop / .soap-modal / .soap-section shell (modals.css).
+ */
+
+.ne-modal-body {
+  padding: 18px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  container-type: inline-size;
+}
+
+/* The primary-tab mount (nota-evolucion-primary-tab.mjs) sits inside the
+ * legacy `.rpc-form-stack` single-column form container, which can be much
+ * narrower than the viewport (patient list + narrower window both eat into
+ * it). A viewport media query can't see that — only a container query can,
+ * so `.ne-layout` stacks correctly at the app's real minWidth (960px, see
+ * main.js) and not just on a narrow phone-width viewport. */
+.ne-primary-mount {
+  container-type: inline-size;
+}
+
+/* Primary-tab toolbar — toggles between the S/O/A/P screen and the legacy
+ * free-text "Plantilla clásica" template inside the "Nota de evolución" tab. */
+.ne-primary-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 0 8px;
+}
+
+.ne-primary-toolbar-link {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+/* Two-column layout — screen 9a: left read/write column (S/O/A/P), right
+ * "insertar" column, 336px in the mockup. Kept fluid per the app's one
+ * resizable-window rule; the aside gets a max-width instead of a hard px. */
+.ne-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(200px, 336px);
+  gap: 14px;
+  align-items: start;
+}
+
+.ne-layout-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ne-layout-aside {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (max-width: 860px) {
+  .ne-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Container-query version of the same stacking rule, for the primary-tab
+ * mount and modal body (see `container-type: inline-size` above) — this is
+ * what actually fires in the embedded Interconsulta "Clínico" tab, where the
+ * host column can be under 600px wide even on a full-size desktop viewport. */
+@container (max-width: 560px) {
+  .ne-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ne-aside-panel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ne-aside-panel--insertar .ne-aside-panel-header {
+  color: var(--color-danger, #d70015);
+  background: var(--color-danger-tint, color-mix(in oklab, var(--color-danger, #d70015) 7%, var(--section-header-bg)));
+}
+
+.ne-aside-panel-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.ne-aside-panel-action {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.ne-aside-panel-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.ne-insertar-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.ne-insertar-item:last-child {
+  border-bottom: none;
+}
+
+.ne-insertar-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ne-insertar-item-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ne-insertar-item-subtitle {
+  font-size: 11px;
+  color: var(--color-ink-muted, var(--text-muted));
+}
+
+.ne-insertar-action {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ne-cambios-item {
+  padding: 6px 0;
+  font-size: 12.5px;
+  color: var(--text);
+  border-bottom: 1px solid var(--divider);
+}
+
+.ne-cambios-item:last-child {
+  border-bottom: none;
+}
+
+/* Objetivo — derivado, solo lectura, se confirma en lugar de teclearse. */
+.ne-section-hint {
+  font-weight: 500;
+  color: var(--color-ink-muted, var(--text-muted));
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.ne-objetivo-zones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ne-objetivo-zone {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.ne-objetivo-zone:last-child {
+  border-bottom: none;
+}
+
+.ne-zone-label {
+  flex-shrink: 0;
+  width: 34px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+}
+
+.ne-zone-label-full {
+  display: none;
+}
+
+.ne-objetivo-zone-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 13px;
+}
+
+.ne-objetivo-item {
+  color: var(--text);
+}
+
+.ne-objetivo-item--alert {
+  color: var(--color-danger, #d70015);
+  font-weight: 600;
+}
+
+.ne-empty-hint {
+  color: var(--color-ink-muted, var(--text-muted));
+  font-size: 13px;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+.ne-objetivo-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--divider);
+}
+
+.ne-objetivo-confirmed {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  color: var(--color-success, var(--primary));
+}
+
+.ne-objetivo-pending {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  color: var(--color-ink-muted, var(--text-muted));
+}
+
+.ne-btn {
+  appearance: none;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ne-btn-confirm {
+  background: var(--color-success-emphasis);
+  color: var(--color-on-success);
+}
+
+/* Análisis — el campo más grande de la pantalla. */
+.ne-section-a {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ne-section-a .soap-section-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.ne-analisis-textarea {
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  resize: vertical;
+}
+
+/* Plan — por zona, marcas mono cortas: novo / sin cambio / suspende. */
+.ne-plan-zones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ne-plan-zone-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ne-plan-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.ne-plan-row-text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.ne-plan-row-mark-btn {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.ne-plan-mark {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: lowercase;
+  padding: 2px 8px;
+  border-radius: var(--radius-chip, 10px);
+  white-space: nowrap;
+}
+
+.ne-plan-mark--novo {
+  color: var(--color-success, #0a7d3c);
+  background: var(--color-success-tint, color-mix(in oklab, var(--color-success, #0a7d3c) 12%, transparent));
+}
+
+.ne-plan-mark--sin-cambio {
+  color: var(--color-ink-muted, var(--text-muted));
+  background: color-mix(in oklab, var(--color-ink, var(--text)) 8%, transparent);
+}
+
+.ne-plan-mark--suspende {
+  color: var(--color-danger, #d70015);
+  background: var(--color-danger-tint, color-mix(in oklab, var(--color-danger, #d70015) 12%, transparent));
+}
+
+.ne-plan-row-remove {
+  appearance: none;
+  background: none;
+  border: none;
+  color: var(--color-ink-muted, var(--text-muted));
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.ne-plan-add-row {
+  margin-top: 2px;
+}
+
+.ne-plan-add-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+html.dark .ne-objetivo-item--alert {
+  color: var(--color-danger, #ff453a);
+}

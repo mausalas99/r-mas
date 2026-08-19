@@ -531,7 +531,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   padding: 5px 12px;
   min-height: 32px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-chip);
+  border-radius: var(--radius-row-btn);
   background: transparent;
   color: var(--text-muted);
   font: inherit;
@@ -656,7 +656,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   height: 32px;
   padding: 5px 26px 5px 10px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-chip);
+  border-radius: var(--radius-field);
   background-color: var(--surface);
   color: var(--text-muted);
   font: inherit;
@@ -745,7 +745,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: var(--radius-chip);
+  border-radius: var(--radius-field);
   background: var(--color-warn-surface);
   border: 1px solid var(--color-warn-border);
   font-size: 12px;

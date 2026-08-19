@@ -36,6 +36,8 @@
   --color-border-dashed: rgba(28, 28, 30, 0.22);
   --color-empty-fill: rgba(28, 28, 30, 0.02);
   --color-rail: rgb(246, 245, 242);
+  --color-panel-header: rgb(242, 240, 236);
+  --color-table-head: rgb(249, 248, 245);
   /* LiveSync header · estado de conexión */
   --color-livesync-live: var(--color-success);
   --color-livesync-syncing: #b45309;
@@ -58,8 +60,8 @@
   --action-hover: var(--color-accent-hover);
   --bg: var(--color-paper);
   --surface: var(--color-surface);
-  --border: color-mix(in oklab, var(--color-ink) 14%, transparent);
-  --divider: color-mix(in oklab, var(--color-ink) 8%, transparent);
+  --border: color-mix(in oklab, var(--color-ink) 11%, transparent);
+  --divider: color-mix(in oklab, var(--color-ink) 6%, transparent);
   --text: var(--color-ink);
   --text-muted: var(--color-ink-muted);
   --error: var(--color-danger);
@@ -94,7 +96,10 @@
   /* Controls + inner workbench frame (Arc-style radial default) */
   --radius-control: 8px;
   --radius-field: 8px;
-  --radius-chip: 8px;
+  --radius-badge: 6px;
+  --radius-row-btn: 7px;
+  /* Chip / progress bar only — never action buttons (design.md "No hacer"). */
+  --radius-chip: 999px;
   --radius-inner: var(--radius-md);
   --radius-container: 12px;
   --radius-sheet: 14px;
@@ -110,6 +115,9 @@
   --shadow-sm: none;
   --shadow: none;
   --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.12);
+  --shadow-window: 0 18px 48px rgba(28, 28, 30, 0.16);
+  --shadow-modal: 0 24px 64px rgba(28, 28, 30, 0.28);
+  --shadow-counter-alert: inset 0 -2px 0 var(--color-danger);
   /* Rams · flat equipment — hairline borders, no card lift */
   --elev-flat: none;
   --elev-raised: none;
@@ -135,7 +143,7 @@
   --overlay-border: var(--material-glass-border);
   --focus-ring: 0 0 0 3px var(--color-focus-ring);
   --color-scrim: oklch(0 0 0);
-  --scrim-bg: color-mix(in oklab, var(--color-scrim) 32%, transparent);
+  --scrim-bg: color-mix(in oklab, var(--color-scrim) 42%, transparent);
   --app-height: 100vh;
   /* Overlay z-index scale (ui audit track 1) */
   --z-base: 0;
@@ -232,6 +240,25 @@
   --type-body: 400 calc(13.5px * var(--density-font)) / 1.5 var(--font-ui);
   --type-caption: 500 calc(11.5px * var(--density-font)) / 1.4 var(--font-ui);
   --tracking-section: 0.04em;
+
+  /* Dense workbench data scale — README "Tipografía", uppercase labels carry
+     their own letter-spacing token since `font` shorthand cannot set it. */
+  --type-wb-section-label: 700 11px/1 var(--font-ui);
+  --tracking-wb-section-label: 0.08em;
+  --type-wb-counter-label: 700 10px/1 var(--font-ui);
+  --tracking-wb-counter-label: 0.09em;
+  --type-wb-column-head: 700 9.5px/1 var(--font-ui);
+  --tracking-wb-column-head: 0.08em;
+  --type-wb-counter-figure: 600 13px/1.2 var(--font-ui);
+  --type-wb-patient-name: 600 12.5px/1.35 var(--font-ui);
+  --type-wb-row: 500 12px/1.35 var(--font-ui);
+  --type-wb-row-2line: 500 12.5px/1.55 var(--font-ui);
+  --type-wb-mono: 500 11.5px/1.3 var(--font-mono);
+  --type-wb-mono-strong: 600 11.5px/1.3 var(--font-mono);
+  --type-wb-status-label: 600 10.5px/1 var(--font-mono);
+  --type-wb-button: 600 11.5px/1 var(--font-ui);
+  --type-wb-button-secondary: 600 11px/1 var(--font-ui);
+  --type-wb-metadata: 500 11.5px/1 var(--font-ui);
 }
 
 html.ui-density-normal {
@@ -241,13 +268,17 @@ html.ui-density-normal {
 }
 
 html.dark {
-  --color-paper: #171a21;
-  --color-surface: #1e222b;
-  --color-content: #171a21;
-  --color-elevated: #1e222b;
+  /* Stepped surface ladder (paper < content < surface < elevated) so cards
+     and bars actually separate from the background instead of sitting on
+     one flat plane. Muted/tertiary ink carries a cool slate tint to match
+     the blue-black ground instead of reading as neutral, washed-out grey. */
+  --color-paper: #12141a;
+  --color-content: #181b23;
+  --color-surface: #1f232d;
+  --color-elevated: #262b36;
   --color-ink: #e8eaed;
-  --color-ink-muted: #98989d;
-  --color-ink-tertiary: #6c6c70;
+  --color-ink-muted: #97a3b8;
+  --color-ink-tertiary: #6b7385;
   /* Teal accent, lightened from light-mode value to clear 4.5:1 on #1e222b */
   --color-warm: oklch(0.78 0.02 52);
   --color-accent: oklch(0.62 0.09 195);
@@ -272,7 +303,9 @@ html.dark {
   --color-border-strong: rgba(148, 163, 184, 0.28);
   --color-border-dashed: rgba(148, 163, 184, 0.30);
   --color-empty-fill: rgba(148, 163, 184, 0.04);
-  --color-rail: #22262f;
+  --color-rail: #232834;
+  --color-panel-header: color-mix(in oklab, var(--color-ink) 4%, var(--color-surface));
+  --color-table-head: color-mix(in oklab, var(--color-ink) 6%, var(--color-surface));
   --color-livesync-live: var(--color-success);
   --color-livesync-syncing: #fbbf24;
   --color-livesync-degraded: #fb923c;

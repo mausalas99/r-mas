@@ -85,24 +85,17 @@
   color: var(--text-muted);
   line-height: 1.35;
 }
-.pase-cult-cuenta {
-  margin-top: 3px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  line-height: 1.35;
-}
 .cultivos-cell-atb pre {
   margin: 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;
 }
 .cultivos-atb-fallback { margin: 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
 .cultivos-atb-wrap { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
-.cultivos-atb-chips, .pase-cult-atb-chips {
+.cultivos-atb-chips {
   display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center;
 }
 .lab-out-cultivo-chunk { margin-top: 12px; }
 #lab-output-box > .lab-out-cultivo-chunk:first-child { margin-top: 0; }
-.cultivos-atb-chips .atb-chip, .pase-cult-atb-chips .atb-chip, .lab-out-atb .atb-chip {
+.cultivos-atb-chips .atb-chip, .lab-out-atb .atb-chip {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 1.35em; padding: 2px 7px; border-radius: 6px;
   font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
@@ -214,13 +207,12 @@
 .atb-ris-hover-panel.is-open {
   display: block;
 }
-.cultivos-copy-full-btn, .pase-cult-copy-full {
+.cultivos-copy-full-btn {
   font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px;
   border: 1px solid var(--border); background: var(--lab-chip-bg); color: var(--text);
   cursor: pointer; font-family: inherit;
 }
-.cultivos-copy-full-btn:hover, .pase-cult-copy-full:hover { filter: brightness(1.06); }
-.pase-cult-atb-wrap { margin-bottom: 6px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.cultivos-copy-full-btn:hover { filter: brightness(1.06); }
 .tend-spark-wrap {
   width:100%; height:40px; margin-top:6px; position:relative; border-radius:6px; overflow:hidden;
 }
@@ -477,7 +469,6 @@ html.rpc-mobile-web #appcontent-lab > .main-work-scroll,
 html.rpc-mobile-web #appcontent-med > .med-active-shell,
 html.rpc-mobile-web #appcontent-med > .med-active-shell > #med-work-area.main-work-scroll,
 html.rpc-mobile-web #appcontent-agenda > .rpc-proc-agenda-root,
-html.rpc-mobile-web:not(.ui-density-normal) .pase-board-scroll,
 html.rpc-mobile-web .patient-expediente-classic,
 html.rpc-mobile-web .patient-expediente-classic .tab-content {
   margin-top: 0;
