@@ -1,5 +1,5 @@
 /**
- * Pase board runtime DI (registered from app-runtimes).
+ * App tabs runtime DI (registered from app-runtimes).
  */
 /** @type {{
  *   getActiveAppTab(): string,
@@ -50,6 +50,6 @@ export var rt = {
   },
 };
 
-export function registerPaseBoardRuntime(ctx) {
+export function registerAppTabsRuntime(ctx) {
   if (ctx && typeof ctx === "object") Object.assign(rt, ctx);
 }

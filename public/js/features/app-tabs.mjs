@@ -1,7 +1,7 @@
 /**
  * Main app tab switching (Lab / Nota / Med / Agenda) and tablist a11y.
  */
-import { isPaseMode, isGuardiaMode } from './chrome.mjs';
+import { isGuardiaMode } from './chrome.mjs';
 import { renderGuardiaBoard } from './guardia-board.mjs';
 import { resumeLabBulkPreviewModalIfSuspended } from './lab-bulk-preview-modal.mjs';
 import { refreshEaCopyFabVisibility } from './estado-actual-panel.mjs';
@@ -11,7 +11,6 @@ import {
   hideLabPanelLoadingSkeleton,
   showLabPanelLoadingSkeleton,
 } from '../lazy-feature-routes.mjs';
-import { setRoundOverviewMode, syncRoundExpedienteLayout } from './patients.mjs';
 import {
   hideAppTabPanel,
   showAppTabPanel,
@@ -23,15 +22,14 @@ import { closePatientDatosModal } from '../patient-datos-modal.mjs';
 import { closeMedRecetaPasteModal } from './medications-paste-modal.mjs';
 import { syncHeaderContext } from './header-context.mjs';
 import { cancelDeferredIdleWork, scheduleAfterPaint } from '../deferred-work.mjs';
-import { rt } from './pase-board-runtime.mjs';
-import { renderPaseBoard } from './pase-board-render.mjs';
+import { rt } from './app-tabs-runtime.mjs';
 import {
   cancelExpedienteWarm,
   granularMountIsEmpty,
   isInnerTabContentFresh,
   renderGranularInnerTab,
   syncInnerTabVisualOnly,
-} from './pase-board-inner-cache.mjs';
+} from './expediente-inner-cache.mjs';
 import { isMobileWeb, normalizeMobileAppTab } from '../mobile-web.mjs';
 
 var APP_TAB_ROWS = [
@@ -66,7 +64,6 @@ function getAppTabDom() {
     appcontentMed: document.getElementById('appcontent-med'),
     appcontentNota: document.getElementById('appcontent-nota'),
     appcontentAgenda: document.getElementById('appcontent-agenda'),
-    paseRoot: document.getElementById('appcontent-pase'),
     guardiaRoot: document.getElementById('appcontent-guardia'),
   };
 }
@@ -84,7 +81,6 @@ function layoutGuardiaAppTab(dom) {
   standardPanels.forEach(function (p) {
     hideAppTabPanel(p);
   });
-  if (dom.paseRoot) hideAppTabPanel(dom.paseRoot);
   if (dom.guardiaRoot) {
     showAppTabPanel(dom.guardiaRoot, false);
     dom.guardiaRoot.style.display = 'flex';
@@ -94,20 +90,6 @@ function layoutGuardiaAppTab(dom) {
     dom.guardiaRoot.style.overflow = 'hidden';
   }
   renderGuardiaBoard(rt.getSettings());
-}
-
-function layoutPaseAppTab(dom, tab, prevAppTab) {
-  var standardPanels = [dom.appcontentLab, dom.appcontentMed, dom.appcontentNota, dom.appcontentAgenda];
-  standardPanels.forEach(function (p) {
-    hideAppTabPanel(p);
-  });
-  if (dom.guardiaRoot) hideAppTabPanel(dom.guardiaRoot);
-  if (dom.paseRoot) {
-    var animatePase = prevAppTab !== tab || dom.paseRoot.style.display === 'none';
-    showAppTabPanel(dom.paseRoot, animatePase);
-    dom.paseRoot.style.flexDirection = 'column';
-  }
-  renderPaseBoard();
 }
 
 function showStandardPanelForTab(dom, tab) {
@@ -168,7 +150,6 @@ function scheduleStandardTabSideEffects(tab) {
 }
 
 function layoutStandardAppTab(dom, tab) {
-  if (dom.paseRoot) hideAppTabPanel(dom.paseRoot);
   if (dom.guardiaRoot) hideAppTabPanel(dom.guardiaRoot);
   showStandardPanelForTab(dom, tab);
   scheduleStandardTabSideEffects(tab);
@@ -200,8 +181,9 @@ function schedulePostAppTabSwitch(tab, prevAppTab) {
   scheduleAfterPaint(function () {
     if (rt.getActiveAppTab() !== deferredTab) return;
     syncAppTabIndicator(deferredTab);
-    if (deferredTab === 'nota') syncRoundExpedienteLayout();
-    else if (deferredTab !== 'med' && prevAppTab !== 'med') rt.syncWorkContextChrome();
+    if (deferredTab !== 'nota' && deferredTab !== 'med' && prevAppTab !== 'med') {
+      rt.syncWorkContextChrome();
+    }
     if (deferredTab === 'lab') resumeLabBulkPreviewModalIfSuspended();
   });
 }
@@ -240,7 +222,6 @@ function syncSpecialRootA11y(rootId, role, label, visible) {
 function syncGuardiaTabA11y(list, rows) {
   if (list) list.setAttribute('aria-hidden', 'true');
   hideStandardTabA11y(rows);
-  syncSpecialRootA11y('appcontent-pase', null, null, false);
   syncSpecialRootA11y(
     'appcontent-guardia',
     'region',
@@ -249,15 +230,7 @@ function syncGuardiaTabA11y(list, rows) {
   );
 }
 
-function syncPaseTabA11y(list, rows) {
-  if (list) list.setAttribute('aria-hidden', 'true');
-  hideStandardTabA11y(rows);
-  syncSpecialRootA11y('appcontent-pase', 'region', 'Vista Pase — resumen del paciente', true);
-  syncSpecialRootA11y('appcontent-guardia', null, null, false);
-}
-
 function syncNormalTabA11y(tab, list, rows) {
-  syncSpecialRootA11y('appcontent-pase', null, null, false);
   syncSpecialRootA11y('appcontent-guardia', null, null, false);
   if (list) list.removeAttribute('aria-hidden');
   rows.forEach(function (r) {
@@ -305,17 +278,13 @@ export function switchAppTab(tab) {
   cancelDeferredIdleWork();
   var prevAppTab = rt.getActiveAppTab();
   rt.setActiveAppTab(tab);
-  if (tab === 'nota' && isPaseMode() && prevAppTab !== 'nota') {
-    setRoundOverviewMode(true);
-  }
-  if (tab === 'nota' && prevAppTab !== 'nota' && !isPaseMode()) {
+  if (tab === 'nota' && prevAppTab !== 'nota') {
     refreshExpedienteOnNotaAppTabEnter();
   }
   var dom = getAppTabDom();
   syncMainAppTabA11y(tab);
   syncAppTabButtonStates(tab, dom);
   if (isGuardiaMode()) layoutGuardiaAppTab(dom);
-  else if (isPaseMode()) layoutPaseAppTab(dom, tab, prevAppTab);
   else layoutStandardAppTab(dom, tab);
 
   syncLabCopyFabVisibility(tab);
@@ -330,10 +299,6 @@ export function syncMainAppTabA11y(tab) {
   var list = document.getElementById('app-main-tablist');
   if (isGuardiaMode()) {
     syncGuardiaTabA11y(list, APP_TAB_ROWS);
-    return;
-  }
-  if (isPaseMode()) {
-    syncPaseTabA11y(list, APP_TAB_ROWS);
     return;
   }
   syncNormalTabA11y(tab, list, APP_TAB_ROWS);

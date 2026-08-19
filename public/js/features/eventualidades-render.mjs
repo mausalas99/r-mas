@@ -265,7 +265,7 @@ function invalidateEventualidadesRelatedCaches() {
     rt.invalidateInnerTabRenderCache('resumen');
     return;
   }
-  void import('./pase-board-inner-cache.mjs')
+  void import('./expediente-inner-cache.mjs')
     .then(function (m) {
       if (m && typeof m.invalidateInnerTabRenderCache === 'function') {
         m.invalidateInnerTabRenderCache('eventualidades');

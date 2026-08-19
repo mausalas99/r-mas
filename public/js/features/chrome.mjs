@@ -1,6 +1,10 @@
 import { normalizeMotionMode, motionClassFor, ALL_MOTION_CLASSES } from '../motion-mode.mjs';
 import { isModeSala } from '../mode-features.mjs';
-import { paseSectionLabelFromTab } from './chrome-pase-label.mjs';
+import { openDatePopover, buildDatePopoverQuickFilters } from './workbench/date-popover.mjs';
+import { buildLabDaysForCalendar, isoDateKeyLocal } from './workbench/header-date-popover-model.mjs';
+import { ensureParsedLabHistory } from '../lab-history-set.mjs';
+import { sortLabHistoryChronological } from '../tend-core.mjs';
+import { daySelectValue } from '../lab-history-day-view.mjs';
 
 /** Runtime hooks supplied by app.js once shell functions exist. */
 let runtime = {
@@ -17,11 +21,7 @@ let runtime = {
   getActiveId() {
     return null;
   },
-  setRoundOverviewMode() {},
-  renderPaseBoard() {},
 };
-
-var _openedDetailFromPase = false;
 
 export function registerChromeRuntime(ctx) {
   if (!ctx || typeof ctx !== 'object') return;
@@ -42,7 +42,7 @@ const I18N_ES = {
   'settings.appearance': 'Apariencia',
   'settings.theme': 'Tema',
   'settings.appearanceFoot':
-    '⌘G/I/P/S cambian modo Guardia/Inter/Pase/Sala. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.',
+    '⌘G/I/S cambian modo Guardia/Inter/Sala. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.',
   'settings.themeGroup': 'Tema de la aplicación',
   'settings.themeLight': 'Claro',
   'settings.themeDark': 'Oscuro',
@@ -53,9 +53,8 @@ const I18N_ES = {
   'settings.fontXLarge': 'Más grande',
   'settings.uiDensity': 'Modo de vista',
   'settings.uiDensityHint':
-    'Normal: Paciente, Laboratorio, Manejo y Agenda en pestañas completas (vista Ronda centrada). Pase: resumen del paciente en una columna; pulsa un título de sección para abrir el detalle en Normal. ⌘P o Ctrl+P abre Modo Pase.',
+    'Normal: Paciente, Laboratorio, Manejo y Agenda en pestañas completas (vista Ronda centrada).',
   'settings.densityNormal': 'Normal',
-  'settings.densityPase': 'Pase',
   'settings.highContrast': 'Alto contraste',
   'settings.highContrastHint': 'Aumenta el contraste de texto y bordes para mejor legibilidad.',
   'settings.hcOff': 'Desactivado',
@@ -236,13 +235,7 @@ export function setMotionMode(mode) {
 export function getUiDensity() {
   const raw = localStorage.getItem(UI_DENSITY_LS);
   if (raw === 'guardia') return 'guardia';
-  if (raw === 'pase' || raw === 'compact') return 'pase';
-  if (raw === 'normal' || raw === 'comfortable') return 'normal';
   return 'normal';
-}
-
-export function isPaseMode() {
-  return getUiDensity() === 'pase';
 }
 
 export function isGuardiaMode() {
@@ -251,7 +244,6 @@ export function isGuardiaMode() {
 
 export function getWorkMode() {
   if (isGuardiaMode()) return 'guardia';
-  if (isPaseMode()) return 'pase';
   var st = null;
   try {
     st = JSON.parse(localStorage.getItem('rpc-settings') || 'null');
@@ -304,6 +296,49 @@ if (typeof document !== 'undefined') {
   }
 }
 
+/** Active patient's parsed lab history, newest-first (empty when no patient is active). */
+function activePatientLabSets() {
+  var pid = runtime.getActiveId();
+  if (!pid) return { pid: null, sets: [] };
+  var raw = ensureParsedLabHistory(pid, { readOnly: true });
+  return { pid: pid, sets: sortLabHistoryChronological(raw || []) };
+}
+
+/**
+ * README 11b: calendar popover anchored to the header date. Folds the
+ * "Días con labs" quick-nav (mockup L262) into the same 286px popover.
+ * Selecting a lab day switches to Laboratorio and jumps the day picker there.
+ */
+export function openHeaderDatePopoverFromChrome(ev) {
+  if (ev && typeof ev.preventDefault === 'function') ev.preventDefault();
+  var anchor = document.getElementById('today-date');
+  if (!anchor) return;
+  var today = new Date();
+  var ctx = activePatientLabSets();
+  var model = buildLabDaysForCalendar({ sets: ctx.sets, todayIso: isoDateKeyLocal(today) });
+  openDatePopover(anchor, {
+    today: today,
+    hasData: model.hasData,
+    loadedRangeLabel: model.loadedRangeLabel,
+    quickFilters: buildDatePopoverQuickFilters({}),
+    labDays: model.labDays,
+    onSelectLabDay: function (dayKey) {
+      var picked = model.labDays.find(function (d) {
+        return d.dayKey === dayKey;
+      });
+      if (!ctx.pid || !picked || !picked.rawFecha) return;
+      runtime.switchAppTab('lab');
+      var value = daySelectValue(picked.rawFecha);
+      import('./lab-panel-history.mjs').then(function (mod) {
+        if (typeof mod.onLabHistoryDateChange === 'function') mod.onLabHistoryDateChange(value);
+        if (typeof mod.syncLabHistoryDateSelect === 'function') {
+          mod.syncLabHistoryDateSelect({ preferSetId: value });
+        }
+      });
+    },
+  });
+}
+
 export function syncHeaderModeSeg() {
   var seg = document.getElementById('header-mode-seg');
   if (!seg) return;
@@ -313,22 +348,6 @@ export function syncHeaderModeSeg() {
     btn.classList.toggle('is-active', on);
     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
-}
-
-export function markOpenedDetailFromPaseBoard() {
-  _openedDetailFromPase = true;
-  syncPaseReturnHeaderBtn();
-  syncHeaderModeSeg();
-}
-
-export function clearPaseDetailEscape() {
-  _openedDetailFromPase = false;
-  syncPaseReturnHeaderBtn();
-  syncHeaderModeSeg();
-}
-
-function paseSectionLabelFromContext() {
-  return paseSectionLabelFromTab(runtime.getActiveAppTab(), runtime.getActiveInner());
 }
 
 export function toggleGuardiaMode() {
@@ -345,38 +364,11 @@ export function toggleGuardiaMode() {
     setUiDensity('normal');
     return;
   }
-  clearPaseDetailEscape();
   setUiDensity('guardia');
 }
 
 export function exitGuardiaModeFromHeader() {
   if (isGuardiaMode()) setUiDensity('normal');
-}
-
-export function exitPaseModeFromHeader() {
-  if (getUiDensity() !== 'pase') return;
-  clearPaseDetailEscape();
-  setUiDensity('normal');
-}
-
-export function syncPaseReturnHeaderBtn() {
-  var show = _openedDetailFromPase && getUiDensity() === 'normal';
-  var crumb = document.getElementById('header-pase-breadcrumb');
-  var section = document.getElementById('header-pase-breadcrumb-section');
-  var btn = document.getElementById('btn-header-return-pase');
-  if (crumb) crumb.style.display = show ? 'inline-flex' : 'none';
-  if (section && show) section.textContent = paseSectionLabelFromContext();
-  if (btn) btn.style.display = 'none';
-  syncHeaderModeSeg();
-}
-
-export function returnToPaseBoardFromDetail() {
-  if (!_openedDetailFromPase) return;
-  clearPaseDetailEscape();
-  setUiDensity('pase');
-  runtime.setRoundOverviewMode(true);
-  runtime.switchAppTab('nota');
-  if (typeof runtime.renderPaseBoard === 'function') runtime.renderPaseBoard();
 }
 
 export function applyUiDensity() {
@@ -387,26 +379,12 @@ export function applyUiDensity() {
   if (rondaHint) {
     rondaHint.setAttribute('aria-hidden', density !== 'normal' ? 'false' : 'true');
   }
-  if (isPaseMode()) runtime.setRoundOverviewMode(true);
-  var paseRoot = document.getElementById('appcontent-pase');
-  if (isPaseMode() && paseRoot) {
-    paseRoot.style.display = 'flex';
-    paseRoot.style.flexDirection = 'column';
-    paseRoot.style.flex = '1';
-    paseRoot.style.minHeight = '0';
-    paseRoot.style.overflow = 'hidden';
-    paseRoot.setAttribute('aria-hidden', 'false');
-  } else if (paseRoot) {
-    paseRoot.style.display = 'none';
-    paseRoot.setAttribute('aria-hidden', 'true');
-  }
   var guardiaRoot = document.getElementById('appcontent-guardia');
   if (guardiaRoot && !isGuardiaMode()) {
     guardiaRoot.style.display = 'none';
     guardiaRoot.setAttribute('aria-hidden', 'true');
   }
   runtime.switchAppTab(runtime.getActiveAppTab());
-  syncPaseReturnHeaderBtn();
   syncHeaderModeSeg();
   if (typeof runtime.renderPatientList === 'function') {
     runtime.renderPatientList({ silent: true });
@@ -420,21 +398,14 @@ export function applyUiDensity() {
 export function syncUiDensityButtons() {
   const d = getUiDensity();
   const normalBtn = document.getElementById('settings-density-normal');
-  const paseBtn = document.getElementById('settings-density-pase');
   if (normalBtn) {
     normalBtn.classList.toggle('active', d === 'normal');
     normalBtn.setAttribute('aria-pressed', d === 'normal' ? 'true' : 'false');
   }
-  if (paseBtn) {
-    paseBtn.classList.toggle('active', d === 'pase');
-    paseBtn.setAttribute('aria-pressed', d === 'pase' ? 'true' : 'false');
-  }
 }
 
 export function setUiDensity(mode) {
-  let m = mode === 'guardia' ? 'guardia' : mode === 'pase' || mode === 'compact' ? 'pase' : 'normal';
-  if (mode === 'comfortable') m = 'normal';
-  if (m === 'pase' || m === 'guardia') clearPaseDetailEscape();
+  let m = mode === 'guardia' ? 'guardia' : 'normal';
   localStorage.setItem(UI_DENSITY_LS, m);
   applyUiDensity();
   syncUiDensityButtons();
@@ -508,9 +479,8 @@ export const windowHandlers = {
   setHighContrast,
   toggleHighContrast,
   setMotionMode,
-  returnToPaseBoardFromDetail,
-  exitPaseModeFromHeader,
   toggleGuardiaMode,
   exitGuardiaModeFromHeader,
+  openHeaderDatePopoverFromChrome,
   t,
 };
