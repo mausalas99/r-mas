@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   patientCardDisplayKey,
   buildPatientListZones,
+  buildInterconsultaZones,
   trySilentPatientListPatch,
   updatePatientListDomIncremental,
 } from './patient-list-incremental.mjs';
@@ -45,6 +46,21 @@ describe('patient-list-incremental', () => {
       zones.active.map((p) => p.id),
       ['a', 'b']
     );
+  });
+
+  it('buildInterconsultaZones buckets nuevas (no/pendiente status) vs en seguimiento', () => {
+    const zones = buildInterconsultaZones([
+      { id: 'a', pinned: false, archived: false, consultInfo: { followUpStatus: 'pendiente' } },
+      { id: 'b', pinned: false, archived: false }, // no consultInfo at all -> nuevas
+      { id: 'c', pinned: false, archived: false, consultInfo: { followUpStatus: 'en_curso' } },
+      { id: 'd', pinned: false, archived: false, consultInfo: { followUpStatus: 'resuelta' } },
+      { id: 'e', pinned: true, archived: false, consultInfo: { followUpStatus: 'pendiente' } },
+      { id: 'f', pinned: false, archived: true, consultInfo: { followUpStatus: 'pendiente' } },
+    ]);
+    assert.deepEqual(zones.nuevas.map((p) => p.id), ['a', 'b']);
+    assert.deepEqual(zones.enSeguimiento.map((p) => p.id), ['c', 'd']);
+    assert.deepEqual(zones.pinned.map((p) => p.id), ['e']);
+    assert.deepEqual(zones.archived.map((p) => p.id), ['f']);
   });
 
   it('trySilentPatientListPatch updates only changed card text', () => {

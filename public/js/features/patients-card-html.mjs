@@ -129,6 +129,22 @@ export function renderActiveSectionLabelHtml(count) {
   );
 }
 
+export function renderNuevasSectionLabelHtml(count) {
+  return (
+    '<div class="patient-list-section-label" role="group" aria-label="Interconsultas nuevas">Nuevas <span class="patient-list-section-count">' +
+    count +
+    '</span></div>'
+  );
+}
+
+export function renderEnSeguimientoSectionLabelHtml(count) {
+  return (
+    '<div class="patient-list-section-label" role="group" aria-label="Interconsultas en seguimiento">En seguimiento <span class="patient-list-section-count">' +
+    count +
+    '</span></div>'
+  );
+}
+
 export function renderArchivedToggleHtml(collapsed, count) {
   return (
     '<button type="button" class="patient-list-section-toggle" onclick="toggleArchivedSection(event)" aria-expanded="' +

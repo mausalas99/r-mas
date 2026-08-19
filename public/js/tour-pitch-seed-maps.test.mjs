@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fillPitchDemoClinicalMaps } from './tour-pitch-seed-maps.mjs';
+import { fillPitchDemoClinicalMaps, buildPitchDemoPatient } from './tour-pitch-seed-maps.mjs';
 import { PITCH_DEMO_PATIENT_ID } from './tour-pitch-sandbox.mjs';
 import { countMedTurnoItems, buildMedTurnoHeaderText } from './features/medications-panel-rows.mjs';
 import { collectDietasFromRecetaBlock, listDietCandidates } from './med-receta-diet.mjs';
+import { getConsultInfo } from './features/patient-dashboard/consult-band.mjs';
 
 /**
  * Regression coverage for the Manejo (4a) fixture: the DEMO PÉREZ patient's medReceta
@@ -25,6 +26,14 @@ function buildMaps() {
   fillPitchDemoClinicalMaps(maps, '19/08/2026', '08:00', new Date('2026-08-19T08:00:00'));
   return maps;
 }
+
+test('DEMO PÉREZ patient: carries consultInfo so the Interconsulta (10b) band has real content', () => {
+  const patient = buildPitchDemoPatient(new Date('2026-08-19T08:00:00'));
+  const info = getConsultInfo(patient);
+  assert.equal(info.requestingService, 'Cirugía general');
+  assert.ok(info.reason.length > 0, 'reason text present');
+  assert.equal(info.followUpStatus, 'en_curso');
+});
 
 test('DEMO PÉREZ medReceta: includes a diet entry the Manejo "Dieta detectada" card can render', () => {
   const maps = buildMaps();

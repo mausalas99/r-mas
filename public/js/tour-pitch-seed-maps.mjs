@@ -20,6 +20,12 @@ export function buildPitchDemoPatient(today) {
     fromLab: false,
     isDemo: true,
     monitoreo: buildPitchMonitoreoHistorial(today),
+    consultInfo: {
+      requestingService: 'Cirugía general',
+      reason:
+        'Descontrol glucémico posoperatorio, ajuste de esquema de insulina y valoración de nefropatía.',
+      followUpStatus: 'en_curso',
+    },
   };
 }
 

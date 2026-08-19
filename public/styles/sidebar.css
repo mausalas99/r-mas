@@ -362,7 +362,8 @@ html.dark .btn-add:hover {
   padding: calc(8px * var(--density-space)) calc(14px * var(--density-space)) calc(16px * var(--density-space));
 }
 /** Contenedor Sortable por sección (pinned / activos / archivados): mismo hueco vertical que antes entre tarjetas. */
-.patient-sort-zone {
+.patient-sort-zone,
+.patient-list-zone {
   display: flex;
   flex-direction: column;
   gap: calc(7px * var(--density-space));

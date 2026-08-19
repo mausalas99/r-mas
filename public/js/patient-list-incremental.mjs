@@ -4,12 +4,45 @@
 
 import { comparePatientsByBed } from '../../lib/patient-bed-sort.mjs';
 import { patientCardDisplayKey } from './patient-list-display-key.mjs';
+import { getConsultInfo } from './features/patient-dashboard/consult-band.mjs';
 
 export { patientCardDisplayKey };
 
 /** @param {object[]} rows */
 function sortZoneByBed(rows) {
   return rows.slice().sort(comparePatientsByBed);
+}
+
+/**
+ * Interconsulta sidebar grouping (design handoff #10b): Nuevas / En
+ * seguimiento instead of Fijados / Pacientes. "Nuevas" = no follow-up
+ * status recorded yet or explicitly "pendiente"; everything else
+ * (en_curso, resuelta) counts as already being followed.
+ * @param {object[]} filtered
+ * @param {{ sortByBed?: boolean }|undefined} [options]
+ */
+export function buildInterconsultaZones(filtered, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const nonArchived = filtered.filter((p) => !p.pinned && !p.archived);
+  const zones = {
+    pinned: filtered.filter((p) => p.pinned && !p.archived),
+    nuevas: nonArchived.filter((p) => {
+      var status = getConsultInfo(p).followUpStatus;
+      return !status || status === 'pendiente';
+    }),
+    enSeguimiento: nonArchived.filter((p) => {
+      var status = getConsultInfo(p).followUpStatus;
+      return status && status !== 'pendiente';
+    }),
+    archived: filtered.filter((p) => !!p.archived),
+  };
+  if (opts.sortByBed) {
+    zones.pinned = sortZoneByBed(zones.pinned);
+    zones.nuevas = sortZoneByBed(zones.nuevas);
+    zones.enSeguimiento = sortZoneByBed(zones.enSeguimiento);
+    zones.archived = sortZoneByBed(zones.archived);
+  }
+  return zones;
 }
 
 /**
