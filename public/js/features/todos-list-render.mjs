@@ -24,6 +24,7 @@ import {
   toggleTodo,
   deleteTodo,
   setTodoPriority,
+  setTodoInProgress,
   acknowledgeHandoffTodo,
   updateTodoText,
 } from './todos-mutations.mjs';
@@ -179,9 +180,29 @@ function buildTodoVenceCell(t, status, now) {
   return cell;
 }
 
+/** Toggle for the D3b "En curso" flag — reflected as EN CURSO in Guardia (6a/6b). */
+function buildTodoInCursoBtn(t) {
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'wb-todo-encurso-btn' + (t.inProgress ? ' is-active' : '');
+  btn.textContent = 'En curso';
+  btn.title = t.inProgress ? 'Quitar "en curso"' : 'Marcar como en curso';
+  btn.setAttribute('aria-pressed', String(!!t.inProgress));
+  btn.addEventListener('click', function () {
+    var next = !t.inProgress;
+    setTodoInProgress(t.id, next);
+    t.inProgress = next;
+    btn.classList.toggle('is-active', next);
+    btn.title = next ? 'Quitar "en curso"' : 'Marcar como en curso';
+    btn.setAttribute('aria-pressed', String(next));
+  });
+  return btn;
+}
+
 function buildTodoAccionCell(t) {
   var cell = document.createElement('span');
   cell.className = 'wb-todo-accion';
+  cell.appendChild(buildTodoInCursoBtn(t));
   var listo = document.createElement('button');
   listo.type = 'button';
   listo.className = 'wb-todo-listo-btn';

@@ -79,14 +79,39 @@ export function guardiaPatientStatus(pendientes) {
 }
 
 /**
- * Admission date, reusing the existing FIMI (servicio)/FIUX (urgencias) patient
- * fields — there is no separate "admission date" model, this app already has one.
+ * Local-calendar-day YYYY-MM-DD for an ISO datetime, or '' when invalid.
+ * @param {unknown} iso
+ * @returns {string}
+ */
+function isoDatetimeToLocalDateInputValue(iso) {
+  const s = String(iso == null ? '' : iso).trim();
+  if (!s) return '';
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return '';
+  return (
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-` +
+    `${String(d.getDate()).padStart(2, '0')}`
+  );
+}
+
+/**
+ * Admission date for the Guardia "Ingresos" counter/filter (decision D3a).
+ * Prefers `registeredAt` — already stamped by `stampPatientRegistrationMeta`
+ * the moment a patient is added to the census, with no manual entry step —
+ * over the FIMI (servicio)/FIUX (urgencias) fields, which are hand-typed and
+ * exist for older/synced records that predate `registeredAt`. Patients are
+ * stored as a JSON blob (no fixed SQL columns), so this needs no
+ * `lib/db/schema.mjs` migration — just a new property on the patient object,
+ * already written by `patient-registration-meta.mjs`.
  * @param {object} p
  * @returns {string} YYYY-MM-DD, or '' when unknown
  */
 export function admissionDateForPatient(p) {
   return (
-    accesoFechaToDateInputValue(p?.fimiFecha) || accesoFechaToDateInputValue(p?.fiuxFecha) || ''
+    isoDatetimeToLocalDateInputValue(p?.registeredAt) ||
+    accesoFechaToDateInputValue(p?.fimiFecha) ||
+    accesoFechaToDateInputValue(p?.fiuxFecha) ||
+    ''
   );
 }
 

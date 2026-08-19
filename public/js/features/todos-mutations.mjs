@@ -69,6 +69,7 @@ export function toggleTodo(id) {
   if (found.completed) {
     found.completedAt = nowIso;
     if (username) found.completedBy = username;
+    found.inProgress = false;
   } else {
     found.completedAt = null;
     found.completedBy = null;
@@ -114,6 +115,25 @@ export function setTodoPriority(id, priority, opts) {
     setTimeout(refreshAllTodoUIs, opts.deferResortMs);
     return;
   }
+  refreshAllTodoUIs();
+}
+
+/**
+ * Toggles the "En curso" (in-progress) flag on a pendiente (decision D3b) —
+ * shows as the EN CURSO status in the Guardia census table
+ * (`guardiaPatientStatus`, `guardia-census-table.mjs`). Cleared automatically
+ * when the pendiente is marked resolved (`toggleTodo` sets `completed`).
+ * @param {string} id
+ */
+export function setTodoInProgress(id, inProgress) {
+  if (!aid()) return;
+  var todos = storage.getTodos(aid());
+  var found = todos.find(function (t) { return t.id === id; });
+  if (!found) return;
+  found.inProgress = !!inProgress;
+  found.updatedAt = new Date().toISOString();
+  storage.saveTodos(aid(), todos);
+  enqueueCloudTodoUpsert(aid(), found);
   refreshAllTodoUIs();
 }
 

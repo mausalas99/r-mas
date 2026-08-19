@@ -13,6 +13,11 @@ import {
 
 const store = {};
 
+function isoLocalDate(iso) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 beforeEach(() => {
   globalThis.localStorage = {
     getItem: (k) => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
@@ -80,16 +85,34 @@ describe('guardiaPatientStatus', () => {
   });
 });
 
-describe('admission date (reuses existing FIMI/FIUX patient fields)', () => {
-  it('prefers fimiFecha over fiuxFecha', () => {
+describe('admission date (D3a: auto-set registeredAt, FIMI/FIUX as legacy fallback)', () => {
+  it('prefers registeredAt over fimiFecha/fiuxFecha', () => {
+    assert.equal(
+      admissionDateForPatient({
+        registeredAt: '2026-08-19T14:32:00.000Z',
+        fimiFecha: '2026-08-18',
+        fiuxFecha: '2026-08-17',
+      }),
+      isoLocalDate('2026-08-19T14:32:00.000Z')
+    );
+  });
+
+  it('falls back to fimiFecha over fiuxFecha when registeredAt is missing', () => {
     assert.equal(
       admissionDateForPatient({ fimiFecha: '2026-08-18', fiuxFecha: '2026-08-17' }),
       '2026-08-18'
     );
   });
 
-  it('falls back to fiuxFecha when fimiFecha is missing', () => {
+  it('falls back to fiuxFecha when both registeredAt and fimiFecha are missing', () => {
     assert.equal(admissionDateForPatient({ fiuxFecha: '17/08/2026' }), '2026-08-17');
+  });
+
+  it('ignores an invalid registeredAt and falls back', () => {
+    assert.equal(
+      admissionDateForPatient({ registeredAt: 'not-a-date', fimiFecha: '2026-08-18' }),
+      '2026-08-18'
+    );
   });
 
   it('is admitted today only when the resolved date matches the local calendar day', () => {
@@ -97,6 +120,10 @@ describe('admission date (reuses existing FIMI/FIUX patient fields)', () => {
     assert.equal(isPatientAdmittedToday({ fimiFecha: today }), true);
     assert.equal(isPatientAdmittedToday({ fimiFecha: '2020-01-01' }), false);
     assert.equal(isPatientAdmittedToday({}), false);
+  });
+
+  it('is admitted today from a fresh registeredAt with no manual entry', () => {
+    assert.equal(isPatientAdmittedToday({ registeredAt: new Date().toISOString() }), true);
   });
 });
 
@@ -159,6 +186,16 @@ describe('buildGuardiaCensusTableHtml', () => {
     ];
     const html = buildGuardiaCensusTableHtml(patients, new Map(), 'R1', {}, 'ingresos');
     assert.match(html, /NUEVO/);
+    assert.doesNotMatch(html, /VIEJO/);
+  });
+
+  it('filters to admitted-today under Ingresos using an auto-set registeredAt (no manual entry)', () => {
+    const patients = [
+      { id: 'p1', name: 'RECIEN LLEGADO', cama: '3', registeredAt: new Date().toISOString() },
+      { id: 'p2', name: 'VIEJO', cama: '2', registeredAt: '2020-01-01T00:00:00.000Z' },
+    ];
+    const html = buildGuardiaCensusTableHtml(patients, new Map(), 'R1', {}, 'ingresos');
+    assert.match(html, /RECIEN LLEGADO/);
     assert.doesNotMatch(html, /VIEJO/);
   });
 

@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { storage } from '../storage.js';
 import { registerTodosRuntime } from './todos-runtime.mjs';
-import { addTodoWithFields } from './todos-mutations.mjs';
+import { addTodoWithFields, setTodoInProgress, toggleTodo } from './todos-mutations.mjs';
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const mutationsSrc = readFileSync(join(dir, 'todos-mutations.mjs'), 'utf8');
@@ -85,5 +85,37 @@ describe('addTodoWithFields', () => {
     registerTodosRuntime({ getActiveId: () => null });
     const ok = addTodoWithFields({ text: 'Algo' });
     assert.equal(ok, false);
+  });
+});
+
+describe('setTodoInProgress (D3b — EN CURSO in Guardia census)', () => {
+  it('sets inProgress true/false and bumps updatedAt', () => {
+    addTodoWithFields({ text: 'Esquema insulina' });
+    const id = storage.getTodos('p1')[0].id;
+    setTodoInProgress(id, true);
+    assert.equal(storage.getTodos('p1')[0].inProgress, true);
+    setTodoInProgress(id, false);
+    assert.equal(storage.getTodos('p1')[0].inProgress, false);
+  });
+
+  it('no-ops when there is no active patient', () => {
+    addTodoWithFields({ text: 'Esquema insulina' });
+    const id = storage.getTodos('p1')[0].id;
+    registerTodosRuntime({ getActiveId: () => null });
+    setTodoInProgress(id, true);
+    registerTodosRuntime({ getActiveId: () => 'p1' });
+    assert.equal(storage.getTodos('p1')[0].inProgress, false);
+  });
+});
+
+describe('toggleTodo clears inProgress on completion', () => {
+  it('resolving an in-progress pendiente clears its EN CURSO flag', () => {
+    addTodoWithFields({ text: 'Transfusión 1 CE' });
+    const id = storage.getTodos('p1')[0].id;
+    setTodoInProgress(id, true);
+    toggleTodo(id);
+    const t = storage.getTodos('p1')[0];
+    assert.equal(t.completed, true);
+    assert.equal(t.inProgress, false);
   });
 });

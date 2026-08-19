@@ -69,6 +69,7 @@ export function buildSettingsHelpWindowHandlersLazy(ensureSettingsHelpLoaded) {
       startMiniTour: 'startMiniTour',
       startHelpTourMain: 'startHelpTourMain',
       togglePresentationModeFromHelp: 'togglePresentationModeFromHelp',
+      seedPitchGuardiaCensusFromHelp: 'seedPitchGuardiaCensusFromHelp',
       exportCensoPdfFromHelp: 'exportCensoPdfFromHelp',
       guidedTourIntroChooseSala: 'guidedTourIntroChooseSala',
       guidedTourIntroChooseInterconsulta: 'guidedTourIntroChooseInterconsulta',

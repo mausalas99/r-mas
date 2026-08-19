@@ -536,6 +536,23 @@ html.dark .exp-pendientes-mount .todo-composer .todo-add-btn:hover {
   color: var(--color-accent);
 }
 
+/* "En curso" toggle (D3b) — mirrors the EN CURSO status label color (warn). */
+.exp-pendientes-mount .wb-todo-encurso-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 7px;
+  cursor: pointer;
+  font: 600 10px/1 var(--font-mono, 'IBM Plex Mono', monospace);
+  letter-spacing: 0.04em;
+  color: var(--color-ink-muted);
+}
+
+.exp-pendientes-mount .wb-todo-encurso-btn.is-active {
+  border-color: var(--color-warn);
+  color: var(--color-warn);
+}
+
 .exp-pendientes-mount .wb-todo-ack-btn,
 .exp-pendientes-mount .wb-todo-del-btn {
   background: none;
@@ -820,8 +837,11 @@ aside.patient-sidebar .patient-card .p-name {
   font-weight: 600;
 }
 
+/* Bed/room/servicio line reads as data (compared, scanned in a column), so it uses the
+   mono type scale like other data — labs, vitals, hours — per the 3b "tarjetas suaves"
+   mockup treatment (gray-mono "214-B · C2 · M. Interna" line). */
 aside.patient-sidebar .patient-card .p-meta {
-  font: var(--type-caption);
+  font: var(--type-wb-mono, var(--type-caption));
 }
 
 /* High contrast: flatten decorative elevation */
