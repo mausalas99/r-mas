@@ -77,6 +77,45 @@ describe('buildTodoGroupPlan', () => {
     assert.notEqual(row.querySelector('.wb-todo-vence').textContent.trim(), '—');
   });
 
+  it('gates delete behind the shared destructive confirm kit (Phase 9, mockup #11a) instead of deleting on click', () => {
+    if (typeof document === 'undefined') return;
+    const todos = [todo({ id: 'del-me', text: 'Borrar esto' })];
+    const list = document.createElement('div');
+    document.body.appendChild(list);
+    appendGroupedTodoSections(list, todos, null, null, NOW);
+    const delBtn = list.querySelector('.wb-todo-del-btn');
+    assert.ok(delBtn, 'delete button renders');
+    delBtn.click();
+    // No window.confirm involved (jsdom/Electron-node has none), and the row must
+    // still exist immediately after the click — deletion only happens after the
+    // confirm modal's own onConfirm, never synchronously on the "x" click.
+    assert.ok(list.querySelector('.wb-row[data-todo-id="del-me"]'), 'row is not removed before confirming');
+    const modal = document.querySelector('.wb-confirm-modal--destructive');
+    assert.ok(modal, 'destructive confirm modal opened');
+    assert.match(document.querySelector('.wb-confirm-title')?.textContent || '', /Eliminar/);
+    document.querySelector('[data-wb-confirm-cancel]')?.click();
+    document.body.removeChild(list);
+  });
+
+  it('shows a reversible-weight undo toast (mockup #11a) when marking a pendiente as listo', () => {
+    if (typeof document === 'undefined') return;
+    registerTodosRuntime({ getActiveId: () => 'p1' });
+    storage.saveTodos('p1', []);
+    const added = addTodoWithFields('Pendiente de prueba', { priority: 'media' });
+    const list = document.createElement('div');
+    document.body.appendChild(list);
+    appendGroupedTodoSections(list, [added], null, null, NOW);
+    const listoBtn = list.querySelector('.wb-todo-listo-btn');
+    assert.ok(listoBtn, 'listo button renders');
+    listoBtn.click();
+    const toast = document.querySelector('.wb-undo-toast');
+    assert.ok(toast, 'undo toast opened instead of a silent toggle');
+    assert.match(toast.textContent, /Pendiente marcado como listo/);
+    assert.match(toast.textContent, /Deshacer/);
+    document.body.removeChild(list);
+    document.querySelector('.wb-undo-toast')?.remove();
+  });
+
   it('renders closed rows strikethrough with no Prior./acción columns', () => {
     if (typeof document === 'undefined') return;
     const todos = [todo({ id: 'c', text: 'Resuelto', completed: true, updatedAt: '2026-06-11T05:10:00.000Z' })];

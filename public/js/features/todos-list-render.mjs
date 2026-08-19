@@ -16,6 +16,7 @@ import {
 } from '../todos-handoff.mjs';
 import { aid, getClinicalUsername, getListFilter, setListFilter } from './todos-runtime.mjs';
 import { openTodoAddModal } from './todos-add-modal.mjs';
+import { openConfirm } from './workbench/confirm.mjs';
 import { nextTodoPriority, normalizeTodoPriority, todoPriorityLabel } from '../todos-priority.mjs';
 import {
   toggleTodo,
@@ -201,7 +202,21 @@ function buildTodoAccionCell(t) {
   listo.className = 'wb-todo-listo-btn';
   listo.textContent = 'Listo';
   listo.title = 'Marcar como resuelto';
-  listo.addEventListener('click', function () { toggleTodo(t.id); });
+  listo.addEventListener('click', function () {
+    var wasOpen = !t.completed;
+    toggleTodo(t.id);
+    // Mockup #11a's reversible-weight example is this exact transition
+    // ("Pendiente marcado como listo" + Deshacer) — no blocking modal,
+    // just a dismissible undo toast. Only on open -> listo, not the reverse.
+    if (wasOpen) {
+      void openConfirm({
+        weight: 'reversible',
+        message: 'Pendiente marcado como listo',
+        undoLabel: 'Deshacer',
+        onUndo: function () { toggleTodo(t.id); },
+      });
+    }
+  });
   cell.appendChild(listo);
   if (isHandoffTodo(t, getClinicalUsername())) {
     var ack = document.createElement('button');
@@ -217,7 +232,16 @@ function buildTodoAccionCell(t) {
   del.className = 'wb-todo-del-btn';
   del.textContent = '×';
   del.title = 'Eliminar';
-  del.addEventListener('click', function () { deleteTodo(t.id); });
+  del.addEventListener('click', function () {
+    void openConfirm({
+      weight: 'destructive',
+      title: '¿Eliminar este pendiente?',
+      message: t.text ? '"' + t.text + '" se borra de tu lista. No se puede deshacer.' : 'No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      cancelLabel: 'Cancelar',
+      onConfirm: function () { deleteTodo(t.id); },
+    });
+  });
   cell.appendChild(del);
   return cell;
 }

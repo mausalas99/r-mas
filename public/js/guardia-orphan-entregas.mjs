@@ -4,6 +4,7 @@
 import { getPatients, persistClinicalState } from './app-state.mjs';
 import { clinicalSessionContext, refreshGuardiaCensusFromDb } from './clinical-access-runtime.mjs';
 import { vitalsMonitorAlertState } from './features/session-manager.mjs';
+import { openConfirm } from './features/workbench/confirm.mjs';
 
 import { escapeHtml, escapeAttr } from './dom-escape.mjs';
 function dbApi() {
@@ -202,12 +203,24 @@ async function deleteOrphanFromServer(btn, settings) {
   const guardiaId = String(btn.dataset.guardiaId || '').trim();
   if (!patientId && !guardiaId) return;
 
-  const ok = window.confirm(
-    '¿Eliminar este paciente del anfitrión ⇄ y liberar la entrega?\n\n' +
-      'Se borrará el expediente en la red local y dejará de asignarte el paciente. Esta acción no se puede deshacer.'
-  );
-  if (!ok) return;
+  await openConfirm({
+    weight: 'destructive',
+    title: '¿Eliminar este paciente del anfitrión ⇄ y liberar la entrega?',
+    message:
+      'Se borrará el expediente en la red local y dejará de asignarte el paciente. Esta acción no se puede deshacer.',
+    confirmLabel: 'Eliminar',
+    cancelLabel: 'Cancelar',
+    onConfirm: () => runDeleteOrphanFromServer(btn, settings, patientId, guardiaId),
+  });
+}
 
+/**
+ * @param {HTMLButtonElement} btn
+ * @param {Record<string, unknown>|null} settings
+ * @param {string} patientId
+ * @param {string} guardiaId
+ */
+async function runDeleteOrphanFromServer(btn, settings, patientId, guardiaId) {
   const api = dbApi();
   if (!api || typeof api.dbGuardiaResolve !== 'function') {
     toast('Base clínica no disponible.', 'error');

@@ -29,7 +29,7 @@ import { patientsBridge } from './patients-bridge.mjs';
 import { patchPatientListActiveHighlight } from './patients-list.mjs';
 import { scrollActiveRondaCardIntoView } from './patients-round.mjs';
 import { syncPatientBulkBar } from './patients-bulk-bar.mjs';
-import { showConfirmDialog } from '../ui-approval-card.mjs';
+import { openConfirm } from './workbench/confirm.mjs';
 import { requestSilentUpdateCheck } from './platform/updater/silent-check.mjs';
 import { writeLastSelectedPatientId } from './patients-default-id.mjs';
 
@@ -240,14 +240,16 @@ function selectPatientCore(id) {
 
 function showPatientDeleteConfirm(n) {
   var many = n > 1;
-  return showConfirmDialog({
-    id: 'patients-delete-confirm',
+  return openConfirm({
+    weight: 'destructive',
     title: many ? 'Eliminar ' + n + ' pacientes' : 'Eliminar paciente',
-    question: many
+    message: many
       ? 'Se quitarán las notas de este turno. No volverán desde otros equipos.'
       : 'Se quitarán las notas de este turno. No volverá desde otros equipos.',
     confirmLabel: 'Eliminar',
     cancelLabel: 'Cancelar',
+  }).then(function (result) {
+    return result === 'confirm';
   });
 }
 
