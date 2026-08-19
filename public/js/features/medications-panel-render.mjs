@@ -4,18 +4,21 @@ import {
   buildMedRecetaNameOnlyText,
   collectDietasFromRecetaBlock,
 } from "../med-receta-core.mjs";
-import { isPaseMode } from "./chrome.mjs";
 import {
   getMedSubview,
   initMedPharmSubviewUi,
   renderMedPharmProfilePanel,
   closeMedPharmModals,
 } from "./med-pharm-profile-panel.mjs";
-import { renderPaseBoard } from "./pase-board.mjs";
 import { wireMedRecetaPasteModalOnce, closeMedRecetaPasteModal } from "./medications-paste-modal.mjs";
 import { restoreMedInputForPatient } from "./medications-input.mjs";
 import { buildMedPanelCacheKey } from "./medications-panel-cache.mjs";
-import { buildMedDietHtml, buildMedRecetaListHtml } from "./medications-panel-rows.mjs";
+import {
+  buildMedDietHtml,
+  buildMedRecetaListHtml,
+  countMedTurnoItems,
+  buildMedTurnoHeaderText,
+} from "./medications-panel-rows.mjs";
 import { classifyMedicationSoapCategory, shouldIncludeMedicationInSoap } from "../med-receta-core.mjs";
 import { renderMedNotaFooter, hideMedNotaFooter } from "./medications-soap-footer.mjs";
 import {
@@ -36,11 +39,39 @@ function getMedPanelDom() {
     listEl: document.getElementById("med-items-list"),
     outPre: document.getElementById("med-output"),
     outCard: document.getElementById("med-output-section"),
+    turnoTitleEl: document.getElementById("med-turno-title-text"),
+    turnoApoyoEl: document.getElementById("med-turno-apoyo"),
   };
+}
+
+var MED_TURNO_TITLE_DEFAULT = "Medicamentos del turno";
+
+function resetMedTurnoHeader(els) {
+  if (els.turnoTitleEl) els.turnoTitleEl.textContent = MED_TURNO_TITLE_DEFAULT;
+  if (els.turnoApoyoEl) {
+    els.turnoApoyoEl.hidden = true;
+    els.turnoApoyoEl.textContent = "";
+  }
+}
+
+function syncMedTurnoHeader(els, items) {
+  if (!els.turnoTitleEl) return;
+  var header = buildMedTurnoHeaderText(countMedTurnoItems(items));
+  els.turnoTitleEl.textContent = header.title;
+  if (els.turnoApoyoEl) {
+    if (header.secondary) {
+      els.turnoApoyoEl.textContent = header.secondary;
+      els.turnoApoyoEl.hidden = false;
+    } else {
+      els.turnoApoyoEl.textContent = "";
+      els.turnoApoyoEl.hidden = true;
+    }
+  }
 }
 
 function renderMedPanelEmptyNoPatient(els) {
   bustMedPanelCache();
+  resetMedTurnoHeader(els);
   els.hintEl.hidden = false;
   els.hintEl.textContent = "Selecciona un paciente en la columna izquierda para ver su manejo.";
   setMedActiveLeadVisible(false);
@@ -49,11 +80,11 @@ function renderMedPanelEmptyNoPatient(els) {
   els.outPre.textContent = "";
   if (els.outCard) els.outCard.style.display = "none";
   hideMedNotaFooter();
-  if (isPaseMode()) renderPaseBoard();
 }
 
 function renderMedPanelEmptyNoContent(activeId, cacheKey, els) {
   setMedPanelCacheKey(cacheKey);
+  resetMedTurnoHeader(els);
   els.hintEl.hidden = false;
   els.hintEl.textContent =
     "Aún no hay medicamentos. Pulsa Importar SOME, pega el bloque del hospital y procesa la receta.";
@@ -63,7 +94,6 @@ function renderMedPanelEmptyNoContent(activeId, cacheKey, els) {
   els.outPre.textContent = "";
   if (els.outCard) els.outCard.style.display = "none";
   hideMedNotaFooter();
-  if (isPaseMode()) renderPaseBoard();
 }
 
 function syncMedOutputTabChrome(outPre, outCard, block) {
@@ -90,6 +120,7 @@ function syncMedOutputTabChrome(outPre, outCard, block) {
 
 function renderMedPanelRecetaContent(activeId, block, cacheKey, els) {
   setMedPanelCacheKey(cacheKey);
+  syncMedTurnoHeader(els, block.items);
   els.hintEl.hidden = true;
   setMedActiveLeadVisible(true);
   if (els.fechaEl) {
@@ -102,7 +133,6 @@ function renderMedPanelRecetaContent(activeId, block, cacheKey, els) {
     buildMedDietHtml(collectDietasFromRecetaBlock(block)) + buildMedRecetaListHtml(activeId, block);
   renderMedNotaFooter();
   syncMedOutputTabChrome(els.outPre, els.outCard, block);
-  if (isPaseMode()) renderPaseBoard();
 }
 
 function handleMedPanelPatientChange(activeId) {

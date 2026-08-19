@@ -22,12 +22,12 @@ import {
   guardDocExportBlocked,
   syncApprovedOutputDir,
 } from "../document-export-client.mjs";
+import { openConfirm } from "./workbench/confirm.mjs";
 
 let rt = {
   getActiveId() { return null; },
   getSettings() { return /** @type {any} */ ({}); },
   showToast() {},
-  renderRoundOverviewPanels() {},
   syncOfflineButtonStates() {},
   guardMobileDocExport() { return false; },
   isRpcOffline() { return false; },
@@ -132,13 +132,13 @@ function renderNoteForm() {
 }
 
 // ── Campos Dx/Tx ──────────────────────────────────────────────────────
-function updateNote(field, value) { if (!getNotes()[aid()]) getNotes()[aid()]={}; getNotes()[aid()][field]=value; persistClinicalState(); if (field === 'estudios') rt.renderRoundOverviewPanels(); }
+function updateNote(field, value) { if (!getNotes()[aid()]) getNotes()[aid()]={}; getNotes()[aid()][field]=value; persistClinicalState(); }
 function updateDx(i, val) { if (!getNotes()[aid()]) return; getNotes()[aid()].diagnosticos[i]=val.toUpperCase(); persistClinicalState(); }
 function addDx() { if (!getNotes()[aid()]) return; getNotes()[aid()].diagnosticos.push(''); persistClinicalState(); renderNoteForm(); }
 function removeDx(i) { if (!getNotes()[aid()]||getNotes()[aid()].diagnosticos.length<=1) return; getNotes()[aid()].diagnosticos.splice(i,1); persistClinicalState(); renderNoteForm(); }
 
 /** Pull patient censo diagnoses into the open note (asks before overwrite). */
-function syncNoteDxFromCenso() {
+async function syncNoteDxFromCenso() {
   var pid = aid();
   if (!pid || !getNotes()[pid]) return;
   var pat = getPatients().find(function (p) {
@@ -150,10 +150,12 @@ function syncNoteDxFromCenso() {
     return String(d).trim();
   });
   if (hasNoteDx) {
-    var ok = window.confirm(
-      '¿Reemplazar los diagnósticos de la nota con los del censo del paciente?'
-    );
-    if (!ok) return;
+    var result = await openConfirm({
+      weight: 'consequence',
+      title: '¿Reemplazar los diagnósticos de la nota con los del censo del paciente?',
+      confirmLabel: 'Reemplazar',
+    });
+    if (result !== 'confirm') return;
   }
   if (!syncNoteDxFromPatient(note, pat, { mode: 'replace' })) {
     rt.showToast('No hay diagnósticos en el censo de este paciente.', 'info');

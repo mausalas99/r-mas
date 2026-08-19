@@ -25,11 +25,18 @@ import {
   registerMedPharmProfileRuntime,
   medPharmProfileWindowHandlers,
 } from "./med-pharm-profile-panel.mjs";
+import {
+  openMedEgresoModal,
+  closeMedEgresoModal,
+  setMedEgresoModalTab,
+  copiarMedEgresoModalTexto,
+} from "./medications-egreso-modal.mjs";
 
 export { registerMedicationsRuntime, registerMedPharmProfileRuntime };
 export { stashMedInputForPatient };
 export { openMedRecetaPasteModal, closeMedRecetaPasteModal };
 export { renderMedRecetaPanel };
+export { openMedEgresoModal, closeMedEgresoModal, setMedEgresoModalTab, copiarMedEgresoModalTexto };
 export {
   toggleMedRecetaSuspendido,
   toggleMedRecetaParaNota,
@@ -64,5 +71,9 @@ export const medicationsWindowHandlers = {
   limpiarManejoActual,
   mediAnadirATratamiento,
   mediLlevarASOAP,
+  openMedEgresoModal,
+  closeMedEgresoModal,
+  setMedEgresoModalTab,
+  copiarMedEgresoModalTexto,
   ...medPharmProfileWindowHandlers,
 };

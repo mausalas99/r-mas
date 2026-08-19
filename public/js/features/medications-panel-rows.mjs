@@ -9,6 +9,8 @@ import {
   isNutritionMedicationItem,
   listDietCandidates,
   buildDietProposalText,
+  classifyApoyoKind,
+  apoyoKindLabel,
 } from "../med-receta-core.mjs";
 import { safeAttrJsString } from "./lab-panel.mjs";
 import { insulinPumpAlgorithmForMedicationItem, insulinPumpMedLabelHtml } from "../insulin-pump-some-detect.mjs";
@@ -276,4 +278,70 @@ export function buildMedRecetaListHtml(activeId, block) {
     rows.join("") +
     "</div>"
   );
+}
+
+/**
+ * Counts the Manejo turno rows split into real medications vs. apoyo (support) items
+ * — e.g. oxygen therapy — so the header can show "Medicamentos del turno · N" plus
+ * "más K apoyo(s) (O₂)" apart, instead of lumping apoyos into the medication count.
+ * Mirrors the row-skip logic in buildMedRecetaListHtml (nutrition rows never shown here,
+ * insulin rescate/prandial groups count once each as a medication).
+ * @param {unknown[]} items
+ * @returns {{ medCount: number, apoyoCount: number, apoyoKinds: string[] }}
+ */
+export function countMedTurnoItems(items) {
+  var list = Array.isArray(items) ? items : [];
+  var medCount = 0;
+  var apoyoCount = 0;
+  var apoyoKindSeen = {};
+  var apoyoKinds = [];
+  var rescateShown = false;
+  var prandialShown = false;
+  list.forEach(function (it) {
+    if (isNutritionMedicationItem(it)) return;
+    if (isInsulinRescateMedicationItem(it)) {
+      if (!rescateShown) {
+        medCount += 1;
+        rescateShown = true;
+      }
+      return;
+    }
+    if (isInsulinPrandialMedicationItem(it)) {
+      if (!prandialShown) {
+        medCount += 1;
+        prandialShown = true;
+      }
+      return;
+    }
+    if (skipRecetaItemForInsulinPumpCarrier(it, list)) return;
+    var apoyoKind = classifyApoyoKind(it && it.nombreRaw);
+    if (apoyoKind) {
+      apoyoCount += 1;
+      if (!apoyoKindSeen[apoyoKind]) {
+        apoyoKindSeen[apoyoKind] = true;
+        apoyoKinds.push(apoyoKind);
+      }
+      return;
+    }
+    medCount += 1;
+  });
+  return { medCount: medCount, apoyoCount: apoyoCount, apoyoKinds: apoyoKinds };
+}
+
+/**
+ * Builds the "Medicamentos del turno · N" title and the secondary
+ * "más K apoyo(s) (O₂)" text for the Manejo header, from the same counts.
+ * @param {{ medCount: number, apoyoCount: number, apoyoKinds: string[] }} counts
+ * @returns {{ title: string, secondary: string }}
+ */
+export function buildMedTurnoHeaderText(counts) {
+  var medCount = counts && typeof counts.medCount === "number" ? counts.medCount : 0;
+  var apoyoCount = counts && typeof counts.apoyoCount === "number" ? counts.apoyoCount : 0;
+  var apoyoKinds = (counts && counts.apoyoKinds) || [];
+  var title = "Medicamentos del turno · " + medCount;
+  if (!apoyoCount) return { title: title, secondary: "" };
+  var labels = apoyoKinds.map(apoyoKindLabel).filter(Boolean);
+  var suffix = labels.length ? " (" + labels.join(", ") + ")" : "";
+  var noun = apoyoCount === 1 ? "apoyo" : "apoyos";
+  return { title: title, secondary: "más " + apoyoCount + " " + noun + suffix };
 }

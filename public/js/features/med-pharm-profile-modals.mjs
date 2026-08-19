@@ -1,4 +1,5 @@
 import { getMedPharmProfileByPatient, persistClinicalState } from '../app-state.mjs';
+import { openConfirm } from './workbench/confirm.mjs';
 import {
   parseSomePharmMonthPaste,
   looksLikeSomePharmMonthPaste,
@@ -104,7 +105,7 @@ export function openMedPharmPasteModal() {
   }
 }
 
-export function deleteMedPharmViewMonth() {
+export async function deleteMedPharmViewMonth() {
   closeMedPharmMoreMenu();
   var pid = mp.rt.getActiveId();
   if (!pid) {
@@ -117,13 +118,15 @@ export function deleteMedPharmViewMonth() {
     return;
   }
   var label = monthLabel(mp.viewYear, mp.viewMonthIndex);
-  if (
-    !confirm(
+  var result = await openConfirm({
+    weight: 'destructive',
+    title:
       '¿Eliminar el perfil farmacoterapéutico de ' +
-        label +
-        '? Las marcas de no administrado y el pegado SOME de ese mes se perderán.'
-    )
-  ) {
+      label +
+      '? Las marcas de no administrado y el pegado SOME de ese mes se perderán.',
+    confirmLabel: 'Eliminar',
+  });
+  if (result !== 'confirm') {
     return;
   }
   var next = deleteMonthFromProfile(profile, mp.viewYear, mp.viewMonthIndex);
@@ -134,7 +137,7 @@ export function deleteMedPharmViewMonth() {
   mp.rt.showToast('Mes eliminado del perfil', 'success');
 }
 
-export function deleteMedPharmProfileAll() {
+export async function deleteMedPharmProfileAll() {
   closeMedPharmMoreMenu();
   var pid = mp.rt.getActiveId();
   if (!pid) {
@@ -146,11 +149,13 @@ export function deleteMedPharmProfileAll() {
     mp.rt.showToast('No hay perfil farmacoterapéutico para borrar', 'error');
     return;
   }
-  if (
-    !confirm(
-      '¿Borrar todo el perfil farmacoterapéutico de este paciente? Se eliminarán todos los meses importados y el borrador de pegado.'
-    )
-  ) {
+  var result = await openConfirm({
+    weight: 'destructive',
+    title:
+      '¿Borrar todo el perfil farmacoterapéutico de este paciente? Se eliminarán todos los meses importados y el borrador de pegado.',
+    confirmLabel: 'Borrar',
+  });
+  if (result !== 'confirm') {
     return;
   }
   delete getMedPharmProfileByPatient()[pid];

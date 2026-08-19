@@ -13,7 +13,6 @@ import {
 } from "../med-receta-core.mjs";
 import { getPatients, getMedRecetaByPatient, getMedNotaSelectionByPatient, getNotes, persistClinicalState } from "../app-state.mjs";
 import { isModeSala } from "../mode-features.mjs";
-import { isPaseMode } from "./chrome.mjs";
 import { mergeSoapMedField, openSOAPModalDirect } from "./soap-estado.mjs";
 import { soapLegacyFieldIdForCategory } from "./soap-legacy-field-map.mjs";
 import { ensureMonitoreo, MED_FIELD_KEYS } from "./estado-actual-data.mjs";
@@ -29,13 +28,9 @@ import {
 } from "./estado-actual-meds.mjs";
 import { clearRecetaProposalDismissed, clearRecetaProposalDismissedKey } from "./estado-actual-meds-core.mjs";
 import { syncMonitoreoInsulinPumpFromReceta } from "./estado-actual-insulin-pump.mjs";
-import { renderNoteForm } from "./notes-indicaciones.mjs";
-import {
-  openPaseSectionInNormal,
-  renderPaseBoard,
-  invalidateInnerTabRenderCache,
-  invalidatePaseBoardCache,
-} from "./pase-board.mjs";
+import { showNotaEvolucionClassicView } from "./nota-evolucion/nota-evolucion-primary-tab.mjs";
+import { switchInnerTab } from "./expediente-navigation.mjs";
+import { invalidateInnerTabRenderCache } from "./expediente-inner-cache.mjs";
 import { invalidateEaPanelCache, renderEstadoActualPanel } from "./estado-actual-panel.mjs";
 import { onRecetaMergedToProfile } from "./med-pharm-profile-panel.mjs";
 import { skipRecetaItemForInsulinPumpCarrier } from "../insulin-pump-receta-display.mjs";
@@ -215,10 +210,8 @@ export function limpiarManejoActual() {
   bustMedPanelCache();
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
-  invalidatePaseBoardCache();
   renderMedRecetaPanel();
   refreshEaAfterMedClear();
-  if (isPaseMode()) renderPaseBoard();
   medToast("Manejo actual limpiado", "success");
 }
 
@@ -263,8 +256,8 @@ export function mediAnadirATratamiento() {
     getNotes()[activeId].tratamiento = tx;
   }
   persistClinicalState();
-  openPaseSectionInNormal("expediente");
-  renderNoteForm();
+  switchInnerTab("notas");
+  showNotaEvolucionClassicView();
   medToast(lines.length + " línea(s) añadidas a Tratamiento", "success");
 }
 
@@ -306,8 +299,8 @@ function mediLlevarASOAPToTemplate(buckets) {
       mergeSoapMedField(fieldId, t);
     });
   });
-  openPaseSectionInNormal("expediente");
-  renderNoteForm();
+  switchInnerTab("notas");
+  showNotaEvolucionClassicView();
   openSOAPModalDirect();
   medToast("Campos SOAP actualizados · completa e Insertar en evolución", "success");
   renderMedRecetaPanel();
