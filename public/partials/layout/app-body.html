@@ -43,19 +43,6 @@
         <button type="button" class="btn-patient-bulk-cancel" onclick="cancelPatientBulkSelect()">Cancelar</button>
       </div>
     </div>
-    <div id="lab-repo-batch-queue" class="lab-repo-batch-queue" hidden>
-      <div class="lab-repo-batch-queue-header">
-        <div class="lab-repo-batch-queue-title-row">
-          <span class="lab-repo-batch-queue-title">Cola labs</span>
-          <span id="lab-repo-batch-queue-meta" class="lab-repo-batch-queue-meta"></span>
-        </div>
-        <div class="lab-repo-batch-queue-actions">
-          <button type="button" class="btn-med-secondary lab-repo-batch-queue-stop" id="lab-repo-batch-queue-stop" hidden>Detener</button>
-          <button type="button" class="btn-med-secondary" id="lab-repo-batch-queue-dismiss" onclick="dismissLabRepoBatchQueue()">Cerrar</button>
-        </div>
-      </div>
-      <ul id="lab-repo-batch-queue-list" class="lab-repo-batch-queue-list"></ul>
-    </div>
   </aside>
 
   <div class="main-col">
@@ -99,12 +86,9 @@
     </div>
     <main id="main-area">
 
-    <div id="appcontent-pase" class="appcontent-pase app-tab-panel-hidden" style="flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
-      <div id="pase-board-scroll" class="pase-board-scroll"></div>
-    </div>
-
     <div id="appcontent-guardia" class="appcontent-guardia app-tab-panel-hidden" style="flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
       <div id="guardia-board-scroll" class="guardia-board-scroll">
+        <div id="guardia-mode-frame" class="wb-mode-frame-mount" aria-label="Guardia"></div>
         <div id="guardia-trust-strip" class="guardia-trust-strip" hidden aria-label="Estado Nube, sala y equipo"></div>
         <div id="guardia-phase-bar" class="guardia-phase-bar" hidden aria-label="Estado del turno de guardia"></div>
         <p id="guardia-entrega-phase-status" class="guardia-entrega-phase-status visually-hidden" aria-live="polite" hidden></p>
@@ -113,7 +97,6 @@
         <section class="guardia-panel guardia-panel--metrics" id="guardia-metrics-panel" aria-label="Resumen de guardia">
           <div class="guardia-metrics-toolbar" id="guardia-census-scope">
             <div id="guardia-summary" class="guardia-summary guardia-summary--compact" role="group" aria-label="Indicadores del turno"></div>
-            <button type="button" id="btn-guardia-entrega-phase" class="btn-guardia-entrega-phase" aria-pressed="false" title="Iniciar entrega al R1 de guardia de tu sala">Entrega</button>
             <button type="button" id="btn-guardia-mode-toggle" class="btn-guardia-mode btn-guardia-mode--compact" aria-pressed="false" title="Filtro de la grilla: todos los pacientes en tu alcance o solo los entregados a ti.">
               <span class="guardia-mode-label">Censo: todos</span>
               <span class="guardia-mode-switch" aria-hidden="true"></span>
@@ -124,10 +107,15 @@
         <section class="guardia-panel guardia-panel--vitals" id="guardia-vitals-section" hidden aria-label="Signos vitales del turno">
           <div id="guardia-vitals-feed" class="guardia-vitals-feed"></div>
         </section>
-        <section class="guardia-panel guardia-panel--census" aria-label="Censo de pacientes">
-          <div id="guardia-census-head" class="guardia-census-head"></div>
-          <div id="guardia-census-grid" class="patient-chips-grid"></div>
-        </section>
+        <div class="guardia-board-columns">
+          <section class="guardia-panel guardia-panel--census" aria-label="Censo de pacientes">
+            <div id="guardia-census-head" class="guardia-census-head"></div>
+            <div id="guardia-census-grid" class="patient-chips-grid"></div>
+          </section>
+          <aside class="guardia-board-side" aria-label="Signos recibidos de internos">
+            <div id="guardia-signos-recibidos"></div>
+          </aside>
+        </div>
       </div>
     </div>
 
@@ -194,7 +182,7 @@
           <div class="card-header card-header-row lab-output-card-header">
             <span class="lab-output-card-title" style="display:flex;align-items:center;gap:8px;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              Resultados
+              <span id="lab-output-title-text">Resultados</span>
             </span>
             <div class="lab-output-header-tools">
               <div class="lab-history-date-picker">
@@ -209,6 +197,7 @@
                   </button>
                 </div>
               </div>
+              <button type="button" class="lab-output-copy-btn" onclick="copiarLabsAlPortapapeles()" title="Copiar resultados al portapapeles">Copiar</button>
               <details class="lab-output-more">
                 <summary class="lab-output-more-btn" aria-label="Más acciones del historial">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
@@ -286,9 +275,10 @@
           <div class="card-header card-header-row med-active-card-header">
             <span class="med-active-card-title">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
-              Medicamentos del turno
+              <span id="med-turno-title-text">Medicamentos del turno</span>
             </span>
             <span class="med-active-header-actions">
+              <span id="med-turno-apoyo" class="med-turno-apoyo" hidden></span>
               <button type="button" class="btn-med-secondary" id="med-import-open-btn" onclick="openMedRecetaPasteModal()" title="Pegar listado SOME del hospital">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 Importar SOME
@@ -319,6 +309,10 @@
               <button type="button" class="card-header-soft-btn card-header-soft-btn-secondary" onclick="copiarMedicamentosAlPortapapeles()">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                 Copiar
+              </button>
+              <button type="button" class="card-header-soft-btn card-header-soft-btn-secondary" onclick="openMedEgresoModal()" title="Ver texto de egreso en una ventana">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Abrir texto de egreso
               </button>
             </span>
           </div>
@@ -414,24 +408,7 @@
         </div>
       </div>
       <div id="patient-view" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
-        <div id="patient-ronda-overview" class="patient-ronda-overview" aria-label="Vista ronda">
-          <header class="ronda-overview-header">
-            <div>
-              <h2 class="ronda-overview-title" id="patient-ronda-patient-label">Paciente</h2>
-              <p class="ronda-overview-sub" id="patient-ronda-patient-meta"></p>
-            </div>
-            <div class="ronda-overview-header-actions">
-              <button type="button" class="secondary" onclick="openFullExpedienteFromRound(null)">Expediente completo</button>
-            </div>
-          </header>
-          <div class="ronda-overview-scroll">
-            <div id="patient-ronda-dashboard-host" class="patient-dash"></div>
-          </div>
-        </div>
         <div id="patient-expediente-classic" class="patient-expediente-classic">
-        <div id="patient-ronda-fullbar" class="patient-ronda-fullbar" aria-hidden="true">
-          <button type="button" onclick="returnToRoundOverview()">Resumen de ronda</button>
-        </div>
         <div class="exp-expediente-nav">
           <nav id="exp-group-row" class="exp-group-row" aria-label="Secciones del expediente"></nav>
           <div class="inner-tab-bar">
@@ -464,6 +441,8 @@
         </div>
         <div id="expediente-panes-host" class="expediente-panes-host">
           <div id="itab-content-paciente" class="tab-content exp-composite-pane">
+            <div id="interconsulta-mode-frame" class="wb-mode-frame-mount" hidden aria-label="Interconsulta"></div>
+            <div id="interconsulta-consult-band" hidden></div>
             <div id="patient-dashboard-mount" class="patient-dash"></div>
             <div id="exp-pendientes-header" class="exp-pendientes-header" hidden>
               <button type="button" class="link back" id="btn-volver-al-resumen">Volver al resumen</button>
@@ -516,6 +495,33 @@
     </div>
 
   </main>
+  </div>
+
+  <div id="lab-repo-batch-queue" class="lab-repo-batch-queue" hidden>
+    <div class="lab-repo-batch-queue-header">
+      <span class="lab-repo-batch-queue-title">Actualizar labs</span>
+      <div class="lab-repo-batch-queue-actions">
+        <button type="button" class="btn-med-secondary lab-repo-batch-queue-stop lab-repo-batch-queue-stop--inactive" id="lab-repo-batch-queue-stop" disabled>Detener</button>
+        <button type="button" class="btn-med-secondary" id="lab-repo-batch-queue-dismiss" onclick="dismissLabRepoBatchQueue()">Cerrar</button>
+      </div>
+    </div>
+    <!-- Teal workbench §11c "Actualizando pacientes": one button + one thin
+         progress bar + one caption line. The button never resizes or moves
+         (see .lab-repo-batch-queue-btn) — only the spinner and label text
+         change. No per-patient row list here (see MISTAKES.md — three prior
+         attempts wrongly built a per-row job list as the primary treatment). -->
+    <div class="lab-repo-batch-queue-row">
+      <span id="lab-repo-batch-queue-btn" class="lab-repo-batch-queue-btn" aria-hidden="true">
+        <span id="lab-repo-batch-queue-spinner" class="lab-repo-batch-queue-spinner"></span>
+        <span id="lab-repo-batch-queue-btn-label">Actualizando</span>
+      </span>
+      <div class="lab-repo-batch-queue-progress">
+        <div class="lab-repo-batch-queue-bar">
+          <div id="lab-repo-batch-queue-fill" class="lab-repo-batch-queue-fill"></div>
+        </div>
+        <span id="lab-repo-batch-queue-meta" class="lab-repo-batch-queue-meta"></span>
+      </div>
+    </div>
   </div>
 </div>
 

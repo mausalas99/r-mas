@@ -57,6 +57,12 @@ let eaVitalHistoryModule = null;
 /** @type {Record<string, unknown> | null} */
 let eaVitalHistoryRuntimeCtx = null;
 
+let notaEvolucionPromise = null;
+/** @type {typeof import('./features/nota-evolucion/nota-evolucion-panel.mjs') | null} */
+let notaEvolucionModule = null;
+/** @type {Record<string, unknown> | null} */
+let notaEvolucionRuntimeCtx = null;
+
 /** @type {Record<string, unknown> | null} */
 let platformRuntimeCtx = null;
 
@@ -136,6 +142,36 @@ export const eaVitalHistoryWindowHandlersLazy = buildLazyWindowHandlers(
     closeEaVitalHistoryModal: 'closeEaVitalHistoryModal',
   },
   ensureEaVitalHistoryLoaded
+);
+
+/** @param {Record<string, unknown>} ctx */
+export function bindLazyNotaEvolucionRuntimeCtx(ctx) {
+  notaEvolucionRuntimeCtx = ctx;
+}
+
+/**
+ * @returns {Promise<typeof import('./features/nota-evolucion/nota-evolucion-panel.mjs')>}
+ */
+export function ensureNotaEvolucionLoaded() {
+  if (notaEvolucionModule) return Promise.resolve(notaEvolucionModule);
+  if (!notaEvolucionPromise) {
+    notaEvolucionPromise = import('./features/nota-evolucion/nota-evolucion-panel.mjs').then(function (mod) {
+      notaEvolucionModule = mod;
+      if (notaEvolucionRuntimeCtx) {
+        mod.registerNotaEvolucionRuntime(notaEvolucionRuntimeCtx);
+      }
+      return mod;
+    });
+  }
+  return notaEvolucionPromise;
+}
+
+export const notaEvolucionWindowHandlersLazy = buildLazyWindowHandlers(
+  {
+    openNotaEvolucionPanel: 'openNotaEvolucionPanel',
+    closeNotaEvolucionPanel: 'closeNotaEvolucionPanel',
+  },
+  ensureNotaEvolucionLoaded
 );
 
 /** @param {Record<string, unknown>} ctx */

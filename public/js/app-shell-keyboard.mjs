@@ -21,7 +21,7 @@ import {
 import { markTabShortcutsAdopted } from './keyboard-shortcuts-nudge.mjs';
 import { copyTeamLabsForToday } from './features/patients-list/copy-team-labs.mjs';
 import { copyTeamEstadoActualForToday } from './features/patients-list/copy-team-estado-actual.mjs';
-import { getActiveInnerTab } from './features/pase-board.mjs';
+import { getActiveInnerTab } from './features/expediente-navigation.mjs';
 
 var shellKeyboardWired = false;
 var lastShellShortcutAt = 0;
@@ -67,7 +67,6 @@ export function normalizeShellShortcutKey(e) {
 var WORK_MODE_SHORTCUTS = {
   g: 'guardia',
   i: 'interconsulta',
-  p: 'pase',
   s: 'sala',
 };
 

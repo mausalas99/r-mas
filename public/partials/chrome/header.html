@@ -1,7 +1,7 @@
 <header>
   <h1 id="app-brand" role="button" tabindex="0" title="Abrir Mi Perfil" aria-label="R+, abrir Mi Perfil" onclick="openProfileFromHeader(event)" onkeydown="if(event.key==='Enter'||event.key===' '){openProfileFromHeader(event);}">R+</h1>
   <div class="header-center" aria-live="polite">
-    <span id="today-date"></span>
+    <span id="today-date" role="button" tabindex="0" aria-haspopup="dialog" aria-label="Abrir calendario" title="Calendario" onclick="openHeaderDatePopoverFromChrome(event)" onkeydown="if(event.key==='Enter'||event.key===' '){openHeaderDatePopoverFromChrome(event);}"></span>
     <span id="estado-actual-meta" class="estado-actual-meta"></span>
     <span id="header-context" class="header-context">
       <span id="header-context-patient" class="header-context-patient"></span>
@@ -17,12 +17,6 @@
         <svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/></svg>
       </button>
 
-      <nav id="header-pase-breadcrumb" class="header-pase-breadcrumb" style="display:none;" aria-label="Navegación desde Pase">
-        <button type="button" class="header-pase-breadcrumb-link" onclick="returnToPaseBoardFromDetail()">Pase</button>
-        <span class="header-pase-breadcrumb-sep" aria-hidden="true">›</span>
-        <span id="header-pase-breadcrumb-section" class="header-pase-breadcrumb-section"></span>
-      </nav>
-      <button type="button" id="btn-header-return-pase" class="header-return-pase-btn" style="display:none;" onclick="returnToPaseBoardFromDetail()" title="Volver al resumen Pase" aria-label="Volver al resumen Pase">← Pase</button>
       <button type="button" id="btn-export-censo-header" class="btn-export-censo-header" style="display:none;" onclick="exportCensoPdfFromHelp()" title="PDF de guardia con todos los pacientes activos">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
         Censo PDF
@@ -31,7 +25,6 @@
         <button type="button" class="header-mode-seg-btn" data-mode="sala" onclick="setWorkModeFromHeader('sala')" aria-pressed="false" title="Modo Sala — Estado actual, Historia, Listado de problemas">Sala</button>
         <button type="button" class="header-mode-seg-btn" data-mode="interconsulta" onclick="setWorkModeFromHeader('interconsulta')" aria-pressed="false" title="Modo Interconsulta — Nota de evolución, Indicaciones">Interconsulta</button>
         <button type="button" class="header-mode-seg-btn" data-mode="guardia" onclick="setWorkModeFromHeader('guardia')" aria-pressed="false" title="Guardia — censo, entrega y turno activo">Guardia</button>
-        <button type="button" class="header-mode-seg-btn" data-mode="pase" onclick="setWorkModeFromHeader('pase')" aria-pressed="false" title="Modo Pase — vista compacta de ronda">Pase</button>
       </div>
     </div>
     <span id="pending-jobs-pill" class="pending-jobs-pill" role="status" aria-live="polite" aria-atomic="true" title="Tareas en curso"></span>

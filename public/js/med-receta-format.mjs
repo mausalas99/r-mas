@@ -17,7 +17,7 @@ import { formatRhzeComboSoapShort, isRhzeComboMedicationItem } from './med-recet
 import { applyIvToOralForEgreso } from './med-receta-iv-oral.mjs';
 import { pluralizeOralForm } from './med-receta-iv-oral-some.mjs';
 
-/** Parte de dosis aplicada antes de comentarios del sistema (// …). Usado en receta y en tarjetas Pase. */
+/** Parte de dosis aplicada antes de comentarios del sistema (// …). Usado en receta. */
 export function dosisBeforeSlash(dosisRaw) {
   var t = trimStr(dosisRaw);
   var idx = t.indexOf('//');

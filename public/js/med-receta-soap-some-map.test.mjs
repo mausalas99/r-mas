@@ -100,3 +100,19 @@ describe('shouldIncludeMedicationInSoap — sueros fuera de EA', () => {
     );
   });
 });
+
+describe('shouldIncludeMedicationInSoap — apoyo (oxígeno) fuera de EA', () => {
+  it('excluye oxígeno, es apoyo, no medicamento', () => {
+    assert.equal(
+      shouldIncludeMedicationInSoap({ nombreRaw: 'OXIGENO · MASCARILLA RESERVORIO 10 L/MIN' }),
+      false
+    );
+  });
+
+  it('no afecta un medicamento real', () => {
+    assert.equal(
+      shouldIncludeMedicationInSoap({ nombreRaw: 'SALBUTAMOL 2 DISPAROS C/6 H' }),
+      true
+    );
+  });
+});

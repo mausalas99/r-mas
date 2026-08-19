@@ -66,7 +66,8 @@ export function applyPitchDemoClinicalSeed(state, today, fecha, hora) {
       recetaHuByPatient,
     },
     fecha,
-    hora
+    hora,
+    today
   );
   savePitchDemoAgenda(fecha);
   capturePitchSandbox(patients);

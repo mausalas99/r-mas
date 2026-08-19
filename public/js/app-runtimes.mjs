@@ -56,8 +56,8 @@ import {
   registerTodosRuntime,
 } from './features/todos.mjs';
 import {
-  registerPaseBoardRuntime,
-} from './features/pase-board.mjs';
+  registerAppTabsRuntime,
+} from './features/app-tabs-runtime.mjs';
 import {
   registerMedicationsRuntime,
   registerMedPharmProfileRuntime,
@@ -119,6 +119,7 @@ import {
   bindLazyPlatformRuntimeCtx,
   bindLazySettingsRuntimeCtx,
   bindLazyEaVitalHistoryRuntimeCtx,
+  bindLazyNotaEvolucionRuntimeCtx,
   chartsRuntimeProxies,
   labsRuntimeProxies,
   platformRuntimeProxies,
@@ -127,9 +128,9 @@ import {
 } from './lazy-feature-routes.mjs';
 import {
   registerNotesIndicacionesRuntime,
-  renderNoteForm,
   renderIndicaForm,
 } from './features/notes-indicaciones.mjs';
+import { showNotaEvolucionClassicView } from './features/nota-evolucion/nota-evolucion-primary-tab.mjs';
 import {
   installLabHistoryAuditHook,
   registerLabHistoryMaintRuntime,
@@ -138,14 +139,11 @@ import {
   renderPatientList,
   selectPatient,
   scrollActiveRondaCardIntoView,
-  renderRoundOverviewPanels,
   openAddModal,
   openAddModalFromLabPatient,
   findPatientByRegistro,
   ensureUniquePatientName,
   buildPatientEntry,
-  setRoundOverviewMode,
-  getRoundOverviewMode,
 } from './features/patients.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
 import {
@@ -162,17 +160,17 @@ import {
   registerRecetaHuRuntime,
   renderRecetaHu,
 } from './features/receta-hu.mjs';
+import { switchAppTab } from './features/app-tabs.mjs';
 import {
-  renderPaseBoard,
-  switchAppTab,
-  openPaseSectionInNormal,
   switchInnerTab,
   switchConsolidatedTab,
-  invalidateInnerTabRenderCache,
   refreshExpedienteAfterPatientSelect,
   renderInnerTabs,
+} from './features/expediente-navigation.mjs';
+import {
+  invalidateInnerTabRenderCache,
   syncInnerTabVisualOnly,
-} from './features/pase-board.mjs';
+} from './features/expediente-inner-cache.mjs';
 import { renderGuardiaBoard } from './features/guardia-board.mjs';
 import {
   renderMedRecetaPanel,
@@ -259,15 +257,13 @@ function buildRuntimeContextUiDeps() {
     renderGuardiaBoard: function () {
       return renderGuardiaBoard(rt.getSettings());
     },
-    setRoundOverviewMode,
-    renderPaseBoard,
     renderInnerTabs,
     invalidateInnerTabRenderCache,
     refreshExpedienteAfterPatientSelect,
     renderEstadoActualButton,
     renderEstadoActualPanel,
     renderPatientDataPane,
-    renderNoteForm,
+    renderNoteForm: showNotaEvolucionClassicView,
     renderIndicaForm,
     renderListadoForm,
     refreshTendenciasOrCultivosPanel,
@@ -286,7 +282,6 @@ function buildRuntimeContextUiDeps() {
     applyDefaultsToNewIndicaciones,
     normalizeFechaLabHistory,
     buildLabSetDateLine,
-    getRoundOverviewMode,
     persistClinicalState,
     getPatients,
     getLabHistory,
@@ -300,7 +295,6 @@ function buildRuntimeContextUiDeps() {
     openAddModalFromLabPatient,
     copyToClipboardSafe,
     ...chartsRuntimeProxies,
-    renderRoundOverviewPanels,
     switchConsolidatedTab,
   };
 }
@@ -354,7 +348,6 @@ function buildRuntimeContextFeatureDeps() {
     selectPatient,
     ...settingsHelpRuntimeProxies,
     findPatientByRegistro,
-    openPaseSectionInNormal,
     renderDiagramas,
     toggleLabDiagramsSection,
     syncLabDiagramsCollapseUI,
@@ -401,7 +394,7 @@ export async function registerAllFeatureRuntimes() {
   registerMedicationsRuntime(ctx);
   registerMedPharmProfileRuntime(ctx);
   registerProfileRuntime(ctx);
-  registerPaseBoardRuntime(ctx);
+  registerAppTabsRuntime(ctx);
   registerChromeRuntime(ctx);
   registerPatientsRuntime(ctx);
   bindLazyLabsRuntimeCtx(ctx);
@@ -469,10 +462,13 @@ export async function registerAllFeatureRuntimes() {
   );
   const { registerLabInnerRuntime } = await import('./features/patient-dashboard/lab-inner.mjs');
   registerLabInnerRuntime(ctx);
+  const { registerInterconsultaChromeRuntime } = await import('./features/interconsulta-mode-chrome.mjs');
+  registerInterconsultaChromeRuntime(ctx);
   registerExpedienteRuntime(ctx);
   registerNotesIndicacionesRuntime(ctx);
   registerProcedureAgendaRuntime(ctx);
   registerSoapEstadoRuntime(ctx);
+  bindLazyNotaEvolucionRuntimeCtx(ctx);
   registerEstadoActualPanelRuntime(ctx);
   registerDriveImportRuntime(ctx);
   registerEstadoActualPasteModalRuntime(ctx);

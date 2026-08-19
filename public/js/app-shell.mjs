@@ -8,7 +8,6 @@ import {
 } from './document-export-client.mjs';
 import {
   isGuardiaMode,
-  syncPaseReturnHeaderBtn,
   syncHeaderModeSeg,
 } from './features/chrome.mjs';
 import { renderGuardiaBoard, syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
@@ -133,7 +132,6 @@ function syncWorkContextChrome() {
   syncActivePatientContextBar();
   syncHeaderModeSeg();
   syncMedPatientGate();
-  syncPaseReturnHeaderBtn();
   syncGuardiaModeButtonVisibility();
   syncGuardiaCensusPanelVisibility(shellCtx.getSettings());
   renderGuardiaCensusGrid(shellCtx.getSettings());

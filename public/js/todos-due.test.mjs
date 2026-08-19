@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isTodoOverdue, todoCompareForDueSort, computeReminderAt, formatTodoDueLabel, formatTodoDuePresetAutoLabel, getTodoDuePresets, mergeTodoDuePreset, parseDuePreset, dueDateFromPresetDef, isoToDatetimeLocalValue, parseDatetimeLocalToIso, TODO_DUE_PRESET_DEFAULTS } from './todos-due.mjs';
+import { isTodoOverdue, todoCompareForDueSort, computeReminderAt, formatTodoDueLabel, formatTodoDuePresetAutoLabel, getTodoDuePresets, mergeTodoDuePreset, parseDuePreset, dueDateFromPresetDef, isoToDatetimeLocalValue, parseDatetimeLocalToIso, TODO_DUE_PRESET_DEFAULTS, todoStatus, groupTodosByStatus } from './todos-due.mjs';
 
 function presetsWithoutDeleted(overrides) {
   return getTodoDuePresets(overrides).map((p) => p.id);
@@ -291,4 +291,39 @@ test('isoToDatetimeLocalValue and parseDatetimeLocalToIso round-trip local field
 test('parseDatetimeLocalToIso — empty or invalid returns null', () => {
   assert.equal(parseDatetimeLocalToIso(''), null);
   assert.equal(parseDatetimeLocalToIso('not-a-date'), null);
+});
+
+test('todoStatus — completed is listo regardless of due date', () => {
+  assert.equal(
+    todoStatus(todo({ completed: true, dueDate: '2026-06-10T12:00:00.000Z' }), NOW),
+    'listo'
+  );
+});
+
+test('todoStatus — past dueDate and not completed is vencido', () => {
+  assert.equal(todoStatus(todo({ dueDate: '2026-06-10T12:00:00.000Z' }), NOW), 'vencido');
+});
+
+test('todoStatus — dueDate later today, not overdue, is hoy', () => {
+  assert.equal(todoStatus(todo({ dueDate: '2026-06-11T18:00:00.000Z' }), NOW), 'hoy');
+});
+
+test('todoStatus — dueDate on a future day is sin_fecha', () => {
+  assert.equal(todoStatus(todo({ dueDate: '2026-06-12T12:00:00.000Z' }), NOW), 'sin_fecha');
+});
+
+test('todoStatus — no dueDate is sin_fecha', () => {
+  assert.equal(todoStatus(todo({ dueDate: null }), NOW), 'sin_fecha');
+});
+
+test('groupTodosByStatus — buckets each todo once, preserving order within a bucket', () => {
+  const vencido = todo({ id: 'v', dueDate: '2026-06-10T12:00:00.000Z' });
+  const hoy = todo({ id: 'h', dueDate: '2026-06-11T18:00:00.000Z' });
+  const sinFecha = todo({ id: 'a', dueDate: null });
+  const listo = todo({ id: 'l', completed: true });
+  const groups = groupTodosByStatus([vencido, hoy, sinFecha, listo], NOW);
+  assert.deepEqual(groups.vencido, [vencido]);
+  assert.deepEqual(groups.hoy, [hoy]);
+  assert.deepEqual(groups.sin_fecha, [sinFecha]);
+  assert.deepEqual(groups.listo, [listo]);
 });

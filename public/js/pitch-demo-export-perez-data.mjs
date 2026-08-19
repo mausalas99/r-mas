@@ -149,7 +149,7 @@ export function buildDemoPerezPayload(ref, fallbackRef) {
     patient: buildDemoPerezPatient(ref),
     note: buildDemoPerezNote(fecha, hora),
     indicaciones: buildDemoPerezIndicaciones(fecha, hora),
-    labHistory: buildPitchLabHistoryEntries(),
+    labHistory: buildPitchLabHistoryEntries(d),
     medReceta: buildDemoPerezMedReceta(fecha),
     medNotaSelection: { 'pitch-med-1': true, 'pitch-med-2': true },
     listadoProblemas: buildTourDemoListadoProblemas(fecha, hora),

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { formatCultivosForCenso } from './censo-cultivo-format.mjs';
 
-test('formatCultivosForCenso usa texto de copiar informe', () => {
+test('formatCultivosForCenso condensa sitio, organismo, ATB y cuenta en una sola línea', () => {
   var chunk = [
     'LIQUIDO PERITONEAL 07/05: PSEUDOMONAS AERUGINOSA',
     'ATB R: CAZ | I: FEP | S: CIPRO, IMI, LVX, MERO, PIP/TAZO, TOBRA',
@@ -17,10 +17,12 @@ test('formatCultivosForCenso usa texto de copiar informe', () => {
     },
   ];
   var out = formatCultivosForCenso(history);
-  assert.match(out, /LIQUIDO PERITONEAL 07\/05: PSEUDOMONAS AERUGINOSA/);
+  assert.match(out, /^LIQ PERIT 07\/05: P\. aeruginosa/);
   assert.doesNotMatch(out, /07\/05\/2026/);
-  assert.match(out, /^ATB R:/m);
+  assert.doesNotMatch(out, /PSEUDOMONAS AERUGINOSA/);
+  assert.match(out, /ATB R: CAZ \| I: FEP \| S: CIPRO, IMI, LVX, MERO, PIP\/TAZO, TOBRA/);
   assert.match(out, /Cuenta: \+100 UFC/);
+  assert.equal(out.split('\n').length, 1);
 });
 
 test('formatCultivosForCenso detecta cultivo por encabezado de sitio en mayúsculas', () => {
@@ -38,5 +40,5 @@ test('formatCultivosForCenso detecta cultivo por encabezado de sitio en mayúscu
     },
   ];
   var out = formatCultivosForCenso(history);
-  assert.match(out, /LIQUIDO PERITONEAL 07\/05: PSEUDOMONAS AERUGINOSA/);
+  assert.match(out, /LIQ PERIT 07\/05: P\. aeruginosa/);
 });

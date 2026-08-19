@@ -67,7 +67,7 @@ function dismissMobileLearningChrome() {
 }
 
 function ensureMobileAppTabAllowed() {
-  void import('./features/pase-board-runtime.mjs')
+  void import('./features/app-tabs-runtime.mjs')
     .then(function (mod) {
       var rt = mod.rt;
       if (!rt || typeof rt.getActiveAppTab !== 'function') return;
@@ -75,7 +75,7 @@ function ensureMobileAppTabAllowed() {
       var tabKey = cur === 'lan' ? 'lab' : cur;
       var normalized = normalizeMobileAppTab(tabKey);
       if (normalized === tabKey) return;
-      return import('./features/pase-board-app-tabs.mjs').then(function (tabs) {
+      return import('./features/app-tabs.mjs').then(function (tabs) {
         if (typeof tabs.switchAppTab === 'function') tabs.switchAppTab(normalized);
       });
     })

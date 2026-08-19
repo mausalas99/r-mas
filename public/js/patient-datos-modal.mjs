@@ -3,7 +3,7 @@
  */
 
 import { migrateGranularInner } from './expediente-tabs.mjs';
-import { rt } from './features/pase-board-runtime.mjs';
+import { rt } from './features/app-tabs-runtime.mjs';
 
 var dismissWired = false;
 /** @type {{ appTab: string, innerTab: string } | null} */

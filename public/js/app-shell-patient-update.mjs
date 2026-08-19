@@ -3,11 +3,7 @@
  */
 import { ensurePatientAccesos, syncLegacyAccesoFields } from './patient-accesos.mjs';
 import { dateInputValueToAccesoFecha } from './patient-date-fields.mjs';
-import { isPaseMode } from './features/chrome.mjs';
-import {
-  renderPatientList,
-  renderRoundOverviewPanels,
-} from './features/patients.mjs';
+import { renderPatientList } from './features/patients.mjs';
 import { getPatients, persistClinicalState } from './app-state.mjs';
 import { scheduleCloudSyncPush } from './features/cloud-sync/mutate-bridge.mjs';
 
@@ -52,16 +48,6 @@ export function createPatientUpdateHandler(shellCtx, syncWorkContextChrome) {
     persistClinicalState();
     renderPatientList();
     syncWorkContextChrome();
-    if (!isPaseMode()) return;
-    void import('./features/pase-board.mjs').then(function (mod) {
-      mod.renderPaseBoard();
-    });
-    renderRoundOverviewPanels();
-    if (shellCtx.getActiveAppTab() === 'agenda') {
-      void import('./features/agenda.mjs').then(function (mod) {
-        mod.renderProcedureAgendaPanel();
-      });
-    }
   }
 
   function updatePatient(field, value) {

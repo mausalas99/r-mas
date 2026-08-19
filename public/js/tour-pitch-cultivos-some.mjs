@@ -213,11 +213,14 @@ export const PITCH_CULTIVO_HEMO_SOME =
   'MEROPENEM\n<=1\tS\n' +
   'PIP/TAZO\n64\tS\n';
 
-/** Entradas de historial solo-cultivo para el pitch (fecha, id, texto). */
+/**
+ * Entradas de historial solo-cultivo para el pitch (dayOffset relative to "today",
+ * id, texto) — dayOffset 0 is the most recent culture, reported today.
+ */
 export const PITCH_CULTIVO_LAB_SPECS = [
-  { id: 'pitch-lab-cult-at-1805', fecha: '18/05/2026', report: PITCH_CULTIVO_ASPIRADO_1805_SOME },
-  { id: 'pitch-lab-cult-peritonitis', fecha: '07/05/2026', report: PITCH_CULTIVO_PERITONEAL_SOME },
-  { id: 'pitch-lab-cult-uro', fecha: '05/05/2026', report: PITCH_CULTIVO_URO_SOME },
-  { id: 'pitch-lab-cult-at-2804', fecha: '28/04/2026', report: PITCH_CULTIVO_ASPIRADO_2804_SOME },
-  { id: 'pitch-lab-cult-hemo', fecha: '11/04/2026', report: PITCH_CULTIVO_HEMO_SOME },
+  { id: 'pitch-lab-cult-at-1805', dayOffset: 0, report: PITCH_CULTIVO_ASPIRADO_1805_SOME },
+  { id: 'pitch-lab-cult-peritonitis', dayOffset: -3, report: PITCH_CULTIVO_PERITONEAL_SOME },
+  { id: 'pitch-lab-cult-uro', dayOffset: -5, report: PITCH_CULTIVO_URO_SOME },
+  { id: 'pitch-lab-cult-at-2804', dayOffset: -12, report: PITCH_CULTIVO_ASPIRADO_2804_SOME },
+  { id: 'pitch-lab-cult-hemo', dayOffset: -29, report: PITCH_CULTIVO_HEMO_SOME },
 ];

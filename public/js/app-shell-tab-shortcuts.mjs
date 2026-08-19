@@ -2,7 +2,7 @@
  * ⌘1–4 tab shortcuts: first press switches app tab; repeat cycles inner views.
  * Pure resolvers are testable without DOM.
  */
-import { isGuardiaMode, isPaseMode, toggleGuardiaMode } from './features/chrome.mjs';
+import { isGuardiaMode, toggleGuardiaMode } from './features/chrome.mjs';
 import {
   getConsolidatedTabs,
   consolidatedInnerTabButtonId,
@@ -10,10 +10,9 @@ import {
 } from './expediente-tabs.mjs';
 import { LAB_INNER_SECTIONS } from './expediente-group-row.mjs';
 import { currentLabInner, switchLabInner } from './features/patient-dashboard/lab-inner.mjs';
-import { switchAppTab } from './features/pase-board-app-tabs.mjs';
-import { switchConsolidatedTab, openPaseSectionInNormal, switchInnerTab } from './features/pase-board-navigation.mjs';
-import { getActiveInnerTab } from './features/pase-board.mjs';
-import { rt } from './features/pase-board-runtime.mjs';
+import { switchAppTab } from './features/app-tabs.mjs';
+import { switchConsolidatedTab, switchInnerTab, getActiveInnerTab } from './features/expediente-navigation.mjs';
+import { rt } from './features/app-tabs-runtime.mjs';
 import { getMedSubview, setMedSubview } from './features/med-pharm-profile-panel.mjs';
 import { medOutputTab } from './features/medications-runtime-state.mjs';
 import { setMedOutputTab } from './features/medications-actions.mjs';
@@ -25,14 +24,6 @@ import {
 var DIGIT_APP_TABS = {
   1: 'nota',
   2: 'lab',
-  3: 'med',
-  4: 'agenda',
-  5: 'agenda',
-};
-
-var PASE_DIGIT_SECTIONS = {
-  1: 'resumen',
-  2: 'labs',
   3: 'med',
   4: 'agenda',
   5: 'agenda',
@@ -98,20 +89,11 @@ export function runResumenHomeShortcut() {
   leaveGuardiaForStandardNavigation();
   dismissOverlaysForResumenHome();
   if (typeof document === 'undefined') return true;
-  if (isPaseMode()) {
-    openPaseSectionInNormal('resumen');
-    return true;
-  }
   switchInnerTab('resumen');
   return true;
 }
 
 function openDigitTabFirst(key) {
-  if (isPaseMode()) {
-    var section = PASE_DIGIT_SECTIONS[key];
-    if (section) openPaseSectionInNormal(section);
-    return;
-  }
   var tab = digitKeyAppTab(key);
   if (tab) switchAppTab(tab);
 }

@@ -1,6 +1,8 @@
 /**
  * Pendientes del modo presentación (demo-pitch). Se escriben en rpc-todos porque saveTodos omite demo-*.
  */
+import { getBlobCache, invalidateParsed } from './storage/storage-core.mjs';
+
 const PITCH_DEMO_PATIENT_ID = 'demo-pitch';
 
 const TODOS_LS_KEY = 'rpc-todos';
@@ -14,11 +16,25 @@ function readTodosMap() {
   }
 }
 
+/**
+ * Desktop/Electron mode reads todos from an in-memory blob cache, not localStorage
+ * (see storage-core.mjs readClinicalBlob) — writing here only to localStorage left
+ * that cache stale, so Modo presentación's Pendientes tab always showed "Sin
+ * pendientes" once a DB session was unlocked. Mirror the write into the cache too,
+ * without persisting to the real DB (demo data must not survive to disk).
+ * @param {Record<string, unknown>} map
+ */
 function writeTodosMap(map) {
+  const json = JSON.stringify(map || {});
   try {
-    localStorage.setItem(TODOS_LS_KEY, JSON.stringify(map || {}));
+    localStorage.setItem(TODOS_LS_KEY, json);
   } catch {
     /* localStorage unavailable */
+  }
+  const cache = getBlobCache();
+  if (cache) {
+    cache.todos = json;
+    invalidateParsed('todos');
   }
 }
 

@@ -82,9 +82,9 @@ test('rankPalette: "exportar nota" → export action', () => {
 });
 
 test('paletteItemText includes keywords for actions', () => {
-  const action = ACTION_ITEMS.find((it) => it.actionId === 'open-pase');
+  const action = ACTION_ITEMS.find((it) => it.actionId === 'open-inicio-turno');
   assert.ok(action);
   const text = paletteItemText(action);
-  assert.match(text, /Abrir pase/i);
-  assert.match(text, /ronda/i);
+  assert.match(text, /Inicio de turno/i);
+  assert.match(text, /pacientes/i);
 });

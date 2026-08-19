@@ -1,12 +1,10 @@
 /**
- * Cultivos para censo: mismo texto que «Copiar informe completo» (formatCultivoCondensedForCopy).
+ * Cultivos para censo: versión condensada de una línea por cultivo,
+ * con sitio y organismo abreviados para ocupar menos espacio.
  */
 import {
   sortLabHistoryChronological,
-  normalizeFechaLabHistory,
-  normalizeHoraLabHistory,
 } from './tend-core.mjs';
-import { formatCultivoCondensedForCopy } from './labs.js';
 import {
   splitResLabsByTipo as splitResLabsByTipoCore,
   isCultureTableHeaderLine,
@@ -16,15 +14,81 @@ import {
 
 export { splitResLabsByTipo } from './cultivo-block-core.mjs';
 
-function buildLabSetDateLine(set) {
-  if (!set) return '';
-  var rawDate = normalizeFechaLabHistory(set.fecha) || String(set.fecha || '').trim();
-  var rawHora = normalizeHoraLabHistory(set.hora);
-  if (!rawDate) return '';
-  return rawHora ? rawDate + ' ' + rawHora.slice(0, 5) : rawDate;
+var CENSO_MAX_CULTIVO_REPORTS = 3;
+
+var SITIO_ABBREV_MAP = [
+  [/\bLIQUIDO\s+CEFALORRAQUIDEO\b/gi, 'LCR'],
+  [/\bLIQUIDO\b/gi, 'LIQ'],
+  [/\bPERITONEAL\b/gi, 'PERIT'],
+  [/\bPLEURAL\b/gi, 'PLEUR'],
+  [/\bSECRECION\b/gi, 'SECR'],
+  [/\bBRONQUIAL\b/gi, 'BRONQ'],
+  [/\bASPIRADO\b/gi, 'ASP'],
+  [/\bTRAQUEAL\b/gi, 'TRAQ'],
+  [/\bCATETER\b/gi, 'CAT'],
+  [/\bHERIDA\b/gi, 'HER'],
+  [/\bABSCESO\b/gi, 'ABSC'],
+  [/\bDRENAJE\b/gi, 'DREN'],
+  [/\bQUIRURGIC[AO]\b/gi, 'QX'],
+  [/\bSUPERFICIAL\b/gi, 'SUPERF'],
+  [/\bPROFUND[AO]\b/gi, 'PROF'],
+  [/\bVASCULAR\b/gi, 'VASC'],
+  [/\bPERIFERIC[AO]\b/gi, 'PERIF'],
+  [/\bABDOMINAL\b/gi, 'ABD'],
+  [/\bGASTRICO\b/gi, 'GAST'],
+  [/\bHEMOCULTIVO\b/gi, 'HEMOC'],
+  [/\bUROCULTIVO\b/gi, 'UROC'],
+  [/\bFUNGICULTIVO\b/gi, 'FUNGIC'],
+];
+
+/** Abrevia palabras de sitio anatómico comunes; deja lo demás igual. */
+function abbreviateSitioCultivo(sitio) {
+  var s = String(sitio || '').trim();
+  if (!s) return s;
+  SITIO_ABBREV_MAP.forEach(function (pair) {
+    s = s.replace(pair[0], pair[1]);
+  });
+  return s.replace(/\s+/g, ' ').trim();
 }
 
-var CENSO_MAX_CULTIVO_REPORTS = 3;
+var ORGANISM_NON_ABBREV_FIRST_WORDS = /^(NEGATIVO|FLORA|NO|SIN|POLIMICROBIANO|LEVADURAS?|HONGOS?|BACILOS?|COCOS?)$/i;
+
+/** Convierte «GENERO especie» a «G. especie», convención científica estándar. */
+function abbreviateOrganismoScientific(organismo) {
+  var s = String(organismo || '').trim();
+  if (!s || s === '—') return s;
+  var words = s.split(/\s+/);
+  if (words.length < 2) return s;
+  var genus = words[0];
+  var species = words[1];
+  if (!/^[A-ZÁÉÍÓÚÑ]{4,}$/i.test(genus)) return s;
+  if (!/^[A-ZÁÉÍÓÚÑ]+$/i.test(species)) return s;
+  if (ORGANISM_NON_ABBREV_FIRST_WORDS.test(genus)) return s;
+  var rest = words.slice(2).join(' ');
+  return (genus.charAt(0).toUpperCase() + '. ' + species.toLowerCase() + (rest ? ' ' + rest : '')).trim();
+}
+
+function extractAtbLineFromChunk(chunk) {
+  var lines = String(chunk || '').split(/\r?\n/);
+  for (var i = 0; i < lines.length; i++) {
+    var l = lines[i].replace(/\*+$/g, '').trim();
+    if (/^ATB\b/i.test(l)) return l;
+  }
+  return '';
+}
+
+/** Une sitio+fecha+organismo+ATB+Cuenta en una sola línea condensada. */
+function buildCompactCultivoLine(r, atbLine) {
+  var sitio = abbreviateSitioCultivo(r.sitio);
+  var fechaCorta = String(r.fechaMuestra || '').replace(/\/\d{4}$/, '');
+  var fecha = fechaCorta && fechaCorta !== '—' ? ' ' + fechaCorta : '';
+  var organismo = abbreviateOrganismoScientific(r.organismo);
+  var head = (sitio + fecha).trim() + ': ' + organismo;
+  var parts = [head];
+  if (atbLine) parts.push(atbLine);
+  if (r.cuenta) parts.push('Cuenta: ' + r.cuenta);
+  return parts.join(' · ');
+}
 
 function extractCultivoTableRowsFromLabHistory(history) {
   var rows = [];
@@ -54,7 +118,7 @@ function extractCultivoTableRowsFromLabHistory(history) {
   return rows;
 }
 
-/** Mismo criterio que modo Pase / tabla de cultivos. */
+/** Mismo criterio que la tabla de cultivos. */
 function filterCultivoRowsSignificantFlip(rows) {
   function seriesKey(r) {
     return (
@@ -123,8 +187,8 @@ export function formatCultivosForCenso(labHistory, maxReports) {
     if (!set) continue;
     var chunk = findCultivoChunkInSet(set, r.organismo);
     if (!chunk) continue;
-    var text = formatCultivoCondensedForCopy(chunk, buildLabSetDateLine(set) || '');
-    if (text.trim()) blocks.push(text.trim());
+    var line = buildCompactCultivoLine(r, extractAtbLineFromChunk(chunk));
+    if (line.trim()) blocks.push(line.trim());
   }
-  return blocks.join('\n\n');
+  return blocks.join('\n');
 }

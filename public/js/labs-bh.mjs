@@ -150,7 +150,8 @@ var BH_OUTPUT_LABEL_TO_FIELD = {
   DD: 'DD',
 };
 
-function bhFieldKeyFromOutputLabel(label) {
+/** Etiqueta mostrada en el reporte (Seg, Band, VPM…) → clave de campo en parsedBySection.BH. */
+export function bhFieldKeyFromOutputLabel(label) {
   return BH_OUTPUT_LABEL_TO_FIELD[label] || label;
 }
 

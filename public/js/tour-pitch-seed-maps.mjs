@@ -27,8 +27,9 @@ export function buildPitchDemoPatient(today) {
  * @param {Record<string, unknown>} maps
  * @param {string} fecha
  * @param {string} hora
+ * @param {Date} [today]
  */
-export function fillPitchDemoClinicalMaps(maps, fecha, hora) {
+export function fillPitchDemoClinicalMaps(maps, fecha, hora, today) {
   const { notes, indicaciones, labHistory, listadoProblemas } = maps;
 
   notes[PITCH_DEMO_PATIENT_ID] = {
@@ -69,7 +70,9 @@ export function fillPitchDemoClinicalMaps(maps, fecha, hora) {
   };
 
   try {
-    labHistory[PITCH_DEMO_PATIENT_ID] = buildPitchLabHistoryEntries();
+    labHistory[PITCH_DEMO_PATIENT_ID] = buildPitchLabHistoryEntries(
+      today instanceof Date ? today : new Date()
+    );
     bumpLabHistoryRevision(PITCH_DEMO_PATIENT_ID);
   } catch {
     delete labHistory[PITCH_DEMO_PATIENT_ID];

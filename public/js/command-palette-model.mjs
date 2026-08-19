@@ -81,10 +81,10 @@ export var ACTION_ITEMS = [
   },
   {
     kind: 'action',
-    actionId: 'open-pase',
-    label: 'Abrir pase',
+    actionId: 'open-inicio-turno',
+    label: 'Inicio de turno',
     hint: '',
-    keywords: 'pase ronda board abrir',
+    keywords: 'inicio turno recibir pacientes heredas pendientes zonas',
   },
 ];
 

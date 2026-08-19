@@ -33,6 +33,9 @@ export function normalizeTodoRow(t, fallbackNow) {
       id: readTodoString(t, 'id', ''),
       text: readTodoString(t, 'text', ''),
       completed: !!(t && t.completed),
+      // "En curso" status (Guardia census, workbench status-label) — set by the
+      // resident/intern while working the pendiente, cleared on completion.
+      inProgress: !!(t && t.inProgress),
       priority: normalizeTodoPriority(t && t.priority),
       createdAt,
       updatedAt,

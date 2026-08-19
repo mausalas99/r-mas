@@ -8,12 +8,26 @@ import { PITCH_CULTIVO_LAB_SPECS } from './tour-pitch-cultivos-some.mjs';
 import { PITCH_DEMO_PATIENT_ID } from './tour-pitch-sandbox.mjs';
 import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
 
-/** @param {{ id: string, fecha: string, report: string }} spec */
-export function buildPitchLabHistoryEntry(spec) {
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** @param {number} dayOffset @param {Date} today @returns {string} DD/MM/YYYY */
+function fechaFromDayOffset(dayOffset, today) {
+  const d = new Date(today.getTime() + dayOffset * DAY_MS);
+  return (
+    String(d.getDate()).padStart(2, '0') +
+    '/' +
+    String(d.getMonth() + 1).padStart(2, '0') +
+    '/' +
+    d.getFullYear()
+  );
+}
+
+/** @param {{ id: string, dayOffset: number, report: string }} spec @param {Date} today */
+export function buildPitchLabHistoryEntry(spec, today) {
   const resLabs = procesarLabs(spec.report).resLabs;
   return {
     id: spec.id,
-    fecha: spec.fecha,
+    fecha: fechaFromDayOffset(spec.dayOffset || 0, today instanceof Date ? today : new Date()),
     hora: '',
     resLabs,
     parsed: extractParsedValues(resLabs),
@@ -25,7 +39,9 @@ export function getPitchCultivoParseText() {
   return PITCH_CULTIVO_LAB_SPECS[0].report;
 }
 
-export function reconcilePitchCultivoHistory(labHistoryMap) {
+/** @param {Record<string, unknown[]>} labHistoryMap @param {Date} [today] */
+export function reconcilePitchCultivoHistory(labHistoryMap, today) {
+  const now = today instanceof Date ? today : new Date();
   const pid = PITCH_DEMO_PATIENT_ID;
   const list = Array.isArray(labHistoryMap[pid]) ? labHistoryMap[pid].slice() : [];
   const byId = Object.create(null);
@@ -33,7 +49,7 @@ export function reconcilePitchCultivoHistory(labHistoryMap) {
     if (entry && entry.id) byId[entry.id] = entry;
   });
   PITCH_CULTIVO_LAB_SPECS.forEach(function (spec) {
-    byId[spec.id] = buildPitchLabHistoryEntry(spec);
+    byId[spec.id] = buildPitchLabHistoryEntry(spec, now);
   });
   labHistoryMap[pid] = Object.keys(byId).map(function (id) {
     return byId[id];
@@ -41,18 +57,24 @@ export function reconcilePitchCultivoHistory(labHistoryMap) {
   bumpLabHistoryRevision(pid);
 }
 
-/** Labs de tendencia + cultivos multipaciente en historial (con sourceText para S/I/R). */
-export function buildPitchLabHistoryEntries() {
+/**
+ * Labs de tendencia + cultivos multipaciente en historial (con sourceText para S/I/R).
+ * @param {Date} [today]
+ */
+export function buildPitchLabHistoryEntries(today) {
+  const now = today instanceof Date ? today : new Date();
   const trendSpecs = [
-    { id: 'pitch-lab-trend-1', fecha: '01/05/2026', report: OLDER_DEMO_SOME_LAB_REPORT },
-    { id: 'pitch-lab-trend-2', fecha: '04/05/2026', report: DEMO_SOME_LAB_REPORT },
-    { id: 'pitch-lab-trend-3', fecha: '06/05/2026', report: OLDER_DEMO_SOME_LAB_REPORT },
-    { id: 'pitch-lab-trend-4', fecha: '08/05/2026', report: DEMO_SOME_LAB_REPORT },
-    { id: 'pitch-lab-trend-5', fecha: '10/05/2026', report: OLDER_DEMO_SOME_LAB_REPORT },
+    { id: 'pitch-lab-trend-1', dayOffset: -9, report: OLDER_DEMO_SOME_LAB_REPORT },
+    { id: 'pitch-lab-trend-2', dayOffset: -6, report: DEMO_SOME_LAB_REPORT },
+    { id: 'pitch-lab-trend-3', dayOffset: -4, report: OLDER_DEMO_SOME_LAB_REPORT },
+    { id: 'pitch-lab-trend-4', dayOffset: -2, report: DEMO_SOME_LAB_REPORT },
+    { id: 'pitch-lab-trend-5', dayOffset: 0, report: OLDER_DEMO_SOME_LAB_REPORT },
   ];
-  const out = trendSpecs.map(buildPitchLabHistoryEntry);
+  const out = trendSpecs.map(function (spec) {
+    return buildPitchLabHistoryEntry(spec, now);
+  });
   PITCH_CULTIVO_LAB_SPECS.forEach(function (spec) {
-    out.push(buildPitchLabHistoryEntry(spec));
+    out.push(buildPitchLabHistoryEntry(spec, now));
   });
   return out;
 }

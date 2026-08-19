@@ -84,10 +84,13 @@ import {
   commandPaletteWindowHandlersLazy,
   clinicalSyncModeSettingsHandlersLazy,
   eaVitalHistoryWindowHandlersLazy,
+  notaEvolucionWindowHandlersLazy,
 } from './lazy-feature-routes.mjs';
 import { todosWindowHandlers } from './features/todos.mjs';
 import { recetaHuWindowHandlers } from './features/receta-hu.mjs';
-import { windowHandlers as paseBoardWindowHandlers, syncMainAppTabA11y, renderInnerTabs, initTabBarMotion } from './features/pase-board.mjs';
+import { windowHandlers as expedienteNavWindowHandlers, renderInnerTabs } from './features/expediente-navigation.mjs';
+import { syncMainAppTabA11y } from './features/app-tabs.mjs';
+import { initTabBarMotion } from './ui-tab-motion.mjs';
 import { medicationsWindowHandlers, registerMedicationsRuntime } from './features/medications.mjs';
 import {
   profileWindowHandlers,
@@ -148,6 +151,7 @@ const allWindowHandlers = Object.assign(
   labHistoryBatchCopyWindowHandlers,
   soapEstadoWindowHandlers,
   estadoActualPanelWindowHandlers,
+  notaEvolucionWindowHandlersLazy,
   estadoActualPasteWindowHandlers,
   driveImportWindowHandlers,
   estadoActualRegistroWindowHandlers,
@@ -163,7 +167,7 @@ const allWindowHandlers = Object.assign(
   platformWindowHandlersLazy,
   todosWindowHandlers,
   recetaHuWindowHandlers,
-  paseBoardWindowHandlers,
+  expedienteNavWindowHandlers,
   commandPaletteWindowHandlersLazy,
   medicationsWindowHandlers,
   profileWindowHandlers,

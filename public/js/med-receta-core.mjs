@@ -41,6 +41,15 @@ export {
 export { applyMedCatalogOverlay, getMedCatalogOverlaySnapshot } from './med-receta-catalog.mjs';
 
 export {
+  classifyApoyoKind,
+  isApoyoMedicationNombre,
+  isApoyoMedicationItem,
+  apoyoKindLabel,
+  APOYO_KIND_OXIGENO,
+  APOYO_KIND_LABELS,
+} from './med-receta-apoyo.mjs';
+
+export {
   dosisBeforeSlash,
   extractRecetaNameOnlyDose,
   formatMedicationEgresoLine,

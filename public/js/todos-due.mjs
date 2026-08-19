@@ -67,6 +67,41 @@ export function isTodoOverdue(todo, now) {
   return dueMs < ref.getTime();
 }
 
+/**
+ * Coarse bucket for grouped Pendientes rendering (vencido → hoy → sin_fecha → listo),
+ * matching the mockup's VENCIDOS/HOY/SIN FECHA/CERRADOS table groups. The todo
+ * model has no explicit workflow state, so this derives one from what exists
+ * today: completed wins as "listo"; an unmet dueDate in the past is "vencido";
+ * a dueDate that falls on today (and isn't overdue) is "hoy"; anything else —
+ * no dueDate, or a dueDate on a future day — is the catch-all "sin_fecha".
+ * @param {{ completed?: boolean, dueDate?: string|null }} todo
+ * @returns {'vencido'|'hoy'|'sin_fecha'|'listo'}
+ */
+export function todoStatus(todo, now) {
+  if (!todo) return 'sin_fecha';
+  if (todo.completed) return 'listo';
+  if (isTodoOverdue(todo, now)) return 'vencido';
+  if (todo.dueDate) {
+    var due = toDate(todo.dueDate);
+    var ref = now == null ? new Date() : toDate(now);
+    if (!Number.isNaN(due.getTime()) && isSameLocalDay(due, ref)) return 'hoy';
+  }
+  return 'sin_fecha';
+}
+
+/**
+ * @param {Array<Record<string, unknown>>} todos
+ * @returns {{ vencido: Array, hoy: Array, sin_fecha: Array, listo: Array }}
+ */
+export function groupTodosByStatus(todos, now) {
+  var groups = { vencido: [], hoy: [], sin_fecha: [], listo: [] };
+  (todos || []).forEach(function (t) {
+    var status = todoStatus(t, now);
+    (groups[status] || groups.sin_fecha).push(t);
+  });
+  return groups;
+}
+
 export function todoCompareForDueSort(a, b, now) {
   if (!!a.completed !== !!b.completed) return a.completed ? 1 : -1;
 

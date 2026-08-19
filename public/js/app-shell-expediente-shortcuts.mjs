@@ -4,11 +4,11 @@
 import { migrateGranularInner } from './expediente-tabs.mjs';
 import { isGuardiaMode, toggleGuardiaMode } from './features/chrome.mjs';
 import { isModeSala } from './mode-features.mjs';
-import { switchAppTab } from './features/pase-board-app-tabs.mjs';
-import { getActiveInnerTab, switchInnerTab } from './features/pase-board.mjs';
+import { switchAppTab } from './features/app-tabs.mjs';
+import { getActiveInnerTab, switchInnerTab } from './features/expediente-navigation.mjs';
 import { switchLabInner } from './features/patient-dashboard/lab-inner.mjs';
 import { openPatientDatosModal } from './patient-datos-modal.mjs';
-import { rt } from './features/pase-board-runtime.mjs';
+import { rt } from './features/app-tabs-runtime.mjs';
 
 var EXPEDIENTE_SHORTCUT_KEYS = { e: 1, t: 1, d: 1 };
 

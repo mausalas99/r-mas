@@ -49,7 +49,7 @@ export function buildPatientSections(patient, ctx) {
 
   var cult = formatCultivosForCenso(ctx.labHistoryByPatient[pid] || []);
   if (cult && cult !== '—') {
-    pushSection(sections, 'Cultivos', cult.split(/\n\n+/).filter(Boolean));
+    pushSection(sections, 'Cultivos', cult.split(/\n+/).filter(Boolean));
   }
 
   pushSection(sections, 'Pendientes', formatPendientesForCenso(ctx.todosByPatient[pid] || []));

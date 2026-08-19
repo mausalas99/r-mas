@@ -39,11 +39,10 @@ describe('app-shell-keyboard work mode shortcuts', () => {
     if (prevLocal === undefined) delete globalThis.localStorage;
     else globalThis.localStorage = prevLocal;
   });
-  it('mapa G/I/P/S → modos de trabajo', () => {
+  it('mapa G/I/S → modos de trabajo', () => {
     assert.deepEqual(shellWorkModeShortcutMap, {
       g: 'guardia',
       i: 'interconsulta',
-      p: 'pase',
       s: 'sala',
     });
   });
