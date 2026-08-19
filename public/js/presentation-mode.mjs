@@ -75,7 +75,11 @@ export function startPresentationMode() {
   syncPresentationBodyClass();
   var pv = document.getElementById('patient-view');
   var es = document.getElementById('empty-state');
-  if (pv) pv.style.display = '';
+  // Match the same 'flex' toggle patients-select.mjs's showPatientViewShell() uses —
+  // #patient-view has no CSS display rule of its own (only inline style controls it),
+  // so clearing to '' falls back to the default block layout and collapses the whole
+  // dashboard ancestor chain to its content-less height (Phase 0 rollout-plan bug).
+  if (pv) pv.style.display = 'flex';
   if (es) es.style.display = 'none';
   rt.showToast('Modo presentación: DEMO PÉREZ', 'info');
 }
