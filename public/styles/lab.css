@@ -566,12 +566,10 @@ html.dark .todo-text-input:focus {
 }
 
 .todo-due-section {
-  /* Sit under the text field: skip prio + check columns + both gaps */
-  margin-left: calc(var(--todo-grid-prio) + var(--todo-grid-check) + 20px);
-  margin-right: calc(var(--todo-grid-actions) + 10px);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  width: 100%;
   gap: 6px;
   min-width: 0;
   padding: 0 0 2px;

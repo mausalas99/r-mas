@@ -15,12 +15,9 @@ import {
   formatTodoCreatorLabel,
 } from '../todos-handoff.mjs';
 import { aid, getClinicalUsername, getListFilter, setListFilter } from './todos-runtime.mjs';
-import { createTodoPrioChip } from './todos-priority-ui.mjs';
-import { createTodoDueAddSection } from './todos-due-composer.mjs';
 import { openTodoAddModal } from './todos-add-modal.mjs';
 import { nextTodoPriority, normalizeTodoPriority, todoPriorityLabel } from '../todos-priority.mjs';
 import {
-  addTodo,
   toggleTodo,
   deleteTodo,
   setTodoPriority,
@@ -43,14 +40,11 @@ var GROUP_META = {
   listo: { title: 'Cerrados · últimas 24 h', titleClass: 'wb-table-card-title--muted' },
 };
 
-function getTodoFormDraftState(container, idPrefix) {
+/** Detects an in-progress row-text edit so a refresh doesn't steal focus mid-keystroke. */
+function getTodoFormDraftState(container) {
   if (!container) return null;
   var active = document.activeElement;
   if (!active || !container.contains(active)) return null;
-
-  if (active.id === idPrefix + 'todo-input') {
-    return { kind: 'new' };
-  }
 
   if (active.classList && active.classList.contains('todo-text-input')) {
     var row = active.closest('.wb-row');
@@ -63,7 +57,6 @@ function getTodoFormDraftState(container, idPrefix) {
 
 function clearTodoListSection(container) {
   Array.from(container.children).forEach(function (child) {
-    if (child.classList.contains('todo-composer')) return;
     container.removeChild(child);
   });
 }
@@ -356,44 +349,29 @@ function appendTodoFilterBar(container) {
   container.appendChild(toolbar);
 }
 
-function appendTodoAddRow(container, idPrefix) {
-  var composer = document.createElement('div');
-  composer.className = 'todo-composer';
-
-  var addRow = document.createElement('div');
-  addRow.className = 'todo-add-row';
-  var input = document.createElement('input');
-  input.type = 'text';
-  input.id = idPrefix + 'todo-input';
-  input.placeholder = 'Nuevo pendiente...';
-  var addPrio = 'media';
-  var prioChip = createTodoPrioChip(addPrio, function (next) {
-    addPrio = next;
+/**
+ * Open-pendientes count (not `completed`) shown on the always-visible
+ * "Pendientes" pill (`#exp-group-row`, ≥1100px) and its <1100px classic-bar
+ * counterpart (`#itab-todo`'s `#exp-pendientes-badge-classic`), mockup
+ * L416's red count next to the Pendientes tab label.
+ */
+export function updateExpPendientesTabBadge() {
+  if (typeof document === 'undefined') return;
+  var badges = [
+    document.getElementById('exp-pendientes-badge'),
+    document.getElementById('exp-pendientes-badge-classic'),
+  ].filter(Boolean);
+  if (!badges.length) return;
+  var patientId = aid();
+  var count = patientId
+    ? storage.getTodos(patientId).filter(function (t) {
+        return !t.completed;
+      }).length
+    : 0;
+  badges.forEach(function (badge) {
+    badge.textContent = String(count);
+    badge.hidden = count === 0;
   });
-  prioChip.id = idPrefix + 'todo-priority-chip';
-  var dueControls = createTodoDueAddSection(idPrefix);
-  var addBtn = document.createElement('button');
-  addBtn.type = 'button';
-  addBtn.className = 'todo-add-btn';
-  addBtn.textContent = 'Agregar';
-  function submitAdd() {
-    addTodo(idPrefix, addPrio, dueControls.getFields());
-    dueControls.reset();
-  }
-  addBtn.addEventListener('click', submitAdd);
-  input.addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') submitAdd();
-  });
-  var chkSpacer = document.createElement('span');
-  chkSpacer.className = 'todo-check-spacer';
-  chkSpacer.setAttribute('aria-hidden', 'true');
-  addRow.appendChild(prioChip);
-  addRow.appendChild(chkSpacer);
-  addRow.appendChild(input);
-  addRow.appendChild(addBtn);
-  composer.appendChild(addRow);
-  composer.appendChild(dueControls.element);
-  container.appendChild(composer);
 }
 
 export function renderTodoListSection(container, preserveTodoId) {
@@ -427,6 +405,7 @@ export function renderTodoListSection(container, preserveTodoId) {
     }
     container.appendChild(none);
     settlePasteSurface(none);
+    updateExpPendientesTabBadge();
     return;
   }
 
@@ -435,6 +414,7 @@ export function renderTodoListSection(container, preserveTodoId) {
   appendGroupedTodoSections(list, todos, preservedRow, preserveTodoId);
   container.appendChild(list);
   settlePasteSurface(list);
+  updateExpPendientesTabBadge();
 }
 
 /** Vencidos first, then hoy, then sin fecha, then resueltos (cerrados) collapsed at the bottom. */
@@ -553,20 +533,15 @@ export function renderTodoFormIn(container, idPrefix) {
 
   container.classList.add('todo-shell');
 
-  var draft = getTodoFormDraftState(container, idPrefix);
-  var hasAddRow = !!container.querySelector('.todo-composer, .todo-add-row');
-  if (draft && hasAddRow) {
-    if (draft.kind === 'new') {
-      renderTodoListSection(container, null);
-      return;
-    }
-    if (draft.kind === 'edit') {
-      renderTodoListSection(container, draft.todoId);
-      return;
-    }
+  // Preserve focus mid-edit on a refresh (e.g. a live-sync patch landing while
+  // the user is typing in a row's text field) instead of rebuilding the DOM.
+  var draft = getTodoFormDraftState(container);
+  var hasContent = !!container.querySelector('.todo-toolbar');
+  if (draft && hasContent) {
+    renderTodoListSection(container, draft.todoId);
+    return;
   }
 
   while (container.firstChild) container.removeChild(container.firstChild);
-  appendTodoAddRow(container, idPrefix);
   renderTodoListSection(container, null);
 }

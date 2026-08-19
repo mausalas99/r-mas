@@ -6,6 +6,7 @@
  * switchInnerTab) so behavior is identical to the classic bars.
  */
 import { buildGroupRowModel } from '../expediente-group-row.mjs';
+import { updateExpPendientesTabBadge } from './todos-list-render.mjs';
 
 var lastPointerType = 'mouse';
 var touchExpandedGroup = null;
@@ -66,9 +67,21 @@ export function renderExpedienteGroupRow(activeGranular, settings) {
         return;
       }
       touchExpandedGroup = null;
-      if (typeof window.switchConsolidatedTab === 'function') window.switchConsolidatedTab(group.id);
+      if (group.granularTarget) {
+        if (typeof window.switchInnerTab === 'function') window.switchInnerTab(group.granularTarget);
+      } else if (typeof window.switchConsolidatedTab === 'function') {
+        window.switchConsolidatedTab(group.id);
+      }
     });
     pill.appendChild(name);
+    if (group.granularTarget === 'todo') {
+      var badge = document.createElement('span');
+      badge.className = 'wb-pendientes-tab-badge exp-group-pendientes-badge';
+      badge.id = 'exp-pendientes-badge';
+      badge.hidden = true;
+      badge.textContent = '0';
+      pill.appendChild(badge);
+    }
 
     var sections = document.createElement('div');
     sections.className = 'exp-group-sections';
@@ -91,6 +104,7 @@ export function renderExpedienteGroupRow(activeGranular, settings) {
     pill.appendChild(sections);
     row.appendChild(pill);
   });
+  updateExpPendientesTabBadge();
 }
 
 /** Re-sync classic bars/indicator when crossing the grouped-row breakpoint. */

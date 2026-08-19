@@ -27,15 +27,30 @@ test('groupSections: resultados and salida come from the existing maps', () => {
   assert.deepEqual(groupSections('salida', INTER), []);
 });
 
-test('buildGroupRowModel: ids are Resumen Clínico Salida (no Resultados)', () => {
+test('buildGroupRowModel: ids are Resumen Clínico Salida Pendientes (no Resultados)', () => {
   const model = buildGroupRowModel('resumen', SALA);
   const ids = model.map((g) => g.id);
-  assert.deepEqual(ids, ['paciente', 'clinico', 'salida']);
+  assert.deepEqual(ids, ['paciente', 'clinico', 'salida', 'todo']);
   assert.equal(GROUP_LABELS.paciente, 'Resumen');
   const pac = model.find((g) => g.id === 'paciente');
   assert.equal(pac.active, true);
   assert.equal(pac.label, 'Resumen');
   assert.equal(model.some((g) => g.id === 'resultados'), false);
+});
+
+test('buildGroupRowModel: Pendientes is its own always-present leaf pill (Phase 6 fix #1) — real entry point, no collapse regression on Resumen', () => {
+  const resumenModel = buildGroupRowModel('resumen', SALA);
+  const pend = resumenModel.find((g) => g.id === 'todo');
+  assert.ok(pend, 'Pendientes pill exists even when Resumen is active');
+  assert.equal(pend.leaf, true);
+  assert.equal(pend.active, false);
+  assert.equal(pend.granularTarget, 'todo');
+  assert.equal(pend.label, 'Pendientes');
+
+  const todoModel = buildGroupRowModel('todo', SALA);
+  assert.equal(todoModel.find((g) => g.id === 'todo').active, true);
+  // Resumen's own leaf pill keeps its label — no active-non-leaf collapse.
+  assert.equal(todoModel.find((g) => g.id === 'paciente').leaf, true);
 });
 
 test('buildGroupRowModel: active group and section reflect the granular target', () => {

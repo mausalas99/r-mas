@@ -1,6 +1,14 @@
-import { describe, it } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { todoRowDetailBits, buildTodoGroupPlan, appendGroupedTodoSections } from './todos-list-render.mjs';
+import {
+  todoRowDetailBits,
+  buildTodoGroupPlan,
+  appendGroupedTodoSections,
+  updateExpPendientesTabBadge,
+} from './todos-list-render.mjs';
+import { registerTodosRuntime } from './todos-runtime.mjs';
+import { addTodoWithFields, toggleTodo } from './todos-mutations.mjs';
+import { storage } from '../storage.js';
 
 function todo(overrides) {
   return Object.assign(
@@ -80,5 +88,59 @@ describe('buildTodoGroupPlan', () => {
     assert.equal(row.querySelector('.wb-todo-prior'), null);
     assert.equal(row.querySelector('.wb-todo-accion'), null);
     assert.match(row.querySelector('.wb-todo-pendiente--closed').textContent, /Resuelto/);
+  });
+});
+
+/** Real, always-visible Pendientes entry point (Phase 6 fix): the tab-bar
+ * badge tracks the open (non-completed) count, mockup L416's red "4". */
+describe('updateExpPendientesTabBadge', () => {
+  const store = {};
+
+  beforeEach(() => {
+    globalThis.localStorage = {
+      getItem: (k) => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v); },
+      removeItem: (k) => { delete store[k]; },
+    };
+    registerTodosRuntime({ getActiveId: () => 'p1' });
+  });
+
+  afterEach(() => {
+    Object.keys(store).forEach((k) => delete store[k]);
+    delete globalThis.localStorage;
+    delete globalThis.document;
+    registerTodosRuntime({ getActiveId: () => null });
+  });
+
+  it('shows the open-todo count and hides the badge at zero', () => {
+    const badge = { textContent: '', hidden: false };
+    globalThis.document = { getElementById: (id) => (id === 'exp-pendientes-badge' ? badge : null) };
+
+    addTodoWithFields({ text: 'Reponer potasio', priority: 'alta' });
+    addTodoWithFields({ text: 'Solicitar TAC', priority: 'media' });
+    updateExpPendientesTabBadge();
+    assert.equal(badge.textContent, '2');
+    assert.equal(badge.hidden, false);
+
+    const first = storage.getTodos('p1')[0];
+    toggleTodo(first.id);
+    updateExpPendientesTabBadge();
+    assert.equal(badge.textContent, '1');
+
+    toggleTodo(first.id); // un-resolve — back to 2
+    updateExpPendientesTabBadge();
+    assert.equal(badge.textContent, '2');
+
+    const second = storage.getTodos('p1')[1];
+    toggleTodo(first.id);
+    toggleTodo(second.id);
+    updateExpPendientesTabBadge();
+    assert.equal(badge.textContent, '0');
+    assert.equal(badge.hidden, true);
+  });
+
+  it('does nothing when the badge element is not mounted', () => {
+    globalThis.document = { getElementById: () => null };
+    assert.doesNotThrow(() => updateExpPendientesTabBadge());
   });
 });

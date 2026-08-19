@@ -4,7 +4,14 @@
  * Sala/Interconsulta differences and the mobile Salida rule are inherited.
  *
  * Paciente (Resumen) is a leaf group: datos lives in the collapsible <details>
- * inside the pane; resumen is the default view. No Datos/Pendientes sub-pills in the row.
+ * inside the pane; resumen is the default view. No Datos sub-pill in the row.
+ *
+ * Pendientes (mockup 10a) is appended as its own always-visible leaf pill
+ * (teal-workbench Phase 6, fix #1) instead of nesting it under Paciente:
+ * nesting would make Paciente non-leaf, and the active-group CSS collapses a
+ * non-leaf pill's own name to show only its sections — that would hide the
+ * "Resumen" label whenever Resumen itself is the active view. A sibling pill
+ * avoids that regression and matches how every other pill in this row works.
  */
 import {
   getConsolidatedTabs,
@@ -51,7 +58,7 @@ export function buildGroupRowModel(activeGranular, settings) {
   var st = settings || {};
   var granular = activeGranular || 'resumen';
   var target = resolveConsolidatedTarget(granular, st);
-  return getConsolidatedTabs(st).map(function (group) {
+  var groups = getConsolidatedTabs(st).map(function (group) {
     var activeGroup = group === target.tab;
     var sections = groupSections(group, st);
     return {
@@ -68,4 +75,13 @@ export function buildGroupRowModel(activeGranular, settings) {
       }),
     };
   });
+  groups.push({
+    id: 'todo',
+    label: SECTION_LABELS.todo,
+    active: granular === 'todo',
+    leaf: true,
+    granularTarget: 'todo',
+    sections: [],
+  });
+  return groups;
 }

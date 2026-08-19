@@ -381,4 +381,10 @@ export function syncConsolidatedPaneVisibility(granularTab, settings, opts) {
   if (dashMount) dashMount.hidden = granularTab !== 'resumen';
   if (pendMount) pendMount.hidden = granularTab !== 'todo';
   if (pendHeader) pendHeader.hidden = granularTab !== 'todo';
+  var pendTabBtn = document.getElementById('itab-todo');
+  if (pendTabBtn) {
+    var pendActive = granularTab === 'todo';
+    pendTabBtn.classList.toggle('active', pendActive);
+    pendTabBtn.setAttribute('aria-selected', String(pendActive));
+  }
 }
