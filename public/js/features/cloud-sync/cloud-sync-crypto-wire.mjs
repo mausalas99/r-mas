@@ -72,6 +72,61 @@ export async function decryptOpsFromPull(dek, ops) {
   return out;
 }
 
+/**
+ * Enumerates every content (path, value) pair in a full room snapshot — the same
+ * fields `decryptRoomStateFromPull` walks, kept in one place so the migration sweep
+ * (`room-dek-migrate.mjs`) can't drift out of sync on "which fields are content".
+ * @param {Record<string, any>} state
+ * @returns {{ path: string, value: unknown }[]}
+ */
+/** @param {unknown[]} out @param {unknown} clinicalOps */
+function collectClinicalOpsEntry(out, clinicalOps) {
+  if (clinicalOps !== undefined && clinicalOps !== null) {
+    out.push({ path: 'clinicalOps', value: clinicalOps });
+  }
+}
+
+/** @param {unknown[]} out @param {unknown} entries */
+function collectEntryContentEntries(out, entries) {
+  if (!Array.isArray(entries)) return;
+  for (const entry of entries) {
+    if (!entry || typeof entry !== 'object' || !entry.id) continue;
+    for (const field of ENTRY_CONTENT_FIELDS) {
+      if (entry[field] !== undefined) out.push({ path: `entries/${entry.id}/${field}`, value: entry[field] });
+    }
+  }
+}
+
+/** @param {unknown[]} out @param {unknown} labSidecars */
+function collectLabSidecarEntries(out, labSidecars) {
+  if (!labSidecars || typeof labSidecars !== 'object') return;
+  for (const patientId of Object.keys(labSidecars)) {
+    const sets = labSidecars[patientId];
+    if (!sets || typeof sets !== 'object') continue;
+    for (const setId of Object.keys(sets)) {
+      out.push({ path: `labSidecars/${patientId}/${setId}`, value: sets[setId] });
+    }
+  }
+}
+
+/** @param {unknown[]} out @param {unknown} todos */
+function collectTodoEntries(out, todos) {
+  if (!todos || typeof todos !== 'object') return;
+  for (const todoId of Object.keys(todos)) {
+    out.push({ path: `todos/${todoId}`, value: todos[todoId] });
+  }
+}
+
+export function listContentFieldEntries(state) {
+  const out = [];
+  if (!state || typeof state !== 'object') return out;
+  collectClinicalOpsEntry(out, state.clinicalOps);
+  collectEntryContentEntries(out, state.entries);
+  collectLabSidecarEntries(out, state.labSidecars);
+  collectTodoEntries(out, state.todos);
+  return out;
+}
+
 /** @param {CryptoKey|null} dek @param {object} entry */
 async function decryptEntryContentFields(dek, entry) {
   if (!entry || typeof entry !== 'object') return;

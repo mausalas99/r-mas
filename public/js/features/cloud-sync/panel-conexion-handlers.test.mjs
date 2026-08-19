@@ -34,6 +34,35 @@ describe('panel-conexion-handlers remember / leave room', () => {
     }
   });
 
+  it('recover re-wraps cached room DEKs under the new password before entering the session', () => {
+    const start = src.indexOf('export async function handleRecover');
+    const next = src.indexOf('\nexport async function ', start + 1);
+    const body = src.slice(start, next > start ? next : undefined);
+    const rewrapAt = body.indexOf('rewrapCachedRoomDeks(');
+    const enterAt = body.indexOf('enterCloudSession(');
+    assert.ok(rewrapAt >= 0 && enterAt > rewrapAt, 'rewrap must run before entering the session');
+    assert.match(body, /rewrapCachedRoomDeks\(deps\.getApi\(\), form\.password\)/);
+  });
+
+  it('create-room and join-room persist room DEKs to the durable store', () => {
+    for (const name of ['handleCreateRoom', 'handleJoinRoom']) {
+      const start = src.indexOf(`export async function ${name}`);
+      const next = src.indexOf('\nexport async function ', start + 1);
+      const body = src.slice(start, next > start ? next : undefined);
+      assert.match(body, /persistRoomDeks\(\)/, name);
+    }
+  });
+
+  it('afterAuthSuccess backfills room encryption fire-and-forget (never blocks/throws into login)', () => {
+    const start = src.indexOf('export async function afterAuthSuccess');
+    const next = src.indexOf('\nexport async function ', start + 1);
+    const body = src.slice(start, next > start ? next : undefined);
+    assert.match(body, /backfillRoomEncryption\(deps\.getApi\(\), room, getCloudSyncClientId\(\)\)/);
+    // "void ...then(ok, fail)" — a rejection is swallowed, not propagated.
+    assert.match(body, /void backfillRoomEncryption\([\s\S]*?\)\.then\(/);
+    assert.doesNotMatch(body, /await backfillRoomEncryption/);
+  });
+
   it('logout always re-renders disconnected', () => {
     const start = src.indexOf('export async function handleLogout');
     const next = src.indexOf('\nexport async function ', start + 1);

@@ -131,7 +131,7 @@ async function handlePromoteSelf(deps) {
       deps.toast('Inicia sesión en la nube primero.', 'error');
       return;
     }
-    if (!confirmAction('¿Promover tu cuenta a admin en la nube?')) return;
+    if (!(await confirmAction('¿Promover tu cuenta a admin en la nube?'))) return;
     await deps.getApi().adminPromote(userId, 'admin');
     deps.toast('Cuenta promovida a admin.', 'success');
   } catch (err) {
@@ -155,7 +155,7 @@ function handlePurgeRoomSelected(deps) {
 
 /** @param {object} deps @param {string} roomId */
 async function handleRotateCode(deps, roomId) {
-  if (!confirmAction('¿Rotar el código de esta sala? Quienes tengan el código anterior no podrán unirse.')) return;
+  if (!(await confirmAction('¿Rotar el código de esta sala? Quienes tengan el código anterior no podrán unirse.'))) return;
   try {
     const data = await deps.getApi().adminRotateCode(roomId);
     deps.toast('Nuevo código: ' + (data.code || '—'), 'success');
@@ -190,7 +190,7 @@ async function handlePurgeRoom(deps, roomId, code) {
 
 /** @param {object} deps @param {string} userId @param {string} handle */
 async function handleRevokeSessions(deps, userId, handle) {
-  if (!confirmAction('¿Revocar todas las sesiones de @' + handle + '?')) return;
+  if (!(await confirmAction('¿Revocar todas las sesiones de @' + handle + '?'))) return;
   try {
     const data = await deps.getApi().adminRevokeSessions(userId);
     deps.toast('Sesiones revocadas: ' + String(data.revoked ?? 0), 'success');
@@ -204,7 +204,7 @@ async function handlePromoteUser(deps, userId, handle, btn) {
   const row = btn.closest('.cloud-sync-admin-row-actions');
   const sel = row?.querySelector('[data-admin-promote-role]');
   const role = sel instanceof HTMLSelectElement ? sel.value : 'admin';
-  if (!confirmAction('¿Cambiar rol de @' + handle + ' a ' + fmtRole(role) + '?')) return;
+  if (!(await confirmAction('¿Cambiar rol de @' + handle + ' a ' + fmtRole(role) + '?'))) return;
   try {
     await deps.getApi().adminPromote(userId, role);
     deps.toast('Rol actualizado.', 'success');
@@ -228,7 +228,7 @@ async function handleResetPassword(deps, userId, handle) {
     deps.toast('La contraseña debe tener al menos 10 caracteres.', 'error');
     return;
   }
-  const rotateRecovery = confirmAction(
+  const rotateRecovery = await confirmAction(
     '¿Rotar también el código de recuperación? El anterior dejará de funcionar.'
   );
   try {
@@ -245,7 +245,7 @@ async function handleResetPassword(deps, userId, handle) {
 
 /** @param {object} deps @param {string} userId @param {string} handle */
 async function handleDisableUser(deps, userId, handle) {
-  if (!confirmAction('¿Deshabilitar @' + handle + ' y revocar sus sesiones?')) return;
+  if (!(await confirmAction('¿Deshabilitar @' + handle + ' y revocar sus sesiones?'))) return;
   try {
     await deps.getApi().adminDisable(userId);
     deps.toast('Usuario deshabilitado.', 'success');
@@ -258,11 +258,11 @@ async function handleDisableUser(deps, userId, handle) {
 /** @param {object} deps @param {string} userId @param {string} handle */
 async function handleDeleteUser(deps, userId, handle) {
   if (
-    !confirmAction(
+    !(await confirmAction(
       '¿Eliminar a @' +
         handle +
         ' de la nube?\n\nTambién se quitará de los equipos clínicos en esta Mac y se publicará el cambio a la sala.\n\nSi es dueño de una sala con otros miembros, el dueño pasa a otro. Si queda sola, se purga esa sala.'
-    )
+    ))
   ) {
     return;
   }

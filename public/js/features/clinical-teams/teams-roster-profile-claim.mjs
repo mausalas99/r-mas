@@ -5,6 +5,7 @@ import {
   normalizeUsername,
   shouldClaimClinicalUsername,
 } from '../../clinical-username.mjs';
+import { openConfirm } from '../workbench/confirm.mjs';
 import { dbApi, toast, currentUserId } from './shared.mjs';
 
 export function clientIdFromSettings() {
@@ -15,24 +16,35 @@ export function clientIdFromSettings() {
   }
 }
 
-async function confirmUsernameChange(currentUsername, username) {
+/** @param {typeof openConfirm} confirmFn */
+async function confirmUsernameChange(currentUsername, username, confirmFn) {
   if (!currentUsername || isLegacyMachineUsername(currentUsername, clientIdFromSettings())) {
     return true;
   }
-  return window.confirm(
-    `¿Cambiar tu usuario de @${currentUsername} a @${username}? Los equipos verán el nuevo nombre.`
-  );
+  const result = await confirmFn({
+    weight: 'consequence',
+    title: `¿Cambiar tu usuario de @${currentUsername} a @${username}?`,
+    consequenceText: 'Los equipos verán el nuevo nombre.',
+    confirmLabel: 'Cambiar',
+    cancelLabel: 'Cancelar',
+  });
+  return result === 'confirm';
 }
 
-async function tryResumeExistingUsername(username, errMsg) {
+/** @param {typeof openConfirm} confirmFn */
+async function tryResumeExistingUsername(username, errMsg, confirmFn) {
   let settings = {};
   try {
     settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
   } catch (_e) { void _e; }
-  const resume = window.confirm(
-    `El usuario @${username} ya existe.\n\n¿Recuperar tu cuenta en este dispositivo?`
-  );
-  if (!resume) {
+  const result = await confirmFn({
+    weight: 'consequence',
+    title: `El usuario @${username} ya existe.`,
+    consequenceText: '¿Recuperar tu cuenta en este dispositivo?',
+    confirmLabel: 'Recuperar',
+    cancelLabel: 'Cancelar',
+  });
+  if (result !== 'confirm') {
     toast(errMsg, 'error');
     return false;
   }
@@ -48,7 +60,8 @@ async function tryResumeExistingUsername(username, errMsg) {
   return true;
 }
 
-async function submitUsernameClaim(userId, username) {
+/** @param {typeof openConfirm} confirmFn */
+async function submitUsernameClaim(userId, username, confirmFn) {
   const api = dbApi();
   if (typeof api.dbClinicalUsernameClaim !== 'function') {
     toast('No se pudo guardar el @usuario.', 'error');
@@ -58,16 +71,20 @@ async function submitUsernameClaim(userId, username) {
   if (claimRes?.ok) return true;
   const errMsg = String(claimRes?.error || '');
   if (/ya está en uso/i.test(errMsg)) {
-    return tryResumeExistingUsername(username, errMsg);
+    return tryResumeExistingUsername(username, errMsg, confirmFn);
   }
   toast(errMsg || 'No se pudo guardar el usuario.', 'error');
   return false;
 }
 
 /**
+ * @param {string} username
+ * @param {string} sala
+ * @param {{ confirm?: typeof openConfirm }} [deps]
  * @returns {Promise<boolean|null>} true = changed ok, false = blocked, null = no change needed
  */
-export async function claimClinicalUsernameIfNeeded(username, sala) {
+export async function claimClinicalUsernameIfNeeded(username, sala, deps = {}) {
+  const confirmFn = typeof deps.confirm === 'function' ? deps.confirm : openConfirm;
   const userId = currentUserId();
   const api = dbApi();
   const currentUsername = normalizeUsername(clinicalSessionContext.user?.username || '');
@@ -81,9 +98,9 @@ export async function claimClinicalUsernameIfNeeded(username, sala) {
 
   const { assertRoomForUsernameRegister } = await import('../../clinical-profile-cloud-stubs.mjs');
   await assertRoomForUsernameRegister({ sala });
-  if (!(await confirmUsernameChange(currentUsername, username))) return false;
+  if (!(await confirmUsernameChange(currentUsername, username, confirmFn))) return false;
 
-  const claimed = await submitUsernameClaim(userId, username);
+  const claimed = await submitUsernameClaim(userId, username, confirmFn);
   if (!claimed) return false;
   if (clinicalSessionContext.user) clinicalSessionContext.user.username = username;
   return true;

@@ -3,6 +3,7 @@ import { PREIMPORT_BACKUP_KEY } from '../shared.mjs';
 import { addAuditEntry } from '../audit.mjs';
 import { getPlatformRuntime } from '../runtime.mjs';
 import { persistFullBackupPayload } from './backup-payload.mjs';
+import { openConfirm } from '../../workbench/confirm.mjs';
 
 const rt = getPlatformRuntime();
 
@@ -28,7 +29,7 @@ function syncPreimportBackupUi() {
   if (el) el.textContent = has ? meta : '—';
 }
 
-function restorePreimportBackupPrompt() {
+async function restorePreimportBackupPrompt() {
   var raw = localStorage.getItem(PREIMPORT_BACKUP_KEY);
   if (!raw) {
     rt.showToast(
@@ -50,13 +51,15 @@ function restorePreimportBackupPrompt() {
     return;
   }
   var n = (payload.data.patients || []).length;
-  if (
-    !confirm(
+  var result = await openConfirm({
+    weight: 'destructive',
+    title:
       '¿Restaurar la copia guardada automáticamente antes de la última importación completa? (' +
-        n +
-        ' pacientes). La aplicación se recargará.'
-    )
-  ) {
+      n +
+      ' pacientes). La aplicación se recargará.',
+    confirmLabel: 'Restaurar',
+  });
+  if (result !== 'confirm') {
     return;
   }
   if (typeof pushUndoSnapshot === 'function') rt.pushUndoSnapshot('Antes de restaurar copia pre-importación');

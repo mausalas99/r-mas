@@ -22,6 +22,7 @@ import {
   activePatientTeamId,
   assignPatientToTeamClinical,
 } from '../../patient-team-assign-ui.mjs';
+import { openConfirm } from '../workbench/confirm.mjs';
 import { toast } from './shared.mjs';
 
 /**
@@ -141,12 +142,16 @@ function toastBringPatientsResult(claimed, errors) {
 
 function resolveBringPatientsConfirm(deps) {
   if (typeof deps.confirm === 'function') return deps.confirm;
-  return (msg) => (typeof window !== 'undefined' ? window.confirm(msg) : false);
+  return async (msg) => {
+    if (typeof document === 'undefined') return false;
+    const result = await openConfirm({ weight: 'consequence', title: msg });
+    return result === 'confirm';
+  };
 }
 
 async function confirmAndAssignBringablePatients(tid, teamName, list, deps) {
   const confirmFn = resolveBringPatientsConfirm(deps);
-  const ok = confirmFn(buildBringPatientsConfirmMessage(list, teamName));
+  const ok = await confirmFn(buildBringPatientsConfirmMessage(list, teamName));
   if (!ok) return { offered: true, claimed: 0, skipped: true };
 
   const ids = list.map((p) => String(p.id));

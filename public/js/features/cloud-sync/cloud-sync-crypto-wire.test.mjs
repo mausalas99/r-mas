@@ -6,6 +6,7 @@ import {
   encryptOpsForPush,
   decryptOpsFromPull,
   decryptRoomStateFromPull,
+  listContentFieldEntries,
 } from './cloud-sync-crypto-wire.mjs';
 
 describe('isEncryptedContentPath', () => {
@@ -95,5 +96,34 @@ describe('decryptRoomStateFromPull', () => {
     };
     const out = await decryptRoomStateFromPull(null, state);
     assert.deepEqual(out, state);
+  });
+});
+
+describe('listContentFieldEntries', () => {
+  it('enumerates clinicalOps, entry content fields, labSidecars, and todos — never identity fields', () => {
+    const state = {
+      clinicalOps: { teams: [] },
+      entries: [
+        { id: 'p1', nombre: 'Juan Perez', note: 'nota', fields: { cama: '12' } },
+        { id: 'p2', indicaciones: 'omeprazol' },
+      ],
+      labSidecars: { p1: { set1: { resLabs: ['Hb 12'] } } },
+      todos: { t1: { text: 'pendiente' } },
+    };
+    const out = listContentFieldEntries(state);
+    assert.deepEqual(out, [
+      { path: 'clinicalOps', value: { teams: [] } },
+      { path: 'entries/p1/note', value: 'nota' },
+      { path: 'entries/p2/indicaciones', value: 'omeprazol' },
+      { path: 'labSidecars/p1/set1', value: { resLabs: ['Hb 12'] } },
+      { path: 'todos/t1', value: { text: 'pendiente' } },
+    ]);
+    // Identity fields never appear.
+    assert.ok(!out.some((e) => e.path.endsWith('/fields')));
+  });
+
+  it('returns an empty list for an empty or malformed state', () => {
+    assert.deepEqual(listContentFieldEntries(null), []);
+    assert.deepEqual(listContentFieldEntries({}), []);
   });
 });

@@ -30,7 +30,6 @@ export const SHORTCUT_GROUPS = [
     items: [
       { keys: ['⌘', 'G'], label: 'Guardia' },
       { keys: ['⌘', 'I'], label: 'Interconsulta' },
-      { keys: ['⌘', 'P'], label: 'Pase' },
       { keys: ['⌘', 'S'], label: 'Sala' },
     ],
   },

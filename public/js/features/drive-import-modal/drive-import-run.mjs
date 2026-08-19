@@ -6,7 +6,7 @@ import { getParsed, hasApprovedReviewContent } from './drive-import-parse.mjs';
 import { confirmDriveImportChoice } from './drive-import-modal-step.mjs';
 import { closeDriveImportModal } from './drive-import-lifecycle.mjs';
 
-function confirmRegistroMismatch(parsed, patient) {
+async function confirmRegistroMismatch(parsed, patient) {
   if (
     !patient ||
     !parsed.header ||
@@ -25,7 +25,7 @@ function confirmRegistroMismatch(parsed, patient) {
   );
 }
 
-function confirmCreateWithoutName(createNew, parsed) {
+async function confirmCreateWithoutName(createNew, parsed) {
   if (!createNew || (parsed.header && parsed.header.nombre)) return true;
   return confirmDriveImportChoice('No se detectó nombre en el encabezado. ¿Crear paciente igualmente?');
 }
@@ -34,8 +34,8 @@ async function confirmImportGuards(parsed, _opts) {
   const rt = getDriveImportRuntime();
   const patient = rt.getActivePatient();
   const createNew = !patient;
-  if (!confirmRegistroMismatch(parsed, patient)) return false;
-  if (!confirmCreateWithoutName(createNew, parsed)) return false;
+  if (!(await confirmRegistroMismatch(parsed, patient))) return false;
+  if (!(await confirmCreateWithoutName(createNew, parsed))) return false;
   return true;
 }
 

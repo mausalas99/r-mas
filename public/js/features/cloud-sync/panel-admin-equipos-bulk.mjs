@@ -286,7 +286,7 @@ export async function handleCloudEquiposBulkPurge(root, getApi, toast) {
     cloud: actionable.filter((t) => t.cloudId).length,
     local: actionable.filter((t) => t.userId).length,
   };
-  if (!confirmAction(equiposBulkPurgeConfirmMessage(actionable.length, stats))) return;
+  if (!(await confirmAction(equiposBulkPurgeConfirmMessage(actionable.length, stats)))) return;
 
   const btn = root.querySelector('[data-admin-action="purge-equipos-bulk"]');
   setBulkButtonDisabled(btn, true);

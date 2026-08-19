@@ -347,7 +347,7 @@ export async function handleCloudEquiposPurgeUser(root, btn, getApi, toast) {
   }
 
   const flags = { hasCloud: Boolean(target.cloudId), hasLocal: Boolean(target.userId) };
-  if (!confirmAction(equiposPurgeConfirmMessage(target.handle, flags))) return;
+  if (!(await confirmAction(equiposPurgeConfirmMessage(target.handle, flags)))) return;
 
   btn.disabled = true;
   try {

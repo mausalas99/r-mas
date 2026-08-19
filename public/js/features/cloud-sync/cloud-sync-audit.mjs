@@ -8,6 +8,7 @@ export const DEK_EVENTS = {
   WRAP_PUT: 'nube.dek.wrap_put',
   WRAP_GET: 'nube.dek.wrap_get',
   WRAP_FAILED: 'nube.dek.wrap_failed',
+  BACKFILL_SWEPT: 'nube.dek.backfill_swept',
 };
 
 function auditApi() {

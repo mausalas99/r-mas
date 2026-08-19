@@ -17,11 +17,12 @@ import {
   renderNoteForm,
   renderIndicaForm,
 } from "./notes-indicaciones.mjs";
+import { renderNotaEvolucionPrimaryTab } from "./nota-evolucion/nota-evolucion-primary-tab.mjs";
+import { switchAppTab } from "./app-tabs.mjs";
 import {
-  switchAppTab,
   switchInnerTab,
   renderInnerTabs,
-} from "./pase-board.mjs";
+} from "./expediente-navigation.mjs";
 import { syncHeaderModeSeg } from "./chrome.mjs";
 import {
   getProfileRuntime,
@@ -122,7 +123,7 @@ export function saveDefaultFormatsFromEditor() {
 export function exitFormatsEditor() {
   var was = getFormatsEditMode();
   clearFormatsEditMode();
-  if (was === "nota") renderNoteForm();
+  if (was === "nota") renderNotaEvolucionPrimaryTab();
   else if (was === "indica") renderIndicaForm();
 }
 
@@ -133,7 +134,7 @@ export function resetProfileTemplates() {
   localStorage.setItem("rpc-settings", JSON.stringify(st));
   loadSettings();
   var mode = getFormatsEditMode();
-  if (mode === "nota") renderNoteForm();
+  if (mode === "nota") renderNotaEvolucionPrimaryTab();
   else if (mode === "indica") renderIndicaForm();
   getProfileRuntime().showToast("Formatos restablecidos (plantillas en blanco)", "success");
 }

@@ -65,6 +65,26 @@ function rememberBridgeApi() {
 }
 
 let rememberHydrated = false;
+/** Raw room DEKs (base64), keyed by roomId — mirrors the durable Recuérdame file. */
+let cachedDeks = {};
+
+/**
+ * Room DEKs from the durable Recuérdame store — room-dek.mjs imports these back
+ * into its in-memory cache at boot so a restored session skips the password.
+ * @returns {Record<string, string>}
+ */
+export function getStoredRoomDeks() {
+  hydrateRememberFromDisk();
+  return cachedDeks;
+}
+
+/**
+ * @param {Record<string, string>} deks raw DEKs, base64, keyed by roomId
+ */
+export function setStoredRoomDeks(deks) {
+  cachedDeks = deks && typeof deks === 'object' ? deks : {};
+  persistRememberToDisk();
+}
 
 /** Pull durable Recuérdame snapshot from userData into local/session storage. */
 function hydrateRememberFromDisk() {
@@ -78,6 +98,7 @@ function hydrateRememberFromDisk() {
   } catch {
     return;
   }
+  if (snap && snap.deks && typeof snap.deks === 'object') cachedDeks = snap.deks;
   if (!snap || !String(snap.token || '').trim()) return;
   try {
     localStorage.setItem(REMEMBER_KEY, '1');
@@ -151,6 +172,7 @@ function persistRememberToDisk() {
       }
     })(),
     roomMeta,
+    deks: cachedDeks,
   });
 }
 
@@ -308,6 +330,7 @@ export function clearCloudSyncSession() {
   setCloudSyncRoomId('');
   setCloudSyncRevision(0);
   writeDual(ROOM_META_KEY, '');
+  cachedDeks = {};
   const api = rememberBridgeApi();
   if (api && typeof api.cloudSyncRememberClear === 'function') {
     void api.cloudSyncRememberClear();

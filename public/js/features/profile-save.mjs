@@ -1,6 +1,7 @@
 /** Perfil — save settings from modal form. */
 import { getNotes, persistClinicalState } from "../app-state.mjs";
-import { renderNoteForm, applyProfileToNoteIfEmpty } from "./notes-indicaciones.mjs";
+import { applyProfileToNoteIfEmpty } from "./notes-indicaciones.mjs";
+import { renderNotaEvolucionPrimaryTab } from "./nota-evolucion/nota-evolucion-primary-tab.mjs";
 import {
   getProfileRuntime,
   normalizeQuickOutputFormat,
@@ -39,7 +40,7 @@ export function saveSettings() {
   });
   if (backfill) persistClinicalState();
   loadSettings();
-  if (getProfileRuntime().getActiveId()) renderNoteForm();
+  if (getProfileRuntime().getActiveId()) renderNotaEvolucionPrimaryTab();
   getProfileRuntime().showToast("Perfil guardado ✓", "success");
 }
 

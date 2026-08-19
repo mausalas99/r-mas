@@ -1,11 +1,20 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import {
   isIncomingPreviewWindow,
   isChartLockedForPatient,
   syncRotationConfigButton,
 } from './clinical-rotation.mjs';
 import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
+
+// `npm run test:one` runs through Electron's Node runtime with no `document`
+// (see scripts/run-with-electron-node.mjs), so the workbench confirm scrim
+// used by confirmNuevaRotacion can't be mounted here. We assert on the source
+// directly instead: the destructive confirm carries the right copy, and the
+// rotation call only runs after the guard on the resolved result.
+const rotationSrc = readFileSync(fileURLToPath(new URL('./clinical-rotation.mjs', import.meta.url)), 'utf8');
 
 describe('clinical-rotation preview window', () => {
   const cycle = {
@@ -58,5 +67,20 @@ describe('clinical-rotation preview window', () => {
       isChartLockedForPatient({ effective_at: '2026-06-01T00:00:00.000Z' }, new Date('2026-06-02T00:00:00Z')),
       false
     );
+  });
+
+  it('confirmNuevaRotacion requests a destructive confirm before archiving teams', () => {
+    const start = rotationSrc.indexOf('export async function confirmNuevaRotacion');
+    assert.notEqual(start, -1);
+    const nextExport = rotationSrc.indexOf('\nexport ', start + 1);
+    const body = rotationSrc.slice(start, nextExport === -1 ? rotationSrc.length : nextExport);
+    assert.match(body, /openConfirm\(\{/);
+    assert.match(body, /weight:\s*'destructive'/);
+    assert.match(body, /¿Iniciar nueva rotación\?/);
+    const confirmIdx = body.indexOf('openConfirm(');
+    const guardIdx = body.indexOf("if (result !== 'confirm')");
+    const nuevaFnIdx = body.indexOf('nuevaFn.call(api');
+    assert.ok(confirmIdx > -1 && guardIdx > confirmIdx, 'the confirm guard must follow the openConfirm call');
+    assert.ok(nuevaFnIdx > guardIdx, 'the rotation call must run only after the confirm guard');
   });
 });

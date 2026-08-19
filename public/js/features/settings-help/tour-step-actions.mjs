@@ -22,7 +22,8 @@ import {
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { setUiDensity, isGuardiaMode } from '../chrome.mjs';
 import { openConnectionDropdown, closeConnectionDropdown } from '../cloud-sync/panel-chrome.mjs';
-import { renderNoteForm, renderIndicaForm } from '../notes-indicaciones.mjs';
+import { renderIndicaForm } from '../notes-indicaciones.mjs';
+import { showNotaEvolucionClassicView } from '../nota-evolucion/nota-evolucion-primary-tab.mjs';
 import { closeLabSomeTablesModal } from '../lab-some-tables-modal.mjs';
 import { closeTendGroupModal } from '../tendencias.mjs';
 import { closeSOAPModal } from '../soap-estado.mjs';
@@ -493,7 +494,7 @@ function applyTourTabsForStep(id, t) {
     rt.switchInnerTab(t.innerTab);
   }
   if (t.appTab !== 'nota') return;
-  if (t.innerTab === 'notas') renderNoteForm();
+  if (t.innerTab === 'notas') showNotaEvolucionClassicView();
   else if (t.innerTab === 'indica') renderIndicaForm();
 }
 

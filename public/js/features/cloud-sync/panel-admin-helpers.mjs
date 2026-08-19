@@ -10,6 +10,7 @@ export function setSessionAdminKey(key) {
   sessionAdminKey = String(key || '').trim();
 }
 import { esc } from '../../dom-escape.mjs';
+import { showConfirmDialog } from '../../ui-approval-card.mjs';
 
 export const ROLE_LABELS = {
   member: 'Miembro',
@@ -22,9 +23,19 @@ export function fmtRole(role) {
   return ROLE_LABELS[role] || role || '—';
 }
 
-/** @param {string} message */
+/**
+ * Styled confirm dialog (replaces window.confirm). Resolves true/false.
+ * @param {string} message
+ * @returns {Promise<boolean>}
+ */
 export function confirmAction(message) {
-  return window.confirm(message);
+  return showConfirmDialog({
+    id: 'cloud-sync-admin-confirm',
+    title: 'Confirmar acción',
+    question: message,
+    confirmLabel: 'Continuar',
+    cancelLabel: 'Cancelar',
+  });
 }
 
 /**

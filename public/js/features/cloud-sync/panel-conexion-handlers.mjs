@@ -6,7 +6,23 @@ import { isValidUsernameFormat, normalizeUsername } from '../../clinical-usernam
 import { isCutoverPending } from './cutover-flags.mjs';
 import { userHasJoinedTeam } from './panel-conexion-html.mjs';
 import { showRecoveryCodeModal } from './recovery-modal.mjs';
-import { cacheSessionPassword, clearRoomDekCache, ensureRoomDek, loadRoomDek } from './room-dek.mjs';
+import {
+  cacheSessionPassword,
+  clearRoomDekCache,
+  ensureRoomDek,
+  loadRoomDek,
+  exportCachedDeksForPersistence,
+  rewrapCachedRoomDeks,
+} from './room-dek.mjs';
+import { backfillRoomEncryption } from './room-dek-migrate.mjs';
+import { getCloudSyncClientId } from './client-id.mjs';
+import { setStoredRoomDeks } from './settings.mjs';
+import { showConfirmDialog } from '../../ui-approval-card.mjs';
+
+/** DEK cache changed (created/loaded/re-wrapped) — mirror it to the durable Recuérdame store. */
+async function persistRoomDeks() {
+  setStoredRoomDeks(await exportCachedDeksForPersistence());
+}
 
 /** Prefer explicit checkbox; else sticky Recuérdame preference; else persist on desktop. */
 function resolveRememberFromSection(section, selector, deps) {
@@ -100,13 +116,22 @@ export function toastRegisterError(err, toast) {
 export async function afterAuthSuccess(deps, user) {
   deps.setCloudUser({ username: user?.username || '', displayName: user?.displayName || '' });
   // Identity IPC + ensure-turn in parallel — don't serialize round-trips.
-  await Promise.all([
+  const [, room] = await Promise.all([
     bridgeCloudIdentityToLocal({
       username: deps.getCloudUser().username,
       displayName: deps.getCloudUser().displayName,
     }),
     deps.tryAutoEnsureTurnRoom(),
   ]);
+  // Existing rooms never got a DEK (only room *creation* triggers one) — the owner's
+  // next login silently backfills it and re-encrypts already-stored plaintext content.
+  // Fire-and-forget: must never block or fail login.
+  if (room?.id) {
+    void backfillRoomEncryption(deps.getApi(), room, getCloudSyncClientId()).then(
+      () => persistRoomDeks(),
+      () => {}
+    );
+  }
   await hydrateClinicalTeamsAfterCloudPull();
   // Mi rotación must not block "conectado" — open in background if needed.
   if (!isCutoverPending() && !userHasJoinedTeam()) {
@@ -222,6 +247,10 @@ export async function handleRecover(deps) {
       newPassword: form.password,
     });
     cacheSessionPassword(form.password);
+    // Re-wrap any room DEKs this device still holds unwrapped (active session or
+    // one restored from the durable store) so the new password can open them too.
+    await rewrapCachedRoomDeks(deps.getApi(), form.password);
+    await persistRoomDeks();
     const prevToken = deps.getCloudSyncToken();
     enterCloudSession(
       deps,
@@ -238,9 +267,14 @@ export async function handleRecover(deps) {
 
 /** @param {object} deps */
 export async function handleRegenerateRecovery(deps) {
-  if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
-    if (!window.confirm(REGENERATE_CONFIRM)) return;
-  }
+  const ok = await showConfirmDialog({
+    id: 'cloud-sync-regenerate-recovery-confirm',
+    title: 'Regenerar código',
+    question: REGENERATE_CONFIRM,
+    confirmLabel: 'Regenerar',
+    cancelLabel: 'Cancelar',
+  });
+  if (!ok) return;
   try {
     const data = await deps.getApi().regenerateRecovery();
     await maybeShowRecoveryCodeModal(data);
@@ -264,6 +298,7 @@ export async function handleCreateRoom(deps) {
     const room = data.room;
     persistCloudRoom(deps, room);
     await ensureRoomDek(deps.getApi(), room.id).catch(() => {});
+    await persistRoomDeks();
     deps.renderConnected(room);
     deps.toast('Sala creada: ' + room.code, 'success');
   } catch (err) {
@@ -289,6 +324,7 @@ export async function handleJoinRoom(deps) {
     const room = data.room;
     persistCloudRoom(deps, room);
     await loadRoomDek(deps.getApi(), room.id);
+    await persistRoomDeks();
     deps.renderConnected(room);
     deps.toast('Unido a la sala ' + room.code + '.', 'success');
   } catch (err) {

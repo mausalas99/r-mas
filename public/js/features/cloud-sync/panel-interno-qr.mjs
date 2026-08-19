@@ -7,6 +7,7 @@ import { copyInternoQrImage, downloadInternoQrPng, drawInternoQrCanvas } from '.
 import { getCloudSyncUrl } from './settings.mjs';
 import { pushInternoAccessToCloud } from './interno-access-sync.mjs';
 import { getClinicalUserUserId } from './panel-clinical-context.mjs';
+import { showConfirmDialog } from '../../ui-approval-card.mjs';
 
 export const CLOUD_INTERNO_QR_OPEN_KEY = 'rpc-cloud-interno-qr-open';
 
@@ -128,7 +129,14 @@ function buildInternoSalaActionButtons(ctx, def, url, active) {
 
   btnRow.appendChild(
     mkBtn('Regenerar token', async () => {
-      if (!confirm(`¿Regenerar QR de ${def.key}? El enlace anterior dejará de funcionar.`)) return;
+      const ok = await showConfirmDialog({
+        id: 'cloud-interno-qr-regenerate-confirm',
+        title: 'Regenerar token',
+        question: `¿Regenerar QR de ${def.key}? El enlace anterior dejará de funcionar.`,
+        confirmLabel: 'Regenerar',
+        cancelLabel: 'Cancelar',
+      });
+      if (!ok) return;
       const r = await api.dbInternoAccessRotate({ userId, sala: def.key });
       if (r?.ok) {
         void pushInternoAccessToCloud(def.key, r.row).catch(() => {});

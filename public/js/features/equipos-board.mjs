@@ -9,6 +9,7 @@ import { loadEquiposHistoryPanel } from './equipos-history.mjs';
 import { showToast } from '../ui-toast.mjs';
 
 import { esc } from '../dom-escape.mjs';
+import { openConfirm } from './workbench/confirm.mjs';
 
 /** @param {object} dev */
 function renderDeviceRow(dev, isAdmin) {
@@ -93,14 +94,24 @@ function buildEquiposBoardHtml(board, cloud, isAdmin) {
 function wireEquiposBoardActions(host) {
   host.querySelectorAll('[data-purge]').forEach((btn) => {
     btn.addEventListener('click', async () => {
-      if (!confirm('¿Liberar este dispositivo y vaciar la cola?')) return;
+      const result = await openConfirm({
+        weight: 'consequence',
+        title: '¿Liberar este dispositivo y vaciar la cola?',
+        confirmLabel: 'Liberar',
+      });
+      if (result !== 'confirm') return;
       await purgeQueue(btn.getAttribute('data-purge'));
       showToast('Cola purgada.', 'success');
       await renderEquiposBoardPanel(host);
     });
   });
   host.querySelector('#btn-equipos-purge-all')?.addEventListener('click', async () => {
-    if (!confirm('¿Purgar cola de los tres dispositivos?')) return;
+    const result = await openConfirm({
+      weight: 'consequence',
+      title: '¿Purgar cola de los tres dispositivos?',
+      confirmLabel: 'Purgar',
+    });
+    if (result !== 'confirm') return;
     await purgeQueue('all');
     showToast('Colas purgadas.', 'success');
     await renderEquiposBoardPanel(host);

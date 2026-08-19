@@ -175,4 +175,38 @@ describe('cloud sync remember durable bridge', () => {
     assert.equal(cleared, true);
     assert.equal(mod.getCloudSyncToken(), '');
   });
+
+  it('setStoredRoomDeks persists deks alongside the token via the durable bridge', async () => {
+    let saved = null;
+    globalThis.window = {
+      electronAPI: {
+        cloudSyncRememberGetSync: () => null,
+        cloudSyncRememberSet: async (s) => {
+          saved = s;
+          return s;
+        },
+        cloudSyncRememberClear: async () => ({ ok: true }),
+      },
+    };
+    const mod = await import('./settings.mjs');
+    mod.setCloudSyncToken('tok-dek', { remember: true });
+    mod.setStoredRoomDeks({ 'room-1': 'ZGVrLWJ5dGVzLWZvci1yb29tLTE=' });
+    assert.deepEqual(saved?.deks, { 'room-1': 'ZGVrLWJ5dGVzLWZvci1yb29tLTE=' });
+    assert.deepEqual(mod.getStoredRoomDeks(), { 'room-1': 'ZGVrLWJ5dGVzLWZvci1yb29tLTE=' });
+  });
+
+  it('clearCloudSyncSession also drops cached deks', async () => {
+    globalThis.window = {
+      electronAPI: {
+        cloudSyncRememberGetSync: () => null,
+        cloudSyncRememberSet: async () => null,
+        cloudSyncRememberClear: async () => ({ ok: true }),
+      },
+    };
+    const mod = await import('./settings.mjs');
+    mod.setCloudSyncToken('tok-y', { remember: true });
+    mod.setStoredRoomDeks({ 'room-1': 'somedek' });
+    mod.clearCloudSyncSession();
+    assert.deepEqual(mod.getStoredRoomDeks(), {});
+  });
 });

@@ -1,5 +1,6 @@
 import { driveImportState, getDriveImportRuntime } from './drive-import-state.mjs';
 import { getBackdrop, getModalEl, getTextarea } from './drive-import-dom.mjs';
+import { openConfirm } from '../workbench/confirm.mjs';
 
 export function syncConfirmLabel() {
   const btn = document.getElementById('drive-import-confirm');
@@ -43,7 +44,7 @@ export function setModalStep(step, hooks) {
   syncConfirmLabel();
 }
 
-export function confirmDriveImportChoice(message) {
+export async function confirmDriveImportChoice(message) {
   const bd = getBackdrop();
   const wasOpen = !!(bd && bd.classList.contains('open'));
   if (bd && wasOpen) {
@@ -52,7 +53,8 @@ export function confirmDriveImportChoice(message) {
   }
   let ok = false;
   try {
-    ok = confirm(message);
+    const result = await openConfirm({ weight: 'destructive', title: message });
+    ok = result === 'confirm';
   } finally {
     if (bd && wasOpen) {
       bd.classList.add('open');

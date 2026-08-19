@@ -6,6 +6,7 @@ import { applySomePharmCatalogOverlay } from '../../med-pharm-some-catalog.mjs';
 import { AUDIT_LOG_KEY } from './shared.mjs';
 import { formatDateSlug, downloadJsonPayload } from './shared.mjs';
 import { getPlatformRuntime } from './runtime.mjs';
+import { openConfirm } from '../workbench/confirm.mjs';
 
 const rt = getPlatformRuntime();
 
@@ -101,11 +102,13 @@ async function lockClinicalDatabaseNow() {
     rt.showToast('Solo disponible con la base de datos cifrada en la app de escritorio.', 'error');
     return;
   }
-  if (
-    !window.confirm(
-      '¿Bloquear la base de datos ahora? R+ la volverá a abrir automáticamente en este equipo al reiniciar o recargar.'
-    )
-  ) {
+  var lockResult = await openConfirm({
+    weight: 'consequence',
+    title: '¿Bloquear la base de datos ahora?',
+    consequenceText: 'R+ la volverá a abrir automáticamente en este equipo al reiniciar o recargar.',
+    confirmLabel: 'Bloquear',
+  });
+  if (lockResult !== 'confirm') {
     return;
   }
   try {
@@ -179,11 +182,13 @@ async function exportClinicalDbBackupJson() {
     rt.showToast('Exportación solo disponible con base cifrada en escritorio.', 'error');
     return;
   }
-  if (
-    !window.confirm(
-      'El respaldo JSON incluye información clínica identificable en texto plano. ¿Continuar y guardar en un lugar seguro?'
-    )
-  ) {
+  var jsonBackupResult = await openConfirm({
+    weight: 'consequence',
+    title: '¿Continuar y guardar en un lugar seguro?',
+    consequenceText: 'El respaldo JSON incluye información clínica identificable en texto plano.',
+    confirmLabel: 'Continuar',
+  });
+  if (jsonBackupResult !== 'confirm') {
     return;
   }
   try {
@@ -208,11 +213,13 @@ async function exportClinicalDbBackupDb() {
     rt.showToast('Exportación solo disponible con base cifrada en escritorio.', 'error');
     return;
   }
-  if (
-    !window.confirm(
-      'Se copiará el archivo .db cifrado. Protégelo como datos clínicos sensibles. ¿Continuar?'
-    )
-  ) {
+  var dbBackupResult = await openConfirm({
+    weight: 'consequence',
+    title: '¿Continuar?',
+    consequenceText: 'Se copiará el archivo .db cifrado. Protégelo como datos clínicos sensibles.',
+    confirmLabel: 'Continuar',
+  });
+  if (dbBackupResult !== 'confirm') {
     return;
   }
   try {

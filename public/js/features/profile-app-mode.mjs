@@ -1,25 +1,22 @@
-/** Perfil — app mode (Sala / Inter / Pase / Guardia) switching. */
+/** Perfil — app mode (Sala / Inter / Guardia) switching. */
 import {
-  isPaseMode,
   isGuardiaMode,
-  setUiDensity,
   toggleGuardiaMode,
   syncHeaderModeSeg,
   toggleHeaderModeSegExpand,
   collapseHeaderModeSeg,
-  exitPaseModeFromHeader,
 } from "./chrome.mjs";
 import { syncCensoExportButtonVisibility } from "../censo-export.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { migrateGranularInner } from "../expediente-tabs.mjs";
-import { renderNoteForm } from "./notes-indicaciones.mjs";
+import { renderNotaEvolucionPrimaryTab } from "./nota-evolucion/nota-evolucion-primary-tab.mjs";
 import { renderEstadoActualButton } from "./soap-estado.mjs";
-import { renderPatientList, renderRoundOverviewPanels } from "./patients.mjs";
+import { renderPatientList } from "./patients.mjs";
 import {
   switchInnerTab,
   getActiveInnerTab,
   refreshExpedienteForAppModeChange,
-} from "./pase-board.mjs";
+} from "./expediente-navigation.mjs";
 import { renderPatientDataPane } from "./expediente.mjs";
 import {
   getProfileRuntime,
@@ -29,6 +26,17 @@ import {
   syncAppModeRadioControls,
 } from "./profile-runtime.mjs";
 import { syncProfileModalLayout } from "./profile-load.mjs";
+
+/**
+ * Loaded lazily (not a top-level import) so the 10b Interconsulta chrome
+ * stays out of the eager boot payload — it only matters once a user
+ * actually switches into Interconsulta mode.
+ */
+function syncInterconsultaModeChrome() {
+  import("./interconsulta-mode-chrome.mjs").then(function (mod) {
+    mod.syncInterconsultaModeChrome();
+  });
+}
 
 function reconcileActiveInnerForAppMode(nowSala) {
   var settings = settingsRef();
@@ -59,13 +67,13 @@ export function applyAppModeSwitchEffects() {
       if (typeof rt.rebuildEstudiosFromLabHistory === "function") {
         rt.rebuildEstudiosFromLabHistory(rt.getActiveId());
       }
-      if (!nowSala) renderNoteForm();
+      if (!nowSala) renderNotaEvolucionPrimaryTab();
       var inner = getActiveInnerTab();
       if (inner === "datos" || inner === "todo") renderPatientDataPane();
     }
     rt.syncWorkContextChrome();
     renderPatientList();
-    if (isPaseMode()) renderRoundOverviewPanels();
+    syncInterconsultaModeChrome();
     rt.showToast("Modo cambiado a " + (nowSala ? "Sala" : "Interconsulta"), "success");
   } catch (err) {
     console.error("[R+] applyAppModeSwitchEffects:", err);
@@ -94,39 +102,21 @@ export function toggleHeaderWorkMode() {
 
 export function setWorkModeFromHeader(mode) {
   var st = settingsRef();
-  var current = isGuardiaMode()
-    ? "guardia"
-    : isPaseMode()
-      ? "pase"
-      : isModeSala(st)
-        ? "sala"
-        : "interconsulta";
+  var current = isGuardiaMode() ? "guardia" : isModeSala(st) ? "sala" : "interconsulta";
   if (mode === current) {
-    if (mode === "pase") {
-      exitPaseModeFromHeader();
-      collapseHeaderModeSeg();
-      syncHeaderModeSeg();
-      return;
-    }
     toggleHeaderModeSegExpand();
     syncHeaderModeSeg();
+    syncInterconsultaModeChrome();
     return;
   }
   if (mode === "guardia") {
     toggleGuardiaMode();
     collapseHeaderModeSeg();
     syncHeaderModeSeg();
-    return;
-  }
-  if (mode === "pase") {
-    if (isGuardiaMode()) toggleGuardiaMode();
-    setUiDensity("pase");
-    collapseHeaderModeSeg();
-    syncHeaderModeSeg();
+    syncInterconsultaModeChrome();
     return;
   }
   if (isGuardiaMode()) toggleGuardiaMode();
-  else if (isPaseMode()) setUiDensity("normal");
   var wantSala = mode === "sala";
   if (wantSala !== isModeSala(st)) {
     st.appMode = wantSala ? "sala" : "interconsulta";
@@ -137,4 +127,5 @@ export function setWorkModeFromHeader(mode) {
   }
   collapseHeaderModeSeg();
   syncHeaderModeSeg();
+  syncInterconsultaModeChrome();
 }

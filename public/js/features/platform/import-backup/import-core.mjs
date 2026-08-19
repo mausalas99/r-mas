@@ -12,6 +12,7 @@ import {
 } from '../../patients.mjs';
 import { addAuditEntry } from '../audit.mjs';
 import { getPlatformRuntime } from '../runtime.mjs';
+import { openConfirm } from '../../workbench/confirm.mjs';
 
 const rt = getPlatformRuntime();
 
@@ -151,7 +152,7 @@ function applySinglePatientExportPayload(payload) {
   return registro;
 }
 
-function importPatientExportPayloads(payloads, sourceLabel) {
+async function importPatientExportPayloads(payloads, sourceLabel) {
   if (!payloads || !payloads.length) {
     rt.showToast('No hay pacientes para importar.', 'error');
     return false;
@@ -163,15 +164,17 @@ function importPatientExportPayloads(payloads, sourceLabel) {
         return (p.patient && p.patient.nombre) || 'Sin nombre';
       })
       .join(', ');
-    if (
-      !confirm(
+    var multiResult = await openConfirm({
+      weight: 'destructive',
+      title:
         'Se importarán ' +
-          payloads.length +
-          ' pacientes: ' +
-          names +
-          '. Si ya existen por registro, se preguntará qué hacer con cada uno. ¿Continuar?'
-      )
-    ) {
+        payloads.length +
+        ' pacientes: ' +
+        names +
+        '. Si ya existen por registro, se preguntará qué hacer con cada uno. ¿Continuar?',
+      confirmLabel: 'Continuar',
+    });
+    if (multiResult !== 'confirm') {
       return false;
     }
     if (typeof pushUndoSnapshot === 'function') {
@@ -198,7 +201,12 @@ function importPatientExportPayloads(payloads, sourceLabel) {
   var msg = existsByRegistro
     ? ('Ya existe un paciente con el registro ' + registro + '. Esto sobrescribirá su nota, indicaciones y labs. ¿Continuar?')
     : ('Se importará el paciente "' + (imported.nombre || 'Sin nombre') + '". ¿Continuar?');
-  if (!confirm(msg)) return false;
+  var singleResult = await openConfirm({
+    weight: 'destructive',
+    title: msg,
+    confirmLabel: 'Continuar',
+  });
+  if (singleResult !== 'confirm') return false;
 
   applySinglePatientExportPayload(payload);
   persistClinicalState();

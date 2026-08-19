@@ -16,6 +16,7 @@ import {
   setEquiposCloudConfig,
 } from '../equipos-cloud-config.mjs';
 import { renderEquiposBoardPanel } from './equipos-board.mjs';
+import { openConfirm } from './workbench/confirm.mjs';
 
 /** @type {{ userId?: string, showToast?: (msg: string, kind?: string) => void } | null} */
 let panelOpts = null;
@@ -278,7 +279,15 @@ function wireEquiposListaQrActions(body, panelCtx, url, active, hasToken) {
   body.querySelector('[data-eq-rotate]')?.addEventListener('click', async () => {
     try {
       if (!persistEquiposCloudFieldsFromDom(body, toast)) return;
-      if (hasToken && !confirm('¿Regenerar enlace? El anterior dejará de funcionar.')) return;
+      if (hasToken) {
+        const result = await openConfirm({
+          weight: 'consequence',
+          title: '¿Regenerar enlace?',
+          consequenceText: 'El anterior dejará de funcionar.',
+          confirmLabel: 'Regenerar',
+        });
+        if (result !== 'confirm') return;
+      }
       await rotateAccessToken(panelCtx.opts.userId || panelCtx.user.user_id);
       toast(hasToken ? 'Enlace regenerado.' : 'Enlace generado.', 'success');
       await refresh();

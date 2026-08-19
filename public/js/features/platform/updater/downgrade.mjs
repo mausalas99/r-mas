@@ -7,14 +7,17 @@ import {
   showUpdateModal,
   renderUpdateError,
 } from './modal-ui.mjs';
+import { openConfirm } from '../../workbench/confirm.mjs';
 
-function confirmDowngrade(version, entry) {
+async function confirmDowngrade(version, entry) {
   var summary = entry && entry.summary ? entry.summary : '';
-  var ok = window.confirm(
-    'Restaurar R+ a v' + version + '?\n\n' + summary +
-      '\n\nLa app se reiniciará. Tus pacientes y ajustes locales se conservan.'
-  );
-  if (!ok) return;
+  var result = await openConfirm({
+    weight: 'destructive',
+    title: 'Restaurar R+ a v' + version + '?',
+    message: summary + '\n\nLa app se reiniciará. Tus pacientes y ajustes locales se conservan.',
+    confirmLabel: 'Restaurar',
+  });
+  if (result !== 'confirm') return;
   updaterState.pendingDowngradeVersion = version;
   updaterState.updateModalMode = 'downgrade';
   resetUpdateModalPanels();

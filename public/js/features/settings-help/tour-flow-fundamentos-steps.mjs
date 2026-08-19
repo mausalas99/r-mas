@@ -20,10 +20,10 @@ function finishNext(nextBtn) {
 }
 
 function getMapTabsCopy() {
-  var mod = getWrapPaseShortcutKey();
+  var mod = getPlatformShortcutKey();
   if (getUiDensity() !== 'normal') {
     return (
-      '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente. Pulsa un bloque o usa <strong>' +
+      '<p style="margin:0;line-height:1.5;">En <strong>Guardia</strong> el centro es un <strong>resumen</strong> del paciente. Pulsa un bloque o usa <strong>' +
       mod +
       '+1…4</strong> para abrir el detalle en vista <strong>Normal</strong> (repite el número para ciclar subvistas).</p>'
     );
@@ -57,7 +57,7 @@ function getIcExportsDesktopLine() {
   );
 }
 
-function getWrapPaseShortcutKey() {
+function getPlatformShortcutKey() {
   return navigator.platform && /Mac/i.test(navigator.platform) ? '⌘' : 'Ctrl';
 }
 
@@ -104,7 +104,7 @@ function renderLabView(bodyEl, nextBtn) {
 }
 
 function renderIcExpedienteTabs(bodyEl, nextBtn) {
-  var mod = getWrapPaseShortcutKey();
+  var mod = getPlatformShortcutKey();
   bodyEl.innerHTML =
     '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, <strong>Paciente</strong> abre en <strong>Resumen</strong>. Grupos: <strong>Resumen</strong>, <strong>Clínico</strong> (Nota, Indicaciones) y <strong>Salida</strong> (Receta HU en PDF). Labs, tendencias y cultivos viven en <strong>Laboratorio</strong>.</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Receta HU</strong> exporta el PDF oficial 000-061-R-06-12. Atajos: <strong>' +
@@ -114,7 +114,7 @@ function renderIcExpedienteTabs(bodyEl, nextBtn) {
 }
 
 function renderSalaExpedienteTabs(bodyEl, nextBtn) {
-  var mod = getWrapPaseShortcutKey();
+  var mod = getPlatformShortcutKey();
   bodyEl.innerHTML =
     '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, <strong>Paciente</strong> abre en <strong>Resumen</strong>. Grupos: <strong>Resumen</strong>, <strong>Clínico</strong> y <strong>Salida</strong>. Labs, tendencias y cultivos viven en <strong>Laboratorio</strong>.</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Clínico</strong>: <strong>Estado actual</strong> → Eventualidades. Atajos: <strong>' +
@@ -156,7 +156,7 @@ function renderSalaTendChart(bodyEl, nextBtn) {
 }
 
 function renderSalaMed(bodyEl, nextBtn) {
-  var mod = getWrapPaseShortcutKey();
+  var mod = getPlatformShortcutKey();
   bodyEl.innerHTML =
     '<p style="margin:0;line-height:1.5;">Pulsa <strong>Importar SOME</strong>, pega el bloque TSV del hospital y procesa la receta. Marca filas para <strong>SOAP</strong> o <strong>Tratamiento</strong>; el demo ya trae dos fármacos de ejemplo.</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Atajos: <strong>' +
@@ -232,7 +232,7 @@ function renderSalaRecetaHu(bodyEl, nextBtn) {
 }
 
 function renderSalaAgenda(bodyEl, nextBtn) {
-  var mod = getWrapPaseShortcutKey();
+  var mod = getPlatformShortcutKey();
   bodyEl.innerHTML =
     '<p style="margin:0;line-height:1.5;">La pestaña <strong>Agenda</strong> (arriba) concentra <strong>procedimientos programados</strong> del servicio: cirugías, estudios y pendientes del turno, enlazados al paciente cuando aplica.</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Atajos: <strong>' +
@@ -263,10 +263,7 @@ function renderLivesyncMobile(bodyEl, nextBtn) {
 
 function renderWrap(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">Listo. Repite el tutorial desde <strong>Mi Perfil</strong> o <strong>Ajustes</strong>. Para el equipo en vivo usa <strong>R+ Cloud</strong> en ⇄ y, si hace falta, el enlace móvil.</p>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Modo Pase</strong> (resumen de ronda): prueba el atajo <strong>' +
-    getWrapPaseShortcutKey() +
-    '+P</strong> o <strong>Ajustes → Modo de vista → Pase</strong> cuando quieras ver pendientes, labs y meds en una sola columna.</p>';
+    '<p style="margin:0;line-height:1.5;">Listo. Repite el tutorial desde <strong>Mi Perfil</strong> o <strong>Ajustes</strong>. Para el equipo en vivo usa <strong>R+ Cloud</strong> en ⇄ y, si hace falta, el enlace móvil.</p>';
   finishNext(nextBtn);
 }
 

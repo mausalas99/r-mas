@@ -70,7 +70,7 @@ var ACTION_HANDLERS = {
     ensureLabsThen('openLabManualEntryModal');
   },
   'open-lab': function () {
-    if (!callWin('openPaseSectionInNormal', 'labs')) callWin('switchAppTab', 'lab');
+    callWin('switchAppTab', 'lab');
   },
   'open-eventualidades': function () {
     goExpedienteSection('eventualidades');
@@ -82,14 +82,16 @@ var ACTION_HANDLERS = {
     callWin('quickExportCurrentPatient');
   },
   'new-pendiente': function () {
-    if (!callWin('openPaseSectionInNormal', 'pendientes')) goExpedienteSection('todo');
+    goExpedienteSection('todo');
     focusTodoInput();
   },
   'copy-labs': function () {
     ensureLabsThen('copiarLabsAlPortapapeles');
   },
-  'open-pase': function () {
-    callWin('setUiDensity', 'pase');
+  'open-inicio-turno': function () {
+    void import('./inicio-turno/inicio-turno-panel.mjs').then(function (mod) {
+      mod.openInicioTurnoPanel();
+    });
   },
 };
 
@@ -116,7 +118,7 @@ function ensureDom() {
   var input = document.createElement('input');
   input.className = 'cmdk-input';
   input.type = 'text';
-  input.placeholder = 'Ir a… o acción (ej. “exportar”, “labs”, “pase”)';
+  input.placeholder = 'Ir a… o acción (ej. “exportar”, “labs”)';
   input.setAttribute('aria-label', 'Buscar sección, paciente o acción');
 
   var list = document.createElement('ul');

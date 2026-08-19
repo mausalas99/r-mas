@@ -2,13 +2,20 @@
  * Room DEK lifecycle for Nube E2EE.
  *
  * The wrap key comes from the user's Nube password, derived fresh each session —
- * we never persist the password itself. The unwrapped DEK is cached in memory only
- * for this run of the app; it does not survive a restart yet (Recuérdame restores
- * the session token but not the password, so there is nothing to re-derive the wrap
- * key from). Re-entering the password once per app launch is the known gap until
- * the durable Recuérdame store is extended to also hold the unwrapped DEK.
+ * we never persist the password itself. The unwrapped DEK is cached in memory for
+ * this run of the app. It can also be restored from the durable Recuérdame store
+ * (raw, no password needed) via hydrateRoomDeksFromPersistence — the caller owns
+ * writing that store, this module only exports/imports the raw key material.
  */
-import { generateDek, generateWrapSalt, deriveWrapKey, wrapDek, unwrapDek } from './crypto.mjs';
+import {
+  generateDek,
+  generateWrapSalt,
+  deriveWrapKey,
+  wrapDek,
+  unwrapDek,
+  exportDekRaw,
+  importDekRaw,
+} from './crypto.mjs';
 import { auditDekEvent, DEK_EVENTS } from './cloud-sync-audit.mjs';
 
 /** In-memory only — cleared on logout, never written to disk. */
@@ -83,5 +90,67 @@ export async function loadRoomDek(api, roomId) {
   } catch (err) {
     await auditDekEvent(DEK_EVENTS.WRAP_FAILED, { roomId, phase: 'load', message: String(err?.message || err) });
     return null;
+  }
+}
+
+/**
+ * Raw (unwrapped) DEKs for every cached room, base64, keyed by roomId — for
+ * writing to the durable Recuérdame store only. Never sent to the server.
+ * @returns {Promise<Record<string, string>>}
+ */
+export async function exportCachedDeksForPersistence() {
+  const out = {};
+  for (const [roomId, dek] of dekByRoomId) {
+    out[roomId] = await exportDekRaw(dek);
+  }
+  return out;
+}
+
+/**
+ * Restore cached DEKs from the durable Recuérdame store, no password needed.
+ * Call once at app boot, before rendering a restored session. Skips rooms
+ * already cached and silently drops entries that fail to import (corrupt file).
+ * @param {Record<string, string> | null | undefined} deksByRoomId
+ */
+export async function hydrateRoomDeksFromPersistence(deksByRoomId) {
+  if (!deksByRoomId) return;
+  for (const [roomId, raw] of Object.entries(deksByRoomId)) {
+    if (dekByRoomId.has(roomId) || !raw) continue;
+    try {
+      dekByRoomId.set(roomId, await importDekRaw(raw));
+    } catch {
+      /* corrupt entry — room falls back to loadRoomDek with the password */
+    }
+  }
+}
+
+/**
+ * Re-wrap every currently-cached room DEK under a new password — call right after
+ * a successful password change/recovery, while the new password is cached. Only
+ * covers rooms whose DEK this device already holds unwrapped (an active session,
+ * or one restored via hydrateRoomDeksFromPersistence); a password truly forgotten
+ * with no cached DEK cannot be recovered — that key material never left the wrap.
+ * Best-effort per room: only the room owner may set a DEK server-side, so a
+ * rejection for a room the caller doesn't own is expected and skipped.
+ * @param {ReturnType<import('./api-client.mjs').createCloudSyncApi>} api
+ * @param {string} newPassword
+ */
+export async function rewrapCachedRoomDeks(api, newPassword) {
+  const password = String(newPassword || '');
+  if (!password) return;
+  for (const [roomId, dek] of dekByRoomId) {
+    try {
+      const salt = generateWrapSalt();
+      const wrapKey = await deriveWrapKey(password, salt);
+      const wrapped = await wrapDek(dek, wrapKey);
+      await api.setRoomDek(roomId, { ct: wrapped.ct, iv: wrapped.iv, salt });
+      await auditDekEvent(DEK_EVENTS.WRAP_PUT, { roomId, reason: 'password-recovery' });
+    } catch (err) {
+      await auditDekEvent(DEK_EVENTS.WRAP_FAILED, {
+        roomId,
+        phase: 'rewrap',
+        message: String(err?.message || err),
+      });
+    }
   }
 }

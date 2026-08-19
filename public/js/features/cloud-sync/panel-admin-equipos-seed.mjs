@@ -79,7 +79,7 @@ export async function handleSeedAgosto2026Equipos(root, getApi, toast) {
     return;
   }
 
-  const ok = confirmAction(
+  const ok = await confirmAction(
     'Crear equipos agosto 2026\n\n' +
       'Se crearán ' +
       plan.create.length +

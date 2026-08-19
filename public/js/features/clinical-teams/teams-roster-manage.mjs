@@ -2,6 +2,7 @@
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { canManageTeamRoster } from '../../clinical-privileges.mjs';
 import { getClinicalTeamsPanelHost } from '../clinical-panel-host.mjs';
+import { openConfirm } from '../workbench/confirm.mjs';
 import { dbApi, toast, currentUserId } from './shared.mjs';
 import { publishClinicalTeamsAfterChange } from './teams-guardia-bridge.mjs';
 import { refreshTeamsUiAfterChange } from './teams-roster-shell.mjs';
@@ -65,16 +66,20 @@ export function wireTeamManageModalDelegation() {
   });
 }
 
-/** @param {HTMLButtonElement} btn */
-async function handleRemoveMemberClick(btn) {
+/** @param {HTMLButtonElement} btn @param {typeof openConfirm} [confirmFn] */
+export async function handleRemoveMemberClick(btn, confirmFn = openConfirm) {
   const targetUserId = String(btn.dataset.userId || '').trim();
   const label = String(btn.dataset.userLabel || '').trim() || targetUserId;
   if (!targetUserId) return;
 
-  const ok = window.confirm(
-    `¿Quitar a «${label}» del equipo y de la base clínica en esta Mac?\n\nDesaparecerá de Integrantes al sincronizar clinicalOps con la sala.`
-  );
-  if (!ok) return;
+  const result = await confirmFn({
+    weight: 'destructive',
+    title: `¿Quitar a «${label}» del equipo y de la base clínica en esta Mac?`,
+    message: 'Desaparecerá de Integrantes al sincronizar clinicalOps con la sala.',
+    confirmLabel: 'Quitar',
+    cancelLabel: 'Cancelar',
+  });
+  if (result !== 'confirm') return;
 
   const api = dbApi();
   if (!api || typeof api.dbClinicalUserDelete !== 'function') {
@@ -99,17 +104,21 @@ async function handleRemoveMemberClick(btn) {
   await refreshTeamsUiAfterChange();
 }
 
-/** @param {HTMLButtonElement} btn */
-async function handleLeaveTeamClick(btn) {
+/** @param {HTMLButtonElement} btn @param {typeof openConfirm} [confirmFn] */
+export async function handleLeaveTeamClick(btn, confirmFn = openConfirm) {
   const teamId = String(btn.dataset.teamId || '').trim();
   const teamName = String(btn.dataset.teamName || 'este equipo').trim();
   const userId = currentUserId();
   if (!teamId || !userId) return;
 
-  const ok = window.confirm(
-    `¿Salir del equipo «${teamName}»?\n\nDejarás de ver los pacientes asignados a ese equipo en Mi rotación.`
-  );
-  if (!ok) return;
+  const result = await confirmFn({
+    weight: 'consequence',
+    title: `¿Salir del equipo «${teamName}»?`,
+    consequenceText: 'Dejarás de ver los pacientes asignados a ese equipo en Mi rotación.',
+    confirmLabel: 'Salir',
+    cancelLabel: 'Cancelar',
+  });
+  if (result !== 'confirm') return;
 
   const api = dbApi();
   if (!api || typeof api.dbClinicalTeamsMemberRemove !== 'function') {
@@ -131,16 +140,20 @@ async function handleLeaveTeamClick(btn) {
   await refreshTeamsUiAfterChange();
 }
 
-/** @param {HTMLButtonElement} btn */
-async function handleDeleteTeamClick(btn) {
+/** @param {HTMLButtonElement} btn @param {typeof openConfirm} [confirmFn] */
+export async function handleDeleteTeamClick(btn, confirmFn = openConfirm) {
   const teamId = String(btn.dataset.teamId || '').trim();
   const teamName = String(btn.dataset.teamName || 'este equipo').trim();
   if (!teamId) return;
 
-  const ok = window.confirm(
-    `¿Eliminar el equipo «${teamName}»?\n\nSe quitarán sus integrantes. Esta acción no se puede deshacer.`
-  );
-  if (!ok) return;
+  const result = await confirmFn({
+    weight: 'destructive',
+    title: `¿Eliminar el equipo «${teamName}»?`,
+    message: 'Se quitarán sus integrantes. Esta acción no se puede deshacer.',
+    confirmLabel: 'Eliminar',
+    cancelLabel: 'Cancelar',
+  });
+  if (result !== 'confirm') return;
 
   const userId = currentUserId();
   const api = dbApi();

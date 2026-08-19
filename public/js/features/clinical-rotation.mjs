@@ -28,6 +28,7 @@ function toMillis(value) {
  */
 
 import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
+import { openConfirm } from './workbench/confirm.mjs';
 export function isIncomingPreviewWindow(cycle, nowDate) {
   if (!cycle?.preview_start_at || !cycle?.effective_at) return false;
   const now = toMillis(nowDate);
@@ -179,14 +180,16 @@ function wireRotationConfigFormOnce() {
 }
 
 export async function confirmNuevaRotacion() {
-  const ok = window.confirm(
-    '¿Iniciar nueva rotación?\n\n' +
+  const result = await openConfirm({
+    weight: 'destructive',
+    title: '¿Iniciar nueva rotación?',
+    message:
       '• Se archivan todos los equipos activos\n' +
       '• Se limpian las guardias del día\n' +
       '• Los residentes deben volver a crear equipos\n\n' +
-      'Esta acción no se puede deshacer.'
-  );
-  if (!ok) return { ok: false, cancelled: true };
+      'Esta acción no se puede deshacer.',
+  });
+  if (result !== 'confirm') return { ok: false, cancelled: true };
 
   const api = dbApi();
   const nuevaFn = api && (api.dbRotationNueva || api.rotationNueva);

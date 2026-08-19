@@ -1,6 +1,6 @@
 /** Perfil — Manejo tab and listado AI prompt preferences. */
 import { isManejoSectionHidden, migrateGranularInner } from "../expediente-tabs.mjs";
-import { renderInnerTabs, switchInnerTab, getActiveInnerTab } from "./pase-board.mjs";
+import { renderInnerTabs, switchInnerTab, getActiveInnerTab } from "./expediente-navigation.mjs";
 import { renderListadoForm } from "./expediente.mjs";
 import {
   getProfileRuntime,

@@ -8,6 +8,7 @@ import {
   cycleLettersForAssign,
   formatCycleOptionLabel,
 } from './teams-roster-directory-render.mjs';
+import { openConfirm } from '../workbench/confirm.mjs';
 
 /** @param {object|null} team @param {string} userRank @param {string} rowPreferred */
 function resolveLanAssignDefaultCycle(team, userId, userRank, rowPreferred, letters) {
@@ -84,10 +85,13 @@ export async function handleLanDeleteDirectoryUserClick(btn) {
     toast('Eliminar usuarios requiere R+ de escritorio con base clínica desbloqueada.', 'error');
     return;
   }
-  const confirmed = window.confirm(
-    `¿Eliminar a «${label}» de la base clínica en esta Mac?\n\nDesaparecerá del directorio. Las demás R+ en la misma sala Nube lo quitarán al sincronizar.`
-  );
-  if (!confirmed) return;
+  const result = await openConfirm({
+    weight: 'destructive',
+    title: `¿Eliminar a «${label}» de la base clínica en esta Mac?`,
+    message: 'Desaparecerá del directorio. Las demás R+ en la misma sala Nube lo quitarán al sincronizar.',
+    confirmLabel: 'Eliminar',
+  });
+  if (result !== 'confirm') return;
 
   btn.disabled = true;
   const res = await api.dbClinicalUserDelete({

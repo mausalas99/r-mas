@@ -18,6 +18,8 @@ import {
 } from './panel-conexion-handlers.mjs';
 import { mountCloudMobileInviteInHost } from './panel-mobile-invite.mjs';
 import { refreshCloudSyncDiagnostics } from './panel-cloud-diagnostics.mjs';
+import { hydrateRoomDeksFromPersistence } from './room-dek.mjs';
+import { getStoredRoomDeks } from './settings.mjs';
 
 /** @param {boolean} [hasCloudSession] @returns {string} */
 export function adminShellHtml(hasCloudSession = false) {
@@ -201,6 +203,10 @@ function reconcileCanonicalCloudRoom(section, deps, ui, cachedRoomId) {
 export function bootstrapConexionState(section, deps, ui) {
   const roomId = deps.getCloudSyncRoomId();
   if (roomId && deps.getCloudSyncToken()) {
+    // Restore any room DEKs held from a prior run — skips re-asking for the Nube
+    // password when the room's content is encrypted. Fire-and-forget: decrypt call
+    // sites read the cache lazily, no render needs to wait on this.
+    void hydrateRoomDeksFromPersistence(getStoredRoomDeks());
     reconcileCanonicalCloudRoom(section, deps, ui, roomId);
     const optimistic = localRoomFromSession(deps, ui.normalizedSala);
     if (optimistic) {

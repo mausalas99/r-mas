@@ -5,6 +5,7 @@ import { getPatientsForDisplay } from "../clinical-read-model-demo.mjs";
 import { storage } from "../storage.js";
 import { isPitchPatientIsolationActive } from "../tour-pitch-demo-seed.mjs";
 import { handleCensusWalkKeydown } from "./patients-census-walk.mjs";
+import { openConfirm } from "./workbench/confirm.mjs";
 
 let rt = {
   getActiveId() {
@@ -112,7 +113,13 @@ export async function undoLastOperation() {
     return;
   }
   var snap = stack[0];
-  if (!confirm('¿Revertir "' + (snap.label || "última operación") + '"? La aplicación se recargará.')) return;
+  var result = await openConfirm({
+    weight: 'consequence',
+    title: '¿Revertir "' + (snap.label || "última operación") + '"?',
+    consequenceText: 'La aplicación se recargará.',
+    confirmLabel: 'Revertir',
+  });
+  if (result !== 'confirm') return;
   var rest = stack.slice(1);
   saveUndoStack(rest);
   replaceAppStateFromBackupData(snap.data || {});
@@ -467,13 +474,18 @@ export function saveExtraTemplateFromEditor() {
   if (rt.getActiveId()) rt.renderIndicaForm();
 }
 
-export function deleteExtraTemplate(id) {
+export async function deleteExtraTemplate(id) {
   var arr = ensureExtraTemplatesArray();
   var tmpl = arr.find(function (t) {
     return t.id === id;
   });
   if (!tmpl) return;
-  if (!confirm('¿Eliminar la plantilla "' + (tmpl.label || "") + '"?')) return;
+  var result = await openConfirm({
+    weight: 'destructive',
+    title: '¿Eliminar la plantilla "' + (tmpl.label || "") + '"?',
+    confirmLabel: 'Eliminar',
+  });
+  if (result !== 'confirm') return;
   var settings = rt.getSettings();
   settings.extraTemplates = arr.filter(function (t) {
     return t.id !== id;

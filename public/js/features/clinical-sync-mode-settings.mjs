@@ -8,6 +8,7 @@ import {
   setClinicalSyncModeLocalOnly,
 } from '../clinical-settings.mjs';
 import { shouldShowNubePanel } from './cloud-sync/nube-sync-policy.mjs';
+import { showConfirmDialog } from '../ui-approval-card.mjs';
 
 function toast(msg, type = 'info') {
   if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
@@ -68,11 +69,15 @@ export async function enableClinicalLanFromSettings() {
 
   // Cloud salas: exit local-only → Nube onboarding, never start LAN runtime.
   if (shouldShowNubePanel(settingsSala())) {
-    const okNube = window.confirm(
-      '¿Activar sincronización del turno?\n\n' +
+    const okNube = await showConfirmDialog({
+      id: 'clinical-sync-mode-nube-confirm',
+      title: 'Activar sincronización del turno',
+      question:
         'Tu sala usa Nube (⇄ Conexión), no LAN. ' +
-        'Los expedientes en esta Mac se conservan.'
-    );
+        'Los expedientes en esta Mac se conservan.',
+      confirmLabel: 'Activar',
+      cancelLabel: 'Cancelar',
+    });
     if (!okNube) return;
     setClinicalSyncModeLocalOnly(false);
     await refreshChromeAfterLocalOnlyExit();
@@ -80,11 +85,15 @@ export async function enableClinicalLanFromSettings() {
     return;
   }
 
-  const ok = window.confirm(
-    '¿Activar guardia en red (LAN)?\n\n' +
+  const ok = await showConfirmDialog({
+    id: 'clinical-sync-mode-lan-confirm',
+    title: 'Activar guardia en red (LAN)',
+    question:
       'Configurarás usuario @usuario, sala y podrás usar Mi rotación y ⇄ LiveSync. ' +
-      'Los expedientes en esta Mac se conservan.'
-  );
+      'Los expedientes en esta Mac se conservan.',
+    confirmLabel: 'Activar',
+    cancelLabel: 'Cancelar',
+  });
   if (!ok) return;
 
   setClinicalSyncModeLocalOnly(false);

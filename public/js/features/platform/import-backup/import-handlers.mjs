@@ -9,6 +9,7 @@ import { getPlatformRuntime } from '../runtime.mjs';
 import { buildFullBackupPayload, persistFullBackupPayload } from './backup-payload.mjs';
 import { normalizeFullBackupImportPayload } from './backup-host-merge.mjs';
 import { importEntriesWithConflicts, importPatientExportPayloads } from './import-core.mjs';
+import { openConfirm } from '../../workbench/confirm.mjs';
 
 const rt = getPlatformRuntime();
 
@@ -58,7 +59,7 @@ function onPatientBackupFileChosen(ev) {
   ev.target.value = '';
   if (!f) return;
   var reader = new FileReader();
-  reader.onload = function() {
+  reader.onload = async function() {
     try {
       var result = parsePatientImportJsonText(reader.result);
       var parsed = result.parsed;
@@ -70,7 +71,7 @@ function onPatientBackupFileChosen(ev) {
         );
         return;
       }
-      importPatientExportPayloads(payloads, f.name + ':');
+      await importPatientExportPayloads(payloads, f.name + ':');
     } catch {
       rt.showToast('No se pudo leer la exportación de paciente.', 'error');
       addAuditEntry('backup-patient-import', 'error', 0, 'read-error');
@@ -103,7 +104,7 @@ async function importBundledDemoPatients() {
     rt.showToast('Los JSON demo no tienen formato de importación válido.', 'error');
     return;
   }
-  importPatientExportPayloads(payloads, 'bundled:');
+  await importPatientExportPayloads(payloads, 'bundled:');
 }
 
 function importBundledDemoPerez() {
@@ -142,7 +143,12 @@ async function processFullBackupFile(rawPayload) {
     return;
   }
   var n = (payload.data.patients || []).length;
-  if (!confirm(buildFullBackupConfirmMsg(n))) return;
+  var result = await openConfirm({
+    weight: 'destructive',
+    title: buildFullBackupConfirmMsg(n),
+    confirmLabel: 'Continuar',
+  });
+  if (result !== 'confirm') return;
   if (typeof pushUndoSnapshot === 'function') rt.pushUndoSnapshot('Importar respaldo completo');
   await persistClinicalState({ immediate: true });
   try {
