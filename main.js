@@ -231,7 +231,10 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
-      backgroundThrottling: true, // throttle renderer cuando window no está en foco
+      // R_PLUS_VERIFY_MODE: script de verificación visual (scripts/verify/) posiciona la
+      // ventana fuera de pantalla para no interrumpir al usuario; sin esto Chromium la
+      // trata como ocluida y pausa timers/rAF, dejando el contenido sin montar.
+      backgroundThrottling: process.env.R_PLUS_VERIFY_MODE !== '1',
       spellcheck: false,          // deshabilitar corrector ortográfico (innecesario)
       // El renderer decide no-blur según el modo de render real (ver preload isSoftwareRender)
       additionalArguments: perfConfig.hardwareAcceleration ? [] : ['--rplus-sw-render'],
