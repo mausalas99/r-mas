@@ -29,6 +29,11 @@ Archivo: `public/tokens.css`
 | `--color-warn` | Falta información, en curso, sin asignar (base propia — ya no comparte valor con `--color-livesync-syncing`) |
 | `--color-success` | Listo, dentro de rango, enviado |
 | `--color-border-strong` / `--color-border-dashed` / `--color-empty-fill` / `--color-rail` | Borde de botón secundario, borde de estado vacío, relleno de estado vacío, pie de modal/barra secundaria |
+| `--color-panel-header` (`rgb(242,240,236)`) | Encabezado de tarjeta — token propio, ya no comparte valor con `--color-content` |
+| `--color-table-head` (`rgb(249,248,245)`) | Fila de encabezados de tabla |
+| `--radius-badge` (6px) / `--radius-row-btn` (7px) / `--radius-chip` (999px) | Insignia · botón en fila · chip/barra de progreso — nunca botón de acción |
+| `--shadow-window` / `--shadow-modal` / `--shadow-counter-alert` | Sombra de ventana, modal/popover, subrayado inset del contador en alerta |
+| `--type-wb-*` (`public/tokens.css`, junto al type scale) | Escala densa del workbench: section/counter/column-head label, counter figure, patient name, row (1/2 líneas), mono data, status label, botón, metadato — ver README §Tipografía |
 | `--material-glass-*` | Floating layers only |
 | `--ease-out` / `--ease-in-out` / `--ease-drawer` | Emil curves |
 | `--press-scale` / `--dur-press` / `--dur-ui` | Press + UI timing |
@@ -67,7 +72,7 @@ Legacy aliases (`--action`, `--surface`, `--text`, `--overlay-bg`, `--primary`, 
 - Hex sueltos en CSS nuevo: siempre `var(--…)`.
 - Animar navegación de alta frecuencia.
 - Primary relleno blanco en oscuro.
-- `999px` en action buttons (`--radius-control` 8px) — 999px solo en chip/badge y barra de progreso.
+- `999px` en action buttons (`--radius-control` 8px) — 999px solo en chip/barra de progreso (`--radius-chip`); insignias usan `--radius-badge` (6px), botones en fila usan `--radius-row-btn` (7px).
 - Rojo/ámbar/verde para algo que no sea un valor o estado clínico.
 - Voseo en copy UI (tú o impersonal).
 
@@ -81,7 +86,11 @@ Legacy aliases (`--action`, `--surface`, `--text`, `--overlay-bg`, `--primary`, 
 
 ## Estado del programa
 
+**Oscuro: profundidad de superficies (2026-08-18)** — `paper`/`content`/`surface`/`elevated` eran solo dos tonos (`paper==content`, `surface==elevated`), así que tarjetas y barras no se despegaban del fondo — plano y apagado. Ahora escalan en cuatro pasos (`#12141a → #181b23 → #1f232d → #262b36`) para dar profundidad real. `ink-muted`/`ink-tertiary` pasaron de gris neutro (`#98989d`/`#6c6c70`) a slate con tinte frío (`#97a3b8`/`#6b7385`) para no leer como gris lavado sobre el fondo azul-negro — contraste igual o mejor (verificado ≥ 4.5:1 contra `elevated` y `paper`). `teal-workbench.test.mjs` sigue en verde: acento y semánticos no tocados.
+
 **Teal workbench: fase 1 completa** (tokens, fuentes, animaciones, docs) — ver `docs/superpowers/plans/2026-08-17-teal-workbench-ui-redesign.md`. La pantalla piloto real es `patient-dashboard/` (ya 100% basada en tokens, recoloreó gratis); faltan las piezas de layout nuevas (banda de contadores, filas alert-tint, estados vacíos) y las 11 pantallas restantes — roadmap en el plan.
+
+**Fase 0 (true-up de tokens y motion) completa** — ver `docs/superpowers/plans/2026-08-18-teal-workbench-full-fidelity.md`. Corrigió: `--radius-chip` a 999px (con `--radius-badge`/`--radius-row-btn` nuevos para los consumidores que no eran chips reales); `--color-table-head` y `--color-panel-header` como tokens propios; hairline/border retinados a 6%/11% ink; `--scrim-bg` claro a 42%; sombras `--shadow-window`/`--shadow-modal`/`--shadow-counter-alert`; escala tipográfica densa `--type-wb-*`; animación `om-rise` real (4.2s, entra/sostiene/sale) distinta de `toast-in`/`toast-out`; shimmer de skeleton retinado a 1.1s.
 
 ### Excepciones documentadas (no brand accent)
 
