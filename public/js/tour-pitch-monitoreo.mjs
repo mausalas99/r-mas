@@ -266,3 +266,23 @@ export function countHistorialWithCoreData(historial) {
   }
   return n;
 }
+
+/**
+ * Teal workbench §11c "Llegó un signo fuera de rango" (Phase 0, 2026-08-19 rollout plan):
+ * a single synthetic historial entry that just arrived, with FC out of range, so the
+ * Guardia vitals feed's `stabilizeVitalsFeedOrder` sees it transition into `hasAlerts`
+ * on the render right after it lands and applies the one-shot `value-alert-pulse` class.
+ * Fake data only — no real vitals.
+ * @param {Date} [ref]
+ * @returns {{ id: string, recordedAt: string, vitals: Record<string, number>, alteredAt: Record<string, string> }}
+ */
+export function buildPitchLiveAlertVitalsEntry(ref) {
+  const now = ref instanceof Date ? ref : new Date();
+  const hhmm = now.toISOString().slice(11, 16);
+  return {
+    id: 'pitch-ea-live-alert',
+    recordedAt: now.toISOString(),
+    vitals: { tas: 118, tad: 72, fc: 142, fr: 22, temp: 37.1, sat: 96 },
+    alteredAt: { fc: hhmm },
+  };
+}

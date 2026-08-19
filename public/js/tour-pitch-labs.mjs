@@ -4,6 +4,11 @@
 import { procesarLabs } from './labs.js';
 import { extractParsedValues } from './features/diagrams-parse.mjs';
 import { DEMO_SOME_LAB_REPORT, OLDER_DEMO_SOME_LAB_REPORT } from './tour-demo-some-lab.mjs';
+import {
+  DEMO_SAME_DAY_AM_SOME,
+  DEMO_SAME_DAY_PM_SOME,
+  DEMO_HEAVILY_ALTERED_SOME,
+} from './tour-pitch-labs-edge-cases.mjs';
 import { PITCH_CULTIVO_LAB_SPECS } from './tour-pitch-cultivos-some.mjs';
 import { PITCH_DEMO_PATIENT_ID } from './tour-pitch-sandbox.mjs';
 import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
@@ -69,6 +74,12 @@ export function buildPitchLabHistoryEntries(today) {
     { id: 'pitch-lab-trend-3', dayOffset: -4, report: OLDER_DEMO_SOME_LAB_REPORT },
     { id: 'pitch-lab-trend-4', dayOffset: -2, report: DEMO_SOME_LAB_REPORT },
     { id: 'pitch-lab-trend-5', dayOffset: 0, report: OLDER_DEMO_SOME_LAB_REPORT },
+    // Edge cases for teal-workbench Phase 0 (2026-08-19 rollout plan): two draws the
+    // same day (hour-group split header) and a single heavily altered draw (cap/wrap
+    // of "RESULTADOS · N ALTERADOS DE M" with N > 17).
+    { id: 'pitch-lab-sameday-am', dayOffset: -1, report: DEMO_SAME_DAY_AM_SOME },
+    { id: 'pitch-lab-sameday-pm', dayOffset: -1, report: DEMO_SAME_DAY_PM_SOME },
+    { id: 'pitch-lab-heavily-altered', dayOffset: -3, report: DEMO_HEAVILY_ALTERED_SOME },
   ];
   const out = trendSpecs.map(function (spec) {
     return buildPitchLabHistoryEntry(spec, now);
