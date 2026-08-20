@@ -151,31 +151,39 @@ describe('updateExpPendientesTabBadge', () => {
     registerTodosRuntime({ getActiveId: () => null });
   });
 
-  it('shows the open-todo count and hides the badge at zero', () => {
-    const badge = { textContent: '', hidden: false };
+  it('shows the open-pendientes dot and hides it at zero, without a count', () => {
+    const attrs = {};
+    const badge = {
+      textContent: '',
+      hidden: false,
+      setAttribute: (k, v) => { attrs[k] = v; },
+      getAttribute: (k) => (Object.prototype.hasOwnProperty.call(attrs, k) ? attrs[k] : null),
+      removeAttribute: (k) => { delete attrs[k]; },
+    };
     globalThis.document = { getElementById: (id) => (id === 'exp-pendientes-badge' ? badge : null) };
 
     addTodoWithFields({ text: 'Reponer potasio', priority: 'alta' });
     addTodoWithFields({ text: 'Solicitar TAC', priority: 'media' });
     updateExpPendientesTabBadge();
-    assert.equal(badge.textContent, '2');
+    assert.equal(badge.textContent, '');
     assert.equal(badge.hidden, false);
+    assert.equal(badge.getAttribute('aria-label'), 'Pendientes abiertos');
 
     const first = storage.getTodos('p1')[0];
     toggleTodo(first.id);
     updateExpPendientesTabBadge();
-    assert.equal(badge.textContent, '1');
+    assert.equal(badge.textContent, '');
+    assert.equal(badge.hidden, false);
 
-    toggleTodo(first.id); // un-resolve — back to 2
-    updateExpPendientesTabBadge();
-    assert.equal(badge.textContent, '2');
+    toggleTodo(first.id); // un-resolve — back to 2 open
 
     const second = storage.getTodos('p1')[1];
     toggleTodo(first.id);
     toggleTodo(second.id);
     updateExpPendientesTabBadge();
-    assert.equal(badge.textContent, '0');
+    assert.equal(badge.textContent, '');
     assert.equal(badge.hidden, true);
+    assert.equal(badge.getAttribute('aria-label'), null);
   });
 
   it('does nothing when the badge element is not mounted', () => {

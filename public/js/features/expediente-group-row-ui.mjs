@@ -79,7 +79,6 @@ export function renderExpedienteGroupRow(activeGranular, settings) {
       badge.className = 'wb-pendientes-tab-badge exp-group-pendientes-badge';
       badge.id = 'exp-pendientes-badge';
       badge.hidden = true;
-      badge.textContent = '0';
       pill.appendChild(badge);
     }
 

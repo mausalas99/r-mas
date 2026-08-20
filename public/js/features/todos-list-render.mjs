@@ -393,8 +393,13 @@ export function updateExpPendientesTabBadge() {
       }).length
     : 0;
   badges.forEach(function (badge) {
-    badge.textContent = String(count);
+    badge.textContent = '';
     badge.hidden = count === 0;
+    if (count === 0) {
+      badge.removeAttribute('aria-label');
+    } else {
+      badge.setAttribute('aria-label', 'Pendientes abiertos');
+    }
   });
 }
 
