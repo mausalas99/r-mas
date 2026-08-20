@@ -51,6 +51,24 @@ test('buildObjetivoZoneHtml marks out-of-range items with the alert class', () =
   assert.match(html, /ne-objetivo-item">SatO2 97 %</);
 });
 
+test('buildObjetivoZoneHtml renders an editable narrative textarea under the mono line, pre-filled', () => {
+  const html = buildObjetivoZoneHtml({
+    id: 'NM',
+    label: 'Nutricional / Metabólico',
+    items: [],
+    narrative: 'DIETA ORAL NORMAL || BALANCE +300ML',
+  });
+  assert.match(html, /data-ne-objetivo-narrative="NM"/);
+  assert.match(html, /DIETA ORAL NORMAL \|\| BALANCE \+300ML/);
+});
+
+test('buildObjetivoZoneHtml renders an empty editable narrative field when there is no default (never fabricated)', () => {
+  const html = buildObjetivoZoneHtml({ id: 'N', label: 'Neurológico', items: [], narrative: '' });
+  const match = html.match(/data-ne-objetivo-narrative="N">([^<]*)<\/textarea>/);
+  assert.ok(match);
+  assert.equal(match[1], '');
+});
+
 test('buildObjetivoSectionHtml shows an empty hint when there are no zones', () => {
   const html = buildObjetivoSectionHtml({ zones: [] });
   assert.match(html, /Sin signos vitales ni laboratorio de hoy/);
@@ -76,6 +94,12 @@ test('buildNotaHeaderHtml renders the shared mode-frame with one teal primary an
   assert.match(html, /data-wb-primary[^>]*>Firmar y cerrar</);
 });
 
+test('buildNotaHeaderHtml suppresses the generic ⌘/ shortcut badge (mockup #9a has only 3 plain buttons)', () => {
+  const html = buildNotaHeaderHtml({});
+  assert.doesNotMatch(html, /data-wb-shortcut/);
+  assert.doesNotMatch(html, /⌘\//);
+});
+
 test('buildPlanZoneHtml renders one row per plan item with its mark and a remove control', () => {
   const html = buildPlanZoneHtml({
     id: 'HD',
@@ -85,6 +109,16 @@ test('buildPlanZoneHtml renders one row per plan item with its mark and a remove
   assert.match(html, /ne-plan-mark--suspende/);
   assert.match(html, /data-ne-plan-remove="p1"/);
   assert.match(html, /Suspender furosemida/);
+});
+
+test('buildPlanZoneHtml renders item text as an editable input, not a locked display span', () => {
+  const html = buildPlanZoneHtml({
+    id: 'HD',
+    label: 'Hemodinámico',
+    items: [{ id: 'p1', text: 'Suspender furosemida', mark: 'suspende' }],
+  });
+  assert.match(html, /<input type="text" class="ne-plan-row-text" data-ne-plan-edit="p1" value="Suspender furosemida"/);
+  assert.doesNotMatch(html, /<span class="ne-plan-row-text">/);
 });
 
 test('buildPlanSectionHtml renders every zone passed in', () => {

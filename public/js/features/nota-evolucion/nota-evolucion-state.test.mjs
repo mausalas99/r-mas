@@ -6,10 +6,14 @@ import {
   addPlanItem,
   removePlanItem,
   cyclePlanItemMark,
+  editPlanItemText,
   planZonesForRender,
   objetivoInputFromPatient,
   objetivoPreviewForPatient,
   confirmObjetivoForPatient,
+  defaultObjetivoNarrativesForPatient,
+  setObjetivoNarrative,
+  objetivoZonesForRender,
   signNoteForPatient,
   dayOfStayForPatient,
 } from './nota-evolucion-state.mjs';
@@ -108,10 +112,11 @@ test('confirmObjetivoForPatient derives from real vitals and persists a signed s
   assert.equal(patient.monitoreo.notaEvolucion.objetivo, snapshot);
 });
 
-test('confirmObjetivoForPatient with no real data yields an empty, non-fabricated snapshot', () => {
+test('confirmObjetivoForPatient with no real data yields non-fabricated (empty-item) zones', () => {
   const patient = {};
   const snapshot = confirmObjetivoForPatient(patient);
-  assert.deepEqual(snapshot.zones, []);
+  assert.equal(snapshot.zones.length, 5);
+  assert.ok(snapshot.zones.every((z) => z.items.length === 0));
   assert.equal(snapshot.text, '');
 });
 
@@ -169,6 +174,52 @@ test('signNoteForPatient snapshots the live Objetivo and stamps signedAt', () =>
   const state = signNoteForPatient(patient, { now: () => fixed });
   assert.equal(state.signedAt, fixed.toISOString());
   assert.ok(state.objetivo.zones.some((z) => z.id === 'HD'));
+});
+
+test('editPlanItemText edits an existing item in place and never fabricates a missing one', () => {
+  const state = emptyNotaEvolucion();
+  const item = addPlanItem(state, 'HD', 'Continuar furosemida');
+  assert.equal(editPlanItemText(state, 'HD', item.id, 'Suspender furosemida'), true);
+  assert.equal(state.planZones.HD[0].text, 'Suspender furosemida');
+  assert.equal(editPlanItemText(state, 'HD', 'missing', 'x'), false);
+});
+
+test('defaultObjetivoNarrativesForPatient returns one string per zone (N/V/HD/HI/NM), never fabricating for a patient with no monitoreo', () => {
+  const empty = defaultObjetivoNarrativesForPatient({});
+  assert.deepEqual(Object.keys(empty).sort(), ['HD', 'HI', 'N', 'NM', 'V']);
+  assert.ok(Object.values(empty).every((v) => v === ''));
+});
+
+test('defaultObjetivoNarrativesForPatient reuses the real Estado Actual clause-builders for a patient with monitoreo', () => {
+  const patient = { monitoreo: { estadoClinico: { four: 15, esferas: 3 } } };
+  const narratives = defaultObjetivoNarrativesForPatient(patient);
+  // N's default comes from the same FOUR-score clause Estado Actual builds
+  // (assembleSoapLines), not hand-typed copy.
+  assert.match(narratives.N, /FOUR 15\/16/);
+  assert.doesNotMatch(narratives.N, /^N:/, 'the leading "ZONE: " prefix must be stripped — the zone id already renders as the card label');
+});
+
+test('setObjetivoNarrative persists an edit; objetivoZonesForRender prefers it over the recomputed default', () => {
+  const patient = { monitoreo: {} };
+  const state = ensureNotaEvolucion(patient);
+  const before = objetivoZonesForRender(state, patient);
+  const nBefore = before.find((z) => z.id === 'N');
+  assert.equal(typeof nBefore.narrative, 'string');
+
+  setObjetivoNarrative(state, 'N', 'Texto editado por el residente.');
+  const after = objetivoZonesForRender(state, patient);
+  assert.equal(after.find((z) => z.id === 'N').narrative, 'Texto editado por el residente.');
+});
+
+test('objetivoZonesForRender always includes all 5 zones with a narrative field, even with zero vitals/labs', () => {
+  const patient = { monitoreo: {} };
+  const state = ensureNotaEvolucion(patient);
+  const zones = objetivoZonesForRender(state, patient);
+  assert.deepEqual(
+    zones.map((z) => z.id),
+    ['N', 'V', 'HD', 'HI', 'NM']
+  );
+  assert.ok(zones.every((z) => typeof z.narrative === 'string'));
 });
 
 test('dayOfStayForPatient computes from the real admission date, and is null without one (never fabricated)', () => {

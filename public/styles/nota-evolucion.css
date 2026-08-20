@@ -223,7 +223,7 @@
 .ne-objetivo-zone {
   display: flex;
   gap: 12px;
-  align-items: baseline;
+  align-items: flex-start;
   padding: 6px 0;
   border-bottom: 1px solid var(--divider);
 }
@@ -235,6 +235,7 @@
 .ne-zone-label {
   flex-shrink: 0;
   width: 34px;
+  padding-top: 2px;
   font-family: var(--font-mono, ui-monospace, monospace);
   font-weight: 700;
   font-size: 11px;
@@ -244,6 +245,17 @@
 
 .ne-zone-label-full {
   display: none;
+}
+
+/* Holds the mono vital/lab line + the editable narrative below it, so the
+ * zone label above stays a single fixed-width column regardless of how many
+ * rows the narrative wraps to. */
+.ne-objetivo-zone-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .ne-objetivo-zone-body {
@@ -260,6 +272,41 @@
 .ne-objetivo-item--alert {
   color: var(--color-danger, #d70015);
   font-weight: 600;
+}
+
+/* The narrative starting default (mockup #9a): pulled from the same
+ * Estado Actual clause-builders as the classic SOAP text, editable in place
+ * — not a read-only summary. Plain-field look at rest, a visible border on
+ * hover/focus is the only affordance (matches Plan's editable-row style
+ * below), so it doesn't compete visually with the mono vitals/labs line. */
+.ne-objetivo-narrative {
+  width: 100%;
+  min-height: 34px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 3px 5px;
+  margin: 0 -5px;
+}
+
+.ne-objetivo-narrative:hover {
+  border-color: var(--divider);
+}
+
+.ne-objetivo-narrative:focus {
+  border-color: var(--primary);
+  outline: none;
+  background: var(--section-header-bg, color-mix(in oklab, var(--primary) 4%, transparent));
+}
+
+.ne-objetivo-narrative::placeholder {
+  color: var(--color-ink-muted, var(--text-muted));
+  font-style: italic;
 }
 
 .ne-empty-hint {
@@ -309,10 +356,32 @@
   padding: 4px 0;
 }
 
+/* An <input>, not a <span> — problem 4: an existing Plan item's text must be
+ * editable in place, not locked to add-new/remove-only. Plain-field look at
+ * rest (no border, no background) so it reads as a clinician-authored list
+ * item, not a form control or a derived/locked row; a border only appears
+ * on hover/focus as the sole editability affordance. */
 .ne-plan-row-text {
   flex: 1;
+  min-width: 0;
+  font-family: inherit;
   font-size: 13px;
   color: var(--text);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: 0 -4px;
+}
+
+.ne-plan-row-text:hover {
+  border-color: var(--divider);
+}
+
+.ne-plan-row-text:focus {
+  border-color: var(--primary);
+  outline: none;
+  background: var(--section-header-bg, color-mix(in oklab, var(--primary) 4%, transparent));
 }
 
 .ne-plan-row-mark-btn {

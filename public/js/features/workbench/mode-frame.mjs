@@ -17,6 +17,7 @@ import { escHtml, escAttr } from '../../dom-escape.mjs';
  *   metadata?: string,
  *   secondaryActions?: ModeFrameAction[],
  *   shortcutLabel?: string,
+ *   showShortcut?: boolean,
  *   primaryAction: ModeFrameAction,
  *   onContextClick?: () => void,
  * }} opts
@@ -29,6 +30,7 @@ export function buildModeFrameHtml(opts) {
     metadata = '',
     secondaryActions = [],
     shortcutLabel = '⌘/',
+    showShortcut = true,
     primaryAction,
     onContextClick,
   } = opts || {};
@@ -65,7 +67,9 @@ export function buildModeFrameHtml(opts) {
     '</div>' +
     '<div class="wb-mode-frame-actions">' +
     secondaryHtml +
-    `<button type="button" class="wb-btn wb-btn-secondary wb-btn-shortcut" data-wb-shortcut>${escHtml(shortcutLabel)}</button>` +
+    (showShortcut
+      ? `<button type="button" class="wb-btn wb-btn-secondary wb-btn-shortcut" data-wb-shortcut>${escHtml(shortcutLabel)}</button>`
+      : '') +
     `<button type="button" class="wb-btn wb-btn-primary" data-wb-primary>${escHtml(primaryAction.label)}</button>` +
     '</div>' +
     '</div>'

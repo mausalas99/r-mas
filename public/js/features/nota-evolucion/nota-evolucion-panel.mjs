@@ -14,8 +14,10 @@ import {
   addPlanItem,
   removePlanItem,
   cyclePlanItemMark,
+  editPlanItemText,
   planZonesForRender,
-  objetivoPreviewForPatient,
+  objetivoZonesForRender,
+  setObjetivoNarrative,
   signNoteForPatient,
   dayOfStayForPatient,
 } from './nota-evolucion-state.mjs';
@@ -98,7 +100,9 @@ export function buildRenderModel(patient) {
   // until the note is signed, at which point the signed snapshot — not a
   // moving target — is what the resident committed to (see
   // `signNoteForPatient` / README: "se guarda el snapshot que se firmó").
-  const objetivo = state.signedAt && state.objetivo ? state.objetivo : objetivoPreviewForPatient(patient);
+  // Each zone also carries a narrative (edited > default) — see
+  // `objetivoZonesForRender`.
+  const objetivo = { zones: objetivoZonesForRender(state, patient) };
   return {
     subjetivo: state.subjetivo,
     objetivo,
@@ -139,6 +143,31 @@ function wireEvents(mount, patient) {
     });
   }
   wireHeaderActions(mount, patient);
+  // Objetivo narrative — editable default per zone (problem 3b): edits persist
+  // without a full re-render, so the resident's cursor/focus is not lost
+  // mid-sentence (same pattern as Subjetivo/Análisis above).
+  mount.querySelectorAll('[data-ne-objetivo-narrative]').forEach((el) => {
+    el.addEventListener('input', () => {
+      const zoneId = el.getAttribute('data-ne-objetivo-narrative');
+      if (!zoneId) return;
+      const state = ensureNotaEvolucion(patient);
+      setObjetivoNarrative(state, zoneId, /** @type {HTMLTextAreaElement} */ (el).value);
+      persistNotaChange(state);
+    });
+  });
+  // Plan item text — editable in place (problem 4): no full re-render either,
+  // for the same reason.
+  mount.querySelectorAll('[data-ne-plan-edit]').forEach((el) => {
+    el.addEventListener('input', () => {
+      const zoneEl = el.closest('[data-ne-plan-zone]');
+      const zoneId = zoneEl && zoneEl.getAttribute('data-ne-plan-zone');
+      const itemId = el.getAttribute('data-ne-plan-edit');
+      if (!zoneId || !itemId) return;
+      const state = ensureNotaEvolucion(patient);
+      editPlanItemText(state, zoneId, itemId, /** @type {HTMLInputElement} */ (el).value);
+      persistNotaChange(state);
+    });
+  });
   mount.querySelectorAll('[data-ne-plan-cycle]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const zoneEl = btn.closest('[data-ne-plan-zone]');

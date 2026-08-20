@@ -35,7 +35,7 @@ export function buildPlanMarkHtml(mark) {
 }
 
 /**
- * @param {{ id: string, label: string, items: Array<{ text: string, altered: boolean }> }} zone
+ * @param {{ id: string, label: string, items: Array<{ text: string, altered: boolean }>, narrative?: string }} zone
  * @returns {string}
  */
 export function buildObjetivoZoneHtml(zone) {
@@ -48,7 +48,10 @@ export function buildObjetivoZoneHtml(zone) {
   return (
     `<div class="ne-objetivo-zone" data-ne-objetivo-zone="${escAttr(zone.id)}">` +
     `<div class="ne-zone-label">${escHtml(zone.id)} <span class="ne-zone-label-full">${escHtml(zone.label)}</span></div>` +
+    '<div class="ne-objetivo-zone-content">' +
     `<div class="ne-objetivo-zone-body">${rows}</div>` +
+    `<textarea class="ne-objetivo-narrative" rows="2" placeholder="Narrativa de ${escAttr(zone.label)}…" data-ne-objetivo-narrative="${escAttr(zone.id)}">${escHtml(zone.narrative || '')}</textarea>` +
+    '</div>' +
     `</div>`
   );
 }
@@ -73,7 +76,7 @@ export function buildObjetivoSectionHtml(objetivo) {
     : '<div class="ne-empty-hint">Sin signos vitales ni laboratorio de hoy para derivar.</div>';
   return (
     '<div class="soap-section ne-section-o">' +
-    '<div class="soap-section-header">O · Objetivo <span class="ne-section-hint">(derivado, no se teclea)</span></div>' +
+    '<div class="soap-section-header">O · Objetivo <span class="ne-section-hint">(signos/labs derivados · narrativa editable)</span></div>' +
     '<div class="soap-section-body">' +
     `<div class="ne-objetivo-zones">${body}</div>` +
     '</div>' +
@@ -90,7 +93,7 @@ export function buildPlanZoneHtml(zone) {
     .map(
       (item) =>
         `<div class="ne-plan-row" data-ne-plan-item="${escAttr(item.id)}">` +
-        `<span class="ne-plan-row-text">${escHtml(item.text)}</span>` +
+        `<input type="text" class="ne-plan-row-text" data-ne-plan-edit="${escAttr(item.id)}" value="${escAttr(item.text)}" aria-label="Editar indicación">` +
         `<button type="button" class="ne-plan-row-mark-btn" data-ne-plan-cycle="${escAttr(item.id)}" title="Cambiar marca">` +
         buildPlanMarkHtml(item.mark) +
         '</button>' +
@@ -204,6 +207,10 @@ export function buildNotaHeaderHtml(header) {
       { label: 'Copiar nota de ayer', title: 'Copiar nota de ayer' },
       { label: 'Vista de impresión', title: 'Vista de impresión' },
     ],
+    // Mockup #9a (L795-812) has 3 plain buttons and no ⌘/ badge; this screen
+    // has nothing today for that shortcut to open, so it is suppressed
+    // rather than shipped as dead chrome (see mode-frame.mjs's `showShortcut`).
+    showShortcut: false,
     primaryAction: { label: 'Firmar y cerrar' },
   });
 }

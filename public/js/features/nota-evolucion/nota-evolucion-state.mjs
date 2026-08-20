@@ -7,17 +7,26 @@ import { deriveSnapshot } from '../estado-actual-data.mjs';
 import { getLabHistory } from '../../app-state.mjs';
 import { buildLabsGlanceForDay } from '../patient-dashboard/labs-glance-model.mjs';
 import { admissionDateForPatient } from '../guardia-census-table.mjs';
+import { buildEstadoActualText } from '../estado-actual-text.mjs';
 import { OBJETIVO_ZONES, deriveObjetivoZones, buildObjetivoSnapshot } from '../../../../lib/nota-evolucion/objetivo-derive.mjs';
 
 /** @typedef {{ id: string, text: string, mark: string }} PlanItem */
-/** @typedef {{ subjetivo: string, analisis: string, planZones: Record<string, PlanItem[]>, objetivo: { zones: unknown[], text: string, confirmedAt: string }|null, lastSavedAt: string|null, signedAt: string|null }} NotaEvolucionState */
+/** @typedef {{ subjetivo: string, analisis: string, planZones: Record<string, PlanItem[]>, objetivo: { zones: unknown[], text: string, confirmedAt: string }|null, objetivoNarrativas: Record<string, string>, lastSavedAt: string|null, signedAt: string|null }} NotaEvolucionState */
 
 /** @returns {NotaEvolucionState} */
 export function emptyNotaEvolucion() {
   /** @type {Record<string, PlanItem[]>} */
   const planZones = {};
   for (const z of OBJETIVO_ZONES) planZones[z.id] = [];
-  return { subjetivo: '', analisis: '', planZones, objetivo: null, lastSavedAt: null, signedAt: null };
+  return {
+    subjetivo: '',
+    analisis: '',
+    planZones,
+    objetivo: null,
+    objetivoNarrativas: {},
+    lastSavedAt: null,
+    signedAt: null,
+  };
 }
 
 /**
@@ -39,6 +48,7 @@ export function ensureNotaEvolucion(patient) {
     for (const z of OBJETIVO_ZONES) {
       if (!Array.isArray(ne.planZones[z.id])) ne.planZones[z.id] = [];
     }
+    if (!ne.objetivoNarrativas || typeof ne.objetivoNarrativas !== 'object') ne.objetivoNarrativas = {};
     if (typeof ne.lastSavedAt !== 'string') ne.lastSavedAt = null;
     if (typeof ne.signedAt !== 'string') ne.signedAt = null;
   }
@@ -194,6 +204,85 @@ export function objetivoInputFromPatient(patient) {
 export function objetivoPreviewForPatient(patient) {
   const { zones } = deriveObjetivoZones(objetivoInputFromPatient(patient));
   return { zones };
+}
+
+/**
+ * Per-zone narrative defaults — one full sentence per Objetivo zone
+ * (N/V/HD/HI/NM), reusing the existing Estado Actual clause-builders
+ * (`assembleSoapLines` via `buildEstadoActualText`) instead of hand-typing
+ * new copy. `assembleSoapLines` already returns exactly one line per zone,
+ * in the same N/V/HD/HI/NM order as `OBJETIVO_ZONES`, each prefixed
+ * `"ZONE: "` — that prefix is stripped since the zone id already renders as
+ * the card's own label. A patient with no `estadoClinico` captured at all
+ * still gets real (if minimal) lines for every zone, because
+ * `assembleSoapLines` always emits a line per zone — it fills unset fields
+ * with a literal `___` placeholder rather than omitting the line. This is a
+ * default only: `objetivoZonesForRender` never lets it override an edit the
+ * clinician already made (see `setObjetivoNarrative`).
+ * @param {Record<string, unknown>} patient
+ * @returns {Record<string, string>}
+ */
+export function defaultObjetivoNarrativesForPatient(patient) {
+  /** @type {Record<string, string>} */
+  const empty = {};
+  for (const z of OBJETIVO_ZONES) empty[z.id] = '';
+  const p = /** @type {any} */ (patient);
+  if (!p || typeof p !== 'object' || !p.monitoreo || typeof p.monitoreo !== 'object') return empty;
+  const mon = p.monitoreo;
+  const ec = mon.estadoClinico && typeof mon.estadoClinico === 'object' ? mon.estadoClinico : {};
+  let text = '';
+  try {
+    text = String(buildEstadoActualText(ec, deriveSnapshot(mon), {}, { patientPeso: p.peso }) || '');
+  } catch {
+    return empty;
+  }
+  const lines = text.split('\n\n');
+  /** @type {Record<string, string>} */
+  const result = {};
+  OBJETIVO_ZONES.forEach((z, i) => {
+    const line = String(lines[i] || '');
+    result[z.id] = line.replace(/^[A-Z]+:\s*/, '').trim();
+  });
+  return result;
+}
+
+/**
+ * Sets (persists) a clinician's edit to one zone's Objetivo narrative. Once
+ * set, `objetivoZonesForRender` always prefers this over the recomputed
+ * default — an edit is never silently overwritten by the next render.
+ * @param {NotaEvolucionState} state
+ * @param {string} zoneId
+ * @param {string} text
+ */
+export function setObjetivoNarrative(state, zoneId, text) {
+  if (!state) return;
+  if (!state.objetivoNarrativas || typeof state.objetivoNarrativas !== 'object') state.objetivoNarrativas = {};
+  state.objetivoNarrativas[zoneId] = String(text || '');
+}
+
+/**
+ * Composes the Objetivo zones actually shown on screen: the live derivation
+ * (or, once signed, the frozen signed snapshot — same rule `buildRenderModel`
+ * already applied before this existed) plus each zone's narrative, which is
+ * the clinician's saved edit when present, else the live default. This is
+ * the single place that decides "signed snapshot vs. live preview" AND
+ * "edited vs. default narrative" so `nota-evolucion-panel.mjs` does not have
+ * to duplicate that rule.
+ * @param {NotaEvolucionState} state
+ * @param {Record<string, unknown>} patient
+ * @returns {Array<{ id: string, label: string, items: Array<{ text: string, altered: boolean }>, narrative: string }>}
+ */
+export function objetivoZonesForRender(state, patient) {
+  const zones =
+    state && state.signedAt && state.objetivo && Array.isArray(state.objetivo.zones)
+      ? state.objetivo.zones
+      : objetivoPreviewForPatient(patient).zones;
+  const defaults = defaultObjetivoNarrativesForPatient(patient);
+  const edited = (state && state.objetivoNarrativas) || {};
+  return zones.map((z) => ({
+    ...z,
+    narrative: typeof edited[z.id] === 'string' ? edited[z.id] : defaults[z.id] || '',
+  }));
 }
 
 /**

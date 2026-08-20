@@ -40,6 +40,17 @@ describe('buildModeFrameHtml', () => {
     assert.doesNotMatch(withoutHandler, /data-wb-context/);
   });
 
+  it('omits the ⌘/ shortcut button when showShortcut is false', () => {
+    const html = buildModeFrameHtml({
+      modeName: 'Nota de evolución',
+      primaryAction: { label: 'Firmar y cerrar' },
+      showShortcut: false,
+    });
+    assert.doesNotMatch(html, /data-wb-shortcut/);
+    assert.doesNotMatch(html, /⌘\//);
+    assert.match(html, /wb-btn-primary" data-wb-primary>Firmar y cerrar/);
+  });
+
   it('rejects more than two secondary actions', () => {
     assert.throws(() =>
       buildModeFrameHtml({
