@@ -598,7 +598,6 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 
 /* Lab cards: one radius tier (lg) — overrides soft-ui xl blanket + base .card xl */
 #appcontent-lab .main-work-scroll > .card,
-#appcontent-lab #lab-input-section,
 #appcontent-lab #lab-output-section,
 #appcontent-lab #lab-history-card,
 #appcontent-lab #lab-diagrams-section,
@@ -628,7 +627,6 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 
 #appcontent-lab #lab-output-section > .card-header,
 #appcontent-lab #lab-history-card > .card-header,
-#appcontent-lab #lab-input-section > .card-header,
 #appcontent-lab .main-work-scroll > .card > .card-header,
 #appcontent-lab #lab-diagrams-section > .card-header {
   font: var(--type-section);

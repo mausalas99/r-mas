@@ -90,11 +90,6 @@ html.tab-bar-indicators-ready html.dark .lab-inner-nav .inner-tab.active {
   display: none;
 }
 
-#appcontent-lab #lab-input-section.card {
-  border-radius: 12px !important;
-}
-
-#appcontent-lab #lab-input-section > .card-header,
 #appcontent-lab .lab-active-shell .card > .card-header {
   padding-left: calc(12px * var(--density-space, 1));
   padding-right: calc(12px * var(--density-space, 1));
