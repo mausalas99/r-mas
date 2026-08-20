@@ -165,7 +165,11 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * labs-cultivo-scan.mjs to fix glued cultivo headers ("UROCULTIVOPOR SONDA");
  * labs-cultivo-scan.mjs was already eager via labs-cultivo.mjs, no new file.
  * Plus RELEASE_NOTES_817 curated entries. */
-const EAGER_BOOT_BUDGET_BYTES = 3452332;
+/** +248 B / +0 files: 8.1.7. Cerrar-sesión-no-borra-la-sala + auto-install-on-idle
+ * changes in session-manager.mjs, cloud-sync/settings.mjs,
+ * clinical-access-runtime/lifecycle.mjs, features/platform/updater/*.mjs — all
+ * already-eager modules on the boot path, no new imports. */
+const EAGER_BOOT_BUDGET_BYTES = 3452580;
 const EAGER_BOOT_BUDGET_FILES = 98;
 
 /**
