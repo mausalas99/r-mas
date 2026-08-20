@@ -95,6 +95,7 @@ function handleUpdateAvailable(payload) {
     formatUpdaterReleaseNotesPlain(version, rawNotes) || stripHtmlToPlainText(rawNotes);
   updaterState.pendingUpdaterTargetVersion = version;
   updaterState.pendingUpdaterIsPrerelease = !!(payload && payload.prerelease);
+  updaterState.updateReadyToInstall = false;
   var isDowngrade = updaterState.updateModalMode === 'downgrade';
   var isRepair = updaterState.pendingRepairUpdateCheck;
   if (isRepair) updaterState.pendingRepairUpdateCheck = false;
@@ -161,6 +162,7 @@ function wireUpdateReadyActions(isDowngrade) {
 function handleUpdateReady(payload) {
   var version = (payload && payload.version) ? payload.version : String(payload || '');
   var isDowngrade = updaterState.updateModalMode === 'downgrade';
+  updaterState.updateReadyToInstall = !isDowngrade;
   try { sendUpdateTelemetry('success', version); } catch (_e) { void _e; }
   if (!isDowngrade && isSnoozeActiveForVersion(version)) return;
   resetUpdateModalPanels();
@@ -186,6 +188,7 @@ function handleUpdateNotAvailable(payload) {
   updaterState.pendingRepairUpdateCheck = false;
   updaterState.pendingUpdaterTargetVersion = null;
   updaterState.pendingUpdaterIsPrerelease = false;
+  updaterState.updateReadyToInstall = false;
   updaterState.checkFeedback = false;
   syncUpdateModalChannelPill(false);
   if (toastKind === 'repair-error' || wasRepair || (payload && payload.reinstallFailed)) {

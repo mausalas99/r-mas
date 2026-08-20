@@ -86,8 +86,15 @@ describe('cloud sync remember me settings', () => {
       name: '',
     });
     clearCloudSyncSession();
-    assert.equal(getCloudSyncRoomId(), '');
-    assert.equal(getCloudSyncRoomSnapshot(), null);
+    assert.equal(getCloudSyncToken(), '');
+    assert.equal(getCloudSyncRoomId(), 'room-1');
+    assert.deepEqual(getCloudSyncRoomSnapshot(), {
+      id: 'room-1',
+      code: 'W8N6CW',
+      sala: 'Sala 1',
+      turnKey: '2026-08',
+      name: '',
+    });
   });
 
   it('advanceCloudSyncRevision ignores stale lower server revisions', () => {

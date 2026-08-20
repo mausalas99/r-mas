@@ -5,6 +5,7 @@ import {
   parseSensCrudasAntibiogramaGlued,
   parseSensCrudasAntibiogramaSlice,
   buildCultivoTipoDisplay,
+  insertSpaceAfterCultivoKeyword_,
 } from './labs-cultivo-scan.mjs';
 
 // Real SOME (hospital lab portal) PDF text extraction glues each row with no
@@ -107,5 +108,19 @@ describe('labs-cultivo-scan: buildCultivoTipoDisplay keyword spacing', () => {
 
   it('leaves already-spaced tipo lines untouched', () => {
     assert.equal(buildCultivoTipoDisplay('UROCULTIVO POR SONDA', ''), 'UROCULTIVO POR SONDA');
+  });
+});
+
+describe('labs-cultivo-scan: insertSpaceAfterCultivoKeyword_ (exported, used by estado-actual render/table paths)', () => {
+  it('inserts a space after the glued study keyword', () => {
+    assert.equal(
+      insertSpaceAfterCultivoKeyword_('UROCULTIVOPOR SONDA 16/08: KLEBSIELLA PNEUMONIAE'),
+      'UROCULTIVO POR SONDA 16/08: KLEBSIELLA PNEUMONIAE'
+    );
+  });
+
+  it('leaves an already-spaced line untouched', () => {
+    var s = 'UROCULTIVO POR SONDA 16/08: KLEBSIELLA PNEUMONIAE';
+    assert.equal(insertSpaceAfterCultivoKeyword_(s), s);
   });
 });

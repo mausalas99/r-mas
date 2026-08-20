@@ -211,4 +211,25 @@ describe('ClientSessionInactivityLocker', () => {
     locker.stop();
     overlay.remove();
   });
+
+  it('calls onLock once the idle overlay engages', () => {
+    if (typeof document === 'undefined') return;
+    const overlay = document.createElement('div');
+    overlay.id = 'lock-overlay-test-onlock';
+    document.body.appendChild(overlay);
+
+    let called = 0;
+    const locker = new ClientSessionInactivityLocker(10, 'lock-overlay-test-onlock', () => {
+      called += 1;
+    });
+    locker.timeout = 100;
+    locker.start({});
+
+    mock.timers.tick(100);
+
+    assert.equal(called, 1);
+
+    locker.stop();
+    overlay.remove();
+  });
 });

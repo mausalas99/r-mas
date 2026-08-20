@@ -9,6 +9,7 @@ import {
   isParsedCultivoHeaderLine,
   parseCuentaFromCultivoChunkLines,
 } from '../../labs.js';
+import { insertSpaceAfterCultivoKeyword_ } from '../../labs-cultivo-scan.mjs';
 import { rt, aid } from './expediente-runtime.mjs';
 
 var CULTIVO_TIPO_LABELS = {
@@ -118,7 +119,7 @@ function buildCultureRowObject(set, seq, tipoKey, studyDate, sortMs, header, org
 }
 
 function parseCultureBlockFromLineArray(lines, set, seq) {
-  var rawHeader = String(lines[0] || '');
+  var rawHeader = insertSpaceAfterCultivoKeyword_(String(lines[0] || ''));
   var tipoKey = classifyCultureTipoKeyFromHeaderLine(rawHeader);
   var studyDate = rt.buildLabSetDateLine(set) || '—';
   var sortMs = parseFechaLabToMs(set.fecha, set.hora);
@@ -253,6 +254,7 @@ function buildCultivoOutputHtmlFragments(text, sourceText) {
   var parts = [];
   chunks.forEach(function (chunk) {
     var lines = chunk.split(/\n/);
+    if (lines.length) lines[0] = insertSpaceAfterCultivoKeyword_(lines[0]);
     var germQuery = germQueryFromCultivoChunkHead(lines[0] || '');
     var sens = sourceText ? extractSensCrudasForGermFromSource(sourceText, germQuery) : null;
     lines.forEach(function (lineRaw) {

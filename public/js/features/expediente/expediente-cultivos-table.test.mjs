@@ -142,3 +142,29 @@ test('extractCultivoTableRowsFromHistory prefers the set with sourceText when th
   assert.equal(coli.length, 1);
   assert.equal(coli[0].labSetId, 'has-src', 'con sortMs empatado, debe ganar el set con sourceText aunque sea más viejo por updatedAt');
 });
+
+test('extractCultivoTableRowsFromHistory inserts the missing space when the study keyword is glued ("UROCULTIVOPOR SONDA")', () => {
+  // El portal de laboratorio a veces pega la palabra clave del estudio con la
+  // siguiente ("UROCULTIVOPOR SONDA" en vez de "UROCULTIVO POR SONDA"). El
+  // renglón "sitio" de la tabla de cultivos debe mostrar el espacio corregido.
+  var chunk = 'UROCULTIVOPOR SONDA 16/08: KLEBSIELLA PNEUMONIAE\nCuenta: +100,000 UFC/ML';
+  var sets = [{ id: 's1', fecha: '16/08/2026', hora: '10:00', resLabs: ['x1'] }];
+  registerExpedienteRuntime({
+    getActiveId: function () {
+      return 'p1';
+    },
+    ensureParsedLabHistory: function () {
+      return sets;
+    },
+    splitResLabsByTipo: function () {
+      return { labs: [], cultivo: [chunk] };
+    },
+    buildLabSetDateLine: function (set) {
+      return set.fecha;
+    },
+  });
+
+  var rows = extractCultivoTableRowsFromHistory('p1');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].sitio, 'UROCULTIVO POR SONDA');
+});

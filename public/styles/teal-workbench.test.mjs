@@ -113,6 +113,17 @@ test('vital wells are ink-neutral, not warm chip fill', () => {
   assert.equal(/\.ea-vital-input:focus\s*\{[^}]*--lab-chip-bg/s.test(ea), false);
 });
 
+test('lab-output-box row grid label column grows for long headers (UROCULTIVO does not overflow into the value column)', () => {
+  // grid-template-columns fija a 64px hacía que encabezados sin tab más largos que
+  // "BH"/"Cuenta:" (p. ej. "UROCULTIVO") desbordaran la columna y se pegaran
+  // visualmente al resto de la línea, aunque el HTML sí trajera el espacio.
+  const lab = read('public/styles/lab.css');
+  assert.match(
+    lab,
+    /#lab-output-box \.out-line,\s*\n#lab-output-box \.out-indent\s*\{[^}]*grid-template-columns:\s*minmax\(64px,\s*max-content\)\s*1fr/s
+  );
+});
+
 test('guided-empty primary has no indigo glow', () => {
   const css = read('public/styles/layout.css');
   assert.equal(/rgba\(\s*79\s*,\s*86\s*,\s*255/.test(css), false);

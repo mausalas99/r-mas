@@ -2,6 +2,7 @@
  * Lab result HTML display helpers (extracted from labs.js for boot-graph slimming).
  */
 import { bhFieldKeyFromOutputLabel } from './labs-bh.mjs';
+import { insertSpaceAfterCultivoKeyword_ } from './labs-cultivo-scan.mjs';
 
 function normalizeGasometryInterpretationLine_(line) {
   var s = String(line == null ? '' : line);
@@ -109,6 +110,7 @@ export function renderEntry(text, trendLookup) {
   var sectionKey = trendLookup ? entryTrendSectionKey_(text) : '';
   var isBhFamily = sectionKey === 'BH';
   return text.split('\n').map(function (line, li) {
+    if (li === 0) line = insertSpaceAfterCultivoKeyword_(line);
     var tabIdx = line.indexOf('\t');
     if (tabIdx >= 0) {
       var label = line.substring(0, tabIdx);

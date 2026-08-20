@@ -6,6 +6,7 @@ import {
   BackgroundVitalsMonitorLoop,
   ClientSessionInactivityLocker,
 } from '../features/session-manager.mjs';
+import { installUpdateIfIdleReady } from '../features/platform/updater/check-actions.mjs';
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
 import { markClinicalAccessBootReady } from './boot-ready.mjs';
 import { bootstrapClinicalAccess } from './bootstrap.mjs';
@@ -67,7 +68,11 @@ export async function initClinicalAccessRuntime(settings, clientId) {
   nextVitalsLoop.start();
 
   if (sessionLocker) sessionLocker.stop();
-  const nextSessionLocker = new ClientSessionInactivityLocker(10, 'rpc-clinical-session-lock');
+  const nextSessionLocker = new ClientSessionInactivityLocker(
+    10,
+    'rpc-clinical-session-lock',
+    installUpdateIfIdleReady
+  );
   setSessionLocker(nextSessionLocker);
   nextSessionLocker.start(clinicalSessionContext);
 
@@ -93,7 +98,11 @@ export async function resumeClinicalSession(settings, clientId) {
   unlockClinicalSessionOverlay();
   if (sessionLocker) {
     sessionLocker.stop();
-    const nextSessionLocker = new ClientSessionInactivityLocker(10, 'rpc-clinical-session-lock');
+    const nextSessionLocker = new ClientSessionInactivityLocker(
+    10,
+    'rpc-clinical-session-lock',
+    installUpdateIfIdleReady
+  );
     setSessionLocker(nextSessionLocker);
     nextSessionLocker.start(clinicalSessionContext);
   }

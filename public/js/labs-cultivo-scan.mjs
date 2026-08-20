@@ -160,8 +160,8 @@ export function detectMuestraDesdeProducto(lineasTexto) {
 }
 
 /** PDF text extraction sometimes drops the space after the study keyword, e.g. "UROCULTIVOPOR SONDA". */
-function insertSpaceAfterCultivoKeyword_(s) {
-  return s.replace(/^(HEMOCULTIVO|UROCULTIVO|FUNGICULTIVO|CATETER)(?=[A-ZÁÉÍÓÚÑ])/, '$1 ');
+export function insertSpaceAfterCultivoKeyword_(s) {
+  return String(s || '').replace(/^(HEMOCULTIVO|UROCULTIVO|FUNGICULTIVO|CATETER)(?=[A-ZÁÉÍÓÚÑ])/i, '$1 ');
 }
 
 export function buildCultivoTipoDisplay(tipoLine, muestra) {

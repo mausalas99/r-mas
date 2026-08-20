@@ -160,7 +160,12 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * dedupe. Eager — cultivos table is always-mounted in the expediente. */
 /** +1023 B / +0 files: 8.1.6 release-notes-highlights.mjs curated entries
  * (RELEASE_NOTES_816). Same eager module, no new import. */
-const EAGER_BOOT_BUDGET_BYTES = 3450652;
+/** +1680 B / +0 files: 8.1.7. labs-display.mjs (renderEntry, always-eager lab
+ * render path) now imports insertSpaceAfterCultivoKeyword_ from
+ * labs-cultivo-scan.mjs to fix glued cultivo headers ("UROCULTIVOPOR SONDA");
+ * labs-cultivo-scan.mjs was already eager via labs-cultivo.mjs, no new file.
+ * Plus RELEASE_NOTES_817 curated entries. */
+const EAGER_BOOT_BUDGET_BYTES = 3452332;
 const EAGER_BOOT_BUDGET_FILES = 98;
 
 /**

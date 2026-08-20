@@ -325,11 +325,12 @@ export function getCloudSyncSettings() {
   };
 }
 
+/**
+ * Logout clears the credential but keeps the room code/name so the next
+ * login doesn't force the user to retype it.
+ */
 export function clearCloudSyncSession() {
   clearCloudSyncToken();
-  setCloudSyncRoomId('');
-  setCloudSyncRevision(0);
-  writeDual(ROOM_META_KEY, '');
   cachedDeks = {};
   const api = rememberBridgeApi();
   if (api && typeof api.cloudSyncRememberClear === 'function') {

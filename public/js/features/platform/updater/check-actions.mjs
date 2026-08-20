@@ -72,4 +72,12 @@ function installUpdate() {
   if (window.electronAPI) window.electronAPI.installUpdate();
 }
 
-export { checkForRepairUpdate, checkForAppUpdates, installUpdate };
+/**
+ * Called when the idle-session lock engages. Installs a downloaded update now,
+ * while no one is actively using R+, instead of waiting for the next app quit.
+ */
+function installUpdateIfIdleReady() {
+  if (updaterState.updateReadyToInstall) installUpdate();
+}
+
+export { checkForRepairUpdate, checkForAppUpdates, installUpdate, installUpdateIfIdleReady };

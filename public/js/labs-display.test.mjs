@@ -41,6 +41,15 @@ test('renderEntry inserts a space between label and values spans (inline-consume
   assert.match(asText, /^UROCULTIVO POR SONDA/);
 });
 
+test('renderEntry inserts a space when the study keyword is glued to the next word (no-tab header line)', () => {
+  // El portal de laboratorio a veces pega la palabra clave del estudio con la
+  // siguiente ("UROCULTIVOPOR SONDA" en vez de "UROCULTIVO POR SONDA"), y esta
+  // línea de cabecera no lleva tab. Sin el arreglo, el token completo
+  // "UROCULTIVOPOR" quedaba dentro del span de la etiqueta.
+  const out = renderEntry('UROCULTIVOPOR SONDA 16/08: ESCHERICHIA COLI');
+  assert.equal(out[0], '<span class="section-lbl">UROCULTIVO</span> POR SONDA 16/08: ESCHERICHIA COLI');
+});
+
 test('renderEntry(text) without a trendLookup arg produces byte-identical HTML (Fase 5 regression guard)', () => {
   const cases = [
     'BH\tHb 14',

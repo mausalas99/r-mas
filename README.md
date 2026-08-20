@@ -39,13 +39,21 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.1.6](https://github.com/mausalas99/r-mas/releases/tag/v8.1.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.1.7](https://github.com/mausalas99/r-mas/releases/tag/v8.1.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
 
 
 
+
+## R+ 8.1.7 (estable — release 8.1.7)
+
+- **Cerrar sesión ya no borra la sala:** el código de sala se conserva para el siguiente inicio de sesión.
+- **Instalación automática al quedar inactivo:** una actualización ya descargada se instala sola cuando aparece el bloqueo por inactividad.
+- **Cultivos:** el encabezado (UROCULTIVO/HEMOCULTIVO/FUNGICULTIVO) ya no se pega visualmente al resto de la línea.
+
+Notas: `docs/RELEASE_NOTES_8.1.7.txt`.
 ## R+ 8.1.6 (estable — release 8.1.6)
 
 - **Estado actual:** ya no cruza signos vitales entre pacientes.

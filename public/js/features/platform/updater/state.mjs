@@ -16,6 +16,8 @@ var updaterState = {
   updateModalMode: 'upgrade',
   minVersionGateKeydownBound: false,
   nativeRecoveryModalShown: false,
+  /** True once a downloaded update is ready — lets the idle-lock force-install. */
+  updateReadyToInstall: false,
 };
 
 export {

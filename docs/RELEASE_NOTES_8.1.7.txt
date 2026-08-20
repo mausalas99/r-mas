@@ -1,0 +1,24 @@
+R+ 8.1.7 (estable — release 8.1.7)
+======================================
+
+Fecha: 2026-08-20
+
+## Resumen
+
+Corrige que "Cerrar sesión" en Nube borrara el código de sala. La actualización ahora se instala sola en cuanto R+ queda inactivo, sin esperar a cerrar la app.
+
+## Nuevo / mejorado
+
+- **Cerrar sesión ya no borra la sala:** al volver a iniciar sesión, R+ recuerda el código de sala — ya no hay que volver a escribirlo.
+- **Instalación automática al quedar inactivo:** si la actualización ya se descargó, se instala sola cuando aparece la pantalla de bloqueo por inactividad (10 min sin uso) — no espera a que cierres R+ manualmente.
+- **Cultivos — encabezado ya no se pega al texto:** en UROCULTIVO/HEMOCULTIVO/FUNGICULTIVO el encabezado a veces se veía pegado al resto de la línea ("UROCULTIVOPOR SONDA"). Corregido.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.1.7-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.1.7-Mac-Intel.dmg`
+- Windows: `R+-8.1.7-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

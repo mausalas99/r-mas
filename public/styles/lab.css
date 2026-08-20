@@ -3307,7 +3307,10 @@ html.dark .lab-out-ascitis-alert {
 #lab-output-box .out-line,
 #lab-output-box .out-indent {
   display: grid;
-  grid-template-columns: 64px 1fr;
+  /* minmax en vez de 64px fijo: etiquetas cortas (BH, Cuenta:) siguen alineadas a 64px,
+     pero encabezados largos sin tab (UROCULTIVO, HEMOCULTIVO, FUNGICULTIVO) ya no
+     desbordan la columna y se pegan visualmente al resto de la línea. */
+  grid-template-columns: minmax(64px, max-content) 1fr;
   gap: 10px 14px;
   align-items: baseline;
   padding: 8px 0;

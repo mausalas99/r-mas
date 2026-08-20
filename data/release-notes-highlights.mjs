@@ -2510,10 +2510,29 @@ var RELEASE_NOTES_816 = [
   },
 ];
 
+var RELEASE_NOTES_817 = [
+  {
+    title: 'Cerrar sesión — ya no borra la sala',
+    body:
+      'Al cerrar sesión en Nube se perdía el código de sala y había que volver a escribirlo. Ahora R+ lo recuerda para el siguiente inicio de sesión.',
+  },
+  {
+    title: 'Cultivos — encabezado ya no se pega al texto',
+    body:
+      'En "UROCULTIVO", "HEMOCULTIVO" y similares, el encabezado a veces se veía pegado al resto de la línea ("UROCULTIVOPOR SONDA"). Corregido, texto y espaciado.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.1.7 en todas</strong> las Macs y PCs del turno. Si descargas la actualización y dejas R+ inactivo (pantalla de bloqueo por inactividad), se instala sola sin interrumpir tu trabajo.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_816;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_817;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.1.7': RELEASE_NOTES_817,
   '8.1.6': RELEASE_NOTES_816,
   '8.1.5': RELEASE_NOTES_815,
   '8.1.4': RELEASE_NOTES_814,

@@ -147,10 +147,13 @@ export class ClientSessionInactivityLocker {
   /**
    * @param {number} [mins]
    * @param {string} [overlayId]
+   * @param {() => void} [onLock] called once the idle overlay engages — e.g. to install a
+   *   downloaded update now that no one is actively working.
    */
-  constructor(mins = 10, overlayId) {
+  constructor(mins = 10, overlayId, onLock) {
     this.timeout = mins * 60000;
     this.el = typeof document !== 'undefined' && overlayId ? document.getElementById(overlayId) : null;
+    this.onLock = onLock;
     /** @type {ReturnType<typeof setTimeout>|null} */
     this.handle = null;
     /** @type {Record<string, unknown>|null} */
@@ -187,6 +190,7 @@ export class ClientSessionInactivityLocker {
     this.handle = setTimeout(() => {
       if (this.ctx) this.ctx.decryptedPrivateKeyPem = null;
       if (this.el) this.el.classList.add('active-lock-view-overlay');
+      if (typeof this.onLock === 'function') this.onLock();
     }, this.timeout);
   }
 }
