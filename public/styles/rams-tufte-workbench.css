@@ -2,7 +2,7 @@
  * Loads after workbench-surfaces.css. Global Rams tokens: public/tokens.css */
 
 /* ── Rams · workbench cards: border not shadow ─────────────────── */
-#appcontent-lab .main-work-scroll > .card,
+#appcontent-lab .main-work-scroll > .card:not(#lab-input-section),
 #appcontent-lab #lab-output-section,
 #appcontent-lab #lab-history-card,
 #appcontent-lab #lab-diagrams-section,

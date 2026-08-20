@@ -1140,6 +1140,7 @@ html.dark .card { box-shadow: var(--shadow); }
 /* Reporte de Laboratorio header row: no card box, just the label + buttons floating. */
 #lab-input-section {
   background: transparent;
+  border: none;
   box-shadow: none;
   border-radius: 0;
 }
