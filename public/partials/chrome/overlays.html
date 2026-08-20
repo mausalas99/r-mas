@@ -84,6 +84,30 @@
   </div>
 </div>
 
+<div id="lab-paste-modal-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal lab-paste-modal" role="dialog" aria-modal="true" aria-labelledby="lab-paste-modal-title" onclick="event.stopPropagation()">
+    <div class="lab-paste-modal-head">
+      <h3 id="lab-paste-modal-title">Pegar SOME / Procesar</h3>
+      <button type="button" class="lab-paste-modal-close" onclick="closeLabPasteModal()" aria-label="Cerrar">×</button>
+    </div>
+    <div class="card-body lab-paste-modal-body">
+      <div class="field-group">
+        <label for="lab-input">Pega reportes SOME (uno o varios días; separador entre pacientes distintos)</label>
+        <textarea id="lab-input" rows="10" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" placeholder="Copia reportes SOME completos desde «Expediente:»…&#10;Varios días del mismo paciente van seguidos.&#10;Entre pacientes distintos usa el separador."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button id="btn-procesar" class="btn-generate ui-pressable" onclick="procesarReporte()" style="min-width:140px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Procesar
+        </button>
+        <button type="button" id="btn-lab-manual-entry" class="btn-med-secondary" onclick="openLabManualEntryModal()" title="Captura manual de un estudio (lab externo)">Labs externos</button>
+        <button type="button" id="btn-lab-patient-separator" class="btn-med-secondary" onclick="insertLabPatientSeparator()">Separador de paciente</button>
+        <button type="button" class="btn-med-secondary" onclick="limpiarReporte()">Limpiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="lab-some-tables-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal lab-some-tables-modal" role="dialog" aria-modal="true" aria-labelledby="lab-some-tables-modal-title" onclick="event.stopPropagation()">
     <header class="lab-some-tables-modal-head">

@@ -14,6 +14,7 @@ import { closeSOAPModal } from './features/soap-estado.mjs';
 import { closeProcedureAgendaModal } from './features/agenda.mjs';
 import { chartsShellCloseProxies } from './lazy-feature-routes.mjs';
 import { closeLabSomeTablesModal } from './features/lab-some-tables-modal.mjs';
+import { closeLabPasteModal } from './features/lab-paste-modal.mjs';
 import { closeLabBulkPreviewModal } from './features/lab-bulk-preview-modal.mjs';
 import { closeLabRepoImportModal } from './features/lab-repo-import.mjs';
 import {
@@ -190,6 +191,9 @@ function wireModalDismissLayers(registry) {
   });
   regOpenClass(registry, 'lab-some-tables-backdrop', closeLabSomeTablesModal, {
     panelSelector: '.lab-some-tables-modal',
+  });
+  regOpenClass(registry, 'lab-paste-modal-backdrop', closeLabPasteModal, {
+    panelSelector: '.lab-paste-modal',
   });
   regOpenClass(registry, 'onboarding-intro-backdrop', hideTourIntroModal);
 }

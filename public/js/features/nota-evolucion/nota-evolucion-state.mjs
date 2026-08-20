@@ -69,6 +69,24 @@ export function addPlanItem(state, zoneId, text) {
 }
 
 /**
+ * In-place edit of a plan item's text (e.g. live textarea input) — does not
+ * touch `mark`.
+ * @param {NotaEvolucionState} state
+ * @param {string} zoneId
+ * @param {string} itemId
+ * @param {string} text
+ * @returns {boolean}
+ */
+export function editPlanItemText(state, zoneId, itemId, text) {
+  const list = state && state.planZones && state.planZones[zoneId];
+  if (!Array.isArray(list)) return false;
+  const item = list.find((it) => it.id === itemId);
+  if (!item) return false;
+  item.text = String(text == null ? '' : text);
+  return true;
+}
+
+/**
  * @param {NotaEvolucionState} state
  * @param {string} zoneId
  * @param {string} itemId

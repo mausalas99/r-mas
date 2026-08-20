@@ -63,6 +63,7 @@ import {
   confirmLabManualEntry,
   registerLabManualEntryRuntime,
 } from './lab-manual-entry.mjs';
+import { openLabPasteModal, closeLabPasteModal } from './lab-paste-modal.mjs';
 var activeLab = null;
 
 labPanelBridge.getActiveLab = function () {
@@ -219,7 +220,11 @@ export {
   insertLabPatientSeparator,
 };
 
+export { openLabPasteModal, closeLabPasteModal };
+
 export const windowHandlers = {
+  openLabPasteModal,
+  closeLabPasteModal,
   procesarReporte,
   clearLabInputAfterSuccessfulParse,
   limpiarReporte,

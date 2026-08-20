@@ -233,6 +233,30 @@
   </div>
 </div>
 
+<div id="lab-paste-modal-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal lab-paste-modal" role="dialog" aria-modal="true" aria-labelledby="lab-paste-modal-title" onclick="event.stopPropagation()">
+    <div class="lab-paste-modal-head">
+      <h3 id="lab-paste-modal-title">Pegar SOME / Procesar</h3>
+      <button type="button" class="lab-paste-modal-close" onclick="closeLabPasteModal()" aria-label="Cerrar">×</button>
+    </div>
+    <div class="card-body lab-paste-modal-body">
+      <div class="field-group">
+        <label for="lab-input">Pega reportes SOME (uno o varios días; separador entre pacientes distintos)</label>
+        <textarea id="lab-input" rows="10" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" placeholder="Copia reportes SOME completos desde «Expediente:»…&#10;Varios días del mismo paciente van seguidos.&#10;Entre pacientes distintos usa el separador."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button id="btn-procesar" class="btn-generate ui-pressable" onclick="procesarReporte()" style="min-width:140px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Procesar
+        </button>
+        <button type="button" id="btn-lab-manual-entry" class="btn-med-secondary" onclick="openLabManualEntryModal()" title="Captura manual de un estudio (lab externo)">Labs externos</button>
+        <button type="button" id="btn-lab-patient-separator" class="btn-med-secondary" onclick="insertLabPatientSeparator()">Separador de paciente</button>
+        <button type="button" class="btn-med-secondary" onclick="limpiarReporte()">Limpiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="lab-some-tables-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal lab-some-tables-modal" role="dialog" aria-modal="true" aria-labelledby="lab-some-tables-modal-title" onclick="event.stopPropagation()">
     <header class="lab-some-tables-modal-head">
@@ -883,30 +907,13 @@
               Reporte de Laboratorio
             </span>
             <div class="card-header-actions lab-report-header-actions">
+              <button type="button" id="btn-lab-paste" class="btn-med-secondary" onclick="openLabPasteModal()" title="Pegar reporte SOME y procesar">Pegar SOME</button>
               <button type="button" id="btn-lab-repo-batch" class="btn-med-secondary" onclick="openLabRepoBatchModal()" title="Actualiza labs desde el repositorio (paciente activo o mi equipo)">Actualizar labs</button>
               <button type="button" class="card-header-soft-btn btn-lab-display-prefs" onclick="openLabDisplayPrefsModal()" title="Vista de laboratorio (BH extendida, gasometría extendida, salida rápida)" aria-label="Opciones de vista de laboratorio">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               </button>
             </div>
           </div>
-          <details class="lab-paste-details">
-            <summary>Pegar SOME / Procesar</summary>
-          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
-            <div class="field-group">
-              <label for="lab-input">Pega reportes SOME (uno o varios días; separador entre pacientes distintos)</label>
-              <textarea id="lab-input" rows="10" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" placeholder="Copia reportes SOME completos desde «Expediente:»…&#10;Varios días del mismo paciente van seguidos.&#10;Entre pacientes distintos usa el separador."></textarea>
-            </div>
-            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-              <button id="btn-procesar" class="btn-generate ui-pressable" onclick="procesarReporte()" style="min-width:140px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                Procesar
-              </button>
-              <button type="button" id="btn-lab-manual-entry" class="btn-med-secondary" onclick="openLabManualEntryModal()" title="Captura manual de un estudio (lab externo)">Labs externos</button>
-              <button type="button" id="btn-lab-patient-separator" class="btn-med-secondary" onclick="insertLabPatientSeparator()">Separador de paciente</button>
-              <button type="button" class="btn-med-secondary" onclick="limpiarReporte()">Limpiar</button>
-            </div>
-          </div>
-          </details>
         </div>
 
         <div id="lab-banner" class="card lab-banner--detected" style="display:none;flex-shrink:0;">
@@ -1042,30 +1049,20 @@
           </div>
         </div>
 
-        <div id="med-output-section" class="card" style="flex-shrink:0;">
-          <div class="card-header card-header-row">
-            <span style="display:flex;align-items:center;gap:8px;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              Texto para nota de egreso
-            </span>
-            <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <span class="med-output-tabs" id="med-output-tabs-track" role="tablist" aria-label="Vista de texto de medicamentos" data-active="full">
-                <span class="med-output-tab-pill" aria-hidden="true"></span>
-                <button id="med-tab-full" type="button" role="tab" aria-selected="true" class="med-output-tab active" onclick="setMedOutputTab('full')">Completa</button>
-                <button id="med-tab-simple" type="button" role="tab" aria-selected="false" class="med-output-tab" onclick="setMedOutputTab('simple')">Nombre + Día</button>
-              </span>
-              <button type="button" class="card-header-soft-btn card-header-soft-btn-secondary" onclick="copiarMedicamentosAlPortapapeles()">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                Copiar
-              </button>
-              <button type="button" class="card-header-soft-btn card-header-soft-btn-secondary" onclick="openMedEgresoModal()" title="Ver texto de egreso en una ventana">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                Abrir texto de egreso
-              </button>
-            </span>
+        <div id="med-output-section" class="card med-egreso-teaser" style="flex-shrink:0;">
+          <div class="med-egreso-teaser-info">
+            <span class="med-egreso-teaser-label">Texto de egreso</span>
+            <p id="med-egreso-preview" class="med-egreso-teaser-preview"></p>
           </div>
-          <div class="card-body">
-            <pre id="med-output" style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.6;margin:0;color:var(--text);"></pre>
+          <div class="med-egreso-teaser-actions">
+            <button type="button" class="card-header-soft-btn" onclick="copiarMedicamentosAlPortapapeles()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copiar
+            </button>
+            <button type="button" class="card-header-soft-btn" onclick="openMedEgresoModal()" title="Ver texto de egreso en una ventana">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Abrir texto de egreso
+            </button>
           </div>
         </div>
         </div>

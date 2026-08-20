@@ -1,6 +1,7 @@
 import { esc } from '../dom-escape.mjs';
 // Lab panel — workbench: limpiar, enviar, bulk paste storage
 import { closeLabSomeTablesModal } from './lab-some-tables-modal.mjs';
+import { closeLabPasteModal } from './lab-paste-modal.mjs';
 import {
   LAB_BULK_PATIENT_SEPARATOR,
 } from '../lab-bulk-paste.mjs';
@@ -398,6 +399,7 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
   );
 
   clearLabInputAfterSuccessfulParse();
+  closeLabPasteModal();
   notifyTourAfterBulkLabStore(blocks, true);
 
   if (

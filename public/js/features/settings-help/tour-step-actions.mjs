@@ -25,6 +25,7 @@ import { openConnectionDropdown, closeConnectionDropdown } from '../cloud-sync/p
 import { renderIndicaForm } from '../notes-indicaciones.mjs';
 import { showNotaEvolucionClassicView } from '../nota-evolucion/nota-evolucion-primary-tab.mjs';
 import { closeLabSomeTablesModal } from '../lab-some-tables-modal.mjs';
+import { openLabPasteModal, closeLabPasteModal } from '../lab-paste-modal.mjs';
 import { closeTendGroupModal } from '../tendencias.mjs';
 import { closeSOAPModal } from '../soap-estado.mjs';
 import { switchLabInner } from '../patient-dashboard/lab-inner.mjs';
@@ -503,6 +504,8 @@ function applyTourOverlayChromeForStep(id, t) {
   else rt.closeProfileModal();
   if (t.openAddModalFullManual) openAddModalFullManual();
   else if (id !== 'lab_parse') closeModal();
+  if (t.openLabPasteModal) openLabPasteModal();
+  else closeLabPasteModal();
   if (t.openConnection) ensureConnectionExpandedForTour(id);
   else if (t.openSettings) ensureSettingsExpandedForTour();
   else {
