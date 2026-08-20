@@ -1,4 +1,5 @@
 import { closeEstadoActualPasteModal } from './estado-actual-paste-modal.mjs';
+import { setEaFormOpenPatientId } from './estado-actual-panel-core.mjs';
 
 /** @type {{ ensureForm(): void, resetForm(): void, showToast(msg: string, type?: string): void }} */
 let rt = {
@@ -83,6 +84,7 @@ export function openEstadoActualRegistroModal(opts) {
 
 export function closeEstadoActualRegistroModal() {
   closeEstadoActualPasteModal();
+  setEaFormOpenPatientId(null);
   var backdrop = getBackdrop();
   if (!backdrop) return;
   backdrop.classList.remove('open');

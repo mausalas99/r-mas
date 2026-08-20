@@ -29,6 +29,7 @@ import { getPatientsForDisplay } from '../clinical-read-model-demo.mjs';
 import { isGuardiaMode } from './chrome.mjs';
 import { rt } from './patients-runtime-state.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
+import { isEaRegistroFormOpenForPatient } from './estado-actual-panel-core.mjs';
 
 let patientSearchFilter = '';
 
@@ -112,6 +113,10 @@ export function reselectIfActivePatientHidden(visiblePatients) {
     return String(p.id) === String(activeId);
   });
   if (stillVisible) return false;
+  // Don't yank the active patient out from under an open "estado actual"
+  // registro form (e.g. a background cloud-sync render that recomputes the
+  // visible list). The form keeps saving to the patient it was opened for.
+  if (isEaRegistroFormOpenForPatient(activeId)) return false;
   ensureActivePatientInSidebarScope();
   return true;
 }

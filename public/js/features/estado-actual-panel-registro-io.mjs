@@ -11,13 +11,15 @@ import { patientHasInsulinPumpInReceta } from '../insulin-pump-some-detect.mjs';
 import { insulinPumpAlgorithmFromMonitoreo } from './estado-actual-insulin-pump.mjs';
 import { getMedRecetaByPatient } from '../app-state.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
+import { getEaFormOpenPatientId } from './estado-actual-panel-core.mjs';
 
 /**
  * @param {HTMLElement | null} form
  */
 export function syncEaRegistroInsulinRescateFlag(form) {
   if (!form) return;
-  var activeId = getEaPanelRuntime().getActiveId();
+  var activeId = getEaFormOpenPatientId();
+  if (activeId == null) activeId = getEaPanelRuntime().getActiveId();
   var block = activeId && getMedRecetaByPatient() ? getMedRecetaByPatient()[activeId] : null;
   var hasRescates = patientHasInsulinRescatesInReceta(block);
   form.classList.toggle('ea-form--no-insulin-rescates', !hasRescates);
@@ -30,7 +32,8 @@ export function syncEaRegistroInsulinRescateFlag(form) {
  */
 export function syncEaRegistroInsulinPumpFlag(form, monitoreo) {
   if (!form) return;
-  var activeId = getEaPanelRuntime().getActiveId();
+  var activeId = getEaFormOpenPatientId();
+  if (activeId == null) activeId = getEaPanelRuntime().getActiveId();
   var block = activeId && getMedRecetaByPatient() ? getMedRecetaByPatient()[activeId] : null;
   var alg = insulinPumpAlgorithmFromMonitoreo(monitoreo);
   var hasPump = alg != null || patientHasInsulinPumpInReceta(block);

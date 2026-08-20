@@ -41,7 +41,12 @@ import { renderMedRecetaPanel } from './medications-panel-render.mjs';
 import { renderEstadoActualBar } from './soap-estado.mjs';
 import { migrateGranularInner } from '../expediente-tabs.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
-import { findActivePatient } from './estado-actual-panel-core.mjs';
+import {
+  findActivePatient,
+  findPatientById,
+  setEaFormOpenPatientId,
+  getEaFormOpenPatientId,
+} from './estado-actual-panel-core.mjs';
 import { eaPanelBridge } from './estado-actual-panel-bridge.mjs';
 import {
   flushEaEstadoClinicoFieldsFromDom,
@@ -100,7 +105,11 @@ function parseFormMedicion() {
 }
 
 export function registrarEstadoActualMedicion() {
-  var patient = findActivePatient();
+  // Save against the patient the form was opened for, not whatever patient
+  // happens to be "active" right now — a background cloud sync render can
+  // silently switch the active patient while this form is open.
+  var capturedId = getEaFormOpenPatientId();
+  var patient = capturedId != null ? findPatientById(capturedId) : findActivePatient();
   if (!patient) {
     getEaPanelRuntime().showToast('Selecciona un paciente primero', 'error');
     return;
@@ -153,6 +162,7 @@ export function ensureEaRegistroModalForm() {
     body.innerHTML = buildRegistroFormMarkup();
   }
   var patient = findActivePatient();
+  setEaFormOpenPatientId(patient ? patient.id : null);
   wireEaRegistroForm(patient && patient.monitoreo ? patient.monitoreo : null);
 }
 
