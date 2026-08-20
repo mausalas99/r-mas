@@ -70,6 +70,16 @@ test('buildLabTrendLookup: ignores prior sets at or after current timestamp', ()
   assertTrend(lookup('QS', 'Cr'), 'up', 1.1);
 });
 
+test('buildLabTrendLookup: skips a same-day duplicate of the live current set to find the real prior day', () => {
+  var history = [
+    set('12/08/2026', '08:00', { BH: { Hb: 7.46 } }),
+    set('14/08/2026', '07:00', { BH: { Hb: 6.75 } }), // today's own persisted record, earlier hora
+  ];
+  var current = set('14/08/2026', '09:00', { BH: { Hb: 6.75 } }); // live view, same day
+  var lookup = buildLabTrendLookup(history, current);
+  assertTrend(lookup('BH', 'Hb'), 'down', 6.75 - 7.46);
+});
+
 test('buildLabTrendLookup: no history/current given returns a null-safe lookup', () => {
   assert.equal(buildLabTrendLookup(null, null)('QS', 'Cr'), null);
   assert.equal(buildLabTrendLookup([], { parsedBySection: null })('QS', 'Cr'), null);

@@ -1150,6 +1150,11 @@ html.dark .card { box-shadow: var(--shadow); }
   padding-left: 0;
   padding-right: 0;
 }
+#lab-input-section .card-header.lab-report-header-row--actions-only {
+  justify-content: flex-end;
+  padding-top: 0;
+  padding-bottom: 0;
+}
 #lab-input-section:hover { box-shadow: none; }
 /* Barras de sección con tono — texto claro en light y dark */
 .card-header[class*="card-header--tone"] {

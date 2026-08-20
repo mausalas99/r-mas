@@ -16,14 +16,30 @@ function currentTimestampMs(currentSet) {
   return typeof ms === 'number' && isFinite(ms) ? ms : null;
 }
 
-/** Tomas estrictamente anteriores a la actual (excluye la propia y cualquiera más reciente). */
+function dayStartMs(fecha) {
+  var ms = parseFechaLabToMs(fecha, null);
+  return typeof ms === 'number' && isFinite(ms) ? ms : null;
+}
+
+/**
+ * Tomas estrictamente anteriores a la actual (excluye la propia y cualquiera más reciente).
+ * También excluye tomas del mismo día calendario: la vista "hoy" en vivo puede traer su
+ * propio registro ya persistido con la misma fecha (hora ligeramente distinta), y compararse
+ * contra ese duplicado esconde el cambio real contra el día anterior.
+ */
 function priorSetsForCurrent(historySets, currentSet) {
   var desc = sortLabHistoryChronological(historySets || []);
   var curMs = currentTimestampMs(currentSet);
   if (curMs == null) return desc;
+  var curDayMs = dayStartMs(currentSet && currentSet.fecha);
   return desc.filter(function (s) {
     var ms = parseFechaLabToMs(s && s.fecha, s && s.hora);
-    return typeof ms === 'number' && isFinite(ms) && ms < curMs;
+    if (!(typeof ms === 'number' && isFinite(ms) && ms < curMs)) return false;
+    if (curDayMs != null) {
+      var sDayMs = dayStartMs(s && s.fecha);
+      if (sDayMs === curDayMs) return false;
+    }
+    return true;
   });
 }
 

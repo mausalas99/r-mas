@@ -24,7 +24,7 @@ html.high-contrast.ui-density-normal .patient-expediente-classic {
 
 /* ── Toolbar → content section gap (hallmark P2-A) ─────────── */
 #appcontent-lab .main-work-scroll > #lab-input-section {
-  margin-bottom: var(--density-gap-section);
+  margin-bottom: calc(4px * var(--density-space, 1));
 }
 
 #appcontent-lab .lab-some-table-toolbar {
@@ -627,7 +627,7 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 
 #appcontent-lab #lab-output-section > .card-header,
 #appcontent-lab #lab-history-card > .card-header,
-#appcontent-lab .main-work-scroll > .card > .card-header,
+#appcontent-lab .main-work-scroll > .card:not(#lab-input-section) > .card-header,
 #appcontent-lab #lab-diagrams-section > .card-header {
   font: var(--type-section);
   letter-spacing: var(--tracking-section);
