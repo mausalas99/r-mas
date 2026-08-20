@@ -292,7 +292,10 @@ function scanInlineIng(text, result) {
 
 function scanInlineEgr(text, result) {
   if (result.recognized.indexOf('egr') >= 0) return;
-  var egr = text.match(/\bE\s*:?\s*(.+?)(?:\s*$)/im);
+  // `(?![A-Za-z])` exige que la "E" sea un token suelto (I: 1200 E: 800), no el arranque de
+  // otra palabra ("EN", "EGRESOS", "ESFERAS"...) — sin esto, una nota de neuro tipo "ORIENTADO
+  // EN ___ ESFERAS, ALERTA" se colaba como si fuera la línea de egresos.
+  var egr = text.match(/\bE(?![A-Za-z])\s*:?\s*(.+?)(?:\s*$)/im);
   if (!egr) return;
   result.io.egrParts = parseIoEgresoLine(egr[1]);
   result.io.egr = diuresisValueFromParts(result.io.egrParts);

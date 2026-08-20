@@ -58,6 +58,17 @@ test('parseEstadoActualPaste — líneas en orden distinto', () => {
   assert.equal(p.glucometrias[1].value, 95);
 });
 
+test('parseEstadoActualPaste — no confunde "ORIENTADO EN ___ ESFERAS" con una línea de egresos', () => {
+  const p = parseEstadoActualPaste(
+    'T°: 36 °C\n' +
+      'N: FOUR .../16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN ___ ESFERAS, ALERTA\n' +
+      'I: 500 CC'
+  );
+  assert.equal(p.io.egr, null);
+  assert.equal(p.io.egrParts.length, 0);
+  assert.ok(p.recognized.indexOf('egr') === -1);
+});
+
 test('parseGlucometriaToken y splitGlucoseList', () => {
   assert.deepEqual(parseGlucometriaToken('198@08:30'), { value: 198, time: '08:30' });
   assert.deepEqual(splitGlucoseList('198, 174, 101'), ['198', '174', '101']);
