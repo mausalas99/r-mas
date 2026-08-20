@@ -47,6 +47,32 @@ test('formatLabsForCensoCompact includes every set from the latest day', () => {
   assert.doesNotMatch(text, /\bHb 6\b/);
 });
 
+test('formatLabsForCensoCompact no duplica un estudio que llega repetido en dos sets del mismo día', () => {
+  var lines = formatLabsForCensoCompact([
+    { fecha: '29/05/2026', hora: '04:45', resLabs: ['BH\tHb 7.24* Hto 23.1*', 'QS\tGlu 51* Cr 6.8*'] },
+    {
+      fecha: '29/05/2026',
+      hora: '01:26',
+      resLabs: ['BH\tHb 7.24* Hto 23.1*', 'QS\tGlu 51* Cr 6.8*', 'GASES\tpH 7.41 pCO2 29*'],
+    },
+  ]);
+  var text = lines.join('\n');
+  var bhCount = (text.match(/Hb 7\.24/g) || []).length;
+  assert.equal(bhCount, 1, 'el bloque BH repetido en ambos sets no debe aparecer dos veces');
+  assert.match(text, /GASES/);
+});
+
+test('formatLabsForCensoCompact no agrega la línea de BH extendido', () => {
+  var lines = formatLabsForCensoCompact([
+    {
+      fecha: '29/05/2026',
+      resLabs: ['BH\tHb 7.24* Hto 23.1*'],
+      bhExtras: { eri: '2.51*', chcm: '31.4' },
+    },
+  ]);
+  assert.doesNotMatch(lines.join('\n'), /BH ext/i);
+});
+
 test('formatLabsForCensoCompact incluye resLabs completos del día', () => {
   var lines = formatLabsForCensoCompact([
     {
