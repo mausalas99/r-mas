@@ -1,22 +1,16 @@
-version: 8.1.6
+version: 8.1.7
 files:
-  - url: R+-8.1.6-x64.exe
-    sha512: GpGZaAZLfU8zcMnbBZOg0WfXW2H3Wuc6X3Qz9P3YHAHfIS85uhvoZWy11nqA4KNLQqSne8+9CJlyG+f8/p8x5A==
-    size: 122889478
-path: R+-8.1.6-x64.exe
-sha512: GpGZaAZLfU8zcMnbBZOg0WfXW2H3Wuc6X3Qz9P3YHAHfIS85uhvoZWy11nqA4KNLQqSne8+9CJlyG+f8/p8x5A==
-releaseDate: '2026-08-20T21:33:21.000Z'
+  - url: R+-8.1.7-x64.exe
+    sha512: lXMWCwR+tdQrwks74WY1TB36kJDtRyyj+QbP1mfl2IxTRg48GBoRirzCBshsMBZq8VMkEbumE2mBB2SOC9MLLA==
+    size: 122895033
+path: R+-8.1.7-x64.exe
+sha512: lXMWCwR+tdQrwks74WY1TB36kJDtRyyj+QbP1mfl2IxTRg48GBoRirzCBshsMBZq8VMkEbumE2mBB2SOC9MLLA==
+releaseDate: '2026-08-20T23:29:32.000Z'
 releaseNotes: |
-  Corrige varios bugs de parsing de labs (EGO, cultivos, egresos) y para un bug donde Estado actual podía mostrar signos vitales de otro paciente.
+  Corrige que "Cerrar sesión" en Nube borrara el código de sala. La actualización ahora se instala sola en cuanto R+ queda inactivo, sin esperar a cerrar la app.
   
-  Estado actual — signos vitales ya no se cruzan de paciente: la sincronización en segundo plano podía escribir los vitales de un paciente en la ficha de otro. Ya no pasa.
+  Cerrar sesión ya no borra la sala: al volver a iniciar sesión, R+ recuerda el código de sala — ya no hay que volver a escribirlo.
   
-  Cultivos — ya no se duplican al actualizar: "Actualizar" podía crear una fila repetida del mismo cultivo en vez de reemplazar la existente. Ahora se identifica el mismo aislamiento por microorganismo + cuenta y se queda con el reporte más completo.
+  Instalación automática al quedar inactivo: si la actualización ya se descargó, se instala sola cuando aparece la pantalla de bloqueo por inactividad (10 min sin uso) — no espera a que cierres R+ manualmente.
   
-  EGO — ya no se apila un campo por línea: un resultado de EGO con varios campos por línea se leía mal y quedaba un campo por renglón.
-  
-  Egresos — "E" a media palabra ya no se confunde con Egreso: el detector de egresos disparaba con una "E" suelta dentro de otra palabra.
-  
-  Censo — ya no se duplican estudios repetidos: un mismo estudio de laboratorio podía aparecer dos veces en el censo; también se quitó "BH extendido" de la lista.
-  
-  Tendencias — la búsqueda de un estudio ya no pierde secciones: un fragmento de texto viejo podía hacer que la vista de tendencias mostrara menos secciones de las que hay.
+  Cultivos — encabezado ya no se pega al texto: en UROCULTIVO/HEMOCULTIVO/FUNGICULTIVO el encabezado a veces se veía pegado al resto de la línea ("UROCULTIVOPOR SONDA"). Corregido.
