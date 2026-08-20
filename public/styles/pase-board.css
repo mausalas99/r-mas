@@ -29,6 +29,21 @@
   color: var(--text-muted);
 }
 
+.wb-table-body .gct-divider {
+  padding: 6px 16px;
+  margin-top: 4px;
+  background: var(--color-table-head);
+  border-bottom: 1px solid color-mix(in oklab, var(--color-ink) 8%, transparent);
+  font: var(--type-wb-column-head);
+  letter-spacing: var(--tracking-wb-column-head);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.wb-table-body .gct-divider:first-child {
+  margin-top: 0;
+}
+
 .dnr-badge {
   background: var(--surface);
   color: var(--error);
