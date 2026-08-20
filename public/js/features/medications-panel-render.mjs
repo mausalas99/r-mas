@@ -1,9 +1,5 @@
 import { getMedRecetaByPatient } from "../app-state.mjs";
-import {
-  buildMedRecetaCopyText,
-  buildMedRecetaNameOnlyText,
-  collectDietasFromRecetaBlock,
-} from "../med-receta-core.mjs";
+import { collectDietasFromRecetaBlock } from "../med-receta-core.mjs";
 import {
   getMedSubview,
   initMedPharmSubviewUi,
@@ -21,23 +17,23 @@ import {
 } from "./medications-panel-rows.mjs";
 import { classifyMedicationSoapCategory, shouldIncludeMedicationInSoap } from "../med-receta-core.mjs";
 import { renderMedNotaFooter, hideMedNotaFooter } from "./medications-soap-footer.mjs";
+import { buildMedEgresoPreviewLine } from "./medications-egreso-text.mjs";
 import {
   rt,
-  medOutputTab,
   getLastMedPanelPatientId,
   setLastMedPanelPatientId,
   getMedPanelCacheKey,
   setMedPanelCacheKey,
   bustMedPanelCache,
 } from "./medications-runtime-state.mjs";
-import { manejoDiaOpts, setMedActiveLeadVisible } from "./medications-utils.mjs";
+import { setMedActiveLeadVisible } from "./medications-utils.mjs";
 
 function getMedPanelDom() {
   return {
     hintEl: document.getElementById("med-hint"),
     fechaEl: document.getElementById("med-fecha-actualizacion"),
     listEl: document.getElementById("med-items-list"),
-    outPre: document.getElementById("med-output"),
+    previewEl: document.getElementById("med-egreso-preview"),
     outCard: document.getElementById("med-output-section"),
     turnoTitleEl: document.getElementById("med-turno-title-text"),
     turnoApoyoEl: document.getElementById("med-turno-apoyo"),
@@ -77,7 +73,7 @@ function renderMedPanelEmptyNoPatient(els) {
   setMedActiveLeadVisible(false);
   if (els.fechaEl) els.fechaEl.hidden = true;
   els.listEl.innerHTML = "";
-  els.outPre.textContent = "";
+  if (els.previewEl) els.previewEl.textContent = "";
   if (els.outCard) els.outCard.style.display = "none";
   hideMedNotaFooter();
 }
@@ -91,31 +87,15 @@ function renderMedPanelEmptyNoContent(activeId, cacheKey, els) {
   setMedActiveLeadVisible(false);
   if (els.fechaEl) els.fechaEl.hidden = true;
   els.listEl.innerHTML = "";
-  els.outPre.textContent = "";
+  if (els.previewEl) els.previewEl.textContent = "";
   if (els.outCard) els.outCard.style.display = "none";
   hideMedNotaFooter();
 }
 
-function syncMedOutputTabChrome(outPre, outCard, block) {
-  var tabFull = document.getElementById("med-tab-full");
-  var tabSimple = document.getElementById("med-tab-simple");
-  var tabTrack = document.getElementById("med-output-tabs-track");
-  if (tabTrack) tabTrack.setAttribute("data-active", medOutputTab === "simple" ? "simple" : "full");
-  if (tabFull) {
-    tabFull.classList.toggle("active", medOutputTab === "full");
-    tabFull.setAttribute("aria-selected", medOutputTab === "full" ? "true" : "false");
-  }
-  if (tabSimple) {
-    tabSimple.classList.toggle("active", medOutputTab === "simple");
-    tabSimple.setAttribute("aria-selected", medOutputTab === "simple" ? "true" : "false");
-  }
-  var items = block.items || [];
-  var diaOpts = manejoDiaOpts(block.fechaActualizacion);
-  var txtFull = buildMedRecetaCopyText(items, diaOpts);
-  var txtSimple = buildMedRecetaNameOnlyText(items, diaOpts);
-  var txt = medOutputTab === "simple" ? txtSimple : txtFull;
-  outPre.textContent = txt;
-  if (outCard) outCard.style.display = txt.trim() ? "block" : "none";
+function syncMedEgresoTeaser(previewEl, outCard, block) {
+  var preview = buildMedEgresoPreviewLine(block);
+  if (previewEl) previewEl.textContent = preview;
+  if (outCard) outCard.style.display = preview.trim() ? "flex" : "none";
 }
 
 function renderMedPanelRecetaContent(activeId, block, cacheKey, els) {
@@ -132,7 +112,7 @@ function renderMedPanelRecetaContent(activeId, block, cacheKey, els) {
   els.listEl.innerHTML =
     buildMedDietHtml(collectDietasFromRecetaBlock(block)) + buildMedRecetaListHtml(activeId, block);
   renderMedNotaFooter();
-  syncMedOutputTabChrome(els.outPre, els.outCard, block);
+  syncMedEgresoTeaser(els.previewEl, els.outCard, block);
 }
 
 function handleMedPanelPatientChange(activeId) {
@@ -209,7 +189,7 @@ export function renderMedRecetaPanel() {
     return;
   }
   var els = getMedPanelDom();
-  if (!els.hintEl || !els.listEl || !els.outPre) return;
+  if (!els.hintEl || !els.listEl) return;
   bustMedPanelCacheIfLegacyDestUi(els.listEl);
   var cacheKey = buildMedPanelCacheKey(activeId);
   if (shouldSkipMedPanelCacheHit(activeId, cacheKey, els)) return;

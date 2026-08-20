@@ -18,6 +18,8 @@ import {
   isInsulinPumpCarrierMedicationItem,
 } from '../insulin-pump-some-detect.mjs';
 import { mergeDietaItems, collectDietasFromRecetaBlock } from '../med-receta-diet.mjs';
+import { apoyoKindLabel } from '../med-receta-apoyo.mjs';
+import { countMedTurnoItems } from './medications-panel-rows.mjs';
 
 /**
  * Full order line, cleaned of the internal " || " name/instructions marker
@@ -80,4 +82,22 @@ export function buildMedEgresoDietSummaryLine(block) {
   if (!desc && !bits.length) return '';
   if (!bits.length) return desc;
   return desc ? desc + ' ' + bits.join(' · ') : bits.join(' · ');
+}
+
+/**
+ * One-line teaser summary for the collapsed "Texto de egreso" card, e.g.
+ * "10 medicamentos · dieta blanda diabética · O₂". Never fabricates data —
+ * omits the diet or apoyo segment when neither is present.
+ * @param {{ items?: unknown[], dietas?: unknown[] }|null|undefined} block
+ * @returns {string}
+ */
+export function buildMedEgresoPreviewLine(block) {
+  var items = block && Array.isArray(block.items) ? block.items : [];
+  var counts = countMedTurnoItems(items);
+  var parts = [counts.medCount + (counts.medCount === 1 ? ' medicamento' : ' medicamentos')];
+  var dietDesc = trimStr(mergeDietaItems(collectDietasFromRecetaBlock(block)).descripcion);
+  if (dietDesc) parts.push(dietDesc);
+  var apoyoLabels = (counts.apoyoKinds || []).map(apoyoKindLabel).filter(Boolean);
+  if (apoyoLabels.length) parts.push(apoyoLabels.join(', '));
+  return parts.join(' · ');
 }

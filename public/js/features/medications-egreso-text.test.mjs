@@ -5,6 +5,7 @@ import {
   formatMedEgresoNameDiaLine,
   buildMedEgresoListLines,
   buildMedEgresoDietSummaryLine,
+  buildMedEgresoPreviewLine,
 } from './medications-egreso-text.mjs';
 
 describe('medications-egreso-text', () => {
@@ -74,6 +75,33 @@ describe('medications-egreso-text', () => {
 
     it('returns empty string when there is no confirmed diet', () => {
       assert.equal(buildMedEgresoDietSummaryLine({ dietas: [], items: [] }), '');
+    });
+  });
+
+  describe('buildMedEgresoPreviewLine', () => {
+    var oxigeno = { nombreRaw: 'OXIGENO MASCARILLA RESERVORIO', viaRaw: '', dosisRaw: '', frecuenciaRaw: '' };
+
+    it('summarizes med count only when there is no diet or apoyo', () => {
+      var block = { items: [ceftriaxona, enoxaparinaNoDay], dietas: [] };
+      assert.equal(buildMedEgresoPreviewLine(block), '2 medicamentos');
+    });
+
+    it('uses singular "medicamento" for a single item', () => {
+      var block = { items: [ceftriaxona], dietas: [] };
+      assert.equal(buildMedEgresoPreviewLine(block), '1 medicamento');
+    });
+
+    it('appends diet description and apoyo label when present', () => {
+      var block = {
+        items: [ceftriaxona, oxigeno],
+        dietas: [{ id: 'd1', descripcionRaw: 'Dieta blanda diabética' }],
+      };
+      assert.equal(buildMedEgresoPreviewLine(block), '1 medicamento · Dieta blanda diabética · O₂');
+    });
+
+    it('never fabricates a diet or apoyo segment that is not present', () => {
+      assert.equal(buildMedEgresoPreviewLine({ items: [], dietas: [] }), '0 medicamentos');
+      assert.equal(buildMedEgresoPreviewLine(null), '0 medicamentos');
     });
   });
 });
