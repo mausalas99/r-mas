@@ -59,7 +59,7 @@ async function parseJsonBody(request) {
 }
 
 /** @param {unknown} ops */
-function validateOpsSize(ops) {
+export function validateOpsSize(ops) {
   if (!Array.isArray(ops) || ops.length === 0) {
     throw new SyncError('invalid_request', 'Se requiere al menos una operación.');
   }

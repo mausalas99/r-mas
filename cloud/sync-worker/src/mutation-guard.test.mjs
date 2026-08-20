@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { SyncError } from './errors.js';
 import { syncErrorStatus } from './errors.js';
+import { QUOTAS } from './quotas.js';
 import {
   checkMutationPushRateLimit,
   tryLegacyBulkLabBackfillAck,
@@ -9,6 +10,7 @@ import {
   summarizeMutationOpsJson,
   validateMutationRequest,
 } from './mutation-guard.mjs';
+import { validateOpsSize } from './sync.js';
 
 describe('mutation-guard', () => {
   it('rate limits excessive pushes per room', () => {
@@ -75,6 +77,29 @@ describe('mutation-guard', () => {
     assert.equal(
       tryNoopMutationAck([{ path: 'entries/p1/fields' }], [], 10, 9),
       null
+    );
+  });
+
+  it('body cap raised so real labSidecars batches (~1.3MB seen in prod) no longer get payload_too_large', () => {
+    // Antes de la subida (220KB) un lote de labSidecars de ~700KB-1.3MB se
+    // rechazaba en el push, aunque cupiera bien bajo el límite de la sala.
+    assert.equal(QUOTAS.maxMutationBodyBytes, 2 * 1024 * 1024);
+    assert.doesNotThrow(() =>
+      validateMutationRequest({ ops: [{ path: 'labSidecars/p1/s1', value: 1 }] }, 1_300_000)
+    );
+  });
+
+  it('per-op lab cap raised so a single ~350KB labSidecars op (seen in prod) passes', () => {
+    assert.equal(QUOTAS.labMutationMaxBytes, 1024 * 1024);
+    const bigLabValue = { id: 'x', resLabs: ['x'.repeat(350_000)] };
+    assert.doesNotThrow(() => validateOpsSize([{ path: 'labSidecars/p1/s1', value: bigLabValue }]));
+  });
+
+  it('still rejects an op over the raised lab cap', () => {
+    const tooBig = { id: 'x', resLabs: ['x'.repeat(QUOTAS.labMutationMaxBytes + 1000)] };
+    assert.throws(
+      () => validateOpsSize([{ path: 'labSidecars/p1/s1', value: tooBig }]),
+      (err) => err instanceof SyncError && err.code === 'payload_too_large'
     );
   });
 
