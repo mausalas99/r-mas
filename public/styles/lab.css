@@ -1137,6 +1137,19 @@ html.dark .card { box-shadow: var(--shadow); }
   justify-content: space-between;
   flex-wrap: wrap;
 }
+/* Reporte de Laboratorio header row: no card box, just the label + buttons floating. */
+#lab-input-section {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+#lab-input-section .card-header {
+  background: transparent;
+  border-bottom: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+#lab-input-section:hover { box-shadow: none; }
 /* Barras de sección con tono — texto claro en light y dark */
 .card-header[class*="card-header--tone"] {
   color: var(--color-on-accent);

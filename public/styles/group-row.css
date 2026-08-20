@@ -29,6 +29,7 @@
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  position: relative;
   padding: 2px;
   border: var(--border-hairline);
   border-radius: var(--radius-pill);

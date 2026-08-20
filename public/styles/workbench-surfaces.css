@@ -287,13 +287,22 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 
 /* Always-visible "Pendientes" entry point in the expediente tab bar
  * (mockup L416 top tab row). A plain dot signals open pendientes without
- * the loud red count — same 8px circle pattern as .priority-dot. */
+ * the loud red count — same 8px circle pattern as .priority-dot. Overlaid
+ * on the pill's top-right corner (iOS-style notification dot), out of
+ * document flow, so it never widens the pill itself. */
+.wb-pendientes-tab {
+  position: relative;
+}
 .wb-pendientes-tab-badge {
-  display: inline-block;
+  position: absolute;
+  top: -2px;
+  right: -2px;
   width: 8px;
   height: 8px;
   background: var(--color-danger);
   border-radius: 999px;
+  border: 2px solid var(--bg);
+  pointer-events: none;
 }
 
 .exp-pendientes-mount .todo-list {
