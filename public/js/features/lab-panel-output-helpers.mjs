@@ -126,12 +126,25 @@ export function appendLabHourGroupHeader(box, group) {
  * @param {object} [group] cuando resLabs viene de un grupo de clusterDayLabSets (sin parsedBySection propio).
  *   Se reconstruye aquí para la toma actual; ausente = reporte plano (result.resLabs).
  */
+/**
+ * Toma actual para el trend lookup: fecha/hora del registro representativo del grupo,
+ * pero SIEMPRE el parsedBySection combinado (todas las secciones del día), nunca el de
+ * un solo registro crudo dentro del grupo — ese registro trae su propio parsedBySection
+ * parcial (de esa toma individual sola) y si se aplicara después pisaría el combinado,
+ * dejando fuera secciones que llegaron en otro fragmento del mismo día (p. ej. Biometría
+ * antes, Química Sanguínea después).
+ */
+export function buildCurrentSetForGroup_(group, buildParsedBySectionFromResLabs) {
+  return Object.assign(
+    {},
+    representativeFechaHoraForGroup_(group),
+    { parsedBySection: buildParsedBySectionFromResLabs(group.resLabs, group.bhExtras) }
+  );
+}
+
 export function appendResLabChunksToBox(box, resLabs, src, result, labDisp, rt, group) {
   var currentSet = group
-    ? Object.assign(
-        { parsedBySection: rt.buildParsedBySectionFromResLabs(group.resLabs, group.bhExtras) },
-        representativeFechaHoraForGroup_(group)
-      )
+    ? buildCurrentSetForGroup_(group, rt.buildParsedBySectionFromResLabs)
     : {
         fecha: result && result.patient && result.patient.fecha,
         hora: result && result.patient && result.patient.hora,

@@ -399,6 +399,44 @@ export function findLabSetsByDateTime(sets, fecha, hora) {
 }
 
 /**
+ * Un mismo estudio (SOME) suele llegar en fragmentos — Biometría se procesa antes que
+ * Química Sanguínea aunque sean la misma toma. Si no comparten ninguna sección ya
+ * presente, son complementarios: se pueden unir sin pisar valores. Si comparten una
+ * sección, tratarlas como tomas distintas del mismo día (comportamiento previo).
+ */
+function sectionsAreComplementary_(a, b) {
+  var pa = (a && a.parsedBySection) || null;
+  var pb = (b && b.parsedBySection) || null;
+  if (!pa || !pb) return false;
+  var keysA = Object.keys(pa).filter(function (k) {
+    return pa[k] && Object.keys(pa[k]).length;
+  });
+  if (!keysA.length) return false;
+  return keysA.every(function (k) {
+    return !pb[k] || !Object.keys(pb[k]).length;
+  });
+}
+
+/**
+ * Mismo día, sin match exacto de hora, pero secciones complementarias (p. ej. Biometría
+ * llegó primero y Química Sanguínea se agrega después del mismo estudio). Devuelve el set
+ * más reciente de ese día que no comparta ninguna sección con lo entrante.
+ */
+function findComplementarySameDaySet_(existingSets, incoming) {
+  var f = normalizeDateValue(incoming && incoming.fecha);
+  if (!f) return null;
+  var sameDay = (existingSets || []).filter(function (s) {
+    return s && s.id != null && String(s.id) !== '' && normalizeDateValue(s.fecha) === f;
+  });
+  if (!sameDay.length) return null;
+  sameDay.sort(compareLabSetIdForDedupe);
+  for (var i = 0; i < sameDay.length; i++) {
+    if (sectionsAreComplementary_(incoming, sameDay[i])) return sameDay[i];
+  }
+  return null;
+}
+
+/**
  * Decide skip / merge / add al importar contra historial existente.
  * @param {object[]} existingSets
  * @param {{ fecha?: string, hora?: string, resLabs?: string[] }} incoming
@@ -409,6 +447,8 @@ export function planLabHistoryDateTimeUpsert(existingSets, incoming) {
   var hora = incoming && incoming.hora;
   var matches = findLabSetsByDateTime(existingSets, fecha, hora);
   if (!matches.length) {
+    var complementary = findComplementarySameDaySet_(existingSets, incoming);
+    if (complementary) return { action: 'merge', keeper: complementary, siblings: [] };
     return { action: 'add', keeper: null, siblings: [] };
   }
   var keeper = matches[0];

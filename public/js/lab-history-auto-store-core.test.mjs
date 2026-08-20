@@ -186,6 +186,48 @@ test('planLabHistoryDateTimeUpsert skip / merge / add', () => {
   );
 });
 
+test('planLabHistoryDateTimeUpsert misma fecha, hora distinta, secciones complementarias → merge', () => {
+  // Biometría llega primero; Química Sanguínea del mismo estudio se procesa más tarde
+  // con otra hora — deben unirse en un solo set, no crear un segundo estudio del día.
+  var existing = [
+    {
+      id: '1',
+      fecha: '31/07/2026',
+      hora: '13:51',
+      resLabs: ['BH\tHb 12.9'],
+      parsedBySection: { BH: { Hb: '12.9' } },
+    },
+  ];
+  var plan = planLabHistoryDateTimeUpsert(existing, {
+    fecha: '31/07/2026',
+    hora: '14:20',
+    resLabs: ['QS\tGlu 83'],
+    parsedBySection: { QS: { Glu: '83' } },
+  });
+  assert.equal(plan.action, 'merge');
+  assert.equal(plan.keeper.id, '1');
+  assert.equal(plan.siblings.length, 0);
+});
+
+test('planLabHistoryDateTimeUpsert misma fecha, hora distinta, misma sección → add (tomas distintas)', () => {
+  var existing = [
+    {
+      id: '1',
+      fecha: '31/07/2026',
+      hora: '13:51',
+      resLabs: ['BH\tHb 12.9'],
+      parsedBySection: { BH: { Hb: '12.9' } },
+    },
+  ];
+  var plan = planLabHistoryDateTimeUpsert(existing, {
+    fecha: '31/07/2026',
+    hora: '20:00',
+    resLabs: ['BH\tHb 10.1'],
+    parsedBySection: { BH: { Hb: '10.1' } },
+  });
+  assert.equal(plan.action, 'add');
+});
+
 test('gasometriaFingerprintFromResLabs igual para mismos GASES', () => {
   var a = gasometriaFingerprintFromResLabs(['BH\tHb 12', 'GASES\tpH 7.36 pCO2 40']);
   var b = gasometriaFingerprintFromResLabs(['GASES\t  pH 7.36   pCO2 40', 'QS\tGlu 90']);
