@@ -3342,6 +3342,9 @@ html.dark #lab-output-box .out-indent {
   gap: 6px 18px;
 }
 #lab-output-box .lab-row-value { display: inline-flex; align-items: baseline; }
+/* Líneas de prosa sin tab (ej. EGO) que no traen su propio .lab-row-label: ocupan las dos
+   columnas de la grilla en vez de auto-colocarse campo por campo en la de 64px. */
+#lab-output-box .lab-row-values-full { grid-column: 1 / -1; }
 .indica-meta-bar {
   display: grid;
   grid-template-columns: minmax(7rem, 1fr) minmax(5.5rem, 0.7fr) minmax(12rem, 2fr);

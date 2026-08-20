@@ -8,6 +8,7 @@ import {
   labTimestampMsFromFechaHora,
 } from './lab-consolidation-cluster.mjs';
 import { dedupeConsolidatedLabRows } from './lab-bulk-paste.mjs';
+import { labRowSectionKey, labRowRichnessScore, isMergeAcrossOccurrencesSectionKey } from './lab-bulk-dedupe.mjs';
 import {
   dayKeyFromLabSet,
   primaryTipoForLabSet,
@@ -106,6 +107,35 @@ function mergeClusterResLabs(sets) {
   return dedupeConsolidatedLabRows(merged, tipo === 'mixed' ? 'labs' : tipo);
 }
 
+/**
+ * Un estudio de renglón único (p. ej. EGO) puede llegar en fragmentos separados por más de
+ * la ventana de clustering de 2h (color/aspecto primero, sedimento después). dedupeConsolidatedLabRows
+ * solo compara renglones DENTRO de un cluster, así que sin esto cada cluster muestra su propio
+ * fragmento incompleto, apilados como bloques "EGO:" casi vacíos uno tras otro. Aquí se elige,
+ * por sección, el renglón más completo de TODO el día y se deja solo en el cluster que lo originó.
+ */
+function reconcileSingletonSectionsAcrossDay_(groups) {
+  var bestByKey = Object.create(null);
+  groups.forEach(function (g, gi) {
+    (g.resLabs || []).forEach(function (row) {
+      var key = labRowSectionKey(row);
+      if (!key || isMergeAcrossOccurrencesSectionKey(key)) return;
+      var score = labRowRichnessScore(row);
+      var prev = bestByKey[key];
+      if (!prev || score > prev.score) bestByKey[key] = { row: row, groupIdx: gi, score: score };
+    });
+  });
+  Object.keys(bestByKey).forEach(function (key) {
+    var winnerGroupIdx = bestByKey[key].groupIdx;
+    groups.forEach(function (g, gi) {
+      if (gi === winnerGroupIdx) return;
+      g.resLabs = (g.resLabs || []).filter(function (row) {
+        return labRowSectionKey(row) !== key;
+      });
+    });
+  });
+}
+
 function newestMs(sets) {
   var best = -Infinity;
   (sets || []).forEach(function (set) {
@@ -158,6 +188,7 @@ export function clusterDayLabSets(sets) {
       refsBySection: mergeClusterRefs(cluster),
     };
   });
+  reconcileSingletonSectionsAcrossDay_(groups);
   groups.sort(function (a, b) {
     return newestMs(b.sets) - newestMs(a.sets);
   });

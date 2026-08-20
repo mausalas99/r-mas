@@ -155,7 +155,7 @@ export function renderEntry(text, trendLookup) {
         '</span>'
       );
     }
-    return line
+    var plain = line
       .split(' ')
       .map(function (tok, ti) {
         if (!tok) return tok;
@@ -164,5 +164,11 @@ export function renderEntry(text, trendLookup) {
         return renderToken(tok);
       })
       .join(' ');
+    // Líneas sin tab que no son la cabecera (li > 0, ej. EGO): sin este wrapper cada
+    // <strong>/span queda como hijo directo de `.out-indent`, que en #lab-output-box es
+    // `display: grid` (grilla 64px + 1fr para las filas con .lab-row-label/.lab-row-values).
+    // La grilla "blockifica" cada hijo suelto y lo auto-coloca en su propia celda, partiendo
+    // la línea en un campo por renglón. Un solo span que ocupe las dos columnas la mantiene junta.
+    return li === 0 ? plain : '<span class="lab-row-values lab-row-values-full">' + plain + '</span>';
   });
 }

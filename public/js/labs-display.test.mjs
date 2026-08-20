@@ -83,6 +83,20 @@ test('renderEntry leaves prose rows (no numeric key/value pairs) unwrapped, no c
   assert.doesNotMatch(out[0], /lab-row-value"/);
 });
 
+test('renderEntry wraps EGO-style continuation lines (no tab, no label) in a full-width span', () => {
+  // #lab-output-box hace `.out-line`/`.out-indent` display:grid (64px + 1fr) para las filas
+  // "SECCION\tclave val…". Sin este wrapper, cada <strong>/span suelto queda como hijo directo
+  // del grid y el navegador lo "blockifica" y auto-coloca uno por celda — el bug real de EGO
+  // apareciendo como un campo por renglón. El span lab-row-values-full evita eso.
+  const out = renderEntry('EGO:\n  AMAR  TURB  pH 6.5  D 1.013\n  Leu 17-18* Eri 2-3');
+  assert.equal(out.length, 3);
+  assert.match(out[0], /^<span class="section-lbl">EGO:<\/span>$/);
+  assert.match(out[1], /^<span class="lab-row-values lab-row-values-full">.*<\/span>$/);
+  assert.match(out[1], /AMAR/);
+  assert.match(out[2], /^<span class="lab-row-values lab-row-values-full">.*<\/span>$/);
+  assert.match(out[2], /Leu <strong[^>]*>17-18<\/strong>/);
+});
+
 test('renderEntry maps BH short output labels (Seg) to their trend fieldKey (NeuPct)', () => {
   const seen = [];
   const lookup = (sectionKey, fieldKey) => {

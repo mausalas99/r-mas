@@ -12,14 +12,19 @@ import {
 } from './labs-chemistry.mjs';
 import { sortResLabsByClinicalOrder } from './labs-section-order.mjs';
 
-function labRowSectionKey(row) {
+export function labRowSectionKey(row) {
   var s = String(row || '').trim();
   if (!s) return '';
   var m = s.match(/^([A-Za-zÁÉÍÓÚáéíóúÑñ0-9]+)/);
   return m ? m[1].toUpperCase() : '';
 }
 
-function labRowRichnessScore(row) {
+/** Secciones que ya se combinan campo-a-campo entre renglones (nunca "gana el más rico" a secas). */
+export function isMergeAcrossOccurrencesSectionKey(key) {
+  return key === 'BH' || key === 'COAG' || key === 'TROP' || isPairMergeSectionKey(key);
+}
+
+export function labRowRichnessScore(row) {
   var s = String(row || '');
   var score = s.length;
   score += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;

@@ -72,6 +72,20 @@ describe('clusterDayLabSets', () => {
     assert.ok(labs);
   });
 
+  it('keeps only the richest EGO fragment when partial reports land more than 2h apart', () => {
+    var groups = clusterDayLabSets([
+      set('early', '13/08/2026', '02:00', ['EGO:\n  AMAR  TURB']),
+      set('later', '13/08/2026', '09:00', ['EGO:\n  AMAR  TURB  pH 6.5  D 1.013\n  Leu 17-18* Eri 2-3']),
+    ]);
+    var egoGroups = groups.filter(function (g) {
+      return g.resLabs.some(function (row) {
+        return /^EGO/.test(String(row));
+      });
+    });
+    assert.equal(egoGroups.length, 1, 'el fragmento EGO más pobre no debe quedar como su propio bloque');
+    assert.ok(/Leu 17-18/.test(egoGroups[0].resLabs.join('\n')));
+  });
+
   it('returns an empty list when there are no usable sets', () => {
     assert.deepEqual(clusterDayLabSets([]), []);
     assert.deepEqual(clusterDayLabSets([{ id: 'x', fecha: '13/08/2026', resLabs: [] }]), []);
