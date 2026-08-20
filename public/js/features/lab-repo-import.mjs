@@ -114,7 +114,7 @@ function finishLabRepoImport(studies, registro, errors) {
 
   closeLabRepoImportModal();
   if (gate.silent) {
-    finalizeBulkLabPaste(text, blocks, totalOk);
+    finalizeBulkLabPaste(text, blocks, totalOk, { replaceOnMatch: true });
     return;
   }
 
@@ -122,7 +122,7 @@ function finishLabRepoImport(studies, registro, errors) {
     blocks: blocks,
     sourceText: text,
     onConfirm: function () {
-      finalizeBulkLabPaste(text, blocks, totalOk);
+      finalizeBulkLabPaste(text, blocks, totalOk, { replaceOnMatch: true });
     },
   });
 }

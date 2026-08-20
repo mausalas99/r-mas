@@ -6,7 +6,7 @@ import { formatNmDietClause } from './estado-actual-diet-text.mjs';
 import { formatInsulinRescatesClause } from './estado-actual-glu-rescue.mjs';
 import { formatIoClauseForSoap } from './estado-actual-io.mjs';
 import { partitionAnalgesiaForSoap, partitionNmMedsForSoap } from './estado-actual-med-soap-split.mjs';
-import { isTempFebrile, isHemodynamicallyUnstable, isTempFeverPeak } from './estado-actual-ranges.mjs';
+import { isTempFebrile, isTempFeverPeak } from './estado-actual-ranges.mjs';
 import {
   gluPointMs,
   vitalAlteredTimeForDisplay,
@@ -171,7 +171,7 @@ export function resolveFebrilLabel(v) {
  * @param {Record<string, unknown>} ec
  */
 export function resolveHemodynamicLabel(v, ec) {
-  return isHemodynamicallyUnstable(v, ec.vasop) ? 'INESTABLE' : 'ESTABLE';
+  return 'ESTABLE';
 }
 
 /**

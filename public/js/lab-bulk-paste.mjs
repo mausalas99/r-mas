@@ -147,6 +147,24 @@ function collectUniqueExpedientes(okReports) {
   return expedientes;
 }
 
+/** Same normalization as findPatientByRegistro: base before "-" when long enough. */
+function expedienteBase_(reg) {
+  var s = String(reg || '').trim();
+  if (!s) return '';
+  var base = s.split('-')[0];
+  return base.length >= 5 ? base : s;
+}
+
+/** Distinct patient identities among expedientes — "1087426" and "1087426-2" count as one. */
+function collectDistinctExpedienteBases(expedientes) {
+  var bases = [];
+  (expedientes || []).forEach(function (exp) {
+    var base = expedienteBase_(exp);
+    if (base && bases.indexOf(base) === -1) bases.push(base);
+  });
+  return bases;
+}
+
 function filterUsableReportsForPatient(okReports, match) {
   if (!match) return okReports;
   var patientReg = String(match.registro || '').trim();
@@ -154,6 +172,32 @@ function filterUsableReportsForPatient(okReports, match) {
   return okReports.filter(function (r) {
     return r.expediente === patientReg;
   });
+}
+
+/**
+ * SEGURIDAD: el sistema SOME a veces junta datos de 2 pacientes distintos en
+ * un solo pegado. Si un bloque trae 2+ expedientes que no son el mismo paciente
+ * (base distinta, ver expedienteBase_), NUNCA se guarda nada de ese bloque —
+ * aunque uno de los dos no esté en el censo. Descartar en silencio uno de los
+ * dos sería igual de riesgoso: puede quedar un resultado de otro paciente.
+ */
+function isMixedExpedienteBlock(expedientes) {
+  return collectDistinctExpedienteBases(expedientes).length > 1;
+}
+
+/** Mensaje en español para mostrar cuando se descarta un bloque por mezcla de pacientes. */
+export function mixedExpedienteWarning(blocks) {
+  var mixed = (blocks || []).find(function (b) {
+    return b && b.status === 'mixed-expediente';
+  });
+  if (!mixed) return null;
+  var list = (mixed.expedientes || []).join(' y ');
+  return (
+    'El texto pegado tiene 2 expedientes distintos (' +
+    list +
+    '). Puede tener datos de otro paciente. No se guardó nada. ' +
+    'Separa los reportes por paciente y pega de nuevo.'
+  );
 }
 
 function collectReportDays(usableReports) {
@@ -164,24 +208,12 @@ function collectReportDays(usableReports) {
   return days;
 }
 
-/** Count expedientes that resolve to a patient in the census (true multi-patient mix). */
-function countCensusMatchedExpedientes(expedientes, findPatient) {
-  if (!findPatient) return (expedientes || []).length;
-  var n = 0;
-  (expedientes || []).forEach(function (exp) {
-    if (exp && findPatient(exp)) n += 1;
-  });
-  return n;
-}
-
-function resolveBulkBlockStatus(chunks, okReports, match, expedientes, usableReports, findPatient) {
+function resolveBulkBlockStatus(chunks, okReports, match, expedientes, usableReports, isMixed) {
   if (!chunks.length) return 'empty';
   if (!okReports.length) return 'parse-errors';
+  if (isMixed) return 'mixed-expediente';
   if (!match) return 'no-patient';
   if (!usableReports.length) return 'parse-errors';
-  // Only warn when two+ distinct census patients appear — stray portal PDFs with another
-  // expediente (or unparseable noise) should not block silent import.
-  if (countCensusMatchedExpedientes(expedientes, findPatient) > 1) return 'mixed-expediente';
   return 'ok';
 }
 
@@ -194,18 +226,12 @@ function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
     return r.ok;
   });
   var expedientes = collectUniqueExpedientes(okReports);
+  var isMixed = isMixedExpedienteBlock(expedientes);
   var primaryExp = expedientes[0] || '';
-  var match = primaryExp && findPatient ? findPatient(primaryExp) : null;
-  var usableReports = filterUsableReportsForPatient(okReports, match);
+  var match = !isMixed && primaryExp && findPatient ? findPatient(primaryExp) : null;
+  var usableReports = isMixed ? [] : filterUsableReportsForPatient(okReports, match);
   var days = collectReportDays(usableReports);
-  var status = resolveBulkBlockStatus(
-    chunks,
-    okReports,
-    match,
-    expedientes,
-    usableReports,
-    findPatient
-  );
+  var status = resolveBulkBlockStatus(chunks, okReports, match, expedientes, usableReports, isMixed);
   var patientReg = match ? String(match.registro || '').trim() : '';
   var setsAfterMerge = usableReports.length
     ? mergeBulkParseResultsForStorage(
@@ -228,7 +254,8 @@ function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
     daysLabel: sortDaysDesc(days).join(', ') || '—',
     setsAfterMerge: setsAfterMerge,
     status: status,
-    canProcess: !!match && usableReports.length > 0,
+    canProcess: !isMixed && !!match && usableReports.length > 0,
+    rawText: String(blockText || '').trim(),
   };
 }
 
@@ -514,7 +541,7 @@ export function bulkPreviewStatusLabel(status) {
     case 'ok':
       return 'Listo';
     case 'mixed-expediente':
-      return 'Varios expedientes';
+      return 'Posible mezcla de 2 pacientes — no guardado';
     case 'no-patient':
       return 'Paciente no encontrado';
     case 'parse-errors':

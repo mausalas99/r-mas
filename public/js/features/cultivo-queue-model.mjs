@@ -54,7 +54,11 @@ import {
 export function chunkHasAntibiograma(chunkText) {
   var t = String(chunkText || '');
   if (!t.trim()) return false;
-  if (/^ATB\b/im.test(t) && /ATB\s*:.+/i.test(t)) return true;
+  // Formato condensado real (compactarLineasAntibiograma): "ATB R: AMP | S: MERO" —
+  // el ":" viene despues del bucket (R/I/S/ESBL), no pegado a "ATB". El regex viejo
+  // exigia "ATB:" literal y nunca hacia match, asi que un cultivo YA resuelto se
+  // marcaba para siempre como "ATB pendiente" (bloqueaba/ensuciaba Actualizar).
+  if (/^ATB\b.*:/im.test(t)) return true;
   var up = t.toUpperCase();
   var idx = up.indexOf('ANTIBIOGRAMA');
   if (idx === -1) return false;

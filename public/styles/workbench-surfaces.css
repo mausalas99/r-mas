@@ -295,10 +295,10 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 }
 .wb-pendientes-tab-badge {
   position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 8px;
-  height: 8px;
+  top: -3px;
+  right: -3px;
+  width: 11px;
+  height: 11px;
   background: var(--color-danger);
   border-radius: 999px;
   border: 2px solid var(--bg);

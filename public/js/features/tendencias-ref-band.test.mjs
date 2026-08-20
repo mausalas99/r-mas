@@ -15,10 +15,15 @@ describe('tendencias-ref-band', () => {
     assert.equal(normalizeTendRef([5, 5]), null);
   });
 
-  it('expands y bounds to include ref and series', () => {
+  it('expands y bounds to include ref when it is close to the series', () => {
     var b = yScaleBoundsForRef([10, 11], [12, 16]);
     assert.ok(b.min < 10);
     assert.ok(b.max > 16);
+  });
+
+  it('keeps the domain on the data when ref is far away, so trend is not flattened', () => {
+    var b = yScaleBoundsForRef([38, 45, 30, 50, 40], [150, 400]);
+    assert.ok(b.max < 150, 'ref band should stay out of view, got max=' + b.max);
   });
 
   it('builds plugin options', () => {

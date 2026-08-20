@@ -5,6 +5,7 @@ import {
 import {
   buildBulkLabPreview,
   shouldShowBulkLabPreview,
+  mixedExpedienteWarning,
 } from '../lab-bulk-paste.mjs';
 import {
   openLabBulkPreviewModal,
@@ -69,6 +70,12 @@ export function procesarReporte() {
   var blocks = buildBulkLabPreview(text, { findPatientByRegistro: rt.findPatientByRegistro });
   if (!blocks.length) {
     rt.showToast('No se detectaron reportes SOME en el texto pegado', 'error');
+    return;
+  }
+
+  var mixedWarning = mixedExpedienteWarning(blocks);
+  if (mixedWarning) {
+    rt.showToast(mixedWarning, 'error');
     return;
   }
 

@@ -7,7 +7,7 @@ import {
 import { findDisplayLabHistorySetId } from './lab-panel-history-dedupe.mjs';
 import { storeBulkLabBlocks, pickDisplayLabResult } from './lab-panel-workbench-store.mjs';
 
-export function storeProcessableBulkBlocks(blocks, processable) {
+export function storeProcessableBulkBlocks(blocks, processable, opts) {
   if (!processable.length) {
     return {
       storedSets: 0,
@@ -17,7 +17,7 @@ export function storeProcessableBulkBlocks(blocks, processable) {
       storedByPatient: {},
     };
   }
-  var storeSummary = storeBulkLabBlocks(blocks, processable);
+  var storeSummary = storeBulkLabBlocks(blocks, processable, opts);
   if (typeof rt.addAuditEntry === 'function') {
     rt.addAuditEntry(
       'lab-bulk-paste',

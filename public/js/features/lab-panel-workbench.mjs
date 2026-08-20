@@ -358,11 +358,11 @@ function toastCitoquimInterpFromResult(result) {
   });
 }
 
-function finalizeBulkLabPaste(text, blocks, totalOkReports) {
+function finalizeBulkLabPaste(text, blocks, totalOkReports, opts) {
   var quickOut = rt.getLabOutputPrefs().quickLabOutput;
   var processable = filterProcessableBulkBlocks(blocks);
   var storeSummary = processable.length
-    ? storeProcessableBulkBlocks(blocks, processable)
+    ? storeProcessableBulkBlocks(blocks, processable, opts)
     : {
         storedSets: 0,
         mergedSets: 0,

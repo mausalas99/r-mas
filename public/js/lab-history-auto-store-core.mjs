@@ -448,8 +448,8 @@ export function planLabHistoryDateTimeUpsert(existingSets, incoming) {
   var matches = findLabSetsByDateTime(existingSets, fecha, hora);
   if (!matches.length) {
     var complementary = findComplementarySameDaySet_(existingSets, incoming);
-    if (complementary) return { action: 'merge', keeper: complementary, siblings: [] };
-    return { action: 'add', keeper: null, siblings: [] };
+    if (complementary) return { action: 'merge', keeper: complementary, siblings: [], matchKind: 'complementary' };
+    return { action: 'add', keeper: null, siblings: [], matchKind: null };
   }
   var keeper = matches[0];
   var siblings = matches.slice(1);
@@ -461,7 +461,7 @@ export function planLabHistoryDateTimeUpsert(existingSets, incoming) {
       resLabs: (incoming && incoming.resLabs) || [],
     })
   ) {
-    return { action: 'skip', keeper: keeper, siblings: [] };
+    return { action: 'skip', keeper: keeper, siblings: [], matchKind: 'datetime' };
   }
-  return { action: 'merge', keeper: keeper, siblings: siblings };
+  return { action: 'merge', keeper: keeper, siblings: siblings, matchKind: 'datetime' };
 }

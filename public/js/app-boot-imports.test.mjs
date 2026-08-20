@@ -151,8 +151,15 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * (patients-list shortcuts, app-shell-keyboard.mjs). Both eager — invoked from
  * the always-mounted shell keyboard handler, same tier as the other named
  * shortcuts in that file. +14376 B / +4 files over prior budget. */
-const EAGER_BOOT_BUDGET_BYTES = 3382912;
-const EAGER_BOOT_BUDGET_FILES = 90;
+/** Budget for 8.1.6: lab-paste-modal.mjs (header-button "Pegar SOME" modal,
+ * replacing the inline <details> disclosure) plus the trend-lookup and
+ * censo-labs-format fixes. Eager — mounted from the always-open Laboratorio
+ * card header. +58939 B / +7 files over prior budget. */
+/** +6941 B / +1 file: expediente-cultivos-table.mjs now imports
+ * normalizeLabLine from lab-history-auto-store-core.mjs to key cultivo-row
+ * dedupe. Eager — cultivos table is always-mounted in the expediente. */
+const EAGER_BOOT_BUDGET_BYTES = 3449629;
+const EAGER_BOOT_BUDGET_FILES = 98;
 
 /**
  * Pre-existing eager/lazy-only conflicts, not introduced by the startup-lag

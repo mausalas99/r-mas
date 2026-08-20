@@ -6,6 +6,8 @@ const {
   shouldOfferBulkPreviewAddPatient,
   hasPendingBulkLabPreviewSession,
   shouldAutoConfirmAfterPatientSave,
+  renderBlockExpedientes,
+  renderBlockRawText,
 } = await import('./lab-bulk-preview-modal.mjs');
 
 describe('resolveBulkPreviewConfirmState', () => {
@@ -74,6 +76,36 @@ describe('shouldOfferBulkPreviewAddPatient', () => {
 describe('hasPendingBulkLabPreviewSession', () => {
   it('is false without an open modal session', () => {
     assert.equal(hasPendingBulkLabPreviewSession(), false);
+  });
+});
+
+describe('renderBlockExpedientes (mezcla de pacientes: revisar cuáles expedientes)', () => {
+  it('muestra ambos expedientes cuando hay 2+', () => {
+    var html = renderBlockExpedientes({ expedientes: ['0008421-7', '1111111-1'] });
+    assert.match(html, /0008421-7/);
+    assert.match(html, /1111111-1/);
+    assert.match(html, / y /);
+  });
+
+  it('vacío con menos de 2 expedientes (no hay mezcla que mostrar)', () => {
+    assert.equal(renderBlockExpedientes({ expedientes: ['0008421-7'] }), '');
+    assert.equal(renderBlockExpedientes({ expedientes: [] }), '');
+    assert.equal(renderBlockExpedientes({}), '');
+  });
+});
+
+describe('renderBlockRawText (inspeccionar el texto pegado/descargado)', () => {
+  it('arma un <details> con el texto crudo escapado', () => {
+    var html = renderBlockRawText({ rawText: 'Expediente:\t0008421-7\n<script>' });
+    assert.match(html, /<details/);
+    assert.match(html, /Ver texto/);
+    assert.match(html, /Expediente:/);
+    assert.doesNotMatch(html, /<script>/);
+  });
+
+  it('vacío sin rawText', () => {
+    assert.equal(renderBlockRawText({}), '');
+    assert.equal(renderBlockRawText({ rawText: '   ' }), '');
   });
 });
 

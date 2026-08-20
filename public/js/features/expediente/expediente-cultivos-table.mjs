@@ -1,5 +1,6 @@
 // Cultivos table render, cache, refresh
 import { sortLabHistoryChronological } from '../../tend-core.mjs';
+import { normalizeLabLine } from '../../lab-history-auto-store-core.mjs';
 import { getLabHistoryRevision, TREND_REFRESH_DEBOUNCE_MS } from '../../lab-history-cache.mjs';
 import { scheduleIdle } from '../../deferred-work.mjs';
 import { rt, aid, esc } from './expediente-runtime.mjs';
@@ -38,9 +39,46 @@ function cultivoOrganismoCellHtml(r) {
 function cultivoAntibiogramCellHtml(r) {
   return buildCultivoAntibiogramCellHtmlForPatient(r, aid());
 }
+/**
+ * Un mismo cultivo puede quedar duplicado en el historial cuando "Actualizar"
+ * vuelve a consultar el repositorio y crea un set nuevo en vez de reemplazar
+ * el existente (p. ej. la hora reportada por el repositorio varía unos
+ * segundos entre consultas, o el texto de sitio cambia de formato). El
+ * microorganismo + cuenta de colonias identifican el mismo aislamiento sin
+ * depender de ese texto — se mantienen constantes cuando el reporte se
+ * actualiza más tarde con el antibiograma. El duplicado más reciente trae el
+ * reporte completo (sourceText) para el chip de antibiograma, así que nos
+ * quedamos con la última ocurrencia por clave.
+ */
+function cultivoRowDedupeKey_(row) {
+  return [
+    row.tipoKey || '',
+    normalizeLabLine(row.fechaMuestra || ''),
+    normalizeLabLine(row.organismo || ''),
+    normalizeLabLine(row.cuenta || ''),
+  ].join('\x01');
+}
+
+/**
+ * Al haber empate (mismo sortMs — el mismo trazado clínico), preferir el set
+ * con sourceText (necesario para el chip de antibiograma) y, si ambos lo
+ * tienen o ninguno, el más reciente por updatedAt. sortMs solo alcanza
+ * cuando son estudios de fechas/horas distintas.
+ */
+function cultivoRowIsBetter_(candidate, current) {
+  var cSortMs = candidate.sortMs || 0;
+  var kSortMs = current.sortMs || 0;
+  if (cSortMs !== kSortMs) return cSortMs > kSortMs;
+  var cHasSrc = !!candidate._hasSourceText;
+  var kHasSrc = !!current._hasSourceText;
+  if (cHasSrc !== kHasSrc) return cHasSrc;
+  return (candidate._updatedAtMs || 0) >= (current._updatedAtMs || 0);
+}
+
 function extractCultivoTableRowsFromHistory(patientId) {
   var history = sortLabHistoryChronological(rt.ensureParsedLabHistory(patientId));
-  var rows = [];
+  var byKey = Object.create(null);
+  var order = [];
   var seq = 0;
   history.forEach(function (set) {
     if (!set || !set.resLabs || !set.resLabs.length) return;
@@ -60,11 +98,20 @@ function extractCultivoTableRowsFromHistory(patientId) {
         });
         if (!lines.length) return;
         if (!isCultureTableHeaderLine(lines[0])) return;
-        rows.push(parseCultureBlockFromLineArray(lines, set, seq++).row);
+        var row = parseCultureBlockFromLineArray(lines, set, seq++).row;
+        row._hasSourceText = !!(set.sourceText && String(set.sourceText).trim());
+        row._updatedAtMs = set.updatedAt ? Date.parse(set.updatedAt) || 0 : 0;
+        var key = cultivoRowDedupeKey_(row);
+        if (!byKey[key] || cultivoRowIsBetter_(row, byKey[key])) {
+          if (!byKey[key]) order.push(key);
+          byKey[key] = row;
+        }
       });
     });
   });
-  return rows;
+  return order.map(function (key) {
+    return byKey[key];
+  });
 }
 
 /** Agrupa por tipo de cultivo y ordena del más reciente al más antiguo. */

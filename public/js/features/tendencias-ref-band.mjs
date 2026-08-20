@@ -17,7 +17,12 @@ export function normalizeTendRef(ref) {
   return { lo: lo, hi: hi };
 }
 
-/** Expand Y domain so the reference band stays visible with the series. */
+/**
+ * Y domain from the series values. The reference band only pulls the domain
+ * toward it when it is close to the data — if the patient is far outside
+ * normal (e.g. platelets at 40 vs a 150-400 band), the band stays out of
+ * view instead of flattening the trend line.
+ */
 export function yScaleBoundsForRef(values, ref) {
   var nums = [];
   for (var i = 0; i < (values || []).length; i += 1) {
@@ -25,12 +30,18 @@ export function yScaleBoundsForRef(values, ref) {
     if (Number.isFinite(n)) nums.push(n);
   }
   var norm = normalizeTendRef(ref);
-  if (norm) {
+  if (!nums.length) {
+    if (!norm) return null;
     nums.push(norm.lo, norm.hi);
   }
-  if (!nums.length) return null;
   var min = Math.min.apply(null, nums);
   var max = Math.max.apply(null, nums);
+  if (norm) {
+    var dataRange = max - min || Math.abs(min) * 0.2 || 1;
+    var maxSpan = dataRange * 8;
+    if (norm.lo < min && max - norm.lo <= maxSpan) min = norm.lo;
+    if (norm.hi > max && norm.hi - min <= maxSpan) max = norm.hi;
+  }
   if (min === max) {
     min -= 1;
     max += 1;

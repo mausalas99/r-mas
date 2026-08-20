@@ -168,22 +168,22 @@ test('planLabHistoryDateTimeUpsert skip / merge / add', () => {
     }).action,
     'skip'
   );
-  assert.equal(
-    planLabHistoryDateTimeUpsert(existing, {
-      fecha: '31/07/2026',
-      hora: '13:51',
-      resLabs: ['QS\tGlu 83'],
-    }).action,
-    'merge'
-  );
-  assert.equal(
-    planLabHistoryDateTimeUpsert(existing, {
-      fecha: '31/07/2026',
-      hora: '14:00',
-      resLabs: ['BH\tHb 12.9'],
-    }).action,
-    'add'
-  );
+  var mergePlan = planLabHistoryDateTimeUpsert(existing, {
+    fecha: '31/07/2026',
+    hora: '13:51',
+    resLabs: ['QS\tGlu 83'],
+  });
+  assert.equal(mergePlan.action, 'merge');
+  // Actualizar labs (replaceOnMatch) solo reemplaza en matchKind 'datetime' —
+  // misma fecha+hora exacta, nunca el merge complementario de mismo día.
+  assert.equal(mergePlan.matchKind, 'datetime');
+  var addPlan = planLabHistoryDateTimeUpsert(existing, {
+    fecha: '31/07/2026',
+    hora: '14:00',
+    resLabs: ['BH\tHb 12.9'],
+  });
+  assert.equal(addPlan.action, 'add');
+  assert.equal(addPlan.matchKind, null);
 });
 
 test('planLabHistoryDateTimeUpsert misma fecha, hora distinta, secciones complementarias → merge', () => {
@@ -207,6 +207,9 @@ test('planLabHistoryDateTimeUpsert misma fecha, hora distinta, secciones complem
   assert.equal(plan.action, 'merge');
   assert.equal(plan.keeper.id, '1');
   assert.equal(plan.siblings.length, 0);
+  // Complementario (mismo día, hora distinta) — replaceOnMatch de Actualizar labs
+  // NUNCA debe pisar esto, solo aplica a matchKind 'datetime'.
+  assert.equal(plan.matchKind, 'complementary');
 });
 
 test('planLabHistoryDateTimeUpsert misma fecha, hora distinta, misma sección → add (tomas distintas)', () => {

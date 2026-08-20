@@ -159,8 +159,13 @@ export function detectMuestraDesdeProducto(lineasTexto) {
   return '';
 }
 
+/** PDF text extraction sometimes drops the space after the study keyword, e.g. "UROCULTIVOPOR SONDA". */
+function insertSpaceAfterCultivoKeyword_(s) {
+  return s.replace(/^(HEMOCULTIVO|UROCULTIVO|FUNGICULTIVO|CATETER)(?=[A-ZÁÉÍÓÚÑ])/, '$1 ');
+}
+
 export function buildCultivoTipoDisplay(tipoLine, muestra) {
-  var t = tipoLine ? tipoLine.replace(/\s+/g, ' ').trim().toUpperCase() : '';
+  var t = tipoLine ? insertSpaceAfterCultivoKeyword_(tipoLine.replace(/\s+/g, ' ').trim().toUpperCase()) : '';
   var m = muestra ? muestra.replace(/\s+/g, ' ').trim().toUpperCase() : '';
   if (t && m) return t + ' (' + m + ')';
   if (t) return t;
@@ -346,7 +351,22 @@ export function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
  * No antepone la fecha/hora del envío; sin marca «Preliminar».
  */
 
+/** PDF text extraction glues the header directly to the germ name, e.g. "MICROORGANISMO*Escherichia coli". */
+function germenFromSameLine_(line) {
+  var rest = line
+    .replace(/\r/g, '')
+    .replace(/^[\s*:]+/, '')
+    .replace(/^MICROORGANISMO/i, '')
+    .replace(/^[\s*:]+/, '')
+    .trim();
+  if (!rest) return null;
+  if (/MALDI|IDENTIF|ESPECTROMETRIA|ESPECTRO/i.test(rest)) return null;
+  return rest.toUpperCase();
+}
+
 function readGermenName_(lineasTexto, i) {
+  var sameLine = germenFromSameLine_(lineasTexto[i]);
+  if (sameLine) return { germen: sameLine, nameEnd: i };
   for (var k = i + 1; k < Math.min(i + 14, lineasTexto.length); k++) {
     var cand = lineasTexto[k].replace(/\r/g, '').replace(/\*/g, '').trim();
     if (!cand) continue;
@@ -364,7 +384,7 @@ function readGermenName_(lineasTexto, i) {
 function findGermenRunEnd_(lineasTexto, i, nameEnd) {
   for (var m = i + 1; m < lineasTexto.length; m++) {
     var Lm = lineasTexto[m].replace(/\r/g, '').replace(/\*+$/g, '').trim();
-    if (/^MICROORGANISMO(\s|$)/i.test(Lm) && m > nameEnd) return m;
+    if (/^MICROORGANISMO/i.test(Lm) && m > nameEnd) return m;
     if (/^IDENTIFICACION\s+POR\s+ESPECTROMETRIA/i.test(Lm)) return m;
   }
   return lineasTexto.length;
@@ -374,7 +394,7 @@ export function findCultivoGermenRuns(lineasTexto) {
   var runs = [];
   for (var i = 0; i < lineasTexto.length; i++) {
     var L = lineasTexto[i].replace(/\r/g, '').replace(/\*+$/g, '').trim();
-    if (!/^MICROORGANISMO(\s|$)/i.test(L)) continue;
+    if (!/^MICROORGANISMO/i.test(L)) continue;
     var named = readGermenName_(lineasTexto, i);
     if (!named) continue;
     runs.push({ germen: named.germen, i0: i, i1: findGermenRunEnd_(lineasTexto, i, named.nameEnd) });
@@ -427,6 +447,78 @@ export function parseSensCrudasAntibiogramaSlice(lineasAb) {
       if (/^(S|R|I)$/.test(lim)) parsed = { mic: '', interp: lim };
     }
     if (parsed && parsed.interp) sensCrudas.push({ med: nL.toUpperCase(), mic: parsed.mic, interp: parsed.interp });
+  }
+  return sensCrudas;
+}
+
+var ATB_INTERP_CODES_ = 'S|R|I|NEG|POS|ESBL|BLEE|BLAC|KPC|NDM|VIM|IMP|MBL';
+var ATB_GLUED_ENTRY_RE_ = new RegExp(
+  '^([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9/.\\- ]*?)\\s*([<>]=?\\s?\\d[\\d.\\/]*|\\d[\\d.\\/]*)\\s*(' +
+    ATB_INTERP_CODES_ +
+    ')$',
+  'i'
+);
+
+/**
+ * PDF text extraction glues each antibiogram row onto one line with no
+ * separators, e.g. "ANTIBIOGRAMA*AMP/SULBACTAM16/8I" then "*AMIKACINA<=16S".
+ * `lineasAb` is already split on the original newlines with the "*" row
+ * markers stripped (same prep as parseSensCrudasAntibiogramaSlice), so each
+ * line is one glued name+mic+interp entry — except the first, which still
+ * carries the "ANTIBIOGRAMA" header glued to the first entry.
+ */
+export function parseSensCrudasAntibiogramaGlued(lineasAb) {
+  var sensCrudas = [];
+  for (var i = 0; i < (lineasAb || []).length; i++) {
+    var entry = String(lineasAb[i] || '')
+      .replace(/^ANTIBIOGRAMA/i, '')
+      .trim();
+    if (!entry) continue;
+    if (/^(MICROORGANISMO|COMENTARIO|CUENTA|IDENTIFICACION)/i.test(entry)) break;
+    var m = ATB_GLUED_ENTRY_RE_.exec(entry);
+    if (!m) continue;
+    var med = m[1].trim().toUpperCase();
+    if (!med) continue;
+    sensCrudas.push({ med: med, mic: m[2].replace(/\s+/g, ''), interp: m[3].toUpperCase() });
+  }
+  return sensCrudas;
+}
+
+var ATB_FIELD_INTERP_RE_ = /^(S|R|I|NEG|POS|ESBL|BLEE|BLAC|KPC|NDM|VIM|IMP|MBL|NO SUSCEPTIBLE)$/i;
+function isAtbFieldValueToken_(t) {
+  return ATB_FIELD_INTERP_RE_.test(t) || /^[<>]=?\s?\d/.test(t) || /^\d/.test(t);
+}
+
+/**
+ * Table extraction where each field of an antibiogram row (drug, MIC,
+ * interpretation) lands on its own line, separated by blank/"*" marker rows
+ * (same one-field-per-line convention as "MICROORGANISMO\n*\nEscherichia
+ * coli"), instead of the drug name and its MIC+interp sharing one line.
+ * `lineasAb` is already stripped of "*" (now blank) and trimmed.
+ */
+export function parseSensCrudasAntibiogramaFieldRows(lineasAb) {
+  var tokens = (lineasAb || []).filter(function (l) {
+    return l && !/^ANTIBIOGRAMA$/i.test(l);
+  });
+  var sensCrudas = [];
+  var i = 0;
+  while (i < tokens.length) {
+    var t = tokens[i];
+    if (isAtbFieldValueToken_(t)) { i++; continue; }
+    if (t.length < 2 || /^(MICROORGANISMO|COMENTARIO|CUENTA|IDENTIFICACION)/i.test(t)) break;
+    var name = t;
+    i++;
+    var vals = [];
+    while (i < tokens.length && vals.length < 2 && isAtbFieldValueToken_(tokens[i])) {
+      vals.push(tokens[i]);
+      i++;
+    }
+    if (!vals.length) continue;
+    var interp = vals[vals.length - 1].toUpperCase();
+    var mic = vals.length > 1 ? vals[0] : '';
+    if (ATB_FIELD_INTERP_RE_.test(interp)) {
+      sensCrudas.push({ med: name.toUpperCase(), mic: mic, interp: interp });
+    }
   }
   return sensCrudas;
 }

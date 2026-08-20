@@ -72,6 +72,36 @@ function countBadReports(block) {
   }).length;
 }
 
+/** Expedientes detectados en el bloque, para inspección directa cuando hay mezcla. */
+export function renderBlockExpedientes(block) {
+  var list = Array.isArray(block.expedientes) ? block.expedientes : [];
+  if (list.length < 2) return '';
+  return (
+    'Exp. ' +
+    list
+      .map(function (e) {
+        return esc(e);
+      })
+      .join(' y Exp. ')
+  );
+}
+
+/** Texto crudo pegado/descargado para ese bloque — permite revisar si es mezcla real o un reporte SOME mal renderizado. */
+export function renderBlockRawText(block) {
+  var raw = String(block.rawText || '').trim();
+  if (!raw) return '';
+  return (
+    '<details class="lab-bulk-preview-rawtext">' +
+    '<summary>Ver texto (' +
+    raw.length +
+    ' caracteres)</summary>' +
+    '<pre>' +
+    esc(raw) +
+    '</pre>' +
+    '</details>'
+  );
+}
+
 function renderReportIssues(block) {
   var bad = (block.reports || []).filter(function (r) {
     return !r.ok;
@@ -154,6 +184,8 @@ function renderPreviewList(blocks) {
       .map(function (block, idx) {
         var issues = renderReportIssues(block);
         var status = block.status || 'unknown';
+        var mixedExpedientes = status === 'mixed-expediente' ? renderBlockExpedientes(block) : '';
+        var expedienteLabel = mixedExpedientes || (block.primaryExpediente ? 'Exp. ' + esc(block.primaryExpediente) : 'Sin expediente');
         return (
           '<li class="lab-bulk-preview-row lab-bulk-preview-row--' +
           esc(status) +
@@ -164,7 +196,7 @@ function renderPreviewList(blocks) {
           esc(block.patientName || '—') +
           '</div>' +
           '<div class="lab-bulk-preview-row-meta">' +
-          (block.primaryExpediente ? 'Exp. ' + esc(block.primaryExpediente) : 'Sin expediente') +
+          expedienteLabel +
           (renderBlockMeta(block) ? ' · ' + esc(renderBlockMeta(block)) : '') +
           '</div>' +
           '</div>' +
@@ -173,6 +205,7 @@ function renderPreviewList(blocks) {
           '</div>' +
           '</div>' +
           (issues || '') +
+          renderBlockRawText(block) +
           '</li>'
         );
       })

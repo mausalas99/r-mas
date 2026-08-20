@@ -83,6 +83,11 @@ export function processSmartPaste(text, opts) {
     return plan;
   }
 
+  if (plan.kind === 'mixed-expediente') {
+    showToast(plan.message, 'error');
+    return plan;
+  }
+
   if (plan.kind === 'indicas') {
     if (appTabForSmartPasteKind(plan.kind) === 'med') switchToMedTab();
     procesarRecetaFromText(plan.sourceText);

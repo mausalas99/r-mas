@@ -30,6 +30,7 @@ const {
   pickLatestDayMergedLabDisplay,
   shouldShowBulkLabPreview,
   extractLabPatientFromBulkBlock,
+  mixedExpedienteWarning,
 } = await import('./lab-bulk-paste.mjs');
 const { procesarLabs } = await import('./labs.js');
 const { primaryTipoForLabSet, isGasometriaOnlyResLabs } = await import('./lab-history-format.mjs');
@@ -364,7 +365,9 @@ describe('lab-bulk-paste preview and tipo', () => {
     assert.ok(preview[0].days.length >= 2);
   });
 
-  it('buildBulkLabPreview ignora expediente ajeno fuera de censo (no Varios expedientes)', () => {
+  it('buildBulkLabPreview bloquea si el expediente ajeno NO está en censo (seguridad paciente)', () => {
+    // Antes se descartaba en silencio el expediente ajeno; ahora bloquea SIEMPRE:
+    // un expediente ajeno fuera del censo también puede ser otro paciente real.
     var foreign = String(DEMO_SOME_LAB_REPORT).replace(/0008421-7/g, '9999999-9');
     var block = DEMO_SOME_LAB_REPORT + '\n\n' + foreign;
     var preview = buildBulkLabPreview(block, {
@@ -374,11 +377,12 @@ describe('lab-bulk-paste preview and tipo', () => {
       },
     });
     assert.equal(preview.length, 1);
-    assert.equal(preview[0].status, 'ok');
-    assert.equal(preview[0].okReportCount, 1);
+    assert.equal(preview[0].status, 'mixed-expediente');
+    assert.equal(preview[0].canProcess, false);
+    assert.equal(preview[0].okReportCount, 0);
   });
 
-  it('buildBulkLabPreview marca Varios expedientes solo con 2+ pacientes de censo', () => {
+  it('buildBulkLabPreview marca mixed-expediente con 2 pacientes de censo (nunca guarda ninguno)', () => {
     var other = String(DEMO_SOME_LAB_REPORT).replace(/0008421-7/g, '1111111-1');
     var block = DEMO_SOME_LAB_REPORT + '\n\n' + other;
     var preview = buildBulkLabPreview(block, {
@@ -390,6 +394,39 @@ describe('lab-bulk-paste preview and tipo', () => {
     });
     assert.equal(preview.length, 1);
     assert.equal(preview[0].status, 'mixed-expediente');
+    assert.equal(preview[0].canProcess, false);
+    assert.equal(preview[0].okReportCount, 0);
+    assert.match(preview[0].rawText, /0008421-7/);
+    assert.match(preview[0].rawText, /1111111-1/);
+  });
+
+  it('buildBulkLabPreview NO marca mixed si los expedientes son el mismo paciente (base-registro)', () => {
+    // 1087426 y 1087426-2 son el mismo paciente en el hospital (findPatientByRegistro base match).
+    var alt = String(DEMO_SOME_LAB_REPORT).replace(/0008421-7/g, '0008421-2');
+    var block = DEMO_SOME_LAB_REPORT + '\n\n' + alt;
+    var preview = buildBulkLabPreview(block, {
+      findPatientByRegistro: function () {
+        return { id: 'p1', nombre: 'Demo Pérez', registro: '0008421-7' };
+      },
+    });
+    assert.equal(preview.length, 1);
+    assert.equal(preview[0].status, 'ok');
+    assert.equal(preview[0].canProcess, true);
+  });
+
+  it('mixedExpedienteWarning arma mensaje en español con los expedientes detectados', () => {
+    var other = String(DEMO_SOME_LAB_REPORT).replace(/0008421-7/g, '1111111-1');
+    var block = DEMO_SOME_LAB_REPORT + '\n\n' + other;
+    var preview = buildBulkLabPreview(block, { findPatientByRegistro: function () { return null; } });
+    var msg = mixedExpedienteWarning(preview);
+    assert.match(msg, /0008421-7/);
+    assert.match(msg, /1111111-1/);
+    assert.match(msg, /no se guard/i);
+  });
+
+  it('mixedExpedienteWarning devuelve null cuando no hay mezcla', () => {
+    var preview = buildBulkLabPreview(DEMO_SOME_LAB_REPORT, { findPatientByRegistro: function () { return null; } });
+    assert.equal(mixedExpedienteWarning(preview), null);
   });
 
   it('buildBulkLabPreview separa pacientes con --- PACIENTE ---', () => {

@@ -1,5 +1,10 @@
 import { escTxt } from './labs-display.mjs';
-import { findCultivoGermenRuns, parseSensCrudasAntibiogramaSlice } from './labs-cultivo-scan.mjs';
+import {
+  findCultivoGermenRuns,
+  parseSensCrudasAntibiogramaSlice,
+  parseSensCrudasAntibiogramaGlued,
+  parseSensCrudasAntibiogramaFieldRows,
+} from './labs-cultivo-scan.mjs';
 
 function isCultivoChromeBodyLine_(line) {
   var t = String(line || '').trim();
@@ -241,18 +246,29 @@ export function extractSensCrudasForGermFromSource(sourceText, germQuery) {
     if (qTok.length > 3 && gTok.length > 3 && (qTok === gTok || q.indexOf(gTok) === 0 || g.indexOf(qTok) === 0)) return true;
     return false;
   }
+  // "Actualizar" puede reconsultar el repositorio varias veces y el reporte
+  // termina anexado (no reemplazado) cuando la hora del estudio varía apenas
+  // unos minutos entre consultas — el mismo cultivo queda repetido 2-3 veces
+  // dentro de sourceText. Un MICROORGANISMO de una copia posterior corta el
+  // slice de una copia anterior antes de llegar a su ANTIBIOGRAMA completo.
+  // En vez de quedarnos con la primera coincidencia (posiblemente truncada),
+  // probamos todas y nos quedamos con la que más antibióticos resuelve.
+  var best = null;
   for (var ri = 0; ri < runs.length; ri++) {
     if (!matches(runs[ri])) continue;
     var sliceLines = lineasTexto.slice(runs[ri].i0, runs[ri].i1);
     var subNorm = sliceLines.join('\n');
     var idxAbLoc = subNorm.toUpperCase().indexOf('ANTIBIOGRAMA');
-    if (idxAbLoc === -1) return null;
+    if (idxAbLoc === -1) continue;
     var lineasAb = subNorm.substring(idxAbLoc).split('\n').map(function (l) {
       return l.replace(/\r/g, '').replace(/\*+/g, '').trim();
     });
-    return parseSensCrudasAntibiogramaSlice(lineasAb);
+    var glued = parseSensCrudasAntibiogramaGlued(lineasAb);
+    var candidate = glued.length ? glued : parseSensCrudasAntibiogramaSlice(lineasAb);
+    if (!candidate.length) candidate = parseSensCrudasAntibiogramaFieldRows(lineasAb);
+    if (!best || candidate.length > best.length) best = candidate;
   }
-  return null;
+  return best;
 }
 
 /**

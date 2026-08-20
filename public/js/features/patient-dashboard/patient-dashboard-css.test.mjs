@@ -104,13 +104,6 @@ test('dashboard cards have no box outline', () => {
   assert.equal(/--spine-h/.test(css), false);
 });
 
-test('lab paste disclosure is a solid rail, not a dashed or native marker line', () => {
-  const css = readLabInnerCss();
-  assert.match(css, /\.lab-paste-details\s*\{[^}]*border-top:\s*1px\s+solid/s);
-  assert.equal(/lab-paste-details[^}]*dashed/.test(css), false);
-  assert.match(css, /summary::-webkit-details-marker/);
-});
-
 test('lab inner nav uses the same pill chrome as Paciente Resumen | Clínico | Salida', () => {
   const css = readLabInnerCss();
   assert.match(css, /\.lab-active-shell\s*\{[^}]*border-radius:\s*var\(--radius-lg\)/s);

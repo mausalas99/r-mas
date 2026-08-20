@@ -39,8 +39,7 @@ test('top tabs: apptab-nota appears before apptab-lab', () => {
   assert.ok(lab > nota, 'apptab-nota must appear before apptab-lab');
 });
 
-test('#patient-ronda-dashboard-host exists; old labs/todos mounts are absent', () => {
-  assert.match(html, /id="patient-ronda-dashboard-host"/);
+test('old labs/todos mounts are absent (dashboard-host removed by teal rollout)', () => {
   assert.doesNotMatch(html, /id="patient-ronda-labs-body"/);
   assert.doesNotMatch(html, /id="patient-ronda-todos-mount"/);
 });

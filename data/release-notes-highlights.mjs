@@ -2483,10 +2483,38 @@ var RELEASE_NOTES_815 = [
   },
 ];
 
+var RELEASE_NOTES_816 = [
+  {
+    title: 'Estado actual — ya no cruza vitales de paciente',
+    body:
+      'La sincronización en segundo plano podía escribir los signos vitales de un paciente en la ficha de otro. Corregido.',
+  },
+  {
+    title: 'Cultivos — ya no se duplican al actualizar',
+    body:
+      '"Actualizar" podía crear una fila repetida del mismo cultivo. Ahora se identifica el mismo aislamiento y se conserva el reporte más completo.',
+  },
+  {
+    title: 'EGO — deja de apilar un campo por línea',
+    body: 'Un resultado con varios campos por línea se leía mal y quedaba un campo por renglón.',
+  },
+  {
+    title: 'Egresos y censo — menos falsos positivos y duplicados',
+    body:
+      'Una "E" a media palabra ya no dispara el detector de egresos; el censo ya no repite un mismo estudio de laboratorio.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.1.6 en todas</strong> las Macs y PCs del turno el mismo día.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_815;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_816;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.1.6': RELEASE_NOTES_816,
   '8.1.5': RELEASE_NOTES_815,
   '8.1.4': RELEASE_NOTES_814,
   '8.1.3': RELEASE_NOTES_813,

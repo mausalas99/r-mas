@@ -39,12 +39,21 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.1.5](https://github.com/mausalas99/r-mas/releases/tag/v8.1.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.1.6](https://github.com/mausalas99/r-mas/releases/tag/v8.1.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
 
 
+
+## R+ 8.1.6 (estable — release 8.1.6)
+
+- **Estado actual:** ya no cruza signos vitales entre pacientes.
+- **Cultivos:** ya no se duplican al actualizar.
+- **EGO:** ya no apila un campo por línea.
+- **Egresos / censo:** menos falsos positivos y estudios duplicados.
+
+Notas: `docs/RELEASE_NOTES_8.1.6.txt`.
 ## R+ 8.1.5 (estable — release 8.1.5)
 
 - **iPad:** Vista ronda ya no esconde Estado actual ni Eventualidades debajo de labs.

@@ -128,6 +128,19 @@ describe('paste-smart-model', () => {
     assert.equal(plan.needsPreview, false);
   });
 
+  it('planSmartPaste: 2 expedientes distintos en un bloque → mixed-expediente, no procesa nada', () => {
+    var other = String(GASO_VENOSA_SOLO).replace('2213511-4', '5555555-5');
+    var text = GASO_VENOSA_SOLO + '\n\n' + other;
+    const plan = planSmartPaste(text, {
+      patients: CENSUS,
+      findPatientByRegistro: (reg) => matchPatientByRegistro(reg, CENSUS),
+    });
+    assert.equal(plan.kind, 'mixed-expediente');
+    assert.match(plan.message, /2213511-4/);
+    assert.match(plan.message, /5555555-5/);
+    assert.equal(plan.totalOkReports, 0);
+  });
+
   it('planSmartPaste: sin censo → preview / no processable', () => {
     const plan = planSmartPaste(GASO_VENOSA_SOLO, {
       patients: [],

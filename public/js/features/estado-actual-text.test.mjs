@@ -287,7 +287,7 @@ test('buildEstadoActualText bomba de insulina muestra glucosa sin sufijo mg/dL',
   assert.doesNotMatch(text, /mg\/dL/i);
 });
 
-test('buildEstadoActualText marca INESTABLE con hipotensión', () => {
+test('buildEstadoActualText mantiene ESTABLE por defecto con hipotensión (solo el médico lo cambia a mano)', () => {
   const m = emptyMonitoreo();
   m.historial.push({
     id: '1',
@@ -298,10 +298,10 @@ test('buildEstadoActualText marca INESTABLE con hipotensión', () => {
   });
   const text = buildEstadoActualText(m.estadoClinico, deriveSnapshot(m), {}, {});
   const hdLine = text.split('\n').find((line) => line.startsWith('HD:'));
-  assert.match(hdLine, /^HD: INESTABLE,/);
+  assert.match(hdLine, /^HD: ESTABLE,/);
 });
 
-test('buildEstadoActualText marca INESTABLE con vasopresores aunque TA normal', () => {
+test('buildEstadoActualText mantiene ESTABLE por defecto con vasopresores', () => {
   const m = emptyMonitoreo();
   m.estadoClinico.vasop = 'NOREPINEFRINA 0.1 MCG/KG/MIN';
   const text = buildEstadoActualText(
@@ -311,7 +311,7 @@ test('buildEstadoActualText marca INESTABLE con vasopresores aunque TA normal', 
     {}
   );
   const hdLine = text.split('\n').find((line) => line.startsWith('HD:'));
-  assert.match(hdLine, /^HD: INESTABLE,/);
+  assert.match(hdLine, /^HD: ESTABLE,/);
 });
 
 test('buildEstadoActualText mantiene ESTABLE con hipertensión aislada', () => {

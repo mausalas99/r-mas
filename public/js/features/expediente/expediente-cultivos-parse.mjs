@@ -28,9 +28,11 @@ function isCultureTableHeaderLine(t) {
 function classifyCultureTipoKeyFromHeaderLine(rawLine) {
   var s = String(rawLine || '').replace(/\s+/g, ' ').trim();
   var beforeColon = (s.split(':')[0] || s).toUpperCase();
-  if (/^HEMOCULTIVO\b/.test(beforeColon)) return 'hemo';
-  if (/^UROCULTIVO\b/.test(beforeColon)) return 'uro';
-  if (/^FUNGICULTIVO\b/.test(beforeColon)) return 'fungi';
+  // Sin \b tras la palabra clave: el texto extraído del PDF a veces la pega
+  // directo a la siguiente palabra ("UROCULTIVOPOR SONDA"), sin espacio.
+  if (/^HEMOCULTIVO/.test(beforeColon)) return 'hemo';
+  if (/^UROCULTIVO/.test(beforeColon)) return 'uro';
+  if (/^FUNGICULTIVO/.test(beforeColon)) return 'fungi';
   if (/^TINCION(\s+DE)?\s+GRAM\b/.test(beforeColon)) return 'gram';
   if (/^CATETER\b/.test(beforeColon)) return 'cateter';
   return 'otro';

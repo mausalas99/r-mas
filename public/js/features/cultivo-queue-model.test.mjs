@@ -27,6 +27,18 @@ test('chunkHasAntibiograma detects ATB line and ANTIBIOGRAMA body', () => {
   assert.equal(chunkHasAntibiograma('UROCULTIVO: E. COLI\nANTIBIOGRAMA\n*\n*'), false);
 });
 
+test('chunkHasAntibiograma detects the real condensed format from compactarLineasAntibiograma (bucket colon, not "ATB:")', () => {
+  // Este es el texto real guardado en resLabs para un cultivo ya resuelto
+  // (labs-cultivo.mjs buildGermenChunk_ -> compactarLineasAntibiograma). No lleva
+  // "ATB:" literal, el ":" va despues del bucket R/I/S/ESBL.
+  assert.equal(
+    chunkHasAntibiograma('SANGRE 12/08: PSEUDOMONAS AERUGINOSA\nATB R: CEFTAZ | S: MEROPENEM'),
+    true
+  );
+  assert.equal(chunkHasAntibiograma('ORINA 12/08: E. COLI\nATB S: NITRO, AMP'), true);
+  assert.equal(chunkHasAntibiograma('ORINA 12/08: E. COLI\nATB sin interpretaciones'), false);
+});
+
 test('cultivoNeedsAtbFollowUp only for positives without ATB', () => {
   assert.equal(cultivoNeedsAtbFollowUp({ negativo: true }, 'x'), false);
   assert.equal(cultivoNeedsAtbFollowUp({ negativo: false }, 'ORG\nATB: CIPRO S'), false);

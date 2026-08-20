@@ -121,22 +121,54 @@ function mergeUpsertLabRows_(keeper, siblings, draft) {
   return dedupeConsolidatedLabRows(mergedRows, tipo === 'mixed' ? 'labs' : tipo);
 }
 
-function applyUpsertMergePlan_(patientId, plan, draft) {
+function removeSiblingsFromHistory_(patientId, siblings) {
+  if (!siblings.length) return;
+  var remove = new Set(
+    siblings.map(function (s) {
+      return String(s.id);
+    })
+  );
+  getLabHistory()[patientId] = getLabHistory()[patientId].filter(function (s) {
+    return !remove.has(String(s.id));
+  });
+}
+
+/**
+ * Actualizar labs (re-fetch del repositorio): la toma re-consultada reemplaza
+ * por completo el set existente en esa fecha+hora — no se pisan valores nuevos
+ * y viejos entre sí. No aplica al pegado normal, donde reportes complementarios
+ * (Biometría, luego Química) deben seguir combinándose vía mergeUpsertLabRows_.
+ */
+function replaceUpsertKeeper_(keeper, draft) {
+  var clean = sanitizeResLabsChunks(draft.resLabs || []);
+  keeper.resLabs = clean;
+  keeper.bhExtras = draft.bhExtras && typeof draft.bhExtras === 'object' ? Object.assign({}, draft.bhExtras) : {};
+  keeper.refsBySection =
+    draft.refsBySection && typeof draft.refsBySection === 'object' ? Object.assign({}, draft.refsBySection) : {};
+  keeper.parsed = rt.extractParsedValues(clean);
+  keeper.parsedBySection = rt.buildParsedBySectionFromResLabs(clean, keeper.bhExtras);
+  if (draft.sourceText) keeper.sourceText = draft.sourceText;
+  keeper.updatedAt = new Date().toISOString();
+}
+
+function applyUpsertMergePlan_(patientId, plan, draft, opts) {
   var keeper = plan.keeper;
   var siblings = plan.siblings || [];
+  var replaceOnMatch = !!(opts && opts.replaceOnMatch) && plan.matchKind === 'datetime';
+
+  if (replaceOnMatch) {
+    var unchanged = !siblings.length && areLabSetsEquivalent(draft.resLabs || [], keeper.resLabs || []);
+    replaceUpsertKeeper_(keeper, draft);
+    removeSiblingsFromHistory_(patientId, siblings);
+    refreshSameDayAscitisForPatient(patientId, keeper.id);
+    bumpLabHistoryRevision(patientId);
+    return { action: unchanged ? 'skipped' : 'merged', set: keeper };
+  }
+
   var deduped = mergeUpsertLabRows_(keeper, siblings, draft);
   if (!areLabSetsEquivalent(deduped, keeper.resLabs || []) || siblings.length) {
     applyMergedLabsToKeeper_(keeper, deduped, draft.sourceText, draft.bhExtras, draft.refsBySection);
-    if (siblings.length) {
-      var remove = new Set(
-        siblings.map(function (s) {
-          return String(s.id);
-        })
-      );
-      getLabHistory()[patientId] = getLabHistory()[patientId].filter(function (s) {
-        return !remove.has(String(s.id));
-      });
-    }
+    removeSiblingsFromHistory_(patientId, siblings);
     refreshSameDayAscitisForPatient(patientId, keeper.id);
     bumpLabHistoryRevision(patientId);
     return { action: 'merged', set: keeper };
@@ -149,7 +181,7 @@ function applyUpsertMergePlan_(patientId, plan, draft) {
  * colapsa hermanos del mismo timestamp (p. ej. Labs 1…8).
  * @returns {{ action: 'added'|'merged'|'skipped', set: object|null }}
  */
-function upsertLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, refsBySection, idSeed) {
+function upsertLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, refsBySection, idSeed, upsertOpts) {
   if (!patientId || !resLabs || !resLabs.length) return { action: 'skipped', set: null };
   if (!getLabHistory()[patientId]) getLabHistory()[patientId] = [];
   var draft = buildLabHistorySet(
@@ -172,7 +204,7 @@ function upsertLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras,
     bumpLabHistoryRevision(patientId);
     return { action: 'added', set: draft };
   }
-  return applyUpsertMergePlan_(patientId, plan, draft);
+  return applyUpsertMergePlan_(patientId, plan, draft, upsertOpts);
 }
 
 function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, refsBySection, idSeed) {
@@ -213,7 +245,7 @@ function pushExternalLabHistory(patientId, opts) {
   return set;
 }
 
-function pushLabHistoryFromBulkPayload(patientId, payload, idSeed) {
+function pushLabHistoryFromBulkPayload(patientId, payload, idSeed, upsertOpts) {
   if (!payload || !payload.resLabs || !payload.resLabs.length) {
     return { action: 'skipped', set: null };
   }
@@ -225,7 +257,8 @@ function pushLabHistoryFromBulkPayload(patientId, payload, idSeed) {
     payload.sourceText,
     payload.bhExtras,
     payload.refsBySection,
-    idSeed
+    idSeed,
+    upsertOpts
   );
 }
 
@@ -308,7 +341,7 @@ function finalizeLabHistoryImport(patientId) {
   enqueueCloudLabSidecarsForPatient(patientId);
 }
 
-function storeBulkLabBlocks(blocks, processable) {
+function storeBulkLabBlocks(blocks, processable, opts) {
   if (processable.length > 1 && typeof rt.pushUndoSnapshot === 'function') {
     rt.pushUndoSnapshot('Procesar laboratorios (' + processable.length + ' pacientes)');
   }
@@ -329,7 +362,7 @@ function storeBulkLabBlocks(blocks, processable) {
       });
     var mergedPayloads = mergeBulkParseResultsForStorage(okItems);
     mergedPayloads.forEach(function (payload, idx) {
-      var upsert = pushLabHistoryFromBulkPayload(patientId, payload, block.blockIndex + '-' + idx);
+      var upsert = pushLabHistoryFromBulkPayload(patientId, payload, block.blockIndex + '-' + idx, opts);
       if (!upsert || upsert.action === 'skipped') {
         skippedDupes += 1;
         return;

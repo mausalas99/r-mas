@@ -6,6 +6,7 @@ import { foldText } from '../fuzzy-match.mjs';
 import {
   buildBulkLabPreview,
   shouldShowBulkLabPreview,
+  mixedExpedienteWarning,
 } from '../lab-bulk-paste.mjs';
 import { looksLikeSomeIndicacionesPaste } from '../med-receta-parse.mjs';
 
@@ -156,7 +157,7 @@ export function assignPatientToBulkBlock(block, patient) {
 }
 
 /**
- * @typedef {'not-some'|'empty'|'ready'|'confirm-single'|'ambiguous'|'preview'|'indicas'} SmartPasteKind
+ * @typedef {'not-some'|'empty'|'ready'|'confirm-single'|'ambiguous'|'preview'|'indicas'|'mixed-expediente'} SmartPasteKind
  */
 
 /**
@@ -198,6 +199,13 @@ export function planSmartPaste(text, opts) {
   }
 
   var blocks = buildBulkLabPreview(sourceText, { findPatientByRegistro: findByReg });
+  var mixedWarning = mixedExpedienteWarning(blocks);
+  if (mixedWarning) {
+    return Object.assign(emptyPlan('mixed-expediente', mixedWarning), {
+      sourceText: sourceText,
+      blocks: blocks,
+    });
+  }
   var totalOk = sumOkReports(blocks);
   if (!totalOk) {
     return Object.assign(emptyPlan('not-some', 'No parece un reporte SOME (copia desde «Expediente:»)'), {

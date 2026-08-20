@@ -179,6 +179,7 @@
 }
 .atb-ris-meta {
   display: inline-flex;
+  flex-basis: 100%;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 8px;

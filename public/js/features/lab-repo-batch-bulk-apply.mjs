@@ -36,13 +36,18 @@ export function previewBlocksFromBulkText(text, rt) {
   return buildBulkLabPreview(text, { findPatientByRegistro: rt.findPatientByRegistro });
 }
 
+/**
+ * Actualizar labs re-consulta el repositorio: la toma re-descargada reemplaza
+ * el set existente en su fecha+hora (replaceOnMatch), no lo mezcla con lo viejo —
+ * evita que se acumulen líneas repetidas o parcialmente corregidas al re-actualizar.
+ */
 export function finalizeJoinedBulkTexts(texts, rt) {
   var text = joinPatientBulkTexts(texts);
   if (!text) return { importedPatients: 0, totalOk: 0 };
   var blocks = previewBlocksFromBulkText(text, rt);
   var counts = countBlocksOkAndPatients(blocks);
   if (!counts.totalOk) return { importedPatients: 0, totalOk: 0 };
-  finalizeBulkLabPaste(text, blocks, counts.totalOk);
+  finalizeBulkLabPaste(text, blocks, counts.totalOk, { replaceOnMatch: true });
   return { importedPatients: counts.patientCount, totalOk: counts.totalOk };
 }
 
@@ -84,7 +89,8 @@ export function openBatchReviewPreview(reviewTexts, rt) {
       finalizeBulkLabPaste(
         reviewText,
         reviewBlocks,
-        countBlocksOkAndPatients(reviewBlocks).totalOk
+        countBlocksOkAndPatients(reviewBlocks).totalOk,
+        { replaceOnMatch: true }
       );
     },
   });

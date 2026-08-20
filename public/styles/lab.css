@@ -3673,6 +3673,43 @@ html.dark #lab-output-box .out-indent {
   padding: 12px 18px 16px;
   border-top: 1px solid var(--divider);
 }
+.lab-bulk-preview-rawtext {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px dashed var(--divider);
+  font-size: calc(12px * var(--density-font, 1));
+  color: var(--text-muted);
+}
+.lab-bulk-preview-rawtext summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.lab-bulk-preview-rawtext summary::-webkit-details-marker {
+  display: none;
+}
+.lab-bulk-preview-rawtext summary::before {
+  content: '▸ ';
+  color: var(--text-muted);
+}
+.lab-bulk-preview-rawtext[open] summary::before {
+  content: '▾ ';
+}
+.lab-bulk-preview-rawtext pre {
+  margin: 6px 0 0;
+  max-height: 240px;
+  overflow: auto;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--surface-inset, rgba(0, 0, 0, 0.18));
+  color: var(--text);
+  font-family: var(--font-mono, monospace);
+  font-size: calc(11px * var(--density-font, 1));
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 html.lab-bulk-preview-modal-open #modal.modal-backdrop.open {
   z-index: var(--z-modal-nested);
 }
