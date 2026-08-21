@@ -201,6 +201,7 @@ export function buildPurgeRoomStatements(db, roomId) {
     db.prepare('DELETE FROM room_members WHERE room_id = ?').bind(roomId),
     db.prepare('DELETE FROM mutations WHERE room_id = ?').bind(roomId),
     db.prepare('DELETE FROM room_state WHERE room_id = ?').bind(roomId),
+    db.prepare('DELETE FROM room_state_labs WHERE room_id = ?').bind(roomId),
     db.prepare('DELETE FROM tombstones WHERE room_id = ?').bind(roomId),
     db.prepare('DELETE FROM rooms WHERE id = ?').bind(roomId),
   ];

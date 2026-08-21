@@ -79,7 +79,11 @@ export function validateOpsSize(ops) {
   }
 }
 
-/** @param {{ WORKER_DATA_KEY?: string }} env @param {string} roomId */
+/**
+ * Assemble the full RoomSyncState from the core row + per-patient lab shards.
+ * Callers never see the split — same flat shape as before sharding.
+ * @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId
+ */
 export async function loadRoomState(env, db, roomId) {
   const row = await db
     .prepare('SELECT ciphertext, iv FROM room_state WHERE room_id = ?')
@@ -89,6 +93,22 @@ export async function loadRoomState(env, db, roomId) {
     throw new SyncError('not_found', 'Estado de sala no encontrado.');
   }
   const state = await decodeRoomState(env, row.ciphertext, row.iv);
+  // Legacy pre-shard rows still carry labSidecars embedded in the core blob.
+  const legacyLabSidecars =
+    state?.labSidecars && typeof state.labSidecars === 'object' ? state.labSidecars : {};
+  state.labSidecars = { ...legacyLabSidecars };
+
+  const { results } = await db
+    .prepare('SELECT patient_id, ciphertext, iv FROM room_state_labs WHERE room_id = ?')
+    .bind(roomId)
+    .all();
+  for (const shardRow of results ?? []) {
+    state.labSidecars[shardRow.patient_id] = await decodeRoomState(
+      env,
+      shardRow.ciphertext,
+      shardRow.iv
+    );
+  }
   return { state };
 }
 
@@ -107,18 +127,44 @@ export async function commitMutationBatch(env, db, opts) {
     clientMutationId,
     applied,
     nextState,
+    previousLabSidecars,
   } = opts;
-  const { ciphertext, iv, storageBytes } = await encodeRoomState(env, nextState);
+
+  const { labSidecars: nextLabSidecars, ...coreState } = nextState;
+  const { ciphertext, iv, storageBytes: coreBytes } = await encodeRoomState(env, coreState);
+
+  const patientIds = new Set([
+    ...Object.keys(nextLabSidecars || {}),
+    ...Object.keys(previousLabSidecars || {}),
+  ]);
+  /** @type {Map<string, { ciphertext: Uint8Array, iv: Uint8Array, storageBytes: number }>} */
+  const labShards = new Map();
+  let labShardBytes = 0;
+  for (const patientId of patientIds) {
+    const sets = nextLabSidecars?.[patientId];
+    if (!sets || typeof sets !== 'object' || Object.keys(sets).length === 0) continue;
+    const shard = await encodeRoomState(env, sets);
+    if (shard.storageBytes > QUOTAS.labShardMaxBytes) {
+      throw new SyncError(
+        'payload_too_large',
+        `El historial de labs del paciente superó el límite por sala (${QUOTAS.labShardMaxBytes} bytes).`
+      );
+    }
+    labShards.set(patientId, shard);
+    labShardBytes += shard.storageBytes;
+  }
+  const storageBytes = coreBytes + labShardBytes;
   if (storageBytes > QUOTAS.storageHardBytes) {
     throw new SyncError(
       'payload_too_large',
       `La sala superó el límite de almacenamiento (${QUOTAS.storageHardBytes} bytes).`
     );
   }
+
   const now = new Date().toISOString();
   const opsJson = JSON.stringify(applied);
   try {
-    const results = await db.batch([
+    const statements = [
       db
         .prepare(
           `INSERT INTO mutations (room_id, revision, client_mutation_id, actor_id, ops_json, created_at)
@@ -159,7 +205,43 @@ export async function commitMutationBatch(env, db, opts) {
           clientMutationId,
           nextRevision
         ),
-    ]);
+    ];
+    for (const patientId of patientIds) {
+      const shard = labShards.get(patientId);
+      if (shard) {
+        statements.push(
+          db
+            .prepare(
+              `INSERT OR REPLACE INTO room_state_labs (room_id, patient_id, ciphertext, iv, updated_at)
+               SELECT ?, ?, ?, ?, ?
+               FROM mutations WHERE room_id = ? AND client_mutation_id = ? AND revision = ?`
+            )
+            .bind(
+              roomId,
+              patientId,
+              shard.ciphertext,
+              shard.iv,
+              now,
+              roomId,
+              clientMutationId,
+              nextRevision
+            )
+        );
+      } else {
+        statements.push(
+          db
+            .prepare(
+              `DELETE FROM room_state_labs WHERE room_id = ? AND patient_id = ?
+               AND EXISTS (
+                 SELECT 1 FROM mutations
+                 WHERE room_id = ? AND client_mutation_id = ? AND revision = ?
+               )`
+            )
+            .bind(roomId, patientId, roomId, clientMutationId, nextRevision)
+        );
+      }
+    }
+    const results = await db.batch(statements);
     const inserted = Number(results?.[0]?.meta?.changes ?? 0);
     const bumped = Number(results?.[1]?.meta?.changes ?? 0);
     if (inserted !== 1 || bumped !== 1) return { ok: false, reason: 'stale' };
@@ -308,6 +390,7 @@ async function handleMutations(request, env, db, roomId) {
       clientMutationId,
       applied: lastApplied,
       nextState: appliedResult.state,
+      previousLabSidecars: state.labSidecars,
     });
     if (committed.ok) {
       await notifyRoomRevision(env, roomId, committed.revision);

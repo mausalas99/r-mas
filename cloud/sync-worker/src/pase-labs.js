@@ -1,7 +1,7 @@
-import { decodeRoomState } from './crypto-at-rest.js';
 import { SyncError } from './errors.js';
 import { resolveActiveRoomForUser } from './rooms.js';
 import { userFromAuthHeader } from './session.js';
+import { loadRoomState } from './sync.js';
 import { filterLabSidecarsForMobilePull, resolveLabSetMs } from './mobile-lab-window.js';
 import { resolvePatientTeamIdFromAssignments } from '../../../lib/clinical-scope/team-membership.mjs';
 
@@ -115,13 +115,7 @@ export async function handlePaseLabs(request, env) {
     throw new SyncError('not_found', 'Sin sala nube activa. Únete desde escritorio primero.');
   }
 
-  const row = await db
-    .prepare('SELECT ciphertext, iv FROM room_state WHERE room_id = ?')
-    .bind(room.id)
-    .first();
-  if (!row) throw new SyncError('not_found', 'Estado de sala vacío.');
-
-  const state = await decodeRoomState(env, row.ciphertext, row.iv);
+  const { state } = await loadRoomState(env, db, room.id);
   const entries = Array.isArray(state?.entries) ? state.entries : [];
   const rawSidecars =
     state?.labSidecars && typeof state.labSidecars === 'object' ? state.labSidecars : {};

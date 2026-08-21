@@ -1,5 +1,5 @@
-import { decodeRoomState } from '../crypto-at-rest.js';
 import { defaultTurnKey } from '../turn-key.js';
+import { loadRoomState as loadSyncRoomState } from '../sync.js';
 import { normalizeInternoSala } from './sala-slug.js';
 
 /**
@@ -37,10 +37,11 @@ export async function resolveRoomForSala(db, sala) {
  * @param {string} roomId
  */
 export async function loadRoomState(env, db, roomId) {
-  const row = await db
-    .prepare('SELECT ciphertext, iv FROM room_state WHERE room_id = ?')
-    .bind(roomId)
-    .first();
-  if (!row) return null;
-  return decodeRoomState(env, row.ciphertext, row.iv);
+  try {
+    const { state } = await loadSyncRoomState(env, db, roomId);
+    return state;
+  } catch (err) {
+    if (err?.code === 'not_found') return null;
+    throw err;
+  }
 }

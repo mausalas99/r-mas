@@ -46,6 +46,8 @@ function createInternoDb(opts = {}) {
   let roomState = opts.state || null;
   /** @type {Array<{ sql: string, args: unknown[] }>} */
   const mutations = [];
+  /** room_state_labs shard rows, keyed by patient_id — mirrors the real table. */
+  const patientLabs = new Map();
 
   const db = {
     prepare(sql) {
@@ -64,6 +66,9 @@ function createInternoDb(opts = {}) {
               }
               if (sql.includes('SELECT revision FROM rooms WHERE id')) {
                 return { revision: roomRow.revision };
+              }
+              if (sql.includes('FROM room_state_labs')) {
+                return patientLabs.get(args[1]) || null;
               }
               if (sql.includes('FROM room_state')) {
                 return roomState;
@@ -87,9 +92,24 @@ function createInternoDb(opts = {}) {
                   iv: args[1],
                 };
               }
+              if (sql.includes('INSERT OR REPLACE INTO room_state_labs')) {
+                patientLabs.set(args[1], { ciphertext: args[2], iv: args[3] });
+              }
+              if (sql.includes('DELETE FROM room_state_labs')) {
+                patientLabs.delete(args[1]);
+              }
               return { meta: { changes: 1 } };
             },
             async all() {
+              if (sql.includes('FROM room_state_labs')) {
+                return {
+                  results: [...patientLabs.entries()].map(([patient_id, row]) => ({
+                    patient_id,
+                    ciphertext: row.ciphertext,
+                    iv: row.iv,
+                  })),
+                };
+              }
               return { results: [] };
             },
           };
