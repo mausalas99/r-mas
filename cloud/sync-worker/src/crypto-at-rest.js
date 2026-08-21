@@ -188,4 +188,6 @@ export async function decryptJson(env, ciphertextHex, ivHex) {
   return decodeRoomState(env, hexToBytes(ciphertextHex), hexToBytes(ivHex));
 }
 
+export { toUint8Array };
+
 export const __test = { looksLikeJsonObject, toUint8Array, PLAINTEXT_IV };

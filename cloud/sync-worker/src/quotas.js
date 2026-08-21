@@ -22,5 +22,13 @@ export const QUOTAS = {
    * (was 220KB) — real lab batches were hitting up to ~1.3MB and getting
    * rejected as payload_too_large. */
   maxMutationBodyBytes: 2 * 1024 * 1024,
+  /** Workers RPC (db.batch()) hard-caps a call's serialized arguments at
+   * 32MiB. D1's binding sends BLOB params as a JSON digit-list over that
+   * RPC, not raw bytes — ~7.14 bytes of serialized payload per raw
+   * ciphertext byte for random AES-GCM output. So the real per-commit
+   * budget is ~32MiB / 7.14, with margin for the other bound params. Guard
+   * on this BEFORE calling db.batch(), or D1 throws an opaque RPC error
+   * instead of a clear payload_too_large. */
+  batchRawBytes: 4 * 1024 * 1024,
 };
 // labs uncapped by set count

@@ -1,4 +1,4 @@
-import { decodeRoomState, encodeRoomState } from './crypto-at-rest.js';
+import { decodeRoomState, encodeRoomState, toUint8Array } from './crypto-at-rest.js';
 import { d1UniqueConstraintTarget, isD1UniqueConstraintError } from './d1-errors.js';
 import { SyncError } from './errors.js';
 import {
@@ -102,14 +102,37 @@ export async function loadRoomState(env, db, roomId) {
     .prepare('SELECT patient_id, ciphertext, iv FROM room_state_labs WHERE room_id = ?')
     .bind(roomId)
     .all();
+  /** @type {Set<string>} patient ids that already have their own shard row */
+  const shardedPatientIds = new Set();
+  /** @type {Map<string, number>} stored ciphertext byte length per sharded patient */
+  const shardStorageBytes = new Map();
   for (const shardRow of results ?? []) {
     state.labSidecars[shardRow.patient_id] = await decodeRoomState(
       env,
       shardRow.ciphertext,
       shardRow.iv
     );
+    shardedPatientIds.add(shardRow.patient_id);
+    shardStorageBytes.set(shardRow.patient_id, toUint8Array(shardRow.ciphertext).length);
   }
-  return { state };
+  return { state, shardedPatientIds, shardStorageBytes };
+}
+
+/** @param {unknown[]} applied patient ids whose lab data this mutation's ops actually touch */
+function patientIdsTouchedByOps(applied) {
+  /** @type {Set<string>} */
+  const ids = new Set();
+  for (const op of applied || []) {
+    const path = String(/** @type {{ path?: unknown }} */ (op)?.path || '');
+    const lab = /^labSidecars\/([^/]+)\//.exec(path);
+    if (lab) {
+      ids.add(lab[1]);
+      continue;
+    }
+    const tomb = /^tombstones\/([^/]+)$/.exec(path);
+    if (tomb) ids.add(tomb[1]);
+  }
+  return ids;
 }
 
 /**
@@ -128,21 +151,45 @@ export async function commitMutationBatch(env, db, opts) {
     applied,
     nextState,
     previousLabSidecars,
+    shardedPatientIds,
+    shardStorageBytes,
   } = opts;
 
   const { labSidecars: nextLabSidecars, ...coreState } = nextState;
   const { ciphertext, iv, storageBytes: coreBytes } = await encodeRoomState(env, coreState);
 
-  const patientIds = new Set([
-    ...Object.keys(nextLabSidecars || {}),
-    ...Object.keys(previousLabSidecars || {}),
-  ]);
+  // Callers that already know which patients have their own shard row (the
+  // real handleMutations path, via loadRoomState) let us rewrite ONLY the
+  // shards this mutation actually touched. Callers that don't (tests, or a
+  // room not yet self-migrated) fall back to the old full-union behavior.
+  const hasShardInfo = shardedPatientIds !== undefined;
+  const knownShardIds =
+    shardedPatientIds instanceof Set ? shardedPatientIds : new Set(shardedPatientIds || []);
+  const storedShardBytes =
+    shardStorageBytes instanceof Map
+      ? shardStorageBytes
+      : new Map(Object.entries(shardStorageBytes || {}));
+
+  const candidateIds = hasShardInfo
+    ? new Set([
+        ...patientIdsTouchedByOps(applied),
+        ...Object.keys(nextLabSidecars || {}).filter((pid) => !knownShardIds.has(pid)),
+      ])
+    : new Set([
+        ...Object.keys(nextLabSidecars || {}),
+        ...Object.keys(previousLabSidecars || {}),
+      ]);
+
   /** @type {Map<string, { ciphertext: Uint8Array, iv: Uint8Array, storageBytes: number }>} */
   const labShards = new Map();
-  let labShardBytes = 0;
-  for (const patientId of patientIds) {
+  /** @type {Set<string>} */
+  const labShardDeletes = new Set();
+  for (const patientId of candidateIds) {
     const sets = nextLabSidecars?.[patientId];
-    if (!sets || typeof sets !== 'object' || Object.keys(sets).length === 0) continue;
+    if (!sets || typeof sets !== 'object' || Object.keys(sets).length === 0) {
+      labShardDeletes.add(patientId);
+      continue;
+    }
     const shard = await encodeRoomState(env, sets);
     if (shard.storageBytes > QUOTAS.labShardMaxBytes) {
       throw new SyncError(
@@ -151,9 +198,38 @@ export async function commitMutationBatch(env, db, opts) {
       );
     }
     labShards.set(patientId, shard);
-    labShardBytes += shard.storageBytes;
   }
-  const storageBytes = coreBytes + labShardBytes;
+
+  const now = new Date().toISOString();
+  const { ciphertext: opsCiphertext, iv: opsIv, storageBytes: opsBytes } = await encodeRoomState(
+    env,
+    applied
+  );
+
+  // Guard the actual db.batch() payload — D1 sends BLOB params over Workers
+  // RPC as a JSON digit-list, not raw bytes, so 32MiB of serialized RPC
+  // corresponds to a much smaller raw-byte budget. Checking coreBytes +
+  // written shards + ops here (not storageHardBytes, which covers the
+  // whole room) is what actually protects this call.
+  let batchRawBytes = coreBytes + opsBytes;
+  for (const shard of labShards.values()) batchRawBytes += shard.storageBytes;
+  if (batchRawBytes > QUOTAS.batchRawBytes) {
+    throw new SyncError(
+      'payload_too_large',
+      `El cambio es demasiado grande para enviarse en un solo paso (${QUOTAS.batchRawBytes} bytes).`
+    );
+  }
+
+  const allShardIds = hasShardInfo
+    ? new Set([...knownShardIds, ...labShards.keys()])
+    : new Set(labShards.keys());
+  let labTotalBytes = 0;
+  for (const patientId of allShardIds) {
+    if (labShardDeletes.has(patientId)) continue;
+    const shard = labShards.get(patientId);
+    labTotalBytes += shard ? shard.storageBytes : storedShardBytes.get(patientId) ?? 0;
+  }
+  const storageBytes = coreBytes + labTotalBytes;
   if (storageBytes > QUOTAS.storageHardBytes) {
     throw new SyncError(
       'payload_too_large',
@@ -161,14 +237,12 @@ export async function commitMutationBatch(env, db, opts) {
     );
   }
 
-  const now = new Date().toISOString();
-  const opsJson = JSON.stringify(applied);
   try {
     const statements = [
       db
         .prepare(
-          `INSERT INTO mutations (room_id, revision, client_mutation_id, actor_id, ops_json, created_at)
-           SELECT ?, ?, ?, ?, ?, ?
+          `INSERT INTO mutations (room_id, revision, client_mutation_id, actor_id, ops_json, ciphertext, iv, created_at)
+           SELECT ?, ?, ?, ?, ?, ?, ?, ?
            FROM rooms WHERE id = ? AND revision = ?`
         )
         .bind(
@@ -176,7 +250,9 @@ export async function commitMutationBatch(env, db, opts) {
           nextRevision,
           clientMutationId,
           userId,
-          opsJson,
+          '',
+          opsCiphertext,
+          opsIv,
           now,
           roomId,
           expectedRevision
@@ -206,40 +282,38 @@ export async function commitMutationBatch(env, db, opts) {
           nextRevision
         ),
     ];
-    for (const patientId of patientIds) {
-      const shard = labShards.get(patientId);
-      if (shard) {
-        statements.push(
-          db
-            .prepare(
-              `INSERT OR REPLACE INTO room_state_labs (room_id, patient_id, ciphertext, iv, updated_at)
-               SELECT ?, ?, ?, ?, ?
-               FROM mutations WHERE room_id = ? AND client_mutation_id = ? AND revision = ?`
-            )
-            .bind(
-              roomId,
-              patientId,
-              shard.ciphertext,
-              shard.iv,
-              now,
-              roomId,
-              clientMutationId,
-              nextRevision
-            )
-        );
-      } else {
-        statements.push(
-          db
-            .prepare(
-              `DELETE FROM room_state_labs WHERE room_id = ? AND patient_id = ?
-               AND EXISTS (
-                 SELECT 1 FROM mutations
-                 WHERE room_id = ? AND client_mutation_id = ? AND revision = ?
-               )`
-            )
-            .bind(roomId, patientId, roomId, clientMutationId, nextRevision)
-        );
-      }
+    for (const [patientId, shard] of labShards) {
+      statements.push(
+        db
+          .prepare(
+            `INSERT OR REPLACE INTO room_state_labs (room_id, patient_id, ciphertext, iv, updated_at)
+             SELECT ?, ?, ?, ?, ?
+             FROM mutations WHERE room_id = ? AND client_mutation_id = ? AND revision = ?`
+          )
+          .bind(
+            roomId,
+            patientId,
+            shard.ciphertext,
+            shard.iv,
+            now,
+            roomId,
+            clientMutationId,
+            nextRevision
+          )
+      );
+    }
+    for (const patientId of labShardDeletes) {
+      statements.push(
+        db
+          .prepare(
+            `DELETE FROM room_state_labs WHERE room_id = ? AND patient_id = ?
+             AND EXISTS (
+               SELECT 1 FROM mutations
+               WHERE room_id = ? AND client_mutation_id = ? AND revision = ?
+             )`
+          )
+          .bind(roomId, patientId, roomId, clientMutationId, nextRevision)
+      );
     }
     const results = await db.batch(statements);
     const inserted = Number(results?.[0]?.meta?.changes ?? 0);
@@ -266,16 +340,26 @@ export async function commitMutationBatch(env, db, opts) {
 async function loadPriorMutation(db, roomId, clientMutationId) {
   return db
     .prepare(
-      `SELECT revision, ops_json FROM mutations
+      `SELECT revision, ops_json, ciphertext, iv FROM mutations
        WHERE room_id = ? AND client_mutation_id = ?`
     )
     .bind(roomId, clientMutationId)
     .first();
 }
 
-/** @param {unknown} prior @param {number} roomRevision @param {number} baseRevision */
-function priorMutationResponse(prior, roomRevision, baseRevision) {
-  const priorOps = JSON.parse(String(prior.ops_json || '[]'));
+/**
+ * mutations rows written before schema 009 kept ops as plaintext ops_json.
+ * Rows written after have empty ops_json and real ops in ciphertext/iv.
+ * @param {{ WORKER_DATA_KEY?: string }} env @param {{ ops_json?: unknown, ciphertext?: unknown, iv?: unknown }} row
+ */
+async function decodeMutationOps(env, row) {
+  if (row?.ciphertext) return decodeRoomState(env, row.ciphertext, row.iv);
+  return JSON.parse(String(row?.ops_json || '[]'));
+}
+
+/** @param {{ WORKER_DATA_KEY?: string }} env @param {unknown} prior @param {number} roomRevision @param {number} baseRevision */
+async function priorMutationResponse(env, prior, roomRevision, baseRevision) {
+  const priorOps = await decodeMutationOps(env, prior);
   return Response.json({
     revision: Number(prior.revision),
     applied: priorOps,
@@ -347,7 +431,7 @@ async function handleMutations(request, env, db, roomId) {
 
   const prior = await loadPriorMutation(db, roomId, clientMutationId);
   if (prior) {
-    return priorMutationResponse(prior, Number(room.revision), baseRevision);
+    return priorMutationResponse(env, prior, Number(room.revision), baseRevision);
   }
 
   let lastApplied = [];
@@ -364,7 +448,7 @@ async function handleMutations(request, env, db, roomId) {
     }
     const expectedRevision = Number(roomRow.revision);
     lastNeedPull = baseRevision < expectedRevision;
-    const { state } = await loadRoomState(env, db, roomId);
+    const { state, shardedPatientIds, shardStorageBytes } = await loadRoomState(env, db, roomId);
     const { lwwOps, sidecarOps } = partitionSyncOps(ops);
     const appliedResult = applyOps(state, lwwOps);
     /** @type {unknown[]} */
@@ -391,6 +475,8 @@ async function handleMutations(request, env, db, roomId) {
       applied: lastApplied,
       nextState: appliedResult.state,
       previousLabSidecars: state.labSidecars,
+      shardedPatientIds,
+      shardStorageBytes,
     });
     if (committed.ok) {
       await notifyRoomRevision(env, roomId, committed.revision);
@@ -404,7 +490,7 @@ async function handleMutations(request, env, db, roomId) {
     if (committed.reason === 'duplicate_client') {
       const raced = await loadPriorMutation(db, roomId, clientMutationId);
       if (raced) {
-        return priorMutationResponse(raced, nextRevision, baseRevision);
+        return priorMutationResponse(env, raced, nextRevision, baseRevision);
       }
     }
   }
@@ -465,7 +551,7 @@ async function handlePull(request, env, db, roomId) {
 
   const { results } = await db
     .prepare(
-      `SELECT revision, ops_json FROM mutations
+      `SELECT revision, ops_json, ciphertext, iv FROM mutations
        WHERE room_id = ? AND revision > ?
        ORDER BY revision ASC`
     )
@@ -477,8 +563,9 @@ async function handlePull(request, env, db, roomId) {
   /** @type {unknown[]} */
   const ops = [];
   for (const row of rows) {
-    const chunk = String(row.ops_json || '[]');
-    cumulativeBytes += new TextEncoder().encode(chunk).length;
+    cumulativeBytes += row.ciphertext
+      ? toUint8Array(row.ciphertext).length
+      : new TextEncoder().encode(String(row.ops_json || '[]')).length;
     if (shouldReturnSnapshotPull(gap, cumulativeBytes)) {
       const { state } = await loadRoomState(env, db, roomId);
       const payload = mobileLabWindow ? filterRoomStateLabSidecarsForMobile(state) : state;
@@ -488,7 +575,7 @@ async function handlePull(request, env, db, roomId) {
         state: payload,
       });
     }
-    const parsed = JSON.parse(chunk);
+    const parsed = await decodeMutationOps(env, row);
     if (Array.isArray(parsed)) ops.push(...parsed);
   }
 

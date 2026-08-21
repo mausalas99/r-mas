@@ -45,7 +45,7 @@ describe('sync.js mutation retention', () => {
     assert.ok(start >= 0);
     const body = syncSrc.slice(start, start + 1800);
     const snapshotIdx = body.indexOf('shouldReturnSnapshotPull(gap)');
-    const selectIdx = body.indexOf('SELECT revision, ops_json FROM mutations');
+    const selectIdx = body.indexOf('SELECT revision, ops_json, ciphertext, iv FROM mutations');
     assert.ok(snapshotIdx >= 0);
     assert.ok(selectIdx >= 0);
     assert.ok(snapshotIdx < selectIdx, 'gap check must run before mutations SELECT');

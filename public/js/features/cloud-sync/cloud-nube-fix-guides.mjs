@@ -108,7 +108,7 @@ const FIX_GUIDES = {
   toxic_outbox_chunk: {
     id: 'toxic_outbox_chunk',
     title: 'Lote demasiado grande en cola',
-    summary: 'Hay un push local que excede el tamaño que el servidor acepta (~200 KB por lote).',
+    summary: 'Hay un push local que excede el tamaño que el servidor acepta (~2 MB por lote).',
     steps: [
       'Revisa «Lotes pesados en cola» en este panel: anota el path más grande.',
       'Toca Reintentar cola (R+ actual divide o recorta el lote).',

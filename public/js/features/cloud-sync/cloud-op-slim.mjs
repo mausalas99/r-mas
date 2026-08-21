@@ -18,8 +18,8 @@ export const CLOUD_LAB_MUTATION_MAX_BYTES = 150 * 1024;
 export const CLOUD_NOTE_MAX_BYTES = 256 * 1024;
 /** Same chunk-safety margin as labs — monitoreo pushes the whole vitals historial each time. */
 export const CLOUD_MONITOREO_MAX_BYTES = 150 * 1024;
-/** Align with cloud/sync-worker/src/quotas.js maxMutationBodyBytes (220KB). */
-export const CLOUD_PUSH_WARN_BODY_BYTES = 200 * 1024;
+/** Align with cloud/sync-worker/src/quotas.js maxMutationBodyBytes (raised 8/2026 to 2MB). */
+export const CLOUD_PUSH_WARN_BODY_BYTES = 2 * 1024 * 1024;
 export const CLOUD_PUSH_WARN_OP_BYTES = 180 * 1024;
 
 /** Lab sidecar fields allowed on Nube. */
