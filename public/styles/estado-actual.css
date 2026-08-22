@@ -1126,6 +1126,88 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   line-height: 1.4;
 }
 
+/* Cardio congestión/POCUS + identity rows — inline fields need a real
+   min-width or labels collapse below their text width and overlap the
+   next field when the row wraps. */
+.ea-clinico-cardio-congestion-form .ea-field--inline,
+.ea-clinico-cardio-identity-row .ea-field--inline {
+  flex: 1 1 130px;
+  min-width: 130px;
+}
+
+/* Estado Actual dashboard — boxy cards, click to open the matching modal */
+.ea-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: calc(10px * var(--density-space, 1));
+}
+
+.ea-dash-card {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.12s, transform 0.12s;
+}
+
+.ea-dash-card:hover {
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+  transform: translateY(-1px);
+}
+
+.ea-dash-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.ea-dash-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ea-dash-card-title {
+  margin: 0;
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.ea-dash-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ea-dash-card-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: calc(12px * var(--density-font, 1));
+}
+
+.ea-dash-card-row-label {
+  color: var(--text-muted);
+}
+
+.ea-dash-card-row-val {
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+}
+
+.ea-dash-card-empty {
+  margin: 0;
+  font-size: calc(11px * var(--density-font, 1));
+  color: var(--text-muted);
+}
+
 /* Vitals grid — compact clinical inputs */
 .ea-vitals-grid {
   grid-template-columns: repeat(7, minmax(0, 1fr));

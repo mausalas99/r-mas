@@ -41,12 +41,16 @@ export function syncDietPendingField(monitoreo, key, val) {
 }
 
 /**
- * @param {HTMLElement | null} panel
  * @param {string} selector
  * @param {string} value
  */
-function syncDomInput(panel, selector, value) {
-  var input = panel && panel.querySelector(selector);
+function syncDomInput(selector, value) {
+  // The Nutrición fields render inside the card modal (not always inside
+  // `#exp-pane-estado-actual`), and only one instance of a given
+  // `data-ea-ec` field exists in the DOM at a time (it's only rendered while
+  // its modal is open), so a document-wide lookup is both correct and
+  // simpler than trying to scope to whichever container currently owns it.
+  var input = typeof document !== 'undefined' ? document.querySelector(selector) : null;
   if (input && 'value' in input) input.value = value;
 }
 
@@ -61,7 +65,7 @@ export function applyKcalKgFieldChange(monitoreo, patient) {
   });
   if (!syncDietKcalFromWeight(monitoreo.estadoClinico, w)) return;
   var kcalVal = String(monitoreo.estadoClinico.kcal || '');
-  syncDomInput(document.getElementById('exp-pane-estado-actual'), '[data-ea-ec="kcal"]', kcalVal);
+  syncDomInput('[data-ea-ec="kcal"]', kcalVal);
   syncDietPendingField(monitoreo, 'kcal', kcalVal);
 }
 
@@ -77,7 +81,7 @@ export function applyKcalFieldChange(monitoreo, patient) {
   var kg = computeDietKcalKgFromTotal(monitoreo.estadoClinico.kcal, w);
   if (kg == null) return;
   monitoreo.estadoClinico.kcalKg = String(kg);
-  syncDomInput(document.getElementById('exp-pane-estado-actual'), '[data-ea-ec="kcalKg"]', String(kg));
+  syncDomInput('[data-ea-ec="kcalKg"]', String(kg));
   syncDietPendingField(monitoreo, 'kcalKg', String(kg));
 }
 

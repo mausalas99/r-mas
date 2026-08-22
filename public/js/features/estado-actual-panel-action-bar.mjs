@@ -7,7 +7,7 @@ import { isModeSala } from '../mode-features.mjs';
  */
 export function buildEaActionBarButtons(settings) {
   var html =
-    '<button type="button" class="ea-btn" onclick="openEstadoActualRegistroModal()">Registro manual</button>';
+    '<button type="button" class="ea-btn" onclick="openEstadoActualRegistroModal()">Registro SV</button>';
   if (!isModeSala(settings)) {
     html +=
       '<button type="button" class="ea-btn ea-btn--success" onclick="estadoActualEnviarANota()">Enviar a nota</button>';

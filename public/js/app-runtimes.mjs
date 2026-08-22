@@ -93,6 +93,8 @@ import {
   openEstadoActualRegistroModal,
   wireEaModalDismiss,
 } from './features/estado-actual-registro-modal.mjs';
+import { wireEaCongestionModalDismiss } from './features/cardio/estado-actual-congestion-modal.mjs';
+import { wireEaCardModalDismiss } from './features/estado-actual-panel-card-modal.mjs';
 import { getDefaultRegistroRecordedAt } from './features/estado-actual-registro-defaults.mjs';
 import {
   registerProcedureAgendaRuntime,
@@ -511,5 +513,7 @@ export function runInitialFeatureBoot() {
   wireEstadoActualPasteModal();
   wireDriveImportModal();
   wireEaModalDismiss();
+  wireEaCongestionModalDismiss();
+  wireEaCardModalDismiss();
   syncCensoExportButtonVisibility();
 }

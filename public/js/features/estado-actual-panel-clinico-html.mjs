@@ -1,4 +1,8 @@
-/** Estado clínico section HTML fragments — extracted from estado-actual-panel-clinico.mjs */
+/**
+ * Estado clínico field HTML fragments — rendered as modal bodies for the
+ * dashboard cards (`estado-actual-panel-cards-html.mjs`), not inline in the
+ * panel anymore.
+ */
 import {
   renderDietCaloricFieldsHtml,
   renderDietWeightHintHtml,
@@ -20,10 +24,11 @@ function renderSoporteOptions(ec) {
 }
 
 /**
+ * FOUR / Esferas / Soporte respiratorio — the "Estado clínico" card's modal body.
  * @param {Record<string, unknown>} ec
  * @param {{ fr?: unknown, sat?: unknown, pesoKg?: unknown }} [vitalsCtx]
  */
-function renderVitalsRowHtml(ec, vitalsCtx) {
+export function renderVitalsRowHtml(ec, vitalsCtx) {
   var soporteBlock = renderSoporteVentilatorioBlockHtml(ec, vitalsCtx);
   return (
     '<div class="ea-clinico-vitals-row">' +
@@ -95,7 +100,11 @@ function renderNutritionRowHtml(ec, dietPending, dietaSuplemento, kcalDisplay, d
   );
 }
 
-function renderDietProposalBarHtml(dietOptions, selectedIndex) {
+/**
+ * @param {unknown[]} dietOptions
+ * @param {number} selectedIndex
+ */
+export function renderDietProposalBarHtml(dietOptions, selectedIndex) {
   var optionsHtml = '';
   if (Array.isArray(dietOptions) && dietOptions.length > 1) {
     optionsHtml =
@@ -133,33 +142,31 @@ function renderDietProposalBarHtml(dietOptions, selectedIndex) {
 }
 
 /**
+ * Dieta / Kcal / Proteína — the "Nutrición" card's modal body.
  * @param {Record<string, unknown>} ec
  * @param {boolean} dietPending
  * @param {boolean} dietaSuplemento
  * @param {string} kcalDisplay
  * @param {string} dietWeightHint
- * @param {string} medFieldsHtml
- * @param {boolean} anyPending
+ * @param {boolean} [dietaParenteral]
  * @param {unknown[]} [dietOptions]
  * @param {number} [dietOptionSelected]
- * @param {boolean} [dietaParenteral]
- * @param {{ fr?: unknown, sat?: unknown, pesoKg?: unknown }} [vitalsCtx]
  */
-export function renderEstadoClinicoBodyHtml(ec, dietPending, dietaSuplemento, kcalDisplay, dietWeightHint, medFieldsHtml, anyPending, dietOptions, dietOptionSelected, dietaParenteral, vitalsCtx) {
+export function renderNutricionModalBodyHtml(
+  ec,
+  dietPending,
+  dietaSuplemento,
+  kcalDisplay,
+  dietWeightHint,
+  dietaParenteral,
+  dietOptions,
+  dietOptionSelected
+) {
   return (
-    '<div class="ea-clinico-body">' +
     '<div class="ea-clinico-grid">' +
-    renderVitalsRowHtml(ec, vitalsCtx) +
     renderNutritionRowHtml(ec, dietPending, dietaSuplemento, kcalDisplay, dietaParenteral) +
     (dietPending ? renderDietProposalBarHtml(dietOptions, dietOptionSelected == null ? 0 : dietOptionSelected) : '') +
     '</div>' +
-    (dietaSuplemento || dietaParenteral ? '' : renderDietWeightHintHtml(dietWeightHint, escHtml)) +
-    medFieldsHtml +
-    (anyPending
-      ? '<div class="ea-clinico-actions">' +
-        '<button type="button" class="ea-btn ea-btn--success" onclick="confirmAllEaMedProposals()">Confirmar todas las propuestas</button>' +
-        '</div>'
-      : '') +
-    '</div>'
+    (dietaSuplemento || dietaParenteral ? '' : renderDietWeightHintHtml(dietWeightHint, escHtml))
   );
 }

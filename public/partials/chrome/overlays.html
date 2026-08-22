@@ -175,6 +175,30 @@
   </div>
 </div>
 
+<div id="ea-card-modal-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal ea-registro-modal" role="dialog" aria-modal="true" aria-labelledby="ea-card-modal-title" onclick="event.stopPropagation()">
+    <header class="ea-registro-modal-head">
+      <div class="ea-registro-modal-head-text">
+        <h3 id="ea-card-modal-title"></h3>
+        <p class="ea-registro-modal-sub" id="ea-card-modal-sub"></p>
+      </div>
+    </header>
+    <div id="ea-card-modal-body" class="ea-registro-modal-body"></div>
+  </div>
+</div>
+
+<div id="ea-congestion-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal ea-registro-modal" role="dialog" aria-modal="true" aria-labelledby="ea-congestion-title" onclick="event.stopPropagation()">
+    <header class="ea-registro-modal-head">
+      <div class="ea-registro-modal-head-text">
+        <h3 id="ea-congestion-title">Registro Congestión / POCUS</h3>
+        <p class="ea-registro-modal-sub">Estado actual · examen del día</p>
+      </div>
+    </header>
+    <div id="ea-congestion-modal-body" class="ea-registro-modal-body"></div>
+  </div>
+</div>
+
 <div id="drive-import-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal drive-import-modal" data-drive-step="paste" role="dialog" aria-modal="true" aria-labelledby="drive-import-title" onclick="event.stopPropagation()">
     <header class="drive-import-head">

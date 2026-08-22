@@ -22,7 +22,7 @@ import { formatEaSavedLabel } from './estado-actual-panel-format.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
 import { invalidateEaPanelCache } from './estado-actual-panel-core.mjs';
 import {
-  renderEstadoClinicoSection,
+  renderEaDashboardSection,
   wireEstadoClinicoInteractions,
   captureEaPanelUiState,
   restoreEaPanelUiState,
@@ -102,11 +102,11 @@ export function patchEaPanelDynamicSections(mount, patient, monitoreo, patchOpts
   var savedLabel = formatEaSavedLabel(monitoreo.textoGuardado && monitoreo.textoGuardado.savedAt);
 
   if (patchOpts.refreshClinico) {
-    var clinicoDet = mount.querySelector('.ea-estado-clinico');
-    if (clinicoDet) {
-      clinicoDet.outerHTML = renderEstadoClinicoSection(monitoreo, getEaPanelRuntime().getActiveId(), patient);
-      wireEstadoClinicoInteractions(mount, patient);
+    var dashboardEl = mount.querySelector('#ea-dashboard-grid');
+    if (dashboardEl) {
+      dashboardEl.outerHTML = renderEaDashboardSection(monitoreo, getEaPanelRuntime().getActiveId(), patient);
     }
+    wireEstadoClinicoInteractions(mount, patient);
   }
 
   var snapEl = mount.querySelector('#ea-snapshot');
@@ -161,7 +161,7 @@ export function renderEaFullPanelShell(mount, patient, monitoreo, activeId, save
     '</span>' +
     '</div>' +
     renderSnapshotSection(snapshot, balTurno, balGlobal) +
-    renderEstadoClinicoSection(monitoreo, activeId, patient) +
+    renderEaDashboardSection(monitoreo, activeId, patient) +
     renderHistorialSection(Array.isArray(monitoreo.historial) ? monitoreo.historial : []) +
     renderEaChartsSummarySection(monitoreo) +
     '</div>';
