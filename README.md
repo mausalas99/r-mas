@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.1.7](https://github.com/mausalas99/r-mas/releases/tag/v8.1.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.1.8](https://github.com/mausalas99/r-mas/releases/tag/v8.1.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -47,6 +47,16 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.1.8 (estable — release 8.1.8)
+
+- **Gasometrías — AG/AGc ya no se pierden:** usa el electrolito sérico de la toma más temprana del día cuando la gasometría no trae Na/Cl/Alb propios.
+- **Cada gasometría del día se muestra por separado**, en vez de fusionarse con otras tomas de GASES.
+- **Aviso de borrado remoto dice quién lo borró:** nombra al miembro del equipo (o "varios usuarios") en vez de "un admin" genérico.
+- **Insulina prandial ya no confunde basales** (Glargina, Lantus, Toujeo, Degludec, Tresiba, Detemir, Levemir, NPH).
+- **Ajuste de espaciado** consistente en botones, tarjetas, modales y paneles.
+
+Notas: `docs/RELEASE_NOTES_8.1.8.txt`.
 ## R+ 8.1.7 (estable — release 8.1.7)
 
 - **Cerrar sesión ya no borra la sala:** el código de sala se conserva para el siguiente inicio de sesión.

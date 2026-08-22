@@ -1,0 +1,26 @@
+R+ 8.1.8 (estable — release 8.1.8)
+======================================
+
+Fecha: 2026-08-22
+
+## Resumen
+
+Mejora gasometrías, el aviso de borrado remoto, y aplica un ajuste de espaciado en toda la interfaz.
+
+## Nuevo / mejorado
+
+- **Gasometrías — AG/AGc ya no se pierden:** si una toma del día trae gasometría sin Na/Cl/Alb propios, R+ ahora usa el electrolito sérico de la toma más temprana del día para seguir calculando el anion gap.
+- **Cada gasometría del día se muestra por separado:** antes, tomas repetidas de GASES en el mismo día podían fusionarse o pisarse entre sí.
+- **Aviso de borrado remoto — dice quién lo borró:** el mensaje de "Quitar de esta Mac" ahora nombra al miembro del equipo (o "varios usuarios") que eliminó el paciente en Nube, en vez de decir genéricamente "un admin".
+- **Insulina prandial — ya no confunde basales:** Glargina, Lantus, Toujeo, Degludec, Tresiba, Detemir, Levemir y NPH ya no se detectan como dosis prandial.
+- **Ajuste de espaciado:** pasada de espaciado consistente en botones, tarjetas, modales y paneles en toda la app.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.1.8-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.1.8-Mac-Intel.dmg`
+- Windows: `R+-8.1.8-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

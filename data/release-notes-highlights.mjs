@@ -2528,10 +2528,34 @@ var RELEASE_NOTES_817 = [
   },
 ];
 
+var RELEASE_NOTES_818 = [
+  {
+    title: 'Gasometrías — el AG/AGc ya no se pierde',
+    body:
+      'Si una toma del día trae gasometría sin Na/Cl/Alb propios, R+ ahora usa el electrolito sérico de la toma más temprana del día para seguir calculando el anion gap.',
+  },
+  {
+    title: 'Aviso de borrado remoto — dice quién lo borró',
+    body:
+      'El mensaje "Quitar de esta Mac" ahora nombra al miembro del equipo (o "varios usuarios") que eliminó el paciente en Nube, en vez de "un admin" genérico.',
+  },
+  {
+    title: 'Insulina prandial — ya no confunde basales',
+    body:
+      'Glargina, Lantus, Toujeo, Degludec, Tresiba, Detemir, Levemir y NPH ya no se detectan por error como dosis prandial.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.1.8 en todas</strong> las Macs y PCs del turno el mismo día.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_817;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_818;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.1.8': RELEASE_NOTES_818,
   '8.1.7': RELEASE_NOTES_817,
   '8.1.6': RELEASE_NOTES_816,
   '8.1.5': RELEASE_NOTES_815,
