@@ -60,7 +60,7 @@ describe('buildPitchGuardiaCensusPatients', () => {
     const patients = buildPitchGuardiaCensusPatients(today);
     seedPitchGuardiaCensusTodos(today);
     const statuses = new Set(
-      patients.map((p) => guardiaPatientStatus(patientPendientes(p.id)))
+      patients.map((p) => guardiaPatientStatus(patientPendientes(p.id, today)))
     );
     assert.ok(statuses.has('vencido'), 'expected at least one VENCIDO patient');
     assert.ok(statuses.has('en_curso'), 'expected at least one EN CURSO patient');

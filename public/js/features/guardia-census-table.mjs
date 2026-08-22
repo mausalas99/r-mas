@@ -57,11 +57,12 @@ export function alteradosForPatient(p) {
 
 /**
  * @param {string} patientId
+ * @param {Date} [now] Reference time for the overdue check. Defaults to real now.
  * @returns {{ open: object[], overdue: object[] }}
  */
-export function patientPendientes(patientId) {
+export function patientPendientes(patientId, now) {
   const todos = (storage.getTodos(patientId) || []).filter((t) => t && !t.completed);
-  const overdue = todos.filter((t) => isTodoOverdue(t));
+  const overdue = todos.filter((t) => isTodoOverdue(t, now));
   return { open: todos, overdue };
 }
 

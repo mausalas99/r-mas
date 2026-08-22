@@ -179,7 +179,8 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * indicator's correct first-paint position) — only the resize-observer +
  * rAF wiring inside initTabBarMotion() moves off the synchronous paint path.
  * No new eager file or import. */
-const EAGER_BOOT_BUDGET_BYTES = 3453407;
+// Raised for 8.1.8: remote-patient-delete-confirm actor-name lookup + gaso electrolyte fallback.
+const EAGER_BOOT_BUDGET_BYTES = 3458000;
 const EAGER_BOOT_BUDGET_FILES = 98;
 
 /**
