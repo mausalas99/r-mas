@@ -80,8 +80,9 @@ export function validateOpsSize(ops) {
 }
 
 /**
- * Assemble the full RoomSyncState from the core row + per-patient lab shards.
- * Callers never see the split — same flat shape as before sharding.
+ * Assemble the full RoomSyncState from the core row + per-patient legacy lab
+ * shards + per-set lab shards. Callers never see the split — same flat shape
+ * as before sharding.
  * @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId
  */
 export async function loadRoomState(env, db, roomId) {
@@ -98,39 +99,65 @@ export async function loadRoomState(env, db, roomId) {
     state?.labSidecars && typeof state.labSidecars === 'object' ? state.labSidecars : {};
   state.labSidecars = { ...legacyLabSidecars };
 
-  const { results } = await db
+  // Whole-patient legacy shard rows (schema 008). Frozen: read here as a base
+  // layer, never rewritten — a patient migrates one set at a time into
+  // room_state_lab_sets below, only when that set is next touched.
+  const { results: legacyRows } = await db
     .prepare('SELECT patient_id, ciphertext, iv FROM room_state_labs WHERE room_id = ?')
     .bind(roomId)
     .all();
-  /** @type {Set<string>} patient ids that already have their own shard row */
-  const shardedPatientIds = new Set();
-  /** @type {Map<string, number>} stored ciphertext byte length per sharded patient */
-  const shardStorageBytes = new Map();
-  for (const shardRow of results ?? []) {
+  /** @type {Map<string, number>} stored byte length per legacy whole-patient row */
+  const legacyShardBytes = new Map();
+  for (const shardRow of legacyRows ?? []) {
     state.labSidecars[shardRow.patient_id] = await decodeRoomState(
       env,
       shardRow.ciphertext,
       shardRow.iv
     );
-    shardedPatientIds.add(shardRow.patient_id);
-    shardStorageBytes.set(shardRow.patient_id, toUint8Array(shardRow.ciphertext).length);
+    legacyShardBytes.set(shardRow.patient_id, toUint8Array(shardRow.ciphertext).length);
   }
-  return { state, shardedPatientIds, shardStorageBytes };
+
+  // Per-set shard rows (schema 010). One row per lab set — always bounded by
+  // labMutationMaxBytes, never approaches the D1 row cap regardless of how
+  // long a patient's history grows. Overrides legacy values for the same set.
+  const { results: setRows } = await db
+    .prepare('SELECT patient_id, set_id, ciphertext, iv FROM room_state_lab_sets WHERE room_id = ?')
+    .bind(roomId)
+    .all();
+  /** @type {Map<string, Map<string, number>>} stored byte length per (patientId -> setId -> bytes) */
+  const labSetBytes = new Map();
+  for (const setRow of setRows ?? []) {
+    const pid = setRow.patient_id;
+    const sid = setRow.set_id;
+    if (!state.labSidecars[pid] || typeof state.labSidecars[pid] !== 'object') {
+      state.labSidecars[pid] = {};
+    }
+    state.labSidecars[pid][sid] = await decodeRoomState(env, setRow.ciphertext, setRow.iv);
+    if (!labSetBytes.has(pid)) labSetBytes.set(pid, new Map());
+    labSetBytes.get(pid).set(sid, toUint8Array(setRow.ciphertext).length);
+  }
+
+  return { state, legacyShardBytes, labSetBytes };
 }
 
-/** @param {unknown[]} applied patient ids whose lab data this mutation's ops actually touch */
-function patientIdsTouchedByOps(applied) {
-  /** @type {Set<string>} */
-  const ids = new Set();
-  for (const op of applied || []) {
+/** @param {unknown[]} ops @returns {Array<{ patientId: string, setId: string }>} lab-sidecar ops */
+function labSetOpsTouched(ops) {
+  const touched = [];
+  for (const op of ops || []) {
     const path = String(/** @type {{ path?: unknown }} */ (op)?.path || '');
-    const lab = /^labSidecars\/([^/]+)\//.exec(path);
-    if (lab) {
-      ids.add(lab[1]);
-      continue;
-    }
-    const tomb = /^tombstones\/([^/]+)$/.exec(path);
-    if (tomb) ids.add(tomb[1]);
+    const m = /^labSidecars\/([^/]+)\/([^/]+)$/.exec(path);
+    if (m) touched.push({ patientId: m[1], setId: m[2] });
+  }
+  return touched;
+}
+
+/** @param {unknown[]} ops @returns {Set<string>} patient ids fully removed (e.g. tombstone) */
+function tombstonedPatientIds(ops) {
+  const ids = new Set();
+  for (const op of ops || []) {
+    const path = String(/** @type {{ path?: unknown }} */ (op)?.path || '');
+    const m = /^tombstones\/([^/]+)$/.exec(path);
+    if (m) ids.add(m[1]);
   }
   return ids;
 }
@@ -150,54 +177,50 @@ export async function commitMutationBatch(env, db, opts) {
     clientMutationId,
     applied,
     nextState,
-    previousLabSidecars,
-    shardedPatientIds,
-    shardStorageBytes,
+    legacyShardBytes,
+    labSetBytes,
   } = opts;
 
   const { labSidecars: nextLabSidecars, ...coreState } = nextState;
   const { ciphertext, iv, storageBytes: coreBytes } = await encodeRoomState(env, coreState);
 
-  // Callers that already know which patients have their own shard row (the
-  // real handleMutations path, via loadRoomState) let us rewrite ONLY the
-  // shards this mutation actually touched. Callers that don't (tests, or a
-  // room not yet self-migrated) fall back to the old full-union behavior.
-  const hasShardInfo = shardedPatientIds !== undefined;
-  const knownShardIds =
-    shardedPatientIds instanceof Set ? shardedPatientIds : new Set(shardedPatientIds || []);
-  const storedShardBytes =
-    shardStorageBytes instanceof Map
-      ? shardStorageBytes
-      : new Map(Object.entries(shardStorageBytes || {}));
+  // Callers that pass real load-time byte maps (the production handleMutations
+  // path, via loadRoomState) get accurate accounting. Callers that don't
+  // (tests, interno flows that never touch labs) default to empty — safe,
+  // since those callers also never touch labSidecars ops.
+  const legacyBytes = legacyShardBytes instanceof Map ? legacyShardBytes : new Map();
+  const setBytes = labSetBytes instanceof Map ? labSetBytes : new Map();
 
-  const candidateIds = hasShardInfo
-    ? new Set([
-        ...patientIdsTouchedByOps(applied),
-        ...Object.keys(nextLabSidecars || {}).filter((pid) => !knownShardIds.has(pid)),
-      ])
-    : new Set([
-        ...Object.keys(nextLabSidecars || {}),
-        ...Object.keys(previousLabSidecars || {}),
-      ]);
+  // The exact ops the client sent ARE the exact write set — no need to guess
+  // which patients changed by diffing whole blobs. Each op already names one
+  // (patientId, setId) pair, so writes are always this small and bounded,
+  // never a whole patient's history in one row.
+  const tombPatientIds = tombstonedPatientIds(applied);
+  const touchedSets = labSetOpsTouched(applied).filter((t) => !tombPatientIds.has(t.patientId));
 
-  /** @type {Map<string, { ciphertext: Uint8Array, iv: Uint8Array, storageBytes: number }>} */
-  const labShards = new Map();
-  /** @type {Set<string>} */
-  const labShardDeletes = new Set();
-  for (const patientId of candidateIds) {
-    const sets = nextLabSidecars?.[patientId];
-    if (!sets || typeof sets !== 'object' || Object.keys(sets).length === 0) {
-      labShardDeletes.add(patientId);
-      continue;
-    }
-    const shard = await encodeRoomState(env, sets);
-    if (shard.storageBytes > QUOTAS.labShardMaxBytes) {
+  /** @type {Array<{ patientId: string, setId: string, ciphertext: Uint8Array, iv: Uint8Array, storageBytes: number }>} */
+  const setWrites = [];
+  let labBytesDelta = 0;
+  for (const { patientId, setId } of touchedSets) {
+    const value = nextLabSidecars?.[patientId]?.[setId];
+    if (value === undefined) continue;
+    const encoded = await encodeRoomState(env, value);
+    if (encoded.storageBytes > QUOTAS.labShardMaxBytes) {
       throw new SyncError(
         'payload_too_large',
-        `El historial de labs del paciente superó el límite por sala (${QUOTAS.labShardMaxBytes} bytes).`
+        `El resultado de labs superó el límite de tamaño (${QUOTAS.labShardMaxBytes} bytes).`
       );
     }
-    labShards.set(patientId, shard);
+    setWrites.push({ patientId, setId, ...encoded });
+    labBytesDelta += encoded.storageBytes - (setBytes.get(patientId)?.get(setId) || 0);
+  }
+
+  // Full-patient wipes (tombstone): drop the legacy row's cached bytes plus
+  // every known set row's bytes for that patient from the running total.
+  for (const patientId of tombPatientIds) {
+    labBytesDelta -= legacyBytes.get(patientId) || 0;
+    const perSet = setBytes.get(patientId);
+    if (perSet) for (const bytes of perSet.values()) labBytesDelta -= bytes;
   }
 
   const now = new Date().toISOString();
@@ -212,7 +235,7 @@ export async function commitMutationBatch(env, db, opts) {
   // written shards + ops here (not storageHardBytes, which covers the
   // whole room) is what actually protects this call.
   let batchRawBytes = coreBytes + opsBytes;
-  for (const shard of labShards.values()) batchRawBytes += shard.storageBytes;
+  for (const w of setWrites) batchRawBytes += w.storageBytes;
   if (batchRawBytes > QUOTAS.batchRawBytes) {
     throw new SyncError(
       'payload_too_large',
@@ -220,16 +243,12 @@ export async function commitMutationBatch(env, db, opts) {
     );
   }
 
-  const allShardIds = hasShardInfo
-    ? new Set([...knownShardIds, ...labShards.keys()])
-    : new Set(labShards.keys());
-  let labTotalBytes = 0;
-  for (const patientId of allShardIds) {
-    if (labShardDeletes.has(patientId)) continue;
-    const shard = labShards.get(patientId);
-    labTotalBytes += shard ? shard.storageBytes : storedShardBytes.get(patientId) ?? 0;
+  let labTotalBytesAtLoad = 0;
+  for (const bytes of legacyBytes.values()) labTotalBytesAtLoad += bytes;
+  for (const perSet of setBytes.values()) {
+    for (const bytes of perSet.values()) labTotalBytesAtLoad += bytes;
   }
-  const storageBytes = coreBytes + labTotalBytes;
+  const storageBytes = coreBytes + labTotalBytesAtLoad + labBytesDelta;
   if (storageBytes > QUOTAS.storageHardBytes) {
     throw new SyncError(
       'payload_too_large',
@@ -282,19 +301,20 @@ export async function commitMutationBatch(env, db, opts) {
           nextRevision
         ),
     ];
-    for (const [patientId, shard] of labShards) {
+    for (const w of setWrites) {
       statements.push(
         db
           .prepare(
-            `INSERT OR REPLACE INTO room_state_labs (room_id, patient_id, ciphertext, iv, updated_at)
-             SELECT ?, ?, ?, ?, ?
+            `INSERT OR REPLACE INTO room_state_lab_sets (room_id, patient_id, set_id, ciphertext, iv, updated_at)
+             SELECT ?, ?, ?, ?, ?, ?
              FROM mutations WHERE room_id = ? AND client_mutation_id = ? AND revision = ?`
           )
           .bind(
             roomId,
-            patientId,
-            shard.ciphertext,
-            shard.iv,
+            w.patientId,
+            w.setId,
+            w.ciphertext,
+            w.iv,
             now,
             roomId,
             clientMutationId,
@@ -302,11 +322,22 @@ export async function commitMutationBatch(env, db, opts) {
           )
       );
     }
-    for (const patientId of labShardDeletes) {
+    for (const patientId of tombPatientIds) {
       statements.push(
         db
           .prepare(
             `DELETE FROM room_state_labs WHERE room_id = ? AND patient_id = ?
+             AND EXISTS (
+               SELECT 1 FROM mutations
+               WHERE room_id = ? AND client_mutation_id = ? AND revision = ?
+             )`
+          )
+          .bind(roomId, patientId, roomId, clientMutationId, nextRevision)
+      );
+      statements.push(
+        db
+          .prepare(
+            `DELETE FROM room_state_lab_sets WHERE room_id = ? AND patient_id = ?
              AND EXISTS (
                SELECT 1 FROM mutations
                WHERE room_id = ? AND client_mutation_id = ? AND revision = ?
@@ -448,7 +479,7 @@ async function handleMutations(request, env, db, roomId) {
     }
     const expectedRevision = Number(roomRow.revision);
     lastNeedPull = baseRevision < expectedRevision;
-    const { state, shardedPatientIds, shardStorageBytes } = await loadRoomState(env, db, roomId);
+    const { state, legacyShardBytes, labSetBytes } = await loadRoomState(env, db, roomId);
     const { lwwOps, sidecarOps } = partitionSyncOps(ops);
     const appliedResult = applyOps(state, lwwOps);
     /** @type {unknown[]} */
@@ -474,9 +505,8 @@ async function handleMutations(request, env, db, roomId) {
       clientMutationId,
       applied: lastApplied,
       nextState: appliedResult.state,
-      previousLabSidecars: state.labSidecars,
-      shardedPatientIds,
-      shardStorageBytes,
+      legacyShardBytes,
+      labSetBytes,
     });
     if (committed.ok) {
       await notifyRoomRevision(env, roomId, committed.revision);

@@ -1544,10 +1544,10 @@
 
 <div class="modal-backdrop" id="todo-due-modal-backdrop" aria-hidden="true">
   <div class="modal todo-due-modal" role="dialog" aria-modal="true" aria-labelledby="todo-due-modal-title" onclick="event.stopPropagation()">
-    <header class="todo-due-modal-head">
+    <div class="todo-due-modal-head">
       <h3 id="todo-due-modal-title">Fecha límite</h3>
       <p class="todo-due-modal-lead">Atajo o fecha libre · recordatorio opcional al vencer</p>
-    </header>
+    </div>
     <div class="todo-due-modal-presets-zone" id="todo-due-modal-presets-zone">
       <div class="todo-due-modal-presets-head">
         <span class="profile-field-label todo-due-modal-section-label">Atajos</span>
@@ -2761,7 +2761,7 @@
 <div id="connection-dropdown-backdrop" class="modal-backdrop connection-dropdown-backdrop" aria-hidden="true">
   <div class="modal connection-dropdown connection-dropdown-modal material-glass" id="connection-dropdown" role="dialog" aria-modal="true" aria-labelledby="connection-dropdown-title" onclick="event.stopPropagation()">
     <h2 class="visually-hidden" id="connection-dropdown-title">Conexión · R+ Cloud</h2>
-    <header class="connection-dropdown-modal-head">
+    <div class="connection-dropdown-modal-head">
       <button type="button" class="connection-dropdown-back" id="btn-connection-dropdown-back" data-cloud-action="nav-back" hidden>
         <span class="connection-dropdown-back-chevron" aria-hidden="true">‹</span>
         <span class="connection-dropdown-back-label">Conexión</span>
@@ -2773,8 +2773,8 @@
           <p class="connection-dropdown-head-sub">Red local del hospital. Conéctate a la sala de guardia y administra tu equipo.</p>
         </div>
       </div>
-      <button type="button" class="clinical-teams-dismiss" id="btn-connection-dropdown-close" aria-label="Cerrar">×</button>
-    </header>
+      <button type="button" class="clinical-teams-dismiss" id="btn-connection-dropdown-close" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
     <div class="connection-dropdown-body" id="connection-dropdown-scroll">
       <div id="lan-connection-panel-root" class="lan-connection-panel-root"></div>
     </div>
@@ -2783,40 +2783,40 @@
 
 <div id="equipos-lista-backdrop" class="modal-backdrop equipos-lista-backdrop" aria-hidden="true">
   <div class="modal equipos-lista-modal" role="dialog" aria-modal="true" aria-labelledby="equipos-lista-title" onclick="event.stopPropagation()">
-    <header class="equipos-lista-modal-head">
+    <div class="equipos-lista-modal-head">
       <h3 id="equipos-lista-title">R+ Lista de espera</h3>
-      <button type="button" class="clinical-teams-dismiss" id="btn-equipos-lista-close" aria-label="Cerrar">×</button>
-    </header>
+      <button type="button" class="clinical-teams-dismiss" id="btn-equipos-lista-close" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
     <div id="equipos-lista-panel-body" class="equipos-lista-panel-body"></div>
   </div>
 </div>
 
 <div id="clinical-teams-backdrop" class="modal-backdrop clinical-teams-backdrop" aria-hidden="true">
   <div class="modal clinical-teams-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-teams-title" onclick="event.stopPropagation()">
-    <header class="clinical-teams-modal-head">
+    <div class="clinical-teams-modal-head">
       <h3 id="clinical-teams-title">Mi rotación</h3>
-      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-teams-close" aria-label="Cerrar">×</button>
-    </header>
+      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-teams-close" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
     <div id="clinical-teams-panel-body" class="clinical-teams-panel-body"></div>
   </div>
 </div>
 
 <div id="clinical-directory-users-backdrop" class="modal-backdrop clinical-directory-users-backdrop" aria-hidden="true">
   <div class="modal clinical-directory-users-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-directory-users-title" onclick="event.stopPropagation()">
-    <header class="clinical-directory-users-modal-head">
+    <div class="clinical-directory-users-modal-head">
       <h3 id="clinical-directory-users-title">Directorio de usuarios</h3>
-      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-directory-users-close" aria-label="Cerrar">×</button>
-    </header>
+      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-directory-users-close" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
     <div id="clinical-directory-users-panel-body" class="clinical-directory-users-panel-body"></div>
   </div>
 </div>
 
 <div id="clinical-admin-code-backdrop" class="modal-backdrop clinical-admin-code-backdrop" aria-hidden="true">
   <div class="modal clinical-admin-code-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-admin-code-title" onclick="event.stopPropagation()">
-    <header class="clinical-directory-users-modal-head">
+    <div class="clinical-directory-users-modal-head">
       <h3 id="clinical-admin-code-title">Privilegios de administración</h3>
-      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-admin-code-close" aria-label="Cerrar">×</button>
-    </header>
+      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-admin-code-close" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
     <p class="clinical-admin-code-lead">Introduce tu código personal para activar acceso de administración.</p>
     <form id="clinical-admin-code-form">
       <div class="field-group">
@@ -2948,9 +2948,9 @@
 
 <div id="tend-group-backdrop" class="tend-group-backdrop" style="display:none" aria-hidden="true">
   <div id="tend-group-modal" role="dialog" aria-modal="true" aria-labelledby="tend-group-title">
-    <header class="tend-group-header">
+    <div class="tend-group-header">
       <h2 id="tend-group-title"></h2>
-    </header>
+    </div>
     <div class="tend-group-tabs-wrap">
       <nav class="tend-group-tabs" id="tend-group-tabs-track" role="tablist" aria-label="Vista del estudio" data-active="charts">
         <span class="tend-group-tab-pill" aria-hidden="true"></span>

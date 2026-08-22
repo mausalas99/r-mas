@@ -278,7 +278,31 @@ function appendAnionGapDerivedTokens_(out, base, na, cl, bica, alb) {
   if (ddv != null) out.push('Delta-Delta', formatNumericToken_(ddv));
 }
 
-function rebuildGasesFromResults_(rows, gasRefs) {
+/**
+ * Na/Cl/Alb séricos presentes en un conjunto de renglones (QS/ESC/PFHs).
+ * @param {unknown[]} rows
+ * @returns {{ na: string|null, cl: string|null, alb: string|null }}
+ */
+export function extractElectrolytesFromResLabs(rows) {
+  var qs = pickBestSectionLine_(rows, 'QS');
+  var esc = pickBestSectionLine_(rows, 'ESC');
+  var pfhs = pickBestSectionLine_(rows, 'PFHS');
+  return {
+    na: valueFromSectionLine_(qs, 'Na') || valueFromSectionLine_(esc, 'Na') || null,
+    cl: valueFromSectionLine_(qs, 'Cl') || valueFromSectionLine_(esc, 'Cl') || null,
+    alb: valueFromSectionLine_(pfhs, 'Alb') || null,
+  };
+}
+
+/**
+ * @param {unknown[]} rows
+ * @param {{[k:string]: unknown}} [gasRefs]
+ * @param {{na?: unknown, cl?: unknown, alb?: unknown}} [fallbackElectrolytes]
+ *   Electrolitos de respaldo (p. ej. la toma inicial del día) para gasometrías
+ *   sin QS/ESC/PFHs propios: la gasometría no trae Na/Cl/Alb, pero el AG sigue
+ *   siendo calculable con el electrolito sérico más reciente del día.
+ */
+function rebuildGasesFromResults_(rows, gasRefs, fallbackElectrolytes) {
   var gases = pickBestSectionLine_(rows, 'GASES');
   if (!gases) return { gasesLine: '', interpLine: '' };
   var base = normalizeLabLine_(gases);
@@ -289,12 +313,11 @@ function rebuildGasesFromResults_(rows, gasRefs) {
     values[k] = valueFromSectionLine_(base, k);
   });
 
-  var qs = pickBestSectionLine_(rows, 'QS');
-  var esc = pickBestSectionLine_(rows, 'ESC');
-  var pfhs = pickBestSectionLine_(rows, 'PFHS');
-  var na = valueFromSectionLine_(qs, 'Na') || valueFromSectionLine_(esc, 'Na') || values.Na;
-  var cl = valueFromSectionLine_(qs, 'Cl') || valueFromSectionLine_(esc, 'Cl');
-  var alb = valueFromSectionLine_(pfhs, 'Alb');
+  var own = extractElectrolytesFromResLabs(rows);
+  var fb = fallbackElectrolytes || {};
+  var na = own.na || values.Na || fb.na;
+  var cl = own.cl || fb.cl;
+  var alb = own.alb || fb.alb;
 
   orderedKeys.forEach(function (k) {
     if (values[k] != null && values[k] !== '') {
@@ -309,7 +332,7 @@ function rebuildGasesFromResults_(rows, gasRefs) {
 export function reprocessLabResultLines_(rows, opts) {
   var gasRefs = opts && opts.gasRefs;
   var clean = dedupeSingletonSections_(rows || []);
-  var rebuilt = rebuildGasesFromResults_(clean, gasRefs);
+  var rebuilt = rebuildGasesFromResults_(clean, gasRefs, opts && opts.fallbackElectrolytes);
   var out = clean.filter(function (r) {
     var k = labSectionKey_(r);
     return k !== 'GASES' && k !== 'INTERPRETACIÓN GASOMETRÍA:';

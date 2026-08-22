@@ -17,7 +17,7 @@ export function emptyState() {
 }
 
 /**
- * @typedef {{ revision: number, entries: object[], entityVersions: Record<string, { updatedAt: string, actorId: string }>, todos: Record<string, unknown>, agenda: unknown[], clinicalOps: unknown, labSidecars: Record<string, Record<string, unknown>>, tombstones?: Record<string, { registro?: string, deletedAt: string }> }} RoomSyncState
+ * @typedef {{ revision: number, entries: object[], entityVersions: Record<string, { updatedAt: string, actorId: string }>, todos: Record<string, unknown>, agenda: unknown[], clinicalOps: unknown, labSidecars: Record<string, Record<string, unknown>>, tombstones?: Record<string, { registro?: string, deletedAt: string, actorId?: string }> }} RoomSyncState
  * @typedef {{ path: string, value: unknown, updatedAt: string, actorId: string }} SyncOp
  * @typedef {{ op: SyncOp, reason: string }} RejectedOp
  */
@@ -216,6 +216,7 @@ function applyTombstone(state, patientId, op) {
   state.tombstones[patientId] = {
     registro: meta.registro,
     deletedAt: meta.deletedAt || op.updatedAt,
+    actorId: op.actorId,
   };
 }
 

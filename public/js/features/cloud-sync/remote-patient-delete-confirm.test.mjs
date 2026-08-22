@@ -6,7 +6,14 @@ import {
   readDeclinedRemoteDeletes,
   writeDeclinedRemoteDeletes,
   buildRemoteDeleteConfirmOpts,
+  resolveActorDisplayName,
+  listPendingRemoteDeletes,
+  pendingRemoteDeletesHtml,
+  writeDeclinedRemoteDeleteActors,
+  partitionCloudTombstonesForConfirm,
 } from './remote-patient-delete-confirm.mjs';
+import { clinicalSessionContext } from '../../clinical-session-context.mjs';
+import { setPatients } from '../../app-state.mjs';
 
 describe('remote-patient-delete-confirm', () => {
   /** @type {Storage} */
@@ -113,5 +120,90 @@ describe('remote-patient-delete-confirm', () => {
     ]);
     assert.equal(many.title, 'Quitar 2 pacientes de esta Mac');
     assert.equal(many.items.length, 2);
+  });
+
+  it('buildRemoteDeleteConfirmOpts names the actor when known', () => {
+    clinicalSessionContext.teams = [
+      { members: [{ user_id: 'u1', clinical_name: 'Dra. Ruiz' }] },
+    ];
+    const one = buildRemoteDeleteConfirmOpts([
+      { patientId: 'p1', deletedAt: 't', actorId: 'u1' },
+    ]);
+    assert.match(one.question, /^Dra\. Ruiz lo eliminó en Nube/);
+    clinicalSessionContext.teams = [];
+  });
+
+  it('resolveActorDisplayName falls back to a device label for unknown actors', () => {
+    clinicalSessionContext.teams = [];
+    assert.equal(resolveActorDisplayName(''), 'otro equipo');
+    assert.equal(resolveActorDisplayName('local'), 'otro equipo');
+    assert.match(resolveActorDisplayName('abcdefgh1234'), /^un dispositivo \(abcdefgh…\)$/);
+  });
+
+  it('listPendingRemoteDeletes only returns declined deletes still on this Mac', () => {
+    setPatients([
+      { id: 'p1', nombre: 'BENITEZ', registro: '111-1' },
+      { id: 'p2', nombre: 'MARTINEZ', registro: '222-2' },
+    ]);
+    writeDeclinedRemoteDeletes({ p1: '2026-08-20T10:00:00Z', p3: '2026-08-20T10:00:00Z' }, store);
+    writeDeclinedRemoteDeleteActors({ p1: 'u1' }, store);
+    clinicalSessionContext.teams = [
+      { members: [{ user_id: 'u1', clinical_name: 'Dra. Ruiz' }] },
+    ];
+    const pending = listPendingRemoteDeletes();
+    assert.deepEqual(
+      pending.map((r) => r.patientId),
+      ['p1']
+    );
+    assert.match(pending[0].label, /BENITEZ/);
+    assert.equal(pending[0].actorName, 'Dra. Ruiz');
+    clinicalSessionContext.teams = [];
+    setPatients([]);
+  });
+
+  it('partitionCloudTombstonesForConfirm keeps an already-declined delete instead of re-applying it', () => {
+    setPatients([{ id: 'p1', nombre: 'BENITEZ', registro: '111-1' }]);
+    writeDeclinedRemoteDeletes({ p1: '2026-08-20T10:00:00Z' }, store);
+    const { silentIds, pendingConfirm } = partitionCloudTombstonesForConfirm(
+      { p1: { deletedAt: '2026-08-20T10:00:00Z', actorId: 'admin-1' } },
+      { localActorId: 'r1-mac' }
+    );
+    assert.deepEqual(silentIds, []);
+    assert.deepEqual(pendingConfirm, []);
+    setPatients([]);
+  });
+
+  it('partitionCloudTombstonesForConfirm re-asks when a new delete arrives for a previously-declined patient', () => {
+    setPatients([{ id: 'p1', nombre: 'BENITEZ', registro: '111-1' }]);
+    writeDeclinedRemoteDeletes({ p1: '2026-08-20T10:00:00Z' }, store);
+    const { silentIds, pendingConfirm } = partitionCloudTombstonesForConfirm(
+      { p1: { deletedAt: '2026-08-21T09:00:00Z', actorId: 'admin-1' } },
+      { localActorId: 'r1-mac' }
+    );
+    assert.deepEqual(silentIds, []);
+    assert.deepEqual(pendingConfirm, [{ patientId: 'p1', deletedAt: '2026-08-21T09:00:00Z', actorId: 'admin-1' }]);
+    setPatients([]);
+  });
+
+  it('partitionCloudTombstonesForConfirm still applies an own-actor echo silently even if previously declined', () => {
+    setPatients([{ id: 'p1', nombre: 'BENITEZ', registro: '111-1' }]);
+    writeDeclinedRemoteDeletes({ p1: '2026-08-20T10:00:00Z' }, store);
+    const { silentIds, pendingConfirm } = partitionCloudTombstonesForConfirm(
+      { p1: { deletedAt: '2026-08-20T10:00:00Z', actorId: 'r1-mac' } },
+      { localActorId: 'r1-mac' }
+    );
+    assert.deepEqual(silentIds, ['p1']);
+    assert.deepEqual(pendingConfirm, []);
+    setPatients([]);
+  });
+
+  it('pendingRemoteDeletesHtml renders a row per pending patient', () => {
+    const empty = pendingRemoteDeletesHtml([]);
+    assert.match(empty, /No hay pacientes/);
+    const html = pendingRemoteDeletesHtml([
+      { patientId: 'p1', label: 'BENITEZ · 111-1', deletedAt: 't', actorName: 'Dra. Ruiz' },
+    ]);
+    assert.match(html, /data-patient-id="p1"/);
+    assert.match(html, /Dra\. Ruiz/);
   });
 });

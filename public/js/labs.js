@@ -82,6 +82,7 @@ export {
   parseGaso_,
   buildGasoInterpretacion_,
   reprocessLabResultLines_,
+  extractElectrolytesFromResLabs,
   DEFAULT_GASO_REFS,
   collectPriorGasRefsFromHistory,
   mergeGasRefs_,

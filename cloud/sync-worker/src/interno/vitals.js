@@ -130,7 +130,8 @@ async function commitInternoVitalsOps(env, db, roomId, ops, actorId, clientMutat
       clientMutationId,
       applied: appliedResult.applied,
       nextState: appliedResult.state,
-      previousLabSidecars: freshState.state.labSidecars,
+      legacyShardBytes: freshState.legacyShardBytes,
+      labSetBytes: freshState.labSetBytes,
     });
     if (committed.ok) {
       return { ok: true, version: nextRevision };

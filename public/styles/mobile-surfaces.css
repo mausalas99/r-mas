@@ -431,7 +431,7 @@ html[data-cloud-mobile='1'] #lan-connection-banner {
   top: max(56px, calc(env(safe-area-inset-top) + 48px));
   z-index: 11000;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   background: color-mix(in oklab, var(--color-accent, #4a52e8) 14%, var(--color-surface-elevated, #fff));
   border: 1px solid color-mix(in oklab, var(--color-accent, #4a52e8) 35%, transparent);
   color: var(--color-ink, #0b0d12);

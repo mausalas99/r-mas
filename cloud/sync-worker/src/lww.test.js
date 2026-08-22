@@ -204,6 +204,7 @@ describe('applyOps LWW', () => {
     assert.equal(s.todos.t1, undefined);
     assert.equal(s.agenda.length, 0);
     assert.equal(s.tombstones.p1.registro, '2166042-4');
+    assert.equal(s.tombstones.p1.actorId, 'a');
 
     ({ state: s } = applyOps(s, [
       {

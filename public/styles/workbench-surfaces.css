@@ -300,7 +300,7 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   width: 11px;
   height: 11px;
   background: var(--color-danger);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 2px solid var(--bg);
   pointer-events: none;
 }
@@ -447,7 +447,7 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 .exp-pendientes-mount .wb-todo-encurso-btn {
   background: none;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   padding: 2px 7px;
   cursor: pointer;
   font: 600 10px/1 var(--font-mono, 'IBM Plex Mono', monospace);

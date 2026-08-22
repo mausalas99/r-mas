@@ -676,3 +676,36 @@ test('parseSomeTablesFromSources skips junk and uses a later SOME report', () =>
 test('parseSomeTablesFromSources is null when nothing looks like SOME', () => {
   assert.equal(parseSomeTablesFromSources(['BH\tHb 12.1', 'QS\tCr 1.1']), null);
 });
+
+test('parseSomeReportTables — encabezado partido en líneas separadas no desplaza filas', () => {
+  const raw = `
+HEMATOLOGIA
+BIOMETRIA HEMATICA COMPLETA
+Estudio
+Resultado Unidades
+Valor de Referencia
+HGB
+*
+8.16
+g/dL	13.60 - 17.80
+HCT
+B
+26
+%	39.5 - 53.1
+`;
+  const parsed = parseSomeReportTables(raw);
+  const rows = parsed.departments[0].groups[0].rows;
+  assert.ok(
+    !rows.some((r) => /^(ESTUDIO|RESULTADO|UNIDADES|VALOR)/i.test(r.estudio)),
+    'header tokens must not become rows'
+  );
+  const hgb = rows.find((r) => r.estudio === 'HGB');
+  assert.ok(hgb);
+  assert.equal(hgb.resultado, '8.16');
+  assert.equal(hgb.unidades, 'g/dL');
+  assert.equal(hgb.ref, '13.60 - 17.80');
+  const hct = rows.find((r) => r.estudio === 'HCT');
+  assert.ok(hct);
+  assert.equal(hct.resultado, '26');
+  assert.equal(hct.flag, 'B');
+});

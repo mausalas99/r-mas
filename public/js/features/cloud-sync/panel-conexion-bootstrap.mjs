@@ -20,6 +20,7 @@ import { mountCloudMobileInviteInHost } from './panel-mobile-invite.mjs';
 import { refreshCloudSyncDiagnostics } from './panel-cloud-diagnostics.mjs';
 import { hydrateRoomDeksFromPersistence } from './room-dek.mjs';
 import { getStoredRoomDeks } from './settings.mjs';
+import { promptAndApplyRemotePatientDeletes } from './remote-patient-delete-confirm.mjs';
 
 /** @param {boolean} [hasCloudSession] @returns {string} */
 export function adminShellHtml(hasCloudSession = false) {
@@ -124,6 +125,16 @@ export function wireConexionClicks(section, deps, ui) {
     if (action === 'nav-view') {
       const view = btn.getAttribute('data-cloud-view');
       if (view) goView(view);
+      return;
+    }
+    if (action === 'review-remote-delete') {
+      const patientId = btn.getAttribute('data-patient-id') || '';
+      const deletedAt = btn.getAttribute('data-deleted-at') || '';
+      if (patientId) {
+        void promptAndApplyRemotePatientDeletes([{ patientId, deletedAt }]).then(function () {
+          handlerDeps.renderConnected(handlerDeps.getCloudSyncRoomSnapshot?.());
+        });
+      }
       return;
     }
     if (action && clickActions[action]) clickActions[action]();

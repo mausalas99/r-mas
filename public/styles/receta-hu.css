@@ -82,7 +82,7 @@
 
 .receta-hu-card {
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   background: var(--surface);
   padding: 14px 16px;
   display: flex;
@@ -117,7 +117,7 @@
   font: inherit;
   font-size: 14px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 8px 10px;
   background: var(--input-fill, var(--bg));
   color: var(--text);
@@ -148,7 +148,7 @@
 .btn-add-inline {
   flex: 0 0 auto;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 8px 14px;
   font-size: 13px;
   font-weight: 600;
@@ -186,7 +186,7 @@
   gap: 10px;
   padding: 10px 12px;
   border: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--bg) 88%, var(--surface));
 }
 
@@ -253,7 +253,7 @@
   line-height: 1;
   cursor: pointer;
   padding: 2px 6px;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   flex-shrink: 0;
 }
 

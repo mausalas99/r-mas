@@ -91,7 +91,7 @@ html.dark.sidebar-auto-hide.sidebar-reveal aside.patient-sidebar {
   height: 30px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--text-muted);
   cursor: pointer;
@@ -134,7 +134,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   height: 30px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--text-muted);
   cursor: pointer;
@@ -156,7 +156,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   right: 4px;
   width: 6px;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--action);
   box-shadow: 0 0 0 1px var(--surface);
 }
@@ -182,7 +182,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
 .clinical-census-filters--popover {
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   background: var(--surface);
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
 }
@@ -222,7 +222,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   height: 30px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--text-muted);
   cursor: pointer;
@@ -305,7 +305,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   justify-content: center;
   width: 20px;
   height: 20px;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   border: 1.5px solid var(--border);
   background: var(--surface);
   color: var(--action);
@@ -546,7 +546,7 @@ aside.patient-sidebar .btn-delete-card::after {
   letter-spacing: 0.02em;
   padding: 2px 8px;
   min-height: 22px;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   border: 1px solid transparent;
   box-shadow: none;
   line-height: 1.15;
@@ -693,6 +693,6 @@ html.dark .patient-drag-hovercard.patient-card {
   font-weight: 700;
   letter-spacing: 0.3px;
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   border: 1px solid color-mix(in oklab, var(--action) 35%, var(--border));
 }

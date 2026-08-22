@@ -6,6 +6,8 @@ import { isInsulinRescateMedicationItem } from './insulin-rescate-detect.mjs';
 
 var INSULIN_RE = /\bINSULINA\b/i;
 var SC_VIA_RE = /\b(?:VIA\s+)?SUBCUT[AÁ]NEA\b|\bSC\b/i;
+var BASAL_INSULIN_RE =
+  /\b(GLARGINA|LANTUS|TOUJEO|DEGLUDEC|TRESIBA|DETEMIR|LEVEMIR|NPH)\b/i;
 
 /** @type {ReadonlyArray<{ key: string, label: string, re: RegExp }>} */
 export var PRANDIAL_SLOT_PATTERNS = [
@@ -72,7 +74,9 @@ export function extractInsulinPrandialUnits(dosisRaw) {
 export function isInsulinPrandialMedicationItem(item) {
   if (!item || item.suspendido) return false;
   if (isInsulinRescateMedicationItem(item)) return false;
-  if (!INSULIN_RE.test(String(item.nombreRaw || ''))) return false;
+  var nombre = String(item.nombreRaw || '');
+  if (!INSULIN_RE.test(nombre)) return false;
+  if (BASAL_INSULIN_RE.test(nombre)) return false;
   if (!SC_VIA_RE.test(String(item.viaRaw || ''))) return false;
   return parseInsulinPrandialSlot(itemBlob(item)) != null;
 }

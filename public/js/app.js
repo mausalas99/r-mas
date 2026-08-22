@@ -436,10 +436,39 @@ let deferredShellBootDone = false;
 function runDeferredShellAfterOnboarding() {
   if (deferredShellBootDone) return;
   deferredShellBootDone = true;
+  void import('./perf-markers.mjs').then(function (perf) {
+    perf.perfMark('deferred-shell-start');
+  });
   syncWorkContextChrome();
   syncMainAppTabA11y(activeAppTab);
   renderInnerTabs();
-  initTabBarMotion();
+  void import('./perf-markers.mjs').then(function (perf) {
+    perf.perfMark('deferred-shell-eager-paint-done');
+    perf.perfMeasure(
+      'deferred-shell-eager-paint',
+      'deferred-shell-start',
+      'deferred-shell-eager-paint-done'
+    );
+  });
+  // Tab-bar slide-indicator setup (resize listener, indicator DOM, rAF sync)
+  // is cosmetic — the active tab is already correct via plain CSS border
+  // before this runs (see html.tab-bar-indicators-ready rules), so it does
+  // not need to block first paint. Runs right after paint instead of inline
+  // (same double-rAF "after paint" pattern as deferred-work.mjs's
+  // scheduleAfterPaint, inlined here to avoid a new boot-hub import).
+  var runInitTabBarMotionAfterPaint = function () {
+    initTabBarMotion();
+    void import('./perf-markers.mjs').then(function (perf) {
+      perf.perfMark('deferred-shell-tab-bar-motion-ready');
+    });
+  };
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(function () {
+      requestAnimationFrame(runInitTabBarMotionAfterPaint);
+    });
+  } else {
+    setTimeout(runInitTabBarMotionAfterPaint, 0);
+  }
   scheduleDeferredShellInits();
   scheduleDeferredUiInits();
   initRpcDatePicker();

@@ -331,7 +331,7 @@ html.ui-density-guardia #lan-connection-banner {
 .guardia-hoy-cycle-today {
   margin: 0;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--color-accent-soft);
   border: 1px solid color-mix(in oklab, var(--color-ink) 18%, var(--border));
   font-size: 0.82rem;
@@ -538,7 +538,7 @@ html.ui-density-guardia #lan-connection-banner {
   align-items: center;
   justify-content: center;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   background: color-mix(in oklab, var(--bg) 40%, var(--surface));
   color: var(--action);
   cursor: pointer;
@@ -596,7 +596,7 @@ html.ui-density-guardia #lan-connection-banner {
   background: color-mix(in oklab, var(--action) 12%, var(--surface));
   border: 1px solid color-mix(in oklab, var(--action) 45%, var(--border));
   padding: 2px 8px;
-  border-radius: 20px;
+  border-radius: var(--radius-md);
 }
 
 #entrega-modal-backdrop .entrega-active-badge.hidden {
@@ -748,7 +748,7 @@ html.ui-density-guardia #lan-connection-banner {
 
 #entrega-modal-backdrop .entrega-proc-details {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 0 10px 8px;
 }
 
@@ -810,7 +810,7 @@ html.ui-density-guardia #lan-connection-banner {
 
 #entrega-modal-backdrop .entrega-handoff-support-card {
   padding: 9px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--divider);
   background: color-mix(in oklab, var(--bg) 40%, var(--surface));
 }
@@ -923,7 +923,7 @@ html.ui-density-guardia #lan-connection-banner {
   line-height: 1.45;
   color: var(--action);
   border: 1px solid color-mix(in oklab, var(--action) 22%, var(--border));
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   background: color-mix(in oklab, var(--action) 8%, var(--surface));
 }
 
@@ -1849,7 +1849,7 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 
 .entrega-freq-chip {
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   padding: 0.3rem 0.7rem;
   font-size: 0.8rem;
   font-weight: 600;
@@ -2007,7 +2007,7 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   min-width: 1.4rem;
   padding: 0 6px;
   margin-left: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 0.75rem;
   font-weight: 700;
   background: color-mix(in srgb, var(--danger) 18%, transparent);
@@ -2432,7 +2432,7 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   text-overflow: ellipsis;
   max-width: 58%;
   padding: 1px 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   background: color-mix(in oklab, var(--action) 12%, var(--surface));
   border: 1px solid color-mix(in oklab, var(--action) 22%, var(--border));
 }
@@ -2584,7 +2584,7 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   font-size: 0.625rem;
   font-weight: 600;
   line-height: 1.15;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   box-sizing: border-box;
 }
 
@@ -2638,7 +2638,7 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   font-size: 0.75rem;
   font-weight: 700;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   width: fit-content;
 }
 
@@ -3468,12 +3468,16 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
   color: var(--text-muted);
-  font-size: 1.35rem;
-  font-weight: 400;
-  line-height: 1;
   font-family: inherit;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.clinical-teams-dismiss svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
 }
 
 .clinical-teams-dismiss:hover {
@@ -4922,7 +4926,7 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
 .clinical-team-invite-browser-gate-card {
   max-width: 420px;
   padding: 20px 22px;
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   background: var(--surface);
   border: 1px solid var(--border);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
@@ -5136,7 +5140,7 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
 .clinical-teams-legacy-banner {
   background: rgba(255, 159, 10, 0.12);
   border: 1px solid rgba(255, 159, 10, 0.35);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 8px 10px;
   font-size: 0.85rem;
   margin: 0 0 10px;
@@ -5491,7 +5495,7 @@ html.clinical-onboarding-active #main-area {
 
 .guardia-v7-upgrade-meter {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--border) 70%, transparent);
   overflow: hidden;
   margin: 0 0 14px;
@@ -5541,7 +5545,7 @@ html.clinical-onboarding-active #main-area {
 
 .clinical-onboard-boot-progress-track {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--text) 10%, transparent);
   overflow: hidden;
 }
@@ -5919,7 +5923,7 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   font-size: 0.72rem;
   color: var(--color-ink-muted, var(--text-muted));
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid transparent;
 }
 
@@ -5929,7 +5933,7 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   justify-content: center;
   width: 1.35rem;
   height: 1.35rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   font-weight: 700;
   font-size: 0.68rem;
@@ -6043,7 +6047,7 @@ html.ui-density-guardia #btn-clinical-lan-connect {
 .inherit-unassigned-toggle {
   margin-bottom: 8px;
   border: 1px dashed var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding-inline: 8px;
 }
 
@@ -6113,7 +6117,7 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   text-transform: uppercase;
   color: var(--color-ink-muted, var(--text-muted));
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 2px 8px;
 }
 
@@ -6133,7 +6137,7 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   min-height: 44px;
   padding: 6px 4px;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
 }
 
 .inherit-patients-check:hover {

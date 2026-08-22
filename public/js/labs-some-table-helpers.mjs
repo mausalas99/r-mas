@@ -36,9 +36,12 @@ function cleanEstudio(raw) {
   return normLine(raw).replace(/\t+$/, '').trim();
 }
 
+var SOME_HEADER_TOKEN_RE = /^(ESTUDIO|RESULTADO(\s+UNIDADES)?|UNIDADES|VALOR\s+DE\s+REFERENCIA)$/;
+
 function isTableHeaderLine(line) {
-  var u = line.toUpperCase();
-  return /ESTUDIO/.test(u) && /RESULTADO/.test(u);
+  var u = line.toUpperCase().trim();
+  if (/ESTUDIO/.test(u) && /RESULTADO/.test(u)) return true;
+  return SOME_HEADER_TOKEN_RE.test(u);
 }
 
 function isDepartmentLine(line) {

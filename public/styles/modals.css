@@ -176,7 +176,7 @@
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px;
 }
 .clinical-conflict-version-pill {
-  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 999px;
+  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: var(--radius-pill);
 }
 .clinical-conflict-version-pill--local {
   background: color-mix(in oklab, var(--color-accent) 18%, transparent); color: var(--color-accent-soft-text);
@@ -525,7 +525,7 @@ html.dark .soap-btn-cancel {
   .intro-options-grid { grid-template-columns: 1fr; }
 }
 .intro-option-card {
-  border: 1px solid var(--border); border-radius: 14px; padding: 14px 14px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-sheet); padding: 14px 14px 14px;
   background: var(--bg); display: flex; flex-direction: column; gap: 8px; text-align: left;
 }
 .intro-option-card-accent {
@@ -889,7 +889,7 @@ html.dark .tour-spotlight-soap { outline-color: var(--color-accent-soft-text) !i
   line-height: 1.2;
   min-width: 20px;
   padding: 4px 7px;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
   background: var(--surface);
   color: var(--text);
@@ -1118,7 +1118,7 @@ html.dark .help-center-modal { background: var(--surface); color: var(--text); }
   font-size: 11px;
   font-weight: 700;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-accent-soft);
   color: var(--action);
   border: 1px solid color-mix(in oklab, var(--action) 25%, transparent);
@@ -1487,7 +1487,7 @@ html.dark #rpc-db-change-pass-overlay { background: var(--scrim-bg); }
 body.rpc-db-unlock-active { overflow: hidden; }
 .rpc-db-unlock-panel {
   background: var(--surface); color: var(--text);
-  border-radius: 16px; max-width: 420px; width: 100%;
+  border-radius: var(--radius-sm); max-width: 420px; width: 100%;
   padding: 26px 24px 22px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);
   border: 1px solid var(--border);
   display: flex; flex-direction: column; gap: 10px;
@@ -1559,7 +1559,7 @@ body.rpc-db-unlock-active { overflow: hidden; }
 html.dark #rpc-idle-lock-overlay { background: var(--scrim-bg); }
 .rpc-idle-lock-panel {
   background: var(--surface); color: var(--text);
-  border-radius: 16px; max-width: 380px; width: 100%;
+  border-radius: var(--radius-sm); max-width: 380px; width: 100%;
   padding: 26px 24px 22px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);
   border: 1px solid var(--border);
   display: flex; flex-direction: column; gap: 12px;
@@ -1604,7 +1604,7 @@ html.dark #rpc-clinical-session-lock { background: var(--scrim-bg); }
 .clinical-session-lock-panel {
   background: var(--surface);
   color: var(--text);
-  border-radius: 16px;
+  border-radius: var(--radius-sm);
   max-width: 380px;
   width: 100%;
   padding: 26px 24px 22px;
@@ -1654,7 +1654,7 @@ html.dark #rpc-clinical-session-lock { background: var(--scrim-bg); }
 html.dark #rpc-wipe-modal { background: var(--scrim-bg); }
 .rpc-wipe-panel {
   background: var(--surface); color: var(--text);
-  border-radius: 14px; max-width: 460px; width: 100%;
+  border-radius: var(--radius-sheet); max-width: 460px; width: 100%;
   padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
   border: 1px solid var(--border);
   display: flex; flex-direction: column; gap: 12px;
@@ -1751,13 +1751,13 @@ html.dark .tend-section-toggle:hover { background: rgba(96, 165, 250, 0.08); }
 }
 .tend-section-count {
   font-size: 12px; font-weight: 600; color: var(--text-muted);
-  padding: 4px 10px; border-radius: 999px; background: var(--lab-chip-bg);
+  padding: 4px 10px; border-radius: var(--radius-pill); background: var(--lab-chip-bg);
   line-height: 1.2; min-width: 1.75em; text-align: center;
 }
 .tend-section-chart-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   height: 32px; padding: 0 12px; margin-left: 0; flex-shrink: 0;
-  border: 1px solid rgba(37, 99, 235, 0.28); border-radius: 999px;
+  border: 1px solid rgba(37, 99, 235, 0.28); border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--primary) 10%, var(--surface));
   color: var(--primary); font-family: inherit; font-size: 12px; font-weight: 600;
   cursor: pointer; transition: border-color var(--dur-normal) ease, color var(--dur-normal) ease, box-shadow var(--dur-normal) ease, background var(--dur-normal) ease;
@@ -1975,7 +1975,7 @@ html.dark .tend-group-drag-hovercard.tend-group-panel-card {
 .tend-group-hidden-label { font-weight: 600; color: var(--text); margin-right: 4px; }
 .tend-group-restore-chip {
   display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px 3px 10px;
-  border-radius: 999px; border: 1px solid var(--border); background: var(--surface);
+  border-radius: var(--radius-chip); border: 1px solid var(--border); background: var(--surface);
   font-size: 11px; color: var(--text); cursor: pointer; font-family: inherit;
 }
 .tend-group-restore-chip:hover { border-color: rgba(37, 99, 235, 0.35); }
@@ -2014,7 +2014,7 @@ html.dark .tend-spark-placeholder { background: rgba(255,255,255,0.04); }
 }
 .tend-hidden-modal-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-height: 2em; }
 .tend-hidden-chip {
-  display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px 6px 12px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px 6px 12px; border-radius: var(--radius-chip);
   border: 1px solid var(--border); background: var(--surface); font-size: 12px; color: var(--text);
   font-family: inherit; cursor: pointer; transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease, color var(--dur-fast) ease;
 }
@@ -2232,7 +2232,7 @@ html.electron-macos-inset-bar .tend-gaso-ext-backdrop * {
   width: min(960px, 96vw);
   max-height: min(90dvh, calc(var(--app-height) - 32px), 940px);
   overflow: auto;
-  border-radius: 16px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface, var(--bg));
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
@@ -2273,7 +2273,7 @@ html.electron-macos-inset-bar .tend-gaso-ext-backdrop * {
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   border: 1px solid rgba(37, 99, 235, 0.28);
   background: rgba(37, 99, 235, 0.08);
 }
@@ -2427,7 +2427,7 @@ html.electron-macos-inset-bar .tend-gaso-ext-backdrop * {
   justify-content: center;
   width: 24px;
   height: 24px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 11px;
   font-weight: 800;
   line-height: 24px;
@@ -2454,7 +2454,7 @@ html.electron-macos-inset-bar .tend-gaso-ext-backdrop * {
   display: inline-block;
   margin-bottom: 6px;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 12px;
   font-weight: 700;
   border: 1px solid var(--border);
@@ -2649,7 +2649,7 @@ html.dark .tend-gaso-tip {
   gap: 10px;
   padding: 6px 14px;
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius-md);
   background: var(--surface);
   cursor: pointer;
   font-family: inherit;
@@ -2860,7 +2860,7 @@ html.dark .tend-gaso-tip {
   width: min(92vw, 420px);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   padding: 18px 20px 16px;
   box-shadow: var(--shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.18));
 }
@@ -2895,7 +2895,7 @@ html.dark .tend-gaso-tip {
   border: 1px solid var(--border);
   background: var(--surface-elevated, var(--surface));
   color: var(--text);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 6px 10px;
   font-size: 0.78rem;
   cursor: pointer;
@@ -2909,7 +2909,7 @@ html.dark .tend-gaso-tip {
   width: 100%;
   min-height: 4.5rem;
   resize: vertical;
-  border-radius: 8px;
+  border-radius: var(--radius-field);
   border: 1px solid var(--border);
   padding: 8px 10px;
   font: inherit;
@@ -2918,7 +2918,7 @@ html.dark .tend-gaso-tip {
 }
 .tend-event-compose-input {
   width: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius-field);
   border: 1px solid var(--border);
   padding: 8px 10px;
   font: inherit;

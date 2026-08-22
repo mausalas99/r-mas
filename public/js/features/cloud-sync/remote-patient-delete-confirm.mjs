@@ -5,8 +5,11 @@
 import { getPatients, persistClinicalState } from '../../app-state.mjs';
 import { removePatientLocally } from '../sync-apply/patient-delete.mjs';
 import { showConfirmDialog } from '../../ui-approval-card.mjs';
+import { clinicalSessionContext } from '../../clinical-session-context.mjs';
+import { esc } from '../../dom-escape.mjs';
 
 const DECLINED_LS = 'rpc.declinedRemotePatientDeletes';
+const DECLINED_ACTORS_LS = 'rpc.declinedRemotePatientDeleteActors';
 
 /** @returns {Record<string, string>} */
 export function readDeclinedRemoteDeletes(storage = globalThis.localStorage) {
@@ -26,6 +29,47 @@ export function writeDeclinedRemoteDeletes(map, storage = globalThis.localStorag
   } catch {
     /* ignore */
   }
+}
+
+/** @returns {Record<string, string>} */
+export function readDeclinedRemoteDeleteActors(storage = globalThis.localStorage) {
+  try {
+    const raw = storage?.getItem(DECLINED_ACTORS_LS);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+/** @param {Record<string, string>} map @param {Storage|undefined} storage */
+export function writeDeclinedRemoteDeleteActors(map, storage = globalThis.localStorage) {
+  try {
+    storage?.setItem(DECLINED_ACTORS_LS, JSON.stringify(map || {}));
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Best-effort actorId -> human label, using the in-session team roster.
+ * Falls back to a truncated id when the actor isn't a known team member.
+ * @param {string} actorId
+ */
+export function resolveActorDisplayName(actorId) {
+  const id = String(actorId || '').trim();
+  if (!id || id === 'local') return 'otro equipo';
+  const teams = clinicalSessionContext.teams || [];
+  for (const team of teams) {
+    const members = team?.members || [];
+    for (const m of members) {
+      if (m && String(m.user_id) === id) {
+        const label = String(m.clinical_name || m.username || '').trim();
+        if (label) return label;
+      }
+    }
+  }
+  return 'un dispositivo (' + id.slice(0, 8) + '…)';
 }
 
 /**
@@ -93,17 +137,27 @@ function patientLabel(patientId) {
 }
 
 /**
- * @param {Array<{ patientId: string, deletedAt: string }>} pending
+ * @param {Array<{ patientId: string, deletedAt: string, actorId?: string }>} pending
+ */
+function resolveConfirmActorLabel(pending) {
+  const names = new Set(pending.map((row) => resolveActorDisplayName(row.actorId)));
+  if (names.size === 1) return { label: [...names][0], plural: false };
+  return { label: 'varios usuarios', plural: true };
+}
+
+/**
+ * @param {Array<{ patientId: string, deletedAt: string, actorId?: string }>} pending
  */
 export function buildRemoteDeleteConfirmOpts(pending) {
   const n = pending.length;
   const items = pending.slice(0, 8).map((row) => patientLabel(row.patientId));
   if (n > 8) items.push('… y ' + (n - 8) + ' más');
+  const { label: actor, plural } = resolveConfirmActorLabel(pending);
   if (n === 1) {
     return {
       title: 'Quitar de esta Mac',
       question:
-        'Un admin (u otro equipo) lo eliminó en Nube. Si confirmas, desaparece de este censo.',
+        actor + (plural ? ' lo eliminaron' : ' lo eliminó') + ' en Nube. Si confirmas, desaparece de este censo.',
       items,
       confirmLabel: 'Eliminar aquí',
       cancelLabel: 'Conservar aquí',
@@ -112,7 +166,7 @@ export function buildRemoteDeleteConfirmOpts(pending) {
   return {
     title: 'Quitar ' + n + ' pacientes de esta Mac',
     question:
-      'Un admin (u otro equipo) los eliminó en Nube. Si confirmas, desaparecen de este censo.',
+      actor + (plural ? ' los eliminaron' : ' los eliminó') + ' en Nube. Si confirmas, desaparecen de este censo.',
     items,
     confirmLabel: 'Eliminar aquí',
     cancelLabel: 'Conservar aquí',
@@ -123,7 +177,7 @@ export function buildRemoteDeleteConfirmOpts(pending) {
 let confirmQueue = null;
 
 /**
- * @param {Array<{ patientId: string, deletedAt: string }>} pending
+ * @param {Array<{ patientId: string, deletedAt: string, actorId?: string }>} pending
  */
 export async function promptAndApplyRemotePatientDeletes(pending) {
   const rows = Array.isArray(pending) ? pending.filter((r) => r && r.patientId) : [];
@@ -135,9 +189,15 @@ export async function promptAndApplyRemotePatientDeletes(pending) {
   });
   if (ok) {
     let removed = false;
+    const declined = readDeclinedRemoteDeletes();
+    const declinedActors = readDeclinedRemoteDeleteActors();
     for (const row of rows) {
       if (removePatientLocally(row.patientId)) removed = true;
+      delete declined[String(row.patientId)];
+      delete declinedActors[String(row.patientId)];
     }
+    writeDeclinedRemoteDeletes(declined);
+    writeDeclinedRemoteDeleteActors(declinedActors);
     if (removed) {
       persistClinicalState({ immediate: true });
       try {
@@ -151,12 +211,66 @@ export async function promptAndApplyRemotePatientDeletes(pending) {
   }
 
   const declined = readDeclinedRemoteDeletes();
+  const declinedActors = readDeclinedRemoteDeleteActors();
   for (const row of rows) {
     const at = String(row.deletedAt || '').trim() || 'declined';
     declined[String(row.patientId)] = at;
+    if (row.actorId) declinedActors[String(row.patientId)] = String(row.actorId);
   }
   writeDeclinedRemoteDeletes(declined);
+  writeDeclinedRemoteDeleteActors(declinedActors);
   return { removed: false, declined: rows.length };
+}
+
+/**
+ * Patients this Mac kept after declining a remote delete, for admin review.
+ * @returns {Array<{ patientId: string, label: string, deletedAt: string, actorName: string }>}
+ */
+export function listPendingRemoteDeletes() {
+  const declined = readDeclinedRemoteDeletes();
+  const declinedActors = readDeclinedRemoteDeleteActors();
+  return Object.keys(declined)
+    .filter((patientId) => patientExistsLocally(patientId))
+    .map((patientId) => ({
+      patientId,
+      label: patientLabel(patientId),
+      deletedAt: String(declined[patientId] || ''),
+      actorName: resolveActorDisplayName(declinedActors[patientId]),
+    }));
+}
+
+/**
+ * @param {Array<{ patientId: string, label: string, deletedAt: string, actorName: string }>} rows
+ */
+export function pendingRemoteDeletesHtml(rows) {
+  if (!rows.length) {
+    return '<p class="cloud-sync-hint">No hay pacientes con eliminación remota pendiente.</p>';
+  }
+  const items = rows
+    .map(
+      (row) =>
+        '<li class="cloud-sync-pending-delete-row">' +
+        '<span class="cloud-sync-pending-delete-label">' +
+        esc(row.label) +
+        '</span>' +
+        '<span class="cloud-sync-pending-delete-meta">' +
+        esc(row.actorName) +
+        (row.deletedAt ? ' · ' + esc(row.deletedAt) : '') +
+        '</span>' +
+        '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" ' +
+        'data-cloud-action="review-remote-delete" data-patient-id="' +
+        esc(row.patientId) +
+        '" data-deleted-at="' +
+        esc(row.deletedAt) +
+        '">Revisar</button></li>'
+    )
+    .join('');
+  return (
+    '<p class="cloud-sync-hint">Se mantuvieron en esta Mac después de rechazar una eliminación remota.</p>' +
+    '<ul class="cloud-sync-pending-delete-list">' +
+    items +
+    '</ul>'
+  );
 }
 
 /**
@@ -201,20 +315,16 @@ export function partitionCloudTombstonesForConfirm(tombstones, opts = {}) {
     if (!exists) continue;
     const tombstoneActorId = resolveTombstoneActorId(patientId, meta, entityVersions);
     const deletedAt = resolveTombstoneDeletedAt(patientId, meta);
-    if (
-      shouldConfirmRemotePatientDelete({
-        patientId,
-        localActorId,
-        tombstoneActorId,
-        deletedAt,
-        patientExistsLocally: true,
-        declinedMap,
-      })
-    ) {
-      pendingConfirm.push({ patientId, deletedAt });
-    } else {
+    // Own delete echoing back: apply silently, no confirm needed.
+    if (localActorId && tombstoneActorId && localActorId === tombstoneActorId) {
       silentIds.push(patientId);
+      continue;
     }
+    // Already declined this exact delete: keep the patient, do not re-delete or re-ask.
+    if (deletedAt && String(declinedMap[patientId] || '') === deletedAt) {
+      continue;
+    }
+    pendingConfirm.push({ patientId, deletedAt, actorId: tombstoneActorId });
   }
   return { silentIds, pendingConfirm };
 }

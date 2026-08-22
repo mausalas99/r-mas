@@ -56,6 +56,46 @@ describe('clusterDayLabSets', () => {
     assert.equal(groups[1].hora, '07:00');
   });
 
+  it('keeps a new same-day gasometría instead of dropping it for an earlier richer one', () => {
+    var groups = clusterDayLabSets([
+      set('morning', '22/08/2026', '04:34', [
+        'BH\tHb 8.16* Hto 26*',
+        'QS\tGlu 171*',
+        'GASES\tpH 7.26 pCO2 39 pO2 39* Lactato 1.7 Bica 17.5 AG 9.1 AGc 13.6 Delta-Delta 0.2',
+      ]),
+      set('newGaso', '22/08/2026', '11:19', ['GASES\tpH 7.28 pCO2 32 pO2 37 Lactato 0.3 HCO3 15.0']),
+    ]);
+    assert.equal(groups.length, 2);
+    groups.forEach(function (g) {
+      assert.ok(
+        g.resLabs.some(function (row) {
+          return /^GASES/.test(String(row));
+        }),
+        'group at ' + g.hora + ' lost its GASES row'
+      );
+    });
+  });
+
+  it('backfills anion gap on a same-day gasometría using the first blood draw electrolytes', () => {
+    var groups = clusterDayLabSets([
+      set('morning', '22/08/2026', '04:34', [
+        'QS\tNa 140 Cl 100 Glu 171*',
+        'GASES\tpH 7.26 pCO2 39 pO2 39* Lactato 1.7 Bica 22',
+      ]),
+      set('newGaso', '22/08/2026', '11:19', ['GASES\tpH 7.28 pCO2 32 pO2 37 Lactato 0.3 Bica 15']),
+    ]);
+    assert.equal(groups.length, 2);
+    var newGasoGroup = groups.find(function (g) {
+      return g.hora === '11:19';
+    });
+    assert.ok(newGasoGroup);
+    var gasesRow = newGasoGroup.resLabs.find(function (r) {
+      return /^GASES/.test(String(r));
+    });
+    assert.ok(gasesRow, 'new gasometría must keep its GASES row');
+    assert.match(gasesRow, /\bAG\s+25\*?\b/);
+  });
+
   it('keeps cultivo in its own family group', () => {
     var groups = clusterDayLabSets([
       set('labs', '13/08/2026', '09:00', ['BH\tHb 8.2*']),

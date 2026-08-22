@@ -256,7 +256,7 @@ html.dark .patient-dash .svc.is-on {
 #patient-ronda-dashboard-host .card {
   background: var(--color-elevated);
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   box-shadow: none;
   min-height: 0;
   overflow: hidden;
@@ -430,7 +430,7 @@ html.dark .patient-dash .svc.is-on {
 
 .patient-dash .draw {
   border: 1px solid color-mix(in oklab, var(--color-danger) 22%, transparent);
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   padding: 0;
   text-align: left;
   min-height: min-content;
@@ -635,7 +635,7 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
 
 .patient-dash .rows li.is-overdue {
   background: var(--color-danger-tint);
-  border-radius: 7px;
+  border-radius: var(--radius-row-btn);
   padding: 3px 6px;
   margin: -3px -6px;
 }
@@ -690,7 +690,7 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
   overflow: auto;
   padding: 20px;
   margin: 0;
-  border-radius: 14px;
+  border-radius: var(--radius-sheet);
   border: 1px solid var(--border);
   background: var(--color-elevated);
   box-shadow: var(--elev-overlay, var(--shadow-md));

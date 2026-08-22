@@ -14,6 +14,7 @@ import {
   primaryTipoForLabSet,
   resLabsHasGasometria,
 } from './lab-history-format.mjs';
+import { reprocessLabResultLines_, extractElectrolytesFromResLabs } from './labs.js';
 import { normalizeHoraLabHistory } from './tend-core.mjs';
 import { looksLikeSomeLabReport } from './labs-report-refs.mjs';
 
@@ -114,12 +115,17 @@ function mergeClusterResLabs(sets) {
  * fragmento incompleto, apilados como bloques "EGO:" casi vacíos uno tras otro. Aquí se elige,
  * por sección, el renglón más completo de TODO el día y se deja solo en el cluster que lo originó.
  */
+/** GASES: cada toma del día es una gasometría distinta, no un fragmento a completar. */
+function isRepeatablePerDaySectionKey_(key) {
+  return key === 'GASES';
+}
+
 function reconcileSingletonSectionsAcrossDay_(groups) {
   var bestByKey = Object.create(null);
   groups.forEach(function (g, gi) {
     (g.resLabs || []).forEach(function (row) {
       var key = labRowSectionKey(row);
-      if (!key || isMergeAcrossOccurrencesSectionKey(key)) return;
+      if (!key || isMergeAcrossOccurrencesSectionKey(key) || isRepeatablePerDaySectionKey_(key)) return;
       var score = labRowRichnessScore(row);
       var prev = bestByKey[key];
       if (!prev || score > prev.score) bestByKey[key] = { row: row, groupIdx: gi, score: score };
@@ -133,6 +139,35 @@ function reconcileSingletonSectionsAcrossDay_(groups) {
         return labRowSectionKey(row) !== key;
       });
     });
+  });
+}
+
+/**
+ * Electrolitos (Na/Cl/Alb) de la toma más temprana del día que trae QS/ESC/PFHs propios.
+ * Una gasometría no incluye estos valores; el AG/AGc se sigue pudiendo calcular con
+ * el electrolito sérico de la primera extracción del día.
+ * @param {object[]} sets
+ * @returns {{na: unknown, cl: unknown, alb: unknown}|null}
+ */
+function dayElectrolyteFallback_(sets) {
+  var best = null;
+  (sets || []).forEach(function (set) {
+    var e = extractElectrolytesFromResLabs((set && set.resLabs) || []);
+    if (e.na == null && e.cl == null) return;
+    var ms = labTimestampMsFromFechaHora(set && set.fecha, set && set.hora);
+    if (ms == null) return;
+    if (!best || ms < best.ms) best = { ms: ms, electrolytes: e };
+  });
+  return best ? best.electrolytes : null;
+}
+
+/** Rellena AG/AGc en gasometrías del día que no traen Na/Cl/Alb propios. */
+function backfillGasoAnionGapAcrossDay_(groups, sets) {
+  var fallback = dayElectrolyteFallback_(sets);
+  if (!fallback) return;
+  groups.forEach(function (g) {
+    if (!resLabsHasGasometria(g.resLabs)) return;
+    g.resLabs = reprocessLabResultLines_(g.resLabs, { fallbackElectrolytes: fallback });
   });
 }
 
@@ -188,6 +223,7 @@ export function clusterDayLabSets(sets) {
       refsBySection: mergeClusterRefs(cluster),
     };
   });
+  backfillGasoAnionGapAcrossDay_(groups, list);
   reconcileSingletonSectionsAcrossDay_(groups);
   groups.sort(function (a, b) {
     return newestMs(b.sets) - newestMs(a.sets);

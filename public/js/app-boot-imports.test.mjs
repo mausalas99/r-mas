@@ -169,7 +169,17 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * changes in session-manager.mjs, cloud-sync/settings.mjs,
  * clinical-access-runtime/lifecycle.mjs, features/platform/updater/*.mjs — all
  * already-eager modules on the boot path, no new imports. */
-const EAGER_BOOT_BUDGET_BYTES = 3452580;
+/** +827 B / +0 files: boot-speed-debt Phase 1 (2026-08-22). app.js now defers
+ * the initTabBarMotion() call (tab-bar slide-indicator setup) to run after
+ * paint (double-rAF, inlined to avoid a new boot-hub import) instead of
+ * inline in runDeferredShellAfterOnboarding, plus perf.mark()
+ * instrumentation around the deferred-shell boot sequence. ui-tab-motion.mjs
+ * itself stays eager (already required, statically, by expediente-
+ * navigation.mjs/expediente-inner-cache.mjs/app-tabs.mjs for the tab
+ * indicator's correct first-paint position) — only the resize-observer +
+ * rAF wiring inside initTabBarMotion() moves off the synchronous paint path.
+ * No new eager file or import. */
+const EAGER_BOOT_BUDGET_BYTES = 3453407;
 const EAGER_BOOT_BUDGET_FILES = 98;
 
 /**
@@ -212,4 +222,21 @@ test('boot bundle: eager payload stays inside budget', () => {
     eager.files.length <= EAGER_BOOT_BUDGET_FILES,
     `eager chunk count ${eager.files.length} > budget ${EAGER_BOOT_BUDGET_FILES}`
   );
+});
+
+test('runDeferredShellAfterOnboarding defers initTabBarMotion off the paint path', () => {
+  const src = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
+  const start = src.indexOf('function runDeferredShellAfterOnboarding');
+  const end = src.indexOf('\nfunction wireOnboardingFinishedBootResume');
+  const body = src.slice(start, end);
+  // renderInnerTabs()/syncMainAppTabA11y() must stay synchronous (first paint).
+  assert.match(body, /syncMainAppTabA11y\(activeAppTab\);\s*\n\s*renderInnerTabs\(\);/);
+  // initTabBarMotion() must not run inline right after renderInnerTabs() —
+  // it must be deferred so it runs after paint instead.
+  assert.doesNotMatch(body, /renderInnerTabs\(\);\s*\n\s*initTabBarMotion\(\);/);
+  assert.match(body, /runInitTabBarMotionAfterPaint\s*=\s*function/);
+  assert.match(body, /requestAnimationFrame\(runInitTabBarMotionAfterPaint\)/);
+  assert.match(body, /perfMark\('deferred-shell-start'\)/);
+  assert.match(body, /perfMark\('deferred-shell-eager-paint-done'\)/);
+  assert.match(body, /perfMark\('deferred-shell-tab-bar-motion-ready'\)/);
 });

@@ -74,6 +74,15 @@ test('isInsulinPrandialMedicationItem — paste con EN AM/MEDIODIA/PM', () => {
   );
 });
 
+test('isInsulinPrandialMedicationItem — glargina con "EN AM" en su propia dosis no es preprandial', () => {
+  var parsed = parseIndicacionesPaste(
+    '22/08/2026 08:33:47 a.m.\tMEDICAMENTOS\tINSULINA GLARGINA\tVIA SUBCUTANEA\t30 UI // EN AM, EN BRAZO IZQUIERDO\tCADA 24 HORAS\tNW'
+  );
+  var glargina = parsed.items[0];
+  assert.equal(isInsulinPrandialMedicationItem(glargina), false);
+  assert.equal(patientHasInsulinPrandialMeds(parsed.items), false);
+});
+
 test('insulinPrandialNmSoapFragment — agrupa por comida con última dosis', () => {
   var parsed = parseIndicacionesPaste(PRANDIAL_MEAL_NAMES_PASTE);
   var prandial = insulinPrandialItemsFromList(parsed.items);

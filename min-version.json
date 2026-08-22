@@ -1,4 +1,4 @@
 {
-  "minVersion": "8.1.3",
-  "message": "Actualiza R+ para continuar con compatibilidad de datos clínicos y LAN."
+  "minVersion": "8.1.6",
+  "message": "Esta versión cambió de identificador de app. La actualización automática no funciona para este paso — descarga e instala el nuevo instalador manualmente."
 }
