@@ -100,3 +100,7 @@ export function showNotaEvolucionClassicView() {
 export function resetNotaEvolucionPrimaryTabViewForTests() {
   viewMode = 'nueva';
 }
+
+export const windowHandlers = {
+  renderNotaEvolucionPrimaryTab,
+};

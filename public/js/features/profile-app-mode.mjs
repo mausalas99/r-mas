@@ -9,15 +9,10 @@ import {
 import { syncCensoExportButtonVisibility } from "../censo-export.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { migrateGranularInner } from "../expediente-tabs.mjs";
-import { renderNotaEvolucionPrimaryTab } from "./nota-evolucion/nota-evolucion-primary-tab.mjs";
 import { renderEstadoActualButton } from "./soap-estado.mjs";
 import { renderPatientList } from "./patients.mjs";
-import {
-  switchInnerTab,
-  getActiveInnerTab,
-  refreshExpedienteForAppModeChange,
-} from "./expediente-navigation.mjs";
 import { renderPatientDataPane } from "./expediente.mjs";
+import { resolveGlobalFn } from "./resolve-global-fn.mjs";
 import {
   getProfileRuntime,
   invalidateLoadSettingsSnapshot,
@@ -40,16 +35,18 @@ function syncInterconsultaModeChrome() {
 
 function reconcileActiveInnerForAppMode(nowSala) {
   var settings = settingsRef();
-  var current = getActiveInnerTab() || "todo";
+  var getActiveInnerTabFn = resolveGlobalFn("getActiveInnerTab");
+  var switchInnerTabFn = resolveGlobalFn("switchInnerTab");
+  var current = (getActiveInnerTabFn ? getActiveInnerTabFn() : null) || "todo";
   var migrated = migrateGranularInner(current, settings);
   if (migrated !== current) {
-    switchInnerTab(migrated, { forceRender: true });
+    if (switchInnerTabFn) switchInnerTabFn(migrated, { forceRender: true });
     return;
   }
   if (nowSala && (current === "notas" || current === "indica")) {
-    switchInnerTab("estadoActual", { forceRender: true });
+    if (switchInnerTabFn) switchInnerTabFn("estadoActual", { forceRender: true });
   } else if (!nowSala && current === "listado") {
-    switchInnerTab("recetaHu", { forceRender: true });
+    if (switchInnerTabFn) switchInnerTabFn("recetaHu", { forceRender: true });
   }
 }
 
@@ -58,7 +55,8 @@ export function applyAppModeSwitchEffects() {
   try {
     reconcileActiveInnerForAppMode(nowSala);
     syncAppModeRadioControls();
-    refreshExpedienteForAppModeChange();
+    var refreshExpedienteFn = resolveGlobalFn("refreshExpedienteForAppModeChange");
+    if (refreshExpedienteFn) refreshExpedienteFn();
     renderEstadoActualButton();
     syncCensoExportButtonVisibility();
     syncHeaderModeSeg();
@@ -67,8 +65,12 @@ export function applyAppModeSwitchEffects() {
       if (typeof rt.rebuildEstudiosFromLabHistory === "function") {
         rt.rebuildEstudiosFromLabHistory(rt.getActiveId());
       }
-      if (!nowSala) renderNotaEvolucionPrimaryTab();
-      var inner = getActiveInnerTab();
+      if (!nowSala) {
+        var renderNotaFn = resolveGlobalFn("renderNotaEvolucionPrimaryTab");
+        if (renderNotaFn) renderNotaFn();
+      }
+      var getActiveInnerTabFn2 = resolveGlobalFn("getActiveInnerTab");
+      var inner = getActiveInnerTabFn2 ? getActiveInnerTabFn2() : null;
       if (inner === "datos" || inner === "todo") renderPatientDataPane();
     }
     rt.syncWorkContextChrome();

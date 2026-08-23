@@ -17,13 +17,8 @@ import {
   renderNoteForm,
   renderIndicaForm,
 } from "./notes-indicaciones.mjs";
-import { renderNotaEvolucionPrimaryTab } from "./nota-evolucion/nota-evolucion-primary-tab.mjs";
-import { switchAppTab } from "./app-tabs.mjs";
-import {
-  switchInnerTab,
-  renderInnerTabs,
-} from "./expediente-navigation.mjs";
 import { syncHeaderModeSeg } from "./chrome.mjs";
+import { resolveGlobalFn } from "./resolve-global-fn.mjs";
 import {
   getProfileRuntime,
   settingsRef,
@@ -40,7 +35,8 @@ function ensureInterconsultaModeForFormats() {
   var modeInterEl = document.getElementById("app-mode-inter");
   if (modeInterEl) modeInterEl.checked = true;
   if (modeSalaEl) modeSalaEl.checked = false;
-  renderInnerTabs();
+  var renderInnerTabsFn = resolveGlobalFn("renderInnerTabs");
+  if (renderInnerTabsFn) renderInnerTabsFn();
   syncHeaderModeSeg();
   getProfileRuntime().syncWorkContextChrome();
 }
@@ -78,8 +74,10 @@ export function openNoteFormatsFromProfile() {
   ensureInterconsultaModeForFormats();
   loadDraftFromSettings(st);
   setFormatsEditMode("nota");
-  switchAppTab("nota");
-  switchInnerTab("notas");
+  var switchAppTabFn = resolveGlobalFn("switchAppTab");
+  if (switchAppTabFn) switchAppTabFn("nota");
+  var switchInnerTabFn = resolveGlobalFn("switchInnerTab");
+  if (switchInnerTabFn) switchInnerTabFn("notas");
   renderNoteForm();
   scrollFormatsEditorIntoView();
 }
@@ -91,8 +89,10 @@ export function openIndicaFormatsFromProfile() {
   ensureInterconsultaModeForFormats();
   loadDraftFromSettings(st);
   setFormatsEditMode("indica");
-  switchAppTab("nota");
-  switchInnerTab("indica");
+  var switchAppTabFn = resolveGlobalFn("switchAppTab");
+  if (switchAppTabFn) switchAppTabFn("nota");
+  var switchInnerTabFn = resolveGlobalFn("switchInnerTab");
+  if (switchInnerTabFn) switchInnerTabFn("indica");
   renderIndicaForm();
   scrollFormatsEditorIntoView();
 }
@@ -123,8 +123,10 @@ export function saveDefaultFormatsFromEditor() {
 export function exitFormatsEditor() {
   var was = getFormatsEditMode();
   clearFormatsEditMode();
-  if (was === "nota") renderNotaEvolucionPrimaryTab();
-  else if (was === "indica") renderIndicaForm();
+  if (was === "nota") {
+    var renderNotaFn = resolveGlobalFn("renderNotaEvolucionPrimaryTab");
+    if (renderNotaFn) renderNotaFn();
+  } else if (was === "indica") renderIndicaForm();
 }
 
 export function resetProfileTemplates() {
@@ -134,8 +136,10 @@ export function resetProfileTemplates() {
   localStorage.setItem("rpc-settings", JSON.stringify(st));
   loadSettings();
   var mode = getFormatsEditMode();
-  if (mode === "nota") renderNotaEvolucionPrimaryTab();
-  else if (mode === "indica") renderIndicaForm();
+  if (mode === "nota") {
+    var renderNotaFn = resolveGlobalFn("renderNotaEvolucionPrimaryTab");
+    if (renderNotaFn) renderNotaFn();
+  } else if (mode === "indica") renderIndicaForm();
   getProfileRuntime().showToast("Formatos restablecidos (plantillas en blanco)", "success");
 }
 

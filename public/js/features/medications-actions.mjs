@@ -29,8 +29,7 @@ import {
 import { clearRecetaProposalDismissed, clearRecetaProposalDismissedKey } from "./estado-actual-meds-core.mjs";
 import { syncMonitoreoInsulinPumpFromReceta } from "./estado-actual-insulin-pump.mjs";
 import { showNotaEvolucionClassicView } from "./nota-evolucion/nota-evolucion-primary-tab.mjs";
-import { switchInnerTab } from "./expediente-navigation.mjs";
-import { invalidateInnerTabRenderCache } from "./expediente-inner-cache.mjs";
+import { resolveGlobalFn } from "./resolve-global-fn.mjs";
 import { invalidateEaPanelCache, renderEstadoActualPanel } from "./estado-actual-panel.mjs";
 import { onRecetaMergedToProfile } from "./med-pharm-profile-panel.mjs";
 import { skipRecetaItemForInsulinPumpCarrier } from "../insulin-pump-receta-display.mjs";
@@ -48,6 +47,16 @@ import { closeMedRecetaPasteModal } from "./medications-paste-modal.mjs";
 import { patchMedRecetaRowSoapUi } from "./medications-panel-cache.mjs";
 import { renderMedRecetaPanel } from "./medications-panel-render.mjs";
 import { renderMedNotaFooter } from "./medications-soap-footer.mjs";
+
+export function switchInnerTab(tab, opts) {
+  var fn = resolveGlobalFn("switchInnerTab");
+  if (fn) fn(tab, opts);
+}
+
+export function invalidateInnerTabRenderCache(tab) {
+  var fn = resolveGlobalFn("invalidateInnerTabRenderCache");
+  if (fn) fn(tab);
+}
 
 export function toggleMedRecetaSuspendido(itemId, suspended) {
   var activeId = rt.getActiveId();

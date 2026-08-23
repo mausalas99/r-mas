@@ -262,4 +262,7 @@ export const windowHandlers = {
   switchInnerTab,
   switchConsolidatedTab,
   initTabBarMotion,
+  renderInnerTabs,
+  getActiveInnerTab,
+  refreshExpedienteForAppModeChange,
 };

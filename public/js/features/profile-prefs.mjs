@@ -1,7 +1,7 @@
 /** Perfil — Manejo tab and listado AI prompt preferences. */
 import { isManejoSectionHidden, migrateGranularInner } from "../expediente-tabs.mjs";
-import { renderInnerTabs, switchInnerTab, getActiveInnerTab } from "./expediente-navigation.mjs";
 import { renderListadoForm } from "./expediente.mjs";
+import { resolveGlobalFn } from "./resolve-global-fn.mjs";
 import {
   getProfileRuntime,
   persistSettingsToLocalStorage,
@@ -31,15 +31,20 @@ export function syncHideClinicoTabUI() {
 
 export function ensureClinicoTabConsistency() {
   var settings = settingsRef();
-  var current = getActiveInnerTab();
+  var getActiveInnerTabFn = resolveGlobalFn("getActiveInnerTab");
+  var current = getActiveInnerTabFn ? getActiveInnerTabFn() : null;
   if (!current) return;
   var migrated = migrateGranularInner(current, settings);
-  if (migrated !== current) switchInnerTab(migrated);
+  if (migrated !== current) {
+    var switchInnerTabFn = resolveGlobalFn("switchInnerTab");
+    if (switchInnerTabFn) switchInnerTabFn(migrated);
+  }
 }
 
 export function applyHideManejoSectionEffects() {
   ensureClinicoTabConsistency();
-  renderInnerTabs();
+  var renderInnerTabsFn = resolveGlobalFn("renderInnerTabs");
+  if (renderInnerTabsFn) renderInnerTabsFn();
   getProfileRuntime().syncWorkContextChrome();
 }
 

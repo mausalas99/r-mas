@@ -10,6 +10,7 @@ import {
 } from './eventualidades-panel.mjs';
 
 import { escapeHtml } from '../dom-escape.mjs';
+import { resolveGlobalFn } from './resolve-global-fn.mjs';
 let dismissWired = false;
 
 function toast(msg, type = 'info') {
@@ -83,14 +84,6 @@ function wireUppercaseTextarea(textarea) {
       if (start != null && end != null) textarea.setSelectionRange(start, end);
     }
   });
-}
-
-function resolveGlobalFn(name) {
-  if (typeof window !== 'undefined' && typeof window[name] === 'function') {
-    return window[name];
-  }
-  if (typeof globalThis[name] === 'function') return globalThis[name];
-  return null;
 }
 
 function openPatientChart(patientId) {

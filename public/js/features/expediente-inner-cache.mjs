@@ -314,3 +314,7 @@ export function syncInnerTabVisualOnly() {
   renderExpedienteGroupRow(tab, settings);
   syncInnerTabIndicator(tab, { consolidated: true, settings: settings });
 }
+
+export const windowHandlers = {
+  invalidateInnerTabRenderCache,
+};
