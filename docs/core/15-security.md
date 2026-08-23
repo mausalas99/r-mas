@@ -17,10 +17,14 @@ diagnósticos — the `entries/{id}` root and `entries/{id}/fields`) are **still
 phone board and the admin census view both read those server-side today, and moving them to
 bed/alias-only is a separate, larger follow-up, not done yet. See "What is encrypted now" below.
 
-**Production (currently live):** unchanged from before this work — HTTPS only, room JSON plaintext
-in D1, Worker applies LWW in the clear. The E2EE code above exists in the repo and is fully unit
-tested, but nothing has been deployed (`wrangler deploy`) — see "Deploy status" below before
-telling anyone Nube is encrypted.
+**Production (currently live, confirmed 2026-08-23 via direct D1 query):** `room_state` rows are
+whole-row encrypted at rest with `WORKER_DATA_KEY` (AES-256-GCM, one shared key held by the
+Worker) — confirmed live, ciphertext + 12-byte IV columns hold real data, not plaintext JSON.
+This is the "Legacy AES-GCM (Worker)" layer described below; despite the doc previously saying it
+was dropped for Free CPU limits, it is active and handling multi-hundred-KB blobs fine. It is
+**not** client E2EE — Cloudflare holds the key and can decrypt. The client E2EE code (per-room DEK,
+below) is still unit-tested only, still not deployed — see "Deploy status" below before telling
+anyone Nube is end-to-end encrypted.
 
 Canonical code: `cloud/sync-worker/src/crypto-at-rest.js`, `public/js/features/cloud-sync/`, `lib/db/crypto.mjs`.  
 Pilot spec: [2026-08-02-cloud-sync-free-pilot-design.md](../superpowers/specs/2026-08-02-cloud-sync-free-pilot-design.md) (V1 deferred true E2EE; at-rest AES also dropped).
@@ -32,7 +36,7 @@ Pilot spec: [2026-08-02-cloud-sync-free-pilot-design.md](../superpowers/specs/20
 | Store | Location | Encryption |
 |-------|----------|------------|
 | Device cache | SQLCipher `rplus-clinical.db` on the Mac (`lib/db/`) | Argon2id + SQLCipher. Strong at-rest if the machine is locked. See [db-encryption.md](../db-encryption.md). |
-| **Nube turn rooms** | Cloudflare Worker `rplus-sync` + D1 `rplus-sync` | **Target:** client E2EE. **Today:** HTTPS in transit; plaintext JSON at rest. |
+| **Nube turn rooms** | Cloudflare Worker `rplus-sync` + D1 `rplus-sync` | **Target:** client E2EE. **Today:** HTTPS in transit; whole-row AES-256-GCM at rest via shared `WORKER_DATA_KEY` (Cloudflare can decrypt), not client E2EE. |
 | Equipos queue | Separate Worker `rmas-lista-de-espera` + D1 `rplus-equipos` + R2 `rplus-equipos-photos` | Equipment photos / queue — not the patient room. |
 | Recuérdame session | `cloud-sync-remember.json` in Electron `userData` (mode `0600`) | Raw Bearer token on disk — not OS keychain / `safeStorage`. |
 
@@ -138,7 +142,7 @@ diagnoses), agenda, and tombstones are unaffected — still plaintext, see "Encr
 | In transit | HTTPS to Workers. No certificate pinning. A passive sniffer sees TLS; a trusted-CA MITM (hospital proxy) sees JSON (or ciphertext, once deployed — see below). |
 | At rest in D1, identity fields | **Still plaintext.** `entries/{id}` root + `entries/{id}/fields` (nombre, cama, servicio, registro, diagnósticos) — Interno + admin census read these server-side. |
 | At rest in D1, content fields | **Built, not deployed.** `public/js/features/cloud-sync/crypto.mjs` encrypts note, indicaciones, historiaClinica, eventualidades, monitoreo, labSidecars, todos, clinicalOps with AES-256-GCM (one DEK per room) before push. The Worker stores and relays ciphertext without ever holding the DEK. |
-| Legacy AES-GCM (Worker) | V1 substitute: Worker encrypts with `WORKER_DATA_KEY` after it already has plaintext. **Not** client E2EE. Dropped — Free CPU cannot AES multi‑MB snapshots. Kept only as a decode path for old rows. |
+| Legacy AES-GCM (Worker) | V1 substitute: Worker encrypts with `WORKER_DATA_KEY` after it already has plaintext. **Not** client E2EE. **Active in production** (confirmed 2026-08-23) — whole `room_state` rows, including multi-hundred-KB snapshots, encrypted this way. Not just a decode path for old rows. |
 | Room DEK wrapping | AES-256-GCM key wrapped with a key derived from the user's Nube password (PBKDF2-SHA-256, 210k iterations, client-side — not subject to the Worker's 100k platform cap). Wrapped blob stored server-side (`rooms.wrapped_dek_*`, schema/006); only the room owner can set it; any member can fetch it but still needs the password to unwrap. `public/js/features/cloud-sync/room-dek.mjs`. |
 | Existing-room backfill | `ensureRoomDek` only ever ran at room *creation* — a room made before this shipped never got a DEK on its own, and users can't be asked to "recreate the room". Fixed: `room-dek-migrate.mjs`'s `backfillRoomEncryption` runs silently on the room owner's next login, generates the DEK if missing, then re-pushes every already-stored plaintext content field (sourced fresh from a pull, never from this device's local census) so it gets encrypted too. Non-owner devices are unaffected — unchanged, they pick up the DEK via `loadRoomDek` on their own next connect. |
 | DEK persistence | Cached in memory, and also mirrored (raw, unwrapped) into the durable Recuérdame store (`cloud-sync-remember.json`, mode 0600 — same file already holding the plaintext session token) via `exportCachedDeksForPersistence`/`hydrateRoomDeksFromPersistence` in `room-dek.mjs`. Restored at boot in `panel-conexion-bootstrap.mjs` before password re-entry — no new trust boundary since anyone who can read that file already has the Bearer token. |

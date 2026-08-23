@@ -84,14 +84,14 @@ test('parseGaso_ calcula anion gap usando Na/Cl de la química sanguínea', () =
   assert.match(out, /\bDelta-Delta 1\b/);
 });
 
-test('parseGaso_ añade AGc cuando hay albúmina en la química', () => {
+test('parseGaso_ añade cAG cuando hay albúmina en la química', () => {
   const conAlb =
     QS_TEXT +
     ` QUIMICA CLINICA ALBUMINA N 2.1 g/dL 3.2 - 5.5`.replace(/\s+/g, ' ');
   const out = parseGaso_(GAS_VEN_HCO3, conAlb);
-  // AG = 140 − (104 + 21.2) = 14.8; AGc = 14.8 + 2.5×(4−2.1) ≈ 19.55 → 19.5*
+  // AG = 140 − (104 + 21.2) = 14.8; cAG = 14.8 + 2.5×(4−2.1) ≈ 19.55 → 19.5*
   assert.match(out, /\bAG 14\.8\*/);
-  assert.match(out, /\bAGc 19\.5\*/);
+  assert.match(out, /\bcAG 19\.5\*/);
 });
 
 test('parseGaso_ calcula UAG con electrolitos urinarios', () => {
@@ -428,6 +428,21 @@ test('parseESC_ y parseQS_ ignoran electrolitos y creatinina de orina', () => {
 test('parseESC_ sigue tomando sodio sérico si también hay química de orina', () => {
   const t = (MUESTRA_QUIMICA_ORINA + ' ' + ESC_TEXT).replace(/\s+/g, ' ');
   assert.match(parseESC_(t), /\bNa 140\b/);
+});
+
+test('parseESC_ añade cCa cuando hay calcio y albúmina', () => {
+  const t = (
+    ESC_TEXT +
+    ' CALCIO EN SUERO N 8 mg/dL 8.5 - 10.5 ALBUMINA N 2 g/dL 3.2 - 5.5'
+  ).replace(/\s+/g, ' ');
+  // cCa = 8 + 0.8×(4−2) = 9.6
+  assert.match(parseESC_(t), /\bCa 8\*/);
+  assert.match(parseESC_(t), /\bcCa 9\.6\b/);
+});
+
+test('parseESC_ no añade cCa sin albúmina', () => {
+  const t = (ESC_TEXT + ' CALCIO EN SUERO N 8 mg/dL 8.5 - 10.5').replace(/\s+/g, ' ');
+  assert.doesNotMatch(parseESC_(t), /\bcCa\b/);
 });
 
 test('procesarLabs no emite ESC ni QS con valores urinarios en reporte solo orina', () => {

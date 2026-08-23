@@ -240,12 +240,12 @@ test('gasometriaFingerprintFromResLabs igual para mismos GASES', () => {
   assert.notEqual(a, c);
 });
 
-test('gasometriaFingerprintFromResLabs ignora AG/AGc/Delta (mismo draw)', () => {
+test('gasometriaFingerprintFromResLabs ignora AG/cAG/Delta (mismo draw)', () => {
   var lean = gasometriaFingerprintFromResLabs([
     'GASES\tpH 7.32 pCO2 44 pO2 70 Lactato 0.8 Bica 22.7',
   ]);
   var rich = gasometriaFingerprintFromResLabs([
-    'GASES\tpH 7.32 pCO2 44 pO2 70 Lactato 0.8 Bica 22.7 AG 11.5 AGc 16.5 Delta-Delta 3.5',
+    'GASES\tpH 7.32 pCO2 44 pO2 70 Lactato 0.8 Bica 22.7 AG 11.5 cAG 16.5 Delta-Delta 3.5',
   ]);
   assert.ok(lean);
   assert.equal(lean, rich);

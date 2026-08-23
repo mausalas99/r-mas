@@ -173,7 +173,7 @@ export function buildAnionGapStep_(agVal, agcVal) {
     interpretation: '',
   };
   if (display != null && isFinite(display)) {
-    var label = agcVal != null ? 'Anión gap corregido por albúmina (AGc)' : 'Anión gap';
+    var label = agcVal != null ? 'Anión gap corregido por albúmina (cAG)' : 'Anión gap';
     if (display < 8) {
       anionGap.interpretation =
         label + ' por debajo del rango usual (referencia habitual 8–12 mEq/L).';
@@ -187,7 +187,7 @@ export function buildAnionGapStep_(agVal, agcVal) {
       anionGap.interpretation +=
         ' AG crudo ' +
         String(Math.round((agVal + Number.EPSILON) * 10) / 10) +
-        ' → AGc ' +
+        ' → cAG ' +
         String(Math.round((agcVal + Number.EPSILON) * 10) / 10) +
         ' (corrección +2.5×(4−Alb)).';
     }
@@ -310,7 +310,7 @@ export function buildSummaryLines_(parts) {
   if (parts.anionGap.value != null) {
     var agLine = 'Anión gap: ' + String(parts.anionGap.value);
     if (parts.anionGap.corrected != null) {
-      agLine += ' (AGc ' + String(parts.anionGap.corrected) + ')';
+      agLine += ' (cAG ' + String(parts.anionGap.corrected) + ')';
     }
     summaryLines.push(agLine + '. ' + parts.anionGap.interpretation);
   }

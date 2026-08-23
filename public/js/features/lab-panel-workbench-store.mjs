@@ -18,6 +18,7 @@ import { enqueueCloudLabSidecarsForPatient } from './cloud-sync/mutate-bridge.mj
 
 import { sanitizeResLabsChunks } from '../labs-reslabs-sanitize.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
+import { labPanelBridge } from './lab-panel-bridge.mjs';
 import { renderLabHistoryPanel, refreshSameDayAscitisForPatient } from './lab-panel-history.mjs';
 import { autoConsolidateLabHistoryForPatient } from './lab-panel-history-dedupe.mjs';
 
@@ -324,6 +325,7 @@ export async function applyDriveImportLabSets(patient, labSets) {
 
   rt.rebuildEstudiosFromLabHistory(patientId);
   rt.ensureParsedLabHistory(patientId);
+  labPanelBridge.setActiveLab(null);
   renderLabHistoryPanel();
   rt.refreshTendenciasOrCultivosPanel();
   return { added: added, skipped: skipped };
@@ -380,6 +382,7 @@ function storeBulkLabBlocks(blocks, processable, opts) {
   });
   if (storedSets || mergedSets || skippedDupes) {
     persistClinicalState({ immediate: true });
+    labPanelBridge.setActiveLab(null);
     renderLabHistoryPanel();
     rt.refreshTendenciasOrCultivosPanel();
   }

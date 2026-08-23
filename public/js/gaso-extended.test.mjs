@@ -45,7 +45,7 @@ test('Anión gap reutiliza computeAnionGapValue_ de labs.js', () => {
   assert.equal(r.steps.anionGap.value, Math.round((agFromLabs + Number.EPSILON) * 10) / 10);
 });
 
-test('AGc y UAG en evaluateGasoExtended', () => {
+test('cAG y UAG en evaluateGasoExtended', () => {
   const r = evaluateGasoExtended({
     na: 134.5,
     cl: 102.3,
@@ -59,7 +59,7 @@ test('AGc y UAG en evaluateGasoExtended', () => {
   assert.equal(r.steps.anionGap.corrected, 19.8);
   assert.equal(r.steps.urinaryAnionGap.value, 28);
   assert.match(r.steps.urinaryAnionGap.interpretation, /positivo|ATR/i);
-  assert.match(r.steps.anionGap.interpretation, /AGc|albúmina/i);
+  assert.match(r.steps.anionGap.interpretation, /cAG|albúmina/i);
 });
 
 test('UAG negativo interpreta excreción de NH₄⁺', () => {

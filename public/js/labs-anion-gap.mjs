@@ -1,4 +1,4 @@
-// Anion gap helpers: serum AG, albumin-corrected AGc, urinary UAG.
+// Anion gap helpers: serum AG, albumin-corrected cAG, urinary UAG.
 import { extraerConRango, marcarSegunRango } from './labs-extract.mjs';
 
 function parseLabNum_(str) {
@@ -59,7 +59,7 @@ export function computeAnionGap_(naStr, clStr, hco3Str) {
   return formatAgToken_(computeAnionGapValue_(naStr, clStr, hco3Str));
 }
 
-/** AGc formateado con * si fuera de 8–12; '---' sin albúmina. */
+/** cAG formateado con * si fuera de 8–12; '---' sin albúmina. */
 export function computeAlbuminCorrectedAnionGap_(naStr, clStr, hco3Str, albStr) {
   return formatAgToken_(computeAlbuminCorrectedAnionGapValue_(naStr, clStr, hco3Str, albStr));
 }
@@ -82,7 +82,7 @@ export function extractUrineElectrolytes_(texto) {
 }
 
 /**
- * AG efectivo para delta-delta / interpretación: AGc si hay albúmina, si no AG crudo.
+ * AG efectivo para delta-delta / interpretación: cAG si hay albúmina, si no AG crudo.
  */
 export function resolveEffectiveAnionGapValue_(naStr, clStr, hco3Str, albStr) {
   var agc = computeAlbuminCorrectedAnionGapValue_(naStr, clStr, hco3Str, albStr);

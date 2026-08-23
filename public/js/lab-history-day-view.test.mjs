@@ -61,7 +61,7 @@ describe('clusterDayLabSets', () => {
       set('morning', '22/08/2026', '04:34', [
         'BH\tHb 8.16* Hto 26*',
         'QS\tGlu 171*',
-        'GASES\tpH 7.26 pCO2 39 pO2 39* Lactato 1.7 Bica 17.5 AG 9.1 AGc 13.6 Delta-Delta 0.2',
+        'GASES\tpH 7.26 pCO2 39 pO2 39* Lactato 1.7 Bica 17.5 AG 9.1 cAG 13.6 Delta-Delta 0.2',
       ]),
       set('newGaso', '22/08/2026', '11:19', ['GASES\tpH 7.28 pCO2 32 pO2 37 Lactato 0.3 HCO3 15.0']),
     ]);

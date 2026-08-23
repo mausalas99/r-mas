@@ -183,7 +183,7 @@ function buildGasoMetricsRow(lab, ev) {
     ev.steps.anionGap.corrected != null ? ev.steps.anionGap.corrected : ev.steps.anionGap.value;
   metrics.appendChild(
     gasoMetricChip(
-      ev.steps.anionGap.corrected != null ? 'AGc' : 'Anión gap',
+      ev.steps.anionGap.corrected != null ? 'cAG' : 'Anión gap',
       fmtGasoNum(agDisplay, 'mEq/L'),
       agChipTone(agDisplay)
     )
@@ -205,7 +205,7 @@ function buildGasoSteps(ev) {
   var ag = ev.steps.anionGap;
   var agBadge =
     ag.corrected != null
-      ? 'AGc ' + ag.corrected + ' (AG ' + ag.value + ') mEq/L'
+      ? 'cAG ' + ag.corrected + ' (AG ' + ag.value + ') mEq/L'
       : ag.value != null
         ? ag.value + ' mEq/L'
         : null;

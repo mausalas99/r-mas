@@ -104,7 +104,7 @@ OBSERVACIONES\t
   assert.match(coag, /INR\s+1\.11/);
 });
 
-test('computeAnionGap_ es AG crudo; AGc corrige por hipoalbuminemia', () => {
+test('computeAnionGap_ es AG crudo; cAG corrige por hipoalbuminemia', () => {
   const sinCorreccion = computeAnionGap_('134.5', '102.3', '17.1');
   const agc = computeAlbuminCorrectedAnionGap_('134.5', '102.3', '17.1', '2.1');
   assert.equal(sinCorreccion, '15.1*');

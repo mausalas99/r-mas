@@ -242,7 +242,7 @@ describe('lab-consolidation-cluster', () => {
 
   it('clusterLabworkByTimeWindow une GASES lean vs rich (misma toma)', () => {
     var lean = 'GASES\tpH 7.32 pCO2 44 pO2 70 Lactato 0.8 Bica 22.7';
-    var rich = lean + ' AG 11.5 AGc 16.5';
+    var rich = lean + ' AG 11.5 cAG 16.5';
     var items = [
       { id: 'a', hasGaso: true, ms: 0, resLabs: [lean] },
       { id: 'b', hasGaso: true, ms: 5 * 60 * 1000, resLabs: [rich] },

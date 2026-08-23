@@ -1,4 +1,4 @@
-import { extraerConRango, extraerConRangoSuero, extraerIndiceAterogenico_ } from './labs-extract.mjs';
+import { extraerConRango, extraerConRangoCoag, extraerConRangoSuero, extraerIndiceAterogenico_ } from './labs-extract.mjs';
 import {
   extractAllTroponinaFromText_,
   TROPONINA_HS_NORMAL_MAX_NG_L,
@@ -154,9 +154,9 @@ function putBhTrendRefs_(refs, tNorm) {
   putTrendRef_(refs, 'BH', 'MPV', extraerConRango(['MPV ', 'VPM '], tNorm));
   putTrendRef_(refs, 'BH', 'RBC', extraerConRango(['RBC ', 'ERITROCITOS', 'HEMATIES'], tNorm));
   putTrendRef_(refs, 'BH', 'Ret', extraerConRango(['RETICULOCITOS'], tNorm));
-  putTrendRef_(refs, 'BH', 'TP', extraerConRango(['TIEMPO DE PROTROMBINA'], tNorm));
-  putTrendRef_(refs, 'BH', 'TTP', extraerConRango(['TIEMPO DE TROMBOPLASTINA'], tNorm));
-  putTrendRef_(refs, 'BH', 'INR', extraerConRango(['INR ', 'INR'], tNorm));
+  putTrendRef_(refs, 'BH', 'TP', extraerConRangoCoag(['TIEMPO DE PROTROMBINA'], tNorm));
+  putTrendRef_(refs, 'BH', 'TTP', extraerConRangoCoag(['TIEMPO DE TROMBOPLASTINA'], tNorm));
+  putTrendRef_(refs, 'BH', 'INR', extraerConRangoCoag(['INR '], tNorm));
 }
 
 function putQsEscPfhTrendRefs_(refs, textoQS, tNorm) {

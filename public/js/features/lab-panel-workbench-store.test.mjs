@@ -18,8 +18,9 @@ Object.defineProperty(globalThis, 'localStorage', {
 });
 globalThis.window = { localStorage: mockStorage };
 
-const { upsertLabHistory } = await import('./lab-panel-workbench-store.mjs');
+const { upsertLabHistory, applyDriveImportLabSets } = await import('./lab-panel-workbench-store.mjs');
 const { getLabHistory } = await import('../app-state.mjs');
+const { labPanelBridge } = await import('./lab-panel-bridge.mjs');
 
 describe('lab-panel-workbench-store upsertLabHistory replaceOnMatch (Actualizar labs)', () => {
   beforeEach(() => {
@@ -83,5 +84,31 @@ describe('lab-panel-workbench-store upsertLabHistory replaceOnMatch (Actualizar 
     );
     assert.equal(result.action, 'skipped');
     assert.equal(getLabHistory().p1.length, 1);
+  });
+});
+
+describe('lab-panel-workbench-store applyDriveImportLabSets clears stale activeLab', () => {
+  beforeEach(() => {
+    store = {};
+    Object.keys(getLabHistory()).forEach(function (k) {
+      delete getLabHistory()[k];
+    });
+    globalThis.document = {
+      addEventListener: function () {},
+      getElementById: function () {
+        return null;
+      },
+      querySelector: function () {
+        return null;
+      },
+    };
+  });
+
+  it('clears activeLab so the panel reloads instead of showing stale/other-patient data', async () => {
+    labPanelBridge.setActiveLab({ patient: { id: 'someone-else' }, resLabs: ['stale'] });
+    await applyDriveImportLabSets({ id: 'p1' }, [
+      { fecha: '11/04/2026', hora: '09:42', resLabs: ['QS\nGLUCOSA\t94\tmg/dL'] },
+    ]);
+    assert.equal(labPanelBridge.getActiveLab(), null);
   });
 });

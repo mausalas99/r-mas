@@ -7,6 +7,7 @@ import {
 } from './labs-extract.mjs';
 import { ageYearsFromLabDemographics, computeEgfrCkdEpi2021Creatinine } from './labs-egfr.mjs';
 import { QS_SOME_TREND_ORDER } from './labs-bh.mjs';
+import { computeCorrectedCalcium_ } from './labs-calcium-corrected.mjs';
 
 /** Orden ESC al consolidar varias filas del mismo día. */
 var ESC_MERGE_FIELD_ORDER = ['Na', 'Cl', 'K', 'Ca', 'F', 'Mg'];
@@ -155,11 +156,13 @@ export function parseESC_(texto, priorRefs) {
   var caData = extraerConRangoSuero(['CALCIO EN SUERO','CALCIO'], texto);
   var fData  = extraerConRangoSuero(['FOSFORO EN SANGRE','FOSFORO','FÓSFORO'], texto);
   var mgData = extraerConRangoSuero(['MAGNESIO'], texto);
+  var albData = extraerConRangoSuero(['ALBUMINA'], texto);
 
   var Na = fmtLabRanged_(naData, 'Na', priorRefs);
   var Cl = fmtLabRanged_(clData, 'Cl', priorRefs);
   var K  = fmtLabRanged_(kData, 'K', priorRefs);
   var Ca = fmtLabRanged_(caData, 'Ca', priorRefs);
+  var cCa = computeCorrectedCalcium_(caData.valor, albData.valor);
   var F  = fmtLabRanged_(fData, 'F', priorRefs);
   var Mg = fmtLabRanged_(mgData, 'Mg', priorRefs);
 
@@ -168,6 +171,7 @@ export function parseESC_(texto, priorRefs) {
   if (Cl !== '---') p.push('Cl', Cl);
   if (K  !== '---') p.push('K',  K);
   if (Ca !== '---') p.push('Ca', Ca);
+  if (cCa !== '---') p.push('cCa', cCa);
   if (F  !== '---') p.push('F',  F);
   if (Mg !== '---') p.push('Mg', Mg);
   return p[0]+'\t'+p.slice(1).join(' ');

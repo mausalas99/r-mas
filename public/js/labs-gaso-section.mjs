@@ -70,7 +70,7 @@ function extractGasoFormatted_(bloqueX, textoFuera, gasRefs) {
     Hto: fmtGasoRanged_(extraerConRango(['HCT ', 'HEMATOCRITO'], bloqueX), 'Hto', gasRefs),
     iCa: fmtGasoRanged_(iCaData, 'iCa', gasRefs),
     AG: computeAnionGap_(naAG.valor, clAG.valor, hco3Data.valor),
-    AGc: computeAlbuminCorrectedAnionGap_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor),
+    cAG: computeAlbuminCorrectedAnionGap_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor),
     UAG: computeUrinaryAnionGap_(urine.na, urine.k, urine.cl),
     DD: computeDeltaDelta_(agEff, hco3Data.valor),
   };
@@ -91,7 +91,7 @@ function buildGasoLine_(g) {
   appendGasoPair_(p, 'Lactato', g.Lac);
   appendGasoPair_(p, 'Bica', g.Bica);
   appendGasoPair_(p, 'AG', g.AG);
-  appendGasoPair_(p, 'AGc', g.AGc);
+  appendGasoPair_(p, 'cAG', g.cAG);
   appendGasoPair_(p, 'UAG', g.UAG);
   appendGasoPair_(p, 'Delta-Delta', g.DD);
   appendGasoPair_(p, 'Hto', g.Hto);
@@ -269,7 +269,7 @@ function appendAnionGapDerivedTokens_(out, base, na, cl, bica, alb) {
     bica || '---',
     alb || '---'
   );
-  appendMarkedAgToken_(out, 'AGc', agc);
+  appendMarkedAgToken_(out, 'cAG', agc);
   var uagExisting = valueFromSectionLine_(base, 'UAG');
   if (uagExisting != null && uagExisting !== '') {
     out.push('UAG', String(uagExisting).replace(/\*$/, ''));

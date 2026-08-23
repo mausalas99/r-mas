@@ -144,7 +144,7 @@ function reconcileSingletonSectionsAcrossDay_(groups) {
 
 /**
  * Electrolitos (Na/Cl/Alb) de la toma más temprana del día que trae QS/ESC/PFHs propios.
- * Una gasometría no incluye estos valores; el AG/AGc se sigue pudiendo calcular con
+ * Una gasometría no incluye estos valores; el AG/cAG se sigue pudiendo calcular con
  * el electrolito sérico de la primera extracción del día.
  * @param {object[]} sets
  * @returns {{na: unknown, cl: unknown, alb: unknown}|null}
@@ -161,7 +161,7 @@ function dayElectrolyteFallback_(sets) {
   return best ? best.electrolytes : null;
 }
 
-/** Rellena AG/AGc en gasometrías del día que no traen Na/Cl/Alb propios. */
+/** Rellena AG/cAG en gasometrías del día que no traen Na/Cl/Alb propios. */
 function backfillGasoAnionGapAcrossDay_(groups, sets) {
   var fallback = dayElectrolyteFallback_(sets);
   if (!fallback) return;

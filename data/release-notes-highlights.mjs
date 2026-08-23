@@ -2530,7 +2530,7 @@ var RELEASE_NOTES_817 = [
 
 var RELEASE_NOTES_818 = [
   {
-    title: 'Gasometrías — el AG/AGc ya no se pierde',
+    title: 'Gasometrías — el AG/cAG ya no se pierde',
     body:
       'Si una toma del día trae gasometría sin Na/Cl/Alb propios, R+ ahora usa el electrolito sérico de la toma más temprana del día para seguir calculando el anion gap.',
   },
@@ -2543,6 +2543,26 @@ var RELEASE_NOTES_818 = [
     title: 'Insulina prandial — ya no confunde basales',
     body:
       'Glargina, Lantus, Toujeo, Degludec, Tresiba, Detemir, Levemir y NPH ya no se detectan por error como dosis prandial.',
+  },
+  {
+    title: 'Labs no se refrescaban solos',
+    body:
+      'Al pegar un reporte SOME nuevo o importar desde Drive, la pantalla podía seguir mostrando el estudio anterior (a veces de otro paciente) hasta cambiar de paciente y regresar. Ahora se refresca de inmediato.',
+  },
+  {
+    title: 'Calcio corregido (cCa) — nuevo',
+    body:
+      'Cuando el reporte trae calcio y albúmina, R+ calcula y muestra el calcio corregido junto al calcio crudo. El anion gap corregido también cambió de nombre, de AGc a cAG (se lee igual que se dice: "corregido" antes del analito).',
+  },
+  {
+    title: 'Tendencias — 20 gráficas más con rango de normalidad',
+    body:
+      'eTFG, Procalcitonina, VSG, T3 libre, Cortisol, PTH, Vitamina D, CK-MB, % saturación de transferrina, Factor Reumatoide, C3, C4, Amonio, Osmolaridad, Alb/Cr, Digoxina, AFP, CEA, PSA, Folato, Calprotectina y Etanol ya muestran su banda de normalidad.',
+  },
+  {
+    title: 'INR — la banda de normalidad en Tendencias ya no se cruzaba con la de TTP',
+    body:
+      'Si el reporte no imprime rango propio para INR, R+ tomaba por error el rango de Tiempo de Tromboplastina (el siguiente estudio en el reporte) y la banda de normalidad quedaba invisible. Ya no.',
   },
   {
     title: 'Actualiza el turno',

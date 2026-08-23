@@ -16,8 +16,8 @@ test('AG crudo = Na − (Cl + HCO₃)', () => {
   assert.equal(computeAnionGap_('140', '104', '24'), '12');
 });
 
-test('AGc = AG + 2.5×(4 − Alb)', () => {
-  // AG = 134.5 − (102.3 + 17.1) ≈ 15.1; AGc ≈ 15.1 + 2.5×(4−2.1) = 19.8
+test('cAG = AG + 2.5×(4 − Alb)', () => {
+  // AG = 134.5 − (102.3 + 17.1) ≈ 15.1; cAG ≈ 15.1 + 2.5×(4−2.1) = 19.8
   const ag = computeAnionGapValue_('134.5', '102.3', '17.1');
   assert.equal(Math.round(ag * 10) / 10, 15.1);
   const agc = computeAlbuminCorrectedAnionGapValue_('134.5', '102.3', '17.1', '2.1');
@@ -26,7 +26,7 @@ test('AGc = AG + 2.5×(4 − Alb)', () => {
   assert.equal(computeAlbuminCorrectedAnionGap_('134.5', '102.3', '17.1', '2.1'), '19.8*');
 });
 
-test('AGc es null sin albúmina', () => {
+test('cAG es null sin albúmina', () => {
   assert.equal(computeAlbuminCorrectedAnionGapValue_('140', '104', '24', '---'), null);
   assert.equal(computeAlbuminCorrectedAnionGap_('140', '104', '24'), '---');
 });
@@ -56,7 +56,7 @@ CLORO EN ORINA: 34mmol/L
   assert.equal(u.cl, '34');
 });
 
-test('resolveEffectiveAnionGapValue_ prefiere AGc cuando hay albúmina', () => {
+test('resolveEffectiveAnionGapValue_ prefiere cAG cuando hay albúmina', () => {
   const eff = resolveEffectiveAnionGapValue_('134.5', '102.3', '17.1', '2.1');
   assert.equal(Math.round(eff * 10) / 10, 19.8);
   const raw = resolveEffectiveAnionGapValue_('134.5', '102.3', '17.1', '---');

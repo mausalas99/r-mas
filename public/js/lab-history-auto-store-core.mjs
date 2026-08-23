@@ -15,7 +15,7 @@ export function normalizeLabLines(lines) {
   return (Array.isArray(lines) ? lines : []).map(normalizeLabLine).filter(Boolean);
 }
 
-/** Analitos que identifican la toma (ignora AG/AGc/Delta derivados). */
+/** Analitos que identifican la toma (ignora AG/cAG/Delta derivados). */
 var GASO_FINGERPRINT_KEYS = {
   PH: true,
   PCO2: true,
@@ -52,7 +52,7 @@ function parseGasometriaCoreValues(line) {
 
 /**
  * Huella de gasometría: mismos valores núcleo (pH/pCO2/pO2/Lactato/Bica…) → misma clave.
- * AG/AGc/Delta no cuentan (un reporte más rico no debe crear Labs (2)).
+ * AG/cAG/Delta no cuentan (un reporte más rico no debe crear Labs (2)).
  * Tomas seriadas con valores distintos → claves distintas.
  */
 export function gasometriaFingerprintFromResLabs(resLabs) {
