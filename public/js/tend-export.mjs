@@ -8,7 +8,10 @@ import {
   tableDomToExportModel,
   writePngToClipboardOrDownload,
 } from './tend-export-helpers.mjs';
-import { copyTableModelAsPng as renderCopyTableModelAsPng } from './tend-export-render.mjs';
+import {
+  copyTableModelAsPng as renderCopyTableModelAsPng,
+  renderChartWithLegendToCanvas,
+} from './tend-export-render.mjs';
 
 export function buildTableTsv(model) {
   if (!model || !model.columns || !model.rows) return '';
@@ -63,6 +66,23 @@ export function copyTableText(text, onDone) {
 
 export function copyTableModelAsPng(model, title, onDone) {
   renderCopyTableModelAsPng(model, title, onDone, writePngToClipboardOrDownload);
+}
+
+/** Copia el gráfico (Chart.js) con una leyenda de las series activas debajo. */
+export function copyChartPng(chart, title, visibleDatasets, onDone) {
+  var done = typeof onDone === 'function' ? onDone : function () {};
+  if (!chart || !chart.canvas) {
+    done(false);
+    return;
+  }
+  var canvas = renderChartWithLegendToCanvas(chart, title, visibleDatasets);
+  canvas.toBlob(function (blob) {
+    if (!blob) {
+      done(false);
+      return;
+    }
+    writePngToClipboardOrDownload(blob, title, done);
+  }, 'image/png');
 }
 
 /** @deprecated Prefer copyTableModelAsPng — mantiene compatibilidad si solo hay DOM. */

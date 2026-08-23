@@ -26,3 +26,6 @@ binding = "ASSETS"
 
 [triggers]
 crons = ["0 6 * * *"]
+
+[observability]
+enabled = true

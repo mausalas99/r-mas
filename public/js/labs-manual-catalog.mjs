@@ -52,6 +52,7 @@ var CORE_MANUAL_TYPES = [
       f('Glu', 'Glu'),
       f('BUN', 'BUN'),
       f('Cr', 'Cr'),
+      f('BUN/CR', 'Rel. BUN/CR'),
       f('eTFG', 'eTFG'),
       f('AU', 'AU'),
       f('PCR', 'PCR'),

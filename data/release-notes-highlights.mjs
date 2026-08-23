@@ -2571,10 +2571,34 @@ var RELEASE_NOTES_818 = [
   },
 ];
 
+var RELEASE_NOTES_819 = [
+  {
+    title: 'Relación BUN/CR — nueva',
+    body:
+      'Cuando el reporte trae BUN y creatinina, R+ calcula y muestra la relación BUN/CR junto a ellos, en Química Clínica y en Tendencias.',
+  },
+  {
+    title: 'Tendencias — copiar gráfica como imagen',
+    body:
+      'Cada panel de Tendencias tiene un botón nuevo para copiar la gráfica (con título y leyenda de series activas) como imagen PNG.',
+  },
+  {
+    title: 'Tendencias — orden de leyenda por arrastre',
+    body:
+      'En los paneles agrupados, ahora puedes arrastrar los renglones de la leyenda para reordenar las series. R+ recuerda el orden por paciente y panel.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.1.9 en todas</strong> las Macs y PCs del turno el mismo día.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_818;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_819;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.1.9': RELEASE_NOTES_819,
   '8.1.8': RELEASE_NOTES_818,
   '8.1.7': RELEASE_NOTES_817,
   '8.1.6': RELEASE_NOTES_816,

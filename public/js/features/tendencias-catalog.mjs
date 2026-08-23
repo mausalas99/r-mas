@@ -142,6 +142,11 @@ function orderTrendSeriesBySaved(specs, savedOrder) {
   });
 }
 
+/** Claves de campo retiradas (renombradas) que no deben resurgir como series dinámicas. */
+var TEND_RETIRED_DYNAMIC_KEYS = {
+  'QS|BUNCR': true, // renombrada a 'BUN/CR'
+};
+
 function tendFindSeriesSpec(sectionKey, fieldKey) {
   for (var i = 0; i < TEND_SERIES_CATALOG.length; i++) {
     if (
@@ -179,6 +184,7 @@ function buildMergedTrendSeriesCatalog(history) {
       var row = pb[sk];
       if (!row) return;
       Object.keys(row).forEach(function (fk) {
+        if (TEND_RETIRED_DYNAMIC_KEYS[sk + '|' + fk]) return;
         var k = tendCatalogSeriesKey(sk, fk);
         if (mapped[k]) return;
         var v = row[fk];

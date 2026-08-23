@@ -55,6 +55,13 @@ function appendQsPair_(p, key, val) {
   if (val !== '---') p.push(key, val);
 }
 
+function appendBunCrRatioIfEligible_(p, bunVal, crVal) {
+  var bunNum = toNum_(bunVal);
+  var crNum = toNum_(crVal);
+  if (bunNum == null || crNum == null || crNum <= 0) return;
+  p.push('BUN/CR', (Math.round((bunNum / crNum) * 10) / 10).toFixed(1));
+}
+
 function appendEgfrIfEligible_(p, crData, patientCtx) {
   if (!patientCtx) return;
   var ageY = ageYearsFromLabDemographics(patientCtx.edad, patientCtx.edadUnidad);
@@ -133,6 +140,7 @@ export function parseQS_(texto, patientCtx, priorRefs) {
     appendEgfrIfEligible_(p, q.crData, patientCtx);
   }
   appendQsPair_(p, 'BUN', q.BUN);
+  if (q.Cr !== '---' && q.BUN !== '---') appendBunCrRatioIfEligible_(p, q.BUN, q.Cr);
   appendQsPair_(p, 'PCR', q.PCR);
   appendQsPair_(p, 'PCT', q.PCT);
   appendQsPair_(p, 'AU', q.AU);

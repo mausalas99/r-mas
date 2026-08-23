@@ -281,6 +281,49 @@ export function renderTableModelToCanvas(layout, title) {
   return canvas;
 }
 
+/** Compone el canvas del gráfico (Chart.js) + título + leyenda de series activas. */
+export function renderChartWithLegendToCanvas(chart, title, visibleDatasets) {
+  var dpr = chart.canvas.width / chart.width;
+  var titleH = Math.round(28 * dpr);
+  var legendH = Math.round(30 * dpr);
+  var pad = Math.round(12 * dpr);
+
+  var canvas = document.createElement('canvas');
+  canvas.width = chart.canvas.width + pad * 2;
+  canvas.height = chart.canvas.height + titleH + legendH + pad * 2;
+  var ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.font = 'bold ' + Math.round(13 * dpr) + 'px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif';
+  ctx.fillStyle = '#334155';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(String(title || ''), pad, pad);
+
+  ctx.drawImage(chart.canvas, pad, pad + titleH);
+
+  var legendFont = Math.round(11 * dpr) + 'px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif';
+  ctx.font = legendFont;
+  ctx.textBaseline = 'middle';
+  var lx = pad;
+  var ly = pad + titleH + chart.canvas.height + legendH / 2;
+  var swatch = Math.round(10 * dpr);
+  var gap = Math.round(6 * dpr);
+  (visibleDatasets || []).forEach(function (ds) {
+    var color = ds.borderColor || '#10b981';
+    ctx.fillStyle = color;
+    ctx.fillRect(lx, ly - swatch / 2, swatch, swatch);
+    lx += swatch + gap;
+    var label = String(ds.label || ds.fieldKey || '');
+    ctx.fillStyle = '#111827';
+    ctx.fillText(label, lx, ly);
+    lx += measureTextWidth(ctx, label, legendFont) + Math.round(18 * dpr);
+  });
+
+  return canvas;
+}
+
 export function copyTableModelAsPng(model, title, onDone, writePng) {
   var done = typeof onDone === 'function' ? onDone : function () {};
   if (!model || !model.columns || !model.rows) {

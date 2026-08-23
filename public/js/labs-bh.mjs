@@ -48,7 +48,7 @@ export const BH_SOME_TREND_ORDER = [
 
 /** Orden QS en SOME (QUIMICA CLINICA; analitos de la sección QS en R+). */
 export const QS_SOME_TREND_ORDER = [
-  'Glu', 'BUN', 'Cr', 'eTFG', 'AU',
+  'Glu', 'BUN', 'Cr', 'BUN/CR', 'eTFG', 'AU',
   'PCR', 'PCT',
   'COL', 'HDL', 'LDL', 'VLDL', 'TGL', 'IA', 'CTHDL',
   'VSG', 'CPK',

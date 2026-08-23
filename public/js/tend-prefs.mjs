@@ -5,6 +5,7 @@ const LS_GROUP_PANEL_ORDER = 'rpc-tend-group-panel-order';
 const LS_TEND_CARD_ORDER = 'rpc-tend-card-order';
 const LS_GROUP_PANEL_HIDDEN = 'rpc-tend-group-panel-hidden';
 const LS_GROUP_PANEL_TITLES = 'rpc-tend-group-panel-titles';
+const LS_GROUP_LEGEND_ORDER = 'rpc-tend-group-legend-order';
 
 export const DEFAULT_PANEL_LABELS = {
   gases: 'Gasometría',
@@ -183,6 +184,22 @@ export function resolvePanelTitle(patientId, sectionKey, familyKey) {
   var custom = readGroupPanelTitles(patientId, sectionKey)[fam];
   if (custom && String(custom).trim()) return String(custom).trim();
   return defaultPanelLabel(fam);
+}
+
+function legendOrderKey(patientId, sectionKey, familyKey) {
+  return groupKey(patientId, sectionKey) + '|' + String(familyKey);
+}
+
+export function readLegendOrder(patientId, sectionKey, familyKey) {
+  var map = readJson(LS_GROUP_LEGEND_ORDER, {});
+  var arr = map[legendOrderKey(patientId, sectionKey, familyKey)];
+  return Array.isArray(arr) ? arr.slice() : null;
+}
+
+export function writeLegendOrder(patientId, sectionKey, familyKey, fieldKeys) {
+  var map = readJson(LS_GROUP_LEGEND_ORDER, {});
+  map[legendOrderKey(patientId, sectionKey, familyKey)] = (fieldKeys || []).slice();
+  writeJson(LS_GROUP_LEGEND_ORDER, map);
 }
 
 export function defaultSeriesColor(index) {

@@ -19,7 +19,9 @@ import {
   resolvePanelTitle,
   defaultPanelLabel,
   defaultSeriesColor,
-  DEFAULT_COLORS
+  DEFAULT_COLORS,
+  readLegendOrder,
+  writeLegendOrder
 } from './tend-prefs.mjs';
 
 const mem = Object.create(null);
@@ -79,6 +81,12 @@ test('títulos de paneles personalizables por paciente+sección', () => {
   assert.equal(resolvePanelTitle('p1', 'BH', 'gases'), 'Gases arteriales');
   writeGroupPanelTitle('p1', 'BH', 'gases', 'Gasometría');
   assert.equal(resolvePanelTitle('p1', 'BH', 'gases'), 'Gasometría');
+});
+
+test('orden de leyenda por paciente+sección+panel', () => {
+  writeLegendOrder('p1', 'QS', 'nef', ['Cr', 'BUNCR', 'BUN']);
+  assert.deepEqual(readLegendOrder('p1', 'QS', 'nef'), ['Cr', 'BUNCR', 'BUN']);
+  assert.equal(readLegendOrder('p1', 'QS', 'other-panel'), null);
 });
 
 test('defaultSeriesColor rota paleta de 8 colores', () => {

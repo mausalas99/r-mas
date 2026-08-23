@@ -23,7 +23,10 @@ import {
   resolvePanelTitle,
   writeGroupPanelTitle,
   defaultSeriesColor,
+  readLegendOrder,
+  writeLegendOrder,
 } from './tend-prefs.mjs';
+import { copyChartPng } from './tend-export.mjs';
 import {
   GENERIC_FAMILY_ORDER,
   applyChartYScale,
@@ -33,6 +36,7 @@ import {
   hexToRgba,
   formatAxisTickValue,
   yScaleBoundsForDatasets,
+  visibleDatasetsForChart,
 } from './tend-group-chart-helpers.mjs';
 import { buildEventMarkerMapForSets, createTendEventMarkerPlugin } from './features/tendencias-event-context.mjs';
 
@@ -179,6 +183,39 @@ function catalogSpecsForCharts(deps, state, sectionKey) {
   });
 }
 
+function orderLegendItems(state, sectionKey, fam, items) {
+  var saved = readLegendOrder(state.patientId, sectionKey, fam);
+  if (!saved || !saved.length) return items;
+  var rank = Object.create(null);
+  saved.forEach(function (fk, i) {
+    rank[fk] = i;
+  });
+  return items.slice().sort(function (a, b) {
+    var ra = Object.prototype.hasOwnProperty.call(rank, a.spec.fieldKey) ? rank[a.spec.fieldKey] : 9999;
+    var rb = Object.prototype.hasOwnProperty.call(rank, b.spec.fieldKey) ? rank[b.spec.fieldKey] : 9999;
+    return ra - rb;
+  });
+}
+
+function mountLegendSortable(legend, state, sectionKey, fam) {
+  var SortableCtor = typeof globalThis !== 'undefined' ? globalThis.Sortable : null;
+  if (!SortableCtor || typeof SortableCtor.create !== 'function') return;
+  SortableCtor.create(legend, {
+    animation: 150,
+    draggable: '.tend-group-legend-item',
+    filter: 'input',
+    preventOnFilter: false,
+    onEnd: function () {
+      var order = [];
+      legend.querySelectorAll('.tend-group-legend-check').forEach(function (inp) {
+        var fk = inp.getAttribute('data-field');
+        if (fk) order.push(fk);
+      });
+      writeLegendOrder(state.patientId, sectionKey, fam, order);
+    },
+  });
+}
+
 function isLegendFieldVisible(state, fieldKey) {
   var saved = readGroupVisibleFields(state.patientId, state.sectionKey);
   if (!saved || !saved.length) return true;
@@ -221,11 +258,21 @@ function appendEmptyChartsMessage(panelEl) {
   panelEl.appendChild(emptyP);
 }
 
+function tendSectionChartSvgIcon() {
+  return (
+    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 17V9M12 17V5M16 17v-4"/></svg>'
+  );
+}
+
 function buildPanelToolbar() {
   var toolbar = document.createElement('div');
   toolbar.className = 'patient-card-toolbar tend-group-panel-toolbar';
   toolbar.innerHTML =
     '<div class="patient-card-toolbar-left">' +
+    '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-copy-svg" title="Copiar gráfica" aria-label="Copiar gráfica como imagen">' +
+    tendSectionChartSvgIcon() +
+    '</button>' +
     '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-eye" title="Ocultar panel" aria-label="Ocultar panel">' +
     tendPanelEyeSvg() +
     '</button>' +
@@ -467,9 +514,14 @@ function renderPanelFamilyCard(fam, ctx) {
   chartWrap.appendChild(canvas);
   block.appendChild(chartWrap);
 
-  var items = (ctx.families[fam] || []).filter(function (item) {
-    return specHasTrendPoints(ctx.state, ctx.sectionKey, item.spec.fieldKey);
-  });
+  var items = orderLegendItems(
+    ctx.state,
+    ctx.sectionKey,
+    fam,
+    (ctx.families[fam] || []).filter(function (item) {
+      return specHasTrendPoints(ctx.state, ctx.sectionKey, item.spec.fieldKey);
+    })
+  );
   var famFieldKeys = items.map(function (item) {
     return item.spec.fieldKey;
   });
@@ -486,6 +538,7 @@ function renderPanelFamilyCard(fam, ctx) {
   var built = buildPanelDatasets(ctx, items, axisMeta);
   block.appendChild(built.legend);
   ctx.sortZone.appendChild(block);
+  mountLegendSortable(built.legend, ctx.state, ctx.sectionKey, fam);
 
   try {
     var chart = createPanelChart(canvas, chartLabels, built.datasets, fam, ctx, markerMap);
@@ -497,6 +550,16 @@ function renderPanelFamilyCard(fam, ctx) {
     chart.update();
     ctx.state.charts.push(chart);
     wireLegendControls(built.legend, chart, fam, ctx);
+    toolbar.querySelector('.tend-group-panel-copy-svg').onclick = function (ev) {
+      if (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+      }
+      var title = resolvePanelTitle(ctx.state.patientId, ctx.sectionKey, fam);
+      copyChartPng(chart, title, visibleDatasetsForChart(chart), function (ok) {
+        if (ctx.deps.showToast) ctx.deps.showToast(ok ? 'Gráfica copiada ✓' : 'No se pudo copiar la gráfica', ok ? 'success' : 'error');
+      });
+    };
   } catch (chartErr) {
     console.error('tend-group chart', fam, chartErr);
     chartWrap.innerHTML =
