@@ -33,7 +33,9 @@ export function eslintDebtFromResults(results) {
     for (const msg of file.messages || []) {
       if (msg.ruleId === 'complexity') complexityOverage += 10;
       if (msg.ruleId === 'max-lines-per-function') {
-        const over = Number(msg.message.match(/(\d+)/)?.[1] || 80) - 80;
+        const actual = Number(msg.message.match(/\((\d+)\)/)?.[1] || 0);
+        const budget = Number(msg.message.match(/Maximum allowed is (\d+)/)?.[1] || 80);
+        const over = actual - budget;
         if (over > 0) lengthOverage += 2 * Math.ceil(over / 10);
       }
     }
