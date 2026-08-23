@@ -185,7 +185,12 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * labs-calcium-corrected.mjs to compute cCa (corrected calcium) inline in
  * the ESC line, alongside the existing raw Ca. Eager — same tier as the rest
  * of parseESC_'s electrolyte extraction. */
-const EAGER_BOOT_BUDGET_BYTES = 3458276;
+/** +2372 B / +0 files: 8.1.9. BUN/CR ratio calc in labs-chemistry.mjs
+ * (parseQS_, always-eager lab parse path); Tendencias copy-chart-as-PNG
+ * (tend-export-render.mjs, tend-export.mjs) and drag-to-reorder legend
+ * (tend-prefs.mjs, tend-group-charts-render.mjs) — all already-eager
+ * modules on the boot path, no new imported files. */
+const EAGER_BOOT_BUDGET_BYTES = 3460648;
 const EAGER_BOOT_BUDGET_FILES = 98;
 
 /**
