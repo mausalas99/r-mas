@@ -180,7 +180,12 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * rAF wiring inside initTabBarMotion() moves off the synchronous paint path.
  * No new eager file or import. */
 // Raised for 8.1.8: remote-patient-delete-confirm actor-name lookup + gaso electrolyte fallback.
-const EAGER_BOOT_BUDGET_BYTES = 3458000;
+/** +276 B / +1 file: 8.1.8. labs-chemistry.mjs (parseESC_, always-eager lab
+ * parse path) now imports computeCorrectedCalcium_ from the new
+ * labs-calcium-corrected.mjs to compute cCa (corrected calcium) inline in
+ * the ESC line, alongside the existing raw Ca. Eager — same tier as the rest
+ * of parseESC_'s electrolyte extraction. */
+const EAGER_BOOT_BUDGET_BYTES = 3458276;
 const EAGER_BOOT_BUDGET_FILES = 98;
 
 /**
