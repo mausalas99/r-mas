@@ -15,7 +15,8 @@ describe('crypto-at-rest', () => {
     const { ciphertext, iv, storageBytes } = await encodeRoomState(env, obj);
     assert.equal(iv.byteLength, 12);
     assert.ok(storageBytes > 0);
-    assert.notEqual(ciphertext[0], 0x7b); // not plain JSON
+    const plainPrefix = new TextEncoder().encode(JSON.stringify(obj)).slice(0, 4);
+    assert.notDeepEqual(Array.from(ciphertext.slice(0, 4)), Array.from(plainPrefix)); // not plain JSON
     const decoded = await decodeRoomState(env, ciphertext, iv);
     assert.deepEqual(decoded, obj);
   });
