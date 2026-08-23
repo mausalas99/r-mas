@@ -1,28 +1,16 @@
-version: 8.1.8
+version: 8.1.9
 files:
-  - url: R+-8.1.8-x64.exe
-    sha512: o+c10XMFsgTOP04OWRxdGH8J6hOcagIWYcsvt/ylVC9ev0KYbHpnabWnTY3PTjJ0pWtJfXBL/jKms9KvEUejWg==
-    size: 122907233
-path: R+-8.1.8-x64.exe
-sha512: o+c10XMFsgTOP04OWRxdGH8J6hOcagIWYcsvt/ylVC9ev0KYbHpnabWnTY3PTjJ0pWtJfXBL/jKms9KvEUejWg==
-releaseDate: '2026-08-23T16:20:24.000Z'
+  - url: R+-8.1.9-x64.exe
+    sha512: jT2DGJ5D7bfZ78qnERD1o+H8pigkixYPuMCeu1t5uLu/thqNeWFkpjljM2HJFCHj0q5gHC1BuIGF3grkHCPN9w==
+    size: 122926739
+path: R+-8.1.9-x64.exe
+sha512: jT2DGJ5D7bfZ78qnERD1o+H8pigkixYPuMCeu1t5uLu/thqNeWFkpjljM2HJFCHj0q5gHC1BuIGF3grkHCPN9w==
+releaseDate: '2026-08-23T18:57:32.000Z'
 releaseNotes: |
-  Mejora gasometrías, el aviso de borrado remoto, y aplica un ajuste de espaciado en toda la interfaz.
+  Relación BUN/CR automática en Química Clínica y Tendencias, copiar gráfica de Tendencias como imagen, y orden de leyenda por arrastre.
   
-  Gasometrías — AG/cAG ya no se pierden: si una toma del día trae gasometría sin Na/Cl/Alb propios, R+ ahora usa el electrolito sérico de la toma más temprana del día para seguir calculando el anion gap.
+  Relación BUN/CR: cuando el reporte trae BUN y creatinina, R+ calcula y muestra BUN/CR junto a ellos, en Química Clínica y en Tendencias (con su propio rango de normalidad).
   
-  Cada gasometría del día se muestra por separado: antes, tomas repetidas de GASES en el mismo día podían fusionarse o pisarse entre sí.
+  Tendencias — copiar gráfica: botón nuevo en cada panel para copiar la gráfica como imagen PNG, con título y leyenda de series activas.
   
-  Aviso de borrado remoto — dice quién lo borró: el mensaje de "Quitar de esta Mac" ahora nombra al miembro del equipo (o "varios usuarios") que eliminó el paciente en Nube, en vez de decir genéricamente "un admin".
-  
-  Insulina prandial — ya no confunde basales: Glargina, Lantus, Toujeo, Degludec, Tresiba, Detemir, Levemir y NPH ya no se detectan como dosis prandial.
-  
-  Ajuste de espaciado: pasada de espaciado consistente en botones, tarjetas, modales y paneles en toda la app.
-  
-  Labs no se refrescaban solos: al pegar un reporte SOME nuevo o importar desde Drive, la pantalla podía seguir mostrando el estudio anterior (a veces de otro paciente) hasta cambiar de paciente y regresar. Ahora se refresca de inmediato.
-  
-  Calcio corregido (cCa) — nuevo: cuando el reporte trae calcio y albúmina, R+ calcula y muestra el calcio corregido junto al calcio crudo. El anion gap corregido también cambió de nombre, de AGc a cAG (se lee igual que se dice: "corregido" antes del analito).
-  
-  Tendencias — 20 gráficas más con rango de normalidad: eTFG, Procalcitonina, VSG, T3 libre, Cortisol, PTH, Vitamina D, CK-MB, % saturación de transferrina, Factor Reumatoide, C3, C4, Amonio, Osmolaridad, Alb/Cr, Digoxina, AFP, CEA, PSA, Folato, Calprotectina y Etanol ya muestran su banda de normalidad.
-  
-  INR — la banda de normalidad en Tendencias ya no se cruzaba con la de TTP: si el reporte no imprime rango propio para INR, R+ tomaba por error el rango de Tiempo de Tromboplastina (el siguiente estudio en el reporte) y la banda de normalidad quedaba invisible. Ya no.
+  Tendencias — orden de leyenda: arrastra los renglones de la leyenda de un panel para reordenar las series. R+ recuerda el orden por paciente y panel.

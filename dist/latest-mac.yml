@@ -1,37 +1,25 @@
-version: 8.1.8
+version: 8.1.9
 files:
-  - url: R+-8.1.8-autoupdate-mac-arm64.zip
-    sha512: 47YBXX7XNdO2lohgkUgoZNTw0h0Bq8y7BxhdU988Cuw4XVmXrtY13/TDSgf+udQrP+psl4mkNmhMjHXjwPDaUA==
-    size: 140343942
-  - url: R+-8.1.8-arm64.dmg
-    sha512: D2ciWOdXfTU4zIeDZQrQEOwic88vihgAVzSbqEZ3NqYqeqJWPpVakBSDEYCqzUScGWkDbpIY5dxQdjgxWgoB9g==
-    size: 146207114
-  - url: R+-8.1.8-autoupdate-mac-x64.zip
-    sha512: yVTSUGWaZgTjVLVJGgJLTXVJDJVyd6pvdSs6LArIhFcEthUe+AOto2CjYYgj4uy+9wIkd0DKBSn0ZQubFwO+sA==
-    size: 148717405
-  - url: R+-8.1.8-x64.dmg
-    sha512: 0F+Qca39lOCvn2J4sgTlKZBJeo8iBeauUgMCAr0UU0q00Q7p8tz79e7gY+RvzztYFc2sJ8tKw82hFmru7hOHPg==
-    size: 154651911
-path: R+-8.1.8-autoupdate-mac-arm64.zip
-sha512: 47YBXX7XNdO2lohgkUgoZNTw0h0Bq8y7BxhdU988Cuw4XVmXrtY13/TDSgf+udQrP+psl4mkNmhMjHXjwPDaUA==
-releaseDate: '2026-08-23T16:20:24.000Z'
+  - url: R+-8.1.9-autoupdate-mac-arm64.zip
+    sha512: EASCuZxtWTlECjPTBUNFuN8PCK2KNEEuYRqrak99+qRNdhQpl66fZcQ05MknOdSLvAcnyyZ9SxUQ7XX7qfuDtg==
+    size: 140348693
+  - url: R+-8.1.9-arm64.dmg
+    sha512: HyW+KIQFJWSBDIlOzsZ59+u5hJX00kFJ6HC27qRrk4Tf0kcJ2nEWhi9BQrqW8kIgYKQlHwDcWrjcO4X6qfURBg==
+    size: 146229571
+  - url: R+-8.1.9-autoupdate-mac-x64.zip
+    sha512: 5fZ9SNnbkaN9e79vBzF/Sw5MYMXpuoLxaxuR2T8WGZZv38GC9IOR5TmNmmMvrzYK1oZmNEZNJgGzXALrHj71Rg==
+    size: 148722129
+  - url: R+-8.1.9-x64.dmg
+    sha512: cqDhTb2d8wbcieudtnIdVCQDSjyvhOeHDerR/26mvAPOSCsPF/NbE9ZULOd7RK6veHn+nh5n1rM1sFGawlf8cQ==
+    size: 154662713
+path: R+-8.1.9-autoupdate-mac-arm64.zip
+sha512: EASCuZxtWTlECjPTBUNFuN8PCK2KNEEuYRqrak99+qRNdhQpl66fZcQ05MknOdSLvAcnyyZ9SxUQ7XX7qfuDtg==
+releaseDate: '2026-08-23T18:57:32.000Z'
 releaseNotes: |
-  Mejora gasometrías, el aviso de borrado remoto, y aplica un ajuste de espaciado en toda la interfaz.
+  Relación BUN/CR automática en Química Clínica y Tendencias, copiar gráfica de Tendencias como imagen, y orden de leyenda por arrastre.
   
-  Gasometrías — AG/cAG ya no se pierden: si una toma del día trae gasometría sin Na/Cl/Alb propios, R+ ahora usa el electrolito sérico de la toma más temprana del día para seguir calculando el anion gap.
+  Relación BUN/CR: cuando el reporte trae BUN y creatinina, R+ calcula y muestra BUN/CR junto a ellos, en Química Clínica y en Tendencias (con su propio rango de normalidad).
   
-  Cada gasometría del día se muestra por separado: antes, tomas repetidas de GASES en el mismo día podían fusionarse o pisarse entre sí.
+  Tendencias — copiar gráfica: botón nuevo en cada panel para copiar la gráfica como imagen PNG, con título y leyenda de series activas.
   
-  Aviso de borrado remoto — dice quién lo borró: el mensaje de "Quitar de esta Mac" ahora nombra al miembro del equipo (o "varios usuarios") que eliminó el paciente en Nube, en vez de decir genéricamente "un admin".
-  
-  Insulina prandial — ya no confunde basales: Glargina, Lantus, Toujeo, Degludec, Tresiba, Detemir, Levemir y NPH ya no se detectan como dosis prandial.
-  
-  Ajuste de espaciado: pasada de espaciado consistente en botones, tarjetas, modales y paneles en toda la app.
-  
-  Labs no se refrescaban solos: al pegar un reporte SOME nuevo o importar desde Drive, la pantalla podía seguir mostrando el estudio anterior (a veces de otro paciente) hasta cambiar de paciente y regresar. Ahora se refresca de inmediato.
-  
-  Calcio corregido (cCa) — nuevo: cuando el reporte trae calcio y albúmina, R+ calcula y muestra el calcio corregido junto al calcio crudo. El anion gap corregido también cambió de nombre, de AGc a cAG (se lee igual que se dice: "corregido" antes del analito).
-  
-  Tendencias — 20 gráficas más con rango de normalidad: eTFG, Procalcitonina, VSG, T3 libre, Cortisol, PTH, Vitamina D, CK-MB, % saturación de transferrina, Factor Reumatoide, C3, C4, Amonio, Osmolaridad, Alb/Cr, Digoxina, AFP, CEA, PSA, Folato, Calprotectina y Etanol ya muestran su banda de normalidad.
-  
-  INR — la banda de normalidad en Tendencias ya no se cruzaba con la de TTP: si el reporte no imprime rango propio para INR, R+ tomaba por error el rango de Tiempo de Tromboplastina (el siguiente estudio en el reporte) y la banda de normalidad quedaba invisible. Ya no.
+  Tendencias — orden de leyenda: arrastra los renglones de la leyenda de un panel para reordenar las series. R+ recuerda el orden por paciente y panel.
