@@ -10,7 +10,7 @@
 
 function handleSomeCultureBlock(state, lines, i, trimmed, h) {
   if (h.normalizeDeptKey(state.currentDept.key) !== 'BACTERIOLOGIA') return null;
-  if (!h.isCultureSampleTitle(trimmed, lines.slice(i + 1))) return null;
+  if (!h.isCultureSampleTitle(trimmed, lines.slice(i + 1, i + 9))) return null;
   var cultBlock = h.parseBacteriologiaCultureGroup(lines, i);
   h.ensureGroup(cultBlock.title);
   cultBlock.rows.forEach(function (r) {
@@ -105,7 +105,7 @@ function handleSomeFlattenCitoTitle(state, lines, i, trimmed, h) {
 }
 
 function handleSomeGroupTitle(state, lines, i, trimmed, h) {
-  if (!h.isLikelyGroupTitle(trimmed, lines.slice(i + 1), state.currentGroup && state.currentGroup.title)) {
+  if (!h.isLikelyGroupTitle(trimmed, lines.slice(i + 1, i + 9), state.currentGroup && state.currentGroup.title)) {
     return null;
   }
   if (h.FLATTEN_DEPT_KEYS[h.normalizeDeptKey(state.currentDept.key)]) {
@@ -125,11 +125,11 @@ function handleSomeGroupTitle(state, lines, i, trimmed, h) {
 function handleSomeFlatStudyRow(state, lines, i, trimmed, h) {
   if (!h.FLATTEN_DEPT_KEYS[h.normalizeDeptKey(state.currentDept.key)]) return null;
   if (h.isCitoGroupTitle(trimmed)) return null;
-  if (!h.isStudyRowHeader(trimmed, lines.slice(i + 1))) return null;
+  if (!h.isStudyRowHeader(trimmed, lines.slice(i + 1, i + 9))) return null;
   if (state.currentGroup && h.isCitoGroupTitle(state.currentGroup.title) && !h.isSerumQcAnalyte(trimmed)) {
     return null;
   }
-  if (h.isLikelyGroupTitle(trimmed, lines.slice(i + 1), state.currentGroup && state.currentGroup.title)) {
+  if (h.isLikelyGroupTitle(trimmed, lines.slice(i + 1, i + 9), state.currentGroup && state.currentGroup.title)) {
     return null;
   }
   h.ensureGroup('');

@@ -30,7 +30,7 @@ function cultureBlockEndIdx(lines, startIdx) {
     var t = cleanEstudio(lines[k]);
     if (!t || isFlagToken(t)) continue;
     if (isDepartmentLine(t) || isTableHeaderLine(t)) return k;
-    if (k > startIdx + 1 && isCultureSampleTitleBound(t, lines.slice(k + 1))) return k;
+    if (k > startIdx + 1 && isCultureSampleTitleBound(t, lines.slice(k + 1, k + 9))) return k;
   }
   return lines.length;
 }
