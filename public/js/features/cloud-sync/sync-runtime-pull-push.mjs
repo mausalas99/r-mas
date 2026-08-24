@@ -5,7 +5,7 @@ import { cloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 import { isCloudTransientServerError } from './cloud-sync-timing.mjs';
 import {
   noteCloudLabSidecarsFromPullResult,
-  noteCloudLabSidecarOpsPushed,
+  noteCloudLabSidecarOpsSent,
 } from './cloud-lab-sidecar-index.mjs';
 import { drainSyncedLabSidecarsFromOutbox, splitLabBackfillInOutbox } from './outbox-lab.mjs';
 import {
@@ -247,7 +247,7 @@ async function pushWithStaleRetry(ctx, roomId, item, ops) {
       chunks.length > 1 ? i : undefined,
     );
     if (lastResult?.revision != null) applyServerRevision(Number(lastResult.revision));
-    noteCloudLabSidecarOpsPushed(sanitized.ops);
+    noteCloudLabSidecarOpsSent(chunks[i], sanitized.ops);
     if (lastResult?.needPull) await pullLatest();
   }
   return lastResult;
@@ -275,7 +275,7 @@ async function flushOutboxItem(ctx, roomId, item) {
   try {
     const result = await pushWithStaleRetry(ctx, roomId, item, sanitized.ops);
     outbox.remove(item.clientMutationId);
-    noteCloudLabSidecarOpsPushed(sanitized.ops);
+    noteCloudLabSidecarOpsSent(item.ops, sanitized.ops);
     pace.markLocalWrite();
     if (result?.revision != null) applyServerRevision(Number(result.revision));
     noteCloudSyncPush();

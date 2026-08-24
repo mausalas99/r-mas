@@ -1,7 +1,7 @@
 import { sanitizeOpsForCloudPush, utf8JsonBytes } from './cloud-op-slim.mjs';
 import { resolveCloudPushMutationId } from './push-mutation-id.mjs';
 import { CLOUD_BATCH_MUTATION_ID } from './constants.mjs';
-import { noteCloudLabSidecarOpsPushed } from './cloud-lab-sidecar-index.mjs';
+import { noteCloudLabSidecarOpsSent } from './cloud-lab-sidecar-index.mjs';
 import { isCloudTransientServerError } from './cloud-sync-timing.mjs';
 
 const DIRECT_PUSH_TRANSIENT_RETRIES = 3;
@@ -123,7 +123,7 @@ export async function pushCloudOpsDirect(api, roomId, ops, getRevision, setRevis
       if (Number.isFinite(next) && next > current) setRevision(next);
     }
     appliedOps += sanitized.ops.length;
-    noteCloudLabSidecarOpsPushed(sanitized.ops);
+    noteCloudLabSidecarOpsSent(chunks[i], sanitized.ops);
   }
   return { appliedOps, chunks: chunks.length };
 }

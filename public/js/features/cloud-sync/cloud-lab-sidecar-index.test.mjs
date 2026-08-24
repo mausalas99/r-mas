@@ -7,6 +7,7 @@ import {
   coalesceLabSidecarOps,
   filterCloudLabSidecarOps,
   noteCloudLabSidecarOpsPushed,
+  noteCloudLabSidecarOpsSent,
   noteCloudLabSidecarsFromState,
   shouldSkipCloudLabSidecarPush,
 } from './cloud-lab-sidecar-index.mjs';
@@ -107,6 +108,26 @@ describe('cloud-lab-sidecar-index', () => {
     const kept = filterCloudLabSidecarOps([op, { path: 'entries/p1/fields', value: { nombre: 'Y' } }]);
     assert.equal(kept.length, 1);
     assert.equal(kept[0].path, 'entries/p1/fields');
+  });
+
+  it('noteCloudLabSidecarOpsSent fingerprints the pre-trim value, not the sent (trimmed) one', () => {
+    // A heavy lab set: sanitizeOpsForCloudPush would trim resLabs to fit quota
+    // before sending, but the fingerprint must be noted from the ORIGINAL
+    // value so it matches what filterCloudLabSidecarOps computes next time
+    // (it always reads the full, untrimmed set fresh from labHistory).
+    const original = {
+      path: 'labSidecars/p1/lab-1',
+      value: { id: 'lab-1', fecha: '2026-08-09', resLabs: ['Hb 12', 'Na 140'] },
+      updatedAt: meta.updatedAt,
+      actorId: meta.actorId,
+    };
+    const sent = {
+      ...original,
+      value: { id: 'lab-1', fecha: '2026-08-09', resLabs: ['Hb 12'] }, // trimmed by quota fit
+    };
+    noteCloudLabSidecarOpsSent([original], [sent]);
+    const kept = filterCloudLabSidecarOps([original]);
+    assert.equal(kept.length, 0, 'unchanged set must not resurface after being sent trimmed');
   });
 
   it('persists fingerprint index in localStorage', () => {

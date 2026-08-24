@@ -195,6 +195,25 @@ export function noteCloudLabSidecarsFromPullResult(result) {
   return noteCloudLabSidecarsFromFold(fold);
 }
 
+/**
+ * Note fingerprints from the pre-quota-fit op values, not the trimmed ones that
+ * were actually sent. `sanitizeOpsForCloudPush` can shrink a heavy lab set
+ * (drop sourceText/bhExtras, trim resLabs) to fit the push budget — noting the
+ * trimmed value's fingerprint would never match the full value read back from
+ * labHistory next time, so that lab set would look "changed" forever and
+ * resync on every push.
+ * @param {unknown[]} originalOps ops before sanitizeOpsForCloudPush
+ * @param {unknown[]} sentOps the (possibly trimmed) ops that were actually pushed
+ */
+export function noteCloudLabSidecarOpsSent(originalOps, sentOps) {
+  if (!Array.isArray(sentOps) || !sentOps.length) return 0;
+  const sentPaths = new Set(sentOps.map((op) => String(op?.path || '')));
+  const originals = (Array.isArray(originalOps) ? originalOps : []).filter((op) =>
+    sentPaths.has(String(op?.path || ''))
+  );
+  return noteCloudLabSidecarOpsPushed(originals);
+}
+
 /** @param {unknown[]} ops */
 export function noteCloudLabSidecarOpsPushed(ops) {
   if (!Array.isArray(ops) || !ops.length) return 0;
