@@ -235,6 +235,16 @@ appExpress.post('/generate-receta-hu', generateLimiter, documentExportAuth, asyn
   }
 });
 
+appExpress.post('/generate-ic-hoja', generateLimiter, documentExportAuth, async (req, res) => {
+  const { patient, payload } = req.body;
+  try {
+    const { buffer, fileName } = await docExport.exportIcHojaDocx({ patient, payload });
+    sendDocxBuffer(res, { buf: buffer, fileName, type: 'ic-hoja', patient });
+  } catch (e) {
+    docExportHttpError(res, e, { type: 'ic-hoja', patient });
+  }
+});
+
 const PORT = LAN_HTTP_PORT;
 
 function portInUseProcessHint(port) {

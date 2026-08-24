@@ -96,9 +96,6 @@ const rootProcessCommonjs = {
     sourceType: 'commonjs',
     globals: { ...globals.node },
   },
-  rules: {
-    'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
-  },
 };
 
 const rootProcessEsm = {
@@ -107,9 +104,6 @@ const rootProcessEsm = {
     ecmaVersion: 2022,
     sourceType: 'module',
     globals: { ...globals.node },
-  },
-  rules: {
-    'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
   },
 };
 
@@ -120,9 +114,6 @@ const rootProcessRecetaHu = {
     sourceType: 'commonjs',
     globals: { ...globals.node },
   },
-  rules: {
-    'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
-  },
 };
 
 const scriptsBlock = {
@@ -131,6 +122,16 @@ const scriptsBlock = {
     ecmaVersion: 2022,
     globals: { ...globals.node },
   },
+};
+
+// Shared by all root-process + scripts files above — same rule, different sourceType per block.
+const unusedVarsIgnoreUnderscore = {
+  files: [
+    'main.js', 'server.js', 'preload.js',
+    'generate-censo.js',
+    'generate-receta-hu.js', 'generate-receta-hu.test.js',
+    'scripts/**/*.mjs', 'scripts/**/*.js', 'scripts/**/*.cjs',
+  ],
   rules: {
     'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
   },
@@ -166,4 +167,5 @@ export default [
   scriptsBlock,
   scriptsEsm,
   scriptsCommonjs,
+  unusedVarsIgnoreUnderscore,
 ];

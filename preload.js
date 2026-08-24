@@ -73,14 +73,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   labRepoFetch: function(payload) {
     return ipcRenderer.invoke('lab-repo-fetch', payload);
   },
+  ocrLabPhoto: function() {
+    return ipcRenderer.invoke('lab-photo-ocr');
+  },
   cloudSyncFetch: function(payload) {
     return ipcRenderer.invoke('cloud-sync-fetch', payload);
   },
   cloudSyncRememberGetSync: function() {
     return ipcRenderer.sendSync('cloud-sync-remember-get-sync');
-  },
-  cloudSyncRememberGet: function() {
-    return ipcRenderer.invoke('cloud-sync-remember-get');
   },
   cloudSyncRememberSet: function(snapshot) {
     return ipcRenderer.invoke('cloud-sync-remember-set', snapshot);
@@ -103,13 +103,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
       macTitleBarInset: process.platform === 'darwin',
       isWindows: process.platform === 'win32',
     };
-  },
-  /** Dev-only ward server (`R_PLUS_DEV_WARD_SERVER=1`). Production Nube builds never bind :3738. */
-  ensureLanServerReady: function() {
-    if (process.env.R_PLUS_DEV_WARD_SERVER !== '1') {
-      return Promise.resolve({ ok: true, peer: false, wardServer: false });
-    }
-    return ipcRenderer.invoke('lan-ensure-server-ready');
   },
   writeClipboardText: function(text) {
     return ipcRenderer.invoke('clipboard-write-text', text);

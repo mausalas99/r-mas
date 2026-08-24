@@ -225,7 +225,7 @@ function createWindow() {
     height: 900,
     minWidth: 960,
     minHeight: 700,
-    title: 'R+',
+    title: 'R+ HF',
     show: false, // mostrar solo cuando esté listo (sin flash blanco)
     webPreferences: {
       nodeIntegration: false,
@@ -659,6 +659,11 @@ ipcMain.handle('generate-document', async (_e, { kind, payload }) => {
         logDocExport({ type: 'receta-hu', patient: payload && payload.patient, status: 200, bytes: buffer.length });
         return { ok: true, fileName, buffer };
       }
+      case 'ic-hoja': {
+        const { buffer, fileName } = await docExport.exportIcHojaDocx(payload || {});
+        logDocExport({ type: 'ic-hoja', patient: payload && payload.patient, status: 200, bytes: buffer.length });
+        return { ok: true, fileName, buffer };
+      }
       default:
         return { ok: false, error: 'Tipo de documento no soportado.' };
     }
@@ -692,15 +697,6 @@ function isDevWardServerEnabled() {
   return process.env.R_PLUS_DEV_WARD_SERVER === '1';
 }
 
-ipcMain.handle('lan-ensure-server-ready', async () => {
-  if (!isDevWardServerEnabled()) {
-    return { ok: true, peer: false, wardServer: false };
-  }
-  const lanServer = require('./server');
-  await lanServer.startLanServer();
-  return { ok: true, peer: false, wardServer: true };
-});
-
 ipcMain.handle('clipboard-write-text', (_e, text) => {
   try {
     clipboard.writeText(String(text == null ? '' : text));
@@ -719,6 +715,33 @@ ipcMain.handle('lab-repo-fetch', async (_e, payload) => {
       studies: [],
       errors: [{ folio: '', message: String(err?.message || err) }],
     };
+  }
+});
+
+let labPhotoOcrModule = null;
+function loadLabPhotoOcr() {
+  if (!labPhotoOcrModule) {
+    labPhotoOcrModule = import('./lib/ocr/lab-photo-ocr.mjs');
+  }
+  return labPhotoOcrModule;
+}
+
+ipcMain.handle('lab-photo-ocr', async () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return { ok: false, canceled: true };
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Elegir foto de lab externo',
+    properties: ['openFile'],
+    filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg'] }],
+  });
+  if (result.canceled || !result.filePaths.length) return { ok: false, canceled: true };
+  const filePath = result.filePaths[0];
+  try {
+    const buffer = await fs.promises.readFile(filePath);
+    const { ocrLabPhoto } = await loadLabPhotoOcr();
+    const { text, confidence } = await ocrLabPhoto(buffer);
+    return { ok: true, text, confidence, fileName: path.basename(filePath) };
+  } catch (e) {
+    return { ok: false, error: (e && e.message) || 'No se pudo leer la imagen.' };
   }
 });
 
@@ -753,10 +776,6 @@ ipcMain.on('cloud-sync-remember-get-sync', (event) => {
   } catch {
     event.returnValue = null;
   }
-});
-
-ipcMain.handle('cloud-sync-remember-get', () => {
-  return readCloudSyncRememberStore(cloudSyncRememberUserData());
 });
 
 ipcMain.handle('cloud-sync-remember-set', (_e, snapshot) => {
@@ -814,7 +833,7 @@ function buildMenu() {
     ...(isMac ? [{
       label: app.name,
       submenu: [
-        { label: `R+ v${version}`, enabled: false },
+        { label: `R+ HF v${version}`, enabled: false },
         { type: 'separator' },
         { label: 'Buscar actualizaciones…', click: checkUpdate },
         { type: 'separator' },
@@ -858,7 +877,7 @@ function buildMenu() {
       label: 'Aplicación',
       submenu: [
         ...(!isMac ? [
-          { label: `R+ v${version}`, enabled: false },
+          { label: `R+ HF v${version}`, enabled: false },
           { type: 'separator' },
           { label: 'Buscar actualizaciones…', click: checkUpdate },
           { type: 'separator' },
@@ -922,7 +941,7 @@ app.whenReady().then(async () => {
         nativeErr && nativeErr.message
           ? nativeErr.message
           : 'No se pudo cargar el módulo nativo de base de datos (SQLCipher).';
-      dialog.showErrorBox('R+ no pudo iniciar', detail);
+      dialog.showErrorBox('R+ HF no pudo iniciar', detail);
       app.quit();
       return;
     }
@@ -1003,7 +1022,7 @@ app.whenReady().then(async () => {
   } catch (e) {
     const detail = e && e.message ? e.message : String(e);
     dialog.showErrorBox(
-      'R+ no pudo iniciar',
+      'R+ HF no pudo iniciar',
       detail
     );
     app.quit();
