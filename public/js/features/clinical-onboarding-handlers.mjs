@@ -366,13 +366,13 @@ export async function handleLocalOnlyConfirmClick() {
   try {
     const result = await submitLocalOnlyProfile(defaultLocalOnlyDisplayName(), rank, errEl);
     if (!result.ok) return;
-    toast('Listo. R+ queda solo en este equipo, sin R+ Cloud.', 'success');
+    toast('Listo. R+ HF queda solo en este equipo, sin R+ Cloud.', 'success');
     const { refreshMainClinicalOnboardingIfNeeded } = await import('./clinical-onboarding-main.mjs');
     await refreshMainClinicalOnboardingIfNeeded();
   } finally {
     if (confirmBtn instanceof HTMLButtonElement) {
       confirmBtn.disabled = false;
-      confirmBtn.textContent = 'Entrar a R+';
+      confirmBtn.textContent = 'Entrar a R+ HF';
     }
   }
 }

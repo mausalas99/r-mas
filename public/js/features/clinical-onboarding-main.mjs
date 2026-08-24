@@ -275,7 +275,7 @@ async function resumeStoredCloudTokenIfPresent() {
 /** @returns {Promise<boolean>} true when the host is ready for the DB unlock + session steps */
 async function ensureOnboardingDbUnlockedAndFlushed(host) {
   ensureOnboardingBootLoading(host, {
-    title: 'Preparando R+',
+    title: 'Preparando R+ HF',
     message: 'Preparando almacenamiento local…',
   });
 
@@ -314,7 +314,7 @@ async function ensureOnboardingPanelSession(host) {
 
 async function renderOnboardingRegistrationForm(host) {
   ensureOnboardingBootLoading(host, {
-    title: 'Preparando R+',
+    title: 'Preparando R+ HF',
     message: 'Cargando formulario…',
     stepperIndex: 2,
   });

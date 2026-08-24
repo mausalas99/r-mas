@@ -38,8 +38,8 @@ export function buildOnboardingStageHtml({ title, leadHtml, bodyHtml, stepperInd
  * @param {{ title?: string, message?: string, stepperIndex?: number|null }} [opts]
  */
 export function buildOnboardingBootLoadingHtml(opts = {}) {
-  const title = opts.title || 'Preparando R+';
-  const message = opts.message || 'Iniciando R+…';
+  const title = opts.title || 'Preparando R+ HF';
+  const message = opts.message || 'Iniciando R+ HF…';
   const stepper =
     opts.stepperIndex != null
       ? buildClinicalOnboardingStepperHtml(/** @type {1|2|3} */ (opts.stepperIndex))
@@ -75,9 +75,9 @@ export function buildSyncModeChoiceBodyHtml() {
           <button type="button" class="clinical-onboard-mode-card clinical-onboard-mode-card--primary" data-sync-mode="nube">
             <span class="clinical-onboard-mode-card-head">
               ${MODE_NUBE_ICON}
-              <span class="clinical-onboard-mode-card-title">Guardia con R+ Cloud</span>
+              <span class="clinical-onboard-mode-card-title">Con R+ Cloud</span>
             </span>
-            <span class="clinical-onboard-mode-card-desc">Crea tu @usuario, elige rotación y sincroniza censo y equipos por <strong>Nube</strong>.</span>
+            <span class="clinical-onboard-mode-card-desc">Crea tu @usuario y sincroniza censo y equipos por <strong>Nube</strong>.</span>
           </button>
           <button type="button" class="clinical-onboard-mode-card" data-sync-mode="existing">
             <span class="clinical-onboard-mode-card-head">

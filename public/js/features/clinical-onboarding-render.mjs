@@ -195,7 +195,7 @@ function renderLocalOnlyConfirmPanel(host) {
     bodyHtml: `
       <p id="onboard-local-only-error" class="clinical-registration-error" hidden></p>
       <div class="modal-actions clinical-onboard-form-actions">
-        <button type="button" class="btn-save" id="clinical-onboard-local-confirm-btn">Entrar a R+</button>
+        <button type="button" class="btn-save" id="clinical-onboard-local-confirm-btn">Entrar a R+ HF</button>
         <button type="button" id="clinical-onboard-mode-back-btn" class="btn-med-secondary">Cambiar modo</button>
       </div>`,
   });

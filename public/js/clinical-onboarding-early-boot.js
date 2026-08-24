@@ -55,9 +55,9 @@
       '<div class="clinical-onboard-mode-grid" role="group" aria-label="Modo de uso">' +
       '<button type="button" class="clinical-onboard-mode-card clinical-onboard-mode-card--primary" data-sync-mode="nube">' +
       '<span class="clinical-onboard-mode-card-head">' +
-      '<span class="clinical-onboard-mode-card-title">Guardia con R+ Cloud</span>' +
+      '<span class="clinical-onboard-mode-card-title">Con R+ Cloud</span>' +
       '</span>' +
-      '<span class="clinical-onboard-mode-card-desc">Crea tu @usuario, elige rotación y sincroniza censo y equipos por <strong>Nube</strong>.</span>' +
+      '<span class="clinical-onboard-mode-card-desc">Crea tu @usuario y sincroniza censo y equipos por <strong>Nube</strong>.</span>' +
       '</button>' +
       '<button type="button" class="clinical-onboard-mode-card" data-sync-mode="existing">' +
       '<span class="clinical-onboard-mode-card-head">' +
@@ -69,7 +69,7 @@
       '<span class="clinical-onboard-mode-card-head">' +
       '<span class="clinical-onboard-mode-card-title">Solo este equipo</span>' +
       '</span>' +
-      '<span class="clinical-onboard-mode-card-desc">Sin Nube: expedientes y notas solo en esta Mac. Sin rotaciones ni sala compartida.</span>' +
+      '<span class="clinical-onboard-mode-card-desc">Sin Nube: expedientes y notas solo en esta Mac.</span>' +
       '</button>' +
       '</div>'
     );
@@ -84,9 +84,9 @@
       '<span title="Perfil" aria-label="Perfil">2</span>' +
       '<span title="Equipo" aria-label="Equipo">3</span>' +
       '</div>' +
-      '<h3 class="clinical-onboarding-title">¿Cómo usarás R+?</h3>' +
+      '<h3 class="clinical-onboarding-title">¿Cómo usarás R+ HF?</h3>' +
       '<div class="clinical-onboarding-lead">' +
-      '<p>Elige cómo usarás R+ en este equipo. Con Nube creas cuenta o entras si ya tienes una; en solo equipo trabajas sin sincronizar.</p>' +
+      '<p>Elige cómo usarás R+ HF en este equipo. Con Nube creas cuenta o entras si ya tienes una; en solo equipo trabajas sin sincronizar.</p>' +
       '</div>' +
       buildSyncModeBodyHtml() +
       '</div></div>'
@@ -116,7 +116,7 @@
   }
 
   function showPreparingHost(host) {
-    host.innerHTML = buildBootLoadingHtml('Preparando R+', 'Iniciando R+…');
+    host.innerHTML = buildBootLoadingHtml('Preparando R+ HF', 'Iniciando R+ HF…');
     if (window.__rpcOnboardingBootProgress && typeof window.__rpcOnboardingBootProgress.start === 'function') {
       window.__rpcOnboardingBootProgress.start(host);
     }

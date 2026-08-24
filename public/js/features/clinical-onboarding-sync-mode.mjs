@@ -23,9 +23,9 @@ export function localOnlyUsernameForUserId(userId) {
 
 export function renderSyncModeChoicePanel(host) {
   host.innerHTML = buildOnboardingStageHtml({
-    title: '¿Cómo usarás R+?',
+    title: '¿Cómo usarás R+ HF?',
     leadHtml:
-      '<p>Elige cómo usarás R+ en este equipo. Con Nube creas cuenta o entras si ya tienes una; en solo equipo trabajas sin sincronizar.</p>',
+      '<p>Elige cómo usarás R+ HF en este equipo. Con Nube creas cuenta o entras si ya tienes una; en solo equipo trabajas sin sincronizar.</p>',
     bodyHtml: buildSyncModeChoiceBodyHtml(),
     stepperIndex: 1,
   });
@@ -40,7 +40,7 @@ export async function handleSyncModeChoice(mode) {
   if (mode === 'local') {
     setClinicalExistingAccountPath(false);
     setClinicalSyncModeLocalOnly(true);
-  } else if (mode === 'nube' || mode === 'lan') {
+  } else if (mode === 'nube') {
     setClinicalExistingAccountPath(false);
     setClinicalSyncModeLocalOnly(false);
   } else if (mode === 'existing') {
