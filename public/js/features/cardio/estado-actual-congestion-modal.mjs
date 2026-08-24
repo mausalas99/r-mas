@@ -12,6 +12,20 @@ import { saveCardioPocusDay } from './estado-actual-cardio-wire.mjs';
 import { localYmdToday } from './estado-actual-cardio-data.mjs';
 import { getEaPanelRuntime } from '../estado-actual-panel-runtime.mjs';
 
+/**
+ * 6MWT reading for the given date from `patient.cardio.scores` (hf-scores.mjs)
+ * — that store, not the POCUS day record, is canonical for scores.
+ * @param {unknown} scores
+ * @param {string} date
+ */
+function sixMwtForDate(scores, date) {
+  var list = Array.isArray(scores) ? scores : [];
+  var row = list.find(function (r) {
+    return r && r.date === date;
+  });
+  return row && row.sixMwtMeters != null ? row.sixMwtMeters : '';
+}
+
 var state = { patient: null, persist: null, refresh: null };
 var dismissWired = false;
 
@@ -59,15 +73,22 @@ export function openEaCongestionModal(patient, editingDate, deps) {
   state.refresh = deps.refresh;
   var pocusByDay = Array.isArray(patient.cardio.pocusByDay) ? patient.cardio.pocusByDay : [];
   var draft = (editingDate && getPocusDay(pocusByDay, editingDate)) || { date: localYmdToday() };
+  draft = Object.assign({}, draft, {
+    sixMwtMeters: sixMwtForDate(patient.cardio.scores, draft.date),
+  });
   body.innerHTML =
+    '<div class="ea-registro-form-scroll">' +
     renderPocusFormHtml(draft) +
+    '<div class="ea-cardio-pocus-log">' +
+    renderPocusLogListHtml(pocusByDay) +
+    '</div>' +
+    '</div>' +
+    '<footer class="ea-registro-modal-foot">' +
     '<div class="modal-actions ea-registro-modal-actions">' +
     '<button type="button" class="btn-med-secondary btn-med-secondary--muted" data-ea-congestion-cancel>Cancelar</button>' +
     '<button type="button" class="btn-generate" data-ea-congestion-save>Guardar día</button>' +
     '</div>' +
-    '<div class="ea-cardio-pocus-log">' +
-    renderPocusLogListHtml(pocusByDay) +
-    '</div>';
+    '</footer>';
   wireModalBody(body);
   backdrop.classList.add('open');
   backdrop.setAttribute('aria-hidden', 'false');

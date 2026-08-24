@@ -25,17 +25,26 @@ test('stevensonPillHtml tones caliente-seco as best, frío-húmedo as worst', ()
   assert.match(stevensonPillHtml(''), /--text-muted/);
 });
 
-test('renderIdentityRowHtml carries the six identity fields with their current values', () => {
+test('renderIdentityRowHtml keeps fenotipo as a real dropdown (plain codes, no percentages) next to an inline FEVI box', () => {
   const html = renderIdentityRowHtml({
-    fenotipo: 'FEr',
+    fenotipo: 'HFrEF',
+    fevi: '35',
     etiologia: 'Isquémica',
     residente: 'Dr. X',
     ekg: 'RSN',
     ritmo: 'Sinusal',
     estrategiaControlFa: 'Control de frecuencia',
   });
-  assert.match(html, /data-ea-cardio="fenotipo"/);
-  assert.match(html, /value="FEr"/);
+  assert.match(html, /<select[^>]*data-ea-cardio="fenotipo"/);
+  const fenotipoSelectMatch = html.match(/<select[^>]*data-ea-cardio="fenotipo"[^>]*>[\s\S]*?<\/select>/);
+  assert.doesNotMatch(fenotipoSelectMatch[0], /%/);
+  assert.doesNotMatch(html, /HFrEF \(/);
+  assert.match(html, />HFrEF</);
+  assert.match(html, />HFmrEF</);
+  assert.match(html, />HFpEF</);
+  assert.match(html, />HFimpEF</);
+  assert.match(html, /data-ea-cardio="fevi"/);
+  assert.match(html, /value="35"/);
   assert.match(html, /data-ea-cardio="estrategiaControlFa"/);
   assert.match(html, /value="Control de frecuencia"/);
 });
@@ -107,4 +116,26 @@ test('renderPocusFormHtml pre-fills fields from a saved day (used by the Registr
   });
   assert.match(html, /data-ea-cardio-pocus="date" value="2026-03-12"/);
   assert.match(html, /data-ea-cardio-pocus="fevi" value="35%"/);
+});
+
+test('renderPocusFormHtml renders an 8-zone lung-US grid alongside the legacy free-text fields', () => {
+  const html = renderPocusFormHtml({
+    date: '2026-03-12',
+    lungPattern: 'B',
+    lungLinesB: '3-4',
+    lungZones: { rAntSup: '1-2', lLatInf: 'Coalescentes' },
+  });
+  // Legacy fields kept as-is.
+  assert.match(html, /data-ea-cardio-pocus="lungPattern" value="B"/);
+  assert.match(html, /data-ea-cardio-pocus="lungLinesB" value="3-4"/);
+  // New per-zone grid, 8 selects.
+  const zoneMatches = html.match(/data-ea-cardio-pocus-zone="/g) || [];
+  assert.equal(zoneMatches.length, 8);
+  assert.match(html, /data-ea-cardio-pocus-zone="rAntSup"[^]*?value="1-2" selected/);
+  assert.match(html, /data-ea-cardio-pocus-zone="lLatInf"[^]*?value="Coalescentes" selected/);
+});
+
+test('renderPocusFormHtml renders a 6MWT numeric field pre-filled from the day draft', () => {
+  const html = renderPocusFormHtml({ date: '2026-03-12', sixMwtMeters: 320 });
+  assert.match(html, /data-ea-cardio-pocus="sixMwtMeters" value="320"/);
 });

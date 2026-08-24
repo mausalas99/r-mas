@@ -38,6 +38,7 @@ import { resolveVentilatorioLabContext } from './estado-actual-ventilatorio-labs
 import { DIET_PENDING_KEYS } from './estado-actual-meds.mjs';
 import { buildDescongestionStats } from './cardio/estado-actual-cardio-data.mjs';
 import { renderDescongestionFormHtml, renderIdentityRowHtml } from './cardio/estado-actual-cardio-html.mjs';
+import { fenotipoFromFevi } from '../../../lib/cardio/hf-enums.mjs';
 import {
   applyCardioFieldChange,
   applyCardioOverrideChange,
@@ -206,11 +207,17 @@ function restoreEaPanelUiState(mount, state) {
   }
 }
 
+function scrollBodyHtml(contentHtml) {
+  return '<div class="ea-registro-form-scroll">' + contentHtml + '</div>';
+}
+
 function closeFooterHtml() {
   return (
+    '<footer class="ea-registro-modal-foot">' +
     '<div class="modal-actions ea-registro-modal-actions">' +
     '<button type="button" class="btn-med-secondary" data-ea-card-close>Cerrar</button>' +
-    '</div>'
+    '</div>' +
+    '</footer>'
   );
 }
 
@@ -252,7 +259,7 @@ function openDescongestionModal(patient, monitoreo, activeId) {
   openEaCardModal({
     title: 'Descongestión',
     cardType: 'descongestion',
-    bodyHtml: renderDescongestionFormHtml(ctx.descongestionStats) + closeFooterHtml(),
+    bodyHtml: scrollBodyHtml(renderDescongestionFormHtml(ctx.descongestionStats)) + closeFooterHtml(),
     wire: function (body) {
       body.querySelectorAll('[data-ea-cardio]').forEach(function (el) {
         var tag = (el.tagName || '').toUpperCase();
@@ -291,7 +298,7 @@ function openIdentidadModal(patient, monitoreo, activeId) {
   openEaCardModal({
     title: 'Identidad',
     cardType: 'identidad',
-    bodyHtml: renderIdentityRowHtml(ctx.cardio) + closeFooterHtml(),
+    bodyHtml: scrollBodyHtml(renderIdentityRowHtml(ctx.cardio)) + closeFooterHtml(),
     wire: function (body) {
       body.querySelectorAll('[data-ea-cardio]').forEach(function (el) {
         var handler = function () {
@@ -301,6 +308,21 @@ function openIdentidadModal(patient, monitoreo, activeId) {
         };
         el.addEventListener('input', handler);
       });
+      // Typing a FEVI auto-selects the matching fenotipo option (doctor can
+      // still override the dropdown by hand afterwards — HFimpEF needs a
+      // history call the number alone can't make).
+      var feviInput = body.querySelector('[data-ea-cardio="fevi"]');
+      var fenotipoSelect = body.querySelector('[data-ea-cardio="fenotipo"]');
+      if (feviInput && fenotipoSelect) {
+        feviInput.addEventListener('input', function () {
+          var derived = fenotipoFromFevi(feviInput.value);
+          if (!derived) return;
+          fenotipoSelect.value = derived;
+          patient.cardio.fenotipo = derived;
+          deps.persist();
+          deps.refresh();
+        });
+      }
       wireCloseButton(body);
     },
   });
@@ -311,7 +333,9 @@ function openEstadoClinicoModal(patient, monitoreo, activeId) {
   openEaCardModal({
     title: 'Estado clínico',
     cardType: 'estado-clinico',
-    bodyHtml: '<div class="ea-clinico-grid">' + renderVitalsRowHtml(ctx.ec, ctx.vitalsCtx) + '</div>' + closeFooterHtml(),
+    bodyHtml:
+      scrollBodyHtml('<div class="ea-clinico-grid">' + renderVitalsRowHtml(ctx.ec, ctx.vitalsCtx) + '</div>') +
+      closeFooterHtml(),
     wire: function (body) {
       body.querySelectorAll('[data-ea-ec]').forEach(function (el) {
         var tag = (el.tagName || '').toUpperCase();
@@ -335,15 +359,17 @@ function openNutricionModal(patient, monitoreo, activeId) {
     title: 'Nutrición',
     cardType: 'nutricion',
     bodyHtml:
-      renderNutricionModalBodyHtml(
-        ctx.ec,
-        ctx.dietPending,
-        ctx.dietaSuplemento,
-        ctx.kcalDisplay,
-        ctx.dietWeightHint,
-        ctx.dietaParenteral,
-        ctx.dietOptions,
-        ctx.dietOptionSelected
+      scrollBodyHtml(
+        renderNutricionModalBodyHtml(
+          ctx.ec,
+          ctx.dietPending,
+          ctx.dietaSuplemento,
+          ctx.kcalDisplay,
+          ctx.dietWeightHint,
+          ctx.dietaParenteral,
+          ctx.dietOptions,
+          ctx.dietOptionSelected
+        )
       ) + closeFooterHtml(),
     wire: function (body) {
       body.querySelectorAll('[data-ea-ec]').forEach(function (el) {
@@ -362,7 +388,7 @@ function openMedicamentosModal(patient, monitoreo, activeId) {
   openEaCardModal({
     title: 'Medicamentos',
     cardType: 'medicamentos',
-    bodyHtml: renderMedCategoryGrid(monitoreo, activeId, getMedRecetaByPatient()) + closeFooterHtml(),
+    bodyHtml: scrollBodyHtml(renderMedCategoryGrid(monitoreo, activeId, getMedRecetaByPatient())) + closeFooterHtml(),
     wire: function (body) {
       wireMedCategoryGrid(body, {
         patient: patient,

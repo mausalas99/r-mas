@@ -8,10 +8,14 @@
  * kept framework-agnostic and unit-testable, no DOM-sweeping here.
  */
 import { applyAcumuladoOverride, clearAcumuladoOverride } from '../../../../lib/cardio/descongestion.mjs';
-import { upsertPocusDay, emptyCongestionChecklist } from '../../../../lib/cardio/congestion.mjs';
+import { upsertPocusDay, emptyCongestionChecklist, emptyLungZones, LUNG_ZONE_KEYS } from '../../../../lib/cardio/congestion.mjs';
+import { upsertScoreEntry } from '../../../../lib/cardio/hf-scores.mjs';
 
 var POCUS_CHECKLIST_KEYS = ['pvy', 'rhy', 'soplo', 'estertores', 'ascitisHepatomegalia', 'edemaMi'];
 var POCUS_DAY_KEYS = ['date', 'vciCm', 'vciCollapse', 'vexus', 'fevi', 'congestionScore', 'lungPattern', 'lungLinesB', 'stevenson', 'note'];
+// Read from the POCUS form but written to `patient.cardio.scores` (hf-scores.mjs),
+// not stored on the pocusByDay day record itself — see saveCardioPocusDay.
+var POCUS_SCORE_KEYS = ['sixMwtMeters'];
 
 /**
  * @param {string} raw 'true' | 'false' | ''
@@ -85,7 +89,7 @@ export function recalcularCardioOverrides(patient, persist, onChange) {
  * @returns {Record<string, unknown>}
  */
 export function readPocusFormValues(mount) {
-  var record = { checklist: emptyCongestionChecklist() };
+  var record = { checklist: emptyCongestionChecklist(), lungZones: emptyLungZones() };
   POCUS_DAY_KEYS.forEach(function (key) {
     var el = mount.querySelector('[data-ea-cardio-pocus="' + key + '"]');
     if (el && 'value' in el) record[key] = String(el.value);
@@ -96,11 +100,22 @@ export function readPocusFormValues(mount) {
   });
   var llenado = mount.querySelector('[data-ea-cardio-pocus="llenadoCapilar"]');
   if (llenado && 'value' in llenado) record.checklist.llenadoCapilar = String(llenado.value);
+  LUNG_ZONE_KEYS.forEach(function (key) {
+    var el = mount.querySelector('[data-ea-cardio-pocus-zone="' + key + '"]');
+    if (el && 'value' in el) record.lungZones[key] = String(el.value);
+  });
+  POCUS_SCORE_KEYS.forEach(function (key) {
+    var el = mount.querySelector('[data-ea-cardio-pocus="' + key + '"]');
+    if (el && 'value' in el) record[key] = String(el.value);
+  });
   return record;
 }
 
 /**
  * Saves the current POCUS draft form as a day record on `patient.cardio.pocusByDay`.
+ * Also writes the 6MWT reading (when entered) into `patient.cardio.scores` —
+ * that's the canonical store for dated scores (hf-scores.mjs), shared with
+ * the Consulta IC screen, not a new field on the POCUS day record.
  * @param {HTMLElement} mount
  * @param {{ cardio?: Record<string, any> }} patient
  * @param {() => void} persist
@@ -111,6 +126,13 @@ export function saveCardioPocusDay(mount, patient, persist, onChange) {
   var record = readPocusFormValues(mount);
   if (!record.date) return;
   patient.cardio.pocusByDay = upsertPocusDay(patient.cardio.pocusByDay, record);
+  var sixMwt = String(record.sixMwtMeters || '').trim();
+  if (sixMwt !== '' && Number.isFinite(Number(sixMwt))) {
+    patient.cardio.scores = upsertScoreEntry(patient.cardio.scores, {
+      date: record.date,
+      sixMwtMeters: Number(sixMwt),
+    });
+  }
   persist();
   onChange();
 }

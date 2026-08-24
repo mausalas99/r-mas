@@ -22,6 +22,7 @@ import { medicionHasCoreData } from './estado-actual-data-core-check.mjs';
 import { mergeMonitoreo } from './estado-actual-data-merge.mjs';
 import { monitoreoHasLanPayload } from '../patient-merge.mjs';
 import { emptyEstadoClinico, emptyMonitoreo, emptyPendienteReceta } from './estado-actual-data-model.mjs';
+import { ensureCardio } from '../../../lib/cardio/patient-cardio.mjs';
 
 export { MED_FIELD_KEYS, DIET_CALORIC_KEYS, buildEaMonitoreoRevision, medicionHasCoreData, mergeMonitoreo };
 export { emptyEstadoClinico, emptyMonitoreo };
@@ -99,6 +100,7 @@ export function ensureMonitoreo(patient) {
     /** @type {any} */ (patient).monitoreo = emptyMonitoreo();
   }
   backfillEstadoClinico(/** @type {any} */ (patient).monitoreo);
+  ensureCardio(patient);
   return patient;
 }
 
