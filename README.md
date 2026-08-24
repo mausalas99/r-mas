@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.2.0](https://github.com/mausalas99/r-mas/releases/tag/v8.2.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.2.1](https://github.com/mausalas99/r-mas/releases/tag/v8.2.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -50,6 +50,12 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.2.1 (estable — release 8.2.1)
+
+- **Fix:** los labs pesados (recortados para caber en el límite de envío a Nube) ya no se re-sincronizan completos en cada sync.
+
+Notas: `docs/RELEASE_NOTES_8.2.1.txt`.
 ## R+ 8.2.0 (estable — release 8.2.0)
 
 - **Llave de rescate de sala:** el admin puede recuperar el acceso a una sala si se pierde el código y ningún dispositivo tiene la llave en caché.

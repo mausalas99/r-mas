@@ -1,0 +1,22 @@
+R+ 8.2.1 (estable — release 8.2.1)
+======================================
+
+Fecha: 2026-08-24
+
+## Resumen
+
+Corrige que los labs se reenviaran completos a Nube en cada sincronización.
+
+## Nuevo / mejorado
+
+- **Fix:** los labs "pesados" (que Nube recorta para caber en el límite de envío) ya no se re-envían en cada sync. El error estaba en que se guardaba la huella del valor recortado en vez del valor completo, así que nunca coincidía con la próxima comparación y el lab se veía "cambiado" para siempre.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.2.1-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.2.1-Mac-Intel.dmg`
+- Windows: `R+-8.2.1-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

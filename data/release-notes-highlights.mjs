@@ -2612,10 +2612,19 @@ var RELEASE_NOTES_820 = [
   },
 ];
 
+var RELEASE_NOTES_821 = [
+  {
+    title: 'Labs ya no se reenvían completos',
+    body:
+      'Corrige un error que hacía que los labs "pesados" se re-sincronizaran enteros con Nube en cada sync, en vez de solo lo nuevo.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_820;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_821;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.2.1': RELEASE_NOTES_821,
   '8.2.0': RELEASE_NOTES_820,
   '8.1.9': RELEASE_NOTES_819,
   '8.1.8': RELEASE_NOTES_818,
