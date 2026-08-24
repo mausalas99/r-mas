@@ -55,6 +55,23 @@ describe('copy-team-labs', () => {
     assert.equal(toast.mock.calls[0].arguments[1], 'success');
   });
 
+  it('excludes pinned patients that are archived', () => {
+    _applyRepoSnapshot({
+      patients: [
+        { id: 'p1', nombre: 'Ana Ruiz', pinned: true },
+        { id: 'p2', nombre: 'Beto Cruz', pinned: true, archived: true },
+      ],
+      labHistory: {
+        p1: [{ fecha: '16/08/2026', resLabs: ['BH\nHb 12.9*'] }],
+        p2: [{ fecha: '16/08/2026', resLabs: ['BH\nHb 10*'] }],
+      },
+    });
+
+    var built = buildTeamLabsCopyText();
+    assert.equal(built.patientCount, 1);
+    assert.doesNotMatch(built.text, /Beto Cruz/);
+  });
+
   it('copyTeamLabsForToday toasts info when no pinned labs today', () => {
     _applyRepoSnapshot({ patients: [{ id: 'p1', nombre: 'Ana Ruiz', pinned: false }] });
     var toast = mock.fn();

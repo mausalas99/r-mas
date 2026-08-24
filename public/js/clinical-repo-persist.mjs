@@ -109,6 +109,10 @@ async function runPersistNow(opts = {}) {
       if (!res || res.ok === false) {
         return { ok: false, error: String(res?.error || 'persist_failed') };
       }
+      // echoSnapshot is off (avoids clobbering local edits with a round-tripped
+      // server copy), but the read model still needs to see what we just persisted —
+      // otherwise getPatients()/getLabHistory() stay frozen at boot forever.
+      _applyRepoSnapshot(snapshot, { source: 'persist-echo-local' });
       return { ok: true, ...res };
     });
   } else {

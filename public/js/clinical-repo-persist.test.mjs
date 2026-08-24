@@ -110,13 +110,13 @@ describe('clinical-repo-persist', () => {
     assert.equal(commands[0].command.labHistory, undefined);
   });
 
-  it('persistClinicalState does not echo snapshot blobs into the read model', async () => {
+  it('persistClinicalState skips the IPC server echo but still applies the local snapshot to the read model', async () => {
     appState.setPatients([{ id: 'p1', nombre: 'Ana' }]);
     appState.setNotes({ p1: 'nota' });
     await persistClinicalState({ immediate: true });
     assert.equal(commands[0].meta.echoSnapshot, false);
-    assert.equal(getPatients().length, 0);
-    assert.deepEqual(getNotes(), {});
+    assert.equal(getPatients()[0].id, 'p1');
+    assert.equal(getNotes('p1'), 'nota');
   });
 
   it('persistClinicalState does not require isClinicalRepoPersistEnabled', async () => {

@@ -22,6 +22,7 @@ import { markTabShortcutsAdopted } from './keyboard-shortcuts-nudge.mjs';
 import { copyTeamLabsForToday } from './features/patients-list/copy-team-labs.mjs';
 import { copyTeamEstadoActualForToday } from './features/patients-list/copy-team-estado-actual.mjs';
 import { getActiveInnerTab } from './features/expediente-navigation.mjs';
+import { rt } from './features/app-tabs-runtime.mjs';
 
 var shellKeyboardWired = false;
 var lastShellShortcutAt = 0;
@@ -100,7 +101,7 @@ function noteTabNavigationShortcutUsed() {
 function openShortcutsModalFromShortcut() {
   void import('./features/settings-help/shortcuts-modal.mjs').then(function (mod) {
     if (typeof mod.openShortcutsModal === 'function') mod.openShortcutsModal();
-  });
+  }).catch(function () {});
 }
 
 /** ⌘/ or Ctrl+/ — show shortcuts cheat sheet (not bare ⌘ hold: conflicts with macOS ⌘Tab). */
@@ -147,8 +148,11 @@ function handleShellPaletteShortcut(e, key) {
 function handleShellCopyTeamLabsShortcut(e, key, showToast) {
   if (key !== 'c' || !e.shiftKey || e.altKey) return false;
   e.preventDefault();
-  if (getActiveInnerTab() === 'estadoActual') copyTeamEstadoActualForToday(showToast);
-  else copyTeamLabsForToday(showToast);
+  if (rt.getActiveAppTab() === 'nota' && getActiveInnerTab() === 'estadoActual') {
+    copyTeamEstadoActualForToday(showToast);
+  } else {
+    copyTeamLabsForToday(showToast);
+  }
   return true;
 }
 

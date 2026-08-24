@@ -51,6 +51,25 @@ describe('copy-team-estado-actual', () => {
     assert.equal(toast.mock.calls[0].arguments[1], 'success');
   });
 
+  it('excludes pinned patients that are archived', () => {
+    _applyRepoSnapshot({
+      patients: [
+        { id: 'p1', nombre: 'Ana Ruiz', pinned: true, monitoreo: { estadoClinico: { resumen: 'Estable' } } },
+        {
+          id: 'p2',
+          nombre: 'Beto Cruz',
+          pinned: true,
+          archived: true,
+          monitoreo: { estadoClinico: { resumen: 'Estable' } },
+        },
+      ],
+    });
+
+    var built = buildTeamEstadoActualCopyText();
+    assert.equal(built.patientCount, 1);
+    assert.doesNotMatch(built.text, /Beto Cruz/);
+  });
+
   it('copyTeamEstadoActualForToday toasts info when no pinned estado actual', () => {
     _applyRepoSnapshot({ patients: [{ id: 'p1', nombre: 'Ana Ruiz', pinned: false }] });
     var toast = mock.fn();

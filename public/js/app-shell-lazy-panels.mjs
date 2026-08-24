@@ -25,5 +25,5 @@ export function shellSyncTeamSyncHeaderButton() {
 export function openCommandPaletteFromShell() {
   void import('./features/command-palette.mjs').then(function (mod) {
     mod.openCommandPalette();
-  });
+  }).catch(function () {});
 }

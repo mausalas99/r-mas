@@ -8,6 +8,8 @@ import {
   normalizeShellShortcutKey,
 } from './app-shell-keyboard.mjs';
 import { SHORTCUT_GROUPS } from './features/settings-help/shortcuts-data.mjs';
+import { rt } from './features/app-tabs-runtime.mjs';
+import { _applyRepoSnapshot, resetClinicalReadModelForTests } from './clinical-read-model.mjs';
 
 const UI_DENSITY_LS = 'rpc-ui-density';
 
@@ -147,5 +149,50 @@ describe('app-shell-keyboard work mode shortcuts', () => {
     );
     assert.equal(prevented, true);
     assert.equal(stopped, true);
+  });
+
+  it('⌘⇧C copia labs (no estado actual) cuando la pestaña activa es Laboratorio', async () => {
+    resetClinicalReadModelForTests();
+    _applyRepoSnapshot({
+      patients: [{ id: 'p1', nombre: 'Ana Ruiz', pinned: true }],
+      labHistory: { p1: [{ fecha: '16/08/2026', resLabs: ['BH\nHb 12.9*'] }] },
+    });
+    var prevClipboard = globalThis.navigator;
+    Object.defineProperty(globalThis, 'navigator', {
+      value: { clipboard: { writeText: async () => {} } },
+      configurable: true,
+    });
+    var prevAppTab = rt.getActiveAppTab;
+    var prevInner = rt.getActiveInner;
+    rt.getActiveAppTab = function () {
+      return 'lab';
+    };
+    rt.getActiveInner = function () {
+      return 'estadoActual';
+    };
+    var toastMsg = '';
+    try {
+      runShellModifierKeydownForTests(
+        {
+          metaKey: true,
+          ctrlKey: false,
+          altKey: false,
+          shiftKey: true,
+          key: 'c',
+          code: 'KeyC',
+          preventDefault() {},
+          target: { tagName: 'BODY', isContentEditable: false },
+        },
+        function (msg) {
+          toastMsg = msg;
+        }
+      );
+      await new Promise((r) => setTimeout(r, 0));
+    } finally {
+      rt.getActiveAppTab = prevAppTab;
+      rt.getActiveInner = prevInner;
+      Object.defineProperty(globalThis, 'navigator', { value: prevClipboard, configurable: true });
+    }
+    assert.match(toastMsg, /Laboratorios copiados/);
   });
 });

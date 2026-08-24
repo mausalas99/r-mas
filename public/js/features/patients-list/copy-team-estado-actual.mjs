@@ -9,7 +9,7 @@ import { copyTableText } from '../../tend-export.mjs';
 
 export function buildTeamEstadoActualCopyText() {
   var pinned = getPatients().filter(function (p) {
-    return p && p.pinned;
+    return p && p.pinned && !p.archived;
   });
 
   var blocks = [];
