@@ -28,6 +28,17 @@ import {
 } from './crypto.mjs';
 import { auditDekEvent, DEK_EVENTS } from './cloud-sync-audit.mjs';
 
+/**
+ * Off until the Worker's NUBE_VERSION_GATE_ENABLED is on and fleet adoption
+ * is confirmed via version-stats. While an old (pre-8.2.0) build can still
+ * reach a room's push/pull endpoints, it can overwrite a field's ciphertext
+ * with plaintext (last-writer-wins), corrupting the room for everyone —
+ * not just failing to read it. Gates DEK *creation* only (room creation +
+ * backfill); an already-existing DEK still loads and decrypts normally.
+ * See docs/superpowers/plans/2026-08-23-nube-e2ee-deploy.md Stage 0.
+ */
+export const NUBE_E2EE_ENABLED = false;
+
 /** @type {Map<string, CryptoKey>} roomId -> unwrapped DEK, in-memory only. */
 const dekByRoomId = new Map();
 

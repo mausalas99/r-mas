@@ -11,6 +11,7 @@ import {
   ensureRoomDek,
   loadRoomDek,
   exportCachedDeksForPersistence,
+  NUBE_E2EE_ENABLED,
 } from './room-dek.mjs';
 import { backfillRoomEncryption } from './room-dek-migrate.mjs';
 import { getCloudSyncClientId } from './client-id.mjs';
@@ -124,7 +125,10 @@ export async function afterAuthSuccess(deps, user) {
   // Existing rooms never got a DEK (only room *creation* triggers one) — the owner's
   // next login silently backfills it and re-encrypts already-stored plaintext content.
   // Fire-and-forget: must never block or fail login.
-  if (room?.id) {
+  // Gated by NUBE_E2EE_ENABLED (off) — see room-dek.mjs for why: an old build
+  // that can't be blocked yet could overwrite ciphertext with plaintext and
+  // corrupt the room for everyone, not just fail to read it.
+  if (room?.id && NUBE_E2EE_ENABLED) {
     void backfillRoomEncryption(deps.getApi(), room, getCloudSyncClientId()).then(
       (result) => {
         if (result && (result.failed > 0 || result.remaining !== 0)) {
@@ -296,16 +300,18 @@ export async function handleCreateRoom(deps) {
     const data = await deps.getApi().createRoom({ name, sala: deps.normalizedSala });
     const room = data.room;
     persistCloudRoom(deps, room);
-    const dekOk = await ensureRoomDek(deps.getApi(), room.id, room.code)
-      .then(() => true)
-      .catch(() => false);
+    const dekOk = NUBE_E2EE_ENABLED
+      ? await ensureRoomDek(deps.getApi(), room.id, room.code)
+          .then(() => true)
+          .catch(() => false)
+      : false;
     await persistRoomDeks();
     deps.renderConnected(room);
     deps.toast(
-      dekOk
+      dekOk || !NUBE_E2EE_ENABLED
         ? 'Sala creada: ' + room.code
         : 'Sala creada: ' + room.code + ' (sin cifrado — reintenta desde ⇄ si es necesario).',
-      dekOk ? 'success' : 'error'
+      dekOk || !NUBE_E2EE_ENABLED ? 'success' : 'error'
     );
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo crear la sala.', 'error');
