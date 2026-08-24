@@ -1,16 +1,22 @@
-version: 8.1.9
+version: 8.2.0
 files:
-  - url: R+-8.1.9-x64.exe
-    sha512: jT2DGJ5D7bfZ78qnERD1o+H8pigkixYPuMCeu1t5uLu/thqNeWFkpjljM2HJFCHj0q5gHC1BuIGF3grkHCPN9w==
-    size: 122926739
-path: R+-8.1.9-x64.exe
-sha512: jT2DGJ5D7bfZ78qnERD1o+H8pigkixYPuMCeu1t5uLu/thqNeWFkpjljM2HJFCHj0q5gHC1BuIGF3grkHCPN9w==
-releaseDate: '2026-08-23T18:57:32.000Z'
+  - url: R+-8.2.0-x64.exe
+    sha512: 6kXc29OCG/NfmwWATpprqXRltyDcO0P6vWZp8hiDBB8MxjPQKrz1nnJSGgD+/MVF83vTsCSmRbaW4Oa8SKY/ow==
+    size: 122967869
+path: R+-8.2.0-x64.exe
+sha512: 6kXc29OCG/NfmwWATpprqXRltyDcO0P6vWZp8hiDBB8MxjPQKrz1nnJSGgD+/MVF83vTsCSmRbaW4Oa8SKY/ow==
+releaseDate: '2026-08-24T21:34:33.000Z'
 releaseNotes: |
-  Relación BUN/CR automática en Química Clínica y Tendencias, copiar gráfica de Tendencias como imagen, y orden de leyenda por arrastre.
+  Llave de rescate para salas de Nube, animaciones al agregar/quitar filas, y correcciones de sincronización.
   
-  Relación BUN/CR: cuando el reporte trae BUN y creatinina, R+ calcula y muestra BUN/CR junto a ellos, en Química Clínica y en Tendencias (con su propio rango de normalidad).
+  Llave de rescate de sala (admin): si se pierde el código de la sala y ningún dispositivo tiene la llave en caché, el admin puede recuperar el acceso con su propia llave. Se guarda una copia extra de la llave de la sala, cifrada solo para el admin.
   
-  Tendencias — copiar gráfica: botón nuevo en cada panel para copiar la gráfica como imagen PNG, con título y leyenda de series activas.
+  Rotación de llave de sala: al rotar el código de una sala, la llave cifrada se puede reemplazar sin perder acceso a los datos ya guardados.
   
-  Tendencias — orden de leyenda: arrastra los renglones de la leyenda de un panel para reordenar las series. R+ recuerda el orden por paciente y panel.
+  Animaciones en listas (censo, pendientes): las filas nuevas aparecen con transición y las que se quitan se desvanecen, en vez de aparecer/desaparecer de golpe.
+  
+  Corrección de fusión de pacientes: al comparar signos vitales de dos registros para decidir cuál es más reciente, ahora se usa la hora real de guardado en vez de la hora clínica editable, evitando empates que perdían datos.
+  
+  Panel de guardia por celular (Interno) desactivado temporalmente: mientras se migra a cifrado de extremo a extremo, el panel y el registro de signos vitales por celular responden "temporalmente desactivado" en vez de fallar.
+  
+  Corrección de copia de equipo: la copia de labs/estado actual del equipo ya no sirve datos viejos tras guardar, y ahora excluye pacientes archivados. El atajo de copiar estado actual solo se activa en la sub-pestaña correcta de Nota.

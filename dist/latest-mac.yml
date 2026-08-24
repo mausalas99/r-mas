@@ -1,25 +1,31 @@
-version: 8.1.9
+version: 8.2.0
 files:
-  - url: R+-8.1.9-autoupdate-mac-arm64.zip
-    sha512: EASCuZxtWTlECjPTBUNFuN8PCK2KNEEuYRqrak99+qRNdhQpl66fZcQ05MknOdSLvAcnyyZ9SxUQ7XX7qfuDtg==
-    size: 140348693
-  - url: R+-8.1.9-arm64.dmg
-    sha512: HyW+KIQFJWSBDIlOzsZ59+u5hJX00kFJ6HC27qRrk4Tf0kcJ2nEWhi9BQrqW8kIgYKQlHwDcWrjcO4X6qfURBg==
-    size: 146229571
-  - url: R+-8.1.9-autoupdate-mac-x64.zip
-    sha512: 5fZ9SNnbkaN9e79vBzF/Sw5MYMXpuoLxaxuR2T8WGZZv38GC9IOR5TmNmmMvrzYK1oZmNEZNJgGzXALrHj71Rg==
-    size: 148722129
-  - url: R+-8.1.9-x64.dmg
-    sha512: cqDhTb2d8wbcieudtnIdVCQDSjyvhOeHDerR/26mvAPOSCsPF/NbE9ZULOd7RK6veHn+nh5n1rM1sFGawlf8cQ==
-    size: 154662713
-path: R+-8.1.9-autoupdate-mac-arm64.zip
-sha512: EASCuZxtWTlECjPTBUNFuN8PCK2KNEEuYRqrak99+qRNdhQpl66fZcQ05MknOdSLvAcnyyZ9SxUQ7XX7qfuDtg==
-releaseDate: '2026-08-23T18:57:32.000Z'
+  - url: R+-8.2.0-autoupdate-mac-arm64.zip
+    sha512: vZJxu+/zdw0TeVROZ3JsImfYeZoPmMMMOArWgIwLzHGWsJEkILA2yUMAkMRz6LgfutIJDdacj4eIqWZ4L1p2UA==
+    size: 140385585
+  - url: R+-8.2.0-arm64.dmg
+    sha512: HDk6Flt9E+KlRawzzW4Z/mH0XALRHyQzGjrT5H5r0zEfwvmxA2qra3Ubmdf5zqoAm6zX2P5MdYr3cOozPW/1ZA==
+    size: 146250422
+  - url: R+-8.2.0-autoupdate-mac-x64.zip
+    sha512: 3Possyq5g8MLPmASKgwzh9uofKT1i3nV1RLK7Jvl37fgGNhl1erDic1CgZYqqorYgFqbF628gowJ4Rijr5UKzg==
+    size: 148759075
+  - url: R+-8.2.0-x64.dmg
+    sha512: Y4lhtXhfZYwxN0timp8KdataeFckMVI2OnwfpyEJdcz6DmF5qvgysgtR2y6DV9n2W8xjgw87EWQq4b91aiX9FQ==
+    size: 154736316
+path: R+-8.2.0-autoupdate-mac-arm64.zip
+sha512: vZJxu+/zdw0TeVROZ3JsImfYeZoPmMMMOArWgIwLzHGWsJEkILA2yUMAkMRz6LgfutIJDdacj4eIqWZ4L1p2UA==
+releaseDate: '2026-08-24T21:34:33.000Z'
 releaseNotes: |
-  Relación BUN/CR automática en Química Clínica y Tendencias, copiar gráfica de Tendencias como imagen, y orden de leyenda por arrastre.
+  Llave de rescate para salas de Nube, animaciones al agregar/quitar filas, y correcciones de sincronización.
   
-  Relación BUN/CR: cuando el reporte trae BUN y creatinina, R+ calcula y muestra BUN/CR junto a ellos, en Química Clínica y en Tendencias (con su propio rango de normalidad).
+  Llave de rescate de sala (admin): si se pierde el código de la sala y ningún dispositivo tiene la llave en caché, el admin puede recuperar el acceso con su propia llave. Se guarda una copia extra de la llave de la sala, cifrada solo para el admin.
   
-  Tendencias — copiar gráfica: botón nuevo en cada panel para copiar la gráfica como imagen PNG, con título y leyenda de series activas.
+  Rotación de llave de sala: al rotar el código de una sala, la llave cifrada se puede reemplazar sin perder acceso a los datos ya guardados.
   
-  Tendencias — orden de leyenda: arrastra los renglones de la leyenda de un panel para reordenar las series. R+ recuerda el orden por paciente y panel.
+  Animaciones en listas (censo, pendientes): las filas nuevas aparecen con transición y las que se quitan se desvanecen, en vez de aparecer/desaparecer de golpe.
+  
+  Corrección de fusión de pacientes: al comparar signos vitales de dos registros para decidir cuál es más reciente, ahora se usa la hora real de guardado en vez de la hora clínica editable, evitando empates que perdían datos.
+  
+  Panel de guardia por celular (Interno) desactivado temporalmente: mientras se migra a cifrado de extremo a extremo, el panel y el registro de signos vitales por celular responden "temporalmente desactivado" en vez de fallar.
+  
+  Corrección de copia de equipo: la copia de labs/estado actual del equipo ya no sirve datos viejos tras guardar, y ahora excluye pacientes archivados. El atajo de copiar estado actual solo se activa en la sub-pestaña correcta de Nota.
