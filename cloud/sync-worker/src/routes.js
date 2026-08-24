@@ -43,7 +43,11 @@ export async function handleApiRoute(request, env) {
       // logged in on an old build (password-wrapped room key) must not keep
       // reading/writing room content once the fleet has moved to the
       // room-code method, even mid-session.
-      assertNubeAppVersion(request.headers.get('X-App-Version'));
+      // Gated by NUBE_VERSION_GATE_ENABLED (off by default) — turn on only
+      // once 8.2.0 has shipped, otherwise this blocks every current user.
+      if (env.NUBE_VERSION_GATE_ENABLED) {
+        assertNubeAppVersion(request.headers.get('X-App-Version'));
+      }
       const roomsSub = subpath === '/rooms' ? '/' : subpath.slice('/rooms'.length) || '/';
       return await handleRooms(request, env, roomsSub);
     }

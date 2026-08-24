@@ -29,3 +29,9 @@ crons = ["0 6 * * *"]
 
 [observability]
 enabled = true
+
+[vars]
+# Off until 8.2.0 ships — while off, app_version is still tracked on every
+# login/register, but no one is blocked. Flip to true only after 8.2.0 is
+# released to users.
+NUBE_VERSION_GATE_ENABLED = false

@@ -27,14 +27,14 @@ import {
 
 export { normalizeUsername, validateUsername, validatePassword } from './auth-util.js';
 
-/** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request @param {string} ip */
-async function handleRegister(db, request, ip) {
+/** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request @param {string} ip @param {boolean} gateEnabled */
+async function handleRegister(db, request, ip, gateEnabled) {
   const body = await parseJsonBody(request);
   const username = normalizeUsername(body?.username);
   const password = body?.password ?? '';
   const displayName = String(body?.displayName ?? '').trim();
 
-  assertNubeAppVersion(body?.appVersion);
+  if (gateEnabled) assertNubeAppVersion(body?.appVersion);
   validateUsername(username);
   validatePassword(password);
 
@@ -86,8 +86,8 @@ async function handleRegister(db, request, ip) {
   });
 }
 
-/** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request @param {string} ip */
-async function handleLogin(db, request, ip) {
+/** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request @param {string} ip @param {boolean} gateEnabled */
+async function handleLogin(db, request, ip, gateEnabled) {
   const body = await parseJsonBody(request);
   const username = normalizeUsername(body?.username);
   const password = body?.password ?? '';
@@ -95,7 +95,7 @@ async function handleLogin(db, request, ip) {
   if (!username || !password) {
     throw new SyncError('invalid_request', 'Usuario y contraseña requeridos.');
   }
-  assertNubeAppVersion(body?.appVersion);
+  if (gateEnabled) assertNubeAppVersion(body?.appVersion);
 
   const rlKey = rateLimitKey(ip, username);
   checkRateLimit(rateLimitKey(ip));
@@ -178,12 +178,13 @@ export async function handleAuth(request, env, subpath) {
 
   const ip = clientIp(request);
   const method = request.method;
+  const gateEnabled = Boolean(env.NUBE_VERSION_GATE_ENABLED);
 
   if (subpath === '/register' && method === 'POST') {
-    return handleRegister(db, request, ip);
+    return handleRegister(db, request, ip, gateEnabled);
   }
   if (subpath === '/login' && method === 'POST') {
-    return handleLogin(db, request, ip);
+    return handleLogin(db, request, ip, gateEnabled);
   }
   if (subpath === '/logout' && method === 'POST') {
     return handleLogout(db, request);
