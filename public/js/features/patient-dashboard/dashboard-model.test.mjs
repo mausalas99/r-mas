@@ -81,6 +81,36 @@ describe('dashboard identity', () => {
   });
 });
 
+describe('dashboard cardio glance', () => {
+  it('composes patient.cardio into model.cardio via buildCardioGlanceModel', () => {
+    const model = buildDashboardModel({
+      patient: {
+        nombre: 'X',
+        cardio: { fenotipo: 'HFrEF', etiologia: 'Isquémica', vexusIngreso: 2 },
+      },
+      inner: 'resumen',
+    });
+    assert.equal(model.cardio.fenotipo, 'HFrEF');
+    assert.equal(model.cardio.etiologia, 'Isquémica');
+    assert.equal(model.cardio.congestion.vexus, 2);
+  });
+
+  it('defaults model.cardio safely when the patient has no cardio field', () => {
+    const model = buildDashboardModel({ patient: { nombre: 'X' }, inner: 'resumen' });
+    assert.equal(model.cardio.fenotipo, '');
+    assert.equal(model.cardio.gdmt.length, 4);
+  });
+
+  it('passes labSets through so model.cardio.chips.ntProBnp reads the latest imported value', () => {
+    const model = buildDashboardModel({
+      patient: { nombre: 'X', cardio: {} },
+      inner: 'resumen',
+      labSets: [{ resLabs: ['CARD: NT-PROBNP 1800 pg/mL'] }],
+    });
+    assert.equal(model.cardio.chips.ntProBnp, '1800');
+  });
+});
+
 describe('dashboard assembler', () => {
   it('vitals snapshot matches deriveSnapshot when tas/tad split across historial rows', () => {
     const model = buildDashboardModel({

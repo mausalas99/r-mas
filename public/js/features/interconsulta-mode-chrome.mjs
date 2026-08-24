@@ -18,7 +18,13 @@ import { isModeSala } from '../mode-features.mjs';
 import { isGuardiaMode } from './chrome.mjs';
 import { settingsRef } from './profile-runtime.mjs';
 import { getPatients } from '../app-state.mjs';
-import { getConsultInfo, renderConsultBandHtml } from './patient-dashboard/consult-band.mjs';
+import { consultaExternaModeLabel } from './cardio/rplushf-gates.mjs';
+import { switchInnerTab } from './expediente-navigation.mjs';
+import {
+  buildHfFollowUpBandModel,
+  renderHfFollowUpBandHtml,
+  wireHfFollowUpBand,
+} from './patient-dashboard/consult-band.mjs';
 
 var rt = {
   getActiveId() {
@@ -40,7 +46,9 @@ export function isInterconsultaModeActive() {
 export function buildInterconsultaBarHtml() {
   return (
     '<div class="wb-ic-bar">' +
-    '<div class="wb-ic-bar-name"><span class="wb-mode-frame-name">Interconsulta</span></div>' +
+    '<div class="wb-ic-bar-name"><span class="wb-mode-frame-name">' +
+    escHtml(consultaExternaModeLabel()) +
+    '</span></div>' +
     '<div class="wb-ic-bar-mid"></div>' +
     '<div class="wb-ic-bar-actions">' +
     '<details class="wb-menu" data-wb-ic-menu>' +
@@ -103,12 +111,22 @@ function activeInterconsultaPatient() {
   );
 }
 
-/** Repaints the consult-info band for whichever patient is active. No-op when hidden. */
+/** Repaints the HF follow-up band for whichever patient is active. No-op when hidden. */
 export function renderConsultBandForActivePatient() {
   var bandMount = document.getElementById('interconsulta-consult-band');
   if (!bandMount || bandMount.hidden) return;
   var patient = activeInterconsultaPatient();
-  bandMount.innerHTML = patient ? renderConsultBandHtml(getConsultInfo(patient)) : '';
+  if (!patient) {
+    bandMount.innerHTML = '';
+    return;
+  }
+  bandMount.innerHTML = renderHfFollowUpBandHtml(buildHfFollowUpBandModel(patient));
+  wireHfFollowUpBand(bandMount, patient, {
+    onChange: renderConsultBandForActivePatient,
+    onOpenConsultaHoy: function () {
+      switchInnerTab('consultaIC', { forceRender: true });
+    },
+  });
 }
 
 function refreshPatients() {

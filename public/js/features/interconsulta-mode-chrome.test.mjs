@@ -7,11 +7,12 @@ import {
   renderConsultBandForActivePatient,
   syncInterconsultaModeChrome,
 } from './interconsulta-mode-chrome.mjs';
+import { setPatients } from '../app-state.mjs';
 
 describe('buildInterconsultaBarHtml', () => {
   it('renders the primary action, a demoted "Generar nota" menu item, and the shortcut', () => {
     var html = buildInterconsultaBarHtml();
-    assert.match(html, /wb-mode-frame-name">Interconsulta/);
+    assert.match(html, /wb-mode-frame-name">Consulta Externa/);
     assert.match(html, /data-wb-ic-primary>Actualizar pacientes/);
     assert.match(html, /data-wb-ic-generar-nota>Generar nota \(\.docx\)/);
     assert.match(html, /data-wb-shortcut/);
@@ -70,5 +71,44 @@ describe('syncInterconsultaModeChrome + renderConsultBandForActivePatient', () =
     renderConsultBandForActivePatient();
     // No matching patient in app-state -> empty band, but call must not throw.
     assert.equal(typeof bandMount.innerHTML, 'string');
+  });
+
+  it('renders the HF follow-up band (fase/fenotipo/etiología/internamiento/consulta) for a real patient', () => {
+    if (typeof document === 'undefined') return;
+    var bandMount = document.getElementById('interconsulta-consult-band');
+    bandMount.hidden = false;
+    setPatients([
+      {
+        id: '1',
+        cardio: {
+          fenotipo: 'HFrEF',
+          etiologia: 'Isquémica',
+          consultas: [
+            {
+              date: '2026-08-01',
+              faseSeguimiento: 'Optimización/estable',
+              ultimoInternamientoFecha: '2026-07-10',
+              ultimoInternamientoCausa: 'Descompensación congestiva',
+            },
+          ],
+        },
+      },
+    ]);
+    registerInterconsultaChromeRuntime({
+      getActiveId: () => '1',
+    });
+    renderConsultBandForActivePatient();
+    var html = bandMount.innerHTML;
+    assert.match(html, /Fase de seguimiento/);
+    assert.match(html, /Optimización\/estable/);
+    assert.match(html, /HFrEF/);
+    assert.match(html, /Isquémica/);
+    assert.match(html, /2026-07-10/);
+    assert.match(html, /Descompensación congestiva/);
+    assert.match(html, /2026-08-01/);
+    assert.match(html, /Abrir consulta de hoy/);
+    assert.doesNotMatch(html, /Servicio solicitante/);
+    assert.doesNotMatch(html, /Motivo de consulta/);
+    setPatients([]);
   });
 });

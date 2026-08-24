@@ -45,11 +45,16 @@ export const BOOT_LAZY_ONLY_SUFFIXES = [
   'features/platform/audit.mjs',
   'features/platform/import-backup.mjs',
   'features/platform/offline.mjs',
+  'features/cardio/consulta-ic-wire.mjs',
 ];
 
 let entregaPromise = null;
 /** @type {typeof import('./features/clinical-entrega.mjs') | null} */
 let entregaModule = null;
+
+let consultaIcPromise = null;
+/** @type {typeof import('./features/cardio/consulta-ic-wire.mjs') | null} */
+let consultaIcModule = null;
 
 let eaVitalHistoryPromise = null;
 /** @type {typeof import('./features/estado-actual-vital-history-modal.mjs') | null} */
@@ -111,6 +116,20 @@ export function ensureEntregaLoaded() {
     });
   }
   return entregaPromise;
+}
+
+/**
+ * @returns {Promise<typeof import('./features/cardio/consulta-ic-wire.mjs')>}
+ */
+export function ensureConsultaIcLoaded() {
+  if (consultaIcModule) return Promise.resolve(consultaIcModule);
+  if (!consultaIcPromise) {
+    consultaIcPromise = import('./features/cardio/consulta-ic-wire.mjs').then(function (mod) {
+      consultaIcModule = mod;
+      return mod;
+    });
+  }
+  return consultaIcPromise;
 }
 
 /** @param {Record<string, unknown>} ctx */

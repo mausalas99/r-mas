@@ -118,8 +118,10 @@ var EXPEDIENTE_INNER_TABS = {
   todo: 1,
   historia: 1,
   estadoActual: 1,
+  consultaIC: 1,
   eventualidades: 1,
   recetaHu: 1,
+  hojaIC: 1,
 };
 
 function isExpedienteInnerTab(tab) {

@@ -27,6 +27,7 @@ import {
   bustMedPanelCache,
 } from "./medications-runtime-state.mjs";
 import { setMedActiveLeadVisible } from "./medications-utils.mjs";
+import { renderCardioManejoCards, clearCardioManejoCards } from "./cardio/medications-cardio-mount.mjs";
 
 function getMedPanelDom() {
   return {
@@ -76,6 +77,7 @@ function renderMedPanelEmptyNoPatient(els) {
   if (els.previewEl) els.previewEl.textContent = "";
   if (els.outCard) els.outCard.style.display = "none";
   hideMedNotaFooter();
+  clearCardioManejoCards();
 }
 
 function renderMedPanelEmptyNoContent(activeId, cacheKey, els) {
@@ -90,6 +92,7 @@ function renderMedPanelEmptyNoContent(activeId, cacheKey, els) {
   if (els.previewEl) els.previewEl.textContent = "";
   if (els.outCard) els.outCard.style.display = "none";
   hideMedNotaFooter();
+  renderCardioManejoCards();
 }
 
 function syncMedEgresoTeaser(previewEl, outCard, block) {
@@ -113,6 +116,7 @@ function renderMedPanelRecetaContent(activeId, block, cacheKey, els) {
     buildMedDietHtml(collectDietasFromRecetaBlock(block)) + buildMedRecetaListHtml(activeId, block);
   renderMedNotaFooter();
   syncMedEgresoTeaser(els.previewEl, els.outCard, block);
+  renderCardioManejoCards();
 }
 
 function handleMedPanelPatientChange(activeId) {
@@ -185,6 +189,7 @@ export function renderMedRecetaPanel() {
   handleMedPanelPatientChange(activeId);
   if (getMedSubview() === "perfil") {
     bustMedPanelCache();
+    clearCardioManejoCards();
     renderMedPharmProfilePanel();
     return;
   }

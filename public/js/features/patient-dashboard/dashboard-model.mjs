@@ -4,6 +4,7 @@
 import { deriveSnapshot } from '../estado-actual-data.mjs';
 import { buildLabsGlanceForDay } from './labs-glance-model.mjs';
 import { buildEaGlance } from './ea-glance-model.mjs';
+import { buildCardioGlanceModel } from '../cardio/dashboard-cardio-glance.mjs';
 
 function resolveView(inner) {
   return inner === 'todo' ? 'pendientes' : 'resumen';
@@ -68,6 +69,8 @@ function lastVitalsAt(monitoreo) {
  *   pendientes?: unknown[],
  *   todayKey?: string,
  *   skipLabs?: boolean,
+ *   cardioTodayYmd?: string,
+ *   cardioAsOfDate?: string,
  * }} params
  */
 export function buildDashboardModel({
@@ -79,6 +82,8 @@ export function buildDashboardModel({
   pendientes,
   todayKey,
   skipLabs,
+  cardioTodayYmd,
+  cardioAsOfDate,
 } = {}) {
   const p = patient ?? {};
   const labs = skipLabs
@@ -95,5 +100,6 @@ export function buildDashboardModel({
     ea: eaInput ? buildEaGlance(eaInput) : { kpis: [], soap: [] },
     eventualidades: firstItems(eventualidades, 3),
     pendientes: lastItems(pendientes, 3),
+    cardio: buildCardioGlanceModel(p, { todayYmd: cardioTodayYmd, asOfDate: cardioAsOfDate, labSets }),
   };
 }

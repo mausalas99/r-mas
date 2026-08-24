@@ -26,6 +26,7 @@ import {
   syncAppModeRadioControls,
 } from "./profile-runtime.mjs";
 import { syncProfileModalLayout } from "./profile-load.mjs";
+import { hospitalizacionModeLabel, consultaExternaModeLabel } from "./cardio/rplushf-gates.mjs";
 
 /**
  * Loaded lazily (not a top-level import) so the 10b Interconsulta chrome
@@ -74,7 +75,10 @@ export function applyAppModeSwitchEffects() {
     rt.syncWorkContextChrome();
     renderPatientList();
     syncInterconsultaModeChrome();
-    rt.showToast("Modo cambiado a " + (nowSala ? "Sala" : "Interconsulta"), "success");
+    rt.showToast(
+      "Modo cambiado a " + (nowSala ? hospitalizacionModeLabel() : consultaExternaModeLabel()),
+      "success"
+    );
   } catch (err) {
     console.error("[R+] applyAppModeSwitchEffects:", err);
     getProfileRuntime().showToast("No se pudo actualizar la vista al cambiar de modo.", "error");

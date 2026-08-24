@@ -19,6 +19,8 @@ import { ensureChartsLoaded } from '../lazy-feature-routes.mjs';
 import { renderIndicaForm } from './notes-indicaciones.mjs';
 import { renderNotaEvolucionPrimaryTab } from './nota-evolucion/nota-evolucion-primary-tab.mjs';
 import { renderEventualidadesPanel } from './eventualidades-panel.mjs';
+import { renderEvaluacionInicialPanel } from './cardio/evaluacion-inicial-wire.mjs';
+import { ensureConsultaIcLoaded } from '../lazy-feature-routes.mjs';
 import {
   renderPatientDataPane,
   renderCultivosTable,
@@ -28,6 +30,7 @@ import { renderTodoForm } from './todos.mjs';
 import { renderPatientDashboard } from './patient-dashboard/dashboard-mount.mjs';
 import { resumenGlanceCacheSuffix } from './resumen-glance-cache.mjs';
 import { renderRecetaHu } from './receta-hu.mjs';
+import { renderHojaIC } from './hoja-ic.mjs';
 import { rt } from './app-tabs-runtime.mjs';
 import {
   syncConsolidatedPaneVisibility,
@@ -255,6 +258,7 @@ function renderLightGranularTab(tab) {
   if (tab === 'listado') renderListadoForm();
   if (tab === 'todo') renderTodoForm();
   if (tab === 'recetaHu') renderRecetaHu();
+  if (tab === 'hojaIC') renderHojaIC();
   markInnerTabRendered(tab);
 }
 
@@ -290,6 +294,18 @@ var GRANULAR_TAB_RENDERERS = {
   eventualidades: function (tab) {
     renderEventualidadesPanel(document.getElementById('exp-pane-eventualidades'));
     markInnerTabRendered(tab);
+  },
+  evaluacionInicial: function (tab) {
+    renderEvaluacionInicialPanel(document.getElementById('exp-pane-evaluacion-inicial'));
+    markInnerTabRendered(tab);
+  },
+  consultaIC: function (tab, opts) {
+    renderHeavyInnerTab(tab, function (done) {
+      void ensureConsultaIcLoaded().then(function (mod) {
+        mod.renderConsultaIc();
+        done();
+      });
+    }, opts);
   },
 };
 

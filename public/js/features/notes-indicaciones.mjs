@@ -1,6 +1,7 @@
 import { esc } from '../dom-escape.mjs';
 // Expediente · nota evolución, indicaciones, Word
 import { getPatients, getNotes, getIndicaciones, persistClinicalState } from "../app-state.mjs";
+import { accesoFechaToDateInputValue } from "../patient-date-fields.mjs";
 import { setAsyncButtonLoading } from "../ui-motion.mjs";
 import {
   applyNotaFormatScaffoldIfEmpty,
@@ -50,6 +51,11 @@ function aid() {
   return rt.getActiveId();
 }
 
+function dateInputValueToDMY(isoValue) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(isoValue == null ? '' : isoValue).trim());
+  return m ? (m[3] + '/' + m[2] + '/' + m[1]) : '';
+}
+
 // ── Prefill médico ─────────────────────────────────────────────────────
 export function applyProfileToNoteIfEmpty(note) {
   if (!note) return false;
@@ -93,8 +99,8 @@ function renderNoteForm() {
   }
   document.getElementById('note-form').innerHTML = (
     '<div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
-    '<div class="field-group"><label>Fecha</label><input type="text" value="' + esc(note.fecha) + '" oninput="updateNote(\'fecha\',this.value)" placeholder="DD/MM/AAAA"></div>' +
-    '<div class="field-group"><label>Hora</label><input type="text" value="' + esc(note.hora) + '" oninput="updateNote(\'hora\',this.value)" placeholder="HH:MM"></div>' +
+    '<div class="field-group"><label>Fecha</label><input type="date" value="' + esc(accesoFechaToDateInputValue(note.fecha)) + '" oninput="updateNoteFecha(this.value)"></div>' +
+    '<div class="field-group"><label>Hora</label><input type="time" value="' + esc(note.hora) + '" oninput="updateNote(\'hora\',this.value)"></div>' +
     '</div></div></div>' +
 
     '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Resumen de Interrogatorio, Exploración Física y Estado Mental</div><div class="card-body"><div class="field-group"><textarea rows="5" placeholder="Ingresa el resumen de interrogatorio, exploración física y estado mental..." oninput="updateNote(\'interrogatorio\',this.value)">' + esc(note.interrogatorio) + '</textarea></div></div></div>' +
@@ -133,6 +139,7 @@ function renderNoteForm() {
 
 // ── Campos Dx/Tx ──────────────────────────────────────────────────────
 function updateNote(field, value) { if (!getNotes()[aid()]) getNotes()[aid()]={}; getNotes()[aid()][field]=value; persistClinicalState(); }
+function updateNoteFecha(isoValue) { updateNote('fecha', dateInputValueToDMY(isoValue)); }
 function updateDx(i, val) { if (!getNotes()[aid()]) return; getNotes()[aid()].diagnosticos[i]=val.toUpperCase(); persistClinicalState(); }
 function addDx() { if (!getNotes()[aid()]) return; getNotes()[aid()].diagnosticos.push(''); persistClinicalState(); renderNoteForm(); }
 function removeDx(i) { if (!getNotes()[aid()]||getNotes()[aid()].diagnosticos.length<=1) return; getNotes()[aid()].diagnosticos.splice(i,1); persistClinicalState(); renderNoteForm(); }
@@ -245,17 +252,17 @@ function renderIndicaForm() {
   ];
   document.getElementById('indica-form').innerHTML = (
     '<div class="indica-meta-bar" role="group" aria-label="Fecha, hora y médicos">' +
-    '<div class="field-group indica-meta-field"><label>Fecha</label><input type="text" value="' + esc(ind.fecha) + '" placeholder="DD/MM/AAAA" oninput="updateIndica(\'fecha\',this.value)"></div>' +
-    '<div class="field-group indica-meta-field"><label>Hora</label><input type="text" value="' + esc(ind.hora) + '" placeholder="HH:MM" oninput="updateIndica(\'hora\',this.value)"></div>' +
-    '<div class="field-group indica-meta-field indica-meta-field--medicos"><label>Médicos</label><textarea rows="2" placeholder="R3 NOMBRE APELLIDO" oninput="updateIndica(\'medicos\',this.value)">' + esc(ind.medicos) + '</textarea></div>' +
+    '<div class="field-group indica-meta-field"><label>Fecha</label><input type="date" value="' + esc(accesoFechaToDateInputValue(ind.fecha)) + '" oninput="updateIndicaFecha(this.value)"></div>' +
+    '<div class="field-group indica-meta-field"><label>Hora</label><input type="time" value="' + esc(ind.hora) + '" oninput="updateIndica(\'hora\',this.value)"></div>' +
+    '<div class="field-group indica-meta-field indica-meta-field--medicos"><label>Médicos</label><textarea rows="5" placeholder="R3 NOMBRE APELLIDO" oninput="updateIndica(\'medicos\',this.value)">' + esc(ind.medicos) + '</textarea></div>' +
     '</div>' +
 
     buildExtraTemplatesSelectorHtml() +
 
-    SECTIONS.map(function(s){ return '<div class="indica-section"><div class="indica-section-header">'+s.label+'</div><div class="indica-section-body"><textarea rows="3" placeholder="'+s.placeholder+'" oninput="updateIndica(\''+s.key+'\',this.value)">'+esc(ind[s.key])+'</textarea></div></div>'; }).join('') +
+    SECTIONS.map(function(s){ return '<div class="indica-section"><div class="indica-section-header">'+s.label+'</div><div class="indica-section-body"><textarea rows="5" placeholder="'+s.placeholder+'" oninput="updateIndica(\''+s.key+'\',this.value)">'+esc(ind[s.key])+'</textarea></div></div>'; }).join('') +
 
     '<div class="card"><div class="card-header card-header--tone-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4"/></svg>Otros</div><div class="card-body" style="display:flex;flex-direction:column;gap:10px;"><div id="otros-list">' +
-    (ind.otros||[]).map(function(o,i){ return '<div class="otros-item"><button class="btn-remove-otro" onclick="removeOtro('+i+')">×</button><input type="text" placeholder="TÍTULO DE LA SECCIÓN" value="'+esc(o.titulo)+'" oninput="updateOtro('+i+',\'titulo\',this.value)"><textarea rows="2" placeholder="Indicaciones..." oninput="updateOtro('+i+',\'contenido\',this.value)">'+esc(o.contenido)+'</textarea></div>'; }).join('') +
+    (ind.otros||[]).map(function(o,i){ return '<div class="otros-item"><button class="btn-remove-otro" onclick="removeOtro('+i+')">×</button><input type="text" placeholder="TÍTULO DE LA SECCIÓN" value="'+esc(o.titulo)+'" oninput="updateOtro('+i+',\'titulo\',this.value)"><textarea rows="5" placeholder="Indicaciones..." oninput="updateOtro('+i+',\'contenido\',this.value)">'+esc(o.contenido)+'</textarea></div>'; }).join('') +
     '</div><button class="btn-add-row" onclick="addOtro()">+ Agregar sección</button></div></div>' +
 
     '<div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-indica"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateIndicaciones()" id="btn-gen-ind"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Indicaciones (.docx)</button></div>'
@@ -264,6 +271,7 @@ function renderIndicaForm() {
 }
 
 function updateIndica(field, value) { if (!getIndicaciones()[aid()]) return; getIndicaciones()[aid()][field]=value; persistClinicalState(); }
+function updateIndicaFecha(isoValue) { updateIndica('fecha', dateInputValueToDMY(isoValue)); }
 
 function updateOtro(i, field, value) { if (!getIndicaciones()[aid()]) return; getIndicaciones()[aid()].otros[i][field]=value; persistClinicalState(); }
 
@@ -405,6 +413,7 @@ function generateIndicaciones() {
 export {
   renderNoteForm,
   updateNote,
+  updateNoteFecha,
   updateDx,
   addDx,
   removeDx,
@@ -415,6 +424,7 @@ export {
   generateWord,
   renderIndicaForm,
   updateIndica,
+  updateIndicaFecha,
   updateOtro,
   addOtro,
   removeOtro,
@@ -423,6 +433,7 @@ export {
 
 export const windowHandlers = {
   updateNote,
+  updateNoteFecha,
   updateDx,
   addDx,
   removeDx,
@@ -433,6 +444,7 @@ export const windowHandlers = {
   generateWord,
   renderIndicaForm,
   updateIndica,
+  updateIndicaFecha,
   updateOtro,
   addOtro,
   removeOtro,

@@ -133,6 +133,8 @@
             <div class="card-header-actions lab-report-header-actions">
               <button type="button" id="btn-lab-paste" class="btn-med-secondary" onclick="openLabPasteModal()" title="Pegar reporte SOME y procesar">Pegar SOME</button>
               <button type="button" id="btn-lab-repo-batch" class="btn-med-secondary" onclick="openLabRepoBatchModal()" title="Actualiza labs desde el repositorio (paciente activo o mi equipo)">Actualizar labs</button>
+              <button type="button" id="btn-lab-manual-entry-toolbar" class="btn-med-secondary" onclick="openLabManualEntryModal()" title="Agregar labs externos a mano">Agregar labs externos</button>
+              <button type="button" id="btn-lab-photo-import" class="btn-med-secondary" onclick="openLabPhotoImport()" title="Leer una foto de un reporte de lab externo (OCR local, sin nube)">Subir foto de lab</button>
               <button type="button" class="card-header-soft-btn btn-lab-display-prefs" onclick="openLabDisplayPrefsModal()" title="Vista de laboratorio (BH extendida, gasometría extendida, salida rápida)" aria-label="Opciones de vista de laboratorio">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               </button>
@@ -426,6 +428,8 @@
           <div id="itab-content-clinico" class="tab-content exp-composite-pane">
             <div class="exp-segment-bar rpc-subtab-bar" id="exp-segment-clinico" role="tablist" aria-label="Secciones clínicas">
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-estadoActual" role="tab" data-exp-segment="estadoActual" aria-selected="false" aria-controls="itab-content-estadoActual" onclick="switchInnerTab('estadoActual')">Estado actual</button>
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-consultaIC" role="tab" data-exp-segment="consultaIC" aria-selected="false" aria-controls="itab-content-consultaIC" onclick="switchInnerTab('consultaIC')">Consulta IC</button>
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-evaluacionInicial" role="tab" data-exp-segment="evaluacionInicial" aria-selected="false" aria-controls="itab-content-evaluacionInicial" onclick="switchInnerTab('evaluacionInicial')">Eval. inicial</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-notas" role="tab" data-exp-segment="notas" aria-selected="false" aria-controls="itab-content-notas" onclick="switchInnerTab('notas')">Nota de evolución</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-indica" role="tab" data-exp-segment="indica" aria-selected="false" aria-controls="itab-content-indica" onclick="switchInnerTab('indica')">Indicaciones</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-eventualidades" role="tab" data-exp-segment="eventualidades" aria-selected="false" aria-controls="itab-content-eventualidades" onclick="switchInnerTab('eventualidades')">Eventualidades</button>
@@ -435,6 +439,10 @@
           </div>
           <div id="itab-content-estadoActual" class="tab-content">
             <div id="exp-pane-estado-actual"></div>
+          </div>
+          <div id="itab-content-consultaIC" class="tab-content"><div id="consulta-ic-container"></div></div>
+          <div id="itab-content-evaluacionInicial" class="tab-content">
+            <div id="exp-pane-evaluacion-inicial" class="rpc-form-stack"></div>
           </div>
           <div id="itab-content-eventualidades" class="tab-content">
             <div id="exp-pane-eventualidades" class="rpc-form-stack"></div>
@@ -448,9 +456,7 @@
           </div>
           <div id="itab-content-salida" class="tab-content exp-composite-pane">
             <div class="exp-segment-bar rpc-subtab-bar" id="exp-segment-salida" role="tablist" aria-label="Salida" style="display:none;">
-              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-listado" role="tab" data-exp-segment="listado" aria-selected="false" aria-controls="itab-content-listado" onclick="switchInnerTab('listado')">Listado</button>
-              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-vpo-salida" role="tab" data-exp-segment="vpo" aria-selected="false" aria-controls="itab-content-vpo" onclick="switchInnerTab('vpo')">VPO</button>
-              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-recetaHu" role="tab" data-exp-segment="recetaHu" aria-selected="false" aria-controls="itab-content-recetaHu" onclick="switchInnerTab('recetaHu')">Receta HU</button>
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-hojaIC" role="tab" data-exp-segment="hojaIC" aria-selected="false" aria-controls="itab-content-hojaIC" onclick="switchInnerTab('hojaIC')">Hoja IC</button>
             </div>
             <div class="exp-segment-body exp-segment-body--salida exp-salida-mount"></div>
           </div>
@@ -459,10 +465,10 @@
           <div id="itab-content-indica" class="tab-content"><div id="indica-form" class="rpc-form-stack"></div></div>
           <div id="itab-content-tend" class="tab-content"><div id="tendencias-container"></div></div>
           <div id="itab-content-cult" class="tab-content"><div id="cultivos-table-container"></div></div>
-          <div id="itab-content-listado" class="tab-content"><div id="listado-form" class="rpc-form-stack"></div></div>
           <div id="itab-content-todo" class="tab-content"><div id="todo-form" class="rpc-form-stack-tight"></div></div>
           <div id="itab-content-vpo" class="tab-content"><div id="vpo-container" class="rpc-form-stack"></div></div>
           <div id="itab-content-recetaHu" class="tab-content"><div id="receta-hu-container"></div></div>
+          <div id="itab-content-hojaIC" class="tab-content"><div id="hoja-ic-container"></div></div>
         </div>
         </div>
       </div>

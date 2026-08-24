@@ -2,7 +2,15 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { deriveSnapshot } from '../estado-actual-data.mjs';
 import { buildDashboardModel } from './dashboard-model.mjs';
-import { renderDashboardHtml, renderLabsHtml } from './dashboard-html.mjs';
+import {
+  renderDashboardHtml,
+  renderLabsHtml,
+  renderCardioIdentityHtml,
+  renderCardioSummaryChipsHtml,
+  renderCongestionCardHtml,
+  renderDiuresisCardHtml,
+  renderGdmtRowHtml,
+} from './dashboard-html.mjs';
 
 const splitHistorialMonitoreo = {
   estadoClinico: {
@@ -479,6 +487,97 @@ describe('dashboard html', () => {
     // 4 chips total across both envios (Lactato duplicated, counted once per envio for M).
     assert.match(html, /LABS FUERA DE RANGO &middot; 1 DE 4/);
     assert.match(html, /LABS FUERA DE RANGO &middot; 2 DE 4/);
+  });
+
+  it('puts fenotipo/etiología chips near the top, above the cardio primary cards', () => {
+    const model = buildDashboardModel({
+      patient: {
+        nombre: 'X',
+        cardio: { fenotipo: 'HFrEF', etiologia: 'Isquémica' },
+      },
+      inner: 'resumen',
+    });
+    const html = renderDashboardHtml(model);
+    const idnIdx = html.indexOf('id="ic-assigned"');
+    const cardioIdIdx = html.indexOf('cardio-identity-row');
+    const primaryIdx = html.indexOf('bento cardio-primary');
+    assert.ok(idnIdx !== -1 && cardioIdIdx !== -1 && primaryIdx !== -1);
+    assert.ok(idnIdx < cardioIdIdx, 'fenotipo/etiología chips render after name/dx chips');
+    assert.ok(cardioIdIdx < primaryIdx, 'fenotipo/etiología chips render before the congestion/diuresis cards');
+    assert.match(html, /chip--cardio">HFrEF/);
+    assert.match(html, /chip--cardio">Isquémica/);
+  });
+
+  it('omits the cardio identity row when fenotipo and etiología are both blank', () => {
+    assert.equal(renderCardioIdentityHtml({ cardio: { fenotipo: '', etiologia: '' } }), '');
+  });
+
+  it('renders NT-proBNP/dispositivo/NYHA Resumen chips when present, additive to fenotipo/etiología', () => {
+    const html = renderCardioSummaryChipsHtml({
+      cardio: { chips: { ntProBnp: '1800', dispositivo: 'TRC-D', nyha: 'III' } },
+    });
+    assert.match(html, /cardio-summary-row/);
+    assert.match(html, /chip--cardio">NT-proBNP 1800/);
+    assert.match(html, /chip--cardio">TRC-D/);
+    assert.match(html, /chip--cardio">NYHA III/);
+  });
+
+  it('omits the Resumen chips row entirely when all three chips are blank', () => {
+    assert.equal(
+      renderCardioSummaryChipsHtml({ cardio: { chips: { ntProBnp: '', dispositivo: '', nyha: '' } } }),
+      '',
+    );
+  });
+
+  it('renders the congestion card with score/VExUS/Stevenson from the latest POCUS day', () => {
+    const html = renderCongestionCardHtml({
+      cardio: {
+        congestion: { score: 4, vexus: 2, stevenson: 'B', date: '2026-08-22', hasData: true },
+      },
+    });
+    assert.match(html, /Congestión/);
+    assert.match(html, /Score congestión/);
+    assert.match(html, /<b>4<\/b>/);
+    assert.match(html, /VExUS/);
+    assert.match(html, /<b>2<\/b>/);
+    assert.match(html, /Stevenson/);
+    assert.match(html, /<b>B<\/b>/);
+    assert.match(html, /2026-08-22/);
+  });
+
+  it('shows an empty hint on the congestion card when there is no POCUS/VExUS data yet', () => {
+    const html = renderCongestionCardHtml({ cardio: { congestion: { hasData: false } } });
+    assert.match(html, /Sin evaluación de congestión/);
+  });
+
+  it('renders the diuresis card with 24h, acumulada and furosemida acumulada', () => {
+    const html = renderDiuresisCardHtml({
+      cardio: {
+        diuresis: { hoyMl: 1200.4, acumuladaMl: 3400.9, furosemidaAcumuladaMg: 160 },
+      },
+    });
+    assert.match(html, /Diuresis 24h/);
+    assert.match(html, /1200 ml/);
+    assert.match(html, /Diuresis acumulada/);
+    assert.match(html, /3401 ml/);
+    assert.match(html, /Furosemida acumulada/);
+    assert.match(html, /160 mg/);
+  });
+
+  it('renders 4 GDMT pills and marks active ones is-on', () => {
+    const html = renderGdmtRowHtml({
+      cardio: {
+        gdmt: [
+          { className: 'IECA/ARA/ARNI', active: true, drug: 'Losartán', dosis: '50 mg' },
+          { className: 'SGLT2i', active: false, drug: '', dosis: '' },
+          { className: 'Betabloqueador', active: true, drug: 'Carvedilol', dosis: '25 mg' },
+          { className: 'MRA', active: false, drug: '', dosis: '' },
+        ],
+      },
+    });
+    assert.equal((html.match(/class="gdmt-pill/g) || []).length, 4);
+    assert.equal((html.match(/is-on/g) || []).length, 2);
+    assert.match(html, /IECA\/ARA\/ARNI/);
   });
 
   it('omits the header meta line when there are no vitals at all', () => {

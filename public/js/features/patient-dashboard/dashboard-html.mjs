@@ -180,6 +180,117 @@ function renderIdentityHtml(model) {
   );
 }
 
+/**
+ * Fenotipo/etiología chips — rendered right under the name/diagnosis row so
+ * a resident sees HF identity before anything else. Omitted entirely when
+ * neither field is set (new/non-cardio-triaged patients).
+ */
+function renderCardioIdentityHtml(model) {
+  var c = model && model.cardio;
+  if (!c || (!c.fenotipo && !c.etiologia)) return '';
+  var chips = '';
+  if (c.fenotipo) chips += '<span class="chip chip--cardio">' + escHtml(c.fenotipo) + '</span>';
+  if (c.etiologia) chips += '<span class="chip chip--cardio">' + escHtml(c.etiologia) + '</span>';
+  return '<div class="chips cardio-identity-row">' + chips + '</div>';
+}
+
+/**
+ * Compact Resumen chips (Part C, Phase 7) — NT-proBNP último valor,
+ * dispositivo, NYHA actual. Additive only: rendered as its own row right
+ * under the fenotipo/etiología chips, omitted entirely when none of the
+ * three have a value.
+ */
+function renderCardioSummaryChipsHtml(model) {
+  var c = (model && model.cardio && model.cardio.chips) || {};
+  var chips = '';
+  if (c.ntProBnp) chips += '<span class="chip chip--cardio">NT-proBNP ' + escHtml(c.ntProBnp) + '</span>';
+  if (c.dispositivo) chips += '<span class="chip chip--cardio">' + escHtml(c.dispositivo) + '</span>';
+  if (c.nyha) chips += '<span class="chip chip--cardio">NYHA ' + escHtml(c.nyha) + '</span>';
+  return chips ? '<div class="chips cardio-summary-row">' + chips + '</div>' : '';
+}
+
+function cardioStatCellHtml(label, value, hint) {
+  if (value == null || value === '') return '';
+  return (
+    '<div class="cardio-stat"><small>' +
+    escHtml(label) +
+    '</small><b>' +
+    escHtml(String(value)) +
+    '</b>' +
+    (hint ? '<span class="cardio-stat-hint">' + escHtml(hint) + '</span>' : '') +
+    '</div>'
+  );
+}
+
+function renderCongestionCardHtml(model) {
+  var c = (model && model.cardio && model.cardio.congestion) || {};
+  var cells =
+    cardioStatCellHtml('Score congestión', c.score != null ? c.score : '') +
+    cardioStatCellHtml('VExUS', c.vexus != null ? c.vexus : '') +
+    cardioStatCellHtml('Stevenson', c.stevenson || '');
+  var body = c.hasData
+    ? '<div class="cardio-stats">' + cells + '</div>'
+    : '<p class="empty-hint">Sin evaluación de congestión</p>';
+  var meta = c.date ? '<span class="card-h-meta">' + escHtml(c.date) + '</span>' : '';
+  return (
+    '<button class="card clickable cardio-card" type="button" data-dash-action="estadoActual">' +
+    '<div class="card-h"><span>Congestión</span>' +
+    meta +
+    '</div><div class="card-b">' +
+    body +
+    '</div></button>'
+  );
+}
+
+function renderDiuresisCardHtml(model) {
+  var d = (model && model.cardio && model.cardio.diuresis) || {};
+  var hasAny = d.hoyMl != null || d.acumuladaMl != null || d.furosemidaAcumuladaMg;
+  var cells =
+    cardioStatCellHtml('Diuresis 24h', d.hoyMl != null ? Math.round(d.hoyMl) + ' ml' : '') +
+    cardioStatCellHtml('Diuresis acumulada', d.acumuladaMl != null ? Math.round(d.acumuladaMl) + ' ml' : '') +
+    cardioStatCellHtml(
+      'Furosemida acumulada',
+      d.furosemidaAcumuladaMg ? Math.round(d.furosemidaAcumuladaMg) + ' mg' : '',
+    );
+  var body = hasAny
+    ? '<div class="cardio-stats">' + cells + '</div>'
+    : '<p class="empty-hint">Sin diuresis registrada</p>';
+  return (
+    '<button class="card clickable cardio-card" type="button" data-dash-action="estadoActual">' +
+    '<div class="card-h">Diuresis</div><div class="card-b">' +
+    body +
+    '</div></button>'
+  );
+}
+
+/**
+ * Compact GDMT ("4 Fantásticos") pillar row — always renders the 4 fixed
+ * classes so a resident can scan on/off at a glance without opening Manejo.
+ */
+function renderGdmtRowHtml(model) {
+  var gdmt = (model && model.cardio && model.cardio.gdmt) || [];
+  if (!gdmt.length) return '';
+  var pills = gdmt
+    .map(function (f) {
+      var title = f.active ? f.drug + (f.dosis ? ' — ' + f.dosis : '') : 'Sin fármaco';
+      return (
+        '<span class="gdmt-pill' +
+        (f.active ? ' is-on' : '') +
+        '" title="' +
+        escAttr(title) +
+        '">' +
+        escHtml(f.className) +
+        '</span>'
+      );
+    })
+    .join('');
+  return (
+    '<button class="gdmt-row" type="button" data-dash-action="estadoActual" aria-label="GDMT / 4 fantásticos">' +
+    pills +
+    '</button>'
+  );
+}
+
 function trendArrowHtml(trend) {
   if (trend === 'up') return '<span class="draw-trend is-up">&#8593;</span>';
   if (trend === 'down') return '<span class="draw-trend is-down">&#8595;</span>';
@@ -521,6 +632,13 @@ export function renderDashboardHtml(model) {
   return (
     '<div class="patient-dash dash">' +
     renderIdentityHtml(m) +
+    renderCardioIdentityHtml(m) +
+    renderCardioSummaryChipsHtml(m) +
+    '<div class="bento cardio-primary">' +
+    renderCongestionCardHtml(m) +
+    renderDiuresisCardHtml(m) +
+    '</div>' +
+    renderGdmtRowHtml(m) +
     '<div class="bento vitals-labs">' +
     renderVitalsHtml(m) +
     renderLabsHtml(m) +
@@ -534,4 +652,11 @@ export function renderDashboardHtml(model) {
   );
 }
 
-export { renderIcAssignedHtml };
+export {
+  renderIcAssignedHtml,
+  renderCardioIdentityHtml,
+  renderCardioSummaryChipsHtml,
+  renderCongestionCardHtml,
+  renderDiuresisCardHtml,
+  renderGdmtRowHtml,
+};

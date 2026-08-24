@@ -4,6 +4,7 @@ import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
 import { PITCH_DEMO_PATIENT_ID } from './tour-pitch-sandbox.mjs';
 import { buildPitchMonitoreoHistorial } from './tour-pitch-monitoreo.mjs';
 import { buildPitchLabHistoryEntries } from './tour-pitch-labs.mjs';
+import { buildDemoPerezCardio } from './pitch-demo-export-perez-cardio.mjs';
 
 /** @param {Date} today */
 export function buildPitchDemoPatient(today) {
@@ -20,6 +21,7 @@ export function buildPitchDemoPatient(today) {
     fromLab: false,
     isDemo: true,
     monitoreo: buildPitchMonitoreoHistorial(today),
+    cardio: buildDemoPerezCardio(today),
     consultInfo: {
       requestingService: 'Cirugía general',
       reason:

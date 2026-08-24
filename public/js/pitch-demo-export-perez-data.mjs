@@ -7,6 +7,7 @@ import {
   buildPitchLabHistoryEntries,
 } from './tour-pitch-demo-seed.mjs';
 import { buildPitchDemoTodosForPatient } from './tour-pitch-demo-todos.mjs';
+import { buildDemoPerezCardio } from './pitch-demo-export-perez-cardio.mjs';
 
 /** @param {Date} ref */
 export function buildDemoPerezPatient(ref) {
@@ -23,6 +24,7 @@ export function buildDemoPerezPatient(ref) {
     fromLab: false,
     isDemo: true,
     monitoreo: buildPitchMonitoreoHistorial(ref),
+    cardio: buildDemoPerezCardio(ref),
   };
 }
 
