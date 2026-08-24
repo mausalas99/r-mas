@@ -8,6 +8,7 @@ const DOC_EXPORT_URL_KIND = {
   '/generate-listado': 'listado',
   '/generate-censo': 'censo',
   '/generate-receta-hu': 'receta-hu',
+  '/generate-ic-hoja': 'ic-hoja',
 };
 
 function canUseDesktopDocumentIpc() {

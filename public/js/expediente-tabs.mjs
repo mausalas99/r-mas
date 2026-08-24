@@ -3,6 +3,30 @@
  */
 import { isModeSala } from './mode-features.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
+import { filterSalidaSectionsForHf } from './features/cardio/rplushf-gates.mjs';
+import { isGuardiaMode } from './features/chrome.mjs';
+
+/**
+ * "Consulta IC" (Part C Phase 4) is gated the same way the HF follow-up band
+ * is (`isInterconsultaModeActive()` in interconsulta-mode-chrome.mjs):
+ * Consulta Externa only, not Sala and not Guardia. Reimplemented against the
+ * same two primitives here (rather than importing that module) to avoid
+ * pulling its heavier patient/band dependencies into this low-level tab
+ * routing file.
+ */
+function isConsultaExternaMode(settings) {
+  if (isModeSala(settings)) return false;
+  var guardia = false;
+  try {
+    guardia = isGuardiaMode();
+  } catch {
+    // localStorage-backed (chrome.mjs) — unavailable in some non-DOM test
+    // environments; treat as "not Guardia" there, matching this file's own
+    // existing tests that never seed a UI-density localStorage value.
+    guardia = false;
+  }
+  return !guardia;
+}
 
 export const CONSOLIDATED_TABS_SALA = ['paciente', 'clinico', 'salida'];
 export const CONSOLIDATED_TABS_INTER = ['paciente', 'clinico', 'salida'];
@@ -14,6 +38,8 @@ const CLINICO_GRANULAR_TABS = [
   'notas',
   'indica',
   'estadoActual',
+  'consultaIC',
+  'evaluacionInicial',
   'eventualidades',
   'vpo',
 ];
@@ -57,8 +83,8 @@ export function shouldShowConsolidatedTab(id, settings) {
   return getConsolidatedTabs(settings).indexOf(name) >= 0;
 }
 
-export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'vpo'];
-export const CLINICO_SECTIONS_SALA = ['estadoActual', 'eventualidades'];
+export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'consultaIC', 'vpo'];
+export const CLINICO_SECTIONS_SALA = ['estadoActual', 'evaluacionInicial', 'eventualidades'];
 export const RESULTADOS_SECTIONS = ['tend', 'cult'];
 export const SALIDA_SECTIONS_SALA = ['listado', 'vpo', 'recetaHu'];
 
@@ -76,6 +102,8 @@ const GRANULAR_PANE_ORDER = [
   'todo',
   'vpo',
   'estadoActual',
+  'consultaIC',
+  'evaluacionInicial',
   'eventualidades',
   'recetaHu',
 ];
@@ -94,12 +122,17 @@ function granularToConsolidatedMap(settings) {
     cult: { tab: 'resultados', section: 'cult' },
     recetaHu: { tab: 'salida', section: sala ? 'recetaHu' : null },
     listado: { tab: sala ? 'salida' : 'paciente', section: sala ? 'listado' : null },
+    hojaIC: { tab: 'salida', section: sala ? 'hojaIC' : null },
     vpo: sala ? { tab: 'salida', section: 'vpo' } : { tab: 'clinico', section: 'vpo' },
     // IC + sala: Estado actual lives under Clínico (panel completo).
     estadoActual: { tab: 'clinico', section: 'estadoActual' },
   };
   if (sala) {
     map.eventualidades = { tab: 'clinico', section: 'eventualidades' };
+    map.evaluacionInicial = { tab: 'clinico', section: 'evaluacionInicial' };
+  }
+  if (isConsultaExternaMode(settings)) {
+    map.consultaIC = { tab: 'clinico', section: 'consultaIC' };
   }
   return map;
 }
@@ -121,7 +154,14 @@ function paneMountSpec(granularTab, settings) {
     cult: { composite: null, selector: '#lab-inner-cult-mount' },
     listado: sala ? { composite: 'salida', selector: '.exp-segment-body--salida' } : { composite: null, selector: null },
     recetaHu: { composite: 'salida', selector: '.exp-segment-body--salida' },
+    hojaIC: sala ? { composite: 'salida', selector: '.exp-segment-body--salida' } : { composite: null, selector: null },
     estadoActual: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
+    consultaIC: isConsultaExternaMode(settings)
+      ? { composite: 'clinico', selector: '.exp-segment-body--clinico' }
+      : { composite: null, selector: null },
+    evaluacionInicial: sala
+      ? { composite: 'clinico', selector: '.exp-segment-body--clinico' }
+      : { composite: null, selector: null },
     eventualidades: sala
       ? { composite: 'clinico', selector: '.exp-segment-body--clinico' }
       : { composite: null, selector: null },
@@ -131,15 +171,19 @@ function paneMountSpec(granularTab, settings) {
 
 export function getClinicoSections(settings) {
   if (isModeSala(settings)) {
-    return ['estadoActual', 'eventualidades'];
+    return ['estadoActual', 'evaluacionInicial', 'eventualidades'];
   }
-  // IC: EA first in the row; default landing when opening Clínico stays notas.
+  // Consulta Externa: outpatient HF follow-up only. No inpatient-style
+  // Estado actual / Nota de evolución / Indicaciones here.
+  if (isConsultaExternaMode(settings)) {
+    return ['consultaIC', 'vpo'];
+  }
   return ['estadoActual', 'notas', 'indica', 'vpo'];
 }
 
 export function getSalidaSections(settings) {
   if (isMobileWeb()) return [];
-  return isModeSala(settings) ? SALIDA_SECTIONS_SALA : [];
+  return isModeSala(settings) ? filterSalidaSectionsForHf(SALIDA_SECTIONS_SALA) : [];
 }
 
 export function resolveConsolidatedTarget(granularTab, settings) {
@@ -178,6 +222,7 @@ export function defaultGranularForConsolidatedTab(compositeTab, settings) {
   var sala = isModeSala(settings);
   var clinicoDefault = 'notas';
   if (sala) clinicoDefault = 'estadoActual';
+  else if (isConsultaExternaMode(settings)) clinicoDefault = 'consultaIC';
   var defaults = {
     paciente: 'resumen',
     clinico: clinicoDefault,
@@ -187,7 +232,7 @@ export function defaultGranularForConsolidatedTab(compositeTab, settings) {
         ? 'estadoActual'
         : 'todo'
       : sala
-        ? 'listado'
+        ? 'hojaIC'
         : 'recetaHu',
   };
   return defaults[compositeTab] || 'todo';
@@ -240,20 +285,26 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
   var clinicoBar = document.getElementById('exp-segment-clinico');
   if (clinicoBar) {
     clinicoBar.style.display = !isClinicoCompositeVisible(settings) ? 'none' : '';
-    ['notas', 'indica', 'estadoActual', 'eventualidades', 'vpo'].forEach(
+    ['notas', 'indica', 'estadoActual', 'consultaIC', 'evaluacionInicial', 'eventualidades', 'vpo'].forEach(
       function (section) {
         var btn = clinicoBar.querySelector('[data-exp-segment="' + section + '"]');
         if (!btn) return;
         if (section === 'estadoActual') {
-          // IC + sala: Estado actual under Clínico.
-          btn.style.display = '';
+          // Sala + Guardia only — Consulta Externa doesn't need inpatient vitals tracking.
+          btn.style.display = isConsultaExternaMode(settings) ? 'none' : '';
+        } else if (section === 'consultaIC') {
+          // Consulta Externa only — not Sala, not Guardia.
+          btn.style.display = isConsultaExternaMode(settings) ? '' : 'none';
+        } else if (section === 'evaluacionInicial') {
+          // Sala only: filled once per hospitalization episode at admission.
+          btn.style.display = sala ? '' : 'none';
         } else if (section === 'eventualidades') {
           btn.style.display = sala ? '' : 'none';
         } else if (section === 'vpo') {
           btn.style.display = sala ? 'none' : '';
         } else {
-          // notas / indica: IC only
-          btn.style.display = sala ? 'none' : '';
+          // notas / indica: Guardia only — not Sala, not Consulta Externa.
+          btn.style.display = sala || isConsultaExternaMode(settings) ? 'none' : '';
         }
       }
     );
@@ -261,8 +312,6 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
   var salidaBar = document.getElementById('exp-segment-salida');
   if (salidaBar) {
     salidaBar.style.display = sala && getSalidaSections(settings).length ? '' : 'none';
-    var vpoSalidaBtn = salidaBar.querySelector('[data-exp-segment="vpo"]');
-    if (vpoSalidaBtn) vpoSalidaBtn.style.display = sala ? '' : 'none';
   }
   var resultadosBar = document.getElementById('exp-segment-resultados');
   if (resultadosBar) resultadosBar.style.display = 'none';

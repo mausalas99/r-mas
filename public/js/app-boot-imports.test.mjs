@@ -169,7 +169,18 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * changes in session-manager.mjs, cloud-sync/settings.mjs,
  * clinical-access-runtime/lifecycle.mjs, features/platform/updater/*.mjs — all
  * already-eager modules on the boot path, no new imports. */
-const EAGER_BOOT_BUDGET_BYTES = 3452580;
+/** +155602 B / +0 files: HF fork Part C Phases 6-7 — Hoja IC docx export
+ * (hoja-ic.mjs, ic-export-payload.mjs, ic-hoja generator client wiring),
+ * Eval. inicial wizard split, and lung-US 8-zone grid in congestion.mjs.
+ * All statically imported the same way every other Salida/Clínico tab
+ * renderer already is in expediente-inner-cache.mjs — not lazy-loadable
+ * without changing that file's existing pattern. */
+/** +2063 B / +0 files: cardio visual-design pass — section grouping
+ * (`.hf-section`/`.hf-field-grid`/`.hf-lung-grid`) added to
+ * evaluacion-inicial-html.mjs and estado-actual-cardio-html.mjs (Eval.
+ * inicial wizard steps, Identidad, POCUS 8-zone grid). Same already-eager
+ * modules, no new imports — just more wrapper markup/comments. */
+const EAGER_BOOT_BUDGET_BYTES = 3610245;
 const EAGER_BOOT_BUDGET_FILES = 98;
 
 /**

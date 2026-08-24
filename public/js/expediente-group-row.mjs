@@ -38,12 +38,15 @@ export var SECTION_LABELS = {
   indica: 'Indicaciones',
   historia: 'Historia Clínica',
   estadoActual: 'Estado actual',
+  consultaIC: 'Consulta IC',
+  evaluacionInicial: 'Eval. inicial',
   eventualidades: 'Eventualidades',
   vpo: 'VPO',
   tend: 'Tendencias',
   cult: 'Cultivos',
   listado: 'Listado',
   recetaHu: 'Receta HU',
+  hojaIC: 'Hoja IC',
 };
 
 export function groupSections(group, settings) {

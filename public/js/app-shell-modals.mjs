@@ -215,6 +215,12 @@ function wireQueuePanelDismissLayers(registry) {
     closeModalViaWindowOrHide('closeLabRepoBatchModal', 'lab-repo-batch-modal'),
     { panelSelector: '.lab-repo-batch-modal' }
   );
+  regOpenClass(
+    registry,
+    'lab-photo-review-modal',
+    closeModalViaWindowOrHide('closeLabPhotoReviewModal', 'lab-photo-review-modal'),
+    { panelSelector: '.lab-photo-review-modal' }
+  );
 }
 
 /** @param {ReturnType<typeof createModalDismissRegistry>} registry */

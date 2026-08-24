@@ -17,13 +17,13 @@ test('groupSections: paciente is a leaf (datos collapse is in-pane, not nav)', (
 });
 
 test('groupSections: clinico follows mode', () => {
-  assert.deepEqual(groupSections('clinico', SALA), ['estadoActual', 'eventualidades']);
-  assert.deepEqual(groupSections('clinico', INTER), ['estadoActual', 'notas', 'indica', 'vpo']);
+  assert.deepEqual(groupSections('clinico', SALA), ['estadoActual', 'evaluacionInicial', 'eventualidades']);
+  assert.deepEqual(groupSections('clinico', INTER), ['estadoActual', 'consultaIC', 'notas', 'indica', 'vpo']);
 });
 
 test('groupSections: resultados and salida come from the existing maps', () => {
   assert.deepEqual(groupSections('resultados', SALA), ['tend', 'cult']);
-  assert.deepEqual(groupSections('salida', SALA), ['listado', 'vpo', 'recetaHu']);
+  assert.deepEqual(groupSections('salida', SALA), ['hojaIC']);
   assert.deepEqual(groupSections('salida', INTER), []);
 });
 

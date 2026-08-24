@@ -33,10 +33,15 @@ test('resolveConsolidatedTarget maps granular tabs to composite groups (intercon
   assert.deepEqual(resolveConsolidatedTarget('listado', INTER), { tab: 'paciente', section: null });
 });
 
-test('resolveConsolidatedTarget maps listado and recetaHu to salida in sala', () => {
+test('resolveConsolidatedTarget maps listado and recetaHu to salida in sala (legacy mapping; no longer surfaced — see getSalidaSections)', () => {
   assert.deepEqual(resolveConsolidatedTarget('listado', SALA), { tab: 'salida', section: 'listado' });
   assert.deepEqual(resolveConsolidatedTarget('recetaHu', SALA), { tab: 'salida', section: 'recetaHu' });
   assert.deepEqual(resolveConsolidatedTarget('manejo', SALA), { tab: 'paciente', section: null });
+});
+
+test('resolveConsolidatedTarget maps hojaIC to salida in sala', () => {
+  assert.deepEqual(resolveConsolidatedTarget('hojaIC', SALA), { tab: 'salida', section: 'hojaIC' });
+  assert.deepEqual(resolveConsolidatedTarget('hojaIC', INTER), { tab: 'salida', section: null });
 });
 
 test('CONSOLIDATED_TABS_SALA has Resumen Clínico Salida (no Resultados)', () => {
@@ -105,18 +110,18 @@ test('resolveConsolidatedTarget estadoActual inter routes to clinico segment', (
 
 test('defaultGranularForConsolidatedTab returns sensible defaults per mode', () => {
   assert.equal(defaultGranularForConsolidatedTab('paciente', INTER), 'resumen');
-  assert.equal(defaultGranularForConsolidatedTab('clinico', INTER), 'notas');
+  assert.equal(defaultGranularForConsolidatedTab('clinico', INTER), 'consultaIC');
   assert.equal(defaultGranularForConsolidatedTab('resultados', INTER), 'tend');
   assert.equal(defaultGranularForConsolidatedTab('salida', INTER), 'recetaHu');
   assert.equal(defaultGranularForConsolidatedTab('clinico', SALA), 'estadoActual');
-  assert.equal(defaultGranularForConsolidatedTab('salida', SALA), 'listado');
+  assert.equal(defaultGranularForConsolidatedTab('salida', SALA), 'hojaIC');
 });
 
 test('consolidatedInnerTabButtonId resolves composite button ids', () => {
   assert.equal(consolidatedInnerTabButtonId('notas', INTER), 'itab-clinico');
   assert.equal(consolidatedInnerTabButtonId('todo', INTER), 'itab-paciente');
   assert.equal(consolidatedInnerTabButtonId('recetaHu', INTER), 'itab-salida');
-  assert.equal(consolidatedInnerTabButtonId('listado', SALA), 'itab-salida');
+  assert.equal(consolidatedInnerTabButtonId('hojaIC', SALA), 'itab-salida');
   assert.equal(consolidatedInnerTabButtonId('clinico', INTER), 'itab-clinico');
   assert.equal(consolidatedInnerTabButtonId('estadoActual', SALA), 'itab-clinico');
   assert.equal(consolidatedInnerTabButtonId('eventualidades', SALA), 'itab-clinico');
@@ -128,12 +133,12 @@ test('consolidatedTabForGranular returns top-level composite tab id', () => {
 });
 
 test('getClinicoSections differs by mode (manejo hidden globally)', () => {
-  assert.deepEqual(getClinicoSections(INTER), ['estadoActual', 'notas', 'indica', 'vpo']);
-  assert.deepEqual(getClinicoSections(SALA), ['estadoActual', 'eventualidades']);
+  assert.deepEqual(getClinicoSections(INTER), ['consultaIC', 'vpo']);
+  assert.deepEqual(getClinicoSections(SALA), ['estadoActual', 'evaluacionInicial', 'eventualidades']);
 });
 
-test('getSalidaSections only in sala', () => {
-  assert.deepEqual(getSalidaSections(SALA), ['listado', 'vpo', 'recetaHu']);
+test('getSalidaSections only in sala, and only the cardio Hoja IC export', () => {
+  assert.deepEqual(getSalidaSections(SALA), ['hojaIC']);
   assert.deepEqual(getSalidaSections(INTER), []);
 });
 
@@ -144,12 +149,12 @@ test('isManejoSectionHidden is always true (global product policy)', () => {
   assert.equal(isManejoSectionHidden(HIDE_MANEJO_LEGACY), true);
 });
 
-test('inter clinico sections include estadoActual first, vpo, no manejo or historia', () => {
-  assert.deepEqual(getClinicoSections(INTER), ['estadoActual', 'notas', 'indica', 'vpo']);
+test('inter clinico sections are consultaIC + vpo, no manejo or historia', () => {
+  assert.deepEqual(getClinicoSections(INTER), ['consultaIC', 'vpo']);
 });
 
-test('sala salida sections include vpo between listado and recetaHu', () => {
-  assert.deepEqual(getSalidaSections(SALA), ['listado', 'vpo', 'recetaHu']);
+test('sala salida sections are hojaIC only (listado/recetaHu/vpo all dropped for HF)', () => {
+  assert.deepEqual(getSalidaSections(SALA), ['hojaIC']);
 });
 
 test('resolveConsolidatedTarget vpo in inter maps to clinico', () => {
@@ -164,19 +169,14 @@ test('interconsulta keeps clinico tab when only manejo is hidden', () => {
   assert.equal(isClinicoCompositeVisible(INTER), true);
   assert.equal(isClinicoCompositeVisible(HIDE_MANEJO_INTER), true);
   assert.equal(getConsolidatedTabs(HIDE_MANEJO_INTER).includes('clinico'), true);
-  assert.deepEqual(getClinicoSections(HIDE_MANEJO_INTER), [
-    'estadoActual',
-    'notas',
-    'indica',
-    'vpo',
-  ]);
+  assert.deepEqual(getClinicoSections(HIDE_MANEJO_INTER), ['consultaIC', 'vpo']);
 });
 
 test('sala keeps clinico for estado actual when manejo is hidden', () => {
   const hiddenSala = { appMode: 'sala', hideManejoSection: true, clinicoUnlocked: true };
   assert.equal(isClinicoCompositeVisible(hiddenSala), true);
   assert.equal(getConsolidatedTabs(hiddenSala).includes('clinico'), true);
-  assert.deepEqual(getClinicoSections(hiddenSala), ['estadoActual', 'eventualidades']);
+  assert.deepEqual(getClinicoSections(hiddenSala), ['estadoActual', 'evaluacionInicial', 'eventualidades']);
 });
 
 test('migrateGranularInner keeps notas and indica when manejo is hidden (inter)', () => {
