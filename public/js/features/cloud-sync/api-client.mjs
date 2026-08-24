@@ -49,6 +49,8 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
     const baseUrl = String(getBaseUrl() || '').replace(/\/$/, '');
     assertCloudBaseUrl(baseUrl);
     const headers = { Accept: 'application/json' };
+    const appVersion = getCachedAppVersion();
+    if (appVersion) headers['X-App-Version'] = appVersion;
     const token = getToken();
     if (token) headers.Authorization = `Bearer ${token}`;
     const adminKey = getAdminKey?.();

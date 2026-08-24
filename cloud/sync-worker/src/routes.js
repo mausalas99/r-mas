@@ -1,5 +1,6 @@
 import { handleAdmin } from './admin.js';
 import { handleAuth } from './auth.js';
+import { assertNubeAppVersion } from './auth-util.js';
 import { SyncError, jsonSyncError, syncErrorStatus } from './errors.js';
 import { handleInternoApiRoute } from './interno/routes.js';
 import { handlePaseLabs } from './pase-labs.js';
@@ -38,6 +39,11 @@ export async function handleApiRoute(request, env) {
     }
 
     if (subpath === '/rooms' || subpath.startsWith('/rooms/')) {
+      // Re-checked on every room request, not just login: a device already
+      // logged in on an old build (password-wrapped room key) must not keep
+      // reading/writing room content once the fleet has moved to the
+      // room-code method, even mid-session.
+      assertNubeAppVersion(request.headers.get('X-App-Version'));
       const roomsSub = subpath === '/rooms' ? '/' : subpath.slice('/rooms'.length) || '/';
       return await handleRooms(request, env, roomsSub);
     }
