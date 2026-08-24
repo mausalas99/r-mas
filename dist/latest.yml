@@ -1,22 +1,12 @@
-version: 8.2.0
+version: 8.2.1
 files:
-  - url: R+-8.2.0-x64.exe
-    sha512: 6kXc29OCG/NfmwWATpprqXRltyDcO0P6vWZp8hiDBB8MxjPQKrz1nnJSGgD+/MVF83vTsCSmRbaW4Oa8SKY/ow==
-    size: 122967869
-path: R+-8.2.0-x64.exe
-sha512: 6kXc29OCG/NfmwWATpprqXRltyDcO0P6vWZp8hiDBB8MxjPQKrz1nnJSGgD+/MVF83vTsCSmRbaW4Oa8SKY/ow==
-releaseDate: '2026-08-24T21:34:33.000Z'
+  - url: R+-8.2.1-x64.exe
+    sha512: t53VLwSmS3zSB9bQD6SSB02TjqUfg4HdNb2GdeaLx1VRJndetlUG3aE/OuGuEPJLT44dZzX0Y2NqySxebqRJEQ==
+    size: 122958828
+path: R+-8.2.1-x64.exe
+sha512: t53VLwSmS3zSB9bQD6SSB02TjqUfg4HdNb2GdeaLx1VRJndetlUG3aE/OuGuEPJLT44dZzX0Y2NqySxebqRJEQ==
+releaseDate: '2026-08-24T22:34:14.000Z'
 releaseNotes: |
-  Llave de rescate para salas de Nube, animaciones al agregar/quitar filas, y correcciones de sincronización.
+  Corrige que los labs se reenviaran completos a Nube en cada sincronización.
   
-  Llave de rescate de sala (admin): si se pierde el código de la sala y ningún dispositivo tiene la llave en caché, el admin puede recuperar el acceso con su propia llave. Se guarda una copia extra de la llave de la sala, cifrada solo para el admin.
-  
-  Rotación de llave de sala: al rotar el código de una sala, la llave cifrada se puede reemplazar sin perder acceso a los datos ya guardados.
-  
-  Animaciones en listas (censo, pendientes): las filas nuevas aparecen con transición y las que se quitan se desvanecen, en vez de aparecer/desaparecer de golpe.
-  
-  Corrección de fusión de pacientes: al comparar signos vitales de dos registros para decidir cuál es más reciente, ahora se usa la hora real de guardado en vez de la hora clínica editable, evitando empates que perdían datos.
-  
-  Panel de guardia por celular (Interno) desactivado temporalmente: mientras se migra a cifrado de extremo a extremo, el panel y el registro de signos vitales por celular responden "temporalmente desactivado" en vez de fallar.
-  
-  Corrección de copia de equipo: la copia de labs/estado actual del equipo ya no sirve datos viejos tras guardar, y ahora excluye pacientes archivados. El atajo de copiar estado actual solo se activa en la sub-pestaña correcta de Nota.
+  Fix: los labs "pesados" (que Nube recorta para caber en el límite de envío) ya no se re-envían en cada sync. El error estaba en que se guardaba la huella del valor recortado en vez del valor completo, así que nunca coincidía con la próxima comparación y el lab se veía "cambiado" para siempre.

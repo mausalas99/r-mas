@@ -1,31 +1,21 @@
-version: 8.2.0
+version: 8.2.1
 files:
-  - url: R+-8.2.0-autoupdate-mac-arm64.zip
-    sha512: vZJxu+/zdw0TeVROZ3JsImfYeZoPmMMMOArWgIwLzHGWsJEkILA2yUMAkMRz6LgfutIJDdacj4eIqWZ4L1p2UA==
-    size: 140385585
-  - url: R+-8.2.0-arm64.dmg
-    sha512: HDk6Flt9E+KlRawzzW4Z/mH0XALRHyQzGjrT5H5r0zEfwvmxA2qra3Ubmdf5zqoAm6zX2P5MdYr3cOozPW/1ZA==
-    size: 146250422
-  - url: R+-8.2.0-autoupdate-mac-x64.zip
-    sha512: 3Possyq5g8MLPmASKgwzh9uofKT1i3nV1RLK7Jvl37fgGNhl1erDic1CgZYqqorYgFqbF628gowJ4Rijr5UKzg==
-    size: 148759075
-  - url: R+-8.2.0-x64.dmg
-    sha512: Y4lhtXhfZYwxN0timp8KdataeFckMVI2OnwfpyEJdcz6DmF5qvgysgtR2y6DV9n2W8xjgw87EWQq4b91aiX9FQ==
-    size: 154736316
-path: R+-8.2.0-autoupdate-mac-arm64.zip
-sha512: vZJxu+/zdw0TeVROZ3JsImfYeZoPmMMMOArWgIwLzHGWsJEkILA2yUMAkMRz6LgfutIJDdacj4eIqWZ4L1p2UA==
-releaseDate: '2026-08-24T21:34:33.000Z'
+  - url: R+-8.2.1-autoupdate-mac-arm64.zip
+    sha512: 8vkwbCU158UH//ObR+4yLqLmqrd3wgd+CyDo0Lukkz+GOBNgLcx6QZreQteiFeIgAw6RF2W9pVoldRHz0AaMvg==
+    size: 140387505
+  - url: R+-8.2.1-arm64.dmg
+    sha512: jfBR5jDx0DH2SepbIAim42OuInAoT+93MwJQTX7Zs+qGHG7iY8t7kWwW2wJwzwT6GpS0z3eQEGgEpLTmu8hd2w==
+    size: 146245078
+  - url: R+-8.2.1-autoupdate-mac-x64.zip
+    sha512: Pfw/m/8FKtFXeYD5SKldO/1FH7/ZxKYKqsXpKl8BayHTSZ4qUTHbxmeRHhnuca0Qjx6703xhLEDik+ay6C7Cag==
+    size: 148760995
+  - url: R+-8.2.1-x64.dmg
+    sha512: rhEc97+WlR3L2i6C7jLQBNOjxyox6cCArI/X1hRrrha8aAJh/ZK4QYtxOPUXIsbZ0eF7Yc9fqC8i0AjXMGMmMg==
+    size: 154730261
+path: R+-8.2.1-autoupdate-mac-arm64.zip
+sha512: 8vkwbCU158UH//ObR+4yLqLmqrd3wgd+CyDo0Lukkz+GOBNgLcx6QZreQteiFeIgAw6RF2W9pVoldRHz0AaMvg==
+releaseDate: '2026-08-24T22:34:14.000Z'
 releaseNotes: |
-  Llave de rescate para salas de Nube, animaciones al agregar/quitar filas, y correcciones de sincronización.
+  Corrige que los labs se reenviaran completos a Nube en cada sincronización.
   
-  Llave de rescate de sala (admin): si se pierde el código de la sala y ningún dispositivo tiene la llave en caché, el admin puede recuperar el acceso con su propia llave. Se guarda una copia extra de la llave de la sala, cifrada solo para el admin.
-  
-  Rotación de llave de sala: al rotar el código de una sala, la llave cifrada se puede reemplazar sin perder acceso a los datos ya guardados.
-  
-  Animaciones en listas (censo, pendientes): las filas nuevas aparecen con transición y las que se quitan se desvanecen, en vez de aparecer/desaparecer de golpe.
-  
-  Corrección de fusión de pacientes: al comparar signos vitales de dos registros para decidir cuál es más reciente, ahora se usa la hora real de guardado en vez de la hora clínica editable, evitando empates que perdían datos.
-  
-  Panel de guardia por celular (Interno) desactivado temporalmente: mientras se migra a cifrado de extremo a extremo, el panel y el registro de signos vitales por celular responden "temporalmente desactivado" en vez de fallar.
-  
-  Corrección de copia de equipo: la copia de labs/estado actual del equipo ya no sirve datos viejos tras guardar, y ahora excluye pacientes archivados. El atajo de copiar estado actual solo se activa en la sub-pestaña correcta de Nota.
+  Fix: los labs "pesados" (que Nube recorta para caber en el límite de envío) ya no se re-envían en cada sync. El error estaba en que se guardaba la huella del valor recortado en vez del valor completo, así que nunca coincidía con la próxima comparación y el lab se veía "cambiado" para siempre.
