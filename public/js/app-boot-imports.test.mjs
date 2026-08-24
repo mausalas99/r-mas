@@ -202,7 +202,9 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
 /** +24 B / +0 files: 8.2.0. app-version.mjs (caches getAppVersion() once for the
  * fleet-adoption version stamp sent on login/register) added to api-client.mjs,
  * already-eager on the sync boot path — no new eager file. */
-const EAGER_BOOT_BUDGET_BYTES = 3474262;
+/** +70 B / +0 files: api-client.mjs now stamps X-App-Version on every request,
+ * not just login (session.js server side) — already-eager, no new eager file. */
+const EAGER_BOOT_BUDGET_BYTES = 3474332;
 const EAGER_BOOT_BUDGET_FILES = 107;
 
 /**

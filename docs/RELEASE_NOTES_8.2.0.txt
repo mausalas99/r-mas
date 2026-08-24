@@ -14,6 +14,7 @@ Llave de rescate para salas de Nube, animaciones al agregar/quitar filas, y corr
 - **Animaciones en listas (censo, pendientes):** las filas nuevas aparecen con transición y las que se quitan se desvanecen, en vez de aparecer/desaparecer de golpe.
 - **Corrección de fusión de pacientes:** al comparar signos vitales de dos registros para decidir cuál es más reciente, ahora se usa la hora real de guardado en vez de la hora clínica editable, evitando empates que perdían datos.
 - **Panel de guardia por celular (Interno) desactivado temporalmente:** mientras se migra a cifrado de extremo a extremo, el panel y el registro de signos vitales por celular responden "temporalmente desactivado" en vez de fallar.
+- **Corrección de copia de equipo:** la copia de labs/estado actual del equipo ya no sirve datos viejos tras guardar, y ahora excluye pacientes archivados. El atajo de copiar estado actual solo se activa en la sub-pestaña correcta de Nota.
 
 ## Instalación
 
