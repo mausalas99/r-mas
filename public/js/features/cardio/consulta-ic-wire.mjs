@@ -150,6 +150,18 @@ function handleConsultaGdmtChange(patient, target) {
   persist();
 }
 
+function handleConsultaDosisTituladaChange(patient, target) {
+  var key = target.getAttribute('data-hf-consulta-dosis-titulada');
+  if (!key) return;
+  var dosisTitulada = {};
+  dosisTitulada[key] = String(target.value || '');
+  patient.cardio.consultas = upsertConsultaEntry(patient.cardio.consultas, {
+    date: currentDate,
+    dosisTitulada: dosisTitulada,
+  });
+  persist();
+}
+
 function handleWorkupChange(patient, target, tri) {
   var attr = tri ? 'data-hf-workup-tri' : 'data-hf-workup';
   var path = target.getAttribute(attr);
@@ -209,6 +221,7 @@ function handleChange(ev) {
   if (target.hasAttribute('data-hf-consulta')) return handleConsultaFieldChange(patient, target);
   if (target.hasAttribute('data-hf-consulta-tri')) return handleConsultaTriChange(patient, target);
   if (target.hasAttribute('data-hf-consulta-gdmt')) return handleConsultaGdmtChange(patient, target);
+  if (target.hasAttribute('data-hf-consulta-dosis-titulada')) return handleConsultaDosisTituladaChange(patient, target);
   if (target.hasAttribute('data-hf-workup')) return handleWorkupChange(patient, target, false);
   if (target.hasAttribute('data-hf-workup-tri')) return handleWorkupChange(patient, target, true);
   if (target.hasAttribute('data-hf-device')) return handleDeviceChange(patient, target, false);
@@ -280,6 +293,8 @@ var ECHO_ENUM_OR_TEXT_KEYS = [
   'nota',
 ];
 
+var ECHO_TRI_KEYS = ['feviRecuperada'];
+
 function handleEchoAction(patient, btn) {
   if (btn.getAttribute('data-hf-echo-action') !== 'save') return;
   var date = echoDraft.date || currentDate;
@@ -287,6 +302,10 @@ function handleEchoAction(patient, btn) {
   var row = { date: date };
   Object.keys(defaults).forEach(function (key) {
     if (key === 'date') return;
+    if (ECHO_TRI_KEYS.indexOf(key) >= 0) {
+      row[key] = parseTriState(String(echoDraft[key] || ''));
+      return;
+    }
     row[key] = ECHO_ENUM_OR_TEXT_KEYS.indexOf(key) >= 0 ? String(echoDraft[key] || '') : numOrNull(echoDraft[key]);
   });
   patient.cardio.echoStudies = upsertEchoStudy(patient.cardio.echoStudies, row);

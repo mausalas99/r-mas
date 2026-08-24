@@ -12,13 +12,13 @@ import {
   migrateTourStepId,
 } from './onboarding-curriculum.mjs';
 
-test('CURRICULUM_VERSION is 17 after structure-first onboarding', () => {
-  assert.equal(CURRICULUM_VERSION, 17);
+test('CURRICULUM_VERSION is 18 after HF adaptation', () => {
+  assert.equal(CURRICULUM_VERSION, 18);
 });
 
-test('getSalaTourSteps has 23 steps: map first, then lab with tendencias', () => {
+test('getSalaTourSteps has 22 steps: map first, then lab with tendencias', () => {
   const steps = getSalaTourSteps();
-  assert.equal(steps.length, 23);
+  assert.equal(steps.length, 22);
   assert.ok(!steps.includes('sala_manejo'));
   assert.ok(!steps.includes('sala_casiopea_lab'));
   assert.ok(!steps.includes('sala_casiopea_trends'));
@@ -36,12 +36,11 @@ test('getSalaTourSteps has 23 steps: map first, then lab with tendencias', () =>
   assert.equal(steps.indexOf('sala_tend'), 8);
   assert.equal(steps.indexOf('sala_tend_chart'), 9);
   assert.equal(steps.indexOf('sala_expediente_tabs'), 10);
-  assert.equal(steps.indexOf('estado_actual'), 11);
+  assert.equal(steps.indexOf('evaluacion_inicial'), 11);
+  assert.equal(steps.indexOf('estado_actual'), 12);
   assert.ok(steps.indexOf('estado_actual_review') < steps.indexOf('eventualidades'));
-  assert.ok(steps.includes('listado_problemas'));
-  assert.ok(steps.includes('sala_vpo'));
-  assert.ok(steps.includes('sala_receta_hu'));
-  assert.equal(steps.indexOf('listado_problemas'), steps.indexOf('sala_med') + 1);
+  assert.ok(steps.includes('sala_hoja_ic'));
+  assert.equal(steps.indexOf('sala_hoja_ic'), steps.indexOf('sala_med') + 1);
   assert.ok(steps.includes('sala_agenda'));
   assert.equal(steps[steps.length - 1], 'wrap');
 });
@@ -74,6 +73,14 @@ test('migrateTourStepId maps legacy estado_actual substeps', () => {
   assert.equal(migrateTourStepId('lab_view', 'sala'), 'lab_view');
 });
 
+test('migrateTourStepId maps retired IM-only steps to their HF replacements', () => {
+  assert.equal(migrateTourStepId('listado_problemas', 'sala'), 'sala_hoja_ic');
+  assert.equal(migrateTourStepId('sala_vpo', 'sala'), 'sala_hoja_ic');
+  assert.equal(migrateTourStepId('sala_receta_hu', 'sala'), 'sala_hoja_ic');
+  assert.equal(migrateTourStepId('ic_nota', 'interconsulta'), 'consulta_ic');
+  assert.equal(migrateTourStepId('ic_indica', 'interconsulta'), 'consulta_ic');
+});
+
 test('getChapterForStep maps map and servicio_default to ch-map', () => {
   const ch = getChapterForStep('servicio_default', 'sala');
   assert.equal(ch.id, 'ch-map');
@@ -86,7 +93,7 @@ test('lab chapter includes tendencias; chart stays clínico', () => {
   assert.equal(getChapterForStep('sala_tend', 'sala').id, 'ch-patient-lab');
   assert.equal(getChapterForStep('lab_parse', 'sala').id, 'ch-patient-lab');
   assert.equal(getChapterForStep('estado_actual', 'sala').id, 'ch-chart');
-  assert.equal(getChapterForStep('sala_vpo', 'sala').id, 'ch-salida');
+  assert.equal(getChapterForStep('sala_hoja_ic', 'sala').id, 'ch-salida');
   assert.equal(getChapterForStep('sala_agenda', 'sala').id, 'ch-agenda');
 });
 

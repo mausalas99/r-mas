@@ -36,7 +36,6 @@ export {
   seedDemoTrendHistory,
   applyTourDemoIngresoDates,
   seedDemoMonitoreoOnActivePatient,
-  seedDemoListadoProblemas,
   ensureProfileExpandedForTour,
   ensureSettingsExpandedForTour,
   ensureConnectionExpandedForTour,

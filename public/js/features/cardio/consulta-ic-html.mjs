@@ -40,7 +40,12 @@ import {
   PULSATILIDAD_PORTAL,
   DOPPLER_RENAL,
   LINEAS_B_CAMPO,
+  CAUSA_REINGRESO,
+  CAUSA_MUERTE,
+  TITULACION_DOSIS,
 } from '../../../../lib/cardio/hf-enums.mjs';
+import { ntProBnpPercentChange } from '../../../../lib/cardio/hf-labs.mjs';
+import { parseTriState } from './consulta-ic-data.mjs';
 
 // No IV/VO/Ambas list exists in hf-enums.mjs (checked) — built inline per the
 // Phase 4 brief's fallback instruction. Flagged in the handoff report as a
@@ -313,6 +318,7 @@ export function renderLabsHtml(model) {
   var previoVals = (m.previo && m.previo.values) || {};
   var actualVals = (m.actual && m.actual.values) || {};
   var table = prevActualTable(LAB_ROWS_DEF, previoVals, actualVals);
+  var pctChange = ntProBnpPercentChange(m.previo, m.actual);
   var draft = m.draft || {};
   var newFields = row(
     LAB_ROWS_DEF.map(function (r) {
@@ -321,6 +327,9 @@ export function renderLabsHtml(model) {
   );
   var body =
     table +
+    (pctChange != null
+      ? '<p class="ea-muted">% cambio NT-proBNP (previo → actual): ' + escHtml(pctChange.toFixed(1)) + '%</p>'
+      : '') +
     '<div style="display:flex;gap:8px;align-items:center;margin-top:8px">' +
     '<button type="button" class="ea-btn ea-btn--ghost" data-hf-lab-action="prefill">Prefill desde laboratorios importados</button>' +
     '</div>' +
@@ -351,6 +360,10 @@ var ECHO_NUM_FIELDS = [
   ['tapsePsap', 'TAPSE/PSAP', ''],
   ['vciMm', 'VCI', 'mm'],
   ['jvdRatio', 'Ratio JVD', ''],
+  ['jvValsalva', 'JV valsalva', ''],
+  ['jvEspiracion', 'JV espiración', ''],
+  ['gradienteReversoVt', 'Gradiente reverso VT', ''],
+  ['sVd', "S´ del VD", ''],
 ];
 var ECHO_ROWS_DEF = ECHO_NUM_FIELDS.map(function (f) {
   return { key: f[0], label: f[1], unit: f[2] };
@@ -402,7 +415,8 @@ export function renderEchoHtml(model) {
       'Patrón pulmonar',
       '<input type="text" class="ea-input" data-hf-echo-new="patronPulmonar" value="' + escAttr(draft.patronPulmonar) + '">'
     ) +
-    fieldHtml('Líneas B por campo', enumSelect('hf-echo-new', 'lineasBPorCampo', draft.lineasBPorCampo, LINEAS_B_CAMPO));
+    fieldHtml('Líneas B por campo', enumSelect('hf-echo-new', 'lineasBPorCampo', draft.lineasBPorCampo, LINEAS_B_CAMPO)) +
+    fieldHtml('¿FEVI recuperada?', triSelect('hf-echo-new', 'feviRecuperada', parseTriState(String(draft.feviRecuperada || ''))));
   var body =
     table +
     sectionDiv(
@@ -541,6 +555,49 @@ export function renderTratamientoActualHtml(fantasticos, gdmtMaxTolerada) {
   return sectionDiv('Tratamiento actual', body);
 }
 
+var DOSIS_TITULADA_FIELDS = [
+  ['bb', 'Betabloqueador'],
+  ['iecaAraArni', 'IECA/ARA/ARNI'],
+  ['arm', 'ARM'],
+  ['isglt2', 'iSGLT2'],
+];
+
+export function renderReingresoMuerteTmoHtml(entry) {
+  var e = entry || {};
+  var dosisTitulada = e.dosisTitulada || {};
+  var reingresoBody = row(
+    fieldHtml('TA', '<input type="number" step="any" class="ea-input" data-hf-consulta="ta" value="' + (e.ta == null ? '' : escAttr(String(e.ta))) + '">') +
+      fieldHtml('Reingreso hospitalario', triSelect('hf-consulta-tri', 'reingresoHospitalario', e.reingresoHospitalario)) +
+      fieldHtml('Causa del reingreso', enumSelect('hf-consulta', 'causaReingreso', e.causaReingreso, CAUSA_REINGRESO)) +
+      fieldHtml('Muerte', triSelect('hf-consulta-tri', 'muerte', e.muerte)) +
+      fieldHtml('Causa de muerte', enumSelect('hf-consulta', 'causaMuerte', e.causaMuerte, CAUSA_MUERTE)) +
+      fieldHtml(
+        'Especificar causa de muerte',
+        '<input type="text" class="ea-input" data-hf-consulta="causaMuerteNota" value="' + escAttr(e.causaMuerteNota) + '">',
+        true
+      )
+  );
+  var tmoBody = row(
+    fieldHtml('Score TMO', '<input type="number" step="any" class="ea-input" data-hf-consulta="scoreTmo" value="' + (e.scoreTmo == null ? '' : escAttr(String(e.scoreTmo))) + '">') +
+      fieldHtml('Mal apego', triSelect('hf-consulta-tri', 'malApego', e.malApego)) +
+      fieldHtml(
+        'Tiempo a la implementación (semanas)',
+        '<input type="number" step="any" class="ea-input" data-hf-consulta="tiempoImplementacionSemanas" value="' +
+          (e.tiempoImplementacionSemanas == null ? '' : escAttr(String(e.tiempoImplementacionSemanas))) +
+          '">'
+      ) +
+      fieldHtml('Implementación completa', triSelect('hf-consulta-tri', 'implementacionCompleta', e.implementacionCompleta)) +
+      fieldHtml('BB/ARNI/ARM/iSGLT2 a dosis máxima', triSelect('hf-consulta-tri', 'bbArniArmSglt2DosisMaxima', e.bbArniArmSglt2DosisMaxima)) +
+      DOSIS_TITULADA_FIELDS.map(function (f) {
+        return fieldHtml(
+          'Dosis titulada — ' + f[1],
+          enumSelect('hf-consulta-dosis-titulada', f[0], dosisTitulada[f[0]], TITULACION_DOSIS)
+        );
+      }).join('')
+  );
+  return sectionDiv('Reingreso y desenlaces', reingresoBody) + sectionDiv('TMO y apego', tmoBody);
+}
+
 export function renderApreciativoPlanHtml(entry) {
   var e = entry || {};
   var body = narrativeTextarea('hf-consulta', 'apreciativo', e.apreciativo, 'Apreciativo') + narrativeTextarea('hf-consulta', 'plan', e.plan, 'Plan');
@@ -558,6 +615,7 @@ export var CONSULTA_IC_STEP_TITLES = [
   'Labs',
   'Eco, ECG y dispositivo',
   'Scores y tratamiento',
+  'Reingreso, muerte y TMO',
   'Apreciativo y plan',
 ];
 export var CONSULTA_IC_STEP_COUNT = CONSULTA_IC_STEP_TITLES.length;
@@ -567,7 +625,8 @@ function stepBodyHtml(step, c, e) {
   if (step === 2) return renderLabsHtml(c.labs);
   if (step === 3) return renderEchoHtml(c.echo) + renderEcgHtml(e) + renderDeviceHtml(c.device);
   if (step === 4) return renderScoresHtml(c.scores) + renderTratamientoActualHtml(c.fantasticos, e.gdmtMaxTolerada);
-  if (step === 5) return renderApreciativoPlanHtml(e);
+  if (step === 5) return renderReingresoMuerteTmoHtml(e);
+  if (step === 6) return renderApreciativoPlanHtml(e);
   return renderFaseComorbilidadesHtml(e) + renderInternamientoHtml(e) + renderSubjetivoObjetivoHtml(e);
 }
 

@@ -1,4 +1,4 @@
-export const CURRICULUM_VERSION = 17;
+export const CURRICULUM_VERSION = 18;
 
 export const SALA_CHAPTERS = [
   {
@@ -28,6 +28,7 @@ export const SALA_CHAPTERS = [
     title: 'Paciente · Clínico',
     stepIds: [
       'sala_expediente_tabs',
+      'evaluacion_inicial',
       'estado_actual',
       'estado_actual_registro',
       'estado_actual_review',
@@ -37,7 +38,7 @@ export const SALA_CHAPTERS = [
   {
     id: 'ch-salida',
     title: 'Medicamentos y salida',
-    stepIds: ['sala_med', 'listado_problemas', 'sala_vpo', 'sala_receta_hu'],
+    stepIds: ['sala_med', 'sala_hoja_ic'],
   },
   {
     id: 'ch-agenda',
@@ -80,8 +81,7 @@ export const IC_CHAPTERS = [
     stepIds: [
       'ic_expediente_tabs',
       'sala_med',
-      'ic_nota',
-      'ic_indica',
+      'consulta_ic',
     ],
   },
   {
@@ -304,5 +304,13 @@ export function migrateTourStepId(stepId, _branch) {
   if (stepId === 'sala_soap') return 'sala_med';
   if (stepId === 'historia_clinica') return 'estado_actual';
   if (stepId === 'gv7_lan_pin') return 'gv7_lan_directorio';
+  if (
+    stepId === 'listado_problemas' ||
+    stepId === 'sala_vpo' ||
+    stepId === 'sala_receta_hu'
+  ) {
+    return 'sala_hoja_ic';
+  }
+  if (stepId === 'ic_nota' || stepId === 'ic_indica') return 'consulta_ic';
   return stepId;
 }

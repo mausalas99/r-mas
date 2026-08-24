@@ -10,7 +10,7 @@ import {
 
 test('getSalaTourSteps orden: mapa y alta primero, lab con tendencias, clínico, salida', () => {
   const steps = getSalaTourSteps();
-  assert.equal(steps.length, 23);
+  assert.equal(steps.length, 22);
   assert.ok(!steps.includes('lab_bulk_separator'));
   assert.ok(!steps.includes('sala_manejo'));
   assert.ok(!steps.includes('historia_clinica'));
@@ -24,9 +24,8 @@ test('getSalaTourSteps orden: mapa y alta primero, lab con tendencias, clínico,
   assert.equal(steps.indexOf('eventualidades'), steps.indexOf('estado_actual_review') + 1);
   assert.ok(!steps.includes('sala_casiopea_lab'));
   assert.ok(!steps.includes('sala_casiopea_trends'));
-  assert.ok(steps.includes('listado_problemas'));
-  assert.ok(steps.includes('sala_vpo'));
-  assert.ok(steps.includes('sala_receta_hu'));
+  assert.ok(steps.includes('evaluacion_inicial'));
+  assert.ok(steps.includes('sala_hoja_ic'));
   assert.ok(steps.includes('sala_agenda'));
   assert.equal(steps[steps.length - 1], 'wrap');
 });
@@ -45,8 +44,7 @@ test('getInterconsultaTourSteps mantiene pasos clásicos sin Estado Actual ni Li
   assert.ok(!steps.includes('map'));
   assert.ok(!steps.includes('estado_actual'));
   assert.ok(!steps.includes('listado_problemas'));
-  assert.ok(steps.includes('ic_nota'));
-  assert.ok(steps.includes('ic_indica'));
+  assert.ok(steps.includes('consulta_ic'));
   assert.ok(steps.includes('livesync_desktop'));
   assert.ok(steps.includes('livesync_mobile'));
   assert.equal(steps[steps.length - 1], 'wrap');
@@ -87,24 +85,23 @@ test('getTourTarget para eventualidades en Clínico (Sala)', () => {
   assert.match(ev.selector, /exp-segment-eventualidades/);
 });
 
-test('getTourTarget para sala_vpo, sala_receta_hu y sala_agenda', () => {
-  const vpo = getTourTarget('sala_vpo', 'sala');
-  assert.equal(vpo.innerTab, 'vpo');
-  assert.match(vpo.selector, /vpo/);
-  const rec = getTourTarget('sala_receta_hu', 'sala');
-  assert.equal(rec.innerTab, 'recetaHu');
+test('getTourTarget para sala_hoja_ic, evaluacion_inicial y sala_agenda', () => {
+  const hoja = getTourTarget('sala_hoja_ic', 'sala');
+  assert.equal(hoja.innerTab, 'hojaIC');
+  assert.match(hoja.selector, /hojaIC|hoja-ic/);
+  assert.equal(stepRequiresUserAction('sala_hoja_ic'), false);
+  const ei = getTourTarget('evaluacion_inicial', 'sala');
+  assert.equal(ei.innerTab, 'evaluacionInicial');
   const ag = getTourTarget('sala_agenda', 'sala');
   assert.equal(ag.appTab, 'agenda');
   assert.match(ag.selector, /agenda/);
 });
 
-test('getTourTarget para listado_problemas abre listado y resalta Generar', () => {
-  const t = getTourTarget('listado_problemas', 'sala');
+test('getTourTarget para consulta_ic (Consulta Externa)', () => {
+  const t = getTourTarget('consulta_ic', 'interconsulta');
   assert.equal(t.appTab, 'nota');
-  assert.equal(t.innerTab, 'listado');
-  assert.equal(t.selector, '#listado-form, #exp-segment-listado, #btn-gen-listado');
-  assert.equal(t.spotlightClass, 'tour-spotlight-action');
-  assert.equal(stepRequiresUserAction('listado_problemas'), false);
+  assert.equal(t.innerTab, 'consultaIC');
+  assert.match(t.selector, /consulta-ic/);
 });
 
 test('getTourTarget para servicio_default apunta a Mi Perfil', () => {
@@ -151,9 +148,9 @@ test('stepRequiresUserAction es false para pasos puramente narrativos', () => {
   assert.equal(stepRequiresUserAction('livesync_mobile'), false);
 });
 
-test('getInterconsultaTourSteps orden curriculum: 18 pasos, mapa antes de laboratorio', () => {
+test('getInterconsultaTourSteps orden curriculum: 17 pasos, mapa antes de laboratorio', () => {
   const steps = getInterconsultaTourSteps();
-  assert.equal(steps.length, 18);
+  assert.equal(steps.length, 17);
   assert.equal(steps[0], 'map_tabs');
   assert.ok(steps.includes('map_add_patient'));
   assert.ok(steps.includes('map_incomplete'));

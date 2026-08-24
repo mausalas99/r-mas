@@ -106,10 +106,10 @@ function renderLabView(bodyEl, nextBtn) {
 function renderIcExpedienteTabs(bodyEl, nextBtn) {
   var mod = getPlatformShortcutKey();
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, <strong>Paciente</strong> abre en <strong>Resumen</strong>. Grupos: <strong>Resumen</strong>, <strong>Clínico</strong> (Nota, Indicaciones) y <strong>Salida</strong> (Receta HU en PDF). Labs, tendencias y cultivos viven en <strong>Laboratorio</strong>.</p>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Receta HU</strong> exporta el PDF oficial 000-061-R-06-12. Atajos: <strong>' +
+    '<p style="margin:0;line-height:1.5;">En <strong>Consulta Externa</strong>, <strong>Paciente</strong> abre en <strong>Resumen</strong>. Grupo <strong>Clínico</strong>: <strong>Consulta IC</strong>, la nota de seguimiento de insuficiencia cardiaca. Labs, tendencias y cultivos viven en <strong>Laboratorio</strong>.</p>' +
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Atajos: <strong>' +
     mod +
-    '+1</strong> cicla grupos · <strong>E/T/D</strong> saltan a EA, tendencias o datos.</p>';
+    '+1</strong> cicla grupos.</p>';
   showNext(nextBtn);
 }
 
@@ -123,16 +123,11 @@ function renderSalaExpedienteTabs(bodyEl, nextBtn) {
   showNext(nextBtn);
 }
 
-function renderIcNota(bodyEl, nextBtn) {
+function renderConsultaIc(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">Genera la <strong>Nota (.docx)</strong> desde el botón correspondiente (motor nativo en Node; no requiere Python). Si el servidor local falla, puedes <strong>Omitir</strong> el tutorial.</p>';
-  hideNext(nextBtn);
-}
-
-function renderIcIndica(bodyEl, nextBtn) {
-  bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">Exporta las <strong>Indicaciones (.docx)</strong> para entrega o impresión (mismo generador nativo que la Nota).</p>';
-  hideNext(nextBtn);
+    '<p style="margin:0;line-height:1.5;"><strong>Consulta IC</strong> es la nota de seguimiento ambulatorio de insuficiencia cardiaca: fase de seguimiento, comorbilidades, estudios, NYHA, VExUS, congestión y ritmo, en un asistente por secciones.</p>' +
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Revisa el ejemplo precargado y pulsa <strong>Siguiente</strong>.</p>';
+  showNext(nextBtn);
 }
 
 function renderIcExports(bodyEl, nextBtn) {
@@ -181,7 +176,7 @@ function renderServicioDefault(bodyEl, nextBtn) {
 
 function renderEstadoActual(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">En <strong>Clínico → Estado actual</strong> el <strong>snapshot</strong> resume el turno (SV, glu, I/O, medicamentos). Abajo, las <strong>gráficas</strong> muestran tendencias por familia (hemodinámico, respiratorio, metabólico) con puntos alterados resaltados.</p>' +
+    '<p style="margin:0;line-height:1.5;">En <strong>Clínico → Estado actual</strong> el <strong>snapshot</strong> resume el turno (SV, glu, I/O, medicamentos) y suma tarjetas cardio: <strong>fenotipo</strong>, <strong>descongestión</strong> y <strong>congestión/POCUS</strong> (VExUS, líneas B). Abajo, las <strong>gráficas</strong> muestran tendencias por familia (hemodinámico, respiratorio, metabólico) con puntos alterados resaltados.</p>' +
     '<p style="margin:10px 0 0;line-height:1.5;">El historial de mediciones y el texto compilado para la nota están en esta misma pestaña. El demo trae tomas de <strong>hoy</strong> (TM, TV, TN).</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para practicar un <strong>registro manual</strong>.</p>';
   showNext(nextBtn);
@@ -210,23 +205,16 @@ function renderEventualidades(bodyEl, nextBtn) {
   showNext(nextBtn);
 }
 
-function renderListadoProblemas(bodyEl, nextBtn) {
+function renderEvaluacionInicial(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;"><strong>Paciente → Salida → Listado</strong>: exporta problemas activos e inactivos a Word (título + incisos <strong>A) CLÍNICA</strong>, <strong>B) EXPLORACIÓN</strong>, etc.).</p>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El demo trae un ejemplo. Pulsa <strong>Generar Listado</strong> (resaltado) o <strong>Siguiente</strong>.</p>';
+    '<p style="margin:0;line-height:1.5;"><strong>Clínico → Eval. inicial</strong>: se llena <strong>una vez por hospitalización</strong>, al ingreso. Etiología y fenotipo de la insuficiencia cardiaca, exploración (llenado capilar, edema, Doppler, VExUS), Rx de tórax y medicamentos previos.</p>' +
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Revisa el ejemplo precargado y pulsa <strong>Siguiente</strong>.</p>';
   showNext(nextBtn);
 }
 
-function renderSalaVpo(bodyEl, nextBtn) {
+function renderSalaHojaIc(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;"><strong>Paciente → Salida → VPO</strong>: documenta escalas de riesgo (ASA, RCRI, Gupta, ARISCAT, Caprini) con el resultado que obtengas en tu calculadora; EKG/Rx editables y texto copiable. Solo en <strong>Sala</strong>.</p>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Completa o revisa los campos resaltados y pulsa <strong>Siguiente</strong>.</p>';
-  showNext(nextBtn);
-}
-
-function renderSalaRecetaHu(bodyEl, nextBtn) {
-  bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;"><strong>Paciente → Salida → Receta HU</strong>: receta médica en formato oficial <strong>000-061-R-06-12</strong> (PDF). Medicamentos, estudios y cuidados; botón <strong>Exportar PDF</strong> cuando esté listo.</p>' +
+    '<p style="margin:0;line-height:1.5;"><strong>Paciente → Salida → Hoja IC</strong>: exporta el seguimiento intrahospitalario a Word con fenotipo, descongestión, congestión/POCUS, medicamentos y labs del día, tal como quedaron en <strong>Estado actual</strong>.</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">En el tutorial no hace falta exportar; <strong>Siguiente</strong> para la <strong>Agenda</strong>.</p>';
   showNext(nextBtn);
 }
@@ -277,21 +265,19 @@ const FUNDAMENTOS_STEP_HANDLERS = {
   lab_view: renderLabView,
   ic_expediente_tabs: renderIcExpedienteTabs,
   sala_expediente_tabs: renderSalaExpedienteTabs,
-  ic_nota: renderIcNota,
-  ic_indica: renderIcIndica,
+  consulta_ic: renderConsultaIc,
   ic_exports: renderIcExports,
   sala_tend: renderSalaTend,
   sala_tend_chart: renderSalaTendChart,
   sala_med: renderSalaMed,
   profile: renderProfile,
   servicio_default: renderServicioDefault,
+  evaluacion_inicial: renderEvaluacionInicial,
   estado_actual: renderEstadoActual,
   estado_actual_registro: renderEstadoActualRegistro,
   estado_actual_review: renderEstadoActualReview,
   eventualidades: renderEventualidades,
-  listado_problemas: renderListadoProblemas,
-  sala_vpo: renderSalaVpo,
-  sala_receta_hu: renderSalaRecetaHu,
+  sala_hoja_ic: renderSalaHojaIc,
   sala_agenda: renderSalaAgenda,
   livesync_desktop: renderLivesyncDesktop,
   livesync_mobile: renderLivesyncMobile,

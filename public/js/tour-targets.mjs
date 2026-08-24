@@ -13,8 +13,6 @@ import {
 // (no se muestra "Siguiente" en el dock).
 const ACTION_STEPS = new Set([
   'lab_parse',
-  'ic_nota',
-  'ic_indica',
   'estado_actual_registro',
   'servicio_default',
   'gv7_guardia_toggle',
@@ -90,24 +88,17 @@ const TARGETS = {
     spotlightClass: 'tour-spotlight-action',
   },
   sala_med:          { appTab: 'med',  selector: '#med-import-open-btn',                      focus: false },
-  listado_problemas: {
+  evaluacion_inicial: {
     appTab: 'nota',
-    innerTab: 'listado',
-    selector: '#listado-form, #exp-segment-listado, #btn-gen-listado',
+    innerTab: 'evaluacionInicial',
+    selector: '#itab-content-evaluacionInicial',
     focus: false,
     spotlightClass: 'tour-spotlight-action',
   },
-  sala_vpo: {
+  sala_hoja_ic: {
     appTab: 'nota',
-    innerTab: 'vpo',
-    selector: '#exp-segment-vpo-salida, #vpo-container, .vpo-panel',
-    focus: false,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  sala_receta_hu: {
-    appTab: 'nota',
-    innerTab: 'recetaHu',
-    selector: '#exp-segment-recetaHu, #receta-hu-container, #btn-receta-hu-export',
+    innerTab: 'hojaIC',
+    selector: '#itab-content-hojaIC, #hoja-ic-container, #btn-hoja-ic-export',
     focus: false,
     spotlightClass: 'tour-spotlight-action',
   },
@@ -117,10 +108,8 @@ const TARGETS = {
     focus: false,
     spotlightClass: 'tour-spotlight-action',
   },
-  ic_nota:           { appTab: 'nota', innerTab: 'notas',   selector: '#btn-gen',            focus: false,
-                       spotlightClass: 'tour-spotlight-soap' },
-  ic_indica:         { appTab: 'nota', innerTab: 'indica',  selector: '#btn-gen-ind',        focus: false,
-                       spotlightClass: 'tour-spotlight-soap' },
+  consulta_ic:       { appTab: 'nota', innerTab: 'consultaIC', selector: '#consulta-ic-container',
+                       focus: false, spotlightClass: 'tour-spotlight-action' },
   ic_exports:        { appTab: null,   selector: '#settings-dropdown',                       focus: false,
                        openSettings: true },
   profile:           { appTab: null,   selector: '#profile-modal .modal',                    focus: false,

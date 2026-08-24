@@ -58,16 +58,15 @@ function purgeTourDemoPatientsFromState() {
 var TOUR_STEPS_USE_DEMO_PEREZ = {
   servicio_default: true,
   sala_expediente_tabs: true,
+  evaluacion_inicial: true,
   estado_actual: true,
   estado_actual_registro: true,
   estado_actual_review: true,
   eventualidades: true,
-  listado_problemas: true,
   sala_med: true,
   sala_tend: true,
   sala_tend_chart: true,
-  sala_vpo: true,
-  sala_receta_hu: true,
+  sala_hoja_ic: true,
 };
 
 function findTourDemoPerezPatient() {

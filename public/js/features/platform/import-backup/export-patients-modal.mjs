@@ -3,13 +3,14 @@ import { getPatients, persistClinicalState } from '../../../app-state.mjs';
 import { esc } from '../../../dom-escape.mjs';
 import { isTourDemoPatientId } from '../../../tour-demo-patient.mjs';
 import { patientsVisibleInSidebar } from '../../patients-scope.mjs';
-import { formatDateSlug, downloadJsonPayload } from '../shared.mjs';
+import { formatDateSlug, downloadJsonPayload, downloadTextPayload } from '../shared.mjs';
 import { addAuditEntry } from '../audit.mjs';
 import { getPlatformRuntime } from '../runtime.mjs';
 import {
   buildPatientsSelectionExportPayload,
   sortPatientsForExportPicker,
 } from './export-patients-selection.mjs';
+import { buildIcRegistryRows, rowsToCsv, withExcelBom } from '../../../../../lib/cardio/ic-registry-export.mjs';
 
 const rt = getPlatformRuntime();
 
@@ -39,9 +40,16 @@ function selectedPatientIdsFromBackdrop(backdrop) {
   return ids;
 }
 
+function setExportButtonEnabled(btn, enabled) {
+  if (!btn) return;
+  btn.disabled = !enabled;
+  btn.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+  btn.style.opacity = enabled ? '' : '0.55';
+  btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
+}
+
 function syncExportPatientsActions(backdrop) {
   var countEl = backdrop.querySelector('#export-patients-count');
-  var exportBtn = backdrop.querySelector('#export-patients-ok');
   var ids = selectedPatientIdsFromBackdrop(backdrop);
   var n = ids.length;
   if (countEl) {
@@ -50,12 +58,8 @@ function syncExportPatientsActions(backdrop) {
         ? 'Ningún paciente seleccionado'
         : n + ' paciente' + (n === 1 ? '' : 's') + ' seleccionado' + (n === 1 ? '' : 's');
   }
-  if (exportBtn) {
-    exportBtn.disabled = n === 0;
-    exportBtn.setAttribute('aria-disabled', n === 0 ? 'true' : 'false');
-    exportBtn.style.opacity = n === 0 ? '0.55' : '';
-    exportBtn.style.cursor = n === 0 ? 'not-allowed' : 'pointer';
-  }
+  setExportButtonEnabled(backdrop.querySelector('#export-patients-ok'), n > 0);
+  setExportButtonEnabled(backdrop.querySelector('#export-patients-csv'), n > 0);
 }
 
 function closeExportPatientsModal(backdrop) {
@@ -97,6 +101,28 @@ function runExportPatientsSelection(patientIds) {
   );
 }
 
+function runExportIcRegistryCsv(patientIds) {
+  persistClinicalState();
+  var idSet = new Set(patientIds);
+  var patients = getPatients().filter(function (p) {
+    return p && idSet.has(p.id);
+  });
+  if (!patients.length) {
+    rt.showToast('No hay pacientes exportables en la selección.', 'error');
+    return;
+  }
+  var built = buildIcRegistryRows(patients);
+  var csv = withExcelBom(rowsToCsv(built.headers, built.rows));
+  downloadTextPayload(csv, 'R-plus-hf-registro-' + formatDateSlug(new Date()) + '.csv', 'text/csv');
+  addAuditEntry('ic-registry-csv-export', 'ok', patients.length, 'csv');
+  var truncatedCount = Object.keys(built.truncatedByPatient).length;
+  var msg = 'Exportados ' + patients.length + ' paciente' + (patients.length === 1 ? '' : 's');
+  if (truncatedCount > 0) {
+    msg += '; ' + truncatedCount + ' paciente' + (truncatedCount === 1 ? '' : 's') + ' con visitas no incluidas (excede columnas de la plantilla)';
+  }
+  rt.showToast(msg, 'success');
+}
+
 function wireExportPatientsModal(backdrop, candidates) {
   var ordered = candidates;
   backdrop.querySelector('#export-patients-all')?.addEventListener('click', function () {
@@ -125,13 +151,19 @@ function wireExportPatientsModal(backdrop, candidates) {
     closeExportPatientsModal(backdrop);
     runExportPatientsSelection(ids);
   });
+  backdrop.querySelector('#export-patients-csv')?.addEventListener('click', function () {
+    var ids = selectedPatientIdsFromBackdrop(backdrop);
+    if (!ids.length) return;
+    closeExportPatientsModal(backdrop);
+    runExportIcRegistryCsv(ids);
+  });
   backdrop.addEventListener('click', function (ev) {
     if (ev.target === backdrop) closeExportPatientsModal(backdrop);
   });
   syncExportPatientsActions(backdrop);
   if (!ordered.length) {
-    var exportBtn = backdrop.querySelector('#export-patients-ok');
-    if (exportBtn) exportBtn.disabled = true;
+    setExportButtonEnabled(backdrop.querySelector('#export-patients-ok'), false);
+    setExportButtonEnabled(backdrop.querySelector('#export-patients-csv'), false);
   }
 }
 
@@ -157,6 +189,7 @@ export function openExportPatientsModal() {
     '<button type="button" id="export-patients-none" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Quitar todos</button>' +
     '<button type="button" id="export-patients-all" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Seleccionar todos</button>' +
     '<button type="button" id="export-patients-cancel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Cancelar</button>' +
+    '<button type="button" id="export-patients-csv" disabled aria-disabled="true" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:not-allowed;opacity:0.55;color:var(--text);">Exportar base de datos IC (.csv)</button>' +
     '<button type="button" id="export-patients-ok" disabled aria-disabled="true" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:not-allowed;opacity:0.55;">Exportar JSON…</button>' +
     '</div></div>';
   document.body.appendChild(backdrop);

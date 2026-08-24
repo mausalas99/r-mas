@@ -143,5 +143,9 @@ test('renderConsultaIcHtml is a step wizard: identity/date always shown, one ste
   assert.match(html4, /Tratamiento actual/);
 
   const html5 = renderConsultaIcHtml(fullCtx(5));
-  assert.match(html5, /Apreciativo \/ Plan/);
+  assert.match(html5, /Reingreso y desenlaces/);
+  assert.match(html5, /TMO y apego/);
+
+  const html6 = renderConsultaIcHtml(fullCtx(6));
+  assert.match(html6, /Apreciativo \/ Plan/);
 });

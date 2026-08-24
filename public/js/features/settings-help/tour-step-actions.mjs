@@ -5,7 +5,6 @@ import {
   getTourStepsForChapter,
 } from '../../onboarding-curriculum.mjs';
 import { saveTourProgress } from '../../onboarding-progress.mjs';
-import { buildTourDemoListadoProblemas } from '../../tour-demo-listado-problemas.mjs';
 import { getTourRegistroFormSample } from '../../tour-demo-monitoreo.mjs';
 import { applyTourDemoIngresoDates } from '../../tour-demo-dates.mjs';
 import { DEMO_PATIENT_ID, tourDemoLabCompleteForTour } from '../../tour-demo-patient.mjs';
@@ -32,7 +31,7 @@ import { switchLabInner } from '../patient-dashboard/lab-inner.mjs';
 import { closeModal, openAddModalFullManual } from '../patients-modal.mjs';
 import { procesarLabs } from '../../labs.js';
 import { extractParsedValues } from '../diagrams-parse.mjs';
-import { getPatients, getLabHistory, getListadoProblemas, persistClinicalState } from '../../app-state.mjs';
+import { getPatients, getLabHistory } from '../../app-state.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
 import { settingsHelpBridge } from './bridges.mjs';
 import { closeSettingsDropdown, isSettingsDropdownOpen, toggleSettingsDropdown } from './settings-dropdown.mjs';
@@ -40,7 +39,6 @@ import {
   TOUR_STEPS_USE_DEMO_PEREZ,
   ensureTourPrimaryDemoPatientActive,
   ensureTourDemoLabInputBoth,
-  findTourDemoPerezPatient,
   getTourDemoDateBundle,
 } from './tour-demo-seed.mjs';
 import { tourState } from './tour-state.mjs';
@@ -165,24 +163,6 @@ export function seedDemoTrendHistory(ref) {
 
 export function seedDemoMonitoreoOnActivePatient() {
   ensureTourPrimaryDemoPatientActive();
-}
-
-export function seedDemoListadoProblemas() {
-  if (!tourState.guidedTourActive) return;
-  if (!ensureTourPrimaryDemoPatientActive()) return;
-  var perez = findTourDemoPerezPatient();
-  if (!perez) return;
-  var demoId = perez.id;
-  var today = new Date();
-  var fecha =
-    String(today.getDate()).padStart(2, '0') + '/'
-    + String(today.getMonth() + 1).padStart(2, '0') + '/'
-    + today.getFullYear();
-  var hora =
-    String(today.getHours()).padStart(2, '0') + ':'
-    + String(today.getMinutes()).padStart(2, '0');
-  getListadoProblemas()[demoId] = buildTourDemoListadoProblemas(fecha, hora);
-  persistClinicalState();
 }
 
 export function ensureProfileExpandedForTour() {
@@ -369,10 +349,7 @@ export function clearAllTourSpotlights() {
 
 // Pasos donde el botón resaltado suele estar arriba a la derecha: dock abajo-derecha lo tapa.
 var TOUR_DOCK_LEFT_STEPS = {
-  ic_nota: 1,
-  ic_indica: 1,
   estado_actual_registro: 1,
-  listado_problemas: 1,
   livesync_desktop: 1,
   livesync_mobile: 1,
   gv7_lan_wifi: 1,
@@ -398,7 +375,6 @@ export function tourApplySpotlightForStep(id, t, scrollDelayMs) {
   var scrollDelay = scrollDelayMs != null ? scrollDelayMs : 140;
   setTimeout(function () {
     if (!tourState.guidedTourActive || tourState.tourStepId !== id) return;
-    if (id === 'listado_problemas') rt.renderListadoForm();
     var el = document.querySelector(t.selector);
     if (!el) return;
     try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_scrollErr) { void _scrollErr; }
@@ -474,7 +450,6 @@ function applyTourDensityForStep(id, t) {
 
 function seedTourDemosForStep(id) {
   if (TOUR_STEPS_USE_DEMO_PEREZ[id]) ensureTourPrimaryDemoPatientActive();
-  if (id === 'listado_problemas') seedDemoListadoProblemas();
   if (id === 'estado_actual' || id === 'estado_actual_registro' || isEstadoActualPostRegistroTourStep(id)) {
     seedDemoMonitoreoOnActivePatient();
   }
@@ -488,12 +463,7 @@ function applyTourTabsForStep(id, t) {
     return;
   }
   if (!t.innerTab) return;
-  if (id === 'listado_problemas') {
-    rt.switchInnerTab('listado', { forceRender: true });
-    rt.renderListadoForm();
-  } else {
-    rt.switchInnerTab(t.innerTab);
-  }
+  rt.switchInnerTab(t.innerTab);
   if (t.appTab !== 'nota') return;
   if (t.innerTab === 'notas') showNotaEvolucionClassicView();
   else if (t.innerTab === 'indica') renderIndicaForm();
