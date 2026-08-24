@@ -593,6 +593,5 @@ export function renderTodoFormIn(container, idPrefix) {
     return;
   }
 
-  while (container.firstChild) container.removeChild(container.firstChild);
   renderTodoListSection(container, null);
 }

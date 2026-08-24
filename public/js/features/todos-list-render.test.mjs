@@ -6,6 +6,7 @@ import {
   appendGroupedTodoSections,
   updateExpPendientesTabBadge,
   renderTodoListSection,
+  renderTodoFormIn,
 } from './todos-list-render.mjs';
 import { registerTodosRuntime } from './todos-runtime.mjs';
 import { addTodoWithFields, toggleTodo } from './todos-mutations.mjs';
@@ -175,6 +176,26 @@ describe('renderTodoListSection row-enter diffing', () => {
     const ghost = container.querySelector('.row-exit');
     assert.ok(ghost, 'a ghost copy of the removed row is appended to animate out');
     assert.match(ghost.textContent, /Segundo/);
+
+    registerTodosRuntime({ getActiveId: () => null });
+  });
+
+  it('still ghost-fades a removed row on the real refresh path (renderTodoFormIn), which pre-cleared the container before this fix', () => {
+    if (typeof document === 'undefined') return;
+    registerTodosRuntime({ getActiveId: () => 'p-form-refresh' });
+    const a = todo({ id: 'a', text: 'Primero' });
+    const b = todo({ id: 'b', text: 'Segundo' });
+    storage.saveTodos('p-form-refresh', [a, b]);
+    const container = document.createElement('div');
+
+    renderTodoFormIn(container);
+    assert.ok(container.querySelector('.wb-row[data-todo-id="b"]'));
+
+    storage.saveTodos('p-form-refresh', [a]);
+    renderTodoFormIn(container);
+    assert.equal(container.querySelector('.wb-row[data-todo-id="b"]'), null);
+    const ghost = container.querySelector('.row-exit');
+    assert.ok(ghost, 'renderTodoFormIn refresh must still leave a fading ghost row');
 
     registerTodosRuntime({ getActiveId: () => null });
   });
