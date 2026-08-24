@@ -14,7 +14,7 @@ describe('fetchMinVersionPayload', () => {
     }
   });
 
-  it('probes local, then the update Worker, then GitHub raw, in that order', async () => {
+  it('probes the update Worker, then GitHub raw, then local last (offline fallback)', async () => {
     const prev = globalThis.fetch;
     const requested = [];
     globalThis.fetch = async (url) => {
@@ -23,13 +23,13 @@ describe('fetchMinVersionPayload', () => {
     };
     try {
       await fetchMinVersionPayload();
-      assert.deepEqual(requested, ['/min-version.json', `${UPDATE_WORKER_URL}min-version.json`, MIN_VERSION_URL]);
+      assert.deepEqual(requested, [`${UPDATE_WORKER_URL}min-version.json`, MIN_VERSION_URL, '/min-version.json']);
     } finally {
       globalThis.fetch = prev;
     }
   });
 
-  it('uses the Worker response when local is missing and Worker answers', async () => {
+  it('uses the Worker response over GitHub raw and the local fallback', async () => {
     const prev = globalThis.fetch;
     globalThis.fetch = async (url) => {
       if (url === `${UPDATE_WORKER_URL}min-version.json`) {
@@ -40,6 +40,22 @@ describe('fetchMinVersionPayload', () => {
     try {
       const payload = await fetchMinVersionPayload();
       assert.equal(payload.minVersion, '8.0.0');
+    } finally {
+      globalThis.fetch = prev;
+    }
+  });
+
+  it('falls back to the local bundled file only when both remote checks fail (offline)', async () => {
+    const prev = globalThis.fetch;
+    globalThis.fetch = async (url) => {
+      if (url === '/min-version.json') {
+        return { ok: true, json: async () => ({ minVersion: '8.1.6' }) };
+      }
+      return { ok: false };
+    };
+    try {
+      const payload = await fetchMinVersionPayload();
+      assert.equal(payload.minVersion, '8.1.6');
     } finally {
       globalThis.fetch = prev;
     }
