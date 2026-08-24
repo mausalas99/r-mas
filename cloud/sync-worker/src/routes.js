@@ -5,6 +5,7 @@ import { SyncError, jsonSyncError, syncErrorStatus } from './errors.js';
 import { handleInternoApiRoute } from './interno/routes.js';
 import { handlePaseLabs } from './pase-labs.js';
 import { handleRooms } from './rooms.js';
+import { stampAppVersionFromRequest } from './session.js';
 
 export const API_PREFIX = '/api/sync/v1';
 
@@ -33,6 +34,11 @@ export async function handleApiRoute(request, env) {
   const subpath = path.slice(API_PREFIX.length) || '/';
 
   try {
+    // Runs on every authenticated request (rooms, admin, pase-labs), not
+    // just login — sessions last 14 days, so login-only tracking would
+    // leave fleet-adoption data stale for weeks.
+    if (env.DB) await stampAppVersionFromRequest(env.DB, request);
+
     if (subpath === '/auth' || subpath.startsWith('/auth/')) {
       const authSub = subpath === '/auth' ? '/' : subpath.slice('/auth'.length) || '/';
       return await handleAuth(request, env, authSub);
