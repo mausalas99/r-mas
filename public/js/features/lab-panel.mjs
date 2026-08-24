@@ -64,6 +64,34 @@ import {
   registerLabManualEntryRuntime,
 } from './lab-manual-entry.mjs';
 import { openLabPasteModal, closeLabPasteModal } from './lab-paste-modal.mjs';
+
+// Lazy: tesseract-adjacent OCR/parse code only loads once the user actually
+// clicks "Subir foto de lab" — lab-panel.mjs is already boot-eager, no need
+// to grow that budget for a rarely-used button.
+let labPhotoModulesPromise = null;
+function loadLabPhotoModules() {
+  if (!labPhotoModulesPromise) {
+    labPhotoModulesPromise = Promise.all([
+      import('./lab-photo-import.mjs'),
+      import('./lab-photo-review-modal.mjs'),
+    ]).then(function (mods) {
+      return { importMod: mods[0], reviewMod: mods[1] };
+    });
+  }
+  return labPhotoModulesPromise;
+}
+async function openLabPhotoImport() {
+  var mods = await loadLabPhotoModules();
+  return mods.importMod.openLabPhotoImport();
+}
+async function closeLabPhotoReviewModal() {
+  var mods = await loadLabPhotoModules();
+  return mods.reviewMod.closeLabPhotoReviewModal();
+}
+async function confirmLabPhotoReview() {
+  var mods = await loadLabPhotoModules();
+  return mods.reviewMod.confirmLabPhotoReview();
+}
 var activeLab = null;
 
 labPanelBridge.getActiveLab = function () {
@@ -262,6 +290,9 @@ export const windowHandlers = {
   openLabManualEntryModal,
   closeLabManualEntryModal,
   confirmLabManualEntry,
+  openLabPhotoImport,
+  closeLabPhotoReviewModal,
+  confirmLabPhotoReview,
   toggleLabMobileSyncDiag,
   copyLabMobileSyncDiag,
   forceLabMobileSyncPull,

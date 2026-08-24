@@ -120,6 +120,7 @@ export function formatLabHistoryDateSelectLabel(set, inferFechaLabSetFromId, pri
   var fe = resolveLabHistoryFeLabel(set, resolveInferFn(inferFechaLabSetFromId), 'Anterior');
   var tipoLabel = labHistoryTipoLabel(set.resLabs, primaryTipoFn);
   if (set.origin === 'externo') tipoLabel = tipoLabel + ' · Ext';
+  if (set.origin === 'foto') tipoLabel = tipoLabel + ' · Foto';
   var horaDisp = normalizeHoraLabHistory(set.hora);
   horaDisp = horaDisp ? String(horaDisp).trim().slice(0, 5) : '';
   if (horaDisp && fe !== '—' && fe.indexOf('Anterior') !== 0) {

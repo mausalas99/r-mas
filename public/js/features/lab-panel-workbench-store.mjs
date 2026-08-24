@@ -222,26 +222,30 @@ function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, r
 }
 
 /**
- * Entrada manual / labs externos → historial con origin: 'externo'.
+ * Entrada manual / labs externos → historial con origin: 'externo' (o
+ * 'foto' para importación por OCR de una foto).
  * @param {string} patientId
- * @param {{ resLabs: string[], fecha?: string, hora?: string, sectionKey?: string }} opts
+ * @param {{ resLabs: string[], fecha?: string, hora?: string, sectionKey?: string, origin?: string, sourceText?: string }} opts
  * @returns {object|null}
  */
 function pushExternalLabHistory(patientId, opts) {
   var o = opts && typeof opts === 'object' ? opts : {};
   var sectionKey = String(o.sectionKey || 'LAB').trim() || 'LAB';
+  var origin = String(o.origin || 'externo').trim() || 'externo';
+  var idPrefix = origin === 'foto' ? 'foto-' : 'ext-';
+  var sourceText = o.sourceText || '[entrada manual · ' + sectionKey + ']';
   var set = pushLabHistory(
     patientId,
     o.resLabs,
     o.fecha,
     o.hora,
-    '[entrada manual · ' + sectionKey + ']',
+    sourceText,
     {},
     {},
-    'ext-' + sectionKey
+    idPrefix + sectionKey
   );
   if (!set) return null;
-  set.origin = 'externo';
+  set.origin = origin;
   return set;
 }
 
