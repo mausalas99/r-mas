@@ -190,8 +190,17 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * (tend-export-render.mjs, tend-export.mjs) and drag-to-reorder legend
  * (tend-prefs.mjs, tend-group-charts-render.mjs) — all already-eager
  * modules on the boot path, no new imported files. */
-const EAGER_BOOT_BUDGET_BYTES = 3460648;
-const EAGER_BOOT_BUDGET_FILES = 98;
+/** +13590 B / +9 files: 8.2.0. Two already-decided pieces landing together —
+ * Stage B.1 boot-debt work (app-tabs.mjs/expediente-navigation.mjs edge cuts,
+ * docs/superpowers/plans/2026-08-23-boot-debt-phase3-stage-b.md — confirmed
+ * that plan itself does not shrink the eager bundle, Stage B.2 needed for the
+ * win and the user decided to stop there) and ui-motion.mjs's
+ * appendExitingRows() (row exit-animation for census/pendientes, already-eager
+ * chain via guardia-census-table.mjs/todos-list-render.mjs). Neither is a new
+ * eager root; both were flagged and left for the committing session to
+ * reconcile per docs/superpowers/plans/2026-08-23-boot-debt-phase2-phase3a.md. */
+const EAGER_BOOT_BUDGET_BYTES = 3474238;
+const EAGER_BOOT_BUDGET_FILES = 107;
 
 /**
  * Pre-existing eager/lazy-only conflicts, not introduced by the startup-lag
