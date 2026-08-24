@@ -82,12 +82,12 @@ describe('register + login with per-row password_iterations (schema/007)', () =>
     const db = makeDb();
     const env = { DB: db };
 
-    const regRes = await handleAuth(req('/register', { username: 'dra.gomez', password: 'correct-horse-battery' }), env, '/register');
+    const regRes = await handleAuth(req('/register', { username: 'dra.gomez', password: 'correct-horse-battery', appVersion: '8.2.0' }), env, '/register');
     assert.equal(regRes.status, 200);
     const stored = db.usersByUsername.get('dra.gomez');
     assert.equal(stored.password_iterations, MAX_ITERATIONS);
 
-    const loginRes = await handleAuth(req('/login', { username: 'dra.gomez', password: 'correct-horse-battery' }), env, '/login');
+    const loginRes = await handleAuth(req('/login', { username: 'dra.gomez', password: 'correct-horse-battery', appVersion: '8.2.0' }), env, '/login');
     const loginData = await loginRes.json();
     assert.ok(loginData.token, 'login must succeed and return a session token');
   });
@@ -109,7 +109,7 @@ describe('register + login with per-row password_iterations (schema/007)', () =>
     });
 
     const loginRes = await handleAuth(
-      req('/login', { username: 'r1.viejo', password: 'legacy-password-here' }),
+      req('/login', { username: 'r1.viejo', password: 'legacy-password-here', appVersion: '8.2.0' }),
       env,
       '/login'
     );
@@ -120,10 +120,10 @@ describe('register + login with per-row password_iterations (schema/007)', () =>
   it('rejects the wrong password for both a modern and a legacy row', async () => {
     const db = makeDb();
     const env = { DB: db };
-    await handleAuth(req('/register', { username: 'modern.user', password: 'correct-horse-battery' }), env, '/register');
+    await handleAuth(req('/register', { username: 'modern.user', password: 'correct-horse-battery', appVersion: '8.2.0' }), env, '/register');
 
     await assert.rejects(
-      () => handleAuth(req('/login', { username: 'modern.user', password: 'wrong-password' }), env, '/login'),
+      () => handleAuth(req('/login', { username: 'modern.user', password: 'wrong-password', appVersion: '8.2.0' }), env, '/login'),
       /invalid_credentials|incorrectos/
     );
   });

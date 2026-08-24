@@ -199,7 +199,10 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * chain via guardia-census-table.mjs/todos-list-render.mjs). Neither is a new
  * eager root; both were flagged and left for the committing session to
  * reconcile per docs/superpowers/plans/2026-08-23-boot-debt-phase2-phase3a.md. */
-const EAGER_BOOT_BUDGET_BYTES = 3474238;
+/** +24 B / +0 files: 8.2.0. app-version.mjs (caches getAppVersion() once for the
+ * fleet-adoption version stamp sent on login/register) added to api-client.mjs,
+ * already-eager on the sync boot path — no new eager file. */
+const EAGER_BOOT_BUDGET_BYTES = 3474262;
 const EAGER_BOOT_BUDGET_FILES = 107;
 
 /**

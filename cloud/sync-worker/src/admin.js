@@ -264,6 +264,26 @@ async function handleRoomMutations(env, db, roomId, limit) {
   return Response.json({ mutations });
 }
 
+/** @param {import('@cloudflare/workers-types').D1Database} db */
+async function handleVersionStats(db) {
+  const { results } = await db
+    .prepare(
+      `SELECT COALESCE(app_version, '(desconocida)') AS version, COUNT(*) AS n
+       FROM users
+       WHERE disabled = 0
+       GROUP BY version
+       ORDER BY n DESC`
+    )
+    .all();
+
+  const versions = (results ?? []).map((row) => ({
+    version: row.version,
+    users: Number(row.n) || 0,
+  }));
+
+  return Response.json({ versions });
+}
+
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {string} q */
 async function handleSearchUsers(db, q) {
   const term = String(q ?? '').trim();
@@ -273,7 +293,7 @@ async function handleSearchUsers(db, q) {
     const pattern = `%${term.replace(/[%_]/g, '')}%`;
     const out = await db
       .prepare(
-        `SELECT id, username, display_name, role, disabled, created_at
+        `SELECT id, username, display_name, role, disabled, created_at, app_version, app_version_at
          FROM users
          WHERE username LIKE ? COLLATE NOCASE OR display_name LIKE ? COLLATE NOCASE
          ORDER BY username
@@ -285,7 +305,7 @@ async function handleSearchUsers(db, q) {
   } else {
     const out = await db
       .prepare(
-        `SELECT id, username, display_name, role, disabled, created_at
+        `SELECT id, username, display_name, role, disabled, created_at, app_version, app_version_at
          FROM users
          ORDER BY created_at DESC
          LIMIT 50`
@@ -301,6 +321,8 @@ async function handleSearchUsers(db, q) {
     role: row.role ?? 'member',
     disabled: Number(row.disabled) !== 0,
     created_at: row.created_at,
+    app_version: row.app_version ?? null,
+    app_version_at: row.app_version_at ?? null,
   }));
 
   return Response.json({ users });
@@ -511,6 +533,11 @@ export async function handleAdmin(request, env, subpath) {
   if (roomDetailMatch && method === 'GET') {
     await requireAdminUser(db, request, env);
     return handleRoomDetail(db, roomDetailMatch[1]);
+  }
+
+  if (subpath === '/version-stats' && method === 'GET') {
+    await requireAdminUser(db, request, env);
+    return handleVersionStats(db);
   }
 
   if (subpath === '/users' && method === 'GET') {

@@ -20,6 +20,7 @@ export function syncErrorStatus(err) {
     return 403;
   }
   if (code === 'not_found') return 404;
+  if (code === 'update_required') return 426;
   if (code === 'not_implemented') return 501;
   if (code === 'rate_limited') return 429;
   if (code === 'payload_too_large') return 413;

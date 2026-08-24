@@ -1,6 +1,7 @@
 const API_PREFIX = '/api/sync/v1';
 
 import { cloudSyncHttpFetch } from './api-transport.mjs';
+import { getCachedAppVersion } from './app-version.mjs';
 import { getCachedRoomDek } from './room-dek.mjs';
 import { encryptOpsForPush, decryptOpsFromPull, decryptRoomStateFromPull } from './cloud-sync-crypto-wire.mjs';
 
@@ -68,8 +69,8 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
   return {
     ping: () => req('/ping'),
     meta: () => req('/meta'),
-    register: (body) => req('/auth/register', { method: 'POST', body }),
-    login: (body) => req('/auth/login', { method: 'POST', body }),
+    register: (body) => req('/auth/register', { method: 'POST', body: { ...body, appVersion: getCachedAppVersion() } }),
+    login: (body) => req('/auth/login', { method: 'POST', body: { ...body, appVersion: getCachedAppVersion() } }),
     logout: () => req('/auth/logout', { method: 'POST', body: {} }),
     recover: (body) => req('/auth/recover', { method: 'POST', body }),
     regenerateRecovery: () =>
@@ -128,5 +129,6 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
     adminResetPassword: (userId, body) =>
       req(`/admin/users/${userId}/reset-password`, { method: 'POST', body }),
     adminDeleteUser: (userId) => req(`/admin/users/${userId}`, { method: 'DELETE' }),
+    adminVersionStats: () => req('/admin/version-stats'),
   };
 }
