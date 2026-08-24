@@ -72,7 +72,7 @@ export function resetStaleConexionSubview() {
   if (!section) return;
   const view = String(section.dataset.cloudView || 'status').trim() || 'status';
   const hasView = !!section.querySelector('[data-cloud-view="' + view + '"]');
-  if (view === 'ops' || view === 'lan' || !hasView) {
+  if (!hasView) {
     applyConexionTourView(section, 'status');
   }
 }

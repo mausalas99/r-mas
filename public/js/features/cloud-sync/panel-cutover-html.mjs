@@ -3,6 +3,23 @@ import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { filterSnapshotPatients } from './cutover-claim.mjs';
 import { isCloudSala, normalizeCloudSala } from './sala-allowlist.mjs';
 import { getCloudSyncUrl } from './settings.mjs';
+import { CLINICAL_SALAS } from '../clinical-teams/shared.mjs';
+
+const CUTOVER_RANKS = ['R1', 'R2', 'R3', 'R4'];
+
+function cutoverRankOptionsHtml(rank) {
+  return CUTOVER_RANKS.map((r) => '<option value="' + r + '" ' + (rank === r ? 'selected' : '') + '>' + r + '</option>').join('');
+}
+
+function cutoverSalaOptionsHtml(sala) {
+  return (
+    '<option value="">— Seleccionar —</option>' +
+    CLINICAL_SALAS.map((s) => {
+      const es = esc(s);
+      return '<option value="' + es + '" ' + (sala === s ? 'selected' : '') + '>' + es + '</option>';
+    }).join('')
+  );
+}
 
 export function cutoverShellHtml(step, body) {
   return (
@@ -80,12 +97,12 @@ export function identityHtml(snapshot, chosenUser) {
     '<label>Nombre en guardia<input class="profile-input" data-cutover-display value="' +
     esc(chosenUser?.displayName || '') +
     '" /></label>' +
-    '<label>Rango<input class="profile-input" data-cutover-rank value="' +
-    esc(chosenUser?.rank || 'R1') +
-    '" /></label>' +
-    '<label>Sala<input class="profile-input" data-cutover-sala value="' +
-    esc(chosenUser?.sala || '') +
-    '" placeholder="Sala 1, Torre HU…" /></label>' +
+    '<label>Rango<select class="profile-input" data-cutover-rank>' +
+    cutoverRankOptionsHtml(chosenUser?.rank || 'R1') +
+    '</select></label>' +
+    '<label>Sala<select class="profile-input" data-cutover-sala>' +
+    cutoverSalaOptionsHtml(chosenUser?.sala || '') +
+    '</select></label>' +
     '</div>' +
     '<div class="cloud-sync-cutover-actions">' +
     '<button type="button" class="cloud-sync-btn" data-cutover-action="back">Atrás</button>' +
@@ -202,7 +219,7 @@ export function cloudHtml(chosenUser) {
 export function doneHtml() {
   return (
     '<p class="cloud-sync-cutover-lead">Listo. Ya puedes trabajar con tu censo y equipo.</p>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary" data-cutover-action="close">Entrar a R+</button>'
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary" data-cutover-action="close">Entrar a R+ HF</button>'
   );
 }
 
