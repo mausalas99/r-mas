@@ -44,6 +44,8 @@ import {
   registerAppRuntimeContext,
   registerAllFeatureRuntimes,
   runInitialFeatureBoot,
+  notaEvolucionPrimaryTabWindowHandlers,
+  expedienteInnerCacheWindowHandlers,
 } from './app-runtimes.mjs';
 import {
   registerAppShellContext,
@@ -89,8 +91,6 @@ import {
 import { todosWindowHandlers } from './features/todos.mjs';
 import { recetaHuWindowHandlers } from './features/receta-hu.mjs';
 import { windowHandlers as expedienteNavWindowHandlers, renderInnerTabs } from './features/expediente-navigation.mjs';
-import { windowHandlers as notaEvolucionPrimaryTabWindowHandlers } from './features/nota-evolucion/nota-evolucion-primary-tab.mjs';
-import { windowHandlers as expedienteInnerCacheWindowHandlers } from './features/expediente-inner-cache.mjs';
 import { syncMainAppTabA11y } from './features/app-tabs.mjs';
 import { initTabBarMotion } from './ui-tab-motion.mjs';
 import { medicationsWindowHandlers, registerMedicationsRuntime } from './features/medications.mjs';

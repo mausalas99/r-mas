@@ -130,7 +130,10 @@ import {
   registerNotesIndicacionesRuntime,
   renderIndicaForm,
 } from './features/notes-indicaciones.mjs';
-import { showNotaEvolucionClassicView } from './features/nota-evolucion/nota-evolucion-primary-tab.mjs';
+import {
+  showNotaEvolucionClassicView,
+  windowHandlers as notaEvolucionPrimaryTabWindowHandlers,
+} from './features/nota-evolucion/nota-evolucion-primary-tab.mjs';
 import {
   installLabHistoryAuditHook,
   registerLabHistoryMaintRuntime,
@@ -170,6 +173,7 @@ import {
 import {
   invalidateInnerTabRenderCache,
   syncInnerTabVisualOnly,
+  windowHandlers as expedienteInnerCacheWindowHandlers,
 } from './features/expediente-inner-cache.mjs';
 import { renderGuardiaBoard } from './features/guardia-board.mjs';
 import {
@@ -513,3 +517,5 @@ export function runInitialFeatureBoot() {
   wireEaModalDismiss();
   syncCensoExportButtonVisibility();
 }
+
+export { notaEvolucionPrimaryTabWindowHandlers, expedienteInnerCacheWindowHandlers };
