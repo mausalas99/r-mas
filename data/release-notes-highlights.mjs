@@ -2618,6 +2618,11 @@ var RELEASE_NOTES_821 = [
     body:
       'Corrige un error que hacía que los labs "pesados" se re-sincronizaran enteros con Nube en cada sync, en vez de solo lo nuevo.',
   },
+  {
+    title: 'Menos tráfico de Nube',
+    body:
+      'La cola de sincronización deja de acumular lotes repetidos de labs ya enviados, así que se vacía más rápido.',
+  },
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */

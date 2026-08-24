@@ -204,7 +204,11 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * already-eager on the sync boot path — no new eager file. */
 /** +70 B / +0 files: api-client.mjs now stamps X-App-Version on every request,
  * not just login (session.js server side) — already-eager, no new eager file. */
-const EAGER_BOOT_BUDGET_BYTES = 3474332;
+/** +741 B / +0 files: 8.2.1. noteCloudLabSidecarOpsSent (cloud-lab-sidecar-index.mjs,
+ * already-eager Nube push path) fixes heavy lab sets resyncing on every push —
+ * fingerprints the pre-trim value, not the sent one. Plus RELEASE_NOTES_821
+ * curated entries in the already-eager release-notes-highlights.mjs. */
+const EAGER_BOOT_BUDGET_BYTES = 3475073;
 const EAGER_BOOT_BUDGET_FILES = 107;
 
 /**
