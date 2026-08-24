@@ -5,6 +5,7 @@ import {
   buildTodoGroupPlan,
   appendGroupedTodoSections,
   updateExpPendientesTabBadge,
+  renderTodoListSection,
 } from './todos-list-render.mjs';
 import { registerTodosRuntime } from './todos-runtime.mjs';
 import { addTodoWithFields, toggleTodo } from './todos-mutations.mjs';
@@ -127,6 +128,55 @@ describe('buildTodoGroupPlan', () => {
     assert.equal(row.querySelector('.wb-todo-prior'), null);
     assert.equal(row.querySelector('.wb-todo-accion'), null);
     assert.match(row.querySelector('.wb-todo-pendiente--closed').textContent, /Resuelto/);
+  });
+});
+
+describe('renderTodoListSection row-enter diffing', () => {
+  it('marks only rows new since the previous paint, so a repaint of unchanged rows does not re-fade them', () => {
+    if (typeof document === 'undefined') return;
+    registerTodosRuntime({ getActiveId: () => 'p-row-enter' });
+    const a = todo({ id: 'a', text: 'Primero' });
+    storage.saveTodos('p-row-enter', [a]);
+    const container = document.createElement('div');
+
+    renderTodoListSection(container);
+    const rowA1 = container.querySelector('.wb-row[data-todo-id="a"]');
+    assert.ok(rowA1, 'first paint renders row a');
+    assert.match(rowA1.className, /row-enter/);
+
+    renderTodoListSection(container);
+    const rowA2 = container.querySelector('.wb-row[data-todo-id="a"]');
+    assert.doesNotMatch(rowA2.className, /row-enter/, 're-render of an unchanged row must not re-enter');
+
+    storage.saveTodos('p-row-enter', [a, todo({ id: 'b', text: 'Segundo' })]);
+    renderTodoListSection(container);
+    const rowA3 = container.querySelector('.wb-row[data-todo-id="a"]');
+    const rowB = container.querySelector('.wb-row[data-todo-id="b"]');
+    assert.doesNotMatch(rowA3.className, /row-enter/, 'existing row stays unmarked');
+    assert.match(rowB.className, /row-enter/, 'newly added row enters');
+
+    registerTodosRuntime({ getActiveId: () => null });
+  });
+
+  it('leaves a fading ghost of a row that is removed from the data, instead of popping it away instantly', () => {
+    if (typeof document === 'undefined') return;
+    registerTodosRuntime({ getActiveId: () => 'p-row-exit' });
+    const a = todo({ id: 'a', text: 'Primero' });
+    const b = todo({ id: 'b', text: 'Segundo' });
+    storage.saveTodos('p-row-exit', [a, b]);
+    const container = document.createElement('div');
+
+    renderTodoListSection(container);
+    assert.ok(container.querySelector('.wb-row[data-todo-id="b"]'));
+
+    storage.saveTodos('p-row-exit', [a]);
+    renderTodoListSection(container);
+    assert.equal(container.querySelector('.wb-row[data-todo-id="b"]'), null, 'removed row is gone from the live list');
+    const ghost = container.querySelector('.row-exit');
+    assert.ok(ghost, 'a ghost copy of the removed row is appended to animate out');
+    assert.match(ghost.textContent, /Segundo/);
+
+    registerTodosRuntime({ getActiveId: () => null });
   });
 });
 

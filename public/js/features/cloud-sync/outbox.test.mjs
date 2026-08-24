@@ -26,6 +26,38 @@ describe('cloud outbox', () => {
     ]);
   });
 
+  it('merges by path — a smaller re-enqueue does not drop paths the pending batch already had', () => {
+    const mem = [];
+    const ob = createOutbox({
+      load: () => mem.slice(),
+      save: (rows) => {
+        mem.length = 0;
+        mem.push(...rows);
+      },
+    });
+    ob.enqueue({
+      clientMutationId: 'm1',
+      ops: [
+        { path: 'entries/p1/fields', value: { cama: '2' } },
+        { path: 'entries/p1/monitoreo', value: { historial: [1] } },
+        { path: 'entries/p1/eventualidades', value: { entries: [] } },
+      ],
+    });
+    // A degraded rebuild (e.g. session lock stripped signed fields) re-enqueues
+    // the same batch id with only eventualidades — monitoreo/fields must survive.
+    ob.enqueue({
+      clientMutationId: 'm1',
+      ops: [{ path: 'entries/p1/eventualidades', value: { entries: [] } }],
+    });
+    assert.equal(ob.list().length, 1);
+    const paths = ob.list()[0].ops.map((op) => op.path).sort();
+    assert.deepEqual(paths, [
+      'entries/p1/eventualidades',
+      'entries/p1/fields',
+      'entries/p1/monitoreo',
+    ]);
+  });
+
   it('keeps distinct clientMutationIds', () => {
     const mem = [];
     const ob = createOutbox({

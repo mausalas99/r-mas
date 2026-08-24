@@ -84,6 +84,9 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
     leaveRoom: (roomId) => req(`/rooms/${roomId}/leave`, { method: 'POST', body: {} }),
     getRoomDek: (roomId) => req(`/rooms/${roomId}/dek`),
     setRoomDek: (roomId, body) => req(`/rooms/${roomId}/dek`, { method: 'PUT', body }),
+    rotateRoomDek: (roomId, body) => req(`/rooms/${roomId}/dek/rotate`, { method: 'PUT', body }),
+    getAdminRoomDek: (roomId) => req(`/rooms/${roomId}/dek/admin`),
+    setAdminRoomDek: (roomId, body) => req(`/rooms/${roomId}/dek/admin`, { method: 'PUT', body }),
     pull: async (roomId, since, opts) => {
       const q = new URLSearchParams({ since: String(since ?? 0) });
       if (opts?.mobile) q.set('mobile', '1');

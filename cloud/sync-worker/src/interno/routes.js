@@ -1,19 +1,35 @@
-import { authenticateInterno } from './auth.js';
-import { readInternoBoard } from './board.js';
-import {
-  applyInternoVitals,
-  checkVitalsRateLimit,
-} from './vitals.js';
+// board.js / vitals.js are no longer imported here — see the disabled-route
+// note below. authenticateInterno, readInternoBoard, applyInternoVitals, and
+// checkVitalsRateLimit stay in their own files, unused, until re-wired.
 
 export const INTERNO_API_PREFIX = '/api/interno/v1';
 
-/** @param {Request} request */
-async function parseJsonBody(request) {
-  try {
-    return await request.json();
-  } catch {
-    return null;
-  }
+// ponytail: clinicalOps and monitoreo are becoming E2EE-encrypted; this board
+// reads them server-side and can't work until it's redesigned to read
+// on-device — see docs/superpowers/plans/2026-08-23-nube-e2ee-deploy.md Stage 0
+// items 3-4. board.js / vitals.js / vitals-medicion.js are left in place,
+// intercepted here at the route level. Remove this block (and re-enable the
+// routes below) once the on-device redesign lands.
+// Response bodies are single-use streams, so build a fresh Response per call.
+function internoDisabledBoard() {
+  return Response.json(
+    {
+      error: 'temporarily_disabled',
+      message:
+        'El panel de guardia por celular está temporalmente desactivado mientras migramos a cifrado de extremo a extremo.',
+    },
+    { status: 503 }
+  );
+}
+function internoDisabledVitals() {
+  return Response.json(
+    {
+      error: 'temporarily_disabled',
+      message:
+        'El registro de signos vitales por celular está temporalmente desactivado mientras migramos a cifrado de extremo a extremo.',
+    },
+    { status: 503 }
+  );
 }
 
 /**
@@ -38,29 +54,14 @@ export async function handleInternoRoutes(request, env, subpath) {
     if (request.method !== 'GET') {
       return Response.json({ error: 'method_not_allowed' }, { status: 405 });
     }
-    const auth = await authenticateInterno(request, db);
-    if (auth instanceof Response) return auth;
-    const board = await readInternoBoard(env, db, auth.sala);
-    if (!board) return Response.json({ error: 'invalid_sala' }, { status: 400 });
-    return Response.json(board);
+    return internoDisabledBoard();
   }
 
   if (subpath === '/vitals') {
     if (request.method !== 'POST') {
       return Response.json({ error: 'method_not_allowed' }, { status: 405 });
     }
-    const body = await parseJsonBody(request);
-    if (!body) return Response.json({ error: 'invalid_json' }, { status: 400 });
-    const auth = await authenticateInterno(request, db, body);
-    if (auth instanceof Response) return auth;
-    if (!checkVitalsRateLimit(request, auth.token)) {
-      return Response.json({ error: 'rate_limited' }, { status: 429 });
-    }
-    const patientId = String(body?.patientId || '').trim();
-    if (!patientId) {
-      return Response.json({ error: 'patient_id_required' }, { status: 400 });
-    }
-    return applyInternoVitals(env, db, auth.sala, patientId, body);
+    return internoDisabledVitals();
   }
 
   return Response.json({ error: 'not_found' }, { status: 404 });

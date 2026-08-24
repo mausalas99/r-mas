@@ -608,6 +608,7 @@ html.ui-density-guardia #lan-connection-banner {
   font-size: 0.75rem;
   line-height: 1.5;
   color: var(--text-muted);
+  animation: fade-in var(--dur-fast) var(--ease-out);
 }
 
 #entrega-modal-backdrop .entrega-modal-lead.hidden {
@@ -674,6 +675,7 @@ html.ui-density-guardia #lan-connection-banner {
   margin: 0 0 4px;
   font-size: 0.6875rem;
   line-height: 1.45;
+  animation: fade-in var(--dur-fast) var(--ease-out);
 }
 
 #entrega-modal-backdrop .entrega-top-strip .entrega-field-hint.hidden {

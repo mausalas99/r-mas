@@ -369,6 +369,12 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
 .settings-panel {
   width: 100%;
 }
+.settings-panel:not([hidden]) {
+  animation: fade-in var(--dur-fast) var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  .settings-panel:not([hidden]) { animation: none; }
+}
 .settings-panel.settings-panel--wide .settings-acc-body {
   max-width: none;
 }
@@ -2029,6 +2035,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   padding: 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
+  animation: fade-in var(--dur-fast) var(--ease-out);
 }
 .equipos-lista-panel-body .equipos-queue-board-host .equipos-desktop-row-meta {
   font-size: 12px;

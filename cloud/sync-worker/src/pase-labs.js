@@ -104,6 +104,24 @@ export async function handlePaseLabs(request, env) {
   if (request.method !== 'GET') {
     throw new SyncError('not_found', 'Método no permitido.');
   }
+  // ponytail: clinicalOps.team_membership / .patient_team_assignment are
+  // becoming E2EE-encrypted; this endpoint reads them server-side to scope
+  // patients and can't work until it's redesigned to read on-device — see
+  // docs/superpowers/plans/2026-08-23-nube-e2ee-deploy.md Stage 0 items 3-4.
+  // buildPaseLabsResponse() below is kept intact, just not called, until the
+  // on-device redesign lands.
+  return Response.json(
+    {
+      error: 'temporarily_disabled',
+      message:
+        'La vista de labs por celular está temporalmente desactivada mientras migramos a cifrado de extremo a extremo.',
+    },
+    { status: 503, headers: CORS_HEADERS }
+  );
+}
+
+/** Pre-E2EE logic, kept for the future on-device redesign. Not called. */
+async function buildPaseLabsResponse(request, env) {
   const db = env.DB;
   if (!db) throw new SyncError('error', 'Base de datos no configurada.');
 

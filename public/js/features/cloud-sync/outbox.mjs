@@ -6,8 +6,29 @@ export { CLOUD_OUTBOX_CHANGED_EVENT, notifyCloudOutboxChanged } from './cloud-ou
 /** @typedef {{ clientMutationId: string, ops: unknown[], baseRevision?: number, enqueuedAt: number }} OutboxEntry */
 
 /**
- * Persistent mutation outbox. Dedupes by `clientMutationId` — **last enqueue wins**
- * for the same id (rapid re-edits collapse to the latest ops payload).
+ * Merge two op lists by `path` — ops in `newOps` win per path, but a path present
+ * only in `oldOps` is kept. A re-enqueue that (e.g. because the census snapshot
+ * momentarily couldn't build a signed field) has fewer paths than the batch
+ * already queued must not erase the paths it doesn't mention.
+ * @param {unknown[]} oldOps
+ * @param {unknown[]} newOps
+ * @returns {unknown[]}
+ */
+function mergeOpsByPath(oldOps, newOps) {
+  const merged = new Map();
+  for (const op of Array.isArray(oldOps) ? oldOps : []) {
+    if (op && typeof op === 'object' && 'path' in op) merged.set(op.path, op);
+  }
+  for (const op of Array.isArray(newOps) ? newOps : []) {
+    if (op && typeof op === 'object' && 'path' in op) merged.set(op.path, op);
+  }
+  return Array.from(merged.values());
+}
+
+/**
+ * Persistent mutation outbox. Dedupes by `clientMutationId` — ops are merged by
+ * `path` for the same id (rapid re-edits collapse to the latest value per path,
+ * without a smaller re-enqueue dropping paths a fuller pending batch already had).
  *
  * @param {{ load?: () => OutboxEntry[], save?: (rows: OutboxEntry[]) => void }} [deps]
  */
@@ -51,18 +72,21 @@ export function createOutbox(deps = {}) {
     const clientMutationId = String(item?.clientMutationId || '').trim();
     if (!clientMutationId) return;
 
-    const rows = load().filter((row) => row.clientMutationId !== clientMutationId);
+    const rows = load();
+    const existing = rows.find((row) => row.clientMutationId === clientMutationId);
+    const rest = rows.filter((row) => row.clientMutationId !== clientMutationId);
     const enqueuedAt =
       item.enqueuedAt != null && Number.isFinite(Number(item.enqueuedAt))
         ? Number(item.enqueuedAt)
         : Date.now();
-    rows.push({
+    const incomingOps = Array.isArray(item.ops) ? item.ops : [];
+    rest.push({
       clientMutationId,
-      ops: Array.isArray(item.ops) ? item.ops : [],
+      ops: existing ? mergeOpsByPath(existing.ops, incomingOps) : incomingOps,
       ...(item.baseRevision != null ? { baseRevision: Number(item.baseRevision) } : {}),
       enqueuedAt,
     });
-    save(rows);
+    save(rest);
   }
 
   /** @returns {OutboxEntry[]} */

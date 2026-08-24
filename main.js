@@ -946,6 +946,9 @@ app.whenReady().then(async () => {
     });
     bootMark('db-ipc');
 
+    const { registerAdminRescueKeyIpcHandlers } = await import('./lib/admin-rescue-key-ipc.mjs');
+    registerAdminRescueKeyIpcHandlers({ ipcMain, app, safeStorage });
+
     unlockPromise = unlockClinicalDbAtStartup(dbManager);
     unlockPromise.catch((unlockErr) => {
       // The renderer surfaces this through db:status + the unlock overlay

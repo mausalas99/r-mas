@@ -14,6 +14,7 @@ import {
   maybeShowLabHistoryForActivePatient,
 } from './lab-panel-history.mjs';
 import { pushLabHistory, finalizeLabHistoryImport } from './lab-panel-workbench-store.mjs';
+import { bumpLabHistoryRevision } from '../lab-history-cache.mjs';
 import {
   filterProcessableBulkBlocks,
   storeProcessableBulkBlocks,
@@ -383,6 +384,9 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports, opts) {
   var displayResult = displayPick.result;
   displayResult.sourceText = displayPick.reportText || text;
   applyBulkLabPatientSwitch(displayPick, displayResult, processable, applyLabPastePatientResolution);
+  // Re-bump for the now-active patient — the dashboard's revision listener drops
+  // events stamped with the pre-switch active id (see dashboard-mount.mjs).
+  bumpLabHistoryRevision(rt.getActiveId());
 
   labPanelBridge.renderOutput(displayResult);
   toastCitoquimInterpFromResult(displayResult);

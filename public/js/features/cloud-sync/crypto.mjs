@@ -95,6 +95,63 @@ export async function unwrapDek(wrapped, wrapKey) {
   );
 }
 
+/**
+ * Admin rescue key: an ECDH P-256 keypair. The private half never leaves the
+ * admin's device — it's generated/stored main-process side (Mac Keychain via
+ * Electron safeStorage). Only the public half and these wrap/unwrap helpers are
+ * used from the renderer.
+ * @param {string} b64
+ * @returns {Promise<CryptoKey>}
+ */
+export async function importAdminPublicKey(b64) {
+  return crypto.subtle.importKey('raw', fromBase64(b64), { name: 'ECDH', namedCurve: 'P-256' }, true, []);
+}
+
+/** @param {string} b64 @returns {Promise<CryptoKey>} */
+export async function importAdminPrivateKey(b64) {
+  return crypto.subtle.importKey('pkcs8', fromBase64(b64), { name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveKey']);
+}
+
+/**
+ * Wrap a room DEK for the admin rescue copy — ephemeral ECDH + AES-GCM (ECIES-style).
+ * Anyone can compute this (it only needs the admin's PUBLIC key); only the admin's
+ * private key can undo it.
+ * @param {CryptoKey} dek
+ * @param {CryptoKey} adminPublicKey
+ * @returns {Promise<{ ct: string, iv: string, ephemeralPubKey: string }>}
+ */
+export async function wrapDekForAdmin(dek, adminPublicKey) {
+  const ephemeral = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveKey']);
+  const sharedKey = await crypto.subtle.deriveKey(
+    { name: 'ECDH', public: adminPublicKey },
+    ephemeral.privateKey,
+    { name: 'AES-GCM', length: DEK_LENGTH_BITS },
+    false,
+    ['wrapKey']
+  );
+  const wrapped = await wrapDek(dek, sharedKey);
+  const ephemeralPubKey = toBase64(await crypto.subtle.exportKey('raw', ephemeral.publicKey));
+  return { ct: wrapped.ct, iv: wrapped.iv, ephemeralPubKey };
+}
+
+/**
+ * Undo wrapDekForAdmin — needs the admin's PRIVATE key. Main-process/rescue-tool use only.
+ * @param {{ ct: string, iv: string, ephemeralPubKey: string }} wrapped
+ * @param {CryptoKey} adminPrivateKey
+ * @returns {Promise<CryptoKey>}
+ */
+export async function unwrapDekForAdmin(wrapped, adminPrivateKey) {
+  const ephemeralPublicKey = await importAdminPublicKey(wrapped.ephemeralPubKey);
+  const sharedKey = await crypto.subtle.deriveKey(
+    { name: 'ECDH', public: ephemeralPublicKey },
+    adminPrivateKey,
+    { name: 'AES-GCM', length: DEK_LENGTH_BITS },
+    true,
+    ['unwrapKey']
+  );
+  return unwrapDek({ ct: wrapped.ct, iv: wrapped.iv }, sharedKey);
+}
+
 /** @param {CryptoKey} dek @returns {Promise<string>} raw DEK bytes, base64 — for the durable Recuérdame cache only */
 export async function exportDekRaw(dek) {
   return toBase64(await crypto.subtle.exportKey('raw', dek));

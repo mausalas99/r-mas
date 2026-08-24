@@ -90,6 +90,9 @@ function parseFormMedicion() {
   return {
     id: Date.now().toString() + '-ea',
     recordedAt: recordedAt,
+    // Real save-time clock for cloud LWW — recordedAt is user-editable clinical
+    // time and can tie across rapid entries; see patient-merge.mjs.
+    savedAt: new Date().toISOString(),
     vitals: vitalBlock.vitals,
     vitalSeries: vitalBlock.vitalSeries,
     alteredAt: vitalBlock.alteredAt,

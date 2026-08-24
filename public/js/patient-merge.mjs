@@ -109,8 +109,15 @@ function bestRecordedAtFromHistorial(hist, best) {
   for (let i = 0; i < hist.length; i += 1) {
     const row = hist[i];
     if (!row || typeof row !== 'object') continue;
+    // savedAt is the real save-time clock; recordedAt is the user-chosen clinical
+    // time (minute precision, editable) and ties too easily across rapid entries —
+    // an LWW tie is broken by actorId, so one instance would always lose forever.
     const ra =
-      /** @type {any} */ (row).recordedAt != null ? String(/** @type {any} */ (row).recordedAt) : '';
+      /** @type {any} */ (row).savedAt != null
+        ? String(/** @type {any} */ (row).savedAt)
+        : /** @type {any} */ (row).recordedAt != null
+          ? String(/** @type {any} */ (row).recordedAt)
+          : '';
     // Must scan all rows — historial is oldest-first; early return picked the oldest clock
     // and Nube LWW rejected later client signos as stale.
     if (ra && compareIso(ra, max) > 0) max = ra;

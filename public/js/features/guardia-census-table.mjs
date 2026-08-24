@@ -18,6 +18,7 @@ import {
 } from './workbench/wb-table.mjs';
 import { buildStatusLabelHtml } from './workbench/status-label.mjs';
 import { buildFilterChipsHtml } from './workbench/filter-chips.mjs';
+import { appendExitingRows } from '../ui-motion.mjs';
 
 const VITAL_LABELS = { ta: 'T/A', tas: 'T/A', fc: 'FC', fr: 'FR', temp: 'Temp', sat: 'SatO₂' };
 const GUARDIA_TABLE_GRID = '92px 1fr 132px 1fr 84px';
@@ -302,7 +303,18 @@ export function mountGuardiaCensusTable(container, patients, guardiasMap, userRa
 
   function renderAt(filterId) {
     container._gctActiveFilter = filterId;
+    var prevRows = Object.create(null);
+    container.querySelectorAll('.wb-row[data-wb-row-id]').forEach((row) => {
+      prevRows[row.getAttribute('data-wb-row-id')] = row;
+    });
     container.innerHTML = buildGuardiaCensusTableHtml(patients, guardiasMap, userRank, groupCtx, filterId);
+    var newIds = new Set();
+    container.querySelectorAll('.wb-row[data-wb-row-id]').forEach((row) => {
+      var id = row.getAttribute('data-wb-row-id');
+      newIds.add(id);
+      if (!prevRows[id]) row.classList.add('row-enter');
+    });
+    appendExitingRows(container, prevRows, newIds);
     wireRows();
     wireChips();
   }

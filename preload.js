@@ -104,6 +104,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       isWindows: process.platform === 'win32',
     };
   },
+  /** Dev-only Nube URL override (`R_PLUS_CLOUD_SYNC_URL=http://localhost:8787`), for local testing against `wrangler dev` instead of production. */
+  getDevCloudSyncUrlOverride: function() {
+    return process.env.R_PLUS_CLOUD_SYNC_URL || null;
+  },
   /** Dev-only ward server (`R_PLUS_DEV_WARD_SERVER=1`). Production Nube builds never bind :3738. */
   ensureLanServerReady: function() {
     if (process.env.R_PLUS_DEV_WARD_SERVER !== '1') {
@@ -125,6 +129,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   dbStatus: function() {
     return ipcRenderer.invoke('db:status');
+  },
+  adminRescueKeyGetPublicInfo: function() {
+    return ipcRenderer.invoke('admin-rescue-key:get-public-info');
   },
   dbMigrationProbe: function(opts) {
     return ipcRenderer.invoke('db:migration-probe', opts);

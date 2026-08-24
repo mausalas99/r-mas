@@ -14,6 +14,34 @@ import { humanizeCloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 import { refreshCloudSyncDiagnostics } from './panel-cloud-diagnostics.mjs';
 import { applyHeaderTeamSyncVisual } from './cloud-sync-header-chrome.mjs';
 import { resolveCloudConexionChipStatus } from './cloud-sync-status-snapshot.mjs';
+import { isRoomUnprotected, retryRoomDekIfUnprotected } from './room-dek.mjs';
+
+/**
+ * Checks the current room's "sala no protegida" badge state and, while
+ * unprotected, opportunistically retries the key fetch (self-heals without
+ * the caller needing its own retry loop).
+ * @param {object} deps
+ * @returns {boolean}
+ */
+function checkRoomUnprotectedBadge(deps) {
+  const snap = deps.getCloudSyncRoomSnapshot?.();
+  const roomId = snap?.id;
+  const unprotected = Boolean(roomId && isRoomUnprotected(roomId));
+  if (unprotected) void retryRoomDekIfUnprotected(deps.getApi(), roomId, snap.code);
+  return unprotected;
+}
+
+/**
+ * @param {boolean} unprotected
+ * @param {string} resolvedStatus
+ * @param {unknown} resolvedDetail
+ * @returns {string}
+ */
+function statusDetailText(unprotected, resolvedStatus, resolvedDetail) {
+  if (unprotected) return 'Esta sala no está protegida ahora mismo.';
+  if (resolvedStatus !== 'error') return '';
+  return humanizeCloudSyncErrorMessage(String(resolvedDetail || '').trim());
+}
 
 /** @param {HTMLElement} section @param {object} deps */
 function bindStatusChip(section, deps) {
@@ -32,10 +60,7 @@ function bindStatusChip(section, deps) {
     }
     const detailEl = section.querySelector('[data-cloud-status-detail]');
     if (detailEl) {
-      const text =
-        resolvedStatus === 'error'
-          ? humanizeCloudSyncErrorMessage(String(resolvedDetail || '').trim())
-          : '';
+      const text = statusDetailText(checkRoomUnprotectedBadge(deps), resolvedStatus, resolvedDetail);
       detailEl.textContent = text;
       detailEl.hidden = !text;
     }

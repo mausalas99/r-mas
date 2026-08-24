@@ -12,6 +12,8 @@ import {
   getCloudSyncRevision,
   setCloudSyncRevision,
   advanceCloudSyncRevision,
+  getCloudSyncUrl,
+  DEFAULT_CLOUD_SYNC_URL,
 } from './settings.mjs';
 
 function memoryStore() {
@@ -106,6 +108,41 @@ describe('cloud sync remember me settings', () => {
     setCloudSyncRevision(0);
     advanceCloudSyncRevision(12);
     assert.equal(getCloudSyncRevision(), 12);
+  });
+});
+
+describe('getCloudSyncUrl dev override', () => {
+  const prevLocal = globalThis.localStorage;
+  const prevWindow = globalThis.window;
+
+  beforeEach(() => {
+    globalThis.localStorage = memoryStore();
+  });
+
+  afterEach(() => {
+    globalThis.localStorage = prevLocal;
+    globalThis.window = prevWindow;
+  });
+
+  it('uses the saved Avanzado URL over any dev override', () => {
+    globalThis.window = { electronAPI: { getDevCloudSyncUrlOverride: () => 'http://localhost:8787' } };
+    globalThis.localStorage.setItem('rpc-settings', JSON.stringify({ cloudSyncUrl: 'https://custom.example' }));
+    assert.equal(getCloudSyncUrl(), 'https://custom.example');
+  });
+
+  it('falls back to the dev override (R_PLUS_CLOUD_SYNC_URL) when no URL is saved', () => {
+    globalThis.window = { electronAPI: { getDevCloudSyncUrlOverride: () => 'http://localhost:8787' } };
+    assert.equal(getCloudSyncUrl(), 'http://localhost:8787');
+  });
+
+  it('falls back to the production default when there is no override or bridge', () => {
+    globalThis.window = {};
+    assert.equal(getCloudSyncUrl(), DEFAULT_CLOUD_SYNC_URL);
+  });
+
+  it('never throws when window/electronAPI is entirely absent (e.g. plain Node test env)', () => {
+    delete globalThis.window;
+    assert.equal(getCloudSyncUrl(), DEFAULT_CLOUD_SYNC_URL);
   });
 });
 

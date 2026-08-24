@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.1.9](https://github.com/mausalas99/r-mas/releases/tag/v8.1.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.2.0](https://github.com/mausalas99/r-mas/releases/tag/v8.2.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -49,6 +49,15 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.2.0 (estable — release 8.2.0)
+
+- **Llave de rescate de sala:** el admin puede recuperar el acceso a una sala si se pierde el código y ningún dispositivo tiene la llave en caché.
+- **Rotación de llave de sala** al rotar el código, sin perder acceso a lo ya guardado.
+- **Animaciones en censo y pendientes** al agregar/quitar filas.
+- **Fix:** fusión de pacientes usaba la hora clínica editable para desempatar signos vitales; ahora usa la hora real de guardado.
+
+Notas: `docs/RELEASE_NOTES_8.2.0.txt`.
 ## R+ 8.1.9 (estable — release 8.1.9)
 
 - **Relación BUN/CR:** cálculo automático en Química Clínica y Tendencias cuando hay BUN y Cr.

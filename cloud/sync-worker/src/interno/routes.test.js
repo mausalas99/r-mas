@@ -231,13 +231,28 @@ describe('interno routes', () => {
     assert.deepEqual(body, { ok: true, interno: true, board: 'v2' });
   });
 
-  it('GET /board requires auth', async () => {
+  it('GET /board is temporarily disabled (E2EE migration)', async () => {
     const res = await handleInternoRoutes(
       new Request('http://localhost/api/interno/v1/board?sala=Torre%20HU'),
       { DB: createInternoDb() },
       '/board'
     );
-    assert.equal(res.status, 401);
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.equal(body.error, 'temporarily_disabled');
+    assert.match(body.message, /cifrado de extremo a extremo/);
+  });
+
+  it('POST /vitals is temporarily disabled (E2EE migration)', async () => {
+    const res = await handleInternoRoutes(
+      new Request('http://localhost/api/interno/v1/vitals', { method: 'POST', body: '{}' }),
+      { DB: createInternoDb() },
+      '/vitals'
+    );
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.equal(body.error, 'temporarily_disabled');
+    assert.match(body.message, /cifrado de extremo a extremo/);
   });
 });
 

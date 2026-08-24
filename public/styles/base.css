@@ -545,7 +545,7 @@ html.dark .rpc-offline-banner {
   color: color-mix(in oklab, var(--error) 38%, white);
   border-bottom-color: color-mix(in oklab, var(--error) 58%, black);
 }
-.rpc-offline-banner.visible { display: flex; }
+.rpc-offline-banner.visible { display: flex; animation: fade-in var(--dur-fast) var(--ease-out); }
 .lan-connection-banner {
   display: none;
   flex-shrink: 0;
@@ -565,7 +565,7 @@ html.dark .lan-connection-banner {
   color: color-mix(in oklab, var(--warn) 24%, white);
   border-bottom-color: color-mix(in oklab, var(--warn) 52%, black);
 }
-.lan-connection-banner:not([hidden]) { display: flex; }
+.lan-connection-banner:not([hidden]) { display: flex; animation: fade-in var(--dur-fast) var(--ease-out); }
 .lan-connection-banner-text { flex: 1; min-width: 0; line-height: 1.35; }
 .lan-connection-banner-dismiss {
   flex-shrink: 0;
@@ -597,7 +597,7 @@ html.dark .lan-connection-banner {
   line-height: 1.2;
   user-select: none;
 }
-.pending-jobs-pill.visible { display: inline-flex; }
+.pending-jobs-pill.visible { display: inline-flex; animation: fade-in var(--dur-fast) var(--ease-out); }
 .pending-jobs-pill::before {
   content: '';
   width: 8px; height: 8px; border-radius: 50%;

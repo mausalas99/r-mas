@@ -61,3 +61,17 @@ describe('handlePaseLabs CORS', () => {
     assert.ok(res.headers.get('Access-Control-Allow-Methods').includes('GET'));
   });
 });
+
+describe('handlePaseLabs disabled (E2EE migration)', () => {
+  it('GET returns 503 with Spanish message, no DB lookup needed', async () => {
+    const req = new Request('https://worker.example.com/api/sync/v1/pase-labs?auth=tok');
+    // No DB in env — if the disabled route accidentally fell through to the
+    // real handler, it would throw before returning a response.
+    const res = await handlePaseLabs(req, {});
+    assert.equal(res.status, 503);
+    assert.equal(res.headers.get('Access-Control-Allow-Origin'), '*');
+    const body = await res.json();
+    assert.equal(body.error, 'temporarily_disabled');
+    assert.match(body.message, /cifrado de extremo a extremo/);
+  });
+});

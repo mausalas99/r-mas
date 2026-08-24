@@ -20,6 +20,25 @@ describe('panel-conexion status chip', () => {
     assert.match(fnBody, /const toast = typeof deps\.toast === 'function'/);
     assert.doesNotMatch(fnBody, /refreshCloudSyncDiagnostics\([^)]*\{\s*toast,\s*\}/);
   });
+
+  it('shows a non-silent "sala no protegida" badge and retries the key fetch while unprotected', () => {
+    const helperStart = panelConexionSrc.indexOf('function checkRoomUnprotectedBadge');
+    const helperEnd = panelConexionSrc.indexOf('\n/** @param {HTMLElement}', helperStart + 1);
+    const helperBody = panelConexionSrc.slice(helperStart, helperEnd > helperStart ? helperEnd : undefined);
+    assert.match(helperBody, /isRoomUnprotected\(roomId\)/);
+    assert.match(helperBody, /retryRoomDekIfUnprotected\(/);
+
+    const fnStart = panelConexionSrc.indexOf('function renderStatusChip');
+    const fnEnd = panelConexionSrc.indexOf('\n  function ', fnStart + 1);
+    const fnBody = panelConexionSrc.slice(fnStart, fnEnd > fnStart ? fnEnd : undefined);
+    assert.match(fnBody, /checkRoomUnprotectedBadge\(deps\)/);
+    assert.match(fnBody, /statusDetailText\(/);
+
+    const textFnStart = panelConexionSrc.indexOf('function statusDetailText');
+    const textFnEnd = panelConexionSrc.indexOf('\n/** @param {HTMLElement}', textFnStart + 1);
+    const textFnBody = panelConexionSrc.slice(textFnStart, textFnEnd > textFnStart ? textFnEnd : undefined);
+    assert.match(textFnBody, /'Esta sala no está protegida ahora mismo\.'/);
+  });
 });
 
 describe('Diagnóstico Nube live pendientes', () => {

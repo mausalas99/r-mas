@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-07T23:19:18.007Z",
-  "totalScore": 0,
-  "bootGraphHash": "5823e515c7f1c9c4",
+  "updatedAt": "2026-08-24T19:30:20.096Z",
+  "totalScore": 306,
+  "bootGraphHash": "02f7eaedd720a08d",
   "bootGraph": {
-    "hash": "5823e515c7f1c9c4",
+    "hash": "02f7eaedd720a08d",
     "imports": [
       {
         "hub": "public/js/app-runtimes.mjs",
@@ -38,6 +38,16 @@
       },
       {
         "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/app-tabs-runtime.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/app-tabs.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
         "from": "./features/chrome.mjs",
         "isDynamic": false
       },
@@ -45,6 +55,16 @@
         "hub": "public/js/app-runtimes.mjs",
         "from": "./features/chrome.mjs",
         "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/cloud-sync/lan-blob-retire.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/cloud-sync/lan-prefs-retire.mjs",
+        "isDynamic": true
       },
       {
         "hub": "public/js/app-runtimes.mjs",
@@ -98,6 +118,16 @@
       },
       {
         "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/expediente-inner-cache.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/expediente-navigation.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
         "from": "./features/expediente.mjs",
         "isDynamic": false
       },
@@ -115,6 +145,11 @@
         "hub": "public/js/app-runtimes.mjs",
         "from": "./features/guardia-board.mjs",
         "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/interconsulta-mode-chrome.mjs",
+        "isDynamic": true
       },
       {
         "hub": "public/js/app-runtimes.mjs",
@@ -138,18 +173,23 @@
       },
       {
         "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/nota-evolucion/nota-evolucion-primary-tab.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
         "from": "./features/notes-indicaciones.mjs",
         "isDynamic": false
       },
       {
         "hub": "public/js/app-runtimes.mjs",
-        "from": "./features/pase-board.mjs",
-        "isDynamic": false
+        "from": "./features/patient-dashboard/dashboard-mount.mjs",
+        "isDynamic": true
       },
       {
         "hub": "public/js/app-runtimes.mjs",
-        "from": "./features/pase-board.mjs",
-        "isDynamic": false
+        "from": "./features/patient-dashboard/lab-inner.mjs",
+        "isDynamic": true
       },
       {
         "hub": "public/js/app-runtimes.mjs",
@@ -190,6 +230,11 @@
         "hub": "public/js/app-runtimes.mjs",
         "from": "./features/soap-estado.mjs",
         "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/sync-apply/patient-delete-local.mjs",
+        "isDynamic": true
       },
       {
         "hub": "public/js/app-runtimes.mjs",
@@ -378,7 +423,7 @@
       },
       {
         "hub": "public/js/app.js",
-        "from": "./clinical-ops-lan.mjs",
+        "from": "./clinical-ops-sync.mjs",
         "isDynamic": true
       },
       {
@@ -403,8 +448,18 @@
       },
       {
         "hub": "public/js/app.js",
+        "from": "./features/app-tabs.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
         "from": "./features/chrome.mjs",
         "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/clinical-onboarding-main.mjs",
+        "isDynamic": true
       },
       {
         "hub": "public/js/app.js",
@@ -473,6 +528,11 @@
       },
       {
         "hub": "public/js/app.js",
+        "from": "./features/expediente-navigation.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
         "from": "./features/expediente.mjs",
         "isDynamic": false
       },
@@ -503,8 +563,13 @@
       },
       {
         "hub": "public/js/app.js",
-        "from": "./features/pase-board.mjs",
-        "isDynamic": false
+        "from": "./features/patient-dashboard/dashboard-mount.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/patient-dashboard/lab-inner.mjs",
+        "isDynamic": true
       },
       {
         "hub": "public/js/app.js",
@@ -553,6 +618,21 @@
       },
       {
         "hub": "public/js/app.js",
+        "from": "./perf-markers.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./perf-markers.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./perf-markers.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
         "from": "./presentation-mode.mjs",
         "isDynamic": false
       },
@@ -574,6 +654,11 @@
       {
         "hub": "public/js/app.js",
         "from": "./storage.js",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./ui-tab-motion.mjs",
         "isDynamic": false
       }
     ]
@@ -607,6 +692,10 @@
     {
       "date": "2026-08-07",
       "note": "Baseline refresh totalScore=0"
+    },
+    {
+      "date": "2026-08-24",
+      "note": "Baseline refresh totalScore=306"
     }
   ]
 }

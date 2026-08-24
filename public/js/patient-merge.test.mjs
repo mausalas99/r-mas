@@ -93,6 +93,20 @@ test('monitoreoUpdatedAt historial gana a textoGuardado más viejo', () => {
   );
 });
 
+test('monitoreoUpdatedAt usa savedAt (no recordedAt) para el reloj de sync — recordedAt es hora clínica editable y empata fácil entre registros rápidos', () => {
+  assert.equal(
+    monitoreoUpdatedAt({
+      historial: [
+        // Same clinical minute (user-picked recordedAt) on both rows — only the
+        // real save-time savedAt distinguishes which one is actually newer.
+        { id: '1', recordedAt: '2026-08-05T08:00:00.000Z', savedAt: '2026-08-05T08:00:12.331Z' },
+        { id: '2', recordedAt: '2026-08-05T08:00:00.000Z', savedAt: '2026-08-05T08:00:47.902Z' },
+      ],
+    }),
+    '2026-08-05T08:00:47.902Z'
+  );
+});
+
 test('mergePatientEntry conserva medPharmProfile m?s reciente', () => {
   const older = {
     patient: { id: 'p', registro: 'R' },

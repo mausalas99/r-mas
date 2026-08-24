@@ -2594,10 +2594,29 @@ var RELEASE_NOTES_819 = [
   },
 ];
 
+var RELEASE_NOTES_820 = [
+  {
+    title: 'Llave de rescate para salas de Nube',
+    body:
+      'Si se pierde el código de una sala y ningún dispositivo tiene la llave en caché, el <strong>admin</strong> puede recuperarla con su propia llave.',
+  },
+  {
+    title: 'Listas con animación',
+    body:
+      'Censo y pendientes: las filas nuevas entran con transición y las que se quitan se desvanecen, sin saltos bruscos.',
+  },
+  {
+    title: 'Fusión de pacientes más confiable',
+    body:
+      'La comparación de signos vitales entre dos registros ahora usa la hora real de guardado, evitando empates que perdían datos.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_819;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_820;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.2.0': RELEASE_NOTES_820,
   '8.1.9': RELEASE_NOTES_819,
   '8.1.8': RELEASE_NOTES_818,
   '8.1.7': RELEASE_NOTES_817,

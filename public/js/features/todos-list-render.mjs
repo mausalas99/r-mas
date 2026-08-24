@@ -26,7 +26,7 @@ import {
   acknowledgeHandoffTodo,
   updateTodoText,
 } from './todos-mutations.mjs';
-import { settlePasteSurface } from '../ui-motion.mjs';
+import { settlePasteSurface, appendExitingRows } from '../ui-motion.mjs';
 
 /** wb-table grid — columns Prior. / Pendiente / Quién / Vence / (acción), mockup L416. */
 var OPEN_ROW_GRID = '62px 1fr 118px 104px 74px';
@@ -403,8 +403,27 @@ export function updateExpPendientesTabBadge() {
   });
 }
 
+/** Rows on screen before a rebuild, keyed by todo id: lets a repaint tell
+ * genuinely-new rows from ones that already existed (so a LAN sync tick
+ * doesn't re-fade the whole list), and lets a row that just left the data
+ * exit-animate instead of vanishing the instant the list rebuilds. */
+function collectTodoRowsById(container) {
+  var rows = Object.create(null);
+  container.querySelectorAll('.wb-row[data-todo-id]').forEach(function (row) {
+    rows[row.dataset.todoId] = row;
+  });
+  return rows;
+}
+
+function markNewTodoRows(root, prevRows) {
+  root.querySelectorAll('.wb-row[data-todo-id]').forEach(function (row) {
+    if (!prevRows[row.dataset.todoId]) row.classList.add('row-enter');
+  });
+}
+
 export function renderTodoListSection(container, preserveTodoId) {
   var preservedRow = preserveTodoId ? findPreservedTodoRow(container, preserveTodoId) : null;
+  var prevRows = collectTodoRowsById(container);
   clearTodoListSection(container);
   appendTodoFilterBar(container);
 
@@ -433,6 +452,7 @@ export function renderTodoListSection(container, preserveTodoId) {
         '<span class="empty-state-lead">Escribe uno arriba para agregarlo.</span>';
     }
     container.appendChild(none);
+    appendExitingRows(container, prevRows, new Set());
     settlePasteSurface(none);
     updateExpPendientesTabBadge();
     return;
@@ -442,6 +462,8 @@ export function renderTodoListSection(container, preserveTodoId) {
   list.className = 'todo-list';
   appendGroupedTodoSections(list, todos, preservedRow, preserveTodoId);
   container.appendChild(list);
+  markNewTodoRows(list, prevRows);
+  appendExitingRows(container, prevRows, new Set(todos.map(function (t) { return t.id; })));
   settlePasteSurface(list);
   updateExpPendientesTabBadge();
 }

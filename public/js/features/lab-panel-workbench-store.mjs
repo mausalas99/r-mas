@@ -12,7 +12,7 @@ import {
 } from '../lab-bulk-paste.mjs';
 import { primaryTipoForLabSet } from '../lab-history-format.mjs';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory } from '../tend-core.mjs';
-import { getNotes, getLabHistory, persistClinicalState } from '../app-state.mjs';
+import { getLabHistory, persistClinicalState } from '../app-state.mjs';
 import { bumpLabHistoryRevision } from '../lab-history-cache.mjs';
 import { enqueueCloudLabSidecarsForPatient } from './cloud-sync/mutate-bridge.mjs';
 
@@ -22,11 +22,8 @@ import { labPanelBridge } from './lab-panel-bridge.mjs';
 import { renderLabHistoryPanel, refreshSameDayAscitisForPatient } from './lab-panel-history.mjs';
 import { autoConsolidateLabHistoryForPatient } from './lab-panel-history-dedupe.mjs';
 
-function resolveLabHistoryFechaNorm(patientId, fecha) {
+function resolveLabHistoryFechaNorm(fecha) {
   var fechaNorm = normalizeFechaLabHistory(fecha) || String(fecha || '').trim();
-  if (!fechaNorm && getNotes()[patientId] && getNotes()[patientId].fecha) {
-    fechaNorm = normalizeFechaLabHistory(getNotes()[patientId].fecha) || '';
-  }
   if (fechaNorm) return fechaNorm;
   var nd = new Date();
   return (
@@ -44,7 +41,7 @@ function buildLabHistorySet(patientId, resLabs, fecha, hora, sourceText, bhExtra
   if (!Object.keys(refs).length && sourceText) {
     refs = buildRefsBySectionFromReport(sourceText);
   }
-  var fechaNorm = resolveLabHistoryFechaNorm(patientId, fecha);
+  var fechaNorm = resolveLabHistoryFechaNorm(fecha);
   var horaNorm = normalizeHoraLabHistory(hora);
   var cleanResLabs = sanitizeResLabsChunks(resLabs);
   var set = {

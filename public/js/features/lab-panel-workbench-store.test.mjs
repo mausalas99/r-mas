@@ -19,8 +19,19 @@ Object.defineProperty(globalThis, 'localStorage', {
 globalThis.window = { localStorage: mockStorage };
 
 const { upsertLabHistory, applyDriveImportLabSets } = await import('./lab-panel-workbench-store.mjs');
-const { getLabHistory } = await import('../app-state.mjs');
+const { getLabHistory, getNotes } = await import('../app-state.mjs');
 const { labPanelBridge } = await import('./lab-panel-bridge.mjs');
+
+function todayFechaNorm() {
+  var nd = new Date();
+  return (
+    String(nd.getDate()).padStart(2, '0') +
+    '/' +
+    String(nd.getMonth() + 1).padStart(2, '0') +
+    '/' +
+    nd.getFullYear()
+  );
+}
 
 describe('lab-panel-workbench-store upsertLabHistory replaceOnMatch (Actualizar labs)', () => {
   beforeEach(() => {
@@ -28,6 +39,13 @@ describe('lab-panel-workbench-store upsertLabHistory replaceOnMatch (Actualizar 
     Object.keys(getLabHistory()).forEach(function (k) {
       delete getLabHistory()[k];
     });
+  });
+
+  it('sin fecha en el payload: usa la fecha de hoy, no la fecha de ingreso del paciente (bug: labs de paciente recién registrado no aparecían)', () => {
+    getNotes()['p1'] = { fecha: '01/01/2020' };
+    upsertLabHistory('p1', ['QS\nGLUCOSA\t94\tmg/dL'], '', '', 'reporte', {}, {}, 'a');
+    var sets = getLabHistory().p1;
+    assert.equal(sets[0].fecha, todayFechaNorm());
   });
 
   it('sin opts: mismo fecha+hora combina secciones complementarias (Biometría + Química del mismo estudio)', () => {

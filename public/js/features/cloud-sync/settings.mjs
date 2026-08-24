@@ -25,7 +25,13 @@ function writeSettings(settings) {
 export function getCloudSyncUrl() {
   const s = readSettings();
   const raw = String(s.cloudSyncUrl || '').trim();
-  return (raw || DEFAULT_CLOUD_SYNC_URL).replace(/\/$/, '');
+  if (raw) return raw.replace(/\/$/, '');
+  // Dev-only, unset in production: R_PLUS_CLOUD_SYNC_URL points a fresh profile at
+  // `wrangler dev` from first launch, before any explicit "Avanzado" URL is saved —
+  // so a test instance can never touch production even for the first network call.
+  const devOverride =
+    typeof window !== 'undefined' ? window.electronAPI?.getDevCloudSyncUrlOverride?.() : null;
+  return String(devOverride || DEFAULT_CLOUD_SYNC_URL).replace(/\/$/, '');
 }
 
 /** @param {string} url */

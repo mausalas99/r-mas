@@ -9,6 +9,7 @@ import {
   isPatientAdmittedToday,
   buildGuardiaCensusTableRowHtml,
   buildGuardiaCensusTableHtml,
+  mountGuardiaCensusTable,
 } from './guardia-census-table.mjs';
 
 const store = {};
@@ -203,5 +204,57 @@ describe('buildGuardiaCensusTableHtml', () => {
     const html = buildGuardiaCensusTableHtml([{ id: 'p1', name: 'X', cama: '1' }], new Map(), 'R1');
     assert.match(html, /wb-table-summary/);
     assert.match(html, /1 paciente sin alterados ni pendientes/);
+  });
+});
+
+describe('mountGuardiaCensusTable row-enter diffing', () => {
+  it('marks only rows new since the previous mount, so a background refresh does not re-fade unchanged rows', () => {
+    if (typeof document === 'undefined') return;
+    const container = document.createElement('div');
+
+    mountGuardiaCensusTable(container, [{ id: 'p1', name: 'A', cama: '1' }], new Map(), 'R1', {});
+    const row1 = container.querySelector('.wb-row[data-wb-row-id="p1"]');
+    assert.ok(row1, 'first mount renders row p1');
+    assert.match(row1.className, /row-enter/);
+
+    mountGuardiaCensusTable(container, [{ id: 'p1', name: 'A', cama: '1' }], new Map(), 'R1', {});
+    const row1Again = container.querySelector('.wb-row[data-wb-row-id="p1"]');
+    assert.doesNotMatch(row1Again.className, /row-enter/, 're-mount of an unchanged patient must not re-enter');
+
+    mountGuardiaCensusTable(
+      container,
+      [{ id: 'p1', name: 'A', cama: '1' }, { id: 'p2', name: 'B', cama: '2' }],
+      new Map(),
+      'R1',
+      {}
+    );
+    const rowP1 = container.querySelector('.wb-row[data-wb-row-id="p1"]');
+    const rowP2 = container.querySelector('.wb-row[data-wb-row-id="p2"]');
+    assert.doesNotMatch(rowP1.className, /row-enter/, 'existing patient row stays unmarked');
+    assert.match(rowP2.className, /row-enter/, 'newly admitted patient row enters');
+  });
+
+  it('leaves a fading ghost of a patient row removed from the census, instead of popping it away instantly', () => {
+    if (typeof document === 'undefined') return;
+    const container = document.createElement('div');
+
+    mountGuardiaCensusTable(
+      container,
+      [{ id: 'p1', name: 'A', cama: '1' }, { id: 'p2', name: 'B', cama: '2' }],
+      new Map(),
+      'R1',
+      {}
+    );
+    assert.ok(container.querySelector('.wb-row[data-wb-row-id="p2"]'));
+
+    mountGuardiaCensusTable(container, [{ id: 'p1', name: 'A', cama: '1' }], new Map(), 'R1', {});
+    assert.equal(
+      container.querySelector('.wb-row[data-wb-row-id="p2"]'),
+      null,
+      'discharged patient is gone from the live table'
+    );
+    const ghost = container.querySelector('.row-exit');
+    assert.ok(ghost, 'a ghost copy of the discharged row is appended to animate out');
+    assert.match(ghost.textContent, /B/);
   });
 });

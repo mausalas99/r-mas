@@ -11,7 +11,19 @@ import {
   encryptValue,
   decryptValue,
   isEncryptedEnvelope,
+  importAdminPublicKey,
+  importAdminPrivateKey,
+  wrapDekForAdmin,
+  unwrapDekForAdmin,
 } from './crypto.mjs';
+
+/** Test-only ECDH keypair generator — mirrors the shape lib/admin-rescue-key.mjs produces. */
+async function generateTestAdminKeyPair() {
+  const pair = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveKey']);
+  const publicB64 = Buffer.from(await crypto.subtle.exportKey('raw', pair.publicKey)).toString('base64');
+  const privateB64 = Buffer.from(await crypto.subtle.exportKey('pkcs8', pair.privateKey)).toString('base64');
+  return { publicB64, privateB64 };
+}
 
 describe('cloud-sync crypto', () => {
   it('round-trips a value through encrypt/decrypt', async () => {
@@ -75,5 +87,28 @@ describe('cloud-sync crypto', () => {
     const dekB = await generateDek();
     const envelope = await encryptValue(dekA, { note: 'secreto' });
     await assert.rejects(() => decryptValue(dekB, envelope));
+  });
+
+  it('admin rescue wrap round-trips with only the admin PUBLIC key needed to wrap', async () => {
+    const dek = await generateDek();
+    const { publicB64, privateB64 } = await generateTestAdminKeyPair();
+    const adminPublicKey = await importAdminPublicKey(publicB64);
+    const wrapped = await wrapDekForAdmin(dek, adminPublicKey);
+    assert.ok(wrapped.ct && wrapped.iv && wrapped.ephemeralPubKey);
+
+    const adminPrivateKey = await importAdminPrivateKey(privateB64);
+    const recovered = await unwrapDekForAdmin(wrapped, adminPrivateKey);
+    const value = { note: 'rescatado' };
+    const envelope = await encryptValue(dek, value);
+    assert.deepEqual(await decryptValue(recovered, envelope), value);
+  });
+
+  it('admin rescue wrap cannot be opened by a different admin keypair', async () => {
+    const dek = await generateDek();
+    const real = await generateTestAdminKeyPair();
+    const wrongAdmin = await generateTestAdminKeyPair();
+    const wrapped = await wrapDekForAdmin(dek, await importAdminPublicKey(real.publicB64));
+    const wrongPrivateKey = await importAdminPrivateKey(wrongAdmin.privateB64);
+    await assert.rejects(() => unwrapDekForAdmin(wrapped, wrongPrivateKey));
   });
 });

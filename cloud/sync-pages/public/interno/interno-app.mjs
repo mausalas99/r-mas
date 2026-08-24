@@ -158,6 +158,8 @@ function renderServerError(code) {
     interno_inactive:
       'Acceso de internos desactivado para esta sala. En la Mac actívalo en QR Internos (MIP).',
     auth_required: 'Falta el token. Escanea el QR completo otra vez.',
+    temporarily_disabled:
+      'El panel de guardia por celular está temporalmente desactivado mientras migramos a cifrado de extremo a extremo.',
   };
   const hint = hints[code] || 'El host respondió con un error. Revisa R+ en la Mac.';
 

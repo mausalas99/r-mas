@@ -7,12 +7,10 @@ import { isCutoverPending } from './cutover-flags.mjs';
 import { userHasJoinedTeam } from './panel-conexion-html.mjs';
 import { showRecoveryCodeModal } from './recovery-modal.mjs';
 import {
-  cacheSessionPassword,
   clearRoomDekCache,
   ensureRoomDek,
   loadRoomDek,
   exportCachedDeksForPersistence,
-  rewrapCachedRoomDeks,
 } from './room-dek.mjs';
 import { backfillRoomEncryption } from './room-dek-migrate.mjs';
 import { getCloudSyncClientId } from './client-id.mjs';
@@ -128,7 +126,12 @@ export async function afterAuthSuccess(deps, user) {
   // Fire-and-forget: must never block or fail login.
   if (room?.id) {
     void backfillRoomEncryption(deps.getApi(), room, getCloudSyncClientId()).then(
-      () => persistRoomDeks(),
+      (result) => {
+        if (result && (result.failed > 0 || result.remaining !== 0)) {
+          deps.toast('Sala ' + (room.code || room.id) + ': algunos datos aún no están protegidos. Reintenta más tarde.', 'error');
+        }
+        return persistRoomDeks();
+      },
       () => {}
     );
   }
@@ -195,7 +198,6 @@ export async function handleLogin(deps) {
       username: form.username,
       password: form.password,
     });
-    cacheSessionPassword(form.password);
     const prevToken = deps.getCloudSyncToken();
     enterCloudSession(deps, data.token, form.remember, prevToken);
     deps.toast(
@@ -246,11 +248,8 @@ export async function handleRecover(deps) {
       recoveryCode: form.recoveryCode,
       newPassword: form.password,
     });
-    cacheSessionPassword(form.password);
-    // Re-wrap any room DEKs this device still holds unwrapped (active session or
-    // one restored from the durable store) so the new password can open them too.
-    await rewrapCachedRoomDeks(deps.getApi(), form.password);
-    await persistRoomDeks();
+    // Room DEKs are wrapped with the room's own join code, not the login
+    // password — recovering the password doesn't affect them at all.
     const prevToken = deps.getCloudSyncToken();
     enterCloudSession(
       deps,
@@ -297,10 +296,17 @@ export async function handleCreateRoom(deps) {
     const data = await deps.getApi().createRoom({ name, sala: deps.normalizedSala });
     const room = data.room;
     persistCloudRoom(deps, room);
-    await ensureRoomDek(deps.getApi(), room.id).catch(() => {});
+    const dekOk = await ensureRoomDek(deps.getApi(), room.id, room.code)
+      .then(() => true)
+      .catch(() => false);
     await persistRoomDeks();
     deps.renderConnected(room);
-    deps.toast('Sala creada: ' + room.code, 'success');
+    deps.toast(
+      dekOk
+        ? 'Sala creada: ' + room.code
+        : 'Sala creada: ' + room.code + ' (sin cifrado — reintenta desde ⇄ si es necesario).',
+      dekOk ? 'success' : 'error'
+    );
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo crear la sala.', 'error');
   }
@@ -323,10 +329,16 @@ export async function handleJoinRoom(deps) {
     const data = await deps.getApi().joinRoom({ code });
     const room = data.room;
     persistCloudRoom(deps, room);
-    await loadRoomDek(deps.getApi(), room.id);
-    await persistRoomDeks();
     deps.renderConnected(room);
     deps.toast('Unido a la sala ' + room.code + '.', 'success');
+    // Loading the room key is best-effort AFTER the join itself succeeded — a
+    // key-load hiccup should never read to the user as "couldn't join."
+    try {
+      await loadRoomDek(deps.getApi(), room.id, room.code);
+      await persistRoomDeks();
+    } catch {
+      deps.toast('Unido, pero no se pudo cargar la llave de cifrado de la sala.', 'error');
+    }
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo unir a la sala.', 'error');
   }

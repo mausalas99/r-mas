@@ -2,6 +2,32 @@
 
 import { animate } from 'motion';
 
+/**
+ * Ghost-row exit for full-rebuild list renders: `container` already holds the
+ * freshly rebuilt DOM (which no longer has the removed rows). This clones each
+ * row that vanished from `rowsBeforeById` and appends it collapsing/fading
+ * via the `.row-exit` keyframe (motion.css), then removes the clone. Without
+ * this, a row disappears in the same instant the list rebuilds — a hard pop.
+ * @param {HTMLElement} container
+ * @param {Record<string, HTMLElement>} rowsBeforeById
+ * @param {Set<string>} idsStillPresent
+ */
+export function appendExitingRows(container, rowsBeforeById, idsStillPresent) {
+  Object.keys(rowsBeforeById).forEach(function (id) {
+    if (idsStillPresent.has(id)) return;
+    var ghost = rowsBeforeById[id].cloneNode(true);
+    ghost.removeAttribute('data-todo-id');
+    ghost.removeAttribute('data-wb-row-id');
+    ghost.classList.add('row-exit');
+    var done = function () {
+      if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
+    };
+    ghost.addEventListener('animationend', done, { once: true });
+    setTimeout(done, 500);
+    container.appendChild(ghost);
+  });
+}
+
 export function prefersReducedMotion() {
   try {
     if (typeof document !== 'undefined' && document.documentElement

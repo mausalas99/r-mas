@@ -6,7 +6,7 @@ import {
   sweepRoomForPlaintextContent,
   backfillRoomEncryption,
 } from './room-dek-migrate.mjs';
-import { cacheSessionPassword, clearRoomDekCache, getCachedRoomDek } from './room-dek.mjs';
+import { clearRoomDekCache, getCachedRoomDek } from './room-dek.mjs';
 // Real (unmodified) Worker merge logic — proves the bumped-clock echo the sweep
 // builds is actually accepted server-side, not just "different from the input".
 import { emptyState, applyOps } from '../../../../cloud/sync-worker/src/lww.js';
@@ -46,18 +46,25 @@ describe('foldOpsToLatestByPath', () => {
   });
 });
 
-/** Fake api mimicking pull/push shape used by room-dek-migrate.mjs. */
-function makeFakeApi({ pullResponse, pushImpl } = {}) {
+/**
+ * Fake api mimicking pull/push shape used by room-dek-migrate.mjs.
+ * `pullSequence`, when given, returns one entry per call (last entry repeats
+ * once exhausted) — lets a test simulate the sweep's re-verification pull
+ * seeing a different (or unchanged) state than the initial one.
+ */
+function makeFakeApi({ pullResponse, pullSequence, pushImpl } = {}) {
   const pushedBatches = [];
+  const pulls = pullSequence ? [...pullSequence] : null;
   return {
     pushedBatches,
     async pull() {
-      return pullResponse;
+      if (!pulls) return pullResponse;
+      return pulls.length > 1 ? pulls.shift() : pulls[0];
     },
     async push(roomId, body) {
       pushedBatches.push(body);
       if (pushImpl) return pushImpl(roomId, body);
-      return { revision: (pullResponse.revision || 0) + pushedBatches.length };
+      return { revision: (pullResponse?.revision || 0) + pushedBatches.length };
     },
   };
 }
@@ -188,6 +195,57 @@ describe('sweepRoomForPlaintextContent — ops fold (small/new room)', () => {
   });
 });
 
+describe('sweepRoomForPlaintextContent — per-entity (small-piece) pushes', () => {
+  it('pushes each patient as its own batch, not one giant batch', async () => {
+    const state = {
+      revision: 500,
+      entries: [
+        { id: 'p1', note: 'plano p1' },
+        { id: 'p2', note: 'plano p2' },
+      ],
+      entityVersions: {
+        'entries/p1/note': { updatedAt: '2026-08-01T00:00:00.000Z', actorId: 'a' },
+        'entries/p2/note': { updatedAt: '2026-08-01T00:00:00.000Z', actorId: 'a' },
+      },
+      labSidecars: {},
+      todos: {},
+    };
+    const api = makeFakeApi({ pullResponse: { revision: 500, state } });
+    const result = await sweepRoomForPlaintextContent(api, 'room-1', 'device-owner');
+    assert.equal(result.swept, 2);
+    assert.equal(result.failed, 0);
+    assert.equal(api.pushedBatches.length, 2, 'one push per patient, not one combined push');
+  });
+
+  it('a failure on one patient does not block sweeping the others', async () => {
+    const state = {
+      revision: 500,
+      entries: [
+        { id: 'p1', note: 'plano p1 — enorme historial que excede el cap de D1' },
+        { id: 'p2', note: 'plano p2' },
+      ],
+      entityVersions: {
+        'entries/p1/note': { updatedAt: '2026-08-01T00:00:00.000Z', actorId: 'a' },
+        'entries/p2/note': { updatedAt: '2026-08-01T00:00:00.000Z', actorId: 'a' },
+      },
+      labSidecars: {},
+      todos: {},
+    };
+    const api = makeFakeApi({
+      pullResponse: { revision: 500, state },
+      pushImpl: (roomId, body) => {
+        if (body.ops.some((op) => op.path === 'entries/p1/note')) {
+          throw new Error('payload_too_large');
+        }
+        return { revision: 501 };
+      },
+    });
+    const result = await sweepRoomForPlaintextContent(api, 'room-1', 'device-owner');
+    assert.equal(result.failed, 1);
+    assert.equal(result.swept, 1, 'p2 still got swept despite p1 failing');
+  });
+});
+
 describe('backfillRoomEncryption', () => {
   beforeEach(() => {
     clearRoomDekCache();
@@ -204,7 +262,6 @@ describe('backfillRoomEncryption', () => {
   });
 
   it('generates a DEK and sweeps when the owner has no DEK yet', async () => {
-    cacheSessionPassword('hunter2-medico');
     const state = {
       revision: 500,
       entries: [{ id: 'p1', note: 'plano' }],
@@ -216,14 +273,13 @@ describe('backfillRoomEncryption', () => {
     api.setRoomDek = async () => ({ ok: true });
     api.getRoomDek = async () => ({ dek: null });
 
-    const result = await backfillRoomEncryption(api, { id: 'room-1', role: 'owner' }, 'device-owner');
+    const result = await backfillRoomEncryption(api, { id: 'room-1', role: 'owner', code: 'ABCD-1234' }, 'device-owner');
     assert.ok(result);
     assert.equal(result.swept, 1);
     assert.ok(getCachedRoomDek('room-1'));
   });
 
   it('does not throw when another device already set the DEK (setRoomDek 409)', async () => {
-    cacheSessionPassword('hunter2-medico');
     const api = makeFakeApi({ pullResponse: { revision: 0, state: emptyState() } });
     api.getRoomDek = async () => ({ dek: null }); // loadRoomDek finds nothing either
     api.setRoomDek = async () => {
@@ -231,23 +287,62 @@ describe('backfillRoomEncryption', () => {
       throw err;
     };
     await assert.doesNotReject(() =>
-      backfillRoomEncryption(api, { id: 'room-1', role: 'owner' }, 'device-owner')
+      backfillRoomEncryption(api, { id: 'room-1', role: 'owner', code: 'ABCD-1234' }, 'device-owner')
     );
     assert.equal(getCachedRoomDek('room-1'), null);
   });
 
   it('re-sweeps (idempotently, finding nothing) when a DEK already exists', async () => {
-    cacheSessionPassword('hunter2-medico');
     const dekState = { revision: 10, entries: [], entityVersions: {}, labSidecars: {}, todos: {} };
     const api = makeFakeApi({ pullResponse: { revision: 10, state: dekState } });
     api.setRoomDek = async () => ({ ok: true });
     api.getRoomDek = async () => ({ dek: null });
 
-    await backfillRoomEncryption(api, { id: 'room-1', role: 'owner' }, 'device-owner');
+    await backfillRoomEncryption(api, { id: 'room-1', role: 'owner', code: 'ABCD-1234' }, 'device-owner');
     const firstPushCount = api.pushedBatches.length;
 
-    const result = await backfillRoomEncryption(api, { id: 'room-1', role: 'owner' }, 'device-owner');
+    const result = await backfillRoomEncryption(api, { id: 'room-1', role: 'owner', code: 'ABCD-1234' }, 'device-owner');
     assert.equal(result.swept, 0);
     assert.equal(api.pushedBatches.length, firstPushCount);
+  });
+
+  it('re-pulls after the sweep and reports remaining plaintext when the push silently did not stick', async () => {
+    const state = {
+      revision: 500,
+      entries: [{ id: 'p1', note: 'plano' }],
+      entityVersions: { 'entries/p1/note': { updatedAt: '2026-08-01T00:00:00.000Z', actorId: 'a' } },
+      labSidecars: {},
+      todos: {},
+    };
+    // Verification pull sees the exact same plaintext state again — nothing changed server-side.
+    const api = makeFakeApi({ pullSequence: [{ revision: 500, state }] });
+    api.setRoomDek = async () => ({ ok: true });
+    api.getRoomDek = async () => ({ dek: null });
+
+    const result = await backfillRoomEncryption(api, { id: 'room-1', role: 'owner', code: 'ABCD-1234' }, 'device-owner');
+    assert.equal(result.remaining, 1);
+  });
+
+  it('reports remaining: 0 once the verification pull shows everything encrypted', async () => {
+    const plaintextState = {
+      revision: 500,
+      entries: [{ id: 'p1', note: 'plano' }],
+      entityVersions: { 'entries/p1/note': { updatedAt: '2026-08-01T00:00:00.000Z', actorId: 'a' } },
+      labSidecars: {},
+      todos: {},
+    };
+    const encryptedState = {
+      revision: 501,
+      entries: [{ id: 'p1', note: { enc: 1, iv: 'x', ct: 'y' } }],
+      entityVersions: { 'entries/p1/note': { updatedAt: '2026-08-01T00:00:00.001Z', actorId: 'device-owner' } },
+      labSidecars: {},
+      todos: {},
+    };
+    const api = makeFakeApi({ pullSequence: [{ revision: 500, state: plaintextState }, { revision: 501, state: encryptedState }] });
+    api.setRoomDek = async () => ({ ok: true });
+    api.getRoomDek = async () => ({ dek: null });
+
+    const result = await backfillRoomEncryption(api, { id: 'room-1', role: 'owner', code: 'ABCD-1234' }, 'device-owner');
+    assert.equal(result.remaining, 0);
   });
 });
