@@ -55,7 +55,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 ## R+ 8.2.2 (estable — release 8.2.2)
 
 - **Tablero de interconsultas:** reemplaza la barra lateral por un tablero de 4 equipos con columnas Preop/Nuevas hoy, Pendientes y Under; clic en un paciente abre su Resumen a pantalla completa.
-- **Cerrar guardia:** "Terminar guardia y repartir pacientes" reparte automáticamente según las reglas de rol.
+- **Alta rápida:** botón "+ Agregar" en el tablero da de alta un paciente nuevo sin esperar un laboratorio.
 - **Servicio solicitante y equipo editables** desde el Resumen del paciente, sin salir de la pantalla.
 
 Notas: `docs/RELEASE_NOTES_8.2.2.txt`.

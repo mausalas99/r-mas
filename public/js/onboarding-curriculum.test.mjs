@@ -12,8 +12,8 @@ import {
   migrateTourStepId,
 } from './onboarding-curriculum.mjs';
 
-test('CURRICULUM_VERSION is 18 after the interconsulta board redesign', () => {
-  assert.equal(CURRICULUM_VERSION, 18);
+test('CURRICULUM_VERSION is 19 after adding ic_board_actions/ic_consult_band tour steps', () => {
+  assert.equal(CURRICULUM_VERSION, 19);
 });
 
 test('getSalaTourSteps has 23 steps: map first, then lab with tendencias', () => {

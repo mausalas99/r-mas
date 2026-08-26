@@ -170,6 +170,7 @@ describe('tour intro launch', () => {
     assert.match(src, /ic_board_map: renderIcBoardMap/);
     assert.match(src, /ic_board_drilldown: renderIcBoardDrilldown/);
     assert.match(src, /function renderIcBoardMap[\s\S]*?tablero de equipos/);
+    assert.doesNotMatch(src, /Cuatro carriles/);
     assert.match(src, /function renderIcBoardDrilldown[\s\S]*?Resumen/);
   });
 });

@@ -81,13 +81,25 @@ function renderMapIncomplete(bodyEl, nextBtn) {
 
 function renderIcBoardMap(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">En Interconsultas no hay barra lateral: este <strong>tablero de equipos</strong> es tu punto de partida. Cuatro carriles — <strong>guardia</strong>, <strong>postguardia</strong> y dos <strong>activo</strong> — con columnas <strong>Preop/Nuevas hoy</strong>, <strong>Pendientes</strong> y <strong>Under</strong> por paciente.</p>';
+    '<p style="margin:0;line-height:1.5;">En Interconsultas no hay barra lateral: este <strong>tablero de equipos</strong> es tu punto de partida. Un carril por equipo — <strong>guardia</strong>, <strong>postguardia</strong> y el resto como <strong>activo</strong> — más un carril <strong>Sin equipo</strong> si hay pacientes sin asignar. Solo el carril de guardia tiene <strong>Preop/Nuevas hoy</strong>; todos tienen <strong>Pendientes</strong> y <strong>Under</strong> por paciente.</p>';
   showNext(nextBtn);
 }
 
 function renderIcBoardDrilldown(bodyEl, nextBtn) {
   bodyEl.innerHTML =
     '<p style="margin:0;line-height:1.5;">Toca una tarjeta para abrir el <strong>Resumen</strong> de ese paciente a pantalla completa. <strong>← Tablero</strong> (o <strong>Esc</strong>) regresa al tablero. Los pacientes llegan al tablero desde un laboratorio procesado, como en los siguientes pasos.</p>';
+  showNext(nextBtn);
+}
+
+function renderIcBoardActions(bodyEl, nextBtn) {
+  bodyEl.innerHTML =
+    '<p style="margin:0;line-height:1.5;"><strong>+ Agregar</strong> da de alta un paciente nuevo sin esperar un laboratorio. <strong>Actualizar pacientes</strong> refresca el tablero. También puedes <strong>arrastrar una tarjeta</strong> de un carril a otro para reasignar el equipo de ese paciente.</p>';
+  showNext(nextBtn);
+}
+
+function renderIcConsultBand(bodyEl, nextBtn) {
+  bodyEl.innerHTML =
+    '<p style="margin:0;line-height:1.5;">Al abrir un paciente, esta tarjeta trae <strong>Servicio solicitante</strong>, <strong>Motivo</strong>, <strong>Seguimiento</strong> y el <strong>equipo asignado</strong> — todo editable aquí, junto al nombre.</p>';
   showNext(nextBtn);
 }
 
@@ -286,6 +298,8 @@ const FUNDAMENTOS_STEP_HANDLERS = {
   map_incomplete: renderMapIncomplete,
   ic_board_map: renderIcBoardMap,
   ic_board_drilldown: renderIcBoardDrilldown,
+  ic_board_actions: renderIcBoardActions,
+  ic_consult_band: renderIcConsultBand,
   map_lab_teaser: renderMapLabTeaser,
   lab_parse: renderLabParse,
   lab_view: renderLabView,

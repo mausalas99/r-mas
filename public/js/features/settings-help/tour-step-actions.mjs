@@ -393,13 +393,29 @@ export function syncTourDockPlacement() {
   else d.classList.remove('tour-dock-pos-left');
 }
 
+// Resuelve una lista de selectores separados por coma probando cada uno
+// en orden de prioridad (no en orden de documento como hace
+// document.querySelector con un selector combinado).
+function resolveTourStepEl(selectorList) {
+  var parts = String(selectorList).split(',');
+  for (var i = 0; i < parts.length; i++) {
+    var sel = parts[i].trim();
+    if (!sel) continue;
+    try {
+      var el = document.querySelector(sel);
+      if (el) return el;
+    } catch (_selErr) { void _selErr; }
+  }
+  return null;
+}
+
 export function tourApplySpotlightForStep(id, t, scrollDelayMs) {
   if (!t || !t.selector) return;
   var scrollDelay = scrollDelayMs != null ? scrollDelayMs : 140;
   setTimeout(function () {
     if (!tourState.guidedTourActive || tourState.tourStepId !== id) return;
     if (id === 'listado_problemas') rt.renderListadoForm();
-    var el = document.querySelector(t.selector);
+    var el = resolveTourStepEl(t.selector);
     if (!el) return;
     try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_scrollErr) { void _scrollErr; }
     var spotlightCls = t.spotlightClass || (stepRequiresUserAction(id) ? 'tour-spotlight-soap' : null);
@@ -472,6 +488,32 @@ function applyTourDensityForStep(id, t) {
   return true;
 }
 
+/** Seeds the 12-patient/4-team interconsulta board demo when the tour's
+ * board-map step starts, so the tutorial doesn't show an empty board.
+ * Idempotent (isInterconsultaDemoActive guard) — re-entering the step
+ * (back/forward) never double-seeds. Cleared on tour exit by
+ * destroyDemoAndClose() (tour-flow-demo-cleanup.mjs). */
+function seedIcBoardDemoForTour() {
+  void import('../interconsulta-demo-toggle.mjs').then((m) => {
+    if (!m.isInterconsultaDemoActive()) m.seedInterconsultaDemoOnMainApp(new Date());
+  });
+}
+
+/** Drills into the first demo patient so the consult-info card (Servicio
+ * solicitante / Motivo / Seguimiento / Equipo) has something to show —
+ * mirrors what tapping a board card does (selectPatientFromIcBoardEvent). */
+function seedIcConsultBandDemoForTour() {
+  Promise.all([import('../patients-bridge.mjs'), import('../interconsulta-mode-chrome.mjs')]).then(
+    ([pb, ic]) => {
+      var demoPatient = getPatients().find(function (p) {
+        return p && p.isDemo;
+      });
+      if (demoPatient) pb.patientsBridge.selectPatient(demoPatient.id);
+      ic.showInterconsultaPatientView();
+    }
+  );
+}
+
 function seedTourDemosForStep(id) {
   if (TOUR_STEPS_USE_DEMO_PEREZ[id]) ensureTourPrimaryDemoPatientActive();
   if (id === 'listado_problemas') seedDemoListadoProblemas();
@@ -479,6 +521,8 @@ function seedTourDemosForStep(id) {
     seedDemoMonitoreoOnActivePatient();
   }
   if (id === 'eventualidades') seedDemoEventualidadesOnActivePatient();
+  if (id === 'ic_board_map') seedIcBoardDemoForTour();
+  if (id === 'ic_consult_band') seedIcConsultBandDemoForTour();
 }
 
 function applyTourTabsForStep(id, t) {
@@ -513,6 +557,11 @@ function applyTourOverlayChromeForStep(id, t) {
     if (typeof closeConnectionDropdown === 'function') closeConnectionDropdown();
   }
   if (id === 'sala_med') rt.renderMedRecetaPanel();
+  if (t.showIcBoard) {
+    void import('../interconsulta-mode-chrome.mjs').then((m) => {
+      if (typeof m.showInterconsultaBoardView === 'function') m.showInterconsultaBoardView();
+    });
+  }
 }
 
 function scheduleEstadoActualTourPrep(id, t) {

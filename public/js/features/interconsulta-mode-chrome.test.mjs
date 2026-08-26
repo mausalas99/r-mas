@@ -7,6 +7,7 @@ import {
   renderConsultBandForActivePatient,
   syncInterconsultaModeChrome,
   isInterconsultaGuardiaOnlyFilterActive,
+  isInterconsultaPostguardiaHidden,
   showInterconsultaPatientView,
 } from './interconsulta-mode-chrome.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
@@ -27,6 +28,12 @@ describe('buildInterconsultaBarHtml', () => {
     var html = buildInterconsultaBarHtml();
     assert.match(html, /data-wb-ic-guardia-filter/);
     assert.match(html, /Solo guardia de hoy/);
+  });
+
+  it('renders the "Ocultar post-guardia" board toggle', () => {
+    var html = buildInterconsultaBarHtml();
+    assert.match(html, /data-wb-ic-hide-postguardia aria-pressed="false"/);
+    assert.match(html, /Ocultar post-guardia/);
   });
 });
 
@@ -54,6 +61,30 @@ describe('"Solo guardia de hoy" filter toggle', () => {
     assert.equal(isInterconsultaGuardiaOnlyFilterActive(), false);
     assert.equal(btn.getAttribute('aria-pressed'), 'false');
     assert.equal(renderCalls.length, 2);
+  });
+});
+
+describe('"Ocultar post-guardia" toggle', () => {
+  it('toggles isInterconsultaPostguardiaHidden and updates aria-pressed', () => {
+    if (typeof document === 'undefined') return;
+    var host = document.createElement('div');
+    var renderCalls = [];
+    registerInterconsultaChromeRuntime({
+      renderPatientList: (opts) => renderCalls.push(opts),
+    });
+    mountInterconsultaBar(host, {});
+    var btn = host.querySelector('[data-wb-ic-hide-postguardia]');
+    assert.ok(btn);
+    assert.equal(btn.getAttribute('aria-pressed'), 'false');
+    assert.equal(isInterconsultaPostguardiaHidden(), false);
+
+    btn.click();
+    assert.equal(isInterconsultaPostguardiaHidden(), true);
+    assert.equal(btn.getAttribute('aria-pressed'), 'true');
+
+    btn.click();
+    assert.equal(isInterconsultaPostguardiaHidden(), false);
+    assert.equal(btn.getAttribute('aria-pressed'), 'false');
   });
 });
 
@@ -223,32 +254,17 @@ describe('interconsulta navigation (board = main window, corrected 2026-08-25)',
     assert.equal(document.getElementById('interconsulta-mode-frame').hidden, true);
   });
 
-  it('always shows the "Terminar guardia y repartir pacientes" button, top-left of the board header', async () => {
+  it('always shows the "+ Agregar" button, top-left of the board header', async () => {
     if (typeof document === 'undefined') return;
     await enterInterconsultaMode();
     syncInterconsultaModeChrome();
     var header = document.querySelector('.ic-board-header');
     assert.ok(header);
-    var rolloverBtn = header.querySelector('[data-ic-board-rollover]');
-    assert.ok(rolloverBtn);
-    assert.match(rolloverBtn.textContent, /Terminar guardia y repartir pacientes/);
+    var addBtn = header.querySelector('[data-ic-board-add]');
+    assert.ok(addBtn);
+    assert.match(addBtn.textContent, /\+ Agregar/);
     // Top-left: first child of the header, ahead of "Actualizar pacientes".
-    assert.equal(header.firstElementChild, rolloverBtn);
-  });
-
-  it('clicking rollover with no on-call team today explains itself instead of failing silently', async () => {
-    if (typeof document === 'undefined') return;
-    var toasts = [];
-    registerInterconsultaChromeRuntime({
-      getActiveId: () => null,
-      showToast: (msg, kind) => toasts.push([msg, kind]),
-    });
-    await enterInterconsultaMode();
-    syncInterconsultaModeChrome();
-    document.querySelector('[data-ic-board-rollover]').click();
-    assert.equal(toasts.length, 1);
-    assert.match(toasts[0][0], /Ningún equipo está de guardia hoy/);
-    assert.equal(toasts[0][1], 'error');
+    assert.equal(header.firstElementChild, addBtn);
   });
 
   it('clicking a patient card swaps to the Resumen view and back/Esc return to the board', async () => {

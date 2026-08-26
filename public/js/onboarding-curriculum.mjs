@@ -1,4 +1,4 @@
-export const CURRICULUM_VERSION = 18;
+export const CURRICULUM_VERSION = 19;
 
 export const SALA_CHAPTERS = [
   {
@@ -61,6 +61,7 @@ export const IC_CHAPTERS = [
       'map_tabs',
       'ic_board_map',
       'ic_board_drilldown',
+      'ic_board_actions',
     ],
   },
   {
@@ -79,6 +80,7 @@ export const IC_CHAPTERS = [
     title: 'Paciente y clínico',
     stepIds: [
       'ic_expediente_tabs',
+      'ic_consult_band',
       'sala_med',
       'ic_nota',
       'ic_indica',

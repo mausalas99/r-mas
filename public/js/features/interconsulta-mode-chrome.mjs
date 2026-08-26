@@ -32,6 +32,7 @@ import { resolvePatientCensusTeamId } from './patients-clinical-filter.mjs';
 import { patientsVisibleInSidebar } from './patients-scope.mjs';
 import { mountInterconsultaTeamBoard } from './interconsulta-team-board.mjs';
 import { openServicePickerModal } from './patient-dashboard/ic-modal.mjs';
+import { openAddModal } from './patients-modal.mjs';
 import { renderPatientCardHtml } from './patients-card-html.mjs';
 import { patientCardIdFromEvent, shouldHandleTouchPointerUp } from './patients-list-click.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
@@ -42,7 +43,6 @@ import {
 } from './interconsulta-demo-toggle.mjs';
 import { isInterconsultaDemoTeamId } from '../../../lib/clinical-scope/interconsulta-demo-seed.mjs';
 import { normalizeServiceKey } from '../../../lib/clinical-scope/shared.mjs';
-import { getInterconsultaTeamRoles } from '../../../lib/clinical-scope/interconsulta-team-roles.mjs';
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
 import {
   assignableTeamsForUser,
@@ -84,6 +84,22 @@ function syncGuardiaOnlyFilterButton(container) {
   btn.classList.toggle('wb-btn-toggle--on', _guardiaOnlyFilter);
 }
 
+/** "Ocultar post-guardia" board toggle — display-only, hides the
+ * postguardia lane without touching data or rollover logic. Session-only,
+ * not persisted, reset on module reload. */
+var _hidePostguardia = false;
+
+export function isInterconsultaPostguardiaHidden() {
+  return _hidePostguardia;
+}
+
+function syncPostguardiaFilterButton(container) {
+  var btn = container && container.querySelector('[data-wb-ic-hide-postguardia]');
+  if (!btn) return;
+  btn.setAttribute('aria-pressed', _hidePostguardia ? 'true' : 'false');
+  btn.classList.toggle('wb-btn-toggle--on', _hidePostguardia);
+}
+
 /** Board ↔ patient drill-down state — 'board' is the IC mode default view. */
 var _icView = 'board';
 var _wasInterconsultaActive = false;
@@ -109,6 +125,9 @@ export function buildInterconsultaBarHtml() {
     '<div class="wb-ic-bar-actions">' +
     '<button type="button" class="wb-btn wb-btn-secondary wb-btn-toggle" data-wb-ic-guardia-filter aria-pressed="false" title="Mostrar solo Preop / Nuevas hoy del equipo de guardia">' +
     'Solo guardia de hoy' +
+    '</button>' +
+    '<button type="button" class="wb-btn wb-btn-secondary wb-btn-toggle" data-wb-ic-hide-postguardia aria-pressed="false" title="Oculta la calle de post-guardia del tablero (no cambia los datos)">' +
+    'Ocultar post-guardia' +
     '</button>' +
     '<details class="wb-menu" data-wb-ic-menu>' +
     '<summary class="wb-btn wb-btn-secondary" aria-haspopup="menu" title="Más acciones">⋯</summary>' +
@@ -139,6 +158,16 @@ export function mountInterconsultaBar(container, opts) {
     guardiaFilterBtn.addEventListener('click', function () {
       _guardiaOnlyFilter = !_guardiaOnlyFilter;
       syncGuardiaOnlyFilterButton(container);
+      renderInterconsultaBoardView();
+    });
+  }
+
+  var hidePostguardiaBtn = container.querySelector('[data-wb-ic-hide-postguardia]');
+  if (hidePostguardiaBtn) {
+    syncPostguardiaFilterButton(container);
+    hidePostguardiaBtn.addEventListener('click', function () {
+      _hidePostguardia = !_hidePostguardia;
+      syncPostguardiaFilterButton(container);
       renderInterconsultaBoardView();
     });
   }
@@ -385,77 +414,6 @@ function refreshPatients() {
   if (typeof rt.showToast === 'function') rt.showToast('Pacientes actualizados', 'success');
 }
 
-function dbApi() {
-  if (typeof window === 'undefined') return null;
-  return window.rplusDb || window.electronAPI || null;
-}
-
-/** "Terminar guardia y repartir pacientes" — moves the on-call team's
- * non-resolved patients to the other active Interconsultas teams
- * (round-robin, see redistributePostCallPatients). Role rotation itself is
- * automatic (date-driven cycle, see interconsulta-team-roles.mjs); this
- * button only does the one-time patient handoff for today's outgoing team.
- * Always visible on the board (per owner request) — explains itself via
- * toast when there's nothing to roll over, instead of hiding. */
-function rolloverInterconsultaGuardia() {
-  if (isInterconsultaDemoActive()) {
-    if (typeof rt.showToast === 'function') {
-      rt.showToast('No disponible con datos demo', 'error');
-    }
-    return;
-  }
-  var ctx = getClinicalScopeContextForEvaluate() || {};
-  var teams = ctx.teams || [];
-  var now = ctx.now || new Date().toISOString();
-  var roles = getInterconsultaTeamRoles(teams, now);
-  var guardia = roles.guardia;
-  if (!guardia) {
-    if (typeof rt.showToast === 'function') {
-      rt.showToast('Ningún equipo está de guardia hoy', 'error');
-    }
-    return;
-  }
-  var remainingTeamIds = [roles.postguardia].concat(roles.activo || [])
-    .filter(Boolean)
-    .map(function (t) {
-      return String(t.team_id);
-    });
-  if (!remainingTeamIds.length) {
-    if (typeof rt.showToast === 'function') {
-      rt.showToast('No hay otro equipo activo para repartir pacientes', 'error');
-    }
-    return;
-  }
-  var api = dbApi();
-  if (!api || typeof api.dbClinicalInterconsultaRollover !== 'function') {
-    if (typeof rt.showToast === 'function') rt.showToast('No se pudo repartir pacientes', 'error');
-    return;
-  }
-  api
-    .dbClinicalInterconsultaRollover({
-      postCallTeamId: String(guardia.team_id),
-      remainingTeamIds: remainingTeamIds,
-      nowIso: now,
-    })
-    .then(function (res) {
-      if (!res || res.ok === false) {
-        if (typeof rt.showToast === 'function') rt.showToast('No se pudo repartir pacientes', 'error');
-        return;
-      }
-      var movedCount = (res.result && res.result.movedCount) || 0;
-      refreshPatients();
-      if (typeof rt.showToast === 'function') {
-        rt.showToast(
-          movedCount > 0 ? movedCount + ' pacientes repartidos' : 'Sin pacientes pendientes que repartir',
-          'success'
-        );
-      }
-    })
-    .catch(function () {
-      if (typeof rt.showToast === 'function') rt.showToast('No se pudo repartir pacientes', 'error');
-    });
-}
-
 function icArchivedToggleHtml(collapsed, count) {
   return (
     '<button type="button" class="patient-list-section-toggle" data-ic-archived-toggle aria-expanded="' +
@@ -541,15 +499,16 @@ export function renderInterconsultaBoardView() {
 
   mount.innerHTML =
     '<div class="ic-board-header">' +
-    '<button type="button" class="wb-btn wb-btn-secondary" data-ic-board-rollover>Terminar guardia y repartir pacientes</button>' +
+    '<button type="button" class="wb-btn wb-btn-secondary" data-ic-board-add>+ Agregar</button>' +
     '<button type="button" class="wb-btn wb-btn-primary" data-ic-board-refresh>Actualizar pacientes</button>' +
     '</div>' +
     '<div id="ic-team-board-mount"></div><div id="ic-archived-mount"></div>';
   mount.querySelector('[data-ic-board-refresh]').addEventListener('click', refreshPatients);
-  mount.querySelector('[data-ic-board-rollover]').addEventListener('click', rolloverInterconsultaGuardia);
+  mount.querySelector('[data-ic-board-add]').addEventListener('click', openAddModal);
   mountInterconsultaTeamBoard(mount.querySelector('#ic-team-board-mount'), active, teams, {
     now: now,
     filterGuardiaOnly: isInterconsultaGuardiaOnlyFilterActive(),
+    hidePostguardia: isInterconsultaPostguardiaHidden(),
     assignTeam: assignInterconsultaTeamViaBoardDrop,
     onAssignTeam: function () {
       renderInterconsultaBoardView();

@@ -104,7 +104,7 @@ test('filterGuardiaOnly narrows to the guardia lane Preop/Nuevas-hoy bucket only
     patient('pend1', 't-a'),
     patient('other1', 't-b'),
   ];
-  const html = renderInterconsultaTeamBoardHtml(patients, teams, NOW, true);
+  const html = renderInterconsultaTeamBoardHtml(patients, teams, NOW, { filterGuardiaOnly: true });
   assert.ok(html.includes('Preop / Nuevas hoy'));
   assert.ok(!html.includes('data-role="activo"'));
   assert.ok(!html.includes('data-role="postguardia"'));
@@ -139,6 +139,79 @@ test('every lane body carries data-drop-team-id, including "" for Sin equipo', (
   const html = renderInterconsultaTeamBoardHtml(patients, teams, NOW);
   assert.match(html, /data-role="guardia"[\s\S]*?data-drop-team-id="t-a"/);
   assert.match(html, /data-role="sin-equipo"[\s\S]*?data-drop-team-id=""/);
+});
+
+test('fewer than 2 real activo teams: still 4 sections, empty slot shows placeholder with no drop target', () => {
+  const teams = [
+    { team_id: 't-a', name: 'Equipo A', service: 'Interconsultas', sub_area_fraction: 'A' },
+    { team_id: 't-b', name: 'Equipo B', service: 'Interconsultas', sub_area_fraction: 'B' },
+    { team_id: 't-d', name: 'Equipo D', service: 'Interconsultas', sub_area_fraction: 'D' },
+  ];
+  const html = renderInterconsultaTeamBoardHtml([], teams, NOW);
+  const sectionCount = (html.match(/<section class="ic-board-lane/g) || []).length;
+  assert.equal(sectionCount, 4);
+  const activoLanes = [...html.matchAll(/<section class="ic-board-lane ic-board-lane--activo"[\s\S]*?<\/section>/g)];
+  assert.equal(activoLanes.length, 2);
+  const emptySlot = activoLanes.find((m) => m[0].includes('Activo 2'));
+  assert.ok(emptySlot);
+  assert.ok(emptySlot[0].includes('Sin equipo asignado.'));
+  assert.ok(!emptySlot[0].includes('data-drop-team-id'));
+});
+
+test('0 real activo teams: still 4 sections, both activo lanes are empty placeholders', () => {
+  const teams = [
+    { team_id: 't-a', name: 'Equipo A', service: 'Interconsultas', sub_area_fraction: 'A' },
+    { team_id: 't-d', name: 'Equipo D', service: 'Interconsultas', sub_area_fraction: 'D' },
+  ];
+  const html = renderInterconsultaTeamBoardHtml([], teams, NOW);
+  const sectionCount = (html.match(/<section class="ic-board-lane/g) || []).length;
+  assert.equal(sectionCount, 4);
+  const activoLanes = [...html.matchAll(/<section class="ic-board-lane ic-board-lane--activo"[\s\S]*?<\/section>/g)];
+  assert.equal(activoLanes.length, 2);
+  for (const m of activoLanes) {
+    assert.ok(m[0].includes('Sin equipo asignado.'));
+    assert.ok(!m[0].includes('data-drop-team-id'));
+  }
+});
+
+test('5th real team folds into an "Otros equipos" lane', () => {
+  const teams = [
+    ...buildTeams(),
+    { team_id: 't-e', name: 'Equipo E', service: 'Interconsultas', sub_area_fraction: 'E' },
+  ];
+  const patients = [patient('p-e', 't-e')];
+  const html = renderInterconsultaTeamBoardHtml(patients, teams, NOW);
+  const sectionCount = (html.match(/<section class="ic-board-lane/g) || []).length;
+  assert.equal(sectionCount, 5);
+  const otrosLane = html.slice(html.indexOf('data-role="sin-equipo"'));
+  assert.ok(otrosLane.includes('Otros equipos'));
+  assert.ok(otrosLane.includes('Equipo E'));
+  assert.ok(otrosLane.includes('data-patient-id="p-e"'));
+});
+
+test('overflow-team patient plus a genuinely unassigned patient share one Sin equipo lane', () => {
+  const teams = [
+    ...buildTeams(),
+    { team_id: 't-e', name: 'Equipo E', service: 'Interconsultas', sub_area_fraction: 'E' },
+  ];
+  const patients = [patient('p-e', 't-e'), patient('p-orphan', '')];
+  const html = renderInterconsultaTeamBoardHtml(patients, teams, NOW);
+  const sinEquipoMatches = (html.match(/data-role="sin-equipo"/g) || []).length;
+  assert.equal(sinEquipoMatches, 1);
+  const otrosLane = html.slice(html.indexOf('data-role="sin-equipo"'));
+  assert.ok(otrosLane.includes('data-patient-id="p-e"'));
+  assert.ok(otrosLane.includes('data-patient-id="p-orphan"'));
+});
+
+test('hidePostguardia: 3 sections, no postguardia or sin-equipo lane, postguardia patient does not leak anywhere', () => {
+  const teams = buildTeams();
+  const patients = [patient('p-post', 't-d')]; // t-d is postguardia on DAY_25 (NOW)
+  const html = renderInterconsultaTeamBoardHtml(patients, teams, NOW, { hidePostguardia: true });
+  const sectionCount = (html.match(/<section class="ic-board-lane/g) || []).length;
+  assert.equal(sectionCount, 3);
+  assert.ok(!html.includes('data-role="postguardia"'));
+  assert.ok(!html.includes('data-role="sin-equipo"'));
+  assert.ok(!html.includes('data-patient-id="p-post"'));
 });
 
 test('dropping a patient card on a lane body calls opts.assignTeam with the patient and target team ids', async () => {

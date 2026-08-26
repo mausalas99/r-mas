@@ -2632,9 +2632,9 @@ var RELEASE_NOTES_822 = [
       'En modo Interconsultas, la barra lateral se reemplaza por un tablero con 4 equipos (guardia, postguardia, activo x2) y columnas Preop/Nuevas hoy, Pendientes y Under. Un clic en un paciente abre su Resumen a pantalla completa; "← Tablero" o Esc regresa.',
   },
   {
-    title: 'Cerrar guardia reparte pacientes',
+    title: 'Alta rápida desde el tablero',
     body:
-      'El botón "Terminar guardia y repartir pacientes" mueve a los pacientes del equipo de guardia según las reglas de rol, sin pasos manuales.',
+      'El botón "+ Agregar" en el tablero de interconsultas da de alta un paciente nuevo sin esperar un laboratorio.',
   },
   {
     title: 'Servicio solicitante y equipo editables',

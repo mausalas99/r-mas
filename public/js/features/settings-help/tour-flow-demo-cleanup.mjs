@@ -13,8 +13,15 @@ import { tourState, publishTourGuardContext } from './tour-state.mjs';
 
 const rt = getSettingsHelpRuntime();
 
+function destroyIcBoardDemo() {
+  void import('../interconsulta-demo-toggle.mjs').then((m) => {
+    if (m.isInterconsultaDemoActive()) m.clearInterconsultaDemoFromMainApp();
+  });
+}
+
 function destroyDemoAndClose() {
   closeLabBulkTourHintModal();
+  destroyIcBoardDemo();
   purgeTourDemoPatientsFromState();
   tourState.guidedTourActive = false;
   tourState.tourStepId = null;

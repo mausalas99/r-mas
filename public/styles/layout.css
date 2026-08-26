@@ -246,11 +246,6 @@ html.ic-board-mode #sidebar-hover-strip {
   gap: 0.6rem;
   margin-bottom: 0.6rem;
 }
-/* Rollover button anchors top-left; margin-right:auto eats the remaining
-   space so "Actualizar pacientes" keeps its flex-end spot on the right. */
-.ic-board-header [data-ic-board-rollover] {
-  margin-right: auto;
-}
 /* Hard backstop: whatever inline-style tug-of-war Resumen's own show/hide
    logic (patients-select.mjs) is mid-race with, the board view always wins
    while it's the active IC view — see syncIcViewVisibility. */

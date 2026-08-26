@@ -151,6 +151,28 @@ test('getTourTarget gv7 trust strip y fin turno en guardia', () => {
   assert.equal(inherit.openConnection, true);
 });
 
+test('ic_board_map e ic_board_drilldown apuntan al tab nota y muestran el tablero', () => {
+  const map = getTourTarget('ic_board_map', 'interconsulta');
+  assert.equal(map.appTab, 'nota');
+  assert.equal(map.showIcBoard, true);
+  const drilldown = getTourTarget('ic_board_drilldown', 'interconsulta');
+  assert.equal(drilldown.appTab, 'nota');
+  assert.equal(drilldown.showIcBoard, true);
+});
+
+test('ic_board_actions apunta al header del tablero y lo muestra', () => {
+  const t = getTourTarget('ic_board_actions', 'interconsulta');
+  assert.equal(t.appTab, 'nota');
+  assert.equal(t.selector, '.ic-board-header');
+  assert.equal(t.showIcBoard, true);
+});
+
+test('ic_consult_band apunta a la tarjeta de datos de la interconsulta', () => {
+  const t = getTourTarget('ic_consult_band', 'interconsulta');
+  assert.equal(t.appTab, 'nota');
+  assert.equal(t.selector, '.ic-consult-band');
+});
+
 test('stepRequiresUserAction es false para pasos puramente narrativos', () => {
   assert.equal(stepRequiresUserAction('map_sidebar'), false);
   assert.equal(stepRequiresUserAction('map_tabs'), false);
@@ -162,12 +184,14 @@ test('stepRequiresUserAction es false para pasos puramente narrativos', () => {
   assert.equal(stepRequiresUserAction('livesync_mobile'), false);
 });
 
-test('getInterconsultaTourSteps orden curriculum: 17 pasos, tablero antes de laboratorio', () => {
+test('getInterconsultaTourSteps orden curriculum: 19 pasos, tablero antes de laboratorio', () => {
   const steps = getInterconsultaTourSteps();
-  assert.equal(steps.length, 17);
+  assert.equal(steps.length, 19);
   assert.equal(steps[0], 'map_tabs');
   assert.ok(steps.includes('ic_board_map'));
   assert.ok(steps.includes('ic_board_drilldown'));
+  assert.ok(steps.includes('ic_board_actions'));
+  assert.ok(steps.includes('ic_consult_band'));
   assert.ok(!steps.includes('map_add_patient'));
   assert.ok(!steps.includes('map_incomplete'));
   assert.ok(!steps.includes('sala_casiopea_lab'));
@@ -176,6 +200,8 @@ test('getInterconsultaTourSteps orden curriculum: 17 pasos, tablero antes de lab
   assert.ok(steps.includes('ic_expediente_tabs'));
   assert.equal(steps.indexOf('sala_tend'), steps.indexOf('lab_view') + 1);
   assert.equal(steps.indexOf('ic_expediente_tabs'), steps.indexOf('sala_tend_chart') + 1);
+  assert.equal(steps.indexOf('ic_board_actions'), steps.indexOf('ic_board_drilldown') + 1);
+  assert.equal(steps.indexOf('ic_consult_band'), steps.indexOf('ic_expediente_tabs') + 1);
 });
 
 test('getTourTarget for sala_expediente_tabs apunta a barra de pestañas', () => {
