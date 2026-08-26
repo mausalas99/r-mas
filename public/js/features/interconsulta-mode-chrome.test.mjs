@@ -223,6 +223,34 @@ describe('interconsulta navigation (board = main window, corrected 2026-08-25)',
     assert.equal(document.getElementById('interconsulta-mode-frame').hidden, true);
   });
 
+  it('always shows the "Terminar guardia y repartir pacientes" button, top-left of the board header', async () => {
+    if (typeof document === 'undefined') return;
+    await enterInterconsultaMode();
+    syncInterconsultaModeChrome();
+    var header = document.querySelector('.ic-board-header');
+    assert.ok(header);
+    var rolloverBtn = header.querySelector('[data-ic-board-rollover]');
+    assert.ok(rolloverBtn);
+    assert.match(rolloverBtn.textContent, /Terminar guardia y repartir pacientes/);
+    // Top-left: first child of the header, ahead of "Actualizar pacientes".
+    assert.equal(header.firstElementChild, rolloverBtn);
+  });
+
+  it('clicking rollover with no on-call team today explains itself instead of failing silently', async () => {
+    if (typeof document === 'undefined') return;
+    var toasts = [];
+    registerInterconsultaChromeRuntime({
+      getActiveId: () => null,
+      showToast: (msg, kind) => toasts.push([msg, kind]),
+    });
+    await enterInterconsultaMode();
+    syncInterconsultaModeChrome();
+    document.querySelector('[data-ic-board-rollover]').click();
+    assert.equal(toasts.length, 1);
+    assert.match(toasts[0][0], /Ningún equipo está de guardia hoy/);
+    assert.equal(toasts[0][1], 'error');
+  });
+
   it('clicking a patient card swaps to the Resumen view and back/Esc return to the board', async () => {
     if (typeof document === 'undefined') return;
     var patient = { id: '42' };

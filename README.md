@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.2.1](https://github.com/mausalas99/r-mas/releases/tag/v8.2.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.2.2](https://github.com/mausalas99/r-mas/releases/tag/v8.2.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -51,6 +51,14 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.2.2 (estable — release 8.2.2)
+
+- **Tablero de interconsultas:** reemplaza la barra lateral por un tablero de 4 equipos con columnas Preop/Nuevas hoy, Pendientes y Under; clic en un paciente abre su Resumen a pantalla completa.
+- **Cerrar guardia:** "Terminar guardia y repartir pacientes" reparte automáticamente según las reglas de rol.
+- **Servicio solicitante y equipo editables** desde el Resumen del paciente, sin salir de la pantalla.
+
+Notas: `docs/RELEASE_NOTES_8.2.2.txt`.
 ## R+ 8.2.1 (estable — release 8.2.1)
 
 - **Fix:** los labs pesados (recortados para caber en el límite de envío a Nube) ya no se re-sincronizan completos en cada sync.

@@ -1,0 +1,24 @@
+R+ 8.2.2 (estable — release 8.2.2)
+======================================
+
+Fecha: 2026-08-26
+
+## Resumen
+
+Rediseño completo del modo Interconsultas: tablero de 4 equipos en vez de lista lateral, cierre de guardia con reparto automático, y edición de servicio solicitante/equipo desde el Resumen del paciente.
+
+## Nuevo / mejorado
+
+- **Tablero de interconsultas:** reemplaza la barra lateral (Fijados/Nuevas/En seguimiento/Archivados) por un tablero de 4 equipos (guardia, postguardia, activo x2) con columnas Preop/Nuevas hoy, Pendientes y Under. Clic en un paciente abre su Resumen a pantalla completa; "← Tablero" o Esc regresa al tablero.
+- **Cerrar guardia:** el botón "Terminar guardia y repartir pacientes" reparte automáticamente a los pacientes del equipo de guardia según las reglas de rol.
+- **Servicio solicitante y equipo editables:** desde el Resumen, un selector de servicio solicitante (mismo catálogo por categorías que Interconsultas en sala) y un selector de equipo, ambos sin salir de la pantalla del paciente.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.2.2-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.2.2-Mac-Intel.dmg`
+- Windows: `R+-8.2.2-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

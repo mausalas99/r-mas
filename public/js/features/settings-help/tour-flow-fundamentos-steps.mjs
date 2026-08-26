@@ -79,6 +79,18 @@ function renderMapIncomplete(bodyEl, nextBtn) {
   showNext(nextBtn);
 }
 
+function renderIcBoardMap(bodyEl, nextBtn) {
+  bodyEl.innerHTML =
+    '<p style="margin:0;line-height:1.5;">En Interconsultas no hay barra lateral: este <strong>tablero de equipos</strong> es tu punto de partida. Cuatro carriles — <strong>guardia</strong>, <strong>postguardia</strong> y dos <strong>activo</strong> — con columnas <strong>Preop/Nuevas hoy</strong>, <strong>Pendientes</strong> y <strong>Under</strong> por paciente.</p>';
+  showNext(nextBtn);
+}
+
+function renderIcBoardDrilldown(bodyEl, nextBtn) {
+  bodyEl.innerHTML =
+    '<p style="margin:0;line-height:1.5;">Toca una tarjeta para abrir el <strong>Resumen</strong> de ese paciente a pantalla completa. <strong>← Tablero</strong> (o <strong>Esc</strong>) regresa al tablero. Los pacientes llegan al tablero desde un laboratorio procesado, como en los siguientes pasos.</p>';
+  showNext(nextBtn);
+}
+
 function renderMapTabs(bodyEl, nextBtn) {
   bodyEl.innerHTML = getMapTabsCopy();
   showNext(nextBtn);
@@ -272,6 +284,8 @@ const FUNDAMENTOS_STEP_HANDLERS = {
   map_tabs: renderMapTabs,
   map_add_patient: renderMapAddPatient,
   map_incomplete: renderMapIncomplete,
+  ic_board_map: renderIcBoardMap,
+  ic_board_drilldown: renderIcBoardDrilldown,
   map_lab_teaser: renderMapLabTeaser,
   lab_parse: renderLabParse,
   lab_view: renderLabView,

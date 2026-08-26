@@ -215,7 +215,12 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * interconsulta-demo-toggle.mjs/-demo-state.mjs (⌥⌘⇧I demo seed),
  * interconsult-catalog.mjs, and the lib/clinical-scope board-buckets/
  * team-roles/interconsultas builders are all eager on the IC-mode boot path. */
-const EAGER_BOOT_BUDGET_BYTES = 3517381;
+/** +3119 B / +0 files: 8.2.2. Restored the "Terminar guardia y repartir
+ * pacientes" rollover button (owner request — the board redesign had
+ * dropped it) as an always-visible board-header button in
+ * interconsulta-mode-chrome.mjs; no new eager file, interconsulta-team-roles.mjs
+ * was already eager via interconsulta-team-board.mjs. */
+const EAGER_BOOT_BUDGET_BYTES = 3520500;
 const EAGER_BOOT_BUDGET_FILES = 113;
 
 /**

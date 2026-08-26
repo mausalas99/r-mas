@@ -72,7 +72,8 @@ var HELP_ARTICLES = [
       '<li><strong>Paciente</strong> abre en <strong>Resumen</strong>. Grupos: Resumen · Clínico · Salida. Atajo <strong>⌘/Ctrl+1</strong> (repite para ciclar).</li>' +
       '<li><strong>Laboratorio</strong>: Labs · Tendencias · Cultivos. Atajo <strong>⌘/Ctrl+2</strong> (repite para ciclar).</li>' +
       '<li><strong>Manejo</strong> es la receta hospitalaria (no está dentro de Paciente). <strong>Agenda</strong> concentra procedimientos del turno.</li>' +
-      '<li>La columna izquierda es el <strong>censo</strong>. <strong>+ Agregar</strong> da de alta; sin cuarto, cama o servicio la tarjeta queda incompleta.</li>' +
+      '<li>En <strong>Sala</strong>, la columna izquierda es el <strong>censo</strong>: <strong>+ Agregar</strong> da de alta; sin cuarto, cama o servicio la tarjeta queda incompleta.</li>' +
+      '<li>En <strong>Interconsultas</strong> no hay columna lateral: la pestaña Paciente abre un <strong>tablero de equipos</strong> (guardia, postguardia, activo). Toca un paciente para ver su Resumen; <strong>← Tablero</strong> o <strong>Esc</strong> regresa.</li>' +
       '</ul>'
   },
   {
@@ -80,7 +81,7 @@ var HELP_ARTICLES = [
     title: 'Tu primer paciente',
     keywords: 'agregar paciente nuevo registro edad sexo cuarto cama duplicado incompleto alta censo',
     html:
-      '<p>Agrega un paciente desde la barra lateral con <strong>+ Agregar</strong> o desde un reporte de laboratorio procesado (<strong>Agregar paciente</strong>).</p>' +
+      '<p>En <strong>Sala</strong>, agrega un paciente desde la barra lateral con <strong>+ Agregar</strong> o desde un reporte de laboratorio procesado (<strong>Agregar paciente</strong>). En <strong>Interconsultas</strong> (sin barra lateral) los pacientes llegan al tablero al procesar un reporte de laboratorio.</p>' +
       '<ul>' +
       '<li>Nombre y registro bastan para empezar. <strong>Cuarto</strong>, <strong>cama</strong> y <strong>servicio</strong> cierran el censo: si faltan, la tarjeta queda <strong>incompleta</strong> — ábrela y completa.</li>' +
       '<li>R+ avisa si detecta el mismo nombre o registro para evitar duplicados.</li>' +

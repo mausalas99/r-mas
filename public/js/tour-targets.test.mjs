@@ -35,13 +35,22 @@ test('getInterconsultaTourSteps no incluye pasos de Modo Pase', () => {
   const steps = getInterconsultaTourSteps();
   assert.ok(!steps.includes('pase_enter'));
   assert.ok(!steps.includes('pase_board'));
-  assert.equal(steps[1], 'map_sidebar');
+  assert.equal(steps[1], 'ic_board_map');
   assert.ok(steps.includes('sala_tend_chart'));
+});
+
+test('getInterconsultaTourSteps enseña el tablero de equipos, no la barra lateral retirada', () => {
+  const steps = getInterconsultaTourSteps();
+  assert.ok(!steps.includes('map_sidebar'));
+  assert.ok(!steps.includes('map_add_patient'));
+  assert.ok(!steps.includes('map_incomplete'));
+  assert.ok(steps.includes('ic_board_map'));
+  assert.ok(steps.includes('ic_board_drilldown'));
 });
 
 test('getInterconsultaTourSteps mantiene pasos clásicos sin Estado Actual ni Listado', () => {
   const steps = getInterconsultaTourSteps();
-  assert.ok(steps.includes('map_sidebar'));
+  assert.ok(steps.includes('ic_board_map'));
   assert.ok(!steps.includes('map'));
   assert.ok(!steps.includes('estado_actual'));
   assert.ok(!steps.includes('listado_problemas'));
@@ -147,16 +156,20 @@ test('stepRequiresUserAction es false para pasos puramente narrativos', () => {
   assert.equal(stepRequiresUserAction('map_tabs'), false);
   assert.equal(stepRequiresUserAction('map_lab_teaser'), false);
   assert.equal(stepRequiresUserAction('wrap'), false);
+  assert.equal(stepRequiresUserAction('ic_board_map'), false);
+  assert.equal(stepRequiresUserAction('ic_board_drilldown'), false);
   assert.equal(stepRequiresUserAction('livesync_desktop'), true);
   assert.equal(stepRequiresUserAction('livesync_mobile'), false);
 });
 
-test('getInterconsultaTourSteps orden curriculum: 18 pasos, mapa antes de laboratorio', () => {
+test('getInterconsultaTourSteps orden curriculum: 17 pasos, tablero antes de laboratorio', () => {
   const steps = getInterconsultaTourSteps();
-  assert.equal(steps.length, 18);
+  assert.equal(steps.length, 17);
   assert.equal(steps[0], 'map_tabs');
-  assert.ok(steps.includes('map_add_patient'));
-  assert.ok(steps.includes('map_incomplete'));
+  assert.ok(steps.includes('ic_board_map'));
+  assert.ok(steps.includes('ic_board_drilldown'));
+  assert.ok(!steps.includes('map_add_patient'));
+  assert.ok(!steps.includes('map_incomplete'));
   assert.ok(!steps.includes('sala_casiopea_lab'));
   assert.ok(!steps.includes('sala_casiopea_trends'));
   assert.ok(!steps.includes('sala_manejo'));

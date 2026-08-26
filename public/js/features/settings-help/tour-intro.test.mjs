@@ -164,4 +164,12 @@ describe('tour intro launch', () => {
     assert.match(src, /map_add_patient: renderMapAddPatient/);
     assert.match(src, /map_incomplete: renderMapIncomplete/);
   });
+
+  it('interconsulta map chapter teaches the team board, not the retired sidebar', () => {
+    const src = readFileSync(join(dir, 'tour-flow-fundamentos-steps.mjs'), 'utf8');
+    assert.match(src, /ic_board_map: renderIcBoardMap/);
+    assert.match(src, /ic_board_drilldown: renderIcBoardDrilldown/);
+    assert.match(src, /function renderIcBoardMap[\s\S]*?tablero de equipos/);
+    assert.match(src, /function renderIcBoardDrilldown[\s\S]*?Resumen/);
+  });
 });

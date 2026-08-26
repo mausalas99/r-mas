@@ -1,4 +1,4 @@
-export const CURRICULUM_VERSION = 17;
+export const CURRICULUM_VERSION = 18;
 
 export const SALA_CHAPTERS = [
   {
@@ -51,16 +51,16 @@ export const SALA_CHAPTERS = [
   },
 ];
 
-/** Interconsulta: mapa de la app primero; laboratorio incluye tendencias. */
+/** Interconsulta: mapa de la app primero (tablero de equipos, no barra
+ * lateral — ver 8.2.2 board redesign); laboratorio incluye tendencias. */
 export const IC_CHAPTERS = [
   {
     id: 'ch-ic-map',
     title: 'Cómo está armada R+',
     stepIds: [
       'map_tabs',
-      'map_sidebar',
-      'map_add_patient',
-      'map_incomplete',
+      'ic_board_map',
+      'ic_board_drilldown',
     ],
   },
   {
@@ -293,7 +293,7 @@ export function isValidStepForBranch(stepId, branch, _mode) {
 }
 
 /** Maps legacy tour step ids after curriculum merges. */
-export function migrateTourStepId(stepId, _branch) {
+export function migrateTourStepId(stepId, branch) {
   if (
     stepId === 'estado_actual_snapshot' ||
     stepId === 'estado_actual_charts' ||
@@ -304,5 +304,14 @@ export function migrateTourStepId(stepId, _branch) {
   if (stepId === 'sala_soap') return 'sala_med';
   if (stepId === 'historia_clinica') return 'estado_actual';
   if (stepId === 'gv7_lan_pin') return 'gv7_lan_directorio';
+  // Interconsulta lost its sidebar to the 8.2.2 team-board redesign — a
+  // saved progress pointer at the old sidebar/alta steps resumes at the
+  // new board-intro step instead of failing validation and restarting.
+  if (
+    branch === 'interconsulta' &&
+    (stepId === 'map_sidebar' || stepId === 'map_add_patient' || stepId === 'map_incomplete')
+  ) {
+    return 'ic_board_map';
+  }
   return stepId;
 }

@@ -12,8 +12,8 @@ import {
   migrateTourStepId,
 } from './onboarding-curriculum.mjs';
 
-test('CURRICULUM_VERSION is 17 after structure-first onboarding', () => {
-  assert.equal(CURRICULUM_VERSION, 17);
+test('CURRICULUM_VERSION is 18 after the interconsulta board redesign', () => {
+  assert.equal(CURRICULUM_VERSION, 18);
 });
 
 test('getSalaTourSteps has 23 steps: map first, then lab with tendencias', () => {
@@ -74,6 +74,14 @@ test('migrateTourStepId maps legacy estado_actual substeps', () => {
   assert.equal(migrateTourStepId('lab_view', 'sala'), 'lab_view');
 });
 
+test('migrateTourStepId sends retired interconsulta sidebar steps to the board intro', () => {
+  assert.equal(migrateTourStepId('map_sidebar', 'interconsulta'), 'ic_board_map');
+  assert.equal(migrateTourStepId('map_add_patient', 'interconsulta'), 'ic_board_map');
+  assert.equal(migrateTourStepId('map_incomplete', 'interconsulta'), 'ic_board_map');
+  // Unchanged for sala — the sidebar is still real there.
+  assert.equal(migrateTourStepId('map_sidebar', 'sala'), 'map_sidebar');
+});
+
 test('getChapterForStep maps map and servicio_default to ch-map', () => {
   const ch = getChapterForStep('servicio_default', 'sala');
   assert.equal(ch.id, 'ch-map');
@@ -120,11 +128,15 @@ test('HUB_MODULES starts with structure and has no Resultados chapter', () => {
   assert.ok(HUB_MODULES.some((m) => m.chapterId === 'ch-patient-lab'));
 });
 
-test('getInterconsultaTourSteps is map-first then lab then clínico', () => {
+test('getInterconsultaTourSteps is map-first (team board, no sidebar) then lab then clínico', () => {
   const steps = getInterconsultaTourSteps();
   assert.equal(steps[0], 'map_tabs');
+  assert.ok(!steps.includes('map_sidebar'));
+  assert.ok(!steps.includes('map_add_patient'));
+  assert.ok(!steps.includes('map_incomplete'));
   assert.equal(steps.indexOf('lab_parse'), steps.indexOf('map_lab_teaser') + 1);
-  assert.ok(steps.indexOf('map_add_patient') < steps.indexOf('lab_parse'));
+  assert.ok(steps.indexOf('ic_board_map') < steps.indexOf('lab_parse'));
+  assert.ok(steps.indexOf('ic_board_drilldown') < steps.indexOf('lab_parse'));
   assert.ok(steps.indexOf('sala_tend') < steps.indexOf('ic_expediente_tabs'));
   assert.ok(!steps.includes('sala_casiopea_lab'));
 });

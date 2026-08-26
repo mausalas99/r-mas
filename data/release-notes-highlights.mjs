@@ -2625,10 +2625,29 @@ var RELEASE_NOTES_821 = [
   },
 ];
 
+var RELEASE_NOTES_822 = [
+  {
+    title: 'Tablero de interconsultas rediseñado',
+    body:
+      'En modo Interconsultas, la barra lateral se reemplaza por un tablero con 4 equipos (guardia, postguardia, activo x2) y columnas Preop/Nuevas hoy, Pendientes y Under. Un clic en un paciente abre su Resumen a pantalla completa; "← Tablero" o Esc regresa.',
+  },
+  {
+    title: 'Cerrar guardia reparte pacientes',
+    body:
+      'El botón "Terminar guardia y repartir pacientes" mueve a los pacientes del equipo de guardia según las reglas de rol, sin pasos manuales.',
+  },
+  {
+    title: 'Servicio solicitante y equipo editables',
+    body:
+      'Desde el Resumen del paciente ahora se puede elegir el servicio solicitante (mismo catálogo por categorías que Interconsultas en sala) y asignar el equipo con un selector rápido, sin salir de la pantalla.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_821;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_822;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.2.2': RELEASE_NOTES_822,
   '8.2.1': RELEASE_NOTES_821,
   '8.2.0': RELEASE_NOTES_820,
   '8.1.9': RELEASE_NOTES_819,
