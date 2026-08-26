@@ -8,11 +8,9 @@ import { shouldEnforceTeamPatientMirror } from '../clinical-privileges.mjs';
 import { isCloudMobileClient } from './cloud-mobile/origin.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
 import { isModeSala } from '../mode-features.mjs';
-import { isGuardiaMode } from './chrome.mjs';
 import { isPatientBulkSelectMode } from './patients-bulk-select.mjs';
 import {
   buildPatientListZones,
-  buildInterconsultaZones,
   buildRondaNavIds,
   trySilentPatientListPatch,
   updatePatientListDomIncremental,
@@ -38,8 +36,6 @@ import {
   renderPatientCardHtml,
   renderPinnedSectionLabelHtml,
   renderActiveSectionLabelHtml,
-  renderNuevasSectionLabelHtml,
-  renderEnSeguimientoSectionLabelHtml,
   renderArchivedToggleHtml,
 } from './patients-card-html.mjs';
 import { syncPatientListIndicator } from '../patient-list-indicator.mjs';
@@ -258,16 +254,8 @@ function renderPatientListMessage(list, msg, opts) {
   }
 }
 
-/** Interconsulta sidebar (10b) groups Nuevas/En seguimiento instead of Fijados/Pacientes. */
-function isInterconsultaSidebarActive() {
-  return !isModeSala(rt.getSettings()) && !isGuardiaMode();
-}
-
 function buildPatientListRenderBundle(filtered) {
-  var interconsulta = isInterconsultaSidebarActive();
-  var zones = interconsulta
-    ? buildInterconsultaZones(filtered, { sortByBed: isMobileWeb() })
-    : buildPatientListZones(filtered, { sortByBed: isMobileWeb() });
+  var zones = buildPatientListZones(filtered, { sortByBed: isMobileWeb() });
   var cardHtml = renderPatientCardHtml;
   var archivedCollapsed = isArchivedSectionCollapsed();
   var listCtx = {
@@ -279,21 +267,17 @@ function buildPatientListRenderBundle(filtered) {
     setLastRondaNavIds(buildRondaNavIds(z));
   };
   return {
-    mode: interconsulta ? 'interconsulta' : 'default',
     zones: zones,
     cardHtml: cardHtml,
     archivedCollapsed: archivedCollapsed,
     listCtx: listCtx,
     onRondaNav: onRondaNav,
-    virtualizeActive: !interconsulta && shouldVirtualizeActiveZone(zones.active.length),
+    virtualizeActive: shouldVirtualizeActiveZone(zones.active.length),
   };
 }
 
 function trySilentPatientListUpdate(list, bundle, opts) {
   if (!opts.silent) return false;
-  // Interconsulta zones (Nuevas/En seguimiento) are a distinct shape from the
-  // incremental patchers below (pinned/active/archived) — always full-render.
-  if (bundle.mode === 'interconsulta') return false;
   var incrementalOpts = {
     zones: bundle.zones,
     archivedCollapsed: bundle.archivedCollapsed,
@@ -368,51 +352,12 @@ function buildDefaultZonePartsHtml(bundle, rondaNav) {
   return parts;
 }
 
-/** Interconsulta (10b): Fijados stays if present, then Nuevas / En seguimiento — no drag. */
-function buildInterconsultaZonePartsHtml(bundle, rondaNav) {
-  var pinned = bundle.zones.pinned;
-  var nuevas = bundle.zones.nuevas;
-  var enSeguimiento = bundle.zones.enSeguimiento;
-  var parts = [];
-  if (pinned.length) {
-    parts.push(renderPinnedSectionLabelHtml(pinned.length));
-    parts.push('<div class="patient-sort-zone" data-patient-zone="pinned">');
-    pinned.forEach(function (p) {
-      rondaNav.push(String(p.id));
-    });
-    parts.push(pinned.map(bundle.cardHtml).join(''));
-    parts.push('</div>');
-  }
-  if (nuevas.length) {
-    parts.push(renderNuevasSectionLabelHtml(nuevas.length));
-    parts.push('<div class="patient-list-zone" data-patient-zone="nuevas">');
-    nuevas.forEach(function (p) {
-      rondaNav.push(String(p.id));
-    });
-    parts.push(nuevas.map(bundle.cardHtml).join(''));
-    parts.push('</div>');
-  }
-  if (enSeguimiento.length) {
-    parts.push(renderEnSeguimientoSectionLabelHtml(enSeguimiento.length));
-    parts.push('<div class="patient-list-zone" data-patient-zone="en-seguimiento">');
-    enSeguimiento.forEach(function (p) {
-      rondaNav.push(String(p.id));
-    });
-    parts.push(enSeguimiento.map(bundle.cardHtml).join(''));
-    parts.push('</div>');
-  }
-  return parts;
-}
-
 function renderPatientListFullHtml(list, bundle, opts) {
   destroyPatientListSortables();
   list.classList.toggle('patient-list--ronda', bundle.listCtx.isRonda);
-  var interconsulta = bundle.mode === 'interconsulta';
   var archived = bundle.zones.archived;
   var rondaNav = [];
-  var parts = interconsulta
-    ? buildInterconsultaZonePartsHtml(bundle, rondaNav)
-    : buildDefaultZonePartsHtml(bundle, rondaNav);
+  var parts = buildDefaultZonePartsHtml(bundle, rondaNav);
   if (archived.length) {
     parts.push(
       renderArchivedToggleHtml(bundle.archivedCollapsed, archived.length)
@@ -429,9 +374,7 @@ function renderPatientListFullHtml(list, bundle, opts) {
   setLastRondaNavIds(rondaNav);
   var savedScrollTop = opts.silent ? list.scrollTop : 0;
   list.innerHTML = parts.join('');
-  if (!interconsulta) {
-    mountActiveZoneVirtualIfNeeded(list, bundle.zones.active, bundle.cardHtml, bundle.listCtx);
-  }
+  mountActiveZoneVirtualIfNeeded(list, bundle.zones.active, bundle.cardHtml, bundle.listCtx);
   if (opts.silent && savedScrollTop > 0) list.scrollTop = savedScrollTop;
   if (!isPatientBulkSelectMode()) mountPatientListSortables();
   if (rt.getActiveAppTab() === 'agenda') rt.renderProcedureAgendaPanel();

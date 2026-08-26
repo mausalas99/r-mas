@@ -9,7 +9,9 @@
  * clinical metadata as JSON via persistClinicalState() rather than adding
  * SQL columns, so no lib/db/schema.mjs bump is needed here.
  */
-import { escHtml } from '../../dom-escape.mjs';
+import { escHtml, escAttr } from '../../dom-escape.mjs';
+import { INTERCONSULT_SERVICES, hueForRequestingService } from './interconsult-catalog.mjs';
+import { buildTeamSelectOptions } from '../clinical-teams/team-select-options.mjs';
 
 export var FOLLOW_UP_STATUSES = ['pendiente', 'en_curso', 'resuelta'];
 
@@ -46,30 +48,80 @@ export function setConsultInfo(patient, patch) {
   return next;
 }
 
-export function renderConsultBandHtml(info) {
+function renderStatusOptionsHtml(statusKey) {
+  var opts = ['<option value=""' + (statusKey ? '' : ' selected') + '>Sin definir</option>'];
+  FOLLOW_UP_STATUSES.forEach(function (key) {
+    opts.push(
+      '<option value="' + key + '"' + (key === statusKey ? ' selected' : '') + '>' +
+      escHtml(FOLLOW_UP_LABELS[key]) +
+      '</option>'
+    );
+  });
+  return opts.join('');
+}
+
+function requestingServiceTriggerHtml(name) {
+  var trimmed = String(name || '').trim();
+  var svc = INTERCONSULT_SERVICES.find(function (s) {
+    return s.name === trimmed;
+  });
+  var hue = svc ? hueForRequestingService(svc) : 220;
+  return (
+    '<button type="button" class="svc" style="--h:' + hue + '" data-ic-req-trigger>' +
+    (trimmed ? escHtml(trimmed) : 'Elegir servicio') +
+    '</button>'
+  );
+}
+
+/**
+ * @param {{ teams: object[], currentTeamId?: string, groupBySala?: boolean }} [teamCtx]
+ */
+function teamFieldHtml(teamCtx) {
+  var teams = (teamCtx && teamCtx.teams) || [];
+  if (!teams.length) return '';
+  var currentTeamId = (teamCtx && teamCtx.currentTeamId) || '';
+  return (
+    '<div class="ic-consult-field">' +
+    '<label class="ic-consult-label">Equipo</label>' +
+    '<select class="ic-consult-input" data-consult-team-select>' +
+    '<option value="">— Sin asignar —</option>' +
+    buildTeamSelectOptions(teams, currentTeamId, { groupBySala: !!(teamCtx && teamCtx.groupBySala) }) +
+    '</select>' +
+    '</div>'
+  );
+}
+
+/** Editable — Servicio solicitante opens the categorized catalog picker
+ * (data-ic-req-trigger, wired in interconsulta-mode-chrome.mjs), Motivo de
+ * consulta is free text, Seguimiento and Equipo are selects. Inputs/selects
+ * carry `data-consult-field`/`data-consult-team-select` for the change
+ * delegation wired in interconsulta-mode-chrome.mjs (renderer has no
+ * per-field handlers here).
+ * @param {{requestingService: string, reason: string, followUpStatus: string}} info
+ * @param {{ teams: object[], currentTeamId?: string, groupBySala?: boolean }} [teamCtx]
+ */
+export function renderConsultBandHtml(info, teamCtx) {
   var c = info || {};
   var statusKey = String(c.followUpStatus || '');
-  var statusLabel = FOLLOW_UP_LABELS[statusKey] || (statusKey ? statusKey : 'Sin definir');
-  var empty = '<span class="ic-consult-empty">Sin dato</span>';
   return (
     '<div class="ic-consult-band">' +
     '<div class="ic-consult-field">' +
-    '<span class="ic-consult-label">Servicio solicitante</span>' +
-    '<span class="ic-consult-value">' +
-    (c.requestingService ? escHtml(c.requestingService) : empty) +
-    '</span></div>' +
+    '<label class="ic-consult-label">Servicio solicitante</label>' +
+    requestingServiceTriggerHtml(c.requestingService) +
+    '</div>' +
     '<div class="ic-consult-field ic-consult-field--reason">' +
-    '<span class="ic-consult-label">Motivo de consulta</span>' +
-    '<span class="ic-consult-value">' +
-    (c.reason ? escHtml(c.reason) : empty) +
-    '</span></div>' +
+    '<label class="ic-consult-label">Motivo de consulta</label>' +
+    '<input type="text" class="ic-consult-input" data-consult-field="reason" ' +
+    'value="' + escAttr(c.reason) + '" placeholder="Sin dato">' +
+    '</div>' +
     '<div class="ic-consult-field">' +
-    '<span class="ic-consult-label">Seguimiento</span>' +
-    '<span class="ic-consult-value ic-consult-status ic-consult-status--' +
-    escHtml(statusKey || 'sin_definir') +
-    '">' +
-    escHtml(statusLabel) +
-    '</span></div>' +
+    '<label class="ic-consult-label">Seguimiento</label>' +
+    '<select class="ic-consult-input ic-consult-status ic-consult-status--' + escHtml(statusKey || 'sin_definir') + '" ' +
+    'data-consult-field="followUpStatus">' +
+    renderStatusOptionsHtml(statusKey) +
+    '</select>' +
+    '</div>' +
+    teamFieldHtml(teamCtx) +
     '</div>'
   );
 }

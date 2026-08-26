@@ -22,7 +22,7 @@ describe('handleApiRoute — /rooms app-version gate', () => {
   });
 
   it('lets a current version pass the gate through to the room handler', async () => {
-    const res = await handleApiRoute(roomsRequest({ 'X-App-Version': '8.2.0' }), gateOn);
+    const res = await handleApiRoute(roomsRequest({ 'X-App-Version': '8.2.1' }), gateOn);
     // No DB configured — proves the version gate passed and a *different*
     // failure (not update_required) came from inside handleRooms.
     assert.notEqual(res.status, 426);

@@ -2,7 +2,7 @@
  * Peer confirm before applying a remote (admin/other) patient wipe from Nube.
  * Own deletes echo back silently; declined wipes are remembered per deletedAt.
  */
-import { getPatients, persistClinicalState } from '../../app-state.mjs';
+import { getSyncablePatients, persistClinicalState } from '../../app-state.mjs';
 import { removePatientLocally } from '../sync-apply/patient-delete.mjs';
 import { showConfirmDialog } from '../../ui-approval-card.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
@@ -125,11 +125,11 @@ export function resolveTombstoneDeletedAt(patientId, tombstoneMeta) {
 
 function patientExistsLocally(patientId) {
   const pid = String(patientId || '').trim();
-  return getPatients().some((p) => p && String(p.id) === pid);
+  return getSyncablePatients().some((p) => p && String(p.id) === pid);
 }
 
 function patientLabel(patientId) {
-  const p = getPatients().find((row) => row && String(row.id) === String(patientId));
+  const p = getSyncablePatients().find((row) => row && String(row.id) === String(patientId));
   if (!p) return String(patientId);
   const name = String(p.nombre || 'Paciente').trim() || 'Paciente';
   const reg = String(p.registro || '').trim();

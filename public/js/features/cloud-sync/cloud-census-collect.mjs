@@ -3,7 +3,7 @@
  * stub returns null on Nube boot until registerLanRuntime). Applies the same team
  * scope as LAN for R1–R3 so peers receive the charts they can see.
  */
-import { getPatients } from '../../app-state.mjs';
+import { getSyncablePatients } from '../../app-state.mjs';
 import { storage } from '../../storage.js';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import {
@@ -16,8 +16,8 @@ import { buildPatientEntry } from '../patients-modal-commit.mjs';
 
 /** @returns {boolean} */
 export function isLanPatientEntryCollectorReady() {
-  if (!getPatients().length) return true;
-  const first = getPatients().find(function (p) {
+  if (!getSyncablePatients().length) return true;
+  const first = getSyncablePatients().find(function (p) {
     return p && p.id && String(p.id).indexOf('demo-') !== 0;
   });
   if (!first?.id) return true;
@@ -28,8 +28,8 @@ export function isLanPatientEntryCollectorReady() {
 async function buildAllLocalPatientEntries() {
   const { buildPatientEntry } = await import('../patients-modal-commit.mjs');
   const out = [];
-  for (let i = 0; i < getPatients().length; i += 1) {
-    const p = getPatients()[i];
+  for (let i = 0; i < getSyncablePatients().length; i += 1) {
+    const p = getSyncablePatients()[i];
     if (!p?.id || String(p.id).indexOf('demo-') === 0) continue;
     const entry = buildPatientEntry(p.id);
     if (entry) out.push(entry);
@@ -57,7 +57,7 @@ function scopeEntriesForCloudPush(entries) {
 
 /** @returns {Promise<object[]>} */
 export async function collectPatientEntriesForCloudPush() {
-  if (!getPatients().length) return [];
+  if (!getSyncablePatients().length) return [];
   const entries = await buildAllLocalPatientEntries();
   return scopeEntriesForCloudPush(entries);
 }
@@ -65,8 +65,8 @@ export async function collectPatientEntriesForCloudPush() {
 /** @returns {Record<string, unknown[]>} */
 export function collectTodosMapForCloudPush() {
   const out = {};
-  for (let i = 0; i < getPatients().length; i += 1) {
-    const p = getPatients()[i];
+  for (let i = 0; i < getSyncablePatients().length; i += 1) {
+    const p = getSyncablePatients()[i];
     if (!p?.id || String(p.id).indexOf('demo-') === 0) continue;
     const list = storage.getTodos(p.id);
     if (list.length) out[p.id] = list;

@@ -75,7 +75,7 @@
 
 .patient-dash .chips {
   display: flex;
-  gap: 6px;
+  gap: 10px;
   flex-wrap: wrap;
   margin-top: 4px;
 }
@@ -667,7 +667,8 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
   color: var(--color-ink);
 }
 
-#patient-ic-scrim {
+#patient-ic-scrim,
+#patient-svc-pick-scrim {
   position: fixed;
   inset: 0;
   z-index: 10000;
@@ -678,11 +679,13 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
   background: color-mix(in oklab, var(--color-ink) 52%, transparent);
   box-sizing: border-box;
 }
-#patient-ic-scrim[hidden] {
+#patient-ic-scrim[hidden],
+#patient-svc-pick-scrim[hidden] {
   display: none !important;
 }
 #patient-ic-panel.patient-dash,
-#patient-ic-panel.patient-dash-ic-modal {
+#patient-ic-panel.patient-dash-ic-modal,
+#patient-svc-pick-panel.patient-dash-ic-modal {
   position: relative;
   width: min(420px, 100%);
   max-height: min(80vh, 560px);
@@ -697,11 +700,13 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
   z-index: 10001;
   container-type: normal;
 }
-#patient-ic-panel.patient-dash-ic-modal h3 {
+#patient-ic-panel.patient-dash-ic-modal h3,
+#patient-svc-pick-panel.patient-dash-ic-modal h3 {
   margin: 0 0 8px;
   font: 600 1.05em/1.3 var(--font-ui);
 }
-#patient-ic-panel.patient-dash-ic-modal [data-ic-done] {
+#patient-ic-panel.patient-dash-ic-modal [data-ic-done],
+#patient-svc-pick-panel.patient-dash-ic-modal [data-svc-pick-done] {
   margin-top: 12px;
 }
 
@@ -721,21 +726,28 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
 
 #patient-ronda-dashboard-host { min-width: 0; }
 
-/* ── Interconsulta consult band (screen 10b) ───────────────────────
- * Shown above the same Resumen used by Sala when appMode=interconsulta.
+/* ── Interconsulta consult info fields ─────────────────────────────
+ * Sits inline inside .idrow .id-name-row, right after the patient name
+ * button (see renderConsultBandForActivePatient in
+ * interconsulta-mode-chrome.mjs) — no card/box of its own, just fields
+ * beside the name, same as the diagnosis chips already living there.
  */
+.patient-dash .dash > .wb-ic-back-btn {
+  align-self: flex-start;
+}
+
 .ic-consult-band {
   display: flex;
-  gap: 24px;
-  padding: 10px 24px;
-  background: var(--color-elevated);
-  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
 }
 .ic-consult-field {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  max-width: 180px;
 }
 .ic-consult-field--reason {
   flex: 1;
@@ -746,21 +758,55 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
   text-transform: uppercase;
   color: var(--color-ink-tertiary);
 }
-.ic-consult-value {
+.ic-consult-input {
   font: var(--type-wb-mono, 500 12.5px/1.4 var(--font-mono));
   color: var(--color-ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  padding: 1px 0;
+  min-width: 0;
+  width: 100%;
 }
-.ic-consult-empty {
+.ic-consult-input::placeholder {
   color: var(--color-ink-tertiary);
   font-style: italic;
+}
+.ic-consult-input:hover {
+  border-bottom-color: var(--border);
+}
+.ic-consult-input:focus {
+  outline: none;
+  border-bottom-color: var(--color-focus-ring, var(--action));
+}
+select.ic-consult-input {
+  cursor: pointer;
 }
 .ic-consult-status--en_curso { color: var(--warn, #8a4208); }
 .ic-consult-status--resuelta { color: var(--color-ink-muted); }
 .ic-consult-status--pendiente { color: var(--color-ink); }
-#interconsulta-mode-frame[hidden],
-#interconsulta-consult-band[hidden] {
+#interconsulta-mode-frame[hidden] {
   display: none;
+}
+
+/* Servicio solicitante / Equipo pickers reuse the sala interconsultantes
+ * chip look (.svc/.svc-add/.ic-cat), scoped here since the band sits
+ * outside .patient-dash. */
+.ic-consult-band .svc {
+  border: 0;
+  border-radius: var(--radius-badge);
+  padding: 3px 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: oklch(0.93 0.045 var(--h, 220));
+  color: oklch(0.36 0.09 var(--h, 220));
+  cursor: pointer;
+}
+html.dark .ic-consult-band .svc {
+  background: oklch(0.32 0.06 var(--h, 220));
+  color: oklch(0.86 0.08 var(--h, 220));
+}
+.ic-consult-band select.ic-consult-input {
+  font: var(--type-wb-mono, 500 12.5px/1.4 var(--font-mono));
 }

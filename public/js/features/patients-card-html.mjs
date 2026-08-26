@@ -11,6 +11,21 @@ import {
   getClinicalScopeContextForEvaluate,
 } from '../clinical-access-runtime.mjs';
 import { rt } from './patients-runtime-state.mjs';
+import { isGuardiaMode } from './chrome.mjs';
+import { getConsultInfo } from './patient-dashboard/consult-band.mjs';
+import { INTERCONSULT_SERVICES, hueForRequestingService } from './patient-dashboard/interconsult-catalog.mjs';
+
+/** Requesting-service hue for the board's card tint (public/styles/pase-board.css's
+ * .patient-card--svc-tint) — same catalog/hue convention as the Servicio
+ * solicitante picker chips. Null when the patient has no requesting service set. */
+function requestingServiceHue(p) {
+  var name = String(getConsultInfo(p).requestingService || '').trim();
+  if (!name) return null;
+  var svc = INTERCONSULT_SERVICES.find(function (s) {
+    return s.name === name;
+  });
+  return svc ? hueForRequestingService(svc) : null;
+}
 
 function renderPatientBulkCheckHtml(p) {
   if (!isPatientBulkSelectMode()) return '';
@@ -22,6 +37,18 @@ function renderPatientBulkCheckHtml(p) {
     (on ? '✓' : '') +
     '</span>'
   );
+}
+
+/** Same interconsulta-mode check as interconsulta-mode-chrome.mjs's isInterconsultaModeActive,
+ * but off `rt.getSettings()` (patients-runtime-state) — the settings source this
+ * module already reads elsewhere (patientSidebarCardOpts below). */
+function isInterconsultaModeUi() {
+  if (isModeSala(rt.getSettings())) return false;
+  try {
+    return !isGuardiaMode();
+  } catch {
+    return true;
+  }
 }
 
 export function renderPatientCardToolbarHtml(p, pinOn, archOn) {
@@ -47,6 +74,23 @@ export function renderPatientCardToolbarHtml(p, pinOn, archOn) {
       p.id +
       '\')" aria-label="Eliminar">×</button>'
     : '';
+  // Interconsulta mode: every patient already has a home (their team's board
+  // lane), so pin-to-top has no purpose there. The `pinned` field/storage is
+  // shared with Sala mode (buildPatientListZones, command palette, copy
+  // team-labs/estado-actual) — only this UI trigger is dropped, not the field.
+  var pinBtn = isInterconsultaModeUi()
+    ? ''
+    : '<button type="button" class="patient-toolbar-chip btn-pinned-text' +
+      (pinOn ? ' patient-toolbar-chip--on' : '') +
+      '" title="' +
+      pinTitle +
+      '" aria-label="' +
+      pinTitle +
+      '" onclick="togglePatientPinned(event,\'' +
+      p.id +
+      '\')">' +
+      (pinOn ? 'Fijado' : 'Fijar') +
+      '</button>';
   return (
     '<div class="patient-card-toolbar">' +
     '<div class="patient-card-toolbar-left">' +
@@ -59,17 +103,7 @@ export function renderPatientCardToolbarHtml(p, pinOn, archOn) {
     '\')">' +
     archiveIcon +
     '</button>' +
-    '<button type="button" class="patient-toolbar-chip btn-pinned-text' +
-    (pinOn ? ' patient-toolbar-chip--on' : '') +
-    '" title="' +
-    pinTitle +
-    '" aria-label="' +
-    pinTitle +
-    '" onclick="togglePatientPinned(event,\'' +
-    p.id +
-    '\')">' +
-    (pinOn ? 'Fijado' : 'Fijar') +
-    '</button>' +
+    pinBtn +
     '</div>' +
     deleteBtn +
     '</div>'
@@ -93,6 +127,7 @@ export function renderPatientCardHtml(p) {
   var aid = rt.getActiveId();
   var bulkOn = isPatientBulkSelectMode() && isPatientBulkSelected(p.id);
   var incomplete = isPatientAdmissionIncomplete(p, rt.getSettings());
+  var svcHue = requestingServiceHue(p);
   return (
     '<div class="patient-card ' +
       (p.id === aid ? 'active' : '') +
@@ -100,9 +135,12 @@ export function renderPatientCardHtml(p) {
       (archOn ? ' patient-card--archived' : '') +
       (bulkOn ? ' patient-card--bulk-selected' : '') +
       (incomplete ? ' patient-card--incomplete' : '') +
+      (svcHue != null ? ' patient-card--svc-tint' : '') +
       '" data-patient-id="' +
       p.id +
-      '" role="button" tabindex="0">' +
+      '"' +
+      (svcHue != null ? ' style="--svc-hue:' + svcHue + '"' : '') +
+      ' role="button" tabindex="0">' +
       renderPatientCardToolbarHtml(p, pinOn, archOn) +
       renderPatientSidebarBodyHtml(p, patientSidebarCardOpts()) +
       '</div>'
@@ -124,22 +162,6 @@ export function renderPinnedSectionLabelHtml(count) {
 export function renderActiveSectionLabelHtml(count) {
   return (
     '<div class="patient-list-section-label" role="group" aria-label="Lista de pacientes">Pacientes <span class="patient-list-section-count">' +
-    count +
-    '</span></div>'
-  );
-}
-
-export function renderNuevasSectionLabelHtml(count) {
-  return (
-    '<div class="patient-list-section-label" role="group" aria-label="Interconsultas nuevas">Nuevas <span class="patient-list-section-count">' +
-    count +
-    '</span></div>'
-  );
-}
-
-export function renderEnSeguimientoSectionLabelHtml(count) {
-  return (
-    '<div class="patient-list-section-label" role="group" aria-label="Interconsultas en seguimiento">En seguimiento <span class="patient-list-section-count">' +
     count +
     '</span></div>'
   );

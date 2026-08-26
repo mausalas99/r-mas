@@ -31,7 +31,7 @@ crons = ["0 6 * * *"]
 enabled = true
 
 [vars]
-# Off until 8.2.0 ships — while off, app_version is still tracked on every
-# login/register, but no one is blocked. Flip to true only after 8.2.0 is
-# released to users.
-NUBE_VERSION_GATE_ENABLED = false
+# On 2026-08-25: block any Nube login/register below MIN_NUBE_APP_VERSION
+# (8.2.1). Only login/register are gated — not the DEK/E2EE work, which
+# is not shipped yet.
+NUBE_VERSION_GATE_ENABLED = true

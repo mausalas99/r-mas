@@ -16,6 +16,7 @@ let rt = {
 
 export const driveImportState = {
   debounceId: null,
+  previewDebounceId: null,
   autoReviewPending: false,
   importBusy: false,
   /** @type {'paste' | 'review'} */

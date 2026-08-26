@@ -4,7 +4,7 @@
 import { isCloudSyncActive } from './nube-sync-policy.mjs';
 import { getCloudSyncRoomId } from './settings.mjs';
 import { CLOUD_PUSH_DEBOUNCE_MS, CLOUD_PUSH_FIRST_MS } from './cloud-sync-timing.mjs';
-import { getPatients, getLabHistory } from '../../app-state.mjs';
+import { getSyncablePatients, getLabHistory } from '../../app-state.mjs';
 import { stampCloudTodoRow, registroForPatientId } from '../../livesync-patient-ids.mjs';
 import { CLOUD_BATCH_MUTATION_ID, CLOUD_TOMBSTONES_MUTATION_ID } from './constants.mjs';
 import {
@@ -194,8 +194,8 @@ const CENSUS_SEED_CLOCK = '2000-01-01T00:00:00.000Z';
  * Must mutate `patients` (buildPatientEntry shallow-copies) so later pushes reuse the same clock.
  */
 export function ensureLiveCensusClocks(_nowIso) {
-  for (let i = 0; i < getPatients().length; i += 1) {
-    const patient = getPatients()[i];
+  for (let i = 0; i < getSyncablePatients().length; i += 1) {
+    const patient = getSyncablePatients()[i];
     if (!patient || typeof patient !== 'object') continue;
     if (!String(patient.lanUpdatedAt || '').trim()) patient.lanUpdatedAt = CENSUS_SEED_CLOCK;
   }
@@ -250,7 +250,7 @@ function pushCrossSalaBundleOps(crossBySala, meta, pushOpsToSalaRoom) {
 function shouldRetryEmptyCensusPush(ops) {
   const entryOps = countPatientEntryOps(ops);
   const otherOps = hasNonEntryCloudOps(ops);
-  if (!entryOps && !otherOps && getPatients().length > 0) {
+  if (!entryOps && !otherOps && getSyncablePatients().length > 0) {
     if (cloudCensusPushRetries < CLOUD_CENSUS_PUSH_MAX_RETRIES) {
       scheduleCloudCensusPushRetry();
       return true;
@@ -299,7 +299,7 @@ export async function enqueueCloudLabSidecarsBackfill() {
   };
   const { collectPatientEntriesForCloudPush } = await import('./cloud-census-collect.mjs');
   const entries = await collectPatientEntriesForCloudPush();
-  let enqueued = false;
+  const items = [];
   for (let i = 0; i < entries.length; i += 1) {
     const entry = entries[i];
     const patientId = String(entry?.patient?.id || '').trim();
@@ -310,10 +310,21 @@ export async function enqueueCloudLabSidecarsBackfill() {
       meta
     );
     if (!ops.length) continue;
-    enqueueEntityOps(`labSidecars/${patientId}`, ops);
-    enqueued = true;
+    const prepared = prepareOutboxOpsForEnqueue(`labSidecars/${patientId}`, ops);
+    if (!prepared.length) continue;
+    items.push({
+      clientMutationId: `labSidecars/${patientId}`,
+      ops: prepared,
+      baseRevision: bridgeRuntime.getRevision?.() ?? 0,
+    });
   }
-  return enqueued;
+  if (!items.length) return false;
+  // One load/save round trip for all patients — enqueueEntityOps per patient
+  // made this loop quadratic against localStorage and blocked the main
+  // thread for hundreds of ms right after connecting Nube.
+  bridgeRuntime.outbox.enqueueMany(items);
+  void bridgeRuntime.flush?.();
+  return true;
 }
 
 /**
@@ -339,7 +350,7 @@ export function enqueueCloudTodoUpsert(patientId, todo) {
     actorId: resolveCloudActorId(bridgeRuntime),
     updatedAt: String(todo.updatedAt || new Date().toISOString()),
   };
-  const row = stampCloudTodoRow(patientId, todo, getPatients());
+  const row = stampCloudTodoRow(patientId, todo, getSyncablePatients());
   enqueueEntityOps(`todos/${todo.id}`, [cloudOp({ path: `todos/${todo.id}`, value: row, ...meta })]);
 }
 
@@ -359,7 +370,7 @@ export function enqueueCloudTodoDelete(patientId, todoRef, updatedAt) {
     updatedAt: String(updatedAt || new Date().toISOString()),
   };
   const pid = String(patientId || '').trim();
-  const registro = registroForPatientId(getPatients(), pid);
+  const registro = registroForPatientId(getSyncablePatients(), pid);
   const tomb = { id: eid, patientId: pid, _deleted: true, updatedAt: meta.updatedAt };
   if (registro) tomb.registro = registro;
   enqueueEntityOps(`todos/${eid}`, [
@@ -414,7 +425,7 @@ export function enqueueCloudLabSidecarsForPatient(patientId) {
   };
   const ops = buildDirtyLabSidecarOpsForPatient(pid, labs, meta);
   if (!ops.length) return;
-  const patient = getPatients().find(function (p) {
+  const patient = getSyncablePatients().find(function (p) {
     return p && String(p.id) === pid;
   });
   void import('./cloud-census-sala-push.mjs').then(async function (mod) {

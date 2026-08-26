@@ -40,6 +40,7 @@ import {
 } from './app-state.mjs';
 import { recoverPresentationPatientsOnBoot } from './presentation-mode.mjs';
 import './censo-export.mjs';
+import './features/interconsulta-demo-toggle.mjs';
 import {
   registerAppRuntimeContext,
   registerAllFeatureRuntimes,

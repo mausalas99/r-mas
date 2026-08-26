@@ -367,6 +367,8 @@
     </div>
 
     <div id="appcontent-nota" role="tabpanel" aria-labelledby="apptab-nota" aria-hidden="false" style="flex-direction:column;flex:1;overflow:hidden;">
+      <div id="interconsulta-mode-frame" class="wb-mode-frame-mount" hidden aria-label="Interconsulta"></div>
+      <div id="ic-board-mount" class="ic-board-view" hidden aria-label="Tablero de equipos de interconsulta"></div>
       <div class="empty-state" id="empty-state">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
         <h3 class="empty-state-title">Elige un paciente para ver el expediente</h3>
@@ -415,8 +417,6 @@
         </div>
         <div id="expediente-panes-host" class="expediente-panes-host">
           <div id="itab-content-paciente" class="tab-content exp-composite-pane">
-            <div id="interconsulta-mode-frame" class="wb-mode-frame-mount" hidden aria-label="Interconsulta"></div>
-            <div id="interconsulta-consult-band" hidden></div>
             <div id="patient-dashboard-mount" class="patient-dash"></div>
             <div id="exp-pendientes-header" class="exp-pendientes-header" hidden>
               <button type="button" class="link back" id="btn-volver-al-resumen">Volver al resumen</button>

@@ -71,4 +71,28 @@ describe('renderConsultBandHtml', () => {
     });
     assert.doesNotMatch(html, /<img/);
   });
+
+  it('renders Servicio solicitante as a catalog-picker trigger, not a text input', () => {
+    var withService = renderConsultBandHtml({ requestingService: 'Cardiología', reason: '', followUpStatus: '' });
+    assert.match(withService, /data-ic-req-trigger/);
+    assert.match(withService, /Cardiología/);
+    assert.doesNotMatch(withService, /data-consult-field="requestingService"/);
+
+    var empty = renderConsultBandHtml({ requestingService: '', reason: '', followUpStatus: '' });
+    assert.match(empty, /Elegir servicio/);
+  });
+
+  it('renders an Equipo select only when teams are given, preselecting the current team', () => {
+    var noTeams = renderConsultBandHtml({ requestingService: '', reason: '', followUpStatus: '' });
+    assert.doesNotMatch(noTeams, /data-consult-team-select/);
+
+    var withTeams = renderConsultBandHtml(
+      { requestingService: '', reason: '', followUpStatus: '' },
+      { teams: [{ team_id: 't1', name: 'Equipo A' }, { team_id: 't2', name: 'Equipo B' }], currentTeamId: 't2' }
+    );
+    assert.match(withTeams, /data-consult-team-select/);
+    assert.match(withTeams, /Equipo A/);
+    var selectedOpt = withTeams.match(/<option value="t2"[^>]*>/)[0];
+    assert.match(selectedOpt, /selected/);
+  });
 });

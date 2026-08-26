@@ -11,7 +11,7 @@ import {
 import { getCloudSyncRoomSnapshot, getCloudSyncSettings } from './settings.mjs';
 import { isCloudSyncActive } from './nube-sync-policy.mjs';
 import { isCloudMutateBridgeConfigured } from './mutate-bridge.mjs';
-import { getPatients } from '../../app-state.mjs';
+import { getSyncablePatients } from '../../app-state.mjs';
 import { getSharedNubeOutbox, getSharedNubeRuntime } from './panel-conexion-runtime.mjs';
 import { showCloudNubeFixModal } from './cloud-nube-fix-guides.mjs';
 import { pruneLabSidecarsFromOutbox } from './outbox-lab.mjs';
@@ -40,7 +40,7 @@ function readCloudDiagnosticsSettings() {
     roomId: settings.roomId,
     revision: settings.revision,
     roomSnapshot: getCloudSyncRoomSnapshot(),
-    localPatientCount: Array.isArray(getPatients()) ? getPatients().length : 0,
+    localPatientCount: Array.isArray(getSyncablePatients()) ? getSyncablePatients().length : 0,
   };
 }
 

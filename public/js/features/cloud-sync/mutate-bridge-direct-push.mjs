@@ -9,7 +9,7 @@ import {
   getCloudSyncUrl,
   getCloudSyncToken,
 } from './settings.mjs';
-import { getPatients } from '../../app-state.mjs';
+import { getSyncablePatients } from '../../app-state.mjs';
 import { recordCloudSyncError } from './cloud-sync-diagnostics.mjs';
 import { countPatientEntryOps, mapPatientEntryToCloudBundleOps } from './mutate-bridge-ops.mjs';
 import { buildDirtyLabSidecarOpsForPatient } from './cloud-lab-sidecar-index.mjs';
@@ -25,7 +25,7 @@ export async function pushCloudCensusNow() {
     return { ok: false, reason: 'bridge_inactive' };
   }
   if (!getCloudSyncRoomId()) return { ok: false, reason: 'no_room' };
-  if (!getPatients().length) return { ok: false, reason: 'no_local_patients' };
+  if (!getSyncablePatients().length) return { ok: false, reason: 'no_local_patients' };
 
   const meta = {
     actorId: resolveCloudActorId(),
@@ -47,7 +47,7 @@ export async function pushCloudCensusNow() {
     return {
       ok: false,
       reason: 'no_entry_ops',
-      localPatients: getPatients().length,
+      localPatients: getSyncablePatients().length,
       collectedEntries: entries.length,
     };
   }

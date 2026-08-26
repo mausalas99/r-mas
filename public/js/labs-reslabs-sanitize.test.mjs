@@ -125,6 +125,19 @@ K/uL\t4.5 - 11.0
   }));
 });
 
+test('sanitizeResLabsChunks conserva el panel de proteínas en orina (Prot24h/Prot12h)', () => {
+  var out = sanitizeResLabsChunks([
+    'BH\tHb 12',
+    'Prot24h\tVol 3550ml 0.830* gr/vol',
+    'Prot12h\tVol 900ml 0.150 gr/vol',
+  ]);
+  assert.deepEqual(out, [
+    'BH\tHb 12',
+    'Prot24h\tVol 3550ml 0.830* gr/vol',
+    'Prot12h\tVol 900ml 0.150 gr/vol',
+  ]);
+});
+
 test('formatLabsForCensoCompact no muestra blobs no clínicos aunque estén en resLabs viejos', () => {
   var lines = formatLabsForCensoCompact([
     {

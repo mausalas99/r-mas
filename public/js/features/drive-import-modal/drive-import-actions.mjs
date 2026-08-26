@@ -156,13 +156,15 @@ export function tryAutoStartReview() {
 export function onPasteInputChanged() {
   const ta = getTextarea();
   const hasText = !!(ta && String(ta.value || '').trim());
-  if (!hasText) {
-    driveImportState.autoReviewPending = false;
+  driveImportState.autoReviewPending = hasText;
+
+  if (driveImportState.previewDebounceId) clearTimeout(driveImportState.previewDebounceId);
+  driveImportState.previewDebounceId = setTimeout(function () {
+    driveImportState.previewDebounceId = null;
     refreshPreview();
-    return;
-  }
-  driveImportState.autoReviewPending = true;
-  refreshPreview();
+  }, 150);
+
+  if (!hasText) return;
   if (driveImportState.debounceId) clearTimeout(driveImportState.debounceId);
   driveImportState.debounceId = setTimeout(function () {
     driveImportState.debounceId = null;

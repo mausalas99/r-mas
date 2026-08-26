@@ -208,8 +208,15 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * already-eager Nube push path) fixes heavy lab sets resyncing on every push —
  * fingerprints the pre-trim value, not the sent one. Plus RELEASE_NOTES_821
  * curated entries in the already-eager release-notes-highlights.mjs. */
-const EAGER_BOOT_BUDGET_BYTES = 3475073;
-const EAGER_BOOT_BUDGET_FILES = 107;
+/** +42308 B / +6 files: 8.2.2. Interconsulta team board redesign
+ * (docs/superpowers/plans/2026-08-25-interconsulta-team-board.md) — the board
+ * is now IC mode's main window, not a lazy sidebar list, so
+ * interconsulta-team-board.mjs, interconsulta-mode-chrome.mjs's new bulk,
+ * interconsulta-demo-toggle.mjs/-demo-state.mjs (⌥⌘⇧I demo seed),
+ * interconsult-catalog.mjs, and the lib/clinical-scope board-buckets/
+ * team-roles/interconsultas builders are all eager on the IC-mode boot path. */
+const EAGER_BOOT_BUDGET_BYTES = 3517381;
+const EAGER_BOOT_BUDGET_FILES = 113;
 
 /**
  * Pre-existing eager/lazy-only conflicts, not introduced by the startup-lag

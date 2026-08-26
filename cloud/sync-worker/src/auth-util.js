@@ -31,7 +31,7 @@ export function validatePassword(password) {
  * so a doctor not using Nube isn't forced to update. Bump this alongside any
  * future change to the room-key/DEK format, same as this 8.2.0 room-code switch.
  */
-export const MIN_NUBE_APP_VERSION = '8.2.0';
+export const MIN_NUBE_APP_VERSION = '8.2.1';
 
 /** @param {unknown} v */
 export function sanitizeAppVersion(v) {

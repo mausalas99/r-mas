@@ -16,7 +16,11 @@ const STYLES_DIR = path.join(__dirname, '..', 'public', 'styles');
 
 // Baseline measured on 2026-08-22, after the border-radius token swap pass
 // (that pass did not touch padding/margin, so this number matches pre-swap).
-const BASELINE = 1533;
+// Raised to 1537 for 8.2.2: interconsulta team board's compact toolbar/chip
+// (.ic-board-bucket .patient-card-toolbar/.patient-toolbar-chip, pase-board.css)
+// needs 1-2px spacing tighter than any existing rem-scale token covers — no
+// spacing token exists in tokens.css to express this yet.
+const BASELINE = 1537;
 
 const SPACING_DECL_RE = /\b(padding|margin)(-top|-right|-bottom|-left)?\s*:\s*[^;]*?\d+px[^;]*;/g;
 

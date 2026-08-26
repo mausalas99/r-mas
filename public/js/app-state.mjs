@@ -76,6 +76,13 @@ export function getPatients() {
   return patients;
 }
 
+/** Patients eligible for cloud sync — excludes local-only demo patients (p.isDemo). */
+export function getSyncablePatients() {
+  return patients.filter(function (p) {
+    return p && !p.isDemo;
+  });
+}
+
 /** Live clinical map (temporary compat): in-place key mutations keep working. */
 export function getNotes() {
   return notes;

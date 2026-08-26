@@ -3,7 +3,7 @@
  */
 import { storage } from '../../storage.js';
 import { persistClinicalState, scheduleIdleClinicalPersist } from '../../app-state.mjs';
-import { getPatients } from '../../app-state.mjs';
+import { getSyncablePatients } from '../../app-state.mjs';
 import { applyLanPatientEntries } from '../sync-apply/patient-entries.mjs';
 import { removePatientLocally, pruneOrphanTodos } from '../sync-apply/patient-delete.mjs';
 import { shouldEnforceTeamPatientMirror } from '../../clinical-privileges.mjs';
@@ -87,10 +87,10 @@ function mergeCloudTodoIntoMap(row, byPatient, map) {
   const id = String(row.id || '').trim();
   if (!remotePid || !id) return;
   const registro = String(row.registro || '').trim();
-  const pid = resolveCloudTodoLocalPatientId(remotePid, registro, getPatients(), map);
+  const pid = resolveCloudTodoLocalPatientId(remotePid, registro, getSyncablePatients(), map);
   if (!pid) return;
   if (
-    !getPatients().some(function (p) {
+    !getSyncablePatients().some(function (p) {
       return p && String(p.id) === String(pid);
     })
   ) {
@@ -143,7 +143,7 @@ export function shouldApplyCloudTombstone(patientId, tombstoneMeta) {
       : ''
   ).trim();
   if (!reg) return true;
-  return !getPatients().some(function (p) {
+  return !getSyncablePatients().some(function (p) {
     return p && String(p.id || '') !== pid && String(p.registro || '').trim() === reg;
   });
 }
@@ -278,7 +278,7 @@ export async function applyCloudState(state, opts) {
   }
   await applyClinicalOpsSnapshot(snapshot.clinicalOps);
   const entries = cloudStateToLanEntries(snapshot);
-  const idMap = buildLiveSyncPatientIdMap(entries, getPatients(), {});
+  const idMap = buildLiveSyncPatientIdMap(entries, getSyncablePatients(), {});
   const patientSync = entries.length
     ? applyLanPatientEntries(entries, cloudPatientEntryApplyOpts())
     : { added: 0, updated: 0 };
@@ -300,7 +300,7 @@ export async function applyCloudState(state, opts) {
     /** @type {Record<string, { actorId?: string }>|undefined} */ (snapshot.entityVersions)
   );
   pruneOrphanTodos(
-    getPatients().map(function (p) {
+    getSyncablePatients().map(function (p) {
       return p && p.id;
     })
   );
@@ -320,7 +320,7 @@ export async function applyCloudState(state, opts) {
 async function applyFoldedCloudPull(fold, labCounts) {
   await applyClinicalOpsSnapshot(fold.clinicalOps);
   const entries = opFoldToLanEntries(fold);
-  const idMap = buildLiveSyncPatientIdMap(entries, getPatients(), {});
+  const idMap = buildLiveSyncPatientIdMap(entries, getSyncablePatients(), {});
   const patientSync = entries.length
     ? applyLanPatientEntries(entries, cloudPatientEntryApplyOpts())
     : { added: 0, updated: 0 };
@@ -328,7 +328,7 @@ async function applyFoldedCloudPull(fold, labCounts) {
   applyCloudAgendaMap(fold.agenda, idMap);
   const removed = applyCloudTombstones(fold.tombstones);
   pruneOrphanTodos(
-    getPatients().map(function (p) {
+    getSyncablePatients().map(function (p) {
       return p && p.id;
     })
   );

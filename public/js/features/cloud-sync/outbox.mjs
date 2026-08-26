@@ -67,12 +67,15 @@ export function createOutbox(deps = {}) {
     notifyCloudOutboxChanged();
   }
 
-  /** @param {{ clientMutationId: string, ops: unknown[], baseRevision?: number }} item */
-  function enqueue(item) {
+  /**
+   * @param {OutboxEntry[]} rows
+   * @param {{ clientMutationId: string, ops: unknown[], baseRevision?: number, enqueuedAt?: number }} item
+   * @returns {OutboxEntry[]}
+   */
+  function mergeItemIntoRows(rows, item) {
     const clientMutationId = String(item?.clientMutationId || '').trim();
-    if (!clientMutationId) return;
+    if (!clientMutationId) return rows;
 
-    const rows = load();
     const existing = rows.find((row) => row.clientMutationId === clientMutationId);
     const rest = rows.filter((row) => row.clientMutationId !== clientMutationId);
     const enqueuedAt =
@@ -86,7 +89,24 @@ export function createOutbox(deps = {}) {
       ...(item.baseRevision != null ? { baseRevision: Number(item.baseRevision) } : {}),
       enqueuedAt,
     });
-    save(rest);
+    return rest;
+  }
+
+  /** @param {{ clientMutationId: string, ops: unknown[], baseRevision?: number }} item */
+  function enqueue(item) {
+    save(mergeItemIntoRows(load(), item));
+  }
+
+  /**
+   * Enqueue several items in one load/save round trip. Same merge semantics as
+   * `enqueue`, called per patient during lab-sidecar backfill — one round trip
+   * per patient turned that loop quadratic against localStorage and blocked
+   * the main thread for hundreds of ms on connect.
+   * @param {{ clientMutationId: string, ops: unknown[], baseRevision?: number }[]} items
+   */
+  function enqueueMany(items) {
+    if (!Array.isArray(items) || !items.length) return;
+    save(items.reduce(mergeItemIntoRows, load()));
   }
 
   /** @returns {OutboxEntry[]} */
@@ -110,5 +130,5 @@ export function createOutbox(deps = {}) {
     save(Array.isArray(nextRows) ? nextRows.slice() : []);
   }
 
-  return { enqueue, list, remove, clear, replaceAll };
+  return { enqueue, enqueueMany, list, remove, clear, replaceAll };
 }

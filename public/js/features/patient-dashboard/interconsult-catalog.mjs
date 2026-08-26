@@ -28,7 +28,17 @@ export const INTERCONSULT_SERVICES = [
   { id: 'rehab', name: 'Rehabilitación', cat: 'sop' },
   { id: 'algo', name: 'Algología', cat: 'sop' },
   { id: 'pali', name: 'Cuidados paliativos', cat: 'sop' },
+  { id: 'torre-hu', name: 'Torre HU', cat: 'sop' },
 ];
+
+/** Servicio solicitante (Interconsulta band) picks from this fixed subset,
+ * in this order — not the full Sala interconsultantes catalog above. */
+export const REQUESTING_SERVICE_IDS = ['tyo', 'cxgen', 'gine', 'torre-hu', 'ncx'];
+
+/** Per-service hues for the requesting-service picker — deliberately not
+ * the category hues above (Sala's interconsultantes picker colors by
+ * médicas/quirúrgicas/soporte; this one needs each service to read apart). */
+export const REQUESTING_SERVICE_HUES = { tyo: 210, cxgen: 265, gine: 335, 'torre-hu': 35, ncx: 150 };
 
 const SERVICE_BY_ID = new Map(INTERCONSULT_SERVICES.map((svc) => [svc.id, svc]));
 
@@ -38,6 +48,10 @@ export function serviceById(id) {
 
 export function hueForService(svc) {
   return INTERCONSULT_CAT_HUE[svc.cat];
+}
+
+export function hueForRequestingService(svc) {
+  return REQUESTING_SERVICE_HUES[svc.id] ?? hueForService(svc);
 }
 
 export function toggleInterconsultId(ids, id) {

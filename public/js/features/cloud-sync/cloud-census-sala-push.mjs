@@ -7,7 +7,7 @@ import {
   resolvePatientTeamIdFromAssignments,
   stampPatientClinicalSala,
 } from '../../clinico-access.mjs';
-import { getPatients, persistClinicalState } from '../../app-state.mjs';
+import { getSyncablePatients, persistClinicalState } from '../../app-state.mjs';
 import { isCloudSala, normalizeCloudSala } from './sala-allowlist.mjs';
 import { isCloudSyncActive } from './nube-sync-policy.mjs';
 import {
@@ -246,7 +246,7 @@ async function scheduleCloudSyncPushAfterRepair() {
 async function repairAllPatientsCensusSalas(rctx, clinicalOpsSalas) {
   let stamped = 0;
   let mirrored = 0;
-  for (const patient of getPatients() || []) {
+  for (const patient of getSyncablePatients() || []) {
     if (!patient?.id || String(patient.id).indexOf('demo-') === 0) continue;
     const result = await repairOnePatientCensusSala(patient, rctx, clinicalOpsSalas);
     if (result.stamped) stamped += 1;

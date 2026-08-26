@@ -213,6 +213,45 @@ html:not(.ui-density-normal) #main-area {
   z-index: 1;
   opacity: 1;
 }
+/* Interconsulta mode: sidebar gone entirely, board fills the main window
+   (see interconsulta-mode-chrome.mjs). Same width:0 pattern as
+   sidebar-auto-hide (sidebar.css) so #main-area expands to fill the flex row. */
+html.ic-board-mode aside.patient-sidebar {
+  width: 0 !important;
+  min-width: 0 !important;
+  overflow: hidden;
+  border: none;
+}
+html.ic-board-mode #sidebar-hover-strip {
+  display: none;
+}
+/* Interconsulta board — a normal-flow sibling of #empty-state/#patient-view
+   inside #appcontent-nota (flex column); the old #interconsulta-mode-frame
+   bar is retired (always hidden, see syncInterconsultaModeChrome). Only one
+   of board/empty-state/patient-view is unhidden at a time (see
+   syncIcViewVisibility in interconsulta-mode-chrome.mjs), so it just takes
+   the remaining flex space like the other two already do. */
+.ic-board-view {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.75rem 1rem;
+}
+.ic-board-view[hidden] {
+  display: none;
+}
+.ic-board-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.6rem;
+}
+/* Hard backstop: whatever inline-style tug-of-war Resumen's own show/hide
+   logic (patients-select.mjs) is mid-race with, the board view always wins
+   while it's the active IC view — see syncIcViewVisibility. */
+html.ic-board-view-open #empty-state,
+html.ic-board-view-open #patient-view {
+  display: none !important;
+}
 /* Panel flotante solo para el contenido (debajo de tabs / sub-tabs) */
 .shell-content-frame {
   border-radius: var(--radius-lg);
@@ -964,6 +1003,37 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
 
 .header-mode-seg-btn[hidden] {
   display: none !important;
+}
+
+/* Collapsed-state hint: which of the 3 modes is active, shown under the pill */
+.header-mode-seg-dots {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  transition: opacity var(--dur-normal) var(--ease-out);
+}
+
+.header-mode-seg:hover .header-mode-seg-dots,
+.header-mode-seg.is-expanded .header-mode-seg-dots {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.header-mode-seg-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.5;
+}
+
+.header-mode-seg-dot.is-active {
+  background: var(--text);
+  opacity: 1;
 }
 
 

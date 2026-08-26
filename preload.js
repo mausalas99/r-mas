@@ -295,6 +295,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalAssignPatientToTeam: function(opts) {
     return ipcRenderer.invoke('db:clinical-assign-patient-to-team', opts);
   },
+  dbClinicalInterconsultaRollover: function(opts) {
+    return ipcRenderer.invoke('db:clinical-interconsulta-rollover', opts);
+  },
   dbClinicalOpsExport: function(opts) {
     return ipcRenderer.invoke('db:clinical-ops-export', opts || {});
   },

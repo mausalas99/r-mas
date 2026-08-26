@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderIcPickerHtml, openInterconsultModal } from './ic-modal.mjs';
+import { renderIcPickerHtml, openInterconsultModal, renderServicePickerHtml } from './ic-modal.mjs';
 
 test('IC picker lists the three catalog groups', () => {
   const html = renderIcPickerHtml(['card']);
@@ -21,6 +21,30 @@ test('openInterconsultModal mounts the panel inside the scrim', () => {
   assert.ok(panel);
   assert.equal(panel.parentElement, scrim);
   assert.equal(scrim.parentElement, document.body);
+});
+
+test('renderServicePickerHtml lists only the requesting-service subset, flat (no category groups)', () => {
+  const html = renderServicePickerHtml('');
+  assert.match(html, /Traumatología/);
+  assert.match(html, /Cirugía general/);
+  assert.match(html, /Ginecología/);
+  assert.match(html, /Torre HU/);
+  assert.match(html, /Neurocirugía/);
+  assert.doesNotMatch(html, /Cardiología/);
+  assert.doesNotMatch(html, /Médicas/);
+});
+
+test('renderServicePickerHtml is single-select: only the current service is marked is-on', () => {
+  const html = renderServicePickerHtml('Traumatología');
+  const onCount = (html.match(/is-on/g) || []).length;
+  assert.equal(onCount, 1);
+  const tyoBtn = html.match(/<button[^>]*data-svc-pick="tyo"[^>]*>/)[0];
+  assert.match(tyoBtn, /is-on/);
+});
+
+test('renderServicePickerHtml selects nothing when no service is set', () => {
+  const html = renderServicePickerHtml('');
+  assert.doesNotMatch(html, /is-on/);
 });
 
 test('openInterconsultModal sets overlay origin from trigger', () => {

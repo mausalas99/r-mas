@@ -117,6 +117,13 @@ export function reselectIfActivePatientHidden(visiblePatients) {
   // registro form (e.g. a background cloud-sync render that recomputes the
   // visible list). The form keeps saving to the patient it was opened for.
   if (isEaRegistroFormOpenForPatient(activeId)) return false;
+  // Demo patients (Interconsulta board demo) are deliberately absent from
+  // patientsVisibleInSidebar() — it's the real-patient sidebar scope — so
+  // "not visible" must not mean "reselect a real patient" for them.
+  var activePatient = getPatients().find(function (p) {
+    return String(p.id) === String(activeId);
+  });
+  if (activePatient && activePatient.isDemo) return false;
   ensureActivePatientInSidebarScope();
   return true;
 }

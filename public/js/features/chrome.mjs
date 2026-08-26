@@ -348,6 +348,9 @@ export function syncHeaderModeSeg() {
     btn.classList.toggle('is-active', on);
     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
+  seg.querySelectorAll('.header-mode-seg-dot').forEach(function (dot) {
+    dot.classList.toggle('is-active', dot.dataset.mode === mode);
+  });
 }
 
 export function toggleGuardiaMode() {

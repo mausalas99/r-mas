@@ -75,8 +75,8 @@ test('dark mode IC chips invert lightness', () => {
 
 test('IC catalog is a compact overlay, not a full-height pane', () => {
   const css = readDashboardCss();
-  assert.match(css, /#patient-ic-scrim\s*\{[^}]*position:\s*fixed/s);
-  assert.match(css, /#patient-ic-panel\.patient-dash-ic-modal\s*\{[^}]*width:\s*min\(420px/s);
+  assert.match(css, /#patient-ic-scrim,?[^{]*\{[^}]*position:\s*fixed/s);
+  assert.match(css, /#patient-ic-panel\.patient-dash-ic-modal,?[^{]*\{[^}]*width:\s*min\(420px/s);
   assert.match(css, /#patient-ic-panel\.patient-dash(?:-ic-modal)?\s*,?[^}]*height:\s*auto/s);
   assert.equal(/#patient-ic-panel[^}]*height:\s*100%/.test(css), false);
 });

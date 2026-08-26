@@ -248,7 +248,7 @@ describe('pull-apply sync-apply wiring (Phase 3)', () => {
     const start = pullApplySrc.indexOf('function mergeCloudTodoIntoMap');
     assert.ok(start >= 0);
     const body = pullApplySrc.slice(start, start + 900);
-    assert.match(body, /getPatients\(\)\.some/);
+    assert.match(body, /getSyncablePatients\(\)\.some/);
     assert.match(pullApplySrc, /pruneOrphanTodos/);
   });
 });

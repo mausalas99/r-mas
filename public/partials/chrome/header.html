@@ -25,6 +25,11 @@
         <button type="button" class="header-mode-seg-btn" data-mode="sala" onclick="setWorkModeFromHeader('sala')" aria-pressed="false" title="Modo Sala — Estado actual, Historia, Listado de problemas">Sala</button>
         <button type="button" class="header-mode-seg-btn" data-mode="interconsulta" onclick="setWorkModeFromHeader('interconsulta')" aria-pressed="false" title="Modo Interconsulta — Nota de evolución, Indicaciones">Interconsulta</button>
         <button type="button" class="header-mode-seg-btn" data-mode="guardia" onclick="setWorkModeFromHeader('guardia')" aria-pressed="false" title="Guardia — censo, entrega y turno activo">Guardia</button>
+        <div class="header-mode-seg-dots" aria-hidden="true">
+          <span class="header-mode-seg-dot" data-mode="sala"></span>
+          <span class="header-mode-seg-dot" data-mode="interconsulta"></span>
+          <span class="header-mode-seg-dot" data-mode="guardia"></span>
+        </div>
       </div>
     </div>
     <span id="pending-jobs-pill" class="pending-jobs-pill" role="status" aria-live="polite" aria-atomic="true" title="Tareas en curso"></span>

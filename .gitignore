@@ -64,3 +64,4 @@ docs/presentacion-r-plus-gemini-slides.md
 docs/vision-north-star.md
 docs/logs/
 scripts/verify/*.png
+.agenttrail/

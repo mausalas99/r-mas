@@ -44,3 +44,4 @@ describe('patient list filter startup', () => {
     assert.match(fn, /setLastRondaNavIds\(buildRondaNavIds\(zones\)\)/);
   });
 });
+

@@ -42,4 +42,47 @@ describe('patients-card-html', () => {
     assert.match(html, /Medicina Interna/);
     assert.match(html, /patient-card-svc/);
   });
+
+  it('oculta el botón Fijar en modo interconsulta (pinned sigue siendo estado compartido)', () => {
+    registerPatientsRuntime({
+      getSettings: () => ({ appMode: 'interconsulta' }),
+      getActiveId: () => null,
+    });
+    const html = renderPatientCardHtml(patient);
+    assert.doesNotMatch(html, /btn-pinned-text/);
+    assert.doesNotMatch(html, /togglePatientPinned/);
+  });
+
+  it('mantiene el botón Fijar en modo sala', () => {
+    registerPatientsRuntime({
+      getSettings: () => ({ appMode: 'sala' }),
+      getActiveId: () => null,
+    });
+    const html = renderPatientCardHtml(patient);
+    assert.match(html, /btn-pinned-text/);
+    assert.match(html, /togglePatientPinned/);
+  });
+
+  it('tints the card with the requesting service hue when consultInfo has one', () => {
+    registerPatientsRuntime({
+      getSettings: () => ({ appMode: 'interconsulta' }),
+      getActiveId: () => null,
+    });
+    const withService = Object.assign({}, patient, {
+      consultInfo: { requestingService: 'Cirugía general', reason: '', followUpStatus: '' },
+    });
+    const html = renderPatientCardHtml(withService);
+    assert.match(html, /patient-card--svc-tint/);
+    assert.match(html, /style="--svc-hue:\d+"/);
+  });
+
+  it('does not tint the card when there is no requesting service', () => {
+    registerPatientsRuntime({
+      getSettings: () => ({ appMode: 'interconsulta' }),
+      getActiveId: () => null,
+    });
+    const html = renderPatientCardHtml(patient);
+    assert.doesNotMatch(html, /patient-card--svc-tint/);
+    assert.doesNotMatch(html, /--svc-hue/);
+  });
 });

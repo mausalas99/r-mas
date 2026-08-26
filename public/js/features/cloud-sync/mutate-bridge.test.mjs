@@ -440,7 +440,19 @@ describe('mutate-bridge LAN decoupling (Phase 3)', () => {
     assert.match(mutateBridgeSrc, /scheduleInitialCloudSeed/);
     assert.match(mutateBridgeSrc, /initialCloudSeedScheduled/);
     assert.match(mutateBridgeSrc, /enqueueCloudLabSidecarsBackfill/);
-    assert.match(mutateBridgeSrc, /enqueueEntityOps\(`labSidecars\/\$\{patientId\}`/);
+    assert.match(mutateBridgeSrc, /clientMutationId: `labSidecars\/\$\{patientId\}`/);
+  });
+
+  it('lab-sidecar backfill batches all patients into one outbox round trip', () => {
+    // enqueueEntityOps per patient made this loop do one localStorage
+    // load+save per patient (quadratic), blocking the main thread for
+    // hundreds of ms right after connecting Nube. Must use enqueueMany once.
+    const start = mutateBridgeSrc.indexOf('export async function enqueueCloudLabSidecarsBackfill');
+    assert.notEqual(start, -1);
+    const nextExport = mutateBridgeSrc.indexOf('\nexport ', start + 1);
+    const body = mutateBridgeSrc.slice(start, nextExport === -1 ? mutateBridgeSrc.length : nextExport);
+    assert.match(body, /outbox\.enqueueMany\(items\)/);
+    assert.doesNotMatch(body, /enqueueEntityOps\(/);
   });
 
   it('patient deletes coalesce into cloud-tombstones with debounced flush', () => {

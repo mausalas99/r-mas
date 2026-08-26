@@ -6270,3 +6270,212 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   font-size: 0.8rem;
   padding: 4px 8px;
 }
+
+/* Interconsulta team board — 4 lanes (guardia, activo x2, postguardia),
+   each with bucket sections built from .r4-section-divider + .patient-chips-grid
+   (see interconsulta-team-board.mjs). Mounted in place of the old
+   Fijados/Nuevas/En seguimiento sidebar zones. */
+.ic-team-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.ic-team-board--filtered {
+  grid-template-columns: 1fr;
+}
+
+.ic-board-lane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  /* A lane can hold dozens of patients (e.g. a "Sin equipo" catch-all) — cap
+     its height and scroll internally instead of blowing out the page. */
+  max-height: calc(100vh - 260px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 0;
+  background: color-mix(in oklab, var(--surface) 96%, transparent);
+  overflow: hidden;
+}
+
+.ic-board-lane__head {
+  flex: 0 0 auto;
+  padding: 0.9rem 1rem 0.4rem;
+}
+
+.ic-board-lane__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 1rem 0.85rem;
+}
+
+.ic-board-lane__title {
+  margin: 0 0 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
+/* Guardia lane: highlighted so the on-call team stands out on the board. */
+.ic-board-lane--guardia {
+  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--action) 20%, transparent);
+}
+
+.ic-board-lane--guardia .ic-board-lane__title {
+  color: var(--action);
+}
+
+/* Postguardia lane stays full-opacity and open — patients can still be
+   dragged onto it (see .ic-board-lane__body[data-drop-team-id]). */
+
+.ic-board-bucket .patient-card[draggable="true"] {
+  cursor: grab;
+}
+
+.ic-board-bucket .patient-card.ic-board-card--dragging {
+  opacity: 0.4;
+}
+
+.ic-board-lane__body.ic-board-lane__body--drop-over {
+  outline: 2px dashed var(--action);
+  outline-offset: -2px;
+  border-radius: var(--radius-control);
+}
+
+.ic-board-bucket .patient-chips-grid {
+  grid-template-columns: 1fr;
+  padding: 0;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.ic-board-bucket .r4-section-divider {
+  padding: 0.5rem 0 0.5rem;
+  font-size: 0.7rem;
+  margin-bottom: 0.5rem;
+}
+
+.ic-board-bucket--accent .r4-section-divider {
+  color: var(--action);
+  border-bottom-color: color-mix(in oklab, var(--action) 45%, var(--border));
+}
+
+/* Interconsulta board cards (rendered via renderPatientCardHtml -> .patient-card,
+   the same sidebar card component, NOT .patient-chip-card) match the teal
+   dashboard's .card language instead of the sidebar's bordered/draggable look
+   — elevated surface, no border, soft hover — and shrink down: a lane here
+   can hold dozens of patients (see .ic-board-lane's scroll), so the roomy
+   sidebar padding/toolbar doesn't scale. */
+.ic-board-bucket .patient-card {
+  background: var(--color-elevated, var(--surface));
+  border: 0;
+  border-radius: var(--radius-container, var(--radius-md));
+  box-shadow: none;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+}
+
+.ic-board-bucket .patient-card:hover {
+  box-shadow: none;
+  background: color-mix(in oklab, var(--color-ink, var(--text)) 4%, var(--color-elevated, var(--surface)));
+}
+
+/* No distinct "currently open" highlight on the board — selection only
+   matters inside the drilled-in Resumen, and the previously active patient
+   would otherwise stay visibly marked after returning to the board. This
+   overrides sidebar.css's generic .patient-card.active (border-left +
+   tinted background), which still applies here by class alone — the
+   html.dark variant is needed too, it outranks the plain rule below on
+   specificity (html adds a type selector) regardless of source order. */
+.ic-board-bucket .patient-card.active,
+html.dark .ic-board-bucket .patient-card.active {
+  background: var(--color-elevated, var(--surface));
+  border: 0;
+  box-shadow: none;
+}
+
+/* Subtle tint from the requesting service's hue (see patients-card-html.mjs,
+   interconsult-catalog.mjs's hueForRequestingService) — same --h convention
+   as the Servicio solicitante picker chips, present at rest and on hover.
+   Repeated for .active (light and dark) so the tint still wins over the
+   reset above when a card is both open and tinted. */
+.ic-board-bucket .patient-card--svc-tint,
+.ic-board-bucket .patient-card.active.patient-card--svc-tint,
+html.dark .ic-board-bucket .patient-card.active.patient-card--svc-tint {
+  background: color-mix(in oklab, oklch(0.6 0.14 var(--svc-hue)) 10%, var(--color-elevated, var(--surface)));
+}
+.ic-board-bucket .patient-card--svc-tint:hover,
+html.dark .ic-board-bucket .patient-card--svc-tint:hover {
+  background: color-mix(in oklab, oklch(0.6 0.14 var(--svc-hue)) 16%, var(--color-elevated, var(--surface)));
+}
+
+.ic-board-bucket .patient-card-toolbar {
+  min-height: 16px;
+  margin-bottom: 2px;
+}
+
+.ic-board-bucket .patient-toolbar-chip {
+  min-height: 18px;
+  padding: 1px 5px;
+}
+
+.ic-board-bucket .patient-card .p-name {
+  font-size: 0.78rem;
+  -webkit-line-clamp: 1;
+  margin-bottom: 0;
+}
+
+.ic-board-bucket .patient-card .p-meta {
+  font-size: 0.68rem;
+}
+
+.ic-board-empty {
+  margin: 0.4rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+.ic-team-board .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  margin: 0.15rem 0 0.4rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-border-strong, var(--border));
+  background: transparent;
+  color: var(--color-ink, var(--text));
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ic-team-board .btn-secondary:hover {
+  background: color-mix(in oklab, var(--action) 8%, transparent);
+}
+
+/* "← Tablero" back button (interconsulta-mode-chrome.mjs top bar) — .wb-btn's
+   `display: inline-flex` ties with the UA [hidden] rule on specificity, and
+   author styles always win that tie, so [hidden] alone never hides it. */
+.wb-ic-back-btn[hidden] {
+  display: none;
+}
+
+.wb-ic-bar-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* "Solo guardia de hoy" board filter toggle (interconsulta-mode-chrome.mjs top bar). */
+.wb-btn-toggle--on {
+  background: color-mix(in oklab, var(--action) 14%, transparent);
+  border-color: var(--action);
+  color: var(--action);
+}
