@@ -1,21 +1,25 @@
-version: 8.2.1
+version: 8.2.2
 files:
-  - url: R+-8.2.1-autoupdate-mac-arm64.zip
-    sha512: 8vkwbCU158UH//ObR+4yLqLmqrd3wgd+CyDo0Lukkz+GOBNgLcx6QZreQteiFeIgAw6RF2W9pVoldRHz0AaMvg==
-    size: 140387505
-  - url: R+-8.2.1-arm64.dmg
-    sha512: jfBR5jDx0DH2SepbIAim42OuInAoT+93MwJQTX7Zs+qGHG7iY8t7kWwW2wJwzwT6GpS0z3eQEGgEpLTmu8hd2w==
-    size: 146245078
-  - url: R+-8.2.1-autoupdate-mac-x64.zip
-    sha512: Pfw/m/8FKtFXeYD5SKldO/1FH7/ZxKYKqsXpKl8BayHTSZ4qUTHbxmeRHhnuca0Qjx6703xhLEDik+ay6C7Cag==
-    size: 148760995
-  - url: R+-8.2.1-x64.dmg
-    sha512: rhEc97+WlR3L2i6C7jLQBNOjxyox6cCArI/X1hRrrha8aAJh/ZK4QYtxOPUXIsbZ0eF7Yc9fqC8i0AjXMGMmMg==
-    size: 154730261
-path: R+-8.2.1-autoupdate-mac-arm64.zip
-sha512: 8vkwbCU158UH//ObR+4yLqLmqrd3wgd+CyDo0Lukkz+GOBNgLcx6QZreQteiFeIgAw6RF2W9pVoldRHz0AaMvg==
-releaseDate: '2026-08-24T22:34:14.000Z'
+  - url: R+-8.2.2-autoupdate-mac-arm64.zip
+    sha512: 6fxlCXix4QlnzZf2r4s12hebHnPzHt8Mypf0Kos4qZfabLNEHoutJDhfyKDTfSZFi7hkkfibCuANtvxRrTqVHA==
+    size: 140461059
+  - url: R+-8.2.2-arm64.dmg
+    sha512: 9djl6qS8bhMTsT3b8Rx5YAgF2aLHoYASTOYhWhhIfm2S/0zRl1FqS/omMx7TtVDbXG3Nbnz/g4Vp3MOj+NmioA==
+    size: 146335828
+  - url: R+-8.2.2-autoupdate-mac-x64.zip
+    sha512: khQ1aZyUBODZiRNmQI6sTnIqyNQLlIuyZmScdwrnfh8/YCWuuUwAg6Nw8SV0KMuDVjKRAJqLvUGFuDBTVC20bw==
+    size: 148834521
+  - url: R+-8.2.2-x64.dmg
+    sha512: TlcwuOSjID9EeD/H+Hc9gqDNsGz/QXZ6Z503CM70uw7Y4hLPSVItppbrxh/AN/DTDVA94ZLoY5mVmpzvIEi5bw==
+    size: 154783598
+path: R+-8.2.2-autoupdate-mac-arm64.zip
+sha512: 6fxlCXix4QlnzZf2r4s12hebHnPzHt8Mypf0Kos4qZfabLNEHoutJDhfyKDTfSZFi7hkkfibCuANtvxRrTqVHA==
+releaseDate: '2026-08-26T21:35:19.000Z'
 releaseNotes: |
-  Corrige que los labs se reenviaran completos a Nube en cada sincronización.
+  Rediseño completo del modo Interconsultas: tablero de 4 equipos en vez de lista lateral, alta rápida de pacientes desde el tablero, y edición de servicio solicitante/equipo desde el Resumen del paciente.
   
-  Fix: los labs "pesados" (que Nube recorta para caber en el límite de envío) ya no se re-envían en cada sync. El error estaba en que se guardaba la huella del valor recortado en vez del valor completo, así que nunca coincidía con la próxima comparación y el lab se veía "cambiado" para siempre.
+  Tablero de interconsultas: reemplaza la barra lateral (Fijados/Nuevas/En seguimiento/Archivados) por un tablero de 4 equipos (guardia, postguardia, activo x2) con columnas Preop/Nuevas hoy, Pendientes y Under. Clic en un paciente abre su Resumen a pantalla completa; "← Tablero" o Esc regresa al tablero.
+  
+  Alta rápida: botón "+ Agregar" en el tablero da de alta un paciente nuevo sin esperar un laboratorio.
+  
+  Servicio solicitante y equipo editables: desde el Resumen, un selector de servicio solicitante (mismo catálogo por categorías que Interconsultas en sala) y un selector de equipo, ambos sin salir de la pantalla del paciente.
