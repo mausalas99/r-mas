@@ -2643,10 +2643,19 @@ var RELEASE_NOTES_822 = [
   },
 ];
 
+var RELEASE_NOTES_823 = [
+  {
+    title: 'Instalador Mac firmado y notarizado',
+    body:
+      'El DMG de 8.2.2 se publicó sin firma de Apple: macOS lo bloqueaba con "R+ no se puede abrir". 8.2.3 corrige el proceso de release para firmar y notarizar el instalador antes de publicarlo.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_822;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_823;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.2.3': RELEASE_NOTES_823,
   '8.2.2': RELEASE_NOTES_822,
   '8.2.1': RELEASE_NOTES_821,
   '8.2.0': RELEASE_NOTES_820,

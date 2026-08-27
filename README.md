@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.2.2](https://github.com/mausalas99/r-mas/releases/tag/v8.2.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.2.3](https://github.com/mausalas99/r-mas/releases/tag/v8.2.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -52,6 +52,12 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.2.3 (estable — release 8.2.3)
+
+- **Instalador Mac firmado y notarizado:** corrige el DMG de 8.2.2, que macOS bloqueaba con "R+ no se puede abrir" por no estar firmado.
+
+Notas: `docs/RELEASE_NOTES_8.2.3.txt`.
 ## R+ 8.2.2 (estable — release 8.2.2)
 
 - **Tablero de interconsultas:** reemplaza la barra lateral por un tablero de 4 equipos con columnas Preop/Nuevas hoy, Pendientes y Under; clic en un paciente abre su Resumen a pantalla completa.
