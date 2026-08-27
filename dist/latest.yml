@@ -1,16 +1,12 @@
-version: 8.2.2
+version: 8.2.3
 files:
-  - url: R+-8.2.2-x64.exe
-    sha512: RYfurSC4Ov5D4gJDdjQ9fJ9+BzERfSMOBDrWsfbxgcixxp5OTguJHojztnDcDtK6v6wTtIkp4QTQ8pKcCTDyZQ==
-    size: 123072121
-path: R+-8.2.2-x64.exe
-sha512: RYfurSC4Ov5D4gJDdjQ9fJ9+BzERfSMOBDrWsfbxgcixxp5OTguJHojztnDcDtK6v6wTtIkp4QTQ8pKcCTDyZQ==
-releaseDate: '2026-08-26T21:35:19.000Z'
+  - url: R+-8.2.3-x64.exe
+    sha512: bv87t4Y/mGSEMFDN+VizzieejhqcTfdsGZCqo97o/kT1AiStuliwO48q0CBdEtDh81SItpuiCxJLmAnjeEHNQA==
+    size: 123054881
+path: R+-8.2.3-x64.exe
+sha512: bv87t4Y/mGSEMFDN+VizzieejhqcTfdsGZCqo97o/kT1AiStuliwO48q0CBdEtDh81SItpuiCxJLmAnjeEHNQA==
+releaseDate: '2026-08-27T20:02:26.000Z'
 releaseNotes: |
-  Rediseño completo del modo Interconsultas: tablero de 4 equipos en vez de lista lateral, alta rápida de pacientes desde el tablero, y edición de servicio solicitante/equipo desde el Resumen del paciente.
+  Corrige el instalador Mac de 8.2.2: no estaba firmado ni notarizado, por lo que macOS bloqueaba la apertura de la app.
   
-  Tablero de interconsultas: reemplaza la barra lateral (Fijados/Nuevas/En seguimiento/Archivados) por un tablero de 4 equipos (guardia, postguardia, activo x2) con columnas Preop/Nuevas hoy, Pendientes y Under. Clic en un paciente abre su Resumen a pantalla completa; "← Tablero" o Esc regresa al tablero.
-  
-  Alta rápida: botón "+ Agregar" en el tablero da de alta un paciente nuevo sin esperar un laboratorio.
-  
-  Servicio solicitante y equipo editables: desde el Resumen, un selector de servicio solicitante (mismo catálogo por categorías que Interconsultas en sala) y un selector de equipo, ambos sin salir de la pantalla del paciente.
+  Instalador Mac firmado y notarizado: 8.2.2 se publicó sin firma de Apple; macOS mostraba "R+ no se puede abrir". 8.2.3 corrige el proceso de release para firmar y notarizar el DMG antes de publicar.

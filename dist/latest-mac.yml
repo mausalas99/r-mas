@@ -1,25 +1,21 @@
-version: 8.2.2
+version: 8.2.3
 files:
-  - url: R+-8.2.2-autoupdate-mac-arm64.zip
-    sha512: 6fxlCXix4QlnzZf2r4s12hebHnPzHt8Mypf0Kos4qZfabLNEHoutJDhfyKDTfSZFi7hkkfibCuANtvxRrTqVHA==
-    size: 140461059
-  - url: R+-8.2.2-arm64.dmg
-    sha512: 9djl6qS8bhMTsT3b8Rx5YAgF2aLHoYASTOYhWhhIfm2S/0zRl1FqS/omMx7TtVDbXG3Nbnz/g4Vp3MOj+NmioA==
-    size: 146335828
-  - url: R+-8.2.2-autoupdate-mac-x64.zip
-    sha512: khQ1aZyUBODZiRNmQI6sTnIqyNQLlIuyZmScdwrnfh8/YCWuuUwAg6Nw8SV0KMuDVjKRAJqLvUGFuDBTVC20bw==
-    size: 148834521
-  - url: R+-8.2.2-x64.dmg
-    sha512: TlcwuOSjID9EeD/H+Hc9gqDNsGz/QXZ6Z503CM70uw7Y4hLPSVItppbrxh/AN/DTDVA94ZLoY5mVmpzvIEi5bw==
-    size: 154783598
-path: R+-8.2.2-autoupdate-mac-arm64.zip
-sha512: 6fxlCXix4QlnzZf2r4s12hebHnPzHt8Mypf0Kos4qZfabLNEHoutJDhfyKDTfSZFi7hkkfibCuANtvxRrTqVHA==
-releaseDate: '2026-08-26T21:35:19.000Z'
+  - url: R+-8.2.3-autoupdate-mac-arm64.zip
+    sha512: 448E/Vh50gw9VP1t8e6V6uuui8Xkvud2nXvCKOsFpzLCxAPuWGYuCOhNVepp72MzbKz8pyUCTdesHd/g1h45EQ==
+    size: 140459735
+  - url: R+-8.2.3-arm64.dmg
+    sha512: 5WZxQVikOQQNx5GJhAcigXJlHZQhOreW/xelOnlwuqHoIJv0RK0uVvWxzzQyq4CKsfklxpJjtpPXkTYkOHD6PQ==
+    size: 146337798
+  - url: R+-8.2.3-autoupdate-mac-x64.zip
+    sha512: gA+UNMslexsSc7i+p8QsKDVmQS8REtepQXbHzbucvTTDfLEyqBBhLXPL8y8LK5rr0GomkI5oLcC8enSH06JunQ==
+    size: 148833197
+  - url: R+-8.2.3-x64.dmg
+    sha512: +/U2Ni3hZD68ct+MWon3JQkqhLkehOEnLgQHexcPtBo0dxYXKm1AyizJgExJYYBUw9K0mE+of7AIXX3EqUa7bg==
+    size: 154785884
+path: R+-8.2.3-autoupdate-mac-arm64.zip
+sha512: 448E/Vh50gw9VP1t8e6V6uuui8Xkvud2nXvCKOsFpzLCxAPuWGYuCOhNVepp72MzbKz8pyUCTdesHd/g1h45EQ==
+releaseDate: '2026-08-27T20:02:26.000Z'
 releaseNotes: |
-  Rediseño completo del modo Interconsultas: tablero de 4 equipos en vez de lista lateral, alta rápida de pacientes desde el tablero, y edición de servicio solicitante/equipo desde el Resumen del paciente.
+  Corrige el instalador Mac de 8.2.2: no estaba firmado ni notarizado, por lo que macOS bloqueaba la apertura de la app.
   
-  Tablero de interconsultas: reemplaza la barra lateral (Fijados/Nuevas/En seguimiento/Archivados) por un tablero de 4 equipos (guardia, postguardia, activo x2) con columnas Preop/Nuevas hoy, Pendientes y Under. Clic en un paciente abre su Resumen a pantalla completa; "← Tablero" o Esc regresa al tablero.
-  
-  Alta rápida: botón "+ Agregar" en el tablero da de alta un paciente nuevo sin esperar un laboratorio.
-  
-  Servicio solicitante y equipo editables: desde el Resumen, un selector de servicio solicitante (mismo catálogo por categorías que Interconsultas en sala) y un selector de equipo, ambos sin salir de la pantalla del paciente.
+  Instalador Mac firmado y notarizado: 8.2.2 se publicó sin firma de Apple; macOS mostraba "R+ no se puede abrir". 8.2.3 corrige el proceso de release para firmar y notarizar el DMG antes de publicar.
