@@ -218,39 +218,6 @@ describe('storage todos', () => {
   });
 });
 
-describe('lan config (P3 retired)', () => {
-  beforeEach(() => {
-    for (const k of Object.keys(store)) delete store[k];
-    clearBlobCacheForTests();
-  });
-
-  it('host patient map APIs are retired (P3)', () => {
-    assert.equal(typeof storage.saveHostPatientMap, 'undefined');
-    assert.equal(typeof storage.getHostPatientMap, 'undefined');
-  });
-
-  it('LAN prefs APIs are retired (P3)', () => {
-    for (const name of [
-      'getLanConfig',
-      'saveLanConfig',
-      'setLanConfig',
-      'getLanShiftPin',
-      'saveLanShiftPin',
-      'setLanShiftPin',
-      'getLanUiRole',
-      'saveLanUiRole',
-      'setLanUiRole',
-      'getLanHideDisconnectBanner',
-      'saveLanHideDisconnectBanner',
-      'setLanHideDisconnectBanner',
-      'getLanLwwOverwriteToast',
-      'setLanLwwOverwriteToast',
-    ]) {
-      assert.equal(typeof storage[name], 'undefined', name);
-    }
-  });
-});
-
 describe('scheduled procedures (agenda v1)', () => {
   beforeEach(() => {
     for (const k of Object.keys(store)) delete store[k];

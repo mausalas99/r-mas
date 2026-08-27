@@ -64,7 +64,7 @@ MICROORGANISMO
 
 test('hemocultivo positivo: periférico y pseudomonas', () => {
   const raw = `
-Nombre:	GONZALEZ PEREZ BRANDON
+Nombre:	PACIENTE DE PRUEBA UNO
 Fecha Registro:	14/02/2026 02:18:16 p. m.
 BACTERIOLOGIA
 HEMOCULTIVO
@@ -101,7 +101,7 @@ Pseudomonas aeruginosa
 
 test('secreción de herida con muestra entre paréntesis: parse y cabecera para Cultivos', () => {
   const raw = `
-Nombre:	VAZQUEZ MARTINEZ GABINO GABRIEL	Fecha Registro:	24/05/2026 12:47:53 p. m.
+Nombre:	PACIENTE DE PRUEBA DOS	Fecha Registro:	24/05/2026 12:47:53 p. m.
 BACTERIOLOGIA
 Estudio		Resultado
 SECRECION DE HERIDA
@@ -129,9 +129,9 @@ CIPROFLOXACINA
 
 test('cultivo líquido peritoneal: tipo, pseudomonas y antibiograma', () => {
   const raw = `
-Expediente:	1929604-8	Solicitud:	2605071010
-Nombre:	CORONADO PALOMO RAUL	Fecha Registro:	07/05/2026 04:32:46 p. m.
-Sexo:	MASCULINO	Ubicación:	NEUROMEDICA
+Expediente:	0000001-1	Solicitud:	2605071010
+Nombre:	PACIENTE DE PRUEBA TRES	Fecha Registro:	07/05/2026 04:32:46 p. m.
+Sexo:	MASCULINO	Ubicación:	SALA DE PRUEBA
 Edad:	69	Medico:	A QUIEN CORRESPONDA
 BACTERIOLOGIA
 Estudio		Resultado	Unidades	Valor de Referencia
@@ -193,14 +193,14 @@ MICROORGANISMO
 `;
   const out = parseCultivo_(raw, norm(raw));
   assert.match(out, /LIQUIDO PERITONEAL 07\/05: PSEUDOMONAS AERUGINOSA/);
-  assert.doesNotMatch(out, /NEUROMEDICA/i);
+  assert.doesNotMatch(out, /SALA DE PRUEBA/i);
   assert.match(out, /\bATB R: CAZ \| I: FEP\b/);
   assert.match(out, /S: CIPRO, IMI, LVX, MERO, PIP\/TAZO, TOBRA/);
 });
 
 test('urocultivo: detecta BLEE por comentario y ESBL en antibiograma', () => {
   const raw = `
-Expediente:	2211202-9
+Expediente:	0000006-6
 Fecha Registro:	29/04/2026 03:00:39 p. m.
 BACTERIOLOGIA
 UROCULTIVO POR SONDA
@@ -315,7 +315,7 @@ test('procesarLabs: Ubicación del encabezado es del paciente (no se antepone al
   const raw = [
     'Expediente:\t1\tSolicitud:\t2',
     'Nombre:\tPACIENTE\tFecha Registro:\t07/05/2026',
-    'Sexo:\tMASCULINO\tUbicación:\tNEUROMEDICA',
+    'Sexo:\tMASCULINO\tUbicación:\tSALA DE PRUEBA',
     'Edad:\t69',
     'BACTERIOLOGIA',
     'UROCULTIVO POR SONDA',
@@ -326,9 +326,9 @@ test('procesarLabs: Ubicación del encabezado es del paciente (no se antepone al
     'Escherichia coli',
   ].join('\n');
   const r = procesarLabs(raw);
-  assert.equal(r.patient.ubicacion, 'NEUROMEDICA');
+  assert.equal(r.patient.ubicacion, 'SALA DE PRUEBA');
   const joined = (r.resLabs || []).join('\n');
-  assert.doesNotMatch(joined, /NEUROMEDICA/i);
+  assert.doesNotMatch(joined, /SALA DE PRUEBA/i);
   assert.match(joined, /UROCULTIVO|POR SONDA|Escherichia coli/i);
 });
 
@@ -354,8 +354,8 @@ test('formatCultivoCondensedForCopy: cabecera con dd/mm, ATB y cuenta', () => {
 
 test('urocultivo sonda Klebsiella: ATB completo; no membrete USER/Labo', () => {
   const raw = `
-Expediente:	2166042-4	Solicitud:	2607200976
-Nombre:	GARCIA CABRERA AUDELIA	Fecha Registro:	20/07/2026 07:43:15 p. m.
+Expediente:	0000002-2	Solicitud:	2607200976
+Nombre:	PACIENTE DE PRUEBA CUATRO	Fecha Registro:	20/07/2026 07:43:15 p. m.
 Sexo:	FEMENINO	Ubicación:	EMERGENCIAS SHOCK TRAUMA SALA
 Edad:	74	Medico:	A QUIEN CORRESPONDA
 BACTERIOLOGIA
@@ -441,8 +441,8 @@ test('formatCultivoCondensedForCopy: sin Preliminar ni fecha/hora del envío', (
 });
 
 test('micobacterias: baciloscopia y cultivo con muestra en OBSERVACIONES', () => {
-  const raw = `Expediente:\t2007285-3\tSolicitud:\t2605250577
-Nombre:\tVELAZQUEZ GARCIA MIGUEL ANGEL\tFecha Registro:\t25/05/2026 09:37:01 a. m.
+  const raw = `Expediente:\t0000003-3\tSolicitud:\t2605250577
+Nombre:\tPACIENTE DE PRUEBA CINCO\tFecha Registro:\t25/05/2026 09:37:01 a. m.
 Sexo:\tMASCULINO\tUbicación:\tSERVICIO CLÍNICO 2
 Edad:\t53\tMedico:\tA QUIEN CORRESPONDA
 
@@ -512,8 +512,8 @@ function cultivoTextFromResLabs(resLabs) {
 }
 
 /** G5 — Zúñiga: preliminar, 3 gérmenes, sin antibiograma */
-const G5_ZUNIGA_PRELIM = `Expediente:\t2212537-0\tSolicitud:\t2605261033
-Nombre:\tZUNIGA TAVARES EFRAIN\tFecha Registro:\t26/5/2026 15:59:36
+const G5_ZUNIGA_PRELIM = `Expediente:\t0000004-4\tSolicitud:\t2605261033
+Nombre:\tPACIENTE DE PRUEBA SEIS\tFecha Registro:\t26/5/2026 15:59:36
 Sexo:\tMASCULINO\tUbicación:\tCIRUGIA A.C.
 Edad:\t63\tMedico:\tA QUIEN CORRESPONDA
 BACTERIOLOGIA
@@ -568,8 +568,8 @@ CUENTA\t
 *`;
 
 /** G2 — urocultivo con carbapenemasa en comentario */
-const G2_URO_CARBAPENEMASA = `Expediente:\t0768636-4\tSolicitud:\t2605050805
-Nombre:\tCASTILLO\tFecha Registro:\t05/05/2026 06:16:18 p. m.
+const G2_URO_CARBAPENEMASA = `Expediente:\t0000005-5\tSolicitud:\t2605050805
+Nombre:\tPACIENTE DE PRUEBA SIETE\tFecha Registro:\t05/05/2026 06:16:18 p. m.
 BACTERIOLOGIA
 UROCULTIVO POR SONDA
 PRODUCTO\t
@@ -593,8 +593,8 @@ PIP/TAZO
 *`;
 
 /** G1 — aspirado 2 gérmenes + ATB */
-const G1_ASPIRADO_2G = `Expediente:\t0768636-4\tSolicitud:\t2605181061
-Nombre:\tCASTILLO\tFecha Registro:\t18/05/2026 04:58:48 p. m.
+const G1_ASPIRADO_2G = `Expediente:\t0000005-5\tSolicitud:\t2605181061
+Nombre:\tPACIENTE DE PRUEBA SIETE\tFecha Registro:\t18/05/2026 04:58:48 p. m.
 BACTERIOLOGIA
 ASPIRADO TRAQUEAL
 PRODUCTO\t
@@ -632,8 +632,8 @@ COLISTINA
 *`;
 
 /** G3 — aspirado 3 gérmenes; S. aureus con BLAC */
-const G3_ASPIRADO_3G = `Expediente:\t0768636-4\tSolicitud:\t2604280886
-Nombre:\tCASTILLO\tFecha Registro:\t28/04/2026 01:45:42 p. m.
+const G3_ASPIRADO_3G = `Expediente:\t0000005-5\tSolicitud:\t2604280886
+Nombre:\tPACIENTE DE PRUEBA SIETE\tFecha Registro:\t28/04/2026 01:45:42 p. m.
 BACTERIOLOGIA
 ASPIRADO TRAQUEAL
 MICROORGANISMO\t
@@ -680,8 +680,8 @@ PIP/TAZO
 *`;
 
 /** G4 — líquido peritoneal, slot MICROORGANISMO vacío */
-const G4_PERITONEAL = `Expediente:\t1929604-8\tSolicitud:\t2605200870
-Nombre:\tCORONADO\tFecha Registro:\t20/05/2026 02:04:18 p. m.
+const G4_PERITONEAL = `Expediente:\t0000001-1\tSolicitud:\t2605200870
+Nombre:\tPACIENTE DE PRUEBA OCHO\tFecha Registro:\t20/05/2026 02:04:18 p. m.
 BACTERIOLOGIA
 LIQUIDO PERITONEAL
 PRODUCTO\t
