@@ -2649,6 +2649,11 @@ var RELEASE_NOTES_823 = [
     body:
       'El DMG de 8.2.2 se publicó sin firma de Apple: macOS lo bloqueaba con "R+ no se puede abrir". 8.2.3 corrige el proceso de release para firmar y notarizar el instalador antes de publicarlo.',
   },
+  {
+    title: 'Verificación de firma antes de publicar',
+    body:
+      'El release ahora deja el DMG firmado y con el ticket de notarización pegado (stapled), listo para abrir sin advertencias de Gatekeeper.',
+  },
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
