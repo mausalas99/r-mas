@@ -1,12 +1,14 @@
-version: 8.2.3
+version: 8.2.4
 files:
-  - url: R+-8.2.3-x64.exe
-    sha512: bv87t4Y/mGSEMFDN+VizzieejhqcTfdsGZCqo97o/kT1AiStuliwO48q0CBdEtDh81SItpuiCxJLmAnjeEHNQA==
-    size: 123054881
-path: R+-8.2.3-x64.exe
-sha512: bv87t4Y/mGSEMFDN+VizzieejhqcTfdsGZCqo97o/kT1AiStuliwO48q0CBdEtDh81SItpuiCxJLmAnjeEHNQA==
-releaseDate: '2026-08-27T20:02:26.000Z'
+  - url: R+-8.2.4-x64.exe
+    sha512: wj0E7WNqVk4Wo9I/T8QtX7n4ugDnBYrNrzJuSbv4P4tJVnvYjaoIFOSGkUvwOk4JCTFRocjPI6cFpwF14Eb0IQ==
+    size: 123058223
+path: R+-8.2.4-x64.exe
+sha512: wj0E7WNqVk4Wo9I/T8QtX7n4ugDnBYrNrzJuSbv4P4tJVnvYjaoIFOSGkUvwOk4JCTFRocjPI6cFpwF14Eb0IQ==
+releaseDate: '2026-08-28T15:41:25.000Z'
 releaseNotes: |
-  Corrige el instalador Mac de 8.2.2: no estaba firmado ni notarizado, por lo que macOS bloqueaba la apertura de la app.
+  Corrige R+ Móvil (iPad/Nube): entrar y unirse al turno no funcionaban por un chequeo de versión que el cliente web nunca podía cumplir.
   
-  Instalador Mac firmado y notarizado: 8.2.2 se publicó sin firma de Apple; macOS mostraba "R+ no se puede abrir". 8.2.3 corrige el proceso de release para firmar y notarizar el DMG antes de publicar.
+  R+ Móvil vuelve a funcionar: el servidor exige que cada dispositivo reporte su versión; la build web de R+ Móvil no tenía forma de reportarla y el servidor la rechazaba en silencio (sin error visible). Ahora la build web incluye su propia versión.
+  
+  Errores de red visibles: si Entrar se queda pegado por mala conexión, ahora falla con un aviso a los 15 segundos en vez de quedarse esperando para siempre sin decir nada.
