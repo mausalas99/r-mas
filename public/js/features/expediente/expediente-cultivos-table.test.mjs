@@ -33,6 +33,36 @@ test('buildCultivosNegStrip renders chip list with count', () => {
   assert.doesNotMatch(html, /cultivos-neg-sep/);
 });
 
+test('buildCultivosNegStrip includes a remove button referencing the lab set to delete', () => {
+  var html = buildCultivosNegStrip([
+    {
+      tipoKey: 'hemo',
+      tipoLabel: 'Hemocultivo',
+      fechaMuestra: '16/08/2026',
+      sitio: 'HEMOCULTIVO (BRAZO DERECHO)',
+      organismo: 'CULTIVO NEGATIVO DESPUES DE 5 DIAS DE INCUBACION',
+      negativo: true,
+      labSetId: 'set-1',
+    },
+  ]);
+  assert.match(html, /cultivos-row-remove-btn/);
+  assert.match(html, /data-cult-set-id="set-1"/);
+});
+
+test('buildCultivosNegStrip omits the remove button when the row has no labSetId', () => {
+  var html = buildCultivosNegStrip([
+    {
+      tipoKey: 'hemo',
+      tipoLabel: 'Hemocultivo',
+      fechaMuestra: '16/08/2026',
+      sitio: 'HEMOCULTIVO (BRAZO DERECHO)',
+      organismo: 'CULTIVO NEGATIVO DESPUES DE 5 DIAS DE INCUBACION',
+      negativo: true,
+    },
+  ]);
+  assert.doesNotMatch(html, /cultivos-row-remove-btn/);
+});
+
 test('extractCultivoTableRowsFromHistory collapses the same cultivo section repeated across envíos', () => {
   var repeatedChunk =
     'RASPADO CORNEAL 14/08: STAPHYLOCOCCUS AUREUS · Preliminar\nATB S: AMP, NITRO, PEN';

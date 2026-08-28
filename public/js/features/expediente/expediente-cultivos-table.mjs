@@ -18,6 +18,7 @@ import {
   refreshPatientCultivoLabsFromRepo,
   cultivoRefreshOutcomeMessage,
 } from '../cultivo-queue-refresh.mjs';
+import { deleteLabHistorySet } from '../lab-panel-history.mjs';
 
 var CULTIVO_TIPO_ORDER = ['hemo', 'uro', 'cateter', 'gram', 'fungi', 'otro'];
 var CULTIVO_TIPO_LABELS = {
@@ -219,6 +220,13 @@ function wireCultivosToolbarOnce() {
   if (!container) return;
   _cultivoToolbarWired = true;
   container.addEventListener('click', function (ev) {
+    var removeBtn = ev.target && ev.target.closest ? ev.target.closest('.cultivos-row-remove-btn') : null;
+    if (removeBtn) {
+      ev.preventDefault();
+      var setId = removeBtn.getAttribute('data-cult-set-id');
+      if (setId) void deleteLabHistorySet(setId);
+      return;
+    }
     var btn = ev.target && ev.target.closest ? ev.target.closest('.cultivo-refresh-repo-btn') : null;
     if (!btn || btn.disabled) return;
     ev.preventDefault();
@@ -290,6 +298,7 @@ export function buildCultivosNegStrip(negs) {
         esc(fd) +
         ' · ' +
         esc(sitio) +
+        cultivoRowRemoveBtnHtml(r) +
         '</li>'
       );
     })
@@ -310,11 +319,20 @@ export function buildCultivosNegStrip(negs) {
   );
 }
 
+function cultivoRowRemoveBtnHtml(r) {
+  if (r.labSetId == null || r.labSetId === '') return '';
+  return (
+    '<button type="button" class="cultivos-row-remove-btn" data-cult-set-id="' +
+    esc(String(r.labSetId)) +
+    '" title="Eliminar este cultivo del historial" aria-label="Eliminar este cultivo del historial">×</button>'
+  );
+}
+
 function collectCultivoTableRowChunks(groups, rowFechaDisplayFn) {
   var rowChunks = [];
   var totalRows = 0;
   groups.forEach(function (g) {
-    rowChunks.push('<tr class="cultivos-section-row"><td colspan="4">' + esc(g.label) + '</td></tr>');
+    rowChunks.push('<tr class="cultivos-section-row"><td colspan="5">' + esc(g.label) + '</td></tr>');
     g.rows.forEach(function (r) {
       totalRows += 1;
       rowChunks.push(
@@ -328,6 +346,8 @@ function collectCultivoTableRowChunks(groups, rowFechaDisplayFn) {
           cultivoOrganismoCellHtml(r) +
           '</td><td class="cultivos-cell-atb">' +
           cultivoAntibiogramCellHtml(r) +
+          '</td><td class="cultivos-cell-remove">' +
+          cultivoRowRemoveBtnHtml(r) +
           '</td></tr>'
       );
     });
@@ -354,7 +374,7 @@ function renderCultivosTable() {
     container.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
     return;
   }
-  var flatRows = extractCultivoTableRowsFromHistory(aid());
+  var flatRows = extractCultivoTableRowsFromHistory(pid);
   if (!flatRows.length) {
     container.innerHTML =
       '<p class="tend-empty">No hay cultivos en el historial. Aparecen urocultivos, hemocultivos, tinción Gram y cultivos de catéter enviados desde Laboratorio.</p>';
@@ -377,7 +397,7 @@ function renderCultivosTable() {
   var negStrip = buildCultivosNegStrip(negs);
   var toolbar = buildCultivosToolbarHtml(aid());
   var thead =
-    '<thead><tr><th>Fecha</th><th>Sitio / muestra</th><th>Organismo</th><th>Antibiograma</th></tr></thead>';
+    '<thead><tr><th>Fecha</th><th>Sitio / muestra</th><th>Organismo</th><th>Antibiograma</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>';
   var built = collectCultivoTableRowChunks(groups, rowFechaDisplay);
   var finishTable = function () {
     wireAtbRisHoverPanels(container);
