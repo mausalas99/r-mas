@@ -157,7 +157,7 @@
     window.__RPC_APP_BUNDLE_REQUESTED__ = true;
     var mod = document.createElement('script');
     mod.type = 'module';
-    mod.src = '/mobile/js/app.bundle.mjs?v=815-1786902557502';
+    mod.src = '/mobile/js/app.bundle.mjs?v=823-1787930359135';
     mod.onerror=function(){try{var g=document.getElementById("rpc-cloud-mobile-gate");if(g){g.innerHTML='<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="alert"><div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4><p class="rpc-cloud-mobile-modal__sub">Error al cargar la app.</p></div><div class="rpc-cloud-mobile-modal__body"><button type="button" class="btn-save" onclick="location.reload()">Recargar</button></div></div>';}}catch(_e){}};document.head.appendChild(mod);
   }
 

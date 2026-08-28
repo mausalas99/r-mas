@@ -1,0 +1,999 @@
+/* Workbench kit — shared components for the teal-workbench redesign.
+ * docs/superpowers/plans/2026-08-18-teal-workbench-full-fidelity.md, Phase 1.
+ * Tokens only from public/tokens.css — nothing here invents a color or size.
+ * Not wired into any production screen yet (Phase 2+ does that).
+ */
+
+/* ── Mode frame (band 1) ─────────────────────────────────────────── */
+
+.wb-mode-frame {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+  padding: 12px 24px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.wb-mode-frame-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.wb-mode-frame-name {
+  font: var(--type-wb-section-label);
+  letter-spacing: var(--tracking-wb-section-label);
+  text-transform: uppercase;
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+.wb-mode-frame-context {
+  font: var(--type-wb-mono);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+.wb-mode-frame-context--clickable {
+  cursor: pointer;
+  border-radius: var(--radius-control);
+  padding: 2px 4px;
+  margin: -2px -4px;
+}
+
+.wb-mode-frame-context--clickable:hover {
+  background: var(--divider);
+}
+
+.wb-mode-frame-meta {
+  font: var(--type-wb-metadata);
+  color: var(--color-ink-tertiary);
+  white-space: nowrap;
+}
+
+.wb-mode-frame-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Interconsulta bar (screen 10b) ───────────────────────────────
+ * Deliberately not wb-mode-frame: the 10b spec calls for a 3-column
+ * grid at 52px, distinct from wb-mode-frame's flex layout at ~44px.
+ */
+
+.wb-ic-bar {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  height: 52px;
+  padding: 0 24px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.wb-ic-bar-name {
+  min-width: 0;
+}
+
+.wb-ic-bar-mid {
+  min-width: 0;
+}
+
+.wb-ic-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  justify-content: flex-end;
+}
+
+/* ── Overflow menu (used to demote secondary actions, e.g. "Generar nota") */
+
+.wb-menu {
+  position: relative;
+}
+
+.wb-menu > summary {
+  list-style: none;
+}
+
+.wb-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.wb-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  min-width: 200px;
+  background: var(--color-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  box-shadow: 0 8px 24px rgba(28, 28, 30, 0.16);
+  padding: 4px;
+  z-index: 20;
+}
+
+.wb-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  font: var(--type-wb-button-secondary);
+  color: var(--color-ink);
+}
+
+.wb-menu-item:hover {
+  background: var(--divider);
+}
+
+/* ── Shared buttons (mode frame + confirm modal) ─────────────────── */
+
+.wb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-control);
+  padding: 7px 12px;
+  font: var(--type-wb-button-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.wb-btn-secondary {
+  background: transparent;
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-ink);
+}
+
+.wb-btn-primary {
+  background: var(--color-accent);
+  border: none;
+  color: var(--color-on-accent);
+  font: var(--type-wb-button);
+  padding: 8px 14px;
+}
+
+.wb-btn-primary:hover {
+  background: var(--color-accent-hover);
+}
+
+.wb-btn-danger {
+  background: var(--color-danger);
+  border: none;
+  color: #fff;
+  font: var(--type-wb-button);
+  padding: 8px 14px;
+}
+
+.wb-btn-link {
+  background: none;
+  border: none;
+  color: var(--color-ink-muted);
+  padding: 0;
+}
+
+.wb-btn-link:hover {
+  color: var(--color-ink);
+}
+
+/* ── Counters band (band 2) ───────────────────────────────────────── */
+
+.wb-counters-band {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--color-elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+.wb-counter-cell {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 11px 18px;
+  border-right: 1px solid color-mix(in oklab, var(--color-ink) 8%, transparent);
+}
+
+.wb-counter-cell:last-child {
+  border-right: none;
+}
+
+.wb-counter-cell--alert {
+  background: var(--color-danger-tint-strong);
+  box-shadow: var(--shadow-counter-alert);
+}
+
+.wb-counter-text {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.wb-counter-label {
+  font: var(--type-wb-counter-label);
+  letter-spacing: var(--tracking-wb-counter-label);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.wb-counter-label--alert {
+  color: var(--color-danger);
+}
+
+.wb-counter-figure {
+  font: var(--type-wb-counter-figure);
+  color: var(--color-ink);
+}
+
+.wb-counter-detail {
+  color: var(--color-ink-muted);
+  font-weight: 500;
+}
+
+.wb-counter-detail--alert {
+  color: var(--color-danger);
+  font-weight: 500;
+}
+
+.wb-counter-progress {
+  height: 5px;
+  border-radius: var(--radius-chip);
+  background: color-mix(in oklab, var(--color-ink) 10%, transparent);
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.wb-counter-progress-fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: var(--radius-chip);
+}
+
+/* ── Table grammar ─────────────────────────────────────────────────── */
+
+.wb-table-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-container);
+  background: var(--color-elevated);
+  overflow: hidden;
+}
+
+.wb-table-card-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 16px;
+  background: var(--color-panel-header);
+  border-bottom: 1px solid var(--border);
+}
+
+.wb-table-card-title {
+  font: var(--type-wb-section-label);
+  letter-spacing: var(--tracking-wb-section-label);
+  text-transform: uppercase;
+  color: var(--color-ink);
+}
+
+.wb-table-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wb-table-colhead {
+  flex-shrink: 0;
+  display: grid;
+  gap: 12px;
+  padding: 7px 16px;
+  background: var(--color-table-head);
+  border-bottom: 1px solid color-mix(in oklab, var(--color-ink) 8%, transparent);
+  font: var(--type-wb-column-head);
+  letter-spacing: var(--tracking-wb-column-head);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.wb-table-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.wb-row {
+  display: grid;
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--divider);
+  font: var(--type-wb-row);
+  color: var(--color-ink);
+  cursor: pointer;
+  background: transparent;
+  transition: background var(--dur-fast, 140ms) var(--ease-out);
+}
+
+.wb-row:hover {
+  background: color-mix(in oklab, var(--color-ink) 3%, transparent);
+}
+
+.wb-row--twoline {
+  padding: 11px 16px;
+  font: var(--type-wb-row-2line);
+}
+
+.wb-row--alert {
+  background: var(--color-danger-tint);
+}
+
+/* Alert rows never lose their tint on hover — the signal must not disappear. */
+.wb-row--alert:hover {
+  background: var(--color-danger-tint);
+}
+
+.wb-cell {
+  min-width: 0;
+}
+
+.wb-table-summary {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  text-align: center;
+  font: 500 12px/1.4 var(--font-ui);
+  color: var(--color-ink-muted);
+}
+
+/* ── Status labels ─────────────────────────────────────────────────── */
+
+.wb-status {
+  font: var(--type-wb-status-label);
+  text-transform: uppercase;
+}
+
+.wb-status--vencido {
+  color: var(--color-danger-deep);
+}
+
+.wb-status--en-curso {
+  color: var(--color-warn);
+}
+
+.wb-status--abierto {
+  color: var(--color-ink-muted);
+}
+
+.wb-status--listo {
+  color: var(--color-success);
+}
+
+/* ── Filter chips ──────────────────────────────────────────────────── */
+
+.wb-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.wb-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: var(--radius-chip);
+  border: 1px solid transparent;
+  background: transparent;
+  font: 600 11px/1 var(--font-ui);
+  color: var(--color-ink-muted);
+  cursor: pointer;
+}
+
+.wb-chip--active {
+  background: var(--color-elevated);
+  border-color: var(--color-border-strong);
+  color: var(--color-ink);
+}
+
+.wb-chip--active-teal {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+/* ── Empty state ───────────────────────────────────────────────────── */
+
+.wb-empty-state {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+  border: var(--border-dashed, 1px dashed var(--color-border-dashed));
+  border-radius: var(--radius-container);
+  background: var(--color-empty-fill);
+}
+
+.wb-empty-label {
+  margin: 0;
+  font: var(--type-wb-section-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.wb-empty-missing {
+  margin: 0;
+  font: 500 12.5px/1.5 var(--font-ui);
+  color: var(--color-ink);
+}
+
+.wb-empty-when {
+  margin: 0;
+  font: 500 12px/1.4 var(--font-ui);
+  color: var(--color-ink-muted);
+}
+
+.wb-empty-exit {
+  align-self: flex-start;
+  margin-top: 2px;
+  font: 600 11.5px/1 var(--font-ui);
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.wb-empty-exit:hover {
+  color: var(--color-accent-hover);
+}
+
+/* ── Confirmation (destructive / consequence) ─────────────────────── */
+
+.wb-scrim {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--scrim-bg);
+  opacity: 0;
+  transition: opacity 160ms var(--ease-out);
+  z-index: var(--z-modal);
+}
+
+.wb-scrim--open {
+  opacity: 1;
+}
+
+.wb-confirm-modal {
+  width: min(420px, 92vw);
+  overflow: hidden;
+  background: var(--color-elevated);
+  border-radius: var(--radius-sheet);
+  box-shadow: var(--shadow-modal);
+  color: var(--color-ink);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+
+.wb-scrim--open .wb-confirm-modal {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.wb-confirm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 15px 20px 14px;
+}
+
+.wb-confirm-title {
+  font: 600 15px/1.25 var(--font-ui);
+}
+
+.wb-confirm-message {
+  font: 500 12.5px/1.5 var(--font-ui);
+  color: var(--color-ink-muted);
+}
+
+.wb-confirm-consequence {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-container);
+  background: var(--color-danger-tint);
+}
+
+.wb-confirm-consequence-label {
+  font: 700 10px/1 var(--font-ui);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-danger);
+}
+
+.wb-confirm-consequence-text {
+  font: 500 12.5px/1.45 var(--font-ui);
+  color: var(--color-ink);
+}
+
+.wb-confirm-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--color-elevated);
+  border-top: 1px solid var(--border);
+}
+
+.wb-confirm-footer--rail {
+  justify-content: space-between;
+  background: var(--color-rail);
+}
+
+.wb-confirm-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Undo toast (reversible weight) ───────────────────────────────── */
+
+.wb-undo-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-radius: var(--radius-container);
+  background: #1f2126;
+  color: #f2f2f4;
+  box-shadow: var(--shadow-modal);
+  z-index: var(--z-toast);
+}
+
+.wb-undo-toast-message {
+  font: 500 12.5px/1.35 var(--font-ui);
+}
+
+.wb-undo-toast-btn {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font: 600 12px/1 var(--font-ui);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-scrim,
+  .wb-confirm-modal {
+    transition: none !important;
+  }
+}
+
+/* ── Calendar popover ──────────────────────────────────────────────── */
+
+.wb-date-popover-host {
+  position: fixed;
+}
+
+.wb-date-popover {
+  width: 286px;
+  background: var(--color-elevated);
+  border-radius: var(--radius-sheet);
+  box-shadow: var(--shadow-modal);
+  color: var(--color-ink);
+  overflow: hidden;
+}
+
+.wb-date-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.wb-date-popover-month {
+  font: 600 13px/1 var(--font-ui);
+}
+
+.wb-date-popover-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wb-date-popover-nav-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-row-btn);
+  background: var(--color-elevated);
+  color: var(--color-ink-muted);
+  font: 600 12px/1 var(--font-ui);
+  cursor: pointer;
+}
+
+.wb-date-popover-weekdays {
+  padding: 12px 16px 8px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  font: 700 9.5px/1 var(--font-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  text-align: center;
+}
+
+.wb-date-popover-grid {
+  padding: 0 16px 12px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.wb-date-popover-day {
+  padding: 8px 0;
+  border: none;
+  border-radius: var(--radius-control);
+  background: transparent;
+  font: 500 12.5px/1 var(--font-mono);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.wb-date-popover-day:hover:not(:disabled) {
+  background: var(--divider);
+}
+
+.wb-date-popover-day--nodata {
+  color: color-mix(in oklab, var(--color-ink-muted) 55%, var(--color-elevated));
+  cursor: default;
+}
+
+.wb-date-popover-day--today {
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+  font-weight: 600;
+}
+
+.wb-date-popover-day--selected {
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.wb-date-popover-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px 12px;
+}
+
+.wb-date-popover-chip {
+  flex: 1;
+  text-align: center;
+  padding: 7px 0;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+  background: var(--color-elevated);
+  font: 600 11.5px/1 var(--font-ui);
+  color: var(--color-ink-muted);
+  cursor: pointer;
+}
+
+.wb-date-popover-chip--active {
+  color: var(--color-ink);
+}
+
+.wb-date-popover-chip:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.wb-date-popover-labdays {
+  border-top: 1px solid var(--divider);
+}
+
+.wb-date-popover-labdays-head {
+  padding: 9px 16px 6px;
+  font: 700 11px/1 var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.wb-date-popover-labdays-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 168px;
+  overflow-y: auto;
+}
+
+.wb-date-popover-labday {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 16px;
+  border: none;
+  border-top: 1px solid var(--divider);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wb-date-popover-labday:first-child {
+  border-top: none;
+}
+
+.wb-date-popover-labday:hover:not(:disabled) {
+  background: var(--state-hover-bg);
+}
+
+.wb-date-popover-labday--active {
+  background: color-mix(in oklab, var(--color-accent) 9%, var(--color-elevated));
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.wb-date-popover-labday--nodata {
+  cursor: default;
+  color: color-mix(in oklab, var(--color-ink-muted) 55%, var(--color-elevated));
+}
+
+.wb-date-popover-labday-label {
+  font: 600 12.5px/1.3 var(--font-ui);
+  color: var(--color-ink);
+}
+
+.wb-date-popover-labday--nodata .wb-date-popover-labday-label {
+  color: inherit;
+  font-weight: 500;
+}
+
+.wb-date-popover-labday-meta {
+  font: 500 11.5px/1 var(--font-mono);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+.wb-date-popover-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 16px;
+  background: var(--color-rail);
+  border-top: 1px solid var(--border);
+}
+
+.wb-date-popover-range {
+  font: 500 11.5px/1 var(--font-mono);
+  color: var(--color-ink-muted);
+}
+
+/* ── Nuevo pendiente modal (screen 7b) ─────────────────────────────── */
+
+.wb-todo-add-modal {
+  width: min(460px, 92vw);
+}
+
+.wb-todo-add-body {
+  gap: 16px;
+  padding: 16px 20px 18px;
+}
+
+.wb-todo-add-header {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.wb-todo-add-context {
+  font: 500 12px/1 var(--font-mono);
+  color: var(--color-ink-muted);
+}
+
+.wb-todo-add-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+}
+
+.wb-todo-add-label {
+  font: 700 10.5px/1 var(--font-ui);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.wb-todo-add-text {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-field);
+  padding: 10px 12px;
+  font: 500 13px/1.4 var(--font-ui);
+  color: var(--color-ink);
+  background: var(--color-elevated);
+  resize: vertical;
+}
+
+.wb-todo-add-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.wb-todo-add-field--due {
+  width: 200px;
+  flex: none;
+}
+
+/* ── Inicio de turno (screen 12a) — dismissable overlay, own scrim class so it
+ * never collides with workbench/confirm.mjs's single-instance `.wb-scrim`. ─── */
+
+.wb-it-scrim {
+  z-index: var(--z-modal-nested);
+  padding: 24px;
+}
+
+.wb-it-window {
+  width: min(1200px, 96vw);
+  height: min(880px, 92vh);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  border-radius: var(--radius-container);
+  box-shadow: var(--shadow-window);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+
+.wb-it-scrim.wb-scrim--open .wb-it-window {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.wb-it-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1.75fr 1fr;
+  gap: 14px;
+  padding: 16px 24px 22px;
+  overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  .wb-it-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.wb-it-col {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.wb-it-col-left {
+  flex: 1;
+}
+
+.wb-it-col-right {
+  overflow-y: auto;
+}
+
+.wb-it-lo-primero {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.wb-it-lo-primero .wb-table-card {
+  flex: 1;
+  min-height: 0;
+}
+
+.wb-it-table-sub {
+  font: 500 11.5px/1 var(--font-ui);
+  color: var(--color-ink-muted);
+}
+
+.wb-it-bed {
+  font: 500 11.5px/1.3 var(--font-mono);
+  color: var(--color-ink-muted);
+}
+
+.wb-it-row-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.wb-it-row-name {
+  font: 600 12.5px/1.35 var(--font-ui);
+}
+
+.wb-it-line-muted {
+  font-weight: 500;
+  color: var(--color-ink-muted);
+}
+
+.wb-it-row-reason {
+  font: 500 12px/1.4 var(--font-ui);
+  color: var(--color-ink);
+}
+
+.wb-it-altered {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.wb-it-since {
+  font: 500 11.5px/1.3 var(--font-mono);
+}
+
+.wb-it-since--vencido {
+  color: var(--color-danger-deep, var(--color-danger));
+}
+
+.wb-it-since--espera {
+  color: var(--color-warn);
+}
+
+.wb-it-since--curso {
+  color: var(--color-ink-muted);
+}
+
+.wb-it-zonas-body {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 13px 16px 15px;
+}
+
+.wb-it-zonas-hint {
+  font: 500 12px/1.5 var(--font-ui);
+  color: var(--color-ink-muted);
+}
+
+.wb-it-zonas-footer {
+  font: 500 11.5px/1.45 var(--font-ui);
+  color: var(--color-ink-tertiary);
+}

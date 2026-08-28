@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.2.3](https://github.com/mausalas99/r-mas/releases/tag/v8.2.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.2.4](https://github.com/mausalas99/r-mas/releases/tag/v8.2.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -53,6 +53,13 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.2.4 (estable — release 8.2.4)
+
+- **R+ Móvil (iPad/Nube) vuelve a funcionar:** entrar y unirse al turno fallaban en silencio por un chequeo de versión que el cliente web no podía cumplir.
+- **Errores de red visibles:** Entrar ya no se queda pegado sin aviso ante mala conexión.
+
+Notas: `docs/RELEASE_NOTES_8.2.4.txt`.
 ## R+ 8.2.3 (estable — release 8.2.3)
 
 - **Instalador Mac firmado y notarizado:** corrige el DMG de 8.2.2, que macOS bloqueaba con "R+ no se puede abrir" por no estar firmado.

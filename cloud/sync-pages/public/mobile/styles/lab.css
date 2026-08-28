@@ -6,7 +6,7 @@
   font-weight: 700;
   letter-spacing: 0.4px;
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   border: 1px solid color-mix(in oklab, var(--color-accent) 28%, var(--border));
 }
 .lab-value-altered {
@@ -22,6 +22,23 @@
   margin-left: 1px;
 }
 html.dark .lab-value-star { color: var(--error); }
+/* Fase 5 (2a/2b) — dentro de la tarjeta Resultados el valor alterado se lee en rojo + flecha,
+   sin fondo tipo pastilla ni asterisco (mockup L2486/L2676). Fuera de esa tarjeta (censo, vista
+   previa) el estilo original se conserva. */
+#lab-output-box .out-line strong.lab-value-altered,
+#lab-output-box .out-indent strong.lab-value-altered {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+#lab-output-box .lab-value-star { display: none; }
+/* Fase 5 — flecha de tendencia vs. toma previa (solo valores alterados). Hereda el color de .lab-value-altered. */
+.lab-trend-arrow {
+  margin-left: 3px;
+  font-weight: 700;
+}
+.lab-trend-up::before { content: '\2191'; }
+.lab-trend-down::before { content: '\2193'; }
 .lab-value-normal {
   color: var(--success);
 }
@@ -163,6 +180,51 @@ html.tab-bar-indicators-ready html.dark .inner-tab.active {
   gap: 0;
 }
 
+/* Grouped pendientes: vencido -> en_curso -> abierto -> listo (collapsed). */
+.todo-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.todo-group-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 12px 4px;
+  cursor: default;
+}
+
+.todo-group-count {
+  font: var(--type-wb-metadata, 500 11.5px/1 var(--font-ui));
+  color: var(--text-muted);
+}
+
+.todo-group-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+details.todo-group summary.todo-group-header {
+  cursor: pointer;
+  list-style: none;
+}
+
+details.todo-group summary.todo-group-header::-webkit-details-marker,
+details.todo-group summary.todo-group-header::marker {
+  display: none;
+}
+
+details.todo-group summary.todo-group-header::before {
+  content: '\25B8';
+  color: var(--text-muted);
+  font-size: 10px;
+  margin-right: 2px;
+}
+
+details.todo-group[open] summary.todo-group-header::before {
+  content: '\25BE';
+}
+
 .todo-add-row,
 .todo-row {
   display: grid;
@@ -277,7 +339,7 @@ html.dark .todo-text-input:focus {
   /* Do not use margin:0 — it wiped the first-line offset and floated the box high */
   margin: 6px 0 0;
   border: 1.5px solid color-mix(in oklab, var(--text-muted) 55%, var(--border, var(--divider)));
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   background: var(--surface);
   cursor: pointer;
   transition:
@@ -457,14 +519,21 @@ html.dark .todo-text-input:focus {
   background: color-mix(in oklab, var(--action) 6%, transparent);
 }
 
-.todo-handoff-meta {
+.todo-owner-meta {
   margin-top: 4px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   font-size: 12px;
   color: var(--text-muted);
 }
 
-.todo-handoff-creator {
+.todo-owner-creator {
   font-weight: 600;
+}
+
+.todo-owner-trigger {
+  font-family: var(--font-mono);
 }
 
 .todo-row-actions {
@@ -497,12 +566,10 @@ html.dark .todo-text-input:focus {
 }
 
 .todo-due-section {
-  /* Sit under the text field: skip prio + check columns + both gaps */
-  margin-left: calc(var(--todo-grid-prio) + var(--todo-grid-check) + 20px);
-  margin-right: calc(var(--todo-grid-actions) + 10px);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  width: 100%;
   gap: 6px;
   min-width: 0;
   padding: 0 0 2px;
@@ -527,9 +594,10 @@ html.dark .todo-text-input:focus {
   border-radius: var(--radius-pill, 999px);
   background: color-mix(in oklab, var(--surface) 88%, var(--bg));
   color: var(--text-muted);
-  padding: 4px 10px;
+  min-height: 30px;
+  padding: 5px 12px;
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.2;
   cursor: pointer;
@@ -537,7 +605,12 @@ html.dark .todo-text-input:focus {
   transition:
     background var(--dur-fast, 0.15s) ease,
     border-color var(--dur-fast, 0.15s) ease,
-    color var(--dur-fast, 0.15s) ease;
+    color var(--dur-fast, 0.15s) ease,
+    transform var(--dur-fast, 0.15s) ease;
+}
+
+.todo-due-preset-chip:active {
+  transform: scale(0.97);
 }
 
 .todo-due-preset-chip:hover {
@@ -578,7 +651,12 @@ html.dark .todo-text-input:focus {
   color: var(--text-muted);
 }
 
-.todo-due-modal {
+#todo-due-modal-backdrop.modal-backdrop {
+  /* Always opened from within another modal (e.g. "Nuevo pendiente"); must paint above it. */
+  z-index: var(--z-modal-nested);
+}
+
+#todo-due-modal-backdrop .todo-due-modal {
   width: min(440px, calc(100vw - 32px));
   padding: 0;
   overflow: hidden;
@@ -592,13 +670,13 @@ html.dark .todo-text-input:focus {
 .todo-due-modal-head {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 16px 18px 12px;
+  gap: 4px;
+  padding: 18px 20px 14px;
   border-bottom: 1px solid var(--border, var(--divider));
 }
-.todo-due-modal-head h3 {
+.todo-due-modal .todo-due-modal-head h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.015em;
   line-height: 1.25;
@@ -613,16 +691,17 @@ html.dark .todo-text-input:focus {
 .todo-due-modal > .todo-due-modal-presets-zone,
 .todo-due-modal > .todo-due-modal-when,
 .todo-due-modal > .todo-due-modal-remind {
-  margin-left: 18px;
-  margin-right: 18px;
+  margin-left: 20px;
+  margin-right: 20px;
 }
 .todo-due-modal > .todo-due-modal-presets-zone {
-  margin-top: 14px;
+  margin-top: 16px;
 }
 .todo-due-modal > .todo-due-modal-actions {
   margin: 0;
-  padding: 12px 18px 16px;
-  border-top: 1px solid var(--border, var(--divider));
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-bottom: 18px;
 }
 
 .todo-due-modal-presets-zone {
@@ -888,11 +967,15 @@ html.dark .todo-text-input:focus {
 
 .todo-due-modal-when {
   margin-bottom: 0;
+  padding: 12px;
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+  border-radius: var(--radius-md, 10px);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
 }
 
 .todo-due-modal-when .profile-field-label {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .todo-due-modal-when .rpc-datetime-field {
@@ -907,42 +990,69 @@ html.dark .todo-text-input:focus {
 }
 
 .todo-due-modal-remind {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 14px 0 0;
+  gap: 9px;
+  margin: 12px 0 0;
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md, 10px);
   font-size: 13px;
+  font-weight: 500;
   color: var(--text);
   cursor: pointer;
+  transition:
+    background var(--dur-fast, 0.15s) ease,
+    border-color var(--dur-fast, 0.15s) ease;
+}
+
+.todo-due-modal-remind:hover {
+  background: color-mix(in oklab, var(--action) 6%, var(--surface));
+  border-color: color-mix(in oklab, var(--border) 80%, transparent);
 }
 
 .todo-due-modal-remind input[type="checkbox"] {
   margin: 0;
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
+  accent-color: var(--action);
+  cursor: pointer;
 }
 
-.todo-due-modal-actions {
+.todo-due-modal .todo-due-modal-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
   flex-wrap: wrap;
 }
 
 .todo-due-modal-actions__secondary {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .todo-due-modal-actions .btn-med-secondary,
 .todo-due-modal-actions .btn-save {
-  min-height: 40px;
+  min-height: 38px;
   padding: 8px 16px;
   font-size: 13px;
+}
+
+.todo-due-modal-actions #todo-due-modal-clear {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.todo-due-modal-actions #todo-due-modal-clear:hover {
+  color: var(--error);
+  background: color-mix(in oklab, var(--error) 8%, transparent);
 }
 
 .todo-text-input {
@@ -1070,6 +1180,25 @@ html.dark .card { box-shadow: var(--shadow); }
   justify-content: space-between;
   flex-wrap: wrap;
 }
+/* Reporte de Laboratorio header row: no card box, just the label + buttons floating. */
+#lab-input-section {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+#lab-input-section .card-header {
+  background: transparent;
+  border-bottom: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+#lab-input-section .card-header.lab-report-header-row--actions-only {
+  justify-content: flex-end;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+#lab-input-section:hover { box-shadow: none; }
 /* Barras de sección con tono — texto claro en light y dark */
 .card-header[class*="card-header--tone"] {
   color: var(--color-on-accent);
@@ -1093,7 +1222,7 @@ html.dark .card { box-shadow: var(--shadow); }
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.35);
   color: var(--color-on-accent);
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   padding: 4px 12px;
   font-size: 12px;
   font-weight: 600;
@@ -1333,10 +1462,30 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
   justify-content: space-between;
   padding: calc(8px * var(--density-space)) calc(12px * var(--density-space));
   min-height: 44px;
+  background: var(--color-panel-header, var(--surface));
 }
 .lab-output-card-title {
   flex: 1;
   min-width: 0;
+  font: 700 11.5px/1 var(--font-sans, inherit);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.lab-output-copy-btn {
+  font: 600 11.5px/1 var(--font-sans, inherit);
+  padding: 6px 12px;
+  min-height: 30px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.lab-output-copy-btn:hover {
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+  color: var(--action);
 }
 .lab-output-header-tools {
   display: flex;
@@ -1360,21 +1509,16 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
   flex-shrink: 0;
 }
 .lab-history-date-select {
-  font-family: inherit;
-  font-size: 13px;
-  line-height: 1.25;
+  font: 600 12px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
   min-width: 0;
   max-width: min(48vw, 240px);
-  padding: 7px 28px 7px 12px;
-  border-radius: var(--radius-control);
-  border: 1px solid var(--border);
-  background: var(--surface);
+  padding: 0 6px;
+  border: none;
+  background: transparent;
   color: var(--text);
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
 }
 .lab-history-date-select:focus-visible {
   outline: 2px solid var(--action);
@@ -1387,8 +1531,12 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
 .lab-history-day-nav {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
 }
 .lab-history-day-nav-btn {
   appearance: none;
@@ -1399,9 +1547,9 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
   width: 26px;
   height: 26px;
   padding: 0;
-  border-radius: var(--radius-control);
-  border: 1px solid var(--border);
-  background: var(--surface);
+  border-radius: calc(var(--radius-control) - 1px);
+  border: none;
+  background: transparent;
   color: var(--text-muted);
   cursor: pointer;
 }
@@ -1895,10 +2043,10 @@ html.lab-some-tables-modal-open .lab-copy-fab {
   text-align: right;
 }
 .lab-some-tables--modal .lab-some-row--abnormal td {
-  background: color-mix(in oklab, var(--error, #b91c1c) 8%, var(--surface));
+  background: color-mix(in oklab, var(--error) 8%, var(--surface));
 }
 .lab-some-tables--modal .lab-some-row--abnormal td:first-child {
-  box-shadow: inset 3px 0 0 var(--error, #b91c1c);
+  box-shadow: inset 3px 0 0 var(--error);
 }
 .lab-some-tables--modal .lab-some-resultado.lab-some-abnormal {
   color: var(--color-danger);
@@ -1916,7 +2064,7 @@ html.dark .lab-copy-fab:hover {
 }
 .btn-generate {
   background: var(--color-accent);
-  color: var(--color-on-accent, #fff);
+  color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-control);
   padding: calc(10px * var(--density-space)) calc(22px * var(--density-space));
@@ -1939,7 +2087,7 @@ html.dark .lab-copy-fab:hover {
 .btn-spinner {
   width: 14px;
   height: 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 2px solid rgba(255, 255, 255, 0.35);
   border-top-color: var(--color-on-accent);
   animation: btn-spin 700ms linear infinite;
@@ -2005,7 +2153,7 @@ html.dark .btn-generate--success:hover { background: var(--color-success-emphasi
   justify-content: center;
   width: 26px;
   height: 26px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   flex-shrink: 0;
 }
 html.dark .btn-med-secondary {
@@ -2401,7 +2549,7 @@ html.dark .btn-med-secondary--muted:hover {
   width: 22px;
   height: 22px;
   border: 1.5px solid color-mix(in oklab, var(--text-muted) 55%, var(--border, var(--divider)));
-  border-radius: 7px;
+  border-radius: var(--radius-row-btn);
   background: color-mix(in oklab, var(--surface) 70%, var(--bg));
   cursor: pointer;
   transition:
@@ -2470,7 +2618,7 @@ html.dark .btn-med-secondary--muted:hover {
   opacity: 0.7;
 }
 .lab-repo-batch-row-warn {
-  color: color-mix(in oklab, var(--danger, #b91c1c) 85%, var(--text-muted));
+  color: color-mix(in oklab, var(--danger) 85%, var(--text-muted));
 }
 .lab-repo-batch-empty {
   margin: auto;
@@ -2486,6 +2634,55 @@ html.dark .btn-med-secondary--muted:hover {
   flex-shrink: 0;
   font-size: 12px;
   color: var(--text-muted);
+}
+/* Teal workbench §11c "Cargando labs": 4-column K/Cr/BUN/Hb chemistry-grid
+   skeleton, shown inline where those values normally render while a single
+   patient's labs are actively refreshing. Never a full-screen spinner.
+   Markup: public/js/ui-skeleton.mjs buildLabChemistrySkeletonHtml(). */
+.lab-chem-skel {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: color-mix(in oklab, var(--text) 8%, transparent);
+  border: 1px solid var(--border, var(--divider));
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.lab-chem-skel-cell {
+  background: var(--surface);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.lab-chem-skel-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.lab-chem-skel-bar {
+  position: relative;
+  overflow: hidden;
+  height: 20px;
+  border-radius: 5px;
+  background-color: color-mix(in oklab, var(--text) 7%, transparent);
+}
+.lab-chem-skel-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--text) 8%, transparent) 45%,
+    transparent 90%
+  );
+  animation: skel-shimmer 1.1s linear infinite;
+  animation-delay: var(--lab-chem-skel-delay, 0s);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lab-chem-skel-bar::after { content: none; }
 }
 .lab-repo-batch-actions {
   flex-shrink: 0;
@@ -2506,28 +2703,28 @@ html.dark .btn-med-secondary--muted:hover {
   font-size: 13px;
 }
 .lab-repo-batch-queue {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
   flex-shrink: 0;
   margin: 0;
-  padding: 8px 12px 10px;
+  padding: 8px 20px 10px;
   border: none;
   border-top: 1px solid var(--divider);
   border-radius: 0;
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
-  z-index: 1;
+  box-shadow: 0 -2px 12px color-mix(in oklab, var(--color-ink) 8%, transparent);
+  z-index: var(--z-floating);
 }
 .lab-repo-batch-queue-header {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
-}
-.lab-repo-batch-queue-title-row {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  min-width: 0;
-  flex: 1;
+  max-width: 1100px;
+  margin: 0 auto 8px;
 }
 .lab-repo-batch-queue-title {
   font-size: 11px;
@@ -2535,11 +2732,11 @@ html.dark .btn-med-secondary--muted:hover {
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--text-muted);
-}
-.lab-repo-batch-queue-meta {
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
+  min-width: 0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .lab-repo-batch-queue-actions {
   display: flex;
@@ -2552,47 +2749,95 @@ html.dark .btn-med-secondary--muted:hover {
   padding: 4px 8px;
   min-height: 0;
 }
-.lab-repo-batch-queue-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  max-height: 120px;
-  overflow: auto;
+/* Detener stays in its slot (visibility, not display) — Cerrar must not slide
+   left/right when a run starts or finishes. */
+.lab-repo-batch-queue-stop--inactive {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Teal workbench §11c "Actualizando pacientes": one teal button (fixed size,
+   never moves or resizes) + one thin progress bar + one mono caption line.
+   No per-patient row list — three prior attempts wrongly built that as the
+   primary treatment; see MISTAKES.md. */
+.lab-repo-batch-queue-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.lab-repo-batch-queue-btn {
+  flex-shrink: 0;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-radius: var(--radius-control);
+  padding: 9px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  cursor: progress;
+}
+.lab-repo-batch-queue-spinner {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: var(--color-on-accent);
+  visibility: hidden;
+  display: inline-block;
+}
+.lab-repo-batch-queue-spinner--active {
+  visibility: visible;
+  animation: btn-spin 700ms linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lab-repo-batch-queue-spinner--active { animation: none; }
+}
+.lab-repo-batch-queue-progress {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 6px;
 }
-.lab-repo-batch-job {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 4px 2px;
-  font-size: 12px;
+.lab-repo-batch-queue-bar {
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--text) 10%, transparent);
+  overflow: hidden;
 }
-.lab-repo-batch-job-name {
-  font-weight: 600;
-  min-width: 0;
+.lab-repo-batch-queue-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  background-size: 60px 100%;
+  background-repeat: no-repeat;
+  transition: width 200ms ease-out;
+  animation: om-sweep 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lab-repo-batch-queue-fill { animation: none; }
+}
+.lab-repo-batch-queue-meta {
+  font-size: 11.5px;
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.lab-repo-batch-job-status {
-  flex-shrink: 0;
-  color: var(--text-muted);
-}
-.lab-repo-batch-job--running .lab-repo-batch-job-status {
-  color: var(--color-accent);
-}
-.lab-repo-batch-job--ok .lab-repo-batch-job-status {
-  color: var(--success, #15803d);
-}
-.lab-repo-batch-job--empty .lab-repo-batch-job-status {
-  color: var(--text-muted);
-}
-.lab-repo-batch-job--error .lab-repo-batch-job-status,
-.lab-repo-batch-job--aborted .lab-repo-batch-job-status {
-  color: var(--danger, #b91c1c);
 }
 .lab-display-prefs-hint {
   margin: 0 0 16px;
@@ -2649,7 +2894,7 @@ html.dark .btn-med-secondary--muted:hover {
 .rpc-switch-track {
   width: 48px;
   height: 28px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--border) 50%, var(--surface));
   border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
   box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.1);
@@ -2838,7 +3083,7 @@ html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36
   flex-shrink: 0;
   width: 18px;
   height: 18px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2872,6 +3117,14 @@ html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36
   letter-spacing: 0.02em;
 }
 html.dark .lab-output-fecha { color: var(--color-accent-soft-text); border-bottom-color: rgba(148, 163, 184, 0.35); }
+/* Fase 5 (2a/2b) — cuando el Día-nav ya muestra la fecha ("18/08/2026" en el picker), el
+   encabezado de fecha repetido dentro de la tarjeta Resultados es ruido que el mockup no
+   tiene (L2486/L2676 empiezan directo en el primer grupo de hora). Solo se oculta cuando el
+   picker tiene historial real (select visible); el reporte recién pegado -sin Día-nav útil-
+   conserva la fecha como único indicador. */
+#lab-output-section:has(.lab-history-date-select:not([hidden])) .lab-output-fecha {
+  display: none;
+}
 
 .lab-hour-group-h {
   font-family: inherit;
@@ -2888,6 +3141,28 @@ html.dark .lab-output-fecha { color: var(--color-accent-soft-text); border-botto
   margin-top: 0;
 }
 html.dark .lab-hour-group-h { border-bottom-color: rgba(148, 163, 184, 0.28); }
+/* Fase 5 (2a/2b) — dentro de Resultados, `lab-results-card.mjs` reescribe el encabezado plano
+   ("HH:MM · Toma…") en dos spans: hora mono grande + etiqueta gris uppercase con el conteo de
+   alterados de esa toma (mockup L2486/L2676). */
+#lab-output-box .lab-hour-group-h {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 0 8px;
+  border-bottom: none;
+  text-transform: none;
+}
+#lab-output-box .lab-hour-group-h:first-child { padding-top: 0; }
+#lab-output-box .lab-hour-time {
+  font: 600 13px/1 var(--font-mono);
+}
+#lab-output-box .lab-hour-label {
+  font: 700 10.5px/1 var(--font-sans, inherit);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
 
 .lab-some-tables-host {
   margin-bottom: 16px;
@@ -3053,6 +3328,69 @@ html.dark .lab-out-ascitis-alert {
   border-radius: 3px;
 }
 .section-lbl { color: var(--section-accent); font-weight: 600; letter-spacing: 0.01em; }
+
+/* Fase 5 (2a/2b) — columnas etiqueta/valores que `renderEntry` (labs-display.mjs) siempre
+   produce ahora. Por defecto quedan en línea (no cambia la lectura en censo/vista previa);
+   dentro de `#lab-output-box` (tarjeta "Resultados" del tab Laboratorio) se convierten en la
+   grilla 64px + 1fr del mockup. */
+.lab-row-label {
+  display: inline;
+  margin-right: 10px;
+}
+.lab-row-values,
+.lab-row-value {
+  display: inline;
+}
+
+#lab-output-box .lab-output-fecha + .out-line,
+#lab-output-box .lab-hour-group-h + .out-line,
+#lab-output-box > .out-line:first-child {
+  border-top: none;
+}
+#lab-output-box .out-line,
+#lab-output-box .out-indent {
+  display: grid;
+  /* minmax en vez de 64px fijo: etiquetas cortas (BH, Cuenta:) siguen alineadas a 64px,
+     pero encabezados largos sin tab (UROCULTIVO, HEMOCULTIVO, FUNGICULTIVO) ya no
+     desbordan la columna y se pegan visualmente al resto de la línea. */
+  grid-template-columns: minmax(64px, max-content) 1fr;
+  gap: 10px 14px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-top: 1px solid var(--divider);
+  white-space: normal;
+  line-height: 1.4;
+}
+html.dark #lab-output-box .out-line,
+html.dark #lab-output-box .out-indent {
+  border-top-color: rgba(148, 163, 184, 0.14);
+}
+#lab-output-box .lab-row-label {
+  display: block;
+  margin-right: 0;
+  font: 700 11px/1.4 var(--font-sans, inherit);
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+#lab-output-box .lab-row-label .section-lbl {
+  color: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+}
+#lab-output-box .lab-row-values {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+#lab-output-box .lab-row-values-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+#lab-output-box .lab-row-value { display: inline-flex; align-items: baseline; }
+/* Líneas de prosa sin tab (ej. EGO) que no traen su propio .lab-row-label: ocupan las dos
+   columnas de la grilla en vez de auto-colocarse campo por campo en la de 64px. */
+#lab-output-box .lab-row-values-full { grid-column: 1 / -1; }
 .indica-meta-bar {
   display: grid;
   grid-template-columns: minmax(7rem, 1fr) minmax(5.5rem, 0.7fr) minmax(12rem, 2fr);
@@ -3110,9 +3448,9 @@ html.dark .lab-out-ascitis-alert {
 .indica-section-body textarea { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 8px 10px; font-size: 13px; font-family: inherit; color: var(--text); background: var(--input-fill); resize: vertical; min-height: 70px; line-height: 1.6; width: 100%; transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out); }
 .indica-section-body textarea:focus { outline: none; border-color: var(--action); background: var(--surface); box-shadow: 0 0 0 3px var(--color-focus-ring); }
 .otros-item { border:1px solid var(--border); border-radius:var(--radius-lg); padding:12px; background:var(--bg); display:flex; flex-direction:column; gap:8px; position:relative; }
-.otros-item input { border:1px solid var(--border); border-radius:6px; padding:7px 10px; font-size:13px; font-family:inherit; background:var(--input-fill); font-weight:600; text-transform:uppercase; width:100%; }
+.otros-item input { border:1px solid var(--border); border-radius:var(--radius-badge); padding:7px 10px; font-size:13px; font-family:inherit; background:var(--input-fill); font-weight:600; text-transform:uppercase; width:100%; }
 .otros-item input:focus { outline:none; border-color:var(--action); box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
-.otros-item textarea { border:1px solid var(--border); border-radius:6px; padding:8px 10px; font-size:13px; font-family:inherit; background:var(--input-fill); resize:vertical; min-height:60px; width:100%; }
+.otros-item textarea { border:1px solid var(--border); border-radius:var(--radius-badge); padding:8px 10px; font-size:13px; font-family:inherit; background:var(--input-fill); resize:vertical; min-height:60px; width:100%; }
 .otros-item textarea:focus { outline:none; border-color:var(--action); box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
 .btn-remove-otro { position:absolute; top:8px; right:8px; background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:2px 6px; border-radius:4px; line-height:1; }
 .btn-remove-otro:hover { color: var(--error); background: var(--color-danger-hover-bg); }
@@ -3188,6 +3526,69 @@ html.dark .lab-out-ascitis-alert {
 .lab-bulk-preview-close:focus-visible {
   outline: 2px solid var(--action);
   outline-offset: 2px;
+}
+/* ── Pegar SOME / Procesar modal (header button → modal) ─── */
+.lab-paste-modal {
+  width: min(640px, calc(100vw - 32px));
+  max-height: min(88vh, 640px);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: var(--border-hairline, 1px solid var(--divider));
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay, var(--shadow-md));
+  color: var(--text);
+}
+.lab-paste-modal-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--divider);
+}
+.lab-paste-modal-head h3 {
+  margin: 0;
+  font-size: calc(15px * var(--density-font, 1));
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+.lab-paste-modal-close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.lab-paste-modal-close:hover {
+  color: var(--text);
+  background: var(--state-hover-bg, color-mix(in srgb, var(--text) 6%, transparent));
+}
+.lab-paste-modal-close:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+}
+.lab-paste-modal-body {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
 }
 .lab-bulk-preview-summary {
   margin: 0;
@@ -3317,6 +3718,43 @@ html.dark .lab-out-ascitis-alert {
   margin: 0;
   padding: 12px 18px 16px;
   border-top: 1px solid var(--divider);
+}
+.lab-bulk-preview-rawtext {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px dashed var(--divider);
+  font-size: calc(12px * var(--density-font, 1));
+  color: var(--text-muted);
+}
+.lab-bulk-preview-rawtext summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.lab-bulk-preview-rawtext summary::-webkit-details-marker {
+  display: none;
+}
+.lab-bulk-preview-rawtext summary::before {
+  content: '▸ ';
+  color: var(--text-muted);
+}
+.lab-bulk-preview-rawtext[open] summary::before {
+  content: '▾ ';
+}
+.lab-bulk-preview-rawtext pre {
+  margin: 6px 0 0;
+  max-height: 240px;
+  overflow: auto;
+  padding: 8px 10px;
+  border-radius: var(--radius-badge);
+  background: var(--surface-inset, rgba(0, 0, 0, 0.18));
+  color: var(--text);
+  font-family: var(--font-mono, monospace);
+  font-size: calc(11px * var(--density-font, 1));
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 html.lab-bulk-preview-modal-open #modal.modal-backdrop.open {
   z-index: var(--z-modal-nested);

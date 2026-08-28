@@ -1,4 +1,4 @@
-/* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
+/* Teal workbench · utilitarian clinical · theme: docs/superpowers/specs/2026-08-17-teal-workbench-ui-design.md */
 /* R+ micro-interactions (transitions.dev-inspired, vanilla CSS) */
 
 @keyframes fade-in {
@@ -38,6 +38,15 @@
   to { transform: rotate(360deg); }
 }
 
+/* Teal workbench spec §11c "om-sweep": a glossy highlight sweeps across the
+   "Actualizando pacientes" progress fill while a batch lab-repo run is in
+   flight. The fill's *width* still reflects real N-of-M progress — only the
+   gloss position is animated. */
+@keyframes om-sweep {
+  0% { background-position: -60px 0; }
+  100% { background-position: calc(100% + 60px) 0; }
+}
+
 @keyframes toast-in {
   from {
     opacity: 0;
@@ -58,6 +67,34 @@
     opacity: 0;
     transform: translateY(-6px) scale(0.98);
   }
+}
+
+/* Teal workbench spec §11c "om-rise" — ephemeral save/undo toast.
+ * A self-contained 4.2s cycle (enter +10px→0, hold ~76%, exit), distinct
+ * from `toast-in` above (which drops from above with scale and has no
+ * built-in hold/exit — it needs a paired JS-driven `toast-out`). Apply
+ * `.om-rise` to run start-to-finish without a class swap. */
+@keyframes om-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  86% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+}
+
+.om-rise {
+  animation: om-rise 4.2s var(--ease-out) 1;
 }
 
 
@@ -124,6 +161,13 @@ textarea.field-shake {
   @keyframes toast-out {
     from { opacity: 1; }
     to { opacity: 0; }
+  }
+
+  @keyframes om-rise {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    86% { opacity: 1; }
+    100% { opacity: 0; }
   }
 
   @keyframes todo-prio-pulse {
@@ -437,5 +481,79 @@ html.motion-sobrio .todo-prio-chip.todo-prio-chip--pulse {
   .ui-pressable:active {
     transform: none;
     transition: none;
+  }
+}
+
+/* ── Value alert pulse — a monitored value crosses out of range ────────
+   Teal workbench spec §11c "om-pulse": two reps, then stops. Never a
+   permanent blink — clinical values must stay readable without motion. */
+@keyframes value-alert-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--color-danger-ring); }
+  45% { box-shadow: 0 0 0 5px var(--color-danger-ring); }
+}
+
+.value-alert-pulse {
+  animation: value-alert-pulse 1.4s var(--ease-out) 2;
+}
+
+/* ── Progress sweep — vitals-round progress bar fill, on value change only ── */
+@keyframes progress-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.progress-sweep-fill {
+  animation: progress-sweep 0.5s var(--ease-out) 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .value-alert-pulse,
+  .progress-sweep-fill {
+    animation: none !important;
+  }
+}
+
+/* ── New-row entrance for full-rebuild list renders ────────────────────
+   Apply only to rows that are genuinely new versus the previous paint —
+   never blanket-applied to every row, or a background refresh (LAN sync,
+   polling) would re-fade a list that hasn't actually changed. */
+.row-enter {
+  animation: fade-in var(--dur-fast) var(--ease-out);
+}
+
+/* ── Row exit for full-rebuild list renders ────────────────────────────
+   A cloned "ghost" of a row that just left the data (todo completed off the
+   list, patient no longer in census) collapses and fades instead of
+   vanishing the instant the list rebuilds. Generous max-height: only needs
+   to bound the row without clipping it, not match its exact height. */
+@keyframes row-exit {
+  from {
+    opacity: 1;
+    max-height: 160px;
+    margin-bottom: 8px;
+  }
+  to {
+    opacity: 0;
+    max-height: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+.row-exit {
+  animation: row-exit var(--dur-normal) var(--ease-out) forwards;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row-enter,
+  .row-exit {
+    animation: none !important;
+  }
+  .row-exit {
+    opacity: 0;
+    max-height: 0;
   }
 }

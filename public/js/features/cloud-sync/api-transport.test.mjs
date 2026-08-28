@@ -25,4 +25,19 @@ describe('cloudSyncHttpFetch', () => {
     assert.equal(res.ok, true);
     assert.deepEqual(await res.json(), { ok: true });
   });
+
+  it('aborts a hung browser fetch instead of waiting forever', async () => {
+    const originalFetch = globalThis.fetch;
+    let receivedSignal;
+    globalThis.fetch = (_url, init) => {
+      receivedSignal = init.signal;
+      return new Promise(() => {}); // never resolves, like a stuck network request
+    };
+    try {
+      cloudSyncHttpFetch('https://example.com/api/sync/v1/auth/login', { method: 'POST' });
+      assert.ok(receivedSignal instanceof AbortSignal);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });

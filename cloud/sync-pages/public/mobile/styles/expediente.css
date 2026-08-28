@@ -134,6 +134,13 @@ html:not(.dark) .lab-history-toggle:hover { background: rgba(0,0,0,0.06); }
   white-space: nowrap;
   padding: 4px 0;
 }
+.med-turno-apoyo {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.med-turno-apoyo[hidden] { display: none !important; }
 .med-active-fecha:not([hidden])::before {
   content: "\00B7";
   margin-right: 8px;
@@ -204,7 +211,10 @@ html.dark .med-receta-row:hover { background: rgba(96, 165, 250, 0.07); }
 .med-receta-checkcell input[type="checkbox"] {
   width: 18px; height: 18px; margin: 0; cursor: pointer; accent-color: var(--action);
 }
-.med-receta-name { font-size: 13px; line-height: 1.45; color: var(--text); min-width: 0; }
+.med-receta-name {
+  font-size: 13px; line-height: 1.45; color: var(--text); min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .med-receta-destcell { min-width: 0; display: flex; align-items: center; }
 .med-receta-diacell {
   display: flex; justify-content: flex-end; align-items: center; min-width: 0;
@@ -238,7 +248,7 @@ html.dark .med-receta-row--needs-dest .med-receta-dest-label {
 .med-receta-dia {
   font-size: 10px; font-weight: 700;
   background: var(--lab-chip-bg); color: var(--lab-chip-txt);
-  padding: 3px 8px; border-radius: 999px; white-space: nowrap;
+  padding: 3px 8px; border-radius: var(--radius-pill); white-space: nowrap;
 }
 .med-nota-toolbar { display: flex; flex-direction: column; gap: 12px; }
 .med-nota-hint { margin: 0; font-size: 12px; line-height: 1.45; color: var(--text-muted); }
@@ -268,7 +278,7 @@ html.dark .med-soap-preview-sec--otros .med-soap-preview-chip {
   border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.08);
 }
 .med-insulin-pump-alg-pill {
-  display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px;
+  display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: var(--radius-pill);
   font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
   background: var(--color-accent-soft);
   color: var(--color-accent-soft-text);
@@ -372,6 +382,46 @@ html.dark .med-output-tab-pill {
 }
 html.dark .med-output-tab.active {
   color: var(--text);
+}
+/* Texto de egreso — collapsed teaser row (mockup #4a). Full text lives in the
+   "Texto de egreso" modal opened via openMedEgresoModal(); this row is only a
+   compact summary + entry point, never the full medication list. */
+.med-egreso-teaser {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: var(--radius-container);
+}
+.med-egreso-teaser-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.med-egreso-teaser-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.med-egreso-teaser-preview {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.med-egreso-teaser-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 .lab-history-meta { font-size: 13px; color: var(--text); flex: 1; min-width: 140px; }
 .lab-history-actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
@@ -639,7 +689,7 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: calc(16px * var(--density-space, 1)) calc(18px * var(--density-space, 1)) calc(12px * var(--density-space, 1));
+  padding: calc(12px * var(--density-space, 1)) calc(16px * var(--density-space, 1));
   border-bottom: 1px solid var(--divider);
   flex-shrink: 0;
 }
@@ -657,10 +707,10 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   border: none;
   background: transparent;
   color: var(--text-muted);
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  min-height: 28px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   padding: 0;
   margin: 0;
   display: inline-flex;
@@ -1050,7 +1100,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   margin: 0 0 12px;
   padding: 4px;
   border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
 }
 
@@ -1060,7 +1110,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   gap: 6px;
   margin: 0;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
@@ -1077,7 +1127,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   margin: 0 0 10px;
   padding: 8px 10px;
   font-size: 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-field);
   background: color-mix(in oklab, var(--warn) 18%, transparent);
   color: inherit;
 }
@@ -1133,7 +1183,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   padding: 8px 10px;
   font-size: 12px;
   line-height: 1.45;
-  border-radius: 8px;
+  border-radius: var(--radius-field);
   color: var(--text-muted);
   background: color-mix(in oklab, var(--surface) 90%, var(--bg));
   border: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
@@ -1146,7 +1196,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   justify-content: space-between;
   gap: 12px;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-field);
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
   border: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
 }
@@ -1257,7 +1307,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   height: 10px;
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--border) 80%, var(--text-muted));
   cursor: pointer;
 }
@@ -1417,7 +1467,7 @@ html.dark .drive-import-lab-status--new {
   line-height: 1.5;
   white-space: pre-wrap;
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   border: 1px solid color-mix(in oklab, var(--border) 45%, transparent);
 }
 
@@ -1426,7 +1476,7 @@ html.dark .drive-import-lab-status--new {
   flex-direction: column;
   gap: 6px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-field);
   border: 1px solid color-mix(in oklab, var(--border) 45%, transparent);
   background: color-mix(in oklab, var(--surface) 96%, var(--bg));
 }
@@ -1449,7 +1499,7 @@ html.dark .drive-import-lab-status--new {
   box-sizing: border-box;
   padding: 8px 10px;
   border: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   font-family: var(--font-sans, system-ui, sans-serif);
   font-size: 12px;
   line-height: 1.45;
@@ -1461,7 +1511,7 @@ html.dark .drive-import-lab-status--new {
   margin: 0 0 10px;
   padding: 10px 12px;
   border: 1px solid color-mix(in oklab, var(--color-accent) 35%, var(--border));
-  border-radius: 8px;
+  border-radius: var(--radius-field);
   background: color-mix(in oklab, var(--color-accent) 8%, var(--surface));
 }
 
@@ -1483,7 +1533,7 @@ html.dark .drive-import-lab-status--new {
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
   background: var(--surface);
   font-size: 12px;

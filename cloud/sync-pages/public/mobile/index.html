@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<script>globalThis.__RPC_CLOUD_MOBILE__=true;globalThis.__RPC_MOBILE_WEB__=true;try{document.documentElement.dataset.cloudMobile="1";document.documentElement.classList.add("rpc-cloud-mobile");}catch(_e){}(function(){function g(){if(document.getElementById("rpc-cloud-mobile-gate"))return;var e=document.createElement("div");e.id="rpc-cloud-mobile-gate";e.className="rpc-cloud-mobile-gate ui-overlay-scrim";e.setAttribute("aria-live","polite");e.innerHTML='<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="dialog" aria-modal="true"><div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4><p class="rpc-cloud-mobile-modal__sub">Conectando al turno…</p></div><div class="rpc-cloud-mobile-modal__body rpc-cloud-mobile-modal__body--center"><span class="rpc-cloud-mobile-spinner" aria-hidden="true"></span></div></div>';document.body&&document.body.appendChild(e);document.body&&document.body.classList.add("rpc-cloud-mobile-gated")}document.body?g():document.addEventListener("DOMContentLoaded",g);setTimeout(function(){if(globalThis.__RPC_CLOUD_MOBILE_BUNDLE_BOOTED__)return;var g=document.getElementById("rpc-cloud-mobile-gate");if(!g||g.hidden)return;g.innerHTML='<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="alert"><div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4><p class="rpc-cloud-mobile-modal__sub">No se pudo cargar la app (v815-1786902557502).</p></div><div class="rpc-cloud-mobile-modal__body"><p>Cierra esta pestaña por completo y vuelve a abrir el enlace del turno.</p><button type="button" class="btn-save" onclick="location.reload()">Recargar</button></div></div>';},18000);})();</script>
+<script>globalThis.__RPC_CLOUD_MOBILE__=true;globalThis.__RPC_MOBILE_WEB__=true;globalThis.__RPC_CLOUD_MOBILE_APP_VERSION__="8.2.3";try{document.documentElement.dataset.cloudMobile="1";document.documentElement.classList.add("rpc-cloud-mobile");}catch(_e){}(function(){function g(){if(document.getElementById("rpc-cloud-mobile-gate"))return;var e=document.createElement("div");e.id="rpc-cloud-mobile-gate";e.className="rpc-cloud-mobile-gate ui-overlay-scrim";e.setAttribute("aria-live","polite");e.innerHTML='<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="dialog" aria-modal="true"><div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4><p class="rpc-cloud-mobile-modal__sub">Conectando al turno…</p></div><div class="rpc-cloud-mobile-modal__body rpc-cloud-mobile-modal__body--center"><span class="rpc-cloud-mobile-spinner" aria-hidden="true"></span></div></div>';document.body&&document.body.appendChild(e);document.body&&document.body.classList.add("rpc-cloud-mobile-gated")}document.body?g():document.addEventListener("DOMContentLoaded",g);setTimeout(function(){if(globalThis.__RPC_CLOUD_MOBILE_BUNDLE_BOOTED__)return;var g=document.getElementById("rpc-cloud-mobile-gate");if(!g||g.hidden)return;g.innerHTML='<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="alert"><div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4><p class="rpc-cloud-mobile-modal__sub">No se pudo cargar la app (v823-1787930359135).</p></div><div class="rpc-cloud-mobile-modal__body"><p>Cierra esta pestaña por completo y vuelve a abrir el enlace del turno.</p><button type="button" class="btn-save" onclick="location.reload()">Recargar</button></div></div>';},18000);})();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' http: https: ws: wss:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
@@ -16,8 +16,8 @@
 <meta name="theme-color" content="#4a52e8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
 <link rel="stylesheet" href="/mobile/tokens.css">
 <link rel="stylesheet" href="/mobile/styles/app.bundle.css">
 <script>
@@ -186,6 +186,8 @@
 
 
 
+
+
 </head>
 <body>
 <a class="skip-to-main" href="#main-area">Saltar al contenido principal</a>
@@ -269,6 +271,30 @@
           <input type="checkbox" id="lab-pref-quick-output" class="rpc-switch-input" role="switch" aria-labelledby="lab-pref-quick-output-lbl" onchange="onLabDisplayPrefsChanged()" />
           <span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span>
         </label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="lab-paste-modal-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal lab-paste-modal" role="dialog" aria-modal="true" aria-labelledby="lab-paste-modal-title" onclick="event.stopPropagation()">
+    <div class="lab-paste-modal-head">
+      <h3 id="lab-paste-modal-title">Pegar SOME / Procesar</h3>
+      <button type="button" class="lab-paste-modal-close" onclick="closeLabPasteModal()" aria-label="Cerrar">×</button>
+    </div>
+    <div class="card-body lab-paste-modal-body">
+      <div class="field-group">
+        <label for="lab-input">Pega reportes SOME (uno o varios días; separador entre pacientes distintos)</label>
+        <textarea id="lab-input" rows="10" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" placeholder="Copia reportes SOME completos desde «Expediente:»…&#10;Varios días del mismo paciente van seguidos.&#10;Entre pacientes distintos usa el separador."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button id="btn-procesar" class="btn-generate ui-pressable" onclick="procesarReporte()" style="min-width:140px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Procesar
+        </button>
+        <button type="button" id="btn-lab-manual-entry" class="btn-med-secondary" onclick="openLabManualEntryModal()" title="Captura manual de un estudio (lab externo)">Labs externos</button>
+        <button type="button" id="btn-lab-patient-separator" class="btn-med-secondary" onclick="insertLabPatientSeparator()">Separador de paciente</button>
+        <button type="button" class="btn-med-secondary" onclick="limpiarReporte()">Limpiar</button>
       </div>
     </div>
   </div>
@@ -615,7 +641,7 @@
 <header>
   <h1 id="app-brand" role="button" tabindex="0" title="Abrir Mi Perfil" aria-label="R+, abrir Mi Perfil" onclick="openProfileFromHeader(event)" onkeydown="if(event.key==='Enter'||event.key===' '){openProfileFromHeader(event);}">R+</h1>
   <div class="header-center" aria-live="polite">
-    <span id="today-date"></span>
+    <span id="today-date" role="button" tabindex="0" aria-haspopup="dialog" aria-label="Abrir calendario" title="Calendario" onclick="openHeaderDatePopoverFromChrome(event)" onkeydown="if(event.key==='Enter'||event.key===' '){openHeaderDatePopoverFromChrome(event);}"></span>
     <span id="estado-actual-meta" class="estado-actual-meta"></span>
     <span id="header-context" class="header-context">
       <span id="header-context-patient" class="header-context-patient"></span>
@@ -631,12 +657,6 @@
         <svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/></svg>
       </button>
 
-      <nav id="header-pase-breadcrumb" class="header-pase-breadcrumb" style="display:none;" aria-label="Navegación desde Pase">
-        <button type="button" class="header-pase-breadcrumb-link" onclick="returnToPaseBoardFromDetail()">Pase</button>
-        <span class="header-pase-breadcrumb-sep" aria-hidden="true">›</span>
-        <span id="header-pase-breadcrumb-section" class="header-pase-breadcrumb-section"></span>
-      </nav>
-      <button type="button" id="btn-header-return-pase" class="header-return-pase-btn" style="display:none;" onclick="returnToPaseBoardFromDetail()" title="Volver al resumen Pase" aria-label="Volver al resumen Pase">← Pase</button>
       <button type="button" id="btn-export-censo-header" class="btn-export-censo-header" style="display:none;" onclick="exportCensoPdfFromHelp()" title="PDF de guardia con todos los pacientes activos">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
         Censo PDF
@@ -645,7 +665,11 @@
         <button type="button" class="header-mode-seg-btn" data-mode="sala" onclick="setWorkModeFromHeader('sala')" aria-pressed="false" title="Modo Sala — Estado actual, Historia, Listado de problemas">Sala</button>
         <button type="button" class="header-mode-seg-btn" data-mode="interconsulta" onclick="setWorkModeFromHeader('interconsulta')" aria-pressed="false" title="Modo Interconsulta — Nota de evolución, Indicaciones">Interconsulta</button>
         <button type="button" class="header-mode-seg-btn" data-mode="guardia" onclick="setWorkModeFromHeader('guardia')" aria-pressed="false" title="Guardia — censo, entrega y turno activo">Guardia</button>
-        <button type="button" class="header-mode-seg-btn" data-mode="pase" onclick="setWorkModeFromHeader('pase')" aria-pressed="false" title="Modo Pase — vista compacta de ronda">Pase</button>
+        <div class="header-mode-seg-dots" aria-hidden="true">
+          <span class="header-mode-seg-dot" data-mode="sala"></span>
+          <span class="header-mode-seg-dot" data-mode="interconsulta"></span>
+          <span class="header-mode-seg-dot" data-mode="guardia"></span>
+        </div>
       </div>
     </div>
     <span id="pending-jobs-pill" class="pending-jobs-pill" role="status" aria-live="polite" aria-atomic="true" title="Tareas en curso"></span>
@@ -722,6 +746,7 @@
         <div class="help-learn-advanced-body">
           <button type="button" class="help-tour-btn" id="btn-export-censo" style="display:none;" onclick="exportCensoPdfFromHelp()">Exportar censo (PDF)</button>
           <button type="button" class="help-tour-btn" id="btn-start-presentation" onclick="togglePresentationModeFromHelp()">Modo presentación (DEMO PÉREZ)</button>
+          <button type="button" class="help-tour-btn" id="btn-seed-guardia-census" style="display:none;" onclick="seedPitchGuardiaCensusFromHelp()">Censo de guardia demo (25 pacientes)</button>
           <button type="button" class="help-tour-btn" onclick="importBundledDemoPerez()">Importar DEMO PÉREZ (JSON incluido)</button>
         </div>
       </details>
@@ -838,19 +863,6 @@
         <button type="button" class="btn-patient-bulk-cancel" onclick="cancelPatientBulkSelect()">Cancelar</button>
       </div>
     </div>
-    <div id="lab-repo-batch-queue" class="lab-repo-batch-queue" hidden>
-      <div class="lab-repo-batch-queue-header">
-        <div class="lab-repo-batch-queue-title-row">
-          <span class="lab-repo-batch-queue-title">Cola labs</span>
-          <span id="lab-repo-batch-queue-meta" class="lab-repo-batch-queue-meta"></span>
-        </div>
-        <div class="lab-repo-batch-queue-actions">
-          <button type="button" class="btn-med-secondary lab-repo-batch-queue-stop" id="lab-repo-batch-queue-stop" hidden>Detener</button>
-          <button type="button" class="btn-med-secondary" id="lab-repo-batch-queue-dismiss" onclick="dismissLabRepoBatchQueue()">Cerrar</button>
-        </div>
-      </div>
-      <ul id="lab-repo-batch-queue-list" class="lab-repo-batch-queue-list"></ul>
-    </div>
   </aside>
 
   <div class="main-col">
@@ -894,12 +906,9 @@
     </div>
     <main id="main-area">
 
-    <div id="appcontent-pase" class="appcontent-pase app-tab-panel-hidden" style="flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
-      <div id="pase-board-scroll" class="pase-board-scroll"></div>
-    </div>
-
     <div id="appcontent-guardia" class="appcontent-guardia app-tab-panel-hidden" style="flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
       <div id="guardia-board-scroll" class="guardia-board-scroll">
+        <div id="guardia-mode-frame" class="wb-mode-frame-mount" aria-label="Guardia"></div>
         <div id="guardia-trust-strip" class="guardia-trust-strip" hidden aria-label="Estado Nube, sala y equipo"></div>
         <div id="guardia-phase-bar" class="guardia-phase-bar" hidden aria-label="Estado del turno de guardia"></div>
         <p id="guardia-entrega-phase-status" class="guardia-entrega-phase-status visually-hidden" aria-live="polite" hidden></p>
@@ -908,7 +917,6 @@
         <section class="guardia-panel guardia-panel--metrics" id="guardia-metrics-panel" aria-label="Resumen de guardia">
           <div class="guardia-metrics-toolbar" id="guardia-census-scope">
             <div id="guardia-summary" class="guardia-summary guardia-summary--compact" role="group" aria-label="Indicadores del turno"></div>
-            <button type="button" id="btn-guardia-entrega-phase" class="btn-guardia-entrega-phase" aria-pressed="false" title="Iniciar entrega al R1 de guardia de tu sala">Entrega</button>
             <button type="button" id="btn-guardia-mode-toggle" class="btn-guardia-mode btn-guardia-mode--compact" aria-pressed="false" title="Filtro de la grilla: todos los pacientes en tu alcance o solo los entregados a ti.">
               <span class="guardia-mode-label">Censo: todos</span>
               <span class="guardia-mode-switch" aria-hidden="true"></span>
@@ -919,10 +927,15 @@
         <section class="guardia-panel guardia-panel--vitals" id="guardia-vitals-section" hidden aria-label="Signos vitales del turno">
           <div id="guardia-vitals-feed" class="guardia-vitals-feed"></div>
         </section>
-        <section class="guardia-panel guardia-panel--census" aria-label="Censo de pacientes">
-          <div id="guardia-census-head" class="guardia-census-head"></div>
-          <div id="guardia-census-grid" class="patient-chips-grid"></div>
-        </section>
+        <div class="guardia-board-columns">
+          <section class="guardia-panel guardia-panel--census" aria-label="Censo de pacientes">
+            <div id="guardia-census-head" class="guardia-census-head"></div>
+            <div id="guardia-census-grid" class="patient-chips-grid"></div>
+          </section>
+          <aside class="guardia-board-side" aria-label="Signos recibidos de internos">
+            <div id="guardia-signos-recibidos"></div>
+          </aside>
+        </div>
       </div>
     </div>
 
@@ -936,36 +949,15 @@
       <div class="main-work-scroll lab-work-scroll" id="lab-inner-labs">
 
         <div id="lab-input-section" class="card" style="flex-shrink:0;">
-          <div class="card-header card-header-row">
-            <span class="lab-report-card-title">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="5" y="5" width="6" height="6" rx="1"/><rect x="13" y="5" width="6" height="6" rx="1"/><rect x="5" y="13" width="6" height="6" rx="1"/><rect x="13" y="13" width="6" height="6" rx="1"/></svg>
-              Reporte de Laboratorio
-            </span>
+          <div class="card-header card-header-row lab-report-header-row--actions-only">
             <div class="card-header-actions lab-report-header-actions">
+              <button type="button" id="btn-lab-paste" class="btn-med-secondary" onclick="openLabPasteModal()" title="Pegar reporte SOME y procesar">Pegar SOME</button>
               <button type="button" id="btn-lab-repo-batch" class="btn-med-secondary" onclick="openLabRepoBatchModal()" title="Actualiza labs desde el repositorio (paciente activo o mi equipo)">Actualizar labs</button>
               <button type="button" class="card-header-soft-btn btn-lab-display-prefs" onclick="openLabDisplayPrefsModal()" title="Vista de laboratorio (BH extendida, gasometría extendida, salida rápida)" aria-label="Opciones de vista de laboratorio">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               </button>
             </div>
           </div>
-          <details class="lab-paste-details">
-            <summary>Pegar SOME / Procesar</summary>
-          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
-            <div class="field-group">
-              <label for="lab-input">Pega reportes SOME (uno o varios días; separador entre pacientes distintos)</label>
-              <textarea id="lab-input" rows="10" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" placeholder="Copia reportes SOME completos desde «Expediente:»…&#10;Varios días del mismo paciente van seguidos.&#10;Entre pacientes distintos usa el separador."></textarea>
-            </div>
-            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-              <button id="btn-procesar" class="btn-generate ui-pressable" onclick="procesarReporte()" style="min-width:140px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                Procesar
-              </button>
-              <button type="button" id="btn-lab-manual-entry" class="btn-med-secondary" onclick="openLabManualEntryModal()" title="Captura manual de un estudio (lab externo)">Labs externos</button>
-              <button type="button" id="btn-lab-patient-separator" class="btn-med-secondary" onclick="insertLabPatientSeparator()">Separador de paciente</button>
-              <button type="button" class="btn-med-secondary" onclick="limpiarReporte()">Limpiar</button>
-            </div>
-          </div>
-          </details>
         </div>
 
         <div id="lab-banner" class="card lab-banner--detected" style="display:none;flex-shrink:0;">
@@ -989,7 +981,7 @@
           <div class="card-header card-header-row lab-output-card-header">
             <span class="lab-output-card-title" style="display:flex;align-items:center;gap:8px;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              Resultados
+              <span id="lab-output-title-text">Resultados</span>
             </span>
             <div class="lab-output-header-tools">
               <div class="lab-history-date-picker">
@@ -1004,6 +996,7 @@
                   </button>
                 </div>
               </div>
+              <button type="button" class="lab-output-copy-btn" onclick="copiarLabsAlPortapapeles()" title="Copiar resultados al portapapeles">Copiar</button>
               <details class="lab-output-more">
                 <summary class="lab-output-more-btn" aria-label="Más acciones del historial">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
@@ -1081,9 +1074,10 @@
           <div class="card-header card-header-row med-active-card-header">
             <span class="med-active-card-title">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
-              Medicamentos del turno
+              <span id="med-turno-title-text">Medicamentos del turno</span>
             </span>
             <span class="med-active-header-actions">
+              <span id="med-turno-apoyo" class="med-turno-apoyo" hidden></span>
               <button type="button" class="btn-med-secondary" id="med-import-open-btn" onclick="openMedRecetaPasteModal()" title="Pegar listado SOME del hospital">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 Importar SOME
@@ -1099,26 +1093,20 @@
           </div>
         </div>
 
-        <div id="med-output-section" class="card" style="flex-shrink:0;">
-          <div class="card-header card-header-row">
-            <span style="display:flex;align-items:center;gap:8px;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              Texto para nota de egreso
-            </span>
-            <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <span class="med-output-tabs" id="med-output-tabs-track" role="tablist" aria-label="Vista de texto de medicamentos" data-active="full">
-                <span class="med-output-tab-pill" aria-hidden="true"></span>
-                <button id="med-tab-full" type="button" role="tab" aria-selected="true" class="med-output-tab active" onclick="setMedOutputTab('full')">Completa</button>
-                <button id="med-tab-simple" type="button" role="tab" aria-selected="false" class="med-output-tab" onclick="setMedOutputTab('simple')">Nombre + Día</button>
-              </span>
-              <button type="button" class="card-header-soft-btn card-header-soft-btn-secondary" onclick="copiarMedicamentosAlPortapapeles()">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                Copiar
-              </button>
-            </span>
+        <div id="med-output-section" class="card med-egreso-teaser" style="flex-shrink:0;">
+          <div class="med-egreso-teaser-info">
+            <span class="med-egreso-teaser-label">Texto de egreso</span>
+            <p id="med-egreso-preview" class="med-egreso-teaser-preview"></p>
           </div>
-          <div class="card-body">
-            <pre id="med-output" style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.6;margin:0;color:var(--text);"></pre>
+          <div class="med-egreso-teaser-actions">
+            <button type="button" class="card-header-soft-btn" onclick="copiarMedicamentosAlPortapapeles()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copiar
+            </button>
+            <button type="button" class="card-header-soft-btn" onclick="openMedEgresoModal()" title="Ver texto de egreso en una ventana">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Abrir texto de egreso
+            </button>
           </div>
         </div>
         </div>
@@ -1199,6 +1187,8 @@
     </div>
 
     <div id="appcontent-nota" role="tabpanel" aria-labelledby="apptab-nota" aria-hidden="false" style="flex-direction:column;flex:1;overflow:hidden;">
+      <div id="interconsulta-mode-frame" class="wb-mode-frame-mount" hidden aria-label="Interconsulta"></div>
+      <div id="ic-board-mount" class="ic-board-view" hidden aria-label="Tablero de equipos de interconsulta"></div>
       <div class="empty-state" id="empty-state">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
         <h3 class="empty-state-title">Elige un paciente para ver el expediente</h3>
@@ -1209,24 +1199,7 @@
         </div>
       </div>
       <div id="patient-view" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
-        <div id="patient-ronda-overview" class="patient-ronda-overview" aria-label="Vista ronda">
-          <header class="ronda-overview-header">
-            <div>
-              <h2 class="ronda-overview-title" id="patient-ronda-patient-label">Paciente</h2>
-              <p class="ronda-overview-sub" id="patient-ronda-patient-meta"></p>
-            </div>
-            <div class="ronda-overview-header-actions">
-              <button type="button" class="secondary" onclick="openFullExpedienteFromRound(null)">Expediente completo</button>
-            </div>
-          </header>
-          <div class="ronda-overview-scroll">
-            <div id="patient-ronda-dashboard-host" class="patient-dash"></div>
-          </div>
-        </div>
         <div id="patient-expediente-classic" class="patient-expediente-classic">
-        <div id="patient-ronda-fullbar" class="patient-ronda-fullbar" aria-hidden="true">
-          <button type="button" onclick="returnToRoundOverview()">Resumen de ronda</button>
-        </div>
         <div class="exp-expediente-nav">
           <nav id="exp-group-row" class="exp-group-row" aria-label="Secciones del expediente"></nav>
           <div class="inner-tab-bar">
@@ -1245,6 +1218,11 @@
             <button type="button" class="inner-tab exp-consolidated-tab" id="itab-salida" onclick="switchConsolidatedTab('salida')" style="display:none;" aria-label="Salida">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
               Salida
+            </button>
+            <button type="button" class="inner-tab wb-pendientes-tab" id="itab-todo" role="tab" aria-selected="false" data-exp-segment="todo" onclick="switchInnerTab('todo')" aria-label="Pendientes" title="Pendientes">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+              Pendientes
+              <span class="wb-pendientes-tab-badge" id="exp-pendientes-badge-classic" hidden></span>
             </button>
           </div>
           <div class="exp-expediente-nav-actions" id="exp-paciente-datos-actions" hidden>
@@ -1311,6 +1289,33 @@
     </div>
 
   </main>
+  </div>
+
+  <div id="lab-repo-batch-queue" class="lab-repo-batch-queue" hidden>
+    <div class="lab-repo-batch-queue-header">
+      <span class="lab-repo-batch-queue-title">Actualizar labs</span>
+      <div class="lab-repo-batch-queue-actions">
+        <button type="button" class="btn-med-secondary lab-repo-batch-queue-stop lab-repo-batch-queue-stop--inactive" id="lab-repo-batch-queue-stop" disabled>Detener</button>
+        <button type="button" class="btn-med-secondary" id="lab-repo-batch-queue-dismiss" onclick="dismissLabRepoBatchQueue()">Cerrar</button>
+      </div>
+    </div>
+    <!-- Teal workbench §11c "Actualizando pacientes": one button + one thin
+         progress bar + one caption line. The button never resizes or moves
+         (see .lab-repo-batch-queue-btn) — only the spinner and label text
+         change. No per-patient row list here (see MISTAKES.md — three prior
+         attempts wrongly built a per-row job list as the primary treatment). -->
+    <div class="lab-repo-batch-queue-row">
+      <span id="lab-repo-batch-queue-btn" class="lab-repo-batch-queue-btn" aria-hidden="true">
+        <span id="lab-repo-batch-queue-spinner" class="lab-repo-batch-queue-spinner"></span>
+        <span id="lab-repo-batch-queue-btn-label">Actualizando</span>
+      </span>
+      <div class="lab-repo-batch-queue-progress">
+        <div class="lab-repo-batch-queue-bar">
+          <div id="lab-repo-batch-queue-fill" class="lab-repo-batch-queue-fill"></div>
+        </div>
+        <span id="lab-repo-batch-queue-meta" class="lab-repo-batch-queue-meta"></span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1587,10 +1592,10 @@
 
 <div class="modal-backdrop" id="todo-due-modal-backdrop" aria-hidden="true">
   <div class="modal todo-due-modal" role="dialog" aria-modal="true" aria-labelledby="todo-due-modal-title" onclick="event.stopPropagation()">
-    <header class="todo-due-modal-head">
+    <div class="todo-due-modal-head">
       <h3 id="todo-due-modal-title">Fecha límite</h3>
       <p class="todo-due-modal-lead">Atajo o fecha libre · recordatorio opcional al vencer</p>
-    </header>
+    </div>
     <div class="todo-due-modal-presets-zone" id="todo-due-modal-presets-zone">
       <div class="todo-due-modal-presets-head">
         <span class="profile-field-label todo-due-modal-section-label">Atajos</span>
@@ -1945,6 +1950,22 @@
   </div>
 </div>
 
+<!-- ── Nota de evolución (SOAP) — screen 9a ─────────────── -->
+<div class="soap-modal-backdrop" id="nota-evolucion-modal-backdrop" aria-hidden="true">
+  <div class="soap-modal" role="dialog" aria-modal="true" aria-labelledby="nota-evolucion-modal-title">
+    <div class="soap-modal-header">
+      <div class="soap-modal-header-title" id="nota-evolucion-modal-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" focusable="false"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>Nota de evolución</span>
+      </div>
+    </div>
+    <div id="nota-evolucion-mount"></div>
+    <div class="soap-modal-footer">
+      <button type="button" class="btn-soap-only-copy" onclick="closeNotaEvolucionPanel()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Focus mode pill -->
 <div id="focus-mode-pill" aria-hidden="true">Modo enfoque · F6 para salir</div>
 
@@ -2220,7 +2241,6 @@
           <div class="settings-form-label" data-i18n="settings.uiDensity">Modo de vista</div>
           <div class="settings-theme-row settings-theme-row--fit" role="group" aria-label="Modo de vista" data-i18n-aria-label="settings.uiDensity">
             <button type="button" class="settings-theme-btn" id="settings-density-normal" onclick="setUiDensity('normal')" data-i18n="settings.densityNormal">Normal</button>
-            <button type="button" class="settings-theme-btn" id="settings-density-pase" onclick="setUiDensity('pase')" data-i18n="settings.densityPase">Pase</button>
           </div>
           </div>
           <div class="settings-form-row">
@@ -2238,7 +2258,7 @@
             <button type="button" class="settings-theme-btn" id="settings-motion-expresivo" onclick="setMotionMode('expresivo')" data-i18n="settings.motionExpresivo">Expresivo</button>
           </div>
           </div>
-          <p class="settings-form-foot overview-hint settings-acc-hint" data-i18n="settings.appearanceFoot">⌘G/I/P/S cambian modo Guardia/Inter/Pase/Sala. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.</p>
+          <p class="settings-form-foot overview-hint settings-acc-hint" data-i18n="settings.appearanceFoot">⌘G/I/S cambian modo Guardia/Inter/Sala. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.</p>
         </div>
       </details>
 
@@ -2789,7 +2809,7 @@
 <div id="connection-dropdown-backdrop" class="modal-backdrop connection-dropdown-backdrop" aria-hidden="true">
   <div class="modal connection-dropdown connection-dropdown-modal material-glass" id="connection-dropdown" role="dialog" aria-modal="true" aria-labelledby="connection-dropdown-title" onclick="event.stopPropagation()">
     <h2 class="visually-hidden" id="connection-dropdown-title">Conexión · R+ Cloud</h2>
-    <header class="connection-dropdown-modal-head">
+    <div class="connection-dropdown-modal-head">
       <button type="button" class="connection-dropdown-back" id="btn-connection-dropdown-back" data-cloud-action="nav-back" hidden>
         <span class="connection-dropdown-back-chevron" aria-hidden="true">‹</span>
         <span class="connection-dropdown-back-label">Conexión</span>
@@ -2801,8 +2821,8 @@
           <p class="connection-dropdown-head-sub">Red local del hospital. Conéctate a la sala de guardia y administra tu equipo.</p>
         </div>
       </div>
-      <button type="button" class="clinical-teams-dismiss" id="btn-connection-dropdown-close" aria-label="Cerrar">×</button>
-    </header>
+      <button type="button" class="clinical-teams-dismiss" id="btn-connection-dropdown-close" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
     <div class="connection-dropdown-body" id="connection-dropdown-scroll">
       <div id="lan-connection-panel-root" class="lan-connection-panel-root"></div>
     </div>
@@ -2811,40 +2831,40 @@
 
 <div id="equipos-lista-backdrop" class="modal-backdrop equipos-lista-backdrop" aria-hidden="true">
   <div class="modal equipos-lista-modal" role="dialog" aria-modal="true" aria-labelledby="equipos-lista-title" onclick="event.stopPropagation()">
-    <header class="equipos-lista-modal-head">
+    <div class="equipos-lista-modal-head">
       <h3 id="equipos-lista-title">R+ Lista de espera</h3>
-      <button type="button" class="clinical-teams-dismiss" id="btn-equipos-lista-close" aria-label="Cerrar">×</button>
-    </header>
+      <button type="button" class="clinical-teams-dismiss" id="btn-equipos-lista-close" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
     <div id="equipos-lista-panel-body" class="equipos-lista-panel-body"></div>
   </div>
 </div>
 
 <div id="clinical-teams-backdrop" class="modal-backdrop clinical-teams-backdrop" aria-hidden="true">
   <div class="modal clinical-teams-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-teams-title" onclick="event.stopPropagation()">
-    <header class="clinical-teams-modal-head">
+    <div class="clinical-teams-modal-head">
       <h3 id="clinical-teams-title">Mi rotación</h3>
-      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-teams-close" aria-label="Cerrar">×</button>
-    </header>
+      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-teams-close" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
     <div id="clinical-teams-panel-body" class="clinical-teams-panel-body"></div>
   </div>
 </div>
 
 <div id="clinical-directory-users-backdrop" class="modal-backdrop clinical-directory-users-backdrop" aria-hidden="true">
   <div class="modal clinical-directory-users-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-directory-users-title" onclick="event.stopPropagation()">
-    <header class="clinical-directory-users-modal-head">
+    <div class="clinical-directory-users-modal-head">
       <h3 id="clinical-directory-users-title">Directorio de usuarios</h3>
-      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-directory-users-close" aria-label="Cerrar">×</button>
-    </header>
+      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-directory-users-close" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
     <div id="clinical-directory-users-panel-body" class="clinical-directory-users-panel-body"></div>
   </div>
 </div>
 
 <div id="clinical-admin-code-backdrop" class="modal-backdrop clinical-admin-code-backdrop" aria-hidden="true">
   <div class="modal clinical-admin-code-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-admin-code-title" onclick="event.stopPropagation()">
-    <header class="clinical-directory-users-modal-head">
+    <div class="clinical-directory-users-modal-head">
       <h3 id="clinical-admin-code-title">Privilegios de administración</h3>
-      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-admin-code-close" aria-label="Cerrar">×</button>
-    </header>
+      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-admin-code-close" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
     <p class="clinical-admin-code-lead">Introduce tu código personal para activar acceso de administración.</p>
     <form id="clinical-admin-code-form">
       <div class="field-group">
@@ -2976,9 +2996,9 @@
 
 <div id="tend-group-backdrop" class="tend-group-backdrop" style="display:none" aria-hidden="true">
   <div id="tend-group-modal" role="dialog" aria-modal="true" aria-labelledby="tend-group-title">
-    <header class="tend-group-header">
+    <div class="tend-group-header">
       <h2 id="tend-group-title"></h2>
-    </header>
+    </div>
     <div class="tend-group-tabs-wrap">
       <nav class="tend-group-tabs" id="tend-group-tabs-track" role="tablist" aria-label="Vista del estudio" data-active="charts">
         <span class="tend-group-tab-pill" aria-hidden="true"></span>

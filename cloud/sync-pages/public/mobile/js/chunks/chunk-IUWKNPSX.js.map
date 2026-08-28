@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../../../../public/js/features/patients-bridge.mjs"],
+  "sourcesContent": ["/** Late-bound bridge to break circular imports between patient modules. */\nexport const patientsBridge = {\n  renderPatientList(_opts) {},\n  selectPatient(_id, _opts) {},\n};\n"],
+  "mappings": ";AACO,IAAM,iBAAiB;AAAA,EAC5B,kBAAkB,OAAO;AAAA,EAAC;AAAA,EAC1B,cAAc,KAAK,OAAO;AAAA,EAAC;AAC7B;",
+  "names": []
+}

@@ -1,0 +1,23 @@
+R+ 8.2.4 (estable — release 8.2.4)
+======================================
+
+Fecha: 2026-08-28
+
+## Resumen
+
+Corrige R+ Móvil (iPad/Nube): entrar y unirse al turno no funcionaban por un chequeo de versión que el cliente web nunca podía cumplir.
+
+## Nuevo / mejorado
+
+- **R+ Móvil vuelve a funcionar:** el servidor exige que cada dispositivo reporte su versión; la build web de R+ Móvil no tenía forma de reportarla y el servidor la rechazaba en silencio (sin error visible). Ahora la build web incluye su propia versión.
+- **Errores de red visibles:** si Entrar se queda pegado por mala conexión, ahora falla con un aviso a los 15 segundos en vez de quedarse esperando para siempre sin decir nada.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.2.4-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.2.4-Mac-Intel.dmg`
+- Windows: `R+-8.2.4-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

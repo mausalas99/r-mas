@@ -91,7 +91,7 @@ html.dark.sidebar-auto-hide.sidebar-reveal aside.patient-sidebar {
   height: 30px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--text-muted);
   cursor: pointer;
@@ -134,7 +134,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   height: 30px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--text-muted);
   cursor: pointer;
@@ -156,7 +156,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   right: 4px;
   width: 6px;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--action);
   box-shadow: 0 0 0 1px var(--surface);
 }
@@ -182,7 +182,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
 .clinical-census-filters--popover {
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   background: var(--surface);
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
 }
@@ -222,7 +222,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   height: 30px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--text-muted);
   cursor: pointer;
@@ -305,7 +305,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   justify-content: center;
   width: 20px;
   height: 20px;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   border: 1.5px solid var(--border);
   background: var(--surface);
   color: var(--action);
@@ -362,7 +362,8 @@ html.dark .btn-add:hover {
   padding: calc(8px * var(--density-space)) calc(14px * var(--density-space)) calc(16px * var(--density-space));
 }
 /** Contenedor Sortable por sección (pinned / activos / archivados): mismo hueco vertical que antes entre tarjetas. */
-.patient-sort-zone {
+.patient-sort-zone,
+.patient-list-zone {
   display: flex;
   flex-direction: column;
   gap: calc(7px * var(--density-space));
@@ -387,7 +388,7 @@ html.dark .btn-add:hover {
   padding: calc(10px * var(--density-space)) calc(12px * var(--density-space)) calc(9px * var(--density-space));
   cursor: grab;
   position: relative;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-container);
   border: var(--border-hairline);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
@@ -403,6 +404,13 @@ html.dark .btn-add:hover {
   background: var(--state-hover-bg);
   border-color: var(--border);
   box-shadow: var(--shadow-sm);
+}
+/* Tarjetas suaves (3b): fijados se distinguen por un borde teal tenue, no por relleno. */
+.patient-card--pinned {
+  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+}
+html.dark .patient-card--pinned {
+  border-color: color-mix(in oklab, var(--action) 55%, var(--border));
 }
 .patient-card.active {
   background: color-mix(in oklab, var(--color-ink) 6%, var(--surface));
@@ -501,6 +509,7 @@ aside.patient-sidebar .btn-delete-card::after {
   min-width: 0;
 }
 .patient-card .p-meta {
+  font: var(--type-wb-mono, 500 11px / 1.3 var(--font-mono));
   font-size: calc(10.5px * var(--density-font));
   color: var(--text-muted);
   display: flex;
@@ -537,7 +546,7 @@ aside.patient-sidebar .btn-delete-card::after {
   letter-spacing: 0.02em;
   padding: 2px 8px;
   min-height: 22px;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   border: 1px solid transparent;
   box-shadow: none;
   line-height: 1.15;
@@ -607,7 +616,7 @@ html.dark .btn-pinned-text.patient-toolbar-chip--on {
   opacity: 1 !important;
   background: color-mix(in oklab, var(--surface) 97%, var(--bg)) !important;
   border: 1px solid color-mix(in oklab, var(--action) 38%, var(--border)) !important;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-container);
   box-shadow: 0 18px 50px rgba(15, 23, 42, 0.2), 0 6px 18px rgba(79, 86, 255, 0.14) !important;
 }
 html.dark .patient-drag-hovercard.patient-card {
@@ -684,6 +693,6 @@ html.dark .patient-drag-hovercard.patient-card {
   font-weight: 700;
   letter-spacing: 0.3px;
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   border: 1px solid color-mix(in oklab, var(--action) 35%, var(--border));
 }

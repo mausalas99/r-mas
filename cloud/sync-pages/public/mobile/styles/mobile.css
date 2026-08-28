@@ -19,7 +19,7 @@
   font-weight: 700;
   line-height: 1;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--success) 16%, var(--surface));
   color: var(--success);
 }
@@ -41,7 +41,7 @@
   font-size: 11px;
   line-height: 1.4;
   padding: 5px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
@@ -85,26 +85,19 @@
   color: var(--text-muted);
   line-height: 1.35;
 }
-.pase-cult-cuenta {
-  margin-top: 3px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  line-height: 1.35;
-}
 .cultivos-cell-atb pre {
   margin: 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;
 }
 .cultivos-atb-fallback { margin: 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
 .cultivos-atb-wrap { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
-.cultivos-atb-chips, .pase-cult-atb-chips {
+.cultivos-atb-chips {
   display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center;
 }
 .lab-out-cultivo-chunk { margin-top: 12px; }
 #lab-output-box > .lab-out-cultivo-chunk:first-child { margin-top: 0; }
-.cultivos-atb-chips .atb-chip, .pase-cult-atb-chips .atb-chip, .lab-out-atb .atb-chip {
+.cultivos-atb-chips .atb-chip, .lab-out-atb .atb-chip {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 1.35em; padding: 2px 7px; border-radius: 6px;
+  min-width: 1.35em; padding: 2px 7px; border-radius: var(--radius-badge);
   font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
   border: 1px solid var(--border); cursor: default; font-family: ui-sans-serif, system-ui, sans-serif;
 }
@@ -186,6 +179,7 @@
 }
 .atb-ris-meta {
   display: inline-flex;
+  flex-basis: 100%;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 8px;
@@ -214,18 +208,17 @@
 .atb-ris-hover-panel.is-open {
   display: block;
 }
-.cultivos-copy-full-btn, .pase-cult-copy-full {
-  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px;
+.cultivos-copy-full-btn {
+  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: var(--radius-badge);
   border: 1px solid var(--border); background: var(--lab-chip-bg); color: var(--text);
   cursor: pointer; font-family: inherit;
 }
-.cultivos-copy-full-btn:hover, .pase-cult-copy-full:hover { filter: brightness(1.06); }
-.pase-cult-atb-wrap { margin-bottom: 6px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.cultivos-copy-full-btn:hover { filter: brightness(1.06); }
 .tend-spark-wrap {
-  width:100%; height:40px; margin-top:6px; position:relative; border-radius:6px; overflow:hidden;
+  width:100%; height:40px; margin-top:6px; position:relative; border-radius:var(--radius-badge); overflow:hidden;
 }
 .tend-spark-canvas-cell {
-  position:relative; width:100%; height:100%; overflow:hidden; border-radius:6px;
+  position:relative; width:100%; height:100%; overflow:hidden; border-radius:var(--radius-badge);
 }
 .tend-spark-canvas-cell canvas { display:block; width:100% !important; height:100% !important; }
 .tend-card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; gap:8px; }
@@ -265,13 +258,13 @@ body.focus-mode #btn-header-team-sync { display: none !important; }
 #focus-mode-pill {
   display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
   background: var(--action); color: var(--color-on-accent); font-size: 11px; font-weight: 600;
-  padding: 4px 12px; border-radius: 999px; box-shadow: var(--shadow-md);
+  padding: 4px 12px; border-radius: var(--radius-pill); box-shadow: var(--shadow-md);
   z-index: 150; letter-spacing: 0.3px; opacity: 0.9; pointer-events: none;
 }
 body.focus-mode #focus-mode-pill { display: block; }
 /* ── Búsqueda unificada ────────────────────────────────────── */
 .unified-search-result {
-  border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-control); padding: 10px 12px;
   background: var(--surface); cursor: pointer; display: flex; flex-direction: column;
   gap: 4px; transition: border-color 0.15s, background 0.15s;
 }
@@ -281,7 +274,7 @@ body.focus-mode #focus-mode-pill { display: block; }
   align-items: center; justify-content: space-between; gap: 8px;
 }
 .unified-search-result .usr-tag {
-  font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+  font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: var(--radius-pill);
   letter-spacing: 0.4px; background: var(--lab-chip-bg); color: var(--lab-chip-txt);
   border: 1px solid color-mix(in oklab, var(--action) 28%, var(--border));
 }
@@ -296,7 +289,7 @@ body.focus-mode #focus-mode-pill { display: block; }
 }
 /* ── Plantillas guardadas (extra-templates) ────────────────── */
 .extra-tmpl-row {
-  border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: var(--radius-control); padding: 8px 10px;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   background: var(--surface);
 }
@@ -313,7 +306,7 @@ body.focus-mode #focus-mode-pill { display: block; }
 .extra-tmpl-row .etr-actions .etr-del:hover { background: color-mix(in oklab, var(--error) 14%, var(--surface)); }
 .indica-extra-tmpl {
   display: flex; gap: 8px; align-items: center; padding: 10px 12px;
-  border: 1px dashed var(--border); border-radius: 8px; background: var(--bg);
+  border: 1px dashed var(--border); border-radius: var(--radius-control); background: var(--bg);
 }
 .indica-extra-tmpl select {
   flex: 1;
@@ -336,7 +329,7 @@ body.focus-mode #focus-mode-pill { display: block; }
   box-shadow: 0 0 0 3px var(--color-focus-ring), inset 0 1px 2px color-mix(in oklab, var(--color-ink) 3%, transparent);
 }
 .indica-extra-tmpl button {
-  background: var(--action); color: var(--color-on-accent); border: none; border-radius: 6px;
+  background: var(--action); color: var(--color-on-accent); border: none; border-radius: var(--radius-badge);
   padding: 6px 14px; font-size: 12px; font-weight: 700; font-family: inherit;
   cursor: pointer; white-space: nowrap;
 }
@@ -398,7 +391,7 @@ html.rpc-mobile-web header {
   bottom: max(12px, env(safe-area-inset-bottom, 0px));
   z-index: var(--z-banner);
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   background: color-mix(in oklab, var(--color-ink) 88%, transparent);
   color: var(--color-paper);
   font-size: 13px;
@@ -477,7 +470,6 @@ html.rpc-mobile-web #appcontent-lab > .main-work-scroll,
 html.rpc-mobile-web #appcontent-med > .med-active-shell,
 html.rpc-mobile-web #appcontent-med > .med-active-shell > #med-work-area.main-work-scroll,
 html.rpc-mobile-web #appcontent-agenda > .rpc-proc-agenda-root,
-html.rpc-mobile-web:not(.ui-density-normal) .pase-board-scroll,
 html.rpc-mobile-web .patient-expediente-classic,
 html.rpc-mobile-web .patient-expediente-classic .tab-content {
   margin-top: 0;

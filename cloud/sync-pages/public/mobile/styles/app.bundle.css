@@ -21,7 +21,7 @@ html.ui-density-normal .patient-list-section-label {
   font-size: calc(10px * var(--density-font));
   opacity: 0.88;
 }
-/* En compacto/Pase se ocultan acciones secundarias; no usar esta clase en controles que deban verse siempre (p. ej. engrane de Laboratorio). */
+/* En Guardia se ocultan acciones secundarias; no usar esta clase en controles que deban verse siempre (p. ej. engrane de Laboratorio). */
 html.ui-density-normal .card-header-soft-btn-secondary { display: none !important; }
 html.ui-density-normal .overview-hint { display: none !important; }
 html:not(.ui-density-normal) .sidebar-ronda-hint { display: flex; }
@@ -62,240 +62,6 @@ html:not(.ui-density-normal) .sidebar-ronda-hint { display: flex; }
   gap: calc(7px * var(--density-space));
   padding-bottom: calc(14px * var(--density-space));
 }
-.patient-card--roundrow {
-  padding: calc(8px * var(--density-space)) calc(10px * var(--density-space));
-}
-.roundrow-main {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: calc(9px * var(--density-space));
-  min-width: 0;
-}
-.roundrow-text {
-  flex: 1;
-  min-width: 0;
-}
-.patient-card-body--round {
-  flex: 1;
-  min-width: 0;
-}
-.patient-card--roundrow .p-name {
-  margin: 0 0 calc(1px * var(--density-space));
-  font-size: calc(11px * var(--density-font));
-  font-weight: 650;
-  line-height: 1.22;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  white-space: normal;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-.patient-card--roundrow .p-meta {
-  margin: 0;
-  font-size: calc(10px * var(--density-font));
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  opacity: 0.92;
-}
-.btn-round-seen {
-  flex-shrink: 0;
-  min-width: 44px;
-  min-height: 44px;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border);
-  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: inherit;
-  padding: 0;
-}
-.btn-round-seen:hover {
-  border-color: color-mix(in oklab, var(--action) 40%, var(--border));
-  color: var(--action);
-}
-.patient-card--roundrow-seen {
-  border-color: color-mix(in oklab, var(--success) 38%, var(--border));
-}
-.patient-card--roundrow-seen .btn-round-seen {
-  background: color-mix(in oklab, var(--success) 16%, var(--surface));
-  color: var(--success);
-  border-color: color-mix(in oklab, var(--success) 45%, var(--border));
-}
-/* Vista ronda — panel central (labs + pendientes) */
-.patient-ronda-overview {
-  display: none;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  background: color-mix(in oklab, var(--bg) 35%, transparent);
-}
-.ronda-overview-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: calc(14px * var(--density-space)) calc(16px * var(--density-space)) calc(10px * var(--density-space));
-  border-bottom: 1px solid color-mix(in oklab, var(--divider) 88%, transparent);
-  background: var(--surface);
-}
-.ronda-overview-title {
-  margin: 0 0 4px;
-  font-size: calc(17px * var(--density-font));
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-}
-.ronda-overview-sub {
-  margin: 0;
-  font-size: calc(12px * var(--density-font));
-  color: var(--text-muted);
-  line-height: 1.35;
-}
-.ronda-overview-header-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  flex-shrink: 0;
-}
-.ronda-overview-header-actions .secondary {
-  font-size: calc(12px * var(--density-font));
-  padding: 8px 12px;
-}
-.ronda-overview-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  padding: calc(14px * var(--density-space)) calc(16px * var(--density-space)) calc(20px * var(--density-space));
-  display: flex;
-  flex-direction: column;
-  gap: calc(14px * var(--density-space));
-}
-.ronda-overview-card {
-  border-radius: var(--radius-lg, 12px);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}
-.ronda-overview-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: calc(11px * var(--density-space)) calc(14px * var(--density-space));
-  background: color-mix(in oklab, var(--surface) 90%, var(--bg));
-  border-bottom: 1px solid color-mix(in oklab, var(--divider) 80%, transparent);
-}
-.ronda-overview-card-head h3 {
-  margin: 0;
-  font-size: calc(12px * var(--density-font));
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  text-transform: none;
-  color: var(--text-muted);
-}
-.ronda-link-btn {
-  background: transparent;
-  border: none;
-  padding: 4px 0;
-  font: inherit;
-  font-size: calc(12px * var(--density-font));
-  font-weight: 600;
-  color: var(--action);
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.ronda-link-btn:hover {
-  color: var(--action-hover, var(--action));
-}
-.ronda-overview-card-body {
-  padding: calc(12px * var(--density-space)) calc(14px * var(--density-space));
-  font-size: calc(13px * var(--density-font));
-  line-height: 1.45;
-}
-.ronda-labs-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
-  font-size: calc(12px * var(--density-font));
-  color: var(--text-muted);
-}
-.ronda-labs-date { font-weight: 650; color: var(--text); }
-.ronda-labs-lines {
-  margin: 0;
-  padding: 0 0 0 1.1em;
-  list-style: disc;
-}
-.ronda-labs-lines li { margin-bottom: 4px; word-break: break-word; }
-.ronda-labs-fallback-label {
-  margin: 0 0 8px;
-  font-size: calc(11px * var(--density-font));
-  font-weight: 600;
-  color: var(--text-muted);
-}
-.ronda-panel-empty {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: calc(13px * var(--density-font));
-  line-height: 1.45;
-}
-.ronda-overview-quick {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding-top: 2px;
-}
-.ronda-quick-primary {
-  border: none;
-  border-radius: var(--radius-pill);
-  background: var(--action);
-  color: var(--color-on-accent);
-  font: inherit;
-  font-size: calc(13px * var(--density-font));
-  font-weight: 700;
-  padding: 9px 16px;
-  cursor: pointer;
-  min-height: 40px;
-  box-shadow: 0 2px 10px color-mix(in oklab, var(--action) 22%, transparent);
-}
-.ronda-quick-primary:hover {
-  background: var(--action-hover, var(--action));
-}
-.ronda-quick-more { position: relative; }
-.ronda-quick-more-btn {
-  list-style: none;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border);
-  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
-  color: var(--text);
-  font: inherit;
-  font-size: calc(12px * var(--density-font));
-  font-weight: 600;
-  padding: 7px 14px;
-  cursor: pointer;
-  min-height: 40px;
-}
-.ronda-quick-more-btn::-webkit-details-marker { display: none; }
-
 /* Compact <details> disclosure (LAN ⇄, settings-adjacent panels, etc.) */
 .rpc-disclosure {
   border: 1px solid var(--border);
@@ -375,58 +141,10 @@ html:not(.ui-density-normal) .sidebar-ronda-hint { display: flex; }
   display: flex;
   flex-direction: column;
   gap: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   box-shadow: none;
 }
 
-.ronda-quick-more-btn:hover {
-  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
-  color: var(--action);
-}
-.ronda-quick-more:not([open]) .ronda-quick-more-menu { display: none; }
-.ronda-quick-more-menu {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 6px);
-  z-index: 30;
-  min-width: 180px;
-  padding: 6px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  box-shadow: var(--shadow-md);
-}
-.ronda-quick-more-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: calc(12px * var(--density-font));
-  font-weight: 600;
-  padding: 8px 10px;
-  cursor: pointer;
-}
-.ronda-quick-more-item:hover {
-  background: color-mix(in oklab, var(--action) 8%, var(--surface));
-  color: var(--action);
-}
-/* Resumen ronda solo se usa en modo Pase; tipografía un poco más legible ahí. */
-html:not(.ui-density-normal) .ronda-overview-card-body {
-  font-size: calc(14px * var(--density-font));
-  line-height: 1.52;
-}
-html:not(.ui-density-normal) .ronda-overview-card-body .card-header {
-  font-size: calc(14px * var(--density-font));
-  font-weight: 650;
-  letter-spacing: 0.01em;
-  text-transform: none;
-}
-html:not(.ui-density-normal) .ronda-labs-lines li { margin-bottom: 6px; }
-html:not(.ui-density-normal) .ronda-labs-meta { margin-bottom: 12px; }
 .patient-expediente-classic {
   display: flex;
   flex-direction: column;
@@ -434,31 +152,6 @@ html:not(.ui-density-normal) .ronda-labs-meta { margin-bottom: 12px; }
   min-height: 0;
   overflow: hidden;
 }
-.patient-ronda-fullbar {
-  display: none;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
-  flex-shrink: 0;
-}
-.patient-ronda-fullbar button {
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 12px;
-  cursor: pointer;
-}
-.patient-ronda-fullbar button:hover {
-  border-color: color-mix(in oklab, var(--action) 40%, var(--border));
-  color: var(--action);
-}
-html:not(.ui-density-normal) .patient-ronda-fullbar.is-visible { display: flex; }
 html.dark .dcard-copy:hover {
   border-color: var(--action);
   color: var(--action);
@@ -853,7 +546,7 @@ html.dark .rpc-offline-banner {
   color: color-mix(in oklab, var(--error) 38%, white);
   border-bottom-color: color-mix(in oklab, var(--error) 58%, black);
 }
-.rpc-offline-banner.visible { display: flex; }
+.rpc-offline-banner.visible { display: flex; animation: fade-in var(--dur-fast) var(--ease-out); }
 .lan-connection-banner {
   display: none;
   flex-shrink: 0;
@@ -873,7 +566,7 @@ html.dark .lan-connection-banner {
   color: color-mix(in oklab, var(--warn) 24%, white);
   border-bottom-color: color-mix(in oklab, var(--warn) 52%, black);
 }
-.lan-connection-banner:not([hidden]) { display: flex; }
+.lan-connection-banner:not([hidden]) { display: flex; animation: fade-in var(--dur-fast) var(--ease-out); }
 .lan-connection-banner-text { flex: 1; min-width: 0; line-height: 1.35; }
 .lan-connection-banner-dismiss {
   flex-shrink: 0;
@@ -905,7 +598,7 @@ html.dark .lan-connection-banner {
   line-height: 1.2;
   user-select: none;
 }
-.pending-jobs-pill.visible { display: inline-flex; }
+.pending-jobs-pill.visible { display: inline-flex; animation: fade-in var(--dur-fast) var(--ease-out); }
 .pending-jobs-pill::before {
   content: '';
   width: 8px; height: 8px; border-radius: 50%;
@@ -943,11 +636,11 @@ html.dark #update-modal-backdrop { background: var(--scrim-bg); }
 }
 #update-modal h2 { font-size: 17px; font-weight: 700; margin: 0 0 8px 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 #update-modal .version-pill {
-  font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: var(--radius-pill);
   background: var(--lab-chip-bg); color: var(--lab-chip-txt);
 }
 #update-modal .channel-pill {
-  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-pill);
   background: var(--color-channel-pill-bg); color: var(--color-channel-pill-fg); text-transform: none; letter-spacing: 0.02em;
 }
 html.dark #update-modal .channel-pill { background: var(--color-channel-pill-bg); color: var(--color-channel-pill-fg); }
@@ -958,14 +651,14 @@ html.dark #update-modal .channel-pill { background: var(--color-channel-pill-bg)
 #min-version-backdrop.open { display: flex; }
 #min-version-modal {
   width: 100%; max-width: 440px; background: var(--surface); color: var(--text);
-  border-radius: 16px; box-shadow: var(--shadow-md); border: none;
+  border-radius: var(--radius-sm); box-shadow: var(--shadow-md); border: none;
   padding: 24px;
 }
 #min-version-modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 10px; color: var(--error); }
 #min-version-modal p { font-size: 14px; color: var(--text); line-height: 1.55; margin-bottom: 14px; }
 #min-version-modal .min-version-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
 #min-version-modal .min-version-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
-#min-version-modal button { font-family: inherit; font-size: 13px; cursor: pointer; border-radius: 8px; padding: 9px 16px; border: none; font-weight: 700; }
+#min-version-modal button { font-family: inherit; font-size: 13px; cursor: pointer; border-radius: var(--radius-control); padding: 9px 16px; border: none; font-weight: 700; }
 #min-version-modal .btn-primary { background: var(--action); color: var(--color-on-accent); }
 #min-version-modal .btn-primary:hover { background: var(--action-hover); }
 #min-version-modal .btn-secondary { background: transparent; color: var(--text-muted); border: 1px solid var(--border); font-weight: 600; }
@@ -975,11 +668,11 @@ html.dark #update-modal .channel-pill { background: var(--color-channel-pill-bg)
 }
 #update-modal .release-notes:empty { display: none; }
 #update-modal .update-state-msg { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; min-height: 1.3em; }
-#update-modal .progress-wrap { height: 10px; background: var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
-#update-modal .progress-fill { height: 100%; width: 0%; background: var(--action); border-radius: 6px; transition: width var(--dur-normal) var(--ease-out); }
+#update-modal .progress-wrap { height: 10px; background: var(--border); border-radius: var(--radius-badge); overflow: hidden; margin-bottom: 8px; }
+#update-modal .progress-fill { height: 100%; width: 0%; background: var(--action); border-radius: var(--radius-badge); transition: width var(--dur-normal) var(--ease-out); }
 #update-modal .progress-label { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
 #update-modal .modal-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
-#update-modal button { font-family: inherit; font-size: 13px; cursor: pointer; border-radius: 8px; padding: 8px 14px; }
+#update-modal button { font-family: inherit; font-size: 13px; cursor: pointer; border-radius: var(--radius-control); padding: 8px 14px; }
 #update-modal .btn-primary { background: var(--action); color: var(--color-on-accent); border: none; font-weight: 600; }
 #update-modal .btn-primary:hover { background: var(--action-hover); }
 #update-modal .btn-secondary { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
@@ -1072,7 +765,7 @@ html.dark .avatar img {
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb {
   background: color-mix(in oklab, var(--text-muted) 45%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 2px solid transparent;
   background-clip: padding-box;
 }
@@ -1229,6 +922,19 @@ header h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
   overflow: hidden;
   text-overflow: ellipsis;
   font-variant-numeric: tabular-nums;
+  pointer-events: auto;
+  cursor: pointer;
+  border-radius: var(--radius-row-btn, 7px);
+  padding: 2px 6px;
+}
+#today-date:hover,
+#today-date:focus-visible {
+  background: var(--state-hover-bg);
+  opacity: 1;
+}
+#today-date:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
 }
 .header-center .estado-actual-meta {
   max-width: 100%;
@@ -1316,6 +1022,46 @@ html:not(.ui-density-normal) #main-area {
   pointer-events: auto;
   z-index: 1;
   opacity: 1;
+}
+/* Interconsulta mode: sidebar gone entirely, board fills the main window
+   (see interconsulta-mode-chrome.mjs). Same width:0 pattern as
+   sidebar-auto-hide (sidebar.css) so #main-area expands to fill the flex row. */
+html.ic-board-mode aside.patient-sidebar {
+  width: 0 !important;
+  min-width: 0 !important;
+  overflow: hidden;
+  border: none;
+}
+html.ic-board-mode #sidebar-hover-strip {
+  display: none;
+}
+/* Interconsulta board — a normal-flow sibling of #empty-state/#patient-view
+   inside #appcontent-nota (flex column); the old #interconsulta-mode-frame
+   bar is retired (always hidden, see syncInterconsultaModeChrome). Only one
+   of board/empty-state/patient-view is unhidden at a time (see
+   syncIcViewVisibility in interconsulta-mode-chrome.mjs), so it just takes
+   the remaining flex space like the other two already do. */
+.ic-board-view {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.75rem 1rem;
+}
+.ic-board-view[hidden] {
+  display: none;
+}
+.ic-board-header {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+/* Hard backstop: whatever inline-style tug-of-war Resumen's own show/hide
+   logic (patients-select.mjs) is mid-race with, the board view always wins
+   while it's the active IC view — see syncIcViewVisibility. */
+html.ic-board-view-open #empty-state,
+html.ic-board-view-open #patient-view {
+  display: none !important;
 }
 /* Panel flotante solo para el contenido (debajo de tabs / sub-tabs) */
 .shell-content-frame {
@@ -1426,18 +1172,6 @@ html.ui-density-normal #main-area {
 }
 
 /* Cluster hierarchy: one accent CTA max; censo PDF = secondary surface pill */
-.header-work-cluster .header-pase-breadcrumb {
-  font-weight: 500;
-}
-.header-work-cluster .header-pase-breadcrumb-link {
-  font-weight: 600;
-}
-.header-work-cluster .header-pase-breadcrumb-section {
-  font-weight: 500;
-}
-.header-work-cluster .header-return-pase-btn {
-  font-weight: 600;
-}
 .header-work-cluster .header-cmdk-hint {
   width: 26px;
   height: 26px;
@@ -1495,62 +1229,6 @@ html.ui-density-normal #main-area {
   .header-work-cluster .btn-export-censo-header {
     padding: 6px 10px;
   }
-}
-.header-pase-breadcrumb {
-  display: none;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  min-height: 36px;
-  padding: 0 4px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-.header-pase-breadcrumb-link {
-  border: none;
-  background: transparent;
-  padding: 6px 8px;
-  margin: 0;
-  border-radius: var(--radius-sm);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--action);
-  cursor: pointer;
-}
-.header-pase-breadcrumb-link:hover {
-  background: color-mix(in oklab, var(--action) 10%, var(--surface));
-}
-.header-pase-breadcrumb-sep {
-  opacity: 0.5;
-  user-select: none;
-}
-.header-pase-breadcrumb-section {
-  color: var(--text);
-  font-weight: 650;
-  max-width: min(160px, 22vw);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.header-return-pase-btn {
-  flex-shrink: 0;
-  border: 1px solid color-mix(in oklab, var(--action) 35%, var(--border));
-  background: color-mix(in oklab, var(--action) 10%, var(--surface));
-  color: var(--action);
-  font-size: 12px;
-  font-weight: 700;
-  font-family: inherit;
-  padding: 7px 12px;
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  min-height: 36px;
-  transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
-}
-.header-return-pase-btn:hover {
-  background: color-mix(in oklab, var(--action) 16%, var(--surface));
-  border-color: color-mix(in oklab, var(--action) 50%, var(--border));
 }
 .estado-actual-meta {
   font-size: 11px;
@@ -1731,7 +1409,7 @@ html.sidebar-auto-hide:not(.sidebar-reveal) .app {
   gap: 0;
 }
 .app-tabs-row .app-tabs { flex: 1; padding: 0; box-shadow: none; background: transparent; min-width: 0; }
-/* Guardia + Pase: hide main tabs, full-height board */
+/* Guardia: hide main tabs, full-height board */
 html:not(.ui-density-normal) .app-tabs-row {
   display: none;
 }
@@ -1762,402 +1440,6 @@ html.sidebar-auto-hide:not(.sidebar-reveal):not(.ui-density-normal) #main-area {
 }
 html.sidebar-auto-hide.sidebar-reveal:not(.ui-density-normal) #main-area {
   border-top-left-radius: var(--radius-lg);
-}
-html:not(.ui-density-normal) .appcontent-pase {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-html:not(.ui-density-normal) .pase-board-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: clip;
-  padding: calc(16px * var(--density-space)) calc(18px * var(--density-space)) calc(24px * var(--density-space));
-  display: flex;
-  flex-direction: column;
-  gap: calc(18px * var(--density-space));
-  scroll-behavior: smooth;
-  margin-top: 0;
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
-  background: var(--color-content);
-}
-html:not(.ui-density-normal) .pase-patient-banner {
-  padding: calc(14px * var(--density-space)) calc(16px * var(--density-space));
-  border: var(--border-hairline);
-  background: var(--color-elevated);
-  box-shadow: none;
-}
-html:not(.ui-density-normal) .pase-patient-banner-body {
-  display: flex;
-  flex-direction: column;
-  gap: calc(10px * var(--density-space));
-  min-width: 0;
-}
-html:not(.ui-density-normal) .pase-patient-name {
-  margin: 0;
-  font-size: calc(15px * var(--density-font));
-  font-weight: 650;
-  line-height: 1.32;
-  letter-spacing: 0.01em;
-  color: var(--text);
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
-html:not(.ui-density-normal) .pase-patient-meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: calc(6px * var(--density-space));
-  align-items: center;
-}
-html:not(.ui-density-normal) .pase-patient-chip {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
-  font-size: calc(11px * var(--density-font));
-  font-weight: 600;
-  line-height: 1.25;
-  color: var(--text-muted);
-  background: color-mix(in oklab, var(--bg) 55%, var(--surface));
-  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
-  border-radius: var(--radius-pill);
-  padding: 4px 10px;
-  max-width: 100%;
-}
-html:not(.ui-density-normal) .pase-patient-chip-label {
-  font-weight: 650;
-  color: color-mix(in oklab, var(--text-muted) 88%, var(--action));
-  font-size: calc(10px * var(--density-font));
-  letter-spacing: 0.02em;
-}
-html:not(.ui-density-normal) .pase-patient-chip--mono {
-  font-family: var(--font-mono);
-  letter-spacing: 0.02em;
-}
-html:not(.ui-density-normal) .pase-section {
-  background: var(--color-elevated);
-  border-radius: var(--radius-control);
-  box-shadow: none;
-  border: var(--border-hairline);
-  padding: calc(12px * var(--density-space)) calc(14px * var(--density-space)) calc(14px * var(--density-space));
-}
-html:not(.ui-density-normal) .pase-section-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 14px;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--divider);
-}
-html:not(.ui-density-normal) .pase-section-title {
-  border: none;
-  background: transparent;
-  font: inherit;
-  font-size: calc(15px * var(--density-font));
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  text-transform: none;
-  color: var(--color-accent);
-  cursor: pointer;
-  padding: 4px 2px;
-  text-align: left;
-  line-height: 1.3;
-  border-bottom: 2px solid transparent;
-  transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
-}
-html:not(.ui-density-normal) .pase-section-title:hover {
-  text-decoration: none;
-  border-bottom-color: var(--color-accent);
-}
-html:not(.ui-density-normal) .pase-section-title:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 1px;
-  border-radius: 4px;
-}
-html:not(.ui-density-normal) .pase-card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
-}
-html:not(.ui-density-normal) .pase-dual-cols {
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  gap: 12px;
-}
-html:not(.ui-density-normal) .pase-dual-col {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-html:not(.ui-density-normal) .pase-dual-col-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-@media (max-width: 520px) {
-  html:not(.ui-density-normal) .pase-dual-cols {
-    flex-direction: column;
-  }
-}
-/** Agenda + Pendientes en una fila (dos tarjetas); en pantallas estrechas se apilan. */
-html:not(.ui-density-normal) .pase-section-row--split {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: calc(12px * var(--density-space));
-  align-items: stretch;
-  min-width: 0;
-}
-@media (max-width: 640px) {
-  html:not(.ui-density-normal) .pase-section-row--split {
-    grid-template-columns: 1fr;
-  }
-}
-html:not(.ui-density-normal) .pase-mini-card {
-  background: var(--color-elevated);
-  border: var(--border-hairline);
-  border-radius: var(--radius-control);
-  padding: 10px 12px;
-  font-size: calc(12px * var(--density-font));
-  line-height: 1.35;
-  min-height: 48px;
-  box-shadow: none;
-}
-html:not(.ui-density-normal) .pase-mini-card--dim {
-  opacity: 0.82;
-  color: var(--text-muted);
-}
-html:not(.ui-density-normal) .pase-mini-card--wide {
-  grid-column: 1 / -1;
-}
-html:not(.ui-density-normal) .pase-mini-card--todo-done {
-  text-decoration: line-through;
-  color: var(--text-muted);
-}
-html:not(.ui-density-normal) .pase-todo-card {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-}
-html:not(.ui-density-normal) .pase-todo-hit {
-  flex-shrink: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 15px;
-  line-height: 1.2;
-  padding: 0 2px 0 0;
-  color: var(--action);
-  font-family: inherit;
-}
-html:not(.ui-density-normal) .pase-todo-hit:focus-visible {
-  outline: 2px solid var(--action);
-  outline-offset: 1px;
-  border-radius: 4px;
-}
-html:not(.ui-density-normal) .pase-todo-card.todo-prio-alta {
-  border-left: 3px solid var(--todo-prio-alta);
-  background: color-mix(in oklab, var(--todo-prio-alta) 14%, var(--surface));
-  padding-left: 12px;
-}
-html:not(.ui-density-normal) .pase-todo-card.todo-prio-media {
-  border-left: 3px solid var(--todo-prio-media);
-  background: color-mix(in oklab, var(--todo-prio-media) 12%, var(--surface));
-  padding-left: 12px;
-}
-html:not(.ui-density-normal) .pase-todo-card.todo-prio-baja {
-  border-left: 3px solid var(--todo-prio-baja);
-  background: color-mix(in oklab, var(--todo-prio-baja) 11%, var(--surface));
-  padding-left: 12px;
-}
-html:not(.ui-density-normal) .pase-cultivo-card .pase-cult-org {
-  font-weight: 650;
-  font-size: calc(13px * var(--density-font));
-  letter-spacing: 0.01em;
-  text-transform: none;
-  line-height: 1.35;
-  margin-bottom: 6px;
-  color: var(--text);
-}
-html:not(.ui-density-normal) .pase-cult-atb {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1.5;
-  color: var(--text);
-  margin-bottom: 8px;
-}
-html:not(.ui-density-normal) .pase-cult-atb-chips {
-  margin-bottom: 4px;
-}
-html:not(.ui-density-normal) .pase-cult-atb-chips .cult-atb-ris-chip-wrap {
-  position: relative;
-  z-index: 0;
-}
-html:not(.ui-density-normal) .pase-cult-atb-chips .cult-atb-ris-chip-wrap:hover {
-  z-index: 5;
-}
-html:not(.ui-density-normal) .pase-atb-tag { font-weight: 700; }
-html:not(.ui-density-normal) .pase-atb-tag--r { color: var(--error); }
-html:not(.ui-density-normal) .pase-atb-tag--i { color: var(--todo-prio-media); }
-html:not(.ui-density-normal) .pase-atb-tag--s { color: var(--success); }
-html:not(.ui-density-normal) .pase-med-card {
-  padding: 12px 14px 11px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-self: stretch;
-}
-html:not(.ui-density-normal) .pase-med-card-head {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: calc(6px * var(--density-space));
-}
-html:not(.ui-density-normal) .pase-med-name {
-  font-family: var(--font-ui);
-  font-size: calc(13px * var(--density-font));
-  font-weight: 600;
-  line-height: 1.32;
-  color: var(--text);
-  min-width: 0;
-  width: 100%;
-  overflow-wrap: break-word;
-  word-break: normal;
-  hyphens: manual;
-}
-html:not(.ui-density-normal) .pase-med-dia-badge {
-  flex-shrink: 0;
-  align-self: flex-end;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  text-transform: none;
-  color: var(--text-muted);
-  line-height: 1.25;
-  text-align: right;
-  margin-top: 0;
-  white-space: nowrap;
-  max-width: 100%;
-  padding-left: calc(14px * var(--density-space));
-  box-sizing: border-box;
-}
-html:not(.ui-density-normal) .pase-med-meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin-top: 2px;
-}
-html:not(.ui-density-normal) .pase-med-chip {
-  font-weight: 650;
-  font-size: 11px;
-  letter-spacing: 0.02em;
-  text-transform: none;
-  color: var(--action);
-  background: color-mix(in oklab, var(--action) 14%, transparent);
-  padding: 2px 7px;
-  border-radius: 5px;
-  line-height: 1.25;
-  max-width: 100%;
-  overflow-wrap: break-word;
-  word-break: normal;
-}
-html:not(.ui-density-normal) .pase-med-chip--dosis {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 6px;
-  width: auto;
-  max-width: 100%;
-  flex: 0 1 auto;
-  box-sizing: border-box;
-  vertical-align: middle;
-}
-html:not(.ui-density-normal) .pase-med-dosis-core {
-  white-space: nowrap;
-  flex: 0 0 auto;
-  max-width: 100%;
-}
-html:not(.ui-density-normal) .pase-med-dosis-rest {
-  flex: 1 1 100%;
-  min-width: 0;
-  line-height: 1.38;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  white-space: normal;
-  overflow-wrap: break-word;
-  word-break: normal;
-}
-html:not(.ui-density-normal) .pase-sub {
-  font-size: calc(11px * var(--density-font));
-  color: var(--text-muted);
-  display: block;
-  margin-top: 4px;
-}
-html:not(.ui-density-normal) .pase-lab-meta {
-  font-family: var(--font-ui);
-  font-size: calc(14px * var(--density-font));
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--action);
-  margin-bottom: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
-  line-height: 1.45;
-}
-html.dark:not(.ui-density-normal) .pase-lab-meta {
-  color: var(--color-accent-soft-text);
-  border-bottom-color: color-mix(in oklab, var(--text-muted) 35%, transparent);
-}
-html:not(.ui-density-normal) .pase-lab-block {
-  font-family: var(--font-mono);
-  font-size: calc(13px * var(--density-font));
-  line-height: 1.65;
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: min(52vh, 520px);
-  overflow: auto;
-  padding: 6px 4px 2px 0;
-  color: var(--text);
-}
-html:not(.ui-density-normal) .pase-lab-line {
-  white-space: pre-wrap;
-  line-height: 1.7;
-}
-html:not(.ui-density-normal) .pase-lab-line--sechead {
-  margin-top: 6px;
-}
-html:not(.ui-density-normal) .pase-lab-line--sechead:first-child {
-  margin-top: 0;
-}
-html.dark:not(.ui-density-normal) .pase-lab-block .section-lbl {
-  color: var(--color-accent-soft-text);
-}
-html:not(.ui-density-normal) .pase-lab-snippet {
-  font-family: var(--font-mono);
-  font-size: calc(11px * var(--density-font));
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 220px;
-  overflow: hidden;
-  line-height: 1.45;
-}
-html:not(.ui-density-normal) .pase-empty-screen {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 40px 24px;
-  color: var(--text-muted);
-  font-size: calc(14px * var(--density-font));
-  line-height: 1.5;
 }
 .app-tabs-keys-btn {
   flex-shrink: 0;
@@ -2534,6 +1816,37 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
   display: none !important;
 }
 
+/* Collapsed-state hint: which of the 3 modes is active, shown under the pill */
+.header-mode-seg-dots {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  transition: opacity var(--dur-normal) var(--ease-out);
+}
+
+.header-mode-seg:hover .header-mode-seg-dots,
+.header-mode-seg.is-expanded .header-mode-seg-dots {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.header-mode-seg-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.5;
+}
+
+.header-mode-seg-dot.is-active {
+  background: var(--text);
+  opacity: 1;
+}
+
 
 /* Hybrid H — ink tab underline (indicator in motion.css) */
 html.tab-bar-indicators-ready .app-tab.active {
@@ -2574,6 +1887,21 @@ html.tab-bar-indicators-ready .app-tab.active {
   text-transform: none;
   border-bottom-width: 1px;
   color: var(--text-muted);
+}
+
+.wb-table-body .gct-divider {
+  padding: 6px 16px;
+  margin-top: 4px;
+  background: var(--color-table-head);
+  border-bottom: 1px solid color-mix(in oklab, var(--color-ink) 8%, transparent);
+  font: var(--type-wb-column-head);
+  letter-spacing: var(--tracking-wb-column-head);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.wb-table-body .gct-divider:first-child {
+  margin-top: 0;
 }
 
 .dnr-badge {
@@ -2863,7 +2191,7 @@ html.ui-density-guardia #lan-connection-banner {
 .guardia-hoy-cycle-today {
   margin: 0;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--color-accent-soft);
   border: 1px solid color-mix(in oklab, var(--color-ink) 18%, var(--border));
   font-size: 0.82rem;
@@ -3070,7 +2398,7 @@ html.ui-density-guardia #lan-connection-banner {
   align-items: center;
   justify-content: center;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   background: color-mix(in oklab, var(--bg) 40%, var(--surface));
   color: var(--action);
   cursor: pointer;
@@ -3128,7 +2456,7 @@ html.ui-density-guardia #lan-connection-banner {
   background: color-mix(in oklab, var(--action) 12%, var(--surface));
   border: 1px solid color-mix(in oklab, var(--action) 45%, var(--border));
   padding: 2px 8px;
-  border-radius: 20px;
+  border-radius: var(--radius-md);
 }
 
 #entrega-modal-backdrop .entrega-active-badge.hidden {
@@ -3140,6 +2468,7 @@ html.ui-density-guardia #lan-connection-banner {
   font-size: 0.75rem;
   line-height: 1.5;
   color: var(--text-muted);
+  animation: fade-in var(--dur-fast) var(--ease-out);
 }
 
 #entrega-modal-backdrop .entrega-modal-lead.hidden {
@@ -3206,6 +2535,7 @@ html.ui-density-guardia #lan-connection-banner {
   margin: 0 0 4px;
   font-size: 0.6875rem;
   line-height: 1.45;
+  animation: fade-in var(--dur-fast) var(--ease-out);
 }
 
 #entrega-modal-backdrop .entrega-top-strip .entrega-field-hint.hidden {
@@ -3280,7 +2610,7 @@ html.ui-density-guardia #lan-connection-banner {
 
 #entrega-modal-backdrop .entrega-proc-details {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 0 10px 8px;
 }
 
@@ -3342,7 +2672,7 @@ html.ui-density-guardia #lan-connection-banner {
 
 #entrega-modal-backdrop .entrega-handoff-support-card {
   padding: 9px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--divider);
   background: color-mix(in oklab, var(--bg) 40%, var(--surface));
 }
@@ -3455,7 +2785,7 @@ html.ui-density-guardia #lan-connection-banner {
   line-height: 1.45;
   color: var(--action);
   border: 1px solid color-mix(in oklab, var(--action) 22%, var(--border));
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   background: color-mix(in oklab, var(--action) 8%, var(--surface));
 }
 
@@ -4381,7 +3711,7 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 
 .entrega-freq-chip {
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   padding: 0.3rem 0.7rem;
   font-size: 0.8rem;
   font-weight: 600;
@@ -4539,7 +3869,7 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   min-width: 1.4rem;
   padding: 0 6px;
   margin-left: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 0.75rem;
   font-weight: 700;
   background: color-mix(in srgb, var(--danger) 18%, transparent);
@@ -4720,6 +4050,34 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 
 .guardia-panel--census {
   padding: 10px 12px 12px;
+}
+
+/*
+ * Census (left) + Signos recibidos (right) two-column layout, screens 6a/6b.
+ * Was unstyled (plain block div) until the Guardia census fixture (Phase 2
+ * continuation) actually populated the census — with an empty census the
+ * missing grid was invisible, since a lone empty-state card looks the same
+ * whether it is stacked below or sitting beside nothing.
+ */
+.guardia-board-columns {
+  display: grid;
+  grid-template-columns: 1.75fr 1fr;
+  align-items: start;
+  gap: 14px;
+  min-height: 0;
+}
+
+.guardia-board-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+@media (max-width: 980px) {
+  .guardia-board-columns {
+    grid-template-columns: 1fr;
+  }
 }
 
 .guardia-metrics-toolbar {
@@ -4936,7 +4294,7 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   text-overflow: ellipsis;
   max-width: 58%;
   padding: 1px 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   background: color-mix(in oklab, var(--action) 12%, var(--surface));
   border: 1px solid color-mix(in oklab, var(--action) 22%, var(--border));
 }
@@ -5088,7 +4446,7 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   font-size: 0.625rem;
   font-weight: 600;
   line-height: 1.15;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   box-sizing: border-box;
 }
 
@@ -5142,7 +4500,7 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   font-size: 0.75rem;
   font-weight: 700;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   width: fit-content;
 }
 
@@ -5972,12 +5330,16 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
   color: var(--text-muted);
-  font-size: 1.35rem;
-  font-weight: 400;
-  line-height: 1;
   font-family: inherit;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.clinical-teams-dismiss svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
 }
 
 .clinical-teams-dismiss:hover {
@@ -7426,7 +6788,7 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
 .clinical-team-invite-browser-gate-card {
   max-width: 420px;
   padding: 20px 22px;
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   background: var(--surface);
   border: 1px solid var(--border);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
@@ -7640,7 +7002,7 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
 .clinical-teams-legacy-banner {
   background: rgba(255, 159, 10, 0.12);
   border: 1px solid rgba(255, 159, 10, 0.35);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 8px 10px;
   font-size: 0.85rem;
   margin: 0 0 10px;
@@ -7995,7 +7357,7 @@ html.clinical-onboarding-active #main-area {
 
 .guardia-v7-upgrade-meter {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--border) 70%, transparent);
   overflow: hidden;
   margin: 0 0 14px;
@@ -8045,7 +7407,7 @@ html.clinical-onboarding-active #main-area {
 
 .clinical-onboard-boot-progress-track {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--text) 10%, transparent);
   overflow: hidden;
 }
@@ -8423,7 +7785,7 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   font-size: 0.72rem;
   color: var(--color-ink-muted, var(--text-muted));
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid transparent;
 }
 
@@ -8433,7 +7795,7 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   justify-content: center;
   width: 1.35rem;
   height: 1.35rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   font-weight: 700;
   font-size: 0.68rem;
@@ -8547,7 +7909,7 @@ html.ui-density-guardia #btn-clinical-lan-connect {
 .inherit-unassigned-toggle {
   margin-bottom: 8px;
   border: 1px dashed var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding-inline: 8px;
 }
 
@@ -8617,7 +7979,7 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   text-transform: uppercase;
   color: var(--color-ink-muted, var(--text-muted));
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 2px 8px;
 }
 
@@ -8637,7 +7999,7 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   min-height: 44px;
   padding: 6px 4px;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
 }
 
 .inherit-patients-check:hover {
@@ -8769,6 +8131,215 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   padding: 4px 8px;
 }
 
+/* Interconsulta team board — 4 lanes (guardia, activo x2, postguardia),
+   each with bucket sections built from .r4-section-divider + .patient-chips-grid
+   (see interconsulta-team-board.mjs). Mounted in place of the old
+   Fijados/Nuevas/En seguimiento sidebar zones. */
+.ic-team-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.ic-team-board--filtered {
+  grid-template-columns: 1fr;
+}
+
+.ic-board-lane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  /* A lane can hold dozens of patients (e.g. a "Sin equipo" catch-all) — cap
+     its height and scroll internally instead of blowing out the page. */
+  max-height: calc(100vh - 260px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 0;
+  background: color-mix(in oklab, var(--surface) 96%, transparent);
+  overflow: hidden;
+}
+
+.ic-board-lane__head {
+  flex: 0 0 auto;
+  padding: 0.9rem 1rem 0.4rem;
+}
+
+.ic-board-lane__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 1rem 0.85rem;
+}
+
+.ic-board-lane__title {
+  margin: 0 0 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
+/* Guardia lane: highlighted so the on-call team stands out on the board. */
+.ic-board-lane--guardia {
+  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--action) 20%, transparent);
+}
+
+.ic-board-lane--guardia .ic-board-lane__title {
+  color: var(--action);
+}
+
+/* Postguardia lane stays full-opacity and open — patients can still be
+   dragged onto it (see .ic-board-lane__body[data-drop-team-id]). */
+
+.ic-board-bucket .patient-card[draggable="true"] {
+  cursor: grab;
+}
+
+.ic-board-bucket .patient-card.ic-board-card--dragging {
+  opacity: 0.4;
+}
+
+.ic-board-lane__body.ic-board-lane__body--drop-over {
+  outline: 2px dashed var(--action);
+  outline-offset: -2px;
+  border-radius: var(--radius-control);
+}
+
+.ic-board-bucket .patient-chips-grid {
+  grid-template-columns: 1fr;
+  padding: 0;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.ic-board-bucket .r4-section-divider {
+  padding: 0.5rem 0 0.5rem;
+  font-size: 0.7rem;
+  margin-bottom: 0.5rem;
+}
+
+.ic-board-bucket--accent .r4-section-divider {
+  color: var(--action);
+  border-bottom-color: color-mix(in oklab, var(--action) 45%, var(--border));
+}
+
+/* Interconsulta board cards (rendered via renderPatientCardHtml -> .patient-card,
+   the same sidebar card component, NOT .patient-chip-card) match the teal
+   dashboard's .card language instead of the sidebar's bordered/draggable look
+   — elevated surface, no border, soft hover — and shrink down: a lane here
+   can hold dozens of patients (see .ic-board-lane's scroll), so the roomy
+   sidebar padding/toolbar doesn't scale. */
+.ic-board-bucket .patient-card {
+  background: var(--color-elevated, var(--surface));
+  border: 0;
+  border-radius: var(--radius-container, var(--radius-md));
+  box-shadow: none;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+}
+
+.ic-board-bucket .patient-card:hover {
+  box-shadow: none;
+  background: color-mix(in oklab, var(--color-ink, var(--text)) 4%, var(--color-elevated, var(--surface)));
+}
+
+/* No distinct "currently open" highlight on the board — selection only
+   matters inside the drilled-in Resumen, and the previously active patient
+   would otherwise stay visibly marked after returning to the board. This
+   overrides sidebar.css's generic .patient-card.active (border-left +
+   tinted background), which still applies here by class alone — the
+   html.dark variant is needed too, it outranks the plain rule below on
+   specificity (html adds a type selector) regardless of source order. */
+.ic-board-bucket .patient-card.active,
+html.dark .ic-board-bucket .patient-card.active {
+  background: var(--color-elevated, var(--surface));
+  border: 0;
+  box-shadow: none;
+}
+
+/* Subtle tint from the requesting service's hue (see patients-card-html.mjs,
+   interconsult-catalog.mjs's hueForRequestingService) — same --h convention
+   as the Servicio solicitante picker chips, present at rest and on hover.
+   Repeated for .active (light and dark) so the tint still wins over the
+   reset above when a card is both open and tinted. */
+.ic-board-bucket .patient-card--svc-tint,
+.ic-board-bucket .patient-card.active.patient-card--svc-tint,
+html.dark .ic-board-bucket .patient-card.active.patient-card--svc-tint {
+  background: color-mix(in oklab, oklch(0.6 0.14 var(--svc-hue)) 10%, var(--color-elevated, var(--surface)));
+}
+.ic-board-bucket .patient-card--svc-tint:hover,
+html.dark .ic-board-bucket .patient-card--svc-tint:hover {
+  background: color-mix(in oklab, oklch(0.6 0.14 var(--svc-hue)) 16%, var(--color-elevated, var(--surface)));
+}
+
+.ic-board-bucket .patient-card-toolbar {
+  min-height: 16px;
+  margin-bottom: 2px;
+}
+
+.ic-board-bucket .patient-toolbar-chip {
+  min-height: 18px;
+  padding: 1px 5px;
+}
+
+.ic-board-bucket .patient-card .p-name {
+  font-size: 0.78rem;
+  -webkit-line-clamp: 1;
+  margin-bottom: 0;
+}
+
+.ic-board-bucket .patient-card .p-meta {
+  font-size: 0.68rem;
+}
+
+.ic-board-empty {
+  margin: 0.4rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+.ic-team-board .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  margin: 0.15rem 0 0.4rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-border-strong, var(--border));
+  background: transparent;
+  color: var(--color-ink, var(--text));
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ic-team-board .btn-secondary:hover {
+  background: color-mix(in oklab, var(--action) 8%, transparent);
+}
+
+/* "← Tablero" back button (interconsulta-mode-chrome.mjs top bar) — .wb-btn's
+   `display: inline-flex` ties with the UA [hidden] rule on specificity, and
+   author styles always win that tie, so [hidden] alone never hides it. */
+.wb-ic-back-btn[hidden] {
+  display: none;
+}
+
+.wb-ic-bar-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* "Solo guardia de hoy" board filter toggle (interconsulta-mode-chrome.mjs top bar). */
+.wb-btn-toggle--on {
+  background: color-mix(in oklab, var(--action) 14%, transparent);
+  border-color: var(--action);
+  color: var(--action);
+}
+
 
 /* --- styles/sidebar.css --- */
 /* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
@@ -8864,7 +8435,7 @@ html.dark.sidebar-auto-hide.sidebar-reveal aside.patient-sidebar {
   height: 30px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--text-muted);
   cursor: pointer;
@@ -8907,7 +8478,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   height: 30px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--text-muted);
   cursor: pointer;
@@ -8929,7 +8500,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   right: 4px;
   width: 6px;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--action);
   box-shadow: 0 0 0 1px var(--surface);
 }
@@ -8955,7 +8526,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
 .clinical-census-filters--popover {
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   background: var(--surface);
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
 }
@@ -8995,7 +8566,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   height: 30px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--text-muted);
   cursor: pointer;
@@ -9078,7 +8649,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   justify-content: center;
   width: 20px;
   height: 20px;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   border: 1.5px solid var(--border);
   background: var(--surface);
   color: var(--action);
@@ -9135,7 +8706,8 @@ html.dark .btn-add:hover {
   padding: calc(8px * var(--density-space)) calc(14px * var(--density-space)) calc(16px * var(--density-space));
 }
 /** Contenedor Sortable por sección (pinned / activos / archivados): mismo hueco vertical que antes entre tarjetas. */
-.patient-sort-zone {
+.patient-sort-zone,
+.patient-list-zone {
   display: flex;
   flex-direction: column;
   gap: calc(7px * var(--density-space));
@@ -9160,7 +8732,7 @@ html.dark .btn-add:hover {
   padding: calc(10px * var(--density-space)) calc(12px * var(--density-space)) calc(9px * var(--density-space));
   cursor: grab;
   position: relative;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-container);
   border: var(--border-hairline);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
@@ -9176,6 +8748,13 @@ html.dark .btn-add:hover {
   background: var(--state-hover-bg);
   border-color: var(--border);
   box-shadow: var(--shadow-sm);
+}
+/* Tarjetas suaves (3b): fijados se distinguen por un borde teal tenue, no por relleno. */
+.patient-card--pinned {
+  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+}
+html.dark .patient-card--pinned {
+  border-color: color-mix(in oklab, var(--action) 55%, var(--border));
 }
 .patient-card.active {
   background: color-mix(in oklab, var(--color-ink) 6%, var(--surface));
@@ -9274,6 +8853,7 @@ aside.patient-sidebar .btn-delete-card::after {
   min-width: 0;
 }
 .patient-card .p-meta {
+  font: var(--type-wb-mono, 500 11px / 1.3 var(--font-mono));
   font-size: calc(10.5px * var(--density-font));
   color: var(--text-muted);
   display: flex;
@@ -9310,7 +8890,7 @@ aside.patient-sidebar .btn-delete-card::after {
   letter-spacing: 0.02em;
   padding: 2px 8px;
   min-height: 22px;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   border: 1px solid transparent;
   box-shadow: none;
   line-height: 1.15;
@@ -9380,7 +8960,7 @@ html.dark .btn-pinned-text.patient-toolbar-chip--on {
   opacity: 1 !important;
   background: color-mix(in oklab, var(--surface) 97%, var(--bg)) !important;
   border: 1px solid color-mix(in oklab, var(--action) 38%, var(--border)) !important;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-container);
   box-shadow: 0 18px 50px rgba(15, 23, 42, 0.2), 0 6px 18px rgba(79, 86, 255, 0.14) !important;
 }
 html.dark .patient-drag-hovercard.patient-card {
@@ -9457,7 +9037,7 @@ html.dark .patient-drag-hovercard.patient-card {
   font-weight: 700;
   letter-spacing: 0.3px;
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   border: 1px solid color-mix(in oklab, var(--action) 35%, var(--border));
 }
 
@@ -9471,7 +9051,7 @@ html.dark .patient-drag-hovercard.patient-card {
   font-weight: 700;
   letter-spacing: 0.4px;
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   border: 1px solid color-mix(in oklab, var(--color-accent) 28%, var(--border));
 }
 .lab-value-altered {
@@ -9487,6 +9067,23 @@ html.dark .patient-drag-hovercard.patient-card {
   margin-left: 1px;
 }
 html.dark .lab-value-star { color: var(--error); }
+/* Fase 5 (2a/2b) — dentro de la tarjeta Resultados el valor alterado se lee en rojo + flecha,
+   sin fondo tipo pastilla ni asterisco (mockup L2486/L2676). Fuera de esa tarjeta (censo, vista
+   previa) el estilo original se conserva. */
+#lab-output-box .out-line strong.lab-value-altered,
+#lab-output-box .out-indent strong.lab-value-altered {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+#lab-output-box .lab-value-star { display: none; }
+/* Fase 5 — flecha de tendencia vs. toma previa (solo valores alterados). Hereda el color de .lab-value-altered. */
+.lab-trend-arrow {
+  margin-left: 3px;
+  font-weight: 700;
+}
+.lab-trend-up::before { content: '\2191'; }
+.lab-trend-down::before { content: '\2193'; }
 .lab-value-normal {
   color: var(--success);
 }
@@ -9628,6 +9225,51 @@ html.tab-bar-indicators-ready html.dark .inner-tab.active {
   gap: 0;
 }
 
+/* Grouped pendientes: vencido -> en_curso -> abierto -> listo (collapsed). */
+.todo-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.todo-group-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 12px 4px;
+  cursor: default;
+}
+
+.todo-group-count {
+  font: var(--type-wb-metadata, 500 11.5px/1 var(--font-ui));
+  color: var(--text-muted);
+}
+
+.todo-group-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+details.todo-group summary.todo-group-header {
+  cursor: pointer;
+  list-style: none;
+}
+
+details.todo-group summary.todo-group-header::-webkit-details-marker,
+details.todo-group summary.todo-group-header::marker {
+  display: none;
+}
+
+details.todo-group summary.todo-group-header::before {
+  content: '\25B8';
+  color: var(--text-muted);
+  font-size: 10px;
+  margin-right: 2px;
+}
+
+details.todo-group[open] summary.todo-group-header::before {
+  content: '\25BE';
+}
+
 .todo-add-row,
 .todo-row {
   display: grid;
@@ -9742,7 +9384,7 @@ html.dark .todo-text-input:focus {
   /* Do not use margin:0 — it wiped the first-line offset and floated the box high */
   margin: 6px 0 0;
   border: 1.5px solid color-mix(in oklab, var(--text-muted) 55%, var(--border, var(--divider)));
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   background: var(--surface);
   cursor: pointer;
   transition:
@@ -9922,14 +9564,21 @@ html.dark .todo-text-input:focus {
   background: color-mix(in oklab, var(--action) 6%, transparent);
 }
 
-.todo-handoff-meta {
+.todo-owner-meta {
   margin-top: 4px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   font-size: 12px;
   color: var(--text-muted);
 }
 
-.todo-handoff-creator {
+.todo-owner-creator {
   font-weight: 600;
+}
+
+.todo-owner-trigger {
+  font-family: var(--font-mono);
 }
 
 .todo-row-actions {
@@ -9962,12 +9611,10 @@ html.dark .todo-text-input:focus {
 }
 
 .todo-due-section {
-  /* Sit under the text field: skip prio + check columns + both gaps */
-  margin-left: calc(var(--todo-grid-prio) + var(--todo-grid-check) + 20px);
-  margin-right: calc(var(--todo-grid-actions) + 10px);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  width: 100%;
   gap: 6px;
   min-width: 0;
   padding: 0 0 2px;
@@ -9992,9 +9639,10 @@ html.dark .todo-text-input:focus {
   border-radius: var(--radius-pill, 999px);
   background: color-mix(in oklab, var(--surface) 88%, var(--bg));
   color: var(--text-muted);
-  padding: 4px 10px;
+  min-height: 30px;
+  padding: 5px 12px;
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.2;
   cursor: pointer;
@@ -10002,7 +9650,12 @@ html.dark .todo-text-input:focus {
   transition:
     background var(--dur-fast, 0.15s) ease,
     border-color var(--dur-fast, 0.15s) ease,
-    color var(--dur-fast, 0.15s) ease;
+    color var(--dur-fast, 0.15s) ease,
+    transform var(--dur-fast, 0.15s) ease;
+}
+
+.todo-due-preset-chip:active {
+  transform: scale(0.97);
 }
 
 .todo-due-preset-chip:hover {
@@ -10043,7 +9696,12 @@ html.dark .todo-text-input:focus {
   color: var(--text-muted);
 }
 
-.todo-due-modal {
+#todo-due-modal-backdrop.modal-backdrop {
+  /* Always opened from within another modal (e.g. "Nuevo pendiente"); must paint above it. */
+  z-index: var(--z-modal-nested);
+}
+
+#todo-due-modal-backdrop .todo-due-modal {
   width: min(440px, calc(100vw - 32px));
   padding: 0;
   overflow: hidden;
@@ -10057,13 +9715,13 @@ html.dark .todo-text-input:focus {
 .todo-due-modal-head {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 16px 18px 12px;
+  gap: 4px;
+  padding: 18px 20px 14px;
   border-bottom: 1px solid var(--border, var(--divider));
 }
-.todo-due-modal-head h3 {
+.todo-due-modal .todo-due-modal-head h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.015em;
   line-height: 1.25;
@@ -10078,16 +9736,17 @@ html.dark .todo-text-input:focus {
 .todo-due-modal > .todo-due-modal-presets-zone,
 .todo-due-modal > .todo-due-modal-when,
 .todo-due-modal > .todo-due-modal-remind {
-  margin-left: 18px;
-  margin-right: 18px;
+  margin-left: 20px;
+  margin-right: 20px;
 }
 .todo-due-modal > .todo-due-modal-presets-zone {
-  margin-top: 14px;
+  margin-top: 16px;
 }
 .todo-due-modal > .todo-due-modal-actions {
   margin: 0;
-  padding: 12px 18px 16px;
-  border-top: 1px solid var(--border, var(--divider));
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-bottom: 18px;
 }
 
 .todo-due-modal-presets-zone {
@@ -10353,11 +10012,15 @@ html.dark .todo-text-input:focus {
 
 .todo-due-modal-when {
   margin-bottom: 0;
+  padding: 12px;
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+  border-radius: var(--radius-md, 10px);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
 }
 
 .todo-due-modal-when .profile-field-label {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .todo-due-modal-when .rpc-datetime-field {
@@ -10372,42 +10035,69 @@ html.dark .todo-text-input:focus {
 }
 
 .todo-due-modal-remind {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 14px 0 0;
+  gap: 9px;
+  margin: 12px 0 0;
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md, 10px);
   font-size: 13px;
+  font-weight: 500;
   color: var(--text);
   cursor: pointer;
+  transition:
+    background var(--dur-fast, 0.15s) ease,
+    border-color var(--dur-fast, 0.15s) ease;
+}
+
+.todo-due-modal-remind:hover {
+  background: color-mix(in oklab, var(--action) 6%, var(--surface));
+  border-color: color-mix(in oklab, var(--border) 80%, transparent);
 }
 
 .todo-due-modal-remind input[type="checkbox"] {
   margin: 0;
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
+  accent-color: var(--action);
+  cursor: pointer;
 }
 
-.todo-due-modal-actions {
+.todo-due-modal .todo-due-modal-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
   flex-wrap: wrap;
 }
 
 .todo-due-modal-actions__secondary {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .todo-due-modal-actions .btn-med-secondary,
 .todo-due-modal-actions .btn-save {
-  min-height: 40px;
+  min-height: 38px;
   padding: 8px 16px;
   font-size: 13px;
+}
+
+.todo-due-modal-actions #todo-due-modal-clear {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.todo-due-modal-actions #todo-due-modal-clear:hover {
+  color: var(--error);
+  background: color-mix(in oklab, var(--error) 8%, transparent);
 }
 
 .todo-text-input {
@@ -10535,6 +10225,25 @@ html.dark .card { box-shadow: var(--shadow); }
   justify-content: space-between;
   flex-wrap: wrap;
 }
+/* Reporte de Laboratorio header row: no card box, just the label + buttons floating. */
+#lab-input-section {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+#lab-input-section .card-header {
+  background: transparent;
+  border-bottom: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+#lab-input-section .card-header.lab-report-header-row--actions-only {
+  justify-content: flex-end;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+#lab-input-section:hover { box-shadow: none; }
 /* Barras de sección con tono — texto claro en light y dark */
 .card-header[class*="card-header--tone"] {
   color: var(--color-on-accent);
@@ -10558,7 +10267,7 @@ html.dark .card { box-shadow: var(--shadow); }
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.35);
   color: var(--color-on-accent);
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   padding: 4px 12px;
   font-size: 12px;
   font-weight: 600;
@@ -10798,10 +10507,30 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
   justify-content: space-between;
   padding: calc(8px * var(--density-space)) calc(12px * var(--density-space));
   min-height: 44px;
+  background: var(--color-panel-header, var(--surface));
 }
 .lab-output-card-title {
   flex: 1;
   min-width: 0;
+  font: 700 11.5px/1 var(--font-sans, inherit);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.lab-output-copy-btn {
+  font: 600 11.5px/1 var(--font-sans, inherit);
+  padding: 6px 12px;
+  min-height: 30px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.lab-output-copy-btn:hover {
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+  color: var(--action);
 }
 .lab-output-header-tools {
   display: flex;
@@ -10825,21 +10554,16 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
   flex-shrink: 0;
 }
 .lab-history-date-select {
-  font-family: inherit;
-  font-size: 13px;
-  line-height: 1.25;
+  font: 600 12px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
   min-width: 0;
   max-width: min(48vw, 240px);
-  padding: 7px 28px 7px 12px;
-  border-radius: var(--radius-control);
-  border: 1px solid var(--border);
-  background: var(--surface);
+  padding: 0 6px;
+  border: none;
+  background: transparent;
   color: var(--text);
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
 }
 .lab-history-date-select:focus-visible {
   outline: 2px solid var(--action);
@@ -10852,8 +10576,12 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
 .lab-history-day-nav {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
 }
 .lab-history-day-nav-btn {
   appearance: none;
@@ -10864,9 +10592,9 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
   width: 26px;
   height: 26px;
   padding: 0;
-  border-radius: var(--radius-control);
-  border: 1px solid var(--border);
-  background: var(--surface);
+  border-radius: calc(var(--radius-control) - 1px);
+  border: none;
+  background: transparent;
   color: var(--text-muted);
   cursor: pointer;
 }
@@ -11360,10 +11088,10 @@ html.lab-some-tables-modal-open .lab-copy-fab {
   text-align: right;
 }
 .lab-some-tables--modal .lab-some-row--abnormal td {
-  background: color-mix(in oklab, var(--error, #b91c1c) 8%, var(--surface));
+  background: color-mix(in oklab, var(--error) 8%, var(--surface));
 }
 .lab-some-tables--modal .lab-some-row--abnormal td:first-child {
-  box-shadow: inset 3px 0 0 var(--error, #b91c1c);
+  box-shadow: inset 3px 0 0 var(--error);
 }
 .lab-some-tables--modal .lab-some-resultado.lab-some-abnormal {
   color: var(--color-danger);
@@ -11381,7 +11109,7 @@ html.dark .lab-copy-fab:hover {
 }
 .btn-generate {
   background: var(--color-accent);
-  color: var(--color-on-accent, #fff);
+  color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-control);
   padding: calc(10px * var(--density-space)) calc(22px * var(--density-space));
@@ -11404,7 +11132,7 @@ html.dark .lab-copy-fab:hover {
 .btn-spinner {
   width: 14px;
   height: 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 2px solid rgba(255, 255, 255, 0.35);
   border-top-color: var(--color-on-accent);
   animation: btn-spin 700ms linear infinite;
@@ -11470,7 +11198,7 @@ html.dark .btn-generate--success:hover { background: var(--color-success-emphasi
   justify-content: center;
   width: 26px;
   height: 26px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   flex-shrink: 0;
 }
 html.dark .btn-med-secondary {
@@ -11866,7 +11594,7 @@ html.dark .btn-med-secondary--muted:hover {
   width: 22px;
   height: 22px;
   border: 1.5px solid color-mix(in oklab, var(--text-muted) 55%, var(--border, var(--divider)));
-  border-radius: 7px;
+  border-radius: var(--radius-row-btn);
   background: color-mix(in oklab, var(--surface) 70%, var(--bg));
   cursor: pointer;
   transition:
@@ -11935,7 +11663,7 @@ html.dark .btn-med-secondary--muted:hover {
   opacity: 0.7;
 }
 .lab-repo-batch-row-warn {
-  color: color-mix(in oklab, var(--danger, #b91c1c) 85%, var(--text-muted));
+  color: color-mix(in oklab, var(--danger) 85%, var(--text-muted));
 }
 .lab-repo-batch-empty {
   margin: auto;
@@ -11951,6 +11679,55 @@ html.dark .btn-med-secondary--muted:hover {
   flex-shrink: 0;
   font-size: 12px;
   color: var(--text-muted);
+}
+/* Teal workbench §11c "Cargando labs": 4-column K/Cr/BUN/Hb chemistry-grid
+   skeleton, shown inline where those values normally render while a single
+   patient's labs are actively refreshing. Never a full-screen spinner.
+   Markup: public/js/ui-skeleton.mjs buildLabChemistrySkeletonHtml(). */
+.lab-chem-skel {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: color-mix(in oklab, var(--text) 8%, transparent);
+  border: 1px solid var(--border, var(--divider));
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.lab-chem-skel-cell {
+  background: var(--surface);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.lab-chem-skel-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.lab-chem-skel-bar {
+  position: relative;
+  overflow: hidden;
+  height: 20px;
+  border-radius: 5px;
+  background-color: color-mix(in oklab, var(--text) 7%, transparent);
+}
+.lab-chem-skel-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--text) 8%, transparent) 45%,
+    transparent 90%
+  );
+  animation: skel-shimmer 1.1s linear infinite;
+  animation-delay: var(--lab-chem-skel-delay, 0s);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lab-chem-skel-bar::after { content: none; }
 }
 .lab-repo-batch-actions {
   flex-shrink: 0;
@@ -11971,28 +11748,28 @@ html.dark .btn-med-secondary--muted:hover {
   font-size: 13px;
 }
 .lab-repo-batch-queue {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
   flex-shrink: 0;
   margin: 0;
-  padding: 8px 12px 10px;
+  padding: 8px 20px 10px;
   border: none;
   border-top: 1px solid var(--divider);
   border-radius: 0;
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
-  z-index: 1;
+  box-shadow: 0 -2px 12px color-mix(in oklab, var(--color-ink) 8%, transparent);
+  z-index: var(--z-floating);
 }
 .lab-repo-batch-queue-header {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
-}
-.lab-repo-batch-queue-title-row {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  min-width: 0;
-  flex: 1;
+  max-width: 1100px;
+  margin: 0 auto 8px;
 }
 .lab-repo-batch-queue-title {
   font-size: 11px;
@@ -12000,11 +11777,11 @@ html.dark .btn-med-secondary--muted:hover {
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--text-muted);
-}
-.lab-repo-batch-queue-meta {
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
+  min-width: 0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .lab-repo-batch-queue-actions {
   display: flex;
@@ -12017,47 +11794,95 @@ html.dark .btn-med-secondary--muted:hover {
   padding: 4px 8px;
   min-height: 0;
 }
-.lab-repo-batch-queue-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  max-height: 120px;
-  overflow: auto;
+/* Detener stays in its slot (visibility, not display) — Cerrar must not slide
+   left/right when a run starts or finishes. */
+.lab-repo-batch-queue-stop--inactive {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Teal workbench §11c "Actualizando pacientes": one teal button (fixed size,
+   never moves or resizes) + one thin progress bar + one mono caption line.
+   No per-patient row list — three prior attempts wrongly built that as the
+   primary treatment; see MISTAKES.md. */
+.lab-repo-batch-queue-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.lab-repo-batch-queue-btn {
+  flex-shrink: 0;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-radius: var(--radius-control);
+  padding: 9px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  cursor: progress;
+}
+.lab-repo-batch-queue-spinner {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: var(--color-on-accent);
+  visibility: hidden;
+  display: inline-block;
+}
+.lab-repo-batch-queue-spinner--active {
+  visibility: visible;
+  animation: btn-spin 700ms linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lab-repo-batch-queue-spinner--active { animation: none; }
+}
+.lab-repo-batch-queue-progress {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 6px;
 }
-.lab-repo-batch-job {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 4px 2px;
-  font-size: 12px;
+.lab-repo-batch-queue-bar {
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--text) 10%, transparent);
+  overflow: hidden;
 }
-.lab-repo-batch-job-name {
-  font-weight: 600;
-  min-width: 0;
+.lab-repo-batch-queue-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  background-size: 60px 100%;
+  background-repeat: no-repeat;
+  transition: width 200ms ease-out;
+  animation: om-sweep 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lab-repo-batch-queue-fill { animation: none; }
+}
+.lab-repo-batch-queue-meta {
+  font-size: 11.5px;
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.lab-repo-batch-job-status {
-  flex-shrink: 0;
-  color: var(--text-muted);
-}
-.lab-repo-batch-job--running .lab-repo-batch-job-status {
-  color: var(--color-accent);
-}
-.lab-repo-batch-job--ok .lab-repo-batch-job-status {
-  color: var(--success, #15803d);
-}
-.lab-repo-batch-job--empty .lab-repo-batch-job-status {
-  color: var(--text-muted);
-}
-.lab-repo-batch-job--error .lab-repo-batch-job-status,
-.lab-repo-batch-job--aborted .lab-repo-batch-job-status {
-  color: var(--danger, #b91c1c);
 }
 .lab-display-prefs-hint {
   margin: 0 0 16px;
@@ -12114,7 +11939,7 @@ html.dark .btn-med-secondary--muted:hover {
 .rpc-switch-track {
   width: 48px;
   height: 28px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--border) 50%, var(--surface));
   border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
   box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.1);
@@ -12303,7 +12128,7 @@ html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36
   flex-shrink: 0;
   width: 18px;
   height: 18px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -12337,6 +12162,14 @@ html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36
   letter-spacing: 0.02em;
 }
 html.dark .lab-output-fecha { color: var(--color-accent-soft-text); border-bottom-color: rgba(148, 163, 184, 0.35); }
+/* Fase 5 (2a/2b) — cuando el Día-nav ya muestra la fecha ("18/08/2026" en el picker), el
+   encabezado de fecha repetido dentro de la tarjeta Resultados es ruido que el mockup no
+   tiene (L2486/L2676 empiezan directo en el primer grupo de hora). Solo se oculta cuando el
+   picker tiene historial real (select visible); el reporte recién pegado -sin Día-nav útil-
+   conserva la fecha como único indicador. */
+#lab-output-section:has(.lab-history-date-select:not([hidden])) .lab-output-fecha {
+  display: none;
+}
 
 .lab-hour-group-h {
   font-family: inherit;
@@ -12353,6 +12186,28 @@ html.dark .lab-output-fecha { color: var(--color-accent-soft-text); border-botto
   margin-top: 0;
 }
 html.dark .lab-hour-group-h { border-bottom-color: rgba(148, 163, 184, 0.28); }
+/* Fase 5 (2a/2b) — dentro de Resultados, `lab-results-card.mjs` reescribe el encabezado plano
+   ("HH:MM · Toma…") en dos spans: hora mono grande + etiqueta gris uppercase con el conteo de
+   alterados de esa toma (mockup L2486/L2676). */
+#lab-output-box .lab-hour-group-h {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 0 8px;
+  border-bottom: none;
+  text-transform: none;
+}
+#lab-output-box .lab-hour-group-h:first-child { padding-top: 0; }
+#lab-output-box .lab-hour-time {
+  font: 600 13px/1 var(--font-mono);
+}
+#lab-output-box .lab-hour-label {
+  font: 700 10.5px/1 var(--font-sans, inherit);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
 
 .lab-some-tables-host {
   margin-bottom: 16px;
@@ -12518,6 +12373,69 @@ html.dark .lab-out-ascitis-alert {
   border-radius: 3px;
 }
 .section-lbl { color: var(--section-accent); font-weight: 600; letter-spacing: 0.01em; }
+
+/* Fase 5 (2a/2b) — columnas etiqueta/valores que `renderEntry` (labs-display.mjs) siempre
+   produce ahora. Por defecto quedan en línea (no cambia la lectura en censo/vista previa);
+   dentro de `#lab-output-box` (tarjeta "Resultados" del tab Laboratorio) se convierten en la
+   grilla 64px + 1fr del mockup. */
+.lab-row-label {
+  display: inline;
+  margin-right: 10px;
+}
+.lab-row-values,
+.lab-row-value {
+  display: inline;
+}
+
+#lab-output-box .lab-output-fecha + .out-line,
+#lab-output-box .lab-hour-group-h + .out-line,
+#lab-output-box > .out-line:first-child {
+  border-top: none;
+}
+#lab-output-box .out-line,
+#lab-output-box .out-indent {
+  display: grid;
+  /* minmax en vez de 64px fijo: etiquetas cortas (BH, Cuenta:) siguen alineadas a 64px,
+     pero encabezados largos sin tab (UROCULTIVO, HEMOCULTIVO, FUNGICULTIVO) ya no
+     desbordan la columna y se pegan visualmente al resto de la línea. */
+  grid-template-columns: minmax(64px, max-content) 1fr;
+  gap: 10px 14px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-top: 1px solid var(--divider);
+  white-space: normal;
+  line-height: 1.4;
+}
+html.dark #lab-output-box .out-line,
+html.dark #lab-output-box .out-indent {
+  border-top-color: rgba(148, 163, 184, 0.14);
+}
+#lab-output-box .lab-row-label {
+  display: block;
+  margin-right: 0;
+  font: 700 11px/1.4 var(--font-sans, inherit);
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+#lab-output-box .lab-row-label .section-lbl {
+  color: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+}
+#lab-output-box .lab-row-values {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+#lab-output-box .lab-row-values-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+#lab-output-box .lab-row-value { display: inline-flex; align-items: baseline; }
+/* Líneas de prosa sin tab (ej. EGO) que no traen su propio .lab-row-label: ocupan las dos
+   columnas de la grilla en vez de auto-colocarse campo por campo en la de 64px. */
+#lab-output-box .lab-row-values-full { grid-column: 1 / -1; }
 .indica-meta-bar {
   display: grid;
   grid-template-columns: minmax(7rem, 1fr) minmax(5.5rem, 0.7fr) minmax(12rem, 2fr);
@@ -12575,9 +12493,9 @@ html.dark .lab-out-ascitis-alert {
 .indica-section-body textarea { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 8px 10px; font-size: 13px; font-family: inherit; color: var(--text); background: var(--input-fill); resize: vertical; min-height: 70px; line-height: 1.6; width: 100%; transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out); }
 .indica-section-body textarea:focus { outline: none; border-color: var(--action); background: var(--surface); box-shadow: 0 0 0 3px var(--color-focus-ring); }
 .otros-item { border:1px solid var(--border); border-radius:var(--radius-lg); padding:12px; background:var(--bg); display:flex; flex-direction:column; gap:8px; position:relative; }
-.otros-item input { border:1px solid var(--border); border-radius:6px; padding:7px 10px; font-size:13px; font-family:inherit; background:var(--input-fill); font-weight:600; text-transform:uppercase; width:100%; }
+.otros-item input { border:1px solid var(--border); border-radius:var(--radius-badge); padding:7px 10px; font-size:13px; font-family:inherit; background:var(--input-fill); font-weight:600; text-transform:uppercase; width:100%; }
 .otros-item input:focus { outline:none; border-color:var(--action); box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
-.otros-item textarea { border:1px solid var(--border); border-radius:6px; padding:8px 10px; font-size:13px; font-family:inherit; background:var(--input-fill); resize:vertical; min-height:60px; width:100%; }
+.otros-item textarea { border:1px solid var(--border); border-radius:var(--radius-badge); padding:8px 10px; font-size:13px; font-family:inherit; background:var(--input-fill); resize:vertical; min-height:60px; width:100%; }
 .otros-item textarea:focus { outline:none; border-color:var(--action); box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
 .btn-remove-otro { position:absolute; top:8px; right:8px; background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:2px 6px; border-radius:4px; line-height:1; }
 .btn-remove-otro:hover { color: var(--error); background: var(--color-danger-hover-bg); }
@@ -12653,6 +12571,69 @@ html.dark .lab-out-ascitis-alert {
 .lab-bulk-preview-close:focus-visible {
   outline: 2px solid var(--action);
   outline-offset: 2px;
+}
+/* ── Pegar SOME / Procesar modal (header button → modal) ─── */
+.lab-paste-modal {
+  width: min(640px, calc(100vw - 32px));
+  max-height: min(88vh, 640px);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: var(--border-hairline, 1px solid var(--divider));
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay, var(--shadow-md));
+  color: var(--text);
+}
+.lab-paste-modal-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--divider);
+}
+.lab-paste-modal-head h3 {
+  margin: 0;
+  font-size: calc(15px * var(--density-font, 1));
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+.lab-paste-modal-close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.lab-paste-modal-close:hover {
+  color: var(--text);
+  background: var(--state-hover-bg, color-mix(in srgb, var(--text) 6%, transparent));
+}
+.lab-paste-modal-close:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+}
+.lab-paste-modal-body {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
 }
 .lab-bulk-preview-summary {
   margin: 0;
@@ -12782,6 +12763,43 @@ html.dark .lab-out-ascitis-alert {
   margin: 0;
   padding: 12px 18px 16px;
   border-top: 1px solid var(--divider);
+}
+.lab-bulk-preview-rawtext {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px dashed var(--divider);
+  font-size: calc(12px * var(--density-font, 1));
+  color: var(--text-muted);
+}
+.lab-bulk-preview-rawtext summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.lab-bulk-preview-rawtext summary::-webkit-details-marker {
+  display: none;
+}
+.lab-bulk-preview-rawtext summary::before {
+  content: '▸ ';
+  color: var(--text-muted);
+}
+.lab-bulk-preview-rawtext[open] summary::before {
+  content: '▾ ';
+}
+.lab-bulk-preview-rawtext pre {
+  margin: 6px 0 0;
+  max-height: 240px;
+  overflow: auto;
+  padding: 8px 10px;
+  border-radius: var(--radius-badge);
+  background: var(--surface-inset, rgba(0, 0, 0, 0.18));
+  color: var(--text);
+  font-family: var(--font-mono, monospace);
+  font-size: calc(11px * var(--density-font, 1));
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 html.lab-bulk-preview-modal-open #modal.modal-backdrop.open {
   z-index: var(--z-modal-nested);
@@ -13281,6 +13299,13 @@ html:not(.dark) .lab-history-toggle:hover { background: rgba(0,0,0,0.06); }
   white-space: nowrap;
   padding: 4px 0;
 }
+.med-turno-apoyo {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.med-turno-apoyo[hidden] { display: none !important; }
 .med-active-fecha:not([hidden])::before {
   content: "\00B7";
   margin-right: 8px;
@@ -13351,7 +13376,10 @@ html.dark .med-receta-row:hover { background: rgba(96, 165, 250, 0.07); }
 .med-receta-checkcell input[type="checkbox"] {
   width: 18px; height: 18px; margin: 0; cursor: pointer; accent-color: var(--action);
 }
-.med-receta-name { font-size: 13px; line-height: 1.45; color: var(--text); min-width: 0; }
+.med-receta-name {
+  font-size: 13px; line-height: 1.45; color: var(--text); min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .med-receta-destcell { min-width: 0; display: flex; align-items: center; }
 .med-receta-diacell {
   display: flex; justify-content: flex-end; align-items: center; min-width: 0;
@@ -13385,7 +13413,7 @@ html.dark .med-receta-row--needs-dest .med-receta-dest-label {
 .med-receta-dia {
   font-size: 10px; font-weight: 700;
   background: var(--lab-chip-bg); color: var(--lab-chip-txt);
-  padding: 3px 8px; border-radius: 999px; white-space: nowrap;
+  padding: 3px 8px; border-radius: var(--radius-pill); white-space: nowrap;
 }
 .med-nota-toolbar { display: flex; flex-direction: column; gap: 12px; }
 .med-nota-hint { margin: 0; font-size: 12px; line-height: 1.45; color: var(--text-muted); }
@@ -13415,7 +13443,7 @@ html.dark .med-soap-preview-sec--otros .med-soap-preview-chip {
   border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.08);
 }
 .med-insulin-pump-alg-pill {
-  display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px;
+  display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: var(--radius-pill);
   font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
   background: var(--color-accent-soft);
   color: var(--color-accent-soft-text);
@@ -13519,6 +13547,46 @@ html.dark .med-output-tab-pill {
 }
 html.dark .med-output-tab.active {
   color: var(--text);
+}
+/* Texto de egreso — collapsed teaser row (mockup #4a). Full text lives in the
+   "Texto de egreso" modal opened via openMedEgresoModal(); this row is only a
+   compact summary + entry point, never the full medication list. */
+.med-egreso-teaser {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: var(--radius-container);
+}
+.med-egreso-teaser-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.med-egreso-teaser-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.med-egreso-teaser-preview {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.med-egreso-teaser-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 .lab-history-meta { font-size: 13px; color: var(--text); flex: 1; min-width: 140px; }
 .lab-history-actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
@@ -13786,7 +13854,7 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: calc(16px * var(--density-space, 1)) calc(18px * var(--density-space, 1)) calc(12px * var(--density-space, 1));
+  padding: calc(12px * var(--density-space, 1)) calc(16px * var(--density-space, 1));
   border-bottom: 1px solid var(--divider);
   flex-shrink: 0;
 }
@@ -13804,10 +13872,10 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   border: none;
   background: transparent;
   color: var(--text-muted);
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  min-height: 28px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   padding: 0;
   margin: 0;
   display: inline-flex;
@@ -14197,7 +14265,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   margin: 0 0 12px;
   padding: 4px;
   border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
 }
 
@@ -14207,7 +14275,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   gap: 6px;
   margin: 0;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
@@ -14224,7 +14292,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   margin: 0 0 10px;
   padding: 8px 10px;
   font-size: 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-field);
   background: color-mix(in oklab, var(--warn) 18%, transparent);
   color: inherit;
 }
@@ -14280,7 +14348,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   padding: 8px 10px;
   font-size: 12px;
   line-height: 1.45;
-  border-radius: 8px;
+  border-radius: var(--radius-field);
   color: var(--text-muted);
   background: color-mix(in oklab, var(--surface) 90%, var(--bg));
   border: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
@@ -14293,7 +14361,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   justify-content: space-between;
   gap: 12px;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-field);
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
   border: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
 }
@@ -14404,7 +14472,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   height: 10px;
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--border) 80%, var(--text-muted));
   cursor: pointer;
 }
@@ -14564,7 +14632,7 @@ html.dark .drive-import-lab-status--new {
   line-height: 1.5;
   white-space: pre-wrap;
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   border: 1px solid color-mix(in oklab, var(--border) 45%, transparent);
 }
 
@@ -14573,7 +14641,7 @@ html.dark .drive-import-lab-status--new {
   flex-direction: column;
   gap: 6px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-field);
   border: 1px solid color-mix(in oklab, var(--border) 45%, transparent);
   background: color-mix(in oklab, var(--surface) 96%, var(--bg));
 }
@@ -14596,7 +14664,7 @@ html.dark .drive-import-lab-status--new {
   box-sizing: border-box;
   padding: 8px 10px;
   border: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   font-family: var(--font-sans, system-ui, sans-serif);
   font-size: 12px;
   line-height: 1.45;
@@ -14608,7 +14676,7 @@ html.dark .drive-import-lab-status--new {
   margin: 0 0 10px;
   padding: 10px 12px;
   border: 1px solid color-mix(in oklab, var(--color-accent) 35%, var(--border));
-  border-radius: 8px;
+  border-radius: var(--radius-field);
   background: color-mix(in oklab, var(--color-accent) 8%, var(--surface));
 }
 
@@ -14630,7 +14698,7 @@ html.dark .drive-import-lab-status--new {
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
   background: var(--surface);
   font-size: 12px;
@@ -14674,6 +14742,7 @@ html.dark .drive-import-lab-status--new {
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  position: relative;
   padding: 2px;
   border: var(--border-hairline);
   border-radius: var(--radius-pill);
@@ -16136,7 +16205,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-altered-time-input {
   border: 1px solid color-mix(in oklab, var(--todo-prio-media) 45%, var(--border));
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   padding: 2px 4px;
   font-size: 11px;
   font-family: inherit;
@@ -16559,7 +16628,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px 10px 16px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--divider);
   flex-shrink: 0;
 }
@@ -16703,7 +16772,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   overflow: hidden;
   padding: 0;
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
 }
 
@@ -16712,7 +16781,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 16px 8px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--divider);
   flex-shrink: 0;
 }
@@ -16723,14 +16792,20 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-charts-modal-close {
+  flex-shrink: 0;
   appearance: none;
   border: none;
   background: transparent;
   color: var(--text-muted);
   font-size: 1.5rem;
   line-height: 1;
-  min-width: 44px;
-  min-height: 44px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   border-radius: var(--radius-sm);
 }
@@ -18829,7 +18904,7 @@ html.dark .ev-compose__input:focus {
 .vpo-chip span {
   display: inline-block;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   font-size: calc(12px * var(--density-font, 1));
   line-height: 1.3;
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
@@ -19026,7 +19101,7 @@ html.dark .ev-compose__input:focus {
 
 .receta-hu-card {
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   background: var(--surface);
   padding: 14px 16px;
   display: flex;
@@ -19061,7 +19136,7 @@ html.dark .ev-compose__input:focus {
   font: inherit;
   font-size: 14px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 8px 10px;
   background: var(--input-fill, var(--bg));
   color: var(--text);
@@ -19092,7 +19167,7 @@ html.dark .ev-compose__input:focus {
 .btn-add-inline {
   flex: 0 0 auto;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 8px 14px;
   font-size: 13px;
   font-weight: 600;
@@ -19130,7 +19205,7 @@ html.dark .ev-compose__input:focus {
   gap: 10px;
   padding: 10px 12px;
   border: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--bg) 88%, var(--surface));
 }
 
@@ -19197,7 +19272,7 @@ html.dark .ev-compose__input:focus {
   line-height: 1;
   cursor: pointer;
   padding: 2px 6px;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   flex-shrink: 0;
 }
 
@@ -19350,7 +19425,7 @@ html.dark .receta-hu-item {
   font: inherit;
   font-size: 12px;
   padding: 5px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--border);
   background: var(--surface);
   min-width: 7.5rem;
@@ -19373,7 +19448,7 @@ html.dark .receta-hu-item {
   cursor: pointer;
   user-select: none;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   border: 1px solid var(--border);
   background: var(--surface);
 }
@@ -19419,7 +19494,7 @@ html.dark .receta-hu-item {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
+  border-radius: var(--radius-row-btn);
   font-size: 16px;
   line-height: 1;
 }
@@ -19768,7 +19843,7 @@ html.dark .med-pharm-modal-legend {
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--primary);
   background: color-mix(in oklab, var(--primary) 12%, var(--surface));
   border: 1px solid color-mix(in oklab, var(--primary) 35%, var(--border));
@@ -19795,7 +19870,7 @@ html.dark .med-pharm-modal-legend {
   font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--text-muted);
   background: color-mix(in oklab, var(--border) 40%, var(--surface));
   border: 1px solid var(--border);
@@ -19839,7 +19914,7 @@ html.dark .med-pharm-modal-legend {
   font-size: 10px;
   font-weight: 600;
   padding: 5px 9px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--border);
   background: color-mix(in oklab, var(--bg) 40%, var(--surface));
   color: var(--text-muted);
@@ -19947,7 +20022,7 @@ html.dark .med-pharm-modal-legend {
   font-size: 10px;
   font-weight: 600;
   padding: 4px 8px;
-  border-radius: 7px;
+  border-radius: var(--radius-row-btn);
   border: 1px solid var(--primary);
   background: var(--surface);
   color: var(--primary);
@@ -20031,7 +20106,7 @@ body.rpc-med-pharm-modal-open {
 
 .med-pharm-modal {
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
   width: min(480px, 100%);
   max-height: 90vh;
@@ -20775,7 +20850,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   margin: 0;
   padding: 5px 10px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
   color: var(--text-muted);
   font: inherit;
@@ -20838,7 +20913,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   margin: 0;
   padding: 9px 12px;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   background: transparent;
   color: var(--text-muted);
   font: inherit;
@@ -20871,6 +20946,12 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
 }
 .settings-panel {
   width: 100%;
+}
+.settings-panel:not([hidden]) {
+  animation: fade-in var(--dur-fast) var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  .settings-panel:not([hidden]) { animation: none; }
 }
 .settings-panel.settings-panel--wide .settings-acc-body {
   max-width: none;
@@ -21034,7 +21115,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   padding: 5px 12px;
   min-height: 32px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-chip);
+  border-radius: var(--radius-row-btn);
   background: transparent;
   color: var(--text-muted);
   font: inherit;
@@ -21159,7 +21240,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   height: 32px;
   padding: 5px 26px 5px 10px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-chip);
+  border-radius: var(--radius-field);
   background-color: var(--surface);
   color: var(--text-muted);
   font: inherit;
@@ -21248,7 +21329,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: var(--radius-chip);
+  border-radius: var(--radius-field);
   background: var(--color-warn-surface);
   border: 1px solid var(--color-warn-border);
   font-size: 12px;
@@ -21535,7 +21616,7 @@ body.connection-dropdown-open {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 12px 14px;
+  padding: 16px 18px;
   border-bottom: 1px solid var(--divider);
   flex-shrink: 0;
   background: var(--color-elevated, var(--surface));
@@ -21612,7 +21693,7 @@ body.connection-dropdown-open {
 .connection-dropdown-head-icon {
   width: 30px;
   height: 30px;
-  border-radius: 7px;
+  border-radius: var(--radius-row-btn);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -21805,7 +21886,7 @@ body.connection-dropdown-open {
   font-size: 12px;
 }
 .connection-dropdown-modal .lan-connection-stack.settings-card-stack {
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   border-color: color-mix(in oklab, var(--border) 100%, transparent);
   background: color-mix(in oklab, var(--surface) 98%, var(--bg));
 }
@@ -21833,7 +21914,7 @@ body.connection-dropdown-open {
   width: 42px;
   height: 24px;
   margin: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid color-mix(in oklab, var(--action) 35%, var(--border));
   background: color-mix(in oklab, var(--text-muted) 22%, var(--surface));
   cursor: pointer;
@@ -22102,7 +22183,7 @@ body.connection-dropdown-open {
 }
 .lan-connection-panel-root .lan-rooms-panel ~ .lan-rooms-panel { display: none !important; }
 .lan-connect-card {
-  border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface);
   padding: 10px 10px 12px; display: flex; flex-direction: column; gap: 8px;
   box-shadow: none;
 }
@@ -22205,7 +22286,7 @@ body.connection-dropdown-open {
   align-items: center;
   padding: 8px 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--surface) 96%, var(--bg));
 }
 .lan-rooms-list-label {
@@ -22438,7 +22519,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   justify-content: center;
   align-items: center;
   padding: 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--border);
   background: #fff;
   width: fit-content;
@@ -22472,7 +22553,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 .equipos-lista-panel-body .equipos-qr-url-box {
   margin: 0;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--border);
   background: var(--input-fill, var(--surface));
   font-family: var(--font-mono, ui-monospace, monospace);
@@ -22486,7 +22567,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 .equipos-lista-panel-body .equipos-qr-lan-notice {
   margin: 0;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid color-mix(in oklab, var(--warning, #b45309) 28%, var(--border));
   background: color-mix(in oklab, var(--warning, #b45309) 8%, var(--surface));
   font-size: 11px;
@@ -22531,7 +22612,8 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   margin: 8px 0;
   padding: 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
+  animation: fade-in var(--dur-fast) var(--ease-out);
 }
 .equipos-lista-panel-body .equipos-queue-board-host .equipos-desktop-row-meta {
   font-size: 12px;
@@ -22550,7 +22632,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   margin-top: 10px;
   padding: 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--surface) 96%, var(--bg));
 }
 .equipos-history-head {
@@ -22601,7 +22683,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-host-patients-row {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
-  padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface);
+  padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-badge); background: var(--surface);
 }
 .lan-host-patients-row-main {
   display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1;
@@ -22629,7 +22711,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-host-patients-preview-row {
   display: flex; flex-direction: column; gap: 1px;
-  padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface);
+  padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius-badge); background: var(--surface);
 }
 .lan-host-patients-preview-more {
   font-size: 10px; color: var(--text-muted); padding: 2px 4px;
@@ -22658,7 +22740,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-host-census-search {
   flex: 1 1 220px; min-width: 0;
-  font-size: 12px; padding: 7px 10px; border-radius: 6px;
+  font-size: 12px; padding: 7px 10px; border-radius: var(--radius-badge);
   border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
 }
 .lan-host-census-filter {
@@ -22667,7 +22749,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-host-census-filter-team {
   flex: 0 1 200px; min-width: 140px;
-  font-size: 11px; padding: 6px 8px; border-radius: 6px;
+  font-size: 11px; padding: 6px 8px; border-radius: var(--radius-badge);
   border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
 }
 .lan-host-census-badge--archived {
@@ -22679,7 +22761,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-host-census-table-wrap {
   flex: 1 1 auto; min-height: 0; overflow: auto;
-  border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface);
 }
 .lan-host-census-table {
   width: 100%; border-collapse: collapse; font-size: 11px;
@@ -22818,7 +22900,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-connect-actions-row .btn-lan-primary { flex: 1; min-width: 140px; }
 .btn-lan-primary {
-  background: var(--action); color: var(--color-on-accent); border: none; border-radius: 8px;
+  background: var(--action); color: var(--color-on-accent); border: none; border-radius: var(--radius-control);
   padding: 10px 14px; font-size: 13px; font-weight: 700; font-family: inherit;
   cursor: pointer; box-shadow: var(--shadow);
 }
@@ -22826,14 +22908,14 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 .btn-lan-primary:disabled { opacity: 0.55; cursor: not-allowed; }
 .btn-lan-secondary {
   background: var(--lab-chip-bg); color: var(--action); border: 1px solid var(--border);
-  border-radius: 8px; padding: 9px 12px; font-size: 12px; font-weight: 600;
+  border-radius: var(--radius-control); padding: 9px 12px; font-size: 12px; font-weight: 600;
   font-family: inherit; cursor: pointer; flex: 1; min-width: 120px;
 }
 .btn-lan-danger {
   background: var(--color-danger-hover-bg);
   color: var(--error);
   border: 1px solid color-mix(in oklab, var(--error) 28%, var(--surface));
-  border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600;
+  border-radius: var(--radius-control); padding: 7px 10px; font-size: 12px; font-weight: 600;
   font-family: inherit; cursor: pointer;
 }
 .btn-lan-danger:hover { background: color-mix(in oklab, var(--error) 10%, var(--surface)); }
@@ -22843,7 +22925,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
 }
 .lan-role-tab {
-  flex: 1; border: none; border-radius: 8px; padding: 9px 8px;
+  flex: 1; border: none; border-radius: var(--radius-control); padding: 9px 8px;
   font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
   background: transparent; color: var(--text-muted); line-height: 1.25;
 }
@@ -22862,7 +22944,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .btn-settings-help-primary {
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 10px 12px;
   font-size: 13px;
   font-weight: 700;
@@ -22875,7 +22957,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 .btn-settings-help-primary:hover { background: var(--action-hover); }
 .btn-settings-help-secondary {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 9px 12px;
   font-size: 12px;
   font-weight: 700;
@@ -23027,7 +23109,7 @@ details.settings-accordion:not([open]) > .settings-acc-body {
 .settings-acc-inline-help.is-visible { display: block; }
 .settings-preimport-box {
   padding: 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid rgba(37, 99, 235, 0.35);
   background: var(--lab-chip-bg);
 }
@@ -23283,7 +23365,7 @@ select.profile-input.profile-select {
   justify-content: space-between;
   gap: 10px 14px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--action);
   background: color-mix(in srgb, var(--action) 12%, transparent);
 }
@@ -23626,7 +23708,7 @@ select.profile-input.profile-select {
   align-items: center;
   gap: 6px;
   padding: 5px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   border: 1px solid color-mix(in oklab, var(--text) 14%, var(--divider));
   background: color-mix(in oklab, var(--text) 6%, var(--color-elevated));
   font-size: 11px;
@@ -24959,7 +25041,7 @@ select.profile-input.profile-select {
   font-weight: 600;
   letter-spacing: 0.02em;
   padding: 0.12rem 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--divider);
   color: var(--text-muted);
   white-space: nowrap;
@@ -24985,7 +25067,7 @@ select.profile-input.profile-select {
   justify-content: center;
   min-width: 1.15rem;
   padding: 0.05rem 0.35rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 0.9em;
   font-weight: 700;
   color: var(--text-secondary);
@@ -25327,7 +25409,7 @@ select.profile-input.profile-select {
   background: var(--card-body-bg, #fff);
   color: var(--text, #1a1a1a);
   border: 1px solid var(--border, #d8dde3);
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   padding: 1.25rem 1.35rem 1.4rem;
   box-shadow: 0 18px 48px rgb(0 0 0 / 18%);
 }
@@ -25370,7 +25452,7 @@ select.profile-input.profile-select {
   text-align: left;
   border: 1px solid var(--border, #d8dde3);
   background: var(--card-header, #f6f7f9);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 0.55rem 0.7rem;
   cursor: pointer;
 }
@@ -25512,7 +25594,7 @@ select.profile-input.profile-select {
   width: 8px;
   height: 8px;
   margin-top: 3px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--text-muted);
   flex-shrink: 0;
 }
@@ -25569,7 +25651,7 @@ select.profile-input.profile-select {
   display: block;
   width: 72px;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--text) 8%, var(--divider));
   overflow: hidden;
 }
@@ -25929,7 +26011,7 @@ select.profile-input.profile-select {
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px;
 }
 .clinical-conflict-version-pill {
-  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 999px;
+  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: var(--radius-pill);
 }
 .clinical-conflict-version-pill--local {
   background: color-mix(in oklab, var(--color-accent) 18%, transparent); color: var(--color-accent-soft-text);
@@ -26278,7 +26360,7 @@ html.dark .soap-btn-cancel {
   .intro-options-grid { grid-template-columns: 1fr; }
 }
 .intro-option-card {
-  border: 1px solid var(--border); border-radius: 14px; padding: 14px 14px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-sheet); padding: 14px 14px 14px;
   background: var(--bg); display: flex; flex-direction: column; gap: 8px; text-align: left;
 }
 .intro-option-card-accent {
@@ -26642,7 +26724,7 @@ html.dark .tour-spotlight-soap { outline-color: var(--color-accent-soft-text) !i
   line-height: 1.2;
   min-width: 20px;
   padding: 4px 7px;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
   background: var(--surface);
   color: var(--text);
@@ -26871,7 +26953,7 @@ html.dark .help-center-modal { background: var(--surface); color: var(--text); }
   font-size: 11px;
   font-weight: 700;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-accent-soft);
   color: var(--action);
   border: 1px solid color-mix(in oklab, var(--action) 25%, transparent);
@@ -27240,7 +27322,7 @@ html.dark #rpc-db-change-pass-overlay { background: var(--scrim-bg); }
 body.rpc-db-unlock-active { overflow: hidden; }
 .rpc-db-unlock-panel {
   background: var(--surface); color: var(--text);
-  border-radius: 16px; max-width: 420px; width: 100%;
+  border-radius: var(--radius-sm); max-width: 420px; width: 100%;
   padding: 26px 24px 22px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);
   border: 1px solid var(--border);
   display: flex; flex-direction: column; gap: 10px;
@@ -27312,7 +27394,7 @@ body.rpc-db-unlock-active { overflow: hidden; }
 html.dark #rpc-idle-lock-overlay { background: var(--scrim-bg); }
 .rpc-idle-lock-panel {
   background: var(--surface); color: var(--text);
-  border-radius: 16px; max-width: 380px; width: 100%;
+  border-radius: var(--radius-sm); max-width: 380px; width: 100%;
   padding: 26px 24px 22px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);
   border: 1px solid var(--border);
   display: flex; flex-direction: column; gap: 12px;
@@ -27357,7 +27439,7 @@ html.dark #rpc-clinical-session-lock { background: var(--scrim-bg); }
 .clinical-session-lock-panel {
   background: var(--surface);
   color: var(--text);
-  border-radius: 16px;
+  border-radius: var(--radius-sm);
   max-width: 380px;
   width: 100%;
   padding: 26px 24px 22px;
@@ -27407,7 +27489,7 @@ html.dark #rpc-clinical-session-lock { background: var(--scrim-bg); }
 html.dark #rpc-wipe-modal { background: var(--scrim-bg); }
 .rpc-wipe-panel {
   background: var(--surface); color: var(--text);
-  border-radius: 14px; max-width: 460px; width: 100%;
+  border-radius: var(--radius-sheet); max-width: 460px; width: 100%;
   padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
   border: 1px solid var(--border);
   display: flex; flex-direction: column; gap: 12px;
@@ -27504,13 +27586,13 @@ html.dark .tend-section-toggle:hover { background: rgba(96, 165, 250, 0.08); }
 }
 .tend-section-count {
   font-size: 12px; font-weight: 600; color: var(--text-muted);
-  padding: 4px 10px; border-radius: 999px; background: var(--lab-chip-bg);
+  padding: 4px 10px; border-radius: var(--radius-pill); background: var(--lab-chip-bg);
   line-height: 1.2; min-width: 1.75em; text-align: center;
 }
 .tend-section-chart-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   height: 32px; padding: 0 12px; margin-left: 0; flex-shrink: 0;
-  border: 1px solid rgba(37, 99, 235, 0.28); border-radius: 999px;
+  border: 1px solid rgba(37, 99, 235, 0.28); border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--primary) 10%, var(--surface));
   color: var(--primary); font-family: inherit; font-size: 12px; font-weight: 600;
   cursor: pointer; transition: border-color var(--dur-normal) ease, color var(--dur-normal) ease, box-shadow var(--dur-normal) ease, background var(--dur-normal) ease;
@@ -27728,7 +27810,7 @@ html.dark .tend-group-drag-hovercard.tend-group-panel-card {
 .tend-group-hidden-label { font-weight: 600; color: var(--text); margin-right: 4px; }
 .tend-group-restore-chip {
   display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px 3px 10px;
-  border-radius: 999px; border: 1px solid var(--border); background: var(--surface);
+  border-radius: var(--radius-chip); border: 1px solid var(--border); background: var(--surface);
   font-size: 11px; color: var(--text); cursor: pointer; font-family: inherit;
 }
 .tend-group-restore-chip:hover { border-color: rgba(37, 99, 235, 0.35); }
@@ -27767,7 +27849,7 @@ html.dark .tend-spark-placeholder { background: rgba(255,255,255,0.04); }
 }
 .tend-hidden-modal-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-height: 2em; }
 .tend-hidden-chip {
-  display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px 6px 12px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px 6px 12px; border-radius: var(--radius-chip);
   border: 1px solid var(--border); background: var(--surface); font-size: 12px; color: var(--text);
   font-family: inherit; cursor: pointer; transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease, color var(--dur-fast) ease;
 }
@@ -27985,7 +28067,7 @@ html.electron-macos-inset-bar .tend-gaso-ext-backdrop * {
   width: min(960px, 96vw);
   max-height: min(90dvh, calc(var(--app-height) - 32px), 940px);
   overflow: auto;
-  border-radius: 16px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface, var(--bg));
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
@@ -28026,7 +28108,7 @@ html.electron-macos-inset-bar .tend-gaso-ext-backdrop * {
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   border: 1px solid rgba(37, 99, 235, 0.28);
   background: rgba(37, 99, 235, 0.08);
 }
@@ -28180,7 +28262,7 @@ html.electron-macos-inset-bar .tend-gaso-ext-backdrop * {
   justify-content: center;
   width: 24px;
   height: 24px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 11px;
   font-weight: 800;
   line-height: 24px;
@@ -28207,7 +28289,7 @@ html.electron-macos-inset-bar .tend-gaso-ext-backdrop * {
   display: inline-block;
   margin-bottom: 6px;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 12px;
   font-weight: 700;
   border: 1px solid var(--border);
@@ -28402,7 +28484,7 @@ html.dark .tend-gaso-tip {
   gap: 10px;
   padding: 6px 14px;
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius-md);
   background: var(--surface);
   cursor: pointer;
   font-family: inherit;
@@ -28613,7 +28695,7 @@ html.dark .tend-gaso-tip {
   width: min(92vw, 420px);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   padding: 18px 20px 16px;
   box-shadow: var(--shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.18));
 }
@@ -28648,7 +28730,7 @@ html.dark .tend-gaso-tip {
   border: 1px solid var(--border);
   background: var(--surface-elevated, var(--surface));
   color: var(--text);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 6px 10px;
   font-size: 0.78rem;
   cursor: pointer;
@@ -28662,7 +28744,7 @@ html.dark .tend-gaso-tip {
   width: 100%;
   min-height: 4.5rem;
   resize: vertical;
-  border-radius: 8px;
+  border-radius: var(--radius-field);
   border: 1px solid var(--border);
   padding: 8px 10px;
   font: inherit;
@@ -28671,7 +28753,7 @@ html.dark .tend-gaso-tip {
 }
 .tend-event-compose-input {
   width: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius-field);
   border: 1px solid var(--border);
   padding: 8px 10px;
   font: inherit;
@@ -28730,8 +28812,479 @@ html.dark .tend-gaso-tip {
 
 
 
+/* --- styles/nota-evolucion.css --- */
+/* ── Nota de evolución (SOAP) — screen 9a ─────────────────────────────
+ * Top bar: shared wb-mode-frame (workbench-kit.css) — identity + día N +
+ * borrador/firmada status, Copiar nota de ayer, Vista de impresión, and the
+ * one teal primary (Firmar y cerrar). S: texto libre + autosave reversible
+ * (om-rise). O: derivado en vivo por zona — el residente lo revisa, no lo
+ * teclea; se firma junto con toda la nota, no por separado. A: campo más
+ * grande de la pantalla. P: por zona, marcas mono cortas (nuevo / sin
+ * cambio / pendiente / suspende).
+ * Reuses .soap-modal-backdrop / .soap-modal / .soap-section shell (modals.css).
+ */
+
+.ne-modal-body {
+  padding: 18px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  container-type: inline-size;
+}
+
+.ne-modal-body .wb-mode-frame {
+  flex-shrink: 0;
+}
+
+/* The primary-tab mount (nota-evolucion-primary-tab.mjs) sits inside the
+ * legacy `.rpc-form-stack` single-column form container, which can be much
+ * narrower than the viewport (patient list + narrower window both eat into
+ * it). A viewport media query can't see that — only a container query can,
+ * so `.ne-layout` stacks correctly at the app's real minWidth (960px, see
+ * main.js) and not just on a narrow phone-width viewport. */
+.ne-primary-mount {
+  container-type: inline-size;
+}
+
+/* Primary-tab toolbar — toggles between the S/O/A/P screen and the legacy
+ * free-text "Plantilla clásica" template inside the "Nota de evolución" tab. */
+.ne-primary-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 0 8px;
+}
+
+.ne-primary-toolbar-link {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+/* Two-column layout — screen 9a: left read/write column (S/O/A/P), right
+ * "insertar" column, 336px in the mockup. Kept fluid per the app's one
+ * resizable-window rule; the aside gets a max-width instead of a hard px. */
+.ne-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(200px, 336px);
+  gap: 14px;
+  align-items: start;
+}
+
+.ne-layout-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ne-layout-aside {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (max-width: 860px) {
+  .ne-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Container-query version of the same stacking rule, for the primary-tab
+ * mount and modal body (see `container-type: inline-size` above) — this is
+ * what actually fires in the embedded Interconsulta "Clínico" tab, where the
+ * host column can be under 600px wide even on a full-size desktop viewport. */
+@container (max-width: 560px) {
+  .ne-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ne-aside-panel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ne-aside-panel--insertar .ne-aside-panel-header {
+  color: var(--color-danger, #d70015);
+  background: var(--color-danger-tint, color-mix(in oklab, var(--color-danger, #d70015) 7%, var(--section-header-bg)));
+}
+
+.ne-aside-panel-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.ne-aside-panel-action {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.ne-aside-panel-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.ne-insertar-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.ne-insertar-item:last-child {
+  border-bottom: none;
+}
+
+.ne-insertar-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ne-insertar-item-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ne-insertar-item-subtitle {
+  font-size: 11px;
+  color: var(--color-ink-muted, var(--text-muted));
+}
+
+.ne-insertar-action {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ne-cambios-item {
+  padding: 6px 0;
+  font-size: 12.5px;
+  color: var(--text);
+  border-bottom: 1px solid var(--divider);
+}
+
+.ne-cambios-item:last-child {
+  border-bottom: none;
+}
+
+/* Per-zone accent (N/V/HD/HI/NM) — mockup #9a colors each zone's mono id a
+ * distinct hue for fast scanning; this is data classification, not a brand
+ * action color, so it does not count against the one-teal-primary rule
+ * (same reasoning as Guardia's VENCIDO/EN CURSO status colors). Values match
+ * the mockup's literal oklch() figures. */
+.ne-objetivo-zone[data-ne-objetivo-zone='N'] .ne-zone-label,
+.ne-plan-zone[data-ne-plan-zone='N'] .ne-zone-label {
+  color: var(--ne-zone-n, oklch(0.42 0.12 300));
+}
+.ne-objetivo-zone[data-ne-objetivo-zone='V'] .ne-zone-label,
+.ne-plan-zone[data-ne-plan-zone='V'] .ne-zone-label {
+  color: var(--ne-zone-v, oklch(0.42 0.12 210));
+}
+.ne-objetivo-zone[data-ne-objetivo-zone='HD'] .ne-zone-label,
+.ne-plan-zone[data-ne-plan-zone='HD'] .ne-zone-label {
+  color: var(--ne-zone-hd, oklch(0.42 0.12 18));
+}
+.ne-objetivo-zone[data-ne-objetivo-zone='HI'] .ne-zone-label,
+.ne-plan-zone[data-ne-plan-zone='HI'] .ne-zone-label {
+  color: var(--ne-zone-hi, oklch(0.42 0.12 85));
+}
+.ne-objetivo-zone[data-ne-objetivo-zone='NM'] .ne-zone-label,
+.ne-plan-zone[data-ne-plan-zone='NM'] .ne-zone-label {
+  color: var(--ne-zone-nm, oklch(0.42 0.12 160));
+}
+
+/* Objetivo — derivado en vivo, solo lectura; se firma con toda la nota. */
+.ne-section-hint {
+  font-weight: 500;
+  color: var(--color-ink-muted, var(--text-muted));
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.ne-objetivo-zones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ne-objetivo-zone {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.ne-objetivo-zone:last-child {
+  border-bottom: none;
+}
+
+.ne-zone-label {
+  flex-shrink: 0;
+  width: 34px;
+  padding-top: 2px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+}
+
+.ne-zone-label-full {
+  display: none;
+}
+
+/* Holds the mono vital/lab line + the editable narrative below it, so the
+ * zone label above stays a single fixed-width column regardless of how many
+ * rows the narrative wraps to. */
+.ne-objetivo-zone-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ne-objetivo-zone-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 13px;
+}
+
+.ne-objetivo-item {
+  color: var(--text);
+}
+
+.ne-objetivo-item--alert {
+  color: var(--color-danger, #d70015);
+  font-weight: 600;
+}
+
+/* The narrative starting default (mockup #9a): pulled from the same
+ * Estado Actual clause-builders as the classic SOAP text, editable in place
+ * — not a read-only summary. Plain-field look at rest, a visible border on
+ * hover/focus is the only affordance (matches Plan's editable-row style
+ * below), so it doesn't compete visually with the mono vitals/labs line. */
+.ne-objetivo-narrative {
+  width: 100%;
+  min-height: 34px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 3px 5px;
+  margin: 0 -5px;
+}
+
+.ne-objetivo-narrative:hover {
+  border-color: var(--divider);
+}
+
+.ne-objetivo-narrative:focus {
+  border-color: var(--primary);
+  outline: none;
+  background: var(--section-header-bg, color-mix(in oklab, var(--primary) 4%, transparent));
+}
+
+.ne-objetivo-narrative::placeholder {
+  color: var(--color-ink-muted, var(--text-muted));
+  font-style: italic;
+}
+
+.ne-empty-hint {
+  color: var(--color-ink-muted, var(--text-muted));
+  font-size: 13px;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+/* Análisis — el campo más grande de la pantalla. */
+.ne-section-a {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ne-section-a .soap-section-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.ne-analisis-textarea {
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  resize: vertical;
+}
+
+/* Plan — por zona, marcas mono cortas: nuevo / sin cambio / pendiente / suspende. */
+.ne-plan-zones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ne-plan-zone-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ne-plan-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+/* An <input>, not a <span> — problem 4: an existing Plan item's text must be
+ * editable in place, not locked to add-new/remove-only. Plain-field look at
+ * rest (no border, no background) so it reads as a clinician-authored list
+ * item, not a form control or a derived/locked row; a border only appears
+ * on hover/focus as the sole editability affordance. */
+.ne-plan-row-text {
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: 0 -4px;
+}
+
+.ne-plan-row-text:hover {
+  border-color: var(--divider);
+}
+
+.ne-plan-row-text:focus {
+  border-color: var(--primary);
+  outline: none;
+  background: var(--section-header-bg, color-mix(in oklab, var(--primary) 4%, transparent));
+}
+
+.ne-plan-row-mark-btn {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Mockup #9a L888-946: marks are plain mono text, weight per mark — no chip
+ * pill, no background tint (per senior-dev ruling 2026-08-19: the mockup
+ * renders these as bare text, not a pill; a prior pass had wrongly styled
+ * them as filled chips). */
+.ne-plan-mark {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-transform: lowercase;
+  white-space: nowrap;
+}
+
+.ne-plan-mark--pendiente,
+.ne-plan-mark--sin-cambio {
+  font-weight: 500;
+  color: var(--color-ink-muted, var(--text-muted));
+}
+
+.ne-plan-mark--nuevo {
+  font-weight: 600;
+  color: var(--color-warn);
+}
+
+.ne-plan-mark--suspende {
+  font-weight: 600;
+  color: var(--color-danger, #d70015);
+}
+
+.ne-plan-row-remove {
+  appearance: none;
+  background: none;
+  border: none;
+  color: var(--color-ink-muted, var(--text-muted));
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.ne-plan-add-row {
+  margin-top: 2px;
+}
+
+.ne-plan-add-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+html.dark .ne-objetivo-item--alert {
+  color: var(--color-danger, #ff453a);
+}
+
+/* Zone accents at 0.42 lightness read as near-black on a dark surface — lift
+ * lightness for dark mode while keeping each zone's hue and chroma. */
+html.dark .ne-objetivo-zone[data-ne-objetivo-zone='N'] .ne-zone-label,
+html.dark .ne-plan-zone[data-ne-plan-zone='N'] .ne-zone-label {
+  color: var(--ne-zone-n-dark, oklch(0.78 0.1 300));
+}
+html.dark .ne-objetivo-zone[data-ne-objetivo-zone='V'] .ne-zone-label,
+html.dark .ne-plan-zone[data-ne-plan-zone='V'] .ne-zone-label {
+  color: var(--ne-zone-v-dark, oklch(0.78 0.1 210));
+}
+html.dark .ne-objetivo-zone[data-ne-objetivo-zone='HD'] .ne-zone-label,
+html.dark .ne-plan-zone[data-ne-plan-zone='HD'] .ne-zone-label {
+  color: var(--ne-zone-hd-dark, oklch(0.78 0.1 18));
+}
+html.dark .ne-objetivo-zone[data-ne-objetivo-zone='HI'] .ne-zone-label,
+html.dark .ne-plan-zone[data-ne-plan-zone='HI'] .ne-zone-label {
+  color: var(--ne-zone-hi-dark, oklch(0.78 0.1 85));
+}
+html.dark .ne-objetivo-zone[data-ne-objetivo-zone='NM'] .ne-zone-label,
+html.dark .ne-plan-zone[data-ne-plan-zone='NM'] .ne-zone-label {
+  color: var(--ne-zone-nm-dark, oklch(0.78 0.1 160));
+}
+
+
 /* --- styles/motion.css --- */
-/* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
+/* Teal workbench · utilitarian clinical · theme: docs/superpowers/specs/2026-08-17-teal-workbench-ui-design.md */
 /* R+ micro-interactions (transitions.dev-inspired, vanilla CSS) */
 
 @keyframes fade-in {
@@ -28771,6 +29324,15 @@ html.dark .tend-gaso-tip {
   to { transform: rotate(360deg); }
 }
 
+/* Teal workbench spec §11c "om-sweep": a glossy highlight sweeps across the
+   "Actualizando pacientes" progress fill while a batch lab-repo run is in
+   flight. The fill's *width* still reflects real N-of-M progress — only the
+   gloss position is animated. */
+@keyframes om-sweep {
+  0% { background-position: -60px 0; }
+  100% { background-position: calc(100% + 60px) 0; }
+}
+
 @keyframes toast-in {
   from {
     opacity: 0;
@@ -28791,6 +29353,34 @@ html.dark .tend-gaso-tip {
     opacity: 0;
     transform: translateY(-6px) scale(0.98);
   }
+}
+
+/* Teal workbench spec §11c "om-rise" — ephemeral save/undo toast.
+ * A self-contained 4.2s cycle (enter +10px→0, hold ~76%, exit), distinct
+ * from `toast-in` above (which drops from above with scale and has no
+ * built-in hold/exit — it needs a paired JS-driven `toast-out`). Apply
+ * `.om-rise` to run start-to-finish without a class swap. */
+@keyframes om-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  86% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+}
+
+.om-rise {
+  animation: om-rise 4.2s var(--ease-out) 1;
 }
 
 
@@ -28857,6 +29447,13 @@ textarea.field-shake {
   @keyframes toast-out {
     from { opacity: 1; }
     to { opacity: 0; }
+  }
+
+  @keyframes om-rise {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    86% { opacity: 1; }
+    100% { opacity: 0; }
   }
 
   @keyframes todo-prio-pulse {
@@ -29173,6 +29770,80 @@ html.motion-sobrio .todo-prio-chip.todo-prio-chip--pulse {
   }
 }
 
+/* ── Value alert pulse — a monitored value crosses out of range ────────
+   Teal workbench spec §11c "om-pulse": two reps, then stops. Never a
+   permanent blink — clinical values must stay readable without motion. */
+@keyframes value-alert-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--color-danger-ring); }
+  45% { box-shadow: 0 0 0 5px var(--color-danger-ring); }
+}
+
+.value-alert-pulse {
+  animation: value-alert-pulse 1.4s var(--ease-out) 2;
+}
+
+/* ── Progress sweep — vitals-round progress bar fill, on value change only ── */
+@keyframes progress-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.progress-sweep-fill {
+  animation: progress-sweep 0.5s var(--ease-out) 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .value-alert-pulse,
+  .progress-sweep-fill {
+    animation: none !important;
+  }
+}
+
+/* ── New-row entrance for full-rebuild list renders ────────────────────
+   Apply only to rows that are genuinely new versus the previous paint —
+   never blanket-applied to every row, or a background refresh (LAN sync,
+   polling) would re-fade a list that hasn't actually changed. */
+.row-enter {
+  animation: fade-in var(--dur-fast) var(--ease-out);
+}
+
+/* ── Row exit for full-rebuild list renders ────────────────────────────
+   A cloned "ghost" of a row that just left the data (todo completed off the
+   list, patient no longer in census) collapses and fades instead of
+   vanishing the instant the list rebuilds. Generous max-height: only needs
+   to bound the row without clipping it, not match its exact height. */
+@keyframes row-exit {
+  from {
+    opacity: 1;
+    max-height: 160px;
+    margin-bottom: 8px;
+  }
+  to {
+    opacity: 0;
+    max-height: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+.row-exit {
+  animation: row-exit var(--dur-normal) var(--ease-out) forwards;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row-enter,
+  .row-exit {
+    animation: none !important;
+  }
+  .row-exit {
+    opacity: 0;
+    max-height: 0;
+  }
+}
+
 
 /* --- styles/ui-patterns.css --- */
 /* Workbench UI patterns — loading, approval, diff, recommendation */
@@ -29195,7 +29866,7 @@ html.motion-sobrio .todo-prio-chip.todo-prio-chip--pulse {
   background: var(--color-ink, #111);
 }
 .ui-loading-cell--round {
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 .ui-loading-label {
   font-size: 13px;
@@ -29296,7 +29967,7 @@ html.motion-sobrio .ui-loading-cell {
   font-size: 1.1rem;
   line-height: 1;
   padding: 0.15rem 0.35rem;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
 }
 .ui-approval-dismiss:hover {
   background: var(--color-hover, rgba(0, 0, 0, 0.05));
@@ -29317,7 +29988,7 @@ html.motion-sobrio .ui-loading-cell {
   padding: 0.35rem 0.5rem;
   border: none;
   background: transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   text-align: left;
   font: inherit;
   cursor: pointer;
@@ -29334,7 +30005,7 @@ html.motion-sobrio .ui-loading-cell {
   box-shadow: inset 0 0 0 1.5px var(--color-border-strong, #9ca3af);
 }
 .ui-approval-mark--radio {
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 .ui-approval-mark--check {
   border-radius: 5px;
@@ -29374,7 +30045,7 @@ html.motion-sobrio .ui-loading-cell {
 .ui-approval-dot {
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1.5px solid var(--color-ink-muted);
   background: transparent;
   padding: 0;
@@ -29392,7 +30063,7 @@ html.motion-sobrio .ui-loading-cell {
 }
 .ui-approval-primary {
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 0.4rem 0.85rem;
   font: inherit;
   font-size: 12.5px;
@@ -29415,7 +30086,7 @@ html.motion-sobrio .ui-loading-cell {
 .ui-approval-sent-check {
   width: 1.5rem;
   height: 1.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-success, #16a34a);
 }
 .ui-approval-sent-label {
@@ -29427,7 +30098,7 @@ html.motion-sobrio .ui-loading-cell {
 /* Diff table */
 .ui-diff-table-wrap {
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   background: var(--color-surface, #fff);
   box-shadow: var(--shadow-card, 0 1px 2px rgba(0, 0, 0, 0.06));
 }
@@ -29492,7 +30163,7 @@ html.motion-sobrio .ui-loading-cell {
 /* Recommendation */
 .ui-rec-card {
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   background: var(--color-surface, #fff);
   box-shadow: var(--shadow-card, 0 1px 2px rgba(0, 0, 0, 0.06));
 }
@@ -29536,7 +30207,7 @@ html.motion-sobrio .ui-loading-cell {
   gap: 0.55rem;
   border: none;
   background: transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 0.4rem 0.35rem;
   text-align: left;
   font: inherit;
@@ -29586,7 +30257,7 @@ html.motion-sobrio .ui-loading-cell {
 .ui-rec-meter-bar {
   width: 4px;
   height: 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 .ui-rec-actions {
   display: inline-flex;
@@ -29597,7 +30268,7 @@ html.motion-sobrio .ui-loading-cell {
 .ui-rec-primary {
   height: 1.75rem;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 0 0.7rem;
   font: inherit;
   font-size: 12.5px;
@@ -29639,7 +30310,7 @@ html.motion-sobrio .ui-loading-cell {
   align-items: center;
   height: 1.35rem;
   padding: 0 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 11.5px;
   font-weight: 500;
 }
@@ -29677,7 +30348,7 @@ html.motion-sobrio .ui-loading-cell {
   width: 2rem;
   height: 2rem;
   margin-bottom: 0.35rem;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--color-inset, #f9fafb);
   color: var(--color-ink-muted);
   box-shadow: 0 0 0 1px var(--color-border, #e5e7eb);
@@ -29753,7 +30424,7 @@ html.motion-sobrio .ui-loading-cell {
 .tend-detail-compare-select {
   font: inherit;
   font-size: 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   border: 1px solid var(--color-border, #e5e7eb);
   padding: 0.2rem 0.4rem;
   background: var(--color-surface, #fff);
@@ -29814,7 +30485,11 @@ html.motion-sobrio .ui-loading-cell {
     color-mix(in oklab, var(--text) 8%, transparent) 45%,
     transparent 90%
   );
-  animation: skel-shimmer 1.4s linear infinite;
+  /* Teal workbench spec §11c "om-shimmer": ~1.1s sweep (was 1.4s). The zip's
+     -180px→220px sweep assumes a fixed-width mockup card; this component
+     spans variable widths, so the sweep stays relative-transform (-100%→100%)
+     — same full-width travel, any card size. */
+  animation: skel-shimmer 1.1s linear infinite;
 }
 
 .skel-line { height: 14px; }
@@ -29918,7 +30593,6 @@ html.high-contrast .skel-card::after {
       box-shadow var(--dur-fast) var(--ease-out);
   }
 
-  .pase-mini-card:active,
   .guardia-census-chip:active {
     transform: scale(0.96);
     transition: transform 100ms var(--ease-out);
@@ -29935,7 +30609,6 @@ html.motion-sobrio .patient-card:active {
   .btn-generate:active,
   .btn-save:active,
   .patient-card:active,
-  .pase-mini-card:active,
   .guardia-census-chip:active {
     transform: none;
   }
@@ -30015,8 +30688,6 @@ html:not(.motion-sobrio) .inner-tab {
 .indica-section,
 .otros-item,
 .tend-card,
-.pase-section,
-.pase-mini-card,
 .exp-datos-tab-action,
 .card,
 .rpc-disclosure {
@@ -30092,7 +30763,7 @@ table,
 /* --- styles/workbench-surfaces.css --- */
 /* Premium UI · Workbench Refinado · desktop surface rollout
  * Scoped overrides only — loads after feature CSS. Phase-1 tokens required.
- * Sections: 1 Expediente · 2 Lab · 3 Sidebar · 4 Pase/Guardia · 5 Manejo/Agenda · 6–7 Tour/Learn
+ * Sections: 1 Expediente · 2 Lab · 3 Sidebar · 4 Guardia · 5 Manejo/Agenda · 6–7 Tour/Learn
  */
 
 /* ── Shared shell frames (Normal density) ─────────────────── */
@@ -30116,7 +30787,7 @@ html.high-contrast.ui-density-normal .patient-expediente-classic {
 
 /* ── Toolbar → content section gap (hallmark P2-A) ─────────── */
 #appcontent-lab .main-work-scroll > #lab-input-section {
-  margin-bottom: var(--density-gap-section);
+  margin-bottom: calc(4px * var(--density-space, 1));
 }
 
 #appcontent-lab .lab-some-table-toolbar {
@@ -30362,20 +31033,39 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   padding: 8px 14px 0;
 }
 
-.exp-pendientes-mount .todo-composer {
-  flex-shrink: 0;
-  /* Full-bleed under shell radius (overflow:hidden clips). Grid gutters = todo-row. */
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: stretch;
-  padding: 12px 24px 14px;
+.todo-toolbar-add-btn {
+  margin-left: auto;
+  background: var(--color-accent, var(--action));
   border: none;
-  border-bottom: 1px solid var(--border, var(--divider));
-  border-radius: 0;
-  background: color-mix(in oklab, var(--bg) 55%, var(--surface));
-  box-shadow: none;
+  color: #fff;
+  border-radius: var(--radius-control, 8px);
+  padding: 7px 12px;
+  font: 600 11.5px/1 var(--font-ui, -apple-system, sans-serif);
+  cursor: pointer;
+}
+
+.todo-toolbar-add-btn:hover {
+  background: var(--color-accent-hover, var(--action-hover));
+}
+
+/* Always-visible "Pendientes" entry point in the expediente tab bar
+ * (mockup L416 top tab row). A plain dot signals open pendientes without
+ * the loud red count — same 8px circle pattern as .priority-dot. Overlaid
+ * on the pill's top-right corner (iOS-style notification dot), out of
+ * document flow, so it never widens the pill itself. */
+.wb-pendientes-tab {
+  position: relative;
+}
+.wb-pendientes-tab-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 11px;
+  height: 11px;
+  background: var(--color-danger);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--bg);
+  pointer-events: none;
 }
 
 .exp-pendientes-mount .todo-list {
@@ -30395,133 +31085,165 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   padding-right: 12px;
 }
 
-.exp-pendientes-mount .todo-composer > .todo-add-row {
-  display: grid;
-  grid-template-columns: var(--todo-grid-prio) var(--todo-grid-check) minmax(0, 1fr) var(--todo-grid-actions);
-  align-items: start;
-  column-gap: 10px;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
-}
-
-
-.exp-pendientes-mount .todo-composer .todo-prio-chip {
-  width: 100%;
-  max-width: 100%;
-  justify-content: center;
-  box-sizing: border-box;
-}
-
-.exp-pendientes-mount .todo-composer input[type='text'] {
-  min-width: 0;
-  width: 100%;
-  min-height: 38px;
-  padding: 8px 11px;
-  border: 1px solid var(--border, var(--divider));
-  border-radius: var(--radius-md, 10px);
-  background: var(--surface);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 14px;
-  line-height: 1.45;
-  box-sizing: border-box;
-}
-
-.exp-pendientes-mount .todo-composer input[type='text']:hover:not(:focus) {
-  border-color: color-mix(in oklab, var(--action) 28%, var(--border));
-}
-
-.exp-pendientes-mount .todo-composer input[type='text']:focus {
-  outline: none;
-  border-color: var(--action);
-  background: var(--surface);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--action) 18%, transparent);
-}
-
-.exp-pendientes-mount .todo-composer .todo-add-btn {
-  justify-self: stretch;
-  align-self: start;
-  width: 100%;
-  min-height: 38px;
-  height: 38px;
-  padding: 0 12px;
-  font-size: 13px;
-  border-radius: var(--radius-pill, 999px);
-  box-sizing: border-box;
-  background: var(--action);
-  color: var(--color-on-accent);
-  border: 1px solid color-mix(in oklab, var(--action) 80%, var(--border));
-}
-
-html.dark .exp-pendientes-mount .todo-composer .todo-add-btn {
-  background: var(--action);
-  color: var(--color-on-accent);
-  border-color: color-mix(in oklab, var(--action) 70%, var(--border));
-}
-
-html.dark .exp-pendientes-mount .todo-composer .todo-add-btn:hover {
-  background: var(--action-hover);
-}
-
-.exp-pendientes-mount .todo-composer .todo-due-section {
-  /* Under input only — must not reset to margin:0 (breaks column lock) */
-  margin-left: calc(var(--todo-grid-prio) + var(--todo-grid-check) + 20px);
-  margin-right: calc(var(--todo-grid-actions) + 10px);
-  padding: 0;
-  border-top: none;
-  align-self: stretch;
-  gap: 6px;
-}
-
-.exp-pendientes-mount .todo-composer .todo-due-section-primary {
-  width: 100%;
-}
-
-.exp-pendientes-mount .todo-composer .todo-due-presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  width: 100%;
-}
-
-.exp-pendientes-mount .todo-composer .todo-due-preset-chip {
-  font-size: 11px;
-  padding: 3px 8px;
-  line-height: 1.2;
-}
-
 .exp-pendientes-mount .todo-list {
   display: flex;
   flex-direction: column;
-  gap: calc(4px * var(--density-space, 1));
+  gap: calc(14px * var(--density-space, 1));
 }
 
-.exp-pendientes-mount .todo-row {
-  border: 1px solid transparent;
-  border-bottom: none;
-  border-radius: var(--radius-md);
-  box-shadow: none;
-  margin: 0;
-  padding: 8px 12px;
-  background: transparent;
-  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+/* Pendientes table (mockup L416): each status group is a wb-table-card;
+ * open groups (vencido/hoy/sin_fecha) use the PRIOR/PENDIENTE/QUIÉN/VENCE
+ * grid, the trailing "listo" (cerrados) group collapses to 3 columns. */
+.exp-pendientes-mount .todo-group-header {
+  padding: 9px 16px;
 }
 
-.exp-pendientes-mount .todo-row.prio-alta,
-.exp-pendientes-mount .todo-row.prio-media,
-.exp-pendientes-mount .todo-row.prio-baja {
-  background: transparent;
+.exp-pendientes-mount .wb-table-card-header--alert {
+  background: var(--color-danger-tint-strong);
 }
 
-.exp-pendientes-mount .todo-row--handoff {
+.exp-pendientes-mount .wb-table-card-title--alert {
+  color: var(--color-danger);
+}
+
+.exp-pendientes-mount .wb-table-card-title--muted {
+  color: var(--color-ink-muted);
+}
+
+.exp-pendientes-mount .wb-todo-group-count {
+  font: var(--type-wb-metadata, 500 11.5px/1 var(--font-ui));
+  color: var(--color-ink-muted);
+}
+
+.exp-pendientes-mount .wb-todo-row--handoff {
   background: color-mix(in oklab, var(--action) 6%, transparent);
 }
 
-.exp-pendientes-mount .todo-row:hover {
-  background: color-mix(in oklab, var(--action) 5%, var(--surface));
-  border-color: color-mix(in oklab, var(--border) 70%, transparent);
+.exp-pendientes-mount .wb-todo-prior {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: 700 10px/1.3 var(--font-mono, 'IBM Plex Mono', monospace);
+  letter-spacing: 0.01em;
+}
+
+.exp-pendientes-mount .wb-todo-prior--alta {
+  color: var(--color-danger-deep);
+}
+
+.exp-pendientes-mount .wb-todo-prior--media {
+  color: var(--color-warn);
+}
+
+.exp-pendientes-mount .wb-todo-prior--baja {
+  color: var(--color-success);
+}
+
+.exp-pendientes-mount .wb-todo-pendiente {
+  min-width: 0;
+}
+
+.exp-pendientes-mount .wb-todo-pendiente .todo-text-input {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-ink);
+  font: 500 12.5px/1.4 var(--font-ui, -apple-system, sans-serif);
+  padding: 0;
+}
+
+.exp-pendientes-mount .wb-todo-pendiente .todo-text-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--action) 22%, transparent);
+  border-radius: 3px;
+}
+
+.exp-pendientes-mount .wb-todo-pendiente--closed {
+  color: var(--color-ink-muted);
+  text-decoration: line-through;
+  font: 500 12.5px/1.4 var(--font-ui, -apple-system, sans-serif);
+}
+
+.exp-pendientes-mount .wb-todo-trigger {
+  font: 500 11px/1 var(--font-mono, 'IBM Plex Mono', monospace);
+  color: var(--color-ink-muted);
+}
+
+.exp-pendientes-mount .wb-todo-quien {
+  font: 500 11.5px/1.3 var(--font-ui, -apple-system, sans-serif);
+  color: var(--color-ink-muted);
+}
+
+.exp-pendientes-mount .wb-todo-vence {
+  font: 600 11.5px/1.3 var(--font-mono, 'IBM Plex Mono', monospace);
+  color: var(--color-ink-muted);
+}
+
+.exp-pendientes-mount .wb-todo-vence--vencido {
+  color: var(--color-danger-deep);
+}
+
+.exp-pendientes-mount .wb-todo-vence--listo {
+  font: 500 11.5px/1.3 var(--font-mono, 'IBM Plex Mono', monospace);
+  color: var(--color-success);
+}
+
+.exp-pendientes-mount .wb-todo-accion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.exp-pendientes-mount .wb-todo-listo-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: 600 11px/1 var(--font-ui, -apple-system, sans-serif);
+  color: var(--color-accent);
+}
+
+/* "En curso" toggle (D3b) — mirrors the EN CURSO status label color (warn). */
+.exp-pendientes-mount .wb-todo-encurso-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-badge);
+  padding: 2px 7px;
+  cursor: pointer;
+  font: 600 10px/1 var(--font-mono, 'IBM Plex Mono', monospace);
+  letter-spacing: 0.04em;
+  color: var(--color-ink-muted);
+}
+
+.exp-pendientes-mount .wb-todo-encurso-btn.is-active {
+  border-color: var(--color-warn);
+  color: var(--color-warn);
+}
+
+.exp-pendientes-mount .wb-todo-ack-btn,
+.exp-pendientes-mount .wb-todo-del-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: 600 11px/1 var(--font-ui, -apple-system, sans-serif);
+  color: var(--color-ink-muted);
+  opacity: 0;
+  transition: opacity var(--dur-fast, 140ms) var(--ease-out);
+}
+
+.exp-pendientes-mount .wb-row:hover .wb-todo-ack-btn,
+.exp-pendientes-mount .wb-row:hover .wb-todo-del-btn,
+.exp-pendientes-mount .wb-todo-ack-btn:focus-visible,
+.exp-pendientes-mount .wb-todo-del-btn:focus-visible {
+  opacity: 1;
+}
+
+.exp-pendientes-mount .wb-todo-del-btn {
+  font-size: 13px;
 }
 
 .exp-pendientes-mount .todo-empty {
@@ -30638,8 +31360,7 @@ html.dark .exp-pendientes-mount .todo-composer .todo-add-btn:hover {
 }
 
 /* Lab cards: one radius tier (lg) — overrides soft-ui xl blanket + base .card xl */
-#appcontent-lab .main-work-scroll > .card,
-#appcontent-lab #lab-input-section,
+#appcontent-lab .main-work-scroll > .card:not(#lab-input-section),
 #appcontent-lab #lab-output-section,
 #appcontent-lab #lab-history-card,
 #appcontent-lab #lab-diagrams-section,
@@ -30669,8 +31390,7 @@ html.dark .exp-pendientes-mount .todo-composer .todo-add-btn:hover {
 
 #appcontent-lab #lab-output-section > .card-header,
 #appcontent-lab #lab-history-card > .card-header,
-#appcontent-lab #lab-input-section > .card-header,
-#appcontent-lab .main-work-scroll > .card > .card-header,
+#appcontent-lab .main-work-scroll > .card:not(#lab-input-section) > .card-header,
 #appcontent-lab #lab-diagrams-section > .card-header {
   font: var(--type-section);
   letter-spacing: var(--tracking-section);
@@ -30785,8 +31505,11 @@ aside.patient-sidebar .patient-card .p-name {
   font-weight: 600;
 }
 
+/* Bed/room/servicio line reads as data (compared, scanned in a column), so it uses the
+   mono type scale like other data — labs, vitals, hours — per the 3b "tarjetas suaves"
+   mockup treatment (gray-mono "214-B · C2 · M. Interna" line). */
 aside.patient-sidebar .patient-card .p-meta {
-  font: var(--type-caption);
+  font: var(--type-wb-mono, var(--type-caption));
 }
 
 /* High contrast: flatten decorative elevation */
@@ -30805,7 +31528,7 @@ html.motion-sobrio aside.patient-sidebar .patient-card {
 
 
 /* ═══════════════════════════════════════════════════════════
-   4 · PASE & GUARDIA
+   4 · GUARDIA
    ═══════════════════════════════════════════════════════════ */
 
 html.ui-density-guardia .guardia-panel:not(.guardia-panel--metrics),
@@ -30836,21 +31559,6 @@ html.ui-density-guardia .patient-chip-card:hover {
   box-shadow: var(--elev-raised);
   background: var(--state-hover-bg);
 }
-
-html:not(.ui-density-normal) .pase-patient-banner,
-html:not(.ui-density-normal) .pase-section {
-  border: var(--border-hairline);
-  box-shadow: var(--elev-raised);
-}
-
-html:not(.ui-density-normal) .pase-section-head {
-  border-bottom: var(--border-hairline);
-}
-
-html:not(.ui-density-normal) .pase-patient-name {
-  font: var(--type-title);
-}
-
 
 html.ui-density-guardia .guardia-metrics-toolbar {
   padding: 0;
@@ -30899,21 +31607,7 @@ html.ui-density-guardia .btn-guardia-entrega-phase.is-active {
   box-shadow: var(--elev-raised);
 }
 
-html.ui-density-pase .pase-board-scroll .card,
-html.ui-density-pase #pase-board-root .card {
-  border: var(--border-hairline);
-  box-shadow: var(--elev-raised);
-}
-
-html.ui-density-pase .pase-section-head h3 {
-  font: var(--type-section);
-  letter-spacing: var(--tracking-section);
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-html.high-contrast .guardia-panel,
-html.high-contrast:not(.ui-density-normal) .pase-section {
+html.high-contrast .guardia-panel {
   box-shadow: none;
 }
 
@@ -31069,8 +31763,7 @@ html.high-contrast .learn-hub-module-card {
  * Loads after workbench-surfaces.css. Global Rams tokens: public/tokens.css */
 
 /* ── Rams · workbench cards: border not shadow ─────────────────── */
-#appcontent-lab .main-work-scroll > .card,
-#appcontent-lab #lab-input-section,
+#appcontent-lab .main-work-scroll > .card:not(#lab-input-section),
 #appcontent-lab #lab-output-section,
 #appcontent-lab #lab-history-card,
 #appcontent-lab #lab-diagrams-section,
@@ -31261,7 +31954,10 @@ html.high-contrast #appcontent-lab .card {
 
 .patient-dash .empty-hint {
   margin: 0;
-  padding: 2px 0 4px;
+  padding: 8px 10px;
+  border: 1px dashed var(--color-border-dashed);
+  border-radius: var(--radius-control);
+  background: var(--color-empty-fill);
   color: var(--color-ink-muted);
   font: 500 13px/1.45 var(--font-ui);
   text-align: left;
@@ -31269,14 +31965,14 @@ html.high-contrast #appcontent-lab .card {
 
 .patient-dash .chips {
   display: flex;
-  gap: 6px;
+  gap: 10px;
   flex-wrap: wrap;
   margin-top: 4px;
 }
 
 .patient-dash .chip {
   background: var(--color-accent-soft);
-  border: 0;
+  border: 1px solid color-mix(in oklab, var(--color-accent) 24%, transparent);
   border-radius: var(--radius-chip);
   padding: 3px 8px;
   font-size: 0.82em;
@@ -31286,6 +31982,7 @@ html.high-contrast #appcontent-lab .card {
 
 html.dark .patient-dash .chip {
   background: var(--color-accent-soft);
+  border-color: color-mix(in oklab, var(--color-accent) 30%, transparent);
   color: var(--color-accent-soft-text);
 }
 
@@ -31313,26 +32010,9 @@ html.dark .patient-dash .chip {
   color: var(--color-ink);
 }
 
-.patient-dash .ic-mod {
-  margin-top: 4px;
-}
-
-.patient-dash .ic-mod > small {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-ink-muted);
-  letter-spacing: 0.02em;
-  margin-bottom: 4px;
-}
-
-.patient-dash .ic-mod .chips {
-  margin-top: 0;
-}
-
 .patient-dash .svc {
   border: 0;
-  border-radius: var(--radius-chip);
+  border-radius: var(--radius-badge);
   padding: 3px 8px;
   font-size: 11.5px;
   font-weight: 600;
@@ -31357,7 +32037,7 @@ html.dark .patient-dash .svc.is-on {
   border: 1px solid color-mix(in oklab, var(--color-ink) 22%, transparent);
   background: transparent;
   color: var(--color-ink-muted);
-  border-radius: var(--radius-chip);
+  border-radius: var(--radius-badge);
   padding: 3px 8px;
   font-size: 11.5px;
   font-weight: 600;
@@ -31390,6 +32070,7 @@ html.dark .patient-dash .svc.is-on {
 }
 
 .patient-dash .bento.vitals-labs {
+  grid-template-columns: 1fr;
   flex: 0 0 auto;
   min-height: min-content;
   align-items: stretch;
@@ -31406,7 +32087,7 @@ html.dark .patient-dash .svc.is-on {
   overflow: visible;
   display: flex;
   flex-direction: column;
-  align-self: stretch;
+  align-self: start;
 }
 
 .patient-dash .bento.rest {
@@ -31465,10 +32146,21 @@ html.dark .patient-dash .svc.is-on {
 #patient-ronda-dashboard-host .card {
   background: var(--color-elevated);
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   box-shadow: none;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Signos vitales / Labs read as ruled sections, not boxed cards — the rest of the
+   dashboard (Pendientes, Eventualidades, Medicamentos) keeps the boxed look above. */
+.patient-dash .vitals-card,
+.patient-dash button.vitals-card,
+.patient-dash .labs-card,
+#patient-ronda-dashboard-host .vitals-card,
+#patient-ronda-dashboard-host .labs-card {
+  background: none;
+  border-radius: 0;
 }
 
 .patient-dash .card:hover,
@@ -31506,8 +32198,10 @@ html.dark .patient-dash .svc.is-on {
   align-items: center;
   padding: 8px 12px;
   border-bottom: 1px solid var(--divider);
-  font-size: 12px;
-  font-weight: 700;
+  font: var(--type-wb-section-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink);
   line-height: 1.3;
 }
 
@@ -31549,12 +32243,26 @@ html.dark .patient-dash .svc.is-on {
 
 .patient-dash .vitals {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
   grid-auto-rows: minmax(min-content, 1fr);
   align-content: stretch;
   gap: 6px 18px;
   flex: 1 1 auto;
   min-height: min-content;
+}
+
+.patient-dash .card-h-meta {
+  font: var(--type-wb-metadata);
+  font-family: var(--font-mono);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+.patient-dash .card-h-meta .vitals-alert-count {
+  color: var(--color-danger);
+  font-weight: 600;
 }
 
 .patient-dash .vital {
@@ -31603,29 +32311,26 @@ html.dark .patient-dash .svc.is-on {
 
 .patient-dash .day-draws {
   display: flex;
-  flex-direction: column;
-  flex-wrap: nowrap;
-  gap: 6px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
   width: 100%;
   min-width: 0;
 }
 
 .patient-dash .draw {
-  border: 1px solid color-mix(in oklab, var(--color-ink) 16%, transparent);
-  background: color-mix(in oklab, var(--color-ink) 4%, var(--color-content));
-  border-radius: 10px;
-  padding: 0.4em 0.55em;
+  border: 1px solid color-mix(in oklab, var(--color-danger) 22%, transparent);
+  border-radius: var(--radius-container);
+  padding: 0;
   text-align: left;
   min-height: min-content;
-  width: 100%;
+  width: auto;
   max-width: 100%;
-  flex: 1 1 100%;
-  display: grid;
-  grid-template-columns: 3.4em minmax(0, 1fr);
-  column-gap: 8px;
-  row-gap: 4px;
-  align-items: start;
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
   color: inherit;
+  background: var(--color-elevated);
   overflow: hidden;
 }
 
@@ -31635,69 +32340,79 @@ html.dark .patient-dash .svc.is-on {
 }
 
 .patient-dash .draw:hover {
-  border-color: color-mix(in oklab, var(--color-ink) 32%, transparent);
+  border-color: color-mix(in oklab, var(--color-danger) 40%, transparent);
 }
 
-.patient-dash .draw.is-on {
-  border-color: color-mix(in oklab, var(--color-ink) 40%, transparent);
-  background: var(--color-elevated);
-}
-
-.patient-dash .draw time {
-  font: 600 1em/1.2 var(--font-mono);
-  grid-column: 1;
-  padding-top: 3px;
-}
-
-.patient-dash .draw-groups {
-  grid-column: 2;
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.patient-dash .draw-g,
-.patient-dash .draw-chip {
-  display: grid;
-  grid-template-columns: 4.2em minmax(0, 1fr);
-  column-gap: 8px;
-  align-items: start;
-  min-width: 0;
-}
-
-.patient-dash .draw-g .tipo {
-  font-size: 0.82em;
-  font-weight: 600;
-  color: var(--color-ink-muted);
-  min-width: min-content;
-  padding-top: 3px;
-}
-
-.patient-dash .draw .vals {
+.patient-dash .draw-head {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  min-width: 0;
-  font: 500 12px/1.3 var(--font-mono);
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0.5em 0.7em;
+  background: var(--color-danger-tint-strong);
+  border-bottom: 1px solid color-mix(in oklab, var(--color-danger) 14%, var(--divider));
 }
 
-.patient-dash .draw .vals .abn {
-  flex: 0 0 auto;
+.patient-dash .draw-head-label {
+  font: 700 11px/1 var(--font-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-danger);
+}
+
+.patient-dash .draw-head-caption {
+  font: var(--type-wb-mono);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+.patient-dash .draw-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+  gap: 1px;
+  background: var(--divider);
+}
+
+.patient-dash .draw-cell {
+  background: var(--color-elevated);
+  padding: 0.55em 0.6em 0.6em;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.patient-dash .draw-label {
+  font: var(--type-wb-section-label);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--color-ink-muted);
+}
+
+.patient-dash .draw-value {
+  font: 600 1.35em/1 var(--font-mono);
+}
+
+.patient-dash .draw-delta {
+  font: var(--type-wb-mono);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+.patient-dash .draw-trend.is-up,
+.patient-dash .draw-trend.is-down {
+  color: var(--color-danger);
 }
 
 .patient-dash .abn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   color: var(--color-danger);
   font-weight: 650;
-  line-height: 1.25;
-  background: color-mix(in oklab, var(--color-danger) 14%, transparent);
-  margin-right: 0;
-  white-space: nowrap;
-  text-align: center;
-  padding: 3px 8px;
-  border-radius: 8px;
+}
+
+.patient-dash .labs-en-rango {
+  margin: 4px 0 0;
+  font: var(--type-wb-metadata);
+  color: var(--color-ink-muted);
 }
 
 .patient-dash .bento.meds-band .soap-pack {
@@ -31804,8 +32519,23 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
 
 .patient-dash .rows time {
   color: var(--color-ink-muted);
-  font: 500 11px var(--font-mono);
+  font: var(--type-wb-mono);
   margin-right: 8px;
+}
+
+.patient-dash .rows li.is-overdue {
+  background: var(--color-danger-tint);
+  border-radius: var(--radius-row-btn);
+  padding: 3px 6px;
+  margin: -3px -6px;
+}
+
+.patient-dash .rows li.is-overdue .due-tag {
+  color: var(--color-danger-deep);
+  font: 700 10px/1.3 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 6px;
 }
 
 .patient-dash .due { color: var(--color-danger); font-weight: 600; }
@@ -31827,7 +32557,8 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
   color: var(--color-ink);
 }
 
-#patient-ic-scrim {
+#patient-ic-scrim,
+#patient-svc-pick-scrim {
   position: fixed;
   inset: 0;
   z-index: 10000;
@@ -31838,11 +32569,13 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
   background: color-mix(in oklab, var(--color-ink) 52%, transparent);
   box-sizing: border-box;
 }
-#patient-ic-scrim[hidden] {
+#patient-ic-scrim[hidden],
+#patient-svc-pick-scrim[hidden] {
   display: none !important;
 }
 #patient-ic-panel.patient-dash,
-#patient-ic-panel.patient-dash-ic-modal {
+#patient-ic-panel.patient-dash-ic-modal,
+#patient-svc-pick-panel.patient-dash-ic-modal {
   position: relative;
   width: min(420px, 100%);
   max-height: min(80vh, 560px);
@@ -31850,18 +32583,20 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
   overflow: auto;
   padding: 20px;
   margin: 0;
-  border-radius: 14px;
+  border-radius: var(--radius-sheet);
   border: 1px solid var(--border);
   background: var(--color-elevated);
   box-shadow: var(--elev-overlay, var(--shadow-md));
   z-index: 10001;
   container-type: normal;
 }
-#patient-ic-panel.patient-dash-ic-modal h3 {
+#patient-ic-panel.patient-dash-ic-modal h3,
+#patient-svc-pick-panel.patient-dash-ic-modal h3 {
   margin: 0 0 8px;
   font: 600 1.05em/1.3 var(--font-ui);
 }
-#patient-ic-panel.patient-dash-ic-modal [data-ic-done] {
+#patient-ic-panel.patient-dash-ic-modal [data-ic-done],
+#patient-svc-pick-panel.patient-dash-ic-modal [data-svc-pick-done] {
   margin-top: 12px;
 }
 
@@ -31880,6 +32615,1093 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
 }
 
 #patient-ronda-dashboard-host { min-width: 0; }
+
+/* ── Interconsulta consult info fields ─────────────────────────────
+ * Sits inline inside .idrow .id-name-row, right after the patient name
+ * button (see renderConsultBandForActivePatient in
+ * interconsulta-mode-chrome.mjs) — no card/box of its own, just fields
+ * beside the name, same as the diagnosis chips already living there.
+ */
+.patient-dash .dash > .wb-ic-back-btn {
+  align-self: flex-start;
+}
+
+.ic-consult-band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+}
+.ic-consult-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  max-width: 180px;
+}
+.ic-consult-field--reason {
+  flex: 1;
+}
+.ic-consult-label {
+  font: var(--type-wb-metadata, 500 10px/1.2 var(--font-ui));
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-tertiary);
+}
+.ic-consult-input {
+  font: var(--type-wb-mono, 500 12.5px/1.4 var(--font-mono));
+  color: var(--color-ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  padding: 1px 0;
+  min-width: 0;
+  width: 100%;
+}
+.ic-consult-input::placeholder {
+  color: var(--color-ink-tertiary);
+  font-style: italic;
+}
+.ic-consult-input:hover {
+  border-bottom-color: var(--border);
+}
+.ic-consult-input:focus {
+  outline: none;
+  border-bottom-color: var(--color-focus-ring, var(--action));
+}
+select.ic-consult-input {
+  cursor: pointer;
+}
+.ic-consult-status--en_curso { color: var(--warn, #8a4208); }
+.ic-consult-status--resuelta { color: var(--color-ink-muted); }
+.ic-consult-status--pendiente { color: var(--color-ink); }
+#interconsulta-mode-frame[hidden] {
+  display: none;
+}
+
+/* Servicio solicitante / Equipo pickers reuse the sala interconsultantes
+ * chip look (.svc/.svc-add/.ic-cat), scoped here since the band sits
+ * outside .patient-dash. */
+.ic-consult-band .svc {
+  border: 0;
+  border-radius: var(--radius-badge);
+  padding: 3px 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: oklch(0.93 0.045 var(--h, 220));
+  color: oklch(0.36 0.09 var(--h, 220));
+  cursor: pointer;
+}
+html.dark .ic-consult-band .svc {
+  background: oklch(0.32 0.06 var(--h, 220));
+  color: oklch(0.86 0.08 var(--h, 220));
+}
+.ic-consult-band select.ic-consult-input {
+  font: var(--type-wb-mono, 500 12.5px/1.4 var(--font-mono));
+}
+
+
+/* --- styles/workbench-kit.css --- */
+/* Workbench kit — shared components for the teal-workbench redesign.
+ * docs/superpowers/plans/2026-08-18-teal-workbench-full-fidelity.md, Phase 1.
+ * Tokens only from public/tokens.css — nothing here invents a color or size.
+ * Not wired into any production screen yet (Phase 2+ does that).
+ */
+
+/* ── Mode frame (band 1) ─────────────────────────────────────────── */
+
+.wb-mode-frame {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+  padding: 12px 24px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.wb-mode-frame-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.wb-mode-frame-name {
+  font: var(--type-wb-section-label);
+  letter-spacing: var(--tracking-wb-section-label);
+  text-transform: uppercase;
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+.wb-mode-frame-context {
+  font: var(--type-wb-mono);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+.wb-mode-frame-context--clickable {
+  cursor: pointer;
+  border-radius: var(--radius-control);
+  padding: 2px 4px;
+  margin: -2px -4px;
+}
+
+.wb-mode-frame-context--clickable:hover {
+  background: var(--divider);
+}
+
+.wb-mode-frame-meta {
+  font: var(--type-wb-metadata);
+  color: var(--color-ink-tertiary);
+  white-space: nowrap;
+}
+
+.wb-mode-frame-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Interconsulta bar (screen 10b) ───────────────────────────────
+ * Deliberately not wb-mode-frame: the 10b spec calls for a 3-column
+ * grid at 52px, distinct from wb-mode-frame's flex layout at ~44px.
+ */
+
+.wb-ic-bar {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  height: 52px;
+  padding: 0 24px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.wb-ic-bar-name {
+  min-width: 0;
+}
+
+.wb-ic-bar-mid {
+  min-width: 0;
+}
+
+.wb-ic-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  justify-content: flex-end;
+}
+
+/* ── Overflow menu (used to demote secondary actions, e.g. "Generar nota") */
+
+.wb-menu {
+  position: relative;
+}
+
+.wb-menu > summary {
+  list-style: none;
+}
+
+.wb-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.wb-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  min-width: 200px;
+  background: var(--color-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  box-shadow: 0 8px 24px rgba(28, 28, 30, 0.16);
+  padding: 4px;
+  z-index: 20;
+}
+
+.wb-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  font: var(--type-wb-button-secondary);
+  color: var(--color-ink);
+}
+
+.wb-menu-item:hover {
+  background: var(--divider);
+}
+
+/* ── Shared buttons (mode frame + confirm modal) ─────────────────── */
+
+.wb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-control);
+  padding: 7px 12px;
+  font: var(--type-wb-button-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.wb-btn-secondary {
+  background: transparent;
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-ink);
+}
+
+.wb-btn-primary {
+  background: var(--color-accent);
+  border: none;
+  color: var(--color-on-accent);
+  font: var(--type-wb-button);
+  padding: 8px 14px;
+}
+
+.wb-btn-primary:hover {
+  background: var(--color-accent-hover);
+}
+
+.wb-btn-danger {
+  background: var(--color-danger);
+  border: none;
+  color: #fff;
+  font: var(--type-wb-button);
+  padding: 8px 14px;
+}
+
+.wb-btn-link {
+  background: none;
+  border: none;
+  color: var(--color-ink-muted);
+  padding: 0;
+}
+
+.wb-btn-link:hover {
+  color: var(--color-ink);
+}
+
+/* ── Counters band (band 2) ───────────────────────────────────────── */
+
+.wb-counters-band {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--color-elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+.wb-counter-cell {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 11px 18px;
+  border-right: 1px solid color-mix(in oklab, var(--color-ink) 8%, transparent);
+}
+
+.wb-counter-cell:last-child {
+  border-right: none;
+}
+
+.wb-counter-cell--alert {
+  background: var(--color-danger-tint-strong);
+  box-shadow: var(--shadow-counter-alert);
+}
+
+.wb-counter-text {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.wb-counter-label {
+  font: var(--type-wb-counter-label);
+  letter-spacing: var(--tracking-wb-counter-label);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.wb-counter-label--alert {
+  color: var(--color-danger);
+}
+
+.wb-counter-figure {
+  font: var(--type-wb-counter-figure);
+  color: var(--color-ink);
+}
+
+.wb-counter-detail {
+  color: var(--color-ink-muted);
+  font-weight: 500;
+}
+
+.wb-counter-detail--alert {
+  color: var(--color-danger);
+  font-weight: 500;
+}
+
+.wb-counter-progress {
+  height: 5px;
+  border-radius: var(--radius-chip);
+  background: color-mix(in oklab, var(--color-ink) 10%, transparent);
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.wb-counter-progress-fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: var(--radius-chip);
+}
+
+/* ── Table grammar ─────────────────────────────────────────────────── */
+
+.wb-table-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-container);
+  background: var(--color-elevated);
+  overflow: hidden;
+}
+
+.wb-table-card-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 16px;
+  background: var(--color-panel-header);
+  border-bottom: 1px solid var(--border);
+}
+
+.wb-table-card-title {
+  font: var(--type-wb-section-label);
+  letter-spacing: var(--tracking-wb-section-label);
+  text-transform: uppercase;
+  color: var(--color-ink);
+}
+
+.wb-table-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wb-table-colhead {
+  flex-shrink: 0;
+  display: grid;
+  gap: 12px;
+  padding: 7px 16px;
+  background: var(--color-table-head);
+  border-bottom: 1px solid color-mix(in oklab, var(--color-ink) 8%, transparent);
+  font: var(--type-wb-column-head);
+  letter-spacing: var(--tracking-wb-column-head);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.wb-table-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.wb-row {
+  display: grid;
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--divider);
+  font: var(--type-wb-row);
+  color: var(--color-ink);
+  cursor: pointer;
+  background: transparent;
+  transition: background var(--dur-fast, 140ms) var(--ease-out);
+}
+
+.wb-row:hover {
+  background: color-mix(in oklab, var(--color-ink) 3%, transparent);
+}
+
+.wb-row--twoline {
+  padding: 11px 16px;
+  font: var(--type-wb-row-2line);
+}
+
+.wb-row--alert {
+  background: var(--color-danger-tint);
+}
+
+/* Alert rows never lose their tint on hover — the signal must not disappear. */
+.wb-row--alert:hover {
+  background: var(--color-danger-tint);
+}
+
+.wb-cell {
+  min-width: 0;
+}
+
+.wb-table-summary {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  text-align: center;
+  font: 500 12px/1.4 var(--font-ui);
+  color: var(--color-ink-muted);
+}
+
+/* ── Status labels ─────────────────────────────────────────────────── */
+
+.wb-status {
+  font: var(--type-wb-status-label);
+  text-transform: uppercase;
+}
+
+.wb-status--vencido {
+  color: var(--color-danger-deep);
+}
+
+.wb-status--en-curso {
+  color: var(--color-warn);
+}
+
+.wb-status--abierto {
+  color: var(--color-ink-muted);
+}
+
+.wb-status--listo {
+  color: var(--color-success);
+}
+
+/* ── Filter chips ──────────────────────────────────────────────────── */
+
+.wb-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.wb-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: var(--radius-chip);
+  border: 1px solid transparent;
+  background: transparent;
+  font: 600 11px/1 var(--font-ui);
+  color: var(--color-ink-muted);
+  cursor: pointer;
+}
+
+.wb-chip--active {
+  background: var(--color-elevated);
+  border-color: var(--color-border-strong);
+  color: var(--color-ink);
+}
+
+.wb-chip--active-teal {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+/* ── Empty state ───────────────────────────────────────────────────── */
+
+.wb-empty-state {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+  border: var(--border-dashed, 1px dashed var(--color-border-dashed));
+  border-radius: var(--radius-container);
+  background: var(--color-empty-fill);
+}
+
+.wb-empty-label {
+  margin: 0;
+  font: var(--type-wb-section-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.wb-empty-missing {
+  margin: 0;
+  font: 500 12.5px/1.5 var(--font-ui);
+  color: var(--color-ink);
+}
+
+.wb-empty-when {
+  margin: 0;
+  font: 500 12px/1.4 var(--font-ui);
+  color: var(--color-ink-muted);
+}
+
+.wb-empty-exit {
+  align-self: flex-start;
+  margin-top: 2px;
+  font: 600 11.5px/1 var(--font-ui);
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.wb-empty-exit:hover {
+  color: var(--color-accent-hover);
+}
+
+/* ── Confirmation (destructive / consequence) ─────────────────────── */
+
+.wb-scrim {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--scrim-bg);
+  opacity: 0;
+  transition: opacity 160ms var(--ease-out);
+  z-index: var(--z-modal);
+}
+
+.wb-scrim--open {
+  opacity: 1;
+}
+
+.wb-confirm-modal {
+  width: min(420px, 92vw);
+  overflow: hidden;
+  background: var(--color-elevated);
+  border-radius: var(--radius-sheet);
+  box-shadow: var(--shadow-modal);
+  color: var(--color-ink);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+
+.wb-scrim--open .wb-confirm-modal {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.wb-confirm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 15px 20px 14px;
+}
+
+.wb-confirm-title {
+  font: 600 15px/1.25 var(--font-ui);
+}
+
+.wb-confirm-message {
+  font: 500 12.5px/1.5 var(--font-ui);
+  color: var(--color-ink-muted);
+}
+
+.wb-confirm-consequence {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-container);
+  background: var(--color-danger-tint);
+}
+
+.wb-confirm-consequence-label {
+  font: 700 10px/1 var(--font-ui);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-danger);
+}
+
+.wb-confirm-consequence-text {
+  font: 500 12.5px/1.45 var(--font-ui);
+  color: var(--color-ink);
+}
+
+.wb-confirm-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--color-elevated);
+  border-top: 1px solid var(--border);
+}
+
+.wb-confirm-footer--rail {
+  justify-content: space-between;
+  background: var(--color-rail);
+}
+
+.wb-confirm-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Undo toast (reversible weight) ───────────────────────────────── */
+
+.wb-undo-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-radius: var(--radius-container);
+  background: #1f2126;
+  color: #f2f2f4;
+  box-shadow: var(--shadow-modal);
+  z-index: var(--z-toast);
+}
+
+.wb-undo-toast-message {
+  font: 500 12.5px/1.35 var(--font-ui);
+}
+
+.wb-undo-toast-btn {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font: 600 12px/1 var(--font-ui);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-scrim,
+  .wb-confirm-modal {
+    transition: none !important;
+  }
+}
+
+/* ── Calendar popover ──────────────────────────────────────────────── */
+
+.wb-date-popover-host {
+  position: fixed;
+}
+
+.wb-date-popover {
+  width: 286px;
+  background: var(--color-elevated);
+  border-radius: var(--radius-sheet);
+  box-shadow: var(--shadow-modal);
+  color: var(--color-ink);
+  overflow: hidden;
+}
+
+.wb-date-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.wb-date-popover-month {
+  font: 600 13px/1 var(--font-ui);
+}
+
+.wb-date-popover-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wb-date-popover-nav-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-row-btn);
+  background: var(--color-elevated);
+  color: var(--color-ink-muted);
+  font: 600 12px/1 var(--font-ui);
+  cursor: pointer;
+}
+
+.wb-date-popover-weekdays {
+  padding: 12px 16px 8px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  font: 700 9.5px/1 var(--font-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  text-align: center;
+}
+
+.wb-date-popover-grid {
+  padding: 0 16px 12px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.wb-date-popover-day {
+  padding: 8px 0;
+  border: none;
+  border-radius: var(--radius-control);
+  background: transparent;
+  font: 500 12.5px/1 var(--font-mono);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.wb-date-popover-day:hover:not(:disabled) {
+  background: var(--divider);
+}
+
+.wb-date-popover-day--nodata {
+  color: color-mix(in oklab, var(--color-ink-muted) 55%, var(--color-elevated));
+  cursor: default;
+}
+
+.wb-date-popover-day--today {
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+  font-weight: 600;
+}
+
+.wb-date-popover-day--selected {
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.wb-date-popover-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px 12px;
+}
+
+.wb-date-popover-chip {
+  flex: 1;
+  text-align: center;
+  padding: 7px 0;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+  background: var(--color-elevated);
+  font: 600 11.5px/1 var(--font-ui);
+  color: var(--color-ink-muted);
+  cursor: pointer;
+}
+
+.wb-date-popover-chip--active {
+  color: var(--color-ink);
+}
+
+.wb-date-popover-chip:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.wb-date-popover-labdays {
+  border-top: 1px solid var(--divider);
+}
+
+.wb-date-popover-labdays-head {
+  padding: 9px 16px 6px;
+  font: 700 11px/1 var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.wb-date-popover-labdays-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 168px;
+  overflow-y: auto;
+}
+
+.wb-date-popover-labday {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 16px;
+  border: none;
+  border-top: 1px solid var(--divider);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wb-date-popover-labday:first-child {
+  border-top: none;
+}
+
+.wb-date-popover-labday:hover:not(:disabled) {
+  background: var(--state-hover-bg);
+}
+
+.wb-date-popover-labday--active {
+  background: color-mix(in oklab, var(--color-accent) 9%, var(--color-elevated));
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.wb-date-popover-labday--nodata {
+  cursor: default;
+  color: color-mix(in oklab, var(--color-ink-muted) 55%, var(--color-elevated));
+}
+
+.wb-date-popover-labday-label {
+  font: 600 12.5px/1.3 var(--font-ui);
+  color: var(--color-ink);
+}
+
+.wb-date-popover-labday--nodata .wb-date-popover-labday-label {
+  color: inherit;
+  font-weight: 500;
+}
+
+.wb-date-popover-labday-meta {
+  font: 500 11.5px/1 var(--font-mono);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+.wb-date-popover-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 16px;
+  background: var(--color-rail);
+  border-top: 1px solid var(--border);
+}
+
+.wb-date-popover-range {
+  font: 500 11.5px/1 var(--font-mono);
+  color: var(--color-ink-muted);
+}
+
+/* ── Nuevo pendiente modal (screen 7b) ─────────────────────────────── */
+
+.wb-todo-add-modal {
+  width: min(460px, 92vw);
+}
+
+.wb-todo-add-body {
+  gap: 16px;
+  padding: 16px 20px 18px;
+}
+
+.wb-todo-add-header {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.wb-todo-add-context {
+  font: 500 12px/1 var(--font-mono);
+  color: var(--color-ink-muted);
+}
+
+.wb-todo-add-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+}
+
+.wb-todo-add-label {
+  font: 700 10.5px/1 var(--font-ui);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.wb-todo-add-text {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-field);
+  padding: 10px 12px;
+  font: 500 13px/1.4 var(--font-ui);
+  color: var(--color-ink);
+  background: var(--color-elevated);
+  resize: vertical;
+}
+
+.wb-todo-add-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.wb-todo-add-field--due {
+  width: 200px;
+  flex: none;
+}
+
+/* ── Inicio de turno (screen 12a) — dismissable overlay, own scrim class so it
+ * never collides with workbench/confirm.mjs's single-instance `.wb-scrim`. ─── */
+
+.wb-it-scrim {
+  z-index: var(--z-modal-nested);
+  padding: 24px;
+}
+
+.wb-it-window {
+  width: min(1200px, 96vw);
+  height: min(880px, 92vh);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  border-radius: var(--radius-container);
+  box-shadow: var(--shadow-window);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+
+.wb-it-scrim.wb-scrim--open .wb-it-window {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.wb-it-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1.75fr 1fr;
+  gap: 14px;
+  padding: 16px 24px 22px;
+  overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  .wb-it-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.wb-it-col {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.wb-it-col-left {
+  flex: 1;
+}
+
+.wb-it-col-right {
+  overflow-y: auto;
+}
+
+.wb-it-lo-primero {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.wb-it-lo-primero .wb-table-card {
+  flex: 1;
+  min-height: 0;
+}
+
+.wb-it-table-sub {
+  font: 500 11.5px/1 var(--font-ui);
+  color: var(--color-ink-muted);
+}
+
+.wb-it-bed {
+  font: 500 11.5px/1.3 var(--font-mono);
+  color: var(--color-ink-muted);
+}
+
+.wb-it-row-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.wb-it-row-name {
+  font: 600 12.5px/1.35 var(--font-ui);
+}
+
+.wb-it-line-muted {
+  font-weight: 500;
+  color: var(--color-ink-muted);
+}
+
+.wb-it-row-reason {
+  font: 500 12px/1.4 var(--font-ui);
+  color: var(--color-ink);
+}
+
+.wb-it-altered {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.wb-it-since {
+  font: 500 11.5px/1.3 var(--font-mono);
+}
+
+.wb-it-since--vencido {
+  color: var(--color-danger-deep, var(--color-danger));
+}
+
+.wb-it-since--espera {
+  color: var(--color-warn);
+}
+
+.wb-it-since--curso {
+  color: var(--color-ink-muted);
+}
+
+.wb-it-zonas-body {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 13px 16px 15px;
+}
+
+.wb-it-zonas-hint {
+  font: 500 12px/1.5 var(--font-ui);
+  color: var(--color-ink-muted);
+}
+
+.wb-it-zonas-footer {
+  font: 500 11.5px/1.45 var(--font-ui);
+  color: var(--color-ink-tertiary);
+}
 
 
 /* --- styles/lab-inner.css --- */
@@ -31975,64 +33797,9 @@ html.tab-bar-indicators-ready html.dark .lab-inner-nav .inner-tab.active {
   display: none;
 }
 
-#appcontent-lab #lab-input-section.card {
-  border-radius: 12px !important;
-}
-
-#appcontent-lab #lab-input-section > .card-header,
 #appcontent-lab .lab-active-shell .card > .card-header {
   padding-left: calc(12px * var(--density-space, 1));
   padding-right: calc(12px * var(--density-space, 1));
-}
-
-#appcontent-lab #lab-input-section > .card-header {
-  border-radius: 12px 12px 0 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.lab-paste-details {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-top: 1px solid var(--border);
-  background: transparent;
-}
-
-.lab-paste-details > summary {
-  list-style: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  font-weight: 600;
-  color: var(--color-ink);
-  border: 0;
-  outline: none;
-}
-
-.lab-paste-details > summary::-webkit-details-marker,
-.lab-paste-details > summary::marker {
-  display: none;
-  content: none;
-}
-
-.lab-paste-details > summary::before {
-  content: "";
-  width: 0.4em;
-  height: 0.4em;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: rotate(-45deg);
-  flex: 0 0 auto;
-}
-
-.lab-paste-details[open] > summary::before {
-  transform: rotate(45deg);
-}
-
-.lab-paste-details > summary:hover {
-  background: var(--state-hover-bg);
 }
 
 .lab-inner-panel > .exp-segment-panel.active {
@@ -32072,7 +33839,7 @@ html.tab-bar-indicators-ready html.dark .lab-inner-nav .inner-tab.active {
   font-weight: 700;
   line-height: 1;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--success) 16%, var(--surface));
   color: var(--success);
 }
@@ -32094,7 +33861,7 @@ html.tab-bar-indicators-ready html.dark .lab-inner-nav .inner-tab.active {
   font-size: 11px;
   line-height: 1.4;
   padding: 5px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
@@ -32138,26 +33905,19 @@ html.tab-bar-indicators-ready html.dark .lab-inner-nav .inner-tab.active {
   color: var(--text-muted);
   line-height: 1.35;
 }
-.pase-cult-cuenta {
-  margin-top: 3px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  line-height: 1.35;
-}
 .cultivos-cell-atb pre {
   margin: 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;
 }
 .cultivos-atb-fallback { margin: 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
 .cultivos-atb-wrap { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
-.cultivos-atb-chips, .pase-cult-atb-chips {
+.cultivos-atb-chips {
   display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center;
 }
 .lab-out-cultivo-chunk { margin-top: 12px; }
 #lab-output-box > .lab-out-cultivo-chunk:first-child { margin-top: 0; }
-.cultivos-atb-chips .atb-chip, .pase-cult-atb-chips .atb-chip, .lab-out-atb .atb-chip {
+.cultivos-atb-chips .atb-chip, .lab-out-atb .atb-chip {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 1.35em; padding: 2px 7px; border-radius: 6px;
+  min-width: 1.35em; padding: 2px 7px; border-radius: var(--radius-badge);
   font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
   border: 1px solid var(--border); cursor: default; font-family: ui-sans-serif, system-ui, sans-serif;
 }
@@ -32239,6 +33999,7 @@ html.tab-bar-indicators-ready html.dark .lab-inner-nav .inner-tab.active {
 }
 .atb-ris-meta {
   display: inline-flex;
+  flex-basis: 100%;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 8px;
@@ -32267,18 +34028,17 @@ html.tab-bar-indicators-ready html.dark .lab-inner-nav .inner-tab.active {
 .atb-ris-hover-panel.is-open {
   display: block;
 }
-.cultivos-copy-full-btn, .pase-cult-copy-full {
-  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px;
+.cultivos-copy-full-btn {
+  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: var(--radius-badge);
   border: 1px solid var(--border); background: var(--lab-chip-bg); color: var(--text);
   cursor: pointer; font-family: inherit;
 }
-.cultivos-copy-full-btn:hover, .pase-cult-copy-full:hover { filter: brightness(1.06); }
-.pase-cult-atb-wrap { margin-bottom: 6px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.cultivos-copy-full-btn:hover { filter: brightness(1.06); }
 .tend-spark-wrap {
-  width:100%; height:40px; margin-top:6px; position:relative; border-radius:6px; overflow:hidden;
+  width:100%; height:40px; margin-top:6px; position:relative; border-radius:var(--radius-badge); overflow:hidden;
 }
 .tend-spark-canvas-cell {
-  position:relative; width:100%; height:100%; overflow:hidden; border-radius:6px;
+  position:relative; width:100%; height:100%; overflow:hidden; border-radius:var(--radius-badge);
 }
 .tend-spark-canvas-cell canvas { display:block; width:100% !important; height:100% !important; }
 .tend-card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; gap:8px; }
@@ -32318,13 +34078,13 @@ body.focus-mode #btn-header-team-sync { display: none !important; }
 #focus-mode-pill {
   display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
   background: var(--action); color: var(--color-on-accent); font-size: 11px; font-weight: 600;
-  padding: 4px 12px; border-radius: 999px; box-shadow: var(--shadow-md);
+  padding: 4px 12px; border-radius: var(--radius-pill); box-shadow: var(--shadow-md);
   z-index: 150; letter-spacing: 0.3px; opacity: 0.9; pointer-events: none;
 }
 body.focus-mode #focus-mode-pill { display: block; }
 /* ── Búsqueda unificada ────────────────────────────────────── */
 .unified-search-result {
-  border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-control); padding: 10px 12px;
   background: var(--surface); cursor: pointer; display: flex; flex-direction: column;
   gap: 4px; transition: border-color 0.15s, background 0.15s;
 }
@@ -32334,7 +34094,7 @@ body.focus-mode #focus-mode-pill { display: block; }
   align-items: center; justify-content: space-between; gap: 8px;
 }
 .unified-search-result .usr-tag {
-  font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+  font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: var(--radius-pill);
   letter-spacing: 0.4px; background: var(--lab-chip-bg); color: var(--lab-chip-txt);
   border: 1px solid color-mix(in oklab, var(--action) 28%, var(--border));
 }
@@ -32349,7 +34109,7 @@ body.focus-mode #focus-mode-pill { display: block; }
 }
 /* ── Plantillas guardadas (extra-templates) ────────────────── */
 .extra-tmpl-row {
-  border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: var(--radius-control); padding: 8px 10px;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   background: var(--surface);
 }
@@ -32366,7 +34126,7 @@ body.focus-mode #focus-mode-pill { display: block; }
 .extra-tmpl-row .etr-actions .etr-del:hover { background: color-mix(in oklab, var(--error) 14%, var(--surface)); }
 .indica-extra-tmpl {
   display: flex; gap: 8px; align-items: center; padding: 10px 12px;
-  border: 1px dashed var(--border); border-radius: 8px; background: var(--bg);
+  border: 1px dashed var(--border); border-radius: var(--radius-control); background: var(--bg);
 }
 .indica-extra-tmpl select {
   flex: 1;
@@ -32389,7 +34149,7 @@ body.focus-mode #focus-mode-pill { display: block; }
   box-shadow: 0 0 0 3px var(--color-focus-ring), inset 0 1px 2px color-mix(in oklab, var(--color-ink) 3%, transparent);
 }
 .indica-extra-tmpl button {
-  background: var(--action); color: var(--color-on-accent); border: none; border-radius: 6px;
+  background: var(--action); color: var(--color-on-accent); border: none; border-radius: var(--radius-badge);
   padding: 6px 14px; font-size: 12px; font-weight: 700; font-family: inherit;
   cursor: pointer; white-space: nowrap;
 }
@@ -32451,7 +34211,7 @@ html.rpc-mobile-web header {
   bottom: max(12px, env(safe-area-inset-bottom, 0px));
   z-index: var(--z-banner);
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   background: color-mix(in oklab, var(--color-ink) 88%, transparent);
   color: var(--color-paper);
   font-size: 13px;
@@ -32530,7 +34290,6 @@ html.rpc-mobile-web #appcontent-lab > .main-work-scroll,
 html.rpc-mobile-web #appcontent-med > .med-active-shell,
 html.rpc-mobile-web #appcontent-med > .med-active-shell > #med-work-area.main-work-scroll,
 html.rpc-mobile-web #appcontent-agenda > .rpc-proc-agenda-root,
-html.rpc-mobile-web:not(.ui-density-normal) .pase-board-scroll,
 html.rpc-mobile-web .patient-expediente-classic,
 html.rpc-mobile-web .patient-expediente-classic .tab-content {
   margin-top: 0;
@@ -32800,6 +34559,11 @@ input.rpc-datetime-input.rpc-datetime-field__native {
   box-shadow: var(--shadow-md);
   color: var(--text);
   font-family: inherit;
+  animation: modal-in var(--dur-fast) var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpc-date-popover { animation: fade-in var(--dur-fast) var(--ease-out); }
 }
 
 .rpc-date-popover__head {
@@ -33772,7 +35536,7 @@ html[data-cloud-mobile='1'] #lan-connection-banner {
   top: max(56px, calc(env(safe-area-inset-top) + 48px));
   z-index: 11000;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   background: color-mix(in oklab, var(--color-accent, #4a52e8) 14%, var(--color-surface-elevated, #fff));
   border: 1px solid color-mix(in oklab, var(--color-accent, #4a52e8) 35%, transparent);
   color: var(--color-ink, #0b0d12);

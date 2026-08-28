@@ -272,7 +272,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   margin: 0;
   padding: 5px 10px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
   color: var(--text-muted);
   font: inherit;
@@ -335,7 +335,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   margin: 0;
   padding: 9px 12px;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-badge);
   background: transparent;
   color: var(--text-muted);
   font: inherit;
@@ -368,6 +368,12 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
 }
 .settings-panel {
   width: 100%;
+}
+.settings-panel:not([hidden]) {
+  animation: fade-in var(--dur-fast) var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  .settings-panel:not([hidden]) { animation: none; }
 }
 .settings-panel.settings-panel--wide .settings-acc-body {
   max-width: none;
@@ -531,7 +537,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   padding: 5px 12px;
   min-height: 32px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-chip);
+  border-radius: var(--radius-row-btn);
   background: transparent;
   color: var(--text-muted);
   font: inherit;
@@ -656,7 +662,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   height: 32px;
   padding: 5px 26px 5px 10px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-chip);
+  border-radius: var(--radius-field);
   background-color: var(--surface);
   color: var(--text-muted);
   font: inherit;
@@ -745,7 +751,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: var(--radius-chip);
+  border-radius: var(--radius-field);
   background: var(--color-warn-surface);
   border: 1px solid var(--color-warn-border);
   font-size: 12px;
@@ -1032,7 +1038,7 @@ body.connection-dropdown-open {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 12px 14px;
+  padding: 16px 18px;
   border-bottom: 1px solid var(--divider);
   flex-shrink: 0;
   background: var(--color-elevated, var(--surface));
@@ -1109,7 +1115,7 @@ body.connection-dropdown-open {
 .connection-dropdown-head-icon {
   width: 30px;
   height: 30px;
-  border-radius: 7px;
+  border-radius: var(--radius-row-btn);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -1302,7 +1308,7 @@ body.connection-dropdown-open {
   font-size: 12px;
 }
 .connection-dropdown-modal .lan-connection-stack.settings-card-stack {
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   border-color: color-mix(in oklab, var(--border) 100%, transparent);
   background: color-mix(in oklab, var(--surface) 98%, var(--bg));
 }
@@ -1330,7 +1336,7 @@ body.connection-dropdown-open {
   width: 42px;
   height: 24px;
   margin: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid color-mix(in oklab, var(--action) 35%, var(--border));
   background: color-mix(in oklab, var(--text-muted) 22%, var(--surface));
   cursor: pointer;
@@ -1599,7 +1605,7 @@ body.connection-dropdown-open {
 }
 .lan-connection-panel-root .lan-rooms-panel ~ .lan-rooms-panel { display: none !important; }
 .lan-connect-card {
-  border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface);
   padding: 10px 10px 12px; display: flex; flex-direction: column; gap: 8px;
   box-shadow: none;
 }
@@ -1702,7 +1708,7 @@ body.connection-dropdown-open {
   align-items: center;
   padding: 8px 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--surface) 96%, var(--bg));
 }
 .lan-rooms-list-label {
@@ -1935,7 +1941,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   justify-content: center;
   align-items: center;
   padding: 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--border);
   background: #fff;
   width: fit-content;
@@ -1969,7 +1975,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 .equipos-lista-panel-body .equipos-qr-url-box {
   margin: 0;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--border);
   background: var(--input-fill, var(--surface));
   font-family: var(--font-mono, ui-monospace, monospace);
@@ -1983,7 +1989,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 .equipos-lista-panel-body .equipos-qr-lan-notice {
   margin: 0;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid color-mix(in oklab, var(--warning, #b45309) 28%, var(--border));
   background: color-mix(in oklab, var(--warning, #b45309) 8%, var(--surface));
   font-size: 11px;
@@ -2028,7 +2034,8 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   margin: 8px 0;
   padding: 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
+  animation: fade-in var(--dur-fast) var(--ease-out);
 }
 .equipos-lista-panel-body .equipos-queue-board-host .equipos-desktop-row-meta {
   font-size: 12px;
@@ -2047,7 +2054,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   margin-top: 10px;
   padding: 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--surface) 96%, var(--bg));
 }
 .equipos-history-head {
@@ -2098,7 +2105,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-host-patients-row {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
-  padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface);
+  padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-badge); background: var(--surface);
 }
 .lan-host-patients-row-main {
   display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1;
@@ -2126,7 +2133,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-host-patients-preview-row {
   display: flex; flex-direction: column; gap: 1px;
-  padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface);
+  padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius-badge); background: var(--surface);
 }
 .lan-host-patients-preview-more {
   font-size: 10px; color: var(--text-muted); padding: 2px 4px;
@@ -2155,7 +2162,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-host-census-search {
   flex: 1 1 220px; min-width: 0;
-  font-size: 12px; padding: 7px 10px; border-radius: 6px;
+  font-size: 12px; padding: 7px 10px; border-radius: var(--radius-badge);
   border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
 }
 .lan-host-census-filter {
@@ -2164,7 +2171,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-host-census-filter-team {
   flex: 0 1 200px; min-width: 140px;
-  font-size: 11px; padding: 6px 8px; border-radius: 6px;
+  font-size: 11px; padding: 6px 8px; border-radius: var(--radius-badge);
   border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
 }
 .lan-host-census-badge--archived {
@@ -2176,7 +2183,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-host-census-table-wrap {
   flex: 1 1 auto; min-height: 0; overflow: auto;
-  border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface);
 }
 .lan-host-census-table {
   width: 100%; border-collapse: collapse; font-size: 11px;
@@ -2315,7 +2322,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-connect-actions-row .btn-lan-primary { flex: 1; min-width: 140px; }
 .btn-lan-primary {
-  background: var(--action); color: var(--color-on-accent); border: none; border-radius: 8px;
+  background: var(--action); color: var(--color-on-accent); border: none; border-radius: var(--radius-control);
   padding: 10px 14px; font-size: 13px; font-weight: 700; font-family: inherit;
   cursor: pointer; box-shadow: var(--shadow);
 }
@@ -2323,14 +2330,14 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 .btn-lan-primary:disabled { opacity: 0.55; cursor: not-allowed; }
 .btn-lan-secondary {
   background: var(--lab-chip-bg); color: var(--action); border: 1px solid var(--border);
-  border-radius: 8px; padding: 9px 12px; font-size: 12px; font-weight: 600;
+  border-radius: var(--radius-control); padding: 9px 12px; font-size: 12px; font-weight: 600;
   font-family: inherit; cursor: pointer; flex: 1; min-width: 120px;
 }
 .btn-lan-danger {
   background: var(--color-danger-hover-bg);
   color: var(--error);
   border: 1px solid color-mix(in oklab, var(--error) 28%, var(--surface));
-  border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600;
+  border-radius: var(--radius-control); padding: 7px 10px; font-size: 12px; font-weight: 600;
   font-family: inherit; cursor: pointer;
 }
 .btn-lan-danger:hover { background: color-mix(in oklab, var(--error) 10%, var(--surface)); }
@@ -2340,7 +2347,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
 }
 .lan-role-tab {
-  flex: 1; border: none; border-radius: 8px; padding: 9px 8px;
+  flex: 1; border: none; border-radius: var(--radius-control); padding: 9px 8px;
   font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
   background: transparent; color: var(--text-muted); line-height: 1.25;
 }
@@ -2359,7 +2366,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .btn-settings-help-primary {
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 10px 12px;
   font-size: 13px;
   font-weight: 700;
@@ -2372,7 +2379,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 .btn-settings-help-primary:hover { background: var(--action-hover); }
 .btn-settings-help-secondary {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 9px 12px;
   font-size: 12px;
   font-weight: 700;
@@ -2524,7 +2531,7 @@ details.settings-accordion:not([open]) > .settings-acc-body {
 .settings-acc-inline-help.is-visible { display: block; }
 .settings-preimport-box {
   padding: 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid rgba(37, 99, 235, 0.35);
   background: var(--lab-chip-bg);
 }
@@ -2780,7 +2787,7 @@ select.profile-input.profile-select {
   justify-content: space-between;
   gap: 10px 14px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--action);
   background: color-mix(in srgb, var(--action) 12%, transparent);
 }

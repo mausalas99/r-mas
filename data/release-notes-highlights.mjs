@@ -2656,10 +2656,24 @@ var RELEASE_NOTES_823 = [
   },
 ];
 
+var RELEASE_NOTES_824 = [
+  {
+    title: 'R+ Móvil (iPad/Nube) vuelve a funcionar',
+    body:
+      'El servidor exige que cada dispositivo reporte su versión; la build web de R+ Móvil no tenía forma de reportarla, así que entrar y unirse al turno fallaban en silencio. Ahora la build web incluye su propia versión.',
+  },
+  {
+    title: 'Errores de red visibles en R+ Móvil',
+    body:
+      'Si Entrar se quedaba pegado por mala conexión, no había ningún aviso. Ahora falla con un mensaje claro a los 15 segundos.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_823;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_824;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.2.4': RELEASE_NOTES_824,
   '8.2.3': RELEASE_NOTES_823,
   '8.2.2': RELEASE_NOTES_822,
   '8.2.1': RELEASE_NOTES_821,
