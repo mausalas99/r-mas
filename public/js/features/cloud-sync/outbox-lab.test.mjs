@@ -4,6 +4,7 @@ import {
   drainSyncedLabOpsFromOutboxRows,
   pruneLabSidecarOpsFromOutboxRows,
   splitLabBackfillOutboxRows,
+  splitLabOpsIntoOutboxItems,
 } from './outbox-lab.mjs';
 import { noteCloudLabSidecarOpsPushed } from './cloud-lab-sidecar-index.mjs';
 
@@ -82,5 +83,62 @@ describe('outbox-lab', () => {
     assert.equal(result.rows[0].ops.length, 2);
     assert.equal(result.rows[1].clientMutationId, 'labSidecars/p2');
     assert.equal(result.rows[1].ops.length, 1);
+  });
+
+  it('splitLabOpsIntoOutboxItems caps rows at the safe push-chunk size', () => {
+    globalThis.localStorage = {
+      store: {},
+      getItem(key) {
+        return this.store[key] ?? null;
+      },
+      setItem(key, value) {
+        this.store[key] = String(value);
+      },
+      removeItem(key) {
+        delete this.store[key];
+      },
+    };
+    try {
+      const ops = Array.from({ length: 8 }, (_, i) => ({
+        path: `labSidecars/p1/lab-${i}`,
+        value: { id: `lab-${i}`, resLabs: ['Hb 12'] },
+        updatedAt: '2026-08-09T12:00:00.000Z',
+      }));
+      const items = splitLabOpsIntoOutboxItems('p1', ops, 7);
+      assert.equal(items.length, 2);
+      assert.equal(items[0].clientMutationId, 'labSidecars/p1');
+      assert.equal(items[0].ops.length, 6);
+      assert.equal(items[0].baseRevision, 7);
+      assert.equal(items[1].clientMutationId, 'labSidecars/p1::1');
+      assert.equal(items[1].ops.length, 2);
+    } finally {
+      delete globalThis.localStorage;
+    }
+  });
+
+  it('splitLabOpsIntoOutboxItems returns one row for a small dirty set', () => {
+    globalThis.localStorage = {
+      store: {},
+      getItem(key) {
+        return this.store[key] ?? null;
+      },
+      setItem(key, value) {
+        this.store[key] = String(value);
+      },
+      removeItem(key) {
+        delete this.store[key];
+      },
+    };
+    try {
+      const ops = [
+        { path: 'labSidecars/p1/lab-1', value: { id: 'lab-1', resLabs: ['Hb 12'] } },
+      ];
+      const items = splitLabOpsIntoOutboxItems('p1', ops);
+      assert.equal(items.length, 1);
+      assert.equal(items[0].clientMutationId, 'labSidecars/p1');
+      assert.equal('baseRevision' in items[0], false);
+    } finally {
+      delete globalThis.localStorage;
+    }
   });
 });

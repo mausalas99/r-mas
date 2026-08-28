@@ -9,6 +9,7 @@ import {
   parseCloudLabSidecarPath,
 } from './cloud-lab-sidecar-index.mjs';
 import { CLOUD_LAB_BACKFILL_MUTATION_ID } from './constants.mjs';
+import { chunkCloudOps } from './cloud-push-direct.mjs';
 
 /**
  * @param {Array<{ clientMutationId?: string, ops?: unknown[], enqueuedAt?: number, baseRevision?: number }>} rows
@@ -210,4 +211,27 @@ export function prepareOutboxOpsForEnqueue(clientMutationId, ops) {
   let next = coalesceLabSidecarOps(Array.isArray(ops) ? ops : []);
   next = filterCloudLabSidecarOps(next);
   return next;
+}
+
+/**
+ * Split one patient's dirty lab ops into several outbox rows sized the same as a
+ * safe push chunk (chunkCloudOps), so a big backfill never lands as one oversized
+ * row that reads "toxic" in diagnostics and drags every op down with one failure.
+ * Chunk 0 keeps the plain `labSidecars/${patientId}` id (existing rows/tests);
+ * later chunks get a `::N` suffix — still matched by isLabSidecarOutboxMutationId.
+ * @param {string} patientId
+ * @param {unknown[]} ops
+ * @param {number} [baseRevision]
+ */
+export function splitLabOpsIntoOutboxItems(patientId, ops, baseRevision) {
+  const prepared = prepareOutboxOpsForEnqueue(`labSidecars/${patientId}`, ops);
+  if (!prepared.length) return [];
+  const chunks = chunkCloudOps(prepared);
+  return chunks.map(function (chunkOps, i) {
+    return {
+      clientMutationId: i === 0 ? `labSidecars/${patientId}` : `labSidecars/${patientId}::${i}`,
+      ops: chunkOps,
+      ...(baseRevision != null ? { baseRevision } : {}),
+    };
+  });
 }

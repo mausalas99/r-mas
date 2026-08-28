@@ -37,6 +37,25 @@ describe('cloud-sync-diagnostics', () => {
     assert.equal(out.entries[0].opCount, 2);
   });
 
+  it('summarizeCloudOutbox measures the quota-fitted size, not the raw stored value', () => {
+    const bigResLabs = Array.from(
+      { length: 6000 },
+      (_, i) => `Linea de resultado de laboratorio numero ${i} con texto de relleno extra`
+    );
+    const out = summarizeCloudOutbox([
+      {
+        clientMutationId: 'labSidecars/p1',
+        enqueuedAt: Date.now(),
+        ops: [{ path: 'labSidecars/p1/lab-1', value: { id: 'lab-1', resLabs: bigResLabs } }],
+      },
+    ]);
+    const raw = JSON.stringify({ id: 'lab-1', resLabs: bigResLabs }).length;
+    assert.ok(raw > 150 * 1024, 'fixture must exceed the 150KB lab quota to be meaningful');
+    // Trimmed to the 150KB lab quota (plus a little wrapper overhead) instead of
+    // the untrimmed raw size — proves the reading matches what actually gets sent.
+    assert.ok(out.entries[0].maxOpBytes < raw / 2);
+  });
+
   it('isToxicCloudOutboxEntry flags legacy cloud-lab-backfill and fat rows', () => {
     assert.equal(
       isToxicCloudOutboxEntry({

@@ -440,7 +440,7 @@ describe('mutate-bridge LAN decoupling (Phase 3)', () => {
     assert.match(mutateBridgeSrc, /scheduleInitialCloudSeed/);
     assert.match(mutateBridgeSrc, /initialCloudSeedScheduled/);
     assert.match(mutateBridgeSrc, /enqueueCloudLabSidecarsBackfill/);
-    assert.match(mutateBridgeSrc, /clientMutationId: `labSidecars\/\$\{patientId\}`/);
+    assert.match(mutateBridgeSrc, /splitLabOpsIntoOutboxItems/);
   });
 
   it('lab-sidecar backfill batches all patients into one outbox round trip', () => {

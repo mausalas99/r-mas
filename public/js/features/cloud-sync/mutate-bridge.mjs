@@ -22,7 +22,7 @@ import {
   internoAccessMutationId,
 } from './mutate-bridge-ops.mjs';
 import { buildDirtyLabSidecarOpsForPatient } from './cloud-lab-sidecar-index.mjs';
-import { prepareOutboxOpsForEnqueue } from './outbox-lab.mjs';
+import { prepareOutboxOpsForEnqueue, splitLabOpsIntoOutboxItems } from './outbox-lab.mjs';
 import {
   buildCloudTombstoneOp,
   coalesceTombstoneOps,
@@ -310,13 +310,9 @@ export async function enqueueCloudLabSidecarsBackfill() {
       meta
     );
     if (!ops.length) continue;
-    const prepared = prepareOutboxOpsForEnqueue(`labSidecars/${patientId}`, ops);
-    if (!prepared.length) continue;
-    items.push({
-      clientMutationId: `labSidecars/${patientId}`,
-      ops: prepared,
-      baseRevision: bridgeRuntime.getRevision?.() ?? 0,
-    });
+    items.push(
+      ...splitLabOpsIntoOutboxItems(patientId, ops, bridgeRuntime.getRevision?.() ?? 0)
+    );
   }
   if (!items.length) return false;
   // One load/save round trip for all patients — enqueueEntityOps per patient
@@ -436,7 +432,9 @@ export function enqueueCloudLabSidecarsForPatient(patientId) {
       if (sala) void mod.pushOpsToSalaRoom(sala, ops);
       return;
     }
-    enqueueEntityOps(`labSidecars/${pid}`, ops);
+    for (const item of splitLabOpsIntoOutboxItems(pid, ops)) {
+      enqueueEntityOps(item.clientMutationId, item.ops);
+    }
   });
   void import('../cloud-mobile/lab-sync-diagnostics.mjs').then(function (labDiag) {
     labDiag.recordLabPushAttempt({

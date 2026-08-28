@@ -1,6 +1,11 @@
 /** Nube sync diagnostics ring buffer and support report. */
 
-import { utf8JsonBytes, CLOUD_PUSH_WARN_BODY_BYTES, CLOUD_PUSH_WARN_OP_BYTES } from './cloud-op-slim.mjs';
+import {
+  utf8JsonBytes,
+  slimCloudOp,
+  CLOUD_PUSH_WARN_BODY_BYTES,
+  CLOUD_PUSH_WARN_OP_BYTES,
+} from './cloud-op-slim.mjs';
 import { CLOUD_LAB_BACKFILL_MUTATION_ID } from './constants.mjs';
 import { isCloudSyncNetworkErrorMessage } from './cloud-sync-error-text.mjs';
 
@@ -214,7 +219,10 @@ export function summarizeCloudOutbox(entries) {
     let maxOpPath = '';
     for (let oi = 0; oi < ops.length; oi += 1) {
       const op = ops[oi];
-      const bytes = utf8JsonBytes(op);
+      // Measure the quota-fitted op (what actually goes on the wire), not the raw
+      // stored value — a still-untrimmed lab set otherwise reads as "toxic" here
+      // even though sanitizeOpsForCloudPush will shrink it to fit before sending.
+      const bytes = utf8JsonBytes(slimCloudOp(op));
       totalBytes += bytes;
       if (bytes > maxOpBytes) {
         maxOpBytes = bytes;
