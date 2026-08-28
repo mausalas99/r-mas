@@ -2089,7 +2089,7 @@ var RELEASE_NOTES_803 = [
   {
     title: 'Admin Nube — Equipos',
     body:
-      'En <strong>⇄ → Admin Nube → Equipos</strong> asignás residentes a equipos clínicos (equipo + ciclo). Los cambios se publican a la sala por R+ Cloud.',
+      'En <strong>⇄ → Admin Nube → Equipos</strong> asignas residentes a equipos clínicos (equipo + ciclo). Los cambios se publican a la sala por R+ Cloud.',
   },
   {
     title: 'Reingreso en Nube',

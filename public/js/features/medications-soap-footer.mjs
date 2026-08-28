@@ -140,7 +140,7 @@ function soapPreviewSection(cat, title, groups) {
 
 function buildSoapPreviewHtml(soapItems, allItems) {
   if (!soapItems.length) {
-    return '<p class="med-soap-preview-empty">Marcá <strong>SOAP</strong> en el listado para ver aquí cómo se repartirán en la plantilla.</p>';
+    return '<p class="med-soap-preview-empty">Marca <strong>SOAP</strong> en el listado para ver aquí cómo se repartirán en la plantilla.</p>';
   }
   var groups = groupSoapPreviewItems(soapItems, allItems);
   return (
@@ -163,7 +163,7 @@ function buildSoapPreviewHtml(soapItems, allItems) {
     soapPreviewSection("vasop", "Vasopresores / inotrópicos", groups) +
     soapPreviewSection("nmAntidiabeticos", "Antidiabéticos", groups) +
     soapPreviewSection("nm", "NM (soporte, crónicos, etc.)", groups) +
-    soapPreviewSection("otros", "Otros — elegí destino en el listado", groups) +
+    soapPreviewSection("otros", "Otros — elige destino en el listado", groups) +
     "</div>"
   );
 }
