@@ -220,7 +220,10 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * patients-modal.mjs's openAddModal — no new eager file) plus the fixed
  * 4-lane board layout, "Ocultar post-guardia" toggle, and the ic_board_actions/
  * ic_consult_band tour steps added on top of the board redesign above. */
-const EAGER_BOOT_BUDGET_BYTES = 3522176;
+/** +1109 B / +0 files: 8.2.4. RELEASE_NOTES_824 curated entries in the
+ * already-eager release-notes-highlights.mjs, plus the cloud-mobile app-version
+ * fallback (api-client.mjs's already-eager getCachedAppVersion) — no new eager file. */
+const EAGER_BOOT_BUDGET_BYTES = 3523285;
 const EAGER_BOOT_BUDGET_FILES = 113;
 
 /**

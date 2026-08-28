@@ -3,9 +3,6 @@
  * Mobile / browser: ordinary fetch.
  */
 
-/** Browser fetch has no default timeout; a flaky network hangs forever with no error. */
-const CLOUD_SYNC_FETCH_TIMEOUT_MS = 15_000;
-
 /**
  * @param {string} url
  * @param {{ method?: string, headers?: Record<string, string>, body?: string }} [init]
@@ -38,5 +35,5 @@ export async function cloudSyncHttpFetch(url, init = {}) {
       },
     };
   }
-  return fetch(url, { ...init, signal: AbortSignal.timeout(CLOUD_SYNC_FETCH_TIMEOUT_MS) });
+  return fetch(url, { ...init, signal: AbortSignal.timeout(15_000) });
 }
