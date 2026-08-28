@@ -45,11 +45,14 @@ export function createCloudMobileLanStripPlugin(stubPath = LAN_STRIP_STUB) {
 const PUBLIC = path.join(ROOT, 'public');
 const DEST = path.join(ROOT, 'cloud', 'sync-pages', 'public', 'mobile');
 
-/** @param {string} [buildId] */
-export function buildCloudFlagsScript(buildId) {
+/** @param {string} [buildId] @param {string} [appVersion] */
+export function buildCloudFlagsScript(buildId, appVersion) {
   const v = String(buildId || Date.now());
   return (
     '<script>globalThis.__RPC_CLOUD_MOBILE__=true;globalThis.__RPC_MOBILE_WEB__=true;' +
+    'globalThis.__RPC_CLOUD_MOBILE_APP_VERSION__=' +
+    JSON.stringify(String(appVersion || '')) +
+    ';' +
     'try{document.documentElement.dataset.cloudMobile="1";document.documentElement.classList.add("rpc-cloud-mobile");}catch(_e){}' +
     '(function(){function g(){if(document.getElementById("rpc-cloud-mobile-gate"))return;var e=document.createElement("div");' +
     'e.id="rpc-cloud-mobile-gate";e.className="rpc-cloud-mobile-gate ui-overlay-scrim";e.setAttribute("aria-live","polite");' +
@@ -255,9 +258,9 @@ function rewriteJsTree(dir) {
   }
 }
 
-export function buildMobileIndexHtml(html, buildId) {
+export function buildMobileIndexHtml(html, buildId, appVersion) {
   let out = html;
-  const flagsScript = buildCloudFlagsScript(buildId);
+  const flagsScript = buildCloudFlagsScript(buildId, appVersion);
 
   if (!out.includes('__RPC_CLOUD_MOBILE__')) {
     out = out.replace(/<head>\s*\n/i, `<head>\n${flagsScript}\n`);
@@ -386,11 +389,19 @@ function cleanDest() {
   fs.mkdirSync(DEST, { recursive: true });
 }
 
-function readMobileBuildId() {
+function readPackageVersion() {
   try {
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
-    const ver = String(pkg.version || '0').replace(/\./g, '');
-    return `${ver}-${Date.now()}`;
+    return String(pkg.version || '');
+  } catch {
+    return '';
+  }
+}
+
+function readMobileBuildId() {
+  try {
+    const ver = readPackageVersion().replace(/\./g, '');
+    return `${ver || '0'}-${Date.now()}`;
   } catch {
     return String(Date.now());
   }
@@ -398,6 +409,7 @@ function readMobileBuildId() {
 
 async function main() {
   const buildId = readMobileBuildId();
+  const appVersion = readPackageVersion();
   runUiBuild();
   cleanDest();
 
@@ -422,7 +434,7 @@ async function main() {
     console.error('missing public/index.html');
     process.exit(1);
   }
-  const indexOut = buildMobileIndexHtml(fs.readFileSync(indexSrc, 'utf8'), buildId);
+  const indexOut = buildMobileIndexHtml(fs.readFileSync(indexSrc, 'utf8'), buildId, appVersion);
   writeFile(path.join(DEST, 'index.html'), indexOut);
   writeFile(path.join(DEST, 'build-id.txt'), `${buildId}\n`);
 
