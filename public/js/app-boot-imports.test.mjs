@@ -223,7 +223,12 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
 /** +1109 B / +0 files: 8.2.4. RELEASE_NOTES_824 curated entries in the
  * already-eager release-notes-highlights.mjs, plus the cloud-mobile app-version
  * fallback (api-client.mjs's already-eager getCachedAppVersion) — no new eager file. */
-const EAGER_BOOT_BUDGET_BYTES = 3523285;
+/** +4222 B / +0 files: 8.2.5. Cultivo antibiogram/dedup fixes in the already-eager
+ * cultivo-block-core.mjs, labs-cultivo-atb.mjs, labs-cultivo-scan.mjs,
+ * labs-cultivo.mjs, and labs-bh.mjs (BH reticulocitos), plus the RELEASE_NOTES_825
+ * curated entries in the already-eager release-notes-highlights.mjs — no new
+ * eager file. */
+const EAGER_BOOT_BUDGET_BYTES = 3527507;
 const EAGER_BOOT_BUDGET_FILES = 113;
 
 /**
