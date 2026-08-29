@@ -415,6 +415,7 @@ function buildBhCorePairs_(f) {
   if (f.Hto !== '---') corePairs.push('Hto', f.Hto);
   if (f.VCM !== '---') corePairs.push('VCM', f.VCM);
   if (f.HCM !== '---') corePairs.push('HCM', f.HCM);
+  if (f.Ret !== '---') corePairs.push('Ret', f.Ret);
   if (f.Leu !== '---') corePairs.push('Leu', f.Leu);
   if (f.Neu !== '---') corePairs.push('Neu', f.Neu);
   if (f.Eos !== '---') corePairs.push('Eos', f.Eos);

@@ -6,7 +6,7 @@ import {
   parseMycobacteriasStudies_,
   findCultivoGermenRuns,
   detectMarcasResistenciaCultivoSlice,
-  parseSensCrudasAntibiogramaSlice,
+  parseSensCrudasAntibiogramaLines,
   compactarLineasAntibiograma,
   extractCuentaKassFromLineas,
 } from './labs-cultivo-scan.mjs';
@@ -45,7 +45,7 @@ function buildGermenChunk_(run, sliceLines, sitio, fechaC, reportePreliminar) {
       .map(function (l) {
         return l.replace(/\r/g, '').replace(/\*/g, '').trim();
       });
-    var abCompact = compactarLineasAntibiograma(parseSensCrudasAntibiogramaSlice(lineasAb), abreviarAbAtb_);
+    var abCompact = compactarLineasAntibiograma(parseSensCrudasAntibiogramaLines(lineasAb), abreviarAbAtb_);
     if (abCompact) chunk += '\n' + abCompact;
   }
   var cuentaRun = extractCuentaKassFromLineas(sliceLines);

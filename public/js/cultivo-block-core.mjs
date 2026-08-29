@@ -271,6 +271,21 @@ function splitCultivoEntryChunks(entry) {
 }
 
 /**
+ * "Actualizar" puede reconsultar el repositorio varias veces y anexar (no
+ * reemplazar) el mismo cultivo cuando la hora del estudio varía apenas unos
+ * minutos entre consultas — el mismo germen queda repetido 2-3 veces dentro
+ * de resLabs. Una copia temprana puede no traer ANTIBIOGRAMA todavía; nos
+ * quedamos con la coincidencia que trae más información, no la primera.
+ * @param {string} chunk
+ */
+function cultivoChunkRichnessScore(chunk) {
+  var s = String(chunk || '');
+  var score = s.length;
+  if (/^ATB\b/im.test(s)) score += 1000;
+  return score;
+}
+
+/**
  * @param {object} set
  * @param {string} organismoQuery
  */
@@ -279,12 +294,19 @@ export function findCultivoChunkInSet(set, organismoQuery) {
   var q = normalizeCultivoOrganismoQuery(organismoQuery);
   if (!q || q === '—') return null;
   var cult = splitResLabsByTipo(set.resLabs).cultivo;
+  var best = null;
+  var bestScore = -1;
   for (var ei = 0; ei < cult.length; ei++) {
     var chunks = splitCultivoEntryChunks(cult[ei]);
     for (var ci = 0; ci < chunks.length; ci++) {
       var head = chunks[ci].split(/\n/)[0] || '';
-      if (cultivoChunkMatchesQuery(head, q)) return chunks[ci];
+      if (!cultivoChunkMatchesQuery(head, q)) continue;
+      var score = cultivoChunkRichnessScore(chunks[ci]);
+      if (score > bestScore) {
+        bestScore = score;
+        best = chunks[ci];
+      }
     }
   }
-  return null;
+  return best;
 }

@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.2.4](https://github.com/mausalas99/r-mas/releases/tag/v8.2.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.2.5](https://github.com/mausalas99/r-mas/releases/tag/v8.2.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -54,6 +54,14 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.2.5 (estable — release 8.2.5)
+
+- **Borrar un cultivo del historial:** botón para quitar un set de labs suelto sin reimportar todo.
+- **Menos lotes atascados en Nube:** tope de tamaño en los lotes de sync de labs pendientes.
+- **Texto en tuteo:** últimas frases en voseo corregidas.
+
+Notas: `docs/RELEASE_NOTES_8.2.5.txt`.
 ## R+ 8.2.4 (estable — release 8.2.4)
 
 - **R+ Móvil (iPad/Nube) vuelve a funcionar:** entrar y unirse al turno fallaban en silencio por un chequeo de versión que el cliente web no podía cumplir.

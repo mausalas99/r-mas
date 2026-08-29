@@ -101,6 +101,28 @@ describe('labs-cultivo-scan: tab-prefixed field-label format', () => {
   });
 });
 
+// Multi-organism report (e.g. raspado corneal con dos gérmenes) where PDF
+// extraction glues two adjacent "MICROORGANISMO" table-cell labels onto the
+// same line with only a tab between them, before the real germ name — the
+// same-line check used to accept the second label itself as the germ,
+// producing a run literally named "MICROORGANISMO".
+var GLUED_DOUBLE_LABEL_LINES = [
+  'RASPADO CORNEAL (MN OI)',
+  'PRODUCTO',
+  'MICROORGANISMO\tMICROORGANISMO',
+  '*',
+  'Salmonella enterica',
+  'COMENTARIO:',
+];
+
+describe('labs-cultivo-scan: glued double MICROORGANISMO label', () => {
+  it('falls through to the real germ name instead of returning the glued label', () => {
+    var runs = findCultivoGermenRuns(GLUED_DOUBLE_LABEL_LINES);
+    assert.equal(runs.length, 1);
+    assert.equal(runs[0].germen, 'SALMONELLA ENTERICA');
+  });
+});
+
 describe('labs-cultivo-scan: buildCultivoTipoDisplay keyword spacing', () => {
   it('inserts a space when the study keyword is glued to the next word', () => {
     assert.equal(buildCultivoTipoDisplay('UROCULTIVOPOR SONDA', ''), 'UROCULTIVO POR SONDA');

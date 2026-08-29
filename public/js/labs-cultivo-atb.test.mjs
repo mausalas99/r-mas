@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { extractSensCrudasForGermFromSource } from './labs-cultivo-atb.mjs';
+import { extractSensCrudasForGermFromSource, formatCultivoCondensedForCopy } from './labs-cultivo-atb.mjs';
 
 // Día con dos cultivos consolidados en el mismo sourceText (mergeClusterSourceText):
 // un urocultivo con el mismo germen pero SIN antibiograma (reportado como
@@ -117,4 +117,25 @@ test('extractSensCrudasForGermFromSource devuelve null si ninguna coincidencia t
     'CUENTA\n*\n' +
     '1,000 UFC/mL\n';
   assert.equal(extractSensCrudasForGermFromSource(soloUro, 'ESCHERICHIA COLI'), null);
+});
+
+// compactarLineasAntibiograma envuelve el bloque ATB en varias líneas
+// (R: .../I: .../S: ...) cuando la fila condensada supera 220 caracteres,
+// solo la primera línea empieza con "ATB". formatCultivoCondensedForCopy
+// debía cortar en la primera línea sin ese prefijo y perdía I/ESBL/S.
+test('formatCultivoCondensedForCopy conserva todas las líneas envueltas del bloque ATB', () => {
+  var chunk =
+    'RECTAL 12/08: Klebsiella pneumoniae\n' +
+    'ATB R: AMK, AMP, AMS, CAZ, CIP, CRO, CTX, FEP, GEN, IMP, LVX, MEM, PIP, SAM\n' +
+    'I: ATM, TZP\n' +
+    'ESBL: CFZ, CXM\n' +
+    'S: COL, ETP, FOS, MNO, NIT, SXT, TGC, VAN\n' +
+    'Cuenta: 100,000 UFC/mL';
+  var t = formatCultivoCondensedForCopy(chunk, '');
+  assert.match(t, /^RECTAL 12\/08: Klebsiella pneumoniae$/m);
+  assert.match(t, /^ATB R: /m);
+  assert.match(t, /^I: ATM, TZP$/m, 'la línea de sensibles intermedios no debe perderse');
+  assert.match(t, /^ESBL: CFZ, CXM$/m, 'la línea ESBL no debe perderse');
+  assert.match(t, /^S: COL, ETP, FOS, MNO, NIT, SXT, TGC, VAN$/m, 'la línea de sensibles no debe perderse');
+  assert.match(t, /^Cuenta: 100,000 UFC\/mL$/m);
 });

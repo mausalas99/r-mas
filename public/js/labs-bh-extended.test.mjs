@@ -58,6 +58,12 @@ describe('parseBH_ extended', () => {
     assert.doesNotMatch(visible, /Pct\b|%/);
   });
 
+  it('adds Ret to the compact visible line, before Leu, when RETICULOCITOS is present', () => {
+    const withRet = BH_REAL + '\nRETICULOCITOS * 1.0 % 0.5 - 1.5';
+    const { visible } = parseBH_(withRet);
+    assert.match(visible, /\bHCM\s+\S+\s+Ret\s+1\s+Leu\b/);
+  });
+
   it('extras contains RBC/CHCM/RDW/MPV and other white-cell absolutes and percentages (not Neu/Eos)', () => {
     const { extras } = parseBH_(BH_REAL);
     assert.strictEqual(extras.RBC, '3.11*');

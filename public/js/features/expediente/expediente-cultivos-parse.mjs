@@ -10,6 +10,7 @@ import {
   parseCuentaFromCultivoChunkLines,
 } from '../../labs.js';
 import { insertSpaceAfterCultivoKeyword_ } from '../../labs-cultivo-scan.mjs';
+import { findCultivoChunkInSet } from '../../cultivo-block-core.mjs';
 import { rt, aid } from './expediente-runtime.mjs';
 
 var CULTIVO_TIPO_LABELS = {
@@ -139,45 +140,6 @@ function parseCultureBlockFromLineArray(lines, set, seq) {
     .join('\n')
     .trim();
   return buildCultureRowObject(set, seq, tipoKey, studyDate, sortMs, header, org, cuenta, resStr);
-}
-
-function cultivoChunkMatchesQuery(gq, q) {
-  if (gq === q || gq.indexOf(q) !== -1 || q.indexOf(gq) !== -1) return true;
-  var gTok = gq.split(/\s+/).filter(Boolean)[0] || '';
-  var qTok = q.split(/\s+/).filter(Boolean)[0] || '';
-  return (
-    gTok.length > 3 &&
-    qTok.length > 3 &&
-    (gTok === qTok || gq.indexOf(qTok) === 0 || q.indexOf(gTok) === 0)
-  );
-}
-
-function findCultivoChunkInSet(set, organismoQuery) {
-  if (!set || !set.resLabs) return null;
-  var q = String(organismoQuery || '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toUpperCase();
-  if (!q || q === '—') return null;
-  var cult = rt.splitResLabsByTipo(set.resLabs).cultivo;
-  for (var ei = 0; ei < cult.length; ei++) {
-    var chunks = String(cult[ei] || '')
-      .split(/\n\n+/)
-      .map(function (s) {
-        return s.trim();
-      })
-      .filter(Boolean);
-    for (var ci = 0; ci < chunks.length; ci++) {
-      var head = chunks[ci].split(/\n/)[0] || '';
-      var gq = germQueryFromCultivoChunkHead(head)
-        .replace(/\s+/g, ' ')
-        .trim()
-        .toUpperCase();
-      if (!gq) continue;
-      if (cultivoChunkMatchesQuery(gq, q)) return chunks[ci];
-    }
-  }
-  return null;
 }
 
 function copyCultivoCondensado(setId, organismo) {

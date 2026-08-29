@@ -361,6 +361,7 @@ function germenFromSameLine_(line) {
     .trim();
   if (!rest) return null;
   if (/MALDI|IDENTIF|ESPECTROMETRIA|ESPECTRO/i.test(rest)) return null;
+  if (/^(MICROORGANISMO|COMENTARIO|CUENTA|ANTIBIOGRAMA)\b/i.test(rest)) return null;
   return rest.toUpperCase();
 }
 
@@ -521,6 +522,23 @@ export function parseSensCrudasAntibiogramaFieldRows(lineasAb) {
     }
   }
   return sensCrudas;
+}
+
+/**
+ * Un mismo bloque ANTIBIOGRAMA puede llegar en tres formatos según cómo
+ * SOME extrajo el PDF: glued (nombre+CMI+interp pegados en una línea),
+ * tab-separated (línea del renglón siguiente), o field-rows (cada campo en
+ * su propia línea). Prueba los tres en orden y usa el primero que resuelva
+ * algo — mismo criterio en el render en vivo (chips) y en lo que se guarda
+ * en resLabs, para que ambos vean el mismo antibiograma.
+ * @param {string[]} lineasAb
+ */
+export function parseSensCrudasAntibiogramaLines(lineasAb) {
+  var glued = parseSensCrudasAntibiogramaGlued(lineasAb);
+  if (glued.length) return glued;
+  var sliced = parseSensCrudasAntibiogramaSlice(lineasAb);
+  if (sliced.length) return sliced;
+  return parseSensCrudasAntibiogramaFieldRows(lineasAb);
 }
 
 /** Línea «Cuenta: …» en un bloque condensado de cultivo (tras la cabecera sitio/fecha:germen). */

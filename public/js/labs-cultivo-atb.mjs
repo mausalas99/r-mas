@@ -1,10 +1,5 @@
 import { escTxt } from './labs-display.mjs';
-import {
-  findCultivoGermenRuns,
-  parseSensCrudasAntibiogramaSlice,
-  parseSensCrudasAntibiogramaGlued,
-  parseSensCrudasAntibiogramaFieldRows,
-} from './labs-cultivo-scan.mjs';
+import { findCultivoGermenRuns, parseSensCrudasAntibiogramaLines } from './labs-cultivo-scan.mjs';
 
 function isCultivoChromeBodyLine_(line) {
   var t = String(line || '').trim();
@@ -32,10 +27,19 @@ export function formatCultivoCondensedForCopy(chunkText, _studyDateLine) {
     .replace(/\s{2,}/g, ' ')
     .trim();
   if (head) lines.push(head);
+  var inAtb = false;
   for (var i = 1; i < chunkLines.length; i++) {
-    if (/^ATB\b/i.test(chunkLines[i]) || /^Cuenta:/i.test(chunkLines[i])) {
+    if (/^Cuenta:/i.test(chunkLines[i])) {
+      inAtb = false;
       lines.push(chunkLines[i]);
+      continue;
     }
+    if (/^ATB\b/i.test(chunkLines[i])) {
+      inAtb = true;
+      lines.push(chunkLines[i]);
+      continue;
+    }
+    if (inAtb) lines.push(chunkLines[i]);
   }
   return lines.join('\n');
 }
@@ -263,9 +267,7 @@ export function extractSensCrudasForGermFromSource(sourceText, germQuery) {
     var lineasAb = subNorm.substring(idxAbLoc).split('\n').map(function (l) {
       return l.replace(/\r/g, '').replace(/\*+/g, '').trim();
     });
-    var glued = parseSensCrudasAntibiogramaGlued(lineasAb);
-    var candidate = glued.length ? glued : parseSensCrudasAntibiogramaSlice(lineasAb);
-    if (!candidate.length) candidate = parseSensCrudasAntibiogramaFieldRows(lineasAb);
+    var candidate = parseSensCrudasAntibiogramaLines(lineasAb);
     if (!best || candidate.length > best.length) best = candidate;
   }
   return best;

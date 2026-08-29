@@ -122,6 +122,23 @@ describe('findCultivoChunkInSet', () => {
   it('returns null for empty query', function () {
     assert.equal(findCultivoChunkInSet({ resLabs: ['UROCULTIVO: X'] }, ''), null);
   });
+
+  // "Actualizar" reconsulta el repositorio varias veces y anexa (no
+  // reemplaza) el mismo cultivo — el mismo germen puede quedar repetido en
+  // resLabs, la copia temprana sin ANTIBIOGRAMA todavía. Antes se devolvía
+  // la primera coincidencia (la vacía); ahora debe preferir la que trae ATB.
+  it('prefers the duplicate that carries the antibiogram over an earlier ATB-less copy', function () {
+    var early = 'UROCULTIVO POR SONDA 16/08: ENTEROCOCCUS FAECALIS\nCuenta: +100,000 UFC/ML';
+    var later = [
+      'UROCULTIVO POR SONDA 16/08: ENTEROCOCCUS FAECALIS',
+      'ATB S: AMP, NITRO, PEN',
+      'Cuenta: +100,000 UFC/ML',
+    ].join('\n');
+    var set = { id: 'set-1', resLabs: [early, later] };
+    var found = findCultivoChunkInSet(set, 'ENTEROCOCCUS FAECALIS');
+    assert.ok(found);
+    assert.match(found, /^ATB\b/m, 'debe devolver la copia con el antibiograma, no la primera vacía');
+  });
 });
 
 describe('isCultureTableHeaderLine', () => {

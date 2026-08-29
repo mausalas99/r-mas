@@ -2669,10 +2669,29 @@ var RELEASE_NOTES_824 = [
   },
 ];
 
+var RELEASE_NOTES_825 = [
+  {
+    title: 'Borrar un cultivo del historial',
+    body:
+      'Cada fila de cultivo tiene ahora un botón para quitar solo ese set de labs, sin tener que reimportar todo el historial para corregir una entrada duplicada o mal cargada.',
+  },
+  {
+    title: 'Menos lotes atascados en Nube',
+    body:
+      'El envío de labs pendientes armaba un lote por paciente sin límite de tamaño; un paciente con muchos labs pendientes podía generar un lote demasiado grande y quedar atorado como <strong>"lote pesado"</strong>. Ahora los lotes tienen un tope y ya no se atascan.',
+  },
+  {
+    title: 'Texto en tuteo',
+    body:
+      'Las últimas frases en voseo (<em>exportá, asignás, elegí</em>) ya usan tú, igual que el resto de la app.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_824;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_825;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.2.5': RELEASE_NOTES_825,
   '8.2.4': RELEASE_NOTES_824,
   '8.2.3': RELEASE_NOTES_823,
   '8.2.2': RELEASE_NOTES_822,
