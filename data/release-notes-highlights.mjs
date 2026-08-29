@@ -2671,6 +2671,20 @@ var RELEASE_NOTES_824 = [
 
 var RELEASE_NOTES_825 = [
   {
+    title: 'Antibiograma completo al copiar un cultivo',
+    body:
+      'El condensado de cultivo cortaba el antibiograma después del encabezado y perdía las líneas de sensibilidad. Ahora copia el <strong>antibiograma completo</strong>.',
+  },
+  {
+    title: 'Cultivo actualizado ya no pierde el antibiograma',
+    body:
+      'Cuando <strong>Actualizar</strong> vuelve a traer el mismo germen con una hora ligeramente distinta, R+ se queda con la copia más completa en vez de la primera que encuentra.',
+  },
+  {
+    title: 'Reticulocitos en biometría hemática',
+    body: 'El valor de <strong>Ret</strong> ahora aparece en el resumen de biometría hemática que se copia.',
+  },
+  {
     title: 'Borrar un cultivo del historial',
     body:
       'Cada fila de cultivo tiene ahora un botón para quitar solo ese set de labs, sin tener que reimportar todo el historial para corregir una entrada duplicada o mal cargada.',
@@ -2679,11 +2693,6 @@ var RELEASE_NOTES_825 = [
     title: 'Menos lotes atascados en Nube',
     body:
       'El envío de labs pendientes armaba un lote por paciente sin límite de tamaño; un paciente con muchos labs pendientes podía generar un lote demasiado grande y quedar atorado como <strong>"lote pesado"</strong>. Ahora los lotes tienen un tope y ya no se atascan.',
-  },
-  {
-    title: 'Texto en tuteo',
-    body:
-      'Las últimas frases en voseo (<em>exportá, asignás, elegí</em>) ya usan tú, igual que el resto de la app.',
   },
 ];
 

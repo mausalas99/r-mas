@@ -5,10 +5,14 @@ Fecha: 2026-08-29
 
 ## Resumen
 
-Permite borrar un cultivo suelto del historial, corrige lotes de sync de labs que se quedaban atascados en Nube, y termina de unificar el texto de la app a tuteo.
+Corrige varios problemas de cultivos y biometría hemática, permite borrar un cultivo suelto del historial, corrige lotes de sync de labs que se quedaban atascados en Nube, y termina de unificar el texto de la app a tuteo.
 
 ## Nuevo / mejorado
 
+- **Antibiograma completo al copiar un cultivo:** el condensado de cultivo cortaba el antibiograma después del encabezado y perdía las líneas de sensibilidad. Ahora copia el antibiograma completo.
+- **Cultivo actualizado ya no pierde el antibiograma:** cuando "Actualizar" vuelve a traer el mismo germen con una hora ligeramente distinta, R+ ahora se queda con la copia más completa (la que trae antibiograma) en vez de la primera que encuentra.
+- **Reticulocitos en biometría hemática:** el valor de Ret ahora aparece en el resumen de biometría hemática que se copia.
+- **Menos falsos positivos de germen:** encabezados como "COMENTARIO" o "ANTIBIOGRAMA" ya no se confunden con el nombre de un germen.
 - **Borrar un cultivo del historial:** cada fila de cultivo tiene ahora un botón para quitar solo ese set de labs, sin tener que reimportar todo el historial para corregir una entrada duplicada o mal cargada.
 - **Menos lotes atascados en Nube:** el envío de labs pendientes armaba un lote por paciente sin límite de tamaño; un paciente con muchos labs pendientes podía generar un lote demasiado grande y quedar atorado como "lote pesado". Ahora los lotes tienen un tope y ya no se atascan.
 - **Texto en tuteo:** las últimas frases en voseo (exportá, asignás, elegí) ya usan tú, igual que el resto de la app.

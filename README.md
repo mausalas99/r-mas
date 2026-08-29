@@ -57,6 +57,9 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ## R+ 8.2.5 (estable — release 8.2.5)
 
+- **Antibiograma completo al copiar un cultivo:** ya no se corta después del encabezado.
+- **Cultivo actualizado ya no pierde el antibiograma:** se queda con la copia más completa.
+- **Reticulocitos en biometría hemática:** Ret ahora aparece en el resumen copiado.
 - **Borrar un cultivo del historial:** botón para quitar un set de labs suelto sin reimportar todo.
 - **Menos lotes atascados en Nube:** tope de tamaño en los lotes de sync de labs pendientes.
 - **Texto en tuteo:** últimas frases en voseo corregidas.
