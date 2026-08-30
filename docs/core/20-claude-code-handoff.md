@@ -20,7 +20,7 @@ Real cause: `pushUndoSnapshot` (`public/js/features/productivity.mjs`) deep-copi
 
 Two wrong theories were tried and reported as fixed before this was found — see `PLAN.md`'s `## decisions` (2026-08-29, claude) and `MISTAKES.md`'s two 2026-08-29 entries for the full trail. Do not repeat: (1) telling the owner to restart the app for a "click does nothing" bug without checking the DOM/console first, (2) presenting a code-reading-only theory as a confirmed fix before the owner verifies it live.
 
-## What's fixed in code (done, committed to working tree, not yet git-committed)
+## What's fixed in code (done, committed `0717f524`, staged for 8.2.5)
 
 - `public/js/features/productivity.mjs` — `saveUndoStack` (now exported) shrinks the stack (drops oldest snapshots, then clears the key) instead of failing when `localStorage.setItem` throws, and logs a `console.warn` every time it has to. New test: `public/js/features/productivity-undo-quota.test.mjs`, registered in `package.json`.
 - `public/js/tend-prefs.mjs` — `writeJson`'s catch now logs instead of swallowing.
