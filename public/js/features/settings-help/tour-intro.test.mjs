@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test';
+import { describe, it, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -173,4 +173,32 @@ describe('tour intro launch', () => {
     assert.doesNotMatch(src, /Cuatro carriles/);
     assert.match(src, /function renderIcBoardDrilldown[\s\S]*?Resumen/);
   });
+});
+
+test('tour-intro — markGuidedTourVersionDone warns on setItem quota error', async () => {
+  const warnings = [];
+  const origWarn = console.warn;
+  console.warn = (...args) => warnings.push(args);
+  
+  globalThis.localStorage = {
+    getItem() { return null; },
+    setItem() {
+      const e = new Error('QuotaExceededError');
+      e.name = 'QuotaExceededError';
+      throw e;
+    },
+  };
+  globalThis.__RPC_APP_VERSION__ = '1.0.0';
+  
+  try {
+    const { markGuidedTourVersionDone } = await import('./tour-intro.mjs');
+    markGuidedTourVersionDone();
+    
+    assert.ok(warnings.length > 0, 'console.warn should have been called');
+    const msg = warnings[0][0];
+    assert.ok(msg.includes('failed to write'), 'warn should mention failed write');
+  } finally {
+    console.warn = origWarn;
+    delete globalThis.localStorage;
+  }
 });

@@ -109,8 +109,8 @@
     }
     try {
       localStorage.setItem('rpc-settings', JSON.stringify(settings));
-    } catch (_e) {
-      void _e;
+    } catch (e) {
+      console.warn("[clinical-onboarding-early-boot] failed to write rpc-settings", e);
     }
     window.__RPC_EARLY_SYNC_MODE_CHOSEN__ = mode;
   }

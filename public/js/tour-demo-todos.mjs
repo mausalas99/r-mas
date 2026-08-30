@@ -18,7 +18,7 @@ function readTodosMap() {
 function writeTodosMap(map) {
   try {
     localStorage.setItem(TODOS_LS_KEY, JSON.stringify(map || {}));
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn('[tour-demo-todos] failed to write ' + TODOS_LS_KEY, e); }
 }
 
 function todoEntry(id, text, priority, completed) {

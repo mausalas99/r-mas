@@ -16,8 +16,8 @@ let wired = false;
 export function markClinicalEverJoinedTeam() {
   try {
     localStorage.setItem(EVER_JOINED_KEY, '1');
-  } catch {
-    /* ignore */
+  } catch (e) {
+    console.warn("[clinical-rotation-rejoin-modal] failed to write " + EVER_JOINED_KEY, e);
   }
 }
 
@@ -25,8 +25,8 @@ export function setRotationRejoinPending(pending) {
   try {
     if (pending) localStorage.setItem(PENDING_REJOIN_KEY, '1');
     else localStorage.removeItem(PENDING_REJOIN_KEY);
-  } catch {
-    /* ignore */
+  } catch (e) {
+    console.warn("[clinical-rotation-rejoin-modal] failed to write " + PENDING_REJOIN_KEY, e);
   }
 }
 

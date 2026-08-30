@@ -13,6 +13,16 @@ import {
   renderChartWithLegendToCanvas,
 } from './tend-export-render.mjs';
 
+export function columnExportHeader(col) {
+  var header = (col && col.header) || '';
+  var tags = ((col && col.eventTags) || [])
+    .map(function (tag) {
+      return tag && tag.text ? String(tag.text) : '';
+    })
+    .filter(Boolean);
+  return tags.length ? header + ' [' + tags.join(' · ') + ']' : header;
+}
+
 export function buildTableTsv(model) {
   if (!model || !model.columns || !model.rows) return '';
   var theme = resolveTableTheme(model);
@@ -25,7 +35,7 @@ export function buildTableTsv(model) {
     [labelHeader]
       .concat(
         visibleCols.map(function (c) {
-          return c.header || '';
+          return columnExportHeader(c);
         })
       )
       .join('\t')

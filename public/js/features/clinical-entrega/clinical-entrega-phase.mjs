@@ -124,8 +124,8 @@ export function startEntregaPhase(covering) {
         startedAt: new Date().toISOString(),
       })
     );
-  } catch {
-    /* ignore quota */
+  } catch (e) {
+    console.warn("[clinical-entrega-phase] failed to write " + ENTREGA_PHASE_KEY, e);
   }
 }
 

@@ -65,7 +65,7 @@ function isArchivedSectionCollapsed() {
 export function setArchivedSectionCollapsed(v) {
   try {
     localStorage.setItem(ARCHIVED_SECTION_COLLAPSED_LS, v ? '1' : '0');
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn('[patients-list] failed to write ' + ARCHIVED_SECTION_COLLAPSED_LS, e); }
 }
 
 export { isArchivedSectionCollapsed };

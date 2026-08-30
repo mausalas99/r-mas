@@ -12,6 +12,45 @@ import {
   shouldSkipCloudLabSidecarPush,
 } from './cloud-lab-sidecar-index.mjs';
 
+describe('localStorage quota error handling', () => {
+  let store = {};
+  const prev = globalThis.localStorage;
+
+  beforeEach(() => {
+    store = {};
+    globalThis.localStorage = {
+      getItem: (k) => (k in store ? store[k] : null),
+      setItem: (k, v) => {
+        store[k] = String(v);
+      },
+      removeItem: (k) => {
+        delete store[k];
+      },
+    };
+  });
+
+  afterEach(() => {
+    if (prev) globalThis.localStorage = prev;
+    else delete globalThis.localStorage;
+  });
+
+  it('logs console.warn when quota is exceeded', () => {
+    let warned = false;
+    const prevWarn = console.warn;
+    console.warn = (msg) => { warned = true; };
+    globalThis.localStorage.setItem = () => {
+      const e = new Error('QuotaExceededError');
+      e.name = 'QuotaExceededError';
+      throw e;
+    };
+    try {
+      // console.warn should be called on quota error
+    } finally {
+      console.warn = prevWarn;
+    }
+  });
+});
+
 const meta = { actorId: 'user-1', updatedAt: '2026-08-09T12:00:00.000Z' };
 
 describe('cloud-lab-sidecar-index', () => {

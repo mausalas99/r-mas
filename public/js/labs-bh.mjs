@@ -351,6 +351,20 @@ function fmtBhRanged_(data, fieldKey, priorRefs) {
   return fmtLabRanged_(data, fieldKey, priorRefs);
 }
 
+/** Walk every RETICULOCITOS hit — section title first, then the result row. */
+function extraerBhReticulocitos_(tNorm) {
+  var t = String(tNorm || '').toUpperCase();
+  var start = 0;
+  var nombre = 'RETICULOCITOS';
+  while (true) {
+    var idx = t.indexOf(nombre, start);
+    if (idx === -1) return { valor: '---', min: null, max: null };
+    var got = extraerConRango([nombre], String(tNorm).substring(idx));
+    if (got.valor !== '---') return got;
+    start = idx + nombre.length;
+  }
+}
+
 function extractBhScalarFields_(tNorm, priorRefs) {
   return {
     Hb: fmtBhRanged_(extraerConRango(['HGB', 'HEMOGLOBINA TOTAL', 'HEMOGLOBINA'], tNorm), 'Hb', priorRefs),
@@ -363,7 +377,7 @@ function extractBhScalarFields_(tNorm, priorRefs) {
     RBC: fmtBhRanged_(extraerConRangoBH(['RBC ', 'ERITROCITOS', 'HEMATIES'], tNorm), 'RBC', priorRefs),
     Plt: fmtBhRanged_(extraerConRango(['PLT '], tNorm), 'Plt', priorRefs),
     MPV: fmtBhRanged_(extraerConRango(['MPV ', 'VPM '], tNorm), 'MPV', priorRefs),
-    Ret: fmtBhRanged_(extraerConRango(['RETICULOCITOS'], tNorm), 'Ret', priorRefs),
+    Ret: fmtBhRanged_(extraerBhReticulocitos_(tNorm), 'Ret', priorRefs),
     TP: fmtBhRanged_(extraerConRangoCoag(['TIEMPO DE PROTROMBINA'], tNorm), 'TP', priorRefs),
     TTP: fmtBhRanged_(extraerConRangoCoag(['TIEMPO DE TROMBOPLASTINA'], tNorm), 'TTP', priorRefs),
     INR: fmtBhRanged_(extraerConRangoCoag(['INR ', 'INR'], tNorm), 'INR', priorRefs),
@@ -463,13 +477,41 @@ function buildBhIndexDisplay_(f, hasCompactBody) {
   return indexDisplay;
 }
 
+/**
+ * Ret-only (or Eri/CHCM/RDW/VPM-only) draws used to store
+ * `BH:\n  Hem.\tRet 1`. Resultados splits that into a header + indent.
+ * Fold Hem.-only blocks into the compact BH line. Leave Dif. multiline.
+ */
+export function flattenBhHemOnlyVisible(text) {
+  var s = String(text == null ? '' : text);
+  var lines = s.split(/\r?\n/);
+  if (!/^BH:\s*$/.test(String(lines[0] || '').trim())) return s;
+  var hemBody = '';
+  for (var i = 1; i < lines.length; i++) {
+    var t = String(lines[i] || '').trim();
+    if (!t) continue;
+    if (/^Dif\./i.test(t)) return s;
+    if (/^Hem\.\t/i.test(t)) {
+      if (hemBody) return s;
+      hemBody = t.slice(t.indexOf('\t') + 1).trim();
+      continue;
+    }
+    return s;
+  }
+  if (!hemBody) return s;
+  return 'BH\t' + hemBody;
+}
+
 function buildBhVisibleLine_(hasCompactBody, corePairs, indexDisplay, diffDisplay) {
   if (hasCompactBody) return 'BH\t' + pairListToDisplay_(corePairs);
   if (!indexDisplay.length && !diffDisplay.length) return '';
+  if (indexDisplay.length && !diffDisplay.length) {
+    return 'BH\t' + indexDisplay.join('  ');
+  }
   var sub = ['BH:'];
   if (indexDisplay.length) sub.push('  Hem.\t' + indexDisplay.join('  '));
   if (diffDisplay.length) sub.push('  Dif.\t' + diffDisplay.join('  '));
-  return sub.join('\n');
+  return flattenBhHemOnlyVisible(sub.join('\n'));
 }
 
 function bhHasAnyData_(f, extras) {
@@ -502,44 +544,6 @@ export function parseBH_(tNorm, priorRefs) {
     buildBhDiffDisplay_(extras, tNorm, hasCompactBody, priorRefs)
   );
   return { visible: visible, coagVisible: formatCoagResLabLine_(coagDisplay), extras: extras };
-}
-
-/** Une varias filas BH del mismo día (p. ej. biometría + dímero D en solicitudes distintas). */
-export function mergeBhResLabRows_(rows) {
-  var list = (rows || [])
-    .map(function (r) {
-      return String(r == null ? '' : r);
-    })
-    .filter(function (s) {
-      return /^BH\b/i.test(s.trim());
-    });
-  if (!list.length) return { bh: '', coag: '' };
-
-  var best = list[0];
-  var bestScore = lineRichnessScore_(best);
-  for (var i = 1; i < list.length; i++) {
-    var sc = lineRichnessScore_(list[i]);
-    if (sc > bestScore) {
-      bestScore = sc;
-      best = list[i];
-    }
-  }
-
-  var coagRows = [];
-  list.forEach(function (row) {
-    String(row)
-      .split(/\r?\n/)
-      .forEach(function (line) {
-        if (extractCoagBodyFromBhLine_(line)) coagRows.push(line);
-      });
-  });
-  var coag = mergeCoagResLabRows_(coagRows);
-
-  var lines = best.split(/\r?\n/).filter(function (line) {
-    return !/^(?:\s*Coag\.|COAG)\t/i.test(line.trim());
-  });
-  var bh = lines.join('\n').trim();
-  return { bh: bh, coag: coag };
 }
 
 // Procalcitonina viene en bloque "ESTUDIOS ESPECIALES" con un rango de

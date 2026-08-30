@@ -10,6 +10,7 @@ import {
   resolveEventualidadEntryText,
   buildEventualidadComposeText,
   normalizeTransfusionProduct,
+  abbreviatedEventualidadLabel,
   TRANSFUSION_PRODUCTS,
   eventualidadDateToIso,
 } from './eventualidades-store.mjs';
@@ -72,12 +73,57 @@ test('buildEventualidadComposeText', () => {
     buildEventualidadComposeText({ kind: 'transfusion', transfusionProduct: 'eritrocitos', detail: '2 U' }),
     'ERITROCITOS — 2 U'
   );
+  assert.equal(
+    buildEventualidadComposeText({ kind: 'transfusion', transfusionProduct: 'aferesis', detail: '' }),
+    'AFÉRESIS PLAQUETARIA'
+  );
   assert.equal(buildEventualidadComposeText({ kind: 'biopsia', detail: 'Médula' }), 'MÉDULA');
 });
 
 test('normalizeTransfusionProduct', () => {
+  assert.ok(TRANSFUSION_PRODUCTS.includes('aferesis'));
   assert.equal(normalizeTransfusionProduct('Plaquetas'), 'plaquetas');
+  assert.equal(normalizeTransfusionProduct('aferesis'), 'aferesis');
   assert.equal(normalizeTransfusionProduct('invalid'), null);
+});
+
+test('abbreviatedEventualidadLabel shortens transfusion and kinds', () => {
+  assert.equal(
+    abbreviatedEventualidadLabel({
+      kind: 'transfusion',
+      transfusionProduct: 'eritrocitos',
+      text: 'ERITROCITOS — 2 U',
+    }),
+    '2 CE'
+  );
+  assert.equal(
+    abbreviatedEventualidadLabel({
+      kind: 'transfusion',
+      transfusionProduct: 'plaquetas',
+      text: 'PLAQUETAS — 4',
+    }),
+    '4 Plaq'
+  );
+  assert.equal(
+    abbreviatedEventualidadLabel({
+      kind: 'transfusion',
+      transfusionProduct: 'plasma',
+      text: 'PLASMA',
+    }),
+    'Plas'
+  );
+  assert.equal(
+    abbreviatedEventualidadLabel({
+      kind: 'transfusion',
+      transfusionProduct: 'aferesis',
+      text: 'AFÉRESIS PLAQUETARIA — 1',
+    }),
+    '1 AfP'
+  );
+  assert.equal(abbreviatedEventualidadLabel({ kind: 'transfusion', text: 'TRANSFUSIÓN' }), 'Transf');
+  assert.equal(abbreviatedEventualidadLabel({ kind: 'biopsia', text: 'Riñón' }), 'Bx');
+  assert.equal(abbreviatedEventualidadLabel({ kind: 'procedimiento', text: 'Toracocentesis' }), 'Proc');
+  assert.equal(abbreviatedEventualidadLabel({ kind: 'otro', text: 'Nota' }), 'Ev');
 });
 
 test('resolveEventualidadEntryText falls back to kind label', () => {

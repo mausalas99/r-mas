@@ -1,9 +1,10 @@
-import { test } from 'node:test';
+import { test, describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   isAutoLabInterpretationText,
   stripAutoLabInterpretationsFromStore,
   stripAutoLabInterpretationsFromPatients,
+  markStrippedAutoLabInterpretations,
 } from './eventualidades-strip-auto-labs.mjs';
 
 test('isAutoLabInterpretationText — LABS header and prosa', () => {
@@ -57,4 +58,45 @@ test('stripAutoLabInterpretationsFromPatients mutates patients', () => {
   assert.equal(stats.labsTextCleared, 1);
   assert.equal(patients[0].eventualidades.labsText, '');
   assert.equal(patients[0].eventualidades.entries[0].text, 'Nota clínica');
+});
+
+describe('localStorage quota error handling', () => {
+  let store = {};
+  const prev = globalThis.localStorage;
+
+  beforeEach(() => {
+    store = {};
+    globalThis.localStorage = {
+      getItem: (k) => (k in store ? store[k] : null),
+      setItem: (k, v) => {
+        store[k] = String(v);
+      },
+      removeItem: (k) => {
+        delete store[k];
+      },
+    };
+  });
+
+  afterEach(() => {
+    if (prev) globalThis.localStorage = prev;
+    else delete globalThis.localStorage;
+  });
+
+  it('logs console.warn when markStrippedAutoLabInterpretations exceeds quota', () => {
+    let warned = null;
+    const prevWarn = console.warn;
+    console.warn = (msg, err) => { warned = { msg, err }; };
+    globalThis.localStorage.setItem = () => {
+      const e = new Error('QuotaExceededError');
+      e.name = 'QuotaExceededError';
+      throw e;
+    };
+    try {
+      markStrippedAutoLabInterpretations();
+    } finally {
+      console.warn = prevWarn;
+    }
+    assert.ok(warned, 'console.warn should be called on quota error');
+    assert.match(warned.msg, /failed to write rpc-strip-auto-lab-ev-v1/);
+  });
 });

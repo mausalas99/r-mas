@@ -5,6 +5,7 @@ import {
   rosterHandoffCounts,
   rosterPendingTodoCount,
   buildEntregaConsequenceText,
+  activateTurnoActivo,
 } from './entrega-roster-panel.mjs';
 import {
   serializePendientesJson,
@@ -85,5 +86,37 @@ describe('buildEntregaConsequenceText', () => {
   it('uses singular wording for exactly one patient', () => {
     const text = buildEntregaConsequenceText([{ id: 'p1' }], new Map());
     assert.match(text, /^Vas a entregar la guardia de 1 paciente,/);
+  });
+
+  it('logs console.warn when activateTurnoActivo exceeds quota', () => {
+    let store2 = {};
+    const prev = globalThis.localStorage;
+    
+    globalThis.localStorage = {
+      getItem: (k) => (k in store2 ? store2[k] : null),
+      setItem: (k, v) => {
+        store2[k] = String(v);
+      },
+      removeItem: (k) => {
+        delete store2[k];
+      },
+    };
+
+    let warned = null;
+    const prevWarn = console.warn;
+    console.warn = (msg, err) => { warned = { msg, err }; };
+    globalThis.localStorage.setItem = () => {
+      const e = new Error('QuotaExceededError');
+      e.name = 'QuotaExceededError';
+      throw e;
+    };
+    try {
+      activateTurnoActivo();
+    } finally {
+      console.warn = prevWarn;
+      if (prev) globalThis.localStorage = prev;
+    }
+    assert.ok(warned, 'console.warn should be called on quota error');
+    assert.match(warned.msg, /turno-activo state/);
   });
 });

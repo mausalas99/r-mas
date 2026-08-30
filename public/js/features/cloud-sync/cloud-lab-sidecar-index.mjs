@@ -47,8 +47,8 @@ function readLabFingerprintIndex() {
 function writeLabFingerprintIndex(index) {
   try {
     localStorage.setItem(CLOUD_LAB_FP_INDEX_KEY, JSON.stringify(index));
-  } catch {
-    /* ignore quota */
+  } catch (e) {
+    console.warn('[cloud-lab-sidecar-index] failed to write ' + CLOUD_LAB_FP_INDEX_KEY, e);
   }
 }
 
@@ -67,8 +67,8 @@ function readLabPoisonPaths() {
 function writeLabPoisonPaths(paths) {
   try {
     localStorage.setItem(CLOUD_LAB_POISON_KEY, JSON.stringify([...paths]));
-  } catch {
-    /* ignore quota */
+  } catch (e) {
+    console.warn('[cloud-lab-sidecar-index] failed to write ' + CLOUD_LAB_POISON_KEY, e);
   }
 }
 

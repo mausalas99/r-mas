@@ -1811,6 +1811,12 @@ body.tend-group-modal-open { overflow: hidden; }
 }
 .tend-group-header h2 {
   margin: 0; font-size: 16px; font-weight: 700; color: var(--text); flex: 1; min-width: 0;
+  border-radius: 6px; padding: 2px 6px; margin-left: -6px; cursor: text;
+}
+.tend-group-header h2:hover { background: color-mix(in oklab, var(--primary) 8%, transparent); }
+.tend-group-header h2:focus {
+  outline: none; background: var(--surface);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 45%, transparent);
 }
 .tend-group-tabs-wrap { padding: 12px 20px 0; flex-shrink: 0; }
 .tend-group-tabs {
@@ -1946,6 +1952,7 @@ html.dark .tend-group-drag-hovercard.tend-group-panel-card {
 .tend-group-table-actions .btn-secondary:hover { border-color: rgba(37, 99, 235, 0.35); color: var(--text); }
 .tend-group-table .is-hidden { display: none !important; }
 .tend-group-table .tend-abnormal { color: var(--error); font-weight: 600; }
+.tend-group-table th { white-space: normal; overflow: hidden; vertical-align: bottom; }
 .tend-group-table-hidden-bar {
   margin-bottom: 10px; padding: 0; border-radius: 10px;
   border: 1px solid var(--border); background: var(--lab-chip-bg);
@@ -1980,10 +1987,30 @@ html.dark .tend-group-drag-hovercard.tend-group-panel-card {
 }
 .tend-group-restore-chip:hover { border-color: rgba(37, 99, 235, 0.35); }
 .tend-group-show-all-btn { margin-left: auto; font-size: 12px; padding: 6px 12px; }
-.tend-group-row--data-hidden td:not(:first-child) { display: none !important; }
-.tend-group-row--data-hidden td:first-child { opacity: 0.72; }
+.tend-group-table tr.is-hidden { display: none !important; }
 .tend-group-row-toggle, .tend-group-col-toggle {
   display: inline-flex; align-items: center; gap: 6px; font-weight: inherit; cursor: pointer;
+}
+.tend-group-col-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  pointer-events: none;
+}
+/* Parent pointer-events:none does not disable children — chips must be none too. */
+.tend-group-col-head .tend-event-col-tags,
+.tend-group-col-head .tend-event-col-tags * {
+  pointer-events: none;
+  max-width: 100%;
+}
+.tend-group-col-toggle {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
 }
 .tend-group-unit { font-weight: 500; color: var(--text-muted); font-size: 11px; }
 .tend-section-body {
@@ -2957,21 +2984,56 @@ html.dark .tend-gaso-tip {
 .tend-event-legend-item {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  align-items: baseline;
+  align-items: center;
+  gap: 8px;
   font-size: 0.8rem;
   line-height: 1.35;
 }
 .tend-event-legend-date {
   font-weight: 600;
   color: var(--text);
+  min-width: 4.5em;
 }
-.tend-event-legend-kind {
+.tend-event-col-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+}
+.tend-event-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 10px;
   font-weight: 600;
-  color: var(--color-accent);
+  line-height: 1.3;
+  color: #111827;
+  white-space: nowrap;
+  background: rgba(148, 163, 184, 0.9);
 }
-.tend-event-legend-text {
-  color: var(--text-muted);
-  flex: 1 1 100%;
+.tend-event-tag--transfusion { background: rgba(248, 113, 113, 0.9); }
+.tend-event-tag--biopsia { background: rgba(251, 191, 36, 0.95); }
+.tend-event-tag--procedimiento { background: rgba(96, 165, 250, 0.95); }
+.tend-event-tag--otro,
+.tend-event-tag--more { background: rgba(148, 163, 184, 0.9); }
+.tend-event-tag--manage { padding: 0 2px 0 5px; }
+.tend-event-tag__edit,
+.tend-event-tag__del {
+  margin: 0;
+  padding: 1px 2px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  cursor: pointer;
 }
+.tend-event-tag__del {
+  opacity: 0.72;
+  font-weight: 700;
+}
+.tend-event-tag__del:hover { opacity: 1; }
 

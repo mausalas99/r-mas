@@ -29,7 +29,7 @@ function tendHiddenSeriesRead() {
 function tendHiddenSeriesWrite(arr) {
   try {
     localStorage.setItem(TEND_HIDDEN_SERIES_LS, JSON.stringify(arr || []));
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn('[tendencias-hidden] failed to write ' + TEND_HIDDEN_SERIES_LS, e); }
 }
 
 function tendSeriesIsUserHidden(sectionKey, fieldKey) {
@@ -71,7 +71,7 @@ function seedTendHiddenDefaults() {
   try {
     if (changed) tendHiddenSeriesWrite(current);
     localStorage.setItem(SEED_KEY, '1');
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn('[tendencias-hidden] failed to write ' + SEED_KEY, e); }
 }
 
 function tendAbnormalOnlyRead() {
@@ -86,7 +86,7 @@ function tendAbnormalOnlyWrite(on) {
   try {
     if (on) localStorage.setItem(TEND_ABNORMAL_ONLY_LS, '1');
     else localStorage.removeItem(TEND_ABNORMAL_ONLY_LS);
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn('[tendencias-hidden] failed to write ' + TEND_ABNORMAL_ONLY_LS, e); }
 }
 
 function tendSeriesLatestAbnormal(history, sectionKey, fieldKey) {

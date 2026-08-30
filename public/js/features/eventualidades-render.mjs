@@ -147,6 +147,52 @@ export async function savePatientEventualidad(patient, text, atIso, kind, transf
 }
 
 /**
+ * Update one existing eventualidad entry and persist. Used by callers outside
+ * the Eventualidades timeline (e.g. the Tendencias detail chart's edit action).
+ * @param {object} patient
+ * @param {string} entryId
+ * @param {{ text?: string, at?: string, kind?: string, transfusionProduct?: string }} patch
+ * @returns {Promise<{ ok: boolean, reason?: string }>}
+ */
+export async function updatePatientEventualidad(patient, entryId, patch) {
+  if (!patient) return { ok: false, reason: 'no-patient' };
+  const store = ensureEventualidades(patient);
+  const next = updateEventualidad(store, entryId, patch);
+  const updated = findEventualidadEntry(next, entryId);
+  if (!updated) return { ok: false, reason: 'not-found' };
+  return persistEventualidades(patient, next, {
+    type: 'eventualidad.upsert',
+    patientId: String(patient.id || ''),
+    entry: {
+      id: updated.id,
+      text: updated.text,
+      at: updated.at,
+      kind: updated.kind,
+      transfusionProduct: updated.transfusionProduct,
+    },
+  });
+}
+
+/**
+ * Delete one eventualidad entry and persist. Used by callers outside the
+ * Eventualidades timeline (e.g. the Tendencias detail chart's remove action).
+ * @param {object} patient
+ * @param {string} entryId
+ * @returns {Promise<{ ok: boolean, reason?: string }>}
+ */
+export async function deletePatientEventualidad(patient, entryId) {
+  if (!patient) return { ok: false, reason: 'no-patient' };
+  const store = ensureEventualidades(patient);
+  const next = removeEventualidad(store, entryId);
+  if (_editingEntryId === entryId) _editingEntryId = null;
+  return persistEventualidades(patient, next, {
+    type: 'eventualidad.delete',
+    patientId: String(patient.id || ''),
+    entryId: entryId,
+  });
+}
+
+/**
  * Persist labsText for sync compat (UI Labs tab removed — no auto-interpret).
  * @param {object} patient
  * @param {string} text
@@ -365,19 +411,11 @@ function wireEventualidadesDayToggles(mountEl) {
 
 async function deleteEventualidadFromTimeline(mountEl, patient, delId) {
   const livePatient = activePatient() || patient;
-  const liveStore = ensureEventualidades(livePatient);
-  const next = removeEventualidad(liveStore, delId);
-  if (_editingEntryId === delId) _editingEntryId = null;
-  livePatient.eventualidades = next;
   if (!removeEventualidadCardEl(mountEl, delId)) {
     renderEventualidadesPanel(mountEl);
   }
   invalidateEventualidadesRelatedCaches();
-  const out = await persistEventualidades(livePatient, next, {
-    type: 'eventualidad.delete',
-    patientId: String(livePatient.id || ''),
-    entryId: delId,
-  });
+  const out = await deletePatientEventualidad(livePatient, delId);
   if (out && out.ok) {
     rt.showToast('Eventualidad eliminada.', 'success');
   } else {

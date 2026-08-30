@@ -3,4 +3,5 @@ export const tendenciasBridge = {
   renderTendencias(_opts) {},
   mountTendCardSortables() {},
   syncTendHiddenModalIfOpen() {},
+  refreshOpenTendDetail() {},
 };

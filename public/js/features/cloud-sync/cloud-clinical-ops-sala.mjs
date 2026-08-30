@@ -34,8 +34,8 @@ function readSalaRooms() {
 function writeSalaRooms(rooms) {
   try {
     localStorage.setItem(SALA_ROOMS_KEY, JSON.stringify(rooms));
-  } catch {
-    /* ignore */
+  } catch (e) {
+    console.warn('[cloud-clinical-ops-sala] failed to write ' + SALA_ROOMS_KEY, e);
   }
 }
 

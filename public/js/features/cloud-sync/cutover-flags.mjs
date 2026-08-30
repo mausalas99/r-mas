@@ -13,8 +13,8 @@ export function setCutoverFlag(value) {
   s[CUTOVER_FLAG_KEY] = value;
   try {
     localStorage.setItem('rpc-settings', JSON.stringify(s));
-  } catch {
-    /* ignore */
+  } catch (e) {
+    console.warn('[cutover-flags] failed to write rpc-settings', e);
   }
 }
 

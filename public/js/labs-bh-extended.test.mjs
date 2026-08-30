@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseBH_ } from './labs.js';
+import { parseBH_, flattenBhHemOnlyVisible, mergeBhResLabRows_, procesarLabs } from './labs.js';
 
 const BH_REAL = [
   'HEMATOLOGIA',
@@ -62,6 +62,49 @@ describe('parseBH_ extended', () => {
     const withRet = BH_REAL + '\nRETICULOCITOS * 1.0 % 0.5 - 1.5';
     const { visible } = parseBH_(withRet);
     assert.match(visible, /\bHCM\s+\S+\s+Ret\s+1\s+Leu\b/);
+  });
+
+  it('Ret-only MIXTO is a compact BH line, not a Hem. sub-row', () => {
+    const { visible } = parseBH_('HEMATOLOGIA\nRETICULOCITOS * 1.0 % 0.5 - 1.5');
+    assert.match(visible, /^BH\tRet\s+1/);
+    assert.doesNotMatch(visible, /^BH:/);
+    assert.doesNotMatch(visible, /Hem\./);
+  });
+
+  it('reads RETICULOCITOS after DIFERENCIAL MANUAL + FROTIS (Actualizar / SOME)', () => {
+    const src =
+      'HEMATOLOGIA\n' +
+      'DIFERENCIAL MANUAL\n' +
+      'SEGMENTADOS\n*\n95\n%\nBANDAS\n*\n2\n%\t0 - 5\n' +
+      'RETICULOCITOS\n' +
+      'Estudio\t\tResultado\tUnidades\tValor de Referencia\n' +
+      'RETICULOCITOS\n*\n1.0\n%\t0.5 - 1.5\n' +
+      'FROTIS DE SANGRE PERIFERICA\nHIPOCROMIA +';
+    const { visible } = parseBH_(src);
+    assert.match(visible, /\bRet\s+1\b/);
+    const { resLabs } = procesarLabs(src);
+    const bh = resLabs.find((l) => /^BH\b/i.test(l));
+    assert.ok(bh);
+    assert.match(bh, /\bRet\s+1\b/);
+  });
+
+  it('mergeBhResLabRows_ keeps Ret from a poorer BH row when consolidating', () => {
+    const merged = mergeBhResLabRows_([
+      'BH\tHb 8.84*  Hto 25.5*  VCM 93  HCM 32.4  Leu 2.89*  Neu 2.65  Eos 0.02  Plt 12.5*',
+      'BH\tRet 1',
+    ]);
+    assert.match(merged.bh, /^BH\t/);
+    assert.match(merged.bh, /\bHb\s+8\.84\*/);
+    assert.match(merged.bh, /\bHCM\s+32\.4\s+Ret\s+1\s+Leu\b/);
+    assert.match(merged.bh, /\bPlt\s+12\.5\*/);
+  });
+
+  it('flattenBhHemOnlyVisible folds a stored Hem. Ret row into BH', () => {
+    assert.equal(flattenBhHemOnlyVisible('BH:\n  Hem.\tRet 1'), 'BH\tRet 1');
+    assert.equal(flattenBhHemOnlyVisible('BH:\n  Hem.\tEri 3.11  Ret 1'), 'BH\tEri 3.11  Ret 1');
+    const withDif = 'BH:\n  Hem.\tRet 1\n  Dif.\tSeg 71%*';
+    assert.equal(flattenBhHemOnlyVisible(withDif), withDif);
+    assert.equal(flattenBhHemOnlyVisible('BH\tHb 8.84'), 'BH\tHb 8.84');
   });
 
   it('extras contains RBC/CHCM/RDW/MPV and other white-cell absolutes and percentages (not Neu/Eos)', () => {

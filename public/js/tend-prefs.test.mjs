@@ -50,6 +50,17 @@ test('ocultos tabla por paciente+sección', () => {
   assert.deepEqual(readGroupTableHidden('p1', 'BH'), { rows: ['NeuPct'], cols: ['t:123'] });
 });
 
+test('ocultos tabla accepts more than 14 items', () => {
+  const cols = [];
+  for (let i = 0; i < 16; i++) cols.push('t:' + i);
+  const rows = ['Bandas', 'Mielocitos', 'Metamielocitos', 'Promielocitos', 'Blastos', 'Eritrocitos'];
+  writeGroupTableHidden('p1', 'BH', { rows: rows, cols: cols });
+  const got = readGroupTableHidden('p1', 'BH');
+  assert.equal(got.cols.length, 16);
+  assert.equal(got.rows.length, 6);
+  assert.equal(got.cols.length + got.rows.length, 22);
+});
+
 test('orden y ocultos de paneles por paciente+sección', () => {
   writeGroupPanelOrder('p1', 'BH', ['gases', 'percent-rbc']);
   writeGroupPanelHidden('p1', 'BH', ['absolute']);

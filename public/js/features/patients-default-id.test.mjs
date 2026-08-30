@@ -64,4 +64,22 @@ describe('last selected patient id', () => {
     writeLastSelectedPatientId('demo-tour');
     assert.equal(readLastSelectedPatientId(), '');
   });
+
+  it('logs console.warn when localStorage quota is exceeded', () => {
+    let warned = null;
+    const prevWarn = console.warn;
+    console.warn = (msg, err) => { warned = { msg, err }; };
+    globalThis.localStorage.setItem = () => {
+      const e = new Error('QuotaExceededError');
+      e.name = 'QuotaExceededError';
+      throw e;
+    };
+    try {
+      writeLastSelectedPatientId('p-123');
+    } finally {
+      console.warn = prevWarn;
+    }
+    assert.ok(warned, 'console.warn should be called on quota error');
+    assert.match(warned.msg, /failed to write rpc-last-patient-id/);
+  });
 });

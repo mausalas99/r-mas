@@ -133,8 +133,62 @@ tech: separate Cloudflare Worker + Pages app, wired into desktop IPC
 files: [cloud/equipos-worker/**, cloud/equipos-pages/**, lib/db/ipc-handlers-register-equipos.mjs]
 needs: [db]
 
+## Show event tags on Tendencias charts {#tend-event-tags}
+tech: abbreviated chips on Chart.js markers, group table date headers, and a one-block-per-day legend
+- [x] Draw small abbreviated boxes on chart event markers {#tend-event-tags-chart}
+  tech: abbreviatedEventualidadLabel + drawEventMarkerTag in tendencias-event-context.mjs; CE/Plaq/Plas
+  by: cursor
+  from: agent
+- [x] Same boxes on the group table date columns {#tend-event-tags-table}
+  tech: buildEventMarkerTagsHtml above each date th in tend-group-table-render.mjs
+  by: cursor
+  from: agent
+- [x] One legend block per day with compact manage {#tend-event-tags-legend}
+  tech: rebuild buildTendDetailEventsLegendHtml — tags + per-chip edit/delete, no stacked Transfusión lines
+  by: cursor
+  from: agent
+- [x] Add Aféresis plaquetaria as a fourth transfusion product {#tend-event-tags-aferesis}
+  tech: TRANSFUSION_PRODUCTS + AfP abbr in eventualidades-store.mjs
+  by: cursor
+  from: agent
+- [x] Strip lab-draw time from event day labels {#tend-event-tags-date-only}
+  tech: eventLegendDateLabel in tendencias-event-context.mjs
+  by: cursor
+  from: agent
+- [x] Keep table hide checkboxes usable when a column has event tags {#tend-event-tags-hide-click}
+  tech: table th wraps; header tags pointer-events none + overflow clip
+  by: cursor
+  from: agent
+- [x] Stop event tag chips from stealing hide-checkbox clicks {#tend-event-tags-hide-click-chips}
+  tech: pointer-events none on .tend-event-col-tags * (parent none does not disable children)
+  by: cursor
+  from: agent
+- [x] Hide checked rows from the table, restore from Ocultos chips {#tend-event-tags-hide-rows}
+  tech: tableHiddenRowClass → is-hidden on tr (was data-hidden, values stayed)
+  by: cursor
+  from: agent
+- [x] Show event boxes on copied table PNG/TSV date headers {#tend-event-tags-export}
+  tech: eventTags on tableModel; drawHeaderEventTags + columnExportHeader
+  by: cursor
+  from: agent
+- [x] Date-only headers on Tendencias tables (live + copy) {#tend-event-tags-table-date}
+  tech: formatTrendColumnHeader({ showTime: false }) in tend-group-table-render
+  by: cursor
+  from: agent
+- [x] Date-only X-axis labels on Tendencias graphs {#tend-event-tags-chart-date}
+  tech: buildTrendAxisMeta labels always dayLabel
+  by: cursor
+  from: agent
+- [x] Fix hide checkboxes doing nothing — real cause was full localStorage, not a click/CSS bug {#tend-event-tags-hide-quota}
+  tech: undo-stack (productivity.mjs pushUndoSnapshot) copied the whole clinical state into localStorage uncapped by size, grew to 44MB on owner's real install, blew the origin quota, and every localStorage.setItem silently failed app-wide (swallowed try/catch, no log). saveUndoStack now shrinks (drops oldest, then clears) instead of failing, and console.warns when it does; tend-prefs.mjs writeJson also logs instead of swallowing. Owner must run `localStorage.removeItem('rpc-undo-stack')` once to clear the existing bloat. Did not audit the other ~115 localStorage.setItem call sites in the repo for the same swallowed-catch pattern — separate future task.
+  by: claude
+files: [public/js/features/eventualidades-store.mjs, public/js/features/tendencias-event-context.mjs, public/js/tend-group-table-render.mjs, public/styles/modals.css, public/js/features/productivity.mjs, public/js/tend-prefs.mjs, public/styles/workbench-kit.css]
+needs: [ui]
+
 ## decisions
 
+- 2026-08-29, claude: table-hide bug took two wrong theories before the real one. First told owner to restart the app (guessed stale bundle — wrong, restart didn't fix it). Then a senior-dev escalation shipped a `.wb-scrim` pointer-events fix on an unverified theory (also not it — told owner it was fixed before confirming, owner tried again and it still failed). Real cause only surfaced after fixing an unrelated swallowed `catch` turned a silent failure into a visible `QuotaExceededError`. Lesson standing for future debugging: do not tell the owner a fix is done until they've confirmed it, when the fix came from code-reading alone with no live repro.
+- 2026-08-29, owner: Tendencias eventualidades show as small abbreviated boxes (2 CE, Plaq, Plas, Transf, Bx, Proc) on the chart, on the group table above the date, and in the under-chart legend. Legend is one block per day — not a stacked list of "Transfusión: PRODUCT — QTY" rows with Editar/Eliminar on every line. Per-item edit/delete stays, but compact (chip click + ×).
 - 2026-08-26, owner: before shipping any change that touches day-to-day workflow, onboarding (guided tour) and Learn Hub must be updated in the same release — not a follow-up. Caught during 8.2.2 prep: the interconsulta board redesign shipped uncommitted with a broken IC guided-tour chapter (taught the retired sidebar) and two stale Learn Hub articles. Fixed before commit; treat this as standing policy for future UI redesigns, not a one-off.
 - 2026-08-26, owner: corrected a misread — the earlier draft of this decision said to restore the rollover button. That removal was deliberate (owner: "Where did I ask for this? I wanted it gone") and stays removed. What the owner actually asked to restore is the add-patient button ("+ Agregar"), lost from the board when the sidebar was hidden. Built top-left of the board header, wired to the existing openAddModal — see #ic-add-button.
 - 2026-08-25, ryan (hive): interconsulta navigation model corrected per the owner. The first build (team lanes in the sidebar next to Resumen) is rejected. New model: in IC mode the sidebar is gone; the team board is the main window's default view; clicking a patient card drills into their Resumen full-window; "← Tablero" button + Esc go back. Plan doc `docs/superpowers/plans/2026-08-25-interconsulta-team-board.md` UI section rewritten; lane/bucket/rollover logic and the guardia filter stay unchanged.

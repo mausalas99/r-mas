@@ -29,8 +29,8 @@ export function isTabShortcutsAdopted() {
 export function markTabShortcutsAdopted() {
   try {
     localStorage.setItem(TAB_SHORTCUTS_ADOPTED_LS_KEY, '1');
-  } catch (_e) {
-    void _e;
+  } catch (e) {
+    console.warn('[keyboard-shortcuts-nudge] failed to write ' + TAB_SHORTCUTS_ADOPTED_LS_KEY, e);
   }
   nudgeShownThisSession = true;
 }

@@ -55,3 +55,31 @@ test('seedPitchDemoTodos sigue visible cuando ya hay un blob cache activo (modo 
   setBlobCache(null);
   delete globalThis.localStorage;
 });
+
+test('tour-pitch-demo-todos — writeTodosMap warns on setItem quota error', async () => {
+  const warnings = [];
+  const origWarn = console.warn;
+  console.warn = (...args) => warnings.push(args);
+  
+  globalThis.localStorage = {
+    getItem() { return null; },
+    setItem() {
+      const e = new Error('QuotaExceededError');
+      e.name = 'QuotaExceededError';
+      throw e;
+    },
+  };
+  
+  try {
+    const { seedPitchDemoTodos } = await import('./tour-pitch-demo-todos.mjs');
+    seedPitchDemoTodos();
+
+    assert.ok(warnings.length > 0, 'console.warn should have been called');
+    const msg = warnings[0][0];
+    assert.ok(msg.includes('failed to write') && msg.includes('rpc-todos'),
+      'warn should mention the key');
+  } finally {
+    console.warn = origWarn;
+    delete globalThis.localStorage;
+  }
+});

@@ -27,9 +27,10 @@ export {
   formatBhExtrasDisplayParts,
   formatBhExtrasDisplayLine,
   parseBH_,
-  mergeBhResLabRows_,
+  flattenBhHemOnlyVisible,
   mergeCoagResLabRows_,
 } from './labs-bh.mjs';
+export { mergeBhResLabRows_ } from './labs-bh-merge.mjs';
 
 export {
   formatCultivoCondensedForCopy,

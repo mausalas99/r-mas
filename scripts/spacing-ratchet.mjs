@@ -20,7 +20,10 @@ const STYLES_DIR = path.join(__dirname, '..', 'public', 'styles');
 // (.ic-board-bucket .patient-card-toolbar/.patient-toolbar-chip, pase-board.css)
 // needs 1-2px spacing tighter than any existing rem-scale token covers — no
 // spacing token exists in tokens.css to express this yet.
-const BASELINE = 1537;
+// Raised to 1545 for 8.2.5: Tendencias event-tag chips (.tend-event-tag,
+// .tend-group-header h2 inline-rename) need 1-2px padding tighter than any
+// existing token — same no-token-fits case as the 8.2.2 raise above.
+const BASELINE = 1545;
 
 const SPACING_DECL_RE = /\b(padding|margin)(-top|-right|-bottom|-left)?\s*:\s*[^;]*?\d+px[^;]*;/g;
 

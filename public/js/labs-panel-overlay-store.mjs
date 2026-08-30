@@ -30,7 +30,7 @@ export function saveLabPanelOverlays(arr) {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(LS_KEY, JSON.stringify({ overlays: memory }));
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.warn('[labs-panel-overlay-store] failed to write ' + LS_KEY, e); }
 }
 
 export function upsertLabPanelOverlay(record) {

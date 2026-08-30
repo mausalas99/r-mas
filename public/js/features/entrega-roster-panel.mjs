@@ -323,8 +323,8 @@ export function activateTurnoActivo() {
     if (!localStorage.getItem(TURNO_STARTED_KEY)) {
       localStorage.setItem(TURNO_STARTED_KEY, new Date().toISOString());
     }
-  } catch {
-    /* quota */
+  } catch (e) {
+    console.warn('[entrega-roster-panel] failed to write turno-activo state', e);
   }
 }
 

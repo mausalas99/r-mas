@@ -12,8 +12,8 @@ export function setCloudSalaUpgradePending(value) {
   else delete s[CLOUD_SALA_UPGRADE_KEY];
   try {
     localStorage.setItem('rpc-settings', JSON.stringify(s));
-  } catch {
-    /* ignore */
+  } catch (e) {
+    console.warn('[cloud-sala-upgrade] failed to write rpc-settings', e);
   }
   return s;
 }

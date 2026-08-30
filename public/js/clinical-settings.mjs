@@ -46,7 +46,7 @@ export function setClinicalSyncModeLocalOnly(localOnly) {
   settings.clinicalLocalOnly = !!localOnly;
   try {
     localStorage.setItem('rpc-settings', JSON.stringify(settings));
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn("[clinical-settings] failed to write rpc-settings", e); }
   return settings;
 }
 
@@ -66,7 +66,7 @@ export function setClinicalExistingAccountPath(enabled) {
   }
   try {
     localStorage.setItem('rpc-settings', JSON.stringify(settings));
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn("[clinical-settings] failed to write rpc-settings", e); }
   return settings;
 }
 
@@ -162,7 +162,7 @@ export function markClinicalLanProfileGateComplete(settings = readRpcSettings())
   settings.clinicalLanProfileGateVersion = CLINICAL_LAN_PROFILE_GATE_VERSION;
   try {
     localStorage.setItem('rpc-settings', JSON.stringify(settings));
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn("[clinical-settings] failed to write rpc-settings", e); }
   return settings;
 }
 
@@ -206,8 +206,8 @@ export function ensureLanProfileGateDeviceReset(settings = readRpcSettings()) {
   if (dirty) {
     try {
       localStorage.setItem('rpc-settings', JSON.stringify(next));
-    } catch (_e) {
-      void _e;
+    } catch (e) {
+      console.warn("[clinical-settings] failed to write rpc-settings", e);
     }
   }
   return next;
@@ -247,6 +247,6 @@ export function persistClinicalUserBinding(patch) {
   }
   try {
     localStorage.setItem('rpc-settings', JSON.stringify(settings));
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn("[clinical-settings] failed to write rpc-settings", e); }
   return settings;
 }

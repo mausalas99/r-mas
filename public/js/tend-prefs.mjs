@@ -44,7 +44,9 @@ function readJson(key, fallback) {
 function writeJson(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch (_e) { void _e; }
+  } catch (e) {
+    console.warn('[tend-prefs] write failed', key, e);
+  }
 }
 
 export function seriesColorKey(sectionKey, fieldKey) {

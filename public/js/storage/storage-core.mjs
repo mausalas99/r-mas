@@ -34,7 +34,10 @@ function safeLocalStorageSet(key, value) {
     localStorage.setItem(key, value);
     return true;
   } catch (err) {
-    if (isQuotaExceededError(err)) return false;
+    if (isQuotaExceededError(err)) {
+      console.warn('[storage-core] localStorage quota exceeded writing key', key, err);
+      return false;
+    }
     throw err;
   }
 }
@@ -129,7 +132,7 @@ function writeTodosMap(map) {
     invalidateParsed('todos');
     return;
   }
-  localStorage.setItem('rpc-todos', json);
+  safeLocalStorageSet('rpc-todos', json);
   invalidateParsed('todos');
 }
 export {

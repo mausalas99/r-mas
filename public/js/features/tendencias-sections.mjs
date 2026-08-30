@@ -23,7 +23,7 @@ function tendSectionExpandedRead() {
 function tendSectionExpandedWrite(map) {
   try {
     localStorage.setItem(TEND_SECTION_EXPANDED_LS, JSON.stringify(map || {}));
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn('[tendencias-sections] failed to write ' + TEND_SECTION_EXPANDED_LS, e); }
 }
 
 /** @param {string} sectionKey */

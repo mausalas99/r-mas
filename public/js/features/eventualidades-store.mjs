@@ -105,14 +105,29 @@ export const EVENTUALIDAD_KIND_LABELS = {
   otro: 'Otro',
 };
 
-/** @typedef {'eritrocitos'|'plaquetas'|'plasma'} TransfusionProduct */
+/** @typedef {'eritrocitos'|'plaquetas'|'plasma'|'aferesis'} TransfusionProduct */
 
-export const TRANSFUSION_PRODUCTS = ['eritrocitos', 'plaquetas', 'plasma'];
+export const TRANSFUSION_PRODUCTS = ['eritrocitos', 'plaquetas', 'plasma', 'aferesis'];
 
 export const TRANSFUSION_PRODUCT_LABELS = {
   eritrocitos: 'Eritrocitos',
   plaquetas: 'Plaquetas',
   plasma: 'Plasma',
+  aferesis: 'Aféresis plaquetaria',
+};
+
+export const TRANSFUSION_PRODUCT_ABBR = {
+  eritrocitos: 'CE',
+  plaquetas: 'Plaq',
+  plasma: 'Plas',
+  aferesis: 'AfP',
+};
+
+export const EVENTUALIDAD_KIND_ABBR = {
+  transfusion: 'Transf',
+  biopsia: 'Bx',
+  procedimiento: 'Proc',
+  otro: 'Ev',
 };
 
 /** @param {unknown} product @returns {TransfusionProduct|null} */
@@ -187,6 +202,43 @@ export function pickHigherPriorityKind(a, b) {
   const ka = normalizeEventualidadKind(a) || 'otro';
   const kb = normalizeEventualidadKind(b) || 'otro';
   return (EVENTUALIDAD_KIND_PRIORITY[ka] || 1) >= (EVENTUALIDAD_KIND_PRIORITY[kb] || 1) ? ka : kb;
+}
+
+/**
+ * Free-text detail typed by the user for an entry, with the auto-added
+ * "<Producto> — " transfusion prefix stripped back off.
+ * @param {{ kind?: unknown, text?: unknown, transfusionProduct?: unknown }|null|undefined} entry
+ * @returns {string}
+ */
+export function deriveEventualidadDetail(entry) {
+  const kind = resolveEventualidadKind(entry);
+  const text = String((entry && entry.text) || '');
+  if (kind !== 'transfusion') return text;
+  const product = normalizeTransfusionProduct(entry && entry.transfusionProduct);
+  const prefix = product ? normalizeEventualidadText(TRANSFUSION_PRODUCT_LABELS[product]) + ' — ' : '';
+  return prefix && text.indexOf(prefix) === 0 ? text.slice(prefix.length) : '';
+}
+
+/** @param {string} detail @returns {string} leading quantity, e.g. "6" from "6 U" */
+function leadingQuantityFromDetail(detail) {
+  const m = /^(\d+)/.exec(String(detail || '').trim());
+  return m ? m[1] : '';
+}
+
+/**
+ * Short chip text for an event marker/tag, e.g. "6 Plaq", "CE", "Bx".
+ * @param {{ kind?: unknown, text?: unknown, transfusionProduct?: unknown }|null|undefined} entry
+ * @returns {string}
+ */
+export function abbreviatedEventualidadLabel(entry) {
+  const kind = resolveEventualidadKind(entry);
+  if (kind === 'transfusion') {
+    const product = normalizeTransfusionProduct(entry && entry.transfusionProduct);
+    const abbr = product ? TRANSFUSION_PRODUCT_ABBR[product] : EVENTUALIDAD_KIND_ABBR.transfusion;
+    const qty = leadingQuantityFromDetail(deriveEventualidadDetail(entry));
+    return qty ? qty + ' ' + abbr : abbr;
+  }
+  return EVENTUALIDAD_KIND_ABBR[kind] || 'Ev';
 }
 
 export function mergeEventualidadesLabsText(store, text) {

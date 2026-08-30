@@ -5,10 +5,12 @@ import * as tc from './tendencias-core.mjs';
 import { renderTendencias } from './tendencias-render.mjs';
 
 import { mountTendCardSortables, syncTendHiddenModalIfOpen } from './tendencias-ui-shell.mjs';
+import { refreshOpenTendDetail } from './tendencias-ui-detail.mjs';
 
 tendenciasBridge.renderTendencias = renderTendencias;
 tendenciasBridge.mountTendCardSortables = mountTendCardSortables;
 tendenciasBridge.syncTendHiddenModalIfOpen = syncTendHiddenModalIfOpen;
+tendenciasBridge.refreshOpenTendDetail = refreshOpenTendDetail;
 
 export function registerTendenciasRuntime(ctx) {
   if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);

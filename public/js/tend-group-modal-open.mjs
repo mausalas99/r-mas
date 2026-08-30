@@ -142,7 +142,9 @@ export function copyTendGroupTablePng(deps, state) {
     if (deps.showToast) deps.showToast('Muestra al menos una fila y una columna', 'error');
     return;
   }
-  var title = (deps.getSectionLabel(state.sectionKey) || state.sectionKey || 'Tabla') + ' — Tendencias';
+  var titleEl = document.getElementById('tend-group-title');
+  var editedTitle = titleEl && titleEl.textContent.trim();
+  var title = editedTitle || (deps.getSectionLabel(state.sectionKey) || state.sectionKey || 'Tabla') + ' — Tendencias';
   copyTableModelAsPng(state.tableModel, title, function (ok) {
     if (deps.showToast) {
       deps.showToast(ok ? 'Tabla copiada como imagen ✓' : 'No se pudo copiar la imagen', ok ? 'success' : 'error');

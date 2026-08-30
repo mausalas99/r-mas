@@ -17,6 +17,15 @@ test('renderEntry preserves section label on first line', () => {
   assert.match(out[0], /Hb/);
 });
 
+test('renderEntry folds a stored BH Hem. Ret row onto the compact BH line', () => {
+  const out = renderEntry('BH:\n  Hem.\tRet 1');
+  assert.equal(out.length, 1);
+  assert.match(out[0], /section-lbl/);
+  assert.match(out[0], />BH</);
+  assert.match(out[0], /Ret/);
+  assert.doesNotMatch(out[0], /Hem\./);
+});
+
 test('renderEntry styles FEB like other lab sections', () => {
   const out = renderEntry('FEB\tTifO neg TifH neg Bru neg');
   assert.match(out[0], /section-lbl/);

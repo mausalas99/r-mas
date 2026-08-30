@@ -85,6 +85,8 @@ test('formatTrendColumnHeader: hora solo si mismo día con horas distintas', () 
   ];
   assert.equal(formatTrendColumnHeader(mismoDia[0], mismoDia), '18/05/2026 06:43');
   assert.equal(formatTrendColumnHeader(mismoDia[1], mismoDia), '18/05/2026 14:00');
+  assert.equal(formatTrendColumnHeader(mismoDia[0], mismoDia, { showTime: false }), '18/05/2026');
+  assert.equal(formatTrendColumnHeader(mismoDia[1], mismoDia, { showTime: false }), '18/05/2026');
 
   const diasDistintos = [
     mockSet('17/05/2026', '06:43', 'BH', 'Hb', 12),
@@ -94,14 +96,14 @@ test('formatTrendColumnHeader: hora solo si mismo día con horas distintas', () 
   assert.equal(formatTrendColumnHeader(diasDistintos[1], diasDistintos), '18/05/2026');
 });
 
-test('buildTrendAxisMeta: etiquetas sin hora si un solo estudio por día', () => {
+test('buildTrendAxisMeta: etiquetas solo fecha, también el mismo día', () => {
   const sets = [
     mockSet('17/05/2026', '08:00', 'BH', 'Hb', 12),
-    mockSet('18/05/2026', '14:00', 'BH', 'Hb', 11)
+    mockSet('18/05/2026', '05:05', 'BH', 'Hb', 11),
+    mockSet('18/05/2026', '17:02', 'BH', 'Hb', 10)
   ];
   const meta = buildTrendAxisMeta(sets);
-  assert.equal(meta.labels[0], '17/05');
-  assert.equal(meta.labels[1], '18/05');
+  assert.deepEqual(meta.labels, ['17/05', '18/05', '18/05']);
 });
 
 test('formatTendSeriesLabel: sin porcentaje duplicado', () => {

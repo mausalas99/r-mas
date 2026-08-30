@@ -8,11 +8,13 @@ import {
   TRANSFUSION_PRODUCTS,
   TRANSFUSION_PRODUCT_LABELS,
   normalizeEventualidadKind,
+  normalizeTransfusionProduct,
+  deriveEventualidadDetail,
   buildEventualidadComposeText,
   toEventualidadDateValue,
   eventualidadDateToIso,
 } from './eventualidades-store.mjs';
-import { savePatientEventualidad } from './eventualidades-render.mjs';
+import { savePatientEventualidad, updatePatientEventualidad } from './eventualidades-render.mjs';
 import { rt } from './tendencias-runtime-state.mjs';
 import { tendenciasBridge } from './tendencias-bridge.mjs';
 
@@ -26,16 +28,17 @@ function findActivePatient() {
   );
 }
 
-function buildTransfusionProductPillsHtml() {
+function buildTransfusionProductPillsHtml(entry) {
+  const activeProduct = entry ? normalizeTransfusionProduct(entry.transfusionProduct) : null;
   return TRANSFUSION_PRODUCTS.map(function (product, idx) {
-    const active = idx === 0 ? ' is-active' : '';
+    const active = entry ? product === activeProduct : idx === 0;
     return (
       '<button type="button" class="tend-event-kind-pill tend-event-product-pill' +
-      active +
+      (active ? ' is-active' : '') +
       '" data-product="' +
       esc(product) +
       '" aria-pressed="' +
-      (idx === 0 ? 'true' : 'false') +
+      (active ? 'true' : 'false') +
       '">' +
       esc(TRANSFUSION_PRODUCT_LABELS[product]) +
       '</button>'
@@ -43,27 +46,42 @@ function buildTransfusionProductPillsHtml() {
   }).join('');
 }
 
-function buildKindFieldsHtml() {
+/** @param {object|null} [entry] existing entry when editing */
+function buildKindFieldsHtml(entry) {
+  const kind = entry ? normalizeEventualidadKind(entry.kind) || 'otro' : null;
+  const detail = entry ? deriveEventualidadDetail(entry) : '';
+  const transfusionDetail = esc(kind === 'transfusion' ? detail : '');
+  const biopsiaSite = esc(kind === 'biopsia' ? detail : '');
+  const procedimientoText = esc(kind === 'procedimiento' ? detail : '');
+  const otroText = esc(kind === 'otro' ? detail : '');
   return (
     '<div class="tend-event-compose-kind-fields" data-kind-fields="transfusion">' +
     '<span class="tend-event-compose-label">Producto</span>' +
     '<div class="tend-event-kind-pills tend-event-transfusion-pills" role="group" aria-label="Producto transfundido">' +
-    buildTransfusionProductPillsHtml() +
+    buildTransfusionProductPillsHtml(entry) +
     '</div>' +
     '<label class="tend-event-compose-label" for="tend-event-compose-transfusion-detail">Detalle (opcional)</label>' +
-    '<input type="text" id="tend-event-compose-transfusion-detail" class="tend-event-compose-input" placeholder="Ej. 2 U, pool…" />' +
+    '<input type="text" id="tend-event-compose-transfusion-detail" class="tend-event-compose-input" value="' +
+    transfusionDetail +
+    '" placeholder="Ej. 2 U, pool…" />' +
     '</div>' +
     '<div class="tend-event-compose-kind-fields is-hidden" data-kind-fields="biopsia" hidden>' +
     '<label class="tend-event-compose-label" for="tend-event-compose-biopsia-site">De dónde</label>' +
-    '<input type="text" id="tend-event-compose-biopsia-site" class="tend-event-compose-input" placeholder="Ej. Riñón, médula ósea, piel…" />' +
+    '<input type="text" id="tend-event-compose-biopsia-site" class="tend-event-compose-input" value="' +
+    biopsiaSite +
+    '" placeholder="Ej. Riñón, médula ósea, piel…" />' +
     '</div>' +
     '<div class="tend-event-compose-kind-fields is-hidden" data-kind-fields="procedimiento" hidden>' +
     '<label class="tend-event-compose-label" for="tend-event-compose-procedimiento-text">Procedimiento</label>' +
-    '<textarea id="tend-event-compose-procedimiento-text" class="tend-event-compose-text" rows="3" placeholder="Describe el procedimiento…"></textarea>' +
+    '<textarea id="tend-event-compose-procedimiento-text" class="tend-event-compose-text" rows="3" placeholder="Describe el procedimiento…">' +
+    procedimientoText +
+    '</textarea>' +
     '</div>' +
     '<div class="tend-event-compose-kind-fields is-hidden" data-kind-fields="otro" hidden>' +
     '<label class="tend-event-compose-label" for="tend-event-compose-otro-text">Detalle (opcional)</label>' +
-    '<textarea id="tend-event-compose-otro-text" class="tend-event-compose-text" rows="3" placeholder="Describe lo ocurrido…"></textarea>' +
+    '<textarea id="tend-event-compose-otro-text" class="tend-event-compose-text" rows="3" placeholder="Describe lo ocurrido…">' +
+    otroText +
+    '</textarea>' +
     '</div>'
   );
 }
@@ -100,21 +118,24 @@ export function validateTendEventComposePayload(payload) {
   };
 }
 
-/** @param {{ defaultDate?: string }} [opts] */
+/** @param {{ defaultDate?: string, entry?: object|null }} [opts] */
 export function buildTendEventComposeHtml(opts) {
-  const defaultDate =
-    opts && opts.defaultDate && /^\d{4}-\d{2}-\d{2}$/.test(opts.defaultDate)
+  const entry = opts && opts.entry ? opts.entry : null;
+  const entryKind = entry ? normalizeEventualidadKind(entry.kind) || 'otro' : null;
+  const defaultDate = entry
+    ? toEventualidadDateValue(new Date(entry.at))
+    : opts && opts.defaultDate && /^\d{4}-\d{2}-\d{2}$/.test(opts.defaultDate)
       ? opts.defaultDate
       : toEventualidadDateValue(new Date());
   const pills = EVENTUALIDAD_KINDS.map(function (kind, idx) {
-    const active = idx === 0 ? ' is-active' : '';
+    const active = entry ? kind === entryKind : idx === 0;
     return (
       '<button type="button" class="tend-event-kind-pill' +
-      active +
+      (active ? ' is-active' : '') +
       '" data-kind="' +
       esc(kind) +
       '" aria-pressed="' +
-      (idx === 0 ? 'true' : 'false') +
+      (active ? 'true' : 'false') +
       '">' +
       esc(EVENTUALIDAD_KIND_LABELS[kind]) +
       '</button>'
@@ -123,7 +144,9 @@ export function buildTendEventComposeHtml(opts) {
   return (
     '<div id="tend-event-compose-backdrop" class="tend-event-compose-backdrop" aria-hidden="false">' +
     '<div id="tend-event-compose-modal" class="tend-event-compose-modal" role="dialog" aria-modal="true" aria-labelledby="tend-event-compose-title">' +
-    '<h3 id="tend-event-compose-title" class="tend-event-compose-title">Nueva eventualidad</h3>' +
+    '<h3 id="tend-event-compose-title" class="tend-event-compose-title">' +
+    (entry ? 'Editar eventualidad' : 'Nueva eventualidad') +
+    '</h3>' +
     '<p class="tend-event-compose-hint">Se mostrará como contexto en las gráficas de tendencia del mismo día.</p>' +
     '<div class="tend-event-compose-field">' +
     '<span class="tend-event-compose-label">Categoría</span>' +
@@ -137,7 +160,7 @@ export function buildTendEventComposeHtml(opts) {
     '" aria-label="Fecha de la eventualidad" />' +
     '</div>' +
     '<div id="tend-event-compose-kind-fields-wrap">' +
-    buildKindFieldsHtml() +
+    buildKindFieldsHtml(entry) +
     '</div>' +
     '<div class="tend-event-compose-actions">' +
     '<button type="button" class="ea-btn ea-btn--ghost" id="tend-event-compose-cancel">Cancelar</button>' +
@@ -228,21 +251,29 @@ async function submitComposeForm(backdrop) {
     return;
   }
   const atIso = eventualidadDateToIso(payload.dateValue);
-  const result = await savePatientEventualidad(
-    patient,
-    payload.text,
-    atIso,
-    payload.kind,
-    payload.transfusionProduct
-  );
+  const editId = backdrop.dataset.editId || '';
+  const result = editId
+    ? await updatePatientEventualidad(patient, editId, {
+        text: payload.text,
+        at: atIso,
+        kind: payload.kind,
+        transfusionProduct: payload.transfusionProduct,
+      })
+    : await savePatientEventualidad(patient, payload.text, atIso, payload.kind, payload.transfusionProduct);
   if (!result.ok) {
-    rt.showToast('No se pudo guardar la eventualidad.', 'error');
+    rt.showToast(
+      editId ? 'No se pudo actualizar la eventualidad.' : 'No se pudo guardar la eventualidad.',
+      'error'
+    );
     return;
   }
   closeComposeModal();
-  rt.showToast('Eventualidad guardada.', 'success');
+  rt.showToast(editId ? 'Eventualidad actualizada.' : 'Eventualidad guardada.', 'success');
   if (typeof tendenciasBridge.renderTendencias === 'function') {
     tendenciasBridge.renderTendencias();
+  }
+  if (typeof tendenciasBridge.refreshOpenTendDetail === 'function') {
+    tendenciasBridge.refreshOpenTendDetail();
   }
 }
 
@@ -302,22 +333,24 @@ function wireComposeBackdrop(backdrop) {
   syncTendEventComposeKindFields(backdrop);
 }
 
-/** @param {{ defaultDate?: string }} [opts] */
+/** @param {{ defaultDate?: string, entry?: object|null }} [opts] */
 export function openTendEventComposeModal(opts) {
   if (typeof document === 'undefined') return;
+  const entry = opts && opts.entry ? opts.entry : null;
   const defaultDate =
-    opts && opts.defaultDate && /^\d{4}-\d{2}-\d{2}$/.test(opts.defaultDate)
+    !entry && opts && opts.defaultDate && /^\d{4}-\d{2}-\d{2}$/.test(opts.defaultDate)
       ? opts.defaultDate
       : toEventualidadDateValue(new Date());
   const existing = document.getElementById('tend-event-compose-backdrop');
   if (existing) existing.remove();
   const wrap = document.createElement('div');
-  wrap.innerHTML = buildTendEventComposeHtml({ defaultDate: defaultDate });
+  wrap.innerHTML = buildTendEventComposeHtml({ defaultDate: defaultDate, entry: entry });
   const backdrop = /** @type {HTMLElement|null} */ (wrap.firstElementChild);
   if (!backdrop) return;
+  if (entry && entry.id) backdrop.dataset.editId = String(entry.id);
   document.body.appendChild(backdrop);
   wireComposeBackdrop(backdrop);
   cancelOverlayClose(backdrop);
   refreshRpcDateFields(backdrop);
-  focusComposeFieldForKind(backdrop, 'transfusion');
+  focusComposeFieldForKind(backdrop, entry ? normalizeEventualidadKind(entry.kind) || 'otro' : 'transfusion');
 }

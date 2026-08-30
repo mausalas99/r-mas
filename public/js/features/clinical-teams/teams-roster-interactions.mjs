@@ -124,7 +124,7 @@ export function wireBrowseSalaControl(elevated) {
   select.addEventListener('change', () => {
     try {
       localStorage.setItem(BROWSE_SALA_LS, String(select.value || ''));
-    } catch (_e) { void _e; }
+    } catch (e) { console.warn("[teams-roster-interactions] failed to write " + BROWSE_SALA_LS, e); }
     void renderClinicalTeamsPanel({ silent: true, skipLanPull: true, preserveDraft: true });
   });
 }

@@ -118,8 +118,8 @@ export function markStrippedAutoLabInterpretations() {
   try {
     if (typeof localStorage === 'undefined') return;
     localStorage.setItem(FLAG_KEY, '1');
-  } catch {
-    /* ignore */
+  } catch (e) {
+    console.warn('[eventualidades-strip-auto-labs] failed to write ' + FLAG_KEY, e);
   }
 }
 

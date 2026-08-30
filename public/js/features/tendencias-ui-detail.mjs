@@ -1,4 +1,4 @@
-import { getNotes } from '../app-state.mjs';
+import { getNotes, getPatients } from '../app-state.mjs';
 import { formatDMYDate, inferFechaLabSetFromId } from '../lab-set-date.mjs';
 import { dedupeTrendSetsForSeries, getSetTrendValueForSeries, buildTendChartLabels, parseFechaLabToMs, normalizeFechaLabHistory } from '../tend-core.mjs';
 import { cancelOverlayClose, closeOverlayAnimated } from '../ui-motion.mjs';
@@ -20,6 +20,8 @@ import {
   eventTooltipLinesForChartIndex,
 } from './tendencias-event-context.mjs';
 import { openTendEventComposeModal } from './tendencias-event-compose.mjs';
+import { findEventualidadEntry } from './eventualidades-store.mjs';
+import { deletePatientEventualidad } from './eventualidades-render.mjs';
 import { alignSeriesToLabels, formatTendTooltipDelta } from './tendencias-insight.mjs';
 import {
   createTendRefBandPlugin,
@@ -29,8 +31,58 @@ import {
 
 var _tendDetailControlsWired = false;
 
+function activeTendDetailPatient() {
+  var pid = rt.getActiveId();
+  if (!pid) return null;
+  return getPatients().find(function (row) {
+    return String(row.id) === String(pid);
+  });
+}
+
+function handleTendDetailEventEdit(entryId) {
+  if (!entryId) return;
+  var patient = activeTendDetailPatient();
+  var entry = patient && patient.eventualidades && findEventualidadEntry(patient.eventualidades, entryId);
+  if (!entry) return;
+  openTendEventComposeModal({ entry: entry });
+}
+
+async function handleTendDetailEventDelete(entryId) {
+  if (!entryId) return;
+  var patient = activeTendDetailPatient();
+  if (!patient) return;
+  var out = await deletePatientEventualidad(patient, entryId);
+  if (out && out.ok) {
+    rt.showToast('Eventualidad eliminada.', 'success');
+    void refreshOpenTendDetail();
+  } else {
+    rt.showToast('No se pudo eliminar la eventualidad.', 'error');
+  }
+}
+
+function wireTendDetailEventsLegend() {
+  var slot = document.getElementById('tend-detail-events-slot');
+  if (!slot || slot.dataset.wired === '1') return;
+  slot.dataset.wired = '1';
+  slot.addEventListener('click', function (ev) {
+    var delBtn = ev.target.closest('[data-tend-ev-delete]');
+    if (delBtn) {
+      ev.preventDefault();
+      void handleTendDetailEventDelete(delBtn.getAttribute('data-tend-ev-delete'));
+      return;
+    }
+    var editBtn = ev.target.closest('[data-tend-ev-edit]');
+    if (editBtn) {
+      ev.preventDefault();
+      handleTendDetailEventEdit(editBtn.getAttribute('data-tend-ev-edit'));
+    }
+  });
+}
+
 function ensureTendDetailControlsWired() {
-  if (_tendDetailControlsWired || typeof document === 'undefined') return;
+  if (typeof document === 'undefined') return;
+  wireTendDetailEventsLegend();
+  if (_tendDetailControlsWired) return;
   var btn = document.getElementById('tend-detail-add-event');
   if (!btn) return;
   _tendDetailControlsWired = true;
@@ -47,6 +99,13 @@ function ensureTendDetailControlsWired() {
     }
     openTendEventComposeModal(defaultDate ? { defaultDate: defaultDate } : undefined);
   });
+}
+
+/** Re-open the currently displayed detail chart in place (e.g. after an event edit/delete). */
+export function refreshOpenTendDetail() {
+  var ctx = tendStore.detailContext;
+  if (!ctx || !ctx.sectionKey || ctx.fieldKey == null) return Promise.resolve();
+  return openTendDetailAsync(ctx.sectionKey, ctx.fieldKey);
 }
 
 function syncTendDetailEventsLegend(markerMap, labels) {
@@ -362,7 +421,13 @@ function openTendDetailAsync(sectionKey, fieldKey) {
   var latest = latestSet ? getSetTrendValueForSeries(latestSet, sectionKey, fieldKey) : null;
   var ref = tendRefForSeries(history, sectionKey, fieldKey, latestSet);
   var markerMap = buildEventMarkerMapForSets(setsAsc, aid());
-  tendStore.detailContext = { setsAsc: setsAsc, markerMap: markerMap, labels: labels };
+  tendStore.detailContext = {
+    setsAsc: setsAsc,
+    markerMap: markerMap,
+    labels: labels,
+    sectionKey: sectionKey,
+    fieldKey: fieldKey,
+  };
   tendStore.detailSelectedIndex = labels.length ? labels.length - 1 : null;
   ensureTendDetailControlsWired();
   document.getElementById('tend-detail-title').textContent =

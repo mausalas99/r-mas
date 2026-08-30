@@ -38,7 +38,7 @@ export function readClinicalTeamsCollapseOpen(key, defaultOpen = true) {
 export function writeClinicalTeamsCollapseOpen(key, open) {
   try {
     localStorage.setItem(CLINICAL_TEAMS_COLLAPSE_LS_PREFIX + key, open ? '1' : '0');
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn('[clinical-teams-shared] failed to write ' + CLINICAL_TEAMS_COLLAPSE_LS_PREFIX + key, e); }
 }
 
 /**

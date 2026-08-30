@@ -28,8 +28,8 @@ function writeTodosMap(map) {
   const json = JSON.stringify(map || {});
   try {
     localStorage.setItem(TODOS_LS_KEY, json);
-  } catch {
-    /* localStorage unavailable */
+  } catch (e) {
+    console.warn('[tour-pitch-demo-todos] failed to write ' + TODOS_LS_KEY, e);
   }
   const cache = getBlobCache();
   if (cache) {

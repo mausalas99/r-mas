@@ -2694,6 +2694,16 @@ var RELEASE_NOTES_825 = [
     body:
       'El envío de labs pendientes armaba un lote por paciente sin límite de tamaño; un paciente con muchos labs pendientes podía generar un lote demasiado grande y quedar atorado como <strong>"lote pesado"</strong>. Ahora los lotes tienen un tope y ya no se atascan.',
   },
+  {
+    title: 'Etiquetas de eventos en Tendencias',
+    body:
+      'Transfusiones, biopsias y procedimientos ahora aparecen como cajitas abreviadas (2 CE, Plaq, Bx…) directo en la gráfica, en el encabezado de fecha de la tabla y en la leyenda — un bloque por día, con editar/eliminar por chip.',
+  },
+  {
+    title: 'Ocultar columnas y filas de Tendencias vuelve a funcionar',
+    body:
+      'En instalaciones con mucho historial, el checkbox para ocultar una columna o fila de la tabla no hacía nada. La causa era que el almacenamiento local del navegador se había llenado por completo; ahora se libera espacio solo y el checkbox responde de nuevo.',
+  },
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */

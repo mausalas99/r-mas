@@ -208,7 +208,7 @@ function writePresetOverridesMap(map) {
   if (typeof localStorage === 'undefined') return;
   try {
     localStorage.setItem(TODO_DUE_PRESETS_STORAGE_KEY, JSON.stringify(map || {}));
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn('[todos-due] failed to write ' + TODO_DUE_PRESETS_STORAGE_KEY, e); }
   if (typeof document !== 'undefined') {
     document.dispatchEvent(new CustomEvent('rpc-todo-due-presets-changed'));
   }

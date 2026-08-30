@@ -11,7 +11,11 @@ import {
   dayKeyFromLabSet,
   mapEventMarkersToChartIndices,
   buildTendDetailEventsLegendHtml,
+  eventLegendDateLabel,
   eventTooltipLinesForChartIndex,
+  eventMarkerTagText,
+  eventMarkerTagSpecs,
+  buildEventMarkerTagsHtml,
 } from './tendencias-event-context.mjs';
 
 test('dayKeyFromLabSet matches eventualidad day key', () => {
@@ -48,6 +52,57 @@ test('pickHigherPriorityKind and resolveEventualidadKind', () => {
   assert.equal(pickHigherPriorityKind('procedimiento', 'transfusion'), 'transfusion');
 });
 
+test('eventMarkerTagText joins abbreviated labels', () => {
+  assert.equal(
+    eventMarkerTagText({
+      kind: 'transfusion',
+      entries: [
+        { kind: 'transfusion', transfusionProduct: 'plaquetas', text: 'PLAQUETAS — 6' },
+        { kind: 'transfusion', transfusionProduct: 'plasma', text: 'PLASMA — 2' },
+      ],
+    }),
+    '6 Plaq · 2 Plas'
+  );
+  assert.equal(
+    eventMarkerTagText({
+      kind: 'transfusion',
+      entries: [
+        { kind: 'transfusion', transfusionProduct: 'eritrocitos', text: 'ERITROCITOS — 1' },
+        { kind: 'transfusion', transfusionProduct: 'plaquetas', text: 'PLAQUETAS — 4' },
+        { kind: 'transfusion', transfusionProduct: 'plasma', text: 'PLASMA — 3' },
+        { kind: 'biopsia', text: 'Médula' },
+      ],
+    }),
+    '1 CE · 4 Plaq · 3 Plas +1'
+  );
+});
+
+test('eventMarkerTagSpecs lists short chips for export', () => {
+  const specs = eventMarkerTagSpecs({
+    kind: 'transfusion',
+    entries: [
+      { kind: 'transfusion', transfusionProduct: 'plaquetas', text: 'PLAQUETAS — 4' },
+      { kind: 'transfusion', transfusionProduct: 'plasma', text: 'PLASMA — 2' },
+    ],
+  });
+  assert.deepEqual(specs, [
+    { text: '4 Plaq', kind: 'transfusion' },
+    { text: '2 Plas', kind: 'transfusion' },
+  ]);
+});
+
+test('buildEventMarkerTagsHtml renders display chips', () => {
+  const html = buildEventMarkerTagsHtml({
+    kind: 'transfusion',
+    entries: [
+      { id: 'ev-ce', kind: 'transfusion', transfusionProduct: 'eritrocitos', text: 'ERITROCITOS — 2 U' },
+    ],
+  });
+  assert.match(html, /tend-event-tag--transfusion/);
+  assert.match(html, />2 CE</);
+  assert.doesNotMatch(html, /data-tend-ev-edit/);
+});
+
 test('buildTendDetailEventsLegendHtml and tooltip lines', () => {
   const markerMap = {
     indices: [1],
@@ -62,8 +117,52 @@ test('buildTendDetailEventsLegendHtml and tooltip lines', () => {
     ]),
   };
   const html = buildTendDetailEventsLegendHtml(markerMap, ['01/08', '03/08', '05/08']);
-  assert.match(html, /Biopsia/);
   assert.match(html, /03\/08/);
+  assert.match(html, />Bx</);
+  assert.doesNotMatch(html, /tend-event-legend-kind/);
+  assert.doesNotMatch(html, /tend-event-legend-entry/);
   const lines = eventTooltipLinesForChartIndex(markerMap, 1);
   assert.equal(lines[0], 'Biopsia: Biopsia renal');
+});
+
+test('buildTendDetailEventsLegendHtml is one day block with compact manage', () => {
+  const markerMap = {
+    indices: [0],
+    byIndex: new Map([
+      [
+        0,
+        {
+          kind: 'transfusion',
+          entries: [
+            { id: 'ev-plaq', text: 'PLAQUETAS — 6', kind: 'transfusion', transfusionProduct: 'plaquetas' },
+            { id: 'ev-plasma', text: 'PLASMA — 2', kind: 'transfusion', transfusionProduct: 'plasma' },
+          ],
+        },
+      ],
+    ]),
+  };
+  const html = buildTendDetailEventsLegendHtml(markerMap, ['24/08']);
+  assert.equal((html.match(/tend-event-legend-item/g) || []).length, 1);
+  assert.match(html, /24\/08/);
+  assert.match(html, />6 Plaq</);
+  assert.match(html, />2 Plas</);
+  assert.match(html, /data-tend-ev-edit="ev-plaq"/);
+  assert.match(html, /data-tend-ev-delete="ev-plaq"/);
+  assert.match(html, /data-tend-ev-edit="ev-plasma"/);
+  assert.match(html, /data-tend-ev-delete="ev-plasma"/);
+  assert.doesNotMatch(html, /Transfusión:/);
+  assert.doesNotMatch(html, /ev-card__edit/);
+  assert.doesNotMatch(html, />Editar</);
+});
+
+test('event legend date drops lab-draw time', () => {
+  assert.equal(eventLegendDateLabel('18/08 05:05'), '18/08');
+  assert.equal(eventLegendDateLabel('16/08'), '16/08');
+  const markerMap = {
+    indices: [0],
+    byIndex: new Map([[0, { kind: 'transfusion', entries: [{ id: 'ev1', text: 'PLAQUETAS', kind: 'transfusion' }] }]]),
+  };
+  const html = buildTendDetailEventsLegendHtml(markerMap, ['18/08 05:05']);
+  assert.match(html, />18\/08</);
+  assert.doesNotMatch(html, /05:05/);
 });

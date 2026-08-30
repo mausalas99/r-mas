@@ -100,7 +100,7 @@ function saveConsultServices(list) {
   st.recetaHuConsultServices = normalizeRecetaHuConsultServices(list);
   try {
     localStorage.setItem('rpc-settings', JSON.stringify(st));
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn('[receta-hu-shared] failed to write rpc-settings', e); }
 }
 
 function activePatient() {

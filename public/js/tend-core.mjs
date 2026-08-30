@@ -177,7 +177,6 @@ export function dedupeTrendSetsForSeries(setsDesc, sectionKey, fieldKey) {
 /** setsAsc: cronológico ascendente (más antiguo primero). */
 export function buildTrendAxisMeta(setsAsc) {
   var cols = setsAsc || [];
-  var timeVis = buildTrendColumnTimeVisibility(cols);
   var dayCounts = Object.create(null);
   var points = cols.map(function (s, idx) {
     if (s.fecha === 'Anterior') {
@@ -195,21 +194,17 @@ export function buildTrendAxisMeta(setsAsc) {
       : String(s.fecha).slice(0, 12);
     var hora = normalizeHoraLabHistory(s.hora);
     var jitter = n > 1 ? (n - 1) * 0.12 : 0;
-    var showTimeInLabel = !!timeVis[colKeyForTrendSet(s)];
     return {
       set: s,
       x: idx + jitter,
       dayLabel: dd,
       tooltipTime: hora ? hora.slice(0, 5) : '',
-      showTimeInLabel: showTimeInLabel
     };
   });
   return {
     points: points,
     labels: points.map(function (p) {
-      if (p.set.fecha === 'Anterior') return 'Ant.';
-      if (p.showTimeInLabel && p.tooltipTime) return p.dayLabel + ' ' + p.tooltipTime;
-      return p.dayLabel;
+      return p.set.fecha === 'Anterior' ? 'Ant.' : p.dayLabel;
     })
   };
 }
@@ -373,7 +368,7 @@ export function formatTrendColumnHeader(set, columns, opts) {
   var vis =
     (opts && opts.timeVisibility) || buildTrendColumnTimeVisibility(cols);
   var ck = colKeyForTrendSet(set);
-  var showTime = !!vis[ck];
+  var showTime = opts && opts.showTime === false ? false : !!vis[ck];
   var date = normalizeFechaLabHistory(set.fecha) || String(set.fecha || '').trim();
   var hora = normalizeHoraLabHistory(set.hora);
   if (showTime && hora) return date + ' ' + hora.slice(0, 5);

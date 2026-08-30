@@ -153,7 +153,7 @@ async function processFullBackupFile(rawPayload) {
   await persistClinicalState({ immediate: true });
   try {
     localStorage.setItem('rpc-preimport-backup', JSON.stringify(buildFullBackupPayload()));
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn('[import-handlers] failed to write rpc-preimport-backup', e); }
   await persistFullBackupPayload(payload);
   addAuditEntry('backup-full-import', 'ok', n, '');
   rt.showToast(

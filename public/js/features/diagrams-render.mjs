@@ -311,8 +311,8 @@ function labDiagramsIsCollapsed() {
 export function setLabDiagramsCollapsed(collapsed) {
   try {
     localStorage.setItem(LAB_DIAGRAMS_COLLAPSED_KEY, collapsed ? "1" : "0");
-  } catch (_e) {
-    void _e;
+  } catch (e) {
+    console.warn('[diagrams-render] failed to write ' + LAB_DIAGRAMS_COLLAPSED_KEY, e);
   }
   syncLabDiagramsCollapseUI();
 }

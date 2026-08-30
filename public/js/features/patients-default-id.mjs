@@ -19,8 +19,8 @@ export function writeLastSelectedPatientId(id) {
       return;
     }
     localStorage.setItem(LAST_PATIENT_LS, pid);
-  } catch (_e) {
-    void _e;
+  } catch (e) {
+    console.warn('[patients-default-id] failed to write ' + LAST_PATIENT_LS, e);
   }
 }
 

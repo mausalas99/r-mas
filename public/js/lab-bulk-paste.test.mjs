@@ -175,6 +175,48 @@ SEG\t29.1 - 38.4`;
     assert.match(coag, /\bTP\s+14\.2/);
   });
 
+  it('mergeBulkParseResults pone Ret en la BH al consolidar biometría + reticulocitos', () => {
+    var cbc = `Expediente:\t1\tSolicitud:\t1
+Nombre:\tMARIBEL BAZABE\tFecha Registro:\tAug 21 2026 3:53AM
+HEMATOLOGIA
+BIOMETRIA HEMATICA COMPLETA
+HGB B 8.84 g/dL 12.20 - 18.10
+HCT B 25.5 % 37.7 - 53.7
+MCV * 93 fL 80 - 97
+MCH * 32.4 pg 27.0 - 31.2
+WBC A 2.89 K/uL 4.00 - 11.00
+NEU * 2.65 K/uL 2.00 - 6.90
+EOS * 0.02 K/uL 0.000 - 0.700
+PLT * 12.50 K/uL 142.00 - 424.00`;
+    var ret = `Expediente:\t1\tSolicitud:\t2
+Nombre:\tMARIBEL BAZABE\tFecha Registro:\tAug 21 2026 4:10AM
+HEMATOLOGIA
+DIFERENCIAL MANUAL
+SEGMENTADOS
+*
+95
+%
+RETICULOCITOS
+Estudio\t\tResultado\tUnidades\tValor de Referencia
+RETICULOCITOS
+*
+1.0
+%\t0.5 - 1.5
+FROTIS DE SANGRE PERIFERICA
+HIPOCROMIA +`;
+    var items = [cbc, ret].map(function (text) {
+      return { result: procesarLabs(text), reportText: text };
+    });
+    var merged = mergeBulkParseResults(items);
+    assert.equal(merged.length, 1);
+    var bh = merged[0].resLabs.find(function (l) {
+      return /^BH\b/i.test(l);
+    });
+    assert.ok(bh);
+    assert.match(bh, /\bHb\s+8\.84/);
+    assert.match(bh, /\bRet\s+1\b/);
+  });
+
   it('mergeBulkParseResults mantiene cada gasometría seriada del mismo día', () => {
     var gasoA = GASO_VENOSA_SOLO.replace('6:43AM', '6:43AM');
     var gasoB = GASO_VENOSA_SOLO.replace('6:43AM', '7:30AM').replace('7.39', '7.35');

@@ -57,7 +57,7 @@ export async function handleSyncModeBack() {
   delete settings.clinicalOnboardingExistingAccount;
   try {
     localStorage.setItem('rpc-settings', JSON.stringify(settings));
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn("[clinical-onboarding-sync-mode] failed to write rpc-settings", e); }
   await refreshOnboardingHost();
 }
 

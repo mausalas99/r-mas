@@ -64,9 +64,27 @@ test('validateTendEventComposePayload otro allows empty detail', () => {
 test('buildTendEventComposeHtml includes transfusion, biopsia and procedimiento fields', () => {
   const html = buildTendEventComposeHtml({ defaultDate: '2026-08-10' });
   assert.match(html, /data-product="eritrocitos"/);
+  assert.match(html, /data-product="aferesis"/);
+  assert.match(html, /Aféresis plaquetaria/);
   assert.match(html, /tend-event-compose-biopsia-site/);
   assert.match(html, /tend-event-compose-procedimiento-text/);
   assert.match(html, /value="2026-08-10"/);
+});
+
+test('buildTendEventComposeHtml prefills fields when editing an existing entry', () => {
+  const entry = {
+    id: 'ev-plaq',
+    at: '2026-08-24T12:00:00.000Z',
+    kind: 'transfusion',
+    transfusionProduct: 'plaquetas',
+    text: 'PLAQUETAS — 6 U',
+  };
+  const html = buildTendEventComposeHtml({ entry });
+  assert.match(html, /Editar eventualidad/);
+  assert.match(html, /value="2026-08-24"/);
+  assert.match(html, /data-kind="transfusion" aria-pressed="true"/);
+  assert.match(html, /data-product="plaquetas" aria-pressed="true"/);
+  assert.match(html, /value="6 U"/);
 });
 
 test('syncTendEventComposeKindFields toggles visible panel', () => {

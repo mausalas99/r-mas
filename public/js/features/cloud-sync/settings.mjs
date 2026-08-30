@@ -55,8 +55,8 @@ export function setCloudSyncRemember(remember) {
   try {
     if (remember) localStorage.setItem(REMEMBER_KEY, '1');
     else localStorage.removeItem(REMEMBER_KEY);
-  } catch {
-    /* ignore */
+  } catch (e) {
+    console.warn('[settings] failed to write ' + REMEMBER_KEY, e);
   }
 }
 
@@ -124,8 +124,8 @@ function hydrateRememberFromDisk() {
       sessionStorage.setItem(ROOM_META_KEY, meta);
       localStorage.setItem(ROOM_META_KEY, meta);
     }
-  } catch {
-    /* ignore */
+  } catch (e) {
+    console.warn('[settings] failed to write remember data', e);
   }
 }
 
@@ -212,8 +212,8 @@ function writeDual(key, value) {
       sessionStorage.removeItem(key);
       localStorage.removeItem(key);
     }
-  } catch {
-    /* ignore */
+  } catch (e) {
+    console.warn('[settings] failed to write dual storage key', e);
   }
   // Durable userData copy so quit/destroy cannot drop Recuérdame.
   if (

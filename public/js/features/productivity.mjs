@@ -79,9 +79,30 @@ function getUndoStack() {
   }
 }
 
-function saveUndoStack(stack) {
+export function saveUndoStack(stack) {
+  var trimmed = (stack || []).slice(0, UNDO_STACK_MAX);
+  var droppedForQuota = false;
+  while (trimmed.length) {
+    try {
+      localStorage.setItem(UNDO_STACK_KEY, JSON.stringify(trimmed));
+      if (droppedForQuota) {
+        console.warn(
+          '[productivity] undo stack exceeded storage quota, kept only',
+          trimmed.length,
+          'of',
+          (stack || []).length,
+          'snapshots'
+        );
+      }
+      return;
+    } catch (e) {
+      droppedForQuota = true;
+      trimmed.pop();
+    }
+  }
+  console.warn('[productivity] undo stack exceeded storage quota even at 1 snapshot, cleared it', stack && stack[0]);
   try {
-    localStorage.setItem(UNDO_STACK_KEY, JSON.stringify((stack || []).slice(0, UNDO_STACK_MAX)));
+    localStorage.removeItem(UNDO_STACK_KEY);
   } catch (_e) { void _e; }
 }
 
@@ -128,7 +149,9 @@ export async function undoLastOperation() {
       "rpc-scheduled-procedures",
       JSON.stringify(snap.data.scheduledProcedures || [])
     );
-  } catch (_e) { void _e; }
+  } catch (e) {
+    console.warn('[productivity] failed to write rpc-scheduled-procedures', e);
+  }
   localStorage.setItem("rpc-settings", JSON.stringify(snap.data.settings || {}));
   if (snap.data.medCatalog && typeof snap.data.medCatalog === "object") {
     storage.saveMedCatalog(snap.data.medCatalog);

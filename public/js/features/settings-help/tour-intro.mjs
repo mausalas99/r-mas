@@ -124,7 +124,7 @@ export function hideTourIntroModal() {
 export function markGuidedTourVersionDone() {
   try {
     localStorage.setItem(GUIDED_TOUR_LS_KEY, normalizeTourVersionLabel(window.__RPC_APP_VERSION__));
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn('[tour-intro] failed to write ' + GUIDED_TOUR_LS_KEY, e); }
 }
 
 export function guidedTourIntroSkip() {

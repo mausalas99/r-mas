@@ -75,7 +75,7 @@ async function persistFullBackupPayload(payload) {
         Array.isArray(payload.data.scheduledProcedures) ? payload.data.scheduledProcedures : []
       )
     );
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn('[backup-payload] failed to write rpc-scheduled-procedures', e); }
   localStorage.setItem('rpc-settings', JSON.stringify(payload.data.settings || {}));
   if (payload.data.medCatalog && typeof payload.data.medCatalog === 'object') {
     storage.saveMedCatalog(payload.data.medCatalog);

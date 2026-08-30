@@ -1,8 +1,9 @@
-import { describe, it } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { setArchivedSectionCollapsed } from './patients-list.mjs';
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const listSrc = readFileSync(join(dir, 'patients-list.mjs'), 'utf8');
@@ -43,5 +44,36 @@ describe('patient list filter startup', () => {
     assert.match(fn, /syncPatientsOrderFromDom\(\)/);
     assert.match(fn, /setLastRondaNavIds\(buildRondaNavIds\(zones\)\)/);
   });
-});
 
+  it('logs console.warn when setArchivedSectionCollapsed exceeds quota', () => {
+    let store = {};
+    const prev = globalThis.localStorage;
+    
+    globalThis.localStorage = {
+      getItem: (k) => (k in store ? store[k] : null),
+      setItem: (k, v) => {
+        store[k] = String(v);
+      },
+      removeItem: (k) => {
+        delete store[k];
+      },
+    };
+
+    let warned = null;
+    const prevWarn = console.warn;
+    console.warn = (msg, err) => { warned = { msg, err }; };
+    globalThis.localStorage.setItem = () => {
+      const e = new Error('QuotaExceededError');
+      e.name = 'QuotaExceededError';
+      throw e;
+    };
+    try {
+      setArchivedSectionCollapsed(true);
+    } finally {
+      console.warn = prevWarn;
+      if (prev) globalThis.localStorage = prev;
+    }
+    assert.ok(warned, 'console.warn should be called on quota error');
+    assert.match(warned.msg, /failed to write rpc-archived-section-collapsed/);
+  });
+});

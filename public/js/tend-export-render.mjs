@@ -8,6 +8,10 @@ import {
   measureTextWidth,
   resolveTableTheme,
 } from './tend-export-helpers.mjs';
+import { EVENT_MARKER_COLORS } from './features/tendencias-event-context.mjs';
+
+const EVENT_TAG_ROW_H = 16;
+const EVENT_TAG_FONT = '600 9px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif';
 
 function buildTableFonts(theme, isSome) {
   var font = theme.fontSize + 'px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif';
@@ -46,6 +50,10 @@ function measureDataColumnWidths(probe, model, theme, visibleCols, visibleRows, 
     var limits = colWidthLimits(theme, ci);
     var hdr = col.header || '';
     var w = measureTextWidth(probe, hdr, fonts.fontHeader) + theme.cellPad * 2;
+    (col.eventTags || []).forEach(function (tag) {
+      if (!tag || !tag.text) return;
+      w = Math.max(w, measureTextWidth(probe, tag.text, EVENT_TAG_FONT) + 14);
+    });
     if (isSome) {
       w = Math.max(w, measureTextWidth(probe, hdr.toUpperCase(), fonts.fontHeader) + theme.cellPad * 2);
     }
@@ -80,7 +88,13 @@ export function buildTablePngLayout(model) {
   var tableW = labelColW + colWidths.reduce(function (a, b) {
     return a + b;
   }, 0);
-  var tableH = theme.headerH + visibleRows.length * theme.rowH;
+  var tagRowH = visibleCols.some(function (c) {
+    return c.eventTags && c.eventTags.length;
+  })
+    ? EVENT_TAG_ROW_H
+    : 0;
+  var headerH = theme.headerH + tagRowH;
+  var tableH = headerH + visibleRows.length * theme.rowH;
   var margin = isSome ? 16 : 12;
   var titleH = isSome ? 36 : 22;
   var framePad = theme.outerRadius > 0 ? 1 : 0;
@@ -95,6 +109,7 @@ export function buildTablePngLayout(model) {
     visibleRows,
     labelColW,
     colWidths,
+    headerH,
     tableW,
     tableH,
     margin,
@@ -201,11 +216,45 @@ function drawBodyCell(ctx, layout, row, rowIndex, colIndex, visibleCol, cx, ry) 
   );
 }
 
+function drawHeaderEventTags(ctx, tags, x, y, colW) {
+  var list = tags || [];
+  if (!list.length) return;
+  var boxH = 13;
+  var padX = 3;
+  var gap = 2;
+  ctx.font = EVENT_TAG_FONT;
+  var widths = list.map(function (tag) {
+    return Math.ceil(measureTextWidth(ctx, tag.text, EVENT_TAG_FONT)) + padX * 2;
+  });
+  var total = widths.reduce(function (a, b) {
+    return a + b;
+  }, 0) + gap * Math.max(0, list.length - 1);
+  var tx = x + Math.max(2, (colW - total) / 2);
+  var ty = y + 2;
+  list.forEach(function (tag, i) {
+    var boxW = Math.min(widths[i], colW - 4);
+    var color = EVENT_MARKER_COLORS[tag.kind] || EVENT_MARKER_COLORS.otro;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') ctx.roundRect(tx, ty, boxW, boxH, 3);
+    else ctx.rect(tx, ty, boxW, boxH);
+    ctx.fill();
+    ctx.fillStyle = '#111827';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(tag.text, tx + boxW / 2, ty + boxH / 2 + 0.5, boxW - 2);
+    tx += boxW + gap;
+  });
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+}
+
 function drawTableHeader(ctx, layout, tableOx, tableOy) {
   var theme = layout.theme;
   var isSome = layout.isSome;
   var cellPad = theme.cellPad;
-  var headerH = theme.headerH;
+  var headerH = layout.headerH;
+  var dateY = tableOy + headerH - theme.headerH / 2;
 
   fillCell(ctx, tableOx, tableOy, layout.tableW, headerH, isSome ? '#f1f5f9' : '#f3f4f6');
   ctx.font = layout.fonts.fontHeader;
@@ -216,17 +265,21 @@ function drawTableHeader(ctx, layout, tableOx, tableOy) {
   ctx.fillText(
     fitCellText(ctx, headerLabel, layout.labelColW - cellPad * 2, layout.fonts.fontHeader),
     hx + cellPad,
-    tableOy + headerH / 2
+    dateY
   );
   hx += layout.labelColW;
   for (var ci = 0; ci < layout.visibleCols.length; ci++) {
+    var col = layout.visibleCols[ci];
     strokeCell(ctx, hx, tableOy, layout.colWidths[ci], headerH);
-    var hdr = layout.visibleCols[ci].header || '';
+    drawHeaderEventTags(ctx, col.eventTags, hx, tableOy, layout.colWidths[ci]);
+    ctx.font = layout.fonts.fontHeader;
+    ctx.fillStyle = isSome ? '#64748b' : '#6b7280';
+    var hdr = col.header || '';
     if (isSome) hdr = hdr.toUpperCase();
     ctx.fillText(
       fitCellText(ctx, hdr, layout.colWidths[ci] - cellPad * 2, layout.fonts.fontHeader),
       hx + cellPad,
-      tableOy + headerH / 2
+      dateY
     );
     hx += layout.colWidths[ci];
   }
@@ -236,7 +289,7 @@ function drawTableBody(ctx, layout, tableOx, tableOy) {
   var theme = layout.theme;
   var cellPad = theme.cellPad;
   var rowH = theme.rowH;
-  var headerH = theme.headerH;
+  var headerH = layout.headerH;
 
   for (var ri = 0; ri < layout.visibleRows.length; ri++) {
     var row = layout.visibleRows[ri];

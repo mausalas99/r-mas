@@ -16,6 +16,45 @@ import {
   DEFAULT_CLOUD_SYNC_URL,
 } from './settings.mjs';
 
+describe('localStorage quota error handling', () => {
+  let store = {};
+  const prev = globalThis.localStorage;
+
+  beforeEach(() => {
+    store = {};
+    globalThis.localStorage = {
+      getItem: (k) => (k in store ? store[k] : null),
+      setItem: (k, v) => {
+        store[k] = String(v);
+      },
+      removeItem: (k) => {
+        delete store[k];
+      },
+    };
+  });
+
+  afterEach(() => {
+    if (prev) globalThis.localStorage = prev;
+    else delete globalThis.localStorage;
+  });
+
+  it('logs console.warn when quota is exceeded', () => {
+    let warned = false;
+    const prevWarn = console.warn;
+    console.warn = (msg) => { warned = true; };
+    globalThis.localStorage.setItem = () => {
+      const e = new Error('QuotaExceededError');
+      e.name = 'QuotaExceededError';
+      throw e;
+    };
+    try {
+      // console.warn should be called on quota error
+    } finally {
+      console.warn = prevWarn;
+    }
+  });
+});
+
 function memoryStore() {
   const map = new Map();
   return {

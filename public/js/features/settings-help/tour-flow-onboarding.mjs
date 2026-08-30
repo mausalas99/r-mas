@@ -35,7 +35,7 @@ function setupNonGuardiaTourMode() {
   var prevMode = st.appMode;
   st.appMode = tourState.guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala';
   if (st.appMode !== prevMode) {
-    try { localStorage.setItem('rpc-settings', JSON.stringify(st)); } catch (_e) { void _e; }
+    try { localStorage.setItem('rpc-settings', JSON.stringify(st)); } catch (e) { console.warn('[tour-flow-onboarding] failed to write rpc-settings', e); }
     applyAppModeSwitchEffects();
     rt.renderEstadoActualBar();
   }

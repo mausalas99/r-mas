@@ -40,7 +40,7 @@ function setLabOutputPrefs(partial) {
   if (partial.quickLabOutput != null) cur.quickLabOutput = !!partial.quickLabOutput;
   try {
     localStorage.setItem(LAB_OUTPUT_PREFS_KEY, JSON.stringify(cur));
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn('[tendencias-lab-prefs] failed to write ' + LAB_OUTPUT_PREFS_KEY, e); }
   return cur;
 }
 

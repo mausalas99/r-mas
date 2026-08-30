@@ -8,6 +8,6 @@ export function closeReleaseNotes(devForceShow) {
   el.classList.remove('open');
   el.setAttribute('aria-hidden', 'true');
   if (v && !devForceShow) {
-    try { localStorage.setItem(RELEASE_NOTES_SEEN_PREFIX + v, '1'); } catch { /* localStorage unavailable */ }
+    try { localStorage.setItem(RELEASE_NOTES_SEEN_PREFIX + v, '1'); } catch (e) { console.warn('[release-notes-close] failed to write ' + RELEASE_NOTES_SEEN_PREFIX + v, e); }
   }
 }

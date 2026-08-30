@@ -5,6 +5,7 @@ import {
   dayKeyFromIso,
   resolveEventualidadKind,
   pickHigherPriorityKind,
+  abbreviatedEventualidadLabel,
   EVENTUALIDAD_KIND_LABELS,
 } from './eventualidades-store.mjs';
 
@@ -75,6 +76,120 @@ export function buildEventMarkerMapForSets(setsAsc, patientId) {
   return mapEventMarkersToChartIndices(axisMeta, markers);
 }
 
+const EVENT_MARKER_TAG_MAX_ENTRIES = 3;
+
+/** @param {{ kind: string, entries: object[] }|null|undefined} bucket @returns {string} */
+/**
+ * @param {{ kind?: string, entries?: object[] }|null|undefined} bucket
+ * @param {{ max?: number }} [opts]
+ * @returns {{ text: string, kind: string }[]}
+ */
+export function eventMarkerTagSpecs(bucket, opts) {
+  const entries = (bucket && bucket.entries) || [];
+  if (!entries.length) return [];
+  const max = opts && opts.max != null ? opts.max : EVENT_MARKER_TAG_MAX_ENTRIES;
+  const shown = entries.slice(0, max);
+  const extra = entries.length - shown.length;
+  const specs = shown.map(function (entry) {
+    return {
+      text: abbreviatedEventualidadLabel(entry),
+      kind: resolveEventualidadKind(entry),
+    };
+  });
+  if (extra > 0) specs.push({ text: '+' + extra, kind: 'otro' });
+  return specs;
+}
+
+export function eventMarkerTagText(bucket) {
+  const entries = (bucket && bucket.entries) || [];
+  if (!entries.length) return '';
+  const shown = entries.slice(0, EVENT_MARKER_TAG_MAX_ENTRIES).map(abbreviatedEventualidadLabel);
+  const extra = entries.length > EVENT_MARKER_TAG_MAX_ENTRIES ? ' +' + (entries.length - EVENT_MARKER_TAG_MAX_ENTRIES) : '';
+  return shown.join(' · ') + extra;
+}
+
+/**
+ * @param {object|null|undefined} entry
+ * @param {{ manage?: boolean }} [opts]
+ * @returns {string}
+ */
+export function buildEventMarkerTagHtml(entry, opts) {
+  const kind = resolveEventualidadKind(entry);
+  const label = abbreviatedEventualidadLabel(entry);
+  const full = String((entry && entry.text) || '').trim();
+  const id = esc((entry && entry.id) || '');
+  const title = full ? ' title="' + esc(full) + '"' : '';
+  const kindClass = 'tend-event-tag tend-event-tag--' + esc(kind);
+  if (!(opts && opts.manage)) {
+    return '<span class="' + kindClass + '"' + title + '>' + esc(label) + '</span>';
+  }
+  return (
+    '<span class="' +
+    kindClass +
+    ' tend-event-tag--manage"' +
+    title +
+    '>' +
+    '<button type="button" class="tend-event-tag__edit" data-tend-ev-edit="' +
+    id +
+    '" aria-label="Editar ' +
+    esc(label) +
+    '">' +
+    esc(label) +
+    '</button>' +
+    '<button type="button" class="tend-event-tag__del" data-tend-ev-delete="' +
+    id +
+    '" aria-label="Eliminar ' +
+    esc(label) +
+    '">×</button></span>'
+  );
+}
+
+/**
+ * @param {{ kind?: string, entries?: object[] }|null|undefined} bucket
+ * @param {{ manage?: boolean, max?: number }} [opts]
+ * @returns {string}
+ */
+export function buildEventMarkerTagsHtml(bucket, opts) {
+  const entries = (bucket && bucket.entries) || [];
+  if (!entries.length) return '';
+  const manage = !!(opts && opts.manage);
+  const max = manage ? entries.length : opts && opts.max != null ? opts.max : EVENT_MARKER_TAG_MAX_ENTRIES;
+  const shown = entries.slice(0, max);
+  const extra = entries.length - shown.length;
+  const chips = shown.map(function (entry) {
+    return buildEventMarkerTagHtml(entry, { manage: manage });
+  });
+  if (extra > 0) chips.push('<span class="tend-event-tag tend-event-tag--more">+' + extra + '</span>');
+  return '<div class="tend-event-col-tags">' + chips.join('') + '</div>';
+}
+
+/**
+ * Draws a small rounded tag centered on x, top-aligned at `top`.
+ * @returns {number} total vertical space used (0 when there is no text)
+ */
+function drawEventMarkerTag(ctx, x, top, color, text) {
+  if (!text) return 0;
+  const boxH = 15;
+  const paddingX = 5;
+  ctx.font = '600 10px system-ui, -apple-system, sans-serif';
+  const textWidth = ctx.measureText(text).width;
+  const boxW = Math.min(textWidth + paddingX * 2, 130);
+  const boxX = x - boxW / 2;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  if (typeof ctx.roundRect === 'function') {
+    ctx.roundRect(boxX, top, boxW, boxH, 4);
+  } else {
+    ctx.rect(boxX, top, boxW, boxH);
+  }
+  ctx.fill();
+  ctx.fillStyle = '#111827';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, top + boxH / 2 + 0.5, boxW - 2);
+  return boxH + 2;
+}
+
 /**
  * @param {{ indices: number[], byIndex: Map<number, object> }|null|undefined} markerMap
  * @param {{ compact?: boolean }} [opts]
@@ -97,11 +212,15 @@ export function createTendEventMarkerPlugin(markerMap, opts) {
         const color = EVENT_MARKER_COLORS[kind] || EVENT_MARKER_COLORS.otro;
         const x = pt.x;
         ctx.save();
+        var lineTop = yScale.top + (compact ? 4 : 0);
+        if (!compact) {
+          lineTop += drawEventMarkerTag(ctx, x, yScale.top, color, eventMarkerTagText(bucket));
+        }
         ctx.strokeStyle = color;
         ctx.lineWidth = compact ? 1 : 1.5;
         ctx.setLineDash(compact ? [2, 3] : [4, 4]);
         ctx.beginPath();
-        ctx.moveTo(x, yScale.top + (compact ? 4 : 0));
+        ctx.moveTo(x, lineTop);
         ctx.lineTo(x, yScale.bottom);
         ctx.stroke();
         if (compact) {
@@ -116,35 +235,27 @@ export function createTendEventMarkerPlugin(markerMap, opts) {
   };
 }
 
-/**
- * @param {{ indices: number[], byIndex: Map<number, object> }|null|undefined} markerMap
- * @param {string[]} labels
- */
+/** Chart axis may append " HH:MM" when a day has two draws; event rows stay date-only. */
+export function eventLegendDateLabel(label) {
+  return String(label || '')
+    .replace(/\s+\d{1,2}:\d{2}(?::\d{2})?$/, '')
+    .trim();
+}
+
 export function buildTendDetailEventsLegendHtml(markerMap, labels) {
   if (!markerMap || !markerMap.indices.length) return '';
   const parts = markerMap.indices.map(function (idx) {
     const bucket = markerMap.byIndex.get(idx);
-    const label = labels && labels[idx] != null ? labels[idx] : '';
+    const label = eventLegendDateLabel(labels && labels[idx] != null ? labels[idx] : '');
     const kind = bucket && bucket.kind ? bucket.kind : 'otro';
-    const kindLabel = EVENTUALIDAD_KIND_LABELS[kind] || 'Otro';
-    const texts = (bucket && bucket.entries ? bucket.entries : [])
-      .map(function (entry) {
-        const entryKind = EVENTUALIDAD_KIND_LABELS[resolveEventualidadKind(entry)] || 'Otro';
-        const snippet = String(entry.text || '').trim().slice(0, 60);
-        return entryKind + (snippet ? ': ' + snippet : '');
-      })
-      .join(' · ');
     return (
       '<div class="tend-event-legend-item" data-kind="' +
       esc(kind) +
       '">' +
       '<span class="tend-event-legend-date">' +
       esc(label) +
-      '</span> ' +
-      '<span class="tend-event-legend-kind">' +
-      esc(kindLabel) +
       '</span>' +
-      (texts ? '<span class="tend-event-legend-text">' + esc(texts) + '</span>' : '') +
+      buildEventMarkerTagsHtml(bucket, { manage: true }) +
       '</div>'
     );
   });

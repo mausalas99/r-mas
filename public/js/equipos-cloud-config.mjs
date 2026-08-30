@@ -109,8 +109,8 @@ export function setEquiposCloudConfig(cfg) {
   }
   try {
     localStorage.setItem('rpc-settings', JSON.stringify(settings));
-  } catch {
-    /* localStorage optional */
+  } catch (e) {
+    console.warn("[equipos-cloud-config] failed to write rpc-settings", e);
   }
 }
 

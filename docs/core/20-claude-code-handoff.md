@@ -2,7 +2,45 @@
 type: "core"
 name: "Claude Code Handoff"
 status: "done"
-description: "update-feed Worker (GitHub first, GitLab fallback) is built and tested. GitHub account lock 2026-08-14."
+description: "Tendencias table-hide checkboxes fixed (2026-08-29) — real cause was full localStorage, not the UI. See top section. Older job below: update-feed Worker (GitHub first, GitLab fallback), done."
+---
+
+# Handoff — Tendencias hide checkboxes silently doing nothing (localStorage full) — DONE, one manual step left per install
+
+**Date:** 2026-08-29
+**From:** Claude Code (Sonnet)
+**To:** next session
+**Branch:** `main`, uncommitted changes present (see `git status`)
+
+## What was wrong
+
+In the Tendencias group table modal (Biometría hemática etc.), the checkboxes that hide a column or row did nothing when clicked — no error, no visual change, nothing saved.
+
+Real cause: `pushUndoSnapshot` (`public/js/features/productivity.mjs`) deep-copies the entire clinical state — every patient, note, indicación, lab history entry, med receta, med catalog — into `localStorage` under `rpc-undo-stack` on every undo-able action, capped only by count (5 snapshots), never by size. On the owner's real install that key alone had grown to 44 MB, blowing past the browser's per-origin `localStorage` quota. Every `localStorage.setItem` after that point failed with `QuotaExceededError`, and every call site wrapped that write in an empty `try { } catch { }` — so the failure was completely silent, for what was likely months, until the owner happened to need a feature (hiding a table column) that depended on one of those writes.
+
+Two wrong theories were tried and reported as fixed before this was found — see `PLAN.md`'s `## decisions` (2026-08-29, claude) and `MISTAKES.md`'s two 2026-08-29 entries for the full trail. Do not repeat: (1) telling the owner to restart the app for a "click does nothing" bug without checking the DOM/console first, (2) presenting a code-reading-only theory as a confirmed fix before the owner verifies it live.
+
+## What's fixed in code (done, committed to working tree, not yet git-committed)
+
+- `public/js/features/productivity.mjs` — `saveUndoStack` (now exported) shrinks the stack (drops oldest snapshots, then clears the key) instead of failing when `localStorage.setItem` throws, and logs a `console.warn` every time it has to. New test: `public/js/features/productivity-undo-quota.test.mjs`, registered in `package.json`.
+- `public/js/tend-prefs.mjs` — `writeJson`'s catch now logs instead of swallowing.
+- `public/styles/workbench-kit.css` — `.wb-scrim` now has `pointer-events: none` when closed (`--open` re-enables it). This was the first (wrong) theory's fix; kept because it's a real, harmless hardening of a full-viewport overlay, not because it was the actual bug.
+- `scripts/verify/tend-group-table-hide.mjs` and `tend-group-table-hide-narrow.mjs` — were silently useless: both used `element.click()` / `elementFromPoint(...).click()`, a JS-level dispatch that bypasses real hit-testing and pointer-events, so they always "passed" even while the real click path was broken. Now use `page.mouse.click(x, y)`, a real pointer event. Any future "does a click work" verify script must do the same.
+- `npm run build:ui` has been run after every source change above — the built app already has the fix.
+
+## What's NOT done — one thing needed from the owner, one optional follow-up
+
+1. **The owner must run one command once per affected install** to clear the existing 44 MB of bloat (the code fix prevents it from recurring, but doesn't retroactively shrink what's already stored): open DevTools (⌥⌘I), Console tab, run:
+   ```js
+   localStorage.removeItem('rpc-undo-stack')
+   ```
+   Confirm with the owner this was done and the checkboxes now work before considering this closed.
+2. **Not done, optional, out of scope for this fix:** ~115 other `localStorage.setItem` call sites in this repo were not audited for the same empty-`catch`-swallows-the-error pattern. Any one of them could be silently failing the same way right now. A future session could grep `localStorage.setItem` across `public/js` and check each call site's error handling. Not started — do not assume it's been checked.
+
+## Verify before trusting this section
+
+Do not re-litigate the root cause without checking current code first — `saveUndoStack`/`writeJson` as described above, and the two verify scripts, are the ground truth. If this section and the code ever disagree, trust the code (see `MISTAKES.md`'s doc-drift entries for why).
+
 ---
 
 # Handoff — update feed (GitHub lock) — DONE

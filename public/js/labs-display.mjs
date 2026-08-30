@@ -1,7 +1,7 @@
 /**
  * Lab result HTML display helpers (extracted from labs.js for boot-graph slimming).
  */
-import { bhFieldKeyFromOutputLabel } from './labs-bh.mjs';
+import { bhFieldKeyFromOutputLabel, flattenBhHemOnlyVisible } from './labs-bh.mjs';
 import { insertSpaceAfterCultivoKeyword_ } from './labs-cultivo-scan.mjs';
 
 function normalizeGasometryInterpretationLine_(line) {
@@ -106,7 +106,7 @@ export function renderToken(tok, trendInfo) {
  * `.lab-row-value` para el gap tipo chip; líneas de prosa (ej. Frotis) no.
  */
 export function renderEntry(text, trendLookup) {
-  text = normalizeGasometryInterpretationLine_(text);
+  text = flattenBhHemOnlyVisible(normalizeGasometryInterpretationLine_(text));
   var sectionKey = trendLookup ? entryTrendSectionKey_(text) : '';
   var isBhFamily = sectionKey === 'BH';
   return text.split('\n').map(function (line, li) {

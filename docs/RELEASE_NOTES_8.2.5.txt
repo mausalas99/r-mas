@@ -5,10 +5,12 @@ Fecha: 2026-08-29
 
 ## Resumen
 
-Corrige varios problemas de cultivos y biometría hemática, permite borrar un cultivo suelto del historial, corrige lotes de sync de labs que se quedaban atascados en Nube, y termina de unificar el texto de la app a tuteo.
+Agrega etiquetas de eventos (transfusión, biopsia, procedimiento) en las gráficas de Tendencias, corrige el checkbox de ocultar columnas/filas que dejaba de responder en instalaciones con mucho historial, corrige varios problemas de cultivos y biometría hemática, permite borrar un cultivo suelto del historial, corrige lotes de sync de labs que se quedaban atascados en Nube, y termina de unificar el texto de la app a tuteo.
 
 ## Nuevo / mejorado
 
+- **Etiquetas de eventos en Tendencias:** transfusiones, biopsias y procedimientos ahora se ven como cajitas abreviadas (2 CE, Plaq, Bx, Proc…) directo en la gráfica, en el encabezado de fecha de la tabla de grupo y en la leyenda. La leyenda ahora es un bloque por día en vez de una lista apilada; cada evento conserva su editar/eliminar, pero compacto.
+- **Ocultar columnas y filas de Tendencias vuelve a funcionar:** en instalaciones con mucho historial acumulado, el checkbox para ocultar una columna o fila de la tabla de grupo no hacía nada. La causa real era que el almacenamiento local del navegador (usado por la función de deshacer) se había llenado por completo, y eso bloqueaba en silencio otros guardados de la app. Ahora libera espacio automáticamente cuando se llena.
 - **Antibiograma completo al copiar un cultivo:** el condensado de cultivo cortaba el antibiograma después del encabezado y perdía las líneas de sensibilidad. Ahora copia el antibiograma completo.
 - **Cultivo actualizado ya no pierde el antibiograma:** cuando "Actualizar" vuelve a traer el mismo germen con una hora ligeramente distinta, R+ ahora se queda con la copia más completa (la que trae antibiograma) en vez de la primera que encuentra.
 - **Reticulocitos en biometría hemática:** el valor de Ret ahora aparece en el resumen de biometría hemática que se copia.

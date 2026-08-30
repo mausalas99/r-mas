@@ -207,7 +207,7 @@ function readSidebarAutoHide() {
 function writeSidebarAutoHide(on) {
   try {
     localStorage.setItem(SIDEBAR_AUTO_HIDE_LS, on ? '1' : '0');
-  } catch (_e) { void _e; }
+  } catch (e) { console.warn("[patients] failed to write " + SIDEBAR_AUTO_HIDE_LS, e); }
 }
 
 function applySidebarAutoHideUi() {
