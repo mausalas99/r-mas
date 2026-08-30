@@ -2702,7 +2702,7 @@ var RELEASE_NOTES_825 = [
   {
     title: 'Ocultar columnas y filas de Tendencias vuelve a funcionar',
     body:
-      'En instalaciones con mucho historial, el checkbox para ocultar una columna o fila de la tabla no hacía nada. La causa era que el almacenamiento local del navegador se había llenado por completo; ahora se libera espacio solo y el checkbox responde de nuevo.',
+      'En instalaciones con mucho historial, el checkbox para ocultar una columna o fila de la tabla no hacía nada. La causa era que el almacenamiento local del navegador se había llenado por completo; R+ ahora libera ese espacio solo al abrir la app, sin ningún paso manual.',
   },
 ];
 

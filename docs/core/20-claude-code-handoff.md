@@ -22,20 +22,17 @@ Two wrong theories were tried and reported as fixed before this was found — se
 
 ## What's fixed in code (done, committed `0717f524`, staged for 8.2.5)
 
-- `public/js/features/productivity.mjs` — `saveUndoStack` (now exported) shrinks the stack (drops oldest snapshots, then clears the key) instead of failing when `localStorage.setItem` throws, and logs a `console.warn` every time it has to. New test: `public/js/features/productivity-undo-quota.test.mjs`, registered in `package.json`.
+- `public/js/features/productivity.mjs` — `saveUndoStack` (now exported) shrinks the stack (drops oldest snapshots, then clears the key) instead of failing when `localStorage.setItem` throws, and logs a `console.warn` every time it has to; an empty stack now clears the key silently instead of logging a false quota warning. New `healUndoStackQuota()` runs this same shrink logic once on every app boot (`initProductivityKeyboardShortcuts`), so installs with pre-existing bloat self-heal on first launch of 8.2.5 — no owner action needed. Tests: `public/js/features/productivity-undo-quota.test.mjs`, registered in `package.json`.
 - `public/js/tend-prefs.mjs` — `writeJson`'s catch now logs instead of swallowing.
 - `public/styles/workbench-kit.css` — `.wb-scrim` now has `pointer-events: none` when closed (`--open` re-enables it). This was the first (wrong) theory's fix; kept because it's a real, harmless hardening of a full-viewport overlay, not because it was the actual bug.
 - `scripts/verify/tend-group-table-hide.mjs` and `tend-group-table-hide-narrow.mjs` — were silently useless: both used `element.click()` / `elementFromPoint(...).click()`, a JS-level dispatch that bypasses real hit-testing and pointer-events, so they always "passed" even while the real click path was broken. Now use `page.mouse.click(x, y)`, a real pointer event. Any future "does a click work" verify script must do the same.
 - `npm run build:ui` has been run after every source change above — the built app already has the fix.
 
-## What's NOT done — one thing needed from the owner, one optional follow-up
+## What's NOT done — one optional follow-up (no manual step needed anymore)
 
-1. **The owner must run one command once per affected install** to clear the existing 44 MB of bloat (the code fix prevents it from recurring, but doesn't retroactively shrink what's already stored): open DevTools (⌥⌘I), Console tab, run:
-   ```js
-   localStorage.removeItem('rpc-undo-stack')
-   ```
-   Confirm with the owner this was done and the checkboxes now work before considering this closed.
-2. **Not done, optional, out of scope for this fix:** ~115 other `localStorage.setItem` call sites in this repo were not audited for the same empty-`catch`-swallows-the-error pattern. Any one of them could be silently failing the same way right now. A future session could grep `localStorage.setItem` across `public/js` and check each call site's error handling. Not started — do not assume it's been checked.
+The manual `localStorage.removeItem('rpc-undo-stack')` DevTools step once listed here is gone: `initProductivityKeyboardShortcuts` now calls `healUndoStackQuota()` on every app boot, which re-saves the existing undo stack through the same shrink-then-clear logic `saveUndoStack` already had — so any install still carrying old bloat cleans itself up automatically the first time it opens 8.2.5. No owner action required.
+
+**Not done, optional, out of scope for this fix:** ~115 other `localStorage.setItem` call sites in this repo were not audited for the same empty-`catch`-swallows-the-error pattern. Any one of them could be silently failing the same way right now. A future session could grep `localStorage.setItem` across `public/js` and check each call site's error handling. Not started — do not assume it's been checked.
 
 ## Verify before trusting this section
 

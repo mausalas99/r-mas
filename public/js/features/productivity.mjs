@@ -81,6 +81,12 @@ function getUndoStack() {
 
 export function saveUndoStack(stack) {
   var trimmed = (stack || []).slice(0, UNDO_STACK_MAX);
+  if (!trimmed.length) {
+    try {
+      localStorage.removeItem(UNDO_STACK_KEY);
+    } catch (_e) { void _e; }
+    return;
+  }
   var droppedForQuota = false;
   while (trimmed.length) {
     try {
@@ -571,10 +577,16 @@ function onProductivityKeydown(e) {
   handleProductivityModShortcut(e, k);
 }
 
+export function healUndoStackQuota() {
+  var stack = getUndoStack();
+  if (stack.length) saveUndoStack(stack);
+}
+
 export function initProductivityKeyboardShortcuts() {
   document.addEventListener('keydown', onProductivityKeydown);
   applyFocusModeFromStorage();
   refreshUndoButtonState();
+  healUndoStackQuota();
 }
 
 export const productivityWindowHandlers = {
