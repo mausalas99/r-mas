@@ -1,37 +1,35 @@
-version: 8.2.5
+version: 8.2.6
 files:
-  - url: R+-8.2.5-autoupdate-mac-arm64.zip
-    sha512: rYdaVx8/PRIlhOUFnMsxerzGnQysUcioSvb1GqUsP16IwbLL7C/p+S3nEFm3KiG/U/IWT/LW2b01flh850gVAQ==
-    size: 140498539
-  - url: R+-8.2.5-arm64.dmg
-    sha512: Sfpzv2eCWpuo2F6YkeZZEGpW5N667hoR/caTM2OsJXJUCcT5Sc3dBJ8vctQzuh4dwsVG57ZEFu7dFXE64YWu5g==
-    size: 146381284
-  - url: R+-8.2.5-autoupdate-mac-x64.zip
-    sha512: M6tiYn3vKQu3ozsQOzbPHFFJmR7lCcg9IQZSRvNfUwpn+/AN/UKy+/6IQ20H6sl1hbitnJXa2SFP2Wka7FLAww==
-    size: 148872079
-  - url: R+-8.2.5-x64.dmg
-    sha512: /P0EvvJ6oh1A+oeKUj5KEW4Ja3Q/uJmc1xTmXLOSkl9cdEHyCFAxpBBrV0+eKHoqMXtujGZ+Lf3A15NzJe5XfQ==
-    size: 154798843
-path: R+-8.2.5-autoupdate-mac-arm64.zip
-sha512: rYdaVx8/PRIlhOUFnMsxerzGnQysUcioSvb1GqUsP16IwbLL7C/p+S3nEFm3KiG/U/IWT/LW2b01flh850gVAQ==
-releaseDate: '2026-08-30T16:02:04.000Z'
+  - url: R+-8.2.6-autoupdate-mac-arm64.zip
+    sha512: toyiRTfLy8miNdwqMA+EtQ/JSHQhFgkR41R1uJRHPaejX4oye9+6GkHqm90veEZfi42o2k3Jabg1lEnL8clexg==
+    size: 140513884
+  - url: R+-8.2.6-arm64.dmg
+    sha512: lalAdpT8K+AjgO2ukdzol4/xNfTvg6n7484v7hvTBUAKpJN3/+Sf5MQRlci9CKmeig10xScp7sz6SQdkbMb7GA==
+    size: 146386595
+  - url: R+-8.2.6-autoupdate-mac-x64.zip
+    sha512: g+vRO1x+nK//kca2vXlISN9xYVHkeCU7VJvDDHkrNU45GV8BStgYSdUJkfbC6/7f4lsHt1pCxBDaHkbaR+19aw==
+    size: 148887391
+  - url: R+-8.2.6-x64.dmg
+    sha512: AtNTxmyzjLseOyO/O4j+9676AugyH7KW3nYEXSR9zAh0abHYTTIpk2TW3ZFrdjh51pO39v7Bpd8I4zoIFQX1kg==
+    size: 154857741
+path: R+-8.2.6-autoupdate-mac-arm64.zip
+sha512: toyiRTfLy8miNdwqMA+EtQ/JSHQhFgkR41R1uJRHPaejX4oye9+6GkHqm90veEZfi42o2k3Jabg1lEnL8clexg==
+releaseDate: '2026-08-30T19:08:41.000Z'
 releaseNotes: |
-  Agrega etiquetas de eventos (transfusión, biopsia, procedimiento) en las gráficas de Tendencias, corrige el checkbox de ocultar columnas/filas que dejaba de responder en instalaciones con mucho historial, corrige varios problemas de cultivos y biometría hemática, permite borrar un cultivo suelto del historial, corrige lotes de sync de labs que se quedaban atascados en Nube, y termina de unificar el texto de la app a tuteo.
+  Versión puente, solo Mac: repara la auto-actualización de las instalaciones que quedaron atoradas en 8.1.4/8.1.5, y trae mejoras de Tendencias (rango de fechas, agrupar por día, gráficas más nítidas) y la hora de glucometría extra con lista. Windows pasa directo a 8.2.7 con estos mismos cambios.
   
-  Etiquetas de eventos en Tendencias: transfusiones, biopsias y procedimientos ahora se ven como cajitas abreviadas (2 CE, Plaq, Bx, Proc…) directo en la gráfica, en el encabezado de fecha de la tabla de grupo y en la leyenda. La leyenda ahora es un bloque por día en vez de una lista apilada; cada evento conserva su editar/eliminar, pero compacto.
+  Auto-actualización de Mac reparada: las instalaciones en 8.1.4/8.1.5 no podían actualizarse solas por un cambio interno de identidad de la app. 8.2.6 sí les llega por el actualizador normal, y una vez instalada descarga y aplica la siguiente versión por sí sola, sin pasos manuales.
   
-  Ocultar columnas y filas de Tendencias vuelve a funcionar: en instalaciones con mucho historial acumulado, el checkbox para ocultar una columna o fila de la tabla de grupo no hacía nada. La causa real era que el almacenamiento local del navegador (usado por la función de deshacer) se había llenado por completo, y eso bloqueaba en silencio otros guardados de la app. R+ ahora limpia ese espacio solo, en automático, al abrir la app — no se necesita ningún paso manual.
+  Rango de fechas en Tendencias: nueva fila desde/hasta arriba del modal de grupo para acotar la gráfica y la tabla a un periodo; "Quitar rango" restaura todo.
   
-  Antibiograma completo al copiar un cultivo: el condensado de cultivo cortaba el antibiograma después del encabezado y perdía las líneas de sensibilidad. Ahora copia el antibiograma completo.
+  Agrupar por día en la tabla de Tendencias: una casilla nueva fusiona varias tomas del mismo día en una sola columna; si una toma es parcial (p. ej. solo plaquetas), conserva los valores de tomas anteriores de ese día. La preferencia se recuerda por paciente y sección.
   
-  Cultivo actualizado ya no pierde el antibiograma: cuando "Actualizar" vuelve a traer el mismo germen con una hora ligeramente distinta, R+ ahora se queda con la copia más completa (la que trae antibiograma) en vez de la primera que encuentra.
+  Gráficas más nítidas: las gráficas de Tendencias se dibujan a la resolución real de la pantalla (Retina/4K) y el PNG que se copia sale a 3x.
   
-  Reticulocitos en biometría hemática: el valor de Ret ahora aparece en el resumen de biometría hemática que se copia.
+  Etiquetas de eventos sin desbordarse: las cajitas de eventos ya no se salen del borde izquierdo o derecho de la gráfica.
   
-  Menos falsos positivos de germen: encabezados como "COMENTARIO" o "ANTIBIOGRAMA" ya no se confunden con el nombre de un germen.
+  Eje X sin columnas vacías: al ocultar campos desde la leyenda, la gráfica recalcula las fechas y elimina columnas que quedaron vacías.
   
-  Borrar un cultivo del historial: cada fila de cultivo tiene ahora un botón para quitar solo ese set de labs, sin tener que reimportar todo el historial para corregir una entrada duplicada o mal cargada.
+  Hora de glucometría extra con lista: en Estado Actual, la hora de una glucometría extra se elige de una lista (04:00, 12:00, 20:00) en vez de teclearla.
   
-  Menos lotes atascados en Nube: el envío de labs pendientes armaba un lote por paciente sin límite de tamaño; un paciente con muchos labs pendientes podía generar un lote demasiado grande y quedar atorado como "lote pesado". Ahora los lotes tienen un tope y ya no se atascan.
-  
-  Texto en tuteo: las últimas frases en voseo (exportá, asignás, elegí) ya usan tú, igual que el resto de la app.
+  Llave de rescate del administrador: si el cambio de identidad de la app deja ilegible la llave guardada en el Llavero, R+ genera una nueva automáticamente.
