@@ -228,7 +228,13 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * labs-cultivo.mjs, and labs-bh.mjs (BH reticulocitos), plus the RELEASE_NOTES_825
  * curated entries in the already-eager release-notes-highlights.mjs — no new
  * eager file. */
-const EAGER_BOOT_BUDGET_BYTES = 3527507;
+/** +20739 B / +0 files: 8.2.5. Tendencias event-tag chips (chart markers, group-
+ * table date headers, per-day legend) in the already-eager
+ * tendencias-event-context.mjs, eventualidades-store.mjs, and
+ * tend-group-table-render.mjs, plus healUndoStackQuota() — the automatic
+ * boot-time cleanup for the undo-stack localStorage quota bug — in the
+ * already-eager productivity.mjs. No new eager file. */
+const EAGER_BOOT_BUDGET_BYTES = 3548246;
 const EAGER_BOOT_BUDGET_FILES = 113;
 
 /**
