@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dedupeTrendSetsForSeries, buildTrendAxisMeta, classifyTendPanelFamily, familyOrderForSection, migratePanelFamilyKey, formatTendSeriesLabel, parseTrendNumeric, formatTrendColumnHeader } from './tend-core.mjs';
+import { dedupeTrendSetsForSeries, buildTrendAxisMeta, classifyTendPanelFamily, familyOrderForSection, migratePanelFamilyKey, formatTendSeriesLabel, parseTrendNumeric, formatTrendColumnHeader, buildSectionTableModel } from './tend-core.mjs';
 
 function mockSet(fecha, hora, sectionKey, fieldKey, val) {
   return {
@@ -110,6 +110,48 @@ test('formatTendSeriesLabel: sin porcentaje duplicado', () => {
   const f = formatTendSeriesLabel('Monocitos %', 'MonoPct', '%');
   assert.equal(f.name, 'Monocitos');
   assert.equal(f.unit, '%');
+});
+
+test('buildSectionTableModel: sin groupByDay, una columna por toma', () => {
+  const sets = [
+    mockSet('16/08/2026', '08:00', 'BH', 'Hb', 5.61),
+    mockSet('16/08/2026', '20:00', 'BH', 'Hb', 6.2)
+  ];
+  const specs = [{ fieldKey: 'Hb', cardTitle: 'Hb', unit: 'g/dL' }];
+  const getValue = (set, fk) => Number(set.parsedBySection.BH[fk].val);
+  const model = buildSectionTableModel(sets, 'BH', specs, getValue);
+  assert.equal(model.columns.length, 2);
+  assert.deepEqual(model.rows[0].values, [5.61, 6.2]);
+});
+
+test('buildSectionTableModel: groupByDay agrupa y usa la toma más reciente', () => {
+  const sets = [
+    mockSet('16/08/2026', '08:00', 'BH', 'Hb', 5.61),
+    mockSet('16/08/2026', '20:00', 'BH', 'Hb', 6.2),
+    mockSet('17/05/2026', '08:00', 'BH', 'Hb', 8.4)
+  ];
+  const specs = [{ fieldKey: 'Hb', cardTitle: 'Hb', unit: 'g/dL' }];
+  const getValue = (set, fk) => Number(set.parsedBySection.BH[fk].val);
+  const model = buildSectionTableModel(sets, 'BH', specs, getValue, { groupByDay: true });
+  assert.equal(model.columns.length, 2);
+  assert.deepEqual(model.rows[0].values, [6.2, 8.4]);
+});
+
+test('buildSectionTableModel: groupByDay no borra un analito con una toma parcial posterior', () => {
+  const full = mockSet('16/08/2026', '08:00', 'BH', 'Hb', 7.68);
+  full.parsedBySection.BH.Plt = { val: '9.73', ab: false };
+  const parcial = mockSet('16/08/2026', '20:00', 'BH', 'Plt', 5.61);
+  const specs = [
+    { fieldKey: 'Hb', cardTitle: 'Hb', unit: 'g/dL' },
+    { fieldKey: 'Plt', cardTitle: 'Plt', unit: 'K/uL' }
+  ];
+  const getValue = (set, fk) => (set.parsedBySection.BH[fk] ? Number(set.parsedBySection.BH[fk].val) : null);
+  const model = buildSectionTableModel([full, parcial], 'BH', specs, getValue, { groupByDay: true });
+  assert.equal(model.columns.length, 1);
+  assert.deepEqual(model.rows[0].values, [7.68]); // Hb viene de la toma completa
+  assert.deepEqual(model.rows[1].values, [5.61]); // Plt viene de la toma parcial (más reciente)
+  assert.equal(model.rows[0].refSets[0], full);
+  assert.equal(model.rows[1].refSets[0], parcial);
 });
 
 test('parseTrendNumeric: menor que y decimales', () => {

@@ -1,6 +1,7 @@
 const LS_SERIES_COLORS = 'rpc-tend-series-colors';
 const LS_GROUP_VISIBLE = 'rpc-tend-group-visible';
 const LS_GROUP_TABLE_HIDDEN = 'rpc-tend-group-table-hidden';
+const LS_GROUP_TABLE_BY_DAY = 'rpc-tend-group-table-by-day';
 const LS_GROUP_PANEL_ORDER = 'rpc-tend-group-panel-order';
 const LS_TEND_CARD_ORDER = 'rpc-tend-card-order';
 const LS_GROUP_PANEL_HIDDEN = 'rpc-tend-group-panel-hidden';
@@ -97,6 +98,17 @@ export function writeGroupTableHidden(patientId, sectionKey, hidden) {
     cols: Array.isArray(hidden && hidden.cols) ? hidden.cols.slice() : []
   };
   writeJson(LS_GROUP_TABLE_HIDDEN, map);
+}
+
+export function readGroupTableByDay(patientId, sectionKey) {
+  var map = readJson(LS_GROUP_TABLE_BY_DAY, {});
+  return !!map[groupKey(patientId, sectionKey)];
+}
+
+export function writeGroupTableByDay(patientId, sectionKey, byDay) {
+  var map = readJson(LS_GROUP_TABLE_BY_DAY, {});
+  map[groupKey(patientId, sectionKey)] = !!byDay;
+  writeJson(LS_GROUP_TABLE_BY_DAY, map);
 }
 
 export function readGroupPanelOrder(patientId, sectionKey) {

@@ -2706,10 +2706,39 @@ var RELEASE_NOTES_825 = [
   },
 ];
 
+var RELEASE_NOTES_826 = [
+  {
+    title: 'Auto-actualización de Mac reparada',
+    body:
+      'Las instalaciones que quedaron en <strong>8.1.4 u 8.1.5</strong> no podían actualizarse solas por un cambio interno de identidad de la app. Esta versión sí les llega, y una vez instalada trae la siguiente actualización por sí sola, sin pasos manuales.',
+  },
+  {
+    title: 'Rango de fechas en Tendencias',
+    body:
+      'Nueva fila <strong>desde/hasta</strong> arriba del modal de grupo para acotar la gráfica y la tabla a un periodo; <strong>Quitar rango</strong> restaura todo.',
+  },
+  {
+    title: 'Agrupar por día en la tabla de Tendencias',
+    body:
+      'Una casilla nueva fusiona varias tomas del mismo día en una sola columna; si una toma es parcial, conserva los valores de tomas anteriores de ese día. La preferencia se recuerda por paciente y sección.',
+  },
+  {
+    title: 'Gráficas más nítidas',
+    body:
+      'Las gráficas de Tendencias se dibujan a la resolución real de la pantalla (Retina/4K), las etiquetas de eventos ya no se salen del borde, y el PNG que se copia sale a <strong>3x</strong>.',
+  },
+  {
+    title: 'Hora de glucometría extra con lista',
+    body:
+      'En Estado Actual, la hora de una glucometría extra se elige de una lista (<strong>04:00, 12:00, 20:00</strong>) en vez de teclearla.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_825;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_826;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.2.6': RELEASE_NOTES_826,
   '8.2.5': RELEASE_NOTES_825,
   '8.2.4': RELEASE_NOTES_824,
   '8.2.3': RELEASE_NOTES_823,

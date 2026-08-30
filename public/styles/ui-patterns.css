@@ -583,6 +583,47 @@ html.motion-sobrio .ui-loading-cell {
   color: var(--color-ink);
 }
 
+.tend-group-range-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.6rem;
+}
+.tend-group-range-label,
+.tend-group-range-sep {
+  font-size: 12px;
+  color: var(--text-muted, var(--color-ink-muted));
+}
+.tend-group-range-row .rpc-date-field {
+  width: auto;
+  min-width: 0;
+}
+.tend-group-range-row .rpc-date-field__trigger {
+  width: auto;
+  max-width: min(150px, 40vw);
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.tend-group-range-row .rpc-date-field__label {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.tend-group-range-clear {
+  font: inherit;
+  font-size: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, var(--color-ink-muted));
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.1rem 0.2rem;
+}
+.tend-group-range-clear:hover {
+  color: var(--text, var(--color-ink));
+}
+
 .todo-row-expand {
   border: none;
   background: transparent;

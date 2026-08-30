@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.2.5](https://github.com/mausalas99/r-mas/releases/tag/v8.2.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.2.6](https://github.com/mausalas99/r-mas/releases/tag/v8.2.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -55,6 +55,16 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.2.6 (estable — release 8.2.6)
+
+- **Auto-actualización de Mac reparada:** las instalaciones atoradas en 8.1.4/8.1.5 vuelven a actualizarse solas; 8.2.6 es la versión puente (solo Mac; Windows pasa directo a 8.2.7).
+- **Rango de fechas en Tendencias:** fila desde/hasta en el modal de grupo, con "Quitar rango".
+- **Agrupar por día:** la tabla de Tendencias puede fusionar tomas del mismo día en una columna.
+- **Gráficas más nítidas:** dibujo a resolución real (Retina/4K), etiquetas sin desbordarse y PNG a 3x.
+- **Glucometría extra:** la hora se elige de lista (04:00, 12:00, 20:00).
+
+Notas: `docs/RELEASE_NOTES_8.2.6.txt`.
 ## R+ 8.2.5 (estable — release 8.2.5)
 
 - **Antibiograma completo al copiar un cultivo:** ya no se corta después del encabezado.

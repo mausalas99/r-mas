@@ -1,13 +1,20 @@
 {
   "schema": 1,
-  "updatedAt": "2026-08-28",
+  "updatedAt": "2026-08-30",
   "entries": [
+    {
+      "version": "8.2.5",
+      "label": "8.2.5",
+      "publishedAt": "2026-08-30",
+      "summary": "Release estable 8.2.5",
+      "recommended": true
+    },
     {
       "version": "8.2.4",
       "label": "8.2.4",
       "publishedAt": "2026-08-28",
       "summary": "Release estable 8.2.4",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "8.2.3",

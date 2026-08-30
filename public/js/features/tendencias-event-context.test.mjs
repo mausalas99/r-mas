@@ -16,7 +16,27 @@ import {
   eventMarkerTagText,
   eventMarkerTagSpecs,
   buildEventMarkerTagsHtml,
+  clampTagBoxX,
 } from './tendencias-event-context.mjs';
+
+test('clampTagBoxX keeps a tag centered on x when it fits inside chartArea', () => {
+  const chartArea = { left: 20, right: 400 };
+  assert.equal(clampTagBoxX(200, 60, chartArea), 170);
+});
+
+test('clampTagBoxX pins the tag to the left edge for a point near the left of chartArea', () => {
+  const chartArea = { left: 20, right: 400 };
+  assert.equal(clampTagBoxX(30, 60, chartArea), 20);
+});
+
+test('clampTagBoxX pins the tag to the right edge for a point near the right of chartArea', () => {
+  const chartArea = { left: 20, right: 400 };
+  assert.equal(clampTagBoxX(390, 60, chartArea), 340);
+});
+
+test('clampTagBoxX falls back to centering when chartArea is missing', () => {
+  assert.equal(clampTagBoxX(100, 60, null), 70);
+});
 
 test('dayKeyFromLabSet matches eventualidad day key', () => {
   const set = { fecha: '05/08/2026', hora: '08:30' };

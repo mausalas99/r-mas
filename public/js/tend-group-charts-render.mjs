@@ -222,6 +222,28 @@ function isLegendFieldVisible(state, fieldKey) {
   return saved.indexOf(fieldKey) >= 0;
 }
 
+/**
+ * Study columns (x-axis) scoped to the currently-checked legend fields only, so a study
+ * that only reported a hidden analyte doesn't leave a blank slot in the visible series.
+ * Falls back to every family field when nothing is checked, so the axis never goes empty.
+ */
+export function rebuildPanelColumns(ctx, items) {
+  var visibleKeys = items
+    .map(function (item) {
+      return item.spec.fieldKey;
+    })
+    .filter(function (fk) {
+      return isLegendFieldVisible(ctx.state, fk);
+    });
+  var keys = visibleKeys.length
+    ? visibleKeys
+    : items.map(function (item) {
+        return item.spec.fieldKey;
+      });
+  var colSets = columnSetsForFields(ctx.state.historyAsc, ctx.sectionKey, keys);
+  return { colSets: colSets, axisMeta: buildTrendAxisMeta(colSets) };
+}
+
 function buildFamiliesMap(deps, state, sectionKey, catalogSpecs) {
   var families = Object.create(null);
   catalogSpecs.forEach(function (sp, idx) {
@@ -344,7 +366,7 @@ function buildChartYScale(fam, datasets) {
   return yScale;
 }
 
-function wireLegendControls(legend, chart, fam, ctx) {
+function wireLegendControls(legend, chart, fam, ctx, items, markerMap) {
   legend.querySelectorAll('.tend-group-legend-check').forEach(function (inp) {
     inp.addEventListener('change', function () {
       var fk = inp.getAttribute('data-field');
@@ -353,9 +375,22 @@ function wireLegendControls(legend, chart, fam, ctx) {
       });
       if (dsIdx < 0) return;
       chart.setDatasetVisibility(dsIdx, inp.checked);
+      persistLegendVisible(ctx.state, ctx.sectionKey);
+      var cols = rebuildPanelColumns(ctx, items);
+      chart.data.labels = cols.axisMeta.labels;
+      chart.data.datasets.forEach(function (ds) {
+        ds.data = cols.axisMeta.points.map(function (p) {
+          var v = getSetTrendValueForSeries(p.set, ctx.sectionKey, ds.fieldKey);
+          return v != null && isFinite(v) ? v : null;
+        });
+      });
+      if (markerMap) {
+        var fresh = buildEventMarkerMapForSets(cols.colSets, ctx.state.patientId);
+        markerMap.indices = fresh.indices;
+        markerMap.byIndex = fresh.byIndex;
+      }
       applyChartYScale(chart, fam);
       chart.update();
-      persistLegendVisible(ctx.state, ctx.sectionKey);
     });
   });
   legend.querySelectorAll('.tend-group-legend-color').forEach(function (inp) {
@@ -430,6 +465,7 @@ function createPanelChart(canvas, chartLabels, datasets, fam, ctx, markerMap) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      devicePixelRatio: Math.max(window.devicePixelRatio || 1, 2),
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
@@ -522,17 +558,15 @@ function renderPanelFamilyCard(fam, ctx) {
       return specHasTrendPoints(ctx.state, ctx.sectionKey, item.spec.fieldKey);
     })
   );
-  var famFieldKeys = items.map(function (item) {
-    return item.spec.fieldKey;
-  });
-  var colSets = columnSetsForFields(ctx.state.historyAsc, ctx.sectionKey, famFieldKeys);
+  var cols = rebuildPanelColumns(ctx, items);
+  var colSets = cols.colSets;
   if (!colSets.length || !items.length) {
     appendPanelEmptyMessage(block, items);
     ctx.sortZone.appendChild(block);
     return;
   }
 
-  var axisMeta = buildTrendAxisMeta(colSets);
+  var axisMeta = cols.axisMeta;
   var chartLabels = axisMeta.labels;
   var markerMap = buildEventMarkerMapForSets(colSets, ctx.state.patientId);
   var built = buildPanelDatasets(ctx, items, axisMeta);
@@ -549,7 +583,7 @@ function renderPanelFamilyCard(fam, ctx) {
     applyChartYScale(chart, fam);
     chart.update();
     ctx.state.charts.push(chart);
-    wireLegendControls(built.legend, chart, fam, ctx);
+    wireLegendControls(built.legend, chart, fam, ctx, items, markerMap);
     toolbar.querySelector('.tend-group-panel-copy-svg').onclick = function (ev) {
       if (ev) {
         ev.preventDefault();

@@ -2,7 +2,39 @@
 type: "core"
 name: "Claude Code Handoff"
 status: "done"
-description: "Tendencias table-hide checkboxes fixed (2026-08-29) — real cause was full localStorage, not the UI. See top section. Older job below: update-feed Worker (GitHub first, GitLab fallback), done."
+description: "Mac cert-swap quiet updater built 2026-08-30, publishing left (owner machine) — see top section. Older jobs below: Tendencias table-hide fix (done), update-feed Worker (done)."
+---
+
+# Handoff — Mac auto-update cert swap: quiet swap BUILT, publishing is owner-machine work
+
+**Date:** 2026-08-30
+**From:** Claude Code (Fable plan, Sonnet build)
+**Branch:** `main`, uncommitted (alongside older uncommitted Tendencias work — see `git status`)
+
+## Problem and decision
+
+CORRECTED 2026-08-30 after auditing the real published zips — the earlier premise "old cert through 8.2.5" was wrong. Actual history: **≤8.1.3** = old free cert `Apple Development: djsalas99@gmail.com (VAXFST8D9H)` + old appId (those releases' Mac assets no longer exist on GitHub); **8.1.4–8.1.5 = NEW Developer ID cert (`N78U9QC783`) but still the OLD appId `com.hospitaluniversitario.rplusclinical`** (dropped in 8.1.6, commit `9a250b74`); **8.1.6+** = new cert + new appId `com.rmas.rplusclinical`. Squirrel.Mac validates an update against the running app's designated requirement, which pins the bundle identifier AND the signing identity — so the appId change strands 8.1.4/8.1.5 exactly like the cert change strands ≤8.1.3. No "Hospital Universitario" certificate ever existed in this keychain (checked, including expired) — that recollection was the old appId. Owner confirmed 2026-08-30: the stuck users are on **8.1.4/8.1.5**, so the 8.2.6 bridge ships with the OLD appId + the normal NEW cert, notarized, **Mac-only publish** (Windows must never see an appId change — NSIS would treat it as a different app). ≤8.1.3 stragglers, if any, rely on the min-version blocking screen. Owner decisions (both via AskUserQuestion, recorded in `PLAN.md ## decisions`): quiet swap over screen-only; first-open-dialog skip accepted (no browser download → no quarantine; target notarized).
+
+## Built + tested this session (uncommitted)
+
+- `lib/mac-quiet-swap.mjs` + `lib/mac-quiet-swap.test.mjs` (19 pass, registered in `package.json scripts.test`). Active only on a packaged darwin app whose own `TeamIdentifier` differs from `N78U9QC783` OR whose bundle `Identifier` differs from `com.rmas.rplusclinical` — covers both stuck families, makes the old-appId 8.2.6 bridge itself active, inert in 8.2.7+ builds and dev. Staged and installed-copy verification require team AND app id. Flow: download hardcoded `https://github.com/mausalas99/r-mas/releases/download/v8.2.7/R+-8.2.7-autoupdate-mac-{arm64,x64}.zip` via Electron `net` (follows redirects, sets no quarantine xattr) → `ditto -x -k` unzip → REQUIRED gates `codesign --verify --deep --strict` + `TeamIdentifier=N78U9QC783` (`spctl --assess` and `xattr -cr` run log-only, never gate) → rename current `.app` to `.app.pre-swap` → `ditto`-copy staged app in → re-verify → `shell.trashItem` the pre-swap copy (recoverable, never `rm`). Any failure after the rename restores the old app; every failure is silent + logged; one attempt per launch; staging dir under `userData/quiet-swap` cleaned either way.
+- **Deliberate deviation from the earlier sketch: no forced relaunch.** A mid-session relaunch could interrupt clinical work; the running process keeps its open file handles and the user simply gets 8.2.7 on their next manual launch.
+- `main.js`: `scheduleUpdateCheck()` no-ops while the swap is active (single choke point for boot/manual/downgrade/reinstall checks); `app.whenReady` runs the activation gate then a 30s-delayed `runQuietSwap`; `quietSwapDownload` helper uses the already-imported `net`. `main-update-feed.test.mjs` 4 pass, `main-lan-boot.test.mjs` 10 pass, `scripts/lib/electron-pack-files.test.js` 10 pass (`build.files` already ships `lib/**/*.mjs`).
+- `lib/admin-rescue-key.mjs`: `ensureAdminKeyPair` now regenerates the keypair when the stored wrap fails to decrypt WHILE `safeStorage.isEncryptionAvailable()` is true (the cert swap invalidates the Keychain wrap). Decrypt failure while the Keychain is merely unavailable returns the existing record untouched — never destroys a still-recoverable key. `lib/admin-rescue-key.test.mjs` 7 pass (3 new).
+
+## Publish sequence (owner's machine only — needs both certs in the login keychain + Apple credentials)
+
+AppId mechanics (supersedes the earlier CSC_NAME instruction — no signing env needed, both builds use the default new cert + notarization): the bridge must be accepted by 8.1.4/8.1.5's updater, so `package.json` `build.appId` is flipped to `com.hospitaluniversitario.rplusclinical` for the 8.2.6 release commit and restored to `com.rmas.rplusclinical` for 8.2.7. Both flips are part of Claude's "get X ready" prep. The swap's staged-app verification refuses any 8.2.7 that accidentally kept the old appId.
+
+1. Release-checklist prep for 8.2.6 (appId flip, bump, notes, highlights, full test pass), then:
+   `npm run release:publish -- --yes --mac-only` (Windows must skip 8.2.6).
+   It becomes Latest; stuck 8.1.4/8.1.5 installs accept it (same team, same appId), and its quiet swap installs 8.2.7 once those assets exist — a 404 before then just retries next launch. Up-to-date Macs (new appId) reject 8.2.6 harmlessly and wait on 8.2.5.
+2. Release-checklist prep for 8.2.7 (appId restored), then: `npm run release:publish -- --yes`.
+3. IMMEDIATELY after (GitHub auto-marks the newest release Latest, and stuck installs must keep landing on 8.2.6 first):
+   `gh release edit v8.2.7 --repo mausalas99/r-mas --latest=false`
+   `gh release edit v8.2.6 --repo mausalas99/r-mas --latest`
+4. After a few days' soak: `gh release edit v8.2.7 --repo mausalas99/r-mas --latest`, and optionally raise `public/min-version.json` to `8.2.7` as the backstop screen (covers ≤8.1.3 and anyone the swap missed). Do NOT raise min-version before v8.2.7's assets are live — it would block every running install behind a download that 404s.
+
 ---
 
 # Handoff — Tendencias hide checkboxes silently doing nothing (localStorage full) — DONE, one manual step left per install

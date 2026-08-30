@@ -234,7 +234,13 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * tend-group-table-render.mjs, plus healUndoStackQuota() — the automatic
  * boot-time cleanup for the undo-stack localStorage quota bug — in the
  * already-eager productivity.mjs. No new eager file. */
-const EAGER_BOOT_BUDGET_BYTES = 3548246;
+/** +2800 B / +0 files: 8.2.6. Tendencias date-range filter and group-by-day
+ * column merge in the already-eager tend-core.mjs, tend-group-modal*.mjs and
+ * tend-group-table-render.mjs, the Estado Actual extra-glucometry hour select
+ * in estado-actual-panel-glu-row.mjs, plus the RELEASE_NOTES_826 curated
+ * entries in the already-eager release-notes-highlights.mjs — no new eager
+ * file. */
+const EAGER_BOOT_BUDGET_BYTES = 3551046;
 const EAGER_BOOT_BUDGET_FILES = 113;
 
 /**

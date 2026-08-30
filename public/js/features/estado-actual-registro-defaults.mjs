@@ -8,6 +8,9 @@ import { pad2 } from './estado-actual-panel-format.mjs';
 /** Horarios estándar: 08:00 y 16:00 del día previo, 00:00 (medianoche) del día actual. */
 export const STANDARD_GLUCOMETRIA_TIMES = ['08:00', '16:00', '00:00'];
 
+/** Horarios cada 4 h para glucometrías extra, sin los estándar (08:00 / 16:00 / 00:00). */
+export const EXTRA_GLUCOMETRIA_TIMES = ['04:00', '12:00', '20:00'];
+
 /** Hora de cierre de turno en registro manual — no es «cuándo» ocurrió un signo alterado. */
 export const TURN_CLOSE_HM = '00:00';
 

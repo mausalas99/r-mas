@@ -164,17 +164,28 @@ export function buildEventMarkerTagsHtml(bucket, opts) {
 }
 
 /**
- * Draws a small rounded tag centered on x, top-aligned at `top`.
+ * Left edge for a tag box of width boxW centered on x, kept inside chartArea so it
+ * never overlaps the plot's left/right edge (e.g. a marker on the first/last point).
+ * @param {number} x @param {number} boxW @param {{left:number, right:number}|null|undefined} chartArea
+ */
+export function clampTagBoxX(x, boxW, chartArea) {
+  var boxX = x - boxW / 2;
+  if (!chartArea) return boxX;
+  return Math.max(chartArea.left, Math.min(boxX, chartArea.right - boxW));
+}
+
+/**
+ * Draws a small rounded tag centered on x (clamped within chartArea), top-aligned at `top`.
  * @returns {number} total vertical space used (0 when there is no text)
  */
-function drawEventMarkerTag(ctx, x, top, color, text) {
+function drawEventMarkerTag(ctx, x, top, color, text, chartArea) {
   if (!text) return 0;
   const boxH = 15;
   const paddingX = 5;
   ctx.font = '600 10px system-ui, -apple-system, sans-serif';
   const textWidth = ctx.measureText(text).width;
   const boxW = Math.min(textWidth + paddingX * 2, 130);
-  const boxX = x - boxW / 2;
+  const boxX = clampTagBoxX(x, boxW, chartArea);
   ctx.fillStyle = color;
   ctx.beginPath();
   if (typeof ctx.roundRect === 'function') {
@@ -186,7 +197,7 @@ function drawEventMarkerTag(ctx, x, top, color, text) {
   ctx.fillStyle = '#111827';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, x, top + boxH / 2 + 0.5, boxW - 2);
+  ctx.fillText(text, boxX + boxW / 2, top + boxH / 2 + 0.5, boxW - 2);
   return boxH + 2;
 }
 
@@ -214,7 +225,7 @@ export function createTendEventMarkerPlugin(markerMap, opts) {
         ctx.save();
         var lineTop = yScale.top + (compact ? 4 : 0);
         if (!compact) {
-          lineTop += drawEventMarkerTag(ctx, x, yScale.top, color, eventMarkerTagText(bucket));
+          lineTop += drawEventMarkerTag(ctx, x, yScale.top, color, eventMarkerTagText(bucket), chart.chartArea);
         }
         ctx.strokeStyle = color;
         ctx.lineWidth = compact ? 1 : 1.5;

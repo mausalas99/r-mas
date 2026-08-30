@@ -1987,6 +1987,10 @@ html.dark .tend-group-drag-hovercard.tend-group-panel-card {
 }
 .tend-group-restore-chip:hover { border-color: rgba(37, 99, 235, 0.35); }
 .tend-group-show-all-btn { margin-left: auto; font-size: 12px; padding: 6px 12px; }
+.tend-group-daymode-toggle {
+  display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px;
+  font-size: 12px; font-weight: 600; color: var(--text); cursor: pointer;
+}
 .tend-group-table tr.is-hidden { display: none !important; }
 .tend-group-row-toggle, .tend-group-col-toggle {
   display: inline-flex; align-items: center; gap: 6px; font-weight: inherit; cursor: pointer;

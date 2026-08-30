@@ -4,7 +4,12 @@ import {
   formatTrendColumnHeader,
   formatTendSeriesLabel,
 } from './tend-core.mjs';
-import { readGroupTableHidden, writeGroupTableHidden } from './tend-prefs.mjs';
+import {
+  readGroupTableHidden,
+  writeGroupTableHidden,
+  readGroupTableByDay,
+  writeGroupTableByDay,
+} from './tend-prefs.mjs';
 import { formatTrendDisplayValue, colKeyForSet } from './tend-group-chart-helpers.mjs';
 import {
   collectEventMarkersForPatient,
@@ -40,6 +45,14 @@ function hiddenColLabel(raw, ck) {
   for (var i = 0; i < raw.columns.length; i++) {
     if (colKeyForSet(raw.columns[i]) === ck) {
       return columnHeader(raw.columns[i], raw.columns);
+    }
+  }
+  // Toma individual fusionada por "Agrupar por día": su columna ya no existe, pero el key sigue oculto.
+  if (ck.indexOf('t:') === 0) {
+    var ms = Number(ck.slice(2));
+    var d = new Date(ms);
+    if (isFinite(ms) && !isNaN(d.getTime())) {
+      return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
     }
   }
   return ck;
@@ -175,7 +188,8 @@ function buildTableExportModel(deps, state, sectionKey, rawModel, hidden, marker
   var rows = rawModel.rows.map(function (row) {
     var cells = rawModel.columns.map(function (set, ci) {
       var val = row.values[ci];
-      var ab = isAbnormal(deps, set, sectionKey, row.fieldKey, val, state.historyDesc);
+      var refSet = row.refSets ? row.refSets[ci] : set;
+      var ab = isAbnormal(deps, refSet, sectionKey, row.fieldKey, val, state.historyDesc);
       return { text: formatCellValue(val, ab), abnormal: ab };
     });
     return {
@@ -255,7 +269,8 @@ function buildTableBodyHtml(deps, esc, sectionKey, state, raw, hidden) {
       var ck = colKeyForSet(set);
       var colHidden = hidden.cols.indexOf(ck) >= 0;
       var val = row.values[ci];
-      var ab = isAbnormal(deps, set, sectionKey, row.fieldKey, val, state.historyDesc);
+      var refSet = row.refSets ? row.refSets[ci] : set;
+      var ab = isAbnormal(deps, refSet, sectionKey, row.fieldKey, val, state.historyDesc);
       html.push(
         '<td class="' +
           (colHidden ? 'is-hidden' : '') +
@@ -299,21 +314,46 @@ function wireTableToggles(wrap, deps, state, sectionKey, renderTable) {
   });
 }
 
+function buildDayModeToggleHtml(byDay) {
+  return (
+    '<label class="tend-group-daymode-toggle"><input type="checkbox" id="tend-group-daymode-input"' +
+    (byDay ? ' checked' : '') +
+    '> Agrupar por día</label>'
+  );
+}
+
+function wireDayModeToggle(wrap, state, sectionKey, renderTable) {
+  var inp = wrap.querySelector('#tend-group-daymode-input');
+  if (!inp) return;
+  inp.addEventListener('change', function () {
+    writeGroupTableByDay(state.patientId, sectionKey, inp.checked);
+    renderTable(sectionKey);
+  });
+}
+
 export function renderGroupTable(deps, state, sectionKey, renderTable) {
   var wrap = document.getElementById('tend-group-table-wrap');
   if (!wrap) return;
   var hidden = readGroupTableHidden(state.patientId, sectionKey);
+  var byDay = readGroupTableByDay(state.patientId, sectionKey);
   var allSpecs = Object.keys(state.specsByField).map(function (fk) {
     return state.specsByField[fk];
   });
-  var raw = buildSectionTableModel(state.historyAsc, sectionKey, allSpecs, function (set, fieldKey) {
-    return getSetTrendValueForSeries(set, sectionKey, fieldKey);
-  });
+  var raw = buildSectionTableModel(
+    state.historyAsc,
+    sectionKey,
+    allSpecs,
+    function (set, fieldKey) {
+      return getSetTrendValueForSeries(set, sectionKey, fieldKey);
+    },
+    { groupByDay: byDay }
+  );
   var markersByDay = collectEventMarkersForPatient(state.patientId);
   state.tableModel = buildTableExportModel(deps, state, sectionKey, raw, hidden, markersByDay);
 
   var esc = deps.esc;
   var html = [
+    buildDayModeToggleHtml(byDay),
     '<div class="cultivos-table-wrap"><table id="tend-group-table" class="cultivos-table tend-group-table">',
   ];
   html = html.concat(buildTableHeadHtml(esc, raw, hidden, markersByDay));
@@ -330,6 +370,7 @@ export function renderGroupTable(deps, state, sectionKey, renderTable) {
     renderTable: renderTable,
   });
   wireTableToggles(wrap, deps, state, sectionKey, renderTable);
+  wireDayModeToggle(wrap, state, sectionKey, renderTable);
 }
 
 export function createTableExportModel(deps, state, sectionKey, rawModel, hidden, markersByDay) {

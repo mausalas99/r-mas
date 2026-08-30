@@ -45,15 +45,13 @@ function measureLabelColumnWidth(probe, theme, labelHeader, visibleRows, fonts) 
   return labelColW;
 }
 
-function measureDataColumnWidths(probe, model, theme, visibleCols, visibleRows, fonts, isSome) {
+export function measureDataColumnWidths(probe, model, theme, visibleCols, visibleRows, fonts, isSome) {
   return visibleCols.map(function (col, ci) {
     var limits = colWidthLimits(theme, ci);
     var hdr = col.header || '';
     var w = measureTextWidth(probe, hdr, fonts.fontHeader) + theme.cellPad * 2;
-    (col.eventTags || []).forEach(function (tag) {
-      if (!tag || !tag.text) return;
-      w = Math.max(w, measureTextWidth(probe, tag.text, EVENT_TAG_FONT) + 14);
-    });
+    var tagsRow = eventTagsRowWidths(probe, col.eventTags);
+    if (tagsRow.total) w = Math.max(w, tagsRow.total + 8);
     if (isSome) {
       w = Math.max(w, measureTextWidth(probe, hdr.toUpperCase(), fonts.fontHeader) + theme.cellPad * 2);
     }
@@ -115,7 +113,7 @@ export function buildTablePngLayout(model) {
     margin,
     titleH,
     framePad,
-    scale: 2,
+    scale: 3,
     canvasW: tableW + margin * 2 + framePad * 2,
     canvasH: tableH + titleH + margin * 2 + framePad * 2,
   };
@@ -216,19 +214,30 @@ function drawBodyCell(ctx, layout, row, rowIndex, colIndex, visibleCol, cx, ry) 
   );
 }
 
-function drawHeaderEventTags(ctx, tags, x, y, colW) {
+export function eventTagsRowWidths(ctx, tags) {
   var list = tags || [];
-  if (!list.length) return;
-  var boxH = 13;
+  if (!list.length) return { widths: [], total: 0 };
   var padX = 3;
   var gap = 2;
   ctx.font = EVENT_TAG_FONT;
   var widths = list.map(function (tag) {
-    return Math.ceil(measureTextWidth(ctx, tag.text, EVENT_TAG_FONT)) + padX * 2;
+    return Math.ceil(measureTextWidth(ctx, tag && tag.text, EVENT_TAG_FONT)) + padX * 2;
   });
   var total = widths.reduce(function (a, b) {
     return a + b;
   }, 0) + gap * Math.max(0, list.length - 1);
+  return { widths: widths, total: total };
+}
+
+function drawHeaderEventTags(ctx, tags, x, y, colW) {
+  var list = tags || [];
+  if (!list.length) return;
+  var boxH = 13;
+  var gap = 2;
+  var tagsRow = eventTagsRowWidths(ctx, list);
+  var widths = tagsRow.widths;
+  var total = tagsRow.total;
+  ctx.font = EVENT_TAG_FONT;
   var tx = x + Math.max(2, (colW - total) / 2);
   var ty = y + 2;
   list.forEach(function (tag, i) {

@@ -1,5 +1,6 @@
 /** Glu row DOM builders — extracted from estado-actual-panel-glu.mjs */
 import { gluRescueFieldsHtml } from './estado-actual-panel-glu-rescue-html.mjs';
+import { EXTRA_GLUCOMETRIA_TIMES } from './estado-actual-registro-defaults.mjs';
 
 /**
  * @param {string} standardTime
@@ -21,9 +22,19 @@ export function buildStandardGluRowHtml(standardTime) {
   );
 }
 
+function extraGluTimeOptionsHtml() {
+  var html = '<option value=""></option>';
+  for (var i = 0; i < EXTRA_GLUCOMETRIA_TIMES.length; i++) {
+    html += '<option value="' + EXTRA_GLUCOMETRIA_TIMES[i] + '">' + EXTRA_GLUCOMETRIA_TIMES[i] + '</option>';
+  }
+  return html;
+}
+
 export function buildExtraGluRowHtml() {
   return (
-    '<input type="time" class="ea-input ea-input--time ea-glu-time-input" data-ea-glu-time aria-label="Hora de glucometría">' +
+    '<select class="ea-input ea-input--time ea-glu-time-input" data-ea-glu-time aria-label="Hora de glucometría">' +
+    extraGluTimeOptionsHtml() +
+    '</select>' +
     '<input type="number" class="ea-input ea-glu-value-input" data-ea-glu-value min="0" step="1" placeholder="mg/dL" inputmode="numeric" aria-label="Glucometría">' +
     '<button type="button" class="ea-btn ea-btn--ghost ea-btn--icon ea-glu-remove-btn" data-ea-glu-remove title="Quitar fila" aria-label="Quitar glucometría">×</button>' +
     '<div class="ea-glu-row-meta">' +

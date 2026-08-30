@@ -2,6 +2,7 @@ import {
   dedupeTrendSetsForSeries,
   getSetTrendValueForSeries,
   sortLabHistoryChronological,
+  parseFechaLabToMs,
 } from './tend-core.mjs';
 import { readGroupVisibleFields } from './tend-prefs.mjs';
 import { toAscendingHistory } from './tend-group-chart-helpers.mjs';
@@ -49,6 +50,25 @@ export function canOpenTendGroupModal(sectionKey, historyDesc, eligible) {
   return eligible.length > 0;
 }
 
+/** @param {unknown[]} historyDesc @param {string} fromIso @param {string} toIso */
+export function filterHistoryByDateRange(historyDesc, fromIso, toIso) {
+  if (!fromIso && !toIso) return historyDesc;
+  var fromMs = fromIso ? new Date(fromIso + 'T00:00:00').getTime() : -Infinity;
+  var toMs = toIso ? new Date(toIso + 'T23:59:59').getTime() : Infinity;
+  return (historyDesc || []).filter(function (s) {
+    var ms = parseFechaLabToMs(s.fecha, s.hora);
+    return typeof ms === 'number' && isFinite(ms) && ms >= fromMs && ms <= toMs;
+  });
+}
+
+/** Re-derive state.historyDesc/historyAsc from the unfiltered history for the given date range. */
+export function applyTendGroupDateRange(state, fromIso, toIso) {
+  state.rangeFrom = fromIso || '';
+  state.rangeTo = toIso || '';
+  state.historyDesc = filterHistoryByDateRange(state.historyDescFull, state.rangeFrom, state.rangeTo);
+  state.historyAsc = toAscendingHistory(state.historyDesc);
+}
+
 export function prepareTendGroupOpen(deps, state, sectionKey) {
   var patientId = deps.getActiveId();
   if (!patientId || !sectionKey) return null;
@@ -60,6 +80,9 @@ export function prepareTendGroupOpen(deps, state, sectionKey) {
   if (sectionKey === 'GASES') state.gasoExtendedFio2 = 0.21;
   state.sectionKey = sectionKey;
   state.patientId = patientId;
+  state.historyDescFull = historyDesc;
+  state.rangeFrom = '';
+  state.rangeTo = '';
   state.historyDesc = historyDesc;
   state.historyAsc = toAscendingHistory(historyDesc);
   state.specsByField = Object.create(null);

@@ -1,4 +1,5 @@
 import { closeOverlayAnimated } from './ui-motion.mjs';
+import { mountRpcDateInput } from './rpc-date-picker.mjs';
 import { createTendGroupTableApi } from './tend-group-table.mjs';
 import { createTendGroupChartsApi } from './tend-group-charts.mjs';
 import { createTendGroupGasoApi } from './tend-group-gaso.mjs';
@@ -9,6 +10,7 @@ import {
   copyTendGroupTablePng,
   copyTendGroupTableText,
   setTendGroupTab,
+  applyTendGroupDateRange,
 } from './tend-group-modal-open.mjs';
 
 export function createTendGroupModal(deps) {
@@ -19,6 +21,9 @@ export function createTendGroupModal(deps) {
     tableModel: null,
     activeTab: 'charts',
     tableHiddenBarCollapsed: false,
+    historyDescFull: [],
+    rangeFrom: '',
+    rangeTo: '',
     historyDesc: [],
     historyAsc: [],
     visibleFields: [],
@@ -64,11 +69,54 @@ export function createTendGroupModal(deps) {
     setTendGroupTab(state, name);
   }
 
+  var _rangeWired = false;
+  function wireRangeRow() {
+    if (_rangeWired) return;
+    var fromInput = document.getElementById('tend-group-range-from');
+    var toInput = document.getElementById('tend-group-range-to');
+    var clearBtn = document.getElementById('tend-group-range-clear');
+    if (!fromInput || !toInput || !clearBtn) return;
+    _rangeWired = true;
+    mountRpcDateInput(fromInput);
+    mountRpcDateInput(toInput);
+    function reapply() {
+      applyTendGroupDateRange(state, fromInput.value, toInput.value);
+      clearBtn.hidden = !(state.rangeFrom || state.rangeTo);
+      renderTendGroupPanels(state.sectionKey, renderCharts, renderTable);
+    }
+    fromInput.addEventListener('change', reapply);
+    toInput.addEventListener('change', reapply);
+    clearBtn.addEventListener('click', function () {
+      fromInput.value = '';
+      toInput.value = '';
+      fromInput.dispatchEvent(new Event('rpc-date-refresh'));
+      toInput.dispatchEvent(new Event('rpc-date-refresh'));
+      reapply();
+    });
+  }
+
+  function resetRangeRow() {
+    var fromInput = document.getElementById('tend-group-range-from');
+    var toInput = document.getElementById('tend-group-range-to');
+    var clearBtn = document.getElementById('tend-group-range-clear');
+    if (fromInput) {
+      fromInput.value = '';
+      fromInput.dispatchEvent(new Event('rpc-date-refresh'));
+    }
+    if (toInput) {
+      toInput.value = '';
+      toInput.dispatchEvent(new Event('rpc-date-refresh'));
+    }
+    if (clearBtn) clearBtn.hidden = true;
+  }
+
   function openModal(sectionKey) {
     if (!prepareTendGroupOpen(deps, state, sectionKey)) return;
     var shown = showTendGroupBackdrop(deps, state, state.activeTab || 'charts');
     if (!shown) return;
     setTab(shown.activeTab);
+    wireRangeRow();
+    resetRangeRow();
     renderTendGroupPanels(sectionKey, renderCharts, renderTable);
   }
 

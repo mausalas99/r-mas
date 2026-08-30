@@ -385,32 +385,54 @@ export function formatTendSeriesLabel(cardTitle, fieldKey, unit) {
   return { name: name || fieldKey, unit: u };
 }
 
-/** Columnas compartidas por estudio (unión de sets con al menos un valor en la sección). */
-export function buildSectionTableModel(historyAsc, sectionKey, catalogSpecs, getValue) {
-  var colSets = [];
-  var seenCol = Object.create(null);
+/**
+ * Columnas compartidas por estudio (unión de sets con al menos un valor en la sección).
+ * Cada columna es un "bucket" de una o más tomas (una sola si no se agrupa por día).
+ * Por fila, el valor sale de la toma más reciente del bucket que sí reportó ese analito,
+ * para que una toma parcial del mismo día (p. ej. solo plaquetas) no borre el resto.
+ */
+export function buildSectionTableModel(historyAsc, sectionKey, catalogSpecs, getValue, opts) {
+  var groupByDay = !!(opts && opts.groupByDay);
+  var buckets = [];
+  var bucketIndexByKey = Object.create(null);
   historyAsc.forEach(function (set) {
-    var ms = parseFechaLabToMs(set.fecha, set.hora);
-    var colKey =
-      typeof ms === 'number' && isFinite(ms)
-        ? 't:' + ms
-        : 'f:' + set.fecha + '|h:' + normalizeHoraLabHistory(set.hora);
-    if (seenCol[colKey]) return;
     var hasAny = catalogSpecs.some(function (sp) {
       return getValue(set, sp.fieldKey) != null;
     });
     if (!hasAny) return;
-    seenCol[colKey] = true;
-    colSets.push(set);
+    var key = groupByDay ? trendDayKey(set) : colKeyForTrendSet(set);
+    if (!Object.prototype.hasOwnProperty.call(bucketIndexByKey, key)) {
+      bucketIndexByKey[key] = buckets.length;
+      buckets.push([]);
+    }
+    buckets[bucketIndexByKey[key]].push(set);
+  });
+  var colSets = buckets.map(function (sets) {
+    return sets[sets.length - 1];
   });
   var rows = catalogSpecs.map(function (sp) {
+    var values = [];
+    var refSets = [];
+    buckets.forEach(function (sets) {
+      var val = null;
+      var origin = null;
+      for (var i = sets.length - 1; i >= 0; i--) {
+        var v = getValue(sets[i], sp.fieldKey);
+        if (v != null) {
+          val = v;
+          origin = sets[i];
+          break;
+        }
+      }
+      values.push(val);
+      refSets.push(origin);
+    });
     return {
       fieldKey: sp.fieldKey,
       label: sp.cardTitle || sp.fieldKey,
       unit: sp.unit || '',
-      values: colSets.map(function (set) {
-        return getValue(set, sp.fieldKey);
-      })
+      values: values,
+      refSets: refSets
     };
   });
   return { columns: colSets, rows: rows };

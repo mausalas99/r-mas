@@ -8,6 +8,8 @@ import {
   writeGroupVisibleFields,
   readGroupTableHidden,
   writeGroupTableHidden,
+  readGroupTableByDay,
+  writeGroupTableByDay,
   readGroupPanelOrder,
   writeGroupPanelOrder,
   readTendCardOrder,
@@ -48,6 +50,14 @@ test('visibles por paciente+sección', () => {
 test('ocultos tabla por paciente+sección', () => {
   writeGroupTableHidden('p1', 'BH', { rows: ['NeuPct'], cols: ['t:123'] });
   assert.deepEqual(readGroupTableHidden('p1', 'BH'), { rows: ['NeuPct'], cols: ['t:123'] });
+});
+
+test('agrupar por día por paciente+sección, por defecto false', () => {
+  assert.equal(readGroupTableByDay('p1', 'BH'), false);
+  writeGroupTableByDay('p1', 'BH', true);
+  assert.equal(readGroupTableByDay('p1', 'BH'), true);
+  writeGroupTableByDay('p1', 'BH', false);
+  assert.equal(readGroupTableByDay('p1', 'BH'), false);
 });
 
 test('ocultos tabla accepts more than 14 items', () => {

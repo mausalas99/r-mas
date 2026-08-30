@@ -7,6 +7,9 @@ const { app, BrowserWindow, Menu, shell, dialog, ipcMain, clipboard, safeStorage
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
+const execFileAsync = promisify(execFile);
 const { writeApprovedOutputDir } = require('./lib/output-dir-policy.js');
 // autoUpdater loaded lazily via getAutoUpdater()
 const {
@@ -322,6 +325,12 @@ function createWindow() {
 }
 
 // ── Auto-updater events ───────────────────────────────────────────
+// Set once in app.whenReady() by the Mac quiet-swap gate (lib/mac-quiet-swap.mjs).
+// True only for an 8.2.6 install still on the old free Apple cert: it bridges
+// itself to 8.2.7 (Developer ID) outside electron-updater, whose Mac path would
+// otherwise try 8.2.7 and fail the Team ID check. scheduleUpdateCheck() below
+// no-ops for the rest of this session when true. Inert (false) everywhere else.
+let macQuietSwapActive = false;
 let _autoUpdater = null;
 function getAutoUpdater() {
   if (!_autoUpdater) {
@@ -460,6 +469,7 @@ ipcMain.on('reinstall-current-release', () => {
 
 let updateCheckTimer = null;
 function scheduleUpdateCheck(delayMs) {
+  if (macQuietSwapActive) return; // this session bridges via quiet-swap instead — see lib/mac-quiet-swap.mjs
   if (updateCheckTimer) clearTimeout(updateCheckTimer);
   updateCheckTimer = setTimeout(function () {
     updateCheckTimer = null;
@@ -895,6 +905,36 @@ async function unlockClinicalDbAtStartup(dbManager) {
   throw lastErr || new Error('Clinical DB auto-open failed');
 }
 
+// Downloads a Mac quiet-swap zip via Electron's net module: follows GitHub's 302
+// redirects and sets no com.apple.quarantine xattr (unlike a browser download —
+// that's the point). See lib/mac-quiet-swap.mjs.
+function quietSwapDownload(url, destPath) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const fail = (err) => {
+      if (settled) return;
+      settled = true;
+      reject(err);
+    };
+    const request = net.request({ url, redirect: 'follow' });
+    const out = fs.createWriteStream(destPath);
+    out.on('error', fail);
+    out.on('finish', () => { settled = true; resolve(); });
+    request.on('error', fail);
+    request.on('response', (response) => {
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        response.resume();
+        fail(new Error(`quiet-swap: HTTP ${response.statusCode} for ${url}`));
+        return;
+      }
+      response.on('data', (chunk) => out.write(chunk));
+      response.on('end', () => out.end());
+      response.on('error', fail);
+    });
+    request.end();
+  });
+}
+
 app.whenReady().then(async () => {
   if (!gotSingleInstanceLock) return;
   try {
@@ -912,6 +952,39 @@ app.whenReady().then(async () => {
     applyUpdateChannel(readUpdateChannelFromDisk());
     captureDefaultUpdaterFeed();
     bootMark('updater-feed');
+
+    // Mac quiet-swap gate: only active for an 8.2.6 install still on the old free
+    // Apple cert. When active, electron-updater must sit out this session (see
+    // scheduleUpdateCheck) and the actual download+swap runs ~30s later, silently.
+    try {
+      const { checkActivation, runQuietSwap } = await import('./lib/mac-quiet-swap.mjs');
+      const activation = await checkActivation({
+        platform: process.platform,
+        isPackaged: app.isPackaged,
+        execPath: process.execPath,
+        execFile: execFileAsync,
+      });
+      macQuietSwapActive = activation.active;
+      if (macQuietSwapActive) {
+        setTimeout(() => {
+          runQuietSwap({
+            appPath: activation.appPath,
+            arch: process.arch,
+            userDataDir: app.getPath('userData'),
+            execFile: execFileAsync,
+            download: quietSwapDownload,
+            fs: fs.promises,
+            trash: (p) => shell.trashItem(p),
+            log: (...args) => console.warn(...args),
+          }).catch((err) => {
+            console.error('[quiet-swap] unexpected error:', err && err.message);
+          });
+        }, 30000);
+      }
+    } catch (qsErr) {
+      console.error('[quiet-swap] activation check failed:', qsErr && qsErr.message);
+    }
+    bootMark('quiet-swap-gate');
 
     const { loadNativeDatabase } = await import('./lib/db/native-load.mjs');
     try {
