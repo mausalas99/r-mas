@@ -2745,10 +2745,34 @@ var RELEASE_NOTES_827 = [
   },
 ];
 
+var RELEASE_NOTES_828 = [
+  {
+    title: 'Cifrado de extremo a extremo en Nube',
+    body:
+      'Notas, labs, indicaciones y monitoreo se guardan <strong>cifrados</strong> en las salas de Nube. Todas las Macs y PCs del turno deben actualizar a esta versión.',
+  },
+  {
+    title: 'Equipos de la próxima rotación',
+    body:
+      'R4/Admin arma y publica los equipos del mes siguiente <strong>antes</strong> de que empiece, con vínculo al equipo que reemplazan para heredar pacientes al iniciar.',
+  },
+  {
+    title: 'Autounión anticipada',
+    body:
+      'Un residente ya puede ver y <strong>unirse</strong> a su equipo de la próxima rotación desde antes, sin esperar la asignación de R4.',
+  },
+  {
+    title: '"Hereda pacientes de" corregido',
+    body:
+      'En Mis equipos, el selector ya no mostraba solo <strong>Ninguno</strong> — ahora lista toda la sala como en el resto de vistas.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_827;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_828;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.2.8': RELEASE_NOTES_828,
   '8.2.7': RELEASE_NOTES_827,
   '8.2.6': RELEASE_NOTES_826,
   '8.2.5': RELEASE_NOTES_825,

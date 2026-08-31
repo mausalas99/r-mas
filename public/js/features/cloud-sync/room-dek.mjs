@@ -37,7 +37,7 @@ import { auditDekEvent, DEK_EVENTS } from './cloud-sync-audit.mjs';
  * backfill); an already-existing DEK still loads and decrypts normally.
  * See docs/superpowers/plans/2026-08-23-nube-e2ee-deploy.md Stage 0.
  */
-export const NUBE_E2EE_ENABLED = false;
+export const NUBE_E2EE_ENABLED = true;
 
 /** @type {Map<string, CryptoKey>} roomId -> unwrapped DEK, in-memory only. */
 const dekByRoomId = new Map();

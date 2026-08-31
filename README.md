@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.2.7](https://github.com/mausalas99/r-mas/releases/tag/v8.2.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.2.8](https://github.com/mausalas99/r-mas/releases/tag/v8.2.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -57,6 +57,12 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.2.8 (estable — release 8.2.8)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_8.2.8.txt`.
 ## R+ 8.2.7 (estable — release 8.2.7)
 
 - **Identificador de app restaurado:** vuelve a `com.rmas.rplusclinical` tras el puente 8.2.6.
