@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { tableHiddenRowClass, tableColumnHeader } from './tend-group-table-render.mjs';
+import { tableHiddenRowClass, tableColumnHeader, rowKey } from './tend-group-table-render.mjs';
 
 test('hidden rows use the same is-hidden class as columns', () => {
   assert.equal(tableHiddenRowClass(true), 'is-hidden');
@@ -14,4 +14,11 @@ test('table date headers omit lab-draw time', () => {
   ];
   assert.equal(tableColumnHeader(cols[0], cols), '18/08/2026');
   assert.equal(tableColumnHeader(cols[1], cols), '18/08/2026');
+});
+
+test('rowKey namespaces by section so cross-section homonyms cannot collide', () => {
+  const bhRow = { sectionKey: 'BH', fieldKey: 'Fib' };
+  const qsRow = { sectionKey: 'QS', fieldKey: 'Fib' };
+  assert.notEqual(rowKey(bhRow), rowKey(qsRow));
+  assert.equal(rowKey(bhRow), 'BH|Fib');
 });

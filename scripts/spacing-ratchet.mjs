@@ -23,7 +23,11 @@ const STYLES_DIR = path.join(__dirname, '..', 'public', 'styles');
 // Raised to 1545 for 8.2.5: Tendencias event-tag chips (.tend-event-tag,
 // .tend-group-header h2 inline-rename) need 1-2px padding tighter than any
 // existing token — same no-token-fits case as the 8.2.2 raise above.
-const BASELINE = 1545;
+// Raised to 1548 for 8.2.6: Tendencias date-range row + "Agrupar por día"
+// chip (modals.css, ui-patterns.css) and the Estado Actual glu-hour select
+// (estado-actual.css) need 3-16px chip spacing and a -4px optical pull that
+// no tokens.css spacing token expresses — same no-token-fits case as above.
+const BASELINE = 1548;
 
 const SPACING_DECL_RE = /\b(padding|margin)(-top|-right|-bottom|-left)?\s*:\s*[^;]*?\d+px[^;]*;/g;
 

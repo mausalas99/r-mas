@@ -1,0 +1,23 @@
+R+ 8.2.7 (estable — release 8.2.7)
+======================================
+
+Fecha: 2026-08-31
+
+## Resumen
+
+Versión normal tras el puente 8.2.6: vuelve al identificador de app habitual (com.rmas.rplusclinical). Es la versión que el puente 8.2.6 instala solo en Macs atoradas en 8.1.4/8.1.5 — se publica como pre-release para no ofrecerse todavía como actualización automática al resto de instalaciones.
+
+## Nuevo / mejorado
+
+- **Identificador de app restaurado:** vuelve a `com.rmas.rplusclinical` (8.2.6 lo cambió temporalmente solo para poder alcanzar las Macs atoradas).
+- **Publicada como pre-release a propósito:** mientras tenga esta marca, ninguna instalación normal la recibe por actualización automática — solo el puente 8.2.6 la descarga, por su URL directa, para completar el traspaso en las Macs atoradas. Se quitará la marca tras confirmar que el traspaso funcionó.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.2.7-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.2.7-Mac-Intel.dmg`
+- Windows: `R+-8.2.7-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

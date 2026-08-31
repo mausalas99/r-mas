@@ -6,8 +6,12 @@ import {
   formatMedicationSoapShort,
 } from '../med-receta-core.mjs';
 import { shouldIncludeMedicationInSoap } from '../med-receta-soap.mjs';
-import { skipRecetaItemForInsulinPumpCarrier } from '../insulin-pump-receta-display.mjs';
-import { skipRecetaItemForNmSoapBucket } from '../insulin-pump-receta-display.mjs';
+import {
+  skipRecetaItemForInsulinPumpCarrier,
+  skipRecetaItemForNmSoapBucket,
+  insulinPumpNmSoapFragment,
+} from '../insulin-pump-receta-display.mjs';
+import { isInsulinIvMedicationItem } from '../insulin-pump-some-detect.mjs';
 import {
   isInsulinRescateMedicationItem,
   INSULIN_RESCATE_NM_LABEL,
@@ -17,8 +21,37 @@ import {
   INSULIN_PRANDIAL_NM_PREFIX,
   insulinPrandialNmSoapFragment,
 } from '../insulin-prandial-display.mjs';
+import {
+  isPotassiumReposCarrierMedicationItem,
+  isPotassiumReposMedicationItem,
+  potassiumReposNmSoapFragment,
+} from '../potassium-repos-display.mjs';
 import { medInstructionFragmentForSoap } from './estado-actual-meds-receta-buckets.mjs';
 import { resolveManejoFechaActualizacion } from './estado-actual-meds-core.mjs';
+
+function tryAddInsulinPumpDropdownOption(it, ctx) {
+  if (ctx.category !== 'nm' || !isInsulinIvMedicationItem(it)) return false;
+  if (!ctx.pumpAdded) {
+    var frag = insulinPumpNmSoapFragment(ctx.items, ctx.items);
+    if (frag) {
+      ctx.options.push({ value: frag, label: frag });
+      ctx.pumpAdded = true;
+    }
+  }
+  return true;
+}
+
+function tryAddPotassiumReposDropdownOption(it, ctx) {
+  if (ctx.category !== 'nm' || !isPotassiumReposMedicationItem(it)) return false;
+  if (!ctx.kReposAdded) {
+    var frag = potassiumReposNmSoapFragment(ctx.items, ctx.items);
+    if (frag) {
+      ctx.options.push({ value: frag, label: frag });
+      ctx.kReposAdded = true;
+    }
+  }
+  return true;
+}
 
 function tryAddInsulinRescateDropdownOption(it, ctx) {
   if (ctx.category !== 'nm' || !isInsulinRescateMedicationItem(it)) return false;
@@ -55,14 +88,17 @@ function medDropdownOptionLabel(it, ctx, value) {
 function tryAddMedDropdownOption(it, ctx) {
   if (!it || /** @type {{ suspendido?: boolean }} */ (it).suspendido) return;
   if (skipRecetaItemForInsulinPumpCarrier(it, ctx.items)) return;
+  if (isPotassiumReposCarrierMedicationItem(it, ctx.items)) return;
   if (!shouldIncludeMedicationInSoap(
     /** @type {{ nombreRaw?: string, dosisRaw?: string, frecuenciaRaw?: string, suspendido?: boolean }} */ (it),
     ctx.classifyFn
   )) {
     return;
   }
+  if (tryAddInsulinPumpDropdownOption(it, ctx)) return;
   if (tryAddInsulinRescateDropdownOption(it, ctx)) return;
   if (tryAddInsulinPrandialDropdownOption(it, ctx)) return;
+  if (tryAddPotassiumReposDropdownOption(it, ctx)) return;
   var cat = effectiveSoapCategory(
     /** @type {{ nombreRaw?: string, soapCatOverride?: string }} */ (it),
     ctx.classifyFn
@@ -99,8 +135,10 @@ export function buildMedDropdownOptions(activeId, category, medRecetaByPatient, 
     refDate: refDate,
     options: options,
     seen: seen,
+    pumpAdded: false,
     rescateAdded: false,
     prandialAdded: false,
+    kReposAdded: false,
   };
   items.forEach(function (it) {
     tryAddMedDropdownOption(it, dropdownCtx);

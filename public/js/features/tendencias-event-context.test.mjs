@@ -17,7 +17,43 @@ import {
   eventMarkerTagSpecs,
   buildEventMarkerTagsHtml,
   clampTagBoxX,
+  createTendEventMarkerPlugin,
 } from './tendencias-event-context.mjs';
+
+function fakeChart(eventsHidden) {
+  var calls = { fillRect: 0, arc: 0 };
+  var ctx = {
+    save: function () {},
+    restore: function () {},
+    beginPath: function () {},
+    fill: function () {},
+    stroke: function () {},
+    fillRect: function () {
+      calls.fillRect++;
+    },
+    arc: function () {
+      calls.arc++;
+    },
+    measureText: function () {
+      return { width: 20 };
+    },
+    fillText: function () {},
+    roundRect: function () {},
+  };
+  var meta = { data: [{ x: 42 }] };
+  return {
+    calls: calls,
+    chart: {
+      _tendEventsHidden: eventsHidden,
+      ctx: ctx,
+      scales: { y: { top: 0, bottom: 100 } },
+      chartArea: { left: 0, right: 200 },
+      getDatasetMeta: function () {
+        return meta;
+      },
+    },
+  };
+}
 
 test('clampTagBoxX keeps a tag centered on x when it fits inside chartArea', () => {
   const chartArea = { left: 20, right: 400 };
@@ -36,6 +72,20 @@ test('clampTagBoxX pins the tag to the right edge for a point near the right of 
 
 test('clampTagBoxX falls back to centering when chartArea is missing', () => {
   assert.equal(clampTagBoxX(100, 60, null), 70);
+});
+
+test('createTendEventMarkerPlugin skips drawing when the panel hid its events', () => {
+  var markerMap = { indices: [0], byIndex: new Map([[0, { kind: 'otro', entries: [{ text: 'x' }] }]]) };
+  var plugin = createTendEventMarkerPlugin(markerMap, { compact: false });
+  var hidden = fakeChart(true);
+  plugin.afterDatasetsDraw(hidden.chart);
+  assert.equal(hidden.calls.fillRect, 0);
+  assert.equal(hidden.calls.arc, 0);
+
+  var shown = fakeChart(false);
+  plugin.afterDatasetsDraw(shown.chart);
+  assert.ok(shown.calls.fillRect > 0);
+  assert.ok(shown.calls.arc > 0);
 });
 
 test('dayKeyFromLabSet matches eventualidad day key', () => {

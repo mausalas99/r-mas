@@ -117,11 +117,27 @@ test('buildSectionTableModel: sin groupByDay, una columna por toma', () => {
     mockSet('16/08/2026', '08:00', 'BH', 'Hb', 5.61),
     mockSet('16/08/2026', '20:00', 'BH', 'Hb', 6.2)
   ];
-  const specs = [{ fieldKey: 'Hb', cardTitle: 'Hb', unit: 'g/dL' }];
-  const getValue = (set, fk) => Number(set.parsedBySection.BH[fk].val);
-  const model = buildSectionTableModel(sets, 'BH', specs, getValue);
+  const specs = [{ fieldKey: 'Hb', cardTitle: 'Hb', unit: 'g/dL', sectionKey: 'BH' }];
+  const getValue = (set, sp) => Number(set.parsedBySection.BH[sp.fieldKey].val);
+  const model = buildSectionTableModel(sets, specs, getValue);
   assert.equal(model.columns.length, 2);
   assert.deepEqual(model.rows[0].values, [5.61, 6.2]);
+});
+
+test('buildSectionTableModel: filas de secciones distintas usan su propio sectionKey', () => {
+  const bh = mockSet('16/08/2026', '08:00', 'BH', 'Hb', 12);
+  bh.parsedBySection.QS = { Glu: { val: '95', ab: false } };
+  const specs = [
+    { fieldKey: 'Hb', cardTitle: 'Hb', unit: 'g/dL', sectionKey: 'BH' },
+    { fieldKey: 'Glu', cardTitle: 'Glu', unit: 'mg/dL', sectionKey: 'QS' }
+  ];
+  const getValue = (set, sp) => {
+    const bucket = set.parsedBySection[sp.sectionKey];
+    return bucket && bucket[sp.fieldKey] ? Number(bucket[sp.fieldKey].val) : null;
+  };
+  const model = buildSectionTableModel([bh], specs, getValue);
+  assert.deepEqual(model.rows[0].values, [12]);
+  assert.deepEqual(model.rows[1].values, [95]);
 });
 
 test('buildSectionTableModel: groupByDay agrupa y usa la toma más reciente', () => {
@@ -130,9 +146,9 @@ test('buildSectionTableModel: groupByDay agrupa y usa la toma más reciente', ()
     mockSet('16/08/2026', '20:00', 'BH', 'Hb', 6.2),
     mockSet('17/05/2026', '08:00', 'BH', 'Hb', 8.4)
   ];
-  const specs = [{ fieldKey: 'Hb', cardTitle: 'Hb', unit: 'g/dL' }];
-  const getValue = (set, fk) => Number(set.parsedBySection.BH[fk].val);
-  const model = buildSectionTableModel(sets, 'BH', specs, getValue, { groupByDay: true });
+  const specs = [{ fieldKey: 'Hb', cardTitle: 'Hb', unit: 'g/dL', sectionKey: 'BH' }];
+  const getValue = (set, sp) => Number(set.parsedBySection.BH[sp.fieldKey].val);
+  const model = buildSectionTableModel(sets, specs, getValue, { groupByDay: true });
   assert.equal(model.columns.length, 2);
   assert.deepEqual(model.rows[0].values, [6.2, 8.4]);
 });
@@ -142,11 +158,12 @@ test('buildSectionTableModel: groupByDay no borra un analito con una toma parcia
   full.parsedBySection.BH.Plt = { val: '9.73', ab: false };
   const parcial = mockSet('16/08/2026', '20:00', 'BH', 'Plt', 5.61);
   const specs = [
-    { fieldKey: 'Hb', cardTitle: 'Hb', unit: 'g/dL' },
-    { fieldKey: 'Plt', cardTitle: 'Plt', unit: 'K/uL' }
+    { fieldKey: 'Hb', cardTitle: 'Hb', unit: 'g/dL', sectionKey: 'BH' },
+    { fieldKey: 'Plt', cardTitle: 'Plt', unit: 'K/uL', sectionKey: 'BH' }
   ];
-  const getValue = (set, fk) => (set.parsedBySection.BH[fk] ? Number(set.parsedBySection.BH[fk].val) : null);
-  const model = buildSectionTableModel([full, parcial], 'BH', specs, getValue, { groupByDay: true });
+  const getValue = (set, sp) =>
+    set.parsedBySection.BH[sp.fieldKey] ? Number(set.parsedBySection.BH[sp.fieldKey].val) : null;
+  const model = buildSectionTableModel([full, parcial], specs, getValue, { groupByDay: true });
   assert.equal(model.columns.length, 1);
   assert.deepEqual(model.rows[0].values, [7.68]); // Hb viene de la toma completa
   assert.deepEqual(model.rows[1].values, [5.61]); // Plt viene de la toma parcial (más reciente)

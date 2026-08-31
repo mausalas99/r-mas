@@ -1,4 +1,5 @@
 const LS_SERIES_COLORS = 'rpc-tend-series-colors';
+const LS_FIELD_THRESHOLDS = 'rpc-tend-field-thresholds';
 const LS_GROUP_VISIBLE = 'rpc-tend-group-visible';
 const LS_GROUP_TABLE_HIDDEN = 'rpc-tend-group-table-hidden';
 const LS_GROUP_TABLE_BY_DAY = 'rpc-tend-group-table-by-day';
@@ -7,6 +8,8 @@ const LS_TEND_CARD_ORDER = 'rpc-tend-card-order';
 const LS_GROUP_PANEL_HIDDEN = 'rpc-tend-group-panel-hidden';
 const LS_GROUP_PANEL_TITLES = 'rpc-tend-group-panel-titles';
 const LS_GROUP_LEGEND_ORDER = 'rpc-tend-group-legend-order';
+const LS_GROUP_EXTRA_FIELDS = 'rpc-tend-group-extra-fields';
+const LS_GROUP_PANEL_EVENTS_HIDDEN = 'rpc-tend-group-panel-events-hidden';
 
 export const DEFAULT_PANEL_LABELS = {
   gases: 'Gasometría',
@@ -65,6 +68,32 @@ export function writeSeriesColor(sectionKey, fieldKey, hex) {
   writeJson(LS_SERIES_COLORS, map);
 }
 
+/** Umbrales de referencia (líneas punteadas) por analito. Compartidos entre pacientes, como el color de serie. */
+export function readFieldThresholds(sectionKey, fieldKey) {
+  var map = readJson(LS_FIELD_THRESHOLDS, {});
+  var arr = map[seriesColorKey(sectionKey, fieldKey)];
+  return Array.isArray(arr)
+    ? arr.filter(function (t) {
+        return t && isFinite(t.value);
+      })
+    : [];
+}
+
+export function writeFieldThresholds(sectionKey, fieldKey, thresholds) {
+  var map = readJson(LS_FIELD_THRESHOLDS, {});
+  var key = seriesColorKey(sectionKey, fieldKey);
+  var clean = (thresholds || [])
+    .filter(function (t) {
+      return t && isFinite(Number(t.value));
+    })
+    .map(function (t) {
+      return { value: Number(t.value), label: String(t.label || '').trim() };
+    });
+  if (clean.length) map[key] = clean;
+  else delete map[key];
+  writeJson(LS_FIELD_THRESHOLDS, map);
+}
+
 function groupKey(patientId, sectionKey) {
   return String(patientId) + '|' + String(sectionKey);
 }
@@ -79,6 +108,25 @@ export function writeGroupVisibleFields(patientId, sectionKey, fieldKeys) {
   var map = readJson(LS_GROUP_VISIBLE, {});
   map[groupKey(patientId, sectionKey)] = (fieldKeys || []).slice();
   writeJson(LS_GROUP_VISIBLE, map);
+}
+
+/** Analitos de otras secciones agregados a la tabla combinada de este estudio. */
+export function readGroupExtraFields(patientId, sectionKey) {
+  var map = readJson(LS_GROUP_EXTRA_FIELDS, {});
+  var arr = map[groupKey(patientId, sectionKey)];
+  return Array.isArray(arr)
+    ? arr.filter(function (p) {
+        return p && p.sectionKey && p.fieldKey;
+      })
+    : [];
+}
+
+export function writeGroupExtraFields(patientId, sectionKey, pairs) {
+  var map = readJson(LS_GROUP_EXTRA_FIELDS, {});
+  map[groupKey(patientId, sectionKey)] = (pairs || []).map(function (p) {
+    return { sectionKey: p.sectionKey, fieldKey: p.fieldKey };
+  });
+  writeJson(LS_GROUP_EXTRA_FIELDS, map);
 }
 
 export function readGroupTableHidden(patientId, sectionKey) {
@@ -161,6 +209,32 @@ export function writeGroupPanelHidden(patientId, sectionKey, familyKeys) {
   var map = readJson(LS_GROUP_PANEL_HIDDEN, {});
   map[groupKey(patientId, sectionKey)] = (familyKeys || []).slice();
   writeJson(LS_GROUP_PANEL_HIDDEN, map);
+}
+
+export function readGroupPanelEventsHidden(patientId, sectionKey) {
+  var map = readJson(LS_GROUP_PANEL_EVENTS_HIDDEN, {});
+  var arr = map[groupKey(patientId, sectionKey)];
+  return Array.isArray(arr) ? arr.slice() : [];
+}
+
+export function isPanelEventsHidden(patientId, sectionKey, familyKey) {
+  return readGroupPanelEventsHidden(patientId, sectionKey).indexOf(String(familyKey || '')) >= 0;
+}
+
+export function writeGroupPanelEventsHidden(patientId, sectionKey, familyKeys) {
+  var map = readJson(LS_GROUP_PANEL_EVENTS_HIDDEN, {});
+  map[groupKey(patientId, sectionKey)] = (familyKeys || []).slice();
+  writeJson(LS_GROUP_PANEL_EVENTS_HIDDEN, map);
+}
+
+export function togglePanelEventsHidden(patientId, sectionKey, familyKey) {
+  var fam = String(familyKey || '');
+  var hidden = readGroupPanelEventsHidden(patientId, sectionKey);
+  var idx = hidden.indexOf(fam);
+  if (idx >= 0) hidden.splice(idx, 1);
+  else hidden.push(fam);
+  writeGroupPanelEventsHidden(patientId, sectionKey, hidden);
+  return idx < 0;
 }
 
 export function defaultPanelLabel(familyKey) {

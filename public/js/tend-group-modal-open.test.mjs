@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { filterHistoryByDateRange, applyTendGroupDateRange } from './tend-group-modal-open.mjs';
+import {
+  filterHistoryByDateRange,
+  applyTendGroupDateRange,
+  resolveExtraSpecs,
+} from './tend-group-modal-open.mjs';
 
 const historyDesc = [
   { fecha: '24/08/2026', hora: '08:00' },
@@ -25,4 +29,21 @@ test('applyTendGroupDateRange re-derives historyDesc/historyAsc from the unfilte
   assert.equal(state.rangeTo, '2026-08-19');
   assert.deepEqual(state.historyDesc, [historyDesc[1], historyDesc[2]]);
   assert.deepEqual(state.historyAsc, [historyDesc[2], historyDesc[1]]);
+});
+
+test('resolveExtraSpecs resolves saved {sectionKey, fieldKey} pairs to live catalog specs', () => {
+  const deps = {
+    getCatalogSpecs: (sectionKey) =>
+      sectionKey === 'QS' ? [{ fieldKey: 'Glu', cardTitle: 'Glucosa', sectionKey: 'QS' }] : [],
+  };
+  const out = resolveExtraSpecs(deps, historyDesc, [{ sectionKey: 'QS', fieldKey: 'Glu' }]);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].fieldKey, 'Glu');
+  assert.equal(out[0].sectionKey, 'QS');
+});
+
+test('resolveExtraSpecs drops pairs whose analyte no longer resolves', () => {
+  const deps = { getCatalogSpecs: () => [] };
+  const out = resolveExtraSpecs(deps, historyDesc, [{ sectionKey: 'QS', fieldKey: 'Glu' }]);
+  assert.deepEqual(out, []);
 });

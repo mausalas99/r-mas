@@ -580,6 +580,7 @@ async function cmdPublish(argv) {
   const skipPreCommit = hasFlag(argv, '--skip-pre-commit');
   const allowExistingGh = hasFlag(argv, '--allow-existing-gh');
   const progressJson = hasFlag(argv, '--progress-json');
+  const prerelease = hasFlag(argv, '--prerelease');
 
   if (macOnly && winOnly) {
     console.error('Usa solo uno de --mac-only o --win-only');
@@ -812,6 +813,7 @@ async function cmdPublish(argv) {
             `R+ ${version}`,
             '--notes-file',
             notesMd,
+            ...(prerelease ? ['--prerelease'] : []),
             ...assets,
           ];
       progress.logCommand(`gh ${ghArgs.join(' ')}`);
@@ -839,7 +841,16 @@ async function cmdPublish(argv) {
       if (uploadOnly) {
         spawnSync(
           'gh',
-          ['release', 'edit', tag, '--repo', REPO, '--notes-file', notesMd],
+          [
+            'release',
+            'edit',
+            tag,
+            '--repo',
+            REPO,
+            '--notes-file',
+            notesMd,
+            '--prerelease=' + (prerelease ? 'true' : 'false'),
+          ],
           { cwd: ROOT, stdio: progressJson ? 'pipe' : 'inherit', encoding: 'utf8' }
         );
       }

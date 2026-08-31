@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   applyRecetaProposal,
+  applyRecetaProposalForce,
   confirmMedField,
   discardMedProposal,
   confirmAllMedProposals,
@@ -34,6 +35,36 @@ test('applyRecetaProposal limpia pendiente cuando la categoría queda vacía en 
   const m = emptyMonitoreo();
   m.pendienteReceta.abx = 'CEFTRIAXONA 1G IV';
   applyRecetaProposal(m, { abx: '' });
+  assert.equal(m.pendienteReceta.abx, '');
+});
+
+test('applyRecetaProposalForce propone contenido nuevo aunque la categoría ya esté confirmada', () => {
+  const m = emptyMonitoreo();
+  m.confirmado.nm = true;
+  m.estadoClinico.nm = 'LACTULOSA 30ML C/8H | OMEPRAZOL 40MG C/24H';
+  applyRecetaProposalForce(m, {
+    nm: 'LACTULOSA 30ML C/8H | OMEPRAZOL 40MG C/24H | BOMBA DE INSULINA EN ALGORITMO 2',
+  });
+  assert.equal(
+    m.pendienteReceta.nm,
+    'LACTULOSA 30ML C/8H | OMEPRAZOL 40MG C/24H | BOMBA DE INSULINA EN ALGORITMO 2'
+  );
+  assert.equal(m.estadoClinico.nm, 'LACTULOSA 30ML C/8H | OMEPRAZOL 40MG C/24H');
+});
+
+test('applyRecetaProposalForce no repropone cuando el contenido confirmado ya coincide', () => {
+  const m = emptyMonitoreo();
+  m.confirmado.abx = true;
+  m.estadoClinico.abx = 'ERTAPENEM 1G';
+  applyRecetaProposalForce(m, { abx: 'ERTAPENEM 1G' });
+  assert.equal(m.pendienteReceta.abx, '');
+});
+
+test('applyRecetaProposalForce respeta el dismiss en categorías sin confirmar', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.abx = '';
+  m.recetaProposalDismissed = { abx: true };
+  applyRecetaProposalForce(m, { abx: 'CEFTRIAXONA 1G IV' });
   assert.equal(m.pendienteReceta.abx, '');
 });
 
@@ -197,6 +228,38 @@ test('bucketsFromRecetaItems — otros sin destino no van a abx', () => {
   const buckets = bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory);
   assert.equal(buckets.abx, '');
   assert.match(buckets.nm, /OMEPRAZOL/i);
+});
+
+test('bucketsFromRecetaItems fusiona KCl + KPO4 en un solo REPOSICIÓN DE POTASIO, oculta HARTMANN', () => {
+  const items = [
+    {
+      id: 'kcl',
+      nombreRaw: 'CLORURO DE POTASIO 20 MEQ SOL INY 5 ML (+)',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw: '80 MEQ',
+      frecuenciaRaw: '-',
+      suspendido: false,
+    },
+    {
+      id: 'kphos',
+      nombreRaw: 'FOSFATO DE POTASIO 20 MEQ SOL INY 10 ML (+)',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw: '40 MEQ',
+      frecuenciaRaw: '-',
+      suspendido: false,
+    },
+    {
+      id: 'hartmann',
+      nombreRaw: 'HARTMANN SOL INY 1000 ML',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw: '1000 ML / VEL.INF: PARA 12 HORAS',
+      frecuenciaRaw: 'UNICA VEZ',
+      suspendido: false,
+    },
+  ];
+  const sel = { kcl: true, kphos: true, hartmann: true };
+  const buckets = bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory);
+  assert.equal(buckets.nm, 'REPOSICIÓN DE POTASIO 120 MEQ A 12 HORAS');
 });
 
 test('estadoClinicoForText merges unconfirmed pendienteReceta into empty fields', () => {
@@ -374,6 +437,74 @@ test('buildMedDropdownOptions lists active receta items for category', () => {
   assert.equal(abxOpts.length, 1);
   assert.match(abxOpts[0].value, /MEROPENEM.*IV/i);
   assert.match(abxOpts[0].label, /MEROPENEM.*IV/i);
+});
+
+test('buildMedDropdownOptions incluye BOMBA DE INSULINA en nm cuando hay bomba + insulina IV', () => {
+  const medRecetaByPatient = {
+    p1: {
+      items: [
+        {
+          id: '1',
+          nombreRaw: 'CLORURO DE SODIO 0.9 % SOL INY 100 ML',
+          viaRaw: 'VIA INTRAVENOSA',
+          dosisRaw: '100 ML / VEL.INF: BOMBA DE INSULINA ALGORITMO 2',
+          frecuenciaRaw: 'CADA 24 HORAS',
+          suspendido: false,
+        },
+        {
+          id: '2',
+          nombreRaw: 'INSULINA HUMANA RAPIDA',
+          viaRaw: 'VIA INTRAVENOSA',
+          dosisRaw: '100 UI',
+          frecuenciaRaw: '-',
+          suspendido: false,
+        },
+      ],
+    },
+  };
+  const nmOpts = buildMedDropdownOptions('p1', 'nm', medRecetaByPatient, classifyMedicationSoapCategory);
+  assert.deepEqual(
+    nmOpts.map((o) => o.value),
+    ['BOMBA DE INSULINA EN ALGORITMO 2']
+  );
+});
+
+test('buildMedDropdownOptions incluye REPOSICIÓN DE POTASIO fusionada en nm, sin HARTMANN', () => {
+  const medRecetaByPatient = {
+    p1: {
+      items: [
+        {
+          id: 'kcl',
+          nombreRaw: 'CLORURO DE POTASIO 20 MEQ SOL INY 5 ML (+)',
+          viaRaw: 'VIA INTRAVENOSA',
+          dosisRaw: '80 MEQ',
+          frecuenciaRaw: '-',
+          suspendido: false,
+        },
+        {
+          id: 'kphos',
+          nombreRaw: 'FOSFATO DE POTASIO 20 MEQ SOL INY 10 ML (+)',
+          viaRaw: 'VIA INTRAVENOSA',
+          dosisRaw: '40 MEQ',
+          frecuenciaRaw: '-',
+          suspendido: false,
+        },
+        {
+          id: 'hartmann',
+          nombreRaw: 'HARTMANN SOL INY 1000 ML',
+          viaRaw: 'VIA INTRAVENOSA',
+          dosisRaw: '1000 ML / VEL.INF: PARA 12 HORAS',
+          frecuenciaRaw: 'UNICA VEZ',
+          suspendido: false,
+        },
+      ],
+    },
+  };
+  const nmOpts = buildMedDropdownOptions('p1', 'nm', medRecetaByPatient, classifyMedicationSoapCategory);
+  assert.deepEqual(
+    nmOpts.map((o) => o.value),
+    ['REPOSICIÓN DE POTASIO 120 MEQ A 12 HORAS']
+  );
 });
 
 test('buildMedDropdownOptions abx label avanza DIA, value conserva base', () => {

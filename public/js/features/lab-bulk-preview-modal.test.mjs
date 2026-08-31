@@ -8,6 +8,8 @@ const {
   shouldAutoConfirmAfterPatientSave,
   renderBlockExpedientes,
   renderBlockRawText,
+  openLabBulkPreviewModal,
+  closeLabBulkPreviewModal,
 } = await import('./lab-bulk-preview-modal.mjs');
 
 describe('resolveBulkPreviewConfirmState', () => {
@@ -76,6 +78,71 @@ describe('shouldOfferBulkPreviewAddPatient', () => {
 describe('hasPendingBulkLabPreviewSession', () => {
   it('is false without an open modal session', () => {
     assert.equal(hasPendingBulkLabPreviewSession(), false);
+  });
+});
+
+describe('closeLabBulkPreviewModal (Cancelar/X no debe reabrir el modal)', () => {
+  function fakeEl() {
+    var classes = [];
+    var attrs = Object.create(null);
+    return {
+      classList: {
+        add: function (c) {
+          if (classes.indexOf(c) === -1) classes.push(c);
+        },
+        remove: function (c) {
+          classes = classes.filter(function (x) {
+            return x !== c;
+          });
+        },
+        contains: function (c) {
+          return classes.indexOf(c) !== -1;
+        },
+      },
+      setAttribute: function (k, v) {
+        attrs[k] = String(v);
+      },
+      getAttribute: function (k) {
+        return Object.prototype.hasOwnProperty.call(attrs, k) ? attrs[k] : null;
+      },
+      textContent: '',
+      innerHTML: '',
+      onclick: null,
+      disabled: false,
+      title: '',
+    };
+  }
+
+  it('descarta la sesión pendiente al cerrar, aunque haya onConfirm', () => {
+    var ids = {
+      'lab-bulk-preview-backdrop': fakeEl(),
+      'lab-bulk-preview-summary': fakeEl(),
+      'lab-bulk-preview-body': fakeEl(),
+      'lab-bulk-preview-confirm': fakeEl(),
+    };
+    var prevDocument = globalThis.document;
+    globalThis.document = {
+      documentElement: fakeEl(),
+      getElementById: function (id) {
+        return ids[id] || null;
+      },
+    };
+    try {
+      openLabBulkPreviewModal({
+        blocks: [{ status: 'mixed-expediente', okReportCount: 1, canProcess: false, reports: [], expedientes: ['2020511-9', '2239216-8'] }],
+        sourceText: 'Expediente: 2020511-9',
+        onConfirm: () => {},
+      });
+      assert.equal(hasPendingBulkLabPreviewSession(), true);
+      assert.equal(ids['lab-bulk-preview-backdrop'].classList.contains('open'), true);
+
+      closeLabBulkPreviewModal();
+
+      assert.equal(hasPendingBulkLabPreviewSession(), false);
+      assert.equal(ids['lab-bulk-preview-backdrop'].classList.contains('open'), false);
+    } finally {
+      globalThis.document = prevDocument;
+    }
   });
 });
 

@@ -9,6 +9,7 @@ import {
   writeGroupTableHidden,
   readGroupTableByDay,
   writeGroupTableByDay,
+  seriesColorKey,
 } from './tend-prefs.mjs';
 import { formatTrendDisplayValue, colKeyForSet } from './tend-group-chart-helpers.mjs';
 import {
@@ -17,12 +18,18 @@ import {
   buildEventMarkerTagsHtml,
   eventMarkerTagSpecs,
 } from './features/tendencias-event-context.mjs';
+import { renderAnalytePickerBar } from './tend-group-analyte-picker.mjs';
 
-function isAbnormal(deps, set, sectionKey, fieldKey, val, historyDesc) {
+/** Identidad de fila estable entre secciones (evita choques de fieldKey homónimos). */
+export function rowKey(row) {
+  return seriesColorKey(row.sectionKey, row.fieldKey);
+}
+
+function isAbnormal(deps, set, row, val, historyDesc) {
   if (val == null || !isFinite(val)) return false;
   var ref =
-    deps.tendRefFromLabSet(set, sectionKey, fieldKey) ||
-    deps.tendRefForSeries(historyDesc, sectionKey, fieldKey, set);
+    deps.tendRefFromLabSet(set, row.sectionKey, row.fieldKey) ||
+    deps.tendRefForSeries(historyDesc, row.sectionKey, row.fieldKey, set);
   if (!ref) return false;
   return val < ref[0] || val > ref[1];
 }
@@ -37,7 +44,8 @@ function columnHeader(set, columns) {
 }
 
 function legendLabelForSpec(deps, sectionKey, spec) {
-  var unit = deps.tendUnitForSeries(sectionKey, spec.fieldKey);
+  var sk = spec.sectionKey || sectionKey;
+  var unit = deps.tendUnitForSeries(sk, spec.fieldKey);
   return formatTendSeriesLabel(spec.cardTitle || spec.fieldKey, spec.fieldKey, unit).name;
 }
 
@@ -58,7 +66,7 @@ function hiddenColLabel(raw, ck) {
   return ck;
 }
 
-function buildHiddenChips(deps, sectionKey, state, hidden, raw) {
+function buildHiddenChips(deps, state, hidden, raw, specsByRowKey) {
   var esc = deps.esc;
   var chips = [];
   hidden.cols.forEach(function (ck) {
@@ -70,12 +78,12 @@ function buildHiddenChips(deps, sectionKey, state, hidden, raw) {
         ' <span aria-hidden="true">×</span></button>'
     );
   });
-  hidden.rows.forEach(function (fk) {
-    var sp = state.specsByField[fk];
-    var lab = sp ? legendLabelForSpec(deps, sectionKey, sp) : fk;
+  hidden.rows.forEach(function (rk) {
+    var sp = specsByRowKey[rk];
+    var lab = sp ? legendLabelForSpec(deps, sp.sectionKey, sp) : rk;
     chips.push(
       '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-row="' +
-        esc(fk) +
+        esc(rk) +
         '">' +
         esc(lab) +
         ' <span aria-hidden="true">×</span></button>'
@@ -111,10 +119,10 @@ function wireHiddenBarActions(bar, ctx) {
   bar.querySelectorAll('[data-restore-row]').forEach(function (btn) {
     btn.onclick = function (ev) {
       ev.stopPropagation();
-      var fk = btn.getAttribute('data-restore-row');
+      var rk = btn.getAttribute('data-restore-row');
       var h = readGroupTableHidden(ctx.state.patientId, ctx.sectionKey);
       h.rows = h.rows.filter(function (r) {
-        return r !== fk;
+        return r !== rk;
       });
       writeGroupTableHidden(ctx.state.patientId, ctx.sectionKey, h);
       ctx.renderTable(ctx.sectionKey);
@@ -124,7 +132,6 @@ function wireHiddenBarActions(bar, ctx) {
 
 export function renderTableHiddenBar(ctx) {
   var wrap = ctx.wrap;
-  var sectionKey = ctx.sectionKey;
   var hidden = ctx.hidden;
   var raw = ctx.raw;
   var bar = wrap.querySelector('#tend-group-table-hidden-bar');
@@ -134,7 +141,7 @@ export function renderTableHiddenBar(ctx) {
     bar.className = 'tend-group-table-hidden-bar';
     wrap.insertBefore(bar, wrap.firstChild);
   }
-  var chips = buildHiddenChips(ctx.deps, sectionKey, ctx.state, hidden, raw);
+  var chips = buildHiddenChips(ctx.deps, ctx.state, hidden, raw, ctx.specsByRowKey);
   if (!chips.length) {
     bar.style.display = 'none';
     bar.innerHTML = '';
@@ -165,10 +172,10 @@ export function renderTableHiddenBar(ctx) {
   wireHiddenBarActions(bar, ctx);
 }
 
-function buildTableExportModel(deps, state, sectionKey, rawModel, hidden, markersByDay) {
+function buildTableExportModel(deps, state, rawModel, hidden, markersByDay) {
   var hiddenRows = Object.create(null);
-  (hidden.rows || []).forEach(function (fk) {
-    hiddenRows[fk] = true;
+  (hidden.rows || []).forEach(function (rk) {
+    hiddenRows[rk] = true;
   });
   var hiddenCols = Object.create(null);
   (hidden.cols || []).forEach(function (ck) {
@@ -186,25 +193,26 @@ function buildTableExportModel(deps, state, sectionKey, rawModel, hidden, marker
     };
   });
   var rows = rawModel.rows.map(function (row) {
+    var rk = rowKey(row);
     var cells = rawModel.columns.map(function (set, ci) {
       var val = row.values[ci];
       var refSet = row.refSets ? row.refSets[ci] : set;
-      var ab = isAbnormal(deps, refSet, sectionKey, row.fieldKey, val, state.historyDesc);
+      var ab = isAbnormal(deps, refSet, row, val, state.historyDesc);
       return { text: formatCellValue(val, ab), abnormal: ab };
     });
     return {
       label: row.label,
       fieldKey: row.fieldKey,
-      hidden: !!hiddenRows[row.fieldKey],
+      hidden: !!hiddenRows[rk],
       cells: cells,
     };
   });
   return { columns: columns, rows: rows };
 }
 
-function rowDisplayLabel(deps, sectionKey, state, row) {
-  var spRow = state.specsByField[row.fieldKey];
-  var rowUnit = deps.tendUnitForSeries(sectionKey, row.fieldKey);
+function rowDisplayLabel(deps, state, row, specsByRowKey) {
+  var spRow = specsByRowKey[rowKey(row)];
+  var rowUnit = deps.tendUnitForSeries(row.sectionKey, row.fieldKey);
   var rowDisp = spRow
     ? formatTendSeriesLabel(spRow.cardTitle || row.fieldKey, row.fieldKey, rowUnit)
     : formatTendSeriesLabel(row.label, row.fieldKey, row.unit || rowUnit);
@@ -247,18 +255,19 @@ export function tableHiddenRowClass(rowHidden) {
   return rowHidden ? 'is-hidden' : '';
 }
 
-function buildTableBodyHtml(deps, esc, sectionKey, state, raw, hidden) {
+function buildTableBodyHtml(deps, esc, state, raw, hidden, specsByRowKey) {
   var html = ['<tbody>'];
   raw.rows.forEach(function (row) {
-    var rowHidden = hidden.rows.indexOf(row.fieldKey) >= 0;
-    var rowLabel = rowDisplayLabel(deps, sectionKey, state, row);
+    var rk = rowKey(row);
+    var rowHidden = hidden.rows.indexOf(rk) >= 0;
+    var rowLabel = rowDisplayLabel(deps, state, row, specsByRowKey);
     html.push(
       '<tr data-field="' +
-        esc(row.fieldKey) +
+        esc(rk) +
         '" class="' +
         tableHiddenRowClass(rowHidden) +
         '"><td><label class="tend-group-row-toggle"><input type="checkbox" data-field-key="' +
-        esc(row.fieldKey) +
+        esc(rk) +
         '"' +
         (rowHidden ? ' checked' : '') +
         ' aria-label="Ocultar fila"> ' +
@@ -270,7 +279,7 @@ function buildTableBodyHtml(deps, esc, sectionKey, state, raw, hidden) {
       var colHidden = hidden.cols.indexOf(ck) >= 0;
       var val = row.values[ci];
       var refSet = row.refSets ? row.refSets[ci] : set;
-      var ab = isAbnormal(deps, refSet, sectionKey, row.fieldKey, val, state.historyDesc);
+      var ab = isAbnormal(deps, refSet, row, val, state.historyDesc);
       html.push(
         '<td class="' +
           (colHidden ? 'is-hidden' : '') +
@@ -331,33 +340,48 @@ function wireDayModeToggle(wrap, state, sectionKey, renderTable) {
   });
 }
 
-export function renderGroupTable(deps, state, sectionKey, renderTable) {
-  var wrap = document.getElementById('tend-group-table-wrap');
+/** Especificaciones de todas las filas de la tabla: las de la sección primaria + las agregadas de otras. */
+function tableRowSpecs(state) {
+  var primary = Object.keys(state.specsByField).map(function (fk) {
+    return state.specsByField[fk];
+  });
+  return primary.concat(state.tableExtraSpecs || []);
+}
+
+function buildSpecsByRowKey(specs) {
+  var map = Object.create(null);
+  specs.forEach(function (sp) {
+    map[seriesColorKey(sp.sectionKey, sp.fieldKey)] = sp;
+  });
+  return map;
+}
+
+export function renderGroupTable(deps, state, sectionKey, renderTable, opts) {
+  var wrap = document.getElementById((opts && opts.wrapId) || 'tend-group-table-wrap');
   if (!wrap) return;
   var hidden = readGroupTableHidden(state.patientId, sectionKey);
   var byDay = readGroupTableByDay(state.patientId, sectionKey);
-  var allSpecs = Object.keys(state.specsByField).map(function (fk) {
-    return state.specsByField[fk];
-  });
+  var allSpecs = tableRowSpecs(state);
+  var specsByRowKey = buildSpecsByRowKey(allSpecs);
   var raw = buildSectionTableModel(
     state.historyAsc,
-    sectionKey,
     allSpecs,
-    function (set, fieldKey) {
-      return getSetTrendValueForSeries(set, sectionKey, fieldKey);
+    function (set, sp) {
+      return getSetTrendValueForSeries(set, sp.sectionKey, sp.fieldKey);
     },
     { groupByDay: byDay }
   );
   var markersByDay = collectEventMarkersForPatient(state.patientId);
-  state.tableModel = buildTableExportModel(deps, state, sectionKey, raw, hidden, markersByDay);
+  state.tableModel = buildTableExportModel(deps, state, raw, hidden, markersByDay);
 
   var esc = deps.esc;
   var html = [
     buildDayModeToggleHtml(byDay),
+    state.dynamicMode ? '<div id="tend-group-analyte-picker-slot"></div>' : '',
     '<div class="cultivos-table-wrap"><table id="tend-group-table" class="cultivos-table tend-group-table">',
   ];
   html = html.concat(buildTableHeadHtml(esc, raw, hidden, markersByDay));
-  html = html.concat(buildTableBodyHtml(deps, esc, sectionKey, state, raw, hidden));
+  html = html.concat(buildTableBodyHtml(deps, esc, state, raw, hidden, specsByRowKey));
   html.push('</table></div>');
   wrap.innerHTML = html.join('');
   renderTableHiddenBar({
@@ -368,13 +392,23 @@ export function renderGroupTable(deps, state, sectionKey, renderTable) {
     deps: deps,
     state: state,
     renderTable: renderTable,
+    specsByRowKey: specsByRowKey,
   });
   wireTableToggles(wrap, deps, state, sectionKey, renderTable);
   wireDayModeToggle(wrap, state, sectionKey, renderTable);
+  if (state.dynamicMode) {
+    renderAnalytePickerBar({
+      slot: wrap.querySelector('#tend-group-analyte-picker-slot'),
+      deps: deps,
+      state: state,
+      sectionKey: sectionKey,
+      renderTable: renderTable,
+    });
+  }
 }
 
 export function createTableExportModel(deps, state, sectionKey, rawModel, hidden, markersByDay) {
-  return buildTableExportModel(deps, state, sectionKey, rawModel, hidden, markersByDay);
+  return buildTableExportModel(deps, state, rawModel, hidden, markersByDay);
 }
 
 export function tableColumnHeader(set, columns) {

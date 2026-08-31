@@ -29,6 +29,14 @@ import {
   isInsulinPrandialGroupSuspended,
   isInsulinPrandialMedicationItem,
 } from "../insulin-prandial-display.mjs";
+import {
+  POTASSIUM_REPOS_GROUP_ID,
+  isPotassiumReposCarrierMedicationItem,
+  isPotassiumReposGroupSoapSelected,
+  isPotassiumReposGroupSuspended,
+  isPotassiumReposMedicationItem,
+  potassiumReposGroupMedLabelHtml,
+} from "../potassium-repos-display.mjs";
 import { esc, isMedNotaSelected } from "./medications-utils.mjs";
 
 export function buildMedDietHtml(dietas) {
@@ -176,6 +184,43 @@ function buildInsulinPrandialGroupRowHtml(activeId, items) {
   );
 }
 
+function buildPotassiumReposGroupRowHtml(activeId, items) {
+  var paraNota = isPotassiumReposGroupSoapSelected(activeId, items, isMedNotaSelected) ? " checked" : "";
+  var chk = isPotassiumReposGroupSuspended(items, function (id) {
+    var it = items.find(function (x) {
+      return String(x.id) === String(id);
+    });
+    return !!(it && it.suspendido);
+  })
+    ? " checked"
+    : "";
+  return (
+    '<div class="med-receta-row med-receta-row--potassium-repos" data-med-item-id="' +
+    esc(POTASSIUM_REPOS_GROUP_ID) +
+    '">' +
+    '<div class="med-receta-checkcell">' +
+    '<input type="checkbox"' +
+    chk +
+    ' title="Excluir reposición de potasio del texto de egreso"' +
+    " onchange=\"toggleMedRecetaPotassiumReposSuspendido(this.checked)\"" +
+    "/>" +
+    "</div>" +
+    '<div class="med-receta-checkcell">' +
+    '<input type="checkbox" data-med-soap-chk="1"' +
+    paraNota +
+    ' title="Incluir reposición de potasio en Estado Actual / SOAP"' +
+    " onchange=\"toggleMedRecetaPotassiumReposParaNota(this.checked)\"" +
+    "/>" +
+    "</div>" +
+    '<div class="med-receta-name">' +
+    potassiumReposGroupMedLabelHtml(items, esc) +
+    "</div>" +
+    '<div class="med-receta-destcell"></div>' +
+    '<div class="med-receta-diacell"></div>' +
+    "</div>"
+  );
+}
+
 function buildMedRecetaRowHtml(activeId, it, fechaActualizacion, allItems) {
   var sid = String(it.id || "");
   var diaOpts = fechaActualizacion ? { fechaActualizacion: fechaActualizacion } : undefined;
@@ -246,6 +291,7 @@ export function buildMedRecetaListHtml(activeId, block) {
   var rows = [];
   var rescateShown = false;
   var prandialShown = false;
+  var kReposShown = false;
   items.forEach(function (it) {
     if (isNutritionMedicationItem(it)) return;
     if (isInsulinRescateMedicationItem(it)) {
@@ -262,7 +308,15 @@ export function buildMedRecetaListHtml(activeId, block) {
       }
       return;
     }
+    if (isPotassiumReposMedicationItem(it)) {
+      if (!kReposShown) {
+        rows.push(buildPotassiumReposGroupRowHtml(activeId, items));
+        kReposShown = true;
+      }
+      return;
+    }
     if (skipRecetaItemForInsulinPumpCarrier(it, items)) return;
+    if (isPotassiumReposCarrierMedicationItem(it, items)) return;
     rows.push(buildMedRecetaRowHtml(activeId, it, block.fechaActualizacion, items));
   });
   if (!rows.length) return "";
@@ -285,7 +339,7 @@ export function buildMedRecetaListHtml(activeId, block) {
  * — e.g. oxygen therapy — so the header can show "Medicamentos del turno · N" plus
  * "más K apoyo(s) (O₂)" apart, instead of lumping apoyos into the medication count.
  * Mirrors the row-skip logic in buildMedRecetaListHtml (nutrition rows never shown here,
- * insulin rescate/prandial groups count once each as a medication).
+ * insulin rescate/prandial/potassium-repos groups count once each as a medication).
  * @param {unknown[]} items
  * @returns {{ medCount: number, apoyoCount: number, apoyoKinds: string[] }}
  */
@@ -297,6 +351,7 @@ export function countMedTurnoItems(items) {
   var apoyoKinds = [];
   var rescateShown = false;
   var prandialShown = false;
+  var kReposShown = false;
   list.forEach(function (it) {
     if (isNutritionMedicationItem(it)) return;
     if (isInsulinRescateMedicationItem(it)) {
@@ -313,7 +368,15 @@ export function countMedTurnoItems(items) {
       }
       return;
     }
+    if (isPotassiumReposMedicationItem(it)) {
+      if (!kReposShown) {
+        medCount += 1;
+        kReposShown = true;
+      }
+      return;
+    }
     if (skipRecetaItemForInsulinPumpCarrier(it, list)) return;
+    if (isPotassiumReposCarrierMedicationItem(it, list)) return;
     var apoyoKind = classifyApoyoKind(it && it.nombreRaw);
     if (apoyoKind) {
       apoyoCount += 1;

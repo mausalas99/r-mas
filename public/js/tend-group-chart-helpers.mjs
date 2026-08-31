@@ -28,6 +28,12 @@ function yScaleBoundsForDatasets(datasets, family) {
         if (y > max) max = y;
       }
     });
+    (ds.thresholds || []).forEach(function (t) {
+      if (t && isFinite(t.value)) {
+        if (t.value < min) min = t.value;
+        if (t.value > max) max = t.value;
+      }
+    });
   });
   if (!isFinite(min)) return {};
   var pad = Math.max((max - min) * 0.12, 0.35);
@@ -79,6 +85,14 @@ function applyChartYScale(chart, family) {
   }
 }
 
+function tendPanelEventsSvg() {
+  return (
+    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.24L4 3a1 1 0 0 0-1 1l.24 5.59a2 2 0 0 0 .59 1.41l9.58 9.59a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.83Z"/>' +
+    '<circle cx="7.5" cy="7.5" r="1.5"/></svg>'
+  );
+}
+
 function tendPanelEyeSvg() {
   return (
     '<svg class="tend-eye-svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -115,6 +129,51 @@ function formatTrendDisplayValue(val) {
   return String(val);
 }
 
+function drawThresholdLine(ctx, chartArea, y, color, text) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  ctx.moveTo(chartArea.left, y);
+  ctx.lineTo(chartArea.right, y);
+  ctx.stroke();
+  if (text) {
+    ctx.setLineDash([]);
+    ctx.font = '600 10px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = color;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(text, chartArea.right - 4, y - 2);
+  }
+  ctx.restore();
+}
+
+/** Dotted horizontal reference lines (e.g. transfusion/biopsy thresholds) per visible dataset. */
+function createTendThresholdPlugin() {
+  return {
+    id: 'tendThresholdLines',
+    afterDatasetsDraw: function (chart) {
+      var ctx = chart.ctx;
+      var yScale = chart.scales && chart.scales.y;
+      var chartArea = chart.chartArea;
+      if (!ctx || !yScale || !chartArea) return;
+      (chart.data.datasets || []).forEach(function (ds, idx) {
+        if (!ds.thresholds || !ds.thresholds.length) return;
+        if (!chart.isDatasetVisible(idx)) return;
+        ds.thresholds.forEach(function (t) {
+          var y = yScale.getPixelForValue(t.value);
+          if (!isFinite(y) || y < chartArea.top || y > chartArea.bottom) return;
+          var text = t.label
+            ? t.label + ' · ' + formatTrendDisplayValue(t.value)
+            : formatTrendDisplayValue(t.value);
+          drawThresholdLine(ctx, chartArea, y, ds.borderColor, text);
+        });
+      });
+    },
+  };
+}
+
 function colKeyForSet(set) {
   return colKeyForTrendSet(set);
 }
@@ -144,9 +203,11 @@ export {
   visibleDatasetsForChart,
   applyChartYScale,
   tendPanelEyeSvg,
+  tendPanelEventsSvg,
   orderPanelFamilies,
   formatTrendDisplayValue,
   colKeyForSet,
   toAscendingHistory,
   hexToRgba,
+  createTendThresholdPlugin,
 };

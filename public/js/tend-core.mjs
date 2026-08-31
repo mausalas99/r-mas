@@ -391,13 +391,13 @@ export function formatTendSeriesLabel(cardTitle, fieldKey, unit) {
  * Por fila, el valor sale de la toma más reciente del bucket que sí reportó ese analito,
  * para que una toma parcial del mismo día (p. ej. solo plaquetas) no borre el resto.
  */
-export function buildSectionTableModel(historyAsc, sectionKey, catalogSpecs, getValue, opts) {
+export function buildSectionTableModel(historyAsc, catalogSpecs, getValue, opts) {
   var groupByDay = !!(opts && opts.groupByDay);
   var buckets = [];
   var bucketIndexByKey = Object.create(null);
   historyAsc.forEach(function (set) {
     var hasAny = catalogSpecs.some(function (sp) {
-      return getValue(set, sp.fieldKey) != null;
+      return getValue(set, sp) != null;
     });
     if (!hasAny) return;
     var key = groupByDay ? trendDayKey(set) : colKeyForTrendSet(set);
@@ -417,7 +417,7 @@ export function buildSectionTableModel(historyAsc, sectionKey, catalogSpecs, get
       var val = null;
       var origin = null;
       for (var i = sets.length - 1; i >= 0; i--) {
-        var v = getValue(sets[i], sp.fieldKey);
+        var v = getValue(sets[i], sp);
         if (v != null) {
           val = v;
           origin = sets[i];
@@ -429,6 +429,7 @@ export function buildSectionTableModel(historyAsc, sectionKey, catalogSpecs, get
     });
     return {
       fieldKey: sp.fieldKey,
+      sectionKey: sp.sectionKey,
       label: sp.cardTitle || sp.fieldKey,
       unit: sp.unit || '',
       values: values,

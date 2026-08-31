@@ -183,6 +183,8 @@ function buildTendInlineControlsHtml(hiddenCount, opts) {
   var gasoBtn = opts.showGasoExtended
     ? '<button type="button" class="tend-toolbar-btn tend-gaso-ext-trigger" data-tend-action="gaso-extended">Gasometría extendida</button>'
     : '';
+  var dynamicTableBtn =
+    '<button type="button" class="tend-toolbar-btn tend-dynamic-table-trigger" title="Combina analitos de distintos estudios en una sola tabla">Tablas Dinámicas</button>';
   return (
     '<div class="tend-inline-controls">' +
     '<button type="button" class="tend-toolbar-toggle' +
@@ -196,6 +198,7 @@ function buildTendInlineControlsHtml(hiddenCount, opts) {
     '</button>' +
     ocultosBtn +
     gasoBtn +
+    dynamicTableBtn +
     '</div>'
   );
 }

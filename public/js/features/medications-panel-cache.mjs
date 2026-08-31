@@ -15,6 +15,10 @@ import {
   INSULIN_PRANDIAL_GROUP_ID,
   isInsulinPrandialGroupSoapSelected,
 } from "../insulin-prandial-display.mjs";
+import {
+  POTASSIUM_REPOS_GROUP_ID,
+  isPotassiumReposGroupSoapSelected,
+} from "../potassium-repos-display.mjs";
 
 export function medRecetaItemById(activeId, itemId) {
   var block = activeId ? getMedRecetaByPatient()[activeId] : null;
@@ -115,6 +119,20 @@ function patchInsulinPrandialRowSoapUi(activeId, listEl) {
   return true;
 }
 
+function patchPotassiumReposRowSoapUi(activeId, listEl) {
+  var block = getMedRecetaByPatient()[activeId];
+  var items = block && block.items ? block.items : [];
+  var row = listEl.querySelector('[data-med-item-id="' + POTASSIUM_REPOS_GROUP_ID + '"]');
+  if (!row) return false;
+  var soapChk = row.querySelector("[data-med-soap-chk]");
+  if (soapChk) {
+    soapChk.checked = isPotassiumReposGroupSoapSelected(activeId, items, function (pid, id) {
+      return !!getMedNotaSelMap(pid)[id];
+    });
+  }
+  return true;
+}
+
 function patchRegularMedRecetaRowSoapUi(activeId, itemId, it, listEl) {
   var sid = String(itemId || "");
   var row = findMedRecetaRow(listEl, sid);
@@ -149,6 +167,9 @@ export function patchMedRecetaRowSoapUi(itemId) {
   }
   if (String(itemId || "") === INSULIN_PRANDIAL_GROUP_ID) {
     return patchInsulinPrandialRowSoapUi(activeId, listEl);
+  }
+  if (String(itemId || "") === POTASSIUM_REPOS_GROUP_ID) {
+    return patchPotassiumReposRowSoapUi(activeId, listEl);
   }
   var it = medRecetaItemById(activeId, itemId);
   if (!it) return false;

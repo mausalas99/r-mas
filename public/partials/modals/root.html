@@ -969,3 +969,25 @@
     </div>
   </div>
 </div>
+
+<div id="tend-dynamic-table-backdrop" class="tend-group-backdrop" style="display:none" aria-hidden="true">
+  <div id="tend-dynamic-table-modal" class="tend-group-modal-panel" role="dialog" aria-modal="true" aria-labelledby="tend-dynamic-table-title">
+    <div class="tend-group-header">
+      <h2 id="tend-dynamic-table-title" contenteditable="true" spellcheck="false" title="Editar título">Tabla dinámica</h2>
+    </div>
+    <div class="tend-group-range-row" id="tend-dynamic-table-range-row">
+      <span class="tend-group-range-label">Rango</span>
+      <input type="date" class="tend-group-range-input" id="tend-dynamic-table-range-from" />
+      <span class="tend-group-range-sep">a</span>
+      <input type="date" class="tend-group-range-input" id="tend-dynamic-table-range-to" />
+      <button type="button" class="tend-group-range-clear" id="tend-dynamic-table-range-clear" hidden>Quitar rango</button>
+    </div>
+    <div class="tend-group-panel">
+      <div id="tend-dynamic-table-wrap"></div>
+      <div class="tend-group-table-actions">
+        <button type="button" class="btn-primary" onclick="copyTendDynamicTablePng()">Copiar</button>
+        <button type="button" class="btn-secondary" onclick="copyTendDynamicTableText()">Copiar como texto</button>
+      </div>
+    </div>
+  </div>
+</div>

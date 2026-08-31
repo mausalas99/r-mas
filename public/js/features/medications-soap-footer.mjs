@@ -19,6 +19,11 @@ import {
   isInsulinPrandialMedicationItem,
   insulinPrandialMedLabelHtml,
 } from "../insulin-prandial-display.mjs";
+import {
+  isPotassiumReposCarrierMedicationItem,
+  isPotassiumReposMedicationItem,
+  potassiumReposGroupMedLabelHtml,
+} from "../potassium-repos-display.mjs";
 import { rt } from "./medications-runtime-state.mjs";
 import { esc, getMedNotaSelMap } from "./medications-utils.mjs";
 
@@ -41,6 +46,13 @@ function pushSpecialNmSoapChip(it, allItems, pumpAlg, flags, groups) {
     if (!flags.prandial) {
       groups.nmAntidiabeticos.push({ _insulinPrandialChip: true, _allItems: allItems });
       flags.prandial = true;
+    }
+    return true;
+  }
+  if (isPotassiumReposMedicationItem(it)) {
+    if (!flags.kRepos) {
+      groups.nm.push({ _potassiumReposChip: true, _allItems: allItems });
+      flags.kRepos = true;
     }
     return true;
   }
@@ -70,9 +82,10 @@ function groupSoapPreviewItems(soapItems, allItems) {
     otros: [],
   };
   var pumpAlg = detectInsulinPumpAlgorithmFromRecetaItems(allItems || []);
-  var flags = { pump: false, rescate: false, prandial: false };
+  var flags = { pump: false, rescate: false, prandial: false, kRepos: false };
   soapItems.forEach(function (it) {
     if (skipRecetaItemForInsulinPumpCarrier(it, allItems || [])) return;
+    if (isPotassiumReposCarrierMedicationItem(it, allItems || [])) return;
     if (!shouldIncludeMedicationInSoap(it, classifyMedicationSoapCategory)) return;
     if (pushSpecialNmSoapChip(it, allItems || [], pumpAlg, flags, groups)) return;
     var cat = effectiveSoapCategory(it, classifyMedicationSoapCategory);
@@ -108,6 +121,13 @@ function chipsForSoapItems(arr) {
         return (
           '<span class="med-soap-preview-chip med-soap-preview-chip--insulin-prandial" title="Insulina preprandial SC (SOME)">' +
           insulinPrandialMedLabelHtml(it._allItems || [], esc) +
+          "</span>"
+        );
+      }
+      if (it && it._potassiumReposChip) {
+        return (
+          '<span class="med-soap-preview-chip med-soap-preview-chip--potassium-repos" title="Reposición de potasio IV (SOME)">' +
+          potassiumReposGroupMedLabelHtml(it._allItems || [], esc) +
           "</span>"
         );
       }

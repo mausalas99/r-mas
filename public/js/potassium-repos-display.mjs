@@ -5,10 +5,12 @@ import {
   isPotassiumReposMedicationItem,
   patientHasPotassiumReposMeds,
   potassiumReposDurationClause,
+  potassiumReposItemsFromList,
   potassiumReposTotalMeQ,
 } from './potassium-repos-detect.mjs';
 
 export const POTASSIUM_REPOS_NM_PREFIX = 'REPOSICIÓN DE POTASIO';
+export const POTASSIUM_REPOS_GROUP_ID = '__potassium_repos_group__';
 
 export {
   isPotassiumReposMedicationItem,
@@ -54,4 +56,47 @@ export function potassiumReposNmSoapFragment(allItems, soapSelected) {
 export function skipRecetaItemForPotassiumReposBucket(item, allItems) {
   if (!patientHasPotassiumReposMeds(allItems)) return false;
   return isPotassiumReposMedicationItem(item);
+}
+
+/**
+ * Fila fusionada de reposición de K en Manejo (KCl + KPO4 + carrier ocultos en una sola línea).
+ * @param {unknown[]} allItems
+ * @param {(s: string) => string} escFn
+ * @returns {string}
+ */
+export function potassiumReposGroupMedLabelHtml(allItems, escFn) {
+  var items = potassiumReposItemsFromList(allItems);
+  var clause = POTASSIUM_REPOS_NM_PREFIX;
+  var total = potassiumReposTotalMeQ(items);
+  if (total != null) clause += ' ' + formatMeQTotal(total) + ' MEQ';
+  var duration = potassiumReposDurationClause(allItems);
+  if (duration) clause += ' ' + duration;
+  return escFn(clause);
+}
+
+/**
+ * @param {string} patientId
+ * @param {unknown[]} items
+ * @param {(patientId: string, itemId: string) => boolean} isSelectedFn
+ * @returns {boolean}
+ */
+export function isPotassiumReposGroupSoapSelected(patientId, items, isSelectedFn) {
+  var kItems = potassiumReposItemsFromList(items);
+  if (!kItems.length) return false;
+  return kItems.some(function (it) {
+    return isSelectedFn(patientId, String(/** @type {{ id?: unknown }} */ (it).id || ''));
+  });
+}
+
+/**
+ * @param {unknown[]} items
+ * @param {(itemId: string) => boolean} isSuspendedFn
+ * @returns {boolean}
+ */
+export function isPotassiumReposGroupSuspended(items, isSuspendedFn) {
+  var kItems = potassiumReposItemsFromList(items);
+  if (!kItems.length) return false;
+  return kItems.every(function (it) {
+    return isSuspendedFn(String(/** @type {{ id?: unknown }} */ (it).id || ''));
+  });
 }

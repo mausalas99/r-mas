@@ -18,6 +18,7 @@ test('parseInsulinPumpAlgorithmFromText extrae algoritmo 1–4', () => {
   assert.equal(parseInsulinPumpAlgorithmFromText('100 ML / VEL.INF: BOMBA ALGORITMO 2'), 2);
   assert.equal(parseInsulinPumpAlgorithmFromText('BOMBA EN ALGORITMO 4'), 4);
   assert.equal(parseInsulinPumpAlgorithmFromText('BOMBA ALGORITMO 1'), 1);
+  assert.equal(parseInsulinPumpAlgorithmFromText('VEL.INF: BOMBA DE INSULINA ALGORITMO 2'), 2);
   assert.equal(parseInsulinPumpAlgorithmFromText('A 60CC/ HRA'), null);
 });
 

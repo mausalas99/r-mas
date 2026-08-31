@@ -163,6 +163,14 @@ export function buildEventMarkerTagsHtml(bucket, opts) {
   return '<div class="tend-event-col-tags">' + chips.join('') + '</div>';
 }
 
+/** @param {string} rgba @param {number} alpha */
+function withAlpha(rgba, alpha) {
+  const m = /^rgba\(([^)]+)\)$/.exec(rgba || '');
+  if (!m) return rgba;
+  const parts = m[1].split(',');
+  return 'rgba(' + parts[0] + ',' + parts[1] + ',' + parts[2] + ',' + alpha + ')';
+}
+
 /**
  * Left edge for a tag box of width boxW centered on x, kept inside chartArea so it
  * never overlaps the plot's left/right edge (e.g. a marker on the first/last point).
@@ -210,6 +218,7 @@ export function createTendEventMarkerPlugin(markerMap, opts) {
   return {
     id: 'tendEventMarkers' + (compact ? 'Compact' : 'Detail'),
     afterDatasetsDraw: function (chart) {
+      if (chart._tendEventsHidden) return;
       if (!markerMap || !markerMap.indices || !markerMap.indices.length) return;
       const ctx = chart.ctx;
       const yScale = chart.scales.y;
@@ -227,17 +236,25 @@ export function createTendEventMarkerPlugin(markerMap, opts) {
         if (!compact) {
           lineTop += drawEventMarkerTag(ctx, x, yScale.top, color, eventMarkerTagText(bucket), chart.chartArea);
         }
-        ctx.strokeStyle = color;
-        ctx.lineWidth = compact ? 1 : 1.5;
-        ctx.setLineDash(compact ? [2, 3] : [4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(x, lineTop);
-        ctx.lineTo(x, yScale.bottom);
-        ctx.stroke();
         if (compact) {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1;
+          ctx.setLineDash([2, 3]);
+          ctx.beginPath();
+          ctx.moveTo(x, lineTop);
+          ctx.lineTo(x, yScale.bottom);
+          ctx.stroke();
           ctx.fillStyle = color;
           ctx.beginPath();
           ctx.arc(x, yScale.bottom - 2, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          const bandW = 3;
+          ctx.fillStyle = withAlpha(color, 0.14);
+          ctx.fillRect(x - bandW / 2, lineTop, bandW, yScale.bottom - lineTop);
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(x, yScale.bottom - 3, 2.5, 0, Math.PI * 2);
           ctx.fill();
         }
         ctx.restore();

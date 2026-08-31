@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.2.6](https://github.com/mausalas99/r-mas/releases/tag/v8.2.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.2.7](https://github.com/mausalas99/r-mas/releases/tag/v8.2.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -56,6 +56,13 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.2.7 (estable — release 8.2.7)
+
+- **Identificador de app restaurado:** vuelve a `com.rmas.rplusclinical` tras el puente 8.2.6.
+- **Publicada como pre-release:** no llega por actualización automática a instalaciones normales; solo el puente 8.2.6 la instala en las Macs atoradas en 8.1.4/8.1.5. Se promueve a Latest tras confirmar el traspaso.
+
+Notas: `docs/RELEASE_NOTES_8.2.7.txt`.
 ## R+ 8.2.6 (estable — release 8.2.6)
 
 - **Auto-actualización de Mac reparada:** las instalaciones atoradas en 8.1.4/8.1.5 vuelven a actualizarse solas; 8.2.6 es la versión puente (solo Mac; Windows pasa directo a 8.2.7).

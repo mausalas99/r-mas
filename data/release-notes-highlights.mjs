@@ -2734,10 +2734,22 @@ var RELEASE_NOTES_826 = [
   },
 ];
 
+var RELEASE_NOTES_827 = [
+  {
+    title: 'Identificador de app restaurado',
+    body: 'Vuelve a com.rmas.rplusclinical tras el puente 8.2.6.',
+  },
+  {
+    title: 'Publicada como pre-release',
+    body: 'Solo el puente 8.2.6 la instala en Macs atoradas; se promueve a Latest tras confirmar el traspaso.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_826;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_827;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.2.7': RELEASE_NOTES_827,
   '8.2.6': RELEASE_NOTES_826,
   '8.2.5': RELEASE_NOTES_825,
   '8.2.4': RELEASE_NOTES_824,

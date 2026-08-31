@@ -2,8 +2,8 @@
 
 import { parseIndicacionesPaste } from './med-receta-parse.mjs';
 
-/** `BOMBA EN ALGORITMO 2` o `BOMBA ALGORITMO 2` (SOME a veces omite «EN» en el diluyente P1/P2). */
-var BOMBA_ALGORITMO_RE = /BOMBA\s+(?:EN\s+)?ALGORITMO\s*(\d)/i;
+/** `BOMBA EN ALGORITMO 2`, `BOMBA ALGORITMO 2` o `BOMBA DE INSULINA ALGORITMO 2` (variantes de SOME). */
+var BOMBA_ALGORITMO_RE = /BOMBA\s+(?:DE\s+INSULINA\s+)?(?:EN\s+)?ALGORITMO\s*(\d)/i;
 var INSULIN_IV_RE = /\bINSULINA\b/i;
 var IV_VIA_RE = /\b(?:VIA\s+)?INTRAVENOSA\b|\bIV\b/i;
 

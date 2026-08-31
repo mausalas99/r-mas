@@ -3,11 +3,11 @@
  */
 import { normalizeNombreForSoapClassify } from './med-receta-nombre.mjs';
 import { trimStr } from './med-receta-util.mjs';
+import { isSuerosMedicationNombre } from './med-receta-soap-some-map.mjs';
 
 var KCL_RE = /\bCLORURO\s+DE\s+POTASIO\b/i;
 var K_PHOS_RE = /\bFOSFATO\s+DE\s+POTASIO\b/i;
 var K_ACETATE_RE = /\bACETATO\s+DE\s+POTASIO\b/i;
-var NACL_RE = /\bCLORURO\s+DE\s+SODIO\b/i;
 
 var HOUR_UNIT_RE = '(?:HORA|HORAS|HRS?|HR)';
 var CC_ML_RE = '(?:CC|ML)';
@@ -251,8 +251,7 @@ export function isPotassiumReposCarrierMedicationItem(item, allItems) {
   }
   if (!patientHasPotassiumReposMeds(allItems)) return false;
   if (isPotassiumReposMedicationItem(item)) return false;
-  var n = normalizeNombreForSoapClassify(/** @type {{ nombreRaw?: unknown }} */ (item).nombreRaw);
-  if (!NACL_RE.test(n)) return false;
+  if (!isSuerosMedicationNombre(/** @type {{ nombreRaw?: unknown }} */ (item).nombreRaw)) return false;
   return blobLooksLikeInfusionCarrier(carrierItemInfusionBlob(item));
 }
 

@@ -1787,7 +1787,8 @@ body.tend-group-modal-open { overflow: hidden; }
   justify-content: center;
   animation: fade-in var(--dur-fast) var(--ease-out);
 }
-#tend-group-modal {
+#tend-group-modal,
+.tend-group-modal-panel {
   background: var(--surface);
   width: 100%;
   height: 100%;
@@ -1846,6 +1847,12 @@ html.dark .tend-group-tab.active { color: var(--text); }
 .tend-group-panel-card {
   margin-bottom: 20px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
   position: relative;
+}
+/* .patient-card (reused here only for box styling) sets cursor:grab on its whole
+   area for the sidebar's drag-anywhere list; this panel only drags from its own
+   .tend-group-panel-drag-hint dots, so cancel the inherited grab cursor here. */
+.tend-group-panel-card.patient-card {
+  cursor: default;
 }
 .tend-group-sort-zone .tend-group-panel-card:last-child { margin-bottom: 0; }
 .tend-group-panel-toolbar {
@@ -1915,6 +1922,24 @@ html.dark .tend-group-drag-hovercard.tend-group-panel-card {
 }
 .tend-group-legend-item {
   display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text); cursor: pointer;
+}
+.tend-group-legend-drag-hint {
+  font-size: 12px;
+  letter-spacing: -2px;
+  color: var(--text-muted);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+}
+.tend-group-legend-drag-hint:hover {
+  color: var(--text);
+  background: color-mix(in oklab, var(--action) 8%, transparent);
+}
+.tend-group-legend-drag-hint:active {
+  cursor: grabbing;
 }
 .tend-group-legend-color {
   width: 28px; height: 22px; padding: 0; border: 1px solid var(--border); border-radius: var(--radius-field); cursor: pointer; background: var(--surface);
@@ -1991,6 +2016,34 @@ html.dark .tend-group-drag-hovercard.tend-group-panel-card {
   display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px;
   font-size: 12px; font-weight: 600; color: var(--text); cursor: pointer;
 }
+.tend-analyte-picker-bar { margin-bottom: 10px; position: relative; }
+.tend-analyte-picker-dropdown {
+  position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; width: min(360px, 100%);
+  border: 1px solid var(--border); border-radius: var(--radius-field); background: var(--surface);
+  box-shadow: var(--shadow-md, var(--shadow-sm)); padding: 8px;
+}
+.tend-analyte-picker-input {
+  width: 100%; box-sizing: border-box; font-family: inherit; font-size: 13px; padding: 7px 10px;
+  border: 1px solid var(--border); border-radius: var(--radius-field); background: var(--bg); color: var(--text);
+  margin-bottom: 6px;
+}
+.tend-analyte-picker-list { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.tend-analyte-picker-option {
+  font-family: inherit; font-size: 12.5px; text-align: left; padding: 7px 8px; border-radius: var(--radius-field);
+  border: none; background: transparent; color: var(--text); cursor: pointer;
+}
+.tend-analyte-picker-option:hover { background: rgba(37, 99, 235, 0.08); }
+.tend-analyte-picker-back {
+  font-family: inherit; font-size: 12.5px; font-weight: 700; text-align: left; padding: 7px 8px;
+  border: none; border-bottom: 1px solid var(--border); border-radius: 0; background: transparent;
+  color: var(--text-muted); cursor: pointer; margin-bottom: 2px;
+}
+.tend-analyte-picker-back:hover { color: var(--text); }
+.tend-analyte-picker-empty { margin: 6px 4px; font-size: 12px; color: var(--text-muted); }
+.tend-group-extra-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; }
+.tend-group-extra-chip:hover {
+  border-color: rgba(239, 68, 68, 0.45); background: rgba(239, 68, 68, 0.08);
+}
 .tend-group-table tr.is-hidden { display: none !important; }
 .tend-group-row-toggle, .tend-group-col-toggle {
   display: inline-flex; align-items: center; gap: 6px; font-weight: inherit; cursor: pointer;
@@ -2037,6 +2090,7 @@ html.dark .tend-spark-placeholder { background: rgba(255,255,255,0.04); }
   transition: border-color var(--dur-normal) ease, box-shadow var(--dur-normal) ease;
 }
 .tend-toolbar-btn:hover { border-color: rgba(37, 99, 235, 0.35); box-shadow: var(--shadow-sm); }
+.tend-dynamic-table-trigger { border-radius: var(--radius-pill); }
 .tend-hidden-modal-hint {
   font-size: 13px;
   color: var(--text-muted);

@@ -1,4 +1,5 @@
 import { createTendGroupModal } from '../tend-group-modal.mjs';
+import { createTendDynamicTableModal } from '../tend-dynamic-table-modal.mjs';
 import { writeTendCardOrder } from '../tend-prefs.mjs';
 import { guidedTourAdvanceAfter, getGuidedTourContext } from './settings-help/tour-flow.mjs';
 import { loadChartJs } from '../vendor-loader.mjs';
@@ -94,6 +95,51 @@ function openTendGasoExtendedModal() {
   void initTendGroupModal().then(function (modal) {
     if (modal) modal.openGasoExtended();
   });
+}
+
+var tendDynamicTableModal = null;
+
+function initTendDynamicTableModal() {
+  if (tendDynamicTableModal) return tendDynamicTableModal;
+  tendDynamicTableModal = createTendDynamicTableModal({
+    getActiveId: function () {
+      return aid();
+    },
+    getHistory: function () {
+      var pid = aid();
+      return pid ? tendParsedHistoryDesc(pid) : [];
+    },
+    getSectionLabel: getTendSectionLabel,
+    getCatalogSpecs: getTendCatalogSpecsForSection,
+    tendUnitForSeries: tendUnitForSeries,
+    tendRefFromLabSet: tendRefFromLabSet,
+    tendRefForSeries: tendRefForSeries,
+    esc: esc,
+    showToast: function (a, b) {
+      rt.showToast(a, b);
+    },
+  });
+  return tendDynamicTableModal;
+}
+
+function openTendDynamicTableModal() {
+  initTendDynamicTableModal().open();
+}
+
+function closeTendDynamicTableModal() {
+  if (tendDynamicTableModal) tendDynamicTableModal.close();
+}
+
+function isTendDynamicTableModalOpen() {
+  return !!(tendDynamicTableModal && tendDynamicTableModal.isOpen());
+}
+
+function copyTendDynamicTablePng() {
+  initTendDynamicTableModal().copyTablePng();
+}
+
+function copyTendDynamicTableText() {
+  initTendDynamicTableModal().copyTableText();
 }
 
 function setTendGroupTab(name) {
@@ -230,6 +276,11 @@ function handleTendenciasToolbarClick(t, ev) {
   if (t.closest('[data-tend-action="gaso-extended"]')) {
     ev.preventDefault();
     openTendGasoExtendedModal();
+    return true;
+  }
+  if (t.closest('.tend-dynamic-table-trigger')) {
+    ev.preventDefault();
+    openTendDynamicTableModal();
     return true;
   }
   return false;
@@ -477,6 +528,11 @@ export {
   setTendGroupTab,
   copyTendGroupTablePng,
   copyTendGroupTableText,
+  openTendDynamicTableModal,
+  closeTendDynamicTableModal,
+  isTendDynamicTableModalOpen,
+  copyTendDynamicTablePng,
+  copyTendDynamicTableText,
   tendSectionChartSvg,
   destroyTendCardSortables,
   syncTendCardOrderFromDom,

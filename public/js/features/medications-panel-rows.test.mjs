@@ -46,6 +46,32 @@ describe("countMedTurnoItems — separa apoyo (O₂) de medicamentos reales", ()
   });
 });
 
+describe("countMedTurnoItems — fusiona reposición de potasio en un solo medicamento", () => {
+  it("cuenta KCl + KPO4 + diluyente HARTMANN como 1 medicamento", () => {
+    var items = [
+      med("CLORURO DE POTASIO 20 MEQ SOL INY 5 ML (+)", {
+        viaRaw: "VIA INTRAVENOSA",
+        dosisRaw: "80 MEQ",
+        frecuenciaRaw: "-",
+      }),
+      med("FOSFATO DE POTASIO 20 MEQ SOL INY 10 ML (+)", {
+        viaRaw: "VIA INTRAVENOSA",
+        dosisRaw: "40 MEQ",
+        frecuenciaRaw: "-",
+      }),
+      med("HARTMANN SOL INY 1000 ML", {
+        viaRaw: "VIA INTRAVENOSA",
+        dosisRaw: "1000 ML / VEL.INF: PARA 12 HORAS",
+        frecuenciaRaw: "UNICA VEZ",
+      }),
+      med("ENALAPRIL 5 MG VO C/12 H"),
+    ];
+    var counts = countMedTurnoItems(items);
+    assert.equal(counts.medCount, 2);
+    assert.equal(counts.apoyoCount, 0);
+  });
+});
+
 describe("buildMedTurnoHeaderText — título + texto secundario del header de Manejo", () => {
   it('arma "Medicamentos del turno · 11" + "más 1 apoyo (O₂)"', () => {
     var text = buildMedTurnoHeaderText({ medCount: 11, apoyoCount: 1, apoyoKinds: ["oxigeno"] });

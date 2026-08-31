@@ -25,18 +25,24 @@ import {
   defaultSeriesColor,
   readLegendOrder,
   writeLegendOrder,
+  readFieldThresholds,
+  writeFieldThresholds,
+  isPanelEventsHidden,
+  togglePanelEventsHidden,
 } from './tend-prefs.mjs';
 import { copyChartPng } from './tend-export.mjs';
 import {
   GENERIC_FAMILY_ORDER,
   applyChartYScale,
   tendPanelEyeSvg,
+  tendPanelEventsSvg,
   orderPanelFamilies,
   formatTrendDisplayValue,
   hexToRgba,
   formatAxisTickValue,
   yScaleBoundsForDatasets,
   visibleDatasetsForChart,
+  createTendThresholdPlugin,
 } from './tend-group-chart-helpers.mjs';
 import { buildEventMarkerMapForSets, createTendEventMarkerPlugin } from './features/tendencias-event-context.mjs';
 
@@ -203,8 +209,11 @@ function mountLegendSortable(legend, state, sectionKey, fam) {
   SortableCtor.create(legend, {
     animation: 150,
     draggable: '.tend-group-legend-item',
+    handle: '.tend-group-legend-drag-hint',
     filter: 'input',
     preventOnFilter: false,
+    forceFallback: true,
+    fallbackTolerance: 4,
     onEnd: function () {
       var order = [];
       legend.querySelectorAll('.tend-group-legend-check').forEach(function (inp) {
@@ -213,6 +222,15 @@ function mountLegendSortable(legend, state, sectionKey, fam) {
       });
       writeLegendOrder(state.patientId, sectionKey, fam, order);
     },
+  });
+  // Stop clicks anywhere in the legend from reaching the panel-card Sortable
+  // above it, so pressing a checkbox/label never triggers the card's own
+  // "about to be dragged" pickup animation. Registered after Sortable's own
+  // listener on this same element, so the legend's drag-hint handle still works.
+  ['mousedown', 'pointerdown', 'touchstart'].forEach(function (evtName) {
+    legend.addEventListener(evtName, function (ev) {
+      ev.stopPropagation();
+    });
   });
 }
 
@@ -298,6 +316,9 @@ function buildPanelToolbar() {
     '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-eye" title="Ocultar panel" aria-label="Ocultar panel">' +
     tendPanelEyeSvg() +
     '</button>' +
+    '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-events-toggle" title="Ocultar eventos" aria-label="Ocultar eventos" aria-pressed="false">' +
+    tendPanelEventsSvg() +
+    '</button>' +
     '</div>' +
     '<span class="tend-group-panel-drag-hint" aria-hidden="true" title="Arrastrar para reordenar">⋮⋮</span>';
   return toolbar;
@@ -367,6 +388,11 @@ function buildChartYScale(fam, datasets) {
 }
 
 function wireLegendControls(legend, chart, fam, ctx, items, markerMap) {
+  legend.querySelectorAll('.tend-group-legend-drag-hint').forEach(function (hint) {
+    hint.addEventListener('click', function (ev) {
+      ev.preventDefault();
+    });
+  });
   legend.querySelectorAll('.tend-group-legend-check').forEach(function (inp) {
     inp.addEventListener('change', function () {
       var fk = inp.getAttribute('data-field');
@@ -433,6 +459,7 @@ function buildPanelDatasets(ctx, items, axisMeta) {
       fill: false,
       spanGaps: true,
       fieldKey: fk,
+      thresholds: readFieldThresholds(ctx.sectionKey, fk),
     });
     var legItem = document.createElement('label');
     legItem.className = 'tend-group-legend-item';
@@ -449,18 +476,138 @@ function buildPanelDatasets(ctx, items, axisMeta) {
       '"> ' +
       '<span>' +
       label +
-      '</span>';
+      '</span>' +
+      '<span class="tend-group-legend-drag-hint" aria-hidden="true" title="Arrastrar para reordenar">⋮⋮</span>';
     legend.appendChild(legItem);
   });
   return { datasets: datasets, legend: legend };
 }
 
+function fieldLabelForItem(ctx, item) {
+  return ctx.legendLabelForSpec(ctx.sectionKey, item.spec);
+}
+
+function applyThresholdsToChart(chart, fieldKey, thresholds) {
+  var dsIdx = chart.data.datasets.findIndex(function (d) {
+    return d.fieldKey === fieldKey;
+  });
+  if (dsIdx < 0) return;
+  chart.data.datasets[dsIdx].thresholds = thresholds;
+  chart.update('none');
+}
+
+function renderThresholdChips(container, ctx, chart, items) {
+  container.innerHTML = '';
+  items.forEach(function (item) {
+    var fk = item.spec.fieldKey;
+    var label = fieldLabelForItem(ctx, item);
+    readFieldThresholds(ctx.sectionKey, fk).forEach(function (t) {
+      var chip = document.createElement('span');
+      chip.className = 'tend-group-threshold-chip';
+      chip.textContent = label + ': ' + (t.label ? t.label + ' ' : '') + t.value;
+      var rm = document.createElement('button');
+      rm.type = 'button';
+      rm.className = 'tend-group-threshold-chip-remove';
+      rm.setAttribute('aria-label', 'Quitar umbral');
+      rm.textContent = '×';
+      rm.onclick = function () {
+        var next = readFieldThresholds(ctx.sectionKey, fk).filter(function (x) {
+          return !(x.value === t.value && x.label === t.label);
+        });
+        writeFieldThresholds(ctx.sectionKey, fk, next);
+        applyThresholdsToChart(chart, fk, next);
+        renderThresholdChips(container, ctx, chart, items);
+      };
+      chip.appendChild(rm);
+      container.appendChild(chip);
+    });
+  });
+}
+
+function buildThresholdControls(ctx, chart, items) {
+  var row = document.createElement('div');
+  row.className = 'tend-group-threshold-row';
+
+  var toggleBtn = document.createElement('button');
+  toggleBtn.type = 'button';
+  toggleBtn.className = 'tend-toolbar-btn tend-group-threshold-add-btn';
+  toggleBtn.textContent = '+ Umbral';
+
+  var form = document.createElement('div');
+  form.className = 'tend-group-threshold-form';
+  form.hidden = true;
+
+  var fieldSelect = document.createElement('select');
+  fieldSelect.className = 'tend-group-threshold-field-select';
+  items.forEach(function (item) {
+    var opt = document.createElement('option');
+    opt.value = item.spec.fieldKey;
+    opt.textContent = fieldLabelForItem(ctx, item);
+    fieldSelect.appendChild(opt);
+  });
+
+  var valueInput = document.createElement('input');
+  valueInput.type = 'number';
+  valueInput.step = 'any';
+  valueInput.placeholder = 'Valor';
+  valueInput.className = 'tend-group-threshold-value-input';
+
+  var labelInput = document.createElement('input');
+  labelInput.type = 'text';
+  labelInput.placeholder = 'Etiqueta (opcional)';
+  labelInput.className = 'tend-group-threshold-label-input';
+
+  var addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'tend-toolbar-btn tend-group-threshold-submit-btn';
+  addBtn.textContent = 'Agregar';
+
+  form.appendChild(fieldSelect);
+  form.appendChild(valueInput);
+  form.appendChild(labelInput);
+  form.appendChild(addBtn);
+
+  var chips = document.createElement('div');
+  chips.className = 'tend-group-threshold-chips';
+  renderThresholdChips(chips, ctx, chart, items);
+
+  toggleBtn.onclick = function () {
+    form.hidden = !form.hidden;
+    if (!form.hidden) valueInput.focus();
+  };
+
+  addBtn.onclick = function () {
+    var val = parseFloat(String(valueInput.value).replace(',', '.'));
+    if (!isFinite(val)) {
+      valueInput.focus();
+      return;
+    }
+    var fk = fieldSelect.value;
+    var next = readFieldThresholds(ctx.sectionKey, fk)
+      .concat([{ value: val, label: labelInput.value.trim() }])
+      .sort(function (a, b) {
+        return a.value - b.value;
+      });
+    writeFieldThresholds(ctx.sectionKey, fk, next);
+    applyThresholdsToChart(chart, fk, next);
+    valueInput.value = '';
+    labelInput.value = '';
+    renderThresholdChips(chips, ctx, chart, items);
+  };
+
+  row.appendChild(toggleBtn);
+  row.appendChild(form);
+  row.appendChild(chips);
+  return row;
+}
+
 function createPanelChart(canvas, chartLabels, datasets, fam, ctx, markerMap) {
   var yScale = buildChartYScale(fam, datasets);
   var eventPlugin = createTendEventMarkerPlugin(markerMap, { compact: false });
+  var thresholdPlugin = createTendThresholdPlugin();
   return new ctx.deps.Chart(canvas, {
     type: 'line',
-    plugins: [eventPlugin],
+    plugins: [eventPlugin, thresholdPlugin],
     data: { labels: chartLabels, datasets: datasets },
     options: {
       responsive: true,
@@ -577,6 +724,7 @@ function renderPanelFamilyCard(fam, ctx) {
   try {
     var chart = createPanelChart(canvas, chartLabels, built.datasets, fam, ctx, markerMap);
     chart._tendFamily = fam;
+    chart._tendEventsHidden = isPanelEventsHidden(ctx.state.patientId, ctx.sectionKey, fam);
     chart.data.datasets.forEach(function (ds, dsIdx) {
       chart.setDatasetVisibility(dsIdx, isLegendFieldVisible(ctx.state, ds.fieldKey));
     });
@@ -584,6 +732,25 @@ function renderPanelFamilyCard(fam, ctx) {
     chart.update();
     ctx.state.charts.push(chart);
     wireLegendControls(built.legend, chart, fam, ctx, items, markerMap);
+    block.appendChild(buildThresholdControls(ctx, chart, items));
+    var eventsToggleBtn = toolbar.querySelector('.tend-group-panel-events-toggle');
+    var syncEventsToggleBtn = function () {
+      var hidden = !!chart._tendEventsHidden;
+      eventsToggleBtn.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+      eventsToggleBtn.classList.toggle('patient-toolbar-chip--on', hidden);
+      eventsToggleBtn.title = hidden ? 'Mostrar eventos' : 'Ocultar eventos';
+      eventsToggleBtn.setAttribute('aria-label', eventsToggleBtn.title);
+    };
+    syncEventsToggleBtn();
+    eventsToggleBtn.onclick = function (ev) {
+      if (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+      }
+      chart._tendEventsHidden = togglePanelEventsHidden(ctx.state.patientId, ctx.sectionKey, fam);
+      syncEventsToggleBtn();
+      chart.update();
+    };
     toolbar.querySelector('.tend-group-panel-copy-svg').onclick = function (ev) {
       if (ev) {
         ev.preventDefault();

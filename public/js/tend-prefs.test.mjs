@@ -23,7 +23,14 @@ import {
   defaultSeriesColor,
   DEFAULT_COLORS,
   readLegendOrder,
-  writeLegendOrder
+  writeLegendOrder,
+  readGroupExtraFields,
+  writeGroupExtraFields,
+  readFieldThresholds,
+  writeFieldThresholds,
+  isPanelEventsHidden,
+  togglePanelEventsHidden,
+  readGroupPanelEventsHidden
 } from './tend-prefs.mjs';
 
 const mem = Object.create(null);
@@ -40,6 +47,20 @@ test('colores globales por section|field', () => {
   writeSeriesColor('BH', 'Hb', '#ff0000');
   assert.equal(readSeriesColor('BH', 'Hb'), '#ff0000');
   assert.equal(seriesColorKey('BH', 'Hb'), 'BH|Hb');
+});
+
+test('umbrales de referencia globales por section|field', () => {
+  assert.deepEqual(readFieldThresholds('BH', 'Plt'), []);
+  writeFieldThresholds('BH', 'Plt', [
+    { value: 10, label: 'Transfusión' },
+    { value: 50, label: 'Biopsia' }
+  ]);
+  assert.deepEqual(readFieldThresholds('BH', 'Plt'), [
+    { value: 10, label: 'Transfusión' },
+    { value: 50, label: 'Biopsia' }
+  ]);
+  writeFieldThresholds('BH', 'Plt', []);
+  assert.deepEqual(readFieldThresholds('BH', 'Plt'), []);
 });
 
 test('visibles por paciente+sección', () => {
@@ -78,6 +99,17 @@ test('orden y ocultos de paneles por paciente+sección', () => {
   assert.deepEqual(readGroupPanelHidden('p1', 'BH'), ['absolute']);
 });
 
+test('togglePanelEventsHidden oculta y muestra eventos por panel', () => {
+  assert.equal(isPanelEventsHidden('p1', 'BH', 'absolute'), false);
+  const nowHidden = togglePanelEventsHidden('p1', 'BH', 'absolute');
+  assert.equal(nowHidden, true);
+  assert.equal(isPanelEventsHidden('p1', 'BH', 'absolute'), true);
+  assert.deepEqual(readGroupPanelEventsHidden('p1', 'BH'), ['absolute']);
+  const nowShown = togglePanelEventsHidden('p1', 'BH', 'absolute');
+  assert.equal(nowShown, false);
+  assert.equal(isPanelEventsHidden('p1', 'BH', 'absolute'), false);
+});
+
 test('readGroupPanelHiddenMigrated: claves legacy BH', () => {
   writeGroupPanelHidden('p1', 'BH', ['percent-rbc', 'absolute', 'percent-diff']);
   const migrated = readGroupPanelHiddenMigrated('p1', 'BH', function (_sk, fam) {
@@ -108,6 +140,13 @@ test('orden de leyenda por paciente+sección+panel', () => {
   writeLegendOrder('p1', 'QS', 'nef', ['Cr', 'BUNCR', 'BUN']);
   assert.deepEqual(readLegendOrder('p1', 'QS', 'nef'), ['Cr', 'BUNCR', 'BUN']);
   assert.equal(readLegendOrder('p1', 'QS', 'other-panel'), null);
+});
+
+test('analitos extra de otras secciones por paciente+sección primaria', () => {
+  assert.deepEqual(readGroupExtraFields('p1', 'BH'), []);
+  writeGroupExtraFields('p1', 'BH', [{ sectionKey: 'QS', fieldKey: 'Glu' }]);
+  assert.deepEqual(readGroupExtraFields('p1', 'BH'), [{ sectionKey: 'QS', fieldKey: 'Glu' }]);
+  assert.deepEqual(readGroupExtraFields('p1', 'QS'), []);
 });
 
 test('defaultSeriesColor rota paleta de 8 colores', () => {

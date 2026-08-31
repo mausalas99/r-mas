@@ -19,6 +19,7 @@ import { ensureMonitoreo, MED_FIELD_KEYS } from "./estado-actual-data.mjs";
 import {
   applyDietProposalFromRecetaBlock,
   applyRecetaProposal,
+  applyRecetaProposalForce,
   bucketsFromRecetaItems,
   discardDietProposal,
   discardMedProposal,
@@ -42,6 +43,7 @@ import {
 } from "./medications-runtime-state.mjs";
 import { insulinRescateItemsFromList, INSULIN_RESCATE_GROUP_ID } from "../insulin-rescate-display.mjs";
 import { insulinPrandialItemsFromList, INSULIN_PRANDIAL_GROUP_ID } from "../insulin-prandial-display.mjs";
+import { potassiumReposItemsFromList, POTASSIUM_REPOS_GROUP_ID } from "../potassium-repos-display.mjs";
 import { getMedNotaSelMap, manejoDiaOpts } from "./medications-utils.mjs";
 import { closeMedRecetaPasteModal } from "./medications-paste-modal.mjs";
 import { patchMedRecetaRowSoapUi } from "./medications-panel-cache.mjs";
@@ -142,6 +144,39 @@ export function toggleMedRecetaInsulinPrandialSuspendido(suspended) {
   var activeId = rt.getActiveId();
   if (!activeId || !getMedRecetaByPatient()[activeId] || !getMedRecetaByPatient()[activeId].items) return;
   insulinPrandialItemsFromList(getMedRecetaByPatient()[activeId].items).forEach(function (it) {
+    it.suspendido = !!suspended;
+  });
+  persistClinicalState();
+  invalidateEaPanelCache();
+  invalidateInnerTabRenderCache("estadoActual");
+  renderMedRecetaPanel();
+}
+
+function togglePotassiumReposGroupSelection(activeId, selected) {
+  var block = getMedRecetaByPatient()[activeId];
+  var items = block && Array.isArray(block.items) ? block.items : [];
+  var m = getMedNotaSelMap(activeId);
+  potassiumReposItemsFromList(items).forEach(function (it) {
+    var id = String(it.id || "");
+    if (!id) return;
+    if (selected) m[id] = true;
+    else delete m[id];
+  });
+}
+
+export function toggleMedRecetaPotassiumReposParaNota(selected) {
+  var activeId = rt.getActiveId();
+  if (!activeId) return;
+  togglePotassiumReposGroupSelection(activeId, selected);
+  bustMedPanelCache();
+  if (!patchMedRecetaRowSoapUi(POTASSIUM_REPOS_GROUP_ID)) renderMedRecetaPanel();
+  else renderMedNotaFooter();
+}
+
+export function toggleMedRecetaPotassiumReposSuspendido(suspended) {
+  var activeId = rt.getActiveId();
+  if (!activeId || !getMedRecetaByPatient()[activeId] || !getMedRecetaByPatient()[activeId].items) return;
+  potassiumReposItemsFromList(getMedRecetaByPatient()[activeId].items).forEach(function (it) {
     it.suspendido = !!suspended;
   });
   persistClinicalState();
@@ -285,7 +320,7 @@ function mediLlevarASOAPToEstadoActual(activeId, buckets) {
       clearRecetaProposalDismissedKey(patient.monitoreo, k);
     }
   });
-  applyRecetaProposal(patient.monitoreo, buckets);
+  applyRecetaProposalForce(patient.monitoreo, buckets);
   persistClinicalState();
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");

@@ -58,6 +58,27 @@ test('potassiumReposDurationClause — variantes de PARA X horas', () => {
   );
 });
 
+test('potassiumReposDurationClause — diluyente HARTMANN (no solo cloruro de sodio)', () => {
+  var hartmannCarrier = {
+    nombreRaw: 'HARTMANN SOL INY 1000 ML',
+    viaRaw: 'VIA INTRAVENOSA',
+    dosisRaw: '1000 ML / VEL.INF: PARA 12 HORAS',
+    frecuenciaRaw: 'UNICA VEZ',
+    suspendido: false,
+  };
+  var block = [
+    {
+      nombreRaw: 'CLORURO DE POTASIO 20 MEQ SOL INY 5 ML (+)',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw: '80 MEQ',
+      frecuenciaRaw: '-',
+      suspendido: false,
+    },
+    hartmannCarrier,
+  ];
+  assert.equal(potassiumReposDurationClause(block), 'A 12 HORAS');
+});
+
 test('potassiumReposTotalMeQ — suma KCl + KPO4 sin subdividir', () => {
   var kcl = {
     nombreRaw: 'CLORURO DE POTASIO 20 MEQ SOL INY 5 ML (+)',
