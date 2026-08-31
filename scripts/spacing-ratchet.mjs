@@ -27,7 +27,11 @@ const STYLES_DIR = path.join(__dirname, '..', 'public', 'styles');
 // chip (modals.css, ui-patterns.css) and the Estado Actual glu-hour select
 // (estado-actual.css) need 3-16px chip spacing and a -4px optical pull that
 // no tokens.css spacing token expresses — same no-token-fits case as above.
-const BASELINE = 1548;
+// Raised to 1562 for 8.2.7: the "Tablas Dinámicas" analyte-picker bar
+// (.tend-analyte-picker-bar and its search/list rows, modals.css) needs
+// 2-10px chip/row spacing that no tokens.css spacing token expresses — same
+// no-token-fits case as above.
+const BASELINE = 1562;
 
 const SPACING_DECL_RE = /\b(padding|margin)(-top|-right|-bottom|-left)?\s*:\s*[^;]*?\d+px[^;]*;/g;
 

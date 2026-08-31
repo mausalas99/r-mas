@@ -240,7 +240,14 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * in estado-actual-panel-glu-row.mjs, plus the RELEASE_NOTES_826 curated
  * entries in the already-eager release-notes-highlights.mjs — no new eager
  * file. */
-const EAGER_BOOT_BUDGET_BYTES = 3551046;
+/** +8612 B / +0 files: 8.2.7. Backlog accumulated on main since 8.2.6 in
+ * already-eager modules: medications-*.mjs / estado-actual-meds*.mjs /
+ * lab-bulk-preview-modal.mjs (meds panel + SOAP footer), insulin-pump-some-
+ * detect.mjs and potassium-repos-detect.mjs/-display.mjs (core lab-paste
+ * detection), tend-core.mjs / tendencias-event-context.mjs (event-tag
+ * follow-ups), and lazy-feature-routes-charts.mjs (the lazy boundary itself).
+ * No new eager file. */
+const EAGER_BOOT_BUDGET_BYTES = 3559658;
 const EAGER_BOOT_BUDGET_FILES = 113;
 
 /**
