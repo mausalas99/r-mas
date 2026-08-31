@@ -635,7 +635,9 @@ describe('clinical-ops-sync', () => {
       service: 'Sala',
       onCallDayIndex: 2,
       createdBy: leader.userId,
-      sala: 'Sala 1',
+      // Different sala than Team A — same-sala would auto-stage this as a
+      // next-rotation team instead of a plain reassignment target.
+      sala: 'Sala E',
     });
     const r1 = ensureClinicalUser(adminDb, { clientId: 'r1-dev', rank: 'R1' });
     claimUsername(adminDb, { userId: r1.userId, username: 'r1_user' });

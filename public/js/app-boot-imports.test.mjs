@@ -247,7 +247,10 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * detection), tend-core.mjs / tendencias-event-context.mjs (event-tag
  * follow-ups), and lazy-feature-routes-charts.mjs (the lazy boundary itself).
  * No new eager file. */
-const EAGER_BOOT_BUDGET_BYTES = 3559658;
+/** +5150 B / +0 files: 8.2.8. RELEASE_NOTES_828 curated entries (Nube E2EE,
+ * next-rotation team staging) in the already-eager release-notes-highlights.mjs
+ * — no new eager file. */
+const EAGER_BOOT_BUDGET_BYTES = 3564808;
 const EAGER_BOOT_BUDGET_FILES = 113;
 
 /**

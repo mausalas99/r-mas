@@ -479,7 +479,10 @@ describe('clinical-access-db', () => {
       name: 'Team B',
       service: 'Sala',
       onCallDayIndex: 0,
-      sala: 'Sala 2',
+      // Different sala than Team A — same-sala would auto-stage this as a
+      // next-rotation team, which is a different scenario from a plain move
+      // between two active peer teams.
+      sala: 'Sala E',
       createdBy: r2.userId,
     });
     addTeamMember(db, teamA.team_id, r2.userId, { subAreaFraction: 'A' });
@@ -1161,7 +1164,8 @@ describe('clinical-access-db', () => {
 
     const browse = listTeamsBySala(db, { sala: 'Sala 2', forUserId: r1.userId });
     assert.ok(browse.some((t) => t.team_id === current.team_id));
-    assert.ok(!browse.some((t) => t.team_id === incoming.team_id));
+    // Staged teams are self-joinable too, so residents can claim their spot early.
+    assert.ok(browse.some((t) => t.team_id === incoming.team_id));
 
     addTeamMember(db, incoming.team_id, r1.userId);
     const rendererTeams = listTeamsForRenderer(db, r1.userId);
@@ -1171,5 +1175,28 @@ describe('clinical-access-db', () => {
     assert.ok(getTeamById(db, current.team_id).archived_at);
     assert.equal(getTeamById(db, incoming.team_id).rotation_active, 1);
     assert.equal(getTeamById(db, incoming.team_id).archived_at, null);
+  });
+
+  it('staging is scoped per sala — another sala\'s first team is still active', () => {
+    const leader = ensureClinicalUser(db, { clientId: 'lead-rot-scope', rank: 'R4' });
+    const salaOneTeam = createTeam(db, {
+      name: 'Sala 1 team',
+      service: 'Sala',
+      onCallDayIndex: 0,
+      sala: 'Sala 1',
+      createdBy: leader.userId,
+    });
+    assert.equal(salaOneTeam.rotation_active, 1);
+
+    // Sala 1 already has an active team, but Sala E has none yet — its first
+    // team must still come in active, not staged.
+    const salaETeam = createTeam(db, {
+      name: 'Sala E team',
+      service: 'Sala',
+      onCallDayIndex: 0,
+      sala: 'Sala E',
+      createdBy: leader.userId,
+    });
+    assert.equal(salaETeam.rotation_active, 1);
   });
 });
