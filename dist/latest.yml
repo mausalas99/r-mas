@@ -1,28 +1,14 @@
-version: 8.2.5
+version: 8.2.7
 files:
-  - url: R+-8.2.5-x64.exe
-    sha512: P/vMx6KxMRBeOMyjekeJmFn2YumjfAHhZt7Gkgu9sEEctei+vGu19kiwY5i5/11LZhyjk9gNz6S19+2LmLChKQ==
-    size: 123085953
-path: R+-8.2.5-x64.exe
-sha512: P/vMx6KxMRBeOMyjekeJmFn2YumjfAHhZt7Gkgu9sEEctei+vGu19kiwY5i5/11LZhyjk9gNz6S19+2LmLChKQ==
-releaseDate: '2026-08-30T16:02:04.000Z'
+  - url: R+-8.2.7-x64.exe
+    sha512: 4dTimphf+Njem0KVLe0n4IFeOsiikZi9fGrHpAcoB/foVjmJ9W1OUZeyylsavFv2fBDpVQO/AKekUcodroPErQ==
+    size: 123093652
+path: R+-8.2.7-x64.exe
+sha512: 4dTimphf+Njem0KVLe0n4IFeOsiikZi9fGrHpAcoB/foVjmJ9W1OUZeyylsavFv2fBDpVQO/AKekUcodroPErQ==
+releaseDate: '2026-08-31T19:43:25.000Z'
 releaseNotes: |
-  Agrega etiquetas de eventos (transfusión, biopsia, procedimiento) en las gráficas de Tendencias, corrige el checkbox de ocultar columnas/filas que dejaba de responder en instalaciones con mucho historial, corrige varios problemas de cultivos y biometría hemática, permite borrar un cultivo suelto del historial, corrige lotes de sync de labs que se quedaban atascados en Nube, y termina de unificar el texto de la app a tuteo.
+  Versión normal tras el puente 8.2.6: vuelve al identificador de app habitual (com.rmas.rplusclinical). Es la versión que el puente 8.2.6 instala solo en Macs atoradas en 8.1.4/8.1.5 — se publica como pre-release para no ofrecerse todavía como actualización automática al resto de instalaciones.
   
-  Etiquetas de eventos en Tendencias: transfusiones, biopsias y procedimientos ahora se ven como cajitas abreviadas (2 CE, Plaq, Bx, Proc…) directo en la gráfica, en el encabezado de fecha de la tabla de grupo y en la leyenda. La leyenda ahora es un bloque por día en vez de una lista apilada; cada evento conserva su editar/eliminar, pero compacto.
+  Identificador de app restaurado: vuelve a com.rmas.rplusclinical (8.2.6 lo cambió temporalmente solo para poder alcanzar las Macs atoradas).
   
-  Ocultar columnas y filas de Tendencias vuelve a funcionar: en instalaciones con mucho historial acumulado, el checkbox para ocultar una columna o fila de la tabla de grupo no hacía nada. La causa real era que el almacenamiento local del navegador (usado por la función de deshacer) se había llenado por completo, y eso bloqueaba en silencio otros guardados de la app. R+ ahora limpia ese espacio solo, en automático, al abrir la app — no se necesita ningún paso manual.
-  
-  Antibiograma completo al copiar un cultivo: el condensado de cultivo cortaba el antibiograma después del encabezado y perdía las líneas de sensibilidad. Ahora copia el antibiograma completo.
-  
-  Cultivo actualizado ya no pierde el antibiograma: cuando "Actualizar" vuelve a traer el mismo germen con una hora ligeramente distinta, R+ ahora se queda con la copia más completa (la que trae antibiograma) en vez de la primera que encuentra.
-  
-  Reticulocitos en biometría hemática: el valor de Ret ahora aparece en el resumen de biometría hemática que se copia.
-  
-  Menos falsos positivos de germen: encabezados como "COMENTARIO" o "ANTIBIOGRAMA" ya no se confunden con el nombre de un germen.
-  
-  Borrar un cultivo del historial: cada fila de cultivo tiene ahora un botón para quitar solo ese set de labs, sin tener que reimportar todo el historial para corregir una entrada duplicada o mal cargada.
-  
-  Menos lotes atascados en Nube: el envío de labs pendientes armaba un lote por paciente sin límite de tamaño; un paciente con muchos labs pendientes podía generar un lote demasiado grande y quedar atorado como "lote pesado". Ahora los lotes tienen un tope y ya no se atascan.
-  
-  Texto en tuteo: las últimas frases en voseo (exportá, asignás, elegí) ya usan tú, igual que el resto de la app.
+  Publicada como pre-release a propósito: mientras tenga esta marca, ninguna instalación normal la recibe por actualización automática — solo el puente 8.2.6 la descarga, por su URL directa, para completar el traspaso en las Macs atoradas. Se quitará la marca tras confirmar que el traspaso funcionó.
