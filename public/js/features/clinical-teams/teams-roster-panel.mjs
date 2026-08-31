@@ -114,8 +114,9 @@ async function maybeRefreshClinicalOpsDirectory(skipPull, browseSala, homeSala) 
 }
 
 async function resolveClinicalTeamsPanelSections(userId, user, joined, ctx, elevated) {
+  const siblingTeams = Array.isArray(clinicalSessionContext.teams) ? clinicalSessionContext.teams : [];
   const joinedHtml = joined.length
-    ? joined.map((team) => renderJoinedTeamCard(team)).join('')
+    ? joined.map((team) => renderJoinedTeamCard(team, siblingTeams)).join('')
     : buildJoinedTeamsEmptyHtml(ctx.displayHandle, false);
   const profileSection = buildClinicalProfileSectionHtml(ctx, user);
   const browseSala = resolveBrowseSala(elevated, ctx.sala);

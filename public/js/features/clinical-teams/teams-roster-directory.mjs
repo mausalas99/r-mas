@@ -8,6 +8,7 @@ import { dbApi, escapeHtml, escapeAttr, CLINICAL_SALAS, BROWSE_SALA_LS, renderCl
 import {
   renderDirectoryTeamCard,
   renderTeamManageBlock,
+  renderInheritedPatientsPreview,
 } from './teams-roster-team-cards.mjs';
 
 /** Hint when ⇄ is live but roster still shows only you (not rotación nueva). */
@@ -106,8 +107,8 @@ function buildDirectoryBrowseControl(elevated, browseSala) {
         </select>`;
 }
 
-/** @param {object} team @param {boolean} elevated */
-function renderDirectoryTeamEntry(team, elevated) {
+/** @param {object} team @param {boolean} elevated @param {object[]} [siblingTeams] this sala's other teams, for the "Hereda de" picker */
+function renderDirectoryTeamEntry(team, elevated, siblingTeams = []) {
   const teamId = String(team.team_id || '');
   let joinBtn = '';
   let joinHint = '';
@@ -117,12 +118,13 @@ function renderDirectoryTeamEntry(team, elevated) {
   } else if (team.joinReason) {
     joinHint = String(team.joinReason);
   }
-  const manage = elevated ? renderTeamManageBlock(team) : { actionsHtml: '', editPanelHtml: '' };
+  const manage = elevated ? renderTeamManageBlock(team, siblingTeams) : { actionsHtml: '', editPanelHtml: '' };
   return renderDirectoryTeamCard(team, {
     joinBtnHtml: joinBtn,
     joinHintHtml: joinHint,
     manageHtml: manage.actionsHtml,
     editPanelHtml: manage.editPanelHtml,
+    patientsPreviewHtml: renderInheritedPatientsPreview(team, siblingTeams),
   });
 }
 
@@ -143,7 +145,8 @@ export async function renderDirectorySectionHtml(opts) {
       : { sala: browseSala || homeSala, forUserId: userId };
 
   const res = await api.dbClinicalTeamsListBySala(listOpts);
-  const directory = (res?.ok && Array.isArray(res.teams) ? res.teams : []).filter((t) => !t.isMember);
+  const allSalaTeams = res?.ok && Array.isArray(res.teams) ? res.teams : [];
+  const directory = allSalaTeams.filter((t) => !t.isMember);
   const browseControl = buildDirectoryBrowseControl(elevated, browseSala);
   const salaLabel = browseSala || homeSala;
   const sectionTitle = buildDirectorySectionTitle(elevated, salaLabel, directory.length);
@@ -174,7 +177,7 @@ export async function renderDirectorySectionHtml(opts) {
     };
   }
 
-  const cards = directory.map((team) => renderDirectoryTeamEntry(team, elevated)).join('');
+  const cards = directory.map((team) => renderDirectoryTeamEntry(team, elevated, allSalaTeams)).join('');
 
   return {
     html: `

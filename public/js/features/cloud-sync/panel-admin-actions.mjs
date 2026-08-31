@@ -56,7 +56,6 @@ function dispatchSimpleAction(action, deps) {
     'refresh-salas': () => void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps)),
     'search-users': () => void loadAdminEquipos(deps.root, deps.getApi),
     'refresh-equipos': () => void deps.equiposPanel?.refresh(),
-    'seed-agosto-2026-equipos': () => void deps.equiposPanel?.seedAgosto2026?.(),
     'save-equipos-bulk': () => void deps.equiposPanel?.handleBulkSave?.(),
     'purge-equipos-bulk': () => void deps.equiposPanel?.handleBulkPurge?.(),
     'load-mutations': () => void loadAdminMutations(deps.root, deps.getApi, deps.toast),

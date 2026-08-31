@@ -202,7 +202,9 @@ export async function confirmNuevaRotacion() {
     toast(res?.error || 'No se aplicó la nueva rotación.', 'error');
     return { ok: false };
   }
-  toast('Nueva rotación aplicada. Cada residente debe unirse a su equipo nuevo.', 'success');
+  const migrated = Number(res.migratedPatients || 0);
+  const migratedNote = migrated > 0 ? ` ${migrated} paciente(s) pasaron a su equipo vinculado.` : '';
+  toast(`Nueva rotación aplicada. Cada residente debe unirse a su equipo nuevo.${migratedNote}`, 'success');
   try {
     await fetchClinicalTeamsFromDb();
   } catch {

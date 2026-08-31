@@ -8,7 +8,6 @@ import {
   applyEquiposFiltersFromToolbar,
   loadAdminEquipos,
 } from './panel-admin-equipos-data.mjs';
-import { handleSeedAgosto2026Equipos } from './panel-admin-equipos-seed.mjs';
 import {
   handleCloudEquiposBulkPurge,
   handleCloudEquiposBulkSave,
@@ -414,9 +413,6 @@ export function wireCloudEquiposPanel(root, deps) {
     },
     handleBulkPurge() {
       return handleCloudEquiposBulkPurge(root, deps.getApi, deps.toast);
-    },
-    seedAgosto2026() {
-      return handleSeedAgosto2026Equipos(root, deps.getApi, deps.toast);
     },
     refresh() {
       return loadAdminEquipos(root, deps.getApi);

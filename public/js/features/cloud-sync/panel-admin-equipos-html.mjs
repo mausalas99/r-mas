@@ -13,8 +13,7 @@ export {
 export function equiposShellHtml() {
   return (
     '<div class="cloud-sync-admin-panel-head">' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="refresh-equipos">Actualizar</button>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="seed-agosto-2026-equipos" title="Censo agosto 2026">Equipos ago 2026</button></div>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="refresh-equipos">Actualizar</button></div>' +
     '<p class="cloud-sync-hint cloud-sync-admin-equipos-hint">Usuarios clínicos + cuenta Nube. Marca → Sala / rango / equipo / ciclo → <strong>Guardar</strong> o <strong>Quitar seleccionados</strong>. En filas con Nube usa <strong>Restablecer clave</strong>; abre <strong>Nube</strong> para rol y sesiones. Los filtros no quitan las marcas.</p>' +
     '<div class="cloud-sync-admin-toolbar cloud-sync-admin-equipos-toolbar">' +
     '<input type="search" class="profile-input" data-admin-equipos-search placeholder="Buscar @usuario o nombre" />' +

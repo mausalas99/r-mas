@@ -15,15 +15,17 @@ import { escapeHtml, escapeAttr, CLINICAL_SALAS, renderClinicalTeamsCollapsible 
 import { shouldShowInheritPatientsUi } from './teams-roster-inherit-gate.mjs';
 
 /** @param {string} teamId @param {object[]} assignments @param {string|Date} now */
-export function countLocalCensusPatientsForTeam(teamId, assignments, now) {
+export function listLocalCensusPatientsForTeam(teamId, assignments, now) {
   const tid = String(teamId || '');
-  if (!tid) return 0;
-  let count = 0;
-  for (const p of getPatients() || []) {
-    if (!p?.id) continue;
-    if (resolvePatientTeamIdFromAssignments(String(p.id), assignments, now) === tid) count += 1;
-  }
-  return count;
+  if (!tid) return [];
+  return (getPatients() || []).filter(
+    (p) => p?.id && resolvePatientTeamIdFromAssignments(String(p.id), assignments, now) === tid
+  );
+}
+
+/** @param {string} teamId @param {object[]} assignments @param {string|Date} now */
+export function countLocalCensusPatientsForTeam(teamId, assignments, now) {
+  return listLocalCensusPatientsForTeam(teamId, assignments, now).length;
 }
 
 /** Una línea de contexto sin repetir sala/servicio. @param {object} team */
@@ -224,6 +226,49 @@ export function renderMyCycleEditBlock(team, user) {
   });
 }
 
+/**
+ * Read-only preview of the predecessor team's current patients, so a staged
+ * (next-rotation) team's members can see what they'll inherit before the
+ * rotation actually starts. Separate from the "Heredar pacientes…" action,
+ * which moves patients and only appears near the handoff window.
+ * @param {object} team @param {object[]} [siblingTeams] this sala's other teams
+ */
+export function renderInheritedPatientsPreview(team, siblingTeams = []) {
+  const staged = Number(team.rotation_active) === 0;
+  const predecessorId = String(team.succeeds_team_id || '').trim();
+  if (!staged || !predecessorId) return '';
+  const predecessor = (siblingTeams || []).find(
+    (t) => String(t?.team_id || '').trim() === predecessorId
+  );
+  if (!predecessor) return '';
+
+  const ctx = getClinicalScopeContextForEvaluate();
+  const assignments = Array.isArray(ctx?.assignments) ? ctx.assignments : [];
+  const now = ctx?.now || new Date().toISOString();
+  const patients = listLocalCensusPatientsForTeam(predecessorId, assignments, now);
+  const predecessorName = String(predecessor.name || 'equipo anterior').trim();
+
+  const bodyHtml = patients.length
+    ? `<ul class="clinical-teams-inherit-preview-list">${patients
+        .map(
+          (p) =>
+            `<li>${escapeHtml(String(p.nombre || 'Sin nombre'))} · ${escapeHtml(String(p.registro || 's/reg'))}</li>`
+        )
+        .join('')}</ul>`
+    : `<p class="clinical-teams-hint">Sin expedientes locales de «${escapeHtml(predecessorName)}» en este Mac todavía.</p>`;
+  const summary = patients.length
+    ? `Pacientes que heredarás de «${escapeHtml(predecessorName)}» (${patients.length})`
+    : `Pacientes que heredarás de «${escapeHtml(predecessorName)}»`;
+
+  return renderClinicalTeamsCollapsible({
+    collapseKey: `card.${String(team.team_id || '')}.inherit-preview`,
+    defaultOpen: false,
+    className: 'clinical-teams-collapse--card-block clinical-teams-inherit-preview-box',
+    summaryHtml: `<span class="clinical-teams-inherit-preview-summary">${summary}</span>`,
+    bodyHtml,
+  });
+}
+
 /** @param {object} team */
 export function renderInheritPatientsBox(team) {
   const teamId = escapeAttr(String(team.team_id || ''));
@@ -259,11 +304,43 @@ export function renderTeamManageActionsHtml(team) {
     </div>`;
 }
 
-/** @param {object} team */
-export function renderTeamEditPanelHtml(team) {
+/** Active (this month's) teams in `sala` that `team` could link to as its predecessor. */
+function succeedsOptionsFor(team, siblingTeams) {
+  const selfId = String(team.team_id || '').trim();
+  const sala = String(team.sala || '').trim();
+  return (siblingTeams || []).filter(
+    (t) =>
+      t &&
+      !t.archived_at &&
+      Number(t.rotation_active) === 1 &&
+      String(t.team_id || '').trim() !== selfId &&
+      String(t.sala || '').trim() === sala
+  );
+}
+
+/** @param {object} team @param {object[]} [siblingTeams] this sala's other teams, for the "Hereda de" picker */
+export function renderTeamEditPanelHtml(team, siblingTeams = []) {
   const teamId = escapeAttr(String(team.team_id || ''));
   const name = escapeHtml(String(team.name || ''));
   const sala = String(team.sala || '').trim();
+  const staged = Number(team.rotation_active) === 0;
+  const succeedsId = String(team.succeeds_team_id || '').trim();
+  const succeedsOptions = staged ? succeedsOptionsFor(team, siblingTeams) : [];
+  const succeedsField = staged
+    ? `<div class="field-group">
+          <label for="clinical-edit-succeeds-${teamId}">Hereda pacientes de</label>
+          <select id="clinical-edit-succeeds-${teamId}" class="profile-input clinical-teams-edit-succeeds">
+            <option value="">— Ninguno —</option>
+            ${succeedsOptions
+              .map(
+                (t) =>
+                  `<option value="${escapeAttr(String(t.team_id))}" ${succeedsId === String(t.team_id) ? 'selected' : ''}>${escapeHtml(String(t.name || 'Equipo'))}</option>`
+              )
+              .join('')}
+          </select>
+          <p class="clinical-teams-hint">Al iniciar la nueva rotación, sus pacientes pasan aquí automáticamente.</p>
+        </div>`
+    : '';
   return `
     <div class="clinical-teams-edit-panel" hidden data-team-id="${teamId}">
       <form class="clinical-teams-edit-form" data-team-id="${teamId}">
@@ -280,6 +357,7 @@ export function renderTeamEditPanelHtml(team) {
             ).join('')}
           </select>
         </div>
+        ${succeedsField}
         <div class="clinical-teams-edit-form-actions">
           <button type="submit" class="btn-save">Guardar cambios</button>
           <button type="button" class="btn-med-secondary clinical-teams-edit-cancel">Cancelar</button>
@@ -288,13 +366,13 @@ export function renderTeamEditPanelHtml(team) {
     </div>`;
 }
 
-/** @param {object} team */
-export function renderTeamManageBlock(team) {
+/** @param {object} team @param {object[]} [siblingTeams] this sala's other teams, for the "Hereda de" picker */
+export function renderTeamManageBlock(team, siblingTeams = []) {
   const user = clinicalSessionContext.user || {};
   if (!canManageTeamRoster(user)) return { actionsHtml: '', editPanelHtml: '' };
   return {
     actionsHtml: renderTeamManageActionsHtml(team),
-    editPanelHtml: renderTeamEditPanelHtml(team),
+    editPanelHtml: renderTeamEditPanelHtml(team, siblingTeams),
   };
 }
 
@@ -333,12 +411,13 @@ export function renderTeamInviteCollapsible(team, teamId) {
 
 /**
  * @param {object} team
+ * @param {object[]} [siblingTeams] this sala's other teams, for the "Hereda de" picker
  */
-export function renderJoinedTeamCard(team) {
+export function renderJoinedTeamCard(team, siblingTeams = []) {
   const user = clinicalSessionContext.user || {};
   const teamId = String(team.team_id || '');
   const members = Array.isArray(team.members) ? team.members : [];
-  const manage = renderTeamManageBlock(team);
+  const manage = renderTeamManageBlock(team, siblingTeams);
 
   return `
     <article class="clinical-teams-card clinical-teams-card--mine" data-team-id="${escapeAttr(teamId)}">
@@ -352,6 +431,7 @@ export function renderJoinedTeamCard(team) {
         ${manage.actionsHtml ? `<div class="clinical-teams-card-actions">${manage.actionsHtml}</div>` : ''}
       </div>
       ${manage.editPanelHtml}
+      ${renderInheritedPatientsPreview(team, siblingTeams)}
       ${renderMembersBlock(members, { teamId })}
       ${renderMyCycleEditBlock(team, user)}
       ${shouldShowInheritPatientsUi() ? renderInheritPatientsBox(team) : ''}
@@ -362,7 +442,7 @@ export function renderJoinedTeamCard(team) {
 
 /**
  * @param {object} team
- * @param {{ joinBtnHtml?: string, joinHintHtml?: string, manageHtml?: string, editPanelHtml?: string }} [opts]
+ * @param {{ joinBtnHtml?: string, joinHintHtml?: string, manageHtml?: string, editPanelHtml?: string, patientsPreviewHtml?: string }} [opts]
  */
 export function renderDirectoryTeamCard(team, opts = {}) {
   const teamId = String(team.team_id || '');
@@ -371,13 +451,19 @@ export function renderDirectoryTeamCard(team, opts = {}) {
   const joinHint = opts.joinHintHtml || '';
   const manage = opts.manageHtml || '';
   const editPanel = opts.editPanelHtml || '';
+  const patientsPreview = opts.patientsPreviewHtml || '';
   const actionButtons = [joinBtn, manage].filter(Boolean).join('');
+  const staged = Number(team.rotation_active) === 0;
+  const eyebrowClass = staged
+    ? 'clinical-teams-card-eyebrow clinical-teams-card-eyebrow--staged'
+    : 'clinical-teams-card-eyebrow';
+  const eyebrowLabel = staged ? 'Próxima rotación · aún no activo' : 'Equipo en sala';
 
   return `
     <article class="clinical-teams-card clinical-teams-card--directory" data-team-id="${escapeAttr(teamId)}">
       <div class="clinical-teams-card-top clinical-teams-card-top--directory">
         <div class="clinical-teams-card-top-text">
-          <p class="clinical-teams-card-eyebrow">Equipo en sala</p>
+          <p class="${eyebrowClass}">${escapeHtml(eyebrowLabel)}</p>
           <h5 class="clinical-teams-card-title">${escapeHtml(team.name || '')}</h5>
           ${renderTeamMetaLine(team)}
           ${renderTeamPatientCountLine(team)}
@@ -385,6 +471,7 @@ export function renderDirectoryTeamCard(team, opts = {}) {
         ${actionButtons ? `<div class="clinical-teams-card-actions">${actionButtons}</div>` : ''}
       </div>
       ${joinHint ? `<p class="clinical-teams-card-join-reason">${escapeHtml(joinHint)}</p>` : ''}
+      ${patientsPreview}
       ${editPanel}
       ${renderMembersBlock(members, { compact: true, teamId })}
     </article>`;

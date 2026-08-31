@@ -4726,6 +4726,10 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   color: var(--text-muted);
 }
 
+.clinical-teams-card-eyebrow--staged {
+  color: var(--color-accent);
+}
+
 .clinical-teams-card-title {
   display: block;
   margin: 0;

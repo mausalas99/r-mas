@@ -29,8 +29,9 @@ needs: [db]
 tech: client-side E2EE for Nube room content
 - [x] Build the encryption/decryption pipeline {#nube-crypto}
   tech: public/js/features/cloud-sync/room-dek.mjs, public/js/features/cloud-sync/crypto.mjs, lib/db/clinical-crypto.mjs, cloud/sync-worker/src/room-dek.js — wired into panel-conexion-handlers.mjs, panel-conexion-bootstrap.mjs, api-client.mjs
-- [ ] Turn encryption on for everyone {#nube-enable}
-  tech: flip NUBE_E2EE_ENABLED (currently false, public/js/features/cloud-sync/room-dek.mjs:40) — gated on Worker version-gate + fleet adoption
+- [~] Turn encryption on for everyone {#nube-enable}
+  by: claude
+  tech: flag flipped true in public/js/features/cloud-sync/room-dek.mjs:40, rebuilt — not yet released to users, fleet adoption gate was not confirmed before flipping (owner request)
   from: roadmap
 files: [public/js/features/cloud-sync/**, lib/db/clinical-crypto.*, cloud/sync-worker/src/room-dek.*]
 needs: [cloud-sync]

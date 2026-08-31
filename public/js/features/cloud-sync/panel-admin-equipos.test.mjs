@@ -135,7 +135,6 @@ describe('equiposShellHtml', () => {
     assert.match(html, /data-admin-equipos-activity/);
     assert.match(html, /data-admin-equipos-team-status/);
     assert.match(html, /refresh-equipos/);
-    assert.match(html, /seed-agosto-2026-equipos/);
     assert.match(html, /save-equipos-bulk/);
     assert.match(html, /purge-equipos-bulk/);
     assert.match(html, /Quitar seleccionados/);

@@ -166,12 +166,30 @@ describe('clinical-teams', () => {
   });
 
   it('renderJoinedTeamCard defines user before cycle edit block', () => {
-    const fnStart = clinicalTeamsSrc.indexOf('function renderJoinedTeamCard(team)');
+    const fnStart = clinicalTeamsSrc.indexOf('function renderJoinedTeamCard(team, siblingTeams');
     assert.ok(fnStart >= 0);
     const fnEnd = clinicalTeamsSrc.indexOf('\nfunction renderDirectoryTeamCard', fnStart);
     const fnBody = clinicalTeamsSrc.slice(fnStart, fnEnd > fnStart ? fnEnd : fnStart + 2500);
     assert.match(fnBody, /const user = clinicalSessionContext\.user/);
     assert.match(fnBody, /renderMyCycleEditBlock\(team, user\)/);
+    assert.match(fnBody, /renderTeamManageBlock\(team, siblingTeams\)/);
+  });
+
+  it('joined team cards pass the full sala roster so "Hereda pacientes de" is not empty', () => {
+    const idx = clinicalTeamsSrc.indexOf('async function resolveClinicalTeamsPanelSections');
+    assert.ok(idx >= 0);
+    const body = clinicalTeamsSrc.slice(idx, idx + 800);
+    assert.match(body, /renderJoinedTeamCard\(team, siblingTeams\)/);
+  });
+
+  it('staged teams preview the predecessor patients before rotation starts', () => {
+    const idx = clinicalTeamsSrc.indexOf('function renderInheritedPatientsPreview');
+    assert.ok(idx >= 0);
+    const body = clinicalTeamsSrc.slice(idx, idx + 1600);
+    assert.match(body, /rotation_active\)\s*===\s*0/);
+    assert.match(body, /team\.succeeds_team_id/);
+    assert.match(body, /listLocalCensusPatientsForTeam\(predecessorId, assignments, now\)/);
+    assert.match(clinicalTeamsSrc, /renderInheritedPatientsPreview\(team, siblingTeams\)/);
   });
 
   it('Mi rotación opens LAN user directory in separate modal', () => {
