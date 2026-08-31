@@ -1,23 +1,29 @@
-version: 8.2.7
+version: 8.2.8
 files:
-  - url: R+-8.2.7-autoupdate-mac-arm64.zip
-    sha512: TyrRKfUN4I0Z7ofyq9N+NLEc5MUztFrk5SF9HQnFq3VK95uA+2YBAQ1YlVnBY0bqAB/LyLRztwNZjNSIIWLmnQ==
-    size: 140545800
-  - url: R+-8.2.7-arm64.dmg
-    sha512: +i9jusAQSisT+PJ/Mlbrl5n0Ss+pcS12BWCNdg2FhMEkAf3qQB8b0o4RCmfF7Vnj/+4i/J2M8+2MKi2MPMYgLw==
-    size: 146399129
-  - url: R+-8.2.7-autoupdate-mac-x64.zip
-    sha512: 0MNo0VbdwMgEnz1CJq78qm+VagynIam8xMEPeeyg9aZj8oXlKgrrWCpQzowxYKe0WyqoimFBLp4deJoteJrqQQ==
-    size: 148919318
-  - url: R+-8.2.7-x64.dmg
-    sha512: qXGikkWvcyv1iwrxN3iUom4kUgVF5cqSgFuXNHfFxbiDn1s9a6Ixab3rtoCMqUpqs5S/X86yp2vMW3vWsXh0CQ==
-    size: 154848894
-path: R+-8.2.7-autoupdate-mac-arm64.zip
-sha512: TyrRKfUN4I0Z7ofyq9N+NLEc5MUztFrk5SF9HQnFq3VK95uA+2YBAQ1YlVnBY0bqAB/LyLRztwNZjNSIIWLmnQ==
-releaseDate: '2026-08-31T19:43:25.000Z'
+  - url: R+-8.2.8-autoupdate-mac-arm64.zip
+    sha512: J5O/Uo2Em3H017oaFIKYXQIHKsal7BKAhJte/do3R6iv44eeu45T+/W42GAmUf6iWUxm1NV3/hpZaDFOO9LftA==
+    size: 140268386
+  - url: R+-8.2.8-arm64.dmg
+    sha512: ABLFt7dXRq5VAhFMVVMoemR18R08hucEeUCTAeLbSpc3EwEgbmhkimjdNguTNWnWI+QHK36R17q4GC8cvPBpMw==
+    size: 146133466
+  - url: R+-8.2.8-autoupdate-mac-x64.zip
+    sha512: +xNlrs4MWNiobsElkpEteyJwFqkSFS2XAWqxyAH2Fjux2Mt/tmknddGEENAuh4HjNC05rbBvbgyYnSc0iErxGQ==
+    size: 148423955
+  - url: R+-8.2.8-x64.dmg
+    sha512: V0eDIHn2yu278FPKwCYQM996zW5Orauw2XWCssoHCR88VW4cJb7qSuvKEFFgcXP5RGCCOqVmt82UaZrnzVcm+Q==
+    size: 154351813
+path: R+-8.2.8-autoupdate-mac-arm64.zip
+sha512: J5O/Uo2Em3H017oaFIKYXQIHKsal7BKAhJte/do3R6iv44eeu45T+/W42GAmUf6iWUxm1NV3/hpZaDFOO9LftA==
+releaseDate: '2026-08-31T22:59:40.000Z'
 releaseNotes: |
-  Versión normal tras el puente 8.2.6: vuelve al identificador de app habitual (com.rmas.rplusclinical). Es la versión que el puente 8.2.6 instala solo en Macs atoradas en 8.1.4/8.1.5 — se publica como pre-release para no ofrecerse todavía como actualización automática al resto de instalaciones.
+  Arranca el cifrado de extremo a extremo en Nube y deja armar los equipos del próximo mes antes de que empiece la rotación.
   
-  Identificador de app restaurado: vuelve a com.rmas.rplusclinical (8.2.6 lo cambió temporalmente solo para poder alcanzar las Macs atoradas).
+  Cifrado de extremo a extremo en Nube: notas, labs, indicaciones y monitoreo ahora se guardan cifrados. El servidor deja de poder leerlos.
   
-  Publicada como pre-release a propósito: mientras tenga esta marca, ninguna instalación normal la recibe por actualización automática — solo el puente 8.2.6 la descarga, por su URL directa, para completar el traspaso en las Macs atoradas. Se quitará la marca tras confirmar que el traspaso funcionó.
+  Equipos de la próxima rotación: R4/Admin arma y publica los equipos del mes siguiente antes de que empiece, con vínculo al equipo que reemplazan para heredar pacientes.
+  
+  Autounión anticipada: un residente puede ver y unirse a su equipo de la próxima rotación desde ya, sin esperar a que R4 lo asigne.
+  
+  Vista previa de traspaso: la tarjeta del equipo nuevo muestra qué pacientes tiene ahora mismo el equipo que va a reemplazar.
+  
+  Corrección: el selector "Hereda pacientes de" en Mis equipos ya no mostraba solo "Ninguno" — ahora lista toda la sala.
