@@ -1045,4 +1045,58 @@ describe('clinical-ops-sync', () => {
     assert.equal(merged.clinical_users.length, 1);
     assert.equal(merged.clinical_users[0].username, 'kept_user');
   });
+
+  it('mergeClinicalOpsSnapshot does not drop a staged successor team synced before its predecessor', () => {
+    const db = openDb();
+    const admin = ensureClinicalUser(db, { clientId: 'admin', rank: 'R4' });
+    claimUsername(db, { userId: admin.userId, username: 'admin_user' });
+    const local = exportClinicalOpsSnapshot(db);
+
+    // A peer that has never seen either team (e.g. it just started syncing, or
+    // pulled after "Iniciar nueva rotación" ran elsewhere): the incoming batch
+    // carries the new (successor) team before its archived predecessor, which
+    // is a valid ordering since team_id is a random UUID, not a timestamp.
+    const oldTeamId = 'zzzz-old-team';
+    const newTeamId = 'aaaa-new-team';
+    const incoming = {
+      ...local,
+      exportedAt: new Date().toISOString(),
+      teams: [
+        {
+          team_id: newTeamId,
+          name: 'Equipo Septiembre',
+          service: 'Sala',
+          on_call_day_index: 0,
+          created_by: admin.userId,
+          leader_user_id: admin.userId,
+          sala: 'Sala 2',
+          rotation_active: 1,
+          succeeds_team_id: oldTeamId,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          team_id: oldTeamId,
+          name: 'Equipo Agosto',
+          service: 'Sala',
+          on_call_day_index: 0,
+          created_by: admin.userId,
+          leader_user_id: admin.userId,
+          sala: 'Sala 2',
+          archived_at: new Date().toISOString(),
+          rotation_active: 0,
+          succeeds_team_id: null,
+          updated_at: new Date().toISOString(),
+        },
+      ],
+    };
+
+    mergeClinicalOpsSnapshot(db, incoming, local);
+
+    const rows = db
+      .prepare(`SELECT team_id, succeeds_team_id FROM teams WHERE team_id IN (?, ?)`)
+      .all(newTeamId, oldTeamId);
+    assert.equal(rows.length, 2, 'both teams synced despite successor-first ordering');
+    const newRow = rows.find((r) => r.team_id === newTeamId);
+    assert.equal(newRow.succeeds_team_id, oldTeamId);
+  });
 });
