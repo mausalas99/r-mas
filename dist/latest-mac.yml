@@ -1,29 +1,31 @@
-version: 8.2.8
+version: 8.2.9
 files:
-  - url: R+-8.2.8-autoupdate-mac-arm64.zip
-    sha512: J5O/Uo2Em3H017oaFIKYXQIHKsal7BKAhJte/do3R6iv44eeu45T+/W42GAmUf6iWUxm1NV3/hpZaDFOO9LftA==
-    size: 140268386
-  - url: R+-8.2.8-arm64.dmg
-    sha512: ABLFt7dXRq5VAhFMVVMoemR18R08hucEeUCTAeLbSpc3EwEgbmhkimjdNguTNWnWI+QHK36R17q4GC8cvPBpMw==
-    size: 146133466
-  - url: R+-8.2.8-autoupdate-mac-x64.zip
-    sha512: +xNlrs4MWNiobsElkpEteyJwFqkSFS2XAWqxyAH2Fjux2Mt/tmknddGEENAuh4HjNC05rbBvbgyYnSc0iErxGQ==
-    size: 148423955
-  - url: R+-8.2.8-x64.dmg
-    sha512: V0eDIHn2yu278FPKwCYQM996zW5Orauw2XWCssoHCR88VW4cJb7qSuvKEFFgcXP5RGCCOqVmt82UaZrnzVcm+Q==
-    size: 154351813
-path: R+-8.2.8-autoupdate-mac-arm64.zip
-sha512: J5O/Uo2Em3H017oaFIKYXQIHKsal7BKAhJte/do3R6iv44eeu45T+/W42GAmUf6iWUxm1NV3/hpZaDFOO9LftA==
-releaseDate: '2026-08-31T22:59:40.000Z'
+  - url: R+-8.2.9-autoupdate-mac-arm64.zip
+    sha512: xyd8GmLuKvf3+djcvBPVXK6EPxnJ+1/odh/LO2TaTiCCvm/G3sKmiarE1gUUAnWgY4q0LIeVaPyXyunTjASyqg==
+    size: 140287669
+  - url: R+-8.2.9-arm64.dmg
+    sha512: Oga1ymewEKPRJQwpvjNVOrDaD+YSQt/K1A7F/WiJRIZk9zxRSL2tHXbZBe9gwugjETS8chGYellAeZXAcXod2Q==
+    size: 146143279
+  - url: R+-8.2.9-autoupdate-mac-x64.zip
+    sha512: PrvsNjL0nIT6Q+0yPIOg2MjL52ZsnutIc0TMZ48gkVz85RBS8toFpYTKC2pD3fK6TcSr3kwBi8CvFhAeEZTPqQ==
+    size: 148443273
+  - url: R+-8.2.9-x64.dmg
+    sha512: QOXoqCF/j9GuoY1LCOVqsYO61tQ/1DB2FbYbcVil9tWXawfi8rvjcwDs10w4vXR/uWrC0kMbNGxTTXLVnBiFJg==
+    size: 154368278
+path: R+-8.2.9-autoupdate-mac-arm64.zip
+sha512: xyd8GmLuKvf3+djcvBPVXK6EPxnJ+1/odh/LO2TaTiCCvm/G3sKmiarE1gUUAnWgY4q0LIeVaPyXyunTjASyqg==
+releaseDate: '2026-09-02T18:32:02.000Z'
 releaseNotes: |
-  Arranca el cifrado de extremo a extremo en Nube y deja armar los equipos del próximo mes antes de que empiece la rotación.
+  Copiar labs ahora conserva negritas al pegar en Word/Docs, se separan los electrolitos urinarios de EGO, y cambiar de sala saca al usuario del equipo anterior.
   
-  Cifrado de extremo a extremo en Nube: notas, labs, indicaciones y monitoreo ahora se guardan cifrados. El servidor deja de poder leerlos.
+  Copiar labs con formato: al copiar labs (panel o "copiar varios días") ahora se pega con negritas en Word, Google Docs, etc. Antes solo pegaba texto plano.
   
-  Equipos de la próxima rotación: R4/Admin arma y publica los equipos del mes siguiente antes de que empiece, con vínculo al equipo que reemplazan para heredar pacientes.
+  Electrolitos urinarios (EU) separados de EGO: Na/K/Cl/Cr en orina ahora forman su propia sección "EU" en vez de mezclarse dentro de EGO.
   
-  Autounión anticipada: un residente puede ver y unirse a su equipo de la próxima rotación desde ya, sin esperar a que R4 lo asigne.
+  Pegado múltiple más tolerante: si un bloque de reportes pegados mezcla 2 expedientes, ahora solo se excluye ese bloque — el resto de los reportes sí se guarda.
   
-  Vista previa de traspaso: la tarjeta del equipo nuevo muestra qué pacientes tiene ahora mismo el equipo que va a reemplazar.
+  Corrección — cambio de sala: al cambiar la sala/rotación de un usuario (perfil propio o admin), ahora se le quita automáticamente del equipo de la sala anterior. Antes seguía apareciendo en ese roster.
   
-  Corrección: el selector "Hereda pacientes de" en Mis equipos ya no mostraba solo "Ninguno" — ahora lista toda la sala.
+  Equipos de próxima rotación: en el selector de "Asignar equipo" ahora se marca "Próxima rotación, aún no activo" para equipos todavía no activos.
+  
+  Mac: el instalador ya no incluye binarios nativos de otra arquitectura (Intel/Apple Silicon mezclados), que podían hacer que macOS marcara la app como dañada.
