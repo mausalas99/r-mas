@@ -210,17 +210,37 @@ export function mixedExpedienteWarning(blocks) {
   var mixed = (blocks || []).find(function (b) {
     return b && b.status === 'mixed-expediente';
   });
-  if (!mixed) return null;
-  var list = (mixed.expedientes || []).join(' y ');
-  var otherReportsOk = (blocks || []).some(function (b) {
-    return b !== mixed && b && b.okReportCount > 0;
+  if (mixed) {
+    var list = (mixed.expedientes || []).join(' y ');
+    var otherReportsOk = (blocks || []).some(function (b) {
+      return b !== mixed && b && b.okReportCount > 0;
+    });
+    return (
+      'Un bloque del texto pegado tiene 2 expedientes distintos (' +
+      list +
+      '). Puede tener datos de otro paciente. Ese bloque se excluyó. ' +
+      (otherReportsOk ? 'El resto del pegado sí se procesó. ' : 'No se guardó nada. ') +
+      'Separa los reportes por paciente y pega de nuevo.'
+    );
+  }
+  var withConflicts = (blocks || []).find(function (b) {
+    return b && b.conflictReports && b.conflictReports.length;
   });
+  if (!withConflicts) return null;
+  var kept = withConflicts.primaryExpediente || '';
+  var excluded = withConflicts.conflictReports
+    .map(function (r) {
+      return r.expediente;
+    })
+    .filter(function (v, i, arr) {
+      return v && arr.indexOf(v) === i;
+    })
+    .join(' y ');
   return (
-    'Un bloque del texto pegado tiene 2 expedientes distintos (' +
-    list +
-    '). Puede tener datos de otro paciente. Ese bloque se excluyó. ' +
-    (otherReportsOk ? 'El resto del pegado sí se procesó. ' : 'No se guardó nada. ') +
-    'Separa los reportes por paciente y pega de nuevo.'
+    'Un bloque del texto pegado trae otro expediente (' +
+    excluded +
+    (kept ? ') distinto del paciente conocido (' + kept + ')' : ') distinto del paciente conocido') +
+    '. Ese reporte se excluyó, no se guardó. El resto del pegado sí se procesó.'
   );
 }
 

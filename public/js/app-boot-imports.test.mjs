@@ -264,7 +264,11 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
 /** +238 B / +0 files: 8.2.9 (cont.). Complexity-reduction extraction in the
  * already-eager cloud-push-direct.mjs (pushChunkWithRetry helper). No new
  * eager file. */
-const EAGER_BOOT_BUDGET_BYTES = 3572434;
+/** +656 B / +0 files: 8.2.9 (cont.). mixedExpedienteWarning now also warns
+ * (never silent) when a block resolves to a known census patient but
+ * excludes a report from an unrecognized expediente — already-eager
+ * lab-bulk-paste.mjs. No new eager file. */
+const EAGER_BOOT_BUDGET_BYTES = 3573090;
 const EAGER_BOOT_BUDGET_FILES = 113;
 
 /**
