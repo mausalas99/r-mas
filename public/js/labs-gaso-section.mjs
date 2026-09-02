@@ -176,7 +176,7 @@ function labRowText_(row) {
 export function dedupeSingletonSections_(rows) {
   var singleton = {
     BH: 1, QS: 1, ESC: 1, PFHS: 1, LIPASA: 1, TROP: 1, GASES: 1, PIE: 1, 'LCR:': 1, 'LIQ:': 1,
-    HECES: 1, FROTIS: 1, EGO: 1, SEROL: 1, GS: 1, PROT12H: 1, PROT24H: 1, 'INTERPRETACIÓN GASOMETRÍA:': 1,
+    HECES: 1, FROTIS: 1, EGO: 1, EU: 1, SEROL: 1, GS: 1, PROT12H: 1, PROT24H: 1, 'INTERPRETACIÓN GASOMETRÍA:': 1,
     'INTERPRETACIÓN ASCITIS:': 1,
     'INTERPRETACIÓN CITOQUÍMICO:': 1,
     TIR: 1, ENDO: 1, CARD: 1, FE: 1, INFL: 1, INM: 1, META: 1, NEF: 1, NIVEL: 1, TM: 1, NUT: 1,

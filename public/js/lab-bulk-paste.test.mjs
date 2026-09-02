@@ -471,6 +471,26 @@ describe('lab-bulk-paste preview and tipo', () => {
     assert.equal(mixedExpedienteWarning(preview), null);
   });
 
+  it('mixedExpedienteWarning avisa que solo se excluyó ese bloque cuando otro sí quedó ok', () => {
+    var mixedOther = String(DEMO_SOME_LAB_REPORT).replace(/0008421-7/g, '1111111-1');
+    var mixedBlock = DEMO_SOME_LAB_REPORT + '\n\n' + mixedOther;
+    var cleanBlock = String(DEMO_SOME_LAB_REPORT).replace(/0008421-7/g, '2222222-2');
+    var text = mixedBlock + '\n\n' + LAB_BULK_PATIENT_SEPARATOR + '\n\n' + cleanBlock;
+    var preview = buildBulkLabPreview(text, {
+      findPatientByRegistro: function (reg) {
+        if (reg === '0008421-7') return { id: 'p1', nombre: 'Demo Pérez', registro: '0008421-7' };
+        if (reg === '1111111-1') return { id: 'p2', nombre: 'Otro', registro: '1111111-1' };
+        if (reg === '2222222-2') return { id: 'p3', nombre: 'Tercero', registro: '2222222-2' };
+        return null;
+      },
+    });
+    assert.equal(preview[0].status, 'mixed-expediente');
+    assert.equal(preview[1].status, 'ok');
+    assert.ok(preview[1].okReportCount > 0);
+    var msg = mixedExpedienteWarning(preview);
+    assert.match(msg, /resto del pegado sí se procesó/i);
+  });
+
   it('buildBulkLabPreview separa pacientes con --- PACIENTE ---', () => {
     var other = String(DEMO_SOME_LAB_REPORT).replace(/0008421-7/g, '1111111-1');
     var text =

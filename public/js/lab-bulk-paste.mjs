@@ -192,10 +192,14 @@ export function mixedExpedienteWarning(blocks) {
   });
   if (!mixed) return null;
   var list = (mixed.expedientes || []).join(' y ');
+  var otherReportsOk = (blocks || []).some(function (b) {
+    return b !== mixed && b && b.okReportCount > 0;
+  });
   return (
-    'El texto pegado tiene 2 expedientes distintos (' +
+    'Un bloque del texto pegado tiene 2 expedientes distintos (' +
     list +
-    '). Puede tener datos de otro paciente. No se guardó nada. ' +
+    '). Puede tener datos de otro paciente. Ese bloque se excluyó. ' +
+    (otherReportsOk ? 'El resto del pegado sí se procesó. ' : 'No se guardó nada. ') +
     'Separa los reportes por paciente y pega de nuevo.'
   );
 }

@@ -118,6 +118,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   writeClipboardText: function(text) {
     return ipcRenderer.invoke('clipboard-write-text', text);
   },
+  writeClipboardHtml: function(text, html) {
+    return ipcRenderer.invoke('clipboard-write-html', text, html);
+  },
   relaunchApp: function() {
     ipcRenderer.send('relaunch-app');
   },

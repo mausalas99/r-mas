@@ -45,6 +45,7 @@ const RELEASE_STAGE_PATHS = [
   'server-python.js',
   '.github/workflows/ci.yml',
   'scripts/lizard-ccn-report.mjs',
+  'scripts/electron-builder-after-pack.cjs',
   'scripts/release.js',
   'scripts/lib/release-git.js',
   'scripts/lib/release-progress.js',

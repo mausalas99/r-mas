@@ -38,8 +38,10 @@ export function renderAssignTeamOptionsHtml(teams, selectedTeamId) {
     list
       .map((team) => {
         const id = escapeAttr(String(team.team_id || ''));
+        const staged = Number(team.rotation_active) === 0;
         const label = escapeHtml(
-          `${String(team.name || 'Equipo').trim()} · ${String(team.sala || '').trim() || 'Sala'}`
+          `${String(team.name || 'Equipo').trim()} · ${String(team.sala || '').trim() || 'Sala'}` +
+            (staged ? ' · Próxima rotación, aún no activo' : '')
         );
         const members = Array.isArray(team.members) ? team.members.length : 0;
         const isSelected = selected && id === selected ? ' selected' : '';

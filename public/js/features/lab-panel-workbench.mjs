@@ -6,6 +6,7 @@ import {
   LAB_BULK_PATIENT_SEPARATOR,
 } from '../lab-bulk-paste.mjs';
 import { sortLabHistoryChronological, normalizeFechaLabHistory } from '../tend-core.mjs';
+import { labLinesToClipboardPayload } from '../lab-clipboard.mjs';
 import { getPatients, getNotes, persistClinicalState } from '../app-state.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 import { labPanelBridge } from './lab-panel-bridge.mjs';
@@ -97,8 +98,8 @@ async function copiarLabsAlPortapapeles() {
   if (!activeLab || !activeLab.resLabs || !activeLab.resLabs.length) {
     rt.showToast('No hay resultados procesados', 'error'); return;
   }
-  var text = buildLabLines().join('\n');
-  var ok = await rt.copyToClipboardSafe(text);
+  var payload = labLinesToClipboardPayload(buildLabLines());
+  var ok = await rt.copyToClipboardSafe(payload.text, payload.html);
   rt.showToast(
     ok ? 'Labs copiados al portapapeles ✓' : 'Error al copiar al portapapeles',
     ok ? 'success' : 'error'

@@ -8,7 +8,7 @@
 var HEAD_ORDER = ['BH', 'QS', 'ESC', 'PFHS', 'GASES'];
 
 /** Tail sections — EGO always last. */
-var TAIL_ORDER = ['CUANTORINA', 'EGO'];
+var TAIL_ORDER = ['EU', 'CUANTORINA', 'EGO'];
 
 var HEAD_RANK = Object.create(null);
 var TAIL_RANK = Object.create(null);

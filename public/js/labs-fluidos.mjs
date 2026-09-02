@@ -337,5 +337,6 @@ export {
   parsePlaquetasCitrato_,
   parseSerologiaBancoSangre_,
   parseCuantOrina_,
+  parseElectrolitosOrina_,
 } from './labs-fluidos-misc.mjs';
 

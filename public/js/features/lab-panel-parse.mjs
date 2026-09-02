@@ -73,15 +73,16 @@ export function procesarReporte() {
     return;
   }
 
-  var mixedWarning = mixedExpedienteWarning(blocks);
-  if (mixedWarning) {
-    rt.showToast(mixedWarning, 'error');
-    return;
-  }
-
   var totalOkReports = blocks.reduce(function (acc, b) {
     return acc + b.okReportCount;
   }, 0);
+
+  var mixedWarning = mixedExpedienteWarning(blocks);
+  if (mixedWarning) {
+    rt.showToast(mixedWarning, totalOkReports ? 'warn' : 'error');
+    if (!totalOkReports) return;
+  }
+
   if (!totalOkReports) {
     rt.showToast(
       looksLikeSomeLabReport(text)

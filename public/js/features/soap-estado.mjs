@@ -40,8 +40,24 @@ export function openSOAPModalDirect() {
   if (bd) bd.classList.add("open");
 }
 
-export async function copyToClipboardSafe(text) {
+/**
+ * @param {string} text texto plano.
+ * @param {string} [html] versión con formato (ej. `<strong>` para negritas). Si se
+ *   provee, se escribe también en el portapapeles para que apps como Google Docs
+ *   respeten el formato al pegar; `text` sigue siendo el fallback plano.
+ */
+export async function copyToClipboardSafe(text, html) {
   var t = text == null ? "" : String(text);
+  if (
+    typeof window !== "undefined" &&
+    window.electronAPI &&
+    html &&
+    typeof window.electronAPI.writeClipboardHtml === "function"
+  ) {
+    try {
+      if (await window.electronAPI.writeClipboardHtml(t, String(html))) return true;
+    } catch (_e) { void _e; }
+  }
   if (
     typeof window !== "undefined" &&
     window.electronAPI &&
@@ -51,6 +67,17 @@ export async function copyToClipboardSafe(text) {
       if (await window.electronAPI.writeClipboardText(t)) return true;
     } catch (_e) { void _e; }
   }
+  try {
+    if (html && typeof ClipboardItem !== "undefined" && navigator.clipboard && navigator.clipboard.write) {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/plain": new Blob([t], { type: "text/plain" }),
+          "text/html": new Blob([String(html)], { type: "text/html" }),
+        }),
+      ]);
+      return true;
+    }
+  } catch (_e) { void _e; }
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(t);

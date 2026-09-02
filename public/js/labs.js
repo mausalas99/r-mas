@@ -2,6 +2,7 @@
 
 export { escTxt, renderToken, renderEntry, isLabSectionHeaderHtml } from './labs-display.mjs';
 export { parseEGO_ } from './labs-ego-parse.mjs';
+export { parseElectrolitosOrina_ } from './labs-fluidos.mjs';
 
 export {
   extraer,
@@ -165,7 +166,7 @@ export {
 } from './labs-report-refs.mjs';
 
 import { createProcesarLabs } from './labs-procesar.mjs';
-import { bloqueCitoquimicoLiquidosFull, parsearCitoquimicoLiquidos, parseFisicoquimicoHeces_, parseFrotisSangre_, parsePlaquetasCitrato_, parseSerologiaBancoSangre_, parseCuantOrina_ } from './labs-fluidos.mjs';
+import { bloqueCitoquimicoLiquidosFull, parsearCitoquimicoLiquidos, parseFisicoquimicoHeces_, parseFrotisSangre_, parsePlaquetasCitrato_, parseSerologiaBancoSangre_, parseCuantOrina_, parseElectrolitosOrina_ } from './labs-fluidos.mjs';
 import { formatCitoquimicoInterpretacionLine_, buildCitoquimicoInterpretAlerts_ } from './labs-citoquimico-interpret.mjs';
 import { dedupeSingletonSections_, parseGaso_, parsePIE_, parsearLCR } from './labs-gaso-section.mjs';
 import { parseBH_ } from './labs-bh.mjs';
@@ -202,6 +203,7 @@ export const procesarLabs = createProcesarLabs({
   parseFisicoquimicoHeces_,
   parseFrotisSangre_,
   parseEGO_,
+  parseElectrolitosOrina_,
   parseCuantOrina_,
   parseCultivo_,
   parseSerologiaBancoSangre_,

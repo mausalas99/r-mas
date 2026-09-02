@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.2.8](https://github.com/mausalas99/r-mas/releases/tag/v8.2.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.2.9](https://github.com/mausalas99/r-mas/releases/tag/v8.2.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -58,9 +58,20 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.2.9 (estable — release 8.2.9)
+
+- **Copiar labs con formato:** al copiar labs se conservan las negritas al pegar en Word/Docs.
+- **Electrolitos urinarios (EU):** sección propia, separada de EGO.
+- **Pegado múltiple más tolerante:** un bloque con expediente mezclado ya no bloquea el resto del pegado.
+- **Corrección:** cambiar de sala saca al usuario del equipo anterior automáticamente.
+
+Notas: `docs/RELEASE_NOTES_8.2.9.txt`.
 ## R+ 8.2.8 (estable — release 8.2.8)
 
-- **TODO:** completar bullets en README.
+- **Cifrado de extremo a extremo en Nube:** notas, labs, indicaciones y monitoreo se guardan cifrados.
+- **Equipos de la próxima rotación:** R4/Admin arma y publica los equipos del mes siguiente antes de que empiece.
+- **Corrección:** el selector "Hereda pacientes de" ya no mostraba solo "Ninguno".
 
 Notas: `docs/RELEASE_NOTES_8.2.8.txt`.
 ## R+ 8.2.7 (estable — release 8.2.7)

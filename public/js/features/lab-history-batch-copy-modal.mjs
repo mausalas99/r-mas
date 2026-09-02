@@ -3,13 +3,14 @@ import {
   buildEstudiosCopyLinesFromLabSets,
   groupLabHistoryByDay,
 } from '../lab-history-set.mjs';
+import { labLinesToClipboardPayload } from '../lab-clipboard.mjs';
 
 /** @type {{
  *   getActiveId(): string|null,
  *   ensureParsedLabHistory(pid: string, opts?: object): unknown[],
  *   ensureParsedLabHistoryCached?(pid: string): unknown[],
  *   showToast(msg: string, type?: string): void,
- *   copyToClipboardSafe(text: string): Promise<boolean>,
+ *   copyToClipboardSafe(text: string, html?: string): Promise<boolean>,
  * }} */
 
 import { esc } from '../dom-escape.mjs';
@@ -78,7 +79,9 @@ function syncBatchCopyActions(backdrop, ordered) {
     return;
   }
   ta.placeholder = '';
-  ta.value = buildEstudiosCopyLinesFromLabSets(ordered, { onlyDayKeys: keys }).join('\n');
+  ta.value = labLinesToClipboardPayload(
+    buildEstudiosCopyLinesFromLabSets(ordered, { onlyDayKeys: keys })
+  ).text;
 }
 
 function closeBatchCopyModal(backdrop) {
@@ -155,12 +158,14 @@ function wireBatchCopyModal(backdrop, loaded) {
       rt.showToast('Selecciona al menos un día', 'error');
       return;
     }
-    var text = buildEstudiosCopyLinesFromLabSets(loaded.ordered, { onlyDayKeys: keys }).join('\n');
-    if (!text.trim()) {
+    var payload = labLinesToClipboardPayload(
+      buildEstudiosCopyLinesFromLabSets(loaded.ordered, { onlyDayKeys: keys })
+    );
+    if (!payload.text.trim()) {
       rt.showToast('No hay texto para copiar en los días elegidos', 'error');
       return;
     }
-    var ok = await rt.copyToClipboardSafe(text);
+    var ok = await rt.copyToClipboardSafe(payload.text, payload.html);
     rt.showToast(
       ok
         ? 'Copiados ' + keys.length + ' día' + (keys.length === 1 ? '' : 's') + ' al portapapeles ✓'

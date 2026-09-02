@@ -2768,10 +2768,34 @@ var RELEASE_NOTES_828 = [
   },
 ];
 
+var RELEASE_NOTES_829 = [
+  {
+    title: 'Copiar labs con formato',
+    body:
+      'Al copiar labs (panel o "copiar varios días") ahora se pega con <strong>negritas</strong> en Word, Google Docs, etc. Antes solo pegaba texto plano.',
+  },
+  {
+    title: 'Electrolitos urinarios (EU) separados',
+    body:
+      'Na/K/Cl/Cr en orina ahora forman su propia sección <strong>EU</strong>, en vez de mezclarse dentro de EGO.',
+  },
+  {
+    title: 'Pegado múltiple más tolerante',
+    body:
+      'Si un bloque pegado mezcla 2 expedientes, ahora solo se excluye ese bloque — el <strong>resto</strong> de los reportes sí se guarda.',
+  },
+  {
+    title: 'Corrección — cambio de sala',
+    body:
+      'Al cambiar la sala de un usuario, ahora se le <strong>quita</strong> automáticamente del equipo de la sala anterior.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_828;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_829;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.2.9': RELEASE_NOTES_829,
   '8.2.8': RELEASE_NOTES_828,
   '8.2.7': RELEASE_NOTES_827,
   '8.2.6': RELEASE_NOTES_826,

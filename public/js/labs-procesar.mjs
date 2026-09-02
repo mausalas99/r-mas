@@ -126,6 +126,7 @@ function collectLabSections_(deps, textoBruto, tNorm, blocks, demograf, priorByS
   pushLabSection_(resLabs, deps.parseFisicoquimicoHeces_(textoBruto));
   appendFrotisLines_(deps, resLabs, textoBruto);
   pushLabSection_(resLabs, deps.parseEGO_(textoBruto));
+  pushLabSection_(resLabs, deps.parseElectrolitosOrina_(textoBruto));
   pushLabSection_(resLabs, deps.parseCuantOrina_(textoBruto));
   pushLabSection_(resLabs, deps.parseCultivo_(textoBruto, tNorm));
   pushLabSection_(resLabs, deps.parseSerologiaBancoSangre_(textoBruto));
@@ -192,6 +193,7 @@ function parseLabPatientHeader_(deps, textoBruto) {
  * @param {(texto: string) => object | null} deps.parseFisicoquimicoHeces_
  * @param {(texto: string) => string | null} deps.parseFrotisSangre_
  * @param {(texto: string) => object | null} deps.parseEGO_
+ * @param {(texto: string) => string} deps.parseElectrolitosOrina_
  * @param {(texto: string) => object | null} deps.parseCuantOrina_
  * @param {(texto: string, tNorm: string) => object | null} deps.parseCultivo_
  * @param {(texto: string) => object | null} deps.parseSerologiaBancoSangre_

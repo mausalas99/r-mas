@@ -174,7 +174,7 @@ export function collectEgoFieldValues_(lineas) {
   return out;
 }
 
-export function buildEgoSections_(f, qOrina) {
+export function buildEgoSections_(f) {
   var sections = { fisico: [], quimico: [], sedimento: [] };
   EGO_FIELD_DEFS.forEach(function (def) {
     var val = f[def.key];
@@ -182,9 +182,5 @@ export function buildEgoSections_(f, qOrina) {
     if (def.skipAus && abreviarEGO_(val) === 'AUS') return;
     sections[def.section].push(def.prefix + marcarEGO_(val, def.tipo));
   });
-  if (qOrina.na) sections.quimico.push('NaU ' + qOrina.na);
-  if (qOrina.k) sections.quimico.push('KU ' + qOrina.k);
-  if (qOrina.cl) sections.quimico.push('ClU ' + qOrina.cl);
-  if (qOrina.cr) sections.quimico.push('CrU ' + qOrina.cr);
   return sections;
 }

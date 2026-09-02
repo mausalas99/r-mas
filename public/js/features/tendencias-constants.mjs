@@ -68,6 +68,7 @@ var TEND_SECTION_LABELS = {
   Prot24h: 'Proteinuria 24 h',
   PIE: 'Prueba de embarazo',
   EGO: 'EGO',
+  EU: 'Electrolitos urinarios',
   CUANTORINA: 'Cuantificación urinaria',
   PltCit: 'Plaquetas (citrato)',
   FROTIS: 'Frotis de sangre',
@@ -94,7 +95,7 @@ var TEND_SECTION_LABELS = {
 var TEND_SECTION_ORDER = [
   'BH', 'PltCit', 'QS', 'ESC', 'PFHs', 'LIPASA', 'TROP', 'CARD', 'TIR', 'ENDO', 'FE',
   'INFL', 'INM', 'META', 'NEF', 'NIVEL', 'TM', 'NUT', 'GI', 'TOX', 'HEPB', 'VIRAL', 'FEB', 'MICRO',
-  'GASES', 'LCR', 'Liq', 'Prot12h', 'Prot24h', 'PIE', 'EGO', 'CUANTORINA', 'FROTIS'
+  'GASES', 'LCR', 'Liq', 'Prot12h', 'Prot24h', 'PIE', 'EGO', 'EU', 'CUANTORINA', 'FROTIS'
 ];
 
 /**

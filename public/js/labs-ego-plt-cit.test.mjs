@@ -1,6 +1,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { procesarLabs, parseEGO_, parsePlaquetasCitrato_, parseFrotisSangre_ } from './labs.js';
+import {
+  procesarLabs,
+  parseEGO_,
+  parsePlaquetasCitrato_,
+  parseFrotisSangre_,
+  parseElectrolitosOrina_,
+} from './labs.js';
 
 const EGO_ROGELIO = `
 Expediente:\t1936787-7\tSolicitud:\t2605050872
@@ -59,6 +65,35 @@ describe('EGO no debe generar BH falso', () => {
     assert.match(ego, /pH 7\.0/);
     assert.match(ego, /Leu 0/);
     assert.match(ego, /Eri 0/);
+  });
+});
+
+const EGO_CON_ELECTROLITOS = `${EGO_ROGELIO}
+SODIO EN ORINA
+*
+40
+135 - 145
+POTASIO EN ORINA
+*
+20
+CLORO EN ORINA: 90
+`;
+
+describe('Electrolitos urinarios: sección propia, no dentro de EGO', () => {
+  it('parseElectrolitosOrina_ arma la línea EU', () => {
+    const eu = parseElectrolitosOrina_(EGO_CON_ELECTROLITOS);
+    assert.strictEqual(eu, 'EU\tNa 40 K 20 Cl 90');
+  });
+
+  it('parseEGO_ ya no incluye NaU/KU/ClU', () => {
+    const ego = parseEGO_(EGO_CON_ELECTROLITOS);
+    assert.doesNotMatch(ego, /NaU|KU|ClU/);
+  });
+
+  it('procesarLabs separa EGO: y EU\\t en filas distintas', () => {
+    const { resLabs } = procesarLabs(EGO_CON_ELECTROLITOS);
+    assert.ok(resLabs.some((l) => l.startsWith('EGO:')));
+    assert.ok(resLabs.some((l) => l === 'EU\tNa 40 K 20 Cl 90'));
   });
 });
 

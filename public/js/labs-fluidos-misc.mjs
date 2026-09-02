@@ -1,4 +1,5 @@
 import { extraerConRango, fmtLabRanged_ } from './labs-extract.mjs';
+import { valorTrasEtiqueta } from './labs-ego-parse-helpers.mjs';
 
 var HECES_ROW_DEFS = [
   { key: 'ASPECTO', out: 'Asp' },
@@ -287,8 +288,6 @@ export function parseSerologiaBancoSangre_(textoBruto) {
   return 'SEROL\t' + parts.join(' ');
 }
 
-/** Na/K/Cl/Cr de QUIMICA CLINICA (orina); Cl suele venir en COMENTARIO DE MUESTRA. */
-
 function readNumericFromLines_(lineas, i, maxLook) {
   for (var j = i + 1; j < Math.min(i + maxLook, lineas.length); j++) {
     var v = lineas[j];
@@ -331,5 +330,26 @@ export function parseCuantOrina_(textoBruto) {
   parts.push(extracted.res + '*');
   parts.push('gr/vol');
   return parts[0] + '\t' + parts.slice(1).join(' ');
+}
+
+/** Electrolitos en orina — sección propia, separada de EGO. Cl suele venir en COMENTARIO DE MUESTRA. */
+export function parseElectrolitosOrina_(textoBruto) {
+  if (!textoBruto) return '';
+  var lineas = textoBruto.split(/\r?\n/).map(function (l) {
+    return l.replace(/\*/g, '').trim();
+  });
+  var na = valorTrasEtiqueta(lineas, ['SODIO EN ORINA']);
+  var k = valorTrasEtiqueta(lineas, ['POTASIO EN ORINA']);
+  var cr = valorTrasEtiqueta(lineas, ['CREATININA EN ORINA']);
+  var mCl = textoBruto.match(/CLORO\s+EN\s+ORINA\s*:?\s*(\d+[.,]?\d*)/i);
+  var cl = mCl ? mCl[1].replace(',', '.') : null;
+
+  var parts = [];
+  if (na) parts.push('Na', na);
+  if (k) parts.push('K', k);
+  if (cl) parts.push('Cl', cl);
+  if (cr) parts.push('Cr', cr);
+  if (!parts.length) return '';
+  return 'EU\t' + parts.join(' ');
 }
 

@@ -720,6 +720,18 @@ ipcMain.handle('clipboard-write-text', (_e, text) => {
   }
 });
 
+ipcMain.handle('clipboard-write-html', (_e, text, html) => {
+  try {
+    clipboard.write({
+      text: String(text == null ? '' : text),
+      html: String(html == null ? '' : html),
+    });
+    return true;
+  } catch (_err) {
+    return false;
+  }
+});
+
 ipcMain.handle('lab-repo-fetch', async (_e, payload) => {
   try {
     const { fetchLabRepoStudies } = await import('./lib/lab-repo/lab-repo-fetch.mjs');
