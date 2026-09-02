@@ -10,7 +10,7 @@ import {
   resLabsHasAsciticFluid_,
   resLabsHasPleuralFluid_,
 } from './labs-fluidos.mjs';
-import { parseLcrParsed } from './labs-lcr-parse.mjs';
+import { parseLcrParsed, parsearLCR } from './labs-lcr-parse.mjs';
 import {
   evaluarPbeAscitis_,
   evaluarPleuralInfeccion_,
@@ -226,12 +226,20 @@ function enrichAscitisGasa_(parsed, src, serumOpts) {
 
 function replaceLiqLineFromSource_(out, src, serumOpts) {
   var newLiq = parsearCitoquimicoLiquidos(src, serumOpts);
-  if (!newLiq) return out;
-  return out
+  var next = newLiq
+    ? out
+        .filter(function (r) {
+          return labSectionKey_(r) !== 'LIQ:';
+        })
+        .concat([newLiq])
+    : out;
+  var newLcr = parsearLCR(src);
+  if (!newLcr) return next;
+  return next
     .filter(function (r) {
-      return labSectionKey_(r) !== 'LIQ:';
+      return labSectionKey_(r) !== 'LCR:';
     })
-    .concat([newLiq]);
+    .concat([newLcr]);
 }
 
 function updateLiqLineWithGasa_(out, parsed) {

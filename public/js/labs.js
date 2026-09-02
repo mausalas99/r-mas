@@ -181,7 +181,6 @@ import { parseExtendedLabPanels_ } from './labs-panel-parse.mjs';
 export { parseExtendedLabPanels_, LAB_EXTENDED_SECTION_KEYS } from './labs-panel-parse.mjs';
 
 export const procesarLabs = createProcesarLabs({
-  bloqueCitoquimicoLiquidosFull,
   dedupeSingletonSections_,
   buildRefsBySectionFromReport,
   extractLabReportFechaDMY,

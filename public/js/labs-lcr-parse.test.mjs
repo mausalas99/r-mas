@@ -149,6 +149,109 @@ test('mergeLcrFields_ — micro reemplaza aspecto inválido de química', () => 
   assert.equal(merged.glu, '51');
 });
 
+const MUESTRA_RODOLFO_LCR = `
+Sexo:	MASCULINO	Ubicación:	MEDICINA INTERNA 2
+Edad:	37	Medico:	A QUIEN CORRESPONDA
+
+QUIMICA CLINICA
+CITOQUIMICO DE LCR
+Estudio		Resultado	Unidades	Valor de Referencia
+pH
+*
+8.5
+ASPECTO
+*
+RECUENTO CELULAR
+*
+POLIMORFONUCLEARES
+*
+LINFOCITOS
+*
+TINTA CHINA
+*
+ERITROCITOS
+*
+COAGLUTINACION
+*
+GRAM
+*
+GLUCOSA
+B
+21
+mg/dL	45 - 80
+PROTEINAS
+A
+200
+mg/dL	15 - 45
+CLORURO
+B
+109.3
+mmol/L	118.1 - 132.0
+OTROS
+*
+
+BACTERIOLOGIA
+CITOQUIMICO LIQ. LCR
+Estudio		Resultado	Unidades	Valor de Referencia
+LCR
+*
+ASPECTO
+*
+CLARO
+RECUENTO CELULAR
+*
+215
+LEUCOCITOS/MM
+LEUCOCITOS POLIMORFONUCLEARES
+*
+26
+%PMN
+LINFOCITOS
+*
+74
+%LINFOCITOS
+TINTA CHINA
+*
+NEGATIVO
+ERITROCITOS
+*
+AUSENTES
+COAGLUTINACION
+*
+GRAM
+*
+MODERADOS LEUCOCITOS
+COMENTARIOS
+*
+`;
+
+test('parseLcrParsed — RECUENTO CELULAR no lo pisa LEUCOCITOS POLIMORFONUCLEARES', () => {
+  const parsed = parseLcrParsed(MUESTRA_RODOLFO_LCR);
+  assert.ok(parsed);
+  assert.equal(parsed.leu, 215);
+  assert.equal(parsed.glu, 21);
+  assert.equal(parsed.protMgdl, 200);
+});
+
+test('parseLcrParsed — celdas separadas por línea en blanco (formato portal) parsean igual', () => {
+  const portalShaped = MUESTRA_RODOLFO_LCR.replace(/\n/g, '\n\n');
+  const parsed = parseLcrParsed(portalShaped);
+  assert.ok(parsed);
+  assert.equal(parsed.pH, 8.5);
+  assert.equal(parsed.leu, 215);
+  assert.equal(parsed.glu, 21);
+  assert.equal(parsed.protMgdl, 200);
+  assert.equal(parsed.cl, 109.3);
+  assert.equal(parsed.gram, 'MODERADOS LEUCOCITOS');
+  assert.equal(parsed.tinta, 'NEGATIVO');
+});
+
+test('procesarLabs — bloque LCR no se cuela como BH (Eritrocitos/Linfocitos)', () => {
+  const { resLabs } = procesarLabs(MUESTRA_RODOLFO_LCR);
+  const bh = resLabs.find((l) => l.startsWith('BH'));
+  assert.ok(!bh, 'no debe generarse línea BH desde el bloque de LCR');
+});
+
 test('procesarLabs — LCR bacteriana previa sigue funcionando', () => {
   const MUESTRA = `
 QUIMICA CLINICA

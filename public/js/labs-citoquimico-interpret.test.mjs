@@ -85,6 +85,18 @@ test('evaluarLcrEtiologia — pleocitosis viral', () => {
   assert.match(alerts.join(' '), /viral/i);
 });
 
+test('evaluarLcrEtiologia — Leu 10-99 con glucosa baja no es viral', () => {
+  const alerts = evaluarLcrEtiologia_(26, 21, 200, 'NEGATIVO', 'NEGATIVO', 90);
+  assert.ok(!/viral/i.test(alerts.join(' ')));
+  assert.match(alerts.join(' '), /tuberculosa/i);
+});
+
+test('evaluarLcrEtiologia — Leu 10-99 con proteína muy alta no es viral puro', () => {
+  const alerts = evaluarLcrEtiologia_(40, 60, 150, 'NEGATIVO', 'NEGATIVO', 90);
+  assert.ok(!/^Meningitis viral/i.test(alerts.join(' ')));
+  assert.match(alerts.join(' '), /bacteriana parcialmente tratada/i);
+});
+
 test('evaluarLcrPhSanity_ — pH normal sin flag', () => {
   assert.equal(evaluarLcrPhSanity_(7.35), '');
 });

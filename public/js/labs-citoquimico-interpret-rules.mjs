@@ -119,6 +119,14 @@ function evaluarLcrLeu100Plus_(alerts, leu, glu, prot, gram, serumGlu) {
   pushLcrBacterialAlert_(alerts, leu, glu, gram);
 }
 
+function evaluarLcrLeu10a100_(alerts, leu, glu, prot, gram, serumGlu) {
+  if (lcrGluLow_(glu, serumGlu) || (prot != null && prot > 100)) {
+    evaluarLcrLeu100Plus_(alerts, leu, glu, prot, gram, serumGlu);
+    return;
+  }
+  pushLcrViralAlert_(alerts, leu);
+}
+
 /**
  * Orientación etiológica LCR (bacteriana vs viral vs TB).
  * @param {number|null} leu
@@ -148,7 +156,7 @@ export function evaluarLcrEtiologia_(leu, glu, prot, gram, tinta, serumGlu) {
     return alerts;
   }
   if (leu >= 10) {
-    pushLcrViralAlert_(alerts, leu);
+    evaluarLcrLeu10a100_(alerts, leu, glu, prot, gram, serumGlu);
     return alerts;
   }
   if (leu > 5) {

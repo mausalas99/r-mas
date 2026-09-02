@@ -33,9 +33,12 @@ export function lcrBlocksNormText_(textoBruto) {
 }
 
 function parseLcrFieldsFromBlock_(bloque) {
-  var lineas = bloque.split(/\r?\n/).map(function (l) {
-    return l.trim();
-  });
+  var lineas = bloque
+    .split(/\r?\n/)
+    .map(function (l) {
+      return l.trim();
+    })
+    .filter(Boolean);
   var fields = emptyLcrFields_();
   for (var i = 0; i < lineas.length; i++) {
     scanLcrLine_(fields, lineas, i, lineas[i].toUpperCase(), lineas[i]);

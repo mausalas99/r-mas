@@ -3,7 +3,7 @@
  * Wired from labs.js via createProcesarLabs(deps) to avoid circular imports with parse*.
  */
 import { buildEgfrPatientCtx } from './labs-egfr.mjs';
-import { lcrBlocksNormText_ } from './labs-lcr-parse.mjs';
+import { citoquimicoBlocksNormText_ } from './labs-fluidos.mjs';
 import { sortResLabsByClinicalOrder } from './labs-section-order.mjs';
 import { sanitizeResLabsChunks } from './labs-reslabs-sanitize.mjs';
 import { mergeRefsBySection_ } from './labs-default-refs.mjs';
@@ -54,20 +54,19 @@ function segmentLabReportBlocks_(deps, textoBruto, tNorm) {
     /GASOMETRIA.*?(?=BIOMETRIA|CITOLOGIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CITOQUIMICO|$)/i
   );
   var bloqueGaso = mGaso ? mGaso[0] : '';
-  var lcrNormChunks = lcrBlocksNormText_(textoBruto);
-  var bloqueCitoLC = deps.bloqueCitoquimicoLiquidosFull(textoBruto);
+  // Cualquier bloque "CITOQUIMICO ..." (LCR, líquidos corporales, o un fluido
+  // aún no contemplado) se excluye de raíz — así BH/QS/ESC/PFH nunca leen un
+  // analito de un panel de líquidos, sea cual sea el nombre del fluido.
+  var citoBlocksNorm = citoquimicoBlocksNormText_(textoBruto);
   var mEGO = tNorm.match(
     /(?:URIANALISIS|EXAMEN GENERAL DE ORINA|ANALISIS DE ORINA).*?(?=BACTERIOLOGIA|CULTIVO|COMENTARIO DE MUESTRA|$)/i
   );
   var bloqueEGO = mEGO ? mEGO[0] : '';
   var tSinLiqCorp = tNorm;
-  if (bloqueCitoLC) {
-    tSinLiqCorp = tNorm.replace(bloqueCitoLC.replace(/\r/g, '').replace(/\s+/g, ' '), ' ');
+  for (var lc = 0; lc < citoBlocksNorm.length; lc++) {
+    tSinLiqCorp = tSinLiqCorp.replace(citoBlocksNorm[lc], ' ');
   }
   var textoQS = tSinLiqCorp.replace(bloqueGaso, ' ').replace(bloqueEGO, ' ');
-  for (var li = 0; li < lcrNormChunks.length; li++) {
-    textoQS = textoQS.replace(lcrNormChunks[li], ' ');
-  }
   var textoParaBh = tSinLiqCorp;
   if (bloqueEGO) textoParaBh = textoParaBh.replace(bloqueEGO, ' ');
   var esSoloGaso =
@@ -173,7 +172,6 @@ function parseLabPatientHeader_(deps, textoBruto) {
 
 /**
  * @param {object} deps
- * @param {(texto: string) => string} deps.bloqueCitoquimicoLiquidosFull
  * @param {(rows: string[]) => string[]} deps.dedupeSingletonSections_
  * @param {(texto: string) => object} deps.buildRefsBySectionFromReport
  * @param {(texto: string) => string} deps.extractLabReportFechaDMY

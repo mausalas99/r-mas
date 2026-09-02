@@ -22,6 +22,32 @@ export function bloqueCitoquimicoLiquidosFull(textoBruto) {
   return t.substring(i0, end);
 }
 
+/** Próximo encabezado de departamento tras un bloque CITOQUIMICO (cualquier fluido). */
+var CITOQUIMICO_BLOCK_STOP_RE =
+  /\n+\s*(?:QUIMICA\s+CLINICA|BIOMETRIA|HEMATOLOGIA|INMUNOLOGIA|GASOMETRIA|BANDEJA|BACTERIOLOGIA|ELECTROLITOS|PFH|COAGULACION|URIANALISIS|EXAMEN\s+GENERAL\s+DE\s+ORINA|CUADERNILLO)\b/i;
+var CITOQUIMICO_BLOCK_RE = new RegExp(
+  'CITOQUIMICO\\b[\\s\\S]*?(?=' + CITOQUIMICO_BLOCK_STOP_RE.source + '|$)',
+  'gi'
+);
+
+/**
+ * Todo bloque "CITOQUIMICO ..." del reporte — LCR, líquidos corporales, o
+ * cualquier fluido no contemplado hoy (sinovial, pericárdico…) — acotado por
+ * el siguiente encabezado de departamento. A diferencia de
+ * bloqueCitoquimicoLiquidosFull (solo "LIQUIDOS CORPORALES") y de las regex
+ * específicas de LCR, esto no depende de reconocer el nombre del fluido:
+ * cualquier encabezado que empiece con CITOQUIMICO cuenta. Úsalo para excluir
+ * estos bloques de parsers genéricos (BH, QS, ESC, PFH) que de otro modo
+ * leerían analitos de un panel de líquidos como si fueran suyos.
+ */
+export function citoquimicoBlocksNormText_(textoBruto) {
+  var t = String(textoBruto || '').replace(/\r/g, '');
+  var matches = t.match(CITOQUIMICO_BLOCK_RE) || [];
+  return matches.map(function (b) {
+    return b.replace(/\s+/g, ' ');
+  });
+}
+
 /** mg/dL del laboratorio → g/dL para ratios (p. ej. 6000→6, 300→3). */
 export function normalizarProteinasFluidoGdl_(valStr) {
   var n = toNum_(String(valStr || '').replace(/[A-Z*]$/i, ''));

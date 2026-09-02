@@ -467,6 +467,73 @@ test('buildCitoquimicoInterpretAlerts — combina ascitis y pleural', () => {
   assert.match(pleuralAlerts.join(' '), /Light EXUDADO/i);
 });
 
+const MUESTRA_LIQUIDO_SINOVIAL = `
+Expediente:	3301188-2	Solicitud:	2608010900
+Nombre:	ANA TORRES MEJIA	Fecha Registro:	Aug 1 2026 9:00AM
+Sexo:	FEMENINO	Ubicación:	REUMATOLOGIA
+Edad:	52	Medico:	A QUIEN CORRESPONDA
+
+BIOMETRIA HEMATICA COMPLETA
+Estudio		Resultado	Unidades	Valor de Referencia
+HGB
+*
+12.1
+g/dL	12.0 - 16.0
+HCT
+*
+37
+%	36 - 46
+WBC
+*
+6.8
+10^3/uL	4.5 - 11.0
+
+QUIMICA CLINICA
+CITOQUIMICO DE LIQUIDO SINOVIAL
+Estudio		Resultado	Unidades	Valor de Referencia
+ASPECTO
+*
+TURBIO
+RECUENTO CELULAR
+*
+4500
+LEUCOCITOS/mm3	0 - 200
+POLIMORFONUCLEARES
+*
+80
+%PMN
+LINFOCITOS
+*
+20
+%LINFOCITOS
+GLUCOSA
+B
+15
+mg/dL	70 - 110
+PROTEINAS
+A
+450
+mg/dL	15 - 45
+ERITROCITOS
+*
+ESCASOS
+GRAM
+*
+NEGATIVO
+
+BACTERIOLOGIA
+`;
+
+test('procesarLabs — un fluido sin nombre conocido (SINOVIAL) no contamina BH/QS', () => {
+  const { resLabs } = procesarLabs(MUESTRA_LIQUIDO_SINOVIAL);
+  const bh = resLabs.find((l) => l.startsWith('BH'));
+  const qs = resLabs.find((l) => l.startsWith('QS'));
+  assert.ok(bh, 'la BH real del reporte sí debe aparecer');
+  assert.match(bh, /Hb 12\.1/);
+  assert.ok(!/Eri 15|Eri 450|Lin 20/.test(bh), 'BH no debe tomar Glu/Prot/Lin del líquido sinovial');
+  if (qs) assert.ok(!/Glu 15\b/.test(qs), 'QS no debe tomar la glucosa del líquido sinovial');
+});
+
 test('refreshCitoquimicoInterpretacionInResLabs_ — une PFHs de otro bloque guardado', () => {
   const ascitisOnly = MUESTRA_WENDY_ASCITIS.replace(
     /QUIMICA CLINICA\nALBUMINA[\s\S]*?3\.2 - 5\.5\n\n/,

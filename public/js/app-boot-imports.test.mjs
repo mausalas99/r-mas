@@ -255,7 +255,16 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
  * modal.mjs, plus the copyToClipboardSafe HTML branch in soap-estado.mjs and
  * the RELEASE_NOTES_829 curated entries. File count unchanged: the deleted
  * lab-history-batch-copy-ui.mjs offsets the new eager file. */
-const EAGER_BOOT_BUDGET_BYTES = 3567575;
+/** +4621 B / +0 files: 8.2.9 (cont.). Backlog in already-eager modules:
+ * lab-bulk-preview-modal.mjs / lab-panel-history-dedupe.mjs (SOAP/meds
+ * panel), lab-bulk-paste.mjs / labs-fluidos.mjs / labs-citoquimico-
+ * interpret*.mjs (EU-section split, multi-expediente paste tolerance),
+ * patient-list-virtual.mjs (active-zone virtualization sizing fix),
+ * cloud-push-direct.mjs (diagnostics). No new eager file. */
+/** +238 B / +0 files: 8.2.9 (cont.). Complexity-reduction extraction in the
+ * already-eager cloud-push-direct.mjs (pushChunkWithRetry helper). No new
+ * eager file. */
+const EAGER_BOOT_BUDGET_BYTES = 3572434;
 const EAGER_BOOT_BUDGET_FILES = 113;
 
 /**

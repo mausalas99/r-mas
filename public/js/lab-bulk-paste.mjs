@@ -8,6 +8,7 @@ import {
   extractLabExpedienteFromReport,
   reprocessLabResultLines_,
   collectPriorRefsFromHistory,
+  refreshCitoquimicoInterpretacionInResLabs_,
 } from './labs.js';
 import { getLabHistory } from './app-state.mjs';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory, parseFechaLabToMs, sortLabHistoryChronological } from './tend-core.mjs';
@@ -176,13 +177,32 @@ function filterUsableReportsForPatient(okReports, match) {
 
 /**
  * SEGURIDAD: el sistema SOME a veces junta datos de 2 pacientes distintos en
- * un solo pegado. Si un bloque trae 2+ expedientes que no son el mismo paciente
- * (base distinta, ver expedienteBase_), NUNCA se guarda nada de ese bloque —
- * aunque uno de los dos no esté en el censo. Descartar en silencio uno de los
- * dos sería igual de riesgoso: puede quedar un resultado de otro paciente.
+ * un solo pegado. Un bloque con 2+ expedientes que no son el mismo paciente
+ * (base distinta, ver expedienteBase_) es sospechoso de mezcla.
  */
 function isMixedExpedienteBlock(expedientes) {
   return collectDistinctExpedienteBases(expedientes).length > 1;
+}
+
+/**
+ * Entre expedientes de bases distintas, busca si exactamente UN paciente del
+ * censo calza (ej.: re-consulta del portal trae el ingreso actual + un
+ * expediente viejo del mismo paciente, ya no vigente). Ese caso no es mezcla:
+ * se conserva el paciente conocido y se excluyen — con aviso, nunca en
+ * silencio — los reportes del expediente ajeno. Si 2+ expedientes calzan con
+ * pacientes DISTINTOS del censo, o ninguno calza, no hay forma segura de
+ * resolver de cuál paciente se trata → null (el bloque se bloquea completo).
+ */
+function resolveKnownPatientAmongExpedientes(expedientes, findPatient) {
+  if (!findPatient) return null;
+  var found = null;
+  for (var i = 0; i < expedientes.length; i += 1) {
+    var m = findPatient(expedientes[i]);
+    if (!m || !m.id) continue;
+    if (found && String(found.id) !== String(m.id)) return null;
+    found = m;
+  }
+  return found;
 }
 
 /** Mensaje en español para mostrar cuando se descarta un bloque por mezcla de pacientes. */
@@ -230,10 +250,18 @@ function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
     return r.ok;
   });
   var expedientes = collectUniqueExpedientes(okReports);
-  var isMixed = isMixedExpedienteBlock(expedientes);
+  var hasMultipleExpedientes = isMixedExpedienteBlock(expedientes);
+  var knownMatch = hasMultipleExpedientes ? resolveKnownPatientAmongExpedientes(expedientes, findPatient) : null;
+  var isMixed = hasMultipleExpedientes && !knownMatch;
   var primaryExp = expedientes[0] || '';
-  var match = !isMixed && primaryExp && findPatient ? findPatient(primaryExp) : null;
+  var match = knownMatch || (!isMixed && primaryExp && findPatient ? findPatient(primaryExp) : null);
   var usableReports = isMixed ? [] : filterUsableReportsForPatient(okReports, match);
+  var conflictReports =
+    hasMultipleExpedientes && !isMixed
+      ? okReports.filter(function (r) {
+          return usableReports.indexOf(r) === -1;
+        })
+      : [];
   var days = collectReportDays(usableReports);
   var status = resolveBulkBlockStatus(chunks, okReports, match, expedientes, usableReports, isMixed);
   var patientReg = match ? String(match.registro || '').trim() : '';
@@ -259,6 +287,7 @@ function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
     setsAfterMerge: setsAfterMerge,
     status: status,
     canProcess: !isMixed && !!match && usableReports.length > 0,
+    conflictReports: conflictReports,
     rawText: String(blockText || '').trim(),
   };
 }
@@ -313,7 +342,13 @@ function buildMergedPayloadFromGroup(items, tipo) {
     if (h) newestHora = h;
     if (item.reportText && looksLikeSomeLabReport(item.reportText) && h) horaSome = h;
   });
+  var sourceText = sourceParts.join('\n\n---\n\n');
   var deduped = dedupeConsolidatedLabRows(merged, tipo);
+  // Cada chunk se parseó por separado (portal: química/bacteriología llegan como
+  // reportes distintos), así que LCR/Liq quedan incompletos por chunk; el dedupe
+  // por riqueza no los fusiona campo a campo. Reconstruirlos desde el texto
+  // combinado (mismo blob que un pegado manual completo) sí los fusiona.
+  deduped = refreshCitoquimicoInterpretacionInResLabs_(deduped, sourceText);
   // Prior gas refs ya se aplicaron en parseReportChunk; aquí el reporte del merge
   // gana y DEFAULT_GASO_REFS cubre campos sin rango.
   deduped = sanitizeResLabsChunks(
@@ -327,7 +362,7 @@ function buildMergedPayloadFromGroup(items, tipo) {
     resLabs: deduped,
     fecha: fecha,
     hora: horaSome || newestHora,
-    sourceText: sourceParts.join('\n\n---\n\n'),
+    sourceText: sourceText,
     bhExtras: mergedBhExtras,
     refsBySection: mergedRefs,
     patient: first.patient,

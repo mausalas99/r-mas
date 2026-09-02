@@ -57,7 +57,9 @@ export function emptyLcrFields_() {
 export function scanLcrLine_(fields, lineas, i, linUp, lin) {
   if (linUp.indexOf('PH') === 0) fields.pH = scanNumericAfter_(lineas, i, 4);
   if (linUp.indexOf('ASPECTO') === 0) fields.aspecto = scanTextAfter_(lineas, i, 4);
-  if (linUp.indexOf('RECUENTO CELULAR') === 0 || linUp.indexOf('LEUCOCITOS') === 0) {
+  var esLeucocitosTotal =
+    linUp.indexOf('LEUCOCITOS') === 0 && linUp.indexOf('POLIMORFONUCLEARES') === -1;
+  if (linUp.indexOf('RECUENTO CELULAR') === 0 || esLeucocitosTotal) {
     var leuVal = scanLeucocitos_(lineas, i);
     if (leuVal !== '') fields.leu = leuVal;
   }

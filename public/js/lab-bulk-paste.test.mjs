@@ -263,6 +263,67 @@ HIPOCROMIA +`;
     assert.ok(gasesLine, 'debe incluir línea GASES');
     assert.match(String(gasesLine), /\bAG \d/, 'debe calcular anión gap al fusionar labs + gasometría');
   });
+});
+
+describe('lab-bulk-paste mergeBulkParseResultsForStorage', () => {
+  beforeEach(() => {
+    store = {};
+  });
+
+  it('mergeBulkParseResultsForStorage fusiona LCR química + bacteriología llegadas como reportes separados (portal)', () => {
+    var header =
+      'Expediente:\t1936244-5\tSolicitud:\t2607150803\n' +
+      'Nombre:\tRODOLFO SEGUNDO\tFecha Registro:\tJul 15 2026 3:06PM\n' +
+      'Sexo:\tMASCULINO\tUbicacion:\tMEDICINA INTERNA 2\n' +
+      'Edad:\t37\tMedico:\tA QUIEN CORRESPONDA\n';
+    var quimica =
+      header +
+      '\nQUIMICA CLINICA\nCITOQUIMICO DE LCR\n' +
+      'Estudio\t\tResultado\tUnidades\tValor de Referencia\n' +
+      'pH\n*\n8.5\nASPECTO\n*\nRECUENTO CELULAR\n*\nPOLIMORFONUCLEARES\n*\nLINFOCITOS\n*\n' +
+      'TINTA CHINA\n*\nERITROCITOS\n*\nCOAGLUTINACION\n*\nGRAM\n*\n' +
+      'GLUCOSA\nB\n21\nmg/dL\t45 - 80\n' +
+      'PROTEINAS\nA\n200\nmg/dL\t15 - 45\n' +
+      'CLORURO\nB\n109.3\nmmol/L\t118.1 - 132.0\n' +
+      'OTROS\n*\n';
+    var bacteriologia =
+      header +
+      '\nBACTERIOLOGIA\nCITOQUIMICO LIQ. LCR\n' +
+      'Estudio\t\tResultado\tUnidades\tValor de Referencia\n' +
+      'LCR\n*\nASPECTO\n*\nCLARO\n' +
+      'RECUENTO CELULAR\n*\n215\nLEUCOCITOS/MM\n' +
+      'LEUCOCITOS POLIMORFONUCLEARES\n*\n26\n%PMN\n' +
+      'LINFOCITOS\n*\n74\n%LINFOCITOS\n' +
+      'TINTA CHINA\n*\nNEGATIVO\n' +
+      'ERITROCITOS\n*\nAUSENTES\n' +
+      'COAGLUTINACION\n*\n' +
+      'GRAM\n*\nMODERADOS LEUCOCITOS\n' +
+      'COMENTARIOS\n*\n';
+    // El portal manda cada celda en su propia línea con una en blanco entre ellas.
+    var portalize = function (t) {
+      return t.replace(/\n/g, '\n\n');
+    };
+    var items = [portalize(quimica), portalize(bacteriologia)].map(function (text) {
+      return { result: procesarLabs(text), reportText: text };
+    });
+    var stored = mergeBulkParseResultsForStorage(items);
+    assert.equal(stored.length, 1, 'química + bacteriología del mismo horario van en un solo bloque');
+    var lcr = stored[0].resLabs.find(function (r) {
+      return /^LCR:/i.test(String(r));
+    });
+    var interp = stored[0].resLabs.find(function (r) {
+      return /^INTERPRETACI[ÓO]N CITOQU[IÍ]MICO:/i.test(String(r));
+    });
+    assert.ok(lcr, 'debe haber una fila LCR');
+    assert.match(lcr, /pH 8\.5/);
+    assert.match(lcr, /Leu 215/);
+    assert.match(lcr, /Glu 21/);
+    assert.match(lcr, /Prot 200/);
+    assert.match(lcr, /Cl 109\.3/);
+    assert.ok(interp, 'debe haber interpretación citoquímica');
+    assert.match(interp, /Meningitis tuberculosa\?/);
+    assert.ok(!/parcialmente tratada vs viral/.test(interp));
+  });
 
   it('mergeBulkParseResultsForStorage une química + gas inicial; gas seriado aparte', () => {
     var labs = DEMO_SOME_LAB_REPORT.replace('Apr 11 2026 9:42AM', 'Apr 11 2026 9:56AM');
@@ -407,9 +468,11 @@ describe('lab-bulk-paste preview and tipo', () => {
     assert.ok(preview[0].days.length >= 2);
   });
 
-  it('buildBulkLabPreview bloquea si el expediente ajeno NO está en censo (seguridad paciente)', () => {
-    // Antes se descartaba en silencio el expediente ajeno; ahora bloquea SIEMPRE:
-    // un expediente ajeno fuera del censo también puede ser otro paciente real.
+  it('buildBulkLabPreview con expediente ajeno NO en censo: filtra al paciente conocido y avisa (no bloquea todo)', () => {
+    // Un expediente ajeno fuera del censo puede ser un ingreso viejo del MISMO
+    // paciente (el portal re-fetch a veces trae ambos). Si solo uno de los
+    // expedientes calza con un paciente del censo, se conserva ese y se
+    // excluye el otro con aviso explícito — nunca en silencio.
     var foreign = String(DEMO_SOME_LAB_REPORT).replace(/0008421-7/g, '9999999-9');
     var block = DEMO_SOME_LAB_REPORT + '\n\n' + foreign;
     var preview = buildBulkLabPreview(block, {
@@ -419,9 +482,12 @@ describe('lab-bulk-paste preview and tipo', () => {
       },
     });
     assert.equal(preview.length, 1);
-    assert.equal(preview[0].status, 'mixed-expediente');
-    assert.equal(preview[0].canProcess, false);
-    assert.equal(preview[0].okReportCount, 0);
+    assert.equal(preview[0].status, 'ok');
+    assert.equal(preview[0].canProcess, true);
+    assert.equal(preview[0].patient.id, 'p1');
+    assert.equal(preview[0].okReportCount, 1);
+    assert.equal(preview[0].conflictReports.length, 1);
+    assert.equal(preview[0].conflictReports[0].expediente, '9999999-9');
   });
 
   it('buildBulkLabPreview marca mixed-expediente con 2 pacientes de censo (nunca guarda ninguno)', () => {

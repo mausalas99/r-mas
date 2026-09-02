@@ -48,6 +48,9 @@ function renderPreviewSummary(blocks) {
   var missing = blocks.filter(function (b) {
     return shouldOfferBulkPreviewAddPatient(b);
   }).length;
+  var conflicts = blocks.reduce(function (acc, b) {
+    return acc + (Array.isArray(b.conflictReports) ? b.conflictReports.length : 0);
+  }, 0);
 
   var parts = [];
   if (processable) {
@@ -59,6 +62,9 @@ function renderPreviewSummary(blocks) {
   parts.push(sets + ' conjunto' + (sets === 1 ? '' : 's'));
   if (badReports) {
     parts.push(badReports + ' omitido' + (badReports === 1 ? '' : 's'));
+  }
+  if (conflicts) {
+    parts.push(conflicts + ' excluido' + (conflicts === 1 ? '' : 's') + ' (otro expediente)');
   }
   if (missing) {
     parts.push(missing + ' sin registrar');
@@ -99,6 +105,38 @@ export function renderBlockRawText(block) {
     esc(raw) +
     '</pre>' +
     '</details>'
+  );
+}
+
+/** Reportes del mismo bloque excluidos por pertenecer a otro expediente (posible otro paciente u otro ingreso). */
+function renderConflictReports(block) {
+  var conflicts = Array.isArray(block.conflictReports) ? block.conflictReports : [];
+  if (!conflicts.length) return '';
+  return (
+    '<details class="lab-bulk-preview-issues lab-bulk-preview-conflicts">' +
+    '<summary>' +
+    conflicts.length +
+    ' reporte' +
+    (conflicts.length === 1 ? '' : 's') +
+    ' excluido' +
+    (conflicts.length === 1 ? '' : 's') +
+    ' (otro expediente, no se guardó)</summary>' +
+    '<ul>' +
+    conflicts
+      .map(function (r) {
+        var label = r.expediente ? 'Exp. ' + r.expediente : 'Reporte';
+        return (
+          '<li><span class="lab-bulk-preview-issue-label">' +
+          esc(label) +
+          '</span> no coincide con ' +
+          esc(block.patientName || 'el paciente') +
+          ' (' +
+          esc(block.primaryExpediente || '') +
+          ') — posible otro ingreso u otro paciente</li>'
+        );
+      })
+      .join('') +
+    '</ul></details>'
   );
 }
 
@@ -205,6 +243,7 @@ function renderPreviewList(blocks) {
           '</div>' +
           '</div>' +
           (issues || '') +
+          renderConflictReports(block) +
           renderBlockRawText(block) +
           '</li>'
         );
