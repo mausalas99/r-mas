@@ -481,10 +481,12 @@ DENSIDAD
   assert.ok(!res.resLabs.some((l) => l.startsWith('QS\t')), 'no debe haber línea QS');
   const ego = res.resLabs.find((l) => l.startsWith('EGO:'));
   assert.ok(ego, 'debe conservar EGO');
-  assert.match(ego, /\bNaU 40\b/);
-  assert.match(ego, /\bKU 22\b/);
-  assert.match(ego, /\bClU 34\b/);
-  assert.match(ego, /\bCrU 53\.99\b/);
+  const eu = res.resLabs.find((l) => l.startsWith('EU\t'));
+  assert.ok(eu, 'debe conservar EU (electrolitos en orina), separado de EGO');
+  assert.match(eu, /\bNa 40\b/);
+  assert.match(eu, /\bK 22\b/);
+  assert.match(eu, /\bCl 34\b/);
+  assert.match(eu, /\bCr 53\.99\b/);
 });
 
 test('buildGasoInterpretacion_ deshabilitada con química y gases', () => {

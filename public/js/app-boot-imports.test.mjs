@@ -250,7 +250,12 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
 /** +5150 B / +0 files: 8.2.8. RELEASE_NOTES_828 curated entries (Nube E2EE,
  * next-rotation team staging) in the already-eager release-notes-highlights.mjs
  * — no new eager file. */
-const EAGER_BOOT_BUDGET_BYTES = 3564808;
+/** +2767 B / +0 files: 8.2.9. New lab-clipboard.mjs (HTML-formatted copy
+ * payload) is eager via lab-panel-workbench.mjs and lab-history-batch-copy-
+ * modal.mjs, plus the copyToClipboardSafe HTML branch in soap-estado.mjs and
+ * the RELEASE_NOTES_829 curated entries. File count unchanged: the deleted
+ * lab-history-batch-copy-ui.mjs offsets the new eager file. */
+const EAGER_BOOT_BUDGET_BYTES = 3567575;
 const EAGER_BOOT_BUDGET_FILES = 113;
 
 /**
