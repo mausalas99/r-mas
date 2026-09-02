@@ -27,6 +27,8 @@ const ERROR_CODE_EXPLAIN = {
   not_found: 'Sala o recurso no encontrado en el servidor.',
   payload_too_large: 'El cambio es demasiado grande para enviar.',
   push_failed: 'No se pudo enviar el censo u operación a Nube.',
+  stale_rejected:
+    'La sala rechazó cambios por reloj desactualizado en esta Mac. Revisa la hora del sistema.',
   not_implemented: 'Función no disponible en el servidor.',
   error: 'Error genérico del servidor.',
   401: 'No autorizado (401). Vuelve a iniciar sesión.',

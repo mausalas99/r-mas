@@ -4,7 +4,9 @@ import {
   chunkCloudOps,
   MAX_LAB_OPS_PER_CHUNK,
   MAX_OPS_PER_CHUNK,
+  pushCloudOpsDirect,
 } from './cloud-push-direct.mjs';
+import { getCloudSyncDiagnostics, clearCloudSyncErrors } from './cloud-sync-diagnostics.mjs';
 
 function labOp(i) {
   return {
@@ -56,5 +58,60 @@ describe('chunkCloudOps', () => {
     });
     assert.equal(chunks.flat().length, 44);
     assert.equal(MAX_OPS_PER_CHUNK, 16);
+  });
+});
+
+describe('pushCloudOpsDirect — stale rejections', () => {
+  it('does not count ops the Worker rejected as stale as applied, and records a diagnostic', async () => {
+    clearCloudSyncErrors();
+    const api = {
+      push: async () => ({
+        revision: 5,
+        applied: [],
+        rejected: [{ op: { path: 'clinicalOps' }, reason: 'stale' }],
+      }),
+    };
+    let revision = 4;
+    const result = await pushCloudOpsDirect(
+      api,
+      'room1',
+      [{ path: 'clinicalOps', value: {}, updatedAt: 't', actorId: 'a' }],
+      () => revision,
+      (next) => {
+        revision = next;
+      }
+    );
+    assert.equal(result.appliedOps, 0);
+    assert.equal(result.staleRejected, 1);
+    const diag = getCloudSyncDiagnostics();
+    assert.ok(
+      diag.lastErrors.some((e) => e.code === 'stale_rejected'),
+      'a stale rejection must be recorded for the Conexión diagnostics panel'
+    );
+  });
+
+  it('counts a fully-applied push as applied, with no diagnostic recorded', async () => {
+    clearCloudSyncErrors();
+    const api = {
+      push: async () => ({
+        revision: 6,
+        applied: [{ path: 'clinicalOps' }],
+        rejected: [],
+      }),
+    };
+    let revision = 5;
+    const result = await pushCloudOpsDirect(
+      api,
+      'room1',
+      [{ path: 'clinicalOps', value: {}, updatedAt: 't', actorId: 'a' }],
+      () => revision,
+      (next) => {
+        revision = next;
+      }
+    );
+    assert.equal(result.appliedOps, 1);
+    assert.equal(result.staleRejected, 0);
+    const diag = getCloudSyncDiagnostics();
+    assert.ok(!diag.lastErrors.some((e) => e.code === 'stale_rejected'));
   });
 });

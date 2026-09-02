@@ -3,6 +3,7 @@ import { resolveCloudPushMutationId } from './push-mutation-id.mjs';
 import { CLOUD_BATCH_MUTATION_ID } from './constants.mjs';
 import { noteCloudLabSidecarOpsSent } from './cloud-lab-sidecar-index.mjs';
 import { isCloudTransientServerError } from './cloud-sync-timing.mjs';
+import { recordCloudSyncError } from './cloud-sync-diagnostics.mjs';
 
 const DIRECT_PUSH_TRANSIENT_RETRIES = 3;
 const DIRECT_PUSH_TRANSIENT_DELAY_MS = 2000;
@@ -88,6 +89,7 @@ export function chunkCloudOps(ops) {
 export async function pushCloudOpsDirect(api, roomId, ops, getRevision, setRevision) {
   const chunks = chunkCloudOps(ops);
   let appliedOps = 0;
+  let staleRejected = 0;
   for (let i = 0; i < chunks.length; i += 1) {
     const sanitized = sanitizeOpsForCloudPush(chunks[i]);
     if (!sanitized.ops.length) continue;
@@ -122,8 +124,24 @@ export async function pushCloudOpsDirect(api, roomId, ops, getRevision, setRevis
       const current = Number(getRevision() ?? 0);
       if (Number.isFinite(next) && next > current) setRevision(next);
     }
-    appliedOps += sanitized.ops.length;
+    const chunkStale = Array.isArray(result?.rejected)
+      ? result.rejected.filter((r) => r?.reason === 'stale').length
+      : 0;
+    staleRejected += chunkStale;
+    appliedOps += sanitized.ops.length - chunkStale;
     noteCloudLabSidecarOpsSent(chunks[i], sanitized.ops);
   }
-  return { appliedOps, chunks: chunks.length };
+  if (staleRejected > 0) {
+    // The Worker's clock rejected these as older than what it already has — usually a
+    // system clock lagging behind the room's other devices. Surfaced here (not thrown):
+    // pushCloudOpsDirect is a shared funnel for census/labs/clinicalOps callers that each
+    // have their own retry semantics, so we record it for the Conexión diagnostics panel
+    // instead of failing the whole push.
+    recordCloudSyncError({
+      op: 'push',
+      code: 'stale_rejected',
+      message: `${staleRejected} operación(es) rechazada(s) por reloj desactualizado`,
+    });
+  }
+  return { appliedOps, chunks: chunks.length, staleRejected };
 }
