@@ -5,7 +5,11 @@ import {
 } from '../tend-core.mjs';
 import { getPatients, getLabHistory } from '../app-state.mjs';
 import { bumpLabHistoryRevision } from '../lab-history-cache.mjs';
-import { findExactDuplicateLabGroups, compareLabSetIdForDedupe } from '../lab-history-auto-store-core.mjs';
+import {
+  findExactDuplicateLabGroups,
+  findComplementaryLabHistoryMergeGroups,
+  compareLabSetIdForDedupe,
+} from '../lab-history-auto-store-core.mjs';
 import { resLabsHasGasometria } from '../lab-history-format.mjs';
 import { sanitizeResLabsChunks } from '../labs-reslabs-sanitize.mjs';
 import { labTimestampMsFromFechaHora } from '../lab-consolidation-cluster.mjs';
@@ -380,7 +384,23 @@ function runLabConsolidationForPatient(patientId, outlierGroupKeys) {
         )
       : [];
   var windowResult = executeLabConsolidationMergeJobs(patientId, jobs);
-  var result = combineConsolidationResults_(sameDtResult, windowResult);
+  // Fragmentos del mismo día que nunca chocan en ningún analito (p. ej. LCR: recuento
+  // celular de Bacteriología + pH/Glu/Prot/Cl de Química Clínica) — sin tope de horas,
+  // fusionar dos analitos distintos nunca pisa un valor.
+  sets = getLabHistory()[patientId] ? getLabHistory()[patientId].slice() : [];
+  var complementaryCandidates = sets.filter(function (s) {
+    var t = labSetTipo(s);
+    return t !== 'mixed' && t !== 'cultivo';
+  });
+  var complementaryGroups = findComplementaryLabHistoryMergeGroups(complementaryCandidates);
+  var complementaryJobs = complementaryGroups.length
+    ? buildManualLabConsolidationJobs(complementaryGroups, setsByIdForPatient(patientId))
+    : [];
+  var complementaryResult = executeLabConsolidationMergeJobs(patientId, complementaryJobs);
+  var result = combineConsolidationResults_(
+    combineConsolidationResults_(sameDtResult, windowResult),
+    complementaryResult
+  );
   if (result.merged) rt.rebuildEstudiosFromLabHistory(patientId);
   return result;
 }

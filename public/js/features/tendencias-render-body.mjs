@@ -1,7 +1,6 @@
 import {
   buildTrendSeriesIndexCached,
   getLabHistoryRevision,
-  getTrendRenderWindow,
   TREND_SPARK_WINDOW,
 } from '../lab-history-cache.mjs';
 import { readTendCardOrder } from '../tend-prefs.mjs';
@@ -239,8 +238,6 @@ export function renderTendenciasBody(container) {
     resetTendRenderEmpty(container, 'Agrega al menos 2 sets de laboratorio para ver tendencias.');
     return;
   }
-  var historyAsc = historyDesc.slice().reverse();
-  var catalogAsc = getTrendRenderWindow(historyAsc, 'catalog');
   var mergedCatalog = tc.buildMergedTrendSeriesCatalog(historyDesc);
   var indexCacheKey =
     String(tc.aid()) +
@@ -253,7 +250,6 @@ export function renderTendenciasBody(container) {
   var seriesIndex = buildTrendSeriesIndexCached(indexCacheKey, {
     catalogSpecs: mergedCatalog,
     historyFullDesc: historyDesc,
-    windowHistoryAsc: catalogAsc,
     tendRefForSeries: tendRefForSeries,
   });
   tc.tendStore._tendRenderState.seriesIndex = seriesIndex;

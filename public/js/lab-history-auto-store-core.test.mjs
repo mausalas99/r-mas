@@ -14,6 +14,7 @@ import {
   findLabSetsByDateTime,
   planLabHistoryDateTimeUpsert,
   gasometriaFingerprintFromResLabs,
+  findComplementaryLabHistoryMergeGroups,
 } from './lab-history-auto-store-core.mjs';
 
 test('normalizeLabLine colapsa espacios y trim', () => {
@@ -229,6 +230,71 @@ test('planLabHistoryDateTimeUpsert misma fecha, hora distinta, misma sección �
     parsedBySection: { BH: { Hb: '10.1' } },
   });
   assert.equal(plan.action, 'add');
+});
+
+test('planLabHistoryDateTimeUpsert misma fecha, hora distinta, misma sección pero analitos distintos (LCR fragmentado) → merge', () => {
+  // Citoquímico de LCR: recuento celular (Bacteriología) llega en un bloque y
+  // pH/Glu/Prot/Cl (Química Clínica) en otro, ambos bajo la sección LCR.
+  var existing = [
+    {
+      id: '1',
+      fecha: '03/08/2026',
+      hora: '10:00',
+      resLabs: ['LCR\tpH 9 Glu 24 Prot 200 Cl 123.3'],
+      parsedBySection: { LCR: { pH: '9', Glu: '24', Prot: '200', Cl: '123.3' } },
+    },
+  ];
+  var plan = planLabHistoryDateTimeUpsert(existing, {
+    fecha: '03/08/2026',
+    hora: '11:30',
+    resLabs: ['LCR\tLeu 265'],
+    parsedBySection: { LCR: { Leu: '265' } },
+  });
+  assert.equal(plan.action, 'merge');
+  assert.equal(plan.keeper.id, '1');
+  assert.equal(plan.matchKind, 'complementary');
+});
+
+test('findComplementaryLabHistoryMergeGroups une fragmentos de LCR del mismo día sin tope de hora', () => {
+  var sets = [
+    {
+      id: '10',
+      fecha: '03/08/2026',
+      parsedBySection: { LCR: { pH: '9', Glu: '24', Prot: '200', Cl: '123.3' } },
+    },
+    {
+      id: '11',
+      fecha: '03/08/2026',
+      parsedBySection: { LCR: { Leu: '265' } },
+    },
+    {
+      id: '12',
+      fecha: '04/08/2026',
+      parsedBySection: { LCR: { Leu: '10' } },
+    },
+  ];
+  var groups = findComplementaryLabHistoryMergeGroups(sets);
+  assert.equal(groups.length, 1);
+  assert.deepEqual(groups[0], ['10', '11']);
+});
+
+test('findComplementaryLabHistoryMergeGroups no une tomas con el mismo analito repetido', () => {
+  var sets = [
+    { id: '1', fecha: '31/07/2026', parsedBySection: { BH: { Hb: '12.9' } } },
+    { id: '2', fecha: '31/07/2026', parsedBySection: { BH: { Hb: '10.1' } } },
+  ];
+  assert.deepEqual(findComplementaryLabHistoryMergeGroups(sets), []);
+});
+
+test('findComplementaryLabHistoryMergeGroups une transitivamente tres fragmentos', () => {
+  var sets = [
+    { id: 'a', fecha: '01/09/2026', parsedBySection: { LCR: { Leu: '5' } } },
+    { id: 'b', fecha: '01/09/2026', parsedBySection: { LCR: { pH: '7.4' } } },
+    { id: 'c', fecha: '01/09/2026', parsedBySection: { LCR: { Glu: '40' } } },
+  ];
+  var groups = findComplementaryLabHistoryMergeGroups(sets);
+  assert.equal(groups.length, 1);
+  assert.deepEqual(groups[0].sort(), ['a', 'b', 'c']);
 });
 
 test('gasometriaFingerprintFromResLabs igual para mismos GASES', () => {

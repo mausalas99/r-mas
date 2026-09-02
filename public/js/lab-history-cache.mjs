@@ -76,16 +76,13 @@ export function trendCatalogSeriesKey(sectionKey, fieldKey) {
  * @param {{
  *   catalogSpecs: Array<{ sectionKey: string, fieldKey: string }>,
  *   historyFullDesc: unknown[],
- *   windowHistoryAsc: unknown[],
  *   tendRefForSeries: (history: unknown[], sk: string, fk: string, preferSet: unknown) => [number, number] | null,
  * }} opts
  */
 export function buildTrendSeriesIndex(opts) {
   var catalogSpecs = opts.catalogSpecs || [];
   var historyFullDesc = opts.historyFullDesc || [];
-  var windowHistoryAsc = opts.windowHistoryAsc || [];
   var tendRefForSeries = opts.tendRefForSeries;
-  var windowDesc = windowHistoryAsc.slice().reverse();
   var out = Object.create(null);
 
   for (var i = 0; i < catalogSpecs.length; i += 1) {
@@ -96,11 +93,12 @@ export function buildTrendSeriesIndex(opts) {
     var rawFull = historyFullDesc.filter(function (s) {
       return getSetTrendValueForSeries(s, sk, fk) != null;
     });
+    // Ventana por serie: las últimas TREND_CATALOG_WINDOW tomas DE ESTA sección/campo,
+    // no las últimas N tomas de cualquier tipo — un estudio infrecuente (LCR, paneles
+    // especiales) no debe desaparecer de tendencias solo porque hay labs rutinarios
+    // (BH/QS) más recientes entre medio.
     var setsDescFull = dedupeTrendSetsForSeries(rawFull, sk, fk);
-    var rawWindow = windowDesc.filter(function (s) {
-      return getSetTrendValueForSeries(s, sk, fk) != null;
-    });
-    var setsDesc = dedupeTrendSetsForSeries(rawWindow, sk, fk);
+    var setsDesc = setsDescFull.slice(0, TREND_CATALOG_WINDOW);
     var latestSet = setsDescFull.length ? setsDescFull[0] : null;
     var latest = latestSet ? getSetTrendValueForSeries(latestSet, sk, fk) : null;
     var ref = tendRefForSeries(historyFullDesc, sk, fk, latestSet);

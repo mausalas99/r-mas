@@ -400,9 +400,12 @@ export function findLabSetsByDateTime(sets, fecha, hora) {
 
 /**
  * Un mismo estudio (SOME) suele llegar en fragmentos — Biometría se procesa antes que
- * Química Sanguínea aunque sean la misma toma. Si no comparten ninguna sección ya
- * presente, son complementarios: se pueden unir sin pisar valores. Si comparten una
- * sección, tratarlas como tomas distintas del mismo día (comportamiento previo).
+ * Química Sanguínea aunque sean la misma toma. También pasa DENTRO de una sección: un
+ * citoquímico de LCR reporta el recuento celular (Bacteriología) y el resto (pH/Glu/
+ * Prot/Cl, Química Clínica) como bloques separados del mismo estudio. Si ningún analito
+ * entrante ya tiene valor en el set existente, son complementarios: se unen sin pisar
+ * nada. Si algún analito se repite con otra hora, es una toma distinta del mismo día
+ * (comportamiento previo).
  */
 function sectionsAreComplementary_(a, b) {
   var pa = (a && a.parsedBySection) || null;
@@ -413,7 +416,11 @@ function sectionsAreComplementary_(a, b) {
   });
   if (!keysA.length) return false;
   return keysA.every(function (k) {
-    return !pb[k] || !Object.keys(pb[k]).length;
+    var rowB = pb[k];
+    if (!rowB || !Object.keys(rowB).length) return true;
+    return Object.keys(pa[k]).every(function (fk) {
+      return !(fk in rowB);
+    });
   });
 }
 
@@ -434,6 +441,70 @@ function findComplementarySameDaySet_(existingSets, incoming) {
     if (sectionsAreComplementary_(incoming, sameDay[i])) return sameDay[i];
   }
   return null;
+}
+
+/**
+ * Grupos de sets del mismo día cuyos analitos no se pisan entre sí (mutuamente
+ * complementarios), listos para fusionar en el historial YA guardado — cubre
+ * fragmentos que quedaron sueltos antes de este fix (p. ej. LCR: recuento celular
+ * de Bacteriología y pH/Glu/Prot/Cl de Química Clínica llegados por separado).
+ * No requiere ventana horaria: dos analitos distintos nunca chocan al unirse.
+ * @param {object[]} sets — con id, fecha y parsedBySection
+ * @returns {string[][]} cada grupo es una lista de ids (2+) a fusionar
+ */
+export function findComplementaryLabHistoryMergeGroups(sets) {
+  var byDay = Object.create(null);
+  (sets || []).forEach(function (s) {
+    if (!s || s.id == null || String(s.id) === '') return;
+    var pb = s.parsedBySection;
+    if (!pb || !Object.keys(pb).length) return;
+    var d = normalizeDateValue(s.fecha);
+    if (!d) return;
+    if (!byDay[d]) byDay[d] = [];
+    byDay[d].push(s);
+  });
+
+  var groups = [];
+  Object.keys(byDay).forEach(function (day) {
+    var arr = byDay[day];
+    if (arr.length < 2) return;
+    var parent = arr.map(function (_, i) {
+      return i;
+    });
+    function find(i) {
+      while (parent[i] !== i) {
+        parent[i] = parent[parent[i]];
+        i = parent[i];
+      }
+      return i;
+    }
+    for (var i = 0; i < arr.length; i++) {
+      for (var j = i + 1; j < arr.length; j++) {
+        if (sectionsAreComplementary_(arr[i], arr[j]) && sectionsAreComplementary_(arr[j], arr[i])) {
+          var ri = find(i);
+          var rj = find(j);
+          if (ri !== rj) parent[ri] = rj;
+        }
+      }
+    }
+    var byRoot = Object.create(null);
+    arr.forEach(function (s, i) {
+      var r = find(i);
+      if (!byRoot[r]) byRoot[r] = [];
+      byRoot[r].push(s);
+    });
+    Object.keys(byRoot).forEach(function (r) {
+      var g = byRoot[r];
+      if (g.length < 2) return;
+      g.sort(compareLabSetIdForDedupe);
+      groups.push(
+        g.map(function (s) {
+          return String(s.id);
+        })
+      );
+    });
+  });
+  return groups;
 }
 
 /**
