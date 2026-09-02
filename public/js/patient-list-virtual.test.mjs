@@ -64,6 +64,15 @@ describe('patient-list-virtual', () => {
     assert.ok(cards.length > 0);
     assert.ok(cards.length < 40);
     assert.ok([...cards].some((el) => el.getAttribute('data-patient-id') === 'p0'));
+    // Regression: must set an explicit `height`, not `max-height`. With only
+    // max-height, a fresh empty zone has 0 content height on first mount, so
+    // the virtual-scroll's first clientHeight read sees 0 and renders no cards.
+    assert.ok(zone.style.height, 'zone should get an explicit height, not just max-height');
+    assert.equal(zone.style.maxHeight, '');
+    // Regression: flex-shrink must be pinned to 0. With shrink:1 (the CSS
+    // default here) + min-height:0, the flex layout can shrink this box back
+    // to 0 to fit its siblings even though an explicit height was just set.
+    assert.equal(zone.style.flexShrink, '0');
 
     destroyPatientActiveZoneVirtual();
     list.remove();

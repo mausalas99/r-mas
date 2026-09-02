@@ -12,7 +12,11 @@ import {
 } from './patient-list-incremental.mjs';
 
 export const PATIENT_ACTIVE_VIRTUAL_THRESHOLD = 30;
-export const PATIENT_ACTIVE_ITEM_STRIDE = 70;
+// Real rendered card height (89-90px at default density) + the flex-column
+// gap between cards (~7-8px) — measured from a live sidebar. Absolutely
+// positioned virtual items get no automatic gap, so a stride shorter than
+// the real card height makes consecutive cards overlap and cut off text.
+export const PATIENT_ACTIVE_ITEM_STRIDE = 98;
 
 /** @param {number} activeCount */
 export function shouldVirtualizeActiveZone(activeCount) {
@@ -53,8 +57,21 @@ function syncActiveZoneMaxHeight(listEl, zoneEl) {
   const listRect = listEl.getBoundingClientRect();
   const zoneRect = zoneEl.getBoundingClientRect();
   const bottomPad = 12;
-  const maxH = Math.max(140, Math.floor(listRect.bottom - zoneRect.top - bottomPad));
-  zoneEl.style.maxHeight = `${maxH}px`;
+  // Floor is ~5 cards tall (PATIENT_ACTIVE_ITEM_STRIDE * 5), not just "not zero":
+  // when filters/pinned patients eat most of the visible sidebar, the remaining
+  // room can be tiny, and clamping to that squeezes this box to 1-2 visible
+  // cards. The outer #patient-list is already overflow-y:auto, so letting this
+  // box run past the fold is fine — the outer scrollbar picks up the rest.
+  const minH = PATIENT_ACTIVE_ITEM_STRIDE * 5;
+  const maxH = Math.max(minH, Math.floor(listRect.bottom - zoneRect.top - bottomPad));
+  // Sets `height` (not `max-height`): with flex-basis:auto + empty content on
+  // first mount, an unset height reads back as 0px, so the virtual-scroll's
+  // very first clientHeight read sees an empty box and renders nothing.
+  // flex-shrink stays 0 (paired with min-height:0 below) so the flex layout
+  // can't collapse this box back to 0 to make room for its siblings — the
+  // parent list scrolls instead, which is the whole point of the CSS overflow:auto here.
+  zoneEl.style.height = `${maxH}px`;
+  zoneEl.style.flexShrink = '0';
 }
 
 function detachResizeObserver() {
@@ -73,8 +90,9 @@ export function destroyPatientActiveZoneVirtual() {
   if (state.zoneEl) {
     state.zoneEl.classList.remove('patient-sort-zone--virtual-active');
     state.zoneEl.style.removeProperty('overflow');
-    state.zoneEl.style.removeProperty('max-height');
+    state.zoneEl.style.removeProperty('height');
     state.zoneEl.style.removeProperty('min-height');
+    state.zoneEl.style.removeProperty('flex-shrink');
     state.zoneEl.removeAttribute('data-active-ids');
     state.zoneEl = null;
   }
