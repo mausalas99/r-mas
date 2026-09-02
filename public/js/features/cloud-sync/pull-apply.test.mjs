@@ -40,6 +40,22 @@ describe('pull-apply cloud snapshot merge', () => {
     assert.equal(entry?.patient?.nombre, 'PACIENTE');
     assert.equal(entry?.note?.texto, 'Nota remota');
     assert.equal(entry?.labHistory?.length, 1);
+    assert.ok(!('medReceta' in entry));
+    assert.ok(!('medReceta' in entry.patient));
+  });
+
+  it('cloudEntryToLanEntry carries medReceta only when the cloud entry has it', () => {
+    const withMeds = cloudEntryToLanEntry(
+      { id: 'p1', fields: { nombre: 'PACIENTE' }, medReceta: { items: [{ id: 'm1' }] } },
+      {}
+    );
+    assert.deepEqual(withMeds.medReceta, { items: [{ id: 'm1' }] });
+
+    const cleared = cloudEntryToLanEntry(
+      { id: 'p1', fields: { nombre: 'PACIENTE' }, medReceta: null },
+      {}
+    );
+    assert.equal(cleared.medReceta, null);
   });
 
   it('cloudStateToLanEntries builds LAN entries from tiny snapshot', () => {
@@ -76,10 +92,15 @@ describe('pull-apply cloud snapshot merge', () => {
       path: 'labSidecars/p1/l1',
       value: { id: 'l1', fecha: '2026-08-02' },
     });
+    foldCloudOp(fold, {
+      path: 'entries/p1/medReceta',
+      value: { items: [{ id: 'm1' }] },
+    });
     const entries = opFoldToLanEntries(fold);
     assert.equal(entries[0].patient.nombre, 'DOS');
     assert.equal(entries[0].note.texto, 'sync');
     assert.equal(entries[0].labHistory[0].id, 'l1');
+    assert.deepEqual(entries[0].medReceta, { items: [{ id: 'm1' }] });
   });
 
   it('eventualidades path overrides stale packed fields copy', () => {

@@ -34,6 +34,7 @@ describe('mutate-bridge op mapping', () => {
         },
         note: { texto: 'Evolución' },
         indicaciones: { items: [] },
+        medReceta: { items: [{ id: 'm1', texto: 'ENOXAPARINA' }] },
         labHistory: [
           {
             id: 'lab-1',
@@ -50,6 +51,7 @@ describe('mutate-bridge op mapping', () => {
     assert.ok(paths.includes('entries/p1/fields'));
     assert.ok(paths.includes('entries/p1/note'));
     assert.ok(paths.includes('entries/p1/indicaciones'));
+    assert.ok(paths.includes('entries/p1/medReceta'));
     assert.ok(paths.includes('labSidecars/p1/lab-1'));
 
     const fieldsOp = ops.find((op) => op.path === 'entries/p1/fields');
@@ -57,6 +59,9 @@ describe('mutate-bridge op mapping', () => {
     const noteOp = ops.find((op) => op.path === 'entries/p1/note');
     assert.equal(noteOp?.value?.texto, 'Evolución');
     assert.equal(noteOp?.actorId, 'user-1');
+    const medRecetaOp = ops.find((op) => op.path === 'entries/p1/medReceta');
+    assert.equal(medRecetaOp?.value?.items?.[0]?.id, 'm1');
+    assert.ok(!('medReceta' in fieldsOp.value));
     const labOp = ops.find((op) => op.path === 'labSidecars/p1/lab-1');
     assert.equal(labOp?.value?.sourceText, undefined);
     assert.ok(labOp?.value?.resLabs);

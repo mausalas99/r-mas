@@ -7,7 +7,7 @@ import { labSetTimestamp, monitoreoUpdatedAt } from '../../patient-merge.mjs';
 /** @typedef {{ path: string, value: unknown, updatedAt: string, actorId: string }} CloudSyncOp */
 
 /** Packed into dedicated LWW paths — must not ride along on `fields` with a fresh batch clock. */
-export const FIELD_SKIP = new Set(['historiaClinica', 'id', 'monitoreo', 'eventualidades']);
+export const FIELD_SKIP = new Set(['historiaClinica', 'id', 'monitoreo', 'eventualidades', 'medReceta']);
 
 /** @param {unknown} note @param {string} fallback */
 function noteOpUpdatedAt(note, fallback) {
@@ -131,6 +131,14 @@ function pushDocOps(ops, patientId, entry, actorId, batchAt) {
       value: entry.indicaciones || {},
       actorId,
       updatedAt: noteOpUpdatedAt(entry.indicaciones, batchAt),
+    })
+  );
+  ops.push(
+    cloudOp({
+      path: `entries/${patientId}/medReceta`,
+      value: entry.medReceta || null,
+      actorId,
+      updatedAt: noteOpUpdatedAt(entry.medReceta, batchAt),
     })
   );
 }

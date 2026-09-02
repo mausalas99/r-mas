@@ -99,6 +99,28 @@ describe('applyOps LWW', () => {
     assert.ok(row.eventualidades.deletedIds.ev_a);
   });
 
+  it('applies medReceta entry path, newer clock wins', () => {
+    let s = emptyState();
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p1/medReceta',
+        value: { items: [{ id: 'm1', texto: 'ENOXAPARINA' }] },
+        updatedAt: '2026-09-02T10:00:00.000Z',
+        actorId: 'a',
+      },
+    ]));
+    assert.deepEqual(s.entries.find((e) => e.id === 'p1').medReceta.items[0].id, 'm1');
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p1/medReceta',
+        value: null,
+        updatedAt: '2026-09-02T11:00:00.000Z',
+        actorId: 'b',
+      },
+    ]));
+    assert.equal(s.entries.find((e) => e.id === 'p1').medReceta, null);
+  });
+
   it('applies monitoreo entry path independent of fields', () => {
     let s = emptyState();
     ({ state: s } = applyOps(s, [

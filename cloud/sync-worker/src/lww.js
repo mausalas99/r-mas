@@ -55,7 +55,7 @@ function getTombstoneDeletedAt(state, patientId) {
 
 /** @param {string} path */
 function isPatientEntryOpPath(path) {
-  return /^entries\/[^/]+(\/fields|\/note|\/indicaciones|\/historiaClinica|\/eventualidades|\/monitoreo)?$/.test(
+  return /^entries\/[^/]+(\/fields|\/note|\/indicaciones|\/historiaClinica|\/eventualidades|\/monitoreo|\/medReceta)?$/.test(
     path
   );
 }
@@ -249,7 +249,7 @@ function applyOpToState(state, op) {
   }
 
   const entryField =
-    /^entries\/([^/]+)\/(note|indicaciones|historiaClinica|eventualidades|monitoreo|fields)$/.exec(
+    /^entries\/([^/]+)\/(note|indicaciones|historiaClinica|eventualidades|monitoreo|medReceta|fields)$/.exec(
       path
     );
   if (entryField) {

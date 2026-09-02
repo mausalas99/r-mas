@@ -9,6 +9,7 @@ const ENTRY_SKIP_KEYS = new Set([
   'historiaClinica',
   'eventualidades',
   'monitoreo',
+  'medReceta',
   'fields',
 ]);
 
@@ -43,12 +44,18 @@ export function cloudEntryToLanEntry(entry, labSidecarsForPatient) {
   if (!entry?.id) return null;
   const note = entry.note;
   const indicaciones = entry.indicaciones;
-  return {
+  const out = {
     patient: buildPatientFromCloudEntry(entry),
     note: note && typeof note === 'object' ? note : {},
     indicaciones: indicaciones && typeof indicaciones === 'object' ? indicaciones : {},
     labHistory: assembleLabHistoryFromSidecars(labSidecarsForPatient),
   };
+  // Only carry medReceta when the cloud entry actually has the key — an older
+  // patient doc that never pushed it must not read back as "meds cleared".
+  if (Object.prototype.hasOwnProperty.call(entry, 'medReceta')) {
+    out.medReceta = entry.medReceta;
+  }
+  return out;
 }
 
 /** @param {Record<string, unknown>} state */
@@ -134,7 +141,7 @@ export function foldCloudOp(fold, op) {
   }
 
   const entryField =
-    /^entries\/([^/]+)\/(note|indicaciones|historiaClinica|eventualidades|monitoreo|fields)$/.exec(
+    /^entries\/([^/]+)\/(note|indicaciones|historiaClinica|eventualidades|monitoreo|medReceta|fields)$/.exec(
       path
     );
   if (entryField) {

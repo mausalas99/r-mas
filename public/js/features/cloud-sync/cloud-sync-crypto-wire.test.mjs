@@ -17,6 +17,7 @@ describe('isEncryptedContentPath', () => {
     assert.equal(isEncryptedContentPath('entries/p1/historiaClinica'), true);
     assert.equal(isEncryptedContentPath('entries/p1/eventualidades'), true);
     assert.equal(isEncryptedContentPath('entries/p1/monitoreo'), true);
+    assert.equal(isEncryptedContentPath('entries/p1/medReceta'), true);
     assert.equal(isEncryptedContentPath('labSidecars/p1/set1'), true);
     assert.equal(isEncryptedContentPath('todos/t1'), true);
   });
@@ -71,6 +72,7 @@ describe('decryptRoomStateFromPull', () => {
           id: 'p1',
           nombre: 'Juan Perez', // identity field — never encrypted, passes through untouched
           note: await (await import('./crypto.mjs')).encryptValue(dek, { text: 'nota' }),
+          medReceta: await (await import('./crypto.mjs')).encryptValue(dek, { items: [{ id: 'm1' }] }),
         },
       ],
       labSidecars: {
@@ -85,6 +87,7 @@ describe('decryptRoomStateFromPull', () => {
     assert.deepEqual(out.clinicalOps, { teams: [] });
     assert.equal(out.entries[0].nombre, 'Juan Perez');
     assert.deepEqual(out.entries[0].note, { text: 'nota' });
+    assert.deepEqual(out.entries[0].medReceta, { items: [{ id: 'm1' }] });
     assert.deepEqual(out.labSidecars.p1.set1, { resLabs: ['Hb 12'] });
     assert.deepEqual(out.todos.t1, { text: 'pendiente' });
   });
@@ -104,7 +107,7 @@ describe('listContentFieldEntries', () => {
     const state = {
       clinicalOps: { teams: [] },
       entries: [
-        { id: 'p1', nombre: 'Juan Perez', note: 'nota', fields: { cama: '12' } },
+        { id: 'p1', nombre: 'Juan Perez', note: 'nota', medReceta: { items: [] }, fields: { cama: '12' } },
         { id: 'p2', indicaciones: 'omeprazol' },
       ],
       labSidecars: { p1: { set1: { resLabs: ['Hb 12'] } } },
@@ -114,6 +117,7 @@ describe('listContentFieldEntries', () => {
     assert.deepEqual(out, [
       { path: 'clinicalOps', value: { teams: [] } },
       { path: 'entries/p1/note', value: 'nota' },
+      { path: 'entries/p1/medReceta', value: { items: [] } },
       { path: 'entries/p2/indicaciones', value: 'omeprazol' },
       { path: 'labSidecars/p1/set1', value: { resLabs: ['Hb 12'] } },
       { path: 'todos/t1', value: { text: 'pendiente' } },

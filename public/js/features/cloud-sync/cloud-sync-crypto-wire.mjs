@@ -2,7 +2,7 @@
  * Wires crypto.mjs into the push/pull wire format.
  *
  * Scope (2026-08-17): only clinical *content* is encrypted — note, indicaciones,
- * historiaClinica, eventualidades, monitoreo, labSidecars, todos, clinicalOps.
+ * historiaClinica, eventualidades, monitoreo, medReceta, labSidecars, todos, clinicalOps.
  * Patient identity (entries/{id} root + entries/{id}/fields: nombre, cama, servicio,
  * registro, diagnósticos) stays plaintext — Interno's board and the admin census view
  * both read those fields server-side today, and rebuilding them to work on ciphertext
@@ -13,7 +13,7 @@
  */
 import { encryptValue, decryptValue, isEncryptedEnvelope } from './crypto.mjs';
 
-const ENTRY_CONTENT_FIELDS = ['note', 'indicaciones', 'historiaClinica', 'eventualidades', 'monitoreo'];
+const ENTRY_CONTENT_FIELDS = ['note', 'indicaciones', 'historiaClinica', 'eventualidades', 'monitoreo', 'medReceta'];
 
 /** @param {string} path */
 export function isEncryptedContentPath(path) {
