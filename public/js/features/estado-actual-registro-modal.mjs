@@ -1,5 +1,6 @@
 import { closeEstadoActualPasteModal } from './estado-actual-paste-modal.mjs';
 import { setEaFormOpenPatientId } from './estado-actual-panel-core.mjs';
+import { setEaRegistroEditMode } from './estado-actual-panel-registro-edit.mjs';
 
 /** @type {{ ensureForm(): void, resetForm(): void, showToast(msg: string, type?: string): void }} */
 let rt = {
@@ -85,6 +86,8 @@ export function openEstadoActualRegistroModal(opts) {
 export function closeEstadoActualRegistroModal() {
   closeEstadoActualPasteModal();
   setEaFormOpenPatientId(null);
+  // A cancelled edit must not linger: the next open (even preserveForm) appends, not replaces.
+  setEaRegistroEditMode(document.getElementById('ea-form'), null);
   var backdrop = getBackdrop();
   if (!backdrop) return;
   backdrop.classList.remove('open');

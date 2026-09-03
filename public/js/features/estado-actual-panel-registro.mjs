@@ -16,6 +16,7 @@ import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { wireFormInteractions } from './estado-actual-panel-registro-wire.mjs';
 import { syncIoBalanceFromForm, clearIoFields, syncEaRegistroInsulinRescateFlag, syncEaRegistroInsulinPumpFlag } from './estado-actual-panel-registro-io.mjs';
 import { applyEstadoActualParsedToForm } from './estado-actual-panel-registro-apply.mjs';
+import { setEaRegistroEditMode } from './estado-actual-panel-registro-edit.mjs';
 
 export { applyEstadoActualParsedToForm };
 
@@ -184,6 +185,7 @@ function resetGluAndBombaFields() {
 export function resetEaRegistroForm(_patient) {
   var form = document.getElementById('ea-form');
   if (!form) return;
+  setEaRegistroEditMode(form, null);
   clearVitalFormFields(form);
   var recorded = document.getElementById('ea-recorded-at');
   if (recorded && 'value' in recorded) recorded.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());

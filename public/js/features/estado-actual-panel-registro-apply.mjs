@@ -16,7 +16,7 @@ import { persistEstadoClinicoLight } from './estado-actual-panel-clinico.mjs';
  * @param {Record<string, unknown>} vitals
  * @param {Record<string, string>} alteredAt
  */
-function applyParsedVitals(form, vitals, alteredAt) {
+export function applyParsedVitals(form, vitals, alteredAt) {
   VITAL_KEYS.forEach(function (key) {
     /** @type {Array<{ value: number, time?: string }>} */
     var readings = [];
@@ -38,7 +38,7 @@ function applyParsedVitals(form, vitals, alteredAt) {
  * @param {HTMLElement} form
  * @param {Array<{ time?: string }>} glucometrias
  */
-function applyParsedGlus(form, glucometrias) {
+export function applyParsedGlus(form, glucometrias) {
   var gluList = form.querySelector('#ea-glu-list');
   if (!gluList || !glucometrias.length) return;
   var standardSet = new Set(STANDARD_GLUCOMETRIA_TIMES);

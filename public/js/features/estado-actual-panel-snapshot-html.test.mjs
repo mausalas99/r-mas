@@ -7,6 +7,7 @@ import {
   vitalHasHistory,
   renderVitalHistoryListHtml,
 } from './estado-actual-panel-snapshot-html.mjs';
+import { renderHistorialSection } from './estado-actual-panel-snapshot.mjs';
 
 test('renderSnapshotVitalsHtml — T/A unificada, fecha en cierre sin @ 00:00', () => {
   var recordedAt = new Date(2026, 5, 26, 0, 0, 0).toISOString();
@@ -99,4 +100,12 @@ test('vitalHasHistory y historial modal — FC con lecturas previas', () => {
   assert.match(listHtml, /ea-vital-history-badge">Actual</);
   assert.match(listHtml, />98</);
   assert.match(listHtml, />103</);
+});
+
+test('renderHistorialSection — cada fila trae Editar y Eliminar con su id', () => {
+  var html = renderHistorialSection([
+    { id: 'row-1', recordedAt: '2026-09-02T06:00:00.000Z', vitals: { tas: 120 } },
+  ]);
+  assert.match(html, /editarEstadoActualMedicion\('row-1'\)">Editar</);
+  assert.match(html, /eliminarEstadoActualMedicion\('row-1'\)">Eliminar</);
 });

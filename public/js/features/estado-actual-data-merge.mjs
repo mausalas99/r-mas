@@ -28,7 +28,18 @@ function medicionMergeKey(row) {
 }
 
 /**
- * Union vitals historial by medicion id; newer recordedAt wins per row.
+ * Winner per id: real save clock when present (an edit keeps recordedAt), else recordedAt.
+ * @param {unknown} row
+ */
+function medicionWinKey(row) {
+  /** @type {any} */
+  var r = row;
+  if (r && typeof r === 'object' && r.savedAt != null && String(r.savedAt).trim()) return String(r.savedAt);
+  return medicionMergeKey(row);
+}
+
+/**
+ * Union vitals historial by medicion id; newer savedAt (else recordedAt) wins per row.
  * @param {unknown[]} localHist
  * @param {unknown[]} remoteHist
  */
@@ -44,7 +55,7 @@ function mergeHistorialMonitoreo(localHist, remoteHist) {
     var id = String(r.id || '').trim();
     if (!id) continue;
     var cur = map.get(id);
-    if (!cur || compareSavedAt(medicionMergeKey(r), medicionMergeKey(cur)) > 0) {
+    if (!cur || compareSavedAt(medicionWinKey(r), medicionWinKey(cur)) > 0) {
       map.set(id, structuredClone(r));
     }
   }

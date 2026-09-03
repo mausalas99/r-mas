@@ -63,6 +63,10 @@ needs: [shell]
 tech: renderer feature modules, patient dashboard
 - [x] Load the patient dashboard {#ui-dashboard}
   tech: public/js/features/patient-dashboard/dashboard-mount.mjs, lab-inner.mjs
+- [x] Edit one past vitals row from Estado actual {#ui-ea-edit-medicion}
+  by: claude
+  from: agent
+  tech: Historial reciente row gets an Editar button beside Eliminar; it reopens the registro modal prefilled with the form flagged data-ea-edit-id (new module estado-actual-panel-registro-edit.mjs, kept out of the 600-line actions file), and Registrar then calls replaceMedicion (same id, new savedAt). Merge winner per row now prefers savedAt so an edit that keeps recordedAt still propagates (estado-actual-data-merge.mjs).
 files: [public/js/features/**]
 needs: [shell, db]
 

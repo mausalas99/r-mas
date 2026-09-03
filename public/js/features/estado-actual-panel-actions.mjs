@@ -4,6 +4,7 @@ import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import {
   ensureMonitoreo,
   appendMedicion,
+  replaceMedicion,
   removeMedicion,
   resolveDietWeightKg,
   syncDietKcalFromWeight,
@@ -59,6 +60,7 @@ import {
   resetEaRegistroForm,
   applyEstadoActualParsedToForm,
 } from './estado-actual-panel-registro.mjs';
+import { getEaRegistroEditId, editarEstadoActualMedicion } from './estado-actual-panel-registro-edit.mjs';
 import {
   buildEaIndicacionesClipboardText,
   hasEaIndicacionesClipboardContent,
@@ -123,7 +125,13 @@ export function registrarEstadoActualMedicion() {
     getEaPanelRuntime().showToast('Formulario no disponible', 'error');
     return;
   }
-  var vitalLimit = validateVitalSeriesTurnLimits(patient.monitoreo.historial, medicion.vitalSeries || {});
+  var editId = getEaRegistroEditId(document.getElementById('ea-form'));
+  var limitHist = editId
+    ? patient.monitoreo.historial.filter(function (r) {
+        return !r || r.id !== editId;
+      })
+    : patient.monitoreo.historial;
+  var vitalLimit = validateVitalSeriesTurnLimits(limitHist, medicion.vitalSeries || {});
   if (!vitalLimit.ok) {
     getEaPanelRuntime().showToast(
       'Máximo ' + MAX_VITAL_READINGS_PER_DAY + ' lecturas de ' + vitalLimit.label + ' en el turno',
@@ -131,9 +139,11 @@ export function registrarEstadoActualMedicion() {
     );
     return;
   }
-  var result = appendMedicion(patient.monitoreo, medicion);
+  var result = editId
+    ? replaceMedicion(patient.monitoreo, editId, medicion)
+    : appendMedicion(patient.monitoreo, medicion);
   if (!result.ok) {
-    getEaPanelRuntime().showToast('No se pudo registrar la medición', 'error');
+    getEaPanelRuntime().showToast('No se pudo ' + (editId ? 'actualizar' : 'registrar') + ' la medición', 'error');
     return;
   }
   syncDietKcalFromWeight(
@@ -149,7 +159,7 @@ export function registrarEstadoActualMedicion() {
   if (getEaPanelRuntime().invalidateInnerTabRenderCache) getEaPanelRuntime().invalidateInnerTabRenderCache('estadoActual');
   if (typeof window.closeEstadoActualRegistroModal === 'function') window.closeEstadoActualRegistroModal();
   eaPanelBridge.renderEstadoActualPanel({ syncHeavy: true, dataOnly: true });
-  getEaPanelRuntime().showToast('Medición registrada ✓', 'success');
+  getEaPanelRuntime().showToast(editId ? 'Medición actualizada ✓' : 'Medición registrada ✓', 'success');
   if (typeof getEaPanelRuntime().onMedicionRegistered === 'function') getEaPanelRuntime().onMedicionRegistered();
 }
 
@@ -570,6 +580,7 @@ export function applyEaMedReclassification(fromKey) {
 export const windowHandlers = {
   registrarEstadoActualMedicion,
   eliminarEstadoActualMedicion,
+  editarEstadoActualMedicion,
   estadoActualGuardar,
   estadoActualGuardarCopiar,
   estadoActualEnviarANota,

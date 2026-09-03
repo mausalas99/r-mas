@@ -55,6 +55,23 @@ export function activePatientTeamId(patientId) {
 }
 
 /**
+ * team_id set for teams live this rotation (not archived, not staged for next
+ * month) in the caller's own sala — used to keep the pancenso to the current
+ * rotation instead of stray assignments to an ended or other-sala team.
+ */
+export function activeRotationTeamIds() {
+  const userSala = String(clinicalSessionContext.user?.sala || '').trim();
+  const ids = Object.create(null);
+  (clinicalSessionContext.teams || []).forEach((t) => {
+    if (!t || !t.team_id || t.archived_at) return;
+    if (Number(t.rotation_active) !== 1) return;
+    if (userSala && String(t.sala || '').trim() !== userSala) return;
+    ids[String(t.team_id)] = true;
+  });
+  return ids;
+}
+
+/**
  * @param {string} patientId
  * @param {string} teamId
  */
