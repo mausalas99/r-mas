@@ -7,7 +7,7 @@ description: "Master documentation hub for R+ — start here for strategy, archi
 
 # R+ Documentation Hub
 
-**Agent entry point:** Read this file, then [01-vision-north-star.md](./01-vision-north-star.md) for product trade-offs. For code locations, see [04-directory-structure.md](./04-directory-structure.md).
+**Agent entry point:** Read this file, then [01-vision-north-star.md](./01-vision-north-star.md) for product trade-offs. For code locations, see [21-code-map.md](./21-code-map.md) (tracked copy of the Cursor project map).
 
 ## Product principles (summary)
 
@@ -15,7 +15,7 @@ description: "Master documentation hub for R+ — start here for strategy, archi
 |-----------|----------|
 | North Star | Paste SOME → structured labs → `.docx` note in minimum TTD |
 | Ideal user | R1/R2 on 24h high-intensity guardia |
-| Architecture | Electron + offline SQLCipher; opt-in Nube (Cloudflare Worker + D1; HTTPS, **not** encrypted at rest); LAN LiveSync retired |
+| Architecture | Electron + offline SQLCipher; opt-in Nube (Cloudflare Worker + D1); LAN LiveSync retired |
 | Scope | Adjunct documentation tool — **not** institutional EMR |
 
 ## Architecture (data flow)
@@ -23,10 +23,9 @@ description: "Master documentation hub for R+ — start here for strategy, archi
 ```mermaid
 flowchart LR
   UI["Renderer<br/>public/js/features"] --> IPC["preload.js / IPC"]
-  UI --> HTTP["localhost:3738"]
-  HTTP --> LAN["lan-squad/<br/>host-store"]
+  UI --> Nube["cloud/sync-worker<br/>Nube rooms"]
   IPC --> DB["lib/db/<br/>SQLCipher"]
-  LAN --> Peers["Peer Macs / iPad"]
+  Nube --> Peers["Peer Macs / R+ Móvil / Interno"]
   UI --> Docs["lib/doc-generators<br/>.docx export"]
 ```
 
@@ -47,6 +46,7 @@ flowchart LR
 | 18 | [knowledge-capture](./18-knowledge-capture.md) | stable | Decision log |
 | 19 | [agent-graph-memory](./19-agent-graph-memory.md) | stable | Cached extraction vs subgraph reasoning (agent memory, not product) |
 | 20 | [claude-code-handoff](./20-claude-code-handoff.md) | in-progress | Resume point for Claude Code (2026-08-15 update-feed) |
+| 21 | [code-map](./21-code-map.md) | stable | Tracked agent code map (paths, domains, changelog) |
 
 *Slots 05, 07, 09–14: placeholders created (see directory).*
 

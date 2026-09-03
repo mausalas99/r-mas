@@ -7,7 +7,6 @@
  *  - 'simple' → drug name + day count only; the day count is omitted when the
  *               item does not track one (never fabricated).
  */
-import { trimStr } from '../med-receta-util.mjs';
 import { applyNombreAccents, expandNombrePresentacion } from '../med-receta-nombre.mjs';
 import { effectiveDiaTratamiento } from '../med-receta-dates.mjs';
 import { applyIvToOralForEgreso } from '../med-receta-iv-oral.mjs';
@@ -20,6 +19,7 @@ import {
 import { mergeDietaItems, collectDietasFromRecetaBlock } from '../med-receta-diet.mjs';
 import { apoyoKindLabel } from '../med-receta-apoyo.mjs';
 import { countMedTurnoItems } from './medications-panel-rows.mjs';
+import { trimStr } from '../med-receta-util.mjs';
 
 /**
  * Full order line, cleaned of the internal " || " name/instructions marker

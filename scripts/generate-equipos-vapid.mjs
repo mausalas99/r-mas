@@ -11,4 +11,4 @@ console.log('  EQUIPOS_VAPID_PRIVATE_JWK=<private JWK JSON string>');
 console.log('\nCloudflare Worker:');
 console.log('  wrangler secret put EQUIPOS_VAPID_PRIVATE_JWK');
 console.log('  wrangler.toml [vars] EQUIPOS_VAPID_PUBLIC_KEY=...');
-console.log('\nLAN host (server.js): same env vars in .env');
+console.log('\nWorker only — LAN host (server.js) is gone.');

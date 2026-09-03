@@ -1,4 +1,3 @@
-import { trimStr } from './med-receta-util.mjs';
 import {
   parseFechaDMYFromTimestampCell,
   extractDiaTratamiento,
@@ -14,6 +13,7 @@ import {
 } from './med-receta-diet.mjs';
 import { normalizeNombreForSoapClassify } from './med-receta-nombre.mjs';
 import { classifyMedicationSoapCategory, shouldIncludeMedicationInSoap } from './med-receta-soap.mjs';
+import { trimStr } from './med-receta-util.mjs';
 
 var SOME_TS_CLASS_RE =
   /^(\d{2}\/\d{2}\/\d{4}\s+\d{1,2}:\d{2}:\d{2}\s+(?:a\.m\.|p\.m\.))\s+(MEDICAMENTOS(?:\s+P[12])?|MEDICAMENTO(?:\s+P[12])?|DIETAS|CUIDADOS|ESTUDIOS|PROCEDIMIENTO)\s+(.*)$/i;

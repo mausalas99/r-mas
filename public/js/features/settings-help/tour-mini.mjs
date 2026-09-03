@@ -6,10 +6,6 @@ import {
   stopPresentationMode,
 } from '../../presentation-mode.mjs';
 import { registerTourDemoPatientHooks } from '../../tour-demo-patient.mjs';
-import { extendPresentationModeWithGuardiaCensus } from '../../tour-pitch-guardia-census.mjs';
-import { getPatients, setPatients, persistClinicalState } from '../../app-state.mjs';
-import { setDemoPatients, getDemoPatients } from '../../clinical-read-model-demo.mjs';
-import { renderPatientList } from '../patients-list.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
 import { settingsHelpBridge } from './bridges.mjs';
 import { switchLabInner } from '../patient-dashboard/lab-inner.mjs';
@@ -246,31 +242,6 @@ function togglePresentationModeFromHelp() {
   else startPresentationMode();
 }
 
-/**
- * Dev/verify-only: extends Modo presentación (DEMO PÉREZ) with 24 more synthetic
- * Guardia census patients (teal-workbench rollout, Phase 2, screens 6a/6b) so the
- * Censo table, Ingresos filter, and VENCIDO/EN CURSO/ABIERTO/LISTO statuses can be
- * screenshot-verified at the mockup's ~25-row scale. Starts presentation mode
- * first if it isn't already active. No PHI — fake data only.
- */
-function seedPitchGuardiaCensusFromHelp() {
-  if (tourState.guidedTourActive) {
-    rt.showToast('Finaliza el tutorial guiado antes del censo de guardia demo.', 'error');
-    return;
-  }
-  if (!isPresentationModeActive()) startPresentationMode();
-  extendPresentationModeWithGuardiaCensus({
-    getPatients,
-    setPatients,
-    getDemoPatients,
-    setDemoPatients,
-    persistClinicalState,
-    renderPatientList,
-  });
-  rt.showToast('Censo de guardia demo: 25 pacientes', 'info');
-}
-
-
 export {
   startMiniTour,
   startHelpTourMain,
@@ -278,7 +249,6 @@ export {
   startQuickRouteTour,
   startHelpTourInterconsulta,
   togglePresentationModeFromHelp,
-  seedPitchGuardiaCensusFromHelp,
   miniTourNext,
   endMiniTour,
 };

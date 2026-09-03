@@ -33,7 +33,7 @@ function todayIso() {
 
 describe('computeGuardiaSummary', () => {
   it('counts patients admitted today via the existing FIMI/FIUX fields, flagging incomplete admissions', () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toLocaleDateString('sv-SE');
     const summary = computeGuardiaSummary(
       [
         { id: 'p1', isCritical: false, pendingCount: 0, fimiFecha: today, cuarto: '214', cama: '2', servicio: 'Sala' },

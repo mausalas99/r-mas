@@ -13,9 +13,9 @@ This doc is the canonical map of *where* paths exist and *why*.
 
 ```
 R+/
-├── main.js, preload.js, server.js    # Electron main, IPC bridge, LAN HTTP server
+├── main.js, preload.js               # Electron main, IPC bridge
 ├── lan-squad/                          # LiveSync host: router, store, auth, WS hub
-├── lib/                                # Node shared logic (importable from main/server)
+├── lib/                                # Node shared logic (importable from main)
 ├── public/js/                          # Renderer source (pre-bundle)
 │   └── features/                       # Primary place for new UI features
 ├── public/interno/                     # Mobile interno/guardia web client
@@ -34,7 +34,7 @@ R+/
 |-------------|----------|
 | New UI feature | `public/js/features/<name>/` + register in `app-runtimes.mjs` |
 | Node shared logic | `lib/<domain>/` as `.mjs` or `.js` |
-| LAN HTTP/WS route | `lan-squad/host-router.js` or `server.js` |
+| Cloud / Nube route | `cloud/sync-worker/` or `cloud/equipos-worker/` |
 | IPC channel | `preload.js` + `main.js` or `lib/db/ipc-handlers.mjs` |
 | DB schema change | `lib/db/schema.mjs` + `schema.test.mjs` (bump version) |
 | Feature documentation | `docs/features/feat-*.md` + update `features-index.md` |

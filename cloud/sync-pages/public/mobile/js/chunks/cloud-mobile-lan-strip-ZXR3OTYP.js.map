@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../public/js/stubs/cloud-mobile-lan-strip.mjs"],
-  "sourcesContent": ["/**\n * No-op replacements for retired LAN modules in the R+ M\u00F3vil Nube bundle.\n * Resolved by build-cloud-mobile.mjs esbuild plugin \u2014 not imported at runtime on desktop.\n */\n\nexport const LAN_RETIRE_FLAG = 'nube-config-retired-v805';\n\nexport function runLanConfigRetireIfNeeded() {\n  return { didRun: false };\n}\n\nexport async function detachLanLiveSyncForNube() {}\n\nexport function getRoomMembership() {\n  return null;\n}\n\nexport function setRoomMembership() {}\n\nexport function clearRoomMembership() {}\n\nexport function migrateLastRoomToMembership() {}\n\nexport function resolveMobilePairingRoomId() {\n  return '';\n}\n\nexport function appendMobileSharerParamsToJoinUrl(url) {\n  return url;\n}\n\nexport function mobileSharerDisplayLabel() {\n  return '';\n}\n\nexport function applyMobileSharerContextFromUrl() {\n  return false;\n}\n\nexport function hydrateMobileSharerSessionFromSettings() {}\n"],
-  "mappings": ";AAKO,IAAM,kBAAkB;AAExB,SAAS,6BAA6B;AAC3C,SAAO,EAAE,QAAQ,MAAM;AACzB;AAEA,eAAsB,2BAA2B;AAAC;AAE3C,SAAS,oBAAoB;AAClC,SAAO;AACT;AAEO,SAAS,oBAAoB;AAAC;AAE9B,SAAS,sBAAsB;AAAC;AAEhC,SAAS,8BAA8B;AAAC;AAExC,SAAS,6BAA6B;AAC3C,SAAO;AACT;AAEO,SAAS,kCAAkC,KAAK;AACrD,SAAO;AACT;AAEO,SAAS,2BAA2B;AACzC,SAAO;AACT;AAEO,SAAS,kCAAkC;AAChD,SAAO;AACT;AAEO,SAAS,yCAAyC;AAAC;",
-  "names": []
-}

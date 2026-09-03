@@ -11,8 +11,8 @@ import {
 
 describe('release-notes', () => {
   it('resolves curated highlights for v-prefixed version', () => {
-    const text = formatCuratedReleaseNotesPlain('v7.1.8');
-    assert.ok(text.includes('Conectar al anfitrión'));
+    const text = formatCuratedReleaseNotesPlain('v8.2.9');
+    assert.ok(text.includes('Copiar labs con formato'));
     assert.ok(!text.includes('Signos vitales'));
   });
 
@@ -40,8 +40,8 @@ describe('release-notes', () => {
   });
 
   it('updater prefers curated target version over stale feed notes', () => {
-    const text = formatUpdaterReleaseNotesPlain('7.1.8', 'Signos vitales sin falsas alarmas');
-    assert.ok(text.includes('Conectar al anfitrión'));
+    const text = formatUpdaterReleaseNotesPlain('8.2.9', 'Signos vitales sin falsas alarmas');
+    assert.ok(text.includes('Copiar labs con formato'));
     assert.ok(!text.includes('Signos vitales'));
   });
 

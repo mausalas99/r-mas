@@ -24,11 +24,8 @@ import {
 } from './clinical-onboarding-sync-mode.mjs';
 import { wireExistingAccountLoginInteractions } from './clinical-onboarding-existing-login.mjs';
 import { isCloudSala } from './cloud-sync/sala-allowlist.mjs';
-import {
-  applyOnboardPickUser,
-  syncOnboardingNubeVisibility,
-} from './clinical-onboarding-nube.mjs';
-import { finishOnboardingCloudAndCutover } from './clinical-onboarding-cloud-finish.mjs';
+import { syncOnboardingNubeVisibility } from './clinical-onboarding-nube.mjs';
+import { finishOnboardingCloud } from './clinical-onboarding-cloud-finish.mjs';
 import {
   defaultLocalOnlyDisplayName,
   submitLocalOnlyProfile,
@@ -236,7 +233,7 @@ export async function handleUsernameStepSubmit(ev) {
 
     if (errEl) errEl.hidden = true;
 
-    const cloudOk = await finishOnboardingCloudAndCutover({
+    const cloudOk = await finishOnboardingCloud({
       username: fields.username,
       name: fields.name,
       sala: fields.sala,
@@ -408,15 +405,6 @@ function wireOnboardingNubeExtras() {
   if (sala && !sala._rpcNubeSalaWired) {
     sala._rpcNubeSalaWired = true;
     sala.addEventListener('change', () => syncOnboardingNubeVisibility());
-  }
-  const shell = document.querySelector('.clinical-onboard-form-shell');
-  if (shell && !shell._rpcCutoverPickWired) {
-    shell._rpcCutoverPickWired = true;
-    shell.addEventListener('click', (ev) => {
-      const t = ev.target instanceof Element ? ev.target : null;
-      const btn = t?.closest?.('[data-onboard-pick-user]');
-      if (btn) applyOnboardPickUser(btn);
-    });
   }
   syncOnboardingNubeVisibility();
 }

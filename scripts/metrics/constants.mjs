@@ -5,4 +5,3 @@ export const BOOT_HUBS = [
 ];
 
 export const BOOT_GRAPH_DEBT_PER_IMPORT = 25;
-export const MAX_FILE_LINES = 600;

@@ -1,14 +1,14 @@
 # R+
 
 ## Start the app and show the window {#shell}
-tech: Electron main/preload/LAN server, public/js/app-runtimes.mjs
+tech: Electron main/preload, public/js/app-runtimes.mjs
 - [x] Boot the app to a window {#shell-boot}
   tech: main.js, preload.js
 - [x] Serve the LAN HTTP server {#shell-server}
   tech: server.js
 - [x] Load renderer features on demand {#shell-features}
   tech: public/js/app.js, public/js/app-runtimes.mjs
-files: [main.js, preload.js, server.js, public/js/app.js, public/js/app-runtimes.mjs, public/js/boot/**]
+files: [main.js, preload.js, public/js/app.js, public/js/app-runtimes.mjs, public/js/boot/**]
 
 ## Keep patient data on the device {#db}
 tech: SQLCipher local DB, schema v25
@@ -71,7 +71,7 @@ tech: 4-team board (guardia/postguardia/activo x2), manual guard rollover
   tech: public/js/features/interconsulta-team-board.mjs mounted by interconsulta-mode-chrome.mjs into #ic-board-mount (public/partials/layout/app-body.html), sidebar hidden via html.ic-board-mode in layout.css. Supersedes the earlier sidebar-mount build (patients-list.mjs no longer knows about interconsulta).
   by: claude
 - [x] Click a patient card to open their Resumen, "← Tablero"/Esc to return {#ic-drilldown}
-  tech: _icView board/patient state + showInterconsultaBoardView/showInterconsultaPatientView in interconsulta-mode-chrome.mjs; verified against the real app via scripts/verify/interconsulta-team-board-{nav,drill,back}.mjs
+  tech: _icView board/patient state + showInterconsultaBoardView/showInterconsultaPatientView in interconsulta-mode-chrome.mjs; verified against the real app in the board nav/drill/back flow.
   by: claude
 - [x] Add a "+ Agregar" button to the board so patients can be added without a lab {#ic-add-button}
   tech: the per-lane "Terminar guardia y repartir pacientes" rollover button was a deliberate earlier removal (test asserts it's gone, interconsulta-team-board.test.mjs) — not a regression. It stays removed; the backend IPC handler is unused UI-side. What the board actually lost when the sidebar was hidden was the sidebar's own "+ Agregar" add-patient trigger. Restored as one always-visible button top-left of the board header (interconsulta-mode-chrome.mjs's renderInterconsultaBoardView, .ic-board-header, data-ic-board-add) wired to the existing openAddModal (patients-modal.mjs) — no new modal built.
@@ -203,7 +203,64 @@ tech: abbreviated chips on Chart.js markers, group table date headers, and a one
 files: [public/js/features/eventualidades-store.mjs, public/js/features/tendencias-event-context.mjs, public/js/tend-group-table-render.mjs, public/js/tend-group-analyte-picker.mjs, public/js/tend-group-modal-open.mjs, public/js/tend-dynamic-table-modal.mjs, public/js/tend-core.mjs, public/js/features/tendencias-ui-shell.mjs, public/js/features/tendencias-ui.mjs, public/js/features/tendencias-core.mjs, public/js/features/tendencias.mjs, public/js/features/tendencias-hidden.mjs, public/js/lazy-feature-routes-charts.mjs, public/js/app-shell-modals.mjs, public/partials/modals/root.html, public/styles/modals.css, public/js/features/productivity.mjs, public/js/tend-prefs.mjs, public/styles/workbench-kit.css]
 needs: [ui]
 
+## Shrink the codebase so agents can navigate it {#shrink}
+tech: gitignore build mirrors, delete verified-dead files, fold single-fan-in splits, replace file-length ratchet with total-LOC + file-count ratchets
+files: [.gitignore, cloud/sync-pages/**, cloud/equipos-pages/**, scripts/metrics/**, package.json, scripts/lib/test-manifest.mjs]
+links: [shell, cloud-sync, ui]
+
+- [x] Stop tracking the mobile/equipos deploy mirrors and index.html; regenerate them before deploy {#shrink-build-output}
+  by: cursor
+  tech: predeploy+predev hooks in both workers, gitignore cloud/sync-pages/public + cloud/equipos-pages/public + public/index.html, build-ui in prestart (−379,683 lines)
+  from: agent
+- [x] Delete the code nothing calls, and the one-shot scripts {#shrink-dead-code}
+  by: cursor
+  tech: stem-grepped then deleted the move-5 dead files + tests, scripts/verify, assemble-*-split, git-release, probe/render scripts, overlay-lww.cjs, docs/demos+mocks, unused pitch JSONs. Kept entity-versions-stub (live) and lib/equipos/equipos-cloud-mode.mjs (public/lib is a symlink to it). Skipped LAN ward server (move 8) and cutover (move 16). Did not inline clinical-profile-cloud-stubs (still has live callers).
+  from: agent
+- [x] Fix the entrega submit crash left by the LAN retirement {#shrink-entrega-bug}
+  by: cursor
+  tech: clinical-entrega-submit.mjs:96-98 calls m.lanMutationRegistry on a stub without that export; add the missing test, delete mutation-registry-stub.mjs and the 3 lan-*-retire runners
+  from: agent
+- [x] Replace the file-length ratchet with ratchets that only go down {#shrink-rules}
+  by: cursor
+  tech: drop MAX_FILE_LINES/fileLineOverageDebt and max-lines-per-function; add total-LOC + module-count ratchets, build-output-is-ignored CI check, duplicate-file CI check, glob test discovery, structure-test allowlist. Boot budget ratcheted down after highlights prune. README history trimmed; CHANGELOG untracked; oxlint + test-manifest deleted.
+  from: agent
+- [x] Fold the split families back into one file per concept {#shrink-fold}
+  by: cursor
+  tech: evaluate rank leaves → guardia-scope + team-scope; clinical-username twins → lib/db; LIST_NUMID_BASE once; folded tendencias-ui / clinical-teams/index / virtual-scroll-controller; moved tests/ to colocated (labs-cultivo renamed). EA panel-* family left (many importers + cycles). labs-default-refs vs tendencias-constants deferred (cycle).
+  from: agent
+- [x] Remove the LAN ward server {#shrink-lan-ward}
+  by: cursor
+  tech: delete server.js + interno/equipos routers + host-store-db + photo-purge; unwire main.js/preload; keep public/interno, public/equipos, doc-export
+  from: owner
+- [x] Remove the 7.9 cutover wizard {#shrink-cutover}
+  by: cursor
+  tech: delete panel-cutover* + cutover-{flags,gate,snapshot,wipe,claim} + clinical-79-cutover IPC; onboarding keeps Nube register only
+  from: owner
+- [x] Fold username via public re-export, EA panel splits, labs refs leaf, CSS sweep {#shrink-fold2}
+  by: cursor
+  tech: username stays two copies + parity (re-export/symlink extracts a boot chunk); catalog reads DEFAULT_* from labs.js; EA single-fan-in folded; dead CSS swept
+  from: owner
+- [x] Keep DEMO PÉREZ; drop Interno/Equipos LAN probe; refresh living docs {#shrink-decisions}
+  by: cursor
+  tech: DEMO PÉREZ stays (pitch/tour seed). host-discovery is origin-only. README + docs/core no longer claim :3738.
+  from: owner
+- [x] Make `npm test` find every test by glob and fix the 14 tests the old manifest never ran {#shrink-test-glob}
+  by: claude
+  tech: package.json test = quoted globs (Node 24 --test treats a bare dir as a file, so the dir-args version could not run); patient-export-format + release-notes-body tests re-pointed after the fixture/highlight prunes; 3 admitted-today tests used the UTC day (failed 18:00-24:00 CST) -> local day; code map is docs/core/21-code-map.md with .cursor/rules/project-context.mdc a symlink to it; lint-tier1 clean on all 56 changed files; main.js reinstall path fixed (bind on undefined autoUpdater)
+  from: agent
+- [~] Fold the remaining over-split module families (estado-actual, clinical-teams, tendencias, panel-admin, med-receta, lab-panel, tend-group) {#shrink-fold3}
+  by: claude
+  from: agent
+  note: med-receta, lab-panel, tend-group, panel-admin, clinical-teams, tendencias folded (module count 1135→1112 tracked non-test .mjs/.cjs). estado-actual (88 files, cyclic) and lazy-feature-routes not started — left for a follow-up session. metrics:check LOC gate now red (335619 tracked vs 334853 baseline) because folding preserves code volume while cutting file count; baseline.json intentionally untouched (off-limits).
+
 ## decisions
+
+- 2026-09-02, claude: `npm test` takes quoted glob patterns, never directory args — Node 24 `--test` treats a bare directory as a file and aborts. Glob discovery now runs every colocated test; the old 685-path manifest had silently skipped `patient-export-format.test.mjs`.
+- 2026-09-02, owner: keep DEMO PÉREZ (pitch/tour patient). Interno/Equipos LAN host probe is dead — Nube origin only. Docs must match. Paid Workers are live; HTTP-pull is not a Free-tier limit.
+- 2026-09-02, cursor: username twins stay two copies + parity test. A public re-export or symlink of `lib/db/clinical-username.mjs` extracts a new eager chunk (112→113). Do not raise the file budget.
+- 2026-09-02, owner: ABG extendida is the gasometría-extendida dialog / advanced interpretation (`isAbgAnalysisHidden`, `tend-group-gaso-dialog`), not anion gap. AG/cAG stay.
+- 2026-09-02, owner: delete the LAN ward server and the 7.9 cutover wizard. 8.2.9 installs just skip the wizard. DEMO PÉREZ and ABG extendida stay open.
+- 2026-09-02, cursor: executing codebase-reduction plan on branch chore/codebase-reduction (worktree). Phase 0+1 only this session: predeploy/predev hooks, gitignore mirrors + index.html, build-ui in prestart. Dirty main working tree left untouched. Owner still must call #shrink-decisions before Phase 2 move 8 and Phase 7.
 
 - 2026-08-30, claude + owner: artifact audit corrected the quiet-swap premise. Published 8.1.4/8.1.5 zips already carry Developer ID N78U9QC783 but keep the old appId com.hospitaluniversitario.rplusclinical (dropped in 8.1.6, commit 9a250b74); the old free cert (Apple Development: djsalas99@gmail.com, VAXFST8D9H) only signed ≤8.1.3, whose Mac assets are gone from GitHub. Owner confirmed the stuck Macs run 8.1.4/8.1.5 → 8.2.6 ships the old appId + the normal new cert, notarized, Mac-only publish (Windows must never see an appId change); swap activation broadened to fire on bundle-id mismatch too; ≤8.1.3 stragglers fall to the min-version screen.
 - 2026-08-30, owner (via AskUserQuestion): Mac cert-swap path resolved as **quiet swap**. 8.2.6 (old free cert) self-downloads the 8.2.7 zip, verifies codesign + Team ID N78U9QC783, and swaps the app files with native tools — no browser download, so no quarantine, and the skipped first-open dialog is accepted (same mechanism every normal auto-updater uses; the target is notarized). The min-version blocking screen stays as the backstop for anyone the swap misses. Deliberate deviation from the handoff: no forced relaunch after the swap (a mid-session relaunch could interrupt clinical work) — the new version runs on the next manual launch.

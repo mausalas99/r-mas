@@ -21,41 +21,48 @@ var TEND_UNITS = {
   Vanco:'ug/mL', Dig:'ng/mL', AFP:'ng/mL', CEA:'ng/mL', CA125:'U/mL', PSA:'ng/mL',
   B12:'pg/mL', Fol:'ng/mL', Calpro:'ug/g', EtOH:'mg/dL'
 };
-var TEND_REF = {
-  Hb:[12,17.5], Hto:[36,53], Leu:[4,11], Plt:[150,400], VCM:[80,100], HCM:[27,33],
-  RBC:[4.2,5.4], CHCM:[31.5,34.5], RDW:[11.5,14.5], MPV:[7.4,10.4],
-  Neu:[1.5,8], Eos:[0,0.6], Lin:[0.6,3.4], Mono:[0,0.9], Baso:[0,0.2],
-  NeuPct:[37,80], LinPct:[10,50], MonoPct:[0,12], EosPct:[0,7], BasoPct:[0,2.5],
-  Bandas:[0,5], Mielo:[0,1], Metamielo:[0,1], Promielo:[0,1], Blastos:[0,1], Atipicos:[0,5],
-  Ret:[0.5,2.5], TP:[11,14], TTP:[25,35], INR:[0.8,1.2], Fib:[150,400], DD:[0,500],
-  Glu:[70,100], Cr:[0.5,1.3], BUN:[7,20], 'BUN/CR':[10,20], PCR:[0,0.5], eTFG:[90,130], PCT:[0,0.05], VSG:[0,20],
-  AU:[3.5,7], TGL:[0,150], COL:[0,200], HDL:[40,60], LDL:[0,130], VLDL:[2,40],
-  IA:[0,3.22], CTHDL:[0,3.1], CPK:[30,200],
-  Na:[136,145], K:[3.5,5.0], Cl:[96,106], HCO3:[22,28], Ca:[8.5,10.5], cCa:[8.5,10.5], F:[2.5,4.5], Mg:[1.6,2.6],
-  AST:[10,40], ALT:[7,56], FA:[44,147], GGT:[0,55], Prot:[6,8.3], BT:[0.1,1.2], Alb:[3.5,5.2], BD:[0,0.3], BI:[0.1,1],
-  LDH:[120,250], Amil:[30,110], Lip:[8,57], TnI1:[0,34], TnI2:[0,34],
-  TSH:[0.4,4], T4L:[0.8,1.8], T3L:[2.3,4.2], HbA1c:[4,5.6], Cortisol:[5,25], PTH:[15,65], VitD:[30,100],
-  NTproBNP:[0,125], CKMB:[0,5], Fe:[50,170], Sat:[20,50], Ferr:[30,400],
-  FR:[0,14], C3:[90,180], C4:[10,40], NH3:[15,45], Osm:[275,295],
-  CysC:[0.5,1], AlbCr:[0,30], Vanco:[10,20], Dig:[0.8,2.0], AFP:[0,10], CEA:[0,5], PSA:[0,4],
-  B12:[200,900], Fol:[3,17], Calpro:[0,50], EtOH:[0,10],
-  LCR_pH:[7.28,7.42], LCR_Leu:[0,5], LCR_Glu:[40,80], LCR_Cl:[118,132], LCR_Prot:[15,45],
-  Liq_pH:[7.1,7.6], Liq_Glu:[20,600], Liq_Leu:[0,5000], Liq_LDH:[0,500], Liq_Dens:[1000,1050], Liq_Prot:[10,50]
+/** Tendencias-only fallbacks (not used to star pasted SOME values). */
+export const TEND_REF_EXTRAS = {
+  'BUN/CR': [10, 20],
+  eTFG: [90, 130],
+  VSG: [0, 20],
+  cCa: [8.5, 10.5],
+  T3L: [2.3, 4.2],
+  Cortisol: [5, 25],
+  PTH: [15, 65],
+  VitD: [30, 100],
+  CKMB: [0, 5],
+  Sat: [20, 50],
+  FR: [0, 14],
+  C3: [90, 180],
+  C4: [10, 40],
+  NH3: [15, 45],
+  Osm: [275, 295],
+  AlbCr: [0, 30],
+  Dig: [0.8, 2.0],
+  AFP: [0, 10],
+  CEA: [0, 5],
+  PSA: [0, 4],
+  Fol: [3, 17],
+  Calpro: [0, 50],
+  EtOH: [0, 10],
+  LCR_pH: [7.28, 7.42],
+  LCR_Leu: [0, 5],
+  LCR_Glu: [40, 80],
+  LCR_Cl: [118, 132],
+  LCR_Prot: [15, 45],
+  Liq_pH: [7.1, 7.6],
+  Liq_Glu: [20, 600],
+  Liq_Leu: [0, 5000],
+  Liq_LDH: [0, 500],
+  Liq_Dens: [1000, 1050],
+  Liq_Prot: [10, 50],
 };
-/** Rangos orientativos en gasometría (arterial/capilar; solo tendencias / color). */
-var TEND_REF_GASES = {
-  pH: [7.35, 7.45],
-  pCO2: [35, 45],
-  pO2: [83, 100],
-  Lactato: [0.5, 2.2],
-  Na: [135, 148],
-  K: [3.5, 5.3],
-  GLU: [70, 110],
-  Hto: [34, 50],
-  Bica: [22, 28],
-  iCa: [1.12, 1.32],
-  cAG: [8, 12]
+
+export const TEND_GASO_EXTRAS = {
+  cAG: [8, 12],
 };
+
 var TEND_SECTION_LABELS = {
   BH: 'Biometría hemática',
   QS: 'Química sanguínea',
@@ -238,8 +245,6 @@ function getTendSectionLabel(sectionKey) {
 
 export {
   TEND_UNITS,
-  TEND_REF,
-  TEND_REF_GASES,
   TEND_SECTION_LABELS,
   TEND_SECTION_ORDER,
   TEND_SERIES_CATALOG,

@@ -1,8 +1,22 @@
 import { closeOverlayAnimated } from './ui-motion.mjs';
 import { mountRpcDateInput } from './rpc-date-picker.mjs';
-import { createTendGroupTableApi } from './tend-group-table.mjs';
-import { createTendGroupChartsApi } from './tend-group-charts.mjs';
-import { createTendGroupGasoApi } from './tend-group-gaso.mjs';
+import {
+  renderGroupTable,
+  createTableExportModel,
+  formatCellValue,
+  tableColumnHeader,
+  tableLegendLabelForSpec,
+} from './tend-group-table-render.mjs';
+import { renderGroupCharts, destroyGroupCharts } from './tend-group-charts-render.mjs';
+import { sortLabHistoryChronological } from './tend-core.mjs';
+import { refillGasoExtendedSlot, serieNumFromLabSet } from './tend-group-gaso-slot.mjs';
+import {
+  ensureGasoExtendedDialog,
+  closeGasoExtendedBackdrop,
+  showGasoExtendedBackdrop,
+  parseFio2Input,
+  wireGasoExtendedDialog,
+} from './tend-group-gaso-dialog.mjs';
 import {
   prepareTendGroupOpen,
   showTendGroupBackdrop,
@@ -12,6 +26,122 @@ import {
   setTendGroupTab,
   applyTendGroupDateRange,
 } from './tend-group-modal-open.mjs';
+
+function createTendGroupTableApi(deps, state) {
+  function renderTable(sectionKey) {
+    renderGroupTable(deps, state, sectionKey, renderTable);
+  }
+
+  function buildTableExportModel(sectionKey, rawModel, hidden) {
+    return createTableExportModel(deps, state, sectionKey, rawModel, hidden);
+  }
+
+  function columnHeader(set, columns) {
+    return tableColumnHeader(set, columns);
+  }
+
+  function legendLabelForSpec(sectionKey, spec) {
+    return tableLegendLabelForSpec(deps, sectionKey, spec);
+  }
+
+  return { renderTable, buildTableExportModel, formatCellValue, columnHeader, legendLabelForSpec };
+}
+
+function createTendGroupChartsApi(deps, state, tableApi) {
+  var legendLabelForSpec = tableApi.legendLabelForSpec;
+  var panelSortableRef = { current: null };
+
+  function renderCharts(sectionKey) {
+    renderGroupCharts(deps, state, sectionKey, legendLabelForSpec, panelSortableRef, renderCharts);
+  }
+
+  function destroyCharts() {
+    destroyGroupCharts(state, panelSortableRef);
+  }
+
+  function destroyPanelSortable() {
+    if (panelSortableRef.current) {
+      try {
+        if (typeof panelSortableRef.current.destroy === 'function') panelSortableRef.current.destroy();
+      } catch (_e) { void _e; }
+      panelSortableRef.current = null;
+    }
+  }
+
+  return { renderCharts, destroyCharts, destroyPanelSortable };
+}
+
+function isAbgAnalysisHidden() {
+  return true;
+}
+
+function defaultEsc(t) {
+  return String(t == null ? '' : t);
+}
+
+function createTendGroupGasoApi(deps, state) {
+  function escHtml(t) {
+    return (deps.esc || defaultEsc)(t);
+  }
+
+  function closeGasoExtended() {
+    closeGasoExtendedBackdrop();
+  }
+
+  function rerunGasoSlot(bd) {
+    var inp = bd.querySelector('.tend-gaso-fio2-input');
+    state.gasoExtendedFio2 = parseFio2Input(inp && inp.value, state.gasoExtendedFio2);
+    refillGasoExtendedSlot(
+      bd.querySelector('.tend-gaso-extended-inner'),
+      state.historyDesc[0],
+      state.gasoExtendedFio2,
+      escHtml
+    );
+  }
+
+  function openGasoExtended() {
+    if (isAbgAnalysisHidden()) {
+      if (deps.showToast) deps.showToast('El análisis de gasometría no está disponible en R+.', 'info');
+      return;
+    }
+    var patientId = deps.getActiveId();
+    if (!patientId) return;
+
+    var historyDesc = sortLabHistoryChronological(deps.getHistory() || []);
+    if (!historyDesc.length) {
+      if (deps.showToast) deps.showToast('Sin laboratorio reciente para gasometría.', 'warn');
+      return;
+    }
+
+    state.patientId = patientId;
+    state.historyDesc = historyDesc;
+
+    var latest = historyDesc[0];
+    var hasGaso =
+      latest &&
+      latest.parsedBySection &&
+      latest.parsedBySection.GASES &&
+      serieNumFromLabSet(latest, 'GASES', 'pH') != null;
+    if (!hasGaso) {
+      if (deps.showToast) deps.showToast('No hay gasometría en el último estudio.', 'warn');
+      return;
+    }
+
+    var bd = ensureGasoExtendedDialog(escHtml, closeGasoExtended);
+    wireGasoExtendedDialog(bd, state, function () {
+      rerunGasoSlot(bd);
+    });
+    refillGasoExtendedSlot(
+      bd.querySelector('.tend-gaso-extended-inner'),
+      latest,
+      state.gasoExtendedFio2,
+      escHtml
+    );
+    showGasoExtendedBackdrop(bd);
+  }
+
+  return { openGasoExtended, closeGasoExtended };
+}
 
 export function createTendGroupModal(deps) {
   var state = {

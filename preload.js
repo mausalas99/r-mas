@@ -108,13 +108,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getDevCloudSyncUrlOverride: function() {
     return process.env.R_PLUS_CLOUD_SYNC_URL || null;
   },
-  /** Dev-only ward server (`R_PLUS_DEV_WARD_SERVER=1`). Production Nube builds never bind :3738. */
-  ensureLanServerReady: function() {
-    if (process.env.R_PLUS_DEV_WARD_SERVER !== '1') {
-      return Promise.resolve({ ok: true, peer: false, wardServer: false });
-    }
-    return ipcRenderer.invoke('lan-ensure-server-ready');
-  },
   writeClipboardText: function(text) {
     return ipcRenderer.invoke('clipboard-write-text', text);
   },
@@ -267,9 +260,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   dbClinicalUserDelete: function(opts) {
     return ipcRenderer.invoke('db:clinical-user-delete', opts);
-  },
-  dbClinical79CutoverWipe: function() {
-    return ipcRenderer.invoke('db:clinical-79-cutover-wipe');
   },
   dbClinicalTeamResolveCode: function(opts) {
     return ipcRenderer.invoke('db:clinical-team-resolve-code', opts);

@@ -2,8 +2,8 @@
  * Detección de reposición de potasio IV en bloques SOME (MEDICAMENTOS P1 + diluyente).
  */
 import { normalizeNombreForSoapClassify } from './med-receta-nombre.mjs';
-import { trimStr } from './med-receta-util.mjs';
 import { isSuerosMedicationNombre } from './med-receta-soap-some-map.mjs';
+import { trimStr } from './med-receta-util.mjs';
 
 var KCL_RE = /\bCLORURO\s+DE\s+POTASIO\b/i;
 var K_PHOS_RE = /\bFOSFATO\s+DE\s+POTASIO\b/i;

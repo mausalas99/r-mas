@@ -15,10 +15,9 @@ Expand incrementally. Short terms also appear in [02-product-context.md](./02-pr
 | R+ | Desktop clinical workstation — Laboratoriazo + documentación clínica |
 | SOME | Hospital laboratory report text format (primary paste source) |
 | TTD | Time-to-Document — North Star primary metric |
-| LiveSync | LAN synchronization subsystem (port 3738, ⇄ / Wi‑Fi UI) |
-| Anfitrión | Turn host Mac holding authoritative sync bundle |
-| PIN del turno | Reusable ~12h code to join the active shift |
-| @usuario | LAN clinical handle (distinct from guardia display name) |
+| LiveSync | Retired LAN sync (old port 3738). Replaced by Nube rooms |
+| Conexión | Nube room join / sync UI (⇄) |
+| @usuario | Clinical handle (distinct from guardia display name) |
 | LWW | Last-write-wins conflict policy on overlapping edits |
 | SQLCipher | Encrypted SQLite clinical store in `userData` |
 | Adjunct | R+ complements but does not replace institutional EMR |

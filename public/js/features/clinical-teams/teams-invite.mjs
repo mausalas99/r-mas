@@ -11,6 +11,8 @@ import {
   isClinicalTeamJoinDesktopApp,
   parseClinicalTeamJoinQuery,
   tryMountClinicalTeamInviteBrowserGate,
+  normalizeTeamInviteCode,
+  resolveTeamIdFromInviteCode,
 } from '../../clinical-team-invite.mjs';
 import { isLanSalaInvitePaste } from '../../mobile-join-link.mjs';
 import { effectiveClinicalRank } from '../../clinical-privileges.mjs';
@@ -18,10 +20,46 @@ import { inferMembershipCycleForJoin } from '../../clinico-access.mjs';
 import { ensureClinicalPanelSession } from '../clinical-panel-host.mjs';
 import { dbApi, toast, currentUserId, filterJoinedTeams } from './shared.mjs';
 import { publishClinicalTeamsAfterChange } from './teams-guardia-bridge.mjs';
-import { resolveTeamIdForInviteInput } from './teams-invite-resolve.mjs';
 import { markClinicalEverJoinedTeam } from '../clinical-rotation-rejoin-modal.mjs';
 
-export { resolveTeamIdForInviteInput };
+/** @param {string} raw */
+function resolveTeamIdFromLocalTeams(raw) {
+  if (raw.includes('-') && raw.length > 20) return raw;
+  return resolveTeamIdFromInviteCode(raw, clinicalSessionContext.teams || []);
+}
+
+async function resolveTeamIdFromDirectory(raw) {
+  try {
+    const { pullClinicalOpsFromCloudRoom } = await import('./teams-guardia-bridge.mjs');
+    await pullClinicalOpsFromCloudRoom({ timeoutMs: 8000, force: true });
+    const { fetchClinicalTeamsFromDb: fetchTeams } = await import('../../clinical-access-runtime.mjs');
+    await fetchTeams();
+    return resolveTeamIdFromInviteCode(raw, clinicalSessionContext.teams || []);
+  } catch {
+    return '';
+  }
+}
+
+/** @param {string} raw */
+async function resolveTeamIdFromDbCode(raw) {
+  const api = dbApi();
+  if (!api || typeof api.dbClinicalTeamResolveCode !== 'function') return '';
+  const res = await api.dbClinicalTeamResolveCode({ code: normalizeTeamInviteCode(raw) });
+  if (!res?.ok || !res.team?.team_id) return '';
+  await fetchClinicalTeamsFromDb();
+  return String(res.team.team_id);
+}
+
+/** @param {string} codeOrId */
+export async function resolveTeamIdForInviteInput(codeOrId) {
+  const raw = String(codeOrId || '').trim();
+  if (!raw) return '';
+  await fetchClinicalTeamsFromDb();
+  let teamId = resolveTeamIdFromLocalTeams(raw);
+  if (!teamId) teamId = await resolveTeamIdFromDirectory(raw);
+  if (!teamId) teamId = await resolveTeamIdFromDbCode(raw);
+  return teamId;
+}
 
 function findTeamForJoin(teamId) {
   return (clinicalSessionContext.teams || []).find((t) => String(t.team_id) === teamId);

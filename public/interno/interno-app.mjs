@@ -2,9 +2,6 @@ import {
   resolveInternoApiBase,
   parseInternoPath,
   salaKeyFromSlug,
-  saveInternoHostOverride,
-  isLoopbackHostname,
-  isCloudInternoShell,
 } from './host-discovery.mjs';
 
 import { escapeHtml, escapeAttr } from '../js/dom-escape.mjs';
@@ -83,9 +80,7 @@ async function init() {
     return;
   }
 
-  root.innerHTML = isCloudInternoShell()
-    ? '<div class="interno-empty"><p>Conectando…</p></div>'
-    : '<div class="interno-empty"><p>Buscando host de guardia en la red…</p></div>';
+  root.innerHTML = '<div class="interno-empty"><p>Conectando…</p></div>';
   apiBase = await resolveInternoApiBase();
   if (!apiBase) {
     renderConnectionError('missing_host');
@@ -146,26 +141,19 @@ async function refreshBoard() {
 
 function renderServerError(code) {
   if (!root) return;
-  const pageHost = window.location.hostname;
-  const port = window.location.port || '3738';
-  const networkOk = !isLoopbackHostname(pageHost);
-
   const hints = {
-    db_unavailable:
-      'En la Mac host, abre R+ y asegúrate de que la base clínica esté desbloqueada (pantalla principal cargada).',
+    db_unavailable: 'La sala Nube no está lista. En la Mac: abre R+ y entra a Conexión.',
     invalid_token:
-      'El QR no coincide con el host. En la Mac: Conexión guardia → QR Internos → copia el enlace de nuevo (sin regenerar si no hace falta).',
+      'El QR no coincide. En la Mac: Conexión → QR Internos → copia el enlace de nuevo.',
     interno_inactive:
       'Acceso de internos desactivado para esta sala. En la Mac actívalo en QR Internos (MIP).',
     auth_required: 'Falta el token. Escanea el QR completo otra vez.',
   };
-  const hint = hints[code] || 'El host respondió con un error. Revisa R+ en la Mac.';
+  const hint = hints[code] || 'Nube respondió con un error. Revisa Conexión en la Mac.';
 
   root.innerHTML = `<div class="interno-error-screen interno-connect-help">
     <p><strong>No se pudo cargar el tablero.</strong></p>
     <p class="interno-summary">${escapeHtml(hint)}</p>
-    ${networkOk ? '' : '<p class="interno-summary">La IP del enlace no es válida para celular (usa <code>192.168.x.x</code>).</p>'}
-    <p class="interno-summary">Host: ${escapeHtml(apiBase || `${window.location.protocol}//${pageHost}:${port}`)}</p>
     <p class="interno-summary">Código: ${escapeHtml(code)}</p>
     <button type="button" class="interno-btn-primary" id="interno-retry-board" style="margin-top:1rem">Reintentar</button>
   </div>`;
@@ -175,57 +163,17 @@ function renderServerError(code) {
   });
 }
 
-function renderConnectionError(reason) {
+function renderConnectionError(_reason) {
   if (!root) return;
-  const pageHost = window.location.hostname;
-  const port = window.location.port || '3738';
-  const badQr = isLoopbackHostname(pageHost);
-  const tried = apiBase ? escapeHtml(apiBase) : '—';
-  const hostDefault = badQr ? '' : `${pageHost}:${port}`;
-
   root.innerHTML = `<div class="interno-error-screen interno-connect-help">
-    <p><strong>No se pudo conectar al host de guardia.</strong></p>
-    <ul class="interno-help-list">
-      ${badQr ? '<li>El QR usa <code>127.0.0.1</code> — en el celular no funciona. Vuelve a copiar el QR desde la Mac host (debe verse una IP tipo <code>192.168.x.x</code>).</li>' : '<li>La página cargó pero la API no responde. Prueba en Safari: <code>/api/interno/v1/ping</code> en la misma URL.</li>'}
-      <li>Celular y Mac en la <strong>misma Wi‑Fi</strong> (no datos móviles ni red invitados).</li>
-      <li>R+ abierto en la Mac y tú como <strong>host</strong> de guardia.</li>
-      <li>En macOS: Ajustes → Red → Firewall → permitir conexiones entrantes a R+ (puerto 3738).</li>
-    </ul>
-    <p class="interno-summary">Probando: ${tried}</p>
-    <details class="interno-host-manual" ${badQr ? 'open' : ''}>
-      <summary>Cambiar IP del host</summary>
-      <p class="interno-summary">Usa la IP que ves en QR Internos en la Mac (ahora cargaste desde <code>${escapeHtml(pageHost)}</code>).</p>
-      <label class="interno-field" for="interno-host-input">
-        <span>IP del host</span>
-        <input id="interno-host-input" type="text" inputmode="decimal" autocomplete="off" placeholder="192.168.1.164:3738" value="${escapeAttr(hostDefault)}" />
-      </label>
-      <button type="button" class="interno-btn-primary" id="interno-host-retry">Reintentar</button>
-    </details>
+    <p><strong>No se pudo conectar a Nube.</strong></p>
+    <p class="interno-summary">Revisa el enlace del QR y la red. Interno ya no usa un host Mac en la Wi‑Fi.</p>
+    <button type="button" class="interno-btn-primary" id="interno-retry-board" style="margin-top:1rem">Reintentar</button>
   </div>`;
-
-  root.querySelector('#interno-host-retry')?.addEventListener('click', () => {
-    void retryWithManualHost();
+  root.querySelector('#interno-retry-board')?.addEventListener('click', () => {
+    root.innerHTML = '<div class="interno-empty"><p>Conectando…</p></div>';
+    void init();
   });
-}
-
-async function retryWithManualHost() {
-  const input = document.getElementById('interno-host-input');
-  const raw = input?.value?.trim() || '';
-  if (!raw) {
-    showToast('Escribe la IP de la Mac host');
-    return;
-  }
-  saveInternoHostOverride(raw);
-  root.innerHTML = '<div class="interno-empty"><p>Conectando…</p></div>';
-  apiBase = await resolveInternoApiBase({ hostOverride: raw });
-  if (!apiBase) {
-    renderConnectionError('manual_failed');
-    return;
-  }
-  await refreshBoard();
-  if (!board) return;
-  connectWs();
-  if (!pollTimer) pollTimer = setInterval(refreshBoard, POLL_MS);
 }
 
 function connectWs() {

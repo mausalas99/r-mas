@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "cd ../.. && npm run build:cloud-mobile && npm run build:cloud-interno",
     "dev": "wrangler dev",
+    "predeploy": "cd ../.. && npm run build:cloud-mobile && npm run build:cloud-interno",
     "deploy": "wrangler deploy",
     "db:migrate:local": "wrangler d1 migrations apply rplus-sync --local",
     "db:migrate:remote": "wrangler d1 migrations apply rplus-sync --remote",

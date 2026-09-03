@@ -1,8 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { platformWindowHandlers } from '../platform.mjs';
-import { compareSemver } from '../platform.mjs';
-import { safeExportSlug } from '../platform.mjs';
+import { platformWindowHandlers } from '../platform/index.mjs';
+import { compareSemver } from '../platform/index.mjs';
+import { safeExportSlug } from '../platform/index.mjs';
 
 describe('platform barrel (BN-06)', () => {
   it('exports platformWindowHandlers with backup/update/audit actions', () => {

@@ -93,9 +93,6 @@ export async function persistEntregaFormState(form, opts = {}) {
       form.dataset.guardiaId = String(guardia.guardia_id);
     }
     await refreshGuardiaCensusFromDb(null);
-    import('../../mutation-registry-stub.mjs').then(function (m) {
-      m.lanMutationRegistry.dispatchLanMutation('entrega', collected.payload.patientId);
-    });
     if (!opts.silent) toast('Entrega registrada.', 'success');
     return { ok: true, guardia };
   } catch (err) {

@@ -3,7 +3,7 @@ type: "core"
 name: "Core Architecture"
 status: "stable"
 dependencies: ["04-directory-structure"]
-description: "Electron, LAN LiveSync, SQLCipher, and document pipeline architecture."
+description: "Electron, Nube sync, SQLCipher, and document pipeline architecture."
 ---
 
 # Core Architecture
@@ -15,47 +15,44 @@ flowchart TB
   subgraph electron [Electron Main]
     M[main.js]
     M --> W[BrowserWindow]
-    M --> S[spawn server.js :3738]
+    M --> IPC[IPC + updater]
   end
   subgraph renderer [Renderer]
     APP[app.js → app.bundle.mjs]
     APP --> FEAT[features/*]
   end
-  subgraph lan [LAN Squad]
-    HR[host-router.js]
-    HS[host-store.js]
-    WS[ws-hub.js]
+  subgraph nube [Nube]
+    SW[cloud/sync-worker]
+    D1[D1 room state]
   end
   W --> APP
-  APP -->|fetch/WS| HR
-  S --> HR
-  HR --> HS
-  HR --> WS
   APP -->|IPC| DBM[lib/db/db-manager.mjs]
+  FEAT -->|HTTPS| SW
+  SW --> D1
 ```
 
 ## Layers
 
 | Layer | Entry | Responsibility |
 |-------|-------|----------------|
-| Main | `main.js` | Window, updater, IPC, spawn LAN server |
+| Main | `main.js` | Window (`app://rplus`), updater, IPC |
 | Preload | `preload.js` | `window.electronAPI` surface |
-| LAN server | `server.js` | Express routes, interno mobile, doc export |
 | Renderer | `public/js/app.js` | Feature registration via `app-runtimes.mjs` |
-| Host sync | `lan-squad/` | Bundle merge, conflict LWW, auth, write queue |
-| Clinical DB | `lib/db/` | SQLCipher schema v14, Argon2, outbox |
+| Cloud sync | `cloud/sync-worker/` | Room LWW, Interno MIP, R+ Móvil `/mobile/` |
+| Clinical DB | `lib/db/` | SQLCipher, Argon2, outbox |
 
-## LiveSync sync strategy (7.x)
+LAN LiveSync and `server.js` (:3738) are removed. Phones do not talk to the Mac.
 
-1. **Typed mutations** — HTTP PUT for note, labs, HC, clinical-ops, commands
-2. **Delta-first** — revision hints → delta log before full bundle
-3. **Safety bundle** — periodic `entriesPartial` (~30s) for untyped paths
-4. **Transport fallback** — WS → SSE → HTTP polling
-5. **Conflict policy** — LWW on overlap
+## Nube sync
+
+1. **Typed mutations** — HTTPS to the Worker (note, labs, clinical-ops, commands)
+2. **Pull** — D1 snapshot / revision reconcile
+3. **Notify** — Durable Object can wake peers (paid Workers)
+4. **Conflict policy** — LWW on overlap
 
 ## Document pipeline
 
-`document-export-client.mjs` → `lib/doc-export-http.js` → `lib/doc-generators/{note,indicaciones,listado}.js` (JSZip `.docx`).
+Desktop export is IPC → `lib/doc-export-service.js` → `lib/doc-generators/{note,indicaciones,listado}.js` (JSZip `.docx`).
 
 ## Related
 

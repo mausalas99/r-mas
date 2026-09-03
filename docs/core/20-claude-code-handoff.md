@@ -1,8 +1,69 @@
 ---
 type: "core"
 name: "Claude Code Handoff"
-status: "done"
-description: "Mac cert-swap quiet updater built 2026-08-30, publishing left (owner machine) — see top section. Older jobs below: Tendencias table-hide fix (done), update-feed Worker (done)."
+status: "active"
+description: "codebase-reduction worktree — staged, not committed. Fold3 leftover + LOC gate red. Older jobs below."
+---
+
+# Handoff — codebase reduction (2026-09-03)
+
+**From:** Cursor (this worktree pass) + Claude (overnight fold3 / test glob)  
+**Path:** `/Users/mauriciosalas/R+/.worktrees/codebase-reduction`  
+**Branch:** `chore/codebase-reduction` (from `4e537c37`)  
+**Do not touch:** `/Users/mauriciosalas/R+` (dirty, other product work)
+
+**Git:** everything is **staged**, **no commit**. ~1437 files, mostly untracking generated `cloud/*/public` + `public/index.html`.
+
+Owner decisions (do not reopen):
+
+- Keep **DEMO PÉREZ** (pitch/tour). Not a delete.
+- **ABG extendida** = gasometría interp dialog only. AG/cAG stay. Still in tree, hidden.
+- **No `:3738` / `server.js`.** LiveSync stays dead. R+ Móvil never used the Mac host. Interno/Equipos are Nube origin only.
+- Paid Workers are live. Do not treat HTTP pull as a Free-tier lock.
+- Username: **two copies + parity test**. Re-export or symlink of `lib/db/clinical-username.mjs` → eager files 112→113. Do not raise the boot file cap.
+
+## What landed
+
+| Slice | What |
+|-------|------|
+| Build output | gitignore `cloud/sync-pages/public`, `cloud/equipos-pages/public`, `public/index.html`. Workers `predeploy`/`predev` rebuild. |
+| Dead code | Unused scripts, demos/mocks, conflict fossils, LAN retire runners. |
+| Ratchets | File-length ratchet **gone**. Caps that only go down: tracked LOC, module count, eager boot. CI: `build-output-ignored`, `no-duplicate-files`, structure pinning. |
+| LAN ward | Deleted `server.js`, `lib/interno/interno-router*`, `host-store-db*`, `lib/equipos/equipos-router*`, photo-purge. Unwired `main.js` / `preload.js`. Doc export is IPC. |
+| Cutover | 7.9 wizard + `clinical-79-cutover` IPC gone. Onboarding = Nube register only. |
+| Interno/Equipos leftover | `host-discovery` is page origin. No subnet probe, no Mac IP form. |
+| Username | `public/js/clinical-username.mjs` is a real file (not a symlink). Parity in `clinical-username.test.mjs`. |
+| Labs refs | Catalog reads `DEFAULT_*` from `labs.js`. Extras stay in `tendencias-constants.mjs`. |
+| Docs | Living docs (README, `docs/core/00,01,02,08,15,16`, `docs/api`) no longer claim `:3738`. Code map is `docs/core/21-code-map.md`; `.cursor/rules/project-context.mdc` is a **symlink** to it. |
+| Tests (Claude) | `npm test` uses **quoted globs** (Node 24 treats a bare dir as a file). Old 685-path manifest is gone. 14 tests the manifest never ran were fixed (export format, highlights, admitted-today local day). |
+| Fold3 (Claude, partial) | Folded med-receta, lab-panel, tend-group, panel-admin, clinical-teams, tendencias. Claimed module count 1135→1112. |
+
+Eager boot cap: **3,430,001 B / 112 files** (`public/js/app-boot-imports.test.mjs`). History: `scripts/metrics/eager-boot-changelog.md`.
+
+## Not done / red
+
+1. **No commit.** Owner must say commit.
+2. **`{#shrink-fold3}` still `[~]`** — `estado-actual` (~88 files, cycles) and `lazy-feature-routes` not folded.
+3. **`npm run metrics:check` LOC gate is red.** `baseline.json` has `trackedLoc: 334853`. Fold3 left measured ~335619. `baseline.json` is **not** a silent refresh — owner must approve, or pay the lines down. `moduleCount` baseline is 1305 (different count than the 1112 PLAN note).
+4. Full `npm test` was not the daily loop. Use `npm run test:one -- path`. Quoted-glob `npm test` is for CI/release.
+
+## Do not
+
+- Raise `EAGER_BOOT_BUDGET_FILES` or `EAGER_BOOT_BUDGET_BYTES`.
+- Point renderer files at `lib/db/clinical-username.mjs`.
+- Sweep CSS by `lan-` prefix. Keep `.equipos-qr-compact-*`.
+- Bring back `server.js` or LAN LiveSync.
+- Mix this worktree with the main dirty tree.
+- Claim Nube is client-E2EE. Worker `WORKER_DATA_KEY` is at-rest; Cloudflare can decrypt. Client DEK code exists, not treated as deployed. Identity fields stay readable on the server.
+
+## Next (pick one)
+
+- **Commit** this branch as-is (LOC gate still red until fold3 leftover or baseline refresh).
+- **Finish fold3** (estado-actual / lazy-feature-routes) and remeasure boot + LOC.
+- **Product:** deploy client E2EE. Not more shrink.
+
+Plan: `PLAN.md` `{#shrink}`. Overnight notes are `{#shrink-test-glob}` and `{#shrink-fold3}`.
+
 ---
 
 # Handoff — Mac auto-update cert swap: quiet swap BUILT, publishing is owner-machine work
@@ -57,7 +118,7 @@ Two wrong theories were tried and reported as fixed before this was found — se
 - `public/js/features/productivity.mjs` — `saveUndoStack` (now exported) shrinks the stack (drops oldest snapshots, then clears the key) instead of failing when `localStorage.setItem` throws, and logs a `console.warn` every time it has to; an empty stack now clears the key silently instead of logging a false quota warning. New `healUndoStackQuota()` runs this same shrink logic once on every app boot (`initProductivityKeyboardShortcuts`), so installs with pre-existing bloat self-heal on first launch of 8.2.5 — no owner action needed. Tests: `public/js/features/productivity-undo-quota.test.mjs`, registered in `package.json`.
 - `public/js/tend-prefs.mjs` — `writeJson`'s catch now logs instead of swallowing.
 - `public/styles/workbench-kit.css` — `.wb-scrim` now has `pointer-events: none` when closed (`--open` re-enables it). This was the first (wrong) theory's fix; kept because it's a real, harmless hardening of a full-viewport overlay, not because it was the actual bug.
-- `scripts/verify/tend-group-table-hide.mjs` and `tend-group-table-hide-narrow.mjs` — were silently useless: both used `element.click()` / `elementFromPoint(...).click()`, a JS-level dispatch that bypasses real hit-testing and pointer-events, so they always "passed" even while the real click path was broken. Now use `page.mouse.click(x, y)`, a real pointer event. Any future "does a click work" verify script must do the same.
+- The old `scripts/verify/tend-group-table-hide*.mjs` click scripts were silently useless (`element.click()` bypasses hit-testing). They are gone; do not recreate that pattern.
 - `npm run build:ui` has been run after every source change above — the built app already has the fix.
 
 ## What's NOT done — one optional follow-up (no manual step needed anymore)
@@ -112,6 +173,7 @@ Plan a hard task: new session `claude --agent ceo-fable --effort high` (or `/mod
 
 | Plan | Path |
 |------|------|
+| **Codebase reduction (637k → ~219k tracked lines)** | `docs/superpowers/plans/2026-09-02-codebase-reduction.md` (local, gitignored) — **executed 2026-09-02 on branch `chore/codebase-reduction`, uncommitted.** Build mirrors + `public/index.html` gitignored (predeploy hooks rebuild them), dead code + LAN ward server + 7.9 cutover wizard deleted, file-length ratchet replaced by total-LOC + module-count ratchets, tests discovered by glob, code map tracked at `docs/core/21-code-map.md`. Status per task in `PLAN.md` `{#shrink}`. |
 | **Update feed Worker (this job)** | `docs/superpowers/specs/2026-08-15-update-feed-worker-design.md` |
 | Tablas Dinámicas (combined lab table builder) | `docs/superpowers/plans/2026-08-30-combined-lab-table.md` — **built 2026-08-30.** Standalone "Tablas Dinámicas" button in the Tendencias panel's top toolbar opens a dedicated, chart-free modal (`tend-dynamic-table-modal.mjs`) where analytes from any lab section can be searched and added into one table. Reuses the per-study table engine via a reserved pseudo section key so persistence (extras, hidden rows/cols, day-mode) comes free from existing `tend-prefs.mjs` functions. The per-study "Gráfica del estudio" modal was reverted back to single-section only (first pass had embedded the picker there; owner asked for it separate). Tests pass (38/38), `build:ui` clean. Not yet manually verified in the running app (needs a patient with ≥2 lab sections). |
 | Biometric unlock (Touch ID + Windows Hello) | `docs/superpowers/plans/2026-08-25-biometric-unlock.md` — **built 2026-08-25, then reverted same day by user request.** Touch ID worked on Mac, but local testing surfaced that the dev DB was never passphrase-encrypted (no onboarding entry point in Settings to turn encryption on after first run — separate gap, not fixed). Windows Hello was never shippable (only known wrapper is abandoned since 2019). User decided to drop the feature rather than chase the encryption-setup gap first. All Touch ID code surgically removed 2026-08-25 (main.js, ipc-handlers*.mjs, preload.js, db-unlock-*.mjs, root.html, tests) — 35/35 tests pass, `build:ui` clean. Do not restart this without first deciding how users turn on local DB encryption post-onboarding. |

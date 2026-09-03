@@ -26,6 +26,24 @@ if (baseline.totalScore == null) {
   failed = true;
 }
 
+if (baseline.trackedLoc == null || baseline.moduleCount == null) {
+  console.error('baseline.json missing trackedLoc/moduleCount — add the current measured size');
+  failed = true;
+} else {
+  if (report.trackedLoc > baseline.trackedLoc) {
+    console.error(
+      `LOC REGRESSION: tracked ${report.trackedLoc} > baseline ${baseline.trackedLoc}`
+    );
+    failed = true;
+  }
+  if (report.moduleCount > baseline.moduleCount) {
+    console.error(
+      `MODULE-COUNT REGRESSION: ${report.moduleCount} > baseline ${baseline.moduleCount}`
+    );
+    failed = true;
+  }
+}
+
 const changed = filterLintableTier1Paths(gitChangedFilesAgainst('main')).filter((p) =>
   fs.existsSync(path.join(ROOT, p))
 );

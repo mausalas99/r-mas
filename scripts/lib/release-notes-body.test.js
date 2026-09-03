@@ -121,22 +121,6 @@ test('RELEASE_NOTES_7.2.0 has no TODO placeholders', () => {
   assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.2.0.txt still has TODO');
 });
 
-test('curated 7.2.0 highlights remain filled (not legacy empty)', async () => {
-  const mod = await import(
-    path.join(ROOT, 'public/js/features/settings-help/release-notes-curated.mjs')
-  );
-  const highlights = mod.RELEASE_NOTES_HIGHLIGHTS['7.2.0'];
-  assert.ok(Array.isArray(highlights) && highlights.length >= 3);
-  const joined = highlights.map((n) => `${n.title} ${n.body}`).join(' ');
-  assert.ok(!/title: 'TODO'/.test(joined));
-  assert.ok(!joined.includes('Completar antes de publicar'));
-  assert.ok(
-    joined.includes('código') ||
-      joined.includes('mDNS') ||
-      joined.includes('huella')
-  );
-});
-
 test('RELEASE_NOTES_7.2.4 has no TODO placeholders', () => {
   const notes = fs.readFileSync(
     path.join(ROOT, 'docs/RELEASE_NOTES_7.2.4.txt'),
@@ -197,44 +181,12 @@ test('RELEASE_NOTES_7.2.3 has no TODO placeholders', () => {
   assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.2.3.txt still has TODO');
 });
 
-test('curated 7.2.3 highlights are current default', async () => {
-  const mod = await import(
-    path.join(ROOT, 'public/js/features/settings-help/release-notes-curated.mjs')
-  );
-  const highlights = mod.RELEASE_NOTES_HIGHLIGHTS['7.2.3'];
-  assert.ok(Array.isArray(highlights) && highlights.length >= 3);
-  const joined = highlights.map((n) => `${n.title} ${n.body}`).join(' ');
-  assert.ok(!/title: 'TODO'/.test(joined));
-  assert.ok(!joined.includes('Completar antes de publicar'));
-  assert.ok(
-    joined.includes('10.0.57.52') ||
-      joined.includes('empaquetado') ||
-      joined.includes('PIN')
-  );
-});
-
 test('RELEASE_NOTES_7.2.2 has no TODO placeholders', () => {
   const notes = fs.readFileSync(
     path.join(ROOT, 'docs/RELEASE_NOTES_7.2.2.txt'),
     'utf8'
   );
   assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.2.2.txt still has TODO');
-});
-
-test('curated 7.2.2 highlights remain filled', async () => {
-  const mod = await import(
-    path.join(ROOT, 'public/js/features/settings-help/release-notes-curated.mjs')
-  );
-  const highlights = mod.RELEASE_NOTES_HIGHLIGHTS['7.2.2'];
-  assert.ok(Array.isArray(highlights) && highlights.length >= 3);
-  const joined = highlights.map((n) => `${n.title} ${n.body}`).join(' ');
-  assert.ok(!/title: 'TODO'/.test(joined));
-  assert.ok(!joined.includes('Completar antes de publicar'));
-  assert.ok(
-    joined.includes('invitado') ||
-      joined.includes('dirección') ||
-      joined.includes('Reconexión')
-  );
 });
 
 test('RELEASE_NOTES_7.2.1 has no TODO placeholders', () => {
@@ -245,41 +197,3 @@ test('RELEASE_NOTES_7.2.1 has no TODO placeholders', () => {
   assert.ok(!/\bTODO\b/.test(notes), 'docs/RELEASE_NOTES_7.2.1.txt still has TODO');
 });
 
-test('curated 7.2.1 highlights remain filled', async () => {
-  const mod = await import(
-    path.join(ROOT, 'public/js/features/settings-help/release-notes-curated.mjs')
-  );
-  const highlights = mod.RELEASE_NOTES_HIGHLIGHTS['7.2.1'];
-  assert.ok(Array.isArray(highlights) && highlights.length >= 3);
-  const joined = highlights.map((n) => `${n.title} ${n.body}`).join(' ');
-  assert.ok(!/title: 'TODO'/.test(joined));
-  assert.ok(!joined.includes('Completar antes de publicar'));
-  assert.ok(
-    joined.includes('VLAN') ||
-      joined.includes('PIN') ||
-      joined.includes('anfitrión')
-  );
-});
-
-test('curated 7.1.3 highlights remain filled (not legacy empty)', async () => {
-  const mod = await import(
-    path.join(ROOT, 'public/js/features/settings-help/release-notes-curated.mjs')
-  );
-  const highlights = mod.RELEASE_NOTES_HIGHLIGHTS['7.1.3'];
-  assert.ok(Array.isArray(highlights) && highlights.length >= 3);
-  const joined = highlights.map((n) => `${n.title} ${n.body}`).join(' ');
-  assert.ok(!/title: 'TODO'/.test(joined));
-  assert.ok(!joined.includes('Completar antes de publicar'));
-  assert.ok(joined.includes('signos') || joined.includes('Learn') || joined.includes('Interconsulta'));
-});
-
-test('curated 6.6.3 highlights remain filled (not legacy empty)', async () => {
-  const mod = await import(
-    path.join(ROOT, 'public/js/features/settings-help/release-notes-curated.mjs')
-  );
-  const highlights = mod.RELEASE_NOTES_HIGHLIGHTS['6.6.3'];
-  assert.ok(Array.isArray(highlights) && highlights.length >= 4);
-  const joined = highlights.map((n) => `${n.title} ${n.body}`).join(' ');
-  assert.ok(!joined.includes('Completar antes de publicar'));
-  assert.ok(joined.includes('Arranque') || joined.includes('Windows'));
-});

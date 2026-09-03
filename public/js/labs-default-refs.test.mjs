@@ -166,6 +166,26 @@ test('mergeRefsBySection_ reporte gana y prior rellena', () => {
   assert.deepEqual(out.ESC.Cl, [98, 107]);
 });
 
+test('tendencias refs fold onto DEFAULT_* without overlapping extras', async () => {
+  const { DEFAULT_LAB_REFS, DEFAULT_GASO_REFS } = await import('./labs-default-refs.mjs');
+  const constants = await import('./features/tendencias-constants.mjs');
+  assert.equal(constants.TEND_REF, undefined);
+  assert.equal(constants.TEND_REF_GASES, undefined);
+  const { TEND_REF_EXTRAS, TEND_GASO_EXTRAS } = constants;
+  for (const key of Object.keys(TEND_REF_EXTRAS)) {
+    assert.equal(DEFAULT_LAB_REFS[key], undefined, key);
+  }
+  for (const key of Object.keys(TEND_GASO_EXTRAS)) {
+    assert.equal(DEFAULT_GASO_REFS[key], undefined, key);
+  }
+  const tendRef = { ...DEFAULT_LAB_REFS, ...TEND_REF_EXTRAS };
+  const tendGases = { ...DEFAULT_GASO_REFS, ...TEND_GASO_EXTRAS };
+  assert.deepEqual(tendRef.LCR_pH, [7.28, 7.42]);
+  assert.deepEqual(tendRef.eTFG, [90, 130]);
+  assert.deepEqual(tendGases.cAG, [8, 12]);
+  assert.deepEqual(tendGases.pH, DEFAULT_GASO_REFS.pH);
+});
+
 test('buildRefsBySectionFromReport no inventa PCT sin estudio', () => {
   const refs = buildRefsBySectionFromReport(QS_HILDA_SIN_REFS);
   assert.ok(!refs.QS || !refs.QS.PCT);

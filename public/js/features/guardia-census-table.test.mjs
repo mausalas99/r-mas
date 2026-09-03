@@ -117,7 +117,7 @@ describe('admission date (D3a: auto-set registeredAt, FIMI/FIUX as legacy fallba
   });
 
   it('is admitted today only when the resolved date matches the local calendar day', () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toLocaleDateString('sv-SE');
     assert.equal(isPatientAdmittedToday({ fimiFecha: today }), true);
     assert.equal(isPatientAdmittedToday({ fimiFecha: '2020-01-01' }), false);
     assert.equal(isPatientAdmittedToday({}), false);
@@ -180,7 +180,7 @@ describe('buildGuardiaCensusTableHtml', () => {
   });
 
   it('filters to admitted-today patients under the Ingresos chip', () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toLocaleDateString('sv-SE');
     const patients = [
       { id: 'p1', name: 'NUEVO', cama: '1', fimiFecha: today },
       { id: 'p2', name: 'VIEJO', cama: '2', fimiFecha: '2020-01-01' },

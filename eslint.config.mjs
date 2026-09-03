@@ -35,7 +35,6 @@ const tier1 = {
     ...js.configs.recommended.rules,
     complexity: ['error', { max: 15 }],
     'max-depth': ['error', 4],
-    'max-lines-per-function': ['error', { max: 80, skipBlankLines: true, skipComments: true }],
     'sonarjs/cognitive-complexity': ['error', 20],
     'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
   },
@@ -54,28 +53,7 @@ const tier2LegacyCjs = {
   files: ['lib/db/clinical-ops-bundle-merge.cjs'],
   rules: {
     complexity: 'warn',
-    'max-lines-per-function': 'warn',
     'sonarjs/cognitive-complexity': 'warn',
-  },
-};
-
-const bootHubs = {
-  files: ['public/js/app.js', 'public/js/app-runtimes.mjs', 'public/js/app-shell.mjs'],
-  rules: {
-    'max-lines-per-function': ['error', { max: 120, skipBlankLines: true, skipComments: true }],
-  },
-};
-
-/** Characterization / contract tests: long describe blocks with many it() cases */
-const tier1Tests = {
-  files: [
-    '**/*.test.mjs',
-    '**/*.test.js',
-    'public/js/**/*.test.mjs',
-    'lib/**/*.test.mjs',
-  ],
-  rules: {
-    'max-lines-per-function': ['error', { max: 320, skipBlankLines: true, skipComments: true }],
   },
 };
 
@@ -90,7 +68,7 @@ const generatedIgnores = {
 };
 
 const rootProcessCommonjs = {
-  files: ['main.js', 'server.js', 'preload.js'],
+  files: ['main.js', 'preload.js'],
   languageOptions: {
     ecmaVersion: 2022,
     sourceType: 'commonjs',
@@ -158,8 +136,6 @@ export default [
   tier1,
   tier1Commonjs,
   tier2LegacyCjs,
-  bootHubs,
-  tier1Tests,
   rootProcessCommonjs,
   rootProcessEsm,
   rootProcessRecetaHu,

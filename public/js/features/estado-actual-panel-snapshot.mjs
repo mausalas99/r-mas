@@ -8,7 +8,7 @@ import {
   buildHistorialRowParts,
 } from './estado-actual-panel-snapshot-html.mjs';
 
-export { formatSnapshotEgresos } from './estado-actual-panel-snapshot-format.mjs';
+export { formatSnapshotEgresos } from './estado-actual-panel-snapshot-html.mjs';
 
 /**
  * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot

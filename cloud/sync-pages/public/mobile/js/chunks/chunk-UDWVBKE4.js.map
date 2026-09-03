@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../public/js/ui-physics.mjs"],
-  "sourcesContent": ["/** Apple Designing Fluid Interfaces \u2014 px/s \u2192 projected delta px. */\nexport function projectMomentum(initialVelocityPxPerSec, decelerationRate) {\n  var d = decelerationRate == null ? 0.998 : decelerationRate;\n  if (!Number.isFinite(initialVelocityPxPerSec) || d >= 1 || d <= 0) return 0;\n  return (initialVelocityPxPerSec / 1000) * d / (1 - d);\n}\n\n/** Progressive resistance past a bound. `overshoot` and `dimension` in px. */\nexport function rubberband(overshoot, dimension, constant) {\n  var c = constant == null ? 0.55 : constant;\n  if (!overshoot || !(dimension > 0)) return 0;\n  return (overshoot * dimension * c) / (dimension + c * Math.abs(overshoot));\n}\n"],
-  "mappings": ";AACO,SAAS,gBAAgB,yBAAyB,kBAAkB;AACzE,MAAI,IAAI,oBAAoB,OAAO,QAAQ;AAC3C,MAAI,CAAC,OAAO,SAAS,uBAAuB,KAAK,KAAK,KAAK,KAAK,EAAG,QAAO;AAC1E,SAAQ,0BAA0B,MAAQ,KAAK,IAAI;AACrD;AAGO,SAAS,WAAW,WAAW,WAAW,UAAU;AACzD,MAAI,IAAI,YAAY,OAAO,OAAO;AAClC,MAAI,CAAC,aAAa,EAAE,YAAY,GAAI,QAAO;AAC3C,SAAQ,YAAY,YAAY,KAAM,YAAY,IAAI,KAAK,IAAI,SAAS;AAC1E;",
-  "names": []
-}

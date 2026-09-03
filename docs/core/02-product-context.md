@@ -41,17 +41,16 @@ R+ serves **Hospital Universitario** guardia and sala workflows. It is a **coady
 | Term | Meaning |
 |------|---------|
 | SOME | Hospital lab report text format (paste source) |
-| LiveSync / ⇄ | LAN sync on port 3738; Wi‑Fi icon in header |
-| PIN del turno | ~12h reusable join code for the shift |
-| @usuario | LAN clinical identity (distinct from display name in guardia) |
-| Anfitrión | Single turn host holding authoritative bundle |
+| LiveSync / ⇄ | Retired. Conexión is Nube room sync |
+| Código de sala | Join code for the Nube room |
+| @usuario | Clinical identity (distinct from display name in guardia) |
 
 ## Roadmap horizons
 
 Aligned with [01-vision-north-star.md](./01-vision-north-star.md#-development-horizons):
 
-- **NOW:** LiveSync stability, guardia board, host persistence
-- **NEXT:** Guardia v7 workbench, Learn Hub, teams/handoffs
+- **NOW:** Nube room sync, guardia board, Interno MIP + R+ Móvil
+- **NEXT:** Client E2EE deploy, realtime DO, workbench maturity
 - **LATER:** RBAC, TLS, institutional pilot boundaries
 
 ## Related

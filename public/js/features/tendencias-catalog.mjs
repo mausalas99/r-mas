@@ -1,14 +1,22 @@
 import { sortLabHistoryChronological, tendEligibleSectionKey } from '../tend-core.mjs';
 import { trendCatalogSeriesKey } from '../lab-history-cache.mjs';
-import { bhTrendDisplayTitle, sortTrendSpecsBySomeOrder } from '../labs.js';
+import {
+  bhTrendDisplayTitle,
+  sortTrendSpecsBySomeOrder,
+  DEFAULT_LAB_REFS,
+  DEFAULT_GASO_REFS,
+} from '../labs.js';
 import {
   TEND_UNITS,
-  TEND_REF,
-  TEND_REF_GASES,
+  TEND_REF_EXTRAS,
+  TEND_GASO_EXTRAS,
   TEND_SERIES_CATALOG,
   getTendSectionLabel,
 } from './tendencias-constants.mjs';
 import { rt } from './tendencias-runtime-state.mjs';
+
+const TEND_REF = { ...DEFAULT_LAB_REFS, ...TEND_REF_EXTRAS };
+const TEND_REF_GASES = { ...DEFAULT_GASO_REFS, ...TEND_GASO_EXTRAS };
 
 function toTrendAscendingSets(sets) {
   return (sets || []).slice().reverse();

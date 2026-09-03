@@ -486,24 +486,6 @@ export async function registerAllFeatureRuntimes() {
       if (typeof ctx.renderPatientList === 'function') ctx.renderPatientList({ silent: true });
     },
   });
-  void import('./features/cloud-sync/nube-config-retire.mjs').then((mod) => {
-    mod.runLanConfigRetireIfNeeded({ showToast: ctx?.showToast });
-  });
-  void import('./features/cloud-sync/lan-prefs-retire.mjs').then((mod) => {
-    mod.runLanPrefsRetireIfNeeded();
-  });
-  void import('./features/cloud-sync/lan-blob-retire.mjs').then((mod) => {
-    const pruneDbBlobs = async (keys) => {
-      if (
-        typeof window !== 'undefined' &&
-        window.electronAPI &&
-        typeof window.electronAPI.dbClinicalDeleteBlobs === 'function'
-      ) {
-        await window.electronAPI.dbClinicalDeleteBlobs({ keys });
-      }
-    };
-    void mod.runLanBlobRetireIfNeeded({ pruneDbBlobs });
-  });
   void import('./equipos-cloud-config.mjs').then((mod) => {
     mod.runEquiposCloudBootIfNeeded();
   });

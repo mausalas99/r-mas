@@ -3,12 +3,6 @@
  * Resolved by build-cloud-mobile.mjs esbuild plugin — not imported at runtime on desktop.
  */
 
-export const LAN_RETIRE_FLAG = 'nube-config-retired-v805';
-
-export function runLanConfigRetireIfNeeded() {
-  return { didRun: false };
-}
-
 export async function detachLanLiveSyncForNube() {}
 
 export function getRoomMembership() {

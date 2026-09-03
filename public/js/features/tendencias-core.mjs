@@ -43,6 +43,10 @@ export {
 export {
   formatDMYDate,
   inferFechaLabSetFromId,
+  closeTendDetail,
+  openTendDetail,
+} from './tendencias-ui-detail.mjs';
+export {
   tendSectionChartSvg,
   destroyTendCardSortables,
   ensureTendHiddenModalDelegation,
@@ -61,7 +65,5 @@ export {
   copyTendDynamicTableText,
   tendCardActivate,
   syncTendHiddenModalIfOpen,
-  openTendDetail,
-  closeTendDetail,
   isTendGroupModalOpen,
-} from './tendencias-ui.mjs';
+} from './tendencias-ui-shell.mjs';

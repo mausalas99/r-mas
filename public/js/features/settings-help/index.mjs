@@ -23,7 +23,6 @@ import {
 import {
   openShortcutsModal,
   closeShortcutsModal,
-  closeShortcutsPeek,
   openShortcutsHelpCenter,
 } from './shortcuts-modal.mjs';
 import {
@@ -62,7 +61,6 @@ import {
   startMiniTour,
   startHelpTourMain,
   togglePresentationModeFromHelp,
-  seedPitchGuardiaCensusFromHelp,
   guidedTourIntroChooseSala,
   guidedTourIntroChooseInterconsulta,
   guidedTourIntroSkip,
@@ -140,7 +138,6 @@ export const settingsHelpWindowHandlers = {
   startMiniTour,
   startHelpTourMain,
   togglePresentationModeFromHelp,
-  seedPitchGuardiaCensusFromHelp,
   exportCensoPdfFromHelp,
   guidedTourIntroChooseSala,
   guidedTourIntroChooseInterconsulta,

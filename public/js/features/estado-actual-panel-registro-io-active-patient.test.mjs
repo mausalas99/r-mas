@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { syncEaRegistroInsulinRescateFlag } from './estado-actual-panel-registro-io.mjs';
+import { syncEaRegistroInsulinRescateFlag } from './estado-actual-panel-registro.mjs';
 import { registerEstadoActualPanelRuntime } from './estado-actual-panel-runtime.mjs';
 import { setEaFormOpenPatientId } from './estado-actual-panel-core.mjs';
 import { getMedRecetaByPatient } from '../app-state.mjs';

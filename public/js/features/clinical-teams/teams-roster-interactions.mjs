@@ -9,11 +9,18 @@ import {
 import { copyToClipboardSafe } from '../soap-estado.mjs';
 import {
   hasProgramAdminPrivileges,
+  effectiveClinicalRank,
 } from '../../clinical-privileges.mjs';
 import { verifyAdminAccessCode } from '../../../../lib/admin-access-code.mjs';
-import { joinClinicalTeamByButton } from './teams-roster-join-handler.mjs';
+import { inferMembershipCycleForJoin } from '../../clinico-access.mjs';
+import { validateTeamRankSlot } from '../../../../lib/clinical-team-composition.mjs';
+import { publishClinicalTeamsAfterChange } from './teams-guardia-bridge.mjs';
+import { markClinicalEverJoinedTeam } from '../clinical-rotation-rejoin-modal.mjs';
 import {
   toast,
+  dbApi,
+  currentUserId,
+  toastTeamWarnings,
   BROWSE_SALA_LS,
   promptAdminAccessCode,
   isAdminAccessGrantedThisSession,
@@ -29,6 +36,46 @@ import {
   syncCreateTeamServiceFromSala,
   renderClinicalTeamsPanel,
 } from './teams-roster-render.mjs';
+
+function toastJoinSlotWarnings(team, rank) {
+  const slotWarn = validateTeamRankSlot(team?.service || '', rank, team?.members || []);
+  if (slotWarn) toast(slotWarn, 'warn');
+  else if (team?.joinWarning) toast(String(team.joinWarning), 'warn');
+}
+
+/** @param {string} teamId */
+async function joinClinicalTeamByButton(teamId) {
+  const userId = currentUserId();
+  const api = dbApi();
+  if (!api || typeof api.dbClinicalTeamsJoin !== 'function') {
+    toast('No se pudo unir al equipo.', 'error');
+    return;
+  }
+  const team = (clinicalSessionContext.teams || []).find((t) => String(t.team_id) === teamId);
+  const rank = effectiveClinicalRank(clinicalSessionContext.user);
+  const cycle = inferMembershipCycleForJoin(team || {}, rank);
+  toastJoinSlotWarnings(team, rank);
+
+  const res = await api.dbClinicalTeamsJoin({ teamId, userId, subAreaFraction: cycle });
+  if (!res || res.ok === false) {
+    toast(res?.error || 'No se pudo unir al equipo.', 'error');
+    return;
+  }
+  toastTeamWarnings(res.warnings);
+  toast('Te uniste al equipo.', 'success');
+  markClinicalEverJoinedTeam();
+  const sala = String(team?.sala || clinicalSessionContext.user?.sala || '').trim();
+  const { closeClinicalTeamsPanel, refreshTeamsUiAfterChange } = await import('./teams-roster-shell.mjs');
+  const { fetchClinicalTeamsFromDb } = await import('../../clinical-access-runtime.mjs');
+  await fetchClinicalTeamsFromDb();
+  closeClinicalTeamsPanel();
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { sala } }));
+  await publishClinicalTeamsAfterChange({ sala });
+  void import('../cloud-sync/ensure-turn-room.mjs').then(({ ensureTurnRoomAfterTeamJoin }) =>
+    ensureTurnRoomAfterTeamJoin(toast)
+  );
+  await refreshTeamsUiAfterChange();
+}
 
 function syncSalaFieldVisibility() {
   syncCreateTeamServiceFromSala();

@@ -1,5 +1,5 @@
 /**
- * Cloud account + ensure-turn + pull/seed during onboarding / cutover.
+ * Cloud account + ensure-turn + pull/seed during onboarding.
  */
 import { bridgeCloudIdentityToLocal } from './identity-bridge.mjs';
 import { createCloudSyncApi } from './api-client.mjs';

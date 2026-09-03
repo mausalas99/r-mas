@@ -2,11 +2,11 @@
  * Conversión IV → oral para texto de egreso / SOAP (receta de alta).
  * Solo aplica a bolus o dosis fijas IV con equivalente oral claro; no infusión continua ni fármacos solo IV.
  */
-import { trimStr } from './med-receta-util.mjs';
 import { stripDiaMarkersFromDosis } from './med-receta-dates.mjs';
 import { normalizeNombreForSoapClassify } from './med-receta-nombre.mjs';
 import { isSuerosMedicationNombre } from './med-receta-soap-some-map.mjs';
 import { pickSomeOralPack } from './med-receta-iv-oral-some.mjs';
+import { trimStr } from './med-receta-util.mjs';
 
 function dosisBeforeSlash(dosisRaw) {
   var t = trimStr(dosisRaw);

@@ -9,6 +9,7 @@ import {
   eslintDebtFromResults,
   duplicationDebtFromJscpd,
 } from './score.mjs';
+import { measureTrackedSize } from './tracked-size.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const REPORT = path.join(ROOT, 'scripts/metrics/report.json');
@@ -103,11 +104,14 @@ function main() {
     bootGraphDebt,
   };
   const totalScore = computeTotalScore(parts);
+  const size = measureTrackedSize(ROOT);
 
   const report = {
     version: 1,
     generatedAt: new Date().toISOString(),
     totalScore,
+    trackedLoc: size.trackedLoc,
+    moduleCount: size.moduleCount,
     parts,
     bootGraph: { hash: bootGraphHash, imports: bootImports },
     eslint: { errorCount: eslintResults.reduce((n, f) => n + (f.errorCount || 0), 0) },

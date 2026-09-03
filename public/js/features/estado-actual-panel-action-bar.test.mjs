@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildEaActionBarButtons } from './estado-actual-panel-action-bar.mjs';
+import { buildEaActionBarButtons } from './estado-actual-panel-render.mjs';
 
 test('buildEaActionBarButtons — sala solo registro manual', () => {
   const html = buildEaActionBarButtons({ appMode: 'sala' });

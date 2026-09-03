@@ -17,7 +17,6 @@ const CLOUD_MOBILE_STRIP_BASENAMES = new Set([
   'mobile-sharer-sync.mjs',
   'cloud-room-membership.mjs',
   'detach-stale-room-membership.mjs',
-  'nube-config-retire.mjs',
 ]);
 
 /** @param {string} modulePath */
@@ -366,7 +365,6 @@ export async function bundleCloudMobileRenderer(outDir) {
     if (
       base.includes('mobile-sharer-sync') ||
       base.includes('detach-stale-room-membership') ||
-      base.includes('nube-config-retire') ||
       base.includes('cloud-room-membership')
     ) {
       throw new Error(`cloud-mobile bundle still contains LAN chunk: ${base}`);

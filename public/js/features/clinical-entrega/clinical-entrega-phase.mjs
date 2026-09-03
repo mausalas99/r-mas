@@ -18,8 +18,11 @@ import {
   setEntregaToolbarStatus,
 } from './clinical-entrega-util.mjs';
 import { collectEntregaScopeUsers } from './clinical-entrega-targets.mjs';
-import { GUARDIA_GRID_MODE_KEY, ENTREGA_PHASE_KEY } from './clinical-entrega-constants.mjs';
 import { resolveActivatorEntregaCovering } from './clinical-entrega-phase-helpers.mjs';
+
+/** @deprecated — use ENTREGA_PHASE_KEY */
+export const GUARDIA_GRID_MODE_KEY = 'guardia.gridMode';
+export const ENTREGA_PHASE_KEY = 'guardia.entregaPhase';
 
 export function resolveR1GuardiaCovering(
   teams,

@@ -122,7 +122,7 @@ function beginReinstallCurrentVersion() {
   const current = app.getVersion();
   reinstallSession = {
     version: current,
-    originalIsUpdateAvailable: getAutoUpdater().isUpdateAvailable.bind(autoUpdater),
+    originalIsUpdateAvailable: getAutoUpdater().isUpdateAvailable.bind(getAutoUpdater()),
   };
   const originalIsUpdateAvailable = reinstallSession.originalIsUpdateAvailable;
   getAutoUpdater().isUpdateAvailable = async function (updateInfo) {
@@ -202,7 +202,6 @@ function sendDowngradeFailedFromSession(code, message) {
   resetUpdaterFeedToDefault();
 }
 
-let server;
 let mainWindow;
 
 // Cache update state so renderer can receive it even if events fired before page loaded
@@ -698,19 +697,6 @@ ipcMain.handle('select-output-dir', async () => {
   return chosen;
 });
 
-function isDevWardServerEnabled() {
-  return process.env.R_PLUS_DEV_WARD_SERVER === '1';
-}
-
-ipcMain.handle('lan-ensure-server-ready', async () => {
-  if (!isDevWardServerEnabled()) {
-    return { ok: true, peer: false, wardServer: false };
-  }
-  const lanServer = require('./server');
-  await lanServer.startLanServer();
-  return { ok: true, peer: false, wardServer: true };
-});
-
 ipcMain.handle('clipboard-write-text', (_e, text) => {
   try {
     clipboard.writeText(String(text == null ? '' : text));
@@ -1041,24 +1027,6 @@ app.whenReady().then(async () => {
       console.error('[R+ boot] clinical DB unlock failed:', unlockErr && unlockErr.message);
     });
 
-    if (isDevWardServerEnabled()) {
-      const lanServer = require('./server');
-      try {
-        server = await lanServer.startLanServer();
-      } catch (lanErr) {
-        const peerMode = process.env.R_PLUS_LAN_PEER === '1';
-        const portBusy =
-          (lanErr && lanErr.code === 'EADDRINUSE') ||
-          (lanErr && lanErr.message && /EADDRINUSE|already in use|3738|3739/.test(String(lanErr.message)));
-        if (peerMode && portBusy) {
-          console.warn(
-            '[R+ LAN peer mode] Puerto LAN en uso — esta ventana usará el servidor del anfitrión ya abierto.'
-          );
-        } else {
-          throw lanErr;
-        }
-      }
-    }
     if (process.env.R_PLUS_RECOVER_CENSUS === '1') {
       try {
         await unlockPromise;
@@ -1148,14 +1116,5 @@ app.on('before-quit', (event) => {
     app.exit(0);
   };
 
-  if (!isDevWardServerEnabled()) {
-    void flushRendererStorageAndDestroyWindows().finally(finishQuit);
-    return;
-  }
-  const lanServer = require('./server');
-  const flushCap = new Promise((r) => setTimeout(r, 3000));
-  Promise.race([lanServer.flushHostStoreNow().catch(() => {}), flushCap])
-    .then(() => flushRendererStorageAndDestroyWindows())
-    .then(() => lanServer.stopLanServer())
-    .finally(finishQuit);
+  void flushRendererStorageAndDestroyWindows().finally(finishQuit);
 });

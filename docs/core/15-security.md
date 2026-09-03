@@ -55,7 +55,7 @@ Default client URL: [`https://rplus-sync.rmas-workersdev.workers.dev`](https://r
 | Durable Object | `RoomSyncHub` — revision notify only, not the clinical snapshot |
 | Dashboard | [dash.cloudflare.com](https://dash.cloudflare.com) → that account → Workers `rplus-sync` / D1 `rplus-sync` |
 
-This is a **personal Cloudflare Free** tenant, not a hospital-controlled account. Because production is not E2EE, Cloudflare (and anyone with Wrangler/D1 access) can read room JSON.
+This is a **personal Cloudflare** tenant (Workers paid), not a hospital-controlled account. Because production is not client E2EE, Cloudflare (and anyone with Wrangler/D1 access) can read room JSON.
 
 ---
 
@@ -171,18 +171,11 @@ Unchanged by Nube. Device unlock is required. Forced-cloud is an anti-goal — o
 - Human confirmation before persisting flagged actions
 - Forensic audit hooks on DB (`lib/db/audit-hooks.mjs`, `forensic-audit.mjs`)
 
-## LAN (retired for clinical sync; leftover risk)
+## LAN (retired)
 
-LAN LiveSync is retired (8.0.5). Dev ward `server.js` on **:3738** (`R_PLUS_DEV_WARD_SERVER=1`) still uses **HTTP + WebSocket without TLS**.
+LAN LiveSync is retired (8.0.5). The dev ward server (`server.js` on :3738) was removed 2026-09-02.
 
-| Condition | Requirement |
-|-----------|-------------|
-| Network | Isolated VLAN / Wi‑Fi only — not guest or public Internet |
-| Exposure | Port **3738** must not be port-forwarded |
-| Token hygiene | Team bearer + shift PIN; logs redacted (`lan-squad/redact-secrets.js`) |
-| PHI at rest (web) | iPad/Safari wipe clinical `localStorage` on session end (`session-clinical-wipe.mjs`) |
-
-**Revisit trigger:** IT offers managed TLS (WSS) on the VLAN, or an audit finds LAN exposure beyond the ward.
+PHI at rest on iPad/Safari still wipes clinical `localStorage` on session end (`session-clinical-wipe.mjs`).
 
 ## Legacy recovery passphrase
 
@@ -197,10 +190,10 @@ The `'r+123'` recovery path remains for field support. Sunset when `legacy: true
 | Patient identity (nombre, cama, servicio, registro) stays plaintext even after deploy | Interno board + admin census need it server-side | Redesign Interno to bed/alias-only, then encrypt identity fields too |
 | DEK survives app restart only via the Recuérdame file | Fixed 2026-08-17 — `room-dek.mjs` persists/restores raw DEKs through `cloud-sync-remember.json` | Still gated on `remember: true`; a "don't remember me" session re-asks the password each launch by design |
 | Password recovery re-wraps DEKs this device still holds unwrapped | Fixed 2026-08-17 — `handleRecover` calls `rewrapCachedRoomDeks` | A device with no cached DEK at recovery time still loses that room (expected — password-derived wrap, no escrow) |
-| Personal Cloudflare Free tenant | Small program; Wrangler secrets | Hospital-controlled account / jurisdiction + signed DPA (`docs/superpowers/plans/2026-08-14-nube-client-encryption-compliance.md`) |
+| Personal Cloudflare account (Workers paid) | Small program; Wrangler secrets | Hospital-controlled account / jurisdiction + signed DPA (`docs/superpowers/plans/2026-08-14-nube-client-encryption-compliance.md`) |
 | Interno token in URL `?t=` | Rotate from ⇄; sala-scoped | Header-only tokens |
 | Recuérdame token on disk | File mode `0600` | Electron `safeStorage` |
-| HTTP without TLS on LAN :3738 | Dev-only / accepted LAN table | WSS + IT certs |
+| Ward HTTP :3738 | Removed 2026-09-02 | Interno / Equipos / Móvil on Nube HTTPS |
 | Shared Interno / shift access | Rank gates on desktop | RBAC per user (LATER) |
 | Adjunct not EMR | Product positioning | Institutional agreement |
 

@@ -41,7 +41,6 @@ const RELEASE_STAGE_PATHS = [
   'lib/server-http-security.test.js',
   'lib/output-dir-policy.js',
   'lib/output-dir-policy.test.js',
-  'server.js',
   'server-python.js',
   '.github/workflows/ci.yml',
   'scripts/lizard-ccn-report.mjs',

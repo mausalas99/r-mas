@@ -8,7 +8,6 @@ import { createInterface } from 'node:readline';
 const COMPLEXITY_RULES = new Set([
   'complexity',
   'sonarjs/cognitive-complexity',
-  'max-lines-per-function',
 ]);
 
 async function readStdin() {

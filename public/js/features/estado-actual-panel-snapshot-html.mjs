@@ -15,7 +15,21 @@ import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
 import { VITAL_KEYS, VITAL_LABELS, VITAL_UNITS } from './estado-actual-panel-constants.mjs';
 import { formatInsulinPumpAlgoritmoLabel } from '../insulin-pump-some-detect.mjs';
 import { pad2, displayValue, displayBalance, escHtml, escAttr } from './estado-actual-panel-format.mjs';
-import { formatSnapshotEgresos } from './estado-actual-panel-snapshot-format.mjs';
+
+/**
+ * @param {{ ing?: unknown, egr?: unknown, egrParts?: Array<{ label?: string, value?: unknown }>, evac?: unknown }} io
+ * @returns {string}
+ */
+export function formatSnapshotEgresos(io) {
+  io = io || {};
+  if (Array.isArray(io.egrParts) && io.egrParts.length) {
+    return escHtml(io.egrParts.map(formatEgresoPartForText).join(' · '));
+  }
+  var egr = io.egr;
+  if (egr == null || egr === '') return '—';
+  if (isIoNumericValue(egr)) return escHtml(String(egr) + ' CC (DIURESIS)');
+  return escHtml(toEaSalidaText(egr));
+}
 
 /**
  * @param {unknown} ing

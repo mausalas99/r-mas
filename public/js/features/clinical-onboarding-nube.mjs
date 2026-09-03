@@ -1,58 +1,13 @@
 /**
- * Nube fields + cutover picker inside Configura tu rotación.
+ * Nube fields inside Configura tu rotación.
  */
-import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
+import { escapeHtml } from '../dom-escape.mjs';
 import { isCloudSala, normalizeCloudSala } from './cloud-sync/sala-allowlist.mjs';
-import { loadCutoverSnapshot } from './cloud-sync/cutover-snapshot.mjs';
-import { isCutoverPending } from './cloud-sync/cutover-flags.mjs';
 import { isCloudSalaUpgradePending } from './cloud-sync/cloud-sala-upgrade.mjs';
 import { getCloudSyncUrl } from './cloud-sync/settings.mjs';
 
 export function shouldShowNubePasswordField(sala) {
   return isCloudSala(sala);
-}
-
-export function buildCutoverPickerHtml() {
-  if (!isCutoverPending()) return '';
-  const snap = loadCutoverSnapshot();
-  const users = Array.isArray(snap?.users) ? snap.users : [];
-  if (!users.length) {
-    return '<p class="clinical-teams-hint clinical-onboard-cutover-hint">No había usuarios guardados en la captura. Crea uno nuevo abajo.</p>';
-  }
-  const items = users
-    .map((u) => {
-      const un = escapeAttr(u.username || '');
-      return (
-        '<li><button type="button" class="cloud-sync-cutover-pick clinical-onboard-cutover-pick" ' +
-        'data-onboard-pick-user="' +
-        un +
-        '" data-display="' +
-        escapeAttr(u.displayName || '') +
-        '" data-rank="' +
-        escapeAttr(u.rank || 'R1') +
-        '" data-sala="' +
-        escapeAttr(u.sala || '') +
-        '">' +
-        '<span class="cloud-sync-cutover-pick-user">@' +
-        escapeHtml(u.username || '') +
-        '</span>' +
-        '<span class="cloud-sync-cutover-pick-meta">' +
-        escapeHtml(u.displayName || '—') +
-        ' · ' +
-        escapeHtml(u.rank || '') +
-        ' · ' +
-        escapeHtml(u.sala || '') +
-        '</span></button></li>'
-      );
-    })
-    .join('');
-  return (
-    '<div class="clinical-onboard-cutover-block">' +
-    '<p class="clinical-onboard-cutover-lead">Usuarios anteriores en este equipo — pulsa uno para rellenarlo:</p>' +
-    '<ul class="cloud-sync-cutover-list clinical-onboard-cutover-list">' +
-    items +
-    '</ul></div>'
-  );
 }
 
 export function buildNubePasswordFieldHtml(prefilledSala) {
@@ -102,25 +57,4 @@ export function readOnboardingNubeFields(root = document) {
     password: String(pass?.value || ''),
     mode: 'register',
   };
-}
-
-export function applyOnboardPickUser(btn) {
-  if (!(btn instanceof HTMLElement)) return;
-  const username = btn.getAttribute('data-onboard-pick-user') || '';
-  const display = btn.getAttribute('data-display') || '';
-  const rank = btn.getAttribute('data-rank') || 'R1';
-  const sala = btn.getAttribute('data-sala') || '';
-  const u = document.getElementById('onboard-username');
-  const n = document.getElementById('onboard-clinical-name');
-  const r = document.getElementById('onboard-rank');
-  const s = document.getElementById('onboard-sala');
-  if (u) u.value = username;
-  if (n) n.value = display;
-  if (r && rank) r.value = rank;
-  if (s && sala) {
-    const opt = [...s.options].find((o) => o.value === sala || o.value.includes(sala.split(' ')[0]));
-    if (opt) s.value = opt.value;
-    else if ([...s.options].some((o) => o.value === sala)) s.value = sala;
-  }
-  syncOnboardingNubeVisibility();
 }

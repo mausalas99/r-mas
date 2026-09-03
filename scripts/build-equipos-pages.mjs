@@ -21,7 +21,7 @@ const PING_PATH = '/api/equipos/v1/ping';
 const PROBE_TIMEOUT_MS = 5000;
 
 export async function probeEquiposHost(base, signal) {
-  const url = \`\${String(base || '').replace(/\\/+\$/, '')}\${PING_PATH}\`;
+  const url = \`\${String(base || '').replace(/\\/+$/, '')}\${PING_PATH}\`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), PROBE_TIMEOUT_MS);
   const onAbort = () => ctrl.abort();
@@ -36,7 +36,7 @@ export async function probeEquiposHost(base, signal) {
     const res = await fetch(url, { cache: 'no-store', signal: ctrl.signal });
     if (!res.ok) return null;
     const data = await res.json();
-    return data && data.equipos ? String(base).replace(/\\/+\$/, '') : null;
+    return data && data.equipos ? String(base).replace(/\\/+$/, '') : null;
   } catch (_e) {
     return null;
   } finally {
@@ -59,7 +59,7 @@ export function isLoopbackHostname() {
 }
 
 export function normalizeHostOverride(raw) {
-  return String(raw || '').trim().replace(/\\/+\$/, '');
+  return String(raw || '').trim().replace(/\\/+$/, '');
 }
 `;
 

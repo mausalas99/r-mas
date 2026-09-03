@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../public/js/clinical-profile-cloud-stubs.mjs"],
-  "sourcesContent": ["/**\n * Cloud-era stubs for retired clinical-profile LAN sync helpers.\n */\nexport const PROFILE_PUSH_FAILED_MSG =\n  'No se pudo sincronizar el perfil con la nube. Revisa \u21C4 Conexi\u00F3n.';\n\nexport async function assertRoomForUsernameRegister() {\n  return { ok: true, roomId: '' };\n}\n\nexport async function flushClinicalProfileToCloud() {\n  return { ok: true, code: 'cloud_only' };\n}\n\nexport function rememberLiveSyncRoomMembership() {}\n\nexport function isBenignPushSkipCode() {\n  return true;\n}\n\nexport function notifyProfilePushResult() {}\n\nexport const PROFILE_NEEDS_CONNECT_MSG = 'Conecta Nube en \u21C4 Conexi\u00F3n para sincronizar el perfil.';\n\nexport function isProfileNeedsConnectCode() {\n  return false;\n}\n"],
-  "mappings": ";AAGO,IAAM,0BACX;AAEF,eAAsB,gCAAgC;AACpD,SAAO,EAAE,IAAI,MAAM,QAAQ,GAAG;AAChC;AAEA,eAAsB,8BAA8B;AAClD,SAAO,EAAE,IAAI,MAAM,MAAM,aAAa;AACxC;AAEO,SAAS,iCAAiC;AAAC;AAE3C,SAAS,uBAAuB;AACrC,SAAO;AACT;AAEO,SAAS,0BAA0B;AAAC;AAEpC,IAAM,4BAA4B;AAElC,SAAS,4BAA4B;AAC1C,SAAO;AACT;",
-  "names": []
-}

@@ -1,6 +1,6 @@
 /**
  * Lista canónica de electron-builder `build.files` y comprobación del grafo
- * de require desde main.js (arranque Electron; server.js es solo dev).
+ * de require desde main.js (arranque Electron).
  * Also gates renderer imports that escape `public/` (e.g. data/release-notes).
  *
  *   node scripts/lib/electron-pack-files.js          # validar
@@ -89,7 +89,7 @@ function resolveLocalRequire(fromFile, reqPath, root) {
 }
 
 /** Dev-only entry points: referenced from main.js but not shipped in release builds. */
-const DEV_ONLY_RUNTIME_FILES = new Set(['server.js', 'server-python.js']);
+const DEV_ONLY_RUNTIME_FILES = new Set(['server-python.js']);
 
 /**
  * @param {string} entryAbs

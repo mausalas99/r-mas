@@ -1,4 +1,4 @@
-/** Renderer mirror of lib/db/clinical-username.mjs */
+/** Renderer copy of lib/db/clinical-username.mjs — parity in clinical-username.test.mjs */
 const USERNAME_RE = /^[a-z][a-z0-9_]{2,31}$/;
 
 export function normalizeUsername(raw) {
@@ -19,6 +19,26 @@ export function isLegacyMachineUsername(username, clientId) {
   if (!u) return true;
   if (c && u === c) return true;
   return /^lc_[a-z0-9_]+$/i.test(u);
+}
+
+/** Machine or LAN-stub handle — valid syntax but not a claimed @usuario for the directory. */
+export function isDirectoryPendingUsername(raw) {
+  const handle = normalizeUsername(raw || '');
+  if (!handle) return true;
+  if (!isValidUsernameFormat(handle)) return true;
+  if (/^lc_[a-z0-9_]+$/.test(handle)) return true;
+  if (/^peer_[a-z0-9_]+$/.test(handle)) return true;
+  return false;
+}
+
+/**
+ * Completed clinical registration: claimed @usuario or saved nombre clínico.
+ * @param {{ username?: string, clinical_name?: string } | null | undefined} row
+ */
+export function isRegisteredClinicalUser(row) {
+  const handle = normalizeUsername(row?.username || '');
+  if (isValidUsernameFormat(handle) && !isDirectoryPendingUsername(handle)) return true;
+  return !!String(row?.clinical_name || '').trim();
 }
 
 /**

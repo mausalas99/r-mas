@@ -43,12 +43,9 @@ import {
 import { getCloudSyncToken } from './cloud-sync/settings.mjs';
 import { wireOnboardingInteractions } from './clinical-onboarding-handlers.mjs';
 import {
-  buildCutoverPickerHtml,
   buildNubePasswordFieldHtml,
   syncOnboardingNubeVisibility,
 } from './clinical-onboarding-nube.mjs';
-import { isCutoverDone, isCutoverPending } from './cloud-sync/cutover-flags.mjs';
-import { shouldShowCutoverWizard } from './cloud-sync/cutover-gate.mjs';
 import { isCloudSalaUpgradePending } from './cloud-sync/cloud-sala-upgrade.mjs';
 
 import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
@@ -147,7 +144,6 @@ function buildLanProfileFormBody(settings) {
   return `
       <div class="clinical-onboard-form-shell">
         <form id="clinical-onboard-username-form" class="clinical-teams-create-form clinical-onboard-form" novalidate>
-          ${buildCutoverPickerHtml()}
           <div class="field-group">
             <label for="onboard-username">Usuario (@usuario) *</label>
             <input id="onboard-username" type="text" class="profile-input" placeholder="ej. drmendoza"
@@ -203,13 +199,9 @@ function renderLocalOnlyConfirmPanel(host) {
 
 function renderLanProfileForm(host, settings) {
   const profileGatePending = needsClinicalLanProfileGate(settings);
-  const cutover = shouldShowCutoverWizard({
-    cutoverDone: isCutoverDone(),
-    cutoverPending: isCutoverPending(),
-  });
   const salaUpgrade = isCloudSalaUpgradePending(settings);
   let gateLead;
-  if (profileGatePending || cutover) {
+  if (profileGatePending) {
     gateLead = `<p class="clinical-onboard-gate-lead">${CLINICAL_LAN_PROFILE_GATE_LEAD_HTML}</p>`;
   } else if (salaUpgrade) {
     gateLead =
@@ -220,12 +212,11 @@ function renderLanProfileForm(host, settings) {
       '<p>Confirma tu @usuario de R+ Cloud, nombre en guardia, rango y rotación. ' +
       'Para equipos, abre <strong>Mi rotación</strong> después.</p>';
   }
-  const title =
-    profileGatePending || cutover
-      ? 'Confirma tu perfil'
-      : salaUpgrade
-        ? 'Conectar Nube'
-        : 'Configura tu rotación';
+  const title = profileGatePending
+    ? 'Confirma tu perfil'
+    : salaUpgrade
+      ? 'Conectar Nube'
+      : 'Configura tu rotación';
 
   host.innerHTML = buildOnboardingStageHtml({
     title,

@@ -1,6 +1,6 @@
 /**
  * Static checks for main-process boot: clinical DB IPC registered before window;
- * DB unlock runs in parallel; ward server :3738 only when R_PLUS_DEV_WARD_SERVER=1.
+ * DB unlock runs in parallel; no LAN ward server.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -45,62 +45,37 @@ test('main boot: DB IPC registered before window; unlock runs in parallel', () =
     'ensureUnlocked invoked from startup helper');
 });
 
-test('main boot: production skips ward server listener on :3738', () => {
+test('main boot: no ward server listener on :3738', () => {
   const body = whenReadyBody(MAIN_SRC);
-  const createIdx = body.indexOf('createWindow()');
-  assert.ok(createIdx >= 0, 'createWindow in whenReady');
-  assert.ok(
-    !/\bawait\s+require\s*\(\s*['"]\.\/server['"]\s*\)/.test(body),
-    'bare await require("./server") removed'
-  );
+  assert.ok(!body.includes("require('./server')"), 'whenReady does not load server.js');
+  assert.ok(!MAIN_SRC.includes('isDevWardServerEnabled'), 'dev ward helper removed');
+  assert.ok(!MAIN_SRC.includes('startLanServer'), 'startLanServer removed');
+  assert.ok(!MAIN_SRC.includes("ipcMain.handle('lan-ensure-server-ready'"), 'lan-ensure-server-ready IPC removed');
   assert.ok(
     !body.includes('setOnInternoHostSync'),
     'interno host sync forward removed from boot (vitals via cloud pull)'
   );
-  assert.ok(MAIN_SRC.includes('isDevWardServerEnabled'), 'isDevWardServerEnabled helper defined');
-  const guardIdx = body.indexOf('isDevWardServerEnabled()');
-  assert.ok(guardIdx >= 0, 'dev ward server guard in whenReady');
-  assert.ok(guardIdx < createIdx, 'ward server guard before createWindow');
-  const startIdx = body.indexOf('startLanServer');
-  assert.ok(startIdx >= 0, 'startLanServer still available for dev mode');
-  assert.ok(startIdx > guardIdx, 'startLanServer only inside dev ward server guard');
-  assert.ok(startIdx < createIdx, 'startLanServer before createWindow when enabled');
 });
 
-test('main boot: lan-ensure-server-ready IPC registered', () => {
-  assert.ok(
-    MAIN_SRC.includes("ipcMain.handle('lan-ensure-server-ready'"),
-    'lan-ensure-server-ready handler'
-  );
+test('preload: no ward-server or 7.9 cutover wipe bridge', () => {
+  assert.ok(!PRELOAD_SRC.includes('ensureLanServerReady'), 'ensureLanServerReady removed');
+  assert.ok(!PRELOAD_SRC.includes('lan-ensure-server-ready'), 'lan-ensure-server-ready invoke removed');
+  assert.ok(!PRELOAD_SRC.includes('dbClinical79CutoverWipe'), 'cutover wipe bridge removed');
+  assert.ok(!PRELOAD_SRC.includes('db:clinical-79-cutover-wipe'), 'cutover wipe invoke removed');
 });
 
-test('main boot: lan-ensure-server-ready no-op in production', () => {
-  const handlerStart = MAIN_SRC.indexOf("ipcMain.handle('lan-ensure-server-ready'");
-  assert.ok(handlerStart >= 0, 'lan-ensure-server-ready handler');
-  const handlerSlice = MAIN_SRC.slice(handlerStart, handlerStart + 420);
-  assert.match(handlerSlice, /isDevWardServerEnabled\(\)/, 'guarded by dev ward flag');
-  assert.match(handlerSlice, /return\s*\{\s*ok:\s*true/, 'returns success without binding');
-});
-
-test('preload: ensureLanServerReady no-op without dev ward flag', () => {
-  const fnStart = PRELOAD_SRC.indexOf('ensureLanServerReady:');
-  assert.ok(fnStart >= 0, 'ensureLanServerReady exposed');
-  const fnSlice = PRELOAD_SRC.slice(fnStart, fnStart + 320);
-  assert.match(fnSlice, /R_PLUS_DEV_WARD_SERVER/, 'checks dev ward flag');
-  assert.match(fnSlice, /Promise\.resolve/, 'short-circuits without IPC');
-  assert.match(fnSlice, /ok:\s*true/, 'returns success');
-});
-
-test('main boot: production quit skips ward server teardown', () => {
+test('main boot: quit flushes Local Storage and exits', () => {
   const quitStart = MAIN_SRC.indexOf("app.on('before-quit'");
   assert.ok(quitStart >= 0, 'before-quit handler');
   const quitBlock = MAIN_SRC.slice(quitStart, quitStart + 1200);
-  assert.ok(quitBlock.includes('isDevWardServerEnabled()'), 'quit guarded by dev ward flag');
+  assert.ok(!quitBlock.includes('isDevWardServerEnabled()'), 'quit has no ward-server branch');
+  assert.ok(!quitBlock.includes('stopLanServer'), 'quit does not stop a ward server');
   assert.ok(
     !quitBlock.includes('lanNetworkWatch'),
     'LAN network watch removed from quit path'
   );
   assert.ok(quitBlock.includes('flushRendererStorageAndDestroyWindows'), 'flushes Local Storage on quit');
+  assert.ok(quitBlock.includes('app.exit(0)'), 'hard exit after flush');
   assert.ok(MAIN_SRC.includes('flushStorageData'), 'calls session.flushStorageData');
 });
 
@@ -110,18 +85,6 @@ test('main window.open uses http(s) allowlist', () => {
   const handlerStart = MAIN_SRC.indexOf('setWindowOpenHandler');
   const handlerSlice = MAIN_SRC.slice(handlerStart, handlerStart + 280);
   assert.ok(handlerSlice.includes('isAllowedExternalUrl(url)'), 'handler gates on allowlist');
-});
-
-test('main quit: destroy windows before LAN server stop (dev ward only)', () => {
-  const quitStart = MAIN_SRC.indexOf("app.on('before-quit'");
-  assert.ok(quitStart >= 0, 'before-quit handler');
-  const quitBlock = MAIN_SRC.slice(quitStart, quitStart + 1600);
-  assert.ok(quitBlock.includes('isDevWardServerEnabled()'), 'quit guarded by dev ward flag');
-  const flushIdx = quitBlock.indexOf('flushRendererStorageAndDestroyWindows');
-  const stopIdx = quitBlock.indexOf('stopLanServer');
-  assert.ok(flushIdx >= 0, 'flush+destroy in quit path');
-  assert.ok(stopIdx > flushIdx, 'flush/destroy windows before stopLanServer when dev ward enabled');
-  assert.ok(quitBlock.includes('app.exit(0)'), 'hard exit after dev ward shutdown');
 });
 
 test('main boot: single-instance lock protects userData Recuérdame', () => {

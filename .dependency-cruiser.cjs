@@ -28,6 +28,13 @@ module.exports = {
       from: { path: '^public/js/features/lan/' },
       to: { path: '^public/js/features/patients' },
     },
+    {
+      name: 'lib-not-to-public-js',
+      severity: 'warn',
+      comment: 'lib/ is Node-only. Shared logic goes in lib/shared/, not a public/js import.',
+      from: { path: '^lib/' },
+      to: { path: '^public/js/' },
+    },
   ],
   options: {
     doNotFollow: { path: 'node_modules' },

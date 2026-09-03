@@ -58,7 +58,7 @@ To maintain focus, we explicitly say **NO** to:
 
 ## 🛠️ The Toolkit (Tech Stack)
 - **Frontend:** Electron 41 renderer (ES modules, esbuild chunks); clinical UI in `public/js/features/`; design tokens in `public/tokens.css` (IBM Plex, quiet workbench).
-- **Backend/Infrastructure:** **Nube** on Cloudflare Workers + D1 (`cloud/sync-worker`, HTTP push/pull); mobile at `/mobile/` (R+ Móvil) and `/interno/` (MIP Nube). Dev-only ward server `server.js` on **:3738** (`R_PLUS_DEV_WARD_SERVER=1`). Equipos queue: separate Worker (`cloud/equipos-worker`).
+- **Backend/Infrastructure:** **Nube** on Cloudflare Workers (paid) + D1 (`cloud/sync-worker`); mobile at `/mobile/` (R+ Móvil) and `/interno/` (MIP Nube). Equipos queue: separate Worker (`cloud/equipos-worker`).
 - **Core Engine:** SOME lab parsers and trend engine; native `.docx` generation (`lib/doc-generators/`); SQLCipher clinical store (`lib/db/`, Argon2) as local/offline cache; cloud room LWW.
 
 ---
@@ -66,8 +66,8 @@ To maintain focus, we explicitly say **NO** to:
 ## 🗺️ Development Horizons
 To guide the Product Owner's backlog, our roadmap is bucketed into three horizons:
 
-- **📍 NOW (Current Focus):** **8.0.5 Nube estable** — **all clinical wards** sync on Cloudflare; Nube is room authority and **LAN LiveSync is retired**; Interno MIP + Equipos en Nube; offline + uncapped labs; Free-tier HTTP sync (no WebSockets yet).
-- **🚀 NEXT (Growth):** **Paid/realtime upgrade path** — Durable Object WebSockets, **envelope DEKs** (encrypt on the client, Cloudflare stores ciphertext only, peers decrypt locally), stronger tenancy; continue workbench maturity (entrega, teams, onboarding).
+- **📍 NOW (Current Focus):** **Nube estable** — all clinical wards sync on Cloudflare; LAN LiveSync retired; Interno MIP + Equipos + R+ Móvil on Nube; offline + uncapped labs.
+- **🚀 NEXT (Growth):** Deploy client E2EE (envelope DEKs) so Cloudflare cannot read clinical content; use paid Workers for Durable Object realtime; stronger tenancy; workbench maturity.
 - **🔭 LATER (Visionary):** **Institutional readiness** — RBAC, formal adjunct-vs-EMR boundary, hospital IT/legal evaluation (not claimed by software alone).
 
 ---

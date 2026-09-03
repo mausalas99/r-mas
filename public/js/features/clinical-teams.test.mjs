@@ -7,7 +7,9 @@ import { readFeatureSrc } from '../../../scripts/lib/read-feature-src.mjs';
 import { filterJoinedTeams, CLINICAL_TEAM_SERVICES } from './clinical-teams.mjs';
 
 const featureDir = join(dirname(fileURLToPath(import.meta.url)), 'clinical-teams');
-const clinicalTeamsSrc = readFeatureSrc(featureDir, [
+const clinicalTeamsSrc = [
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'clinical-teams.mjs'), 'utf8'),
+  readFeatureSrc(featureDir, [
   'shared.mjs',
   'teams-roster.mjs',
   'teams-roster-shell.mjs',
@@ -32,18 +34,16 @@ const clinicalTeamsSrc = readFeatureSrc(featureDir, [
   'teams-roster-directory-modal.mjs',
   'teams-roster-directory-assign.mjs',
   'teams-roster-directory-wire.mjs',
-  'teams-roster-directory-row-html.mjs',
   'teams-roster-interactions.mjs',
   'teams-roster-modal-chrome.mjs',
-  'teams-roster-join-handler.mjs',
   'teams-roster-bring-patients.mjs',
   'teams-roster-inherit-gate.mjs',
   'teams-roster-inherit-patients.mjs',
   'teams-roster-inherit-patients-modal.mjs',
   'teams-invite.mjs',
   'teams-guardia-bridge.mjs',
-  'index.mjs',
-]);
+  ]),
+].join('\n');
 
 describe('clinical-teams', () => {
   it('filterJoinedTeams returns teams where user is a member', () => {
@@ -116,7 +116,7 @@ describe('clinical-teams', () => {
   });
 
   it('joining a team awaits Nube clinicalOps pull-then-push', () => {
-    const joinHandlerSrc = readFileSync(join(featureDir, 'teams-roster-join-handler.mjs'), 'utf8');
+    const joinHandlerSrc = readFileSync(join(featureDir, 'teams-roster-interactions.mjs'), 'utf8');
     const inviteSrc = readFileSync(join(featureDir, 'teams-invite.mjs'), 'utf8');
     assert.match(joinHandlerSrc, /await publishClinicalTeamsAfterChange/);
     assert.doesNotMatch(joinHandlerSrc, /void publishClinicalTeamsAfterChange/);
@@ -277,14 +277,14 @@ describe('clinical-teams', () => {
   });
 
   it('joining a team closes Mi rotación after success', () => {
-    const joinHandlerSrc = readFileSync(join(featureDir, 'teams-roster-join-handler.mjs'), 'utf8');
+    const joinHandlerSrc = readFileSync(join(featureDir, 'teams-roster-interactions.mjs'), 'utf8');
     const inviteSrc = readFileSync(join(featureDir, 'teams-invite.mjs'), 'utf8');
     assert.match(joinHandlerSrc, /closeClinicalTeamsPanel\(\)/);
     assert.match(inviteSrc, /closeClinicalTeamsPanel\(\)/);
   });
 
   it('joining a team does not auto-open inherit; bring is opt-in on team card', () => {
-    const joinHandlerSrc = readFileSync(join(featureDir, 'teams-roster-join-handler.mjs'), 'utf8');
+    const joinHandlerSrc = readFileSync(join(featureDir, 'teams-roster-interactions.mjs'), 'utf8');
     const inviteSrc = readFileSync(join(featureDir, 'teams-invite.mjs'), 'utf8');
     const submitSrc = readFileSync(join(featureDir, 'teams-roster-submit.mjs'), 'utf8');
     assert.doesNotMatch(joinHandlerSrc, /offerBringPatientsAfterTeamJoin/);

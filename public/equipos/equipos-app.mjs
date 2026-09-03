@@ -895,9 +895,7 @@ async function init() {
     renderMissingTokenScreen();
     return;
   }
-  root.innerHTML = isCloudEquiposMode()
-    ? '<div class="equipos-empty"><p>Cargando cola de equipos…</p></div>'
-    : '<div class="equipos-empty"><p>Buscando host de equipos…</p></div>';
+  root.innerHTML = '<div class="equipos-empty"><p>Cargando cola de equipos…</p></div>';
   apiBase = await resolveEquiposApiBase();
   if (!apiBase) {
     renderLoadError();

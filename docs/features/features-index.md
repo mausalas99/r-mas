@@ -16,13 +16,13 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 | Lab repo / Actualizar labs | `lib/lab-repo/`, `lab-repo-import.mjs`, `lab-repo-batch-import.mjs` | Unificado: paciente activo → fechas; sin paciente → mi equipo. [scraper](../superpowers/specs/2026-06-27-lab-repo-scraper-design.md) |
 | Labs externos (manual) | `labs-manual-catalog.mjs`, `labs-manual-synthesize.mjs`, `features/lab-manual-entry.mjs` | [spec](../superpowers/specs/2026-07-31-labs-externos-manual-entry-design.md) — tipo + celdas → historial `origin: 'externo'` |
 | Paste-anywhere / Procesar SOME | `public/js/features/paste-smart.mjs`, `paste-smart-model.mjs` | Global paste or ⌘K → match census → confirm once → Labs |
-| Cola documentación (mi equipo) | `public/js/features/doc-queue-panel.mjs`, `doc-queue-model.mjs`, `lab-eventualidad-interpret.mjs`, `lab-eventualidad-autosend.mjs`, `eventualidades-labs-timeline.mjs` | Interpretación → `labsText` + timeline Labs (auto); [spec](../superpowers/specs/2026-08-03-labs-timeline-auto-ux-design.md) |
+| Cola documentación (mi equipo) | `public/js/features/doc-queue-panel.mjs`, `doc-queue-model.mjs`, `lab-eventualidad-autosend.mjs` | Interpretación → `labsText` + timeline Labs (auto); [spec](../superpowers/specs/2026-08-03-labs-timeline-auto-ux-design.md) |
 | ⌘K palette (acciones) | `public/js/command-palette-model.mjs`, `features/command-palette.mjs` | Jumps + shift actions (Procesar SOME, labs batch, doc queue, EA, export, pase) |
 | Preparar entrega (checklist) | `lib/entrega/entrega-prep-checklist.mjs`, `public/js/features/entrega-prep-panel.mjs` | Mi equipo: EA hoy / pendientes vencidos / cultivos sin seguimiento → 1 clic |
 | Cola cultivos (mi equipo) | `public/js/features/cultivo-queue-panel.mjs`, `cultivo-queue-model.mjs` | ATB pendiente / sin nota → Cultivos |
 | EA → clipboard indicaciones | `public/js/features/ea-indicaciones-clipboard.mjs` | Copiar meds confirmados + bomba a portapapeles |
 | Tendencias | `public/js/features/tendencias.mjs` | Δ/anomaly strip + detail compare |
-| Patient dashboard | `public/js/features/patient-dashboard/` | Paciente → Resumen glance home; SOAP meds as N/HD/HI list; [spec](../superpowers/specs/2026-08-13-patient-dashboard-home-design.md); mock `docs/mocks/patient-dashboard-nav.html` |
+| Patient dashboard | `public/js/features/patient-dashboard/` | Paciente → Resumen glance home; SOAP meds as N/HD/HI list; [spec](../superpowers/specs/2026-08-13-patient-dashboard-home-design.md) |
 | Censo ↑/↓ + toque | `patients-census-walk.mjs`, `patients-list-click.mjs` | Flechas recorren el censo visible; pointerup en iPad selecciona la tarjeta |
 | UI overlays / physics | `ui-overlay.mjs`, `ui-physics.mjs`, `ui-motion.mjs` | [warm-instrument](../superpowers/specs/2026-08-13-warm-instrument-ui-design.md): bounce 0, origen en el trigger, rubberband |
 | Expediente / tabs | `public/js/expediente-tabs.mjs` | |
@@ -37,7 +37,7 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 | Modo entrega | `lib/entrega/`, `clinical-entrega.mjs` | |
 | Clinical teams | `public/js/features/clinical-teams/` | |
 | Onboarding / Learn Hub | `onboarding-curriculum.mjs`, `clinical-onboarding*.mjs`, `learn-hub.mjs` | Curriculum v17: structure + alta + incompletos first; Labs under Laboratorio |
-| Interno MIP (Nube) | `panel-interno-qr.mjs`, `interno-access-sync.mjs`, `cloud/sync-worker/src/interno/` | [feat-interno-mip-nube.md](./feat-interno-mip-nube.md); QR ⇄ → `/interno/{sala}` |
+| Interno MIP (Nube) | `interno-access-sync.mjs`, `cloud/sync-worker/src/interno/` | [feat-interno-mip-nube.md](./feat-interno-mip-nube.md); QR ⇄ → `/interno/{sala}` |
 | Cloud mobile (iPad / R+ Móvil Nube) | `cloud/sync-pages/`, `public/js/features/cloud-mobile/`, `cloud/sync-worker/` ASSETS | [spec](../superpowers/specs/2026-08-05-cloud-mobile-ipad-design.md) |
 | Equipos (Lumify/EKG/US) | `lib/equipos/`, `public/equipos/`, `cloud/equipos-worker/`, `equipos-cloud-config.mjs` | [spec](../superpowers/specs/2026-06-23-equipos-tracking-design.md); cloud deploy: `cloud/equipos-worker/README.md` |
 | Settings / tours | `public/js/features/settings-help/` | |

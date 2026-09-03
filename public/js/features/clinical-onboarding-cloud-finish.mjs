@@ -1,11 +1,8 @@
 /**
- * After LAN profile save: Nube register + cutover patient claim.
+ * After profile save: Nube register when the sala is cloud.
  */
 import { isCloudSala } from './cloud-sync/sala-allowlist.mjs';
 import { registerCloudDuringOnboarding } from './cloud-sync/register-during-onboarding.mjs';
-import { isCutoverPending, setCutoverFlag } from './cloud-sync/cutover-flags.mjs';
-import { loadCutoverSnapshot } from './cloud-sync/cutover-snapshot.mjs';
-import { claimPatientsToTeam, filterSnapshotPatients } from './cloud-sync/cutover-claim.mjs';
 import {
   clearCloudSalaUpgradePending,
   isCloudSalaUpgradePending,
@@ -22,7 +19,7 @@ import { readOnboardingNubeFields } from './clinical-onboarding-nube.mjs';
  * }} ctx
  * @returns {Promise<boolean>}
  */
-export async function finishOnboardingCloudAndCutover(ctx) {
+export async function finishOnboardingCloud(ctx) {
   const sala = ctx.sala;
   const needsCloud = isCloudSala(sala) || isCloudSalaUpgradePending();
   if (needsCloud && isCloudSala(sala)) {
@@ -48,29 +45,6 @@ export async function finishOnboardingCloudAndCutover(ctx) {
     }
   }
 
-  if (isCutoverPending()) {
-    await claimCutoverPatients(ctx.username, ctx.toast);
-    setCutoverFlag('done');
-  }
   clearCloudSalaUpgradePending();
   return true;
-}
-
-async function claimCutoverPatients(username, toast) {
-  const snap = loadCutoverSnapshot();
-  if (!snap) return;
-  const patients = filterSnapshotPatients(snap, { username });
-  const byTeam = new Map();
-  for (const p of patients) {
-    const tid = String(p.teamId || '').trim();
-    if (!tid) continue;
-    if (!byTeam.has(tid)) byTeam.set(tid, []);
-    byTeam.get(tid).push(p.id);
-  }
-  let claimed = 0;
-  for (const [teamId, ids] of byTeam) {
-    const out = await claimPatientsToTeam(ids, teamId);
-    claimed += out.claimed;
-  }
-  if (claimed > 0) toast('Pacientes reclamados: ' + claimed, 'success');
 }

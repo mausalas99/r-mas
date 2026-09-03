@@ -3,7 +3,6 @@ import { shouldForcePanelRebuildOnAuthChange } from './panel-session-gate.mjs';
 import { bridgeCloudIdentityToLocal } from './identity-bridge.mjs';
 import { hydrateClinicalTeamsAfterCloudPull } from './clinical-ops-hydrate.mjs';
 import { isValidUsernameFormat, normalizeUsername } from '../../clinical-username.mjs';
-import { isCutoverPending } from './cutover-flags.mjs';
 import { userHasJoinedTeam } from './panel-conexion-html.mjs';
 import { showRecoveryCodeModal } from './recovery-modal.mjs';
 import {
@@ -141,7 +140,7 @@ export async function afterAuthSuccess(deps, user) {
   }
   await hydrateClinicalTeamsAfterCloudPull();
   // Mi rotación must not block "conectado" — open in background if needed.
-  if (!isCutoverPending() && !userHasJoinedTeam()) {
+  if (!userHasJoinedTeam()) {
     void deps.handleOpenRotation();
   }
 }
@@ -307,12 +306,9 @@ export async function handleCreateRoom(deps) {
       : false;
     await persistRoomDeks();
     deps.renderConnected(room);
-    deps.toast(
-      dekOk || !NUBE_E2EE_ENABLED
-        ? 'Sala creada: ' + room.code
-        : 'Sala creada: ' + room.code + ' (sin cifrado — reintenta desde ⇄ si es necesario).',
-      dekOk || !NUBE_E2EE_ENABLED ? 'success' : 'error'
-    );
+    const encrypted = dekOk || !NUBE_E2EE_ENABLED;
+    const suffix = encrypted ? '' : ' (sin cifrado — reintenta desde ⇄ si es necesario).';
+    deps.toast('Sala creada: ' + room.code + suffix, encrypted ? 'success' : 'error');
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo crear la sala.', 'error');
   }

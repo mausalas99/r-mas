@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../public/js/lab-set-date.mjs"],
-  "sourcesContent": ["/** Fecha aproximada desde id num\u00E9rico (timestamp al guardar el set). Leaf module \u2014 no feature imports. */\n\nexport function formatDMYDate(d) {\n  if (!d || isNaN(d.getTime())) return '';\n  return (\n    String(d.getDate()).padStart(2, '0') +\n    '/' +\n    String(d.getMonth() + 1).padStart(2, '0') +\n    '/' +\n    d.getFullYear()\n  );\n}\n\nexport function inferFechaLabSetFromId(set) {\n  if (!set || set.fecha === 'Anterior') return '';\n  var id = String(set.id || '');\n  if (!/^\\d{10,}$/.test(id)) return '';\n  var ms = parseInt(id, 10);\n  if (id.length === 10) ms *= 1000;\n  return formatDMYDate(new Date(ms));\n}\n"],
-  "mappings": ";AAEO,SAAS,cAAc,GAAG;AAC/B,MAAI,CAAC,KAAK,MAAM,EAAE,QAAQ,CAAC,EAAG,QAAO;AACrC,SACE,OAAO,EAAE,QAAQ,CAAC,EAAE,SAAS,GAAG,GAAG,IACnC,MACA,OAAO,EAAE,SAAS,IAAI,CAAC,EAAE,SAAS,GAAG,GAAG,IACxC,MACA,EAAE,YAAY;AAElB;AAEO,SAAS,uBAAuB,KAAK;AAC1C,MAAI,CAAC,OAAO,IAAI,UAAU,WAAY,QAAO;AAC7C,MAAI,KAAK,OAAO,IAAI,MAAM,EAAE;AAC5B,MAAI,CAAC,YAAY,KAAK,EAAE,EAAG,QAAO;AAClC,MAAI,KAAK,SAAS,IAAI,EAAE;AACxB,MAAI,GAAG,WAAW,GAAI,OAAM;AAC5B,SAAO,cAAc,IAAI,KAAK,EAAE,CAAC;AACnC;",
-  "names": []
-}

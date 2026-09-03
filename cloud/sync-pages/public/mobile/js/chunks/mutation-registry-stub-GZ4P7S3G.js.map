@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../public/js/mutation-registry-stub.mjs"],
-  "sourcesContent": ["/** Retired LAN mutation registry \u2014 no-op for cloud-only builds. */\nexport function recordLanMutation() {}\n\nexport function flushLanMutationRegistry() {\n  return Promise.resolve();\n}\n"],
-  "mappings": ";AACO,SAAS,oBAAoB;AAAC;AAE9B,SAAS,2BAA2B;AACzC,SAAO,QAAQ,QAAQ;AACzB;",
-  "names": []
-}

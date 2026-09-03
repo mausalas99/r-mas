@@ -2,8 +2,7 @@
 /**
  * CI gate: fail if production sources reintroduce LAN LiveSync imports.
  * Excludes docs/, *.test.*, scripts/ci self, and comment-only mentions.
- * `/api/lan/v1` is only forbidden in client graphs (public/js, cloud/) —
- * server may keep a 410 Gone stub.
+ * `/api/lan/v1` is only forbidden in client graphs (public/js, cloud/).
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -37,14 +36,6 @@ export function stripComments(src) {
     .replace(/(^|[\s;{}()[\],=])\/\/[^\n]*/g, '$1');
 }
 
-/** @param {string} src */
-export function stripDevWardBlocks(src) {
-  return String(src || '').replace(
-    /if\s*\(\s*process\.env\.R_PLUS_DEV_WARD_SERVER[\s\S]*?\{[\s\S]*?\n\}/g,
-    ''
-  );
-}
-
 /** @param {string} relPath */
 function isClientGraph(relPath) {
   const p = String(relPath || '').replace(/\\/g, '/');
@@ -57,10 +48,7 @@ function isClientGraph(relPath) {
  */
 export function scanSourceForForbiddenLanImports(source, relPath) {
   if (!shouldScanPath(relPath)) return [];
-  let body = stripComments(source);
-  if (String(relPath).replace(/\\/g, '/').endsWith('server.js')) {
-    body = stripDevWardBlocks(body);
-  }
+  const body = stripComments(source);
   /** @type {{ path: string, rule: string, line: number, excerpt: string }[]} */
   const hits = [];
   const lines = body.split('\n');
@@ -105,7 +93,7 @@ function walk(dir, out) {
 
 export function collectScanFiles(root = ROOT) {
   const roots = ['public/js', 'lib', 'cloud', 'scripts'].map((p) => join(root, p));
-  const files = [join(root, 'server.js'), join(root, 'main.js'), join(root, 'preload.js')];
+  const files = [join(root, 'main.js'), join(root, 'preload.js')];
   for (const r of roots) walk(r, files);
   return files
     .map((abs) => relative(root, abs).replace(/\\/g, '/'))

@@ -47,16 +47,7 @@ export async function applyClinicalDbUnlockCompletion(opts) {
   if (!isDbMode() || typeof window === 'undefined') return;
   await hydrateAppStateFromDb();
   await initClinicalRuntimeAfterUnlock();
-  var cutoverShowing = false;
-  try {
-    var cutover = await import('./cloud-sync/cutover-gate.mjs');
-    if (cutover && typeof cutover.run79CutoverGate === 'function') {
-      cutoverShowing = !!(await cutover.run79CutoverGate());
-    }
-  } catch (err) {
-    console.warn('[R+] 7.9 cutover gate:', err && err.message);
-  }
-  if (refreshOnboarding && !cutoverShowing) await refreshOnboardingAfterUnlock();
+  if (refreshOnboarding) await refreshOnboardingAfterUnlock();
 }
 
 export function handleUnlockSuccess(res) {

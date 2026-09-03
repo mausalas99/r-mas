@@ -1,5 +1,5 @@
 /**
- * Evita omitir módulos que main.js carga al arrancar (server.js es dev-only).
+ * Evita omitir módulos que main.js carga al arrancar.
  */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -55,7 +55,7 @@ test('ensureElectronPackFiles sin --write no modifica si ya está sincronizado',
   assert.equal(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'), before);
 });
 
-test('lista canónica no incluye server.js (dev-only ward server)', () => {
+test('lista canónica no incluye server.js (ward server removed)', () => {
   assert.ok(!PACK_FILES_BASELINE.includes('server.js'));
   assert.ok(!canonicalBuildFiles(ROOT).includes('server.js'));
 });

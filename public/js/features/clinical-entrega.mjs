@@ -2,7 +2,6 @@
  * Entrega (handoff) modal — assign active_guardias with rank-based eligibility (façade).
  */
 import { resolveEntregaActorRole as resolveEntregaActorRoleImpl } from './entrega-modal-ui.mjs';
-import { GUARDIA_GRID_MODE_KEY, ENTREGA_PHASE_KEY } from './clinical-entrega/clinical-entrega-constants.mjs';
 import {
   ensureEntregaTargetUser,
   collectEntregaScopeUsers,
@@ -34,6 +33,8 @@ import {
   toggleEntregaPhase,
   loadGuardiaGridViewContext,
   saveGuardiaGridMode,
+  GUARDIA_GRID_MODE_KEY,
+  ENTREGA_PHASE_KEY,
 } from './clinical-entrega/clinical-entrega-phase.mjs';
 
 export function resolveEntregaActorRole(currentUser, existingGuardia) {

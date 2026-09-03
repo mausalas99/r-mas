@@ -1,5 +1,5 @@
-import { trimStr } from './med-receta-util.mjs';
 import { getMedCatalogAccentMap } from './med-receta-catalog.mjs';
+import { trimStr } from './med-receta-util.mjs';
 
 var ACCENT_FIRST_WORD = {
   LOSARTAN: 'LOSARTÁN',

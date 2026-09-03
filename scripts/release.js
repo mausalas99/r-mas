@@ -19,6 +19,10 @@
  *   npm run release:publish -- --skip-pre-commit   (no commit automático antes de tests)
  *
  * Tras bump, edita docs/RELEASE_NOTES_X.Y.Z.txt, README y data/release-notes-highlights.mjs.
+
+Nube mobile / interno / equipos: wrangler deploy runs predeploy hooks that rebuild
+cloud/sync-pages/public and cloud/equipos-pages/public. Deploy those workers in the
+same release as the desktop build — do not ship a stale mobile mirror.
  */
 
 const fs = require('fs');
@@ -301,6 +305,7 @@ async function cmdBump(argv) {
   updateReadme(version, title);
   updateHighlightsStub(version);
   updateHighlightsDefault(version);
+  run('npm run build:changelog');
 
   const packSync = ensureElectronPackFiles(ROOT, { write: true });
   if (packSync.changed) {
@@ -895,6 +900,8 @@ async function cmdPublish(argv) {
 Verificar:
   gh release view ${tag} --repo ${REPO} --json assets --jq '.assets[].name'
   curl -sL "https://github.com/${REPO}/releases/download/${tag}/latest-mac.yml" | head -8
+  cd cloud/sync-worker && npm run deploy
+  cd cloud/equipos-worker && npm run deploy
 `);
     }
   } catch (err) {

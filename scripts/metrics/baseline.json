@@ -697,5 +697,7 @@
       "date": "2026-08-24",
       "note": "Baseline refresh totalScore=306"
     }
-  ]
+  ],
+  "trackedLoc": 334853,
+  "moduleCount": 1305
 }

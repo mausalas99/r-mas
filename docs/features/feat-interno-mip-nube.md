@@ -20,7 +20,7 @@ Board móvil para **internos de pregrado (MIP)**: censo por sala, signos vitales
 
 | Pieza | Ruta |
 |-------|------|
-| QR / panel Conexión | `public/js/features/cloud-sync/panel-interno-qr.mjs`, `interno-access-sync.mjs` |
+| QR / panel Conexión | `interno-access-sync.mjs` |
 | Worker routes + vitals | `cloud/sync-worker/src/interno/`, `interno-access-sidecar.js` |
 | UI móvil (assets) | `cloud/sync-pages/` (ruta `/interno/`) |
 | Tokens locales | SQLCipher `sala_interno_access` → push sidecar `internoAccessUpsert` |

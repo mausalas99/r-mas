@@ -167,6 +167,26 @@ describe('clinical-onboarding helpers', () => {
     assert.match(gatesSrc, /hasTrustedCloudRememberMe/);
   });
 
+  it('onboarding no longer mounts the 7.9 cutover wizard', () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const renderSrc = readFileSync(join(here, 'clinical-onboarding-render.mjs'), 'utf8');
+    const finishSrc = readFileSync(join(here, 'clinical-onboarding-cloud-finish.mjs'), 'utf8');
+    const unlockSrc = readFileSync(join(here, 'db-unlock-completion.mjs'), 'utf8');
+    const handlersSrc = readFileSync(join(here, 'clinical-onboarding-handlers.mjs'), 'utf8');
+    const nubeSrc = readFileSync(join(here, 'clinical-onboarding-nube.mjs'), 'utf8');
+    for (const [name, src] of [
+      ['render', renderSrc],
+      ['cloud-finish', finishSrc],
+      ['unlock', unlockSrc],
+      ['handlers', handlersSrc],
+      ['nube', nubeSrc],
+    ]) {
+      assert.doesNotMatch(src, /cutover/i, `${name} still mentions cutover`);
+    }
+    assert.match(finishSrc, /export async function finishOnboardingCloud/);
+    assert.match(finishSrc, /registerCloudDuringOnboarding/);
+  });
+
   it('needsTeamOnboarding is false for R4 and Admin without a team', () => {
     const prevUser = clinicalSessionContext.user;
     const prevTeams = clinicalSessionContext.teams;

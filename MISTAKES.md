@@ -2,6 +2,24 @@
 
 Newest entry first. One entry per mistake.
 
+## 2026-09-02 — rewrote the `test` script and never ran it; it could not start
+
+What happened: the codebase-reduction session replaced the 31 KB test manifest with directory arguments (`--test lib public scripts …`) and reported "glob test discovery" done. Under Electron's Node 24, `--test lib` fails with `Cannot find module …/lib` — the whole suite was unrunnable. Found by the next session running `npm run test:one -- lib`.
+Root cause: Node's test runner accepts glob patterns, not bare directories. The new script was never executed; only `test:one` on single files was.
+Prevention: after any change to `scripts.test`, run the full command once and compare the reported test count with the previous run. Directory scope goes in as a quoted glob (`"lib/**/*.test.*js"`).
+
+## 2026-09-02 — pointing renderer username imports at lib/db added an eager chunk
+
+What happened: merged `clinical-username` into `lib/db` and rewired ~30 renderer imports to that path. `build:ui` then produced 113 eager chunks (budget 112). Caught by `app-boot-imports.test.mjs` in the same turn.
+Root cause: esbuild splits a shared `lib/` module imported from many `public/js` files into its own chunk. The old public copy lived inside an existing chunk.
+Prevention: do not import `lib/` from eager renderer modules unless you measure `collectEagerBundleSet` after `build:ui`. Use a public copy + parity test when a shared `lib/` import raises the chunk count.
+
+## 2026-09-02 — almost deleted the live equipos-cloud-mode module because public/lib is a symlink
+
+What happened: the reduction plan listed `lib/equipos/equipos-cloud-mode.mjs` as a "dead 3rd copy." I deleted it after a stem grep showed no Node importer of that exact path. `public/lib/equipos/equipos-cloud-mode.mjs` is a git symlink to `../../../lib/equipos/equipos-cloud-mode.mjs`; the live equipos app imports the public path. Deleting the lib file broke the symlink target. Caught in the same turn by a follow-up `ls` and restored from HEAD.
+Root cause: treated "no import of `lib/equipos/…`" as "file is unused" without checking whether another tracked path is a symlink to it.
+Prevention: before deleting a `lib/` file that has a same-basename twin under `public/`, run `ls -l` on both paths. If either is a symlink, keep the target.
+
 ## 2026-09-02 — told owner 8.2.9 was ready a second time, again without running the full suite first
 
 What happened: prepared 8.2.9 (release notes, debt-gate fixes, boot-budget bump) and reported it ready. Owner ran `rpublish`, which runs the full 4532-test suite (not `test:one`), and it stopped on one failure in `public/js/features/paste-smart-model.test.mjs`: `planSmartPaste` returned `'ready'` instead of `'mixed-expediente'` for a paste containing one known-census-patient expediente plus one unrecognized one.
