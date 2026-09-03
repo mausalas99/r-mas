@@ -1386,6 +1386,12 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   background: color-mix(in oklab, var(--surface) 94%, var(--bg));
 }
 
+.ea-historial-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .ea-historial-main {
   display: flex;
   flex-direction: column;

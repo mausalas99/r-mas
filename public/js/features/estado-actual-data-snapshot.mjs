@@ -265,25 +265,59 @@ function collectBpListsFromHistorialRow(row) {
   return { recordedAt, tasList, tadList };
 }
 
+function pushBpPair(pairs, recordedAt, tasReading, tadReading) {
+  var time =
+    tasReading && tasReading.time
+      ? String(tasReading.time)
+      : tadReading && tadReading.time
+        ? String(tadReading.time)
+        : undefined;
+  pairs.push({
+    tas: tasReading && Number.isFinite(Number(tasReading.value)) ? Number(tasReading.value) : null,
+    tad: tadReading && Number.isFinite(Number(tadReading.value)) ? Number(tadReading.value) : null,
+    recordedAt: recordedAt,
+    time: time,
+  });
+}
+
+/**
+ * TAS y TAD se guardan como series independientes por signo, así que una lectura
+ * de TAS y una de TAD solo pertenecen a la misma toma si comparten `time`. Sin esa
+ * coincidencia, no se debe adivinar el par por posición: cada lectura sobrante
+ * queda sola en su fila.
+ */
 function appendBpPairsFromLayers(pairs, recordedAt, tasList, tadList) {
-  var layers = Math.max(tasList.length, tadList.length);
-  if (!layers) return;
+  if (!tasList.length && !tadList.length) return;
+  var tadUsed = new Array(tadList.length);
+  var leftoverTas = [];
+
+  for (var i = 0; i < tasList.length; i++) {
+    var tasReading = tasList[i];
+    var matchIdx = -1;
+    if (tasReading.time) {
+      for (var j = 0; j < tadList.length; j++) {
+        if (!tadUsed[j] && tadList[j].time === tasReading.time) {
+          matchIdx = j;
+          break;
+        }
+      }
+    }
+    if (matchIdx === -1) {
+      leftoverTas.push(tasReading);
+      continue;
+    }
+    tadUsed[matchIdx] = true;
+    pushBpPair(pairs, recordedAt, tasReading, tadList[matchIdx]);
+  }
+
+  var leftoverTad = [];
+  for (var k = 0; k < tadList.length; k++) {
+    if (!tadUsed[k]) leftoverTad.push(tadList[k]);
+  }
+
+  var layers = Math.max(leftoverTas.length, leftoverTad.length);
   for (var li = 0; li < layers; li++) {
-    var tasReading = tasList[li] || null;
-    var tadReading = tadList[li] || null;
-    if (!tasReading && !tadReading) continue;
-    var time =
-      tasReading && tasReading.time
-        ? String(tasReading.time)
-        : tadReading && tadReading.time
-          ? String(tadReading.time)
-          : undefined;
-    pairs.push({
-      tas: tasReading && Number.isFinite(Number(tasReading.value)) ? Number(tasReading.value) : null,
-      tad: tadReading && Number.isFinite(Number(tadReading.value)) ? Number(tadReading.value) : null,
-      recordedAt: recordedAt,
-      time: time,
-    });
+    pushBpPair(pairs, recordedAt, leftoverTas[li] || null, leftoverTad[li] || null);
   }
 }
 

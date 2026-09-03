@@ -51,7 +51,18 @@ function scanProteinas_(lineas, i, lin) {
 
 /** @returns {object} */
 export function emptyLcrFields_() {
-  return { pH: '', aspecto: '', leu: '', glu: '', prot: '', cl: '', gram: '', tinta: '' };
+  return {
+    pH: '',
+    aspecto: '',
+    leu: '',
+    glu: '',
+    prot: '',
+    cl: '',
+    gram: '',
+    tinta: '',
+    pmn: '',
+    linf: '',
+  };
 }
 
 export function scanLcrLine_(fields, lineas, i, linUp, lin) {
@@ -68,6 +79,14 @@ export function scanLcrLine_(fields, lineas, i, linUp, lin) {
   if (linUp.indexOf('CLORURO') === 0) fields.cl = scanNumericAfter_(lineas, i, 4);
   if (linUp.indexOf('GRAM') === 0) fields.gram = scanTextAfter_(lineas, i, 4);
   if (linUp.indexOf('TINTA CHINA') === 0) fields.tinta = scanTextAfter_(lineas, i, 4);
+  if (linUp.indexOf('POLIMORFONUCLEARES') === 0 || linUp.indexOf('LEUCOCITOS POLIMORFONUCLEARES') === 0) {
+    var pmnVal = scanNumericAfter_(lineas, i, 4);
+    if (pmnVal !== '') fields.pmn = pmnVal;
+  }
+  if (linUp.indexOf('LINFOCITOS') === 0) {
+    var linfVal = scanNumericAfter_(lineas, i, 4);
+    if (linfVal !== '') fields.linf = linfVal;
+  }
 }
 
 export function isInvalidLcrTextField_(val) {
@@ -86,7 +105,9 @@ export function lcrFieldsEmpty_(fields) {
     fields.cl ||
     fields.gram ||
     fields.tinta ||
-    fields.pH
+    fields.pH ||
+    fields.pmn ||
+    fields.linf
   );
 }
 
@@ -95,6 +116,8 @@ export function buildLcrLine_(fields) {
   if (fields.pH) p.push('pH', fields.pH);
   if (fields.aspecto) p.push('Asp', fields.aspecto);
   if (fields.leu !== '') p.push('Leu', fields.leu);
+  if (fields.pmn) p.push('PMN', fields.pmn + '%');
+  if (fields.linf) p.push('Linf', fields.linf + '%');
   if (fields.glu) p.push('Glu', fields.glu);
   if (fields.prot) p.push('Prot', fields.prot);
   if (fields.cl) p.push('Cl', fields.cl);

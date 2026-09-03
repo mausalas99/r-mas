@@ -62,6 +62,7 @@ export function renderHistorialSection(historial) {
       var when = formatHistorialWhen(row.recordedAt);
       var parts = buildHistorialRowParts(row);
       var summary = parts.length ? parts.join(' · ') : 'Registro vacío';
+      var safeId = String(row.id || '').replace(/'/g, "\\'");
       return (
         '<li class="ea-historial-row">' +
         '<div class="ea-historial-main">' +
@@ -72,9 +73,14 @@ export function renderHistorialSection(historial) {
         summary +
         '</span>' +
         '</div>' +
+        '<div class="ea-historial-actions">' +
+        '<button type="button" class="ea-btn ea-btn--ghost" onclick="editarEstadoActualMedicion(\'' +
+        safeId +
+        '\')">Editar</button>' +
         '<button type="button" class="ea-btn ea-btn--ghost ea-btn--danger" onclick="eliminarEstadoActualMedicion(\'' +
-        String(row.id || '').replace(/'/g, "\\'") +
+        safeId +
         '\')">Eliminar</button>' +
+        '</div>' +
         '</li>'
       );
     })

@@ -4,6 +4,7 @@ export const VIA_ACCESO_LABELS = {
   periferica: 'EV periférica',
   cvc: 'CVC',
   picc: 'PICC',
+  foley: 'Sonda Foley',
 };
 
 /** @param {unknown} via */

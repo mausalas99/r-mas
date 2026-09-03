@@ -77,6 +77,8 @@ export function mergeLcrFields_(blocks) {
     merged.cl = mergeLcrScalar_(merged.cl, next.cl);
     merged.gram = mergeLcrText_(merged.gram, next.gram);
     merged.tinta = mergeLcrText_(merged.tinta, next.tinta);
+    merged.pmn = mergeLcrScalar_(merged.pmn, next.pmn);
+    merged.linf = mergeLcrScalar_(merged.linf, next.linf);
   }
   return merged;
 }
@@ -93,6 +95,8 @@ function fieldsToLcrParsed_(fields) {
     cl: toNum_(fields.cl),
     gram: fields.gram || '',
     tinta: fields.tinta || '',
+    pmn: toNum_(fields.pmn),
+    linf: toNum_(fields.linf),
   };
 }
 

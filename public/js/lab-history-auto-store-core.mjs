@@ -398,14 +398,21 @@ export function findLabSetsByDateTime(sets, fecha, hora) {
   return matches;
 }
 
+// ponytail: 1–2 analitos idénticos a otra hora pueden ser una toma repetida real
+// (lactato, troponina, Na/K); 3+ idénticos es el mismo estudio pegado otra vez.
+var SAME_STUDY_MIN_SHARED = 3;
+
 /**
  * Un mismo estudio (SOME) suele llegar en fragmentos — Biometría se procesa antes que
  * Química Sanguínea aunque sean la misma toma. También pasa DENTRO de una sección: un
  * citoquímico de LCR reporta el recuento celular (Bacteriología) y el resto (pH/Glu/
  * Prot/Cl, Química Clínica) como bloques separados del mismo estudio. Si ningún analito
  * entrante ya tiene valor en el set existente, son complementarios: se unen sin pisar
- * nada. Si algún analito se repite con otra hora, es una toma distinta del mismo día
- * (comportamiento previo).
+ * nada. Un analito compartido con el MISMO valor no es conflicto (el mismo estudio
+ * pegado otra vez, p. ej. LCR completo dos veces el mismo día): son complementarios si
+ * hay 3+ analitos compartidos e idénticos, o ninguno compartido. Un analito compartido
+ * con valor distinto, o 1-2 compartidos idénticos (posible toma repetida real), es
+ * conflicto.
  */
 function sectionsAreComplementary_(a, b) {
   var pa = (a && a.parsedBySection) || null;
@@ -415,13 +422,21 @@ function sectionsAreComplementary_(a, b) {
     return pa[k] && Object.keys(pa[k]).length;
   });
   if (!keysA.length) return false;
-  return keysA.every(function (k) {
+  var shared = 0;
+  var hasConflict = keysA.some(function (k) {
     var rowB = pb[k];
-    if (!rowB || !Object.keys(rowB).length) return true;
-    return Object.keys(pa[k]).every(function (fk) {
-      return !(fk in rowB);
+    if (!rowB || !Object.keys(rowB).length) return false;
+    return Object.keys(pa[k]).some(function (fk) {
+      if (!(fk in rowB)) return false;
+      if (Number(pa[k][fk]) === Number(rowB[fk])) {
+        shared++;
+        return false;
+      }
+      return true;
     });
   });
+  if (hasConflict) return false;
+  return shared === 0 || shared >= SAME_STUDY_MIN_SHARED;
 }
 
 /**

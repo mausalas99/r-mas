@@ -100,7 +100,7 @@ test('buildCensusPayload usa censoMedsText y dx del paciente', () => {
   assert.equal(payload.rows.length, 1);
   var sections = payload.rows[0].sections || [];
   var dx = sections.find((s) => s.label === 'Diagnósticos');
-  var meds = sections.find((s) => s.label === 'ATB / Medicamentos');
+  var meds = sections.find((s) => s.label === 'Medicamentos');
   var pend = sections.find((s) => s.label === 'Pendientes');
   assert.match(dx.lines.join(' '), /DM2/);
   assert.match(meds.lines.join(' '), /MEROPENEM/);
@@ -138,7 +138,7 @@ test('buildCensusPayload accesos múltiples en celda', () => {
   assert.match(joined, /PICC/);
 });
 
-test('buildCensusPayload fallback meds desde receta', () => {
+test('buildCensusPayload fallback atb desde receta (antibiótico separado de meds)', () => {
   var payload = buildCensusPayload({
     settings: {},
     patients: [{ id: '1', nombre: 'T', archived: false, diagnosticosList: ['X'] }],
@@ -159,8 +159,38 @@ test('buildCensusPayload fallback meds desde receta', () => {
     },
     todosByPatient: { 1: [] },
   });
-  var medSec = (payload.rows[0].sections || []).find((s) => s.label === 'ATB / Medicamentos');
-  assert.match(medSec.lines.join(' '), /VANCOMICINA/i);
+  var atbSec = (payload.rows[0].sections || []).find((s) => s.label === 'Antibióticos');
+  assert.match(atbSec.lines.join(' '), /VANCOMICINA/i);
+  var medSec = (payload.rows[0].sections || []).find((s) => s.label === 'Medicamentos');
+  assert.ok(!medSec);
+});
+
+test('buildCensusPayload usa censoAtbText del paciente en columna ATB separada', () => {
+  var payload = buildCensusPayload({
+    settings: {},
+    patients: [
+      { id: '1', nombre: 'T', archived: false, censoAtbText: 'MEROPENEM · Día 2', censoMedsText: 'OMEPRAZOL' },
+    ],
+    includeArchived: false,
+    labHistoryByPatient: { 1: [] },
+    medRecetaByPatient: {},
+    todosByPatient: { 1: [] },
+  });
+  assert.equal(payload.rows[0].atb, 'MEROPENEM · Día 2');
+  assert.equal(payload.rows[0].meds, 'OMEPRAZOL');
+});
+
+test('formatPacienteMetaForCenso incluye FN (fecha de nacimiento) y equipo', () => {
+  var meta = formatPacienteMetaForCenso(
+    { registro: '55', edad: '40', fechaNacimiento: '1986-03-02' },
+    {},
+    'Equipo Azul'
+  );
+  var lines = meta.split('\n');
+  assert.equal(lines[0], '55');
+  assert.equal(lines[1], '40 años');
+  assert.equal(lines[2], 'FN: 02/03/1986');
+  assert.equal(lines[lines.length - 1], 'Equipo: Equipo Azul');
 });
 
 test('buildCensusPayload labs con resultados completos del último set', () => {

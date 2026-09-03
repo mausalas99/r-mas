@@ -43,6 +43,7 @@ import {
   toggleEaEstadoClinico,
   windowHandlers,
 } from './estado-actual-panel-actions.mjs';
+import { editarEstadoActualMedicion } from './estado-actual-panel-registro-edit.mjs';
 import { renderEstadoActualPanel, navigateToEstadoActualPanel } from './estado-actual-panel-render.mjs';
 
 eaPanelBridge.renderEstadoActualPanel = renderEstadoActualPanel;
@@ -83,6 +84,7 @@ export {
   registrarEstadoActualMedicion,
   ensureEaRegistroModalForm,
   eliminarEstadoActualMedicion,
+  editarEstadoActualMedicion,
   estadoActualGuardar,
   estadoActualGuardarCopiar,
   estadoActualEnviarANota,

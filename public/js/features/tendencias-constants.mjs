@@ -194,6 +194,8 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: 'GASES', fieldKey: 'cAG', cardTitle: 'AG corregido (gas)' },
   { sectionKey: 'LCR', fieldKey: 'pH', cardTitle: 'pH (LCR)' },
   { sectionKey: 'LCR', fieldKey: 'Leu', cardTitle: 'Leucocitos (LCR)' },
+  { sectionKey: 'LCR', fieldKey: 'PMN', cardTitle: 'PMN (LCR)' },
+  { sectionKey: 'LCR', fieldKey: 'Linf', cardTitle: 'Linfocitos (LCR)' },
   { sectionKey: 'LCR', fieldKey: 'Glu', cardTitle: 'Glucosa (LCR)' },
   { sectionKey: 'LCR', fieldKey: 'Prot', cardTitle: 'Proteínas (LCR)' },
   { sectionKey: 'LCR', fieldKey: 'Cl', cardTitle: 'Cl (LCR)' },

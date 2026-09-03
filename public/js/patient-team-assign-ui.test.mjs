@@ -1,11 +1,19 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { clinicalSessionContext } from './clinical-access-runtime.mjs';
 import {
   activePatientTeamId,
   buildPatientTeamAssignSectionHtml,
   defaultPatientRegistrationTeamId,
 } from './patient-team-assign-ui.mjs';
+
+const src = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), 'patient-team-assign-ui.mjs'),
+  'utf8'
+);
 
 describe('patient-team-assign-ui', () => {
   beforeEach(() => {
@@ -80,5 +88,11 @@ describe('patient-team-assign-ui', () => {
     assert.match(html, /Dr\. A/);
     assert.match(html, /Dr\. B/);
     assert.match(html, /Dr\. C/);
+  });
+
+  it('team-assign push pulls peer state before pushing (no LWW wipe)', () => {
+    assert.match(src, /syncClinicalOpsForSala/);
+    assert.doesNotMatch(src, /pushClinicalOpsLanNow/);
+    assert.doesNotMatch(src, /\bpushClinicalOpsForSala\b/);
   });
 });

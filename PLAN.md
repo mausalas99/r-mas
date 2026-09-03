@@ -22,7 +22,10 @@ files: [lib/db/**]
 tech: Cloudflare Durable Object WebSocket hub (not a local LAN host)
 - [x] Push changes to teammates in real time {#sync-ws}
   tech: cloud/sync-worker/src/room-sync-hub.js, cloud/sync-worker/src/room-live.js, public/js/live-sync-room.mjs
-files: [cloud/sync-worker/src/room-sync-hub.js, cloud/sync-worker/src/room-live.js, public/js/live-sync-room.mjs]
+- [x] Fix team assignments not reaching teammates {#team-assign-sync-fix}
+  tech: patient-team-assign-ui.mjs pushed the sala clinicalOps LWW snapshot without pulling first, so a peer's un-pulled assignment could be overwritten; switched to syncClinicalOpsForSala (pull-then-push), matching cloud-clinical-ops-sala.mjs's own documented rule and the pattern already used in teams-guardia-bridge.mjs
+  by: claude
+files: [cloud/sync-worker/src/room-sync-hub.js, cloud/sync-worker/src/room-live.js, public/js/live-sync-room.mjs, public/js/patient-team-assign-ui.mjs]
 needs: [db]
 
 ## Encrypt patient data before it leaves the device {#nube}
@@ -60,6 +63,10 @@ needs: [shell]
 tech: renderer feature modules, patient dashboard
 - [x] Load the patient dashboard {#ui-dashboard}
   tech: public/js/features/patient-dashboard/dashboard-mount.mjs, lab-inner.mjs
+- [x] Edit one past vitals row from Estado actual {#ui-ea-edit-medicion}
+  by: claude
+  from: agent
+  tech: Historial reciente row gets an Editar button beside Eliminar; it reopens the registro modal prefilled with the form flagged data-ea-edit-id (new module estado-actual-panel-registro-edit.mjs, kept out of the 600-line actions file), and Registrar then calls replaceMedicion (same id, new savedAt). Merge winner per row now prefers savedAt so an edit that keeps recordedAt still propagates (estado-actual-data-merge.mjs).
 files: [public/js/features/**]
 needs: [shell, db]
 

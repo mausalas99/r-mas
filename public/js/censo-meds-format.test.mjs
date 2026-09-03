@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatCensoMedsFromReceta } from './censo-meds-format.mjs';
+import {
+  formatCensoMedsFromReceta,
+  formatCensoAtbFromReceta,
+  splitCensoMedsAtbFromReceta,
+} from './censo-meds-format.mjs';
 
 function rescateItem(id, units, min, max) {
   return {
@@ -22,6 +26,23 @@ test('formatCensoMedsFromReceta solo nombre y día', () => {
   var text = formatCensoMedsFromReceta({
     items: [
       {
+        nombreRaw: 'Losartán 50mg',
+        viaRaw: 'ORAL',
+        frecuenciaRaw: 'c/24h',
+        dosisRaw: '50 mg',
+        diaTratamiento: 3,
+        suspendido: false,
+      },
+    ],
+  });
+  assert.equal(text, 'LOSARTÁN\nDía 3');
+  assert.doesNotMatch(text, /ORAL|c\/24h|50\s*mg/i);
+});
+
+test('formatCensoAtbFromReceta separa antibióticos del resto', () => {
+  var atb = formatCensoAtbFromReceta({
+    items: [
+      {
         nombreRaw: 'Meropenem 1g',
         viaRaw: 'INTRAVENOSA',
         frecuenciaRaw: 'c/8h',
@@ -29,10 +50,22 @@ test('formatCensoMedsFromReceta solo nombre y día', () => {
         diaTratamiento: 3,
         suspendido: false,
       },
+      { nombreRaw: 'Losartán 50mg', suspendido: false },
     ],
   });
-  assert.equal(text, 'MEROPENEM · Día 3');
-  assert.doesNotMatch(text, /IV|c\/8h|1\s*g/i);
+  assert.equal(atb, 'MEROPENEM\nDía 3');
+  assert.doesNotMatch(atb, /LOSARTAN/i);
+});
+
+test('splitCensoMedsAtbFromReceta reparte cada item a un solo lado', () => {
+  var split = splitCensoMedsAtbFromReceta({
+    items: [
+      { nombreRaw: 'Vancomicina 1g', suspendido: false },
+      { nombreRaw: 'Losartán 50mg', suspendido: false },
+    ],
+  });
+  assert.equal(split.atb, 'VANCOMICINA');
+  assert.equal(split.meds, 'LOSARTÁN');
 });
 
 test('sin día solo nombre', () => {
@@ -73,8 +106,8 @@ test('agrupa insulinas PRN SC como RESCATES DE INSULINA', () => {
   assert.equal((text.match(/RESCATES DE INSULINA/g) || []).length, 1);
 });
 
-test('suplemento nutricional no sale en meds', () => {
-  var text = formatCensoMedsFromReceta({
+test('suplemento nutricional no sale en atb', () => {
+  var text = formatCensoAtbFromReceta({
     items: [
       {
         nombreRaw: 'ALIMENTACION ADULTO SUPLEMENTO 237 ML',
@@ -93,7 +126,7 @@ test('suplemento nutricional no sale en meds', () => {
       },
     ],
   });
-  assert.equal(text, 'CEFTRIAXONA · Día 6');
+  assert.equal(text, 'CEFTRIAXONA\nDía 6');
   assert.doesNotMatch(text, /ALIMENTACION|DIETA/i);
 });
 

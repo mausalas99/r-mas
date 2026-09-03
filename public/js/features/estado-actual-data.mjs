@@ -333,6 +333,25 @@ export function removeMedicion(patientOrMonitoreo, id) {
 }
 
 /**
+ * Replace the row with `id` in place; the stored row keeps that id.
+ * @param {unknown} patientOrMonitoreo
+ * @param {string} id
+ * @param {MedicionHistorial | unknown} medicion
+ */
+export function replaceMedicion(patientOrMonitoreo, id, medicion) {
+  if (!id || !medicion || typeof medicion !== 'object') return { ok: false, error: 'empty' };
+  /** @type {any} */
+  var mon = resolveMonitoreoContainer(patientOrMonitoreo);
+  if (!mon) return { ok: false, error: 'empty' };
+  var idx = mon.historial.findIndex(function (row) {
+    return row && typeof row === 'object' && /** @type {any} */ (row).id === id;
+  });
+  if (idx < 0) return { ok: false, error: 'missing' };
+  mon.historial[idx] = structuredClone(Object.assign({}, medicion, { id: id }));
+  return { ok: true };
+}
+
+/**
  * @param {unknown} raw
  * @returns {number | null}
  */

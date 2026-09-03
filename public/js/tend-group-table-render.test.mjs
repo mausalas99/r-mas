@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { tableHiddenRowClass, tableColumnHeader, rowKey } from './tend-group-table-render.mjs';
+import {
+  tableHiddenRowClass,
+  tableColumnHeader,
+  rowKey,
+  createTableExportModel,
+} from './tend-group-table-render.mjs';
 
 test('hidden rows use the same is-hidden class as columns', () => {
   assert.equal(tableHiddenRowClass(true), 'is-hidden');
@@ -21,4 +26,43 @@ test('rowKey namespaces by section so cross-section homonyms cannot collide', ()
   const qsRow = { sectionKey: 'QS', fieldKey: 'Fib' };
   assert.notEqual(rowKey(bhRow), rowKey(qsRow));
   assert.equal(rowKey(bhRow), 'BH|Fib');
+});
+
+test('LCR export/copy model appends a per-day interpretation row from resLabs', () => {
+  const rawModel = {
+    columns: [
+      {
+        fecha: '03/08/2026',
+        hora: '10:00',
+        resLabs: ['INTERPRETACIÓN CITOQUÍMICO:\tSugestivo de meningitis viral'],
+      },
+      { fecha: '06/08/2026', hora: '11:00', resLabs: ['LCR\npH 9'] },
+    ],
+    rows: [],
+  };
+  const model = createTableExportModel(
+    {},
+    { sectionKey: 'LCR', historyDesc: [] },
+    'LCR',
+    rawModel,
+    { rows: [], cols: [] },
+    null
+  );
+  assert.equal(model.rows.length, 1);
+  assert.equal(model.rows[0].label, 'Interpretación');
+  assert.equal(model.rows[0].cells[0].text, 'Sugestivo de meningitis viral');
+  assert.equal(model.rows[0].cells[1].text, '—');
+});
+
+test('non-LCR sections skip the interpretation row', () => {
+  const rawModel = { columns: [{ fecha: '03/08/2026', resLabs: [] }], rows: [] };
+  const model = createTableExportModel(
+    {},
+    { sectionKey: 'QS', historyDesc: [] },
+    'QS',
+    rawModel,
+    { rows: [], cols: [] },
+    null
+  );
+  assert.equal(model.rows.length, 0);
 });

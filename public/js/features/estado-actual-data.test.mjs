@@ -12,6 +12,7 @@ import {
   balanceGlobalHistorico,
   medicionHasCoreData,
   appendMedicion,
+  replaceMedicion,
   resolveDietWeightKg,
   computeDietKcalTotal,
   computeDietKcalKgFromTotal,
@@ -474,4 +475,32 @@ test('deriveSnapshot overlay vitals from vitalSeries (SOAP alineado al strip)', 
     recordedAt,
     time: '08:00',
   });
+});
+
+test('replaceMedicion sustituye la fila en sitio y conserva el id', () => {
+  const m = emptyMonitoreo();
+  m.historial = [
+    { id: 'a', recordedAt: '2026-09-01T06:00:00.000Z', vitals: { tas: 120 } },
+    { id: 'b', recordedAt: '2026-09-02T06:00:00.000Z', vitals: { tas: 110 } },
+  ];
+  const out = replaceMedicion(m, 'a', { id: 'fresh', recordedAt: '2026-09-01T06:00:00.000Z', vitals: { tas: 130 } });
+  assert.equal(out.ok, true);
+  assert.equal(m.historial.length, 2);
+  assert.equal(m.historial[0].id, 'a');
+  assert.equal(m.historial[0].vitals.tas, 130);
+  assert.equal(m.historial[1].vitals.tas, 110);
+  assert.equal(replaceMedicion(m, 'zzz', { vitals: {} }).ok, false);
+});
+
+test('mergeMonitoreo — fila editada (mismo id y recordedAt): gana el savedAt más nuevo', () => {
+  const local = emptyMonitoreo();
+  local.historial = [
+    { id: 'r1', recordedAt: '2026-09-02T06:00:00.000Z', savedAt: '2026-09-02T07:00:00.000Z', vitals: { tas: 120 } },
+  ];
+  const remote = emptyMonitoreo();
+  remote.historial = [
+    { id: 'r1', recordedAt: '2026-09-02T06:00:00.000Z', savedAt: '2026-09-02T09:30:00.000Z', vitals: { tas: 135 } },
+  ];
+  assert.equal(mergeMonitoreo(local, remote).historial[0].vitals.tas, 135);
+  assert.equal(mergeMonitoreo(remote, local).historial[0].vitals.tas, 135);
 });

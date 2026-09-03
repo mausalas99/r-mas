@@ -20,6 +20,12 @@ What happened: the reduction plan listed `lib/equipos/equipos-cloud-mode.mjs` as
 Root cause: treated "no import of `lib/equipos/…`" as "file is unused" without checking whether another tracked path is a symlink to it.
 Prevention: before deleting a `lib/` file that has a same-basename twin under `public/`, run `ls -l` on both paths. If either is a symlink, keep the target.
 
+## 2026-09-02 — LCR fragment merge shipped in 8.2.9 blanks the hora, so the next re-paste of the same study is stored twice
+
+What happened: the 8.2.9 "merge fragmented LCR lab reports" fix joined the Química (pH/Glu/Prot/Cl) and Bacteriología (recuento) fragments of one citoquímico into one set. Same day the owner reported every LCR point drawn twice in Tendencias (03/08 and 06/08 each show two identical columns).
+Root cause: `mergeLabHistorySetsCluster` sets `keeper.hora = ''` when the fragments carried different horas; `findLabSetsByDateTime` never matches an empty hora; and `sectionsAreComplementary_` treated any shared analyte as a conflict even when the value was identical. So the owner's habitual re-paste of the cumulative SOME print (same study, same values) took the `'add'` path and created a second full copy on the same day. The fix only tested the fragment→merge direction, not what happens to the merged set on the next import.
+Prevention: when a merge/dedupe rule changes what a stored set looks like (hora, ids, lines), add a test for the *next* import of the same source against the merged result — the re-paste round trip is the normal case for SOME cumulative prints, not an edge case. Identical shared values (3+) are the same study pasted again, not a different draw.
+
 ## 2026-09-02 — told owner 8.2.9 was ready a second time, again without running the full suite first
 
 What happened: prepared 8.2.9 (release notes, debt-gate fixes, boot-budget bump) and reported it ready. Owner ran `rpublish`, which runs the full 4532-test suite (not `test:one`), and it stopped on one failure in `public/js/features/paste-smart-model.test.mjs`: `planSmartPaste` returned `'ready'` instead of `'mixed-expediente'` for a paste containing one known-census-patient expediente plus one unrecognized one.

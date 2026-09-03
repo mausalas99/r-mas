@@ -255,6 +255,76 @@ test('planLabHistoryDateTimeUpsert misma fecha, hora distinta, misma sección pe
   assert.equal(plan.matchKind, 'complementary');
 });
 
+test('planLabHistoryDateTimeUpsert mismo estudio LCR pegado otra vez (mismos valores, otra hora) → merge', () => {
+  var existing = [
+    {
+      id: '1',
+      fecha: '03/08/2026',
+      hora: '',
+      resLabs: ['LCR\tpH 9 Leu 265 Glu 24 Prot 200 Cl 123.3'],
+      parsedBySection: { LCR: { pH: '9', Leu: '265', Glu: '24', Prot: '200', Cl: '123.3' } },
+    },
+  ];
+  var plan = planLabHistoryDateTimeUpsert(existing, {
+    fecha: '03/08/2026',
+    hora: '15:00',
+    resLabs: ['LCR\tpH 9 Leu 265 Glu 24 Prot 200 Cl 123.3'],
+    parsedBySection: { LCR: { pH: '9', Leu: '265', Glu: '24', Prot: '200', Cl: '123.3' } },
+  });
+  assert.equal(plan.action, 'merge');
+  assert.equal(plan.matchKind, 'complementary');
+  assert.equal(plan.keeper.id, '1');
+});
+
+test('planLabHistoryDateTimeUpsert mismo estudio LCR con un analito distinto → add (conflicto real)', () => {
+  var existing = [
+    {
+      id: '1',
+      fecha: '03/08/2026',
+      hora: '',
+      resLabs: ['LCR\tpH 9 Leu 265 Glu 24 Prot 200 Cl 123.3'],
+      parsedBySection: { LCR: { pH: '9', Leu: '265', Glu: '24', Prot: '200', Cl: '123.3' } },
+    },
+  ];
+  var plan = planLabHistoryDateTimeUpsert(existing, {
+    fecha: '03/08/2026',
+    hora: '15:00',
+    resLabs: ['LCR\tpH 9 Leu 265 Glu 30 Prot 200 Cl 123.3'],
+    parsedBySection: { LCR: { pH: '9', Leu: '265', Glu: '30', Prot: '200', Cl: '123.3' } },
+  });
+  assert.equal(plan.action, 'add');
+});
+
+test('planLabHistoryDateTimeUpsert BH con solo 2 analitos idénticos a otra hora → add (posible toma repetida)', () => {
+  var existing = [
+    {
+      id: '1',
+      fecha: '31/07/2026',
+      hora: '',
+      resLabs: ['BH\tHb 12.9 Hto 38'],
+      parsedBySection: { BH: { Hb: '12.9', Hto: '38' } },
+    },
+  ];
+  var plan = planLabHistoryDateTimeUpsert(existing, {
+    fecha: '31/07/2026',
+    hora: '20:00',
+    resLabs: ['BH\tHb 12.9 Hto 38'],
+    parsedBySection: { BH: { Hb: '12.9', Hto: '38' } },
+  });
+  assert.equal(plan.action, 'add');
+});
+
+test('findComplementaryLabHistoryMergeGroups une dos sets LCR completos idénticos del mismo día', () => {
+  var lcr = { pH: '9', Leu: '265', Glu: '24', Prot: '200', Cl: '123.3' };
+  var sets = [
+    { id: '10', fecha: '03/08/2026', parsedBySection: { LCR: lcr } },
+    { id: '11', fecha: '03/08/2026', parsedBySection: { LCR: Object.assign({}, lcr) } },
+  ];
+  var groups = findComplementaryLabHistoryMergeGroups(sets);
+  assert.equal(groups.length, 1);
+  assert.deepEqual(groups[0].sort(), ['10', '11']);
+});
+
 test('findComplementaryLabHistoryMergeGroups une fragmentos de LCR del mismo día sin tope de hora', () => {
   var sets = [
     {

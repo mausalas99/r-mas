@@ -1,4 +1,4 @@
-import { formatCensoMedsFromReceta } from './censo-meds-format.mjs';
+import { formatCensoMedsFromReceta, formatCensoAtbFromReceta } from './censo-meds-format.mjs';
 import { formatLabsForCensoCompact } from './censo-labs-format.mjs';
 import { diagnosticosTextForCenso } from './patient-diagnosticos.mjs';
 import { formatCultivosForCenso } from './censo-cultivo-format.mjs';
@@ -26,6 +26,13 @@ function medsLines(patient, ctx, pid) {
   return splitLines(meds).slice(0, 6);
 }
 
+function atbLines(patient, ctx, pid) {
+  var atb =
+    String(patient.censoAtbText || '').trim() ||
+    formatCensoAtbFromReceta(/** @type {{ items?: unknown[] }} */ (ctx.medRecetaByPatient[pid]));
+  return splitLines(atb).slice(0, 6);
+}
+
 /** @param {Record<string, unknown>} patient @param {object} ctx */
 export function buildPatientSections(patient, ctx) {
   var pid = String(patient.id);
@@ -34,7 +41,8 @@ export function buildPatientSections(patient, ctx) {
   var dx = diagnosticosTextForCenso(patient.diagnosticosList);
   if (dx && dx !== '—') pushSection(sections, 'Diagnósticos', [dx]);
 
-  pushSection(sections, 'ATB / Medicamentos', medsLines(patient, ctx, pid));
+  pushSection(sections, 'Antibióticos', atbLines(patient, ctx, pid));
+  pushSection(sections, 'Medicamentos', medsLines(patient, ctx, pid));
 
   var signosIo = formatCensoSignosIoFromPatient(patient);
   var signosLines = [];

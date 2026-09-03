@@ -56,14 +56,25 @@ function scanNumericSkipLetterFlag_(lineas, i, maxLook) {
   return '';
 }
 
+/**
+ * Nombre de departamento/sección — nunca un fluido real. Cuando el scan de
+ * "CITOQUIMICO DE" (fluido vacío) cae en el header de la siguiente sub-tabla
+ * de departamento (p. ej. "BACTERIOLOGIA" antes de "CITOQUIMICO DE LIQUIDOS
+ * CORPORALES"), este candidato debe rechazarse en vez de usarse como fluido.
+ */
+export var CITO_DEPT_HEADER_RE_ =
+  /^(BACTERIOLOGIA|QUIMICA\s+CLINICA|HEMATOLOGIA|INMUNOLOGIA|GASOMETRIA|BANDEJA|CITOQUIMICO)\b/i;
+
 function scanCitoFluidType_(fields, lineas, i, lin) {
   if (/^CITOQUIMICO DE\s*$/i.test(lin) && !/CORPORALES/i.test(lin)) {
     var f = nextMeaningfulLine_(lineas, i, 6);
-    if (f && !/^:$/.test(f)) fields.fluid = f.toUpperCase();
+    if (f && !/^:$/.test(f) && !CITO_DEPT_HEADER_RE_.test(f)) fields.fluid = f.toUpperCase();
   }
   if (/^CITOQUIMICO DE\s+/i.test(lin) && !/CORPORALES/i.test(lin)) {
     var mTipo = lin.match(/^CITOQUIMICO DE\s+(.+)$/i);
-    if (mTipo && mTipo[1].trim()) fields.fluid = mTipo[1].trim().toUpperCase();
+    if (mTipo && mTipo[1].trim() && !CITO_DEPT_HEADER_RE_.test(mTipo[1].trim())) {
+      fields.fluid = mTipo[1].trim().toUpperCase();
+    }
   }
 }
 

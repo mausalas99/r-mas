@@ -3,6 +3,7 @@ import { buildCensoDocumentHeader, resolveCensoEquipoMembers } from './censo-hea
 import { formatAccesoFechaDisplay } from './patient-date-fields.mjs';
 import { resolveCensoFimiLabel } from './censo-header-format.mjs';
 import { ensurePatientDiagnosticos } from './patient-diagnosticos.mjs';
+import { formatDobForDocs } from './age-calc.mjs';
 import { patientBedSortKey, comparePatientsByBed } from '../../lib/patient-bed-sort.mjs';
 
 /** @param {Date} [date] */
@@ -49,7 +50,8 @@ function flattenRowForCompactPdf(sections) {
   };
   return {
     dx: pick('Diagnósticos'),
-    meds: pick('ATB / Medicamentos'),
+    atb: pick('Antibióticos'),
+    meds: pick('Medicamentos'),
     signos: pick('Signos / I-O'),
     signosCol: '',
     ioCol: '',
@@ -133,14 +135,17 @@ export function formatPatientNameForCenso(name) {
 }
 
 /**
- * Registro, edad, FIUX y FIMI (sin sexo) para PDF / vista previa.
+ * Registro, edad, FN, FIUX y FIMI (sin sexo) para PDF / vista previa.
  * @param {Record<string, unknown>} patient
  * @param {Record<string, unknown>} [settings]
+ * @param {string} [teamLabel] — equipo dueño del paciente (solo pancenso)
  */
-export function formatPacienteMetaForCenso(patient, settings) {
+export function formatPacienteMetaForCenso(patient, settings, teamLabel) {
   var lines = [];
   if (patient.registro) lines.push(String(patient.registro).trim());
   if (patient.edad) lines.push(String(patient.edad).trim() + ' años');
+  var fn = formatDobForDocs(patient.fechaNacimiento);
+  if (fn) lines.push('FN: ' + fn);
   var fiux = formatAccesoFechaDisplay(patient.fiuxFecha);
   if (fiux) lines.push('FIUX: ' + fiux);
   var fimi = formatAccesoFechaDisplay(patient.fimiFecha);
@@ -148,6 +153,7 @@ export function formatPacienteMetaForCenso(patient, settings) {
     var fimiLabel = resolveCensoFimiLabel(settings || {});
     lines.push(fimiLabel + ': ' + fimi);
   }
+  if (teamLabel) lines.push('Equipo: ' + String(teamLabel).trim());
   return lines.join('\n');
 }
 
@@ -159,6 +165,7 @@ export function formatPacienteMetaForCenso(patient, settings) {
  *   labHistoryByPatient: Record<string, unknown[]>,
  *   medRecetaByPatient: Record<string, unknown>,
  *   todosByPatient: Record<string, Array<{ text?: string, completed?: boolean }>>,
+ *   teamLabelByPatientId?: Record<string, string>,
  *   now?: Date,
  * }} opts
  */
@@ -195,6 +202,7 @@ export function buildCensusPayload(opts) {
     todosByPatient: opts.todosByPatient,
   };
 
+  var teamLabelByPatientId = opts.teamLabelByPatientId || {};
   var rows = sorted.map(function (patient, idx) {
     ensurePatientDiagnosticos(patient);
     var cama = formatCamaCellForCenso(patient);
@@ -204,9 +212,10 @@ export function buildCensusPayload(opts) {
       num: String(idx + 1),
       cama: cama,
       pacienteNombre: formatPatientNameForCenso(patient.nombre),
-      pacienteMeta: formatPacienteMetaForCenso(patient, settings),
+      pacienteMeta: formatPacienteMetaForCenso(patient, settings, teamLabelByPatientId[String(patient.id)]),
       sections: built.sections,
       dx: flat.dx,
+      atb: flat.atb,
       meds: flat.meds,
       signos: flat.signos,
       signosCol: built.signosIo.signosCol,

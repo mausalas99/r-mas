@@ -76,19 +76,13 @@ export function renderCensoSectionCell(row, key, fallbackLabel) {
   return renderCensoLines(sec.lines.join('\n'), key);
 }
 
-export function renderCensoColMultiline(row, key) {
-  var v = String(row[key] || '').trim();
-  if (!v) return '';
-  return renderCensoLines(v, key);
-}
-
 function censoPreviewCellClass(key) {
   if (key === 'paciente') return 'censo-paciente';
   if (key === 'dx') return 'censo-dx';
+  if (key === 'atb') return 'censo-atb';
   if (key === 'meds') return 'censo-meds';
   if (key === 'labs') return 'censo-labs';
   if (key === 'signos') return 'censo-signos';
-  if (key === 'io') return 'censo-io';
   if (key === 'accesos') return 'censo-acc';
   if (key === 'cultivos') return 'censo-cult';
   if (key === 'pend') return 'censo-pend';
@@ -119,17 +113,24 @@ function renderCensoPreviewCell(row, key) {
   if (key === 'dx') {
     return '<td class="censo-data-cell censo-center censo-dx">' + renderCensoSectionCell(row, 'dx', 'Diagnósticos') + '</td>';
   }
+  if (key === 'atb') {
+    return '<td class="censo-data-cell censo-center censo-atb">' + renderCensoSectionCell(row, 'atb', 'Antibióticos') + '</td>';
+  }
   if (key === 'meds') {
-    return '<td class="censo-data-cell censo-center censo-meds">' + renderCensoSectionCell(row, 'meds', 'ATB / Medicamentos') + '</td>';
+    return '<td class="censo-data-cell censo-center censo-meds">' + renderCensoSectionCell(row, 'meds', 'Medicamentos') + '</td>';
   }
   if (key === 'labs') {
     return '<td class="censo-data-cell censo-labs">' + renderCensoSectionCell(row, 'labs', 'Laboratorios') + '</td>';
   }
   if (key === 'signos') {
-    return '<td class="censo-data-cell censo-signos">' + renderCensoColMultiline(row, 'signosCol') + '</td>';
-  }
-  if (key === 'io') {
-    return '<td class="censo-data-cell censo-io">' + renderCensoColMultiline(row, 'ioCol') + '</td>';
+    var signosIo = [String(row.signosCol || '').trim(), String(row.ioCol || '').trim()]
+      .filter(Boolean)
+      .join('\n');
+    return (
+      '<td class="censo-data-cell censo-signos">' +
+      (signosIo ? renderCensoLines(signosIo, 'signos') : '') +
+      '</td>'
+    );
   }
   if (key === 'accesos') {
     return '<td class="censo-data-cell censo-acc">' + renderCensoSectionCell(row, 'accesos', 'Accesos') + '</td>';
@@ -185,11 +186,11 @@ export const CENSO_PREVIEW_STYLES =
   '.censo-line--lab-panel{font-weight:600;font-size:7.5px;font-family:"IBM Plex Mono",ui-monospace,monospace;letter-spacing:-0.01em}' +
   '.censo-line--label-led{font-size:8px;font-weight:600}' +
   'td.censo-labs .censo-line{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:7.5px;line-height:1.28}' +
-  'td.censo-signos,td.censo-io,td.censo-pend,td.censo-acc,td.censo-cult{font-size:8px;text-align:left}' +
-  'td.censo-paciente,td.censo-dx,td.censo-meds{text-align:center}' +
+  'td.censo-signos,td.censo-pend,td.censo-acc,td.censo-cult{font-size:8px;text-align:left}' +
+  'td.censo-paciente,td.censo-dx,td.censo-atb,td.censo-meds{text-align:center}' +
   'td.censo-paciente{font-size:8.5px}' +
   'td.censo-dx{font-weight:700;font-size:8px;line-height:1.25}' +
-  'td.censo-meds{font-size:7.5px;line-height:1.28}' +
+  'td.censo-atb,td.censo-meds{font-size:7.5px;line-height:1.28}' +
   'td.censo-acc,td.censo-cult{font-size:8px}' +
   '.censo-center{text-align:center;vertical-align:middle}' +
   '.censo-bold{font-weight:700}' +
