@@ -1,6 +1,15 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { renderCensusPdf } = require('./generate-censo.js');
+const { renderCensusPdf, splitCellLinesNoWrap } = require('./generate-censo.js');
+
+test('splitCellLinesNoWrap separa "· Día N" a su propia línea en ATB/Meds', () => {
+  assert.deepEqual(splitCellLinesNoWrap('CEFALOTINA · Día 6', 'atb'), ['CEFALOTINA', 'Día 6']);
+  assert.deepEqual(splitCellLinesNoWrap('LOSARTÁN · Día 3', 'meds'), ['LOSARTÁN', 'Día 3']);
+  // Ya en líneas separadas (formato actual): sin cambios.
+  assert.deepEqual(splitCellLinesNoWrap('CEFALOTINA\nDía 6', 'atb'), ['CEFALOTINA', 'Día 6']);
+  // Otras columnas no aplican esta normalización.
+  assert.deepEqual(splitCellLinesNoWrap('A · Día 6', 'dx'), ['A · Día 6']);
+});
 
 test('renderCensusPdf devuelve buffer PDF con fichas', async () => {
   var buf = await renderCensusPdf({

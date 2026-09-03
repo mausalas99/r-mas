@@ -54,20 +54,20 @@ function isEmptyCellLines(lines) {
 }
 
 /** Centrado horizontal del bloque en la celda. */
-const CENTER_COLS = { num: true, paciente: true, dx: true, meds: true };
+const CENTER_COLS = { num: true, paciente: true, dx: true, atb: true, meds: true };
 /** Reducir tamaño antes de elipsis (evita «…» en # y cortes dentro de un fármaco). */
-const SHRINK_FIT_COLS = { num: true, meds: true };
+const SHRINK_FIT_COLS = { num: true, atb: true, meds: true };
 /** Sin partir líneas (solo saltos explícitos \\n). */
-const NO_WRAP_COLS = { num: true, meds: true };
+const NO_WRAP_COLS = { num: true, atb: true, meds: true };
 /** Envolver ancho completo; nunca elipsis por columna estrecha. */
-const FULL_WRAP_COLS = { labs: true, pend: true, signos: true, io: true, dx: true };
+const FULL_WRAP_COLS = { labs: true, pend: true, signos: true, dx: true };
 /** Cama en negrita. */
 const BOLD_COLS = { cama: true };
 
 /** @param {string} colKey */
 function colFontSize(colKey) {
   if (colKey === 'labs') return FONT_LABS;
-  if (colKey === 'meds') return 7.5;
+  if (colKey === 'atb' || colKey === 'meds') return 7.5;
   if (colKey === 'num' || colKey === 'cama') return 9;
   return FONT;
 }
@@ -275,19 +275,20 @@ function rowCells(row) {
   var pend = row.pendientes || pickSection(row, 'Pendientes');
   var signos = String(row.signosCol || '').trim();
   var io = String(row.ioCol || '').trim();
-  if (!signos) {
+  if (!signos && !io) {
     signos = row.signos || pickSection(row, 'Signos / I-O') || pickSection(row, 'Signos / Estado actual');
   }
+  var signosIo = [signos, io].filter(Boolean).join('\n');
 
   return {
     num: String(row.num || ''),
     cama: String(row.cama || '—'),
     paciente: pac,
     dx: row.dx || pickSection(row, 'Diagnósticos'),
-    meds: row.meds || pickSection(row, 'ATB / Medicamentos'),
+    atb: row.atb || pickSection(row, 'Antibióticos'),
+    meds: row.meds || pickSection(row, 'Medicamentos'),
     labs: row.labs || pickSection(row, 'Laboratorios'),
-    signos: signos,
-    io: io,
+    signos: signosIo,
     accesos: accesos,
     cultivos: cultivos,
     pend: pend,
@@ -355,8 +356,13 @@ function cellLinesUnbounded(font, fontBold, text, innerW, colKey) {
  * @returns {string[]}
  */
 function splitCellLinesNoWrap(text, colKey) {
-  var raw = String(text || '')
-    .replace(/\r/g, '')
+  var normalized = String(text || '').replace(/\r/g, '');
+  // ATB/Meds: datos guardados antes de que el «Día N» pasara a línea propia
+  // siguen con " · " en un solo renglón — seguiría cortándose con elipsis.
+  if (colKey === 'atb' || colKey === 'meds') {
+    normalized = normalized.replace(/\s*·\s*(?=Día\s*\d)/gi, '\n');
+  }
+  var raw = normalized
     .split('\n')
     .map(function (l) {
       return pdfSafeLine(l);
@@ -662,7 +668,7 @@ function drawTableHeader(page, yTop, font, fontBold, layout) {
   var tx = x;
   cols.forEach(function (col) {
     var title = col.title;
-    var headSize = col.key === 'labs' || col.key === 'meds' ? 7.5 : FONT_HEAD;
+    var headSize = col.key === 'labs' || col.key === 'atb' || col.key === 'meds' ? 7.5 : FONT_HEAD;
     var lines = wrapText(fontBold, pdfSafeLine(title), col.w - 4, headSize);
     if (!lines.length) lines = [title];
     var blockH = lines.length * (headSize + 1);
@@ -1037,4 +1043,5 @@ export {
   wrapLabsCellLines,
   wrapPlainCellLines,
   wrapPacienteCellLines,
+  splitCellLinesNoWrap,
 };

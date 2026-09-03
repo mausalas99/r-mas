@@ -163,6 +163,13 @@ export function stampCensoFieldsClock(patient, now) {
   patient.lanUpdatedAt = String(now || new Date().toISOString());
 }
 
+/** @param {Record<string, unknown>} target @param {Record<string, unknown>} source @param {string} key @param {boolean} keepLocal */
+function mergeCensoTextField(target, source, key, keepLocal) {
+  if (source[key] && !(keepLocal && String(target[key] || '').trim())) {
+    target[key] = source[key];
+  }
+}
+
 /**
  * @param {Record<string, unknown>} target
  * @param {Record<string, unknown>|undefined} source
@@ -173,9 +180,8 @@ export function mergeCensoPatientFields(target, source, options) {
   if (!target || !source) return;
   var keepLocal = !!(options && options.keepLocalWhenPresent);
   mergeAccesosPatientFields(target, source);
-  if (source.censoMedsText && !(keepLocal && String(target.censoMedsText || '').trim())) {
-    target.censoMedsText = source.censoMedsText;
-  }
+  mergeCensoTextField(target, source, 'censoMedsText', keepLocal);
+  mergeCensoTextField(target, source, 'censoAtbText', keepLocal);
   // Never clobber real diagnoses with placeholder [''] from ensurePatientDiagnosticos.
   if (!diagnosticosListHasContent(source.diagnosticosList)) return;
   if (keepLocal && diagnosticosListHasContent(target.diagnosticosList)) return;

@@ -5,7 +5,7 @@ import {
   migratePatientDiagnosticosFromVpo,
   stampCensoFieldsClock,
 } from './patient-diagnosticos.mjs';
-import { formatCensoMedsFromReceta } from './censo-meds-format.mjs';
+import { formatCensoMedsFromReceta, formatCensoAtbFromReceta } from './censo-meds-format.mjs';
 import { getPatients, getMedRecetaByPatient, getVpoByPatient, persistClinicalState } from './app-state.mjs';
 
 import { esc } from './dom-escape.mjs';
@@ -61,11 +61,18 @@ export function buildPatientCensoDatosSectionsHtml(patient) {
     '<textarea class="ea-input" id="patient-dx-paste" rows="2" placeholder="DX1 + DX2…"></textarea>' +
     '<button type="button" class="btn-med-secondary" onclick="splitPatientDxPaste()">Separar por +</button>' +
     '</div></div></div>' +
-    '<div class="card" style="margin-top:10px;"><div class="card-header">Censo — ATB / Medicamentos</div><div class="card-body">' +
+    '<div class="card" style="margin-top:10px;"><div class="card-header">Censo — Antibióticos</div><div class="card-body">' +
+    '<div class="vpo-toolbar">' +
+    '<button type="button" class="btn-med-secondary" onclick="censoTomarDeAntibioticos()">Tomar de Antibióticos</button>' +
+    '</div>' +
+    '<textarea class="ea-input" id="patient-censo-atb" rows="4" placeholder="Texto para columna ATB del PDF…" oninput="updatePatientCensoAtb(this.value)">' +
+    esc(patient.censoAtbText || '') +
+    '</textarea></div></div>' +
+    '<div class="card" style="margin-top:10px;"><div class="card-header">Censo — Medicamentos</div><div class="card-body">' +
     '<div class="vpo-toolbar">' +
     '<button type="button" class="btn-med-secondary" onclick="censoTomarDeMedicamentos()">Tomar de Medicamentos</button>' +
     '</div>' +
-    '<textarea class="ea-input" id="patient-censo-meds" rows="6" placeholder="Texto para columna ATB/Meds del PDF…" oninput="updatePatientCensoMeds(this.value)">' +
+    '<textarea class="ea-input" id="patient-censo-meds" rows="6" placeholder="Texto para columna Meds del PDF…" oninput="updatePatientCensoMeds(this.value)">' +
     esc(patient.censoMedsText || '') +
     '</textarea></div></div>'
   );
@@ -139,6 +146,15 @@ export function updatePatientCensoMeds(value) {
   persistClinicalState();
 }
 
+export function updatePatientCensoAtb(value) {
+  var pid = currentPatientId();
+  var patient = activePatient(pid);
+  if (!patient) return;
+  patient.censoAtbText = String(value || '');
+  stampCensoFieldsClock(patient);
+  persistClinicalState();
+}
+
 export function censoTomarDeMedicamentos() {
   var pid = currentPatientId();
   var patient = activePatient(pid);
@@ -151,11 +167,25 @@ export function censoTomarDeMedicamentos() {
   persistClinicalState();
 }
 
+export function censoTomarDeAntibioticos() {
+  var pid = currentPatientId();
+  var patient = activePatient(pid);
+  if (!patient) return;
+  var text = formatCensoAtbFromReceta(getMedRecetaByPatient()[pid]);
+  patient.censoAtbText = text;
+  stampCensoFieldsClock(patient);
+  var ta = document.getElementById('patient-censo-atb');
+  if (ta) ta.value = text;
+  persistClinicalState();
+}
+
 export const patientDataCensoWindowHandlers = {
   onPatientDxInput,
   addPatientDxRow,
   removePatientDxRow,
   splitPatientDxPaste,
   updatePatientCensoMeds,
+  updatePatientCensoAtb,
   censoTomarDeMedicamentos,
+  censoTomarDeAntibioticos,
 };

@@ -92,7 +92,7 @@ export function classifyCensoTableLine(line, colKey, lineIndex) {
 
   if (colKey === 'paciente') return classifyCensoPacienteLine(s);
   if (colKey === 'labs') return classifyCensoLabsLine(s);
-  if ((colKey === 'signos' || colKey === 'io') && SIGNOS_LABEL_RE.test(s)) {
+  if (colKey === 'signos' && SIGNOS_LABEL_RE.test(s)) {
     return 'label-led';
   }
   if (colKey === 'dx') return 'emphasis';

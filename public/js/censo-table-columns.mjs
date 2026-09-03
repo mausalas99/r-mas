@@ -4,10 +4,10 @@ export const CENSO_COL_WEIGHTS = [
   { key: 'cama', title: 'Cama', weight: 22 },
   { key: 'paciente', title: 'Paciente', weight: 70 },
   { key: 'dx', title: 'Dx', weight: 54 },
-  { key: 'meds', title: 'ATB / Meds', weight: 64 },
+  { key: 'atb', title: 'ATB', weight: 42 },
+  { key: 'meds', title: 'Meds', weight: 46 },
   { key: 'labs', title: 'Labs', weight: 138 },
-  { key: 'signos', title: 'Signos', weight: 88 },
-  { key: 'io', title: 'I / E / B', weight: 72 },
+  { key: 'signos', title: 'Signos / I-E-B', weight: 78 },
   { key: 'accesos', title: 'Accesos', weight: 28 },
   { key: 'cultivos', title: 'Cultivos', weight: 58 },
   { key: 'pend', title: 'Pend.', weight: 78 },
@@ -52,13 +52,17 @@ export function censoRowColumnText(row, key) {
   if (key === 'paciente') {
     return [row.pacienteNombre, row.pacienteMeta].filter(Boolean).join('\n');
   }
-  if (key === 'signos') return String(row.signosCol || row.signos || '').trim();
-  if (key === 'io') return String(row.ioCol || '').trim();
+  if (key === 'signos') {
+    return [String(row.signosCol || row.signos || '').trim(), String(row.ioCol || '').trim()]
+      .filter(Boolean)
+      .join('\n');
+  }
   var direct = row[key];
   if (direct) return String(direct).trim();
   var labelByKey = {
     dx: 'Diagnósticos',
-    meds: 'ATB / Medicamentos',
+    atb: 'Antibióticos',
+    meds: 'Medicamentos',
     labs: 'Laboratorios',
     accesos: 'Accesos',
     cultivos: 'Cultivos',
@@ -140,6 +144,7 @@ export function censoColumnPercents(weights) {
  */
 function censoColClass(key) {
   if (key === 'paciente') return 'pac';
+  if (key === 'atb') return 'atb';
   if (key === 'meds') return 'med';
   if (key === 'labs') return 'lab';
   return key;
