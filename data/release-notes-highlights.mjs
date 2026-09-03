@@ -197,10 +197,29 @@ var RELEASE_NOTES_829 = [
   },
 ];
 
+var RELEASE_NOTES_830 = [
+  {
+    title: 'Corrección — equipo desactualizado en la nube',
+    body:
+      'Un cambio de equipo que no se pudo guardar por un bloqueo momentáneo de la base local ya no se perdía en silencio — ahora se <strong>reintenta en cada inicio de sesión</strong>.',
+  },
+  {
+    title: 'Corrección — choque al unirse a una sala',
+    body:
+      'Unirse a una sala nube desde dos dispositivos casi al mismo tiempo ya no muestra un <strong>error de base de datos</strong> en vez de confirmar la membresía.',
+  },
+  {
+    title: 'Recuento celular (líquidos)',
+    body:
+      'El número de recuento ya no se confunde con la letra del tubo, y <strong>Rec, Linf, Eri</strong> ahora aparecen en las tendencias de líquidos.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_829;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_830;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.3.0': RELEASE_NOTES_830,
   '8.2.9': RELEASE_NOTES_829,
   '8.2.8': RELEASE_NOTES_828,
   '8.2.7': RELEASE_NOTES_827,

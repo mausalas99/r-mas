@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.2.9](https://github.com/mausalas99/r-mas/releases/tag/v8.2.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.3.0](https://github.com/mausalas99/r-mas/releases/tag/v8.3.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -59,6 +59,14 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.3.0 (estable — release 8.3.0)
+
+- **Corrección — equipo desactualizado en la nube:** un cambio de equipo que no se pudo guardar por un bloqueo momentáneo de la base local ya no se perdía en silencio — se reintenta en cada inicio de sesión, no solo en la configuración inicial.
+- **Corrección — choque al unirse a una sala:** unirse a una sala nube desde dos dispositivos casi al mismo tiempo ya no muestra un error de base de datos.
+- **Corrección — recuento celular (líquidos):** el número ya no se confunde con la letra del tubo; Rec, Linf y Eri ahora aparecen en tendencias de líquidos.
+
+Notas: `docs/RELEASE_NOTES_8.3.0.txt`.
 ## R+ 8.2.9 (estable — release 8.2.9)
 
 - **Copiar labs con formato:** al copiar labs se conservan las negritas al pegar en Word/Docs.
