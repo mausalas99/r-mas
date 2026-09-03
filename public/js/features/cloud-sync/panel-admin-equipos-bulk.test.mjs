@@ -99,7 +99,8 @@ describe('handleCloudEquiposBulkSave sala push', () => {
     assert.ok(idx >= 0);
     const body = src.slice(idx);
     assert.match(body, /changedSalas\s*=\s*\[\.\.\.new Set\(drafts\.map\(\(d\) => d\.sala\)/);
-    assert.match(body, /for \(const sala of changedSalas\) await publishClinicalTeamsAfterChange\(\{ sala \}\)/);
+    assert.match(body, /publishAfterBulkSave\(changedSalas\)/);
+    assert.match(src, /for \(const sala of changedSalas\) await publishClinicalTeamsAfterChange\(\{ sala \}\)/);
   });
 });
 

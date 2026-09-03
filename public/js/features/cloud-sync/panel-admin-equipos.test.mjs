@@ -392,8 +392,9 @@ describe('admin Equipos publish after reassignment', () => {
     const start = bulkSrc.indexOf('export async function handleCloudEquiposBulkSave');
     assert.ok(start >= 0);
     const body = bulkSrc.slice(start, start + 2200);
-    assert.match(body, /publishClinicalTeamsAfterChange\(\)/);
+    assert.match(body, /publishAfterBulkSave\(/);
     assert.match(body, /admin-equipos-bulk/);
+    assert.match(bulkSrc, /publishClinicalTeamsAfterChange\(\)/);
   });
 });
 

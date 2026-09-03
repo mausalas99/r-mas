@@ -4,8 +4,12 @@ import { VITAL_KEYS } from './estado-actual-panel-constants.mjs';
 import { toDatetimeLocalValue } from './estado-actual-panel-format.mjs';
 import { buildBombaRow, syncEaGluMode } from './estado-actual-panel-glu.mjs';
 import { setVitalStackFromSeries } from './estado-actual-panel-vitals.mjs';
-import { fillIoFields, syncIoBalanceFromForm } from './estado-actual-panel-registro-io.mjs';
-import { applyParsedVitals, applyParsedGlus } from './estado-actual-panel-registro-apply.mjs';
+import {
+  fillIoFields,
+  syncIoBalanceFromForm,
+  applyParsedVitals,
+  applyParsedGlus,
+} from './estado-actual-panel-registro.mjs';
 import { findActivePatient } from './estado-actual-panel-core.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
 

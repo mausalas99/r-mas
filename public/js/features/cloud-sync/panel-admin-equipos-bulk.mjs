@@ -151,6 +151,23 @@ async function persistBulkEquiposDrafts(drafts, api) {
 }
 
 /**
+ * Push to the sala(s) just assigned, not only the admin's own teams —
+ * otherwise a rotation change never reaches the target sala's room.
+ * @param {string[]} changedSalas
+ */
+async function publishAfterBulkSave(changedSalas) {
+  try {
+    if (changedSalas.length) {
+      for (const sala of changedSalas) await publishClinicalTeamsAfterChange({ sala });
+    } else {
+      await publishClinicalTeamsAfterChange();
+    }
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
  * Save rank (+ team/cycle when set) for every checked visible row — one reload at the end.
  * @param {HTMLElement} root
  * @param {object[]} teams
@@ -188,18 +205,8 @@ export async function handleCloudEquiposBulkSave(root, teams, getApi, toast) {
     }
     for (const warning of result.warnings || []) toast(warning, 'warn');
 
-    // Push to the sala(s) just assigned, not only the admin's own teams —
-    // otherwise a rotation change never reaches the target sala's room.
     const changedSalas = [...new Set(drafts.map((d) => d.sala).filter(Boolean))];
-    try {
-      if (changedSalas.length) {
-        for (const sala of changedSalas) await publishClinicalTeamsAfterChange({ sala });
-      } else {
-        await publishClinicalTeamsAfterChange();
-      }
-    } catch {
-      /* best-effort */
-    }
+    await publishAfterBulkSave(changedSalas);
 
     document.dispatchEvent(
       new CustomEvent('rpc-clinical-teams-changed', {

@@ -9,7 +9,7 @@ test('tendencias-hidden — logs warn on setItem QuotaExceededError', async () =
   const mockStore = {};
   globalThis.localStorage = {
     getItem(k) { return mockStore[k]; },
-    setItem(k) { 
+    setItem(_k) {
       const e = new Error('QuotaExceededError');
       e.name = 'QuotaExceededError';
       throw e;

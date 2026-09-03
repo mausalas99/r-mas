@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyAbx_ } from './med-receta-soap-families.mjs';
+import { classifyAbx_ } from './med-receta-soap.mjs';
 
 test('classifyAbx_ reconoce nombres completos que solo calzan por raíz truncada', () => {
   assert.equal(classifyAbx_('CEFTRIAXONA 1 G SOL INY 10 ML'), true);
