@@ -240,7 +240,7 @@ async function handleCreateRoom(env, db, request) {
 }
 
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request */
-async function handleJoinRoom(db, request) {
+export async function handleJoinRoom(db, request) {
   const user = await requireUser(db, request);
   const body = await parseJsonBody(request);
   const code = String(body?.code ?? '').trim().toUpperCase();
@@ -282,7 +282,7 @@ async function handleJoinRoom(db, request) {
   const now = new Date().toISOString();
   await db
     .prepare(
-      `INSERT INTO room_members (room_id, user_id, role, joined_at) VALUES (?, ?, 'member', ?)`
+      `INSERT OR IGNORE INTO room_members (room_id, user_id, role, joined_at) VALUES (?, ?, 'member', ?)`
     )
     .bind(room.id, user.id, now)
     .run();
@@ -401,7 +401,7 @@ async function handleEnsureTurn(env, db, request) {
     const now = new Date().toISOString();
     await db
       .prepare(
-        `INSERT INTO room_members (room_id, user_id, role, joined_at) VALUES (?, ?, 'member', ?)`
+        `INSERT OR IGNORE INTO room_members (room_id, user_id, role, joined_at) VALUES (?, ?, 'member', ?)`
       )
       .bind(existingRoom.id, user.id, now)
       .run();
