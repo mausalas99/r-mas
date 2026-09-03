@@ -280,7 +280,7 @@ GitHub public again
 
 ## CSS design consistency (2026-08-22 cosmetic pass)
 
-New CSS must use tokens from `public/tokens.css` (`--radius-*`, spacing, color), not hardcoded hex/radius/spacing values. `scripts/spacing-ratchet.mjs`, wired into `npm run metrics:check`, counts hardcoded `padding`/`margin` px values in `public/styles/*.css` and fails the build if that count grows above baseline — it does not convert existing values, only blocks new debt. Icons remain a known deferred gap: 65+ hand-rolled inline SVGs with no shared icon library, not fixed in this pass — revisit only if a future feature needs new icons.
+New CSS must use tokens from `public/tokens.css` (`--radius-*`, spacing, color), not hardcoded hex/radius/spacing values. `scripts/spacing-ratchet.mjs` (2026-09-03: removed — it never blocked a real value, only forced a baseline bump most releases; see PLAN.md `#shrink-guardrails`) used to count hardcoded `padding`/`margin` px values in `public/styles/*.css` and fail the build if that count grew. Icons remain a known deferred gap: 65+ hand-rolled inline SVGs with no shared icon library, not fixed in this pass — revisit only if a future feature needs new icons.
 
 ## Closed (do not reopen)
 

@@ -77,6 +77,7 @@ public/js/guardia-orphan-entregas.test.mjs
 public/js/labs-procesar-characterization.test.mjs
 public/js/patient-diagnosticos.test.mjs
 public/js/patient-export-format.test.mjs
+public/js/patient-team-assign-ui.test.mjs
 public/js/todos-due.test.mjs
 public/js/vendor-loader.test.mjs
 scripts/build-ui.test.mjs

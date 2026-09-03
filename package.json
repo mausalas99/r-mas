@@ -36,7 +36,7 @@
     "rebuild:db-native": "node scripts/rebuild-native-db.mjs",
     "postinstall": "node scripts/rebuild-native-db.mjs || true",
     "metrics": "node scripts/metrics/run.mjs",
-    "metrics:check": "node scripts/metrics/check.mjs && node scripts/spacing-ratchet.mjs && node scripts/ci/build-output-ignored.mjs && node scripts/ci/no-duplicate-files.mjs && node scripts/ci/structure-pinning-tests.mjs",
+    "metrics:check": "node scripts/metrics/check.mjs && node scripts/ci/build-output-ignored.mjs && node scripts/ci/no-duplicate-files.mjs && node scripts/ci/structure-pinning-tests.mjs && node scripts/ci/forbid-lan-imports.mjs",
     "lint:tier1": "node scripts/metrics/lint-tier1.mjs",
     "lint:tier1:full": "node scripts/metrics/lint-tier1.mjs --full",
     "lint:tier1:changed": "node scripts/metrics/lint-tier1.mjs",

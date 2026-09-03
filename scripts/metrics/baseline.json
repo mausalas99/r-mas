@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-24T19:30:20.096Z",
-  "totalScore": 306,
+  "updatedAt": "2026-09-03T00:00:00.000Z",
+  "totalScore": 140,
   "bootGraphHash": "02f7eaedd720a08d",
   "bootGraph": {
     "hash": "02f7eaedd720a08d",
@@ -696,8 +696,12 @@
     {
       "date": "2026-08-24",
       "note": "Baseline refresh totalScore=306"
+    },
+    {
+      "date": "2026-09-03",
+      "note": "Baseline refresh totalScore=140, trackedLoc=337166→350000, moduleCount=1305→1244 (codebase-reduction branch, chore/codebase-reduction). Owner set the 350k LOC ceiling deliberately, as headroom above the real measured count (337,166) after merging 3 feature commits from main, so normal feature work does not hit this gate every release. Not a silent refresh: owner approved via chat, PLAN.md #shrink-fold3."
     }
   ],
-  "trackedLoc": 334853,
-  "moduleCount": 1305
+  "trackedLoc": 350000,
+  "moduleCount": 1244
 }
