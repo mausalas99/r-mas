@@ -455,8 +455,6 @@ html.dark .ev-compose__input:focus {
     0 0 0 3px var(--color-focus-ring);
 }
 
-@media (prefers-reduced-motion: reduce) {
-
 @media (hover: none) {
   .ev-card__foot {
     opacity: 1;
