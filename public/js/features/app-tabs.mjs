@@ -2,11 +2,11 @@
  * Main app tab switching (Lab / Nota / Med / Agenda) and tablist a11y.
  */
 import { isGuardiaMode } from './chrome.mjs';
-import { renderGuardiaBoard } from './guardia-board.mjs';
 import { resumeLabBulkPreviewModalIfSuspended } from './lab-bulk-preview-modal.mjs';
 import { refreshEaCopyFabVisibility } from './estado-actual-panel.mjs';
 import {
   ensureChartsLoaded,
+  ensureGuardiaBoardLoaded,
   ensureLabsLoaded,
   hideLabPanelLoadingSkeleton,
   showLabPanelLoadingSkeleton,
@@ -89,7 +89,9 @@ function layoutGuardiaAppTab(dom) {
     dom.guardiaRoot.style.minHeight = '0';
     dom.guardiaRoot.style.overflow = 'hidden';
   }
-  renderGuardiaBoard(rt.getSettings());
+  void ensureGuardiaBoardLoaded().then(function (mod) {
+    mod.renderGuardiaBoard(rt.getSettings());
+  });
 }
 
 function showStandardPanelForTab(dom, tab) {

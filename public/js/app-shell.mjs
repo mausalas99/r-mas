@@ -10,7 +10,8 @@ import {
   isGuardiaMode,
   syncHeaderModeSeg,
 } from './features/chrome.mjs';
-import { renderGuardiaBoard, syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
+import { syncGuardiaModeButtonVisibility } from './features/guardia-mode-button.mjs';
+import { ensureGuardiaBoardLoaded } from './lazy-feature-routes.mjs';
 import {
   loadSettings,
 } from './features/profile.mjs';
@@ -135,7 +136,11 @@ function syncWorkContextChrome() {
   syncGuardiaModeButtonVisibility();
   syncGuardiaCensusPanelVisibility(shellCtx.getSettings());
   renderGuardiaCensusGrid(shellCtx.getSettings());
-  if (isGuardiaMode()) renderGuardiaBoard(shellCtx.getSettings());
+  if (isGuardiaMode()) {
+    void ensureGuardiaBoardLoaded().then(function (mod) {
+      mod.renderGuardiaBoard(shellCtx.getSettings());
+    });
+  }
   void import('./features/header-context.mjs').then(function (mod) {
     mod.syncHeaderContext(shellCtx);
   });

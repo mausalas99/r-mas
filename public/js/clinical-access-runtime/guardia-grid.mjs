@@ -1,6 +1,6 @@
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { isGuardiaMode } from '../features/chrome.mjs';
-import { renderGuardiaBoard } from '../features/guardia-board.mjs';
+import { ensureGuardiaBoardLoaded } from '../lazy-feature-routes.mjs';
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
 import { electronApi } from './electron-api.mjs';
 import { fetchClinicalScopeContextFromDb, fetchClinicalTeamsFromDb } from './scope-db.mjs';
@@ -42,7 +42,9 @@ export function syncGuardiaCensusPanelVisibility(_settings) {
  * @param {Record<string, unknown>|null|undefined} settings
  */
 export async function renderGuardiaCensusGrid(settings) {
-  if (isGuardiaMode()) renderGuardiaBoard(settings);
+  if (!isGuardiaMode()) return;
+  const mod = await ensureGuardiaBoardLoaded();
+  mod.renderGuardiaBoard(settings);
 }
 
 /**

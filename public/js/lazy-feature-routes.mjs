@@ -39,6 +39,7 @@ export const BOOT_LAZY_ONLY_SUFFIXES = [
   'features/estado-actual-charts-modal.mjs',
   'features/estado-actual-vital-history-modal.mjs',
   'features/clinical-entrega.mjs',
+  'features/guardia-board.mjs',
   'features/settings-help/tour-flow.mjs',
   'features/settings-help/tour-engine.mjs',
   'features/settings-help/settings-dropdown.mjs',
@@ -50,6 +51,10 @@ export const BOOT_LAZY_ONLY_SUFFIXES = [
 let entregaPromise = null;
 /** @type {typeof import('./features/clinical-entrega.mjs') | null} */
 let entregaModule = null;
+
+let guardiaBoardPromise = null;
+/** @type {typeof import('./features/guardia-board.mjs') | null} */
+let guardiaBoardModule = null;
 
 let eaVitalHistoryPromise = null;
 /** @type {typeof import('./features/estado-actual-vital-history-modal.mjs') | null} */
@@ -111,6 +116,20 @@ export function ensureEntregaLoaded() {
     });
   }
   return entregaPromise;
+}
+
+/**
+ * @returns {Promise<typeof import('./features/guardia-board.mjs')>}
+ */
+export function ensureGuardiaBoardLoaded() {
+  if (guardiaBoardModule) return Promise.resolve(guardiaBoardModule);
+  if (!guardiaBoardPromise) {
+    guardiaBoardPromise = import('./features/guardia-board.mjs').then(function (mod) {
+      guardiaBoardModule = mod;
+      return mod;
+    });
+  }
+  return guardiaBoardPromise;
 }
 
 /** @param {Record<string, unknown>} ctx */

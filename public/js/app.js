@@ -112,7 +112,7 @@ import {
 } from './features/clinical-rotation-entry.mjs';
 import { wireClinicalTeamsControls } from './features/clinical-teams.mjs';
 import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
-import { syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
+import { syncGuardiaModeButtonVisibility } from './features/guardia-mode-button.mjs';
 import { resolveClinicalClientId } from './clinical-settings.mjs';
 
 function lazyWindowHandler(exportName, loader) {

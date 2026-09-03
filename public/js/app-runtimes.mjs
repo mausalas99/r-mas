@@ -120,6 +120,7 @@ import {
   bindLazySettingsRuntimeCtx,
   bindLazyEaVitalHistoryRuntimeCtx,
   bindLazyNotaEvolucionRuntimeCtx,
+  ensureGuardiaBoardLoaded,
   chartsRuntimeProxies,
   labsRuntimeProxies,
   platformRuntimeProxies,
@@ -175,7 +176,6 @@ import {
   syncInnerTabVisualOnly,
   windowHandlers as expedienteInnerCacheWindowHandlers,
 } from './features/expediente-inner-cache.mjs';
-import { renderGuardiaBoard } from './features/guardia-board.mjs';
 import {
   renderMedRecetaPanel,
 } from './features/medications.mjs';
@@ -259,7 +259,9 @@ function buildRuntimeContextUiDeps() {
     renderPatientList,
     scrollActiveRondaCardIntoView,
     renderGuardiaBoard: function () {
-      return renderGuardiaBoard(rt.getSettings());
+      return ensureGuardiaBoardLoaded().then(function (mod) {
+        return mod.renderGuardiaBoard(rt.getSettings());
+      });
     },
     renderInnerTabs,
     invalidateInnerTabRenderCache,
