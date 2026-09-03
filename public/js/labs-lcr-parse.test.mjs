@@ -7,6 +7,7 @@ import {
   isCitoquimInterpretacionResLabChunk,
 } from './labs.js';
 import { collectLcrBlocks_, mergeLcrFields_ } from './labs-lcr-parse.mjs';
+import { buildParsedBySectionFromResLabs } from './features/diagrams-parse.mjs';
 
 const MUESTRA_JOSE_GARCIA_LCR = `
 Expediente:	1936244-5	Solicitud:	2607150803
@@ -231,6 +232,66 @@ test('parseLcrParsed — RECUENTO CELULAR no lo pisa LEUCOCITOS POLIMORFONUCLEAR
   assert.equal(parsed.leu, 215);
   assert.equal(parsed.glu, 21);
   assert.equal(parsed.protMgdl, 200);
+});
+
+test('parseLcrParsed — PMN/Linf del bloque de bacteriología, línea y tendencias', () => {
+  const parsed = parseLcrParsed(MUESTRA_RODOLFO_LCR);
+  assert.ok(parsed);
+  assert.equal(parsed.pmn, 26);
+  assert.equal(parsed.linf, 74);
+  assert.match(parsed.line, /Leu \d+ PMN \d+% Linf \d+%/);
+  const bySection = buildParsedBySectionFromResLabs([parsed.line]);
+  assert.equal(bySection.LCR.PMN, 26);
+  assert.equal(bySection.LCR.Linf, 74);
+});
+
+test('parseLcrParsed — bloque de química sin valores no llena PMN/Linf', () => {
+  const soloQuimica = `
+QUIMICA CLINICA
+CITOQUIMICO DE LCR
+Estudio		Resultado	Unidades	Valor de Referencia
+pH
+*
+7.4
+ASPECTO
+*
+RECUENTO CELULAR
+*
+POLIMORFONUCLEARES
+*
+%PMN
+LINFOCITOS
+*
+%LINFOCITOS
+TINTA CHINA
+*
+ERITROCITOS
+*
+COAGLUTINACION
+*
+GRAM
+*
+GLUCOSA
+*
+55
+mg/dL	45 - 80
+PROTEINAS
+A
+20
+mg/dL	15 - 45
+CLORURO
+A
+125
+mmol/L	118.1 - 132.0
+OTROS
+*
+`;
+  const parsed = parseLcrParsed(soloQuimica);
+  assert.ok(parsed);
+  assert.equal(parsed.pmn, null);
+  assert.equal(parsed.linf, null);
+  assert.ok(!/PMN/.test(parsed.line));
+  assert.ok(!/Linf/.test(parsed.line));
 });
 
 test('parseLcrParsed — celdas separadas por línea en blanco (formato portal) parsean igual', () => {

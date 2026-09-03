@@ -13,6 +13,10 @@ import {
 } from './tend-prefs.mjs';
 import { formatTrendDisplayValue, colKeyForSet } from './tend-group-chart-helpers.mjs';
 import {
+  isCitoquimInterpretacionResLabChunk,
+  citoquimInterpretacionBody_,
+} from './labs-citoquimico-interpret.mjs';
+import {
   collectEventMarkersForPatient,
   dayKeyFromLabSet,
   buildEventMarkerTagsHtml,
@@ -172,6 +176,24 @@ export function renderTableHiddenBar(ctx) {
   wireHiddenBarActions(bar, ctx);
 }
 
+/** Texto de "INTERPRETACIÓN CITOQUÍMICO:" pegado junto a esa toma de LCR, si existe. */
+function lcrInterpretationForSet(set) {
+  var resLabs = (set && set.resLabs) || [];
+  for (var i = 0; i < resLabs.length; i++) {
+    if (isCitoquimInterpretacionResLabChunk(resLabs[i])) {
+      return citoquimInterpretacionBody_(resLabs[i]);
+    }
+  }
+  return '';
+}
+
+/** Fila "Interpretación" al pie de la tabla de LCR, una por columna/toma. null si no aplica. */
+function interpretationRowTexts(sectionKey, columns) {
+  if (sectionKey !== 'LCR') return null;
+  var texts = (columns || []).map(lcrInterpretationForSet);
+  return texts.some(Boolean) ? texts : null;
+}
+
 function buildTableExportModel(deps, state, rawModel, hidden, markersByDay) {
   var hiddenRows = Object.create(null);
   (hidden.rows || []).forEach(function (rk) {
@@ -207,6 +229,17 @@ function buildTableExportModel(deps, state, rawModel, hidden, markersByDay) {
       cells: cells,
     };
   });
+  var interpTexts = interpretationRowTexts(state.sectionKey, rawModel.columns);
+  if (interpTexts) {
+    rows.push({
+      label: 'Interpretación',
+      fieldKey: '__interpretation',
+      hidden: false,
+      cells: interpTexts.map(function (t) {
+        return { text: t || '—', abnormal: false };
+      }),
+    });
+  }
   return { columns: columns, rows: rows };
 }
 
@@ -291,6 +324,22 @@ function buildTableBodyHtml(deps, esc, state, raw, hidden, specsByRowKey) {
     });
     html.push('</tr>');
   });
+  var interpTexts = interpretationRowTexts(state.sectionKey, raw.columns);
+  if (interpTexts) {
+    html.push('<tr class="tend-group-table-interp-row"><td><em>Interpretación</em></td>');
+    raw.columns.forEach(function (set, ci) {
+      var ck = colKeyForSet(set);
+      var colHidden = hidden.cols.indexOf(ck) >= 0;
+      html.push(
+        '<td class="' +
+          (colHidden ? 'is-hidden' : '') +
+          '" style="white-space:normal;text-align:left;font-size:12px;font-style:italic;">' +
+          esc(interpTexts[ci] || '—') +
+          '</td>'
+      );
+    });
+    html.push('</tr>');
+  }
   html.push('</tbody>');
   return html;
 }

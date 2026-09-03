@@ -294,10 +294,7 @@ function classifyBhPanelFamily(fk, unit) {
   return 'bh-absolute';
 }
 
-function classifyGenericPanelFamily(fk, unit) {
-  if (/Pct$/i.test(fk)) return 'percent-diff';
-  if (isErythrocytePercentField(fk)) return 'percent-rbc';
-  if (String(unit || '').trim() === '%' && !/Pct$/i.test(fk)) return 'percent-rbc';
+function classifyGenericPanelFamily() {
   return 'absolute';
 }
 

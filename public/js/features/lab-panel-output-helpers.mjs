@@ -14,6 +14,12 @@ import {
 } from './lab-panel-history.mjs';
 import { findDisplayLabHistorySetId } from './lab-panel-history-dedupe.mjs';
 import { buildLabTrendLookup } from './lab-trend-arrows.mjs';
+import { reprocessSelectedLabHistorySet } from './lab-panel-history.mjs';
+import {
+  citoquimicoTipoFingerprintFromLine_,
+  citoquimicoTipoValueFromLine_,
+  setCitoquimicoTipoOverride,
+} from '../labs-citoquimico-tipo-override.mjs';
 
 export function resolveLabOutputFechaBanner(patient) {
   if (!patient || !patient.fecha) return '';
@@ -81,12 +87,63 @@ function appendCultivoChunk(box, text, src, rt) {
   box.appendChild(wrap);
 }
 
+function isCitoquimicoTipoLine_(text) {
+  return /^Liq:\t/.test(text);
+}
+
+/** Reemplaza el botón por un input angosto para escribir el fluido y guardarlo. */
+function openCitoquimicoTipoEditor_(btn, text) {
+  var actual = citoquimicoTipoValueFromLine_(text);
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'lab-cito-tipo-edit-input';
+  input.value = actual;
+  input.placeholder = 'Tipo de líquido';
+  input.style.cssText = 'width:150px;font:inherit;font-size:11px;padding:1px 4px;';
+  var restore = function () {
+    if (input.parentNode) input.parentNode.replaceChild(btn, input);
+  };
+  var commit = function () {
+    var name = input.value.trim();
+    if (name && name !== actual) {
+      setCitoquimicoTipoOverride(citoquimicoTipoFingerprintFromLine_(text), name);
+      reprocessSelectedLabHistorySet();
+      return;
+    }
+    restore();
+  };
+  input.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter') { ev.preventDefault(); commit(); }
+    if (ev.key === 'Escape') { ev.preventDefault(); restore(); }
+  });
+  input.addEventListener('blur', commit);
+  btn.parentNode.replaceChild(input, btn);
+  input.focus();
+  input.select();
+}
+
+/** Click-to-edit: corrige a mano el "Tipo" (fluido) del citoquímico cuando el scan falla. */
+function appendCitoquimicoTipoEditControl_(div, text) {
+  var host = div.querySelector('.lab-row-values') || div;
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'lab-cito-tipo-edit-btn';
+  btn.title = 'Corregir tipo de líquido';
+  btn.textContent = '✎';
+  btn.style.cssText = 'margin-left:6px;font-size:11px;opacity:.6;cursor:pointer;border:none;background:none;';
+  btn.addEventListener('click', function () {
+    openCitoquimicoTipoEditor_(btn, text);
+  });
+  host.appendChild(btn);
+}
+
 function appendStandardResLabChunk(box, text, trendLookup) {
   renderEntry(text, trendLookup).forEach(function (html, idx) {
     var div = document.createElement('div');
     div.className = idx === 0 || isLabSectionHeaderHtml(html) ? 'out-line' : 'out-indent';
     div.innerHTML = html;
     box.appendChild(div);
+    if (idx === 0 && isCitoquimicoTipoLine_(text)) appendCitoquimicoTipoEditControl_(div, text);
   });
 }
 

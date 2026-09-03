@@ -39,6 +39,8 @@ var TEND_SECTION_UNIT_MAPS = {
   LCR: {
     pH: '',
     Leu: '/μL',
+    PMN: '%',
+    Linf: '%',
     Glu: TEND_UNITS.Glu || '',
     Prot: 'mg/dL',
     Cl: TEND_UNITS.Cl || '',

@@ -5,20 +5,67 @@ import {
   scanCitoquimicoLine_,
   citoquimicoFieldsEmpty_,
   buildCitoquimicoParts_,
+  CITO_DEPT_HEADER_RE_,
 } from './labs-citoquimico-scan.mjs';
+import {
+  citoquimicoTipoFingerprintFromLine_,
+  getCitoquimicoTipoOverride,
+} from './labs-citoquimico-tipo-override.mjs';
 import { parseFluidLeu_, parsePmnField_ } from './labs-fluid-interpret-values.mjs';
+
+/**
+ * Frontera de "otro reporte" tras UNA aparición de "CITOQUIMICO DE LIQUIDOS
+ * CORPORALES": el separador "\n\n---\n\n" que el merge de varios envíos del
+ * mismo día inserta ENTRE REPORTES (ver lab-bulk-paste.mjs /
+ * lab-panel-history-dedupe.mjs — siempre con línea en blanco de ambos lados),
+ * o un encabezado de departamento nuevo. Ojo: un renglón "---" suelto (sin
+ * línea en blanco alrededor) puede ser el valor "sin dato" de un campo dentro
+ * de la MISMA tabla (p. ej. POLIMORFONUCLEARES sin porcentaje) — ese no debe
+ * cortar el bloque.
+ */
+var CITO_NEXT_BOUNDARY_RE =
+  /\n\n\s*---\s*\n\n|\n\n\s*(?:QUIMICA\s+CLINICA|BIOMETRIA|HEMATOLOGIA|INMUNOLOGIA|GASOMETRIA|BANDEJA|BACTERIOLOGIA)\b/i;
+
+/**
+ * Entre las dos apariciones legítimas de "CITOQUIMICO DE LIQUIDOS CORPORALES"
+ * de UN mismo estudio (sub-tabla de química + sub-tabla de bacteriología) solo
+ * debe haber, a lo sumo, el encabezado "BACTERIOLOGIA" y/o el separador "---"
+ * que junta envíos del mismo día — nunca OTRO departamento. Si "Actualizar
+ * labs" intercala un envío ajeno (p. ej. Química Sanguínea de otra solicitud)
+ * entre las dos mitades del citoquímico, esa pareja no es válida: tomar todo
+ * lo de en medio arrastraría valores séricos ajenos hacia los campos del
+ * citoquímico (Glu/Prot/LDH quedarían con el valor sérico, no el del líquido).
+ * En ese caso se descarta la pareja y se prueba con la siguiente aparición —
+ * o, si no hay otra, se acota solo desde la aparición que quede.
+ */
+var OTHER_DEPT_BETWEEN_CITO_PAIR_RE =
+  /\b(?:QUIMICA\s+CLINICA|BIOMETRIA|HEMATOLOGIA|INMUNOLOGIA|GASOMETRIA|BANDEJA|ELECTROLITOS|PFH|COAGULACION|URIANALISIS|EXAMEN\s+GENERAL\s+DE\s+ORINA|CUADERNILLO)\b/i;
+
+function boundCitoquimicoOccurrence_(t, u, idx, key) {
+  var stop = u.substring(idx + key.length).search(CITO_NEXT_BOUNDARY_RE);
+  return stop === -1 ? t.substring(idx) : t.substring(idx, idx + key.length + stop);
+}
 
 export function bloqueCitoquimicoLiquidosFull(textoBruto) {
   var t = textoBruto.replace(/\r/g, '');
   var u = t.toUpperCase();
   var key = 'CITOQUIMICO DE LIQUIDOS CORPORALES';
-  var i0 = u.indexOf(key);
-  if (i0 === -1) return '';
-  var i2 = u.indexOf(key, i0 + key.length);
-  if (i2 === -1) return t.substring(i0);
-  var afterSecond = t.substring(i2 + key.length);
-  var stop = afterSecond.search(/\n\n\s*(?:QUIMICA CLINICA|HEMATOLOGIA|INMUNOLOGIA|GASOMETRIA|BANDEJA)\b/i);
-  var end = stop === -1 ? t.length : i2 + key.length + stop;
+  var occ = [];
+  for (var p = u.indexOf(key); p !== -1; p = u.indexOf(key, p + key.length)) occ.push(p);
+  if (!occ.length) return '';
+  var i0 = occ[0];
+  var i2 = -1;
+  for (var k = 1; k < occ.length; k++) {
+    var gap = u.substring(i0 + key.length, occ[k]);
+    if (!OTHER_DEPT_BETWEEN_CITO_PAIR_RE.test(gap)) {
+      i2 = occ[k];
+      break;
+    }
+    i0 = occ[k]; // el hueco trae otro reporte de por medio — no es pareja de i0
+  }
+  if (i2 === -1) return boundCitoquimicoOccurrence_(t, u, i0, key);
+  var stop2 = u.substring(i2 + key.length).search(CITO_NEXT_BOUNDARY_RE);
+  var end = stop2 === -1 ? t.length : i2 + key.length + stop2;
   return t.substring(i0, end);
 }
 
@@ -311,7 +358,7 @@ export function parseCitoquimicoLiquidosParsed(textoBruto, serumOpts) {
     var lin = lineas[i];
     scanCitoquimicoLine_(fields, lineas, i, lin, lin.toUpperCase(), normalizarRecuentoCelular_);
   }
-  if (!fields.fluid && fields.com && /\bPLEURAL\b/i.test(fields.com)) fields.fluid = fields.com;
+  if (!fields.fluid && fields.com && !CITO_DEPT_HEADER_RE_.test(fields.com)) fields.fluid = fields.com;
   if (!fields.fluid && esLiquidoPleural_(fields.fluid, fields.com, bloque)) fields.fluid = 'LIQUIDO PLEURAL';
 
   if (citoquimicoFieldsEmpty_(fields)) {
@@ -333,8 +380,15 @@ export function parseCitoquimicoLiquidosParsed(textoBruto, serumOpts) {
   }
 
   var p = buildCitoquimicoParts_(fields, { fmtProteinaFluido: fmtProteinaFluido_, gasaVal: gasaVal });
+  var tipoFingerprint = citoquimicoTipoFingerprintFromLine_(p[0] + '\t' + p.slice(1).join(' '));
+  var tipoOverride = getCitoquimicoTipoOverride(tipoFingerprint);
+  if (tipoOverride && tipoOverride !== fields.fluid) {
+    fields.fluid = tipoOverride;
+    p = buildCitoquimicoParts_(fields, { fmtProteinaFluido: fmtProteinaFluido_, gasaVal: gasaVal });
+  }
   return {
     line: p[0] + '\t' + p.slice(1).join(' '),
+    tipoFingerprint: tipoFingerprint,
     esAscitico: esAscitico,
     esPleural: esPleural,
     alb: asciticAlb,

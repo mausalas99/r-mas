@@ -6,6 +6,29 @@ import { getEffectivePanelDefs } from './labs-panel-overlay-store.mjs';
 
 export { LAB_EXTENDED_SECTION_KEYS, labExtendedSectionAlt_ } from './labs-panel-defs.mjs';
 
+/**
+ * Próximo encabezado de departamento tras un bloque BACTERIOLOGIA (mismo estilo
+ * que CITOQUIMICO_BLOCK_STOP_RE / CITOQUIMICO_BLOCK_RE en labs-fluidos.mjs).
+ */
+var BACT_BLOCK_STOP_RE_ =
+  /\n+\s*(?:QUIMICA\s+CLINICA|BIOMETRIA|HEMATOLOGIA|INMUNOLOGIA|GASOMETRIA|BANDEJA|CITOQUIMICO|ELECTROLITOS|PFH|COAGULACION|URIANALISIS|EXAMEN\s+GENERAL\s+DE\s+ORINA|CUADERNILLO|MYCOBACTERIAS)\b/i;
+var BACT_BLOCK_RE_ = new RegExp('BACTERIOLOGIA\\b[\\s\\S]*?(?=' + BACT_BLOCK_STOP_RE_.source + '|$)', 'gi');
+
+/**
+ * Quita los bloques BACTERIOLOGIA (cultivos + antibiograma) del texto antes de
+ * pasarlo a cualquier panel extendido. Un antibiograma trae filas como
+ * "VANCOMICINA\t2\tS" (sensibilidad, no nivel sérico) que de otro modo dispara
+ * el gate /VANCOMICINA/i del panel NIVEL y fabrica un "NIVEL Vanco 2" falso —
+ * ese resultado ya se muestra correctamente dentro del chunk de cultivo
+ * (appendCultivoChunk). Root cause único: todos los panel defs pasan por
+ * parseExtendedLabPanels_, así que se corrige aquí una sola vez.
+ */
+function stripBacteriologiaBlocks_(textoBruto) {
+  var t = String(textoBruto || '');
+  if (!/BACTERIOLOGIA/i.test(t)) return t;
+  return t.replace(BACT_BLOCK_RE_, '\n');
+}
+
 function panelGatesMatch_(def, texto) {
   var gates = def.gates || [];
   if (!gates.length) return true;
@@ -155,13 +178,14 @@ function mergeSectionLines_(lines) {
  */
 export function parseExtendedLabPanels_(textoBruto, priorRefsBySection) {
   if (!textoBruto || typeof textoBruto !== 'string') return [];
+  var texto = stripBacteriologiaBlocks_(textoBruto);
   var out = [];
   var defs = getEffectivePanelDefs();
   var priorMap = priorRefsBySection && typeof priorRefsBySection === 'object' ? priorRefsBySection : null;
   for (var i = 0; i < defs.length; i++) {
     var def = defs[i];
     var prior = priorMap && def ? priorMap[def.sectionKey] : null;
-    var line = parsePanelDef_(def, textoBruto, prior);
+    var line = parsePanelDef_(def, texto, prior);
     if (line) out.push(line);
   }
   return mergeSectionLines_(out);

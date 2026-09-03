@@ -46,6 +46,12 @@ test('classifyTendPanelFamily: gases y QS genérico', () => {
   assert.equal(classifyTendPanelFamily('QS', 'Glu', 'mg/dL'), 'absolute');
 });
 
+test('classifyTendPanelFamily: LCR/Liq porcentajes van al panel de valores absolutos', () => {
+  assert.equal(classifyTendPanelFamily('LCR', 'PMN', '%'), 'absolute');
+  assert.equal(classifyTendPanelFamily('LCR', 'Linf', '%'), 'absolute');
+  assert.equal(classifyTendPanelFamily('Liq', 'PMN', '%'), 'absolute');
+});
+
 test('classifyTendPanelFamily: BH en 4 paneles', () => {
   assert.equal(classifyTendPanelFamily('BH', 'Hb', 'g/dL'), 'bh-absolute');
   assert.equal(classifyTendPanelFamily('BH', 'Neu', 'K/μL'), 'bh-absolute');
