@@ -34,6 +34,9 @@ function viaSelectHtml(index, via) {
     '<option value="picc"' +
     (v === 'picc' ? ' selected' : '') +
     '>PICC</option>' +
+    '<option value="foley"' +
+    (v === 'foley' ? ' selected' : '') +
+    '>Sonda Foley</option>' +
     '</select>'
   );
 }

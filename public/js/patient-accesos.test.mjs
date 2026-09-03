@@ -28,6 +28,12 @@ describe('patient-accesos', () => {
     assert.ok(text.includes('\n'));
   });
 
+  it('formatAccesosForCenso reconoce sonda Foley', () => {
+    var p = { accesosList: [{ via: 'foley', fecha: '2026-05-01' }] };
+    var text = formatAccesosForCenso(p);
+    assert.match(text, /Sonda Foley.*01\/05\/2026/);
+  });
+
   it('syncLegacyAccesoFields prioriza CVC para electrolitos', () => {
     var p = {
       accesosList: [
