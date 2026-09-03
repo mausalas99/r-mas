@@ -66,12 +66,12 @@ function resolveTeamSalaById(tid) {
 }
 
 async function pushClinicalOpsAfterTeamAssign(teamSala) {
-  const lan = await import('./features/cloud-sync/mutate-bridge.mjs').catch(() => null);
-  if (lan?.pushClinicalOpsLanNow) await lan.pushClinicalOpsLanNow();
   if (!teamSala) return;
   try {
-    const { pushClinicalOpsForSala } = await import('./features/cloud-sync/cloud-clinical-ops-sala.mjs');
-    await pushClinicalOpsForSala(teamSala);
+    // Pull first: a push-only write here can overwrite a peer's un-pulled
+    // assignment in the sala's LWW clinicalOps snapshot (see syncClinicalOpsForSala).
+    const { syncClinicalOpsForSala } = await import('./features/cloud-sync/cloud-clinical-ops-sala.mjs');
+    await syncClinicalOpsForSala(teamSala);
   } catch {
     /* Nube optional */
   }

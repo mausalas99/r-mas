@@ -22,7 +22,10 @@ files: [lib/db/**]
 tech: Cloudflare Durable Object WebSocket hub (not a local LAN host)
 - [x] Push changes to teammates in real time {#sync-ws}
   tech: cloud/sync-worker/src/room-sync-hub.js, cloud/sync-worker/src/room-live.js, public/js/live-sync-room.mjs
-files: [cloud/sync-worker/src/room-sync-hub.js, cloud/sync-worker/src/room-live.js, public/js/live-sync-room.mjs]
+- [x] Fix team assignments not reaching teammates {#team-assign-sync-fix}
+  tech: patient-team-assign-ui.mjs pushed the sala clinicalOps LWW snapshot without pulling first, so a peer's un-pulled assignment could be overwritten; switched to syncClinicalOpsForSala (pull-then-push), matching cloud-clinical-ops-sala.mjs's own documented rule and the pattern already used in teams-guardia-bridge.mjs
+  by: claude
+files: [cloud/sync-worker/src/room-sync-hub.js, cloud/sync-worker/src/room-live.js, public/js/live-sync-room.mjs, public/js/patient-team-assign-ui.mjs]
 needs: [db]
 
 ## Encrypt patient data before it leaves the device {#nube}
