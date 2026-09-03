@@ -1,22 +1,18 @@
-version: 8.2.9
+version: 8.3.0
 files:
-  - url: R+-8.2.9-x64.exe
-    sha512: eSSI5LQxPUHPXmDqB2xsAV6tZxPBfNJMsiyLyRnwJWHV3r7I3VCFlF5nrIbkDwd9sWGsq4YcSxlsm/3NPHwFIw==
-    size: 123112962
-path: R+-8.2.9-x64.exe
-sha512: eSSI5LQxPUHPXmDqB2xsAV6tZxPBfNJMsiyLyRnwJWHV3r7I3VCFlF5nrIbkDwd9sWGsq4YcSxlsm/3NPHwFIw==
-releaseDate: '2026-09-02T18:32:02.000Z'
+  - url: R+-8.3.0-x64.exe
+    sha512: fP6F3p985tql2j5h13CiAzMyOfGB9fHyIetqQIJT5MHPBRwNx163OXKDdmyruDecy5TQlIAE7O9a1N5OcAcQsQ==
+    size: 123005809
+path: R+-8.3.0-x64.exe
+sha512: fP6F3p985tql2j5h13CiAzMyOfGB9fHyIetqQIJT5MHPBRwNx163OXKDdmyruDecy5TQlIAE7O9a1N5OcAcQsQ==
+releaseDate: '2026-09-03T20:12:31.000Z'
 releaseNotes: |
-  Copiar labs ahora conserva negritas al pegar en Word/Docs, se separan los electrolitos urinarios de EGO, y cambiar de sala saca al usuario del equipo anterior.
+  Corrige un equipo clínico que podía quedarse desactualizado en la nube sin
+  mostrar error, un choque al unirse a una sala al mismo tiempo desde dos
+  dispositivos, y el orden de captura del recuento celular en líquidos.
   
-  Copiar labs con formato: al copiar labs (panel o "copiar varios días") ahora se pega con negritas en Word, Google Docs, etc. Antes solo pegaba texto plano.
+  Corrección — equipo desactualizado en la nube: un cambio de equipo que no
   
-  Electrolitos urinarios (EU) separados de EGO: Na/K/Cl/Cr en orina ahora forman su propia sección "EU" en vez de mezclarse dentro de EGO.
+  Corrección — choque al unirse a una sala: unirse a una sala nube desde
   
-  Pegado múltiple más tolerante: si un bloque de reportes pegados mezcla 2 expedientes, ahora solo se excluye ese bloque — el resto de los reportes sí se guarda.
-  
-  Corrección — cambio de sala: al cambiar la sala/rotación de un usuario (perfil propio o admin), ahora se le quita automáticamente del equipo de la sala anterior. Antes seguía apareciendo en ese roster.
-  
-  Equipos de próxima rotación: en el selector de "Asignar equipo" ahora se marca "Próxima rotación, aún no activo" para equipos todavía no activos.
-  
-  Mac: el instalador ya no incluye binarios nativos de otra arquitectura (Intel/Apple Silicon mezclados), que podían hacer que macOS marcara la app como dañada.
+  Corrección — recuento celular (líquidos): el número de recuento ya no se
