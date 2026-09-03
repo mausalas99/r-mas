@@ -8,6 +8,7 @@ import {
 } from './cloud-op-slim.mjs';
 import { CLOUD_LAB_BACKFILL_MUTATION_ID } from './constants.mjs';
 import { isCloudSyncNetworkErrorMessage } from './cloud-sync-error-text.mjs';
+import { getClinicalOpsTrace } from '../../clinical-ops-sync.mjs';
 
 const MAX_ERRORS = 8;
 const MAX_TRACE = 16;
@@ -336,6 +337,7 @@ function buildDiagnosticsSnapshot(d) {
     syncTrace: syncTrace.map(function (e) {
       return { at: e.at, boundary: e.boundary, data: { ...e.data } };
     }),
+    clinicalOpsTrace: getClinicalOpsTrace(),
     lastErrors: lastErrors.map(function (e) {
       return { at: e.at, op: e.op, code: e.code, message: e.message };
     }),

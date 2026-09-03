@@ -18,6 +18,7 @@ import {
   summarizeCloudOutbox,
   isToxicCloudOutboxEntry,
 } from './cloud-sync-diagnostics.mjs';
+import { recordClinicalOpsTrace, clearClinicalOpsTrace } from '../../clinical-ops-sync.mjs';
 
 describe('cloud-sync-diagnostics', () => {
   it('summarizeCloudOutbox groups signos and pendientes', () => {
@@ -113,6 +114,16 @@ describe('cloud-sync-diagnostics', () => {
     const raw = formatCloudDiagnosticsReport(diag);
     assert.match(raw, /syncTrace/);
     assert.match(raw, /clientMutationId/);
+  });
+
+  it('surfaces a deferred clinicalOps merge (DB_LOCKED) in the diagnostics snapshot', () => {
+    clearCloudSyncDiagnostics();
+    clearClinicalOpsTrace();
+    recordClinicalOpsTrace('merge', { ok: false, changed: false, deferred: true, code: 'DB_LOCKED' });
+    const diag = getCloudSyncDiagnostics();
+    const lastMerge = diag.clinicalOpsTrace.find((e) => e.boundary === 'merge');
+    assert.equal(lastMerge?.data?.deferred, true);
+    assert.equal(lastMerge?.data?.code, 'DB_LOCKED');
   });
 
   it('includes transport and ws signal in snapshot', () => {

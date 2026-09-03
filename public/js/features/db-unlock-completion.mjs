@@ -39,6 +39,24 @@ async function refreshOnboardingAfterUnlock() {
 }
 
 /**
+ * A clinicalOps merge deferred earlier (DB locked) only gets retried from the
+ * onboarding-incomplete path — an already-onboarded user unlocking normally
+ * never flushes it, so a stale team roster can sit forever. Every unlock
+ * retries it here too; a no-op when nothing is pending.
+ */
+async function flushPendingClinicalOpsAfterUnlock() {
+  try {
+    var opsSync = await import('../clinical-ops-sync.mjs');
+    var flushed = await opsSync.flushPendingClinicalOpsSnapshot();
+    if (flushed && flushed.changed && typeof document !== 'undefined') {
+      document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+    }
+  } catch {
+    /* flush optional */
+  }
+}
+
+/**
  * Rehydrate clinical session after a late DB unlock (overlay / recovery).
  * @param {{ refreshOnboarding?: boolean }} [opts]
  */
@@ -47,6 +65,7 @@ export async function applyClinicalDbUnlockCompletion(opts) {
   if (!isDbMode() || typeof window === 'undefined') return;
   await hydrateAppStateFromDb();
   await initClinicalRuntimeAfterUnlock();
+  await flushPendingClinicalOpsAfterUnlock();
   if (refreshOnboarding) await refreshOnboardingAfterUnlock();
 }
 
