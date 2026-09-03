@@ -36,7 +36,10 @@ tech: client-side E2EE for Nube room content
   by: claude
   tech: flag flipped true in public/js/features/cloud-sync/room-dek.mjs:40, rebuilt — not yet released to users, fleet adoption gate was not confirmed before flipping (owner request)
   from: roadmap
-files: [public/js/features/cloud-sync/**, lib/db/clinical-crypto.*, cloud/sync-worker/src/room-dek.*]
+- [x] Sync Manejo (current medication list) through Nube {#nube-medreceta}
+  by: claude
+  tech: medReceta already flowed through LAN sync (applyLanPatientEntries) and local persistence (medRecetaByPatient blob) — only the Nube leg was missing. Treated as a per-patient content field, same lane as note/indicaciones (not a labSidecars-style dated map): cloud/sync-worker/src/lww.js (path allowlist + LWW field), public/js/features/cloud-sync/mutate-bridge-ops.mjs (FIELD_SKIP + push in pushDocOps), cloud-sync-crypto-wire.mjs (added to ENTRY_CONTENT_FIELDS — encryption/decryption/DEK-migration enumeration all reuse this one list), pull-apply-state.mjs (ENTRY_SKIP_KEYS + cloudEntryToLanEntry + foldCloudOp regex). No server field allowlist elsewhere, no size-quota change needed (falls back to the generic note byte cap). Tests added alongside: lww.test.js, mutate-bridge.test.mjs, cloud-sync-crypto-wire.test.mjs, pull-apply.test.mjs — all green; build:ui clean.
+files: [public/js/features/cloud-sync/**, lib/db/clinical-crypto.*, cloud/sync-worker/src/room-dek.*, cloud/sync-worker/src/lww.js]
 needs: [cloud-sync]
 
 ## Deliver app updates without depending on one host {#update-feed}
@@ -63,11 +66,27 @@ needs: [shell]
 tech: renderer feature modules, patient dashboard
 - [x] Load the patient dashboard {#ui-dashboard}
   tech: public/js/features/patient-dashboard/dashboard-mount.mjs, lab-inner.mjs
+- [x] Chart LCR cell types (PMN %, linfocitos %) and stop the same LCR study showing twice {#lcr-diff-trend}
+  by: claude
+  from: agent
+  tech: labs-lcr-scan/parse pmn+linf → LCR line "PMN 47% Linf 53%" → tendencias catalog; sectionsAreComplementary_ treats identical shared values as the same study (re-paste), not a conflict
+- [x] Add a "generar pancenso" button — full-sala census (all teams), each patient tagged with its owning team {#censo-pancenso}
+  by: claude
+  tech: exportPancensoPdf/buildTeamLabelMap in censo-export.mjs (bypasses the joined-team narrowing, reuses getPatients() + activePatientTeamId/teamLabelById); shared runCensoPdfExport() extracted so the existing per-team censo export keeps its own flow; button in header.html (next to Censo PDF) + settings-dropdown.html partial, wired through lazy-feature-routes-handlers.mjs — needs an app reload/rebuild to appear, first pass shipped without the header button and owner correctly reported it missing
+- [x] Split the census ATB/Meds column into separate ATB and Meds columns; merge Signos and I/E/B into one column {#censo-atb-meds-split}
+  by: claude
+  tech: censo-table-columns.mjs col defs (atb, meds, merged signos); ATB auto-splits live from the med receta via classifyMedicationSoapCategory==='abx' (splitCensoMedsAtbFromReceta in censo-meds-format.mjs), same manual-override pattern as censoMedsText (new censoAtbText field, own sync-merge in patient-diagnosticos.mjs); renderers updated in censo-preview-html-render.mjs and generate-censo.js (PDF). Found+fixed a real pre-existing bug while wiring this: classifyAbx_'s regex had a trailing \b that silently broke matching for every truncated-stem entry (CEFTRIAXONA, CEFTAZIDIMA, CEFUROXIMA, CEFOTAXIMA, LEVOFLOXACINO, CIPROFLOXACINO, MOXIFLOXACINO) app-wide, not just in censo — owner caught it live (screenshot showed CEFALOTINA/FLUCONAZOL stuck in Meds)
+- [x] Add sonda Foley as an acceso option {#censo-acceso-foley}
+  by: claude
+  tech: VIA_ACCESO_LABELS in patient-accesos.mjs + select option in patient-data-accesos-ui.mjs
+- [x] Show fecha de nacimiento (DOB) in the census patient-data cell {#censo-dob}
+  by: claude
+  tech: formatPacienteMetaForCenso reuses existing patient.fechaNacimiento + formatDobForDocs (age-calc.mjs) — field was already populated by drive-import but never displayed
 - [x] Edit one past vitals row from Estado actual {#ui-ea-edit-medicion}
   by: claude
   from: agent
   tech: Historial reciente row gets an Editar button beside Eliminar; it reopens the registro modal prefilled with the form flagged data-ea-edit-id (new module estado-actual-panel-registro-edit.mjs, kept out of the 600-line actions file), and Registrar then calls replaceMedicion (same id, new savedAt). Merge winner per row now prefers savedAt so an edit that keeps recordedAt still propagates (estado-actual-data-merge.mjs).
-files: [public/js/features/**]
+files: [public/js/features/**, public/js/censo-*.mjs, public/js/patient-accesos.mjs, public/js/patient-data-accesos-ui.mjs, public/js/patient-data-censo-ui.mjs, public/js/patient-diagnosticos.mjs, generate-censo.js]
 needs: [shell, db]
 
 ## Redesign the interconsulta team board {#interconsulta}
@@ -270,6 +289,7 @@ links: [shell, cloud-sync, ui]
 - 2026-09-02, owner: ABG extendida is the gasometría-extendida dialog / advanced interpretation (`isAbgAnalysisHidden`, `tend-group-gaso-dialog`), not anion gap. AG/cAG stay.
 - 2026-09-02, owner: delete the LAN ward server and the 7.9 cutover wizard. 8.2.9 installs just skip the wizard. DEMO PÉREZ and ABG extendida stay open.
 - 2026-09-02, cursor: executing codebase-reduction plan on branch chore/codebase-reduction (worktree). Phase 0+1 only this session: predeploy/predev hooks, gitignore mirrors + index.html, build-ui in prestart. Dirty main working tree left untouched. Owner still must call #shrink-decisions before Phase 2 move 8 and Phase 7.
+- 2026-09-02, owner: asked whether Manejo (medication list) syncs through Nube. It did not — Nube's live room state only carried census/notes/todos/agenda/labs; medReceta was LAN-only. Nube is a closed area per CLAUDE.md boundaries, so confirmed scope with the owner before building; owner said yes. Built as a per-patient content field mirroring note/indicaciones (see #nube-medreceta), not the heavier labSidecars per-item map — medReceta is one current document per patient, no dated history needed.
 
 - 2026-08-30, claude + owner: artifact audit corrected the quiet-swap premise. Published 8.1.4/8.1.5 zips already carry Developer ID N78U9QC783 but keep the old appId com.hospitaluniversitario.rplusclinical (dropped in 8.1.6, commit 9a250b74); the old free cert (Apple Development: djsalas99@gmail.com, VAXFST8D9H) only signed ≤8.1.3, whose Mac assets are gone from GitHub. Owner confirmed the stuck Macs run 8.1.4/8.1.5 → 8.2.6 ships the old appId + the normal new cert, notarized, Mac-only publish (Windows must never see an appId change); swap activation broadened to fire on bundle-id mismatch too; ≤8.1.3 stragglers fall to the min-version screen.
 - 2026-08-30, owner (via AskUserQuestion): Mac cert-swap path resolved as **quiet swap**. 8.2.6 (old free cert) self-downloads the 8.2.7 zip, verifies codesign + Team ID N78U9QC783, and swaps the app files with native tools — no browser download, so no quarantine, and the skipped first-open dialog is accepted (same mechanism every normal auto-updater uses; the target is notarized). The min-version blocking screen stays as the backstop for anyone the swap misses. Deliberate deviation from the handoff: no forced relaunch after the swap (a mid-session relaunch could interrupt clinical work) — the new version runs on the next manual launch.

@@ -15,13 +15,22 @@ const OUTPUTS = [
   'cloud/equipos-pages/public',
 ];
 
+/**
+ * A directory-only gitignore pattern (trailing `/`) only matches a bare path
+ * if git can tell it's a directory — which it can't on a fresh checkout
+ * where the path doesn't exist yet (exactly CI's case). Retry with a
+ * trailing slash so the check doesn't depend on the path already existing.
+ */
 function isIgnored(rel) {
-  try {
-    execSync('git check-ignore -q -- ' + rel, { cwd: ROOT });
-    return true;
-  } catch {
-    return false;
+  for (const query of [rel, rel + '/']) {
+    try {
+      execSync('git check-ignore -q -- ' + query, { cwd: ROOT });
+      return true;
+    } catch {
+      /* try next form */
+    }
   }
+  return false;
 }
 
 const leaked = OUTPUTS.filter((rel) => !isIgnored(rel));
