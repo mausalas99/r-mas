@@ -96,15 +96,21 @@ function scanCitoChemistry_(fields, lineas, i, lin, linUp) {
 
 function scanRecuentoField_(fields, lineas, i, linUp) {
   if (linUp.indexOf('RECUENTO') !== 0 || linUp.indexOf('LEUCOCITOS') !== -1) return;
-  var bits = [];
+  var numero = '';
+  var letra = '';
   for (var j = i + 1; j < Math.min(i + 5, lineas.length); j++) {
     var c = lineas[j].replace(/\*/g, '').trim();
     if (!c) continue;
     if (/^LEUCOCITOS/i.test(c)) break;
-    if (/^\d+[.,]?\d*$/.test(c) || /^[A-Z]$/i.test(c)) bits.push(c.toUpperCase());
-    if (bits.length >= 2) break;
+    if (!numero && /^\d+[.,]?\d*$/.test(c)) numero = c;
+    else if (!letra && /^[A-Z]$/i.test(c)) letra = c.toUpperCase();
+    if (numero && letra) break;
   }
-  if (bits.length) fields.rec = bits.join(' ');
+  // Sin espacio (número primero) para que el tokenizer genérico de tendencias
+  // (parsearSecciones en diagrams-parse.mjs, que exige "Rec <número>" en un
+  // solo token) no confunda la letra del tubo con una clave de campo propia
+  // ("A" en vez de "Rec") — mismo patrón que PROTEINAS (protVal + letra).
+  if (numero) fields.rec = numero + letra;
 }
 
 function scanLeucocitosField_(fields, lineas, i, linUp, normalizarRecuentoCelular) {

@@ -95,6 +95,7 @@ test('parsearCitoquimicoLiquidos — líquido peritoneal (química + citología)
   assert.match(out, /Prot.*\b3\b/);
   assert.match(out, /LDH.*6/);
   assert.match(out, /Asp.*CLARO/);
+  assert.match(out, /Rec 48A/, 'recuento: número primero, sin espacio antes de la letra del tubo');
   assert.match(out, /Leu.*48/);
   assert.match(out, /PMN.*PREDOMINIO/);
   assert.match(out, /Eri.*ESCASOS/);

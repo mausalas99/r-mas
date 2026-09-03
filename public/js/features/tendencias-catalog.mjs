@@ -60,7 +60,10 @@ var TEND_SECTION_UNIT_MAPS = {
     Prot: 'mg/dL',
     LDH: TEND_UNITS.LDH || '',
     Leu: '/μL',
+    Rec: '/μL',
     PMN: '%',
+    Linf: '%',
+    Eri: '/μL',
   },
 };
 
