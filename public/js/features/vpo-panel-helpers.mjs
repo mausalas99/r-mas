@@ -6,6 +6,7 @@ import {
   importDiagnosticosFromPaste,
 } from '../vpo-data.mjs';
 import { ensurePatientDiagnosticos } from '../patient-diagnosticos.mjs';
+import { markFieldInvalid, clearFieldInvalid } from '../ui-field-invalid.mjs';
 
 /**
  * @param {object} state
@@ -108,8 +109,10 @@ export function handleVpoDxDelegationAction(mount, action, state, deps) {
     var ta = mount.querySelector('[data-vpo-dx-paste]');
     if (!importDiagnosticosFromPaste(state, ta ? ta.value : '')) {
       deps.showToast('Pega diagnósticos separados por +', 'error');
+      markFieldInvalid(ta, 'Pega diagnósticos separados por +');
       return;
     }
+    clearFieldInvalid(ta);
     if (ta) ta.value = '';
     deps.scheduleSave();
     deps.refreshDxListDom(mount, state);

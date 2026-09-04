@@ -6,6 +6,7 @@ import {
   renderProximaCitaList,
   renderConsultServiceSelect,
 } from './receta-hu-list-render.mjs';
+import { markFieldInvalid, clearFieldInvalid } from '../ui-field-invalid.mjs';
 
 function recetaHuRoot() {
   return document.getElementById('receta-hu-container');
@@ -41,9 +42,10 @@ export function recetaHuCommitMedFromCompose() {
   var fields = readMedComposeFields();
   if (medComposeIsEmpty(fields)) {
     rt.showToast('Escribe al menos un campo del medicamento', 'error');
-    if (fields.nEl) fields.nEl.focus();
+    markFieldInvalid(fields.nEl, 'Escribe al menos un campo del medicamento');
     return;
   }
+  clearFieldInvalid(fields.nEl);
   var draft = readDraftFromDom();
   draft.meds.push({
     medicamento: fields.medicamento,
@@ -72,9 +74,10 @@ export function recetaHuCommitLabFromCompose() {
   var name = inp ? String(inp.value || '').trim() : '';
   if (!name) {
     rt.showToast('Escribe el nombre del estudio', 'error');
-    if (inp) inp.focus();
+    markFieldInvalid(inp, 'Escribe el nombre del estudio');
     return;
   }
+  clearFieldInvalid(inp);
   var draft = readDraftFromDom();
   draft.labs.push(name);
   persistDraft(pid, draft);
@@ -129,9 +132,10 @@ function resolveProximaTexto(fields, draft) {
   }
   if (!texto && !fields.fecha) {
     rt.showToast('Elige servicio o escribe el texto de la consulta', 'error');
-    if (fields.sel) fields.sel.focus();
+    markFieldInvalid(fields.sel, 'Elige servicio o escribe el texto de la consulta');
     return null;
   }
+  clearFieldInvalid(fields.sel);
   var plazo = fields.plazo || draft.proximaPlazo || '2 semanas';
   return { texto: texto, plazo: plazo };
 }

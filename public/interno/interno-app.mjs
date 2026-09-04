@@ -5,6 +5,7 @@ import {
 } from './host-discovery.mjs';
 
 import { escapeHtml, escapeAttr } from '../js/dom-escape.mjs';
+import { markFieldInvalid } from '../js/ui-field-invalid.mjs';
 const POLL_MS = 30000;
 const TOKEN_KEY = 'rpc-interno-token';
 const REPORTER_KEY = 'rpc-interno-reporter';
@@ -471,6 +472,7 @@ async function markPendienteComplete(patientId, itemId, opts = {}) {
             ? 'Guardia no activa'
             : 'No se pudo marcar';
       showToast(msg);
+      markFieldInvalid(document.getElementById('interno-sheet-hecho'), msg);
       return;
     }
     applyPendienteCompleted(patientId, itemId);
@@ -479,6 +481,7 @@ async function markPendienteComplete(patientId, itemId, opts = {}) {
     void refreshBoard();
   } catch (_e) {
     showToast('Error de conexión');
+    markFieldInvalid(document.getElementById('interno-sheet-hecho'), 'Error de conexión');
   }
 }
 

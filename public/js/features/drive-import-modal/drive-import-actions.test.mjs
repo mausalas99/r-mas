@@ -26,3 +26,42 @@ describe('onPasteInputChanged debounces the expensive preview refresh', () => {
     assert.match(body, /previewDebounceId\s*=\s*setTimeout\(function\s*\(\)\s*\{[\s\S]*?refreshPreview\(\);/);
   });
 });
+
+function exportedFunctionBody(name) {
+  const start = src.indexOf('export ' + (name === 'startDriveImportReview' ? 'function' : 'async function') + ' ' + name);
+  assert.notEqual(start, -1, name + ' should be declared');
+  const nextExport = src.indexOf('\nexport ', start + 1);
+  return src.slice(start, nextExport === -1 ? src.length : nextExport);
+}
+
+describe('paste-textarea field-invalid marking', () => {
+  it('marks the textarea invalid (empty paste, and unparseable paste) in startDriveImportReview', () => {
+    const body = exportedFunctionBody('startDriveImportReview');
+    assert.match(
+      body,
+      /rt\.showToast\('Pega el contenido del documento', 'error'\);\s*markFieldInvalid\(ta, 'Pega el contenido del documento'\);\s*return;/
+    );
+    assert.match(
+      body,
+      /rt\.showToast\('No se pudo analizar el texto', 'error'\);\s*markFieldInvalid\(ta, 'No se pudo analizar el texto'\);\s*return;/
+    );
+    assert.match(body, /clearFieldInvalid\(ta\);/);
+  });
+
+  it('marks the textarea invalid (empty paste, and unparseable paste) in confirmDriveImport', () => {
+    const body = exportedFunctionBody('confirmDriveImport');
+    assert.match(
+      body,
+      /rt\.showToast\('Pega el contenido del documento', 'error'\);\s*markFieldInvalid\(ta, 'Pega el contenido del documento'\);\s*return;/
+    );
+    assert.match(
+      body,
+      /rt\.showToast\('No se pudo analizar el texto', 'error'\);\s*markFieldInvalid\(ta, 'No se pudo analizar el texto'\);\s*return;/
+    );
+    assert.match(body, /clearFieldInvalid\(ta\);/);
+  });
+
+  it('imports markFieldInvalid/clearFieldInvalid from the shared helper', () => {
+    assert.match(src, /import \{ markFieldInvalid, clearFieldInvalid \} from '\.\.\/\.\.\/ui-field-invalid\.mjs';/);
+  });
+});
