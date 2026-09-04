@@ -26,6 +26,7 @@ import {
 } from '../../../lib/patient-priority-sort.mjs';
 import { storage } from '../storage.js';
 import { openConfirm } from './workbench/confirm.mjs';
+import { escAttr } from '../dom-escape.mjs';
 
 const PANEL_ID = 'entrega-roster-panel';
 const WARN_SVG = `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`;
@@ -120,7 +121,7 @@ function renderRosterRow(p, guardiasMap) {
       <div class="roster-row${hasCtx ? ' roster-row--ctx' : ''}" data-patient-id="${p.id}" role="button" tabindex="0">
         <div class="roster-row-bed">${p.bed_label || '—'}</div>
         <div class="roster-row-body">
-          <div class="roster-row-name">${p.name || '—'}</div>
+          <div class="roster-row-name" title="${escAttr(p.name || '—')}">${p.name || '—'}</div>
           <div class="roster-row-dx">${String(p.diagnosticosText || p.service || '').toUpperCase() || '—'}</div>
           ${summary
             ? `<div class="roster-row-ctx">${summary}</div>`

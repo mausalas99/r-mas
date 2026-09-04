@@ -38,6 +38,7 @@ import {
   potassiumReposGroupMedLabelHtml,
 } from "../potassium-repos-display.mjs";
 import { esc, isMedNotaSelected } from "./medications-utils.mjs";
+import { escAttr } from "../dom-escape.mjs";
 
 export function buildMedDietHtml(dietas) {
   if (!dietas || !dietas.length) return "";
@@ -225,14 +226,9 @@ function buildMedRecetaRowHtml(activeId, it, fechaActualizacion, allItems) {
   var sid = String(it.id || "");
   var diaOpts = fechaActualizacion ? { fechaActualizacion: fechaActualizacion } : undefined;
   var pumpAlg = insulinPumpAlgorithmForMedicationItem(allItems || [], it);
-  var label;
-  if (pumpAlg != null) {
-    label = insulinPumpMedLabelHtml(pumpAlg, esc);
-  } else {
-    var listLabel = formatMedicationSoapShort(it, diaOpts);
-    if (it.diaTratamiento != null) listLabel = listLabel.replace(/\s+DIA\s+\d+\s*$/i, "");
-    label = esc(listLabel.slice(0, 160));
-  }
+  var fullLabel = formatMedicationSoapShort(it, diaOpts);
+  if (it.diaTratamiento != null) fullLabel = fullLabel.replace(/\s+DIA\s+\d+\s*$/i, "");
+  var label = pumpAlg != null ? insulinPumpMedLabelHtml(pumpAlg, esc) : esc(fullLabel.slice(0, 160));
   var chk = it.suspendido ? " checked" : "";
   var soapEligible = shouldIncludeMedicationInSoap(it, classifyMedicationSoapCategory);
   var paraNota = soapEligible && isMedNotaSelected(activeId, sid) ? " checked" : "";
@@ -273,7 +269,7 @@ function buildMedRecetaRowHtml(activeId, it, fechaActualizacion, allItems) {
     "/>" +
     "</div>" +
     soapCell +
-    '<div class="med-receta-name">' +
+    '<div class="med-receta-name" title="' + escAttr(fullLabel) + '">' +
     label +
     "</div>" +
     '<div class="med-receta-destcell">' +

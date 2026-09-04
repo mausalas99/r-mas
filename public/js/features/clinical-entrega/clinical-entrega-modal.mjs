@@ -131,7 +131,9 @@ function populateEntregaNavNameDx_(opts, patient) {
   if (navName) {
     const bed = patient?.bed_label || patient?.bed || '—';
     const name = String(patient?.name || '').trim();
-    navName.textContent = name ? `${name} · Cama ${bed}` : '—';
+    const navNameText = name ? `${name} · Cama ${bed}` : '—';
+    navName.textContent = navNameText;
+    navName.title = navNameText;
   }
   if (navDx) {
     navDx.textContent = patient

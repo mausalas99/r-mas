@@ -1,6 +1,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { countMedTurnoItems, buildMedTurnoHeaderText } from "./medications-panel-rows.mjs";
+import { countMedTurnoItems, buildMedTurnoHeaderText, buildMedRecetaListHtml } from "./medications-panel-rows.mjs";
+import { formatMedicationSoapShort } from "../med-receta-format.mjs";
+import { escAttr } from "../dom-escape.mjs";
 
 function med(nombreRaw, extra) {
   return Object.assign({ id: nombreRaw, nombreRaw: nombreRaw }, extra || {});
@@ -69,6 +71,22 @@ describe("countMedTurnoItems — fusiona reposición de potasio en un solo medic
     var counts = countMedTurnoItems(items);
     assert.equal(counts.medCount, 2);
     assert.equal(counts.apoyoCount, 0);
+  });
+});
+
+describe("buildMedRecetaListHtml — title completo y escapado en .med-receta-name", () => {
+  it("escapa comillas y ángulos del nombre truncado en el atributo title", () => {
+    var item = {
+      id: "m1",
+      nombreRaw: 'OMEPRAZOL "40MG" <IV>',
+      dosisRaw: "40 MG",
+      viaRaw: "IV",
+      frecuenciaRaw: "CADA 24 HORAS",
+    };
+    var html = buildMedRecetaListHtml(null, { items: [item] });
+    var fullLabel = formatMedicationSoapShort(item, undefined);
+    assert.match(html, new RegExp('class="med-receta-name" title="' + escAttr(fullLabel).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + '"'));
+    assert.doesNotMatch(html, /title="[^"]*<IV>/);
   });
 });
 
