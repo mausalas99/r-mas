@@ -204,7 +204,7 @@ async function importPatientExportPayloads(payloads, sourceLabel) {
   var singleResult = await openConfirm({
     weight: 'destructive',
     title: msg,
-    confirmLabel: 'Continuar',
+    confirmLabel: 'Sobrescribir',
   });
   if (singleResult !== 'confirm') return false;
 

@@ -41,10 +41,11 @@ function clearPreviewHints() {
 }
 
 function showParseError(err) {
+  console.error('drive-import: parse failed', err);
   const parseHint = getParseHintEl();
   if (parseHint) {
     parseHint.hidden = false;
-    parseHint.textContent = 'Error al analizar: ' + (err && err.message ? err.message : String(err));
+    parseHint.textContent = 'No se pudo leer el texto pegado.';
   }
   setPreviewButtonsDisabled(true);
 }

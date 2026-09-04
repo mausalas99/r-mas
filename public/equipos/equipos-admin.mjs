@@ -308,7 +308,10 @@ function wireAdminActions() {
           ctx.showToast(`Historial borrado (${total} registros). Sal de admin para ver la cola limpia.`);
           void renderActiveTab();
         })
-        .catch((e) => ctx.showToast(e.message || 'No se pudo borrar el historial.'));
+        .catch((e) => {
+          console.error('equipos-admin: wipe history failed', e);
+          ctx.showToast('No se pudo borrar el historial.');
+        });
     }
   });
 }
@@ -390,7 +393,8 @@ export function openEquiposAdminUnlock(opts) {
       close();
       opts.onUnlocked();
     } catch (e) {
-      opts.showToast(e.message || 'Clave incorrecta.');
+      console.error('equipos-admin: key verification failed', e);
+      opts.showToast('Clave incorrecta.');
     }
   });
 }

@@ -39,4 +39,11 @@ describe('importPatientExportPayloads destructive confirms', () => {
     assert.ok(applyIdx > guardIdx, 'the single-patient import must run only after the confirm guard');
     assert.match(body.slice(confirmIdx, guardIdx + 60), /weight:\s*'destructive'/);
   });
+
+  it('single-patient overwrite confirm labels the button "Sobrescribir"', () => {
+    const body = importPatientExportPayloadsBody();
+    const confirmIdx = body.indexOf('var singleResult = await openConfirm');
+    const guardIdx = body.indexOf('if (singleResult !== \'confirm\') return false;');
+    assert.match(body.slice(confirmIdx, guardIdx), /confirmLabel:\s*'Sobrescribir'/);
+  });
 });

@@ -23,3 +23,20 @@ describe('wipe-history confirm wording', () => {
     );
   });
 });
+
+const errorToastSites = ["'No se pudo borrar el historial.'", "'Clave incorrecta.'"];
+
+describe('equipos-admin error toasts show Spanish copy, not the raw error', () => {
+  for (const fallback of errorToastSites) {
+    it(`${fallback} is preceded by a console.error and never shows e.message`, () => {
+      const idx = src.indexOf(fallback);
+      assert.notEqual(idx, -1, `expected to find ${fallback} in equipos-admin.mjs`);
+      const catchIdx = src.lastIndexOf('catch (e) {', idx);
+      assert.notEqual(catchIdx, -1, 'expected a preceding catch (e) block');
+      const block = src.slice(catchIdx, idx + fallback.length);
+
+      assert.doesNotMatch(block, /showToast\(e\.message/, 'must never show the raw error message');
+      assert.match(block, /console\.error\(/, 'the raw error must still be logged for support');
+    });
+  }
+});

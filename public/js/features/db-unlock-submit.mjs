@@ -150,7 +150,8 @@ export async function submitRecoveryCode() {
     }
     finishUnlockFlow({ unlocked: true, status: res, recoveryCodeToShow: res.recoveryCodeToShow });
   } catch (err) {
-    setUnlockError((err && err.message) || 'Error al recuperar.');
+    console.error('db-unlock: recovery failed', err);
+    setUnlockError('Error al recuperar.');
     if (submitBtn) submitBtn.disabled = false;
   }
 }
@@ -210,7 +211,8 @@ export async function submitDbUnlockPassphrase() {
     }
     finalizeUnlockSubmitSuccess(res, submitBtn);
   } catch (err) {
-    setUnlockError((err && err.message) || 'Error al desbloquear.');
+    console.error('db-unlock: unlock failed', err);
+    setUnlockError('Error al desbloquear.');
     if (submitBtn) submitBtn.disabled = false;
   }
 }
