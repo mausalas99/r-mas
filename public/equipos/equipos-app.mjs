@@ -563,7 +563,8 @@ async function handleAction(btn) {
       });
     } catch (e) {
       openQueueDevices.delete(dev);
-      showToast(e.message || 'No se pudo entrar en la cola.');
+      console.error('equipos: join waitlist failed', e);
+      showToast('No se pudo entrar en la cola.');
       return;
     }
     if (pushSupported()) {
@@ -684,7 +685,8 @@ async function handleAction(btn) {
             showToast('Dispositivo tomado.');
             await refreshBoard();
           } catch (e) {
-            showToast(e.message || 'Error al tomar.');
+            console.error('equipos: checkout failed', e);
+            showToast('Error al tomar.');
           }
         }
       );
@@ -742,7 +744,8 @@ async function handleAction(btn) {
           showToast('Dispositivo entregado.');
           await refreshBoard();
         } catch (e) {
-          showToast(e.message || 'Error al entregar.');
+          console.error('equipos: return failed', e);
+          showToast('Error al entregar.');
         }
       }
     );
@@ -779,7 +782,8 @@ async function handleAction(btn) {
           showToast('Reporte enviado al equipo.');
           await refreshBoard();
         } catch (e) {
-          showToast(e.message || 'Error.');
+          console.error('equipos: alert report failed', e);
+          showToast('Error.');
         }
       }
     );
