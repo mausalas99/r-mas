@@ -1,0 +1,829 @@
+{
+  "references": [
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 17,
+      "ref": "docs/core/01-vision-north-star.md",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/docs/core/01-vision-north-star.md"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 32,
+      "ref": "/subtask",
+      "status": "missing",
+      "detail": "absolute path not found on this machine"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 40,
+      "ref": "docs/core/20-claude-code-handoff.md",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/docs/core/20-claude-code-handoff.md"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 45,
+      "ref": "path/to/file.test.mjs",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 46,
+      "ref": "public/js",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/public/js"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 56,
+      "ref": "cursor/rules/project-context.mdc",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 57,
+      "ref": "docs/core/00-system-index.md",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/docs/core/00-system-index.md"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 58,
+      "ref": "scripts/graph-memory/cli.mjs",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/scripts/graph-memory/cli.mjs"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 58,
+      "ref": "docs/core/19-agent-graph-memory.md",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/docs/core/19-agent-graph-memory.md"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 62,
+      "ref": "/clear",
+      "status": "missing",
+      "detail": "absolute path not found on this machine"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 64,
+      "ref": "/mcp",
+      "status": "missing",
+      "detail": "absolute path not found on this machine"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 70,
+      "ref": "~/.claude/plans/",
+      "status": "ok_external",
+      "detail": "/Users/mauriciosalas/.claude/plans/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 82,
+      "ref": "public/js/features/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/public/js/features/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 83,
+      "ref": "lib/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/lib/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 84,
+      "ref": "lib/db/schema.mjs",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/lib/db/schema.mjs"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 98,
+      "ref": "[src/audio/**",
+      "status": "glob_empty",
+      "detail": "no matches from repo root or file dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/.claude/worktrees/reverent-leavitt-e201cb/.claude/rules/schema.md",
+      "line": 9,
+      "ref": "lib/db/schema.test.mjs",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/lib/db/schema.test.mjs"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/.claude/worktrees/reverent-leavitt-e201cb/.claude/rules/tests-with-code.md",
+      "line": 16,
+      "ref": "package.json",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/package.json"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/.claude/worktrees/reverent-leavitt-e201cb/.claude/rules/renderer.md",
+      "line": 10,
+      "ref": "public/js/**/*.mjs",
+      "status": "glob_ok",
+      "detail": "500+ matches"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/.claude/worktrees/reverent-leavitt-e201cb/.claude/rules/renderer.md",
+      "line": 10,
+      "ref": "public/js/chunks/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/public/js/chunks/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/.claude/worktrees/reverent-leavitt-e201cb/.claude/rules/renderer.md",
+      "line": 10,
+      "ref": "app.bundle.mjs",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 12,
+      "ref": "src/ui-ux-pro-max/scripts/search.py",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/src/ui-ux-pro-max/scripts/search.py"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 33,
+      "ref": "src/ui-ux-pro-max/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/src/ui-ux-pro-max/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 34,
+      "ref": "data/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/data/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 36,
+      "ref": "stacks/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 37,
+      "ref": "scripts/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/scripts/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 38,
+      "ref": "search.py",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 39,
+      "ref": "core.py",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 40,
+      "ref": "design_system.py",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 41,
+      "ref": "templates/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/templates/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 42,
+      "ref": "base/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 42,
+      "ref": "skill-content.md",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 42,
+      "ref": "quick-reference.md",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 43,
+      "ref": "platforms/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 43,
+      "ref": "claude.json",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 43,
+      "ref": "cursor.json",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 45,
+      "ref": "cli/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/cli/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 46,
+      "ref": "src/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/src/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 47,
+      "ref": "commands/init.ts",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 48,
+      "ref": "utils/template.ts",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 49,
+      "ref": "assets/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 50,
+      "ref": "src/ui-ux-pro-max/data/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/src/ui-ux-pro-max/data/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 51,
+      "ref": "src/ui-ux-pro-max/scripts/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/src/ui-ux-pro-max/scripts/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 52,
+      "ref": "src/ui-ux-pro-max/templates/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/src/ui-ux-pro-max/templates/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 54,
+      "ref": "claude/skills/ui-ux-pro-max/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 55,
+      "ref": "factory/skills/ui-ux-pro-max/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 56,
+      "ref": "shared/ui-ux-pro-max/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 57,
+      "ref": "claude-plugin/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 69,
+      "ref": "data/*.csv",
+      "status": "glob_empty",
+      "detail": "no matches from repo root or file dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 69,
+      "ref": "data/stacks/*.csv",
+      "status": "glob_empty",
+      "detail": "no matches from repo root or file dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 70,
+      "ref": "scripts/*.py",
+      "status": "glob_empty",
+      "detail": "no matches from repo root or file dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 71,
+      "ref": "claude/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 71,
+      "ref": "factory/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 71,
+      "ref": "shared/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 74,
+      "ref": "base/skill-content.md",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 75,
+      "ref": "base/quick-reference.md",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 76,
+      "ref": "platforms/*.json",
+      "status": "glob_empty",
+      "detail": "no matches from repo root or file dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 80,
+      "ref": "src/ui-ux-pro-max/data/*",
+      "status": "glob_ok",
+      "detail": "16 matches"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 80,
+      "ref": "cli/assets/data/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/cli/assets/data/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 81,
+      "ref": "src/ui-ux-pro-max/scripts/*",
+      "status": "glob_ok",
+      "detail": "3 matches"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 81,
+      "ref": "cli/assets/scripts/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/cli/assets/scripts/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 82,
+      "ref": "src/ui-ux-pro-max/templates/*",
+      "status": "glob_ok",
+      "detail": "2 matches"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 82,
+      "ref": "cli/assets/templates/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/cli/assets/templates/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 95,
+      "ref": "feat/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 95,
+      "ref": "fix/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 12,
+      "ref": "src/utils/config.ts",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/micode/src/utils/config.ts"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 26,
+      "ref": "src/agents/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/micode/src/agents/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 27,
+      "ref": "src/hooks/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/micode/src/hooks/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 28,
+      "ref": "src/tools/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/micode/src/tools/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 29,
+      "ref": "src/utils/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/micode/src/utils/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 29,
+      "ref": "config.ts",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 29,
+      "ref": "errors.ts",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 29,
+      "ref": "logger.ts",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 29,
+      "ref": "model-limits.ts",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 30,
+      "ref": "src/config-loader.ts",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/micode/src/config-loader.ts"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 31,
+      "ref": "src/mindmodel/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/micode/src/mindmodel/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 32,
+      "ref": "src/octto/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/micode/src/octto/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 32,
+      "ref": "session/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 32,
+      "ref": "state/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 32,
+      "ref": "ui/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 33,
+      "ref": "src/indexing/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/micode/src/indexing/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 34,
+      "ref": "thoughts/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 34,
+      "ref": "ledgers/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 34,
+      "ref": "shared/plans/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 34,
+      "ref": "shared/designs/",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 38,
+      "ref": "index.ts",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 39,
+      "ref": "log.info/warn/error/debug",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 40,
+      "ref": "/init",
+      "status": "missing",
+      "detail": "absolute path not found on this machine"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 40,
+      "ref": "/mindmodel",
+      "status": "missing",
+      "detail": "absolute path not found on this machine"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 40,
+      "ref": "/ledger",
+      "status": "missing",
+      "detail": "absolute path not found on this machine"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 40,
+      "ref": "/search",
+      "status": "missing",
+      "detail": "absolute path not found on this machine"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 40,
+      "ref": "src/index.ts",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/micode/src/index.ts"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 72,
+      "ref": "src/utils/errors.ts",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/micode/src/utils/errors.ts"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 82,
+      "ref": "src/mindmodel/types.ts",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/micode/src/mindmodel/types.ts"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 87,
+      "ref": "try/catch",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 88,
+      "ref": "disconnect/close/unsubscribe",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 98,
+      "ref": "tests/",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/tests/"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 100,
+      "ref": "/tmp",
+      "status": "ok_external",
+      "detail": "/tmp"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/superpowers/CLAUDE.md",
+      "line": 13,
+      "ref": "github/PULL_REQUEST_TEMPLATE.md",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/AGENTS.md",
+      "line": 65,
+      "ref": "cursor/rules/tests-with-code.mdc",
+      "status": "missing",
+      "detail": "not found from repo root or containing dir"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/AGENTS.md",
+      "line": 67,
+      "ref": "CLAUDE.md",
+      "status": "ok",
+      "detail": "/Users/mauriciosalas/R+/CLAUDE.md"
+    }
+  ],
+  "commands": [
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 45,
+      "command": "npm run test:one",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 46,
+      "command": "npm run build:ui",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 47,
+      "command": "npm run metrics:check",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 105,
+      "command": "bun run check",
+      "status": "missing",
+      "detail": "no such script in package.json"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 105,
+      "command": "bun run typecheck",
+      "status": "missing",
+      "detail": "no such script in package.json"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "line": 108,
+      "command": "bun run build",
+      "status": "ok",
+      "detail": ""
+    }
+  ],
+  "rule_scopes": [
+    {
+      "file": "/Users/mauriciosalas/R+/.claude/worktrees/reverent-leavitt-e201cb/.claude/rules/schema.md",
+      "patterns": [
+        "lib/db/**",
+        "docs/database/**"
+      ],
+      "matches": 101,
+      "status": "ok"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/.claude/worktrees/reverent-leavitt-e201cb/.claude/rules/tests-with-code.md",
+      "patterns": [
+        "public/js/**/*.{mjs,js}",
+        "lib/**/*.{mjs,js,cjs}",
+        "lan-squad/**/*.{js,mjs}",
+        "cloud/**/*.{js,mjs}",
+        "server.js",
+        "main.js",
+        "preload.js"
+      ],
+      "matches": 3921,
+      "status": "ok"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/.claude/worktrees/reverent-leavitt-e201cb/.claude/rules/renderer.md",
+      "patterns": [
+        "public/js/**",
+        "public/styles/**",
+        "public/partials/**"
+      ],
+      "matches": 2103,
+      "status": "ok"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/.claude/rules/schema.md",
+      "patterns": [
+        "lib/db/**",
+        "docs/database/**"
+      ],
+      "matches": 101,
+      "status": "ok"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/.claude/rules/tests-with-code.md",
+      "patterns": [
+        "public/js/**/*.{mjs,js}",
+        "lib/**/*.{mjs,js,cjs}",
+        "cloud/**/*.{js,mjs}",
+        "server.js",
+        "main.js",
+        "preload.js"
+      ],
+      "matches": 3921,
+      "status": "ok"
+    },
+    {
+      "file": "/Users/mauriciosalas/R+/.claude/rules/renderer.md",
+      "patterns": [
+        "public/js/**",
+        "public/styles/**",
+        "public/partials/**"
+      ],
+      "matches": 2103,
+      "status": "ok"
+    }
+  ],
+  "stats": {
+    "files_examined": 11,
+    "references_checked": 101,
+    "references_bad": 56,
+    "commands_checked": 6,
+    "commands_missing": 2
+  }
+}

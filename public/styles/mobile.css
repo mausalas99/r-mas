@@ -209,7 +209,7 @@
 }
 .atb-ris-mic-lbl {
   font-weight: 600;
-  font-size: 9px;
+  font-size: 10px; /* --type-wb-counter-label scale */
   letter-spacing: 0.02em;
   opacity: 0.85;
   margin-right: 2px;

@@ -1,0 +1,221 @@
+{
+  "repo": "/Users/mauriciosalas/R+",
+  "files": [
+    {
+      "path": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "rel": "CLAUDE.md",
+      "scope": "project",
+      "loaded_at_launch": true,
+      "external": false,
+      "exists": true,
+      "size_bytes": 8826,
+      "sha1": "386fab3530f1",
+      "is_symlink": false,
+      "symlink_target": null,
+      "excluded": false,
+      "excluded_by": null,
+      "is_pointer": false,
+      "pointer_style": null,
+      "pointer_targets": []
+    },
+    {
+      "path": "/Users/mauriciosalas/R+/.claude/worktrees/reverent-leavitt-e201cb/.claude/rules/schema.md",
+      "rel": ".claude/worktrees/reverent-leavitt-e201cb/.claude/rules/schema.md",
+      "scope": "rules",
+      "loaded_at_launch": false,
+      "external": false,
+      "exists": true,
+      "size_bytes": 152,
+      "sha1": "8ea29ab72f4a",
+      "is_symlink": false,
+      "symlink_target": null,
+      "excluded": false,
+      "excluded_by": null,
+      "rules_paths": [
+        "lib/db/**",
+        "docs/database/**"
+      ]
+    },
+    {
+      "path": "/Users/mauriciosalas/R+/.claude/worktrees/reverent-leavitt-e201cb/.claude/rules/tests-with-code.md",
+      "rel": ".claude/worktrees/reverent-leavitt-e201cb/.claude/rules/tests-with-code.md",
+      "scope": "rules",
+      "loaded_at_launch": false,
+      "external": false,
+      "exists": true,
+      "size_bytes": 406,
+      "sha1": "e09ffc937e03",
+      "is_symlink": false,
+      "symlink_target": null,
+      "excluded": false,
+      "excluded_by": null,
+      "rules_paths": [
+        "public/js/**/*.{mjs,js}",
+        "lib/**/*.{mjs,js,cjs}",
+        "lan-squad/**/*.{js,mjs}",
+        "cloud/**/*.{js,mjs}",
+        "server.js",
+        "main.js",
+        "preload.js"
+      ]
+    },
+    {
+      "path": "/Users/mauriciosalas/R+/.claude/worktrees/reverent-leavitt-e201cb/.claude/rules/renderer.md",
+      "rel": ".claude/worktrees/reverent-leavitt-e201cb/.claude/rules/renderer.md",
+      "scope": "rules",
+      "loaded_at_launch": false,
+      "external": false,
+      "exists": true,
+      "size_bytes": 321,
+      "sha1": "06ccd61d4158",
+      "is_symlink": false,
+      "symlink_target": null,
+      "excluded": false,
+      "excluded_by": null,
+      "rules_paths": [
+        "public/js/**",
+        "public/styles/**",
+        "public/partials/**"
+      ]
+    },
+    {
+      "path": "/Users/mauriciosalas/R+/.claude/rules/schema.md",
+      "rel": ".claude/rules/schema.md",
+      "scope": "rules",
+      "loaded_at_launch": false,
+      "external": false,
+      "exists": true,
+      "size_bytes": 152,
+      "sha1": "8ea29ab72f4a",
+      "is_symlink": false,
+      "symlink_target": null,
+      "excluded": false,
+      "excluded_by": null,
+      "rules_paths": [
+        "lib/db/**",
+        "docs/database/**"
+      ]
+    },
+    {
+      "path": "/Users/mauriciosalas/R+/.claude/rules/tests-with-code.md",
+      "rel": ".claude/rules/tests-with-code.md",
+      "scope": "rules",
+      "loaded_at_launch": false,
+      "external": false,
+      "exists": true,
+      "size_bytes": 412,
+      "sha1": "974c1a187446",
+      "is_symlink": false,
+      "symlink_target": null,
+      "excluded": false,
+      "excluded_by": null,
+      "rules_paths": [
+        "public/js/**/*.{mjs,js}",
+        "lib/**/*.{mjs,js,cjs}",
+        "cloud/**/*.{js,mjs}",
+        "server.js",
+        "main.js",
+        "preload.js"
+      ]
+    },
+    {
+      "path": "/Users/mauriciosalas/R+/.claude/rules/renderer.md",
+      "rel": ".claude/rules/renderer.md",
+      "scope": "rules",
+      "loaded_at_launch": false,
+      "external": false,
+      "exists": true,
+      "size_bytes": 413,
+      "sha1": "80adcb323094",
+      "is_symlink": false,
+      "symlink_target": null,
+      "excluded": false,
+      "excluded_by": null,
+      "rules_paths": [
+        "public/js/**",
+        "public/styles/**",
+        "public/partials/**"
+      ]
+    },
+    {
+      "path": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "rel": "ui-ux-pro-max-skill/CLAUDE.md",
+      "scope": "nested",
+      "loaded_at_launch": false,
+      "external": false,
+      "exists": true,
+      "size_bytes": 4050,
+      "sha1": "210c25c956c7",
+      "is_symlink": false,
+      "symlink_target": null,
+      "excluded": false,
+      "excluded_by": null
+    },
+    {
+      "path": "/Users/mauriciosalas/R+/micode/CLAUDE.md",
+      "rel": "micode/CLAUDE.md",
+      "scope": "nested",
+      "loaded_at_launch": false,
+      "external": false,
+      "exists": true,
+      "size_bytes": 6654,
+      "sha1": "d133657d9405",
+      "is_symlink": false,
+      "symlink_target": null,
+      "excluded": false,
+      "excluded_by": null
+    },
+    {
+      "path": "/Users/mauriciosalas/R+/superpowers/CLAUDE.md",
+      "rel": "superpowers/CLAUDE.md",
+      "scope": "nested",
+      "loaded_at_launch": false,
+      "external": false,
+      "exists": true,
+      "size_bytes": 8506,
+      "sha1": "05bbeefabd83",
+      "is_symlink": false,
+      "symlink_target": null,
+      "excluded": false,
+      "excluded_by": null
+    },
+    {
+      "path": "/Users/mauriciosalas/R+/AGENTS.md",
+      "rel": "AGENTS.md",
+      "scope": "import",
+      "loaded_at_launch": true,
+      "external": false,
+      "exists": true,
+      "size_bytes": 6412,
+      "sha1": "38c706430d1a",
+      "is_symlink": false,
+      "symlink_target": null,
+      "excluded": false,
+      "excluded_by": null
+    }
+  ],
+  "import_edges": [
+    {
+      "from": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "from_line": 7,
+      "ref": "AGENTS.md",
+      "resolved": "/Users/mauriciosalas/R+/AGENTS.md",
+      "exists": true,
+      "depth": 1
+    }
+  ],
+  "effective_launch_loaded": [
+    "/Users/mauriciosalas/R+/CLAUDE.md",
+    "/Users/mauriciosalas/R+/AGENTS.md"
+  ],
+  "user_scope": {
+    "user_claude_md_exists": true,
+    "user_rules_count": 0,
+    "included_in_exam": false
+  },
+  "managed_policy_files": [],
+  "sessions": {
+    "dir": null,
+    "session_files": 0
+  }
+}

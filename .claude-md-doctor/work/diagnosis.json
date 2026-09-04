@@ -1,0 +1,95 @@
+{
+  "grade": "A",
+  "chief_complaint": "The two launch-loaded files are lean and accurate, but they carry one verbatim 13-line block duplicated between them, spent twice in every session's context.",
+  "history_note": "No Claude Code session directory was found on this machine, so the history backtest (Stage 4) could not run. No rule-adherence data is available for this repo.",
+  "stale_claims": [
+    {
+      "claim": "Electron 41 medical workbench",
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 13,
+      "status": "verified",
+      "detail": "package.json pins \"electron\": \"^41.2.0\"."
+    },
+    {
+      "claim": "Local SQLCipher",
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 13,
+      "status": "verified",
+      "detail": "package.json depends on better-sqlite3-multiple-ciphers (SQLCipher-compatible)."
+    }
+  ],
+  "dismissed_refs": [
+    {"ref": "/subtask", "line": 32, "reason": "a Claude Code slash command, not a file path"},
+    {"ref": "path/to/file.test.mjs", "line": 45, "reason": "generic placeholder inside a command example, not a real reference"},
+    {"ref": "cursor/rules/project-context.mdc", "line": 56, "reason": "false positive: checker stripped the leading dot; the real path .cursor/rules/project-context.mdc exists"},
+    {"ref": "/clear", "line": 62, "reason": "a Claude Code slash command, not a file path"},
+    {"ref": "/mcp", "line": 64, "reason": "a Claude Code slash command, not a file path"},
+    {"ref": "[src/audio/**, config.py]", "line": 98, "reason": "illustrative example syntax inside prose documenting a convention, not a real path"},
+    {"ref": "cursor/rules/tests-with-code.mdc", "line": 65, "reason": "false positive: checker stripped the leading dot from the markdown link target; .cursor/rules/tests-with-code.mdc exists"},
+    {"ref": "app.bundle.mjs", "line": 10, "reason": "contextual filename in prose (same sentence as public/js/chunks/); the real file public/js/app.bundle.mjs exists"}
+  ],
+  "rule_verdicts": {},
+  "diagnoses": [
+    {
+      "state": "redundant",
+      "severity": "warn",
+      "title": "agenttrail plan convention block duplicated verbatim across CLAUDE.md and AGENTS.md",
+      "detail": "The entire 13-line \"agenttrail plan convention\" section is byte-identical in both files. Since CLAUDE.md imports AGENTS.md with @AGENTS.md, both copies load into every session, paying the token cost twice for one rule.",
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 91,
+      "evidence": [
+        "CLAUDE.md:90-102 and AGENTS.md:69-81 are identical, including the <!-- agenttrail --> marker and every bullet."
+      ],
+      "citations": ["cursor-rules"],
+      "prescription": "Keep the agenttrail block in one file only (AGENTS.md, since CLAUDE.md already imports it) and delete the copy from CLAUDE.md."
+    },
+    {
+      "state": "redundant",
+      "severity": "info",
+      "title": "Response-style instruction split across both files with overlapping wording",
+      "detail": "CLAUDE.md line 3 (\"Always talk in ASD-STE100... say only what needs to be said\") and AGENTS.md's \"Short responses\" section (line 61, \"Always use ASD-STE100... talk to me like I'm 5\") both govern the same thing: how terse and plain replies should be.",
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 3,
+      "evidence": [
+        "CLAUDE.md:3 vs AGENTS.md:49-61 (\"Short responses\")"
+      ],
+      "citations": ["eth"],
+      "prescription": "Fold CLAUDE.md line 3 into AGENTS.md's \"Short responses\" section, or vice versa, so the tone rule lives in one place."
+    },
+    {
+      "state": "stale",
+      "severity": "info",
+      "title": "Rebuild-date claim cannot be checked against history",
+      "detail": "CLAUDE.md says \"Last rebuild: 2026-08-14\" but both CLAUDE.md and AGENTS.md are gitignored (/CLAUDE.md, /AGENTS.md in .gitignore) and untracked, so there is no commit history to confirm the date. This is a self-reported cadence, not a repo defect.",
+      "file": "/Users/mauriciosalas/R+/CLAUDE.md",
+      "line": 5,
+      "evidence": ["git ls-files shows neither file tracked; .gitignore lines 47-48 exclude them"],
+      "citations": [],
+      "prescription": "No fix needed. If the rebuild cadence should be auditable, remove CLAUDE.md/AGENTS.md from .gitignore, or track the rebuild date in a small tracked file instead."
+    },
+    {
+      "state": "dead-ref",
+      "severity": "info",
+      "title": "Three vendored tool directories carry their own broken CLAUDE.md references",
+      "detail": "ui-ux-pro-max-skill/, micode/, and superpowers/ each have their own .git and are gitignored from this repo — they are separate checked-out projects, not R+'s own instructions. Their CLAUDE.md files have many dead references (e.g. ui-ux-pro-max-skill/CLAUDE.md has 20+ missing paths) and one has un-pruned /init boilerplate, but fixing another project's memory file is out of scope here.",
+      "file": "/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md",
+      "line": 1,
+      "evidence": ["each dir has its own .git and is listed in .gitignore (lines 40, 42, 43)"],
+      "citations": [],
+      "prescription": "No action in this repo. If these tools matter to this project, fix them in their own repos."
+    }
+  ],
+  "prescriptions": [
+    {
+      "action": "Delete the duplicate agenttrail block from CLAUDE.md, keeping the one in AGENTS.md",
+      "rationale": "Removes 13 duplicated lines from every session's standing context with zero loss of instruction, since AGENTS.md is already imported.",
+      "citations": ["cursor-rules"]
+    }
+  ],
+  "followup": [
+    "Re-run this checkup after any large edit to CLAUDE.md/AGENTS.md, or every 2-3 months per the file's own cadence.",
+    "No Claude Code session transcripts were found on this machine, so rule-adherence backtesting is unavailable here. If sessions exist on another machine or are retained longer, re-run there for real adherence data.",
+    "Highest-value fix: remove the duplicated agenttrail block from CLAUDE.md."
+  ],
+  "share_note": "Two files, one nearly-clean bill of health, and a single paragraph that forgot it already said itself once."
+}

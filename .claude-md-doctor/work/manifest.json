@@ -1,0 +1,36 @@
+{
+  "stages": [
+    {
+      "stage": "intake",
+      "ts": "2026-08-28T11:52:46-0600",
+      "files": 11,
+      "imports": 1,
+      "effective": 2
+    },
+    {
+      "stage": "vitals",
+      "ts": "2026-08-28T11:52:57-0600",
+      "files_measured": 11
+    },
+    {
+      "stage": "refcheck",
+      "ts": "2026-08-28T11:53:09-0600",
+      "files_examined": 11,
+      "references_checked": 101,
+      "references_bad": 56,
+      "commands_checked": 6,
+      "commands_missing": 2
+    },
+    {
+      "stage": "report",
+      "ts": "2026-08-28T11:56:25-0600",
+      "out": "/Users/mauriciosalas/R+/.claude-md-doctor/report.html",
+      "incomplete": []
+    },
+    {
+      "stage": "card",
+      "ts": "2026-08-28T11:56:31-0600",
+      "grade": "A"
+    }
+  ]
+}

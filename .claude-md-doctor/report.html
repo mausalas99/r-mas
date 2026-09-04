@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CLAUDE.md checkup — R+</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect x='4' y='1' width='4' height='10' fill='%23c0492f'/%3E%3Crect x='1' y='4' width='10' height='4' fill='%23c0492f'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f6f7f5; --card:#ffffff; --ink:#1c2024; --ink2:#5b6470; --ink3:#8a93a0;
+  --line:#e3e6e2; --accent:#2f6f5e; --accent-soft:#e7f1ee;
+  --crit:#b23c2e; --crit-soft:#f9e9e6; --warn:#9a6d1f; --warn-soft:#f7efdd;
+  --ok:#2c7a5c; --ok-soft:#e4f1eb; --info:#2a6fb8; --info-soft:#e6eef7;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --bot-body:#93a0af; --bot-visor:#2b3440; --bot-eye:#5fd4c8;
+  --bot-coat:#fdfdfc; --bot-mirror:#d4a04c;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#15171a; --card:#1d2025; --ink:#e8eaed; --ink2:#a8b0ba; --ink3:#717a86;
+    --line:#2c3138; --accent:#5eb094; --accent-soft:#20302b;
+    --crit:#e07a6c; --crit-soft:#3a2320; --warn:#d4a04c; --warn-soft:#362c17;
+    --ok:#66b394; --ok-soft:#1e3229; --info:#6ba3dd; --info-soft:#1d2b3d;
+    --bot-body:#7b8794; --bot-visor:#12181f; --bot-eye:#5fd4c8;
+    --bot-coat:#e4e7ea; --bot-mirror:#d4a04c;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:880px;margin:0 auto;padding:32px 20px 64px}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
+.masthead{display:flex;align-items:flex-end;gap:16px}
+.bot{flex:none;image-rendering:pixelated}
+.clinic{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink2);
+  font-family:var(--mono)}
+h1{font-size:26px;margin:2px 0 4px}
+.sub{color:var(--ink2);font-size:13px}
+.grade{min-width:96px;text-align:center;border:3px solid var(--line);
+  border-radius:2px;padding:8px 14px 10px;background:var(--card);
+  box-shadow:4px 4px 0 var(--line)}
+.grade b{display:block;font-size:34px;line-height:1;font-family:var(--mono)}
+.grade span{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)}
+.grade .hearts{margin-top:6px;line-height:0}
+.grade.g-a{border-color:var(--ok);color:var(--ok)}
+.grade.g-b{border-color:var(--accent);color:var(--accent)}
+.grade.g-c{border-color:var(--warn);color:var(--warn)}
+.grade.g-d,.grade.g-f{border-color:var(--crit);color:var(--crit)}
+.ecg{display:block;width:100%;height:18px;margin:10px 0 14px;color:var(--accent)}
+.chief{background:var(--card);border-left:4px solid var(--accent);border-radius:0 8px 8px 0;
+  padding:12px 16px;margin:18px 0;font-size:15px}
+.chief b{color:var(--ink2);font-size:11px;letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:4px}
+section{margin:28px 0}
+h2{font-size:13px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink2);
+  border-bottom:1px solid var(--line);padding-bottom:6px;margin:0 0 14px;
+  font-family:var(--mono)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.card .v{font-size:22px;font-weight:650;font-family:var(--mono)}
+.card .k{font-size:12px;color:var(--ink2);margin-top:2px}
+.card .n{font-size:11px;color:var(--ink3);margin-top:4px}
+.card.bad .v{color:var(--crit)} .card.warned .v{color:var(--warn)} .card.fine .v{color:var(--ok)}
+.tablebox{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);text-align:left}
+th,td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+code,.mono{font-family:var(--mono);font-size:12.5px}
+.pill{display:inline-block;font-size:11px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.p-crit{background:var(--crit-soft);color:var(--crit)}
+.p-warn{background:var(--warn-soft);color:var(--warn)}
+.p-ok{background:var(--ok-soft);color:var(--ok)}
+.p-info{background:var(--info-soft);color:var(--info)}
+.dx{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:10px}
+.dx-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.dx-title{font-weight:650}
+.dx-loc{color:var(--ink3);font-size:12px;font-family:var(--mono)}
+.dx p{margin:8px 0 0;color:var(--ink2);font-size:14px}
+.dx .rx{margin-top:10px;padding:10px 12px;background:var(--accent-soft);border-radius:6px;font-size:13.5px}
+.dx .rx b{color:var(--accent);font-size:11px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:3px}
+details{margin-top:8px}
+summary{cursor:pointer;font-size:12.5px;color:var(--info)}
+details pre{background:var(--bg);border:1px solid var(--line);border-radius:6px;
+  padding:10px;font-size:12px;overflow-x:auto;white-space:pre-wrap}
+sup a{color:var(--info);text-decoration:none;font-size:10.5px}
+.foot{font-size:12.5px;color:var(--ink2)}
+.foot li{margin-bottom:6px}
+.note{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:10px 14px;
+  font-size:13px;margin:14px 0}
+.privacy{font-size:12px;color:var(--ink3);margin-top:36px;
+  border-top:1px solid var(--line);padding-top:14px}
+ul.plain{margin:0;padding-left:20px}
+ul.plain li{margin-bottom:6px}
+.tl-block{margin:8px 0 12px;padding:8px 10px;background:var(--bg);
+  border:1px solid var(--line);border-radius:6px}
+.tl{display:flex;height:14px;border-radius:3px;overflow:hidden;margin:7px 0 5px;
+  min-width:240px;max-width:560px}
+.tl-seg{min-width:3px}
+.tl-e{background:var(--warn)} .tl-b{background:var(--info)} .tl-o{background:var(--ink3);opacity:.45}
+.tl-seg.tl-after{box-shadow:inset 0 -4px 0 var(--crit)}
+.tl-sum{font-size:12.5px;color:var(--ink2)}
+.tl-sum b{color:var(--ink);font-family:var(--mono)}
+.tl-x{color:var(--crit);font-weight:700}
+.tl-ok{color:var(--ok);font-weight:700}
+.tl-legend{font-size:11px;color:var(--ink3);margin-top:5px;display:flex;
+  align-items:center;gap:5px;flex-wrap:wrap}
+.tl-key{display:inline-block;width:14px;height:9px;border-radius:2px}
+ul.rxlist{list-style:none;margin:0;padding:0}
+ul.rxlist>li{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start}
+ul.rxlist .pe{flex:none;font-size:16px;line-height:1.4}
+@media (max-width:560px){header{flex-wrap:wrap}.grade{order:-1;margin-left:auto}}
+@media print{body{background:#fff}.wrap{max-width:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="masthead">
+      <svg class="bot" width="64" height="60" viewBox="0 0 64 60" shape-rendering="crispEdges" aria-label="pixel robot doctor" role="img">
+        <!-- antenna -->
+        <rect x="28" y="0" width="8" height="4" fill="var(--bot-eye)"/>
+        <rect x="30" y="4" width="4" height="4" fill="var(--bot-body)"/>
+        <!-- head -->
+        <rect x="12" y="8" width="40" height="24" fill="var(--bot-body)"/>
+        <!-- head mirror -->
+        <rect x="40" y="8" width="4" height="4" fill="var(--bot-mirror)"/>
+        <rect x="44" y="4" width="8" height="8" fill="var(--bot-mirror)"/>
+        <rect x="46" y="6" width="4" height="4" fill="var(--bot-coat)"/>
+        <!-- visor + eyes -->
+        <rect x="16" y="16" width="32" height="8" fill="var(--bot-visor)"/>
+        <rect x="20" y="18" width="6" height="4" fill="var(--bot-eye)"/>
+        <rect x="38" y="18" width="6" height="4" fill="var(--bot-eye)"/>
+        <!-- mouth -->
+        <rect x="26" y="27" width="12" height="2" fill="var(--bot-visor)"/>
+        <!-- neck -->
+        <rect x="26" y="32" width="12" height="4" fill="var(--bot-body)"/>
+        <!-- coat (backplate = outline) -->
+        <rect x="14" y="34" width="36" height="24" fill="var(--bot-body)"/>
+        <rect x="16" y="36" width="32" height="20" fill="var(--bot-coat)"/>
+        <!-- red cross -->
+        <rect x="30" y="40" width="4" height="12" fill="var(--crit)"/>
+        <rect x="26" y="44" width="12" height="4" fill="var(--crit)"/>
+      </svg>
+      <div>
+        <div class="clinic">claude-md-doctor · checkup report</div>
+        <h1>R+</h1>
+        <div class="sub">Examined 2026-08-28 11:56 · claude-md-doctor v0.4.4</div>
+      </div>
+    </div>
+    <div class="grade g-a"><b>A</b><span>chart grade</span>
+      <div class="hearts"><svg width="13" height="12" viewBox="0 0 14 12" shape-rendering="crispEdges" style="margin:0 1px"><g fill="currentColor"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="4"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></g></svg><svg width="13" height="12" viewBox="0 0 14 12" shape-rendering="crispEdges" style="margin:0 1px"><g fill="currentColor"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="4"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></g></svg><svg width="13" height="12" viewBox="0 0 14 12" shape-rendering="crispEdges" style="margin:0 1px"><g fill="currentColor"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="4"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></g></svg><svg width="13" height="12" viewBox="0 0 14 12" shape-rendering="crispEdges" style="margin:0 1px"><g fill="currentColor"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="4"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></g></svg><svg width="13" height="12" viewBox="0 0 14 12" shape-rendering="crispEdges" style="margin:0 1px"><g fill="currentColor"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="4"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></g></svg></div>
+    </div>
+  </header>
+
+  <svg class="ecg" viewBox="0 0 400 16" preserveAspectRatio="none" shape-rendering="crispEdges" aria-hidden="true">
+    <path d="M0 11 H56 V6 H60 V11 H72 V14 H76 V11 H120 V2 H124 V14 H128 V11 H196 V6 H200 V11 H212 V14 H216 V11 H268 V2 H272 V14 H276 V11 H336 V6 H340 V11 H352 V14 H356 V11 H400"
+      fill="none" stroke="currentColor" stroke-width="2"/>
+  </svg>
+
+  
+
+  <div class="chief"><b>Chief complaint</b>The two launch-loaded files are lean and accurate, but they carry one verbatim 13-line block duplicated between them, spent twice in every session&#x27;s context.</div>
+
+  <section><h2>Patient chart</h2>
+    <div class="tablebox"><table><tr><th style='width:220px'>Repository</th><td><code>/Users/mauriciosalas/R+</code></td></tr>
+<tr><th style='width:220px'>Files examined</th><td>11 in-repo (2 launch-loaded), 0 external noted</td></tr>
+<tr><th style='width:220px'>User-scope memory</th><td>~/.claude/CLAUDE.md present, 0 user rules — not examined (repo scope only)</td></tr>
+<tr><th style='width:220px'>Session history found</th><td>none found for this path on this machine</td></tr></table></div>
+  </section>
+
+  <section><h2>Vitals</h2>
+    <div class="cards"><div class="card fine"><div class="v">88</div><div class="k">lines — CLAUDE.md</div><div class="n">official target: under 200<sup><a href="#fn-official-200">[1]</a></sup></div></div>
+<div class="card warned"><div class="v">3,777</div><div class="k">est. tokens loaded every session</div><div class="n">1.89% of a 200k context (estimate)</div></div>
+<div class="card fine"><div class="v">140</div><div class="k">launch-loaded lines (all files)</div><div class="n">startup warning at 40000 chars: not triggered<sup><a href="#fn-official-40k">[2]</a></sup></div></div></div>
+    <div style="height:12px"></div>
+    <div class="tablebox"><table>
+      <tr><th>File</th><th>Lines</th><th>~Tokens</th><th>Markers</th></tr>
+      <tr><td><code>CLAUDE.md</code></td><td>88</td><td>2187</td><td><span class="pill p-info">1 comment lines free</span></td></tr>
+<tr><td><code>/Users/mauriciosalas/R+/micode/CLAUDE.md</code></td><td>85</td><td>1663</td><td>—</td></tr>
+<tr><td><code>/Users/mauriciosalas/R+/ui-ux-pro-max-skill/CLAUDE.md</code></td><td>74</td><td>983</td><td><span class="pill p-warn">/init boilerplate</span></td></tr>
+<tr><td><code>/Users/mauriciosalas/R+/superpowers/CLAUDE.md</code></td><td>63</td><td>2119</td><td>—</td></tr>
+<tr><td><code>AGENTS.md</code></td><td>52</td><td>1590</td><td><span class="pill p-info">1 comment lines free</span></td></tr>
+<tr><td><code>tests-with-code.md</code></td><td>15</td><td>101</td><td>—</td></tr>
+<tr><td><code>tests-with-code.md</code></td><td>14</td><td>103</td><td>—</td></tr>
+<tr><td><code>renderer.md</code></td><td>11</td><td>80</td><td>—</td></tr>
+<tr><td><code>renderer.md</code></td><td>11</td><td>103</td><td>—</td></tr>
+<tr><td><code>schema.md</code></td><td>7</td><td>38</td><td>—</td></tr>
+<tr><td><code>schema.md</code></td><td>7</td><td>38</td><td>—</td></tr>
+    </table></div>
+  </section>
+
+  <section><h2>Lab results — records check</h2><p class='sub'>101 path references checked — 45 resolve, 56 flagged (49 confirmed on review, 7 dismissed as false positives). 6 commands checked — 2 missing.</p>
+<div class='tablebox'><table><tr><th>Reference</th><th>Where</th><th>Status</th><th>Detail</th></tr><tr><td><code>[src/audio/**</code></td><td class='mono'>CLAUDE.md:98</td><td><span class='pill p-warn'>glob empty</span></td><td>no matches from repo root or file dir</td></tr><tr><td><code>stacks/</code></td><td class='mono'>CLAUDE.md:36</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>search.py</code></td><td class='mono'>CLAUDE.md:38</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>core.py</code></td><td class='mono'>CLAUDE.md:39</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>design_system.py</code></td><td class='mono'>CLAUDE.md:40</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>base/</code></td><td class='mono'>CLAUDE.md:42</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>skill-content.md</code></td><td class='mono'>CLAUDE.md:42</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>quick-reference.md</code></td><td class='mono'>CLAUDE.md:42</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>platforms/</code></td><td class='mono'>CLAUDE.md:43</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>claude.json</code></td><td class='mono'>CLAUDE.md:43</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>cursor.json</code></td><td class='mono'>CLAUDE.md:43</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>commands/init.ts</code></td><td class='mono'>CLAUDE.md:47</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>utils/template.ts</code></td><td class='mono'>CLAUDE.md:48</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>assets/</code></td><td class='mono'>CLAUDE.md:49</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>claude/skills/ui-ux-pro-max/</code></td><td class='mono'>CLAUDE.md:54</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>factory/skills/ui-ux-pro-max/</code></td><td class='mono'>CLAUDE.md:55</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>shared/ui-ux-pro-max/</code></td><td class='mono'>CLAUDE.md:56</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>claude-plugin/</code></td><td class='mono'>CLAUDE.md:57</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>data/*.csv</code></td><td class='mono'>CLAUDE.md:69</td><td><span class='pill p-warn'>glob empty</span></td><td>no matches from repo root or file dir</td></tr><tr><td><code>data/stacks/*.csv</code></td><td class='mono'>CLAUDE.md:69</td><td><span class='pill p-warn'>glob empty</span></td><td>no matches from repo root or file dir</td></tr><tr><td><code>scripts/*.py</code></td><td class='mono'>CLAUDE.md:70</td><td><span class='pill p-warn'>glob empty</span></td><td>no matches from repo root or file dir</td></tr><tr><td><code>claude/</code></td><td class='mono'>CLAUDE.md:71</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>factory/</code></td><td class='mono'>CLAUDE.md:71</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>shared/</code></td><td class='mono'>CLAUDE.md:71</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>base/skill-content.md</code></td><td class='mono'>CLAUDE.md:74</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>base/quick-reference.md</code></td><td class='mono'>CLAUDE.md:75</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>platforms/*.json</code></td><td class='mono'>CLAUDE.md:76</td><td><span class='pill p-warn'>glob empty</span></td><td>no matches from repo root or file dir</td></tr><tr><td><code>feat/</code></td><td class='mono'>CLAUDE.md:95</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>fix/</code></td><td class='mono'>CLAUDE.md:95</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>config.ts</code></td><td class='mono'>CLAUDE.md:29</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>errors.ts</code></td><td class='mono'>CLAUDE.md:29</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>logger.ts</code></td><td class='mono'>CLAUDE.md:29</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>model-limits.ts</code></td><td class='mono'>CLAUDE.md:29</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>session/</code></td><td class='mono'>CLAUDE.md:32</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>state/</code></td><td class='mono'>CLAUDE.md:32</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>ui/</code></td><td class='mono'>CLAUDE.md:32</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>thoughts/</code></td><td class='mono'>CLAUDE.md:34</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>ledgers/</code></td><td class='mono'>CLAUDE.md:34</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>shared/plans/</code></td><td class='mono'>CLAUDE.md:34</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>shared/designs/</code></td><td class='mono'>CLAUDE.md:34</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>index.ts</code></td><td class='mono'>CLAUDE.md:38</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>log.info/warn/error/debug</code></td><td class='mono'>CLAUDE.md:39</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>/init</code></td><td class='mono'>CLAUDE.md:40</td><td><span class='pill p-crit'>missing</span></td><td>absolute path not found on this machine</td></tr><tr><td><code>/mindmodel</code></td><td class='mono'>CLAUDE.md:40</td><td><span class='pill p-crit'>missing</span></td><td>absolute path not found on this machine</td></tr><tr><td><code>/ledger</code></td><td class='mono'>CLAUDE.md:40</td><td><span class='pill p-crit'>missing</span></td><td>absolute path not found on this machine</td></tr><tr><td><code>/search</code></td><td class='mono'>CLAUDE.md:40</td><td><span class='pill p-crit'>missing</span></td><td>absolute path not found on this machine</td></tr><tr><td><code>try/catch</code></td><td class='mono'>CLAUDE.md:87</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>disconnect/close/unsubscribe</code></td><td class='mono'>CLAUDE.md:88</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr><tr><td><code>github/PULL_REQUEST_TEMPLATE.md</code></td><td class='mono'>CLAUDE.md:13</td><td><span class='pill p-crit'>missing</span></td><td>not found from repo root or containing dir</td></tr></table></div>
+<details><summary>7 flag(s) dismissed on review</summary><ul class='plain foot'><li><code>/subtask</code> — a Claude Code slash command, not a file path</li><li><code>path/to/file.test.mjs</code> — generic placeholder inside a command example, not a real reference</li><li><code>cursor/rules/project-context.mdc</code> — false positive: checker stripped the leading dot; the real path .cursor/rules/project-context.mdc exists</li><li><code>/clear</code> — a Claude Code slash command, not a file path</li><li><code>/mcp</code> — a Claude Code slash command, not a file path</li><li><code>app.bundle.mjs</code> — contextual filename in prose (same sentence as public/js/chunks/); the real file public/js/app.bundle.mjs exists</li><li><code>cursor/rules/tests-with-code.mdc</code> — false positive: checker stripped the leading dot from the markdown link target; .cursor/rules/tests-with-code.mdc exists</li></ul></details>
+<div style='height:10px'></div><div class='tablebox'><table><tr><th>Command</th><th>Where</th><th>Detail</th></tr><tr><td><code>bun run check</code></td><td class='mono'>CLAUDE.md:105</td><td>no such script in package.json</td></tr><tr><td><code>bun run typecheck</code></td><td class='mono'>CLAUDE.md:105</td><td>no such script in package.json</td></tr></table></div>
+<h2 style='margin-top:22px'>Checkable claims</h2><div class='tablebox'><table><tr><th>Claim in file</th><th>Where</th><th>Verdict</th><th>Detail</th></tr><tr><td>Electron 41 medical workbench</td><td class='mono'>CLAUDE.md:13</td><td><span class='pill p-ok'>verified</span></td><td>package.json pins &quot;electron&quot;: &quot;^41.2.0&quot;.</td></tr><tr><td>Local SQLCipher</td><td class='mono'>CLAUDE.md:13</td><td><span class='pill p-ok'>verified</span></td><td>package.json depends on better-sqlite3-multiple-ciphers (SQLCipher-compatible).</td></tr></table></div></section>
+
+  <section><h2>Rulebook — adherence &amp; enforcement</h2><p class='sub'>No Claude Code session directory was found on this machine, so the history backtest (Stage 4) could not run. No rule-adherence data is available for this repo.</p></section>
+
+  <section><h2>Diagnoses</h2><div class='dx'><div class='dx-head'><span class='pill p-warn'>warn</span><span class='pill p-info'>redundant</span><span class='dx-title'>agenttrail plan convention block duplicated verbatim across CLAUDE.md and AGENTS.md</span><span class='dx-loc'>CLAUDE.md:91</span><sup><a href="#fn-cursor-rules">[3]</a></sup></div><p>The entire 13-line &quot;agenttrail plan convention&quot; section is byte-identical in both files. Since CLAUDE.md imports AGENTS.md with @AGENTS.md, both copies load into every session, paying the token cost twice for one rule.</p><details><summary>evidence</summary><pre>CLAUDE.md:90-102 and AGENTS.md:69-81 are identical, including the &lt;!-- agenttrail --&gt; marker and every bullet.</pre></details><div class='rx'><b>💊 Prescription</b>Keep the agenttrail block in one file only (AGENTS.md, since CLAUDE.md already imports it) and delete the copy from CLAUDE.md.</div></div>
+<div class='dx'><div class='dx-head'><span class='pill p-info'>info</span><span class='pill p-info'>redundant</span><span class='dx-title'>Response-style instruction split across both files with overlapping wording</span><span class='dx-loc'>CLAUDE.md:3</span><sup><a href="#fn-eth">[4]</a></sup></div><p>CLAUDE.md line 3 (&quot;Always talk in ASD-STE100... say only what needs to be said&quot;) and AGENTS.md&#x27;s &quot;Short responses&quot; section (line 61, &quot;Always use ASD-STE100... talk to me like I&#x27;m 5&quot;) both govern the same thing: how terse and plain replies should be.</p><details><summary>evidence</summary><pre>CLAUDE.md:3 vs AGENTS.md:49-61 (&quot;Short responses&quot;)</pre></details><div class='rx'><b>💊 Prescription</b>Fold CLAUDE.md line 3 into AGENTS.md&#x27;s &quot;Short responses&quot; section, or vice versa, so the tone rule lives in one place.</div></div>
+<div class='dx'><div class='dx-head'><span class='pill p-info'>info</span><span class='pill p-info'>stale</span><span class='dx-title'>Rebuild-date claim cannot be checked against history</span><span class='dx-loc'>CLAUDE.md:5</span></div><p>CLAUDE.md says &quot;Last rebuild: 2026-08-14&quot; but both CLAUDE.md and AGENTS.md are gitignored (/CLAUDE.md, /AGENTS.md in .gitignore) and untracked, so there is no commit history to confirm the date. This is a self-reported cadence, not a repo defect.</p><details><summary>evidence</summary><pre>git ls-files shows neither file tracked; .gitignore lines 47-48 exclude them</pre></details><div class='rx'><b>💊 Prescription</b>No fix needed. If the rebuild cadence should be auditable, remove CLAUDE.md/AGENTS.md from .gitignore, or track the rebuild date in a small tracked file instead.</div></div>
+<div class='dx'><div class='dx-head'><span class='pill p-info'>info</span><span class='pill p-info'>dead-ref</span><span class='dx-title'>Three vendored tool directories carry their own broken CLAUDE.md references</span><span class='dx-loc'>CLAUDE.md:1</span></div><p>ui-ux-pro-max-skill/, micode/, and superpowers/ each have their own .git and are gitignored from this repo — they are separate checked-out projects, not R+&#x27;s own instructions. Their CLAUDE.md files have many dead references (e.g. ui-ux-pro-max-skill/CLAUDE.md has 20+ missing paths) and one has un-pruned /init boilerplate, but fixing another project&#x27;s memory file is out of scope here.</p><details><summary>evidence</summary><pre>each dir has its own .git and is listed in .gitignore (lines 40, 42, 43)</pre></details><div class='rx'><b>💊 Prescription</b>No action in this repo. If these tools matter to this project, fix them in their own repos.</div></div></section>
+
+  <section><h2>Prescriptions</h2><ul class='rxlist'><li><span class='pe'>💊</span><div><b>Delete the duplicate agenttrail block from CLAUDE.md, keeping the one in AGENTS.md</b><sup><a href="#fn-cursor-rules">[3]</a></sup><br><span class='sub'>Removes 13 duplicated lines from every session&#x27;s standing context with zero loss of instruction, since AGENTS.md is already imported.</span></div></li></ul></section>
+
+  <section><h2>Follow-up</h2><ul class='rxlist'><li><span class='pe'>🩺</span><div>Re-run this checkup after any large edit to CLAUDE.md/AGENTS.md, or every 2-3 months per the file&#x27;s own cadence.</div></li><li><span class='pe'>🩺</span><div>No Claude Code session transcripts were found on this machine, so rule-adherence backtesting is unavailable here. If sessions exist on another machine or are retained longer, re-run there for real adherence data.</div></li><li><span class='pe'>🩺</span><div>Highest-value fix: remove the duplicated agenttrail block from CLAUDE.md.</div></li></ul></section>
+
+  <section><h2>Evidence</h2><ol class="foot"><li id="fn-official-200">Claude Code memory doc — “Size: target under 200 lines per CLAUDE.md file. Longer files consume more context and reduce adherence.” <a href="https://code.claude.com/docs/en/memory">https://code.claude.com/docs/en/memory</a></li><li id="fn-official-40k">Claude Code troubleshooting — startup warning at 40,000 characters of memory content. <a href="https://code.claude.com/docs/en/troubleshooting">https://code.claude.com/docs/en/troubleshooting</a></li><li id="fn-cursor-rules">Jiang &amp; Nam (MSR 2026), 401 repos: five-theme content taxonomy; ~28.7% duplicated lines across a repo&#x27;s rules files. <a href="https://arxiv.org/abs/2512.18925">https://arxiv.org/abs/2512.18925</a></li><li id="fn-eth">Gloaguen et al. (ETH Zurich), “Evaluating AGENTS.md” (v2): context files cost +20–23% inference with no significant success change; agents measurably comply with explicit directives; “describe only minimal requirements.” <a href="https://arxiv.org/abs/2602.11988">https://arxiv.org/abs/2602.11988</a></li></ol></section>
+
+  <div class="privacy">This exam ran entirely on this machine; no file left it.
+  Quotes from repository files are limited to short excerpts. The report may still
+  contain repository-private strings — review before sharing.
+  claude-md-doctor is an independent open-source tool, not affiliated with Anthropic.</div>
+</div>
+</body>
+</html>

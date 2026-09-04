@@ -1525,7 +1525,7 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 }
 
 .entrega-time-picker__hint {
-  font-size: 0.62rem;
+  font-size: 0.625rem; /* --type-wb-counter-label scale (10px) */
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -406,3 +406,29 @@ test('--lab-chip-txt (= --color-accent-soft-text = --color-accent) clears 4.5:1 
   }
 });
 
+test('WU11: no source stylesheet declares a font-size below the 10px dense floor', () => {
+  // The design system deliberately ships type tokens down to 9.5px
+  // (--type-wb-column-head, tokens.css:246-261) but those are only ever
+  // consumed via the `font:` shorthand, never written as a literal
+  // `font-size:` in a stylesheet — so scanning for the literal property
+  // does not false-positive on the intentional dense-scale tokens.
+  // Known pre-existing sub-10px site outside WU11's audit-verified 16 spots
+  // (interface-fix-plan-DETAIL.md). Left alone deliberately: WU11 scope is
+  // exactly those 16 sites; this one needs its own audited fix.
+  const knownExceptions = new Set(['public/interno/interno.css: font-size: 0.6rem']);
+  const dirs = ['public/styles', 'public/interno'];
+  const offenders = [];
+  const sizeRe = /font-size:\s*calc\(\s*([\d.]+)px[^)]*\)|font-size:\s*([\d.]+)px|font-size:\s*([\d.]+)rem/g;
+  for (const dir of dirs) {
+    for (const name of readdirSync(join(root, dir))) {
+      if (!name.endsWith('.css') || name === 'app.bundle.css') continue;
+      const css = read(join(dir, name));
+      for (const m of css.matchAll(sizeRe)) {
+        const px = m[1] !== undefined ? Number(m[1]) : m[2] !== undefined ? Number(m[2]) : Number(m[3]) * 16;
+        const site = `${dir}/${name}: ${m[0].trim()}`;
+        if (px < 10 && !knownExceptions.has(site)) offenders.push(site);
+      }
+    }
+  }
+  assert.deepEqual(offenders, []);
+});

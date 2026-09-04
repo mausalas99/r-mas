@@ -992,7 +992,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-snapshot-io .ea-snapshot-label {
-  font-size: 9px;
+  font-size: 10px; /* --type-wb-counter-label scale */
   letter-spacing: 0.04em;
   color: var(--text-muted);
   font-weight: 600;
@@ -1100,7 +1100,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-vital-unit {
-  font-size: 9px;
+  font-size: 10px; /* --type-wb-counter-label scale */
   font-weight: 500;
   color: var(--text-muted);
   text-transform: lowercase;
@@ -1153,7 +1153,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-altered-label {
-  font-size: 9px;
+  font-size: 10.5px; /* --type-wb-status-label scale */
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--todo-prio-media);
@@ -1676,7 +1676,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-vital-history-badge {
-  font-size: calc(9px * var(--density-font, 1));
+  font-size: calc(10px * var(--density-font, 1)); /* --type-wb-counter-label scale */
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1991,7 +1991,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-vital-prev-summary {
-  font-size: calc(9px * var(--density-font, 1));
+  font-size: calc(10px * var(--density-font, 1)); /* --type-wb-counter-label scale */
   font-weight: 600;
   color: var(--text-muted);
   line-height: 1.15;
@@ -2126,7 +2126,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-registro-modal .ea-vital-unit {
-  font-size: 8px;
+  font-size: 10px; /* --type-wb-counter-label scale */
   line-height: 1.1;
 }
 
@@ -2191,7 +2191,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-registro-modal .ea-vital-chip .ea-altered-label {
-  font-size: 8px;
+  font-size: 10.5px; /* --type-wb-status-label scale */
   width: 100%;
   text-align: center;
 }

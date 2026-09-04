@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 418">
+<rect width="800" height="418" fill="#f6f7f5"/>
+<rect x="14" y="14" width="772" height="390" rx="16" fill="#ffffff" stroke="#d8dcd6"/>
+<g shape-rendering="crispEdges" transform="translate(44,40) scale(1.05)">
+<rect x="28" y="0" width="8" height="4" fill="#5fd4c8"/><rect x="30" y="4" width="4" height="4" fill="#93a0af"/>
+<rect x="12" y="8" width="40" height="24" fill="#93a0af"/>
+<rect x="40" y="8" width="4" height="4" fill="#d4a04c"/><rect x="44" y="4" width="8" height="8" fill="#d4a04c"/><rect x="46" y="6" width="4" height="4" fill="#fdfdfc"/>
+<rect x="16" y="16" width="32" height="8" fill="#2b3440"/>
+<rect x="20" y="18" width="6" height="4" fill="#5fd4c8"/><rect x="38" y="18" width="6" height="4" fill="#5fd4c8"/>
+<rect x="26" y="27" width="12" height="2" fill="#2b3440"/>
+<rect x="26" y="32" width="12" height="4" fill="#93a0af"/>
+<rect x="14" y="34" width="36" height="24" fill="#93a0af"/><rect x="16" y="36" width="32" height="20" fill="#fdfdfc"/>
+<rect x="30" y="40" width="4" height="12" fill="#b23c2e"/><rect x="26" y="44" width="12" height="4" fill="#b23c2e"/>
+</g>
+<text x="128" y="60" font-size="12" letter-spacing="2.5" fill="#5b6470" font-family="ui-monospace,Menlo,Consolas,monospace">CLAUDE-MD-DOCTOR · CHECKUP</text>
+<text x="128" y="88" font-size="26" font-weight="700" fill="#1c2024" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,sans-serif">R+</text>
+<rect x="648" y="40" width="104" height="66" rx="3" fill="#ffffff" stroke="#2c7a5c" stroke-width="3"/>
+<rect x="654" y="110" width="104" height="4" fill="#d8dcd6"/>
+<text x="700" y="78" font-size="34" font-weight="700" fill="#2c7a5c" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace">A</text>
+<g transform="translate(656,88)" fill="#2c7a5c"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="4"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></g><g transform="translate(674,88)" fill="#2c7a5c"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="4"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></g><g transform="translate(692,88)" fill="#2c7a5c"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="4"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></g><g transform="translate(710,88)" fill="#2c7a5c"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="4"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></g><g transform="translate(728,88)" fill="#2c7a5c"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="4"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></g>
+<path d="M46 140 H210 V134 H214 V140 H250 V144 H254 V140 H420 V132 H424 V145 H428 V140 H580 V134 H584 V140 H620 V144 H624 V140 H754" fill="none" stroke="#2f6f5e" stroke-width="2" shape-rendering="crispEdges"/>
+<text x="60" y="196" font-size="26" font-weight="600" fill="#1c2024" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,sans-serif">Two files, one nearly-clean bill of health, and a</text><text x="60" y="232" font-size="26" font-weight="600" fill="#1c2024" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,sans-serif">single paragraph that forgot it already said itself…</text>
+<text x="60" y="268" font-size="14" fill="#5b6470" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,sans-serif">140 effective lines · ~3,777 tokens loaded every session</text>
+
+<text x="60" y="358" font-size="11" fill="#8a93a0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,sans-serif"></text>
+<text x="60" y="386" font-size="13" fill="#5b6470" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,sans-serif">give your CLAUDE.md a checkup</text>
+<text x="740" y="386" font-size="12" text-anchor="end" fill="#8a93a0" font-family="ui-monospace,Menlo,Consolas,monospace">npx skills add agent-clinic/claude-md-doctor</text>
+</svg>
