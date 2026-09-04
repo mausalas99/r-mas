@@ -61,7 +61,7 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .priority-critical:not(#appcontent-guardia .priority-critical) {
-    animation: criticalPulseHighlight 2.5s infinite;
+    animation: criticalPulseHighlight 2.5s var(--ease-out) 2;
   }
 }
 
@@ -2458,7 +2458,7 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 
 @media (prefers-reduced-motion: no-preference) {
   .vitals-banner.warning {
-    animation: guardia-vitals-blink 1.5s infinite;
+    animation: guardia-vitals-blink 1.5s var(--ease-out) 2;
   }
 }
 
