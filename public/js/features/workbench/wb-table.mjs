@@ -32,7 +32,7 @@ export function buildTableCardHeaderHtml({ title = '', actionsHtml = '' } = {}) 
  * @param {string} [gridTemplate]
  */
 export function buildColumnHeadHtml(columns, gridTemplate) {
-  const style = gridTemplate ? ` style="grid-template-columns:${escAttr(gridTemplate)}"` : '';
+  const style = gridTemplate ? ` style="--wb-grid:${escAttr(gridTemplate)}"` : '';
   return (
     `<div class="wb-table-colhead"${style}>` +
     (columns || []).map((c) => `<span>${escHtml(c)}</span>`).join('') +
@@ -47,7 +47,7 @@ export function buildRowHtml({ id, cellsHtml = [], alert = false, twoLine = fals
   const classes = ['wb-row'];
   if (alert) classes.push('wb-row--alert');
   if (twoLine) classes.push('wb-row--twoline');
-  const style = gridTemplate ? ` style="grid-template-columns:${escAttr(gridTemplate)}"` : '';
+  const style = gridTemplate ? ` style="--wb-grid:${escAttr(gridTemplate)}"` : '';
   return (
     `<div class="${classes.join(' ')}"${style} data-wb-row-id="${escAttr(id)}" role="button" tabindex="0">` +
     cellsHtml.map((h) => `<span class="wb-cell">${h}</span>`).join('') +

@@ -30,6 +30,18 @@ describe('buildTableCardHtml', () => {
     assert.doesNotMatch(bodyMatch[1], /wb-table-summary/);
   });
 
+  it('sets column widths via the --wb-grid custom property, never an inline grid-template-columns', () => {
+    const html = buildTableCardHtml({
+      title: 'Censo',
+      columns: COLUMNS,
+      gridTemplate: GRID,
+      rows: [{ id: 'p1', cellsHtml: ['214-B', 'PÉREZ', 'SatO₂ 89', 'Reponer K', 'VENCIDO'] }],
+    });
+    assert.match(html, new RegExp(`style="--wb-grid:${GRID}"`));
+    assert.doesNotMatch(html, /style="grid-template-columns:/);
+    assert.doesNotMatch(html, /\bgrid-template-columns\s*:/);
+  });
+
   it('marks two-line rows with the two-line class', () => {
     const html = buildTableCardHtml({
       title: 'Lo primero',

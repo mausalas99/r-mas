@@ -305,6 +305,7 @@
 .wb-table-colhead {
   flex-shrink: 0;
   display: grid;
+  grid-template-columns: var(--wb-grid, none);
   gap: 12px;
   padding: 7px 16px;
   background: var(--color-table-head);
@@ -325,6 +326,7 @@
 
 .wb-row {
   display: grid;
+  grid-template-columns: var(--wb-grid, none);
   gap: 12px;
   align-items: baseline;
   padding: 10px 16px;
