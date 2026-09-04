@@ -21,7 +21,7 @@
   --color-section-accent: var(--color-accent);
   --color-channel-pill-bg: color-mix(in oklab, var(--color-ink) 12%, var(--color-surface));
   --color-channel-pill-fg: var(--color-ink);
-  --color-focus-ring: color-mix(in oklab, var(--color-accent) 26%, transparent);
+  --color-focus-ring: color-mix(in oklab, var(--color-accent) 82%, transparent);
   --color-danger: #d70015;
   --color-danger-deep: #a8000f;
   --color-danger-tint: rgba(215, 0, 21, 0.045);
@@ -290,7 +290,7 @@ html.dark {
   --color-section-header-bg: color-mix(in oklab, var(--color-ink) 8%, var(--color-surface));
   --color-channel-pill-bg: color-mix(in oklab, var(--color-ink) 18%, var(--color-surface));
   --color-channel-pill-fg: var(--color-ink);
-  --color-focus-ring: color-mix(in oklab, var(--color-accent) 22%, transparent);
+  --color-focus-ring: color-mix(in oklab, var(--color-accent) 82%, transparent);
   --color-danger: #ff6b6b;
   --color-danger-deep: #ff8a8a;
   --color-danger-tint: rgba(255, 107, 107, 0.08);

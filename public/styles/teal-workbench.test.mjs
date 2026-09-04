@@ -235,3 +235,112 @@ test('nota-evolucion.css defines every --ne-zone-* role it uses (light and dark)
   }
 });
 
+// WU3 — the focus ring must clear WCAG 3:1 non-text contrast, and no rule
+// sets outline: none without a paired :focus-visible replacement.
+function relLuma([r, g, b]) {
+  const lin = (c) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  const [rl, gl, bl] = [r, g, b].map(lin);
+  return 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
+}
+function contrastRatio(rgbA, rgbB) {
+  const lumA = relLuma(rgbA);
+  const lumB = relLuma(rgbB);
+  const [lighter, darker] = lumA > lumB ? [lumA, lumB] : [lumB, lumA];
+  return (lighter + 0.05) / (darker + 0.05);
+}
+function hexToRgb(h) {
+  const n = h.replace('#', '');
+  const full = n.length === 3 ? n.split('').map((c) => c + c).join('') : n;
+  const int = parseInt(full, 16);
+  return [(int >> 16) & 255, (int >> 8) & 255, int & 255];
+}
+// oklch(L C H) -> sRGB [0,255], via the standard OKLab matrices (CSS Color 4).
+function oklchToRgb(L, C, Hdeg) {
+  const h = (Hdeg * Math.PI) / 180;
+  const a = C * Math.cos(h);
+  const b = C * Math.sin(h);
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.291485548 * b;
+  const [l, m, s] = [l_ ** 3, m_ ** 3, s_ ** 3];
+  const lin = [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ];
+  const gam = (c) => {
+    c = Math.max(0, Math.min(1, c));
+    return c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055;
+  };
+  return lin.map((c) => Math.round(gam(c) * 255));
+}
+// color-mix(in oklab, C pct%, transparent) then composited (alpha blend) over bg.
+function compositeOverBg(rgb, pct, bgRgb) {
+  return rgb.map((c, i) => Math.round((c * pct + bgRgb[i] * (100 - pct)) / 100));
+}
+
+test('--color-focus-ring opacity clears 3:1 against --color-elevated/--color-surface/--color-paper, in both themes', () => {
+  const css = read('public/tokens.css');
+  const lightPctMatch = css.match(/:root\s*\{[^}]*--color-focus-ring:\s*color-mix\(in oklab,\s*var\(--color-accent\)\s*(\d+)%/s);
+  const darkPctMatch = css.match(/html\.dark\s*\{[^}]*--color-focus-ring:\s*color-mix\(in oklab,\s*var\(--color-accent\)\s*(\d+)%/s);
+  assert.ok(lightPctMatch, 'light --color-focus-ring not found');
+  assert.ok(darkPctMatch, 'dark --color-focus-ring not found');
+  const lightPct = Number(lightPctMatch[1]);
+  const darkPct = Number(darkPctMatch[1]);
+  assert.ok(lightPct > 26, `light focus-ring opacity ${lightPct}% must be raised above the old 26%`);
+  assert.ok(darkPct > 22, `dark focus-ring opacity ${darkPct}% must be raised above the old 22%`);
+
+  const lightAccent = oklchToRgb(0.52, 0.09, 195); // --color-accent, :root
+  const darkAccent = oklchToRgb(0.62, 0.09, 195); // --color-accent, html.dark
+  const lightBgs = ['#ffffff', '#f8f7f4', '#eceae6']; // elevated, surface, paper
+  const darkBgs = ['#262b36', '#1f232d', '#12141a'];
+  for (const bg of lightBgs) {
+    const ratio = contrastRatio(compositeOverBg(lightAccent, lightPct, hexToRgb(bg)), hexToRgb(bg));
+    assert.ok(ratio >= 3, `light focus ring at ${lightPct}% only reaches ${ratio.toFixed(2)}:1 on ${bg}`);
+  }
+  for (const bg of darkBgs) {
+    const ratio = contrastRatio(compositeOverBg(darkAccent, darkPct, hexToRgb(bg)), hexToRgb(bg));
+    assert.ok(ratio >= 3, `dark focus ring at ${darkPct}% only reaches ${ratio.toFixed(2)}:1 on ${bg}`);
+  }
+});
+
+test('cmdk.css has no outline: none without a paired :focus-visible rule providing a real outline', () => {
+  const css = read('public/styles/cmdk.css');
+  for (const m of css.matchAll(/([^{}]+)\{([^{}]*outline:\s*none[^{}]*)\}/g)) {
+    const selector = m[1].trim();
+    // either the rule itself is scoped to :focus-visible (and must set a
+    // real outline, not none), or an adjacent :focus-visible rule restores one.
+    const idx = m.index;
+    const after = css.slice(idx, idx + 400);
+    const hasFollowupFocusVisible = /:focus-visible\s*\{[^}]*outline:\s*(?!none)/s.test(after);
+    assert.ok(
+      hasFollowupFocusVisible,
+      `rule "${selector}" sets outline: none with no nearby :focus-visible rule providing a real outline`
+    );
+  }
+});
+
+test('estado-actual.css vital-input and disclosure focus styles differ from their rest/none state', () => {
+  const css = read('public/styles/estado-actual.css');
+  assert.equal(/\.ea-estado-clinico > summary:focus-visible\s*\{[^}]*outline:\s*none/s.test(css), false);
+  assert.match(css, /\.ea-estado-clinico > summary:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--action\)/s);
+  for (const selector of [
+    /\.ea-vital-input:focus\s*\{([^}]*)\}/,
+    /\.ea-registro-modal \.ea-vital-value-wrap \.ea-vital-input:focus\s*\{([^}]*)\}/,
+  ]) {
+    const m = css.match(selector);
+    assert.ok(m, `${selector} not found`);
+    assert.doesNotMatch(m[1], /outline:\s*none/);
+    assert.match(m[1], /outline:\s*2px solid var\(--action\)/);
+  }
+});
+
+test('vpo.css scale-chip focus outline is fully opaque (70% alone failed 3:1 once --accent resolved)', () => {
+  const css = read('public/styles/vpo.css');
+  assert.match(css, /\.vpo-chip input:focus-visible \+ span\s*\{[^}]*outline:\s*2px solid var\(--accent\);/s);
+  assert.equal(/\.vpo-chip input:focus-visible \+ span\s*\{[^}]*color-mix/s.test(css), false);
+});
+
