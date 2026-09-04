@@ -1,5 +1,6 @@
 import { esc } from '../../dom-escape.mjs';
 import { STACKED_BACKDROP_CLASS } from './stacked-overlay.mjs';
+import { wireFocusTrap, restoreFocus, focusFirstFocusable } from '../../modal-dismiss.mjs';
 
 const DEFAULT_TITLE = 'Código de recuperación';
 const BODY_COPY = 'Guarda este código de recuperación. No lo volveremos a mostrar.';
@@ -59,8 +60,17 @@ function copyRecoveryCode(text) {
  * @param {HTMLElement} overlay
  * @param {string} code
  * @param {() => void} resolve
+ * @param {{ unwire: () => void }} trap
+ * @param {Element|null} previousFocus
  */
-function wireRecoveryModal(overlay, code, resolve) {
+function wireRecoveryModal(overlay, code, resolve, trap, previousFocus) {
+  function closeOverlay() {
+    trap.unwire();
+    overlay.remove();
+    restoreFocus(previousFocus);
+    resolve();
+  }
+
   const copyBtn = overlay.querySelector('[data-recovery-copy]');
   if (copyBtn) {
     copyBtn.addEventListener('click', function () {
@@ -70,8 +80,7 @@ function wireRecoveryModal(overlay, code, resolve) {
 
   const continueBtn = overlay.querySelector('[data-recovery-continue]');
   if (!continueBtn) {
-    overlay.remove();
-    resolve();
+    closeOverlay();
     return;
   }
 
@@ -90,8 +99,7 @@ function wireRecoveryModal(overlay, code, resolve) {
       if (confirmBox && typeof confirmBox.focus === 'function') confirmBox.focus();
       return;
     }
-    overlay.remove();
-    resolve();
+    closeOverlay();
   });
 }
 
@@ -109,7 +117,11 @@ export function showRecoveryCodeModal({ code, title }) {
       resolve();
       return;
     }
+    const previousFocus = document.activeElement;
     document.body.appendChild(overlay);
-    wireRecoveryModal(/** @type {HTMLElement} */ (overlay), code, resolve);
+    const panel = overlay.querySelector('[role="dialog"]') || overlay;
+    const trap = wireFocusTrap(panel);
+    focusFirstFocusable(panel);
+    wireRecoveryModal(/** @type {HTMLElement} */ (overlay), code, resolve, trap, previousFocus);
   });
 }

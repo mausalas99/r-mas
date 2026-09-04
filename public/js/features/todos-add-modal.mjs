@@ -8,16 +8,19 @@ import { escHtml } from '../dom-escape.mjs';
 import { createTodoPrioChip } from './todos-priority-ui.mjs';
 import { createTodoDueAddSection } from './todos-due-composer.mjs';
 import { addTodoWithFields } from './todos-mutations.mjs';
+import { wireFocusTrap, restoreFocus } from '../modal-dismiss.mjs';
 
-/** @type {{ backdrop: HTMLElement, onKeydown: (ev: KeyboardEvent) => void }|null} */
+/** @type {{ backdrop: HTMLElement, onKeydown: (ev: KeyboardEvent) => void, trap: { unwire: () => void }, previousFocus: Element|null }|null} */
 let activeModal = null;
 
 function closeActiveTodoAddModal() {
   if (!activeModal) return;
-  const { backdrop, onKeydown } = activeModal;
+  const { backdrop, onKeydown, trap, previousFocus } = activeModal;
   document.removeEventListener('keydown', onKeydown);
+  trap.unwire();
   if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
   activeModal = null;
+  restoreFocus(previousFocus);
 }
 
 /** Force-close the modal (e.g. on route change). */
@@ -72,6 +75,7 @@ export function buildTodoAddModalHtml(opts = {}) {
 export function openTodoAddModal(opts = {}) {
   if (typeof document === 'undefined') return undefined;
   closeActiveTodoAddModal();
+  const previousFocus = document.activeElement;
 
   const backdrop = document.createElement('div');
   backdrop.className = 'wb-scrim';
@@ -126,7 +130,8 @@ export function openTodoAddModal(opts = {}) {
   };
   document.addEventListener('keydown', onKeydown);
 
-  activeModal = { backdrop, onKeydown };
+  const trap = wireFocusTrap(modal);
+  activeModal = { backdrop, onKeydown, trap, previousFocus };
   if (typeof textEl.focus === 'function') textEl.focus();
   return backdrop;
 }
