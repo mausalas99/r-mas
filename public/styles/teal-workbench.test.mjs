@@ -190,3 +190,48 @@ test('app-body has Importar SOME and no +1 día control', () => {
   assert.equal(html.includes('med-active-btn-group'), false);
   assert.equal(html.includes('+1 día'), false);
 });
+
+// WU2 — every color role that CSS in the app actually references must be
+// declared somewhere (tokens.css, or the same file for a page-local role),
+// so no var(--x) silently drops its whole declaration at computed-value time.
+function declaredCustomProps(css) {
+  const names = new Set();
+  for (const m of css.matchAll(/(^|[\s{;])(--[a-zA-Z0-9-]+)\s*:/g)) names.add(m[2]);
+  return names;
+}
+
+function undeclaredVarRefs(css, declared) {
+  const missing = new Set();
+  for (const m of css.matchAll(/var\((--[a-zA-Z0-9-]+)\)/g)) {
+    if (!declared.has(m[1])) missing.add(m[1]);
+  }
+  return [...missing];
+}
+
+test('--accent resolves to the teal brand color (equipos.css and vpo.css consume it)', () => {
+  const css = read('public/tokens.css');
+  assert.match(css, /:root\s*\{[^}]*--accent:\s*var\(--color-accent\)/s);
+  assert.match(css, /html\.dark\s*\{[^}]*--accent:\s*var\(--color-accent\)/s);
+});
+
+test('ui-patterns.css names no undefined color role (--color-inset/--color-field/--color-hover/--surface-muted are gone)', () => {
+  const tokens = read('public/tokens.css');
+  const uiPatterns = read('public/styles/ui-patterns.css');
+  const declared = new Set([...declaredCustomProps(tokens), ...declaredCustomProps(uiPatterns)]);
+  assert.deepEqual(undeclaredVarRefs(uiPatterns, declared), []);
+  for (const dead of ['--color-inset', '--color-field', '--color-hover', '--surface-muted']) {
+    assert.equal(uiPatterns.includes(dead), false, `${dead} should no longer appear in ui-patterns.css`);
+  }
+});
+
+test('nota-evolucion.css defines every --ne-zone-* role it uses (light and dark)', () => {
+  const tokens = read('public/tokens.css');
+  const notaEvo = read('public/styles/nota-evolucion.css');
+  const declared = new Set([...declaredCustomProps(tokens), ...declaredCustomProps(notaEvo)]);
+  assert.deepEqual(undeclaredVarRefs(notaEvo, declared), []);
+  for (const zone of ['n', 'v', 'hd', 'hi', 'nm']) {
+    assert.match(notaEvo, new RegExp(`:root\\s*\\{[^}]*--ne-zone-${zone}:\\s*oklch`, 's'));
+    assert.match(notaEvo, new RegExp(`html\\.dark\\s*\\{[^}]*--ne-zone-${zone}-dark:\\s*oklch`, 's'));
+  }
+});
+

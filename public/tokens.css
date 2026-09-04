@@ -55,6 +55,7 @@
   --color-update-banner-btn-border: rgba(255, 255, 255, 0.4);
 
   /* Legacy aliases (app CSS) */
+  --accent: var(--color-accent);
   --primary: var(--color-accent);
   --action: var(--color-accent);
   --action-hover: var(--color-accent-hover);
@@ -316,6 +317,7 @@ html.dark {
   --color-update-banner-bg: #14532d;
   --color-update-banner-fg: #bbf7d0;
 
+  --accent: var(--color-accent);
   --primary: var(--color-accent);
   --action: var(--color-accent);
   --action-hover: var(--color-accent-hover);

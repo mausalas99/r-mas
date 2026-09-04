@@ -184,26 +184,34 @@
  * distinct hue for fast scanning; this is data classification, not a brand
  * action color, so it does not count against the one-teal-primary rule
  * (same reasoning as Guardia's VENCIDO/EN CURSO status colors). Values match
- * the mockup's literal oklch() figures. */
+ * the mockup's literal oklch() figures — defined here (not tokens.css)
+ * because no other screen shares this five-hue palette. */
+:root {
+  --ne-zone-n: oklch(0.42 0.12 300);
+  --ne-zone-v: oklch(0.42 0.12 210);
+  --ne-zone-hd: oklch(0.42 0.12 18);
+  --ne-zone-hi: oklch(0.42 0.12 85);
+  --ne-zone-nm: oklch(0.42 0.12 160);
+}
 .ne-objetivo-zone[data-ne-objetivo-zone='N'] .ne-zone-label,
 .ne-plan-zone[data-ne-plan-zone='N'] .ne-zone-label {
-  color: var(--ne-zone-n, oklch(0.42 0.12 300));
+  color: var(--ne-zone-n);
 }
 .ne-objetivo-zone[data-ne-objetivo-zone='V'] .ne-zone-label,
 .ne-plan-zone[data-ne-plan-zone='V'] .ne-zone-label {
-  color: var(--ne-zone-v, oklch(0.42 0.12 210));
+  color: var(--ne-zone-v);
 }
 .ne-objetivo-zone[data-ne-objetivo-zone='HD'] .ne-zone-label,
 .ne-plan-zone[data-ne-plan-zone='HD'] .ne-zone-label {
-  color: var(--ne-zone-hd, oklch(0.42 0.12 18));
+  color: var(--ne-zone-hd);
 }
 .ne-objetivo-zone[data-ne-objetivo-zone='HI'] .ne-zone-label,
 .ne-plan-zone[data-ne-plan-zone='HI'] .ne-zone-label {
-  color: var(--ne-zone-hi, oklch(0.42 0.12 85));
+  color: var(--ne-zone-hi);
 }
 .ne-objetivo-zone[data-ne-objetivo-zone='NM'] .ne-zone-label,
 .ne-plan-zone[data-ne-plan-zone='NM'] .ne-zone-label {
-  color: var(--ne-zone-nm, oklch(0.42 0.12 160));
+  color: var(--ne-zone-nm);
 }
 
 /* Objetivo — derivado en vivo, solo lectura; se firma con toda la nota. */
@@ -446,23 +454,30 @@ html.dark .ne-objetivo-item--alert {
 
 /* Zone accents at 0.42 lightness read as near-black on a dark surface — lift
  * lightness for dark mode while keeping each zone's hue and chroma. */
+html.dark {
+  --ne-zone-n-dark: oklch(0.78 0.1 300);
+  --ne-zone-v-dark: oklch(0.78 0.1 210);
+  --ne-zone-hd-dark: oklch(0.78 0.1 18);
+  --ne-zone-hi-dark: oklch(0.78 0.1 85);
+  --ne-zone-nm-dark: oklch(0.78 0.1 160);
+}
 html.dark .ne-objetivo-zone[data-ne-objetivo-zone='N'] .ne-zone-label,
 html.dark .ne-plan-zone[data-ne-plan-zone='N'] .ne-zone-label {
-  color: var(--ne-zone-n-dark, oklch(0.78 0.1 300));
+  color: var(--ne-zone-n-dark);
 }
 html.dark .ne-objetivo-zone[data-ne-objetivo-zone='V'] .ne-zone-label,
 html.dark .ne-plan-zone[data-ne-plan-zone='V'] .ne-zone-label {
-  color: var(--ne-zone-v-dark, oklch(0.78 0.1 210));
+  color: var(--ne-zone-v-dark);
 }
 html.dark .ne-objetivo-zone[data-ne-objetivo-zone='HD'] .ne-zone-label,
 html.dark .ne-plan-zone[data-ne-plan-zone='HD'] .ne-zone-label {
-  color: var(--ne-zone-hd-dark, oklch(0.78 0.1 18));
+  color: var(--ne-zone-hd-dark);
 }
 html.dark .ne-objetivo-zone[data-ne-objetivo-zone='HI'] .ne-zone-label,
 html.dark .ne-plan-zone[data-ne-plan-zone='HI'] .ne-zone-label {
-  color: var(--ne-zone-hi-dark, oklch(0.78 0.1 85));
+  color: var(--ne-zone-hi-dark);
 }
 html.dark .ne-objetivo-zone[data-ne-objetivo-zone='NM'] .ne-zone-label,
 html.dark .ne-plan-zone[data-ne-plan-zone='NM'] .ne-zone-label {
-  color: var(--ne-zone-nm-dark, oklch(0.78 0.1 160));
+  color: var(--ne-zone-nm-dark);
 }
