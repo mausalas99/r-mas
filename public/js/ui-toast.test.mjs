@@ -81,6 +81,81 @@ test('optional action button renders and invokes onClick', () => {
   assert.equal(stack.children.length, 0);
 });
 
+test('error toast schedules no auto-dismiss timer', () => {
+  if (!setupDom()) return;
+  mock.timers.enable({ apis: ['setTimeout'] });
+  try {
+    showToast('fallo', 'error');
+    const stack = document.getElementById('toast-stack');
+    const el = stack.lastElementChild;
+    mock.timers.tick(20000);
+    assert.ok(el.isConnected, 'error toast must stay until dismissed manually');
+  } finally {
+    mock.timers.reset();
+  }
+});
+
+test('action-carrying toast schedules no auto-dismiss timer', () => {
+  if (!setupDom()) return;
+  mock.timers.enable({ apis: ['setTimeout'] });
+  try {
+    showToast('con acción', 'info', {
+      action: { label: 'Deshacer', onClick() {} },
+    });
+    const stack = document.getElementById('toast-stack');
+    const el = stack.lastElementChild;
+    mock.timers.tick(20000);
+    assert.ok(el.isConnected, 'action toast must stay until dismissed manually');
+  } finally {
+    mock.timers.reset();
+  }
+});
+
+test('plain info toast still auto-dismisses', () => {
+  if (!setupDom()) return;
+  mock.timers.enable({ apis: ['setTimeout'] });
+  try {
+    showToast('info simple', 'info');
+    const stack = document.getElementById('toast-stack');
+    const el = stack.lastElementChild;
+    mock.timers.tick(3500);
+    assert.ok(!el.isConnected, 'plain info toast should still auto-dismiss');
+  } finally {
+    mock.timers.reset();
+  }
+});
+
+test('close button dismisses a toast that has no auto-dismiss timer', () => {
+  if (!setupDom()) return;
+  showToast('fallo', 'error');
+  const stack = document.getElementById('toast-stack');
+  const closeBtn = stack.querySelector('.toast-close');
+  assert.ok(closeBtn, 'toast must render a visible close button');
+  closeBtn.click();
+  assert.equal(stack.children.length, 0);
+});
+
+test('focusin pauses the dismiss timer, focusout resumes it', () => {
+  if (!setupDom()) return;
+  mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  try {
+    showToast('foco', 'info');
+    const stack = document.getElementById('toast-stack');
+    const el = stack.lastElementChild;
+
+    mock.timers.tick(2000);
+    el.dispatchEvent(new Event('focusin', { bubbles: true }));
+    mock.timers.tick(5000);
+    assert.ok(el.isConnected, 'toast should remain while focused');
+
+    el.dispatchEvent(new Event('focusout', { bubbles: true }));
+    mock.timers.tick(2000);
+    assert.ok(!el.isConnected, 'toast should dismiss after focus leaves and remaining time elapses');
+  } finally {
+    mock.timers.reset();
+  }
+});
+
 test('swipe dismiss uses velocity or projected travel', () => {
   const history = [
     { t: 0, x: 0, y: 0 },

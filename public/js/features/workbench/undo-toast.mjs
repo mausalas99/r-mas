@@ -1,12 +1,12 @@
 /**
  * Workbench kit — undo toast.
- * README 11c: `om-rise` — a self-contained 4.2s cycle (enter +10px→0, hold
- * ~86%, exit). Shows a message + a "Deshacer" button and self-dismisses.
+ * README 11c: `om-rise` for the entrance (+10px→0, fade in). This carries
+ * the app's only "Deshacer" action, so it does NOT auto-dismiss — it stays
+ * until the user clicks Deshacer, the close button, or the toast itself.
  */
 import { escHtml } from '../../dom-escape.mjs';
 
 const DEFAULT_UNDO_LABEL = 'Deshacer';
-const OM_RISE_DURATION_MS = 4200;
 
 /** @param {{ message?: string, undoLabel?: string }} opts */
 export function buildUndoToastHtml({ message = '', undoLabel = DEFAULT_UNDO_LABEL } = {}) {
@@ -16,6 +16,7 @@ export function buildUndoToastHtml({ message = '', undoLabel = DEFAULT_UNDO_LABE
     (undoLabel
       ? `<button type="button" class="wb-undo-toast-btn" data-wb-undo>${escHtml(undoLabel)}</button>`
       : '') +
+    '<button type="button" class="wb-undo-toast-close" data-wb-undo-close aria-label="Cerrar aviso">×</button>' +
     '</div>'
   );
 }
@@ -26,7 +27,6 @@ export function buildUndoToastHtml({ message = '', undoLabel = DEFAULT_UNDO_LABE
  *   undoLabel?: string,
  *   onUndo?: () => void,
  *   container?: HTMLElement,
- *   durationMs?: number,
  * }} opts
  * @returns {HTMLElement|null}
  */
@@ -38,6 +38,10 @@ export function showUndoToast(opts = {}) {
   const toast = wrap.firstElementChild;
   host.appendChild(toast);
 
+  function remove() {
+    if (toast.parentNode) toast.parentNode.removeChild(toast);
+  }
+
   const undoBtn = toast.querySelector('[data-wb-undo]');
   if (undoBtn && typeof opts.onUndo === 'function') {
     undoBtn.addEventListener('click', () => {
@@ -46,13 +50,8 @@ export function showUndoToast(opts = {}) {
     });
   }
 
-  function remove() {
-    if (toast.parentNode) toast.parentNode.removeChild(toast);
-  }
-
-  toast.addEventListener('animationend', remove, { once: true });
-  // Fallback for environments without animation events (reduced motion, tests).
-  setTimeout(remove, opts.durationMs || OM_RISE_DURATION_MS);
+  const closeBtn = toast.querySelector('[data-wb-undo-close]');
+  if (closeBtn) closeBtn.addEventListener('click', remove);
 
   return toast;
 }

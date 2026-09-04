@@ -2950,6 +2950,27 @@ html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36
   background: color-mix(in oklab, var(--color-on-accent) 22%, transparent);
 }
 
+.toast-close {
+  flex-shrink: 0;
+  margin-left: 2px;
+  padding: 3px 7px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: calc(14px * var(--density-font));
+  line-height: 1;
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+.toast-close:hover,
+.toast-close:focus-visible {
+  opacity: 1;
+  background: color-mix(in oklab, var(--color-on-accent) 18%, transparent);
+}
+
 .toast-glyph {
   flex-shrink: 0;
   width: 18px;

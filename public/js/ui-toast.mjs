@@ -68,13 +68,13 @@ function clearToastTimer(entry) {
 }
 
 function pauseToastTimer(entry) {
-  if (!entry || entry.pausedAt != null) return;
+  if (!entry || entry.noAutoDismiss || entry.pausedAt != null) return;
   clearToastTimer(entry);
   entry.pausedAt = Date.now();
 }
 
 function resumeToastTimer(entry) {
-  if (!entry || entry.pausedAt == null) return;
+  if (!entry || entry.noAutoDismiss || entry.pausedAt == null) return;
   const remaining = Math.max(0, entry.endAt - entry.pausedAt);
   entry.pausedAt = null;
   if (remaining <= 0) {
@@ -123,6 +123,17 @@ function buildToastEl(msg, kind, id, action) {
     });
     el.appendChild(actionBtn);
   }
+
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'toast-close';
+  closeBtn.setAttribute('aria-label', 'Cerrar aviso');
+  closeBtn.textContent = '×';
+  closeBtn.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    removeToastEl(el, false);
+  });
+  el.appendChild(closeBtn);
 
   return el;
 }
@@ -184,7 +195,10 @@ function scheduleDismiss(entry, ms) {
   }, ms);
 }
 
+/** Errors and action-carrying toasts (e.g. undo) stay on screen until the
+ * user dismisses them — returns null to mean "no auto-dismiss timer". */
 function dismissMsForKind(kind, opts) {
+  if (kind === 'error' || (opts && opts.action)) return null;
   if (opts && typeof opts.durationMs === 'number' && opts.durationMs > 0) {
     return opts.durationMs;
   }
@@ -271,15 +285,17 @@ export function showToast(msg, type, opts) {
     el.classList.add('show');
   });
 
+  const dismissMs = dismissMsForKind(kind, opts);
   const entry = {
     id,
     el,
     timer: null,
     endAt: 0,
     pausedAt: null,
+    noAutoDismiss: dismissMs == null,
   };
   toastEntries.set(id, entry);
-  scheduleDismiss(entry, dismissMsForKind(kind, opts));
+  if (!entry.noAutoDismiss) scheduleDismiss(entry, dismissMs);
 
   if (documentHiddenPaused || (typeof document !== 'undefined' && document.hidden)) {
     pauseToastTimer(entry);
@@ -292,17 +308,24 @@ export function showToast(msg, type, opts) {
     if (documentHiddenPaused || (typeof document !== 'undefined' && document.hidden)) return;
     resumeToastTimer(entry);
   });
+  el.addEventListener('focusin', function () {
+    pauseToastTimer(entry);
+  });
+  el.addEventListener('focusout', function () {
+    if (documentHiddenPaused || (typeof document !== 'undefined' && document.hidden)) return;
+    resumeToastTimer(entry);
+  });
 
   if (typeof opts.onClick === 'function') {
     el.classList.add('toast--clickable');
     el.addEventListener('click', function (ev) {
-      if (ev.target && ev.target.closest && ev.target.closest('.toast-action')) return;
+      if (ev.target && ev.target.closest && ev.target.closest('.toast-action, .toast-close')) return;
       opts.onClick();
       removeToastEl(el, false);
     });
   } else {
     el.addEventListener('click', function (ev) {
-      if (ev.target && ev.target.closest && ev.target.closest('.toast-action')) return;
+      if (ev.target && ev.target.closest && ev.target.closest('.toast-action, .toast-close')) return;
       removeToastEl(el, false);
     });
   }
