@@ -157,6 +157,12 @@ describe('buildGuardiaCensusTableRowHtml', () => {
     const html = buildGuardiaCensusTableRowHtml({ id: 'p1', name: 'X', cama: '1' });
     assert.match(html, /92px 1fr 132px 1fr 84px/);
   });
+
+  it('sets the column grid via the --wb-grid custom property, not an inline grid-template-columns', () => {
+    const html = buildGuardiaCensusTableRowHtml({ id: 'p1', name: 'X', cama: '1' });
+    assert.match(html, /style="--wb-grid:92px 1fr 132px 1fr 84px"/);
+    assert.doesNotMatch(html, /grid-template-columns/);
+  });
 });
 
 describe('buildGuardiaCensusTableHtml', () => {
