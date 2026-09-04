@@ -21,13 +21,17 @@ async function confirmRegistroMismatch(parsed, patient) {
       parsed.header.registro +
       ') no coincide con ' +
       patient.registro +
-      '. ¿Continuar de todos modos?'
+      '. ¿Continuar de todos modos?',
+    'Continuar de todos modos'
   );
 }
 
 async function confirmCreateWithoutName(createNew, parsed) {
   if (!createNew || (parsed.header && parsed.header.nombre)) return true;
-  return confirmDriveImportChoice('No se detectó nombre en el encabezado. ¿Crear paciente igualmente?');
+  return confirmDriveImportChoice(
+    'No se detectó nombre en el encabezado. ¿Crear paciente igualmente?',
+    'Crear paciente'
+  );
 }
 
 async function confirmImportGuards(parsed, _opts) {

@@ -144,7 +144,7 @@ function resolveBringPatientsConfirm(deps) {
   if (typeof deps.confirm === 'function') return deps.confirm;
   return async (msg) => {
     if (typeof document === 'undefined') return false;
-    const result = await openConfirm({ weight: 'consequence', title: msg });
+    const result = await openConfirm({ weight: 'consequence', title: msg, confirmLabel: 'Asignar pacientes' });
     return result === 'confirm';
   };
 }

@@ -77,6 +77,7 @@ describe('clinical-rotation preview window', () => {
     assert.match(body, /openConfirm\(\{/);
     assert.match(body, /weight:\s*'destructive'/);
     assert.match(body, /¿Iniciar nueva rotación\?/);
+    assert.match(body, /confirmLabel:\s*'Archivar equipos'/);
     const confirmIdx = body.indexOf('openConfirm(');
     const guardIdx = body.indexOf("if (result !== 'confirm')");
     const nuevaFnIdx = body.indexOf('nuevaFn.call(api');
