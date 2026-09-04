@@ -114,26 +114,17 @@
     ]
   },
   {
-    "id": "joined-as-leader-not-in-members",
+    "id": "not-joined-as-admin-creator-only",
     "fn": "getJoinedTeamsForUser",
     "teams": [
       {
         "team_id": "t1",
         "service": "Sala",
         "leader_user_id": "drmauricios",
-        "members": []
-      },
-      {
-        "team_id": "t2",
-        "service": "UX",
         "created_by": "drmauricios",
-        "members": []
-      },
-      {
-        "team_id": "t3",
-        "service": "Eme",
-        "leader_user_id": "someone-else",
-        "members": []
+        "members": [
+          { "user_id": "other", "username": "otherdoc" }
+        ]
       }
     ],
     "userOrUserId": {
@@ -141,10 +132,7 @@
       "username": "drmauricios"
     },
     "usernameHint": null,
-    "expectedTeamIds": [
-      "t1",
-      "t2"
-    ]
+    "expectedTeamIds": []
   },
   {
     "id": "joined-alias-getJoinedTeams",

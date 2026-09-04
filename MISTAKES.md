@@ -125,6 +125,12 @@ What happened: While verifying the DEMO PÉREZ fixture fix, `scripts/verify/goto
 Root cause: `:has-text()` with no scoping matches the first DOM-order element containing that text anywhere on the page, not the visually-obvious one — a settings-dropdown entry or similar can share label text with the actual navigation tab and win the match.
 Prevention: When a verify-tool screenshot looks wrong, check whether the intended UI state actually changed (dump DOM/URL/active-tab state) before concluding the app is broken. For this app's own tab/screen navigation, prefer `page.evaluate(() => document.getElementById('apptab-lab')?.click())` against real DOM ids from `public/partials/layout/app-body.html` over the text-locator helpers.
 
+## 2026-09-04 — "team leader/creator implies membership" fix over-broadened patient access
+
+What happened: Debugging why an R1 with admin rank saw no patients on iPad, I (and a senior-dev subagent) found `getJoinedTeamsForUser`/`buildTeamsWithMembers` only matched `team_membership` rows, missing team leaders/creators with no explicit row. I shipped a fix (bundled into commit `2c7d6551`) that treated `leader_user_id`/`created_by` as implicit membership. The user then reported seeing ALL teams' patients instead of just their own — the fix was based on a false premise: an admin who creates a team to assign residents to it is not clinically part of that team. The real gap was that the user's genuine team_membership row was for a *different* team than the ones they administratively created, and I never asked which team was actually theirs before shipping the leader-implies-member change.
+Root cause: Assumed "created/leads a team" implies clinical membership without asking the user to confirm which team they were actually on. Also let a subagent commit a bundled fix (DEK loading + turnKey cache + this over-broad change) without separating the confirmed-good parts from the speculative one, and without the user having asked for a commit at all.
+Prevention: When a scope/membership fix depends on a real-world fact only the user knows (who is really on which team), ask before writing the fix, not after shipping it. Keep unrelated fixes in separate commits so a wrong one can be reverted alone. Do not let a subagent create a commit unless the user explicitly asked for one this turn.
+
 Format:
 
 ```

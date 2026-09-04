@@ -70,30 +70,6 @@ function indexTeamMembers(snapshot, archived, removals) {
   return { usersById, membersByTeam };
 }
 
-/**
- * A team's leader/creator may never have an explicit team_membership row (she led
- * the team without "joining" it as a member). Without a synthesized row here, every
- * joined-team-scope check downstream (patient visibility included) treats her as
- * having zero teams — see getJoinedTeamsForUser in lib/clinical-scope/team-membership.mjs.
- */
-function withLeaderAsMember(members, team, usersById) {
-  const leaderId = String(team?.leader_user_id || team?.created_by || '').trim();
-  if (!leaderId) return members;
-  if (members.some((m) => String(m.user_id) === leaderId)) return members;
-  const profile = usersById.get(leaderId) || {};
-  return [
-    ...members,
-    {
-      team_id: String(team.team_id || ''),
-      user_id: leaderId,
-      sub_area_fraction: null,
-      username: profile.username ?? null,
-      rank: profile.rank ?? null,
-      clinical_name: profile.clinical_name ?? null,
-    },
-  ];
-}
-
 export function buildTeamsWithMembers(snapshot) {
   const archived = archivedTeamIds(snapshot);
   const removals = membershipRemovalKeys(snapshot);
@@ -110,7 +86,7 @@ export function buildTeamsWithMembers(snapshot) {
       return {
         ...team,
         sala,
-        members: withLeaderAsMember(membersByTeam.get(teamId) || [], team, usersById),
+        members: membersByTeam.get(teamId) || [],
       };
     });
 }
