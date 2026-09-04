@@ -16,6 +16,7 @@ import {
 } from './drive-import-review-render.mjs';
 import { finishReviewAndImport, runDriveImport } from './drive-import-run.mjs';
 import { getApplyMode } from './drive-import-dom.mjs';
+import { markFieldInvalid, clearFieldInvalid } from '../../ui-field-invalid.mjs';
 
 const modalStepHooks = { updateDocSummary };
 
@@ -76,6 +77,7 @@ export function startDriveImportReview() {
   const ta = getTextarea();
   if (!ta || !String(ta.value || '').trim()) {
     rt.showToast('Pega el contenido del documento', 'error');
+    markFieldInvalid(ta, 'Pega el contenido del documento');
     return;
   }
 
@@ -84,8 +86,10 @@ export function startDriveImportReview() {
     parsed = getParsed();
   } catch {
     rt.showToast('No se pudo analizar el texto', 'error');
+    markFieldInvalid(ta, 'No se pudo analizar el texto');
     return;
   }
+  clearFieldInvalid(ta);
 
   driveImportState.reviewSteps = buildDriveImportReviewSteps(parsed, getReviewBuildOpts(parsed));
 
@@ -109,6 +113,7 @@ export async function confirmDriveImport() {
     const ta = getTextarea();
     if (!ta || !String(ta.value || '').trim()) {
       rt.showToast('Pega el contenido del documento', 'error');
+      markFieldInvalid(ta, 'Pega el contenido del documento');
       return;
     }
     let parsed;
@@ -116,8 +121,10 @@ export async function confirmDriveImport() {
       parsed = getParsed();
     } catch {
       rt.showToast('No se pudo analizar el texto', 'error');
+      markFieldInvalid(ta, 'No se pudo analizar el texto');
       return;
     }
+    clearFieldInvalid(ta);
     await runDriveImport(parsed, { fromReview: false });
   } catch (err) {
     console.error('[drive-import] fast import failed', err);

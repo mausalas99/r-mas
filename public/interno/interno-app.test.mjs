@@ -43,3 +43,32 @@ describe('interno-app — title attributes on CSS-truncated text (WU10)', () => 
     assert.match(src, /<li class="interno-estudio-row\$\{done \? ' is-done' : ''\}"[^>]*role="button" tabindex="0">/);
   });
 });
+
+function functionBody(name) {
+  const start = src.indexOf('function ' + name + '(');
+  assert.notEqual(start, -1, name + ' should be declared');
+  const nextFn = src.indexOf('\nfunction ', start + 1);
+  return src.slice(start, nextFn === -1 ? src.length : nextFn);
+}
+
+describe('markPendienteComplete field-invalid marking (WU14)', () => {
+  it('imports markFieldInvalid from the shared helper', () => {
+    assert.match(src, /import \{ markFieldInvalid \} from '\.\.\/js\/ui-field-invalid\.mjs';/);
+  });
+
+  it('marks #interno-sheet-hecho invalid alongside the server-error toast', () => {
+    const body = functionBody('markPendienteComplete');
+    assert.match(
+      body,
+      /showToast\(msg\);\s*markFieldInvalid\(document\.getElementById\('interno-sheet-hecho'\), msg\);\s*return;/
+    );
+  });
+
+  it('marks #interno-sheet-hecho invalid alongside the network-error toast', () => {
+    const body = functionBody('markPendienteComplete');
+    assert.match(
+      body,
+      /showToast\('Error de conexión'\);\s*markFieldInvalid\(document\.getElementById\('interno-sheet-hecho'\), 'Error de conexión'\);/
+    );
+  });
+});

@@ -9,6 +9,7 @@ import { entregaDraft, entregaUiFlags } from './entrega-modal-state.mjs';
 import { formatHHmm, scheduledAtFromTimeInput, buildTimeSelectMarkup, readTimeFromForm } from './entrega-modal-time.mjs';
 import { checkPill } from './entrega-modal-handoff.mjs';
 import { openConfirm } from '../workbench/confirm.mjs';
+import { markFieldInvalid, clearFieldInvalid } from '../../ui-field-invalid.mjs';
 
 const BADGE_LABELS = {
   consentimiento: 'Consent',
@@ -233,10 +234,13 @@ function addItemFromForm(formEl) {
     return;
   }
   const fields = readFormFields(formEl);
+  const labelEl = formEl.querySelector('[name="entrega-proc-label"]');
   if (!fields.label) {
     toast('Indica la etiqueta del procedimiento.', 'error');
+    markFieldInvalid(labelEl, 'Indica la etiqueta del procedimiento.');
     return;
   }
+  clearFieldInvalid(labelEl);
   const item = createProcedimientoItem({
     ...fields,
     lockedBase: entregaDraft.actor.role === 'diurno',
