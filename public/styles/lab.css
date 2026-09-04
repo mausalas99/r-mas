@@ -2010,62 +2010,7 @@ html.dark .lab-copy-fab:hover {
 }
 html.dark .btn-generate--success { background: var(--color-success-emphasis); }
 html.dark .btn-generate--success:hover { background: var(--color-success-emphasis-hover); }
-.btn-med-secondary {
-  background: color-mix(in oklab, var(--lab-chip-bg) 88%, var(--surface));
-  border: 1px solid color-mix(in oklab, var(--action) 32%, var(--border));
-  color: var(--primary);
-  border-radius: var(--radius-control);
-  padding: calc(9px * var(--density-space)) calc(16px * var(--density-space));
-  font-size: calc(13px * var(--density-font));
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: calc(7px * var(--density-space));
-  min-height: 44px;
-  transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.1s;
-  box-shadow: 0 2px 8px color-mix(in oklab, var(--color-accent) 8%, transparent);
-}
-.btn-med-secondary:hover {
-  background: color-mix(in oklab, var(--lab-chip-bg) 70%, var(--surface));
-  border-color: color-mix(in oklab, var(--action) 48%, var(--border));
-  box-shadow: 0 4px 14px color-mix(in oklab, var(--color-accent) 14%, transparent);
-}
-.btn-med-secondary:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent) 20%, transparent), 0 2px 8px color-mix(in oklab, var(--color-accent) 10%, transparent);
-}
-html.dark .btn-med-secondary {
-  background: var(--color-elevated);
-  border: 1px solid color-mix(in oklab, var(--color-ink) 42%, transparent);
-  color: var(--color-ink);
-  border-radius: var(--radius-control);
-}
-html.dark .btn-med-secondary:hover {
-  background: var(--color-elevated);
-  border-color: color-mix(in oklab, var(--color-ink) 58%, transparent);
-  color: var(--color-ink);
-}
-.btn-med-secondary--muted {
-  color: var(--text-muted);
-  border-color: var(--border);
-  background: color-mix(in oklab, var(--surface) 92%, transparent);
-  box-shadow: none;
-}
-.btn-med-secondary--muted:hover {
-  color: var(--text);
-  background: var(--lab-chip-bg);
-  border-color: color-mix(in oklab, var(--border) 70%, var(--action));
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-}
-html.dark .btn-med-secondary--muted {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: var(--border);
-}
-html.dark .btn-med-secondary--muted:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
+/* .btn-med-secondary base/hover/focus/dark/--muted → components.css (single source) */
 .modal-backdrop { display: none; position: fixed; inset: 0; background: var(--scrim-bg); z-index: var(--z-modal); align-items: center; justify-content: center; }
 .modal-backdrop.open {
   display: flex;

@@ -292,12 +292,7 @@ html.dark .med-insulin-pump-alg-pill {
 }
 .med-soap-preview-chip--insulin-pump .med-insulin-pump-alg-pill { margin-left: 8px; }
 .med-nota-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.btn-med-secondary {
-  background: none; border: 1px solid var(--border); border-radius: var(--radius-md);
-  padding: 8px 14px; font-size: 13px; font-family: inherit; font-weight: 600;
-  color: var(--text-muted); cursor: pointer;
-}
-.btn-med-secondary:hover { border-color: var(--action); color: var(--action); background: var(--lab-chip-bg); }
+/* .btn-med-secondary base/hover → components.css (single source) */
 .med-output-tabs {
   position: relative;
   display: inline-flex;
