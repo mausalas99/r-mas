@@ -500,7 +500,7 @@ html.censo-preview-open {
 }
 
 .censo-preview-backdrop {
-  z-index: 120;
+  z-index: var(--z-modal);
 }
 .censo-preview-backdrop.open {
   align-items: stretch;

@@ -63,7 +63,7 @@ function openLabPatientPicker(opts) {
   var titleText = String(options.title || '¿A qué paciente enviar los labs?');
   var overlay = document.createElement('div');
   overlay.id = 'lab-picker-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:var(--z-modal);display:flex;align-items:center;justify-content:center;';
   var box = document.createElement('div');
   box.style.cssText = 'background:#1f2937;border-radius:10px;padding:20px;min-width:260px;max-width:360px;width:90%;';
   var title = document.createElement('div');

@@ -397,7 +397,7 @@ function tendDragBeginVisuals(state) {
   ghost.setAttribute('aria-hidden', 'true');
   ghost.style.cssText =
     'position:fixed;left:' + rect.left + 'px;top:' + rect.top + 'px;width:' + rect.width +
-    'px;height:' + rect.height + 'px;margin:0;box-sizing:border-box;pointer-events:none;z-index:10060;transition:none;opacity:1';
+    'px;height:' + rect.height + 'px;margin:0;box-sizing:border-box;pointer-events:none;z-index:var(--z-modal-nested);transition:none;opacity:1';
   document.body.appendChild(ghost);
   card.classList.add('tend-card--sort-source');
   state.ghost = ghost;

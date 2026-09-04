@@ -1305,7 +1305,7 @@ html.lab-copy-fab-active .lab-panel-root .lab-work-scroll {
   position: fixed;
   right: calc(22px * var(--density-space));
   bottom: calc(22px * var(--density-space));
-  z-index: 150;
+  z-index: var(--z-floating);
   width: 48px;
   height: 48px;
   min-width: 48px;
@@ -1529,7 +1529,7 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
-  z-index: 120;
+  z-index: var(--z-dropdown);
   width: max-content;
   min-width: 168px;
   max-width: min(72vw, 240px);

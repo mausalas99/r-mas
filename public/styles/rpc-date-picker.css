@@ -168,7 +168,7 @@ input.rpc-datetime-input.rpc-datetime-field__native {
   box-shadow: var(--shadow-md);
   color: var(--text);
   font-family: inherit;
-  animation: modal-in var(--dur-fast) var(--ease-out);
+  animation: modal-in var(--dur-normal) var(--ease-out);
 }
 
 @media (prefers-reduced-motion: reduce) {

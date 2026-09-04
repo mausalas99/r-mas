@@ -429,7 +429,7 @@ html[data-cloud-mobile='1'] #lan-connection-banner {
   left: 12px;
   right: 12px;
   top: max(56px, calc(env(safe-area-inset-top) + 48px));
-  z-index: 11000;
+  z-index: var(--z-banner);
   padding: 12px 14px;
   border-radius: var(--radius-container);
   background: color-mix(in oklab, var(--color-accent, #4a52e8) 14%, var(--color-surface-elevated, #fff));
@@ -444,7 +444,7 @@ html[data-cloud-mobile='1'] #lan-connection-banner {
 .rpc-cloud-mobile-gate {
   position: fixed;
   inset: 0;
-  z-index: 12000;
+  z-index: var(--z-gate);
   display: flex;
   align-items: center;
   justify-content: center;

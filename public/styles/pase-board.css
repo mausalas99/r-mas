@@ -271,7 +271,7 @@ html.ui-density-guardia #lan-connection-banner {
 }
 
 .guardia-hoy-modal-backdrop.open {
-  z-index: 205;
+  z-index: var(--z-modal);
 }
 
 .guardia-hoy-modal {
@@ -462,7 +462,7 @@ html.ui-density-guardia #lan-connection-banner {
 }
 
 #entrega-modal-backdrop.entrega-modal-backdrop.open {
-  z-index: 210;
+  z-index: var(--z-modal);
   align-items: center;
   justify-content: center;
   padding: max(10px, env(safe-area-inset-top, 0px)) 14px
@@ -2865,14 +2865,14 @@ html.guardia-entrega-roster-open #guardia-board-scroll {
 .entrega-roster-panel-host:not(:empty) {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: var(--z-modal-nested);
   pointer-events: auto;
 }
 
 .roster-panel {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: var(--z-modal-nested);
   background: var(--color-paper);
   color: var(--text);
   display: flex;

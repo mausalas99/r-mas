@@ -14,7 +14,7 @@
 .ui-overlay-scrim {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: var(--z-modal);
   background: var(--scrim-bg);
 }
 .ui-overlay-dialog {
@@ -26,7 +26,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 10001;
+  z-index: var(--z-modal-nested);
   max-height: 85vh;
   padding-bottom: env(safe-area-inset-bottom, 0);
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;

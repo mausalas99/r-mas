@@ -150,6 +150,7 @@
   --z-sticky: 10;
   --z-dropdown: 100;
   --z-sidebar-rail: 450;
+  --z-sidebar-popover: 520; /* popovers anchored inside the patient sidebar */
   --z-floating: 1000;
   --z-modal: 9000;
   --z-modal-nested: 9010;
@@ -165,7 +166,10 @@
   --z-toast: 9500;
   --z-celebration: 9600;
   --z-cmdk: 9800;
+  --z-cmdk-confirm: 9810; /* confirms layered above the ⌘K palette */
+  --z-cmdk-confirm-content: 9811;
   --z-db-unlock: 9900;
+  --z-gate: 9910; /* full-screen blocking connection/auth gates */
   --input-fill: color-mix(in oklab, var(--color-paper) 65%, var(--surface));
   --card-body-bg: color-mix(in oklab, var(--surface) 94%, var(--bg));
   --diagram-line: #64748b;

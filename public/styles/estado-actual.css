@@ -18,7 +18,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 #ea-copy-fab.lab-copy-fab {
-  z-index: 151;
+  z-index: var(--z-floating);
 }
 
 .estado-actual-panel {

@@ -2612,7 +2612,7 @@ html.dark .tend-gaso-tip {
 
 /* Fin de guardia — pendientes → equipos origen */
 .guardia-fin-turno-backdrop.open {
-  z-index: 207;
+  z-index: var(--z-modal);
 }
 
 .guardia-fin-turno-modal {
@@ -2693,7 +2693,7 @@ html.dark .tend-gaso-tip {
 
 /* Guardia patient chip action sheet */
 .guardia-patient-action-backdrop.open {
-  z-index: 206;
+  z-index: var(--z-modal);
 }
 
 .guardia-patient-action-modal {
@@ -2776,7 +2776,7 @@ html.dark .tend-gaso-tip {
 .tend-event-compose-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1120;
+  z-index: var(--z-modal-nested);
   display: flex;
   align-items: center;
   justify-content: center;

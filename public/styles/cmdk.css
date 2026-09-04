@@ -186,7 +186,7 @@
 .paste-smart-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 12000;
+  z-index: var(--z-cmdk-confirm);
   background: color-mix(in srgb, var(--text) 28%, transparent);
   backdrop-filter: blur(2px);
 }
@@ -198,7 +198,7 @@
 
 .paste-smart-modal {
   position: fixed;
-  z-index: 12001;
+  z-index: var(--z-cmdk-confirm-content);
   left: 50%;
   top: 42%;
   transform: translate(-50%, -50%);

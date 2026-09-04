@@ -671,7 +671,7 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
 #patient-svc-pick-scrim {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -697,7 +697,7 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
   border: 1px solid var(--border);
   background: var(--color-elevated);
   box-shadow: var(--elev-overlay, var(--shadow-md));
-  z-index: 10001;
+  z-index: var(--z-modal-nested);
   container-type: normal;
 }
 #patient-ic-panel.patient-dash-ic-modal h3,

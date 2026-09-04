@@ -555,7 +555,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 9000;
+  z-index: var(--z-modal);
   padding: 16px;
 }
 
@@ -627,7 +627,7 @@
   padding: 10px 16px;
   border-radius: 8px;
   font-size: 0.875rem;
-  z-index: 10000;
+  z-index: var(--z-toast);
   transition: transform 0.2s ease;
 }
 
