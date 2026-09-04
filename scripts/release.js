@@ -227,15 +227,27 @@ function updateReadme(version, title) {
   console.log('Actualizado README.md');
 }
 
+/**
+ * Overwrites data/release-notes-highlights.mjs with a stub for just this
+ * version — no history. Onboarding covers past-version context; carrying
+ * old curated entries forward only bloated the file release after release.
+ */
 function updateHighlightsStub(version) {
-  let text = fs.readFileSync(RELEASE_NOTES_HIGHLIGHTS, 'utf8');
-  const constName = curatedConstName(version);
-  const key = `'${version}':`;
-  if (text.includes(key)) {
-    console.log('release-notes-highlights.mjs ya tiene RELEASE_NOTES_HIGHLIGHTS para', version);
-    return;
+  if (fs.existsSync(RELEASE_NOTES_HIGHLIGHTS)) {
+    const existing = fs.readFileSync(RELEASE_NOTES_HIGHLIGHTS, 'utf8');
+    if (existing.includes(`'${version}':`)) {
+      console.log('release-notes-highlights.mjs ya tiene RELEASE_NOTES_HIGHLIGHTS para', version);
+      return;
+    }
   }
-  const varBlock = `var ${constName} = [
+  const constName = curatedConstName(version);
+  const text = `/**
+ * Curated in-app "what's new" highlights for the current release only (data
+ * only). Onboarding covers history for new/returning users — this file is
+ * not an archive, it exists to be overwritten wholesale on every bump.
+ */
+
+var ${constName} = [
   {
     title: 'TODO',
     body: 'Completar antes de publicar.',
@@ -246,37 +258,14 @@ function updateHighlightsStub(version) {
   },
 ];
 
-`;
-  const mapEntry = `  '${version}': ${constName},\n`;
-  const fallbackMarker = '/** Fallback when a version has no curated entry';
-  if (!text.includes(fallbackMarker)) {
-    throw new Error('data/release-notes-highlights.mjs: no se encontró marcador FALLBACK.');
-  }
-  text = text.replace(fallbackMarker, varBlock + fallbackMarker);
-  const marker = 'export var RELEASE_NOTES_HIGHLIGHTS = {\n';
-  if (!text.includes(marker)) {
-    throw new Error('data/release-notes-highlights.mjs: no se encontró RELEASE_NOTES_HIGHLIGHTS.');
-  }
-  text = text.replace(marker, marker + mapEntry);
-  fs.writeFileSync(RELEASE_NOTES_HIGHLIGHTS, text, 'utf8');
-  console.log('Añadido stub', constName, 'en data/release-notes-highlights.mjs');
-}
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = ${constName};
 
-function updateHighlightsDefault(version) {
-  let text = fs.readFileSync(RELEASE_NOTES_HIGHLIGHTS, 'utf8');
-  const constName = curatedConstName(version);
-  const re = /export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_\d+;/;
-  if (!re.test(text)) {
-    throw new Error('data/release-notes-highlights.mjs: no se encontró RELEASE_NOTES_HIGHLIGHTS_DEFAULT.');
-  }
-  if (!text.includes(`var ${constName} =`)) {
-    throw new Error(
-      `data/release-notes-highlights.mjs: falta var ${constName} — completa highlights antes del bump.`
-    );
-  }
-  text = text.replace(re, `export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = ${constName};`);
+export var RELEASE_NOTES_HIGHLIGHTS = {
+  '${version}': ${constName},
+};
+`;
   fs.writeFileSync(RELEASE_NOTES_HIGHLIGHTS, text, 'utf8');
-  console.log('Actualizado RELEASE_NOTES_HIGHLIGHTS_DEFAULT →', constName);
+  console.log('Reescrito data/release-notes-highlights.mjs con stub', constName, '(sin historial)');
 }
 
 function readReleaseTitle(version) {
@@ -304,7 +293,6 @@ async function cmdBump(argv) {
   writeReleaseNotes(version, title);
   updateReadme(version, title);
   updateHighlightsStub(version);
-  updateHighlightsDefault(version);
   run('npm run build:changelog');
 
   const packSync = ensureElectronPackFiles(ROOT, { write: true });

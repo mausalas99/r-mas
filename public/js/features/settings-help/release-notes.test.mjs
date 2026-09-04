@@ -9,11 +9,20 @@ import {
   RELEASE_NOTES_HIGHLIGHTS_DEFAULT,
 } from './release-notes-curated.mjs';
 
+// data/release-notes-highlights.mjs only ever holds the current version — no
+// history (onboarding covers that). These tests read the current version
+// back out of the map instead of hardcoding one, so they keep working
+// unchanged after every bump.
+const currentVersion = Object.entries(RELEASE_NOTES_HIGHLIGHTS).find(
+  ([, notes]) => notes === RELEASE_NOTES_HIGHLIGHTS_DEFAULT
+)?.[0];
+const currentTitle = RELEASE_NOTES_HIGHLIGHTS_DEFAULT[0]?.title;
+
 describe('release-notes', () => {
   it('resolves curated highlights for v-prefixed version', () => {
-    const text = formatCuratedReleaseNotesPlain('v8.2.9');
-    assert.ok(text.includes('Copiar labs con formato'));
-    assert.ok(!text.includes('Signos vitales'));
+    assert.ok(currentVersion, 'RELEASE_NOTES_HIGHLIGHTS must have exactly the current version');
+    const text = formatCuratedReleaseNotesPlain('v' + currentVersion);
+    assert.ok(text.includes(currentTitle));
   });
 
   it('does not fall back to default for unknown future version', () => {
@@ -21,14 +30,6 @@ describe('release-notes', () => {
   });
 
   it('uses default when version omitted', () => {
-    const versionKey = Object.entries(RELEASE_NOTES_HIGHLIGHTS).find(
-      ([, notes]) => notes === RELEASE_NOTES_HIGHLIGHTS_DEFAULT
-    )?.[0];
-    assert.ok(
-      versionKey,
-      'RELEASE_NOTES_HIGHLIGHTS_DEFAULT must be registered in RELEASE_NOTES_HIGHLIGHTS'
-    );
-
     const text = formatCuratedReleaseNotesPlain('');
     assert.ok(text.length > 0, 'default release notes must not be empty');
     assert.ok(!text.includes('Completar antes de publicar'));
@@ -36,13 +37,13 @@ describe('release-notes', () => {
       !RELEASE_NOTES_HIGHLIGHTS_DEFAULT.some((n) => String(n.title || '').trim() === 'TODO'),
       'default highlights must not use TODO placeholders'
     );
-    assert.equal(text, formatCuratedReleaseNotesPlain(versionKey));
+    assert.equal(text, formatCuratedReleaseNotesPlain(currentVersion));
   });
 
   it('updater prefers curated target version over stale feed notes', () => {
-    const text = formatUpdaterReleaseNotesPlain('8.2.9', 'Signos vitales sin falsas alarmas');
-    assert.ok(text.includes('Copiar labs con formato'));
-    assert.ok(!text.includes('Signos vitales'));
+    const text = formatUpdaterReleaseNotesPlain(currentVersion, 'Texto de relleno del feed');
+    assert.ok(text.includes(currentTitle));
+    assert.ok(!text.includes('Texto de relleno del feed'));
   });
 
   it('updater uses feed notes when no curated entry exists', () => {
