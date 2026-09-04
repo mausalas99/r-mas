@@ -2084,7 +2084,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   font-size: 10px; color: var(--text-muted);
 }
 .lan-host-patients-badge {
-  display: inline-block; font-size: 9px; font-weight: 700; text-transform: uppercase;
+  display: inline-block; font-size: 10px; /* --type-wb-counter-label scale */ font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.04em; padding: 1px 5px; border-radius: 4px; margin-right: 4px;
   background: var(--lab-chip-bg); color: var(--text-muted);
 }
@@ -2174,7 +2174,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   text-align: center; color: var(--text-muted); padding: 24px 12px !important;
 }
 .lan-host-census-badge {
-  display: inline-block; font-size: 9px; font-weight: 700; text-transform: uppercase;
+  display: inline-block; font-size: 10px; /* --type-wb-counter-label scale */ font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.04em; padding: 1px 5px; border-radius: 4px;
   background: var(--lab-chip-bg); color: var(--text-muted);
 }

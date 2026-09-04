@@ -534,7 +534,7 @@ html.dark .med-pharm-modal-legend {
 .med-pharm-regimen-badge {
   display: inline-block;
   padding: 1px 6px;
-  font-size: 9px;
+  font-size: 10px; /* --type-wb-counter-label scale */
   font-weight: 800;
   letter-spacing: 0;
   border-radius: var(--radius-pill);
@@ -561,7 +561,7 @@ html.dark .med-pharm-modal-legend {
   display: inline-block;
   margin-top: 0;
   padding: 1px 6px;
-  font-size: 8px;
+  font-size: 10px; /* --type-wb-counter-label scale */
   font-weight: 700;
   letter-spacing: 0.04em;
   border-radius: var(--radius-pill);
@@ -961,7 +961,7 @@ body.rpc-med-pharm-modal-open {
   top: 2px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 8px;
+  font-size: 10px; /* --type-wb-counter-label scale */
   font-weight: 600;
   text-transform: lowercase;
   color: var(--text-muted);
@@ -1062,7 +1062,7 @@ body.rpc-med-pharm-modal-open {
 }
 
 .med-pharm-grid-scope .some-grid-unified td.day-pad.indicated .x2 {
-  font-size: 9px;
+  font-size: 10px; /* --type-wb-counter-label scale */
   font-weight: 800;
   color: var(--primary);
   line-height: var(--some-day-band-h);
