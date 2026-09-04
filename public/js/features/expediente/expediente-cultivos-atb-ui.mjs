@@ -224,6 +224,18 @@ function wireAtbRisHoverPanels(rootEl) {
       if (rel && (wrap.contains(rel) || p.contains(rel))) return;
       hideAtbRisHoverPanel(p);
     });
+    rootEl.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Enter' && ev.key !== ' ') return;
+      var t = ev.target;
+      if (t && t.nodeType !== 1) t = t.parentElement;
+      if (!t || !t.closest || !t.closest('.atb-chip')) return;
+      var wrap = t.closest('.cult-atb-ris-chip-wrap');
+      if (!wrap || !rootEl.contains(wrap)) return;
+      ev.preventDefault();
+      var p = panelAtbRisForWrap(wrap);
+      if (p) cancelHideAtbPanel(p);
+      positionAtbRisHoverPanel(wrap);
+    });
   }
   rootEl.querySelectorAll('.atb-ris-hover-panel').forEach(wireAtbRisPanelHoverListeners);
 }

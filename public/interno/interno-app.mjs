@@ -230,7 +230,7 @@ function render() {
       html += `<li class="interno-row${crit}" data-id="${escapeAttr(p.id)}">
         <span class="interno-bed">${escapeHtml(p.bedLabel)}</span>
         <span class="interno-row-main">
-          <span class="interno-name">${escapeHtml(p.nameShort)}</span>
+          <span class="interno-name" title="${escapeAttr(p.nameShort)}">${escapeHtml(p.nameShort)}</span>
           ${markers}
         </span>
         <span class="interno-chip ${escapeAttr(p.vitals?.cls || 'nominal')}">${escapeHtml(p.vitals?.banner || '')}</span>
@@ -260,11 +260,20 @@ function render() {
     });
   });
   root.querySelectorAll('.interno-estudio-row').forEach((row) => {
-    row.addEventListener('click', (ev) => {
-      if (ev.target.closest('[data-mark-done]')) return;
+    const openDetail = () => {
       const patientId = row.getAttribute('data-patient-id');
       const itemId = row.getAttribute('data-item-id');
       if (patientId && itemId) openEstudioDetail(patientId, itemId);
+    };
+    row.addEventListener('click', (ev) => {
+      if (ev.target.closest('[data-mark-done]')) return;
+      openDetail();
+    });
+    row.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Enter' && ev.key !== ' ') return;
+      if (ev.target.closest('[data-mark-done]')) return;
+      ev.preventDefault();
+      openDetail();
     });
   });
   root.querySelectorAll('[data-mark-done]').forEach((btn) => {
@@ -376,7 +385,7 @@ function renderEstudioRow(patientId, item) {
   return `<li class="interno-estudio-row${done ? ' is-done' : ''}" data-patient-id="${escapeAttr(patientId)}" data-item-id="${escapeAttr(item.id)}" role="button" tabindex="0">
     <span class="interno-estudio-time">${time}</span>
     <span class="interno-estudio-main">
-      <span class="interno-estudio-label">${escapeHtml(item.label || '')}</span>
+      <span class="interno-estudio-label" title="${escapeAttr(item.label || '')}">${escapeHtml(item.label || '')}</span>
       ${chips ? `<span class="interno-estudio-badges">${chips}</span>` : ''}
     </span>
     ${doneBtn}

@@ -260,6 +260,13 @@ function ensureTendenciasClickDelegation() {
   }
   _tendenciasClickDelegationWired = true;
   root.addEventListener('click', onTendenciasContainerClick);
+  root.addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    var t = ev.target;
+    if (!t || !t.closest || !t.closest('.tend-card')) return;
+    ev.preventDefault();
+    onTendenciasContainerClick(ev);
+  });
 }
 
 function handleTendenciasToolbarClick(t, ev) {

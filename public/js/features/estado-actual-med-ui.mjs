@@ -144,7 +144,9 @@ function medItemRowHtml(item, key, idx) {
   return (
     '<div class="ea-med-item">' +
     '<div class="ea-med-item-row">' +
-    '<span class="ea-med-item-text">' +
+    '<span class="ea-med-item-text" title="' +
+    escAttr(item) +
+    '">' +
     escHtml(item) +
     '</span>' +
     '<button type="button" class="ea-btn ea-btn--icon ea-med-item-remove" data-ea-med-remove="' +

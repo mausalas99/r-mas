@@ -83,6 +83,7 @@ function buildMedPharmNameRow(group, current, stats, columns, profile, windowLab
   var nameEl = document.createElement('div');
   nameEl.className = 'med-pharm-name';
   nameEl.textContent = group.med || '';
+  nameEl.title = group.med || '';
   nameRow.appendChild(nameEl);
   var catEl = document.createElement('span');
   catEl.className = 'med-pharm-cat-badge';

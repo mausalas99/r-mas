@@ -68,7 +68,9 @@ export function syncHeaderContext(ctx) {
           return String(x.id) === String(id);
         }) || null;
   var showPatient = !!(p && !sidebarShowsActivePatient());
-  patientEl.textContent = showPatient ? buildHeaderPatientLine(p) : '';
+  var patientLine = showPatient ? buildHeaderPatientLine(p) : '';
+  patientEl.textContent = patientLine;
+  patientEl.title = patientLine;
   patientEl.style.display = showPatient ? '' : 'none';
   pathEl.textContent = buildHeaderPath(
     typeof ctx.getActiveAppTab === 'function' ? ctx.getActiveAppTab() : 'nota',

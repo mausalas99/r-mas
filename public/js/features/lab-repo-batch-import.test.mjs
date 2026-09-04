@@ -126,4 +126,20 @@ describe('lab-repo-batch-import — inline "Actualizando pacientes" progress', (
     assert.match(meta.textContent, /^1 de 1 · /);
     assert.equal(fill.style.width, '100%');
   });
+
+  it('escapes the patient name in the row title attribute (CSS-truncated name)', () => {
+    if (typeof document === 'undefined') return;
+    registerLabRepoBatchImportRuntime({
+      getLabRepoBatchTeamPatients: () => [
+        { id: 'p1', nombre: 'García "López" <VIP>', registro: 'REG1' },
+      ],
+      getActivePatient: () => null,
+      getActiveId: () => null,
+      showToast: () => {},
+    });
+    openLabRepoBatchModal();
+    const nameEl = document.querySelector('.lab-repo-batch-row-name');
+    assert.equal(nameEl.getAttribute('title'), 'García &quot;López&quot; &lt;VIP&gt;');
+    assert.doesNotMatch(document.getElementById('lab-repo-batch-list').innerHTML, /title="[^"]*<VIP>/);
+  });
 });

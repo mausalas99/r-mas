@@ -49,6 +49,14 @@ test('renderMedCategoryGrid omite categorías vacías y ofrece añadir', () => {
   assert.doesNotMatch(html, /Sin medicamentos/);
 });
 
+test('renderMedCategoryGrid pone title con el texto completo y escapado', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.analgesia = 'PARACETAMOL 500MG "dosis alta" <riesgo>';
+  const html = renderMedCategoryGrid(m, null, {});
+  assert.match(html, /class="ea-med-item-text" title="PARACETAMOL 500MG &quot;dosis alta&quot; &lt;riesgo&gt;"/);
+  assert.doesNotMatch(html, /title="[^"]*<riesgo/);
+});
+
 test('renderMedCategoryGrid avanza día de ATB sin reimportar SOME', () => {
   const m = emptyMonitoreo();
   m.estadoClinico.abx = 'LINEZOLID 600MG VO C/12H DÍA 5';

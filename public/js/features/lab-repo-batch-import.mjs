@@ -1,6 +1,6 @@
 /** Bulk lab-repo update for mi equipo: sequential IPC + sidebar job queue. */
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
-import { esc } from '../dom-escape.mjs';
+import { esc, escAttr } from '../dom-escape.mjs';
 import { patientsVisibleInSidebar } from './patients-scope.mjs';
 import { registerLabPanelRuntime, rt } from './lab-panel-runtime-state.mjs';
 import {
@@ -119,7 +119,9 @@ function renderBatchList() {
         (disabled ? ' disabled' : '') +
         ' />' +
         '<span class="lab-repo-batch-row-text">' +
-        '<span class="lab-repo-batch-row-name">' +
+        '<span class="lab-repo-batch-row-name" title="' +
+        escAttr(r.nombre) +
+        '">' +
         esc(r.nombre) +
         '</span>' +
         '<span class="lab-repo-batch-row-meta">' +

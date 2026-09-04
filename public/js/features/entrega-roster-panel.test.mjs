@@ -1,5 +1,8 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { storage } from '../storage.js';
 import {
   rosterHandoffCounts,
@@ -11,6 +14,18 @@ import {
   serializePendientesJson,
   createProcedimientoItem,
 } from '../../../lib/entrega/entrega-pendientes.mjs';
+
+const dir = dirname(fileURLToPath(import.meta.url));
+const panelSrc = readFileSync(join(dir, 'entrega-roster-panel.mjs'), 'utf8');
+
+describe('renderRosterRow', () => {
+  it('sets a title on roster-row-name via the shared escAttr helper (CSS-truncated name)', () => {
+    const start = panelSrc.indexOf('function renderRosterRow');
+    const end = panelSrc.indexOf('function', start + 20);
+    const fn = panelSrc.slice(start, end);
+    assert.match(fn, /class="roster-row-name" title="\$\{escAttr\(p\.name \|\| '—'\)\}"/);
+  });
+});
 
 const store = {};
 

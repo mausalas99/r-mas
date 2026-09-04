@@ -1,6 +1,7 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildHeaderPath, buildHeaderPatientLine } from './header-context.mjs';
+import { buildHeaderPath, buildHeaderPatientLine, syncHeaderContext } from './header-context.mjs';
+import { setPatients } from '../app-state.mjs';
 
 const SALA = { appMode: 'sala' };
 const INTER = { appMode: 'interconsulta' };
@@ -29,6 +30,33 @@ test('buildHeaderPath: expediente shows group › section', () => {
   assert.equal(buildHeaderPath('nota', 'notas', INTER), 'Clínico › Nota de evolución');
   assert.equal(buildHeaderPath('nota', 'todo', SALA), 'Resumen');
   assert.equal(buildHeaderPath('nota', 'datos', SALA), 'Resumen');
+});
+
+test('syncHeaderContext sets the patient element title to the full (un-truncated) line', () => {
+  if (typeof document === 'undefined') return;
+  const patientEl = document.createElement('span');
+  patientEl.id = 'header-context-patient';
+  const pathEl = document.createElement('span');
+  pathEl.id = 'header-context-path';
+  document.body.appendChild(patientEl);
+  document.body.appendChild(pathEl);
+  document.documentElement.classList.add('sidebar-auto-hide');
+  setPatients([{ id: 'p1', nombre: 'García López', cuarto: '412' }]);
+  try {
+    syncHeaderContext({
+      getActiveId: () => 'p1',
+      getActiveAppTab: () => 'nota',
+      getActiveInner: () => 'todo',
+      getSettings: () => ({}),
+    });
+    assert.equal(patientEl.title, 'García López · 412');
+    assert.equal(patientEl.title, patientEl.textContent);
+  } finally {
+    document.documentElement.classList.remove('sidebar-auto-hide');
+    patientEl.remove();
+    pathEl.remove();
+    setPatients([]);
+  }
 });
 
 test('buildHeaderPatientLine: name · bed · truncated dx', () => {
