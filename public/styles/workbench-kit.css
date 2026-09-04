@@ -592,6 +592,22 @@
   flex-shrink: 0;
 }
 
+.wb-undo-toast-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font: 600 15px/1 var(--font-ui);
+  opacity: 0.7;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0 0 0 4px;
+}
+
+.wb-undo-toast-close:hover,
+.wb-undo-toast-close:focus-visible {
+  opacity: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wb-scrim,
   .wb-confirm-modal {
