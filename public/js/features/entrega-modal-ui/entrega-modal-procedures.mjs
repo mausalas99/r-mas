@@ -8,6 +8,7 @@ import {
 import { entregaDraft, entregaUiFlags } from './entrega-modal-state.mjs';
 import { formatHHmm, scheduledAtFromTimeInput, buildTimeSelectMarkup, readTimeFromForm } from './entrega-modal-time.mjs';
 import { checkPill } from './entrega-modal-handoff.mjs';
+import { openConfirm } from '../workbench/confirm.mjs';
 
 const BADGE_LABELS = {
   consentimiento: 'Consent',
@@ -119,12 +120,19 @@ function updateItemFlags(itemId, flag, checked) {
   renderProcList();
 }
 
-function deleteItem(itemId) {
+async function deleteItem(itemId) {
   const item = entregaDraft.items.find((it) => it.id === itemId);
   if (!item || !entregaDraft.actor || !canDeletePendienteItem(item, entregaDraft.actor)) {
     toast('No puedes eliminar este procedimiento.', 'error');
     return;
   }
+  const result = await openConfirm({
+    weight: 'destructive',
+    title: '¿Eliminar procedimiento?',
+    message: item.label ? `Se eliminará «${item.label}» de la lista de pendientes.` : 'Se eliminará este procedimiento de la lista de pendientes.',
+    confirmLabel: 'Eliminar',
+  });
+  if (result !== 'confirm') return;
   entregaDraft.items = entregaDraft.items.filter((it) => it.id !== itemId);
   renderProcList();
 }
@@ -263,7 +271,7 @@ function wireProcUiOnce() {
     if (!delBtn) return;
     const card = delBtn.closest('[data-item-id]');
     const id = card?.getAttribute('data-item-id');
-    if (id) deleteItem(id);
+    if (id) void deleteItem(id);
   });
 
   root.addEventListener('change', (ev) => {

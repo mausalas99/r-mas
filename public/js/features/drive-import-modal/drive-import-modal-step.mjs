@@ -44,7 +44,7 @@ export function setModalStep(step, hooks) {
   syncConfirmLabel();
 }
 
-export async function confirmDriveImportChoice(message) {
+export async function confirmDriveImportChoice(message, confirmLabel) {
   const bd = getBackdrop();
   const wasOpen = !!(bd && bd.classList.contains('open'));
   if (bd && wasOpen) {
@@ -53,7 +53,7 @@ export async function confirmDriveImportChoice(message) {
   }
   let ok = false;
   try {
-    const result = await openConfirm({ weight: 'destructive', title: message });
+    const result = await openConfirm({ weight: 'destructive', title: message, confirmLabel: confirmLabel || 'Continuar' });
     ok = result === 'confirm';
   } finally {
     if (bd && wasOpen) {

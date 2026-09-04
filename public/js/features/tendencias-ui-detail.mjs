@@ -23,6 +23,7 @@ import { openTendEventComposeModal } from './tendencias-event-compose.mjs';
 import { findEventualidadEntry } from './eventualidades-store.mjs';
 import { deletePatientEventualidad } from './eventualidades-render.mjs';
 import { alignSeriesToLabels, formatTendTooltipDelta } from './tendencias-insight.mjs';
+import { openConfirm } from './workbench/confirm.mjs';
 
 /**
  * Chart.js plugin: horizontal normality (reference) band for Tendencias.
@@ -171,6 +172,14 @@ async function handleTendDetailEventDelete(entryId) {
   if (!entryId) return;
   var patient = activeTendDetailPatient();
   if (!patient) return;
+  var entry = patient.eventualidades && findEventualidadEntry(patient.eventualidades, entryId);
+  var result = await openConfirm({
+    weight: 'destructive',
+    title: '¿Eliminar esta eventualidad?',
+    message: (entry && entry.text) || 'Esta eventualidad se borrará del historial del paciente.',
+    confirmLabel: 'Eliminar',
+  });
+  if (result !== 'confirm') return;
   var out = await deletePatientEventualidad(patient, entryId);
   if (out && out.ok) {
     rt.showToast('Eventualidad eliminada.', 'success');

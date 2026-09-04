@@ -12,12 +12,15 @@ import { fileURLToPath } from 'node:url';
 const src = readFileSync(fileURLToPath(new URL('./drive-import-modal-step.mjs', import.meta.url)), 'utf8');
 
 describe('confirmDriveImportChoice destructive confirm', () => {
-  it('wraps openConfirm with weight destructive and the caller message as title', () => {
+  it('wraps openConfirm with weight destructive, the caller message as title, and an explicit confirm label', () => {
     const start = src.indexOf('export async function confirmDriveImportChoice');
     assert.notEqual(start, -1, 'confirmDriveImportChoice should be declared as an async function');
     const nextExport = src.indexOf('\nexport ', start + 1);
     const body = src.slice(start, nextExport === -1 ? src.length : nextExport);
-    assert.match(body, /openConfirm\(\{\s*weight:\s*'destructive',\s*title:\s*message\s*\}\)/);
+    assert.match(
+      body,
+      /openConfirm\(\{\s*weight:\s*'destructive',\s*title:\s*message,\s*confirmLabel:\s*confirmLabel \|\| 'Continuar'\s*\}\)/
+    );
     assert.match(body, /ok = result === 'confirm'/);
   });
 });

@@ -188,6 +188,7 @@ export async function confirmNuevaRotacion() {
       '• Se limpian las guardias del día\n' +
       '• Los residentes deben volver a crear equipos\n\n' +
       'Esta acción no se puede deshacer.',
+    confirmLabel: 'Archivar equipos',
   });
   if (result !== 'confirm') return { ok: false, cancelled: true };
 

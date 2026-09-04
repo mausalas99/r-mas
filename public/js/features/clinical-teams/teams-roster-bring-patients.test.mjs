@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+
+// `npm run test:one` runs through Electron's Node runtime with no `document`,
+// so the workbench confirm scrim used by resolveBringPatientsConfirm can't be
+// mounted here. Asserted on source directly, like clinical-rotation.test.mjs.
+const bringPatientsSrc = readFileSync(fileURLToPath(new URL('./teams-roster-bring-patients.mjs', import.meta.url)), 'utf8');
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { setPatients } from '../../app-state.mjs';
 import {
@@ -116,6 +121,15 @@ describe('teams-roster-bring-patients', () => {
     assert.equal(res.offered, true);
     assert.equal(res.claimed, 2);
     assert.equal(assign.mock.callCount(), 2);
+  });
+
+  it('resolveBringPatientsConfirm names the action instead of the generic default label', () => {
+    const start = bringPatientsSrc.indexOf('function resolveBringPatientsConfirm');
+    const nextFn = bringPatientsSrc.indexOf('\nfunction ', start + 1);
+    const body = bringPatientsSrc.slice(start, nextFn === -1 ? bringPatientsSrc.length : nextFn);
+    assert.match(body, /openConfirm\(\{/);
+    assert.match(body, /weight:\s*'consequence'/);
+    assert.match(body, /confirmLabel:\s*'Asignar pacientes'/);
   });
 
   it('bring/inherit modules stay off active_guardias / entrega pendientes', () => {

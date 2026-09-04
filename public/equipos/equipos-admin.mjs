@@ -295,7 +295,7 @@ function wireAdminActions() {
       ) {
         return;
       }
-      if (!confirm('Confirmación final: esta acción no se puede deshacer.')) return;
+      if (!confirm('Confirmación final: se borrará todo el historial de forma permanente. Esta acción no se puede deshacer.')) return;
       void equiposAdminFetch(ctx.apiBase, ctx.token, '/admin/wipe-history', {
         method: 'POST',
         body: {},
