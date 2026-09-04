@@ -9,8 +9,10 @@ const read = (rel) => readFileSync(join(root, rel), 'utf8');
 
 test('accent is teal, the only non-clinical brand color', () => {
   const css = read('public/tokens.css');
-  assert.match(css, /:root\s*\{[^}]*--color-accent:\s*oklch\(0\.52 0\.09 195\)/s);
-  assert.match(css, /html\.dark\s*\{[^}]*--color-accent:\s*oklch\(0\.62 0\.09 195\)/s);
+  // WU4 darkened/lightened the L channel only (4.5:1 for --lab-chip-txt);
+  // hue 195 and chroma 0.09 must stay put in both themes.
+  assert.match(css, /:root\s*\{[^}]*--color-accent:\s*oklch\(0\.51 0\.09 195\)/s);
+  assert.match(css, /html\.dark\s*\{[^}]*--color-accent:\s*oklch\(0\.75 0\.09 195\)/s);
   assert.equal(/:root\s*\{[^}]*--color-accent:\s*var\(--color-ink\)/s.test(css), false);
 });
 
@@ -190,3 +192,217 @@ test('app-body has Importar SOME and no +1 día control', () => {
   assert.equal(html.includes('med-active-btn-group'), false);
   assert.equal(html.includes('+1 día'), false);
 });
+
+// WU2 — every color role that CSS in the app actually references must be
+// declared somewhere (tokens.css, or the same file for a page-local role),
+// so no var(--x) silently drops its whole declaration at computed-value time.
+function declaredCustomProps(css) {
+  const names = new Set();
+  for (const m of css.matchAll(/(^|[\s{;])(--[a-zA-Z0-9-]+)\s*:/g)) names.add(m[2]);
+  return names;
+}
+
+function undeclaredVarRefs(css, declared) {
+  const missing = new Set();
+  for (const m of css.matchAll(/var\((--[a-zA-Z0-9-]+)\)/g)) {
+    if (!declared.has(m[1])) missing.add(m[1]);
+  }
+  return [...missing];
+}
+
+test('--accent resolves to the teal brand color (equipos.css and vpo.css consume it)', () => {
+  const css = read('public/tokens.css');
+  assert.match(css, /:root\s*\{[^}]*--accent:\s*var\(--color-accent\)/s);
+  assert.match(css, /html\.dark\s*\{[^}]*--accent:\s*var\(--color-accent\)/s);
+});
+
+test('ui-patterns.css names no undefined color role (--color-inset/--color-field/--color-hover/--surface-muted are gone)', () => {
+  const tokens = read('public/tokens.css');
+  const uiPatterns = read('public/styles/ui-patterns.css');
+  const declared = new Set([...declaredCustomProps(tokens), ...declaredCustomProps(uiPatterns)]);
+  assert.deepEqual(undeclaredVarRefs(uiPatterns, declared), []);
+  for (const dead of ['--color-inset', '--color-field', '--color-hover', '--surface-muted']) {
+    assert.equal(uiPatterns.includes(dead), false, `${dead} should no longer appear in ui-patterns.css`);
+  }
+});
+
+test('nota-evolucion.css defines every --ne-zone-* role it uses (light and dark)', () => {
+  const tokens = read('public/tokens.css');
+  const notaEvo = read('public/styles/nota-evolucion.css');
+  const declared = new Set([...declaredCustomProps(tokens), ...declaredCustomProps(notaEvo)]);
+  assert.deepEqual(undeclaredVarRefs(notaEvo, declared), []);
+  for (const zone of ['n', 'v', 'hd', 'hi', 'nm']) {
+    assert.match(notaEvo, new RegExp(`:root\\s*\\{[^}]*--ne-zone-${zone}:\\s*oklch`, 's'));
+    assert.match(notaEvo, new RegExp(`html\\.dark\\s*\\{[^}]*--ne-zone-${zone}-dark:\\s*oklch`, 's'));
+  }
+});
+
+// WU3 — the focus ring must clear WCAG 3:1 non-text contrast, and no rule
+// sets outline: none without a paired :focus-visible replacement.
+function relLuma([r, g, b]) {
+  const lin = (c) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  const [rl, gl, bl] = [r, g, b].map(lin);
+  return 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
+}
+function contrastRatio(rgbA, rgbB) {
+  const lumA = relLuma(rgbA);
+  const lumB = relLuma(rgbB);
+  const [lighter, darker] = lumA > lumB ? [lumA, lumB] : [lumB, lumA];
+  return (lighter + 0.05) / (darker + 0.05);
+}
+function hexToRgb(h) {
+  const n = h.replace('#', '');
+  const full = n.length === 3 ? n.split('').map((c) => c + c).join('') : n;
+  const int = parseInt(full, 16);
+  return [(int >> 16) & 255, (int >> 8) & 255, int & 255];
+}
+// oklch(L C H) -> sRGB [0,255], via the standard OKLab matrices (CSS Color 4).
+function oklchToRgb(L, C, Hdeg) {
+  const h = (Hdeg * Math.PI) / 180;
+  const a = C * Math.cos(h);
+  const b = C * Math.sin(h);
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.291485548 * b;
+  const [l, m, s] = [l_ ** 3, m_ ** 3, s_ ** 3];
+  const lin = [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ];
+  const gam = (c) => {
+    c = Math.max(0, Math.min(1, c));
+    return c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055;
+  };
+  return lin.map((c) => Math.round(gam(c) * 255));
+}
+// color-mix(in oklab, C pct%, transparent) then composited (alpha blend) over bg.
+function compositeOverBg(rgb, pct, bgRgb) {
+  return rgb.map((c, i) => Math.round((c * pct + bgRgb[i] * (100 - pct)) / 100));
+}
+
+test('--color-focus-ring opacity clears 3:1 against --color-elevated/--color-surface/--color-paper, in both themes', () => {
+  const css = read('public/tokens.css');
+  const lightPctMatch = css.match(/:root\s*\{[^}]*--color-focus-ring:\s*color-mix\(in oklab,\s*var\(--color-accent\)\s*(\d+)%/s);
+  const darkPctMatch = css.match(/html\.dark\s*\{[^}]*--color-focus-ring:\s*color-mix\(in oklab,\s*var\(--color-accent\)\s*(\d+)%/s);
+  assert.ok(lightPctMatch, 'light --color-focus-ring not found');
+  assert.ok(darkPctMatch, 'dark --color-focus-ring not found');
+  const lightPct = Number(lightPctMatch[1]);
+  const darkPct = Number(darkPctMatch[1]);
+  assert.ok(lightPct > 26, `light focus-ring opacity ${lightPct}% must be raised above the old 26%`);
+  assert.ok(darkPct > 22, `dark focus-ring opacity ${darkPct}% must be raised above the old 22%`);
+
+  // Read --color-accent's own oklch(L C H) rather than hardcoding it, so this
+  // stays correct across future retunes (e.g. WU4's lightness nudges).
+  const lightAccentMatch = css.match(/:root\s*\{[^}]*--color-accent:\s*oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/s);
+  const darkAccentMatch = css.match(/html\.dark\s*\{[^}]*--color-accent:\s*oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/s);
+  assert.ok(lightAccentMatch && darkAccentMatch, '--color-accent oklch() not found');
+  const lightAccent = oklchToRgb(...lightAccentMatch.slice(1, 4).map(Number));
+  const darkAccent = oklchToRgb(...darkAccentMatch.slice(1, 4).map(Number));
+  const lightBgs = ['#ffffff', '#f8f7f4', '#eceae6']; // elevated, surface, paper
+  const darkBgs = ['#262b36', '#1f232d', '#12141a'];
+  for (const bg of lightBgs) {
+    const ratio = contrastRatio(compositeOverBg(lightAccent, lightPct, hexToRgb(bg)), hexToRgb(bg));
+    assert.ok(ratio >= 3, `light focus ring at ${lightPct}% only reaches ${ratio.toFixed(2)}:1 on ${bg}`);
+  }
+  for (const bg of darkBgs) {
+    const ratio = contrastRatio(compositeOverBg(darkAccent, darkPct, hexToRgb(bg)), hexToRgb(bg));
+    assert.ok(ratio >= 3, `dark focus ring at ${darkPct}% only reaches ${ratio.toFixed(2)}:1 on ${bg}`);
+  }
+});
+
+test('cmdk.css has no outline: none without a paired :focus-visible rule providing a real outline', () => {
+  const css = read('public/styles/cmdk.css');
+  for (const m of css.matchAll(/([^{}]+)\{([^{}]*outline:\s*none[^{}]*)\}/g)) {
+    const selector = m[1].trim();
+    // either the rule itself is scoped to :focus-visible (and must set a
+    // real outline, not none), or an adjacent :focus-visible rule restores one.
+    const idx = m.index;
+    const after = css.slice(idx, idx + 400);
+    const hasFollowupFocusVisible = /:focus-visible\s*\{[^}]*outline:\s*(?!none)/s.test(after);
+    assert.ok(
+      hasFollowupFocusVisible,
+      `rule "${selector}" sets outline: none with no nearby :focus-visible rule providing a real outline`
+    );
+  }
+});
+
+test('estado-actual.css vital-input and disclosure focus styles differ from their rest/none state', () => {
+  const css = read('public/styles/estado-actual.css');
+  assert.equal(/\.ea-estado-clinico > summary:focus-visible\s*\{[^}]*outline:\s*none/s.test(css), false);
+  assert.match(css, /\.ea-estado-clinico > summary:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--action\)/s);
+  for (const selector of [
+    /\.ea-vital-input:focus\s*\{([^}]*)\}/,
+    /\.ea-registro-modal \.ea-vital-value-wrap \.ea-vital-input:focus\s*\{([^}]*)\}/,
+  ]) {
+    const m = css.match(selector);
+    assert.ok(m, `${selector} not found`);
+    assert.doesNotMatch(m[1], /outline:\s*none/);
+    assert.match(m[1], /outline:\s*2px solid var\(--action\)/);
+  }
+});
+
+test('vpo.css scale-chip focus outline is fully opaque (70% alone failed 3:1 once --accent resolved)', () => {
+  const css = read('public/styles/vpo.css');
+  assert.match(css, /\.vpo-chip input:focus-visible \+ span\s*\{[^}]*outline:\s*2px solid var\(--accent\);/s);
+  assert.equal(/\.vpo-chip input:focus-visible \+ span\s*\{[^}]*color-mix/s.test(css), false);
+});
+
+// WU4 — darken the faintest text/label colors (lightness only, hue held) so
+// their real-world pairings clear 4.5:1. --color-paper is untouched.
+test('--color-ink-tertiary is darkened (light) / lightened (dark) and stays lighter/fainter than --color-ink-muted', () => {
+  const css = read('public/tokens.css');
+  const lightMatch = css.match(/:root\s*\{[^}]*--color-ink-tertiary:\s*(#[0-9a-fA-F]{6})/s);
+  const darkMatch = css.match(/html\.dark\s*\{[^}]*--color-ink-tertiary:\s*(#[0-9a-fA-F]{6})/s);
+  assert.ok(lightMatch && darkMatch);
+  assert.notEqual(lightMatch[1].toLowerCase(), '#98989d');
+  assert.notEqual(darkMatch[1].toLowerCase(), '#6b7385');
+  // --color-ink-tertiary's two real consumers (workbench-kit.css on
+  // --color-surface, patient-dashboard.css on --color-elevated) must clear 4.5:1.
+  assert.ok(contrastRatio(hexToRgb(lightMatch[1]), hexToRgb('#f8f7f4')) >= 4.5, 'light ink-tertiary must clear 4.5:1 on --color-surface');
+  assert.ok(contrastRatio(hexToRgb(lightMatch[1]), hexToRgb('#ffffff')) >= 4.5, 'light ink-tertiary must clear 4.5:1 on --color-elevated');
+  assert.ok(contrastRatio(hexToRgb(darkMatch[1]), hexToRgb('#1f232d')) >= 4.5, 'dark ink-tertiary must clear 4.5:1 on --color-surface');
+  assert.ok(contrastRatio(hexToRgb(darkMatch[1]), hexToRgb('#262b36')) >= 4.5, 'dark ink-tertiary must clear 4.5:1 on --color-elevated');
+  // stays a fainter tier than --color-ink-muted, not darker/more prominent than it.
+  const mutedLight = css.match(/:root\s*\{[^}]*--color-ink-muted:\s*(#[0-9a-fA-F]{6})/s)[1];
+  const mutedDark = css.match(/html\.dark\s*\{[^}]*--color-ink-muted:\s*(#[0-9a-fA-F]{6})/s)[1];
+  assert.ok(relLuma(hexToRgb(lightMatch[1])) > relLuma(hexToRgb(mutedLight)), 'light ink-tertiary should stay lighter (fainter) than ink-muted');
+  assert.ok(relLuma(hexToRgb(darkMatch[1])) < relLuma(hexToRgb(mutedDark)), 'dark ink-tertiary should stay darker (fainter against a dark bg) than ink-muted');
+});
+
+test('--todo-prio-alta (light) clears 4.5:1 as the .todo-prio-chip.prio-alta label (82% mixed onto --color-ink over 14% mixed onto --color-surface)', () => {
+  const css = read('public/tokens.css');
+  const m = css.match(/:root\s*\{[^}]*--todo-prio-alta:\s*(#[0-9a-fA-F]{6})/s);
+  assert.ok(m);
+  assert.notEqual(m[1].toLowerCase(), '#cf6060', '--todo-prio-alta must be darkened from the old 4.09:1 value');
+  const alta = hexToRgb(m[1]);
+  const ink = hexToRgb('#1a1a1c');
+  const surface = hexToRgb('#f8f7f4');
+  const mix = (fg, bg, pct) => fg.map((c, i) => Math.round((c * pct + bg[i] * (100 - pct)) / 100));
+  const textColor = mix(alta, ink, 82);
+  const bgColor = mix(alta, surface, 14);
+  assert.ok(contrastRatio(textColor, bgColor) >= 4.5, `.todo-prio-chip.prio-alta label only reaches ${contrastRatio(textColor, bgColor).toFixed(2)}:1`);
+});
+
+test('--lab-chip-txt (= --color-accent-soft-text = --color-accent) clears 4.5:1 on --lab-chip-bg, in both themes', () => {
+  const css = read('public/tokens.css');
+  const lightAccentMatch = css.match(/:root\s*\{[^}]*--color-accent:\s*oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/s);
+  const darkAccentMatch = css.match(/html\.dark\s*\{[^}]*--color-accent:\s*oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/s);
+  const lightAccent = oklchToRgb(...lightAccentMatch.slice(1, 4).map(Number));
+  const darkAccent = oklchToRgb(...darkAccentMatch.slice(1, 4).map(Number));
+  const mix = (fg, bg, pct) => fg.map((c, i) => Math.round((c * pct + bg[i] * (100 - pct)) / 100));
+  // light --lab-chip-bg = --color-accent-soft = color-mix(accent 12%, --color-elevated) — opaque, exact.
+  const lightChipBg = mix(lightAccent, hexToRgb('#ffffff'), 12);
+  assert.ok(contrastRatio(lightAccent, lightChipBg) >= 4.5, `light --lab-chip-txt only reaches ${contrastRatio(lightAccent, lightChipBg).toFixed(2)}:1 on its chip background`);
+  // dark --lab-chip-bg mixes toward transparent (18%), so it composites over
+  // whatever sits behind it — check every plausible dark card/panel ancestor.
+  for (const ancestor of ['#262b36', '#1f232d', '#181b23']) {
+    const darkChipBg = mix(darkAccent, hexToRgb(ancestor), 18);
+    const ratio = contrastRatio(darkAccent, darkChipBg);
+    assert.ok(ratio >= 4.5, `dark --lab-chip-txt only reaches ${ratio.toFixed(2)}:1 on --lab-chip-bg over ${ancestor}`);
+  }
+});
+

@@ -39,6 +39,12 @@
   outline: none;
 }
 
+.cmdk-input:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: -2px;
+  box-shadow: var(--focus-ring);
+}
+
 .cmdk-input::placeholder {
   color: var(--text-muted);
   font-weight: 400;
@@ -252,10 +258,14 @@
   font: inherit;
 }
 
-.paste-smart-choice:hover,
+.paste-smart-choice:hover {
+  background: var(--state-hover-bg);
+}
+
 .paste-smart-choice:focus-visible {
   background: var(--state-hover-bg);
-  outline: none;
+  outline: 2px solid var(--action);
+  outline-offset: -2px;
 }
 
 .paste-smart-choice-name {

@@ -254,8 +254,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-estado-clinico > summary:focus-visible {
-  outline: none;
-  box-shadow: none;
+  outline: 2px solid var(--action);
+  outline-offset: -2px;
 }
 
 .ea-clinico-body {
@@ -1122,7 +1122,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-vital-input:focus {
-  outline: none;
+  outline: 2px solid var(--action);
+  outline-offset: -2px;
   background: var(--surface);
 }
 
@@ -2165,9 +2166,9 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-registro-modal .ea-vital-value-wrap .ea-vital-input:focus {
-  outline: none;
+  outline: 2px solid var(--action);
+  outline-offset: -2px;
   background: transparent;
-  box-shadow: none;
 }
 
 .ea-registro-modal .ea-vital-value-wrap .ea-vital-input:focus::placeholder {
