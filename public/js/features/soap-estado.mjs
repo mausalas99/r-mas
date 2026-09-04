@@ -113,14 +113,23 @@ export function openSOAPModal() {
     backdrop.className = "lab-conflict-backdrop";
     backdrop.id = "soap-confirm-backdrop";
     backdrop.innerHTML =
-      '<div class="lab-conflict-modal">' +
-      "<h3>¿Reemplazar evolución?</h3>" +
+      '<div class="lab-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="soap-confirm-title">' +
+      '<h3 id="soap-confirm-title">¿Reemplazar evolución?</h3>' +
       "<p>La evolución ya tiene contenido. ¿Reemplazarlo con la plantilla?</p>" +
-      '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">' +
-      '<button onclick="document.getElementById(\'soap-confirm-backdrop\').remove()" style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Cancelar</button>' +
-      '<button onclick="document.getElementById(\'soap-confirm-backdrop\').remove();document.getElementById(\'soap-modal-backdrop\').classList.add(\'open\')" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Reemplazar</button>' +
+      '<div class="lab-conflict-actions" style="flex-direction:row;justify-content:flex-end;gap:8px;">' +
+      '<button type="button" class="btn-cancel" id="soap-confirm-cancel">Cancelar</button>' +
+      '<button type="button" class="btn-conflict-primary" id="soap-confirm-replace">Reemplazar</button>' +
       "</div></div>";
     document.body.appendChild(backdrop);
+    var closeSoapConfirm = function () {
+      var x = document.getElementById("soap-confirm-backdrop");
+      if (x) x.remove();
+    };
+    document.getElementById("soap-confirm-cancel").onclick = closeSoapConfirm;
+    document.getElementById("soap-confirm-replace").onclick = function () {
+      closeSoapConfirm();
+      document.getElementById("soap-modal-backdrop").classList.add("open");
+    };
   } else {
     document.getElementById("soap-modal-backdrop").classList.add("open");
   }

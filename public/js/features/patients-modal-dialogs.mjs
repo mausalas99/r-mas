@@ -32,18 +32,23 @@ export function showDuplicateWarning(existing, onConfirm) {
   backdrop.className = 'lab-conflict-backdrop';
   backdrop.id = 'dup-confirm-backdrop';
   backdrop.innerHTML =
-    '<div class="lab-conflict-modal">' +
-    '<h3>Paciente similar encontrado</h3>' +
+    '<div class="lab-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="dup-confirm-title">' +
+    '<h3 id="dup-confirm-title">Paciente similar encontrado</h3>' +
     '<p>' +
     body +
     '</p>' +
-    '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">' +
-    '<button onclick="document.getElementById(\'dup-confirm-backdrop\').remove()" style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:#1f2937;">Cancelar</button>' +
-    '<button id="dup-confirm-btn" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Agregar de todas formas</button>' +
+    '<div class="lab-conflict-actions" style="flex-direction:row;justify-content:flex-end;gap:8px;">' +
+    '<button type="button" class="btn-cancel" id="dup-confirm-cancel">Cancelar</button>' +
+    '<button type="button" class="btn-conflict-primary" id="dup-confirm-btn">Agregar de todas formas</button>' +
     '</div></div>';
   document.body.appendChild(backdrop);
+  var closeDupConfirm = function () {
+    var x = document.getElementById('dup-confirm-backdrop');
+    if (x) x.remove();
+  };
+  document.getElementById('dup-confirm-cancel').onclick = closeDupConfirm;
   document.getElementById('dup-confirm-btn').onclick = function () {
-    document.getElementById('dup-confirm-backdrop').remove();
+    closeDupConfirm();
     onConfirm();
   };
 }
