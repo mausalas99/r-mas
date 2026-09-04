@@ -45,6 +45,17 @@ describe('patient list filter startup', () => {
     assert.match(fn, /setLastRondaNavIds\(buildRondaNavIds\(zones\)\)/);
   });
 
+  it('wires a keydown listener on the delegating #patient-list root for Enter/Space card activation (WU7)', () => {
+    const start = listSrc.indexOf('function ensurePatientListClickDelegation');
+    const end = listSrc.length;
+    const fn = listSrc.slice(start, end);
+    assert.match(fn, /root\.addEventListener\('click', selectPatientFromListEvent\);/);
+    assert.match(fn, /root\.addEventListener\('keydown', function \(ev\) \{/);
+    assert.match(fn, /if \(ev\.key !== 'Enter' && ev\.key !== ' '\) return;/);
+    assert.match(fn, /if \(!patientCardIdFromEvent\(ev\)\) return;/);
+    assert.match(fn, /ev\.preventDefault\(\);\s*\n\s*selectPatientFromListEvent\(ev\);/);
+  });
+
   it('logs console.warn when setArchivedSectionCollapsed exceeds quota', () => {
     let store = {};
     const prev = globalThis.localStorage;

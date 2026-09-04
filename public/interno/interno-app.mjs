@@ -260,11 +260,20 @@ function render() {
     });
   });
   root.querySelectorAll('.interno-estudio-row').forEach((row) => {
-    row.addEventListener('click', (ev) => {
-      if (ev.target.closest('[data-mark-done]')) return;
+    const openDetail = () => {
       const patientId = row.getAttribute('data-patient-id');
       const itemId = row.getAttribute('data-item-id');
       if (patientId && itemId) openEstudioDetail(patientId, itemId);
+    };
+    row.addEventListener('click', (ev) => {
+      if (ev.target.closest('[data-mark-done]')) return;
+      openDetail();
+    });
+    row.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Enter' && ev.key !== ' ') return;
+      if (ev.target.closest('[data-mark-done]')) return;
+      ev.preventDefault();
+      openDetail();
     });
   });
   root.querySelectorAll('[data-mark-done]').forEach((btn) => {

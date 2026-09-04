@@ -468,4 +468,10 @@ function ensurePatientListClickDelegation() {
     if (!shouldHandleTouchPointerUp(ev)) return;
     selectPatientFromListEvent(ev);
   });
+  root.addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    if (!patientCardIdFromEvent(ev)) return;
+    ev.preventDefault();
+    selectPatientFromListEvent(ev);
+  });
 }
