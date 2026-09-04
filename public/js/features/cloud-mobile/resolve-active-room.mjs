@@ -2,6 +2,7 @@
  * Resolve the user's active Nube room (server pointer + membership fallback).
  */
 import { createCloudSyncApi } from '../cloud-sync/api-client.mjs';
+import { loadRoomDek } from '../cloud-sync/room-dek.mjs';
 import { getPatients } from '../../app-state.mjs';
 import {
   getCloudSyncUrl,
@@ -40,22 +41,28 @@ export function pickBestCloudMobileRoom(rooms) {
 export async function joinCloudMobileRoomByCodeSilent(code) {
   const trimmed = String(code || '').trim();
   if (!trimmed || !getCloudSyncToken()) return null;
+  const api = createApi();
   try {
-    const data = await createApi().joinRoom({ code: trimmed });
+    const data = await api.joinRoom({ code: trimmed });
     const room = data?.room || null;
-    if (!room?.id) return null;
-    setCloudSyncRoomSnapshot(room);
-    persistCloudMobilePairingFromRoom(room, readCloudMobileJoinUser());
-    return room;
+    return applyResolvedRoom(room, api);
   } catch {
     return null;
   }
 }
 
-function applyResolvedRoom(room) {
+async function applyResolvedRoom(room, api) {
   if (!room?.id) return null;
   setCloudSyncRoomSnapshot(room);
   persistCloudMobilePairingFromRoom(room, readCloudMobileJoinUser());
+  // Best-effort: an iPad session with no decryption key would show every
+  // patient as empty, with no error — see the desktop join handler in
+  // panel-conexion-handlers.mjs for the same load-after-join step.
+  try {
+    await loadRoomDek(api, room.id, room.code);
+  } catch {
+    /* patient identity still renders; clinical content stays locked */
+  }
   return room;
 }
 
@@ -70,12 +77,12 @@ export async function resolveCloudMobileActiveRoom(api) {
     const data = await client.activeRoom();
     const active = data?.room || null;
     if (active?.id && Number(active.revision) > 0) {
-      return applyResolvedRoom(active);
+      return await applyResolvedRoom(active, client);
     }
     const listed = await client.listRooms();
     const best = pickBestCloudMobileRoom(listed?.rooms);
-    if (best?.id) return applyResolvedRoom(best);
-    if (active?.id) return applyResolvedRoom(active);
+    if (best?.id) return await applyResolvedRoom(best, client);
+    if (active?.id) return await applyResolvedRoom(active, client);
   } catch {
     /* legacy fallback */
   }

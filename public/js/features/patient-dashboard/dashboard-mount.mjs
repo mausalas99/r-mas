@@ -290,7 +290,7 @@ function localTodayKey() {
 }
 
 function fillDashboardLabs(targets, pid) {
-  if (String(rt.getActiveId() || '') !== String(pid || '')) return;
+  if (String(rt.getActiveId() || '') !== String(pid || '')) return false;
   var html = renderLabsHtml({
     labs: pid
       ? buildLabsGlanceForDay({
@@ -304,6 +304,7 @@ function fillDashboardLabs(targets, pid) {
     var slot = mount.querySelector('[data-dash-labs]');
     if (slot) slot.outerHTML = html;
   });
+  return true;
 }
 
 export function renderPatientDashboard(hostEl, opts) {
@@ -326,9 +327,13 @@ export function renderPatientDashboard(hostEl, opts) {
     mount.innerHTML = html;
   });
   syncInterconsultaModeChrome();
-  if (!deferLabs) return;
+  if (!deferLabs) {
+    if (typeof opts.onLabsReady === 'function') opts.onLabsReady();
+    return;
+  }
   scheduleAfterPaintThenIdle(function () {
-    fillDashboardLabs(targets, pid);
+    var painted = fillDashboardLabs(targets, pid);
+    if (painted && typeof opts.onLabsReady === 'function') opts.onLabsReady();
   });
 }
 

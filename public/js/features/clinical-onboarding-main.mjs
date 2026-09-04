@@ -345,7 +345,9 @@ async function showMainClinicalOnboardingBody() {
   }
 
   await reloadClinicalTeamsBeforeGate();
-  await resumeStoredCloudTokenIfPresent();
+  if (needsOnboardingShell()) {
+    await resumeStoredCloudTokenIfPresent();
+  }
 
   if (!needsOnboardingShell()) {
     hideMainClinicalOnboarding();

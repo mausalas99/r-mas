@@ -76,6 +76,16 @@ describe('clinical-onboarding-main', () => {
     assert.match(mainSrc, /rpc-clinical-onboarding-finished/);
   });
 
+  it('only resumes the stored cloud token when onboarding is actually needed', async () => {
+    const mainSrc = await import('node:fs').then((fs) =>
+      fs.readFileSync(new URL('./clinical-onboarding-main.mjs', import.meta.url), 'utf8')
+    );
+    const start = mainSrc.indexOf('async function showMainClinicalOnboardingBody');
+    assert.ok(start >= 0);
+    const body = mainSrc.slice(start, start + 900);
+    assert.match(body, /if \(needsOnboardingShell\(\)\) \{\s*await resumeStoredCloudTokenIfPresent\(\);/);
+  });
+
   it('app.js no pre-marca deferredShellBootDone antes de runDeferredShellAfterOnboarding', async () => {
     const appSrc = await import('node:fs').then((fs) =>
       fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8')

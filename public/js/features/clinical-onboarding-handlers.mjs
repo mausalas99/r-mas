@@ -128,7 +128,8 @@ async function upsertClinicalProfile(api, sessionUserId, fields, errEl) {
     clinicalName: fields.name,
     rank: fields.rank,
     sala: fields.sala || null,
-    isProgramAdmin: false,
+    // Omitted on purpose: a brand-new user gets the schema default (not
+    // admin); an existing session keeps its real admin flag either way.
   });
   if (!profileRes?.ok) {
     showOnboardError(errEl, profileRes?.error || 'No se guardó el perfil.');
@@ -138,7 +139,6 @@ async function upsertClinicalProfile(api, sessionUserId, fields, errEl) {
     clinicalSessionContext.user.rank = fields.rank;
     clinicalSessionContext.user.clinical_name = fields.name;
     clinicalSessionContext.user.sala = fields.sala || null;
-    clinicalSessionContext.user.is_program_admin = 0;
   }
   return true;
 }
@@ -228,7 +228,6 @@ export async function handleUsernameStepSubmit(ev) {
       sala: fields.sala || '',
       registered: true,
       lanProfileGateComplete: true,
-      isProgramAdmin: false,
     });
 
     if (errEl) errEl.hidden = true;
@@ -260,7 +259,6 @@ function applyResumedProfileToSession(name, rank, sala) {
   clinicalSessionContext.user.rank = rank;
   clinicalSessionContext.user.clinical_name = name;
   clinicalSessionContext.user.sala = sala;
-  clinicalSessionContext.user.is_program_admin = 0;
 }
 
 function readResumedFormFields() {
@@ -281,7 +279,8 @@ async function saveResumedProfileIfComplete(api, sessionUserId, username, errEl)
     clinicalName: fields.name,
     rank: fields.rank,
     sala: fields.sala,
-    isProgramAdmin: false,
+    // Omitted on purpose: this resumes an EXISTING user's identity, so the
+    // DB update skips the column, preserving their existing admin flag.
   });
   if (!profileRes?.ok) {
     showOnboardError(errEl, profileRes?.error || 'No se guardó el perfil.');
@@ -297,7 +296,6 @@ async function saveResumedProfileIfComplete(api, sessionUserId, username, errEl)
     sala: fields.sala,
     registered: true,
     lanProfileGateComplete: true,
-    isProgramAdmin: false,
   });
   await refreshClinicalUserProfile();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));

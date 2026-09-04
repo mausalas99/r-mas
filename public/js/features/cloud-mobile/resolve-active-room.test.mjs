@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { pickBestCloudMobileRoom } from './resolve-active-room.mjs';
 
 const bootSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'boot.mjs'), 'utf8');
+const resolveSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'resolve-active-room.mjs'), 'utf8');
 
 describe('pickBestCloudMobileRoom', () => {
   it('prefers highest revision', () => {
@@ -14,6 +15,13 @@ describe('pickBestCloudMobileRoom', () => {
       { id: 'b', revision: 3, storageBytes: 50, updatedAt: '2026-08-02' },
     ]);
     assert.equal(best?.id, 'b');
+  });
+});
+
+describe('cloud-mobile room resolution loads the decryption key', () => {
+  it('loads the room DEK after every resolved room, like the desktop join handler', () => {
+    assert.match(resolveSrc, /loadRoomDek\(api, room\.id, room\.code\)/);
+    assert.match(resolveSrc, /applyResolvedRoom\(active, client\)/);
   });
 });
 

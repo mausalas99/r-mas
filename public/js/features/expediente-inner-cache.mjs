@@ -259,8 +259,10 @@ function renderLightGranularTab(tab) {
 }
 
 function renderResumenInnerTab(tab, opts) {
-  renderPatientDashboard(null, { deferLabs: !!(opts && opts.deferLabs) });
-  markInnerTabRendered(tab);
+  renderPatientDashboard(null, {
+    deferLabs: !!(opts && opts.deferLabs),
+    onLabsReady: markInnerTabRendered.bind(null, tab),
+  });
 }
 
 var GRANULAR_TAB_RENDERERS = {

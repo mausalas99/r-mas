@@ -54,7 +54,8 @@ export async function upsertLocalOnlyProfile(sessionUserId, name, rank) {
     clinicalName: name,
     rank,
     sala: null,
-    isProgramAdmin: false,
+    // Omitted on purpose: preserves the schema default for a new user, and
+    // an existing session's real admin flag either way.
   });
   if (!profileRes?.ok) {
     return { ok: false, error: profileRes?.error || 'No se guardó el perfil.' };
@@ -63,7 +64,6 @@ export async function upsertLocalOnlyProfile(sessionUserId, name, rank) {
     clinicalSessionContext.user.rank = rank;
     clinicalSessionContext.user.clinical_name = name;
     clinicalSessionContext.user.sala = null;
-    clinicalSessionContext.user.is_program_admin = 0;
   }
   return { ok: true };
 }
@@ -78,7 +78,6 @@ export function persistLocalOnlyBinding(sessionUserId, localHandle, name, rank) 
     sala: '',
     registered: true,
     lanProfileGateComplete: true,
-    isProgramAdmin: false,
   });
   setClinicalSyncModeLocalOnly(true);
 }

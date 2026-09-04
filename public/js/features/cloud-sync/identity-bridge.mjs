@@ -70,7 +70,8 @@ async function tryUpsertClinicalProfile(sessionUserId, profile) {
     clinicalName: String(profile.displayName || '').trim(),
     rank: String(profile.rank || clinicalSessionContext.user?.rank || 'R1'),
     sala: profile.sala ?? clinicalSessionContext.user?.sala ?? null,
-    isProgramAdmin: false,
+    // Omitted on purpose: this bridge doesn't know admin status, and the DB
+    // update skips the column when it's absent, preserving the existing flag.
   });
   if (!profileRes?.ok) {
     return { ok: false, error: profileRes?.error || 'No se guardó el perfil clínico.' };

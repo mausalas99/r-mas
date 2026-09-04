@@ -24,6 +24,7 @@ import {
 } from './session.mjs';
 import { buildCloudMobileBookmarkUrl } from './invite-url.mjs';
 import { resolveCloudMobileActiveRoom } from './resolve-active-room.mjs';
+import { loadRoomDek } from '../cloud-sync/room-dek.mjs';
 import {
   CLOUD_MOBILE_ROOM_RESOLVE_TIMEOUT_MS,
   withCloudMobileBootTimeout,
@@ -209,11 +210,20 @@ export async function joinCloudMobileRoomByCode(code, onConnected) {
   if (!trimmed) return false;
   if (!getCloudSyncToken()) return false;
   try {
-    const data = await createApi().joinRoom({ code: trimmed });
+    const api = createApi();
+    const data = await api.joinRoom({ code: trimmed });
     const room = data.room;
     setCloudSyncRoomSnapshot(room);
     persistCloudMobilePairingFromRoom(room);
     rewriteCloudMobileBookmarkUrl();
+    // Best-effort: without the room's decryption key every patient renders
+    // as empty, with no error. Same load-after-join step as the desktop
+    // panel-conexion-handlers.mjs join handler.
+    try {
+      await loadRoomDek(api, room.id, room.code);
+    } catch {
+      /* patient identity still renders; clinical content stays locked */
+    }
     toast('Unido a la sala ' + room.code + '.', 'success');
     onConnected();
     return true;

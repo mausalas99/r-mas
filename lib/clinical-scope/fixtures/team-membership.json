@@ -114,6 +114,39 @@
     ]
   },
   {
+    "id": "joined-as-leader-not-in-members",
+    "fn": "getJoinedTeamsForUser",
+    "teams": [
+      {
+        "team_id": "t1",
+        "service": "Sala",
+        "leader_user_id": "drmauricios",
+        "members": []
+      },
+      {
+        "team_id": "t2",
+        "service": "UX",
+        "created_by": "drmauricios",
+        "members": []
+      },
+      {
+        "team_id": "t3",
+        "service": "Eme",
+        "leader_user_id": "someone-else",
+        "members": []
+      }
+    ],
+    "userOrUserId": {
+      "user_id": "drmauricios",
+      "username": "drmauricios"
+    },
+    "usernameHint": null,
+    "expectedTeamIds": [
+      "t1",
+      "t2"
+    ]
+  },
+  {
     "id": "joined-alias-getJoinedTeams",
     "fn": "getJoinedTeams",
     "teams": [

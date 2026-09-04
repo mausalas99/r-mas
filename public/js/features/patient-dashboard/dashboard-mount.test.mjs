@@ -108,6 +108,27 @@ test('patient select defers labs glance until after identity paints', () => {
   assert.match(cache, /deferLabs: !!\(opts && opts\.deferLabs\)/);
 });
 
+test('deferred labs fill only reports ready when it actually painted (root cause of stuck blank labs: a tab switch mid-fill used to leave the Resumen cache marked fresh forever)', () => {
+  const dir = dirname(fileURLToPath(import.meta.url));
+  const mount = readFileSync(join(dir, 'dashboard-mount.mjs'), 'utf8');
+  const fillStart = mount.indexOf('function fillDashboardLabs');
+  const fillFn = mount.slice(fillStart, mount.indexOf('export function renderPatientDashboard'));
+  assert.match(fillFn, /return false/);
+  assert.match(fillFn, /return true/);
+  const renderFn = mount.slice(
+    mount.indexOf('export function renderPatientDashboard'),
+    mount.indexOf('export const windowHandlers')
+  );
+  assert.match(renderFn, /var painted = fillDashboardLabs/);
+  assert.match(renderFn, /painted && typeof opts\.onLabsReady/);
+  const cache = readFileSync(join(dir, '../expediente-inner-cache.mjs'), 'utf8');
+  const resumenFn = cache.slice(
+    cache.indexOf('function renderResumenInnerTab'),
+    cache.indexOf('var GRANULAR_TAB_RENDERERS')
+  );
+  assert.match(resumenFn, /onLabsReady: markInnerTabRendered\.bind\(null, tab\)/);
+});
+
 test('patient select does not force-warm EA/Tendencias at 1.2s', () => {
   const dir = dirname(fileURLToPath(import.meta.url));
   const nav = readFileSync(join(dir, '../expediente-navigation.mjs'), 'utf8');

@@ -43,26 +43,37 @@ function salaCacheKey(sala) {
   return normalizeCloudSala(sala);
 }
 
+/** Rooms are one per (sala, YYYY-MM) — cloud/sync-worker/src/rooms.js handleEnsureTurn. */
+function currentTurnKey() {
+  return String(getCloudSyncRoomSnapshot()?.turnKey || '').trim();
+}
+
 /** @param {string} sala */
 export function getSalaRoomCache(sala) {
   const key = salaCacheKey(sala);
   const entry = readSalaRooms()[key];
   if (!entry?.roomId) return { roomId: '', revision: 0 };
+  const turn = currentTurnKey();
+  // Last month's room id is dead: every push lands where no peer or iPad reads.
+  if (turn && String(entry.turnKey || '') !== turn) return { roomId: '', revision: 0 };
   return {
     roomId: String(entry.roomId),
     revision: Number(entry.revision) || 0,
   };
 }
 
-/** @param {string} sala @param {{ id: string, revision?: number }} room */
+/** @param {string} sala @param {{ id: string, revision?: number, turnKey?: string }} room */
 export function rememberSalaRoom(sala, room) {
   const key = salaCacheKey(sala);
   if (!key || !room?.id) return;
   const rooms = readSalaRooms();
+  const prev = rooms[key];
+  const sameRoom = prev?.roomId === String(room.id);
   rooms[key] = {
     roomId: String(room.id),
-    revision: Number(room.revision) || rooms[key]?.revision || 0,
+    revision: Number(room.revision) || (sameRoom ? Number(prev?.revision) || 0 : 0),
     sala: key,
+    turnKey: String(room.turnKey || '').trim() || currentTurnKey(),
   };
   writeSalaRooms(rooms);
 }
@@ -98,6 +109,15 @@ export async function ensureTurnRoomForSala(sala) {
   const normalized = normalizeCloudSala(sala);
   if (!isCloudSala(normalized) || !getCloudSyncToken()) return null;
 
+  // The census room already IS this sala's (sala, turn) room — no round trip, and
+  // no chance of ensure-turn moving the active-room pointer off it.
+  const snap = getCloudSyncRoomSnapshot();
+  const home = normalizeCloudSala(snap?.sala || '');
+  if (snap?.id && home === normalized) {
+    rememberSalaRoom(normalized, snap);
+    return { id: String(snap.id), revision: getSalaRoomCache(normalized).revision, sala: normalized };
+  }
+
   const cached = getSalaRoomCache(normalized);
   if (cached.roomId) {
     return { id: cached.roomId, revision: cached.revision, sala: normalized };
@@ -108,6 +128,11 @@ export async function ensureTurnRoomForSala(sala) {
   const room = data?.room;
   if (!room?.id) return null;
   rememberSalaRoom(normalized, room);
+  // ensure-turn just made this sala the user's active room; put the pointer back
+  // on the census room, or the iPad resolves to the wrong sala.
+  if (snap?.id && isCloudSala(home)) {
+    await api.ensureTurn({ sala: home }).catch(() => null);
+  }
   return room;
 }
 
