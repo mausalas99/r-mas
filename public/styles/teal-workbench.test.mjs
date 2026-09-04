@@ -9,8 +9,10 @@ const read = (rel) => readFileSync(join(root, rel), 'utf8');
 
 test('accent is teal, the only non-clinical brand color', () => {
   const css = read('public/tokens.css');
-  assert.match(css, /:root\s*\{[^}]*--color-accent:\s*oklch\(0\.52 0\.09 195\)/s);
-  assert.match(css, /html\.dark\s*\{[^}]*--color-accent:\s*oklch\(0\.62 0\.09 195\)/s);
+  // WU4 darkened/lightened the L channel only (4.5:1 for --lab-chip-txt);
+  // hue 195 and chroma 0.09 must stay put in both themes.
+  assert.match(css, /:root\s*\{[^}]*--color-accent:\s*oklch\(0\.51 0\.09 195\)/s);
+  assert.match(css, /html\.dark\s*\{[^}]*--color-accent:\s*oklch\(0\.75 0\.09 195\)/s);
   assert.equal(/:root\s*\{[^}]*--color-accent:\s*var\(--color-ink\)/s.test(css), false);
 });
 
@@ -293,8 +295,13 @@ test('--color-focus-ring opacity clears 3:1 against --color-elevated/--color-sur
   assert.ok(lightPct > 26, `light focus-ring opacity ${lightPct}% must be raised above the old 26%`);
   assert.ok(darkPct > 22, `dark focus-ring opacity ${darkPct}% must be raised above the old 22%`);
 
-  const lightAccent = oklchToRgb(0.52, 0.09, 195); // --color-accent, :root
-  const darkAccent = oklchToRgb(0.62, 0.09, 195); // --color-accent, html.dark
+  // Read --color-accent's own oklch(L C H) rather than hardcoding it, so this
+  // stays correct across future retunes (e.g. WU4's lightness nudges).
+  const lightAccentMatch = css.match(/:root\s*\{[^}]*--color-accent:\s*oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/s);
+  const darkAccentMatch = css.match(/html\.dark\s*\{[^}]*--color-accent:\s*oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/s);
+  assert.ok(lightAccentMatch && darkAccentMatch, '--color-accent oklch() not found');
+  const lightAccent = oklchToRgb(...lightAccentMatch.slice(1, 4).map(Number));
+  const darkAccent = oklchToRgb(...darkAccentMatch.slice(1, 4).map(Number));
   const lightBgs = ['#ffffff', '#f8f7f4', '#eceae6']; // elevated, surface, paper
   const darkBgs = ['#262b36', '#1f232d', '#12141a'];
   for (const bg of lightBgs) {
@@ -342,5 +349,60 @@ test('vpo.css scale-chip focus outline is fully opaque (70% alone failed 3:1 onc
   const css = read('public/styles/vpo.css');
   assert.match(css, /\.vpo-chip input:focus-visible \+ span\s*\{[^}]*outline:\s*2px solid var\(--accent\);/s);
   assert.equal(/\.vpo-chip input:focus-visible \+ span\s*\{[^}]*color-mix/s.test(css), false);
+});
+
+// WU4 — darken the faintest text/label colors (lightness only, hue held) so
+// their real-world pairings clear 4.5:1. --color-paper is untouched.
+test('--color-ink-tertiary is darkened (light) / lightened (dark) and stays lighter/fainter than --color-ink-muted', () => {
+  const css = read('public/tokens.css');
+  const lightMatch = css.match(/:root\s*\{[^}]*--color-ink-tertiary:\s*(#[0-9a-fA-F]{6})/s);
+  const darkMatch = css.match(/html\.dark\s*\{[^}]*--color-ink-tertiary:\s*(#[0-9a-fA-F]{6})/s);
+  assert.ok(lightMatch && darkMatch);
+  assert.notEqual(lightMatch[1].toLowerCase(), '#98989d');
+  assert.notEqual(darkMatch[1].toLowerCase(), '#6b7385');
+  // --color-ink-tertiary's two real consumers (workbench-kit.css on
+  // --color-surface, patient-dashboard.css on --color-elevated) must clear 4.5:1.
+  assert.ok(contrastRatio(hexToRgb(lightMatch[1]), hexToRgb('#f8f7f4')) >= 4.5, 'light ink-tertiary must clear 4.5:1 on --color-surface');
+  assert.ok(contrastRatio(hexToRgb(lightMatch[1]), hexToRgb('#ffffff')) >= 4.5, 'light ink-tertiary must clear 4.5:1 on --color-elevated');
+  assert.ok(contrastRatio(hexToRgb(darkMatch[1]), hexToRgb('#1f232d')) >= 4.5, 'dark ink-tertiary must clear 4.5:1 on --color-surface');
+  assert.ok(contrastRatio(hexToRgb(darkMatch[1]), hexToRgb('#262b36')) >= 4.5, 'dark ink-tertiary must clear 4.5:1 on --color-elevated');
+  // stays a fainter tier than --color-ink-muted, not darker/more prominent than it.
+  const mutedLight = css.match(/:root\s*\{[^}]*--color-ink-muted:\s*(#[0-9a-fA-F]{6})/s)[1];
+  const mutedDark = css.match(/html\.dark\s*\{[^}]*--color-ink-muted:\s*(#[0-9a-fA-F]{6})/s)[1];
+  assert.ok(relLuma(hexToRgb(lightMatch[1])) > relLuma(hexToRgb(mutedLight)), 'light ink-tertiary should stay lighter (fainter) than ink-muted');
+  assert.ok(relLuma(hexToRgb(darkMatch[1])) < relLuma(hexToRgb(mutedDark)), 'dark ink-tertiary should stay darker (fainter against a dark bg) than ink-muted');
+});
+
+test('--todo-prio-alta (light) clears 4.5:1 as the .todo-prio-chip.prio-alta label (82% mixed onto --color-ink over 14% mixed onto --color-surface)', () => {
+  const css = read('public/tokens.css');
+  const m = css.match(/:root\s*\{[^}]*--todo-prio-alta:\s*(#[0-9a-fA-F]{6})/s);
+  assert.ok(m);
+  assert.notEqual(m[1].toLowerCase(), '#cf6060', '--todo-prio-alta must be darkened from the old 4.09:1 value');
+  const alta = hexToRgb(m[1]);
+  const ink = hexToRgb('#1a1a1c');
+  const surface = hexToRgb('#f8f7f4');
+  const mix = (fg, bg, pct) => fg.map((c, i) => Math.round((c * pct + bg[i] * (100 - pct)) / 100));
+  const textColor = mix(alta, ink, 82);
+  const bgColor = mix(alta, surface, 14);
+  assert.ok(contrastRatio(textColor, bgColor) >= 4.5, `.todo-prio-chip.prio-alta label only reaches ${contrastRatio(textColor, bgColor).toFixed(2)}:1`);
+});
+
+test('--lab-chip-txt (= --color-accent-soft-text = --color-accent) clears 4.5:1 on --lab-chip-bg, in both themes', () => {
+  const css = read('public/tokens.css');
+  const lightAccentMatch = css.match(/:root\s*\{[^}]*--color-accent:\s*oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/s);
+  const darkAccentMatch = css.match(/html\.dark\s*\{[^}]*--color-accent:\s*oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/s);
+  const lightAccent = oklchToRgb(...lightAccentMatch.slice(1, 4).map(Number));
+  const darkAccent = oklchToRgb(...darkAccentMatch.slice(1, 4).map(Number));
+  const mix = (fg, bg, pct) => fg.map((c, i) => Math.round((c * pct + bg[i] * (100 - pct)) / 100));
+  // light --lab-chip-bg = --color-accent-soft = color-mix(accent 12%, --color-elevated) — opaque, exact.
+  const lightChipBg = mix(lightAccent, hexToRgb('#ffffff'), 12);
+  assert.ok(contrastRatio(lightAccent, lightChipBg) >= 4.5, `light --lab-chip-txt only reaches ${contrastRatio(lightAccent, lightChipBg).toFixed(2)}:1 on its chip background`);
+  // dark --lab-chip-bg mixes toward transparent (18%), so it composites over
+  // whatever sits behind it — check every plausible dark card/panel ancestor.
+  for (const ancestor of ['#262b36', '#1f232d', '#181b23']) {
+    const darkChipBg = mix(darkAccent, hexToRgb(ancestor), 18);
+    const ratio = contrastRatio(darkAccent, darkChipBg);
+    assert.ok(ratio >= 4.5, `dark --lab-chip-txt only reaches ${ratio.toFixed(2)}:1 on --lab-chip-bg over ${ancestor}`);
+  }
 });
 
