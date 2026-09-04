@@ -12,4 +12,15 @@ describe('clinical-ops-sync', () => {
     assert.equal(clinicalOpsMergeHadChanges({ usersUpdated: 1 }), true);
     assert.equal(clinicalOpsMergeHadChanges({ stubsCreated: 2 }), true);
   });
+
+  it('clinicalOpsMergeHadChanges ignores point-in-time snapshot counts', () => {
+    assert.equal(
+      clinicalOpsMergeHadChanges({ incomingUsers: 12, teamsVisibleAfterMerge: 3 }),
+      false
+    );
+    assert.equal(
+      clinicalOpsMergeHadChanges({ incomingUsers: 12, teamsVisibleAfterMerge: 3, usersUpdated: 1 }),
+      true
+    );
+  });
 });
