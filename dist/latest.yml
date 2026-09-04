@@ -1,18 +1,16 @@
-version: 8.3.0
+version: 8.3.1
 files:
-  - url: R+-8.3.0-x64.exe
-    sha512: fP6F3p985tql2j5h13CiAzMyOfGB9fHyIetqQIJT5MHPBRwNx163OXKDdmyruDecy5TQlIAE7O9a1N5OcAcQsQ==
-    size: 123005809
-path: R+-8.3.0-x64.exe
-sha512: fP6F3p985tql2j5h13CiAzMyOfGB9fHyIetqQIJT5MHPBRwNx163OXKDdmyruDecy5TQlIAE7O9a1N5OcAcQsQ==
-releaseDate: '2026-09-03T20:12:31.000Z'
+  - url: R+-8.3.1-x64.exe
+    sha512: 9abWa/NqFTMIoyLAi8D6q1hUzSLXkB7aZFGs3Ob4VnHF+o5DUAvuVBFQxFsNKqQb5W/x00r5Z5deNOqjT1L1hQ==
+    size: 123000662
+path: R+-8.3.1-x64.exe
+sha512: 9abWa/NqFTMIoyLAi8D6q1hUzSLXkB7aZFGs3Ob4VnHF+o5DUAvuVBFQxFsNKqQb5W/x00r5Z5deNOqjT1L1hQ==
+releaseDate: '2026-09-04T19:07:19.000Z'
 releaseNotes: |
-  Corrige un equipo clínico que podía quedarse desactualizado en la nube sin
-  mostrar error, un choque al unirse a una sala al mismo tiempo desde dos
-  dispositivos, y el orden de captura del recuento celular en líquidos.
+  Corrige equipos clínicos nuevos que podían desaparecer para toda la sala, y
+  el ingreso a Nube por código QR en R+ Móvil que dejaba pacientes vacíos en
+  iPad.
   
-  Corrección — equipo desactualizado en la nube: un cambio de equipo que no
+  Corrección — equipos nuevos que desaparecían: un equipo recién creado
   
-  Corrección — choque al unirse a una sala: unirse a una sala nube desde
-  
-  Corrección — recuento celular (líquidos): el número de recuento ya no se
+  Corrección — R+ Móvil por código QR: unirse a una sala desde el código
