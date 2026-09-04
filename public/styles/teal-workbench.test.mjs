@@ -84,15 +84,14 @@ test('Phase 0: dense workbench data type scale is defined', () => {
   assert.match(css, /--type-wb-metadata:\s*500 11\.5px\/1/);
 });
 
-test('Phase 0: om-rise is a true self-contained enter/hold/exit cycle, distinct from toast-in', () => {
+test('WU8: om-rise is entrance-only now — the undo toast is JS-dismissed (close button / no auto-timer), not CSS-faded', () => {
   const css = read('public/styles/motion.css');
   assert.match(css, /@keyframes om-rise\s*\{/);
   const kf = css.match(/@keyframes om-rise\s*\{[\s\S]*?\n\}/);
   assert.ok(kf);
-  assert.match(kf[0], /0%\s*\{[^}]*opacity:\s*0;[^}]*transform:\s*translateY\(10px\)/s);
-  assert.match(kf[0], /86%/);
-  assert.match(kf[0], /100%\s*\{[^}]*opacity:\s*0/s);
-  assert.match(css, /\.om-rise\s*\{[^}]*animation:\s*om-rise 4\.2s/s);
+  assert.match(kf[0], /from\s*\{[^}]*opacity:\s*0;[^}]*transform:\s*translateY\(10px\)/s);
+  assert.match(kf[0], /to\s*\{[^}]*opacity:\s*1;[^}]*transform:\s*translateY\(0\)/s);
+  assert.match(css, /\.om-rise\s*\{[^}]*animation:\s*om-rise[^;]*\bforwards\b/s);
   // still distinct from the pre-existing (wrong-direction) toast-in
   assert.match(css, /@keyframes toast-in\s*\{/);
 });
