@@ -133,6 +133,12 @@ function createMiniElement(tag) {
     addEventListener(type, fn) {
       (this._listeners[type] ||= []).push(fn);
     },
+    removeEventListener(type, fn) {
+      const list = this._listeners[type];
+      if (!list) return;
+      const idx = list.indexOf(fn);
+      if (idx >= 0) list.splice(idx, 1);
+    },
     click() {
       if (this._disabled) return;
       const handlers = this._listeners.click || [];
@@ -164,12 +170,17 @@ function createMiniDom() {
   const body = createMiniElement('body');
   return {
     body,
+    activeElement: null,
     createElement(tag) {
       return createMiniElement(tag);
     },
     querySelector(sel) {
       return querySel(body, sel);
     },
+    // wireFocusTrap (modal-dismiss.mjs) listens on document for focusin;
+    // the mini-DOM doesn't model focus, so these are no-ops.
+    addEventListener() {},
+    removeEventListener() {},
   };
 }
 

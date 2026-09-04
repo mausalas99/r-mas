@@ -10,8 +10,9 @@
  */
 import { escHtml } from '../../dom-escape.mjs';
 import { showUndoToast } from './undo-toast.mjs';
+import { wireFocusTrap, restoreFocus, focusFirstFocusable } from '../../modal-dismiss.mjs';
 
-/** @type {{ backdrop: HTMLElement, onKeydown: (ev: KeyboardEvent) => void, resolve: (v: string) => void }|null} */
+/** @type {{ backdrop: HTMLElement, onKeydown: (ev: KeyboardEvent) => void, resolve: (v: string) => void, trap: { unwire: () => void }, previousFocus: Element|null }|null} */
 let activeConfirm = null;
 
 /**
@@ -93,10 +94,12 @@ export function buildConfirmModalHtml(opts = {}) {
 /** @param {'confirm'|'cancel'} result */
 function closeActiveConfirm(result) {
   if (!activeConfirm) return;
-  const { backdrop, onKeydown, resolve } = activeConfirm;
+  const { backdrop, onKeydown, resolve, trap, previousFocus } = activeConfirm;
   document.removeEventListener('keydown', onKeydown);
+  trap.unwire();
   if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
   activeConfirm = null;
+  restoreFocus(previousFocus);
   if (typeof resolve === 'function') resolve(result);
 }
 
@@ -111,11 +114,15 @@ function closeActiveConfirm(result) {
 function openModalConfirm(opts) {
   return new Promise((resolve) => {
     if (activeConfirm) closeActiveConfirm('cancel');
+    const previousFocus = document.activeElement;
 
     const wrap = document.createElement('div');
     wrap.innerHTML = buildConfirmModalHtml(opts);
     const backdrop = wrap.firstElementChild;
     document.body.appendChild(backdrop);
+    const panel = backdrop.querySelector('[role="dialog"]');
+    const trap = wireFocusTrap(panel);
+    focusFirstFocusable(panel);
 
     // Open transition: add the class on the next frame so the CSS transition runs.
     const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : (fn) => setTimeout(fn, 0);
@@ -151,7 +158,7 @@ function openModalConfirm(opts) {
       secondaryBtn.addEventListener('click', () => opts.onSecondary());
     }
 
-    activeConfirm = { backdrop, onKeydown, resolve };
+    activeConfirm = { backdrop, onKeydown, resolve, trap, previousFocus };
   });
 }
 

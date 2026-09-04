@@ -2,12 +2,15 @@
  * Hybrid H overlay primitives: dialog, sheet, menu.
  * Focus trap, Esc/backdrop via modal-dismiss, sheet drag + velocity dismiss.
  */
-import { bindBackdropDismiss, createModalDismissRegistry } from './modal-dismiss.mjs';
+import {
+  bindBackdropDismiss,
+  createModalDismissRegistry,
+  wireFocusTrap,
+  restoreFocus,
+  focusFirstFocusable,
+} from './modal-dismiss.mjs';
 import { prefersReducedMotion, springTo, getReleaseVelocity } from './ui-motion.mjs';
 import { projectMomentum, rubberband } from './ui-physics.mjs';
-
-var FOCUSABLE =
-  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 var DEFAULT_DISMISS_VELOCITY = 0.11;
 var SHEET_DISMISS_FRACTION = 0.3;
@@ -37,14 +40,6 @@ function ensureDismissRegistry() {
     dismissRegistry.init();
   }
   return dismissRegistry;
-}
-
-/** @param {HTMLElement} container */
-function getFocusableElements(container) {
-  if (!container || typeof container.querySelectorAll !== 'function') return [];
-  return Array.from(container.querySelectorAll(FOCUSABLE)).filter(function (el) {
-    return !el.disabled && el.tabIndex !== -1;
-  });
 }
 
 /** @param {HTMLElement} panel @param {string} kind */
@@ -83,62 +78,6 @@ function hideScrim(scrim) {
   scrim.setAttribute('aria-hidden', 'true');
 }
 
-/** @param {Element|null|undefined} el */
-function restoreFocus(el) {
-  if (!el || typeof el.focus !== 'function') return;
-  try {
-    el.focus();
-  } catch (_e) {
-    void _e;
-  }
-}
-
-/** @param {HTMLElement} panel */
-function focusPanelFirst(panel) {
-  var focusables = getFocusableElements(panel);
-  if (focusables.length) focusables[0].focus();
-  else if (typeof panel.focus === 'function') panel.focus();
-}
-
-/**
- * @param {HTMLElement} panel
- * @returns {{ unwire: () => void }}
- */
-function wireFocusTrap(panel) {
-  function onTrapKeydown(ev) {
-    if (ev.key !== 'Tab') return;
-    var focusables = getFocusableElements(panel);
-    if (!focusables.length) {
-      ev.preventDefault();
-      return;
-    }
-    var first = focusables[0];
-    var last = focusables[focusables.length - 1];
-    if (ev.shiftKey && document.activeElement === first) {
-      ev.preventDefault();
-      last.focus();
-    } else if (!ev.shiftKey && document.activeElement === last) {
-      ev.preventDefault();
-      first.focus();
-    }
-  }
-
-  function onFocusIn(ev) {
-    if (!panel.contains(ev.target)) {
-      focusPanelFirst(panel);
-    }
-  }
-
-  panel.addEventListener('keydown', onTrapKeydown);
-  document.addEventListener('focusin', onFocusIn);
-  return {
-    unwire: function () {
-      panel.removeEventListener('keydown', onTrapKeydown);
-      document.removeEventListener('focusin', onFocusIn);
-    },
-  };
-}
-
 /**
  * @param {HTMLElement} el
  * @param {Record<string, unknown>} keyframes
@@ -170,6 +109,10 @@ function registerOverlayLayer(isOpen, scrim, closeLayer) {
       return scrim || null;
     },
     panelSelector: '.ui-overlay-panel',
+    // openDialog/openSheet wire their own focus trap explicitly (below),
+    // scoped to their own open/close lifecycle — opt out of the registry's
+    // DOM-diffing auto-trap so the two mechanisms don't fight over focus.
+    skipAutoFocusTrap: true,
   });
 }
 
@@ -214,7 +157,7 @@ export function openDialog(opts) {
 
   wireScrimDismiss(scrim);
   var trap = wireFocusTrap(panel);
-  focusPanelFirst(panel);
+  focusFirstFocusable(panel);
 
   function cleanup() {
     trap.unwire();
@@ -383,7 +326,7 @@ export function openSheet(opts) {
 
   wireScrimDismiss(scrim);
   var trap = wireFocusTrap(panel);
-  focusPanelFirst(panel);
+  focusFirstFocusable(panel);
 
   var pointer = wireSheetPointer(panel, reduced, dismissVelocity, function () {
     closeLayer('drag');
@@ -466,7 +409,7 @@ export function openMenu(opts) {
   animControls = runSpring(panel, openKf, { bounce: 0, duration: 0.26 });
 
   var trap = wireFocusTrap(panel);
-  focusPanelFirst(panel);
+  focusFirstFocusable(panel);
 
   function cleanup() {
     trap.unwire();
@@ -492,6 +435,9 @@ export function openMenu(opts) {
     close: function () {
       closeLayer('esc');
     },
+    // Menus wire their own focus trap explicitly (below); no backdrop to
+    // resolve a panel from anyway.
+    skipAutoFocusTrap: true,
   });
 
   return {

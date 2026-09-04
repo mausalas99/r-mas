@@ -35,6 +35,8 @@ import {
   closeModal,
   confirmCloseAddPatientModal,
 } from './features/patients.mjs';
+import { closeFinTurnoSheet } from './features/guardia-fin-turno-modal.mjs';
+import { closeEntregaModal } from './features/clinical-entrega/clinical-entrega-modal.mjs';
 
 const DYNAMIC_BACKDROP_IDS = [
   'lab-dedupe-backdrop',
@@ -209,6 +211,8 @@ function wireModalDismissLayers(registry) {
     panelSelector: '.lab-paste-modal',
   });
   regOpenClass(registry, 'onboarding-intro-backdrop', hideTourIntroModal);
+  regOpenClass(registry, 'guardia-fin-turno-backdrop', closeFinTurnoSheet);
+  regOpenClass(registry, 'entrega-modal-backdrop', closeEntregaModal);
 }
 
 /** @param {ReturnType<typeof createModalDismissRegistry>} registry */
