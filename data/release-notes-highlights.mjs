@@ -215,10 +215,24 @@ var RELEASE_NOTES_830 = [
   },
 ];
 
+var RELEASE_NOTES_831 = [
+  {
+    title: 'Corrección — equipos nuevos que desaparecían',
+    body:
+      'Un equipo recién creado ya no se vuelve invisible para toda la sala — se corrigieron <strong>tres fallas</strong> distintas en la sincronización.',
+  },
+  {
+    title: 'Corrección — R+ Móvil por código QR',
+    body:
+      'Unirse a una sala desde el código QR ya no deja los pacientes <strong>vacíos</strong> en iPad.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_830;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_831;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.3.1': RELEASE_NOTES_831,
   '8.3.0': RELEASE_NOTES_830,
   '8.2.9': RELEASE_NOTES_829,
   '8.2.8': RELEASE_NOTES_828,

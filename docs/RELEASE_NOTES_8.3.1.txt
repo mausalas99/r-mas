@@ -1,0 +1,31 @@
+R+ 8.3.1 (estable — release 8.3.1)
+======================================
+
+Fecha: 2026-09-04
+
+## Resumen
+
+Corrige equipos clínicos nuevos que podían desaparecer para toda la sala, y
+el ingreso a Nube por código QR en R+ Móvil que dejaba pacientes vacíos en
+iPad.
+
+## Nuevo / mejorado
+
+- **Corrección — equipos nuevos que desaparecían:** un equipo recién creado
+  podía volverse invisible para toda la sala por tres fallas distintas en la
+  sincronización (la creadora del equipo quedaba sin sala asignada, un error
+  al enlazar equipos se descartaba en silencio, y una re-archivación se
+  revertía a destiempo). Las tres quedan corregidas.
+- **Corrección — R+ Móvil por código QR:** unirse a una sala desde el código
+  QR se saltaba la carga de la llave de descifrado, dejando todos los
+  pacientes vacíos en iPad sin mostrar ningún error.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.3.1-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.3.1-Mac-Intel.dmg`
+- Windows: `R+-8.3.1-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

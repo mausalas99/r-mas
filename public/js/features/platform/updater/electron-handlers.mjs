@@ -1,6 +1,5 @@
 /** Individual Electron IPC update event handlers. */
 import { formatProgressLine } from '../../../update-helpers.mjs';
-import { formatUpdaterReleaseNotesPlain } from '../../settings-help/release-notes.mjs';
 import { getPlatformRuntime } from '../runtime.mjs';
 import { updaterState } from './state.mjs';
 import { syncUpdateModalChannelPill, sendUpdateTelemetry } from './channel-settings.mjs';
@@ -87,10 +86,11 @@ function populateUpdateAvailableDom(version, releaseNotes, isDowngrade, isRepair
   if (label) label.textContent = '';
 }
 
-function handleUpdateAvailable(payload) {
+async function handleUpdateAvailable(payload) {
   resetUpdateCheckButtons();
   var version = (payload && payload.version) ? payload.version : String(payload || '');
   var rawNotes = (payload && payload.releaseNotes != null) ? String(payload.releaseNotes) : '';
+  var { formatUpdaterReleaseNotesPlain } = await import('../../settings-help/release-notes.mjs');
   var releaseNotes =
     formatUpdaterReleaseNotesPlain(version, rawNotes) || stripHtmlToPlainText(rawNotes);
   updaterState.pendingUpdaterTargetVersion = version;

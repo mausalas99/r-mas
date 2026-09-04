@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.3.0](https://github.com/mausalas99/r-mas/releases/tag/v8.3.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.3.1](https://github.com/mausalas99/r-mas/releases/tag/v8.3.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -60,6 +60,13 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.3.1 (estable — release 8.3.1)
+
+- **Corrección — equipos nuevos que desaparecían:** un equipo recién creado podía volverse invisible para toda la sala por tres fallas distintas en la sincronización. Las tres quedan corregidas.
+- **Corrección — R+ Móvil por código QR:** unirse a una sala desde el código QR se saltaba la carga de la llave de descifrado, dejando todos los pacientes vacíos en iPad sin mostrar error.
+
+Notas: `docs/RELEASE_NOTES_8.3.1.txt`.
 ## R+ 8.3.0 (estable — release 8.3.0)
 
 - **Corrección — equipo desactualizado en la nube:** un cambio de equipo que no se pudo guardar por un bloqueo momentáneo de la base local ya no se perdía en silencio — se reintenta en cada inicio de sesión, no solo en la configuración inicial.

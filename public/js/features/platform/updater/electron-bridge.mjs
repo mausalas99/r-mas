@@ -11,7 +11,9 @@ import {
 function safeHandler(fn, label) {
   return function wrapped(payload) {
     try {
-      fn(payload);
+      Promise.resolve(fn(payload)).catch(function (e) {
+        console.error(label + ' callback error:', e && e.message);
+      });
     } catch (e) {
       console.error(label + ' callback error:', e && e.message);
     }
