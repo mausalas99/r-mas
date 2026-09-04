@@ -1601,6 +1601,8 @@ html.dark .lab-output-more-item--danger:hover {
 #lab-diagrams-body {
   max-height: min(120vh, 3200px);
   opacity: 1;
+  /* No edge cue: #diagrams-grid is flex-wrap, so cards reflow to new rows
+     instead of overflowing sideways. overflow-x is a defensive fallback only. */
   overflow-x: auto;
   overflow-y: hidden;
   transition:
@@ -1847,6 +1849,21 @@ html.lab-some-tables-modal-open .lab-copy-fab {
   overflow-x: auto;
   background: var(--color-elevated);
   box-shadow: none;
+  /* Block-layout wrap around a <table>: needs display:flex (not just a
+     copy of .inner-tab-bar's ::after) so the sticky fade pseudo can sit
+     beside the table instead of dropping to a new line below it. */
+  display: flex;
+  position: relative;
+}
+.lab-some-tables--modal .lab-some-table-wrap::after {
+  content: "";
+  position: sticky;
+  right: 0;
+  flex: 0 0 28px;
+  align-self: stretch;
+  margin-left: -28px;
+  pointer-events: none;
+  background: linear-gradient(to left, var(--color-elevated), transparent);
 }
 .lab-some-tables--modal .lab-some-table {
   border-radius: 0;
@@ -3134,6 +3151,20 @@ html.dark .lab-hour-group-h { border-bottom-color: rgba(148, 163, 184, 0.28); }
   border: var(--border-hairline);
   border-radius: var(--radius-control);
   box-shadow: none;
+  /* Block-layout wrap around a <table>: see .lab-some-tables--modal
+     .lab-some-table-wrap above for why display:flex is needed here. */
+  display: flex;
+  position: relative;
+}
+.lab-some-table-wrap::after {
+  content: "";
+  position: sticky;
+  right: 0;
+  flex: 0 0 28px;
+  align-self: stretch;
+  margin-left: -28px;
+  pointer-events: none;
+  background: linear-gradient(to left, var(--color-elevated), transparent);
 }
 .lab-some-table {
   width: 100%;

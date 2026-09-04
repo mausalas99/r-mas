@@ -816,6 +816,18 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
 }
+/* Edge cue: both hosts (.expediente-panes-host, #med-work-area) sit on var(--bg). */
+.exp-segment-bar::after,
+.manejo-subtabs::after {
+  content: "";
+  position: sticky;
+  right: 0;
+  flex: 0 0 28px;
+  align-self: stretch;
+  margin-left: -28px;
+  pointer-events: none;
+  background: linear-gradient(to left, var(--bg), transparent);
+}
 
 .exp-segment-btn,
 .manejo-subtab {

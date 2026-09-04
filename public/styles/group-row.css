@@ -22,6 +22,18 @@
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: thin;
+    position: relative;
+  }
+  /* Edge cue: fades to var(--surface), the .exp-expediente-nav background it sits on. */
+  #patient-expediente-classic > .exp-expediente-nav > #exp-group-row::after {
+    content: "";
+    position: sticky;
+    right: 0;
+    flex: 0 0 28px;
+    align-self: stretch;
+    margin-left: -28px;
+    pointer-events: none;
+    background: linear-gradient(to left, var(--surface), transparent);
   }
 }
 
@@ -219,6 +231,18 @@ html.rpc-mobile-web #patient-expediente-classic > .exp-expediente-nav > #exp-gro
   overflow-y: hidden;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+/* Edge cue: fades to var(--surface), the .exp-expediente-nav background it sits on. */
+html.rpc-mobile-web #patient-expediente-classic > .exp-expediente-nav > #exp-group-row::after {
+  content: "";
+  position: sticky;
+  right: 0;
+  flex: 0 0 28px;
+  align-self: stretch;
+  margin-left: -28px;
+  pointer-events: none;
+  background: linear-gradient(to left, var(--surface), transparent);
 }
 
 html.rpc-mobile-web .exp-group-name,

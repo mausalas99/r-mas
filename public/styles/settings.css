@@ -857,6 +857,18 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
     overflow-x: auto;
     border-right: none;
     border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  /* Edge cue: fades to this row's own background (color-mix over --surface). */
+  .settings-nav::after {
+    content: "";
+    position: sticky;
+    right: 0;
+    flex: 0 0 28px;
+    align-self: stretch;
+    margin-left: -28px;
+    pointer-events: none;
+    background: linear-gradient(to left, color-mix(in oklab, var(--surface) 94%, var(--bg)), transparent);
   }
   .settings-nav-item {
     width: auto;

@@ -83,7 +83,19 @@
   color: var(--primary); background: var(--lab-chip-bg); border-bottom: 1px solid var(--border);
   padding: 10px 12px !important;
 }
-.cultivos-table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
+/* Block-layout wrap around a <table>: display:flex lets the sticky fade
+   pseudo sit beside the table instead of on a new line below it. */
+.cultivos-table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: flex; position: relative; }
+.cultivos-table-wrap::after {
+  content: "";
+  position: sticky;
+  right: 0;
+  flex: 0 0 28px;
+  align-self: stretch;
+  margin-left: -28px;
+  pointer-events: none;
+  background: linear-gradient(to left, var(--surface), transparent);
+}
 .cultivos-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .cultivos-table th {
   text-align: left; padding: 10px 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.02em;

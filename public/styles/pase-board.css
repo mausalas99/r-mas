@@ -2745,6 +2745,18 @@ html.guardia-entrega-roster-open #guardia-board-scroll {
   padding-bottom: 4px;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+/* Edge cue: fades to .guardia-vitals-feed's own background, not plain --surface. */
+.vfeed-strip::after {
+  content: "";
+  position: sticky;
+  right: 0;
+  flex: 0 0 28px;
+  align-self: stretch;
+  margin-left: -28px;
+  pointer-events: none;
+  background: linear-gradient(to left, color-mix(in oklab, var(--color-success-emphasis) 5%, var(--surface)), transparent);
 }
 
 .vfeed-chip {
