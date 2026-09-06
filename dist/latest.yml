@@ -1,16 +1,22 @@
-version: 8.3.1
+version: 8.3.2
 files:
-  - url: R+-8.3.1-x64.exe
-    sha512: 9abWa/NqFTMIoyLAi8D6q1hUzSLXkB7aZFGs3Ob4VnHF+o5DUAvuVBFQxFsNKqQb5W/x00r5Z5deNOqjT1L1hQ==
-    size: 123000662
-path: R+-8.3.1-x64.exe
-sha512: 9abWa/NqFTMIoyLAi8D6q1hUzSLXkB7aZFGs3Ob4VnHF+o5DUAvuVBFQxFsNKqQb5W/x00r5Z5deNOqjT1L1hQ==
-releaseDate: '2026-09-04T19:07:19.000Z'
+  - url: R+-8.3.2-x64.exe
+    sha512: /15V1J7BvmdCjwzmllPT0TcfeYxBQqo2yx7E/ZzEJovPiiH59ni4Fv3WcwpxaqU+voDN//IRU/vdxJuwOgPX7g==
+    size: 123113456
+path: R+-8.3.2-x64.exe
+sha512: /15V1J7BvmdCjwzmllPT0TcfeYxBQqo2yx7E/ZzEJovPiiH59ni4Fv3WcwpxaqU+voDN//IRU/vdxJuwOgPX7g==
+releaseDate: '2026-09-06T18:23:42.000Z'
 releaseNotes: |
-  Corrige equipos clínicos nuevos que podían desaparecer para toda la sala, y
-  el ingreso a Nube por código QR en R+ Móvil que dejaba pacientes vacíos en
-  iPad.
+  Nueva pestaña de administración de medicamentos, balance de líquidos por turno con recordatorio de hemodiálisis, y los estudios/procedimientos del pegado de Manejo ahora se agregan solos a Pendientes.
   
-  Corrección — equipos nuevos que desaparecían: un equipo recién creado
+  Nuevo — pestaña Medicamentos: en Sala, Paciente → Clínico tiene una pestaña de administración con horario por toma (marca solo lo no administrado) y un registro aparte para PRN.
   
-  Corrección — R+ Móvil por código QR: unirse a una sala desde el código
+  Nuevo — balance de líquidos por turno: Estado actual separa entradas y salidas en T1/T2/T3, con una sección de otras fuentes cuantificables (ultrafiltrado, drenaje, toracocentesis o una propia).
+  
+  Nuevo — recordatorio de hemodiálisis: si hay una hemodiálisis pendiente, el registro del día avisa con un botón para posponerla sin cerrar el pendiente.
+  
+  Nuevo — estudios y procedimientos a Pendientes: al pegar el bloque de Manejo, los estudios de imagen (TAC, RM, RX, etc.) y procedimientos se agregan solos a Pendientes.
+  
+  Mejorado — Solución Stanford: los medicamentos marcados para Solución Stanford se agrupan en una sola línea, en Estado actual y en Manejo.
+  
+  Mejorado — copiar Estado actual: el texto copiado ahora pega en negritas reales en Word, Docs o Gmail, en vez de asteriscos sueltos.
