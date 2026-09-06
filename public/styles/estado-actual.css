@@ -1433,7 +1433,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   background: transparent;
   color: var(--text-muted);
   font: inherit;
-  font-size: 9.5px;
+  font-size: 10px; /* --type-wb-counter-label scale */
   font-weight: 700;
   letter-spacing: 0.02em;
   padding: 1px 6px;
@@ -2265,7 +2265,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-registro-modal .ea-vital-value-wrap .ea-vital-input:focus {
-  outline: none;
+  outline: 2px solid var(--action);
+  outline-offset: -2px;
   box-shadow: none;
   background: transparent;
 }

@@ -71,6 +71,7 @@ public/js/features/drive-import-modal/drive-import-run.test.mjs
 public/js/features/entrega-modal-ui/entrega-modal-procedures.test.mjs
 public/js/features/entrega-roster-panel.test.mjs
 public/js/features/eventualidades-persist-repo.test.mjs
+public/js/features/expediente-group-row-ui.test.mjs
 public/js/features/lab-panel-history.test.mjs
 public/js/features/med-pharm-profile-modals.test.mjs
 public/js/features/med-pharm-profile-render-helpers.test.mjs
