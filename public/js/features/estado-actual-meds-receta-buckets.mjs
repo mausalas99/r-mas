@@ -7,6 +7,9 @@ import {
 } from '../med-receta-core.mjs';
 import { shouldIncludeMedicationInSoap } from '../med-receta-soap.mjs';
 import { MED_FIELD_KEYS } from './estado-actual-data.mjs';
+import { getPatients } from '../app-state.mjs';
+import { dayKeyFromIso } from './eventualidades-store.mjs';
+import { medAdminScheduleForItem } from '../med-admin-schedule.mjs';
 import {
   insulinPumpNmSoapFragment,
   skipRecetaItemForNmSoapBucket,
@@ -25,13 +28,44 @@ import {
   skipRecetaItemForPotassiumReposBucket,
 } from '../potassium-repos-display.mjs';
 import { isPotassiumReposCarrierMedicationItem } from '../potassium-repos-detect.mjs';
+import {
+  stanfordSolutionNmSoapFragment,
+  skipRecetaItemForStanfordSolutionBucket,
+} from '../stanford-solution-display.mjs';
+
+/** @returns {Record<string, boolean> | null} today's not-administered marks for a patient, or null if none/stale */
+function notAdminMapForPatient(patientId) {
+  if (!patientId) return null;
+  var patient = getPatients().find(function (p) {
+    return String(p.id) === String(patientId);
+  });
+  var medAdmin = patient && patient.medAdmin;
+  if (!medAdmin || typeof medAdmin !== 'object') return null;
+  if (medAdmin.day !== dayKeyFromIso(new Date().toISOString())) return null;
+  return medAdmin.notAdmin && typeof medAdmin.notAdmin === 'object' ? medAdmin.notAdmin : null;
+}
+
+/** @returns {{ missed: string[], total: number }} which of the item's scheduled dose times were marked not-given today */
+function missedDoseTimesForItem(notAdminMap, item) {
+  if (!notAdminMap || !item) return { missed: [], total: 0 };
+  var times = medAdminScheduleForItem(item).defaultTimes || [];
+  var missed = times.filter(function (t) {
+    return !!notAdminMap[item.id + '|' + t];
+  });
+  return { missed: missed, total: times.length };
+}
 
 /**
- * @param {{ nombreRaw?: string, viaRaw?: string, dosisRaw?: string, frecuenciaRaw?: string, diaTratamiento?: number | null, suspendido?: boolean }} it
+ * @param {{ id?: string, nombreRaw?: string, viaRaw?: string, dosisRaw?: string, frecuenciaRaw?: string, diaTratamiento?: number | null, suspendido?: boolean }} it
+ * @param {Record<string, boolean> | null} [notAdminMap] today's not-administered marks, keyed `itemId|hh:mm`
  * @returns {string}
  */
-export function medInstructionFragmentForSoap(it) {
-  return formatMedicationSoapShort(it);
+export function medInstructionFragmentForSoap(it, notAdminMap) {
+  var frag = formatMedicationSoapShort(it);
+  var info = missedDoseTimesForItem(notAdminMap, it);
+  if (!info.missed.length) return frag;
+  if (info.missed.length === info.total) return frag + ' (NO ADMINISTRADA)';
+  return frag + ' (NO ADMINISTRADO, ' + info.missed.join(', ') + ')';
 }
 
 /**
@@ -77,16 +111,23 @@ function pushRecetaItemToSoapBucket(it, ctx) {
   if (!it || !ctx.selMap[it.id] || it.suspendido) return;
   if (skipRecetaItemForInsulinPumpCarrier(it, ctx.list)) return;
   if (isPotassiumReposCarrierMedicationItem(it, ctx.list)) return;
+  if (skipRecetaItemForStanfordSolutionBucket(it, ctx.list)) {
+    if (ctx.stanfordNmFrag && !ctx.stanfordNmAdded) {
+      ctx.arrays.nm.push(ctx.stanfordNmFrag);
+      ctx.stanfordNmAdded = true;
+    }
+    return;
+  }
   if (!shouldIncludeMedicationInSoap(it, ctx.classifyFn)) return;
   var cat = effectiveSoapCategory(it, ctx.classifyFn);
   if (cat === 'otros') return;
   if (maybeAddNmSpecialFragment(it, ctx, cat)) return;
-  var frag = medInstructionFragmentForSoap(it);
+  var frag = medInstructionFragmentForSoap(it, ctx.notAdminMap);
   if (ctx.arrays[cat]) ctx.arrays[cat].push(frag);
   else ctx.arrays.otros.push(frag);
 }
 
-export function bucketsFromRecetaItems(items, selMap, classifyFn) {
+export function bucketsFromRecetaItems(items, selMap, classifyFn, patientId) {
   /** @type {Record<string, string[]>} */
   var arrays = {
     analgesia: [],
@@ -116,6 +157,7 @@ export function bucketsFromRecetaItems(items, selMap, classifyFn) {
   var rescateNmFrag = insulinRescateNmSoapFragment(list, soapSelected);
   var prandialNmFrag = insulinPrandialNmSoapFragment(list, soapSelected);
   var kReposNmFrag = potassiumReposNmSoapFragment(list, soapSelected);
+  var stanfordNmFrag = stanfordSolutionNmSoapFragment(list, soapSelected);
   var bucketCtx = {
     list: list,
     selMap: selMap,
@@ -129,6 +171,9 @@ export function bucketsFromRecetaItems(items, selMap, classifyFn) {
     prandialNmAdded: false,
     kReposNmFrag: kReposNmFrag,
     kReposNmAdded: false,
+    stanfordNmFrag: stanfordNmFrag,
+    stanfordNmAdded: false,
+    notAdminMap: notAdminMapForPatient(patientId),
   };
   list.forEach(function (it) {
     pushRecetaItemToSoapBucket(it, bucketCtx);

@@ -16,11 +16,12 @@ import { resolveVentilatorioLabContext } from './estado-actual-ventilatorio-labs
  * @param {Record<string, unknown> | null | undefined} estadoClinico
  * @param {{ vitals?: Record<string, unknown>, glucometrias?: Array<{ value?: unknown }>, bombaInsulina?: Array<{ value?: unknown, units?: unknown }>, io?: { ing?: unknown, egr?: unknown, egrParts?: unknown[], evac?: unknown }, alteredAt?: Record<string, string> } | null | undefined} snapshot
  * @param {{ balanceTurno?: unknown } | null | undefined} balances
- * @param {{ patientPeso?: unknown, recetaBlock?: { items?: unknown[] } | null, rescatesInSome?: boolean, bombaAlgoritmo?: number | null } | null | undefined} [options]
+ * @param {{ patientPeso?: unknown, recetaBlock?: { items?: unknown[] } | null, rescatesInSome?: boolean, bombaAlgoritmo?: number | null, bold?: boolean } | null | undefined} [options]
  * @returns {string}
  */
 export function buildEstadoActualText(estadoClinico, snapshot, balances, options) {
   options = options || {};
+  var bold = !!options.bold;
   var ctx = normalizeEaTextInputs(estadoClinico, snapshot, balances);
   var labCtx = options.patientId ? resolveVentilatorioLabContext(options.patientId, getLabHistory()) : null;
   var soporte = resolveSoporteClause(ctx.ec, {
@@ -46,6 +47,7 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
   var nmClause = buildNmClause(ctx.ec, kcalDisplay, ctx.snapIo, ctx.btTurno, ctx.glSrc, ctx.bombaSrc, {
     rescatesInSome: rescatesInSome,
     bombaAlgoritmo: bombaAlgoritmo,
+    bold: bold,
   });
-  return assembleSoapLines(ctx.ec, ctx.v, soporte, hiTemp, nmClause).join('\n\n');
+  return assembleSoapLines(ctx.ec, ctx.v, soporte, hiTemp, nmClause, { bold: bold }).join('\n\n');
 }

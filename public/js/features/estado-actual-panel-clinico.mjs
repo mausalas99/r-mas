@@ -205,9 +205,10 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
   );
 }
 
-function getEstadoActualTextForPatient(patient) {
+/** @param {{ bold?: boolean }} [opts] `bold`: markdown-bold zone labels, meds and vitals (clipboard copy only). */
+function getEstadoActualTextForPatient(patient, opts) {
   if (!patient || !patient.monitoreo) return '';
-  return generateEstadoActualText(patient.monitoreo, patient);
+  return generateEstadoActualText(patient.monitoreo, patient, undefined, opts);
 }
 
 export function flushEaEstadoClinicoFieldsFromDom(patient, root) {
@@ -317,7 +318,7 @@ function wireEstadoClinicoInteractions(mount, patient) {
   });
 }
 
-function generateEstadoActualText(monitoreo, patient, activeId) {
+function generateEstadoActualText(monitoreo, patient, activeId, opts) {
   var snapshot = deriveSnapshot(monitoreo);
   var weightKg = resolveDietWeightKg({
     patientPeso: patient && patient.peso,
@@ -335,6 +336,7 @@ function generateEstadoActualText(monitoreo, patient, activeId) {
       patientPeso: patient && patient.peso,
       recetaBlock: recetaBlock,
       bombaAlgoritmo: monitoreo.bombaInsulinaAlgoritmo ?? null,
+      bold: !!(opts && opts.bold),
     }
   );
 }

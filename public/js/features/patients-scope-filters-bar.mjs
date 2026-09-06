@@ -170,18 +170,18 @@ export function detachPatientFiltersPopover() {
   mount.setAttribute('aria-hidden', 'true');
 }
 
-/** @param {HTMLElement} bar @param {() => void} refreshCensusViews */
+/** @param {HTMLElement} bar @param {(options?: { typing?: boolean }) => void} refreshCensusViews */
 export function wireCensusFilterInputs(bar, refreshCensusViews) {
   wirePatientFiltersPopover();
   const salaSel = bar.querySelector('#clinical-filter-sala');
   const teamSel = bar.querySelector('#clinical-filter-team');
   const serviceInp = bar.querySelector('#clinical-filter-service');
-  const onFilterChange = () => {
+  const onFilterChange = (changeOpts) => {
     const currentBar = censusFiltersBarEl();
     if (currentBar) {
       syncPatientFiltersTriggerUi(currentBar, currentBar.classList.contains('is-collapsed'));
     }
-    refreshCensusViews();
+    refreshCensusViews(changeOpts);
   };
   if (salaSel) {
     salaSel.addEventListener('change', () => {
@@ -201,7 +201,7 @@ export function wireCensusFilterInputs(bar, refreshCensusViews) {
   if (serviceInp) {
     serviceInp.addEventListener('input', () => {
       elevatedPatientFilters.service = String(serviceInp.value || '').trim();
-      onFilterChange();
+      onFilterChange({ typing: true });
     });
   }
 }

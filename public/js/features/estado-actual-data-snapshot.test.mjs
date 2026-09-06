@@ -27,6 +27,28 @@ test('deriveBpPairsFromHistorial_ pairs TAS/TAD by matching time, not array posi
   );
 });
 
+test('deriveBpPairsFromHistorial_ keeps a repeated diastolic value paired instead of dropping it', () => {
+  var historial = [
+    {
+      recordedAt: '2026-09-05T06:00:00.000Z',
+      vitalSeries: {
+        tas: [{ value: 155 }, { value: 140 }],
+        tad: [{ value: 60 }, { value: 60 }],
+      },
+    },
+  ];
+  var pairs = deriveBpPairsFromHistorial_(historial);
+  assert.deepEqual(
+    pairs.map(function (p) {
+      return [p.tas, p.tad];
+    }),
+    [
+      [155, 60],
+      [140, 60],
+    ],
+  );
+});
+
 test('deriveBpPairsFromHistorial_ falls back to positional pairing when no times are recorded', () => {
   var historial = [
     {

@@ -127,7 +127,7 @@ export function focusSiblingGluOrIo(row) {
     nextFocus.focus();
     return true;
   }
-  var ioIng = document.getElementById('ea-io-ing');
+  var ioIng = document.getElementById('ea-io-ing-t1');
   if (ioIng && 'focus' in ioIng) ioIng.focus();
   return true;
 }

@@ -37,6 +37,13 @@ import {
   isPotassiumReposMedicationItem,
   potassiumReposGroupMedLabelHtml,
 } from "../potassium-repos-display.mjs";
+import {
+  STANFORD_SOLUTION_GROUP_ID,
+  isStanfordSolutionGroupSoapSelected,
+  isStanfordSolutionGroupSuspended,
+  isStanfordSolutionMedicationItem,
+  stanfordSolutionGroupMedLabelHtml,
+} from "../stanford-solution-display.mjs";
 import { esc, isMedNotaSelected } from "./medications-utils.mjs";
 import { escAttr } from "../dom-escape.mjs";
 
@@ -222,6 +229,43 @@ function buildPotassiumReposGroupRowHtml(activeId, items) {
   );
 }
 
+function buildStanfordSolutionGroupRowHtml(activeId, items) {
+  var paraNota = isStanfordSolutionGroupSoapSelected(activeId, items, isMedNotaSelected) ? " checked" : "";
+  var chk = isStanfordSolutionGroupSuspended(items, function (id) {
+    var it = items.find(function (x) {
+      return String(x.id) === String(id);
+    });
+    return !!(it && it.suspendido);
+  })
+    ? " checked"
+    : "";
+  return (
+    '<div class="med-receta-row med-receta-row--stanford-solution" data-med-item-id="' +
+    esc(STANFORD_SOLUTION_GROUP_ID) +
+    '">' +
+    '<div class="med-receta-checkcell">' +
+    '<input type="checkbox"' +
+    chk +
+    ' title="Excluir Solución Stanford del texto de egreso"' +
+    " onchange=\"toggleMedRecetaStanfordSolutionSuspendido(this.checked)\"" +
+    "/>" +
+    "</div>" +
+    '<div class="med-receta-checkcell">' +
+    '<input type="checkbox" data-med-soap-chk="1"' +
+    paraNota +
+    ' title="Incluir Solución Stanford en Estado Actual / SOAP"' +
+    " onchange=\"toggleMedRecetaStanfordSolutionParaNota(this.checked)\"" +
+    "/>" +
+    "</div>" +
+    '<div class="med-receta-name">' +
+    stanfordSolutionGroupMedLabelHtml(items, esc) +
+    "</div>" +
+    '<div class="med-receta-destcell"></div>' +
+    '<div class="med-receta-diacell"></div>' +
+    "</div>"
+  );
+}
+
 function buildMedRecetaRowHtml(activeId, it, fechaActualizacion, allItems) {
   var sid = String(it.id || "");
   var diaOpts = fechaActualizacion ? { fechaActualizacion: fechaActualizacion } : undefined;
@@ -288,6 +332,7 @@ export function buildMedRecetaListHtml(activeId, block) {
   var rescateShown = false;
   var prandialShown = false;
   var kReposShown = false;
+  var stanfordShown = false;
   items.forEach(function (it) {
     if (isNutritionMedicationItem(it)) return;
     if (isInsulinRescateMedicationItem(it)) {
@@ -308,6 +353,13 @@ export function buildMedRecetaListHtml(activeId, block) {
       if (!kReposShown) {
         rows.push(buildPotassiumReposGroupRowHtml(activeId, items));
         kReposShown = true;
+      }
+      return;
+    }
+    if (isStanfordSolutionMedicationItem(it)) {
+      if (!stanfordShown) {
+        rows.push(buildStanfordSolutionGroupRowHtml(activeId, items));
+        stanfordShown = true;
       }
       return;
     }
@@ -348,6 +400,7 @@ export function countMedTurnoItems(items) {
   var rescateShown = false;
   var prandialShown = false;
   var kReposShown = false;
+  var stanfordShown = false;
   list.forEach(function (it) {
     if (isNutritionMedicationItem(it)) return;
     if (isInsulinRescateMedicationItem(it)) {
@@ -368,6 +421,13 @@ export function countMedTurnoItems(items) {
       if (!kReposShown) {
         medCount += 1;
         kReposShown = true;
+      }
+      return;
+    }
+    if (isStanfordSolutionMedicationItem(it)) {
+      if (!stanfordShown) {
+        medCount += 1;
+        stanfordShown = true;
       }
       return;
     }

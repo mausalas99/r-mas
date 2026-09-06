@@ -144,9 +144,11 @@ var HELP_ARTICLES = [
       '<ul>' +
       '<li><strong>Signos vitales</strong> estructurados con resaltado si salen del rango esperado.</li>' +
       '<li><strong>Glucometrías / insulina</strong>: registro y lectura rápida en el mismo panel.</li>' +
-      '<li><strong>Balance hídrico (I/O)</strong>: entradas y salidas para el párrafo de estado.</li>' +
+      '<li><strong>Balance hídrico (I/O)</strong>: entradas y salidas por turno (T1/T2/T3), más una sección de <strong>otras fuentes cuantificables</strong> (ultrafiltrado, drenaje, toracocentesis o una fuente propia con <strong>+ Otra…</strong>) fuera de los turnos.</li>' +
+      '<li>Si hay una <strong>hemodiálisis pendiente</strong>, el registro del día muestra un aviso con botón <strong>No fue hoy</strong> para posponerlo sin cerrar el pendiente.</li>' +
+      '<li>Al <strong>copiar</strong> el texto compilado, los encabezados de zona, medicamentos y signos vitales pegan en <strong>negritas reales</strong> en Word, Docs o Gmail — ya no como asteriscos sueltos.</li>' +
       '<li><strong>Tendencias</strong>: vista compacta cuando hay historia de laboratorio útil.</li>' +
-      '<li><strong>Medicamentos</strong>: propuesta desde la receta hospitalaria para <strong>confirmar</strong> dosis vigentes antes de cerrar texto.</li>' +
+      '<li><strong>Medicamentos</strong>: propuesta desde la receta hospitalaria para <strong>confirmar</strong> dosis vigentes antes de cerrar texto. Los marcados <strong>PARA SOLUCIÓN STANFORD</strong> se agrupan en una sola línea.</li>' +
       '</ul>' +
       '<p style="font-size:13px;color:var(--text-muted);margin:0;">En <strong>Sala</strong>, copia el texto compilado desde el historial o el botón flotante de copiar hacia la nota. En <strong>Interconsulta</strong>, <strong>Enviar a nota</strong> vuelca el texto a la evolución y abre la pestaña Notas (pide confirmar si ya hay texto).</p>'
   },
@@ -171,10 +173,24 @@ var HELP_ARTICLES = [
       '<p>En <strong>SOME</strong>, para reutilizar el mismo bloque, copia normalmente <strong>desde la columna Fecha y hora</strong> hasta el <strong>final de la sección</strong> de medicamentos y pégalo en R+.</p>' +
       '<ul>' +
       '<li><strong>Excl.</strong> excluye el fármaco del texto de egreso; <strong>SOAP</strong> marca qué filas se volcarán a la plantilla SOAP o al tratamiento.</li>' +
-      '<li>La vista previa inferior agrupa por categoría (analgésicos, antiHTA, antibióticos, vasopresores, otros).</li>' +
+      '<li>La vista previa inferior agrupa por categoría (analgésicos, antiHTA, antibióticos, vasopresores, otros). Los <strong>PARA SOLUCIÓN STANFORD</strong> se muestran agrupados en una sola línea.</li>' +
+      '<li>Los renglones de <strong>ESTUDIOS de imagen</strong> (TAC, RM, RX, USG y similares) y <strong>PROCEDIMIENTO</strong> del mismo pegado se agregan como <strong>Pendientes</strong> automáticamente.</li>' +
       '<li><strong>Añadir a Tratamiento</strong> inserta líneas en la nota; <strong>Abrir plantilla SOAP</strong> rellena los campos del modal según esa clasificación.</li>' +
       '<li><strong>Copiar</strong> en la tarjeta inferior genera texto tipo nota de egreso.</li>' +
       '<li>Atajos: <strong>Ctrl/⌘ + 3</strong> cicla Manejo actual ↔ Perfil histórico; <strong>Ctrl/⌘ + Shift + 3</strong> alterna Completa / Nombre+Día; <strong>Ctrl/⌘ + M</strong> es alias de Medicamentos.</li>' +
+      '</ul>'
+  },
+  {
+    id: 'medicamentos-administracion',
+    title: 'Medicamentos: panel de administración',
+    keywords: 'medicamentos administracion horario checklist prn dosis administrado no administrado ocultar',
+    html:
+      '<p>En modo <strong>Sala</strong>, <strong>Paciente → Clínico → Medicamentos</strong> muestra una cuadrícula del turno: un renglón por fármaco con horario fijo y una columna por hora.</p>' +
+      '<ul>' +
+      '<li>Cada celda nace <strong>administrada</strong>; haz clic (o Enter/Espacio) solo cuando <strong>no</strong> se dio esa toma.</li>' +
+      '<li>Los medicamentos <strong>PRN</strong> (por razón necesaria) no aparecen en la cuadrícula: usa el botón flotante <strong>PRN</strong> para elegir hora y <strong>Registrar</strong> cada dosis administrada; cada registro queda como una etiqueta que puedes quitar.</li>' +
+      '<li>El botón <strong>×</strong> en un renglón lo oculta de la vista del día; queda listado abajo para volver a <strong>Mostrar</strong>lo.</li>' +
+      '<li>La cuadrícula se reinicia cada día; lo que ocultaste se mantiene oculto al día siguiente.</li>' +
       '</ul>'
   },
   {

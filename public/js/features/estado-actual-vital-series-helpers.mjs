@@ -43,7 +43,9 @@ export function mergeVitalSeriesFromStoredSeries(out, rawSeries) {
     out[bk] = [];
     for (var ai = 0; ai < arr.length; ai++) {
       var norm = normalizeVitalReading(arr[ai]);
-      if (norm) pushVitalReading(out[bk], norm);
+      // Un solo registro ya trae sus lecturas en orden y sin mezclar fuentes:
+      // dos lecturas iguales (p. ej. dos TAD de 60) son reales, no un duplicado.
+      if (norm) out[bk].push(norm);
     }
   }
 }
@@ -66,10 +68,17 @@ export function mergeVitalSeriesFromLegacyVitals(out, vit, alt) {
     }
     var extraKey = getVitalExtraStorageKey(key);
     if (vit[extraKey] != null && vit[extraKey] !== '') {
-      pushVitalReading(out[key], {
+      var extraReading = {
         value: Number(vit[extraKey]),
         time: alt[extraKey] ? String(alt[extraKey]) : undefined,
-      });
+      };
+      if (hadStoredSeries) {
+        // vitalSeries ya trae esta lectura; solo evita el doble conteo del espejo legacy.
+        pushVitalReading(out[key], extraReading);
+      } else {
+        // Sin vitalSeries, actual + previa son dos campos del formulario, nunca la misma lectura.
+        out[key].push(extraReading);
+      }
     }
   }
 }

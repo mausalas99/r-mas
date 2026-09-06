@@ -157,6 +157,7 @@ function buildMedPharmSummaryRow(group, columns, profile, windowLabel) {
   var freqEl = document.createElement('span');
   freqEl.className = 'med-pharm-freq-cell';
   freqEl.textContent = formatFreqShort(current.freq);
+  freqEl.title = formatFreqShort(current.freq);
   summary.appendChild(freqEl);
   var viaEl = document.createElement('span');
   viaEl.className = 'med-pharm-via-cell';

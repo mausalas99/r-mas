@@ -289,7 +289,7 @@ function buildExtraTemplatesSelectorHtml() {
     '<button type="button" class="btn-med-secondary" onclick="openIndicaFormatsFromProfile()" title="Editar formatos en blanco de indicaciones">Predeterminados…</button>';
   if (!arr.length) {
     return (
-      '<div class="indica-extra-tmpl">' +
+      '<div class="indica-extra-tmpl indica-extra-tmpl--empty">' +
       predBtn +
       '<span class="iet-hint">Plantillas guardadas: Ajustes → Plantillas. Formatos en blanco: Predeterminados…</span>' +
       '</div>'

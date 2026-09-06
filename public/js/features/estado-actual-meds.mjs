@@ -232,7 +232,7 @@ export function syncRecetaProposalsFromSoapSelection(
   var fechaActualizacion = resolveManejoFechaActualizacion(patientId, medRecetaByPatient);
   var pruned = pruneEstadoClinicoMedsFromReceta(monitoreo, items, classifyFn, fechaActualizacion);
   var sel = medNotaSelectionByPatient && medNotaSelectionByPatient[patientId];
-  var buckets = bucketsFromRecetaItems(items, sel || {}, classifyFn);
+  var buckets = bucketsFromRecetaItems(items, sel || {}, classifyFn, patientId);
   applyRecetaProposal(monitoreo, buckets);
   var syncedAbx = syncConfirmedAbxFromReceta(monitoreo, buckets);
   var hasAny = MED_FIELD_KEYS.some(function (k) {

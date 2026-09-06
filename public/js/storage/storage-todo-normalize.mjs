@@ -18,6 +18,9 @@ function readTodoOptionalFields(t) {
     completedBy: normalizeOptionalTodoString(t && t.completedBy),
     handoffAcknowledgedAt: normalizeOptionalTodoString(t && t.handoffAcknowledgedAt),
     handoffAcknowledgedBy: normalizeOptionalTodoString(t && t.handoffAcknowledgedBy),
+    // Fecha (YYYY-MM-DD) en la que se apagó el recordatorio de hemodiálisis del
+    // día — el pendiente sigue abierto, sólo deja de avisar por hoy.
+    dialysisSkippedOn: normalizeOptionalTodoString(t && t.dialysisSkippedOn),
   };
 }
 

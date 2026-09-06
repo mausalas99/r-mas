@@ -6,6 +6,7 @@ import {
   resolveDowngradeEntries,
   filterEntriesWithGitHubReleases,
   fetchStableVersionsCatalog,
+  formatDowngradeOptionText,
 } from './stable-downgrade-ui.mjs';
 import { UPDATE_WORKER_URL } from '../../lib/update-feed.mjs';
 
@@ -74,6 +75,18 @@ test('fetchStableVersionsCatalog probes the update Worker before GitHub raw', as
   } finally {
     globalThis.fetch = prevFetch;
   }
+});
+
+test('formatDowngradeOptionText drops a summary that just restates the label', () => {
+  const out = formatDowngradeOptionText('8.3.1', 'Release estable 8.3.1');
+  assert.equal(out.text, '8.3.1');
+  assert.equal(out.title, '8.3.1 — Release estable 8.3.1');
+});
+
+test('formatDowngradeOptionText keeps a summary with real release notes', () => {
+  const out = formatDowngradeOptionText('6.5.9', 'LAN directorio, fusión usuarios Mac/Windows.');
+  assert.equal(out.text, '6.5.9 — LAN directorio, fusión usuarios Mac/Windows.');
+  assert.equal(out.title, out.text);
 });
 
 test('fetchStableVersionsCatalog uses the Worker catalog when it answers', async () => {

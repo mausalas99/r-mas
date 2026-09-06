@@ -3,6 +3,7 @@
  */
 import { isModeSala } from '../mode-features.mjs';
 import { buildEaMonitoreoRevision } from './estado-actual-data.mjs';
+import { buildMedAdminCacheRevision } from './estado-actual-data-revision.mjs';
 import { getPatients, getMedRecetaByPatient } from '../app-state.mjs';
 import { getLabHistoryRevision } from '../lab-history-cache.mjs';
 import { storage } from '../storage.js';
@@ -50,36 +51,46 @@ export function invalidateInnerTabRenderCache(tab) {
   innerTabRenderCache = Object.create(null);
 }
 
-export function granularMountIsEmpty(tab) {
-  if (tab === "estadoActual") {
-    var ea = document.getElementById("exp-pane-estado-actual");
-    return !!ea && !ea.querySelector(".estado-actual-panel");
-  }
-  if (tab === "eventualidades") {
-    var ev = document.getElementById("exp-pane-eventualidades");
-    return !!ev && !ev.querySelector(".ev-panel");
-  }
-  if (tab === "tend") {
+function mountLacksMarker(mountId, markerSelector) {
+  var el = document.getElementById(mountId);
+  return !!el && !el.querySelector(markerSelector);
+}
+
+var GRANULAR_MOUNT_EMPTY_CHECKS = {
+  estadoActual: function () {
+    return mountLacksMarker("exp-pane-estado-actual", ".estado-actual-panel");
+  },
+  eventualidades: function () {
+    return mountLacksMarker("exp-pane-eventualidades", ".ev-panel");
+  },
+  medAdmin: function () {
+    return mountLacksMarker("exp-pane-medAdmin", ".med-admin-panel");
+  },
+  tend: function () {
     var tend = document.getElementById("tendencias-container");
     if (!tend) return true;
     return !tend.querySelector(".tend-grid, .tend-toolbar, .tend-empty");
-  }
-  if (tab === "resumen") {
+  },
+  resumen: function () {
     var dash = document.getElementById("patient-dashboard-mount");
     if (!dash) return true;
     return !dash.querySelector(".dash");
-  }
-  if (tab === "todo") {
+  },
+  todo: function () {
     var tf = document.getElementById("todo-form");
     if (!tf) return true;
     return !tf.querySelector(".todo-add-row") && !tf.querySelector(".todo-list");
-  }
-  if (tab === "datos") {
+  },
+  datos: function () {
     var pdf = document.getElementById("patient-data-form");
     if (!pdf) return true;
     return !String(pdf.innerHTML || "").trim();
-  }
-  return false;
+  },
+};
+
+export function granularMountIsEmpty(tab) {
+  var check = GRANULAR_MOUNT_EMPTY_CHECKS[tab];
+  return check ? check() : false;
 }
 
 function estadoActualCacheSuffix(patientId) {
@@ -104,6 +115,9 @@ function innerTabRenderCacheKey(tab) {
   }
   if (tab === "estadoActual" || tab === "resumen") {
     key += "|E" + estadoActualCacheSuffix(pid);
+  }
+  if (tab === "medAdmin") {
+    key += "|A" + buildMedAdminCacheRevision(pid, getMedRecetaByPatient());
   }
   if (tab === "resumen") {
     var patient = getPatients().find(function (x) {
@@ -227,7 +241,10 @@ function renderHeavyInnerTab(tab, run, opts) {
 }
 
 export function syncConsolidatedInnerTabButtons(granularTab, settings) {
-  var composite = consolidatedInnerTabButtonId(granularTab, settings).replace(/^itab-/, "");
+  // Pendientes ("todo") has its own tab button outside .exp-consolidated-tab;
+  // don't also light up the composite tab its content happens to be nested in.
+  var composite =
+    granularTab === "todo" ? "" : consolidatedInnerTabButtonId(granularTab, settings).replace(/^itab-/, "");
   document.querySelectorAll(".exp-consolidated-tab").forEach(function (btn) {
     var id = btn.id || "";
     var name = id.replace(/^itab-/, "");
@@ -292,6 +309,14 @@ var GRANULAR_TAB_RENDERERS = {
   eventualidades: function (tab) {
     renderEventualidadesPanel(document.getElementById('exp-pane-eventualidades'));
     markInnerTabRendered(tab);
+  },
+  medAdmin: function (tab, opts) {
+    renderHeavyInnerTab(tab, function (done) {
+      void import('./med-admin-panel.mjs').then(function (mod) {
+        mod.renderMedAdminPanel(document.getElementById('exp-pane-medAdmin'));
+        done();
+      });
+    }, opts);
   },
 };
 

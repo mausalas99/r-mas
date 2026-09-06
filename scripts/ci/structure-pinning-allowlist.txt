@@ -1,8 +1,5 @@
 # Named sound guards + grandfathered readFileSync tests. Do not add new entries
 # without review. Rewrite a file off this list when a merge needs it.
-public/js/app-boot-imports.test.mjs
-public/js/app-state-deprecation.test.mjs
-public/js/clinical-p5-gate-progress.test.mjs
 cloud/sync-worker/src/assets.test.js
 cloud/sync-worker/src/pull-strategy.test.js
 lib/censo-export-file.test.mjs
@@ -20,12 +17,19 @@ lib/renderer-protocol.test.mjs
 lib/stable-versions-catalog.test.js
 main-lan-boot.test.mjs
 main-update-feed.test.mjs
+public/equipos/equipos-admin.test.mjs
+public/equipos/equipos-app.test.mjs
+public/interno/interno-app.test.mjs
+public/js/app-boot-imports.test.mjs
 public/js/app-shell-exports.test.mjs
+public/js/app-state-deprecation.test.mjs
 public/js/clinical-access-runtime.test.mjs
 public/js/clinical-onboarding-early-boot.test.mjs
+public/js/clinical-p5-gate-progress.test.mjs
 public/js/clinical-read-model.test.mjs
 public/js/clinical-repo-hydrate.test.mjs
 public/js/features/agenda.test.mjs
+public/js/features/clinical-entrega/clinical-entrega-modal.test.mjs
 public/js/features/clinical-onboarding-boot-progress.test.mjs
 public/js/features/clinical-onboarding-gate-flow.test.mjs
 public/js/features/clinical-onboarding-main.test.mjs
@@ -36,12 +40,14 @@ public/js/features/clinical-sync-mode-settings.test.mjs
 public/js/features/clinical-teams.test.mjs
 public/js/features/clinical-teams/teams-roster-bring-patients.test.mjs
 public/js/features/clinical-teams/teams-roster-directory-assign.test.mjs
+public/js/features/cloud-mobile/login-ui.test.mjs
 public/js/features/cloud-mobile/resolve-active-room.test.mjs
 public/js/features/cloud-sync/admin-prompt-modal.test.mjs
 public/js/features/cloud-sync/clinical-ops-hydrate.test.mjs
 public/js/features/cloud-sync/cloud-census-collect.test.mjs
 public/js/features/cloud-sync/cloud-clinical-ops-sala.test.mjs
 public/js/features/cloud-sync/connection-panel.test.mjs
+public/js/features/cloud-sync/identity-bridge.test.mjs
 public/js/features/cloud-sync/mutate-bridge.test.mjs
 public/js/features/cloud-sync/panel-admin-actions.test.mjs
 public/js/features/cloud-sync/panel-admin-clinical-purge.test.mjs
@@ -57,11 +63,17 @@ public/js/features/cloud-sync/pull-apply.test.mjs
 public/js/features/cloud-sync/register-during-onboarding.test.mjs
 public/js/features/cloud-sync/sync-runtime-cycle-flush.test.mjs
 public/js/features/command-palette-motion.test.mjs
+public/js/features/db-unlock-submit.test.mjs
 public/js/features/drive-import-modal/drive-import-actions.test.mjs
 public/js/features/drive-import-modal/drive-import-modal-step.test.mjs
+public/js/features/drive-import-modal/drive-import-preview.test.mjs
+public/js/features/drive-import-modal/drive-import-run.test.mjs
+public/js/features/entrega-modal-ui/entrega-modal-procedures.test.mjs
+public/js/features/entrega-roster-panel.test.mjs
 public/js/features/eventualidades-persist-repo.test.mjs
 public/js/features/lab-panel-history.test.mjs
 public/js/features/med-pharm-profile-modals.test.mjs
+public/js/features/med-pharm-profile-render-helpers.test.mjs
 public/js/features/patient-dashboard/dashboard-mount.test.mjs
 public/js/features/patients-list.test.mjs
 public/js/features/patients-select.test.mjs
@@ -69,12 +81,16 @@ public/js/features/platform/import-backup/import-core.test.mjs
 public/js/features/platform/import-backup/import-handlers.test.mjs
 public/js/features/platform/import-backup/preimport.test.mjs
 public/js/features/platform/updater/downgrade.test.mjs
+public/js/features/platform/updater/electron-handlers.test.mjs
 public/js/features/settings-help/tour-flow-onboarding.test.mjs
 public/js/features/settings-help/tour-intro.test.mjs
 public/js/features/sync-apply/patient-entries-nube.test.mjs
+public/js/features/tendencias-ui-detail-event-delete.test.mjs
+public/js/features/tendencias-ui-shell.test.mjs
 public/js/features/todos-mutations.test.mjs
 public/js/guardia-orphan-entregas.test.mjs
 public/js/labs-procesar-characterization.test.mjs
+public/js/med-receta-core.test.mjs
 public/js/patient-diagnosticos.test.mjs
 public/js/patient-export-format.test.mjs
 public/js/patient-team-assign-ui.test.mjs
@@ -89,4 +105,3 @@ scripts/lib/github-release-notes.test.js
 scripts/lib/release-notes-body.test.js
 scripts/lib/sqlcipher-native.test.mjs
 scripts/metrics/check.test.mjs
-public/js/med-receta-core.test.mjs

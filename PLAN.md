@@ -32,9 +32,9 @@ needs: [db]
 tech: client-side E2EE for Nube room content
 - [x] Build the encryption/decryption pipeline {#nube-crypto}
   tech: public/js/features/cloud-sync/room-dek.mjs, public/js/features/cloud-sync/crypto.mjs, lib/db/clinical-crypto.mjs, cloud/sync-worker/src/room-dek.js — wired into panel-conexion-handlers.mjs, panel-conexion-bootstrap.mjs, api-client.mjs
-- [~] Turn encryption on for everyone {#nube-enable}
-  by: claude
-  tech: flag flipped true in public/js/features/cloud-sync/room-dek.mjs:40, rebuilt — not yet released to users, fleet adoption gate was not confirmed before flipping (owner request)
+- [x] Turn encryption on for everyone {#nube-enable}
+  by: owner
+  tech: NUBE_E2EE_ENABLED flipped true in public/js/features/cloud-sync/room-dek.mjs:40, commit 1a6c146f "chore(release): prepare 8.2.8", 2026-08-31. Already released and adopted — remote D1 shows users on 8.2.8/8.2.9/8.3.1. This was live 5 days before docs/core/20-claude-code-handoff.md and this file were corrected to say so (both wrongly said "not deployed" / "not yet released").
   from: roadmap
 - [x] Sync Manejo (current medication list) through Nube {#nube-medreceta}
   by: claude
@@ -86,6 +86,11 @@ tech: renderer feature modules, patient dashboard
   by: claude
   from: agent
   tech: Historial reciente row gets an Editar button beside Eliminar; it reopens the registro modal prefilled with the form flagged data-ea-edit-id (new module estado-actual-panel-registro-edit.mjs, kept out of the 600-line actions file), and Registrar then calls replaceMedicion (same id, new savedAt). Merge winner per row now prefers savedAt so an edit that keeps recordedAt still propagates (estado-actual-data-merge.mjs).
+- [x] Update the Learn Hub and guided tour for the new Medicamentos tab, balance-por-turnos, and Stanford Solution grouping {#ui-onboarding-2026-09-05}
+  by: claude
+  from: owner
+  tech: help-content.mjs — new "medicamentos-administracion" article (per-dose-time grid, PRN log, ocultar); estado-actual article gains balance-por-turno + otras fuentes cuantificables + hemodiálisis "No fue hoy" + Stanford grouping bullets; medicamentos-receta article gains Stanford grouping + ESTUDIOS/PROCEDIMIENTO-to-Pendientes bullets. tour-flow-fundamentos-steps.mjs renderSalaExpedienteTabs copy updated for the 3-tab Clínico row and the widened ⌘E cycle. Scoped to copy only — no new interactive tour step for the Medicamentos tab, existing steps already reach it via the Estado actual walkthrough.
+  update 2026-09-06 (claude): re-diffed against same-day upstream changes before treating this as final. Folded in 2 real deltas — the extra I/O sources row grew a free-text "+ Otra…" option (bullet updated), and the Estado actual "Copiar" button now pastes zone/med/vital headers as real bold instead of literal asterisks (new bullet). Checked and skipped as not onboarding-relevant: censo Día-N auto-advance fix (no new control), touch-tap-to-expand removal on the group row (UX simplification, not a new capability), mobile-web bed-label shortening (cosmetic). Tests re-run clean, build:ui clean.
 files: [public/js/features/**, public/js/censo-*.mjs, public/js/patient-accesos.mjs, public/js/patient-data-accesos-ui.mjs, public/js/patient-data-censo-ui.mjs, public/js/patient-diagnosticos.mjs, generate-censo.js]
 needs: [shell, db]
 
@@ -283,6 +288,10 @@ links: [shell, cloud-sync, ui]
 
 ## decisions
 
+- 2026-09-05, claude: corrected a stale-docs miss. Answered "has E2EE been deployed?" as "no, flag is false" by trusting docs/core/20-claude-code-handoff.md instead of checking room-dek.mjs directly — the flag was already true, shipped in 8.2.8 (2026-08-31, owner's own commit). Caught only when updating this plan file for the decisions below. Lesson: check the actual flag before answering a deploy-status question, docs decay.
+- 2026-09-05, owner: accepted that stragglers on old app builds will see scrambled/garbage note content once their room's owner encrypts it — no longer waiting for full fleet adoption before enabling E2EE (moot now: it was already enabled 2026-08-31).
+- 2026-09-05, owner: the Cloudflare data-processing agreement gap does not block deploying E2EE. Personal Cloudflare account stays as-is.
+- 2026-09-05, claude: re-verified PBKDF2 iteration values on remote D1 (`SELECT password_iterations, COUNT(*) FROM users GROUP BY password_iterations`) — only 50000 (17 rows, legacy) and 100000 (12 rows, current) appear, no stray/broken values like the 310k that caused the 2026-08-14 outage. Per-row iteration check passes.
 - 2026-09-02, claude: `npm test` takes quoted glob patterns, never directory args — Node 24 `--test` treats a bare directory as a file and aborts. Glob discovery now runs every colocated test; the old 685-path manifest had silently skipped `patient-export-format.test.mjs`.
 - 2026-09-02, owner: keep DEMO PÉREZ (pitch/tour patient). Interno/Equipos LAN host probe is dead — Nube origin only. Docs must match. Paid Workers are live; HTTP-pull is not a Free-tier limit.
 - 2026-09-02, cursor: username twins stay two copies + parity test. A public re-export or symlink of `lib/db/clinical-username.mjs` extracts a new eager chunk (112→113). Do not raise the file budget.

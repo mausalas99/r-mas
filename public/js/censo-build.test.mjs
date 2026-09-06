@@ -180,6 +180,33 @@ test('buildCensusPayload usa censoAtbText del paciente en columna ATB separada',
   assert.equal(payload.rows[0].meds, 'OMEPRAZOL');
 });
 
+test('buildCensusPayload usa Manejo en vez de texto guardado si hay receta', () => {
+  var payload = buildCensusPayload({
+    settings: {},
+    patients: [{ id: '1', nombre: 'T', archived: false, censoAtbText: 'VIEJO · Día 2' }],
+    includeArchived: false,
+    labHistoryByPatient: { 1: [] },
+    medRecetaByPatient: {
+      1: {
+        fechaActualizacion: '04/09/2026',
+        items: [
+          {
+            nombreRaw: 'Piperacilina/Tazobactam 4.5g',
+            diaTratamiento: 2,
+            suspendido: false,
+          },
+        ],
+      },
+    },
+    todosByPatient: { 1: [] },
+    now: new Date(2026, 8, 6),
+  });
+  var atbSec = (payload.rows[0].sections || []).find((s) => s.label === 'Antibióticos');
+  assert.match(atbSec.lines.join(' '), /PIPERACILINA\/TAZOBACTAM/);
+  assert.match(atbSec.lines.join(' '), /Día 4/);
+  assert.doesNotMatch(atbSec.lines.join(' '), /VIEJO/);
+});
+
 test('formatPacienteMetaForCenso incluye FN (fecha de nacimiento) y equipo', () => {
   var meta = formatPacienteMetaForCenso(
     { registro: '55', edad: '40', fechaNacimiento: '1986-03-02' },

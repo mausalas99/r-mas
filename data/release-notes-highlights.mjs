@@ -4,21 +4,31 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_831 = [
+var RELEASE_NOTES_832 = [
   {
-    title: 'Corrección — equipos nuevos que desaparecían',
+    title: 'Nuevo — pestaña Medicamentos',
     body:
-      'Un equipo recién creado ya no se vuelve invisible para toda la sala — se corrigieron <strong>tres fallas</strong> distintas en la sincronización.',
+      'En Sala, <strong>Paciente → Clínico</strong> tiene una pestaña de administración por horario de toma, más un registro aparte para PRN.',
   },
   {
-    title: 'Corrección — R+ Móvil por código QR',
+    title: 'Nuevo — balance de líquidos por turno',
     body:
-      'Unirse a una sala desde el código QR ya no deja los pacientes <strong>vacíos</strong> en iPad.',
+      'Estado actual separa entradas y salidas en <strong>T1/T2/T3</strong>, con otras fuentes cuantificables (ultrafiltrado, drenaje, toracocentesis) y un recordatorio de hemodiálisis.',
+  },
+  {
+    title: 'Nuevo — estudios y procedimientos a Pendientes',
+    body:
+      'Al pegar el bloque de Manejo, los <strong>estudios de imagen</strong> y procedimientos se agregan solos a Pendientes.',
+  },
+  {
+    title: 'Mejorado — Solución Stanford y copiar Estado actual',
+    body:
+      'Los medicamentos de Solución Stanford se agrupan en una línea, y el texto copiado ahora pega en <strong>negritas reales</strong>.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_831;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_832;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.3.1': RELEASE_NOTES_831,
+  '8.3.2': RELEASE_NOTES_832,
 };

@@ -27,6 +27,12 @@ function buildVitalChipHtml(baseKey, labelOverride, opts) {
     '<span class="ea-vital-unit">' +
     unit +
     '</span></div>';
+  // El panel "Alterado" flota anclado a una esquina del chip (position:
+  // absolute, como el botón "+1"), fuera del flujo normal: la altura del
+  // chip y el tamaño del valor nunca cambian al abrirlo. La etiqueta de
+  // texto queda oculta visualmente (visually-hidden) — el aro ámbar del
+  // chip (ea-vital-box--altered) ya comunica el estado; el reloj
+  // compacto solo añade la hora exacta.
   return (
     '<div class="vital-box ea-vital-box ea-vital-chip" data-ea-vital-box="' +
     boxKey +
@@ -44,13 +50,14 @@ function buildVitalChipHtml(baseKey, labelOverride, opts) {
     '<div class="ea-altered-slot ea-altered-slot--hidden" data-ea-altered-wrap="' +
     boxKey +
     '" hidden>' +
-    '<span class="ea-altered-label">Alterado</span>' +
+    '<span class="ea-altered-label visually-hidden">Alterado</span>' +
     '<input type="time" class="ea-altered-time-input" data-ea-altered="' +
     boxKey +
     '" aria-label="Hora ' +
     label +
     ' alterado">' +
-    '</div></div>'
+    '</div>' +
+    '</div>'
   );
 }
 
@@ -83,9 +90,6 @@ export function buildVitalStackHtml(vitalKey) {
     ' (máx. ' +
     MAX_VITAL_READINGS_PER_DAY +
     '/día)">+1</button>' +
-    '<div class="ea-vital-prev-badge" data-ea-vital-prev-view hidden>' +
-    '<span class="ea-vital-prev-summary" data-ea-vital-prev-summary></span>' +
-    '</div>' +
     '</div>'
   );
 }
@@ -107,8 +111,6 @@ function getVitalStackLayerCount(stack) {
  */
 function setVitalStackLayerCount(stack, count) {
   stack.setAttribute('data-ea-layer-count', String(count));
-  stack.classList.toggle('ea-vital-stack--multi', count > 1);
-  stack.classList.toggle('ea-vital-stack--dual', count > 1);
 }
 
 /**
@@ -120,46 +122,23 @@ function updateVitalStackLayerVisibility(form, vitalKey) {
   var stack = form.querySelector('[data-ea-vital-stack="' + vitalKey + '"]');
   if (!stack) return;
   var count = getVitalStackLayerCount(stack);
-  var active = count - 1;
+  var activeSlot = null;
   for (var li = 0; li < MAX_VITAL_LAYERS_IN_FORM; li++) {
     var slot = stack.querySelector('[data-ea-layer="' + li + '"]');
     if (!slot) continue;
-    var on = li === active;
-    slot.hidden = !on;
-    slot.style.visibility = '';
-    slot.style.pointerEvents = '';
-    slot.style.zIndex = '';
+    // Todas las lecturas hasta count quedan visibles y editables, no solo la última.
+    slot.hidden = li >= count;
+    if (li === count - 1) activeSlot = slot;
   }
-  var prevBadge = stack.querySelector('[data-ea-vital-prev-view]');
-  if (prevBadge) prevBadge.hidden = count <= 1;
-}
-
-/**
- * @param {HTMLElement | null} form
- * @param {string} vitalKey
- */
-function syncVitalPrevSummary(form, vitalKey) {
-  if (!form) return;
-  var stack = form.querySelector('[data-ea-vital-stack="' + vitalKey + '"]');
-  if (!stack) return;
-  var summary = stack.querySelector('[data-ea-vital-prev-summary]');
-  if (!summary) return;
-  var count = getVitalStackLayerCount(stack);
-  var unit = VITAL_UNITS[vitalKey] || '';
-  /** @type {string[]} */
-  var parts = [];
-  for (var li = 0; li < count - 1; li++) {
-    var input = stack.querySelector(
-      '[data-ea-vital="' + vitalKey + '"][data-ea-layer-idx="' + li + '"]'
-    );
-    var boxKey = vitalLayerBoxKey(vitalKey, li);
-    var timeEl = stack.querySelector('[data-ea-altered="' + boxKey + '"]');
-    var val = input && 'value' in input ? String(input.value).trim() : '';
-    if (!val) continue;
-    var time = timeEl && 'value' in timeEl && timeEl.value ? String(timeEl.value) : '';
-    parts.push(val + (unit ? ' ' + unit : '') + (time ? ' @ ' + time : ''));
+  // El botón "+1" vive dentro de la casilla activa (la más reciente), no
+  // flotando sobre todo el stack, para no taparse con las lecturas previas.
+  // Se ancla al chip (position: relative), no al slot — el slot es
+  // "display: contents" y no sirve de referencia para position: absolute.
+  var addBtn = stack.querySelector('[data-ea-vital-add="' + vitalKey + '"]');
+  var activeChip = activeSlot && activeSlot.querySelector('.ea-vital-chip');
+  if (addBtn && activeChip && addBtn.parentElement !== activeChip) {
+    activeChip.appendChild(addBtn);
   }
-  summary.textContent = parts.length ? parts.join(' · ') : '—';
 }
 
 /**
@@ -243,7 +222,6 @@ export function expandVitalNextLayer(form, vitalKey) {
   }
   setVitalStackLayerCount(stack, count + 1);
   updateVitalStackLayerVisibility(form, vitalKey);
-  syncVitalPrevSummary(form, vitalKey);
   syncVitalAddButtonVisibility(form, vitalKey);
   var nextInput = stack.querySelector(
     '[data-ea-vital="' + vitalKey + '"][data-ea-layer-idx="' + count + '"]'
@@ -277,7 +255,6 @@ export function setVitalStackFromSeries(form, vitalKey, readings, layerCount) {
     if (timeEl && 'value' in timeEl) timeEl.value = rd && rd.time ? String(rd.time) : '';
   }
   updateVitalStackLayerVisibility(form, vitalKey);
-  syncVitalPrevSummary(form, vitalKey);
   syncVitalAddButtonVisibility(form, vitalKey);
 }
 

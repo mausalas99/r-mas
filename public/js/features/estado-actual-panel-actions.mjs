@@ -14,6 +14,8 @@ import {
   parseIoEvacField,
   parseIoIngresoField,
   diuresisValueFromParts,
+  sumIoTurnos,
+  ioTurnoAggregate,
 } from './estado-actual-io.mjs';
 import {
   datetimeLocalToIso,
@@ -26,6 +28,7 @@ import {
   parseBombaFromForm,
 } from './estado-actual-panel-parse-form.mjs';
 import { validateVitalSeriesTurnLimits } from './estado-actual-panel-vitals.mjs';
+import { estadoActualTextToClipboardPayload } from './estado-actual-clipboard.mjs';
 import { MAX_VITAL_READINGS_PER_DAY } from './estado-actual-vital-series.mjs';
 import {
   confirmMedField,
@@ -59,6 +62,7 @@ import {
   wireEaRegistroForm,
   resetEaRegistroForm,
   applyEstadoActualParsedToForm,
+  readIoExtraPartsFromForm,
 } from './estado-actual-panel-registro.mjs';
 import { getEaRegistroEditId, editarEstadoActualMedicion } from './estado-actual-panel-registro-edit.mjs';
 import {
@@ -84,10 +88,19 @@ function parseFormMedicion() {
   var glucometrias = bombaOn ? [] : parseGlucometriasFromForm(form, defaultTime);
   var bombaInsulina = bombaOn ? parseBombaFromForm(form, defaultTime) : [];
 
-  var ingEl = document.getElementById('ea-io-ing');
-  var egrEl = document.getElementById('ea-io-egr');
+  var ingRaw = ['ea-io-ing-t1', 'ea-io-ing-t2', 'ea-io-ing-t3'].map(function (id) {
+    var el = document.getElementById(id);
+    return el && 'value' in el ? el.value : '';
+  });
+  var egrRaw = ['ea-io-egr-t1', 'ea-io-egr-t2', 'ea-io-egr-t3'].map(function (id) {
+    var el = document.getElementById(id);
+    return el && 'value' in el ? el.value : '';
+  });
   var evacEl = document.getElementById('ea-io-evac');
-  var egrParts = parseIoEgresoLine(egrEl && 'value' in egrEl ? String(egrEl.value) : '');
+  var ingTotals = sumIoTurnos(ingRaw.map(parseIoIngresoField));
+  var egrPartsPerTurno = egrRaw.map(parseIoEgresoLine);
+  var egrExtra = readIoExtraPartsFromForm(form);
+  var egrParts = [].concat.apply([], egrPartsPerTurno).concat(egrExtra);
 
   return {
     id: Date.now().toString() + '-ea',
@@ -101,10 +114,13 @@ function parseFormMedicion() {
     glucometrias: glucometrias,
     bombaInsulina: bombaInsulina,
     io: {
-      ing: parseIoIngresoField(ingEl && 'value' in ingEl ? ingEl.value : ''),
+      ing: ioTurnoAggregate(ingTotals),
       egr: diuresisValueFromParts(egrParts),
       egrParts: egrParts,
+      egrExtra: egrExtra.map(function (p) { return { kind: p.kind, value: p.value }; }),
       evac: parseIoEvacField(evacEl && 'value' in evacEl ? evacEl.value : ''),
+      ingTurnos: ingRaw,
+      egrTurnos: egrRaw,
     },
   };
 }
@@ -237,7 +253,8 @@ export async function estadoActualGuardarCopiar() {
     return;
   }
   persistEstadoActualTexto(patient, text);
-  var ok = await getEaPanelRuntime().copyToClipboardSafe(text);
+  var copyPayload = estadoActualTextToClipboardPayload(getEstadoActualTextForPatient(patient, { bold: true }));
+  var ok = await getEaPanelRuntime().copyToClipboardSafe(copyPayload.text, copyPayload.html);
   getEaPanelRuntime().showToast(
     ok ? 'Estado Actual guardado y copiado ✓' : 'Guardado, pero no se pudo copiar',
     ok ? 'success' : 'error'
@@ -419,12 +436,13 @@ export async function copiarEstadoActualTexto() {
     return;
   }
   ensureMonitoreo(patient);
-  var text = getEstadoActualTextForPatient(patient);
+  var text = getEstadoActualTextForPatient(patient, { bold: true });
   if (!text.trim()) {
     getEaPanelRuntime().showToast('No hay texto para copiar', 'error');
     return;
   }
-  var ok = await getEaPanelRuntime().copyToClipboardSafe(text);
+  var payload = estadoActualTextToClipboardPayload(text);
+  var ok = await getEaPanelRuntime().copyToClipboardSafe(payload.text, payload.html);
   getEaPanelRuntime().showToast(ok ? 'Texto copiado al portapapeles ✓' : 'No se pudo copiar', ok ? 'success' : 'error');
 }
 

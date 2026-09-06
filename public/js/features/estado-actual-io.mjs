@@ -97,6 +97,59 @@ export function parseIoNumber(raw) {
 }
 
 /**
+ * Suma los valores de turno (T1..Tn) que son número, ignorando NC/vacíos.
+ * @param {Array<unknown>} turnoValues
+ * @returns {{ sum: number, count: number }}
+ */
+export function sumIoTurnos(turnoValues) {
+  var sum = 0;
+  var count = 0;
+  for (var i = 0; i < turnoValues.length; i++) {
+    if (isIoNumericValue(turnoValues[i])) {
+      sum += Number(turnoValues[i]);
+      count++;
+    }
+  }
+  return { sum: sum, count: count };
+}
+
+/**
+ * @param {{ sum: number, count: number }} totals
+ * @returns {number | 'NC'} valor a guardar como io.ing/io.egr — NC cuando ningún turno se cuantificó
+ */
+export function ioTurnoAggregate(totals) {
+  return totals && totals.count > 0 ? totals.sum : 'NC';
+}
+
+/**
+ * Texto «700 CC (2T)» o «NC» para el total en vivo de un grupo de turnos.
+ * @param {{ sum: number, count: number }} totals
+ * @returns {string}
+ */
+export function formatIoTurnoTotal(totals) {
+  if (!totals || totals.count === 0) return 'NC';
+  return totals.sum + ' CC (' + totals.count + 'T)';
+}
+
+/**
+ * Total numérico de egresos de un turno (todas sus partes), o 'NC' si no hay ninguna cuantificada.
+ * @param {IoEgresoPart[]} parts
+ * @returns {number | 'NC'}
+ */
+export function ioTurnoEgresoValue(parts) {
+  if (!Array.isArray(parts) || !parts.length) return 'NC';
+  var sum = 0;
+  var any = false;
+  for (var i = 0; i < parts.length; i++) {
+    if (parts[i] && isIoNumericValue(parts[i].value)) {
+      sum += Number(parts[i].value);
+      any = true;
+    }
+  }
+  return any ? sum : 'NC';
+}
+
+/**
  * @param {unknown} v
  * @returns {boolean}
  */
@@ -203,8 +256,20 @@ export function splitIoSegments(text) {
 }
 
 /**
- * @typedef {{ kind: 'diuresis' | 'drain' | 'gastrostomy' | 'nephro', label: string, value: number | string }} IoEgresoPart
+ * @typedef {{ kind: 'diuresis' | 'drain' | 'gastrostomy' | 'nephro' | 'ultrafiltrado' | 'thoracentesis' | 'custom', label: string, value: number | string }} IoEgresoPart
  */
+
+/**
+ * Fuentes cuantificables seleccionables como fila suelta (fuera de T1/T2/T3) en
+ * el registro de estado actual — p. ej. ultrafiltrado de una hemodiálisis
+ * pasada, un drenaje o una toracocentesis del día.
+ * @type {Array<{ kind: 'ultrafiltrado' | 'drain' | 'thoracentesis', label: string }>}
+ */
+export var IO_EXTRA_SOURCE_KINDS = [
+  { kind: 'ultrafiltrado', label: 'ULTRAFILTRADO' },
+  { kind: 'drain', label: 'DRENAJE' },
+  { kind: 'thoracentesis', label: 'TORACOCENTESIS' },
+];
 
 /** @returns {IoEgresoPart} */
 function ncDiuresisPart() {
@@ -223,6 +288,12 @@ function classifyDiuresisSegment(s) {
 function classifyDrainSegment(s) {
   var dRest = s.replace(/^DRENAJ(?:E|ES)?\s*/i, '').trim();
   return { kind: 'drain', label: 'DRENAJE', value: parseSegmentValue(dRest || s) };
+}
+
+/** @param {string} s @returns {IoEgresoPart} */
+function classifyUltrafiltradoSegment(s) {
+  var rest = s.replace(/^(?:ULTRAFILTRAD[OA]|ULTRAFILTRACI[OÓ]N|UF)\s*/i, '').trim();
+  return { kind: 'ultrafiltrado', label: 'ULTRAFILTRADO', value: parseSegmentValue(rest || s) };
 }
 
 /** @param {string} s @returns {IoEgresoPart} */
@@ -259,6 +330,9 @@ function classifyEgresoSegment(seg) {
   var u = s.toUpperCase();
   if (/^NC$/i.test(s) || /^no\s+cuantificad/i.test(s)) return ncDiuresisPart();
   if (/^DIURESIS\b/i.test(s) || /^ORINA\b/i.test(s)) return classifyDiuresisSegment(s);
+  if (/^(?:ULTRAFILTRAD[OA]|ULTRAFILTRACI[OÓ]N)\b/i.test(s) || /^UF\b/i.test(s)) {
+    return classifyUltrafiltradoSegment(s);
+  }
   if (/DRENAJ/i.test(u)) return classifyDrainSegment(s);
   if (/GASTROSTOM/i.test(u)) return classifyGastrostomySegment(s);
   if (/NEFRO/i.test(u)) return classifyNephroSegment(s, u);
@@ -311,7 +385,7 @@ export function sumNumericEgressFromParts(parts) {
 
 /**
  * @param {unknown} io
- * @returns {number | null} Total cc de egresos numéricos (diuresis + drenajes + gastrostomía + nefros)
+ * @returns {number | null} Total cc de egresos numéricos (diuresis + drenajes + gastrostomía + nefros + ultrafiltrado)
  */
 export function ioNumericEgressTotal(io) {
   if (!io || typeof io !== 'object') return null;
@@ -368,6 +442,55 @@ export function formatEgresoPartForText(part) {
 }
 
 /**
+ * Turnos de diuresis colapsados a una sola cláusula: si todos los turnos
+ * vienen NC se muestra una sola vez "DIURESIS NC"; si hay turnos
+ * cuantificados, se suman (los turnos NC restantes no se listan aparte). El
+ * resto de egresos (drenajes, gastrostomía, etc.) se formatea sin cambios.
+ * @param {IoEgresoPart[]} parts
+ * @param {{ showTurnCount?: boolean }} [opts] `showTurnCount` (por defecto true)
+ *   anota "(suma, NT)" para el texto de Estado Actual; en false muestra solo
+ *   el total ("DIURESIS suma CC"), como en la tarjeta de Egresos.
+ * @returns {string[]}
+ */
+export function formatEgresoPartsForText(parts, opts) {
+  var showTurnCount = !opts || opts.showTurnCount !== false;
+  var firstDiuresisIdx = -1;
+  var diuresisParts = [];
+  for (var i = 0; i < parts.length; i++) {
+    if (parts[i] && parts[i].kind === 'diuresis') {
+      if (firstDiuresisIdx === -1) firstDiuresisIdx = i;
+      diuresisParts.push(parts[i]);
+    }
+  }
+  var diuresisClause = null;
+  if (diuresisParts.length > 1) {
+    var quantified = diuresisParts.filter(function (p) {
+      return isIoNumericValue(p.value);
+    });
+    if (!quantified.length) {
+      diuresisClause = 'DIURESIS NC';
+    } else {
+      var sum = quantified.reduce(function (acc, p) {
+        return acc + Number(p.value);
+      }, 0);
+      diuresisClause = showTurnCount
+        ? 'DIURESIS (' + sum + ', ' + quantified.length + 'T)'
+        : formatEgresoPartForText({ kind: 'diuresis', label: 'DIURESIS', value: sum });
+    }
+  }
+  var out = [];
+  for (var j = 0; j < parts.length; j++) {
+    var p = parts[j];
+    if (p && p.kind === 'diuresis' && diuresisClause != null) {
+      if (j === firstDiuresisIdx) out.push(diuresisClause);
+      continue;
+    }
+    out.push(formatEgresoPartForText(p));
+  }
+  return out;
+}
+
+/**
  * @param {IoEgresoPart[]} parts
  * @returns {string}
  */
@@ -409,7 +532,7 @@ function appendLegacyEgrClause(clauses, egr) {
 function appendEgressClauses(clauses, io) {
   var parts = Array.isArray(io.egrParts) && io.egrParts.length ? io.egrParts : legacyEgrToParts(io.egr);
   if (parts.length) {
-    for (var i = 0; i < parts.length; i++) clauses.push(formatEgresoPartForText(parts[i]));
+    Array.prototype.push.apply(clauses, formatEgresoPartsForText(parts));
     return;
   }
   if (io.egr != null && io.egr !== '') appendLegacyEgrClause(clauses, io.egr);

@@ -183,6 +183,17 @@ async function openManualInstallerForVersion(version) {
 
 export const SETTINGS_UPDATES_PANEL_EVENT = 'rpc-settings-updates-panel-shown';
 
+/**
+ * A summary that only restates the label ("Release estable 6.5.0") adds no
+ * information, so showing it would just push a native <select>'s already-narrow
+ * option text past its width and get clipped mid-word. Drop it in that case.
+ */
+export function formatDowngradeOptionText(label, summary) {
+  const fullText = label + (summary ? ' — ' + summary : '');
+  const isGenericSummary = summary === 'Release estable ' + label;
+  return { text: isGenericSummary ? label : fullText, title: fullText };
+}
+
 function populateDowngradeSelect(select, entries) {
   select.innerHTML = '';
   if (!entries.length) {
@@ -197,7 +208,9 @@ function populateDowngradeSelect(select, entries) {
   entries.forEach(function (e) {
     const opt = document.createElement('option');
     opt.value = e.version;
-    opt.textContent = e.label + (e.summary ? ' — ' + e.summary : '');
+    const formatted = formatDowngradeOptionText(e.label, e.summary);
+    opt.textContent = formatted.text;
+    opt.title = formatted.title;
     select.appendChild(opt);
   });
   select.value = pickDefaultDowngradeVersion(entries);

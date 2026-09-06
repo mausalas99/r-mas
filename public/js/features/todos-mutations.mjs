@@ -137,6 +137,24 @@ export function setTodoInProgress(id, inProgress) {
   refreshAllTodoUIs();
 }
 
+/**
+ * Marca que la hemodiálisis de un pendiente no se hizo hoy — sólo apaga el
+ * recordatorio de hoy en el registro de estado actual; el pendiente sigue
+ * abierto para el día siguiente.
+ * @param {string} id
+ */
+export function setTodoDialysisSkippedToday(id) {
+  if (!aid()) return;
+  var todos = storage.getTodos(aid());
+  var found = todos.find(function (t) { return t.id === id; });
+  if (!found) return;
+  found.dialysisSkippedOn = new Date().toISOString().slice(0, 10);
+  found.updatedAt = new Date().toISOString();
+  storage.saveTodos(aid(), todos);
+  enqueueCloudTodoUpsert(aid(), found);
+  refreshAllTodoUIs();
+}
+
 export function acknowledgeHandoffTodo(id) {
   if (!aid()) return;
   var todos = storage.getTodos(aid());

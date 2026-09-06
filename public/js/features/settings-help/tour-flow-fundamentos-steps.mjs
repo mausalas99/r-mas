@@ -141,9 +141,9 @@ function renderSalaExpedienteTabs(bodyEl, nextBtn) {
   var mod = getPlatformShortcutKey();
   bodyEl.innerHTML =
     '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, <strong>Paciente</strong> abre en <strong>Resumen</strong>. Grupos: <strong>Resumen</strong>, <strong>Clínico</strong> y <strong>Salida</strong>. Labs, tendencias y cultivos viven en <strong>Laboratorio</strong>.</p>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Clínico</strong>: <strong>Estado actual</strong> → Eventualidades. Atajos: <strong>' +
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Clínico</strong>: <strong>Estado actual</strong> → Medicamentos → Eventualidades. Atajos: <strong>' +
     mod +
-    '+1</strong> cicla grupos · <strong>E</strong> EA/Eventualidades · <strong>T</strong> tendencias/cultivos.</p>';
+    '+1</strong> cicla grupos · <strong>E</strong> cicla los tres · <strong>T</strong> tendencias/cultivos.</p>';
   showNext(nextBtn);
 }
 

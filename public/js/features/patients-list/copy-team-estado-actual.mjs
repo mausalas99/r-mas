@@ -14,7 +14,7 @@ export function buildTeamEstadoActualCopyText() {
 
   var blocks = [];
   pinned.forEach(function (p) {
-    var text = getEstadoActualTextForPatient(p);
+    var text = getEstadoActualTextForPatient(p, { bold: true });
     if (!text) return;
     blocks.push(formatPatientNameForCenso(p.nombre) + '\n' + text);
   });

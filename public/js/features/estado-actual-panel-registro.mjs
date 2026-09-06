@@ -1,5 +1,7 @@
 /** EA registro manual — form markup, wiring, reset. */
 import { getMedRecetaByPatient } from '../app-state.mjs';
+import { storage } from '../storage.js';
+import { setTodoDialysisSkippedToday } from './todos-mutations.mjs';
 import { patientHasInsulinPumpInReceta } from '../insulin-pump-some-detect.mjs';
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { ensureMonitoreo } from './estado-actual-data.mjs';
@@ -11,6 +13,11 @@ import {
   serializeEgrPartsToFormText,
   diuresisValueFromParts,
   formatIoBalanceDisplay,
+  sumIoTurnos,
+  ioTurnoAggregate,
+  formatIoTurnoTotal,
+  ioTurnoEgresoValue,
+  IO_EXTRA_SOURCE_KINDS,
 } from './estado-actual-io.mjs';
 import { persistEstadoClinicoLight } from './estado-actual-panel-clinico.mjs';
 import { VITAL_KEYS } from './estado-actual-panel-constants.mjs';
@@ -78,16 +85,71 @@ export function syncEaRegistroInsulinPumpFlag(form, monitoreo) {
   }
 }
 
+var IO_TURNO_IDS = ['t1', 't2', 't3'];
+
 /**
- * @param {HTMLElement | null} form
+ * @param {HTMLElement} form
+ * @param {'ing' | 'egr'} prefix
+ * @returns {HTMLInputElement[]}
  */
-export function applyIoNcMode(form) {
-  if (!form) return;
-  var ingEl = form.querySelector('#ea-io-ing');
-  var egrEl = form.querySelector('#ea-io-egr');
-  if (ingEl && 'value' in ingEl) ingEl.value = 'NC';
-  if (egrEl && 'value' in egrEl) egrEl.value = 'DIURESIS NC';
+function ioTurnoInputs(form, prefix) {
+  return IO_TURNO_IDS.map(function (t) {
+    return form.querySelector('#ea-io-' + prefix + '-' + t);
+  });
+}
+
+/**
+ * @param {HTMLElement | null} btn
+ */
+function toggleIoTurnoNc(btn) {
+  if (!btn) return;
+  var box = btn.closest('.ea-turno-box');
+  var input = box && box.querySelector('input');
+  if (!input || !('value' in input)) return;
+  var isNc = String(input.value || '').trim().toUpperCase() === 'NC';
+  input.value = isNc ? '' : 'NC';
+}
+
+/**
+ * @param {HTMLElement} form
+ * @param {HTMLElement} target
+ * @returns {boolean} true si el click era el botón NC de un turno (ya manejado)
+ */
+function tryHandleIoTurnoNcClick(form, target) {
+  var btn = target.matches('[data-ea-io-turno-nc]') ? target : target.closest('[data-ea-io-turno-nc]');
+  if (!btn) return false;
+  toggleIoTurnoNc(/** @type {HTMLElement} */ (btn));
   syncIoBalanceFromForm(form);
+  return true;
+}
+
+/**
+ * Fuentes cuantificables sueltas (fuera de T1/T2/T3): una fila por fuente,
+ * con su propio selector de tipo — ultrafiltrado, drenaje, toracocentesis.
+ * @param {HTMLElement | null} form
+ * @returns {import('./estado-actual-io.mjs').IoEgresoPart[]}
+ */
+export function readIoExtraPartsFromForm(form) {
+  if (!form) return [];
+  var rows = form.querySelectorAll('[data-ea-io-extra-row]');
+  var parts = [];
+  rows.forEach(function (row) {
+    var kindEl = row.querySelector('[data-ea-io-extra-kind]');
+    var valueEl = row.querySelector('[data-ea-io-extra-value]');
+    var kind = kindEl && 'value' in kindEl ? kindEl.value : '';
+    var meta;
+    if (kind === IO_EXTRA_CUSTOM_VALUE) {
+      var customEl = ioExtraCustomInput(row);
+      var name = customEl && 'value' in customEl ? String(customEl.value).trim() : '';
+      meta = name ? { kind: 'custom', label: name.toUpperCase() } : null;
+    } else {
+      meta = IO_EXTRA_SOURCE_KINDS.find(function (k) { return k.kind === kind; });
+    }
+    if (!meta) return;
+    var parsed = parseIoIngresoField(valueEl && 'value' in valueEl ? valueEl.value : '');
+    parts.push({ kind: meta.kind, label: meta.label, value: parsed == null ? 'NC' : parsed });
+  });
+  return parts;
 }
 
 /**
@@ -95,19 +157,34 @@ export function applyIoNcMode(form) {
  */
 export function syncIoBalanceFromForm(form) {
   if (!form) return;
-  var ingEl = form.querySelector('#ea-io-ing');
-  var egrEl = form.querySelector('#ea-io-egr');
+  var ingInputs = ioTurnoInputs(form, 'ing');
+  var egrInputs = ioTurnoInputs(form, 'egr');
   var out = form.querySelector('#ea-balance-turno-live');
-  if (!ingEl || !egrEl || !out) return;
-  var ing = parseIoIngresoField(ingEl.value);
-  if (ing === 'NC' && String(egrEl.value || '').trim().toUpperCase() !== 'DIURESIS NC') {
-    egrEl.value = 'DIURESIS NC';
-  }
-  var egrParts = parseIoEgresoLine(egrEl.value);
-  var label = formatIoBalanceDisplay(ing, {
-    ing: ing,
-    egrParts: egrParts,
-    egr: diuresisValueFromParts(egrParts),
+  if (ingInputs.some(function (el) { return !el; }) || egrInputs.some(function (el) { return !el; }) || !out) return;
+
+  var ingValues = ingInputs.map(function (el) { return parseIoIngresoField(el.value); });
+  var ingTotals = sumIoTurnos(ingValues);
+  var ingTotalEl = form.querySelector('#ea-io-ing-total');
+  if (ingTotalEl) ingTotalEl.textContent = formatIoTurnoTotal(ingTotals);
+
+  var egrPartsPerTurno = egrInputs.map(function (el) { return parseIoEgresoLine(el.value); });
+  var egrTotals = sumIoTurnos(egrPartsPerTurno.map(ioTurnoEgresoValue));
+  var egrTotalEl = form.querySelector('#ea-io-egr-total');
+  if (egrTotalEl) egrTotalEl.textContent = formatIoTurnoTotal(egrTotals);
+
+  ingInputs.concat(egrInputs).forEach(function (el) {
+    var isNc = String(el.value || '').trim().toUpperCase() === 'NC';
+    el.classList.toggle('ea-turno-input--nc', isNc);
+    var ncBtn = el.closest('.ea-turno-box') && el.closest('.ea-turno-box').querySelector('[data-ea-io-turno-nc]');
+    if (ncBtn) ncBtn.setAttribute('aria-pressed', String(isNc));
+  });
+
+  var combinedParts = [].concat.apply([], egrPartsPerTurno).concat(readIoExtraPartsFromForm(form));
+  var aggregateIng = ioTurnoAggregate(ingTotals);
+  var label = formatIoBalanceDisplay(aggregateIng, {
+    ing: aggregateIng,
+    egrParts: combinedParts,
+    egr: diuresisValueFromParts(combinedParts),
   });
   out.textContent = label;
   out.classList.remove('ea-balance-live--pos', 'ea-balance-live--neg');
@@ -116,16 +193,14 @@ export function syncIoBalanceFromForm(form) {
 }
 
 /**
- * @param {HTMLElement | null} egrEl
- * @param {{ egrParts?: unknown[], egr?: unknown }} io
+ * @param {HTMLElement} form
+ * @param {'ing' | 'egr'} prefix
+ * @param {Array<unknown>} values
  */
-export function fillEgrField(egrEl, io) {
-  if (!egrEl || !('value' in egrEl)) return;
-  if (io.egrParts && io.egrParts.length) {
-    egrEl.value = serializeEgrPartsToFormText(io.egrParts);
-  } else if (io.egr != null && io.egr !== '') {
-    egrEl.value = typeof io.egr === 'number' ? String(io.egr) : String(io.egr);
-  }
+function fillIoTurnoInputs(form, prefix, values) {
+  ioTurnoInputs(form, prefix).forEach(function (el, i) {
+    if (el && 'value' in el) el.value = values[i] != null && values[i] !== '' ? String(values[i]) : '';
+  });
 }
 
 /**
@@ -139,28 +214,46 @@ export function fillEvacField(evacEl, evac) {
 
 /**
  * @param {HTMLElement} form
- * @param {{ ing?: unknown, egr?: unknown, egrParts?: unknown[], evac?: unknown }} io
+ * @param {{ ing?: unknown, egr?: unknown, egrParts?: unknown[], egrExtra?: Array<{ kind: string, value: unknown }>, evac?: unknown, ingTurnos?: unknown[], egrTurnos?: unknown[] }} io
  */
 export function fillIoFields(form, io) {
   io = io || {};
-  var ingEl = form.querySelector('#ea-io-ing');
-  var egrEl = form.querySelector('#ea-io-egr');
-  var evacEl = form.querySelector('#ea-io-evac');
-  if (ingEl && io.ing != null && io.ing !== '' && 'value' in ingEl) ingEl.value = String(io.ing);
-  fillEgrField(egrEl, io);
-  fillEvacField(evacEl, io.evac);
+  if (Array.isArray(io.ingTurnos) && io.ingTurnos.length) {
+    fillIoTurnoInputs(form, 'ing', io.ingTurnos);
+  } else if (io.ing != null && io.ing !== '') {
+    fillIoTurnoInputs(form, 'ing', [io.ing]);
+  }
+  if (Array.isArray(io.egrTurnos) && io.egrTurnos.length) {
+    fillIoTurnoInputs(form, 'egr', io.egrTurnos);
+  } else {
+    var legacyEgrText =
+      io.egrParts && io.egrParts.length
+        ? serializeEgrPartsToFormText(io.egrParts)
+        : io.egr != null && io.egr !== ''
+          ? String(io.egr)
+          : '';
+    if (legacyEgrText) fillIoTurnoInputs(form, 'egr', [legacyEgrText]);
+  }
+  fillEvacField(form.querySelector('#ea-io-evac'), io.evac);
+  var extraList = form.querySelector('#ea-io-extra-list');
+  if (extraList) {
+    extraList.innerHTML = '';
+    (Array.isArray(io.egrExtra) ? io.egrExtra : []).forEach(function (p) {
+      extraList.appendChild(buildIoExtraRow(p));
+    });
+  }
 }
 
 /**
  * @param {HTMLElement} form
  */
 export function clearIoFields(form) {
-  var ing = form.querySelector('#ea-io-ing');
-  var egr = form.querySelector('#ea-io-egr');
+  fillIoTurnoInputs(form, 'ing', []);
+  fillIoTurnoInputs(form, 'egr', []);
   var evac = form.querySelector('#ea-io-evac');
-  if (ing && 'value' in ing) ing.value = '';
-  if (egr && 'value' in egr) egr.value = '';
   if (evac && 'value' in evac) evac.value = '';
+  var extraList = form.querySelector('#ea-io-extra-list');
+  if (extraList) extraList.innerHTML = '';
 }
 
 function defaultAlteredTimeFromForm(form) {
@@ -195,32 +288,70 @@ function syncAlteredFields(form) {
   syncAllVitalAddButtonVisibility(form);
 }
 
+/** @returns {boolean} true si el click era el botón "No se realizó hoy" de hemodiálisis (ya manejado) */
+function tryHandleHemodialisisNoFueClick(form, target) {
+  var noFueBtn = target.closest('[data-ea-hemodialisis-no-fue]');
+  if (!noFueBtn) return false;
+  var pendId = noFueBtn.getAttribute('data-ea-hemodialisis-no-fue');
+  if (pendId) setTodoDialysisSkippedToday(pendId);
+  var lead = noFueBtn.closest('.ea-registro-hint--hemodialisis');
+  if (lead) lead.remove();
+  return true;
+}
+
+/** @returns {boolean} true si el click era "+" de una capa de signo vital (ya manejado) */
+function tryHandleVitalAddClick(form, target) {
+  var addBtn = target.closest('[data-ea-vital-add]');
+  if (!addBtn) return false;
+  var vitalKey = addBtn.getAttribute('data-ea-vital-add');
+  if (vitalKey) {
+    expandVitalNextLayer(form, vitalKey);
+    syncAlteredFields(form);
+  }
+  return true;
+}
+
+/** @returns {boolean} true si el click era "+" de una glucometría (ya manejado) */
+function tryHandleGluAddClick(form, target) {
+  if (target.id !== 'ea-add-glu' && !target.closest('#ea-add-glu')) return false;
+  var gluList = form.querySelector('#ea-glu-list');
+  if (gluList) {
+    gluList.appendChild(buildGluRow());
+    applyRegistroTabSkipAttributes(form);
+  }
+  return true;
+}
+
+/** @returns {boolean} true si el click era "+" de una bomba de insulina (ya manejado) */
+function tryHandleBombaAddClick(form, target) {
+  if (target.id !== 'ea-add-bomba' && !target.closest('#ea-add-bomba')) return false;
+  var bombaList = form.querySelector('#ea-bomba-list');
+  if (bombaList) bombaList.appendChild(buildBombaRow());
+  return true;
+}
+
+/** @returns {boolean} true si el click era "+ Agregar fuente" (I/O extra) (ya manejado) */
+function tryHandleIoExtraAddClick(form, target) {
+  if (target.id !== 'ea-add-io-extra' && !target.closest('#ea-add-io-extra')) return false;
+  var extraList = form.querySelector('#ea-io-extra-list');
+  if (extraList) extraList.appendChild(buildIoExtraRow());
+  return true;
+}
+
+var FORM_CLICK_HANDLERS = [
+  tryHandleHemodialisisNoFueClick,
+  tryHandleIoTurnoNcClick,
+  tryHandleVitalAddClick,
+  tryHandleGluAddClick,
+  tryHandleBombaAddClick,
+  tryHandleIoExtraAddClick,
+];
+
 function handleFormClick(form, ev) {
   var target = /** @type {HTMLElement | null} */ (ev.target);
   if (!target || !form.contains(target)) return;
-  if (target.matches('[data-ea-io-nc]') || target.closest('[data-ea-io-nc]')) {
-    applyIoNcMode(form);
-    return;
-  }
-  var addBtn = target.closest('[data-ea-vital-add]');
-  if (addBtn) {
-    var vitalKey = addBtn.getAttribute('data-ea-vital-add');
-    if (!vitalKey) return;
-    expandVitalNextLayer(form, vitalKey);
-    syncAlteredFields(form);
-    return;
-  }
-  if (target.id === 'ea-add-glu' || target.closest('#ea-add-glu')) {
-    var gluList = form.querySelector('#ea-glu-list');
-    if (gluList) {
-      gluList.appendChild(buildGluRow());
-      applyRegistroTabSkipAttributes(form);
-    }
-    return;
-  }
-  if (target.id === 'ea-add-bomba' || target.closest('#ea-add-bomba')) {
-    var bombaList = form.querySelector('#ea-bomba-list');
-    if (bombaList) bombaList.appendChild(buildBombaRow());
+  for (var i = 0; i < FORM_CLICK_HANDLERS.length; i++) {
+    if (FORM_CLICK_HANDLERS[i](form, target)) return;
   }
 }
 
@@ -234,7 +365,9 @@ function handleFormChange(form, ev) {
   if (target.matches('[data-ea-glu-altered]')) {
     var gluRow = target.closest('.ea-glu-row');
     if (gluRow) syncGluRowAltered(/** @type {HTMLElement} */ (gluRow));
+    return;
   }
+  if (target.matches('[data-ea-io-extra-kind]')) syncIoBalanceFromForm(form);
 }
 
 function handleFormInput(form, ev) {
@@ -245,7 +378,11 @@ function handleFormInput(form, ev) {
   else if (target.matches('[data-ea-glu-value], [data-ea-glu-rescue-units], [data-ea-glu-post-rescue-value]')) {
     var gluRow = target.closest('.ea-glu-row');
     if (gluRow) syncGluRowAltered(/** @type {HTMLElement} */ (gluRow));
-  } else if (target.id === 'ea-io-ing' || target.id === 'ea-io-egr' || target.id === 'ea-io-evac') {
+  } else if (
+    target.matches('[data-ea-io-turno]') ||
+    target.id === 'ea-io-evac' ||
+    target.matches('[data-ea-io-extra-value], [data-ea-io-extra-custom]')
+  ) {
     syncIoBalanceFromForm(form);
   }
 }
@@ -389,6 +526,130 @@ function buildRegistroGluSectionHtml() {
   );
 }
 
+function buildIoTurnoBoxHtml(prefix, turno, inputmode, placeholder) {
+  var id = 'ea-io-' + prefix + '-' + turno;
+  return (
+    '<div class="ea-turno-box">' +
+    '<span class="ea-turno-box-label">' +
+    turno.toUpperCase() +
+    '<button type="button" class="ea-turno-nc-btn" data-ea-io-turno-nc aria-pressed="false" title="Marcar turno como NC">NC</button>' +
+    '</span>' +
+    '<input type="text" id="' +
+    id +
+    '" inputmode="' +
+    inputmode +
+    '" autocomplete="off" placeholder="' +
+    placeholder +
+    '" data-ea-io-turno="' +
+    prefix +
+    '">' +
+    '</div>'
+  );
+}
+
+function buildIoTurnoGroupHtml(prefix, label, totalId, inputmode, placeholder) {
+  return (
+    '<div class="ea-turno-group">' +
+    '<div class="ea-turno-group-head">' +
+    '<span class="ea-label">' +
+    label +
+    '</span>' +
+    '<span class="ea-turno-total" id="' +
+    totalId +
+    '">NC</span>' +
+    '</div>' +
+    '<div class="ea-turno-row">' +
+    IO_TURNO_IDS.map(function (t) {
+      return buildIoTurnoBoxHtml(prefix, t, inputmode, placeholder);
+    }).join('') +
+    '</div>' +
+    '</div>'
+  );
+}
+
+/** Title-cases a stored uppercase source label for display (e.g. "ULTRAFILTRADO" -> "Ultrafiltrado"). */
+function ioExtraLabelForDisplay(label) {
+  var s = String(label || '');
+  return s ? s.charAt(0) + s.slice(1).toLowerCase() : '';
+}
+
+/** Dropdown value that means "let me type a source that isn't in the list". */
+var IO_EXTRA_CUSTOM_VALUE = '__custom__';
+
+function ioExtraCustomInput(row) {
+  return row.querySelector('[data-ea-io-extra-custom]');
+}
+
+/** Swaps the dropdown for the "name this source" field (and back) — only one is ever shown. */
+function setIoExtraCustomVisible(row, isCustom) {
+  var selectEl = row.querySelector('[data-ea-io-extra-kind]');
+  var customEl = ioExtraCustomInput(row);
+  if (!selectEl || !customEl) return;
+  selectEl.hidden = isCustom;
+  customEl.hidden = !isCustom;
+}
+
+/** Same swap, plus focuses the name field — for when the user just picked "+ Otra…". */
+export function syncIoExtraCustomField(row) {
+  var selectEl = row.querySelector('[data-ea-io-extra-kind]');
+  if (!selectEl) return;
+  var isCustom = selectEl.value === IO_EXTRA_CUSTOM_VALUE;
+  setIoExtraCustomVisible(row, isCustom);
+  if (isCustom) {
+    var customEl = ioExtraCustomInput(row);
+    if (customEl) customEl.focus();
+  }
+}
+
+/**
+ * @param {{ kind?: string, label?: string, value?: unknown } | null | undefined} [data]
+ * @returns {HTMLDivElement}
+ */
+export function buildIoExtraRow(data) {
+  data = data || {};
+  var row = document.createElement('div');
+  row.className = 'ea-io-extra-row';
+  row.setAttribute('data-ea-io-extra-row', '');
+  var options =
+    IO_EXTRA_SOURCE_KINDS.map(function (k) {
+      return '<option value="' + k.kind + '">' + ioExtraLabelForDisplay(k.label) + '</option>';
+    }).join('') +
+    '<option value="' + IO_EXTRA_CUSTOM_VALUE + '">+ Otra…</option>';
+  row.innerHTML =
+    '<div class="ea-io-extra-kind-cell">' +
+    '<select class="ea-input" data-ea-io-extra-kind>' + options + '</select>' +
+    '<input type="text" class="ea-input" data-ea-io-extra-custom hidden placeholder="Nombre de la fuente" autocomplete="off">' +
+    '</div>' +
+    '<input type="text" class="ea-input" data-ea-io-extra-value inputmode="decimal" autocomplete="off" placeholder="cc o NC">' +
+    '<button type="button" class="ea-btn ea-btn--ghost ea-btn--icon" data-ea-io-extra-remove title="Quitar" aria-label="Quitar fuente">×</button>';
+  var kindEl = row.querySelector('[data-ea-io-extra-kind]');
+  var customEl = ioExtraCustomInput(row);
+  var known = data.kind && IO_EXTRA_SOURCE_KINDS.find(function (k) { return k.kind === data.kind; });
+  if (kindEl && known) {
+    kindEl.value = known.kind;
+  } else if (kindEl && data.label) {
+    kindEl.value = IO_EXTRA_CUSTOM_VALUE;
+    if (customEl) customEl.value = ioExtraLabelForDisplay(data.label);
+  }
+  if (kindEl) setIoExtraCustomVisible(row, kindEl.value === IO_EXTRA_CUSTOM_VALUE);
+  var valueEl = row.querySelector('[data-ea-io-extra-value]');
+  if (valueEl && data.value != null && data.value !== '') valueEl.value = String(data.value);
+  var removeBtn = row.querySelector('[data-ea-io-extra-remove]');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', function () {
+      var form = row.closest('form');
+      row.remove();
+      syncIoBalanceFromForm(form);
+    });
+  }
+  if (kindEl) {
+    kindEl.addEventListener('change', function () {
+      syncIoExtraCustomField(row);
+    });
+  }
+  return row;
+}
+
 function buildRegistroIoSectionHtml() {
   return (
     '<section class="ea-registro-section" aria-labelledby="ea-io-section-lbl">' +
@@ -396,26 +657,72 @@ function buildRegistroIoSectionHtml() {
     '<h4 id="ea-io-section-lbl" class="ea-registro-section-label">Ingresos / egresos</h4>' +
     '</div>' +
     '<div class="ea-io-grid">' +
-    '<label class="ea-field">' +
-    '<span class="ea-label ea-label--with-action">Ingresos (cc)' +
-    '<button type="button" class="ea-btn ea-btn--ghost ea-io-nc-btn" data-ea-io-nc title="Marcar ingresos, egresos y balance como NC">NC</button>' +
-    '</span>' +
-    '<input type="text" class="ea-input" id="ea-io-ing" inputmode="text" autocomplete="off" placeholder="cc o NC">' +
-    '</label>' +
-    '<label class="ea-field">' +
+    buildIoTurnoGroupHtml('ing', 'Ingresos (cc) — por turno', 'ea-io-ing-total', 'decimal', 'cc') +
+    buildIoTurnoGroupHtml(
+      'egr',
+      'Egresos (cc) — por turno',
+      'ea-io-egr-total',
+      'text',
+      'cc, detalle o NC'
+    ) +
+    '<div class="ea-field ea-field--full ea-io-extra">' +
+    '<div class="ea-io-extra-head">' +
+    '<span class="ea-label">Otras fuentes cuantificables</span>' +
+    '<button type="button" class="ea-btn ea-btn--ghost" id="ea-add-io-extra">+ Agregar fuente</button>' +
+    '</div>' +
+    '<div id="ea-io-extra-list" class="ea-io-extra-list"></div>' +
+    '</div>' +
+    '<label class="ea-field ea-field--full">' +
     '<span class="ea-label">Evacuaciones</span>' +
     '<input type="text" class="ea-input" id="ea-io-evac" inputmode="text" autocomplete="off" placeholder="NC, cc o texto">' +
     '</label>' +
-    '<div class="ea-field ea-io-balance">' +
+    '<div class="ea-field ea-field--full ea-io-balance">' +
     '<span class="ea-label">Balance</span>' +
     '<span id="ea-balance-turno-live" class="ea-balance-live">—</span>' +
     '</div>' +
-    '<label class="ea-field ea-field--full">' +
-    '<span class="ea-label">Egresos (diuresis, drenajes, nefrostomías…)</span>' +
-    '<input type="text" class="ea-input" id="ea-io-egr" inputmode="text" autocomplete="off" placeholder="DIURESIS NC, DRENAJE 50 CC, NEFRO IZQ 20 CC">' +
-    '</label>' +
     '</div>' +
     '</section>'
+  );
+}
+
+/**
+ * Pendiente de hemodiálisis abierto que no fue silenciado hoy — dispara el
+ * recordatorio en el registro para que se documente el ultrafiltrado, o se
+ * marque que no se realizó.
+ * @param {string | null | undefined} activeId
+ * @returns {{ id: string } | null}
+ */
+export function findOpenHemodialisisReminder(activeId) {
+  if (!activeId) return null;
+  var today = new Date().toISOString().slice(0, 10);
+  var todos = storage.getTodos(activeId) || [];
+  return (
+    todos.find(function (t) {
+      return (
+        t &&
+        !t.completed &&
+        /^Procedimiento: HEMODIALISIS\b/i.test(String(t.text || '')) &&
+        t.dialysisSkippedOn !== today
+      );
+    }) || null
+  );
+}
+
+function buildRegistroLeadHtml(activeId) {
+  var reminder = findOpenHemodialisisReminder(activeId);
+  var reminderHtml = reminder
+    ? '<div class="ea-registro-hint ea-registro-hint--hemodialisis">' +
+      '<span>Hay hemodiálisis indicada. Registra el ultrafiltrado en egresos.</span>' +
+      '<button type="button" class="ea-btn ea-btn--ghost" data-ea-hemodialisis-no-fue="' +
+      reminder.id +
+      '">No se realizó hoy</button>' +
+      '</div>'
+    : '';
+  return (
+    '<div class="ea-registro-lead">' +
+    reminderHtml +
+    '<p class="ea-registro-hint">Basta un dato para registrar · <span class="ea-registro-kbd-hint">⌘↵</span></p>' +
+    '</div>'
   );
 }
 
@@ -435,14 +742,14 @@ export function buildRegistroFormMarkup() {
   var vitalFields = VITAL_KEYS.map(function (key) {
     return buildVitalStackHtml(key);
   }).join('');
+  var activeId = getEaFormOpenPatientId();
+  if (activeId == null) activeId = getEaPanelRuntime().getActiveId();
 
   return (
     '<div class="ea-registro-shell">' +
     '<div class="ea-registro-form-scroll">' +
     '<form id="ea-form" class="ea-form ea-form--registro" onsubmit="return false;">' +
-    '<div class="ea-registro-lead">' +
-    '<p class="ea-registro-hint">Basta un dato para registrar · <span class="ea-registro-kbd-hint">⌘↵</span></p>' +
-    '</div>' +
+    buildRegistroLeadHtml(activeId) +
     '<label class="ea-field ea-field--datetime">' +
     '<span class="ea-label">Fecha y hora</span>' +
     '<input type="datetime-local" class="ea-input rpc-datetime-input" id="ea-recorded-at" value="' +
@@ -515,7 +822,10 @@ export function resetEaRegistroForm(_patient) {
   setEaRegistroEditMode(form, null);
   clearVitalFormFields(form);
   var recorded = document.getElementById('ea-recorded-at');
-  if (recorded && 'value' in recorded) recorded.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
+  if (recorded && 'value' in recorded) {
+    recorded.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
+    recorded.dispatchEvent(new Event('rpc-datetime-sync'));
+  }
   clearIoFields(form);
   resetGluAndBombaFields();
   syncEaRegistroInsulinPumpFlag(form, _patient && _patient.monitoreo ? _patient.monitoreo : null);

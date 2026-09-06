@@ -22,6 +22,7 @@ export function shortenPatientDisplayName(fullName) {
 
 /** @param {{ cuarto?: string, cama?: string }} p */
 import { escHtml } from './dom-escape.mjs';
+import { isMobileWeb } from './mobile-web.mjs';
 
 export function formatPatientBedParts(p) {
   const cuarto = String(p?.cuarto || '').trim();
@@ -41,8 +42,9 @@ export function formatPatientBedLabel(p) {
 export function formatPatientBedMetaHtml(p) {
   const { cuarto, cama } = formatPatientBedParts(p);
   const parts = [];
-  if (cuarto) parts.push(`<span>Cto. ${escSidebarHtml(cuarto)}</span>`);
-  if (cama) parts.push(`<span>Cama ${escSidebarHtml(cama)}</span>`);
+  const label = isMobileWeb() ? { cuarto: '', cama: '' } : { cuarto: 'Cto. ', cama: 'Cama ' };
+  if (cuarto) parts.push(`<span>${label.cuarto}${escSidebarHtml(cuarto)}</span>`);
+  if (cama) parts.push(`<span>${label.cama}${escSidebarHtml(cama)}</span>`);
   return parts;
 }
 

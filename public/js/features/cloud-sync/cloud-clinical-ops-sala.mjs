@@ -281,6 +281,10 @@ export async function pushClinicalOpsForSalas(salas) {
   let last = { ok: false, reason: 'no_push' };
   for (const sala of targets) {
     last = await syncClinicalOpsForSala(sala);
+    // Each sala fires two document-wide CustomEvents to dozens of listeners.
+    // Yield a frame between salas so a multi-sala sync can't chain them into
+    // one unbroken block on the main thread.
+    await new Promise(requestAnimationFrame);
   }
   return last;
 }

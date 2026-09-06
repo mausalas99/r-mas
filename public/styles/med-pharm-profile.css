@@ -578,6 +578,8 @@ html.dark .med-pharm-modal-legend {
   color: var(--primary);
   text-align: center;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .med-pharm-via-cell {
@@ -1267,3 +1269,251 @@ html.dark .med-pharm-adh-panel {
 .med-pharm-grid-scope .some-grid-unified tbody tr:hover .col-via {
   background: color-mix(in oklab, var(--action) 8%, var(--surface));
 }
+
+/* Verificación de medicamentos (Clínico › Medicamentos) — reuses the
+ * some-grid-unified table above with today's dose times as columns instead
+ * of calendar days, so a checked/unchecked dose reads identically. Styled as
+ * its own "soft chip" look (spaced, rounded, colored) instead of the dense
+ * calendar grid — it only carries today's doses, not a month of history. */
+.med-admin-panel {
+  --some-day-w: 42px;
+  --some-day-band-h: 44px;
+  --some-hdr-row-h: 34px;
+}
+.med-admin-panel .some-grid-wrap {
+  padding: 14px 20px;
+  width: 100%;
+}
+.med-admin-panel:has(~ .med-admin-prn-fab) .some-grid-wrap {
+  margin-top: 44px;
+}
+.med-admin-panel table.some-grid-unified {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  font-size: 13px;
+  border: none;
+  border-collapse: separate;
+  border-spacing: 16px calc(var(--some-day-band-h) * 0.27);
+}
+.med-admin-panel .some-grid-unified th,
+.med-admin-panel .some-grid-unified td {
+  border: none;
+}
+.med-admin-panel .med-admin-col-med { width: 220px; min-width: 220px; max-width: 220px; }
+.med-admin-panel .some-grid-unified .col-day,
+.med-admin-panel .some-grid-unified th.day-hdr {
+  width: auto;
+  min-width: 90px;
+  max-width: none;
+}
+.med-admin-panel .some-grid-unified td.day-pad {
+  width: auto;
+  min-width: 90px;
+  max-width: none;
+}
+.med-admin-panel .some-grid-unified thead tr.hdr-row-1 th {
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.med-admin-panel .some-grid-unified td.col-med {
+  padding: calc(var(--some-day-band-h) * 0.136) 8px calc(var(--some-day-band-h) * 0.136) 4px;
+  background: transparent;
+}
+.med-admin-panel .some-grid-unified tbody tr:nth-child(even) td.col-med {
+  background: transparent;
+}
+.med-admin-row-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.med-admin-panel .some-grid-unified .med-cell-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+}
+.med-admin-dia-pill {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: color-mix(in oklab, var(--text-muted) 16%, transparent);
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.med-admin-hide-btn {
+  flex: 0 0 auto;
+  width: max(14px, calc(var(--some-day-band-h) * 0.45));
+  height: max(14px, calc(var(--some-day-band-h) * 0.45));
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.45;
+}
+.med-admin-hide-btn:hover {
+  opacity: 1;
+  background: color-mix(in oklab, var(--error) 18%, transparent);
+  color: var(--error);
+}
+.med-admin-panel .some-grid-unified td.day-pad,
+.med-admin-panel .some-grid-unified td.day-pad-empty {
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  position: relative;
+}
+.med-admin-panel .some-grid-unified td.day-pad.indicated {
+  background: color-mix(in oklab, var(--success) 16%, transparent);
+  box-shadow: none;
+  cursor: pointer;
+}
+.med-admin-panel .some-grid-unified td.day-pad.indicated::after {
+  content: "✓";
+  color: var(--success);
+  font-size: 13px;
+  font-weight: 700;
+}
+.med-admin-panel .some-grid-unified td.day-pad.indicated.not-admin {
+  background: color-mix(in oklab, var(--error) 18%, transparent);
+  box-shadow: none;
+}
+.med-admin-panel .some-grid-unified td.day-pad.indicated.not-admin::after {
+  content: "✕";
+  color: var(--error);
+}
+.med-admin-panel .some-grid-unified td.day-pad.indicated:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: -2px;
+}
+
+.med-admin-empty { color: var(--text-muted); padding: 8px 0; font-size: 13px; }
+
+.med-admin-legend {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.med-admin-legend-swatch {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  vertical-align: -2px;
+  margin-right: 6px;
+}
+.med-admin-legend-swatch--on {
+  background: color-mix(in oklab, var(--success) 22%, transparent);
+}
+.med-admin-legend-swatch--off {
+  background: color-mix(in oklab, var(--error) 26%, transparent);
+}
+
+.med-admin-hidden-footer { margin-top: 10px; font-size: 12px; }
+.med-admin-hidden-toggle {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+.med-admin-hidden-toggle:hover { color: var(--text); }
+.med-admin-hidden-list { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+.med-admin-hidden-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.med-admin-unhide-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--action);
+  font-size: 11px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.med-admin-unhide-btn:hover { background: color-mix(in oklab, var(--action) 12%, transparent); }
+
+.med-admin-prn { margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--border); }
+.med-admin-prn-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+.med-admin-prn-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; font-size: 12px; border-bottom: 1px solid var(--border); }
+.med-admin-prn-row:last-child { border-bottom: none; }
+.med-admin-prn-row .med-admin-name { font-weight: 600; color: var(--text); }
+.med-admin-prn-row .med-admin-meta { color: var(--text-muted); font-size: 11px; }
+.med-admin-prn-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.med-admin-prn-log { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.med-admin-prn-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: color-mix(in oklab, var(--action) 14%, transparent);
+  color: var(--action); border-radius: 999px; padding: 2px 4px 2px 8px; font-size: 11px; font-weight: 600;
+}
+.med-admin-prn-chip-x {
+  border: none; background: transparent; color: inherit; font-size: 12px; line-height: 1;
+  cursor: pointer; padding: 2px; opacity: 0.7;
+}
+.med-admin-prn-chip-x:hover { opacity: 1; }
+.med-admin-prn-add { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.med-admin-prn-time {
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-field);
+  color: var(--text); font-size: 14px; padding: 6px 10px; font-family: inherit; min-width: 96px;
+}
+.med-admin-prn-register {
+  background: var(--action); color: var(--color-update-banner-fg, #fff); border: none;
+  border-radius: var(--radius-field); padding: 5px 12px; font-size: 12px; font-weight: 700;
+  cursor: pointer;
+}
+.med-admin-prn-register:hover { background: color-mix(in oklab, var(--action) 88%, var(--color-ink)); }
+
+#itab-content-medAdmin { position: relative; }
+.med-admin-prn-fab {
+  position: absolute; right: calc(22px * var(--density-space)); top: calc(22px * var(--density-space));
+  z-index: 150; min-width: 36px; height: 34px; padding: 0 12px; border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--action) 28%, var(--border));
+  background: var(--surface); color: var(--action); font-size: 12px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; gap: 5px; justify-content: center;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.14);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.med-admin-prn-fab:hover { transform: scale(1.05); box-shadow: 0 6px 24px rgba(15, 23, 42, 0.18); }
+.med-admin-prn-fab-count {
+  background: var(--action); color: var(--color-update-banner-fg, #fff); border-radius: 999px;
+  font-size: 9px; min-width: 14px; height: 14px; padding: 0 3px; display: inline-flex;
+  align-items: center; justify-content: center;
+}
+
+.med-admin-prn-modal { max-width: 480px; max-height: 80vh; }
+.med-admin-prn-modal-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.med-admin-prn-modal-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.med-admin-prn-modal-close {
+  width: 28px; height: 28px; border: none; background: transparent; color: var(--text-muted);
+  border-radius: 8px; font-size: 16px; line-height: 1; cursor: pointer;
+}
+.med-admin-prn-modal-close:hover { background: var(--border); color: var(--text); }
+.med-admin-prn-modal-subtitle { font-size: 12px; color: var(--text-muted); }
+.med-admin-prn-modal-body { overflow-y: auto; }

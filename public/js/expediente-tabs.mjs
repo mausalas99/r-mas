@@ -15,6 +15,7 @@ const CLINICO_GRANULAR_TABS = [
   'indica',
   'estadoActual',
   'eventualidades',
+  'medAdmin',
   'vpo',
 ];
 export const COMPOSITE_PANE_IDS = ['paciente', 'clinico', 'resultados', 'salida'];
@@ -58,7 +59,7 @@ export function shouldShowConsolidatedTab(id, settings) {
 }
 
 export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'vpo'];
-export const CLINICO_SECTIONS_SALA = ['estadoActual', 'eventualidades'];
+export const CLINICO_SECTIONS_SALA = ['estadoActual', 'eventualidades', 'medAdmin'];
 export const RESULTADOS_SECTIONS = ['tend', 'cult'];
 export const SALIDA_SECTIONS_SALA = ['listado', 'vpo', 'recetaHu'];
 
@@ -77,6 +78,7 @@ const GRANULAR_PANE_ORDER = [
   'vpo',
   'estadoActual',
   'eventualidades',
+  'medAdmin',
   'recetaHu',
 ];
 
@@ -100,6 +102,7 @@ function granularToConsolidatedMap(settings) {
   };
   if (sala) {
     map.eventualidades = { tab: 'clinico', section: 'eventualidades' };
+    map.medAdmin = { tab: 'clinico', section: 'medAdmin' };
   }
   return map;
 }
@@ -125,13 +128,16 @@ function paneMountSpec(granularTab, settings) {
     eventualidades: sala
       ? { composite: 'clinico', selector: '.exp-segment-body--clinico' }
       : { composite: null, selector: null },
+    medAdmin: sala
+      ? { composite: 'clinico', selector: '.exp-segment-body--clinico' }
+      : { composite: null, selector: null },
   };
   return map[granularTab] || null;
 }
 
 export function getClinicoSections(settings) {
   if (isModeSala(settings)) {
-    return ['estadoActual', 'eventualidades'];
+    return ['estadoActual', 'eventualidades', 'medAdmin'];
   }
   // IC: EA first in the row; default landing when opening Clínico stays notas.
   return ['estadoActual', 'notas', 'indica', 'vpo'];
@@ -240,14 +246,14 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
   var clinicoBar = document.getElementById('exp-segment-clinico');
   if (clinicoBar) {
     clinicoBar.style.display = !isClinicoCompositeVisible(settings) ? 'none' : '';
-    ['notas', 'indica', 'estadoActual', 'eventualidades', 'vpo'].forEach(
+    ['notas', 'indica', 'estadoActual', 'eventualidades', 'medAdmin', 'vpo'].forEach(
       function (section) {
         var btn = clinicoBar.querySelector('[data-exp-segment="' + section + '"]');
         if (!btn) return;
         if (section === 'estadoActual') {
           // IC + sala: Estado actual under Clínico.
           btn.style.display = '';
-        } else if (section === 'eventualidades') {
+        } else if (section === 'eventualidades' || section === 'medAdmin') {
           btn.style.display = sala ? '' : 'none';
         } else if (section === 'vpo') {
           btn.style.display = sala ? 'none' : '';

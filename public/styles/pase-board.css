@@ -998,10 +998,6 @@ html.ui-density-guardia #lan-connection-banner {
   background: transparent;
 }
 
-#entrega-modal-backdrop .entrega-panel--pendientes .clinical-teams-section-head-row {
-  margin-bottom: 2px;
-}
-
 #entrega-modal-backdrop .entrega-proc-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -3540,19 +3536,6 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   gap: 4px;
 }
 
-.clinical-teams-section-head-row {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.clinical-teams-section-head-row .clinical-teams-section-intro {
-  flex: 1;
-  min-width: 12rem;
-}
-
 .clinical-teams-section-title {
   margin: 0;
   font-size: 0.8125rem;
@@ -3617,18 +3600,25 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   transform: rotate(90deg);
 }
 
-.clinical-teams-collapse-summary-head {
-  flex-direction: row;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
+/* A collapsible with a summaryActionsHtml sibling (e.g. the sala filter <select>) lays its
+ * <summary> and the actions out as a row, with the body wrapping to its own line below —
+ * the actions element is a sibling of <summary>, not nested in it (see shared.mjs). */
+.clinical-teams-collapse--section:has(> .clinical-teams-collapse-summary-actions) {
+  display: flex;
   flex-wrap: wrap;
-  width: 100%;
+  align-items: flex-end;
+  gap: 12px;
 }
 
-.clinical-teams-collapse-summary-head .clinical-teams-section-intro {
+.clinical-teams-collapse--section:has(> .clinical-teams-collapse-summary-actions)
+  > .clinical-teams-collapse-summary {
   flex: 1;
   min-width: 12rem;
+}
+
+.clinical-teams-collapse--section:has(> .clinical-teams-collapse-summary-actions)
+  > .clinical-teams-collapse-body {
+  flex-basis: 100%;
 }
 
 .clinical-teams-collapse-summary-actions {

@@ -200,6 +200,7 @@ export function buildCensusPayload(opts) {
     medRecetaByPatient: opts.medRecetaByPatient,
     labHistoryByPatient: opts.labHistoryByPatient,
     todosByPatient: opts.todosByPatient,
+    now: now,
   };
 
   var teamLabelByPatientId = opts.teamLabelByPatientId || {};

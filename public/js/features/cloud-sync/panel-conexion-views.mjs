@@ -162,7 +162,7 @@ export function connectedViewsHtml({
   if (showAdmin) {
     cuentaRows += optionsRow('Administración', 'Usuarios, salas y clave admin', 'admin');
   }
-  const pendingDeletes = listPendingRemoteDeletes();
+  const pendingDeletes = showAdmin ? listPendingRemoteDeletes() : [];
   const sistemaRows =
     optionsRow('Diagnóstico Nube', 'Dashboard de estado y alertas', 'nube') +
     (pendingDeletes.length

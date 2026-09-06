@@ -87,8 +87,10 @@ export function buildHiTempClause(v, snapAlt, tempPeakAt, now) {
 /**
  * @param {unknown} fieldVal
  * @param {string} joiner
+ * @param {boolean} [bold] wrap each drug in its own `**...**` pair, so the joiner
+ *   itself never ends up inside the bold span
  */
-export function medsListForSoap(fieldVal, joiner) {
+export function medsListForSoap(fieldVal, joiner, bold) {
   if (fieldVal == null || !String(fieldVal).trim()) return '';
   return String(fieldVal)
     .split(' | ')
@@ -97,7 +99,8 @@ export function medsListForSoap(fieldVal, joiner) {
     })
     .filter(Boolean)
     .map(function (part) {
-      return part.toUpperCase();
+      var upper = part.toUpperCase();
+      return bold ? '**' + upper + '**' : upper;
     })
     .join(joiner);
 }
@@ -127,12 +130,12 @@ export const SOAP_EMPTY_MED_FALLBACK = 'NINGUNO';
  * Required categories (always) use {@link SOAP_EMPTY_MED_FALLBACK}.
  * @param {string} label
  * @param {string} clause
- * @param {{ always?: boolean }} [opts]
+ * @param {{ always?: boolean, bold?: boolean }} [opts]
  * @returns {string}
  */
 export function soapMedCategorySegment(label, clause, opts) {
   var val = clause != null ? String(clause).trim() : '';
-  if (val) return label + ': ' + val;
+  if (val) return label + ': ' + (opts && opts.bold ? '**' + val + '**' : val);
   if (opts && opts.always) return label + ': ' + SOAP_EMPTY_MED_FALLBACK;
   return '';
 }
@@ -245,15 +248,16 @@ export function resolveKcalDisplay(ec, options) {
  * @param {unknown} btTurno
  * @param {Array<{ value?: unknown, postRescueValue?: unknown, rescueUnits?: number }>} glSrc
  * @param {Array<{ value?: unknown, units?: unknown }>} bombaSrc
- * @param {{ rescatesInSome?: boolean, bombaAlgoritmo?: number | null }} [opts]
+ * @param {{ rescatesInSome?: boolean, bombaAlgoritmo?: number | null, bold?: boolean }} [opts]
  */
 export function buildNmClause(ec, kcalDisplay, snapIo, btTurno, glSrc, bombaSrc, opts) {
   opts = opts || {};
+  var bold = !!opts.bold;
   var ioClause = formatIoClauseForSoap(snapIo, btTurno);
   var gluParts = collectGluDisplayValues(glSrc);
   var bombaClause = buildBombaClause(bombaSrc, opts.bombaAlgoritmo);
   var nmPartition = partitionNmMedsForSoap(ec.nm);
-  var nmOtherClause = medsListForSoap(nmPartition.other, ' || ');
+  var nmOtherClause = medsListForSoap(nmPartition.other, ' || ', bold);
   var nmInsulinClause = medsListForSoap(nmPartition.insulin, ', ');
   var hasAppliedRescates = glSrc.some(function (g) {
     if (!g || typeof g !== 'object') return false;
@@ -271,14 +275,16 @@ export function buildNmClause(ec, kcalDisplay, snapIo, btTurno, glSrc, bombaSrc,
     var gluSuffix = gluHasRescueFmt ? '' : ' MG/DL';
     nmParts.push('GLUCOMETRÍAS CAPILARES (' + gluParts.join(', ') + gluSuffix + ')');
   }
-  if (bombaClause) nmParts.push(bombaClause.replace(/^\s*\|\|\s*/, ''));
-  else if (!hasAppliedRescates) {
+  if (bombaClause) {
+    var bombaBody = bombaClause.replace(/^\s*\|\|\s*/, '');
+    nmParts.push(bold ? '**' + bombaBody + '**' : bombaBody);
+  } else if (!hasAppliedRescates) {
     var rescatesClause = nmPartition.rescatesDisponibles
       ? 'RESCATES DE INSULINA DISPONIBLES'
       : formatInsulinRescatesClause(glSrc, { rescatesInSome: opts.rescatesInSome });
     if (rescatesClause) nmParts.push(rescatesClause);
   }
-  if (nmInsulinClause) nmParts.push('INSULINA: ' + nmInsulinClause);
+  if (nmInsulinClause) nmParts.push('INSULINA: ' + (bold ? '**' + nmInsulinClause + '**' : nmInsulinClause));
   return nmParts.join(' || ');
 }
 
@@ -288,8 +294,15 @@ export function buildNmClause(ec, kcalDisplay, snapIo, btTurno, glSrc, bombaSrc,
  * @param {string} soporte
  * @param {string} hiTemp
  * @param {string} nmClause
+ * @param {{ bold?: boolean }} [opts] `bold` markdown-wraps zone labels, meds and vitals
+ *   (used only for the clipboard-copy text; the saved/preview text stays plain).
  */
-export function assembleSoapLines(ec, v, soporte, hiTemp, nmClause) {
+export function assembleSoapLines(ec, v, soporte, hiTemp, nmClause, opts) {
+  var bold = !!(opts && opts.bold);
+  var b = function (s) {
+    return bold ? '**' + s + '**' : s;
+  };
+  var medOpts = { bold: bold };
   var analgesiaSplit = partitionAnalgesiaForSoap(ec.analgesia);
   var analgesiaClause = medsClauseOrEmpty(analgesiaSplit.analgesia);
   var antipireticosClause = medsClauseOrEmpty(analgesiaSplit.antipireticos);
@@ -301,55 +314,64 @@ export function assembleSoapLines(ec, v, soporte, hiTemp, nmClause) {
   var viaAereaClause = medsClauseOrEmpty(ec.viaAerea);
   var vasopClause = medsClauseOrEmpty(ec.vasop);
   var nMeds = joinSoapMedSegments([
-    soapMedCategorySegment('ANALGESIA', analgesiaClause),
-    soapMedCategorySegment('ANALGESIA / ANTIPIRETICOS', antipireticosClause),
-    soapMedCategorySegment('ANTIEMETICOS', antiemeticosClause),
-    soapMedCategorySegment('SEDACION', sedacionClause),
-    soapMedCategorySegment('ANTIEPILEPTICOS', antiepilepticosClause),
-    soapMedCategorySegment('ANTIPARKINSONIANOS', antiparkinsonianosClause),
-    soapMedCategorySegment('ANTIDOTOS', antidotosClause),
+    soapMedCategorySegment('ANALGESIA', analgesiaClause, medOpts),
+    soapMedCategorySegment('ANALGESIA / ANTIPIRETICOS', antipireticosClause, medOpts),
+    soapMedCategorySegment('ANTIEMETICOS', antiemeticosClause, medOpts),
+    soapMedCategorySegment('SEDACION', sedacionClause, medOpts),
+    soapMedCategorySegment('ANTIEPILEPTICOS', antiepilepticosClause, medOpts),
+    soapMedCategorySegment('ANTIPARKINSONIANOS', antiparkinsonianosClause, medOpts),
+    soapMedCategorySegment('ANTIDOTOS', antidotosClause, medOpts),
   ]);
   var hdMeds = joinSoapMedSegments([
-    soapMedCategorySegment('VASOPRESORES', vasopClause, { always: true }),
-    soapMedCategorySegment('ANTIHIPERTENSIVOS', medsClauseOrEmpty(ec.antihta), { always: true }),
+    soapMedCategorySegment('VASOPRESORES', vasopClause, { always: true, bold: bold }),
+    soapMedCategorySegment('ANTIHIPERTENSIVOS', medsClauseOrEmpty(ec.antihta), {
+      always: true,
+      bold: bold,
+    }),
     soapMedCategorySegment('TROMBOPROFILAXIS', medsClauseOrEmpty(ec.antitromboticos), {
       always: true,
+      bold: bold,
     }),
-    soapMedCategorySegment('ANTICOAGULACION', medsClauseOrEmpty(ec.anticoagulacion)),
-    soapMedCategorySegment('ANTIARRITMICOS', medsClauseOrEmpty(ec.antiarritmicos)),
-    soapMedCategorySegment('DIURÉTICOS', medsClauseOrEmpty(ec.diureticos)),
-    soapMedCategorySegment('ESTATINAS', medsClauseOrEmpty(ec.estatinas)),
+    soapMedCategorySegment('ANTICOAGULACION', medsClauseOrEmpty(ec.anticoagulacion), medOpts),
+    soapMedCategorySegment('ANTIARRITMICOS', medsClauseOrEmpty(ec.antiarritmicos), medOpts),
+    soapMedCategorySegment('DIURÉTICOS', medsClauseOrEmpty(ec.diureticos), medOpts),
+    soapMedCategorySegment('ESTATINAS', medsClauseOrEmpty(ec.estatinas), medOpts),
   ]);
   var hiMeds = joinSoapMedSegments([
-    soapMedCategorySegment('ANTIBIOTICOTERAPIA', medsClauseOrEmpty(ec.abx), { always: true }),
-    soapMedCategorySegment('TRANSFUSIONES', medsClauseOrEmpty(ec.transfusiones)),
+    soapMedCategorySegment('ANTIBIOTICOTERAPIA', medsClauseOrEmpty(ec.abx), {
+      always: true,
+      bold: bold,
+    }),
+    soapMedCategorySegment('TRANSFUSIONES', medsClauseOrEmpty(ec.transfusiones), medOpts),
   ]);
+  var viaAereaSegment = viaAereaClause ? ' || VIA AEREA: ' + b(viaAereaClause) : '';
   return [
-    'N: FOUR ' +
+    b('N:') +
+      ' FOUR ' +
       num(ec.four) +
       '/16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN ' +
       num(ec.esferas) +
       ' ESFERAS, ALERTA' +
       (nMeds ? ' || ' + nMeds : ''),
-    'V: FR ' +
-      num(v.fr) +
-      ' RPM, SATO2 ' +
-      num(v.sat) +
-      '% ' +
+    b('V:') +
+      ' FR ' +
+      b(num(v.fr) + ' RPM') +
+      ', SATO2 ' +
+      b(num(v.sat) + '%') +
+      ' ' +
       soporte +
       ' | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS' +
-      (viaAereaClause ? ' || VIA AEREA: ' + viaAereaClause : ''),
-    'HD: ' +
+      viaAereaSegment,
+    b('HD:') +
+      ' ' +
       resolveHemodynamicLabel(v, ec) +
       ', TA ' +
-      num(v.tas) +
-      '/' +
-      num(v.tad) +
-      ' MMHG, FC ' +
-      num(v.fc) +
-      ' LPM || ' +
+      b(num(v.tas) + '/' + num(v.tad) + ' MMHG') +
+      ', FC ' +
+      b(num(v.fc) + ' LPM') +
+      ' || ' +
       hdMeds,
-    'HI: ' + resolveFebrilLabel(v) + ', ' + hiTemp + ' || ' + hiMeds,
-    'NM: ' + nmClause,
+    b('HI:') + ' ' + resolveFebrilLabel(v) + ', ' + b(hiTemp) + ' || ' + hiMeds,
+    b('NM:') + ' ' + nmClause,
   ];
 }

@@ -22,6 +22,9 @@ export async function hydrateClinicalTeamsAfterCloudPull() {
     /* list optional */
   }
   if (typeof document === 'undefined') return;
+  // Over 20 features listen for this; yield a frame first so the fan-out
+  // doesn't chain onto whatever synchronous work just ran above.
+  await new Promise(requestAnimationFrame);
   document.dispatchEvent(
     new CustomEvent('rpc-clinical-teams-changed', { detail: { source: 'cloud-hydrate' } })
   );

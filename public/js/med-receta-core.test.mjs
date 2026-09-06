@@ -345,6 +345,30 @@ test('extractRecetaNameOnlyDose — buprenorfina CC/HORA → MCG/HORA titulació
   assert.equal(extractRecetaNameOnlyDose(d), '4 MCG/HORA');
 });
 
+test('formatMedicationSoapShort — buprenorfina en infusión se muestra como BOMBA DE BUPRENORFINA', () => {
+  var item = {
+    nombreRaw: 'BUPRENORFINA 0.3 MG SOL INY 1 ML',
+    viaRaw: 'VIA INTRAVENOSA',
+    dosisRaw: '300 MCG DILUIR EN: EN 100CC DE NACL AL 0.9% VEL.INF: 4.1CC/H //',
+    frecuenciaRaw: 'CADA 24 HORAS',
+    diaTratamiento: null,
+    suspendido: false,
+  };
+  assert.equal(formatMedicationSoapShort(item), 'BOMBA DE BUPRENORFINA 4.1 MCG/HORA IV C/24H');
+});
+
+test('formatMedicationSoapShort — buprenorfina PRN sin bomba conserva el nombre simple', () => {
+  var item = {
+    nombreRaw: 'BUPRENORFINA 0.3 MG SOL INY 1 ML',
+    viaRaw: 'VIA INTRAVENOSA',
+    dosisRaw: '75 MCG //',
+    frecuenciaRaw: 'PRN',
+    diaTratamiento: null,
+    suspendido: false,
+  };
+  assert.equal(formatMedicationSoapShort(item), 'BUPRENORFINA 75MCG IV PRN');
+});
+
 test('buildMedRecetaNameOnlyText — infusión sin dilución en salida simple', () => {
   var items = [
     {
@@ -374,7 +398,7 @@ test('buildMedRecetaNameOnlyText — infusión sin dilución en salida simple', 
     },
   ];
   var lines = buildMedRecetaNameOnlyText(items).split('\n');
-  assert.equal(lines[0], 'BUPRENORFINA 4 MCG/HORA IV C/24H');
+  assert.equal(lines[0], 'BOMBA DE BUPRENORFINA 4 MCG/HORA IV C/24H');
   assert.equal(lines[1], 'VANCOMICINA 1.5 G IV C/12H DIA 4');
   assert.equal(lines[2], 'NOREPINEFRINA 5 MCG/MIN IV C/24H');
 });
@@ -760,13 +784,48 @@ test('buildDietProposalText resume dieta con macros', () => {
   assert.match(t, /70/i);
 });
 
-test('parseIndicacionesPaste separa meds, dieta y skipped', () => {
+test('parseIndicacionesPaste separa meds, dieta, pendientes y skipped', () => {
   var r = parseIndicacionesPaste(SAMPLE_MIXED);
   assert.equal(r.items.length, 2);
   assert.equal(r.dietas.length, 1);
   assert.equal(r.dietas[0].proteinG, 70);
+  // BIOMETRÍA HEMÁTICA es laboratorio, no imagen — no va a Pendientes.
+  assert.equal(r.pendientes.length, 0);
   assert.equal(r.skippedSummary.cuidados, 1);
   assert.equal(r.skippedSummary.estudios, 1);
+});
+
+test('parseIndicacionesPaste — sólo estudios de imagen van a Pendientes, laboratorio se omite', () => {
+  var paste =
+    '05/09/2026 08:40:21 a.m.\tESTUDIOS\tBIOMETRÍA HEMÁTICA\t\tA LAS 0:00\tUNICA VEZ\tNW\n' +
+    '05/09/2026 08:40:30 a.m.\tESTUDIOS\tPERFIL BIOQUÍMICO III.\t\tA LAS 0:00\tUNICA VEZ\tNW\n' +
+    '05/09/2026 08:40:51 a.m.\tESTUDIOS\tGASES ARTERIALES / VENOSOS.\t\tA LAS 0:00\tUNICA VEZ\tNW\n' +
+    '02/09/2026 06:53:43 a.m.\tESTUDIOS\tRM CRANEO CONTRASTADA\t\tRMN SIMPLE Y CONTRASTADA\tUNICA VEZ\tNW\n' +
+    '02/09/2026 07:03:25 a.m.\tESTUDIOS\tTAC ABDOMEN TOTAL SIM Y CONT\t\t\tUNICA VEZ\tNW';
+  var r = parseIndicacionesPaste(paste);
+  assert.equal(r.pendientes.length, 2);
+  assert.equal(r.pendientes[0].nombreRaw, 'RM CRANEO CONTRASTADA');
+  assert.equal(r.pendientes[1].nombreRaw, 'TAC ABDOMEN TOTAL SIM Y CONT');
+  assert.equal(r.skippedSummary.estudios, 3);
+});
+
+test('parseIndicacionesPaste captura HEMODIALISIS y TAC con su contraste como pendientes separados', () => {
+  var paste =
+    '05/09/2026 08:40:21 a.m.\tESTUDIOS\tTAC TORAX SIMPLE Y CONT\t\t\tUNICA VEZ\tNW\n' +
+    '05/09/2026 08:41:09 a.m.\tPROCEDIMIENTO\tHEMODIALISIS\t \tKIT PARA HEMODIALISIS\t \tNW\n' +
+    '05/09/2026 08:45:26 a.m.\tPROCEDIMIENTO\tTOMOGRAFIA AXIAL COMPUTERIZADA DE TORAX\t \tCONTRASTE PARA TAC DE TORAX\t \tNW';
+  var r = parseIndicacionesPaste(paste);
+  assert.equal(r.pendientes.length, 3);
+  assert.equal(r.pendientes[0].kind, 'estudio');
+  assert.equal(r.pendientes[0].nombreRaw, 'TAC TORAX SIMPLE Y CONT');
+  assert.equal(r.pendientes[1].kind, 'procedimiento');
+  assert.equal(r.pendientes[1].nombreRaw, 'HEMODIALISIS');
+  assert.equal(r.pendientes[1].detalleRaw, 'KIT PARA HEMODIALISIS');
+  assert.equal(r.pendientes[2].kind, 'procedimiento');
+  assert.equal(r.pendientes[2].nombreRaw, 'TOMOGRAFIA AXIAL COMPUTERIZADA DE TORAX');
+  assert.equal(r.pendientes[2].detalleRaw, 'CONTRASTE PARA TAC DE TORAX');
+  assert.equal(r.items.length, 0);
+  assert.equal(r.skipped, 0);
 });
 
 test('looksLikeSomeIndicacionesPaste true con solo DIETAS', () => {

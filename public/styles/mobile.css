@@ -339,6 +339,10 @@ body.focus-mode #focus-mode-pill { display: block; }
   display: flex; gap: 8px; align-items: center; padding: 10px 12px;
   border: 1px dashed var(--border); border-radius: var(--radius-control); background: var(--bg);
 }
+.indica-extra-tmpl--empty {
+  display: inline-flex;
+  align-self: flex-start;
+}
 .indica-extra-tmpl select {
   flex: 1;
   min-width: 0;
@@ -383,7 +387,11 @@ html.rpc-mobile-web #profile-toggle-label,
 html.rpc-mobile-web #btn-open-settings,
 html.rpc-mobile-web #itab-salida,
 html.rpc-mobile-web #exp-segment-salida,
-html.rpc-mobile-web #itab-content-salida {
+html.rpc-mobile-web #itab-content-salida,
+html.rpc-mobile-web #exp-clinico-drive-actions,
+html.rpc-mobile-web .btn-add,
+html.rpc-mobile-web #btn-patient-bulk-select,
+html.rpc-mobile-web #btn-sidebar-auto-hide {
   display: none !important;
 }
 html.rpc-mobile-web #app-brand {
@@ -438,12 +446,15 @@ html.rpc-mobile-web #rpc-mobile-boot-banner.is-visible {
 /* iOS standalone: 100vh is often wrong — fill the screen and keep flex children sized. */
 html.rpc-mobile-web {
   height: 100%;
+  height: 100dvh;
+  overflow: hidden;
 }
 html.rpc-mobile-web body {
   background: var(--bg);
   min-height: 100vh;
   min-height: -webkit-fill-available;
   height: 100%;
+  height: 100dvh;
 }
 html.rpc-mobile-web header {
   margin-left: 0;
@@ -480,9 +491,9 @@ html.rpc-mobile-web .sidebar-hover-strip {
 html.rpc-mobile-web aside.patient-sidebar,
 html.rpc-mobile-web.sidebar-auto-hide aside.patient-sidebar,
 html.rpc-mobile-web.sidebar-auto-hide:not(.sidebar-reveal) aside.patient-sidebar {
-  width: min(280px, 38vw) !important;
-  min-width: 200px !important;
-  max-width: 42vw;
+  width: min(150px, 22vw) !important;
+  min-width: 120px !important;
+  max-width: 30vw;
   opacity: 1 !important;
   transform: none !important;
   pointer-events: auto !important;

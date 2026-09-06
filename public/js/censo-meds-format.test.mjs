@@ -86,6 +86,25 @@ test('bloque null devuelve vacío', () => {
   assert.equal(formatCensoMedsFromReceta(null), '');
 });
 
+test('día ATB avanza con fechaActualizacion de Manejo respecto a hoy', () => {
+  var refDate = new Date(2026, 8, 6);
+  var atb = formatCensoAtbFromReceta(
+    {
+      fechaActualizacion: '04/09/2026',
+      items: [
+        {
+          nombreRaw: 'Piperacilina/Tazobactam 4.5g',
+          dosisRaw: '4.5 g // *DIA# 2*',
+          diaTratamiento: 2,
+          suspendido: false,
+        },
+      ],
+    },
+    refDate
+  );
+  assert.equal(atb, 'PIPERACILINA/TAZOBACTAM\nDía 4');
+});
+
 test('agrupa insulinas PRN SC como RESCATES DE INSULINA', () => {
   var text = formatCensoMedsFromReceta({
     items: [

@@ -39,6 +39,7 @@ export var SECTION_LABELS = {
   historia: 'Historia Clínica',
   estadoActual: 'Estado actual',
   eventualidades: 'Eventualidades',
+  medAdmin: 'Medicamentos',
   vpo: 'VPO',
   tend: 'Tendencias',
   cult: 'Cultivos',

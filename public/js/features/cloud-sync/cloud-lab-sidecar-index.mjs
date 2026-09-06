@@ -32,8 +32,12 @@ export function parseCloudLabSidecarPath(path) {
   return { patientId: m[1], setId: m[2], path: `labSidecars/${m[1]}/${m[2]}` };
 }
 
-/** @returns {Record<string, { fp: string, at: number, src?: string }>} */
-function readLabFingerprintIndex() {
+/**
+ * Exported so a caller looping `buildDirtyLabSidecarOpsForPatient` over many patients can
+ * read the index once and share it, instead of re-parsing it from localStorage per patient.
+ * @returns {Record<string, { fp: string, at: number, src?: string }>}
+ */
+export function readLabFingerprintIndex() {
   try {
     const raw = localStorage.getItem(CLOUD_LAB_FP_INDEX_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
@@ -111,13 +115,16 @@ export function shouldSkipCloudLabSidecarPush(patientId, set, setId, index) {
  * @param {string} patientId
  * @param {unknown[]} labs
  * @param {{ actorId: string, updatedAt: string }} meta
+ * @param {Record<string, { fp: string, at: number, src?: string }>} [index] pass a shared
+ *   index when calling this in a loop over many patients — each call otherwise re-parses
+ *   the whole localStorage index from scratch.
  */
-export function buildDirtyLabSidecarOpsForPatient(patientId, labs, meta) {
+export function buildDirtyLabSidecarOpsForPatient(patientId, labs, meta, index) {
   const ops = [];
   const actorId = meta.actorId;
   const batchAt = meta.updatedAt;
   const list = Array.isArray(labs) ? labs : [];
-  const idx = readLabFingerprintIndex();
+  const idx = index || readLabFingerprintIndex();
   const poisonPaths = readLabPoisonPaths();
   for (let i = 0; i < list.length; i += 1) {
     const set = list[i];

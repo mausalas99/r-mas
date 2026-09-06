@@ -20,16 +20,20 @@ function pushSection(sections, label, lines) {
 }
 
 function medsLines(patient, ctx, pid) {
+  var block = /** @type {{ items?: unknown[] }} */ (ctx.medRecetaByPatient[pid]);
   var meds =
-    String(patient.censoMedsText || '').trim() ||
-    formatCensoMedsFromReceta(/** @type {{ items?: unknown[] }} */ (ctx.medRecetaByPatient[pid]));
+    block && Array.isArray(block.items) && block.items.length
+      ? formatCensoMedsFromReceta(block, ctx.now)
+      : String(patient.censoMedsText || '').trim();
   return splitLines(meds).slice(0, 6);
 }
 
 function atbLines(patient, ctx, pid) {
+  var block = /** @type {{ items?: unknown[] }} */ (ctx.medRecetaByPatient[pid]);
   var atb =
-    String(patient.censoAtbText || '').trim() ||
-    formatCensoAtbFromReceta(/** @type {{ items?: unknown[] }} */ (ctx.medRecetaByPatient[pid]));
+    block && Array.isArray(block.items) && block.items.length
+      ? formatCensoAtbFromReceta(block, ctx.now)
+      : String(patient.censoAtbText || '').trim();
   return splitLines(atb).slice(0, 6);
 }
 

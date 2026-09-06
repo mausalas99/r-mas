@@ -6,6 +6,7 @@ import {
   renderGuardiaSummaryTiles,
   renderGuardiaModeFrame,
   renderGuardiaSignosRecibidosPanel,
+  enrichPatientForGuardiaCard,
 } from './guardia-board-chrome.mjs';
 
 const store = {};
@@ -86,6 +87,15 @@ describe('computeGuardiaSummary', () => {
     );
     assert.equal(summary.vitalsReceivedToday, 1);
     assert.equal(summary.vitalsOutOfRange, 1);
+  });
+});
+
+describe('enrichPatientForGuardiaCard', () => {
+  it('keeps cuarto/cama so the Guardia card edit modal shows the real bed, not "Cama —"', () => {
+    const patient = { id: 'p1', cuarto: '208', cama: '2', sala: 'MEDICINA INTERNA' };
+    const enriched = enrichPatientForGuardiaCard(patient, new Map());
+    assert.equal(enriched.cuarto, '208');
+    assert.equal(enriched.cama, '2');
   });
 });
 

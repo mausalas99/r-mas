@@ -1,7 +1,7 @@
 /** Snapshot / historial HTML fragments — extracted from estado-actual-panel-snapshot.mjs */
 import { isIoNumericValue } from './estado-actual-data.mjs';
 import {
-  formatEgresoPartForText,
+  formatEgresoPartsForText,
   formatEvacForText,
   formatIoBalanceDisplay,
   toEaSalidaText,
@@ -23,7 +23,7 @@ import { pad2, displayValue, displayBalance, escHtml, escAttr } from './estado-a
 export function formatSnapshotEgresos(io) {
   io = io || {};
   if (Array.isArray(io.egrParts) && io.egrParts.length) {
-    return escHtml(io.egrParts.map(formatEgresoPartForText).join(' · '));
+    return escHtml(formatEgresoPartsForText(io.egrParts, { showTurnCount: false }).join(' · '));
   }
   var egr = io.egr;
   if (egr == null || egr === '') return '—';
@@ -480,7 +480,7 @@ function appendHistorialGluParts(parts, row) {
 function appendHistorialIoParts(parts, io) {
   if (io.ing != null && io.ing !== '') parts.push('Ing ' + io.ing);
   if (Array.isArray(io.egrParts) && io.egrParts.length) {
-    parts.push(io.egrParts.map(formatEgresoPartForText).join(', '));
+    parts.push(formatEgresoPartsForText(io.egrParts, { showTurnCount: false }).join(', '));
   } else if (io.egr != null && io.egr !== '') {
     parts.push('Egr ' + io.egr);
   }

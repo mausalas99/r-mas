@@ -56,10 +56,20 @@ describe('panel-conexion-handlers remember / leave room', () => {
     const start = src.indexOf('export async function afterAuthSuccess');
     const next = src.indexOf('\nexport async function ', start + 1);
     const body = src.slice(start, next > start ? next : undefined);
+    assert.match(body, /void ensureRoomEncryptionBackfill\(deps, room\)/);
+    assert.doesNotMatch(body, /await ensureRoomEncryptionBackfill/);
+  });
+
+  it('ensureRoomEncryptionBackfill runs the backfill and persists DEKs, swallowing rejection', () => {
+    const start = src.indexOf('export async function ensureRoomEncryptionBackfill');
+    assert.ok(start >= 0);
+    const next = src.indexOf('\nexport async function ', start + 1);
+    const body = src.slice(start, next > start ? next : undefined);
     assert.match(body, /backfillRoomEncryption\(deps\.getApi\(\), room, getCloudSyncClientId\(\)\)/);
-    // "void ...then(ok, fail)" — a rejection is swallowed, not propagated.
-    assert.match(body, /void backfillRoomEncryption\([\s\S]*?\)\.then\(/);
-    assert.doesNotMatch(body, /await backfillRoomEncryption/);
+    assert.match(body, /\.catch\(\(\) => null\)/);
+    assert.match(body, /persistRoomDeks\(\)/);
+    // Must be safe to call on every reconnect: no-ops without a room or the flag.
+    assert.match(body, /if\s*\(!room\?\.id \|\| !NUBE_E2EE_ENABLED\) return/);
   });
 
   it('logout always re-renders disconnected', () => {

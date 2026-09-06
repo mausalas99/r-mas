@@ -39,7 +39,7 @@ export function extractMedBaseName(med) {
     .trim()
     .toUpperCase();
   const doseStart =
-    /\s+(?=\d+(?:[.,]\d+)?\s*(?:%|MG|G|MCG|µG|UG|UI|IU|ML|MEQ|MMOL|UNIDADES?|U\/|MCG\/|MG\/|MCG\/ML|MG\/ML))/i;
+    /\s+(?=\d+(?:[.,]\d+)?(?:\/\d+(?:[.,]\d+)?)?\s*(?:%|MG|G|MCG|µG|UG|UI|IU|ML|MEQ|MMOL|UNIDADES?|U\/|MCG\/|MG\/|MCG\/ML|MG\/ML))/i;
   const cut = t.search(doseStart);
   if (cut > 0) return t.slice(0, cut).trim();
   const slash = t.indexOf(' / ');

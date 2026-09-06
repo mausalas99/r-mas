@@ -1,6 +1,8 @@
 import { closeEstadoActualPasteModal } from './estado-actual-paste-modal.mjs';
 import { setEaFormOpenPatientId } from './estado-actual-panel-core.mjs';
 import { setEaRegistroEditMode } from './estado-actual-panel-registro-edit.mjs';
+import { toDatetimeLocalValue } from './estado-actual-panel-format.mjs';
+import { syncIoBalanceFromForm, buildIoExtraRow } from './estado-actual-panel-registro.mjs';
 
 /** @type {{ ensureForm(): void, resetForm(): void, showToast(msg: string, type?: string): void }} */
 let rt = {
@@ -83,6 +85,30 @@ export function openEstadoActualRegistroModal(opts) {
   if (first && 'focus' in first) first.focus();
 }
 
+/**
+ * Abre un registro nuevo (en blanco) para anotar retroactivamente una
+ * hemodiálisis pasada: fecha en "ayer" y una fila de ultrafiltrado lista
+ * para escribir el valor — fuera de T1/T2/T3, junto a las demás fuentes
+ * cuantificables sueltas.
+ */
+export function openPastHemodialisisRegistro() {
+  openEstadoActualRegistroModal();
+  var form = document.getElementById('ea-form');
+  if (!form) return;
+  var yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  var recorded = document.getElementById('ea-recorded-at');
+  if (recorded && 'value' in recorded) recorded.value = toDatetimeLocalValue(yesterday);
+  var extraList = form.querySelector('#ea-io-extra-list');
+  if (extraList) {
+    var row = buildIoExtraRow({ kind: 'ultrafiltrado' });
+    extraList.appendChild(row);
+    var valueEl = row.querySelector('[data-ea-io-extra-value]');
+    if (valueEl && 'focus' in valueEl) valueEl.focus();
+  }
+  syncIoBalanceFromForm(form);
+}
+
 export function closeEstadoActualRegistroModal() {
   closeEstadoActualPasteModal();
   setEaFormOpenPatientId(null);
@@ -98,4 +124,5 @@ export function closeEstadoActualRegistroModal() {
 export const windowHandlers = {
   openEstadoActualRegistroModal,
   closeEstadoActualRegistroModal,
+  openPastHemodialisisRegistro,
 };

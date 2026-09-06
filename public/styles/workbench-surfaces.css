@@ -293,6 +293,19 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 .wb-pendientes-tab {
   position: relative;
 }
+/* .inner-tab-bar::after's scroll-edge fade sticks 28px onto whatever tab is
+ * last (Salida in consolidated mode, Pendientes otherwise) — reserve that
+ * 28px as real padding so the fade lands on blank space, not a tab border. */
+#patient-expediente-classic > .exp-expediente-nav > .inner-tab-bar {
+  padding-right: 28px;
+}
+/* The shared .inner-tab-bar::after fade cancels its own 28px width AND the
+ * bar's 2px gap by default, which pulls it 28px left of the last tab's edge —
+ * cancel only the 2px gap instead, so the fade sits flush against the last
+ * tab and paints over the reserved padding-right above, not over the tab. */
+#patient-expediente-classic > .exp-expediente-nav > .inner-tab-bar::after {
+  margin-left: -2px;
+}
 .wb-pendientes-tab-badge {
   position: absolute;
   top: -3px;
@@ -301,7 +314,9 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   height: 11px;
   background: var(--color-danger);
   border-radius: var(--radius-pill);
-  border: 2px solid var(--bg);
+  /* Cuts out against the tab bar's own surface, not the page's --bg — the
+   * two differ, so a --bg border showed as a faded ring instead of a clean cutout. */
+  border: 2px solid var(--surface);
   pointer-events: none;
 }
 

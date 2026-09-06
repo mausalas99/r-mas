@@ -39,6 +39,23 @@ describe('patient-sidebar-card', () => {
     assert.doesNotMatch(html, /patient-card-pin-badge/);
   });
 
+  it('drops the Cto./Cama labels on mobile web, keeps the numbers', () => {
+    globalThis.__RPC_MOBILE_WEB__ = true;
+    try {
+      const html = renderPatientSidebarBodyHtml({
+        nombre: 'GARCIA LOPEZ JUAN',
+        cuarto: '412',
+        cama: '2',
+      });
+      assert.doesNotMatch(html, /Cto\./);
+      assert.doesNotMatch(html, /Cama /);
+      assert.match(html, /<span>412<\/span>/);
+      assert.match(html, /<span>2<\/span>/);
+    } finally {
+      delete globalThis.__RPC_MOBILE_WEB__;
+    }
+  });
+
   it('hides servicio in modo sala', () => {
     const html = renderPatientSidebarBodyHtml(
       {

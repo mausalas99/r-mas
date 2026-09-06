@@ -456,6 +456,8 @@ export async function registerAllFeatureRuntimes() {
     })
   );
   registerEventualidadesRuntime(ctx);
+  const { registerMedAdminRuntime } = await import('./features/med-admin-panel.mjs');
+  registerMedAdminRuntime(ctx);
   const { registerPatientDashboardRuntime } = await import('./features/patient-dashboard/dashboard-mount.mjs');
   registerPatientDashboardRuntime(
     Object.assign({}, ctx, {

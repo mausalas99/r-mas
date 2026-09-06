@@ -78,6 +78,21 @@ function appendCalendarDay(parts) {
 }
 
 /**
+ * Revision suffix for the medication-administration checklist cache —
+ * changes when the active receta changes or the calendar day rolls over.
+ * @param {string | null | undefined} activeId
+ * @param {Record<string, { items?: Array<{ id?: string, suspendido?: boolean }>, dietas?: unknown[], fechaActualizacion?: unknown }>} [medRecetaByPatient]
+ * @returns {string}
+ */
+export function buildMedAdminCacheRevision(activeId, medRecetaByPatient) {
+  var parts = [];
+  var block = activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null;
+  appendRecetaRevision(parts, block);
+  appendCalendarDay(parts);
+  return parts.join(':');
+}
+
+/**
  * @param {unknown} monitoreoLike
  * @param {string | null | undefined} activeId
  * @param {Record<string, { items?: Array<{ id?: string, suspendido?: boolean }>, dietas?: unknown[], fechaActualizacion?: unknown }>} [medRecetaByPatient]

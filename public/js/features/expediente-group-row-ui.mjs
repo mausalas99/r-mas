@@ -8,8 +8,6 @@
 import { buildGroupRowModel } from '../expediente-group-row.mjs';
 import { updateExpPendientesTabBadge } from './todos-list-render.mjs';
 
-var lastPointerType = 'mouse';
-var touchExpandedGroup = null;
 var resyncWired = false;
 
 export function usesGroupedExpedienteRow() {
@@ -31,9 +29,6 @@ export function renderExpedienteGroupRow(activeGranular, settings) {
   if (!row) return;
   if (!row._pointerWired) {
     row._pointerWired = true;
-    row.addEventListener('pointerdown', function (ev) {
-      lastPointerType = ev.pointerType || 'mouse';
-    });
     row.addEventListener('keydown', function (ev) {
       if (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft') return;
       var names = Array.prototype.slice.call(row.querySelectorAll('.exp-group-name'));
@@ -49,24 +44,17 @@ export function renderExpedienteGroupRow(activeGranular, settings) {
   model.forEach(function (group) {
     var pill = document.createElement('div');
     pill.className = 'exp-group-pill' + (group.active ? ' is-active' : '') + (group.leaf ? ' exp-group-pill--leaf' : '');
-    if (!group.active && touchExpandedGroup === group.id) pill.classList.add('is-touch-expanded');
     pill.dataset.group = group.id;
     if (group.active && !group.leaf) pill.setAttribute('aria-label', group.label);
 
     var name = document.createElement('button');
     name.type = 'button';
     name.className = 'exp-group-name';
-    name.setAttribute('aria-expanded', group.leaf ? 'false' : (group.active || touchExpandedGroup === group.id ? 'true' : 'false'));
+    name.setAttribute('aria-expanded', group.leaf ? 'false' : (group.active ? 'true' : 'false'));
     name.setAttribute('aria-current', group.active ? 'true' : 'false');
     name.textContent = group.label;
     name.addEventListener('click', function () {
-      // Touch: first tap expands the pill, second tap (or a section tap) selects.
-      if (lastPointerType === 'touch' && !group.active && touchExpandedGroup !== group.id) {
-        touchExpandedGroup = group.id;
-        renderExpedienteGroupRow(activeGranular, settings);
-        return;
-      }
-      touchExpandedGroup = null;
+      // Touch has no hover preview — a tap always selects directly, same as a mouse click.
       if (group.granularTarget) {
         if (typeof window.switchInnerTab === 'function') window.switchInnerTab(group.granularTarget);
       } else if (typeof window.switchConsolidatedTab === 'function') {
@@ -94,7 +82,6 @@ export function renderExpedienteGroupRow(activeGranular, settings) {
       btn.setAttribute('aria-pressed', section.active ? 'true' : 'false');
       btn.textContent = section.label;
       btn.addEventListener('click', function () {
-        touchExpandedGroup = null;
         if (typeof window.switchInnerTab === 'function') window.switchInnerTab(section.id);
       });
       inner.appendChild(btn);

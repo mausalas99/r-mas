@@ -158,7 +158,12 @@ async function mergeClinicalOpsSnapshot(api, snapshot) {
   const ok = res?.ok !== false;
   const changed = ok && clinicalOpsMergeHadChanges(res?.mergeStats);
   recordClinicalOpsMergeTrace(snapshot, res, ok, changed);
-  if (ok && changed) dispatchClinicalOpsSynced(res?.mergeStats);
+  if (ok && changed) {
+    // A dozen-plus features listen for this; let the browser paint/handle
+    // input before the synchronous dispatchEvent fan-out runs them all.
+    await new Promise(requestAnimationFrame);
+    dispatchClinicalOpsSynced(res?.mergeStats);
+  }
   return buildClinicalOpsMergeResult(res, ok, changed);
 }
 

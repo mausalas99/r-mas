@@ -20,4 +20,23 @@ describe('cloud-census-collect', () => {
     assert.match(src, /filterPatientEntriesForLanTeamScope/);
     assert.match(src, /shouldUseElevatedPatientCensus/);
   });
+
+  it('scopes the raw patient list before building any per-patient entry (never builds out-of-scope entries)', () => {
+    assert.match(src, /scopePatientsForCloudPush/);
+    const fnStart = src.indexOf('export async function collectPatientEntriesForCloudPush');
+    assert.ok(fnStart > -1, 'collectPatientEntriesForCloudPush not found');
+    const fnBody = src.slice(fnStart, fnStart + 300);
+    const scopeIdx = fnBody.indexOf('scopePatientsForCloudPush');
+    const buildIdx = fnBody.indexOf('buildLocalPatientEntries');
+    assert.ok(scopeIdx > -1 && buildIdx > -1, 'expected both calls in collectPatientEntriesForCloudPush');
+    assert.ok(scopeIdx < buildIdx, 'scoping must run before building entries');
+  });
+
+  it('splits the census by active Filtros so backfill can prioritize what the sidebar shows', () => {
+    assert.match(src, /export function scopePatientsForCloudPushSplitByFilters/);
+    assert.match(src, /filterPatientsForGuardiaCensus/);
+    assert.match(src, /censusFiltersAreActive/);
+    // No active filter → everything is priority, nothing deferred.
+    assert.match(src, /if \(!censusFiltersAreActive\(\)\) return \{ priority: patients, remaining: \[\] \};/);
+  });
 });

@@ -154,12 +154,10 @@ export async function renderDirectorySectionHtml(opts) {
   const sectionIntro = `
         <h4 class="clinical-teams-section-title">${sectionTitle}</h4>
         <p class="clinical-teams-section-desc">${sectionDesc}</p>`;
-  const headRow = browseControl
-    ? `<div class="clinical-teams-section-head-row clinical-teams-collapse-summary-head">
-        <div class="clinical-teams-section-intro">${sectionIntro}</div>
-        <div class="clinical-teams-collapse-summary-actions">${browseControl}</div>
-      </div>`
-    : `<div class="clinical-teams-section-intro">${sectionIntro}</div>`;
+  const headRow = `<div class="clinical-teams-section-intro">${sectionIntro}</div>`;
+  const summaryActionsHtml = browseControl
+    ? `<div class="clinical-teams-collapse-summary-actions">${browseControl}</div>`
+    : '';
 
   if (!directory.length) {
     const emptyMsg = buildDirectoryEmptyMessage(elevated, browseSala, homeSala);
@@ -170,6 +168,7 @@ export async function renderDirectorySectionHtml(opts) {
         defaultOpen: true,
         className: 'clinical-teams-collapse--section',
         summaryHtml: headRow,
+        summaryActionsHtml,
         bodyHtml: `<p class="clinical-teams-empty">${emptyMsg}</p>`,
       })}
     </section>`,
@@ -187,6 +186,7 @@ export async function renderDirectorySectionHtml(opts) {
         defaultOpen: true,
         className: 'clinical-teams-collapse--section',
         summaryHtml: headRow,
+        summaryActionsHtml,
         bodyHtml: `<div class="clinical-teams-list clinical-teams-list--directory">${cards}</div>`,
       })}
     </section>`,

@@ -1125,6 +1125,12 @@ html.dark .card { box-shadow: var(--shadow); }
 .card-header--tone-teal { background: var(--lab-header-teal); }
 .card-header--tone-teal-md { background: var(--lab-header-teal-md); }
 .card-header--tone-violet { background: var(--lab-header-violet); }
+html.dark .card-header[class*="card-header--tone"] {
+  color: var(--text);
+}
+html.dark .card-header[class*="card-header--tone"] .card-header-ghost-btn {
+  color: var(--text);
+}
 .card-header-subhint {
   margin-left: auto;
   font-size: 11px;
@@ -1278,10 +1284,10 @@ input[type="checkbox"]:focus-visible {
 .btn-add-row:hover { border-style: solid; border-color: var(--action); color: var(--action); background: var(--lab-chip-bg); box-shadow: 0 4px 12px color-mix(in oklab, var(--color-accent) 10%, transparent); }
 .action-bar {
   background: var(--surface);
-  border-top: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
   padding: calc(14px * var(--density-space)) calc(24px * var(--density-space));
   display: flex; justify-content: flex-end; gap: calc(10px * var(--density-space)); flex-shrink: 0;
-  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow);
 }
 .lab-panel-root {
   display: flex;
@@ -2869,9 +2875,9 @@ html.dark .rpc-switch-thumb {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
-.rpc-proc-agenda-head-spacer { width: 46px; flex-shrink: 0; border-right: 1px solid var(--border); }
+.rpc-proc-agenda-head-spacer { width: 46px; flex-shrink: 0; border-right: 1px solid var(--border); border-top-left-radius: var(--radius-container); }
 .rpc-proc-agenda-head-cell { flex: 1; min-width: 0; padding: 8px 4px; text-align: center; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: capitalize; letter-spacing: 0.02em; border-right: 1px solid var(--border); box-sizing: border-box; }
-.rpc-proc-agenda-head-cell:last-child { border-right: none; }
+.rpc-proc-agenda-head-cell:last-child { border-right: none; border-top-right-radius: var(--radius-container); }
 .rpc-proc-agenda-head-cell strong { display: block; font-size: 14px; font-weight: 800; color: var(--text); margin-top: 2px; }
 .rpc-proc-agenda-board-body { display: flex; min-width: 640px; align-items: stretch; position: relative; }
 .rpc-proc-agenda-times-col { width: 46px; flex-shrink: 0; border-right: 1px solid var(--border); box-sizing: border-box; background: var(--surface); }

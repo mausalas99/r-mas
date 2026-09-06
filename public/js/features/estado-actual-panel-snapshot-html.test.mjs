@@ -6,8 +6,31 @@ import {
   getVitalHistoryEntries,
   vitalHasHistory,
   renderVitalHistoryListHtml,
+  formatSnapshotEgresos,
 } from './estado-actual-panel-snapshot-html.mjs';
 import { renderHistorialSection } from './estado-actual-panel-snapshot.mjs';
+
+test('formatSnapshotEgresos — 3 turnos NC de diuresis colapsan a uno solo', () => {
+  var io = {
+    egrParts: [
+      { kind: 'diuresis', label: 'DIURESIS', value: 'NC' },
+      { kind: 'diuresis', label: 'DIURESIS', value: 'NC' },
+      { kind: 'diuresis', label: 'DIURESIS', value: 'NC' },
+    ],
+  };
+  assert.equal(formatSnapshotEgresos(io), 'DIURESIS NC');
+});
+
+test('formatSnapshotEgresos — turnos cuantificados muestran el total, sin conteo de turnos', () => {
+  var io = {
+    egrParts: [
+      { kind: 'diuresis', label: 'DIURESIS', value: 300 },
+      { kind: 'diuresis', label: 'DIURESIS', value: 500 },
+      { kind: 'diuresis', label: 'DIURESIS', value: 1600 },
+    ],
+  };
+  assert.equal(formatSnapshotEgresos(io), 'DIURESIS 2400 CC');
+});
 
 test('renderSnapshotVitalsHtml — T/A unificada, fecha en cierre sin @ 00:00', () => {
   var recordedAt = new Date(2026, 5, 26, 0, 0, 0).toISOString();

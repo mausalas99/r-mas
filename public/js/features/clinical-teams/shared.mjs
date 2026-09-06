@@ -43,13 +43,18 @@ export function writeClinicalTeamsCollapseOpen(key, open) {
 
 /**
  * Collapsible block with persisted open state (Mi rotación sections and team cards).
- * @param {{ collapseKey: string, defaultOpen?: boolean, summaryHtml: string, bodyHtml: string, className?: string }} opts
+ * `summaryActionsHtml` (form controls, e.g. a sala filter <select>) renders as a sibling of
+ * <summary>, never inside it — a <summary> can only contain plain content; nesting a control
+ * in it breaks keyboard/screen-reader toggling (and native <details> ignores <summary> unless
+ * it is a direct child of <details>, so it cannot be wrapped either).
+ * @param {{ collapseKey: string, defaultOpen?: boolean, summaryHtml: string, summaryActionsHtml?: string, bodyHtml: string, className?: string }} opts
  */
 export function renderClinicalTeamsCollapsible(opts) {
   const {
     collapseKey,
     defaultOpen = true,
     summaryHtml,
+    summaryActionsHtml = '',
     bodyHtml,
     className = '',
   } = opts;
@@ -57,7 +62,7 @@ export function renderClinicalTeamsCollapsible(opts) {
   const extraClass = className ? ` ${className}` : '';
   return `
     <details class="clinical-teams-collapse${extraClass}" data-collapse-key="${escapeAttr(collapseKey)}"${open ? ' open' : ''}>
-      <summary class="clinical-teams-collapse-summary">${summaryHtml}</summary>
+      <summary class="clinical-teams-collapse-summary">${summaryHtml}</summary>${summaryActionsHtml}
       <div class="clinical-teams-collapse-body">${bodyHtml}</div>
     </details>`;
 }

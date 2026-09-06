@@ -21,3 +21,18 @@ describe('normalizeTodoRow inProgress flag', () => {
     assert.equal(row.inProgress, true);
   });
 });
+
+describe('normalizeTodoRow dialysisSkippedOn', () => {
+  it('keeps dialysisSkippedOn when the source todo carries it', () => {
+    const row = normalizeTodoRow(
+      { id: 't1', text: 'Procedimiento: HEMODIALISIS', dialysisSkippedOn: '2026-09-05' },
+      '2026-09-05T00:00:00Z'
+    );
+    assert.equal(row.dialysisSkippedOn, '2026-09-05');
+  });
+
+  it('is absent when the source todo never carries it', () => {
+    const row = normalizeTodoRow({ id: 't1', text: 'x' }, '2026-08-18T00:00:00Z');
+    assert.equal(row.dialysisSkippedOn, null);
+  });
+});

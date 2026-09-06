@@ -342,6 +342,27 @@
   height: 100%;
   min-height: 220px;
   resize: vertical;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--input-fill);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+
+.ne-analisis-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--surface);
+}
+
+.ne-analisis-textarea::placeholder {
+  color: var(--color-ink-muted, var(--text-muted));
+  font-style: italic;
 }
 
 /* Plan — por zona, marcas mono cortas: nuevo / sin cambio / pendiente / suspende. */
@@ -446,6 +467,25 @@
 .ne-plan-add-input {
   width: 100%;
   box-sizing: border-box;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--input-fill);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 7px 10px;
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+
+.ne-plan-add-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--surface);
+}
+
+.ne-plan-add-input::placeholder {
+  color: var(--color-ink-muted, var(--text-muted));
+  font-style: italic;
 }
 
 html.dark .ne-objetivo-item--alert {

@@ -499,6 +499,9 @@ export function formatMedicationSoapShort(item, opts) {
   item = applyIvToOralForEgreso(item, opts);
   if (isRhzeComboMedicationItem(item)) return formatRhzeComboSoapShort(item, opts);
   var nombre = compactSoapDrugName(applyNombreAccents(expandNombrePresentacion(item.nombreRaw)));
+  if (nombre === 'BUPRENORFINA' && extractVelInfSegment(dosisForInfusionParse(item.dosisRaw))) {
+    nombre = 'BOMBA DE BUPRENORFINA';
+  }
   var via = normalizeVia(item.viaRaw);
   var freqNorm = normalizeFrecuencia(item.frecuenciaRaw);
   var dosisCompact = extractRecetaNameOnlyDose(item.dosisRaw);

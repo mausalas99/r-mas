@@ -149,7 +149,26 @@ function shouldSkipIndicacionesLine_(cols, tipoEarly) {
   return true;
 }
 
-function processIndicacionesLine_(cols, lineIndex, lineText, items, dietas, fechas, skippedSummary) {
+/** ESTUDIOS de imagen (no laboratorio) — sólo éstos van a Pendientes. */
+var IMAGING_STUDY_RE =
+  /\b(TAC|RM|RX|USG|PET|ECO|MAMOGRAF[IÍ]A|DENSITOMETR[IÍ]A|FLUOROSCOP[IÍ]A|ANGIOTAC|ANGIORRESONANCIA|ANGIOGRAF[IÍ]A|GAM(?:M)?AGRAF[IÍ]A|TOMOGRAF[IÍ]A|RESONANCIA|RADIOGRAF[IÍ]A|ECOGRAF[IÍ]A|ULTRASONID[OA])\b/i;
+
+/** @param {string} nombreRaw @returns {boolean} */
+function isImagingStudyName(nombreRaw) {
+  return IMAGING_STUDY_RE.test(String(nombreRaw || ''));
+}
+
+/** ESTUDIOS o PROCEDIMIENTO: no van a la receta, van a Pendientes. */
+function parsePendienteRow(cols, lineIndex, kind) {
+  return {
+    id: 'pend-' + Date.now().toString(36) + '-' + lineIndex + '-' + Math.random().toString(36).slice(2, 5),
+    kind: kind,
+    nombreRaw: trimStr(cols[2]),
+    detalleRaw: trimStr(cols[4]),
+  };
+}
+
+function processIndicacionesLine_(cols, lineIndex, lineText, items, dietas, fechas, skippedSummary, pendientes) {
   var tipo = trimStr(cols[1]).toUpperCase();
   var fd = parseFechaDMYFromTimestampCell(cols[0]);
   if (fd) fechas.push(fd);
@@ -166,9 +185,19 @@ function processIndicacionesLine_(cols, lineIndex, lineText, items, dietas, fech
     dietas.push(parseDietaRow(cols, lineIndex));
     return 0;
   }
+  if (tipo === 'ESTUDIOS') {
+    if (isImagingStudyName(cols[2])) {
+      pendientes.push(parsePendienteRow(cols, lineIndex, 'estudio'));
+      return 0;
+    }
+    skippedSummary.estudios += 1;
+    return 1;
+  }
+  if (tipo === 'PROCEDIMIENTO') {
+    pendientes.push(parsePendienteRow(cols, lineIndex, 'procedimiento'));
+    return 0;
+  }
   if (tipo === 'CUIDADOS') skippedSummary.cuidados += 1;
-  else if (tipo === 'ESTUDIOS') skippedSummary.estudios += 1;
-  else if (tipo === 'PROCEDIMIENTO') skippedSummary.other += 1;
   else skippedSummary.other += 1;
   return 1;
 }
@@ -181,6 +210,7 @@ export function parseIndicacionesPaste(text) {
     .filter(Boolean);
   var items = [];
   var dietas = [];
+  var pendientes = [];
   var fechas = [];
   var skipped = 0;
   var skippedSummary = { cuidados: 0, estudios: 0, other: 0 };
@@ -193,11 +223,12 @@ export function parseIndicacionesPaste(text) {
       continue;
     }
     if (cols.length < 7) cols = padIndicacionesCols_(cols);
-    skipped += processIndicacionesLine_(cols, i, lines[i], items, dietas, fechas, skippedSummary);
+    skipped += processIndicacionesLine_(cols, i, lines[i], items, dietas, fechas, skippedSummary, pendientes);
   }
   return {
     items: items,
     dietas: dietas,
+    pendientes: pendientes,
     fechas: fechas,
     skipped: skipped,
     skippedSummary: skippedSummary,

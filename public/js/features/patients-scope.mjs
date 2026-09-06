@@ -152,9 +152,21 @@ export function togglePatientCensusFilters(event) {
   togglePatientCensusFiltersCollapsed();
 }
 
-/** Filtros censo — apply toolbar state immediately, then optional LAN census pull. */
-export function refreshCensusViewsAfterFilterChange() {
+/**
+ * Filtros censo — apply toolbar state immediately, then optional LAN census pull.
+ * @param {{ typing?: boolean }} [options] `typing: true` for Servicio keystrokes:
+ *   a text match only narrows patients already on device, so the Equipo-catalog
+ *   sync, forced synchronous re-render, and LAN pull are wasted work — only a
+ *   coalesced re-render runs.
+ */
+export function refreshCensusViewsAfterFilterChange(options) {
+  const typing = !!(options && options.typing);
   const user = clinicalSessionContext.user;
+  if (typing) {
+    patientsBridge.renderPatientList();
+    if (isGuardiaMode()) renderGuardiaCensusGrid(rt.getSettings());
+    return;
+  }
   if (user) syncCensusScalarFilterInputs(user);
   // Force flush so coalesced rAF renders cannot drop Equipo/Sala/Servicio changes under load.
   patientsBridge.renderPatientList({ force: true });

@@ -234,7 +234,7 @@ export function buildNotaEvolucionHtml(note) {
     '<div class="soap-section ne-section-s" style="flex-shrink:0;">' +
     '<div class="soap-section-header">S · Subjetivo</div>' +
     '<div class="soap-section-body">' +
-    `<textarea id="ne-subjetivo" rows="2" placeholder="Refiere / niega…" data-ne-subjetivo>${escHtml(n.subjetivo || '')}</textarea>` +
+    `<textarea id="ne-subjetivo" rows="2" class="ne-objetivo-narrative" placeholder="Refiere / niega…" data-ne-subjetivo>${escHtml(n.subjetivo || '')}</textarea>` +
     '</div>' +
     '</div>' +
     buildObjetivoSectionHtml(n.objetivo || { zones: [] }) +

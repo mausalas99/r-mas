@@ -12,7 +12,10 @@ import {
 import { getSyncablePatients } from '../../app-state.mjs';
 import { recordCloudSyncError } from './cloud-sync-diagnostics.mjs';
 import { countPatientEntryOps, mapPatientEntryToCloudBundleOps } from './mutate-bridge-ops.mjs';
-import { buildDirtyLabSidecarOpsForPatient } from './cloud-lab-sidecar-index.mjs';
+import {
+  buildDirtyLabSidecarOpsForPatient,
+  readLabFingerprintIndex,
+} from './cloud-lab-sidecar-index.mjs';
 import {
   isCloudMutateBridgeConfigured,
   resolveCloudActorId,
@@ -98,6 +101,7 @@ export async function pushCloudLabSidecarsNow() {
   };
   const { collectPatientEntriesForCloudPush } = await import('./cloud-census-collect.mjs');
   const entries = await collectPatientEntriesForCloudPush();
+  const fpIndex = readLabFingerprintIndex();
   /** @type {import('./mutate-bridge-ops.mjs').CloudSyncOp[]} */
   const ops = [];
   for (let i = 0; i < entries.length; i += 1) {
@@ -108,7 +112,8 @@ export async function pushCloudLabSidecarsNow() {
       ...buildDirtyLabSidecarOpsForPatient(
         patientId,
         Array.isArray(entry.labHistory) ? entry.labHistory : [],
-        meta
+        meta,
+        fpIndex
       )
     );
   }

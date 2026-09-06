@@ -3,7 +3,11 @@
  */
 import { isCloudSyncActive } from './nube-sync-policy.mjs';
 import { getCloudSyncRoomId } from './settings.mjs';
-import { CLOUD_PUSH_DEBOUNCE_MS, CLOUD_PUSH_FIRST_MS } from './cloud-sync-timing.mjs';
+import {
+  CLOUD_PUSH_DEBOUNCE_MS,
+  CLOUD_PUSH_FIRST_MS,
+  CLOUD_LAB_BACKFILL_DEFERRED_MS,
+} from './cloud-sync-timing.mjs';
 import { getSyncablePatients, getLabHistory } from '../../app-state.mjs';
 import { stampCloudTodoRow, registroForPatientId } from '../../livesync-patient-ids.mjs';
 import { CLOUD_BATCH_MUTATION_ID, CLOUD_TOMBSTONES_MUTATION_ID } from './constants.mjs';
@@ -21,7 +25,10 @@ import {
   buildInternoAccessUpsertOp,
   internoAccessMutationId,
 } from './mutate-bridge-ops.mjs';
-import { buildDirtyLabSidecarOpsForPatient } from './cloud-lab-sidecar-index.mjs';
+import {
+  buildDirtyLabSidecarOpsForPatient,
+  readLabFingerprintIndex,
+} from './cloud-lab-sidecar-index.mjs';
 import { prepareOutboxOpsForEnqueue, splitLabOpsIntoOutboxItems } from './outbox-lab.mjs';
 import {
   buildCloudTombstoneOp,
@@ -287,40 +294,60 @@ async function pushCloudBundleOps() {
 
 /**
  * Enqueue dirty lab sidecars for all patients (R+ Móvil backfill) — outbox path, no direct HTTP.
+ * Builds the patients matching the active Filtros first (what the user is actually looking
+ * at), then the rest of the team-scoped census on a deferred pass — so a narrow Filtros
+ * doesn't stall boot, but every patient still reaches Nube shortly after.
  * @returns {Promise<boolean>}
  */
 export async function enqueueCloudLabSidecarsBackfill() {
   if (!isCloudSyncActive() || !bridgeRuntime?.outbox) return false;
   if (!getCloudSyncRoomId()) return false;
 
-  const meta = {
-    actorId: resolveCloudActorId(bridgeRuntime),
-    updatedAt: new Date().toISOString(),
-  };
-  const { collectPatientEntriesForCloudPush } = await import('./cloud-census-collect.mjs');
-  const entries = await collectPatientEntriesForCloudPush();
-  const items = [];
-  for (let i = 0; i < entries.length; i += 1) {
-    const entry = entries[i];
-    const patientId = String(entry?.patient?.id || '').trim();
-    if (!patientId) continue;
-    const ops = buildDirtyLabSidecarOpsForPatient(
-      patientId,
-      Array.isArray(entry.labHistory) ? entry.labHistory : [],
-      meta
-    );
-    if (!ops.length) continue;
-    items.push(
-      ...splitLabOpsIntoOutboxItems(patientId, ops, bridgeRuntime.getRevision?.() ?? 0)
-    );
+  const { buildLocalPatientEntries, scopePatientsForCloudPushSplitByFilters } = await import(
+    './cloud-census-collect.mjs'
+  );
+
+  async function enqueueLabSidecarsFor(patients) {
+    if (!patients.length) return false;
+    const meta = {
+      actorId: resolveCloudActorId(bridgeRuntime),
+      updatedAt: new Date().toISOString(),
+    };
+    const entries = await buildLocalPatientEntries(patients);
+    const fpIndex = readLabFingerprintIndex();
+    const items = [];
+    for (let i = 0; i < entries.length; i += 1) {
+      const entry = entries[i];
+      const patientId = String(entry?.patient?.id || '').trim();
+      if (!patientId) continue;
+      const ops = buildDirtyLabSidecarOpsForPatient(
+        patientId,
+        Array.isArray(entry.labHistory) ? entry.labHistory : [],
+        meta,
+        fpIndex
+      );
+      if (!ops.length) continue;
+      items.push(
+        ...splitLabOpsIntoOutboxItems(patientId, ops, bridgeRuntime.getRevision?.() ?? 0)
+      );
+    }
+    if (!items.length) return false;
+    // One load/save round trip for all patients — enqueueEntityOps per patient
+    // made this loop quadratic against localStorage and blocked the main
+    // thread for hundreds of ms right after connecting Nube.
+    bridgeRuntime.outbox.enqueueMany(items);
+    void bridgeRuntime.flush?.();
+    return true;
   }
-  if (!items.length) return false;
-  // One load/save round trip for all patients — enqueueEntityOps per patient
-  // made this loop quadratic against localStorage and blocked the main
-  // thread for hundreds of ms right after connecting Nube.
-  bridgeRuntime.outbox.enqueueMany(items);
-  void bridgeRuntime.flush?.();
-  return true;
+
+  const { priority, remaining } = scopePatientsForCloudPushSplitByFilters();
+  const pushedPriority = await enqueueLabSidecarsFor(priority);
+  if (remaining.length) {
+    setTimeout(function () {
+      void enqueueLabSidecarsFor(remaining);
+    }, CLOUD_LAB_BACKFILL_DEFERRED_MS);
+  }
+  return pushedPriority;
 }
 
 /**

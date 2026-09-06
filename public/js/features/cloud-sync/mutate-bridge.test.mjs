@@ -282,6 +282,41 @@ describe('mutate-bridge op mapping', () => {
     assert.equal(monOp.updatedAt, meta.updatedAt);
   });
 
+  it('mapBundleEnvelopeToOps pushes medReceta stamped with the fresh batch clock (medReceta has no updatedAt of its own)', () => {
+    const ops = mapBundleEnvelopeToOps(
+      {
+        entries: [
+          {
+            patient: { id: 'p1', nombre: 'PAC', lanUpdatedAt: '2026-08-03T09:00:00.000Z' },
+            medReceta: { fechaActualizacion: '06/09/2026', items: [{ id: 'm1' }] },
+            note: {},
+            indicaciones: {},
+            labHistory: [],
+          },
+        ],
+      },
+      meta
+    );
+    const medOp = ops.find((op) => op.path === 'entries/p1/medReceta');
+    assert.ok(medOp);
+    assert.equal(medOp.updatedAt, meta.updatedAt);
+  });
+
+  it('mapBundleEnvelopeToOps: a same-day re-paste of medReceta gets a newer clock than the prior push, not a tied one (was: rejected by the Worker as stale)', () => {
+    const sameDayReceta = { fechaActualizacion: '06/09/2026', items: [{ id: 'm1' }] };
+    const firstPush = mapBundleEnvelopeToOps(
+      { entries: [{ patient: { id: 'p1' }, medReceta: sameDayReceta, note: {}, indicaciones: {}, labHistory: [] }] },
+      { actorId: 'user-1', updatedAt: '2026-09-06T10:00:00.000Z' }
+    );
+    const secondPush = mapBundleEnvelopeToOps(
+      { entries: [{ patient: { id: 'p1' }, medReceta: sameDayReceta, note: {}, indicaciones: {}, labHistory: [] }] },
+      { actorId: 'user-1', updatedAt: '2026-09-06T10:05:00.000Z' }
+    );
+    const firstAt = firstPush.find((op) => op.path === 'entries/p1/medReceta')?.updatedAt;
+    const secondAt = secondPush.find((op) => op.path === 'entries/p1/medReceta')?.updatedAt;
+    assert.ok(firstAt < secondAt, 'a later re-paste must carry a strictly newer clock than the first');
+  });
+
   it('buildLabSidecarOpsForPatient maps lab history to sidecar paths', () => {
     const ops = buildLabSidecarOpsForPatient(
       'p1',
@@ -458,6 +493,18 @@ describe('mutate-bridge LAN decoupling (Phase 3)', () => {
     const body = mutateBridgeSrc.slice(start, nextExport === -1 ? mutateBridgeSrc.length : nextExport);
     assert.match(body, /outbox\.enqueueMany\(items\)/);
     assert.doesNotMatch(body, /enqueueEntityOps\(/);
+  });
+
+  it('lab-sidecar backfill pushes Filtros-priority patients now, the rest on a deferred pass', () => {
+    // A narrow Filtros must not delay or drop the rest of the census — it only
+    // reorders the two localStorage-heavy passes so startup isn't stalled.
+    const start = mutateBridgeSrc.indexOf('export async function enqueueCloudLabSidecarsBackfill');
+    assert.notEqual(start, -1);
+    const nextExport = mutateBridgeSrc.indexOf('\nexport ', start + 1);
+    const body = mutateBridgeSrc.slice(start, nextExport === -1 ? mutateBridgeSrc.length : nextExport);
+    assert.match(body, /scopePatientsForCloudPushSplitByFilters/);
+    assert.match(body, /CLOUD_LAB_BACKFILL_DEFERRED_MS/);
+    assert.match(body, /setTimeout/);
   });
 
   it('patient deletes coalesce into cloud-tombstones with debounced flush', () => {

@@ -117,6 +117,29 @@ describe('estado-actual-vital-series', () => {
     assert.equal(leg.vitals.tempPeak, 37.2);
   });
 
+  it('keeps two legacy readings even when current and previous share the same value', () => {
+    var med = { vitals: { tad: 60, tadExtra: 60 } };
+    var series = vitalSeriesFromMedicion(med);
+    assert.equal(series.tad.length, 2);
+    assert.deepEqual(series.tad.map((r) => r.value), [60, 60]);
+  });
+
+  it('legacy extra field does not double-count a value already in vitalSeries', () => {
+    // vitalSeriesToLegacyFields siempre copia el time del espejo, como en un guardado real.
+    var med = {
+      vitals: { tempPeak: 37.2 },
+      alteredAt: { tempPeak: '08:00' },
+      vitalSeries: {
+        temp: [
+          { value: 37.2, time: '08:00' },
+          { value: 38.5, time: '14:00' },
+        ],
+      },
+    };
+    var series = vitalSeriesFromMedicion(med);
+    assert.equal(series.temp.length, 2);
+  });
+
   it('legacy vitals do not duplicate when vitalSeries already has readings', () => {
     var med = {
       vitals: { temp: 36 },

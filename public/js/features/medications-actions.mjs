@@ -12,6 +12,9 @@ import {
   incrementMedItemsDiaTratamiento,
 } from "../med-receta-core.mjs";
 import { getPatients, getMedRecetaByPatient, getMedNotaSelectionByPatient, getNotes, persistClinicalState } from "../app-state.mjs";
+import { scheduleCloudSyncPush } from "./cloud-sync/mutate-bridge.mjs";
+import { storage } from "../storage.js";
+import { addTodoWithFields } from "./todos-mutations.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { mergeSoapMedField, openSOAPModalDirect } from "./soap-estado.mjs";
 import { soapLegacyFieldIdForCategory } from "./soap-legacy-field-map.mjs";
@@ -44,6 +47,7 @@ import {
 import { insulinRescateItemsFromList, INSULIN_RESCATE_GROUP_ID } from "../insulin-rescate-display.mjs";
 import { insulinPrandialItemsFromList, INSULIN_PRANDIAL_GROUP_ID } from "../insulin-prandial-display.mjs";
 import { potassiumReposItemsFromList, POTASSIUM_REPOS_GROUP_ID } from "../potassium-repos-display.mjs";
+import { stanfordSolutionItemsFromList, STANFORD_SOLUTION_GROUP_ID } from "../stanford-solution-display.mjs";
 import { getMedNotaSelMap, manejoDiaOpts } from "./medications-utils.mjs";
 import { closeMedRecetaPasteModal } from "./medications-paste-modal.mjs";
 import { patchMedRecetaRowSoapUi } from "./medications-panel-cache.mjs";
@@ -69,6 +73,7 @@ export function toggleMedRecetaSuspendido(itemId, suspended) {
   if (!it) return;
   it.suspendido = !!suspended;
   persistClinicalState();
+  scheduleCloudSyncPush();
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
   renderMedRecetaPanel();
@@ -126,6 +131,7 @@ export function toggleMedRecetaInsulinRescateSuspendido(suspended) {
     it.suspendido = !!suspended;
   });
   persistClinicalState();
+  scheduleCloudSyncPush();
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
   renderMedRecetaPanel();
@@ -147,6 +153,7 @@ export function toggleMedRecetaInsulinPrandialSuspendido(suspended) {
     it.suspendido = !!suspended;
   });
   persistClinicalState();
+  scheduleCloudSyncPush();
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
   renderMedRecetaPanel();
@@ -180,6 +187,41 @@ export function toggleMedRecetaPotassiumReposSuspendido(suspended) {
     it.suspendido = !!suspended;
   });
   persistClinicalState();
+  scheduleCloudSyncPush();
+  invalidateEaPanelCache();
+  invalidateInnerTabRenderCache("estadoActual");
+  renderMedRecetaPanel();
+}
+
+function toggleStanfordSolutionGroupSelection(activeId, selected) {
+  var block = getMedRecetaByPatient()[activeId];
+  var items = block && Array.isArray(block.items) ? block.items : [];
+  var m = getMedNotaSelMap(activeId);
+  stanfordSolutionItemsFromList(items).forEach(function (it) {
+    var id = String(it.id || "");
+    if (!id) return;
+    if (selected) m[id] = true;
+    else delete m[id];
+  });
+}
+
+export function toggleMedRecetaStanfordSolutionParaNota(selected) {
+  var activeId = rt.getActiveId();
+  if (!activeId) return;
+  toggleStanfordSolutionGroupSelection(activeId, selected);
+  bustMedPanelCache();
+  if (!patchMedRecetaRowSoapUi(STANFORD_SOLUTION_GROUP_ID)) renderMedRecetaPanel();
+  else renderMedNotaFooter();
+}
+
+export function toggleMedRecetaStanfordSolutionSuspendido(suspended) {
+  var activeId = rt.getActiveId();
+  if (!activeId || !getMedRecetaByPatient()[activeId] || !getMedRecetaByPatient()[activeId].items) return;
+  stanfordSolutionItemsFromList(getMedRecetaByPatient()[activeId].items).forEach(function (it) {
+    it.suspendido = !!suspended;
+  });
+  persistClinicalState();
+  scheduleCloudSyncPush();
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
   renderMedRecetaPanel();
@@ -197,6 +239,7 @@ export function setMedRecetaSoapCategory(itemId, category) {
   if (!cat || SOAP_DESTINATION_KEYS.indexOf(cat) < 0 || cat === autoCat) delete it.soapCatOverride;
   else it.soapCatOverride = cat;
   persistClinicalState();
+  scheduleCloudSyncPush();
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
   bustMedPanelCache();
@@ -251,6 +294,7 @@ export function limpiarManejoActual() {
     })
   );
   persistClinicalState();
+  scheduleCloudSyncPush();
   bustMedPanelCache();
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
@@ -378,7 +422,7 @@ export function mediLlevarASOAP() {
     );
     return;
   }
-  var buckets = bucketsFromRecetaItems(block ? block.items : [], sel, classifyMedicationSoapCategory);
+  var buckets = bucketsFromRecetaItems(block ? block.items : [], sel, classifyMedicationSoapCategory, activeId);
   var hasBuckets = MED_FIELD_KEYS.some(function (k) {
     return buckets[k] && String(buckets[k]).trim();
   });
@@ -394,14 +438,14 @@ export function mediLlevarASOAP() {
 }
 
 function toastParseRecetaFailure(raw, parsed) {
-  if (parsed.items.length || parsed.dietas.length) return false;
+  if (parsed.items.length || parsed.dietas.length || (parsed.pendientes && parsed.pendientes.length)) return false;
   if (!looksLikeSomeIndicacionesPaste(raw || "")) {
     medToast(
       "No parece el bloque de SOME. Copia desde Fecha/hora con tabuladores (medicamentos, dietas…) y pégalo aquí.",
       "error"
     );
   } else {
-    medToast("No se encontraron filas MEDICAMENTOS ni DIETAS válidas", "error");
+    medToast("No se encontraron filas MEDICAMENTOS, DIETAS, ESTUDIOS ni PROCEDIMIENTO válidas", "error");
   }
   return true;
 }
@@ -410,14 +454,86 @@ function buildRecetaProcessToast(parsed) {
   var parts = [];
   if (parsed.items.length) parts.push(parsed.items.length + " medicamento(s)");
   if (parsed.dietas.length) parts.push(parsed.dietas.length + " dieta(s)");
+  if (parsed.pendientes && parsed.pendientes.length) parts.push(parsed.pendientes.length + " pendiente(s)");
   var msg = "Manejo actualizado (" + parts.join(" · ") + ")";
   if (parsed.skipped <= 0) return msg;
   var sum = parsed.skippedSummary || {};
   var omit = [];
   if (sum.cuidados) omit.push(sum.cuidados + " cuidados");
-  if (sum.estudios) omit.push(sum.estudios + " estudios");
+  if (sum.estudios) omit.push(sum.estudios + " estudios de laboratorio");
   if (sum.other) omit.push(sum.other + " otras");
   return msg + ". Omitidas " + parsed.skipped + " líneas" + (omit.length ? " (" + omit.join(", ") + ")" : "");
+}
+
+/** El detalle es sólo el insumo/kit usado, no aporta nada al pendiente. */
+var KIT_DETAIL_RE = /^KIT\s+PARA\b/i;
+
+/** "TORAX" → "Torax": primera letra mayúscula, resto tal cual llegó. */
+function capitalizeFirstOnly_(s) {
+  var t = String(s || "").trim();
+  if (!t) return t;
+  var lower = t.toLowerCase();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+/**
+ * Nombre corto para un PROCEDIMIENTO de imagen — "TOMOGRAFIA AXIAL
+ * COMPUTERIZADA DE TORAX" → "TAC de Torax". null si no es de imagen.
+ */
+function shortImagingProcedureName_(nombreRaw) {
+  var n = String(nombreRaw || "").toUpperCase();
+  var tac = n.match(/^TOMOGRAF[IÍ]A\b[\s\S]*?\bDE\s+(.+)/);
+  if (tac) return "TAC de " + capitalizeFirstOnly_(tac[1]);
+  var rm = n.match(/^(?:IMAGENES\s+DE\s+)?RESONANCIA\s+MAGN[EÉ]TICA\b[\s\S]*?\bDE\s+(.+)/);
+  if (rm) return "RM de " + capitalizeFirstOnly_(rm[1]);
+  return null;
+}
+
+/** "SIN CONTRASTE" no cuenta como contrastada, aunque contenga "CONTRASTE". */
+function isContrastedDetail_(detalleRaw, nombreRaw) {
+  var text = (String(detalleRaw || "") + " " + String(nombreRaw || "")).toUpperCase();
+  if (/SIN\s+CONTRASTE/.test(text)) return false;
+  return /CONTRAST/.test(text);
+}
+
+/** Texto de pendiente para un renglón de ESTUDIOS/PROCEDIMIENTO parseado. */
+function pendienteTextFromRow_(row) {
+  var label = row.kind === "estudio" ? "Estudio" : "Procedimiento";
+  var shortName = row.kind === "procedimiento" ? shortImagingProcedureName_(row.nombreRaw) : null;
+  if (shortName) {
+    var contrasted = isContrastedDetail_(row.detalleRaw, row.nombreRaw);
+    return label + ": " + shortName + (contrasted ? " contrastada" : "");
+  }
+  var detalle = row.detalleRaw && !KIT_DETAIL_RE.test(row.detalleRaw) ? row.detalleRaw : "";
+  var extra = detalle ? " — " + detalle : "";
+  return label + ": " + row.nombreRaw + extra;
+}
+
+/**
+ * Da de alta en Pendientes cada ESTUDIOS/PROCEDIMIENTO nuevo del bloque
+ * pegado. Si un pendiente idéntico ya está abierto no se duplica, sólo se
+ * avisa — una solicitud modificada (otro contraste, otro estudio) sí entra
+ * como pendiente nuevo.
+ */
+export function addPendientesFromParsedReceta(activeId, pendientes) {
+  if (!pendientes || !pendientes.length) return;
+  var existing = storage.getTodos(activeId) || [];
+  var openTexts = existing
+    .filter(function (t) { return t && !t.completed; })
+    .map(function (t) { return String(t.text || ""); });
+  var repetidos = 0;
+  pendientes.forEach(function (row) {
+    var text = pendienteTextFromRow_(row);
+    if (openTexts.indexOf(text) >= 0) {
+      repetidos += 1;
+      return;
+    }
+    addTodoWithFields({ text: text, priority: "media" });
+    openTexts.push(text);
+  });
+  if (repetidos) {
+    medToast(repetidos + " pendiente(s) ya estaban en la lista, no se repitieron", "info");
+  }
 }
 
 function applyDietFromParsedReceta(activeId) {
@@ -444,7 +560,7 @@ function syncEaMedsFromProcessedReceta(activeId) {
   var monitoreo = patient.monitoreo;
   pruneEstadoClinicoMedsFromReceta(monitoreo, items, classifyMedicationSoapCategory, fecha);
   var sel = getMedNotaSelectionByPatient()[activeId] || {};
-  var buckets = bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory);
+  var buckets = bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory, activeId);
   applyRecetaProposal(monitoreo, buckets);
   syncConfirmedAbxFromReceta(monitoreo, buckets);
   syncMonitoreoInsulinPumpFromReceta(monitoreo, block);
@@ -471,8 +587,10 @@ function commitProcessedReceta(activeId, raw, parsed) {
   });
   getMedNotaSelectionByPatient()[activeId] = sel;
   applyDietFromParsedReceta(activeId);
+  addPendientesFromParsedReceta(activeId, parsed.pendientes);
   syncEaMedsFromProcessedReceta(activeId);
   persistClinicalState();
+  scheduleCloudSyncPush();
   onRecetaMergedToProfile(activeId, getMedRecetaByPatient()[activeId]);
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
@@ -552,6 +670,7 @@ export function incrementMedDiaTratamiento() {
   }
   block.items = res.items;
   persistClinicalState();
+  scheduleCloudSyncPush();
   renderMedRecetaPanel();
   medToast(
     res.count === 1

@@ -15,6 +15,7 @@ import {
   handleLogout,
   handleOpenRotation,
   renderAfterAuth,
+  ensureRoomEncryptionBackfill,
 } from './panel-conexion-handlers.mjs';
 import { mountCloudMobileInviteInHost } from './panel-mobile-invite.mjs';
 import { refreshCloudSyncDiagnostics } from './panel-cloud-diagnostics.mjs';
@@ -192,6 +193,7 @@ export function localRoomFromSession(deps, normalizedSala) {
     code: String((snap && snap.code) || ''),
     turnKey: String((snap && snap.turnKey) || ''),
     name: String((snap && snap.name) || ''),
+    role: String((snap && snap.role) || ''),
   };
 }
 
@@ -224,6 +226,10 @@ export function bootstrapConexionState(section, deps, ui) {
       // Local snapshot is enough — skip getRoom (saves Free-tier requests).
       // Membership is validated on the next pull/push cycle.
       ui.renderConnected(optimistic);
+      // Runs on every plain reconnect, not just a fresh login — a remembered
+      // session used to skip this path entirely, leaving daily-used rooms
+      // unlocked. No-ops instantly once the room already has a DEK.
+      void ensureRoomEncryptionBackfill({ getApi: deps.getApi, toast: ui.toast }, optimistic);
       return;
     }
     void deps
@@ -232,7 +238,9 @@ export function bootstrapConexionState(section, deps, ui) {
       .then(function (data) {
         if (!section.isConnected) return;
         ui.setCloudUser(null);
-        ui.renderConnected(data.room || data);
+        const room = data.room || data;
+        ui.renderConnected(room);
+        void ensureRoomEncryptionBackfill({ getApi: deps.getApi, toast: ui.toast }, room);
       })
       .catch(function (err) {
         if (!section.isConnected) return;

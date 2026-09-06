@@ -187,6 +187,16 @@ html.rpc-mobile-web aside.patient-sidebar .patient-card.active {
   box-shadow: var(--elev-raised);
 }
 
+/* Narrower iPad sidebar: drop the name line entirely, keep only room/bed, so cards stay short. */
+html.rpc-mobile-web aside.patient-sidebar .patient-card .p-name {
+  display: none;
+}
+
+/* Archive / Fijar / delete are desktop-only card actions — no room for them on iPad. */
+html.rpc-mobile-web aside.patient-sidebar .patient-card-toolbar {
+  display: none;
+}
+
 html.rpc-mobile-web aside.patient-sidebar #patient-search {
   border: var(--border-hairline);
   background: var(--input-fill);

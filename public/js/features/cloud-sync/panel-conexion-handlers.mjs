@@ -22,6 +22,23 @@ async function persistRoomDeks() {
   setStoredRoomDeks(await exportCachedDeksForPersistence());
 }
 
+/**
+ * Locks a room's content if this device is its owner and it isn't locked yet.
+ * No-op instantly once the room already has a DEK, so it's safe to call on
+ * every reconnect (bootstrapConexionState) and not just a fresh login —
+ * a remembered session used to skip this path entirely, leaving daily-used
+ * rooms unlocked forever. Fire-and-forget: never throws.
+ * @param {object} deps @param {{ id?: string, role?: string, code?: string }} room
+ */
+export async function ensureRoomEncryptionBackfill(deps, room) {
+  if (!room?.id || !NUBE_E2EE_ENABLED) return;
+  const result = await backfillRoomEncryption(deps.getApi(), room, getCloudSyncClientId()).catch(() => null);
+  if (result && (result.failed > 0 || result.remaining !== 0)) {
+    deps.toast('Sala ' + (room.code || room.id) + ': algunos datos aún no están protegidos. Reintenta más tarde.', 'error');
+  }
+  await persistRoomDeks();
+}
+
 /** Prefer explicit checkbox; else sticky Recuérdame preference; else persist on desktop. */
 function resolveRememberFromSection(section, selector, deps) {
   const el = section?.querySelector?.(selector);
@@ -123,21 +140,7 @@ export async function afterAuthSuccess(deps, user) {
   ]);
   // Existing rooms never got a DEK (only room *creation* triggers one) — the owner's
   // next login silently backfills it and re-encrypts already-stored plaintext content.
-  // Fire-and-forget: must never block or fail login.
-  // Gated by NUBE_E2EE_ENABLED (off) — see room-dek.mjs for why: an old build
-  // that can't be blocked yet could overwrite ciphertext with plaintext and
-  // corrupt the room for everyone, not just fail to read it.
-  if (room?.id && NUBE_E2EE_ENABLED) {
-    void backfillRoomEncryption(deps.getApi(), room, getCloudSyncClientId()).then(
-      (result) => {
-        if (result && (result.failed > 0 || result.remaining !== 0)) {
-          deps.toast('Sala ' + (room.code || room.id) + ': algunos datos aún no están protegidos. Reintenta más tarde.', 'error');
-        }
-        return persistRoomDeks();
-      },
-      () => {}
-    );
-  }
+  void ensureRoomEncryptionBackfill(deps, room);
   await hydrateClinicalTeamsAfterCloudPull();
   // Mi rotación must not block "conectado" — open in background if needed.
   if (!userHasJoinedTeam()) {

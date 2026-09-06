@@ -19,3 +19,18 @@ describe('buildMedPharmNameRow', () => {
     assert.match(fn, /nameEl\.textContent = group\.med \|\| '';\s*\n\s*nameEl\.title = group\.med \|\| '';/);
   });
 });
+
+// buildMedPharmSummaryRow's freq cell is a fixed-width grid column (44px); a long
+// non-standard freq string (formatFreqShort can't compress it) is CSS-ellipsized,
+// so it needs a .title tooltip too, matching the via cell right below it.
+describe('buildMedPharmSummaryRow', () => {
+  it('sets .title on the freq cell right after .textContent (CSS-truncated freq)', () => {
+    const start = src.indexOf('function buildMedPharmSummaryRow');
+    const end = src.indexOf('function', start + 30);
+    const fn = src.slice(start, end);
+    assert.match(
+      fn,
+      /freqEl\.textContent = formatFreqShort\(current\.freq\);\s*\n\s*freqEl\.title = formatFreqShort\(current\.freq\);/
+    );
+  });
+});

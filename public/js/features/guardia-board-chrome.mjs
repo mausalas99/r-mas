@@ -294,6 +294,11 @@ export function enrichPatientForGuardiaCard(p, guardiasMap, teamCtx = {}) {
     sala: p.sala,
     servicio: p.servicio,
     area: p.area,
+    // patients-modal.mjs's fillCompleteAdmissionLocationInputs() reads these
+    // straight off the patient object — without them the edit modal opened
+    // from a Guardia card showed a blank "Cama —" instead of the real bed.
+    cuarto: p.cuarto,
+    cama: p.cama,
     // guardia-census-table.mjs's alteradosForPatient()/admissionDateForPatient()
     // read these straight off the patient object (not off the `base` grid-card
     // shape above) — without them every row silently read as "sin toma 08:00"

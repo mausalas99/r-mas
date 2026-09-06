@@ -24,6 +24,9 @@ export const CLOUD_POLL_ERROR_MAX_MS = 5 * 60_000;
 export const CLOUD_PUSH_DEBOUNCE_MS = 1_500;
 export const CLOUD_PUSH_FIRST_MS = 600;
 
+/** Backfill patients outside the active Filtros after this delay, once the priority set is pushed. */
+export const CLOUD_LAB_BACKFILL_DEFERRED_MS = 5_000;
+
 /** @typedef {'ws' | 'poll' | 'offline'} CloudSyncTransport */
 
 /**

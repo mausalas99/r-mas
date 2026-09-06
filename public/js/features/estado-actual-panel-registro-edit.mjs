@@ -80,7 +80,10 @@ export function applyMedicionToForm(row) {
   var form = document.getElementById('ea-form');
   if (!form || !row) return;
   var recorded = form.querySelector('#ea-recorded-at');
-  if (recorded && 'value' in recorded && row.recordedAt) recorded.value = toDatetimeLocalValue(row.recordedAt);
+  if (recorded && 'value' in recorded && row.recordedAt) {
+    recorded.value = toDatetimeLocalValue(row.recordedAt);
+    recorded.dispatchEvent(new Event('rpc-datetime-sync'));
+  }
   applyMedicionVitals(form, row);
   applyMedicionBomba(form, Array.isArray(row.bombaInsulina) ? row.bombaInsulina : []);
   applyParsedGlus(form, Array.isArray(row.glucometrias) ? row.glucometrias : []);

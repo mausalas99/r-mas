@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.3.1](https://github.com/mausalas99/r-mas/releases/tag/v8.3.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.3.2](https://github.com/mausalas99/r-mas/releases/tag/v8.3.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -61,6 +61,15 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.3.2 (estable — release 8.3.2)
+
+- **Nuevo — pestaña Medicamentos:** administración por horario de toma, con registro aparte para PRN.
+- **Nuevo — balance de líquidos por turno:** T1/T2/T3 más otras fuentes cuantificables, con recordatorio de hemodiálisis.
+- **Nuevo — estudios y procedimientos a Pendientes:** el pegado de Manejo los agrega solos.
+- **Mejorado:** agrupación de Solución Stanford y copiado de Estado actual con negritas reales.
+
+Notas: `docs/RELEASE_NOTES_8.3.2.txt`.
 ## R+ 8.3.1 (estable — release 8.3.1)
 
 - **Corrección — equipos nuevos que desaparecían:** un equipo recién creado podía volverse invisible para toda la sala por tres fallas distintas en la sincronización. Las tres quedan corregidas.

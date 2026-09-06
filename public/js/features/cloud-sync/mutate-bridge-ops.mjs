@@ -204,8 +204,22 @@ export function mapPatientEntryToCensusSeedOps(entry, meta) {
   return ops;
 }
 
+/** @param {CloudSyncOp[]} ops @param {string} patientId @param {unknown} medReceta @param {string} actorId @param {string} batchAt */
+function pushMedRecetaOp(ops, patientId, medReceta, actorId, batchAt) {
+  if (!medReceta) return;
+  ops.push(
+    cloudOp({
+      path: `entries/${patientId}/medReceta`,
+      value: medReceta,
+      actorId,
+      updatedAt: noteOpUpdatedAt(medReceta, batchAt),
+    })
+  );
+}
+
 /**
- * Debounced Nube bundle: census fields + estado actual / eventualidades (not notes/labs/HC).
+ * Debounced Nube bundle: census fields + estado actual / eventualidades / medReceta
+ * (not notes/labs/HC — those stay on the heavier full-doc push).
  * @param {object} entry
  * @param {{ actorId: string, updatedAt: string }} meta
  * @returns {CloudSyncOp[]}
@@ -217,6 +231,7 @@ export function mapPatientEntryToCloudBundleOps(entry, meta) {
   const ops = [];
   pushCensusFieldsOp(ops, patientId, entry.patient, meta.actorId);
   pushCloudLiveClinicalOps(ops, patientId, entry.patient, meta.actorId, meta.updatedAt);
+  pushMedRecetaOp(ops, patientId, entry.medReceta, meta.actorId, meta.updatedAt);
   return ops;
 }
 

@@ -74,3 +74,7 @@ docs/vision-north-star.md
 docs/logs/
 scripts/verify/*.png
 .agenttrail/
+# Local design-tool scratch (impeccable skill)
+/PRODUCT.md
+/DESIGN.new.md
+.impeccable/

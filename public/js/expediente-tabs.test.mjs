@@ -129,7 +129,7 @@ test('consolidatedTabForGranular returns top-level composite tab id', () => {
 
 test('getClinicoSections differs by mode (manejo hidden globally)', () => {
   assert.deepEqual(getClinicoSections(INTER), ['estadoActual', 'notas', 'indica', 'vpo']);
-  assert.deepEqual(getClinicoSections(SALA), ['estadoActual', 'eventualidades']);
+  assert.deepEqual(getClinicoSections(SALA), ['estadoActual', 'eventualidades', 'medAdmin']);
 });
 
 test('getSalidaSections only in sala', () => {
@@ -176,7 +176,7 @@ test('sala keeps clinico for estado actual when manejo is hidden', () => {
   const hiddenSala = { appMode: 'sala', hideManejoSection: true, clinicoUnlocked: true };
   assert.equal(isClinicoCompositeVisible(hiddenSala), true);
   assert.equal(getConsolidatedTabs(hiddenSala).includes('clinico'), true);
-  assert.deepEqual(getClinicoSections(hiddenSala), ['estadoActual', 'eventualidades']);
+  assert.deepEqual(getClinicoSections(hiddenSala), ['estadoActual', 'eventualidades', 'medAdmin']);
 });
 
 test('migrateGranularInner keeps notas and indica when manejo is hidden (inter)', () => {

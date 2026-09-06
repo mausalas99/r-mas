@@ -67,6 +67,11 @@ describe('extractMedBaseName', () => {
     assert.equal(extractMedBaseName('ACIDO ACETILSALICILICO 100 MG TABLETA'), 'ACIDO ACETILSALICILICO');
     assert.equal(extractMedBaseName('LIDOCAINA 10 % SPRAY 115 ML'), 'LIDOCAINA');
   });
+
+  it('corta dosis combinadas con "/" antes de la unidad', () => {
+    assert.equal(extractMedBaseName('CALCIO/VITAMINA D 600/400 MG/UI TABLETA'), 'CALCIO/VITAMINA D');
+    assert.equal(extractMedBaseName('AMOXICILINA/CLAVULANICO 875/125 MG TABLETA'), 'AMOXICILINA/CLAVULANICO');
+  });
 });
 
 describe('adherenceStats', () => {

@@ -33,6 +33,7 @@ describe('localRoomFromSession', () => {
           sala: 'Sala 1',
           turnKey: '2026-08',
           name: 'Sala 1 2026-08',
+          role: 'owner',
         }),
       },
       'Sala'
@@ -44,6 +45,7 @@ describe('localRoomFromSession', () => {
       code: 'ABC123',
       turnKey: '2026-08',
       name: 'Sala 1 2026-08',
+      role: 'owner',
     });
   });
 
@@ -70,14 +72,15 @@ describe('localRoomFromSession', () => {
 });
 
 describe('bootstrapConexionState getRoom failures', () => {
+  const bootSrc = readFileSync(
+    new URL('./panel-conexion-bootstrap.mjs', import.meta.url),
+    'utf8'
+  );
+  const fnStart = bootSrc.indexOf('export function bootstrapConexionState');
+  const fnEnd = bootSrc.indexOf('\nexport function ', fnStart + 1);
+  const fnBody = bootSrc.slice(fnStart, fnEnd > fnStart ? fnEnd : fnStart + 2400);
+
   it('source keeps Recuérdame token unless 401/403', () => {
-    const bootSrc = readFileSync(
-      new URL('./panel-conexion-bootstrap.mjs', import.meta.url),
-      'utf8'
-    );
-    const fnStart = bootSrc.indexOf('export function bootstrapConexionState');
-    assert.ok(fnStart >= 0);
-    const fnBody = bootSrc.slice(fnStart, fnStart + 1600);
     assert.match(fnBody, /status === 401/);
     assert.match(fnBody, /status === 403/);
     assert.match(fnBody, /tryAutoEnsureTurnRoom/);
@@ -90,6 +93,23 @@ describe('bootstrapConexionState getRoom failures', () => {
       catchBody.indexOf('clearCloudSyncSession') >
         catchBody.indexOf('401'),
       'clearCloudSyncSession must be gated on auth status'
+    );
+  });
+
+  it('locks a room on every plain reconnect, not just a fresh login', () => {
+    // Optimistic (skip-getRoom) branch.
+    const optimisticIdx = fnBody.indexOf('ui.renderConnected(optimistic)');
+    assert.ok(optimisticIdx >= 0);
+    assert.match(
+      fnBody.slice(optimisticIdx, optimisticIdx + 350),
+      /void ensureRoomEncryptionBackfill\(.*optimistic\)/
+    );
+    // getRoom-fetched branch.
+    const getRoomIdx = fnBody.indexOf('ui.renderConnected(room)');
+    assert.ok(getRoomIdx >= 0);
+    assert.match(
+      fnBody.slice(getRoomIdx, getRoomIdx + 200),
+      /void ensureRoomEncryptionBackfill\(.*\broom\b\)/
     );
   });
 });
