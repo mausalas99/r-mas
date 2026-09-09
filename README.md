@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.3.2](https://github.com/mausalas99/r-mas/releases/tag/v8.3.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.3.3](https://github.com/mausalas99/r-mas/releases/tag/v8.3.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -62,6 +62,15 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.3.3 (estable — release 8.3.3)
+
+- **Nuevo — pestaña Red en Administración:** censo de pacientes de todas las áreas, con filtros y archivar/restaurar/eliminar.
+- **Arreglado:** pacientes nuevos que no sincronizaban en salas con más de 50 pacientes en el mes.
+- **Arreglado:** la Nube ya no se queda colgada indefinidamente si la conexión falla.
+- **Mejorado:** diálogos de confirmación en Administración, y velocidad de descifrado en sincronización.
+
+Notas: `docs/RELEASE_NOTES_8.3.3.txt`.
 ## R+ 8.3.2 (estable — release 8.3.2)
 
 - **Nuevo — pestaña Medicamentos:** administración por horario de toma, con registro aparte para PRN.

@@ -4,31 +4,31 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_832 = [
+var RELEASE_NOTES_833 = [
   {
-    title: 'Nuevo — pestaña Medicamentos',
+    title: 'Nuevo — pestaña Red en Administración',
     body:
-      'En Sala, <strong>Paciente → Clínico</strong> tiene una pestaña de administración por horario de toma, más un registro aparte para PRN.',
+      'Ve y filtra los pacientes de <strong>todas las áreas</strong> desde un solo lugar, con acciones de archivar, restaurar y eliminar (una por una o en bloque).',
   },
   {
-    title: 'Nuevo — balance de líquidos por turno',
+    title: 'Arreglado — pacientes nuevos que no llegaban a otros dispositivos',
     body:
-      'Estado actual separa entradas y salidas en <strong>T1/T2/T3</strong>, con otras fuentes cuantificables (ultrafiltrado, drenaje, toracocentesis) y un recordatorio de hemodiálisis.',
+      'Cuando una sala pasaba de <strong>50 pacientes en el mes</strong>, los ingresos nuevos se guardaban solo en el dispositivo que los creó. Ya no.',
   },
   {
-    title: 'Nuevo — estudios y procedimientos a Pendientes',
+    title: 'Arreglado — la Nube ya no se queda colgada',
     body:
-      'Al pegar el bloque de Manejo, los <strong>estudios de imagen</strong> y procedimientos se agregan solos a Pendientes.',
+      'Si la conexión falla a mitad de una sincronización, ahora se corta a los <strong>20 segundos</strong> con un aviso claro, en vez de quedarse esperando para siempre.',
   },
   {
-    title: 'Mejorado — Solución Stanford y copiar Estado actual',
+    title: 'Mejorado — diálogos de confirmación en Administración',
     body:
-      'Los medicamentos de Solución Stanford se agrupan en una línea, y el texto copiado ahora pega en <strong>negritas reales</strong>.',
+      'Rotar código, archivar, eliminar: los diálogos de confirmación ahora se ven <strong>encima</strong> del panel, no detrás.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_832;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_833;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.3.2': RELEASE_NOTES_832,
+  '8.3.3': RELEASE_NOTES_833,
 };
