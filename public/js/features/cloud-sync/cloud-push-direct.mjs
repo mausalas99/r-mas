@@ -4,6 +4,7 @@ import { CLOUD_BATCH_MUTATION_ID } from './constants.mjs';
 import { noteCloudLabSidecarOpsSent } from './cloud-lab-sidecar-index.mjs';
 import { isCloudTransientServerError } from './cloud-sync-timing.mjs';
 import { recordCloudSyncError } from './cloud-sync-diagnostics.mjs';
+import { noteCloudOpsAttempted } from './cloud-sync-echo-guard.mjs';
 
 const DIRECT_PUSH_TRANSIENT_RETRIES = 3;
 const DIRECT_PUSH_TRANSIENT_DELAY_MS = 2000;
@@ -110,6 +111,57 @@ async function pushChunkWithRetry(api, roomId, sanitized, chunkIndex, getRevisio
   }
 }
 
+const REJECT_REASON_LABEL = {
+  quota_exceeded: 'límite de la sala',
+};
+
+/**
+ * The Worker reports per-op rejections inside an HTTP 200 body (`result.rejected`),
+ * not as an HTTP error — a caller that ignores it loses data silently (e.g. a room
+ * over quota drops every new patient with no error anywhere). Reads `result.rejected`
+ * and records a Conexión diagnostic per reason so nothing is dropped unlogged.
+ *
+ * @param {{ rejected?: Array<{ op?: unknown, reason?: string }> }} result
+ * @returns {{ stale: number, other: number }}
+ */
+export function recordRejectedCloudOps(result) {
+  const rejected = Array.isArray(result?.rejected) ? result.rejected : [];
+  let stale = 0;
+  /** @type {Map<string, number>} */
+  const otherByReason = new Map();
+  for (const r of rejected) {
+    const reason = String(r?.reason || '');
+    if (reason === 'stale') {
+      stale += 1;
+    } else if (reason) {
+      otherByReason.set(reason, (otherByReason.get(reason) || 0) + 1);
+    }
+  }
+  if (stale > 0) {
+    // The Worker's clock rejected these as older than what it already has — usually a
+    // system clock lagging behind the room's other devices. Surfaced here (not thrown):
+    // callers are a shared funnel for census/labs/clinicalOps that each have their own
+    // retry semantics, so we record it for the Conexión diagnostics panel instead of
+    // failing the whole push.
+    recordCloudSyncError({
+      op: 'push',
+      code: 'stale_rejected',
+      message: `${stale} operación(es) rechazada(s) por reloj desactualizado`,
+    });
+  }
+  let other = 0;
+  for (const [reason, count] of otherByReason) {
+    other += count;
+    const label = REJECT_REASON_LABEL[reason] || reason;
+    recordCloudSyncError({
+      op: 'push',
+      code: reason,
+      message: `${count} operación(es) rechazada(s) por ${label}`,
+    });
+  }
+  return { stale, other };
+}
+
 /**
  * Push ops straight to the Worker (no localStorage outbox).
  *
@@ -127,29 +179,16 @@ export async function pushCloudOpsDirect(api, roomId, ops, getRevision, setRevis
     const sanitized = sanitizeOpsForCloudPush(chunks[i]);
     if (!sanitized.ops.length) continue;
     const result = await pushChunkWithRetry(api, roomId, sanitized, i, getRevision);
+    noteCloudOpsAttempted(sanitized.ops);
     if (result?.revision != null) {
       const next = Number(result.revision);
       const current = Number(getRevision() ?? 0);
       if (Number.isFinite(next) && next > current) setRevision(next);
     }
-    const chunkStale = Array.isArray(result?.rejected)
-      ? result.rejected.filter((r) => r?.reason === 'stale').length
-      : 0;
+    const { stale: chunkStale } = recordRejectedCloudOps(result);
     staleRejected += chunkStale;
     appliedOps += sanitized.ops.length - chunkStale;
     noteCloudLabSidecarOpsSent(chunks[i], sanitized.ops);
-  }
-  if (staleRejected > 0) {
-    // The Worker's clock rejected these as older than what it already has — usually a
-    // system clock lagging behind the room's other devices. Surfaced here (not thrown):
-    // pushCloudOpsDirect is a shared funnel for census/labs/clinicalOps callers that each
-    // have their own retry semantics, so we record it for the Conexión diagnostics panel
-    // instead of failing the whole push.
-    recordCloudSyncError({
-      op: 'push',
-      code: 'stale_rejected',
-      message: `${staleRejected} operación(es) rechazada(s) por reloj desactualizado`,
-    });
   }
   return { appliedOps, chunks: chunks.length, staleRejected };
 }

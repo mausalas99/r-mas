@@ -1085,6 +1085,26 @@
   min-height: 0;
 }
 
+.cloud-sync-admin-red-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(8px * var(--density-space));
+  margin: calc(8px * var(--density-space)) 0;
+}
+
+.cloud-sync-admin-red-filters select {
+  min-width: 160px;
+}
+
+.cloud-sync-admin-red-select-all {
+  display: flex;
+  align-items: center;
+  gap: calc(4px * var(--density-space));
+  font-size: 0.85em;
+  color: var(--text-muted);
+  margin-right: auto;
+}
+
 .cloud-sync-admin-skeleton {
   display: flex;
   flex-direction: column;

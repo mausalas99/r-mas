@@ -126,6 +126,14 @@ function main() {
       version: 1,
       updatedAt: report.generatedAt,
       totalScore,
+      // Rounded up: baseline.json is itself a tracked file, so writing this
+      // number into it shifts the file's own line count by a few lines —
+      // an exact measurement here would fail the very check() run right after.
+      trackedLoc:
+        baseline?.trackedLoc != null && baseline.trackedLoc >= size.trackedLoc
+          ? baseline.trackedLoc
+          : Math.ceil(size.trackedLoc / 100) * 100 + 100,
+      moduleCount: size.moduleCount,
       bootGraphHash: bootGraphHash,
       bootGraph: report.bootGraph,
       byFile: {},

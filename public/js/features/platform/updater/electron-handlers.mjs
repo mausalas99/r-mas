@@ -86,10 +86,21 @@ function populateUpdateAvailableDom(version, releaseNotes, isDowngrade, isRepair
   if (label) label.textContent = '';
 }
 
-async function handleUpdateAvailable(payload) {
-  resetUpdateCheckButtons();
+function resolveUpdateAvailablePayload(payload) {
   var version = (payload && payload.version) ? payload.version : String(payload || '');
   var rawNotes = (payload && payload.releaseNotes != null) ? String(payload.releaseNotes) : '';
+  return { version: version, rawNotes: rawNotes };
+}
+
+function shouldSkipUpdateAvailable(isDowngrade, isRepair, version) {
+  return !isDowngrade && !isRepair && !updaterState.checkFeedback && isSnoozeActiveForVersion(version);
+}
+
+async function handleUpdateAvailable(payload) {
+  resetUpdateCheckButtons();
+  var resolved = resolveUpdateAvailablePayload(payload);
+  var version = resolved.version;
+  var rawNotes = resolved.rawNotes;
   var { formatUpdaterReleaseNotesPlain } = await import('../../settings-help/release-notes.mjs');
   var releaseNotes =
     formatUpdaterReleaseNotesPlain(version, rawNotes) || stripHtmlToPlainText(rawNotes);
@@ -99,20 +110,36 @@ async function handleUpdateAvailable(payload) {
   var isDowngrade = updaterState.updateModalMode === 'downgrade';
   var isRepair = updaterState.pendingRepairUpdateCheck;
   if (isRepair) updaterState.pendingRepairUpdateCheck = false;
-  if (!isDowngrade && !isRepair && isSnoozeActiveForVersion(version)) return;
+  if (shouldSkipUpdateAvailable(isDowngrade, isRepair, version)) return;
   resetUpdateModalPanels();
   populateUpdateAvailableDom(version, releaseNotes, isDowngrade, isRepair);
   wireUpdateAvailableActions(version, isDowngrade);
   showUpdateModal();
 }
 
+function shouldSkipUpdateProgress() {
+  return updaterState.pendingUpdaterTargetVersion && updaterState.updateModalMode !== 'downgrade' &&
+    !updaterState.checkFeedback && isSnoozeActiveForVersion(updaterState.pendingUpdaterTargetVersion);
+}
+
+function resolveUpdateProgressPercent(payload) {
+  if (typeof payload === 'number') return payload;
+  return (payload && payload.percent != null) ? payload.percent : 0;
+}
+
+function buildProgressLabelText(transferred, total, bps, pct) {
+  if (transferred != null && total != null) {
+    return formatProgressLine({ transferred: transferred, total: total, bytesPerSecond: bps });
+  }
+  return 'Progreso: ' + pct + '%';
+}
+
 function handleUpdateProgress(payload) {
-  var pct = typeof payload === 'number' ? payload : (payload && payload.percent != null ? payload.percent : 0);
+  var pct = resolveUpdateProgressPercent(payload);
   var transferred = payload && payload.transferred;
   var total = payload && payload.total;
   var bps = payload && payload.bytesPerSecond;
-  if (updaterState.pendingUpdaterTargetVersion && updaterState.updateModalMode !== 'downgrade' &&
-      isSnoozeActiveForVersion(updaterState.pendingUpdaterTargetVersion)) return;
+  if (shouldSkipUpdateProgress()) return;
   resetUpdateModalPanels();
   syncUpdateModalChannelPill(updaterState.pendingUpdaterIsPrerelease);
   var state = document.getElementById('update-modal-state');
@@ -120,17 +147,7 @@ function handleUpdateProgress(payload) {
   var fill = document.getElementById('update-modal-progress-fill');
   if (fill) fill.style.width = pct + '%';
   var label = document.getElementById('update-modal-progress-label');
-  if (label) {
-    if (transferred != null && total != null) {
-      label.textContent = formatProgressLine({
-        transferred: transferred,
-        total: total,
-        bytesPerSecond: bps,
-      });
-    } else {
-      label.textContent = 'Progreso: ' + pct + '%';
-    }
-  }
+  if (label) label.textContent = buildProgressLabelText(transferred, total, bps, pct);
   showUpdateModal();
 }
 
@@ -164,7 +181,7 @@ function handleUpdateReady(payload) {
   var isDowngrade = updaterState.updateModalMode === 'downgrade';
   updaterState.updateReadyToInstall = !isDowngrade;
   try { sendUpdateTelemetry('success', version); } catch (_e) { void _e; }
-  if (!isDowngrade && isSnoozeActiveForVersion(version)) return;
+  if (!isDowngrade && !updaterState.checkFeedback && isSnoozeActiveForVersion(version)) return;
   resetUpdateModalPanels();
   syncUpdateModalChannelPill(updaterState.pendingUpdaterIsPrerelease);
   var state = document.getElementById('update-modal-state');

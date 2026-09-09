@@ -43,13 +43,18 @@ describe('panel-conexion-handlers remember / leave room', () => {
     assert.match(body, /enterCloudSession\(/);
   });
 
-  it('create-room and join-room persist room DEKs to the durable store', () => {
-    for (const name of ['handleCreateRoom', 'handleJoinRoom']) {
-      const start = src.indexOf(`export async function ${name}`);
-      const next = src.indexOf('\nexport async function ', start + 1);
-      const body = src.slice(start, next > start ? next : undefined);
-      assert.match(body, /persistRoomDeks\(\)/, name);
-    }
+  it('create-room persists room DEKs to the durable store; join-room does the same via joinRoomByCode', () => {
+    const createStart = src.indexOf('export async function handleCreateRoom');
+    const createNext = src.indexOf('\nexport async function ', createStart + 1);
+    assert.match(src.slice(createStart, createNext), /persistRoomDeks\(\)/, 'handleCreateRoom');
+
+    const joinStart = src.indexOf('export async function handleJoinRoom');
+    const joinNext = src.indexOf('\nexport async function ', joinStart + 1);
+    assert.match(src.slice(joinStart, joinNext), /joinRoomByCode\(/, 'handleJoinRoom');
+
+    const helperStart = src.indexOf('export async function joinRoomByCode');
+    const helperNext = src.indexOf('\nexport async function ', helperStart + 1);
+    assert.match(src.slice(helperStart, helperNext), /persistRoomDeks\(\)/, 'joinRoomByCode');
   });
 
   it('afterAuthSuccess backfills room encryption fire-and-forget (never blocks/throws into login)', () => {

@@ -92,6 +92,32 @@ export function setStoredRoomDeks(deks) {
   persistRememberToDisk();
 }
 
+function writeRememberBaseline(token) {
+  localStorage.setItem(REMEMBER_KEY, '1');
+  sessionStorage.setItem(TOKEN_KEY, String(token));
+  localStorage.setItem(TOKEN_KEY, String(token));
+}
+
+function writeRememberRoomId(roomId) {
+  if (!roomId) return;
+  sessionStorage.setItem(ROOM_ID_KEY, String(roomId));
+  localStorage.setItem(ROOM_ID_KEY, String(roomId));
+}
+
+function writeRememberRevision(revision) {
+  if (revision == null) return;
+  const rev = String(Number(revision) || 0);
+  sessionStorage.setItem(REVISION_KEY, rev);
+  localStorage.setItem(REVISION_KEY, rev);
+}
+
+function writeRememberRoomMeta(roomMeta) {
+  if (!roomMeta || !roomMeta.id) return;
+  const meta = JSON.stringify(roomMeta);
+  sessionStorage.setItem(ROOM_META_KEY, meta);
+  localStorage.setItem(ROOM_META_KEY, meta);
+}
+
 /** Pull durable Recuérdame snapshot from userData into local/session storage. */
 function hydrateRememberFromDisk() {
   if (rememberHydrated) return;
@@ -107,23 +133,10 @@ function hydrateRememberFromDisk() {
   if (snap && snap.deks && typeof snap.deks === 'object') cachedDeks = snap.deks;
   if (!snap || !String(snap.token || '').trim()) return;
   try {
-    localStorage.setItem(REMEMBER_KEY, '1');
-    sessionStorage.setItem(TOKEN_KEY, String(snap.token));
-    localStorage.setItem(TOKEN_KEY, String(snap.token));
-    if (snap.roomId) {
-      sessionStorage.setItem(ROOM_ID_KEY, String(snap.roomId));
-      localStorage.setItem(ROOM_ID_KEY, String(snap.roomId));
-    }
-    if (snap.revision != null) {
-      const rev = String(Number(snap.revision) || 0);
-      sessionStorage.setItem(REVISION_KEY, rev);
-      localStorage.setItem(REVISION_KEY, rev);
-    }
-    if (snap.roomMeta && snap.roomMeta.id) {
-      const meta = JSON.stringify(snap.roomMeta);
-      sessionStorage.setItem(ROOM_META_KEY, meta);
-      localStorage.setItem(ROOM_META_KEY, meta);
-    }
+    writeRememberBaseline(snap.token);
+    writeRememberRoomId(snap.roomId);
+    writeRememberRevision(snap.revision);
+    writeRememberRoomMeta(snap.roomMeta);
   } catch (e) {
     console.warn('[settings] failed to write remember data', e);
   }

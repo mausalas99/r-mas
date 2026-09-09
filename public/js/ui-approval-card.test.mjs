@@ -4,6 +4,7 @@ import {
   buildApprovalCardHtml,
   buildApprovalPagerHtml,
   buildConfirmCardHtml,
+  showConfirmDialog,
   wrapApprovalInConflictModal,
   wrapConfirmInConflictModal,
 } from './ui-approval-card.mjs';
@@ -80,5 +81,23 @@ describe('ui-approval-card', () => {
     assert.match(wrap, /ui-confirm-modal/);
     assert.match(wrap, /material-glass/);
     assert.match(wrap, /role="dialog"/);
+  });
+
+  it('showConfirmDialog stacks above an already-open modal when asked (Administración is nested in Conexión)', () => {
+    if (typeof document === 'undefined') {
+      assert.ok(true);
+      return;
+    }
+    void showConfirmDialog({ id: 'test-stacked', question: 'q', stacked: true });
+    var stacked = document.getElementById('test-stacked');
+    assert.ok(stacked);
+    assert.match(stacked.className, /lab-conflict-backdrop--stacked/);
+    stacked.remove();
+
+    void showConfirmDialog({ id: 'test-unstacked', question: 'q' });
+    var unstacked = document.getElementById('test-unstacked');
+    assert.ok(unstacked);
+    assert.doesNotMatch(unstacked.className, /--stacked/);
+    unstacked.remove();
   });
 });

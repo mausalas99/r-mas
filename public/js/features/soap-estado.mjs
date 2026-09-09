@@ -46,44 +46,69 @@ export function openSOAPModalDirect() {
  *   provee, se escribe también en el portapapeles para que apps como Google Docs
  *   respeten el formato al pegar; `text` sigue siendo el fallback plano.
  */
-export async function copyToClipboardSafe(text, html) {
-  var t = text == null ? "" : String(text);
+async function tryElectronHtmlClipboard(t, html) {
   if (
-    typeof window !== "undefined" &&
-    window.electronAPI &&
-    html &&
-    typeof window.electronAPI.writeClipboardHtml === "function"
+    typeof window === "undefined" ||
+    !window.electronAPI ||
+    !html ||
+    typeof window.electronAPI.writeClipboardHtml !== "function"
   ) {
-    try {
-      if (await window.electronAPI.writeClipboardHtml(t, String(html))) return true;
-    } catch (_e) { void _e; }
-  }
-  if (
-    typeof window !== "undefined" &&
-    window.electronAPI &&
-    typeof window.electronAPI.writeClipboardText === "function"
-  ) {
-    try {
-      if (await window.electronAPI.writeClipboardText(t)) return true;
-    } catch (_e) { void _e; }
+    return false;
   }
   try {
-    if (html && typeof ClipboardItem !== "undefined" && navigator.clipboard && navigator.clipboard.write) {
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          "text/plain": new Blob([t], { type: "text/plain" }),
-          "text/html": new Blob([String(html)], { type: "text/html" }),
-        }),
-      ]);
-      return true;
-    }
-  } catch (_e) { void _e; }
+    return !!(await window.electronAPI.writeClipboardHtml(t, String(html)));
+  } catch (_e) {
+    void _e;
+    return false;
+  }
+}
+
+async function tryElectronTextClipboard(t) {
+  if (
+    typeof window === "undefined" ||
+    !window.electronAPI ||
+    typeof window.electronAPI.writeClipboardText !== "function"
+  ) {
+    return false;
+  }
   try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(t);
-      return true;
-    }
-  } catch (_e) { void _e; }
+    return !!(await window.electronAPI.writeClipboardText(t));
+  } catch (_e) {
+    void _e;
+    return false;
+  }
+}
+
+async function tryClipboardItemWrite(t, html) {
+  if (!html || typeof ClipboardItem === "undefined" || !navigator.clipboard || !navigator.clipboard.write) {
+    return false;
+  }
+  try {
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "text/plain": new Blob([t], { type: "text/plain" }),
+        "text/html": new Blob([String(html)], { type: "text/html" }),
+      }),
+    ]);
+    return true;
+  } catch (_e) {
+    void _e;
+    return false;
+  }
+}
+
+async function tryClipboardWriteText(t) {
+  if (!navigator.clipboard || !navigator.clipboard.writeText) return false;
+  try {
+    await navigator.clipboard.writeText(t);
+    return true;
+  } catch (_e) {
+    void _e;
+    return false;
+  }
+}
+
+function tryExecCommandCopy(t) {
   try {
     var ta = document.createElement("textarea");
     ta.value = t;
@@ -98,6 +123,15 @@ export async function copyToClipboardSafe(text, html) {
   } catch {
     return false;
   }
+}
+
+export async function copyToClipboardSafe(text, html) {
+  var t = text == null ? "" : String(text);
+  if (await tryElectronHtmlClipboard(t, html)) return true;
+  if (await tryElectronTextClipboard(t)) return true;
+  if (await tryClipboardItemWrite(t, html)) return true;
+  if (await tryClipboardWriteText(t)) return true;
+  return tryExecCommandCopy(t);
 }
 
 export function openSOAPModal() {

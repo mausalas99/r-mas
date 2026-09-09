@@ -3,6 +3,7 @@
  */
 import { createCloudSyncApi } from './api-client.mjs';
 import { pushCloudOpsDirect } from './cloud-push-direct.mjs';
+import { cloudSyncNowIso } from './cloud-sync-clock.mjs';
 import { hydrateClinicalTeamsAfterCloudPull } from './clinical-ops-hydrate.mjs';
 import { createOpFold, foldCloudOp } from './pull-apply-state.mjs';
 import { isCloudSala, normalizeCloudSala } from './sala-allowlist.mjs';
@@ -160,7 +161,7 @@ export async function pushClinicalOpsForSala(sala) {
   if (clinicalOps == null) return { ok: false, reason: 'no_snapshot' };
 
   const actorId = resolveCloudActorId();
-  const updatedAt = new Date().toISOString();
+  const updatedAt = cloudSyncNowIso();
   const api = createApi();
 
   const pushed = await pushCloudOpsDirect(

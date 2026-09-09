@@ -32,6 +32,13 @@ describe('classifyBySomeCatalog — grafías SOME', () => {
     assert.equal(classifyBySomeCatalog(n('DIFENIDOL 25 MG')), 'antiemeticos');
     assert.equal(classifyBySomeCatalog(n('APREPITANT 125 MG')), 'antiemeticos');
     assert.equal(classifyBySomeCatalog(n('CLONIXINATO DE LISINA 125 MG')), 'analgesia');
+    assert.equal(classifyBySomeCatalog(n('VANCOMICINA 1 G')), 'abx');
+    assert.equal(classifyBySomeCatalog(n('WARFARINA 5 MG')), 'anticoagulacion');
+    assert.equal(classifyBySomeCatalog(n('ONDANSETRON 4 MG')), 'antiemeticos');
+    assert.equal(classifyBySomeCatalog(n('HIDROCLOROTIAZIDA 25 MG')), 'diuretico');
+    assert.equal(classifyBySomeCatalog(n('CICLOFOSFAMIDA 1300 MG')), 'nm');
+    assert.equal(classifyBySomeCatalog(n('CITARABINA 100 MG')), 'transfusiones');
+    assert.equal(classifyBySomeCatalog(n('VINCRISTINA 1.4 MG/M2')), 'transfusiones');
   });
 
   it('no inventa destino para un fármaco desconocido', () => {

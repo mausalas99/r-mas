@@ -33,6 +33,18 @@ export function emptyNotaEvolucion() {
  * @param {Record<string, unknown>|null|undefined} patient
  * @returns {NotaEvolucionState|null}
  */
+function normalizeNotaEvolucionState(ne) {
+  if (typeof ne.subjetivo !== 'string') ne.subjetivo = '';
+  if (typeof ne.analisis !== 'string') ne.analisis = '';
+  if (!ne.planZones || typeof ne.planZones !== 'object') ne.planZones = {};
+  for (const z of OBJETIVO_ZONES) {
+    if (!Array.isArray(ne.planZones[z.id])) ne.planZones[z.id] = [];
+  }
+  if (!ne.objetivoNarrativas || typeof ne.objetivoNarrativas !== 'object') ne.objetivoNarrativas = {};
+  if (typeof ne.lastSavedAt !== 'string') ne.lastSavedAt = null;
+  if (typeof ne.signedAt !== 'string') ne.signedAt = null;
+}
+
 export function ensureNotaEvolucion(patient) {
   if (!patient || typeof patient !== 'object') return null;
   /** @type {any} */
@@ -41,16 +53,7 @@ export function ensureNotaEvolucion(patient) {
   if (!p.monitoreo.notaEvolucion || typeof p.monitoreo.notaEvolucion !== 'object') {
     p.monitoreo.notaEvolucion = emptyNotaEvolucion();
   } else {
-    const ne = p.monitoreo.notaEvolucion;
-    if (typeof ne.subjetivo !== 'string') ne.subjetivo = '';
-    if (typeof ne.analisis !== 'string') ne.analisis = '';
-    if (!ne.planZones || typeof ne.planZones !== 'object') ne.planZones = {};
-    for (const z of OBJETIVO_ZONES) {
-      if (!Array.isArray(ne.planZones[z.id])) ne.planZones[z.id] = [];
-    }
-    if (!ne.objetivoNarrativas || typeof ne.objetivoNarrativas !== 'object') ne.objetivoNarrativas = {};
-    if (typeof ne.lastSavedAt !== 'string') ne.lastSavedAt = null;
-    if (typeof ne.signedAt !== 'string') ne.signedAt = null;
+    normalizeNotaEvolucionState(p.monitoreo.notaEvolucion);
   }
   return p.monitoreo.notaEvolucion;
 }

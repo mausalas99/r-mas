@@ -140,9 +140,7 @@ function renderPostguardiaLaneHtml(team, patients, now) {
  * @param {{ filterGuardiaOnly?: boolean, hidePostguardia?: boolean }} [opts]
  * @returns {string}
  */
-export function renderInterconsultaTeamBoardHtml(patients, teams, now = new Date(), opts = {}) {
-  const { filterGuardiaOnly = false, hidePostguardia = false } = opts || {};
-  const roles = getInterconsultaTeamRoles(teams, now);
+function groupPatientsByTeamId(patients) {
   const byTeam = new Map();
   for (const p of patients || []) {
     const teamId = String(p?.censusTeamId || '');
@@ -150,40 +148,34 @@ export function renderInterconsultaTeamBoardHtml(patients, teams, now = new Date
     if (!byTeam.has(teamId)) byTeam.set(teamId, []);
     byTeam.get(teamId).push(p);
   }
-  const patientsFor = (team) => (team ? byTeam.get(String(team.team_id || '')) || [] : []);
+  return byTeam;
+}
 
-  const slots = laneSlots(roles);
-  // Computed BEFORE hidePostguardia filtering — postguardia's patients must
-  // stay "known" even when its lane is hidden, or they'd wrongly leak into
-  // the Otros equipos / Sin equipo lane below.
-  const knownTeamIds = new Set(
+// Computed BEFORE hidePostguardia filtering — postguardia's patients must
+// stay "known" even when its lane is hidden, or they'd wrongly leak into
+// the Otros equipos / Sin equipo lane below.
+function computeKnownTeamIds(roles, slots) {
+  return new Set(
     [roles.guardia, roles.postguardia, ...slots.activo, ...slots.overflow]
       .filter(Boolean)
       .map((t) => String(t.team_id || ''))
   );
+}
 
-  if (filterGuardiaOnly) {
-    const body = roles.guardia
-      ? renderActiveLaneBodyHtml(patientsFor(roles.guardia), ['preop'], true, now)
-      : '<p class="ic-board-empty">Sin equipo de guardia hoy.</p>';
-    return (
-      '<div class="ic-team-board ic-team-board--filtered">' +
-      '<section class="ic-board-lane ic-board-lane--guardia" data-role="guardia">' +
-      '<h3 class="ic-board-lane__title">' + escHtml(teamLabel(roles.guardia)) + ' — Guardia</h3>' +
-      body +
-      '</section></div>'
-    );
-  }
+function renderGuardiaOnlyBoardHtml(roles, patientsFor, now) {
+  const body = roles.guardia
+    ? renderActiveLaneBodyHtml(patientsFor(roles.guardia), ['preop'], true, now)
+    : '<p class="ic-board-empty">Sin equipo de guardia hoy.</p>';
+  return (
+    '<div class="ic-team-board ic-team-board--filtered">' +
+    '<section class="ic-board-lane ic-board-lane--guardia" data-role="guardia">' +
+    '<h3 class="ic-board-lane__title">' + escHtml(teamLabel(roles.guardia)) + ' — Guardia</h3>' +
+    body +
+    '</section></div>'
+  );
+}
 
-  const lanes = [
-    renderGuardiaLaneHtml(roles.guardia, patientsFor(roles.guardia), now),
-    renderActivoLaneHtml(slots.activo[0], patientsFor(slots.activo[0]), now, 0),
-    renderActivoLaneHtml(slots.activo[1], patientsFor(slots.activo[1]), now, 1),
-  ];
-  if (!hidePostguardia) {
-    lanes.push(renderPostguardiaLaneHtml(roles.postguardia, patientsFor(roles.postguardia), now));
-  }
-
+function computeOtrosGroups(patients, slots, patientsFor, knownTeamIds) {
   const otrosGroups = slots.overflow
     .map((team) => ({ label: teamLabel(team), patients: patientsFor(team) }))
     .filter((g) => g.patients.length);
@@ -194,6 +186,30 @@ export function renderInterconsultaTeamBoardHtml(patients, teams, now = new Date
   if (unassignedPatients.length) {
     otrosGroups.push({ label: 'Sin equipo', patients: unassignedPatients });
   }
+  return otrosGroups;
+}
+
+export function renderInterconsultaTeamBoardHtml(patients, teams, now = new Date(), opts = {}) {
+  const { filterGuardiaOnly = false, hidePostguardia = false } = opts || {};
+  const roles = getInterconsultaTeamRoles(teams, now);
+  const byTeam = groupPatientsByTeamId(patients);
+  const patientsFor = (team) => (team ? byTeam.get(String(team.team_id || '')) || [] : []);
+
+  const slots = laneSlots(roles);
+  const knownTeamIds = computeKnownTeamIds(roles, slots);
+
+  if (filterGuardiaOnly) return renderGuardiaOnlyBoardHtml(roles, patientsFor, now);
+
+  const lanes = [
+    renderGuardiaLaneHtml(roles.guardia, patientsFor(roles.guardia), now),
+    renderActivoLaneHtml(slots.activo[0], patientsFor(slots.activo[0]), now, 0),
+    renderActivoLaneHtml(slots.activo[1], patientsFor(slots.activo[1]), now, 1),
+  ];
+  if (!hidePostguardia) {
+    lanes.push(renderPostguardiaLaneHtml(roles.postguardia, patientsFor(roles.postguardia), now));
+  }
+
+  const otrosGroups = computeOtrosGroups(patients, slots, patientsFor, knownTeamIds);
   if (otrosGroups.length) {
     lanes.push(renderOtrosLaneHtml(otrosGroups));
   }

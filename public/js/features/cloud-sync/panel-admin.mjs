@@ -5,8 +5,10 @@ import {
   mutacionesShellHtml,
   mutationsRoomOptionsHtml,
   peligroHtml,
+  applyNetworkCensusFilters,
+  setSelectAllVisibleNetwork,
 } from './panel-admin-html.mjs';
-import { loadAdminResumen, loadAdminSalas } from './panel-admin-data.mjs';
+import { loadAdminResumen, loadAdminSalas, loadAdminNetworkCensus } from './panel-admin-data.mjs';
 import { createAdminClickHandler } from './panel-admin-actions.mjs';
 import { equiposShellHtml } from './panel-admin-equipos-html.mjs';
 import { wireCloudEquiposPanel } from './panel-admin-equipos-actions.mjs';
@@ -58,7 +60,13 @@ function mountAdminPanelSections(root) {
  * @param {{
  *   getApi: () => ReturnType<import('./api-client.mjs').createCloudSyncApi>,
  *   toast?: (msg: string, kind?: string) => void,
- * }} deps
+ *   getCloudSyncRoomId?: () => string,
+ *   renderConnected?: (room: object) => void,
+ *   setCloudSyncRoomSnapshot?: (room: object) => void,
+ *   setCloudSyncRoomId?: (id: string) => void,
+ *   setCloudSyncRevision?: (rev: number) => void,
+ * }} deps  outer Conexión deps — passed through so "Red" can switch this
+ *   device's active room (see joinRoomByCode in panel-conexion-handlers.mjs).
  */
 export function mountCloudAdminPanel(host, deps) {
   const toast = deps.toast || function () {};
@@ -103,6 +111,7 @@ export function mountCloudAdminPanel(host, deps) {
     toast,
     roomsCache,
     equiposPanel,
+    outerDeps: deps,
     get openRoomDetailId() {
       return openRoomDetailId;
     },
@@ -120,10 +129,23 @@ export function mountCloudAdminPanel(host, deps) {
         selectAdminTab(root, tabId);
         const resolved = tabId === 'usuarios' ? 'equipos' : tabId;
         if (resolved === 'equipos') void equiposPanel.refresh();
+        if (resolved === 'red') void loadAdminNetworkCensus(root, deps);
       }
       return;
     }
     createAdminClickHandler(clickDeps)(ev);
+  });
+
+  root.addEventListener('change', function (ev) {
+    const target = ev.target instanceof Element ? ev.target : null;
+    if (!target) return;
+    if (target.closest('[data-network-filter]')) {
+      applyNetworkCensusFilters(root);
+      return;
+    }
+    if (target.matches('[data-network-select-all]') && target instanceof HTMLInputElement) {
+      setSelectAllVisibleNetwork(root, target.checked);
+    }
   });
 
   const salasCtx = {

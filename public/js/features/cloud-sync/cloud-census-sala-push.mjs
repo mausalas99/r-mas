@@ -27,6 +27,7 @@ import {
   mapPatientEntryToCloudBundleOps,
   pushCensusFieldsOp,
 } from './mutate-bridge-ops.mjs';
+import { cloudSyncNowIso } from './cloud-sync-clock.mjs';
 
 /** @returns {string} */
 export function getActiveCloudSala() {
@@ -109,7 +110,7 @@ export function buildPatientAdmitOpsForCloud(patient, actorId) {
   if (!pid || pid.indexOf('demo-') === 0) return [];
   const meta = {
     actorId: String(actorId || 'local'),
-    updatedAt: String(patient.lanUpdatedAt || new Date().toISOString()),
+    updatedAt: String(patient.lanUpdatedAt || cloudSyncNowIso()),
   };
   /** @type {import('./mutate-bridge-ops.mjs').CloudSyncOp[]} */
   const ops = [];
@@ -138,7 +139,7 @@ export async function buildPatientCensusMirrorOps(patient, actorId) {
   if (!pid) return ops;
   const meta = {
     actorId: String(actorId || 'local'),
-    updatedAt: String(patient.lanUpdatedAt || new Date().toISOString()),
+    updatedAt: String(patient.lanUpdatedAt || cloudSyncNowIso()),
   };
   try {
     const { buildPatientEntry } = await import('../patients-modal-commit.mjs');

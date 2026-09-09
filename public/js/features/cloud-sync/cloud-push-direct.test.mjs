@@ -114,4 +114,30 @@ describe('pushCloudOpsDirect — stale rejections', () => {
     const diag = getCloudSyncDiagnostics();
     assert.ok(!diag.lastErrors.some((e) => e.code === 'stale_rejected'));
   });
+
+  it('records a quota_exceeded diagnostic for non-stale rejections', async () => {
+    clearCloudSyncErrors();
+    const api = {
+      push: async () => ({
+        revision: 2,
+        applied: [],
+        rejected: [{ op: { path: 'entries/p9/fields' }, reason: 'quota_exceeded' }],
+      }),
+    };
+    let revision = 1;
+    await pushCloudOpsDirect(
+      api,
+      'room1',
+      [{ path: 'entries/p9/fields', value: {}, updatedAt: 't', actorId: 'a' }],
+      () => revision,
+      (next) => {
+        revision = next;
+      }
+    );
+    const diag = getCloudSyncDiagnostics();
+    assert.ok(
+      diag.lastErrors.some((e) => e.code === 'quota_exceeded'),
+      'a quota_exceeded rejection must be recorded for the Conexión diagnostics panel'
+    );
+  });
 });

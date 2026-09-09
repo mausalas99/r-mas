@@ -393,6 +393,29 @@ function installAppRuntimeContextDeps() {
   Object.assign(rt, buildRuntimeContextUiDeps(), buildRuntimeContextFeatureDeps());
 }
 
+// One-time cleanup: a Red-tab bug (fixed 2026-09-08) merged a whole foreign
+// sala's roster into some devices when "Abrir expediente" was clicked on one
+// patient there. These two names are the ones a user actually reported
+// getting "Pendiente" reminders for. Runs once; flag key stops it repeating.
+const FOREIGN_RED_TAB_PATIENTS_CLEANUP_FLAG = 'rpc-cleanup-foreign-red-tab-patients-2026-09-08';
+const FOREIGN_RED_TAB_PATIENT_NAMES = ['MELISSA DENIS SEGURA GUERRERO', 'MARIA GUILLERMINA GARCIA FLORES'];
+
+async function removeForeignPatientsMergedByRedTabBugOnce() {
+  try {
+    if (localStorage.getItem(FOREIGN_RED_TAB_PATIENTS_CLEANUP_FLAG)) return;
+    localStorage.setItem(FOREIGN_RED_TAB_PATIENTS_CLEANUP_FLAG, '1');
+    const { findPatientsByExactNames } = await import('./patient-name-cleanup-once.mjs');
+    const targets = findPatientsByExactNames(getPatients(), FOREIGN_RED_TAB_PATIENT_NAMES);
+    if (!targets.length) return;
+    const { removePatientLocally } = await import('./features/sync-apply/patient-delete.mjs');
+    targets.forEach(function (p) {
+      removePatientLocally(p.id);
+    });
+  } catch {
+    /* best-effort one-time cleanup */
+  }
+}
+
 export async function registerAllFeatureRuntimes() {
   installAppRuntimeContextDeps();
   var ctx = getAppRuntimeContext();
@@ -439,6 +462,7 @@ export async function registerAllFeatureRuntimes() {
       });
     },
   });
+  await removeForeignPatientsMergedByRedTabBugOnce();
   const { pruneOrphanTodos } = await import('./features/sync-apply/patient-delete-local.mjs');
   pruneOrphanTodos(
     getPatients().map(function (p) {

@@ -4,10 +4,15 @@ import { cloudSyncHttpFetch } from './api-transport.mjs';
 import { getCachedAppVersion } from './app-version.mjs';
 import { getCachedRoomDek } from './room-dek.mjs';
 import { encryptOpsForPush, decryptOpsFromPull, decryptRoomStateFromPull } from './cloud-sync-crypto-wire.mjs';
+import { noteServerDate } from './cloud-sync-clock.mjs';
 
 /** @param {Response} res @param {Record<string, unknown>} data */
 function httpErrorFromResponse(res, data) {
-  const err = new Error(data.error || data.message || res.statusText);
+  const message =
+    data.error === 'cloud_sync_timeout'
+      ? 'La Nube no respondió a tiempo. Intenta de nuevo.'
+      : data.message || data.error || res.statusText;
+  const err = new Error(message);
   err.status = res.status;
   err.data = data;
   if (res.status === 429) {
@@ -63,6 +68,7 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
 
+    noteServerDate(res.headers.get('Date'));
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw httpErrorFromResponse(res, data);
     return data;
@@ -114,6 +120,7 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
 
     adminOverview: () => req('/admin/overview'),
     adminRooms: () => req('/admin/rooms'),
+    adminNetworkCensus: () => req('/admin/network-census'),
     adminRoom: (roomId) => req(`/admin/rooms/${roomId}`),
     adminRotateCode: (roomId) => req(`/admin/rooms/${roomId}/rotate-code`, { method: 'POST', body: {} }),
     adminPurgeRoom: (roomId) => req(`/admin/rooms/${roomId}/purge`, { method: 'POST', body: {} }),

@@ -197,7 +197,9 @@ export function buildConfirmCardHtml(opts) {
  *   items?: string[],
  *   confirmLabel?: string,
  *   cancelLabel?: string,
- * }} opts
+ *   stacked?: boolean,
+ * }} opts  `stacked: true` raises the backdrop above a modal already open
+ *   (e.g. Conexión/Administración, at --z-modal-nested) — see stacked-overlay.mjs.
  * @returns {Promise<boolean>}
  */
 export function showConfirmDialog(opts) {
@@ -207,7 +209,9 @@ export function showConfirmDialog(opts) {
       return;
     }
     var backdrop = document.createElement('div');
-    backdrop.className = 'lab-conflict-backdrop';
+    backdrop.className = opts && opts.stacked
+      ? 'lab-conflict-backdrop lab-conflict-backdrop--stacked'
+      : 'lab-conflict-backdrop';
     if (opts && opts.id) backdrop.id = String(opts.id);
     backdrop.innerHTML = wrapConfirmInConflictModal(buildConfirmCardHtml(opts));
     var done = false;

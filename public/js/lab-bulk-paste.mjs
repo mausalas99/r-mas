@@ -261,6 +261,33 @@ function resolveBulkBlockStatus(chunks, okReports, match, expedientes, usableRep
   return 'ok';
 }
 
+function resolvePrimaryMatch(knownMatch, isMixed, primaryExp, findPatient) {
+  if (knownMatch) return knownMatch;
+  if (isMixed || !primaryExp || !findPatient) return null;
+  return findPatient(primaryExp);
+}
+
+function computeConflictReports(hasMultipleExpedientes, isMixed, okReports, usableReports) {
+  if (!hasMultipleExpedientes || isMixed) return [];
+  return okReports.filter(function (r) {
+    return usableReports.indexOf(r) === -1;
+  });
+}
+
+function computeSetsAfterMerge(usableReports) {
+  if (!usableReports.length) return 0;
+  return mergeBulkParseResultsForStorage(
+    usableReports.map(function (r) {
+      return { result: r.result, reportText: r.reportText };
+    })
+  ).length;
+}
+
+function computePatientName(match, okReports) {
+  if (match) return match.nombre || 'Sin nombre';
+  return okReports[0] ? okReports[0].nombre || '—' : '—';
+}
+
 function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
   var chunks = splitSomeReportsInBlock(blockText);
   var reports = chunks.map(function (chunk, ri) {
@@ -274,24 +301,13 @@ function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
   var knownMatch = hasMultipleExpedientes ? resolveKnownPatientAmongExpedientes(expedientes, findPatient) : null;
   var isMixed = hasMultipleExpedientes && !knownMatch;
   var primaryExp = expedientes[0] || '';
-  var match = knownMatch || (!isMixed && primaryExp && findPatient ? findPatient(primaryExp) : null);
+  var match = resolvePrimaryMatch(knownMatch, isMixed, primaryExp, findPatient);
   var usableReports = isMixed ? [] : filterUsableReportsForPatient(okReports, match);
-  var conflictReports =
-    hasMultipleExpedientes && !isMixed
-      ? okReports.filter(function (r) {
-          return usableReports.indexOf(r) === -1;
-        })
-      : [];
+  var conflictReports = computeConflictReports(hasMultipleExpedientes, isMixed, okReports, usableReports);
   var days = collectReportDays(usableReports);
   var status = resolveBulkBlockStatus(chunks, okReports, match, expedientes, usableReports, isMixed);
   var patientReg = match ? String(match.registro || '').trim() : '';
-  var setsAfterMerge = usableReports.length
-    ? mergeBulkParseResultsForStorage(
-        usableReports.map(function (r) {
-          return { result: r.result, reportText: r.reportText };
-        })
-      ).length
-    : 0;
+  var setsAfterMerge = computeSetsAfterMerge(usableReports);
 
   return {
     blockIndex: blockIndex,
@@ -300,7 +316,7 @@ function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
     reports: reports,
     expedientes: expedientes,
     patient: match,
-    patientName: match ? match.nombre || 'Sin nombre' : okReports[0] ? okReports[0].nombre || '—' : '—',
+    patientName: computePatientName(match, okReports),
     primaryExpediente: patientReg || primaryExp,
     days: sortDaysDesc(days),
     daysLabel: sortDaysDesc(days).join(', ') || '—',

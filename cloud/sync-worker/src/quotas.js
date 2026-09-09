@@ -1,5 +1,11 @@
 export const QUOTAS = {
-  maxLivePatients: 50,
+  /** Sized for daily rooms. Rooms became one-per-sala-per-calendar-month on
+   * 2026-08-05 (turn-key.js defaultTurnKey), so 50 filled up mid-month and
+   * silently rejected every new patient. Real size ceiling is
+   * storageSoftBytes/storageHardBytes, enforced independently in sync.js
+   * (~line 267), and lab sets are sharded out of room_state — so this count
+   * is a runaway guard, not the storage limit. */
+  maxLivePatients: 300,
   maxMembers: 20,
   maxTombstones: 100,
   tombstoneMaxAgeDays: 14,

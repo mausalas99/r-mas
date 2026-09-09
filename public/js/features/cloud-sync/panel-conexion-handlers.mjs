@@ -182,13 +182,37 @@ export function readLoginForm(section) {
 }
 
 /** @param {object} deps @param {object} room */
-function persistCloudRoom(deps, room) {
+export function persistCloudRoom(deps, room) {
   if (typeof deps.setCloudSyncRoomSnapshot === 'function') {
     deps.setCloudSyncRoomSnapshot(room);
     return;
   }
   deps.setCloudSyncRoomId(room.id);
   deps.setCloudSyncRevision(Number(room.revision) || 0);
+}
+
+/**
+ * Core of "join/switch to a room by code" — join, persist, render, load its
+ * DEK. Shared by the manual Conexión form (`handleJoinRoom`, reads the code
+ * from an input) and the network census view (switches this device to a
+ * patient's room on click, code already known).
+ * @param {object} deps
+ * @param {string} code
+ */
+export async function joinRoomByCode(deps, code) {
+  const data = await deps.getApi().joinRoom({ code });
+  const room = data.room;
+  persistCloudRoom(deps, room);
+  deps.renderConnected(room);
+  // Loading the room key is best-effort AFTER the join itself succeeded — a
+  // key-load hiccup should never read to the user as "couldn't join."
+  try {
+    await loadRoomDek(deps.getApi(), room.id, room.code);
+    await persistRoomDeks();
+  } catch {
+    deps.toast('Unido, pero no se pudo cargar la llave de cifrado de la sala.', 'error');
+  }
+  return room;
 }
 
 /** @param {object} deps */
@@ -331,19 +355,8 @@ export async function handleJoinRoom(deps) {
     return;
   }
   try {
-    const data = await deps.getApi().joinRoom({ code });
-    const room = data.room;
-    persistCloudRoom(deps, room);
-    deps.renderConnected(room);
+    const room = await joinRoomByCode(deps, code);
     deps.toast('Unido a la sala ' + room.code + '.', 'success');
-    // Loading the room key is best-effort AFTER the join itself succeeded — a
-    // key-load hiccup should never read to the user as "couldn't join."
-    try {
-      await loadRoomDek(deps.getApi(), room.id, room.code);
-      await persistRoomDeks();
-    } catch {
-      deps.toast('Unido, pero no se pudo cargar la llave de cifrado de la sala.', 'error');
-    }
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo unir a la sala.', 'error');
   }

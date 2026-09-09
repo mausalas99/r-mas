@@ -3,6 +3,7 @@
  */
 import { isCloudSyncActive } from './nube-sync-policy.mjs';
 import { getCloudSyncRoomId } from './settings.mjs';
+import { cloudSyncNowIso } from './cloud-sync-clock.mjs';
 import {
   CLOUD_PUSH_DEBOUNCE_MS,
   CLOUD_PUSH_FIRST_MS,
@@ -122,7 +123,7 @@ export function enqueueCloudClinicalOpsValue(clinicalOps) {
     path: 'clinicalOps',
     value: clinicalOps,
     actorId: resolveCloudActorId(bridgeRuntime),
-    updatedAt: new Date().toISOString(),
+    updatedAt: cloudSyncNowIso(),
   })]);
   return true;
 }
@@ -274,7 +275,7 @@ async function enqueueCloudBundleOps() {
   try {
     const meta = {
       actorId: resolveCloudActorId(bridgeRuntime),
-      updatedAt: new Date().toISOString(),
+      updatedAt: cloudSyncNowIso(),
     };
     ensureLiveCensusClocks(meta.updatedAt);
     const ops = await collectCloudBundleOps(meta);
@@ -311,7 +312,7 @@ export async function enqueueCloudLabSidecarsBackfill() {
     if (!patients.length) return false;
     const meta = {
       actorId: resolveCloudActorId(bridgeRuntime),
-      updatedAt: new Date().toISOString(),
+      updatedAt: cloudSyncNowIso(),
     };
     const entries = await buildLocalPatientEntries(patients);
     const fpIndex = readLabFingerprintIndex();
@@ -371,7 +372,7 @@ export function enqueueCloudTodoUpsert(patientId, todo) {
   if (!isCloudSyncActive() || !todo?.id || !bridgeRuntime?.outbox) return;
   const meta = {
     actorId: resolveCloudActorId(bridgeRuntime),
-    updatedAt: String(todo.updatedAt || new Date().toISOString()),
+    updatedAt: String(todo.updatedAt || cloudSyncNowIso()),
   };
   const row = stampCloudTodoRow(patientId, todo, getSyncablePatients());
   enqueueEntityOps(`todos/${todo.id}`, [cloudOp({ path: `todos/${todo.id}`, value: row, ...meta })]);
@@ -390,7 +391,7 @@ export function enqueueCloudTodoDelete(patientId, todoRef, updatedAt) {
   // Fresh delete clock only — equal clocks make Worker LWW reject the delete.
   const meta = {
     actorId: resolveCloudActorId(bridgeRuntime),
-    updatedAt: String(updatedAt || new Date().toISOString()),
+    updatedAt: String(updatedAt || cloudSyncNowIso()),
   };
   const pid = String(patientId || '').trim();
   const registro = registroForPatientId(getSyncablePatients(), pid);
@@ -410,7 +411,7 @@ export function enqueueCloudAgendaUpsert(eventObj) {
   if (!isCloudSyncActive() || !eventObj?.id || !bridgeRuntime?.outbox) return;
   const meta = {
     actorId: resolveCloudActorId(bridgeRuntime),
-    updatedAt: String(eventObj.updatedAt || new Date().toISOString()),
+    updatedAt: String(eventObj.updatedAt || cloudSyncNowIso()),
   };
   enqueueEntityOps(`agenda/${eventObj.id}`, [
     cloudOp({ path: `agenda/${eventObj.id}`, value: eventObj, ...meta }),
@@ -424,7 +425,7 @@ export function enqueueCloudAgendaDelete(id, updatedAt) {
   if (!eid) return;
   const meta = {
     actorId: resolveCloudActorId(bridgeRuntime),
-    updatedAt: String(updatedAt || new Date().toISOString()),
+    updatedAt: String(updatedAt || cloudSyncNowIso()),
   };
   enqueueEntityOps(`agenda/${eid}`, [
     cloudOp({
@@ -444,7 +445,7 @@ export function enqueueCloudLabSidecarsForPatient(patientId) {
   if (!labs.length) return;
   const meta = {
     actorId: resolveCloudActorId(bridgeRuntime),
-    updatedAt: new Date().toISOString(),
+    updatedAt: cloudSyncNowIso(),
   };
   const ops = buildDirtyLabSidecarOpsForPatient(pid, labs, meta);
   if (!ops.length) return;
@@ -519,7 +520,7 @@ function buildMergedTombstoneOps(pid, registro) {
     buildCloudTombstoneOp(pid, {
       registro,
       actorId: resolveCloudActorId(bridgeRuntime),
-      updatedAt: new Date().toISOString(),
+      updatedAt: cloudSyncNowIso(),
     }),
   ]);
   const prepared = prepareOutboxOpsForEnqueue(CLOUD_TOMBSTONES_MUTATION_ID, ops);

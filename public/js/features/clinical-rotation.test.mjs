@@ -80,8 +80,19 @@ describe('clinical-rotation preview window', () => {
     assert.match(body, /confirmLabel:\s*'Archivar equipos'/);
     const confirmIdx = body.indexOf('openConfirm(');
     const guardIdx = body.indexOf("if (result !== 'confirm')");
-    const nuevaFnIdx = body.indexOf('nuevaFn.call(api');
+    const applyIdx = body.indexOf('applyRotationNueva(api)');
     assert.ok(confirmIdx > -1 && guardIdx > confirmIdx, 'the confirm guard must follow the openConfirm call');
-    assert.ok(nuevaFnIdx > guardIdx, 'the rotation call must run only after the confirm guard');
+    assert.ok(applyIdx > guardIdx, 'the rotation call must run only after the confirm guard');
+
+    // applyRotationNueva() (called above) carries its own guard: the DB call
+    // must not fire when the api doesn't expose the rotation-nueva function.
+    const applyStart = rotationSrc.indexOf('async function applyRotationNueva');
+    assert.notEqual(applyStart, -1);
+    const applyEnd = rotationSrc.indexOf('\n}', applyStart);
+    const applyBody = rotationSrc.slice(applyStart, applyEnd);
+    const apiGuardIdx = applyBody.indexOf("if (typeof nuevaFn !== 'function')");
+    const nuevaFnIdx = applyBody.indexOf('nuevaFn.call(api');
+    assert.ok(apiGuardIdx > -1, 'applyRotationNueva must guard on api availability');
+    assert.ok(nuevaFnIdx > apiGuardIdx, 'the rotation DB call must run only after the api-availability guard');
   });
 });

@@ -4,6 +4,7 @@
  */
 import { CLOUD_TOMBSTONES_MUTATION_ID } from './constants.mjs';
 import { cloudOp } from './mutate-bridge-ops.mjs';
+import { cloudSyncNowIso } from './cloud-sync-clock.mjs';
 
 /**
  * @param {string} clientMutationId
@@ -22,7 +23,7 @@ export function isTombstoneOutboxMutationId(clientMutationId) {
  */
 export function buildCloudTombstoneOp(patientId, meta) {
   const pid = String(patientId || '').trim();
-  const updatedAt = String(meta?.updatedAt || '').trim() || new Date().toISOString();
+  const updatedAt = String(meta?.updatedAt || '').trim() || cloudSyncNowIso();
   const actorId = String(meta?.actorId || '').trim() || 'local';
   const registro = String(meta?.registro || '').trim();
   /** @type {{ deletedAt: string, registro?: string }} */

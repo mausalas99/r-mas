@@ -117,3 +117,27 @@ describe('createCloudSyncApi push/pull encryption', () => {
     assert.deepEqual(data.state.entries[0].note, { text: 'nota' });
   });
 });
+
+describe('createCloudSyncApi — error messages', () => {
+  after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('shows a plain Spanish message for a cloud_sync_timeout, not the raw code', async () => {
+    stubFetch(() => ({ status: 0, body: { error: 'cloud_sync_timeout' } }));
+    const api = createCloudSyncApi({ getBaseUrl: () => 'https://x', getToken: () => 'tok' });
+    await assert.rejects(() => api.pull(ROOM_ID, 0), /La Nube no respondió a tiempo/);
+  });
+
+  it('shows the server Spanish message, not the raw machine code', async () => {
+    stubFetch(() => ({ status: 403, body: { error: 'not_member', message: 'No eres miembro de esta sala.' } }));
+    const api = createCloudSyncApi({ getBaseUrl: () => 'https://x', getToken: () => 'tok' });
+    await assert.rejects(() => api.pull(ROOM_ID, 0), /No eres miembro de esta sala/);
+  });
+
+  it('falls back to the machine code when the server sends no message', async () => {
+    stubFetch(() => ({ status: 403, body: { error: 'not_member' } }));
+    const api = createCloudSyncApi({ getBaseUrl: () => 'https://x', getToken: () => 'tok' });
+    await assert.rejects(() => api.pull(ROOM_ID, 0), /not_member/);
+  });
+});

@@ -422,8 +422,15 @@ function markNewTodoRows(root, prevRows) {
 }
 
 export function renderTodoListSection(container, preserveTodoId) {
+  var currentPatientId = String(aid() || '');
+  var hadPriorPatient = container.dataset.todoListPatientId !== undefined;
+  var patientChanged = hadPriorPatient && container.dataset.todoListPatientId !== currentPatientId;
+  /** First paint or a patient switch: the whole panel is new, so it settles as
+   * one calm block instead of each row animating on its own (see below). */
+  var isPanelSwap = !hadPriorPatient || patientChanged;
+  container.dataset.todoListPatientId = currentPatientId;
   var preservedRow = preserveTodoId ? findPreservedTodoRow(container, preserveTodoId) : null;
-  var prevRows = collectTodoRowsById(container);
+  var prevRows = patientChanged ? Object.create(null) : collectTodoRowsById(container);
   clearTodoListSection(container);
   appendTodoFilterBar(container);
 
@@ -453,7 +460,7 @@ export function renderTodoListSection(container, preserveTodoId) {
     }
     container.appendChild(none);
     appendExitingRows(container, prevRows, new Set());
-    settlePasteSurface(none);
+    if (isPanelSwap) settlePasteSurface(none);
     updateExpPendientesTabBadge();
     return;
   }
@@ -462,9 +469,14 @@ export function renderTodoListSection(container, preserveTodoId) {
   list.className = 'todo-list';
   appendGroupedTodoSections(list, todos, preservedRow, preserveTodoId);
   container.appendChild(list);
-  markNewTodoRows(list, prevRows);
-  appendExitingRows(container, prevRows, new Set(todos.map(function (t) { return t.id; })));
-  settlePasteSurface(list);
+  if (!patientChanged) {
+    markNewTodoRows(list, prevRows);
+    appendExitingRows(container, prevRows, new Set(todos.map(function (t) { return t.id; })));
+  }
+  /* Only the freshly-appeared panel gets the whole-block settle. An in-place
+   * add/complete/delete on an already-shown list must not re-fade rows that
+   * did not change — the row-enter/row-exit above already animate those. */
+  if (isPanelSwap) settlePasteSurface(list);
   updateExpPendientesTabBadge();
 }
 

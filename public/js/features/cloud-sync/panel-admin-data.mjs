@@ -2,12 +2,14 @@ import { adminTableHtml } from './panel-admin-helpers.mjs';
 import {
   adminErrorHtml,
   mutationsListHtml,
+  redCensusHtml,
   resumenHtml,
   roomDetailHtml,
   salasTableHtml,
   roomDetailHostHtml,
   userActionsHtml,
 } from './panel-admin-html.mjs';
+import { fetchNetworkCensus } from './network-census.mjs';
 
 /**
  * @param {HTMLElement} root
@@ -58,6 +60,25 @@ export async function loadAdminRoomDetail(root, getApi, roomId) {
     el.innerHTML = roomDetailHtml(data);
   } catch (err) {
     el.innerHTML = adminErrorHtml(err?.data?.message || err?.message || 'No se pudo cargar el detalle.');
+  }
+}
+
+/**
+ * Cross-area patient list ("Red" tab). One request (`fetchNetworkCensus`)
+ * fetches and decrypts every sala's current room — this device's own active
+ * room is never touched, so there's nothing to restore afterward.
+ * @param {HTMLElement} root
+ * @param {{ getApi: () => ReturnType<import('./api-client.mjs').createCloudSyncApi> }} deps
+ */
+export async function loadAdminNetworkCensus(root, deps) {
+  const el = root.querySelector('[data-admin-red]');
+  if (!el) return;
+  el.innerHTML = '<p class="cloud-sync-hint">Recorriendo áreas…</p>';
+  try {
+    const census = await fetchNetworkCensus(deps.getApi());
+    el.innerHTML = redCensusHtml(census);
+  } catch (err) {
+    el.innerHTML = adminErrorHtml(err?.data?.message || err?.message || 'No se pudo recorrer la red.');
   }
 }
 

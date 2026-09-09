@@ -35,6 +35,9 @@ export function confirmAction(message) {
     question: message,
     confirmLabel: 'Continuar',
     cancelLabel: 'Cancelar',
+    // Administración is itself a modal nested in Conexión (--z-modal-nested) —
+    // without this the confirm backdrop renders behind it (--z-modal, lower).
+    stacked: true,
   });
 }
 
@@ -56,7 +59,8 @@ export function adminTableHtml(rows, cols, opts = {}) {
       const tds = cols
         .map((c) => '<td>' + (c.cell ? c.cell(row) : esc(String(row[c.key] ?? ''))) + '</td>')
         .join('');
-      return '<tr>' + tds + '</tr>';
+      const attrs = opts.rowAttrs ? ' ' + opts.rowAttrs(row) : '';
+      return '<tr' + attrs + '>' + tds + '</tr>';
     })
     .join('');
   return (

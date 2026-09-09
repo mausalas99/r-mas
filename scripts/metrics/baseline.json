@@ -1,7 +1,9 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-06T17:52:46.433Z",
-  "totalScore": 225,
+  "updatedAt": "2026-09-09T16:20:57.038Z",
+  "totalScore": 0,
+  "trackedLoc": 348800,
+  "moduleCount": 1257,
   "bootGraphHash": "7dee73a925486bda",
   "bootGraph": {
     "hash": "7dee73a925486bda",
@@ -223,6 +225,11 @@
       },
       {
         "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/sync-apply/patient-delete.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
         "from": "./features/sync-apply/patient-entries.mjs",
         "isDynamic": false
       },
@@ -270,6 +277,11 @@
         "hub": "public/js/app-runtimes.mjs",
         "from": "./mode-features.mjs",
         "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./patient-name-cleanup-once.mjs",
+        "isDynamic": true
       },
       {
         "hub": "public/js/app-runtimes.mjs",
@@ -661,10 +673,6 @@
     },
     {
       "date": "2026-06-03",
-      "note": "Baseline refresh totalScore=0"
-    },
-    {
-      "date": "2026-06-03",
       "note": "Baseline refresh totalScore=31408"
     },
     {
@@ -678,10 +686,6 @@
     {
       "date": "2026-08-07",
       "note": "Baseline refresh totalScore=130 (was 0; LAN excision WS3 — deleted lan-squad/, features/lan/, historia-clinica; boot graph hash change)"
-    },
-    {
-      "date": "2026-08-07",
-      "note": "Baseline refresh totalScore=0"
     },
     {
       "date": "2026-08-24",
@@ -698,8 +702,10 @@
     {
       "date": "2026-09-06",
       "note": "Correccion de conteo: moduleCount quedo en 1246 por error (medido con git ls-files antes de que los 5 archivos nuevos de esta sesion quedaran en el indice). Valor real post-commit: 1251 (git ls-files ya los incluye). trackedLoc sin cambio (350000 techo, 345907 medido)."
+    },
+    {
+      "date": "2026-09-09",
+      "note": "Baseline refresh: moduleCount 1251->1257 (6 new files this session: admin-roles.js, cloud-sync-clock.mjs, cloud-sync-echo-guard.mjs, network-census.mjs, scope-cloud-state-to-patient.mjs, patient-name-cleanup-once.mjs, for the Red tab cross-area admin census feature). trackedLoc ceiling 350000->348800 (measured 348603, rounded up). totalScore 225->0 (this session fixed the 3 new complexity violations the Red tab feature introduced instead of carrying them as debt; the 15 pre-existing violations from the 2026-09-06 raise are untouched, still tracked in docs/superpowers/plans/2026-09-06-complexity-debt-handoff.md). Owner-approved via chat 2026-09-09. Also fixes a script bug: run.mjs --write-baseline was dropping trackedLoc/moduleCount from the file entirely (only totalScore/bootGraph were ever written back), so every baseline refresh silently blanked the LOC/module ratchets until the next check() run failed on it."
     }
-  ],
-  "trackedLoc": 350000,
-  "moduleCount": 1251
+  ]
 }

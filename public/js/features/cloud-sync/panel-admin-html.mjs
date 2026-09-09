@@ -2,10 +2,15 @@ import { esc } from '../../dom-escape.mjs';
 import { formatBytes } from '../../update-helpers.mjs';
 import { adminTableHtml, fmtRole } from './panel-admin-helpers.mjs';
 import { formatCloudRoomLabel } from './room-label.mjs';
+import { resolvePatientCensusTeamId } from '../patients-clinical-filter.mjs';
+
+/** Sentinel team-filter value meaning "sin equipo" (no resolved team), distinct from "" = todos. */
+const NO_TEAM_FILTER_VALUE = '__sin_equipo__';
 
 const ADMIN_TABS = [
   { id: 'resumen', label: 'Resumen' },
   { id: 'salas', label: 'Salas' },
+  { id: 'red', label: 'Red' },
   // Equipos + cuentas Nube (antes pestaña Usuarios) en un solo panel.
   { id: 'equipos', label: 'Usuarios' },
   { id: 'mutaciones', label: 'Mutaciones' },
@@ -159,6 +164,246 @@ export function salasTableHtml(rooms) {
     '<p class="cloud-sync-hint cloud-sync-admin-salas-hint">Cada sala de guardia (Sala 1, Sala 2, Sala E, Torre HU) tiene su propio espacio por mes (YYYY-MM).</p>' +
     adminTableHtml(rooms, cols)
   );
+}
+
+function networkCensusRowFromEntry(area, entry, teams, assignments, now, teamOptions) {
+  const fields = entry?.fields || {};
+  const patientId = String(entry?.id || '');
+  const teamId = resolvePatientCensusTeamId({ id: patientId, ...fields }, teams, assignments, now);
+  if (teamId) {
+    const team = teams.find((t) => String(t.team_id || '') === teamId);
+    teamOptions.set(teamId, team?.name || teamId);
+  }
+  return {
+    sala: area.sala,
+    roomId: area.roomId,
+    code: area.code,
+    patientId,
+    registro: fields.registro || '',
+    nombre: fields.nombre || '(sin nombre)',
+    cama: fields.cama || '—',
+    cuarto: fields.cuarto || '—',
+    servicio: fields.servicio || '—',
+    archived: !!fields.archived,
+    teamId,
+  };
+}
+
+function networkCensusRowsFromArea(area, now, teamOptions) {
+  const teams = area.clinicalOps?.teams || [];
+  const assignments = area.clinicalOps?.patient_team_assignment || [];
+  return (area.entries || []).map((entry) =>
+    networkCensusRowFromEntry(area, entry, teams, assignments, now, teamOptions)
+  );
+}
+
+/**
+ * Walks every area's entries into flat rows, plus the areas that errored and
+ * the teamId->label map for the team filter's <option>s.
+ */
+function buildNetworkCensusRows(census, now) {
+  const rows = [];
+  const errors = [];
+  const teamOptions = new Map(); // teamId -> label
+  for (const area of Array.isArray(census) ? census : []) {
+    if (area.error) {
+      errors.push(area);
+      continue;
+    }
+    rows.push(...networkCensusRowsFromArea(area, now, teamOptions));
+  }
+  rows.sort((a, b) => a.sala.localeCompare(b.sala, 'es') || String(a.cama).localeCompare(String(b.cama), 'es'));
+  return { rows, errors, teamOptions };
+}
+
+function networkCensusCols() {
+  return [
+    {
+      label: '',
+      cell: (row) =>
+        '<input type="checkbox" data-network-select data-room-id="' +
+        esc(String(row.roomId || '')) +
+        '" data-patient-id="' +
+        esc(String(row.patientId || '')) +
+        '" data-registro="' +
+        esc(String(row.registro || '')) +
+        '" data-archived="' +
+        (row.archived ? '1' : '0') +
+        '" aria-label="Seleccionar paciente" />',
+    },
+    { label: 'Sala', key: 'sala' },
+    { label: 'Nombre', key: 'nombre' },
+    { label: 'Cama', key: 'cama' },
+    { label: 'Cuarto', key: 'cuarto' },
+    { label: 'Servicio', key: 'servicio' },
+    { label: 'Estado', cell: (row) => (row.archived ? 'Archivado' : 'Activo') },
+    {
+      label: 'Acciones',
+      cell: (row) =>
+        '<div class="cloud-sync-admin-row-actions">' +
+        '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" ' +
+        'data-admin-action="switch-network-room" data-room-code="' +
+        esc(String(row.code || '')) +
+        '" data-patient-id="' +
+        esc(String(row.patientId || '')) +
+        '">Abrir expediente</button>' +
+        '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" ' +
+        'data-admin-action="archive-network-patient" data-room-id="' +
+        esc(String(row.roomId || '')) +
+        '" data-patient-id="' +
+        esc(String(row.patientId || '')) +
+        '" data-archived="' +
+        (row.archived ? '1' : '0') +
+        '">' +
+        (row.archived ? 'Restaurar' : 'Archivar') +
+        '</button>' +
+        (row.archived
+          ? '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger cloud-sync-btn--compact" ' +
+            'data-admin-action="delete-network-patient" data-room-id="' +
+            esc(String(row.roomId || '')) +
+            '" data-patient-id="' +
+            esc(String(row.patientId || '')) +
+            '" data-registro="' +
+            esc(String(row.registro || '')) +
+            '">Eliminar</button>'
+          : '') +
+        '</div>',
+    },
+  ];
+}
+
+function networkCensusErrorsHtml(errors) {
+  return errors.length
+    ? '<p class="cloud-sync-hint">Sin acceso aún: ' +
+      errors.map((a) => esc(a.sala) + ' (' + esc(a.error) + ')').join(', ') +
+      '</p>'
+    : '';
+}
+
+function networkCensusFiltersHtml(census, teamOptions) {
+  const salaOptionsHtml = (Array.isArray(census) ? census : [])
+    .filter((a) => !a.error)
+    .map((a) => '<option value="' + esc(a.sala) + '">' + esc(a.sala) + '</option>')
+    .join('');
+  const teamOptionsHtml = Array.from(teamOptions.entries())
+    .sort((a, b) => a[1].localeCompare(b[1], 'es'))
+    .map(([id, label]) => '<option value="' + esc(id) + '">' + esc(label) + '</option>')
+    .join('');
+
+  return (
+    '<div class="cloud-sync-admin-red-filters">' +
+    '<select class="profile-input" data-network-filter="sala" aria-label="Filtrar por área">' +
+    '<option value="">Todas las áreas</option>' +
+    salaOptionsHtml +
+    '</select>' +
+    '<select class="profile-input" data-network-filter="team" aria-label="Filtrar por equipo">' +
+    '<option value="">Todos los equipos</option>' +
+    '<option value="' + NO_TEAM_FILTER_VALUE + '">Sin equipo</option>' +
+    teamOptionsHtml +
+    '</select>' +
+    '<select class="profile-input" data-network-filter="activity" aria-label="Filtrar por estado">' +
+    '<option value="">Todos</option>' +
+    '<option value="active">Activos</option>' +
+    '<option value="archived">Archivados</option>' +
+    '</select>' +
+    '</div>'
+  );
+}
+
+/**
+ * Cross-area patient list ("Red" tab) — one row per patient, every sala's
+ * current room. Rows carry the patient's room code so a click can switch
+ * this device to that area (`data-admin-action="switch-network-room"`), plus
+ * `data-sala`/`data-team-id`/`data-archived` for the client-side filters
+ * (`applyNetworkCensusFilters` in panel-admin.mjs — no re-fetch on filter change).
+ * @param {Array<{ sala: string, roomId?: string, code?: string, entries?: object[], clinicalOps?: { teams?: object[], patient_team_assignment?: object[] }|null, error?: string }>} census
+ */
+export function redCensusHtml(census) {
+  const { rows, errors, teamOptions } = buildNetworkCensusRows(census, new Date());
+
+  return (
+    '<div class="cloud-sync-admin-panel-head">' +
+    '<label class="cloud-sync-admin-red-select-all">' +
+    '<input type="checkbox" data-network-select-all aria-label="Seleccionar todos los visibles" /> Todos</label>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="bulk-archive-network">Archivar seleccionados</button>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger cloud-sync-btn--compact" data-admin-action="bulk-delete-network">Eliminar seleccionados</button>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="refresh-red">Actualizar</button></div>' +
+    '<p class="cloud-sync-hint">Todos los pacientes, en todas las áreas, con la sala actual de cada una. El check de "Eliminar" solo cuenta a los ya archivados.</p>' +
+    networkCensusFiltersHtml(census, teamOptions) +
+    networkCensusErrorsHtml(errors) +
+    adminTableHtml(rows, networkCensusCols(), {
+      emptyHtml: '<p class="cloud-sync-hint">Sin pacientes en ninguna área.</p>',
+      rowAttrs: (row) =>
+        'data-sala="' +
+        esc(row.sala) +
+        '" data-team-id="' +
+        esc(row.teamId || NO_TEAM_FILTER_VALUE) +
+        '" data-archived="' +
+        (row.archived ? '1' : '0') +
+        '"',
+    })
+  );
+}
+
+/**
+ * Applies the Red tab's sala/team/activity filters by toggling row visibility —
+ * no re-fetch, the census HTML already carries every row's `data-sala`,
+ * `data-team-id`, `data-archived`. Safe to call with no filter selects present.
+ * @param {HTMLElement} root
+ */
+export function applyNetworkCensusFilters(root) {
+  const panel = root.querySelector('[data-admin-red]');
+  if (!panel) return;
+  const val = (name) => {
+    const sel = panel.querySelector('[data-network-filter="' + name + '"]');
+    return sel instanceof HTMLSelectElement ? sel.value : '';
+  };
+  const sala = val('sala');
+  const team = val('team');
+  const activity = val('activity');
+  panel.querySelectorAll('tbody tr').forEach((tr) => {
+    let show = true;
+    if (sala && tr.getAttribute('data-sala') !== sala) show = false;
+    if (team && tr.getAttribute('data-team-id') !== team) show = false;
+    if (activity === 'active' && tr.getAttribute('data-archived') === '1') show = false;
+    if (activity === 'archived' && tr.getAttribute('data-archived') !== '1') show = false;
+    tr.hidden = !show;
+  });
+}
+
+/**
+ * Checkboxes belonging to rows the filters currently show (`tr.hidden === false`) —
+ * "select all" only ever touches what the admin can actually see.
+ * @param {HTMLElement} root
+ */
+export function listVisibleNetworkCheckboxes(root) {
+  const panel = root.querySelector('[data-admin-red]');
+  if (!panel) return [];
+  return [...panel.querySelectorAll('tbody input[data-network-select]')].filter(
+    (cb) => cb instanceof HTMLInputElement && !cb.closest('tr')?.hidden
+  );
+}
+
+/**
+ * @param {HTMLElement} root
+ * @returns {Array<{ roomId: string, patientId: string, registro: string, archived: boolean }>}
+ */
+export function listSelectedNetworkPatients(root) {
+  const panel = root.querySelector('[data-admin-red]');
+  if (!panel) return [];
+  return [...panel.querySelectorAll('tbody input[data-network-select]:checked')]
+    .filter((cb) => cb instanceof HTMLInputElement)
+    .map((cb) => ({
+      roomId: cb.getAttribute('data-room-id') || '',
+      patientId: cb.getAttribute('data-patient-id') || '',
+      registro: cb.getAttribute('data-registro') || '',
+      archived: cb.getAttribute('data-archived') === '1',
+    }));
+}
+
+/** @param {HTMLElement} root @param {boolean} checked */
+export function setSelectAllVisibleNetwork(root, checked) {
+  for (const cb of listVisibleNetworkCheckboxes(root)) cb.checked = checked;
 }
 
 export function roomDetailHostHtml() {

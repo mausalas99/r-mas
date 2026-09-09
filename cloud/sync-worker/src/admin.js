@@ -6,9 +6,10 @@ import { summarizeMutationOpsJson } from './mutation-guard.mjs';
 import { hashPassword } from './password.js';
 import { QUOTAS } from './quotas.js';
 import { randomRoomCode } from './rooms.js';
+import { ADMIN_ROLES } from './admin-roles.js';
+import { CLOUD_SALAS } from './sala-allowlist.js';
 import { userFromAuthHeader } from './session.js';
-
-const ADMIN_ROLES = new Set(['admin', 'program_admin']);
+import { loadRoomState } from './sync.js';
 const PROMOTABLE_ROLES = new Set(['admin', 'program_admin', 'member']);
 const OPS_JSON_TRUNC = 500;
 const DEFAULT_MUTATIONS_LIMIT = 50;
@@ -120,6 +121,86 @@ async function handleListRooms(db) {
   }));
 
   return Response.json({ rooms });
+}
+
+/**
+ * Pick the current room per sala from a raw `rooms` table scan — highest
+ * `turn_key` (sala+month, sorts lexically as `YYYY-MM`), ties broken by
+ * revision. Mirrors the client's `currentRoomsBySala` (network-census.mjs).
+ * @param {Array<{ id: string, sala?: string, turn_key?: string, revision?: number }>} rows
+ */
+export function currentRoomsBySala(rows) {
+  const bySala = new Map();
+  for (const row of rows ?? []) {
+    const sala = String(row?.sala || '').trim();
+    if (!sala || !CLOUD_SALAS.includes(sala)) continue;
+    const prev = bySala.get(sala);
+    if (!prev) {
+      bySala.set(sala, row);
+      continue;
+    }
+    const prevKey = String(prev.turn_key || '');
+    const key = String(row.turn_key || '');
+    if (key > prevKey || (key === prevKey && Number(row.revision) > Number(prev.revision))) {
+      bySala.set(sala, row);
+    }
+  }
+  return bySala;
+}
+
+/**
+ * Cross-area patient list ("Red" tab), server side. Replaces the old client
+ * sweep (join + DEK fetch + pull, per sala, 8 salas = 24 round trips) with
+ * one request: this Worker already holds the DB connection, so reading all
+ * 8 rooms' state here costs 8 local D1 reads instead of 24 trips over the
+ * public internet. The wrapped DEK travels alongside each room's state —
+ * unwrapping it still happens on the client, which is the only side that
+ * ever holds a room's join code.
+ * @param {{ WORKER_DATA_KEY?: string }} env
+ * @param {import('@cloudflare/workers-types').D1Database} db
+ */
+export async function handleNetworkCensus(env, db) {
+  const { results } = await db
+    .prepare(
+      `SELECT id, sala, code, turn_key, revision, wrapped_dek_ct, wrapped_dek_iv, wrapped_dek_salt
+       FROM rooms`
+    )
+    .all();
+  const bySala = currentRoomsBySala(results ?? []);
+
+  // One sala at a time, not Promise.all. loadRoomState is up to 3 D1 queries
+  // per room; 8 rooms in parallel fires up to 24 D1 queries in one burst from
+  // a single request, which measurably contributes to D1's own "DB is
+  // overloaded, requests queued for too long" errors under real concurrent
+  // hospital traffic (seen live via `wrangler tail` 2026-09-08). This is
+  // Worker-to-D1, not a network round trip to the client, so going sequential
+  // costs a few tens of ms — trivial next to the 24-round-trips-over-the-
+  // internet problem this endpoint replaced, and it stops one admin click
+  // from being the spike that tips D1 over.
+  const salas = [];
+  for (const sala of CLOUD_SALAS) {
+    const room = bySala.get(sala);
+    if (!room) {
+      salas.push({ sala, error: 'Sin sala activa este mes.' });
+      continue;
+    }
+    try {
+      const { state } = await loadRoomState(env, db, room.id);
+      salas.push({
+        sala,
+        roomId: room.id,
+        code: room.code,
+        dek: room.wrapped_dek_ct
+          ? { ct: room.wrapped_dek_ct, iv: room.wrapped_dek_iv, salt: room.wrapped_dek_salt }
+          : null,
+        state,
+      });
+    } catch (err) {
+      salas.push({ sala, roomId: room.id, code: room.code, error: err?.message || 'Error' });
+    }
+  }
+
+  return Response.json({ salas });
 }
 
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */
@@ -504,6 +585,11 @@ export async function handleAdmin(request, env, subpath) {
   if (subpath === '/rooms' && method === 'GET') {
     await requireAdminUser(db, request, env);
     return handleListRooms(db);
+  }
+
+  if (subpath === '/network-census' && method === 'GET') {
+    await requireAdminUser(db, request, env);
+    return handleNetworkCensus(env, db);
   }
 
   const roomMutationsMatch = /^\/rooms\/([^/]+)\/mutations$/.exec(subpath);

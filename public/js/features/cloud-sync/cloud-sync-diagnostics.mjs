@@ -70,6 +70,21 @@ export function clearCloudSyncErrors() {
   lastErrors.length = 0;
 }
 
+/**
+ * Clear only errors recorded before `beforeIso` (keep everything at/after it).
+ * Falsy `beforeIso` clears everything, same as `clearCloudSyncErrors()`.
+ * @param {string | null} beforeIso
+ */
+function clearCloudSyncErrorsBefore(beforeIso) {
+  if (!beforeIso) {
+    clearCloudSyncErrors();
+    return;
+  }
+  const kept = lastErrors.filter((row) => row.at >= beforeIso);
+  lastErrors.length = 0;
+  lastErrors.push(...kept);
+}
+
 export function clearCloudSyncWsFaults() {
   lastWsError = null;
   lastWsClose = null;
@@ -77,9 +92,13 @@ export function clearCloudSyncWsFaults() {
 
 /** @param {boolean} ok */
 export function noteCloudSyncCycle(ok) {
+  const prevCycleAt = lastCycleAt;
   lastCycleAt = new Date().toISOString();
   lastCycleOk = !!ok;
-  if (ok) clearCloudSyncErrors();
+  // A push can return HTTP 200 with a per-op `rejected` array, so a cycle can
+  // succeed and still have recorded a real error. Clear only errors from before
+  // the previous cycle boundary — never the ones this cycle just recorded.
+  if (ok) clearCloudSyncErrorsBefore(prevCycleAt);
 }
 
 export function noteCloudSyncPull() {

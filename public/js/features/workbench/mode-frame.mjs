@@ -23,17 +23,35 @@ import { escHtml, escAttr } from '../../dom-escape.mjs';
  * }} opts
  * @returns {string}
  */
+function withDefault(v, fallback) {
+  return v === undefined ? fallback : v;
+}
+
+function normalizeModeFrameOpts(opts) {
+  const o = opts || {};
+  return {
+    modeName: withDefault(o.modeName, ''),
+    context: withDefault(o.context, ''),
+    metadata: withDefault(o.metadata, ''),
+    secondaryActions: withDefault(o.secondaryActions, []),
+    shortcutLabel: withDefault(o.shortcutLabel, '⌘/'),
+    showShortcut: withDefault(o.showShortcut, true),
+    primaryAction: o.primaryAction,
+    onContextClick: o.onContextClick,
+  };
+}
+
 export function buildModeFrameHtml(opts) {
   const {
-    modeName = '',
-    context = '',
-    metadata = '',
-    secondaryActions = [],
-    shortcutLabel = '⌘/',
-    showShortcut = true,
+    modeName,
+    context,
+    metadata,
+    secondaryActions,
+    shortcutLabel,
+    showShortcut,
     primaryAction,
     onContextClick,
-  } = opts || {};
+  } = normalizeModeFrameOpts(opts);
 
   if (!primaryAction || !primaryAction.label) {
     throw new Error('wb-mode-frame: exactly one primary action is required');

@@ -21,6 +21,7 @@ import {
   resolveCloudActorId,
   ensureLiveCensusClocks,
 } from './mutate-bridge.mjs';
+import { cloudSyncNowIso } from './cloud-sync-clock.mjs';
 
 /** Direct census seed — bypasses LAN bundle timing; used on desktop boot / ⇄ connect. */
 export async function pushCloudCensusNow() {
@@ -32,7 +33,7 @@ export async function pushCloudCensusNow() {
 
   const meta = {
     actorId: resolveCloudActorId(),
-    updatedAt: new Date().toISOString(),
+    updatedAt: cloudSyncNowIso(),
   };
   ensureLiveCensusClocks(meta.updatedAt);
 
@@ -97,7 +98,7 @@ export async function pushCloudLabSidecarsNow() {
 
   const meta = {
     actorId: resolveCloudActorId(),
-    updatedAt: new Date().toISOString(),
+    updatedAt: cloudSyncNowIso(),
   };
   const { collectPatientEntriesForCloudPush } = await import('./cloud-census-collect.mjs');
   const entries = await collectPatientEntriesForCloudPush();

@@ -151,14 +151,23 @@ describe('cloud-sync-diagnostics', () => {
     assert.match(redacted, /"token":"\*\*\*"/);
   });
 
-  it('noteCloudSyncCycle(true) clears recorded errors', () => {
+  it('noteCloudSyncCycle(true) clears stale errors from an earlier cycle window', () => {
     clearCloudSyncDiagnostics();
     recordCloudSyncError({ op: 'push', code: 'ERR', message: 'falló' });
-    noteCloudSyncCycle(false);
-    assert.equal(getCloudSyncDiagnostics().lastErrors.length, 1);
+    noteCloudSyncCycle(true);
     noteCloudSyncCycle(true);
     assert.equal(getCloudSyncDiagnostics().lastErrors.length, 0);
     assert.equal(getCloudSyncDiagnostics().lastCycleOk, true);
+  });
+
+  it('noteCloudSyncCycle(true) keeps an error recorded during that same cycle (HTTP 200 + rejected ops)', () => {
+    clearCloudSyncDiagnostics();
+    noteCloudSyncCycle(true); // establish a cycle boundary
+    recordCloudSyncError({ op: 'push', code: 'quota_exceeded', message: 'Cupo de Nube alcanzado' });
+    noteCloudSyncCycle(true); // this cycle also reports ok — must not wipe the error it just recorded
+    const diag = getCloudSyncDiagnostics();
+    assert.equal(diag.lastErrors.length, 1);
+    assert.equal(diag.lastErrors[0].code, 'quota_exceeded');
   });
 
   it('noteCloudSyncWsLifecycle open clears ws faults', () => {

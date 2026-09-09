@@ -85,20 +85,32 @@ function medDropdownOptionLabel(it, ctx, value) {
   return value;
 }
 
-function tryAddMedDropdownOption(it, ctx) {
-  if (!it || /** @type {{ suspendido?: boolean }} */ (it).suspendido) return;
-  if (skipRecetaItemForInsulinPumpCarrier(it, ctx.items)) return;
-  if (isPotassiumReposCarrierMedicationItem(it, ctx.items)) return;
-  if (!shouldIncludeMedicationInSoap(
+function shouldSkipRecetaItemForDropdown(it, ctx) {
+  if (!it || /** @type {{ suspendido?: boolean }} */ (it).suspendido) return true;
+  if (skipRecetaItemForInsulinPumpCarrier(it, ctx.items)) return true;
+  if (isPotassiumReposCarrierMedicationItem(it, ctx.items)) return true;
+  return !shouldIncludeMedicationInSoap(
     /** @type {{ nombreRaw?: string, dosisRaw?: string, frecuenciaRaw?: string, suspendido?: boolean }} */ (it),
     ctx.classifyFn
-  )) {
-    return;
-  }
-  if (tryAddInsulinPumpDropdownOption(it, ctx)) return;
-  if (tryAddInsulinRescateDropdownOption(it, ctx)) return;
-  if (tryAddInsulinPrandialDropdownOption(it, ctx)) return;
-  if (tryAddPotassiumReposDropdownOption(it, ctx)) return;
+  );
+}
+
+var SPECIAL_DROPDOWN_OPTION_HANDLERS = [
+  tryAddInsulinPumpDropdownOption,
+  tryAddInsulinRescateDropdownOption,
+  tryAddInsulinPrandialDropdownOption,
+  tryAddPotassiumReposDropdownOption,
+];
+
+function tryAddSpecialDropdownOption(it, ctx) {
+  return SPECIAL_DROPDOWN_OPTION_HANDLERS.some(function (handler) {
+    return handler(it, ctx);
+  });
+}
+
+function tryAddMedDropdownOption(it, ctx) {
+  if (shouldSkipRecetaItemForDropdown(it, ctx)) return;
+  if (tryAddSpecialDropdownOption(it, ctx)) return;
   var cat = effectiveSoapCategory(
     /** @type {{ nombreRaw?: string, soapCatOverride?: string }} */ (it),
     ctx.classifyFn

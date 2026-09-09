@@ -199,6 +199,52 @@ describe('renderTodoListSection row-enter diffing', () => {
 
     registerTodosRuntime({ getActiveId: () => null });
   });
+
+  it('does not row-enter/row-exit stagger the whole list when the active patient changes', () => {
+    if (typeof document === 'undefined') return;
+    const a = todo({ id: 'a', text: 'Paciente 1 pendiente' });
+    const b = todo({ id: 'b', text: 'Paciente 2 pendiente' });
+    storage.saveTodos('p-switch-1', [a]);
+    storage.saveTodos('p-switch-2', [b]);
+    const container = document.createElement('div');
+
+    registerTodosRuntime({ getActiveId: () => 'p-switch-1' });
+    renderTodoListSection(container);
+    const rowA = container.querySelector('.wb-row[data-todo-id="a"]');
+    assert.match(rowA.className, /row-enter/, 'first paint for a patient still enters normally');
+
+    registerTodosRuntime({ getActiveId: () => 'p-switch-2' });
+    renderTodoListSection(container);
+    const rowB = container.querySelector('.wb-row[data-todo-id="b"]');
+    assert.doesNotMatch(rowB.className, /row-enter/, 'switching patients swaps the panel as one, not row-by-row');
+    assert.equal(container.querySelector('.row-exit'), null, 'no ghost of the previous patient\'s row is left behind');
+
+    registerTodosRuntime({ getActiveId: () => null });
+  });
+
+  it('does not re-settle the whole list when adding or clearing a pendiente for the same patient', () => {
+    if (typeof document === 'undefined') return;
+    registerTodosRuntime({ getActiveId: () => 'p-inplace' });
+    const a = todo({ id: 'a', text: 'Primero' });
+    storage.saveTodos('p-inplace', [a]);
+    const container = document.createElement('div');
+
+    renderTodoListSection(container);
+    const list1 = container.querySelector('.todo-list');
+    assert.equal(list1.style.opacity, '0', 'first paint of the panel still settles as a whole');
+
+    storage.saveTodos('p-inplace', [a, todo({ id: 'b', text: 'Segundo' })]);
+    renderTodoListSection(container);
+    const list2 = container.querySelector('.todo-list');
+    assert.notEqual(list2.style.opacity, '0', 'adding a pendiente to an already-shown list must not re-fade the whole panel');
+
+    storage.saveTodos('p-inplace', [a]);
+    renderTodoListSection(container);
+    const list3 = container.querySelector('.todo-list');
+    assert.notEqual(list3.style.opacity, '0', 'clearing a pendiente must not re-fade the whole panel either');
+
+    registerTodosRuntime({ getActiveId: () => null });
+  });
 });
 
 /** Real, always-visible Pendientes entry point (Phase 6 fix): the tab-bar

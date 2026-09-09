@@ -326,6 +326,59 @@ export function getConsolidatedCompositeState(granularTab, settings) {
   return state;
 }
 
+function syncDatosActionsVisibility(compositeState) {
+  var datosActions = document.getElementById('exp-paciente-datos-actions');
+  if (!datosActions) return;
+  datosActions.hidden = !(compositeState.paciente && compositeState.paciente.active);
+}
+
+function syncDriveActionsVisibility(settings, compositeState) {
+  var driveActions = document.getElementById('exp-clinico-drive-actions');
+  if (!driveActions) return;
+  driveActions.hidden = !(
+    isModeSala(settings) &&
+    compositeState.clinico &&
+    compositeState.clinico.active
+  );
+}
+
+function syncSalidaPanes(target, granularTab, settings) {
+  var salidaSections = getSalidaSections(settings);
+  if (salidaSections.length) {
+    salidaSections.forEach(function (section) {
+      var pane = paneEl(section);
+      if (pane) pane.classList.toggle('active', target.tab === 'salida' && target.section === section);
+    });
+    return;
+  }
+  var recetaPane = paneEl('recetaHu');
+  if (recetaPane) recetaPane.classList.toggle('active', target.tab === 'salida' && granularTab === 'recetaHu');
+}
+
+function syncDatosPane() {
+  var datosPane = paneEl('datos');
+  if (!datosPane) return;
+  var datosInModal = !!datosPane.closest('#exp-datos-modal-mount');
+  datosPane.classList.toggle('active', datosInModal);
+  datosPane.hidden = !datosInModal;
+}
+
+function syncPendientesMounts(granularTab) {
+  var todoPane = paneEl('todo');
+  if (todoPane) todoPane.classList.toggle('active', granularTab === 'todo');
+  var dashMount = document.getElementById('patient-dashboard-mount');
+  var pendMount = document.querySelector('#itab-content-paciente .exp-pendientes-mount');
+  var pendHeader = document.getElementById('exp-pendientes-header');
+  if (dashMount) dashMount.hidden = granularTab !== 'resumen';
+  if (pendMount) pendMount.hidden = granularTab !== 'todo';
+  if (pendHeader) pendHeader.hidden = granularTab !== 'todo';
+  var pendTabBtn = document.getElementById('itab-todo');
+  if (!pendTabBtn) return;
+  var pendActive = granularTab === 'todo';
+  pendTabBtn.classList.toggle('active', pendActive);
+  pendTabBtn.setAttribute('aria-selected', String(pendActive));
+}
+
 export function syncConsolidatedPaneVisibility(granularTab, settings, opts) {
   opts = opts || {};
   var target = resolveConsolidatedTarget(granularTab, settings);
@@ -337,18 +390,8 @@ export function syncConsolidatedPaneVisibility(granularTab, settings, opts) {
     composite.hidden = !pane.visible;
     composite.classList.toggle('active', pane.active);
   });
-  var datosActions = document.getElementById('exp-paciente-datos-actions');
-  if (datosActions) {
-    datosActions.hidden = !(compositeState.paciente && compositeState.paciente.active);
-  }
-  var driveActions = document.getElementById('exp-clinico-drive-actions');
-  if (driveActions) {
-    driveActions.hidden = !(
-      isModeSala(settings) &&
-      compositeState.clinico &&
-      compositeState.clinico.active
-    );
-  }
+  syncDatosActionsVisibility(compositeState);
+  syncDriveActionsVisibility(settings, compositeState);
   CLINICO_GRANULAR_TABS.forEach(function (section) {
     var pane = paneEl(section);
     if (!pane) return;
@@ -363,34 +406,7 @@ export function syncConsolidatedPaneVisibility(granularTab, settings, opts) {
       pane.classList.toggle('active', target.tab === 'resultados' && target.section === section);
     }
   });
-  var datosPane = paneEl('datos');
-  var todoPane = paneEl('todo');
-  var salidaSections = getSalidaSections(settings);
-  if (salidaSections.length) {
-    salidaSections.forEach(function (section) {
-      var pane = paneEl(section);
-      if (pane) pane.classList.toggle('active', target.tab === 'salida' && target.section === section);
-    });
-  } else {
-    var recetaPane = paneEl('recetaHu');
-    if (recetaPane) recetaPane.classList.toggle('active', target.tab === 'salida' && granularTab === 'recetaHu');
-  }
-  if (datosPane) {
-    var datosInModal = !!datosPane.closest('#exp-datos-modal-mount');
-    datosPane.classList.toggle('active', datosInModal);
-    datosPane.hidden = !datosInModal;
-  }
-  if (todoPane) todoPane.classList.toggle('active', granularTab === 'todo');
-  var dashMount = document.getElementById('patient-dashboard-mount');
-  var pendMount = document.querySelector('#itab-content-paciente .exp-pendientes-mount');
-  var pendHeader = document.getElementById('exp-pendientes-header');
-  if (dashMount) dashMount.hidden = granularTab !== 'resumen';
-  if (pendMount) pendMount.hidden = granularTab !== 'todo';
-  if (pendHeader) pendHeader.hidden = granularTab !== 'todo';
-  var pendTabBtn = document.getElementById('itab-todo');
-  if (pendTabBtn) {
-    var pendActive = granularTab === 'todo';
-    pendTabBtn.classList.toggle('active', pendActive);
-    pendTabBtn.setAttribute('aria-selected', String(pendActive));
-  }
+  syncSalidaPanes(target, granularTab, settings);
+  syncDatosPane();
+  syncPendientesMounts(granularTab);
 }

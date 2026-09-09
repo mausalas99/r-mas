@@ -476,37 +476,86 @@ function capitalizeFirstOnly_(s) {
   return lower.charAt(0).toUpperCase() + lower.slice(1);
 }
 
+/** Palabras de califican simple/contraste, no forman parte de la región anatómica. */
+function stripImagingQualifiers_(s) {
+  return String(s || "")
+    .replace(/\b(SIMPLE|SIM|SIN|CON|Y|CONTRASTAD[AO]|CONTRASTE|CONT)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /**
- * Nombre corto para un PROCEDIMIENTO de imagen — "TOMOGRAFIA AXIAL
- * COMPUTERIZADA DE TORAX" → "TAC de Torax". null si no es de imagen.
+ * Identifica un estudio de imagen (TAC/RM) en cualquiera de sus dos formas —
+ * "TOMOGRAFIA AXIAL COMPUTERIZADA DE TORAX" (nombre completo, típico de
+ * PROCEDIMIENTO) o "TAC TORAX SIMPLE Y CONT" (abreviado, típico de ESTUDIOS)
+ * — y devuelve una llave (modalidad + región) para emparejar ambas formas
+ * del mismo estudio. null si no es de imagen.
  */
-function shortImagingProcedureName_(nombreRaw) {
+function imagingStudyKey_(nombreRaw) {
   var n = String(nombreRaw || "").toUpperCase();
-  var tac = n.match(/^TOMOGRAF[IÍ]A\b[\s\S]*?\bDE\s+(.+)/);
-  if (tac) return "TAC de " + capitalizeFirstOnly_(tac[1]);
-  var rm = n.match(/^(?:IMAGENES\s+DE\s+)?RESONANCIA\s+MAGN[EÉ]TICA\b[\s\S]*?\bDE\s+(.+)/);
-  if (rm) return "RM de " + capitalizeFirstOnly_(rm[1]);
+  var tac = n.match(/^TOMOGRAF[IÍ]A\b[\s\S]*?\bDE\s+(.+)/) || n.match(/^TAC\s+(.+)/);
+  if (tac) {
+    var bodyTac = stripImagingQualifiers_(tac[1]);
+    if (bodyTac) return { key: "TAC|" + bodyTac, shortName: "TAC de " + capitalizeFirstOnly_(bodyTac) };
+  }
+  var rm = n.match(/^(?:IMAGENES\s+DE\s+)?RESONANCIA\s+MAGN[EÉ]TICA\b[\s\S]*?\bDE\s+(.+)/) || n.match(/^RM\s+(.+)/);
+  if (rm) {
+    var bodyRm = stripImagingQualifiers_(rm[1]);
+    if (bodyRm) return { key: "RM|" + bodyRm, shortName: "RM de " + capitalizeFirstOnly_(bodyRm) };
+  }
   return null;
 }
 
-/** "SIN CONTRASTE" no cuenta como contrastada, aunque contenga "CONTRASTE". */
+/** "SIN CONTRASTE" no cuenta como contrastada; "CONT"/"CONTRASTE" sueltos sí. */
 function isContrastedDetail_(detalleRaw, nombreRaw) {
   var text = (String(detalleRaw || "") + " " + String(nombreRaw || "")).toUpperCase();
-  if (/SIN\s+CONTRASTE/.test(text)) return false;
-  return /CONTRAST/.test(text);
+  if (/SIN\s+CONTRAST/.test(text)) return false;
+  return /CONTRAST|\bCONT\b/.test(text);
 }
 
 /** Texto de pendiente para un renglón de ESTUDIOS/PROCEDIMIENTO parseado. */
 function pendienteTextFromRow_(row) {
   var label = row.kind === "estudio" ? "Estudio" : "Procedimiento";
-  var shortName = row.kind === "procedimiento" ? shortImagingProcedureName_(row.nombreRaw) : null;
-  if (shortName) {
+  var imaging = row.kind === "procedimiento" ? imagingStudyKey_(row.nombreRaw) : null;
+  if (imaging) {
     var contrasted = isContrastedDetail_(row.detalleRaw, row.nombreRaw);
-    return label + ": " + shortName + (contrasted ? " contrastada" : "");
+    return label + ": " + imaging.shortName + (contrasted ? " contrastada" : "");
   }
   var detalle = row.detalleRaw && !KIT_DETAIL_RE.test(row.detalleRaw) ? row.detalleRaw : "";
   var extra = detalle ? " — " + detalle : "";
   return label + ": " + row.nombreRaw + extra;
+}
+
+/**
+ * Une en un solo renglón las filas de un mismo estudio de imagen (misma
+ * modalidad + región) que aparecen dos veces en el mismo paste — la orden
+ * en ESTUDIOS y su insumo/contraste en PROCEDIMIENTO. Evita que el mismo
+ * TAC/RM entre dos veces a Pendientes. Filas sin pareja de imagen quedan
+ * igual.
+ */
+function mergeImagingRowPairs_(pendientes) {
+  var groups = [];
+  var byKey = {};
+  pendientes.forEach(function (row) {
+    var imaging = imagingStudyKey_(row.nombreRaw);
+    if (!imaging) {
+      groups.push({ rows: [row], imaging: null });
+      return;
+    }
+    var g = byKey[imaging.key];
+    if (!g) {
+      g = { rows: [], imaging: imaging };
+      byKey[imaging.key] = g;
+      groups.push(g);
+    }
+    g.rows.push(row);
+  });
+  return groups.map(function (g) {
+    if (!g.imaging || g.rows.length < 2) return pendienteTextFromRow_(g.rows[0]);
+    var label = g.rows.some(function (r) { return r.kind === "estudio"; }) ? "Estudio" : "Procedimiento";
+    var contrasted = g.rows.some(function (r) { return isContrastedDetail_(r.detalleRaw, r.nombreRaw); });
+    return label + ": " + g.imaging.shortName + (contrasted ? " contrastada" : "");
+  });
 }
 
 /**
@@ -522,8 +571,7 @@ export function addPendientesFromParsedReceta(activeId, pendientes) {
     .filter(function (t) { return t && !t.completed; })
     .map(function (t) { return String(t.text || ""); });
   var repetidos = 0;
-  pendientes.forEach(function (row) {
-    var text = pendienteTextFromRow_(row);
+  mergeImagingRowPairs_(pendientes).forEach(function (text) {
     if (openTexts.indexOf(text) >= 0) {
       repetidos += 1;
       return;

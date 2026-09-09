@@ -95,6 +95,22 @@ describe('addPendientesFromParsedReceta', () => {
     assert.equal(storage.getTodos('p1').length, 1);
   });
 
+  it('pairs the ESTUDIOS order with its PROCEDIMIENTO contraste line instead of duplicating the TAC/RM', () => {
+    addPendientesFromParsedReceta('p1', [
+      { kind: 'estudio', nombreRaw: 'TAC TORAX SIMPLE Y CONT', detalleRaw: '' },
+      { kind: 'procedimiento', nombreRaw: 'HEMODIALISIS', detalleRaw: 'KIT PARA HEMODIALISIS' },
+      {
+        kind: 'procedimiento',
+        nombreRaw: 'TOMOGRAFIA AXIAL COMPUTERIZADA DE TORAX',
+        detalleRaw: 'CONTRASTE PARA TAC DE TORAX',
+      },
+    ]);
+    const todos = storage.getTodos('p1');
+    assert.equal(todos.length, 2);
+    assert.equal(todos[0].text, 'Estudio: TAC de Torax contrastada');
+    assert.equal(todos[1].text, 'Procedimiento: HEMODIALISIS');
+  });
+
   it('a changed solicitud (contrastada vs sin contraste) is a new pendiente, not a duplicate', () => {
     addPendientesFromParsedReceta('p1', [
       { kind: 'procedimiento', nombreRaw: 'TOMOGRAFIA AXIAL COMPUTERIZADA DE TORAX', detalleRaw: 'CONTRASTE PARA TAC DE TORAX' },

@@ -1,5 +1,5 @@
 import { sanitizeOpsForCloudPush } from './cloud-op-slim.mjs';
-import { chunkCloudOps } from './cloud-push-direct.mjs';
+import { chunkCloudOps, recordRejectedCloudOps } from './cloud-push-direct.mjs';
 import { resolveCloudPushMutationId } from './push-mutation-id.mjs';
 import { cloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 import { isCloudTransientServerError } from './cloud-sync-timing.mjs';
@@ -8,6 +8,7 @@ import {
   noteCloudLabSidecarOpsSent,
 } from './cloud-lab-sidecar-index.mjs';
 import { drainSyncedLabSidecarsFromOutbox, splitLabBackfillInOutbox } from './outbox-lab.mjs';
+import { noteCloudOpsAttempted } from './cloud-sync-echo-guard.mjs';
 import {
   cloudSyncErrorCode,
   noteCloudSyncPull,
@@ -246,6 +247,8 @@ async function pushWithStaleRetry(ctx, roomId, item, ops) {
       sanitized.ops,
       chunks.length > 1 ? i : undefined,
     );
+    noteCloudOpsAttempted(sanitized.ops);
+    recordRejectedCloudOps(lastResult);
     if (lastResult?.revision != null) applyServerRevision(Number(lastResult.revision));
     noteCloudLabSidecarOpsSent(chunks[i], sanitized.ops);
     if (lastResult?.needPull) await pullLatest();

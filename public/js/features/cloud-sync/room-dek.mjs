@@ -144,6 +144,37 @@ export async function ensureRoomDek(api, roomId, roomCode) {
 }
 
 /**
+ * Unwrap an already-fetched wrapped DEK blob and cache it — the part of
+ * `loadRoomDek` that needs no network round trip, split out so a caller that
+ * already has the wrapped blob (e.g. the batched `/admin/network-census`
+ * response) can skip the per-room GET entirely. Returns null (not an error)
+ * for a room with no DEK yet — that room's content stays plaintext.
+ * @param {string} roomId
+ * @param {{ ct: string, iv: string, salt: string } | null | undefined} wrapped
+ * @param {string} roomCode
+ */
+export async function unwrapAndCacheRoomDek(roomId, wrapped, roomCode) {
+  const cached = getCachedRoomDek(roomId);
+  if (cached) return cached;
+  if (!wrapped || !roomCode) {
+    unprotectedRooms.delete(String(roomId)); // no DEK to unwrap — fine, not a failure
+    return null;
+  }
+  try {
+    const wrapKey = await deriveWrapKey(roomCode, wrapped.salt);
+    const dek = await unwrapDek({ ct: wrapped.ct, iv: wrapped.iv }, wrapKey);
+    dekByRoomId.set(String(roomId), dek);
+    unprotectedRooms.delete(String(roomId));
+    await auditDekEvent(DEK_EVENTS.WRAP_GET, { roomId });
+    return dek;
+  } catch (err) {
+    unprotectedRooms.add(String(roomId));
+    await auditDekEvent(DEK_EVENTS.WRAP_FAILED, { roomId, phase: 'load', message: String(err?.message || err) });
+    return null;
+  }
+}
+
+/**
  * Call after joining/reconnecting to a room, with the room's join code in hand.
  * Fetches the wrapped DEK and unwraps it locally. Returns null (not an error) for
  * a room that has no DEK yet — that room's content stays plaintext, unchanged.
@@ -166,22 +197,7 @@ export async function loadRoomDek(api, roomId, roomCode) {
     await auditDekEvent(DEK_EVENTS.WRAP_FAILED, { roomId, phase: 'load-fetch', message: String(err?.message || err) });
     return null;
   }
-  if (!wrapped) {
-    unprotectedRooms.delete(String(roomId)); // room genuinely has no DEK yet — fine, not a failure
-    return null;
-  }
-  try {
-    const wrapKey = await deriveWrapKey(roomCode, wrapped.salt);
-    const dek = await unwrapDek({ ct: wrapped.ct, iv: wrapped.iv }, wrapKey);
-    dekByRoomId.set(String(roomId), dek);
-    unprotectedRooms.delete(String(roomId));
-    await auditDekEvent(DEK_EVENTS.WRAP_GET, { roomId });
-    return dek;
-  } catch (err) {
-    unprotectedRooms.add(String(roomId));
-    await auditDekEvent(DEK_EVENTS.WRAP_FAILED, { roomId, phase: 'load', message: String(err?.message || err) });
-    return null;
-  }
+  return unwrapAndCacheRoomDek(roomId, wrapped, roomCode);
 }
 
 /**

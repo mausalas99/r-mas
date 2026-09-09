@@ -96,6 +96,26 @@ describe('bootstrapConexionState getRoom failures', () => {
     );
   });
 
+  it('mountAdminShell passes a real renderConnected into the admin panel (Red tab room-switch needs it, not just getApi)', () => {
+    const fnStart = bootSrc.indexOf('export function mountAdminShell');
+    assert.ok(fnStart >= 0);
+    const fnEnd = bootSrc.indexOf('\nexport function ', fnStart + 1);
+    const body = bootSrc.slice(fnStart, fnEnd > fnStart ? fnEnd : undefined);
+    assert.match(body, /mountCloudAdminPanel\(host, \{ \.\.\.deps, \.\.\.extra, toast \}\)/);
+  });
+
+  it('panel-conexion.mjs feeds mountAdminShell its own renderConnected/renderDisconnected, not the base deps', () => {
+    const conexionSrc = readFileSync(
+      new URL('./panel-conexion.mjs', import.meta.url),
+      'utf8'
+    );
+    const idx = conexionSrc.indexOf('mountAdminShell(section, deps, toast,');
+    assert.ok(idx >= 0);
+    const call = conexionSrc.slice(idx, idx + 150);
+    assert.match(call, /renderConnected/);
+    assert.match(call, /renderDisconnected/);
+  });
+
   it('locks a room on every plain reconnect, not just a fresh login', () => {
     // Optimistic (skip-getRoom) branch.
     const optimisticIdx = fnBody.indexOf('ui.renderConnected(optimistic)');

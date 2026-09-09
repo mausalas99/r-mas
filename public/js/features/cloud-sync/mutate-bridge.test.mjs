@@ -431,7 +431,7 @@ describe('enqueueCloudTodoDelete clock', () => {
     );
     assert.match(
       fn,
-      /updatedAt:\s*String\(updatedAt \|\| new Date\(\)\.toISOString\(\)\)/
+      /updatedAt:\s*String\(updatedAt \|\| cloudSyncNowIso\(\)\)/
     );
     assert.doesNotMatch(fn, /updatedAt \|\| todo\.updatedAt/);
   });

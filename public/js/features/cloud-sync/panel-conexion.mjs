@@ -158,7 +158,10 @@ export function mountNubeSection(root, deps) {
     cloudUserRef
   );
 
-  const { ensureAdminOpen, toggleAdminPanel } = mountAdminShell(section, deps, toast);
+  const { ensureAdminOpen, toggleAdminPanel } = mountAdminShell(section, deps, toast, {
+    renderConnected,
+    renderDisconnected,
+  });
   cloudUserRef.ensureAdminOpen = ensureAdminOpen;
   const ui = {
     normalizedSala,

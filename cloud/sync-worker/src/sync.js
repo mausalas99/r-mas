@@ -1,3 +1,4 @@
+import { ADMIN_ROLES } from './admin-roles.js';
 import { decodeRoomState, encodeRoomState, toUint8Array } from './crypto-at-rest.js';
 import { d1UniqueConstraintTarget, isD1UniqueConstraintError } from './d1-errors.js';
 import { SyncError } from './errors.js';
@@ -28,8 +29,15 @@ import {
 /** Concurrent pushes race on (room_id, revision); retry with fresh revision. */
 const MUTATION_COMMIT_ATTEMPTS = 5;
 
-/** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request */
-async function requireMember(db, request, roomId) {
+/**
+ * A room member may push/pull their own room. An admin may push/pull ANY
+ * room without a `room_members` row — same "admin sees every room" rule
+ * already applied to reads in admin.js's handleRoomDetail/handleRoomMutations,
+ * extended to writes so the Red tab's archive/delete actions (and any other
+ * cross-sala admin action) work without first joining each sala.
+ * @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request
+ */
+export async function requireMember(db, request, roomId) {
   const user = await userFromAuthHeader(db, request);
   if (!user) {
     throw new SyncError('auth_required', 'Sesión inválida o expirada.');
@@ -43,10 +51,17 @@ async function requireMember(db, request, roomId) {
     )
     .bind(roomId, user.id)
     .first();
-  if (!row) {
-    throw new SyncError('not_member', 'No eres miembro de esta sala.');
+  if (row) {
+    return { user, room: row };
   }
-  return { user, room: row };
+  if (ADMIN_ROLES.has(user.role)) {
+    const room = await db
+      .prepare('SELECT id, revision, storage_bytes FROM rooms WHERE id = ?')
+      .bind(roomId)
+      .first();
+    if (room) return { user, room };
+  }
+  throw new SyncError('not_member', 'No eres miembro de esta sala.');
 }
 
 /** @param {Request} request */

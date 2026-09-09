@@ -179,6 +179,47 @@ function wireRotationConfigFormOnce() {
   });
 }
 
+function resolveRotationNuevaFn(api) {
+  return api && (api.dbRotationNueva || api.rotationNueva);
+}
+
+/** Calls the rotation-nueva DB op, toasting and returning null on any failure. */
+async function applyRotationNueva(api) {
+  const nuevaFn = resolveRotationNuevaFn(api);
+  if (typeof nuevaFn !== 'function') {
+    toast('Base de datos no disponible.', 'error');
+    return null;
+  }
+  const res = await nuevaFn.call(api, { userId: clinicalSessionContext.user?.user_id });
+  if (!res || res.ok === false) {
+    toast(res?.error || 'No se aplicó la nueva rotación.', 'error');
+    return null;
+  }
+  return res;
+}
+
+function rotationNuevaSuccessMessage(res) {
+  const migrated = Number(res.migratedPatients || 0);
+  const migratedNote = migrated > 0 ? ` ${migrated} paciente(s) pasaron a su equipo vinculado.` : '';
+  return `Nueva rotación aplicada. Cada residente debe unirse a su equipo nuevo.${migratedNote}`;
+}
+
+async function broadcastRotationTeamsChanged(sala) {
+  try {
+    await fetchClinicalTeamsFromDb();
+  } catch {
+    /* optional */
+  }
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true, sala } }));
+  document.dispatchEvent(new CustomEvent('rpc-guardia-rotation-changed'));
+  try {
+    const { publishClinicalTeamsAfterChange } = await import('./clinical-teams/teams-guardia-bridge.mjs');
+    void publishClinicalTeamsAfterChange({ sala });
+  } catch {
+    /* publish optional */
+  }
+}
+
 export async function confirmNuevaRotacion() {
   const result = await openConfirm({
     weight: 'destructive',
@@ -193,33 +234,12 @@ export async function confirmNuevaRotacion() {
   if (result !== 'confirm') return { ok: false, cancelled: true };
 
   const api = dbApi();
-  const nuevaFn = api && (api.dbRotationNueva || api.rotationNueva);
-  if (typeof nuevaFn !== 'function') {
-    toast('Base de datos no disponible.', 'error');
-    return { ok: false };
-  }
-  const res = await nuevaFn.call(api, { userId: clinicalSessionContext.user?.user_id });
-  if (!res || res.ok === false) {
-    toast(res?.error || 'No se aplicó la nueva rotación.', 'error');
-    return { ok: false };
-  }
-  const migrated = Number(res.migratedPatients || 0);
-  const migratedNote = migrated > 0 ? ` ${migrated} paciente(s) pasaron a su equipo vinculado.` : '';
-  toast(`Nueva rotación aplicada. Cada residente debe unirse a su equipo nuevo.${migratedNote}`, 'success');
-  try {
-    await fetchClinicalTeamsFromDb();
-  } catch {
-    /* optional */
-  }
+  const res = await applyRotationNueva(api);
+  if (!res) return { ok: false };
+
+  toast(rotationNuevaSuccessMessage(res), 'success');
   const sala = String(clinicalSessionContext.user?.sala || '').trim();
-  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true, sala } }));
-  document.dispatchEvent(new CustomEvent('rpc-guardia-rotation-changed'));
-  try {
-    const { publishClinicalTeamsAfterChange } = await import('./clinical-teams/teams-guardia-bridge.mjs');
-    void publishClinicalTeamsAfterChange({ sala });
-  } catch {
-    /* publish optional */
-  }
+  await broadcastRotationTeamsChanged(sala);
   await promptRotationRejoinAfterNuevaRotacion();
   return { ok: true };
 }

@@ -180,6 +180,10 @@ export function wireTeamsChangedListener(section, deps, ui) {
  * @param {object} deps
  * @param {string} normalizedSala
  */
+function snapField(snap, field, fallback = '') {
+  return String((snap && snap[field]) || fallback);
+}
+
 export function localRoomFromSession(deps, normalizedSala) {
   const roomId = deps.getCloudSyncRoomId();
   const token = deps.getCloudSyncToken();
@@ -189,11 +193,11 @@ export function localRoomFromSession(deps, normalizedSala) {
   return {
     id: String(roomId),
     revision,
-    sala: String((snap && snap.sala) || normalizedSala || ''),
-    code: String((snap && snap.code) || ''),
-    turnKey: String((snap && snap.turnKey) || ''),
-    name: String((snap && snap.name) || ''),
-    role: String((snap && snap.role) || ''),
+    sala: snapField(snap, 'sala', normalizedSala || ''),
+    code: snapField(snap, 'code'),
+    turnKey: snapField(snap, 'turnKey'),
+    name: snapField(snap, 'name'),
+    role: snapField(snap, 'role'),
   };
 }
 
@@ -271,8 +275,13 @@ export function bootstrapConexionState(section, deps, ui) {
   ui.renderDisconnected();
 }
 
-/** @param {HTMLElement} section @param {object} deps @param {(msg: string, kind?: string) => void} toast */
-export function mountAdminShell(section, deps, toast) {
+/**
+ * @param {HTMLElement} section @param {object} deps @param {(msg: string, kind?: string) => void} toast
+ * @param {{ renderConnected?: (room: object) => void }} [extra] — renderConnected/renderDisconnected
+ *   live on the `ui` object built in panel-conexion.mjs, not on the base `deps` contract; the "Red"
+ *   tab's room switch (joinRoomByCode) needs a real renderConnected or it throws on switch.
+ */
+export function mountAdminShell(section, deps, toast, extra = {}) {
   /** @type {ReturnType<import('./panel-admin.mjs').mountCloudAdminPanel> | null} */
   let adminMount = null;
   async function ensureAdminOpen() {
@@ -281,7 +290,9 @@ export function mountAdminShell(section, deps, toast) {
     if (!adminMount) {
       const { mountCloudAdminPanel } = await import('./panel-admin.mjs');
       host.textContent = '';
-      adminMount = mountCloudAdminPanel(host, { getApi: deps.getApi, toast });
+      // Full deps (not just getApi) so the "Red" tab can switch this
+      // device's active room — see joinRoomByCode in panel-conexion-handlers.mjs.
+      adminMount = mountCloudAdminPanel(host, { ...deps, ...extra, toast });
     } else {
       adminMount.refresh?.();
     }

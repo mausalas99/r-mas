@@ -24,3 +24,30 @@ describe('handleUpdateAvailable release-notes import', () => {
     assert.match(body, /await import\(['"]\.\.\/\.\.\/settings-help\/release-notes\.mjs['"]\)/);
   });
 });
+
+describe('manual "Buscar actualizaciones" bypasses an active snooze', () => {
+  // Bug: clicking "Más tarde" snoozes a version for 24h (markDismissedVersion),
+  // and a manual re-check hit the same isSnoozeActiveForVersion guard, so the
+  // modal silently never came back until the snooze expired.
+  it('checks checkFeedback before every isSnoozeActiveForVersion guard', () => {
+    // A guard can sit inline in the handler, or be delegated to a shouldSkip*
+    // helper called as `if (shouldSkipX()) return;` — either shape must still
+    // bypass on manual check (checkFeedback) before consulting snooze state.
+    const inlineGuards = [...src.matchAll(/^.*isSnoozeActiveForVersion\([^)]*\)\) return;$/gm)]
+      .map(([line]) => line);
+    const helperNames = [...src.matchAll(/if \((shouldSkip\w*)\([^)]*\)\) return;/g)]
+      .map(([, name]) => name);
+    const helperGuards = helperNames.map((name) => {
+      const start = src.indexOf(`function ${name}(`);
+      assert.notEqual(start, -1, `helper ${name} not found`);
+      const bodyEnd = src.indexOf('\n}', start);
+      return src.slice(start, bodyEnd);
+    });
+    const guards = [...inlineGuards, ...helperGuards];
+    assert.equal(guards.length, 3, 'expected three snooze guards in handleUpdateAvailable/Progress/Ready');
+    for (const guard of guards) {
+      assert.match(guard, /!updaterState\.checkFeedback/, `guard missing manual-check bypass: ${guard}`);
+      assert.match(guard, /isSnoozeActiveForVersion/, `guard missing snooze check: ${guard}`);
+    }
+  });
+});

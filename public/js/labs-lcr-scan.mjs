@@ -65,27 +65,79 @@ export function emptyLcrFields_() {
   };
 }
 
-export function scanLcrLine_(fields, lineas, i, linUp, lin) {
-  if (linUp.indexOf('PH') === 0) fields.pH = scanNumericAfter_(lineas, i, 4);
-  if (linUp.indexOf('ASPECTO') === 0) fields.aspecto = scanTextAfter_(lineas, i, 4);
+function scanLcrPH_(fields, lineas, i, linUp) {
+  if (linUp.indexOf('PH') !== 0) return;
+  fields.pH = scanNumericAfter_(lineas, i, 4);
+}
+
+function scanLcrAspecto_(fields, lineas, i, linUp) {
+  if (linUp.indexOf('ASPECTO') !== 0) return;
+  fields.aspecto = scanTextAfter_(lineas, i, 4);
+}
+
+function scanLcrLeucocitosTotal_(fields, lineas, i, linUp) {
   var esLeucocitosTotal =
     linUp.indexOf('LEUCOCITOS') === 0 && linUp.indexOf('POLIMORFONUCLEARES') === -1;
-  if (linUp.indexOf('RECUENTO CELULAR') === 0 || esLeucocitosTotal) {
-    var leuVal = scanLeucocitos_(lineas, i);
-    if (leuVal !== '') fields.leu = leuVal;
+  if (linUp.indexOf('RECUENTO CELULAR') !== 0 && !esLeucocitosTotal) return;
+  var leuVal = scanLeucocitos_(lineas, i);
+  if (leuVal !== '') fields.leu = leuVal;
+}
+
+function scanLcrGlucosa_(fields, lineas, i, linUp) {
+  if (linUp.indexOf('GLUCOSA') !== 0) return;
+  fields.glu = scanNumericAfter_(lineas, i, 4);
+}
+
+function scanLcrProteinas_(fields, lineas, i, linUp, lin) {
+  if (linUp.indexOf('PROTEINAS') !== 0) return;
+  fields.prot = scanProteinas_(lineas, i, lin);
+}
+
+function scanLcrCloruro_(fields, lineas, i, linUp) {
+  if (linUp.indexOf('CLORURO') !== 0) return;
+  fields.cl = scanNumericAfter_(lineas, i, 4);
+}
+
+function scanLcrGram_(fields, lineas, i, linUp) {
+  if (linUp.indexOf('GRAM') !== 0) return;
+  fields.gram = scanTextAfter_(lineas, i, 4);
+}
+
+function scanLcrTinta_(fields, lineas, i, linUp) {
+  if (linUp.indexOf('TINTA CHINA') !== 0) return;
+  fields.tinta = scanTextAfter_(lineas, i, 4);
+}
+
+function scanLcrPmn_(fields, lineas, i, linUp) {
+  if (linUp.indexOf('POLIMORFONUCLEARES') !== 0 && linUp.indexOf('LEUCOCITOS POLIMORFONUCLEARES') !== 0) {
+    return;
   }
-  if (linUp.indexOf('GLUCOSA') === 0) fields.glu = scanNumericAfter_(lineas, i, 4);
-  if (linUp.indexOf('PROTEINAS') === 0) fields.prot = scanProteinas_(lineas, i, lin);
-  if (linUp.indexOf('CLORURO') === 0) fields.cl = scanNumericAfter_(lineas, i, 4);
-  if (linUp.indexOf('GRAM') === 0) fields.gram = scanTextAfter_(lineas, i, 4);
-  if (linUp.indexOf('TINTA CHINA') === 0) fields.tinta = scanTextAfter_(lineas, i, 4);
-  if (linUp.indexOf('POLIMORFONUCLEARES') === 0 || linUp.indexOf('LEUCOCITOS POLIMORFONUCLEARES') === 0) {
-    var pmnVal = scanNumericAfter_(lineas, i, 4);
-    if (pmnVal !== '') fields.pmn = pmnVal;
-  }
-  if (linUp.indexOf('LINFOCITOS') === 0) {
-    var linfVal = scanNumericAfter_(lineas, i, 4);
-    if (linfVal !== '') fields.linf = linfVal;
+  var pmnVal = scanNumericAfter_(lineas, i, 4);
+  if (pmnVal !== '') fields.pmn = pmnVal;
+}
+
+function scanLcrLinfocitos_(fields, lineas, i, linUp) {
+  if (linUp.indexOf('LINFOCITOS') !== 0) return;
+  var linfVal = scanNumericAfter_(lineas, i, 4);
+  if (linfVal !== '') fields.linf = linfVal;
+}
+
+var LCR_LINE_SCANNERS_ = [
+  scanLcrPH_,
+  scanLcrAspecto_,
+  scanLcrLeucocitosTotal_,
+  scanLcrGlucosa_,
+  scanLcrProteinas_,
+  scanLcrCloruro_,
+  scanLcrGram_,
+  scanLcrTinta_,
+  scanLcrPmn_,
+  scanLcrLinfocitos_,
+];
+
+export function scanLcrLine_(fields, lineas, i, linUp, lin) {
+  for (var s = 0; s < LCR_LINE_SCANNERS_.length; s++) {
+    LCR_LINE_SCANNERS_[s](fields, lineas, i, linUp, lin);
   }
 }
 

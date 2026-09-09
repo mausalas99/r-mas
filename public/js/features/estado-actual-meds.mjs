@@ -267,6 +267,22 @@ export function applyRecetaProposal(monitoreo, buckets) {
  * @param {Record<string, unknown>} monitoreo
  * @param {Record<string, string>} buckets
  */
+function nextRecetaBucketValue(buckets, key) {
+  var val = buckets && buckets[key];
+  return val != null && String(val).trim() ? String(val).trim() : '';
+}
+
+function shouldSkipConfirmedForceUpdate(estadoClinico, key, next) {
+  var current = String(estadoClinico[key] || '').trim();
+  return !next || next === current;
+}
+
+function shouldSkipForceRecetaKey(monitoreo, estadoClinico, key, next) {
+  var isConfirmed = !!(monitoreo.confirmado && monitoreo.confirmado[key]);
+  if (isConfirmed) return shouldSkipConfirmedForceUpdate(estadoClinico, key, next);
+  return isRecetaProposalDismissed(monitoreo, key);
+}
+
 export function applyRecetaProposalForce(monitoreo, buckets) {
   if (!monitoreo || typeof monitoreo !== 'object') return;
   if (!monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== 'object') {
@@ -274,15 +290,8 @@ export function applyRecetaProposalForce(monitoreo, buckets) {
   }
   var estadoClinico = monitoreo.estadoClinico && typeof monitoreo.estadoClinico === 'object' ? monitoreo.estadoClinico : {};
   for (var k of MED_FIELD_KEYS) {
-    var val = buckets && buckets[k];
-    var next = val != null && String(val).trim() ? String(val).trim() : '';
-    var isConfirmed = !!(monitoreo.confirmado && monitoreo.confirmado[k]);
-    if (isConfirmed) {
-      var current = String(estadoClinico[k] || '').trim();
-      if (!next || next === current) continue;
-    } else if (isRecetaProposalDismissed(monitoreo, k)) {
-      continue;
-    }
+    var next = nextRecetaBucketValue(buckets, k);
+    if (shouldSkipForceRecetaKey(monitoreo, estadoClinico, k, next)) continue;
     monitoreo.pendienteReceta[k] = next;
   }
 }

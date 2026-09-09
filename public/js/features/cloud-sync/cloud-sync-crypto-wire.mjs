@@ -130,52 +130,67 @@ export function listContentFieldEntries(state) {
 /** @param {CryptoKey|null} dek @param {object} entry */
 async function decryptEntryContentFields(dek, entry) {
   if (!entry || typeof entry !== 'object') return;
-  for (const field of ENTRY_CONTENT_FIELDS) {
-    if (entry[field] !== undefined) entry[field] = await maybeDecrypt(dek, entry[field]);
-  }
+  await Promise.all(
+    ENTRY_CONTENT_FIELDS.map(async (field) => {
+      if (entry[field] !== undefined) entry[field] = await maybeDecrypt(dek, entry[field]);
+    })
+  );
 }
 
 /** @param {CryptoKey|null} dek @param {Record<string, Record<string, unknown>>} labSidecars */
 async function decryptLabSidecars(dek, labSidecars) {
   if (!labSidecars || typeof labSidecars !== 'object') return;
-  for (const patientId of Object.keys(labSidecars)) {
-    const sets = labSidecars[patientId];
-    if (!sets || typeof sets !== 'object') continue;
-    for (const setId of Object.keys(sets)) {
-      sets[setId] = await maybeDecrypt(dek, sets[setId]);
-    }
-  }
+  await Promise.all(
+    Object.keys(labSidecars).map(async (patientId) => {
+      const sets = labSidecars[patientId];
+      if (!sets || typeof sets !== 'object') return;
+      await Promise.all(
+        Object.keys(sets).map(async (setId) => {
+          sets[setId] = await maybeDecrypt(dek, sets[setId]);
+        })
+      );
+    })
+  );
 }
 
 /** @param {CryptoKey|null} dek @param {Record<string, unknown>} todos */
 async function decryptTodos(dek, todos) {
   if (!todos || typeof todos !== 'object') return;
-  for (const todoId of Object.keys(todos)) {
-    todos[todoId] = await maybeDecrypt(dek, todos[todoId]);
-  }
+  await Promise.all(
+    Object.keys(todos).map(async (todoId) => {
+      todos[todoId] = await maybeDecrypt(dek, todos[todoId]);
+    })
+  );
 }
 
 /**
  * Decrypts a full room snapshot (`needSnapshot` pull) in place. No-op field-by-field
- * for a room with no DEK, or for values that were never encrypted.
+ * for a room with no DEK, or for values that were never encrypted. Every field's
+ * decrypt is independent, so they all run concurrently instead of one at a time —
+ * matters most for the admin network-census pull, which decrypts 8 whole rooms
+ * at once and used to be the biggest remaining cost after the round trips were cut.
  * @param {CryptoKey|null} dek
  * @param {Record<string, any>} state
  */
 export async function decryptRoomStateFromPull(dek, state) {
   if (!state || typeof state !== 'object') return state;
 
-  if (state.clinicalOps) {
-    state.clinicalOps = await maybeDecrypt(dek, state.clinicalOps);
-  }
+  const clinicalOpsDone = state.clinicalOps
+    ? maybeDecrypt(dek, state.clinicalOps).then((v) => {
+        state.clinicalOps = v;
+      })
+    : Promise.resolve();
 
-  if (Array.isArray(state.entries)) {
-    for (const entry of state.entries) {
-      await decryptEntryContentFields(dek, entry);
-    }
-  }
+  const entriesDone = Array.isArray(state.entries)
+    ? Promise.all(state.entries.map((entry) => decryptEntryContentFields(dek, entry)))
+    : Promise.resolve();
 
-  await decryptLabSidecars(dek, state.labSidecars);
-  await decryptTodos(dek, state.todos);
+  await Promise.all([
+    clinicalOpsDone,
+    entriesDone,
+    decryptLabSidecars(dek, state.labSidecars),
+    decryptTodos(dek, state.todos),
+  ]);
 
   return state;
 }

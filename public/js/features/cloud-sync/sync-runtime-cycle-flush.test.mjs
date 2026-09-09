@@ -2,6 +2,7 @@ import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createSyncRuntimeCycle } from './sync-runtime-cycle.mjs';
 import { makeOutbox } from './sync-runtime-cycle-test-helpers.mjs';
+import { getCloudSyncDiagnostics, clearCloudSyncErrors } from './cloud-sync-diagnostics.mjs';
 
 describe('createSyncRuntimeCycle flush/push behavior', () => {
   let prevOnline;
@@ -159,6 +160,46 @@ describe('createSyncRuntimeCycle flush/push behavior', () => {
     assert.match(src, /addEventListener\('focus'/);
     assert.match(src, /deferBootCycle/);
     assert.match(src, /if \(!opts\.deferBootCycle\)/);
+  });
+
+  it('records a quota_exceeded diagnostic instead of silently dropping a rejected op, and still removes the outbox row', async () => {
+    clearCloudSyncErrors();
+    const outbox = makeOutbox([
+      {
+        clientMutationId: 'm-quota',
+        ops: [{ path: 'entries/p9/fields', value: { nombre: 'P9' }, updatedAt: 't', actorId: 'a' }],
+        baseRevision: 0,
+        enqueuedAt: 1,
+      },
+    ]);
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => ({ revision: 1, ops: [] }),
+        push: async () => ({
+          revision: 2,
+          applied: [],
+          rejected: [{ op: { path: 'entries/p9/fields' }, reason: 'quota_exceeded' }],
+        }),
+      },
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => 0,
+      setRevision: () => {},
+      onStatus() {},
+    });
+
+    // Full syncCycle (not just flushOutbox): the cycle ends ok and calls
+    // noteCloudSyncCycle(true), which must not wipe the quota_exceeded row it
+    // just recorded — that is what the owner actually sees after a sync.
+    await runtime.syncCycle();
+    runtime.stop();
+
+    const diag = getCloudSyncDiagnostics();
+    assert.ok(
+      diag.lastErrors.some((e) => e.code === 'quota_exceeded'),
+      'a quota_exceeded rejection must be recorded for the Conexión diagnostics panel'
+    );
+    assert.equal(outbox.list().length, 0);
   });
 
   it('while hidden still flushes outbox and keeps polling armed', async () => {
