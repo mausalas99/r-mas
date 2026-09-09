@@ -1,31 +1,29 @@
-version: 8.3.2
+version: 8.3.3
 files:
-  - url: R+-8.3.2-autoupdate-mac-arm64.zip
-    sha512: cwHVwLB3CEgtE67LY2mX00ee49LBSGc2rGqgH82YMzZEgM99e7zzPVCOO17QZI0+eA5Xl7zNwceUfN+dZqMbxw==
-    size: 140239478
-  - url: R+-8.3.2-arm64.dmg
-    sha512: qpuwK9nEtNc8g9QXqtZPcVuNTqXZc43tgUqL34M5QS9egZr+CA7fINkXv5Ek8ZcIxQoF4xH2C6b5+f25qPCNRg==
-    size: 146110050
-  - url: R+-8.3.2-autoupdate-mac-x64.zip
-    sha512: SGuQjU4clEroCd+0MdvFc9NRou5sg7VaJCXIEiqE14BuywoHkf979wARtiXEh7mLKXMhdK6nULdgCrg54ecThA==
-    size: 148395055
-  - url: R+-8.3.2-x64.dmg
-    sha512: IuK86y+oWT4DKWAGfvnizJ5TINvranSXsjdPqMIQnfVrY48gOEQdDxPa0pcdAU2T0R62yLVSXfMk3UInUISwFw==
-    size: 154301887
-path: R+-8.3.2-autoupdate-mac-arm64.zip
-sha512: cwHVwLB3CEgtE67LY2mX00ee49LBSGc2rGqgH82YMzZEgM99e7zzPVCOO17QZI0+eA5Xl7zNwceUfN+dZqMbxw==
-releaseDate: '2026-09-06T18:23:41.000Z'
+  - url: R+-8.3.3-autoupdate-mac-arm64.zip
+    sha512: 8t692KiN7M8jDnGjFd0bSLJbFDsOBzQ5sptikVKBqKRiLFKPCwb/hldc7KHYU1977qTrk/ELF2iVGDoMD20EYw==
+    size: 140281342
+  - url: R+-8.3.3-arm64.dmg
+    sha512: 8CwBi9TL93HgChcLP8fPtyA/U6fRNklH3fwgIEJxQIylEiIopU2uWx29JpB2q6XmCCJDnxhg3mpl8+Tx0nwaIQ==
+    size: 146150389
+  - url: R+-8.3.3-autoupdate-mac-x64.zip
+    sha512: J/5+WpdVRsrgI3159KnQqdjfu/0A1omjRDkZX13UqPQl/D4GuH3KBPfHlqgc5GgB0J14n8dNcpvb52aKAjvRDA==
+    size: 148436917
+  - url: R+-8.3.3-x64.dmg
+    sha512: kL8/wRiry1rDB0mPgBqU18V2YhLZ+CaOF9YyNoJRwz7t8Xtv2nmmkLHaCFnTgaugYA6Yv4OCYRjsGDW/XsP6bQ==
+    size: 154373530
+path: R+-8.3.3-autoupdate-mac-arm64.zip
+sha512: 8t692KiN7M8jDnGjFd0bSLJbFDsOBzQ5sptikVKBqKRiLFKPCwb/hldc7KHYU1977qTrk/ELF2iVGDoMD20EYw==
+releaseDate: '2026-09-09T17:29:11.000Z'
 releaseNotes: |
-  Nueva pestaña de administración de medicamentos, balance de líquidos por turno con recordatorio de hemodiálisis, y los estudios/procedimientos del pegado de Manejo ahora se agregan solos a Pendientes.
+  Nueva pestaña Red en Administración para ver y archivar pacientes de todas las áreas, corrección de un bug que impedía sincronizar pacientes nuevos en salas con más de 50 pacientes en el mes, y varias correcciones de estabilidad en la Nube.
   
-  Nuevo — pestaña Medicamentos: en Sala, Paciente → Clínico tiene una pestaña de administración con horario por toma (marca solo lo no administrado) y un registro aparte para PRN.
+  Nuevo — pestaña Red en Administración: lista cruzada de pacientes de todas las áreas, con filtros por área/equipo/estado, columna de Cuarto, y acciones de archivar, restaurar y eliminar (una por una o seleccionando varias).
   
-  Nuevo — balance de líquidos por turno: Estado actual separa entradas y salidas en T1/T2/T3, con una sección de otras fuentes cuantificables (ultrafiltrado, drenaje, toracocentesis o una propia).
+  Arreglado — pacientes nuevos que no sincronizaban: en una sala con más de 50 pacientes en el mes, los ingresos nuevos se guardaban solo en el dispositivo que los creó y nunca llegaban a los demás. Las ediciones a pacientes ya existentes sí funcionaban.
   
-  Nuevo — recordatorio de hemodiálisis: si hay una hemodiálisis pendiente, el registro del día avisa con un botón para posponerla sin cerrar el pendiente.
+  Arreglado — la Nube ya no se queda colgada: si la conexión falla a mitad de una sincronización, ahora corta a los 20 segundos con un aviso, en vez de esperar para siempre.
   
-  Nuevo — estudios y procedimientos a Pendientes: al pegar el bloque de Manejo, los estudios de imagen (TAC, RM, RX, etc.) y procedimientos se agregan solos a Pendientes.
+  Mejorado — diálogos de confirmación en Administración: rotar código, archivar, eliminar; ahora se ven encima del panel de Administración, no detrás.
   
-  Mejorado — Solución Stanford: los medicamentos marcados para Solución Stanford se agrupan en una sola línea, en Estado actual y en Manejo.
-  
-  Mejorado — copiar Estado actual: el texto copiado ahora pega en negritas reales en Word, Docs o Gmail, en vez de asteriscos sueltos.
+  Mejorado — velocidad de sincronización: la Nube descifra los campos de una sincronización en paralelo en vez de uno por uno.

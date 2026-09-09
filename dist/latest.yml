@@ -1,22 +1,20 @@
-version: 8.3.2
+version: 8.3.3
 files:
-  - url: R+-8.3.2-x64.exe
-    sha512: /15V1J7BvmdCjwzmllPT0TcfeYxBQqo2yx7E/ZzEJovPiiH59ni4Fv3WcwpxaqU+voDN//IRU/vdxJuwOgPX7g==
-    size: 123113456
-path: R+-8.3.2-x64.exe
-sha512: /15V1J7BvmdCjwzmllPT0TcfeYxBQqo2yx7E/ZzEJovPiiH59ni4Fv3WcwpxaqU+voDN//IRU/vdxJuwOgPX7g==
-releaseDate: '2026-09-06T18:23:42.000Z'
+  - url: R+-8.3.3-x64.exe
+    sha512: FS7a72fnmoJjsLB5q1gVDiQdh8dM18R9lxWf2jGD09rFYY4qB8/0md1ZxjlpWP8AvqeWAjB/zUCoC4aFj+grgw==
+    size: 123121974
+path: R+-8.3.3-x64.exe
+sha512: FS7a72fnmoJjsLB5q1gVDiQdh8dM18R9lxWf2jGD09rFYY4qB8/0md1ZxjlpWP8AvqeWAjB/zUCoC4aFj+grgw==
+releaseDate: '2026-09-09T17:29:11.000Z'
 releaseNotes: |
-  Nueva pestaña de administración de medicamentos, balance de líquidos por turno con recordatorio de hemodiálisis, y los estudios/procedimientos del pegado de Manejo ahora se agregan solos a Pendientes.
+  Nueva pestaña Red en Administración para ver y archivar pacientes de todas las áreas, corrección de un bug que impedía sincronizar pacientes nuevos en salas con más de 50 pacientes en el mes, y varias correcciones de estabilidad en la Nube.
   
-  Nuevo — pestaña Medicamentos: en Sala, Paciente → Clínico tiene una pestaña de administración con horario por toma (marca solo lo no administrado) y un registro aparte para PRN.
+  Nuevo — pestaña Red en Administración: lista cruzada de pacientes de todas las áreas, con filtros por área/equipo/estado, columna de Cuarto, y acciones de archivar, restaurar y eliminar (una por una o seleccionando varias).
   
-  Nuevo — balance de líquidos por turno: Estado actual separa entradas y salidas en T1/T2/T3, con una sección de otras fuentes cuantificables (ultrafiltrado, drenaje, toracocentesis o una propia).
+  Arreglado — pacientes nuevos que no sincronizaban: en una sala con más de 50 pacientes en el mes, los ingresos nuevos se guardaban solo en el dispositivo que los creó y nunca llegaban a los demás. Las ediciones a pacientes ya existentes sí funcionaban.
   
-  Nuevo — recordatorio de hemodiálisis: si hay una hemodiálisis pendiente, el registro del día avisa con un botón para posponerla sin cerrar el pendiente.
+  Arreglado — la Nube ya no se queda colgada: si la conexión falla a mitad de una sincronización, ahora corta a los 20 segundos con un aviso, en vez de esperar para siempre.
   
-  Nuevo — estudios y procedimientos a Pendientes: al pegar el bloque de Manejo, los estudios de imagen (TAC, RM, RX, etc.) y procedimientos se agregan solos a Pendientes.
+  Mejorado — diálogos de confirmación en Administración: rotar código, archivar, eliminar; ahora se ven encima del panel de Administración, no detrás.
   
-  Mejorado — Solución Stanford: los medicamentos marcados para Solución Stanford se agrupan en una sola línea, en Estado actual y en Manejo.
-  
-  Mejorado — copiar Estado actual: el texto copiado ahora pega en negritas reales en Word, Docs o Gmail, en vez de asteriscos sueltos.
+  Mejorado — velocidad de sincronización: la Nube descifra los campos de una sincronización en paralelo en vez de uno por uno.
