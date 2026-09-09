@@ -55,7 +55,7 @@ describe('deleteTodo cloud clock', () => {
       bridgeSrc.indexOf('export function enqueueCloudTodoDelete'),
       bridgeSrc.indexOf('export function enqueueCloudAgendaUpsert')
     );
-    assert.match(fn, /updatedAt: String\(updatedAt \|\| new Date\(\)\.toISOString\(\)\)/);
+    assert.match(fn, /updatedAt: String\(updatedAt \|\| cloudSyncNowIso\(\)\)/);
     assert.match(fn, /_deleted: true/);
   });
 });
