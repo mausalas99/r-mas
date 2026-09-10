@@ -24,7 +24,6 @@ import {
 } from '../clinical-username.mjs';
 import { CLINICAL_SALAS } from './clinical-teams/shared.mjs';
 import { renderSyncModeChoicePanel } from './clinical-onboarding-sync-mode.mjs';
-import { isLanSkipShiftPin } from '../shift-pin-stub.mjs';
 import { buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
 import {
   getClientId,
@@ -129,17 +128,7 @@ function buildLanProfileFormBody(settings) {
       ''
   );
   const prefilledSala = String(settings.clinicalSala || clinicalSessionContext.user?.sala || '');
-  const prefilledShiftPin = '';
-  const shiftPinFieldHtml = isLanSkipShiftPin()
-    ? ''
-    : `
-          <div class="field-group">
-            <label for="onboard-shift-pin">PIN del turno (⇄)</label>
-            <input id="onboard-shift-pin" type="text" class="profile-input" inputmode="numeric"
-              pattern="[0-9]{6}" maxlength="6" placeholder="6 dígitos del anfitrión" autocomplete="off"
-              value="${escapeAttr(prefilledShiftPin)}">
-            <p class="clinical-teams-hint">6 dígitos del anfitrión (⇄). R+ conecta solo; si cambias de Wi‑Fi, vuelve a usar el mismo PIN.</p>
-          </div>`;
+  const shiftPinFieldHtml = '';
 
   return `
       <div class="clinical-onboard-form-shell">

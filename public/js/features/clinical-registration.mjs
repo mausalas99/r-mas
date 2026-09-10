@@ -5,7 +5,6 @@ import { closeModalAnimated } from '../ui-motion.mjs';
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { ensureLanProfileGateDeviceReset, isClinicalLocalOnlyMode, needsClinicalLanProfileGate, readRpcSettings } from '../clinical-settings.mjs';
 import { handleClinicalRegistrationSubmit } from './clinical-registration-submit.mjs';
-import { isLanSkipShiftPin } from '../shift-pin-stub.mjs';
 
 /** @type {((ok: boolean) => void)|null} */
 let pendingResolve = null;
@@ -98,7 +97,7 @@ export function openClinicalRegistrationModal() {
   }
   const usernameInput = document.getElementById('clinical-reg-username');
   const shiftPinGroup = document.getElementById('clinical-reg-shift-pin')?.closest('.field-group');
-  if (shiftPinGroup) shiftPinGroup.hidden = isLanSkipShiftPin();
+  if (shiftPinGroup) shiftPinGroup.hidden = true;
   if (usernameInput) usernameInput.focus();
 }
 

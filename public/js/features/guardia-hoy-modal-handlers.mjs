@@ -3,7 +3,6 @@
  */
 import { fetchClinicalScopeContextFromDb } from '../clinical-access-runtime.mjs';
 import { publishClinicalTeamsToSync, toastTeamPublishResult } from './clinical-teams/teams-guardia-bridge.mjs';
-import { syncLanHostClinicalMetaToDisk } from '../host-meta-stub.mjs';
 
 function dbApi() {
   if (typeof window === 'undefined') return null;
@@ -46,7 +45,6 @@ export async function persistGuardiaSelections(selects) {
   await fetchClinicalScopeContextFromDb();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
   if (activated) {
-    await syncLanHostClinicalMetaToDisk();
     const lanPush = await publishClinicalTeamsToSync();
     toastTeamPublishResult(lanPush, 'Guardia hoy activada.');
   }

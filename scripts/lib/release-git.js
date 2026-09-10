@@ -37,8 +37,6 @@ const RELEASE_STAGE_PATHS = [
   'lib/doc-generators/',
   'lib/doc-export-audit.js',
   'lib/doc-export-http.js',
-  'lib/server-http-security.js',
-  'lib/server-http-security.test.js',
   'lib/output-dir-policy.js',
   'lib/output-dir-policy.test.js',
   'server-python.js',

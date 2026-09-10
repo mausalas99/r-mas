@@ -16,6 +16,5 @@ Debt accounting: `baseline.json` is the committed snapshot; PRs must not increas
 | `npm run lint:tier1:full` | ESLint on entire `public/js`, `lib`, `lan-squad` (exit 0 gate) |
 | `npm run metrics:check` | Fail if `report.totalScore > baseline.totalScore` or Tier 1 violations in changed files |
 | `npm run metrics:baseline` | Refresh `baseline.json` after approved debt paydown (human-initiated) |
-| `node scripts/metrics/fix-mechanical-eslint.mjs --full` | Mechanical ESLint pass on full Tier 1 tree |
 
 **Baseline (2026-06-21):** `totalScore=50` (boot graph structural delta only; complexity/length/unused at 0).

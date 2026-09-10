@@ -1049,13 +1049,6 @@ app.whenReady().then(async () => {
       app.quit();
       return;
     }
-
-    try {
-      const userData = app.getPath('userData');
-      void userData;
-    } catch (_reconcileErr) {
-      /* LAN host reconcile retired */
-    }
   } catch (e) {
     const detail = e && e.message ? e.message : String(e);
     dialog.showErrorBox(
