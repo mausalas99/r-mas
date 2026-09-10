@@ -1,18 +1,8 @@
-/** @type {import('./unified-patient-grid-board.mjs').UnifiedPatientGridBoard|null} */
-let _gridBoard = null;
 let _appShellInstalled = false;
 let _entregaControlsInstalled = false;
 let _guardiaViewBootstrapped = false;
 let _elevatedFullWardPullScheduled = false;
 let _entregaClickBusy = false;
-
-export function getGridBoard() {
-  return _gridBoard;
-}
-
-export function setGridBoard(board) {
-  _gridBoard = board;
-}
 
 export function isAppShellInstalled() {
   return _appShellInstalled;
