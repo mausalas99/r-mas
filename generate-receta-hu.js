@@ -42,17 +42,7 @@ function resolveTemplatePath(baseDir) {
   throw new Error('No se encontró la plantilla PDF de receta HU.');
 }
 
-/**
- * pdf-lib StandardFonts (WinAnsi) no admiten controles ni saltos en drawText.
- * @param {string} text
- */
-function pdfSafeLine(text) {
-  return String(text || '')
-    // eslint-disable-next-line no-control-regex -- strip C0 controls before PDF embedding
-    .replace(/[\r\n\f\v\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+const { pdfSafeLine } = require('./lib/pdf-safe-line.js');
 
 function splitToFieldLines(text, maxLines) {
   const raw = String(text || '')

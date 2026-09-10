@@ -60,9 +60,6 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
-
-
-
 ## R+ 8.3.3 (estable — release 8.3.3)
 
 - **Nuevo — pestaña Red en Administración:** censo de pacientes de todas las áreas, con filtros y archivar/restaurar/eliminar.
@@ -71,35 +68,6 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 - **Mejorado:** diálogos de confirmación en Administración, y velocidad de descifrado en sincronización.
 
 Notas: `docs/RELEASE_NOTES_8.3.3.txt`.
-## R+ 8.3.2 (estable — release 8.3.2)
-
-- **Nuevo — pestaña Medicamentos:** administración por horario de toma, con registro aparte para PRN.
-- **Nuevo — balance de líquidos por turno:** T1/T2/T3 más otras fuentes cuantificables, con recordatorio de hemodiálisis.
-- **Nuevo — estudios y procedimientos a Pendientes:** el pegado de Manejo los agrega solos.
-- **Mejorado:** agrupación de Solución Stanford y copiado de Estado actual con negritas reales.
-
-Notas: `docs/RELEASE_NOTES_8.3.2.txt`.
-## R+ 8.3.1 (estable — release 8.3.1)
-
-- **Corrección — equipos nuevos que desaparecían:** un equipo recién creado podía volverse invisible para toda la sala por tres fallas distintas en la sincronización. Las tres quedan corregidas.
-- **Corrección — R+ Móvil por código QR:** unirse a una sala desde el código QR se saltaba la carga de la llave de descifrado, dejando todos los pacientes vacíos en iPad sin mostrar error.
-
-Notas: `docs/RELEASE_NOTES_8.3.1.txt`.
-## R+ 8.3.0 (estable — release 8.3.0)
-
-- **Corrección — equipo desactualizado en la nube:** un cambio de equipo que no se pudo guardar por un bloqueo momentáneo de la base local ya no se perdía en silencio — se reintenta en cada inicio de sesión, no solo en la configuración inicial.
-- **Corrección — choque al unirse a una sala:** unirse a una sala nube desde dos dispositivos casi al mismo tiempo ya no muestra un error de base de datos.
-- **Corrección — recuento celular (líquidos):** el número ya no se confunde con la letra del tubo; Rec, Linf y Eri ahora aparecen en tendencias de líquidos.
-
-Notas: `docs/RELEASE_NOTES_8.3.0.txt`.
-## R+ 8.2.9 (estable — release 8.2.9)
-
-- **Copiar labs con formato:** al copiar labs se conservan las negritas al pegar en Word/Docs.
-- **Electrolitos urinarios (EU):** sección propia, separada de EGO.
-- **Pegado múltiple más tolerante:** un bloque con expediente mezclado ya no bloquea el resto del pegado.
-- **Corrección:** cambiar de sala saca al usuario del equipo anterior automáticamente.
-
-Notas: `docs/RELEASE_NOTES_8.2.9.txt`.
 
 ## Historial de versiones
 
@@ -265,7 +233,7 @@ Si prefieres instalar a mano o la versión no está en el catálogo curado, rein
 
 - Tus datos (pacientes, notas, indicaciones, historial de labs, respaldos JSON, ajustes) están en el `userData` de Electron — abre la carpeta desde **Ajustes → Datos en esta computadora → Abrir carpeta…**. **No se borran** al reinstalar una versión anterior.
 - Si una release documenta un **cambio de formato incompatible**, importa tu respaldo `.json` más reciente desde **Ajustes → Respaldo local → Importar copia de seguridad…** después de reinstalar la versión anterior.
-- En macOS, `electron-updater` requiere misma firma y `appId` (`com.hospitaluniversitario.rplusclinical`) entre versiones. Si cambias manualmente entre una build firmada y otra ad-hoc, es normal que la auto-actualización falle: reinstala desde el `.dmg` para resolverlo.
+- En macOS, `electron-updater` requiere misma firma y `appId` (`com.rmas.rplusclinical`) entre versiones. Si cambias manualmente entre una build firmada y otra ad-hoc, es normal que la auto-actualización falle: reinstala desde el `.dmg` para resolverlo.
 
 ---
 

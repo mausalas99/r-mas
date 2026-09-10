@@ -1,6 +1,6 @@
 ---
 type: "core"
-name": "Error Handling & Recovery"
+name: "Error Handling & Recovery"
 status: "reserved"
 description: "Slot reservado para manejo de errores y recuperación. Ver 00-system-index.md."
 ---

@@ -67,16 +67,18 @@ const generatedIgnores = {
   ],
 };
 
+const noUnusedVarsIgnoreUnderscore = {
+  'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+};
+
 const rootProcessCommonjs = {
-  files: ['main.js', 'preload.js'],
+  files: ['main.js', 'preload.js', 'generate-receta-hu.js', 'generate-receta-hu.test.js'],
   languageOptions: {
     ecmaVersion: 2022,
     sourceType: 'commonjs',
     globals: { ...globals.node },
   },
-  rules: {
-    'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
-  },
+  rules: noUnusedVarsIgnoreUnderscore,
 };
 
 const rootProcessEsm = {
@@ -86,21 +88,7 @@ const rootProcessEsm = {
     sourceType: 'module',
     globals: { ...globals.node },
   },
-  rules: {
-    'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
-  },
-};
-
-const rootProcessRecetaHu = {
-  files: ['generate-receta-hu.js', 'generate-receta-hu.test.js'],
-  languageOptions: {
-    ecmaVersion: 2022,
-    sourceType: 'commonjs',
-    globals: { ...globals.node },
-  },
-  rules: {
-    'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
-  },
+  rules: noUnusedVarsIgnoreUnderscore,
 };
 
 const scriptsBlock = {
@@ -109,9 +97,7 @@ const scriptsBlock = {
     ecmaVersion: 2022,
     globals: { ...globals.node },
   },
-  rules: {
-    'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
-  },
+  rules: noUnusedVarsIgnoreUnderscore,
 };
 
 const scriptsEsm = {
@@ -138,7 +124,6 @@ export default [
   tier2LegacyCjs,
   rootProcessCommonjs,
   rootProcessEsm,
-  rootProcessRecetaHu,
   scriptsBlock,
   scriptsEsm,
   scriptsCommonjs,

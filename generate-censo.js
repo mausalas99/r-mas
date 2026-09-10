@@ -12,6 +12,7 @@ import {
   CENSO_OPTIONAL_COL_KEYS,
   resolveCensoColWeights,
 } from './public/js/censo-table-columns.mjs';
+import { pdfSafeLine } from './lib/pdf-safe-line.js';
 
 const PAGE_W = 1008;
 const PAGE_H = 612;
@@ -75,19 +76,6 @@ function colFontSize(colKey) {
 function colLineHeight(colKey) {
   if (colKey === 'labs') return LINE_H_LABS;
   return LINE_H;
-}
-
-/**
- * pdf-lib StandardFonts (WinAnsi) no admiten \\n ni controles en drawText.
- * @param {string} text
- * @returns {string}
- */
-function pdfSafeLine(text) {
-  return String(text || '')
-    // eslint-disable-next-line no-control-regex -- strip C0 controls before PDF embedding
-    .replace(/[\r\n\f\v\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
 }
 
 /**
@@ -493,9 +481,6 @@ function wrapCensusCellLines(font, fontBold, text, innerW, maxLines, colKey) {
   if (colKey === 'labs') {
     return wrapLabsCellLines(font, fontBold, text, innerW, maxLines);
   }
-  if (colKey === 'pend') {
-    return wrapPlainCellLines(font, text, innerW, maxLines, colFontSize(colKey));
-  }
   return wrapPlainCellLines(font, text, innerW, maxLines, colFontSize(colKey));
 }
 
@@ -687,26 +672,6 @@ function drawTableHeader(page, yTop, font, fontBold, layout) {
   });
 }
 
-/**
- * @param {import('pdf-lib').PDFPage} page
- * @param {CensoRow} row
- * @param {number} yTop
- * @param {number} rowH
- * @param {import('pdf-lib').PDFFont} font
- * @param {import('pdf-lib').PDFFont} fontBold
- * @param {boolean} zebra
- */
-/**
- * @param {import('pdf-lib').PDFPage} page
- * @param {string[]} lines
- * @param {number} tx
- * @param {number} innerW
- * @param {number} yTop
- * @param {number} rowH
- * @param {import('pdf-lib').PDFFont} font
- * @param {import('pdf-lib').PDFFont} fontBold
- * @param {string} colKey
- */
 /**
  * @param {string} colKey
  * @param {string} role
