@@ -48,7 +48,7 @@ When faced with competing priorities or feature requests, the team should use th
 ## 🚫 Out of Bounds (Anti-Goals)
 To maintain focus, we explicitly say **NO** to:
 
-- **Unmanaged public EMR SaaS:** R+ is not a hospital system of record in the vendor cloud; the **Nube Free pilot** stores **opt-in turn rooms** on Cloudflare. **Target:** client encrypt → opaque D1 → client decrypt. **Today:** HTTPS in transit, **plaintext JSON in D1**, not E2EE — see [15-security.md](./15-security.md). Not a general-purpose cloud expediente product.
+- **Unmanaged public EMR SaaS:** R+ is not a hospital system of record in the vendor cloud; the **Nube Free pilot** stores **opt-in turn rooms** on Cloudflare. HTTPS in transit; clinical *content* fields (notes/labs/indicaciones/monitoreo/clinicalOps) are client E2EE, live since 2026-08-31 (8.2.8) — opaque to Cloudflare. Patient *identity* fields (name/bed/service/diagnoses) are still plaintext in D1 — see [15-security.md](./15-security.md). Not a general-purpose cloud expediente product.
 - **EMR replacement:** R+ is not the system of record; formal boundary with the hospital EMR stays explicit.
 - **Autonomous clinical decisions:** No opaque diagnostic or treatment engines; Manejo automático-style suggestions remain retired.
 - **Forced cloud:** Nube is **opt-in**; offline device unlock (local SQLCipher only) must keep working without an account.

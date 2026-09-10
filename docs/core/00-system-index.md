@@ -40,7 +40,7 @@ flowchart LR
 | 04 | [directory-structure](./04-directory-structure.md) | stable | Where every file type lives |
 | 06 | [design-system](./06-design-system.md) | stable | UI tokens (→ `design.md`) |
 | 08 | [core-architecture](./08-core-architecture.md) | stable | Electron, LAN, DB, sync |
-| 15 | [security](./15-security.md) | stable | SQLCipher + Nube (Cloudflare D1 plaintext JSON) + leftover LAN |
+| 15 | [security](./15-security.md) | stable | SQLCipher + Nube (Cloudflare, client E2EE live for content, identity fields plaintext) + leftover LAN |
 | 16 | [glossary-of-terms](./16-glossary-of-terms.md) | in-progress | Domain lexicon |
 | 17 | [docs-blueprint](./17-docs-blueprint.md) | stable | Documentation standard |
 | 18 | [knowledge-capture](./18-knowledge-capture.md) | stable | Decision log |
