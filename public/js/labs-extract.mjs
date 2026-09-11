@@ -48,6 +48,12 @@ function esFraccionColesterol_(texto, idxNombre, nombreLen) {
   return /^\s*(HDL|LDL)\b/.test(after);
 }
 
+/** True si «CREATININA» es en realidad el título/fila «DEPURACION DE CREATININA» (orina de 24h, no sérica). */
+function esDepuracionCreatinina_(texto, idxNombre) {
+  var before = texto.substring(Math.max(0, idxNombre - 16), idxNombre).toUpperCase();
+  return /DEPURACION\s+DE\s*$/.test(before);
+}
+
 /** True si la etiqueta pertenece a EGO/sedimento urinario (no biometría hemática). */
 function esContextoSedimentoOrina_(texto, idxNombre, nombreLen) {
   var w = texto.substring(idxNombre, Math.min(texto.length, idxNombre + nombreLen + 120));
@@ -120,6 +126,12 @@ export function extraerConRangoSuero(nombres, texto) {
       }
       // «COLESTEROL» solo = total; no tomar COLESTEROL HDL / LDL.
       if (nombre === 'COLESTEROL' && esFraccionColesterol_(texto, idx, nombre.length)) {
+        start = idx + nombre.length;
+        continue;
+      }
+      // «CREATININA» dentro de «DEPURACION DE CREATININA» es de una recolección
+      // de 24h, no sérica — no tomar el primer número que siga (es de otra fila).
+      if (nombre === 'CREATININA' && esDepuracionCreatinina_(texto, idx)) {
         start = idx + nombre.length;
         continue;
       }

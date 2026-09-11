@@ -83,8 +83,8 @@ function sectionPrior_(priorBySec, key) {
   return priorBySec && priorBySec[key] ? priorBySec[key] : null;
 }
 
-function collectCoreLabSections_(deps, resLabs, blocks, demograf, textoBruto, tNorm, priorBySec) {
-  var bhRes = deps.parseBH_(blocks.textoParaBh, sectionPrior_(priorBySec, 'BH'));
+function collectCoreLabSections_(deps, resLabs, blocks, demograf, textoBruto, tNorm, priorBySec, priorBhValues) {
+  var bhRes = deps.parseBH_(blocks.textoParaBh, sectionPrior_(priorBySec, 'BH'), priorBhValues);
   if (bhRes && bhRes.visible) resLabs.push(bhRes.visible);
   if (bhRes && bhRes.coagVisible) resLabs.push(bhRes.coagVisible);
   pushLabSection_(resLabs, deps.parseQS_(blocks.textoQS, demograf, sectionPrior_(priorBySec, 'QS')));
@@ -106,11 +106,11 @@ function appendFrotisLines_(deps, resLabs, textoBruto) {
   });
 }
 
-function collectLabSections_(deps, textoBruto, tNorm, blocks, demograf, priorBySec) {
+function collectLabSections_(deps, textoBruto, tNorm, blocks, demograf, priorBySec, priorBhValues) {
   var resLabs = [];
   var bhExtras = blocks.esSoloGaso
     ? {}
-    : collectCoreLabSections_(deps, resLabs, blocks, demograf, textoBruto, tNorm, priorBySec);
+    : collectCoreLabSections_(deps, resLabs, blocks, demograf, textoBruto, tNorm, priorBySec, priorBhValues);
   pushLabSection_(
     resLabs,
     deps.parseGaso_(blocks.bloqueGaso, blocks.textoQS, sectionPrior_(priorBySec, 'GASES'))
@@ -126,6 +126,7 @@ function collectLabSections_(deps, textoBruto, tNorm, blocks, demograf, priorByS
   appendFrotisLines_(deps, resLabs, textoBruto);
   pushLabSection_(resLabs, deps.parseEGO_(textoBruto));
   pushLabSection_(resLabs, deps.parseElectrolitosOrina_(textoBruto));
+  pushLabSection_(resLabs, deps.parseDepuracionCreatinina_(textoBruto));
   pushLabSection_(resLabs, deps.parseCuantOrina_(textoBruto));
   pushLabSection_(resLabs, deps.parseCultivo_(textoBruto, tNorm));
   pushLabSection_(resLabs, deps.parseSerologiaBancoSangre_(textoBruto));
@@ -176,7 +177,7 @@ function parseLabPatientHeader_(deps, textoBruto) {
  * @param {(texto: string) => object} deps.buildRefsBySectionFromReport
  * @param {(texto: string) => string} deps.extractLabReportFechaDMY
  * @param {(texto: string) => string} deps.extractLabReportHora
- * @param {(texto: string, tNorm: string) => object | null} deps.parseBH_
+ * @param {(texto: string, priorRefs: object, priorBhValues?: object) => object | null} deps.parseBH_
  * @param {(texto: string, demograf: object) => object | null} deps.parseQS_
  * @param {(texto: string) => object | null} deps.parseESC_
  * @param {(texto: string) => object | null} deps.parsePFH_
@@ -206,6 +207,7 @@ export function createProcesarLabs(deps) {
    *   patient?: { sexo?: string, edad?: string },
    *   priorRefsBySection?: { [section: string]: { [field: string]: [number, number] } },
    *   gasRefs?: { [field: string]: [number, number] },
+   *   priorBhValues?: { [field: string]: number },
    * }} [options]
    */
   return function procesarLabs(textoBruto, options) {
@@ -225,7 +227,8 @@ export function createProcesarLabs(deps) {
       );
     }
     var egfrCtx = buildEgfrPatientCtx(hdr.edadRaw, hdr.edadUnidad, chartPatient);
-    var sections = collectLabSections_(deps, textoBruto, tNorm, blocks, egfrCtx, priorBySec);
+    var priorBhValues = options && options.priorBhValues ? options.priorBhValues : Object.create(null);
+    var sections = collectLabSections_(deps, textoBruto, tNorm, blocks, egfrCtx, priorBySec, priorBhValues);
     var reportRefs = deps.buildRefsBySectionFromReport(textoBruto);
     return {
       patient: hdr.patient,

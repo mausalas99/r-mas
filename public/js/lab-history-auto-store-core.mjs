@@ -414,14 +414,36 @@ var SAME_STUDY_MIN_SHARED = 3;
  * con valor distinto, o 1-2 compartidos idénticos (posible toma repetida real), es
  * conflicto.
  */
+/** Secciones con contenido real (no {} ni filas vacías). */
+function nonEmptySectionKeys_(p) {
+  return Object.keys(p || {}).filter(function (k) {
+    return p[k] && Object.keys(p[k]).length;
+  });
+}
+
+/**
+ * GASES (gasometría) ya tiene su propio emparejamiento dedicado —
+ * clusterLabworkByTimeWindow empareja la gaso con el labwork más cercano del
+ * día respetando ventana/serialidad. Tratarla aquí también como "fragmento
+ * genérico sin analitos compartidos" pegaba BH/QS de una toma distinta (horas
+ * después) a una gasometría sin ningún dato hematológico propio.
+ */
+function isGasesOnlySection_(keys) {
+  return keys.length === 1 && keys[0] === 'GASES';
+}
+
 function sectionsAreComplementary_(a, b) {
   var pa = (a && a.parsedBySection) || null;
   var pb = (b && b.parsedBySection) || null;
   if (!pa || !pb) return false;
-  var keysA = Object.keys(pa).filter(function (k) {
-    return pa[k] && Object.keys(pa[k]).length;
-  });
+  var keysA = nonEmptySectionKeys_(pa);
   if (!keysA.length) return false;
+  // Un set sin ninguna sección reconocida (p. ej. un cultivo/micobacterias sin
+  // analitos estructurados) no tiene nada que "no choque" — es vacuamente
+  // compatible con cualquier cosa y se volvía un imán para fusiones ajenas.
+  var keysB = nonEmptySectionKeys_(pb);
+  if (!keysB.length) return false;
+  if (isGasesOnlySection_(keysA) || isGasesOnlySection_(keysB)) return false;
   var shared = 0;
   var hasConflict = keysA.some(function (k) {
     var rowB = pb[k];

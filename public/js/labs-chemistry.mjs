@@ -74,7 +74,11 @@ function appendEgfrIfEligible_(p, crData, patientCtx) {
 }
 
 function extractQsFormatted_(texto, priorRefs) {
-  var crData = extraerConRangoSuero(['CREATININA EN SANGRE', 'CREATININA'], texto);
+  // Con depuración de creatinina (24h) en el reporte, la creatinina sérica
+  // ya se muestra en la fila DepCr — no duplicarla en QS.
+  var crData = /DEPURACION\s+DE\s+CREATININA/i.test(texto)
+    ? { valor: '---', min: null, max: null }
+    : extraerConRangoSuero(['CREATININA EN SANGRE', 'CREATININA'], texto);
   return {
     Glu: fmtSuero_(extraerConRangoSuero(['GLUCOSA EN SANGRE', 'GLUCOSA EN', 'GLUCOSA'], texto), 'Glu', priorRefs),
     crData: crData,

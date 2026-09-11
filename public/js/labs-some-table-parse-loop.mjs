@@ -168,7 +168,7 @@ export function dispatchSomeParseLine(state, lines, i, trimmed, h) {
     state.skipSection = false;
     return i;
   }
-  if (h.isTableHeaderLine(trimmed) || !state.currentDept) return i;
+  if (h.isTableHeaderLine(trimmed, h.cleanEstudio(lines[i + 1] || '')) || !state.currentDept) return i;
   if (trimmed === ':' || trimmed === '—') return i;
   if (h.isSectionDividerRow({ estudio: trimmed, resultado: '', unidades: '', ref: '' })) return i;
   if (h.isSectionDividerEstudio(trimmed)) return h.skipSectionDividerBlock(lines, i) - 1;

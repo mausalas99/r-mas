@@ -8,6 +8,7 @@ import {
   extractLabExpedienteFromReport,
   reprocessLabResultLines_,
   collectPriorRefsFromHistory,
+  collectPriorBhValuesFromHistory,
   refreshCitoquimicoInterpretacionInResLabs_,
 } from './labs.js';
 import { getLabHistory } from './app-state.mjs';
@@ -21,6 +22,7 @@ import {
 } from './lab-consolidation-cluster.mjs';
 import { sanitizeResLabsChunks } from './labs-reslabs-sanitize.mjs';
 import { dedupeConsolidatedLabRows } from './lab-bulk-dedupe.mjs';
+import { buildParsedBySectionFromResLabs } from './features/diagrams-parse.mjs';
 
 export { dedupeConsolidatedLabRows } from './lab-bulk-dedupe.mjs';
 
@@ -122,16 +124,28 @@ function priorRefsForPatient_(patient) {
   return collectPriorRefsFromHistory(sortLabHistoryChronological(getLabHistory()[patient.id] || []));
 }
 
-function parseReportChunk(reportText, reportIndex, findPatient) {
+/** Último Hto/Ret conocidos (toma distinta) para completar RetC cuando la toma actual solo trae uno. */
+function priorBhValuesForPatient_(patient) {
+  if (!patient || !patient.id) return Object.create(null);
+  return collectPriorBhValuesFromHistory(sortLabHistoryChronological(getLabHistory()[patient.id] || []));
+}
+
+function parseReportChunk(reportText, reportIndex, findPatient, batchBhValues) {
   if (!looksLikeSomeLabReport(reportText)) {
     return parseReportChunkFailure(reportIndex, 'No parece reporte SOME (copia desde «Expediente:»)');
   }
   try {
     var chartPatient = resolveChartPatientForReport_(reportText, findPatient);
     var priorRefs = priorRefsForPatient_(chartPatient);
+    var priorBhValues = Object.assign(
+      Object.create(null),
+      priorBhValuesForPatient_(chartPatient),
+      batchBhValues || Object.create(null)
+    );
     var result = procesarLabs(reportText, {
       patient: chartPatient || undefined,
       priorRefsBySection: priorRefs,
+      priorBhValues: priorBhValues,
     });
     if (!result.resLabs) result.resLabs = [];
     return parseReportChunkSuccess(reportText, reportIndex, result);
@@ -288,10 +302,23 @@ function computePatientName(match, okReports) {
   return okReports[0] ? okReports[0].nombre || '—' : '—';
 }
 
+/** Hto/Ret de cada chunk del bloque, para que un chunk sin Hto (o sin Ret) tome el de otro del mismo pegado. */
+function collectBatchBhValues_(chunks, findPatient) {
+  var out = Object.create(null);
+  chunks.forEach(function (chunk, ri) {
+    var r = parseReportChunk(chunk, ri, findPatient);
+    if (!r.ok || !r.result) return;
+    var bh = buildParsedBySectionFromResLabs(r.result.resLabs, r.result.bhExtras).BH;
+    if (bh) Object.assign(out, bh);
+  });
+  return out;
+}
+
 function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
   var chunks = splitSomeReportsInBlock(blockText);
+  var batchBhValues = collectBatchBhValues_(chunks, findPatient);
   var reports = chunks.map(function (chunk, ri) {
-    return parseReportChunk(chunk, ri, findPatient);
+    return parseReportChunk(chunk, ri, findPatient, batchBhValues);
   });
   var okReports = reports.filter(function (r) {
     return r.ok;

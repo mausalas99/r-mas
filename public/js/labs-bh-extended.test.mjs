@@ -61,7 +61,19 @@ describe('parseBH_ extended', () => {
   it('adds Ret to the compact visible line, before Leu, when RETICULOCITOS is present', () => {
     const withRet = BH_REAL + '\nRETICULOCITOS * 1.0 % 0.5 - 1.5';
     const { visible } = parseBH_(withRet);
-    assert.match(visible, /\bHCM\s+\S+\s+Ret\s+1\s+Leu\b/);
+    assert.match(visible, /\bHCM\s+\S+\s+Ret\s+1\s+RetC\s+[\d.]+\s+\([a-z]+\)\s+Leu\b/);
+  });
+
+  it('RetC toma Hto de la toma previa cuando la actual solo trae Ret', () => {
+    const soloRet = 'HEMATOLOGIA\nRETICULOCITOS * 4.0 % 0.5 - 2.5';
+    const { visible } = parseBH_(soloRet, null, { Hto: 30 });
+    assert.match(visible, /RetC\s+2\.67\s+\(regenerativa\)/);
+  });
+
+  it('RetC no combina Ret y Hto si ambos faltan en la toma actual', () => {
+    const sinNada = 'HEMATOLOGIA\nWBC B 6.0 10^3/uL 4 - 11';
+    const { visible } = parseBH_(sinNada, null, { Hto: 30, Ret: 4 });
+    assert.doesNotMatch(visible, /RetC/);
   });
 
   it('Ret-only MIXTO is a compact BH line, not a Hem. sub-row', () => {
@@ -95,8 +107,15 @@ describe('parseBH_ extended', () => {
     ]);
     assert.match(merged.bh, /^BH\t/);
     assert.match(merged.bh, /\bHb\s+8\.84\*/);
-    assert.match(merged.bh, /\bHCM\s+32\.4\s+Ret\s+1\s+Leu\b/);
+    assert.match(merged.bh, /\bHCM\s+32\.4\s+Ret\s+1\s+RetC\s+0\.57\s+\(arregenerativa\)\s+Leu\b/);
     assert.match(merged.bh, /\bPlt\s+12\.5\*/);
+  });
+
+  it('mergeBhResLabRows_ keeps a RetC computed from a borrowed cross-draw value when its cluster has only that one row', () => {
+    const merged = mergeBhResLabRows_([
+      'BH\tRet 2.8  RetC 0.72 (arregenerativa)',
+    ]);
+    assert.match(merged.bh, /\bRet\s+2\.8\s+RetC\s+0\.72\s+\(arregenerativa\)/);
   });
 
   it('flattenBhHemOnlyVisible folds a stored Hem. Ret row into BH', () => {

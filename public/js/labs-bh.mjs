@@ -6,6 +6,7 @@ import {
   fmtLabRanged_,
 } from './labs-extract.mjs';
 import { lineRichnessScore_ } from './labs-gaso-section.mjs';
+import { computeRetiCorregido_ } from './labs-reticulocito-corregido.mjs';
 
 export const BH_EXTRA_DISPLAY_LABELS = {
   RBC: 'Eri',
@@ -365,10 +366,24 @@ function extraerBhReticulocitos_(tNorm) {
   }
 }
 
-function extractBhScalarFields_(tNorm, priorRefs) {
+/** Completa Hto/Ret faltante con la toma previa más reciente (nunca ambos a la vez). */
+function retCFuenteMixta_(retRaw, htoRaw, priorBhValues) {
+  if (retRaw !== '---' && htoRaw === '---' && priorBhValues && priorBhValues.Hto != null) {
+    return { ret: retRaw, hto: String(priorBhValues.Hto) };
+  }
+  if (htoRaw !== '---' && retRaw === '---' && priorBhValues && priorBhValues.Ret != null) {
+    return { ret: String(priorBhValues.Ret), hto: htoRaw };
+  }
+  return { ret: retRaw, hto: htoRaw };
+}
+
+function extractBhScalarFields_(tNorm, priorRefs, priorBhValues) {
+  var htoData = extraerConRango(['HCT ', 'HEMATOCRITO'], tNorm);
+  var retData = extraerBhReticulocitos_(tNorm);
+  var retC = retCFuenteMixta_(retData.valor, htoData.valor, priorBhValues);
   return {
     Hb: fmtBhRanged_(extraerConRango(['HGB', 'HEMOGLOBINA TOTAL', 'HEMOGLOBINA'], tNorm), 'Hb', priorRefs),
-    Hto: fmtBhRanged_(extraerConRango(['HCT ', 'HEMATOCRITO'], tNorm), 'Hto', priorRefs),
+    Hto: fmtBhRanged_(htoData, 'Hto', priorRefs),
     VCM: fmtBhRanged_(extraerConRango(['MCV ', 'VCM '], tNorm), 'VCM', priorRefs),
     HCM: fmtBhRanged_(extraerConRango(['MCH ', 'HCM '], tNorm), 'HCM', priorRefs),
     CHCM: fmtBhRanged_(extraerConRango(['MCHC', 'CHCM'], tNorm), 'CHCM', priorRefs),
@@ -377,7 +392,8 @@ function extractBhScalarFields_(tNorm, priorRefs) {
     RBC: fmtBhRanged_(extraerConRangoBH(['RBC ', 'ERITROCITOS', 'HEMATIES'], tNorm), 'RBC', priorRefs),
     Plt: fmtBhRanged_(extraerConRango(['PLT '], tNorm), 'Plt', priorRefs),
     MPV: fmtBhRanged_(extraerConRango(['MPV ', 'VPM '], tNorm), 'MPV', priorRefs),
-    Ret: fmtBhRanged_(extraerBhReticulocitos_(tNorm), 'Ret', priorRefs),
+    Ret: fmtBhRanged_(retData, 'Ret', priorRefs),
+    RetC: computeRetiCorregido_(retC.ret, retC.hto),
     TP: fmtBhRanged_(extraerConRangoCoag(['TIEMPO DE PROTROMBINA'], tNorm), 'TP', priorRefs),
     TTP: fmtBhRanged_(extraerConRangoCoag(['TIEMPO DE TROMBOPLASTINA'], tNorm), 'TTP', priorRefs),
     INR: fmtBhRanged_(extraerConRangoCoag(['INR ', 'INR'], tNorm), 'INR', priorRefs),
@@ -430,6 +446,7 @@ function buildBhCorePairs_(f) {
   if (f.VCM !== '---') corePairs.push('VCM', f.VCM);
   if (f.HCM !== '---') corePairs.push('HCM', f.HCM);
   if (f.Ret !== '---') corePairs.push('Ret', f.Ret);
+  if (f.RetC !== '---') corePairs.push('RetC', f.RetC);
   if (f.Leu !== '---') corePairs.push('Leu', f.Leu);
   if (f.Neu !== '---') corePairs.push('Neu', f.Neu);
   if (f.Eos !== '---') corePairs.push('Eos', f.Eos);
@@ -527,8 +544,8 @@ function bhHasAnyData_(f, extras) {
   return hasCore || hasExtIdx || hasCoag || Object.keys(extras).length > 0;
 }
 
-export function parseBH_(tNorm, priorRefs) {
-  var f = extractBhScalarFields_(tNorm, priorRefs);
+export function parseBH_(tNorm, priorRefs, priorBhValues) {
+  var f = extractBhScalarFields_(tNorm, priorRefs, priorBhValues);
   var extras = buildBhExtras_(tNorm, f.Leu);
   if (!bhHasAnyData_(f, extras)) return { visible: '', coagVisible: '', extras: {} };
 

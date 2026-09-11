@@ -131,6 +131,26 @@ export function collectPriorGasRefsFromHistory(history) {
   return all.GASES || Object.create(null);
 }
 
+/**
+ * Último valor numérico conocido por campo BH en el historial (entrada
+ * posterior gana). Para calcular RetC cuando Ret y Hto no comparten toma.
+ * @param {Array<{ parsedBySection?: { BH?: { [field: string]: number } } }>} history
+ * @returns {{ [field: string]: number }}
+ */
+export function collectPriorBhValuesFromHistory(history) {
+  var out = Object.create(null);
+  if (!history || !history.length) return out;
+  for (var i = 0; i < history.length; i++) {
+    var bh = history[i] && history[i].parsedBySection && history[i].parsedBySection.BH;
+    if (!bh || typeof bh !== 'object') continue;
+    Object.keys(bh).forEach(function (k) {
+      var v = bh[k];
+      if (typeof v === 'number' && isFinite(v)) out[k] = v;
+    });
+  }
+  return out;
+}
+
 /** Mezcla mapas de refs campo a campo; overlay gana. */
 export function mergeRefsMap_(base, overlay) {
   var out = Object.create(null);

@@ -215,6 +215,51 @@ HIPOCROMIA +`;
     assert.ok(bh);
     assert.match(bh, /\bHb\s+8\.84/);
     assert.match(bh, /\bRet\s+1\b/);
+    assert.match(bh, /\bRetC\s+0\.57 \(arregenerativa\)/);
+  });
+
+  it('buildBulkLabPreview calcula RetC en ambos chunks cuando Hto y Ret llegan en reportes separados del mismo pegado', () => {
+    var cbc = `Expediente:\t1\tSolicitud:\t1
+Nombre:\tMARIBEL BAZABE\tFecha Registro:\tAug 21 2026 3:53AM
+HEMATOLOGIA
+BIOMETRIA HEMATICA COMPLETA
+HGB B 8.84 g/dL 12.20 - 18.10
+HCT B 25.5 % 37.7 - 53.7
+MCV * 93 fL 80 - 97
+MCH * 32.4 pg 27.0 - 31.2
+WBC A 2.89 K/uL 4.00 - 11.00
+NEU * 2.65 K/uL 2.00 - 6.90
+EOS * 0.02 K/uL 0.000 - 0.700
+PLT * 12.50 K/uL 142.00 - 424.00`;
+    var ret = `Expediente:\t1\tSolicitud:\t2
+Nombre:\tMARIBEL BAZABE\tFecha Registro:\tAug 21 2026 4:10AM
+HEMATOLOGIA
+DIFERENCIAL MANUAL
+SEGMENTADOS
+*
+95
+%
+RETICULOCITOS
+Estudio\t\tResultado\tUnidades\tValor de Referencia
+RETICULOCITOS
+*
+1.0
+%\t0.5 - 1.5
+FROTIS DE SANGRE PERIFERICA
+HIPOCROMIA +`;
+    var block = cbc + '\n---\n' + ret;
+    var preview = buildBulkLabPreview(block, { findPatientByRegistro: function () { return null; } });
+    var bhLines = preview[0].reports
+      .filter(function (r) { return r.ok; })
+      .map(function (r) {
+        return r.result.resLabs.find(function (l) { return /^BH\b/i.test(l); });
+      })
+      .filter(Boolean);
+    assert.equal(bhLines.length, 2);
+    // 25.5% Hto (del chunk CBC) × 1% Ret (del chunk reticulocitos) = RetC 0.57 arregenerativa, en los dos.
+    bhLines.forEach(function (bh) {
+      assert.match(bh, /RetC\s+0\.57\s+\(arregenerativa\)/);
+    });
   });
 
   it('mergeBulkParseResults mantiene cada gasometría seriada del mismo día', () => {

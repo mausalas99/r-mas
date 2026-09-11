@@ -81,6 +81,16 @@ function mergeRowUnitsRef_(unidades, ref, p, value) {
   return { unidades: unidades, ref: ref };
 }
 
+/** SOME nombra la fila de la cuantificación de proteínas en orina (12/24h)
+ * literalmente "RESULTADO" — su unidad "gr/vol" es exclusiva de ese estudio,
+ * así que sirve para renombrarla a algo legible sin tocar otros "RESULTADO". */
+function renameProteinuriaRowName_(estudio, unidades) {
+  if (estudio.toUpperCase() === 'RESULTADO' && String(unidades || '').toLowerCase() === 'gr/vol') {
+    return 'Prot';
+  }
+  return estudio;
+}
+
 export function finalizeRow(estudio, flag, valueParts) {
   var est = cleanEstudio(estudio);
   if (!est) return null;
@@ -101,7 +111,7 @@ export function finalizeRow(estudio, flag, valueParts) {
     ref = merged.ref;
   }
   return {
-    estudio: est,
+    estudio: renameProteinuriaRowName_(est, unidades),
     flag: flagTok,
     resultado: value,
     unidades: unidades,
@@ -151,11 +161,11 @@ export function readCultureSomeRowAt(lines, startIdx, endIdx, cultureFieldRe, is
   return { row: row, nextIdx: j };
 }
 
-function isInvalidStandardRowHeader(estudio) {
+function isInvalidStandardRowHeader(estudio, nextLine) {
   return (
     !estudio ||
     isFlagToken(estudio) ||
-    isTableHeaderLine(estudio) ||
+    isTableHeaderLine(estudio, nextLine) ||
     isDepartmentLine(estudio) ||
     isSkippedGroupTitle(estudio) ||
     isCommentNoiseEstudio(estudio) ||
@@ -229,7 +239,7 @@ function handleStandardRowToken_(estudio, t, lines, j, parts, currentGroupTitle,
 
 export function readRowAt(lines, startIdx, currentGroupTitle) {
   var estudio = cleanEstudio(lines[startIdx]);
-  if (isInvalidStandardRowHeader(estudio)) return null;
+  if (isInvalidStandardRowHeader(estudio, cleanEstudio(lines[startIdx + 1] || ''))) return null;
 
   var j = startIdx + 1;
   var flagState = { flag: '*' };

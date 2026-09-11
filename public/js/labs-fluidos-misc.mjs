@@ -327,9 +327,72 @@ export function parseCuantOrina_(textoBruto) {
   var tipo = /orina\s+de\s+12/i.test(bloque) ? '12h' : '24h';
   var parts = ['Prot' + tipo];
   if (extracted.vol !== '---') parts.push('Vol ' + extracted.vol + 'ml');
-  parts.push(extracted.res + '*');
+  parts.push('Prot', extracted.res + '*');
   parts.push('gr/vol');
+
+  var ipc = calcularIndiceProteinCreatinina_(textoBruto, extracted.res, extracted.vol);
+  if (ipc) parts.push('IPC', ipc);
+
   return parts[0] + '\t' + parts.slice(1).join(' ');
+}
+
+/**
+ * Índice proteína/creatinina urinaria (UPCR): proteína y creatinina de orina
+ * en mg/dL. El resultado de CUANTIFICACION PROTEINAS viene en gr/vol (gramos
+ * en el volumen total recolectado), así que primero se convierte a mg/dL
+ * usando ese mismo volumen (100 ml = 1 dL) antes de dividir.
+ */
+function calcularIndiceProteinCreatinina_(textoBruto, proteinaGrVol, volMl) {
+  if (volMl === '---') return null;
+  var lineas = textoBruto.split(/\r?\n/).map(function (l) {
+    return l.replace(/\*/g, '').trim();
+  });
+  var crU = valorTrasEtiqueta(lineas, ['CREATININA EN ORINA']);
+  if (!crU) return null;
+  var proteinaMgDl = (parseFloat(proteinaGrVol) * 100000) / parseFloat(volMl);
+  var ratio = proteinaMgDl / parseFloat(crU);
+  return isFinite(ratio) ? ratio.toFixed(2) : null;
+}
+
+/** Igual que valorTrasEtiqueta pero toma la ÚLTIMA línea con esa etiqueta —
+ * para estudios cuyo nombre repite el encabezado de sección (p.ej. DEPURACION
+ * DE CREATININA aparece como encabezado y, más abajo, como fila de resultado). */
+function valorTrasUltimaEtiqueta_(lineas, etiqueta) {
+  var lbl = etiqueta.toUpperCase();
+  var idx = -1;
+  for (var i = 0; i < lineas.length; i++) {
+    if (lineas[i].toUpperCase() === lbl) idx = i;
+  }
+  if (idx === -1) return null;
+  for (var j = idx + 1; j < Math.min(idx + 10, lineas.length); j++) {
+    var l = lineas[j].trim();
+    if (!l || /^[ABHL]$/.test(l) || /^[-–:/.]+$/.test(l)) continue;
+    var mNum = l.match(/^(-?\d+[.,]?\d*)/);
+    if (mNum) return mNum[1].replace(',', '.');
+  }
+  return null;
+}
+
+/** Depuración de creatinina 24h — Tiempo, depuración, creatinina sérica y urinaria. */
+export function parseDepuracionCreatinina_(textoBruto) {
+  if (!textoBruto) return '';
+  if (textoBruto.toUpperCase().indexOf('DEPURACION DE CREATININA') === -1) return '';
+
+  var lineas = textoBruto.split(/\r?\n/).map(function (l) {
+    return l.replace(/\*/g, '').trim();
+  });
+  var tiempo = valorTrasEtiqueta(lineas, ['TIEMPO']);
+  var dep = valorTrasUltimaEtiqueta_(lineas, 'DEPURACION DE CREATININA');
+  var crS = valorTrasEtiqueta(lineas, ['CREATININA SERICA']);
+  var crU = valorTrasEtiqueta(lineas, ['CREATININA EN ORINA']);
+
+  var parts = [];
+  if (tiempo) parts.push('Tiempo', tiempo + 'min');
+  if (dep) parts.push('Dep', dep + 'ml/min');
+  if (crS) parts.push('CrS', crS);
+  if (crU) parts.push('CrU', crU);
+  if (!parts.length) return '';
+  return 'DepCr\t' + parts.join(' ');
 }
 
 /** Electrolitos en orina — sección propia, separada de EGO. Cl suele venir en COMENTARIO DE MUESTRA. */
@@ -340,7 +403,11 @@ export function parseElectrolitosOrina_(textoBruto) {
   });
   var na = valorTrasEtiqueta(lineas, ['SODIO EN ORINA']);
   var k = valorTrasEtiqueta(lineas, ['POTASIO EN ORINA']);
-  var cr = valorTrasEtiqueta(lineas, ['CREATININA EN ORINA']);
+  // La creatinina de una depuración de 24h no es electrolito urinario puntual: no va en EU.
+  var cr =
+    textoBruto.toUpperCase().indexOf('DEPURACION DE CREATININA') === -1
+      ? valorTrasEtiqueta(lineas, ['CREATININA EN ORINA'])
+      : null;
   var mCl = textoBruto.match(/CLORO\s+EN\s+ORINA\s*:?\s*(\d+[.,]?\d*)/i);
   var cl = mCl ? mCl[1].replace(',', '.') : null;
 

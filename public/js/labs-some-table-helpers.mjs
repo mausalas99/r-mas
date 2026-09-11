@@ -38,10 +38,20 @@ function cleanEstudio(raw) {
 
 var SOME_HEADER_TOKEN_RE = /^(ESTUDIO|RESULTADO(\s+UNIDADES)?|UNIDADES|VALOR\s+DE\s+REFERENCIA)$/;
 
-function isTableHeaderLine(line) {
+/**
+ * @param {string} line
+ * @param {string} [nextLine] — siguiente línea ya limpia (cleanEstudio). Si se da:
+ * una palabra suelta de encabezado (p.ej. "RESULTADO") seguida de un flag (A/B/*)
+ * es en realidad el nombre de un estudio propio (p.ej. "RESULTADO" de
+ * CUANTIFICACION PROTEINAS EN ORINA), no la repetición del encabezado de columnas
+ * — un encabezado real nunca va seguido directo de un flag.
+ */
+function isTableHeaderLine(line, nextLine) {
   var u = line.toUpperCase().trim();
   if (/ESTUDIO/.test(u) && /RESULTADO/.test(u)) return true;
-  return SOME_HEADER_TOKEN_RE.test(u);
+  if (!SOME_HEADER_TOKEN_RE.test(u)) return false;
+  if (nextLine != null && isFlagToken(nextLine)) return false;
+  return true;
 }
 
 function isDepartmentLine(line) {
@@ -215,10 +225,10 @@ function lineHasSomeMetadata(line) {
   return /\b(?:Expediente|Solicitud)\s*:/i.test(t);
 }
 
-function isInvalidStudyHeaderName_(name) {
+function isInvalidStudyHeaderName_(name, nextLine) {
   return (
     !name ||
-    isTableHeaderLine(name) ||
+    isTableHeaderLine(name, nextLine) ||
     isDepartmentLine(name) ||
     isFlagToken(name) ||
     /^\d+([.,]\d+)?$/.test(name) ||
@@ -240,7 +250,7 @@ function studyHeaderMatchesNext_(name, nextLines) {
 /** SOME row header: estudio line then flag (or duplicate estudio) before valores. */
 function isStudyRowHeader(line, nextLines) {
   var name = cleanEstudio(line);
-  if (isInvalidStudyHeaderName_(name)) return false;
+  if (isInvalidStudyHeaderName_(name, cleanEstudio(nextLines[0] || ''))) return false;
   return studyHeaderMatchesNext_(name, nextLines);
 }
 

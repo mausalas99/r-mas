@@ -6,6 +6,8 @@ import {
   parsePlaquetasCitrato_,
   parseFrotisSangre_,
   parseElectrolitosOrina_,
+  parseDepuracionCreatinina_,
+  parseCuantOrina_,
 } from './labs.js';
 
 const EGO_ROGELIO = `
@@ -94,6 +96,78 @@ describe('Electrolitos urinarios: sección propia, no dentro de EGO', () => {
     const { resLabs } = procesarLabs(EGO_CON_ELECTROLITOS);
     assert.ok(resLabs.some((l) => l.startsWith('EGO:')));
     assert.ok(resLabs.some((l) => l === 'EU\tNa 40 K 20 Cl 90'));
+  });
+
+  it('ignora CREATININA EN ORINA cuando viene de una depuración de 24h', () => {
+    const depuracion = EGO_ROGELIO + '\nDEPURACION DE CREATININA\nCREATININA EN ORINA\n*\n82.36\n';
+    assert.strictEqual(parseElectrolitosOrina_(depuracion), '');
+  });
+});
+
+const DEPURACION_Y_PROTEINAS = `
+Expediente:\t1734216-1\tSolicitud:\t2609090907
+Nombre:\tMARIA OLIVIA RODRIGUEZ OLIVA\tFecha Registro:\tSep 9 2026 12:57PM
+Sexo:\tMASCULINO\tUbicación:\tMEDICINA INTERNA 1
+Edad:\t75\tMedico:\tA QUIEN CORRESPONDA
+
+QUIMICA CLINICA
+DEPURACION DE CREATININA
+Estudio\t\tResultado\tUnidades\tValor de Referencia
+VOLUMEN EN ORINA\t
+A
+100
+mls.\tN/A
+TIEMPO\t
+A
+1440
+min.\tN/A
+DEPURACION DE CREATININA\t
+B
+0.98
+ml/min.\t72.00 - 141.00
+CREATININA SERICA\t
+A
+5.8
+mg/dL\t0.6 - 1.4
+CREATININA EN ORINA\t
+*
+82.36
+
+URIANALISIS
+CUANTIFICACION PROTEINAS EN ORINA 12 O 24 HRS
+Estudio\t\tResultado\tUnidades\tValor de Referencia
+VOLUMEN DE ORINA\t
+A
+100
+ml\tN/A
+RESULTADO\t
+A
+0.09
+gr/vol\tNEGATIVO
+OBSERVACIONES\t
+*
+`;
+
+describe('Depuración de creatinina 24h: fila propia con tiempo, depuración, CrS y CrU', () => {
+  it('parseDepuracionCreatinina_ arma la línea DepCr', () => {
+    const line = parseDepuracionCreatinina_(DEPURACION_Y_PROTEINAS);
+    assert.strictEqual(line, 'DepCr\tTiempo 1440min Dep 0.98ml/min CrS 5.8 CrU 82.36');
+  });
+
+  it('no arma línea si no hay depuración de creatinina en el texto', () => {
+    assert.strictEqual(parseDepuracionCreatinina_(EGO_ROGELIO), '');
+  });
+
+  it('parseCuantOrina_ agrega el índice proteína/creatinina (IPC) convirtiendo gr/vol a mg/dL', () => {
+    // proteína: 0.09 g en 100 ml (=1 dL) → 90 mg/dL; CrU: 82.36 mg/dL → IPC = 90 / 82.36
+    const line = parseCuantOrina_(DEPURACION_Y_PROTEINAS);
+    assert.strictEqual(line, 'Prot24h\tVol 100ml Prot 0.09* gr/vol IPC 1.09');
+  });
+
+  it('procesarLabs incluye la fila DepCr junto con Prot24h', () => {
+    const { resLabs } = procesarLabs(DEPURACION_Y_PROTEINAS);
+    assert.ok(resLabs.some((l) => l.startsWith('DepCr\t')));
+    assert.ok(resLabs.some((l) => l.startsWith('Prot24h\t')));
   });
 });
 

@@ -418,5 +418,6 @@ export {
   parseSerologiaBancoSangre_,
   parseCuantOrina_,
   parseElectrolitosOrina_,
+  parseDepuracionCreatinina_,
 } from './labs-fluidos-misc.mjs';
 

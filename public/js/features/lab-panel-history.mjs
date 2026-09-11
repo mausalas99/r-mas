@@ -1,6 +1,6 @@
 import { esc } from '../dom-escape.mjs';
 // Lab panel — historial, dedupe, consolidación
-import { procesarLabs, reprocessLabResultLines_, collectPriorRefsFromHistory, mergeGasRefs_, refreshCitoquimicoInterpretacionInResLabs_, resLabsHasCitoquimFluid_ } from '../labs.js';
+import { procesarLabs, reprocessLabResultLines_, collectPriorRefsFromHistory, collectPriorBhValuesFromHistory, mergeGasRefs_, refreshCitoquimicoInterpretacionInResLabs_, resLabsHasCitoquimFluid_ } from '../labs.js';
 import { dedupeConsolidatedLabRows } from '../lab-bulk-paste.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { normalizeLabHistoryPatientSets } from '../storage.js';
@@ -488,13 +488,21 @@ function chartPatientForActiveId_() {
   }) || null;
 }
 
-function priorRefsForActivePatient_(excludeSetId) {
+function otherLabSetsForActivePatient_(excludeSetId) {
   const pid = rt.getActiveId();
-  if (!pid) return Object.create(null);
-  const others = sortLabHistoryChronological(getLabHistory()[pid] || []).filter(function (s) {
+  if (!pid) return [];
+  return sortLabHistoryChronological(getLabHistory()[pid] || []).filter(function (s) {
     return !excludeSetId || String(s.id) !== String(excludeSetId);
   });
-  return collectPriorRefsFromHistory(others);
+}
+
+function priorRefsForActivePatient_(excludeSetId) {
+  return collectPriorRefsFromHistory(otherLabSetsForActivePatient_(excludeSetId));
+}
+
+/** Último Hto/Ret conocidos (toma distinta) para completar RetC cuando la toma actual solo trae uno. */
+function priorBhValuesForActivePatient_(excludeSetId) {
+  return collectPriorBhValuesFromHistory(otherLabSetsForActivePatient_(excludeSetId));
 }
 
 function reprocessLabSetResLabs_(set, ctx) {
@@ -508,6 +516,7 @@ function reprocessLabSetResLabs_(set, ctx) {
     const parsed = procesarLabs(mergedSrc, {
       patient: chartPatient || undefined,
       priorRefsBySection: priorRefs,
+      priorBhValues: priorBhValuesForActivePatient_(set && set.id),
     });
     repro = reprocessLabResultLines_(parsed.resLabs || [], {
       gasRefs: mergeGasRefs_(priorGas, parsed.refsBySection && parsed.refsBySection.GASES),

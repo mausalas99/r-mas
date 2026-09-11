@@ -709,3 +709,33 @@ B
   assert.equal(hct.resultado, '26');
   assert.equal(hct.flag, 'B');
 });
+
+test('parseSomeReportTables — un estudio llamado "RESULTADO" no se confunde con el encabezado de columnas', () => {
+  const raw = `
+URIANALISIS
+CUANTIFICACION PROTEINAS EN ORINA 12 O 24 HRS
+Estudio\t\tResultado\tUnidades\tValor de Referencia
+VOLUMEN DE ORINA\t
+A
+100
+ml\tN/A
+RESULTADO\t
+A
+0.09
+gr/vol\tNEGATIVO
+OBSERVACIONES\t
+*
+`;
+  const parsed = parseSomeReportTables(raw);
+  const rows = parsed.departments[0].groups[0].rows;
+  const prot = rows.find((r) => r.estudio === 'Prot');
+  assert.ok(prot, 'la fila de proteinuria (nombrada "RESULTADO" por el SOME) no debe perderse');
+  assert.equal(prot.resultado, '0.09');
+  assert.equal(prot.unidades, 'gr/vol');
+  assert.equal(prot.ref, 'NEGATIVO');
+  assert.equal(prot.flag, 'A');
+  assert.ok(
+    !rows.some((r) => r.estudio === 'RESULTADO' || r.estudio === '0.09'),
+    'no debe quedar una fila literal "RESULTADO" ni una con el valor 0.09 como nombre'
+  );
+});

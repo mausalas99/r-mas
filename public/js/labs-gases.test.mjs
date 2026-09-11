@@ -425,6 +425,43 @@ test('parseESC_ y parseQS_ ignoran electrolitos y creatinina de orina', () => {
   assert.equal(parseQS_(MUESTRA_QUIMICA_ORINA), '');
 });
 
+/** DEPURACION DE CREATININA (24h) no debe alimentar la creatinina sérica de QS. */
+const MUESTRA_DEPURACION_CREATININA = `
+QUIMICA CLINICA
+GLUCOSA
+A
+86
+mg/dL\t70 - 100
+DEPURACION DE CREATININA
+Estudio\t\tResultado\tUnidades\tValor de Referencia
+VOLUMEN EN ORINA\t
+A
+100
+mls.\tN/A
+TIEMPO\t
+A
+1440
+min.\tN/A
+DEPURACION DE CREATININA\t
+B
+0.98
+ml/min.\t72.00 - 141.00
+CREATININA SERICA\t
+A
+5.8
+mg/dL\t0.6 - 1.4
+CREATININA EN ORINA\t
+*
+82.36
+`;
+
+test('parseQS_ no muestra Cr cuando el reporte trae depuración de creatinina de 24h (va en DepCr)', () => {
+  var qs = parseQS_(MUESTRA_DEPURACION_CREATININA);
+  assert.match(qs, /\bGlu 86\b/);
+  assert.doesNotMatch(qs, /\bCr\b/);
+  assert.doesNotMatch(qs, /\b100\b/);
+});
+
 test('parseESC_ sigue tomando sodio sérico si también hay química de orina', () => {
   const t = (MUESTRA_QUIMICA_ORINA + ' ' + ESC_TEXT).replace(/\s+/g, ' ');
   assert.match(parseESC_(t), /\bNa 140\b/);

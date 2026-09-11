@@ -314,6 +314,53 @@ test('planLabHistoryDateTimeUpsert BH con solo 2 analitos idénticos a otra hora
   assert.equal(plan.action, 'add');
 });
 
+test('planLabHistoryDateTimeUpsert gasometría sola no absorbe BH/QS de otra toma del día → add', () => {
+  // Repro: gasometría 03:58 (solo GASES) + BH/QS/ESC/PFHs 06:42, mismo día.
+  // GASES tiene su propio emparejamiento dedicado (clusterLabworkByTimeWindow);
+  // sectionsAreComplementary_ no debe tratarla como "fragmento sin analitos
+  // compartidos" del estudio de BH — eso pegaba "BH Eri ..." a una toma que
+  // no tiene ningún dato hematológico propio.
+  var existing = [
+    {
+      id: '1',
+      fecha: '07/09/2026',
+      hora: '03:58',
+      resLabs: ['GASES\tpH 7.42 pCO2 41'],
+      parsedBySection: { GASES: { pH: '7.42', pCO2: '41' } },
+    },
+  ];
+  var plan = planLabHistoryDateTimeUpsert(existing, {
+    fecha: '07/09/2026',
+    hora: '06:42',
+    resLabs: ['BH\tHb 7.78'],
+    parsedBySection: { BH: { Hb: '7.78' } },
+  });
+  assert.equal(plan.action, 'add');
+});
+
+test('planLabHistoryDateTimeUpsert set sin sección reconocida (cultivo) no es imán de fusión → add', () => {
+  // Repro: reporte de micobacterias (sin analitos estructurados, parsedBySection
+  // vacío) + BH/QS de otra toma del mismo día. Un parsedBySection {} no debe ser
+  // "vacuamente complementario" con cualquier cosa — eso volvía al set de
+  // cultivo un imán para BH/QS ajenos.
+  var existing = [
+    {
+      id: '1',
+      fecha: '07/09/2026',
+      hora: '08:07',
+      resLabs: ['CULTIVO DE MICOBACTERIAS: NEGATIVO A LA FECHA.'],
+      parsedBySection: {},
+    },
+  ];
+  var plan = planLabHistoryDateTimeUpsert(existing, {
+    fecha: '07/09/2026',
+    hora: '06:42',
+    resLabs: ['BH\tHb 7.78'],
+    parsedBySection: { BH: { Hb: '7.78' } },
+  });
+  assert.equal(plan.action, 'add');
+});
+
 test('findComplementaryLabHistoryMergeGroups une dos sets LCR completos idénticos del mismo día', () => {
   var lcr = { pH: '9', Leu: '265', Glu: '24', Prot: '200', Cl: '123.3' };
   var sets = [
