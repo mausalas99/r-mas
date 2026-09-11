@@ -1,20 +1,24 @@
-version: 8.3.3
+version: 8.3.4
 files:
-  - url: R+-8.3.3-x64.exe
-    sha512: FS7a72fnmoJjsLB5q1gVDiQdh8dM18R9lxWf2jGD09rFYY4qB8/0md1ZxjlpWP8AvqeWAjB/zUCoC4aFj+grgw==
-    size: 123121974
-path: R+-8.3.3-x64.exe
-sha512: FS7a72fnmoJjsLB5q1gVDiQdh8dM18R9lxWf2jGD09rFYY4qB8/0md1ZxjlpWP8AvqeWAjB/zUCoC4aFj+grgw==
-releaseDate: '2026-09-09T17:29:11.000Z'
+  - url: R+-8.3.4-x64.exe
+    sha512: 2YF+Qq9TRapS4llm/FlNsHasho2XYVlkie/pYXDa/BkFeOOl8iXZIjPkudHiqylB3uyj5HrNtwVxMe+Pxd9Ajg==
+    size: 122371796
+path: R+-8.3.4-x64.exe
+sha512: 2YF+Qq9TRapS4llm/FlNsHasho2XYVlkie/pYXDa/BkFeOOl8iXZIjPkudHiqylB3uyj5HrNtwVxMe+Pxd9Ajg==
+releaseDate: '2026-09-11T14:06:37.000Z'
 releaseNotes: |
-  Nueva pestaña Red en Administración para ver y archivar pacientes de todas las áreas, corrección de un bug que impedía sincronizar pacientes nuevos en salas con más de 50 pacientes en el mes, y varias correcciones de estabilidad en la Nube.
+  Rediseño de las pantallas Admin/Red, Equipo y Mi Perfil, nuevo soporte de laboratorio para DEPCR y reticulocito corregido, y un arreglo de un congelamiento en diálogos de confirmación.
   
-  Nuevo — pestaña Red en Administración: lista cruzada de pacientes de todas las áreas, con filtros por área/equipo/estado, columna de Cuarto, y acciones de archivar, restaurar y eliminar (una por una o seleccionando varias).
+  Nuevo: Admin → Usuarios/Red, Equipo y Mi Perfil tienen un rediseño real — filas con menú de acciones unificado, selección múltiple, tarjetas de equipo colapsadas por defecto, y Mi Perfil agrupado en "Cómo trabajo" y "Firma y formatos".
   
-  Arreglado — pacientes nuevos que no sincronizaban: en una sala con más de 50 pacientes en el mes, los ingresos nuevos se guardaban solo en el dispositivo que los creó y nunca llegaban a los demás. Las ediciones a pacientes ya existentes sí funcionaban.
+  Nuevo: los equipos clínicos pueden marcar si un integrante empieza en la rotación actual o en la próxima.
   
-  Arreglado — la Nube ya no se queda colgada: si la conexión falla a mitad de una sincronización, ahora corta a los 20 segundos con un aviso, en vez de esperar para siempre.
+  Nuevo: DEPCR (depuración de creatinina de 24h) se reconoce como su propio estudio de laboratorio, ya no se mezcla con química/orina.
   
-  Mejorado — diálogos de confirmación en Administración: rotar código, archivar, eliminar; ahora se ven encima del panel de Administración, no detrás.
+  Nuevo: cálculo de reticulocito corregido (RetC = Ret × Hto/45), con su propio umbral de regenerativo/arregenerativo.
   
-  Mejorado — velocidad de sincronización: la Nube descifra los campos de una sincronización en paralelo en vez de uno por uno.
+  Arreglado: un diálogo de confirmación destructivo abierto sobre el panel de Administración podía congelar la app por un bucle de foco infinito.
+  
+  Mejorado: las acciones de eliminar/quitar (equipos, procedimientos, entregas huérfanas) ahora se ven en rojo.
+  
+  Mejorado: en Pendientes, una fila que se completa o elimina desaparece junto a su lugar original en la lista, no al final.
