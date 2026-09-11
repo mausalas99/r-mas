@@ -1,24 +1,12 @@
-version: 8.3.4
+version: 8.3.5
 files:
-  - url: R+-8.3.4-x64.exe
-    sha512: 2YF+Qq9TRapS4llm/FlNsHasho2XYVlkie/pYXDa/BkFeOOl8iXZIjPkudHiqylB3uyj5HrNtwVxMe+Pxd9Ajg==
-    size: 122371796
-path: R+-8.3.4-x64.exe
-sha512: 2YF+Qq9TRapS4llm/FlNsHasho2XYVlkie/pYXDa/BkFeOOl8iXZIjPkudHiqylB3uyj5HrNtwVxMe+Pxd9Ajg==
-releaseDate: '2026-09-11T14:06:37.000Z'
+  - url: R+-8.3.5-x64.exe
+    sha512: 9N4jJKD0DZCAwBjeqdO9VydpN6xfEUIBOPGc/QLOKzvOQF1fzMTYdH5ef4kThMCyXiCwRypfkQb5KkdlLmCJ2w==
+    size: 122368834
+path: R+-8.3.5-x64.exe
+sha512: 9N4jJKD0DZCAwBjeqdO9VydpN6xfEUIBOPGc/QLOKzvOQF1fzMTYdH5ef4kThMCyXiCwRypfkQb5KkdlLmCJ2w==
+releaseDate: '2026-09-11T16:23:49.000Z'
 releaseNotes: |
-  Rediseño de las pantallas Admin/Red, Equipo y Mi Perfil, nuevo soporte de laboratorio para DEPCR y reticulocito corregido, y un arreglo de un congelamiento en diálogos de confirmación.
+  Arreglo del foco visual en el modal de Registrar medición: el recuadro de acento queda en toda la tarjeta del signo vital, no en el número.
   
-  Nuevo: Admin → Usuarios/Red, Equipo y Mi Perfil tienen un rediseño real — filas con menú de acciones unificado, selección múltiple, tarjetas de equipo colapsadas por defecto, y Mi Perfil agrupado en "Cómo trabajo" y "Firma y formatos".
-  
-  Nuevo: los equipos clínicos pueden marcar si un integrante empieza en la rotación actual o en la próxima.
-  
-  Nuevo: DEPCR (depuración de creatinina de 24h) se reconoce como su propio estudio de laboratorio, ya no se mezcla con química/orina.
-  
-  Nuevo: cálculo de reticulocito corregido (RetC = Ret × Hto/45), con su propio umbral de regenerativo/arregenerativo.
-  
-  Arreglado: un diálogo de confirmación destructivo abierto sobre el panel de Administración podía congelar la app por un bucle de foco infinito.
-  
-  Mejorado: las acciones de eliminar/quitar (equipos, procedimientos, entregas huérfanas) ahora se ven en rojo.
-  
-  Mejorado: en Pendientes, una fila que se completa o elimina desaparece junto a su lugar original en la lista, no al final.
+  Arreglado: en Registrar medición, el signo vital que recibe foco automático (TAS) mostraba un recuadro también alrededor del número; ahora el recuadro rodea solo la tarjeta completa.

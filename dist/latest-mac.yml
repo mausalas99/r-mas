@@ -1,33 +1,21 @@
-version: 8.3.4
+version: 8.3.5
 files:
-  - url: R+-8.3.4-autoupdate-mac-arm64.zip
-    sha512: V14leshsHmE4XCr8BNTE7kCf+/ZYal+K7bWNN42LfrUk1+UhDVr4XO+kJk8yUwYqCZvWTc/8txQj8e4ZELmS8Q==
-    size: 139367882
-  - url: R+-8.3.4-arm64.dmg
-    sha512: EJdpcz72es8X6fbVap4jtQdWW8oi+iPwOjyr0bZX0tYkhAG/crPrNkvJzdqH7sHGA8rSwPyafYL7D30zRYXgtQ==
-    size: 145198708
-  - url: R+-8.3.4-autoupdate-mac-x64.zip
-    sha512: fWVHn1vOS4Ii/aCRNSDt6KHf12sNHZ66rzde0z7SngfVarLTaW8QDktFInMSXXPtOKvpdaaBODaFLZFtftkavA==
-    size: 147523436
-  - url: R+-8.3.4-x64.dmg
-    sha512: gtFs8a2bglZQOUIKrqROiPLbS+xMfXTAxJF7LtgImeJJ6p+IuxfQLtXrFCm+c4zGfHu3juKtqUuno4VC5e7uoA==
-    size: 153406031
-path: R+-8.3.4-autoupdate-mac-arm64.zip
-sha512: V14leshsHmE4XCr8BNTE7kCf+/ZYal+K7bWNN42LfrUk1+UhDVr4XO+kJk8yUwYqCZvWTc/8txQj8e4ZELmS8Q==
-releaseDate: '2026-09-11T14:06:37.000Z'
+  - url: R+-8.3.5-autoupdate-mac-arm64.zip
+    sha512: TFCNmkyuHNsSCAvC1uriNtA+GbaB3sH/mmCtB86QxjLZPVj6VdNtj6maascoIrE2bw2o09WtwQsFiAQbEcs+JQ==
+    size: 139368650
+  - url: R+-8.3.5-arm64.dmg
+    sha512: i47E33V6ULkkNiios35dRrt7k33y16+1FgSkzVNkV822MbHzHRrOScsiMFaYeZACM9gm61jzz8F7JA8Cu04Pgw==
+    size: 145200658
+  - url: R+-8.3.5-autoupdate-mac-x64.zip
+    sha512: aTLGZ157/Ukj2moaYtMmD1cl5mR0kEIT1JoMfXQlf1DZ0j8dJ58FdP2EFY/1jtlfzi/shGp+VCq/lADtTvCRCw==
+    size: 147524206
+  - url: R+-8.3.5-x64.dmg
+    sha512: yVCXqdAa0pPvEehf/HGBHAlPFA7fk6NWbDNS+5NOcI4QwqCWd33vn2YM/BBPinaZgXxnA6sWth0paArDoeexpA==
+    size: 153415061
+path: R+-8.3.5-autoupdate-mac-arm64.zip
+sha512: TFCNmkyuHNsSCAvC1uriNtA+GbaB3sH/mmCtB86QxjLZPVj6VdNtj6maascoIrE2bw2o09WtwQsFiAQbEcs+JQ==
+releaseDate: '2026-09-11T16:23:49.000Z'
 releaseNotes: |
-  Rediseño de las pantallas Admin/Red, Equipo y Mi Perfil, nuevo soporte de laboratorio para DEPCR y reticulocito corregido, y un arreglo de un congelamiento en diálogos de confirmación.
+  Arreglo del foco visual en el modal de Registrar medición: el recuadro de acento queda en toda la tarjeta del signo vital, no en el número.
   
-  Nuevo: Admin → Usuarios/Red, Equipo y Mi Perfil tienen un rediseño real — filas con menú de acciones unificado, selección múltiple, tarjetas de equipo colapsadas por defecto, y Mi Perfil agrupado en "Cómo trabajo" y "Firma y formatos".
-  
-  Nuevo: los equipos clínicos pueden marcar si un integrante empieza en la rotación actual o en la próxima.
-  
-  Nuevo: DEPCR (depuración de creatinina de 24h) se reconoce como su propio estudio de laboratorio, ya no se mezcla con química/orina.
-  
-  Nuevo: cálculo de reticulocito corregido (RetC = Ret × Hto/45), con su propio umbral de regenerativo/arregenerativo.
-  
-  Arreglado: un diálogo de confirmación destructivo abierto sobre el panel de Administración podía congelar la app por un bucle de foco infinito.
-  
-  Mejorado: las acciones de eliminar/quitar (equipos, procedimientos, entregas huérfanas) ahora se ven en rojo.
-  
-  Mejorado: en Pendientes, una fila que se completa o elimina desaparece junto a su lugar original en la lista, no al final.
+  Arreglado: en Registrar medición, el signo vital que recibe foco automático (TAS) mostraba un recuadro también alrededor del número; ahora el recuadro rodea solo la tarjeta completa.
