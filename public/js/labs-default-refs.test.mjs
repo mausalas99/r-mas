@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   procesarLabs,
   collectPriorRefsFromHistory,
+  collectPriorBhValuesFromHistory,
   mergeRefsMap_,
   mergeRefsBySection_,
   buildRefsBySectionFromReport,
@@ -189,4 +190,15 @@ test('tendencias refs fold onto DEFAULT_* without overlapping extras', async () 
 test('buildRefsBySectionFromReport no inventa PCT sin estudio', () => {
   const refs = buildRefsBySectionFromReport(QS_HILDA_SIN_REFS);
   assert.ok(!refs.QS || !refs.QS.PCT);
+});
+
+test('collectPriorBhValuesFromHistory solo mira el BH más cercano, no toda la historia', () => {
+  // Newest-first, como sortLabHistoryChronological. Ret real solo en el más viejo.
+  const hist = [
+    { parsedBySection: { BH: { Hto: 40 } } },
+    { parsedBySection: { BH: { Hto: 39, Ret: 1.2 } } },
+  ];
+  const out = collectPriorBhValuesFromHistory(hist);
+  assert.equal(out.Hto, 40);
+  assert.equal(out.Ret, undefined, 'no debe heredar Ret de una toma más lejana');
 });

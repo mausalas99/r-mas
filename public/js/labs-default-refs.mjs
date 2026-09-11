@@ -132,8 +132,10 @@ export function collectPriorGasRefsFromHistory(history) {
 }
 
 /**
- * Último valor numérico conocido por campo BH en el historial (entrada
- * posterior gana). Para calcular RetC cuando Ret y Hto no comparten toma.
+ * Valores numéricos del BH más cercano en el historial (el primero con
+ * sección BH). Para calcular RetC cuando Ret y Hto no comparten toma.
+ * Solo mira esa única toma más cercana — así RetC no se recalcula y
+ * reaparece en cada toma posterior con un Ret cada vez más viejo.
  * @param {Array<{ parsedBySection?: { BH?: { [field: string]: number } } }>} history
  * @returns {{ [field: string]: number }}
  */
@@ -147,6 +149,7 @@ export function collectPriorBhValuesFromHistory(history) {
       var v = bh[k];
       if (typeof v === 'number' && isFinite(v)) out[k] = v;
     });
+    break;
   }
   return out;
 }
