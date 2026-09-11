@@ -4,31 +4,31 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_833 = [
+var RELEASE_NOTES_834 = [
   {
-    title: 'Nuevo — pestaña Red en Administración',
+    title: 'Nuevo — Admin, Red, Equipo y Mi Perfil rediseñados',
     body:
-      'Ve y filtra los pacientes de <strong>todas las áreas</strong> desde un solo lugar, con acciones de archivar, restaurar y eliminar (una por una o en bloque).',
+      'Filas más claras con menú de acciones unificado, tarjetas de equipo colapsadas por defecto, y Mi Perfil agrupado en dos secciones.',
   },
   {
-    title: 'Arreglado — pacientes nuevos que no llegaban a otros dispositivos',
+    title: 'Nuevo — laboratorios: DEPCR y reticulocito corregido',
     body:
-      'Cuando una sala pasaba de <strong>50 pacientes en el mes</strong>, los ingresos nuevos se guardaban solo en el dispositivo que los creó. Ya no.',
+      'DEPCR (depuración de creatinina de 24h) ahora es su propio estudio, y se calcula el <strong>reticulocito corregido (RetC)</strong>.',
   },
   {
-    title: 'Arreglado — la Nube ya no se queda colgada',
+    title: 'Arreglado — congelamiento en diálogos de confirmación',
     body:
-      'Si la conexión falla a mitad de una sincronización, ahora se corta a los <strong>20 segundos</strong> con un aviso claro, en vez de quedarse esperando para siempre.',
+      'Un diálogo destructivo abierto sobre Administración ya <strong>no puede congelar la app</strong>.',
   },
   {
-    title: 'Mejorado — diálogos de confirmación en Administración',
+    title: 'Mejorado — acciones destructivas más visibles',
     body:
-      'Rotar código, archivar, eliminar: los diálogos de confirmación ahora se ven <strong>encima</strong> del panel, no detrás.',
+      'Eliminar y Quitar ahora se ven en <strong>rojo</strong> para evitar clics accidentales.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_833;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_834;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.3.3': RELEASE_NOTES_833,
+  '8.3.4': RELEASE_NOTES_834,
 };

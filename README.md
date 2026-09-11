@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.3.3](https://github.com/mausalas99/r-mas/releases/tag/v8.3.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.3.4](https://github.com/mausalas99/r-mas/releases/tag/v8.3.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -60,6 +60,15 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.3.4 (estable — release 8.3.4)
+
+- **Nuevo — Admin, Red, Equipo y Mi Perfil rediseñados:** filas más claras con menú de acciones unificado, tarjetas colapsadas por defecto y Mi Perfil agrupado en dos secciones.
+- **Nuevo — laboratorios:** se reconoce DEPCR (depuración de creatinina de 24h) como estudio propio, y se calcula el reticulocito corregido (RetC).
+- **Arreglado:** un diálogo de confirmación sobre Administración ya no podía congelar la app (bucle de foco).
+- **Mejorado:** acciones de eliminar/quitar se ven en rojo para evitar clics accidentales.
+
+Notas: `docs/RELEASE_NOTES_8.3.4.txt`.
 ## R+ 8.3.3 (estable — release 8.3.3)
 
 - **Nuevo — pestaña Red en Administración:** censo de pacientes de todas las áreas, con filtros y archivar/restaurar/eliminar.
