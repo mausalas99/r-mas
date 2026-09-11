@@ -8,7 +8,12 @@ var RELEASE_NOTES_835 = [
   {
     title: 'Arreglado — foco visual en Registrar medición',
     body:
-      'El recuadro de foco del signo vital autoseleccionado (TAS) ahora marca <strong>toda la tarjeta</strong>, no el número.',
+      'El signo vital autoseleccionado (TAS) ya no muestra un recuadro extra alrededor del número.',
+  },
+  {
+    title: 'Mejorado — un solo recuadro de foco por tarjeta',
+    body:
+      'El recuadro de foco ahora marca <strong>toda la tarjeta</strong> del signo vital, en vez de dos recuadros superpuestos.',
   },
 ];
 
