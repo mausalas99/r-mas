@@ -917,7 +917,7 @@
  * equipos" section — no has-joined override needed here any more. */
 
 .cloud-sync-equipo-embed .clinical-teams-list--directory {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14.5rem), 1fr));
 }
 
 .cloud-sync-equipo-embed .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team {
