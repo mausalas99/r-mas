@@ -333,15 +333,16 @@ test('estado-actual.css vital-input and disclosure focus styles differ from thei
   const css = read('public/styles/estado-actual.css');
   assert.equal(/\.ea-estado-clinico > summary:focus-visible\s*\{[^}]*outline:\s*none/s.test(css), false);
   assert.match(css, /\.ea-estado-clinico > summary:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--action\)/s);
-  for (const selector of [
-    /\.ea-vital-input:focus\s*\{([^}]*)\}/,
-    /\.ea-registro-modal \.ea-vital-value-wrap \.ea-vital-input:focus\s*\{([^}]*)\}/,
-  ]) {
-    const m = css.match(selector);
-    assert.ok(m, `${selector} not found`);
-    assert.doesNotMatch(m[1], /outline:\s*none/);
-    assert.match(m[1], /outline:\s*2px solid var\(--action\)/);
-  }
+  const plainInput = css.match(/\.ea-vital-input:focus\s*\{([^}]*)\}/);
+  assert.ok(plainInput, '.ea-vital-input:focus not found');
+  assert.doesNotMatch(plainInput[1], /outline:\s*none/);
+  assert.match(plainInput[1], /outline:\s*2px solid var\(--action\)/);
+
+  // Inside the registro modal, the input itself stays outline: none — the
+  // surrounding chip carries the visible indicator instead (one box, not two).
+  const chip = css.match(/\.ea-registro-modal \.ea-vital-chip:focus-within\s*\{([^}]*)\}/);
+  assert.ok(chip, '.ea-registro-modal .ea-vital-chip:focus-within not found');
+  assert.match(chip[1], /outline:\s*2px solid var\(--action\)/);
 });
 
 test('vpo.css scale-chip focus outline is fully opaque (70% alone failed 3:1 once --accent resolved)', () => {
