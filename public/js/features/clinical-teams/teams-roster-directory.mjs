@@ -113,7 +113,7 @@ function renderDirectoryTeamEntry(team, elevated, siblingTeams = []) {
   let joinBtn = '';
   let joinHint = '';
   if (team.joinEligible) {
-    joinBtn = `<button type="button" class="btn-med-secondary clinical-teams-join-btn" data-team-id="${escapeAttr(teamId)}">Unirme</button>`;
+    joinBtn = `<button type="button" class="btn-save clinical-teams-join-btn" data-team-id="${escapeAttr(teamId)}">Unirme</button>`;
     if (team.joinWarning) joinHint = String(team.joinWarning);
   } else if (team.joinReason) {
     joinHint = String(team.joinReason);
@@ -129,11 +129,11 @@ function renderDirectoryTeamEntry(team, elevated, siblingTeams = []) {
 }
 
 /**
- * @param {{ userId: string, elevated: boolean, browseSala: string, homeSala: string }} opts
+ * @param {{ userId: string, elevated: boolean, browseSala: string, homeSala: string, leadingCardsHtml?: string, leadingCount?: number }} opts
  * @returns {Promise<{ html: string, count: number }>}
  */
 export async function renderDirectorySectionHtml(opts) {
-  const { userId, elevated, browseSala, homeSala } = opts;
+  const { userId, elevated, browseSala, homeSala, leadingCardsHtml = '', leadingCount = 0 } = opts;
   const api = dbApi();
   if (!api || typeof api.dbClinicalTeamsListBySala !== 'function') {
     return { html: '', count: 0 };
@@ -149,7 +149,8 @@ export async function renderDirectorySectionHtml(opts) {
   const directory = allSalaTeams.filter((t) => !t.isMember);
   const browseControl = buildDirectoryBrowseControl(elevated, browseSala);
   const salaLabel = browseSala || homeSala;
-  const sectionTitle = buildDirectorySectionTitle(elevated, salaLabel, directory.length);
+  const totalCount = directory.length + leadingCount;
+  const sectionTitle = buildDirectorySectionTitle(elevated, salaLabel, totalCount);
   const sectionDesc = buildDirectorySectionDesc(elevated, directory.length);
   const sectionIntro = `
         <h4 class="clinical-teams-section-title">${sectionTitle}</h4>
@@ -159,7 +160,7 @@ export async function renderDirectorySectionHtml(opts) {
     ? `<div class="clinical-teams-collapse-summary-actions">${browseControl}</div>`
     : '';
 
-  if (!directory.length) {
+  if (!directory.length && !leadingCardsHtml) {
     const emptyMsg = buildDirectoryEmptyMessage(elevated, browseSala, homeSala);
     return {
       html: `<section class="clinical-teams-section clinical-teams-section--directory">
@@ -176,7 +177,7 @@ export async function renderDirectorySectionHtml(opts) {
     };
   }
 
-  const cards = directory.map((team) => renderDirectoryTeamEntry(team, elevated, allSalaTeams)).join('');
+  const cards = leadingCardsHtml + directory.map((team) => renderDirectoryTeamEntry(team, elevated, allSalaTeams)).join('');
 
   return {
     html: `

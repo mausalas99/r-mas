@@ -890,12 +890,20 @@
   grid-column: 1 / -1;
 }
 
+/* Two concerns share this stack — rotación/crear equipo (admin) vs.
+   explorar/unirse/mis equipos (encontrar equipo) — so the boundary
+   between them needs more than the 12px used inside each group. */
+.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--directory,
+.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--more {
+  margin-top: calc(12px * var(--density-space));
+}
+
 .cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--joined {
   grid-column: 1;
 }
 
 .cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--directory {
-  grid-column: 2;
+  grid-column: 1 / -1;
 }
 
 .cloud-sync-equipo-embed
@@ -904,17 +912,12 @@
   grid-column: 1 / -1;
 }
 
-.cloud-sync-equipo-embed
-  .clinical-teams-panel-body--embed.clinical-teams-panel-body--has-joined
-  > .clinical-teams-section--joined,
-.cloud-sync-equipo-embed
-  .clinical-teams-panel-body--embed.clinical-teams-panel-body--has-joined
-  > .clinical-teams-section--directory {
-  grid-column: 1 / -1;
-}
+/* With membership, your team's own card is rendered as the first item in
+ * Explorar's grid (teams-roster-panel.mjs) instead of a separate "Mis
+ * equipos" section — no has-joined override needed here any more. */
 
 .cloud-sync-equipo-embed .clinical-teams-list--directory {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14.5rem), 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .cloud-sync-equipo-embed .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team {
@@ -1093,6 +1096,8 @@
 }
 
 .cloud-sync-admin-red-filters select {
+  flex: 1 1 160px;
+  width: auto;
   min-width: 160px;
 }
 
@@ -1337,6 +1342,19 @@
   background: linear-gradient(to left, color-mix(in oklab, var(--surface, #1a1f26) 92%, transparent), transparent);
 }
 
+/* Guardar/Quitar (or Archivar/Eliminar on Red) only exist once something is checked. */
+.cloud-sync-admin-equipos-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: calc(8px * var(--density-space));
+}
+
+.cloud-sync-admin-equipos-bulk-count {
+  font-size: 0.85em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
 .cloud-sync-admin-equipos-bulk .cloud-sync-btn {
   flex: 0 0 auto;
   white-space: nowrap;
@@ -1496,6 +1514,19 @@
   margin-top: calc(10px * var(--density-space));
 }
 
+.cloud-sync-admin-equipos-group-label {
+  margin: calc(6px * var(--density-space)) 0 0;
+  font-size: calc(11px * var(--density-font));
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-equipos-group-label:first-child {
+  margin-top: 0;
+}
+
 .cloud-sync-admin-equipos-row {
   display: flex;
   flex-direction: column;
@@ -1510,7 +1541,24 @@
   display: none;
 }
 
+/* Row content on the left, the "⋯" menu pinned top-right — one anchor per row, not two stacked toggles. */
+.cloud-sync-admin-equipos-row-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(8px * var(--density-space));
+}
+
 .cloud-sync-admin-equipos-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: calc(4px * var(--density-space));
+  min-width: 0;
+  flex: 1;
+}
+
+/* Identity line: who — bold, always visible, nothing secondary mixed in. */
+.cloud-sync-admin-equipos-row-identity {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1518,9 +1566,28 @@
   min-width: 0;
 }
 
+/* Meta line: everything secondary, one small muted row instead of scattered badges. */
+.cloud-sync-admin-equipos-row-meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(4px * var(--density-space)) calc(8px * var(--density-space));
+  min-width: 0;
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
 .cloud-sync-admin-equipos-nube-wrap {
-  padding-top: calc(2px * var(--density-space));
-  border-top: 1px solid color-mix(in oklab, var(--divider) 70%, transparent);
+  min-width: 0;
+}
+
+.cloud-sync-admin-equipos-menu-label {
+  margin: calc(10px * var(--density-space)) 0 calc(4px * var(--density-space));
+  font-size: calc(11px * var(--density-font));
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
 }
 
 .cloud-sync-admin-equipos-handle {
@@ -1532,8 +1599,12 @@
   color: var(--text-secondary);
 }
 
+.cloud-sync-admin-equipos-meta {
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
 .cloud-sync-admin-equipos-placement {
-  margin-left: auto;
   font-size: 0.9em;
   color: var(--text-muted);
 }
@@ -1643,6 +1714,37 @@
 
 .cloud-sync-admin-equipos-nube-summary::-webkit-details-marker {
   display: none;
+}
+
+.cloud-sync-admin-equipos-edit {
+  margin: 0;
+}
+
+.cloud-sync-admin-equipos-edit-summary {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: var(--radius-control, 8px);
+  font-size: calc(15px * var(--density-font));
+  font-weight: 700;
+  color: var(--text-secondary);
+  list-style: none;
+}
+
+.cloud-sync-admin-equipos-edit-summary:hover {
+  background: var(--state-hover-bg);
+  color: var(--text);
+}
+
+.cloud-sync-admin-equipos-edit-summary::-webkit-details-marker {
+  display: none;
+}
+
+.cloud-sync-admin-equipos-edit[open] > .cloud-sync-admin-equipos-edit-summary {
+  margin-bottom: calc(6px * var(--density-space));
 }
 
 .cloud-sync-admin-row-actions--compact {

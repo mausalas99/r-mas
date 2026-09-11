@@ -7,6 +7,7 @@ import { removePatientLocally } from '../sync-apply/patient-delete.mjs';
 import { showConfirmDialog } from '../../ui-approval-card.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { esc } from '../../dom-escape.mjs';
+import { formatCloudDiagWhen } from './cloud-sync-diagnostics-human-format.mjs';
 
 const DECLINED_LS = 'rpc.declinedRemotePatientDeletes';
 const DECLINED_ACTORS_LS = 'rpc.declinedRemotePatientDeleteActors';
@@ -249,14 +250,15 @@ export function pendingRemoteDeletesHtml(rows) {
   const items = rows
     .map(
       (row) =>
-        '<li class="cloud-sync-pending-delete-row">' +
-        '<span class="cloud-sync-pending-delete-label">' +
+        '<li class="cloud-sync-inset-row cloud-sync-pending-delete-row">' +
+        '<span class="cloud-sync-options-row-text">' +
+        '<span class="cloud-sync-options-row-title">' +
         esc(row.label) +
         '</span>' +
-        '<span class="cloud-sync-pending-delete-meta">' +
+        '<span class="cloud-sync-options-row-meta">' +
         esc(row.actorName) +
-        (row.deletedAt ? ' · ' + esc(row.deletedAt) : '') +
-        '</span>' +
+        (row.deletedAt ? ' · ' + esc(formatCloudDiagWhen(row.deletedAt)) : '') +
+        '</span></span>' +
         '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" ' +
         'data-cloud-action="review-remote-delete" data-patient-id="' +
         esc(row.patientId) +
@@ -267,7 +269,7 @@ export function pendingRemoteDeletesHtml(rows) {
     .join('');
   return (
     '<p class="cloud-sync-hint">Se mantuvieron en esta Mac después de rechazar una eliminación remota.</p>' +
-    '<ul class="cloud-sync-pending-delete-list">' +
+    '<ul class="cloud-sync-inset-group cloud-sync-pending-delete-list">' +
     items +
     '</ul>'
   );

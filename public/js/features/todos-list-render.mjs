@@ -26,7 +26,7 @@ import {
   acknowledgeHandoffTodo,
   updateTodoText,
 } from './todos-mutations.mjs';
-import { settlePasteSurface, appendExitingRows } from '../ui-motion.mjs';
+import { settlePasteSurface, appendExitingRows, appendExitingRowsInPlace } from '../ui-motion.mjs';
 
 /** wb-table grid — columns Prior. / Pendiente / Quién / Vence / (acción), mockup L416. */
 var OPEN_ROW_GRID = '62px 1fr 118px 104px 74px';
@@ -471,7 +471,11 @@ export function renderTodoListSection(container, preserveTodoId) {
   container.appendChild(list);
   if (!patientChanged) {
     markNewTodoRows(list, prevRows);
-    appendExitingRows(container, prevRows, new Set(todos.map(function (t) { return t.id; })));
+    var openGroups = groupTodosByStatus(todos);
+    var openIds = new Set(
+      openGroups.vencido.concat(openGroups.hoy, openGroups.sin_fecha).map(function (t) { return t.id; })
+    );
+    appendExitingRowsInPlace(list, prevRows, openIds);
   }
   /* Only the freshly-appeared panel gets the whole-block settle. An in-place
    * add/complete/delete on an already-shown list must not re-fade rows that

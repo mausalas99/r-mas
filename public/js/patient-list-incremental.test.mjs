@@ -104,4 +104,28 @@ describe('patient-list-incremental', () => {
     assert.equal(list.querySelectorAll('.patient-card').length, 2);
     assert.match(list.textContent || '', /Two/);
   });
+
+  it('updatePatientListDomIncremental renders an expanded archived zone without throwing', () => {
+    if (typeof document === 'undefined') return;
+    const list = document.createElement('div');
+
+    const zones = buildPatientListZones([
+      { id: 'p1', nombre: 'One', pinned: false, archived: true, cuarto: '1', cama: '1', servicio: 'S' },
+    ]);
+
+    const ok = updatePatientListDomIncremental(list, {
+      zones,
+      archivedCollapsed: false,
+      isRonda: false,
+      renderCard: (p) =>
+        `<div class="patient-card" data-patient-id="${p.id}"><div class="p-name">${p.nombre}</div></div>`,
+      renderPinnedLabel: () => '<div class="patient-list-section-label patient-list-section-label--pinned"></div>',
+      renderActiveLabel: () => '<div class="patient-list-section-label"></div>',
+      renderArchivedToggle: () => '<button type="button" class="patient-list-section-toggle"></button>',
+      ctx: { activeId: null, isRonda: false },
+    });
+
+    assert.equal(ok, true);
+    assert.match(list.textContent || '', /One/);
+  });
 });

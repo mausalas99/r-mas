@@ -84,6 +84,20 @@ export {
   setHideListadoProblemasAiPrompt,
 } from "./profile-prefs.mjs";
 
+/** Censo y listado guardan nombres por separado; esto solo copia el valor mostrado, no cambia el guardado. */
+export function copyCensoFromListado() {
+  [
+    ["settings-medico-r2", "profile-r2"],
+    ["settings-medico-r1a", "profile-r1a"],
+    ["settings-medico-r1b", "profile-r1b"],
+    ["settings-medico-profesor", "profile-maestro"],
+  ].forEach(([srcId, dstId]) => {
+    const src = document.getElementById(srcId);
+    const dst = document.getElementById(dstId);
+    if (src && dst) dst.value = src.value;
+  });
+}
+
 /** @param {Record<string, unknown>} st */
 export function hydrateProfileSettings(st) {
   if (!st || typeof st !== "object") return st;
@@ -118,6 +132,7 @@ export const profileWindowHandlers = {
   saveSettings,
   closeTemplatesModal,
   saveTemplates,
+  copyCensoFromListado,
 };
 
 export { updateDefaultFormatField };

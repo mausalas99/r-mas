@@ -194,6 +194,43 @@ function initSettingsSplitPane() {
   showSettingsPanel(initialId);
 }
 
+function foldDiacritics(s) {
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+function navItemSearchText(btn, panelId) {
+  var panel = document.getElementById(panelId);
+  var bits = [btn.textContent];
+  if (panel) {
+    panel.querySelectorAll('.settings-card__title, .settings-form-label').forEach(function (el) {
+      bits.push(el.textContent);
+    });
+  }
+  return foldDiacritics(bits.join(' '));
+}
+
+/** Filters the Ajustes sidebar by section name and setting name (accent-insensitive). */
+export function filterSettingsNav(query) {
+  initSettingsSplitPane();
+  var q = foldDiacritics(query).trim();
+  var items = Array.from(document.querySelectorAll('.settings-nav-item'));
+  if (!q) {
+    items.forEach(function (btn) {
+      btn.hidden = false;
+    });
+    syncSettingsNavVisibility();
+    return;
+  }
+  var firstMatchId = '';
+  items.forEach(function (btn) {
+    var panelId = btn.getAttribute('data-settings-target');
+    var matches = navItemSearchText(btn, panelId).indexOf(q) !== -1;
+    btn.hidden = !matches;
+    if (matches && !firstMatchId) firstMatchId = panelId;
+  });
+  if (firstMatchId) showSettingsPanel(firstMatchId);
+}
+
 function wireSettingsModalChromeOnce() {
   if (settingsModalChromeWired) return;
   settingsModalChromeWired = true;
@@ -245,6 +282,11 @@ export function toggleSettingsDropdown() {
     .catch(() => {});
   initSettingsSplitPane();
   syncSettingsNavVisibility();
+  var searchInput = document.getElementById('settings-search-input');
+  if (searchInput && searchInput.value) {
+    searchInput.value = '';
+    filterSettingsNav('');
+  }
   var scrollHost = document.getElementById('settings-dropdown-scroll');
   if (scrollHost) scrollHost.scrollTop = 0;
   var activePanel = document.querySelector('.settings-panel.is-active');

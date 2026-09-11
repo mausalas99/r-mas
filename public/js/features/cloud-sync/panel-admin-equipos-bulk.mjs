@@ -104,6 +104,16 @@ export function listSelectedEquiposRows(root) {
   );
 }
 
+/** Show Guardar/Quitar only once something is checked — an empty selection has nothing to act on. @param {HTMLElement} root */
+export function updateEquiposBulkBarVisibility(root) {
+  const actions = root.querySelector('[data-admin-equipos-bulk-actions]');
+  if (!(actions instanceof HTMLElement)) return;
+  const count = listSelectedEquiposRows(root).length;
+  actions.hidden = count === 0;
+  const countEl = actions.querySelector('[data-admin-equipos-bulk-count]');
+  if (countEl) countEl.textContent = count ? count + ' seleccionado' + (count === 1 ? '' : 's') : '';
+}
+
 /** @param {HTMLElement} root @param {boolean} checked */
 export function setSelectAllVisibleEquipos(root, checked) {
   for (const row of listVisibleEquiposRows(root)) {

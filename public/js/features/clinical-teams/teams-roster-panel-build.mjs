@@ -67,9 +67,26 @@ export async function resolveClinicalTeamsPanelContext(user, joined) {
   };
 }
 
+function buildQuickSalaSelect(ctx) {
+  const options = [`<option value="">— Seleccionar —</option>`]
+    .concat(
+      CLINICAL_SALAS.map(
+        (s) => `<option value="${escapeAttr(s)}" ${ctx.sala === s ? 'selected' : ''}>${escapeHtml(s)}</option>`
+      )
+    )
+    .join('');
+  return `<select id="clinical-quick-sala" class="profile-input clinical-teams-browse-select" aria-label="Mi sala">${options}</select>`;
+}
+
 export function buildClinicalTeamsHandleHint(ctx) {
   if (!ctx.displayHandle) return '';
-  return `<p class="clinical-teams-lead clinical-teams-handle-hint">Tu @usuario: <strong>@${escapeHtml(ctx.displayHandle)}</strong> — compártelo para que te agreguen a un equipo.${ctx.savedHandle !== ctx.displayHandle ? ' Pulsa <strong>Guardar perfil</strong> para publicarlo en R+ Cloud.' : ''}</p>`;
+  let salaLabel = '';
+  if (!ctx.profileGatePending) {
+    salaLabel = ` · Sala ${buildQuickSalaSelect(ctx)}`;
+  } else if (ctx.sala) {
+    salaLabel = ` · Sala <strong>${escapeHtml(ctx.sala)}</strong>`;
+  }
+  return `<p class="clinical-teams-lead clinical-teams-handle-hint">Tu @usuario: <strong>@${escapeHtml(ctx.displayHandle)}</strong>${salaLabel} — compártelo para que te agreguen a un equipo.${ctx.savedHandle !== ctx.displayHandle ? ' Pulsa <strong>Guardar perfil</strong> para publicarlo en R+ Cloud.' : ''}</p>`;
 }
 
 export function buildClinicalProfileSectionHtml(ctx, user) {
@@ -156,21 +173,31 @@ export function buildJoinedTeamsSectionHtml(ctx, joinedHtml, lanMemberHint) {
 }
 
 /**
- * Visible R4/Admin block — not buried under Configuración / Zona avanzada.
+ * R4/Admin only, monthly-at-most action — collapsed by default so it doesn't
+ * dominate the screen every time (a resident using this panel daily shouldn't
+ * see "Cambiar de rotación" before their own team).
  * @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user
  */
 export function buildRotationAdminSectionHtml(user) {
   if (!canConfigureRotation(user)) return '';
   return `
     <section class="clinical-teams-section clinical-teams-section--rotation" aria-label="Cambiar de rotación">
-      <div class="clinical-teams-rotation-card">
-        <h4 class="clinical-teams-section-title">Cambiar de rotación</h4>
-        <p class="clinical-teams-section-desc">Mes nuevo o cambio de equipos del servicio. Archiva equipos activos y limpia guardias del día; los residentes vuelven a crear o unirse.</p>
-        <div class="clinical-teams-advanced-rotation-actions">
-          <button type="button" id="btn-nueva-rotacion" class="btn-med-secondary clinical-teams-nueva-rotacion-btn">Iniciar nueva rotación…</button>
-          <button type="button" id="btn-rotation-config-open" class="btn-med-secondary">Calendario de vigencia…</button>
-        </div>
-      </div>
+      ${renderClinicalTeamsCollapsible({
+        collapseKey: 'section.rotation',
+        defaultOpen: false,
+        className: 'clinical-teams-collapse--section',
+        summaryHtml: `
+          <h4 class="clinical-teams-section-title">Cambiar de rotación</h4>
+          <p class="clinical-teams-section-desc">Mes nuevo o cambio de equipos del servicio.</p>`,
+        bodyHtml: `
+          <div class="clinical-teams-rotation-card">
+            <p class="clinical-teams-section-desc">Archiva equipos activos y limpia guardias del día; los residentes vuelven a crear o unirse.</p>
+            <div class="clinical-teams-advanced-rotation-actions">
+              <button type="button" id="btn-nueva-rotacion" class="btn-med-secondary clinical-teams-nueva-rotacion-btn">Iniciar nueva rotación…</button>
+              <button type="button" id="btn-rotation-config-open" class="btn-med-secondary">Calendario de vigencia…</button>
+            </div>
+          </div>`,
+      })}
     </section>`;
 }
 

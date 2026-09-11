@@ -124,7 +124,7 @@ function renderMemberRemoveButton(m, handle, memberUserId, opts) {
     memberUserId &&
     memberUserId !== String(opts.callerUserId || '').trim();
   if (!canRemove) return '';
-  return `<button type="button" class="btn-med-secondary clinical-teams-member-remove-btn" data-user-id="${escapeAttr(memberUserId)}" data-team-id="${escapeAttr(String(opts.teamId))}" data-user-label="${escapeAttr(String(m.clinical_name || handle || memberUserId))}" title="Quitar del equipo y de la base clínica">Quitar</button>`;
+  return `<button type="button" class="btn-med-secondary btn-med-secondary--danger clinical-teams-member-remove-btn" data-user-id="${escapeAttr(memberUserId)}" data-team-id="${escapeAttr(String(opts.teamId))}" data-user-label="${escapeAttr(String(m.clinical_name || handle || memberUserId))}" title="Quitar del equipo y de la base clínica">Quitar</button>`;
 }
 
 /**
@@ -154,6 +154,7 @@ export function renderMemberRow(m, opts = {}) {
 export function renderMembersBlock(members, { compact = false, teamId = '' } = {}) {
   const list = Array.isArray(members) ? members : [];
   const count = list.length;
+  if (compact && count === 0) return '';
   const canRemove = !!teamId && canManageTeamRoster(clinicalSessionContext.user);
   const callerUserId = String(clinicalSessionContext.user?.user_id || '');
   const rows = count
@@ -164,17 +165,21 @@ export function renderMembersBlock(members, { compact = false, teamId = '' } = {
   const heading = count === 1 ? 'Integrantes (1)' : `Integrantes (${count})`;
   const listHtml = `<ul class="clinical-teams-member-rows">${rows}</ul>`;
   const tid = String(teamId || '').trim();
+  const compactClass = compact ? ' clinical-teams-card-members--compact' : '';
   if (!tid) {
     return `
-    <div class="clinical-teams-card-members${compact ? ' clinical-teams-card-members--compact' : ''}">
+    <div class="clinical-teams-card-members${compactClass}">
       <h6 class="clinical-teams-members-heading">${heading}</h6>
       ${listHtml}
     </div>`;
   }
+  // ".members2" (not ".members"): the joined-team card used to default this open, so many
+  // users already have the old key stuck at open in localStorage — a new key name is the
+  // only way to actually land the new collapsed-by-default card for them.
   return renderClinicalTeamsCollapsible({
-    collapseKey: `card.${tid}.members`,
-    defaultOpen: true,
-    className: `clinical-teams-collapse--card-block clinical-teams-card-members${compact ? ' clinical-teams-card-members--compact' : ''}`,
+    collapseKey: `card.${tid}.members2`,
+    defaultOpen: false,
+    className: `clinical-teams-collapse--card-block clinical-teams-card-members${compactClass}`,
     summaryHtml: `<span class="clinical-teams-members-heading">${heading}</span>`,
     bodyHtml: listHtml,
   });
@@ -218,8 +223,8 @@ export function renderMyCycleEditBlock(team, user) {
         </div>
       </form>`;
   return renderClinicalTeamsCollapsible({
-    collapseKey: `card.${teamId}.cycle`,
-    defaultOpen: true,
+    collapseKey: `card.${teamId}.cycle2`,
+    defaultOpen: false,
     className: 'clinical-teams-collapse--card-block clinical-teams-my-cycle-box',
     summaryHtml: '<span class="clinical-teams-my-cycle-title">Mi ciclo en este equipo</span>',
     bodyHtml: formHtml,
@@ -300,7 +305,7 @@ export function renderTeamManageActionsHtml(team) {
   return `
     <div class="clinical-teams-manage-actions">
       <button type="button" class="btn-med-secondary clinical-teams-edit-btn" data-team-id="${teamId}">Editar</button>
-      <button type="button" class="btn-med-secondary clinical-teams-delete-btn" data-team-id="${teamId}" data-team-name="${teamNameAttr}">Eliminar</button>
+      <button type="button" class="btn-med-secondary btn-med-secondary--danger clinical-teams-delete-btn" data-team-id="${teamId}" data-team-name="${teamNameAttr}">Eliminar</button>
     </div>`;
 }
 
@@ -356,6 +361,14 @@ export function renderTeamEditPanelHtml(team, siblingTeams = []) {
                 `<option value="${escapeAttr(s)}" ${sala === s ? 'selected' : ''}>${escapeHtml(s)}</option>`
             ).join('')}
           </select>
+        </div>
+        <div class="field-group">
+          <label for="clinical-edit-rotation-${teamId}">Rotación</label>
+          <select id="clinical-edit-rotation-${teamId}" class="profile-input clinical-teams-edit-rotation-active">
+            <option value="1" ${staged ? '' : 'selected'}>Esta rotación (activo ahora)</option>
+            <option value="0" ${staged ? 'selected' : ''}>Próxima rotación (aún no activo)</option>
+          </select>
+          <p class="clinical-teams-hint">Se asigna solo al crear el equipo; cámbialo aquí si no corresponde.</p>
         </div>
         ${succeedsField}
         <div class="clinical-teams-edit-form-actions">
@@ -419,6 +432,14 @@ export function renderJoinedTeamCard(team, siblingTeams = []) {
   const members = Array.isArray(team.members) ? team.members : [];
   const manage = renderTeamManageBlock(team, siblingTeams);
 
+  const detailsBody = `
+      ${renderInheritedPatientsPreview(team, siblingTeams)}
+      ${renderMembersBlock(members, { teamId })}
+      ${renderMyCycleEditBlock(team, user)}
+      ${shouldShowInheritPatientsUi() ? renderInheritPatientsBox(team) : ''}
+      ${renderLeaveTeamBox(team)}
+      ${renderTeamInviteCollapsible(team, teamId)}`;
+
   return `
     <article class="clinical-teams-card clinical-teams-card--mine" data-team-id="${escapeAttr(teamId)}">
       <div class="clinical-teams-card-top${manage.actionsHtml ? ' clinical-teams-card-top--directory' : ''}">
@@ -431,12 +452,13 @@ export function renderJoinedTeamCard(team, siblingTeams = []) {
         ${manage.actionsHtml ? `<div class="clinical-teams-card-actions">${manage.actionsHtml}</div>` : ''}
       </div>
       ${manage.editPanelHtml}
-      ${renderInheritedPatientsPreview(team, siblingTeams)}
-      ${renderMembersBlock(members, { teamId })}
-      ${renderMyCycleEditBlock(team, user)}
-      ${shouldShowInheritPatientsUi() ? renderInheritPatientsBox(team) : ''}
-      ${renderLeaveTeamBox(team)}
-      ${renderTeamInviteCollapsible(team, teamId)}
+      ${renderClinicalTeamsCollapsible({
+        collapseKey: `card.${teamId}.details`,
+        defaultOpen: false,
+        className: 'clinical-teams-collapse--card-block',
+        summaryHtml: '<span class="clinical-teams-invite-summary">Detalles del equipo</span>',
+        bodyHtml: detailsBody,
+      })}
     </article>`;
 }
 

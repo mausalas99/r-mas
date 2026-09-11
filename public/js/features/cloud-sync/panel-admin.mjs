@@ -7,6 +7,7 @@ import {
   peligroHtml,
   applyNetworkCensusFilters,
   setSelectAllVisibleNetwork,
+  updateNetworkBulkBarVisibility,
 } from './panel-admin-html.mjs';
 import { loadAdminResumen, loadAdminSalas, loadAdminNetworkCensus } from './panel-admin-data.mjs';
 import { createAdminClickHandler } from './panel-admin-actions.mjs';
@@ -145,6 +146,11 @@ export function mountCloudAdminPanel(host, deps) {
     }
     if (target.matches('[data-network-select-all]') && target instanceof HTMLInputElement) {
       setSelectAllVisibleNetwork(root, target.checked);
+      updateNetworkBulkBarVisibility(root);
+      return;
+    }
+    if (target.closest('[data-network-select]')) {
+      updateNetworkBulkBarVisibility(root);
     }
   });
 

@@ -60,6 +60,16 @@ export function bindBackdropDismiss(backdropEl, requestClose, panelSelector) {
   });
 }
 
+/**
+ * Panels opened via `wireFocusTrap` directly (bypassing the registry below),
+ * most-recently-opened last. `onGlobalFocusIn` defers to whichever of these is
+ * open so a registry-tracked modal (e.g. Ajustes) never fights a dialog opened
+ * on top of it (e.g. a destructive confirm) over focus — that fight was an
+ * infinite focusin ping-pong (RangeError: Maximum call stack size exceeded).
+ * @type {HTMLElement[]}
+ */
+var rawTrapStack = [];
+
 var FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -97,6 +107,8 @@ export function restoreFocus(el) {
  * @returns {{ unwire: () => void }}
  */
 export function wireFocusTrap(panel) {
+  rawTrapStack.push(panel);
+
   function onTrapKeydown(ev) {
     if (ev.key !== 'Tab') return;
     var focusables = getFocusableElements(panel);
@@ -116,6 +128,9 @@ export function wireFocusTrap(panel) {
   }
 
   function onFocusIn(ev) {
+    // Back off when a later-opened raw trap (or none at all, once unwired)
+    // is topmost — only the most-recently-opened trap may steal focus back.
+    if (rawTrapStack[rawTrapStack.length - 1] !== panel) return;
     if (!panel.contains(ev.target)) {
       focusFirstFocusable(panel);
     }
@@ -125,6 +140,8 @@ export function wireFocusTrap(panel) {
   document.addEventListener('focusin', onFocusIn);
   return {
     unwire: function () {
+      var idx = rawTrapStack.indexOf(panel);
+      if (idx !== -1) rawTrapStack.splice(idx, 1);
       panel.removeEventListener('keydown', onTrapKeydown);
       document.removeEventListener('focusin', onFocusIn);
     },
@@ -204,6 +221,9 @@ export function createModalDismissRegistry() {
    */
   function syncFocusTrap() {
     if (typeof document === 'undefined') return;
+    // A raw wireFocusTrap dialog (e.g. a destructive confirm) opened on top
+    // of a registry-tracked modal owns focus until it closes — see rawTrapStack.
+    if (rawTrapStack.length) return;
     while (focusStack.length && !focusStack[focusStack.length - 1].layer.isOpen()) {
       var closedEntry = focusStack.pop();
       restoreFocus(closedEntry.previousFocus);
@@ -223,6 +243,7 @@ export function createModalDismissRegistry() {
   }
 
   function onTabKeydown(ev) {
+    if (rawTrapStack.length) return;
     var top = topmostTrackedOpen();
     if (!top) return;
     if (typeof document === 'undefined' || !top.panel.contains(document.activeElement)) return;
@@ -243,6 +264,7 @@ export function createModalDismissRegistry() {
   }
 
   function onGlobalFocusIn(ev) {
+    if (rawTrapStack.length) return;
     var top = topmostTrackedOpen();
     if (!top) return;
     if (!top.panel.contains(ev.target)) {

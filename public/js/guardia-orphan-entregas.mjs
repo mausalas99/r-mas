@@ -64,7 +64,7 @@ export function renderOrphanEntregasStrip(rows, opts = {}) {
           <button type="button" class="btn-med-secondary guardia-orphan-open-btn"
             data-patient-id="${escapeAttr(patientId)}"
             data-guardia-id="${escapeAttr(guardiaId)}">Abrir</button>
-          <button type="button" class="btn-med-secondary guardia-orphan-delete-btn"
+          <button type="button" class="btn-med-secondary btn-med-secondary--danger guardia-orphan-delete-btn"
             data-patient-id="${escapeAttr(patientId)}"
             data-guardia-id="${escapeAttr(guardiaId)}">Eliminar del servidor</button>
         </div>

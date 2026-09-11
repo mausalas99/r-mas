@@ -2265,8 +2265,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-registro-modal .ea-vital-value-wrap .ea-vital-input:focus {
-  outline: 2px solid var(--action);
-  outline-offset: -2px;
+  outline: none;
   box-shadow: none;
   background: transparent;
 }

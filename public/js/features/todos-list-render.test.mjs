@@ -180,6 +180,30 @@ describe('renderTodoListSection row-enter diffing', () => {
     registerTodosRuntime({ getActiveId: () => null });
   });
 
+  it('leaves a fading ghost of a row marked Listo, not just a deleted one', () => {
+    if (typeof document === 'undefined') return;
+    registerTodosRuntime({ getActiveId: () => 'p-row-exit-listo' });
+    const a = todo({ id: 'a', text: 'Primero' });
+    const b = todo({ id: 'b', text: 'Segundo' });
+    storage.saveTodos('p-row-exit-listo', [a, b]);
+    const container = document.createElement('div');
+
+    renderTodoListSection(container);
+    assert.ok(container.querySelector('.wb-row[data-todo-id="b"]'));
+
+    toggleTodo('b');
+    renderTodoListSection(container);
+    const ghost = container.querySelector('.row-exit');
+    assert.ok(ghost, 'marking a pendiente Listo must still leave a fading ghost row');
+    assert.match(ghost.textContent, /Segundo/);
+    assert.ok(
+      ghost.closest('.todo-list'),
+      'the ghost must sit inside the list, next to where the row used to be, not tacked onto the end of the panel'
+    );
+
+    registerTodosRuntime({ getActiveId: () => null });
+  });
+
   it('still ghost-fades a removed row on the real refresh path (renderTodoFormIn), which pre-cleared the container before this fix', () => {
     if (typeof document === 'undefined') return;
     registerTodosRuntime({ getActiveId: () => 'p-form-refresh' });

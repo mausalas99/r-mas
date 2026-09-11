@@ -187,7 +187,7 @@ function assembleLanUserRowArticle(ctx) {
       </select>
       <span class="clinical-directory-assign-actions" role="group" aria-label="Acciones">
         <button type="button" class="btn-save clinical-directory-assign-btn" data-user-id="${userId}">Asignar</button>
-        <button type="button" class="btn-med-secondary clinical-directory-delete-user-btn${deleteBtnClass}" data-user-id="${userId}" data-user-label="${escapeAttr(String(u.clinical_name || normalizeUsername(u.username || '') || rawUserId))}" title="Quitar de la base clínica (se publica por R+ Cloud)"${deleteBtnAttrs}>Quitar</button>
+        <button type="button" class="btn-med-secondary btn-med-secondary--danger clinical-directory-delete-user-btn${deleteBtnClass}" data-user-id="${userId}" data-user-label="${escapeAttr(String(u.clinical_name || normalizeUsername(u.username || '') || rawUserId))}" title="Quitar de la base clínica (se publica por R+ Cloud)"${deleteBtnAttrs}>Quitar</button>
       </span>
     </div>
   </article>`;

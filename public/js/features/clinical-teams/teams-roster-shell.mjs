@@ -31,7 +31,14 @@ export async function refreshTeamsUiAfterChange(opts = {}) {
   if (isDirectoryModalOpen()) return;
 
   const { refreshClinicalPatientListForScope } = await import('../../clinical-access-runtime.mjs');
-  await refreshClinicalPatientListForScope({ allowLanPull: true });
+  try {
+    await refreshClinicalPatientListForScope({ allowLanPull: true });
+  } catch (err) {
+    // A patient-list refresh failure must not stop the teams panel below from
+    // picking up the change (e.g. a rotation edit) — it left the badge stuck
+    // on stale data until the whole window was closed and reopened.
+    console.error('[Mi rotación] refreshClinicalPatientListForScope failed', err);
+  }
   import('../clinical-rotation-entry.mjs').then((m) => m.syncClinicalRotationEntryChrome());
   if (isClinicalTeamsPanelActive()) {
     if (!opts.force) {

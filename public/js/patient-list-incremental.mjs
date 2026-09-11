@@ -190,7 +190,7 @@ function removeNonStructuralPatientListNodes(list) {
 }
 
 function appendPatientZoneSection(frag, labelHtml, zoneName, zoneClass) {
-  frag.appendChild(htmlToElement(labelHtml));
+  if (labelHtml) frag.appendChild(htmlToElement(labelHtml));
   const zone = document.createElement('div');
   zone.className = zoneClass || 'patient-sort-zone';
   zone.setAttribute('data-patient-zone', zoneName);

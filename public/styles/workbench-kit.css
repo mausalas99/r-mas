@@ -480,7 +480,7 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 160ms var(--ease-out);
-  z-index: var(--z-modal);
+  z-index: var(--z-confirm);
 }
 
 .wb-scrim--open {

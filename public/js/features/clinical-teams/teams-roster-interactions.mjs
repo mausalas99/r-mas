@@ -176,6 +176,22 @@ export function wireBrowseSalaControl(elevated) {
   });
 }
 
+export function wireQuickSalaControl() {
+  const select = document.getElementById('clinical-quick-sala');
+  if (!select || select._rpcQuickSalaWired) return;
+  select._rpcQuickSalaWired = true;
+  select.addEventListener('change', async () => {
+    const target = document.getElementById('clinical-profile-sala');
+    if (!target || !select.value) {
+      select.value = target ? target.value : '';
+      return;
+    }
+    target.value = select.value;
+    const m = await import('./teams-roster.mjs');
+    await m.handleProfileFormSubmit({ preventDefault() {} });
+  });
+}
+
 export function wireJoinButtons() {
   document.querySelectorAll('.clinical-teams-join-btn').forEach((btn) => {
     if (!(btn instanceof HTMLButtonElement) || btn._rpcJoinWired) return;
@@ -257,5 +273,6 @@ export function wireRenderedClinicalTeamsPanel(elevated) {
   wireInheritPatientsButtons();
   wireCopyInviteButtons();
   wireBrowseSalaControl(elevated);
+  wireQuickSalaControl();
   wireClinicalTeamsCollapsePersistence();
 }

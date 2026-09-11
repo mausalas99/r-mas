@@ -6,6 +6,7 @@ import {
   getOverlayZIndex,
   isBackdropOutsideClick,
   getDismissPanel,
+  wireFocusTrap,
 } from './modal-dismiss.mjs';
 
 test('closeTopmost cierra la capa abierta con mayor z-index', () => {
@@ -92,7 +93,10 @@ test('getOverlayZIndex lee z-index del backdrop', () => {
 function fakeFocusable(fakeDoc) {
   var el = { disabled: false, tabIndex: 0 };
   el.focus = function () {
-    fakeDoc.activeElement = el;
+    // Docs built by fakeDispatchDoc() re-run focusin listeners synchronously
+    // (as the real DOM does); plain fakeDoc stubs just record the change.
+    if (typeof fakeDoc.dispatchFocusIn === 'function') fakeDoc.dispatchFocusIn(el);
+    else fakeDoc.activeElement = el;
   };
   return el;
 }
@@ -311,6 +315,89 @@ test('el trap de foco se retira si lo que está más arriba maneja su propio cic
     var tabEv = { key: 'Tab', shiftKey: false, preventDefault: function () {} };
     reg.handleKeydown(tabEv);
     assert.equal(fakeDoc.activeElement, trigger, 'auto-trap does not wrap Tab while a self-managed layer is on top');
+  } finally {
+    globalThis.document = priorDocument;
+  }
+});
+
+/**
+ * Builds a fake document that dispatches focusin for real: `.focus()` on a
+ * fakeFocusable synchronously runs every registered focusin listener
+ * (capture-phase ones first, matching real DOM event order), so a handler
+ * that calls `.focus()` again re-enters synchronously — exactly what let the
+ * registry's onGlobalFocusIn and a raw wireFocusTrap's onFocusIn ping-pong
+ * into a stack overflow when both were live at once.
+ */
+function fakeDispatchDoc() {
+  var listeners = [];
+  var doc = {
+    addEventListener: function (type, cb, useCapture) {
+      if (type !== 'focusin') return;
+      listeners.push({ cb: cb, capture: !!useCapture });
+    },
+    removeEventListener: function (type, cb) {
+      if (type !== 'focusin') return;
+      listeners = listeners.filter(function (l) {
+        return l.cb !== cb;
+      });
+    },
+    dispatchFocusIn: function (target) {
+      doc.activeElement = target;
+      var ev = { target: target };
+      listeners
+        .slice()
+        .sort(function (a, b) {
+          return (a.capture ? 0 : 1) - (b.capture ? 0 : 1);
+        })
+        .forEach(function (l) {
+          l.cb(ev);
+        });
+    },
+  };
+  return doc;
+}
+
+test('un diálogo destructivo (wireFocusTrap) abierto sobre un modal con registro no entra en bucle de foco', () => {
+  var priorDocument = globalThis.document;
+  try {
+    var fakeDoc = fakeDispatchDoc();
+    var outerFirst = fakeFocusable(fakeDoc);
+    var outerPanel = fakePanel([outerFirst]);
+    var outerBackdrop = fakeBackdrop(outerPanel);
+    globalThis.document = fakeDoc;
+
+    // Ajustes-like modal, tracked by the shared registry.
+    var reg = createModalDismissRegistry();
+    reg.register({
+      isOpen: function () {
+        return true;
+      },
+      close: function () {},
+      backdropEl: function () {
+        return outerBackdrop;
+      },
+    });
+    reg.init();
+    reg.checkFocusTrap();
+    assert.equal(fakeDoc.activeElement, outerFirst);
+
+    // A destructive confirm opens on top via the raw wireFocusTrap path
+    // (confirm.mjs), same as importing patients from inside Ajustes.
+    var confirmFirst = fakeFocusable(fakeDoc);
+    var confirmPanel = fakePanel([confirmFirst]);
+    var trap = wireFocusTrap(confirmPanel);
+
+    // Something outside either panel receives focus (e.g. a stray tabindex
+    // element) — this used to alternate focusFirstFocusable(outerPanel) and
+    // focusFirstFocusable(confirmPanel) forever (RangeError: Maximum call
+    // stack size exceeded). It must now settle without throwing.
+    var stray = fakeFocusable(fakeDoc);
+    assert.doesNotThrow(function () {
+      fakeDoc.dispatchFocusIn(stray);
+    });
+    assert.equal(fakeDoc.activeElement, confirmFirst, 'the topmost (raw-trap) dialog wins focus, not the modal underneath');
+
+    trap.unwire();
   } finally {
     globalThis.document = priorDocument;
   }

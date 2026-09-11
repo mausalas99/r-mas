@@ -70,7 +70,7 @@ function renderProcList() {
           </div>
           ${
             canDel
-              ? `<button type="button" class="btn-med-secondary entrega-proc-delete" data-action="delete">Eliminar</button>`
+              ? `<button type="button" class="btn-med-secondary btn-med-secondary--danger entrega-proc-delete" data-action="delete">Eliminar</button>`
               : ''
           }
         </li>`;
@@ -101,7 +101,7 @@ function renderProcList() {
         </div>
         ${
           canDel
-              ? `<button type="button" class="btn-med-secondary entrega-proc-delete" data-action="delete">Eliminar</button>`
+              ? `<button type="button" class="btn-med-secondary btn-med-secondary--danger entrega-proc-delete" data-action="delete">Eliminar</button>`
             : ''
         }
       </li>`;

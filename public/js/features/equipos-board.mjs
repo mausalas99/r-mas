@@ -16,7 +16,7 @@ function renderDeviceRow(dev, isAdmin) {
   const label = DEVICE_LABELS[dev.device_type] || dev.device_type;
   const status = STATUS_LABELS[dev.status] || dev.status;
   const purgeBtn = isAdmin
-    ? `<button type="button" class="btn-lan-secondary" data-purge="${esc(dev.device_type)}" style="font-size:11px">Purgar cola</button>`
+    ? `<button type="button" class="btn-lan-secondary btn-lan-secondary--danger" data-purge="${esc(dev.device_type)}">Purgar cola</button>`
     : '';
   return (
     `<div class="equipos-desktop-row">` +
@@ -85,7 +85,7 @@ function buildEquiposBoardHtml(board, cloud, isAdmin) {
     (isAdmin
       ? `<div class="equipos-board-admin-actions">` +
         `<button type="button" class="btn-lan-secondary" id="btn-equipos-history">Historial de uso</button>` +
-        `<button type="button" class="btn-lan-secondary" id="btn-equipos-purge-all">Purgar todo</button>` +
+        `<button type="button" class="btn-lan-secondary btn-lan-secondary--danger" id="btn-equipos-purge-all">Purgar todo</button>` +
         `</div>`
       : '')
   );

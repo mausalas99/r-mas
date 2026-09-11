@@ -1,6 +1,7 @@
 <div id="settings-dropdown-backdrop" class="modal-backdrop settings-dropdown-backdrop" aria-hidden="true">
   <div class="modal settings-dropdown settings-dropdown-modal material-glass" id="settings-dropdown" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="settings-dropdown-title" tabindex="-1" onclick="event.stopPropagation()">
     <header class="settings-dropdown-modal-head">
+      <div class="settings-dropdown-head-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
       <h3 id="settings-dropdown-title">Ajustes</h3>
       <div class="settings-dropdown-head-links">
         <button type="button" class="settings-head-link" onclick="closeSettingsDropdown(); openLearnHub();">Tutoriales</button>
@@ -9,6 +10,10 @@
       <button type="button" class="clinical-teams-dismiss" id="btn-settings-dropdown-close" aria-label="Cerrar">×</button>
     </header>
     <div class="settings-dropdown-body" id="settings-dropdown-scroll">
+      <div class="settings-search-row">
+        <svg class="settings-search-icon" aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="search" id="settings-search-input" class="settings-search-input" placeholder="Buscar en ajustes…" autocomplete="off" oninput="filterSettingsNav(this.value)" aria-label="Buscar en ajustes">
+      </div>
       <div id="settings-clinical-sync-mode" class="settings-clinical-sync-mode" hidden>
         <p class="settings-acc-hint settings-clinical-sync-mode-lead">R+ está en modo <strong>solo este equipo</strong> (para médicos ajenos a medicina interna): sin ⇄ LiveSync, Mi rotación ni sala compartida.</p>
         <button type="button" class="btn-settings-row" onclick="enableClinicalLanFromSettings()">Activar guardia con R+ Cloud…</button>
@@ -55,6 +60,60 @@
           </div>
           </div>
           <p class="settings-form-foot overview-hint settings-acc-hint" data-i18n="settings.appearanceFoot">⌘G/I/S cambian modo Guardia/Inter/Sala. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.</p>
+        </div>
+      </details>
+
+      <details class="settings-accordion" id="settings-accordion-cuenta-equipo">
+        <summary>Cuenta y equipo</summary>
+        <div class="settings-acc-body">
+          <p class="settings-acc-hint settings-acc-hint--tight settings-acc-lead">Perfil, guardia, equipo y R+ Cloud. Antes repartidos en Mi Perfil y Conexión guardia — desde aquí llegas directo a cada uno.</p>
+          <div class="settings-card-stack">
+            <div class="settings-card">
+              <div class="settings-card__copy">
+                <p class="settings-card__title">Mi Perfil</p>
+                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Modo de trabajo, firma en notas y Word, salida clínica.</p>
+              </div>
+              <div class="settings-card__action">
+                <button type="button" class="btn-settings-row" onclick="closeSettingsDropdown(); openProfileModal();">Abrir…</button>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="settings-card__copy">
+                <p class="settings-card__title">Mi rotación</p>
+                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">@usuario, sala clínica y entregas.</p>
+              </div>
+              <div class="settings-card__action">
+                <button type="button" class="btn-settings-row" onclick="closeSettingsDropdown(); void openMiRotacion();">Abrir…</button>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="settings-card__copy">
+                <p class="settings-card__title">Equipo (R+ Cloud)</p>
+                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Miembros de la sala y su rol.</p>
+              </div>
+              <div class="settings-card__action">
+                <button type="button" class="btn-settings-row" onclick="closeSettingsDropdown(); openConnectionDropdown('equipo');">Abrir…</button>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="settings-card__copy">
+                <p class="settings-card__title">Administración (R+ Cloud)</p>
+                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Usuarios, salas y clave de administrador.</p>
+              </div>
+              <div class="settings-card__action">
+                <button type="button" class="btn-settings-row" onclick="closeSettingsDropdown(); openConnectionDropdown('admin');">Abrir…</button>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="settings-card__copy">
+                <p class="settings-card__title">Diagnóstico Nube</p>
+                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Estado de sincronización y alertas.</p>
+              </div>
+              <div class="settings-card__action">
+                <button type="button" class="btn-settings-row" onclick="closeSettingsDropdown(); openConnectionDropdown('nube');">Abrir…</button>
+              </div>
+            </div>
+          </div>
         </div>
       </details>
 

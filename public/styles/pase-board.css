@@ -3256,7 +3256,7 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
 }
 
 #clinical-teams-backdrop .clinical-teams-panel-body > .clinical-teams-section--directory {
-  grid-column: 2;
+  grid-column: 1 / -1;
 }
 
 /* Empty Mis equipos → Explorar spans full width for horizontal team grid */
@@ -3266,11 +3266,9 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   grid-column: 1 / -1;
 }
 
-/* With membership → Explorar arriba, Mis equipos abajo (full width) */
-#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--has-joined > .clinical-teams-section--joined,
-#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--has-joined > .clinical-teams-section--directory {
-  grid-column: 1 / -1;
-}
+/* With membership, your team's own card is rendered as the first item in
+ * Explorar's grid (teams-roster-panel.mjs) instead of a separate "Mis
+ * equipos" section — no has-joined override needed here any more. */
 
 #clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--pick-team {
   grid-template-columns: 1fr;
@@ -4235,13 +4233,18 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
 
 .clinical-teams-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16.5rem), 1fr));
+  /* auto-fit (not auto-fill) so empty candidate tracks collapse instead of sitting
+   * reserved-but-blank beside the real card(s); the max is a fixed length, not `1fr`,
+   * so the one track that IS populated (almost always just 1-2 joined teams) can't
+   * grow to soak up the freed space either — together these stop a lone card from
+   * either floating next to a dead empty column or getting stretched edge-to-edge. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16.5rem), 22rem));
   gap: 12px;
   align-items: stretch;
 }
 
 .clinical-teams-list--directory {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .clinical-teams-list .clinical-teams-card {
@@ -4264,6 +4267,9 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
 }
 
 .clinical-teams-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 0;
@@ -4314,6 +4320,23 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
   flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
+}
+
+.clinical-teams-edit-panel {
+  margin-top: 12px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--divider);
+}
+
+.clinical-teams-edit-form .field-group {
+  margin-bottom: 12px;
+}
+
+.clinical-teams-edit-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
 }
 
 .clinical-teams-card-join-reason {
@@ -4368,7 +4391,6 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
 
 .clinical-teams-card-members.clinical-teams-collapse--card-block {
   padding: 0;
-  border-top: none;
 }
 
 .clinical-teams-card-members--compact {
@@ -4578,19 +4600,14 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
 
 .clinical-teams-my-cycle-box {
   margin: 0;
-  padding: 12px 16px;
-  border-top: 1px solid var(--divider);
+  border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--color-accent) 6%, var(--surface));
 }
 
 .clinical-teams-leave-box {
   margin: 0;
-  padding: 10px 16px 14px;
+  padding: 6px 16px;
   border-top: 1px solid var(--divider);
-}
-
-.clinical-teams-leave-box .clinical-teams-leave-btn {
-  width: 100%;
 }
 
 .clinical-teams-my-cycle-title {
@@ -4624,8 +4641,7 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
 
 .clinical-teams-invite-box {
   margin: 0;
-  padding: 12px 16px 16px;
-  border-top: 1px solid var(--divider);
+  border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--bg) 40%, var(--surface));
 }
 
@@ -5353,6 +5369,20 @@ html.clinical-onboarding-active #main-area {
   border-radius: var(--radius-md);
   background: color-mix(in oklab, var(--action) 8%, var(--surface));
   border: 1px solid color-mix(in oklab, var(--action) 20%, var(--border));
+}
+
+/* Sits inline mid-sentence in .clinical-teams-handle-hint — .profile-input's width:100%
+ * would otherwise stretch it to the paragraph's full width and force line breaks. */
+.clinical-teams-handle-hint #clinical-quick-sala {
+  display: inline-block;
+  width: auto;
+  min-width: 0;
+  vertical-align: baseline;
+  margin: 0 2px;
+  padding: 2px 22px 2px 6px;
+  font-size: inherit;
+  font-weight: 700;
+  min-height: 0;
 }
 
 .clinical-teams-profile-handle {

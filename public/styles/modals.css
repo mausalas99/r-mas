@@ -5,7 +5,7 @@
   display: flex; align-items: center; justify-content: center;
 }
 .templates-modal {
-  background: var(--surface); border-radius: var(--radius-lg); padding: 20px;
+  background: var(--surface); padding: 20px;
   width: 90%; max-width: 440px; display: flex; flex-direction: column; gap: 12px;
   box-shadow: var(--shadow-md);
   border: none;
@@ -192,7 +192,6 @@ body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-save-copy { 
 }
 .soap-modal {
   background: var(--surface);
-  border-radius: var(--radius-lg);
   width: 620px;
   max-width: 95vw;
   max-height: min(90dvh, calc(var(--app-height) - 56px));
@@ -331,7 +330,7 @@ html.dark .soap-btn-cancel {
 }
 .onboarding-intro-modal {
   background: var(--surface); color: var(--text);
-  border-radius: 18px; max-width: min(720px, calc(100vw - 32px)); width: 100%;
+  max-width: min(720px, calc(100vw - 32px)); width: 100%;
   padding: 28px 26px 28px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);
   border: none;
   flex-shrink: 0;

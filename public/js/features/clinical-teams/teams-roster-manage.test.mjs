@@ -5,7 +5,43 @@ import {
   handleRemoveMemberClick,
   handleLeaveTeamClick,
   handleDeleteTeamClick,
+  handleEditTeamSubmit,
 } from './teams-roster-manage.mjs';
+
+// handleEditTeamSubmit does `instanceof HTMLInputElement/HTMLSelectElement` on
+// the form fields it reads — stand in minimal classes so those checks pass
+// under Electron's Node test runtime, which has no real `document`.
+class FakeInputElement {
+  constructor(value) {
+    this.value = value;
+  }
+}
+class FakeSelectElement {
+  constructor(value) {
+    this.value = value;
+  }
+}
+class FakeButtonElement {
+  constructor() {
+    this.disabled = false;
+  }
+}
+
+/** @param {{ name?: string, sala?: string, succeeds?: string, rotationActive?: string }} fields */
+function fakeEditForm({ name = 'Equipo', sala = 'Sala 1', succeeds, rotationActive } = {}) {
+  const byClass = {
+    '.clinical-teams-edit-name': new FakeInputElement(name),
+    '.clinical-teams-edit-sala': new FakeSelectElement(sala),
+    '.clinical-teams-edit-succeeds': succeeds === undefined ? null : new FakeSelectElement(succeeds),
+    '.clinical-teams-edit-rotation-active':
+      rotationActive === undefined ? null : new FakeSelectElement(rotationActive),
+    'button[type="submit"]': new FakeButtonElement(),
+  };
+  return {
+    dataset: { teamId: 't1' },
+    querySelector: (sel) => byClass[sel] ?? null,
+  };
+}
 
 function fakeBtn(dataset) {
   return { dataset, disabled: false };
@@ -105,5 +141,64 @@ describe('teams-roster-manage confirm gating', () => {
     const btn = fakeBtn({ teamId: 't1', teamName: 'Dra. Leslie' });
     await assert.rejects(handleDeleteTeamClick(btn, confirmFn), /probe-delete-team/);
     assert.equal(dbClinicalTeamsArchive.mock.callCount(), 1);
+  });
+});
+
+function fakeEditEvent() {
+  return { preventDefault: mock.fn() };
+}
+
+describe('handleEditTeamSubmit rotation override', () => {
+  const prevWindow = globalThis.window;
+  const prevUser = clinicalSessionContext.user;
+  const prevInputEl = globalThis.HTMLInputElement;
+  const prevSelectEl = globalThis.HTMLSelectElement;
+  const prevButtonEl = globalThis.HTMLButtonElement;
+
+  beforeEach(() => {
+    clinicalSessionContext.user = { user_id: 'u1', rank: 'R4' };
+    globalThis.HTMLInputElement = FakeInputElement;
+    globalThis.HTMLSelectElement = FakeSelectElement;
+    globalThis.HTMLButtonElement = FakeButtonElement;
+  });
+
+  afterEach(() => {
+    globalThis.window = prevWindow;
+    clinicalSessionContext.user = prevUser;
+    globalThis.HTMLInputElement = prevInputEl;
+    globalThis.HTMLSelectElement = prevSelectEl;
+    globalThis.HTMLButtonElement = prevButtonEl;
+  });
+
+  // dbClinicalTeamsUpdate rejects so submitTeamEdit never reaches its success
+  // toast (ensureToastStack needs a real `document`, unavailable here — same
+  // dodge the existing confirm-gating tests above use for their "confirm"
+  // branch). The mock still records the call args before it throws.
+  it('forwards the chosen rotation option as rotationActive', async () => {
+    const dbClinicalTeamsUpdate = mock.fn(async () => {
+      throw new Error('probe-edit-team');
+    });
+    globalThis.window = { rplusDb: { dbClinicalTeamsUpdate } };
+
+    const form = fakeEditForm({ rotationActive: '1' });
+    await assert.rejects(handleEditTeamSubmit(fakeEditEvent(), form), /probe-edit-team/);
+
+    assert.equal(dbClinicalTeamsUpdate.mock.callCount(), 1);
+    const opts = dbClinicalTeamsUpdate.mock.calls[0].arguments[0];
+    assert.equal(opts.rotationActive, 1);
+    assert.equal(opts.teamId, 't1');
+  });
+
+  it('sends undefined (leave unchanged) when the rotation select is absent', async () => {
+    const dbClinicalTeamsUpdate = mock.fn(async () => {
+      throw new Error('probe-edit-team-2');
+    });
+    globalThis.window = { rplusDb: { dbClinicalTeamsUpdate } };
+
+    const form = fakeEditForm();
+    await assert.rejects(handleEditTeamSubmit(fakeEditEvent(), form), /probe-edit-team-2/);
+
+    const opts = dbClinicalTeamsUpdate.mock.calls[0].arguments[0];
+    assert.equal(opts.rotationActive, undefined);
   });
 });

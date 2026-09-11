@@ -889,21 +889,6 @@ html.high-contrast .guardia-panel {
   outline: none;
 }
 
-#appcontent-agenda .rpc-proc-agenda-board-head {
-  border: var(--border-hairline);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  box-shadow: var(--elev-flat);
-  background: var(--surface);
-}
-
-#appcontent-agenda .rpc-proc-agenda-board-body {
-  border: var(--border-hairline);
-  border-top: none;
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  box-shadow: var(--elev-raised);
-  overflow: hidden;
-}
-
 #appcontent-agenda .rpc-proc-agenda-title {
   font: var(--type-title);
   letter-spacing: var(--tracking-title, -0.02em);

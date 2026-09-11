@@ -1066,7 +1066,6 @@ html.dark #main-area > div[id^="appcontent-"] > div:first-child:not(.lab-active-
 .card {
   background: var(--surface);
   border: none;
-  border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   overflow: hidden;
   transition: box-shadow 0.15s ease;
@@ -2070,6 +2069,15 @@ html.dark .btn-med-secondary:hover {
   border-color: color-mix(in oklab, var(--color-ink) 58%, transparent);
   color: var(--color-ink);
 }
+.btn-med-secondary--danger {
+  color: var(--danger);
+  border-color: color-mix(in oklab, var(--danger) 35%, var(--divider));
+  background: color-mix(in oklab, var(--danger) 8%, var(--color-elevated));
+}
+.btn-med-secondary--danger:hover {
+  background: color-mix(in oklab, var(--danger) 14%, var(--color-elevated));
+  border-color: color-mix(in oklab, var(--danger) 45%, var(--divider));
+}
 .btn-med-secondary--muted {
   color: var(--text-muted);
   border-color: var(--border);
@@ -2100,7 +2108,6 @@ html.dark .btn-med-secondary--muted:hover {
 }
 .modal {
   background: var(--surface);
-  border-radius: var(--radius-lg);
   padding: 28px;
   width: 500px;
   max-width: 95vw;

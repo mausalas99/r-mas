@@ -43,7 +43,16 @@ function getRuntime() {
   };
 }
 
-function setConnectionDropdownOpen(open) {
+/** @param {string} [view] */
+export function jumpToConexionView(view) {
+  if (!view) return;
+  const target = document.querySelector(
+    '[data-cloud-action="nav-view"][data-cloud-view="' + view + '"]'
+  );
+  if (target) target.click();
+}
+
+function setConnectionDropdownOpen(open, view) {
   const dd = document.getElementById('connection-dropdown');
   const bg = document.getElementById('connection-dropdown-backdrop');
   const syncBtn = document.getElementById('btn-header-team-sync');
@@ -78,6 +87,7 @@ function setConnectionDropdownOpen(open) {
   document.body.classList.add('connection-dropdown-open');
   if (syncBtn) syncBtn.setAttribute('aria-expanded', 'true');
   void renderConnectionPanel({ force: true, runtime: getRuntime }).then(function () {
+    jumpToConexionView(view);
     return import('./panel-conexion-tour.mjs').then(function (m) {
       return m.afterConnectionPanelOpened();
     });
@@ -88,7 +98,8 @@ export function closeConnectionDropdown() {
   setConnectionDropdownOpen(false);
 }
 
-export function openConnectionDropdown() {
+/** @param {string} [view] optional Opciones sub-view to jump straight into once open (e.g. 'admin', 'nube', 'equipo'). */
+export function openConnectionDropdown(view) {
   if (isCloudMobileClient()) {
     getRuntime().showToast(
       'R+ Móvil usa la nube automáticamente. Si no ves pacientes, deja R+ abierto en el Mac del turno y recarga.',
@@ -96,7 +107,7 @@ export function openConnectionDropdown() {
     );
     return;
   }
-  setConnectionDropdownOpen(true);
+  setConnectionDropdownOpen(true, view);
 }
 
 export function toggleConnectionDropdown(ev) {

@@ -52,8 +52,11 @@ export function equiposShellHtml() {
     '<div class="cloud-sync-admin-equipos-bulk">' +
     '<label class="cloud-sync-admin-equipos-select-all-label">' +
     '<input type="checkbox" class="cloud-sync-admin-equipos-check" data-admin-equipos-select-all /> Seleccionar visibles</label>' +
+    '<div class="cloud-sync-admin-equipos-bulk-actions" data-admin-equipos-bulk-actions hidden>' +
+    '<span class="cloud-sync-admin-equipos-bulk-count" data-admin-equipos-bulk-count></span>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary cloud-sync-btn--compact" data-admin-action="save-equipos-bulk">Guardar seleccionados</button>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger cloud-sync-btn--compact" data-admin-action="purge-equipos-bulk" title="Elimina cuentas Nube y/o perfiles clínicos de los marcados">Quitar seleccionados</button></div>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger cloud-sync-btn--compact" data-admin-action="purge-equipos-bulk" title="Elimina cuentas Nube y/o perfiles clínicos de los marcados">Quitar seleccionados</button>' +
+    '</div></div>' +
     '<div data-admin-equipos-list><p class="cloud-sync-hint">Cargando usuarios y equipos…</p></div>'
   );
 }
@@ -71,7 +74,22 @@ export function equiposListHtml(rows, teams) {
   if (!rows.length) {
     return '<p class="cloud-sync-hint">No hay usuarios Nube ni perfiles clínicos locales para asignar.</p>';
   }
-  const cards = rows.map((row) => renderEquiposUserRow(row, teams)).join('');
+  let sawUnassigned = false;
+  let sawAssigned = false;
+  const cards = rows
+    .map((row) => {
+      const hasTeam = !!resolveUserPlacement(String(row.user_id || ''), teams)?.teamId;
+      let label = '';
+      if (!hasTeam && !sawUnassigned) {
+        sawUnassigned = true;
+        label = '<p class="cloud-sync-admin-equipos-group-label">Sin equipo — primero</p>';
+      } else if (hasTeam && !sawAssigned) {
+        sawAssigned = true;
+        label = '<p class="cloud-sync-admin-equipos-group-label">Ya asignados</p>';
+      }
+      return label + renderEquiposUserRow(row, teams);
+    })
+    .join('');
   return '<div class="cloud-sync-admin-equipos-list">' + cards + '</div>';
 }
 
@@ -274,27 +292,43 @@ function equiposRowArticleOpenHtml(row, userId, userRank, handle, placement, act
   );
 }
 
-/**
- * @param {string} handle
- * @param {string} name
- * @param {object} row
- * @param {ReturnType<typeof equiposRowActivityParts>} activity
- * @param {string} placementLabel
- */
-function equiposRowMainSectionHtml(handle, name, row, activity, placementLabel) {
+/** Sala + rango siempre visibles, sin abrir «Editar asignación». @param {object} row @param {string} userRank */
+function equiposRowMetaLineHtml(row, userRank) {
+  const sala = String(row.sala || '').trim();
   return (
-    '<div class="cloud-sync-admin-equipos-row-main">' +
+    '<span class="cloud-sync-admin-equipos-meta">' + esc([sala || 'Sin sala', userRank].join(' · ')) + '</span>'
+  );
+}
+
+/**
+ * Identity line: who this is — checkbox, handle, name, "nuevo" state. Bold weight.
+ * @param {string} handle @param {string} name @param {object} row
+ */
+function equiposRowIdentityLineHtml(handle, name, row) {
+  return (
+    '<div class="cloud-sync-admin-equipos-row-identity">' +
     '<label class="cloud-sync-admin-equipos-check-label" title="Incluir en Guardar seleccionados">' +
     '<input type="checkbox" class="cloud-sync-admin-equipos-check" data-admin-equipos-select /></label>' +
     '<span class="cloud-sync-admin-equipos-handle">@' +
     esc(handle) +
-    '</span> ' +
-    equiposRowActivityBadgeHtml(activity) +
-    ' ' +
-    equiposRowPendingBadgeHtml(row) +
+    '</span>' +
     '<span class="cloud-sync-admin-equipos-name">' +
     name +
     '</span>' +
+    equiposRowPendingBadgeHtml(row) +
+    '</div>'
+  );
+}
+
+/**
+ * Meta line: everything secondary — sala/rango, actividad, equipo, historial. Muted, small.
+ * @param {object} row @param {string} userRank @param {ReturnType<typeof equiposRowActivityParts>} activity @param {string} placementLabel @param {string} handle
+ */
+function equiposRowMetaSectionHtml(row, userRank, activity, placementLabel, handle) {
+  return (
+    '<div class="cloud-sync-admin-equipos-row-meta-line">' +
+    equiposRowMetaLineHtml(row, userRank) +
+    equiposRowActivityBadgeHtml(activity) +
     '<span class="cloud-sync-admin-equipos-placement">' +
     placementLabel +
     '</span>' +
@@ -303,11 +337,33 @@ function equiposRowMainSectionHtml(handle, name, row, activity, placementLabel) 
   );
 }
 
-/** @param {string} cloudId @param {string} handle */
+/**
+ * @param {string} handle
+ * @param {string} name
+ * @param {object} row
+ * @param {ReturnType<typeof equiposRowActivityParts>} activity
+ * @param {string} placementLabel
+ * @param {string} userRank
+ */
+function equiposRowMainSectionHtml(handle, name, row, activity, placementLabel, userRank) {
+  return (
+    '<div class="cloud-sync-admin-equipos-row-main">' +
+    equiposRowIdentityLineHtml(handle, name, row) +
+    equiposRowMetaSectionHtml(row, userRank, activity, placementLabel, handle) +
+    '</div>'
+  );
+}
+
+/** Nube account actions, flattened into the row menu (no separate nested toggle). @param {string} cloudId @param {string} handle */
 function equiposRowNubeWrapHtml(cloudId, handle) {
   if (!cloudId) return '';
-  const nubeActions = userActionsHtml({ id: cloudId, username: handle });
-  return '<div class="cloud-sync-admin-equipos-nube-wrap">' + nubeActions + '</div>';
+  const nubeActions = userActionsHtml({ id: cloudId, username: handle }, { bare: true });
+  return (
+    '<p class="cloud-sync-admin-equipos-menu-label">Cuenta Nube</p>' +
+    '<div class="cloud-sync-admin-equipos-nube-wrap">' +
+    nubeActions +
+    '</div>'
+  );
 }
 
 /** @param {object} row @param {object[]} teams */
@@ -324,16 +380,24 @@ export function renderEquiposUserRow(row, teams) {
 
   return (
     equiposRowArticleOpenHtml(row, userId, userRank, handle, placement, activity) +
+    '<div class="cloud-sync-admin-equipos-row-head">' +
     equiposRowMainSectionHtml(
       handle,
       name,
       row,
       activity,
-      equiposRowPlacementLabelHtml(placement, userRank)
+      equiposRowPlacementLabelHtml(placement, userRank),
+      userRank
     ) +
+    '<details class="cloud-sync-admin-equipos-edit wb-menu">' +
+    '<summary class="cloud-sync-admin-equipos-edit-summary" title="Editar asignación y cuenta Nube">⋯</summary>' +
+    '<div class="wb-menu-panel cloud-sync-admin-equipos-menu-panel">' +
     equiposRowAssignFieldsHtml(row, userRank, placement, teams) +
     equiposRowActionBtnsHtml(resetPasswordBtn, purgeBtn) +
     equiposRowNubeWrapHtml(cloudId, handle) +
+    '</div>' +
+    '</details>' +
+    '</div>' +
     '</article>'
   );
 }

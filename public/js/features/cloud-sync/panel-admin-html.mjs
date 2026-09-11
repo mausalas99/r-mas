@@ -212,7 +212,11 @@ function buildNetworkCensusRows(census, now) {
     }
     rows.push(...networkCensusRowsFromArea(area, now, teamOptions));
   }
-  rows.sort((a, b) => a.sala.localeCompare(b.sala, 'es') || String(a.cama).localeCompare(String(b.cama), 'es'));
+  rows.sort(
+    (a, b) =>
+      a.sala.localeCompare(b.sala, 'es') ||
+      String(a.cama).localeCompare(String(b.cama), 'es', { numeric: true })
+  );
   return { rows, errors, teamOptions };
 }
 
@@ -247,7 +251,10 @@ function networkCensusCols() {
         '" data-patient-id="' +
         esc(String(row.patientId || '')) +
         '">Abrir expediente</button>' +
-        '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" ' +
+        '<details class="cloud-sync-admin-equipos-edit wb-menu">' +
+        '<summary class="cloud-sync-admin-equipos-edit-summary" title="Más acciones">⋯</summary>' +
+        '<div class="wb-menu-panel">' +
+        '<button type="button" class="wb-menu-item" ' +
         'data-admin-action="archive-network-patient" data-room-id="' +
         esc(String(row.roomId || '')) +
         '" data-patient-id="' +
@@ -258,7 +265,7 @@ function networkCensusCols() {
         (row.archived ? 'Restaurar' : 'Archivar') +
         '</button>' +
         (row.archived
-          ? '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger cloud-sync-btn--compact" ' +
+          ? '<button type="button" class="wb-menu-item" ' +
             'data-admin-action="delete-network-patient" data-room-id="' +
             esc(String(row.roomId || '')) +
             '" data-patient-id="' +
@@ -267,6 +274,7 @@ function networkCensusCols() {
             esc(String(row.registro || '')) +
             '">Eliminar</button>'
           : '') +
+        '</div></details>' +
         '</div>',
     },
   ];
@@ -325,8 +333,11 @@ export function redCensusHtml(census) {
     '<div class="cloud-sync-admin-panel-head">' +
     '<label class="cloud-sync-admin-red-select-all">' +
     '<input type="checkbox" data-network-select-all aria-label="Seleccionar todos los visibles" /> Todos</label>' +
+    '<div class="cloud-sync-admin-equipos-bulk-actions" data-admin-red-bulk-actions hidden>' +
+    '<span class="cloud-sync-admin-equipos-bulk-count" data-admin-red-bulk-count></span>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="bulk-archive-network">Archivar seleccionados</button>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger cloud-sync-btn--compact" data-admin-action="bulk-delete-network">Eliminar seleccionados</button>' +
+    '</div>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="refresh-red">Actualizar</button></div>' +
     '<p class="cloud-sync-hint">Todos los pacientes, en todas las áreas, con la sala actual de cada una. El check de "Eliminar" solo cuenta a los ya archivados.</p>' +
     networkCensusFiltersHtml(census, teamOptions) +
@@ -406,6 +417,17 @@ export function setSelectAllVisibleNetwork(root, checked) {
   for (const cb of listVisibleNetworkCheckboxes(root)) cb.checked = checked;
 }
 
+/** Show Archivar/Eliminar only once a row is checked. @param {HTMLElement} root */
+export function updateNetworkBulkBarVisibility(root) {
+  const panel = root.querySelector('[data-admin-red]');
+  const actions = panel?.querySelector('[data-admin-red-bulk-actions]');
+  if (!(actions instanceof HTMLElement)) return;
+  const count = listSelectedNetworkPatients(root).length;
+  actions.hidden = count === 0;
+  const countEl = actions.querySelector('[data-admin-red-bulk-count]');
+  if (countEl) countEl.textContent = count ? count + ' seleccionado' + (count === 1 ? '' : 's') : '';
+}
+
 export function roomDetailHostHtml() {
   return '<div class="cloud-sync-admin-room-detail" data-admin-room-detail></div>';
 }
@@ -465,13 +487,12 @@ function equiposRedirectHintHtml() {
 /**
  * Compact Nube account actions for Equipos rows (replaces the old Usuarios table).
  * @param {{ id: string, username?: string }} user
+ * @param {{ bare?: boolean }} [opts] — bare: return just the actions, no own <details> wrap (caller supplies one)
  */
-export function userActionsHtml(user) {
+export function userActionsHtml(user, opts = {}) {
   const id = esc(String(user.id));
   const handle = esc(String(user.username || ''));
-  return (
-    '<details class="cloud-sync-admin-equipos-nube">' +
-    '<summary class="cloud-sync-admin-equipos-nube-summary">Nube</summary>' +
+  const actions =
     '<div class="cloud-sync-admin-row-actions cloud-sync-admin-row-actions--compact">' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="revoke-sessions" data-user-id="' +
     id +
@@ -497,7 +518,13 @@ export function userActionsHtml(user) {
     id +
     '" data-user-handle="' +
     handle +
-    '">Eliminar Nube</button></div></details>'
+    '">Eliminar Nube</button></div>';
+  if (opts.bare) return actions;
+  return (
+    '<details class="cloud-sync-admin-equipos-nube">' +
+    '<summary class="cloud-sync-admin-equipos-nube-summary">Nube</summary>' +
+    actions +
+    '</details>'
   );
 }
 

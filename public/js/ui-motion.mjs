@@ -28,6 +28,53 @@ export function appendExitingRows(container, rowsBeforeById, idsStillPresent) {
   });
 }
 
+/**
+ * Same idea as appendExitingRows, but the ghost lands where the row used to
+ * sit — next to whichever surviving row was its nearest neighbor — instead of
+ * always at the end of the list. Without this, a row leaving the middle of
+ * the list looks like the whole list snapped to its new shape while an
+ * unrelated ghost faded out at the bottom.
+ * @param {HTMLElement} list
+ * @param {Record<string, HTMLElement>} rowsBeforeById
+ * @param {Set<string>} idsStillPresent
+ */
+export function appendExitingRowsInPlace(list, rowsBeforeById, idsStillPresent) {
+  var orderedIds = Object.keys(rowsBeforeById);
+  orderedIds.forEach(function (id, i) {
+    if (idsStillPresent.has(id)) return;
+    var ghost = rowsBeforeById[id].cloneNode(true);
+    ghost.removeAttribute('data-todo-id');
+    ghost.removeAttribute('data-wb-row-id');
+    ghost.classList.add('row-exit');
+    var done = function () {
+      if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
+    };
+    ghost.addEventListener('animationend', done, { once: true });
+    setTimeout(done, 500);
+
+    var anchor = null;
+    var before = true;
+    for (var f = i + 1; f < orderedIds.length && !anchor; f++) {
+      if (idsStillPresent.has(orderedIds[f])) {
+        anchor = list.querySelector('[data-todo-id="' + orderedIds[f] + '"]');
+      }
+    }
+    if (!anchor) {
+      before = false;
+      for (var b = i - 1; b >= 0 && !anchor; b--) {
+        if (idsStillPresent.has(orderedIds[b])) {
+          anchor = list.querySelector('[data-todo-id="' + orderedIds[b] + '"]');
+        }
+      }
+    }
+    if (anchor && anchor.parentNode) {
+      anchor.parentNode.insertBefore(ghost, before ? anchor : anchor.nextSibling);
+    } else {
+      list.appendChild(ghost);
+    }
+  });
+}
+
 export function prefersReducedMotion() {
   try {
     if (typeof document !== 'undefined' && document.documentElement

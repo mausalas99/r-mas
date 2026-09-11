@@ -122,11 +122,16 @@ async function resolveClinicalTeamsPanelSections(userId, user, joined, ctx, elev
   const browseSala = resolveBrowseSala(elevated, ctx.sala);
   const joinCodeSection = renderJoinWithCodeSectionHtml();
   const lanMemberHint = await resolveTeamMemberHintHtml(joined);
+  // Once you belong to a team, its card leads the same Explorar grid instead
+  // of sitting in its own full-width "Mis equipos" box — that box, with just
+  // 1-3 narrow cards in it, left a dead empty strip beside it.
   const { html: directorySection, count: directoryCount } = await renderDirectorySectionHtml({
     userId,
     elevated,
     browseSala,
     homeSala: ctx.sala,
+    leadingCardsHtml: joined.length ? `${lanMemberHint}${joinedHtml}` : '',
+    leadingCount: joined.length,
   });
 
   const pickTeamLayout = shouldUsePickTeamPanelLayout(joined.length, directoryCount, elevated);
@@ -138,8 +143,8 @@ async function resolveClinicalTeamsPanelSections(userId, user, joined, ctx, elev
     rejoinPending,
   });
 
-  const joinedContentHtml = joined.length ? joinedHtml : buildJoinedTeamsEmptyHtml(ctx.displayHandle, pickTeamLayout);
-  const joinedSection = buildJoinedTeamsSectionHtml(ctx, joinedContentHtml, lanMemberHint);
+  const joinedContentHtml = joined.length ? '' : buildJoinedTeamsEmptyHtml(ctx.displayHandle, pickTeamLayout);
+  const joinedSection = joined.length ? '' : buildJoinedTeamsSectionHtml(ctx, joinedContentHtml, lanMemberHint);
   const createSection = renderCreateTeamSectionHtml();
   const rotationSection = buildRotationAdminSectionHtml(user);
   const configSection = buildClinicalTeamsConfigSectionHtml(profileSection);
@@ -163,31 +168,36 @@ function renderClinicalTeamsPanelBody(host, sections, hasJoinedTeam) {
   host.classList.toggle('clinical-teams-panel-body--pick-team', pickTeamLayout);
   host.classList.toggle('clinical-teams-panel-body--has-joined', hasJoinedTeam);
 
+  // Fixed order regardless of state: light identity hint, then whichever of
+  // "your team" / "pick a team" is primary right now, then the rare stuff
+  // (rotation, create, join-by-code, config) always last — so the screen
+  // doesn't reshuffle itself between visits.
   if (pickTeamLayout) {
     host.innerHTML = `
     ${pickBanner}
-    ${directorySection}
     ${handleHint}
+    ${directorySection}
     ${joinedSection}
+    ${rotationSection}
     ${createSection}
     ${joinCodeSection}
     ${configSection}`;
   } else if (hasJoinedTeam) {
+    // joinedSection is '' here — your team card already leads directorySection's grid.
     host.innerHTML = `
     ${handleHint}
+    ${directorySection}
     ${rotationSection}
     ${createSection}
-    ${directorySection}
     ${joinCodeSection}
-    ${joinedSection}
     ${configSection}`;
   } else {
     host.innerHTML = `
     ${handleHint}
+    ${directorySection}
+    ${joinedSection}
     ${rotationSection}
     ${createSection}
-    ${joinedSection}
-    ${directorySection}
     ${joinCodeSection}
     ${configSection}`;
   }

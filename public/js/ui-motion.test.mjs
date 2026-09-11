@@ -6,7 +6,44 @@ import {
   springTo,
   prefersReducedMotion,
   settlePasteSurface,
+  appendExitingRowsInPlace,
 } from './ui-motion.mjs';
+
+function rowFixture(id, text) {
+  const row = document.createElement('div');
+  row.dataset.todoId = id;
+  row.textContent = text;
+  return row;
+}
+
+test('appendExitingRowsInPlace puts the ghost next to its old neighbor, not at the end of the list', () => {
+  if (typeof document === 'undefined') return;
+  const list = document.createElement('div');
+  const body = document.createElement('div');
+  list.appendChild(body);
+  const a = rowFixture('a', 'Primero');
+  const c = rowFixture('c', 'Tercero');
+  body.appendChild(a);
+  body.appendChild(c);
+
+  const rowsBefore = { a: rowFixture('a', 'Primero'), b: rowFixture('b', 'Segundo'), c: rowFixture('c', 'Tercero') };
+  appendExitingRowsInPlace(list, rowsBefore, new Set(['a', 'c']));
+
+  const ghost = list.querySelector('.row-exit');
+  assert.ok(ghost, 'a ghost for the removed row is appended');
+  assert.match(ghost.textContent, /Segundo/);
+  assert.equal(ghost.previousElementSibling, a, 'the ghost sits right after its old previous neighbor');
+  assert.equal(ghost.nextElementSibling, c, 'and right before its old next neighbor — collapsing in place');
+});
+
+test('appendExitingRowsInPlace falls back to the list itself when no neighbor survives', () => {
+  if (typeof document === 'undefined') return;
+  const list = document.createElement('div');
+  const rowsBefore = { a: rowFixture('a', 'Único') };
+  appendExitingRowsInPlace(list, rowsBefore, new Set());
+  const ghost = list.querySelector('.row-exit');
+  assert.ok(ghost, 'still appends a ghost when nothing else is left to anchor to');
+});
 
 test('resolvePatientFieldIds — nombre desde lab', () => {
   assert.deepEqual(

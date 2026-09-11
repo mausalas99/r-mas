@@ -13,6 +13,7 @@ import {
   handleCloudEquiposBulkSave,
   purgeEquiposRowTarget,
   setSelectAllVisibleEquipos,
+  updateEquiposBulkBarVisibility,
 } from './panel-admin-equipos-bulk.mjs';
 import {
   equiposDbApi,
@@ -118,7 +119,12 @@ function handleEquiposPanelChange(ev, ctx) {
   const selectAll = target?.closest('[data-admin-equipos-select-all]');
   if (selectAll instanceof HTMLInputElement) {
     setSelectAllVisibleEquipos(ctx.root, selectAll.checked);
+    updateEquiposBulkBarVisibility(ctx.root);
+    return;
   }
+
+  const rowCheck = target?.closest('[data-admin-equipos-select]');
+  if (rowCheck) updateEquiposBulkBarVisibility(ctx.root);
 }
 
 /**

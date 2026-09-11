@@ -256,6 +256,18 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   flex-shrink: 0;
   background: color-mix(in oklab, var(--surface) 98%, var(--bg));
 }
+.settings-dropdown-head-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-row-btn);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.settings-dropdown-head-icon svg { display: block; width: 16px; height: 16px; }
 .settings-dropdown-head-links {
   display: flex;
   align-items: center;
@@ -301,6 +313,33 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   flex-direction: column;
   gap: 8px;
   padding: var(--modal-shell-gutter, var(--content-gutter));
+}
+.settings-search-row {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.settings-search-icon {
+  position: absolute;
+  left: 11px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.settings-search-input {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control, var(--radius-badge));
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+}
+.settings-search-input::placeholder { color: var(--text-muted); }
+.settings-search-input:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--action) 55%, transparent);
+  outline-offset: 1px;
 }
 .settings-split {
   flex: 1;
@@ -2026,7 +2065,8 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   gap: 6px;
   margin-top: 10px;
 }
-.equipos-lista-panel-body .equipos-queue-board-host .equipos-board-admin-actions .btn-lan-secondary {
+.equipos-lista-panel-body .equipos-queue-board-host .equipos-board-admin-actions .btn-lan-secondary,
+.equipos-lista-panel-body .equipos-queue-board-host .equipos-desktop-row .btn-lan-secondary {
   font-size: 11px;
 }
 .equipos-history-host {
@@ -2312,6 +2352,8 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   border-radius: var(--radius-control); padding: 9px 12px; font-size: 12px; font-weight: 600;
   font-family: inherit; cursor: pointer; flex: 1; min-width: 120px;
 }
+.btn-lan-secondary--danger { color: var(--danger); border-color: color-mix(in oklab, var(--danger) 45%, var(--border)); }
+.btn-lan-secondary--danger:hover { color: #fff; background: var(--danger); border-color: var(--danger); }
 .lan-role-tabs {
   display: flex; gap: 6px; margin-bottom: 6px; padding: 5px;
   background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
@@ -2569,13 +2611,23 @@ select.profile-input.profile-select {
   width: min(880px, calc(100vw - 28px));
   max-height: min(92vh, 900px);
 }
-.profile-block--formats { padding-bottom: 10px; }
 .profile-modal-title {
   margin: 0 0 8px;
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: calc(17px * var(--density-font, 1));
+}
+.profile-modal-title-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-row-btn);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 .profile-modal-lead {
   margin: 0 0 14px;
@@ -2599,24 +2651,18 @@ select.profile-input.profile-select {
   align-items: start;
 }
 .profile-modal--wide .profile-block--span-full,
-.profile-modal--wide .profile-block--formats,
 .profile-modal--wide .profile-actions--footer {
   grid-column: 1 / -1;
 }
-.profile-modal--wide .profile-block--bridge,
-.profile-modal--wide .profile-block--salida {
+.profile-modal--wide .profile-block--bridge {
   grid-column: 1 / -1;
 }
-.profile-block--bridge {
-  border-color: color-mix(in oklab, var(--color-accent) 35%, var(--border));
-  background: color-mix(in oklab, var(--color-accent) 6%, var(--surface));
-}
-.profile-bridge-btn { margin-top: 4px; }
 .profile-hint--compact { margin-bottom: 8px; }
+.profile-hint--inline { margin: 0; display: inline; font-weight: 400; }
 .profile-salida-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 18px;
+  grid-template-columns: 1fr;
+  gap: 14px;
   margin-top: 4px;
 }
 .profile-subblock {
@@ -2624,6 +2670,17 @@ select.profile-input.profile-select {
   border-radius: var(--radius-sm);
   border: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
   background: color-mix(in oklab, var(--bg) 40%, var(--surface));
+}
+.profile-block--work .profile-subblock,
+.profile-block--sign .profile-subblock {
+  margin-bottom: 10px;
+}
+.profile-block--work .profile-subblock:last-child,
+.profile-block--sign .profile-subblock:last-child {
+  margin-bottom: 0;
+}
+.profile-block--work #profile-salida-section {
+  margin-top: 4px;
 }
 .profile-subblock-title {
   margin: 0 0 4px;
