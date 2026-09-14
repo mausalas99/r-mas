@@ -1,12 +1,15 @@
 import { sanitizeOpsForCloudPush } from './cloud-op-slim.mjs';
-import { chunkCloudOps, recordRejectedCloudOps } from './cloud-push-direct.mjs';
+import { drainCloudOps, recordRejectedCloudOps } from './cloud-push-direct.mjs';
 import { resolveCloudPushMutationId } from './push-mutation-id.mjs';
 import { cloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
-import { isCloudTransientServerError } from './cloud-sync-timing.mjs';
 import {
   noteCloudLabSidecarsFromPullResult,
   noteCloudLabSidecarOpsSent,
 } from './cloud-lab-sidecar-index.mjs';
+import {
+  noteCloudMedRecetaFromPullResult,
+  noteCloudMedRecetaOpsSent,
+} from './cloud-med-receta-index.mjs';
 import { drainSyncedLabSidecarsFromOutbox, splitLabBackfillInOutbox } from './outbox-lab.mjs';
 import { noteCloudOpsAttempted } from './cloud-sync-echo-guard.mjs';
 import {
@@ -19,18 +22,6 @@ import {
 
 /** Concurrent Nube writers; Worker returns 409 revision_stale / conflict. */
 const PUSH_STALE_RETRIES = 3;
-/** Transient 502/503/504 from saturated Worker / D1. */
-const PUSH_TRANSIENT_RETRIES = 3;
-const PUSH_TRANSIENT_DELAY_MS = 2000;
-
-/**
- * @param {number} ms
- */
-function delayMs(ms) {
-  return new Promise(function (resolve) {
-    setTimeout(resolve, ms);
-  });
-}
 
 /**
  * @param {unknown} err
@@ -145,6 +136,7 @@ async function finalizePull(pctx, result, since, opsCount, labIngress) {
   const { applyPullResult, outbox, outboxSync } = pctx;
   if (applyPullResult) await applyPullResult(result);
   noteCloudLabSidecarsFromPullResult(result);
+  noteCloudMedRecetaFromPullResult(result);
   drainSyncedLabSidecarsFromOutbox(outbox);
   outboxSync.refreshIdleStatus();
   noteCloudSyncPull();
@@ -186,35 +178,38 @@ function createPullPushOps(ctx) {
 }
 
 /**
+ * Push one already-sized chunk. Stale/conflict (409) retries here, right after
+ * a fresh pull — a backoff-class error (503/D1-overload/429) is NOT retried
+ * here; it throws back to drainCloudOps, which re-cuts the whole drain smaller
+ * via the AIMD pacer instead of hammering the same oversized chunk.
+ *
  * @param {object} ctx
  * @param {string} roomId
  * @param {{ clientMutationId: string, baseRevision?: number, enqueuedAt?: number }} item
- * @param {unknown[]} ops
- * @param {number} [chunkIndex]
+ * @param {unknown[]} chunk raw (pre-sanitize) ops for this chunk
+ * @param {number} attempt running attempt count across the whole drain
  */
-async function pushSingleWithStaleRetry(ctx, roomId, item, ops, chunkIndex) {
+async function pushSingleWithStaleRetry(ctx, roomId, item, chunk, attempt) {
   const { api, getRevision, pullLatest } = ctx;
   if (!api || typeof api.push !== 'function') {
     throw new Error('Cliente Nube no configurado');
   }
-  const suffix = chunkIndex != null ? `:c${chunkIndex}` : '';
+  const sanitized = sanitizeOpsForCloudPush(chunk);
+  if (!sanitized.ops.length) return { sanitized, pushResult: null };
   let lastErr;
-  let transientAttempts = 0;
-  for (let attempt = 0; attempt <= PUSH_STALE_RETRIES; attempt++) {
+  for (let staleAttempt = 0; staleAttempt <= PUSH_STALE_RETRIES; staleAttempt += 1) {
     try {
-      return await api.push(roomId, {
-        clientMutationId: `${resolveCloudPushMutationId(item)}${suffix}`,
-        ops,
+      const pushResult = await api.push(roomId, {
+        // Unique per drain attempt — a chunk re-cut smaller after congestion
+        // never collides with the Worker's cached response for an earlier one.
+        clientMutationId: `${resolveCloudPushMutationId(item)}:a${attempt}:${Date.now()}`,
+        ops: sanitized.ops,
         baseRevision: getRevision() ?? item.baseRevision ?? 0,
       });
+      return { sanitized, pushResult };
     } catch (err) {
       lastErr = err;
-      if (isCloudTransientServerError(err) && transientAttempts < PUSH_TRANSIENT_RETRIES) {
-        transientAttempts += 1;
-        await delayMs(PUSH_TRANSIENT_DELAY_MS * transientAttempts);
-        continue;
-      }
-      if (!isCloudRevisionStaleError(err) || attempt >= PUSH_STALE_RETRIES) throw err;
+      if (!isCloudRevisionStaleError(err) || staleAttempt >= PUSH_STALE_RETRIES) throw err;
       await pullLatest();
     }
   }
@@ -222,36 +217,46 @@ async function pushSingleWithStaleRetry(ctx, roomId, item, ops, chunkIndex) {
 }
 
 /**
+ * Drain one outbox row's ops through the Worker, AIMD-paced. Each chunk is
+ * removed from the outbox as soon as it's acked (or dropped by the
+ * sanitizer) — a later chunk's failure leaves only the unsent ops behind,
+ * not the whole row.
+ *
  * @param {object} ctx
  * @param {string} roomId
  * @param {{ clientMutationId: string, baseRevision?: number, enqueuedAt?: number }} item
- * @param {unknown[]} ops
+ * @param {unknown[]} ops raw ops for the whole row
+ * @param {(sent: number, total: number) => void} [onProgress]
  */
-async function pushWithStaleRetry(ctx, roomId, item, ops) {
-  const { applyServerRevision, pullLatest } = ctx;
-  const chunks = chunkCloudOps(ops);
-  if (!chunks.length) return null;
+async function pushWithStaleRetry(ctx, roomId, item, ops, onProgress) {
+  const { applyServerRevision, pullLatest, outbox } = ctx;
+  if (!Array.isArray(ops) || !ops.length) return null;
   let lastResult = null;
-  for (let i = 0; i < chunks.length; i += 1) {
-    const sanitized = sanitizeOpsForCloudPush(chunks[i]);
-    if (!sanitized.ops.length) continue;
-    const chunkItem = {
+  let totalDropped = 0;
+  await drainCloudOps({
+    ops,
+    sendChunk: (chunk, attempt) => pushSingleWithStaleRetry(ctx, roomId, item, chunk, attempt),
+    onProgress,
+    async onChunkAcked(chunk, { sanitized, pushResult }) {
+      totalDropped += sanitized.dropped;
+      // Removed whether it was actually sent or fully dropped by the
+      // sanitizer (echoed/poison ops must not come back forever).
+      outbox.removeOps(item.clientMutationId, chunk);
+      if (!pushResult) return;
+      noteCloudOpsAttempted(sanitized.ops);
+      recordRejectedCloudOps(pushResult);
+      if (pushResult.revision != null) applyServerRevision(Number(pushResult.revision));
+      noteCloudLabSidecarOpsSent(chunk, sanitized.ops);
+      noteCloudMedRecetaOpsSent(sanitized.ops);
+      lastResult = pushResult;
+      if (pushResult.needPull) await pullLatest();
+    },
+  });
+  if (totalDropped > 0) {
+    recordCloudSyncTrace('push_drop', {
       clientMutationId: item.clientMutationId,
-      enqueuedAt: (item.enqueuedAt || Date.now()) + i,
-      baseRevision: item.baseRevision,
-    };
-    lastResult = await pushSingleWithStaleRetry(
-      ctx,
-      roomId,
-      chunkItem,
-      sanitized.ops,
-      chunks.length > 1 ? i : undefined,
-    );
-    noteCloudOpsAttempted(sanitized.ops);
-    recordRejectedCloudOps(lastResult);
-    if (lastResult?.revision != null) applyServerRevision(Number(lastResult.revision));
-    noteCloudLabSidecarOpsSent(chunks[i], sanitized.ops);
-    if (lastResult?.needPull) await pullLatest();
+      dropped: totalDropped,
+    });
   }
   return lastResult;
 }
@@ -260,31 +265,23 @@ async function pushWithStaleRetry(ctx, roomId, item, ops) {
  * @param {object} ctx
  * @param {string} roomId
  * @param {{ clientMutationId: string, baseRevision?: number, enqueuedAt?: number, ops: unknown[] }} item
+ * @param {(sent: number, total: number) => void} [onProgress]
  * @returns {Promise<unknown>} error, if the item is still pending after the attempt
  */
-async function flushOutboxItem(ctx, roomId, item) {
+async function flushOutboxItem(ctx, roomId, item, onProgress) {
   const { outbox, pace, applyServerRevision } = ctx;
-  const sanitized = sanitizeOpsForCloudPush(item.ops);
-  if (sanitized.dropped > 0) {
-    recordCloudSyncTrace('push_drop', {
-      clientMutationId: item.clientMutationId,
-      dropped: sanitized.dropped,
-    });
-  }
-  if (!sanitized.ops.length) {
-    outbox.remove(item.clientMutationId);
-    return null;
-  }
   try {
-    const result = await pushWithStaleRetry(ctx, roomId, item, sanitized.ops);
-    outbox.remove(item.clientMutationId);
-    noteCloudLabSidecarOpsSent(item.ops, sanitized.ops);
+    const result = await pushWithStaleRetry(ctx, roomId, item, item.ops, onProgress);
+    // Matches the row snapshot taken at the start of this flush — ops merged
+    // into the same clientMutationId while this drain was in flight have a
+    // different (path, updatedAt) and are not touched, so they survive.
+    outbox.removeOps(item.clientMutationId, item.ops);
     pace.markLocalWrite();
     if (result?.revision != null) applyServerRevision(Number(result.revision));
     noteCloudSyncPush();
     recordCloudSyncTrace('push', {
       clientMutationId: item.clientMutationId,
-      opCount: sanitized.ops.length,
+      opCount: Array.isArray(item.ops) ? item.ops.length : 0,
       revision: result?.revision != null ? Number(result.revision) : null,
     });
     return null;
@@ -315,11 +312,20 @@ async function runFlushOutbox(ctx) {
   splitLabBackfillInOutbox(outbox);
   const pending = outbox.list();
   if (pending.length === 0) return;
+  const total = pending.reduce(
+    (sum, row) => sum + (Array.isArray(row?.ops) ? row.ops.length : 0),
+    0
+  );
   setStatus('syncing');
   /** One stuck row (e.g. one patient's oversized batch) must not block every other row. */
   let firstErr = null;
+  let doneOps = 0;
   for (const item of pending) {
-    const err = await flushOutboxItem(ctx, roomId, item);
+    const baseDone = doneOps;
+    const err = await flushOutboxItem(ctx, roomId, item, (sent) => {
+      setStatus('syncing', `Enviando ${baseDone + sent}/${total} cambios`);
+    });
+    doneOps = baseDone + (Array.isArray(item.ops) ? item.ops.length : 0);
     if (err && !firstErr) firstErr = err;
   }
   if (firstErr) {

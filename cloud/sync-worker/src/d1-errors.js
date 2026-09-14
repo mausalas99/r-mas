@@ -1,3 +1,20 @@
+/** Same class of message the client treats as transient (cloud-sync-timing.mjs). */
+const D1_OVERLOAD_MESSAGE_RE = /overloaded|queued for too long|SQLITE_BUSY/i;
+
+/**
+ * Detect D1 overload ("D1 DB is overloaded", queue timeouts, SQLITE_BUSY) —
+ * distinct from a real bug: the caller should retry, not surface a 500.
+ * @param {unknown} err
+ */
+export function isD1OverloadError(err) {
+  const msg = String(
+    err && typeof err === 'object' && 'message' in err
+      ? /** @type {{ message?: unknown }} */ (err).message
+      : err || ''
+  );
+  return D1_OVERLOAD_MESSAGE_RE.test(msg);
+}
+
 /**
  * Detect D1 / SQLite unique / primary-key constraint failures.
  * @param {unknown} err

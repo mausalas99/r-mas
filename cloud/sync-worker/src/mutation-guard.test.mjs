@@ -20,7 +20,7 @@ describe('mutation-guard', () => {
     }
     assert.throws(
       () => checkMutationPushRateLimit(roomId),
-      (err) => err instanceof SyncError && err.code === 'rate_limited'
+      (err) => err instanceof SyncError && err.code === 'rate_limited' && err.retryAfterSeconds === 10
     );
     assert.equal(syncErrorStatus(new SyncError('rate_limited', 'x')), 429);
   });

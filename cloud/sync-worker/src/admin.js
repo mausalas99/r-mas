@@ -156,6 +156,15 @@ export function currentRoomsBySala(rows) {
  * public internet. The wrapped DEK travels alongside each room's state —
  * unwrapping it still happens on the client, which is the only side that
  * ever holds a room's join code.
+ *
+ * `loadRoomState(..., { skipLabShards: true })`: the Red tab only ever reads
+ * `entries`/`entityVersions`/`clinicalOps` off `state` (see
+ * `panel-admin-html.mjs`'s `networkCensusRowFromEntry`), never
+ * `state.labSidecars` — so the two lab-shard tables (`room_state_labs`,
+ * `room_state_lab_sets`, up to hundreds of rows per room for an active
+ * patient list) are skipped entirely: no D1 read, no per-row AES-GCM decrypt.
+ * That decrypt loop, not the 8-salas-sequential loop below, was the real
+ * cost of this endpoint under real hospital data.
  * @param {{ WORKER_DATA_KEY?: string }} env
  * @param {import('@cloudflare/workers-types').D1Database} db
  */
@@ -168,15 +177,15 @@ export async function handleNetworkCensus(env, db) {
     .all();
   const bySala = currentRoomsBySala(results ?? []);
 
-  // One sala at a time, not Promise.all. loadRoomState is up to 3 D1 queries
-  // per room; 8 rooms in parallel fires up to 24 D1 queries in one burst from
-  // a single request, which measurably contributes to D1's own "DB is
-  // overloaded, requests queued for too long" errors under real concurrent
-  // hospital traffic (seen live via `wrangler tail` 2026-09-08). This is
-  // Worker-to-D1, not a network round trip to the client, so going sequential
-  // costs a few tens of ms — trivial next to the 24-round-trips-over-the-
-  // internet problem this endpoint replaced, and it stops one admin click
-  // from being the spike that tips D1 over.
+  // One sala at a time, not Promise.all. Even with skipLabShards this is
+  // still a D1 read; 8 rooms in parallel from a single request measurably
+  // contributes to D1's own "DB is overloaded, requests queued for too long"
+  // errors under real concurrent hospital traffic (seen live via
+  // `wrangler tail` 2026-09-08). This is Worker-to-D1, not a network round
+  // trip to the client, so going sequential costs a few ms per room —
+  // trivial next to the 24-round-trips-over-the-internet problem this
+  // endpoint replaced, and it stops one admin click from being the spike
+  // that tips D1 over.
   const salas = [];
   for (const sala of CLOUD_SALAS) {
     const room = bySala.get(sala);
@@ -185,7 +194,7 @@ export async function handleNetworkCensus(env, db) {
       continue;
     }
     try {
-      const { state } = await loadRoomState(env, db, room.id);
+      const { state } = await loadRoomState(env, db, room.id, { skipLabShards: true });
       salas.push({
         sala,
         roomId: room.id,

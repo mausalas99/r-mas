@@ -18,6 +18,7 @@ import {
   ensureRoomEncryptionBackfill,
 } from './panel-conexion-handlers.mjs';
 import { mountCloudMobileInviteInHost } from './panel-mobile-invite.mjs';
+import { mountInternoQrPanelInHost } from './panel-interno-qr.mjs';
 import { refreshCloudSyncDiagnostics } from './panel-cloud-diagnostics.mjs';
 import { hydrateRoomDeksFromPersistence } from './room-dek.mjs';
 import { getStoredRoomDeks } from './settings.mjs';
@@ -37,6 +38,12 @@ function buildConexionGoView(section, deps, ui) {
       onMobile() {
         mountCloudMobileInviteInHost(
           section.querySelector('[data-cloud-mobile-invite-host]'),
+          { runtime: deps.runtime }
+        );
+      },
+      onInternoQr() {
+        mountInternoQrPanelInHost(
+          section.querySelector('[data-cloud-interno-qr-host]'),
           { runtime: deps.runtime }
         );
       },

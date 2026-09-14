@@ -46,3 +46,18 @@ test('formatPendientesForCenso — ignora completados', () => {
     []
   );
 });
+
+test('formatPendientesForCenso — all:true devuelve todos los niveles sin tope (vista previa)', () => {
+  var lines = formatPendientesForCenso(
+    [
+      { text: 'Alta 1', completed: false, priority: 'alta' },
+      { text: 'Alta 2', completed: false, priority: 'alta' },
+      { text: 'Alta 3', completed: false, priority: 'alta' },
+      { text: 'Alta 4', completed: false, priority: 'alta' },
+      { text: 'Media 1', completed: false, priority: 'media' },
+      { text: 'Baja 1', completed: false, priority: 'baja' },
+    ],
+    { all: true }
+  );
+  assert.deepEqual(lines, ['Alta 1', 'Alta 2', 'Alta 3', 'Alta 4', 'Media 1', 'Baja 1']);
+});

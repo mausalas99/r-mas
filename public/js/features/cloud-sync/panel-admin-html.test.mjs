@@ -9,9 +9,17 @@ import {
   redCensusHtml,
   applyNetworkCensusFilters,
   listSelectedNetworkPatients,
+  listVisibleNetworkRowsWithRegistro,
+  markNetworkRowLabsVerified,
   setSelectAllVisibleNetwork,
   peligroHtml,
 } from './panel-admin-html.mjs';
+
+function isoDaysAgo(n) {
+  return new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString();
+}
+
+const COMPLETE_ADMISSION_FIELDS = { cama: '3', cuarto: '412', servicio: 'Área A' };
 
 describe('buildAdminShellHtml', () => {
   it('uses tabs instead of details accordion', () => {
@@ -79,7 +87,9 @@ describe('redCensusHtml', () => {
     assert.match(html, /data-network-filter="sala"/);
     assert.match(html, /data-network-filter="team"/);
     assert.match(html, /data-network-filter="activity"/);
+    assert.match(html, /data-network-filter="labs"/);
     assert.match(html, /data-sala="Área A\/Pensionistas"/);
+    assert.match(html, /data-no-labs="1"/);
   });
 
   it('marks archived patients and exposes an archive/restore action carrying the room id', () => {
@@ -99,7 +109,7 @@ describe('redCensusHtml', () => {
     assert.match(html, />Restaurar</);
   });
 
-  it('only offers permanent delete for already-archived patients, scoped to that room', () => {
+  it('offers permanent delete for any patient, active or archived, scoped to that room', () => {
     const archivedHtml = redCensusHtml([
       {
         sala: 'Eme',
@@ -121,7 +131,46 @@ describe('redCensusHtml', () => {
         entries: [{ id: 'p3', fields: { nombre: 'RUIZ' } }],
       },
     ]);
-    assert.doesNotMatch(activeHtml, /data-admin-action="delete-network-patient"/);
+    assert.match(activeHtml, /data-admin-action="delete-network-patient"/);
+  });
+
+  it('shows who last touched a patient and when, resolving the actor id against the clinical roster', () => {
+    const html = redCensusHtml(
+      [
+        {
+          sala: 'Eme',
+          roomId: 'r-eme',
+          code: 'EEEE',
+          entries: [{ id: 'p4', fields: { nombre: 'TORRES' } }],
+          entityVersions: {
+            'entries/p4': { updatedAt: '2026-09-01T00:00:00.000Z', actorId: 'u1' },
+            'entries/p4/fields': { updatedAt: '2026-09-10T00:00:00.000Z', actorId: 'u2' },
+          },
+        },
+      ],
+      [{ user_id: 'u2', clinical_name: 'Dra. Emily', username: 'emily' }]
+    );
+    assert.match(html, /Dra\. Emily/);
+    assert.doesNotMatch(html, />u2</);
+  });
+
+  it('falls back to the raw actor id when the roster has no match, and to "Sin datos" with no activity', () => {
+    const html = redCensusHtml([
+      {
+        sala: 'Eme',
+        roomId: 'r-eme',
+        code: 'EEEE',
+        entries: [
+          { id: 'p5', fields: { nombre: 'DIAZ' } },
+          { id: 'p6', fields: { nombre: 'LUNA' } },
+        ],
+        entityVersions: {
+          'entries/p5': { updatedAt: '2026-09-10T00:00:00.000Z', actorId: 'ghost-id' },
+        },
+      },
+    ]);
+    assert.match(html, /ghost-id/);
+    assert.match(html, /Sin datos/);
   });
 
   it('resolves the team filter option from clinicalOps team assignments', () => {
@@ -144,6 +193,78 @@ describe('redCensusHtml', () => {
   it('shows an empty state when no patients are visible anywhere', () => {
     const html = redCensusHtml([]);
     assert.match(html, /Sin pacientes en ninguna área/);
+  });
+});
+
+describe('redCensusHtml stale-labs highlight (probable discharge)', () => {
+  it('flags a complete-admission patient whose last lab set write is more than 7 days old', () => {
+    const html = redCensusHtml([
+      {
+        sala: 'Sala 1',
+        roomId: 'r1',
+        code: 'CCCC',
+        entries: [{ id: 'p1', fields: { nombre: 'PEREZ', ...COMPLETE_ADMISSION_FIELDS } }],
+        entityVersions: {
+          'labSidecars/p1/s1': { updatedAt: isoDaysAgo(10), actorId: 'u1' },
+        },
+      },
+    ]);
+    assert.match(html, /cloud-sync-admin-row--stale-labs/);
+    assert.match(html, /cloud-sync-admin-stale-labs">hace 10 d/);
+  });
+
+  it('does not flag a patient with a lab set write in the last 7 days', () => {
+    const html = redCensusHtml([
+      {
+        sala: 'Sala 1',
+        roomId: 'r1',
+        code: 'CCCC',
+        entries: [{ id: 'p1', fields: { nombre: 'PEREZ', ...COMPLETE_ADMISSION_FIELDS } }],
+        entityVersions: {
+          'labSidecars/p1/s1': { updatedAt: isoDaysAgo(2), actorId: 'u1' },
+        },
+      },
+    ]);
+    assert.doesNotMatch(html, /cloud-sync-admin-row--stale-labs/);
+    assert.doesNotMatch(html, /cloud-sync-admin-stale-labs/);
+  });
+
+  it('shows "Nunca" and flags a complete-admission patient with no lab entity-version key at all', () => {
+    const html = redCensusHtml([
+      {
+        sala: 'Sala 1',
+        roomId: 'r1',
+        code: 'CCCC',
+        entries: [{ id: 'p1', fields: { nombre: 'PEREZ', ...COMPLETE_ADMISSION_FIELDS } }],
+        entityVersions: { 'entries/p1/fields': { updatedAt: isoDaysAgo(1), actorId: 'u1' } },
+      },
+    ]);
+    assert.match(html, /cloud-sync-admin-row--stale-labs/);
+    assert.match(html, /cloud-sync-admin-stale-labs">Nunca</);
+  });
+
+  it('flags an incomplete admission (no cama/cuarto/servicio yet) with no lab activity — age alone decides', () => {
+    const html = redCensusHtml([
+      {
+        sala: 'Sala 1',
+        roomId: 'r1',
+        code: 'CCCC',
+        entries: [{ id: 'p1', fields: { nombre: 'PEREZ' } }],
+      },
+    ]);
+    assert.match(html, /cloud-sync-admin-row--stale-labs/);
+  });
+
+  it('flags an archived patient with no lab activity — age alone decides', () => {
+    const html = redCensusHtml([
+      {
+        sala: 'Sala 1',
+        roomId: 'r1',
+        code: 'CCCC',
+        entries: [{ id: 'p1', fields: { nombre: 'PEREZ', archived: true, ...COMPLETE_ADMISSION_FIELDS } }],
+      },
+    ]);
+    assert.match(html, /cloud-sync-admin-row--stale-labs/);
   });
 });
 
@@ -199,6 +320,160 @@ describe('applyNetworkCensusFilters', () => {
     const rows = root.querySelectorAll('tbody tr');
     assert.equal(rows[0].hidden, false);
     assert.equal(rows[1].hidden, true);
+    document.body.innerHTML = '';
+  });
+
+  it('the labs filter reads the stale-labs class, same signal as the row highlight', () => {
+    if (typeof document === 'undefined') {
+      assert.ok(true);
+      return;
+    }
+    document.body.innerHTML =
+      '<div id="root"><div data-admin-red>' +
+      '<select data-network-filter="sala"><option value="" selected>x</option></select>' +
+      '<select data-network-filter="team"><option value="" selected>x</option></select>' +
+      '<select data-network-filter="activity"><option value="" selected>x</option></select>' +
+      '<select data-network-filter="labs"><option value="" selected>x</option>' +
+      '<option value="stale">s</option><option value="fresh">f</option></select>' +
+      '<table><tbody>' +
+      '<tr data-sala="Eme" data-team-id="__sin_equipo__" data-archived="0" class="cloud-sync-admin-row--stale-labs"><td>A</td></tr>' +
+      '<tr data-sala="Eme" data-team-id="__sin_equipo__" data-archived="0"><td>B</td></tr>' +
+      '</tbody></table></div></div>';
+    const root = /** @type {HTMLElement} */ (document.getElementById('root'));
+    const labsSelect = root.querySelector('[data-network-filter="labs"]');
+    labsSelect.value = 'stale';
+    applyNetworkCensusFilters(root);
+    const rows = root.querySelectorAll('tbody tr');
+    assert.equal(rows[0].hidden, false);
+    assert.equal(rows[1].hidden, true);
+
+    labsSelect.value = 'fresh';
+    applyNetworkCensusFilters(root);
+    assert.equal(rows[0].hidden, true);
+    assert.equal(rows[1].hidden, false);
+    document.body.innerHTML = '';
+  });
+});
+
+describe('verify-red-labs helpers', () => {
+  it('listVisibleNetworkRowsWithRegistro skips hidden rows and rows with no registro', () => {
+    if (typeof document === 'undefined') {
+      assert.ok(true);
+      return;
+    }
+    document.body.innerHTML =
+      '<div id="root"><div data-admin-red><table><tbody>' +
+      '<tr><td><input data-network-select data-registro="REG-1" /></td></tr>' +
+      '<tr hidden><td><input data-network-select data-registro="REG-2" /></td></tr>' +
+      '<tr><td><input data-network-select data-registro="" /></td></tr>' +
+      '</tbody></table></div></div>';
+    const root = /** @type {HTMLElement} */ (document.getElementById('root'));
+    const rows = listVisibleNetworkRowsWithRegistro(root);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].registro, 'REG-1');
+    document.body.innerHTML = '';
+  });
+
+  it('markNetworkRowLabsVerified updates data-no-labs and the labs cell', () => {
+    if (typeof document === 'undefined') {
+      assert.ok(true);
+      return;
+    }
+    const html = redCensusHtml([
+      {
+        sala: 'Eme',
+        roomId: 'r-eme',
+        code: 'EEEE',
+        entries: [
+          {
+            id: 'p1',
+            fields: { nombre: 'PEREZ', registro: 'REG-1', cama: '1', cuarto: '1', servicio: 'MI' },
+          },
+        ],
+      },
+    ]);
+    document.body.innerHTML = '<div id="root"><div data-admin-red>' + html + '</div></div>';
+    const root = /** @type {HTMLElement} */ (document.getElementById('root'));
+    const tr = root.querySelector('tbody tr');
+    assert.equal(tr.classList.contains('cloud-sync-admin-row--stale-labs'), true);
+
+    markNetworkRowLabsVerified(tr, true);
+    assert.equal(tr.getAttribute('data-no-labs'), '0');
+    assert.match(tr.innerHTML, /Tiene labs \(verificado\)/);
+    assert.equal(tr.classList.contains('cloud-sync-admin-row--stale-labs'), false);
+
+    markNetworkRowLabsVerified(tr, true, '2026-09-01 10:00');
+    assert.match(tr.innerHTML, /\(verificado\)/);
+    assert.doesNotMatch(tr.innerHTML, /Tiene labs \(verificado\)/);
+
+    markNetworkRowLabsVerified(tr, false);
+    assert.equal(tr.getAttribute('data-no-labs'), '1');
+    assert.match(tr.innerHTML, /Sin labs \(verificado\)/);
+    assert.equal(tr.classList.contains('cloud-sync-admin-row--stale-labs'), true);
+    document.body.innerHTML = '';
+  });
+
+  it('keeps the highlight for a verified patient whose last lab is over 6 days old', () => {
+    if (typeof document === 'undefined') {
+      assert.ok(true);
+      return;
+    }
+    const html = redCensusHtml([
+      {
+        sala: 'Eme',
+        roomId: 'r-eme',
+        code: 'EEEE',
+        entries: [
+          {
+            id: 'p1',
+            fields: { nombre: 'PEREZ', registro: 'REG-1', cama: '1', cuarto: '1', servicio: 'MI' },
+          },
+        ],
+      },
+    ]);
+    document.body.innerHTML = '<div id="root"><div data-admin-red>' + html + '</div></div>';
+    const root = /** @type {HTMLElement} */ (document.getElementById('root'));
+    const tr = root.querySelector('tbody tr');
+    const toFecha = (d) => d.toISOString().slice(0, 16).replace('T', ' ');
+
+    markNetworkRowLabsVerified(tr, true, toFecha(new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)));
+    assert.equal(tr.classList.contains('cloud-sync-admin-row--stale-labs'), true);
+
+    markNetworkRowLabsVerified(tr, true, toFecha(new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)));
+    assert.equal(tr.classList.contains('cloud-sync-admin-row--stale-labs'), false);
+    document.body.innerHTML = '';
+  });
+
+  it('still highlights a verified-no-labs row even if the patient is archived', () => {
+    if (typeof document === 'undefined') {
+      assert.ok(true);
+      return;
+    }
+    const html = redCensusHtml([
+      {
+        sala: 'Eme',
+        roomId: 'r-eme',
+        code: 'EEEE',
+        entries: [
+          {
+            id: 'p1',
+            fields: {
+              nombre: 'PEREZ',
+              registro: 'REG-1',
+              cama: '1',
+              cuarto: '1',
+              servicio: 'MI',
+              archived: true,
+            },
+          },
+        ],
+      },
+    ]);
+    document.body.innerHTML = '<div id="root"><div data-admin-red>' + html + '</div></div>';
+    const root = /** @type {HTMLElement} */ (document.getElementById('root'));
+    const tr = root.querySelector('tbody tr');
+    markNetworkRowLabsVerified(tr, false);
+    assert.equal(tr.classList.contains('cloud-sync-admin-row--stale-labs'), true);
     document.body.innerHTML = '';
   });
 });

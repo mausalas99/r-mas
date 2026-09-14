@@ -4,6 +4,7 @@ import { normalizeUsername } from '../../clinical-username.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { advancedUrlFieldsHtml } from './panel-conexion-html.mjs';
 import { canAccessCloudAdmin } from './panel-admin.mjs';
+import { canManageInternoQr } from '../../clinical-privileges.mjs';
 import { setClinicalTeamsEmbedHost } from '../clinical-panel-host.mjs';
 import { stopCloudSyncDiagnosticsLiveRefresh } from './panel-cloud-diagnostics.mjs';
 import { listPendingRemoteDeletes, pendingRemoteDeletesHtml } from './remote-patient-delete-confirm.mjs';
@@ -155,9 +156,13 @@ export function connectedViewsHtml({
     '<span class="cloud-sync-options-entry-meta">Equipo, cuenta y administración</span></span>' +
     '<span class="cloud-sync-options-row-chevron" aria-hidden="true">›</span></button></div>';
 
+  const showInternoQr = canManageInternoQr(clinicalSessionContext.user);
   let guardiaRows =
     optionsRow('iPad / R+ Móvil', 'QR y enlace permanente', 'mobile') +
-    optionsRow('Equipo', '@usuario, equipos y sala', 'equipo');
+    optionsRow('Equipo', '@usuario, equipos y sala', 'equipo') +
+    (showInternoQr
+      ? optionsRow('QR Internos', 'Vitales desde el celular por sala', 'interno-qr')
+      : '');
   let cuentaRows = optionsRow('Cuenta', 'Recuperación y sesión', 'cuenta');
   if (showAdmin) {
     cuentaRows += optionsRow('Administración', 'Usuarios, salas y clave admin', 'admin');
@@ -189,6 +194,13 @@ export function connectedViewsHtml({
       'iPad / R+ Móvil',
       '<div class="cloud-sync-mobile-invite-host" data-cloud-mobile-invite-host></div>'
     ) +
+    (showInternoQr
+      ? viewBlock(
+          'interno-qr',
+          'QR Internos',
+          '<div class="cloud-sync-interno-qr-host" data-cloud-interno-qr-host></div>'
+        )
+      : '') +
     viewBlock('cuenta', 'Cuenta', cuentaBodyHtml(cloudUser)) +
     (showAdmin ? viewBlock('admin', 'Administración', adminHost) : '') +
     (pendingDeletes.length
@@ -266,6 +278,7 @@ const CONEXION_MODAL_TITLES = {
   status: 'Conexión guardia',
   options: 'Opciones',
   mobile: 'iPad / R+ Móvil',
+  'interno-qr': 'QR Internos',
   equipo: 'Equipo',
   ops: 'Operaciones',
   admin: 'Administración',
@@ -278,6 +291,7 @@ const CONEXION_MODAL_TITLES = {
 const CONEXION_MODAL_BACK_LABEL = {
   options: 'Conexión',
   mobile: 'Opciones',
+  'interno-qr': 'Opciones',
   equipo: 'Opciones',
   ops: 'Opciones',
   admin: 'Opciones',
@@ -315,6 +329,7 @@ function syncConexionModalChrome(view) {
 const CONEXION_VIEW_HOOK = {
   admin: 'onAdmin',
   mobile: 'onMobile',
+  'interno-qr': 'onInternoQr',
   nube: 'onNube',
   equipo: 'onEquipo',
 };
@@ -335,7 +350,7 @@ function invokeConexionViewHook(next, hooks) {
 /**
  * @param {HTMLElement} section
  * @param {string} view
- * @param {{ onAdmin?: () => void | Promise<void>, onMobile?: () => void | Promise<void>, onNube?: () => void | Promise<void>, onEquipo?: () => void | Promise<void>, onStatusHome?: () => void }} [hooks]
+ * @param {{ onAdmin?: () => void | Promise<void>, onMobile?: () => void | Promise<void>, onInternoQr?: () => void | Promise<void>, onNube?: () => void | Promise<void>, onEquipo?: () => void | Promise<void>, onStatusHome?: () => void }} [hooks]
  */
 export function applyConexionView(section, view, hooks) {
   let next = String(view || 'status').trim() || 'status';

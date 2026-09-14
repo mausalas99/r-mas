@@ -5,6 +5,7 @@ import {
   getSalaTourSteps,
   getInterconsultaTourSteps,
   getQuickRouteTourSteps,
+  getGuardiaV7TourSteps,
   stepRequiresUserAction,
 } from './tour-targets.mjs';
 
@@ -137,12 +138,9 @@ test('getTourTarget para map_add_patient y map_incomplete', () => {
   assert.match(inc.selector, /m-cuarto/);
 });
 
-test('getTourTarget gv7 trust strip y fin turno en guardia', () => {
-  const trust = getTourTarget('gv7_trust_strip', 'guardia-v7');
-  assert.match(trust.selector, /guardia-trust-strip/);
-  assert.equal(trust.openGuardiaDensity, true);
-  const fin = getTourTarget('gv7_fin_turno', 'guardia-v7');
-  assert.match(fin.selector, /guardia-phase-bar|finalizar-turno/);
+test('getTourTarget gv7 no ofrece pasos del modo Entrega retirado', () => {
+  assert.equal(getTourTarget('gv7_trust_strip', 'guardia-v7').selector, null);
+  assert.equal(getTourTarget('gv7_fin_turno', 'guardia-v7').selector, null);
   const rejoin = getTourTarget('gv7_rotacion_rejoin', 'guardia-v7');
   assert.match(rejoin.selector, /equipo|rotation/);
   assert.equal(rejoin.openConnection, true);
@@ -210,8 +208,13 @@ test('getTourTarget for sala_expediente_tabs apunta a barra de pestañas', () =>
   assert.equal(t.selector, '.inner-tab-bar');
 });
 
-test('every sala, IC and quick-route step has a target selector', () => {
-  const ids = [...getSalaTourSteps(), ...getInterconsultaTourSteps(), ...getQuickRouteTourSteps()];
+test('every sala, IC, quick-route and guardia-v7 step has a target selector', () => {
+  const ids = [
+    ...getSalaTourSteps(),
+    ...getInterconsultaTourSteps(),
+    ...getQuickRouteTourSteps(),
+    ...getGuardiaV7TourSteps(),
+  ];
   for (const id of new Set(ids)) {
     const t = getTourTarget(id, 'sala');
     assert.ok(t.selector, `missing selector for ${id}`);

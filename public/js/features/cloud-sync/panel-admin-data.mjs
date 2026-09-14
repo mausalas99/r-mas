@@ -1,6 +1,7 @@
 import { adminTableHtml } from './panel-admin-helpers.mjs';
 import {
   adminErrorHtml,
+  applyCachedLabVerifications,
   mutationsListHtml,
   redCensusHtml,
   resumenHtml,
@@ -10,6 +11,11 @@ import {
   userActionsHtml,
 } from './panel-admin-html.mjs';
 import { fetchNetworkCensus } from './network-census.mjs';
+import { autoVerifyStaleNetworkLabs } from './panel-admin-labs-verify.mjs';
+import {
+  clinicalSessionContext,
+  getClinicalScopeContextForEvaluate,
+} from '../../clinical-access-runtime.mjs';
 
 /**
  * @param {HTMLElement} root
@@ -76,7 +82,10 @@ export async function loadAdminNetworkCensus(root, deps) {
   el.innerHTML = '<p class="cloud-sync-hint">Recorriendo áreas…</p>';
   try {
     const census = await fetchNetworkCensus(deps.getApi());
-    el.innerHTML = redCensusHtml(census);
+    const scope = clinicalSessionContext.scopeContext || getClinicalScopeContextForEvaluate();
+    el.innerHTML = redCensusHtml(census, scope.users || []);
+    applyCachedLabVerifications(root);
+    void autoVerifyStaleNetworkLabs(root);
   } catch (err) {
     el.innerHTML = adminErrorHtml(err?.data?.message || err?.message || 'No se pudo recorrer la red.');
   }

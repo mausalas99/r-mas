@@ -26,10 +26,12 @@ export function checkMutationPushRateLimit(roomId) {
   }
   entry.count += 1;
   if (entry.count > MUTATION_PUSH_MAX_PER_ROOM) {
-    throw new SyncError(
+    const err = new SyncError(
       'rate_limited',
       'Demasiados envíos a esta sala. Espera un minuto e actualiza R+ si persiste.'
     );
+    err.retryAfterSeconds = 10;
+    throw err;
   }
 }
 

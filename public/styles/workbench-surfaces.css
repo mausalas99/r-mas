@@ -841,12 +841,6 @@ html.ui-density-guardia .entrega-proc-card:hover {
   background: var(--state-hover-bg);
 }
 
-html.ui-density-guardia .guardia-census-count {
-  border: 0;
-  box-shadow: none;
-  background: transparent;
-}
-
 html.ui-density-guardia .btn-guardia-entrega-phase {
   border: var(--border-hairline);
   transition:

@@ -150,6 +150,25 @@ export function applyElevatedPatientFilters(patients, filters, ctx = {}) {
 }
 
 /**
+ * Guardia sala declaration scope: keep a patient only when the team it
+ * resolves to (`p._filterTeamId`, set by `tagPatientsForTeamFilter`) belongs
+ * to the declared sala. No inference from `patient.sala` — that field can be
+ * mis-stamped on elevated devices with a full-ward pull.
+ * @param {object[]} list
+ * @param {string} sala
+ * @param {object[]} teams
+ */
+export function filterPatientsByTeamSala(list, sala, teams) {
+  const target = String(sala || '').trim();
+  if (!target) return list || [];
+  const teamsArr = teams || [];
+  return (list || []).filter((p) => {
+    const team = teamsArr.find((t) => String(t?.team_id || '') === String(p?._filterTeamId || ''));
+    return String(team?.sala || '').trim() === target;
+  });
+}
+
+/**
  * @param {object[]} list
  * @param {{ teams?: object[], assignments?: object[], userId?: string, now?: string }} ctx
  */

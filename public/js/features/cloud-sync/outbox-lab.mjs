@@ -10,6 +10,7 @@ import {
 } from './cloud-lab-sidecar-index.mjs';
 import { CLOUD_LAB_BACKFILL_MUTATION_ID } from './constants.mjs';
 import { chunkCloudOps } from './cloud-push-direct.mjs';
+import { filterCloudOpsNotAttempted } from './cloud-sync-echo-guard.mjs';
 
 /**
  * @param {Array<{ clientMutationId?: string, ops?: unknown[], enqueuedAt?: number, baseRevision?: number }>} rows
@@ -203,13 +204,17 @@ export function drainSyncedLabSidecarsFromOutbox(outbox) {
 }
 
 /**
- * Coalesce + filter lab ops before persisting an outbox row.
+ * Coalesce + filter lab ops, then drop ops already attempted with this exact
+ * (path, updatedAt) before persisting an outbox row — the delta moves from
+ * wire time to enqueue time, so the row itself stays the delta instead of
+ * re-collecting the whole census on every edit.
  * @param {string} clientMutationId
  * @param {unknown[]} ops
  */
 export function prepareOutboxOpsForEnqueue(clientMutationId, ops) {
   let next = coalesceLabSidecarOps(Array.isArray(ops) ? ops : []);
   next = filterCloudLabSidecarOps(next);
+  next = filterCloudOpsNotAttempted(next);
   return next;
 }
 

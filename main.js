@@ -730,6 +730,15 @@ ipcMain.handle('lab-repo-fetch', async (_e, payload) => {
   }
 });
 
+ipcMain.handle('lab-repo-check', async (_e, payload) => {
+  try {
+    const { checkLabRepoHasStudies } = await import('./lib/lab-repo/lab-repo-fetch.mjs');
+    return await checkLabRepoHasStudies(payload);
+  } catch (err) {
+    return { hasStudies: null, error: String(err?.message || err) };
+  }
+});
+
 ipcMain.handle('cloud-sync-fetch', async (_e, payload) => {
   try {
     const { cloudSyncNetFetch } = require('./lib/cloud-sync-ipc-fetch.cjs');

@@ -73,6 +73,7 @@ export async function mountEntregaPendientesUi(opts) {
   mountEntregaHandoffPanel(doc.handoffContext, {
     isCritical: !!opts.isCritical,
     signedRefusal: !!opts.signedRefusal,
+    patientId: opts.patientId,
   });
   mountEntregaVitalsPanel({
     vitalsPlan: doc.vitalsPlan,

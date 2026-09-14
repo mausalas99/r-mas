@@ -23,17 +23,11 @@ const GV7_HELP_ARTICLE = {
   gv7_guardia_chip: 'modo-guardia',
   gv7_guardia_tab: 'modo-guardia',
   gv7_guardia_scope: 'modo-guardia',
-  gv7_trust_strip: 'modo-guardia',
   gv7_guardia_toggle: 'modo-guardia',
   gv7_guardia_exit: 'modo-guardia',
   gv7_censo_r1: 'modo-guardia',
   gv7_censo_r4: 'modo-guardia',
   gv7_censo_sync: 'modo-guardia',
-  gv7_entrega_phase: 'modo-entrega',
-  gv7_entrega_patient: 'modo-entrega',
-  gv7_entrega_roster: 'modo-entrega',
-  gv7_entrega_pendientes: 'modo-entrega',
-  gv7_fin_turno: 'modo-entrega',
   gv7_lan_wifi: 'nube-conexion-turno',
   gv7_lan_directorio: 'nube-conexion-turno',
   gv7_lan_rotacion: 'rotacion-equipos',
@@ -90,27 +84,15 @@ function getGuardiaV7StepBody(stepId) {
   const rank = getClinicalRankForTour();
   const bodies = {
     gv7_guardia_chip:
-      '<p style="margin:0;line-height:1.5;">El botón <strong>Guardia</strong> en la barra superior abre el tablero de turno: censo, entrega y monitoreo. No bloquea el resto de R+.</p>',
+      '<p style="margin:0;line-height:1.5;">El botón <strong>Guardia</strong> en la barra superior abre el tablero de turno: censo y monitoreo. No bloquea el resto de R+.</p>',
     gv7_guardia_tab:
-      '<p style="margin:0;line-height:1.5;">En <strong>Modo Guardia</strong> el centro muestra el panel de guardia: fases del turno, métricas y grilla de pacientes.</p>',
+      '<p style="margin:0;line-height:1.5;">En <strong>Modo Guardia</strong> el centro muestra el panel de guardia: métricas y grilla de pacientes.</p>',
     gv7_guardia_scope:
-      '<p style="margin:0;line-height:1.5;">La <strong>barra de contexto</strong> resume sala y fase del turno. Quién ves en el censo depende de tu rango — lo revisamos en el módulo <strong>Censo y alcance</strong>.</p>',
-    gv7_trust_strip:
-      '<p style="margin:0;line-height:1.5;">La franja <strong>Nube · sala · equipo</strong> confirma de un vistazo que estás sincronizado y en el equipo correcto. Si dice <strong>Sin Nube</strong>, abre ⇄ Conexión antes de confiar en el censo compartido.</p>',
+      '<p style="margin:0;line-height:1.5;">La <strong>barra de contexto</strong> resume sala y equipo. Quién ves en el censo depende de tu rango — lo revisamos en el módulo <strong>Censo y alcance</strong>.</p>',
     gv7_guardia_toggle:
-      '<p style="margin:0;line-height:1.5;"><strong>Censo: solo entregados</strong> filtra la grilla a pacientes que te entregaron en este turno, sin cambiar el modo Entrega.</p>',
+      '<p style="margin:0;line-height:1.5;"><strong>Censo: solo entregados</strong> filtra la grilla a pacientes que te entregaron en este turno.</p>',
     gv7_guardia_exit:
       '<p style="margin:0;line-height:1.5;">Pulsa de nuevo <strong>Guardia</strong> para volver a la vista Normal (Paciente, Laboratorio, etc.).</p>',
-    gv7_entrega_phase:
-      '<p style="margin:0;line-height:1.5;">Pulsa <strong>Entrega</strong> en la barra del censo para abrir el listado de handoff por paciente antes del turno activo.</p>',
-    gv7_entrega_patient:
-      '<p style="margin:0;line-height:1.5;">En cada paciente, <strong>Entrega</strong> documenta handoff, equipo entrante y pendientes. La grilla resalta críticos y entrantes.</p>',
-    gv7_entrega_roster:
-      '<p style="margin:0;line-height:1.5;">El <strong>roster de entrega</strong> lista pacientes pendientes de documentar antes de pasar al turno activo.</p>',
-    gv7_entrega_pendientes:
-      '<p style="margin:0;line-height:1.5;"><strong>Pendientes de entrega</strong>: plantillas por servicio, handoff estructurado y seguimiento entre turnos.</p>',
-    gv7_fin_turno:
-      '<p style="margin:0;line-height:1.5;">Al <strong>finalizar turno</strong>, R+ agrupa pendientes abiertos por equipo de origen para enviar handoff diurno y liberar cobertura. No borra pendientes si cierras sin enviar.</p>',
     gv7_lan_wifi:
       '<p style="margin:0;line-height:1.5;">' +
       LIVESYNC_BTN_COPY +

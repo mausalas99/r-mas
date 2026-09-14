@@ -1240,6 +1240,15 @@
   border-bottom: none;
 }
 
+/* No lab draw in 7 days (or ever): probable discharge not yet removed from the Red tab. */
+.cloud-sync-admin-row--stale-labs td {
+  background: color-mix(in srgb, var(--color-warn, #d97706) 10%, transparent);
+}
+.cloud-sync-admin-stale-labs {
+  color: var(--color-warn, #d97706);
+  font-weight: 600;
+}
+
 .cloud-sync-admin-row-actions {
   display: flex;
   flex-wrap: wrap;

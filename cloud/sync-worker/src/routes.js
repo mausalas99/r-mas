@@ -74,7 +74,10 @@ export async function handleApiRoute(request, env) {
     throw new SyncError('not_found', 'Ruta no encontrada.');
   } catch (err) {
     if (err instanceof SyncError) {
-      return Response.json(jsonSyncError(err), { status: syncErrorStatus(err) });
+      const headers = err.retryAfterSeconds
+        ? { 'Retry-After': String(err.retryAfterSeconds) }
+        : undefined;
+      return Response.json(jsonSyncError(err), { status: syncErrorStatus(err), headers });
     }
     throw err;
   }

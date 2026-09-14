@@ -1,11 +1,13 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  createSyncFailCycle,
   createSyncRuntimeCycle,
   isCloudRevisionStaleError,
 } from './sync-runtime-cycle.mjs';
 import { humanizeCloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 import { makeOutbox } from './sync-runtime-cycle-test-helpers.mjs';
+import { noteCloudSyncPush } from './cloud-sync-diagnostics.mjs';
 
 describe('createSyncRuntimeCycle status', () => {
   let prevOnline;
@@ -167,8 +169,18 @@ describe('createSyncRuntimeCycle status', () => {
   it('does not block other patients when one outbox row keeps failing', async () => {
     const statuses = [];
     const outbox = makeOutbox([
-      { clientMutationId: 'labSidecars/p1', ops: [{ t: 1 }], baseRevision: 0, enqueuedAt: 1 },
-      { clientMutationId: 'labSidecars/p2', ops: [{ t: 2 }], baseRevision: 0, enqueuedAt: 2 },
+      {
+        clientMutationId: 'labSidecars/p1',
+        ops: [{ path: 'labSidecars/p1/set-1', value: {}, updatedAt: 't1' }],
+        baseRevision: 0,
+        enqueuedAt: 1,
+      },
+      {
+        clientMutationId: 'labSidecars/p2',
+        ops: [{ path: 'labSidecars/p2/set-1', value: {}, updatedAt: 't2' }],
+        baseRevision: 0,
+        enqueuedAt: 2,
+      },
     ]);
     const runtime = createSyncRuntimeCycle({
       api: {
@@ -223,6 +235,62 @@ describe('createSyncRuntimeCycle status', () => {
     assert.match(String(last.detail || ''), /cliente de nube no está listo para enviar|enlace con nube no está listo/i);
   });
 
+  it('reports the pending op count as status detail before any cycle has run', () => {
+    const statuses = [];
+    const outbox = makeOutbox([
+      {
+        clientMutationId: 'm1',
+        ops: [{ path: 'a', value: 1 }, { path: 'b', value: 2 }],
+        baseRevision: 0,
+        enqueuedAt: 1,
+      },
+    ]);
+    const runtime = createSyncRuntimeCycle({
+      api: { pull: async () => ({ revision: 1 }), push: async () => ({ revision: 1 }) },
+      outbox,
+      getRoomId: () => '', // no room yet — boot never reaches a real cycle
+      getRevision: () => 0,
+      setRevision: () => {},
+      onStatus(status, detail) {
+        statuses.push({ status, detail });
+      },
+    });
+    runtime.stop();
+
+    const last = statuses[statuses.length - 1];
+    assert.equal(last.status, 'pending');
+    assert.match(last.detail, /^2 cambios sin enviar/);
+  });
+
+  it('appends "último envío hace X min" once the last push is stale', () => {
+    noteCloudSyncPush();
+    const realNow = Date.now;
+    Date.now = () => realNow() + 3 * 60_000;
+    try {
+      const statuses = [];
+      const outbox = makeOutbox([
+        { clientMutationId: 'm1', ops: [{ path: 'a', value: 1 }], baseRevision: 0, enqueuedAt: 1 },
+      ]);
+      const runtime = createSyncRuntimeCycle({
+        api: { pull: async () => ({ revision: 1 }), push: async () => ({ revision: 1 }) },
+        outbox,
+        getRoomId: () => '',
+        getRevision: () => 0,
+        setRevision: () => {},
+        onStatus(status, detail) {
+          statuses.push({ status, detail });
+        },
+      });
+      runtime.stop();
+
+      const last = statuses[statuses.length - 1];
+      assert.equal(last.status, 'pending');
+      assert.match(last.detail, /1 cambios sin enviar · último envío hace 3 min/);
+    } finally {
+      Date.now = realNow;
+    }
+  });
+
   it('reaches idle when pull succeeds and outbox empty', async () => {
     const statuses = [];
     const runtime = createSyncRuntimeCycle({
@@ -243,5 +311,45 @@ describe('createSyncRuntimeCycle status', () => {
     runtime.stop();
 
     assert.equal(statuses[statuses.length - 1], 'idle');
+  });
+});
+
+describe('createSyncFailCycle — backoff-class errors with pending ops', () => {
+  function fakeScheduler() {
+    const calls = [];
+    return { calls, isRateLimitedError: () => false, noteFailure: (err) => calls.push(err) };
+  }
+
+  it('goes to pending (not error) when the outbox still has ops', () => {
+    const statuses = [];
+    const scheduler = fakeScheduler();
+    const failCycle = createSyncFailCycle(() => scheduler, (status, detail) => statuses.push({ status, detail }), () => 1);
+    const err = new Error('overloaded');
+    err.status = 503;
+    failCycle(err);
+    const last = statuses[statuses.length - 1];
+    assert.equal(last.status, 'pending');
+    assert.match(last.detail, /Servidor Nube saturado/);
+    assert.equal(scheduler.calls.length, 1, 'still notifies the poll scheduler');
+  });
+
+  it('goes to idle for the same error once the outbox is empty', () => {
+    const statuses = [];
+    const scheduler = fakeScheduler();
+    const failCycle = createSyncFailCycle(() => scheduler, (status, detail) => statuses.push({ status, detail }), () => 0);
+    const err = new Error('overloaded');
+    err.status = 503;
+    failCycle(err);
+    assert.equal(statuses[statuses.length - 1].status, 'idle');
+  });
+
+  it('a permanent error still reports error even with pending ops', () => {
+    const statuses = [];
+    const scheduler = fakeScheduler();
+    const failCycle = createSyncFailCycle(() => scheduler, (status, detail) => statuses.push({ status, detail }), () => 3);
+    const err = new Error('bad request');
+    err.status = 400;
+    failCycle(err);
+    assert.equal(statuses[statuses.length - 1].status, 'error');
   });
 });

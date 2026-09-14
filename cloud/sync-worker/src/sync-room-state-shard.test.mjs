@@ -373,6 +373,48 @@ describe('room_state_lab_sets sharding (one row per lab set)', () => {
   });
 });
 
+describe('loadRoomState skipLabShards (admin network census: metadata only)', () => {
+  let db;
+  beforeEach(() => {
+    db = fakeDb({ revision: 0 });
+  });
+
+  it('reads no lab-shard tables and decrypts no lab shard when skipLabShards is set', async () => {
+    await db.setLegacyState(baseState({ entries: [{ id: 'p1', fields: {} }] }));
+    await db.setLegacyPatientShard('p1', { s1: { v: 'legacy' } });
+    await commitMutationBatch(TEST_KEY, db, {
+      roomId: ROOM_ID,
+      expectedRevision: 0,
+      nextRevision: 1,
+      userId: 'u1',
+      clientMutationId: 'm1',
+      applied: [{ path: 'labSidecars/p2/s1', value: { v: 'fresh' } }],
+      nextState: baseState({
+        entries: [{ id: 'p1', fields: {} }],
+        labSidecars: { p2: { s1: { v: 'fresh' } } },
+      }),
+    });
+
+    db.clearBoundSql();
+    const { state, legacyShardBytes, labSetBytes } = await loadRoomState(TEST_KEY, db, ROOM_ID, {
+      skipLabShards: true,
+    });
+
+    assert.equal(db.boundSql.some((sql) => sql.includes('FROM room_state_labs')), false);
+    assert.equal(db.boundSql.some((sql) => sql.includes('FROM room_state_lab_sets')), false);
+    assert.deepEqual(state.entries, [{ id: 'p1', fields: {} }]);
+    assert.equal(legacyShardBytes.size, 0);
+    assert.equal(labSetBytes.size, 0);
+  });
+
+  it('still returns the full lab shards when skipLabShards is omitted (default behavior unchanged)', async () => {
+    await db.setLegacyState(baseState());
+    await db.setLegacyPatientShard('p1', { s1: { v: 'legacy' } });
+    const { state } = await loadRoomState(TEST_KEY, db, ROOM_ID);
+    assert.deepEqual(state.labSidecars.p1, { s1: { v: 'legacy' } });
+  });
+});
+
 describe('commitMutationBatch writes only the ops-touched set rows', () => {
   let db;
   beforeEach(() => {

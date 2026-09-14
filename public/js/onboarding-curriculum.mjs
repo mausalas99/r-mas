@@ -1,4 +1,4 @@
-export const CURRICULUM_VERSION = 19;
+export const CURRICULUM_VERSION = 20;
 
 export const SALA_CHAPTERS = [
   {
@@ -106,7 +106,6 @@ export const GUARDIA_V7_CHAPTERS = [
       'gv7_guardia_chip',
       'gv7_guardia_tab',
       'gv7_guardia_scope',
-      'gv7_trust_strip',
       'gv7_guardia_toggle',
       'gv7_guardia_exit',
     ],
@@ -115,17 +114,6 @@ export const GUARDIA_V7_CHAPTERS = [
     id: 'ch-guardia-censo',
     title: 'Censo y alcance',
     stepIds: ['gv7_censo_r1', 'gv7_censo_r4', 'gv7_censo_sync'],
-  },
-  {
-    id: 'ch-guardia-entrega',
-    title: 'Modo Entrega',
-    stepIds: [
-      'gv7_entrega_phase',
-      'gv7_entrega_patient',
-      'gv7_entrega_roster',
-      'gv7_entrega_pendientes',
-      'gv7_fin_turno',
-    ],
   },
   {
     id: 'ch-guardia-nube',
@@ -294,26 +282,32 @@ export function isValidStepForBranch(stepId, branch, _mode) {
   return steps.includes(stepId);
 }
 
+const LEGACY_STEP_ID_MAP = new Map([
+  ['estado_actual_snapshot', 'estado_actual_review'],
+  ['estado_actual_charts', 'estado_actual_review'],
+  ['estado_actual_historial', 'estado_actual_review'],
+  ['sala_soap', 'sala_med'],
+  ['historia_clinica', 'estado_actual'],
+  ['gv7_lan_pin', 'gv7_lan_directorio'],
+  // Modo Guardia lost its top bar (mode title, trust-strip chips, "Entregar
+  // guardia") in the 8.3.x cleanup — Guardia is monitor-only now. Send saved
+  // progress pointers at the retired trust-strip step or anywhere in the
+  // retired entrega/handoff chapter to the nearest step that still exists.
+  ['gv7_trust_strip', 'gv7_guardia_toggle'],
+  ['gv7_entrega_phase', 'gv7_lan_wifi'],
+  ['gv7_entrega_patient', 'gv7_lan_wifi'],
+  ['gv7_entrega_roster', 'gv7_lan_wifi'],
+  ['gv7_entrega_pendientes', 'gv7_lan_wifi'],
+  ['gv7_fin_turno', 'gv7_lan_wifi'],
+]);
+
+// Interconsulta lost its sidebar to the 8.2.2 team-board redesign — a saved
+// progress pointer at the old sidebar/alta steps resumes at the new
+// board-intro step instead of failing validation and restarting.
+const INTERCONSULTA_RETIRED_STEP_IDS = new Set(['map_sidebar', 'map_add_patient', 'map_incomplete']);
+
 /** Maps legacy tour step ids after curriculum merges. */
 export function migrateTourStepId(stepId, branch) {
-  if (
-    stepId === 'estado_actual_snapshot' ||
-    stepId === 'estado_actual_charts' ||
-    stepId === 'estado_actual_historial'
-  ) {
-    return 'estado_actual_review';
-  }
-  if (stepId === 'sala_soap') return 'sala_med';
-  if (stepId === 'historia_clinica') return 'estado_actual';
-  if (stepId === 'gv7_lan_pin') return 'gv7_lan_directorio';
-  // Interconsulta lost its sidebar to the 8.2.2 team-board redesign — a
-  // saved progress pointer at the old sidebar/alta steps resumes at the
-  // new board-intro step instead of failing validation and restarting.
-  if (
-    branch === 'interconsulta' &&
-    (stepId === 'map_sidebar' || stepId === 'map_add_patient' || stepId === 'map_incomplete')
-  ) {
-    return 'ic_board_map';
-  }
-  return stepId;
+  if (branch === 'interconsulta' && INTERCONSULTA_RETIRED_STEP_IDS.has(stepId)) return 'ic_board_map';
+  return LEGACY_STEP_ID_MAP.get(stepId) || stepId;
 }

@@ -137,6 +137,21 @@ export function resolveCensusTeamFilterId(user, teamsForCatalog, priorTeamId = '
   return resolveElevatedTeamFilterId(user, teamsForCatalog, storage);
 }
 
+/**
+ * Home sala for Guardia auto-derivation: profile sala first, else the sala of
+ * the team `resolveActiveTeamFilterId` resolves to, else '' (Step 1 picker).
+ * @param {object|null|undefined} user
+ * @param {object[]} teams
+ */
+export function resolveHomeSala(user, teams) {
+  const profileSala = String(user?.sala || '').trim();
+  if (profileSala) return profileSala;
+  const teamId = resolveActiveTeamFilterId(user, teams);
+  if (!teamId) return '';
+  const team = (teams || []).find((t) => String(t?.team_id || '') === teamId);
+  return String(team?.sala || '').trim();
+}
+
 /** @param {string} teamId @param {object[]} teams */
 export function isTeamIdInCensusCatalog(teamId, teams) {
   if (!teamId || teamId === CENSUS_TEAM_FILTER_UNASSIGNED) return true;

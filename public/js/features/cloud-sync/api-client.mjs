@@ -15,7 +15,7 @@ function httpErrorFromResponse(res, data) {
   const err = new Error(message);
   err.status = res.status;
   err.data = data;
-  if (res.status === 429) {
+  if (res.status === 429 || res.status === 503) {
     const sec = Number(res.headers.get('Retry-After'));
     if (Number.isFinite(sec) && sec >= 0) {
       err.retryAfterMs = sec <= 1000 ? sec * 1000 : sec;

@@ -4,10 +4,11 @@ import { storage } from '../storage.js';
 import {
   computeGuardiaSummary,
   renderGuardiaSummaryTiles,
-  renderGuardiaModeFrame,
-  renderGuardiaSignosRecibidosPanel,
   enrichPatientForGuardiaCard,
+  renderGuardiaCensusHead,
+  installGuardiaAppShell,
 } from './guardia-board-chrome.mjs';
+import { readGuardiaSala, writeGuardiaSala } from './guardia-board-state.mjs';
 
 const store = {};
 
@@ -97,6 +98,56 @@ describe('enrichPatientForGuardiaCard', () => {
     assert.equal(enriched.cuarto, '208');
     assert.equal(enriched.cama, '2');
   });
+  it('passes through guardia marks: esfuerzo, pronostico, nota', () => {
+    const patient = {
+      id: 'p1',
+      guardiaEsfuerzo: 'show',
+      guardiaPronostico: 'good',
+      guardiaNota: 'SV c/4h',
+    };
+    const enriched = enrichPatientForGuardiaCard(patient, new Map());
+    assert.equal(enriched.guardiaEsfuerzo, 'show');
+    assert.equal(enriched.guardiaPronostico, 'good');
+    assert.equal(enriched.guardiaNota, 'SV c/4h');
+  });
+});
+
+describe('renderGuardiaCensusHead', () => {
+  it('is a no-op — the bar was removed so the census grid keeps that vertical room', () => {
+    if (typeof document === 'undefined') return;
+    const host = document.createElement('div');
+    host.id = 'guardia-census-head';
+    host.innerHTML = '<p>stale content</p>';
+    document.body.appendChild(host);
+    try {
+      renderGuardiaCensusHead({ sala: 'Sala 2', teamCount: 3 });
+      assert.equal(host.innerHTML, '');
+    } finally {
+      host.remove();
+    }
+  });
+});
+
+describe('Cambiar sala', () => {
+  it('forces the Step 1 picker instead of instantly re-deriving the home sala', () => {
+    if (typeof document === 'undefined') return;
+    writeGuardiaSala('Sala 1');
+    const grid = document.createElement('div');
+    grid.id = 'guardia-census-grid';
+    document.body.appendChild(grid);
+    const btn = document.createElement('button');
+    btn.id = 'guardia-btn-cambiar-sala';
+    document.body.appendChild(btn);
+    try {
+      installGuardiaAppShell();
+      btn.click();
+      assert.equal(readGuardiaSala(), '');
+      assert.match(grid.innerHTML, /Activar guardia/);
+    } finally {
+      grid.remove();
+      btn.remove();
+    }
+  });
 });
 
 describe('renderGuardiaSummaryTiles', () => {
@@ -134,42 +185,6 @@ describe('renderGuardiaSummaryTiles', () => {
       const order = host.innerHTML.indexOf('Toma de signos');
       assert.ok(order < host.innerHTML.indexOf('Pendientes'));
       assert.ok(host.innerHTML.indexOf('Pendientes') < host.innerHTML.indexOf('Ingresos'));
-    } finally {
-      host.remove();
-    }
-  });
-});
-
-describe('renderGuardiaModeFrame', () => {
-  it('mounts one teal primary "Entregar guardia" button with the shared id', () => {
-    if (typeof document === 'undefined') return;
-    const host = document.createElement('div');
-    host.id = 'guardia-mode-frame';
-    document.body.appendChild(host);
-    try {
-      renderGuardiaModeFrame();
-      const primary = host.querySelector('#btn-guardia-entrega-phase');
-      assert.ok(primary, 'expected #btn-guardia-entrega-phase inside the mode frame');
-      assert.match(primary.className, /wb-btn-primary/);
-      assert.equal(primary.textContent, 'Entregar guardia');
-      assert.equal(host.querySelectorAll('.wb-btn-primary').length, 1);
-    } finally {
-      host.remove();
-    }
-  });
-});
-
-describe('renderGuardiaSignosRecibidosPanel', () => {
-  it('renders the shared empty state, not a fake panel or a bare zero', () => {
-    if (typeof document === 'undefined') return;
-    const host = document.createElement('div');
-    host.id = 'guardia-signos-recibidos';
-    document.body.appendChild(host);
-    try {
-      renderGuardiaSignosRecibidosPanel();
-      assert.match(host.innerHTML, /wb-empty-state/);
-      assert.match(host.innerHTML, /Signos recibidos/);
-      assert.doesNotMatch(host.innerHTML, />0</);
     } finally {
       host.remove();
     }

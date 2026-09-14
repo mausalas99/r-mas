@@ -9,7 +9,9 @@ import {
   resolveClinicalRank,
   assertClinicalWriteAllowed,
   clinicalSessionContext,
+  migrateLocalPatientsClinicalSala,
 } from './clinical-access-runtime.mjs';
+import { getPatients, setPatients } from './app-state.mjs';
 
 test('mapPatientForGuardiaGrid maps bed and service fields', () => {
   const row = mapPatientForGuardiaGrid({
@@ -81,4 +83,24 @@ test('missing assigned patients trigger Nube sala-room syncCycle', () => {
   assert.match(src, /scheduleLanPatientReconcile/);
   assert.match(src, /syncCycle/);
   assert.doesNotMatch(src, /scheduleReconcileLiveSyncRoom/);
+});
+
+test('migrateLocalPatientsClinicalSala skips elevated accounts (full-ward-pull guard)', () => {
+  const priorPatients = getPatients();
+  clinicalSessionContext.user = { user_id: 'admin1', rank: 'Admin', sala: 'Sala 1' };
+  setPatients([
+    { id: 'p1', isDemo: false },
+    { id: 'p2', isDemo: false, sala: '' },
+  ]);
+  try {
+    const migrated = migrateLocalPatientsClinicalSala();
+    assert.equal(migrated, 0);
+    assert.deepEqual(
+      getPatients().map((p) => p.sala),
+      [undefined, '']
+    );
+  } finally {
+    setPatients(priorPatients);
+    clinicalSessionContext.user = null;
+  }
 });

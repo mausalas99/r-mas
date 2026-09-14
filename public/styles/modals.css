@@ -2760,6 +2760,20 @@ html.dark .tend-gaso-tip {
   resize: vertical;
 }
 
+.guardia-patient-action-dx { margin: 0; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; }
+.guardia-marks-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.guardia-marks-group__label { flex-basis: 100%; font-size: 0.78rem; color: var(--text-muted); }
+.guardia-marks-btn {
+  padding: 6px 10px; border: 1px solid var(--border); border-radius: 999px;
+  background: var(--surface); font: inherit; cursor: pointer;
+}
+.guardia-marks-btn[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: color-mix(in oklab, var(--color-accent) 12%, var(--surface));
+  font-weight: 600;
+}
+.guardia-marks-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+
 .guardia-patient-action-actions {
   margin-top: 4px;
   justify-content: flex-end;

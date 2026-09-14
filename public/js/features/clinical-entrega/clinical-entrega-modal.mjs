@@ -359,6 +359,7 @@ async function finalizeEntregaModalOpen_(params) {
     vitalsFrequency: existing?.vitals_frequency,
     isCritical: !!(existing?.is_critical),
     signedRefusal: !!Number(patientRow?.negativa_maniobras_firmada),
+    patientId: patientRow?.id ? String(patientRow.id) : '',
   });
   setEntregaModalTitle_(existing, guardiaId, actor);
   showEntregaModal_(bd, hideR1Picker, teamSelect, select);

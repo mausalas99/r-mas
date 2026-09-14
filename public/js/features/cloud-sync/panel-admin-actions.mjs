@@ -14,7 +14,12 @@ import {
   loadAdminRoomDetail,
   loadAdminSalas,
 } from './panel-admin-data.mjs';
-import { listSelectedNetworkPatients } from './panel-admin-html.mjs';
+import {
+  listSelectedNetworkPatients,
+  listVisibleNetworkRowsWithRegistro,
+  applyNetworkCensusFilters,
+} from './panel-admin-html.mjs';
+import { verifyNetworkLabsRows, labRepoCheckAvailable } from './panel-admin-labs-verify.mjs';
 import { loadAdminEquipos } from './panel-admin-equipos-data.mjs';
 import { purgeClinicalUserMatchingCloudHandle } from './panel-admin-clinical-purge.mjs';
 import { openEquiposActivityHistoryFromButton } from './panel-admin-equipos-history-modal.mjs';
@@ -36,14 +41,14 @@ export function createAdminClickHandler(deps) {
     const btn = ev.target instanceof Element ? ev.target.closest('[data-admin-action]') : null;
     if (!btn) return;
     const action = btn.getAttribute('data-admin-action');
-    if (dispatchSimpleAction(action, deps)) return;
+    if (dispatchSimpleAction(action, deps, btn)) return;
     dispatchRoomAction(action, btn, deps);
     dispatchUserAction(action, btn, deps);
   };
 }
 
-/** @param {string | null} action @param {object} deps */
-function dispatchSimpleAction(action, deps) {
+/** @param {string | null} action @param {object} deps @param {Element} btn */
+function dispatchSimpleAction(action, deps, btn) {
   const map = {
     'save-key': () => {
       const input = deps.root.querySelector('[data-admin-key-input]');
@@ -56,6 +61,7 @@ function dispatchSimpleAction(action, deps) {
     'refresh-red': () => void loadAdminNetworkCensus(deps.root, deps.outerDeps),
     'bulk-archive-network': () => void handleBulkArchiveNetwork(deps),
     'bulk-delete-network': () => void handleBulkDeleteNetwork(deps),
+    'verify-red-labs': () => void handleVerifyRedLabs(deps, btn),
     'search-users': () => void loadAdminEquipos(deps.root, deps.getApi),
     'refresh-equipos': () => void deps.equiposPanel?.refresh(),
     'save-equipos-bulk': () => void deps.equiposPanel?.handleBulkSave?.(),
@@ -206,10 +212,16 @@ async function archiveOneNetworkPatient(api, roomId, patientId, nextArchived) {
  * push (same op family as `enqueueCloudPatientDelete`, plaintext like `fields`,
  * scoped to this one room). Lets a patient who moved areas (e.g. Urgencias →
  * hospitalización) be re-admitted fresh elsewhere without a stale archived row.
+ * No pull first — unlike archive, a tombstone op carries no existing `fields`
+ * to merge, and the Worker re-reads the room's real revision server-side
+ * before applying (`baseRevision` only drives the informational `needPull`
+ * flag in the response, ignored here) — a pull here was a full room-state
+ * decrypt (incl. lab sidecars) spent just to throw away everything but a
+ * revision number the server recomputes anyway, which is what made every
+ * delete (and every patient in a bulk delete) feel so slow.
  * @param {ReturnType<import('./api-client.mjs').createCloudSyncApi>} api @param {string} roomId @param {string} patientId @param {string} registro
  */
 async function deleteOneNetworkPatient(api, roomId, patientId, registro) {
-  const { revision } = await pullNetworkPatientFields(api, roomId, patientId);
   const op = buildCloudTombstoneOp(patientId, {
     registro,
     actorId: resolveCloudActorId(),
@@ -218,7 +230,7 @@ async function deleteOneNetworkPatient(api, roomId, patientId, registro) {
   await api.push(roomId, {
     clientMutationId: `admin-delete-${patientId}-${Date.now()}`,
     ops: [op],
-    baseRevision: revision,
+    baseRevision: 0,
   });
 }
 
@@ -281,39 +293,64 @@ async function handleBulkArchiveNetwork(deps) {
 }
 
 /**
- * Bulk-delete every selected patient that is ALREADY archived, one room each —
- * a selected-but-still-active patient is skipped, never deleted outright, so
- * "select all" can't accidentally wipe active patients.
+ * Bulk-delete every selected patient, one room each.
  * @param {object} deps
  */
 async function handleBulkDeleteNetwork(deps) {
   const selected = listSelectedNetworkPatients(deps.root);
-  const targets = selected.filter((p) => p.archived && p.roomId && p.patientId);
-  const skipped = selected.length - targets.length;
+  const targets = selected.filter((p) => p.roomId && p.patientId);
   if (!targets.length) {
-    deps.toast('Selecciona pacientes ya archivados para eliminarlos.', 'error');
+    deps.toast('Selecciona pacientes para eliminarlos.', 'error');
     return;
   }
-  const skipNote = skipped ? ` (se omiten ${skipped} activo(s) seleccionados)` : '';
   if (
     !(await confirmAction(
-      '¿Eliminar ' + targets.length + ' paciente(s) archivado(s) de su sala' + skipNote + '? Esto no se puede deshacer aquí.'
+      '¿Eliminar ' + targets.length + ' paciente(s) de su sala? Esto no se puede deshacer aquí.'
     ))
   ) {
     return;
   }
   const api = deps.getApi();
-  let ok = 0;
-  for (const p of targets) {
-    try {
-      await deleteOneNetworkPatient(api, p.roomId, p.patientId, p.registro);
-      ok += 1;
-    } catch {
-      /* keep going — one bad room shouldn't stop the rest */
-    }
-  }
+  // Parallel: each delete is an independent tombstone push to its own room, so
+  // N sequential round trips was the remaining bottleneck once the per-item
+  // pull was already cut (docs/core/20-claude-code-handoff.md, 2026-09-13).
+  const results = await Promise.allSettled(
+    targets.map((p) => deleteOneNetworkPatient(api, p.roomId, p.patientId, p.registro))
+  );
+  const ok = results.filter((r) => r.status === 'fulfilled').length;
   deps.toast(ok + ' de ' + targets.length + ' eliminado(s).', ok === targets.length ? 'success' : 'warn');
   void loadAdminNetworkCensus(deps.root, deps.outerDeps);
+}
+
+/**
+ * "Verificar labs" — for every patient the Red filters currently show, asks
+ * the real lab-repo portal (same check as "Actualizar labs") whether it has
+ * any study for that registro, existence only, no date parse. Sequential:
+ * the portal client is a single cookie session, same as the batch import.
+ * @param {object} deps @param {Element} btn
+ */
+async function handleVerifyRedLabs(deps, btn) {
+  const rows = listVisibleNetworkRowsWithRegistro(deps.root);
+  if (!rows.length) {
+    deps.toast('Ningún paciente visible tiene registro para consultar.', 'error');
+    return;
+  }
+  if (!labRepoCheckAvailable()) {
+    deps.toast('Verificación de labs no disponible en este dispositivo.', 'error');
+    return;
+  }
+  const original = btn.textContent;
+  btn.setAttribute('disabled', 'true');
+  const { ok, failed } = await verifyNetworkLabsRows(rows, ({ index, total }) => {
+    btn.textContent = 'Verificando ' + (index + 1) + '/' + total + '…';
+  });
+  btn.textContent = original;
+  btn.removeAttribute('disabled');
+  applyNetworkCensusFilters(deps.root);
+  deps.toast(
+    ok + ' de ' + rows.length + ' verificado(s)' + (failed ? ', ' + failed + ' con error' : '') + '.',
+    failed ? 'warn' : 'success'
+  );
 }
 
 /** @param {string | null} action @param {Element} btn @param {object} deps */

@@ -62,6 +62,26 @@ describe('fetchNetworkCensus', () => {
     assert.deepEqual(row.clinicalOps, { teams: [{ team_id: 't1', name: 'Equipo Azul' }] });
   });
 
+  it('carries each room\'s entityVersions through, for the Red tab "last touched" column', async () => {
+    const salas = CLOUD_SALAS.map((sala) => ({ sala, error: 'Sin sala activa este mes.' }));
+    const sala1 = salas.find((s) => s.sala === 'Sala 1');
+    Object.assign(sala1, {
+      error: undefined,
+      roomId: 'r-1',
+      code: 'CCCC',
+      dek: null,
+      state: {
+        entries: [],
+        entityVersions: { 'entries/p1/fields': { updatedAt: '2026-09-10T00:00:00.000Z', actorId: 'u1' } },
+      },
+    });
+    const census = await fetchNetworkCensus(makeFakeApi(salas));
+    const row = census.find((c) => c.sala === 'Sala 1');
+    assert.deepEqual(row.entityVersions, {
+      'entries/p1/fields': { updatedAt: '2026-09-10T00:00:00.000Z', actorId: 'u1' },
+    });
+  });
+
   it('passes through an error row (no current room) untouched', async () => {
     const salas = CLOUD_SALAS.map((sala) => ({ sala, error: 'Sin sala activa este mes.' }));
     const census = await fetchNetworkCensus(makeFakeApi(salas));

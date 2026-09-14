@@ -6,6 +6,8 @@ import { applySomePharmCatalogOverlay } from './med-pharm-some-catalog.mjs';
 import { repairLabHistoryMapInPlace } from './lab-history-repair.mjs';
 import { migratePatientMonitoreo } from './features/estado-actual-data.mjs';
 import { migratePatientsClinicalSala } from './clinico-access.mjs';
+import { hasElevatedTeamPrivileges } from './clinical-privileges.mjs';
+import { clinicalSessionContext } from './clinical-session-context.mjs';
 import { maybeStripAutoLabInterpretationsOnce } from './features/eventualidades-strip-auto-labs.mjs';
 import {
   persistClinicalState,
@@ -321,7 +323,10 @@ export function initAppState() {
   try {
     var rpcSettings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
     var clinicalSala = String(rpcSettings.clinicalSala || '').trim();
-    if (clinicalSala) {
+    // Elevated accounts (R4/Admin/program admin) can hold a full-ward pull
+    // with patients missing their own `sala` — stamping them with the
+    // viewer's own sala would mis-tag patients from other salas as this one.
+    if (clinicalSala && !hasElevatedTeamPrivileges(clinicalSessionContext.user)) {
       salaMigrated = migratePatientsClinicalSala(patients, { sala: clinicalSala });
     }
   } catch (_e) { void _e; }

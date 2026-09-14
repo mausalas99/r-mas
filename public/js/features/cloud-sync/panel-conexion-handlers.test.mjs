@@ -57,6 +57,24 @@ describe('panel-conexion-handlers remember / leave room', () => {
     assert.match(src.slice(helperStart, helperNext), /persistRoomDeks\(\)/, 'joinRoomByCode');
   });
 
+  it('joinRoomByCode drains the outbox against the OLD room before switching (never lets pending edits ride into the new room)', () => {
+    const start = src.indexOf('export async function joinRoomByCode');
+    const next = src.indexOf('\nexport async function ', start + 1);
+    const body = src.slice(start, next > start ? next : undefined);
+    assert.match(body, /await flushOutboxBeforeRoomSwitch\(deps\);/);
+    const joinCallIdx = body.indexOf('deps.getApi().joinRoom');
+    const flushIdx = body.indexOf('flushOutboxBeforeRoomSwitch');
+    assert.ok(flushIdx >= 0 && joinCallIdx > flushIdx, 'flush must happen before the room join call');
+  });
+
+  it('flushOutboxBeforeRoomSwitch throws (blocking the switch) instead of letting an undrained outbox through', () => {
+    const start = src.indexOf('async function flushOutboxBeforeRoomSwitch');
+    const next = src.indexOf('\nexport async function joinRoomByCode', start + 1);
+    const body = src.slice(start, next > start ? next : undefined);
+    assert.match(body, /outbox\.list\(\)\.length > 0/);
+    assert.match(body, /throw err/);
+  });
+
   it('afterAuthSuccess backfills room encryption fire-and-forget (never blocks/throws into login)', () => {
     const start = src.indexOf('export async function afterAuthSuccess');
     const next = src.indexOf('\nexport async function ', start + 1);

@@ -3,6 +3,7 @@
  */
 import { slimLabSetForCloud } from './cloud-op-slim.mjs';
 import { labSetTimestamp, monitoreoUpdatedAt } from '../../patient-merge.mjs';
+import { shouldSkipCloudMedRecetaPush } from './cloud-med-receta-index.mjs';
 
 /** @typedef {{ path: string, value: unknown, updatedAt: string, actorId: string }} CloudSyncOp */
 
@@ -133,14 +134,16 @@ function pushDocOps(ops, patientId, entry, actorId, batchAt) {
       updatedAt: noteOpUpdatedAt(entry.indicaciones, batchAt),
     })
   );
-  ops.push(
-    cloudOp({
-      path: `entries/${patientId}/medReceta`,
-      value: entry.medReceta || null,
-      actorId,
-      updatedAt: noteOpUpdatedAt(entry.medReceta, batchAt),
-    })
-  );
+  if (!shouldSkipCloudMedRecetaPush(patientId, entry.medReceta)) {
+    ops.push(
+      cloudOp({
+        path: `entries/${patientId}/medReceta`,
+        value: entry.medReceta || null,
+        actorId,
+        updatedAt: noteOpUpdatedAt(entry.medReceta, batchAt),
+      })
+    );
+  }
 }
 
 /** @param {string} patientId @param {unknown[]} labs @param {{ actorId: string, updatedAt: string }} meta */
@@ -207,6 +210,7 @@ export function mapPatientEntryToCensusSeedOps(entry, meta) {
 /** @param {CloudSyncOp[]} ops @param {string} patientId @param {unknown} medReceta @param {string} actorId @param {string} batchAt */
 function pushMedRecetaOp(ops, patientId, medReceta, actorId, batchAt) {
   if (!medReceta) return;
+  if (shouldSkipCloudMedRecetaPush(patientId, medReceta)) return;
   ops.push(
     cloudOp({
       path: `entries/${patientId}/medReceta`,

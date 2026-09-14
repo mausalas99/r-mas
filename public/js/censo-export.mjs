@@ -307,6 +307,7 @@ function previewCenso(includeArchived, pancenso) {
     medRecetaByPatient: getMedRecetaByPatient(),
     todosByPatient: buildTodosMap(),
     teamLabelByPatientId: pancenso ? buildTeamLabelMap(censusPatients) : undefined,
+    showAllPendientes: true,
   });
   if (!payload.rows.length) {
     rt.showToast('Sin pacientes para el censo', 'error');

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildInternoIndexHtml, rewriteInternoModuleImports } from './build-cloud-interno.mjs';
+import { buildInternoIndexHtml, bundleInternoApp } from './build-cloud-interno.mjs';
 
 describe('buildInternoIndexHtml', () => {
   it('injects cloud flags and rewrites shared asset roots', () => {
@@ -23,10 +23,23 @@ describe('buildInternoIndexHtml', () => {
   });
 });
 
-describe('rewriteInternoModuleImports', () => {
-  it('rewrites dom-escape import for ASSETS mount', () => {
-    const src = "import { escapeHtml } from '../js/dom-escape.mjs';\n";
-    const out = rewriteInternoModuleImports(src);
-    assert.match(out, /from '\.\/js\/dom-escape\.mjs'/);
+describe('bundleInternoApp', () => {
+  it('inlines interno-crypto-board.mjs and every lib/ dependency into one self-contained ESM file', async () => {
+    const tmp = await import('node:fs/promises');
+    const os = await import('node:os');
+    const path = await import('node:path');
+    const outDir = await tmp.mkdtemp(path.join(os.tmpdir(), 'interno-bundle-'));
+    const outfile = path.join(outDir, 'interno-app.mjs');
+    const entry = new URL('../public/interno/interno-app.mjs', import.meta.url).pathname;
+
+    await bundleInternoApp(entry, outfile);
+
+    const out = await tmp.readFile(outfile, 'utf8');
+    assert.ok(out.length > 0);
+    // No leftover relative imports — everything the app needs is inlined.
+    assert.doesNotMatch(out, /from ['"]\.\.?\//);
+    assert.match(out, /subkeyB64FromLocationHash|buildInternoMedicion/);
+
+    await tmp.rm(outDir, { recursive: true, force: true });
   });
 });

@@ -140,4 +140,22 @@ describe('createCloudSyncApi — error messages', () => {
     const api = createCloudSyncApi({ getBaseUrl: () => 'https://x', getToken: () => 'tok' });
     await assert.rejects(() => api.pull(ROOM_ID, 0), /not_member/);
   });
+
+  it('captures Retry-After on a 503 D1-overload response, same as 429', async () => {
+    globalThis.fetch = async () => ({
+      ok: false,
+      status: 503,
+      statusText: '',
+      headers: { get: (name) => (name === 'Retry-After' ? '5' : null) },
+      async json() {
+        return { error: 'overloaded', message: 'D1_ERROR: D1 DB is overloaded' };
+      },
+    });
+    const api = createCloudSyncApi({ getBaseUrl: () => 'https://x', getToken: () => 'tok' });
+    await assert.rejects(() => api.pull(ROOM_ID, 0), (err) => {
+      assert.equal(err.status, 503);
+      assert.equal(err.retryAfterMs, 5000);
+      return true;
+    });
+  });
 });

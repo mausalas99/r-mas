@@ -8,7 +8,7 @@
  */
 import { markCloudLabOpPoison } from './cloud-lab-sidecar-index.mjs';
 import { looksLikeSomeLabReport } from '../../labs-report-refs.mjs';
-import { wasCloudOpAlreadyAttempted } from './cloud-sync-echo-guard.mjs';
+import { filterCloudOpsNotAttempted } from './cloud-sync-echo-guard.mjs';
 
 /**
  * Must stay under cloud-push-direct.mjs CHUNK_BUDGET_BYTES (180KB) so any single
@@ -177,14 +177,14 @@ export function slimCloudOp(op) {
  */
 export function sanitizeOpsForCloudPush(ops) {
   if (!Array.isArray(ops) || !ops.length) return { ops: [], dropped: 0 };
+  const notAttempted = filterCloudOpsNotAttempted(ops);
   const next = [];
   let dropped = 0;
-  for (let i = 0; i < ops.length; i += 1) {
-    if (wasCloudOpAlreadyAttempted(/** @type {{ path?: string, updatedAt?: string }} */ (ops[i]))) continue;
-    const slimmed = slimCloudOp(/** @type {{ path?: string, value?: unknown }} */ (ops[i]));
+  for (let i = 0; i < notAttempted.length; i += 1) {
+    const slimmed = slimCloudOp(/** @type {{ path?: string, value?: unknown }} */ (notAttempted[i]));
     if (!slimmed || typeof slimmed !== 'object') {
       dropped += 1;
-      const dropPath = String(ops[i]?.path || '');
+      const dropPath = String(notAttempted[i]?.path || '');
       if (dropPath.startsWith('labSidecars/')) markCloudLabOpPoison(dropPath);
       continue;
     }

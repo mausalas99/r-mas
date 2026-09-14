@@ -50,10 +50,25 @@ function persistBootstrapUserBinding(res) {
   persistClinicalUserBinding(patch);
 }
 
-async function refreshBootstrapScopeAndCensus() {
+async function refreshBootstrapProfile(userId) {
+  // Same DB row read twice back-to-back (merge below normalizes a legacy
+  // 'Admin' rank value that refreshClinicalUserProfile does not, and is the
+  // fallback if that second read fails) — kept sequential, but the whole
+  // chain runs alongside the unrelated teams/scope chain instead of after it.
+  await mergeBootstrapProfileFromDb(userId);
   await refreshClinicalUserProfile();
+}
+
+async function refreshBootstrapTeamsAndScope() {
+  // Scope read must follow teams: it overwrites clinicalSessionContext.teams
+  // with the scope-filtered list when present, and that overwrite has to be
+  // the one left standing.
   await fetchClinicalTeamsFromDb();
   await fetchClinicalScopeContextFromDb();
+}
+
+async function refreshBootstrapScopeAndCensus(userId) {
+  await Promise.all([refreshBootstrapProfile(userId), refreshBootstrapTeamsAndScope()]);
   if (hasElevatedTeamPrivileges(clinicalSessionContext.user)) {
     void ensureElevatedWardCensusOnDevice({
       allowLanPull: true,
@@ -78,8 +93,7 @@ export async function applyBootstrapResult(res) {
     is_program_admin: res.user.isProgramAdmin ? 1 : 0,
     public_key: res.user.publicKeyPem,
   };
-  await mergeBootstrapProfileFromDb(res.user.userId);
   applyBootstrapGuardiaState(res);
   persistBootstrapUserBinding(res);
-  await refreshBootstrapScopeAndCensus();
+  await refreshBootstrapScopeAndCensus(res.user.userId);
 }

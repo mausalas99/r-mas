@@ -1,6 +1,8 @@
 import { applyCors, corsPreflight } from './cors.js';
 import { withEdgeCache } from './cache-api.mjs';
 import { runScheduledPurge } from './cron-purge.mjs';
+import { isD1OverloadError } from './d1-errors.js';
+import { syncErrorStatus } from './errors.js';
 import { handleMeta } from './meta.js';
 import { salaFromSlug } from './interno/sala-slug.js';
 import { API_PREFIX, handleApiRoute, normalizePath } from './routes.js';
@@ -76,6 +78,18 @@ export default {
     } catch (err) {
       const message = err && err.message ? String(err.message) : 'error';
       console.error('rplus-sync unhandled', message);
+      if (isD1OverloadError(err)) {
+        return applyCors(
+          request,
+          Response.json(
+            { error: 'overloaded', message },
+            {
+              status: syncErrorStatus({ code: 'overloaded' }),
+              headers: { 'Retry-After': '5' },
+            }
+          )
+        );
+      }
       return applyCors(
         request,
         Response.json({ error: 'internal_error', message }, { status: 500 })

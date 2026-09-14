@@ -1,6 +1,6 @@
 import { startCloudSyncRuntime } from './sync-runtime.mjs';
 import { OUTBOX_STORAGE_KEY } from './outbox.mjs';
-import { createMemoryOutbox } from '../cloud-mobile/outbox-memory.mjs';
+import { createSqlcipherOutbox } from './outbox-sqlcipher.mjs';
 import { configureCloudMutateBridge, scheduleInitialCloudSeed } from './mutate-bridge.mjs';
 import { applyCloudPullResult } from './pull-apply.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
@@ -8,7 +8,7 @@ import { getCloudSyncClientId } from './client-id.mjs';
 import { getCloudSyncUrl } from './settings.mjs';
 import { withTombstoneCoalesce } from './outbox-tombstones.mjs';
 
-/** @type {ReturnType<typeof createOutbox> | null} */
+/** @type {ReturnType<typeof createSqlcipherOutbox> | null} */
 let sharedOutbox = null;
 
 /** @type {ReturnType<typeof startCloudSyncRuntime> | null} */
@@ -21,7 +21,9 @@ function ensureSharedOutbox() {
   } catch {
     /* ignore bloated legacy outbox */
   }
-  sharedOutbox = withTombstoneCoalesce(createMemoryOutbox());
+  const sqlOutbox = createSqlcipherOutbox();
+  sharedOutbox = withTombstoneCoalesce(sqlOutbox);
+  void sqlOutbox.hydrate();
   return sharedOutbox;
 }
 

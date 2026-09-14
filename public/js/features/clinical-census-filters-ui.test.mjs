@@ -17,6 +17,7 @@ import {
   censusTeamCatalogForFilters,
   resolveCensusTeamFilterId,
   resolveCensusSalaFilterId,
+  resolveHomeSala,
 } from './clinical-census-filters-ui.mjs';
 
 beforeEach(() => {
@@ -198,6 +199,28 @@ describe('clinical census team filter', () => {
     );
   });
 });
+describe('resolveHomeSala', () => {
+  const teams = [
+    { team_id: 't1', name: 'Dra. Gabriela', sala: 'Sala 1', members: [{ user_id: 'u1' }] },
+    { team_id: 't2', name: 'Otro equipo', sala: 'Sala 2', members: [{ user_id: 'u1' }] },
+  ];
+
+  it('profile sala wins over team membership', () => {
+    const user = { user_id: 'u1', sala: 'Sala E' };
+    assert.equal(resolveHomeSala(user, teams), 'Sala E');
+  });
+
+  it('falls back to the joined team sala when profile sala is empty', () => {
+    const user = { user_id: 'u1', sala: '' };
+    assert.equal(resolveHomeSala(user, [teams[0]]), 'Sala 1');
+  });
+
+  it('returns empty when both profile sala and team membership are empty', () => {
+    const user = { user_id: 'u9', sala: '' };
+    assert.equal(resolveHomeSala(user, teams), '');
+  });
+});
+
 describe('clinical census filters collapse storage', () => {
   it('defaults collapsed (popover closed)', () => {
     const mem = new Map();

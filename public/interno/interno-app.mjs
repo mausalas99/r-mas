@@ -3,11 +3,18 @@ import {
   parseInternoPath,
   salaKeyFromSlug,
 } from './host-discovery.mjs';
+import {
+  buildEncryptedInternoVitals,
+  decryptAndAssembleInternoBoard,
+  importInternoSubkeyRaw,
+  subkeyB64FromLocationHash,
+} from './interno-crypto-board.mjs';
 
 import { escapeHtml, escapeAttr } from '../js/dom-escape.mjs';
 import { markFieldInvalid } from '../js/ui-field-invalid.mjs';
 const POLL_MS = 30000;
 const TOKEN_KEY = 'rpc-interno-token';
+const SUBKEY_KEY = 'rpc-interno-subkey';
 const REPORTER_KEY = 'rpc-interno-reporter';
 
 /** @type {Record<string, string>} */
@@ -32,6 +39,10 @@ let apiBase = '';
 let salaKey = '';
 /** @type {string} */
 let token = '';
+/** @type {CryptoKey|null} narrow Interno subkey — never sent over the network, only ever read from the QR's URL fragment */
+let subkey = null;
+/** @type {object[]} decrypted entries from the last board fetch, kept for submitVitals to find the current monitoreo to append to */
+let decryptedEntries = [];
 /** @type {object|null} */
 let board = null;
 /** @type {string|null} */
@@ -65,19 +76,37 @@ function loadTokenFromUrl() {
   return sessionStorage.getItem(TOKEN_KEY) || '';
 }
 
+/** The Interno subkey lives only in the URL fragment (never sent to the server) and sessionStorage. */
+function loadSubkeyB64FromUrl() {
+  const fromHash = subkeyB64FromLocationHash(window.location.hash);
+  if (fromHash) {
+    sessionStorage.setItem(SUBKEY_KEY, fromHash);
+    return fromHash;
+  }
+  return sessionStorage.getItem(SUBKEY_KEY) || '';
+}
+
 async function init() {
   const slug = parseInternoPath(window.location.pathname);
   salaKey = salaKeyFromSlug(slug);
   token = loadTokenFromUrl();
+  const subkeyB64 = loadSubkeyB64FromUrl();
 
   if (!salaKey) {
     root.innerHTML =
       '<div class="interno-error-screen"><p>Enlace inválido. Escanea el QR de tu sala.</p></div>';
     return;
   }
-  if (!token) {
+  if (!token || !subkeyB64) {
     root.innerHTML =
       '<div class="interno-error-screen"><p>Falta el código de acceso. Escanea el QR completo de la sala.</p></div>';
+    return;
+  }
+  try {
+    subkey = await importInternoSubkeyRaw(subkeyB64);
+  } catch (_e) {
+    root.innerHTML =
+      '<div class="interno-error-screen"><p>El código de acceso no es válido. Escanea el QR de nuevo.</p></div>';
     return;
   }
 
@@ -119,7 +148,11 @@ async function refreshBoard() {
     const res = await apiFetch('/board');
     const body = await readJsonResponse(res);
     if (res.ok) {
-      board = body;
+      // The Worker only ever relays plaintext identity + still-encrypted
+      // clinicalOps/monitoreo — decrypt and assemble the board on-device.
+      const assembled = await decryptAndAssembleInternoBoard(subkey, body);
+      decryptedEntries = Array.isArray(assembled?.entries) ? assembled.entries : [];
+      board = assembled;
       render();
       return;
     }
@@ -650,21 +683,38 @@ async function submitVitals(bd, patientId, close) {
   if (saveBtn) saveBtn.disabled = true;
 
   try {
+    // Build and encrypt the medición on-device — the Worker never sees
+    // plaintext vitals, only the finished {enc:1,...} envelope below.
+    const currentEntry = decryptedEntries.find((e) => String(e?.id) === String(patientId));
+    const built = await buildEncryptedInternoVitals(subkey, currentEntry?.monitoreo, {
+      vitals,
+      glucometrias,
+      reporterName,
+      sala: salaKey,
+    });
+    if (!built.ok) {
+      showToast('Ingresa al menos un dato');
+      return;
+    }
+
     const res = await apiFetch('/vitals', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ patientId, vitals, glucometrias, reporterName, sala: salaKey }),
+      body: JSON.stringify({
+        patientId,
+        sala: salaKey,
+        medicionId: built.medicionId,
+        monitoreoEnvelope: built.monitoreoEnvelope,
+      }),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      showToast(err.error === 'empty_medicion' ? 'Ingresa al menos un dato' : 'No se pudo guardar');
+      showToast('No se pudo guardar');
       return;
     }
-    const out = await res.json();
     close();
     expandedId = null;
     await refreshBoard();
-    showToast(out.hasAlterations ? 'Registrado · signos alterados' : 'Registrado ✓');
+    showToast(built.hasAlterations ? 'Registrado · signos alterados' : 'Registrado ✓');
   } catch (_e) {
     showToast('Error de conexión');
   } finally {

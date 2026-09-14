@@ -2,12 +2,14 @@ import { sanitizeOpsForCloudPush, utf8JsonBytes } from './cloud-op-slim.mjs';
 import { resolveCloudPushMutationId } from './push-mutation-id.mjs';
 import { CLOUD_BATCH_MUTATION_ID } from './constants.mjs';
 import { noteCloudLabSidecarOpsSent } from './cloud-lab-sidecar-index.mjs';
-import { isCloudTransientServerError } from './cloud-sync-timing.mjs';
+import { noteCloudMedRecetaOpsSent } from './cloud-med-receta-index.mjs';
+import {
+  cloudDrainPacer,
+  CLOUD_DRAIN_MAX_CONGESTION_EVENTS,
+  isCloudBackoffError,
+} from './cloud-sync-timing.mjs';
 import { recordCloudSyncError } from './cloud-sync-diagnostics.mjs';
 import { noteCloudOpsAttempted } from './cloud-sync-echo-guard.mjs';
-
-const DIRECT_PUSH_TRANSIENT_RETRIES = 3;
-const DIRECT_PUSH_TRANSIENT_DELAY_MS = 2000;
 
 /**
  * @param {number} ms
@@ -46,9 +48,10 @@ function countLabSidecarOps(ops) {
 
 /**
  * @param {unknown[]} ops
+ * @param {number} [maxOps] Worker op cap per chunk — the AIMD pacer shrinks this on congestion.
  * @returns {unknown[][]}
  */
-export function chunkCloudOps(ops) {
+export function chunkCloudOps(ops, maxOps = MAX_OPS_PER_CHUNK) {
   if (!Array.isArray(ops) || !ops.length) return [];
   /** @type {unknown[][]} */
   const chunks = [];
@@ -68,7 +71,7 @@ export function chunkCloudOps(ops) {
     const bytes = utf8JsonBytes(op);
     const labCap =
       isLabSidecarOp(op) && current.length > 0 && countLabSidecarOps(current) >= MAX_LAB_OPS_PER_CHUNK;
-    const opCap = current.length >= MAX_OPS_PER_CHUNK;
+    const opCap = current.length >= maxOps;
     const byteCap = current.length > 0 && currentBytes + bytes > CHUNK_BUDGET_BYTES;
     if (labCap || opCap || byteCap) flush();
     current.push(op);
@@ -79,36 +82,67 @@ export function chunkCloudOps(ops) {
 }
 
 /**
- * Push one sanitized chunk, retrying transient server errors with backoff.
+ * Drain `ops` through `sendChunk`, sized and paced by the AIMD `pacer` (shared
+ * with every other drain against the same D1 — see cloudDrainPacer). Chunk
+ * size is re-cut from `pacer.chunkOps()` on every pass, so a congested drain
+ * shrinks mid-flight instead of retrying the same oversized chunk.
  *
- * @param {ReturnType<import('./api-client.mjs').createCloudSyncApi>} api
- * @param {string} roomId
- * @param {ReturnType<typeof sanitizeOpsForCloudPush>} sanitized
- * @param {number} chunkIndex
- * @param {() => number} getRevision
+ * On a backoff-class error (D1 overload, rate limit) the pacer backs off,
+ * the drain waits a jittered gap, and the same remaining ops are re-cut and
+ * retried — up to `CLOUD_DRAIN_MAX_CONGESTION_EVENTS` times, after which it
+ * throws so the cycle-level backoff (sync-runtime-schedule.mjs) takes over.
+ * Any other error (permanent, or stale retries exhausted inside `sendChunk`)
+ * throws immediately.
+ *
+ * @param {{
+ *   ops: unknown[],
+ *   sendChunk: (chunk: unknown[], attempt: number) => Promise<unknown>,
+ *   onChunkAcked?: (chunk: unknown[], result: unknown) => unknown | Promise<unknown>,
+ *   onProgress?: (sent: number, total: number) => void,
+ *   pacer?: ReturnType<typeof import('./cloud-sync-timing.mjs').createDrainPacer>,
+ *   delay?: (ms: number) => Promise<void>,
+ * }} opts
  */
-async function pushChunkWithRetry(api, roomId, sanitized, chunkIndex, getRevision) {
-  const item = {
-    clientMutationId: CLOUD_BATCH_MUTATION_ID,
-    enqueuedAt: Date.now() + chunkIndex,
-  };
-  let transientAttempts = 0;
-  for (;;) {
+export async function drainCloudOps({
+  ops,
+  sendChunk,
+  onChunkAcked,
+  onProgress,
+  pacer = cloudDrainPacer,
+  delay = delayMs,
+}) {
+  const total = Array.isArray(ops) ? ops.length : 0;
+  let remaining = Array.isArray(ops) ? ops.slice() : [];
+  let sent = 0;
+  let attempt = 0;
+  let congestionEvents = 0;
+  let lastResult = null;
+
+  while (remaining.length) {
+    const chunk = chunkCloudOps(remaining, pacer.chunkOps())[0] || [];
+    if (!chunk.length) break;
+    attempt += 1;
+    let result;
     try {
-      return await api.push(roomId, {
-        clientMutationId: `${resolveCloudPushMutationId(item)}:chunk${chunkIndex}`,
-        ops: sanitized.ops,
-        baseRevision: getRevision() ?? 0,
-      });
+      result = await sendChunk(chunk, attempt);
     } catch (err) {
-      if (isCloudTransientServerError(err) && transientAttempts < DIRECT_PUSH_TRANSIENT_RETRIES) {
-        transientAttempts += 1;
-        await delayMs(DIRECT_PUSH_TRANSIENT_DELAY_MS * transientAttempts);
+      if (isCloudBackoffError(err) && congestionEvents < CLOUD_DRAIN_MAX_CONGESTION_EVENTS) {
+        congestionEvents += 1;
+        pacer.onCongested(err);
+        await delay(pacer.gapMs());
         continue;
       }
       throw err;
     }
+    pacer.onClean();
+    remaining = remaining.slice(chunk.length);
+    sent += chunk.length;
+    if (onChunkAcked) await onChunkAcked(chunk, result);
+    onProgress?.(sent, total);
+    lastResult = result;
+    if (remaining.length) await delay(pacer.gapMs());
   }
+  return lastResult;
 }
 
 const REJECT_REASON_LABEL = {
@@ -172,23 +206,44 @@ export function recordRejectedCloudOps(result) {
  * @param {(revision: number) => void} setRevision
  */
 export async function pushCloudOpsDirect(api, roomId, ops, getRevision, setRevision) {
-  const chunks = chunkCloudOps(ops);
   let appliedOps = 0;
   let staleRejected = 0;
-  for (let i = 0; i < chunks.length; i += 1) {
-    const sanitized = sanitizeOpsForCloudPush(chunks[i]);
-    if (!sanitized.ops.length) continue;
-    const result = await pushChunkWithRetry(api, roomId, sanitized, i, getRevision);
-    noteCloudOpsAttempted(sanitized.ops);
-    if (result?.revision != null) {
-      const next = Number(result.revision);
-      const current = Number(getRevision() ?? 0);
-      if (Number.isFinite(next) && next > current) setRevision(next);
-    }
-    const { stale: chunkStale } = recordRejectedCloudOps(result);
-    staleRejected += chunkStale;
-    appliedOps += sanitized.ops.length - chunkStale;
-    noteCloudLabSidecarOpsSent(chunks[i], sanitized.ops);
+  let chunksSent = 0;
+
+  /** @param {unknown[]} chunk @param {number} attempt */
+  async function sendChunk(chunk, attempt) {
+    const sanitized = sanitizeOpsForCloudPush(chunk);
+    if (!sanitized.ops.length) return { sanitized, pushResult: null };
+    const item = { clientMutationId: CLOUD_BATCH_MUTATION_ID, enqueuedAt: Date.now() };
+    const pushResult = await api.push(roomId, {
+      // Unique per attempt so a chunk re-cut smaller after congestion never
+      // collides with the Worker's cached response for an earlier attempt.
+      clientMutationId: `${resolveCloudPushMutationId(item)}:a${attempt}:${Date.now()}`,
+      ops: sanitized.ops,
+      baseRevision: getRevision() ?? 0,
+    });
+    return { sanitized, pushResult };
   }
-  return { appliedOps, chunks: chunks.length, staleRejected };
+
+  await drainCloudOps({
+    ops,
+    sendChunk,
+    onChunkAcked(chunk, { sanitized, pushResult }) {
+      chunksSent += 1;
+      if (!pushResult) return;
+      noteCloudOpsAttempted(sanitized.ops);
+      if (pushResult.revision != null) {
+        const next = Number(pushResult.revision);
+        const current = Number(getRevision() ?? 0);
+        if (Number.isFinite(next) && next > current) setRevision(next);
+      }
+      const { stale: chunkStale } = recordRejectedCloudOps(pushResult);
+      staleRejected += chunkStale;
+      appliedOps += sanitized.ops.length - chunkStale;
+      noteCloudLabSidecarOpsSent(chunk, sanitized.ops);
+      noteCloudMedRecetaOpsSent(sanitized.ops);
+    },
+  });
+
+  return { appliedOps, chunks: chunksSent, staleRejected };
 }

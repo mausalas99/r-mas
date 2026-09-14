@@ -14,9 +14,8 @@ import {
   guardiaTeamGroupLabel,
 } from './unified-patient-grid-team-groups.mjs';
 import { vitalsBannerForGuardia } from './unified-patient-grid-board.mjs';
-import { getEntregaPhase, openEntregaModal, toggleEntregaPhase } from './clinical-entrega.mjs';
+import { openEntregaModal } from './clinical-entrega.mjs';
 import { mergeSalaGuardiaTodayRows } from './guardia-hoy-modal.mjs';
-import { isEntregaRosterOpen } from './entrega-roster-panel.mjs';
 import { ensureTeamAssignedPatientsOnDevice, refreshGuardiaCensusFromDb } from '../clinical-access-runtime.mjs';
 import { syncGuardiaPhaseBar } from './guardia-phase-bar.mjs';
 import { entregaChipMarkerIds } from '../../../lib/entrega/entrega-chip-markers.mjs';
@@ -33,70 +32,15 @@ import {
   isPatientAdmittedToday,
 } from './guardia-census-table.mjs';
 import { isPatientAdmissionIncomplete } from '../patient-admission-incomplete.mjs';
-import { renderGuardiaBoard } from './guardia-board-render.mjs';
-import { mountModeFrame } from './workbench/mode-frame.mjs';
+import { renderGuardiaBoard, showGuardiaSalaPicker } from './guardia-board-render.mjs';
 import { mountCountersBand } from './workbench/counters-band.mjs';
-import { mountEmptyState } from './workbench/empty-state.mjs';
-import { openCommandPaletteFromShell } from '../app-shell-lazy-panels.mjs';
-import {
-  isAppShellInstalled,
-  isEntregaClickBusy,
-  isEntregaControlsInstalled,
-  markAppShellInstalled,
-  markEntregaControlsInstalled,
-  setEntregaClickBusy,
-} from './guardia-board-state.mjs';
+import { clearGuardiaSala, isAppShellInstalled, markAppShellInstalled } from './guardia-board-state.mjs';
 
 export function resolveGuardiaGridRank(user) {
   if (hasElevatedTeamPrivileges(user)) return 'R4';
   const raw = String(user?.rank || '').trim();
   if (raw === 'R4') return 'R4';
   return effectiveClinicalRank(user);
-}
-
-/**
- * Mode frame (workbench kit band 1) for the Guardia pane — mode name + one teal
- * primary ("Entregar guardia") + Censo PDF secondary + the ⌘/ shortcut.
- * The primary button keeps the `btn-guardia-entrega-phase` id so the existing
- * entrega-phase click/state wiring (wireGuardiaEntregaPhaseButton, below) still
- * finds it after each remount — it is NOT wired here to avoid a double listener.
- */
-export function renderGuardiaModeFrame() {
-  const host = document.getElementById('guardia-mode-frame');
-  if (!host) return;
-  mountModeFrame(host, {
-    modeName: 'Guardia',
-    secondaryActions: [
-      {
-        label: 'Censo PDF',
-        title: 'Generar PDF del censo de guardia',
-        onClick: () => {
-          if (typeof window !== 'undefined' && typeof window.exportCensoPdfFromHelp === 'function') {
-            window.exportCensoPdfFromHelp();
-          }
-        },
-      },
-    ],
-    onShortcut: openCommandPaletteFromShell,
-    primaryAction: { label: 'Entregar guardia' },
-  });
-  const primaryBtn = host.querySelector('[data-wb-primary]');
-  if (primaryBtn) primaryBtn.id = 'btn-guardia-entrega-phase';
-}
-
-/**
- * Right column "Signos recibidos" card (screen 6a/6b) — there is no intern
- * vitals-capture pipeline feeding Guardia yet (Phase 11, deferred). Render the
- * shared empty state instead of a fake panel or a bare zero.
- */
-export function renderGuardiaSignosRecibidosPanel() {
-  const host = document.getElementById('guardia-signos-recibidos');
-  if (!host) return;
-  mountEmptyState(host, {
-    label: 'Signos recibidos',
-    missing: 'Todavía no hay una captura de signos de internos conectada a Guardia.',
-    whenArrives: 'Llega con el Interno móvil (fase 11), pendiente de las decisiones de Nube y PHI.',
-  });
 }
 
 /** @param {Record<string, unknown>|null|undefined} settings */
@@ -124,116 +68,40 @@ export async function bootstrapGuardiaViewOnEnter(settings) {
   }
 }
 
-/** Pull guardia census + missing ward patients when entering modo guardia. */
+/**
+ * Pull guardia census + missing ward patients when entering modo guardia.
+ * The LAN reconcile is fire-and-forget so the loading screen doesn't sit on
+ * screen for its 3s debounce once local DB data is already in hand.
+ */
 export async function bootstrapGuardiaCensusData(settings) {
   await refreshGuardiaCensusFromDb(settings);
-  await ensureTeamAssignedPatientsOnDevice({ allowLanPull: true, lanPullDelayMs: 3000 });
   if (isGuardiaMode()) renderGuardiaBoard(settings);
-}
-
-/** @returns {Record<string, unknown>|null} */
-export function guardiaBoardSettings() {
-  try {
-    if (typeof window !== 'undefined' && typeof window.loadSettings === 'function') {
-      return window.loadSettings();
-    }
-  } catch (_e) { void _e; }
-  return null;
-}
-
-export function handleEntregaPhaseButtonClick() {
-  if (isEntregaClickBusy()) return;
-  setEntregaClickBusy(true);
-  void (async () => {
-    try {
-      await toggleEntregaPhase({
-        settings: guardiaBoardSettings(),
-        renderGuardiaBoard,
-      });
-      syncEntregaPhaseChrome();
-    } finally {
-      setEntregaClickBusy(false);
-    }
-  })();
-}
-
-export function installGuardiaEntregaControls() {
-  if (isEntregaControlsInstalled() || typeof document === 'undefined') return;
-  markEntregaControlsInstalled();
-
-  if (typeof window !== 'undefined') {
-    window.appShell = window.appShell || {};
-    window.appShell.toggleEntregaPhase = handleEntregaPhaseButtonClick;
-  }
-
-  syncEntregaPhaseChrome();
+  void ensureTeamAssignedPatientsOnDevice({ allowLanPull: true, lanPullDelayMs: 3000 }).then(() => {
+    if (isGuardiaMode()) renderGuardiaBoard(settings);
+  });
 }
 
 export function installGuardiaAppShell() {
   if (isAppShellInstalled() || typeof window === 'undefined') return;
   markAppShellInstalled();
   wireGuardiaPatientActionSheetDismiss();
-  installGuardiaEntregaControls();
   window.appShell = window.appShell || {};
   window.appShell.openEntregaModal = openEntregaModal;
-  window.appShell.toggleEntregaPhase = handleEntregaPhaseButtonClick;
   window.addEventListener('guardia:turno-activo', () => {
     renderGuardiaBoard(null);
   });
   window.addEventListener('guardia:entrega-ended', () => {
-    syncEntregaPhaseChrome();
     renderGuardiaBoard(null);
   });
-}
-
-if (typeof document !== 'undefined') {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', installGuardiaEntregaControls, { once: true });
-  } else {
-    installGuardiaEntregaControls();
-  }
-}
-
-export function syncEntregaPhaseChrome(opts = {}) {
-  const btn = document.getElementById('btn-guardia-entrega-phase');
-  const status = document.getElementById('guardia-entrega-phase-status');
-  const phase = getEntregaPhase();
-  const active = !!phase?.active;
-  const rosterOpen = opts.rosterOpen ?? isEntregaRosterOpen();
-
-  if (btn) {
-    btn.hidden = !!rosterOpen;
-    btn.classList.toggle('is-active', active);
-    btn.setAttribute('aria-pressed', String(active));
-    // One teal primary, top right (screen 6a/6b) — the label stays fixed;
-    // state is conveyed by title + the status line below, not by re-labeling it.
-    btn.textContent = 'Entregar guardia';
-    btn.title = active
-      ? 'Continuar entrega — listado de pacientes'
-      : opts.turnoActivo
-        ? 'Documentar entrega — abre el listado por paciente'
-        : 'Iniciar entrega al R1 de guardia de tu sala';
-  }
-
-  if (status) {
-    if (active && phase?.coveringLabel && !rosterOpen) {
-      status.hidden = false;
-      status.textContent = `Entregando a ${phase.coveringLabel} · pulsa "Entregar guardia" para abrir el listado`;
-    } else {
-      status.hidden = true;
-      status.textContent = '';
-    }
-  }
-}
-
-/** @param {Record<string, unknown>|null|undefined} _settings */
-export function wireGuardiaEntregaPhaseButton(_settings) {
-  installGuardiaEntregaControls();
-  const btn = document.getElementById('btn-guardia-entrega-phase');
-  if (!btn || btn._guardiaEntregaWired) return;
-  btn._guardiaEntregaWired = true;
-  btn.addEventListener('click', () => handleEntregaPhaseButtonClick());
-  syncEntregaPhaseChrome();
+  document.addEventListener('click', (ev) => {
+    const btn = ev.target?.closest?.('#guardia-btn-cambiar-sala');
+    if (!btn) return;
+    ev.preventDefault();
+    clearGuardiaSala();
+    // Force the picker even though a home sala would otherwise re-derive
+    // instantly — Cambiar is a one-night manual override.
+    showGuardiaSalaPicker(null);
+  });
 }
 
 /** @param {string} pid */
@@ -307,6 +175,9 @@ export function enrichPatientForGuardiaCard(p, guardiasMap, teamCtx = {}) {
     registeredAt: p.registeredAt,
     fimiFecha: p.fimiFecha,
     fiuxFecha: p.fiuxFecha,
+    guardiaEsfuerzo: p.guardiaEsfuerzo,
+    guardiaPronostico: p.guardiaPronostico,
+    guardiaNota: p.guardiaNota,
   };
 }
 
@@ -442,77 +313,15 @@ export function renderGuardiaSummaryTiles(summary, opts = {}) {
 }
 
 /**
- * @param {number} count
- * @param {{ turnoActivo: boolean, entregaActive: boolean, vitalsOverdue: number, critical: number }} state
+ * Deliberately empty — Cambiar now lives in the census table's own header
+ * (buildGuardiaCensusTableHtml) so the census grid keeps the vertical room
+ * this separate bar used to take.
+ * @param {{ sala: string, teamCount: number }} state
  */
-export function renderGuardiaCensusHead(count, state) {
+export function renderGuardiaCensusHead(state) {
+  void state;
   const host = document.getElementById('guardia-census-head');
-  if (!host) return;
-
-  const parts = [];
-  if (state.critical > 0) parts.push(`${state.critical} crítico${state.critical === 1 ? '' : 's'}`);
-  if (state.vitalsOverdue > 0) {
-    parts.push(`${state.vitalsOverdue} signo${state.vitalsOverdue === 1 ? '' : 's'} vencido${state.vitalsOverdue === 1 ? '' : 's'}`);
-  }
-  const byTeam = hasElevatedTeamPrivileges(clinicalSessionContext.user);
-  const sortHint = parts.length
-    ? `${parts.join(' · ')} arriba · por cama`
-    : byTeam
-      ? 'Agrupados por equipo · críticos e inestables arriba · por cama'
-      : 'Orden por cama · críticos e inestables arriba';
-
-  // The patient count now lives on the census table's own card header
-  // ("Censo · N pacientes", guardia-census-table.mjs) — this strip keeps only
-  // the triage sort hint and the learn nudge, so the count is never duplicated.
-  void count;
-  host.innerHTML = `
-    <div class="guardia-census-head-inner">
-      <div class="guardia-census-head-main">
-        <p class="guardia-section-sub">${sortHint}</p>
-      </div>
-    </div>`;
-  appendGuardiaLearnNudge(host);
-}
-
-export function syncGuardiaLearnNudgeChrome() {
-  const host = document.getElementById('guardia-census-head');
-  if (!host) return;
-  void import('../guardia-v7-progress.mjs').then(function (progressMod) {
-    const inner = host.querySelector('.guardia-census-head-inner');
-    if (!inner) return;
-    const btn = inner.querySelector('.guardia-learn-nudge-btn');
-    if (progressMod.isGuardiaV7TrackComplete()) btn?.remove();
-  });
-}
-
-export function appendGuardiaLearnNudge(host) {
-  void Promise.all([
-    import('../guardia-v7-progress.mjs'),
-    import('./settings-help/learn-hub.mjs'),
-  ]).then(function (mods) {
-    const progressMod = mods[0];
-    const hubMod = mods[1];
-    const inner = host.querySelector('.guardia-census-head-inner');
-    if (!inner) return;
-    const existing = inner.querySelector('.guardia-learn-nudge-btn');
-    if (progressMod.isGuardiaV7TrackComplete()) {
-      existing?.remove();
-      return;
-    }
-    if (existing) return;
-    const summary = progressMod.guardiaV7ProgressSummary();
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn-med-secondary guardia-learn-nudge-btn';
-    btn.textContent = `Guía guardia ${summary.completed}/${summary.total}`;
-    btn.title = 'Abrir capítulos de guardia en el Centro de aprendizaje';
-    btn.addEventListener('click', function () {
-      if (typeof hubMod.openLearnHub === 'function') {
-        hubMod.openLearnHub({ focusTrack: 'guardia-v7' });
-      }
-    });
-    inner.appendChild(btn);
-  });
+  if (host) host.innerHTML = '';
 }
 
 export function wireGuardiaModeToggle(settings) {
@@ -554,25 +363,19 @@ export function syncGuardiaBoardChrome(state) {
   if (vitalsSection) vitalsSection.hidden = !state.turnoActivo || !!state.rosterOpen;
 
   if (filterHint) {
-    const elevated = hasElevatedTeamPrivileges(clinicalSessionContext.user);
+    // Sala + equipo scope is now shown on the census head (renderGuardiaCensusHead) —
+    // Filtros censo no longer applies to Guardia, so this hint only covers alcance.
     const alcanceOn = !!clinicalSessionContext.guardiaMode;
     filterHint.textContent = alcanceOn
       ? 'Solo pacientes que te entregaron en este turno.'
-      : elevated
-        ? 'Censo completo del servicio — acota con Filtros censo arriba.'
-        : state.turnoActivo
-          ? 'Todos los pacientes en tu alcance durante el turno.'
-          : 'Todos los pacientes en tu alcance clínico.';
-    filterHint.classList.toggle('visually-hidden', !elevated && !alcanceOn);
+      : state.turnoActivo
+        ? 'Todos los pacientes en tu alcance durante el turno.'
+        : 'Todos los pacientes en tu alcance clínico.';
+    filterHint.classList.toggle('visually-hidden', !alcanceOn);
   }
   if (scopePanel) {
     scopePanel.classList.toggle('guardia-census-scope--narrow', !!clinicalSessionContext.guardiaMode);
   }
 
-  syncEntregaPhaseChrome({ rosterOpen: state.rosterOpen, turnoActivo: state.turnoActivo });
-
-  syncGuardiaPhaseBar({
-    ...state,
-    onBeginEntrega: handleEntregaPhaseButtonClick,
-  });
+  syncGuardiaPhaseBar(state);
 }

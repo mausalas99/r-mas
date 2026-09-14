@@ -123,7 +123,11 @@ describe('createSyncRuntimeCycle flush/push behavior', () => {
     await runtime.syncCycle();
     runtime.stop();
 
-    assert.deepEqual(mutationIds, ['clinicalOps:12345']);
+    // Base id still carries enqueuedAt (12345); an `:a<attempt>:<ts>` suffix
+    // makes every wire attempt unique so a re-cut chunk never collides with
+    // the Worker's cached response for an earlier attempt (fact 4).
+    assert.equal(mutationIds.length, 1);
+    assert.match(mutationIds[0], /^clinicalOps:12345:a1:\d+$/);
   });
 
   it('pulls before push when outbox is empty', async () => {
@@ -200,6 +204,171 @@ describe('createSyncRuntimeCycle flush/push behavior', () => {
       'a quota_exceeded rejection must be recorded for the Conexión diagnostics panel'
     );
     assert.equal(outbox.list().length, 0);
+  });
+
+  it('an op merged into the row mid-flight survives — a whole-row remove would have deleted it unsent', async () => {
+    const outbox = makeOutbox([
+      {
+        clientMutationId: 'm1',
+        ops: [
+          { path: 'a', value: 1, updatedAt: 't1' },
+          { path: 'b', value: 1, updatedAt: 't1' },
+        ],
+        baseRevision: 0,
+        enqueuedAt: 1,
+      },
+    ]);
+    let pushCalls = 0;
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => ({ revision: 1, ops: [] }),
+        push: async () => {
+          pushCalls += 1;
+          // A concurrent local edit lands on the same row while this push
+          // is still in flight, before the Worker has responded.
+          outbox.enqueue({ clientMutationId: 'm1', ops: [{ path: 'a', value: 2, updatedAt: 't2' }] });
+          return { revision: 2 };
+        },
+      },
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => 0,
+      setRevision: () => {},
+      onStatus() {},
+    });
+
+    await runtime.syncCycle();
+    runtime.stop();
+
+    assert.equal(pushCalls, 1);
+    const rows = outbox.list();
+    assert.equal(rows.length, 1, 'the row survives — it still holds the unsent mid-flight op');
+    assert.equal(rows[0].clientMutationId, 'm1');
+    // 'b'@t1 was actually sent and acked; 'a'@t1 was overwritten by the
+    // mid-flight edit before the ack, so the ack for 'a'@t1 is a no-op and
+    // the newer 'a'@t2 is the only op left, still unsent.
+    assert.deepEqual(
+      rows[0].ops.map((op) => `${op.path}@${op.updatedAt}`),
+      ['a@t2']
+    );
+  });
+
+  it('a permanent failure partway through a multi-chunk drain leaves only the unsent tail behind', async () => {
+    const ops = Array.from({ length: 20 }, (_, i) => ({
+      path: `entries/p${i}/fields`,
+      value: { nombre: `P${i}` },
+      updatedAt: `t${i}`,
+      actorId: 'a',
+    }));
+    const outbox = makeOutbox([{ clientMutationId: 'm-census', ops, baseRevision: 0, enqueuedAt: 1 }]);
+    let pushCalls = 0;
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => ({ revision: 1, ops: [] }),
+        push: async () => {
+          pushCalls += 1;
+          if (pushCalls === 2) {
+            const err = new Error('bad request');
+            err.status = 400;
+            throw err;
+          }
+          return { revision: pushCalls + 1 };
+        },
+      },
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => 0,
+      setRevision: () => {},
+      onStatus() {},
+    });
+
+    await runtime.syncCycle();
+    runtime.stop();
+
+    assert.equal(pushCalls, 2, 'the drain needed 2 chunks for 20 ops, and the 2nd failed');
+    const rows = outbox.list();
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].clientMutationId, 'm-census');
+    assert.ok(rows[0].ops.length > 0 && rows[0].ops.length < 20, 'only the unsent tail remains');
+    assert.ok(
+      !rows[0].ops.some((op) => op.path === 'entries/p0/fields'),
+      'the acked first chunk must not come back'
+    );
+  });
+
+  it('a second cycle after a partial failure never reuses the failed chunk wire id', async () => {
+    const ops = Array.from({ length: 20 }, (_, i) => ({
+      path: `entries/p${i}/fields`,
+      value: { nombre: `P${i}` },
+      updatedAt: `t${i}`,
+      actorId: 'a',
+    }));
+    const outbox = makeOutbox([{ clientMutationId: 'm-census', ops, baseRevision: 0, enqueuedAt: 1 }]);
+    const ids = [];
+    let pushCalls = 0;
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => ({ revision: 1, ops: [] }),
+        push: async (_room, body) => {
+          pushCalls += 1;
+          ids.push(body.clientMutationId);
+          if (pushCalls === 2) {
+            const err = new Error('bad request');
+            err.status = 400;
+            throw err;
+          }
+          return { revision: pushCalls + 1 };
+        },
+      },
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => 0,
+      setRevision: () => {},
+      onStatus() {},
+    });
+
+    await runtime.syncCycle();
+    const failedId = ids[ids.length - 1];
+    await new Promise((r) => setTimeout(r, 2));
+    await runtime.syncCycle();
+    runtime.stop();
+
+    const retryId = ids[ids.length - 1];
+    assert.notEqual(
+      retryId,
+      failedId,
+      'a retried chunk must not reuse a wire id the Worker may have cached a response for'
+    );
+    assert.equal(outbox.list().length, 0, 'the tail eventually drains on the second cycle');
+  });
+
+  it('reports send progress as "syncing" detail while draining the outbox', async () => {
+    const statuses = [];
+    const outbox = makeOutbox([
+      { clientMutationId: 'm1', ops: [{ path: 'a', value: 1, updatedAt: 't1' }], baseRevision: 0, enqueuedAt: 1 },
+      { clientMutationId: 'm2', ops: [{ path: 'b', value: 2, updatedAt: 't2' }], baseRevision: 0, enqueuedAt: 2 },
+    ]);
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => ({ revision: 1, ops: [] }),
+        push: async () => ({ revision: 1 }),
+      },
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => 0,
+      setRevision: () => {},
+      onStatus(status, detail) {
+        statuses.push({ status, detail });
+      },
+    });
+
+    await runtime.syncCycle();
+    runtime.stop();
+
+    const progress = statuses
+      .filter((s) => s.status === 'syncing' && s.detail)
+      .map((s) => s.detail);
+    assert.deepEqual(progress, ['Enviando 1/2 cambios', 'Enviando 2/2 cambios']);
   });
 
   it('while hidden still flushes outbox and keeps polling armed', async () => {

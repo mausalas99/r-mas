@@ -8,6 +8,7 @@ import {
   unwrapDek,
   exportDekRaw,
   importDekRaw,
+  deriveInternoSubkey,
   encryptValue,
   decryptValue,
   isEncryptedEnvelope,
@@ -101,6 +102,33 @@ describe('cloud-sync crypto', () => {
     const value = { note: 'rescatado' };
     const envelope = await encryptValue(dek, value);
     assert.deepEqual(await decryptValue(recovered, envelope), value);
+  });
+
+  it('derives a stable Interno subkey that round-trips its own envelopes', async () => {
+    const dek = await generateDek();
+    const subkeyA = await deriveInternoSubkey(dek);
+    const subkeyB = await deriveInternoSubkey(dek);
+    const value = { active_guardias: [{ patient_id: 'p1' }] };
+    const envelope = await encryptValue(subkeyA, value);
+    assert.deepEqual(await decryptValue(subkeyB, envelope), value);
+  });
+
+  it('Interno subkey cannot decrypt content encrypted under the raw room DEK, or vice versa', async () => {
+    const dek = await generateDek();
+    const subkey = await deriveInternoSubkey(dek);
+    const noteEnvelope = await encryptValue(dek, { note: 'historia clínica completa' });
+    await assert.rejects(() => decryptValue(subkey, noteEnvelope));
+    const vitalsEnvelope = await encryptValue(subkey, { fc: 88 });
+    await assert.rejects(() => decryptValue(dek, vitalsEnvelope));
+  });
+
+  it('Interno subkey transports through raw export/import, same as a DEK', async () => {
+    const dek = await generateDek();
+    const subkey = await deriveInternoSubkey(dek);
+    const raw = await exportDekRaw(subkey);
+    const imported = await importDekRaw(raw);
+    const envelope = await encryptValue(subkey, { fc: 72 });
+    assert.deepEqual(await decryptValue(imported, envelope), { fc: 72 });
   });
 
   it('admin rescue wrap cannot be opened by a different admin keypair', async () => {

@@ -130,7 +130,6 @@ export function mountCloudAdminPanel(host, deps) {
         selectAdminTab(root, tabId);
         const resolved = tabId === 'usuarios' ? 'equipos' : tabId;
         if (resolved === 'equipos') void equiposPanel.refresh();
-        if (resolved === 'red') void loadAdminNetworkCensus(root, deps);
       }
       return;
     }
@@ -166,12 +165,14 @@ export function mountCloudAdminPanel(host, deps) {
   selectAdminTab(root, 'resumen');
   void loadAdminResumen(root, deps.getApi);
   void loadAdminSalas(root, deps.getApi, salasCtx);
+  void loadAdminNetworkCensus(root, deps);
 
   return {
     root,
     refresh() {
       void loadAdminResumen(root, deps.getApi);
       void loadAdminSalas(root, deps.getApi, salasCtx);
+      void loadAdminNetworkCensus(root, deps);
     },
   };
 }

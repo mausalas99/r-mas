@@ -1,15 +1,7 @@
 import { applyOps } from '../lww.js';
 import { commitMutationBatch, loadRoomState as loadSyncRoomState } from '../sync.js';
-import {
-  assertInternoPatientOnBoard,
-  entriesToPatients,
-  readInternoBoard,
-} from './board.js';
-import { loadRoomState, resolveRoomForSala } from './room-resolve.js';
-import {
-  applyInternoMedicionToPatient,
-  buildInternoMedicion,
-} from './vitals-medicion.js';
+import { assertInternoPatientOnBoard, readInternoRelayBoard } from './board.js';
+import { resolveRoomForSala } from './room-resolve.js';
 
 const VITALS_RATE_WINDOW_MS = 60_000;
 const VITALS_RATE_MAX = 60;
@@ -37,68 +29,6 @@ export function checkVitalsRateLimit(request, token) {
   }
   bucket.count += 1;
   return bucket.count <= VITALS_RATE_MAX;
-}
-
-/** @param {object|null|undefined} stored @param {string} patientId */
-function resolveInternoVitalsPatient(stored, patientId) {
-  if (stored) return { cur: stored, isNewPatient: false };
-  return {
-    cur: {
-      id: patientId,
-      monitoreo: { historial: [], estadoClinico: {}, confirmado: {} },
-    },
-    isNewPatient: true,
-  };
-}
-
-/** @param {object} nextPatient */
-function ensureInternoMonitoreoShell(nextPatient) {
-  if (!nextPatient.monitoreo) {
-    nextPatient.monitoreo = { historial: [], estadoClinico: {}, confirmado: {} };
-  }
-}
-
-/** @param {object|null|undefined} clinicalOps @param {string} patientId */
-function touchGuardiaVitalsCheck(clinicalOps, patientId) {
-  if (!clinicalOps || !Array.isArray(clinicalOps.active_guardias)) return clinicalOps;
-  const now = new Date().toISOString();
-  const pid = String(patientId);
-  let changed = false;
-  const active_guardias = clinicalOps.active_guardias.map((row) => {
-    if (String(row?.patient_id || '') !== pid) return row;
-    if (String(row?.status || 'Active') !== 'Active') return row;
-    changed = true;
-    return { ...row, last_vitals_check: now };
-  });
-  return changed ? { ...clinicalOps, active_guardias } : clinicalOps;
-}
-
-/** @param {string} sala @param {string} patientId @param {object} built @param {object} nextPatient @param {object|null|undefined} clinicalOps @param {boolean} isNewPatient */
-function buildInternoVitalsOps(sala, patientId, built, nextPatient, clinicalOps, isNewPatient) {
-  const actorId = `interno:${sala}`;
-  const updatedAt = String(built.medicion.recordedAt || new Date().toISOString());
-  const nextClinicalOps = touchGuardiaVitalsCheck(clinicalOps, patientId);
-  /** @type {import('../lww.js').SyncOp[]} */
-  const ops = [
-    {
-      path: `entries/${patientId}/monitoreo`,
-      value: nextPatient.monitoreo,
-      updatedAt,
-      actorId,
-    },
-  ];
-  if (nextClinicalOps !== clinicalOps) {
-    ops.push({ path: 'clinicalOps', value: nextClinicalOps, updatedAt, actorId });
-  }
-  if (isNewPatient) {
-    ops.unshift({
-      path: `entries/${patientId}`,
-      value: { id: patientId, monitoreo: nextPatient.monitoreo },
-      updatedAt,
-      actorId,
-    });
-  }
-  return { ops, actorId, clientMutationId: `interno-vitals/${patientId}/${built.medicion.id}` };
 }
 
 /**
@@ -144,54 +74,46 @@ async function commitInternoVitalsOps(env, db, roomId, ops, actorId, clientMutat
 }
 
 /**
+ * The phone builds and encrypts the medición itself (it holds the Interno
+ * subkey, the Worker never does) and submits the finished envelope. The Worker
+ * applies it as an opaque LWW replace — cloud/sync-worker/src/lww.js already
+ * treats any enc:1 monitoreo value this way, so no merge/decrypt happens here.
  * @param {{ WORKER_DATA_KEY?: string }} env
  * @param {import('@cloudflare/workers-types').D1Database} db
  * @param {string} sala
  * @param {string} patientId
- * @param {object} body
+ * @param {{ monitoreoEnvelope?: unknown, medicionId?: string }} body
  */
 export async function applyInternoVitals(env, db, sala, patientId, body) {
   const scope = await assertInternoPatientOnBoard(env, db, sala, patientId);
   if (scope.error) return scope.error;
+
+  const monitoreoEnvelope = body?.monitoreoEnvelope;
+  if (!monitoreoEnvelope || typeof monitoreoEnvelope !== 'object') {
+    return Response.json({ error: 'empty_medicion' }, { status: 400 });
+  }
+  const medicionId = String(body?.medicionId || '').trim();
+  if (!medicionId) {
+    return Response.json({ error: 'medicion_id_required' }, { status: 400 });
+  }
 
   const room = scope.room || (await resolveRoomForSala(db, sala));
   if (!room) {
     return Response.json({ error: 'room_not_found' }, { status: 503 });
   }
 
-  const built = buildInternoMedicion({
-    vitals: body?.vitals,
-    glucometrias: body?.glucometrias,
-    reporterName: body?.reporterName,
-    sala,
-  });
-  if (!built.ok) {
-    return Response.json({ error: 'empty_medicion' }, { status: 400 });
-  }
+  const actorId = `interno:${sala}`;
+  const updatedAt = new Date().toISOString();
+  const ops = [
+    {
+      path: `entries/${patientId}/monitoreo`,
+      value: monitoreoEnvelope,
+      updatedAt,
+      actorId,
+    },
+  ];
+  const clientMutationId = `interno-vitals/${patientId}/${medicionId}`;
 
-  const state = await loadRoomState(env, db, String(room.id));
-  if (!state) {
-    return Response.json({ error: 'room_state_missing' }, { status: 503 });
-  }
-
-  const patients = entriesToPatients(state.entries || []);
-  const stored = patients.find((row) => String(row.id) === patientId);
-  const { cur, isNewPatient } = resolveInternoVitalsPatient(stored, patientId);
-  const nextPatient = structuredClone(cur);
-  ensureInternoMonitoreoShell(nextPatient);
-  const applied = applyInternoMedicionToPatient(nextPatient, built.medicion);
-  if (!applied.ok) {
-    return Response.json({ error: 'apply_failed' }, { status: 400 });
-  }
-
-  const { ops, actorId, clientMutationId } = buildInternoVitalsOps(
-    sala,
-    patientId,
-    built,
-    nextPatient,
-    state.clinicalOps,
-    isNewPatient
-  );
   const committed = await commitInternoVitalsOps(
     env,
     db,
@@ -208,12 +130,7 @@ export async function applyInternoVitals(env, db, sala, patientId, body) {
     return Response.json({ error: committed.error }, { status });
   }
 
-  return Response.json({
-    ok: true,
-    patientId,
-    version: committed.version,
-    hasAlterations: built.hasAlterations,
-  });
+  return Response.json({ ok: true, patientId, version: committed.version });
 }
 
-export { readInternoBoard };
+export { readInternoRelayBoard };

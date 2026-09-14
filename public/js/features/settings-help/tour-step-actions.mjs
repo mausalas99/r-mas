@@ -441,34 +441,11 @@ function applyGuardiaTourLayoutForStep(stepId) {
       ]).then(([entrega, roster]) => {
         entrega.endEntregaPhase();
         roster.closeEntregaRosterPanel();
-        if (stepId === 'gv7_fin_turno') {
-          roster.activateTurnoActivo();
-          window.dispatchEvent(new CustomEvent('guardia:turno-activo'));
-        } else {
-          roster.deactivateTurnoActivo();
-        }
+        roster.deactivateTurnoActivo();
         document.documentElement.classList.remove('guardia-entrega-roster-open');
         if (typeof rt.renderGuardiaBoard === 'function') {
           rt.renderGuardiaBoard(rt.getSettings());
         }
-      });
-      return;
-    }
-    if (guards.shouldOpenEntregaRosterForTour(stepId)) {
-      void import('../clinical-entrega.mjs').then((entrega) => {
-        if (!entrega.isEntregaPhaseActive()) {
-          void entrega.beginEntregaPhaseFlow({
-            settings: rt.getSettings(),
-            renderGuardiaBoard: rt.renderGuardiaBoard,
-          });
-          return;
-        }
-        void import('../entrega-roster-panel.mjs').then((roster) => {
-          if (!roster.isEntregaRosterOpen()) {
-            roster.openEntregaRosterPanel(rt.getSettings());
-            rt.renderGuardiaBoard?.(rt.getSettings());
-          }
-        });
       });
     }
   });
@@ -611,11 +588,6 @@ export function applyTourTargetForStep(id) {
   if (id === 'map_lab_teaser' || id === 'lab_parse') ensureTourDemoLabInputBoth();
   closeStaleModalsForTourStep(id);
   clearAllTourSpotlights();
-  if (id === 'gv7_trust_strip') {
-    void import('../guardia-trust-strip.mjs').then((m) => {
-      if (typeof m.syncGuardiaTrustStrip === 'function') m.syncGuardiaTrustStrip();
-    });
-  }
   if (!t.selector) return;
   var spotlightDelay = id === 'listado_problemas' || id === 'map_incomplete' ? 280 : 140;
   tourApplySpotlightForStep(id, t, spotlightDelay);

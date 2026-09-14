@@ -64,7 +64,11 @@ export function buildPatientSections(patient, ctx) {
     pushSection(sections, 'Cultivos', cult.split(/\n+/).filter(Boolean));
   }
 
-  pushSection(sections, 'Pendientes', formatPendientesForCenso(ctx.todosByPatient[pid] || []));
+  pushSection(
+    sections,
+    'Pendientes',
+    formatPendientesForCenso(ctx.todosByPatient[pid] || [], { all: !!ctx.showAllPendientes })
+  );
 
   return { sections: sections, signosIo: signosIo };
 }

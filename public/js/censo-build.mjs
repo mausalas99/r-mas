@@ -201,6 +201,7 @@ export function buildCensusPayload(opts) {
     labHistoryByPatient: opts.labHistoryByPatient,
     todosByPatient: opts.todosByPatient,
     now: now,
+    showAllPendientes: !!opts.showAllPendientes,
   };
 
   var teamLabelByPatientId = opts.teamLabelByPatientId || {};

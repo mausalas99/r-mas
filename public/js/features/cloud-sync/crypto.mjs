@@ -165,6 +165,37 @@ export async function importDekRaw(b64) {
   ]);
 }
 
+/** HKDF info string binding the Interno subkey to this one purpose — changing it invalidates every already-issued Interno QR. */
+const INTERNO_SUBKEY_INFO = 'rplus-interno-v1';
+
+/**
+ * Derive a purpose-scoped subkey from the room DEK (HKDF-SHA-256, empty salt —
+ * the DEK is already high-entropy secret key material, so HKDF here is pure
+ * Expand-style domain separation, not password stretching). Used for Interno:
+ * the phone gets this narrow subkey instead of the raw room DEK, so a leaked
+ * Interno QR only ever exposes what this subkey decrypts (clinicalOps,
+ * monitoreo) — never notes, labs, or historia clínica, which stay under the
+ * DEK this subkey can't be reversed back into.
+ * @param {CryptoKey} dek
+ * @returns {Promise<CryptoKey>}
+ */
+export async function deriveInternoSubkey(dek) {
+  const raw = await crypto.subtle.exportKey('raw', dek);
+  const keyMaterial = await crypto.subtle.importKey('raw', raw, 'HKDF', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    {
+      name: 'HKDF',
+      hash: 'SHA-256',
+      salt: new Uint8Array(0),
+      info: new TextEncoder().encode(INTERNO_SUBKEY_INFO),
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: DEK_LENGTH_BITS },
+    true,
+    ['encrypt', 'decrypt']
+  );
+}
+
 /**
  * @param {CryptoKey} dek
  * @param {unknown} value plain JS value — JSON-serializable

@@ -29,7 +29,6 @@ import { patientsBridge } from './patients-bridge.mjs';
 import { patchPatientListActiveHighlight } from './patients-list.mjs';
 import { scrollActiveRondaCardIntoView } from './patients-round.mjs';
 import { syncPatientBulkBar } from './patients-bulk-bar.mjs';
-import { openConfirm } from './workbench/confirm.mjs';
 import { requestSilentUpdateCheck } from './platform/updater/silent-check.mjs';
 import { writeLastSelectedPatientId } from './patients-default-id.mjs';
 
@@ -238,26 +237,6 @@ function selectPatientCore(id) {
   });
 }
 
-function showPatientDeleteConfirm(n) {
-  var many = n > 1;
-  return openConfirm({
-    weight: 'destructive',
-    title: many ? 'Eliminar ' + n + ' pacientes' : 'Eliminar paciente',
-    message: many
-      ? 'Se quitarán las notas de este turno. No volverán desde otros equipos.'
-      : 'Se quitarán las notas de este turno. No volverá desde otros equipos.',
-    confirmLabel: 'Eliminar',
-    cancelLabel: 'Cancelar',
-  }).then(function (result) {
-    return result === 'confirm';
-  });
-}
-
-function confirmPatientDelete(target) {
-  if (target && target.archived) return Promise.resolve(true);
-  return showPatientDeleteConfirm(1);
-}
-
 function showEmptyPatientShell() {
   var pv = document.getElementById('patient-view');
   var es = document.getElementById('empty-state');
@@ -304,7 +283,6 @@ export async function deletePatient(e, id) {
     }
     return;
   }
-  if (!(await confirmPatientDelete(target))) return;
   var label = 'Eliminar ' + (target.nombre || 'paciente');
   if (typeof rt.pushUndoSnapshot === 'function') rt.pushUndoSnapshot(label);
   var summary = await commitPatientDeletes([id]);
@@ -333,8 +311,6 @@ export async function confirmBulkDeletePatients() {
     return;
   }
   var n = allowed.length;
-  var ok = await showPatientDeleteConfirm(n);
-  if (!ok) return;
   if (typeof rt.pushUndoSnapshot === 'function') {
     rt.pushUndoSnapshot('Eliminar ' + n + ' pacientes');
   }

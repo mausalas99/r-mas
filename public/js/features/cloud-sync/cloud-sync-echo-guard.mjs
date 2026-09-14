@@ -35,6 +35,25 @@ export function wasCloudOpAlreadyAttempted(op) {
   return readEchoIndex()[path] === at;
 }
 
+/**
+ * Batch form of `wasCloudOpAlreadyAttempted` — reads the echo index once for
+ * the whole array instead of once per op. Drop the already-attempted ops at
+ * enqueue time (not only at wire time) so the persisted outbox row is the
+ * delta too, not the whole census re-collected every edit.
+ * @param {unknown[]} ops
+ * @returns {unknown[]}
+ */
+export function filterCloudOpsNotAttempted(ops) {
+  if (!Array.isArray(ops) || !ops.length) return [];
+  const idx = readEchoIndex();
+  return ops.filter((op) => {
+    const path = String(op?.path || '').trim();
+    const at = String(op?.updatedAt || '').trim();
+    if (!path || !at) return true;
+    return idx[path] !== at;
+  });
+}
+
 /** Call once a push actually got a response (applied or rejected) for these ops. */
 export function noteCloudOpsAttempted(ops) {
   if (!Array.isArray(ops) || !ops.length) return;

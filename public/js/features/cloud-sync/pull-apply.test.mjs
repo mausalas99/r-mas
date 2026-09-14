@@ -226,6 +226,25 @@ describe('pull-apply tombstone guard', () => {
   });
 });
 
+describe('pull-apply tombstone vs entry race', () => {
+  it('drops entries for a patient id that has an active tombstone in the same pull', async () => {
+    const { excludeTombstonedEntries } = await import('./pull-apply.mjs');
+    const entries = [
+      { patient: { id: 'p-deleted' } },
+      { patient: { id: 'p-live' } },
+    ];
+    const result = excludeTombstonedEntries(entries, { 'p-deleted': { registro: '123' } });
+    assert.deepEqual(result.map((e) => e.patient.id), ['p-live']);
+  });
+
+  it('is a no-op when there are no tombstones', async () => {
+    const { excludeTombstonedEntries } = await import('./pull-apply.mjs');
+    const entries = [{ patient: { id: 'p-live' } }];
+    assert.equal(excludeTombstonedEntries(entries, {}), entries);
+    assert.equal(excludeTombstonedEntries(entries, undefined), entries);
+  });
+});
+
 describe('pull-apply sync-apply wiring (Phase 3)', () => {
   it('imports patient apply/delete from sync-apply not lan', () => {
     assert.match(pullApplySrc, /sync-apply\/patient-entries/);

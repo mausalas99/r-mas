@@ -2,11 +2,55 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   drainSyncedLabOpsFromOutboxRows,
+  prepareOutboxOpsForEnqueue,
   pruneLabSidecarOpsFromOutboxRows,
   splitLabBackfillOutboxRows,
   splitLabOpsIntoOutboxItems,
 } from './outbox-lab.mjs';
 import { noteCloudLabSidecarOpsPushed } from './cloud-lab-sidecar-index.mjs';
+import { noteCloudOpsAttempted, clearCloudSyncEchoGuard } from './cloud-sync-echo-guard.mjs';
+
+describe('prepareOutboxOpsForEnqueue — delta at enqueue', () => {
+  const prevLocalStorage = globalThis.localStorage;
+
+  function stubLocalStorage() {
+    globalThis.localStorage = {
+      store: {},
+      getItem(key) {
+        return this.store[key] ?? null;
+      },
+      setItem(key, value) {
+        this.store[key] = String(value);
+      },
+      removeItem(key) {
+        delete this.store[key];
+      },
+    };
+  }
+
+  function restoreLocalStorage() {
+    if (prevLocalStorage) globalThis.localStorage = prevLocalStorage;
+    else delete globalThis.localStorage;
+  }
+
+  it('drops an op already attempted with this exact (path, updatedAt), keeping a real new edit', () => {
+    stubLocalStorage();
+    try {
+      clearCloudSyncEchoGuard();
+      noteCloudOpsAttempted([{ path: 'entries/p1/fields', updatedAt: 't1' }]);
+      const prepared = prepareOutboxOpsForEnqueue('m1', [
+        { path: 'entries/p1/fields', value: { nombre: 'X' }, updatedAt: 't1' },
+        { path: 'entries/p2/fields', value: { nombre: 'Y' }, updatedAt: 't1' },
+      ]);
+      assert.deepEqual(
+        prepared.map((op) => op.path),
+        ['entries/p2/fields']
+      );
+    } finally {
+      restoreLocalStorage();
+    }
+  });
+});
 
 describe('outbox-lab', () => {
   it('pruneLabSidecarOpsFromOutboxRows drops lab-only entries and strips lab ops from batch', () => {

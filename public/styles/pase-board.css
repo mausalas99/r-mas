@@ -38,10 +38,125 @@
   letter-spacing: var(--tracking-wb-column-head);
   text-transform: uppercase;
   color: var(--color-ink-muted);
+  cursor: pointer;
+  user-select: none;
 }
 
-.wb-table-body .gct-divider:first-child {
+.wb-table-body details.gct-team-group:first-child > .gct-divider {
   margin-top: 0;
+}
+
+/* Guardia census — tarjetas por paciente (Modo Guardia) */
+.gct-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 10px 16px;
+}
+.gct-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  height: var(--gct-card-h, 78px);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  font: var(--type-wb-row);
+  font-size: 13.5px;
+  color: var(--color-ink);
+  cursor: pointer;
+  overflow: hidden;
+  transition: background var(--dur-fast, 140ms) var(--ease-out);
+}
+.gct-card:hover { background: color-mix(in oklab, var(--color-ink) 3%, transparent); }
+.gct-card--alert,
+.gct-card--alert:hover {
+  background: var(--color-danger-tint);
+  border-color: var(--color-danger-deep);
+  border-left-width: 3px;
+}
+/* Sin laboratorios en 7 días: posible alta no dada de baja del censo. */
+.gct-card--stale-labs:not(.gct-card--alert) {
+  border-color: color-mix(in srgb, var(--color-warn, #d97706) 55%, var(--divider));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-warn, #d97706) 25%, transparent);
+}
+.gct-chip--stale-labs { background: color-mix(in oklab, var(--color-warn, #d97706) 20%, transparent); }
+.gct-card__row { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.gct-cell-bed { color: var(--color-ink-muted); font-size: 0.9em; flex-shrink: 0; }
+.gct-cell-name {
+  font-weight: 600;
+  flex-shrink: 0;
+  max-width: 45%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gct-card__marks { display: inline-flex; gap: 4px; flex-shrink: 0; margin-left: auto; }
+.gct-chip {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex-shrink: 0;
+  background: color-mix(in oklab, var(--color-ink) 12%, transparent);
+}
+.gct-chip--risk { background: var(--color-danger-tint); }
+.gct-task-row { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.gct-task {
+  font-weight: 600;
+  font-size: 0.95em;
+  min-height: 1em;
+  line-height: 1.35;
+  flex: 1;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--gct-task-lines, 2);
+  overflow: hidden;
+}
+/* Guardia census loading skeleton — same gct-*/wb-table-card shape as the
+   real census so it fills the panel instead of leaving it mostly blank. */
+.guardia-census-loading .gct-card--skeleton { cursor: default; }
+.skel {
+  display: block;
+  border-radius: var(--radius-sm, 4px);
+  background: linear-gradient(
+    100deg,
+    color-mix(in oklab, var(--color-ink) 8%, transparent) 40%,
+    color-mix(in oklab, var(--color-ink) 16%, transparent) 50%,
+    color-mix(in oklab, var(--color-ink) 8%, transparent) 60%
+  );
+  background-size: 200% 100%;
+  animation: guardia-skel-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes guardia-skel-shimmer {
+  from { background-position-x: 150%; }
+  to { background-position-x: -50%; }
+}
+.skel-title { width: 120px; height: 12px; }
+.skel-label { width: 90px; height: 10px; }
+.skel-bed { width: 24px; height: 12px; }
+.skel-name { width: 40%; height: 12px; }
+.skel-task { width: 70%; height: 12px; }
+@media (prefers-reduced-motion: reduce) {
+  .skel { animation: none; }
+}
+
+.gct-task-more {
+  font-size: 0.78em;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  background: color-mix(in oklab, var(--color-ink) 8%, transparent);
+  border-radius: 10px;
+  padding: 1px 7px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .dnr-badge {
@@ -606,11 +721,10 @@ html.ui-density-guardia #lan-connection-banner {
 }
 
 #entrega-modal-backdrop .entrega-top-strip {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  align-items: end;
-  margin: 0;
+  /* R1/equipo/estado are auto-filled by the covering-resident + census-team
+     logic in clinical-entrega-modal.mjs; hidden per request so the quick
+     handoff pop-up opens straight to Marcadores. */
+  display: none;
 }
 
 #entrega-modal-backdrop .entrega-top-strip.entrega-top-strip--phase-covering-set {
@@ -2045,17 +2159,6 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   margin-bottom: 14px;
 }
 
-.guardia-panel--metrics {
-  padding: 8px 12px 10px;
-  margin-bottom: 12px;
-  border-radius: var(--radius-md, 14px);
-  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
-  background: color-mix(in oklab, var(--color-elevated, var(--surface)) 88%, transparent);
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
 .guardia-panel--vitals {
   padding: 0;
 }
@@ -2069,116 +2172,44 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   margin-top: 14px;
 }
 
-.guardia-panel--census {
-  padding: 10px 12px 12px;
+.guardia-sala-picker {
+  padding: 28px 20px;
 }
 
-/*
- * Census (left) + Signos recibidos (right) two-column layout, screens 6a/6b.
- * Was unstyled (plain block div) until the Guardia census fixture (Phase 2
- * continuation) actually populated the census — with an empty census the
- * missing grid was invisible, since a lone empty-state card looks the same
- * whether it is stacked below or sitting beside nothing.
- */
-.guardia-board-columns {
-  display: grid;
-  grid-template-columns: 1.75fr 1fr;
-  align-items: start;
-  gap: 14px;
+.guardia-sala-picker-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 280px;
+  text-align: left;
+}
+
+.guardia-panel--census {
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+#guardia-census-grid {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   min-height: 0;
 }
 
-.guardia-board-side {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-}
-
-@media (max-width: 980px) {
-  .guardia-board-columns {
-    grid-template-columns: 1fr;
-  }
-}
-
-.guardia-metrics-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 12px;
-  flex-wrap: wrap;
-  min-height: 28px;
-}
-
-#appcontent-guardia .guardia-summary--compact {
-  display: flex;
-  align-items: stretch;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  margin: 0;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-#appcontent-guardia .btn-guardia-mode--compact {
-  padding: 3px 9px;
-  font-size: 0.6875rem;
-  gap: 7px;
-}
-
-#appcontent-guardia .btn-guardia-mode--compact .guardia-mode-switch {
-  width: 26px;
-  height: 15px;
+#guardia-census-grid > .wb-table-card {
+  flex: 1;
+  min-height: 0;
 }
 
 .guardia-census-head {
   margin: 0 0 12px;
 }
-
-.guardia-census-head-inner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px 16px;
-}
-
-.guardia-census-head-main {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 12px;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.guardia-census-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
-  margin-left: 0;
-  padding: 0;
-  border-radius: 0;
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-  font-weight: 700;
-  background: transparent;
-  border: 0;
-  color: var(--action);
-  font-variant-numeric: tabular-nums;
-}
-
-.guardia-section-sub {
+.guardia-census-head:empty {
   margin: 0;
-  font-size: 0.75rem;
-  line-height: 1.35;
-  color: var(--text-muted);
-}
-
-.guardia-learn-nudge-btn {
-  flex: 0 0 auto;
-  margin-left: auto;
 }
 
 #appcontent-guardia .patient-chips-grid,
@@ -2367,12 +2398,6 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   font-weight: 600;
   color: var(--text-muted);
   opacity: 0.85;
-}
-
-#appcontent-guardia .guardia-learn-nudge-btn {
-  opacity: 0.72;
-  font-size: 0.72rem;
-  padding: 4px 8px;
 }
 
 #appcontent-guardia .patient-chip-vitals,
@@ -2647,20 +2672,6 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   background: color-mix(in oklab, var(--action) 10%, var(--surface));
   border: 1px solid color-mix(in oklab, var(--action) 25%, var(--border));
   color: var(--action);
-}
-
-#appcontent-guardia .btn-guardia-mode {
-  flex-shrink: 0;
-}
-
-#appcontent-guardia .btn-guardia-mode.is-active {
-  background: var(--color-success-emphasis);
-  color: var(--color-on-success);
-  border-color: var(--color-success-emphasis);
-}
-
-#appcontent-guardia .btn-guardia-mode.is-active .guardia-mode-switch {
-  background: color-mix(in oklab, var(--color-on-success) 75%, transparent);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -5051,21 +5062,6 @@ html.clinical-onboarding-active #main-area {
   max-width: min(920px, 100%);
   margin: 0 auto;
   box-sizing: border-box;
-}
-
-.guardia-census-head-inner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px 16px;
-}
-
-.guardia-learn-nudge-btn {
-  flex: 0 0 auto;
-  margin-left: auto;
-  font-size: 0.8125rem;
-  white-space: nowrap;
 }
 
 .guardia-v7-upgrade-card {

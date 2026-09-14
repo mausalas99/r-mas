@@ -7,6 +7,7 @@ import { isCloudTransientServerError } from './cloud-sync-timing.mjs';
 import { createPullPush, isCloudRevisionStaleError } from './sync-runtime-pull-push.mjs';
 import {
   cloudSyncErrorCode,
+  getLastCloudPushAt,
   noteCloudSyncCycle,
   noteCloudSyncTransport,
   noteCloudSyncWsSignal,
@@ -15,6 +16,25 @@ import {
 } from './cloud-sync-diagnostics.mjs';
 
 export { isCloudRevisionStaleError };
+
+/** Only worth mentioning once the last push is stale enough to notice. */
+const STALE_PUSH_DETAIL_MS = 2 * 60_000;
+
+/**
+ * @param {number} pendingOps
+ */
+function pendingDetailText(pendingOps) {
+  if (!pendingOps) return '';
+  let text = `${pendingOps} cambios sin enviar`;
+  const lastPushAt = getLastCloudPushAt();
+  if (lastPushAt) {
+    const ageMs = Date.now() - new Date(lastPushAt).getTime();
+    if (ageMs >= STALE_PUSH_DETAIL_MS) {
+      text += ` · último envío hace ${Math.floor(ageMs / 60_000)} min`;
+    }
+  }
+  return text;
+}
 
 /**
  * @param {import('./outbox.mjs').createOutbox extends () => infer O ? O : never} outbox
@@ -25,15 +45,23 @@ function createOutboxSync(outbox, setStatus) {
     return outbox.list().length;
   }
 
-  function refreshIdleStatus() {
-    if (!navigator.onLine) {
-      setStatus(pendingCount() > 0 ? 'pending' : 'offline');
-      return;
-    }
-    setStatus(pendingCount() > 0 ? 'pending' : 'idle');
+  function pendingOpsCount() {
+    return outbox.list().reduce(
+      (sum, row) => sum + (Array.isArray(row?.ops) ? row.ops.length : 0),
+      0
+    );
   }
 
-  return { pendingCount, refreshIdleStatus };
+  function refreshIdleStatus() {
+    const detail = pendingDetailText(pendingOpsCount());
+    if (!navigator.onLine) {
+      setStatus(pendingCount() > 0 ? 'pending' : 'offline', detail);
+      return;
+    }
+    setStatus(pendingCount() > 0 ? 'pending' : 'idle', detail);
+  }
+
+  return { pendingCount, pendingOpsCount, refreshIdleStatus };
 }
 
 /**
@@ -140,7 +168,7 @@ function attachSyncRuntimeListeners(ctx, opts = {}) {
   function noteLocalMutation() {
     pace.markLocalWrite();
     if (outboxSync.pendingCount() > 0 && getCurrentStatus() === 'idle') {
-      setStatus('pending');
+      outboxSync.refreshIdleStatus();
     }
     scheduler.armNextTimer(false);
   }
@@ -172,7 +200,7 @@ function attachSyncRuntimeListeners(ctx, opts = {}) {
  * @param {() => ReturnType<typeof createCloudPollScheduler>} getScheduler
  * @param {(status: CloudSyncStatus, detail?: string) => void} setStatus
  */
-function createSyncFailCycle(getScheduler, setStatus, pendingCount) {
+export function createSyncFailCycle(getScheduler, setStatus, pendingCount) {
   return function failCycle(err) {
     const scheduler = getScheduler();
     const transient = isCloudTransientServerError(err);
@@ -192,7 +220,13 @@ function createSyncFailCycle(getScheduler, setStatus, pendingCount) {
         message: msg,
       });
     }
-    if (transient && pendingCount() === 0) {
+    const pending = pendingCount() > 0;
+    if (backoff && pending) {
+      // Ops are still sitting in the outbox, not lost — "Pendiente" (with the
+      // saturation reason as detail) is honest here; "Error" would read as a
+      // sync failure the owner needs to act on.
+      setStatus('pending', msg);
+    } else if (transient && !pending) {
       setStatus('idle');
     } else {
       setStatus('error', msg);
@@ -294,8 +328,8 @@ export function createSyncRuntimeCycle(deps) {
   function setStatus(status, detail) {
     currentStatus = status;
     if (status === 'error') lastDetail = String(detail || lastDetail || '').trim();
-    else if (status === 'idle' || status === 'syncing') lastDetail = '';
-    else if (detail) lastDetail = String(detail).trim();
+    else if (status === 'idle') lastDetail = '';
+    else lastDetail = String(detail || '').trim();
     onStatus?.(status, lastDetail || undefined);
   }
 

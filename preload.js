@@ -73,6 +73,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   labRepoFetch: function(payload) {
     return ipcRenderer.invoke('lab-repo-fetch', payload);
   },
+  labRepoCheck: function(payload) {
+    return ipcRenderer.invoke('lab-repo-check', payload);
+  },
   cloudSyncFetch: function(payload) {
     return ipcRenderer.invoke('cloud-sync-fetch', payload);
   },
@@ -152,6 +155,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   dbClinicalDeleteBlobs: function(payload) {
     return ipcRenderer.invoke('db:clinical-delete-blobs', payload || {});
+  },
+  dbCloudOutboxList: function() {
+    return ipcRenderer.invoke('db:cloud-outbox-list');
+  },
+  dbCloudOutboxReplaceAll: function(rows) {
+    return ipcRenderer.invoke('db:cloud-outbox-replace-all', { rows });
   },
   dbClinicalCommand: function(payload) {
     return ipcRenderer.invoke('db:clinical-command', payload);

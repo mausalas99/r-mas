@@ -4,7 +4,7 @@ import { encodeRoomState } from '../crypto-at-rest.js';
 import worker from '../worker-app.mjs';
 import { salaFromSlug, normalizeInternoSala } from './sala-slug.js';
 import { authenticateInterno } from './auth.js';
-import { readInternoBoard } from './board.js';
+import { readInternoRelayBoard } from './board.js';
 import {
   applyInternoVitals,
   checkVitalsRateLimit,
@@ -228,43 +228,92 @@ describe('interno routes', () => {
     );
     assert.equal(res.status, 200);
     const body = await res.json();
-    assert.deepEqual(body, { ok: true, interno: true, board: 'v2' });
+    assert.deepEqual(body, { ok: true, interno: true, board: 'v3' });
   });
 
-  it('GET /board is temporarily disabled (E2EE migration)', async () => {
+  it('GET /board relays entries + clinicalOps as-is, still encrypted', async () => {
+    const db = createInternoDb({ sala: 'Torre HU', token: 'abc' });
+    await db.setState({
+      revision: 1,
+      entries: [
+        { id: 'p1', nombre: 'GONZALEZ TEST', sala: 'Torre HU' },
+      ],
+      entityVersions: {},
+      todos: {},
+      agenda: [],
+      clinicalOps: { enc: 1, iv: 'iv', ct: 'ct' },
+      labSidecars: {},
+    });
+    const res = await handleInternoRoutes(
+      new Request('http://localhost/api/interno/v1/board?sala=Torre%20HU&t=abc'),
+      { DB: db, ...TEST_KEY },
+      '/board'
+    );
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.active, true);
+    assert.equal(body.entries.length, 1);
+    assert.equal(body.entries[0].id, 'p1');
+    assert.deepEqual(body.clinicalOps, { enc: 1, iv: 'iv', ct: 'ct' });
+  });
+
+  it('GET /board rejects a missing/invalid token', async () => {
     const res = await handleInternoRoutes(
       new Request('http://localhost/api/interno/v1/board?sala=Torre%20HU'),
       { DB: createInternoDb() },
       '/board'
     );
-    assert.equal(res.status, 503);
-    const body = await res.json();
-    assert.equal(body.error, 'temporarily_disabled');
-    assert.match(body.message, /cifrado de extremo a extremo/);
+    assert.equal(res.status, 401);
   });
 
-  it('POST /vitals is temporarily disabled (E2EE migration)', async () => {
+  it('POST /vitals applies an already-encrypted monitoreo envelope, no decrypt', async () => {
+    const db = createInternoDb({ sala: 'Torre HU', token: 'abc', revision: 3 });
+    await db.setState({
+      revision: 3,
+      entries: [
+        {
+          id: 'p1',
+          nombre: 'GONZALEZ TEST',
+          sala: 'Torre HU',
+          monitoreo: { enc: 1, iv: 'old-iv', ct: 'old-ct' },
+        },
+      ],
+      entityVersions: {},
+      todos: {},
+      agenda: [],
+      clinicalOps: { enc: 1, iv: 'iv', ct: 'ct' },
+      labSidecars: {},
+    });
     const res = await handleInternoRoutes(
-      new Request('http://localhost/api/interno/v1/vitals', { method: 'POST', body: '{}' }),
-      { DB: createInternoDb() },
+      new Request('http://localhost/api/interno/v1/vitals', {
+        method: 'POST',
+        body: JSON.stringify({
+          sala: 'Torre HU',
+          token: 'abc',
+          patientId: 'p1',
+          medicionId: 'med-1',
+          monitoreoEnvelope: { enc: 1, iv: 'new-iv', ct: 'new-ct' },
+        }),
+      }),
+      { DB: db, ...TEST_KEY },
       '/vitals'
     );
-    assert.equal(res.status, 503);
+    assert.equal(res.status, 200);
     const body = await res.json();
-    assert.equal(body.error, 'temporarily_disabled');
-    assert.match(body.message, /cifrado de extremo a extremo/);
+    assert.equal(body.ok, true);
+    assert.equal(body.version, 4);
   });
 });
 
 describe('interno board', () => {
   it('returns inactive board when token row is disabled', async () => {
     const db = createInternoDb({ active: false });
-    const board = await readInternoBoard(TEST_KEY, db, 'Torre HU');
+    const board = await readInternoRelayBoard(TEST_KEY, db, 'Torre HU');
     assert.equal(board?.inactive, true);
-    assert.equal(board?.patients.length, 0);
+    assert.equal(board?.entries.length, 0);
   });
 
-  it('builds board rows for Torre HU guardia patients', async () => {
+  it('relays entries and clinicalOps untouched for the phone to decrypt', async () => {
     const db = createInternoDb({ sala: 'Torre HU' });
     await db.setState({
       revision: 1,
@@ -283,10 +332,11 @@ describe('interno board', () => {
       clinicalOps: sampleClinicalOps(),
       labSidecars: {},
     });
-    const board = await readInternoBoard(TEST_KEY, db, 'Torre HU');
+    const board = await readInternoRelayBoard(TEST_KEY, db, 'Torre HU');
     assert.equal(board?.active, true);
-    assert.equal(board?.patients.length, 1);
-    assert.equal(board?.patients[0].id, 'p1');
+    assert.equal(board?.entries.length, 1);
+    assert.equal(board?.entries[0].id, 'p1');
+    assert.deepEqual(board?.clinicalOps, sampleClinicalOps());
   });
 });
 
@@ -305,7 +355,7 @@ describe('interno vitals', () => {
     assert.equal(checkVitalsRateLimit(req, 'tok'), false);
   });
 
-  it('merges monitoreo and bumps room revision', async () => {
+  it('applies an already-encrypted monitoreo envelope as an opaque replace', async () => {
     const db = createInternoDb({ sala: 'Torre HU', revision: 3 });
     await db.setState({
       revision: 3,
@@ -316,7 +366,7 @@ describe('interno vitals', () => {
           cuarto: '301',
           cama: '01',
           sala: 'Torre HU',
-          monitoreo: { historial: [], estadoClinico: {}, confirmado: {} },
+          monitoreo: { enc: 1, iv: 'old-iv', ct: 'old-ct' },
         },
       ],
       entityVersions: {},
@@ -327,8 +377,8 @@ describe('interno vitals', () => {
     });
 
     const res = await applyInternoVitals(TEST_KEY, db, 'Torre HU', 'p1', {
-      vitals: { fc: 88, ta: '120/70' },
-      reporterName: 'Interno Test',
+      medicionId: 'med-1',
+      monitoreoEnvelope: { enc: 1, iv: 'new-iv', ct: 'new-ct' },
     });
     assert.equal(res.status, 200);
     const body = await res.json();
@@ -337,6 +387,27 @@ describe('interno vitals', () => {
     assert.equal(body.version, 4);
     assert.equal(db.getRevision(), 4);
     assert.equal(db.getMutations().length, 1);
+  });
+
+  it('rejects a vitals write for a patient not in this sala\'s room', async () => {
+    const db = createInternoDb({ sala: 'Torre HU', revision: 3 });
+    await db.setState({
+      revision: 3,
+      entries: [{ id: 'p1', nombre: 'GONZALEZ TEST', sala: 'Torre HU' }],
+      entityVersions: {},
+      todos: {},
+      agenda: [],
+      clinicalOps: sampleClinicalOps(),
+      labSidecars: {},
+    });
+
+    const res = await applyInternoVitals(TEST_KEY, db, 'Torre HU', 'not-in-room', {
+      medicionId: 'med-1',
+      monitoreoEnvelope: { enc: 1, iv: 'new-iv', ct: 'new-ct' },
+    });
+    assert.equal(res.status, 403);
+    const body = await res.json();
+    assert.equal(body.error, 'patient_out_of_scope');
   });
 });
 

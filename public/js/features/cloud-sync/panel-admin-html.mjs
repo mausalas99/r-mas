@@ -3,6 +3,7 @@ import { formatBytes } from '../../update-helpers.mjs';
 import { adminTableHtml, fmtRole } from './panel-admin-helpers.mjs';
 import { formatCloudRoomLabel } from './room-label.mjs';
 import { resolvePatientCensusTeamId } from '../patients-clinical-filter.mjs';
+import { getCachedLabVerify } from './lab-verify-cache.mjs';
 
 /** Sentinel team-filter value meaning "sin equipo" (no resolved team), distinct from "" = todos. */
 const NO_TEAM_FILTER_VALUE = '__sin_equipo__';
@@ -166,51 +167,126 @@ export function salasTableHtml(rooms) {
   );
 }
 
-function networkCensusRowFromEntry(area, entry, teams, assignments, now, teamOptions) {
-  const fields = entry?.fields || {};
-  const patientId = String(entry?.id || '');
-  const teamId = resolvePatientCensusTeamId({ id: patientId, ...fields }, teams, assignments, now);
-  if (teamId) {
-    const team = teams.find((t) => String(t.team_id || '') === teamId);
-    teamOptions.set(teamId, team?.name || teamId);
+/** Newest `{ updatedAt, actorId }` among a patient's own entity-version keys (`entries/{id}`, `entries/{id}/fields`, …). */
+function lastPatientActivity(entityVersions, patientId) {
+  if (!entityVersions) return null;
+  const prefix = 'entries/' + patientId;
+  let best = null;
+  for (const key of Object.keys(entityVersions)) {
+    if (key !== prefix && !key.startsWith(prefix + '/')) continue;
+    const v = entityVersions[key];
+    if (!v || !v.updatedAt) continue;
+    if (!best || String(v.updatedAt) > String(best.updatedAt)) best = v;
   }
+  return best;
+}
+
+/**
+ * Newest `{ updatedAt, actorId }` among a patient's own lab-set writes
+ * (`labSidecars/{id}/{setId}`, one entityVersions key per lab set — see
+ * `lww.js`'s `applyOps`). Same entityVersions map `lastPatientActivity`
+ * reads, filtered to lab paths only — costs no extra fetch or decrypt,
+ * since `entityVersions` already lives in the core (unsharded) room state
+ * that `handleNetworkCensus` loads with `skipLabShards: true`.
+ */
+function lastPatientLabActivity(entityVersions, patientId) {
+  if (!entityVersions) return null;
+  const prefix = 'labSidecars/' + patientId + '/';
+  let best = null;
+  for (const key of Object.keys(entityVersions)) {
+    if (!key.startsWith(prefix)) continue;
+    const v = entityVersions[key];
+    if (!v || !v.updatedAt) continue;
+    if (!best || String(v.updatedAt) > String(best.updatedAt)) best = v;
+  }
+  return best;
+}
+
+const STALE_LABS_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** No lab draw in 7 days, or ever — lab age alone, regardless of archived/admission state. */
+function isStaleLabsRow(row, now) {
+  if (!row.lastLabAt) return true;
+  return now.getTime() - new Date(row.lastLabAt).getTime() > STALE_LABS_MS;
+}
+
+/** @param {Map<string, object>} usersById @param {string} actorId */
+function labelForActor(usersById, actorId) {
+  const id = String(actorId || '').trim();
+  if (!id) return '';
+  const u = usersById.get(id);
+  return u ? String(u.clinical_name || u.username || id) : id;
+}
+
+function baseFieldsForNetworkCensusRow(fields) {
   return {
-    sala: area.sala,
-    roomId: area.roomId,
-    code: area.code,
-    patientId,
     registro: fields.registro || '',
     nombre: fields.nombre || '(sin nombre)',
     cama: fields.cama || '—',
     cuarto: fields.cuarto || '—',
     servicio: fields.servicio || '—',
     archived: !!fields.archived,
-    teamId,
   };
 }
 
-function networkCensusRowsFromArea(area, now, teamOptions) {
+function resolveNetworkCensusTeamId(patientId, fields, teams, assignments, now, teamOptions) {
+  const teamId = resolvePatientCensusTeamId({ id: patientId, ...fields }, teams, assignments, now);
+  if (teamId) {
+    const team = teams.find((t) => String(t.team_id || '') === teamId);
+    teamOptions.set(teamId, team?.name || teamId);
+  }
+  return teamId;
+}
+
+function networkCensusRowFromEntry(area, entry, teams, assignments, now, teamOptions, usersById) {
+  const fields = entry?.fields || {};
+  const patientId = String(entry?.id || '');
+  const teamId = resolveNetworkCensusTeamId(patientId, fields, teams, assignments, now, teamOptions);
+  const activity = lastPatientActivity(area.entityVersions, patientId);
+  const labActivity = lastPatientLabActivity(area.entityVersions, patientId);
+  const row = {
+    sala: area.sala,
+    roomId: area.roomId,
+    code: area.code,
+    patientId,
+    ...baseFieldsForNetworkCensusRow(fields),
+    teamId,
+    lastUpdatedAt: activity?.updatedAt || '',
+    lastActor: activity ? labelForActor(usersById, activity.actorId) : '',
+    lastLabAt: labActivity?.updatedAt || '',
+  };
+  row.staleLabs = isStaleLabsRow(row, now);
+  return row;
+}
+
+function networkCensusRowsFromArea(area, now, teamOptions, usersById) {
   const teams = area.clinicalOps?.teams || [];
   const assignments = area.clinicalOps?.patient_team_assignment || [];
   return (area.entries || []).map((entry) =>
-    networkCensusRowFromEntry(area, entry, teams, assignments, now, teamOptions)
+    networkCensusRowFromEntry(area, entry, teams, assignments, now, teamOptions, usersById)
   );
 }
 
 /**
  * Walks every area's entries into flat rows, plus the areas that errored and
  * the teamId->label map for the team filter's <option>s.
+ * @param {object[]} census
+ * @param {Date} now
+ * @param {Array<{ user_id?: string, clinical_name?: string, username?: string }>} [users]
  */
-function buildNetworkCensusRows(census, now) {
+function buildNetworkCensusRows(census, now, users) {
   const rows = [];
   const errors = [];
   const teamOptions = new Map(); // teamId -> label
+  const usersById = new Map(
+    (users || []).filter((u) => u && u.user_id).map((u) => [String(u.user_id), u])
+  );
   for (const area of Array.isArray(census) ? census : []) {
     if (area.error) {
       errors.push(area);
       continue;
     }
-    rows.push(...networkCensusRowsFromArea(area, now, teamOptions));
+    rows.push(...networkCensusRowsFromArea(area, now, teamOptions, usersById));
   }
   rows.sort(
     (a, b) =>
@@ -218,6 +294,35 @@ function buildNetworkCensusRows(census, now) {
       String(a.cama).localeCompare(String(b.cama), 'es', { numeric: true })
   );
   return { rows, errors, teamOptions };
+}
+
+/** @param {string} iso */
+function timeAgoLong(iso) {
+  if (!iso) return '';
+  const diffMin = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (diffMin < 1) return 'ahora';
+  if (diffMin < 60) return diffMin + ' min';
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return diffH + ' h';
+  const diffD = Math.floor(diffH / 24);
+  return diffD + ' d' + (diffD === 1 ? 'ía' : 'ías');
+}
+
+function activityCellHtml(row) {
+  if (!row.lastUpdatedAt) return '<span class="cloud-sync-hint">Sin datos</span>';
+  const who = row.lastActor ? esc(row.lastActor) : 'desconocido';
+  return 'hace ' + timeAgoLong(row.lastUpdatedAt) + ' · ' + who;
+}
+
+/** "Últ. labs" cell — highlighted when isStaleLabsRow flagged the patient as a probable discharge. */
+function labActivityCellHtml(row) {
+  if (!row.lastLabAt) {
+    return row.staleLabs
+      ? '<span class="cloud-sync-admin-stale-labs">Nunca</span>'
+      : '<span class="cloud-sync-hint">Sin datos</span>';
+  }
+  const text = 'hace ' + timeAgoLong(row.lastLabAt);
+  return row.staleLabs ? '<span class="cloud-sync-admin-stale-labs">' + text + '</span>' : text;
 }
 
 function networkCensusCols() {
@@ -241,6 +346,8 @@ function networkCensusCols() {
     { label: 'Cuarto', key: 'cuarto' },
     { label: 'Servicio', key: 'servicio' },
     { label: 'Estado', cell: (row) => (row.archived ? 'Archivado' : 'Activo') },
+    { label: 'Últ. actividad', cell: activityCellHtml },
+    { label: 'Últ. labs', cell: labActivityCellHtml },
     {
       label: 'Acciones',
       cell: (row) =>
@@ -264,16 +371,14 @@ function networkCensusCols() {
         '">' +
         (row.archived ? 'Restaurar' : 'Archivar') +
         '</button>' +
-        (row.archived
-          ? '<button type="button" class="wb-menu-item" ' +
-            'data-admin-action="delete-network-patient" data-room-id="' +
-            esc(String(row.roomId || '')) +
-            '" data-patient-id="' +
-            esc(String(row.patientId || '')) +
-            '" data-registro="' +
-            esc(String(row.registro || '')) +
-            '">Eliminar</button>'
-          : '') +
+        '<button type="button" class="wb-menu-item" ' +
+        'data-admin-action="delete-network-patient" data-room-id="' +
+        esc(String(row.roomId || '')) +
+        '" data-patient-id="' +
+        esc(String(row.patientId || '')) +
+        '" data-registro="' +
+        esc(String(row.registro || '')) +
+        '">Eliminar</button>' +
         '</div></details>' +
         '</div>',
     },
@@ -314,6 +419,14 @@ function networkCensusFiltersHtml(census, teamOptions) {
     '<option value="active">Activos</option>' +
     '<option value="archived">Archivados</option>' +
     '</select>' +
+    '<select class="profile-input" data-network-filter="labs" aria-label="Filtrar por labs">' +
+    '<option value="">Todos</option>' +
+    '<option value="stale">Más de 6 días</option>' +
+    '<option value="fresh">Menos de 6 días</option>' +
+    '</select>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" ' +
+    'data-admin-action="verify-red-labs" title="Consulta el repositorio de labs por cada paciente visible">' +
+    'Verificar labs</button>' +
     '</div>'
   );
 }
@@ -324,10 +437,11 @@ function networkCensusFiltersHtml(census, teamOptions) {
  * this device to that area (`data-admin-action="switch-network-room"`), plus
  * `data-sala`/`data-team-id`/`data-archived` for the client-side filters
  * (`applyNetworkCensusFilters` in panel-admin.mjs — no re-fetch on filter change).
- * @param {Array<{ sala: string, roomId?: string, code?: string, entries?: object[], clinicalOps?: { teams?: object[], patient_team_assignment?: object[] }|null, error?: string }>} census
+ * @param {Array<{ sala: string, roomId?: string, code?: string, entries?: object[], clinicalOps?: { teams?: object[], patient_team_assignment?: object[] }|null, entityVersions?: Record<string, { updatedAt: string, actorId: string }>|null, error?: string }>} census
+ * @param {Array<{ user_id?: string, clinical_name?: string, username?: string }>} [users] Clinical roster, for labeling "Últ. actividad" by actor id.
  */
-export function redCensusHtml(census) {
-  const { rows, errors, teamOptions } = buildNetworkCensusRows(census, new Date());
+export function redCensusHtml(census, users) {
+  const { rows, errors, teamOptions } = buildNetworkCensusRows(census, new Date(), users);
 
   return (
     '<div class="cloud-sync-admin-panel-head">' +
@@ -339,7 +453,7 @@ export function redCensusHtml(census) {
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger cloud-sync-btn--compact" data-admin-action="bulk-delete-network">Eliminar seleccionados</button>' +
     '</div>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="refresh-red">Actualizar</button></div>' +
-    '<p class="cloud-sync-hint">Todos los pacientes, en todas las áreas, con la sala actual de cada una. El check de "Eliminar" solo cuenta a los ya archivados.</p>' +
+    '<p class="cloud-sync-hint">Todos los pacientes, en todas las áreas, con la sala actual de cada una.</p>' +
     networkCensusFiltersHtml(census, teamOptions) +
     networkCensusErrorsHtml(errors) +
     adminTableHtml(rows, networkCensusCols(), {
@@ -351,15 +465,22 @@ export function redCensusHtml(census) {
         esc(row.teamId || NO_TEAM_FILTER_VALUE) +
         '" data-archived="' +
         (row.archived ? '1' : '0') +
-        '"',
+        '" data-no-labs="' +
+        (row.lastLabAt ? '0' : '1') +
+        '"' +
+        (row.staleLabs ? ' class="cloud-sync-admin-row--stale-labs"' : ''),
     })
   );
 }
 
 /**
- * Applies the Red tab's sala/team/activity filters by toggling row visibility —
+ * Applies the Red tab's sala/team/activity/labs filters by toggling row visibility —
  * no re-fetch, the census HTML already carries every row's `data-sala`,
- * `data-team-id`, `data-archived`. Safe to call with no filter selects present.
+ * `data-team-id`, `data-archived`. The labs filter reads the same
+ * `cloud-sync-admin-row--stale-labs` class the row highlight uses (no labs at
+ * all, or a last lab over 6 days old once verified — see
+ * `markNetworkRowLabsVerified`), so "stale"/"fresh" always match what's lit up.
+ * Safe to call with no filter selects present.
  * @param {HTMLElement} root
  */
 export function applyNetworkCensusFilters(root) {
@@ -372,12 +493,16 @@ export function applyNetworkCensusFilters(root) {
   const sala = val('sala');
   const team = val('team');
   const activity = val('activity');
+  const labs = val('labs');
   panel.querySelectorAll('tbody tr').forEach((tr) => {
     let show = true;
     if (sala && tr.getAttribute('data-sala') !== sala) show = false;
     if (team && tr.getAttribute('data-team-id') !== team) show = false;
     if (activity === 'active' && tr.getAttribute('data-archived') === '1') show = false;
     if (activity === 'archived' && tr.getAttribute('data-archived') !== '1') show = false;
+    const stale = tr.classList.contains('cloud-sync-admin-row--stale-labs');
+    if (labs === 'stale' && !stale) show = false;
+    if (labs === 'fresh' && stale) show = false;
     tr.hidden = !show;
   });
 }
@@ -415,6 +540,71 @@ export function listSelectedNetworkPatients(root) {
 /** @param {HTMLElement} root @param {boolean} checked */
 export function setSelectAllVisibleNetwork(root, checked) {
   for (const cb of listVisibleNetworkCheckboxes(root)) cb.checked = checked;
+}
+
+/**
+ * Rows the filters currently show, with a registro to check against the lab
+ * repo portal. Used by "Verificar labs" — same registro the delete action uses.
+ * @param {HTMLElement} root
+ * @returns {Array<{ tr: HTMLTableRowElement, registro: string, patientId: string }>}
+ */
+export function listVisibleNetworkRowsWithRegistro(root) {
+  const panel = root.querySelector('[data-admin-red]');
+  if (!panel) return [];
+  return [...panel.querySelectorAll('tbody tr')]
+    .filter((tr) => !tr.hidden)
+    .map((tr) => {
+      const cb = tr.querySelector('input[data-network-select]');
+      return {
+        tr: /** @type {HTMLTableRowElement} */ (tr),
+        registro: cb?.getAttribute('data-registro') || '',
+        patientId: cb?.getAttribute('data-patient-id') || '',
+      };
+    })
+    .filter((row) => row.registro);
+}
+
+const VERIFIED_STALE_LABS_MS = 6 * 24 * 60 * 60 * 1000;
+
+/**
+ * Stamps a verified existence result onto a row: `data-no-labs` reflects the
+ * live portal check instead of the cloud-sync guess, and the "Últ. labs" cell
+ * shows the newest `fechaSolicitud` the portal reported (existence check only,
+ * no PDF parse — so no lab values, just the date it was requested). The stale
+ * highlight stays lit for no labs at all, or a last lab over 6 days old —
+ * archived/incomplete-admission no longer exempt (age alone decides).
+ * @param {HTMLTableRowElement} tr @param {boolean} hasStudies
+ * @param {string|null} [lastFechaSolicitud]
+ */
+export function markNetworkRowLabsVerified(tr, hasStudies, lastFechaSolicitud) {
+  tr.setAttribute('data-no-labs', hasStudies ? '0' : '1');
+  const ageMs = lastFechaSolicitud ? Date.now() - new Date(lastFechaSolicitud).getTime() : NaN;
+  const stale = !hasStudies || (Number.isFinite(ageMs) && ageMs > VERIFIED_STALE_LABS_MS);
+  tr.classList.toggle('cloud-sync-admin-row--stale-labs', stale);
+  const cell = tr.querySelector('td:nth-child(9)');
+  if (cell) {
+    cell.innerHTML = !hasStudies
+      ? '<span class="cloud-sync-admin-stale-labs">Sin labs (verificado)</span>'
+      : lastFechaSolicitud
+        ? 'hace ' + timeAgoLong(lastFechaSolicitud) + ' (verificado)'
+        : '<span class="cloud-sync-hint">Tiene labs (verificado)</span>';
+  }
+}
+
+/**
+ * Restores any cached "Verificar labs" result onto freshly rendered rows —
+ * keeps the verified state visible across a Red census reload, before
+ * `autoVerifyStaleNetworkLabs` (panel-admin-labs-verify.mjs) re-checks stale ones.
+ * @param {HTMLElement} root
+ */
+export function applyCachedLabVerifications(root) {
+  const panel = root.querySelector('[data-admin-red]');
+  if (!panel) return;
+  panel.querySelectorAll('tbody tr').forEach((tr) => {
+    const patientId = tr.querySelector('input[data-network-select]')?.getAttribute('data-patient-id') || '';
+    const cached = patientId ? getCachedLabVerify(patientId) : null;
+    if (cached) markNetworkRowLabsVerified(/** @type {HTMLTableRowElement} */ (tr), cached.hasStudies, cached.lastFechaSolicitud);
+  });
 }
 
 /** Show Archivar/Eliminar only once a row is checked. @param {HTMLElement} root */

@@ -53,7 +53,7 @@ function bindStatusChip(section, deps) {
     const resolvedDetail = live.detail || detail;
     const transport = live.transport || getSharedNubeRuntime()?.getTransportState?.() || 'poll';
     if (chip) {
-      chip.textContent = formatCloudStatusChipLabel(resolvedStatus, transport);
+      chip.textContent = formatCloudStatusChipLabel(resolvedStatus, transport, resolvedDetail);
       chip.className = 'cloud-sync-status-chip ' + statusChipModifier(resolvedStatus);
       chip.setAttribute('data-status', resolvedStatus);
       chip.setAttribute('data-cloud-transport', transport);

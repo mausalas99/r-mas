@@ -99,8 +99,14 @@ export function validateOpsSize(ops) {
  * shards + per-set lab shards. Callers never see the split — same flat shape
  * as before sharding.
  * @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId
+ * @param {{ skipLabShards?: boolean }} [opts] `skipLabShards`: skip the two shard
+ *   tables entirely (no D1 read, no per-row AES-GCM decrypt) — for callers that
+ *   only need `entries`/`entityVersions`/`clinicalOps` and never read
+ *   `state.labSidecars`. `state.labSidecars` is left as whatever legacy data
+ *   (if any) was embedded in the core blob, not the full sharded set.
  */
-export async function loadRoomState(env, db, roomId) {
+export async function loadRoomState(env, db, roomId, opts = {}) {
+  const skipLabShards = !!opts.skipLabShards;
   const row = await db
     .prepare('SELECT ciphertext, iv FROM room_state WHERE room_id = ?')
     .bind(roomId)
@@ -114,6 +120,15 @@ export async function loadRoomState(env, db, roomId) {
     state?.labSidecars && typeof state.labSidecars === 'object' ? state.labSidecars : {};
   state.labSidecars = { ...legacyLabSidecars };
 
+  /** @type {Map<string, number>} stored byte length per legacy whole-patient row */
+  const legacyShardBytes = new Map();
+  /** @type {Map<string, Map<string, number>>} stored byte length per (patientId -> setId -> bytes) */
+  const labSetBytes = new Map();
+
+  if (skipLabShards) {
+    return { state, legacyShardBytes, labSetBytes };
+  }
+
   // Whole-patient legacy shard rows (schema 008). Frozen: read here as a base
   // layer, never rewritten — a patient migrates one set at a time into
   // room_state_lab_sets below, only when that set is next touched.
@@ -121,8 +136,6 @@ export async function loadRoomState(env, db, roomId) {
     .prepare('SELECT patient_id, ciphertext, iv FROM room_state_labs WHERE room_id = ?')
     .bind(roomId)
     .all();
-  /** @type {Map<string, number>} stored byte length per legacy whole-patient row */
-  const legacyShardBytes = new Map();
   for (const shardRow of legacyRows ?? []) {
     state.labSidecars[shardRow.patient_id] = await decodeRoomState(
       env,
@@ -139,8 +152,6 @@ export async function loadRoomState(env, db, roomId) {
     .prepare('SELECT patient_id, set_id, ciphertext, iv FROM room_state_lab_sets WHERE room_id = ?')
     .bind(roomId)
     .all();
-  /** @type {Map<string, Map<string, number>>} stored byte length per (patientId -> setId -> bytes) */
-  const labSetBytes = new Map();
   for (const setRow of setRows ?? []) {
     const pid = setRow.patient_id;
     const sid = setRow.set_id;

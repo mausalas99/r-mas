@@ -26,6 +26,7 @@ async function decryptOneSalaCensus(row) {
       code: row.code,
       entries: state?.entries || [],
       clinicalOps: state?.clinicalOps || null,
+      entityVersions: state?.entityVersions || null,
     };
   } catch (err) {
     return { sala: row.sala, roomId: row.roomId, code: row.code, error: err?.message || 'Error' };
@@ -38,7 +39,7 @@ async function decryptOneSalaCensus(row) {
  * no current room, or whose decrypt failed, gets an `error` row instead of
  * throwing — one bad room never blanks the whole view.
  * @param {ReturnType<import('./api-client.mjs').createCloudSyncApi>} api
- * @returns {Promise<Array<{ sala: string, roomId?: string, code?: string, entries?: object[], clinicalOps?: object|null, error?: string }>>}
+ * @returns {Promise<Array<{ sala: string, roomId?: string, code?: string, entries?: object[], clinicalOps?: object|null, entityVersions?: Record<string, { updatedAt: string, actorId: string }>|null, error?: string }>>}
  */
 export async function fetchNetworkCensus(api) {
   const { salas } = await api.adminNetworkCensus();

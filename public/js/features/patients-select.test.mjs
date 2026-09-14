@@ -84,7 +84,7 @@ describe('selectPatient chart paint', () => {
   it('paints the census highlight first, then idles the chart so startup INP is not the cold Resumen', () => {
     const src = selectPatientSrc();
     const start = src.indexOf('function selectPatientCore');
-    const end = src.indexOf('function showPatientDeleteConfirm');
+    const end = src.indexOf('function showEmptyPatientShell');
     assert.ok(start >= 0 && end > start);
     const fn = src.slice(start, end);
     assert.match(fn, /scheduleSelectedPatientChart\(/);

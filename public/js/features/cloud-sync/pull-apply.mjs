@@ -133,6 +133,22 @@ function applyCloudAgendaMap(agendaMap, idMap) {
   storage.saveScheduledProcedures(remapAgendaPatientIds(live, idMap || {}));
 }
 
+/**
+ * A patient id with an active delete tombstone must never be reborn as a new
+ * nameless shell from stale/residual entry data in the same pull. Drop those
+ * entries before applyLanPatientEntries can call createNewPatientShell on them.
+ * @param {Array<{ patient?: { id?: string } }>} entries
+ * @param {Record<string, unknown>} [tombstones]
+ */
+export function excludeTombstonedEntries(entries, tombstones) {
+  const deletedIds = tombstones ? Object.keys(tombstones) : [];
+  if (!deletedIds.length) return entries;
+  const deleted = new Set(deletedIds);
+  return entries.filter(function (entry) {
+    return !(entry && entry.patient && deleted.has(String(entry.patient.id || '')));
+  });
+}
+
 /** @param {string} patientId @param {unknown} tombstoneMeta */
 export function shouldApplyCloudTombstone(patientId, tombstoneMeta) {
   const pid = String(patientId || '').trim();
@@ -277,7 +293,7 @@ export async function applyCloudState(state, opts) {
     /* optional */
   }
   await applyClinicalOpsSnapshot(snapshot.clinicalOps);
-  const entries = cloudStateToLanEntries(snapshot);
+  const entries = excludeTombstonedEntries(cloudStateToLanEntries(snapshot), snapshot.tombstones);
   const idMap = buildLiveSyncPatientIdMap(entries, getSyncablePatients(), {});
   const patientSync = entries.length
     ? applyLanPatientEntries(entries, cloudPatientEntryApplyOpts())
@@ -319,7 +335,7 @@ export async function applyCloudState(state, opts) {
 /** @param {ReturnType<typeof createOpFold>} fold @param {{ rawLabOps: number, filteredLabOps: number }} labCounts */
 async function applyFoldedCloudPull(fold, labCounts) {
   await applyClinicalOpsSnapshot(fold.clinicalOps);
-  const entries = opFoldToLanEntries(fold);
+  const entries = excludeTombstonedEntries(opFoldToLanEntries(fold), fold.tombstones);
   const idMap = buildLiveSyncPatientIdMap(entries, getSyncablePatients(), {});
   const patientSync = entries.length
     ? applyLanPatientEntries(entries, cloudPatientEntryApplyOpts())

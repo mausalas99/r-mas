@@ -12,8 +12,8 @@ import {
   migrateTourStepId,
 } from './onboarding-curriculum.mjs';
 
-test('CURRICULUM_VERSION is 19 after adding ic_board_actions/ic_consult_band tour steps', () => {
-  assert.equal(CURRICULUM_VERSION, 19);
+test('CURRICULUM_VERSION is 20 after retiring the Modo Entrega tour chapter', () => {
+  assert.equal(CURRICULUM_VERSION, 20);
 });
 
 test('getSalaTourSteps has 23 steps: map first, then lab with tendencias', () => {
@@ -67,6 +67,15 @@ test('migrateTourStepId maps retired gv7_lan_pin to directorio', () => {
   assert.equal(migrateTourStepId('gv7_lan_pin', 'guardia-v7'), 'gv7_lan_directorio');
 });
 
+test('migrateTourStepId sends the retired Modo Entrega chapter to the nearest live step', () => {
+  assert.equal(migrateTourStepId('gv7_trust_strip', 'guardia-v7'), 'gv7_guardia_toggle');
+  assert.equal(migrateTourStepId('gv7_entrega_phase', 'guardia-v7'), 'gv7_lan_wifi');
+  assert.equal(migrateTourStepId('gv7_entrega_patient', 'guardia-v7'), 'gv7_lan_wifi');
+  assert.equal(migrateTourStepId('gv7_entrega_roster', 'guardia-v7'), 'gv7_lan_wifi');
+  assert.equal(migrateTourStepId('gv7_entrega_pendientes', 'guardia-v7'), 'gv7_lan_wifi');
+  assert.equal(migrateTourStepId('gv7_fin_turno', 'guardia-v7'), 'gv7_lan_wifi');
+});
+
 test('migrateTourStepId maps legacy estado_actual substeps', () => {
   assert.equal(migrateTourStepId('estado_actual_charts', 'sala'), 'estado_actual_review');
   assert.equal(migrateTourStepId('sala_soap', 'interconsulta'), 'sala_med');
@@ -98,17 +107,19 @@ test('lab chapter includes tendencias; chart stays clínico', () => {
   assert.equal(getChapterForStep('sala_agenda', 'sala').id, 'ch-agenda');
 });
 
-test('guardia-v7 censo chapter precedes entrega', () => {
+test('guardia-v7 censo chapter precedes nube; Modo Entrega chapter is gone', () => {
   assert.equal(getChapterForStep('gv7_censo_r1', 'guardia-v7').id, 'ch-guardia-censo');
-  assert.equal(getChapterForStep('gv7_trust_strip', 'guardia-v7').id, 'ch-guardia-modo');
-  assert.equal(getChapterForStep('gv7_fin_turno', 'guardia-v7').id, 'ch-guardia-entrega');
   assert.equal(getChapterForStep('gv7_inherit_patients', 'guardia-v7').id, 'ch-guardia-nube');
   const steps = getGuardiaV7TourSteps();
-  assert.equal(steps.length, 22);
+  assert.equal(steps.length, 16);
   assert.ok(!steps.includes('gv7_lan_pin'));
-  assert.ok(steps.indexOf('gv7_censo_sync') < steps.indexOf('gv7_entrega_phase'));
-  assert.ok(steps.indexOf('gv7_trust_strip') < steps.indexOf('gv7_guardia_toggle'));
-  assert.ok(steps.indexOf('gv7_entrega_pendientes') < steps.indexOf('gv7_fin_turno'));
+  assert.ok(!steps.includes('gv7_trust_strip'));
+  assert.ok(!steps.includes('gv7_entrega_phase'));
+  assert.ok(!steps.includes('gv7_entrega_patient'));
+  assert.ok(!steps.includes('gv7_entrega_roster'));
+  assert.ok(!steps.includes('gv7_entrega_pendientes'));
+  assert.ok(!steps.includes('gv7_fin_turno'));
+  assert.ok(steps.indexOf('gv7_censo_sync') < steps.indexOf('gv7_lan_wifi'));
   assert.ok(steps.indexOf('gv7_lan_rotacion') < steps.indexOf('gv7_rotacion_rejoin'));
 });
 

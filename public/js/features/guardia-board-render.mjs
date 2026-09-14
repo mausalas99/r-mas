@@ -9,6 +9,7 @@ import {
   getClinicalScopeContextForEvaluate,
   ensureElevatedWardCensusOnDevice,
   refreshGuardiaCensusFromDb,
+  waitForClinicalAccessReady,
 } from '../clinical-access-runtime.mjs';
 import { userIsOnGuardiaCallToday } from '../clinico-access.mjs';
 import { effectiveClinicalRank, hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
@@ -25,32 +26,34 @@ import {
   openGuardiaPatientActionSheet,
   shouldShowGuardiaPatientActionMenu,
 } from './guardia-patient-action-sheet.mjs';
-import { filterPatientsForGuardiaCensus } from './patients-clinical-filter.mjs';
+import { filterPatientsByTeamSala, filterPatientsForGuardiaCensus } from './patients-clinical-filter.mjs';
 import { elevatedPatientFilters } from './clinical-census-filters-state.mjs';
-import { renderGuardiaCensusEmpty } from './guardia-census-empty.mjs';
-import { syncGuardiaTrustStrip } from './guardia-trust-strip.mjs';
+import {
+  renderGuardiaCensusEmpty,
+  renderGuardiaCensusLoading,
+  renderGuardiaSalaPicker,
+} from './guardia-census-empty.mjs';
 import { setGuardiaMode } from '../guardia-mode-sync.mjs';
+import { CLINICAL_SALA_VALUES } from '../../../lib/clinical-salas.mjs';
+import { resolveHomeSala } from './clinical-census-filters-ui.mjs';
 import {
   bootstrapGuardiaCensusData,
   bootstrapGuardiaViewOnEnter,
-  computeGuardiaSummary,
   enrichPatientForGuardiaCard,
   installGuardiaAppShell,
   renderGuardiaCensusHead,
-  renderGuardiaModeFrame,
-  renderGuardiaSignosRecibidosPanel,
-  renderGuardiaSummaryTiles,
   resolveGuardiaGridRank,
-  syncEntregaPhaseChrome,
   syncGuardiaBoardChrome,
-  wireGuardiaEntregaPhaseButton,
-  wireGuardiaModeToggle,
 } from './guardia-board-chrome.mjs';
 import {
   isElevatedFullWardPullScheduled,
+  isGuardiaInitialLoadDone,
   isGuardiaViewBootstrapped,
   markElevatedFullWardPullScheduled,
+  markGuardiaInitialLoadDone,
+  readGuardiaSala,
   setGuardiaViewBootstrapped,
+  writeGuardiaSala,
 } from './guardia-board-state.mjs';
 
 function clearInactiveGuardiaBoard() {
@@ -61,19 +64,20 @@ function clearInactiveGuardiaBoard() {
 
 function ensureGuardiaBoardBootstrapped(settings) {
   installGuardiaAppShell();
-  // Must render before wireGuardiaEntregaPhaseButton below — it (re)creates the
-  // #btn-guardia-entrega-phase node that function wires and syncs.
-  renderGuardiaModeFrame();
   void import('./clinical-rotation-entry.mjs').then((mod) => {
     mod.syncClinicalRotationEntryChrome?.();
   });
   if (!isGuardiaViewBootstrapped()) {
     setGuardiaViewBootstrapped(true);
-    void bootstrapGuardiaViewOnEnter(settings);
-    void bootstrapGuardiaCensusData(settings);
+    void Promise.all([
+      bootstrapGuardiaViewOnEnter(settings),
+      bootstrapGuardiaCensusData(settings),
+      waitForClinicalAccessReady(),
+    ]).then(() => {
+      markGuardiaInitialLoadDone();
+      if (isGuardiaMode()) renderGuardiaBoard(settings);
+    });
   }
-  wireGuardiaEntregaPhaseButton(settings);
-  syncEntregaPhaseChrome();
 }
 
 function maybeOpenEntregaRoster(settings, entregaActive, turnoActivo) {
@@ -129,21 +133,27 @@ function buildGuardiaScopeContext() {
   return { salaGuardiaToday, onCallGuardiaReceiver };
 }
 
-function buildGuardiaCensusPatients(guardiasMap, gridViewContext) {
+/**
+ * Guardia census (Step 2): clinical scope, then narrowed to the sala declared
+ * for tonight (Step 1) via each patient's resolved team — never `patient.sala`,
+ * which can be mis-stamped on elevated devices with a full-ward pull.
+ * @param {Map<string, object>} guardiasMap
+ * @param {string} declaredSala
+ */
+function buildGuardiaCensusPatients(guardiasMap, declaredSala) {
   let scopedPatients = getPatients().filter((p) => p && p.id && !p.isDemo && !p.archived);
-  if (gridViewContext === 'GUARDIA') {
-    scopedPatients = filterPatientsForGuardiaCensus(
-      scopedPatients,
-      clinicalSessionContext.user,
-      clinicalSessionContext.scopeContext,
-      guardiasMap,
-      elevatedPatientFilters
-    );
-  }
   const scope = clinicalSessionContext.scopeContext || getClinicalScopeContextForEvaluate();
   const teams = scope.teams || clinicalSessionContext.teams || [];
   const assignments = scope.assignments || [];
   const now = scope.now || new Date().toISOString();
+  scopedPatients = filterPatientsForGuardiaCensus(
+    scopedPatients,
+    clinicalSessionContext.user,
+    clinicalSessionContext.scopeContext,
+    guardiasMap,
+    { sala: '__all__', teamId: '', service: '' }
+  );
+  scopedPatients = filterPatientsByTeamSala(scopedPatients, declaredSala, teams);
   return scopedPatients.map((p) =>
     enrichPatientForGuardiaCard(p, guardiasMap, { teams, assignments, now })
   );
@@ -193,6 +203,8 @@ function wireGuardiaGridBoard({
       openGuardiaPatientActionSheet({
         patientId,
         patientLabel: row?.name ? String(row.name) : undefined,
+        dxText: row?.dxText ? String(row.dxText) : '',
+        onMarksSaved: () => renderGuardiaBoard(settings),
       });
       return;
     }
@@ -228,6 +240,18 @@ function wireGuardiaGridBoard({
   );
 }
 
+/** Step 1 picker — shown only when no sala can be derived (or forced by Cambiar). */
+export function showGuardiaSalaPicker(settings) {
+  renderGuardiaSalaPicker(document.getElementById('guardia-census-grid'), {
+    salas: CLINICAL_SALA_VALUES,
+    selected: String(clinicalSessionContext.user?.sala || '').trim(),
+    onStart: (sala) => {
+      writeGuardiaSala(sala);
+      renderGuardiaBoard(settings);
+    },
+  });
+}
+
 export function renderGuardiaBoard(settings) {
   if (!isGuardiaMode()) {
     clearInactiveGuardiaBoard();
@@ -247,9 +271,7 @@ export function renderGuardiaBoard(settings) {
   const rosterOpen = isEntregaRosterOpen();
   const gridViewContext = loadGuardiaGridViewContext();
 
-  wireGuardiaModeToggle(settings);
   syncGuardiaRotationToolbar();
-  syncGuardiaTrustStrip();
   syncGuardiaBoardChrome({
     turnoActivo,
     entregaActive,
@@ -260,17 +282,27 @@ export function renderGuardiaBoard(settings) {
   maybeOpenEntregaRoster(settings, entregaActive, turnoActivo);
 
   buildGuardiaScopeContext();
-  const censusPatients = buildGuardiaCensusPatients(guardiasMap, gridViewContext);
-  const summary = computeGuardiaSummary(censusPatients, guardiasMap);
 
-  renderGuardiaSummaryTiles(summary, { turnoActivo });
-  renderGuardiaCensusHead(censusPatients.length, {
-    turnoActivo,
-    entregaActive,
-    vitalsOverdue: summary.vitalsOverdue,
-    critical: summary.critical,
-  });
-  renderGuardiaSignosRecibidosPanel();
+  if (!isGuardiaInitialLoadDone()) {
+    renderGuardiaCensusLoading(document.getElementById('guardia-census-grid'));
+    return;
+  }
+
+  // Step 1: 24h override, else home sala (profile, else joined team) — the
+  // picker only shows when all three resolve empty.
+  const declaredSala =
+    readGuardiaSala() ||
+    resolveHomeSala(clinicalSessionContext.user, clinicalSessionContext.teams || []);
+  if (!declaredSala) {
+    showGuardiaSalaPicker(settings);
+    return;
+  }
+
+  const censusPatients = buildGuardiaCensusPatients(guardiasMap, declaredSala);
+  const scopeTeams = clinicalSessionContext.scopeContext?.teams || clinicalSessionContext.teams || [];
+  const teamCount = scopeTeams.filter((t) => String(t?.sala || '').trim() === declaredSala).length;
+
+  renderGuardiaCensusHead({ sala: declaredSala, teamCount });
   renderGuardiaVitalsIfTurno(
     turnoActivo,
     censusPatients.map((p) => p.id)

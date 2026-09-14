@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import { evaluateClinicalScope } from '../clinico-access.mjs';
 import {
   applyElevatedPatientFilters,
+  filterPatientsByTeamSala,
   filterPatientsForClinicalSidebar,
   filterPatientsForGuardiaCensus,
   patientForScopeEvaluate,
   patientMatchesCensusTeamFilter,
   patientMatchesCensusSalaFilter,
+  tagPatientsForTeamFilter,
 } from './patients-clinical-filter.mjs';
 import { CENSUS_TEAM_FILTER_UNASSIGNED } from './clinical-census-filters-ui.mjs';
 
@@ -267,6 +269,33 @@ test('R2 sidebar without team includes same-sala census', () => {
     { teams: [], guardias: [], assignments: [], cycle: null, now: '2026-06-01T12:00:00Z' }
   );
   assert.deepEqual(out.map((p) => p.id), ['p1']);
+});
+
+test('filterPatientsByTeamSala keeps only patients whose resolved team is in the declared sala', () => {
+  const teams = [
+    { team_id: 't-sala1', sala: 'Sala 1' },
+    { team_id: 't-sala2', sala: 'Sala 2' },
+  ];
+  const census = [
+    { id: 'p-mis-stamped', sala: 'Sala 2' }, // patient.sala says Sala 2 but team says Sala 1
+    { id: 'p-real-sala2', sala: 'Sala 1' }, // patient.sala mis-stamped as Sala 1, team says Sala 2
+    { id: 'p-no-team' },
+  ];
+  tagPatientsForTeamFilter(census, {
+    teams,
+    assignments: [
+      { patient_id: 'p-mis-stamped', team_id: 't-sala1', effective_at: '2026-06-01T00:00:00Z' },
+      { patient_id: 'p-real-sala2', team_id: 't-sala2', effective_at: '2026-06-01T00:00:00Z' },
+    ],
+    now: '2026-06-02T12:00:00Z',
+  });
+  const out = filterPatientsByTeamSala(census, 'Sala 2', teams);
+  assert.deepEqual(out.map((p) => p.id), ['p-real-sala2']);
+});
+
+test('filterPatientsByTeamSala with empty sala returns the list unchanged', () => {
+  const census = [{ id: 'p1' }, { id: 'p2' }];
+  assert.deepEqual(filterPatientsByTeamSala(census, '', []), census);
 });
 
 test('Interconsultas sala filter includes patient assigned to Interconsultas team with UX stamp', () => {

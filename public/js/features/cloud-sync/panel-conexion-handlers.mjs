@@ -16,6 +16,7 @@ import { backfillRoomEncryption } from './room-dek-migrate.mjs';
 import { getCloudSyncClientId } from './client-id.mjs';
 import { setStoredRoomDeks } from './settings.mjs';
 import { showConfirmDialog } from '../../ui-approval-card.mjs';
+import { getSharedNubeRuntime, getSharedNubeOutbox } from './panel-conexion-runtime.mjs';
 
 /** DEK cache changed (created/loaded/re-wrapped) — mirror it to the durable Recuérdame store. */
 async function persistRoomDeks() {
@@ -192,6 +193,32 @@ export function persistCloudRoom(deps, room) {
 }
 
 /**
+ * Ops already queued for the room this device is about to leave must be sent
+ * there before the switch — `runFlushOutbox` reads whatever room is active
+ * at flush time, so a pending edit from the old room would otherwise land in
+ * the new one the moment it drains. Throws (blocking the switch) if the
+ * queue can't be drained — e.g. offline — rather than risk it draining into
+ * the wrong room later.
+ * @param {object} deps
+ */
+async function flushOutboxBeforeRoomSwitch(deps) {
+  const outbox = getSharedNubeOutbox();
+  if (!outbox || outbox.list().length === 0) return;
+  try {
+    await getSharedNubeRuntime()?.flushOutbox?.();
+  } catch {
+    /* fall through to the pending check below */
+  }
+  if (outbox.list().length > 0) {
+    const err = new Error(
+      'Hay cambios sin enviar en la sala actual. Espera a que se sincronicen antes de cambiar de sala.'
+    );
+    err.data = { error: 'outbox_pending', message: err.message };
+    throw err;
+  }
+}
+
+/**
  * Core of "join/switch to a room by code" — join, persist, render, load its
  * DEK. Shared by the manual Conexión form (`handleJoinRoom`, reads the code
  * from an input) and the network census view (switches this device to a
@@ -200,6 +227,7 @@ export function persistCloudRoom(deps, room) {
  * @param {string} code
  */
 export async function joinRoomByCode(deps, code) {
+  await flushOutboxBeforeRoomSwitch(deps);
   const data = await deps.getApi().joinRoom({ code });
   const room = data.room;
   persistCloudRoom(deps, room);

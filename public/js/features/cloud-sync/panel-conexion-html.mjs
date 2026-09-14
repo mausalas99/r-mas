@@ -24,12 +24,19 @@ export function cloudSyncTransportLabel(transport) {
 /**
  * @param {CloudSyncStatus} status
  * @param {'ws' | 'poll' | 'offline'} [transport]
+ * @param {string} [detail] Pending-ops count / send-progress text — shown inline
+ *   only for 'pending' and 'syncing' (an error's detail has its own paragraph).
  */
-export function formatCloudStatusChipLabel(status, transport) {
+export function formatCloudStatusChipLabel(status, transport, detail) {
   const base = STATUS_LABELS[status] || status;
   if (status === 'offline' || status === 'error') return base;
   const mode = cloudSyncTransportLabel(transport || 'poll');
-  return base + ' · ' + mode;
+  const label = base + ' · ' + mode;
+  const detailText = String(detail || '').trim();
+  if ((status === 'pending' || status === 'syncing') && detailText) {
+    return label + ' · ' + detailText;
+  }
+  return label;
 }
 
 /** @param {CloudSyncStatus} status */

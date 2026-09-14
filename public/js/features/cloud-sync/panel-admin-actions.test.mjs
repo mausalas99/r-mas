@@ -49,6 +49,46 @@ describe('panel-admin-actions archive-network-patient (Red tab)', () => {
   });
 });
 
+describe('panel-admin-actions verify-red-labs (Red tab)', () => {
+  const src = readFileSync(new URL('./panel-admin-actions.mjs', import.meta.url), 'utf8');
+
+  it('is wired into dispatchSimpleAction', () => {
+    assert.match(src, /'verify-red-labs': \(\) => void handleVerifyRedLabs\(deps, btn\)/);
+  });
+
+  it('delegates the per-row portal check to the shared verifyNetworkLabsRows loop', () => {
+    const start = src.indexOf('async function handleVerifyRedLabs');
+    const end = src.indexOf('\n/**', start + 1);
+    const body = src.slice(start, end > start ? end : undefined);
+    assert.match(body, /listVisibleNetworkRowsWithRegistro\(deps\.root\)/);
+    assert.match(body, /labRepoCheckAvailable\(\)/);
+    assert.match(body, /verifyNetworkLabsRows\(rows,/);
+    assert.doesNotMatch(body, /labRepoFetch/);
+    assert.match(body, /applyNetworkCensusFilters\(deps\.root\)/);
+  });
+});
+
+describe('panel-admin-labs-verify (shared verify loop + auto-run)', () => {
+  const src = readFileSync(
+    new URL('./panel-admin-labs-verify.mjs', import.meta.url),
+    'utf8'
+  );
+
+  it('verifyNetworkLabsRows checks the lab-repo portal per row and caches the result', () => {
+    assert.match(src, /await window\.electronAPI\.labRepoCheck\(\{ registro: rows\[i\]\.registro \}\)/);
+    assert.match(src, /markNetworkRowLabsVerified\(rows\[i\]\.tr, res\.hasStudies, res\.lastFechaSolicitud\)/);
+    assert.match(src, /setCachedLabVerify\(rows\[i\]\.patientId, res\.hasStudies, res\.lastFechaSolicitud\)/);
+  });
+
+  it('autoVerifyStaleNetworkLabs only re-checks rows with no cache or a cache past the cooldown', () => {
+    const start = src.indexOf('export async function autoVerifyStaleNetworkLabs');
+    const body = src.slice(start);
+    assert.match(body, /labRepoCheckAvailable\(\)/);
+    assert.match(body, /getCachedLabVerify\(row\.patientId\)/);
+    assert.match(body, /Date\.now\(\) - cached\.checkedAt > AUTO_VERIFY_COOLDOWN_MS/);
+  });
+});
+
 describe('panel-admin-actions delete-network-patient (Red tab, room-scoped delete)', () => {
   const src = readFileSync(new URL('./panel-admin-actions.mjs', import.meta.url), 'utf8');
 
@@ -78,6 +118,13 @@ describe('panel-admin-actions delete-network-patient (Red tab, room-scoped delet
     const body = src.slice(start, end > start ? end : undefined);
     assert.match(body, /buildCloudTombstoneOp\(patientId,/);
     assert.match(body, /api\.push\(roomId,/);
+  });
+
+  it('deleteOneNetworkPatient does not pull the room first — a tombstone needs no existing fields, and the Worker recomputes revision itself', () => {
+    const start = src.indexOf('async function deleteOneNetworkPatient');
+    const end = src.indexOf('\n/**', start + 1);
+    const body = src.slice(start, end > start ? end : undefined);
+    assert.doesNotMatch(body, /pullNetworkPatientFields/);
   });
 });
 
@@ -115,13 +162,21 @@ describe('panel-admin-actions bulk archive/delete on the Red tab (multiselect)',
     assert.match(body, /loadAdminNetworkCensus\(deps\.root, deps\.outerDeps\)/);
   });
 
-  it('handleBulkDeleteNetwork only deletes selected patients that are already archived, skipping the rest', () => {
+  it('handleBulkDeleteNetwork deletes every selected patient, archived or not', () => {
     const start = src.indexOf('async function handleBulkDeleteNetwork');
     const end = src.indexOf('\n/**', start + 1);
     const body = src.slice(start, end > start ? end : undefined);
-    assert.match(body, /filter\(\(p\) => p\.archived && p\.roomId && p\.patientId\)/);
+    assert.match(body, /filter\(\(p\) => p\.roomId && p\.patientId\)/);
     assert.match(body, /confirmAction\(/);
     assert.match(body, /deleteOneNetworkPatient\(api, p\.roomId, p\.patientId, p\.registro\)/);
     assert.match(body, /loadAdminNetworkCensus\(deps\.root, deps\.outerDeps\)/);
+  });
+
+  it('handleBulkDeleteNetwork fires every delete in parallel, not one at a time', () => {
+    const start = src.indexOf('async function handleBulkDeleteNetwork');
+    const end = src.indexOf('\n/**', start + 1);
+    const body = src.slice(start, end > start ? end : undefined);
+    assert.match(body, /Promise\.allSettled\(/);
+    assert.doesNotMatch(body, /for \(const p of targets\)/);
   });
 });

@@ -2,27 +2,89 @@
  * Modo Guardia — census table (Cama/Paciente/Alterados/Pendiente/Estado), built on the
  * shared workbench table grammar (teal-workbench redesign, screen 6a/6b).
  */
-import { escHtml } from '../dom-escape.mjs';
+import { escHtml, escAttr } from '../dom-escape.mjs';
 import { isTodoOverdue } from '../todos-due.mjs';
 import { storage } from '../storage.js';
 import { accesoFechaToDateInputValue } from '../patient-date-fields.mjs';
 import { isPatientAdmissionIncomplete } from '../patient-admission-incomplete.mjs';
+import { getLabHistory } from '../clinical-read-model.mjs';
+import { sortLabHistoryChronological, parseFechaLabToMs } from '../tend-core.mjs';
 import { sortPatientsByPriorityThenBed } from '../../../lib/patient-priority-sort.mjs';
 import { buildGuardiaTeamCensusGroups } from './unified-patient-grid-team-groups.mjs';
 import { filterR4FollowUpPinPatients, R4_FOLLOWUP_PIN_LABEL } from './unified-patient-grid-board.mjs';
-import {
-  buildTableCardHeaderHtml,
-  buildColumnHeadHtml,
-  buildRowHtml,
-  buildSummaryLineHtml,
-} from './workbench/wb-table.mjs';
-import { buildStatusLabelHtml } from './workbench/status-label.mjs';
+import { buildTableCardHeaderHtml, buildSummaryLineHtml } from './workbench/wb-table.mjs';
 import { buildFilterChipsHtml } from './workbench/filter-chips.mjs';
 import { appendExitingRows } from '../ui-motion.mjs';
 
 const VITAL_LABELS = { ta: 'T/A', tas: 'T/A', fc: 'FC', fr: 'FR', temp: 'Temp', sat: 'SatO₂' };
-const GUARDIA_TABLE_GRID = '92px 1fr 132px 1fr 84px';
 const GUARDIA_CENSUS_FILTER_DEFAULT = 'todos';
+
+export const GUARDIA_ESFUERZO_OPTIONS = [
+  { id: 'full', icon: '🍪', label: 'Reanimar' },
+  { id: 'show', icon: '🎭', label: 'Show' },
+  { id: 'no', icon: '🚫', label: 'No reanimar' },
+];
+export const GUARDIA_PRONOSTICO_OPTIONS = [
+  { id: 'good', icon: '🙂', label: 'Bueno' },
+  { id: 'bad', icon: '🙁', label: 'Malo' },
+];
+export const GUARDIA_NOTA_MAX = 200;
+
+/** @param {unknown} raw */
+export function normalizeGuardiaEsfuerzo(raw) {
+  const v = String(raw || '');
+  return GUARDIA_ESFUERZO_OPTIONS.some((o) => o.id === v) ? v : null;
+}
+
+/** @param {unknown} raw */
+export function normalizeGuardiaPronostico(raw) {
+  const v = String(raw || '');
+  return GUARDIA_PRONOSTICO_OPTIONS.some((o) => o.id === v) ? v : null;
+}
+
+/** @param {unknown} raw */
+export function normalizeGuardiaNota(raw) {
+  return String(raw == null ? '' : raw)
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, GUARDIA_NOTA_MAX);
+}
+
+/** @param {{ guardiaEsfuerzo?: unknown, guardiaPronostico?: unknown, guardiaNota?: unknown }} patch */
+export function normalizeGuardiaMarksPatch(patch) {
+  const next = {};
+  if (!patch || typeof patch !== 'object') return next;
+  if (Object.prototype.hasOwnProperty.call(patch, 'guardiaEsfuerzo')) {
+    next.guardiaEsfuerzo = normalizeGuardiaEsfuerzo(patch.guardiaEsfuerzo);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'guardiaPronostico')) {
+    next.guardiaPronostico = normalizeGuardiaPronostico(patch.guardiaPronostico);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'guardiaNota')) {
+    next.guardiaNota = normalizeGuardiaNota(patch.guardiaNota);
+  }
+  return next;
+}
+
+function guardiaMarkChipHtml(prefix, option, risk) {
+  const title = `${prefix}: ${option.label}`;
+  const cls = risk ? 'gct-chip gct-chip--risk' : 'gct-chip';
+  return (
+    `<span class="${cls}" title="${escAttr(title)}" aria-label="${escAttr(title)}">${option.icon}</span>`
+  );
+}
+
+/** @param {object} p */
+export function buildGuardiaMarksBadgesHtml(p) {
+  const esfuerzo = GUARDIA_ESFUERZO_OPTIONS.find((o) => o.id === normalizeGuardiaEsfuerzo(p?.guardiaEsfuerzo));
+  const pronostico = GUARDIA_PRONOSTICO_OPTIONS.find(
+    (o) => o.id === normalizeGuardiaPronostico(p?.guardiaPronostico)
+  );
+  return (
+    (esfuerzo ? guardiaMarkChipHtml('Esfuerzo', esfuerzo, esfuerzo.id === 'no') : '') +
+    (pronostico ? guardiaMarkChipHtml('Pronóstico', pronostico, pronostico.id === 'bad') : '')
+  );
+}
 
 function vitalLabel(key) {
   return VITAL_LABELS[key] || String(key || '').toUpperCase();
@@ -134,73 +196,172 @@ export function isPatientAdmittedToday(p) {
   return isSameLocalDateAsToday(admissionDateForPatient(p));
 }
 
+const STALE_LABS_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Sin laboratorios en los últimos 7 días (o nunca): candidato a alta no dado de baja del censo. */
+export function isProbableDischargeCandidate(p) {
+  const hist = getLabHistory(p.id);
+  if (!hist || !hist.length) return true;
+  const newest = sortLabHistoryChronological(hist)[0];
+  const ms = parseFechaLabToMs(newest.fecha, newest.hora);
+  if (ms == null) return true;
+  return Date.now() - ms > STALE_LABS_MS;
+}
+
 function bedLabel(p) {
   const joined = [p?.cuarto, p?.cama].filter(Boolean).join(' · ');
   return joined || String(p?.bed_label || '—');
 }
 
-function alteradosCellHtml(p) {
-  const a = alteradosForPatient(p);
-  if (!a.taken) return '<span class="gct-cell-warn">sin toma 08:00</span>';
-  if (!a.chips.length) return '<span class="gct-cell-muted">sin alterados</span>';
-  const shown = a.chips.slice(0, 2);
-  const rest = a.chips.length - shown.length;
-  const tail = rest > 0 ? ` <span class="gct-cell-muted">+${rest}</span>` : '';
-  return `<span class="gct-cell-alert">${shown.map(escHtml).join(' · ')}</span>${tail}`;
-}
-
-function pendienteCellHtml(pendientes) {
-  const first = pendientes.open[0];
-  if (!first) return '<span class="gct-cell-muted">—</span>';
-  return escHtml(String(first.text || ''));
+/** First name + first last name, e.g. "MARIBEL BENITEZ BAZABE" -> "MARIBEL BENITEZ" — full name stays in title/aria-label. */
+function patientShortName(name) {
+  const words = String(name || '')
+    .trim()
+    .split(/[\s,]+/)
+    .filter((w) => /^\p{L}/u.test(w));
+  return words.length ? words.slice(0, 2).join(' ') : String(name || '—');
 }
 
 /**
  * @param {object} p
  * @returns {string}
  */
-export function buildGuardiaCensusTableRowHtml(p) {
+export function buildGuardiaCensusCardHtml(p) {
   const pendientes = patientPendientes(p.id);
   const status = guardiaPatientStatus(pendientes);
-  const cellsHtml = [
-    `<span class="gct-cell-bed">${escHtml(bedLabel(p))}</span>`,
-    `<span class="gct-cell-name">${escHtml(String(p.name || p.nombre || '—'))}</span>`,
-    alteradosCellHtml(p),
-    pendienteCellHtml(pendientes),
-    buildStatusLabelHtml(status),
-  ];
-  return buildRowHtml({
-    id: p.id,
-    cellsHtml,
-    alert: status === 'vencido',
-    gridTemplate: GUARDIA_TABLE_GRID,
-  });
+  const task = pendientes.overdue[0] || pendientes.open[0];
+  const morePend = task ? pendientes.open.length - 1 : 0;
+  const classes = ['gct-card'];
+  if (status === 'vencido') classes.push('gct-card--alert');
+  const staleLabs = !isPatientAdmissionIncomplete(p) && isProbableDischargeCandidate(p);
+  if (staleLabs) classes.push('gct-card--stale-labs');
+  const staleLabsChip = staleLabs
+    ? '<span class="gct-chip gct-chip--stale-labs" title="Sin laboratorios en 7 días: posible alta" aria-label="Sin laboratorios en 7 días: posible alta">⏳</span>'
+    : '';
+  const name = String(p.name || p.nombre || '—');
+  return (
+    `<div class="${classes.join(' ')}" data-wb-row-id="${escAttr(p.id)}" role="button" tabindex="0">` +
+    '<div class="gct-card__row">' +
+    `<span class="gct-cell-bed">${escHtml(bedLabel(p))}</span>` +
+    `<span class="gct-cell-name" title="${escAttr(name)}" aria-label="${escAttr(name)}">${escHtml(patientShortName(name))}</span>` +
+    `<span class="gct-card__marks">${staleLabsChip}${buildGuardiaMarksBadgesHtml(p)}</span>` +
+    '</div>' +
+    '<div class="gct-task-row">' +
+    `<span class="gct-task"${task ? ` title="${escAttr(String(task.text || ''))}"` : ''}>` +
+    `${task ? escHtml(String(task.text || '')) : ''}</span>` +
+    (morePend > 0
+      ? `<span class="gct-task-more" title="${morePend} pendientes más">+${morePend}</span>`
+      : '') +
+    '</div>' +
+    '</div>'
+  );
 }
 
-function dividerHtml(label) {
-  return `<div class="gct-divider">${escHtml(label)}</div>`;
+const GCT_CARD_H_DEFAULT = 78;
+// Floor/ceiling for how far fitGuardiaCards can resize a card. Bounds are set from the
+// real pixel cost of each task-line tier below (padding 16 + row1 ~20 + gap 6 + N * 17.3
+// line-height), not round numbers — MIN=40 or MAX=132 used to sit inside a line tier's
+// needed height, so cards at those extremes clipped their own task text.
+const GCT_CARD_H_MIN = 60;
+const GCT_CARD_H_MAX = 200;
+
+function guardiaScrollHost() {
+  return document.getElementById('guardia-board-scroll');
+}
+
+// Thresholds are the minimum card height that tier's line count actually fits in
+// (see GCT_CARD_H_MIN comment) — grant a tier only once there's room for it.
+export function guardiaTaskLinesFor(cardHeight) {
+  if (cardHeight >= 95) return '3';
+  if (cardHeight >= 78) return '2';
+  return '1';
+}
+
+/**
+ * Grows or shrinks --gct-card-h so the census always fills #guardia-board-scroll
+ * with no leftover blank space and no scrollbar (med-admin-panel.mjs pattern),
+ * adjusting the task line-clamp to match. Loops because one pass under/over
+ * corrects when the grid has more than one column (changing every card's height
+ * by X changes total scroll height by X per ROW, not per card).
+ */
+function fitGuardiaCards(mountEl) {
+  const cards = mountEl.querySelectorAll('.gct-card');
+  if (!cards.length) return;
+  const host = guardiaScrollHost();
+  if (!host) return;
+  for (let guard = 0; guard < 20; guard += 1) {
+    const overflow = host.scrollHeight - host.clientHeight;
+    const current = parseFloat(getComputedStyle(mountEl).getPropertyValue('--gct-card-h')) || GCT_CARD_H_DEFAULT;
+    let next = current;
+    if (overflow > 1 && current > GCT_CARD_H_MIN) {
+      next = Math.max(GCT_CARD_H_MIN, current - Math.max(2, Math.ceil(overflow / 40)));
+    } else if (overflow < -8 && current < GCT_CARD_H_MAX) {
+      next = Math.min(GCT_CARD_H_MAX, current + Math.max(2, Math.ceil(-overflow / 40)));
+    } else {
+      return;
+    }
+    if (next === current) return;
+    mountEl.style.setProperty('--gct-card-h', `${next}px`);
+    mountEl.style.setProperty('--gct-task-lines', guardiaTaskLinesFor(next));
+  }
+}
+
+function wireGuardiaCardsResize(mountEl) {
+  if (mountEl._gctResizeWired) return;
+  mountEl._gctResizeWired = true;
+  if (typeof ResizeObserver === 'undefined') return;
+  const ro = new ResizeObserver(() => fitGuardiaCards(mountEl));
+  ro.observe(mountEl);
+}
+
+/** Group keys the user collapsed. Survives re-renders (mountGuardiaCensusTable replaces innerHTML each refresh). */
+export const collapsedGroupIds = new Set();
+
+function groupBlockHtml(key, label, count, cardsHtml) {
+  const open = collapsedGroupIds.has(key) ? '' : ' open';
+  return (
+    `<details class="gct-team-group" data-group-key="${escAttr(key)}"${open}>` +
+    `<summary class="gct-divider">${escHtml(label)} · ${count}</summary>` +
+    `<div class="gct-grid">${cardsHtml}</div>` +
+    '</details>'
+  );
 }
 
 function batchRowsHtml(patients, guardiasMap) {
   return sortPatientsByPriorityThenBed(patients, guardiasMap)
-    .map(buildGuardiaCensusTableRowHtml)
+    .map(buildGuardiaCensusCardHtml)
+    .join('');
+}
+
+function teamGroupsHtml(patients, guardiasMap, groupCtx) {
+  return buildGuardiaTeamCensusGroups(patients, groupCtx)
+    .filter((group) => group.patients.length)
+    .map((group) =>
+      groupBlockHtml(
+        group.teamId || group.label,
+        group.label,
+        group.patients.length,
+        batchRowsHtml(group.patients, guardiasMap)
+      )
+    )
     .join('');
 }
 
 function guardiaCensusBodyHtml(patients, guardiasMap, userRank, groupCtx) {
-  if (userRank !== 'R4') return batchRowsHtml(patients, guardiasMap);
+  if (userRank !== 'R4') return teamGroupsHtml(patients || [], guardiasMap, groupCtx);
   let body = '';
   const followUpPatients = filterR4FollowUpPinPatients(patients);
   const followUpIds = new Set(followUpPatients.map((p) => p.id));
   if (followUpPatients.length) {
-    body += dividerHtml(R4_FOLLOWUP_PIN_LABEL) + batchRowsHtml(followUpPatients, guardiasMap);
+    body += groupBlockHtml(
+      R4_FOLLOWUP_PIN_LABEL,
+      R4_FOLLOWUP_PIN_LABEL,
+      followUpPatients.length,
+      batchRowsHtml(followUpPatients, guardiasMap)
+    );
   }
   const rest = (patients || []).filter((p) => p?.id && !followUpIds.has(p.id));
-  buildGuardiaTeamCensusGroups(rest, groupCtx).forEach((group) => {
-    if (!group.patients.length) return;
-    body += dividerHtml(group.label) + batchRowsHtml(group.patients, guardiasMap);
-  });
-  return body;
+  return body + teamGroupsHtml(rest, guardiasMap, groupCtx);
 }
 
 function guardiaCensusSummaryLine(patients) {
@@ -248,18 +409,17 @@ export function buildGuardiaCensusTableHtml(
   const all = patients || [];
   const title = `Censo · ${all.length} paciente${all.length === 1 ? '' : 's'}`;
   const chipsHtml = buildFilterChipsHtml(guardiaCensusFilterChips(all), activeFilter);
-  const header = buildTableCardHeaderHtml({ title, actionsHtml: chipsHtml });
-  const colhead = buildColumnHeadHtml(
-    ['Cama', 'Paciente', 'Alterados', 'Pendiente', 'Estado'],
-    GUARDIA_TABLE_GRID
-  );
+  // Cambiar sala/equipo lives here (not a separate head bar) to keep the census
+  // grid's vertical room — the click is handled by a delegated document listener
+  // in guardia-board-chrome.mjs, so the button works from anywhere in the DOM.
+  const cambiarBtn = '<button type="button" class="btn-med-secondary" id="guardia-btn-cambiar-sala">Cambiar</button>';
+  const header = buildTableCardHeaderHtml({ title, actionsHtml: cambiarBtn + chipsHtml });
   const filtered = applyGuardiaCensusFilter(all, activeFilter);
   const bodyHtml = guardiaCensusBodyHtml(filtered, guardiasMap, userRank, groupCtx);
   const summary = guardiaCensusSummaryLine(filtered);
   return (
     '<div class="wb-table-card guardia-census-table">' +
     header +
-    colhead +
     `<div class="wb-table-body">${bodyHtml}</div>` +
     (summary ? buildSummaryLineHtml(summary) : '') +
     '</div>'
@@ -279,11 +439,27 @@ export function mountGuardiaCensusTable(container, patients, guardiasMap, userRa
   container.classList.remove('patient-chips-grid', 'patient-chips-grid--guardia');
   container.classList.add('guardia-census-table-mount');
 
+  if (!container._gctToggleWired) {
+    container._gctToggleWired = true;
+    // toggle does not bubble — capture phase is required for delegation.
+    container.addEventListener(
+      'toggle',
+      (ev) => {
+        const details = ev.target.closest && ev.target.closest('details.gct-team-group');
+        const key = details && details.getAttribute('data-group-key');
+        if (!key) return;
+        if (details.open) collapsedGroupIds.delete(key);
+        else collapsedGroupIds.add(key);
+      },
+      true
+    );
+  }
+
   const activeFilter = container._gctActiveFilter || GUARDIA_CENSUS_FILTER_DEFAULT;
 
   function wireRows() {
     if (typeof onRowClick !== 'function') return;
-    container.querySelectorAll('.wb-row[data-wb-row-id]').forEach((row) => {
+    container.querySelectorAll('[data-wb-row-id]').forEach((row) => {
       const open = () => onRowClick(row.getAttribute('data-wb-row-id'));
       row.addEventListener('click', open);
       row.addEventListener('keydown', (ev) => {
@@ -303,13 +479,17 @@ export function mountGuardiaCensusTable(container, patients, guardiasMap, userRa
 
   function renderAt(filterId) {
     container._gctActiveFilter = filterId;
+    // Reassess from the full 2-line card height on every render — a previous
+    // filter/collapse pass may have shrunk these to fit fewer/shorter rows.
+    container.style.removeProperty('--gct-card-h');
+    container.style.removeProperty('--gct-task-lines');
     var prevRows = Object.create(null);
-    container.querySelectorAll('.wb-row[data-wb-row-id]').forEach((row) => {
+    container.querySelectorAll('[data-wb-row-id]').forEach((row) => {
       prevRows[row.getAttribute('data-wb-row-id')] = row;
     });
     container.innerHTML = buildGuardiaCensusTableHtml(patients, guardiasMap, userRank, groupCtx, filterId);
     var newIds = new Set();
-    container.querySelectorAll('.wb-row[data-wb-row-id]').forEach((row) => {
+    container.querySelectorAll('[data-wb-row-id]').forEach((row) => {
       var id = row.getAttribute('data-wb-row-id');
       newIds.add(id);
       if (!prevRows[id]) row.classList.add('row-enter');
@@ -317,6 +497,8 @@ export function mountGuardiaCensusTable(container, patients, guardiasMap, userRa
     appendExitingRows(container, prevRows, newIds);
     wireRows();
     wireChips();
+    wireGuardiaCardsResize(container);
+    fitGuardiaCards(container);
   }
 
   renderAt(activeFilter);

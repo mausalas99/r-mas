@@ -117,6 +117,62 @@ describe('cloud outbox', () => {
     assert.equal(ob.list().length, 2);
   });
 
+  it('removeOps drops only the acked ops (by path+updatedAt), keeping the rest', () => {
+    const mem = [];
+    const ob = createOutbox({
+      load: () => mem.slice(),
+      save: (rows) => {
+        mem.length = 0;
+        mem.push(...rows);
+      },
+    });
+    ob.enqueue({
+      clientMutationId: 'labSidecars/p1',
+      ops: [
+        { path: 'labSidecars/p1/set-1', value: {}, updatedAt: 't1' },
+        { path: 'labSidecars/p1/set-2', value: {}, updatedAt: 't2' },
+      ],
+    });
+    ob.removeOps('labSidecars/p1', [{ path: 'labSidecars/p1/set-1', updatedAt: 't1' }]);
+    assert.equal(ob.list().length, 1);
+    assert.deepEqual(
+      ob.list()[0].ops.map((op) => op.path),
+      ['labSidecars/p1/set-2']
+    );
+  });
+
+  it('removeOps deletes the row once every op is acked', () => {
+    const mem = [];
+    const ob = createOutbox({
+      load: () => mem.slice(),
+      save: (rows) => {
+        mem.length = 0;
+        mem.push(...rows);
+      },
+    });
+    ob.enqueue({ clientMutationId: 'm1', ops: [{ path: 'a', value: 1, updatedAt: 't1' }] });
+    ob.removeOps('m1', [{ path: 'a', updatedAt: 't1' }]);
+    assert.equal(ob.list().length, 0);
+  });
+
+  it('removeOps leaves an op merged in mid-flight untouched — a stale ack must not lose it', () => {
+    const mem = [];
+    const ob = createOutbox({
+      load: () => mem.slice(),
+      save: (rows) => {
+        mem.length = 0;
+        mem.push(...rows);
+      },
+    });
+    ob.enqueue({ clientMutationId: 'm1', ops: [{ path: 'a', value: 1, updatedAt: 't1' }] });
+    // A concurrent local edit re-enqueues the same id with a newer value
+    // while a drain of the t1 snapshot is still in flight.
+    ob.enqueue({ clientMutationId: 'm1', ops: [{ path: 'a', value: 2, updatedAt: 't2' }] });
+    ob.removeOps('m1', [{ path: 'a', updatedAt: 't1' }]);
+    assert.equal(ob.list().length, 1);
+    assert.equal(ob.list()[0].ops[0].updatedAt, 't2');
+  });
+
   it('remove drops one entry by clientMutationId', () => {
     const mem = [];
     const ob = createOutbox({

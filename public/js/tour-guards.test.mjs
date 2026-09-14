@@ -4,7 +4,6 @@ import {
   syncGuidedTourContext,
   shouldSuppressGuardiaEntregaBootstrap,
   shouldShowGuardiaBoardWithoutEntrega,
-  shouldOpenEntregaRosterForTour,
 } from './tour-guards.mjs';
 
 test('guardia v7 tour suppresses entrega bootstrap on modo guardia steps', () => {
@@ -14,10 +13,8 @@ test('guardia v7 tour suppresses entrega bootstrap on modo guardia steps', () =>
   syncGuidedTourContext({ active: true, stepId: 'gv7_guardia_tab' });
   assert.equal(shouldSuppressGuardiaEntregaBootstrap(), true);
   assert.equal(shouldShowGuardiaBoardWithoutEntrega('gv7_guardia_tab'), true);
-  assert.equal(shouldOpenEntregaRosterForTour('gv7_guardia_tab'), false);
 
-  syncGuidedTourContext({ active: true, stepId: 'gv7_entrega_roster' });
+  syncGuidedTourContext({ active: true, stepId: 'gv7_censo_r1' });
   assert.equal(shouldSuppressGuardiaEntregaBootstrap(), false);
-  assert.equal(shouldShowGuardiaBoardWithoutEntrega('gv7_entrega_roster'), false);
-  assert.equal(shouldOpenEntregaRosterForTour('gv7_entrega_roster'), true);
+  assert.equal(shouldShowGuardiaBoardWithoutEntrega('gv7_censo_r1'), false);
 });

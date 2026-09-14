@@ -51,6 +51,34 @@ function functionBody(name) {
   return src.slice(start, nextFn === -1 ? src.length : nextFn);
 }
 
+describe('interno-app — Interno subkey wiring (E2EE redesign)', () => {
+  it('imports the on-device decrypt/encrypt helpers from interno-crypto-board.mjs', () => {
+    assert.match(
+      src,
+      /import \{\s*buildEncryptedInternoVitals,\s*decryptAndAssembleInternoBoard,\s*importInternoSubkeyRaw,\s*subkeyB64FromLocationHash,\s*\} from '\.\/interno-crypto-board\.mjs';/
+    );
+  });
+
+  it('gates init() on both the sala token and the subkey, and imports the subkey before connecting', () => {
+    const body = functionBody('init');
+    assert.match(body, /if \(!token \|\| !subkeyB64\)/);
+    assert.match(body, /subkey = await importInternoSubkeyRaw\(subkeyB64\)/);
+  });
+
+  it('refreshBoard() decrypts and assembles the relay board instead of trusting a server-built DTO', () => {
+    const body = functionBody('refreshBoard');
+    assert.match(body, /decryptAndAssembleInternoBoard\(subkey, body\)/);
+  });
+
+  it('submitVitals() sends an already-encrypted monitoreoEnvelope, never raw vitals numbers', () => {
+    const start = src.indexOf('async function submitVitals');
+    const block = src.slice(start);
+    assert.match(block, /buildEncryptedInternoVitals\(subkey, currentEntry\?\.monitoreo/);
+    assert.match(block, /monitoreoEnvelope: built\.monitoreoEnvelope/);
+    assert.doesNotMatch(block, /body: JSON\.stringify\(\{ patientId, vitals, glucometrias/);
+  });
+});
+
 describe('markPendienteComplete field-invalid marking (WU14)', () => {
   it('imports markFieldInvalid from the shared helper', () => {
     assert.match(src, /import \{ markFieldInvalid \} from '\.\.\/js\/ui-field-invalid\.mjs';/);

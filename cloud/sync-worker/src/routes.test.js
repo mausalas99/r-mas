@@ -39,3 +39,22 @@ describe('handleApiRoute — /rooms app-version gate', () => {
     assert.notEqual(res.status, 426);
   });
 });
+
+describe('handleApiRoute — SyncError Retry-After header', () => {
+  it('sets Retry-After: 10 on the 429 once a room trips the push rate limit', async () => {
+    const env = { DB: {} };
+    const mutationsUrl = `https://x${API_PREFIX}/rooms/room-routes-rate-test/mutations`;
+    let res;
+    for (let i = 0; i < 121; i += 1) {
+      res = await handleApiRoute(new Request(mutationsUrl, { method: 'POST', body: '{}' }), env);
+    }
+    assert.equal(res.status, 429);
+    assert.equal(res.headers.get('Retry-After'), '10');
+  });
+
+  it('carries no Retry-After header for a SyncError that has no retry hint', async () => {
+    const res = await handleApiRoute(new Request(`https://x${API_PREFIX}/sync`), {});
+    assert.equal(res.status, 501);
+    assert.equal(res.headers.get('Retry-After'), null);
+  });
+});
