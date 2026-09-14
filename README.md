@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.3.5](https://github.com/mausalas99/r-mas/releases/tag/v8.3.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.3.6](https://github.com/mausalas99/r-mas/releases/tag/v8.3.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -62,6 +62,15 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.3.6 (estable — release 8.3.6)
+
+- **Nuevo — Internos vuelve:** enlace por QR por sala, cifrado de extremo a extremo (el servidor nunca ve los datos del paciente).
+- **Nuevo — Modo Guardia rediseñado:** tarjetas por paciente, sala declarada al iniciar el turno, y marcadores de esfuerzo terapéutico, pronóstico y nota corta.
+- **Mejorado:** la sincronización con la Nube resiste mejor una reconexión tras una caída, y el chip de estado muestra cuántos cambios faltan por enviar.
+- **Arreglado:** eliminar un paciente desde Administración → Red ya no se siente lento; el reticulocito corregido (RetC) ya no reaparecía donde no correspondía.
+
+Notas: `docs/RELEASE_NOTES_8.3.6.txt`.
 ## R+ 8.3.5 (estable — release 8.3.5)
 
 - **Arreglado:** en Registrar medición, el recuadro de foco del signo vital autoseleccionado (TAS) ahora marca toda la tarjeta, no el número.
