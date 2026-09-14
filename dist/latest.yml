@@ -1,12 +1,20 @@
-version: 8.3.5
+version: 8.3.6
 files:
-  - url: R+-8.3.5-x64.exe
-    sha512: 9N4jJKD0DZCAwBjeqdO9VydpN6xfEUIBOPGc/QLOKzvOQF1fzMTYdH5ef4kThMCyXiCwRypfkQb5KkdlLmCJ2w==
-    size: 122368834
-path: R+-8.3.5-x64.exe
-sha512: 9N4jJKD0DZCAwBjeqdO9VydpN6xfEUIBOPGc/QLOKzvOQF1fzMTYdH5ef4kThMCyXiCwRypfkQb5KkdlLmCJ2w==
-releaseDate: '2026-09-11T16:23:49.000Z'
+  - url: R+-8.3.6-x64.exe
+    sha512: 6cMVD/hESeK5oN95xnvJiHLDfujBOtwYqRa4ONMBuBQ/Mw/vVEiQVCNAiZqIJaAa/wR19aR6tfQ9glu5Cg9+CQ==
+    size: 122427208
+path: R+-8.3.6-x64.exe
+sha512: 6cMVD/hESeK5oN95xnvJiHLDfujBOtwYqRa4ONMBuBQ/Mw/vVEiQVCNAiZqIJaAa/wR19aR6tfQ9glu5Cg9+CQ==
+releaseDate: '2026-09-14T16:32:49.000Z'
 releaseNotes: |
-  Arreglo del foco visual en el modal de Registrar medición: el recuadro de acento queda en toda la tarjeta del signo vital, no en el número.
+  Internos vuelve a funcionar con un QR cifrado por sala, Modo Guardia se rediseña con marcadores por paciente, y la sincronización con la Nube resiste mejor las caídas de conexión.
   
-  Arreglado: en Registrar medición, el signo vital que recibe foco automático (TAS) mostraba un recuadro también alrededor del número; ahora el recuadro rodea solo la tarjeta completa.
+  Nuevo: Internos (acceso desde el celular por escaneo de QR) vuelve a estar disponible. El QR es por sala, cifrado de extremo a extremo — el servidor nunca ve los datos del paciente ni de los signos vitales.
+  
+  Nuevo: Modo Guardia se rediseña — vista de tarjetas por paciente, se declara la sala al iniciar el turno, y cada paciente puede marcar esfuerzo terapéutico, pronóstico de la noche y una nota corta.
+  
+  Mejorado: la sincronización con la Nube resiste mejor una reconexión después de una caída de conexión, y el chip de estado ahora muestra cuántos cambios faltan por enviar.
+  
+  Arreglado: eliminar un paciente desde Administración → Red ya no se siente lento.
+  
+  Arreglado: el reticulocito corregido (RetC) ya no reaparecía en estudios de sangre posteriores donde no correspondía.

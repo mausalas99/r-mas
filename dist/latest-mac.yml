@@ -1,21 +1,29 @@
-version: 8.3.5
+version: 8.3.6
 files:
-  - url: R+-8.3.5-autoupdate-mac-arm64.zip
-    sha512: TFCNmkyuHNsSCAvC1uriNtA+GbaB3sH/mmCtB86QxjLZPVj6VdNtj6maascoIrE2bw2o09WtwQsFiAQbEcs+JQ==
-    size: 139368650
-  - url: R+-8.3.5-arm64.dmg
-    sha512: i47E33V6ULkkNiios35dRrt7k33y16+1FgSkzVNkV822MbHzHRrOScsiMFaYeZACM9gm61jzz8F7JA8Cu04Pgw==
-    size: 145200658
-  - url: R+-8.3.5-autoupdate-mac-x64.zip
-    sha512: aTLGZ157/Ukj2moaYtMmD1cl5mR0kEIT1JoMfXQlf1DZ0j8dJ58FdP2EFY/1jtlfzi/shGp+VCq/lADtTvCRCw==
-    size: 147524206
-  - url: R+-8.3.5-x64.dmg
-    sha512: yVCXqdAa0pPvEehf/HGBHAlPFA7fk6NWbDNS+5NOcI4QwqCWd33vn2YM/BBPinaZgXxnA6sWth0paArDoeexpA==
-    size: 153415061
-path: R+-8.3.5-autoupdate-mac-arm64.zip
-sha512: TFCNmkyuHNsSCAvC1uriNtA+GbaB3sH/mmCtB86QxjLZPVj6VdNtj6maascoIrE2bw2o09WtwQsFiAQbEcs+JQ==
-releaseDate: '2026-09-11T16:23:49.000Z'
+  - url: R+-8.3.6-autoupdate-mac-arm64.zip
+    sha512: zvnSeS8j9A64MIBuzuuAo1JNzAUsP6emdqmyJQ1O2S47prUf2XqgHXRlr2zq6mX2xWtpuFyejPakZ/0oo7Pxsg==
+    size: 139442334
+  - url: R+-8.3.6-arm64.dmg
+    sha512: Up7UCNow7C/fZZbI+POp2PUYW8YkLfP0hMOzkjxGpQHGpRpQz8sj4844oZzjHOk0AKSKpmuAgjTIK+DKj1X9pA==
+    size: 145280517
+  - url: R+-8.3.6-autoupdate-mac-x64.zip
+    sha512: eaf0sg7i2yTvVXhidW8DWtzUsJbyeCnISpNk7RJRw/wIjMa5H87ZRGN63GnHEQMOqDhxh78Ef7WcCOvNrEr43w==
+    size: 147597950
+  - url: R+-8.3.6-x64.dmg
+    sha512: zKQvR9d5gVN7mgtt2wJv1cZ6fr5M2pypICn2/3yRrAi+m6felA500bWZZwlqOF5/RsJJkEHgkcLWs8qtSKFyZw==
+    size: 153471787
+path: R+-8.3.6-autoupdate-mac-arm64.zip
+sha512: zvnSeS8j9A64MIBuzuuAo1JNzAUsP6emdqmyJQ1O2S47prUf2XqgHXRlr2zq6mX2xWtpuFyejPakZ/0oo7Pxsg==
+releaseDate: '2026-09-14T16:32:49.000Z'
 releaseNotes: |
-  Arreglo del foco visual en el modal de Registrar medición: el recuadro de acento queda en toda la tarjeta del signo vital, no en el número.
+  Internos vuelve a funcionar con un QR cifrado por sala, Modo Guardia se rediseña con marcadores por paciente, y la sincronización con la Nube resiste mejor las caídas de conexión.
   
-  Arreglado: en Registrar medición, el signo vital que recibe foco automático (TAS) mostraba un recuadro también alrededor del número; ahora el recuadro rodea solo la tarjeta completa.
+  Nuevo: Internos (acceso desde el celular por escaneo de QR) vuelve a estar disponible. El QR es por sala, cifrado de extremo a extremo — el servidor nunca ve los datos del paciente ni de los signos vitales.
+  
+  Nuevo: Modo Guardia se rediseña — vista de tarjetas por paciente, se declara la sala al iniciar el turno, y cada paciente puede marcar esfuerzo terapéutico, pronóstico de la noche y una nota corta.
+  
+  Mejorado: la sincronización con la Nube resiste mejor una reconexión después de una caída de conexión, y el chip de estado ahora muestra cuántos cambios faltan por enviar.
+  
+  Arreglado: eliminar un paciente desde Administración → Red ya no se siente lento.
+  
+  Arreglado: el reticulocito corregido (RetC) ya no reaparecía en estudios de sangre posteriores donde no correspondía.
