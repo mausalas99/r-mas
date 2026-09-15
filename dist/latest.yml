@@ -1,20 +1,14 @@
-version: 8.3.6
+version: 8.3.7
 files:
-  - url: R+-8.3.6-x64.exe
-    sha512: 6cMVD/hESeK5oN95xnvJiHLDfujBOtwYqRa4ONMBuBQ/Mw/vVEiQVCNAiZqIJaAa/wR19aR6tfQ9glu5Cg9+CQ==
-    size: 122427208
-path: R+-8.3.6-x64.exe
-sha512: 6cMVD/hESeK5oN95xnvJiHLDfujBOtwYqRa4ONMBuBQ/Mw/vVEiQVCNAiZqIJaAa/wR19aR6tfQ9glu5Cg9+CQ==
-releaseDate: '2026-09-14T16:32:49.000Z'
+  - url: R+-8.3.7-x64.exe
+    sha512: dMdAaccPhcwHxGWxyBX/wWofLRbhZiALfnEvwyIfSs5u/lKYzVaNhiOwrmN6z+W8FCkMjBuQHe8neP7tIKaPWA==
+    size: 122417162
+path: R+-8.3.7-x64.exe
+sha512: dMdAaccPhcwHxGWxyBX/wWofLRbhZiALfnEvwyIfSs5u/lKYzVaNhiOwrmN6z+W8FCkMjBuQHe8neP7tIKaPWA==
+releaseDate: '2026-09-15T14:34:17.000Z'
 releaseNotes: |
-  Internos vuelve a funcionar con un QR cifrado por sala, Modo Guardia se rediseña con marcadores por paciente, y la sincronización con la Nube resiste mejor las caídas de conexión.
+  Arregla un error donde el reticulocito corregido se contagiaba a días de otro estudio al pegar varias semanas de laboratorios juntas.
   
-  Nuevo: Internos (acceso desde el celular por escaneo de QR) vuelve a estar disponible. El QR es por sala, cifrado de extremo a extremo — el servidor nunca ve los datos del paciente ni de los signos vitales.
+  Arreglado: al pegar varios laboratorios juntos (SOME), un solo valor de reticulocito ya no se combinaba con la biometría de otro día lejano para calcular un RetC falso — ahora solo se empareja con el estudio más cercano en el tiempo, una sola vez.
   
-  Nuevo: Modo Guardia se rediseña — vista de tarjetas por paciente, se declara la sala al iniciar el turno, y cada paciente puede marcar esfuerzo terapéutico, pronóstico de la noche y una nota corta.
-  
-  Mejorado: la sincronización con la Nube resiste mejor una reconexión después de una caída de conexión, y el chip de estado ahora muestra cuántos cambios faltan por enviar.
-  
-  Arreglado: eliminar un paciente desde Administración → Red ya no se siente lento.
-  
-  Arreglado: el reticulocito corregido (RetC) ya no reaparecía en estudios de sangre posteriores donde no correspondía.
+  Arreglado: actualizar labs (Actualizar labs) del paciente ya activo ahora refresca de inmediato la lista de fechas en Laboratorio, el panel de tendencias y el campo de estudios de la nota — antes quedaban con datos viejos hasta cambiar de paciente y volver.

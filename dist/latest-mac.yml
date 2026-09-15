@@ -1,29 +1,23 @@
-version: 8.3.6
+version: 8.3.7
 files:
-  - url: R+-8.3.6-autoupdate-mac-arm64.zip
-    sha512: zvnSeS8j9A64MIBuzuuAo1JNzAUsP6emdqmyJQ1O2S47prUf2XqgHXRlr2zq6mX2xWtpuFyejPakZ/0oo7Pxsg==
-    size: 139442334
-  - url: R+-8.3.6-arm64.dmg
-    sha512: Up7UCNow7C/fZZbI+POp2PUYW8YkLfP0hMOzkjxGpQHGpRpQz8sj4844oZzjHOk0AKSKpmuAgjTIK+DKj1X9pA==
-    size: 145280517
-  - url: R+-8.3.6-autoupdate-mac-x64.zip
-    sha512: eaf0sg7i2yTvVXhidW8DWtzUsJbyeCnISpNk7RJRw/wIjMa5H87ZRGN63GnHEQMOqDhxh78Ef7WcCOvNrEr43w==
-    size: 147597950
-  - url: R+-8.3.6-x64.dmg
-    sha512: zKQvR9d5gVN7mgtt2wJv1cZ6fr5M2pypICn2/3yRrAi+m6felA500bWZZwlqOF5/RsJJkEHgkcLWs8qtSKFyZw==
-    size: 153471787
-path: R+-8.3.6-autoupdate-mac-arm64.zip
-sha512: zvnSeS8j9A64MIBuzuuAo1JNzAUsP6emdqmyJQ1O2S47prUf2XqgHXRlr2zq6mX2xWtpuFyejPakZ/0oo7Pxsg==
-releaseDate: '2026-09-14T16:32:49.000Z'
+  - url: R+-8.3.7-autoupdate-mac-arm64.zip
+    sha512: MbQFciAj9bK5Wxdo8rlDwDNEW30ZohWyA+lJCyHnPPGadviQ+R9ct/t47CtatpjvSmckJ0ieHfxR73fZoreclw==
+    size: 139442110
+  - url: R+-8.3.7-arm64.dmg
+    sha512: Ok4vAX2u1xfA78ud+aNGbsDJjviL9FrKSev5RgfojKKHBeuXP/jSoZ1chuhkxfDi/lqwthYdmRChoUDrCTJTUw==
+    size: 145287936
+  - url: R+-8.3.7-autoupdate-mac-x64.zip
+    sha512: 4YZ5vskwznpB+lrRp+7EhynNrrOXHHXmwiNPzsvTNc7Eo+UlmKn8R00t0hqY4C78KeGTkZ+TRdrgKXHVsWnjcg==
+    size: 147597649
+  - url: R+-8.3.7-x64.dmg
+    sha512: MUAAuz9wB8Aw4mMfaNb6Wp1S/0iTgOmugeqGGPRxZdHHX1PIDCrG7gOplSnUUHKM3MGdbPCkYfdmGjOVHGzmjw==
+    size: 153459100
+path: R+-8.3.7-autoupdate-mac-arm64.zip
+sha512: MbQFciAj9bK5Wxdo8rlDwDNEW30ZohWyA+lJCyHnPPGadviQ+R9ct/t47CtatpjvSmckJ0ieHfxR73fZoreclw==
+releaseDate: '2026-09-15T14:34:17.000Z'
 releaseNotes: |
-  Internos vuelve a funcionar con un QR cifrado por sala, Modo Guardia se rediseña con marcadores por paciente, y la sincronización con la Nube resiste mejor las caídas de conexión.
+  Arregla un error donde el reticulocito corregido se contagiaba a días de otro estudio al pegar varias semanas de laboratorios juntas.
   
-  Nuevo: Internos (acceso desde el celular por escaneo de QR) vuelve a estar disponible. El QR es por sala, cifrado de extremo a extremo — el servidor nunca ve los datos del paciente ni de los signos vitales.
+  Arreglado: al pegar varios laboratorios juntos (SOME), un solo valor de reticulocito ya no se combinaba con la biometría de otro día lejano para calcular un RetC falso — ahora solo se empareja con el estudio más cercano en el tiempo, una sola vez.
   
-  Nuevo: Modo Guardia se rediseña — vista de tarjetas por paciente, se declara la sala al iniciar el turno, y cada paciente puede marcar esfuerzo terapéutico, pronóstico de la noche y una nota corta.
-  
-  Mejorado: la sincronización con la Nube resiste mejor una reconexión después de una caída de conexión, y el chip de estado ahora muestra cuántos cambios faltan por enviar.
-  
-  Arreglado: eliminar un paciente desde Administración → Red ya no se siente lento.
-  
-  Arreglado: el reticulocito corregido (RetC) ya no reaparecía en estudios de sangre posteriores donde no correspondía.
+  Arreglado: actualizar labs (Actualizar labs) del paciente ya activo ahora refresca de inmediato la lista de fechas en Laboratorio, el panel de tendencias y el campo de estudios de la nota — antes quedaban con datos viejos hasta cambiar de paciente y volver.
