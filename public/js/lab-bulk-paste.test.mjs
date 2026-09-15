@@ -262,6 +262,60 @@ HIPOCROMIA +`;
     });
   });
 
+  it('buildBulkLabPreview empareja con el BH mas cercano una sola vez, sin encadenar por varios dias', () => {
+    var ret = `Expediente:\t1\tSolicitud:\t1
+Nombre:\tMARIBEL BAZABE\tFecha Registro:\tAug 21 2026 4:10AM
+HEMATOLOGIA
+DIFERENCIAL MANUAL
+SEGMENTADOS
+*
+95
+%
+RETICULOCITOS
+Estudio\t\tResultado\tUnidades\tValor de Referencia
+RETICULOCITOS
+*
+1.0
+%\t0.5 - 1.5
+FROTIS DE SANGRE PERIFERICA
+HIPOCROMIA +`;
+    var medio = `Expediente:\t1\tSolicitud:\t2
+Nombre:\tMARIBEL BAZABE\tFecha Registro:\tSep 5 2026 1:08AM
+HEMATOLOGIA
+BIOMETRIA HEMATICA COMPLETA
+HGB B 7.97 g/dL 12.20 - 18.10
+HCT B 25.1 % 37.7 - 53.7
+MCV * 88 fL 80 - 97
+MCH * 28.1 pg 27.0 - 31.2
+WBC A 4.32 K/uL 4.00 - 11.00
+NEU * 3.43 K/uL 2.00 - 6.90
+PLT * 22 K/uL 142.00 - 424.00`;
+    var lejano = `Expediente:\t1\tSolicitud:\t3
+Nombre:\tMARIBEL BAZABE\tFecha Registro:\tSep 14 2026 2:17AM
+HEMATOLOGIA
+BIOMETRIA HEMATICA COMPLETA
+HGB B 8.76 g/dL 12.20 - 18.10
+HCT B 26.9 % 37.7 - 53.7
+MCV * 89 fL 80 - 97
+MCH * 29 pg 27.0 - 31.2
+WBC A 2.43 K/uL 4.00 - 11.00
+NEU * 1.78 K/uL 2.00 - 6.90
+PLT * 172 K/uL 142.00 - 424.00`;
+    var block = ret + '\n---\n' + medio + '\n---\n' + lejano;
+    var preview = buildBulkLabPreview(block, { findPatientByRegistro: function () { return null; } });
+    var bhLines = preview[0].reports
+      .filter(function (r) { return r.ok; })
+      .map(function (r) {
+        return r.result.resLabs.find(function (l) { return /^BH\b/i.test(l); });
+      })
+      .filter(Boolean);
+    assert.equal(bhLines.length, 3);
+    // medio (05/09) toma su BH mas cercano: lejano (14/09, 9 dias) en vez de ret (21/08, 15 dias) — ninguno trae Ret.
+    assert.doesNotMatch(bhLines[1], /RetC/, 'el CBC del 05/09 no debe heredar el Ret del 21/08 a traves de otro dia');
+    // lejano (14/09) tambien mira solo su vecino mas cercano (medio, sin Ret): no sigue buscando hasta el Ret real.
+    assert.doesNotMatch(bhLines[2], /RetC/, 'el CBC del 14/09 no debe encadenar mas alla de su BH mas cercano');
+  });
+
   it('mergeBulkParseResults mantiene cada gasometría seriada del mismo día', () => {
     var gasoA = GASO_VENOSA_SOLO.replace('6:43AM', '6:43AM');
     var gasoB = GASO_VENOSA_SOLO.replace('6:43AM', '7:30AM').replace('7.39', '7.35');

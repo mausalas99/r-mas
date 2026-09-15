@@ -388,6 +388,16 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports, opts) {
   // Re-bump for the now-active patient — the dashboard's revision listener drops
   // events stamped with the pre-switch active id (see dashboard-mount.mjs).
   bumpLabHistoryRevision(rt.getActiveId());
+  // applyBulkLabPatientSwitch only reloads the Laboratorio history list when it
+  // switches patient — re-importing for the already-active patient (Actualizar
+  // labs) left the date list stale until the user switched away and back.
+  renderLabHistoryPanel();
+  rt.refreshTendenciasOrCultivosPanel();
+  // Same reason: the note's "estudios" textarea is plain DOM state, not
+  // re-rendered by anything above — only a patient switch used to repaint it.
+  var estudiosEl = document.querySelector('#note-form textarea[oninput*="estudios"]');
+  var activeNotes = getNotes()[rt.getActiveId()];
+  if (estudiosEl && activeNotes) estudiosEl.value = activeNotes.estudios || '';
 
   labPanelBridge.renderOutput(displayResult);
   toastCitoquimInterpFromResult(displayResult);

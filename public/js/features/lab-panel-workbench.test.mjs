@@ -44,4 +44,26 @@ describe('bulk lab paste patient switch + revision bump ordering', () => {
     assert.equal(rt.getActiveId(), 'new-patient');
     assert.deepEqual(seen, ['old-patient', 'new-patient']);
   });
+
+  // Bug: re-importing labs (Actualizar labs) for the patient already on screen
+  // took a switch-away-and-back to show up, because applyBulkLabPatientSwitch
+  // skips rt.selectPatient when the match is already active — and selectPatient
+  // was the only thing reloading the Laboratorio date list. Fix in
+  // finalizeBulkLabPaste calls renderLabHistoryPanel() unconditionally after
+  // applyBulkLabPatientSwitch, regardless of whether a switch happened.
+  it('does not call selectPatient when the matched patient is already active', () => {
+    rt.getActiveId = () => 'same-patient';
+    rt.findPatientByRegistro = () => ({ id: 'same-patient', nombre: 'Test' });
+    var selectCalls = [];
+    rt.selectPatient = (id) => selectCalls.push(id);
+
+    applyBulkLabPatientSwitch(
+      { expediente: '123' },
+      {},
+      [{ okReportCount: 2 }],
+      () => {}
+    );
+
+    assert.deepEqual(selectCalls, []);
+  });
 });

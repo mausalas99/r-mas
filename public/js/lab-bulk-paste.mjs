@@ -302,23 +302,38 @@ function computePatientName(match, okReports) {
   return okReports[0] ? okReports[0].nombre || '—' : '—';
 }
 
-/** Hto/Ret de cada chunk del bloque, para que un chunk sin Hto (o sin Ret) tome el de otro del mismo pegado. */
+/** Hto/Ret de cada chunk del bloque, para que un chunk sin Hto (o sin Ret) tome el de otro
+ * chunk del mismo pegado. Cada chunk mira solo su BH más cercano en el tiempo (un solo salto,
+ * sin tope de distancia) y usa lo que ese BH tenga — si ese vecino tampoco trae Ret, no sigue
+ * buscando más atrás. Así un único Ret real en un pegado masivo (meses de reportes) no se
+ * propaga en cadena a días lejanos que no son su toma. */
 function collectBatchBhValues_(chunks, findPatient) {
-  var out = Object.create(null);
-  chunks.forEach(function (chunk, ri) {
+  var parsed = chunks.map(function (chunk, ri) {
     var r = parseReportChunk(chunk, ri, findPatient);
-    if (!r.ok || !r.result) return;
-    var bh = buildParsedBySectionFromResLabs(r.result.resLabs, r.result.bhExtras).BH;
-    if (bh) Object.assign(out, bh);
+    var bh = r.ok && r.result ? buildParsedBySectionFromResLabs(r.result.resLabs, r.result.bhExtras).BH : null;
+    return { ri: ri, bh: bh, ms: r.ok ? labTimestampMsFromFechaHora(r.fecha, r.hora) : null };
   });
-  return out;
+  return parsed.map(function (p) {
+    if (p.ms == null) return Object.create(null);
+    var nearest = null;
+    var nearestGap = Infinity;
+    parsed.forEach(function (o) {
+      if (o.ri === p.ri || !o.bh || o.ms == null) return;
+      var gap = Math.abs(o.ms - p.ms);
+      if (gap < nearestGap) {
+        nearest = o;
+        nearestGap = gap;
+      }
+    });
+    return nearest ? Object.assign(Object.create(null), nearest.bh) : Object.create(null);
+  });
 }
 
 function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
   var chunks = splitSomeReportsInBlock(blockText);
   var batchBhValues = collectBatchBhValues_(chunks, findPatient);
   var reports = chunks.map(function (chunk, ri) {
-    return parseReportChunk(chunk, ri, findPatient, batchBhValues);
+    return parseReportChunk(chunk, ri, findPatient, batchBhValues[ri]);
   });
   var okReports = reports.filter(function (r) {
     return r.ok;

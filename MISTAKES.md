@@ -311,3 +311,9 @@ What happened:
 Root cause:
 Prevention:
 ```
+
+## 2026-09-15 — explained a pasted-lab anomaly clinically for 4 turns before checking the parser
+
+What happened: User pasted 2 months of raw lab text with `RetC ... (arregenerativa)` tagged on almost every BH, and asked why. I answered with clinical reasoning (marrow suppression, chronic anemia) instead of checking whether the tag was real data. User had to push through several turns — "it should link to just one BH", "there are way too many tags", finally "THIS IS FROM THE PARSER, ITS A BUG" — before I looked at the actual parsing code in `public/js/lab-bulk-paste.mjs`. Root bug: `collectBatchBhValues_` flattened every chunk's BH fields into one shared object across an entire bulk-paste batch, so the single real `Ret` value anywhere in a multi-week paste got paired with every other day's `Hto` to compute a fake "corrected" retic count and tag, regardless of how far apart the dates were.
+Root cause: Treated a data-shaped question (why does a field show this value) as a domain-knowledge question, and answered from clinical priors instead of first asking "is this number even real." The codebase already had the right instinct once (`collectPriorBhValuesFromHistory`, with a comment and test guarding the exact same failure mode for saved patient history) — but the newer bulk-paste batch path reintroduced the unbounded carry-forward without that guard.
+Prevention: When pasted/displayed data looks statistically off (a tag appearing on nearly every row, a value repeating suspiciously often), check the parser/computation path before reaching for a domain explanation — R+'s whole job is turning pasted text into structured labs, so "is this a parsing bug" outranks "is this a real clinical pattern" as the first hypothesis. Fixed by bounding `collectBatchBhValues_` to the existing `LAB_CONSOLIDATION_WINDOW_MS` (2h, same-draw window already used elsewhere in that file) instead of unbounded nearest-in-batch.
