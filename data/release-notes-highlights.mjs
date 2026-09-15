@@ -4,30 +4,19 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_836 = [
+var RELEASE_NOTES_837 = [
   {
-    title: 'Nuevo — Internos vuelve, con código QR por sala',
-    body:
-      'El celular se conecta a la sala con un <strong>QR cifrado de extremo a extremo</strong> — el servidor nunca ve los datos del paciente.',
+    title: 'RetC ya no se contagia entre días',
+    body: 'Al pegar varias semanas de laboratorios juntas, un solo valor de reticulocito ya no se combinaba con la biometría de otro día para inventar un RetC falso.',
   },
   {
-    title: 'Nuevo — Modo Guardia rediseñado',
-    body:
-      'Tarjetas por paciente, sala declarada al iniciar el turno, y marcadores de esfuerzo terapéutico, pronóstico de la noche y nota corta.',
-  },
-  {
-    title: 'Mejorado — sincronización más resistente',
-    body:
-      'La Nube resiste mejor una reconexión tras una caída, y el chip de estado ahora muestra <strong>cuántos cambios faltan por enviar</strong>.',
-  },
-  {
-    title: 'Arreglado — eliminar paciente en Red',
-    body: 'Eliminar un paciente desde Administración → Red ya no se siente lento.',
+    title: 'Actualizar labs refresca todo al toque',
+    body: 'La lista de fechas en Laboratorio, el panel de tendencias y el campo de estudios de la nota se actualizan de inmediato, sin tener que cambiar de paciente y volver.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_836;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_837;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.3.6': RELEASE_NOTES_836,
+  '8.3.7': RELEASE_NOTES_837,
 };

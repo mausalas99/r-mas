@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.3.6](https://github.com/mausalas99/r-mas/releases/tag/v8.3.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.3.7](https://github.com/mausalas99/r-mas/releases/tag/v8.3.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -63,6 +63,13 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.3.7 (estable — release 8.3.7)
+
+- **Arreglado:** al pegar varios laboratorios juntos, un reticulocito de un día ya no se contagiaba al RetC de otro día.
+- **Arreglado:** actualizar labs del paciente activo refresca fechas, tendencias y estudios sin cambiar de paciente.
+
+Notas: `docs/RELEASE_NOTES_8.3.7.txt`.
 ## R+ 8.3.6 (estable — release 8.3.6)
 
 - **Nuevo — Internos vuelve:** enlace por QR por sala, cifrado de extremo a extremo (el servidor nunca ve los datos del paciente).

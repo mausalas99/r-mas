@@ -1,0 +1,23 @@
+R+ 8.3.7 (estable — release 8.3.7)
+======================================
+
+Fecha: 2026-09-15
+
+## Resumen
+
+Arregla un error donde el reticulocito corregido se contagiaba a días de otro estudio al pegar varias semanas de laboratorios juntas.
+
+## Nuevo / mejorado
+
+- **Arreglado:** al pegar varios laboratorios juntos (SOME), un solo valor de reticulocito ya no se combinaba con la biometría de otro día lejano para calcular un RetC falso — ahora solo se empareja con el estudio más cercano en el tiempo, una sola vez.
+- **Arreglado:** actualizar labs (Actualizar labs) del paciente ya activo ahora refresca de inmediato la lista de fechas en Laboratorio, el panel de tendencias y el campo de estudios de la nota — antes quedaban con datos viejos hasta cambiar de paciente y volver.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.3.7-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.3.7-Mac-Intel.dmg`
+- Windows: `R+-8.3.7-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
