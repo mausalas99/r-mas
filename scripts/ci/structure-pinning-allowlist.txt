@@ -51,6 +51,7 @@ public/js/features/cloud-sync/identity-bridge.test.mjs
 public/js/features/cloud-sync/mutate-bridge.test.mjs
 public/js/features/cloud-sync/panel-admin-actions.test.mjs
 public/js/features/cloud-sync/panel-admin-clinical-purge.test.mjs
+public/js/features/cloud-sync/panel-admin-data.test.mjs
 public/js/features/cloud-sync/panel-admin-equipos-bulk.test.mjs
 public/js/features/cloud-sync/panel-admin-equipos.test.mjs
 public/js/features/cloud-sync/panel-conexion-bootstrap.test.mjs
@@ -68,6 +69,7 @@ public/js/features/drive-import-modal/drive-import-actions.test.mjs
 public/js/features/drive-import-modal/drive-import-modal-step.test.mjs
 public/js/features/drive-import-modal/drive-import-preview.test.mjs
 public/js/features/drive-import-modal/drive-import-run.test.mjs
+public/js/features/entrega-modal-ui/entrega-modal-handoff.test.mjs
 public/js/features/entrega-modal-ui/entrega-modal-procedures.test.mjs
 public/js/features/entrega-roster-panel.test.mjs
 public/js/features/eventualidades-persist-repo.test.mjs

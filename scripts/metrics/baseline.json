@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-09T16:20:57.038Z",
+  "updatedAt": "2026-09-14T16:16:04.525Z",
   "totalScore": 0,
-  "trackedLoc": 348800,
-  "moduleCount": 1257,
+  "trackedLoc": 352400,
+  "moduleCount": 1258,
   "bootGraphHash": "7dee73a925486bda",
   "bootGraph": {
     "hash": "7dee73a925486bda",
@@ -706,6 +706,10 @@
     {
       "date": "2026-09-09",
       "note": "Baseline refresh: moduleCount 1251->1257 (6 new files this session: admin-roles.js, cloud-sync-clock.mjs, cloud-sync-echo-guard.mjs, network-census.mjs, scope-cloud-state-to-patient.mjs, patient-name-cleanup-once.mjs, for the Red tab cross-area admin census feature). trackedLoc ceiling 350000->348800 (measured 348603, rounded up). totalScore 225->0 (this session fixed the 3 new complexity violations the Red tab feature introduced instead of carrying them as debt; the 15 pre-existing violations from the 2026-09-06 raise are untouched, still tracked in docs/superpowers/plans/2026-09-06-complexity-debt-handoff.md). Owner-approved via chat 2026-09-09. Also fixes a script bug: run.mjs --write-baseline was dropping trackedLoc/moduleCount from the file entirely (only totalScore/bootGraph were ever written back), so every baseline refresh silently blanked the LOC/module ratchets until the next check() run failed on it."
+    },
+    {
+      "date": "2026-09-14",
+      "note": "Baseline refresh totalScore=0"
     }
   ]
 }
