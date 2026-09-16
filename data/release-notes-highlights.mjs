@@ -17,6 +17,10 @@ var RELEASE_NOTES_838 = [
     title: 'Mejorado — sincronización más confiable',
     body: 'La Nube resiste mejor un reintento casi simultáneo y un reinicio de la app, sin reenviar de más ni perder de vista lo ya sincronizado.',
   },
+  {
+    title: 'Limpieza de datos viejos en el equipo',
+    body: 'Copias de respaldo previas a una importación e índices de sincronización obsoletos ya no se acumulan sin límite. R+ también avisa una vez por sesión si el espacio local se acerca a su límite.',
+  },
 ];
 
 export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_838;

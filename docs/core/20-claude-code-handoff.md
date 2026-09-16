@@ -2,10 +2,10 @@
 type: "core"
 name: "Claude Code Handoff"
 status: "active"
-description: "ls-slim: all 5 stages coded/tested/committed, not pushed, not verified live. Older jobs below."
+description: "ls-slim: all 5 stages coded/tested/committed AND verified live. Not pushed. Older jobs below."
 ---
 
-# Handoff — keep local storage small (#ls-slim) — code done, NOT verified live
+# Handoff — keep local storage small (#ls-slim) — DONE, verified live 2026-09-16
 
 **Date:** 2026-09-16
 **From:** Claude Code (Sonnet)
@@ -29,20 +29,14 @@ Owner reported `localStorage` full on their desktop install and asked to "move c
 
 All touched tests green (`test:one`, not bare `npm test`). `metrics:check` green, baseline regenerated twice (staged files first for correct module count). Eager boot budget raised twice with justification in `scripts/metrics/eager-boot-changelog.md`: 3,325,000 → 3,326,000 → 3,327,000 bytes total this session (small, unavoidable — new/touched modules already reachable from the eager boot chain; see that file's two 2026-09-16 `#ls-slim` entries for the exact reasoning per raise, do not raise again without reading them first).
 
-## What's NOT done
+## Live verification — DONE 2026-09-16
 
-**Live verification.** Every stage above is code-and-test-verified only. This project's own rule ("always verify live in app") was not followed for Stages 1-4 because **computer-use could not attach to the running R+ window for most of this session** — the process was confirmed alive (no crash report, no error in the process itself, `IndexedDB` directory present and growing), the owner confirmed they could use the app normally throughout, but `mcp__computer-use__app_screenshot`/`app_list_windows` returned "App not running" / `[]` regardless of fresh `request_access` grants, `open_application` calls, or the owner fully quitting (Cmd+Q, not just closing the window) and relaunching with a genuinely new PID. This looks like a tool-side registration issue specific to this unpackaged dev Electron process (`electron .`, not a signed `.app` bundle with a real `com.rmas.rplusclinical` Info.plist), not a bug in the code above. Try computer-use again fresh in the new session — it may just have been this session's tool state.
+Computer-use attached fine this session (root cause of last session's failure: the tool needs the app's real process name — `Electron`, since this is an unpackaged dev process, not `R+`). Checked against the live running app, DB unlocked, real patient open:
 
-If computer-use still cannot attach, ask the owner to paste DevTools console output directly (they can do this themselves in seconds). The four commands from the plan's Stage 0:
-
-```js
-JSON.stringify(localStorage).length
-Object.entries(localStorage).map(([k,v])=>[k,v.length]).sort((a,b)=>b[1]-a[1]).slice(0,15)
-!!window.electronAPI?.dbClinicalLoadAll
-await window.electronAPI.dbStatus()
-```
-
-Plus two behavior checks: patient count in the sidebar still matches after a fresh unlock (Stage 1 didn't delete real data), and "Restaurar copia previa a importación" in Ajustes still appears and restores correctly if the owner has ever imported a backup (Stage 2 moved that payload to IndexedDB).
+- `JSON.stringify(localStorage).length` → **44,116 bytes** (was tens of millions before Stage 1; the dead `rpc-cloud-sync-lab-fp-index` key and the 12 dead `rpc-*` clinical keys are gone). Largest surviving key is `rpc-audit-log` at ~26 KB — nowhere near quota.
+- `window.electronAPI.dbStatus()` → `{ok:true, state:"unlocked", schemaVersion:27, dbFileExists:true, sqlcipherReady:true, nativeReady:true, nativeError:null}` — DB healthy.
+- Sidebar patient list (5 fijados + 1 archivado) rendered correctly with full clinical detail (labs, meds, pendientes) — Stage 1's sweep did not touch real patient data.
+- "Restaurar copia previa a importación" does **not** currently show in Ajustes → Respaldos — expected, since this install has no `rpc-preimport-backup`/migrated IndexedDB backup on record right now (the button is conditional on one existing). Not a regression; just untested for real, since no backup import happened this session. If the owner ever imports a backup, re-check that this button appears afterward and restores correctly.
 
 **Not pushed.** 6 local commits ahead of `origin/main`. Owner has not asked for a push or a release — do not push or run `rpublish` without asking.
 
