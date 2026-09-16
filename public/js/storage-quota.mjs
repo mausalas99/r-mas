@@ -79,6 +79,39 @@ export function assessStoragePressure(pendingBytes, quotaInfo) {
   return 'ok';
 }
 
+export const LOCAL_STORAGE_WARN_BYTES = 8 * 1024 * 1024;
+let _warnedLocalStorageNearFull = false;
+
+/**
+ * A full localStorage used to fail silently (MISTAKES.md 2026-08-29: a
+ * `QuotaExceededError` swallowed by an empty catch for months). Warn once
+ * per session, loud, before that happens again.
+ */
+export function warnIfLocalStorageNearFull() {
+  if (_warnedLocalStorageNearFull) return;
+  if (typeof localStorage === 'undefined') return;
+  var bytes;
+  try {
+    bytes = JSON.stringify(localStorage).length * 2;
+  } catch {
+    return;
+  }
+  if (bytes < LOCAL_STORAGE_WARN_BYTES) return;
+  _warnedLocalStorageNearFull = true;
+  console.warn('[R+] localStorage casi lleno:', bytes, 'bytes');
+  if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
+    window.showToast(
+      'Almacenamiento local casi lleno. Exporta un respaldo y avisa a soporte.',
+      'error'
+    );
+  }
+}
+
+/** @internal tests */
+export function __resetLocalStorageWarnForTests() {
+  _warnedLocalStorageNearFull = false;
+}
+
 export function isQuotaExceededError(err) {
   if (!err) return false;
   return (

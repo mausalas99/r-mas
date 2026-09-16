@@ -1,4 +1,5 @@
 import { storage, ensureStorageHydrated } from './storage.js';
+import { warnIfLocalStorageNearFull } from './storage-quota.mjs';
 import { isWebClinicalClient } from './db-storage-bridge.mjs';
 import { isSessionScopedWebClient } from './session-clinical-wipe.mjs';
 import { applyMedCatalogOverlay } from './med-receta-core.mjs';
@@ -286,6 +287,7 @@ export function repairLabHistoryInMemory() {
  */
 export async function bootHydrateFromDb() {
   await ensureStorageHydrated();
+  warnIfLocalStorageNearFull();
   initAppState();
   try {
     var repoHydrate = await import('./clinical-repo-hydrate.mjs');

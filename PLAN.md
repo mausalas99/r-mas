@@ -323,7 +323,9 @@ files: [public/js/features/db-unlock-migration.mjs, public/js/features/db-unlock
   by: claude
   tech: storage-save-all.mjs now checks isDbMode() before computing estimateRpcPersistBytes/assessStoragePressure — DB mode goes straight to persistSaveAllToDb, since that quota estimate checks localStorage's ceiling, not SQLCipher's. Also deleted the now-dead skipClinicalLocalPersist() check after it (both isSessionScopedWebClient() and isDbMode() are already excluded by that point in the function, so it could never be true). storage.legacy.test.mjs + storage-prefs-only.test.mjs (40 tests) and storage-quota.test.mjs (4 tests) all green unmodified. build:ui green, eager budget improved (net deletion). metrics:check green, no baseline change needed. Not yet confirmed live (same computer-use attach issue).
   from: agent
-- [ ] Warn once when localStorage is near full {#ls-warn}
+- [~] Warn once when localStorage is near full {#ls-warn}
+  by: claude
+  tech: warnIfLocalStorageNearFull() in storage-quota.mjs — JSON.stringify(localStorage).length * 2 against an 8 MB threshold, console.warn + one Spanish toast per session, called once from bootHydrateFromDb() in app-state.mjs (desktop DB-mode boot path only, matching the plan). 6 new tests in storage-quota.test.mjs (warns+toasts once, stays quiet below threshold), 14 app-state tests still green. Eager boot budget raised 3,326,000→3,327,000 (small, both touched modules already eager), logged. metrics:baseline regenerated, metrics:check green. Not yet confirmed live (same computer-use attach issue) — the plan's own live check (seed a 9 MB key, reload, see the toast) still needs doing by hand.
   from: agent
 
 ## decisions
