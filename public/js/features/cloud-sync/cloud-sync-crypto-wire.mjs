@@ -43,15 +43,13 @@ async function maybeDecrypt(dek, value) {
  */
 export async function encryptOpsForPush(dek, ops) {
   if (!dek || !Array.isArray(ops)) return ops;
-  const out = [];
-  for (const op of ops) {
-    if (op && typeof op === 'object' && isEncryptedContentPath(/** @type {any} */ (op).path)) {
-      out.push({ ...op, value: await encryptValue(dek, /** @type {any} */ (op).value) });
-    } else {
-      out.push(op);
-    }
-  }
-  return out;
+  return Promise.all(
+    ops.map(async (op) =>
+      op && typeof op === 'object' && isEncryptedContentPath(/** @type {any} */ (op).path)
+        ? { ...op, value: await encryptValue(dek, /** @type {any} */ (op).value) }
+        : op
+    )
+  );
 }
 
 /**
@@ -61,15 +59,13 @@ export async function encryptOpsForPush(dek, ops) {
  */
 export async function decryptOpsFromPull(dek, ops) {
   if (!Array.isArray(ops)) return ops;
-  const out = [];
-  for (const op of ops) {
-    if (op && typeof op === 'object' && isEncryptedEnvelope(/** @type {any} */ (op).value)) {
-      out.push({ ...op, value: await maybeDecrypt(dek, /** @type {any} */ (op).value) });
-    } else {
-      out.push(op);
-    }
-  }
-  return out;
+  return Promise.all(
+    ops.map(async (op) =>
+      op && typeof op === 'object' && isEncryptedEnvelope(/** @type {any} */ (op).value)
+        ? { ...op, value: await maybeDecrypt(dek, /** @type {any} */ (op).value) }
+        : op
+    )
+  );
 }
 
 /**
