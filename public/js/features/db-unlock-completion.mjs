@@ -1,5 +1,10 @@
 import { isDbMode } from '../db-storage-bridge.mjs';
-import { clearMigratedLocalStorageKeys, collectClinicalLsSnapshot } from './db-unlock-migration.mjs';
+import { getBlobCache } from '../storage/storage-core.mjs';
+import {
+  clearMigratedLocalStorageKeys,
+  collectClinicalLsSnapshot,
+  sweepLegacyClinicalLocalStorage,
+} from './db-unlock-migration.mjs';
 import { dbUnlockState } from './db-unlock-state.mjs';
 
 async function hydrateAppStateFromDb() {
@@ -67,6 +72,7 @@ export async function applyClinicalDbUnlockCompletion(opts) {
   await initClinicalRuntimeAfterUnlock();
   await flushPendingClinicalOpsAfterUnlock();
   if (refreshOnboarding) await refreshOnboardingAfterUnlock();
+  sweepLegacyClinicalLocalStorage(getBlobCache());
 }
 
 export function handleUnlockSuccess(res) {

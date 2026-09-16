@@ -30,7 +30,13 @@ void import('./perf-markers.mjs').then(function (perf) {
   }
 });
 import { isDbMode, isWebClinicalClient, isElectronDesktopShell } from './db-storage-bridge.mjs';
-import { ensureClinicalDbUnlocked, dbUnlockWindowHandlers, describeClinicalDbBootFailure } from './features/db-unlock.mjs';
+import {
+  ensureClinicalDbUnlocked,
+  dbUnlockWindowHandlers,
+  describeClinicalDbBootFailure,
+  sweepLegacyClinicalLocalStorage,
+} from './features/db-unlock.mjs';
+import { getBlobCache } from './storage/storage-core.mjs';
 import {
   bootHydrateFromDb,
   initAppState,
@@ -220,6 +226,7 @@ async function loadClinicalStateFromDb() {
   const unlockResult = await ensureClinicalDbUnlocked();
   if (unlockResult && unlockResult.unlocked) {
     await bootHydrateFromDb();
+    sweepLegacyClinicalLocalStorage(getBlobCache());
     try {
       const { flushPendingClinicalOpsSnapshot } = await import('./clinical-ops-sync.mjs');
       const flushed = await flushPendingClinicalOpsSnapshot();

@@ -311,8 +311,9 @@ files: [public/js/features/db-unlock-migration.mjs, public/js/features/db-unlock
   by: claude
   tech: createIdbBackedSlot() removeItem(key) from localStorage once its first IndexedDB hydrate resolves (covers echo-guard, lab-fp-index, and any future caller of the same helper) — reclaims the 52 MB rpc-cloud-sync-lab-fp-index leftover this install already has, not just future growth. Shipped in idb-index-store.mjs, colocated idb-index-store.test.mjs added (2 tests), test:one green on all 4 touched files (29 tests). build:ui run, app cache cleared, force-reloaded live. Verified live: JSON.stringify(localStorage).length dropped from 79,075,015 to 66,837 after reload — the 52 MB key and the rest of the legacy blobs are gone.
   from: agent
-- [ ] Remove dead clinical copies from localStorage after each unlock {#ls-sweep}
-  tech: sweep CLINICAL_LS_KEYS only when SQLCipher hydrated and has patients
+- [~] Remove dead clinical copies from localStorage after each unlock {#ls-sweep}
+  by: claude
+  tech: sweepLegacyClinicalLocalStorage() in db-unlock-migration.mjs, guarded by hasPatients(blobCache.patients) OR empty localStorage rpc-patients copy. Wired into both applyClinicalDbUnlockCompletion() (overlay/recovery unlock) and the silent boot auto-unlock path in app.js (loadClinicalStateFromDb, after bootHydrateFromDb()) — the CEO plan only named the former, but the latter is the path most users hit every launch. New db-unlock-migration.test.mjs (3 cases), test:one green (4/4 across both touched test files). build:ui green, eager-boot budget still holds. Not yet confirmed live: computer-use lost its attach to the running R+ window mid-session (app itself is fine per owner, who restarted it and can use it) — needs one live DevTools check before marking done.
   from: agent
 - [ ] Move the pre-import backup to IndexedDB {#ls-preimport-idb}
   tech: shared idb-kv.mjs, key `preimport` in `rplus-undo`

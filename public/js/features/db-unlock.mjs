@@ -2,6 +2,7 @@
 export {
   needsPassphraseConfirm,
   collectClinicalLsSnapshot,
+  sweepLegacyClinicalLocalStorage,
 } from './db-unlock-migration.mjs';
 export { describeClinicalDbBootFailure } from './db-unlock-errors.mjs';
 export {

@@ -30,6 +30,35 @@ export function clearMigratedLocalStorageKeys(keys) {
   }
 }
 
+function hasPatients(raw) {
+  try {
+    var parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) && parsed.length > 0;
+  } catch (_e) {
+    return false;
+  }
+}
+
+/**
+ * After a desktop unlock, SQLCipher is the durable clinical store. Any
+ * `rpc-*` clinical key still in localStorage is a dead copy from before the
+ * migration ran on this install — clear it, unless the DB looks emptier
+ * than localStorage (a hydrate failure), which would make deleting the only
+ * copy a data-loss bug instead of cleanup.
+ * @param {Record<string, string> | null} blobCache from storage-core.mjs getBlobCache()
+ */
+export function sweepLegacyClinicalLocalStorage(blobCache) {
+  if (!blobCache) return;
+  if (!hasPatients(blobCache.patients)) {
+    var lsRaw = typeof localStorage !== 'undefined' ? localStorage.getItem('rpc-patients') : null;
+    if (hasPatients(lsRaw)) {
+      console.warn('[R+] sweepLegacyClinicalLocalStorage: DB has 0 patients but localStorage has some — refusing to clear');
+      return;
+    }
+  }
+  clearMigratedLocalStorageKeys(CLINICAL_LS_KEYS);
+}
+
 export async function runMigrationProbe(electron) {
   if (!electron || typeof electron.dbMigrationProbe !== 'function') {
     return { needed: false, hasHostJson: false };
