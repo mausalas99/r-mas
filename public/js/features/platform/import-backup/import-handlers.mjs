@@ -10,6 +10,7 @@ import { buildFullBackupPayload, persistFullBackupPayload } from './backup-paylo
 import { normalizeFullBackupImportPayload } from './backup-host-merge.mjs';
 import { importEntriesWithConflicts, importPatientExportPayloads } from './import-core.mjs';
 import { openConfirm } from '../../workbench/confirm.mjs';
+import { writePreimportBackup } from './preimport.mjs';
 
 const rt = getPlatformRuntime();
 
@@ -151,9 +152,7 @@ async function processFullBackupFile(rawPayload) {
   if (result !== 'confirm') return;
   if (typeof pushUndoSnapshot === 'function') rt.pushUndoSnapshot('Importar respaldo completo');
   await persistClinicalState({ immediate: true });
-  try {
-    localStorage.setItem('rpc-preimport-backup', JSON.stringify(buildFullBackupPayload()));
-  } catch (e) { console.warn('[import-handlers] failed to write rpc-preimport-backup', e); }
+  await writePreimportBackup(buildFullBackupPayload());
   await persistFullBackupPayload(payload);
   addAuditEntry('backup-full-import', 'ok', n, '');
   rt.showToast(

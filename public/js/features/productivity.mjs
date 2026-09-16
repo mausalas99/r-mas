@@ -6,6 +6,7 @@ import { storage } from "../storage.js";
 import { isPitchPatientIsolationActive } from "../tour-pitch-demo-seed.mjs";
 import { handleCensusWalkKeydown } from "./patients-census-walk.mjs";
 import { openConfirm } from "./workbench/confirm.mjs";
+import { openKvDb, idbGet, idbPut, idbDelete } from "../idb-kv.mjs";
 
 let rt = {
   getActiveId() {
@@ -79,56 +80,7 @@ var IDB_KEY = "current";
 var _legacyUndoStackMigrated = false;
 
 function openUndoDb() {
-  return new Promise(function (resolve, reject) {
-    var req = indexedDB.open(IDB_DB_NAME, 1);
-    req.onupgradeneeded = function () {
-      req.result.createObjectStore(IDB_STORE);
-    };
-    req.onsuccess = function () {
-      resolve(req.result);
-    };
-    req.onerror = function () {
-      reject(req.error);
-    };
-  });
-}
-
-function idbGet(db, key) {
-  return new Promise(function (resolve, reject) {
-    var req = db.transaction(IDB_STORE, "readonly").objectStore(IDB_STORE).get(key);
-    req.onsuccess = function () {
-      resolve(req.result);
-    };
-    req.onerror = function () {
-      reject(req.error);
-    };
-  });
-}
-
-function idbPut(db, key, value) {
-  return new Promise(function (resolve, reject) {
-    var tx = db.transaction(IDB_STORE, "readwrite");
-    tx.objectStore(IDB_STORE).put(value, key);
-    tx.oncomplete = function () {
-      resolve();
-    };
-    tx.onerror = function () {
-      reject(tx.error);
-    };
-  });
-}
-
-function idbDelete(db, key) {
-  return new Promise(function (resolve, reject) {
-    var tx = db.transaction(IDB_STORE, "readwrite");
-    tx.objectStore(IDB_STORE).delete(key);
-    tx.oncomplete = function () {
-      resolve();
-    };
-    tx.onerror = function () {
-      reject(tx.error);
-    };
-  });
+  return openKvDb(IDB_DB_NAME, IDB_STORE);
 }
 
 // One-time move of any leftover stack from the old localStorage key — this is
@@ -147,7 +99,7 @@ async function migrateLegacyUndoStackOnce(db) {
   try {
     var arr = JSON.parse(raw);
     if (Array.isArray(arr) && arr.length) {
-      await idbPut(db, IDB_KEY, arr.slice(0, UNDO_STACK_MAX));
+      await idbPut(db, IDB_STORE, IDB_KEY, arr.slice(0, UNDO_STACK_MAX));
     }
   } catch (_e) { void _e; }
 }
@@ -156,7 +108,7 @@ async function getUndoStack() {
   try {
     var db = await openUndoDb();
     await migrateLegacyUndoStackOnce(db);
-    var arr = await idbGet(db, IDB_KEY);
+    var arr = await idbGet(db, IDB_STORE, IDB_KEY);
     return Array.isArray(arr) ? arr : [];
   } catch {
     return [];
@@ -168,10 +120,10 @@ export async function saveUndoStack(stack) {
   try {
     var db = await openUndoDb();
     if (!trimmed.length) {
-      await idbDelete(db, IDB_KEY);
+      await idbDelete(db, IDB_STORE, IDB_KEY);
       return;
     }
-    await idbPut(db, IDB_KEY, trimmed);
+    await idbPut(db, IDB_STORE, IDB_KEY, trimmed);
   } catch (e) {
     console.warn('[productivity] failed to write undo stack to IndexedDB', e);
   }

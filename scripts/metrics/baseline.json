@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-16T14:40:12.102Z",
+  "updatedAt": "2026-09-16T16:05:28.256Z",
   "totalScore": 0,
-  "trackedLoc": 352700,
-  "moduleCount": 1259,
-  "bootGraphHash": "7dee73a925486bda",
+  "trackedLoc": 353000,
+  "moduleCount": 1260,
+  "bootGraphHash": "45ebb804869ca233",
   "bootGraph": {
-    "hash": "7dee73a925486bda",
+    "hash": "45ebb804869ca233",
     "imports": [
       {
         "hub": "public/js/app-runtimes.mjs",
@@ -660,6 +660,11 @@
       },
       {
         "hub": "public/js/app.js",
+        "from": "./storage/storage-core.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
         "from": "./ui-tab-motion.mjs",
         "isDynamic": false
       }
@@ -714,6 +719,14 @@
     {
       "date": "2026-09-16",
       "note": "Baseline refresh totalScore=0"
+    },
+    {
+      "date": "2026-09-16",
+      "note": "Baseline refresh totalScore=0"
+    },
+    {
+      "date": "2026-09-16",
+      "note": "Baseline refresh totalScore=25"
     },
     {
       "date": "2026-09-16",

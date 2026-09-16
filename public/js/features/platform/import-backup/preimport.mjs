@@ -4,34 +4,75 @@ import { addAuditEntry } from '../audit.mjs';
 import { getPlatformRuntime } from '../runtime.mjs';
 import { persistFullBackupPayload } from './backup-payload.mjs';
 import { openConfirm } from '../../workbench/confirm.mjs';
+import { openKvDb, idbGet, idbPut } from '../../../idb-kv.mjs';
 
 const rt = getPlatformRuntime();
 
-function syncPreimportBackupUi() {
+// Full-census snapshot, same size class as the undo stack — shares its
+// IndexedDB database (localStorage's ~5-10MB quota is shared with cloud
+// sync and the audit log, and this payload alone can be many MB).
+const IDB_DB_NAME = 'rplus-undo';
+const IDB_STORE = 'stack';
+const IDB_KEY = 'preimport';
+let _legacyPreimportMigrated = false;
+
+// One-time move of a leftover backup from the old localStorage key — this is
+// itself the thing that was filling up storage, so clearing it is the fix.
+async function migrateLegacyPreimportBackupOnce(db) {
+  if (_legacyPreimportMigrated) return;
+  _legacyPreimportMigrated = true;
+  var raw = null;
+  try {
+    raw = localStorage.getItem(PREIMPORT_BACKUP_KEY);
+  } catch (_e) { void _e; }
+  if (!raw) return;
+  try {
+    localStorage.removeItem(PREIMPORT_BACKUP_KEY);
+  } catch (_e) { void _e; }
+  try {
+    var payload = JSON.parse(raw);
+    if (payload) await idbPut(db, IDB_STORE, IDB_KEY, payload);
+  } catch (_e) { void _e; }
+}
+
+async function readPreimportBackup() {
+  try {
+    var db = await openKvDb(IDB_DB_NAME, IDB_STORE);
+    await migrateLegacyPreimportBackupOnce(db);
+    return (await idbGet(db, IDB_STORE, IDB_KEY)) || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function writePreimportBackup(payload) {
+  try {
+    var db = await openKvDb(IDB_DB_NAME, IDB_STORE);
+    await idbPut(db, IDB_STORE, IDB_KEY, payload);
+  } catch (e) {
+    console.warn('[preimport] failed to write pre-import backup to IndexedDB', e);
+  }
+}
+
+async function syncPreimportBackupUi() {
   var wrap = document.getElementById('settings-preimport-restore-wrap');
   if (!wrap) return;
-  var raw = localStorage.getItem(PREIMPORT_BACKUP_KEY);
-  var has = false;
+  var payload = await readPreimportBackup();
+  var has = !!(payload && payload.format === 'r-plus-backup' && payload.version === 1 && payload.data);
   var meta = '';
-  try {
-    if (raw) {
-      var p = JSON.parse(raw);
-      if (p && p.format === 'r-plus-backup' && p.version === 1 && p.data) {
-        has = true;
-        var n = (p.data.patients || []).length;
-        var when = p.exportedAt ? String(p.exportedAt).slice(0, 19).replace('T', ' ') : '';
-        meta = (when ? when + ' · ' : '') + n + ' paciente(s)';
-      }
-    }
-  } catch (_e) { void _e; }
+  if (has) {
+    var n = (payload.data.patients || []).length;
+    var when = payload.exportedAt ? String(payload.exportedAt).slice(0, 19).replace('T', ' ') : '';
+    meta = (when ? when + ' · ' : '') + n + ' paciente(s)';
+  }
   wrap.style.display = has ? 'block' : 'none';
   var el = document.getElementById('settings-preimport-meta');
   if (el) el.textContent = has ? meta : '—';
 }
 
 async function restorePreimportBackupPrompt() {
-  var raw = localStorage.getItem(PREIMPORT_BACKUP_KEY);
-  if (!raw) {
+  var payload = await readPreimportBackup();
+  if (!payload) {
     rt.showToast(
       'No hay copia automática previa a una importación. Revisa Descargas por archivos R-plus-respaldo- o R-plus-auto-respaldo-.',
       'error'
@@ -39,14 +80,7 @@ async function restorePreimportBackupPrompt() {
     syncPreimportBackupUi();
     return;
   }
-  var payload;
-  try {
-    payload = JSON.parse(raw);
-  } catch {
-    rt.showToast('La copia automática previa está dañada.', 'error');
-    return;
-  }
-  if (!payload || payload.format !== 'r-plus-backup' || payload.version !== 1 || !payload.data) {
+  if (payload.format !== 'r-plus-backup' || payload.version !== 1 || !payload.data) {
     rt.showToast('Formato de respaldo no válido.', 'error');
     return;
   }

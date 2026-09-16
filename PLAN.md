@@ -315,8 +315,9 @@ files: [public/js/features/db-unlock-migration.mjs, public/js/features/db-unlock
   by: claude
   tech: sweepLegacyClinicalLocalStorage() in db-unlock-migration.mjs, guarded by hasPatients(blobCache.patients) OR empty localStorage rpc-patients copy. Wired into both applyClinicalDbUnlockCompletion() (overlay/recovery unlock) and the silent boot auto-unlock path in app.js (loadClinicalStateFromDb, after bootHydrateFromDb()) — the CEO plan only named the former, but the latter is the path most users hit every launch. New db-unlock-migration.test.mjs (3 cases), test:one green (4/4 across both touched test files). build:ui green, eager-boot budget still holds. Not yet confirmed live: computer-use lost its attach to the running R+ window mid-session (app itself is fine per owner, who restarted it and can use it) — needs one live DevTools check before marking done.
   from: agent
-- [ ] Move the pre-import backup to IndexedDB {#ls-preimport-idb}
-  tech: shared idb-kv.mjs, key `preimport` in `rplus-undo`
+- [~] Move the pre-import backup to IndexedDB {#ls-preimport-idb}
+  by: claude
+  tech: extracted openKvDb/idbGet/idbPut/idbDelete from productivity.mjs into shared idb-kv.mjs (net deletion in productivity.mjs, used by both undo-stack and preimport now). preimport.mjs stores the payload under key `preimport` in the same `rplus-undo`/`stack` IndexedDB store as the undo stack, with a one-time migration off the old rpc-preimport-backup localStorage key on first read. import-handlers.mjs now calls writePreimportBackup() instead of localStorage.setItem. syncPreimportBackupUi/restorePreimportBackupPrompt are async now; all callers were already fire-and-forget or already-async, no caller changes needed. Tests: new idb-kv.test.mjs, rewritten import-handlers-quota.test.mjs (asserts IndexedDB path), preimport.test.mjs unchanged and still green. Eager boot budget raised 3,325,000→3,326,000 (idb-kv.mjs reached via the already-known-eager import-backup barrel), logged in eager-boot-changelog.md. metrics:baseline regenerated, metrics:check green. Not yet confirmed live (same computer-use attach issue as #ls-sweep).
   from: agent
 - [ ] Stop the useless quota estimate on the SQLCipher save path {#ls-quota-skip}
   from: agent
