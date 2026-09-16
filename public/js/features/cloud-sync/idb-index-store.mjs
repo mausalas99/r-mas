@@ -59,6 +59,14 @@ export function createIdbBackedSlot(key, makeDefault) {
       })
       .finally(() => {
         loaded = true;
+        // This slot never reads localStorage — a pre-migration key sitting there is
+        // dead weight only (same "safe to lose" index as a cache miss, see file docs).
+        // Clear it once IndexedDB is confirmed the store, so it stops eating quota.
+        try {
+          localStorage.removeItem(key);
+        } catch {
+          /* no localStorage (test env) or storage disabled — nothing to clear */
+        }
       });
   }
 
