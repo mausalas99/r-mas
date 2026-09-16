@@ -319,7 +319,9 @@ files: [public/js/features/db-unlock-migration.mjs, public/js/features/db-unlock
   by: claude
   tech: extracted openKvDb/idbGet/idbPut/idbDelete from productivity.mjs into shared idb-kv.mjs (net deletion in productivity.mjs, used by both undo-stack and preimport now). preimport.mjs stores the payload under key `preimport` in the same `rplus-undo`/`stack` IndexedDB store as the undo stack, with a one-time migration off the old rpc-preimport-backup localStorage key on first read. import-handlers.mjs now calls writePreimportBackup() instead of localStorage.setItem. syncPreimportBackupUi/restorePreimportBackupPrompt are async now; all callers were already fire-and-forget or already-async, no caller changes needed. Tests: new idb-kv.test.mjs, rewritten import-handlers-quota.test.mjs (asserts IndexedDB path), preimport.test.mjs unchanged and still green. Eager boot budget raised 3,325,000→3,326,000 (idb-kv.mjs reached via the already-known-eager import-backup barrel), logged in eager-boot-changelog.md. metrics:baseline regenerated, metrics:check green. Not yet confirmed live (same computer-use attach issue as #ls-sweep).
   from: agent
-- [ ] Stop the useless quota estimate on the SQLCipher save path {#ls-quota-skip}
+- [~] Stop the useless quota estimate on the SQLCipher save path {#ls-quota-skip}
+  by: claude
+  tech: storage-save-all.mjs now checks isDbMode() before computing estimateRpcPersistBytes/assessStoragePressure — DB mode goes straight to persistSaveAllToDb, since that quota estimate checks localStorage's ceiling, not SQLCipher's. Also deleted the now-dead skipClinicalLocalPersist() check after it (both isSessionScopedWebClient() and isDbMode() are already excluded by that point in the function, so it could never be true). storage.legacy.test.mjs + storage-prefs-only.test.mjs (40 tests) and storage-quota.test.mjs (4 tests) all green unmodified. build:ui green, eager budget improved (net deletion). metrics:check green, no baseline change needed. Not yet confirmed live (same computer-use attach issue).
   from: agent
 - [ ] Warn once when localStorage is near full {#ls-warn}
   from: agent

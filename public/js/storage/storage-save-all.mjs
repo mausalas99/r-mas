@@ -4,7 +4,6 @@ import {
 } from '../storage-quota.mjs';
 import {
   invalidateParsed,
-  skipClinicalLocalPersist,
   safeLocalStorageSet,
   getCachedQuotaEstimate,
   getBlobCache,
@@ -88,21 +87,20 @@ export async function storageSaveAll(
     vpoByPatient,
     medPharmProfileByPatient
   );
+  const { dbFields, localWrites } = buildSaveAllPersistPayload(payload);
+
+  // Desktop DB unlocked: SQLCipher is the durable store, not localStorage —
+  // the quota estimate below is checking the wrong ceiling (localStorage's
+  // ~10 MB, not the origin quota SQLCipher actually uses) and can never trip.
+  if (isDbMode()) {
+    return persistSaveAllToDb(dbFields, 'ok');
+  }
+
   const pending = estimateRpcPersistBytes(payload);
   const quotaInfo = await getCachedQuotaEstimate();
   const level = assessStoragePressure(pending, quotaInfo);
   if (level === 'block') {
     return { ok: false, code: 'QUOTA_EXCEEDED', level: 'block' };
-  }
-
-  const { dbFields, localWrites } = buildSaveAllPersistPayload(payload);
-
-  if (isDbMode()) {
-    return persistSaveAllToDb(dbFields, level);
-  }
-
-  if (skipClinicalLocalPersist()) {
-    return { ok: true, level: level === 'warn' ? 'warn' : 'ok' };
   }
   return persistSaveAllToLocalStorage(localWrites, level);
 }
