@@ -243,6 +243,80 @@ describe('pull-apply tombstone vs entry race', () => {
     assert.equal(excludeTombstonedEntries(entries, {}), entries);
     assert.equal(excludeTombstonedEntries(entries, undefined), entries);
   });
+
+  it('applies every eligible tombstone directly, with no pending-confirm notification', () => {
+    assert.doesNotMatch(pullApplySrc, /remote-patient-delete-confirm/);
+    assert.doesNotMatch(pullApplySrc, /scheduleRemotePatientDeleteConfirm/);
+    assert.doesNotMatch(pullApplySrc, /partitionCloudTombstonesForConfirm/);
+    const start = pullApplySrc.indexOf('function applyCloudTombstones');
+    assert.ok(start >= 0);
+    const body = pullApplySrc.slice(start, start + 400);
+    assert.match(body, /shouldApplyCloudTombstone/);
+    assert.match(body, /removePatientLocally/);
+  });
+});
+
+describe('pull-apply fresh-sync own-team-first staging', () => {
+  it('splits entries so the joined-team patient goes first, the rest second', async () => {
+    const { splitEntriesByOwnTeamFirst } = await import('./pull-apply.mjs');
+    const { clinicalSessionContext } = await import('../../clinical-session-context.mjs');
+    const prevUser = clinicalSessionContext.user;
+    const prevScope = clinicalSessionContext.scopeContext;
+    clinicalSessionContext.user = { user_id: 'r1', rank: 'R1', sala: 'Sala 1' };
+    clinicalSessionContext.scopeContext = {
+      teams: [
+        {
+          team_id: 't-mine',
+          service: 'Sala',
+          sub_area_fraction: 'B',
+          sala: 'Sala 1',
+          members: [{ user_id: 'r1' }],
+        },
+      ],
+      assignments: [
+        { patient_id: 'p1', team_id: 't-mine', effective_at: '2026-06-01T00:00:00Z' },
+        { patient_id: 'p2', team_id: 't-other', effective_at: '2026-06-01T00:00:00Z' },
+      ],
+      guardias: [],
+      now: '2026-06-02T12:00:00Z',
+    };
+    try {
+      const entries = [
+        { patient: { id: 'p2', service: 'Sala', sala: 'Sala 1' } },
+        { patient: { id: 'p1', service: 'Sala', sala: 'Sala 1' } },
+      ];
+      const { own, rest } = splitEntriesByOwnTeamFirst(entries);
+      assert.deepEqual(own.map((e) => e.patient.id), ['p1']);
+      assert.deepEqual(rest.map((e) => e.patient.id), ['p2']);
+    } finally {
+      clinicalSessionContext.user = prevUser;
+      clinicalSessionContext.scopeContext = prevScope;
+    }
+  });
+
+  it('is a no-op (everything in "rest") when there is no signed-in user', async () => {
+    const { splitEntriesByOwnTeamFirst } = await import('./pull-apply.mjs');
+    const { clinicalSessionContext } = await import('../../clinical-session-context.mjs');
+    const prevUser = clinicalSessionContext.user;
+    clinicalSessionContext.user = null;
+    try {
+      const entries = [{ patient: { id: 'p1' } }];
+      const { own, rest } = splitEntriesByOwnTeamFirst(entries);
+      assert.deepEqual(own, []);
+      assert.equal(rest, entries);
+    } finally {
+      clinicalSessionContext.user = prevUser;
+    }
+  });
+
+  it('applyCloudState stages patient entries and yields a paint between batches', () => {
+    const start = pullApplySrc.indexOf('async function applyPatientEntriesStaged');
+    assert.ok(start >= 0);
+    const body = pullApplySrc.slice(start, start + 500);
+    assert.match(body, /splitEntriesByOwnTeamFirst/);
+    assert.match(body, /yieldToPaint/);
+    assert.match(pullApplySrc, /const patientSync = await applyPatientEntriesStaged\(entries\);/);
+  });
 });
 
 describe('pull-apply sync-apply wiring (Phase 3)', () => {

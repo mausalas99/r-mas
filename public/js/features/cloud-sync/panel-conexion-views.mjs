@@ -7,7 +7,6 @@ import { canAccessCloudAdmin } from './panel-admin.mjs';
 import { canManageInternoQr } from '../../clinical-privileges.mjs';
 import { setClinicalTeamsEmbedHost } from '../clinical-panel-host.mjs';
 import { stopCloudSyncDiagnosticsLiveRefresh } from './panel-cloud-diagnostics.mjs';
-import { listPendingRemoteDeletes, pendingRemoteDeletesHtml } from './remote-patient-delete-confirm.mjs';
 
 /**
  * @param {{ username?: string, displayName?: string } | null} cloudUser
@@ -167,16 +166,8 @@ export function connectedViewsHtml({
   if (showAdmin) {
     cuentaRows += optionsRow('Administración', 'Usuarios, salas y clave admin', 'admin');
   }
-  const pendingDeletes = showAdmin ? listPendingRemoteDeletes() : [];
   const sistemaRows =
     optionsRow('Diagnóstico Nube', 'Dashboard de estado y alertas', 'nube') +
-    (pendingDeletes.length
-      ? optionsRow(
-          'Eliminaciones pendientes',
-          pendingDeletes.length + ' paciente(s) con eliminación remota rechazada',
-          'pendientes'
-        )
-      : '') +
     optionsRow('Avanzado', 'URL del servicio', 'advanced');
 
   const optionsBody =
@@ -203,9 +194,6 @@ export function connectedViewsHtml({
       : '') +
     viewBlock('cuenta', 'Cuenta', cuentaBodyHtml(cloudUser)) +
     (showAdmin ? viewBlock('admin', 'Administración', adminHost) : '') +
-    (pendingDeletes.length
-      ? viewBlock('pendientes', 'Eliminaciones pendientes', pendingRemoteDeletesHtml(pendingDeletes))
-      : '') +
     viewBlock(
       'nube',
       'Diagnóstico Nube',

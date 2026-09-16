@@ -8,6 +8,9 @@ import { applyLanPatientEntries } from '../sync-apply/patient-entries.mjs';
 import { removePatientLocally, pruneOrphanTodos } from '../sync-apply/patient-delete.mjs';
 import { shouldEnforceTeamPatientMirror } from '../../clinical-privileges.mjs';
 import { isClinicalScopeReadyForPatientApply } from '../../clinical-access-runtime/scope-ops.mjs';
+import { getClinicalScopeContextForEvaluate } from '../../clinical-access-runtime/scope-evaluate.mjs';
+import { clinicalSessionContext } from '../../clinical-session-context.mjs';
+import { filterPatientsForDesktopCloudTeamScope } from '../../mobile-team-patient-scope.mjs';
 import {
   buildLiveSyncPatientIdMap,
   remapAgendaPatientIds,
@@ -21,11 +24,6 @@ import {
 } from './pull-apply-state.mjs';
 import { bumpLabHistoryRevision } from '../../lab-history-cache.mjs';
 import { getLabHistory } from '../../app-state.mjs';
-import {
-  partitionCloudTombstonesForConfirm,
-  scheduleRemotePatientDeleteConfirm,
-} from './remote-patient-delete-confirm.mjs';
-import { resolveCloudActorId } from './mutate-bridge.mjs';
 
 /** @type {Promise<typeof import('../cloud-mobile/lab-sync-diagnostics.mjs')> | null} */
 let _labSyncDiagMod = null;
@@ -164,18 +162,13 @@ export function shouldApplyCloudTombstone(patientId, tombstoneMeta) {
   });
 }
 
-/** @param {Record<string, unknown>} tombstones @param {Record<string, { actorId?: string }>|null|undefined} [entityVersions] */
-function applyCloudTombstones(tombstones, entityVersions) {
-  const { silentIds, pendingConfirm } = partitionCloudTombstonesForConfirm(tombstones || {}, {
-    localActorId: resolveCloudActorId(),
-    entityVersions: entityVersions || {},
-    shouldApply: shouldApplyCloudTombstone,
-  });
+/** @param {Record<string, unknown>} tombstones */
+function applyCloudTombstones(tombstones) {
   let removed = false;
-  for (const patientId of silentIds) {
+  for (const patientId of Object.keys(tombstones || {})) {
+    if (!shouldApplyCloudTombstone(patientId, tombstones[patientId])) continue;
     if (removePatientLocally(patientId)) removed = true;
   }
-  if (pendingConfirm.length) scheduleRemotePatientDeleteConfirm(pendingConfirm);
   return removed;
 }
 
@@ -221,6 +214,53 @@ function cloudPatientEntryApplyOpts() {
     skipTodos: true,
     skipTeamScopeFilter: shouldSkipTeamScopeFilterOnCloudPull(),
   };
+}
+
+/** One browser paint between staged batches — otherwise both apply within
+ * the same tick and nothing visibly arrives before the rest. */
+function yieldToPaint() {
+  return new Promise(function (resolve) {
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function () { resolve(); });
+    else setTimeout(resolve, 0);
+  });
+}
+
+/**
+ * A fresh room join pulls the whole history as one state snapshot. Applying
+ * it in one shot leaves the sidebar empty until every patient in the room is
+ * in. Split off the caller's own joined-team patients so those can paint
+ * first — a no-op split (empty own set, or everyone is own-team) just
+ * returns everything as "rest" and the caller applies it in one go.
+ * @param {Array<{ patient: { id: string } }>} entries
+ * @returns {{ own: Array, rest: Array }}
+ */
+export function splitEntriesByOwnTeamFirst(entries) {
+  const user = clinicalSessionContext.user;
+  if (!user?.user_id) return { own: [], rest: entries };
+  const patients = entries.map((e) => e.patient).filter(Boolean);
+  const ownPatients = filterPatientsForDesktopCloudTeamScope(
+    patients,
+    user,
+    getClinicalScopeContextForEvaluate(),
+    clinicalSessionContext.guardiasMap
+  );
+  if (!ownPatients.length || ownPatients.length === entries.length) return { own: [], rest: entries };
+  const ownIds = new Set(ownPatients.map((p) => String(p.id)));
+  return {
+    own: entries.filter((e) => ownIds.has(String(e.patient.id))),
+    rest: entries.filter((e) => !ownIds.has(String(e.patient.id))),
+  };
+}
+
+/** @param {Array<{ patient: { id: string } }>} entries */
+async function applyPatientEntriesStaged(entries) {
+  if (!entries.length) return { added: 0, updated: 0 };
+  const { own, rest } = splitEntriesByOwnTeamFirst(entries);
+  if (!rest.length || !own.length) return applyLanPatientEntries(entries, cloudPatientEntryApplyOpts());
+  const first = applyLanPatientEntries(own, cloudPatientEntryApplyOpts());
+  await yieldToPaint();
+  const second = applyLanPatientEntries(rest, cloudPatientEntryApplyOpts());
+  return { added: first.added + second.added, updated: first.updated + second.updated };
 }
 
 async function refreshCloudTodoUIs(patientIds) {
@@ -295,9 +335,7 @@ export async function applyCloudState(state, opts) {
   await applyClinicalOpsSnapshot(snapshot.clinicalOps);
   const entries = excludeTombstonedEntries(cloudStateToLanEntries(snapshot), snapshot.tombstones);
   const idMap = buildLiveSyncPatientIdMap(entries, getSyncablePatients(), {});
-  const patientSync = entries.length
-    ? applyLanPatientEntries(entries, cloudPatientEntryApplyOpts())
-    : { added: 0, updated: 0 };
+  const patientSync = await applyPatientEntriesStaged(entries);
 
   let todoPatients = [];
   if (!opts?.skipTodos && snapshot.todos) todoPatients = applyCloudTodosMap(snapshot.todos, idMap);
@@ -311,10 +349,7 @@ export async function applyCloudState(state, opts) {
       idMap
     );
   }
-  const removed = applyCloudTombstones(
-    snapshot.tombstones || {},
-    /** @type {Record<string, { actorId?: string }>|undefined} */ (snapshot.entityVersions)
-  );
+  const removed = applyCloudTombstones(snapshot.tombstones || {});
   pruneOrphanTodos(
     getSyncablePatients().map(function (p) {
       return p && p.id;
