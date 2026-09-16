@@ -10,7 +10,7 @@ description: "ls-slim: all 5 stages coded/tested/committed AND verified live. No
 **Date:** 2026-09-16
 **From:** Claude Code (Sonnet)
 **To:** next session
-**Branch:** `main`, 6 commits ahead of `origin/main`, clean working tree
+**Branch:** `main`, 8 commits ahead of `origin/main`, clean working tree
 **Plan:** `docs/superpowers/plans/2026-09-16-localstorage-slim.md`
 
 ## What was wrong
@@ -38,7 +38,7 @@ Computer-use attached fine this session (root cause of last session's failure: t
 - Sidebar patient list (5 fijados + 1 archivado) rendered correctly with full clinical detail (labs, meds, pendientes) — Stage 1's sweep did not touch real patient data.
 - "Restaurar copia previa a importación" does **not** currently show in Ajustes → Respaldos — expected, since this install has no `rpc-preimport-backup`/migrated IndexedDB backup on record right now (the button is conditional on one existing). Not a regression; just untested for real, since no backup import happened this session. If the owner ever imports a backup, re-check that this button appears afterward and restores correctly.
 
-**Not pushed.** 6 local commits ahead of `origin/main`. Owner has not asked for a push or a release — do not push or run `rpublish` without asking.
+**Not pushed.** 8 local commits ahead of `origin/main` (ls-slim + this release-notes fold-in). Owner is running `rpublish` (8.3.8) themselves — do not push or publish on their behalf.
 
 **Out of scope, optional, from the plan file:** `clinical-localStorage-export.migrated.backup.json` in `~/Library/Application Support/r-plus/` is a plaintext PHI export left by an old migration. Consider deleting it by hand after Stage 1 is verified live — not started.
 
