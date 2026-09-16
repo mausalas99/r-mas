@@ -1,7 +1,7 @@
-import { describe, it, beforeEach, afterEach } from 'node:test';
+import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  CLOUD_LAB_FP_INDEX_KEY,
+  __resetLabSidecarIndexForTests,
   buildDirtyLabSidecarOpsForPatient,
   cloudLabSidecarFingerprint,
   coalesceLabSidecarOps,
@@ -9,69 +9,15 @@ import {
   noteCloudLabSidecarOpsPushed,
   noteCloudLabSidecarOpsSent,
   noteCloudLabSidecarsFromState,
+  readLabFingerprintIndex,
   shouldSkipCloudLabSidecarPush,
 } from './cloud-lab-sidecar-index.mjs';
-
-describe('localStorage quota error handling', () => {
-  let store = {};
-  const prev = globalThis.localStorage;
-
-  beforeEach(() => {
-    store = {};
-    globalThis.localStorage = {
-      getItem: (k) => (k in store ? store[k] : null),
-      setItem: (k, v) => {
-        store[k] = String(v);
-      },
-      removeItem: (k) => {
-        delete store[k];
-      },
-    };
-  });
-
-  afterEach(() => {
-    if (prev) globalThis.localStorage = prev;
-    else delete globalThis.localStorage;
-  });
-
-  it('logs console.warn when quota is exceeded', () => {
-    let warned = false;
-    const prevWarn = console.warn;
-    console.warn = (msg) => { warned = true; };
-    globalThis.localStorage.setItem = () => {
-      const e = new Error('QuotaExceededError');
-      e.name = 'QuotaExceededError';
-      throw e;
-    };
-    try {
-      // console.warn should be called on quota error
-    } finally {
-      console.warn = prevWarn;
-    }
-  });
-});
 
 const meta = { actorId: 'user-1', updatedAt: '2026-08-09T12:00:00.000Z' };
 
 describe('cloud-lab-sidecar-index', () => {
   beforeEach(() => {
-    globalThis.localStorage = {
-      /** @type {Record<string, string>} */
-      store: {},
-      getItem(key) {
-        return this.store[key] ?? null;
-      },
-      setItem(key, value) {
-        this.store[key] = String(value);
-      },
-      removeItem(key) {
-        delete this.store[key];
-      },
-    };
-  });
-
-  afterEach(() => {
-    delete globalThis.localStorage;
+    __resetLabSidecarIndexForTests();
   });
 
   it('fingerprint ignores non-SOME paste and matches slim payload', () => {
@@ -169,29 +115,36 @@ describe('cloud-lab-sidecar-index', () => {
     assert.equal(kept.length, 0, 'unchanged set must not resurface after being sent trimmed');
   });
 
-  it('persists fingerprint index in localStorage', () => {
+  it('persists the fingerprint index', () => {
     noteCloudLabSidecarOpsPushed([
       {
         path: 'labSidecars/p1/x',
         value: { id: 'x', resLabs: ['x'] },
       },
     ]);
-    assert.ok(globalThis.localStorage.getItem(CLOUD_LAB_FP_INDEX_KEY));
+    assert.ok('labSidecars/p1/x' in readLabFingerprintIndex());
   });
 
-  it('buildDirtyLabSidecarOpsForPatient reads fingerprint index once, not per set', () => {
-    let getItemCalls = 0;
-    const origGetItem = globalThis.localStorage.getItem.bind(globalThis.localStorage);
-    globalThis.localStorage.getItem = function (key) {
-      getItemCalls += 1;
-      return origGetItem(key);
-    };
+  it('evicts oldest entries once the index passes ~1MB so it can never alone bloat unbounded', () => {
+    const big = 'x'.repeat(2000);
+    for (let i = 0; i < 700; i += 1) {
+      noteCloudLabSidecarOpsPushed([
+        { path: `labSidecars/p${i}/set-${i}`, value: { id: `set-${i}`, resLabs: [big] } },
+      ]);
+    }
+    const idx = readLabFingerprintIndex();
+    assert.ok(JSON.stringify(idx).length <= 1_000_000, 'index must stay under the byte budget');
+    assert.ok(!('labSidecars/p0/set-0' in idx), 'oldest entry should have been evicted');
+    assert.ok('labSidecars/p699/set-699' in idx, 'newest entry should survive');
+  });
+
+  it('buildDirtyLabSidecarOpsForPatient computes the right dirty set for a full patient batch', () => {
     const labs = Array.from({ length: 20 }, (_, i) => ({
       id: `lab-${i}`,
       fecha: '2026-08-09',
       resLabs: [`K ${i}`],
     }));
-    buildDirtyLabSidecarOpsForPatient('p1', labs, meta);
-    assert.ok(getItemCalls <= 4, `expected O(1) localStorage reads, got ${getItemCalls}`);
+    const ops = buildDirtyLabSidecarOpsForPatient('p1', labs, meta);
+    assert.equal(ops.length, 20, 'none synced yet, so all 20 sets are dirty');
   });
 });

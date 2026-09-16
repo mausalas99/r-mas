@@ -7,9 +7,17 @@ import {
   backfillRoomEncryption,
 } from './room-dek-migrate.mjs';
 import { clearRoomDekCache, getCachedRoomDek } from './room-dek.mjs';
+import { __resetEchoGuardForTests } from './cloud-sync-echo-guard.mjs';
 // Real (unmodified) Worker merge logic — proves the bumped-clock echo the sweep
 // builds is actually accepted server-side, not just "different from the input".
 import { emptyState, applyOps } from '../../../../cloud/sync-worker/src/lww.js';
+
+// Several tests below reuse the same (path, bumped-updatedAt) pair across
+// cases — without this the echo guard (a module-level singleton) would
+// remember a push from an earlier test and silently drop it here too.
+beforeEach(() => {
+  __resetEchoGuardForTests();
+});
 
 describe('bumpTimestamp', () => {
   it('adds exactly 1ms to a valid ISO timestamp, same format', () => {

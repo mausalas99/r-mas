@@ -76,6 +76,59 @@ describe('parseBH_ extended', () => {
     assert.doesNotMatch(visible, /RetC/);
   });
 
+  it('muestra hemolizada: fila sin resultado (solo *) no toma el mínimo del rango como valor', () => {
+    const hemolizada = [
+      'HEMATOLOGIA',
+      'BIOMETRIA HEMATICA COMPLETA',
+      'Estudio\t\tResultado\tUnidades\tValor de Referencia',
+      'RBC\t',
+      '*',
+      'M/uL\t3.94 - 5.32',
+      'HGB\t',
+      '*',
+      'g/dL\t12.00 - 15.70',
+      'HCT\t',
+      '*',
+      '%\t35.5 - 47.3',
+      'PLT\t',
+      '*',
+      'K/uL\t142.00 - 424.00',
+    ].join('\n');
+    const { visible } = parseBH_(hemolizada);
+    assert.doesNotMatch(visible, /Hb\s+12\b/);
+    assert.doesNotMatch(visible, /Hto\s+35\.5\b/);
+    assert.doesNotMatch(visible, /Plt\s+142\b/);
+  });
+
+  it('muestra hemolizada: diferencial (%) sin resultado no toma el mínimo del rango', () => {
+    const hemolizadaDif = [
+      'HEMATOLOGIA',
+      'BIOMETRIA HEMATICA COMPLETA',
+      'Estudio\t\tResultado\tUnidades\tValor de Referencia',
+      'NEU%\t',
+      '*',
+      '%\t38.6 - 75.2',
+      'LYM%\t',
+      '*',
+      '%\t15.0 - 48.5',
+    ].join('\n');
+    const { visible } = parseBH_(hemolizadaDif);
+    assert.doesNotMatch(visible, /Seg\s+38\.6/);
+    assert.doesNotMatch(visible, /Lin\s+15/);
+  });
+
+  it('RetC toma Hto del bloque GASOMETRIA de la misma toma, con etiqueta separada por tab', () => {
+    const retMasGases = [
+      'HEMATOLOGIA',
+      'RETICULOCITOS',
+      'RETICULOCITOS\t*\t2.8\t%\t0.5 - 1.5',
+      'GASOMETRIA ARTERIAL',
+      'HCT\t*\t37\t%\t37 - 53',
+    ].join('\n');
+    const { visible } = parseBH_(retMasGases);
+    assert.match(visible, /RetC\s+2\.3\s+\(regenerativa\)/);
+  });
+
   it('Ret-only MIXTO is a compact BH line, not a Hem. sub-row', () => {
     const { visible } = parseBH_('HEMATOLOGIA\nRETICULOCITOS * 1.0 % 0.5 - 1.5');
     assert.match(visible, /^BH\tRet\s+1/);

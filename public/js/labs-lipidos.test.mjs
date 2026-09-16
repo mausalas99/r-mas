@@ -88,3 +88,20 @@ test('procesarLabs emite QS lipídico ampliado', () => {
   assert.match(qs, /\bHDL 38\b/);
   assert.match(qs, /\bCTHDL 4\.92\*/);
 });
+
+// Muestra hemolizada/rechazada: la columna Resultado viene vacía (solo '*'),
+// así que el primer número tras la etiqueta es el mínimo del rango, no un resultado.
+var MUESTRA_HEMOLIZADA = `QUIMICA CLINICA
+NITROGENO DE LA UREA EN SANGRE
+Estudio\t\tResultado\tUnidades\tValor de Referencia
+NITROGENO DE LA UREA EN SANGRE\t
+*
+mg/dL\t7 - 20
+`;
+
+test('extraerConRangoSuero no toma el mínimo del rango como resultado cuando falta el valor', () => {
+  var bun = extraerConRangoSuero(['NITROGENO DE LA UREA EN SANGRE'], MUESTRA_HEMOLIZADA);
+  assert.equal(bun.valor, '---');
+  assert.equal(bun.min, null);
+  assert.equal(bun.max, null);
+});

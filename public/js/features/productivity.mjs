@@ -70,61 +70,126 @@ function buildUndoSnapshotPayload(label) {
   };
 }
 
-function getUndoStack() {
+// Snapshots hold the whole census (patients/notes/labs/etc) and can run into
+// MBs — too big for localStorage's ~5-10MB quota, which cloud sync and the
+// audit log also share. IndexedDB has no such shared ceiling.
+var IDB_DB_NAME = "rplus-undo";
+var IDB_STORE = "stack";
+var IDB_KEY = "current";
+var _legacyUndoStackMigrated = false;
+
+function openUndoDb() {
+  return new Promise(function (resolve, reject) {
+    var req = indexedDB.open(IDB_DB_NAME, 1);
+    req.onupgradeneeded = function () {
+      req.result.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess = function () {
+      resolve(req.result);
+    };
+    req.onerror = function () {
+      reject(req.error);
+    };
+  });
+}
+
+function idbGet(db, key) {
+  return new Promise(function (resolve, reject) {
+    var req = db.transaction(IDB_STORE, "readonly").objectStore(IDB_STORE).get(key);
+    req.onsuccess = function () {
+      resolve(req.result);
+    };
+    req.onerror = function () {
+      reject(req.error);
+    };
+  });
+}
+
+function idbPut(db, key, value) {
+  return new Promise(function (resolve, reject) {
+    var tx = db.transaction(IDB_STORE, "readwrite");
+    tx.objectStore(IDB_STORE).put(value, key);
+    tx.oncomplete = function () {
+      resolve();
+    };
+    tx.onerror = function () {
+      reject(tx.error);
+    };
+  });
+}
+
+function idbDelete(db, key) {
+  return new Promise(function (resolve, reject) {
+    var tx = db.transaction(IDB_STORE, "readwrite");
+    tx.objectStore(IDB_STORE).delete(key);
+    tx.oncomplete = function () {
+      resolve();
+    };
+    tx.onerror = function () {
+      reject(tx.error);
+    };
+  });
+}
+
+// One-time move of any leftover stack from the old localStorage key — this is
+// itself the thing that was filling up storage, so clearing it is the fix.
+async function migrateLegacyUndoStackOnce(db) {
+  if (_legacyUndoStackMigrated) return;
+  _legacyUndoStackMigrated = true;
+  var raw = null;
   try {
-    var arr = JSON.parse(localStorage.getItem(UNDO_STACK_KEY) || "[]");
+    raw = localStorage.getItem(UNDO_STACK_KEY);
+  } catch (_e) { void _e; }
+  if (!raw) return;
+  try {
+    localStorage.removeItem(UNDO_STACK_KEY);
+  } catch (_e) { void _e; }
+  try {
+    var arr = JSON.parse(raw);
+    if (Array.isArray(arr) && arr.length) {
+      await idbPut(db, IDB_KEY, arr.slice(0, UNDO_STACK_MAX));
+    }
+  } catch (_e) { void _e; }
+}
+
+async function getUndoStack() {
+  try {
+    var db = await openUndoDb();
+    await migrateLegacyUndoStackOnce(db);
+    var arr = await idbGet(db, IDB_KEY);
     return Array.isArray(arr) ? arr : [];
   } catch {
     return [];
   }
 }
 
-export function saveUndoStack(stack) {
+export async function saveUndoStack(stack) {
   var trimmed = (stack || []).slice(0, UNDO_STACK_MAX);
-  if (!trimmed.length) {
-    try {
-      localStorage.removeItem(UNDO_STACK_KEY);
-    } catch (_e) { void _e; }
-    return;
-  }
-  var droppedForQuota = false;
-  while (trimmed.length) {
-    try {
-      localStorage.setItem(UNDO_STACK_KEY, JSON.stringify(trimmed));
-      if (droppedForQuota) {
-        console.warn(
-          '[productivity] undo stack exceeded storage quota, kept only',
-          trimmed.length,
-          'of',
-          (stack || []).length,
-          'snapshots'
-        );
-      }
-      return;
-    } catch (e) {
-      droppedForQuota = true;
-      trimmed.pop();
-    }
-  }
-  console.warn('[productivity] undo stack exceeded storage quota even at 1 snapshot, cleared it', stack && stack[0]);
   try {
-    localStorage.removeItem(UNDO_STACK_KEY);
-  } catch (_e) { void _e; }
+    var db = await openUndoDb();
+    if (!trimmed.length) {
+      await idbDelete(db, IDB_KEY);
+      return;
+    }
+    await idbPut(db, IDB_KEY, trimmed);
+  } catch (e) {
+    console.warn('[productivity] failed to write undo stack to IndexedDB', e);
+  }
 }
 
-export function pushUndoSnapshot(label) {
+export async function pushUndoSnapshot(label) {
   var snap = buildUndoSnapshotPayload(label);
-  var stack = getUndoStack();
+  var stack = await getUndoStack();
   stack.unshift(snap);
-  saveUndoStack(stack);
+  await saveUndoStack(stack);
   refreshUndoButtonState();
   rt.addAuditEntry("undo-snapshot", "ok", 0, snap.label);
 }
 
-export function refreshUndoButtonState() {
+export async function refreshUndoButtonState() {
   var btn = document.getElementById("btn-undo-op");
   if (!btn) return;
-  var stack = getUndoStack();
+  var stack = await getUndoStack();
   btn.disabled = stack.length === 0;
   if (stack.length > 0) {
     btn.textContent = "Deshacer: " + (stack[0].label || "última operación");
@@ -134,7 +199,7 @@ export function refreshUndoButtonState() {
 }
 
 export async function undoLastOperation() {
-  var stack = getUndoStack();
+  var stack = await getUndoStack();
   if (!stack.length) {
     rt.showToast("No hay operaciones para deshacer.", "error");
     return;
@@ -148,7 +213,7 @@ export async function undoLastOperation() {
   });
   if (result !== 'confirm') return;
   var rest = stack.slice(1);
-  saveUndoStack(rest);
+  await saveUndoStack(rest);
   replaceAppStateFromBackupData(snap.data || {});
   try {
     localStorage.setItem(
@@ -577,16 +642,10 @@ function onProductivityKeydown(e) {
   handleProductivityModShortcut(e, k);
 }
 
-export function healUndoStackQuota() {
-  var stack = getUndoStack();
-  if (stack.length) saveUndoStack(stack);
-}
-
 export function initProductivityKeyboardShortcuts() {
   document.addEventListener('keydown', onProductivityKeydown);
   applyFocusModeFromStorage();
   refreshUndoButtonState();
-  healUndoStackQuota();
 }
 
 export const productivityWindowHandlers = {

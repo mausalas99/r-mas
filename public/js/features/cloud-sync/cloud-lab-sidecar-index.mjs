@@ -5,10 +5,41 @@ import { canonicalStringify } from '../../../../lib/db/canonical-json.mjs';
 import { labSetTimestamp } from '../../patient-merge.mjs';
 import { slimLabSetForCloud } from './cloud-op-slim.mjs';
 import { cloudOp, labSetId } from './mutate-bridge-ops.mjs';
+import { createIdbBackedSlot } from './idb-index-store.mjs';
 import { createOpFold, foldCloudOp } from './pull-apply-state.mjs';
 
 export const CLOUD_LAB_FP_INDEX_KEY = 'rpc-cloud-sync-lab-fp-index';
 export const CLOUD_LAB_POISON_KEY = 'rpc-cloud-sync-lab-poison';
+
+const fpSlot = createIdbBackedSlot(CLOUD_LAB_FP_INDEX_KEY, () => ({}));
+const poisonSlot = createIdbBackedSlot(CLOUD_LAB_POISON_KEY, () => []);
+
+/** Test-only: force the in-memory index and poison set back to empty. */
+export function __resetLabSidecarIndexForTests() {
+  fpSlot.resetForTests();
+  poisonSlot.resetForTests();
+}
+
+// Grows one entry per lab set ever synced, never pruned on delete — bound it
+// by serialized size so it can't alone bloat past a reasonable footprint.
+// Evicting a stale entry just means that lab set gets resent once more,
+// never wrongly skipped.
+const LAB_FP_INDEX_MAX_BYTES = 1_000_000;
+
+/** @param {Record<string, { fp: string, at: number, src?: string }>} index */
+function trimLabFingerprintIndex(index) {
+  let keys = Object.keys(index);
+  let size = JSON.stringify(index).length;
+  while (keys.length && size > LAB_FP_INDEX_MAX_BYTES) {
+    keys.sort((a, b) => (index[a]?.at || 0) - (index[b]?.at || 0));
+    const avgBytes = size / keys.length;
+    const removeCount = Math.min(keys.length, Math.max(1, Math.ceil(((size - LAB_FP_INDEX_MAX_BYTES) / avgBytes) * 1.1)));
+    for (let i = 0; i < removeCount; i += 1) delete index[keys[i]];
+    keys = Object.keys(index);
+    size = JSON.stringify(index).length;
+  }
+  return index;
+}
 
 /** @param {unknown} set */
 export function cloudLabSidecarFingerprint(set) {
@@ -38,42 +69,24 @@ export function parseCloudLabSidecarPath(path) {
  * @returns {Record<string, { fp: string, at: number, src?: string }>}
  */
 export function readLabFingerprintIndex() {
-  try {
-    const raw = localStorage.getItem(CLOUD_LAB_FP_INDEX_KEY);
-    const parsed = raw ? JSON.parse(raw) : null;
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
-    return {};
-  }
+  const idx = fpSlot.read();
+  return idx && typeof idx === 'object' ? idx : {};
 }
 
 /** @param {Record<string, { fp: string, at: number, src?: string }>} index */
 function writeLabFingerprintIndex(index) {
-  try {
-    localStorage.setItem(CLOUD_LAB_FP_INDEX_KEY, JSON.stringify(index));
-  } catch (e) {
-    console.warn('[cloud-lab-sidecar-index] failed to write ' + CLOUD_LAB_FP_INDEX_KEY, e);
-  }
+  fpSlot.write(trimLabFingerprintIndex(index));
 }
 
 /** @returns {Set<string>} */
 function readLabPoisonPaths() {
-  try {
-    const raw = localStorage.getItem(CLOUD_LAB_POISON_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return new Set(Array.isArray(parsed) ? parsed.map(String) : []);
-  } catch {
-    return new Set();
-  }
+  const raw = poisonSlot.read();
+  return new Set(Array.isArray(raw) ? raw.map(String) : []);
 }
 
 /** @param {Set<string>} paths */
 function writeLabPoisonPaths(paths) {
-  try {
-    localStorage.setItem(CLOUD_LAB_POISON_KEY, JSON.stringify([...paths]));
-  } catch (e) {
-    console.warn('[cloud-lab-sidecar-index] failed to write ' + CLOUD_LAB_POISON_KEY, e);
-  }
+  poisonSlot.write([...paths]);
 }
 
 /** @param {string} path */

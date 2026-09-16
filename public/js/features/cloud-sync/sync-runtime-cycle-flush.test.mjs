@@ -1,8 +1,11 @@
-import { describe, it, before, after } from 'node:test';
+import { describe, it, before, beforeEach, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createSyncRuntimeCycle } from './sync-runtime-cycle.mjs';
 import { makeOutbox } from './sync-runtime-cycle-test-helpers.mjs';
 import { getCloudSyncDiagnostics, clearCloudSyncErrors } from './cloud-sync-diagnostics.mjs';
+import { clearCloudSyncEchoGuard } from './cloud-sync-echo-guard.mjs';
+import { __resetLabSidecarIndexForTests } from './cloud-lab-sidecar-index.mjs';
+import { __resetMedRecetaIndexForTests } from './cloud-med-receta-index.mjs';
 
 describe('createSyncRuntimeCycle flush/push behavior', () => {
   let prevOnline;
@@ -15,6 +18,16 @@ describe('createSyncRuntimeCycle flush/push behavior', () => {
   });
   after(() => {
     if (prevOnline) Object.defineProperty(globalThis.navigator, 'onLine', prevOnline);
+  });
+  beforeEach(() => {
+    // Several tests here reuse identical (path, updatedAt) fixtures across
+    // `it`s. The fingerprint/echo indexes now persist in memory for real
+    // (moved off localStorage), so leftover state from one test could make
+    // a later test's op look like an already-synced repeat. Start each test
+    // with clean indexes, the way a real cold app start would.
+    clearCloudSyncEchoGuard();
+    __resetLabSidecarIndexForTests();
+    __resetMedRecetaIndexForTests();
   });
 
   it('truncates oversized resLabs before push and reaches idle', async () => {
@@ -127,7 +140,7 @@ describe('createSyncRuntimeCycle flush/push behavior', () => {
     // makes every wire attempt unique so a re-cut chunk never collides with
     // the Worker's cached response for an earlier attempt (fact 4).
     assert.equal(mutationIds.length, 1);
-    assert.match(mutationIds[0], /^clinicalOps:12345:a1:\d+$/);
+    assert.match(mutationIds[0], /^clinicalOps:12345:a1:\d+-\d+$/);
   });
 
   it('pulls before push when outbox is empty', async () => {

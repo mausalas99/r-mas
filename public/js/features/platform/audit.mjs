@@ -75,7 +75,11 @@ function addAuditEntry(action, result, count, detail) {
     detail: detail || ''
   });
   if (list.length > 200) list = list.slice(0, 200);
-  localStorage.setItem(AUDIT_LOG_KEY, JSON.stringify(list));
+  try {
+    localStorage.setItem(AUDIT_LOG_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.warn('[audit] storage quota exceeded, dropped entry', e);
+  }
 }
 
 async function exportAuditLog() {

@@ -1,6 +1,7 @@
-import { describe, it, beforeEach, afterEach } from 'node:test';
+import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  __resetEchoGuardForTests,
   wasCloudOpAlreadyAttempted,
   noteCloudOpsAttempted,
   clearCloudSyncEchoGuard,
@@ -8,26 +9,8 @@ import {
 } from './cloud-sync-echo-guard.mjs';
 
 describe('cloud-sync-echo-guard', () => {
-  const prev = globalThis.localStorage;
-
   beforeEach(() => {
-    globalThis.localStorage = {
-      store: {},
-      getItem(key) {
-        return this.store[key] ?? null;
-      },
-      setItem(key, value) {
-        this.store[key] = String(value);
-      },
-      removeItem(key) {
-        delete this.store[key];
-      },
-    };
-  });
-
-  afterEach(() => {
-    if (prev) globalThis.localStorage = prev;
-    else delete globalThis.localStorage;
+    __resetEchoGuardForTests();
   });
 
   it('has never attempted an op before it is noted', () => {
@@ -81,5 +64,14 @@ describe('cloud-sync-echo-guard', () => {
     noteCloudOpsAttempted([{ path: 'entries/p1/fields', updatedAt: 't1' }]);
     clearCloudSyncEchoGuard();
     assert.equal(wasCloudOpAlreadyAttempted({ path: 'entries/p1/fields', updatedAt: 't1' }), false);
+  });
+
+  it('evicts oldest entries once the index passes ~1MB so it can never alone bloat unbounded', () => {
+    const bigAt = '2026-01-01T00:00:00.000Z-' + 'x'.repeat(500);
+    for (let i = 0; i < 2500; i += 1) {
+      noteCloudOpsAttempted([{ path: `entries/p${i}/fields`, updatedAt: bigAt }]);
+    }
+    assert.equal(wasCloudOpAlreadyAttempted({ path: 'entries/p0/fields', updatedAt: bigAt }), false);
+    assert.equal(wasCloudOpAlreadyAttempted({ path: 'entries/p2499/fields', updatedAt: bigAt }), true);
   });
 });

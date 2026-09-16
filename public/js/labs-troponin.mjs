@@ -1,4 +1,4 @@
-import { marcarSegunRango, fmt } from './labs-extract.mjs';
+import { marcarSegunRango, fmt, esValorDelRango_ } from './labs-extract.mjs';
 
 /** Umbral URL hs-cTnI (ng/L) cuando el reporte no trae rango numérico útil. */
 export const TROPONINA_HS_NORMAL_MAX_NG_L = 34;
@@ -76,8 +76,8 @@ export function extractAllTroponinaFromText_(textoBruto) {
       var sub = texto.substring(idx, idx + 320);
       var subText = texto.substring(idx + nameUp.length, idx + nameUp.length + 220);
       var mValor = subText.match(/(-?\d+[.,]?\d*)/);
-      if (mValor) {
-        var mRango = subText.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
+      var mRango = mValor ? subText.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/) : null;
+      if (mValor && !esValorDelRango_(mValor, mRango)) {
         hits.push({
           valor: mValor[1],
           min: mRango ? parseFloat(mRango[1].replace(',', '.')) : null,

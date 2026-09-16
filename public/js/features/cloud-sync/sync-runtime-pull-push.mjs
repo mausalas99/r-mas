@@ -1,6 +1,6 @@
 import { sanitizeOpsForCloudPush } from './cloud-op-slim.mjs';
 import { drainCloudOps, recordRejectedCloudOps } from './cloud-push-direct.mjs';
-import { resolveCloudPushMutationId } from './push-mutation-id.mjs';
+import { nextWireIdStamp, resolveCloudPushMutationId } from './push-mutation-id.mjs';
 import { cloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 import {
   noteCloudLabSidecarsFromPullResult,
@@ -202,7 +202,7 @@ async function pushSingleWithStaleRetry(ctx, roomId, item, chunk, attempt) {
       const pushResult = await api.push(roomId, {
         // Unique per drain attempt — a chunk re-cut smaller after congestion
         // never collides with the Worker's cached response for an earlier one.
-        clientMutationId: `${resolveCloudPushMutationId(item)}:a${attempt}:${Date.now()}`,
+        clientMutationId: `${resolveCloudPushMutationId(item)}:a${attempt}:${nextWireIdStamp()}`,
         ops: sanitized.ops,
         baseRevision: getRevision() ?? item.baseRevision ?? 0,
       });

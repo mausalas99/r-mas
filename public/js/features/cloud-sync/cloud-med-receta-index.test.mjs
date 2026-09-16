@@ -1,6 +1,7 @@
-import { describe, it, beforeEach, afterEach } from 'node:test';
+import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  __resetMedRecetaIndexForTests,
   cloudMedRecetaFingerprint,
   noteCloudMedRecetaFromPullResult,
   noteCloudMedRecetaOpsSent,
@@ -9,24 +10,8 @@ import {
 } from './cloud-med-receta-index.mjs';
 
 describe('cloud-med-receta-index', () => {
-  const prev = globalThis.localStorage;
-
   beforeEach(() => {
-    const store = {};
-    globalThis.localStorage = {
-      getItem: (k) => (k in store ? store[k] : null),
-      setItem: (k, v) => {
-        store[k] = String(v);
-      },
-      removeItem: (k) => {
-        delete store[k];
-      },
-    };
-  });
-
-  afterEach(() => {
-    if (prev) globalThis.localStorage = prev;
-    else delete globalThis.localStorage;
+    __resetMedRecetaIndexForTests();
   });
 
   it('does not skip a patient never seen before', () => {
@@ -79,8 +64,14 @@ describe('cloud-med-receta-index', () => {
     assert.equal(a, b);
   });
 
-  it('missing localStorage fails open (never skips) instead of throwing', () => {
-    delete globalThis.localStorage;
-    assert.equal(shouldSkipCloudMedRecetaPush('p1', { items: [] }), false);
+  it('evicts oldest entries once the index passes ~1MB so it can never alone bloat unbounded', () => {
+    const big = 'x'.repeat(2000);
+    for (let i = 0; i < 700; i += 1) {
+      noteCloudMedRecetaOpsSent([{ path: `entries/p${i}/medReceta`, value: { items: [{ texto: big }] } }]);
+    }
+    const idx = readMedRecetaFingerprintIndex();
+    assert.ok(JSON.stringify(idx).length <= 1_000_000, 'index must stay under the byte budget');
+    assert.ok(!('entries/p0/medReceta' in idx), 'oldest entry should have been evicted');
+    assert.ok('entries/p699/medReceta' in idx, 'newest entry should survive');
   });
 });

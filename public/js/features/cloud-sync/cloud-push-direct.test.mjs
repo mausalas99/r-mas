@@ -9,6 +9,7 @@ import {
 } from './cloud-push-direct.mjs';
 import { createDrainPacer } from './cloud-sync-timing.mjs';
 import { getCloudSyncDiagnostics, clearCloudSyncErrors } from './cloud-sync-diagnostics.mjs';
+import { clearCloudSyncEchoGuard } from './cloud-sync-echo-guard.mjs';
 
 function labOp(i) {
   return {
@@ -210,14 +211,15 @@ describe('pushCloudOpsDirect — unique wire ids per attempt', () => {
     );
     assert.equal(ids.length, 2);
     assert.notEqual(ids[0], ids[1], 'a retried attempt must not reuse the first wire id');
-    assert.match(ids[0], /:a1:\d+$/);
-    assert.match(ids[1], /:a2:\d+$/);
+    assert.match(ids[0], /:a1:\d+-\d+$/);
+    assert.match(ids[1], /:a2:\d+-\d+$/);
   });
 });
 
 describe('pushCloudOpsDirect — stale rejections', () => {
   it('does not count ops the Worker rejected as stale as applied, and records a diagnostic', async () => {
     clearCloudSyncErrors();
+    clearCloudSyncEchoGuard();
     const api = {
       push: async () => ({
         revision: 5,
@@ -246,6 +248,7 @@ describe('pushCloudOpsDirect — stale rejections', () => {
 
   it('counts a fully-applied push as applied, with no diagnostic recorded', async () => {
     clearCloudSyncErrors();
+    clearCloudSyncEchoGuard();
     const api = {
       push: async () => ({
         revision: 6,

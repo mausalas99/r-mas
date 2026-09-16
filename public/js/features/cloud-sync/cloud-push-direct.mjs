@@ -1,5 +1,5 @@
 import { sanitizeOpsForCloudPush, utf8JsonBytes } from './cloud-op-slim.mjs';
-import { resolveCloudPushMutationId } from './push-mutation-id.mjs';
+import { nextWireIdStamp, resolveCloudPushMutationId } from './push-mutation-id.mjs';
 import { CLOUD_BATCH_MUTATION_ID } from './constants.mjs';
 import { noteCloudLabSidecarOpsSent } from './cloud-lab-sidecar-index.mjs';
 import { noteCloudMedRecetaOpsSent } from './cloud-med-receta-index.mjs';
@@ -218,7 +218,7 @@ export async function pushCloudOpsDirect(api, roomId, ops, getRevision, setRevis
     const pushResult = await api.push(roomId, {
       // Unique per attempt so a chunk re-cut smaller after congestion never
       // collides with the Worker's cached response for an earlier attempt.
-      clientMutationId: `${resolveCloudPushMutationId(item)}:a${attempt}:${Date.now()}`,
+      clientMutationId: `${resolveCloudPushMutationId(item)}:a${attempt}:${nextWireIdStamp()}`,
       ops: sanitized.ops,
       baseRevision: getRevision() ?? 0,
     });

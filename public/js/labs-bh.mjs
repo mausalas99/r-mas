@@ -3,6 +3,7 @@ import {
   extraerConRango,
   extraerConRangoBH,
   extraerConRangoCoag,
+  esValorDelRango_,
   fmtLabRanged_,
 } from './labs-extract.mjs';
 import { lineRichnessScore_ } from './labs-gaso-section.mjs';
@@ -343,7 +344,10 @@ function extraerSimpleBh_(labels, texto) {
     if (idx === -1) continue;
     var sub = texto.substring(idx, idx + 80);
     var m = sub.match(/(-?\d+[.,]?\d*)/);
-    if (m) return m[1].replace(',', '.');
+    if (!m) continue;
+    var mRango = sub.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
+    if (esValorDelRango_(m, mRango)) continue;
+    return m[1].replace(',', '.');
   }
   return '';
 }

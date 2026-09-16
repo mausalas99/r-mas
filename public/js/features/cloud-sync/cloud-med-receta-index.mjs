@@ -11,8 +11,36 @@
  */
 import { canonicalStringify } from '../../../../lib/db/canonical-json.mjs';
 import { createOpFold, foldCloudOp } from './pull-apply-state.mjs';
+import { createIdbBackedSlot } from './idb-index-store.mjs';
 
 export const CLOUD_MED_RECETA_FP_INDEX_KEY = 'rpc-cloud-sync-med-receta-fp-index';
+
+const slot = createIdbBackedSlot(CLOUD_MED_RECETA_FP_INDEX_KEY, () => ({}));
+
+/** Test-only: force the in-memory index back to empty. */
+export function __resetMedRecetaIndexForTests() {
+  slot.resetForTests();
+}
+
+// One entry per patient ever synced, never pruned on delete — bound it by
+// serialized size so it can't alone bloat past a reasonable footprint.
+// Evicting a stale entry only costs one extra resend next sync, never a
+// wrongly-skipped push.
+const FP_INDEX_MAX_BYTES = 1_000_000;
+
+/** @param {Record<string, string>} index */
+function trimFingerprintIndex(index) {
+  let keys = Object.keys(index);
+  let size = JSON.stringify(index).length;
+  while (keys.length && size > FP_INDEX_MAX_BYTES) {
+    const avgBytes = size / keys.length;
+    const removeCount = Math.min(keys.length, Math.max(1, Math.ceil(((size - FP_INDEX_MAX_BYTES) / avgBytes) * 1.1)));
+    for (let i = 0; i < removeCount; i += 1) delete index[keys[i]];
+    keys = Object.keys(index);
+    size = JSON.stringify(index).length;
+  }
+  return index;
+}
 
 /** @param {unknown} medReceta */
 export function cloudMedRecetaFingerprint(medReceta) {
@@ -21,22 +49,13 @@ export function cloudMedRecetaFingerprint(medReceta) {
 
 /** @returns {Record<string, string>} */
 export function readMedRecetaFingerprintIndex() {
-  try {
-    const raw = localStorage.getItem(CLOUD_MED_RECETA_FP_INDEX_KEY);
-    const parsed = raw ? JSON.parse(raw) : null;
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
-    return {};
-  }
+  const idx = slot.read();
+  return idx && typeof idx === 'object' ? idx : {};
 }
 
 /** @param {Record<string, string>} index */
 function writeMedRecetaFingerprintIndex(index) {
-  try {
-    localStorage.setItem(CLOUD_MED_RECETA_FP_INDEX_KEY, JSON.stringify(index));
-  } catch (e) {
-    console.warn('[cloud-med-receta-index] failed to write ' + CLOUD_MED_RECETA_FP_INDEX_KEY, e);
-  }
+  slot.write(trimFingerprintIndex(index));
 }
 
 /**

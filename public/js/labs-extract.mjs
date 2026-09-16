@@ -10,20 +10,36 @@ export function extraer(nombres, bloque) {
   return '---';
 }
 
+/** Nombre con espacio final -> boundary real (space/tab/newline), no solo ' ' literal.
+ * Paneles como GASOMETRIA suelen separar la etiqueta del valor con tab o salto de línea,
+ * no con espacio; 'HCT ' literal fallaba ahí y dejaba a RetC sin Hto aunque estuviera en el mismo reporte. */
+function nombreConBoundary_(nombre) {
+  var esc = nombre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return /\s$/.test(nombre) ? esc.replace(/\s+$/, '\\s') : esc;
+}
+
+/** True si el "valor" detectado es en realidad el mínimo del rango de referencia,
+ * no un resultado real (columna Resultado vacía, solo '*' — muestra hemolizada/rechazada). */
+export function esValorDelRango_(mValor, mRango) {
+  return !!mRango && mValor.index === mRango.index;
+}
+
 export function extraerConRango(nombres, texto) {
   if (!texto) return { valor: '---', min: null, max: null };
   var t = texto.toUpperCase();
   for (var i = 0; i < nombres.length; i++) {
     var nombre = nombres[i].toUpperCase();
-    var idx = t.indexOf(nombre);
+    var m = t.match(new RegExp(nombreConBoundary_(nombre)));
+    var idx = m ? m.index : -1;
     if (idx === -1) continue;
     // Start AFTER the test name to avoid matching digits within it
     var start = idx + nombre.length;
     var sub = texto.substring(start, start + 220);
     var mValor = sub.match(/(-?\d+[.,]?\d*)/);
     if (!mValor) continue;
-    var valorStr = mValor[1];
     var mRango = sub.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
+    if (esValorDelRango_(mValor, mRango)) continue;
+    var valorStr = mValor[1];
     if (!mRango) return { valor: valorStr, min: null, max: null };
     return { valor: valorStr,
              min: parseFloat(mRango[1].replace(',','.')),
@@ -94,8 +110,12 @@ export function extraerConRangoBH(nombres, texto) {
         start = idx + nombre.length;
         continue;
       }
-      var valorStr = mValor[1];
       var mRango = sub.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
+      if (esValorDelRango_(mValor, mRango)) {
+        start = idx + nombre.length;
+        continue;
+      }
+      var valorStr = mValor[1];
       if (!mRango) return { valor: valorStr, min: null, max: null };
       return {
         valor: valorStr,
@@ -142,8 +162,12 @@ export function extraerConRangoSuero(nombres, texto) {
         start = idx + nombre.length;
         continue;
       }
-      var valorStr = mValor[1];
       var mRango = sub.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
+      if (esValorDelRango_(mValor, mRango)) {
+        start = idx + nombre.length;
+        continue;
+      }
+      var valorStr = mValor[1];
       if (!mRango) return { valor: valorStr, min: null, max: null };
       return { valor: valorStr,
         min: parseFloat(mRango[1].replace(',', '.')),
@@ -341,8 +365,9 @@ export function extraerConRangoPanel(nombres, texto) {
     stripped = stripped.replace(reName, ' ');
     var mValor = stripped.match(/(-?\d+[.,]?\d*)/);
     if (!mValor) continue;
-    var valorStr = mValor[1];
     var mRango = stripped.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
+    if (esValorDelRango_(mValor, mRango)) continue;
+    var valorStr = mValor[1];
     if (!mRango) return { valor: valorStr, min: null, max: null };
     return {
       valor: valorStr,

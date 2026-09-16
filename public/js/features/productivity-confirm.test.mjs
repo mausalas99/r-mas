@@ -43,8 +43,16 @@ describe('productivity.mjs confirm migrations', () => {
     assert.match(backdrop.innerHTML, /La aplicación se recargará\./);
 
     document.querySelector('[data-wb-confirm-cancel]').click();
-    const stack = JSON.parse(localStorage.getItem('rpc-undo-stack'));
-    assert.equal(stack.length, 1, 'canceling must not consume the undo snapshot');
+
+    // Snapshot lives in IndexedDB now; re-open the confirm to prove it's still there.
+    await undoLastOperation();
+    const backdrop2 = document.querySelector('[data-wb-confirm-backdrop]');
+    assert.match(
+      backdrop2.innerHTML,
+      /¿Revertir &quot;eliminar paciente&quot;\?/,
+      'canceling must not consume the undo snapshot'
+    );
+    document.querySelector('[data-wb-confirm-cancel]').click();
   });
 
   it('deleteExtraTemplate opens a destructive confirm; only removes the template on confirm', async () => {
