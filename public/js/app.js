@@ -203,7 +203,9 @@ try {
 
 const appStateReady = (async function loadClinicalStateOnBoot() {
   if (isElectronDesktopShell() && !isDbMode()) {
-    for (let i = 0; i < 60 && !isDbMode(); i += 1) {
+    // preload exposes electronAPI synchronously, so this normally exits on i=0;
+    // short budget only covers a slow/failed preload before falling back.
+    for (let i = 0; i < 10 && !isDbMode(); i += 1) {
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
   }
