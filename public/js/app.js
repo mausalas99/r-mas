@@ -521,9 +521,9 @@ function runDomBootAfterState() {
     }
     initModalDismiss();
     syncHeaderTodayDate();
-    if (!window._rpcHeaderDateResizeWired) {
+    if (!window._rpcHeaderDateResizeWired && typeof window.matchMedia === 'function') {
       window._rpcHeaderDateResizeWired = true;
-      window.addEventListener('resize', syncHeaderTodayDate);
+      window.matchMedia('(max-width: 920px)').addEventListener('change', syncHeaderTodayDate);
     }
     loadSettings();
     if (!onboardingBootActive) {
