@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.3.7](https://github.com/mausalas99/r-mas/releases/tag/v8.3.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.3.8](https://github.com/mausalas99/r-mas/releases/tag/v8.3.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -64,6 +64,14 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.3.8 (estable — release 8.3.8)
+
+- **Arreglado:** una fila de laboratorio sin resultado (solo `*`) ya no toma el mínimo del rango como valor real.
+- **Arreglado:** RetC ahora encuentra el hematocrito en GASOMETRIA aunque la etiqueta use tab o salto de línea.
+- **Mejorado (Nube):** sincronización más confiable ante reintentos y reinicios de la app.
+
+Notas: `docs/RELEASE_NOTES_8.3.8.txt`.
 ## R+ 8.3.7 (estable — release 8.3.7)
 
 - **Arreglado:** al pegar varios laboratorios juntos, un reticulocito de un día ya no se contagiaba al RetC de otro día.
