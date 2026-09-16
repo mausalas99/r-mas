@@ -290,8 +290,9 @@ export function clearTourActionPoll() {
     tourState.tourActionPollTimer = null;
   }
   if (tourState.tourActionClickHandler) {
-    document.removeEventListener('click', tourState.tourActionClickHandler, true);
-    document.removeEventListener('toggle', tourState.tourActionClickHandler, true);
+    ['click', 'toggle', 'input', 'change'].forEach(function (evt) {
+      document.removeEventListener(evt, tourState.tourActionClickHandler, true);
+    });
     tourState.tourActionClickHandler = null;
   }
 }
@@ -299,12 +300,13 @@ export function clearTourActionPoll() {
 export function armTourActionPoll() {
   clearTourActionPoll();
   if (!tourState.guidedTourActive || !stepRequiresUserAction(tourState.tourStepId)) return;
-  tourState.tourActionPollTimer = setInterval(syncTourActionNextButton, 300);
+  tourState.tourActionPollTimer = setInterval(syncTourActionNextButton, 800);
   tourState.tourActionClickHandler = function () {
     syncTourActionNextButton();
   };
-  document.addEventListener('click', tourState.tourActionClickHandler, true);
-  document.addEventListener('toggle', tourState.tourActionClickHandler, true);
+  ['click', 'toggle', 'input', 'change'].forEach(function (evt) {
+    document.addEventListener(evt, tourState.tourActionClickHandler, true);
+  });
 }
 
 function enableTourNextButton(nextBtn) {
