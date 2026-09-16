@@ -1,14 +1,20 @@
-version: 8.3.7
+version: 8.3.8
 files:
-  - url: R+-8.3.7-x64.exe
-    sha512: dMdAaccPhcwHxGWxyBX/wWofLRbhZiALfnEvwyIfSs5u/lKYzVaNhiOwrmN6z+W8FCkMjBuQHe8neP7tIKaPWA==
-    size: 122417162
-path: R+-8.3.7-x64.exe
-sha512: dMdAaccPhcwHxGWxyBX/wWofLRbhZiALfnEvwyIfSs5u/lKYzVaNhiOwrmN6z+W8FCkMjBuQHe8neP7tIKaPWA==
-releaseDate: '2026-09-15T14:34:17.000Z'
+  - url: R+-8.3.8-x64.exe
+    sha512: dUk6QYMOzS4CkpRZbE1/duf2TA51rl0CoAF6PWace3VnT6rH9lLUHmLeBlz5gjfiNfpZpg+4IK3466U10PNKUg==
+    size: 122443792
+path: R+-8.3.8-x64.exe
+sha512: dUk6QYMOzS4CkpRZbE1/duf2TA51rl0CoAF6PWace3VnT6rH9lLUHmLeBlz5gjfiNfpZpg+4IK3466U10PNKUg==
+releaseDate: '2026-09-16T16:42:41.000Z'
 releaseNotes: |
-  Arregla un error donde el reticulocito corregido se contagiaba a días de otro estudio al pegar varias semanas de laboratorios juntas.
+  Arregla dos errores de lectura de laboratorios pegados, hace más confiable la sincronización en Nube, y limpia datos viejos que podían llenar el almacenamiento local del equipo.
   
-  Arreglado: al pegar varios laboratorios juntos (SOME), un solo valor de reticulocito ya no se combinaba con la biometría de otro día lejano para calcular un RetC falso — ahora solo se empareja con el estudio más cercano en el tiempo, una sola vez.
+  Arreglado: una fila de laboratorio sin resultado (solo *, muestra hemolizada o rechazada) ya no tomaba el mínimo del rango de referencia como si fuera el valor real — ahora se ignora correctamente.
   
-  Arreglado: actualizar labs (Actualizar labs) del paciente ya activo ahora refresca de inmediato la lista de fechas en Laboratorio, el panel de tendencias y el campo de estudios de la nota — antes quedaban con datos viejos hasta cambiar de paciente y volver.
+  Arreglado: el reticulocito corregido (RetC) ahora encuentra el hematocrito en bloques de GASOMETRIA aunque la etiqueta esté separada por tabulador o salto de línea, no solo por espacio.
+  
+  Mejorado (Nube): la sincronización es más resistente a reintentos casi simultáneos y a reinicios de la app — el índice que evita reenviar datos ya sincronizados ahora persiste de forma confiable en vez de perderse en memoria.
+  
+  Arreglado: datos viejos y muertos (copias de respaldo previas a una importación, índices de sincronización obsoletos) ya no se acumulan sin límite en el almacenamiento local del equipo. En instalaciones antiguas esto podía llenar ese espacio en silencio y hacer que ciertas acciones (como ocultar una columna en Tendencias) dejaran de guardar cambios sin ningún aviso.
+  
+  Nuevo: si el almacenamiento local del equipo se acerca a su límite, R+ ahora avisa una vez por sesión en vez de fallar en silencio.
