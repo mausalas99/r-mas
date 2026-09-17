@@ -6,8 +6,16 @@
 
 var RELEASE_NOTES_839 = [
   {
+    title: 'Manejo/estado actual ya no se borra en una sincronización parcial',
+    body: 'Un payload de Nube sin el campo de manejo o estado actual de un paciente se trataba como si se hubiera vaciado a propósito — podía borrar el de todos los pacientes del censo de golpe. Corregido.',
+  },
+  {
     title: 'Pacientes recién admitidos ya no se pierden de la Nube',
     body: 'Si la asignación de equipo de un paciente llegaba en un ciclo de red distinto al del paciente mismo, la admisión podía descartarse de la sincronización para siempre. Ya no.',
+  },
+  {
+    title: 'Asignar equipo reintenta si la Nube no responde',
+    body: 'Antes, un timeout transitorio de la Nube al asignar un paciente a un equipo perdía esa asignación en silencio para siempre. Ahora reintenta una vez.',
   },
   {
     title: 'Arreglada la animación de Pendientes',

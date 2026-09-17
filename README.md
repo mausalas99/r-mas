@@ -68,7 +68,9 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ## R+ 8.3.9 (estable — release 8.3.9)
 
+- **Arreglado (Nube, importante):** una sincronización parcial ya no borra el manejo/estado actual de los pacientes.
 - **Arreglado (Nube):** un paciente recién admitido ya no se pierde de la sincronización si su asignación de equipo llega en un ciclo distinto.
+- **Arreglado (Nube):** asignar equipo reintenta una vez si la Nube no responde a tiempo.
 - **Arreglado:** animación de Pendientes al agregar y completar.
 - **Arreglado:** el censo para imprimir ahora entra en una sola hoja.
 
