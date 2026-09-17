@@ -38,6 +38,14 @@ describe('handleApiRoute — /rooms app-version gate', () => {
     const res = await handleApiRoute(roomsRequest(), {});
     assert.notEqual(res.status, 426);
   });
+
+  it('does not gate the /live WebSocket route — browsers cannot set X-App-Version on a WS handshake', async () => {
+    const req = new Request(`https://x${API_PREFIX}/rooms/some-room/live`, {
+      headers: { Upgrade: 'websocket' },
+    });
+    const res = await handleApiRoute(req, gateOn);
+    assert.notEqual(res.status, 426);
+  });
 });
 
 describe('handleApiRoute — SyncError Retry-After header', () => {

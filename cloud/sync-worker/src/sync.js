@@ -495,6 +495,16 @@ async function handleMutations(request, env, db, roomId) {
   let lastRejected = [];
   let lastNeedPull = baseRevision < Number(room.revision);
 
+  // Pure over the client-sent ops, same on every retry attempt — hoisted out
+  // of the loop. Most pushes (signos/eventualidades/notes) touch no lab data
+  // at all, so skip the room's full lab-ciphertext fetch for them: reading
+  // every patient's lab history on every push does not scale past a handful
+  // of patients, and once the room's total ciphertext gets big enough D1's
+  // own RPC (BLOBs go over the wire as JSON digit-lists) fails outright with
+  // a "Failed to parse body as JSON" error whose message IS that huge dump.
+  const { lwwOps, sidecarOps } = partitionSyncOps(ops);
+  const hasLabSidecarOps = lwwOps.some((op) => String(op?.path || '').startsWith('labSidecars/'));
+
   for (let attempt = 0; attempt < MUTATION_COMMIT_ATTEMPTS; attempt++) {
     const roomRow = await db
       .prepare('SELECT revision FROM rooms WHERE id = ?')
@@ -505,8 +515,9 @@ async function handleMutations(request, env, db, roomId) {
     }
     const expectedRevision = Number(roomRow.revision);
     lastNeedPull = baseRevision < expectedRevision;
-    const { state, legacyShardBytes, labSetBytes } = await loadRoomState(env, db, roomId);
-    const { lwwOps, sidecarOps } = partitionSyncOps(ops);
+    const { state, legacyShardBytes, labSetBytes } = await loadRoomState(env, db, roomId, {
+      skipLabShards: !hasLabSidecarOps,
+    });
     const appliedResult = applyOps(state, lwwOps);
     /** @type {unknown[]} */
     const sidecarApplied = [];

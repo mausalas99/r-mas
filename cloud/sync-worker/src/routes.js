@@ -51,7 +51,13 @@ export async function handleApiRoute(request, env) {
       // room-code method, even mid-session.
       // Gated by NUBE_VERSION_GATE_ENABLED (off by default) — turn on only
       // once 8.2.0 has shipped, otherwise this blocks every current user.
-      if (env.NUBE_VERSION_GATE_ENABLED) {
+      // Skip for the WebSocket live route: the browser WebSocket API cannot
+      // set custom request headers, so X-App-Version is always absent there
+      // and this gate would reject every live-sync connection, forever
+      // (client sees a non-101 response → close code 1006). Session auth in
+      // handleRoomLive already gates that route.
+      const isLiveSocketRoute = /^\/[^/]+\/live$/.test(subpath.slice('/rooms'.length) || '/');
+      if (env.NUBE_VERSION_GATE_ENABLED && !isLiveSocketRoute) {
         assertNubeAppVersion(request.headers.get('X-App-Version'));
       }
       const roomsSub = subpath === '/rooms' ? '/' : subpath.slice('/rooms'.length) || '/';

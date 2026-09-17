@@ -51,6 +51,23 @@ describe('sync.js mutation retention', () => {
     assert.ok(snapshotIdx < selectIdx, 'gap check must run before mutations SELECT');
   });
 
+  it('skips the whole-room lab-ciphertext fetch on push when the batch touches no lab sets', () => {
+    // Most pushes (signos/eventualidades/notes) never touch labSidecars — loading
+    // every patient's lab history to apply them doesn't scale, and once a room's
+    // total ciphertext is big enough D1 fails outright ("Failed to parse body as
+    // JSON") with that whole dump as the error message. loadRoomState must be
+    // told to skip lab shards for these, computed once before the retry loop
+    // (pure over the client's own ops, unchanged across retries).
+    const start = syncSrc.indexOf('async function handleMutations');
+    assert.ok(start >= 0);
+    const body = syncSrc.slice(start, start + 3000);
+    const hoistIdx = body.indexOf('hasLabSidecarOps');
+    const loopIdx = body.indexOf('for (let attempt');
+    const loadIdx = body.indexOf('skipLabShards: !hasLabSidecarOps');
+    assert.ok(hoistIdx >= 0 && hoistIdx < loopIdx, 'hasLabSidecarOps must be computed before the retry loop');
+    assert.ok(loadIdx > loopIdx, 'loadRoomState inside the loop must pass skipLabShards');
+  });
+
   it('returns empty ops when client revision is current', () => {
     const start = syncSrc.indexOf('async function handlePull');
     assert.ok(start >= 0);
