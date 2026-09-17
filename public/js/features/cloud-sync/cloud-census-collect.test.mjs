@@ -32,6 +32,14 @@ describe('cloud-census-collect', () => {
     assert.ok(scopeIdx < buildIdx, 'scoping must run before building entries');
   });
 
+  it('always pushes a just-admitted local patient even if it does not yet structurally match our own team', () => {
+    const fnStart = src.indexOf('function scopePatientsForCloudPush');
+    assert.ok(fnStart > -1);
+    const fnBody = src.slice(fnStart, fnStart + 900);
+    assert.match(fnBody, /isFreshLocalAdmission/);
+    assert.match(fnBody, /allowedIds\.has\(p\.id\) \|\| isFreshLocalAdmission\(p\)/);
+  });
+
   it('splits the census by active Filtros so backfill can prioritize what the sidebar shows', () => {
     assert.match(src, /export function scopePatientsForCloudPushSplitByFilters/);
     assert.match(src, /filterPatientsForGuardiaCensus/);

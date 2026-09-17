@@ -138,7 +138,11 @@ test('boot hubs do not eagerly import lazy-only feature shells (BN-12)', () => {
 });
 
 /** Ratchet down only. History: scripts/metrics/eager-boot-changelog.md */
-const EAGER_BOOT_BUDGET_BYTES = 3327000;
+// Raised 2026-09-17: new-admission sync-race fix (patient-scope-prune grace
+// window, first-sighting entry passthrough, fresh-join "Descargando
+// pacientes…" state) touches core clinical-session/sync modules that are
+// already eager — nothing here is lazy-loadable.
+const EAGER_BOOT_BUDGET_BYTES = 3330000;
 const EAGER_BOOT_BUDGET_FILES = 128;
 
 /**

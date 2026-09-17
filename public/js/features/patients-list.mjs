@@ -1,4 +1,5 @@
 import { getPatients, persistClinicalState } from '../app-state.mjs';
+import { cloudPullProgress } from '../clinical-session-context.mjs';
 import {
   renderGuardiaCensusGrid,
   syncGuardiaCensusPanelVisibility,
@@ -409,7 +410,9 @@ function renderPatientListNow(opts) {
   if (!list) return;
   var visiblePatients = patientsVisibleInSidebar();
   if (!visiblePatients.length) {
-    if (isCloudMobileClient()) {
+    if (cloudPullProgress.freshInFlight) {
+      renderPatientListMessage(list, 'Descargando pacientes…', opts);
+    } else if (isCloudMobileClient()) {
       renderPatientListMessage(
         list,
         'Sin pacientes en la nube. En el Mac del turno deja R+ abierto ~20 s y recarga esta página.',

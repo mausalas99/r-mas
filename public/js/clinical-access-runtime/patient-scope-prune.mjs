@@ -8,6 +8,20 @@ import { filterPatientsForClinicalSidebar } from '../features/patients-clinical-
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
 import { getClinicalScopeContextForEvaluate } from './scope-evaluate.mjs';
 
+/**
+ * A brand-new patient's team assignment can lag its census entry by a poll
+ * cycle or two (25s idle mobile poll). Give a freshly-arrived patient this
+ * long to pick up its assignment before hard-deleting it as out-of-scope —
+ * otherwise a real admission gets wiped for good the moment it is first seen.
+ */
+const PATIENT_SCOPE_PRUNE_GRACE_MS = 60_000;
+
+function isWithinScopePruneGrace(patient) {
+  const at = Date.parse(String(patient?.lanUpdatedAt || ''));
+  if (Number.isNaN(at)) return false;
+  return Date.now() - at < PATIENT_SCOPE_PRUNE_GRACE_MS;
+}
+
 function dropPatientSidecars(pid) {
   const id = String(pid || '');
   if (!id) return;
@@ -39,11 +53,15 @@ export function prunePatientsOutsideVisibleScope() {
   if (!isReadyToPrunePatientsOutsideScope()) return 0;
   const user = clinicalSessionContext.user;
   const ctx = getClinicalScopeContextForEvaluate();
-  const visible = filterPatientsForClinicalSidebar(
+  const scoped = filterPatientsForClinicalSidebar(
     getPatients(),
     user,
     ctx,
     clinicalSessionContext.guardiasMap
+  );
+  const scopedIds = new Set(scoped.map((p) => String(p?.id || '')).filter(Boolean));
+  const visible = getPatients().filter(
+    (p) => scopedIds.has(String(p?.id || '')) || isWithinScopePruneGrace(p)
   );
   const visibleIds = new Set(visible.map((p) => String(p?.id || '')).filter(Boolean));
   const removed = Math.max(0, getPatients().length - visible.length);

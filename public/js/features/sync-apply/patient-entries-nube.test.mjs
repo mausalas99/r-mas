@@ -7,6 +7,7 @@ import {
   getLabHistoryRevision,
   resetLabHistoryCacheForTests,
 } from '../../lab-history-cache.mjs';
+import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import {
   applyLanPatientEntries,
   isPlaceholderPatientName,
@@ -213,6 +214,92 @@ describe('applyLanPatientEntries on Nube path', () => {
     );
     assert.ok(getLabHistoryRevision('p-labs') > before);
     assert.equal(getLabHistory()['p-labs'].length, 1);
+  });
+});
+
+describe('applyLanPatientEntries team-scope filter on iPad mirror', () => {
+  const prevUser = clinicalSessionContext.user;
+  const prevScope = clinicalSessionContext.scopeContext;
+  const prevMobile = globalThis.__RPC_MOBILE_WEB__;
+
+  beforeEach(() => {
+    globalThis.__RPC_MOBILE_WEB__ = true;
+    clinicalSessionContext.user = { user_id: 'r1' };
+    clinicalSessionContext.scopeContext = {
+      teams: [
+        {
+          team_id: 't-mine',
+          service: 'Sala',
+          sala: 'Sala 1',
+          members: [{ user_id: 'r1' }],
+        },
+      ],
+      assignments: [],
+      guardias: [],
+      now: '2026-06-02T12:00:00.000Z',
+    };
+    clinicalSessionContext.guardiasMap = new Map();
+  });
+
+  afterEach(() => {
+    clinicalSessionContext.user = prevUser;
+    clinicalSessionContext.scopeContext = prevScope;
+    clinicalSessionContext.guardiasMap = new Map();
+    if (prevMobile) globalThis.__RPC_MOBILE_WEB__ = prevMobile;
+    else delete globalThis.__RPC_MOBILE_WEB__;
+  });
+
+  it('adds a brand-new patient even though its team assignment has not synced yet', () => {
+    const result = applyLanPatientEntries(
+      [
+        {
+          patient: {
+            id: 'p-brand-new',
+            nombre: 'RECIEN ADMITIDO',
+            registro: '77',
+            servicio: 'Onco',
+            sala: 'Sala 9',
+          },
+          note: {},
+          indicaciones: {},
+          labHistory: [],
+        },
+      ],
+      {}
+    );
+    assert.equal(result.added, 1);
+    const added = getPatients().find((p) => p.id === 'p-brand-new');
+    assert.ok(added);
+    assert.ok(added.lanUpdatedAt);
+  });
+
+  it('still hides a foreign patient the iPad already knows about', () => {
+    getPatients().push({
+      id: 'p-foreign',
+      nombre: 'AJENO',
+      registro: '78',
+      servicio: 'Onco',
+      sala: 'Sala 9',
+    });
+    const result = applyLanPatientEntries(
+      [
+        {
+          patient: {
+            id: 'p-foreign',
+            nombre: 'AJENO ACTUALIZADO',
+            registro: '78',
+            servicio: 'Onco',
+            sala: 'Sala 9',
+          },
+          note: {},
+          indicaciones: {},
+          labHistory: [],
+        },
+      ],
+      {}
+    );
+    assert.equal(result.updated, 0);
+    assert.equal(getPatients().find((p) => p.id === 'p-foreign').nombre, 'AJENO');
   });
 });
 

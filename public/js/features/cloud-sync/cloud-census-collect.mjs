@@ -29,6 +29,22 @@ export function isLanPatientEntryCollectorReady() {
 }
 
 /**
+ * This device unambiguously owns a patient it just admitted, even before a
+ * patient_team_assignment row exists locally to structurally prove it. Without
+ * this, a brand-new admission that doesn't yet match the admitting user's own
+ * joined team is stripped from every push (not just the first) until some
+ * unrelated later edit happens to touch it again — so it can go unsent to the
+ * cloud, and therefore to every other device, indefinitely.
+ */
+const OWN_PATIENT_PUSH_GRACE_MS = 60_000;
+
+function isFreshLocalAdmission(patient) {
+  const at = Date.parse(String(patient?.lanUpdatedAt || ''));
+  if (Number.isNaN(at)) return false;
+  return Date.now() - at < OWN_PATIENT_PUSH_GRACE_MS;
+}
+
+/**
  * Team-scope the raw patient list before any per-patient entry is built.
  * @param {object[]} patients
  * @returns {object[]}
@@ -52,7 +68,7 @@ function scopePatientsForCloudPush(patients) {
     clinicalSessionContext.guardiasMap
   );
   const allowedIds = new Set(scoped.map((e) => e.patient.id));
-  return list.filter((p) => allowedIds.has(p.id));
+  return list.filter((p) => allowedIds.has(p.id) || isFreshLocalAdmission(p));
 }
 
 /** @param {object[]} patients @returns {Promise<object[]>} */

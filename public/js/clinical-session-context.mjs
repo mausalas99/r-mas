@@ -16,6 +16,10 @@ export const clinicalSessionContext = {
   lastBlockHashByPatient: new Map(),
 };
 
+/** True while a fresh room join's full-history snapshot is being applied —
+ * the sidebar is empty for real reasons, not because there are no patients. */
+export const cloudPullProgress = { freshInFlight: false };
+
 /** Active clinical user id (session bag, then rpc-settings fallback). */
 export function resolveClinicalSessionUserId() {
   const fromCtx = String(clinicalSessionContext.user?.user_id || '').trim();

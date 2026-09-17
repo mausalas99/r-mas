@@ -140,16 +140,38 @@ function assignLanScalarIfChanged(target, key, incoming, fallback, takeIncoming)
   return true;
 }
 
+/**
+ * A patient census op and its patient_team_assignment op can land in different
+ * poll cycles. Once a poll's ops are applied the revision moves past them and
+ * the server never resends them — so an entry dropped here for a patient we
+ * don't know locally yet is gone for good, not just delayed. Let first-sighting
+ * entries through unconditionally; scope still applies to already-known
+ * patients, and prunePatientsOutsideVisibleScope (after a short grace window,
+ * see patient-scope-prune.mjs) removes a first-sighting entry that turns out
+ * to not be ours once the assignment data catches up.
+ */
 function filterIncomingPatientEntriesForScope(entries) {
-  if (!isClinicalScopeReadyForPatientApply()) return [];
+  if (!isClinicalScopeReadyForPatientApply()) return entries || [];
   var user = clinicalSessionContext.user;
   if (!user?.user_id) return [];
-  return filterPatientEntriesForLanTeamScope(
-    entries || [],
+  var known = new Set(
+    getPatients().map(function (p) {
+      return p && p.id;
+    })
+  );
+  var unseen = (entries || []).filter(function (e) {
+    return e && e.patient && !known.has(e.patient.id);
+  });
+  var seen = (entries || []).filter(function (e) {
+    return e && e.patient && known.has(e.patient.id);
+  });
+  var scopedSeen = filterPatientEntriesForLanTeamScope(
+    seen,
     user,
     getClinicalScopeContextForEvaluate(),
     clinicalSessionContext.guardiasMap
   );
+  return unseen.concat(scopedSeen);
 }
 
 export function touchPatientLanUpdatedAt(patientId) {
@@ -347,6 +369,7 @@ function createNewPatientShell(entry) {
     sexo: p.sexo || 'F',
     registro: p.registro || '',
     fromLab: !!p.fromLab,
+    lanUpdatedAt: p.lanUpdatedAt || new Date().toISOString(),
   };
   mergePatientMonitoreoFromImported(newPat, p);
   mergeCensoPatientFields(newPat, p);

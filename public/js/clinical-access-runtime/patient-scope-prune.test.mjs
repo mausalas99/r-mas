@@ -74,3 +74,37 @@ test('prunePatientsOutsideVisibleScope removes foreign census on mobile team mir
     cleanup(prevMobile);
   }
 });
+
+test('prunePatientsOutsideVisibleScope spares a just-arrived foreign-looking patient (assignment op still in flight)', () => {
+  const prevMobile = globalThis.__RPC_MOBILE_WEB__;
+  globalThis.__RPC_MOBILE_WEB__ = true;
+  setCloudRoomConnected(true);
+  try {
+    seedScope();
+    getPatients().find((p) => p.id === 'p-other').lanUpdatedAt = new Date().toISOString();
+    const removed = prunePatientsOutsideVisibleScope();
+    assert.equal(removed, 0);
+    assert.equal(getPatients().length, 2);
+    assert.equal(getNotes()['p-other']?.fecha, '01/01/2026');
+  } finally {
+    cleanup(prevMobile);
+  }
+});
+
+test('prunePatientsOutsideVisibleScope still removes a foreign patient once its grace window has passed', () => {
+  const prevMobile = globalThis.__RPC_MOBILE_WEB__;
+  globalThis.__RPC_MOBILE_WEB__ = true;
+  setCloudRoomConnected(true);
+  try {
+    seedScope();
+    getPatients().find((p) => p.id === 'p-other').lanUpdatedAt = new Date(
+      Date.now() - 5 * 60_000
+    ).toISOString();
+    const removed = prunePatientsOutsideVisibleScope();
+    assert.equal(removed, 1);
+    assert.equal(getPatients().length, 1);
+    assert.equal(getPatients()[0].id, 'p-mine');
+  } finally {
+    cleanup(prevMobile);
+  }
+});

@@ -20,6 +20,16 @@ describe('patient list filter startup', () => {
     assert.match(fn, /p\.pinned = false/);
   });
 
+  it('shows a downloading message instead of the empty state during a fresh cloud join', () => {
+    const start = listSrc.indexOf('function renderPatientListNow');
+    assert.ok(start >= 0);
+    const fn = listSrc.slice(start, start + 1400);
+    const freshIdx = fn.indexOf('cloudPullProgress.freshInFlight');
+    const emptyIdx = fn.indexOf("'Sin pacientes aún'");
+    assert.ok(freshIdx >= 0 && emptyIdx >= 0 && freshIdx < emptyIdx);
+    assert.match(fn, /'Descargando pacientes…'/);
+  });
+
   it('defers Filtros chrome after a silent census render', () => {
     const start = listSrc.indexOf('function renderPatientListNow');
     assert.ok(start >= 0);

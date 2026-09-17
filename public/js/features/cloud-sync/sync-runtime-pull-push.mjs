@@ -1,3 +1,4 @@
+import { cloudPullProgress } from '../../clinical-session-context.mjs';
 import { sanitizeOpsForCloudPush } from './cloud-op-slim.mjs';
 import { drainCloudOps, recordRejectedCloudOps } from './cloud-push-direct.mjs';
 import { nextWireIdStamp, resolveCloudPushMutationId } from './push-mutation-id.mjs';
@@ -157,13 +158,33 @@ async function runPullLatest(pctx) {
     throw new Error('Cliente Nube no configurado');
   }
   const since = getRevision() ?? 0;
-  const result = await api.pull(roomId, since, pollMobile ? { mobile: true } : undefined);
-  const opsCount = pullOpsCount(result);
-  if (result?.revision != null) {
-    reconcileServerRevision(pctx, Number(result.revision), since, opsCount);
+  // since === 0 means this client has no local revision yet — a fresh room
+  // join, about to pull the whole history. The sidebar sits empty for that
+  // whole round trip; "Descargando pacientes…" replaces "Sin pacientes aún"
+  // for real reasons while this is true, not because there truly are none.
+  const freshJoin = since === 0;
+  if (freshJoin) {
+    cloudPullProgress.freshInFlight = true;
+    if (typeof document !== 'undefined') {
+      try {
+        const { renderPatientList } = await import('../patients.mjs');
+        renderPatientList({ silent: true });
+      } catch {
+        /* list optional during boot */
+      }
+    }
   }
-  const labIngress = pollMobile ? await recordLabPullIngress(result) : null;
-  await finalizePull(pctx, result, since, opsCount, labIngress);
+  try {
+    const result = await api.pull(roomId, since, pollMobile ? { mobile: true } : undefined);
+    const opsCount = pullOpsCount(result);
+    if (result?.revision != null) {
+      reconcileServerRevision(pctx, Number(result.revision), since, opsCount);
+    }
+    const labIngress = pollMobile ? await recordLabPullIngress(result) : null;
+    await finalizePull(pctx, result, since, opsCount, labIngress);
+  } finally {
+    if (freshJoin) cloudPullProgress.freshInFlight = false;
+  }
 }
 
 /**
