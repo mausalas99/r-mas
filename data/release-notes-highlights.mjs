@@ -4,27 +4,23 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_838 = [
+var RELEASE_NOTES_839 = [
   {
-    title: 'Muestra hemolizada ya no inventa un valor',
-    body: 'Una fila de laboratorio sin resultado (solo <strong>*</strong>, muestra hemolizada o rechazada) ya no tomaba el mínimo del rango como si fuera el valor real.',
+    title: 'Pacientes recién admitidos ya no se pierden de la Nube',
+    body: 'Si la asignación de equipo de un paciente llegaba en un ciclo de red distinto al del paciente mismo, la admisión podía descartarse de la sincronización para siempre. Ya no.',
   },
   {
-    title: 'RetC encuentra el Hto en GASOMETRIA',
-    body: 'El reticulocito corregido ahora empareja con el hematocrito aunque la etiqueta esté separada por tabulador o salto de línea, no solo espacio.',
+    title: 'Arreglada la animación de Pendientes',
+    body: 'Al agregar un pendiente, la fila ya no se armaba dos veces seguidas y borraba su propia animación de entrada. Completar uno ahora muestra un color de éxito breve.',
   },
   {
-    title: 'Mejorado — sincronización más confiable',
-    body: 'La Nube resiste mejor un reintento casi simultáneo y un reinicio de la app, sin reenviar de más ni perder de vista lo ya sincronizado.',
-  },
-  {
-    title: 'Limpieza de datos viejos en el equipo',
-    body: 'Copias de respaldo previas a una importación e índices de sincronización obsoletos ya no se acumulan sin límite. R+ también avisa una vez por sesión si el espacio local se acerca a su límite.',
+    title: 'Censo para imprimir entra en una hoja',
+    body: 'La vista de impresión del censo ahora se ajusta para caber en una sola página en vez de cortarse en varias.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_838;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_839;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.3.8': RELEASE_NOTES_838,
+  '8.3.9': RELEASE_NOTES_839,
 };

@@ -1,0 +1,24 @@
+R+ 8.3.9 (estable — release 8.3.9)
+======================================
+
+Fecha: 2026-09-17
+
+## Resumen
+
+Arregla que pacientes recién admitidos desaparecieran de la sincronización en Nube, corrige la animación de Pendientes, y hace que el censo para imprimir entre en una sola hoja.
+
+## Nuevo / mejorado
+
+- **Arreglado (Nube):** un paciente recién admitido podía perderse de la sincronización para siempre si su asignación de equipo llegaba en un ciclo de red distinto al del paciente mismo — ya no se descarta, y ahora se muestra "Descargando pacientes…" mientras un equipo nuevo se une a una sala y baja todo el historial.
+- **Arreglado:** al agregar un pendiente, la fila ya no se armaba dos veces seguidas, lo que borraba la animación de entrada antes de que se viera. Al completar un pendiente ahora hay un color de éxito breve en vez de solo desaparecer.
+- **Arreglado:** el censo en vista de impresión ahora se ajusta para entrar en una sola hoja en vez de cortarse en varias páginas.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.3.9-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.3.9-Mac-Intel.dmg`
+- Windows: `R+-8.3.9-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

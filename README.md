@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.3.8](https://github.com/mausalas99/r-mas/releases/tag/v8.3.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.3.9](https://github.com/mausalas99/r-mas/releases/tag/v8.3.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -65,6 +65,14 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.3.9 (estable — release 8.3.9)
+
+- **Arreglado (Nube):** un paciente recién admitido ya no se pierde de la sincronización si su asignación de equipo llega en un ciclo distinto.
+- **Arreglado:** animación de Pendientes al agregar y completar.
+- **Arreglado:** el censo para imprimir ahora entra en una sola hoja.
+
+Notas: `docs/RELEASE_NOTES_8.3.9.txt`.
 ## R+ 8.3.8 (estable — release 8.3.8)
 
 - **Arreglado:** una fila de laboratorio sin resultado (solo `*`) ya no toma el mínimo del rango como valor real.
