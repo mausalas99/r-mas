@@ -204,6 +204,28 @@ describe('renderTodoListSection row-enter diffing', () => {
     registerTodosRuntime({ getActiveId: () => null });
   });
 
+  it('does not re-flash an already-closed pendiente as just-done when an unrelated one is added', () => {
+    if (typeof document === 'undefined') return;
+    registerTodosRuntime({ getActiveId: () => 'p-stale-done' });
+    const a = todo({ id: 'a', text: 'Abierto' });
+    const closed = todo({ id: 'closed', text: 'Ya cerrado antes', completed: true });
+    storage.saveTodos('p-stale-done', [a, closed]);
+    const container = document.createElement('div');
+
+    renderTodoListSection(container);
+    assert.equal(container.querySelector('.row-exit-done'), null, 'first paint must not flash an already-closed row');
+
+    storage.saveTodos('p-stale-done', [a, closed, todo({ id: 'b', text: 'Nuevo' })]);
+    renderTodoListSection(container);
+    assert.equal(
+      container.querySelector('.row-exit-done'),
+      null,
+      'adding an unrelated pendiente must not re-flash an already-closed one as just done'
+    );
+
+    registerTodosRuntime({ getActiveId: () => null });
+  });
+
   it('still ghost-fades a removed row on the real refresh path (renderTodoFormIn), which pre-cleared the container before this fix', () => {
     if (typeof document === 'undefined') return;
     registerTodosRuntime({ getActiveId: () => 'p-form-refresh' });
@@ -243,6 +265,29 @@ describe('renderTodoListSection row-enter diffing', () => {
     assert.doesNotMatch(rowB.className, /row-enter/, 'switching patients swaps the panel as one, not row-by-row');
     assert.equal(container.querySelector('.row-exit'), null, 'no ghost of the previous patient\'s row is left behind');
 
+    registerTodosRuntime({ getActiveId: () => null });
+  });
+
+  it('the real "+ Pendiente" toolbar flow leaves the new row with row-enter, not clobbered by a second render', () => {
+    if (typeof document === 'undefined') return;
+    registerTodosRuntime({ getActiveId: () => 'p-toolbar-add' });
+    storage.saveTodos('p-toolbar-add', []);
+    const container = document.createElement('div');
+    container.id = 'todo-form'; // refreshAllTodoUIs() looks this up by id
+    document.body.appendChild(container);
+
+    renderTodoListSection(container);
+    container.querySelector('.todo-toolbar-add-btn').click();
+    document.querySelector('.wb-todo-add-text').value = 'Nuevo desde el botón';
+    document.querySelector('[data-wb-todo-add-ok]').click();
+
+    const row = [...container.querySelectorAll('.todo-text-input')].find(
+      (i) => i.value === 'Nuevo desde el botón'
+    )?.closest('.wb-row');
+    assert.ok(row, 'the new row renders');
+    assert.match(row.className, /row-enter/, 'the newly added row must keep its enter animation, not get rebuilt away');
+
+    container.remove();
     registerTodosRuntime({ getActiveId: () => null });
   });
 

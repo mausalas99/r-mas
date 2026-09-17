@@ -361,11 +361,10 @@ function appendTodoFilterBar(container) {
   addBtn.textContent = '+ Pendiente';
   addBtn.setAttribute('aria-haspopup', 'dialog');
   addBtn.addEventListener('click', function () {
-    openTodoAddModal({
-      onAdded: function () {
-        renderTodoListSection(container, null);
-      },
-    });
+    /* No onAdded here: addTodoWithFields already repaints #todo-form via
+     * refreshAllTodoUIs(). A second render here rebuilt the row an instant
+     * later, wiping the freshly-entered row before row-enter could animate. */
+    openTodoAddModal();
   });
 
   toolbar.appendChild(bar);
@@ -406,10 +405,14 @@ export function updateExpPendientesTabBadge() {
 /** Rows on screen before a rebuild, keyed by todo id: lets a repaint tell
  * genuinely-new rows from ones that already existed (so a LAN sync tick
  * doesn't re-fade the whole list), and lets a row that just left the data
- * exit-animate instead of vanishing the instant the list rebuilds. */
+ * exit-animate instead of vanishing the instant the list rebuilds.
+ * Scoped to the open groups only — a row already sitting closed in the
+ * collapsed "Cerrados" group must never be mistaken for one that just
+ * completed on every unrelated re-render. */
 function collectTodoRowsById(container) {
   var rows = Object.create(null);
   container.querySelectorAll('.wb-row[data-todo-id]').forEach(function (row) {
+    if (row.closest('.todo-group--listo')) return;
     rows[row.dataset.todoId] = row;
   });
   return rows;
@@ -475,7 +478,14 @@ export function renderTodoListSection(container, preserveTodoId) {
     var openIds = new Set(
       openGroups.vencido.concat(openGroups.hoy, openGroups.sin_fecha).map(function (t) { return t.id; })
     );
-    appendExitingRowsInPlace(list, prevRows, openIds);
+    /* Still present (just moved to Cerrados) = completed, gets the success
+     * flash. Gone entirely = deleted, gets the plain exit. */
+    var stillPresentIds = new Set(todos.map(function (t) { return t.id; }));
+    var doneIds = new Set();
+    Object.keys(prevRows).forEach(function (id) {
+      if (!openIds.has(id) && stillPresentIds.has(id)) doneIds.add(id);
+    });
+    appendExitingRowsInPlace(list, prevRows, openIds, doneIds);
   }
   /* Only the freshly-appeared panel gets the whole-block settle. An in-place
    * add/complete/delete on an already-shown list must not re-fade rows that

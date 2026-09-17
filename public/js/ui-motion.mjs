@@ -37,15 +37,17 @@ export function appendExitingRows(container, rowsBeforeById, idsStillPresent) {
  * @param {HTMLElement} list
  * @param {Record<string, HTMLElement>} rowsBeforeById
  * @param {Set<string>} idsStillPresent
+ * @param {Set<string>} [doneIds] rows that left because they were completed,
+ *   not deleted — gets the success-flash `.row-exit-done` instead of `.row-exit`.
  */
-export function appendExitingRowsInPlace(list, rowsBeforeById, idsStillPresent) {
+export function appendExitingRowsInPlace(list, rowsBeforeById, idsStillPresent, doneIds) {
   var orderedIds = Object.keys(rowsBeforeById);
   orderedIds.forEach(function (id, i) {
     if (idsStillPresent.has(id)) return;
     var ghost = rowsBeforeById[id].cloneNode(true);
     ghost.removeAttribute('data-todo-id');
     ghost.removeAttribute('data-wb-row-id');
-    ghost.classList.add('row-exit');
+    ghost.classList.add(doneIds && doneIds.has(id) ? 'row-exit-done' : 'row-exit');
     var done = function () {
       if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
     };

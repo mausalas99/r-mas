@@ -45,6 +45,16 @@ test('appendExitingRowsInPlace falls back to the list itself when no neighbor su
   assert.ok(ghost, 'still appends a ghost when nothing else is left to anchor to');
 });
 
+test('appendExitingRowsInPlace gives a completed row the success-flash exit, not the plain one', () => {
+  if (typeof document === 'undefined') return;
+  const list = document.createElement('div');
+  const rowsBefore = { a: rowFixture('a', 'Listo'), b: rowFixture('b', 'Borrado') };
+  appendExitingRowsInPlace(list, rowsBefore, new Set(), new Set(['a']));
+  assert.ok(list.querySelector('.row-exit-done'), 'the completed row exits with the flash variant');
+  assert.ok(list.querySelector('.row-exit'), 'the deleted row still gets the plain exit');
+  assert.equal(list.querySelectorAll('.row-exit-done').length, 1);
+});
+
 test('resolvePatientFieldIds — nombre desde lab', () => {
   assert.deepEqual(
     resolvePatientFieldIds('Falta el nombre del paciente.', true),
