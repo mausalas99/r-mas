@@ -82,15 +82,17 @@ function resolveTeamSalaById(tid) {
   return String(team?.sala || '').trim();
 }
 
+/** One retry after a beat — a transient Nube timeout must not permanently drop the assignment. */
 async function pushClinicalOpsAfterTeamAssign(teamSala) {
   if (!teamSala) return;
-  try {
-    // Pull first: a push-only write here can overwrite a peer's un-pulled
-    // assignment in the sala's LWW clinicalOps snapshot (see syncClinicalOpsForSala).
-    const { syncClinicalOpsForSala } = await import('./features/cloud-sync/cloud-clinical-ops-sala.mjs');
-    await syncClinicalOpsForSala(teamSala);
-  } catch {
-    /* Nube optional */
+  const { syncClinicalOpsForSala } = await import('./features/cloud-sync/cloud-clinical-ops-sala.mjs');
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await syncClinicalOpsForSala(teamSala);
+      return;
+    } catch {
+      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
   }
 }
 

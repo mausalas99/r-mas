@@ -95,4 +95,12 @@ describe('patient-team-assign-ui', () => {
     assert.doesNotMatch(src, /pushClinicalOpsLanNow/);
     assert.doesNotMatch(src, /\bpushClinicalOpsForSala\b/);
   });
+
+  it('retries the sala push once on a transient Nube failure', () => {
+    const fnStart = src.indexOf('async function pushClinicalOpsAfterTeamAssign');
+    assert.ok(fnStart > -1);
+    const fnBody = src.slice(fnStart, fnStart + 500);
+    assert.match(fnBody, /for \(let attempt = 0; attempt < 2; attempt \+= 1\)/);
+    assert.match(fnBody, /setTimeout/);
+  });
 });
