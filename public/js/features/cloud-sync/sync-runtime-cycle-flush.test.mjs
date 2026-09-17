@@ -219,7 +219,7 @@ describe('createSyncRuntimeCycle flush/push behavior', () => {
     assert.equal(outbox.list().length, 0);
   });
 
-  it('an op merged into the row mid-flight survives — a whole-row remove would have deleted it unsent', async () => {
+  it('an op merged into the row mid-flight survives and is resent within the same flush', async () => {
     const outbox = makeOutbox([
       {
         clientMutationId: 'm1',
@@ -231,15 +231,19 @@ describe('createSyncRuntimeCycle flush/push behavior', () => {
         enqueuedAt: 1,
       },
     ]);
+    const pushed = [];
     let pushCalls = 0;
     const runtime = createSyncRuntimeCycle({
       api: {
         pull: async () => ({ revision: 1, ops: [] }),
-        push: async () => {
+        push: async (_room, body) => {
           pushCalls += 1;
-          // A concurrent local edit lands on the same row while this push
-          // is still in flight, before the Worker has responded.
-          outbox.enqueue({ clientMutationId: 'm1', ops: [{ path: 'a', value: 2, updatedAt: 't2' }] });
+          pushed.push(body);
+          if (pushCalls === 1) {
+            // A concurrent local edit lands on the same row while this push
+            // is still in flight, before the Worker has responded.
+            outbox.enqueue({ clientMutationId: 'm1', ops: [{ path: 'a', value: 2, updatedAt: 't2' }] });
+          }
           return { revision: 2 };
         },
       },
@@ -253,16 +257,162 @@ describe('createSyncRuntimeCycle flush/push behavior', () => {
     await runtime.syncCycle();
     runtime.stop();
 
-    assert.equal(pushCalls, 1);
-    const rows = outbox.list();
-    assert.equal(rows.length, 1, 'the row survives — it still holds the unsent mid-flight op');
-    assert.equal(rows[0].clientMutationId, 'm1');
     // 'b'@t1 was actually sent and acked; 'a'@t1 was overwritten by the
     // mid-flight edit before the ack, so the ack for 'a'@t1 is a no-op and
-    // the newer 'a'@t2 is the only op left, still unsent.
+    // the newer 'a'@t2 survives the whole-row-remove trap. The outer flush
+    // loop re-lists the outbox every turn, so 'a'@t2 goes out on the very
+    // next turn of this same flush instead of waiting for the next cycle.
+    assert.equal(pushCalls, 2);
     assert.deepEqual(
-      rows[0].ops.map((op) => `${op.path}@${op.updatedAt}`),
+      pushed[1].ops.map((op) => `${op.path}@${op.updatedAt}`),
       ['a@t2']
+    );
+    assert.equal(outbox.list().length, 0);
+  });
+
+  it('a live edit behind a lab backfill reaches the Worker before the backfill drains', async () => {
+    const labRows = Array.from({ length: 10 }, (_, i) => ({
+      clientMutationId: `labSidecars/p${i}`,
+      ops: [
+        {
+          path: `labSidecars/p${i}/set1`,
+          value: { id: 'set1', resLabs: ['BH\tHb 8'] },
+          updatedAt: 't',
+          actorId: 'a',
+        },
+      ],
+      baseRevision: 0,
+      enqueuedAt: i + 1,
+    }));
+    const outbox = makeOutbox([
+      ...labRows,
+      {
+        clientMutationId: 'clinicalOps',
+        ops: [{ path: 'clinicalOps', value: { teams: [] }, updatedAt: 't', actorId: 'a' }],
+        baseRevision: 0,
+        enqueuedAt: 11,
+      },
+    ]);
+    const pushed = [];
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => ({ revision: 1, ops: [] }),
+        push: async (_room, body) => {
+          pushed.push(body);
+          return { revision: 1 };
+        },
+      },
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => 0,
+      setRevision: () => {},
+      onStatus() {},
+    });
+
+    await runtime.syncCycle();
+    runtime.stop();
+
+    assert.ok(pushed.length > 0);
+    assert.equal(pushed[0].ops[0].path, 'clinicalOps');
+  });
+
+  it('a new field op enqueued mid-flush goes out on the next push, not a second lab row', async () => {
+    const outbox = makeOutbox([
+      {
+        clientMutationId: 'labSidecars/p0',
+        ops: [{ path: 'labSidecars/p0/set1', value: { id: 'set1', resLabs: ['a'] }, updatedAt: 't', actorId: 'a' }],
+        baseRevision: 0,
+        enqueuedAt: 1,
+      },
+      {
+        clientMutationId: 'labSidecars/p1',
+        ops: [{ path: 'labSidecars/p1/set1', value: { id: 'set1', resLabs: ['a'] }, updatedAt: 't', actorId: 'a' }],
+        baseRevision: 0,
+        enqueuedAt: 2,
+      },
+      {
+        clientMutationId: 'labSidecars/p2',
+        ops: [{ path: 'labSidecars/p2/set1', value: { id: 'set1', resLabs: ['a'] }, updatedAt: 't', actorId: 'a' }],
+        baseRevision: 0,
+        enqueuedAt: 3,
+      },
+    ]);
+    const pushed = [];
+    let pushCalls = 0;
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => ({ revision: 1, ops: [] }),
+        push: async (_room, body) => {
+          pushCalls += 1;
+          pushed.push(body);
+          if (pushCalls === 1) {
+            // The live edit the owner actually hits: it lands while the lab
+            // backfill's first row is still in flight.
+            outbox.enqueue({
+              clientMutationId: 'cloud-room-push',
+              ops: [{ path: 'entries/p9/fields', value: { nombre: 'P9' }, updatedAt: 't3', actorId: 'a' }],
+            });
+          }
+          return { revision: 1 };
+        },
+      },
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => 0,
+      setRevision: () => {},
+      onStatus() {},
+    });
+
+    await runtime.syncCycle();
+    runtime.stop();
+
+    assert.ok(pushed.length >= 2);
+    assert.equal(pushed[0].ops[0].path, 'labSidecars/p0/set1');
+    assert.equal(pushed[1].ops[0].path, 'entries/p9/fields');
+  });
+
+  it('a row that always fails with a permanent error is attempted once per flush, and the error surfaces', async () => {
+    clearCloudSyncErrors();
+    const outbox = makeOutbox([
+      {
+        clientMutationId: 'm-bad',
+        ops: [{ path: 'entries/p1/fields', value: { nombre: 'P1' }, updatedAt: 't1', actorId: 'a' }],
+        baseRevision: 0,
+        enqueuedAt: 1,
+      },
+    ]);
+    let pushCalls = 0;
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => ({ revision: 1, ops: [] }),
+        push: async () => {
+          pushCalls += 1;
+          const err = new Error('bad request');
+          err.status = 400;
+          throw err;
+        },
+      },
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => 0,
+      setRevision: () => {},
+      onStatus() {},
+    });
+
+    // The constructor already kicks an immediate cycle; drive through
+    // syncCycle() (like the rest of this file) so cycleInflightRef dedupes
+    // it with that boot cycle instead of running a second, independent flush.
+    // syncCycle() itself swallows the error via failCycle, so the flush's own
+    // throw (firstErr) is observed here as the recorded diagnostic instead.
+    await runtime.syncCycle();
+    runtime.stop();
+
+    assert.equal(pushCalls, 1, 'a permanently-failing row must not be retried in the same flush');
+    assert.equal(outbox.list().length, 1, 'the row stays pending for the next scheduled cycle');
+    const diag = getCloudSyncDiagnostics();
+    assert.ok(
+      diag.lastErrors.some((e) => e.op === 'cycle'),
+      'the flush error must surface, not be silently swallowed'
     );
   });
 

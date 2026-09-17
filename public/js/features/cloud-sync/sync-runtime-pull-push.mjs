@@ -6,6 +6,7 @@ import { cloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 import {
   noteCloudLabSidecarsFromPullResult,
   noteCloudLabSidecarOpsSent,
+  isLabSidecarOutboxMutationId,
 } from './cloud-lab-sidecar-index.mjs';
 import {
   noteCloudMedRecetaFromPullResult,
@@ -321,6 +322,27 @@ async function flushOutboxItem(ctx, roomId, item, onProgress) {
   }
 }
 
+/** @param {{ clientMutationId?: string, enqueuedAt?: number }} row */
+function outboxRowKey(row) {
+  return `${row?.clientMutationId ?? ''}@${row?.enqueuedAt ?? ''}`;
+}
+
+/**
+ * First not-yet-tried non-lab row wins the turn, so a live edit never waits
+ * behind a lab backfill; falls back to the first not-yet-tried row otherwise.
+ * @param {{ clientMutationId?: string, enqueuedAt?: number }[]} pending
+ * @param {Set<string>} tried
+ */
+function pickNextOutboxRow(pending, tried) {
+  let fallback = null;
+  for (const row of pending) {
+    if (tried.has(outboxRowKey(row))) continue;
+    if (!isLabSidecarOutboxMutationId(row.clientMutationId)) return row;
+    if (!fallback) fallback = row;
+  }
+  return fallback;
+}
+
 /** @param {object} ctx */
 async function runFlushOutbox(ctx) {
   const { getRoomId, setStatus, outboxSync, outbox } = ctx;
@@ -331,17 +353,24 @@ async function runFlushOutbox(ctx) {
     return;
   }
   splitLabBackfillInOutbox(outbox);
-  const pending = outbox.list();
-  if (pending.length === 0) return;
-  const total = pending.reduce(
-    (sum, row) => sum + (Array.isArray(row?.ops) ? row.ops.length : 0),
-    0
-  );
+  if (outbox.list().length === 0) return;
   setStatus('syncing');
   /** One stuck row (e.g. one patient's oversized batch) must not block every other row. */
   let firstErr = null;
   let doneOps = 0;
-  for (const item of pending) {
+  // Re-list and re-pick every turn, instead of looping one snapshot, so a row
+  // enqueued (or merged with new ops) after this flush started is seen and
+  // preferred on the very next turn — not only after a lab backfill drains.
+  const tried = new Set();
+  for (;;) {
+    const pending = outbox.list();
+    const item = pending.length ? pickNextOutboxRow(pending, tried) : null;
+    if (!item) break;
+    tried.add(outboxRowKey(item));
+    const total = doneOps + pending.reduce(
+      (sum, row) => sum + (Array.isArray(row?.ops) ? row.ops.length : 0),
+      0
+    );
     const baseDone = doneOps;
     const err = await flushOutboxItem(ctx, roomId, item, (sent) => {
       setStatus('syncing', `Enviando ${baseDone + sent}/${total} cambios`);
