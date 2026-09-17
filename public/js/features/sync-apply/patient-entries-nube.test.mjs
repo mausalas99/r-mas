@@ -2,7 +2,7 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { getPatients, getLabHistory } from '../../app-state.mjs';
+import { getPatients, getLabHistory, getNotes, getIndicaciones } from '../../app-state.mjs';
 import {
   getLabHistoryRevision,
   resetLabHistoryCacheForTests,
@@ -61,6 +61,24 @@ describe('applyLanPatientEntries on Nube path', () => {
     });
     assert.equal(getPatients().length, 1);
     assert.equal(getPatients()[0].nombre, 'PACIENTE NUBE');
+  });
+
+  it('a partial ops-fold entry with no note key must not wipe an existing note', () => {
+    getPatients().push({ id: 'p-note', nombre: 'ANA', registro: '9', lanUpdatedAt: '2026-08-06T10:00:00.000Z' });
+    getNotes()['p-note'] = { texto: 'Manejo actual: continuar antibiótico' };
+    getIndicaciones()['p-note'] = { texto: 'Dieta blanda' };
+    try {
+      // Only cuarto/cama changed this poll — the fold never saw a note/indicaciones op for this pid.
+      applyLanPatientEntries(
+        [{ patient: { id: 'p-note', registro: '9', cuarto: '204' } }],
+        { skipTeamScopeFilter: true }
+      );
+      assert.equal(getNotes()['p-note'].texto, 'Manejo actual: continuar antibiótico');
+      assert.equal(getIndicaciones()['p-note'].texto, 'Dieta blanda');
+    } finally {
+      delete getNotes()['p-note'];
+      delete getIndicaciones()['p-note'];
+    }
   });
 
   it('isPlaceholderPatientName detects default admit labels', () => {

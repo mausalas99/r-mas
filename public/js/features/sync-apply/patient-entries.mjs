@@ -220,15 +220,22 @@ function applyLanPatientScalars(existing, p) {
 
 function applyLanPatientCharts(existing, entry) {
   var changed = false;
-  var nextNote = entry.note || {};
-  if (!lanJsonEqual(getNotes()[existing.id], nextNote)) {
-    getNotes()[existing.id] = nextNote;
-    changed = true;
+  // A partial ops-fold entry (e.g. only `fields` touched this poll) omits
+  // `note`/`indicaciones` entirely — must not read back as "chart cleared"
+  // for a patient whose real note just wasn't part of this batch.
+  if (Object.prototype.hasOwnProperty.call(entry, 'note')) {
+    var nextNote = entry.note || {};
+    if (!lanJsonEqual(getNotes()[existing.id], nextNote)) {
+      getNotes()[existing.id] = nextNote;
+      changed = true;
+    }
   }
-  var nextInd = entry.indicaciones || {};
-  if (!lanJsonEqual(getIndicaciones()[existing.id], nextInd)) {
-    getIndicaciones()[existing.id] = nextInd;
-    changed = true;
+  if (Object.prototype.hasOwnProperty.call(entry, 'indicaciones')) {
+    var nextInd = entry.indicaciones || {};
+    if (!lanJsonEqual(getIndicaciones()[existing.id], nextInd)) {
+      getIndicaciones()[existing.id] = nextInd;
+      changed = true;
+    }
   }
   var nextLabs = trimMobileLabHistorySets(Array.isArray(entry.labHistory) ? entry.labHistory : []);
   var mergedLabs = trimMobileLabHistorySets(

@@ -58,6 +58,12 @@ describe('pull-apply cloud snapshot merge', () => {
     assert.equal(cleared.medReceta, null);
   });
 
+  it('cloudEntryToLanEntry omits note/indicaciones when the entry never had the key', () => {
+    const partial = cloudEntryToLanEntry({ id: 'p1', fields: { cuarto: '204' } }, {});
+    assert.ok(!('note' in partial));
+    assert.ok(!('indicaciones' in partial));
+  });
+
   it('cloudStateToLanEntries builds LAN entries from tiny snapshot', () => {
     const entries = cloudStateToLanEntries({
       entries: [

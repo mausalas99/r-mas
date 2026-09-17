@@ -42,16 +42,22 @@ function buildPatientFromCloudEntry(entry) {
  */
 export function cloudEntryToLanEntry(entry, labSidecarsForPatient) {
   if (!entry?.id) return null;
-  const note = entry.note;
-  const indicaciones = entry.indicaciones;
   const out = {
     patient: buildPatientFromCloudEntry(entry),
-    note: note && typeof note === 'object' ? note : {},
-    indicaciones: indicaciones && typeof indicaciones === 'object' ? indicaciones : {},
     labHistory: assembleLabHistoryFromSidecars(labSidecarsForPatient),
   };
-  // Only carry medReceta when the cloud entry actually has the key — an older
-  // patient doc that never pushed it must not read back as "meds cleared".
+  // Only carry note/indicaciones/medReceta when the cloud entry (or op fold)
+  // actually has the key — a partial ops batch that only touched e.g. `fields`
+  // for this patient must not read back as "note/meds cleared" for everyone
+  // else in that same pull.
+  if (Object.prototype.hasOwnProperty.call(entry, 'note')) {
+    const note = entry.note;
+    out.note = note && typeof note === 'object' ? note : {};
+  }
+  if (Object.prototype.hasOwnProperty.call(entry, 'indicaciones')) {
+    const indicaciones = entry.indicaciones;
+    out.indicaciones = indicaciones && typeof indicaciones === 'object' ? indicaciones : {};
+  }
   if (Object.prototype.hasOwnProperty.call(entry, 'medReceta')) {
     out.medReceta = entry.medReceta;
   }
