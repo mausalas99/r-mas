@@ -10,6 +10,14 @@ var RELEASE_NOTES_839 = [
     body: 'Un payload de Nube sin el campo de manejo o estado actual de un paciente se trataba como si se hubiera vaciado a propósito — podía borrar el de todos los pacientes del censo de golpe. Corregido.',
   },
   {
+    title: 'Ediciones del iPad ya llegan a la Mac',
+    body: 'El equipo que no creó la sala nunca cargaba la llave de cifrado y aplicaba los datos entrantes en silencio como si vinieran vacíos. La pantalla de un paciente abierto también se actualiza sola cuando llegan datos nuevos de otro equipo.',
+  },
+  {
+    title: 'Conexión en vivo más resistente',
+    body: 'La conexión en vivo detecta y reconecta sola cuando queda "zombi" (común en redes celulares). Una edición ya no espera a que termine una descarga grande de laboratorios.',
+  },
+  {
     title: 'Pacientes recién admitidos ya no se pierden de la Nube',
     body: 'Si la asignación de equipo de un paciente llegaba en un ciclo de red distinto al del paciente mismo, la admisión podía descartarse de la sincronización para siempre. Ya no.',
   },
