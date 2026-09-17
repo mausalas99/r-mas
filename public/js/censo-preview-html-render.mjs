@@ -204,6 +204,38 @@ export function buildCensoPreviewStyles(weights) {
   return CENSO_PREVIEW_STYLES + censoColgroupCssRules(weights);
 }
 
+// Legal landscape @page above, minus its 10mm margin on each side.
+export const CENSO_PRINT_PAGE_H_MM = 215.9 - 20;
+export const CENSO_PRINT_PAGE_W_MM = 355.6 - 20;
+export const CENSO_PRINT_MM_TO_PX = 96 / 25.4;
+
+/**
+ * Factor de zoom para que el contenido quepa en una página al imprimir.
+ * @param {number} contentWidthPx
+ * @param {number} contentHeightPx
+ * @returns {number}
+ */
+export function censoPrintFitScale(contentWidthPx, contentHeightPx) {
+  if (!contentWidthPx || !contentHeightPx) return 1;
+  var maxH = CENSO_PRINT_PAGE_H_MM * CENSO_PRINT_MM_TO_PX;
+  var maxW = CENSO_PRINT_PAGE_W_MM * CENSO_PRINT_MM_TO_PX;
+  return Math.min(1, maxH / contentHeightPx, maxW / contentWidthPx);
+}
+
+function censoPrintFitScript() {
+  var maxH = CENSO_PRINT_PAGE_H_MM * CENSO_PRINT_MM_TO_PX;
+  var maxW = CENSO_PRINT_PAGE_W_MM * CENSO_PRINT_MM_TO_PX;
+  return (
+    '<script>(function(){function fit(){document.body.style.zoom="";' +
+    'var r=document.body.getBoundingClientRect();' +
+    'var s=Math.min(1,' + maxH + '/r.height,' + maxW + '/r.width);' +
+    'if(s<1)document.body.style.zoom=String(s);}' +
+    'window.addEventListener("beforeprint",fit);' +
+    'window.addEventListener("afterprint",function(){document.body.style.zoom="";});' +
+    '})();</script>'
+  );
+}
+
 export function buildCensoPreviewDocumentHtml(header, bodyHtml, rows) {
   var weights = resolveCensoColWeights(rows || []);
   var titleLine = header.titleLine || 'Censo de Sala';
@@ -233,6 +265,8 @@ export function buildCensoPreviewDocumentHtml(header, bodyHtml, rows) {
     '</tr></thead>' +
     '<tbody>' +
     bodyHtml +
-    '</tbody></table></body></html>'
+    '</tbody></table>' +
+    censoPrintFitScript() +
+    '</body></html>'
   );
 }
