@@ -1,6 +1,11 @@
-import { describe, it } from 'node:test';
+import { describe, it, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRoomSyncWs } from './room-sync-ws.mjs';
+import {
+  HEARTBEAT_INTERVAL_MS,
+  HEARTBEAT_TIMEOUT_MS,
+  RECONNECT_MIN_MS,
+} from './room-sync-ws-internals.mjs';
 
 describe('createRoomSyncWs', () => {
   it('builds live websocket url with token and revision', () => {
@@ -69,5 +74,82 @@ describe('createRoomSyncWs', () => {
         resolve();
       }, 400);
     });
+  });
+
+  it('pings on an interval so an idle iOS socket does not get NAT-dropped silently', () => {
+    const prevOnline = Object.getOwnPropertyDescriptor(globalThis.navigator || {}, 'onLine');
+    Object.defineProperty(globalThis.navigator, 'onLine', { configurable: true, get: () => true });
+    const original = globalThis.WebSocket;
+    const sent = [];
+    globalThis.WebSocket = class MockWs {
+      constructor() {
+        this.onopen = null;
+        this.onclose = null;
+        setTimeout(() => this.onopen?.(), 0);
+      }
+      send(msg) {
+        sent.push(msg);
+      }
+      close() {}
+    };
+    mock.timers.enable({ apis: ['setInterval', 'setTimeout', 'Date'] });
+    try {
+      const ws = createRoomSyncWs({
+        getBaseUrl: () => 'https://sync.example.com',
+        getToken: () => 't',
+        getRoomId: () => 'r',
+        getRevision: () => 1,
+      });
+      ws.start();
+      mock.timers.tick(0); // flush the deferred onopen
+      mock.timers.tick(HEARTBEAT_INTERVAL_MS);
+      assert.match(sent[0] || '', /"type":"ping"/);
+      ws.stop();
+    } finally {
+      mock.timers.reset();
+      globalThis.WebSocket = original;
+      if (prevOnline) Object.defineProperty(globalThis.navigator, 'onLine', prevOnline);
+    }
+  });
+
+  it('force-reconnects a socket gone silent past the heartbeat timeout — the iOS zombie-socket case', () => {
+    const prevOnline = Object.getOwnPropertyDescriptor(globalThis.navigator || {}, 'onLine');
+    Object.defineProperty(globalThis.navigator, 'onLine', { configurable: true, get: () => true });
+    const original = globalThis.WebSocket;
+    let constructed = 0;
+    let closed = 0;
+    globalThis.WebSocket = class MockWs {
+      constructor() {
+        constructed += 1;
+        this.onopen = null;
+        this.onclose = null;
+        setTimeout(() => this.onopen?.(), 0);
+      }
+      send() {}
+      close() {
+        closed += 1;
+        this.onclose?.({ code: 1006, reason: 'stale' });
+      }
+    };
+    mock.timers.enable({ apis: ['setInterval', 'setTimeout', 'Date'] });
+    try {
+      const ws = createRoomSyncWs({
+        getBaseUrl: () => 'https://sync.example.com',
+        getToken: () => 't',
+        getRoomId: () => 'r',
+        getRevision: () => 1,
+      });
+      ws.start();
+      mock.timers.tick(0); // flush the deferred onopen
+      mock.timers.tick(HEARTBEAT_TIMEOUT_MS + HEARTBEAT_INTERVAL_MS);
+      assert.equal(closed, 1);
+      mock.timers.tick(RECONNECT_MIN_MS); // the scheduled reconnect fires
+      assert.equal(constructed, 2);
+      ws.stop();
+    } finally {
+      mock.timers.reset();
+      globalThis.WebSocket = original;
+      if (prevOnline) Object.defineProperty(globalThis.navigator, 'onLine', prevOnline);
+    }
   });
 });

@@ -3,6 +3,12 @@ import { noteCloudSyncWsLifecycle } from './cloud-sync-diagnostics.mjs';
 const RECONNECT_MIN_MS = 1_000;
 const RECONNECT_MAX_MS = 30_000;
 const SIGNAL_DEBOUNCE_MS = 300;
+// iOS/carrier NAT paths can drop an idle WebSocket without ever firing
+// onclose, so the client believes transport is still "ws" while nothing
+// arrives — the mobile idle poll fallback (60s) is the only thing left to
+// notice. A periodic ping plus a liveness watchdog force a real reconnect.
+const HEARTBEAT_INTERVAL_MS = 20_000;
+const HEARTBEAT_TIMEOUT_MS = 45_000;
 
 /** @typedef {'ws' | 'poll' | 'offline'} CloudSyncTransport */
 
@@ -114,13 +120,16 @@ function wireRoomLiveSocket(ctx, url) {
   const ws = ctx.wsRef.current;
   ws.onopen = function () {
     ctx.onOpen();
+    roomWsStartHeartbeat(ctx.state);
     noteCloudSyncWsLifecycle({ url: redactedUrl, open: true });
   };
   ws.onmessage = function (ev) {
+    ctx.state.lastActivity.current = Date.now();
     ctx.signal.handleMessage(ev.data);
   };
   ws.onclose = function (ev) {
     ctx.wsRef.current = null;
+    roomWsStopHeartbeat(ctx.state);
     noteCloudSyncWsLifecycle({
       code: ev?.code,
       reason: String(ev?.reason || ''),
@@ -157,7 +166,31 @@ function roomWsClearReconnect(state) {
   }
 }
 
+function roomWsStopHeartbeat(state) {
+  if (state.heartbeatTimer.current != null) {
+    clearInterval(state.heartbeatTimer.current);
+    state.heartbeatTimer.current = null;
+  }
+}
+
+function roomWsStartHeartbeat(state) {
+  roomWsStopHeartbeat(state);
+  state.lastActivity.current = Date.now();
+  state.heartbeatTimer.current = setInterval(function () {
+    if (Date.now() - state.lastActivity.current > HEARTBEAT_TIMEOUT_MS) {
+      roomWsCloseSocket(state);
+      return;
+    }
+    try {
+      state.wsRef.current?.send(JSON.stringify({ type: 'ping' }));
+    } catch {
+      /* ignore */
+    }
+  }, HEARTBEAT_INTERVAL_MS);
+}
+
 function roomWsCloseSocket(state) {
+  roomWsStopHeartbeat(state);
   if (!state.wsRef.current) return;
   try {
     state.wsRef.current.close();
@@ -176,6 +209,7 @@ function roomWsConnect(state, deps) {
     {
       wsRef: state.wsRef,
       signal: state.signal,
+      state,
       scheduleReconnect: function () {
         roomWsScheduleReconnect(state, deps);
       },
@@ -218,6 +252,8 @@ export function createRoomWsController(deps) {
   const stopped = { current: false };
   const reconnectDelay = { current: RECONNECT_MIN_MS };
   const transport = { current: /** @type {CloudSyncTransport} */ ('poll') };
+  const heartbeatTimer = { current: /** @type {ReturnType<typeof setInterval> | null} */ (null) };
+  const lastActivity = { current: 0 };
   const signal = createRoomWsSignalQueue(deps);
 
   function setTransport(next) {
@@ -232,6 +268,8 @@ export function createRoomWsController(deps) {
     stopped,
     reconnectDelay,
     transport,
+    heartbeatTimer,
+    lastActivity,
     signal,
     setTransport,
   };
@@ -271,4 +309,4 @@ export function createRoomWsController(deps) {
   };
 }
 
-export { RECONNECT_MIN_MS, RECONNECT_MAX_MS };
+export { RECONNECT_MIN_MS, RECONNECT_MAX_MS, HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS };
