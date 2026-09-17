@@ -101,6 +101,18 @@ function estadoActualCacheSuffix(patientId) {
   return buildEaMonitoreoRevision(p.monitoreo, patientId, getMedRecetaByPatient());
 }
 
+/** eventualidades has no dedicated revision counter — its store's own
+ * `updatedAt` (bumped on every local edit and adopted from whichever side
+ * is newer on merge, see mergeEventualidades) already changes exactly when
+ * the list does, so it doubles as one for free. */
+function eventualidadesCacheSuffix(patientId) {
+  var p = getPatients().find(function (x) {
+    return String(x.id) === String(patientId);
+  });
+  var ev = p && p.eventualidades;
+  return (ev && typeof ev === "object" && ev.updatedAt) || "0";
+}
+
 function innerTabRenderCacheKey(tab) {
   var pid = String(rt.getActiveId() || "");
   var settings = rt.getSettings();
@@ -118,6 +130,9 @@ function innerTabRenderCacheKey(tab) {
   }
   if (tab === "medAdmin") {
     key += "|A" + buildMedAdminCacheRevision(pid, getMedRecetaByPatient());
+  }
+  if (tab === "eventualidades") {
+    key += "|V" + eventualidadesCacheSuffix(pid);
   }
   if (tab === "resumen") {
     var patient = getPatients().find(function (x) {

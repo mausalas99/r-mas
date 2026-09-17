@@ -68,6 +68,11 @@ export function isRoomUnprotected(roomId) {
   return unprotectedRooms.has(String(roomId || ''));
 }
 
+/** A pull just handed back ciphertext this device could not open. @param {string} roomId */
+export function markRoomUnprotected(roomId) {
+  if (roomId) unprotectedRooms.add(String(roomId));
+}
+
 const DEK_FETCH_RETRIES = 2;
 const DEK_FETCH_RETRY_DELAY_MS = 800;
 
@@ -184,7 +189,13 @@ export async function unwrapAndCacheRoomDek(roomId, wrapped, roomCode) {
  */
 export async function loadRoomDek(api, roomId, roomCode) {
   const cached = getCachedRoomDek(roomId);
-  if (cached) return cached;
+  if (cached) {
+    // A cached key means this device CAN decrypt this room — clear a stale
+    // "unprotected" flag left over from a pull that raced an earlier load
+    // (see MISTAKES.md 2026-09-17), otherwise the badge never clears again.
+    unprotectedRooms.delete(String(roomId));
+    return cached;
+  }
   if (!roomCode) return null;
 
   let wrapped;

@@ -13,10 +13,22 @@ const ENTRY_SKIP_KEYS = new Set([
   'fields',
 ]);
 
+/**
+ * True for a still-wrapped `{ enc: 1, iv, ct }` envelope this device could not
+ * open (no room DEK yet, or a stale/wrong one). That must never be merged into
+ * local state as if it were the real value — it would read back as "cleared"
+ * (see MISTAKES.md 2026-09-17). This module stays import-free by design, so the
+ * check is duplicated from crypto.mjs's isEncryptedEnvelope rather than imported.
+ * @param {unknown} value
+ */
+function isCiphertext(value) {
+  return !!value && typeof value === 'object' && /** @type {any} */ (value).enc === 1;
+}
+
 /** @param {Record<string, unknown>} sidecarMap */
 export function assembleLabHistoryFromSidecars(sidecarMap) {
   if (!sidecarMap || typeof sidecarMap !== 'object') return [];
-  return Object.values(sidecarMap).filter((row) => row && typeof row === 'object');
+  return Object.values(sidecarMap).filter((row) => row && typeof row === 'object' && !isCiphertext(row));
 }
 
 /** @param {Record<string, unknown>} entry */
@@ -28,11 +40,11 @@ function buildPatientFromCloudEntry(entry) {
     ...(fields && typeof fields === 'object' ? fields : {}),
   };
   for (const [key, value] of Object.entries(entry)) {
-    if (ENTRY_SKIP_KEYS.has(key)) continue;
+    if (ENTRY_SKIP_KEYS.has(key) || isCiphertext(value)) continue;
     patient[key] = value;
   }
-  if (entry.eventualidades) patient.eventualidades = entry.eventualidades;
-  if (entry.monitoreo) patient.monitoreo = entry.monitoreo;
+  if (entry.eventualidades && !isCiphertext(entry.eventualidades)) patient.eventualidades = entry.eventualidades;
+  if (entry.monitoreo && !isCiphertext(entry.monitoreo)) patient.monitoreo = entry.monitoreo;
   return patient;
 }
 
@@ -50,15 +62,15 @@ export function cloudEntryToLanEntry(entry, labSidecarsForPatient) {
   // actually has the key — a partial ops batch that only touched e.g. `fields`
   // for this patient must not read back as "note/meds cleared" for everyone
   // else in that same pull.
-  if (Object.prototype.hasOwnProperty.call(entry, 'note')) {
+  if (Object.prototype.hasOwnProperty.call(entry, 'note') && !isCiphertext(entry.note)) {
     const note = entry.note;
     out.note = note && typeof note === 'object' ? note : {};
   }
-  if (Object.prototype.hasOwnProperty.call(entry, 'indicaciones')) {
+  if (Object.prototype.hasOwnProperty.call(entry, 'indicaciones') && !isCiphertext(entry.indicaciones)) {
     const indicaciones = entry.indicaciones;
     out.indicaciones = indicaciones && typeof indicaciones === 'object' ? indicaciones : {};
   }
-  if (Object.prototype.hasOwnProperty.call(entry, 'medReceta')) {
+  if (Object.prototype.hasOwnProperty.call(entry, 'medReceta') && !isCiphertext(entry.medReceta)) {
     out.medReceta = entry.medReceta;
   }
   return out;

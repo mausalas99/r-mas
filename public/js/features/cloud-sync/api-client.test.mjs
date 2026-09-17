@@ -2,6 +2,7 @@ import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createCloudSyncApi } from './api-client.mjs';
 import { generateDek, encryptValue } from './crypto.mjs';
+import { isRoomUnprotected, clearRoomDekCache } from './room-dek.mjs';
 
 const ROOM_ID = 'room-1';
 const originalFetch = globalThis.fetch;
@@ -115,6 +116,43 @@ describe('createCloudSyncApi push/pull encryption', () => {
     const data = await api.pull(ROOM_ID, 0);
     assert.equal(data.state.entries[0].nombre, 'Juan');
     assert.deepEqual(data.state.entries[0].note, { text: 'nota' });
+  });
+
+  it('flags the room unprotected when a pull comes back with ciphertext this device cannot open', async () => {
+    clearRoomDekCache();
+    const dek = await generateDek();
+    const envelope = await encryptValue(dek, { text: 'nota' });
+    stubFetch(() => ({
+      body: { revision: 2, ops: [{ path: 'entries/p1/note', value: envelope }] },
+    }));
+
+    const api = createCloudSyncApi({
+      getBaseUrl: () => 'https://x',
+      getToken: () => 'tok',
+      getRoomDek: () => null, // this device has no DEK for the room yet
+    });
+
+    assert.equal(isRoomUnprotected('room-unprotected-1'), false);
+    await api.pull('room-unprotected-1', 1);
+    assert.equal(isRoomUnprotected('room-unprotected-1'), true);
+  });
+
+  it('does not flag the room when the pull decrypts cleanly', async () => {
+    clearRoomDekCache();
+    const dek = await generateDek();
+    const envelope = await encryptValue(dek, { text: 'nota' });
+    stubFetch(() => ({
+      body: { revision: 2, ops: [{ path: 'entries/p1/note', value: envelope }] },
+    }));
+
+    const api = createCloudSyncApi({
+      getBaseUrl: () => 'https://x',
+      getToken: () => 'tok',
+      getRoomDek: () => dek,
+    });
+
+    await api.pull('room-unprotected-2', 1);
+    assert.equal(isRoomUnprotected('room-unprotected-2'), false);
   });
 });
 

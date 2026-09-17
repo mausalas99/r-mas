@@ -38,3 +38,14 @@ export function stopCloudSyncRuntime() {
     _activeRuntime = null;
   }
 }
+
+/**
+ * Re-pull right away instead of waiting for the next scheduled poll (up to 90s).
+ * For the one moment this matters: a room's decrypt key just loaded for the
+ * first time on this device, racing the runtime's own first pull on connect —
+ * without this nudge, whatever that first pull silently dropped as unreadable
+ * ciphertext sits invisible until the next poll fires (see MISTAKES.md 2026-09-17).
+ */
+export function nudgeCloudSyncRuntime() {
+  void _activeRuntime?.syncCycle();
+}

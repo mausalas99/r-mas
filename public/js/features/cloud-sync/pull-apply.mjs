@@ -438,6 +438,25 @@ async function refreshSidebarAfterCloudPull(result) {
   }
 }
 
+/**
+ * The sidebar refresh above repaints the patient list, not the chart already
+ * open on screen — without this, a patient whose eventualidades/signos just
+ * arrived from another device keeps showing the stale chart until the owner
+ * switches away and back, or reloads. Safe to call on every pull: it's a
+ * no-op unless the open patient is the one that changed, and it never fires
+ * while a text field in the chart is focused (see refreshActivePatientViewIfOpen).
+ * @param {{ added?: number, updated?: number, removed?: boolean }} result
+ */
+async function refreshActivePatientChartAfterCloudPull(result) {
+  if (!result?.added && !result?.updated && !result?.removed) return;
+  try {
+    const { refreshActivePatientViewIfOpen } = await import('../patients-select.mjs');
+    refreshActivePatientViewIfOpen();
+  } catch {
+    /* optional during boot */
+  }
+}
+
 /** @param {unknown} result */
 export async function applyCloudPullResult(result) {
   if (!result || typeof result !== 'object') return { added: 0, updated: 0, removed: false };
@@ -449,5 +468,6 @@ export async function applyCloudPullResult(result) {
     applied = await applyCloudOps(row.ops);
   }
   await refreshSidebarAfterCloudPull(applied);
+  await refreshActivePatientChartAfterCloudPull(applied);
   return applied;
 }

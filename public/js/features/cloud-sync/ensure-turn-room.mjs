@@ -1,5 +1,37 @@
 import { isCloudSala, normalizeCloudSala } from './sala-allowlist.mjs';
 import { setCloudRoomConnected } from './nube-sync-policy.mjs';
+import { loadRoomDek, exportCachedDeksForPersistence, getCachedRoomDek } from './room-dek.mjs';
+
+/**
+ * Every connect to a turn room must have its DEK loaded — otherwise this device
+ * silently applies the room's encrypted fields as empty (see MISTAKES.md 2026-09-17).
+ * `loadRoomDek` returns the cached key instantly when already loaded, so this is
+ * safe to call on every reconnect, not just the first join. Never blocks or throws
+ * into the connect flow — a failed fetch just leaves the room flagged unprotected.
+ *
+ * The sync runtime's own first pull on connect fires immediately, racing this
+ * fetch — on a device that has never had this room's key before, that first
+ * pull can land before the key does and silently drop real data as ciphertext.
+ * Only when this call is the one that fetched the key for the first time on
+ * this device (not just returning an already-cached key) does it nudge the
+ * runtime to re-pull right away, instead of waiting out the next scheduled
+ * poll — a cheap, one-time correction, not a recurring extra request.
+ * @param {object} deps @param {object} room
+ */
+function loadDekAfterTurnConnect(deps, room) {
+  if (!deps.api?.getRoomDek || !room?.id) return;
+  const hadDekAlready = !!getCachedRoomDek(room.id);
+  void loadRoomDek(deps.api, room.id, room.code)
+    .then(async (dek) => {
+      const { setStoredRoomDeks } = await import('./settings.mjs');
+      setStoredRoomDeks(await exportCachedDeksForPersistence());
+      if (dek && !hadDekAlready) {
+        const { nudgeCloudSyncRuntime } = await import('./sync-runtime.mjs');
+        nudgeCloudSyncRuntime();
+      }
+    })
+    .catch(() => {});
+}
 
 /** @param {object} deps @param {object} room */
 function applyEnsureTurnSuccess(deps, room) {
@@ -9,6 +41,7 @@ function applyEnsureTurnSuccess(deps, room) {
     deps.setCloudSyncRoomId(String(room.id));
     deps.setCloudSyncRevision(Number(room.revision) || 0);
   }
+  loadDekAfterTurnConnect(deps, room);
   setCloudRoomConnected(true);
   deps.onConnected?.(room);
   deps.startSyncRuntime?.();

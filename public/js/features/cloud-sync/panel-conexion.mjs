@@ -38,7 +38,7 @@ function checkRoomUnprotectedBadge(deps) {
  * @returns {string}
  */
 function statusDetailText(unprotected, resolvedStatus, resolvedDetail) {
-  if (unprotected) return 'Esta sala no está protegida ahora mismo.';
+  if (unprotected) return 'Esta sala tiene datos cifrados que este equipo aún no puede leer. Reintentando…';
   if (resolvedStatus !== 'error') return '';
   return humanizeCloudSyncErrorMessage(String(resolvedDetail || '').trim());
 }

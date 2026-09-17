@@ -3,6 +3,8 @@ const ALLOWED = [
   /^entries\/[^/]+\/estadoActual$/,
   /^entries\/[^/]+\/note$/,
   /^entries\/[^/]+\/indicaciones$/,
+  /^entries\/[^/]+\/fields$/,
+  /^entries\/[^/]+$/,
   /^todos\/[^/]+$/,
 ];
 

@@ -170,6 +170,40 @@ function inputPending() {
   return !!(sched && typeof sched.isInputPending === 'function' && sched.isInputPending());
 }
 
+/** True while the user has a text field open inside the chart (a note, an
+ * inline eventualidad edit, …) — a background repaint must never yank the
+ * DOM out from under an in-progress, unsaved keystroke. */
+function hasFocusedEditableInPatientView() {
+  var el = typeof document !== 'undefined' ? document.activeElement : null;
+  if (!el) return false;
+  var tag = el.tagName;
+  if (tag !== 'INPUT' && tag !== 'TEXTAREA' && !el.isContentEditable) return false;
+  var patientView = document.getElementById('patient-view');
+  return !!(patientView && patientView.contains(el));
+}
+
+/**
+ * Re-paint the currently open patient's chart in place — no navigation, no
+ * bulk-select or incoming-scope checks (this must never fire as a side
+ * effect of a background cloud pull). For when that patient's own data just
+ * changed underneath the screen already showing it (e.g. a phone synced new
+ * signos/eventualidades) — same repaint a patient switch already does,
+ * without leaving the chart. Cheap to call even when nothing changed: the
+ * inner-tab render cache no-ops unless the pulled data actually touched
+ * what's on screen.
+ */
+export function refreshActivePatientViewIfOpen() {
+  var id = rt.getActiveId();
+  if (id == null || id === '') return;
+  if (hasFocusedEditableInPatientView()) return;
+  scheduleSelectedPatientChart(id, {
+    patientChanged: false,
+    prevId: id,
+    wasOnLab: rt.getActiveAppTab() === 'lab',
+    appTab: rt.getActiveAppTab(),
+  });
+}
+
 function scheduleSelectedPatientChart(id, ctx) {
   cancelDeferredIdleWork();
   scheduleTrailing(function () {

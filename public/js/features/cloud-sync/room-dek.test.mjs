@@ -10,6 +10,7 @@ import {
   rewrapRoomDekForNewCode,
   isRoomUnprotected,
   retryRoomDekIfUnprotected,
+  markRoomUnprotected,
 } from './room-dek.mjs';
 import { encryptValue, decryptValue } from './crypto.mjs';
 
@@ -190,6 +191,20 @@ describe('key-fetch reliability + "sala no protegida" badge', () => {
     await retryRoomDekIfUnprotected(api, 'room-1', 'ABCD-1234');
     assert.equal(isRoomUnprotected('room-1'), false);
     assert.deepEqual(await decryptValue(getCachedRoomDek('room-1'), envelope), value);
+  });
+
+  it('markRoomUnprotected flags a room whose pull came back with unreadable ciphertext', async () => {
+    assert.equal(isRoomUnprotected('room-1'), false);
+    markRoomUnprotected('room-1');
+    assert.equal(isRoomUnprotected('room-1'), true);
+
+    const api = makeFakeApi();
+    await ensureRoomDek(api, 'room-1', 'ABCD-1234');
+    clearRoomDekCache();
+    markRoomUnprotected('room-1');
+    await retryRoomDekIfUnprotected(api, 'room-1', 'ABCD-1234');
+    assert.equal(isRoomUnprotected('room-1'), false);
+    assert.equal(!!getCachedRoomDek('room-1'), true);
   });
 });
 

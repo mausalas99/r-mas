@@ -2,8 +2,14 @@ const API_PREFIX = '/api/sync/v1';
 
 import { cloudSyncHttpFetch } from './api-transport.mjs';
 import { getCachedAppVersion } from './app-version.mjs';
-import { getCachedRoomDek } from './room-dek.mjs';
-import { encryptOpsForPush, decryptOpsFromPull, decryptRoomStateFromPull } from './cloud-sync-crypto-wire.mjs';
+import { getCachedRoomDek, markRoomUnprotected } from './room-dek.mjs';
+import { isEncryptedEnvelope } from './crypto.mjs';
+import {
+  encryptOpsForPush,
+  decryptOpsFromPull,
+  decryptRoomStateFromPull,
+  listContentFieldEntries,
+} from './cloud-sync-crypto-wire.mjs';
 import { noteServerDate } from './cloud-sync-clock.mjs';
 
 /** @param {Response} res @param {Record<string, unknown>} data */
@@ -103,9 +109,13 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
       const dek = getRoomDek(roomId);
       if (Array.isArray(data?.ops)) {
         data.ops = await decryptOpsFromPull(dek, data.ops);
+        if (data.ops.some((op) => isEncryptedEnvelope(op?.value))) markRoomUnprotected(roomId);
       }
       if (data?.state) {
         data.state = await decryptRoomStateFromPull(dek, data.state);
+        if (listContentFieldEntries(data.state).some((e) => isEncryptedEnvelope(e.value))) {
+          markRoomUnprotected(roomId);
+        }
       }
       return data;
     },

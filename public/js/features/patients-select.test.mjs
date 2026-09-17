@@ -106,6 +106,36 @@ describe('selectPatient chart paint', () => {
   });
 });
 
+describe('refreshActivePatientViewIfOpen', () => {
+  it('repaints in place via the same chart-paint path as a real select, never the public selectPatient', () => {
+    const src = selectPatientSrc();
+    const start = src.indexOf('export function refreshActivePatientViewIfOpen');
+    assert.ok(start >= 0);
+    const fn = src.slice(start, start + 600);
+    assert.match(fn, /rt\.getActiveId\(\)/);
+    assert.match(fn, /hasFocusedEditableInPatientView\(\)/);
+    assert.match(fn, /scheduleSelectedPatientChart\(/);
+    assert.match(fn, /patientChanged:\s*false/);
+    // A background cloud pull must never trip bulk-select toggling or the
+    // incoming-scope block toast — those live only in the public selectPatient().
+    assert.doesNotMatch(fn, /selectPatient\(/);
+    assert.doesNotMatch(fn, /isPatientBulkSelectMode/);
+    assert.doesNotMatch(fn, /blockIncomingPreviewChartOpen/);
+  });
+
+  it('skips the repaint while a text field in the chart is focused, so an unsaved keystroke is never clobbered', () => {
+    const src = selectPatientSrc();
+    const start = src.indexOf('function hasFocusedEditableInPatientView');
+    const end = src.indexOf('export function refreshActivePatientViewIfOpen');
+    assert.ok(start >= 0 && end > start);
+    const fn = src.slice(start, end);
+    assert.match(fn, /INPUT/);
+    assert.match(fn, /TEXTAREA/);
+    assert.match(fn, /isContentEditable/);
+    assert.match(fn, /getElementById\('patient-view'\)/);
+  });
+});
+
 describe('shouldRevealSidebarAt', () => {
   it('reveals when the pointer is on the left 36px of the window or workbench', () => {
     assert.equal(shouldRevealSidebarAt(8, 0), true);

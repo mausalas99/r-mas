@@ -29,8 +29,15 @@ describe('filterOpsForCloudMobile', () => {
       { path: 'agenda/ev-1', value: {} },
       { path: 'tombstones/p1', value: {} },
       { path: 'entries/p1/labHistory/lab-1', value: {} },
-      { path: 'entries/p1/fields', value: {} },
     ];
     assert.equal(filterOpsForCloudMobile(ops).length, 0);
+  });
+
+  it('allows patient identity for iPad registration', () => {
+    const ops = [
+      { path: 'entries/p1/fields', value: {} },
+      { path: 'entries/p1', value: { nombre: 'x' } },
+    ];
+    assert.equal(filterOpsForCloudMobile(ops).length, 2);
   });
 });

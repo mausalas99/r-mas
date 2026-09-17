@@ -37,7 +37,7 @@ describe('panel-conexion status chip', () => {
     const textFnStart = panelConexionSrc.indexOf('function statusDetailText');
     const textFnEnd = panelConexionSrc.indexOf('\n/** @param {HTMLElement}', textFnStart + 1);
     const textFnBody = panelConexionSrc.slice(textFnStart, textFnEnd > textFnStart ? textFnEnd : undefined);
-    assert.match(textFnBody, /'Esta sala no está protegida ahora mismo\.'/);
+    assert.match(textFnBody, /Esta sala tiene datos cifrados que este equipo aún no puede leer/);
   });
 });
 

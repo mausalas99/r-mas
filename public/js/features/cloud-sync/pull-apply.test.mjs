@@ -135,6 +135,23 @@ describe('pull-apply cloud snapshot merge', () => {
     assert.ok(entries[0].patient.eventualidades.deletedIds.ev_a);
   });
 
+  it('never merges an unreadable ciphertext envelope as if it were the real value', () => {
+    const envelope = { enc: 1, iv: 'x', ct: 'y' };
+    const entry = cloudEntryToLanEntry(
+      { id: 'p1', fields: { nombre: 'PAC' }, monitoreo: envelope, note: envelope, medReceta: envelope },
+      { s1: envelope }
+    );
+    assert.equal(entry.patient.monitoreo, undefined);
+    assert.ok(!('note' in entry));
+    assert.ok(!('medReceta' in entry));
+    assert.deepEqual(entry.labHistory, []);
+
+    const fold = createOpFold();
+    foldCloudOp(fold, { path: 'entries/p1/monitoreo', value: envelope });
+    const entries = opFoldToLanEntries(fold);
+    assert.equal(entries[0].patient.monitoreo, undefined);
+  });
+
   it('monitoreo path overrides stale packed fields copy', () => {
     const fold = createOpFold();
     foldCloudOp(fold, {
@@ -341,6 +358,15 @@ describe('pull-apply sync-apply wiring (Phase 3)', () => {
   it('refreshes patient sidebar after cloud pull applies changes', () => {
     assert.match(pullApplySrc, /refreshSidebarAfterCloudPull/);
     assert.match(pullApplySrc, /renderPatientList/);
+  });
+
+  it('also repaints the chart already open, not just the sidebar row, so a phone edit shows up without a reload', () => {
+    assert.match(pullApplySrc, /await refreshActivePatientChartAfterCloudPull\(applied\)/);
+    const start = pullApplySrc.indexOf('async function refreshActivePatientChartAfterCloudPull');
+    assert.ok(start >= 0);
+    const fn = pullApplySrc.slice(start, start + 500);
+    assert.match(fn, /refreshActivePatientViewIfOpen/);
+    assert.match(fn, /patients-select\.mjs/);
   });
 
   it('debounces SQLCipher persist after census pull', () => {
