@@ -61,15 +61,16 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "@electron/rebuild": "3.7.2",
+    "@electron/rebuild": "4.2.0",
     "@eslint/js": "^9.39.1",
+    "@typesafe-ai/sdk": "^0.6.0",
     "chart.js": "^4.5.1",
     "dependency-cruiser": "^16.10.4",
     "electron": "^41.2.0",
     "electron-builder": "^26.8.1",
     "esbuild": "^0.25.12",
     "eslint": "^9.39.1",
-    "eslint-plugin-sonarjs": "^3.0.5",
+    "eslint-plugin-sonarjs": "4.2.1",
     "globals": "^16.2.0",
     "jscpd": "^4.0.5",
     "playwright": "^1.62.1",
