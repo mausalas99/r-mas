@@ -2,6 +2,12 @@
 
 Newest entry first. One entry per mistake.
 
+## 2026-09-17 — gave a script to auto-edit settings.json when the user just wanted the file opened
+
+What happened: user asked "give me the command to do this" about pasting a hooks block into `~/.claude/settings.json`. I read that as "give me a command that performs the edit" and wrote a Python script to splice the hooks in automatically. The user corrected me: "I just meant give me the terminal command to open the file so I can paste it there" — they wanted `open -e ~/.claude/settings.json`, nothing more.
+Root cause: picked the more powerful interpretation of an ambiguous request instead of the simplest one. The user had already written out the exact JSON to paste; the only missing piece was how to get the file open, not how to have it edited for them.
+Prevention: when a request is "give me the command to do X" and the user has already supplied the content, default to the smallest command that gets them there (open/navigate) rather than a script that does the whole edit — ask or pick the literal reading before reaching for the automated one.
+
 ## 2026-09-17 — shipped the DEK-on-connect fix without checking it against the sync runtime's own boot-time pull, so it traded silent data loss for a slow, then permanently-stuck, error banner
 
 What happened: fixed the iPad→desktop sync bug (below) by loading a non-owner desktop's room decrypt key on every turn-room connect, fire-and-forget. Shipped it, owner deployed, reported "it synced, but it took way too long" and, on request for evidence, showed a red "Esta sala tiene datos cifrados…" banner stuck on screen. Both were consequences of the exact same fix I had just written: the sync runtime's own first pull fires immediately on connect, racing my fire-and-forget key load — on a device with no cached key yet (every non-owner desktop, day one), that first pull loses the race, correctly drops the ciphertext it can't read, and flags the room. The owner then had to wait for the next scheduled poll (up to 90s) to see data, and a separate pre-existing bug in `loadRoomDek` (its "already cached" fast path never cleared the flag) meant the scary banner never went away again even after the key did load successfully moments later.
