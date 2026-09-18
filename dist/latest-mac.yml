@@ -1,29 +1,35 @@
-version: 8.3.8
+version: 8.3.9
 files:
-  - url: R+-8.3.8-autoupdate-mac-arm64.zip
-    sha512: 0NN6jDRKXrkYeEPEW18EDZKU41CYmdEleeMFORkPVBJSlCtxsSeD0ktBLjLEzvm81Q4EW2UrV6UUBD/wF/JKDw==
-    size: 139461092
-  - url: R+-8.3.8-arm64.dmg
-    sha512: y0eikCQ6pJ7FUadASkfSH+SH7x/3UP+uI3K2dkDW/DnES9Zsczx4YV61JTGKLR0j7tyOHWp2k1WXXe5CdiZo3Q==
-    size: 145278597
-  - url: R+-8.3.8-autoupdate-mac-x64.zip
-    sha512: qu1E41u++jxiCLGZuHyrguqoEgA5Zf8N6CucuXa76qpE7W67C/zjzc46MT9j+zYbBt3zzeqC/QOfp9GTj+Dy7w==
-    size: 147616696
-  - url: R+-8.3.8-x64.dmg
-    sha512: iHY69IsXWY+I0Z3eO1gPxBhzd9WdA5HdpKB+g/eJ2Fa0ZJbPPW9kjHtHP+olYPnHdowNW7paOH7HkeMA3rR5Dg==
-    size: 153504766
-path: R+-8.3.8-autoupdate-mac-arm64.zip
-sha512: 0NN6jDRKXrkYeEPEW18EDZKU41CYmdEleeMFORkPVBJSlCtxsSeD0ktBLjLEzvm81Q4EW2UrV6UUBD/wF/JKDw==
-releaseDate: '2026-09-16T16:42:41.000Z'
+  - url: R+-8.3.9-autoupdate-mac-arm64.zip
+    sha512: EAc1kmrqp8X0/+vLi9zZh6WhZEwIOM2bF5ASvvZvV7xU1FJiP53GePrxhwfYyKk1mXHHU3WZTGN/JroczDgBiQ==
+    size: 141774361
+  - url: R+-8.3.9-arm64.dmg
+    sha512: MZ9I/Tgu/W7YH6ruLV5jqG5ObBRPCDq5fwgn891EZHB9IOafNwMHLuF8KLA96i0ILmc3sTDovQ7C1xl6yZjw5A==
+    size: 142461003
+  - url: R+-8.3.9-autoupdate-mac-x64.zip
+    sha512: N1ibDi/x1PzXok/i80YY5aDtYMQhmDnOGPC8kQeTfMjrJUl7eeZ+0c3CQKWN4B/arm8Vsr4sTXoH+94K4AijMQ==
+    size: 150443447
+  - url: R+-8.3.9-x64.dmg
+    sha512: jUdjsKI3j6Clt2WdHXHhL+H0MJ5wUk92cKrLSWNUdCXU/uwkhLQVoltWyHbt9nKF4x7smlFJzFY7Q+UE2f9RCA==
+    size: 151075209
+path: R+-8.3.9-autoupdate-mac-arm64.zip
+sha512: EAc1kmrqp8X0/+vLi9zZh6WhZEwIOM2bF5ASvvZvV7xU1FJiP53GePrxhwfYyKk1mXHHU3WZTGN/JroczDgBiQ==
+releaseDate: '2026-09-17T20:58:32.000Z'
 releaseNotes: |
-  Arregla dos errores de lectura de laboratorios pegados, hace más confiable la sincronización en Nube, y limpia datos viejos que podían llenar el almacenamiento local del equipo.
+  Arregla dos bugs graves de Nube (borrado de manejo/estado actual en sync parcial, y ediciones de iPad que nunca llegaban al Mac), hace la sincronización más resistente en general, arregla que pacientes recién admitidos desaparecieran de la sincronización, corrige la animación de Pendientes, y hace que el censo para imprimir entre en una sola hoja.
   
-  Arreglado: una fila de laboratorio sin resultado (solo *, muestra hemolizada o rechazada) ya no tomaba el mínimo del rango de referencia como si fuera el valor real — ahora se ignora correctamente.
+  Arreglado (Nube, importante): una sincronización parcial que llegaba sin el campo de manejo/estado actual de un paciente lo borraba como si hubiera sido vaciado a propósito — podía pasar de golpe para todos los pacientes del censo. Ya no: la ausencia del campo en un payload parcial ya no se trata como "se vació".
   
-  Arreglado: el reticulocito corregido (RetC) ahora encuentra el hematocrito en bloques de GASOMETRIA aunque la etiqueta esté separada por tabulador o salto de línea, no solo por espacio.
+  Arreglado (Nube, importante): ediciones de signos vitales y registros de pacientes nuevos hechos desde el iPad podían no llegar nunca a la Mac — el equipo que no creó la sala nunca cargaba la llave de cifrado y aplicaba los datos en silencio como si vinieran vacíos. También: la pantalla de un paciente ya abierto ahora se actualiza sola cuando llegan datos nuevos de otro equipo, sin tener que cambiar de paciente y volver.
   
-  Mejorado (Nube): la sincronización es más resistente a reintentos casi simultáneos y a reinicios de la app — el índice que evita reenviar datos ya sincronizados ahora persiste de forma confiable en vez de perderse en memoria.
+  Mejorado (Nube): la conexión en vivo ahora detecta y reconecta sola cuando queda "zombi" (pasa silenciosamente inactiva, común en redes celulares de iPhone/iPad).
   
-  Arreglado: datos viejos y muertos (copias de respaldo previas a una importación, índices de sincronización obsoletos) ya no se acumulan sin límite en el almacenamiento local del equipo. En instalaciones antiguas esto podía llenar ese espacio en silencio y hacer que ciertas acciones (como ocultar una columna en Tendencias) dejaran de guardar cambios sin ningún aviso.
+  Mejorado (Nube): una edición hecha mientras se está bajando un historial grande de laboratorios ya no espera a que termine esa descarga — se envía de inmediato.
   
-  Nuevo: si el almacenamiento local del equipo se acerca a su límite, R+ ahora avisa una vez por sesión en vez de fallar en silencio.
+  Arreglado (Nube): un paciente recién admitido podía perderse de la sincronización para siempre si su asignación de equipo llegaba en un ciclo de red distinto al del paciente mismo — ya no se descarta, y ahora se muestra "Descargando pacientes…" mientras un equipo nuevo se une a una sala y baja todo el historial.
+  
+  Arreglado (Nube): asignar un paciente a un equipo ahora reintenta una vez si la Nube no responde a tiempo, en vez de perder esa asignación en silencio para siempre.
+  
+  Arreglado: al agregar un pendiente, la fila ya no se armaba dos veces seguidas, lo que borraba la animación de entrada antes de que se viera. Al completar un pendiente ahora hay un color de éxito breve en vez de solo desaparecer.
+  
+  Arreglado: el censo en vista de impresión ahora se ajusta para entrar en una sola hoja en vez de cortarse en varias páginas.
