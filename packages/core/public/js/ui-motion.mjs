@@ -1,7 +1,5 @@
 // Vanilla helpers for field shake and async button label swaps.
 
-import { animate } from 'motion';
-
 /**
  * Ghost-row exit for full-rebuild list renders: `container` already holds the
  * freshly rebuilt DOM (which no longer has the removed rows). This clones each
@@ -146,12 +144,19 @@ export function springTo(el, keyframes, options) {
 
   var animOpts = { type: 'spring', bounce: bounce, duration: duration };
   if (options.velocity != null) animOpts.velocity = options.velocity;
-  var controls = animate(el, kf, animOpts);
+  // `motion` is ~262 KB and nothing on the boot path animates, so it loads on
+  // first use instead of riding the eager bundle. Callers keep the same
+  // synchronous handle; only the first animation pays the load.
+  var controls = import('motion').then(function (mod) {
+    return mod.animate(el, kf, animOpts);
+  });
   return {
     stop: function () {
-      try { controls.stop(); } catch (_e) { void _e; }
+      controls.then(function (c) {
+        try { c.stop(); } catch (_e) { void _e; }
+      }, function () {});
     },
-    finished: controls.finished || Promise.resolve(),
+    finished: controls.then(function (c) { return c.finished || undefined; }),
   };
 }
 

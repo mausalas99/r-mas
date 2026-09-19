@@ -5,7 +5,6 @@
 import esbuild from 'esbuild';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const ROOT = process.cwd();
 const ENTRY = path.join(ROOT, 'public/js/app.js');
@@ -136,7 +135,7 @@ export async function bundleRenderer(opts = {}) {
   return result;
 }
 
-const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+const isMain = import.meta.main;
 if (isMain) {
   const prod = process.argv.includes('--prod');
   const check = process.argv.includes('--check');

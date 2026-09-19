@@ -442,7 +442,7 @@ async function main() {
   console.log(`wrote cloud/sync-pages/public/mobile/ (${totalBytes.toLocaleString()} bytes)`);
 }
 
-const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+const isMain = import.meta.main;
 if (isMain) {
   main().catch((err) => {
     console.error(err instanceof Error ? err.message : err);
