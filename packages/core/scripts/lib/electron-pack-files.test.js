@@ -22,8 +22,8 @@ const ROOT = path.join(__dirname, '../../../..');
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
 test('lista canónica incluye lib/**/*.js / lib/**/*.cjs', () => {
-  assert.ok(PACK_FILES_BASELINE.includes('lib/**/*.js'));
-  assert.ok(PACK_FILES_BASELINE.includes('lib/**/*.cjs'));
+  assert.ok(PACK_FILES_BASELINE.includes('packages/core/lib/**/*.js'));
+  assert.ok(PACK_FILES_BASELINE.includes('packages/core/lib/**/*.cjs'));
 });
 
 test('main.js y dependencias de arranque están cubiertos por la lista canónica', () => {
@@ -63,7 +63,7 @@ test('lista canónica no incluye server.js (ward server removed)', () => {
 test('release-notes highlights data está en build.files', () => {
   const patterns = canonicalBuildFiles(ROOT);
   assert.ok(
-    filePatternCovers('data/release-notes-highlights.mjs', patterns),
+    filePatternCovers('packages/core/data/release-notes-highlights.mjs', patterns),
     'Falta data/release-notes-highlights.mjs en build.files (lazy settings-help lo importa en runtime)'
   );
 });
@@ -71,7 +71,7 @@ test('release-notes highlights data está en build.files', () => {
 test('imports del renderer fuera de public/ quedan en build.files (anti crash asar)', () => {
   const external = collectRendererExternalImports(ROOT);
   assert.ok(
-    external.includes('data/release-notes-highlights.mjs'),
+    external.includes('packages/core/data/release-notes-highlights.mjs'),
     'settings-help → data/release-notes-highlights.mjs debe detectarse'
   );
   const patterns = canonicalBuildFiles(ROOT);
@@ -83,20 +83,22 @@ test('imports del renderer fuera de public/ quedan en build.files (anti crash as
   }
 });
 
-test('main.js require("./…") directo está en build.files (excepto server dev-only)', () => {
+test('main.js require("../…") directo está en build.files (excepto server dev-only)', () => {
   const patterns = pkg.build.files || [];
-  const mainSrc = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8');
-  const relRequires = [...mainSrc.matchAll(/require\('\.\/([^']+)'\)/g)].map((m) => m[1]);
+  const mainAbs = path.join(ROOT, 'packages/im/main.js');
+  const mainSrc = fs.readFileSync(mainAbs, 'utf8');
+  const relRequires = [...mainSrc.matchAll(/require\('(\.[^']+)'\)/g)].map((m) => m[1]);
   for (const rel of relRequires) {
-    if (rel === 'server') continue;
-    const abs = path.join(ROOT, rel);
+    if (rel === './server') continue;
+    const abs = path.join(path.dirname(mainAbs), rel);
+    const relToRoot = path.relative(ROOT, abs).replace(/\\/g, '/');
     const resolved = fs.existsSync(abs)
-      ? rel
+      ? relToRoot
       : fs.existsSync(`${abs}.js`)
-        ? `${rel}.js`
+        ? `${relToRoot}.js`
         : fs.existsSync(`${abs}.cjs`)
-          ? `${rel}.cjs`
-          : rel;
+          ? `${relToRoot}.cjs`
+          : relToRoot;
     assert.ok(
       filePatternCovers(resolved, patterns),
       `Falta "${resolved}" en package.json → build.files (main.js lo requiere al iniciar)`

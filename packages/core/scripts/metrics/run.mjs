@@ -68,7 +68,7 @@ function runDependencyCruiser() {
   const outPath = path.join(ROOT, 'scripts/metrics/.depcruise.json');
   try {
     execSync(
-      `npx depcruise public/js lib --config .dependency-cruiser.cjs -T json -o scripts/metrics/.depcruise.json`,
+      `npx depcruise public/js lib packages/im --config .dependency-cruiser.cjs -T json -o scripts/metrics/.depcruise.json`,
       { cwd: ROOT, stdio: 'pipe' }
     );
     const raw = JSON.parse(fs.readFileSync(outPath, 'utf8'));

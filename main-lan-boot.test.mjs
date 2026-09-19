@@ -94,7 +94,7 @@ test('main boot: single-instance lock protects userData Recuérdame', () => {
 });
 
 test('main forwards ⌘1 / ⌘E / ⌘T to renderer (Chromium would steal them)', () => {
-  assert.ok(MAIN_SRC.includes("require('./lib/shell-shortcut-input.cjs')"));
+  assert.ok(MAIN_SRC.includes("require('../core/lib/shell-shortcut-input.cjs')"));
   assert.ok(MAIN_SRC.includes("on('before-input-event'"));
   assert.ok(MAIN_SRC.includes("send('shell-shortcut'"));
   assert.ok(PRELOAD_SRC.includes('onShellShortcut'));

@@ -35,6 +35,27 @@ module.exports = {
       from: { path: '^lib/' },
       to: { path: '^public/js/' },
     },
+    {
+      name: 'im-not-to-hf',
+      severity: 'error',
+      comment: 'free IM app must never import paid HF-only code',
+      from: { path: '^packages/im/' },
+      to: { path: '^packages/hf/' },
+    },
+    {
+      name: 'im-not-to-neumo',
+      severity: 'error',
+      comment: 'IM app must not import Neumo-only code',
+      from: { path: '^packages/im/' },
+      to: { path: '^packages/neumo/' },
+    },
+    {
+      name: 'core-not-to-im',
+      severity: 'error',
+      comment: 'shared core must not depend on the IM app shell',
+      from: { path: '^packages/core/' },
+      to: { path: '^packages/im/' },
+    },
   ],
   options: {
     doNotFollow: { path: 'node_modules' },

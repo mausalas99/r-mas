@@ -9,7 +9,7 @@ import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import esbuild from 'esbuild';
 
-const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const CLOUD_MOBILE_ENTRY = path.join(ROOT, 'public/js/app-cloud-mobile.js');
 const LAN_STRIP_STUB = path.join(ROOT, 'public/js/stubs/cloud-mobile-lan-strip.mjs');
 

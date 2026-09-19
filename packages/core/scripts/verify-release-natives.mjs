@@ -11,7 +11,7 @@ import { createRequire } from 'node:module';
 import { describeNativeBinary } from './lib/native-binary-format.mjs';
 import { electronProbeEnv } from './lib/sqlcipher-native.mjs';
 
-const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const require = createRequire(import.meta.url);
 
 const ARGON2_NODES = [

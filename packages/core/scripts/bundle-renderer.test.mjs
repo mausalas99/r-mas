@@ -21,7 +21,7 @@ describe('bundle-renderer', () => {
     assert.ok(fs.existsSync(chunksDir), 'run npm run build:ui to emit chunks');
     const sample = fs.readdirSync(chunksDir).find((f) => f.endsWith('.js') && !f.endsWith('.map'));
     assert.ok(sample, 'expected at least one chunk .js');
-    const rel = `public/js/chunks/${sample}`;
+    const rel = `packages/core/public/js/chunks/${sample}`;
     assert.ok(
       filePatternCovers(rel, PACK_FILES_BASELINE),
       `${rel} must be covered by electron-pack public/**/*`

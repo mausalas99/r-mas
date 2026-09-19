@@ -16,8 +16,8 @@ const MAIN_SRC = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8');
 test('main.js imports UPDATE_FEED_MODE/UPDATE_WORKER_URL from lib/update-feed.js', () => {
   assert.match(
     MAIN_SRC,
-    /require\(['"]\.\/lib\/update-feed\.js['"]\)/,
-    'main.js should require ./lib/update-feed.js'
+    /require\(['"]\.\.\/core\/lib\/update-feed\.js['"]\)/,
+    'main.js should require ../core/lib/update-feed.js'
   );
 });
 

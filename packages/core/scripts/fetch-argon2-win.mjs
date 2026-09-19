@@ -17,7 +17,7 @@ const PACKAGE_NAME = '@node-rs/argon2-win32-x64-msvc';
 const TARBALL_URL = `https://registry.npmjs.org/${PACKAGE_NAME}/-/${PACKAGE_NAME.split('/').pop()}-${ARGON2_VERSION}.tgz`;
 const NODE_FILE = 'argon2.win32-x64-msvc.node';
 
-const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const destDir = path.join(root, 'node_modules', '@node-rs', 'argon2');
 const destFile = path.join(destDir, NODE_FILE);
 

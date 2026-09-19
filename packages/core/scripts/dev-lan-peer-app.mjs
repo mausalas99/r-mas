@@ -12,7 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const peerDir = path.join(os.tmpdir(), 'rplus-lan-peer');
 
 function parseArgs(argv) {

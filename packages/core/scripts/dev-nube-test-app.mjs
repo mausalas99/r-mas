@@ -14,7 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const peerDir = path.join(os.tmpdir(), 'rplus-nube-test');
 const PORT = String(process.env.R_PLUS_LAN_HTTP_PORT || '3739');
 

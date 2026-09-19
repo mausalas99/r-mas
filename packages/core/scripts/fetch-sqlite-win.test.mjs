@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
-const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const nodeFile = path.join(
   root,
   'node_modules/better-sqlite3-multiple-ciphers/build/Release/better_sqlite3.node'

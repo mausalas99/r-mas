@@ -10,7 +10,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const destDir = path.join(root, 'node_modules', '@node-rs', 'argon2');
 const ARM64_NODE = 'argon2.darwin-arm64.node';
 

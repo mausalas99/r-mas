@@ -11,20 +11,20 @@ const fs = require('fs');
 const path = require('path');
 
 const PACK_FILES_BASELINE = [
-  'main.js',
-  'data/release-notes-highlights.mjs',
-  'scripts/lib/release-notes-body.js',
-  'preload.js',
-  'lib/**/*.js',
-  'lib/**/*.mjs',
-  'lib/**/*.cjs',
-  'generate-receta-hu.js',
-  'generate-censo.js',
-  'template.docx',
-  'template_indicaciones.docx',
-  'template_listado.docx',
-  'templates/receta-hu-000-061-R-06-12.pdf',
-  'public/**/*',
+  'packages/im/main.js',
+  'packages/im/preload.js',
+  'packages/core/data/release-notes-highlights.mjs',
+  'packages/core/scripts/lib/release-notes-body.js',
+  'packages/core/lib/**/*.js',
+  'packages/core/lib/**/*.mjs',
+  'packages/core/lib/**/*.cjs',
+  'packages/core/generate-receta-hu.js',
+  'packages/core/generate-censo.js',
+  'packages/core/template.docx',
+  'packages/core/template_indicaciones.docx',
+  'packages/core/template_listado.docx',
+  'packages/core/templates/receta-hu-000-061-R-06-12.pdf',
+  'packages/core/public/**/*',
   'build/AppIcon.icns',
   'build/icon.ico',
 ];
@@ -36,13 +36,13 @@ const NATIVE_MODULE_PACK_PATTERNS = [
 ];
 
 const ASAR_UNPACK_BASELINE = [
-  'lib/doc-generators/**/*',
-  'generate-receta-hu.js',
-  'generate-censo.js',
-  'template.docx',
-  'template_indicaciones.docx',
-  'template_listado.docx',
-  'templates/receta-hu-000-061-R-06-12.pdf',
+  'packages/core/lib/doc-generators/**/*',
+  'packages/core/generate-receta-hu.js',
+  'packages/core/generate-censo.js',
+  'packages/core/template.docx',
+  'packages/core/template_indicaciones.docx',
+  'packages/core/template_listado.docx',
+  'packages/core/templates/receta-hu-000-061-R-06-12.pdf',
   ...NATIVE_MODULE_PACK_PATTERNS,
 ];
 
@@ -128,7 +128,9 @@ function extraPatternForUncoveredFile(rel) {
 }
 
 /**
- * Walk production renderer sources under public/js (skip *.test.*).
+ * Walk production renderer sources under public/js (skip *.test.* and the
+ * bundled app.bundle.mjs/chunks/ output — generated, and its JSDoc type
+ * comments can carry stale relative paths that aren't real imports).
  * @param {string} dir
  * @param {string[]} out
  */
@@ -137,11 +139,13 @@ function walkRendererSourceFiles(dir, out = []) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
     const abs = path.join(dir, ent.name);
     if (ent.isDirectory()) {
+      if (ent.name === 'chunks') continue;
       walkRendererSourceFiles(abs, out);
       continue;
     }
     if (!/\.(mjs|js|cjs)$/.test(ent.name)) continue;
     if (/\.test\.(mjs|js|cjs)$/.test(ent.name)) continue;
+    if (/^app\.bundle\./.test(ent.name)) continue;
     out.push(abs);
   }
   return out;
@@ -175,7 +179,7 @@ function localEsmImportsFromSource(src) {
  * @returns {string[]} relative paths from repo root
  */
 function collectRendererExternalImports(root) {
-  const publicRoot = path.join(root, 'public');
+  const publicRoot = path.join(root, 'packages/core/public');
   const jsRoot = path.join(publicRoot, 'js');
   const found = new Set();
   for (const abs of walkRendererSourceFiles(jsRoot)) {
@@ -196,7 +200,7 @@ function collectRendererExternalImports(root) {
  */
 function canonicalBuildFiles(root) {
   const patterns = [...PACK_FILES_BASELINE];
-  const entryPoints = ['main.js'];
+  const entryPoints = ['packages/im/main.js'];
   const runtime = [];
   for (const entry of entryPoints) {
     const entryAbs = path.join(root, entry);
@@ -306,7 +310,7 @@ function ensureElectronPackFiles(root, opts = {}) {
 function assertRuntimeCoveredByPatterns(root) {
   const patterns = canonicalBuildFiles(root);
   const runtime = [];
-  runtime.push(...collectRuntimeRequires(path.join(root, 'main.js'), root));
+  runtime.push(...collectRuntimeRequires(path.join(root, 'packages/im/main.js'), root));
   runtime.push(...collectRendererExternalImports(root));
   const uncovered = runtime.filter((rel) => !filePatternCovers(rel, patterns));
   if (uncovered.length) {

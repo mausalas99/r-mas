@@ -11,7 +11,7 @@ import { createRequire } from 'node:module';
 export const SQLCIPHER_NODE_REL = 'node_modules/better-sqlite3-multiple-ciphers/build/Release/better_sqlite3.node';
 
 const libDir = path.dirname(fileURLToPath(import.meta.url));
-export const repoRoot = path.join(libDir, '..', '..');
+export const repoRoot = path.join(libDir, '..', '..', '..');
 const require = createRequire(import.meta.url);
 
 /** @param {string} [root] */

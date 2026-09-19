@@ -12,7 +12,7 @@ import {
   sqlcipherDestAbs,
 } from './lib/sqlcipher-native.mjs';
 
-const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const strict = process.env.R_PLUS_STRICT_NATIVE === '1';
 const sqlAbs = sqlcipherDestAbs(root);
 const expectPlatform = process.platform === 'win32' ? 'win32' : 'darwin';

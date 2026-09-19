@@ -17,7 +17,7 @@ const SQLCIPHER_VERSION = '12.10.0';
 const PREBUILD_REPO = 'm4heshd/better-sqlite3-multiple-ciphers';
 const NODE_REL = 'build/Release/better_sqlite3.node';
 
-const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const pkgDir = path.join(root, 'node_modules', 'better-sqlite3-multiple-ciphers');
 const destFile = path.join(pkgDir, NODE_REL);
 

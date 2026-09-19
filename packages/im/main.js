@@ -10,28 +10,28 @@ const os = require('os');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
 const execFileAsync = promisify(execFile);
-const { writeApprovedOutputDir } = require('./lib/output-dir-policy.js');
+const { writeApprovedOutputDir } = require('../core/lib/output-dir-policy.js');
 // autoUpdater loaded lazily via getAutoUpdater()
 const {
   buildGenericFeedUrl,
   buildManualInstallerUrl,
   isValidDowngradeTargetVersion,
   pickMacArch,
-} = require('./lib/update-downgrade.js');
-const { UPDATE_FEED_MODE, UPDATE_WORKER_URL } = require('./lib/update-feed.js');
-const { probeNativeRuntime } = require('./lib/native-runtime-probe.js');
-const { isAllowedExternalUrl } = require('./lib/window-open-policy.cjs');
-const { isReservedShellShortcutInput, hasCmdOrCtrl } = require('./lib/shell-shortcut-input.cjs');
-const { cleanupLegacyAppIdFiles } = require('./lib/legacy-appid-cleanup.js');
-const { PERF_CONFIG_FILE, normalizePerfConfig, readPerfConfig, writePerfConfig } = require('./lib/perf-config.js');
-const { setLanDbManager, getLanDbManager } = require('./lib/db/lan-db-bridge.cjs');
-const { installElectronLanCors } = require('./lib/electron-lan-cors.cjs');
+} = require('../core/lib/update-downgrade.js');
+const { UPDATE_FEED_MODE, UPDATE_WORKER_URL } = require('../core/lib/update-feed.js');
+const { probeNativeRuntime } = require('../core/lib/native-runtime-probe.js');
+const { isAllowedExternalUrl } = require('../core/lib/window-open-policy.cjs');
+const { isReservedShellShortcutInput, hasCmdOrCtrl } = require('../core/lib/shell-shortcut-input.cjs');
+const { cleanupLegacyAppIdFiles } = require('../core/lib/legacy-appid-cleanup.js');
+const { PERF_CONFIG_FILE, normalizePerfConfig, readPerfConfig, writePerfConfig } = require('../core/lib/perf-config.js');
+const { setLanDbManager, getLanDbManager } = require('../core/lib/db/lan-db-bridge.cjs');
+const { installElectronLanCors } = require('../core/lib/electron-lan-cors.cjs');
 const {
   registerRendererProtocolSchemes,
   attachRendererProtocolHandler,
   rendererAppIndexUrl,
   shouldUseLegacyHttpRenderer,
-} = require('./lib/renderer-protocol.cjs');
+} = require('../core/lib/renderer-protocol.cjs');
 // Boot timing. Enable with R_PLUS_BOOT_PERF=1.
 const BOOT_T0 = process.hrtime.bigint();
 function bootMark(label) {
@@ -629,8 +629,8 @@ let docExportModule = null;
 let logDocExportFn = null;
 function loadDocExport() {
   if (!docExportModule) {
-    docExportModule = require('./lib/doc-export-service.js');
-    logDocExportFn = require('./lib/doc-export-audit.js').logDocExport;
+    docExportModule = require('../core/lib/doc-export-service.js');
+    logDocExportFn = require('../core/lib/doc-export-audit.js').logDocExport;
   }
   return { docExport: docExportModule, logDocExport: logDocExportFn };
 }
@@ -720,7 +720,7 @@ ipcMain.handle('clipboard-write-html', (_e, text, html) => {
 
 ipcMain.handle('lab-repo-fetch', async (_e, payload) => {
   try {
-    const { fetchLabRepoStudies } = await import('./lib/lab-repo/lab-repo-fetch.mjs');
+    const { fetchLabRepoStudies } = await import('../core/lib/lab-repo/lab-repo-fetch.mjs');
     return await fetchLabRepoStudies(payload);
   } catch (err) {
     return {
@@ -732,7 +732,7 @@ ipcMain.handle('lab-repo-fetch', async (_e, payload) => {
 
 ipcMain.handle('lab-repo-check', async (_e, payload) => {
   try {
-    const { checkLabRepoHasStudies } = await import('./lib/lab-repo/lab-repo-fetch.mjs');
+    const { checkLabRepoHasStudies } = await import('../core/lib/lab-repo/lab-repo-fetch.mjs');
     return await checkLabRepoHasStudies(payload);
   } catch (err) {
     return { hasStudies: null, error: String(err?.message || err) };
@@ -741,7 +741,7 @@ ipcMain.handle('lab-repo-check', async (_e, payload) => {
 
 ipcMain.handle('cloud-sync-fetch', async (_e, payload) => {
   try {
-    const { cloudSyncNetFetch } = require('./lib/cloud-sync-ipc-fetch.cjs');
+    const { cloudSyncNetFetch } = require('../core/lib/cloud-sync-ipc-fetch.cjs');
     return await cloudSyncNetFetch(net, payload || {});
   } catch (err) {
     return {
@@ -758,7 +758,7 @@ const {
   readCloudSyncRememberStore,
   writeCloudSyncRememberStore,
   clearCloudSyncRememberStore,
-} = require('./lib/cloud-sync-remember-store.cjs');
+} = require('../core/lib/cloud-sync-remember-store.cjs');
 
 function cloudSyncRememberUserData() {
   return app.getPath('userData');
@@ -947,7 +947,7 @@ app.whenReady().then(async () => {
   try {
     installElectronLanCors(session.defaultSession);
     if (!shouldUseLegacyHttpRenderer()) {
-      attachRendererProtocolHandler({ protocol, net }, path.join(__dirname, 'public'));
+      attachRendererProtocolHandler({ protocol, net }, path.join(__dirname, '..', 'core', 'public'));
     }
     process.env.R_PLUS_USER_DATA = app.getPath('userData');
     // One-time sweep of OS-level leftovers under the retired hospital-name appId
@@ -964,7 +964,7 @@ app.whenReady().then(async () => {
     // Apple cert. When active, electron-updater must sit out this session (see
     // scheduleUpdateCheck) and the actual download+swap runs ~30s later, silently.
     try {
-      const { checkActivation, runQuietSwap } = await import('./lib/mac-quiet-swap.mjs');
+      const { checkActivation, runQuietSwap } = await import('../core/lib/mac-quiet-swap.mjs');
       const activation = await checkActivation({
         platform: process.platform,
         isPackaged: app.isPackaged,
@@ -993,7 +993,7 @@ app.whenReady().then(async () => {
     }
     bootMark('quiet-swap-gate');
 
-    const { loadNativeDatabase } = await import('./lib/db/native-load.mjs');
+    const { loadNativeDatabase } = await import('../core/lib/db/native-load.mjs');
     try {
       loadNativeDatabase();
       bootMark('native-db');
@@ -1007,7 +1007,7 @@ app.whenReady().then(async () => {
       return;
     }
 
-    const { createDbManager } = await import('./lib/db/db-manager.mjs');
+    const { createDbManager } = await import('../core/lib/db/db-manager.mjs');
     const dbManager = createDbManager({
       userDataPath: app.getPath('userData'),
       safeStorage,
@@ -1015,7 +1015,7 @@ app.whenReady().then(async () => {
     });
     setLanDbManager(dbManager);
 
-    const { registerDbIpcHandlers } = await import('./lib/db/ipc-handlers.mjs');
+    const { registerDbIpcHandlers } = await import('../core/lib/db/ipc-handlers.mjs');
     registerDbIpcHandlers({
       ipcMain,
       dbManager,
@@ -1026,7 +1026,7 @@ app.whenReady().then(async () => {
     });
     bootMark('db-ipc');
 
-    const { registerAdminRescueKeyIpcHandlers } = await import('./lib/admin-rescue-key-ipc.mjs');
+    const { registerAdminRescueKeyIpcHandlers } = await import('../core/lib/admin-rescue-key-ipc.mjs');
     registerAdminRescueKeyIpcHandlers({ ipcMain, app, safeStorage });
 
     unlockPromise = unlockClinicalDbAtStartup(dbManager);
@@ -1039,7 +1039,7 @@ app.whenReady().then(async () => {
     if (process.env.R_PLUS_RECOVER_CENSUS === '1') {
       try {
         await unlockPromise;
-        const { runRecoverCensusExport } = await import('./lib/db/recover-census-export.mjs');
+        const { runRecoverCensusExport } = await import('../core/lib/db/recover-census-export.mjs');
         const result = await runRecoverCensusExport({ app, dbManager });
         dialog.showMessageBox({
           type: 'info',

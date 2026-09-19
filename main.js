@@ -1,1 +1,1 @@
-packages/core/main.js
+packages/im/main.js
