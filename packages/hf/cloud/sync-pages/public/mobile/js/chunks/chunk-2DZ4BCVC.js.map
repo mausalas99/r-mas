@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../../../../public/js/shift-pin-stub.mjs"],
+  "sourcesContent": ["/** LAN shift PIN retired \u2014 always skip legacy PIN UI. */\nexport function isLanSkipShiftPin() {\n  return true;\n}\n"],
+  "mappings": ";AACO,SAAS,oBAAoB;AAClC,SAAO;AACT;",
+  "names": []
+}

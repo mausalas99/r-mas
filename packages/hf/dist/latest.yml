@@ -1,0 +1,16 @@
+version: 8.1.7
+files:
+  - url: R+-8.1.7-x64.exe
+    sha512: lXMWCwR+tdQrwks74WY1TB36kJDtRyyj+QbP1mfl2IxTRg48GBoRirzCBshsMBZq8VMkEbumE2mBB2SOC9MLLA==
+    size: 122895033
+path: R+-8.1.7-x64.exe
+sha512: lXMWCwR+tdQrwks74WY1TB36kJDtRyyj+QbP1mfl2IxTRg48GBoRirzCBshsMBZq8VMkEbumE2mBB2SOC9MLLA==
+releaseDate: '2026-08-20T23:29:32.000Z'
+releaseNotes: |
+  Corrige que "Cerrar sesión" en Nube borrara el código de sala. La actualización ahora se instala sola en cuanto R+ queda inactivo, sin esperar a cerrar la app.
+  
+  Cerrar sesión ya no borra la sala: al volver a iniciar sesión, R+ recuerda el código de sala — ya no hay que volver a escribirlo.
+  
+  Instalación automática al quedar inactivo: si la actualización ya se descargó, se instala sola cuando aparece la pantalla de bloqueo por inactividad (10 min sin uso) — no espera a que cierres R+ manualmente.
+  
+  Cultivos — encabezado ya no se pega al texto: en UROCULTIVO/HEMOCULTIVO/FUNGICULTIVO el encabezado a veces se veía pegado al resto de la línea ("UROCULTIVOPOR SONDA"). Corregido.

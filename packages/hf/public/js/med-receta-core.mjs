@@ -1,0 +1,75 @@
+/** Barrel: medicamentos receta / SOAP core — re-exporta submódulos sin romper importadores. */
+export {
+  parseFechaDMYFromTimestampCell,
+  extractDiaTratamiento,
+  parseFechaDMYToLocalDate,
+  calendarDaysSinceFechaDMY,
+  advanceDiaInMedSoapText,
+  advanceAbxMedTextForManejoDate,
+  effectiveDiaTratamiento,
+  setDiaTratamientoInDosis,
+  incrementMedItemsDiaTratamiento,
+  rewriteAbxDisplayText,
+} from './med-receta-dates.mjs';
+
+export {
+  extractDietNutrients,
+  dietNutrientBlobFromCols,
+  mergeDietaItems,
+  buildDietProposalText,
+  resolveDietaDescripcionRaw,
+  dietProposalFingerprint,
+  isParenteralNutritionText,
+  isNutritionMedicationItem,
+  nutritionMedItemToDieta,
+  normalizeParenteralDietaItem,
+  dietaItemToMerged,
+  listDietCandidates,
+  listDietCandidatesFromRecetaBlock,
+  collectDietasFromRecetaBlock,
+} from './med-receta-diet.mjs';
+
+export {
+  parseIndicacionesPaste,
+  parseMedicationPaste,
+  looksLikeSomeIndicacionesPaste,
+  looksLikeSomeMedicationPaste,
+  shouldAutoSelectSoap,
+  resolveFechaActualizacion,
+} from './med-receta-parse.mjs';
+
+export { applyMedCatalogOverlay, getMedCatalogOverlaySnapshot } from './med-receta-catalog.mjs';
+
+export {
+  classifyApoyoKind,
+  isApoyoMedicationNombre,
+  isApoyoMedicationItem,
+  apoyoKindLabel,
+  APOYO_KIND_OXIGENO,
+  APOYO_KIND_LABELS,
+} from './med-receta-apoyo.mjs';
+
+export {
+  dosisBeforeSlash,
+  extractRecetaNameOnlyDose,
+  formatMedicationEgresoLine,
+  buildMedRecetaCopyText,
+  formatMedicationSoapShort,
+  buildMedRecetaNameOnlyText,
+  isPrnMedicationItem,
+} from './med-receta-format.mjs';
+
+export { applyIvToOralForEgreso } from './med-receta-iv-oral.mjs';
+
+export {
+  SOAP_DESTINATION_KEYS,
+  SOAP_DESTINATION_LABELS,
+  SOAP_DESTINATION_GROUPS,
+  soapDestinationSelectOptionsHtml,
+  mapSoapDestKeyToEaField,
+  effectiveSoapCategory,
+  soapDestinationUiValue,
+  unassignedOtrosSoapItems,
+  classifyMedicationSoapCategory,
+  shouldIncludeMedicationInSoap,
+} from './med-receta-soap.mjs';

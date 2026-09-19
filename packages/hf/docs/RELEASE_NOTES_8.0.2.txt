@@ -1,0 +1,47 @@
+R+ 8.0.2 (Nube diagnóstico + sala Torre + salir de equipo)
+============================================================
+
+Fecha: 2026-08-06
+
+## Resumen
+
+**8.0.2** añade **Diagnóstico Nube** en ⇄ (cola, errores y trazas copiables para soporte), corrige la sala **Torre** al unirse a Nube, deja salir del equipo resolviendo entregas activas automáticamente, y afina sync (todos con `patientId`, sala clínica desde SQLCipher, room canónico al reconectar).
+
+## Nuevo / mejorado
+
+- **⇄ Diagnóstico Nube** — Opciones → **Diagnóstico Nube**: estado de sync, cola de mutaciones, últimos errores y trazas push/pull. Botón **Copiar informe** para soporte sin abrir DevTools.
+- **Sala Torre HU** — `torre` (sin «HU») normaliza a **Torre HU** en cliente y Worker; evita rechazo al elegir sala en Conexión.
+- **Salir del equipo** — Al salir, las entregas activas del equipo se **resuelven** en lugar de bloquear con «entregas activas».
+- **Sala clínica fiable** — El perfil SQLCipher (Mi rotación) gana sobre `rpc-settings` cuando divergen; bootstrap y refresh persisten `sala` en sesión.
+- **Sync Nube** — Todos en push llevan `patientId` y `updatedAt` por ítem; reconexión reconcilia `roomId` canónico (ensure-turn); errores de push/censo/ciclo alimentan el diagnóstico.
+- **Labs** — Quita el estado de carga del chunk al terminar de renderizar el panel.
+- **Worker** — `d1-errors` clasifica choques UNIQUE (revisión vs `client_mutation_id`) para reintentos más precisos.
+- **Tests** — `cloud-sync-diagnostics`, `mutate-bridge` (todos), `panel-clinical-context`, `clinical-access-db` (leave team).
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v8.0.2
+
+- Mac: `R+-8.0.2-arm64.dmg`, `R+-8.0.2-x64.dmg` (y zip para auto-update).
+- Windows: `R+-8.0.2-x64.exe`.
+
+Descarga **8.0.2 en todas las Macs** del turno. **Despliega el Worker el mismo día** si usas sala Torre o quieres el helper D1 en cloud.
+
+**Operador cloud (recomendado antes del turno):**
+
+```bash
+cd /Users/mauriciosalas/R+
+npm run build:cloud-mobile
+cd cloud/sync-worker
+npm run deploy
+cd ../..
+curl -sS "https://rplus-sync.rmas-workersdev.workers.dev/api/sync/v1/ping"
+```
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Notas
+
+- Diagnóstico Nube es solo escritorio (⇄); R+ Móvil no cambia en esta versión.
+- Si en 8.0.1 te bloqueaba salir del equipo con entregas activas, 8.0.2 las cierra al salir — revisa Guardia si necesitas reasignar.
+- Sin redeploy del Worker, el cliente mejora diagnóstico y sala Torre local; el allowlist `torre` en cloud requiere Worker actualizado.

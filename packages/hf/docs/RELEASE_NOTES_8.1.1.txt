@@ -1,0 +1,54 @@
+R+ 8.1.1 (censo Filtros + clinical-repo + wipe Nube)
+=======================================================
+
+Fecha: 2026-08-13
+
+## Resumen
+
+**8.1.1** lleva el censo de escritorio a **Filtros** (R1–R3 ven el censo completo y lo estrechan; iPad sigue en espejo de equipo), protege el **borrado de pacientes** (Admin/R4 vs equipo; confirmación si Nube lo quitó en otra Mac) y activa **clinical-repo**: escrituras SQLCipher-first con change-log hacia Nube (schema **v23**). Incluye SOAP/reclasificar en Estado Actual y Recuérdame durable.
+
+## Nuevo / mejorado
+
+### Censo / Filtros
+
+- **Escritorio via Filtros** — R1–R3 ya no ocultan el censo por equipo: ven el censo completo y lo estrechan con Filtros (sala + equipo por defecto). Evita que desaparezcan expedientes tras archivo de equipo o reasignación admin.
+- **iPad** — Sigue el espejo duro de equipo (sin cambio de política móvil).
+- **Sala en Filtros** — Preferencia persistente; R1–R3 default a su sala, Admin/R4 a Todas.
+
+### Borrado de pacientes
+
+- **Quién puede borrar** — Admin/R4: cualquier expediente. Resto: solo pacientes de su equipo (UI, toast y lote).
+- **Wipe remoto** — Si un admin (u otro equipo) elimina en Nube, esta Mac pregunta antes de quitarlo localmente («Eliminar aquí» / «Conservar aquí»). Los borrados propios se aplican en silencio.
+
+### Clinical-repo / Nube
+
+- **Schema v23** — Tabla `clinical_change_log`; escrituras canónicas vía `lib/clinical-repo/` y `db:clinical-command`.
+- **Projector** — El change-log drena a la cola Nube (eventualidades + projector **encendidos** por defecto; opt-out `0`).
+- **Recuérdame durable** — Token en `userData` (IPC + flush al salir); no se pierde al actualizar.
+
+### Estado Actual / Manejo
+
+- **SOAP** — Selector de destino al clasificar medicamentos.
+- **Reclasificar** — Propuestas en EA que sobreviven al refresco del panel (`soapCatOverride`).
+- **ABX** — Sync desde receta.
+
+### Tendencias
+
+- Etiqueta eTFG simplificada; CTA de eventualidad en el detalle; se quita la barra + Eventualidad del toolbar.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v8.1.1
+
+- Mac: `R+-8.1.1-arm64.dmg`, `R+-8.1.1-x64.dmg` (y zip para auto-update).
+- Windows: `R+-8.1.1-x64.exe`.
+
+Instala **8.1.1 en todas las Macs** del turno. El Worker de **8.1.0** sigue vigente (sin deploy extra si ya lo desplegaste).
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Notas
+
+- Peers en **8.1.0** son compatibles en el mismo turno; conviene actualizar todas las Macs el mismo día.
+- **Sin wipe al actualizar** — SQLCipher y `userData` persisten; la migración a schema **v23** corre al abrir.
+- **Recuérdame** guarda token en el dispositivo; no usar en Macs compartidas.

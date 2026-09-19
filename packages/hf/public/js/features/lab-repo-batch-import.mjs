@@ -1,0 +1,516 @@
+/** Bulk lab-repo update for mi equipo: sequential IPC + sidebar job queue. */
+import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
+import { esc } from '../dom-escape.mjs';
+import { patientsVisibleInSidebar } from './patients-scope.mjs';
+import { registerLabPanelRuntime, rt } from './lab-panel-runtime-state.mjs';
+import {
+  labRepoFetchRangeFromDateInputs,
+  labRepoDefaultDateRange,
+  labRepoToDateInputValue,
+  syncLabRepoDateField,
+} from './lab-repo-import.mjs';
+import { applyBatchStudyGroups } from './lab-repo-batch-bulk-apply.mjs';
+import {
+  buildLabRepoBatchRows,
+  selectedLabRepoBatchRows,
+  setAllSelectableLabRepoBatchRows,
+  selectOnlyActiveLabRepoBatchRows,
+  setLabRepoBatchRowSelected,
+  formatLabRepoBatchSummaryToast,
+  classifyLabRepoBatchFetch,
+  buildLabRepoBatchJobs,
+  setLabRepoBatchJobStatus,
+  abortPendingLabRepoBatchJobs,
+  jobStatusFromFetchKind,
+} from './lab-repo-batch-model.mjs';
+import { buildLabChemistrySkeletonHtml } from '../ui-skeleton.mjs';
+import {
+  resolveActivePatientBatchRow,
+  resolveBatchOpenMode,
+  syncBatchModalModeUi,
+  activePatientMissingRegistroMessage,
+} from './lab-repo-batch-mode.mjs';
+import { requestSilentUpdateCheck } from './platform/updater/silent-check.mjs';
+
+/** @type {import('./lab-repo-batch-model.mjs').LabRepoBatchRow[]} */
+var batchRows = [];
+/** @type {import('./lab-repo-batch-model.mjs').LabRepoBatchJob[]} */
+var batchJobs = [];
+var batchBusy = false;
+var batchAbort = false;
+var batchSinglePatientMode = false;
+/** @type {ReturnType<typeof setTimeout> | null} */
+var queueAutoDismissTimer = null;
+var QUEUE_AUTO_DISMISS_MS = 1600;
+
+function clearQueueAutoDismiss() {
+  if (queueAutoDismissTimer == null) return;
+  clearTimeout(queueAutoDismissTimer);
+  queueAutoDismissTimer = null;
+}
+
+function scheduleQueueAutoDismiss() {
+  clearQueueAutoDismiss();
+  queueAutoDismissTimer = setTimeout(function () {
+    queueAutoDismissTimer = null;
+    if (batchBusy) return;
+    batchJobs = [];
+    renderSidebarQueue();
+  }, QUEUE_AUTO_DISMISS_MS);
+}
+
+function teamPatients() {
+  if (typeof rt.getLabRepoBatchTeamPatients === 'function') {
+    return rt.getLabRepoBatchTeamPatients() || [];
+  }
+  // Same team/sala filter as the sidebar — do not re-narrow to explicit assignments only
+  // (that hid unassigned structural matches and looked like “patients disappeared”).
+  if (typeof rt.getLabRepoBatchCensusPatients === 'function') {
+    return rt.getLabRepoBatchCensusPatients() || [];
+  }
+  return patientsVisibleInSidebar() || [];
+}
+
+function batchConfirmLabel(selectedCount) {
+  if (batchBusy) return 'Actualizando…';
+  if (batchSinglePatientMode) return 'Actualizar';
+  if (selectedCount > 0) return 'Actualizar · ' + selectedCount;
+  return 'Actualizar';
+}
+
+function syncConfirmButtonLabel() {
+  var btn = document.getElementById('lab-repo-batch-confirm');
+  if (!btn || batchBusy) return;
+  var selected = selectedLabRepoBatchRows(batchRows).length;
+  btn.textContent = batchConfirmLabel(selected);
+}
+
+function renderBatchList() {
+  var list = document.getElementById('lab-repo-batch-list');
+  if (!list) return;
+  if (!batchRows.length) {
+    list.innerHTML =
+      '<p class="lab-repo-batch-empty">No hay pacientes en tu equipo (o aún no hay asignaciones).</p>';
+    return;
+  }
+  list.innerHTML = batchRows
+    .map(function (r) {
+      var disabled = !r.hasRegistro || batchBusy;
+      var metaHtml;
+      if (r.hasRegistro) {
+        metaHtml =
+          '<span class="lab-repo-batch-row-reg">Reg. ' +
+          esc(r.registro) +
+          '</span>' +
+          (r.hint
+            ? '<span class="lab-repo-batch-row-loc">' + esc(r.hint) + '</span>'
+            : '');
+      } else {
+        metaHtml = '<span class="lab-repo-batch-row-warn">Sin registro — se omite</span>';
+      }
+      return (
+        '<label class="lab-repo-batch-row' +
+        (r.hasRegistro ? '' : ' lab-repo-batch-row--disabled') +
+        '">' +
+        '<input type="checkbox" class="lab-repo-batch-check" data-patient-id="' +
+        esc(r.id) +
+        '"' +
+        (r.selected ? ' checked' : '') +
+        (disabled ? ' disabled' : '') +
+        ' />' +
+        '<span class="lab-repo-batch-row-text">' +
+        '<span class="lab-repo-batch-row-name">' +
+        esc(r.nombre) +
+        '</span>' +
+        '<span class="lab-repo-batch-row-meta">' +
+        metaHtml +
+        '</span>' +
+        '</span>' +
+        '</label>'
+      );
+    })
+    .join('');
+}
+
+function syncBatchCount() {
+  var el = document.getElementById('lab-repo-batch-count');
+  var selected = selectedLabRepoBatchRows(batchRows).length;
+  var noReg = batchRows.filter(function (r) {
+    return r && !r.hasRegistro;
+  }).length;
+  if (el) {
+    var parts = [selected + ' seleccionado' + (selected === 1 ? '' : 's')];
+    if (noReg) parts.push(noReg + ' sin registro');
+    el.textContent = parts.join(' · ');
+  }
+  syncConfirmButtonLabel();
+}
+
+/**
+ * Teal workbench §11c "Cargando labs": while the single-patient "Actualizar
+ * labs" flow is fetching/parsing, show the K/Cr/BUN/Hb chemistry-grid
+ * skeleton inline (never a full-screen spinner or a generic dots label).
+ */
+function setBatchProgress(_text, visible) {
+  var el = document.getElementById('lab-repo-batch-progress');
+  if (!el) return;
+  el.hidden = !visible;
+  el.innerHTML = visible ? buildLabChemistrySkeletonHtml() : '';
+}
+
+function renderSidebarQueue() {
+  var root = document.getElementById('lab-repo-batch-queue');
+  var fill = document.getElementById('lab-repo-batch-queue-fill');
+  var meta = document.getElementById('lab-repo-batch-queue-meta');
+  var stopBtn = document.getElementById('lab-repo-batch-queue-stop');
+  var spinner = document.getElementById('lab-repo-batch-queue-spinner');
+  var btnLabel = document.getElementById('lab-repo-batch-queue-btn-label');
+  if (!root) return;
+
+  if (!batchJobs.length) {
+    root.hidden = true;
+    return;
+  }
+
+  root.hidden = false;
+  var total = batchJobs.length;
+  var done = batchJobs.filter(function (j) {
+    return j.status !== 'pending' && j.status !== 'running';
+  }).length;
+
+  // Teal workbench §11c "Actualizando pacientes": one button + one thin
+  // progress bar + one caption ("N de M · ..."), never a per-patient row
+  // list. The button's size/position never changes — only the spinner
+  // (class toggle, not `hidden`) and label text update.
+  if (fill) {
+    fill.style.width = (total ? Math.round((done / total) * 100) : 0) + '%';
+  }
+  if (meta) {
+    meta.textContent = done + ' de ' + total + ' · los que ya llegaron se ven de inmediato';
+  }
+  if (spinner) {
+    spinner.classList.toggle('lab-repo-batch-queue-spinner--active', batchBusy);
+  }
+  if (btnLabel) {
+    btnLabel.textContent = batchBusy ? 'Actualizando' : 'Listo';
+  }
+  if (stopBtn) {
+    stopBtn.classList.toggle('lab-repo-batch-queue-stop--inactive', !batchBusy);
+    stopBtn.disabled = !batchBusy;
+  }
+}
+
+function showSidebarQueue(jobs) {
+  batchJobs = jobs || [];
+  renderSidebarQueue();
+}
+
+function updateJobStatus(patientId, status) {
+  batchJobs = setLabRepoBatchJobStatus(batchJobs, patientId, status);
+  renderSidebarQueue();
+}
+
+function setBatchBusy(busy) {
+  batchBusy = !!busy;
+  var btn = document.getElementById('lab-repo-batch-confirm');
+  var cancel = document.getElementById('lab-repo-batch-cancel');
+  var selectAll = document.getElementById('lab-repo-batch-select-all');
+  var selectActive = document.getElementById('lab-repo-batch-select-active');
+  var selectNone = document.getElementById('lab-repo-batch-select-none');
+  if (btn) {
+    btn.disabled = busy;
+    btn.setAttribute('aria-disabled', busy ? 'true' : 'false');
+    btn.textContent = batchConfirmLabel(selectedLabRepoBatchRows(batchRows).length);
+  }
+  if (cancel) {
+    cancel.textContent = busy ? 'Detener' : 'Cancelar';
+  }
+  if (selectAll) selectAll.disabled = busy;
+  if (selectActive) selectActive.disabled = busy;
+  if (selectNone) selectNone.disabled = busy;
+  renderBatchList();
+  renderSidebarQueue();
+}
+
+function onBatchListClick(e) {
+  var t = e.target;
+  if (!t || !t.classList || !t.classList.contains('lab-repo-batch-check')) return;
+  if (batchBusy) return;
+  var id = t.getAttribute('data-patient-id');
+  batchRows = setLabRepoBatchRowSelected(batchRows, id, !!t.checked);
+  syncBatchCount();
+}
+
+function wireBatchModalOnce() {
+  var list = document.getElementById('lab-repo-batch-list');
+  if (list && !list.dataset.wired) {
+    list.dataset.wired = '1';
+    list.addEventListener('change', onBatchListClick);
+  }
+  var dismiss = document.getElementById('lab-repo-batch-queue-dismiss');
+  if (dismiss && !dismiss.dataset.wired) {
+    dismiss.dataset.wired = '1';
+    dismiss.addEventListener('click', dismissLabRepoBatchQueue);
+  }
+  var stopBtn = document.getElementById('lab-repo-batch-queue-stop');
+  if (stopBtn && !stopBtn.dataset.wired) {
+    stopBtn.dataset.wired = '1';
+    stopBtn.addEventListener('click', function () {
+      if (!batchBusy) return;
+      batchAbort = true;
+      rt.showToast('Deteniendo actualización…', 'info');
+    });
+  }
+}
+
+export function registerLabRepoBatchImportRuntime(ctx) {
+  registerLabPanelRuntime(ctx);
+}
+
+export function dismissLabRepoBatchQueue() {
+  if (batchBusy) {
+    rt.showToast('Espera a que termine o pulsa Detener', 'info');
+    return;
+  }
+  clearQueueAutoDismiss();
+  batchJobs = [];
+  renderSidebarQueue();
+}
+
+export function openLabRepoBatchModal() {
+  var modal = document.getElementById('lab-repo-batch-modal');
+  if (!modal) return;
+  if (!window.electronAPI || typeof window.electronAPI.labRepoFetch !== 'function') {
+    rt.showToast('Actualización masiva solo en la app de escritorio', 'warn');
+    return;
+  }
+  requestSilentUpdateCheck();
+  if (batchBusy) {
+    rt.showToast('Ya hay una actualización en curso — mira la cola en la barra lateral', 'info');
+    return;
+  }
+
+  wireBatchModalOnce();
+  batchAbort = false;
+
+  var teamRows = buildLabRepoBatchRows(teamPatients(), { defaultSelectWithRegistro: true });
+  var teamWithReg = teamRows.filter(function (r) {
+    return r && r.hasRegistro;
+  }).length;
+  var missingReg = activePatientMissingRegistroMessage(rt, teamWithReg);
+  if (missingReg) {
+    rt.showToast(missingReg, 'error');
+    return;
+  }
+
+  var range = labRepoDefaultDateRange();
+  var desdeEl = document.getElementById('lab-repo-batch-desde');
+  var hastaEl = document.getElementById('lab-repo-batch-hasta');
+  refreshRpcDateFields(modal);
+  if (desdeEl && hastaEl) {
+    desdeEl.value = labRepoToDateInputValue(range.desde);
+    hastaEl.value = labRepoToDateInputValue(range.hasta);
+    syncLabRepoDateField(desdeEl);
+    syncLabRepoDateField(hastaEl);
+  }
+
+  var mode = resolveBatchOpenMode(teamRows, resolveActivePatientBatchRow(rt));
+  batchSinglePatientMode = mode.singlePatientMode;
+  batchRows = mode.rows;
+  setBatchProgress('', false);
+  setBatchBusy(false);
+  syncBatchModalModeUi(batchSinglePatientMode, batchRows[0]);
+  if (!batchSinglePatientMode) {
+    renderBatchList();
+    syncBatchCount();
+  }
+
+  modal.hidden = false;
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+export function closeLabRepoBatchModal() {
+  if (batchBusy) {
+    batchAbort = true;
+    rt.showToast('Deteniendo actualización…', 'info');
+    return;
+  }
+  hideBatchModal();
+}
+
+function hideBatchModal() {
+  var modal = document.getElementById('lab-repo-batch-modal');
+  if (!modal) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  modal.hidden = true;
+  setBatchProgress('', false);
+}
+
+export function labRepoBatchSelectAll() {
+  if (batchBusy) return;
+  batchRows = setAllSelectableLabRepoBatchRows(batchRows, true);
+  renderBatchList();
+  syncBatchCount();
+}
+
+export function labRepoBatchSelectActive() {
+  if (batchBusy) return;
+  var activeId =
+    typeof rt.getActiveId === 'function' ? String(rt.getActiveId() || '') : '';
+  batchRows = selectOnlyActiveLabRepoBatchRows(batchRows, activeId);
+  renderBatchList();
+  syncBatchCount();
+}
+
+export function labRepoBatchSelectNone() {
+  if (batchBusy) return;
+  batchRows = setAllSelectableLabRepoBatchRows(batchRows, false);
+  renderBatchList();
+  syncBatchCount();
+}
+
+function readBatchDateRange() {
+  var desdeEl = document.getElementById('lab-repo-batch-desde');
+  var hastaEl = document.getElementById('lab-repo-batch-hasta');
+  if (!desdeEl || !hastaEl) return null;
+  return labRepoFetchRangeFromDateInputs(desdeEl.value, hastaEl.value);
+}
+
+function validateBatchImportStart() {
+  if (batchBusy) return null;
+  var selected = selectedLabRepoBatchRows(batchRows);
+  if (!selected.length) {
+    rt.showToast('Selecciona al menos un paciente con registro', 'error');
+    return null;
+  }
+  var range = readBatchDateRange();
+  if (!range) {
+    rt.showToast('Revisa el rango de fechas (Desde no puede ser posterior a Hasta)', 'error');
+    return null;
+  }
+  if (!window.electronAPI || typeof window.electronAPI.labRepoFetch !== 'function') {
+    rt.showToast('Actualización masiva solo en la app de escritorio', 'warn');
+    return null;
+  }
+  return { selected: selected, range: range };
+}
+
+function applyFetchKindToTotals(kind, studies, errors, totals, row) {
+  if (kind === 'connection') {
+    totals.failed += 1;
+    rt.showToast('No se pudo conectar al repositorio de laboratorio (revisa red hospital)', 'error');
+    batchAbort = true;
+    return;
+  }
+  if (kind === 'empty') {
+    totals.empty += 1;
+    return;
+  }
+  if (kind === 'error') {
+    totals.failed += 1;
+    return;
+  }
+  totals.groups.push({ row: row, studies: studies || [], errors: errors || [] });
+}
+
+async function fetchOneBatchPatient(row, range) {
+  try {
+    var res = await window.electronAPI.labRepoFetch({
+      registro: row.registro,
+      desde: range.desde.toISOString(),
+      hasta: range.hasta.toISOString(),
+    });
+    var studies = (res && res.studies) || [];
+    var errors = (res && res.errors) || [];
+    return {
+      kind: classifyLabRepoBatchFetch(studies, errors),
+      studies: studies,
+      errors: errors,
+    };
+  } catch (_unused) {
+    void _unused;
+    return { kind: 'throw', studies: [], errors: [] };
+  }
+}
+
+async function runBatchFetches(selected, range) {
+  var totals = { groups: [], empty: 0, failed: 0 };
+  for (var i = 0; i < selected.length; i++) {
+    if (batchAbort) break;
+    var row = selected[i];
+    updateJobStatus(row.id, 'running');
+    setBatchProgress(
+      'Consultando ' + row.nombre + ' (' + (i + 1) + '/' + selected.length + ')…',
+      true
+    );
+    var one = await fetchOneBatchPatient(row, range);
+    if (one.kind === 'throw') {
+      totals.failed += 1;
+      updateJobStatus(row.id, 'error');
+      rt.showToast('Error al consultar el repositorio', 'error');
+      batchAbort = true;
+      break;
+    }
+    updateJobStatus(row.id, jobStatusFromFetchKind(one.kind));
+    applyFetchKindToTotals(one.kind, one.studies, one.errors, totals, row);
+  }
+  if (batchAbort) {
+    batchJobs = abortPendingLabRepoBatchJobs(batchJobs);
+    renderSidebarQueue();
+  }
+  return totals;
+}
+
+function finishBatchRun(selected, totals, applied) {
+  var skippedNoRegistro = batchRows.filter(function (r) {
+    return r && !r.hasRegistro;
+  }).length;
+  var summary = formatLabRepoBatchSummaryToast({
+    attempted: selected.length,
+    importedPatients: applied.importedPatients,
+    empty: totals.empty,
+    skippedNoRegistro: skippedNoRegistro,
+    failed: totals.failed,
+    needsReview: applied.needsReview ? 1 : 0,
+    aborted: batchAbort,
+  });
+  rt.showToast(summary, totals.failed || batchAbort ? 'warn' : 'ok');
+}
+
+export async function confirmLabRepoBatchImport() {
+  var start = validateBatchImportStart();
+  if (!start) return;
+
+  clearQueueAutoDismiss();
+  batchAbort = false;
+  showSidebarQueue(buildLabRepoBatchJobs(start.selected));
+  if (batchSinglePatientMode) {
+    // Keep the modal open and show the chemistry-grid skeleton inline —
+    // only one patient's values are refreshing, no need to hand off to the
+    // sidebar dock (that stays for the multi-patient "Actualizando
+    // pacientes" run).
+    setBatchProgress('', true);
+  } else {
+    hideBatchModal();
+  }
+  setBatchBusy(true);
+  try {
+    var totals = await runBatchFetches(start.selected, start.range);
+    var applied = { needsReview: false, importedPatients: 0 };
+    if (totals.groups.length) {
+      setBatchProgress('', true);
+      applied = applyBatchStudyGroups(totals.groups, rt);
+    }
+    finishBatchRun(start.selected, totals, applied);
+  } finally {
+    batchBusy = false;
+    batchAbort = false;
+    setBatchBusy(false);
+    setBatchProgress('', false);
+    if (batchSinglePatientMode) hideBatchModal();
+    renderSidebarQueue();
+    scheduleQueueAutoDismiss();
+  }
+}

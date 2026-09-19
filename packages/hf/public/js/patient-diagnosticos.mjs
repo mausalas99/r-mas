@@ -1,0 +1,208 @@
+import { mergeAccesosPatientFields } from './patient-accesos.mjs';
+
+function normalizePlusSeparators(text) {
+  return String(text || '')
+    .replace(/[\uFF0B\u2795]/g, '+')
+    .replace(/\s+\+\s+/g, ' + ');
+}
+
+/** @param {string} text @returns {string[]} */
+export function parseDiagnosticosText(text) {
+  var raw = normalizePlusSeparators(String(text || '').trim());
+  if (!raw) return [];
+  var parts = /\+/.test(raw) ? raw.split(/\s*\+\s*/) : raw.split(/\r?\n/);
+  return parts
+    .map(function (p) {
+      return String(p || '')
+        .trim()
+        .replace(/^\d+\.\s*/, '')
+        .toUpperCase();
+    })
+    .filter(Boolean);
+}
+
+/** @param {string[]} list @returns {string} */
+export function formatDiagnosticosCopy(list) {
+  return (list || [])
+    .map(function (d, i) {
+      return i + 1 + '. ' + String(d || '').trim();
+    })
+    .filter(function (line) {
+      return line.length > 2;
+    })
+    .join('\n');
+}
+
+/** @param {Record<string, unknown>|null|undefined} patient */
+export function ensurePatientDiagnosticos(patient) {
+  if (!patient) return;
+  if (!Array.isArray(patient.diagnosticosList)) patient.diagnosticosList = [];
+  if (!patient.diagnosticosList.length && patient.diagnosticosText) {
+    patient.diagnosticosList = parseDiagnosticosText(String(patient.diagnosticosText));
+  }
+  if (!patient.diagnosticosList.length) patient.diagnosticosList = [''];
+  var normalized = patient.diagnosticosList.map(function (d) {
+    return String(d || '').trim().toUpperCase();
+  });
+  patient.diagnosticosList = normalized;
+  var nonEmpty = normalized.filter(Boolean);
+  patient.diagnosticosText = formatDiagnosticosCopy(nonEmpty);
+}
+
+/** Máximo de diagnósticos exportados al censo (los primeros N de la lista). */
+export const CENSO_MAX_DIAGNOSTICOS = 3;
+
+/** @param {string[]} list @param {{ max?: number }} [options] */
+export function diagnosticosTextForCenso(list, options) {
+  var max =
+    options && options.max != null ? options.max : CENSO_MAX_DIAGNOSTICOS;
+  return (list || [])
+    .map(function (d) {
+      return String(d || '').trim().toUpperCase();
+    })
+    .filter(Boolean)
+    .slice(0, max)
+    .join(' + ');
+}
+
+/**
+ * @param {Record<string, unknown>} patient
+ * @param {Record<string, unknown>|null|undefined} vpoState
+ */
+export function migratePatientDiagnosticosFromVpo(patient, vpoState) {
+  if (!patient || !vpoState) return false;
+  var has = (patient.diagnosticosList || []).some(function (d) {
+    return String(d).trim();
+  });
+  if (has) return false;
+  var from = (vpoState.diagnosticosList || []).filter(function (d) {
+    return String(d).trim();
+  });
+  if (!from.length) return false;
+  patient.diagnosticosList = from
+    .map(function (d) {
+      return String(d).trim().toUpperCase();
+    })
+    .concat(['']);
+  ensurePatientDiagnosticos(patient);
+  return true;
+}
+
+/**
+ * @param {Record<string, unknown>} patient
+ * @param {string[]} list
+ */
+export function applyPatientDiagnosticosList(patient, list) {
+  patient.diagnosticosList = list;
+  ensurePatientDiagnosticos(patient);
+}
+
+function noteDiagnosticosEmpty(note) {
+  var dx = (note && note.diagnosticos) || [];
+  return !dx.some(function (d) {
+    return String(d).trim();
+  });
+}
+
+function patientDiagnosticosNonEmpty(patient) {
+  ensurePatientDiagnosticos(patient);
+  return (patient.diagnosticosList || []).filter(function (d) {
+    return String(d).trim();
+  });
+}
+
+/**
+ * Copy censo diagnoses into the note when the note dx list is empty.
+ * @param {{ diagnosticos?: string[] }} note
+ * @param {Record<string, unknown>} patient
+ */
+export function preloadNoteDxFromPatient(note, patient) {
+  return syncNoteDxFromPatient(note, patient, { mode: 'ifEmpty' });
+}
+
+/**
+ * @param {{ diagnosticos?: string[] }} note
+ * @param {Record<string, unknown>} patient
+ * @param {{ mode?: 'ifEmpty' | 'replace' }} [options]
+ * @returns {boolean} whether note.diagnosticos changed
+ */
+export function syncNoteDxFromPatient(note, patient, options) {
+  if (!note || !patient) return false;
+  var mode = (options && options.mode) || 'ifEmpty';
+  var from = patientDiagnosticosNonEmpty(patient);
+  if (!from.length) return false;
+  if (mode === 'ifEmpty' && !noteDiagnosticosEmpty(note)) return false;
+  note.diagnosticos = from.slice();
+  return true;
+}
+
+/**
+ * Before Word export: ensure note has dx from censo if the note list is empty.
+ * @param {{ diagnosticos?: string[] }} note
+ * @param {Record<string, unknown>} patient
+ */
+export function ensureNoteDxFromPatientForExport(note, patient) {
+  return syncNoteDxFromPatient(note, patient, { mode: 'ifEmpty' });
+}
+
+function diagnosticosListHasContent(list) {
+  return (list || []).some(function (d) {
+    return String(d || '').trim();
+  });
+}
+
+/**
+ * Stamp the censo fields clock. Diagnoses and censo meds ride the single
+ * `entries/<id>/fields` LWW path — without this stamp the Nube rejects the op
+ * as stale and the old remote value comes back on the next pull.
+ * @param {Record<string, unknown>|null|undefined} patient
+ * @param {string} [now]
+ */
+export function stampCensoFieldsClock(patient, now) {
+  if (!patient) return;
+  patient.lanUpdatedAt = String(now || new Date().toISOString());
+}
+
+/**
+ * @param {Record<string, unknown>} target
+ * @param {Record<string, unknown>|undefined} source
+ * @param {{ keepLocalWhenPresent?: boolean }} [options] — set when the incoming
+ *   clock is behind the local one; then local non-empty values win.
+ */
+export function mergeCensoPatientFields(target, source, options) {
+  if (!target || !source) return;
+  var keepLocal = !!(options && options.keepLocalWhenPresent);
+  mergeAccesosPatientFields(target, source);
+  if (source.censoMedsText && !(keepLocal && String(target.censoMedsText || '').trim())) {
+    target.censoMedsText = source.censoMedsText;
+  }
+  // Never clobber real diagnoses with placeholder [''] from ensurePatientDiagnosticos.
+  if (!diagnosticosListHasContent(source.diagnosticosList)) return;
+  if (keepLocal && diagnosticosListHasContent(target.diagnosticosList)) return;
+  target.diagnosticosList = source.diagnosticosList;
+  if (source.diagnosticosText) target.diagnosticosText = source.diagnosticosText;
+  else ensurePatientDiagnosticos(target);
+}
+
+/**
+ * Two-way censo merge for LAN entry merge.
+ * @param {Record<string, unknown>} target
+ * @param {Record<string, unknown>|undefined} preferred — usually newer by lanUpdatedAt
+ * @param {Record<string, unknown>|undefined} fallback
+ */
+export function mergeCensoPatientFieldsFromBoth(target, preferred, fallback) {
+  if (!target) return;
+  // Apply fallback first, then preferred so non-empty preferred dx/meds win.
+  mergeCensoPatientFields(target, fallback);
+  mergeCensoPatientFields(target, preferred);
+}
+
+export function pushDiagnosticosToPatient(patient, list) {
+  if (!patient) return;
+  var cleaned = (list || [])
+    .map(function (d) {
+      return String(d || '').trim().toUpperCase();
+    })
+    .filter(Boolean);
+  applyPatientDiagnosticosList(patient, cleaned.length ? cleaned.concat(['']) : ['']);
+}

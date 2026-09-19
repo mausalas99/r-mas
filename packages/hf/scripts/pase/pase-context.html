@@ -1,0 +1,717 @@
+<title>Pase MI</title>
+
+<style>
+  :root {
+    --bg:           #0A0E16;
+    --surface:      #10172A;
+    --raised:       #18243A;
+    --border:       #1E2D44;
+    --text:         #C8D4E4;
+    --text-dim:     #506070;
+    --accent:       #B89240;
+    --accent-dim:   #6B5520;
+    --critical:     #D95858;
+    --label:        #6A9EC0;
+    --good:         #4E9068;
+    --header-h:     52px;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg:         #EDF0F5;
+      --surface:    #FFFFFF;
+      --raised:     #F3F6FA;
+      --border:     #C8D4E2;
+      --text:       #1A2535;
+      --text-dim:   #7A8E9E;
+      --accent:     #8A6E28;
+      --accent-dim: #D4BC7A;
+      --critical:   #BF3030;
+      --label:      #2C6A90;
+      --good:       #2A6E44;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg:           #0A0E16;
+    --surface:      #10172A;
+    --raised:       #18243A;
+    --border:       #1E2D44;
+    --text:         #C8D4E4;
+    --text-dim:     #506070;
+    --accent:       #B89240;
+    --accent-dim:   #6B5520;
+    --critical:     #D95858;
+    --label:        #6A9EC0;
+    --good:         #4E9068;
+  }
+
+  :root[data-theme="light"] {
+    --bg:         #EDF0F5;
+    --surface:    #FFFFFF;
+    --raised:     #F3F6FA;
+    --border:     #C8D4E2;
+    --text:       #1A2535;
+    --text-dim:   #7A8E9E;
+    --accent:     #8A6E28;
+    --accent-dim: #D4BC7A;
+    --critical:   #BF3030;
+    --label:      #2C6A90;
+    --good:       #2A6E44;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+
+  /* ── Header ─────────────────────────────────────────────────────── */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    height: var(--header-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    gap: 12px;
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .header-brand h1 {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .header-sub {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: .03em;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .labs-freshness {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .btn {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--raised);
+    color: var(--text);
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: .02em;
+    transition: border-color .15s, background .15s;
+  }
+
+  .btn:hover { border-color: var(--accent); }
+  .btn:active { background: var(--border); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .btn-primary {
+    border-color: var(--accent-dim);
+    color: var(--accent);
+  }
+
+  /* ── Census ──────────────────────────────────────────────────────── */
+  .census {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── Patient card ────────────────────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+
+  .card-identity {
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    align-items: baseline;
+  }
+
+  .identity-name {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    color: var(--text);
+  }
+
+  .identity-meta {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: .02em;
+  }
+
+  .identity-room {
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: .06em;
+  }
+
+  /* ── Clinical fields ─────────────────────────────────────────────── */
+  .fields {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .field {
+    display: grid;
+    grid-template-columns: 68px 1fr;
+    gap: 0 10px;
+    align-items: baseline;
+  }
+
+  .field-key {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: .10em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding-top: 2px;
+    text-align: right;
+  }
+
+  .field-val {
+    font-size: 12.5px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .field-val.empty {
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  /* ── Labs block ──────────────────────────────────────────────────── */
+  .labs-block {
+    padding: 10px 14px 12px;
+  }
+
+  .labs-header {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: .10em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .lab-set {
+    margin-bottom: 8px;
+  }
+
+  .lab-set:last-child { margin-bottom: 0; }
+
+  .lab-time {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: .04em;
+    margin-bottom: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .lab-line {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text);
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .lab-line .lp { color: var(--label); font-weight: 600; }
+  .lab-line .lc { color: var(--critical); }
+
+  .labs-empty {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  /* ── Card footer ─────────────────────────────────────────────────── */
+  .card-footer {
+    padding: 8px 14px;
+    border-top: 1px solid var(--border);
+    background: var(--raised);
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* ── Status bar ──────────────────────────────────────────────────── */
+  .status-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 36px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    gap: 12px;
+  }
+
+  .status-pase {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .status-pase span { color: var(--accent); }
+
+  /* ── Feedback ────────────────────────────────────────────────────── */
+  .toast {
+    position: fixed;
+    top: calc(var(--header-h) + 12px);
+    right: 16px;
+    background: var(--raised);
+    border: 1px solid var(--accent-dim);
+    color: var(--accent);
+    font-size: 12px;
+    padding: 8px 14px;
+    border-radius: 4px;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity .2s, transform .2s;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ── Loading / error states ──────────────────────────────────────── */
+  .state-msg {
+    padding: 48px 0;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toast { transition: none; }
+  }
+</style>
+
+<!-- Embedded pase context — updated by /pase skill -->
+<script id="pase-data" type="application/json">
+{
+  "generatedAt": null,
+  "patients": []
+}
+</script>
+
+<!-- ── Layout ──────────────────────────────────────────────────────── -->
+<header class="header">
+  <div class="header-brand">
+    <h1>Context Pase</h1>
+    <span class="header-sub" id="date-display"></span>
+  </div>
+  <div class="header-actions">
+    <span class="labs-freshness" id="labs-freshness"></span>
+    <button class="btn" id="btn-refresh">↻ Refrescar</button>
+  </div>
+</header>
+
+<main class="census" id="census">
+  <div class="state-msg" id="state-msg">Obteniendo datos de R+…</div>
+</main>
+
+<div class="status-bar">
+  <span class="status-pase" id="status-pase"></span>
+  <button class="btn btn-primary" id="btn-copy-all" style="display:none">Copiar pase completo</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BASE_URL = 'https://rplus-sync.rmas-workersdev.workers.dev/api/sync/v1/pase-labs';
+const TOKEN_KEY = 'rplus_pase_auth';
+
+function getAuthToken() {
+  // 1. URL hash fragment: #auth=<token> (deeplink / bookmark)
+  try {
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    const t = params.get('auth');
+    if (t) { sessionStorage.setItem(TOKEN_KEY, t); return t; }
+  } catch {}
+  // 2. Session storage (survives refresh, cleared on tab close)
+  return sessionStorage.getItem(TOKEN_KEY) || '';
+}
+
+function saveToken(t) { sessionStorage.setItem(TOKEN_KEY, t.trim()); }
+function clearToken()  { sessionStorage.removeItem(TOKEN_KEY); }
+
+function buildEndpoint() {
+  return `${BASE_URL}?auth=${encodeURIComponent(getAuthToken())}`;
+}
+
+// ── State ──────────────────────────────────────────────────────────
+let rPlusPatients = [];   // from live R+ fetch
+let fetchedAt     = null; // Date of last successful R+ fetch
+
+// ── Utilities ──────────────────────────────────────────────────────
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-MX', { weekday:'short', day:'numeric', month:'long', year:'numeric' });
+  } catch { return iso; }
+}
+
+function fmtAge(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    const now = Date.now();
+    const diff = Math.floor((now - d.getTime()) / 60000);
+    if (diff < 1)  return 'justo ahora';
+    if (diff < 60) return `hace ${diff} min`;
+    const h = Math.floor(diff / 60);
+    if (h < 24)    return `hace ${h}h`;
+    return `hace ${Math.floor(h / 24)}d`;
+  } catch { return ''; }
+}
+
+// Highlight abnormal values (number followed by *) and panel labels
+function renderLabLine(line) {
+  if (!line) return '';
+  const m = line.match(/^(\S+)\s+([\s\S]*)$/);
+  if (!m) return esc(line);
+  const panel = m[1];
+  const rest  = m[2];
+  // Highlight n* or n.n* patterns
+  const highlighted = rest.replace(
+    /(\d+(?:\.\d+)?)\*/g,
+    '<span class="lc">$1*</span>'
+  );
+  return `<span class="lp">${esc(panel)}</span>  ${highlighted}`;
+}
+
+function renderLabSets(labs) {
+  if (!labs || labs.length === 0) {
+    return '<div class="labs-empty">Sin labs en R+</div>';
+  }
+  return labs.map(set => {
+    const ts = [set.fecha, set.hora].filter(Boolean).join(' ');
+    const lines = (set.resLabs || []).map(l =>
+      `<div class="lab-line">${renderLabLine(l)}</div>`
+    ).join('');
+    return `<div class="lab-set">
+      <div class="lab-time">${esc(ts)}</div>
+      ${lines}
+    </div>`;
+  }).join('');
+}
+
+// ── Embedded pase-data ─────────────────────────────────────────────
+function readPaseData() {
+  try {
+    const el = document.getElementById('pase-data');
+    return JSON.parse(el ? el.textContent : '{}') || {};
+  } catch { return {}; }
+}
+
+function getPasePatient(paseData, patientId) {
+  const list = paseData.patients || [];
+  return list.find(p => p.id === patientId) || null;
+}
+
+// ── Render ─────────────────────────────────────────────────────────
+function renderCard(rPlusP, paseP) {
+  const cama  = esc(rPlusP.cama     || '—');
+  const nombre= esc(rPlusP.nombre   || '—');
+  const exp   = esc(rPlusP.expediente || 'NC');
+  const labs  = rPlusP.labs || [];
+
+  const identity = paseP?.identity || `${rPlusP.cama}  ${rPlusP.nombre}`;
+  const dx        = paseP?.dx        || '';
+  const reciente  = paseP?.reciente  || '';
+  const pend      = paseP?.pend      || '';
+  const estadoHoy = paseP?.estadoHoy || '';
+
+  function field(key, val) {
+    const empty = !val;
+    return `<div class="field">
+      <span class="field-key">${key}</span>
+      <span class="field-val${empty ? ' empty' : ''}">${empty ? 's/d' : esc(val)}</span>
+    </div>`;
+  }
+
+  const hasPaseCtx = !!(dx || reciente || pend || estadoHoy);
+
+  return `<article class="card" data-id="${esc(rPlusP.id)}">
+    <div class="card-identity">
+      <span class="identity-room">${cama}</span>
+      <span class="identity-name">${nombre}</span>
+      <span class="identity-meta">Exp: ${exp}</span>
+      ${paseP?.identity
+        ? `<span class="identity-meta" style="color:var(--text-dim);font-size:10px">${esc(paseP.identity.split('|').slice(1).join('|').trim())}</span>`
+        : ''}
+    </div>
+
+    ${hasPaseCtx ? `<div class="fields">
+      ${field('DX',       dx)}
+      ${field('RECIENTE', reciente)}
+      ${field('PEND',     pend)}
+      ${field('ESTADO',   estadoHoy)}
+    </div>` : `<div class="fields">
+      <div class="state-msg" style="padding:10px 0;font-size:11px">Ejecuta <code>/pase</code> para completar contexto clínico</div>
+    </div>`}
+
+    <div class="labs-block">
+      <div class="labs-header">Laboratorio</div>
+      ${renderLabSets(labs)}
+    </div>
+
+    <div class="card-footer">
+      <button class="btn" data-copy-id="${esc(rPlusP.id)}">Copiar bloque</button>
+    </div>
+  </article>`;
+}
+
+function renderCensus() {
+  const census = document.getElementById('census');
+  const stateMsg = document.getElementById('state-msg');
+  const btnCopyAll = document.getElementById('btn-copy-all');
+
+  if (!rPlusPatients.length) {
+    stateMsg.style.display = '';
+    stateMsg.textContent = 'Sin pacientes activos en R+ para este equipo.';
+    btnCopyAll.style.display = 'none';
+    return;
+  }
+
+  stateMsg.style.display = 'none';
+  btnCopyAll.style.display = '';
+
+  const paseData = readPaseData();
+  census.innerHTML = rPlusPatients.map(p => renderCard(p, getPasePatient(paseData, p.id))).join('');
+
+  // Wire copy-block buttons
+  census.querySelectorAll('[data-copy-id]').forEach(btn => {
+    btn.addEventListener('click', () => copyPatientBlock(btn.dataset.copyId));
+  });
+}
+
+// ── Status bar ─────────────────────────────────────────────────────
+function updateStatus() {
+  const freshness = document.getElementById('labs-freshness');
+  const statusPase = document.getElementById('status-pase');
+  const paseData  = readPaseData();
+
+  freshness.textContent = fetchedAt
+    ? `Labs: ${fmtAge(fetchedAt.toISOString())}`
+    : '';
+
+  if (paseData.generatedAt) {
+    statusPase.innerHTML = `Pase generado: <span>${fmtDate(paseData.generatedAt)}</span>`;
+  } else {
+    statusPase.textContent = 'Contexto clínico pendiente — ejecuta /pase';
+  }
+}
+
+// ── Date header ────────────────────────────────────────────────────
+function setDateDisplay() {
+  const el = document.getElementById('date-display');
+  const d  = new Date();
+  el.textContent = d.toLocaleDateString('es-MX', {
+    weekday: 'long', day: 'numeric', month: 'long'
+  });
+}
+
+// ── Fetch R+ ───────────────────────────────────────────────────────
+async function fetchRPlus() {
+  const stateMsg = document.getElementById('state-msg');
+  const census   = document.getElementById('census');
+
+  try {
+    const token = getAuthToken();
+    if (!token) {
+      showTokenGate();
+      return;
+    }
+    const res = await fetch(buildEndpoint());
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    const data = await res.json();
+    rPlusPatients = (data.patients || []).sort((a, b) =>
+      String(a.cama || '').localeCompare(String(b.cama || ''), 'es', { numeric: true })
+    );
+    fetchedAt = new Date();
+    renderCensus();
+    updateStatus();
+  } catch (err) {
+    stateMsg.style.display = '';
+    stateMsg.textContent   = `Error al obtener datos de R+: ${err.message}`;
+  }
+}
+
+// ── Copy utilities ─────────────────────────────────────────────────
+function buildPatientText(p, paseP) {
+  const lines = [];
+
+  const identityLine = paseP?.identity
+    || `${p.cama}  ${p.nombre}  Exp: ${p.expediente}`;
+  lines.push(identityLine);
+
+  if (paseP?.dx)        lines.push(`DX: ${paseP.dx}`);
+  if (paseP?.reciente)  lines.push(`RECIENTE: ${paseP.reciente}`);
+  if (paseP?.pend)      lines.push(`PEND: ${paseP.pend}`);
+  if (paseP?.estadoHoy) lines.push(`ESTADO HOY (${(paseP.estadoHoy.match(/^(\d{2}\/\d{2})/) || ['',''])[1]}): ${paseP.estadoHoy.replace(/^\d{2}\/\d{2}[:\s]*/, '').trim()}`);
+
+  const labs = p.labs || [];
+  if (labs.length) {
+    const labParts = labs.slice(0, 2).map(s => {
+      const ts  = [s.fecha, s.hora].filter(Boolean).join(' ');
+      const val = (s.resLabs || []).join('  ');
+      return `LABS ${ts}: ${val}`;
+    });
+    lines.push(labParts.join(' | '));
+  }
+
+  return lines.join('\n');
+}
+
+function copyPatientBlock(patientId) {
+  const p      = rPlusPatients.find(x => x.id === patientId);
+  const paseP  = getPasePatient(readPaseData(), patientId);
+  if (!p) return;
+  const text = buildPatientText(p, paseP);
+  copyToClipboard(text, 'Bloque copiado');
+}
+
+function copyAll() {
+  const paseData = readPaseData();
+  const d = new Date();
+  const dateStr = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  const header = `CONTEXT PASE — ${dateStr}`;
+  const blocks = rPlusPatients.map(p =>
+    buildPatientText(p, getPasePatient(paseData, p.id))
+  );
+  const alias = rPlusPatients.map(p => {
+    const pp = getPasePatient(paseData, p.id);
+    return `${p.cama} ${p.nombre}${pp?.alias ? ' — ' + pp.alias : ''}`;
+  }).join(' | ');
+  const text = [header, '', ...blocks, '', `ALIAS: ${alias}`].join('\n');
+  copyToClipboard(text, 'Pase copiado');
+}
+
+function copyToClipboard(text, msg) {
+  navigator.clipboard.writeText(text).then(() => showToast(msg)).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity  = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast(msg);
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── Token gate ─────────────────────────────────────────────────────
+function showTokenGate() {
+  const census = document.getElementById('census');
+  const stateMsg = document.getElementById('state-msg');
+  stateMsg.style.display = 'none';
+  census.innerHTML = `
+    <div style="max-width:400px;margin:48px auto;padding:0 16px">
+      <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px">Conectar a R+</div>
+      <div style="font-size:12.5px;color:var(--text-dim);margin-bottom:16px;line-height:1.6">
+        Pega el token de la URL móvil de R+.<br>
+        Se guarda solo en esta pestaña.
+      </div>
+      <div style="display:flex;gap:8px">
+        <input id="token-input" type="password" placeholder="407d2b92…"
+          style="flex:1;background:var(--raised);border:1px solid var(--border);color:var(--text);
+                 font-family:'Courier New',monospace;font-size:12px;padding:7px 10px;
+                 border-radius:4px;outline:none"
+          autocomplete="off" spellcheck="false">
+        <button class="btn btn-primary" id="token-submit">Conectar</button>
+      </div>
+      <div id="token-err" style="font-size:11px;color:var(--critical);margin-top:8px;display:none"></div>
+    </div>`;
+
+  const input  = document.getElementById('token-input');
+  const submit = document.getElementById('token-submit');
+  const err    = document.getElementById('token-err');
+
+  input.addEventListener('focus', () => { input.style.borderColor = 'var(--accent)'; });
+  input.addEventListener('blur',  () => { input.style.borderColor = 'var(--border)'; });
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') submit.click(); });
+
+  submit.addEventListener('click', async () => {
+    const t = input.value.trim();
+    if (!t) { err.textContent = 'Ingresa el token.'; err.style.display = ''; return; }
+    err.style.display = 'none';
+    saveToken(t);
+    await fetchRPlus();
+  });
+
+  input.focus();
+}
+
+// ── Init ────────────────────────────────────────────────────────────
+setDateDisplay();
+fetchRPlus();
+setInterval(updateStatus, 30000);
+
+document.getElementById('btn-refresh').addEventListener('click', fetchRPlus);
+document.getElementById('btn-copy-all').addEventListener('click', copyAll);
+</script>

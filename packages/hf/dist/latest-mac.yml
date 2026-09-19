@@ -1,0 +1,25 @@
+version: 8.1.7
+files:
+  - url: R+-8.1.7-autoupdate-mac-arm64.zip
+    sha512: RIfBC8vy47/ZVvIgdOqiBt5rX/VczJi2xDNhMKqRfOTgBjIxdhgGzBMxXVB8gqILdCwcW0wyKNLGf7uw3D+nhQ==
+    size: 140327982
+  - url: R+-8.1.7-arm64.dmg
+    sha512: u3fP6XdbcXEwu7+iIqhM4lfnbcKh5kTCjU3idXNTJzY3pqUvcJkBWpYrtQ8XnyvjTmtAE8ZPxM9wtOgwka3mhg==
+    size: 146199695
+  - url: R+-8.1.7-autoupdate-mac-x64.zip
+    sha512: yT0qyhn3bNAHtTujJks3uWjVhYQv0Rf7U3e30u4jB0ZtMr5Uk4kgWjRyha85Bu+i95z4ovvoI77L8G+yMnjmlw==
+    size: 148701510
+  - url: R+-8.1.7-x64.dmg
+    sha512: 5t5EeXAVNja1bH19GkRXeqUA5gT66znz8rCMAzSCN5ATvZkLOYhakNvJdk/G6D4AfAzsvBlyrp2bNAcOfUccjQ==
+    size: 154620822
+path: R+-8.1.7-autoupdate-mac-arm64.zip
+sha512: RIfBC8vy47/ZVvIgdOqiBt5rX/VczJi2xDNhMKqRfOTgBjIxdhgGzBMxXVB8gqILdCwcW0wyKNLGf7uw3D+nhQ==
+releaseDate: '2026-08-20T23:29:32.000Z'
+releaseNotes: |
+  Corrige que "Cerrar sesión" en Nube borrara el código de sala. La actualización ahora se instala sola en cuanto R+ queda inactivo, sin esperar a cerrar la app.
+  
+  Cerrar sesión ya no borra la sala: al volver a iniciar sesión, R+ recuerda el código de sala — ya no hay que volver a escribirlo.
+  
+  Instalación automática al quedar inactivo: si la actualización ya se descargó, se instala sola cuando aparece la pantalla de bloqueo por inactividad (10 min sin uso) — no espera a que cierres R+ manualmente.
+  
+  Cultivos — encabezado ya no se pega al texto: en UROCULTIVO/HEMOCULTIVO/FUNGICULTIVO el encabezado a veces se veía pegado al resto de la línea ("UROCULTIVOPOR SONDA"). Corregido.

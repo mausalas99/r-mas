@@ -1,0 +1,72 @@
+[
+  {
+    "id": "missingUser",
+    "user": null,
+    "patient": { "id": "p1" },
+    "activeGuardia": null,
+    "context": {},
+    "expected": {
+      "readable": false,
+      "writable": false,
+      "reasoning": "Usuario o paciente no identificado",
+      "audit": { "patientId": "p1" }
+    }
+  },
+  {
+    "id": "missingPatient",
+    "user": { "user_id": "u1", "rank": "Team" },
+    "patient": null,
+    "activeGuardia": null,
+    "context": {},
+    "expected": {
+      "readable": false,
+      "writable": false,
+      "reasoning": "Usuario o paciente no identificado",
+      "audit": { "userId": "u1", "rank": "Team" }
+    }
+  },
+  {
+    "id": "adminFull",
+    "user": { "user_id": "u1", "rank": "Admin" },
+    "patient": { "id": "p1" },
+    "activeGuardia": null,
+    "context": {},
+    "expected": {
+      "readable": true,
+      "writable": true,
+      "reasoning": "Admin: acceso completo",
+      "audit": { "userId": "u1", "rank": "Admin", "patientId": "p1" }
+    }
+  },
+  {
+    "id": "teamFullRead",
+    "user": { "user_id": "u1", "rank": "Team" },
+    "patient": { "id": "p1" },
+    "activeGuardia": null,
+    "context": {},
+    "expected": {
+      "readable": true,
+      "writable": true,
+      "reasoning": "Team: lectura y escritura completas",
+      "audit": { "userId": "u1", "rank": "Team", "patientId": "p1" }
+    }
+  },
+  {
+    "id": "incomingPreview",
+    "user": { "user_id": "u1", "rank": "Team" },
+    "patient": { "id": "p1" },
+    "activeGuardia": null,
+    "context": {
+      "cycle": { "preview_start_at": "2026-05-30T00:00:00Z", "effective_at": "2026-06-01T00:00:00Z" },
+      "assignments": [{ "patient_id": "p1", "effective_at": "2026-06-01T00:00:00Z" }],
+      "now": "2026-05-31T12:00:00Z"
+    },
+    "expected": {
+      "readable": true,
+      "writable": false,
+      "reasoning": "Vista previa Incoming: lectura permitida hasta vigencia",
+      "incomingPreview": true,
+      "audit": { "userId": "u1", "rank": "Team", "patientId": "p1" }
+    }
+  }
+]

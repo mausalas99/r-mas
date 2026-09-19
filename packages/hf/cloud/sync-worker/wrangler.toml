@@ -1,0 +1,36 @@
+name = "rplus-hf-sync"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+# Workers Paid — 30s CPU (Free was 10ms). Needed for Sala snapshot LWW.
+[limits]
+cpu_ms = 30_000
+
+[[durable_objects.bindings]]
+name = "ROOM_SYNC_HUB"
+class_name = "RoomSyncHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RoomSyncHub"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "rplus-hf-sync"
+database_id = "debe4f35-0b88-4d4a-acdd-a383985f8f89"
+migrations_dir = "schema"
+
+[assets]
+directory = "../sync-pages/public"
+binding = "ASSETS"
+
+[triggers]
+crons = ["0 6 * * *"]
+
+[vars]
+# Off: R+ HF's version numbering restarted at 1.0.0 (see CLAUDE.md), so
+# auth-util.js's MIN_NUBE_APP_VERSION ('8.2.1', copied from R+) does not
+# apply here. Do not flip this on without first setting a min version that
+# matches R+ HF's own release numbers — otherwise every current user is
+# locked out of login/register.
+NUBE_VERSION_GATE_ENABLED = false

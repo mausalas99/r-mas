@@ -1,0 +1,55 @@
+R+ 8.1.0 (censo cross-sala + Tendencias eventualidades)
+===========================================================
+
+Fecha: 2026-08-10
+
+## Resumen
+
+**8.1.0** corrige el censo **cross-sala** en Nube: expediente, labs y asignaciones van al room de la sala operativa del equipo (no solo la sala activa de la Mac). **Tendencias** muestra marcadores de eventualidades en las gráficas y permite alta con categoría/fecha. El Worker elimina la caché KV de revisión (pull solo D1). Incluye mejoras de filtros de censo, EA ventilatorio y roster de equipos.
+
+## Nuevo / mejorado
+
+### Nube / censo cross-sala
+
+- **Expediente al room correcto** — Pacientes asignados a un equipo de otra sala (p. ej. Torre HU) sincronizan expediente, labs y censo al room Nube de **esa** sala, aunque la Mac esté en Sala 1/2/E.
+- **Asignación de equipo** — Al asignar paciente a equipo de otra sala, se empuja censo y expediente al room destino.
+- **Reconciliación Nube** — Tras asignaciones clinicalOps, si faltan expedientes en esta Mac, pull automático del room de la sala (reemplaza reconcile LAN).
+- **Worker** — Eliminada caché KV de revisión; pull lee revisión solo en D1 (menos complejidad, menos cupo KV).
+
+### Tendencias / eventualidades
+
+- **Marcadores en gráficas** — Transfusión, biopsia, procedimiento y otro aparecen como puntos coloreados en Tendencias (un marcador por día).
+- **Alta desde Tendencias** — Modal con categoría, fecha y detalle (producto en transfusiones).
+- **Campo `kind`** — Eventualidades guardan categoría explícita además del texto libre.
+
+### Estado Actual / Manejo
+
+- **Ventilatorio** — Refinamientos en hints PaFi/ROX, aire ambiente y gasometría venosa.
+- **NM** — Mejoras en grid de categorías y vacíos.
+
+### Censo / equipos
+
+- **Filtros de censo** — Barra de filtros con popover anclado al sidebar; preferencias persisten al recrear la barra.
+- **Roster equipos** — UX de pick-team para residentes con equipos en directorio.
+
+### R+ Móvil (sync-pages)
+
+- Estilos actualizados para EA, expediente y workbench surfaces.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v8.1.0
+
+- Mac: `R+-8.1.0-arm64.dmg`, `R+-8.1.0-x64.dmg` (y zip para auto-update).
+- Windows: `R+-8.1.0-x64.exe`.
+
+Instala **8.1.0 en todas las Macs** del turno. **Despliega el Worker** el mismo día: `npm run deploy` en `cloud/sync-worker`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Notas
+
+- Peers en **8.0.9** son compatibles en el mismo turno.
+- **Sin wipe al actualizar** — SQLCipher y `userData` persisten; Recuérdame sigue en `app://rplus`.
+- No hay bump de schema SQLCipher.
+- **Recuérdame** guarda token en el dispositivo; no usar en Macs compartidas.

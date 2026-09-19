@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simulacro · Guardia + Entrega (Nube)</title>
+  <style>
+    :root {
+      --color-paper: #eceae6;
+      --color-surface: #f7f6f3;
+      --color-elevated: #ffffff;
+      --color-ink: #1c1c1e;
+      --color-ink-muted: #6c6c70;
+      --color-success: #248a3d;
+      --color-danger: #d70015;
+      --warn: #b45309;
+      --border: color-mix(in oklab, var(--color-ink) 14%, transparent);
+      --radius-md: 20px;
+      --radius-lg: 28px;
+      --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+      --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+      --overlay-bg: color-mix(in oklab, #000 45%, transparent);
+      --material-glass-bg: color-mix(in oklab, var(--color-elevated) 82%, transparent);
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+      --dur-ui: 220ms;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100dvh;
+      font-family: var(--font-ui);
+      background: var(--color-paper);
+      color: var(--color-ink);
+    }
+    [hidden] { display: none !important; }
+    .demo-banner {
+      position: sticky; top: 0; z-index: 40;
+      display: flex; flex-wrap: wrap; gap: 10px 16px;
+      align-items: center; justify-content: space-between;
+      padding: 12px 18px;
+      background: color-mix(in oklab, var(--warn) 12%, var(--color-elevated));
+      border-bottom: 1px solid color-mix(in oklab, var(--warn) 35%, var(--border));
+      font-size: 0.85rem;
+    }
+    .demo-banner code {
+      font-family: var(--font-mono); font-size: 0.78rem;
+      background: color-mix(in oklab, var(--color-ink) 6%, transparent);
+      padding: 2px 6px; border-radius: 6px;
+    }
+    .shell { max-width: 1100px; margin: 0 auto; padding: 22px 16px 64px; }
+    .shell h1 { margin: 0 0 6px; font-size: 1.35rem; letter-spacing: -0.02em; }
+    .lead {
+      margin: 0 0 16px; color: var(--color-ink-muted);
+      font-size: 0.92rem; line-height: 1.5; max-width: 68ch;
+    }
+    .scene-nav {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin: 0 0 18px; padding: 0; list-style: none;
+    }
+    .scene-nav button {
+      appearance: none; cursor: pointer; font: inherit; font-size: 0.8rem; font-weight: 600;
+      min-height: 40px; padding: 0 12px; border-radius: 999px;
+      border: 1px solid var(--border); background: var(--color-elevated);
+    }
+    .scene-nav button[aria-current="true"] {
+      background: var(--color-ink); color: #fff; border-color: var(--color-ink);
+    }
+    .note {
+      margin: 0 0 14px; padding: 12px 14px; border-radius: 12px;
+      border: 1px solid var(--border); background: var(--color-elevated);
+      font-size: 0.85rem; line-height: 1.45; color: var(--color-ink-muted);
+    }
+    .note strong { color: var(--color-ink); }
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 900px) { .compare { grid-template-columns: 1fr; } }
+    .pane {
+      background: var(--color-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-md); overflow: hidden; min-height: 480px;
+      display: flex; flex-direction: column;
+    }
+    .pane-head {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      background: var(--color-surface);
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--color-ink-muted);
+    }
+    .tag-bad { color: var(--color-danger); }
+    .tag-good { color: var(--color-success); }
+    .pane-body { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+    .app-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-bottom: 1px solid var(--border);
+      background: var(--color-surface);
+    }
+    .brand { font-weight: 800; font-size: 1.05rem; }
+    .spacer { flex: 1; }
+    .mode-seg {
+      display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+      font-size: 0.68rem; font-weight: 600;
+    }
+    .mode-seg span {
+      padding: 6px 8px; color: var(--color-ink-muted);
+      border-right: 1px solid var(--border);
+    }
+    .mode-seg span:last-child { border-right: 0; }
+    .mode-seg span.on { background: var(--color-ink); color: #fff; }
+
+    .trust-strip {
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+      padding: 8px 10px; border-bottom: 1px solid var(--border);
+      background: color-mix(in oklab, var(--color-success) 6%, var(--color-elevated));
+      font-size: 0.75rem;
+    }
+    .chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 9px; border-radius: 999px;
+      border: 1px solid var(--border); background: var(--color-elevated);
+      font-weight: 600; font-size: 0.72rem;
+    }
+    .chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-success); }
+    .chip.muted { font-weight: 500; color: var(--color-ink-muted); }
+    .chip.action {
+      background: var(--color-ink); color: #fff; border-color: var(--color-ink); cursor: pointer;
+    }
+    .chip.warn {
+      border-color: color-mix(in oklab, var(--warn) 40%, var(--border));
+      background: color-mix(in oklab, var(--warn) 10%, var(--color-elevated));
+      color: var(--warn);
+    }
+
+    .phase-bar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
+      background: var(--color-surface);
+    }
+    .phase-bar .badge {
+      font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+      background: var(--color-ink); color: #fff;
+    }
+    .phase-bar .clock { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; }
+    .phase-bar .hint { font-size: 0.75rem; color: var(--color-ink-muted); }
+
+    .metrics {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
+    }
+    .stat {
+      display: flex; flex-direction: column; min-width: 52px;
+      padding: 6px 10px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--color-surface);
+    }
+    .stat b { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+    .stat span { font-size: 0.65rem; color: var(--color-ink-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+    .stat.hot b { color: var(--color-danger); }
+
+    .btn {
+      appearance: none; border-radius: 12px; font: inherit; font-weight: 600;
+      font-size: 0.8rem; min-height: 36px; padding: 0 12px; cursor: pointer;
+      border: 1px solid var(--border); background: var(--color-elevated);
+    }
+    .btn.primary { background: var(--color-ink); color: #fff; border-color: var(--color-ink); }
+    .btn:active { transform: scale(0.97); }
+    .scope-toggle {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 4px 10px 4px 12px; border-radius: 999px;
+      border: 1px solid var(--border); font-size: 0.72rem; font-weight: 600;
+      background: var(--color-elevated); cursor: pointer;
+    }
+    .scope-toggle .sw {
+      width: 28px; height: 16px; border-radius: 999px;
+      background: color-mix(in oklab, var(--color-ink) 18%, transparent);
+      position: relative;
+    }
+    .scope-toggle .sw::after {
+      content: ""; position: absolute; top: 2px; left: 2px;
+      width: 12px; height: 12px; border-radius: 50%; background: #fff;
+    }
+    .scope-toggle.on .sw { background: var(--color-ink); }
+    .scope-toggle.on .sw::after { left: 14px; }
+
+    .census-head {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 10px 12px 6px; font-size: 0.85rem; font-weight: 700;
+    }
+    .census-head span { font-weight: 500; font-size: 0.72rem; color: var(--color-ink-muted); }
+
+    .grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 8px; padding: 0 12px 14px; overflow: auto;
+    }
+    .chip-card {
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 10px; background: var(--color-elevated);
+      font-size: 0.75rem; cursor: pointer;
+      transition: border-color var(--dur-ui) var(--ease-out);
+    }
+    .chip-card:hover { border-color: var(--color-ink); }
+    .chip-card.crit { border-color: color-mix(in oklab, var(--color-danger) 45%, var(--border)); }
+    .chip-card .bed { font-family: var(--font-mono); font-weight: 700; font-size: 0.8rem; }
+    .chip-card .name { font-weight: 600; margin: 2px 0 4px; }
+    .chip-card .dx { color: var(--color-ink-muted); font-size: 0.68rem; line-height: 1.3; }
+    .chip-card .vit { margin-top: 6px; font-size: 0.68rem; color: var(--warn); font-weight: 600; }
+    .chip-card .labs { margin-top: 4px; font-family: var(--font-mono); font-size: 0.65rem; color: var(--color-ink-muted); }
+
+    .empty {
+      margin: 20px 12px; padding: 18px; border-radius: 12px;
+      border: 1px dashed var(--border); text-align: center;
+      font-size: 0.82rem; color: var(--color-ink-muted); line-height: 1.45;
+    }
+    .empty strong { color: var(--color-ink); display: block; margin-bottom: 6px; }
+
+    .sheet-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    .sheet-list li {
+      display: flex; justify-content: space-between; gap: 8px; align-items: center;
+      padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+      font-size: 0.82rem; cursor: pointer;
+    }
+    .sheet-list li:hover { background: var(--color-surface); }
+    .sheet-list .meta { font-size: 0.7rem; color: var(--color-ink-muted); }
+
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 100;
+      display: none; align-items: center; justify-content: center;
+      padding: 16px; background: var(--overlay-bg);
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      width: min(96vw, 420px); max-height: min(90vh, 580px);
+      display: flex; flex-direction: column;
+      background: var(--material-glass-bg);
+      backdrop-filter: blur(18px);
+      border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 18px 20px 14px;
+    }
+    .modal h3 { margin: 0 0 8px; font-size: 1.1rem; }
+    .modal .lead-m { margin: 0 0 12px; font-size: 0.85rem; color: var(--color-ink-muted); line-height: 1.45; }
+    .modal-body { overflow: auto; flex: 1; }
+    .modal-foot {
+      display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end;
+      padding-top: 12px; margin-top: 8px; border-top: 1px solid var(--border);
+    }
+    .toast {
+      position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+      z-index: 200; padding: 10px 16px; border-radius: 12px;
+      background: var(--color-ink); color: #fff; font-size: 0.84rem; font-weight: 600;
+      opacity: 0; pointer-events: none; transition: opacity var(--dur-ui);
+    }
+    .toast.show { opacity: 1; }
+    .stack-pain { padding: 12px; font-size: 0.8rem; color: var(--color-ink-muted); line-height: 1.45; }
+    .stack-pain ol { margin: 8px 0 0; padding-left: 1.2rem; }
+  </style>
+</head>
+<body>
+  <div class="demo-banner">
+    <div>
+      <strong>Simulacro</strong> · Guardia board + Entrega (era Nube) ·
+      <code>docs/demos/ux-guardia-board-entrega-preview.html</code>
+    </div>
+    <div>No modifica la app · español neutro</div>
+  </div>
+
+  <div class="shell">
+    <h1>Rediseño modo Guardia</h1>
+    <p class="lead">
+      Tablero para censo y handoff en <strong>Nube</strong> (sin host LAN).
+      <strong>Regla:</strong> entregas pendientes <em>no deben bloquear</em> heredar pacientes ni salir de equipo
+      (al salir se resuelven las coverings del usuario). Heredar/traer solo mueve censo.
+    </p>
+
+    <ul class="scene-nav">
+      <li><button type="button" data-scene="board" aria-current="true">Tablero</button></li>
+      <li><button type="button" data-scene="entrega">Entrega</button></li>
+      <li><button type="button" data-scene="fin">Fin de guardia</button></li>
+      <li><button type="button" data-scene="doc">Documentar sin salir</button></li>
+      <li><button type="button" data-scene="empty">Empty / alcance</button></li>
+      <li><button type="button" data-scene="boundary">Límites</button></li>
+    </ul>
+
+    <!-- BOARD -->
+    <section id="scene-board" class="scene">
+      <p class="note">
+        <strong>Tablero.</strong> Hoy: métricas + Entrega + «Alcance completo / Solo mis entregas» (nombre que pelea con el modo del header), sin estado Nube.
+        Propuesta: strip de confianza, censo renombrado, CTAs de fase visibles, chips con acción clara.
+      </p>
+      <div class="compare">
+        <div class="pane">
+          <div class="pane-head"><span class="tag-bad">Hoy</span><span>Callejón</span></div>
+          <div class="pane-body">
+            <div class="app-header">
+              <span class="brand">R+</span>
+              <div class="spacer"></div>
+              <div class="mode-seg"><span>Sala</span><span>IC</span><span class="on">Guardia</span><span>Pase</span></div>
+              <span style="font-size:1.1rem;opacity:.5" title="Wi‑Fi">📶</span>
+            </div>
+            <div class="metrics">
+              <div class="stat"><b>18</b><span>censo</span></div>
+              <div class="stat hot"><b>3</b><span>críticos</span></div>
+              <div class="stat"><b>5</b><span>signos</span></div>
+              <button type="button" class="btn primary">Entrega</button>
+              <button type="button" class="scope-toggle on"><span>Solo mis entregas</span><span class="sw"></span></button>
+            </div>
+            <div class="census-head">Pacientes 12 <span>Guía guardia 2/7</span></div>
+            <div class="grid">
+              <div class="chip-card crit"><div class="bed">402</div><div class="name">Pérez</div><div class="dx">NAC + DM2</div><div class="vit">SV · hace 3 h</div></div>
+              <div class="chip-card"><div class="bed">318</div><div class="name">Ruiz</div><div class="dx">IRC</div></div>
+            </div>
+            <div class="stack-pain">
+              Sin strip Nube/equipo. «Solo mis entregas» suena a otro modo. Click chip → sale a expediente (pierde el tablero).
+            </div>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-head"><span class="tag-good">Propuesta</span><span>Nube-first</span></div>
+          <div class="pane-body">
+            <div class="app-header">
+              <span class="brand">R+</span>
+              <div class="spacer"></div>
+              <div class="mode-seg"><span>Sala</span><span>IC</span><span class="on">Guardia</span></div>
+              <span class="chip">Nube</span>
+            </div>
+            <div class="trust-strip">
+              <span class="chip"><span class="dot"></span> Conectado</span>
+              <span class="chip muted">Sala 2 · ago 2026</span>
+              <span class="chip muted">Equipo B</span>
+            </div>
+            <div class="phase-bar">
+              <span class="badge">Pre-turno</span>
+              <span class="hint">Recibe entregas o inicia turno cuando estés listo</span>
+              <div class="spacer"></div>
+              <button type="button" class="btn" data-go-entrega>Iniciar entrega</button>
+              <button type="button" class="btn primary" id="btn-start-turno">Iniciar turno</button>
+            </div>
+            <div class="metrics">
+              <div class="stat"><b>18</b><span>censo</span></div>
+              <div class="stat hot"><b>3</b><span>críticos</span></div>
+              <div class="stat"><b>5</b><span>SV</span></div>
+              <div class="stat"><b>4</b><span>labs hoy</span></div>
+              <button type="button" class="scope-toggle" id="scope-btn" aria-pressed="false">
+                <span id="scope-lbl">Censo: todos</span><span class="sw"></span>
+              </button>
+            </div>
+            <div class="census-head">Pacientes 18 <span>tocar chip · menú rápido</span></div>
+            <div class="grid" id="demo-grid">
+              <div class="chip-card crit" data-chip="perez"><div class="bed">402</div><div class="name">Pérez, J</div><div class="dx">NAC + DM2</div><div class="vit">SV · hace 3 h</div><div class="labs">GLU 142</div></div>
+              <div class="chip-card" data-chip="ruiz"><div class="bed">318</div><div class="name">Ruiz, A</div><div class="dx">IRC</div><div class="labs">Cr 2.1</div></div>
+              <div class="chip-card" data-chip="soto"><div class="bed">211</div><div class="name">Soto, C</div><div class="dx">Neumonía</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ENTREGA -->
+    <section id="scene-entrega" class="scene" hidden>
+      <p class="note">
+        <strong>Entrega (era Nube).</strong> Una fase del tablero: roster → confirmar → turno activo.
+        Se separa de «Preparar entrega» (checklist de documentación en el header).
+        Copy sin ⇄ / host / LAN.
+      </p>
+      <div class="compare">
+        <div class="pane">
+          <div class="pane-head"><span class="tag-bad">Hoy</span><span>Vocabulario</span></div>
+          <div class="pane-body">
+            <div class="stack-pain">
+              <ol>
+                <li>Header: Preparar entrega (checklist)</li>
+                <li>Board: botón Entrega (fase handoff)</li>
+                <li>Activar guardia hoy (otro modal)</li>
+                <li>Orphans: «entregas sin expediente» con lenguaje ⇄</li>
+              </ol>
+              Cuatro conceptos para un handoff. En Nube el censo ya es de sala — el roster debe decir a quién entregas y qué falta documentar.
+            </div>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-head"><span class="tag-good">Propuesta</span><span>Una fase</span></div>
+          <div class="pane-body">
+            <div class="app-header">
+              <span class="brand">R+</span>
+              <div class="spacer"></div>
+              <span class="chip warn">Fase entrega</span>
+            </div>
+            <div class="trust-strip">
+              <span class="chip"><span class="dot"></span> Nube al día</span>
+              <span class="chip muted">Entregando a R1 de Sala 2</span>
+            </div>
+            <div class="phase-bar">
+              <span class="badge">Entrega</span>
+              <span class="hint">12 pacientes · 3 con huecos de documentación</span>
+              <div class="spacer"></div>
+              <button type="button" class="btn" id="btn-prep-gaps">Ver huecos (prep)</button>
+              <button type="button" class="btn primary" id="btn-confirm-entrega">Confirmar entrega</button>
+            </div>
+            <div class="modal-body" style="padding:12px">
+              <ul class="sheet-list">
+                <li><span><strong>402 Pérez</strong><br><span class="meta">Handoff OK · EA hoy</span></span><span class="chip">Listo</span></li>
+                <li><span><strong>318 Ruiz</strong><br><span class="meta">Sin EA de hoy</span></span><span class="chip warn">Hueco</span></li>
+                <li><span><strong>211 Soto</strong><br><span class="meta">Labs pendientes</span></span><span class="chip warn">Hueco</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DOC -->
+    <section id="scene-doc" class="scene" hidden>
+      <p class="note">
+        <strong>Documentar sin salir.</strong> El chip abre un menú rápido; «Abrir expediente» deja un
+        <strong>Volver al censo</strong> sticky. Labs / eventualidad no destruyen el modo Guardia.
+      </p>
+      <div class="compare">
+        <div class="pane">
+          <div class="pane-head"><span class="tag-bad">Hoy</span><span>Exit density</span></div>
+          <div class="pane-body">
+            <div class="stack-pain">
+              Action sheet → Abrir expediente → <code>setUiDensity('normal')</code>.
+              Sidebar y tabs vuelven; el residente pierde el mapa del turno.
+              Registrar eventualidad habla de «equipo en LAN».
+            </div>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-head"><span class="tag-good">Propuesta</span><span>Menú + volver</span></div>
+          <div class="pane-body">
+            <div class="app-header">
+              <span class="brand">R+</span>
+              <button type="button" class="btn" style="margin-left:8px" id="btn-back-census">← Censo guardia</button>
+              <div class="spacer"></div>
+              <div class="mode-seg"><span>Sala</span><span class="on">IC</span><span>Guardia</span></div>
+            </div>
+            <div class="trust-strip">
+              <span class="chip muted">Pérez · 402 · desde Guardia</span>
+            </div>
+            <div style="padding:14px;font-size:0.82rem;line-height:1.45;color:var(--color-ink-muted)">
+              Estás en Nota / Lab / EA del paciente. El header guarda el retorno al tablero.
+              Menú del chip (simular): Labs · Nota · Eventualidad · Cerrar.
+              <div style="margin-top:12px">
+                <button type="button" class="btn primary" data-open-sheet>Abrir menú del chip</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EMPTY -->
+    <section id="scene-empty" class="scene" hidden>
+      <p class="note">
+        <strong>Empty + alcance.</strong> Grid vacío con next action. Toggle renombrado:
+        <em>Censo: todos / solo entregados</em> — no «modo».
+      </p>
+      <div class="compare">
+        <div class="pane">
+          <div class="pane-head"><span class="tag-bad">Hoy</span><span>Blank</span></div>
+          <div class="pane-body">
+            <div class="metrics">
+              <div class="stat"><b>0</b><span>censo</span></div>
+              <button type="button" class="scope-toggle on"><span>Solo mis entregas</span><span class="sw"></span></button>
+            </div>
+            <div class="empty" style="border-style:solid;min-height:120px"></div>
+            <div class="stack-pain">Grid vacío sin mensaje. El R1 no sabe si es filtro, Nube o equipo.</div>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-head"><span class="tag-good">Propuesta</span><span>Next action</span></div>
+          <div class="pane-body">
+            <div class="trust-strip">
+              <span class="chip"><span class="dot"></span> Conectado</span>
+              <span class="chip muted">Equipo B</span>
+            </div>
+            <div class="metrics">
+              <div class="stat"><b>0</b><span>visibles</span></div>
+              <button type="button" class="scope-toggle on"><span>Censo: solo entregados</span><span class="sw"></span></button>
+            </div>
+            <div class="empty">
+              <strong>No hay pacientes en este alcance</strong>
+              Prueba «Censo: todos», o confirma que ya te entregaron en Nube.
+              Si acabas de rotar, abre Mi rotación (fuera del tablero).
+              <div style="margin-top:12px">
+                <button type="button" class="btn primary" id="btn-scope-all">Ver censo completo</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FIN DE GUARDIA -->
+    <section id="scene-fin" class="scene" hidden>
+      <p class="note">
+        <strong>Fin de guardia → pendientes abiertos → equipos.</strong>
+        Al finalizar, el R de guardia ve los estudios/procedimientos <em>no completados</em>
+        agrupados por <strong>equipo de origen</strong> (el equipo diurno del paciente).
+        No se borran al apagar el reloj del turno. No es «heredar pacientes».
+      </p>
+      <div class="compare">
+        <div class="pane">
+          <div class="pane-head"><span class="tag-bad">Hoy (gap)</span><span>Solo UI</span></div>
+          <div class="pane-body">
+            <div class="phase-bar">
+              <span class="badge">Turno activo</span>
+              <span class="clock">08:12</span>
+              <div class="spacer"></div>
+              <button type="button" class="btn">Finalizar turno</button>
+            </div>
+            <div class="stack-pain">
+              <strong style="color:var(--color-ink)">Finalizar turno</strong> hoy solo apaga el reloj local
+              (<code>guardia.turnoActive</code>). Los <code>active_guardias</code> con estudios abiertos
+              siguen Active, pero <strong>no hay pantalla</strong> que los liste por equipo para devolverlos.
+              Eso es la mejora a diseñar — sin tocar heredar/traer.
+            </div>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-head"><span class="tag-good">Propuesta</span><span>Devolver</span></div>
+          <div class="pane-body">
+            <div class="app-header">
+              <span class="brand">R+</span>
+              <div class="spacer"></div>
+              <span class="chip warn">Cierre de guardia</span>
+            </div>
+            <div class="trust-strip">
+              <span class="chip muted">5 pendientes abiertos · 3 equipos</span>
+            </div>
+            <div class="phase-bar">
+              <span class="badge">Pendientes al cierre</span>
+              <span class="hint">Enviar a equipos de origen o marcar resuelto</span>
+            </div>
+            <div style="padding:12px">
+              <ul class="sheet-list">
+                <li>
+                  <span>
+                    <strong>Equipo Fer</strong><br>
+                    <span class="meta">402 Pérez · TAC tórax · 318 Ruiz · gasometría</span>
+                  </span>
+                  <button type="button" class="btn primary btn-fin-send" data-team="Fer">Enviar 2</button>
+                </li>
+                <li>
+                  <span>
+                    <strong>Equipo Leslie</strong><br>
+                    <span class="meta">211 Soto · US abdomen</span>
+                  </span>
+                  <button type="button" class="btn primary btn-fin-send" data-team="Leslie">Enviar 1</button>
+                </li>
+                <li>
+                  <span>
+                    <strong>Sin equipo / otros</strong><br>
+                    <span class="meta">1 estudio huérfano</span>
+                  </span>
+                  <button type="button" class="btn btn-fin-send" data-team="otros">Revisar</button>
+                </li>
+              </ul>
+              <p style="margin:12px 0 0;font-size:0.75rem;color:var(--color-ink-muted);line-height:1.4">
+                Agrupa por <code>source_team_id</code> del handoff (equipo diurno), no por el equipo del R de guardia.
+                Día a día: el R completa estudios en el tablero; al cierre solo quedan los abiertos.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BOUNDARY -->
+    <section id="scene-boundary" class="scene" hidden>
+      <p class="note">
+        <strong>Límites duros</strong> — para que el rediseño no mezcle flujos.
+      </p>
+      <div class="pane" style="min-height:auto">
+        <div class="pane-head"><span class="tag-good">Separación</span></div>
+        <div class="pane-body" style="padding:14px">
+          <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+            <thead>
+              <tr>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid var(--border);color:var(--color-ink-muted);font-size:0.7rem;text-transform:uppercase">Flujo</th>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid var(--border);color:var(--color-ink-muted);font-size:0.7rem;text-transform:uppercase">Qué hace</th>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid var(--border);color:var(--color-ink-muted);font-size:0.7rem;text-transform:uppercase">No toca</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:10px 8px;border-bottom:1px solid var(--border);font-weight:700">Modo Entrega</td>
+                <td style="padding:10px 8px;border-bottom:1px solid var(--border)">Handoff al R de guardia + estudios en <code>active_guardias</code></td>
+                <td style="padding:10px 8px;border-bottom:1px solid var(--border)">Asignación de censo / heredar</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 8px;border-bottom:1px solid var(--border);font-weight:700">Día a día (turno)</td>
+                <td style="padding:10px 8px;border-bottom:1px solid var(--border)">Completar SV / estudios / eventualidades</td>
+                <td style="padding:10px 8px;border-bottom:1px solid var(--border)">Heredar pacientes del mes</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 8px;border-bottom:1px solid var(--border);font-weight:700">Fin de guardia</td>
+                <td style="padding:10px 8px;border-bottom:1px solid var(--border)">Desplegar abiertos → enviar a equipos origen</td>
+                <td style="padding:10px 8px;border-bottom:1px solid var(--border)">Borrar pendientes al apagar reloj</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 8px;border-bottom:1px solid var(--border);font-weight:700">Heredar / traer</td>
+                <td style="padding:10px 8px;border-bottom:1px solid var(--border)">Solo censo; funciona aunque haya entrega Active</td>
+                <td style="padding:10px 8px;border-bottom:1px solid var(--border)">No escribe pendientes</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 8px;font-weight:700">Salir de equipo</td>
+                <td style="padding:10px 8px">Siempre permitido; resuelve coverings del usuario</td>
+                <td style="padding:10px 8px">No usa pendientes como candado</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="modal-sheet">
+    <div class="modal">
+      <h3>Pérez · 402</h3>
+      <p class="lead-m">Acciones rápidas · el censo sigue debajo</p>
+      <div class="modal-body">
+        <ul class="sheet-list">
+          <li data-act="labs"><span><strong>Pegar / ver labs</strong></span><span class="meta">sin salir</span></li>
+          <li data-act="nota"><span><strong>Nota / expediente</strong></span><span class="meta">con volver</span></li>
+          <li data-act="ev"><span><strong>Registrar eventualidad</strong></span><span class="meta">visible al equipo</span></li>
+          <li data-act="ea"><span><strong>Estado actual</strong></span><span class="meta">Sala</span></li>
+        </ul>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn" data-close-sheet>Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const scenes = [...document.querySelectorAll('.scene')];
+    const nav = [...document.querySelectorAll('.scene-nav button')];
+    function show(id) {
+      scenes.forEach((s) => { s.hidden = s.id !== 'scene-' + id; });
+      nav.forEach((b) => b.setAttribute('aria-current', b.dataset.scene === id ? 'true' : 'false'));
+    }
+    nav.forEach((b) => b.addEventListener('click', () => show(b.dataset.scene)));
+    show('board');
+
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => el.classList.remove('show'), 2200);
+    }
+
+    document.getElementById('scope-btn').addEventListener('click', () => {
+      const btn = document.getElementById('scope-btn');
+      const on = btn.classList.toggle('on');
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      document.getElementById('scope-lbl').textContent = on ? 'Censo: solo entregados' : 'Censo: todos';
+      toast(on ? 'Mostrando solo pacientes entregados' : 'Mostrando censo completo');
+    });
+
+    document.getElementById('btn-start-turno').addEventListener('click', () => {
+      toast('Turno activo · reloj + feed de SV');
+    });
+    document.querySelectorAll('[data-go-entrega]').forEach((b) => {
+      b.addEventListener('click', () => { show('entrega'); toast('Fase entrega'); });
+    });
+    document.getElementById('btn-confirm-entrega').addEventListener('click', () => {
+      toast('Entrega confirmada · inicia Turno activo');
+    });
+    document.getElementById('btn-prep-gaps').addEventListener('click', () => {
+      toast('Abre Preparar entrega (checklist) con 3 huecos');
+    });
+    document.getElementById('btn-back-census').addEventListener('click', () => {
+      show('board');
+      toast('De vuelta al censo de guardia');
+    });
+    document.getElementById('btn-scope-all').addEventListener('click', () => {
+      toast('Censo: todos');
+    });
+    document.querySelectorAll('.btn-fin-send').forEach((b) => {
+      b.addEventListener('click', () => {
+        toast('Pendientes → Equipo ' + b.getAttribute('data-team') + ' (origen)');
+      });
+    });
+
+    const sheet = document.getElementById('modal-sheet');
+    function openSheet() { sheet.classList.add('open'); }
+    function closeSheet() { sheet.classList.remove('open'); }
+    document.querySelectorAll('[data-open-sheet], [data-chip]').forEach((el) => {
+      el.addEventListener('click', openSheet);
+    });
+    document.querySelectorAll('[data-close-sheet]').forEach((b) => b.addEventListener('click', closeSheet));
+    sheet.addEventListener('click', (e) => { if (e.target === sheet) closeSheet(); });
+    sheet.querySelectorAll('[data-act]').forEach((li) => {
+      li.addEventListener('click', () => {
+        closeSheet();
+        const a = li.getAttribute('data-act');
+        if (a === 'nota') { show('doc'); toast('Nota con «← Censo guardia»'); }
+        else if (a === 'labs') toast('Labs overlay · censo intacto');
+        else if (a === 'ev') toast('Eventualidad · visible al equipo (Nube)');
+        else toast('Estado actual');
+      });
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet(); });
+  </script>
+</body>
+</html>

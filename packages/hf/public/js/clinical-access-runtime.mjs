@@ -1,0 +1,61 @@
+/**
+ * Wires clinical access modules into the running app (session, signing, scope).
+ * Thin barrel — implementation lives under ./clinical-access-runtime/.
+ */
+export { clinicalSessionContext, buildGuardiasMap } from './clinical-session-context.mjs';
+
+export { markClinicalAccessBootReady, waitForClinicalAccessReady } from './clinical-access-runtime/boot-ready.mjs';
+
+export {
+  isClinicalScopeReadyForPatientApply,
+  applyClinicalScopeFromOpsSnapshot,
+  prunePatientsOutsideClinicalScope,
+} from './clinical-access-runtime/scope-ops.mjs';
+
+export {
+  fetchClinicalScopeContextFromDb,
+  fetchClinicalTeamsFromDb,
+  fetchActiveRotationCycleFromDb,
+  fetchIncomingAssignmentsFromDb,
+} from './clinical-access-runtime/scope-db.mjs';
+
+export { getClinicalScopeContextForEvaluate } from './clinical-access-runtime/scope-evaluate.mjs';
+
+export {
+  resolveClinicalRank,
+  bootstrapClinicalAccess,
+  lookupClinicalUserByUsername,
+  resumeClinicalIdentityByUsername,
+} from './clinical-access-runtime/bootstrap.mjs';
+
+export { migrateLocalPatientsClinicalSala, getClinicalUser, unlockClinicalSessionOverlay } from './clinical-access-runtime/session-user.mjs';
+
+export { touchClinicalSessionActivity } from './clinical-access-runtime/session-activity.mjs';
+
+export { refreshClinicalUserProfile } from './clinical-access-runtime/session-profile.mjs';
+
+export {
+  ensureTeamAssignedPatientsOnDevice,
+  ensureElevatedWardCensusOnDevice,
+  refreshClinicalPatientListForScope,
+  wireClinicalOpsSyncRefresh,
+} from './clinical-access-runtime/census-nube-pull.mjs';
+
+export {
+  initClinicalAccessRuntime,
+  stopClinicalAccessRuntime,
+  resumeClinicalSession,
+} from './clinical-access-runtime/lifecycle.mjs';
+
+export {
+  assertClinicalWriteAllowed,
+  signOutgoingLiveSyncMutation,
+  verifyIncomingClinicalLedger,
+  guardAndSignLiveSyncMutation,
+} from './clinical-access-runtime/crypto-signing.mjs';
+
+export {
+  pruneMobilePatientsOutsideTeamScope,
+  finalizeMobileLanPatientCensus,
+  refreshDesktopPatientListAfterScopePrune,
+} from './clinical-access-runtime/mobile.mjs';

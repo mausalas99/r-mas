@@ -1,0 +1,48 @@
+R+ 8.0.6 (onboarding Nube — ya tengo cuenta + modales Conexión)
+============================================================
+
+Fecha: 2026-08-08
+
+## Resumen
+
+**8.0.6** mejora el **primer arranque en Nube**: al elegir modo de uso puedes **iniciar sesión con cuenta existente** (recuérdame + pull de censo/equipos) sin pasar por «crear cuenta». Los modales hijos de **⇄ Conexión** (código de recuperación, admin, historial Equipos) se apilan correctamente sobre el panel. El script `setup-sync` puede provisionar el namespace **KV CACHE** del Worker.
+
+## Nuevo / mejorado
+
+### Onboarding Nube
+
+- **Ya tengo cuenta** — Tercera tarjeta en «¿Cómo usarás R+?»: login con @usuario + contraseña Nube, rotación y **Recuérdame**; sincroniza censo y equipos al terminar.
+- **Crear cuenta separado** — El flujo de registro en perfil ya no mezcla radio «crear / login»; solo crea cuenta nueva.
+- **Reanudar sesión** — Si «Recuérdame» dejó token pero faltaban flags de perfil, el onboarding completa sync sin volver a pedir contraseña.
+- **Copy y iconos** — Tarjetas Nube / login / solo equipo con iconos cloud y llave; sin referencias a LAN en el paso de modo.
+
+### Conexión y modales
+
+- **Modales apilados** — Código de recuperación, prompt admin y historial Equipos usan `lab-conflict-backdrop--stacked` (z-index sobre ⇄ Conexión).
+- **Recuérdame en registro** — `registerCloudDuringOnboarding` respeta «Recuérdame» al guardar token.
+
+### Operador cloud
+
+- **setup-sync** — Tras D1, intenta crear namespace KV `rplus-sync-cache` y escribir binding `CACHE` en `wrangler.toml` (opcional; el Worker funciona sin él).
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v8.0.6
+
+- Mac: `R+-8.0.6-arm64.dmg`, `R+-8.0.6-x64.dmg` (y zip para auto-update).
+- Windows: `R+-8.0.6-x64.exe`.
+
+Instala **8.0.6 en todas las Macs** del turno. No requiere migración Worker obligatoria; si aún no tienes KV CACHE y quieres hints de revisión:
+
+```bash
+cd /Users/mauriciosalas/R+
+node cloudflare/setup-sync.mjs
+```
+
+Tras el build local: `npm run build:mac` / `npm run build:win`.
+
+## Notas
+
+- Usuarios que reinstalan R+ en una Mac nueva: elige **Ya tengo cuenta** en lugar de crear un @usuario duplicado.
+- **Recuérdame** guarda el token Nube en el dispositivo; no lo uses en Macs compartidas.
+- Peers en **8.0.5** son compatibles en el mismo turno; el cambio es solo UX de onboarding y modales.
