@@ -34,8 +34,3 @@ export function migrateLocalPatientsClinicalSala() {
 export function getClinicalUser() {
   return clinicalSessionContext.user;
 }
-
-export function unlockClinicalSessionOverlay() {
-  const overlay = document.getElementById('rpc-clinical-session-lock');
-  if (overlay) overlay.classList.remove('active-lock-view-overlay');
-}

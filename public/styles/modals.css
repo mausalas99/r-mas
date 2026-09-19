@@ -1429,63 +1429,6 @@ html.dark #rpc-idle-lock-overlay { background: var(--scrim-bg); }
 }
 .rpc-idle-lock-actions .btn-unlock:hover { background: var(--action-hover); }
 
-/* ── Sesión clínica (clave de firma en memoria) ───────────── */
-#rpc-clinical-session-lock {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-db-unlock);
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: var(--scrim-bg);
-}
-html.dark #rpc-clinical-session-lock { background: var(--scrim-bg); }
-#rpc-clinical-session-lock.active-lock-view-overlay { display: flex; }
-.clinical-session-lock-panel {
-  background: var(--surface);
-  color: var(--text);
-  border-radius: var(--radius-sm);
-  max-width: 380px;
-  width: 100%;
-  padding: 26px 24px 22px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  text-align: center;
-}
-.clinical-session-lock-panel h2 {
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin: 0;
-}
-.clinical-session-lock-panel p {
-  font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.5;
-  margin: 0;
-}
-.clinical-session-lock-actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 4px;
-}
-.clinical-session-lock-actions .btn-unlock {
-  background: var(--action);
-  color: var(--color-on-accent);
-  border: none;
-  border-radius: var(--radius-field);
-  padding: 9px 18px;
-  font-size: 14px;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-}
-.clinical-session-lock-actions .btn-unlock:hover { background: var(--action-hover); }
-
 /* ── Borrado de datos ──────────────────────────────────────── */
 #rpc-wipe-modal {
   display: none; position: fixed; inset: 0; z-index: var(--z-db-unlock);

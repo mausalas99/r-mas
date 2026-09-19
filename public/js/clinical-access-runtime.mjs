@@ -36,7 +36,7 @@ export {
   resumeClinicalIdentityByUsername,
 } from './clinical-access-runtime/bootstrap.mjs';
 
-export { migrateLocalPatientsClinicalSala, getClinicalUser, unlockClinicalSessionOverlay } from './clinical-access-runtime/session-user.mjs';
+export { migrateLocalPatientsClinicalSala, getClinicalUser } from './clinical-access-runtime/session-user.mjs';
 
 export { touchClinicalSessionActivity } from './clinical-access-runtime/session-activity.mjs';
 
