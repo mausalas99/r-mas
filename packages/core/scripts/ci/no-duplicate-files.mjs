@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { GATE_EXCLUDED_RE } from '../metrics/constants.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
@@ -42,6 +43,7 @@ function trackedRegularFiles() {
     const rel = m[2];
     if (mode === '120000') continue;
     if (mode !== '100644' && mode !== '100755') continue;
+    if (GATE_EXCLUDED_RE.test(rel)) continue;
     out.push(rel);
   }
   return out;
