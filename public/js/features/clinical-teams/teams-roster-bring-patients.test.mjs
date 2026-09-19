@@ -1,8 +1,5 @@
 import { describe, it, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { setPatients } from '../../app-state.mjs';
 import {
@@ -12,11 +9,9 @@ import {
   offerBringPatientsAfterTeamJoin,
 } from './teams-roster-bring-patients.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
 describe('teams-roster-bring-patients', () => {
   beforeEach(() => {
-    clinicalSessionContext.user = { user_id: 'u1', rank: 'R2' };
+    clinicalSessionContext.user = { user_id: 'u1', rank: 'Team' };
     // User only joined the new Nube team; t-lan is stale LAN assignment still in DB.
     clinicalSessionContext.teams = [
       { team_id: 't-new', name: 'Dra. Leslie', members: [{ user_id: 'u1' }] },
@@ -118,14 +113,4 @@ describe('teams-roster-bring-patients', () => {
     assert.equal(assign.mock.callCount(), 2);
   });
 
-  it('bring/inherit modules stay off active_guardias / entrega pendientes', () => {
-    const bring = readFileSync(join(__dirname, 'teams-roster-bring-patients.mjs'), 'utf8');
-    const inherit = readFileSync(join(__dirname, 'teams-roster-inherit-patients.mjs'), 'utf8');
-    for (const src of [bring, inherit]) {
-      const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-      assert.doesNotMatch(code, /active_guardias|pendientes_json|dbGuardiaUpsert|clinical-entrega/);
-      assert.doesNotMatch(code, /from ['"].*entrega/);
-      assert.doesNotMatch(code, /from ['"].*guardia/);
-    }
-  });
 });

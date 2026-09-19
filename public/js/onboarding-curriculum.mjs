@@ -96,53 +96,6 @@ export const IC_CHAPTERS = [
   },
 ];
 
-export const GUARDIA_V7_CHAPTERS = [
-  {
-    id: 'ch-guardia-modo',
-    title: 'Modo Guardia',
-    stepIds: [
-      'gv7_guardia_chip',
-      'gv7_guardia_tab',
-      'gv7_guardia_scope',
-      'gv7_trust_strip',
-      'gv7_guardia_toggle',
-      'gv7_guardia_exit',
-    ],
-  },
-  {
-    id: 'ch-guardia-censo',
-    title: 'Censo y alcance',
-    stepIds: ['gv7_censo_r1', 'gv7_censo_r4', 'gv7_censo_sync'],
-  },
-  {
-    id: 'ch-guardia-entrega',
-    title: 'Modo Entrega',
-    stepIds: [
-      'gv7_entrega_phase',
-      'gv7_entrega_patient',
-      'gv7_entrega_roster',
-      'gv7_entrega_pendientes',
-      'gv7_fin_turno',
-    ],
-  },
-  {
-    id: 'ch-guardia-nube',
-    title: 'R+ Cloud y equipos',
-    stepIds: [
-      'gv7_lan_wifi',
-      'gv7_lan_directorio',
-      'gv7_lan_rotacion',
-      'gv7_rotacion_rejoin',
-      'gv7_inherit_patients',
-    ],
-  },
-  {
-    id: 'ch-guardia-movil',
-    title: 'iPad y móvil',
-    stepIds: ['gv7_mobile_link', 'gv7_mobile_scope', 'gv7_mobile_vs_sala'],
-  },
-];
-
 export const QUICK_ROUTE_CHAPTERS = [
   {
     id: 'ch-quick-route',
@@ -151,8 +104,7 @@ export const QUICK_ROUTE_CHAPTERS = [
       'map_tabs',
       'map_add_patient',
       'lab_parse',
-      'gv7_guardia_chip',
-      'gv7_lan_wifi',
+      'livesync_desktop',
       'quick_wrap',
     ],
   },
@@ -165,14 +117,6 @@ export const QUICK_ROUTE_HUB_MODULE = {
   branch: 'quick-route',
   stepCount: QUICK_ROUTE_CHAPTERS[0].stepIds.length,
 };
-
-export const GUARDIA_V7_HUB_MODULES = GUARDIA_V7_CHAPTERS.map((ch) => ({
-  id: ch.id,
-  label: ch.title,
-  chapterId: ch.id,
-  branch: 'guardia-v7',
-  stepCount: ch.stepIds.length,
-}));
 
 export const SALA_HUB_MODULES = [
   { id: 'mod-ch1', chapterId: 'ch-map', label: 'Cómo está armada R+', branch: 'sala' },
@@ -196,7 +140,6 @@ export const HUB_MODULES = SALA_HUB_MODULES;
 
 function chaptersForBranch(branch) {
   if (branch === 'interconsulta') return IC_CHAPTERS;
-  if (branch === 'guardia-v7') return GUARDIA_V7_CHAPTERS;
   if (branch === 'quick-route') return QUICK_ROUTE_CHAPTERS;
   return SALA_CHAPTERS;
 }
@@ -207,10 +150,6 @@ export function getSalaTourSteps() {
 
 export function getInterconsultaTourSteps() {
   return IC_CHAPTERS.flatMap((c) => c.stepIds.slice());
-}
-
-export function getGuardiaV7TourSteps() {
-  return GUARDIA_V7_CHAPTERS.flatMap((c) => c.stepIds.slice());
 }
 
 export function getQuickRouteTourSteps() {
@@ -245,11 +184,7 @@ export function getChapterProgressLabel(stepId, branch) {
   const chapter = chapters.find((c) => c.id === ch.id);
   if (!chapter) {
     const linear =
-      branch === 'guardia-v7'
-        ? getGuardiaV7TourSteps()
-        : branch === 'interconsulta'
-          ? getInterconsultaTourSteps()
-          : getSalaTourSteps();
+      branch === 'interconsulta' ? getInterconsultaTourSteps() : getSalaTourSteps();
     const linearIdx = linear.indexOf(stepId);
     return {
       chapterTitle: ch.title || '',
@@ -286,7 +221,6 @@ export function getTourStepsForChapter(chapterId, branch) {
 }
 
 export function isValidStepForBranch(stepId, branch, _mode) {
-  if (branch === 'guardia-v7') return getGuardiaV7TourSteps().includes(stepId);
   if (branch === 'quick-route') return getQuickRouteTourSteps().includes(stepId);
   const steps = branch === 'interconsulta' ? getInterconsultaTourSteps() : getSalaTourSteps();
   return steps.includes(stepId);
@@ -303,7 +237,6 @@ export function migrateTourStepId(stepId, _branch) {
   }
   if (stepId === 'sala_soap') return 'sala_med';
   if (stepId === 'historia_clinica') return 'estado_actual';
-  if (stepId === 'gv7_lan_pin') return 'gv7_lan_directorio';
   if (
     stepId === 'listado_problemas' ||
     stepId === 'sala_vpo' ||

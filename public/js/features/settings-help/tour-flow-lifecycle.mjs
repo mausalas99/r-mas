@@ -14,7 +14,6 @@ import {
 import {
   clearGuidedTourModuleScope,
   maybeMarkFundamentosChapterComplete,
-  maybeMarkGuardiaV7ChapterComplete,
 } from './tour-flow-chapter.mjs';
 import { destroyDemoAndClose } from './tour-flow-demo-cleanup.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
@@ -86,7 +85,6 @@ async function promptMiRotacionAfterSalaTourIfNeeded(branch) {
 function completeGuidedTourWithCelebration() {
   const completedBranch = tourState.guidedTourBranch;
   if (tourState.tourStepId) {
-    if (completedBranch === 'guardia-v7') maybeMarkGuardiaV7ChapterComplete(tourState.tourStepId);
     if (completedBranch === 'sala' || completedBranch === 'interconsulta') {
       maybeMarkFundamentosChapterComplete(tourState.tourStepId);
     }
@@ -102,11 +100,9 @@ function completeGuidedTourWithCelebration() {
   if (completedBranch === 'sala') prepareSalaGuidedTourExitSync();
   publishTourGuardContext();
   hideTourDock();
-  if (completedBranch !== 'guardia-v7') {
-    rt.launchConfetti();
-    rt.showToast('Tutorial completado', 'success');
-  }
-  if (completedBranch !== 'guardia-v7') safeDestroyDemoAndClose();
+  rt.launchConfetti();
+  rt.showToast('Tutorial completado', 'success');
+  safeDestroyDemoAndClose();
   syncLearnHubContinueVisibility();
 }
 

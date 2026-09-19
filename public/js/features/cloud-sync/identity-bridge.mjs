@@ -68,9 +68,8 @@ async function tryUpsertClinicalProfile(sessionUserId, profile) {
   const profileRes = await api.dbClinicalProfileUpsert({
     userId: sessionUserId,
     clinicalName: String(profile.displayName || '').trim(),
-    rank: String(profile.rank || clinicalSessionContext.user?.rank || 'R1'),
+    rank: String(profile.rank || clinicalSessionContext.user?.rank || 'Team'),
     sala: profile.sala ?? clinicalSessionContext.user?.sala ?? null,
-    isProgramAdmin: false,
   });
   if (!profileRes?.ok) {
     return { ok: false, error: profileRes?.error || 'No se guardó el perfil clínico.' };
@@ -91,7 +90,7 @@ export function normalizeCloudIdentityUsername(raw) {
 export async function bridgeCloudIdentityToLocal({ username, displayName, rank, sala }) {
   const localHandle = normalizeCloudIdentityUsername(username);
   const clinicalName = String(displayName || '').trim();
-  const clinicalRank = String(rank || clinicalSessionContext.user?.rank || 'R1');
+  const clinicalRank = String(rank || clinicalSessionContext.user?.rank || 'Team');
   const clinicalSala = sala ?? clinicalSessionContext.user?.sala ?? null;
   const sessionUserId = resolveClinicalSessionUserId();
 

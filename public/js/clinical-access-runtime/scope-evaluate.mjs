@@ -1,5 +1,4 @@
 import { shouldEnforceTeamPatientMirror } from '../clinical-privileges.mjs';
-import { readEntregaPhaseActive } from '../clinico-access.mjs';
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
 
 function scopeContextForEvaluateFromParts(parts) {
@@ -13,8 +12,6 @@ function scopeContextForEvaluateFromParts(parts) {
     cycle: parts.cycle,
     assignments: parts.assignments,
     salaGuardiaToday: parts.salaGuardiaToday,
-    guardiaMode: parts.guardiaMode,
-    entregaPhaseActive: parts.entregaPhaseActive,
     enforceTeamPatientScope,
     now: parts.now,
   };
@@ -32,14 +29,6 @@ export function getClinicalScopeContextForEvaluate() {
       cycle: cached.cycle ?? null,
       assignments: Array.isArray(cached.assignments) ? cached.assignments : [],
       salaGuardiaToday: Array.isArray(cached.salaGuardiaToday) ? cached.salaGuardiaToday : [],
-      guardiaMode:
-        cached.guardiaMode != null
-          ? !!cached.guardiaMode
-          : !!clinicalSessionContext.guardiaMode,
-      entregaPhaseActive:
-        cached.entregaPhaseActive != null
-          ? !!cached.entregaPhaseActive
-          : readEntregaPhaseActive(),
       enforceTeamPatientScope: shouldEnforceTeamPatientMirror()
         ? true
         : cached.enforceTeamPatientScope,
@@ -55,8 +44,6 @@ export function getClinicalScopeContextForEvaluate() {
     cycle: null,
     assignments: fallbackAssignments,
     salaGuardiaToday: [],
-    guardiaMode: !!clinicalSessionContext.guardiaMode,
-    entregaPhaseActive: readEntregaPhaseActive(),
     enforceTeamPatientScope: shouldEnforceTeamPatientMirror(),
     now: new Date().toISOString(),
   });

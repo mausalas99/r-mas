@@ -11,7 +11,7 @@ test('pruneMobilePatientsOutsideTeamScope keeps census while LAN scope is loadin
   try {
     setPatients([{ id: 'p1', nombre: 'TEST', registro: 'R1' }]);
     getNotes().p1 = { fecha: '01/01/2026' };
-    clinicalSessionContext.user = { user_id: 'u1', rank: 'R1' };
+    clinicalSessionContext.user = { user_id: 'u1', rank: 'Team' };
     clinicalSessionContext.scopeContext = null;
 
     const pruned = pruneMobilePatientsOutsideTeamScope();

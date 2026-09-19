@@ -3,7 +3,6 @@ import { syncHeaderContext } from './header-context.mjs';
 import { flushRecetaHuDraftIfMountedFor } from './receta-hu.mjs';
 import { stashMedInputForPatient } from './medications.mjs';
 import { stashMedPharmPasteForPatient } from './med-pharm-profile-panel.mjs';
-import { stashVpoForPatient } from './vpo.mjs';
 import { cancelDeferredIdleWork, scheduleTrailing } from '../deferred-work.mjs';
 import { isModeSala } from '../mode-features.mjs';
 import { migrateGranularInner } from '../expediente-tabs.mjs';
@@ -107,7 +106,6 @@ function stashPatientDraftsOnChange(prevId) {
   flushRecetaHuDraftIfMountedFor(prevId);
   stashMedInputForPatient(prevId);
   stashMedPharmPasteForPatient(prevId);
-  stashVpoForPatient(prevId);
 }
 
 function showPatientViewShell() {

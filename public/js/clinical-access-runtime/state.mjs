@@ -1,13 +1,7 @@
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
 
-/** @type {import('../features/session-manager.mjs').BackgroundVitalsMonitorLoop|null} */
-export let vitalsLoop = null;
 /** @type {import('../features/session-manager.mjs').ClientSessionInactivityLocker|null} */
 export let sessionLocker = null;
-
-export function setVitalsLoop(loop) {
-  vitalsLoop = loop;
-}
 
 export function setSessionLocker(locker) {
   sessionLocker = locker;

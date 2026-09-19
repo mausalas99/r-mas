@@ -1,8 +1,6 @@
 /**
  * Main app tab switching (Lab / Nota / Med / Agenda) and tablist a11y.
  */
-import { isGuardiaMode } from './chrome.mjs';
-import { renderGuardiaBoard } from './guardia-board.mjs';
 import { resumeLabBulkPreviewModalIfSuspended } from './lab-bulk-preview-modal.mjs';
 import { refreshEaCopyFabVisibility } from './estado-actual-panel.mjs';
 import {
@@ -31,12 +29,14 @@ import {
   syncInnerTabVisualOnly,
 } from './expediente-inner-cache.mjs';
 import { isMobileWeb, normalizeMobileAppTab } from '../mobile-web.mjs';
+import { renderDirectorioPanel } from './directorio.mjs';
 
 var APP_TAB_ROWS = [
   ['lab', 'apptab-lab', 'appcontent-lab', 'appTab.lab'],
   ['nota', 'apptab-nota', 'appcontent-nota', 'appTab.nota'],
   ['med', 'apptab-med', 'appcontent-med', 'appTab.med'],
   ['agenda', 'apptab-agenda', 'appcontent-agenda', 'appTab.agenda'],
+  ['directorio', 'apptab-directorio', 'appcontent-directorio', 'appTab.directorio'],
 ];
 
 function refreshExpedienteOnNotaAppTabEnter() {
@@ -60,11 +60,12 @@ function getAppTabDom() {
     apptabNota: document.getElementById('apptab-nota'),
     apptabMed: document.getElementById('apptab-med'),
     apptabAgenda: document.getElementById('apptab-agenda'),
+    apptabDirectorio: document.getElementById('apptab-directorio'),
     appcontentLab: document.getElementById('appcontent-lab'),
     appcontentMed: document.getElementById('appcontent-med'),
     appcontentNota: document.getElementById('appcontent-nota'),
     appcontentAgenda: document.getElementById('appcontent-agenda'),
-    guardiaRoot: document.getElementById('appcontent-guardia'),
+    appcontentDirectorio: document.getElementById('appcontent-directorio'),
   };
 }
 
@@ -73,23 +74,8 @@ function syncAppTabButtonStates(tab, dom) {
   if (dom.apptabNota) dom.apptabNota.classList.toggle('active', tab === 'nota');
   if (dom.apptabMed) dom.apptabMed.classList.toggle('active', tab === 'med');
   if (dom.apptabAgenda) dom.apptabAgenda.classList.toggle('active', tab === 'agenda');
+  if (dom.apptabDirectorio) dom.apptabDirectorio.classList.toggle('active', tab === 'directorio');
   syncAppTabIndicator(tab);
-}
-
-function layoutGuardiaAppTab(dom) {
-  var standardPanels = [dom.appcontentLab, dom.appcontentMed, dom.appcontentNota, dom.appcontentAgenda];
-  standardPanels.forEach(function (p) {
-    hideAppTabPanel(p);
-  });
-  if (dom.guardiaRoot) {
-    showAppTabPanel(dom.guardiaRoot, false);
-    dom.guardiaRoot.style.display = 'flex';
-    dom.guardiaRoot.style.flexDirection = 'column';
-    dom.guardiaRoot.style.flex = '1';
-    dom.guardiaRoot.style.minHeight = '0';
-    dom.guardiaRoot.style.overflow = 'hidden';
-  }
-  renderGuardiaBoard(rt.getSettings());
 }
 
 function showStandardPanelForTab(dom, tab) {
@@ -98,6 +84,7 @@ function showStandardPanelForTab(dom, tab) {
     ['med', dom.appcontentMed],
     ['nota', dom.appcontentNota],
     ['agenda', dom.appcontentAgenda],
+    ['directorio', dom.appcontentDirectorio],
   ];
   pairs.forEach(function (pair) {
     var panel = pair[1];
@@ -138,6 +125,11 @@ function scheduleStandardTabSideEffects(tab) {
       if (rt.getActiveAppTab() === 'agenda') rt.renderProcedureAgendaPanel();
     });
   }
+  if (tab === 'directorio') {
+    scheduleAfterPaint(function () {
+      if (rt.getActiveAppTab() === 'directorio') renderDirectorioPanel();
+    });
+  }
   if (tab === 'nota' && rt.getActiveInner() === 'tend') {
     scheduleAfterPaint(function () {
       if (rt.getActiveAppTab() === 'nota' && rt.getActiveInner() === 'tend') {
@@ -150,7 +142,6 @@ function scheduleStandardTabSideEffects(tab) {
 }
 
 function layoutStandardAppTab(dom, tab) {
-  if (dom.guardiaRoot) hideAppTabPanel(dom.guardiaRoot);
   showStandardPanelForTab(dom, tab);
   scheduleStandardTabSideEffects(tab);
   if (tab === 'lab') syncLabInnerVisibility();
@@ -188,50 +179,7 @@ function schedulePostAppTabSwitch(tab, prevAppTab) {
   });
 }
 
-function hideStandardTabA11y(rows) {
-  rows.forEach(function (r) {
-    var b = document.getElementById(r[1]);
-    var p = document.getElementById(r[2]);
-    if (b) {
-      b.setAttribute('aria-hidden', 'true');
-      b.setAttribute('tabindex', '-1');
-    }
-    if (p) {
-      p.setAttribute('role', 'tabpanel');
-      p.removeAttribute('aria-label');
-      p.setAttribute('aria-labelledby', r[1]);
-      p.setAttribute('aria-hidden', 'true');
-    }
-  });
-}
-
-function syncSpecialRootA11y(rootId, role, label, visible) {
-  var root = document.getElementById(rootId);
-  if (!root) return;
-  if (role) {
-    root.setAttribute('role', role);
-    root.setAttribute('aria-label', label);
-    root.setAttribute('aria-hidden', visible ? 'false' : 'true');
-    return;
-  }
-  root.removeAttribute('role');
-  root.removeAttribute('aria-label');
-  root.setAttribute('aria-hidden', 'true');
-}
-
-function syncGuardiaTabA11y(list, rows) {
-  if (list) list.setAttribute('aria-hidden', 'true');
-  hideStandardTabA11y(rows);
-  syncSpecialRootA11y(
-    'appcontent-guardia',
-    'region',
-    'Modo Guardia — censo de pacientes',
-    true
-  );
-}
-
 function syncNormalTabA11y(tab, list, rows) {
-  syncSpecialRootA11y('appcontent-guardia', null, null, false);
   if (list) list.removeAttribute('aria-hidden');
   rows.forEach(function (r) {
     var b = document.getElementById(r[1]);
@@ -284,8 +232,7 @@ export function switchAppTab(tab) {
   var dom = getAppTabDom();
   syncMainAppTabA11y(tab);
   syncAppTabButtonStates(tab, dom);
-  if (isGuardiaMode()) layoutGuardiaAppTab(dom);
-  else layoutStandardAppTab(dom, tab);
+  layoutStandardAppTab(dom, tab);
 
   syncLabCopyFabVisibility(tab);
   refreshEaCopyFabVisibility();
@@ -297,10 +244,6 @@ export function switchAppTab(tab) {
 export function syncMainAppTabA11y(tab) {
   if (tab === 'lan') tab = 'lab';
   var list = document.getElementById('app-main-tablist');
-  if (isGuardiaMode()) {
-    syncGuardiaTabA11y(list, APP_TAB_ROWS);
-    return;
-  }
   syncNormalTabA11y(tab, list, APP_TAB_ROWS);
 }
 
@@ -308,7 +251,7 @@ if (typeof document !== 'undefined') {
 (function setupMainAppTabKeyboard() {
   var list = document.getElementById('app-main-tablist');
   if (!list) return;
-  var order = isMobileWeb() ? ['nota', 'lab'] : ['nota', 'lab', 'med', 'agenda'];
+  var order = isMobileWeb() ? ['nota', 'lab'] : ['nota', 'lab', 'med', 'agenda', 'directorio'];
   list.addEventListener('keydown', function (e) {
     if (!isAppTabNavKey(e.key)) return;
     var cur = rt.getActiveAppTab() === 'lan' ? 'lab' : rt.getActiveAppTab();

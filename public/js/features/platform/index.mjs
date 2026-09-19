@@ -54,7 +54,7 @@ import {
   hideUpdateModal,
 } from './updater.mjs';
 
-export { syncDbSecuritySectionUi } from '../db-unlock.mjs';
+export { syncDbSecuritySectionUi, changeAdminAccessCode } from '../db-unlock.mjs';
 
 export {
   getAuditLog,

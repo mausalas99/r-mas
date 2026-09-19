@@ -1,6 +1,5 @@
 /** Mi rotación — persist clinical profile from panel form. */
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
-import { effectiveClinicalRank } from '../../clinical-privileges.mjs';
 import {
   isClinicalLocalOnlyMode,
   persistClinicalUserBinding,
@@ -23,8 +22,7 @@ function syncProgramAdminFlag(isProgramAdmin, res) {
 function applyProfileUpsertToSession(res, { rank, sala, clinicalName, isProgramAdmin }) {
   if (!clinicalSessionContext.user) return;
   const savedRank = String(res.profile?.rank || rank || '');
-  clinicalSessionContext.user.rank =
-    savedRank === 'Admin' ? 'R1' : savedRank || clinicalSessionContext.user.rank;
+  clinicalSessionContext.user.rank = savedRank || clinicalSessionContext.user.rank;
   if (sala != null) clinicalSessionContext.user.sala = sala;
   if (clinicalName) clinicalSessionContext.user.clinical_name = clinicalName;
   if (res.profile?.username) clinicalSessionContext.user.username = res.profile.username;
@@ -78,7 +76,7 @@ async function submitProfileUpsert(api, userId, fields) {
   const res = await api.dbClinicalProfileUpsert({
     userId,
     clinicalName: fields.clinicalName || clinicalSessionContext.user?.clinical_name || '',
-    rank: fields.rank || effectiveClinicalRank(clinicalSessionContext.user),
+    rank: fields.rank || clinicalSessionContext.user?.rank || 'Team',
     sala: fields.sala ?? clinicalSessionContext.user?.sala ?? null,
     isProgramAdmin: fields.isProgramAdmin,
     adminAccessCode: fields.adminAccessCode ?? undefined,

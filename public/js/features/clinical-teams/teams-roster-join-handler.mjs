@@ -1,6 +1,4 @@
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
-import { effectiveClinicalRank } from '../../clinical-privileges.mjs';
-import { inferMembershipCycleForJoin } from '../../clinico-access.mjs';
 import { validateTeamRankSlot } from '../../../../lib/clinical-team-composition.mjs';
 import { dbApi, toast, currentUserId, toastTeamWarnings } from './shared.mjs';
 import { publishClinicalTeamsAfterChange } from './teams-guardia-bridge.mjs';
@@ -21,11 +19,10 @@ export async function joinClinicalTeamByButton(teamId) {
     return;
   }
   const team = (clinicalSessionContext.teams || []).find((t) => String(t.team_id) === teamId);
-  const rank = effectiveClinicalRank(clinicalSessionContext.user);
-  const cycle = inferMembershipCycleForJoin(team || {}, rank);
+  const rank = String(clinicalSessionContext.user?.rank || 'Team');
   toastJoinSlotWarnings(team, rank);
 
-  const res = await api.dbClinicalTeamsJoin({ teamId, userId, subAreaFraction: cycle });
+  const res = await api.dbClinicalTeamsJoin({ teamId, userId });
   if (!res || res.ok === false) {
     toast(res?.error || 'No se pudo unir al equipo.', 'error');
     return;

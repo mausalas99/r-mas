@@ -454,7 +454,12 @@ export function dueDateFromPresetDef(preset, now) {
   if (preset.kind === 'dayTime') {
     var base = new Date(ref);
     if (preset.dayOffset === 1) base.setDate(base.getDate() + 1);
-    return setLocalTime(base, preset.hour, preset.minute);
+    var due = setLocalTime(base, preset.hour, preset.minute);
+    // "Hoy HH:MM" already past today's time would be born overdue — roll to tomorrow.
+    if (preset.dayOffset === 0 && due.getTime() < ref.getTime()) {
+      due.setDate(due.getDate() + 1);
+    }
+    return due;
   }
   if (preset.kind === 'offsetHours') {
     return new Date(ref.getTime() + preset.hours * 60 * 60 * 1000);

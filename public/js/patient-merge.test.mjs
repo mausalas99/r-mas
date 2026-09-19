@@ -8,7 +8,6 @@ import {
   filterEntriesByPatientDeletes,
   entryUpdatedAt,
   monitoreoUpdatedAt,
-  mergeEventualidades,
   cloneEntry,
 } from './patient-merge.mjs';
 import { emptyMonitoreo } from './features/estado-actual-data.mjs';
@@ -116,6 +115,31 @@ test('mergePatientEntry conserva medPharmProfile m?s reciente', () => {
   };
   const merged = mergePatientEntry(older, newer);
   assert.equal(merged.medPharmProfile.months['2026-05'].rows[0].rowKey, 'b');
+});
+
+test('mergePatientEntry conserva cardio de ambos peers (une por clave, no descarta uno)', () => {
+  const withGdmt = {
+    patient: {
+      id: 'p',
+      registro: 'R',
+      cardio: { fantasticos: [{ med: 'sacubitril', dosis: '97/103' }], workup: { peptido: 'BNP alto' } },
+    },
+    note: { fecha: '01/01/2026' },
+    labHistory: [],
+  };
+  const withPocus = {
+    patient: {
+      id: 'p',
+      registro: 'R',
+      cardio: { pocusByDay: [{ dia: 1, vexus: 2 }] },
+    },
+    note: { fecha: '10/01/2026' },
+    labHistory: [],
+  };
+  const m = mergePatientEntry(withGdmt, withPocus);
+  assert.equal(m.patient.cardio.fantasticos[0].med, 'sacubitril');
+  assert.equal(m.patient.cardio.workup.peptido, 'BNP alto');
+  assert.equal(m.patient.cardio.pocusByDay[0].vexus, 2);
 });
 
 test('mergePatientEntry fusiona monitoreo con mergeMonitoreo si ambos tienen carga', () => {
@@ -374,70 +398,6 @@ test('filterEntriesByPatientDeletes conserva readmisi?n con mismo registro e id 
   ]);
   assert.equal(filtered.length, 1);
   assert.equal(filtered[0].patient.id, 'p-new');
-});
-
-test('mergeEventualidades une entradas de ambos lados por id', () => {
-  const merged = mergeEventualidades(
-    { entries: [{ id: 'ev_a', at: '2026-06-01T10:00:00.000Z', text: 'A' }] },
-    { entries: [{ id: 'ev_b', at: '2026-06-02T10:00:00.000Z', text: 'B' }] }
-  );
-  assert.equal(merged.entries.length, 2);
-});
-
-test('mergeEventualidades respeta deletedIds y no resurrecta', () => {
-  const merged = mergeEventualidades(
-    {
-      entries: [{ id: 'ev_b', at: '2026-06-02T10:00:00.000Z', text: 'B' }],
-      deletedIds: { ev_a: '2026-06-03T12:00:00.000Z' },
-      updatedAt: '2026-06-03T12:00:00.000Z',
-    },
-    {
-      entries: [
-        { id: 'ev_a', at: '2026-06-01T10:00:00.000Z', text: 'A' },
-        { id: 'ev_b', at: '2026-06-02T10:00:00.000Z', text: 'B' },
-      ],
-    }
-  );
-  assert.equal(merged.entries.length, 1);
-  assert.equal(merged.entries[0].id, 'ev_b');
-  assert.equal(merged.deletedIds.ev_a, '2026-06-03T12:00:00.000Z');
-});
-
-test('mergeEventualidades conserva labsText no vacío', () => {
-  const merged = mergeEventualidades(
-    { entries: [], labsText: 'BH Hb 9' },
-    { entries: [{ id: 'ev_b', at: '2026-06-02T10:00:00.000Z', text: 'B' }], labsText: '' }
-  );
-  assert.equal(merged.entries.length, 1);
-  assert.equal(merged.labsText, 'BH Hb 9');
-  const both = mergeEventualidades(
-    { entries: [], labsText: 'BH' },
-    { entries: [], labsText: 'BH + QS gluc 120' }
-  );
-  assert.equal(both.labsText, 'BH + QS gluc 120');
-});
-
-test('mergePatientEntry conserva eventualidades de ambos peers', () => {
-  const a = {
-    patient: {
-      id: 'p1',
-      registro: 'R1',
-      eventualidades: { entries: [{ id: 'ev_a', at: '2026-06-01T10:00:00.000Z', text: 'A' }] },
-    },
-    note: { fecha: '01/06/2026' },
-    labHistory: [],
-  };
-  const b = {
-    patient: {
-      id: 'p1',
-      registro: 'R1',
-      eventualidades: { entries: [{ id: 'ev_b', at: '2026-06-02T10:00:00.000Z', text: 'B' }] },
-    },
-    note: { fecha: '02/06/2026' },
-    labHistory: [],
-  };
-  const m = mergePatientEntry(a, b);
-  assert.equal(m.patient.eventualidades.entries.length, 2);
 });
 
 test('mergePatientEntry conserva diagnósticos del peer más reciente', () => {

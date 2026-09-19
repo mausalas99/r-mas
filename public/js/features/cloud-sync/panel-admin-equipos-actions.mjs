@@ -1,14 +1,11 @@
-import { resolveMembershipCycleForUser } from '../../clinico-access.mjs';
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
-import { getCycleLetterOptionsForRank } from '../../clinico-access.mjs';
 import { publishClinicalTeamsAfterChange } from '../clinical-teams/teams-guardia-bridge.mjs';
 import { confirmAction } from './panel-admin-helpers.mjs';
-import { renderEquiposAssignTeamOptionsHtml, cycleOptionsForTeam } from './panel-admin-equipos-html-fields.mjs';
+import { renderEquiposAssignTeamOptionsHtml } from './panel-admin-equipos-html-fields.mjs';
 import {
   applyEquiposFiltersFromToolbar,
   loadAdminEquipos,
 } from './panel-admin-equipos-data.mjs';
-import { handleSeedAgosto2026Equipos } from './panel-admin-equipos-seed.mjs';
 import {
   handleCloudEquiposBulkPurge,
   handleCloudEquiposBulkSave,
@@ -41,33 +38,6 @@ export function resolveEquiposTeamSalaScope(row, root) {
   return '';
 }
 
-export function syncCloudEquiposCycleSelect(teamSelect, teams, preferredCycle = '') {
-  const row = teamSelect.closest('.cloud-sync-admin-equipos-row');
-  const cycleSelect = row?.querySelector('.cloud-sync-admin-equipos-cycle');
-  if (!(cycleSelect instanceof HTMLSelectElement)) return;
-
-  const teamId = String(teamSelect.value || '').trim();
-  if (!teamId) {
-    cycleSelect.innerHTML = '<option value="">—</option>';
-    cycleSelect.disabled = true;
-    return;
-  }
-
-  const team = (teams || []).find((t) => String(t.team_id) === teamId);
-  const userId = String(row?.getAttribute('data-user-id') || '').trim();
-  const userRank = readEquiposRowRank(row);
-  const rowPreferred = String(preferredCycle || '').trim();
-  cycleSelect.innerHTML = cycleOptionsForTeam(team, userId, userRank, rowPreferred);
-  cycleSelect.disabled = false;
-  if (team) {
-    const service = String(team.service || 'Sala');
-    const letters = getCycleLetterOptionsForRank(service, userRank);
-    let defaultCycle = resolveMembershipCycleForUser(team, userId, userRank);
-    if (rowPreferred && letters.includes(rowPreferred)) defaultCycle = rowPreferred;
-    cycleSelect.value = defaultCycle;
-  }
-}
-
 /** @param {HTMLElement} row @param {object[]} teams @param {HTMLElement | null | undefined} root */
 export function syncCloudEquiposTeamSelect(row, teams, root) {
   const teamSelect = row.querySelector('.cloud-sync-admin-equipos-team');
@@ -77,7 +47,6 @@ export function syncCloudEquiposTeamSelect(row, teams, root) {
   teamSelect.innerHTML = renderEquiposAssignTeamOptionsHtml(teams, prev, sala);
   const values = new Set([...teamSelect.options].map((o) => o.value).filter(Boolean));
   teamSelect.value = prev && values.has(prev) ? prev : '';
-  syncCloudEquiposCycleSelect(teamSelect, teams);
 }
 
 /** @param {HTMLElement} root @param {object[]} teams */
@@ -130,10 +99,6 @@ export async function handleCloudEquiposSaveRank(root, btn, teams, getApi, toast
     if (res.resolvedUserId) {
       row.setAttribute('data-user-id', res.resolvedUserId);
       row.setAttribute('data-user-rank', draft.rank);
-    }
-    const teamSelect = row.querySelector('.cloud-sync-admin-equipos-team');
-    if (teamSelect instanceof HTMLSelectElement) {
-      syncCloudEquiposCycleSelect(teamSelect, teams);
     }
     row.setAttribute('data-sala', draft.sala || '');
     toast(
@@ -378,7 +343,6 @@ export function wireCloudEquiposPanel(root, deps) {
       return teamsCache;
     },
     applyFilters: () => applyEquiposFiltersFromToolbar(root),
-    syncCycle: (teamSelect) => syncCloudEquiposCycleSelect(teamSelect, teamsCache),
     syncTeamRow: (row) => syncCloudEquiposTeamSelect(row, teamsCache, root),
     syncAllTeams: () => syncAllCloudEquiposTeamSelects(root, teamsCache),
     readRowSala: (row) => readEquiposRowSala(row),
@@ -414,9 +378,6 @@ export function wireCloudEquiposPanel(root, deps) {
     },
     handleBulkPurge() {
       return handleCloudEquiposBulkPurge(root, deps.getApi, deps.toast);
-    },
-    seedAgosto2026() {
-      return handleSeedAgosto2026Equipos(root, deps.getApi, deps.toast);
     },
     refresh() {
       return loadAdminEquipos(root, deps.getApi);

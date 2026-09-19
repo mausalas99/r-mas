@@ -7,10 +7,6 @@
  *
  * Not auto-opened on join — use the team card «Heredar pacientes» button or
  * call this explicitly when appropriate (e.g. post–nueva rotación flows).
- *
- * HARD BOUNDARY — census assignment only. Never read/write `active_guardias`
- * or Modo Entrega. Active pendientes must not block heredar/traer or leave
- * team (leave resolves coverings in clinical-access-teams-membership).
  */
 import { getPatients } from '../../app-state.mjs';
 import {

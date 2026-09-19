@@ -8,6 +8,8 @@ import {
   writeGroupVisibleFields,
   readGroupTableHidden,
   writeGroupTableHidden,
+  readGroupExtraFields,
+  writeGroupExtraFields,
   readGroupPanelOrder,
   writeGroupPanelOrder,
   readTendCardOrder,
@@ -46,6 +48,12 @@ test('visibles por paciente+sección', () => {
 test('ocultos tabla por paciente+sección', () => {
   writeGroupTableHidden('p1', 'BH', { rows: ['NeuPct'], cols: ['t:123'] });
   assert.deepEqual(readGroupTableHidden('p1', 'BH'), { rows: ['NeuPct'], cols: ['t:123'] });
+});
+
+test('analitos agregados de otras secciones por paciente+sección (tabla combinada)', () => {
+  writeGroupExtraFields('p1', 'BH', [{ sectionKey: 'QS', fieldKey: 'Fib' }]);
+  assert.deepEqual(readGroupExtraFields('p1', 'BH'), [{ sectionKey: 'QS', fieldKey: 'Fib' }]);
+  assert.deepEqual(readGroupExtraFields('p1', 'ESC'), []);
 });
 
 test('orden y ocultos de paneles por paciente+sección', () => {

@@ -16,7 +16,7 @@ function mockMobileWeb() {
 
 beforeEach(() => {
   mockDesktopElectron();
-  clinicalSessionContext.user = { user_id: 'u1', rank: 'R1', username: 'r1doc' };
+  clinicalSessionContext.user = { user_id: 'u1', rank: 'Team', username: 'r1doc' };
   clinicalSessionContext.scopeContext = null;
 });
 

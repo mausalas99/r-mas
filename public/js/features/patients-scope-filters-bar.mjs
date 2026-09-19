@@ -117,7 +117,9 @@ export function initPatientFiltersChrome() {
 }
 
 function buildCensusFiltersBodyHtml(user, mobileSidebar) {
-  const showSalaFilter = !mobileSidebar || censusFiltersUseFullTeamCatalog(user);
+  // R+ HF is a single-rotation unit — a sala picker with one option is pure clutter.
+  const showSalaFilter =
+    CLINICAL_SALA_VALUES.length > 1 && (!mobileSidebar || censusFiltersUseFullTeamCatalog(user));
   const salaBlock = showSalaFilter
     ? '<label class="clinical-census-filter"><span>Sala</span>' +
       '<select id="clinical-filter-sala" class="profile-input">' +

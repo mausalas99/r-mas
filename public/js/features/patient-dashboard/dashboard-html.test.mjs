@@ -11,6 +11,8 @@ import {
   renderDiuresisCardHtml,
   renderGdmtRowHtml,
 } from './dashboard-html.mjs';
+import { attachProfileSettingsGetter } from '../profile-runtime.mjs';
+import { setActivePatientAreaGetter } from '../active-patient-area.mjs';
 
 const splitHistorialMonitoreo = {
   estadoClinico: {
@@ -510,6 +512,36 @@ describe('dashboard html', () => {
 
   it('omits the cardio identity row when fenotipo and etiología are both blank', () => {
     assert.equal(renderCardioIdentityHtml({ cardio: { fenotipo: '', etiologia: '' } }), '');
+  });
+
+  describe('Consulta Externa identity row', () => {
+    it('drops the interconsult-service chips and adds the HF follow-up band mount on the name row', () => {
+      try {
+        attachProfileSettingsGetter(() => ({ appMode: 'interconsulta' }));
+        setActivePatientAreaGetter(() => 'CONSULTA EXTERNA');
+        const model = buildDashboardModel({
+          patient: { nombre: 'PACIENTE EXTERNA', interconsultServiceIds: ['card'] },
+          inner: 'resumen',
+        });
+        const html = renderDashboardHtml(model);
+        assert.match(html, /id="interconsulta-consult-band"/);
+        assert.doesNotMatch(html, /\+ Agregar/);
+        assert.doesNotMatch(html, /class="svc"/);
+      } finally {
+        setActivePatientAreaGetter(() => '');
+        attachProfileSettingsGetter(() => ({}));
+      }
+    });
+
+    it('keeps the interconsult-service "+ Agregar" chips for hospitalización (sala) patients', () => {
+      const model = buildDashboardModel({
+        patient: { nombre: 'PACIENTE INTERNO', interconsultServiceIds: [] },
+        inner: 'resumen',
+      });
+      const html = renderDashboardHtml(model);
+      assert.doesNotMatch(html, /id="interconsulta-consult-band"/);
+      assert.match(html, /\+ Agregar/);
+    });
   });
 
   it('renders NT-proBNP/dispositivo/NYHA Resumen chips when present, additive to fenotipo/etiología', () => {

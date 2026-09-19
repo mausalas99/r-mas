@@ -48,7 +48,7 @@ function buildCloudMobileSeedUser(cloudUser) {
   return {
     user_id: username || String(cloudUser?.id || 'cloud-mobile'),
     username: username || null,
-    rank: 'R1',
+    rank: 'Team',
     sala: null,
     clinical_name: displayName || null,
     is_program_admin: 0,

@@ -327,8 +327,7 @@ function printNextSteps() {
       '  3. R+ desktop (Sala or Torre HU profile): ⇄ panel → Nube → paste Worker URL.\n' +
       '     When Nube is connected, it overrides LAN for that room.\n' +
       '  4. Verify: curl -s https://YOUR-URL/api/sync/v1/ping\n' +
-      '  5. Free-tier sizing: cd cloud/sync-worker && npm run estimate:free\n' +
-      '  6. Equipos queue is separate: node cloudflare/setup.mjs\n'
+      '  5. Free-tier sizing: cd cloud/sync-worker && npm run estimate:free\n'
   );
 }
 

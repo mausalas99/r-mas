@@ -57,7 +57,7 @@
         </div>
       </div>
       <div class="field-group" id="m-area-group"><label>Área / Departamento *</label><input id="m-area" type="text" placeholder="ej. CIRUGÍA AB" style="text-transform:uppercase;"></div>
-      <div class="field-group" id="m-servicio-group"><label id="m-servicio-label">Servicio *</label><input id="m-servicio" type="text" placeholder="ej. CIRUGÍA GENERAL" style="text-transform:uppercase;"></div>
+      <div class="field-group" id="m-servicio-group"><label id="m-servicio-label">Servicio *</label><input id="m-servicio" type="text" placeholder="ej. CARDIOLOGÍA" style="text-transform:uppercase;"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="field-group"><label>Cuarto *</label><input id="m-cuarto" type="text" placeholder="440"></div>
         <div class="field-group"><label>Cama *</label><input id="m-cama" type="text" placeholder="05"></div>
@@ -591,111 +591,7 @@
   </div>
 </div>
 
-<div id="entrega-modal-backdrop" class="modal-backdrop entrega-modal-backdrop" aria-hidden="true">
-  <div class="modal entrega-modal entrega-modal--wide" id="entrega-modal" role="dialog" aria-modal="true" aria-labelledby="entrega-modal-nav-name" onclick="event.stopPropagation()">
-    <div class="entrega-modal-nav" id="entrega-modal-nav">
-      <button type="button" class="entrega-nav-btn" id="entrega-nav-prev" aria-label="Paciente anterior" disabled>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <div class="entrega-nav-patient">
-        <span class="entrega-nav-patient-name" id="entrega-modal-nav-name">—</span>
-        <span class="entrega-nav-patient-dx" id="entrega-modal-nav-dx"></span>
-      </div>
-      <div class="entrega-nav-meta">
-        <span class="entrega-active-badge hidden" id="entrega-modal-active-badge">
-          <svg width="6" height="6" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="4" fill="currentColor"/></svg>
-          Entrega activa
-        </span>
-        <span class="entrega-nav-counter" id="entrega-modal-nav-counter"></span>
-      </div>
-      <button type="button" class="entrega-nav-btn" id="entrega-nav-next" aria-label="Paciente siguiente" disabled>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
-    </div>
-    <h3 id="entrega-modal-title" class="visually-hidden">Entrega de paciente</h3>
-    <form id="entrega-form" class="entrega-modal-form">
-      <div class="entrega-form-body">
-        <section class="entrega-top-strip clinical-teams-create-form" aria-label="Datos de entrega">
-          <div class="field-group entrega-field-group--r1">
-            <label for="entrega-covering-user">R1 de guardia</label>
-            <p id="entrega-covering-hint" class="clinical-teams-section-desc entrega-field-hint hidden"></p>
-            <select id="entrega-covering-user" class="profile-input" required></select>
-          </div>
-          <div class="field-group entrega-field-group--patient-team">
-            <label for="entrega-source-team">Equipo del paciente</label>
-            <p id="entrega-source-team-hint" class="clinical-teams-section-desc entrega-field-hint hidden"></p>
-            <select id="entrega-source-team" class="profile-input" required></select>
-          </div>
-          <div id="entrega-clinical-status-slot" class="field-group"></div>
-        </section>
 
-        <p id="entrega-flow-hint" class="clinical-teams-section-desc entrega-modal-lead hidden"></p>
-
-        <div id="entrega-handoff-panel" class="entrega-handoff-panel"></div>
-
-        <p id="entrega-handoff-summary" class="entrega-handoff-summary" aria-live="polite"></p>
-
-        <section class="clinical-teams-section clinical-teams-section--directory entrega-panel entrega-panel--pendientes" aria-label="Procedimientos y estudios">
-          <details class="entrega-proc-details">
-            <summary class="entrega-proc-summary">
-              <h4 class="clinical-teams-section-title">Procedimientos y estudios</h4>
-            </summary>
-            <div class="entrega-panel-body entrega-proc-block">
-              <div class="entrega-proc-toolbar">
-                <button type="button" id="btn-entrega-add-proc" class="btn-med-secondary">
-                  + Procedimiento
-                </button>
-              </div>
-              <ul id="entrega-proc-list" class="entrega-proc-list"></ul>
-              <div id="entrega-proc-form" class="entrega-proc-form hidden" aria-hidden="true"></div>
-            </div>
-          </details>
-        </section>
-      </div>
-      <footer class="modal-actions entrega-modal-foot">
-        <button type="button" class="btn-cancel" id="btn-entrega-cancel">Cancelar</button>
-        <button type="submit" class="btn-save" id="btn-entrega-save">Guardar paciente</button>
-      </footer>
-    </form>
-  </div>
-</div>
-
-<div id="guardia-hoy-modal-backdrop" class="modal-backdrop guardia-hoy-modal-backdrop" aria-hidden="true">
-  <div class="modal guardia-hoy-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-hoy-modal-title" onclick="event.stopPropagation()">
-    <h3 id="guardia-hoy-modal-title">Activar guardia hoy</h3>
-    <p class="clinical-registration-lead guardia-hoy-modal-lead">
-      Declara quién es el R1 de guardia en tu sala. Puedes activar guardia aunque no sea tu día de ciclo.
-    </p>
-    <form id="guardia-hoy-form">
-      <div id="guardia-hoy-modal-body" class="guardia-hoy-modal-body"></div>
-      <div class="modal-actions guardia-hoy-modal-actions">
-        <button type="button" class="btn-cancel" id="guardia-hoy-btn-cancel">Cancelar</button>
-        <button type="button" class="btn-med-secondary" id="guardia-hoy-btn-skip">Continuar sin activar</button>
-        <button type="submit" class="btn-save" id="guardia-hoy-btn-confirm">Activar guardia</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<div id="guardia-patient-action-backdrop" class="modal-backdrop guardia-patient-action-backdrop" aria-hidden="true">
-  <div class="modal guardia-patient-action-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-patient-action-title" onclick="event.stopPropagation()">
-    <h3 id="guardia-patient-action-title">Paciente</h3>
-    <div id="guardia-patient-action-body" class="guardia-patient-action-body"></div>
-    <div class="modal-actions guardia-patient-action-footer">
-      <button type="button" class="btn-cancel" id="guardia-patient-action-cancel">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<div id="guardia-fin-turno-backdrop" class="modal-backdrop guardia-fin-turno-backdrop" aria-hidden="true">
-  <div class="modal guardia-fin-turno-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-fin-turno-title" onclick="event.stopPropagation()">
-    <h3 id="guardia-fin-turno-title">Cierre de guardia</h3>
-    <div id="guardia-fin-turno-body" class="guardia-fin-turno-body"></div>
-    <div class="modal-actions guardia-fin-turno-footer">
-      <button type="button" class="btn-cancel" id="guardia-fin-turno-dismiss">Cerrar sin enviar</button>
-    </div>
-  </div>
-</div>
 
 <div id="guardia-rotation-config-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal guardia-rotation-config-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-rotation-config-title" onclick="event.stopPropagation()">
@@ -775,16 +671,6 @@
   </div>
 </div>
 
-<div id="equipos-lista-backdrop" class="modal-backdrop equipos-lista-backdrop" aria-hidden="true">
-  <div class="modal equipos-lista-modal" role="dialog" aria-modal="true" aria-labelledby="equipos-lista-title" onclick="event.stopPropagation()">
-    <header class="equipos-lista-modal-head">
-      <h3 id="equipos-lista-title">R+ Lista de espera</h3>
-      <button type="button" class="clinical-teams-dismiss" id="btn-equipos-lista-close" aria-label="Cerrar">×</button>
-    </header>
-    <div id="equipos-lista-panel-body" class="equipos-lista-panel-body"></div>
-  </div>
-</div>
-
 <div id="clinical-teams-backdrop" class="modal-backdrop clinical-teams-backdrop" aria-hidden="true">
   <div class="modal clinical-teams-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-teams-title" onclick="event.stopPropagation()">
     <header class="clinical-teams-modal-head">
@@ -829,7 +715,7 @@
 <div id="clinical-registration-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal clinical-registration-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-registration-title" onclick="event.stopPropagation()">
     <h3 id="clinical-registration-title" class="clinical-onboarding-title">Registro de guardia</h3>
-    <p class="clinical-registration-lead">Identifícate para el censo de guardia, firmado clínico y acceso al Modo Guardia. Tras actualizar a <strong>6.6.6</strong> debes volver a escribir usuario y nombre (son datos distintos).</p>
+    <p class="clinical-registration-lead">Identifícate para el censo de guardia y el firmado clínico. Tras actualizar a <strong>6.6.6</strong> debes volver a escribir usuario y nombre (son datos distintos).</p>
     <div class="clinical-onboard-form-shell clinical-onboard-form-shell--in-modal">
       <form id="clinical-registration-form" class="clinical-teams-create-form clinical-onboard-form">
         <div class="field-group">
@@ -840,15 +726,12 @@
         <div class="field-group">
           <label for="clinical-reg-name">Nombre en guardia *</label>
           <input id="clinical-reg-name" type="text" class="profile-input" placeholder="ej. Dr. Mendoza" autocomplete="name" required>
-          <p class="clinical-teams-hint"><strong>Nombre en guardia</strong> — cómo te ven en el censo (p. ej. <code>Dr. Mendoza</code> o <code>R1 García</code>).</p>
+          <p class="clinical-teams-hint"><strong>Nombre en guardia</strong> — cómo te ven en el censo (p. ej. <code>Dr. Mendoza</code> o <code>García</code>).</p>
         </div>
         <div class="field-group">
           <label for="clinical-reg-rank">Rango</label>
           <select id="clinical-reg-rank" class="profile-input">
-            <option value="R1">R1</option>
-            <option value="R2">R2</option>
-            <option value="R3">R3</option>
-            <option value="R4">R4</option>
+            <option value="Team">Team</option>
             <option value="Admin">Admin</option>
           </select>
         </div>
@@ -935,8 +818,6 @@
         <canvas id="tend-detail-canvas"></canvas>
       </div>
     </div>
-    <div id="tend-detail-events-slot" class="tend-detail-events-slot" aria-hidden="true"></div>
-    <button type="button" class="ea-btn ea-btn--ghost tend-detail-add-event-btn" id="tend-detail-add-event" data-tend-action="add-event-day">Agregar evento este día</button>
   </div>
 </div>
 
@@ -958,6 +839,28 @@
       <div class="tend-group-table-actions">
         <button type="button" class="btn-primary" onclick="copyTendGroupTablePng()">Copiar</button>
         <button type="button" class="btn-secondary" onclick="copyTendGroupTableText()">Copiar como texto</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tend-dynamic-table-backdrop" class="tend-group-backdrop" style="display:none" aria-hidden="true">
+  <div id="tend-dynamic-table-modal" role="dialog" aria-modal="true" aria-labelledby="tend-dynamic-table-title">
+    <header class="tend-group-header">
+      <h2 id="tend-dynamic-table-title">Tabla dinámica</h2>
+    </header>
+    <div class="tend-group-range-row" id="tend-dynamic-table-range-row">
+      <span class="tend-group-range-label">Rango</span>
+      <input type="date" class="tend-group-range-input" id="tend-dynamic-table-range-from" />
+      <span class="tend-group-range-sep">a</span>
+      <input type="date" class="tend-group-range-input" id="tend-dynamic-table-range-to" />
+      <button type="button" class="tend-group-range-clear" id="tend-dynamic-table-range-clear" hidden>Quitar rango</button>
+    </div>
+    <div class="tend-group-panel">
+      <div id="tend-dynamic-table-wrap"></div>
+      <div class="tend-group-table-actions">
+        <button type="button" class="btn-primary" onclick="copyTendDynamicTablePng()">Copiar</button>
+        <button type="button" class="btn-secondary" onclick="copyTendDynamicTableText()">Copiar como texto</button>
       </div>
     </div>
   </div>

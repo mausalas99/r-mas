@@ -42,7 +42,7 @@ const I18N_ES = {
   'settings.appearance': 'Apariencia',
   'settings.theme': 'Tema',
   'settings.appearanceFoot':
-    '⌘G/I/S cambian modo Guardia/Inter/Sala. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.',
+    '⌘I/S cambian modo Inter/Sala. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.',
   'settings.themeGroup': 'Tema de la aplicación',
   'settings.themeLight': 'Claro',
   'settings.themeDark': 'Oscuro',
@@ -83,6 +83,7 @@ const I18N_ES = {
   'appTab.nota': 'Paciente',
   'appTab.med': 'Manejo',
   'appTab.agenda': 'Agenda',
+  'appTab.directorio': 'Directorio',
   'roundMode.hint': '↑ / ↓ · paciente siguiente / anterior',
   'roundMode.seenTitle': 'Visto en ronda (se reinicia cada día)',
   'roundMode.sectionNota': 'Nota e indicaciones',
@@ -233,17 +234,17 @@ export function setMotionMode(mode) {
 }
 
 export function getUiDensity() {
-  const raw = localStorage.getItem(UI_DENSITY_LS);
-  if (raw === 'guardia') return 'guardia';
   return 'normal';
 }
 
+// Guardia mode (board/toggle) was removed outright — nothing can ever set this
+// true anymore. Kept as a permanent-false stub so the handful of "not in
+// guardia mode" guard clauses elsewhere don't need individual edits.
 export function isGuardiaMode() {
-  return getUiDensity() === 'guardia';
+  return false;
 }
 
 export function getWorkMode() {
-  if (isGuardiaMode()) return 'guardia';
   var st = null;
   try {
     st = JSON.parse(localStorage.getItem('rpc-settings') || 'null');
@@ -350,47 +351,17 @@ export function syncHeaderModeSeg() {
   });
 }
 
-export function toggleGuardiaMode() {
-  if (isGuardiaMode()) {
-    void import('./entrega-roster-panel.mjs').then(({ closeEntregaRosterPanel }) => {
-      closeEntregaRosterPanel();
-    });
-    void import('./clinical-entrega.mjs').then(({ endEntregaPhase }) => {
-      endEntregaPhase();
-    });
-    void import('./guardia-phase-bar.mjs').then(({ teardownGuardiaPhaseBar }) => {
-      teardownGuardiaPhaseBar();
-    });
-    setUiDensity('normal');
-    return;
-  }
-  setUiDensity('guardia');
-}
-
-export function exitGuardiaModeFromHeader() {
-  if (isGuardiaMode()) setUiDensity('normal');
-}
-
 export function applyUiDensity() {
   const density = getUiDensity();
   document.documentElement.classList.toggle('ui-density-normal', density === 'normal');
-  document.documentElement.classList.toggle('ui-density-guardia', density === 'guardia');
   const rondaHint = document.getElementById('sidebar-ronda-hint');
   if (rondaHint) {
     rondaHint.setAttribute('aria-hidden', density !== 'normal' ? 'false' : 'true');
-  }
-  var guardiaRoot = document.getElementById('appcontent-guardia');
-  if (guardiaRoot && !isGuardiaMode()) {
-    guardiaRoot.style.display = 'none';
-    guardiaRoot.setAttribute('aria-hidden', 'true');
   }
   runtime.switchAppTab(runtime.getActiveAppTab());
   syncHeaderModeSeg();
   if (typeof runtime.renderPatientList === 'function') {
     runtime.renderPatientList({ silent: true });
-  }
-  if (typeof runtime.renderGuardiaBoard === 'function' && isGuardiaMode()) {
-    runtime.renderGuardiaBoard();
   }
   if (typeof runtime.syncLabOutputChrome === 'function') runtime.syncLabOutputChrome();
 }
@@ -405,7 +376,7 @@ export function syncUiDensityButtons() {
 }
 
 export function setUiDensity(mode) {
-  let m = mode === 'guardia' ? 'guardia' : 'normal';
+  let m = 'normal';
   localStorage.setItem(UI_DENSITY_LS, m);
   applyUiDensity();
   syncUiDensityButtons();
@@ -417,9 +388,6 @@ export function setUiDensity(mode) {
     requestAnimationFrame(() => runtime.scrollActiveRondaCardIntoView());
   }
   if (runtime.getActiveAppTab() === 'agenda') runtime.renderProcedureAgendaPanel();
-  if (isGuardiaMode() && typeof runtime.renderGuardiaBoard === 'function') {
-    runtime.renderGuardiaBoard();
-  }
 }
 
 export function getProcedureAgendaRowPx() {
@@ -479,8 +447,6 @@ export const windowHandlers = {
   setHighContrast,
   toggleHighContrast,
   setMotionMode,
-  toggleGuardiaMode,
-  exitGuardiaModeFromHeader,
   openHeaderDatePopoverFromChrome,
   t,
 };

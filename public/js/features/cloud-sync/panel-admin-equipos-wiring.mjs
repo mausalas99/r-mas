@@ -6,11 +6,6 @@ function closestSelect(target, selector) {
   return el instanceof HTMLSelectElement ? el : null;
 }
 
-/** @param {Element | null} target */
-function closestTeamSelect(target) {
-  return closestSelect(target, '.cloud-sync-admin-equipos-team');
-}
-
 /** @param {Element | null} target @param {{
  *   applyFilters: () => void,
  *   syncAllTeams: () => void,
@@ -52,18 +47,13 @@ function handleUserSalaChange(target, ctx) {
 
 /**
  * @param {Element | null} target
- * @param {{
- *   syncCycle: (teamSelect: HTMLSelectElement) => void,
- *   readRowRank: (row: HTMLElement) => string,
- * }} ctx
+ * @param {{ readRowRank: (row: HTMLElement) => string }} ctx
  */
 function handleRankChange(target, ctx) {
   const rankSel = closestSelect(target, '.cloud-sync-admin-equipos-rank');
   if (!rankSel) return false;
   const row = rankSel.closest('.cloud-sync-admin-equipos-row');
   if (row instanceof HTMLElement) row.setAttribute('data-user-rank', ctx.readRowRank(row));
-  const teamSelect = row?.querySelector('.cloud-sync-admin-equipos-team');
-  if (teamSelect instanceof HTMLSelectElement) ctx.syncCycle(teamSelect);
   return true;
 }
 
@@ -71,7 +61,6 @@ function handleRankChange(target, ctx) {
  * @param {Event} ev
  * @param {{
  *   root: HTMLElement,
- *   syncCycle: (teamSelect: HTMLSelectElement) => void,
  *   applyFilters: () => void,
  *   syncAllTeams: () => void,
  *   syncTeamRow: (row: HTMLElement) => void,
@@ -81,11 +70,6 @@ function handleRankChange(target, ctx) {
  */
 export function handleEquiposPanelChange(ev, ctx) {
   const target = ev.target instanceof Element ? ev.target : null;
-  const teamSel = closestTeamSelect(target);
-  if (teamSel) {
-    ctx.syncCycle(teamSel);
-    return;
-  }
   if (handleToolbarSalaChange(target, ctx)) return;
   if (handleToolbarFilterChange(target, ctx)) return;
   if (handleUserSalaChange(target, ctx)) return;

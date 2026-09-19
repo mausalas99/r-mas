@@ -17,6 +17,7 @@ import {
   getConsolidatedCompositeState,
   applyExpedientePaneLayout,
   resetExpedientePaneLayoutCache,
+  setActivePatientAreaGetter,
 } from './expediente-tabs.mjs';
 
 const INTER = { appMode: 'interconsulta', hideManejoSection: false };
@@ -93,7 +94,12 @@ test('migrateGranularInner keeps known tabs and falls back to resumen', () => {
   assert.equal(migrateGranularInner('recetaHu', SALA), 'recetaHu');
   assert.equal(migrateGranularInner('listado', INTER), 'resumen');
   assert.equal(migrateGranularInner('estadoActual', SALA), 'estadoActual');
-  assert.equal(migrateGranularInner('estadoActual', INTER), 'estadoActual');
+  // estadoActual isn't a valid inter/consulta-externa section (see
+  // getClinicoSections) — it must swap to consultaIC on patient switch,
+  // not stick around as a stale active tab pointing at nothing.
+  assert.equal(migrateGranularInner('estadoActual', INTER), 'consultaIC');
+  assert.equal(migrateGranularInner('consultaIC', SALA), 'estadoActual');
+  assert.equal(migrateGranularInner('consultaIC', INTER), 'consultaIC');
   assert.equal(migrateGranularInner('datos', INTER), 'resumen');
   assert.equal(migrateGranularInner('datos', SALA), 'resumen');
   assert.equal(migrateGranularInner('todo', INTER), 'todo');
@@ -133,7 +139,7 @@ test('consolidatedTabForGranular returns top-level composite tab id', () => {
 });
 
 test('getClinicoSections differs by mode (manejo hidden globally)', () => {
-  assert.deepEqual(getClinicoSections(INTER), ['consultaIC', 'vpo']);
+  assert.deepEqual(getClinicoSections(INTER), ['consultaIC']);
   assert.deepEqual(getClinicoSections(SALA), ['estadoActual', 'evaluacionInicial', 'eventualidades']);
 });
 
@@ -149,27 +155,19 @@ test('isManejoSectionHidden is always true (global product policy)', () => {
   assert.equal(isManejoSectionHidden(HIDE_MANEJO_LEGACY), true);
 });
 
-test('inter clinico sections are consultaIC + vpo, no manejo or historia', () => {
-  assert.deepEqual(getClinicoSections(INTER), ['consultaIC', 'vpo']);
+test('inter clinico sections are consultaIC only, no manejo or historia', () => {
+  assert.deepEqual(getClinicoSections(INTER), ['consultaIC']);
 });
 
-test('sala salida sections are hojaIC only (listado/recetaHu/vpo all dropped for HF)', () => {
+test('sala salida sections are hojaIC only (listado/recetaHu dropped for HF)', () => {
   assert.deepEqual(getSalidaSections(SALA), ['hojaIC']);
-});
-
-test('resolveConsolidatedTarget vpo in inter maps to clinico', () => {
-  assert.deepEqual(resolveConsolidatedTarget('vpo', INTER), { tab: 'clinico', section: 'vpo' });
-});
-
-test('resolveConsolidatedTarget vpo in sala maps to salida', () => {
-  assert.deepEqual(resolveConsolidatedTarget('vpo', SALA), { tab: 'salida', section: 'vpo' });
 });
 
 test('interconsulta keeps clinico tab when only manejo is hidden', () => {
   assert.equal(isClinicoCompositeVisible(INTER), true);
   assert.equal(isClinicoCompositeVisible(HIDE_MANEJO_INTER), true);
   assert.equal(getConsolidatedTabs(HIDE_MANEJO_INTER).includes('clinico'), true);
-  assert.deepEqual(getClinicoSections(HIDE_MANEJO_INTER), ['consultaIC', 'vpo']);
+  assert.deepEqual(getClinicoSections(HIDE_MANEJO_INTER), ['consultaIC']);
 });
 
 test('sala keeps clinico for estado actual when manejo is hidden', () => {
@@ -331,5 +329,24 @@ test('applyExpedientePaneLayout mounts Tendencias into Laboratorio (and remounts
     resetExpedientePaneLayoutCache();
     if (prevDoc === undefined) delete globalThis.document;
     else globalThis.document = prevDoc;
+  }
+});
+
+test('outpatient (consulta externa) active patient gets interconsulta sections even in global sala mode', () => {
+  try {
+    setActivePatientAreaGetter(() => 'CONSULTA EXTERNA');
+    assert.deepEqual(getClinicoSections(SALA), ['consultaIC']);
+    assert.deepEqual(getSalidaSections(SALA), []); // outpatient: no Hoja IC egress export
+  } finally {
+    setActivePatientAreaGetter(() => '');
+  }
+});
+
+test('non-outpatient active patient keeps normal sala sections', () => {
+  try {
+    setActivePatientAreaGetter(() => 'CARDIOLOGIA PISO 3');
+    assert.deepEqual(getClinicoSections(SALA), ['estadoActual', 'evaluacionInicial', 'eventualidades']);
+  } finally {
+    setActivePatientAreaGetter(() => '');
   }
 });

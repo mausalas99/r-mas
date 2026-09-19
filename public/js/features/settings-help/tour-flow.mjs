@@ -2,14 +2,11 @@
 export {
   MOBILE_SCOPE_COPY,
   LIVESYNC_BTN_COPY,
-  getGuardiaV7StepHtml,
-  escapeTourHtml,
-} from './tour-flow-guardia-copy.mjs';
+} from './tour-flow-fundamentos-steps.mjs';
 export { renderTourStep } from './tour-flow-render.mjs';
 export {
   clearGuidedTourModuleScope,
   maybeMarkFundamentosChapterComplete,
-  maybeMarkGuardiaV7ChapterComplete,
 } from './tour-flow-chapter.mjs';
 export {
   guidedTourClickPrev,

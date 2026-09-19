@@ -10,6 +10,7 @@ import { emptyCardio } from '../../../../lib/cardio/patient-cardio.mjs';
 import { sumFurosemidaMg, listActiveMeds } from '../../../../lib/cardio/med-segments.mjs';
 import { normalizeDevice } from '../../../../lib/cardio/hf-device.mjs';
 import { latestTwoScores } from '../../../../lib/cardio/hf-scores.mjs';
+import { admissionDateForPatient } from '../guardia-census-table.mjs';
 
 /** @param {unknown} patient */
 function resolveCardio(patient) {
@@ -63,11 +64,13 @@ function extractDiuresisEntries(monitoreo) {
 
 /**
  * @param {Array<{ ymd: string, value: number }>} entries
- * @param {string} [ymdFilter]
+ * @param {{ ymd?: string, sinceYmd?: string }} [filter]
  */
-function sumDiuresis(entries, ymdFilter) {
+function sumDiuresis(entries, filter) {
+  var f = filter || {};
   return entries.reduce(function (sum, e) {
-    if (ymdFilter && e.ymd !== ymdFilter) return sum;
+    if (f.ymd && e.ymd !== f.ymd) return sum;
+    if (f.sinceYmd && e.ymd < f.sinceYmd) return sum;
     return sum + e.value;
   }, 0);
 }
@@ -159,6 +162,7 @@ export function buildCardioGlanceModel(patient, opts) {
   var hasToday = diuresisEntries.some(function (e) {
     return e.ymd === todayYmd;
   });
+  var sinceYmd = String(cardio.inicioDescongestion || '') || admissionDateForPatient(patient) || '';
   var furosemidaAcumuladaMg = sumFurosemidaMg(cardio.diureticSegments, asOfDate);
 
   var gdmt = (Array.isArray(cardio.fantasticos) ? cardio.fantasticos : []).map(function (f) {
@@ -178,8 +182,8 @@ export function buildCardioGlanceModel(patient, opts) {
     etiologia: String(cardio.etiologia || '').trim(),
     congestion: congestion,
     diuresis: {
-      hoyMl: hasToday ? sumDiuresis(diuresisEntries, todayYmd) : null,
-      acumuladaMl: diuresisEntries.length ? sumDiuresis(diuresisEntries) : null,
+      hoyMl: hasToday ? sumDiuresis(diuresisEntries, { ymd: todayYmd }) : null,
+      acumuladaMl: diuresisEntries.length ? sumDiuresis(diuresisEntries, { sinceYmd: sinceYmd }) : null,
       furosemidaAcumuladaMg: furosemidaAcumuladaMg,
       activeDiureticCount: listActiveMeds(cardio.diureticSegments || []).length,
     },

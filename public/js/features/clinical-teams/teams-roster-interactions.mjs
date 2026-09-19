@@ -10,7 +10,6 @@ import { copyToClipboardSafe } from '../soap-estado.mjs';
 import {
   hasProgramAdminPrivileges,
 } from '../../clinical-privileges.mjs';
-import { verifyAdminAccessCode } from '../../../../lib/admin-access-code.mjs';
 import { joinClinicalTeamByButton } from './teams-roster-join-handler.mjs';
 import {
   toast,
@@ -25,13 +24,12 @@ import {
 import { getClinicalTeamsPanelHost } from '../clinical-panel-host.mjs';
 import { wireTeamManageModalDelegation } from './teams-roster-manage.mjs';
 import {
-  syncCreateTeamCycleField,
-  syncCreateTeamServiceFromSala,
+  syncCreateTeamSalaDefault,
   renderClinicalTeamsPanel,
 } from './teams-roster-render.mjs';
 
 function syncSalaFieldVisibility() {
-  syncCreateTeamServiceFromSala();
+  syncCreateTeamSalaDefault();
 }
 
 function wireAdminCheckboxGate() {
@@ -54,7 +52,7 @@ function wireAdminCheckboxGate() {
 
     ev.preventDefault();
     void promptAdminAccessCode().then((code) => {
-      if (code && verifyAdminAccessCode(code)) {
+      if (code) {
         cb.checked = true;
         rememberAdminAccessCode(code);
         return;
@@ -75,7 +73,7 @@ function wireCreateTeamPanel() {
   const showPanel = () => {
     panel.hidden = false;
     openBtn.hidden = true;
-    syncCreateTeamServiceFromSala();
+    syncCreateTeamSalaDefault();
     const firstField = panel.querySelector('input, select, textarea');
     if (firstField instanceof HTMLElement) firstField.focus();
   };
@@ -100,19 +98,7 @@ export function wireClinicalTeamsPanelInteractions() {
   const salaSelect = document.getElementById('clinical-team-create-sala');
   if (salaSelect && !salaSelect._rpcSalaWired) {
     salaSelect._rpcSalaWired = true;
-    salaSelect.addEventListener('change', () => syncCreateTeamServiceFromSala());
-  }
-
-  const serviceSelect = document.getElementById('clinical-team-create-service');
-  if (serviceSelect && !serviceSelect._rpcServiceWired) {
-    serviceSelect._rpcServiceWired = true;
-    serviceSelect.addEventListener('change', () => syncCreateTeamCycleField());
-  }
-
-  const r1LineSelect = document.getElementById('clinical-team-create-r1-line');
-  if (r1LineSelect && !r1LineSelect._rpcR1LineWired) {
-    r1LineSelect._rpcR1LineWired = true;
-    r1LineSelect.addEventListener('change', () => syncCreateTeamCycleField());
+    salaSelect.addEventListener('change', () => syncCreateTeamSalaDefault());
   }
 }
 

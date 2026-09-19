@@ -3,9 +3,6 @@
 const CREATE_FIELD_IDS = [
   'clinical-team-create-name',
   'clinical-team-create-sala',
-  'clinical-team-create-service',
-  'clinical-team-create-day',
-  'clinical-team-create-r1-line',
 ];
 
 const PROFILE_FIELD_IDS = [
@@ -15,10 +12,7 @@ const PROFILE_FIELD_IDS = [
   'clinical-profile-name',
 ];
 
-const JOIN_CODE_FIELD_IDS = [
-  'clinical-team-join-code-input',
-  'clinical-team-join-code-cycle',
-];
+const JOIN_CODE_FIELD_IDS = ['clinical-team-join-code-input'];
 
 import { getClinicalTeamsPanelHost } from '../clinical-panel-host.mjs';
 import { isEquipoEmbedActive } from '../cloud-sync/panel-equipo-embed.mjs';
@@ -134,18 +128,16 @@ export function captureClinicalTeamsPanelDraft(host) {
   const createPanel = document.getElementById('clinical-team-create-panel');
   const openBtn = document.getElementById('btn-clinical-team-create-open');
 
-  /** @type {Array<{ teamId: string, username: string, cycle: string }>} */
+  /** @type {Array<{ teamId: string, username: string }>} */
   const addMember = [];
   host.querySelectorAll('.clinical-teams-add-member-form').forEach((form) => {
     if (!(form instanceof HTMLFormElement)) return;
     const input = form.querySelector('.clinical-teams-add-member-input');
-    const cycleEl = form.querySelector('.clinical-teams-add-member-cycle');
     const username = input instanceof HTMLInputElement ? String(input.value || '').trim() : '';
     if (!username) return;
     addMember.push({
       teamId: String(form.dataset.teamId || ''),
       username,
-      cycle: cycleEl instanceof HTMLSelectElement ? String(cycleEl.value || '') : '',
     });
   });
 
@@ -183,8 +175,7 @@ function restoreCreateTeamPanelDraft(draft) {
   openBtn.hidden = draft.createOpenBtnHidden;
   if (!draft.createPanelOpen) return;
   void import('./teams-roster-create.mjs').then((m) => {
-    m.syncCreateTeamServiceFromSala();
-    m.syncCreateTeamCycleField();
+    m.syncCreateTeamSalaDefault();
   });
 }
 
@@ -204,7 +195,7 @@ function restoreEditPanelsOpen(host, teamIds) {
   }
 }
 
-/** @param {HTMLElement} host @param {Array<{ teamId: string, username: string, cycle: string }>} rows */
+/** @param {HTMLElement} host @param {Array<{ teamId: string, username: string }>} rows */
 function restoreAddMemberDraftRows(host, rows) {
   for (const row of rows || []) {
     if (!row.teamId || !row.username) continue;
@@ -213,9 +204,7 @@ function restoreAddMemberDraftRows(host, rows) {
     );
     if (!(form instanceof HTMLFormElement)) continue;
     const input = form.querySelector('.clinical-teams-add-member-input');
-    const cycleEl = form.querySelector('.clinical-teams-add-member-cycle');
     if (input instanceof HTMLInputElement) input.value = row.username;
-    if (cycleEl instanceof HTMLSelectElement && row.cycle) cycleEl.value = row.cycle;
   }
 }
 

@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../public/js/ui-skeleton.mjs"],
-  "sourcesContent": ["/** Skeleton placeholder helpers (premium UI phase 1). */\n\nexport function buildLabPanelSkeletonHtml() {\n  return (\n    '<div class=\"lab-panel-skeleton\" id=\"lab-panel-loading\" aria-busy=\"true\" aria-label=\"Cargando Laboratorio\">' +\n    '<div class=\"skel-line lab-panel-skeleton-title\"></div>' +\n    '<div class=\"skel-card\"></div>' +\n    '<div class=\"skel-line\" style=\"width:72%\"></div>' +\n    '<div class=\"skel-line\" style=\"width:58%\"></div>' +\n    '<div class=\"skel-line\" style=\"width:84%\"></div>' +\n  '</div>'\n  );\n}\n\nexport function buildTextSkeletonPanel(className, lines) {\n  const cls = className || 'skel-panel';\n  const count = Math.max(1, Number(lines) || 3);\n  let html = '<div class=\"' + cls + '\" aria-busy=\"true\">';\n  for (let i = 0; i < count; i++) {\n    const width = 55 + ((i * 17) % 35);\n    html += '<div class=\"skel-line\" style=\"width:' + width + '%\"></div>';\n  }\n  html += '</div>';\n  return html;\n}\n"],
-  "mappings": ";AAEO,SAAS,4BAA4B;AAC1C,SACE;AAQJ;AAEO,SAAS,uBAAuB,WAAW,OAAO;AACvD,QAAM,MAAM,aAAa;AACzB,QAAM,QAAQ,KAAK,IAAI,GAAG,OAAO,KAAK,KAAK,CAAC;AAC5C,MAAI,OAAO,iBAAiB,MAAM;AAClC,WAAS,IAAI,GAAG,IAAI,OAAO,KAAK;AAC9B,UAAM,QAAQ,KAAO,IAAI,KAAM;AAC/B,YAAQ,yCAAyC,QAAQ;AAAA,EAC3D;AACA,UAAQ;AACR,SAAO;AACT;",
-  "names": []
-}

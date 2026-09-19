@@ -111,7 +111,7 @@ export function hydrateMobileSharerSessionFromSettings() {
   clinicalSessionContext.user = {
     user_id: userId || username || 'mobile-sharer',
     username: username || null,
-    rank: String(s.clinicalRank || 'R1').trim() || 'R1',
+    rank: String(s.clinicalRank || 'Team').trim() || 'Team',
     sala: s.clinicalSala || null,
     clinical_name: s.clinicalDisplayName || null,
     is_program_admin: 0,

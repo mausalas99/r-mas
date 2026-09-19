@@ -6,7 +6,6 @@ import { applySomePharmCatalogOverlay } from './med-pharm-some-catalog.mjs';
 import { repairLabHistoryMapInPlace } from './lab-history-repair.mjs';
 import { migratePatientMonitoreo } from './features/estado-actual-data.mjs';
 import { migratePatientsClinicalSala } from './clinico-access.mjs';
-import { maybeStripAutoLabInterpretationsOnce } from './features/eventualidades-strip-auto-labs.mjs';
 import {
   persistClinicalState,
   flushPersistClinicalState,
@@ -320,17 +319,6 @@ export function initAppState() {
   } catch (_e) { void _e; }
   if (repairLabHistoryInMemory() || monitoreoMigrated || salaMigrated > 0) {
     void persistClinicalState({ immediate: true, source: 'boot-migrate' });
-  }
-  var stripLabs = maybeStripAutoLabInterpretationsOnce(patients);
-  if (stripLabs.ran && stripLabs.patientsChanged > 0) {
-    void persistClinicalState({ immediate: true, source: 'boot-strip-labs' });
-    try {
-      import('./features/cloud-sync/mutate-bridge.mjs').then(function (m) {
-        if (m && typeof m.scheduleCloudSyncPush === 'function') m.scheduleCloudSyncPush();
-      });
-    } catch (_e) {
-      void _e;
-    }
   }
 }
 

@@ -5,19 +5,10 @@ import {
   clinicalSessionContext,
 } from '../../clinical-access-runtime.mjs';
 import { normalizeUsername } from '../../clinical-username.mjs';
-import { verifyAdminAccessCode } from '../../../../lib/admin-access-code.mjs';
 import { CLINICAL_SALA_VALUES } from '../../../../lib/clinical-salas.mjs';
 
 import { escapeHtml, escapeAttr } from '../../dom-escape.mjs';
 export { escapeHtml, escapeAttr };
-export const CLINICAL_TEAM_SERVICES = [
-  'Sala',
-  'Interconsultas',
-  'Eme',
-  'Torre HU',
-  'UX',
-  'Área A/Pensionistas',
-];
 
 export const CLINICAL_SALAS = CLINICAL_SALA_VALUES;
 
@@ -129,11 +120,13 @@ function finishAdminCodePrompt(code) {
   resolve?.(code);
 }
 
-function submitAdminCodeModal() {
+async function submitAdminCodeModal() {
   const input = document.getElementById('clinical-admin-code-input');
   const err = document.getElementById('clinical-admin-code-error');
   const code = input instanceof HTMLInputElement ? input.value : '';
-  if (!verifyAdminAccessCode(code)) {
+  const api = dbApi();
+  const res = api ? await api.dbAdminAccessCodeVerify(code) : null;
+  if (!res || res.ok === false || !res.valid) {
     if (err) {
       err.textContent = 'Código incorrecto.';
       err.hidden = false;

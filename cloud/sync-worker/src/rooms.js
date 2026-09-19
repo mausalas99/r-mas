@@ -48,7 +48,7 @@ export function validateCloudSalaForRoom(salaRaw) {
   if (!salaRaw || !isCloudSala(salaRaw)) {
     throw new SyncError(
       'invalid_request',
-      'Sala no disponible en la nube. Solo Sala 1, Sala 2, Sala E y Torre HU.'
+      'Sala no disponible en la nube. Solo Unidad IC.'
     );
   }
   return normalizeCloudSala(salaRaw);
@@ -504,9 +504,9 @@ export async function handleRooms(request, env, subpath) {
     return handleRoomLive(request, env, liveMatch[1]);
   }
 
-  const dekMatch = /^\/([^/]+)\/dek$/.exec(subpath);
+  const dekMatch = /^\/([^/]+)\/dek(\/.*)?$/.exec(subpath);
   if (dekMatch) {
-    return handleRoomDek(request, env, dekMatch[1]);
+    return handleRoomDek(request, env, dekMatch[1], dekMatch[2] || '');
   }
 
   const syncMatch = /^\/([^/]+)\/(mutations|pull)$/.exec(subpath);

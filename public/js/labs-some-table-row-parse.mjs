@@ -111,11 +111,11 @@ export function finalizeRow(estudio, flag, valueParts) {
 }
 
 function shouldStopCultureRow_(t, lines, j, estudio, parts, cultureFieldRe, isSampleTitle) {
-  if (isCultureFieldLine(t, cultureFieldRe) || isSampleTitle(t, lines.slice(j))) return true;
+  if (isCultureFieldLine(t, cultureFieldRe) || isSampleTitle(t, lines.slice(j, j + 8))) return true;
   if (isDepartmentLine(t) || isTableHeaderLine(t)) return true;
   if (!parts.length && isFlagToken(t)) {
     var peek = cleanEstudio(lines[j] || '');
-    return !!(peek && (isCultureFieldLine(peek, cultureFieldRe) || isSampleTitle(peek, lines.slice(j + 1))));
+    return !!(peek && (isCultureFieldLine(peek, cultureFieldRe) || isSampleTitle(peek, lines.slice(j + 1, j + 9))));
   }
   return false;
 }
@@ -166,7 +166,7 @@ function isInvalidStandardRowHeader(estudio) {
 }
 
 function shouldStopAtGroupTitle(t, lines, j, parts, currentGroupTitle) {
-  if (!isLikelyGroupTitle(t, lines.slice(j), currentGroupTitle)) return false;
+  if (!isLikelyGroupTitle(t, lines.slice(j, j + 9), currentGroupTitle)) return false;
   return (
     parts.length > 0 ||
     isCitoGroupTitle(t) ||

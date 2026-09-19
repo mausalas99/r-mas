@@ -1,4 +1,5 @@
 import { confirmAction, fmtRole } from './panel-admin-helpers.mjs';
+import { rewrapRoomDekForNewCode } from './room-dek.mjs';
 import { setSessionAdminKey } from './panel-admin-helpers.mjs';
 import { showRecoveryCodeModal } from './recovery-modal.mjs';
 import { showAdminPromptModal } from './admin-prompt-modal.mjs';
@@ -55,7 +56,6 @@ function dispatchSimpleAction(action, deps) {
     'refresh-salas': () => void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps)),
     'search-users': () => void loadAdminEquipos(deps.root, deps.getApi),
     'refresh-equipos': () => void deps.equiposPanel?.refresh(),
-    'seed-agosto-2026-equipos': () => void deps.equiposPanel?.seedAgosto2026?.(),
     'save-equipos-bulk': () => void deps.equiposPanel?.handleBulkSave?.(),
     'purge-equipos-bulk': () => void deps.equiposPanel?.handleBulkPurge?.(),
     'load-mutations': () => void loadAdminMutations(deps.root, deps.getApi, deps.toast),
@@ -158,6 +158,7 @@ async function handleRotateCode(deps, roomId) {
   if (!(await confirmAction('¿Rotar el código de esta sala? Quienes tengan el código anterior no podrán unirse.'))) return;
   try {
     const data = await deps.getApi().adminRotateCode(roomId);
+    if (data.code) await rewrapRoomDekForNewCode(deps.getApi(), roomId, data.code);
     deps.toast('Nuevo código: ' + (data.code || '—'), 'success');
     void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps));
   } catch (err) {

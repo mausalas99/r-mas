@@ -17,6 +17,28 @@ function importPatientExportPayloadsBody() {
   return src.slice(start, nextExport === -1 ? src.length : nextExport);
 }
 
+describe('cardio data is carried over on patient import', () => {
+  it('copyImportCardio clones the imported cardio object and backfills defaults', () => {
+    const start = src.indexOf('function copyImportCardio');
+    assert.notEqual(start, -1, 'copyImportCardio should be declared');
+    const body = src.slice(start, src.indexOf('\n}', start) + 2);
+    assert.match(body, /JSON\.parse\(JSON\.stringify\(importedPatient\.cardio\)\)/);
+    assert.match(body, /ensureCardio\(target\)/);
+  });
+
+  it('overwrite path copies cardio before the existing patient is persisted', () => {
+    const start = src.indexOf('function applyImportOverwrite');
+    const body = src.slice(start, src.indexOf('\n}', start) + 2);
+    assert.match(body, /copyImportCardio\(existing, entry\.patient\)/);
+  });
+
+  it('duplicate path copies cardio onto the newly created patient', () => {
+    const start = src.indexOf('function applyImportDuplicate');
+    const body = src.slice(start, src.indexOf('\n}', start) + 2);
+    assert.match(body, /copyImportCardio\(newPatient, entry\.patient\)/);
+  });
+});
+
 describe('importPatientExportPayloads destructive confirms', () => {
   it('multi-patient path requests a destructive confirm before importing', () => {
     const body = importPatientExportPayloadsBody();

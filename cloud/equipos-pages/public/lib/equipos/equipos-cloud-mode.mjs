@@ -1,1 +1,0 @@
-../../../../../lib/equipos/equipos-cloud-mode.mjs

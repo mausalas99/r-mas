@@ -3,21 +3,12 @@ import assert from 'node:assert/strict';
 import {
   formatCensoSalaTitleLine,
   formatCensoEquipoLine,
-  normalizeCensoUbicacionValue,
   resolveCensoFimiLabel,
-  CENSO_UBICACION_TORRE,
 } from './censo-header-format.mjs';
 
-test('formatCensoSalaTitleLine sala numérica', () => {
-  assert.equal(formatCensoSalaTitleLine({ censoSala: '2' }), 'Censo de Sala 2');
-});
-
-test('formatCensoSalaTitleLine Torre HU sin sala', () => {
-  assert.equal(formatCensoSalaTitleLine({ censoSala: CENSO_UBICACION_TORRE }), 'Censo de Torre HU');
-});
-
-test('normalizeCensoUbicacionValue migra censoTorre antiguo', () => {
-  assert.equal(normalizeCensoUbicacionValue({ censoTorre: 'Torre HU' }), CENSO_UBICACION_TORRE);
+test('formatCensoSalaTitleLine siempre Censo (HF es el único servicio)', () => {
+  assert.equal(formatCensoSalaTitleLine({}), 'Censo');
+  assert.equal(formatCensoSalaTitleLine({ censoSala: '2' }), 'Censo');
 });
 
 test('resolveCensoFimiLabel personalizable', () => {
@@ -34,4 +25,13 @@ test('formatCensoEquipoLine solo nombres', () => {
   });
   assert.equal(line, 'Ana R2 · Luis R1 · Mar R1 · Dr. Maestro');
   assert.doesNotMatch(line, /R2:/);
+});
+
+test('formatCensoEquipoLine usa censoEquipo/censoJefe flat cuando existen', () => {
+  var line = formatCensoEquipoLine({
+    censoEquipo: 'Ana\nLuis\nMar',
+    censoJefe: 'Dr. Jefe',
+    residenteR2: 'legacy no usado',
+  });
+  assert.equal(line, 'Ana · Luis · Mar · Dr. Jefe');
 });

@@ -1,4 +1,3 @@
-import { resolveMembershipCycleForUser } from '../../clinico-access.mjs';
 import { assignDraftToTeam, resolveClinicalProfileUserId } from './panel-admin-equipos-persist-core.mjs';
 
 /** @returns {import('../../preload.js').ElectronAPI | null} */
@@ -28,7 +27,7 @@ export function readEquiposRowRank(row) {
   const rankSel = row?.querySelector?.('.cloud-sync-admin-equipos-rank');
   const fromSelect = selectValue(rankSel);
   if (fromSelect) return fromSelect;
-  return String(row?.getAttribute?.('data-user-rank') || 'R1').trim() || 'R1';
+  return String(row?.getAttribute?.('data-user-rank') || 'Team').trim() || 'Team';
 }
 
 /** @param {HTMLElement | null | undefined} row */
@@ -52,12 +51,8 @@ export function readEquiposRowDraft(row, teams) {
   const sala = readEquiposRowSala(row);
   const rank = readEquiposRowRank(row);
   const teamId = selectValue(row.querySelector('.cloud-sync-admin-equipos-team'));
-  let subAreaFraction = selectValue(row.querySelector('.cloud-sync-admin-equipos-cycle'));
   const team = (teams || []).find((t) => String(t.team_id) === teamId) || null;
-  if (!subAreaFraction && team) {
-    subAreaFraction = resolveMembershipCycleForUser(team, userId, rank);
-  }
-  return { username, displayName, userId, sala, rank, teamId, subAreaFraction, team, row };
+  return { username, displayName, userId, sala, rank, teamId, team, row };
 }
 
 /**

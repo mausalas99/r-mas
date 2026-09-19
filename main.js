@@ -649,11 +649,6 @@ ipcMain.handle('generate-document', async (_e, { kind, payload }) => {
         logDocExport({ type: 'listado', patient: payload && payload.patient, status: 200, bytes: buffer.length });
         return { ok: true, fileName, buffer };
       }
-      case 'censo': {
-        const { buffer, fileName } = await docExport.exportCensoPdf(payload || {}, paths);
-        logDocExport({ type: 'censo', status: 200, bytes: buffer.length });
-        return { ok: true, fileName, buffer };
-      }
       case 'receta-hu': {
         const { buffer, fileName } = await docExport.exportRecetaHuPdf(payload || {});
         logDocExport({ type: 'receta-hu', patient: payload && payload.patient, status: 200, bytes: buffer.length });
@@ -726,6 +721,12 @@ function loadLabPhotoOcr() {
   return labPhotoOcrModule;
 }
 
+function resolveTessdataLangPath() {
+  const dir = path.join(__dirname, 'resources', 'tessdata');
+  const unpackedDir = dir.includes('app.asar') ? dir.replace('app.asar', 'app.asar.unpacked') : dir;
+  return fs.existsSync(path.join(unpackedDir, 'spa.traineddata')) ? unpackedDir : undefined;
+}
+
 ipcMain.handle('lab-photo-ocr', async () => {
   if (!mainWindow || mainWindow.isDestroyed()) return { ok: false, canceled: true };
   const result = await dialog.showOpenDialog(mainWindow, {
@@ -738,7 +739,7 @@ ipcMain.handle('lab-photo-ocr', async () => {
   try {
     const buffer = await fs.promises.readFile(filePath);
     const { ocrLabPhoto } = await loadLabPhotoOcr();
-    const { text, confidence } = await ocrLabPhoto(buffer);
+    const { text, confidence } = await ocrLabPhoto(buffer, { langPath: resolveTessdataLangPath() });
     return { ok: true, text, confidence, fileName: path.basename(filePath) };
   } catch (e) {
     return { ok: false, error: (e && e.message) || 'No se pudo leer la imagen.' };
@@ -964,6 +965,9 @@ app.whenReady().then(async () => {
       getClientId: () => 'desktop-host',
     });
     bootMark('db-ipc');
+
+    const { registerAdminRescueKeyIpcHandlers } = await import('./lib/admin-rescue-key-ipc.mjs');
+    registerAdminRescueKeyIpcHandlers({ ipcMain, app, safeStorage });
 
     unlockPromise = unlockClinicalDbAtStartup(dbManager);
     unlockPromise.catch((unlockErr) => {

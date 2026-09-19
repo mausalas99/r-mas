@@ -25,8 +25,8 @@ describe('patient switch preserves expediente tab', () => {
     assert.equal(innerAfterPatientSwitch('resumen', SALA), 'resumen');
   });
 
-  it('keeps estadoActual in interconsulta when switching patients', () => {
-    assert.equal(innerAfterPatientSwitch('estadoActual', INTER), 'estadoActual');
+  it('migrates estadoActual to consultaIC in interconsulta when switching patients (Guardia mode removed — interconsulta is always Consulta Externa now)', () => {
+    assert.equal(innerAfterPatientSwitch('estadoActual', INTER), 'consultaIC');
   });
 
   it('only migrates invalid tabs for the current mode', () => {

@@ -28,7 +28,6 @@
       box-shadow var(--dur-fast) var(--ease-out);
   }
 
-  .pase-mini-card:active,
   .guardia-census-chip:active {
     transform: scale(0.96);
     transition: transform 100ms var(--ease-out);
@@ -45,7 +44,6 @@ html.motion-sobrio .patient-card:active {
   .btn-generate:active,
   .btn-save:active,
   .patient-card:active,
-  .pase-mini-card:active,
   .guardia-census-chip:active {
     transform: none;
   }

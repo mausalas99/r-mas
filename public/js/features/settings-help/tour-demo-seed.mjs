@@ -7,7 +7,6 @@ import {
   buildTourDemoLabPasteBoth,
 } from '../../tour-demo-dates.mjs';
 import { seedTourDemoTodos, clearTourDemoTodos } from '../../tour-demo-todos.mjs';
-import { buildTourDemoEventualidades } from '../../tour-demo-eventualidades.mjs';
 import {
   DEMO_PATIENT_ID,
   DEMO_PATIENT_ID_2,
@@ -78,7 +77,7 @@ function findTourDemoPerezPatient() {
   );
 }
 
-/** Monitoreo, eventualidades, pendientes y notas demo para DEMO PÉREZ (idempotente). */
+/** Monitoreo, pendientes y notas demo para DEMO PÉREZ (idempotente). */
 function seedTourDemoPerezClinicalData() {
   var p = findTourDemoPerezPatient();
   if (!p) return false;
@@ -91,11 +90,6 @@ function seedTourDemoPerezClinicalData() {
   var hist = p.monitoreo && Array.isArray(p.monitoreo.historial) ? p.monitoreo.historial : [];
   if (!hist.length) {
     p.monitoreo = buildTourMonitoreoHistorial(today);
-  }
-  var ev =
-    p.eventualidades && Array.isArray(p.eventualidades.entries) ? p.eventualidades.entries : [];
-  if (!ev.length) {
-    p.eventualidades = buildTourDemoEventualidades(today);
   }
   if (!getNotes()[pid] || !String((getNotes()[pid].diagnosticos || [])[0] || '').trim()) {
     getNotes()[pid] = {

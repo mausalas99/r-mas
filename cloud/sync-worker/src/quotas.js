@@ -1,5 +1,9 @@
 export const QUOTAS = {
-  maxLivePatients: 50,
+  /** Rooms are one-per-sala-per-calendar-month (see turn-key.js), not daily —
+   * 50 was sized for daily rooms and silently rejected new admissions past
+   * the 50th patient in a month. Real ceiling is the storage byte quotas;
+   * this is now just a runaway guard. */
+  maxLivePatients: 300,
   maxMembers: 20,
   maxTombstones: 100,
   tombstoneMaxAgeDays: 14,
@@ -11,10 +15,12 @@ export const QUOTAS = {
    * (outbox diagnostics showed 220KB body cap rejecting pushes). Paid
    * Workers plan has no platform ceiling anywhere near this. */
   labMutationMaxBytes: 1024 * 1024,
-  /** D1 hard-caps any single BLOB/row at 2,000,000 bytes. This is one
-   * patient's whole lab history in one room (room_state_labs row) — margin
-   * under that cap for JSON/AES-GCM overhead. Not a business quota, a
-   * platform ceiling; see schema/008-shard-room-state-labs.sql. */
+  /** D1 hard-caps any single BLOB/row at 2,000,000 bytes. Since schema 010,
+   * this guards ONE lab set's row (room_state_lab_sets), not a whole
+   * patient's history — margin under the cap for JSON/AES-GCM overhead.
+   * A single set is already ≤ labMutationMaxBytes (1MB), so this should
+   * never fire in practice; it's a defense-in-depth platform ceiling, not
+   * a business quota. See schema/010-shard-room-state-lab-sets.sql. */
   labShardMaxBytes: 1_900_000,
   /** Align with desktop chunkCloudOps (6 lab ops × few patients). */
   maxOpsPerMutation: 16,

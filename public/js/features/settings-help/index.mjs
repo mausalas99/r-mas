@@ -1,7 +1,6 @@
 /**
  * Settings dropdown, guided tours, help center, release notes (BN-05 shell).
  */
-import { exportCensoPdfFromHelp } from '../../censo-export.mjs';
 import { settingsHelpBridge } from './bridges.mjs';
 export { registerSettingsHelpRuntime } from './runtime.mjs';
 import {
@@ -32,7 +31,6 @@ import {
   syncLearnAprenderChrome,
   renderLearnHubBody,
 } from './learn-hub.mjs';
-import { dismissGuardiaV7UpgradeCard } from './guardia-v7-upgrade-card.mjs';
 import {
   closeReleaseNotes,
   RELEASE_NOTES_DEV_FORCE_SHOW,
@@ -62,7 +60,6 @@ import {
   startMiniTour,
   startHelpTourMain,
   togglePresentationModeFromHelp,
-  seedPitchGuardiaCensusFromHelp,
   guidedTourIntroChooseSala,
   guidedTourIntroChooseInterconsulta,
   guidedTourIntroSkip,
@@ -140,8 +137,6 @@ export const settingsHelpWindowHandlers = {
   startMiniTour,
   startHelpTourMain,
   togglePresentationModeFromHelp,
-  seedPitchGuardiaCensusFromHelp,
-  exportCensoPdfFromHelp,
   guidedTourIntroChooseSala,
   guidedTourIntroChooseInterconsulta,
   guidedTourIntroSkip,
@@ -161,5 +156,4 @@ export const settingsHelpWindowHandlers = {
   insertLabTourSecondPatientExample,
   openLearnHub,
   closeLearnHub,
-  dismissGuardiaV7UpgradeCard,
 };

@@ -33,11 +33,6 @@ export function wireClinicalTeamsFormDelegation(root) {
       void loadRoster().then(function (m) {
         return m.handleAddMemberSubmit(ev, form);
       });
-    } else if (form.classList.contains('clinical-teams-my-cycle-form')) {
-      ev.preventDefault();
-      void loadRoster().then(function (m) {
-        return m.handleMyCycleSubmit(ev, form);
-      });
     } else if (form.id === 'clinical-team-join-code-form') {
       ev.preventDefault();
       void handleJoinWithCodeSubmit(ev);

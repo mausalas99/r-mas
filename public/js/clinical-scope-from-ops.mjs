@@ -11,17 +11,6 @@ function activeRotationCycle(snapshot) {
   return rows[0];
 }
 
-function activeGuardiasFromSnapshot(snapshot) {
-  const resolved = new Set(
-    (snapshot?.active_guardias_resolved || []).map((row) => String(row?.guardia_id || ''))
-  );
-  return (snapshot?.active_guardias || []).filter((row) => {
-    const guardiaId = String(row?.guardia_id || '');
-    if (!guardiaId || resolved.has(guardiaId)) return false;
-    return String(row?.status || 'Active') === 'Active';
-  });
-}
-
 /**
  * @param {object|null|undefined} snapshot
  * @param {{ userId?: string, username?: string }} hints
@@ -58,7 +47,7 @@ export function resolveClinicalUserRowFromOpsSnapshot(snapshot, hints = {}) {
 
 /**
  * @param {object|null|undefined} snapshot
- * @param {{ guardiaMode?: boolean, entregaPhaseActive?: boolean, enforceTeamPatientScope?: boolean, now?: string }} [options]
+ * @param {{ enforceTeamPatientScope?: boolean, now?: string }} [options]
  */
 export function buildClinicalScopeContextFromOpsSnapshot(snapshot, options = {}) {
   if (!snapshot || typeof snapshot !== 'object') return null;
@@ -69,7 +58,7 @@ export function buildClinicalScopeContextFromOpsSnapshot(snapshot, options = {})
   });
   return {
     teams: buildTeamsWithMembers(snapshot),
-    guardias: activeGuardiasFromSnapshot(snapshot),
+    guardias: [],
     cycle: activeRotationCycle(snapshot),
     assignments: Array.isArray(snapshot.patient_team_assignment)
       ? snapshot.patient_team_assignment.slice()
@@ -78,8 +67,6 @@ export function buildClinicalScopeContextFromOpsSnapshot(snapshot, options = {})
       ? snapshot.team_guardia_today.slice()
       : [],
     users,
-    guardiaMode: !!options.guardiaMode,
-    entregaPhaseActive: !!options.entregaPhaseActive,
     enforceTeamPatientScope: !!options.enforceTeamPatientScope,
     now: options.now || new Date().toISOString(),
   };

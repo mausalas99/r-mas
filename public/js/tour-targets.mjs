@@ -5,7 +5,6 @@
 import {
   getSalaTourSteps as curriculumSalaSteps,
   getInterconsultaTourSteps as curriculumIcSteps,
-  getGuardiaV7TourSteps as curriculumGuardiaV7Steps,
   getQuickRouteTourSteps as curriculumQuickRouteSteps,
 } from './onboarding-curriculum.mjs';
 
@@ -15,9 +14,6 @@ const ACTION_STEPS = new Set([
   'lab_parse',
   'estado_actual_registro',
   'servicio_default',
-  'gv7_guardia_toggle',
-  'gv7_lan_wifi',
-  'gv7_mobile_link',
   'livesync_desktop',
 ]);
 
@@ -120,164 +116,6 @@ const TARGETS = {
                        openConnection: true,
                        spotlightClass: 'tour-spotlight-action' },
   livesync_mobile:   { appTab: null,   selector: '#connection-dropdown', focus: false, openConnection: true },
-  gv7_guardia_chip: {
-    appTab: null,
-    selector: '#header-mode-seg',
-    focus: false,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_guardia_tab: {
-    appTab: null,
-    selector: '#appcontent-guardia',
-    focus: false,
-    openGuardiaDensity: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_guardia_scope: {
-    appTab: null,
-    selector: '#guardia-census-scope, #clinical-context-bar',
-    focus: false,
-    openGuardiaDensity: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_trust_strip: {
-    appTab: null,
-    selector: '#guardia-trust-strip',
-    focus: false,
-    openGuardiaDensity: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_guardia_toggle: {
-    appTab: null,
-    selector: '#btn-guardia-mode-toggle',
-    focus: false,
-    openGuardiaDensity: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_guardia_exit: {
-    appTab: null,
-    selector: '#header-mode-seg',
-    focus: false,
-    exitGuardiaDensity: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_entrega_phase: {
-    appTab: null,
-    selector: '#btn-guardia-entrega-phase',
-    focus: false,
-    openGuardiaDensity: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_entrega_patient: {
-    appTab: null,
-    selector: '#guardia-census-grid, #guardia-incoming-strip',
-    focus: false,
-    openGuardiaDensity: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_entrega_roster: {
-    appTab: null,
-    selector: '#entrega-roster-panel',
-    focus: false,
-    openGuardiaDensity: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_entrega_pendientes: {
-    appTab: null,
-    selector: '#entrega-modal, #entrega-handoff-panel',
-    focus: false,
-    openGuardiaDensity: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_fin_turno: {
-    appTab: null,
-    selector: '#guardia-phase-bar, #guardia-btn-finalizar-turno',
-    focus: false,
-    openGuardiaDensity: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_lan_wifi: {
-    appTab: null,
-    selector: '#btn-header-team-sync, #connection-dropdown',
-    focus: false,
-    openConnection: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_lan_directorio: {
-    appTab: null,
-    selector:
-      '[data-cloud-view="equipo"] .clinical-teams-section--directory, #connection-dropdown',
-    focus: false,
-    openConnection: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_lan_rotacion: {
-    appTab: null,
-    selector:
-      '[data-cloud-view="equipo"] .cloud-sync-equipo-embed, [data-cloud-equipo-host], #connection-dropdown',
-    focus: false,
-    openConnection: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_rotacion_rejoin: {
-    appTab: null,
-    selector:
-      '[data-cloud-view="equipo"] .clinical-teams-section--rotation, #connection-dropdown',
-    focus: false,
-    openConnection: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_inherit_patients: {
-    appTab: null,
-    selector:
-      '[data-cloud-view="equipo"] .clinical-teams-inherit-btn, #connection-dropdown',
-    focus: false,
-    openConnection: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_mobile_link: {
-    appTab: null,
-    selector:
-      '[data-cloud-view="mobile"] .cloud-mobile-invite-host, .cloud-mobile-invite-qr-host, [data-cloud-mobile-invite-host]',
-    focus: false,
-    openConnection: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_mobile_scope: {
-    appTab: null,
-    selector:
-      '[data-cloud-view="mobile"] .cloud-mobile-invite-qr-host, .cloud-sync-mobile-invite-host, .lan-invite-collapsible--mobile',
-    focus: false,
-    openConnection: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_mobile_vs_sala: {
-    appTab: null,
-    selector:
-      '[data-cloud-view="mobile"] .cloud-mobile-invite-host, [data-cloud-mobile-invite-host], #connection-dropdown',
-    focus: false,
-    openConnection: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_censo_r1: {
-    appTab: null,
-    selector: '#patient-sidebar, #patient-list',
-    focus: false,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_censo_r4: {
-    appTab: null,
-    selector: '.r4-section-divider, #guardia-census-head',
-    focus: false,
-    openGuardiaDensity: true,
-    spotlightClass: 'tour-spotlight-action',
-  },
-  gv7_censo_sync: {
-    appTab: null,
-    selector: '#btn-header-team-sync, #lan-connection-banner',
-    focus: false,
-    spotlightClass: 'tour-spotlight-action',
-  },
 };
 
 export function getSalaTourSteps() {
@@ -288,17 +126,12 @@ export function getInterconsultaTourSteps() {
   return curriculumIcSteps();
 }
 
-export function getGuardiaV7TourSteps() {
-  return curriculumGuardiaV7Steps();
-}
-
 export function getQuickRouteTourSteps() {
   return curriculumQuickRouteSteps();
 }
 
 export function getTourSteps(branch) {
   if (branch === 'interconsulta') return getInterconsultaTourSteps();
-  if (branch === 'guardia-v7') return getGuardiaV7TourSteps();
   if (branch === 'quick-route') return getQuickRouteTourSteps();
   return getSalaTourSteps();
 }

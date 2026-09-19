@@ -165,7 +165,8 @@ export function defaultPatientRegistrationTeamId(user) {
   if (teams.length === 1) return String(teams[0].team_id || '');
   const preferred = resolveActiveTeamFilterId(user, clinicalSessionContext.teams || []);
   if (preferred && teams.some((t) => String(t.team_id) === preferred)) return preferred;
-  return '';
+  const carrizales = teams.find((t) => /carrizales/i.test(String(t.name || t.service || '')));
+  return carrizales ? String(carrizales.team_id || '') : '';
 }
 
 /** Populate #m-team in the patient registration modal (hidden when user has no teams). */

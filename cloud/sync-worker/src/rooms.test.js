@@ -38,18 +38,8 @@ describe('emptyRoomState', () => {
 });
 
 describe('create sala gate', () => {
-  it('accepts all clinical wards on Nube', () => {
-    const allowed = [
-      'Sala 1',
-      'Sala 2',
-      'Sala E',
-      'Torre HU',
-      'torre-hu',
-      'Interconsultas',
-      'UX',
-      'Eme',
-      'Área A/Pensionistas',
-    ];
+  it('accepts the single R+ HF sala on Nube', () => {
+    const allowed = ['Unidad IC', 'unidad ic', 'ic'];
     for (const sala of allowed) {
       assert.equal(isCloudSala(sala), true, sala);
       assert.ok(CLOUD_SALAS.includes(normalizeCloudSala(sala)), sala);
@@ -59,8 +49,8 @@ describe('create sala gate', () => {
 
 
 describe('validateCloudSalaForRoom (ensure-turn gate)', () => {
-  it('accepts all clinical wards', () => {
-    const allowed = ['Sala 1', 'Interconsultas', 'UX', 'Eme', 'Área A/Pensionistas', 'torre-hu'];
+  it('accepts the single R+ HF sala', () => {
+    const allowed = ['Unidad IC', 'unidad ic', 'ic'];
     for (const sala of allowed) {
       assert.equal(validateCloudSalaForRoom(sala), normalizeCloudSala(sala), sala);
     }

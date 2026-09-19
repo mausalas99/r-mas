@@ -76,6 +76,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ocrLabPhoto: function() {
     return ipcRenderer.invoke('lab-photo-ocr');
   },
+  cardioImageAttach: function(payload) {
+    return ipcRenderer.invoke('cardio-image-attach', payload);
+  },
+  cardioImageList: function(payload) {
+    return ipcRenderer.invoke('cardio-image-list', payload);
+  },
+  cardioImageListVisit: function(payload) {
+    return ipcRenderer.invoke('cardio-image-list-visit', payload);
+  },
+  cardioImageGet: function(payload) {
+    return ipcRenderer.invoke('cardio-image-get', payload);
+  },
+  cardioImageDelete: function(payload) {
+    return ipcRenderer.invoke('cardio-image-delete', payload);
+  },
+  cardioImageUsage: function(payload) {
+    return ipcRenderer.invoke('cardio-image-usage', payload);
+  },
   cloudSyncFetch: function(payload) {
     return ipcRenderer.invoke('cloud-sync-fetch', payload);
   },
@@ -118,6 +136,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   dbStatus: function() {
     return ipcRenderer.invoke('db:status');
+  },
+  adminRescueKeyGetPublicInfo: function() {
+    return ipcRenderer.invoke('admin-rescue-key:get-public-info');
   },
   dbMigrationProbe: function(opts) {
     return ipcRenderer.invoke('db:migration-probe', opts);
@@ -296,6 +317,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalProfileUpsert: function(opts) {
     return ipcRenderer.invoke('db:clinical-profile-upsert', opts);
   },
+  dbAdminAccessCodeVerify: function(code) {
+    return ipcRenderer.invoke('db:admin-access-code-verify', { code: code });
+  },
+  dbAdminAccessCodeSet: function(currentCode, newCode) {
+    return ipcRenderer.invoke('db:admin-access-code-set', { currentCode: currentCode, newCode: newCode });
+  },
   dbClinicalUserTouch: function(opts) {
     return ipcRenderer.invoke('db:clinical-user-touch', opts);
   },
@@ -310,41 +337,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   dbClinicalProfileGet: function(opts) {
     return ipcRenderer.invoke('db:clinical-profile-get', opts);
-  },
-  dbInternoAccessList: function(opts) {
-    return ipcRenderer.invoke('db:interno-access-list', opts);
-  },
-  dbInternoAccessRotate: function(opts) {
-    return ipcRenderer.invoke('db:interno-access-rotate', opts);
-  },
-  dbInternoAccessSetActive: function(opts) {
-    return ipcRenderer.invoke('db:interno-access-set-active', opts);
-  },
-  dbEquiposAccessGet: function() {
-    return ipcRenderer.invoke('db:equipos-access-get');
-  },
-  dbEquiposAccessRotate: function(opts) {
-    return ipcRenderer.invoke('db:equipos-access-rotate', opts);
-  },
-  dbEquiposAccessSetActive: function(opts) {
-    return ipcRenderer.invoke('db:equipos-access-set-active', opts);
-  },
-  dbEquiposBoard: function() {
-    return ipcRenderer.invoke('db:equipos-board');
-  },
-  dbEquiposReports: function(opts) {
-    return ipcRenderer.invoke('db:equipos-reports', opts);
-  },
-  dbEquiposPurgeQueue: function(opts) {
-    return ipcRenderer.invoke('db:equipos-purge-queue', opts);
-  },
-  dbEquiposPromoteTemporaryHost: function(opts) {
-    return ipcRenderer.invoke('db:equipos-promote-temporary-host', opts);
-  },
-  dbEquiposExportMergeSnapshot: function() {
-    return ipcRenderer.invoke('db:equipos-export-merge-snapshot');
-  },
-  dbEquiposMergeSnapshot: function(opts) {
-    return ipcRenderer.invoke('db:equipos-merge-snapshot', opts);
   },
 });

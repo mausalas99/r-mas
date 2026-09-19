@@ -37,7 +37,7 @@ function indexClinicalUsers(clinicalUsers) {
     userById.set(id, {
       username: String(u.username || '').trim().toLowerCase(),
       displayName: String(u.clinical_name || u.displayName || '').trim(),
-      rank: String(u.rank || 'R1').trim() || 'R1',
+      rank: String(u.rank || 'Team').trim() || 'Team',
       sala: String(u.sala || '').trim(),
       userId: id,
     });

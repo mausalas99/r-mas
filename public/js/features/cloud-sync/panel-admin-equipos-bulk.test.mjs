@@ -26,13 +26,10 @@ function fakeRow(attrs, selects, opts = {}) {
         return { value: selects.sala?.value || '', selectedIndex: 0 };
       }
       if (sel === '.cloud-sync-admin-equipos-rank') {
-        return { value: selects.rank?.value || 'R1', selectedIndex: 0 };
+        return { value: selects.rank?.value || 'Team', selectedIndex: 0 };
       }
       if (sel === '.cloud-sync-admin-equipos-team') {
         return { value: selects.team?.value || '', selectedIndex: 0 };
-      }
-      if (sel === '.cloud-sync-admin-equipos-cycle') {
-        return { value: selects.cycle?.value || '', selectedIndex: 0 };
       }
       return null;
     },
@@ -40,20 +37,19 @@ function fakeRow(attrs, selects, opts = {}) {
 }
 
 describe('readEquiposRowDraft', () => {
-  it('captures sala, R3 rank, team and cycle without DOM globals', () => {
+  it('captures sala, rank and team without DOM globals', () => {
     const row = fakeRow(
       {
         'data-cloud-username': 'axel',
         'data-cloud-display': 'Axel',
         'data-user-id': 'u1',
-        'data-user-rank': 'R3',
+        'data-user-rank': 'Team',
         'data-sala': 'Sala 1',
       },
       {
         sala: { value: 'Interconsultas' },
-        rank: { value: 'R3' },
+        rank: { value: 'Team' },
         team: { value: 't1' },
-        cycle: { value: 'A' },
       }
     );
     const draft = readEquiposRowDraft(/** @type {any} */ (row), [
@@ -62,10 +58,9 @@ describe('readEquiposRowDraft', () => {
     assert.equal(draft.username, 'axel');
     assert.equal(draft.sala, 'Interconsultas');
     assert.equal(readEquiposRowSala(/** @type {any} */ (row)), 'Interconsultas');
-    assert.equal(draft.rank, 'R3');
+    assert.equal(draft.rank, 'Team');
     assert.equal(draft.teamId, 't1');
-    assert.equal(draft.subAreaFraction, 'A');
-    assert.equal(readEquiposRowRank(/** @type {any} */ (row)), 'R3');
+    assert.equal(readEquiposRowRank(/** @type {any} */ (row)), 'Team');
   });
 });
 

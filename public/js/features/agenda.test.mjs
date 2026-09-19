@@ -30,3 +30,24 @@ describe('agenda deleteProcedureAgendaFromModal destructive confirm', () => {
     assert.ok(deleteIdx > guardIdx, 'the delete must run only after the confirm guard');
   });
 });
+
+function functionBodyFor(name, marker) {
+  const start = src.indexOf('export function ' + name);
+  assert.notEqual(start, -1, name + ' should be declared as a function');
+  const nextExport = src.indexOf('\nexport ', start + 1);
+  const body = src.slice(start, nextExport === -1 ? src.length : nextExport);
+  if (marker) assert.match(body, marker);
+  return body;
+}
+
+describe('agenda renderProcedureAgendaPanel mode branch', () => {
+  it('renders the Consulta Externa list instead of the procedure calendar when that mode is active', () => {
+    const body = functionBodyFor('renderProcedureAgendaPanel');
+    assert.match(body, /isInterconsultaModeActive\(\)/);
+    const gateIdx = body.indexOf('isInterconsultaModeActive()');
+    const listIdx = body.indexOf('renderAgendaConsultaListPanel()');
+    const calendarIdx = body.indexOf('getProcedureAgendaMondayAnchor()');
+    assert.ok(gateIdx > -1 && listIdx > gateIdx, 'the CE branch must call renderAgendaConsultaListPanel');
+    assert.ok(calendarIdx > listIdx, 'the procedure calendar build must stay after (unreached by) the CE branch');
+  });
+});

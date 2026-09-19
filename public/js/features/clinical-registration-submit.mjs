@@ -7,8 +7,7 @@ import {
   resolveClinicalClientId,
 } from '../clinical-settings.mjs';
 import { resumeClinicalIdentityByUsername } from '../clinical-access-runtime.mjs';
-
-const RANKS = ['R1', 'R2', 'R3', 'R4', 'Admin'];
+import { CLINICAL_RANKS } from '../../../lib/clinical-ranks.mjs';
 
 function dbApi() {
   if (typeof window === 'undefined') return null;
@@ -71,7 +70,7 @@ function readRegistrationFormFields_() {
   return {
     usernameRaw: String(document.getElementById('clinical-reg-username')?.value || '').trim(),
     name: String(document.getElementById('clinical-reg-name')?.value || '').trim(),
-    rank: String(document.getElementById('clinical-reg-rank')?.value || 'R1'),
+    rank: String(document.getElementById('clinical-reg-rank')?.value || 'Team'),
     sala: String(document.getElementById('clinical-reg-sala')?.value || '').trim(),
     shiftPin: String(document.getElementById('clinical-reg-shift-pin')?.value || '').trim(),
   };
@@ -94,7 +93,7 @@ function validateRegistrationFields_(fields, errEl) {
     }
     return null;
   }
-  return { username, safeRank: RANKS.includes(fields.rank) ? fields.rank : 'R1' };
+  return { username, safeRank: CLINICAL_RANKS.includes(fields.rank) ? fields.rank : 'Team' };
 }
 
 async function connectShiftPinIfNeeded_(_shiftPin, _sala, _runtime) {

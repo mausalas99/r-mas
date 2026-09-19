@@ -4,6 +4,13 @@
  * existing "Medicamentos del turno" card. index.html has no container for
  * these cards, so this creates one once (after #med-output-section) and
  * reuses it on every render.
+ *
+ * Compact layout: a `.hf-glance-cards` row of 3 small summary cards
+ * (#med-cardio-cards) that each open a modal with the full card content.
+ * The modal is rendered into a SEPARATE sibling node (#med-cardio-modal-host)
+ * so a field edit inside it — which persists and re-renders via
+ * persistAndRerender() — never wipes the modal out from under the user's
+ * cursor: only the summary row is a child of #med-cardio-cards.
  */
 import { ensureCardio } from "../../../../lib/cardio/patient-cardio.mjs";
 import { appendDoseSegment, endDoseSegment } from "../../../../lib/cardio/med-segments.mjs";
@@ -11,13 +18,18 @@ import { persistClinicalState } from "../../app-state.mjs";
 import { findPatientById } from "../estado-actual-panel-core.mjs";
 import { rt } from "../medications-runtime-state.mjs";
 import {
-  buildFantasticosCardHtml,
-  buildOtrosMedsCardHtml,
-  buildDiureticosCardHtml,
+  buildFantasticosSummaryHtml,
+  buildOtrosMedsSummaryHtml,
+  buildDiureticosSummaryHtml,
+  buildCardioModalHtml,
 } from "./medications-cardio-html.mjs";
 import { updateFantasticoField } from "./medications-cardio-rows.mjs";
 
 var CONTAINER_ID = "med-cardio-cards";
+var MODAL_HOST_ID = "med-cardio-modal-host";
+
+/** Which modal is open ("fantasticos" | "otros" | "diureticos" | null). */
+var openModalKey = null;
 
 function ensureContainer() {
   var existing = document.getElementById(CONTAINER_ID);
@@ -26,11 +38,19 @@ function ensureContainer() {
   if (!anchor || !anchor.parentNode) return null;
   var container = document.createElement("div");
   container.id = CONTAINER_ID;
-  container.style.display = "flex";
-  container.style.flexDirection = "column";
-  container.style.gap = "calc(28px * var(--density-space, 1))";
+  container.className = "hf-glance-cards";
   anchor.insertAdjacentElement("afterend", container);
   return container;
+}
+
+function ensureModalHost(container) {
+  var existing = document.getElementById(MODAL_HOST_ID);
+  if (existing) return existing;
+  if (!container || !container.parentNode) return null;
+  var host = document.createElement("div");
+  host.id = MODAL_HOST_ID;
+  container.insertAdjacentElement("afterend", host);
+  return host;
 }
 
 function todayYmd() {
@@ -107,11 +127,11 @@ function handleSegmentToggleEnd(patient, btn, group) {
   persistAndRerender();
 }
 
-function handleSegmentAdd(patient, container, group) {
+function handleSegmentAdd(patient, scopeEl, group) {
   var key = segmentsKeyForGroup(group);
   if (!key) return;
   var getVal = function (field) {
-    var el = container.querySelector('[data-' + group + '-new="' + field + '"]');
+    var el = scopeEl.querySelector('[data-' + group + '-new="' + field + '"]');
     return el ? String(el.value || "").trim() : "";
   };
   var tipo = getVal("tipo");
@@ -127,11 +147,25 @@ function handleSegmentAdd(patient, container, group) {
   persistAndRerender();
 }
 
+/** Summary row: only click handling — opening a modal. */
 function wireContainerOnce(container) {
   if (container.dataset.cardioWired === "1") return;
   container.dataset.cardioWired = "1";
 
-  container.addEventListener("change", function (ev) {
+  container.addEventListener("click", function (ev) {
+    var btn = ev.target && ev.target.closest ? ev.target.closest("button[data-cardio-modal-open]") : null;
+    if (!btn) return;
+    openModalKey = btn.getAttribute("data-cardio-modal-open");
+    renderCardioManejoCards();
+  });
+}
+
+/** Modal host: the field edit/add/toggle-end wiring, plus close. */
+function wireModalHostOnce(modalHost) {
+  if (modalHost.dataset.cardioModalWired === "1") return;
+  modalHost.dataset.cardioModalWired = "1";
+
+  modalHost.addEventListener("change", function (ev) {
     var target = ev.target;
     if (!target || !target.getAttribute) return;
     var patient = currentPatient();
@@ -149,8 +183,22 @@ function wireContainerOnce(container) {
     }
   });
 
-  container.addEventListener("click", function (ev) {
-    var btn = ev.target && ev.target.closest ? ev.target.closest("button[data-cardio-med-action], button[data-cardio-diur-action]") : null;
+  modalHost.addEventListener("click", function (ev) {
+    var target = ev.target;
+    if (target && target.hasAttribute && target.hasAttribute("data-cardio-modal-backdrop")) {
+      openModalKey = null;
+      renderCardioManejoCards();
+      return;
+    }
+    var closeBtn = target && target.closest ? target.closest("button[data-cardio-modal-close]") : null;
+    if (closeBtn) {
+      openModalKey = null;
+      renderCardioManejoCards();
+      return;
+    }
+    var btn = target && target.closest
+      ? target.closest("button[data-cardio-med-action], button[data-cardio-diur-action]")
+      : null;
     if (!btn) return;
     var patient = currentPatient();
     if (!patient) return;
@@ -159,32 +207,44 @@ function wireContainerOnce(container) {
     if (action === "toggle-end") {
       handleSegmentToggleEnd(patient, btn, group);
     } else if (action === "add") {
-      handleSegmentAdd(patient, container, group);
+      handleSegmentAdd(patient, modalHost, group);
     }
   });
 }
 
 /**
- * Renders (or clears) the 3 cardio cards for the active patient. Safe to
- * call on every renderMedRecetaPanel() pass — cheap DOM diff via innerHTML,
- * matching this panel's existing render-on-every-pass convention.
+ * Renders (or clears) the 3 cardio summary cards + the open modal (if any)
+ * for the active patient. Safe to call on every renderMedRecetaPanel() pass
+ * — cheap DOM diff via innerHTML, matching this panel's existing
+ * render-on-every-pass convention. The modal's open/closed state
+ * (`openModalKey`) survives every call; only its content is rebuilt.
  */
 export function renderCardioManejoCards() {
   var container = ensureContainer();
   if (!container) return;
+  var modalHost = ensureModalHost(container);
   var patient = currentPatient();
   if (!patient) {
     container.innerHTML = "";
+    if (modalHost) modalHost.innerHTML = "";
+    openModalKey = null;
     return;
   }
   container.innerHTML =
-    buildFantasticosCardHtml(patient.cardio) +
-    buildOtrosMedsCardHtml(patient.cardio) +
-    buildDiureticosCardHtml(patient.cardio);
+    buildFantasticosSummaryHtml(patient.cardio) +
+    buildOtrosMedsSummaryHtml(patient.cardio) +
+    buildDiureticosSummaryHtml(patient.cardio);
   wireContainerOnce(container);
+  if (modalHost) {
+    modalHost.innerHTML = openModalKey ? buildCardioModalHtml(openModalKey, patient.cardio) : "";
+    wireModalHostOnce(modalHost);
+  }
 }
 
 export function clearCardioManejoCards() {
+  openModalKey = null;
   var container = document.getElementById(CONTAINER_ID);
   if (container) container.innerHTML = "";
+  var modalHost = document.getElementById(MODAL_HOST_ID);
+  if (modalHost) modalHost.innerHTML = "";
 }

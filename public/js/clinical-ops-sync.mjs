@@ -90,10 +90,15 @@ export async function collectClinicalOpsForSync(opts) {
   return snap;
 }
 
+// Point-in-time counts, not deltas — near-always > 0 on a normal room, so they'd
+// make "did anything change" true forever if counted here (see teamsVisibleAfterMerge).
+const MERGE_STATS_SNAPSHOT_KEYS = new Set(['incomingUsers', 'teamsVisibleAfterMerge']);
+
 /** @param {object|null|undefined} mergeStats */
 export function clinicalOpsMergeHadChanges(mergeStats) {
   if (!mergeStats || typeof mergeStats !== 'object') return false;
   return Object.keys(mergeStats).some((key) => {
+    if (MERGE_STATS_SNAPSHOT_KEYS.has(key)) return false;
     const value = mergeStats[key];
     return typeof value === 'number' && value > 0;
   });

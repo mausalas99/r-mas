@@ -6,11 +6,9 @@
 
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { shouldEnforceTeamPatientMirror, shouldUseElevatedPatientCensus } from '../clinical-privileges.mjs';
-import { readEntregaPhaseActive } from '../clinico-access.mjs';
-import { clinicalSessionContext } from '../clinical-session-context.mjs';
+import { clinicalSessionContext, buildGuardiasMap } from '../clinical-session-context.mjs';
 import { buildClinicalScopeContextFromOpsSnapshot } from '../clinical-scope-from-ops.mjs';
 import { joinedTeamIdsForUser } from '../mobile-team-patient-scope.mjs';
-import { buildGuardiasMap } from './guardia-grid.mjs';
 import { applyOpsResolvedUser, invalidateMobileSidebarPatientCache } from './scope-ops-user.mjs';
 
 /** True when LAN may apply/filter patient bundle rows for the signed-in user. */
@@ -27,8 +25,6 @@ export function isClinicalScopeReadyForPatientApply() {
 
 function applyOpsScopeContext(snapshot) {
   const ctx = buildClinicalScopeContextFromOpsSnapshot(snapshot, {
-    guardiaMode: clinicalSessionContext.guardiaMode,
-    entregaPhaseActive: readEntregaPhaseActive(),
     enforceTeamPatientScope: true,
   });
   if (!ctx) return false;

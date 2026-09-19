@@ -7,7 +7,6 @@ import {
 } from '../../../../lib/clinical-user-activity.mjs';
 import { escapeHtml, escapeAttr } from './shared.mjs';
 import {
-  formatCycleOptionLabel,
   renderAssignTeamOptionsHtml,
   resolveUserPlacement,
 } from './teams-roster-directory-render.mjs';
@@ -21,7 +20,6 @@ export function lanUserSearchHaystack(u, placement) {
     u?.rank,
     placement?.teamName,
     placement?.teamSala,
-    placement?.cycle,
   ]
     .map((part) => String(part || '').trim())
     .filter(Boolean)
@@ -29,14 +27,11 @@ export function lanUserSearchHaystack(u, placement) {
     .toLowerCase();
 }
 
-/** @param {ReturnType<typeof resolveUserPlacement>} placement @param {string} userRank */
-function formatLanUserPlacementLabel(placement, userRank) {
+/** @param {ReturnType<typeof resolveUserPlacement>} placement */
+function formatLanUserPlacementLabel(placement) {
   if (!placement?.teamId) return 'Sin equipo asignado';
   const parts = [placement.teamName || 'Equipo'];
   if (placement.teamSala) parts.push(placement.teamSala);
-  if (placement.cycle) {
-    parts.push(formatCycleOptionLabel(placement.cycle, userRank || placement.rank));
-  }
   return parts.join(' · ');
 }
 
@@ -50,19 +45,15 @@ function renderLanUserHandleCell(u) {
 }
 
 /** @param {object} u @param {ReturnType<typeof resolveUserPlacement>} placement */
-function renderLanUserPlacementShort(placement, userRank) {
+function renderLanUserPlacementShort(placement) {
   const hasTeam = Boolean(placement?.teamId);
   if (!hasTeam) {
     return '<span class="clinical-directory-users-placement clinical-directory-users-placement--none">Sin equipo asignado</span>';
   }
-  return escapeHtml(
-    [placement.teamName, placement.cycle ? formatCycleOptionLabel(placement.cycle, userRank) : '']
-      .filter(Boolean)
-      .join(' · ')
-  );
+  return escapeHtml(placement.teamName || '');
 }
 
-/** @param {object} u @param {object[]} teamList @param {{ canDelete?: boolean, callerUserId?: string }} opts */
+/** @param {object} u */
 function lanUserCardActivityMeta(u) {
   const activityIso = String(u.last_activity_at || '').trim();
   const activityTier = clinicalUserActivityTier(activityIso);
@@ -72,16 +63,6 @@ function lanUserCardActivityMeta(u) {
     activityLabel: escapeHtml(clinicalUserActivityLabel(activityTier)),
     activityDetail: escapeHtml(formatClinicalUserLastActivity(activityIso)),
   };
-}
-
-/** @param {object} u @param {ReturnType<typeof resolveUserPlacement>} placement @param {object[]} teamList */
-function lanUserCardAssignMeta(u, placement, teamList, userRank) {
-  const userId = escapeAttr(String(u.user_id || ''));
-  const teamOptions = renderAssignTeamOptionsHtml(teamList, placement?.teamId);
-  const cycleOptions = placement?.cycle
-    ? `<option value="${escapeAttr(placement.cycle)}" selected>${escapeHtml(formatCycleOptionLabel(placement.cycle, userRank))}</option>`
-    : '<option value="">— Ciclo —</option>';
-  return { userId, teamOptions, cycleOptions };
 }
 
 /** @param {object} ctx */
@@ -95,7 +76,6 @@ function assembleLanUserRowArticle(ctx) {
     placement,
     placementLabel,
     teamOptions,
-    cycleOptions,
     placementShort,
     activityTier,
     activityLabel,
@@ -106,7 +86,7 @@ function assembleLanUserRowArticle(ctx) {
     deleteBtnAttrs,
     salaLabel,
   } = ctx;
-  return `<article class="clinical-lan-user-card clinical-lan-user-row" data-user-id="${userId}" data-user-rank="${rankRaw}" data-preferred-cycle="${escapeAttr(placement?.cycle || '')}" data-sala="${salaAttr}" data-has-team="${placement?.teamId ? '1' : '0'}" data-activity-tier="${escapeAttr(activityTier)}" data-search="${searchHaystack}">
+  return `<article class="clinical-lan-user-card clinical-lan-user-row" data-user-id="${userId}" data-user-rank="${rankRaw}" data-sala="${salaAttr}" data-has-team="${placement?.teamId ? '1' : '0'}" data-activity-tier="${escapeAttr(activityTier)}" data-search="${searchHaystack}">
     <div class="clinical-lan-user-card-main">
       <div class="clinical-lan-user-card-identity">
         ${renderLanUserHandleCell(u)}
@@ -120,10 +100,6 @@ function assembleLanUserRowArticle(ctx) {
     <div class="clinical-lan-user-card-assign">
       <label class="visually-hidden" for="clinical-lan-team-${userId}">Equipo</label>
       <select id="clinical-lan-team-${userId}" class="profile-input clinical-directory-assign-team" title="Asignar equipo">${teamOptions}</select>
-      <label class="visually-hidden" for="clinical-lan-cycle-${userId}">Ciclo</label>
-      <select id="clinical-lan-cycle-${userId}" class="profile-input clinical-directory-assign-cycle" title="Ciclo del integrante" ${placement?.teamId ? '' : 'disabled'}>
-        ${cycleOptions}
-      </select>
       <span class="clinical-directory-assign-actions" role="group" aria-label="Acciones">
         <button type="button" class="btn-save clinical-directory-assign-btn" data-user-id="${userId}">Asignar</button>
         <button type="button" class="btn-med-secondary clinical-directory-delete-user-btn${deleteBtnClass}" data-user-id="${userId}" data-user-label="${escapeAttr(String(u.clinical_name || normalizeUsername(u.username || '') || rawUserId))}" title="Quitar de la base clínica (se publica por R+ Cloud)"${deleteBtnAttrs}>Quitar</button>
@@ -138,13 +114,13 @@ export function renderDirectoryUserRowHtml(u, teamList, opts = {}) {
   const canDelete =
     !!opts.canDelete && rawUserId && rawUserId !== String(opts.callerUserId || '').trim();
   const name = escapeHtml(String(u.clinical_name || '').trim() || 'Sin nombre');
-  const rankRaw = escapeAttr(String(u.rank || 'R1'));
-  const userRank = String(u.rank || 'R1');
+  const rankRaw = escapeAttr(String(u.rank || 'Team'));
   const salaLabel = escapeHtml(String(u.sala || '').trim() || '—');
   const placement = resolveUserPlacement(u.user_id, teamList);
-  const placementLabel = escapeHtml(formatLanUserPlacementLabel(placement, userRank));
-  const { userId, teamOptions, cycleOptions } = lanUserCardAssignMeta(u, placement, teamList, userRank);
-  const placementShort = renderLanUserPlacementShort(placement, userRank);
+  const placementLabel = escapeHtml(formatLanUserPlacementLabel(placement));
+  const userId = escapeAttr(String(u.user_id || ''));
+  const teamOptions = renderAssignTeamOptionsHtml(teamList, placement?.teamId);
+  const placementShort = renderLanUserPlacementShort(placement);
   const { activityIso, activityTier, activityLabel, activityDetail } = lanUserCardActivityMeta(u);
   const searchHaystack = escapeAttr(
     `${lanUserSearchHaystack(u, placement)} ${formatClinicalUserLastActivity(activityIso)}`.toLowerCase()
@@ -159,12 +135,10 @@ export function renderDirectoryUserRowHtml(u, teamList, opts = {}) {
     rawUserId,
     name,
     rankRaw,
-    userRank,
     salaLabel,
     placement,
     placementLabel,
     teamOptions,
-    cycleOptions,
     placementShort,
     activityTier,
     activityLabel,

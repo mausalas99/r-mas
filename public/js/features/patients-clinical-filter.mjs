@@ -6,15 +6,9 @@ import {
   resolvePatientSala,
 } from '../clinico-access.mjs';
 import {
-  shouldEnforceTeamPatientMirror,
-  shouldFilterPatientsByJoinedTeam,
   shouldUseDesktopCensusWithFilters,
   shouldUseElevatedPatientCensus,
 } from '../clinical-privileges.mjs';
-import {
-  filterPatientsForDesktopCloudTeamScope,
-  filterPatientsForMobileTeamMirror,
-} from '../mobile-team-patient-scope.mjs';
 import { CENSUS_TEAM_FILTER_UNASSIGNED } from './clinical-census-filters-ui.mjs';
 
 /** Map chart patient row to scope patient shape. */
@@ -35,17 +29,10 @@ export function patientForScopeEvaluate(p) {
  * @param {Map<string, object>|null|undefined} [guardiasMap]
  */
 export function filterPatientsForClinicalSidebar(patients, user, scopeContext, guardiasMap) {
-  if (!user?.user_id) return shouldFilterPatientsByJoinedTeam(user) ? [] : patients || [];
+  if (!user?.user_id) return patients || [];
   // Desktop: full list (Filtros apply in filterPatientsForGuardiaCensus).
   if (shouldUseDesktopCensusWithFilters(user) || shouldUseElevatedPatientCensus(user)) {
     return patients || [];
-  }
-  if (shouldFilterPatientsByJoinedTeam(user)) {
-    // iPad/PWA: assignment-only mirror.
-    if (shouldEnforceTeamPatientMirror()) {
-      return filterPatientsForMobileTeamMirror(patients, user, scopeContext, guardiasMap);
-    }
-    return filterPatientsForDesktopCloudTeamScope(patients, user, scopeContext, guardiasMap);
   }
   return (patients || []).filter((p) => {
     if (!p) return false;
@@ -171,7 +158,6 @@ export function tagPatientsForTeamFilter(list, ctx = {}) {
 /**
  * Scope via clinico-access when not using assignment/structural team mirror.
  * Joined teams → strict team filter; otherwise same-sala census for R1–R3.
- * «Solo entregados» toggle sets guardiaMode + enforceTeamPatientScope on scopeContext.
  * @param {object[]} basePatients
  * @param {object|null|undefined} user
  * @param {object} scopeContext
@@ -179,12 +165,6 @@ export function tagPatientsForTeamFilter(list, ctx = {}) {
  */
 function filterPatientsForGuardiaSalaScope(basePatients, user, scopeContext, guardiasMap) {
   const ctx = scopeContext || {};
-  const soloEntregados = !!ctx.guardiaMode;
-  const guardiaScope = {
-    ...ctx,
-    guardiaMode: soloEntregados,
-    enforceTeamPatientScope: soloEntregados,
-  };
   return (basePatients || []).filter(function (p) {
     if (!p) return false;
     const mapped = patientForScopeEvaluate(p);
@@ -192,7 +172,7 @@ function filterPatientsForGuardiaSalaScope(basePatients, user, scopeContext, gua
       guardiasMap && typeof guardiasMap.get === 'function'
         ? guardiasMap.get(String(p.id)) || null
         : null;
-    return isPatientReadableInClinicalScope(user, mapped, activeGuardia, guardiaScope);
+    return isPatientReadableInClinicalScope(user, mapped, activeGuardia, ctx);
   });
 }
 
@@ -216,8 +196,6 @@ export function filterPatientsForGuardiaCensus(
   if (shouldUseElevatedPatientCensus(user) || shouldUseDesktopCensusWithFilters(user)) {
     // Desktop: full census; Filtros (default sala + equipo) narrow the list.
     visible = basePatients || [];
-  } else if (shouldFilterPatientsByJoinedTeam(user)) {
-    visible = filterPatientsForClinicalSidebar(basePatients, user, scopeContext, guardiasMap);
   } else {
     visible = filterPatientsForGuardiaSalaScope(basePatients, user, scopeContext, guardiasMap);
   }

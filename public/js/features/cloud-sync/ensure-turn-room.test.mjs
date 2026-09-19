@@ -26,7 +26,7 @@ describe('ensure-turn-room', () => {
     assert.equal(called, false);
   });
 
-  it('allows former LAN-only salas (UX)', async () => {
+  it('allows the R+ HF sala', async () => {
     let called = false;
     const result = await ensureTurnRoom({
       api: {
@@ -35,7 +35,7 @@ describe('ensure-turn-room', () => {
           return { room: { id: 'ux-room' } };
         },
       },
-      getSala: () => 'UX',
+      getSala: () => 'Unidad IC',
       getToken: () => 'token',
       setCloudSyncRoomId: () => {},
       setCloudSyncRevision: () => {},
@@ -53,7 +53,7 @@ describe('ensure-turn-room', () => {
           return { room: { id: 'x' } };
         },
       },
-      getSala: () => 'Sala 1',
+      getSala: () => 'Unidad IC',
       getToken: () => '',
       setCloudSyncRoomId: () => {},
       setCloudSyncRevision: () => {},
@@ -72,7 +72,7 @@ describe('ensure-turn-room', () => {
           room: { id: 'room-1', code: 'ABC123', revision: 5, sala },
         }),
       },
-      getSala: () => 'Torre HU',
+      getSala: () => 'Unidad IC',
       getToken: () => 'tok',
       setCloudSyncRoomId: (id) => {
         roomId = id;

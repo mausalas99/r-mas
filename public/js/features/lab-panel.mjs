@@ -39,7 +39,6 @@ import {
   copiarLabsAlPortapapeles,
   clearLabInputAfterSuccessfulParse,
 } from './lab-panel-workbench.mjs';
-import { applyDriveImportLabSets } from './lab-panel-workbench-store.mjs';
 import { procesarReporte, renderOutput } from './lab-panel-parse.mjs';
 import {
   openLabRepoImportModal,
@@ -244,7 +243,6 @@ export {
   expandLabHistoryList,
   limpiarReporte,
   enviarLabsANota,
-  applyDriveImportLabSets,
   insertLabPatientSeparator,
 };
 

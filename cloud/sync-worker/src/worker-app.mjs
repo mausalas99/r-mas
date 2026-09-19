@@ -2,7 +2,6 @@ import { applyCors, corsPreflight } from './cors.js';
 import { withEdgeCache } from './cache-api.mjs';
 import { runScheduledPurge } from './cron-purge.mjs';
 import { handleMeta } from './meta.js';
-import { salaFromSlug } from './interno/sala-slug.js';
 import { API_PREFIX, handleApiRoute, normalizePath } from './routes.js';
 
 /** @param {Request} request @param {import('@cloudflare/workers-types').ExecutionContext} env */
@@ -42,19 +41,6 @@ export async function handleSyncWorkerRequest(request, env) {
 
   if (path === '/mobile' || path === '/mobile/join') {
     const indexReq = new Request(new URL('/mobile/index.html', url.origin), request);
-    const indexRes = env.ASSETS
-      ? await env.ASSETS.fetch(indexReq)
-      : new Response('Not found', { status: 404 });
-    return applyCors(request, indexRes);
-  }
-
-  const internoSlugMatch = /^\/interno\/([^/]+)$/.exec(path);
-  if (internoSlugMatch && request.method === 'GET') {
-    const slug = internoSlugMatch[1].toLowerCase();
-    if (!salaFromSlug(slug)) {
-      return applyCors(request, Response.json({ error: 'invalid_slug' }, { status: 404 }));
-    }
-    const indexReq = new Request(new URL('/interno/index.html', url.origin), request);
     const indexRes = env.ASSETS
       ? await env.ASSETS.fetch(indexReq)
       : new Response('Not found', { status: 404 });

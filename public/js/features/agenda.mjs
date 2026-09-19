@@ -22,6 +22,8 @@ import {
   validateProcedureAgendaForm,
   buildProcedureAgendaEvent,
 } from "./agenda-modal-helpers.mjs";
+import { isInterconsultaModeActive } from "./cardio/rplushf-gates.mjs";
+import { renderAgendaConsultaListPanel } from "./cardio/agenda-consulta-list.mjs";
 
 let rt = {
   getActiveId() {
@@ -83,8 +85,14 @@ function formatProcedureAgendaRangeLabel(monday) {
 function syncProcedureAgendaNavButtons() {
   var prevBtn = document.getElementById("procedure-agenda-prev");
   var nextBtn = document.getElementById("procedure-agenda-next");
-  if (prevBtn) prevBtn.disabled = procedureAgendaWeekOffset <= -1;
-  if (nextBtn) nextBtn.disabled = procedureAgendaWeekOffset >= 1;
+  if (prevBtn) {
+    prevBtn.hidden = false;
+    prevBtn.disabled = procedureAgendaWeekOffset <= -1;
+  }
+  if (nextBtn) {
+    nextBtn.hidden = false;
+    nextBtn.disabled = procedureAgendaWeekOffset >= 1;
+  }
 }
 
 export function navigateProcedureAgendaWeek(delta) {
@@ -103,6 +111,13 @@ export function renderProcedureAgendaPanel() {
   var mount = document.getElementById("procedure-agenda-grid-mount");
   var rangeEl = document.getElementById("procedure-agenda-range");
   if (!mount || !rangeEl) return;
+  var titleEl = document.querySelector(".rpc-proc-agenda-title");
+  if (isInterconsultaModeActive()) {
+    if (titleEl) titleEl.textContent = "Agenda de consultas";
+    renderAgendaConsultaListPanel();
+    return;
+  }
+  if (titleEl) titleEl.textContent = "Agenda de procedimientos";
   syncProcedureAgendaNavButtons();
   var monday = getProcedureAgendaMondayAnchor();
   rangeEl.textContent = formatProcedureAgendaRangeLabel(monday);
@@ -115,7 +130,10 @@ export function renderProcedureAgendaPanel() {
   });
 
   var newBtn = document.getElementById("procedure-agenda-new");
-  if (newBtn) newBtn.disabled = elig.length === 0;
+  if (newBtn) {
+    newBtn.hidden = false;
+    newBtn.disabled = elig.length === 0;
+  }
 
   var board = document.createElement("div");
   board.appendChild(buildAgendaBoardHead(monday));

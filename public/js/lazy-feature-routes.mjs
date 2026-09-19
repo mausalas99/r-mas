@@ -38,7 +38,6 @@ export const BOOT_LAZY_ONLY_SUFFIXES = [
   'features/tendencias.mjs',
   'features/estado-actual-charts-modal.mjs',
   'features/estado-actual-vital-history-modal.mjs',
-  'features/clinical-entrega.mjs',
   'features/settings-help/tour-flow.mjs',
   'features/settings-help/tour-engine.mjs',
   'features/settings-help/settings-dropdown.mjs',
@@ -47,10 +46,6 @@ export const BOOT_LAZY_ONLY_SUFFIXES = [
   'features/platform/offline.mjs',
   'features/cardio/consulta-ic-wire.mjs',
 ];
-
-let entregaPromise = null;
-/** @type {typeof import('./features/clinical-entrega.mjs') | null} */
-let entregaModule = null;
 
 let consultaIcPromise = null;
 /** @type {typeof import('./features/cardio/consulta-ic-wire.mjs') | null} */
@@ -102,20 +97,6 @@ export function ensurePlatformLoaded() {
     });
   }
   return platformPromise;
-}
-
-/**
- * @returns {Promise<typeof import('./features/clinical-entrega.mjs')>}
- */
-export function ensureEntregaLoaded() {
-  if (entregaModule) return Promise.resolve(entregaModule);
-  if (!entregaPromise) {
-    entregaPromise = import('./features/clinical-entrega.mjs').then(function (mod) {
-      entregaModule = mod;
-      return mod;
-    });
-  }
-  return entregaPromise;
 }
 
 /**

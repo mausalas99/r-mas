@@ -13,6 +13,7 @@ import {
 import { addAuditEntry } from '../audit.mjs';
 import { getPlatformRuntime } from '../runtime.mjs';
 import { openConfirm } from '../../workbench/confirm.mjs';
+import { ensureCardio } from '../../../../../lib/cardio/patient-cardio.mjs';
 
 const rt = getPlatformRuntime();
 
@@ -25,6 +26,13 @@ function askConflictAction(label) {
   if (v === 'O') return 'overwrite';
   if (v === 'D') return 'duplicate';
   return 'cancel';
+}
+
+function copyImportCardio(target, importedPatient) {
+  if (importedPatient && importedPatient.cardio && typeof importedPatient.cardio === 'object') {
+    target.cardio = JSON.parse(JSON.stringify(importedPatient.cardio));
+  }
+  ensureCardio(target);
 }
 
 function copyImportClinicalData(patientId, entry) {
@@ -50,6 +58,7 @@ function applyImportOverwrite(existing, entry) {
   mergePatientRegistrationMeta(existing, entry.patient);
   existing.registro = entry.patient.registro || existing.registro;
   mergePatientMonitoreoFromImported(existing, entry.patient);
+  copyImportCardio(existing, entry.patient);
   copyImportClinicalData(existing.id, entry);
   return existing.id;
 }
@@ -71,6 +80,7 @@ function applyImportDuplicate(entry) {
   mergePatientMonitoreoFromImported(newPatient, entry.patient);
   mergeCensoPatientFields(newPatient, entry.patient);
   mergePatientRegistrationMeta(newPatient, entry.patient);
+  copyImportCardio(newPatient, entry.patient);
   getPatients().unshift(newPatient);
   copyImportClinicalData(newId, entry);
   return newId;

@@ -4,7 +4,7 @@ import { isTurnCloseHm } from './estado-actual-registro-defaults.mjs';
 import { buildGluRow, syncEaGluMode, buildBombaRow } from './estado-actual-panel-glu.mjs';
 import { syncGluRowAltered } from './estado-actual-panel-glu.mjs';
 import { expandVitalNextLayer, syncAllVitalAddButtonVisibility, vitalLayerBoxKey } from './estado-actual-panel-vitals.mjs';
-import { syncIoBalanceFromForm, applyIoNcMode } from './estado-actual-panel-registro-io.mjs';
+import { syncIoBalanceFromForm, buildIoExtraRow } from './estado-actual-panel-registro-io.mjs';
 import {
   applyRegistroTabSkipAttributes,
   handleRegistroTabKeydown,
@@ -42,11 +42,25 @@ function syncAlteredFields(form) {
   syncAllVitalAddButtonVisibility(form);
 }
 
+/**
+ * @param {HTMLElement | null} btn
+ */
+function toggleIoTurnoNc(btn) {
+  if (!btn) return;
+  var box = btn.closest('.ea-turno-box');
+  var input = box && box.querySelector('input');
+  if (!input || !('value' in input)) return;
+  var isNc = String(input.value || '').trim().toUpperCase() === 'NC';
+  input.value = isNc ? '' : 'NC';
+}
+
 function handleFormClick(form, ev) {
   var target = /** @type {HTMLElement | null} */ (ev.target);
   if (!target || !form.contains(target)) return;
-  if (target.matches('[data-ea-io-nc]') || target.closest('[data-ea-io-nc]')) {
-    applyIoNcMode(form);
+  var ncBtn = target.matches('[data-ea-io-turno-nc]') ? target : target.closest('[data-ea-io-turno-nc]');
+  if (ncBtn) {
+    toggleIoTurnoNc(/** @type {HTMLElement} */ (ncBtn));
+    syncIoBalanceFromForm(form);
     return;
   }
   var addBtn = target.closest('[data-ea-vital-add]');
@@ -68,6 +82,11 @@ function handleFormClick(form, ev) {
   if (target.id === 'ea-add-bomba' || target.closest('#ea-add-bomba')) {
     var bombaList = form.querySelector('#ea-bomba-list');
     if (bombaList) bombaList.appendChild(buildBombaRow());
+    return;
+  }
+  if (target.id === 'ea-add-io-extra' || target.closest('#ea-add-io-extra')) {
+    var extraList = form.querySelector('#ea-io-extra-list');
+    if (extraList) extraList.appendChild(buildIoExtraRow());
   }
 }
 
@@ -81,7 +100,9 @@ function handleFormChange(form, ev) {
   if (target.matches('[data-ea-glu-altered]')) {
     var gluRow = target.closest('.ea-glu-row');
     if (gluRow) syncGluRowAltered(/** @type {HTMLElement} */ (gluRow));
+    return;
   }
+  if (target.matches('[data-ea-io-extra-kind]')) syncIoBalanceFromForm(form);
 }
 
 function handleFormInput(form, ev) {
@@ -92,7 +113,11 @@ function handleFormInput(form, ev) {
   else if (target.matches('[data-ea-glu-value], [data-ea-glu-rescue-units], [data-ea-glu-post-rescue-value]')) {
     var gluRow = target.closest('.ea-glu-row');
     if (gluRow) syncGluRowAltered(/** @type {HTMLElement} */ (gluRow));
-  } else if (target.id === 'ea-io-ing' || target.id === 'ea-io-egr' || target.id === 'ea-io-evac') {
+  } else if (
+    target.matches('[data-ea-io-turno]') ||
+    target.id === 'ea-io-evac' ||
+    target.matches('[data-ea-io-extra-value], [data-ea-io-extra-custom]')
+  ) {
     syncIoBalanceFromForm(form);
   }
 }

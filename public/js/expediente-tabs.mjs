@@ -1,10 +1,24 @@
 /**
  * Consolidated expediente tabs (Sala + Interconsulta; granular fallback unused).
  */
-import { isModeSala } from './mode-features.mjs';
+import { isModeSala as isModeSalaSetting } from './mode-features.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
 import { filterSalidaSectionsForHf } from './features/cardio/rplushf-gates.mjs';
 import { isGuardiaMode } from './features/chrome.mjs';
+import { activePatientModeSala } from './features/active-patient-area.mjs';
+export { setActivePatientAreaGetter } from './features/active-patient-area.mjs';
+
+/**
+ * Per-patient override: tab set follows the active patient's área, not the
+ * app's global mode toggle — a session can mix hospitalized and outpatient
+ * patients. "Consulta Externa" in área forces interconsulta tabs; any other
+ * área forces sala tabs. The global toggle only decides when área is empty
+ * (no per-patient signal yet).
+ */
+function isModeSala(settings) {
+  var perPatient = activePatientModeSala();
+  return perPatient === null ? isModeSalaSetting(settings) : perPatient;
+}
 
 /**
  * "Consulta IC" (Part C Phase 4) is gated the same way the HF follow-up band
@@ -41,7 +55,6 @@ const CLINICO_GRANULAR_TABS = [
   'consultaIC',
   'evaluacionInicial',
   'eventualidades',
-  'vpo',
 ];
 export const COMPOSITE_PANE_IDS = ['paciente', 'clinico', 'resultados', 'salida'];
 
@@ -83,10 +96,10 @@ export function shouldShowConsolidatedTab(id, settings) {
   return getConsolidatedTabs(settings).indexOf(name) >= 0;
 }
 
-export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'consultaIC', 'vpo'];
+export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'consultaIC'];
 export const CLINICO_SECTIONS_SALA = ['estadoActual', 'evaluacionInicial', 'eventualidades'];
 export const RESULTADOS_SECTIONS = ['tend', 'cult'];
-export const SALIDA_SECTIONS_SALA = ['listado', 'vpo', 'recetaHu'];
+export const SALIDA_SECTIONS_SALA = ['listado', 'recetaHu'];
 
 /** @deprecated use getClinicoSections(settings) */
 export const CLINICO_SECTIONS = CLINICO_SECTIONS_ALL;
@@ -100,7 +113,6 @@ const GRANULAR_PANE_ORDER = [
   'cult',
   'listado',
   'todo',
-  'vpo',
   'estadoActual',
   'consultaIC',
   'evaluacionInicial',
@@ -123,7 +135,6 @@ function granularToConsolidatedMap(settings) {
     recetaHu: { tab: 'salida', section: sala ? 'recetaHu' : null },
     listado: { tab: sala ? 'salida' : 'paciente', section: sala ? 'listado' : null },
     hojaIC: { tab: 'salida', section: sala ? 'hojaIC' : null },
-    vpo: sala ? { tab: 'salida', section: 'vpo' } : { tab: 'clinico', section: 'vpo' },
     // IC + sala: Estado actual lives under Clínico (panel completo).
     estadoActual: { tab: 'clinico', section: 'estadoActual' },
   };
@@ -139,11 +150,6 @@ function granularToConsolidatedMap(settings) {
 
 function paneMountSpec(granularTab, settings) {
   var sala = isModeSala(settings);
-  if (granularTab === 'vpo') {
-    return sala
-      ? { composite: 'salida', selector: '.exp-segment-body--salida' }
-      : { composite: 'clinico', selector: '.exp-segment-body--clinico' };
-  }
   var map = {
     datos: { composite: null, selector: null },
     resumen: { composite: 'paciente', selector: '#patient-dashboard-mount' },
@@ -176,9 +182,9 @@ export function getClinicoSections(settings) {
   // Consulta Externa: outpatient HF follow-up only. No inpatient-style
   // Estado actual / Nota de evolución / Indicaciones here.
   if (isConsultaExternaMode(settings)) {
-    return ['consultaIC', 'vpo'];
+    return ['consultaIC'];
   }
-  return ['estadoActual', 'notas', 'indica', 'vpo'];
+  return ['estadoActual', 'notas', 'indica'];
 }
 
 export function getSalidaSections(settings) {
@@ -195,9 +201,6 @@ export function resolveConsolidatedTarget(granularTab, settings) {
   var map = granularToConsolidatedMap(settings || {});
   var target = map[granularTab] || { tab: 'paciente', section: null };
   if (isMobileWeb() && target.tab === 'salida') {
-    if (!isModeSala(settings) && granularTab === 'vpo') {
-      return { tab: 'clinico', section: 'vpo' };
-    }
     return isModeSala(settings)
       ? { tab: 'clinico', section: 'estadoActual' }
       : { tab: 'paciente', section: null };
@@ -252,7 +255,16 @@ function compositeEl(name) {
   return document.getElementById('itab-content-' + name);
 }
 
-function mountPaneInComposite(granularTab, settings) {
+/**
+ * Exported so per-patient render paths (switchInnerTab,
+ * refreshExpedienteAfterPatientSelect) can re-mount a single pane without a
+ * full applyExpedientePaneLayout() pass. Needed because pane mounting used
+ * to be a one-time, app-wide operation (only re-run on boot or on an
+ * explicit global appMode change) — now that a pane's mount target can
+ * depend on the ACTIVE PATIENT (outpatient override), it must be
+ * re-checked on every patient switch too, not just on a global mode flip.
+ */
+export function mountPaneInComposite(granularTab, settings) {
   var pane = paneEl(granularTab);
   var spec = paneMountSpec(granularTab, settings);
   if (!pane || !spec || !spec.selector) return;
@@ -285,7 +297,7 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
   var clinicoBar = document.getElementById('exp-segment-clinico');
   if (clinicoBar) {
     clinicoBar.style.display = !isClinicoCompositeVisible(settings) ? 'none' : '';
-    ['notas', 'indica', 'estadoActual', 'consultaIC', 'evaluacionInicial', 'eventualidades', 'vpo'].forEach(
+    ['notas', 'indica', 'estadoActual', 'consultaIC', 'evaluacionInicial', 'eventualidades'].forEach(
       function (section) {
         var btn = clinicoBar.querySelector('[data-exp-segment="' + section + '"]');
         if (!btn) return;
@@ -300,8 +312,6 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
           btn.style.display = sala ? '' : 'none';
         } else if (section === 'eventualidades') {
           btn.style.display = sala ? '' : 'none';
-        } else if (section === 'vpo') {
-          btn.style.display = sala ? 'none' : '';
         } else {
           // notas / indica: Guardia only — not Sala, not Consulta Externa.
           btn.style.display = sala || isConsultaExternaMode(settings) ? 'none' : '';
@@ -384,21 +394,12 @@ export function syncConsolidatedPaneVisibility(granularTab, settings, opts) {
   if (datosActions) {
     datosActions.hidden = !(compositeState.paciente && compositeState.paciente.active);
   }
-  var driveActions = document.getElementById('exp-clinico-drive-actions');
-  if (driveActions) {
-    driveActions.hidden = !(
-      isModeSala(settings) &&
-      compositeState.clinico &&
-      compositeState.clinico.active
-    );
-  }
   CLINICO_GRANULAR_TABS.forEach(function (section) {
     var pane = paneEl(section);
     if (!pane) return;
     var onClinico = target.tab === 'clinico' && target.section === section;
-    var onSalida = target.tab === 'salida' && target.section === section && section === 'vpo';
     // Activate by target only.
-    pane.classList.toggle('active', onClinico || onSalida);
+    pane.classList.toggle('active', onClinico);
   });
   RESULTADOS_SECTIONS.forEach(function (section) {
     var pane = paneEl(section);

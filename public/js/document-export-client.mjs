@@ -6,7 +6,6 @@ const DOC_EXPORT_URL_KIND = {
   '/generate': 'note',
   '/generate-indicaciones': 'indicaciones',
   '/generate-listado': 'listado',
-  '/generate-censo': 'censo',
   '/generate-receta-hu': 'receta-hu',
   '/generate-ic-hoja': 'ic-hoja',
 };

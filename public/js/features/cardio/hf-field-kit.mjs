@@ -68,14 +68,31 @@ export function enumSelect(dataAttr, key, val, options) {
  * @param {string} key field key stored under that data attribute
  * @param {unknown} val
  * @param {string} label
+ * @param {{ rows?: number, widthPct?: number }} [opts] `rows` shortens the
+ *   textarea (default 5) and `widthPct` lets two narratives sit side by side
+ *   in a flex row instead of always stacking full-width — used to fit two
+ *   narratives into one wizard step without vertical scroll.
  */
-export function narrativeTextarea(dataAttr, key, val, label) {
+export function narrativeTextarea(dataAttr, key, val, label, opts) {
+  var o = opts || {};
+  var rows = o.rows || 5;
+  var widthPct = o.widthPct || 100;
+  // `.hf-narrative`'s CSS min-height (120px) ignores the `rows` attribute —
+  // a `rows="3"` textarea still measured ~120px tall. `.hf-narrative--tight`
+  // (rows <= 3) drops that floor so a short narrative actually gets short.
+  var tightClass = rows <= 3 ? ' hf-narrative--tight' : '';
   return (
-    '<label class="ea-field" style="flex:1 1 100%">' +
+    '<label class="ea-field" style="flex:1 1 ' +
+    widthPct +
+    '%">' +
     '<span class="ea-label">' +
     escHtml(label) +
     '</span>' +
-    '<textarea class="ea-input hf-narrative" rows="5" data-' +
+    '<textarea class="ea-input hf-narrative' +
+    tightClass +
+    '" rows="' +
+    rows +
+    '" data-' +
     dataAttr +
     '="' +
     escAttr(key) +
@@ -123,6 +140,38 @@ export function prevActualTable(rowsDef, previo, actual) {
     rows +
     '</tbody>' +
     '</table>'
+  );
+}
+
+/**
+ * Same Previo/Actual table as `prevActualTable`, split into `numCols`
+ * side-by-side tables (`.hf-prev-actual-columns` flex wrapper) with tighter
+ * row height (`.hf-prev-actual-table--tight`) — used inside Consulta IC's
+ * "ver tabla completa" modals so a 20-30+ row table fits one modal screen
+ * with no scroll in either direction (splitting into columns cuts the
+ * height instead of the width, unlike a plain scroll container would).
+ * @param {Array<{key: string, label: string, unit?: string}>} rowsDef
+ * @param {Record<string, unknown> | null} previo
+ * @param {Record<string, unknown> | null} actual
+ * @param {number} numCols
+ */
+export function prevActualTableColumns(rowsDef, previo, actual, numCols) {
+  var rows = rowsDef || [];
+  var n = Math.max(1, numCols || 1);
+  var perCol = Math.ceil(rows.length / n);
+  var cols = [];
+  for (var i = 0; i < rows.length; i += perCol) cols.push(rows.slice(i, i + perCol));
+  return (
+    '<div class="hf-prev-actual-columns">' +
+    cols
+      .map(function (colRows) {
+        return prevActualTable(colRows, previo, actual).replace(
+          'class="hf-prev-actual-table"',
+          'class="hf-prev-actual-table hf-prev-actual-table--tight"'
+        );
+      })
+      .join('') +
+    '</div>'
   );
 }
 

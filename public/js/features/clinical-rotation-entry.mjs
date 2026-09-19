@@ -19,7 +19,7 @@ export async function openMiRotacion() {
   if (isClinicalLocalOnlyMode(readRpcSettings())) {
     if (typeof window.showToast === 'function') {
       window.showToast(
-        'Mi rotación no está disponible en modo solo este equipo (ajeno a medicina interna).',
+        'Mi rotación no está disponible en modo solo este equipo (fuera de este equipo).',
         'info'
       );
     }

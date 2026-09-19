@@ -4,30 +4,16 @@
  * and the team-filter kill-switch stay renderer-local.
  */
 
-import {
-  evaluateClinicalScope,
-  readEntregaPhaseActive as readEntregaPhaseActivePure,
-} from '../../lib/clinical-scope/index.mjs';
+import { evaluateClinicalScope } from '../../lib/clinical-scope/index.mjs';
 
 export {
   normalizeServiceKey,
-  isSalaWardService,
-  usesSalaR1LinePicker,
-  getCycleLetterOptionsForRank,
-  getCycleConfig,
-  getCycleLettersForTeamCreate,
-  getCycleFieldMetaForTeamCreate,
-  letterIndexForTeam,
-  isOnCallToday,
-  activeCycleLetterForDate,
   isIncomingPreviewWindow,
   extractSalaLetter,
   salaLetterForTeamOrArea,
   resolvePatientSala,
   patientInUserSala,
   isInterconsultasPatient,
-  userOffCallFromInterconsultasRotationServices,
-  userOnCallForInterconsultasTeam,
   stampPatientClinicalSala,
   migratePatientsClinicalSala,
   patientMatchesTeam,
@@ -38,28 +24,8 @@ export {
   resolvePatientTeamIdFromAssignments,
   patientAssignedToTeam,
   patientInJoinedTeamScope,
-  patientCoveredByGuardia,
-  isActiveGuardiaCoveringUser,
   teamForMemberCycle,
-  isMemberOnCallToday,
-  isTeamRankOnCallToday,
-  inferMembershipCycleForJoin,
-  resolveMembershipCycleForUser,
-  formatMemberCycleLabel,
   patientMatchesAnyJoinedTeam,
-  r3ExtendedStructuralAccess,
-  R4_GUARDIA_SECTOR_ORDER,
-  resolveR4GuardiaSectorLabel,
-  isR4MacroPatient,
-  hasSalaGuardiaDeclaredForLetter,
-  computeSalaAbcdefDeficitWrite,
-  salaOnCallR1,
-  userIsOnGuardiaCallToday,
-  userIsOnCallForLanHost,
-  salaOnCallR2,
-  teamGuardiaOverride,
-  canR2SalaAbcdefDeficitWrite,
-  ENTREGA_PHASE_LS_KEY,
   evaluateClinicalScope,
 } from '../../lib/clinical-scope/index.mjs';
 
@@ -74,11 +40,6 @@ export {
   confirmClinicoUnlock,
   clinicoAccessWindowHandlers,
 } from './clinico-access-unlock.mjs';
-
-/** @param {Storage|undefined} storage */
-export function readEntregaPhaseActive(storage = globalThis.localStorage) {
-  return readEntregaPhaseActivePure(storage);
-}
 
 /**
  * TEMPORARY kill switch: when true, team-based patient scope is bypassed and every

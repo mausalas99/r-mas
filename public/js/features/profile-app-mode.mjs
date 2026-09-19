@@ -1,12 +1,9 @@
-/** Perfil — app mode (Sala / Inter / Guardia) switching. */
+/** Perfil — app mode (Sala / Inter) switching. */
 import {
-  isGuardiaMode,
-  toggleGuardiaMode,
   syncHeaderModeSeg,
   toggleHeaderModeSegExpand,
   collapseHeaderModeSeg,
 } from "./chrome.mjs";
-import { syncCensoExportButtonVisibility } from "../censo-export.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { migrateGranularInner } from "../expediente-tabs.mjs";
 import { renderNotaEvolucionPrimaryTab } from "./nota-evolucion/nota-evolucion-primary-tab.mjs";
@@ -61,7 +58,6 @@ export function applyAppModeSwitchEffects() {
     syncAppModeRadioControls();
     refreshExpedienteForAppModeChange();
     renderEstadoActualButton();
-    syncCensoExportButtonVisibility();
     syncHeaderModeSeg();
     var rt = getProfileRuntime();
     if (rt.getActiveId()) {
@@ -106,21 +102,13 @@ export function toggleHeaderWorkMode() {
 
 export function setWorkModeFromHeader(mode) {
   var st = settingsRef();
-  var current = isGuardiaMode() ? "guardia" : isModeSala(st) ? "sala" : "interconsulta";
+  var current = isModeSala(st) ? "sala" : "interconsulta";
   if (mode === current) {
     toggleHeaderModeSegExpand();
     syncHeaderModeSeg();
     syncInterconsultaModeChrome();
     return;
   }
-  if (mode === "guardia") {
-    toggleGuardiaMode();
-    collapseHeaderModeSeg();
-    syncHeaderModeSeg();
-    syncInterconsultaModeChrome();
-    return;
-  }
-  if (isGuardiaMode()) toggleGuardiaMode();
   var wantSala = mode === "sala";
   if (wantSala !== isModeSala(st)) {
     st.appMode = wantSala ? "sala" : "interconsulta";

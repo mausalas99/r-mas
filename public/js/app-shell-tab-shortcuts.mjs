@@ -2,7 +2,6 @@
  * ⌘1–4 tab shortcuts: first press switches app tab; repeat cycles inner views.
  * Pure resolvers are testable without DOM.
  */
-import { isGuardiaMode, toggleGuardiaMode } from './features/chrome.mjs';
 import {
   getConsolidatedTabs,
   consolidatedInnerTabButtonId,
@@ -69,11 +68,6 @@ function currentExpedienteComposite(settings) {
   return consolidatedInnerTabButtonId(inner, settings).replace(/^itab-/, '');
 }
 
-function leaveGuardiaForStandardNavigation() {
-  if (!isGuardiaMode()) return;
-  toggleGuardiaMode();
-}
-
 function dismissOverlaysForResumenHome() {
   var win = typeof window !== 'undefined' ? window : null;
   if (!win) return;
@@ -86,7 +80,6 @@ function dismissOverlaysForResumenHome() {
 
 /** ⌘↩ — Paciente → Resumen from anywhere (modals and fields included). */
 export function runResumenHomeShortcut() {
-  leaveGuardiaForStandardNavigation();
   dismissOverlaysForResumenHome();
   if (typeof document === 'undefined') return true;
   switchInnerTab('resumen');
@@ -133,7 +126,6 @@ function isOnDigitAppTab(key) {
 /** @param {string} key - digit 1–5 */
 export function runTabDigitShortcut(key) {
   if (!digitKeyAppTab(key)) return false;
-  leaveGuardiaForStandardNavigation();
   if (isOnDigitAppTab(key)) {
     if (key === '1') {
       cycleExpedienteComposite();
@@ -159,7 +151,6 @@ export function runTabDigitShortcut(key) {
 
 /** ⌘⇧3 — alternate egreso text format when on Manejo actual. */
 export function runMedOutputTabShortcut() {
-  leaveGuardiaForStandardNavigation();
   if (typeof rt.getActiveAppTab === 'function' && rt.getActiveAppTab() !== 'med') {
     switchAppTab('med');
     return true;
@@ -184,7 +175,6 @@ export function runAgendaTabShortcut() {
 
 /** ⌘[ / ⌘] — previous / next agenda week (when on Agenda). */
 export function runAgendaWeekNavShortcut(delta) {
-  leaveGuardiaForStandardNavigation();
   if (typeof rt.getActiveAppTab === 'function' && rt.getActiveAppTab() !== 'agenda') {
     switchAppTab('agenda');
     return true;

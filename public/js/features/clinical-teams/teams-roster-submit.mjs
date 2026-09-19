@@ -3,7 +3,6 @@ import {
   clinicalSessionContext,
   fetchClinicalTeamsFromDb,
 } from '../../clinical-access-runtime.mjs';
-import { clinicalServiceForSala } from '../../../../lib/clinical-salas.mjs';
 import { canManageTeamRoster } from '../../clinical-privileges.mjs';
 import {
   isValidUsernameFormat,
@@ -37,7 +36,7 @@ function readCreateTeamBasics() {
 async function createElevatedTeam(api, { name, sala, userId }) {
   const res = await api.dbClinicalTeamsCreate({
     name,
-    service: clinicalServiceForSala(sala) || 'Sala',
+    service: 'HF',
     onCallDayIndex: 0,
     sala,
     teamLeaderName: name,
@@ -56,12 +55,11 @@ async function createElevatedTeam(api, { name, sala, userId }) {
   );
 }
 
-async function autoJoinCreatorToTeam(api, teamId, userId, cycleLetter) {
+async function autoJoinCreatorToTeam(api, teamId, userId) {
   if (!teamId || typeof api.dbClinicalTeamsMemberAdd !== 'function') return;
   const addRes = await api.dbClinicalTeamsMemberAdd({
     teamId,
     userId,
-    subAreaFraction: cycleLetter,
   });
   if (!addRes || addRes.ok === false) {
     toast(addRes?.error || 'Equipo creado pero no se pudo unir automáticamente.', 'error');
@@ -69,22 +67,9 @@ async function autoJoinCreatorToTeam(api, teamId, userId, cycleLetter) {
 }
 
 async function createStandardTeam(api, { name, sala, userId }) {
-  let service = String(document.getElementById('clinical-team-create-service')?.value || '').trim();
-  const mappedService = clinicalServiceForSala(sala);
-  if (mappedService && mappedService !== 'Sala') {
-    service = mappedService;
-  }
-  const cycleLetter = String(document.getElementById('clinical-team-create-day')?.value || 'A').trim();
-
-  if (!service) {
-    toast('Indica nombre y servicio.', 'error');
-    return;
-  }
-
   const res = await api.dbClinicalTeamsCreate({
     name,
-    service,
-    subAreaFraction: cycleLetter,
+    service: 'HF',
     onCallDayIndex: 0,
     sala,
     teamLeaderName: name,
@@ -96,7 +81,7 @@ async function createStandardTeam(api, { name, sala, userId }) {
     return;
   }
   const teamId = String(res.team?.team_id || '');
-  await autoJoinCreatorToTeam(api, teamId, userId, cycleLetter);
+  await autoJoinCreatorToTeam(api, teamId, userId);
 
   closeCreateTeamPanelAfterSuccess();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true, sala } }));
@@ -163,7 +148,6 @@ export async function handleAddMemberSubmit(ev, form) {
   const res = await api.dbClinicalTeamsMemberAdd({
     teamId: parsed.teamId,
     userId: partnerUserId,
-    subAreaFraction: parsed.subAreaFraction,
   });
   if (!res || res.ok === false) {
     toast(res?.error || 'No se agregó el miembro.', 'error');
@@ -195,13 +179,7 @@ function parseAddMemberForm(form) {
       error: 'Usuario inválido. Usa 3–32 caracteres: letras minúsculas, números y _ (sin @).',
     };
   }
-  const cycleEl = form.querySelector('.clinical-teams-add-member-cycle');
-  const subAreaFraction =
-    cycleEl instanceof HTMLSelectElement ? String(cycleEl.value || '').trim() : '';
-  if (!subAreaFraction) {
-    return { ok: false, error: 'Elige el ciclo del integrante.' };
-  }
-  return { ok: true, teamId, handle, subAreaFraction, usernameInput };
+  return { ok: true, teamId, handle, usernameInput };
 }
 
 async function resolvePartnerUserIdForAdd(handle) {
@@ -212,41 +190,3 @@ async function resolvePartnerUserIdForAdd(handle) {
   return resolveLocalUserIdByHandle(handle);
 }
 
-/**
- * @param {Event} ev
- * @param {HTMLFormElement} form
- */
-export async function handleMyCycleSubmit(ev, form) {
-  ev.preventDefault();
-  const teamId = String(form.dataset.teamId || '');
-  const userId = currentUserId();
-  const select = form.querySelector('.clinical-teams-cycle-select');
-  const subAreaFraction =
-    select instanceof HTMLSelectElement ? String(select.value || '').trim() : '';
-  if (!teamId || !userId || !subAreaFraction) {
-    toast('Elige tu ciclo.', 'error');
-    return;
-  }
-
-  const api = dbApi();
-  if (!api || typeof api.dbClinicalTeamsMemberAdd !== 'function') {
-    toast('Base de datos no disponible.', 'error');
-    return;
-  }
-
-  const res = await api.dbClinicalTeamsMemberAdd({
-    teamId,
-    userId,
-    subAreaFraction,
-  });
-  if (!res || res.ok === false) {
-    toast(res?.error || 'No se guardó el ciclo.', 'error');
-    return;
-  }
-
-  toast('Ciclo actualizado.', 'success');
-  const sala = teamSalaForId(teamId);
-  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { sala } }));
-  await publishClinicalTeamsAfterChange({ sala });
-  await refreshTeamsUiAfterChange();
-}

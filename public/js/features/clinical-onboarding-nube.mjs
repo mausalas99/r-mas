@@ -5,8 +5,6 @@ import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
 import { isCloudSala, normalizeCloudSala } from './cloud-sync/sala-allowlist.mjs';
 import { loadCutoverSnapshot } from './cloud-sync/cutover-snapshot.mjs';
 import { isCutoverPending } from './cloud-sync/cutover-flags.mjs';
-import { isCloudSalaUpgradePending } from './cloud-sync/cloud-sala-upgrade.mjs';
-import { getCloudSyncUrl } from './cloud-sync/settings.mjs';
 
 export function shouldShowNubePasswordField(sala) {
   return isCloudSala(sala);
@@ -29,7 +27,7 @@ export function buildCutoverPickerHtml() {
         '" data-display="' +
         escapeAttr(u.displayName || '') +
         '" data-rank="' +
-        escapeAttr(u.rank || 'R1') +
+        escapeAttr(u.rank || 'Team') +
         '" data-sala="' +
         escapeAttr(u.sala || '') +
         '">' +
@@ -57,7 +55,6 @@ export function buildCutoverPickerHtml() {
 
 export function buildNubePasswordFieldHtml(prefilledSala) {
   const show = shouldShowNubePasswordField(prefilledSala);
-  const upgrade = isCloudSalaUpgradePending();
   return (
     '<div class="field-group clinical-onboard-nube-field" id="onboard-nube-field" ' +
     (show ? '' : 'hidden') +
@@ -67,12 +64,6 @@ export function buildNubePasswordFieldHtml(prefilledSala) {
     'autocomplete="new-password" minlength="10" ' +
     (show ? 'required' : '') +
     ' placeholder="mín. 10 caracteres">' +
-    '<p class="clinical-teams-hint">' +
-    (upgrade
-      ? 'Tu rotación ahora es Sala/Torre: crea tu cuenta Nube con esta contraseña (misma @usuario).'
-      : 'Obligatoria en <strong>Sala</strong> / <strong>Torre HU</strong>. URL: ') +
-    (upgrade ? '' : escapeHtml(getCloudSyncUrl())) +
-    '</p>' +
     '<p id="onboard-nube-status" class="clinical-teams-hint" aria-live="polite"></p>' +
     '</div>'
   );
@@ -108,15 +99,12 @@ export function applyOnboardPickUser(btn) {
   if (!(btn instanceof HTMLElement)) return;
   const username = btn.getAttribute('data-onboard-pick-user') || '';
   const display = btn.getAttribute('data-display') || '';
-  const rank = btn.getAttribute('data-rank') || 'R1';
   const sala = btn.getAttribute('data-sala') || '';
   const u = document.getElementById('onboard-username');
   const n = document.getElementById('onboard-clinical-name');
-  const r = document.getElementById('onboard-rank');
   const s = document.getElementById('onboard-sala');
   if (u) u.value = username;
   if (n) n.value = display;
-  if (r && rank) r.value = rank;
   if (s && sala) {
     const opt = [...s.options].find((o) => o.value === sala || o.value.includes(sala.split(' ')[0]));
     if (opt) s.value = opt.value;

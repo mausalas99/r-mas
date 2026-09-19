@@ -183,6 +183,9 @@ function buildTendInlineControlsHtml(hiddenCount, opts) {
   var gasoBtn = opts.showGasoExtended
     ? '<button type="button" class="tend-toolbar-btn tend-gaso-ext-trigger" data-tend-action="gaso-extended">Gasometría extendida</button>'
     : '';
+  var dynamicTableBtn = opts.showDynamicTable
+    ? '<button type="button" class="tend-toolbar-btn tend-dynamic-table-trigger" data-tend-action="dynamic-table">Tabla dinámica</button>'
+    : '';
   return (
     '<div class="tend-inline-controls">' +
     '<button type="button" class="tend-toolbar-toggle' +
@@ -196,6 +199,7 @@ function buildTendInlineControlsHtml(hiddenCount, opts) {
     '</button>' +
     ocultosBtn +
     gasoBtn +
+    dynamicTableBtn +
     '</div>'
   );
 }

@@ -2950,6 +2950,15 @@ html.dark .rpc-switch-thumb {
 }
 .btn-save:hover:not(:disabled):not(.loading) { background: var(--action-hover); }
 /* Agenda de procedimientos (vista semanal) */
+/* Agenda tab, Consulta Externa mode: weekly pending-consultas list (agenda-consulta-list.mjs) instead of the procedure calendar. */
+.hf-agenda-consulta-list { display: flex; flex-direction: column; gap: 8px; padding: 4px; }
+.hf-agenda-consulta-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-md, 10px); background: var(--surface); }
+.hf-agenda-consulta-row-name { font-weight: 700; color: var(--text); }
+.hf-agenda-consulta-row-date { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+.hf-agenda-row--done { opacity: 0.5; }
+.hf-agenda-row--done .hf-agenda-consulta-row-name,
+.hf-agenda-row--done .hf-agenda-consulta-row-date { text-decoration: line-through; }
+.hf-agenda-consulta-empty { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
 .rpc-proc-agenda-root { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: calc(20px * var(--density-space)) calc(24px * var(--density-space)) calc(24px * var(--density-space)); gap: calc(14px * var(--density-space)); }
 .rpc-proc-agenda-header { display: flex; flex-wrap: wrap; align-items: center; gap: calc(10px * var(--density-space)) calc(16px * var(--density-space)); justify-content: space-between; }
 .rpc-proc-agenda-titlewrap { display: flex; flex-direction: column; gap: 2px; min-width: 0; }

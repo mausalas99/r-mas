@@ -15,7 +15,7 @@ describe('mobile-sharer-sync', () => {
     g.window = {
       __RPC_MOBILE_WEB__: true,
       location: {
-        search: '?name=Dr.%20Perez&rank=R1&sala=Sala%202&user=jperez&room=sala-2',
+        search: '?name=Dr.%20Perez&rank=Team&sala=Sala%202&user=jperez&room=sala-2',
         origin: 'http://10.0.1.5:3738',
       },
     };
@@ -43,7 +43,7 @@ describe('mobile-sharer-sync', () => {
     assert.equal(ok, true);
     const s = JSON.parse(localStorage.getItem('rpc-settings'));
     assert.equal(s.clinicalDisplayName, 'Dr. Perez');
-    assert.equal(s.clinicalRank, 'R1');
+    assert.equal(s.clinicalRank, 'Team');
     assert.equal(s.clinicalSala, 'Sala 2');
     assert.equal(s.clinicalUsername, 'jperez');
     assert.equal(s.clinicalRegistered, true);

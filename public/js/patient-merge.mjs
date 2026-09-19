@@ -9,11 +9,11 @@ import { medPharmProfileUpdatedAt } from './med-pharm-profile-core.mjs';
 import { mergePatientRegistrationMeta } from './patient-registration-meta.mjs';
 import { mergeCensoPatientFieldsFromBoth } from './patient-diagnosticos.mjs';
 import { isDemoPatientId } from './demo-patient.mjs';
-import { eventualidadesUpdatedAt, mergeEventualidades } from './patient-merge-eventualidades.mjs';
 import { stripDuplicateLabSets } from './lab-history-auto-store-core.mjs';
 import { looksLikeSomeLabReport } from './labs-report-refs.mjs';
+import { emptyCardio } from '../../lib/cardio/patient-cardio.mjs';
 
-export { isDemoPatientId, eventualidadesUpdatedAt, mergeEventualidades };
+export { isDemoPatientId };
 
 /** @param {object} entry */
 export function entryMatchKey(entry) {
@@ -109,8 +109,15 @@ function bestRecordedAtFromHistorial(hist, best) {
   for (let i = 0; i < hist.length; i += 1) {
     const row = hist[i];
     if (!row || typeof row !== 'object') continue;
+    // savedAt is the real save-time clock; recordedAt is the user-chosen clinical
+    // time (minute precision, editable) and ties too easily across rapid entries —
+    // an LWW tie is broken by actorId, so one instance would always lose forever.
     const ra =
-      /** @type {any} */ (row).recordedAt != null ? String(/** @type {any} */ (row).recordedAt) : '';
+      /** @type {any} */ (row).savedAt != null
+        ? String(/** @type {any} */ (row).savedAt)
+        : /** @type {any} */ (row).recordedAt != null
+          ? String(/** @type {any} */ (row).recordedAt)
+          : '';
     // Must scan all rows — historial is oldest-first; early return picked the oldest clock
     // and Nube LWW rejected later client signos as stale.
     if (ra && compareIso(ra, max) > 0) max = ra;
@@ -193,7 +200,6 @@ export function entryUpdatedAt(entry) {
     medPharmTimestamp(entry.medPharmProfile),
     listadoTimestamp(entry.listadoProblemas),
     monitoreoUpdatedAt(p.monitoreo),
-    eventualidadesUpdatedAt(p.eventualidades),
   ];
   const labs = Array.isArray(entry.labHistory) ? entry.labHistory : [];
   for (let i = 0; i < labs.length; i += 1) {
@@ -318,6 +324,33 @@ function pickPatientFields(older, newer) {
   return out;
 }
 
+function hasCardioValue(v) {
+  if (v == null) return false;
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === 'object') return Object.keys(v).length > 0;
+  return String(v).trim() !== '';
+}
+
+/**
+ * No per-field timestamps exist for cardio, so merge key-by-key: keep whichever
+ * side has content for each key (preferring `first`), instead of picking one
+ * side's whole cardio object and losing the other's GDMT/workup/POCUS data.
+ * @param {unknown} first @param {unknown} second
+ */
+function mergePatientCardio(first, second) {
+  const a = first && typeof first === 'object' ? first : null;
+  const b = second && typeof second === 'object' ? second : null;
+  if (!a && !b) return undefined;
+  if (!a) return structuredClone(b);
+  if (!b) return structuredClone(a);
+  const out = {};
+  for (const key of Object.keys(emptyCardio())) {
+    const av = a[key];
+    out[key] = hasCardioValue(av) ? av : b[key];
+  }
+  return structuredClone(out);
+}
+
 function pickNewerByTimestamp(tsA, tsB, aVal, bVal, cloneFn) {
   return compareIso(tsA, tsB) >= 0 ? cloneFn(aVal) : cloneFn(bVal);
 }
@@ -378,11 +411,9 @@ function mergePatientDocuments(a, b) {
 function buildMergedPatientEntry(a, b, patient, first, second) {
   mergePatientMonitoreo(patient, first, second);
 
-  const mergedEventualidades = mergeEventualidades(first.patient?.eventualidades, second.patient?.eventualidades);
-  if (mergedEventualidades) patient.eventualidades = mergedEventualidades;
-
   // pickPatientFields only whitelists demographics — restore censo/dx from both sides.
   mergeCensoPatientFieldsFromBoth(patient, first.patient, second.patient);
+  patient.cardio = mergePatientCardio(first.patient?.cardio, second.patient?.cardio);
 
   if (patient.id) bumpLabHistoryRevision(patient.id);
 

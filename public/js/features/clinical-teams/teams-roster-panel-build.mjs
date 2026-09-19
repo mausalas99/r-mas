@@ -1,6 +1,5 @@
 /** Mi rotación — panel HTML builders extracted from renderClinicalTeamsPanelInto. */
 import {
-  effectiveClinicalRank,
   hasProgramAdminPrivileges,
   canViewUserDirectory,
   canConfigureRotation,
@@ -48,7 +47,6 @@ export async function resolveClinicalTeamsPanelContext(user, joined) {
       : rawUsername;
   const displayHandle = resolveDisplayLanHandle(user, usernameForInput);
   const savedHandle = normalizeUsername(user.username || '');
-  const rank = effectiveClinicalRank(user);
   const programAdmin = hasProgramAdminPrivileges(user);
   const canViewDirectoryUsers = canViewUserDirectory(user);
   const sala = String(user.sala || '').trim();
@@ -59,7 +57,6 @@ export async function resolveClinicalTeamsPanelContext(user, joined) {
     usernameForInput,
     displayHandle,
     savedHandle,
-    rank,
     programAdmin,
     canViewDirectoryUsers,
     sala,
@@ -79,7 +76,7 @@ export function buildClinicalProfileSectionHtml(ctx, user) {
     : '';
   const directoryNote = ctx.canViewDirectoryUsers
     ? ''
-    : `<p class="clinical-teams-lan-directory-note">El directorio completo de usuarios lo abren <strong>R4</strong>, <strong>Admin</strong> o quien tenga <strong>privilegios de administración</strong>. Al registrar <strong>@usuario</strong> conéctate a <strong>R+ Cloud</strong> en ⇄; R+ publica tu perfil al guardar.</p>`;
+    : `<p class="clinical-teams-lan-directory-note">El directorio completo de usuarios lo abren <strong>Admin</strong> o quien tenga <strong>privilegios de administración</strong>. Al registrar <strong>@usuario</strong> conéctate a <strong>R+ Cloud</strong> en ⇄; R+ publica tu perfil al guardar.</p>`;
   const profileHandleBanner = ctx.displayHandle
     ? `<p class="clinical-teams-profile-handle">Visible en R+ Cloud como <strong>@${escapeHtml(ctx.displayHandle)}</strong></p>`
     : '';
@@ -102,18 +99,6 @@ export function buildClinicalProfileSectionHtml(ctx, user) {
         <div class="field-group">
           <label for="clinical-profile-name">Nombre en guardia</label>
           <input id="clinical-profile-name" type="text" class="profile-input" value="${clinicalName}" required>
-        </div>
-        <div class="field-group">
-          <label for="clinical-profile-rank">Rango clínico</label>
-          <select id="clinical-profile-rank" class="profile-input">
-            ${['R1', 'R2', 'R3', 'R4']
-              .map(
-                (r) =>
-                  `<option value="${r}" ${r === ctx.rank ? 'selected' : ''}>${r}</option>`
-              )
-              .join('')}
-          </select>
-          ${hintHtml('Equipos, entregas y alcance clínico.')}
         </div>
         <div class="field-group">
           <label class="clinical-teams-guardia-label">
@@ -156,7 +141,7 @@ export function buildJoinedTeamsSectionHtml(ctx, joinedHtml, lanMemberHint) {
 }
 
 /**
- * Visible R4/Admin block — not buried under Configuración / Zona avanzada.
+ * Visible Admin block — not buried under Configuración / Zona avanzada.
  * @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user
  */
 export function buildRotationAdminSectionHtml(user) {
@@ -215,7 +200,7 @@ export function buildPickTeamsBannerHtml(opts) {
   }
 
   const lead = rejoinPending
-    ? `Nueva rotación: tu R2 o R4 ya publicó <strong>${countLabel}</strong> en <strong>${salaLabel}</strong>. Elige el tuyo abajo — no hace falta crear uno nuevo.`
+    ? `Nueva rotación: tu Admin ya publicó <strong>${countLabel}</strong> en <strong>${salaLabel}</strong>. Elige el tuyo abajo — no hace falta crear uno nuevo.`
     : `Ya hay <strong>${countLabel}</strong> en <strong>${salaLabel}</strong>. Elige el tuyo y pulsa <strong>Unirme</strong>.`;
   return `<div class="clinical-teams-pick-banner" role="status">${lead}</div>`;
 }

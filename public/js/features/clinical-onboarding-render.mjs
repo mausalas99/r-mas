@@ -95,12 +95,6 @@ async function renderCompletedOnboarding(host) {
   }
 }
 
-function buildRankOptionsHtml(rank) {
-  return ['R1', 'R2', 'R3', 'R4']
-    .map((r) => `<option value="${r}" ${rank === r ? 'selected' : ''}>${r}</option>`)
-    .join('');
-}
-
 function buildSalaOptionsHtml(prefilledSala) {
   return CLINICAL_SALAS.map(
     (s) =>
@@ -125,7 +119,6 @@ function resolveOnboardUsernamePrefill(settings) {
 
 function buildLanProfileFormBody(settings) {
   const cachedUsername = resolveOnboardUsernamePrefill(settings);
-  const rank = String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'R1');
   const prefilledName = String(
     settings.clinicalDisplayName ||
       clinicalSessionContext.user?.clinical_name ||
@@ -159,12 +152,6 @@ function buildLanProfileFormBody(settings) {
             <input id="onboard-clinical-name" type="text" class="profile-input" placeholder="ej. Dr. Mendoza"
               value="${escapeAttr(prefilledName)}" required autocomplete="name">
             <p class="clinical-teams-hint">${CLINICAL_LAN_DISPLAY_NAME_HINT_HTML}</p>
-          </div>
-          <div class="field-group">
-            <label for="onboard-rank">Rango</label>
-            <select id="onboard-rank" class="profile-input">
-              ${buildRankOptionsHtml(rank)}
-            </select>
           </div>
           <div class="field-group">
             <label for="onboard-sala">Rotación *</label>
@@ -217,7 +204,7 @@ function renderLanProfileForm(host, settings) {
       'Completa el perfil y registra tu <strong>contraseña de Nube</strong> para sincronizar el turno.</p>';
   } else {
     gateLead =
-      '<p>Confirma tu @usuario de R+ Cloud, nombre en guardia, rango y rotación. ' +
+      '<p>Confirma tu @usuario de R+ Cloud, nombre en guardia y rotación. ' +
       'Para equipos, abre <strong>Mi rotación</strong> después.</p>';
   }
   const title =

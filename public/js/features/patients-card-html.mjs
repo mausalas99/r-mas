@@ -42,6 +42,11 @@ export function renderPatientCardToolbarHtml(p, pinOn, archOn) {
     p.id,
     getClinicalScopeContextForEvaluate()
   );
+  var dischargeBtn = archOn
+    ? ''
+    : '<button type="button" class="patient-toolbar-chip btn-discharge-text" title="Dar de alta" aria-label="Dar de alta" onclick="dischargePatient(event,\'' +
+      p.id +
+      '\')">Alta</button>';
   var deleteBtn = canDelete
     ? '<button type="button" class="btn-delete-card" onclick="deletePatient(event,\'' +
       p.id +
@@ -70,6 +75,7 @@ export function renderPatientCardToolbarHtml(p, pinOn, archOn) {
     '\')">' +
     (pinOn ? 'Fijado' : 'Fijar') +
     '</button>' +
+    dischargeBtn +
     '</div>' +
     deleteBtn +
     '</div>'

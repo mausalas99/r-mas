@@ -13,8 +13,6 @@ import {
   tryMountClinicalTeamInviteBrowserGate,
 } from '../../clinical-team-invite.mjs';
 import { isLanSalaInvitePaste } from '../../mobile-join-link.mjs';
-import { effectiveClinicalRank } from '../../clinical-privileges.mjs';
-import { inferMembershipCycleForJoin } from '../../clinico-access.mjs';
 import { ensureClinicalPanelSession } from '../clinical-panel-host.mjs';
 import { dbApi, toast, currentUserId, filterJoinedTeams } from './shared.mjs';
 import { publishClinicalTeamsAfterChange } from './teams-guardia-bridge.mjs';
@@ -39,8 +37,8 @@ async function openTeamsPanelAfterAlreadyJoined() {
   await openClinicalTeamsPanel();
 }
 
-async function finalizeSuccessfulTeamJoin(team, teamId, cycle) {
-  toast(`Te uniste al equipo ${team.name || ''} (ciclo ${cycle}).`, 'success');
+async function finalizeSuccessfulTeamJoin(team, teamId) {
+  toast(`Te uniste al equipo ${team.name || ''}.`, 'success');
   markClinicalEverJoinedTeam();
   const sala = String(team?.sala || clinicalSessionContext.user?.sala || '').trim();
   const { closeClinicalTeamsPanel, refreshTeamsUiAfterChange } = await import('./teams-roster-shell.mjs');
@@ -54,7 +52,7 @@ async function finalizeSuccessfulTeamJoin(team, teamId, cycle) {
   await refreshTeamsUiAfterChange();
 }
 
-export async function joinTeamById(teamId, subAreaFraction) {
+export async function joinTeamById(teamId) {
   const userId = currentUserId();
   if (!userId || !teamId) return false;
 
@@ -76,15 +74,13 @@ export async function joinTeamById(teamId, subAreaFraction) {
     return false;
   }
 
-  const rank = effectiveClinicalRank(clinicalSessionContext.user);
-  const cycle = subAreaFraction || inferMembershipCycleForJoin(team, rank);
-  const res = await api.dbClinicalTeamsJoin({ teamId, userId, subAreaFraction: cycle });
+  const res = await api.dbClinicalTeamsJoin({ teamId, userId });
   if (!res?.ok) {
     toast(res?.error || 'No se pudo unir al equipo.', 'error');
     return false;
   }
 
-  await finalizeSuccessfulTeamJoin(team, teamId, cycle);
+  await finalizeSuccessfulTeamJoin(team, teamId);
   return true;
 }
 
@@ -103,10 +99,7 @@ export async function redirectLanInviteFromTeamJoinField(raw) {
 export async function handleJoinWithCodeSubmit(ev) {
   ev.preventDefault();
   const input = document.getElementById('clinical-team-join-code-input');
-  const cycleEl = document.getElementById('clinical-team-join-code-cycle');
   const code = input instanceof HTMLInputElement ? input.value : '';
-  const subAreaFraction =
-    cycleEl instanceof HTMLSelectElement ? String(cycleEl.value || '').trim() : '';
 
   if (isLanSalaInvitePaste(code)) {
     await redirectLanInviteFromTeamJoinField(code);
@@ -120,7 +113,7 @@ export async function handleJoinWithCodeSubmit(ev) {
     toast(inviteCodeFailureMessage(diag), 'error');
     return;
   }
-  await joinTeamById(teamId, subAreaFraction);
+  await joinTeamById(teamId);
 }
 
 function clearClinicalTeamJoinQueryParams() {
@@ -165,9 +158,6 @@ export async function consumeClinicalTeamJoinFromUrl() {
     return;
   }
 
-  const cycleEl = document.getElementById('clinical-team-join-code-cycle');
-  const subAreaFraction =
-    cycleEl instanceof HTMLSelectElement ? String(cycleEl.value || '').trim() : '';
-  await joinTeamById(teamId, subAreaFraction);
+  await joinTeamById(teamId);
   clearClinicalTeamJoinQueryParams();
 }

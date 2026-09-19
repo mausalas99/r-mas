@@ -18,8 +18,7 @@ import {
   closeEstadoActualRegistroModal,
   openEstadoActualRegistroModal,
 } from '../estado-actual-registro-modal.mjs';
-import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
-import { setUiDensity, isGuardiaMode } from '../chrome.mjs';
+import { setUiDensity } from '../chrome.mjs';
 import { openConnectionDropdown, closeConnectionDropdown } from '../cloud-sync/panel-chrome.mjs';
 import { renderIndicaForm } from '../notes-indicaciones.mjs';
 import { showNotaEvolucionClassicView } from '../nota-evolucion/nota-evolucion-primary-tab.mjs';
@@ -49,7 +48,6 @@ const rt = getSettingsHelpRuntime();
 
 export function resolveTourBranch() {
   if (tourState.guidedTourBranch === 'interconsulta') return 'interconsulta';
-  if (tourState.guidedTourBranch === 'guardia-v7') return 'guardia-v7';
   if (tourState.guidedTourBranch === 'quick-route') return 'quick-route';
   return 'sala';
 }
@@ -96,7 +94,6 @@ export function hideTourDock() {
   d.classList.remove('tour-dock-visible');
   d.classList.remove('tour-dock-collapsed');
   d.classList.remove('tour-dock-pos-left');
-  d.classList.remove('tour-dock--guardia');
   d.classList.remove('tour-dock--fundamentos');
   d.classList.remove('tour-dock--quick-route');
   var btn = document.getElementById('btn-tour-collapse');
@@ -255,15 +252,6 @@ function isMobileInviteExpandedForTour() {
   return !!(qrHost && qrHost.querySelector('canvas'));
 }
 
-function isGuardiaEntregasFilterActiveForTour() {
-  if (clinicalSessionContext && clinicalSessionContext.guardiaMode) return true;
-  var boardBtn = document.getElementById('btn-guardia-mode-toggle');
-  return !!(
-    boardBtn &&
-    (boardBtn.getAttribute('aria-pressed') === 'true' || boardBtn.classList.contains('is-active'))
-  );
-}
-
 export function clearTourActionPoll() {
   if (tourState.tourActionPollTimer) {
     clearInterval(tourState.tourActionPollTimer);
@@ -317,11 +305,6 @@ function syncMobileInviteTourNext(nextBtn, stepId) {
   enableTourNextButton(nextBtn);
 }
 
-function syncGuardiaToggleTourNext(nextBtn, stepId) {
-  if (stepId !== 'gv7_guardia_toggle' || !isGuardiaEntregasFilterActiveForTour()) return;
-  enableTourNextButton(nextBtn);
-}
-
 export function syncTourActionNextButton() {
   var nextBtn = document.getElementById('tour-btn-next');
   if (!nextBtn || !tourState.guidedTourActive) return;
@@ -330,7 +313,6 @@ export function syncTourActionNextButton() {
   syncServicioDefaultTourNext(nextBtn, stepId);
   syncConnectionTourNext(nextBtn, stepId);
   syncMobileInviteTourNext(nextBtn, stepId);
-  syncGuardiaToggleTourNext(nextBtn, stepId);
 }
 
 export function guidedTourStepIndex() {
@@ -388,64 +370,9 @@ export function tourApplySpotlightForStep(id, t, scrollDelayMs) {
   }, scrollDelay);
 }
 
-// Lleva al usuario al elemento del paso actual: cambia tab/tab interno,
-// abre Mi Perfil/Ajustes si aplica, hace scroll y aplica spotlight para
-// que la zona de avance sea inequívoca.
-function applyGuardiaTourLayoutForStep(stepId) {
-  void import('../../tour-guards.mjs').then((guards) => {
-    if (!guards.isGuidedTourRunning()) return;
-    if (guards.shouldShowGuardiaBoardWithoutEntrega(stepId)) {
-      void Promise.all([
-        import('../clinical-entrega.mjs'),
-        import('../entrega-roster-panel.mjs'),
-      ]).then(([entrega, roster]) => {
-        entrega.endEntregaPhase();
-        roster.closeEntregaRosterPanel();
-        if (stepId === 'gv7_fin_turno') {
-          roster.activateTurnoActivo();
-          window.dispatchEvent(new CustomEvent('guardia:turno-activo'));
-        } else {
-          roster.deactivateTurnoActivo();
-        }
-        document.documentElement.classList.remove('guardia-entrega-roster-open');
-        if (typeof rt.renderGuardiaBoard === 'function') {
-          rt.renderGuardiaBoard(rt.getSettings());
-        }
-      });
-      return;
-    }
-    if (guards.shouldOpenEntregaRosterForTour(stepId)) {
-      void import('../clinical-entrega.mjs').then((entrega) => {
-        if (!entrega.isEntregaPhaseActive()) {
-          void entrega.beginEntregaPhaseFlow({
-            settings: rt.getSettings(),
-            renderGuardiaBoard: rt.renderGuardiaBoard,
-          });
-          return;
-        }
-        void import('../entrega-roster-panel.mjs').then((roster) => {
-          if (!roster.isEntregaRosterOpen()) {
-            roster.openEntregaRosterPanel(rt.getSettings());
-            rt.renderGuardiaBoard?.(rt.getSettings());
-          }
-        });
-      });
-    }
-  });
-}
-
 function applyTourDensityForStep(id, t) {
-  if (tourState.guidedTourActive && !t?.openGuardiaDensity) setUiDensity('normal');
-  if (!t) return false;
-  if (t.openGuardiaDensity) {
-    if (!isGuardiaMode()) {
-      setUiDensity('guardia');
-      if (typeof rt.renderGuardiaBoard === 'function') rt.renderGuardiaBoard(rt.getSettings());
-    }
-    applyGuardiaTourLayoutForStep(id);
-  }
-  if (t.exitGuardiaDensity && isGuardiaMode()) setUiDensity('normal');
-  return true;
+  if (tourState.guidedTourActive) setUiDensity('normal');
+  return !!t;
 }
 
 function seedTourDemosForStep(id) {
@@ -532,11 +459,6 @@ export function applyTourTargetForStep(id) {
   if (id === 'map_lab_teaser' || id === 'lab_parse') ensureTourDemoLabInputBoth();
   closeStaleModalsForTourStep(id);
   clearAllTourSpotlights();
-  if (id === 'gv7_trust_strip') {
-    void import('../guardia-trust-strip.mjs').then((m) => {
-      if (typeof m.syncGuardiaTrustStrip === 'function') m.syncGuardiaTrustStrip();
-    });
-  }
   if (!t.selector) return;
   var spotlightDelay = id === 'listado_problemas' || id === 'map_incomplete' ? 280 : 140;
   tourApplySpotlightForStep(id, t, spotlightDelay);

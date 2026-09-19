@@ -1125,6 +1125,13 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   line-height: 1.4;
 }
 
+/* Short narratives (Consulta IC's Subjetivo/Objetivo pair, ECG descripción,
+   Apreciativo, Eco nota) pass `rows<=3` and need the 120px floor above
+   dropped, or a "short" textarea still renders ~120px tall. */
+.hf-narrative--tight {
+  min-height: 56px;
+}
+
 .ea-diet-weight-hint {
   margin: 0;
   font-size: calc(11px * var(--density-font, 1));
@@ -1180,6 +1187,53 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   color: var(--text);
 }
 
+/* Wizard step pills — clickable jump nav shared by Evaluación Inicial and
+   Consulta IC's step wizards (numbered pill row, current step highlighted).
+   Numbers only, single compact row: keeps the step-overflow budget these
+   wizards were tuned against (see the split-step comments in each -html.mjs)
+   intact instead of reopening it with tall nav chrome. */
+.hf-wizard-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.hf-wizard-step {
+  min-width: 1.8em;
+  padding: 2px 8px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+  color: var(--text-muted);
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 600;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.hf-wizard-step:hover {
+  border-color: color-mix(in oklab, var(--action) 40%, var(--divider));
+  color: var(--text);
+}
+
+.hf-wizard-step.is-current {
+  border-color: var(--action);
+  background: color-mix(in oklab, var(--action) 16%, var(--surface));
+  color: var(--text);
+}
+
+/* Collapsible section — same `.hf-section` chrome, just wrapped in native
+   `<details>`/`<summary>` (same pattern as `.ea-med-cat`/`.cloud-sync-advanced`)
+   so a secondary field-group can start closed to save vertical space in the
+   Consulta IC wizard steps. */
+summary.hf-section-title {
+  cursor: pointer;
+}
+.hf-collapse-body {
+  margin-top: 10px;
+}
+
 /* CSS Grid field layout — replaces ad hoc `flex-wrap` rows so fields align
    into clean columns at desktop widths instead of breaking unpredictably. */
 .hf-field-grid {
@@ -1224,6 +1278,358 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* US pulmonar / Rx tórax cards (Exploración step) — compact tap targets that
+   open the full fields in a modal instead of rendering them inline, to keep
+   the step within its one-screen budget. Same `.hf-section` chrome as other
+   cards, just clickable. */
+.hf-ei-card-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.hf-ei-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+  cursor: pointer;
+  font: inherit;
+}
+
+.hf-ei-card:hover {
+  border-color: color-mix(in oklab, var(--action) 40%, var(--divider));
+}
+
+.hf-ei-card-title {
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 700;
+  color: var(--text);
+}
+
+.hf-ei-card-sub {
+  font-size: calc(11px * var(--density-font, 1));
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* Rx tórax / POCUS / EKG attachments — cardio-image-attach.mjs */
+.hf-cardio-images {
+  margin-top: 6px;
+}
+
+.hf-cardio-images-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.hf-cardio-image-thumb {
+  position: relative;
+  display: inline-block;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--divider);
+}
+
+.hf-cardio-image-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hf-cardio-image-remove {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: none;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* Derecho/Izquierdo toggle inside the US pulmonar modal — replaces the old
+   side-by-side two-column layout so only one side's 4 zones render at once. */
+.hf-side-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.hf-side-tab {
+  padding: 5px 14px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+  color: var(--text-muted);
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hf-side-tab.is-active {
+  border-color: var(--action);
+  background: color-mix(in oklab, var(--action) 16%, var(--surface));
+  color: var(--text);
+}
+
+/* Rx tórax hallazgos — chip-style checkboxes instead of bare
+   `<input type="checkbox">` labels. The input itself is visually hidden
+   (not `display:none`, so it stays keyboard/focus accessible); the label
+   is the pill and reflects checked state via `:has()`. */
+.hf-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hf-chip-checkbox {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+  color: var(--text-muted);
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.hf-chip-checkbox input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hf-chip-checkbox:has(input:checked) {
+  border-color: var(--action);
+  background: color-mix(in oklab, var(--action) 16%, var(--surface));
+  color: var(--text);
+}
+
+.hf-chip-checkbox:has(input:focus-visible) {
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+/* Exploración step's sub-modal (US pulmonar / Rx tórax) — uses the shared
+   `.modal-backdrop`/`.modal` chrome from `lab.css`, just a narrower body. */
+.hf-ei-modal {
+  width: min(560px, 92vw);
+  max-height: 84vh;
+  overflow-y: auto;
+}
+
+.hf-ei-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.hf-ei-modal-head h4 {
+  margin: 0;
+  font-size: calc(14px * var(--density-font, 1));
+}
+
+/* Consulta IC's own root overrides `.rpc-form-stack`'s 20px gap (5 stacked
+   blocks — identity, date, step head, section(s), nav — at 20px each ate
+   100px of the ~562px step budget on its own). Combined-class selector
+   (two classes) outweighs the single-class base rule regardless of source
+   order, so this doesn't need `!important` and doesn't touch other
+   `.rpc-form-stack` consumers. */
+.hf-consulta-ic.rpc-form-stack {
+  gap: 4px;
+}
+
+/* Scoped-tighter section/field chrome for Consulta IC specifically — several
+   steps (Eco/ECG/Dispositivo, Reingreso y TMO, Impresión/Plan) measured
+   modestly over the ~562px step budget against a demo patient with real
+   data even after per-step content fixes (confirmed via the `run` skill);
+   this shaves the shared section/grid chrome across all of them at once
+   instead of re-tuning each step's markup further. Scoped to `.hf-consulta-ic`
+   so it doesn't touch `.hf-section`/`.hf-field-grid` used elsewhere
+   (`evaluacion-inicial-html.mjs`, the Congestión/POCUS modal). */
+.hf-consulta-ic .hf-section {
+  padding: 6px 10px;
+  gap: 4px;
+}
+.hf-consulta-ic .hf-field-grid {
+  gap: 4px 10px;
+}
+.hf-consulta-ic .hf-collapse-body {
+  margin-top: 4px;
+}
+
+/* Subjetivo/Objetivo checklists (paso 2): side-by-side halves each column's
+   width, so the default 150px field-grid minimum only fits 2 columns per
+   row (6 symptom/exam fields -> 3 rows each). Narrowing to 110px here packs
+   3 columns per row (6 fields -> 2 rows) — this measured over budget at
+   150px, confirmed via the `run` skill. Scoped to this wrapper only, not
+   `.hf-field-grid` globally. */
+.hf-consulta-subjobj-cols .hf-field-grid {
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+}
+.hf-consulta-subjobj-cols .hf-section {
+  padding: 4px 8px;
+  gap: 2px;
+}
+
+/* Eco/ECG/Dispositivo step: ECG and Dispositivo cards are equal-width
+   (50/50) columns, not proportional to field count (ECG has 3 fields,
+   Dispositivo has 8) — narrowing Dispositivo's field-grid minmax keeps it
+   at ~4-5 columns per row (2 rows for 8 fields) instead of degrading to 2
+   columns at half width. Scoped to this wrapper only. */
+.hf-eco-device-col .hf-field-grid {
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+}
+
+/* Consulta IC redesign (8-step wizard): glance cards that open a modal for
+   the full table/form, an in-step segmented control for the workup's 9
+   subsystems, and compact Previo/Actual tables split into columns so a
+   20-30+ row table fits a modal with no scroll in either direction. */
+.hf-glance-cards {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hf-glance-card {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  font: inherit;
+  color: var(--text);
+}
+
+.hf-glance-card:hover {
+  border-color: color-mix(in oklab, var(--action) 40%, var(--border));
+  background: color-mix(in oklab, var(--action) 6%, var(--surface));
+}
+
+.hf-glance-card-title {
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 700;
+}
+
+.hf-glance-card-glance {
+  font-size: calc(11px * var(--density-font, 1));
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.hf-seg-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.hf-seg-tab {
+  padding: 5px 10px;
+  border: 1px solid var(--divider);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hf-seg-tab--active {
+  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+  background: color-mix(in oklab, var(--action) 14%, var(--surface));
+  color: var(--text);
+}
+
+.hf-prev-actual-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: calc(12px * var(--density-font, 1));
+}
+
+.hf-prev-actual-table th,
+.hf-prev-actual-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--divider);
+  text-align: left;
+}
+
+.hf-prev-actual-columns {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.hf-prev-actual-columns .hf-prev-actual-table {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.hf-prev-actual-table--tight th,
+.hf-prev-actual-table--tight td {
+  padding: 2px 6px;
+  font-size: calc(10.5px * var(--density-font, 1));
+  line-height: 1.25;
+}
+
+/* Wide modal variant for Consulta IC's card-triggered modals (labs/eco
+   tables, entry forms, scores) — extends `.ea-registro-modal` (same shell
+   as the Congestión/POCUS modal: fixed-height shell, `overflow: hidden`,
+   header/body/foot flex column) but wider, since a Previo/Actual table
+   split into columns or a 20-30 field grid needs more than 820px to fit
+   with no scroll in either direction. The body content is a plain padded
+   div, not `.ea-registro-form-scroll` — that class scrolls, which this
+   screen must not do. */
+.hf-consulta-modal {
+  max-width: min(97vw, 1180px);
+  width: min(97vw, 1180px);
+  max-height: min(94vh, 900px);
+}
+
+.hf-consulta-modal-body-pad {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 14px 18px;
+}
+
+/* Entry-form modals (labs-new/eco-new, 22-34 fields) need more columns than
+   `.hf-field-grid`'s default 150px minimum gives at this modal's width — a
+   34-field eco form at 4 columns measured 57px over budget (confirmed via
+   the `run` skill). 130px fits 5 instead of 4. */
+.hf-consulta-modal-body-pad .hf-field-grid {
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
 }
 
 .hf-lung-grid-side-title {
@@ -1567,16 +1973,11 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-io-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  align-items: end;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   padding-top: 4px;
   border-top: 1px solid var(--divider);
-}
-
-.ea-io-grid .ea-field--full {
-  grid-column: 1 / -1;
 }
 
 .ea-label--with-action {
@@ -1585,28 +1986,166 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   gap: 8px;
 }
 
-.ea-io-nc-btn {
-  min-height: 24px;
-  padding: 0 8px;
-  font-size: 11px;
-  line-height: 1;
-}
-
 .ea-form--no-insulin-rescates .ea-glu-altered-toggle,
 .ea-form--no-insulin-rescates .ea-glu-rescue-wrap {
   display: none !important;
-}
-
-@media (max-width: 640px) {
-  .ea-io-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .ea-io-balance .ea-balance-live {
   font-size: calc(15px * var(--density-font, 1));
   font-weight: 700;
   color: var(--success);
+}
+
+/* Fuentes cuantificables sueltas — fuera de T1/T2/T3 (ultrafiltrado, drenaje, toracocentesis) */
+.ea-io-extra {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--divider);
+}
+
+.ea-io-extra-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ea-io-extra-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ea-io-extra-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) minmax(100px, 120px) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--divider);
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+  width: fit-content;
+  max-width: 100%;
+}
+
+.ea-io-extra-kind-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+@media (max-width: 520px) {
+  .ea-io-extra-row {
+    grid-template-columns: minmax(0, 1fr) minmax(84px, 100px) auto;
+    width: 100%;
+  }
+}
+
+/* Ingresos/egresos por turno (T1-T3) */
+.ea-turno-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ea-turno-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ea-turno-total {
+  font-size: calc(12.5px * var(--density-font, 1));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--action);
+}
+
+.ea-turno-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 420px) {
+  .ea-turno-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ea-turno-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface) 55%, transparent);
+}
+
+.ea-turno-box-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
+.ea-turno-box input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  border-radius: var(--radius-control, 8px);
+  padding: 5px 7px;
+  font: inherit;
+  font-size: calc(12.5px * var(--density-font, 1));
+  background: var(--input-fill);
+  color: var(--text);
+}
+
+.ea-turno-box input:focus {
+  outline: none;
+  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+  background: var(--surface);
+}
+
+.ea-turno-box input.ea-turno-input--nc {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.ea-turno-nc-btn {
+  appearance: none;
+  border: 1px solid color-mix(in oklab, var(--border) 92%, transparent);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 1px 6px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.ea-turno-nc-btn:hover {
+  background: color-mix(in oklab, var(--surface) 72%, transparent);
+}
+
+.ea-turno-nc-btn[aria-pressed='true'] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .ea-form-actions {
@@ -2658,6 +3197,17 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   margin: 0;
 }
 
+.ea-input[data-ea-cardio-override] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.ea-input[data-ea-cardio-override]::-webkit-outer-spin-button,
+.ea-input[data-ea-cardio-override]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .ea-registro-modal .ea-vital-value-wrap .ea-vital-input:focus {
   outline: none;
   background: transparent;
@@ -3043,15 +3593,9 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-registro-modal .ea-io-grid {
-  gap: 10px 12px;
+  gap: 12px;
   padding-top: 2px;
   border-top: none;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(6.5rem, 0.85fr);
-  align-items: end;
-}
-
-.ea-registro-modal .ea-io-grid .ea-field--full {
-  grid-column: 1 / -1;
 }
 
 .ea-registro-modal .ea-io-grid .ea-field {

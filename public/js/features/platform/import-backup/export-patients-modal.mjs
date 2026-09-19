@@ -3,16 +3,31 @@ import { getPatients, persistClinicalState } from '../../../app-state.mjs';
 import { esc } from '../../../dom-escape.mjs';
 import { isTourDemoPatientId } from '../../../tour-demo-patient.mjs';
 import { patientsVisibleInSidebar } from '../../patients-scope.mjs';
-import { formatDateSlug, downloadJsonPayload, downloadTextPayload } from '../shared.mjs';
+import { formatDateSlug, downloadJsonPayload, downloadBlob } from '../shared.mjs';
 import { addAuditEntry } from '../audit.mjs';
 import { getPlatformRuntime } from '../runtime.mjs';
+import { hasProgramAdminPrivileges } from '../../../clinical-privileges.mjs';
+import { clinicalSessionContext } from '../../../clinical-access-runtime.mjs';
 import {
   buildPatientsSelectionExportPayload,
   sortPatientsForExportPicker,
 } from './export-patients-selection.mjs';
-import { buildIcRegistryRows, rowsToCsv, withExcelBom } from '../../../../../lib/cardio/ic-registry-export.mjs';
+import { buildIcRegistryRows } from '../../../../../lib/cardio/ic-registry-export.mjs';
+import { buildIcRegistryLongRows } from '../../../../../lib/cardio/ic-registry-long-export.mjs';
+import { buildXlsxWorkbook } from '../../../../../lib/cardio/xlsx-writer.mjs';
+
+const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+function downloadXlsx(bytes, fileName) {
+  downloadBlob(new Blob([bytes], { type: XLSX_MIME }), fileName);
+}
 
 const rt = getPlatformRuntime();
+
+/** IC registry CSV export is Admin-only (department head). */
+export function canExportIcRegistryCsv() {
+  return hasProgramAdminPrivileges(clinicalSessionContext.user);
+}
 
 function exportablePatientsForPicker() {
   var visible = patientsVisibleInSidebar();
@@ -60,6 +75,7 @@ function syncExportPatientsActions(backdrop) {
   }
   setExportButtonEnabled(backdrop.querySelector('#export-patients-ok'), n > 0);
   setExportButtonEnabled(backdrop.querySelector('#export-patients-csv'), n > 0);
+  setExportButtonEnabled(backdrop.querySelector('#export-patients-csv-long'), n > 0);
 }
 
 function closeExportPatientsModal(backdrop) {
@@ -101,7 +117,11 @@ function runExportPatientsSelection(patientIds) {
   );
 }
 
-function runExportIcRegistryCsv(patientIds) {
+async function runExportIcRegistryCsv(patientIds) {
+  if (!canExportIcRegistryCsv()) {
+    rt.showToast('Exportar la base IC requiere rango Admin.', 'error');
+    return;
+  }
   persistClinicalState();
   var idSet = new Set(patientIds);
   var patients = getPatients().filter(function (p) {
@@ -112,15 +132,43 @@ function runExportIcRegistryCsv(patientIds) {
     return;
   }
   var built = buildIcRegistryRows(patients);
-  var csv = withExcelBom(rowsToCsv(built.headers, built.rows));
-  downloadTextPayload(csv, 'R-plus-hf-registro-' + formatDateSlug(new Date()) + '.csv', 'text/csv');
-  addAuditEntry('ic-registry-csv-export', 'ok', patients.length, 'csv');
+  var xlsx = await buildXlsxWorkbook([{ name: 'Registro IC', headers: built.headers, rows: built.rows }]);
+  downloadXlsx(xlsx, 'R-plus-hf-registro-' + formatDateSlug(new Date()) + '.xlsx');
+  addAuditEntry('ic-registry-csv-export', 'ok', patients.length, 'xlsx');
   var truncatedCount = Object.keys(built.truncatedByPatient).length;
   var msg = 'Exportados ' + patients.length + ' paciente' + (patients.length === 1 ? '' : 's');
   if (truncatedCount > 0) {
     msg += '; ' + truncatedCount + ' paciente' + (truncatedCount === 1 ? '' : 's') + ' con visitas no incluidas (excede columnas de la plantilla)';
   }
   rt.showToast(msg, 'success');
+}
+
+async function runExportIcRegistryLongCsv(patientIds) {
+  if (!canExportIcRegistryCsv()) {
+    rt.showToast('Exportar la base IC requiere rango Admin.', 'error');
+    return;
+  }
+  persistClinicalState();
+  var idSet = new Set(patientIds);
+  var patients = getPatients().filter(function (p) {
+    return p && idSet.has(p.id);
+  });
+  if (!patients.length) {
+    rt.showToast('No hay pacientes exportables en la selección.', 'error');
+    return;
+  }
+  var built = buildIcRegistryLongRows(patients);
+  var slug = formatDateSlug(new Date());
+  var xlsx = await buildXlsxWorkbook([
+    { name: 'Pacientes', headers: built.pacientesHeaders, rows: built.pacientesRows },
+    { name: 'Visitas', headers: built.visitasHeaders, rows: built.visitasRows },
+  ]);
+  downloadXlsx(xlsx, 'R-plus-hf-registro-' + slug + '.xlsx');
+  addAuditEntry('ic-registry-long-csv-export', 'ok', patients.length, 'xlsx');
+  rt.showToast(
+    'Exportados ' + patients.length + ' paciente' + (patients.length === 1 ? '' : 's') + ' (2 hojas: Pacientes + Visitas)',
+    'success'
+  );
 }
 
 function wireExportPatientsModal(backdrop, candidates) {
@@ -155,7 +203,13 @@ function wireExportPatientsModal(backdrop, candidates) {
     var ids = selectedPatientIdsFromBackdrop(backdrop);
     if (!ids.length) return;
     closeExportPatientsModal(backdrop);
-    runExportIcRegistryCsv(ids);
+    void runExportIcRegistryCsv(ids);
+  });
+  backdrop.querySelector('#export-patients-csv-long')?.addEventListener('click', function () {
+    var ids = selectedPatientIdsFromBackdrop(backdrop);
+    if (!ids.length) return;
+    closeExportPatientsModal(backdrop);
+    void runExportIcRegistryLongCsv(ids);
   });
   backdrop.addEventListener('click', function (ev) {
     if (ev.target === backdrop) closeExportPatientsModal(backdrop);
@@ -164,11 +218,13 @@ function wireExportPatientsModal(backdrop, candidates) {
   if (!ordered.length) {
     setExportButtonEnabled(backdrop.querySelector('#export-patients-ok'), false);
     setExportButtonEnabled(backdrop.querySelector('#export-patients-csv'), false);
+    setExportButtonEnabled(backdrop.querySelector('#export-patients-csv-long'), false);
   }
 }
 
 export function openExportPatientsModal() {
   var candidates = exportablePatientsForPicker();
+  var canExportCsv = canExportIcRegistryCsv();
   var listHtml = candidates.length
     ? buildExportPatientsListHtml(candidates, rt.getActiveId())
     : '<li style="font-size:13px;color:var(--text-muted);">No hay pacientes exportables en el censo visible.</li>';
@@ -189,7 +245,10 @@ export function openExportPatientsModal() {
     '<button type="button" id="export-patients-none" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Quitar todos</button>' +
     '<button type="button" id="export-patients-all" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Seleccionar todos</button>' +
     '<button type="button" id="export-patients-cancel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Cancelar</button>' +
-    '<button type="button" id="export-patients-csv" disabled aria-disabled="true" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:not-allowed;opacity:0.55;color:var(--text);">Exportar base de datos IC (.csv)</button>' +
+    (canExportCsv
+      ? '<button type="button" id="export-patients-csv" disabled aria-disabled="true" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:not-allowed;opacity:0.55;color:var(--text);">Exportar base de datos IC (.xlsx)</button>' +
+        '<button type="button" id="export-patients-csv-long" disabled aria-disabled="true" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:not-allowed;opacity:0.55;color:var(--text);">Exportar base de datos IC (formato largo, 2 hojas)</button>'
+      : '') +
     '<button type="button" id="export-patients-ok" disabled aria-disabled="true" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:not-allowed;opacity:0.55;">Exportar JSON…</button>' +
     '</div></div>';
   document.body.appendChild(backdrop);

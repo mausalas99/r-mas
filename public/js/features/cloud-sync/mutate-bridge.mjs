@@ -18,8 +18,6 @@ import {
   pickCensusFields,
   mapPatientEntryToOps,
   mapPatientEntryToCensusSeedOps,
-  buildInternoAccessUpsertOp,
-  internoAccessMutationId,
 } from './mutate-bridge-ops.mjs';
 import { buildDirtyLabSidecarOpsForPatient } from './cloud-lab-sidecar-index.mjs';
 import { prepareOutboxOpsForEnqueue } from './outbox-lab.mjs';
@@ -506,13 +504,4 @@ function findCloudTombstonesEntry(outbox) {
     if (String(rows[i]?.clientMutationId || '') === CLOUD_TOMBSTONES_MUTATION_ID) return rows[i];
   }
   return null;
-}
-
-/** @param {{ sala?: string, access_token?: string, is_active?: number, rotated_at?: string|null, rotated_by?: string|null }} row @returns {boolean} */
-export function enqueueInternoAccessUpsert(row) {
-  if (!isCloudSyncActive() || !bridgeRuntime?.outbox || !row?.sala) return false;
-  const op = buildInternoAccessUpsertOp(row);
-  enqueueEntityOps(internoAccessMutationId(row), [op]);
-  void bridgeRuntime.flush?.();
-  return true;
 }

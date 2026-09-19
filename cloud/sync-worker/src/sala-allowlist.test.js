@@ -7,38 +7,29 @@ import {
 } from './sala-allowlist.js';
 
 describe('normalizeCloudSala', () => {
-  it('normalizes Sala family to individual wards', () => {
+  it('normalizes Unidad IC aliases', () => {
+    assert.equal(normalizeCloudSala('Unidad IC'), 'Unidad IC');
+    assert.equal(normalizeCloudSala('unidad ic'), 'Unidad IC');
+    assert.equal(normalizeCloudSala('IC'), 'Unidad IC');
+  });
+
+  it('leaves unknown labels alone', () => {
     assert.equal(normalizeCloudSala('Sala 1'), 'Sala 1');
-    assert.equal(normalizeCloudSala('sala 2'), 'Sala 2');
-    assert.equal(normalizeCloudSala('Sala E'), 'Sala E');
-    assert.equal(normalizeCloudSala('sala e'), 'Sala E');
-  });
-
-  it('does not treat bare Sala as a cloud ward', () => {
-    assert.equal(normalizeCloudSala('sala'), 'sala');
-    assert.equal(isCloudSala('Sala'), false);
-  });
-
-  it('normalizes all clinical ward aliases', () => {
-    assert.equal(normalizeCloudSala('torre'), 'Torre HU');
-    assert.equal(normalizeCloudSala('interconsultas'), 'Interconsultas');
-    assert.equal(normalizeCloudSala('UX'), 'UX');
-    assert.equal(normalizeCloudSala('eme'), 'Eme');
-    assert.equal(normalizeCloudSala('Área A/Pensionistas'), 'Área A/Pensionistas');
-    assert.equal(normalizeCloudSala('area a'), 'Área A/Pensionistas');
+    assert.equal(isCloudSala('Sala 1'), false);
   });
 });
 
 describe('isCloudSala', () => {
-  it('allows all clinical wards on Nube', () => {
+  it('allows the single R+ HF sala', () => {
     for (const sala of CLOUD_SALAS) {
       assert.equal(isCloudSala(sala), true, sala);
     }
-    assert.equal(isCloudSala('torre-hu'), true);
+    assert.equal(isCloudSala('ic'), true);
   });
 
-  it('rejects unknown sala labels', () => {
-    assert.equal(isCloudSala('Sala'), false);
+  it('rejects legacy IM ward labels', () => {
+    assert.equal(isCloudSala('Sala 1'), false);
+    assert.equal(isCloudSala('Torre HU'), false);
     assert.equal(isCloudSala(''), false);
   });
 });

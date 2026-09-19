@@ -1,5 +1,5 @@
 /**
- * Modal after R4/Admin «Iniciar nueva rotación» (local) or rotationNuevaAt from Nube sync (peers).
+ * Modal after Admin «Iniciar nueva rotación» (local) or rotationNuevaAt from Nube sync (peers).
  */
 import { clinicalSessionContext, fetchClinicalTeamsFromDb } from '../clinical-access-runtime.mjs';
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
@@ -60,7 +60,7 @@ export function buildRotationRejoinLeadHtml(user) {
   return (
     '<p>Hay <strong>nueva rotación</strong>: los equipos anteriores ya no están activos' +
     (sala ? ` (sala actual: <strong>${escapeHtml(sala)}</strong>)` : '') +
-    '. Tu R2 o R4 ya publicó equipos nuevos en Nube — confirma tu sala y <strong>elige el tuyo</strong> en Mi rotación.</p>'
+    '. Tu Admin ya publicó equipos nuevos en Nube — confirma tu sala y <strong>elige el tuyo</strong> en Mi rotación.</p>'
   );
 }
 
@@ -120,7 +120,7 @@ export function openRotationRejoinModal() {
   if (select instanceof HTMLSelectElement) select.focus();
 }
 
-/** Show modal only when R4/Admin (or peer sync) set the pending flag. */
+/** Show modal only when Admin (or peer sync) set the pending flag. */
 export async function maybeShowRotationRejoinModal() {
   if (typeof document === 'undefined') return false;
   if (isClinicalLocalOnlyMode(readRpcSettings())) return false;
@@ -155,7 +155,7 @@ export async function maybeShowRotationRejoinModal() {
   return true;
 }
 
-/** R4/Admin «Iniciar nueva rotación» or peer after rotationNuevaAt from Nube. */
+/** Admin «Iniciar nueva rotación» or peer after rotationNuevaAt from Nube. */
 export async function promptRotationRejoinAfterNuevaRotacion() {
   setRotationRejoinPending(true);
   return maybeShowRotationRejoinModal();
@@ -169,7 +169,7 @@ async function persistSalaFromModal() {
   const user = clinicalSessionContext.user || {};
   const ok = await persistProfileFromPanel({
     clinicalName: String(user.clinical_name || ''),
-    rank: String(user.rank || 'R1'),
+    rank: String(user.rank || 'Team'),
     sala,
     username: String(user.username || ''),
   });

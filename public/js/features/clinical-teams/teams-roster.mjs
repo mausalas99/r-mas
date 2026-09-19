@@ -16,7 +16,6 @@ export { handleProfileFormSubmit } from './teams-roster-profile.mjs';
 export {
   handleCreateTeamSubmit,
   handleAddMemberSubmit,
-  handleMyCycleSubmit,
 } from './teams-roster-submit.mjs';
 
 export {

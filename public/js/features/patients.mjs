@@ -196,6 +196,51 @@ export function togglePatientArchived(ev, id) {
   }
 }
 
+/**
+ * Cerrar consulta (Consulta Externa wizard) migrates the patient to Directorio
+ * the same way "Alta" does for Sala — flip `hospitalizado = false`, which is
+ * the field both the sidebar (`patients-scope.mjs`) and Directorio
+ * (`directorio.mjs`) already gate on. History and the wizard stay intact;
+ * reopening the file from Directorio re-opens the same consulta.
+ */
+function migratePatientToDirectorioOnConsultaClose(ev) {
+  var id = ev && ev.detail && ev.detail.patientId;
+  if (!id) return;
+  var p = getPatients().find(function (x) {
+    return x.id === id;
+  });
+  if (!p) return;
+  p.hospitalizado = false;
+  p.lanUpdatedAt = new Date().toISOString();
+  persistClinicalState();
+  patientsBridge.renderPatientList();
+  if (isCloudSyncActive()) {
+    scheduleCloudSyncPush();
+  }
+}
+if (typeof document !== 'undefined') {
+  document.addEventListener('hf:consulta-cerrada', migratePatientToDirectorioOnConsultaClose);
+}
+
+/** Dar de alta: sale de Hospitalizados hacia el Directorio, conserva historial completo. */
+export function dischargePatient(ev, id) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  var p = getPatients().find(function (x) {
+    return x.id === id;
+  });
+  if (!p) return;
+  p.hospitalizado = false;
+  p.lanUpdatedAt = new Date().toISOString();
+  persistClinicalState();
+  patientsBridge.renderPatientList();
+  if (isCloudSyncActive()) {
+    scheduleCloudSyncPush();
+  }
+}
+
 function readSidebarAutoHide() {
   try {
     return localStorage.getItem(SIDEBAR_AUTO_HIDE_LS) === '1';
@@ -306,6 +351,7 @@ export const windowHandlers = {
   focusPatientSearchInput,
   togglePatientPinned,
   togglePatientArchived,
+  dischargePatient,
   movePatientByOffset,
   toggleArchivedSection,
   toggleSidebarAutoHide,

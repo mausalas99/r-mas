@@ -1,7 +1,6 @@
 /** Mi rotación — roster render (barrel). */
 export {
-  syncCreateTeamServiceFromSala,
-  syncCreateTeamCycleField,
+  syncCreateTeamSalaDefault,
   renderCreateTeamForm,
   renderCreateTeamFormElevated,
   renderCreateTeamFormStandard,
@@ -13,11 +12,8 @@ export {
   countLocalCensusPatientsForTeam,
   renderTeamMetaLine,
   renderTeamPatientCountLine,
-  renderCycleSelectForRank,
-  renderAddMemberCycleSelect,
   renderMemberRow,
   renderMembersBlock,
-  renderMyCycleEditBlock,
   renderLeaveTeamBox,
   renderTeamManageActionsHtml,
   renderTeamEditPanelHtml,

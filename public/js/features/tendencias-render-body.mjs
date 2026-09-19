@@ -263,6 +263,7 @@ export function renderTendenciasBody(container) {
   var hiddenChipN = tc.tendHiddenChipDescriptors().length;
   var toolbarOpts = {
     showGasoExtended: !isAbgAnalysisHidden() && tc.historyHasGasoForExtended(historyDesc),
+    showDynamicTable: historyDesc.length >= 2,
   };
   var toolbarHtml = tc.buildTendInlineControlsHtml(hiddenChipN, toolbarOpts);
   if (!avail.seriesAvail.length) {

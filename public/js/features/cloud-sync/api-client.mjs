@@ -1,6 +1,7 @@
 const API_PREFIX = '/api/sync/v1';
 
 import { cloudSyncHttpFetch } from './api-transport.mjs';
+import { getCachedAppVersion } from './app-version.mjs';
 import { getCachedRoomDek } from './room-dek.mjs';
 import { encryptOpsForPush, decryptOpsFromPull, decryptRoomStateFromPull } from './cloud-sync-crypto-wire.mjs';
 
@@ -48,6 +49,8 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
     const baseUrl = String(getBaseUrl() || '').replace(/\/$/, '');
     assertCloudBaseUrl(baseUrl);
     const headers = { Accept: 'application/json' };
+    const appVersion = getCachedAppVersion();
+    if (appVersion) headers['X-App-Version'] = appVersion;
     const token = getToken();
     if (token) headers.Authorization = `Bearer ${token}`;
     const adminKey = getAdminKey?.();
@@ -68,8 +71,8 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
   return {
     ping: () => req('/ping'),
     meta: () => req('/meta'),
-    register: (body) => req('/auth/register', { method: 'POST', body }),
-    login: (body) => req('/auth/login', { method: 'POST', body }),
+    register: (body) => req('/auth/register', { method: 'POST', body: { ...body, appVersion: getCachedAppVersion() } }),
+    login: (body) => req('/auth/login', { method: 'POST', body: { ...body, appVersion: getCachedAppVersion() } }),
     logout: () => req('/auth/logout', { method: 'POST', body: {} }),
     recover: (body) => req('/auth/recover', { method: 'POST', body }),
     regenerateRecovery: () =>
@@ -84,6 +87,9 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
     leaveRoom: (roomId) => req(`/rooms/${roomId}/leave`, { method: 'POST', body: {} }),
     getRoomDek: (roomId) => req(`/rooms/${roomId}/dek`),
     setRoomDek: (roomId, body) => req(`/rooms/${roomId}/dek`, { method: 'PUT', body }),
+    rotateRoomDek: (roomId, body) => req(`/rooms/${roomId}/dek/rotate`, { method: 'PUT', body }),
+    getAdminRoomDek: (roomId) => req(`/rooms/${roomId}/dek/admin`),
+    setAdminRoomDek: (roomId, body) => req(`/rooms/${roomId}/dek/admin`, { method: 'PUT', body }),
     pull: async (roomId, since, opts) => {
       const q = new URLSearchParams({ since: String(since ?? 0) });
       if (opts?.mobile) q.set('mobile', '1');
@@ -125,5 +131,6 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
     adminResetPassword: (userId, body) =>
       req(`/admin/users/${userId}/reset-password`, { method: 'POST', body }),
     adminDeleteUser: (userId) => req(`/admin/users/${userId}`, { method: 'DELETE' }),
+    adminVersionStats: () => req('/admin/version-stats'),
   };
 }

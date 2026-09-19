@@ -28,6 +28,7 @@ import {
 } from "./medications-runtime-state.mjs";
 import { setMedActiveLeadVisible } from "./medications-utils.mjs";
 import { renderCardioManejoCards, clearCardioManejoCards } from "./cardio/medications-cardio-mount.mjs";
+import { isInterconsultaModeActive } from "./cardio/rplushf-gates.mjs";
 
 function getMedPanelDom() {
   return {
@@ -38,7 +39,12 @@ function getMedPanelDom() {
     outCard: document.getElementById("med-output-section"),
     turnoTitleEl: document.getElementById("med-turno-title-text"),
     turnoApoyoEl: document.getElementById("med-turno-apoyo"),
+    turnoCardEl: document.getElementById("med-turno-card"),
   };
+}
+
+function syncMedTurnoCardVisibility(els) {
+  if (els.turnoCardEl) els.turnoCardEl.hidden = isInterconsultaModeActive();
 }
 
 var MED_TURNO_TITLE_DEFAULT = "Medicamentos del turno";
@@ -194,6 +200,7 @@ export function renderMedRecetaPanel() {
     return;
   }
   var els = getMedPanelDom();
+  syncMedTurnoCardVisibility(els);
   if (!els.hintEl || !els.listEl) return;
   bustMedPanelCacheIfLegacyDestUi(els.listEl);
   var cacheKey = buildMedPanelCacheKey(activeId);

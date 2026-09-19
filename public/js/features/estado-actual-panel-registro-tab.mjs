@@ -10,7 +10,7 @@ export const REGISTRO_TAB_SKIP_SELECTOR = [
   '#ea-add-glu',
   '#ea-add-bomba',
   '#ea-bomba-enabled',
-  '[data-ea-io-nc]',
+  '[data-ea-io-turno-nc]',
   '.ea-registro-paste-btn',
 ].join(',');
 
@@ -55,7 +55,15 @@ export function getRegistroTabSpineElements(form) {
     });
   }
 
-  ['ea-io-ing', 'ea-io-evac', 'ea-io-egr'].forEach(function (id) {
+  [
+    'ea-io-ing-t1',
+    'ea-io-ing-t2',
+    'ea-io-ing-t3',
+    'ea-io-egr-t1',
+    'ea-io-egr-t2',
+    'ea-io-egr-t3',
+    'ea-io-evac',
+  ].forEach(function (id) {
     var el = form.querySelector('#' + id);
     if (el && isFocusableVisible_(el)) out.push(/** @type {HTMLElement} */ (el));
   });

@@ -64,9 +64,6 @@ export async function assignDraftToTeam(api, draft, resolvedUserId) {
   if (!draft.teamId) {
     return { ok: true, assigned: false, warnings: [] };
   }
-  if (!draft.subAreaFraction) {
-    return { ok: false, error: 'Elige el ciclo de @' + draft.username + '.' };
-  }
   if (typeof api.dbClinicalTeamsMemberAdd !== 'function') {
     return { ok: false, error: 'No se pudo asignar (base clínica no disponible).' };
   }
@@ -75,7 +72,6 @@ export async function assignDraftToTeam(api, draft, resolvedUserId) {
     teamId: draft.teamId,
     userId: resolvedUserId,
     username: resolvedUserId ? undefined : draft.username,
-    subAreaFraction: draft.subAreaFraction,
     exclusive: true,
   });
   if (!res || res.ok === false) {

@@ -1,10 +1,6 @@
-import {
-  shouldFilterPatientsByJoinedTeam,
-  shouldUseElevatedPatientCensus,
-} from './clinical-privileges.mjs';
+import { shouldUseElevatedPatientCensus } from './clinical-privileges.mjs';
 import { isPatientReadableInClinicalScope } from './clinico-access.mjs';
 import { patientForScopeEvaluate } from './features/patients-clinical-filter.mjs';
-import { isPatientVisibleOnMobileTeamMirror } from './mobile-team-patient-scope.mjs';
 
 /**
  * Whether a patient chart should sync over LAN for the current clinical user.
@@ -15,9 +11,6 @@ import { isPatientVisibleOnMobileTeamMirror } from './mobile-team-patient-scope.
  */
 export function isPatientInLanTeamSyncScope(user, patient, activeGuardia = null, context = null) {
   if (!user?.user_id || !patient?.id) return false;
-  if (shouldFilterPatientsByJoinedTeam(user)) {
-    return isPatientVisibleOnMobileTeamMirror(user, patient, context, activeGuardia);
-  }
   if (shouldUseElevatedPatientCensus(user)) return true;
   return isPatientReadableInClinicalScope(user, patient, activeGuardia, context);
 }

@@ -49,7 +49,7 @@ function readUsernameFormFields() {
   return {
     username: normalizeUsername(String(document.getElementById('onboard-username')?.value || '')),
     name: String(document.getElementById('onboard-clinical-name')?.value || '').trim(),
-    rank: String(document.getElementById('onboard-rank')?.value || 'R1'),
+    rank: 'Team',
     sala: String(document.getElementById('onboard-sala')?.value || '').trim(),
     shiftPin: String(document.getElementById('onboard-shift-pin')?.value || '').trim(),
   };
@@ -269,7 +269,7 @@ function applyResumedProfileToSession(name, rank, sala) {
 function readResumedFormFields() {
   return {
     name: String(document.getElementById('onboard-clinical-name')?.value || '').trim(),
-    rank: String(document.getElementById('onboard-rank')?.value || 'R1'),
+    rank: 'Team',
     sala: String(document.getElementById('onboard-sala')?.value || '').trim(),
   };
 }
@@ -362,7 +362,7 @@ export async function handleLocalOnlyConfirmClick() {
     confirmBtn.textContent = 'Preparando…';
   }
   const settings = readRpcSettings();
-  const rank = String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'R1');
+  const rank = String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'Team');
   try {
     const result = await submitLocalOnlyProfile(defaultLocalOnlyDisplayName(), rank, errEl);
     if (!result.ok) return;

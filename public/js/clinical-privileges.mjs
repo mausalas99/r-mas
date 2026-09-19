@@ -3,25 +3,18 @@
 import { isWebClinicalClient } from './db-storage-bridge.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
 
-/** iPad/PWA or any browser LAN session — never full Admin/R4 ward census. */
+/** iPad/PWA or any browser LAN session — never full Admin ward census. */
 export function shouldEnforceTeamPatientMirror() {
   return isMobileWeb() || isWebClinicalClient();
 }
 
 /**
- * Desktop Nube used to hard-hide non-joined-team charts (broke visibility after team
- * archive + admin reassignment). Desktop now shows the full census and narrows via
- * Filtros (default sala + equipo). Kept as a named policy hook for tests/callers.
- * @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} [user]
+ * No team-based visibility partition anywhere (Admin/Team both see every patient,
+ * on every device). Kept as a named policy hook for existing callers/tests.
+ * @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} [_user]
  */
-export function shouldUseCloudTeamPatientMirror(_user) {
+export function shouldFilterPatientsByJoinedTeam(_user) {
   return false;
-}
-
-/** Sidebar hard team mirror — iPad/PWA only (desktop uses Filtros instead). */
-export function shouldFilterPatientsByJoinedTeam(user) {
-  if (shouldEnforceTeamPatientMirror()) return true;
-  return shouldUseCloudTeamPatientMirror(user);
 }
 
 /**
@@ -34,8 +27,6 @@ export function shouldUseDesktopCensusWithFilters(user) {
   return true;
 }
 
-const CLINICAL_RANKS = new Set(['R1', 'R2', 'R3', 'R4']);
-
 /** @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user */
 export function hasProgramAdminPrivileges(user) {
   if (!user) return false;
@@ -43,38 +34,24 @@ export function hasProgramAdminPrivileges(user) {
   return String(user.rank || '') === 'Admin';
 }
 
-/** @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user */
-export function effectiveClinicalRank(user) {
-  const rank = String(user?.rank || 'R1');
-  if (CLINICAL_RANKS.has(rank)) return rank;
-  if (rank === 'Admin') return 'R1';
-  return 'R1';
-}
-
-/** @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user */
+/**
+ * Rotation-roster admin (Nueva rotación, equipos queue admin actions): Admin only.
+ * @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user
+ */
 export function canConfigureRotation(user) {
-  const rank = effectiveClinicalRank(user);
-  if (rank === 'R4') return true;
   return hasProgramAdminPrivileges(user);
 }
 
-/** @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user */
-export function canManageInternoQr(user) {
-  return canConfigureRotation(user);
-}
-
 /**
- * Cross-sala team browse and global patient census (R4, Admin, program admin).
+ * Cross-team browse and global patient census: Admin or program admin.
  * @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user
  */
 export function hasElevatedTeamPrivileges(user) {
-  if (!user) return false;
-  if (hasProgramAdminPrivileges(user)) return true;
-  return effectiveClinicalRank(user) === 'R4';
+  return hasProgramAdminPrivileges(user);
 }
 
 /**
- * Desktop elevated census (R4/Admin): full ward + Filtros censo.
+ * Desktop elevated census (Admin): full census + Filtros censo.
  * iPad/PWA always uses joined-team scope regardless of rank.
  * @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user
  */
@@ -84,12 +61,9 @@ export function shouldUseElevatedPatientCensus(user) {
   return true;
 }
 
-/** Filtros censo toolbar — desktop always; iPad/PWA when team-mirrored. */
+/** Filtros censo toolbar — every signed-in user sees the full census, so always show it. */
 export function shouldShowClinicalCensusFilters(user) {
-  if (!user?.user_id) return false;
-  if (shouldUseDesktopCensusWithFilters(user)) return true;
-  if (shouldUseElevatedPatientCensus(user)) return true;
-  return shouldFilterPatientsByJoinedTeam(user);
+  return !!user?.user_id;
 }
 
 /** @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user */
@@ -102,7 +76,7 @@ export function canManageTeamRoster(user) {
   return hasElevatedTeamPrivileges(user);
 }
 
-/** Remove LAN directory users from the clinical DB (R4, Admin, program admin). */
+/** Remove LAN directory users from the clinical DB (Admin, program admin). */
 export function canDeleteDirectoryUser(user) {
   return canManageTeamRoster(user);
 }

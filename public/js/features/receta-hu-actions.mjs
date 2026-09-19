@@ -1,4 +1,5 @@
 import { rt, aid, persistDraft, consultServices, saveConsultServices, readDraftFromDom } from './receta-hu-shared.mjs';
+import { askTextPrompt } from '../text-prompt-modal.mjs';
 import { buildProximaCitaText } from '../receta-hu-core.mjs';
 import {
   renderMedList,
@@ -171,10 +172,14 @@ export function recetaHuRemoveProximaRow(idx) {
   renderProximaCitaList(recetaHuRoot(), draft.proximasCitas);
 }
 
-export function recetaHuAddConsultService() {
+export async function recetaHuAddConsultService() {
   var sel = document.getElementById('receta-hu-consult-servicio');
   if (!sel) return;
-  var name = window.prompt('Nombre del servicio para el menú (ej. Nefrología):', sel.value || '');
+  var name = await askTextPrompt({
+    title: 'Nuevo servicio',
+    message: 'Nombre del servicio para el menú (ej. Nefrología):',
+    defaultValue: sel.value || '',
+  });
   if (!name) return;
   var trimmed = String(name).trim();
   if (!trimmed) return;

@@ -46,6 +46,20 @@ function getStep(mount) {
 
 function setStep(mount, step) {
   stepByMount.set(mount, Math.max(0, Math.min(EVALUACION_INICIAL_STEP_COUNT - 1, step)));
+  setModal(mount, null, 'D');
+}
+
+// Which Exploración-step sub-modal (US pulmonar / Rx tórax) is open per
+// mount, plus US pulmonar's active side tab. Same per-mount-WeakMap pattern
+// as `stepByMount` above.
+var modalByMount = new WeakMap();
+
+function getModal(mount) {
+  return modalByMount.get(mount) || { modal: null, side: 'D' };
+}
+
+function setModal(mount, modal, side) {
+  modalByMount.set(mount, { modal: modal || null, side: side === 'I' ? 'I' : 'D' });
 }
 
 function activePatient() {
@@ -176,6 +190,40 @@ function wireRxTorax(mount, patient) {
   }
 }
 
+// US pulmonar / Rx tórax cards (Exploración step) open their fields in a
+// modal instead of rendering inline (see `explorationModalHtml` in the html
+// file) — this just toggles `modalByMount` and re-renders; the actual field
+// wiring (`wireUsPulmonar`/`wireRxTorax` below) already works on whatever is
+// in `mount`, modal or not, since it's all one `querySelectorAll(mount, ...)`.
+function wireExplorationModal(mount) {
+  mount.querySelectorAll('[data-hf-ei-modal-open]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      setModal(mount, el.getAttribute('data-hf-ei-modal-open'), 'D');
+      renderEvaluacionInicialPanel(mount);
+    });
+  });
+  var closeBtn = mount.querySelector('[data-hf-ei-modal-action="close"]');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function () {
+      setModal(mount, null);
+      renderEvaluacionInicialPanel(mount);
+    });
+  }
+  var backdrop = mount.querySelector('[data-hf-ei-modal-backdrop]');
+  if (backdrop) {
+    backdrop.addEventListener('click', function () {
+      setModal(mount, null);
+      renderEvaluacionInicialPanel(mount);
+    });
+  }
+  mount.querySelectorAll('[data-hf-ei-uspulmonar-side]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      setModal(mount, getModal(mount).modal, el.getAttribute('data-hf-ei-uspulmonar-side'));
+      renderEvaluacionInicialPanel(mount);
+    });
+  });
+}
+
 function wireCanonicalCardioFields(mount, patient) {
   mount.querySelectorAll('[data-ea-cardio]').forEach(function (el) {
     el.addEventListener('change', function () {
@@ -259,6 +307,14 @@ function wireStepNav(mount) {
       renderEvaluacionInicialPanel(mount);
     });
   }
+  // Step pills — jump directly to any step (no linear gate), same
+  // setStep()/render mechanism as Atrás/Siguiente above.
+  mount.querySelectorAll('[data-hf-ei-step-jump]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      setStep(mount, Number(el.getAttribute('data-hf-ei-step-jump')));
+      renderEvaluacionInicialPanel(mount);
+    });
+  });
 }
 
 function wireEvaluacionInicialForm(mount, patient) {
@@ -275,6 +331,7 @@ function wireEvaluacionInicialForm(mount, patient) {
   wireMedicamentosPrevios(mount, patient);
   wireCongestionSync(mount, patient);
   wireStepNav(mount);
+  wireExplorationModal(mount);
 }
 
 /**
@@ -289,6 +346,6 @@ export function renderEvaluacionInicialPanel(mount) {
   }
   ensureCardio(patient);
   patient.cardio.evaluacionInicial = normalizeEvaluacionInicial(patient.cardio.evaluacionInicial);
-  mount.innerHTML = buildEvaluacionInicialHtml(patient.cardio.evaluacionInicial, patient.cardio, getStep(mount));
+  mount.innerHTML = buildEvaluacionInicialHtml(patient.cardio.evaluacionInicial, patient.cardio, getStep(mount), getModal(mount));
   wireEvaluacionInicialForm(mount, patient);
 }

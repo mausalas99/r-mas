@@ -38,7 +38,7 @@ describe('clinical-onboarding gate flow', () => {
     try {
       clinicalSessionContext.user = {
         user_id: 'r1-joined',
-        rank: 'R1',
+        rank: 'Team',
         username: 'drmauricios',
         clinical_name: 'Dr. Mauricio',
         sala: 'Sala 2',
@@ -95,8 +95,8 @@ describe('clinical-onboarding gate flow', () => {
     };
     try {
       clinicalSessionContext.user = {
-        user_id: 'r1-1',
-        rank: 'R1',
+        user_id: 'team-1',
+        rank: 'Team',
         username: 'drmendoza',
         clinical_name: 'Dr Mendoza',
         sala: 'Sala 1',
@@ -109,7 +109,7 @@ describe('clinical-onboarding gate flow', () => {
         {
           team_id: 't1',
           name: 'Dr. Gutiérrez',
-          members: [{ user_id: 'r1-1', rank: 'R1' }],
+          members: [{ user_id: 'team-1', rank: 'Team' }],
         },
       ];
       assert.equal(needsTeamOnboardingStep(), false);

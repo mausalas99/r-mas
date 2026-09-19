@@ -1,7 +1,7 @@
 const SETTINGS_KEY = 'rpc-settings';
 /** Deployed Free-pilot Worker (override in ⇄ → Avanzado). */
 export const DEFAULT_CLOUD_SYNC_URL =
-  'https://rplus-sync.rmas-workersdev.workers.dev';
+  'https://rplus-hf-sync.rmas-workersdev.workers.dev';
 const TOKEN_KEY = 'rpc-cloud-sync-token';
 const ROOM_ID_KEY = 'rpc-cloud-sync-room-id';
 const REVISION_KEY = 'rpc-cloud-sync-revision';

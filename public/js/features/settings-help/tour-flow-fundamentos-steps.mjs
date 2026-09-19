@@ -2,8 +2,13 @@
 import { stepRequiresUserAction } from '../../tour-targets.mjs';
 import { getUiDensity } from '../chrome.mjs';
 import { hideTourDock } from './tour-engine.mjs';
-import { LIVESYNC_BTN_COPY, MOBILE_SCOPE_COPY } from './tour-flow-guardia-copy.mjs';
 import { tourState } from './tour-state.mjs';
+
+export const MOBILE_SCOPE_COPY =
+  'La app móvil (iPad/Safari) muestra el expediente esencial; no incluye Ajustes, exportaciones Word ni todas las pestañas de escritorio.';
+
+export const LIVESYNC_BTN_COPY =
+  '<strong>R+ Cloud</strong> (icono <strong>⇄</strong> / Wi‑Fi junto a Ajustes)';
 
 function showNext(nextBtn, label) {
   nextBtn.style.display = '';

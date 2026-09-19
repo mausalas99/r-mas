@@ -167,16 +167,14 @@ describe('clinical-onboarding helpers', () => {
     assert.match(gatesSrc, /hasTrustedCloudRememberMe/);
   });
 
-  it('needsTeamOnboarding is false for R4 and Admin without a team', () => {
+  it('needsTeamOnboarding is false for Admin without a team, true for Team', () => {
     const prevUser = clinicalSessionContext.user;
     const prevTeams = clinicalSessionContext.teams;
     try {
-      clinicalSessionContext.user = { user_id: 'r4-1', rank: 'R4' };
+      clinicalSessionContext.user = { user_id: 'adm-1', rank: 'Admin' };
       clinicalSessionContext.teams = [];
       assert.equal(needsTeamOnboarding(), false);
-      clinicalSessionContext.user = { user_id: 'adm-1', rank: 'Admin' };
-      assert.equal(needsTeamOnboarding(), false);
-      clinicalSessionContext.user = { user_id: 'r2-1', rank: 'R2' };
+      clinicalSessionContext.user = { user_id: 'team-1', rank: 'Team' };
       assert.equal(needsTeamOnboarding(), true);
     } finally {
       clinicalSessionContext.user = prevUser;

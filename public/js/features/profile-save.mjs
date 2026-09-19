@@ -17,15 +17,10 @@ function applyProfileFormToSettings(st) {
   st.doctorName = readProfileField("profile-doctor");
   st.cedulaProfesional = readProfileField("profile-cedula");
   st.profesorName = readProfileField("profile-profesor");
-  st.residenteR2 = readProfileField("profile-r2");
-  st.residenteR1a = readProfileField("profile-r1a");
-  st.residenteR1b = readProfileField("profile-r1b");
-  st.residenteR1 = st.residenteR1a;
-  st.censoSala = readProfileField("profile-censo-sala");
-  st.censoTorre = st.censoSala === "torre" ? "Torre HU" : "";
+  st.censoEquipo = readProfileField("profile-censo-equipo");
+  st.censoJefe = readProfileField("profile-censo-jefe");
   st.censoFimiLabel = readProfileField("profile-censo-fimi-label");
-  st.profesorName =
-    readProfileField("profile-maestro") || readProfileField("profile-profesor");
+  st.censoFiuxLabel = readProfileField("profile-censo-fiux-label");
   st.grado = readProfileField("profile-grado");
   st.quickOutputFormat = normalizeQuickOutputFormat(st.quickOutputFormat);
 }

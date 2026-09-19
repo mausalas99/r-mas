@@ -5,6 +5,7 @@ const LS_GROUP_PANEL_ORDER = 'rpc-tend-group-panel-order';
 const LS_TEND_CARD_ORDER = 'rpc-tend-card-order';
 const LS_GROUP_PANEL_HIDDEN = 'rpc-tend-group-panel-hidden';
 const LS_GROUP_PANEL_TITLES = 'rpc-tend-group-panel-titles';
+const LS_GROUP_EXTRA_FIELDS = 'rpc-tend-group-extra-fields';
 
 export const DEFAULT_PANEL_LABELS = {
   gases: 'Gasometría',
@@ -63,6 +64,25 @@ export function writeSeriesColor(sectionKey, fieldKey, hex) {
 
 function groupKey(patientId, sectionKey) {
   return String(patientId) + '|' + String(sectionKey);
+}
+
+/** Analitos de otras secciones agregados a la tabla combinada de este estudio. */
+export function readGroupExtraFields(patientId, sectionKey) {
+  var map = readJson(LS_GROUP_EXTRA_FIELDS, {});
+  var arr = map[groupKey(patientId, sectionKey)];
+  return Array.isArray(arr)
+    ? arr.filter(function (p) {
+        return p && p.sectionKey && p.fieldKey;
+      })
+    : [];
+}
+
+export function writeGroupExtraFields(patientId, sectionKey, pairs) {
+  var map = readJson(LS_GROUP_EXTRA_FIELDS, {});
+  map[groupKey(patientId, sectionKey)] = (pairs || []).map(function (p) {
+    return { sectionKey: p.sectionKey, fieldKey: p.fieldKey };
+  });
+  writeJson(LS_GROUP_EXTRA_FIELDS, map);
 }
 
 export function readGroupVisibleFields(patientId, sectionKey) {

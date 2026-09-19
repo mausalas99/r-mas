@@ -21,13 +21,6 @@ export async function refreshDesktopPatientListAfterScopePrune() {
   } catch {
     /* patients UI optional */
   }
-  try {
-    const { renderGuardiaCensusGrid } = await import('./guardia-grid.mjs');
-    const { rt } = await import('../features/patients-runtime-state.mjs');
-    renderGuardiaCensusGrid(rt.getSettings());
-  } catch {
-    /* guardia optional */
-  }
 }
 
 /** Prune + one sidebar refresh after LAN scope/patients settle (avoids 3↔11 flash). */

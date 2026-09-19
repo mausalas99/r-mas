@@ -10,7 +10,7 @@
     </header>
     <div class="settings-dropdown-body" id="settings-dropdown-scroll">
       <div id="settings-clinical-sync-mode" class="settings-clinical-sync-mode" hidden>
-        <p class="settings-acc-hint settings-clinical-sync-mode-lead">R+ está en modo <strong>solo este equipo</strong> (para médicos ajenos a medicina interna): sin ⇄ LiveSync, Mi rotación ni sala compartida.</p>
+        <p class="settings-acc-hint settings-clinical-sync-mode-lead">R+ está en modo <strong>solo este equipo</strong> (para médicos fuera de este equipo): sin ⇄ LiveSync, Mi rotación ni sala compartida.</p>
         <button type="button" class="btn-settings-row" onclick="enableClinicalLanFromSettings()">Activar guardia con R+ Cloud…</button>
       </div>
 
@@ -54,7 +54,7 @@
             <button type="button" class="settings-theme-btn" id="settings-motion-expresivo" onclick="setMotionMode('expresivo')" data-i18n="settings.motionExpresivo">Expresivo</button>
           </div>
           </div>
-          <p class="settings-form-foot overview-hint settings-acc-hint" data-i18n="settings.appearanceFoot">⌘G/I/S cambian modo Guardia/Inter/Sala. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.</p>
+          <p class="settings-form-foot overview-hint settings-acc-hint" data-i18n="settings.appearanceFoot">⌘I/S cambian modo Inter/Sala. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.</p>
         </div>
       </details>
 
@@ -109,15 +109,6 @@
               <label class="settings-card__action settings-card__toggle-label" for="settings-hide-listado-ai-prompt">
                 <input type="checkbox" class="settings-card__toggle" id="settings-hide-listado-ai-prompt" onchange="setHideListadoProblemasAiPrompt(this.checked)">
               </label>
-            </div>
-            <div class="settings-card" id="btn-export-censo-settings-row" style="display:none;">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Exportar censo de guardia (PDF)</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight" id="btn-export-censo-settings-hint">Tabla landscape con todos los pacientes activos (diagnósticos en Datos del paciente).</p>
-              </div>
-              <div class="settings-card__action">
-                <button type="button" class="btn-settings-row" id="btn-export-censo-settings" onclick="closeSettingsDropdown(); exportCensoPdfFromHelp();">Exportar censo de guardia (PDF)…</button>
-              </div>
             </div>
             <div class="settings-card-stack__foot">
               <p class="overview-hint" data-i18n="settings.docsFolderHint">Los .docx generados se guardan aquí (si no eliges carpeta, se usa Descargas).</p>
@@ -444,6 +435,15 @@
               </div>
               <div class="settings-card__action">
                 <button type="button" class="btn-settings-row" onclick="exportClinicalDbBackupDb()">Exportar copia .db cifrada…</button>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="settings-card__copy">
+                <p class="settings-card__title">Código de administración</p>
+                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Requerido para dar o quitar rango Admin. Guardado solo en este equipo.</p>
+              </div>
+              <div class="settings-card__action">
+                <button type="button" class="btn-settings-row" onclick="changeAdminAccessCode()">Cambiar código de administración…</button>
               </div>
             </div>
           </div>

@@ -1,8 +1,8 @@
 /**
- * Wires clinical access modules into the running app (Guardia grid, session, signing).
+ * Wires clinical access modules into the running app (session, signing, scope).
  * Thin barrel — implementation lives under ./clinical-access-runtime/.
  */
-export { clinicalSessionContext } from './clinical-session-context.mjs';
+export { clinicalSessionContext, buildGuardiasMap } from './clinical-session-context.mjs';
 
 export { markClinicalAccessBootReady, waitForClinicalAccessReady } from './clinical-access-runtime/boot-ready.mjs';
 
@@ -20,14 +20,6 @@ export {
 } from './clinical-access-runtime/scope-db.mjs';
 
 export { getClinicalScopeContextForEvaluate } from './clinical-access-runtime/scope-evaluate.mjs';
-
-export {
-  mapPatientForGuardiaGrid,
-  buildGuardiasMap,
-  syncGuardiaCensusPanelVisibility,
-  refreshGuardiaCensusFromDb,
-  renderGuardiaCensusGrid,
-} from './clinical-access-runtime/guardia-grid.mjs';
 
 export {
   resolveClinicalRank,

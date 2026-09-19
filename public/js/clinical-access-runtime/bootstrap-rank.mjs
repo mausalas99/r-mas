@@ -1,10 +1,11 @@
+import { CLINICAL_RANKS } from '../../../lib/clinical-ranks.mjs';
+
 /**
  * @param {Record<string, unknown>|null|undefined} settings
  * @param {string} [clientId]
  */
 export function resolveClinicalRank(settings, clientId) {
   void clientId;
-  const rank = settings && settings.clinicalRank ? String(settings.clinicalRank) : 'R1';
-  const allowed = new Set(['R1', 'R2', 'R3', 'R4', 'Admin']);
-  return allowed.has(rank) ? rank : 'R1';
+  const rank = settings && settings.clinicalRank ? String(settings.clinicalRank) : 'Team';
+  return CLINICAL_RANKS.includes(rank) ? rank : 'Team';
 }

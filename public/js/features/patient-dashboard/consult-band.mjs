@@ -1,11 +1,13 @@
 /**
- * Consulta Externa mode — HF follow-up band shown above the Resumen patient
- * summary (design handoff screen 10b). Previously rendered IM interconsult
+ * Consulta Externa mode — HF follow-up band shown inline in the interconsulta
+ * top bar (design handoff screen 10b). Previously rendered IM interconsult
  * fields (servicio solicitante/motivo/seguimiento); now shows the cardiology
  * outpatient follow-up snapshot instead: fase de seguimiento (editable),
- * fenotipo/etiología, último internamiento, and última consulta — sourced
- * from `patient.cardio` (top-level identity fields + `cardio.consultas[]`,
- * see lib/cardio/consulta-seguimiento.mjs).
+ * último internamiento, and última consulta — sourced from `patient.cardio`
+ * (`cardio.consultas[]`, see lib/cardio/consulta-seguimiento.mjs).
+ * Fenotipo/etiología is deliberately NOT repeated here — it already renders
+ * as chips right under the patient name in Resumen (renderCardioIdentityHtml
+ * in dashboard-html.mjs).
  *
  * `getConsultInfo`/`setConsultInfo` and the old `patient.consultInfo` JSON
  * field are kept for backward compat (existing callers/tests) but are no
@@ -110,8 +112,6 @@ export function buildHfFollowUpBandModel(patient) {
   var latest = latestConsultaEntry(cardio);
   return {
     faseSeguimiento: String((latest && latest.faseSeguimiento) || ''),
-    fenotipo: String(cardio.fenotipo || ''),
-    etiologia: String(cardio.etiologia || ''),
     ultimoInternamientoFecha: String((latest && latest.ultimoInternamientoFecha) || ''),
     ultimoInternamientoCausa: String((latest && latest.ultimoInternamientoCausa) || ''),
     ultimaConsultaFecha: String((latest && latest.date) || ''),
@@ -156,41 +156,32 @@ function faseSelectOptionsHtml(currentValue) {
 
 export function renderHfFollowUpBandHtml(model) {
   var m = model || {};
-  var empty = '<span class="ic-consult-empty">Sin dato</span>';
-  var fenotipoEtiologia =
-    m.fenotipo || m.etiologia
-      ? escHtml(m.fenotipo || '—') + ' &middot; ' + escHtml(m.etiologia || '—')
-      : empty;
+  var empty = '<span class="hf-follow-band-empty">Sin dato</span>';
   var ultimoInternamiento = m.ultimoInternamientoFecha
     ? escHtml(m.ultimoInternamientoFecha) +
       (m.ultimoInternamientoCausa ? ' — ' + escHtml(m.ultimoInternamientoCausa) : '')
     : empty;
   var ultimaConsulta = m.ultimaConsultaFecha ? escHtml(m.ultimaConsultaFecha) : empty;
   return (
-    '<div class="ic-consult-band">' +
-    '<div class="ic-consult-field">' +
-    '<span class="ic-consult-label">Fase de seguimiento</span>' +
-    '<select class="ic-consult-fase-select" data-hf-fase-select>' +
+    '<div class="hf-follow-band">' +
+    '<div class="hf-follow-band-fields">' +
+    '<div class="hf-follow-band-field">' +
+    '<span class="hf-follow-band-label">Fase de seguimiento</span>' +
+    '<select class="hf-follow-band-fase-select" data-hf-fase-select>' +
     faseSelectOptionsHtml(String(m.faseSeguimiento || '')) +
     '</select></div>' +
-    '<div class="ic-consult-field">' +
-    '<span class="ic-consult-label">Fenotipo / Etiología</span>' +
-    '<span class="ic-consult-value">' +
-    fenotipoEtiologia +
-    '</span></div>' +
-    '<div class="ic-consult-field">' +
-    '<span class="ic-consult-label">Último internamiento</span>' +
-    '<span class="ic-consult-value">' +
+    '<div class="hf-follow-band-field">' +
+    '<span class="hf-follow-band-label">Último internamiento</span>' +
+    '<span class="hf-follow-band-value">' +
     ultimoInternamiento +
     '</span></div>' +
-    '<div class="ic-consult-field">' +
-    '<span class="ic-consult-label">Última consulta</span>' +
-    '<span class="ic-consult-value">' +
+    '<div class="hf-follow-band-field">' +
+    '<span class="hf-follow-band-label">Última consulta</span>' +
+    '<span class="hf-follow-band-value">' +
     ultimaConsulta +
     '</span></div>' +
-    '<div class="ic-consult-field ic-consult-field--action">' +
-    '<button type="button" class="wb-btn wb-btn-secondary" data-hf-open-consulta-ic>Abrir consulta de hoy</button>' +
     '</div>' +
+    '<button type="button" class="wb-btn wb-btn-primary hf-follow-band-action" data-hf-open-consulta-ic>Abrir consulta de hoy</button>' +
     '</div>'
   );
 }

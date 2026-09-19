@@ -86,15 +86,13 @@ describe('buildHfFollowUpBandModel', () => {
     var model = buildHfFollowUpBandModel({});
     assert.deepEqual(model, {
       faseSeguimiento: '',
-      fenotipo: '',
-      etiologia: '',
       ultimoInternamientoFecha: '',
       ultimoInternamientoCausa: '',
       ultimaConsultaFecha: '',
     });
   });
 
-  it('reads fenotipo/etiología from top-level cardio and the rest from the latest consulta entry', () => {
+  it('reads faseSeguimiento and dates from the latest consulta entry', () => {
     var patient = {
       cardio: {
         fenotipo: 'HFpEF',
@@ -111,8 +109,8 @@ describe('buildHfFollowUpBandModel', () => {
       },
     };
     var model = buildHfFollowUpBandModel(patient);
-    assert.equal(model.fenotipo, 'HFpEF');
-    assert.equal(model.etiologia, 'Hipertensiva');
+    assert.equal(model.fenotipo, undefined);
+    assert.equal(model.etiologia, undefined);
     assert.equal(model.faseSeguimiento, 'Optimización/estable');
     assert.equal(model.ultimoInternamientoFecha, '2026-07-10');
     assert.equal(model.ultimoInternamientoCausa, 'Descompensación congestiva');
@@ -121,11 +119,9 @@ describe('buildHfFollowUpBandModel', () => {
 });
 
 describe('renderHfFollowUpBandHtml', () => {
-  it('renders the fase select, chips, dates and the "Abrir consulta de hoy" button', () => {
+  it('renders the fase select, dates and the "Abrir consulta de hoy" button — no fenotipo/etiología (already shown in Resumen)', () => {
     var html = renderHfFollowUpBandHtml({
       faseSeguimiento: 'Optimización/estable',
-      fenotipo: 'HFrEF',
-      etiologia: 'Isquémica',
       ultimoInternamientoFecha: '2026-07-10',
       ultimoInternamientoCausa: 'Descompensación congestiva',
       ultimaConsultaFecha: '2026-08-01',
@@ -133,14 +129,17 @@ describe('renderHfFollowUpBandHtml', () => {
     assert.match(html, /Fase de seguimiento/);
     assert.match(html, /data-hf-fase-select/);
     assert.match(html, /Optimización\/estable/);
-    assert.match(html, /HFrEF/);
-    assert.match(html, /Isquémica/);
     assert.match(html, /2026-07-10/);
     assert.match(html, /Descompensación congestiva/);
     assert.match(html, /2026-08-01/);
     assert.match(html, /Abrir consulta de hoy/);
     assert.doesNotMatch(html, /Servicio solicitante/);
     assert.doesNotMatch(html, /Motivo de consulta/);
+    assert.doesNotMatch(html, /Fenotipo/);
+    // Un-boxed header layout: inline fields + a primary action, no legacy card classes.
+    assert.match(html, /class="hf-follow-band"/);
+    assert.match(html, /class="wb-btn wb-btn-primary hf-follow-band-action"/);
+    assert.doesNotMatch(html, /ic-consult/);
   });
 
   it('falls back to "Sin dato" empty states when nothing is on file', () => {
@@ -216,6 +215,6 @@ describe('backward compat: old consultInfo storage still works alongside the new
     });
     // Old storage is untouched by, and does not interfere with, the new band's model.
     var model = buildHfFollowUpBandModel(patient);
-    assert.equal(model.fenotipo, 'HFrEF');
+    assert.equal(model.faseSeguimiento, '');
   });
 });

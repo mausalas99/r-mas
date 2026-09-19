@@ -121,46 +121,6 @@ function wireReleaseNotesDismiss() {
   );
 }
 
-function syncReleaseNotesGuardiaCta() {
-  var actions = document.querySelector('.release-notes-actions');
-  if (!actions) return;
-  var existing = document.getElementById('release-notes-open-guardia-guide');
-  if (existing) existing.remove();
-  var cur = typeof window !== 'undefined' ? window.__RPC_APP_VERSION__ : '';
-  var prev = typeof window !== 'undefined' ? window.__RPC_PREV_APP_VERSION__ : '';
-  if (!cur || !prev) return;
-  void import('../../guardia-v7-gating.mjs').then(function (gating) {
-    void import('../../guardia-v7-progress.mjs').then(function (progress) {
-      if (
-        !gating.shouldOfferGuardiaV7Education({
-          prevVersion: prev,
-          curVersion: cur,
-          needsOnboarding: false,
-          trackComplete: progress.isGuardiaV7TrackComplete(),
-        })
-      ) {
-        return;
-      }
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn-edit-templates release-notes-guardia-guide-btn';
-      btn.id = 'release-notes-open-guardia-guide';
-      btn.textContent = 'Abrir guía de guardia';
-      btn.addEventListener('click', function () {
-        closeReleaseNotes(RELEASE_NOTES_DEV_FORCE_SHOW);
-        void import('./learn-hub.mjs').then(function (hub) {
-          if (typeof hub.openLearnHub === 'function') {
-            hub.openLearnHub({ focusTrack: 'guardia-v7' });
-          }
-        });
-      });
-      var primary = actions.querySelector('.release-notes-dismiss-btn');
-      if (primary) actions.insertBefore(btn, primary);
-      else actions.appendChild(btn);
-    });
-  });
-}
-
 function showReleaseNotesModal(version) {
   wireReleaseNotesDismiss();
   var el = document.getElementById('release-notes-backdrop');
@@ -185,7 +145,6 @@ function showReleaseNotesModal(version) {
       list.appendChild(li);
     });
   }
-  syncReleaseNotesGuardiaCta();
   el.classList.add('open');
   el.setAttribute('aria-hidden', 'false');
   el.setAttribute('data-version', version);

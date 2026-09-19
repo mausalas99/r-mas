@@ -17,7 +17,7 @@ const snapshot = {
     {
       user_id: 'u-r1',
       username: 'jperez',
-      rank: 'R1',
+      rank: 'Team',
       sala: 'Sala 2',
       clinical_name: 'Dr. Perez',
     },
@@ -47,7 +47,6 @@ const snapshot = {
     { patient_id: 'p-other', team_id: 'team-b', effective_at: '2026-01-01T00:00:00.000Z' },
   ],
   team_guardia_today: [],
-  active_guardias: [],
   rotation_cycles: [],
 };
 
@@ -60,13 +59,13 @@ describe('clinical-scope-from-ops', () => {
     assert.equal(row?.user_id, 'u-r1');
   });
 
-  it('builds teams with members and filters patients by joined team', () => {
+  it('builds teams with members and gives a Team-rank user full read on every patient', () => {
     const ctx = buildClinicalScopeContextFromOpsSnapshot(snapshot, {
       enforceTeamPatientScope: true,
     });
     assert.equal(ctx.teams.length, 2);
     assert.equal(ctx.teams[0].members.length, 1);
-    const user = { user_id: 'u-r1', rank: 'R1', sala: 'Sala 2' };
+    const user = { user_id: 'u-r1', rank: 'Team', sala: 'Sala 2' };
     const mine = isReadableInScope(
       user,
       patientForScopeEvaluate({ id: 'p-mine', servicio: 'Sala', sala: 'Sala 2' }),
@@ -80,10 +79,10 @@ describe('clinical-scope-from-ops', () => {
       ctx
     );
     assert.equal(mine, true);
-    assert.equal(other, false);
+    assert.equal(other, true);
   });
 
-  it('admin on mobile scope still filters by joined team', () => {
+  it('Admin has full read on every patient', () => {
     const ctx = buildClinicalScopeContextFromOpsSnapshot(
       {
         ...snapshot,
@@ -114,6 +113,6 @@ describe('clinical-scope-from-ops', () => {
       ctx
     );
     assert.equal(mine, true);
-    assert.equal(other, false);
+    assert.equal(other, true);
   });
 });

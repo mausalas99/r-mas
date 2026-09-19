@@ -16,7 +16,7 @@ describe('teams-roster-manage confirm gating', () => {
   const prevUser = clinicalSessionContext.user;
 
   beforeEach(() => {
-    clinicalSessionContext.user = { user_id: 'u1', rank: 'R2' };
+    clinicalSessionContext.user = { user_id: 'u1', rank: 'Team' };
   });
 
   afterEach(() => {

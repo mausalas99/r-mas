@@ -125,20 +125,6 @@ test('getTourTarget para map_add_patient y map_incomplete', () => {
   assert.match(inc.selector, /m-cuarto/);
 });
 
-test('getTourTarget gv7 trust strip y fin turno en guardia', () => {
-  const trust = getTourTarget('gv7_trust_strip', 'guardia-v7');
-  assert.match(trust.selector, /guardia-trust-strip/);
-  assert.equal(trust.openGuardiaDensity, true);
-  const fin = getTourTarget('gv7_fin_turno', 'guardia-v7');
-  assert.match(fin.selector, /guardia-phase-bar|finalizar-turno/);
-  const rejoin = getTourTarget('gv7_rotacion_rejoin', 'guardia-v7');
-  assert.match(rejoin.selector, /equipo|rotation/);
-  assert.equal(rejoin.openConnection, true);
-  const inherit = getTourTarget('gv7_inherit_patients', 'guardia-v7');
-  assert.match(inherit.selector, /equipo|inherit/);
-  assert.equal(inherit.openConnection, true);
-});
-
 test('stepRequiresUserAction es false para pasos puramente narrativos', () => {
   assert.equal(stepRequiresUserAction('map_sidebar'), false);
   assert.equal(stepRequiresUserAction('map_tabs'), false);

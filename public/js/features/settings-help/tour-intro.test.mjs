@@ -8,7 +8,6 @@ const dir = dirname(fileURLToPath(import.meta.url));
 
 const TOUR_FLOW_PARTS = [
   'tour-flow.mjs',
-  'tour-flow-guardia-copy.mjs',
   'tour-flow-chapter.mjs',
   'tour-flow-render.mjs',
   'tour-flow-navigation.mjs',
@@ -125,22 +124,9 @@ describe('tour intro launch', () => {
     assert.doesNotMatch(main, /tryShowGuidedTourIntroIfNeeded/);
   });
 
-  it('guardia-v7 gating requires post-registration', () => {
-    const gating = readFileSync(
-      join(dir, '..', '..', 'guardia-v7-gating.mjs'),
-      'utf8'
-    );
-    assert.match(gating, /needsOnboarding/);
-    assert.match(gating, /shouldOfferGuardiaV7Education/);
-  });
-
-  it('learn-hub and upgrade card modules exist', () => {
+  it('learn-hub module exists', () => {
     const hub = readFileSync(join(dir, 'learn-hub.mjs'), 'utf8');
     assert.match(hub, /openLearnHub/);
-    assert.match(hub, /GUARDIA_V7_HUB_MODULES/);
-    const card = readFileSync(join(dir, 'guardia-v7-upgrade-card.mjs'), 'utf8');
-    assert.match(card, /maybeShowGuardiaV7UpgradeCard/);
-    assert.match(card, /dismissGuardiaV7UpgradeCard/);
   });
 
   it('tourAfterBulkLabParse advances lab_parse when both demo patients are in census', () => {

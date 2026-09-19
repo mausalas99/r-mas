@@ -19,12 +19,12 @@ const PACK_FILES_BASELINE = [
   'lib/**/*.mjs',
   'lib/**/*.cjs',
   'generate-receta-hu.js',
-  'generate-censo.js',
   'template.docx',
   'template_indicaciones.docx',
   'template_listado.docx',
   'templates/receta-hu-000-061-R-06-12.pdf',
   'templates/ic-seguimiento.docx',
+  'resources/tessdata/**/*',
   'public/**/*',
   'build/AppIcon.icns',
   'build/icon.ico',
@@ -39,12 +39,12 @@ const NATIVE_MODULE_PACK_PATTERNS = [
 const ASAR_UNPACK_BASELINE = [
   'lib/doc-generators/**/*',
   'generate-receta-hu.js',
-  'generate-censo.js',
   'template.docx',
   'template_indicaciones.docx',
   'template_listado.docx',
   'templates/receta-hu-000-061-R-06-12.pdf',
   'templates/ic-seguimiento.docx',
+  'resources/tessdata/**/*',
   ...NATIVE_MODULE_PACK_PATTERNS,
 ];
 

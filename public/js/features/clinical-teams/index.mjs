@@ -2,7 +2,6 @@
  * Mi rotación shell — re-exports and modal/control wiring (BN-07).
  */
 export {
-  CLINICAL_TEAM_SERVICES,
   CLINICAL_SALAS,
   filterJoinedTeams,
   isUserTeamMember,

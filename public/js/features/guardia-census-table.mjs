@@ -8,8 +8,6 @@ import { storage } from '../storage.js';
 import { accesoFechaToDateInputValue } from '../patient-date-fields.mjs';
 import { isPatientAdmissionIncomplete } from '../patient-admission-incomplete.mjs';
 import { sortPatientsByPriorityThenBed } from '../../../lib/patient-priority-sort.mjs';
-import { buildGuardiaTeamCensusGroups } from './unified-patient-grid-team-groups.mjs';
-import { filterR4FollowUpPinPatients, R4_FOLLOWUP_PIN_LABEL } from './unified-patient-grid-board.mjs';
 import {
   buildTableCardHeaderHtml,
   buildColumnHeadHtml,
@@ -175,30 +173,16 @@ export function buildGuardiaCensusTableRowHtml(p) {
   });
 }
 
-function dividerHtml(label) {
-  return `<div class="gct-divider">${escHtml(label)}</div>`;
-}
-
 function batchRowsHtml(patients, guardiasMap) {
   return sortPatientsByPriorityThenBed(patients, guardiasMap)
     .map(buildGuardiaCensusTableRowHtml)
     .join('');
 }
 
-function guardiaCensusBodyHtml(patients, guardiasMap, userRank, groupCtx) {
-  if (userRank !== 'R4') return batchRowsHtml(patients, guardiasMap);
-  let body = '';
-  const followUpPatients = filterR4FollowUpPinPatients(patients);
-  const followUpIds = new Set(followUpPatients.map((p) => p.id));
-  if (followUpPatients.length) {
-    body += dividerHtml(R4_FOLLOWUP_PIN_LABEL) + batchRowsHtml(followUpPatients, guardiasMap);
-  }
-  const rest = (patients || []).filter((p) => p?.id && !followUpIds.has(p.id));
-  buildGuardiaTeamCensusGroups(rest, groupCtx).forEach((group) => {
-    if (!group.patients.length) return;
-    body += dividerHtml(group.label) + batchRowsHtml(group.patients, guardiasMap);
-  });
-  return body;
+// One flat table for every Team member — no rank-based grouping (rank is
+// Admin/Team only now, see docs/superpowers/plans/2026-08-25-oncall-rank-redesign.md).
+function guardiaCensusBodyHtml(patients, guardiasMap) {
+  return batchRowsHtml(patients, guardiasMap);
 }
 
 function guardiaCensusSummaryLine(patients) {
@@ -239,7 +223,7 @@ function applyGuardiaCensusFilter(patients, activeId) {
 export function buildGuardiaCensusTableHtml(
   patients,
   guardiasMap,
-  userRank = 'R1',
+  userRank = 'Team',
   groupCtx = {},
   activeFilter = GUARDIA_CENSUS_FILTER_DEFAULT
 ) {

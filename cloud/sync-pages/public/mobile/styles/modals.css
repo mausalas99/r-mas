@@ -609,10 +609,6 @@ html.dark .btn-intro-skip:hover {
   border-radius: var(--radius-lg);
   padding: 14px 14px 12px;
 }
-#tour-dock.tour-dock--guardia .tour-dock-inner {
-  border-left: 4px solid var(--action);
-  background: color-mix(in oklab, var(--color-accent-soft) 22%, var(--surface));
-}
 .tour-dock-head {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
   margin-bottom: 10px;

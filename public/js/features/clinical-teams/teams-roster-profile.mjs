@@ -7,7 +7,6 @@ import {
 import { hasProgramAdminPrivileges } from '../../clinical-privileges.mjs';
 import { isValidUsernameFormat, normalizeUsername } from '../../clinical-username.mjs';
 import { syncRotationConfigButton } from '../clinical-rotation.mjs';
-import { verifyAdminAccessCode } from '../../../../lib/admin-access-code.mjs';
 import {
   toast,
   currentUserId,
@@ -25,7 +24,6 @@ function readProfileFormFields() {
     username: normalizeUsername(
       String(document.getElementById('clinical-profile-username')?.value || '')
     ),
-    rank: String(document.getElementById('clinical-profile-rank')?.value || 'R1'),
     sala: String(document.getElementById('clinical-profile-sala')?.value || ''),
     clinicalName: String(document.getElementById('clinical-profile-name')?.value || '').trim(),
     adminCb: document.getElementById('clinical-profile-admin'),
@@ -42,7 +40,7 @@ async function resolveProgramAdminChange(adminCb, wasProgramAdmin) {
   }
   if (!isAdminAccessGrantedThisSession()) {
     const code = await promptAdminAccessCode();
-    if (!code || !verifyAdminAccessCode(code)) {
+    if (!code) {
       if (adminCb instanceof HTMLInputElement) adminCb.checked = wasProgramAdmin;
       if (code != null) toast('Código incorrecto.', 'error');
       return null;
@@ -94,7 +92,6 @@ export async function handleProfileFormSubmit(ev) {
   const usernameWillChange = claimResult === true;
 
   const ok = await persistProfileFromPanel({
-    rank: fields.rank,
     sala: fields.sala,
     clinicalName: fields.clinicalName,
     isProgramAdmin: adminChange.isProgramAdmin,

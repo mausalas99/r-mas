@@ -1,6 +1,5 @@
-/** Fundamentos / guardia-v7 chapter completion during tours. */
+/** Fundamentos chapter completion during tours. */
 import { getChapterProgressLabel, getChapterForStep } from '../../onboarding-curriculum.mjs';
-import { syncLearnHubContinueVisibility } from './tour-engine.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
 import { tourState } from './tour-state.mjs';
 
@@ -33,28 +32,4 @@ function maybeMarkFundamentosChapterComplete(stepId) {
   });
 }
 
-function maybeMarkGuardiaV7ChapterComplete(stepId) {
-  if (tourState.guidedTourBranch !== 'guardia-v7') return;
-  const branch = 'guardia-v7';
-  const chapter = getChapterForStep(stepId, branch);
-  if (!chapter || !chapter.id || chapter.id === 'unknown') return;
-  const stepsInChapter = getChapterProgressLabel(stepId, branch);
-  if (stepsInChapter.stepInChapter !== stepsInChapter.chapterSteps) return;
-  void import('../../guardia-v7-progress.mjs').then((m) => {
-    const result = m.markGuardiaV7ChapterComplete(chapter.id);
-    if (!result.wasNew) return;
-    rt.launchConfetti();
-    rt.showToast(`Módulo completado: ${chapter.title}`, 'success');
-    syncLearnHubContinueVisibility();
-    if (m.isGuardiaV7TrackComplete()) {
-      void import('../guardia-board-chrome.mjs').then((chrome) => {
-        chrome.syncGuardiaLearnNudgeChrome?.();
-      });
-      window.setTimeout(() => {
-        rt.showToast('¡Guía de guardia completada!', 'success');
-      }, 500);
-    }
-  });
-}
-
-export { clearGuidedTourModuleScope, maybeMarkFundamentosChapterComplete, maybeMarkGuardiaV7ChapterComplete };
+export { clearGuidedTourModuleScope, maybeMarkFundamentosChapterComplete };

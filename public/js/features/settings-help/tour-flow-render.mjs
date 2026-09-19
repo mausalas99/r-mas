@@ -10,17 +10,19 @@ import {
   armTourActionPoll,
   guidedTourStepIndex,
 } from './tour-engine.mjs';
-import {
-  getGuardiaV7StepHtml,
-  escapeTourHtml,
-} from './tour-flow-guardia-copy.mjs';
 import { renderFundamentosStep } from './tour-flow-fundamentos-steps.mjs';
 import { tourState } from './tour-state.mjs';
+
+function escapeTourHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 function syncTourDockBranchClass(branch) {
   var d = document.getElementById('tour-dock');
   if (!d) return;
-  d.classList.toggle('tour-dock--guardia', branch === 'guardia-v7');
   d.classList.toggle('tour-dock--fundamentos', branch === 'sala' || branch === 'interconsulta');
   d.classList.toggle('tour-dock--quick-route', branch === 'quick-route');
 }
@@ -52,11 +54,6 @@ function renderQuickRouteStepCopy(bodyEl, nextBtn) {
     nextBtn.style.display = 'none';
     return true;
   }
-  if (id.indexOf('gv7_') === 0) {
-    bodyEl.innerHTML = getGuardiaV7StepHtml(id);
-    nextBtn.textContent = 'Siguiente';
-    return true;
-  }
   return false;
 }
 
@@ -66,15 +63,6 @@ function renderTourDockBadge(tourBranch, prog, idx, total) {
   if (tourBranch === 'quick-route') {
     badge.innerHTML =
       '<span class="tour-dock-badge-line tour-dock-badge-kicker">Ruta rápida</span>' +
-      '<span class="tour-dock-badge-line tour-dock-badge-step">Paso ' +
-      prog.stepInChapter + ' de ' + prog.chapterSteps + '</span>';
-    return;
-  }
-  if (tourBranch === 'guardia-v7') {
-    badge.innerHTML =
-      '<span class="tour-dock-badge-line tour-dock-badge-kicker">Guardia</span>' +
-      '<span class="tour-dock-badge-line tour-dock-badge-module">Módulo ' +
-      prog.chapterIndex + '/5 · ' + escapeTourHtml(prog.chapterTitle) + '</span>' +
       '<span class="tour-dock-badge-line tour-dock-badge-step">Paso ' +
       prog.stepInChapter + ' de ' + prog.chapterSteps + '</span>';
     return;
@@ -122,29 +110,13 @@ function renderQuickRouteBranch(bodyEl, nextBtn, prevBtn) {
   return true;
 }
 
-function renderGuardiaV7Branch(bodyEl, nextBtn, prevBtn) {
-  bodyEl.innerHTML = getGuardiaV7StepHtml(tourState.tourStepId);
-  var gv7Steps = getGuidedTourSteps();
-  var gv7Idx = gv7Steps.indexOf(tourState.tourStepId);
-  nextBtn.textContent =
-    gv7Idx >= 0 && gv7Idx >= gv7Steps.length - 1 ? 'Finalizar módulo' : 'Siguiente';
-  if (stepRequiresUserAction(tourState.tourStepId)) {
-    nextBtn.style.display = 'none';
-  }
-  finalizeTourStepRender(prevBtn);
-}
-
-function renderGuardiaOrQuickRouteStep(bodyEl, nextBtn, prevBtn, tourBranch) {
-  if (tourBranch !== 'guardia-v7' && tourBranch !== 'quick-route') return false;
-  if (tourBranch === 'quick-route' && tourState.tourStepId === 'quick_wrap') {
+function renderQuickRouteStepIfApplicable(bodyEl, nextBtn, prevBtn, tourBranch) {
+  if (tourBranch !== 'quick-route') return false;
+  if (tourState.tourStepId === 'quick_wrap') {
     renderQuickRouteWrap(bodyEl, nextBtn, prevBtn);
     return true;
   }
-  if (tourBranch === 'quick-route' && renderQuickRouteBranch(bodyEl, nextBtn, prevBtn)) {
-    return true;
-  }
-  renderGuardiaV7Branch(bodyEl, nextBtn, prevBtn);
-  return true;
+  return renderQuickRouteBranch(bodyEl, nextBtn, prevBtn);
 }
 
 function renderTourStep() {
@@ -161,7 +133,7 @@ function renderTourStep() {
   renderTourDockBadge(tourBranch, prog, idx, total);
   resetTourNextButton(nextBtn);
 
-  if (renderGuardiaOrQuickRouteStep(bodyEl, nextBtn, prevBtn, tourBranch)) {
+  if (renderQuickRouteStepIfApplicable(bodyEl, nextBtn, prevBtn, tourBranch)) {
     return;
   }
 

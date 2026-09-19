@@ -402,7 +402,7 @@ export function buildSectionTableModel(historyAsc, sectionKey, catalogSpecs, get
         : 'f:' + set.fecha + '|h:' + normalizeHoraLabHistory(set.hora);
     if (seenCol[colKey]) return;
     var hasAny = catalogSpecs.some(function (sp) {
-      return getValue(set, sp.fieldKey) != null;
+      return getValue(set, sp) != null;
     });
     if (!hasAny) return;
     seenCol[colKey] = true;
@@ -411,10 +411,11 @@ export function buildSectionTableModel(historyAsc, sectionKey, catalogSpecs, get
   var rows = catalogSpecs.map(function (sp) {
     return {
       fieldKey: sp.fieldKey,
+      sectionKey: sp.sectionKey,
       label: sp.cardTitle || sp.fieldKey,
       unit: sp.unit || '',
       values: colSets.map(function (set) {
-        return getValue(set, sp.fieldKey);
+        return getValue(set, sp);
       })
     };
   });

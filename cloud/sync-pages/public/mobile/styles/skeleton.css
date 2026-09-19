@@ -27,7 +27,11 @@
     color-mix(in oklab, var(--text) 8%, transparent) 45%,
     transparent 90%
   );
-  animation: skel-shimmer 1.4s linear infinite;
+  /* Teal workbench spec §11c "om-shimmer": ~1.1s sweep (was 1.4s). The zip's
+     -180px→220px sweep assumes a fixed-width mockup card; this component
+     spans variable widths, so the sweep stays relative-transform (-100%→100%)
+     — same full-width travel, any card size. */
+  animation: skel-shimmer 1.1s linear infinite;
 }
 
 .skel-line { height: 14px; }

@@ -8,6 +8,7 @@
  */
 import { markCloudLabOpPoison } from './cloud-lab-sidecar-index.mjs';
 import { looksLikeSomeLabReport } from '../../labs-report-refs.mjs';
+import { wasCloudOpAlreadyAttempted } from './cloud-sync-echo-guard.mjs';
 
 /**
  * Must stay under cloud-push-direct.mjs CHUNK_BUDGET_BYTES (180KB) so any single
@@ -169,7 +170,8 @@ export function slimCloudOp(op) {
 }
 
 /**
- * Slim + drop ops that still exceed worker quotas (poison pills).
+ * Slim + drop ops that still exceed worker quotas (poison pills). Also silently skips
+ * an op already pushed with this exact (path, updatedAt) — see cloud-sync-echo-guard.mjs.
  * @param {unknown[]} ops
  * @returns {{ ops: unknown[], dropped: number }}
  */
@@ -178,6 +180,7 @@ export function sanitizeOpsForCloudPush(ops) {
   const next = [];
   let dropped = 0;
   for (let i = 0; i < ops.length; i += 1) {
+    if (wasCloudOpAlreadyAttempted(/** @type {{ path?: string, updatedAt?: string }} */ (ops[i]))) continue;
     const slimmed = slimCloudOp(/** @type {{ path?: string, value?: unknown }} */ (ops[i]));
     if (!slimmed || typeof slimmed !== 'object') {
       dropped += 1;

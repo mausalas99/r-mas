@@ -174,9 +174,14 @@ export const chartsShellCloseProxies = {
   closeTendDetail: lazyChartsClose('closeTendDetail'),
   closeTendGroupModal: lazyChartsClose('closeTendGroupModal'),
   closeTendHiddenModal: lazyChartsClose('closeTendHiddenModal'),
+  closeTendDynamicTableModal: lazyChartsClose('closeTendDynamicTableModal'),
   closeLabDisplayPrefsModal: lazyChartsClose('closeLabDisplayPrefsModal'),
   isTendGroupModalOpen: function () {
     if (chartsModules) return chartsModules.tendencias.isTendGroupModalOpen();
+    return false;
+  },
+  isTendDynamicTableModalOpen: function () {
+    if (chartsModules) return chartsModules.tendencias.isTendDynamicTableModalOpen();
     return false;
   },
 };
@@ -190,6 +195,10 @@ var tendenciasHandlerNames = {
   setTendGroupTab: 'setTendGroupTab',
   copyTendGroupTablePng: 'copyTendGroupTablePng',
   copyTendGroupTableText: 'copyTendGroupTableText',
+  openTendDynamicTableModal: 'openTendDynamicTableModal',
+  closeTendDynamicTableModal: 'closeTendDynamicTableModal',
+  copyTendDynamicTablePng: 'copyTendDynamicTablePng',
+  copyTendDynamicTableText: 'copyTendDynamicTableText',
   toggleTendSection: 'toggleTendSection',
   toggleTendAbnormalOnlyFilter: 'toggleTendAbnormalOnlyFilter',
   tendHideSeriesFromCard: 'tendHideSeriesFromCard',

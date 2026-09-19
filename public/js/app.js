@@ -39,7 +39,6 @@ import {
   clearWebSessionClinicalMemory,
 } from './app-state.mjs';
 import { recoverPresentationPatientsOnBoot } from './presentation-mode.mjs';
-import './censo-export.mjs';
 import {
   registerAppRuntimeContext,
   registerAllFeatureRuntimes,
@@ -69,11 +68,11 @@ import { windowHandlers as labHistoryBatchCopyWindowHandlers } from './features/
 import { windowHandlers as soapEstadoWindowHandlers } from './features/soap-estado.mjs';
 import { windowHandlers as estadoActualPanelWindowHandlers } from './features/estado-actual-panel.mjs';
 import { windowHandlers as estadoActualPasteWindowHandlers } from './features/estado-actual-paste-modal.mjs';
-import { windowHandlers as driveImportWindowHandlers } from './features/drive-import-modal.mjs';
 import { windowHandlers as estadoActualRegistroWindowHandlers } from './features/estado-actual-registro-modal.mjs';
 import { windowHandlers as eaCongestionModalWindowHandlers } from './features/cardio/estado-actual-congestion-modal.mjs';
 import { windowHandlers as eaCardModalWindowHandlers } from './features/estado-actual-panel-card-modal.mjs';
 import { windowHandlers as agendaWindowHandlers } from './features/agenda.mjs';
+import { windowHandlers as directorioWindowHandlers } from './features/directorio.mjs';
 import { windowHandlers as expedienteWindowHandlers } from './features/expediente.mjs';
 import { windowHandlers as notesIndicacionesWindowHandlers } from './features/notes-indicaciones.mjs';
 import { productivityWindowHandlers } from './features/productivity.mjs';
@@ -111,7 +110,6 @@ import {
 } from './features/clinical-rotation-entry.mjs';
 import { wireClinicalTeamsControls } from './features/clinical-teams.mjs';
 import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
-import { syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
 import { resolveClinicalClientId } from './clinical-settings.mjs';
 
 function lazyWindowHandler(exportName, loader) {
@@ -155,13 +153,13 @@ const allWindowHandlers = Object.assign(
   estadoActualPanelWindowHandlers,
   notaEvolucionWindowHandlersLazy,
   estadoActualPasteWindowHandlers,
-  driveImportWindowHandlers,
   estadoActualRegistroWindowHandlers,
   eaCongestionModalWindowHandlers,
   eaCardModalWindowHandlers,
   eaVitalHistoryWindowHandlersLazy,
   chartsWindowHandlersLazy,
   agendaWindowHandlers,
+  directorioWindowHandlers,
   expedienteWindowHandlers,
   patientDashboardWindowHandlers,
   labInnerWindowHandlers,
@@ -413,7 +411,6 @@ const CLINICAL_DB_BOOT_STEPS = [
       wireClinicalRotationEntryControls();
       wireClinicalTeamsControls();
       syncClinicalRotationEntryChrome();
-      syncGuardiaModeButtonVisibility();
       ctx.teamsMod = await import('./features/clinical-teams.mjs');
     },
   },

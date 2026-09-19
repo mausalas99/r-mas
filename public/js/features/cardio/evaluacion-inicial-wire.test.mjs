@@ -23,6 +23,10 @@ function goBack(mount) {
   fire(mount.querySelector('[data-hf-ei-step-action="back"]'), 'click');
 }
 
+function jumpTo(mount, step) {
+  fire(mount.querySelector('[data-hf-ei-step-jump="' + step + '"]'), 'click');
+}
+
 test('renderEvaluacionInicialPanel shows a placeholder when no patient is active', () => {
   if (typeof document === 'undefined') return;
   seedPatient(null, undefined);
@@ -71,6 +75,31 @@ test('Siguiente/Atrás move between steps and each step only wires its own field
   goBack(mount);
   assert.match(mount.innerHTML, /Paso 1 de 5/);
   assert.equal(mount.querySelector('[data-hf-ei-step-action="back"]'), null);
+});
+
+test('clicking a step pill jumps directly to that step, skipping intermediate ones, with existing data intact', () => {
+  if (typeof document === 'undefined') return;
+  seedPatient('p1c', undefined);
+  var mount = document.createElement('div');
+  renderEvaluacionInicialPanel(mount);
+  var patient = getPatients()[0];
+
+  // Data entered on step 0 (Identificación) should survive a jump away and back.
+  var residenteEl = mount.querySelector('[data-hf-ei="residente"]');
+  residenteEl.value = 'Dra. Pérez';
+  fire(residenteEl, 'input');
+
+  // Jump straight from step 0 to step 4 (FEVI y labs), skipping steps 1-3.
+  jumpTo(mount, 4);
+  assert.match(mount.innerHTML, /Paso 5 de 6/);
+  assert.ok(mount.querySelector('[data-hf-ei="feviEstimadaInicial"]'));
+  assert.equal(mount.querySelector('[data-hf-ei="motivoConsulta"]'), null);
+
+  // Jump back to step 0 — no linear gate, and the earlier edit persisted.
+  jumpTo(mount, 0);
+  assert.match(mount.innerHTML, /Paso 1 de 6/);
+  assert.equal(patient.cardio.evaluacionInicial.residente, 'Dra. Pérez');
+  assert.equal(mount.querySelector('[data-hf-ei="residente"]').value, 'Dra. Pérez');
 });
 
 test('editing etiología (step 2) and fenotipo (step 4) writes patient.cardio (canonical), not patient.cardio.evaluacionInicial', () => {

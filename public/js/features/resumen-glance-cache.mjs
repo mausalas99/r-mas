@@ -1,8 +1,11 @@
 /** Bust Resumen cache when pendientes or eventualidades change. */
 export function resumenGlanceCacheSuffix(patient, todos) {
-  var ev = patient && patient.eventualidades;
-  var evAt = ev && ev.updatedAt ? String(ev.updatedAt) : '';
-  var evN = ev && Array.isArray(ev.entries) ? ev.entries.length : 0;
+  var cardio = patient && patient.cardio;
+  var evList =
+    cardio && Array.isArray(cardio.eventualidadesSeguimiento) ? cardio.eventualidadesSeguimiento : [];
+  var evN = evList.length;
+  // ponytail: JSON length as a cheap change signal — won't catch same-length edits.
+  var evAt = evN ? String(JSON.stringify(evList).length) : '';
   var open = 0;
   var stamp = '';
   (todos || []).forEach(function (t) {

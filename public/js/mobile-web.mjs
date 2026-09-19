@@ -43,7 +43,7 @@ export function normalizeMobileAppTab(tab) {
   if (!isMobileWeb()) return tab;
   if (tab === 'lan') tab = 'lab';
   if (tab === 'lab' || tab === 'nota') return tab;
-  if (tab === 'med' || tab === 'agenda') return 'nota';
+  if (tab === 'med' || tab === 'agenda' || tab === 'directorio') return 'nota';
   return 'lab';
 }
 
@@ -84,15 +84,13 @@ function ensureMobileAppTabAllowed() {
     });
 }
 
-/** Oculta chrome de escritorio (censo, perfil, ajustes, pestaña Salida). */
+/** Oculta chrome de escritorio (perfil, ajustes, pestaña Salida). */
 export function syncMobileBarebonesChrome() {
   if (!isMobileWeb() || typeof document === 'undefined') return;
   var hideIds = [
-    'btn-export-censo-header',
     'profile-toggle-btn',
     'btn-open-settings',
     'itab-salida',
-    'sidebar-censo-export-wrap',
     'btn-header-team-sync',
     'lab-input-section',
     'lab-diagrams-section',
@@ -106,8 +104,10 @@ export function syncMobileBarebonesChrome() {
     'onboarding-intro-backdrop',
     'apptab-med',
     'apptab-agenda',
+    'apptab-directorio',
     'appcontent-med',
     'appcontent-agenda',
+    'appcontent-directorio',
   ];
   hideMobileChromeByIds(hideIds);
   dismissMobileLearningChrome();

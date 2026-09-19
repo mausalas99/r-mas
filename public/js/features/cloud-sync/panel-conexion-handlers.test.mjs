@@ -34,14 +34,13 @@ describe('panel-conexion-handlers remember / leave room', () => {
     }
   });
 
-  it('recover re-wraps cached room DEKs under the new password before entering the session', () => {
+  it('recover does not touch room DEKs (they are wrapped with the room code, not the login password)', () => {
     const start = src.indexOf('export async function handleRecover');
     const next = src.indexOf('\nexport async function ', start + 1);
     const body = src.slice(start, next > start ? next : undefined);
-    const rewrapAt = body.indexOf('rewrapCachedRoomDeks(');
-    const enterAt = body.indexOf('enterCloudSession(');
-    assert.ok(rewrapAt >= 0 && enterAt > rewrapAt, 'rewrap must run before entering the session');
-    assert.match(body, /rewrapCachedRoomDeks\(deps\.getApi\(\), form\.password\)/);
+    assert.doesNotMatch(body, /cacheSessionPassword/);
+    assert.doesNotMatch(body, /rewrapCachedRoomDeks/);
+    assert.match(body, /enterCloudSession\(/);
   });
 
   it('create-room and join-room persist room DEKs to the durable store', () => {

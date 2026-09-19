@@ -1,7 +1,5 @@
 import { getPatients, persistClinicalState } from '../app-state.mjs';
 import {
-  renderGuardiaCensusGrid,
-  syncGuardiaCensusPanelVisibility,
   isClinicalScopeReadyForPatientApply,
 } from '../clinical-access-runtime.mjs';
 import { shouldEnforceTeamPatientMirror } from '../clinical-privileges.mjs';
@@ -45,6 +43,7 @@ import {
 import { syncPatientListIndicator } from '../patient-list-indicator.mjs';
 import { setLastRondaNavIds } from './patients-round.mjs';
 import { patientCardIdFromEvent, shouldHandleTouchPointerUp } from './patients-list-click.mjs';
+import { renderDirectorioPanel } from './directorio.mjs';
 
 var ARCHIVED_SECTION_COLLAPSED_LS = 'rpc-archived-section-collapsed';
 var _patientListSortables = [];
@@ -55,6 +54,7 @@ function ensurePatientUiState() {
     if (!p) continue;
     if (typeof p.archived !== 'boolean') p.archived = false;
     if (typeof p.pinned !== 'boolean') p.pinned = false;
+    if (typeof p.hospitalizado !== 'boolean') p.hospitalizado = true;
   }
 }
 
@@ -252,10 +252,7 @@ function renderPatientListMessage(list, msg, opts) {
   if (opts.silent && scrollTop > 0) list.scrollTop = scrollTop;
   setLastRondaNavIds([]);
   if (rt.getActiveAppTab() === 'agenda') rt.renderProcedureAgendaPanel();
-  if (!opts.silent) {
-    syncGuardiaCensusPanelVisibility(rt.getSettings());
-    renderGuardiaCensusGrid(rt.getSettings());
-  }
+  if (rt.getActiveAppTab() === 'directorio') renderDirectorioPanel();
 }
 
 /** Interconsulta sidebar (10b) groups Nuevas/En seguimiento instead of Fijados/Pacientes. */
@@ -435,10 +432,7 @@ function renderPatientListFullHtml(list, bundle, opts) {
   if (opts.silent && savedScrollTop > 0) list.scrollTop = savedScrollTop;
   if (!isPatientBulkSelectMode()) mountPatientListSortables();
   if (rt.getActiveAppTab() === 'agenda') rt.renderProcedureAgendaPanel();
-  if (!opts.silent) {
-    syncGuardiaCensusPanelVisibility(rt.getSettings());
-    renderGuardiaCensusGrid(rt.getSettings());
-  }
+  if (rt.getActiveAppTab() === 'directorio') renderDirectorioPanel();
 }
 
 /** @param {{ silent?: boolean }|undefined} [opts] */

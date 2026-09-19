@@ -13,9 +13,6 @@ import {
   removeTeamMember,
   listDirectoryUsers,
   setTeamGuardiaToday,
-  upsertActiveGuardia,
-  saveEntregaTemplateUser,
-  saveEntregaTemplateTeam,
 } from '../../../lib/db/clinical-access-db.mjs';
 import {
   exportClinicalOpsSnapshot,
@@ -35,79 +32,21 @@ function openDb() {
 describe('clinical-ops-sync', () => {
   it('exportClinicalOpsSnapshot includes V2 tables', () => {
     const db = openDb();
-    const user = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'R2' });
-    createTeam(db, { name: 'Sala A', service: 'Sala', onCallDayIndex: 1, createdBy: user.userId });
+    const user = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'Team' });
+    createTeam(db, { name: 'Sala A', service: 'HF', onCallDayIndex: 1, createdBy: user.userId });
     const snap = exportClinicalOpsSnapshot(db);
     assert.ok(Array.isArray(snap.rotation_cycles));
     assert.ok(Array.isArray(snap.patient_team_assignment));
     assert.ok(Array.isArray(snap.team_guardia_today));
     assert.ok(Array.isArray(snap.teams));
     assert.equal(snap.teams.length, 1);
-    assert.ok(Array.isArray(snap.entrega_template_user));
-    assert.ok(Array.isArray(snap.entrega_template_team));
-  });
-
-  it('mergeClinicalOpsSnapshot last-writes entrega templates by created_at', () => {
-    const db = openDb();
-    const user = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'R2' });
-    const team = createTeam(db, { name: 'Sala A', service: 'Sala', onCallDayIndex: 1, createdBy: user.userId });
-    const userTpl = saveEntregaTemplateUser(db, {
-      userId: user.userId,
-      name: 'Local user tpl',
-      payload: { kind: 'imagen', label: 'TAC' },
-    });
-    const teamTpl = saveEntregaTemplateTeam(db, {
-      teamId: team.team_id,
-      createdBy: user.userId,
-      name: 'Local team tpl',
-      payload: { kind: 'otro', label: 'Endo' },
-    });
-
-    const local = exportClinicalOpsSnapshot(db);
-    const incoming = {
-      ...local,
-      exportedAt: new Date().toISOString(),
-      entrega_template_user: [
-        {
-          template_id: userTpl.templateId,
-          user_id: user.userId,
-          name: 'Remote user tpl',
-          payload_json: JSON.stringify({ kind: 'otro', label: 'RM' }),
-          created_at: '2099-01-02T00:00:00',
-        },
-      ],
-      entrega_template_team: [
-        {
-          template_id: teamTpl.templateId,
-          team_id: team.team_id,
-          name: 'Remote team tpl',
-          payload_json: JSON.stringify({ kind: 'imagen', label: 'US' }),
-          created_by: user.userId,
-          created_at: '2099-01-02T00:00:00',
-        },
-      ],
-    };
-
-    mergeClinicalOpsSnapshot(db, incoming, local);
-
-    const userRow = db
-      .prepare(`SELECT name, payload_json FROM entrega_template_user WHERE template_id = ?`)
-      .get(userTpl.templateId);
-    assert.equal(userRow.name, 'Remote user tpl');
-    assert.match(userRow.payload_json, /"label":"RM"/);
-
-    const teamRow = db
-      .prepare(`SELECT name, payload_json FROM entrega_template_team WHERE template_id = ?`)
-      .get(teamTpl.templateId);
-    assert.equal(teamRow.name, 'Remote team tpl');
-    assert.match(teamRow.payload_json, /"label":"US"/);
   });
 
   it('mergeClinicalOpsSnapshot last-writes team_guardia_today by declared_at', () => {
     const db = openDb();
-    const userA = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'R2' });
-    const userB = ensureClinicalUser(db, { clientId: 'dev-b', rank: 'R3' });
-    const team = createTeam(db, { name: 'Sala A', service: 'Sala', onCallDayIndex: 1, createdBy: userA.userId });
+    const userA = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'Team' });
+    const userB = ensureClinicalUser(db, { clientId: 'dev-b', rank: 'Team' });
+    const team = createTeam(db, { name: 'Sala A', service: 'HF', onCallDayIndex: 1, createdBy: userA.userId });
     setTeamGuardiaToday(db, team.team_id, userA.userId);
 
     const local = exportClinicalOpsSnapshot(db);
@@ -130,112 +69,23 @@ describe('clinical-ops-sync', () => {
     assert.equal(row.user_id, userB.userId);
   });
 
-  it('mergeClinicalOpsSnapshot does not resurrect entrega after peer resolution tombstone', () => {
-    const db = openDb();
-    const user = ensureClinicalUser(db, { clientId: 'dev-no-resurrect', rank: 'R2' });
-    const team = createTeam(db, {
-      name: 'No Resurrect',
-      service: 'Sala',
-      onCallDayIndex: 1,
-      createdBy: user.userId,
-    });
-    upsertActiveGuardia(db, {
-      patientId: 'p-stale-local',
-      coveringUserId: user.userId,
-      sourceTeamId: team.team_id,
-    });
-    const local = exportClinicalOpsSnapshot(db);
-    const resolvedAt = '2099-06-06T21:00:00.000Z';
-    mergeClinicalOpsSnapshot(
-      db,
-      {
-        ...local,
-        exportedAt: resolvedAt,
-        active_guardias: [],
-        active_guardias_resolved: [{ patient_id: 'p-stale-local', assigned_at: resolvedAt }],
-      },
-      local
-    );
-    assert.equal(
-      db
-        .prepare(`SELECT status FROM active_guardias WHERE patient_id = ?`)
-        .get('p-stale-local').status,
-      'Resolved'
-    );
-  });
-
-  it('mergeClinicalOpsSnapshot applies active_guardias_resolved from peer', () => {
-    const db = openDb();
-    const user = ensureClinicalUser(db, { clientId: 'dev-resolve', rank: 'R2' });
-    const team = createTeam(db, {
-      name: 'Resolve Team',
-      service: 'Sala',
-      onCallDayIndex: 1,
-      createdBy: user.userId,
-    });
-    upsertActiveGuardia(db, {
-      patientId: 'p-resolved-peer',
-      coveringUserId: user.userId,
-      sourceTeamId: team.team_id,
-    });
-    const local = exportClinicalOpsSnapshot(db);
-    assert.equal(
-      db
-        .prepare(`SELECT status FROM active_guardias WHERE patient_id = ?`)
-        .get('p-resolved-peer').status,
-      'Active'
-    );
-
-    const resolvedAt = '2099-06-06T20:00:00.000Z';
-    mergeClinicalOpsSnapshot(
-      db,
-      {
-        ...local,
-        exportedAt: resolvedAt,
-        active_guardias: [],
-        active_guardias_resolved: [
-          {
-            patient_id: 'p-resolved-peer',
-            assigned_at: resolvedAt,
-          },
-        ],
-      },
-      local
-    );
-
-    assert.equal(
-      db
-        .prepare(`SELECT status FROM active_guardias WHERE patient_id = ?`)
-        .get('p-resolved-peer').status,
-      'Resolved'
-    );
-  });
-
   it('mergeClinicalOpsSnapshot applies rotation.nueva archive from peer', () => {
     const db = openDb();
-    const user = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'R2' });
-    const team = createTeam(db, { name: 'Sala A', service: 'Sala', onCallDayIndex: 1, createdBy: user.userId });
+    const user = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'Team' });
+    const team = createTeam(db, { name: 'Sala A', service: 'HF', onCallDayIndex: 1, createdBy: user.userId });
     setTeamGuardiaToday(db, team.team_id, user.userId);
-    upsertActiveGuardia(db, {
-      patientId: 'p1',
-      coveringUserId: user.userId,
-      sourceTeamId: team.team_id,
-    });
 
     const local = exportClinicalOpsSnapshot(db);
-    assert.equal(db.prepare(`SELECT COUNT(*) AS c FROM active_guardias`).get().c, 1);
 
     const incoming = {
       ...local,
       exportedAt: new Date().toISOString(),
       rotationNuevaAt: '2099-06-01T00:00:00',
-      active_guardias: [],
       team_guardia_today: [],
       teams: local.teams.map((t) => ({ ...t, archived_at: '2099-06-01T00:00:00' })),
     };
 
     mergeClinicalOpsSnapshot(db, incoming, local);
-    assert.equal(db.prepare(`SELECT COUNT(*) AS c FROM active_guardias`).get().c, 0);
     assert.equal(db.prepare(`SELECT COUNT(*) AS c FROM team_guardia_today`).get().c, 0);
   });
 
@@ -264,10 +114,10 @@ describe('clinical-ops-sync', () => {
 
   it('mergeClinicalOpsSnapshot imports remote membership after LAN users', () => {
     const db = openDb();
-    const leader = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'R2' });
+    const leader = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'Team' });
     const team = createTeam(db, {
       name: 'Sala A',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 1,
       createdBy: leader.userId,
       sala: 'Sala 1',
@@ -281,7 +131,7 @@ describe('clinical-ops-sync', () => {
         {
           user_id: remoteUserId,
           username: 'mgarcia',
-          rank: 'R1',
+          rank: 'Team',
           clinical_name: 'Dr. García',
           sala: 'Sala 1',
           is_program_admin: 0,
@@ -300,7 +150,7 @@ describe('clinical-ops-sync', () => {
 
   it('mergeClinicalOpsSnapshot accepts 6.5.6 snapshots without clinical_users', () => {
     const db = openDb();
-    const leader = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'R2' });
+    const leader = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'Team' });
     const local = exportClinicalOpsSnapshot(db);
     const remoteTeamId = '22222222-2222-2222-2222-222222222222';
     const remoteUserId = '11111111-1111-1111-1111-111111111111';
@@ -311,12 +161,11 @@ describe('clinical-ops-sync', () => {
       rotation_cycles: [],
       patient_team_assignment: [],
       team_guardia_today: [],
-      active_guardias: [],
       teams: [
         {
           team_id: remoteTeamId,
           name: 'Equipo remoto',
-          service: 'Sala',
+          service: 'HF',
           sub_area_fraction: null,
           on_call_day_index: 1,
           created_by: remoteUserId,
@@ -341,7 +190,7 @@ describe('clinical-ops-sync', () => {
 
   it('mergeClinicalOpsSnapshot unions clinical_users from local and incoming', () => {
     const db = openDb();
-    const localUser = ensureClinicalUser(db, { clientId: 'local-dev', rank: 'R4', clinicalName: 'Local' });
+    const localUser = ensureClinicalUser(db, { clientId: 'local-dev', rank: 'Admin', clinicalName: 'Local' });
     claimUsername(db, { userId: localUser.userId, username: 'local_user' });
     const local = exportClinicalOpsSnapshot(db);
 
@@ -353,7 +202,7 @@ describe('clinical-ops-sync', () => {
         {
           user_id: remoteUserId,
           username: 'remote_peer',
-          rank: 'R1',
+          rank: 'Team',
           clinical_name: 'Remoto',
           sala: 'Sala 2',
           is_program_admin: 0,
@@ -374,7 +223,7 @@ describe('clinical-ops-sync', () => {
     const db = openDb();
     const user = ensureClinicalUser(db, {
       clientId: 'device-pending',
-      rank: 'R2',
+      rank: 'Team',
       clinicalName: 'Dra. Nueva',
     });
     const snap = exportClinicalOpsSnapshot(db);
@@ -387,7 +236,7 @@ describe('clinical-ops-sync', () => {
     const db = openDb();
     const user = ensureClinicalUser(db, {
       clientId: 'device-pending-sala',
-      rank: 'R2',
+      rank: 'Team',
       clinicalName: 'Dra. Con Sala',
       sala: 'Sala 2',
     });
@@ -401,7 +250,7 @@ describe('clinical-ops-sync', () => {
     const db = openDb();
     const user = ensureClinicalUser(db, {
       clientId: 'interconsultas-only',
-      rank: 'R2',
+      rank: 'Team',
       clinicalName: 'Dr. Interconsultas',
     });
     const listed = listDirectoryUsers(db);
@@ -410,18 +259,18 @@ describe('clinical-ops-sync', () => {
 
   it('exportClinicalOpsSnapshot includes team members without valid @usuario when they have clinical_name', () => {
     const db = openDb();
-    const leader = ensureClinicalUser(db, { clientId: 'dev-lead', rank: 'R2', clinicalName: 'Lead' });
+    const leader = ensureClinicalUser(db, { clientId: 'dev-lead', rank: 'Team', clinicalName: 'Lead' });
     claimUsername(db, { userId: leader.userId, username: 'lead_user' });
     const team = createTeam(db, {
       name: 'Sala A',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 1,
       createdBy: leader.userId,
       sala: 'Sala 1',
     });
     const member = ensureClinicalUser(db, {
       clientId: 'device-only',
-      rank: 'R1',
+      rank: 'Team',
       clinicalName: 'Sin Handle',
     });
     joinTeam(db, team.team_id, member.userId);
@@ -433,11 +282,11 @@ describe('clinical-ops-sync', () => {
 
   it('mergeClinicalOpsSnapshot upgrades peer stub when remote claims @usuario', () => {
     const db = openDb();
-    const leader = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'R2' });
+    const leader = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'Team' });
     claimUsername(db, { userId: leader.userId, username: 'leader_ok' });
     const team = createTeam(db, {
       name: 'Sala A',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 1,
       createdBy: leader.userId,
     });
@@ -449,7 +298,6 @@ describe('clinical-ops-sync', () => {
       rotation_cycles: [],
       patient_team_assignment: [],
       team_guardia_today: [],
-      active_guardias: [],
       teams: [],
       team_membership: [{ team_id: team.team_id, user_id: remoteUserId, sub_area_fraction: null }],
       clinical_users: [],
@@ -467,7 +315,7 @@ describe('clinical-ops-sync', () => {
         {
           user_id: remoteUserId,
           username: 'claimed_peer',
-          rank: 'R1',
+          rank: 'Team',
           clinical_name: 'Dr. Claimed',
           sala: 'Sala 1',
           is_program_admin: 0,
@@ -485,7 +333,7 @@ describe('clinical-ops-sync', () => {
 
   it('mergeClinicalOpsSnapshot does not purge users re-published in incoming clinical_users', () => {
     const db = openDb();
-    const user = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'R1', clinicalName: 'Keep Me' });
+    const user = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'Team', clinicalName: 'Keep Me' });
     claimUsername(db, { userId: user.userId, username: 'keep_me' });
     db.prepare(
       `INSERT INTO app_meta (key, value) VALUES ('lan_clinical_users_deleted', ?)
@@ -500,7 +348,7 @@ describe('clinical-ops-sync', () => {
         {
           user_id: user.userId,
           username: 'keep_me',
-          rank: 'R1',
+          rank: 'Team',
           clinical_name: 'Keep Me',
           sala: 'Sala 1',
           is_program_admin: 0,
@@ -514,11 +362,11 @@ describe('clinical-ops-sync', () => {
 
   it('listDirectoryUsers includes active-team peer stubs', () => {
     const db = openDb();
-    const leader = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'R2' });
+    const leader = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'Team' });
     claimUsername(db, { userId: leader.userId, username: 'leader_dir' });
     const team = createTeam(db, {
       name: 'Sala A',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 1,
       createdBy: leader.userId,
     });
@@ -530,7 +378,6 @@ describe('clinical-ops-sync', () => {
       rotation_cycles: [],
       patient_team_assignment: [],
       team_guardia_today: [],
-      active_guardias: [],
       teams: [],
       team_membership: [{ team_id: team.team_id, user_id: remoteUserId, sub_area_fraction: null }],
       clinical_users: [],
@@ -549,7 +396,7 @@ describe('clinical-ops-sync', () => {
           {
             user_id: 'user-a',
             username: 'same_handle',
-            rank: 'R1',
+            rank: 'Team',
             clinical_name: 'A',
           },
         ],
@@ -562,7 +409,7 @@ describe('clinical-ops-sync', () => {
           {
             user_id: 'user-b',
             username: 'same_handle',
-            rank: 'R2',
+            rank: 'Team',
             clinical_name: 'B',
           },
         ],
@@ -577,11 +424,11 @@ describe('clinical-ops-sync', () => {
 
   it('mergeClinicalOpsSnapshot does not re-add tombstoned user via team_membership', () => {
     const db = openDb();
-    const admin = ensureClinicalUser(db, { clientId: 'admin', rank: 'R4' });
+    const admin = ensureClinicalUser(db, { clientId: 'admin', rank: 'Admin' });
     claimUsername(db, { userId: admin.userId, username: 'admin_user' });
     const team = createTeam(db, {
       name: 'Equipo',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 1,
       createdBy: admin.userId,
       sala: 'Sala 2',
@@ -621,23 +468,23 @@ describe('clinical-ops-sync', () => {
     // Admin Mac moves R1 from team A → team B. Peer Mac still has membership on A.
     // Incoming removal must apply even though peer has not recorded a local leave.
     const adminDb = openDb();
-    const leader = ensureClinicalUser(adminDb, { clientId: 'admin', rank: 'R4' });
+    const leader = ensureClinicalUser(adminDb, { clientId: 'admin', rank: 'Admin' });
     claimUsername(adminDb, { userId: leader.userId, username: 'admin_user' });
     const teamA = createTeam(adminDb, {
       name: 'Equipo A',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 1,
       createdBy: leader.userId,
       sala: 'Sala 1',
     });
     const teamB = createTeam(adminDb, {
       name: 'Equipo B',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 2,
       createdBy: leader.userId,
       sala: 'Sala 1',
     });
-    const r1 = ensureClinicalUser(adminDb, { clientId: 'r1-dev', rank: 'R1' });
+    const r1 = ensureClinicalUser(adminDb, { clientId: 'r1-dev', rank: 'Team' });
     claimUsername(adminDb, { userId: r1.userId, username: 'r1_user' });
     joinTeam(adminDb, teamA.team_id, r1.userId, { subAreaFraction: 'A1' });
     const peerBaseline = exportClinicalOpsSnapshot(adminDb);
@@ -670,16 +517,16 @@ describe('clinical-ops-sync', () => {
 
   it('mergeClinicalOpsSnapshot drops peer-only self team when admin assigns exclusive membership', () => {
     const adminDb = openDb();
-    const leader = ensureClinicalUser(adminDb, { clientId: 'admin', rank: 'R4' });
+    const leader = ensureClinicalUser(adminDb, { clientId: 'admin', rank: 'Admin' });
     claimUsername(adminDb, { userId: leader.userId, username: 'admin_user' });
     const teamMarisol = createTeam(adminDb, {
       name: 'Dra. Marisol',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 1,
       createdBy: leader.userId,
       sala: 'Sala E',
     });
-    const r1Admin = ensureClinicalUser(adminDb, { clientId: 'r1-admin', rank: 'R1' });
+    const r1Admin = ensureClinicalUser(adminDb, { clientId: 'r1-admin', rank: 'Team' });
     claimUsername(adminDb, { userId: r1Admin.userId, username: 'aironpc' });
     addTeamMember(adminDb, teamMarisol.team_id, r1Admin.userId, {
       subAreaFraction: 'A1',
@@ -688,11 +535,11 @@ describe('clinical-ops-sync', () => {
     const adminSnap = exportClinicalOpsSnapshot(adminDb);
 
     const peerDb = openDb();
-    const r1Peer = ensureClinicalUser(peerDb, { clientId: 'r1-peer', rank: 'R1' });
+    const r1Peer = ensureClinicalUser(peerDb, { clientId: 'r1-peer', rank: 'Team' });
     claimUsername(peerDb, { userId: r1Peer.userId, username: 'aironpc' });
     const selfTeam = createTeam(peerDb, {
       name: 'DR AIRON',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 2,
       createdBy: r1Peer.userId,
       sala: 'Sala E',
@@ -715,23 +562,23 @@ describe('clinical-ops-sync', () => {
 
   it('mergeClinicalOpsSnapshot remaps leave tombstones to local @username user_id', () => {
     const peerDb = openDb();
-    const leader = ensureClinicalUser(peerDb, { clientId: 'admin', rank: 'R4' });
+    const leader = ensureClinicalUser(peerDb, { clientId: 'admin', rank: 'Admin' });
     claimUsername(peerDb, { userId: leader.userId, username: 'admin_user' });
     const teamA = createTeam(peerDb, {
       name: 'Equipo A',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 1,
       createdBy: leader.userId,
       sala: 'Sala 1',
     });
     const teamB = createTeam(peerDb, {
       name: 'Equipo B',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 2,
       createdBy: leader.userId,
       sala: 'Sala 1',
     });
-    const localR1 = ensureClinicalUser(peerDb, { clientId: 'peer-mac', rank: 'R1' });
+    const localR1 = ensureClinicalUser(peerDb, { clientId: 'peer-mac', rank: 'Team' });
     claimUsername(peerDb, { userId: localR1.userId, username: 'r1doc' });
     joinTeam(peerDb, teamA.team_id, localR1.userId, { subAreaFraction: 'A1' });
     const peerLocal = exportClinicalOpsSnapshot(peerDb);
@@ -744,7 +591,7 @@ describe('clinical-ops-sync', () => {
         {
           user_id: hostUserId,
           username: 'r1doc',
-          rank: 'R1',
+          rank: 'Team',
           clinical_name: 'R1 Doc',
           sala: 'Sala 1',
           is_program_admin: 0,
@@ -787,16 +634,16 @@ describe('clinical-ops-sync', () => {
 
   it('mergeClinicalOpsSnapshot honors team_membership_removals over stale membership union', () => {
     const db = openDb();
-    const leader = ensureClinicalUser(db, { clientId: 'host', rank: 'R4' });
+    const leader = ensureClinicalUser(db, { clientId: 'host', rank: 'Admin' });
     claimUsername(db, { userId: leader.userId, username: 'host_user' });
     const team = createTeam(db, {
       name: 'Equipo LAN',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 1,
       createdBy: leader.userId,
       sala: 'Sala 2',
     });
-    const peer = ensureClinicalUser(db, { clientId: 'peer-dev', rank: 'R2' });
+    const peer = ensureClinicalUser(db, { clientId: 'peer-dev', rank: 'Team' });
     claimUsername(db, { userId: peer.userId, username: 'peer_user' });
     joinTeam(db, team.team_id, peer.userId);
     const peerId = peer.userId;
@@ -830,16 +677,16 @@ describe('clinical-ops-sync', () => {
 
   it('mergeClinicalOpsSnapshot lets a fresh LAN re-join override an older leave tombstone', () => {
     const db = openDb();
-    const leader = ensureClinicalUser(db, { clientId: 'host', rank: 'R4' });
+    const leader = ensureClinicalUser(db, { clientId: 'host', rank: 'Admin' });
     claimUsername(db, { userId: leader.userId, username: 'host_user' });
     const team = createTeam(db, {
       name: 'Equipo LAN',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 1,
       createdBy: leader.userId,
       sala: 'Sala 2',
     });
-    const peer = ensureClinicalUser(db, { clientId: 'peer-dev', rank: 'R2' });
+    const peer = ensureClinicalUser(db, { clientId: 'peer-dev', rank: 'Team' });
     claimUsername(db, { userId: peer.userId, username: 'peer_user' });
     joinTeam(db, team.team_id, peer.userId);
     const peerId = peer.userId;
@@ -881,10 +728,10 @@ describe('clinical-ops-sync', () => {
 
   it('mergeClinicalOpsSnapshot prunes leave tombstones for deleted or purged users', () => {
     const db = openDb();
-    const leader = ensureClinicalUser(db, { clientId: 'host', rank: 'R4' });
+    const leader = ensureClinicalUser(db, { clientId: 'host', rank: 'Admin' });
     const team = createTeam(db, {
       name: 'Equipo LAN',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 1,
       createdBy: leader.userId,
       sala: 'Sala 2',
@@ -910,11 +757,11 @@ describe('clinical-ops-sync', () => {
 
   it('mergeClinicalOpsSnapshot keeps local team archive over stale active peer row', () => {
     const db = openDb();
-    const admin = ensureClinicalUser(db, { clientId: 'admin', rank: 'R4' });
+    const admin = ensureClinicalUser(db, { clientId: 'admin', rank: 'Admin' });
     claimUsername(db, { userId: admin.userId, username: 'admin_user' });
     const team = createTeam(db, {
       name: 'Equipo viejo',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 1,
       createdBy: admin.userId,
       sala: 'Sala 2',
@@ -953,11 +800,11 @@ describe('clinical-ops-sync', () => {
 
   it('mergeClinicalOpsSnapshot keeps newer local team rename over stale peer name', () => {
     const db = openDb();
-    const admin = ensureClinicalUser(db, { clientId: 'admin', rank: 'R4' });
+    const admin = ensureClinicalUser(db, { clientId: 'admin', rank: 'Admin' });
     claimUsername(db, { userId: admin.userId, username: 'admin_user' });
     const team = createTeam(db, {
       name: 'Equipo A',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 1,
       createdBy: admin.userId,
       sala: 'Sala 2',
@@ -984,14 +831,14 @@ describe('clinical-ops-sync', () => {
 
   it('exportClinicalOpsSnapshotForSala filters teams and membership by effective sala', () => {
     const db = openDb();
-    const userS2 = ensureClinicalUser(db, { clientId: 'dev-s2', rank: 'R2' });
+    const userS2 = ensureClinicalUser(db, { clientId: 'dev-s2', rank: 'Team' });
     db.prepare(`UPDATE users SET sala = ? WHERE user_id = ?`).run('Sala 2', userS2.userId);
-    const userSE = ensureClinicalUser(db, { clientId: 'dev-se', rank: 'R1' });
+    const userSE = ensureClinicalUser(db, { clientId: 'dev-se', rank: 'Team' });
     db.prepare(`UPDATE users SET sala = ? WHERE user_id = ?`).run('Sala E', userSE.userId);
 
     const teamSE = createTeam(db, {
       name: 'Dr. Sam',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 0,
       sala: 'Sala E',
       createdBy: userSE.userId,
@@ -999,7 +846,7 @@ describe('clinical-ops-sync', () => {
     joinTeam(db, teamSE.team_id, userSE.userId, { subAreaFraction: 'A' });
     const teamS2 = createTeam(db, {
       name: 'Sala 2 Team',
-      service: 'Sala',
+      service: 'HF',
       onCallDayIndex: 0,
       sala: 'Sala 2',
       createdBy: userS2.userId,
@@ -1025,7 +872,7 @@ describe('clinical-ops-sync', () => {
         {
           user_id: 'u-local',
           username: 'kept_user',
-          rank: 'R1',
+          rank: 'Team',
           clinical_name: 'Kept',
           sala: 'Sala 1',
         },
@@ -1036,7 +883,7 @@ describe('clinical-ops-sync', () => {
     const incoming = {
       exportedAt: '2026-06-02T10:00:00.000Z',
       rotationNuevaAt: '2026-06-02T09:00:00.000Z',
-      teams: [{ team_id: 't-new', name: 'Nuevo', service: 'Sala' }],
+      teams: [{ team_id: 't-new', name: 'Nuevo', service: 'HF' }],
       team_membership: [],
     };
     const merged = mergeClinicalOpsSnapshotsData(local, incoming);

@@ -2,8 +2,7 @@
  * Pure helpers: pick previous team + patients for month handoff
  * (e.g. choose Dr. Fer → inherit into Dra. Leslie).
  *
- * HARD BOUNDARY — only census team assignment helpers. Active entrega
- * pendientes must not block this path; leave-team resolves coverings separately.
+ * HARD BOUNDARY — only census team assignment helpers.
  */
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { activePatientTeamId } from '../../patient-team-assign-ui.mjs';

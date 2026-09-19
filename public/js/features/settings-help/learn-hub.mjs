@@ -1,19 +1,13 @@
 import {
-  GUARDIA_V7_HUB_MODULES,
   QUICK_ROUTE_HUB_MODULE,
   SALA_HUB_MODULES,
   IC_HUB_MODULES,
-  GUARDIA_V7_CHAPTERS,
   SALA_CHAPTERS,
   IC_CHAPTERS,
   getChapterForStep,
   getChapterProgressLabel,
 } from '../../onboarding-curriculum.mjs';
 import { loadTourProgress } from '../../onboarding-progress.mjs';
-import {
-  loadGuardiaV7Progress,
-  resetGuardiaV7Chapter,
-} from '../../guardia-v7-progress.mjs';
 import {
   loadFundamentosProgress,
   fundamentosModuleCount,
@@ -23,8 +17,6 @@ import { isMobileWeb } from '../../mobile-web.mjs';
 import { closeModalAnimated } from '../../ui-motion.mjs';
 import { needsClinicalOnboarding } from '../clinical-onboarding.mjs';
 import { settingsHelpBridge } from './bridges.mjs';
-import { getSettingsHelpRuntime } from './runtime.mjs';
-
 import { escapeHtml } from '../../dom-escape.mjs';
 let learnHubDismissWired = false;
 let learnHubLastFocus = null;
@@ -37,10 +29,6 @@ function estMinutesForSteps(stepCount) {
 function stepCountForChapter(chapterId, branch) {
   if (branch === 'quick-route') {
     return QUICK_ROUTE_HUB_MODULE.stepCount || 0;
-  }
-  if (branch === 'guardia-v7') {
-    const ch = GUARDIA_V7_CHAPTERS.find((c) => c.id === chapterId);
-    return ch ? ch.stepIds.length : 0;
   }
   if (branch === 'interconsulta') {
     const ch = IC_CHAPTERS.find((c) => c.id === chapterId);
@@ -148,47 +136,12 @@ function startLearnModule(chapterId) {
   });
 }
 
-function resetLearnModuleProgress(chapterId, branch, focusTrack) {
-  if (branch === 'guardia-v7') {
-    resetGuardiaV7Chapter(chapterId);
-    getSettingsHelpRuntime().showToast('Módulo reseteado. Ábrelo cuando quieras.', 'info');
-    renderLearnHubBody(focusTrack);
-  }
-}
-
-function guardiaModuleState(chapterId, progress, tourProgress) {
-  const chapterSteps = stepCountForChapter(chapterId, 'guardia-v7');
-  const completed = progress.completedChapters.includes(chapterId);
-  let inProgress = false;
-  let stepInChapter = 0;
-  if (tourProgress && tourProgress.branch === 'guardia-v7' && tourProgress.stepId) {
-    const ch = getChapterForStep(tourProgress.stepId, 'guardia-v7');
-    if (ch.id === chapterId) {
-      inProgress = !completed;
-      const prog = getChapterProgressLabel(tourProgress.stepId, 'guardia-v7');
-      stepInChapter = prog.stepInChapter;
-    }
-  }
-  return {
-    completed,
-    inProgress,
-    stepInChapter,
-    chapterSteps,
-    active: inProgress && tourProgress && tourProgress.chapterId === chapterId,
-  };
-}
-
 function fundamentosModuleState(chapterId, branch, progress, tourProgress) {
   const chapterSteps = stepCountForChapter(chapterId, branch);
   const completed = progress.completedChapters.includes(chapterId);
   let inProgress = false;
   let stepInChapter = 0;
-  if (
-    tourProgress &&
-    tourProgress.branch !== 'guardia-v7' &&
-    tourProgress.branch === branch &&
-    tourProgress.stepId
-  ) {
+  if (tourProgress && tourProgress.branch === branch && tourProgress.stepId) {
     const ch = getChapterForStep(tourProgress.stepId, branch);
     if (ch.id === chapterId) {
       inProgress = !completed;
@@ -232,44 +185,11 @@ function renderLearnHubQuickRouteCard(parts) {
   );
 }
 
-function renderLearnHubNovedadesTrack(parts, focusTrack, progress, tourProgress) {
-  const guardiaCompletedCount = GUARDIA_V7_HUB_MODULES.filter((m) =>
-    progress.completedChapters.includes(m.chapterId)
-  ).length;
-  const novedadesOpen = focusTrack !== 'fundamentos';
-  parts.push(
-    `<details class="learn-hub-track learn-hub-track--novedades"${novedadesOpen ? ' open' : ''}>`
-  );
-  parts.push(
-    '<summary class="learn-hub-track-title">' +
-    'Guardia y R+ Cloud' +
-    `<span class="learn-hub-progress-pill">${guardiaCompletedCount}/5</span>` +
-    '</summary>'
-  );
-  parts.push('<div class="learn-hub-track-body">');
-  parts.push(
-    '<p class="learn-hub-section-lead">Módulos cortos e independientes. Pulsa una tarjeta para empezar; los completados se pueden resetear y abrir después.</p>'
-  );
+function renderLearnHubQuickRouteSection(parts) {
+  parts.push('<div class="learn-hub-section learn-hub-section--quick-route">');
   parts.push('<div class="learn-hub-module-list">');
   renderLearnHubQuickRouteCard(parts);
-  GUARDIA_V7_HUB_MODULES.forEach((mod, idx) => {
-    const st = guardiaModuleState(mod.chapterId, progress, tourProgress);
-    parts.push(
-      buildModuleRow({
-        chapterId: mod.chapterId,
-        label: mod.label,
-        branch: 'guardia-v7',
-        completed: st.completed,
-        inProgress: st.inProgress,
-        stepInChapter: st.stepInChapter,
-        chapterSteps: st.chapterSteps,
-        active: st.active,
-        moduleIndex: idx + 1,
-        allowReset: true,
-      })
-    );
-  });
-  parts.push('</div></div></details>');
+  parts.push('</div></div>');
 }
 
 function renderLearnHubFundamentosTrack(parts, focusTrack, fundamentosProgress, tourProgress) {
@@ -335,17 +255,16 @@ function renderLearnHubFundamentosTrack(parts, focusTrack, fundamentosProgress, 
   parts.push('</div></div></details>');
 }
 
-export function renderLearnHubBody(focusTrack = 'guardia-v7') {
+export function renderLearnHubBody(focusTrack = 'fundamentos') {
   const host = document.getElementById('learn-hub-body');
   if (!host) return;
 
-  const progress = loadGuardiaV7Progress();
   const fundamentosProgress = loadFundamentosProgress();
   const tourProgress = loadTourProgress();
   const parts = [];
 
   renderLearnHubContinueSection(tourProgress, parts);
-  renderLearnHubNovedadesTrack(parts, focusTrack, progress, tourProgress);
+  renderLearnHubQuickRouteSection(parts);
   renderLearnHubFundamentosTrack(parts, focusTrack, fundamentosProgress, tourProgress);
 
   parts.push(
@@ -363,17 +282,6 @@ function wireLearnHubBodyOnce(host) {
   host._rpcLearnHubWired = true;
 
   host.addEventListener('click', (ev) => {
-    const resetBtn = ev.target.closest('[data-learn-reset]');
-    if (resetBtn) {
-      ev.preventDefault();
-      ev.stopPropagation();
-      resetLearnModuleProgress(
-        resetBtn.getAttribute('data-learn-reset'),
-        resetBtn.getAttribute('data-learn-reset-branch') || 'guardia-v7',
-        'guardia-v7'
-      );
-      return;
-    }
     const row = ev.target.closest('[data-learn-chapter]');
     if (row) {
       startLearnModule(row.getAttribute('data-learn-chapter'));
@@ -434,7 +342,7 @@ export function syncLearnAprenderChrome() {
 export function openLearnHub(opts = {}) {
   if (isMobileWeb()) return;
   wireLearnHubDismiss();
-  renderLearnHubBody(opts.focusTrack || 'guardia-v7');
+  renderLearnHubBody(opts.focusTrack || 'fundamentos');
   const bd = document.getElementById('learn-hub-backdrop');
   if (!bd) return;
   learnHubLastFocus = document.activeElement;

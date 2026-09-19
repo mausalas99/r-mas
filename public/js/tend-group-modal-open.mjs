@@ -2,6 +2,8 @@ import {
   dedupeTrendSetsForSeries,
   getSetTrendValueForSeries,
   sortLabHistoryChronological,
+  parseFechaLabToMs,
+  tendEligibleSectionKey,
 } from './tend-core.mjs';
 import { readGroupVisibleFields } from './tend-prefs.mjs';
 import { toAscendingHistory } from './tend-group-chart-helpers.mjs';
@@ -35,6 +37,51 @@ export function resolveVisibleFields(patientId, sectionKey, eligible) {
   });
 }
 
+/** Otras secciones de laboratorio presentes en la historia, distintas de la abierta. */
+function otherSectionKeysInHistory(historyDesc, excludeSectionKey) {
+  var seen = Object.create(null);
+  var out = [];
+  (historyDesc || []).forEach(function (set) {
+    var pb = set && set.parsedBySection;
+    if (!pb) return;
+    Object.keys(pb).forEach(function (sk) {
+      if (sk === excludeSectionKey || seen[sk] || !tendEligibleSectionKey(sk)) return;
+      seen[sk] = true;
+      out.push(sk);
+    });
+  });
+  return out;
+}
+
+/** Analitos elegibles (≥2 tomas) de otras secciones, para agregar a la tabla combinada. */
+export function crossSectionEligibleSpecs(deps, state) {
+  var already = Object.create(null);
+  (state.tableExtraSpecs || []).forEach(function (sp) {
+    already[sp.sectionKey + '|' + sp.fieldKey] = true;
+  });
+  var out = [];
+  otherSectionKeysInHistory(state.historyDescFull, state.sectionKey).forEach(function (otherKey) {
+    eligibleSpecs(deps, otherKey, state.historyDescFull).forEach(function (sp) {
+      if (already[otherKey + '|' + sp.fieldKey]) return;
+      out.push(Object.assign({}, sp, { sectionKey: otherKey }));
+    });
+  });
+  return out;
+}
+
+/** Resuelve pares {sectionKey, fieldKey} guardados a specs vivas del catálogo actual. */
+export function resolveExtraSpecs(deps, historyDesc, savedPairs) {
+  var out = [];
+  (savedPairs || []).forEach(function (pair) {
+    var catalog = deps.getCatalogSpecs(pair.sectionKey, historyDesc) || [];
+    var found = catalog.filter(function (sp) {
+      return sp.fieldKey === pair.fieldKey;
+    })[0];
+    if (found) out.push(Object.assign({}, found, { sectionKey: pair.sectionKey }));
+  });
+  return out;
+}
+
 function hasBhSectionData(historyDesc) {
   return historyDesc.some(function (s) {
     return s.parsedBySection && s.parsedBySection.BH && Object.keys(s.parsedBySection.BH).length;
@@ -49,6 +96,25 @@ export function canOpenTendGroupModal(sectionKey, historyDesc, eligible) {
   return eligible.length > 0;
 }
 
+/** @param {unknown[]} historyDesc @param {string} fromIso @param {string} toIso */
+export function filterHistoryByDateRange(historyDesc, fromIso, toIso) {
+  if (!fromIso && !toIso) return historyDesc;
+  var fromMs = fromIso ? new Date(fromIso + 'T00:00:00').getTime() : -Infinity;
+  var toMs = toIso ? new Date(toIso + 'T23:59:59').getTime() : Infinity;
+  return (historyDesc || []).filter(function (s) {
+    var ms = parseFechaLabToMs(s.fecha, s.hora);
+    return typeof ms === 'number' && isFinite(ms) && ms >= fromMs && ms <= toMs;
+  });
+}
+
+/** Re-derive state.historyDesc/historyAsc from the unfiltered history for the given date range. */
+export function applyTendGroupDateRange(state, fromIso, toIso) {
+  state.rangeFrom = fromIso || '';
+  state.rangeTo = toIso || '';
+  state.historyDesc = filterHistoryByDateRange(state.historyDescFull, state.rangeFrom, state.rangeTo);
+  state.historyAsc = toAscendingHistory(state.historyDesc);
+}
+
 export function prepareTendGroupOpen(deps, state, sectionKey) {
   var patientId = deps.getActiveId();
   if (!patientId || !sectionKey) return null;
@@ -60,6 +126,9 @@ export function prepareTendGroupOpen(deps, state, sectionKey) {
   if (sectionKey === 'GASES') state.gasoExtendedFio2 = 0.21;
   state.sectionKey = sectionKey;
   state.patientId = patientId;
+  state.historyDescFull = historyDesc;
+  state.rangeFrom = '';
+  state.rangeTo = '';
   state.historyDesc = historyDesc;
   state.historyAsc = toAscendingHistory(historyDesc);
   state.specsByField = Object.create(null);
@@ -127,7 +196,7 @@ export function renderTendGroupPanels(sectionKey, renderCharts, renderTable) {
   }
 }
 
-export function copyTendGroupTablePng(deps, state) {
+export function copyTendGroupTablePng(deps, state, opts) {
   if (!state.tableModel) {
     if (deps.showToast) deps.showToast('No hay tabla para copiar', 'error');
     return;
@@ -142,7 +211,13 @@ export function copyTendGroupTablePng(deps, state) {
     if (deps.showToast) deps.showToast('Muestra al menos una fila y una columna', 'error');
     return;
   }
-  var title = (deps.getSectionLabel(state.sectionKey) || state.sectionKey || 'Tabla') + ' — Tendencias';
+  var titleElId = (opts && opts.titleElId) || 'tend-group-title';
+  var titleEl = document.getElementById(titleElId);
+  var editedTitle = titleEl && titleEl.textContent.trim();
+  var fallbackTitle =
+    (opts && opts.fallbackTitle) ||
+    (deps.getSectionLabel(state.sectionKey) || state.sectionKey || 'Tabla') + ' — Tendencias';
+  var title = editedTitle || fallbackTitle;
   copyTableModelAsPng(state.tableModel, title, function (ok) {
     if (deps.showToast) {
       deps.showToast(ok ? 'Tabla copiada como imagen ✓' : 'No se pudo copiar la imagen', ok ? 'success' : 'error');

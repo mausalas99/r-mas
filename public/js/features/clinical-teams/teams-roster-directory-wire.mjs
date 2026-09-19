@@ -22,7 +22,6 @@ import {
   refreshDirectoryFromHostUi,
 } from './teams-roster-directory-load.mjs';
 import {
-  syncAssignCycleSelect,
   handleLanDeleteDirectoryUserClick,
   handleLanAssignButtonClick,
 } from './teams-roster-directory-assign.mjs';
@@ -103,10 +102,6 @@ function wireDirectoryHostInteractions(host) {
     },
     true
   );
-  host.addEventListener('change', (ev) => {
-    const teamSelect = ev.target instanceof Element ? ev.target.closest('.clinical-directory-assign-team') : null;
-    if (teamSelect) syncAssignCycleSelect(teamSelect);
-  });
   host.addEventListener('click', (ev) => {
     const refreshBtn =
       ev.target instanceof Element ? ev.target.closest('.clinical-directory-refresh-btn') : null;

@@ -1119,11 +1119,214 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   cursor: default;
 }
 
+.hf-narrative {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
 .ea-diet-weight-hint {
   margin: 0;
   font-size: calc(11px * var(--density-font, 1));
   color: var(--text-muted);
   line-height: 1.4;
+}
+
+/* Cardio congestión/POCUS + identity rows — inline fields need a real
+   min-width or labels collapse below their text width and overlap the
+   next field when the row wraps. */
+.ea-clinico-cardio-congestion-form .ea-field--inline,
+.ea-clinico-cardio-identity-row .ea-field--inline {
+  flex: 1 1 130px;
+  min-width: 130px;
+}
+
+/* Identity row + POCUS/Congestión modal outer wrap — stack of section
+   cards instead of one flat field wall. */
+.ea-clinico-cardio-identity-row,
+.ea-clinico-cardio-congestion-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Section grouping — every plain-text sub-heading (Historia de IC,
+   Exploración física, US pulmonar, etc.) becomes a visually distinct card:
+   subtle border/tint, consistent padding, spacing between sections. Reuses
+   the `.ea-snapshot-zone` card look (border + tinted surface) already used
+   for the dashboard strip, so cardio modals/wizard match the rest of the
+   panel instead of inventing a second visual language. */
+.hf-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+}
+
+/* Bedside/always-relevant checklist group — sits first and reads as more
+   prominent than the detailed/optional imaging-grade sections below it. */
+.hf-section--primary {
+  border-color: color-mix(in oklab, var(--action) 24%, var(--border));
+  background: color-mix(in oklab, var(--action) 6%, var(--surface));
+}
+
+.hf-section-title {
+  margin: 0;
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* CSS Grid field layout — replaces ad hoc `flex-wrap` rows so fields align
+   into clean columns at desktop widths instead of breaking unpredictably. */
+.hf-field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px 12px;
+  align-items: start;
+}
+
+.hf-field-grid .ea-field,
+.hf-field-grid .ea-field--inline {
+  min-width: 0;
+  flex: unset;
+}
+
+.hf-duration-field {
+  display: flex;
+  gap: 6px;
+}
+
+.hf-duration-field .hf-duration-number {
+  width: 4.5em;
+  flex: 0 0 auto;
+}
+
+.hf-duration-field .hf-duration-unit {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 8-zone lung-US grid — two side-by-side columns (Der./Izq.) so the two
+   lung sides read as visually distinct groups instead of 8 stacked
+   look-alike blocks. */
+.hf-lung-grid {
+  display: flex;
+  gap: 14px;
+}
+
+.hf-lung-grid-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hf-lung-grid-side-title {
+  margin: 0;
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.hf-lung-grid-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--lab-chip-bg, var(--color-accent-soft)) 30%, var(--surface));
+}
+
+.hf-lung-grid-zone-label {
+  font-size: calc(10px * var(--density-font, 1));
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+@media (max-width: 640px) {
+  .hf-lung-grid {
+    flex-direction: column;
+  }
+}
+
+/* Estado Actual dashboard — boxy cards, click to open the matching modal */
+.ea-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: calc(10px * var(--density-space, 1));
+}
+
+.ea-dash-card {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.12s, transform 0.12s;
+}
+
+.ea-dash-card:hover {
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+  transform: translateY(-1px);
+}
+
+.ea-dash-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.ea-dash-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ea-dash-card-title {
+  margin: 0;
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.ea-dash-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ea-dash-card-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: calc(12px * var(--density-font, 1));
+}
+
+.ea-dash-card-row-label {
+  color: var(--text-muted);
+}
+
+.ea-dash-card-row-val {
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+}
+
+.ea-dash-card-empty {
+  margin: 0;
+  font-size: calc(11px * var(--density-font, 1));
+  color: var(--text-muted);
 }
 
 /* Vitals grid — compact clinical inputs */
@@ -2909,6 +3112,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   background: var(--surface);
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .ea-paste-nested-backdrop {

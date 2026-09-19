@@ -1,16 +1,13 @@
 /**
  * Shell de aplicación: chrome de contexto, toast, modales, export clínico, atajos y arranque diferido.
  */
-import { renderGuardiaCensusGrid, syncGuardiaCensusPanelVisibility } from './clinical-access-runtime.mjs';
 import {
   registerDocumentExportRuntime,
   saveOutputDirSelection,
 } from './document-export-client.mjs';
 import {
-  isGuardiaMode,
   syncHeaderModeSeg,
 } from './features/chrome.mjs';
-import { renderGuardiaBoard, syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
 import {
   loadSettings,
 } from './features/profile.mjs';
@@ -132,10 +129,6 @@ function syncWorkContextChrome() {
   syncActivePatientContextBar();
   syncHeaderModeSeg();
   syncMedPatientGate();
-  syncGuardiaModeButtonVisibility();
-  syncGuardiaCensusPanelVisibility(shellCtx.getSettings());
-  renderGuardiaCensusGrid(shellCtx.getSettings());
-  if (isGuardiaMode()) renderGuardiaBoard(shellCtx.getSettings());
   void import('./features/header-context.mjs').then(function (mod) {
     mod.syncHeaderContext(shellCtx);
   });

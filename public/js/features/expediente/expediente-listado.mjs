@@ -266,11 +266,11 @@ function _renderListadoMedicosCard(lst) {
       'Médicos (firma)' +
       '<span class="card-header-subhint">Pre-llena desde Mi Perfil. Edita aquí para este paciente.</span>' +
     '</div><div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-      row('profesor', 'Profesor') +
-      row('r4',       'R4') +
-      row('r2',       'R2') +
-      row('r1a',      'R1 (1)') +
-      row('r1b',      'R1 (2)') +
+      row('profesor', 'Jefe de servicio') +
+      row('r4',       'Médico 2') +
+      row('r2',       'Médico 3') +
+      row('r1a',      'Médico 4') +
+      row('r1b',      'Médico 5') +
     '</div></div>'
   );
 }

@@ -136,6 +136,19 @@ function wireModalDismissLayers(registry) {
     panelSelector: '#tend-group-modal',
   });
 
+  registry.register({
+    isOpen: function () {
+      var bd = shellEl('tend-dynamic-table-backdrop');
+      if (bd && bd.getAttribute('aria-hidden') === 'false') return true;
+      return chartsShellCloseProxies.isTendDynamicTableModalOpen();
+    },
+    close: chartsShellCloseProxies.closeTendDynamicTableModal,
+    backdropEl: function () {
+      return shellEl('tend-dynamic-table-backdrop');
+    },
+    panelSelector: '#tend-dynamic-table-modal',
+  });
+
   regAriaOpen(registry, 'rpc-wipe-modal', closeWipeDataModal);
   regOpenClass(registry, 'soap-modal-backdrop', closeSOAPModal);
   regOpenClass(registry, 'procedure-agenda-modal', closeProcedureAgendaModal, {

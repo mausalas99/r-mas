@@ -349,78 +349,6 @@
   </div>
 </div>
 
-<div id="drive-import-backdrop" class="modal-backdrop" aria-hidden="true">
-  <div class="modal drive-import-modal" data-drive-step="paste" role="dialog" aria-modal="true" aria-labelledby="drive-import-title" onclick="event.stopPropagation()">
-    <header class="drive-import-head">
-      <h3 id="drive-import-title">Importar desde Drive</h3>
-      <p id="drive-import-hint" class="drive-import-hint">Pega el documento copiado desde Google Docs. Revisarás cada sección antes de importar.</p>
-    </header>
-
-    <div id="drive-import-step-paste" class="drive-import-pane drive-import-pane--paste">
-      <fieldset id="drive-import-mode-fieldset" class="drive-import-modes">
-        <legend class="visually-hidden">Modo de aplicación</legend>
-        <label class="drive-import-radio"><input type="radio" name="drive-import-mode" value="fill" checked /> Completar vacíos</label>
-        <label class="drive-import-radio"><input type="radio" name="drive-import-mode" value="replace" /> Reemplazar HC</label>
-        <label class="drive-import-radio"><input type="radio" name="drive-import-mode" value="eventos" /> Solo eventualidades</label>
-      </fieldset>
-      <p id="drive-import-warning" class="drive-import-warning" hidden></p>
-      <label for="drive-import-input" class="drive-import-dropzone">
-        <span class="drive-import-dropzone-label">Documento de Drive</span>
-        <textarea
-          id="drive-import-input"
-          class="drive-import-input"
-          rows="3"
-          spellcheck="false"
-          placeholder="Ctrl+V o ⌘V para pegar aquí…"
-        ></textarea>
-        <span class="drive-import-dropzone-meta">Análisis local · no se envía a ningún servidor</span>
-      </label>
-      <p id="drive-import-parse-hint" class="drive-import-parse-hint" hidden aria-live="polite"></p>
-    </div>
-
-    <div id="drive-import-step-review" class="drive-import-pane drive-import-pane--review" hidden>
-      <div class="drive-import-doc-bar">
-        <span id="drive-import-doc-summary" class="drive-import-doc-summary"></span>
-        <button type="button" class="drive-import-doc-edit" id="drive-import-back-paste">Cambiar texto</button>
-      </div>
-      <div class="drive-import-review-top">
-        <p id="drive-import-review-progress" class="drive-import-review-progress" aria-live="polite"></p>
-        <div class="drive-import-review-dots" id="drive-import-review-dots" role="tablist" aria-label="Secciones a revisar"></div>
-      </div>
-      <article class="drive-import-review-card">
-        <h4 id="drive-import-review-title" class="drive-import-review-title"></h4>
-        <p id="drive-import-review-hint" class="drive-import-review-hint"></p>
-        <label id="drive-import-review-include-wrap" class="drive-import-review-include">
-          <input type="checkbox" id="drive-import-review-include" checked />
-          <span>Incluir al importar</span>
-        </label>
-        <div id="drive-import-review-structured" class="drive-import-review-structured" hidden></div>
-        <textarea
-          id="drive-import-review-editor"
-          class="drive-import-review-editor"
-          rows="10"
-          spellcheck="true"
-          aria-labelledby="drive-import-review-title"
-        ></textarea>
-        <div id="drive-import-review-list" class="drive-import-review-list" hidden></div>
-      </article>
-    </div>
-
-    <div class="modal-actions drive-import-actions">
-      <div id="drive-import-actions-paste" class="drive-import-actions-group">
-        <button type="button" class="btn-med-secondary btn-med-secondary--muted" id="drive-import-cancel" onclick="closeDriveImportModal()">Cancelar</button>
-        <button type="button" class="btn-med-secondary" id="drive-import-apply-fast">Importar sin revisar</button>
-        <button type="button" class="btn-generate" id="drive-import-confirm" disabled>Revisar secciones…</button>
-      </div>
-      <div id="drive-import-actions-review" class="drive-import-actions-group" hidden>
-        <button type="button" class="btn-med-secondary btn-med-secondary--muted" id="drive-import-cancel-review" onclick="closeDriveImportModal()">Cancelar</button>
-        <button type="button" class="btn-med-secondary btn-med-secondary--muted" id="drive-import-review-prev">Anterior</button>
-        <button type="button" class="btn-generate" id="drive-import-review-next">Importar lo aprobado</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div id="lab-manual-entry-modal" class="modal-backdrop" aria-hidden="true" hidden>
   <div class="modal lab-manual-entry-modal" role="dialog" aria-modal="true" aria-labelledby="lab-manual-entry-title" onclick="event.stopPropagation()">
     <div class="lab-manual-entry-head">
@@ -664,11 +592,6 @@
       <button type="button" class="btn-header-icon ui-pressable" id="btn-header-shortcuts" onclick="openShortcutsModal()" title="Atajos de teclado (⌘/)" aria-label="Ver atajos de teclado">
         <svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/></svg>
       </button>
-
-      <button type="button" id="btn-export-censo-header" class="btn-export-censo-header" style="display:none;" onclick="exportCensoPdfFromHelp()" title="PDF de guardia con todos los pacientes activos">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
-        Censo PDF
-      </button>
       <div id="header-mode-seg" class="header-mode-seg" role="group" aria-label="Modo de trabajo" aria-expanded="false">
         <button type="button" class="header-mode-seg-btn" data-mode="sala" onclick="setWorkModeFromHeader('sala')" aria-pressed="false" title="Hospitalización — Estado actual, Historia, Listado de problemas">Hospitalización</button>
         <button type="button" class="header-mode-seg-btn" data-mode="interconsulta" onclick="setWorkModeFromHeader('interconsulta')" aria-pressed="false" title="Consulta Externa — Nota de evolución, Indicaciones">Consulta Externa</button>
@@ -746,9 +669,7 @@
       <details class="help-learn-advanced">
         <summary>Avanzado</summary>
         <div class="help-learn-advanced-body">
-          <button type="button" class="help-tour-btn" id="btn-export-censo" style="display:none;" onclick="exportCensoPdfFromHelp()">Exportar censo (PDF)</button>
           <button type="button" class="help-tour-btn" id="btn-start-presentation" onclick="togglePresentationModeFromHelp()">Modo presentación (DEMO PÉREZ)</button>
-          <button type="button" class="help-tour-btn" id="btn-seed-guardia-census" style="display:none;" onclick="seedPitchGuardiaCensusFromHelp()">Censo de guardia demo (25 pacientes)</button>
           <button type="button" class="help-tour-btn" onclick="importBundledDemoPerez()">Importar DEMO PÉREZ (JSON incluido)</button>
         </div>
       </details>
@@ -847,12 +768,6 @@
       <label class="visually-hidden" for="patient-search">Buscar paciente</label>
       <input type="search" class="patient-search-input" id="patient-search" placeholder="Buscar por nombre, registro, cuarto…" autocomplete="off" oninput="onPatientSearchInput(this.value)">
     </div>
-    <div class="sidebar-censo-export-wrap" id="sidebar-censo-export-wrap" style="display:none;">
-      <button type="button" class="btn-export-censo-sidebar" id="btn-export-censo-sidebar" onclick="exportCensoPdfFromHelp()" title="Generar PDF del censo de guardia">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
-        Exportar censo (PDF)
-      </button>
-    </div>
     <div class="sidebar-ronda-hint" id="sidebar-ronda-hint" aria-hidden="true">
       <span class="sidebar-ronda-hint-keys"><kbd>↓</kbd><kbd>↑</kbd></span>
       <span data-i18n="roundMode.hint">↑ / ↓ · paciente siguiente / anterior</span>
@@ -872,11 +787,10 @@
       <span id="lan-connection-banner-text" class="lan-connection-banner-text">Sin conexión a R+ Cloud. La sincronización de sala puede estar limitada hasta reconectar en ⇄.</span>
       <button type="button" class="lan-connection-banner-dismiss" onclick="dismissLanDisconnectBanner()" aria-label="Ocultar aviso de desconexión" title="Ocultar aviso">×</button>
     </div>
-    <section id="guardia-census-panel" class="guardia-census-panel" aria-label="Censo de guardia" hidden></section>
     <div class="workbench-chrome">
     <div class="clinical-context-bar" id="clinical-context-bar" hidden>
       <div class="clinical-rotation-section" id="clinical-rotation-section" hidden>
-        <button type="button" class="app-bar-mi-rotacion" id="btn-sidebar-mi-rotacion" title="@usuario, equipos de sala y entregas" onclick="void openMiRotacion()">
+        <button type="button" class="app-bar-mi-rotacion" id="btn-sidebar-mi-rotacion" title="@usuario y equipos de sala" onclick="void openMiRotacion()">
           <span class="app-bar-mi-rotacion-icon" aria-hidden="true">↻</span>
           <span class="app-bar-mi-rotacion-label">Mi rotación</span>
           <span class="app-bar-mi-rotacion-meta" id="clinical-rotation-entry-primary">Configura tu rotación</span>
@@ -903,43 +817,15 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
         <span class="app-tab-label" data-i18n="appTab.agenda">Agenda</span>
       </button>
+      <button type="button" class="app-tab" role="tab" id="apptab-directorio" aria-selected="false" aria-controls="appcontent-directorio" tabindex="-1" onclick="switchAppTab('directorio')" data-i18n-aria-label="appTab.directorio" data-i18n-title="appTab.directorio">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <span class="app-tab-label" data-i18n="appTab.directorio">Directorio</span>
+      </button>
       </div>
     </div>
     </div>
     <main id="main-area">
 
-    <div id="appcontent-guardia" class="appcontent-guardia app-tab-panel-hidden" style="flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
-      <div id="guardia-board-scroll" class="guardia-board-scroll">
-        <div id="guardia-mode-frame" class="wb-mode-frame-mount" aria-label="Guardia"></div>
-        <div id="guardia-trust-strip" class="guardia-trust-strip" hidden aria-label="Estado Nube, sala y equipo"></div>
-        <div id="guardia-phase-bar" class="guardia-phase-bar" hidden aria-label="Estado del turno de guardia"></div>
-        <p id="guardia-entrega-phase-status" class="guardia-entrega-phase-status visually-hidden" aria-live="polite" hidden></p>
-        <div id="guardia-incoming-strip" class="guardia-incoming-strip" hidden aria-label="Pacientes entrantes (preview)"></div>
-        <div id="guardia-orphan-entregas-strip" class="guardia-orphan-entregas-strip" hidden aria-label="Entregas sin expediente local"></div>
-        <section class="guardia-panel guardia-panel--metrics" id="guardia-metrics-panel" aria-label="Resumen de guardia">
-          <div class="guardia-metrics-toolbar" id="guardia-census-scope">
-            <div id="guardia-summary" class="guardia-summary guardia-summary--compact" role="group" aria-label="Indicadores del turno"></div>
-            <button type="button" id="btn-guardia-mode-toggle" class="btn-guardia-mode btn-guardia-mode--compact" aria-pressed="false" title="Filtro de la grilla: todos los pacientes en tu alcance o solo los entregados a ti.">
-              <span class="guardia-mode-label">Censo: todos</span>
-              <span class="guardia-mode-switch" aria-hidden="true"></span>
-            </button>
-          </div>
-          <p id="guardia-census-filter-hint" class="guardia-census-filter-hint visually-hidden" aria-live="polite"></p>
-        </section>
-        <section class="guardia-panel guardia-panel--vitals" id="guardia-vitals-section" hidden aria-label="Signos vitales del turno">
-          <div id="guardia-vitals-feed" class="guardia-vitals-feed"></div>
-        </section>
-        <div class="guardia-board-columns">
-          <section class="guardia-panel guardia-panel--census" aria-label="Censo de pacientes">
-            <div id="guardia-census-head" class="guardia-census-head"></div>
-            <div id="guardia-census-grid" class="patient-chips-grid"></div>
-          </section>
-          <aside class="guardia-board-side" aria-label="Signos recibidos de internos">
-            <div id="guardia-signos-recibidos"></div>
-          </aside>
-        </div>
-      </div>
-    </div>
 
     <div id="appcontent-lab" role="tabpanel" aria-labelledby="apptab-lab" aria-hidden="true" class="lab-panel-root app-tab-panel-hidden">
       <div class="lab-active-shell">
@@ -1074,7 +960,7 @@
         </div>
         <div id="med-work-area" class="main-work-scroll med-pharm-root">
         <div id="med-subview-receta" class="med-receta-subview">
-        <div class="card med-active-card">
+        <div id="med-turno-card" class="card med-active-card">
           <div class="card-header card-header-row med-active-card-header">
             <span class="med-active-card-title">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
@@ -1190,6 +1076,23 @@
       </div>
     </div>
 
+    <div id="appcontent-directorio" role="tabpanel" aria-labelledby="apptab-directorio" aria-hidden="true" class="app-tab-panel-hidden" style="flex-direction:column;flex:1;overflow:hidden;">
+      <div class="rpc-proc-agenda-root">
+        <div class="rpc-proc-agenda-header">
+          <div class="rpc-proc-agenda-titlewrap">
+            <h2 class="rpc-proc-agenda-title">Directorio de pacientes</h2>
+          </div>
+        </div>
+        <div class="patient-search-wrap">
+          <label class="visually-hidden" for="directorio-search">Buscar en directorio</label>
+          <input type="search" class="patient-search-input" id="directorio-search" placeholder="Buscar por nombre o registro…" autocomplete="off" oninput="onDirectorioSearchInput(this.value)">
+        </div>
+        <div class="rpc-proc-agenda-scroll">
+          <div class="patient-list" id="directorio-list"></div>
+        </div>
+      </div>
+    </div>
+
     <div id="appcontent-nota" role="tabpanel" aria-labelledby="apptab-nota" aria-hidden="false" style="flex-direction:column;flex:1;overflow:hidden;">
       <div class="empty-state" id="empty-state">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
@@ -1233,14 +1136,9 @@
               Datos
             </button>
           </div>
-          <div class="exp-expediente-nav-actions" id="exp-clinico-drive-actions" hidden>
-            <button type="button" class="btn-med-secondary drive-import-trigger exp-drive-tab-action" id="btn-drive-import" onclick="openDriveImportModal()" aria-label="Importar desde Drive">Importar desde Drive</button>
-          </div>
         </div>
         <div id="expediente-panes-host" class="expediente-panes-host">
           <div id="itab-content-paciente" class="tab-content exp-composite-pane">
-            <div id="interconsulta-mode-frame" class="wb-mode-frame-mount" hidden aria-label="Interconsulta"></div>
-            <div id="interconsulta-consult-band" hidden></div>
             <div id="patient-dashboard-mount" class="patient-dash"></div>
             <div id="exp-pendientes-header" class="exp-pendientes-header" hidden>
               <button type="button" class="link back" id="btn-volver-al-resumen">Volver al resumen</button>
@@ -1250,7 +1148,7 @@
           <div id="itab-content-clinico" class="tab-content exp-composite-pane">
             <div class="exp-segment-bar rpc-subtab-bar" id="exp-segment-clinico" role="tablist" aria-label="Secciones clínicas">
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-estadoActual" role="tab" data-exp-segment="estadoActual" aria-selected="false" aria-controls="itab-content-estadoActual" onclick="switchInnerTab('estadoActual')">Estado actual</button>
-              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-consultaIC" role="tab" data-exp-segment="consultaIC" aria-selected="false" aria-controls="itab-content-consultaIC" onclick="switchInnerTab('consultaIC')">Consulta IC</button>
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-consultaIC" role="tab" data-exp-segment="consultaIC" aria-selected="false" aria-controls="itab-content-consultaIC" onclick="switchInnerTab('consultaIC')">Consulta</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-evaluacionInicial" role="tab" data-exp-segment="evaluacionInicial" aria-selected="false" aria-controls="itab-content-evaluacionInicial" onclick="switchInnerTab('evaluacionInicial')">Eval. inicial</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-notas" role="tab" data-exp-segment="notas" aria-selected="false" aria-controls="itab-content-notas" onclick="switchInnerTab('notas')">Nota de evolución</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-indica" role="tab" data-exp-segment="indica" aria-selected="false" aria-controls="itab-content-indica" onclick="switchInnerTab('indica')">Indicaciones</button>
@@ -1335,12 +1233,6 @@
     </h3>
     <p class="profile-modal-lead">Configura cómo usas R+ y cómo se firman notas y documentos. Los cambios en plantillas solo aplican en campos vacíos al abrir un paciente.</p>
     <div class="profile-body" id="profile-body">
-      <section class="profile-block profile-block--span-full profile-block--bridge" id="profile-clinical-bridge" hidden>
-        <h4 class="profile-block-title">Guardia y equipos</h4>
-        <p class="profile-hint">@usuario, sala clínica, equipo y entregas. Es independiente del nombre que aparece en notas y Word abajo.</p>
-        <button type="button" class="btn-edit-templates profile-bridge-btn" onclick="void openMiRotacion()">Abrir Mi rotación →</button>
-      </section>
-
       <section class="profile-block profile-block--mode">
         <h4 class="profile-block-title">Modo de trabajo</h4>
         <p class="profile-hint">Define qué pestañas del expediente ves (hospitalización vs consulta).</p>
@@ -1351,7 +1243,7 @@
         <p class="profile-hint profile-hint--compact">Sala: Estado actual y listado. Interconsulta: nota e indicaciones.</p>
         <div class="profile-field profile-field--servicio" id="profile-default-servicio-wrap">
           <label class="profile-field-label" for="settings-default-servicio">Servicio predeterminado</label>
-          <input class="profile-input" id="settings-default-servicio" type="text" placeholder="CIRUGÍA GENERAL" style="text-transform:uppercase;" onblur="onDefaultServicioBlur()">
+          <input class="profile-input" id="settings-default-servicio" type="text" placeholder="CARDIOLOGÍA" style="text-transform:uppercase;" onblur="onDefaultServicioBlur()">
           <p class="profile-hint">Pre-llena el campo Servicio al agregar pacientes en modo Sala.</p>
           <p id="default-servicio-warning" class="profile-hint profile-hint--warn" style="display:none;">Usa el nombre completo del servicio (evita abreviaturas de 1–3 letras).</p>
         </div>
@@ -1376,7 +1268,7 @@
           </div>
           <div class="profile-field">
             <label class="profile-field-label" for="profile-grado">Grado / servicio en nota</label>
-            <input class="profile-input" id="profile-grado" type="text" placeholder="R3 · Medicina Interna">
+            <input class="profile-input" id="profile-grado" type="text" placeholder="R3 · Cardiología">
           </div>
         </div>
       </section>
@@ -1389,38 +1281,22 @@
             <h5 class="profile-subblock-title">Censo PDF — encabezado</h5>
             <p class="profile-hint">Ubicación y nombres bajo el título del PDF de guardia.</p>
             <div class="profile-field">
-              <label class="profile-field-label" for="profile-censo-sala">Sala / ubicación</label>
-              <select class="profile-input profile-select" id="profile-censo-sala">
-                <option value="">—</option>
-                <option value="1">Sala 1</option>
-                <option value="2">Sala 2</option>
-                <option value="E">Sala E</option>
-                <option value="torre">Torre HU</option>
-              </select>
-            </div>
-            <div class="profile-field">
               <label class="profile-field-label" for="profile-censo-fimi-label">Etiqueta FIMI</label>
               <input class="profile-input" id="profile-censo-fimi-label" type="text" placeholder="FIMI" maxlength="24">
-              <p class="profile-hint profile-hint--field">En datos del paciente y censo PDF. FIUX es fijo.</p>
+              <p class="profile-hint profile-hint--field">En datos del paciente y censo PDF.</p>
             </div>
-            <p class="profile-hint profile-hint--spaced">Equipo en el PDF</p>
-            <div class="profile-grid-2">
-              <div class="profile-field">
-                <label class="profile-field-label" for="profile-r2">R2 (censo)</label>
-                <input class="profile-input" id="profile-r2" type="text" placeholder="Nombre del R2">
-              </div>
-              <div class="profile-field">
-                <label class="profile-field-label" for="profile-r1a">R1 (1) censo</label>
-                <input class="profile-input" id="profile-r1a" type="text" placeholder="Nombre R1">
-              </div>
-              <div class="profile-field">
-                <label class="profile-field-label" for="profile-r1b">R1 (2) censo</label>
-                <input class="profile-input" id="profile-r1b" type="text" placeholder="Nombre R1">
-              </div>
-              <div class="profile-field">
-                <label class="profile-field-label" for="profile-maestro">Maestro (censo)</label>
-                <input class="profile-input" id="profile-maestro" type="text" placeholder="Dr. Nombre Apellido">
-              </div>
+            <div class="profile-field">
+              <label class="profile-field-label" for="profile-censo-fiux-label">Etiqueta FIUX</label>
+              <input class="profile-input" id="profile-censo-fiux-label" type="text" placeholder="FIUX" maxlength="24">
+              <p class="profile-hint profile-hint--field">En datos del paciente y censo PDF.</p>
+            </div>
+            <div class="profile-field">
+              <label class="profile-field-label" for="profile-censo-equipo">Equipo (censo)</label>
+              <textarea class="profile-input" id="profile-censo-equipo" rows="4" placeholder="Un nombre por línea"></textarea>
+            </div>
+            <div class="profile-field">
+              <label class="profile-field-label" for="profile-censo-jefe">Jefe de servicio (censo)</label>
+              <input class="profile-input" id="profile-censo-jefe" type="text" placeholder="Dr. Nombre Apellido">
             </div>
             <p class="profile-hint profile-hint--field">Vacío → R+ puede usar las firmas del listado abajo.</p>
           </div>
@@ -1428,11 +1304,11 @@
             <h5 class="profile-subblock-title">Listado — bloque «Médicos (firma)»</h5>
             <p class="profile-hint">Plantilla al generar el listado. Por paciente puedes cambiarla en Salida → Listado.</p>
             <div class="profile-grid-2">
-              <div class="profile-field"><label class="profile-field-label" for="settings-medico-profesor">Profesor (listado)</label><input class="profile-input" id="settings-medico-profesor" type="text" onblur="onMedicoTemplateBlur()"></div>
-              <div class="profile-field"><label class="profile-field-label" for="settings-medico-r4">R4 (listado)</label><input class="profile-input" id="settings-medico-r4" type="text" onblur="onMedicoTemplateBlur()"></div>
-              <div class="profile-field"><label class="profile-field-label" for="settings-medico-r2">R2 (listado)</label><input class="profile-input" id="settings-medico-r2" type="text" onblur="onMedicoTemplateBlur()"></div>
-              <div class="profile-field"><label class="profile-field-label" for="settings-medico-r1a">R1 (1) listado</label><input class="profile-input" id="settings-medico-r1a" type="text" onblur="onMedicoTemplateBlur()"></div>
-              <div class="profile-field"><label class="profile-field-label" for="settings-medico-r1b">R1 (2) listado</label><input class="profile-input" id="settings-medico-r1b" type="text" onblur="onMedicoTemplateBlur()"></div>
+              <div class="profile-field"><label class="profile-field-label" for="settings-medico-profesor">Jefe de servicio (listado)</label><input class="profile-input" id="settings-medico-profesor" type="text" onblur="onMedicoTemplateBlur()"></div>
+              <div class="profile-field"><label class="profile-field-label" for="settings-medico-r4">Médico 2 (listado)</label><input class="profile-input" id="settings-medico-r4" type="text" onblur="onMedicoTemplateBlur()"></div>
+              <div class="profile-field"><label class="profile-field-label" for="settings-medico-r2">Médico 3 (listado)</label><input class="profile-input" id="settings-medico-r2" type="text" onblur="onMedicoTemplateBlur()"></div>
+              <div class="profile-field"><label class="profile-field-label" for="settings-medico-r1a">Médico 4 (listado)</label><input class="profile-input" id="settings-medico-r1a" type="text" onblur="onMedicoTemplateBlur()"></div>
+              <div class="profile-field"><label class="profile-field-label" for="settings-medico-r1b">Médico 5 (listado)</label><input class="profile-input" id="settings-medico-r1b" type="text" onblur="onMedicoTemplateBlur()"></div>
             </div>
           </div>
         </div>
@@ -1455,8 +1331,6 @@
     </div>
   </div>
 </div>
-
-<div id="entrega-roster-panel" class="entrega-roster-panel-host"></div>
 
 <div class="modal-backdrop" id="modal" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -1517,7 +1391,7 @@
         </div>
       </div>
       <div class="field-group" id="m-area-group"><label>Área / Departamento *</label><input id="m-area" type="text" placeholder="ej. CIRUGÍA AB" style="text-transform:uppercase;"></div>
-      <div class="field-group" id="m-servicio-group"><label id="m-servicio-label">Servicio *</label><input id="m-servicio" type="text" placeholder="ej. CIRUGÍA GENERAL" style="text-transform:uppercase;"></div>
+      <div class="field-group" id="m-servicio-group"><label id="m-servicio-label">Servicio *</label><input id="m-servicio" type="text" placeholder="ej. CARDIOLOGÍA" style="text-transform:uppercase;"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="field-group"><label>Cuarto *</label><input id="m-cuarto" type="text" placeholder="440"></div>
         <div class="field-group"><label>Cama *</label><input id="m-cama" type="text" placeholder="05"></div>
@@ -2051,111 +1925,7 @@
   </div>
 </div>
 
-<div id="entrega-modal-backdrop" class="modal-backdrop entrega-modal-backdrop" aria-hidden="true">
-  <div class="modal entrega-modal entrega-modal--wide" id="entrega-modal" role="dialog" aria-modal="true" aria-labelledby="entrega-modal-nav-name" onclick="event.stopPropagation()">
-    <div class="entrega-modal-nav" id="entrega-modal-nav">
-      <button type="button" class="entrega-nav-btn" id="entrega-nav-prev" aria-label="Paciente anterior" disabled>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <div class="entrega-nav-patient">
-        <span class="entrega-nav-patient-name" id="entrega-modal-nav-name">—</span>
-        <span class="entrega-nav-patient-dx" id="entrega-modal-nav-dx"></span>
-      </div>
-      <div class="entrega-nav-meta">
-        <span class="entrega-active-badge hidden" id="entrega-modal-active-badge">
-          <svg width="6" height="6" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="4" fill="currentColor"/></svg>
-          Entrega activa
-        </span>
-        <span class="entrega-nav-counter" id="entrega-modal-nav-counter"></span>
-      </div>
-      <button type="button" class="entrega-nav-btn" id="entrega-nav-next" aria-label="Paciente siguiente" disabled>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
-    </div>
-    <h3 id="entrega-modal-title" class="visually-hidden">Entrega de paciente</h3>
-    <form id="entrega-form" class="entrega-modal-form">
-      <div class="entrega-form-body">
-        <section class="entrega-top-strip clinical-teams-create-form" aria-label="Datos de entrega">
-          <div class="field-group entrega-field-group--r1">
-            <label for="entrega-covering-user">R1 de guardia</label>
-            <p id="entrega-covering-hint" class="clinical-teams-section-desc entrega-field-hint hidden"></p>
-            <select id="entrega-covering-user" class="profile-input" required></select>
-          </div>
-          <div class="field-group entrega-field-group--patient-team">
-            <label for="entrega-source-team">Equipo del paciente</label>
-            <p id="entrega-source-team-hint" class="clinical-teams-section-desc entrega-field-hint hidden"></p>
-            <select id="entrega-source-team" class="profile-input" required></select>
-          </div>
-          <div id="entrega-clinical-status-slot" class="field-group"></div>
-        </section>
 
-        <p id="entrega-flow-hint" class="clinical-teams-section-desc entrega-modal-lead hidden"></p>
-
-        <div id="entrega-handoff-panel" class="entrega-handoff-panel"></div>
-
-        <p id="entrega-handoff-summary" class="entrega-handoff-summary" aria-live="polite"></p>
-
-        <section class="clinical-teams-section clinical-teams-section--directory entrega-panel entrega-panel--pendientes" aria-label="Procedimientos y estudios">
-          <details class="entrega-proc-details">
-            <summary class="entrega-proc-summary">
-              <h4 class="clinical-teams-section-title">Procedimientos y estudios</h4>
-            </summary>
-            <div class="entrega-panel-body entrega-proc-block">
-              <div class="entrega-proc-toolbar">
-                <button type="button" id="btn-entrega-add-proc" class="btn-med-secondary">
-                  + Procedimiento
-                </button>
-              </div>
-              <ul id="entrega-proc-list" class="entrega-proc-list"></ul>
-              <div id="entrega-proc-form" class="entrega-proc-form hidden" aria-hidden="true"></div>
-            </div>
-          </details>
-        </section>
-      </div>
-      <footer class="modal-actions entrega-modal-foot">
-        <button type="button" class="btn-cancel" id="btn-entrega-cancel">Cancelar</button>
-        <button type="submit" class="btn-save" id="btn-entrega-save">Guardar paciente</button>
-      </footer>
-    </form>
-  </div>
-</div>
-
-<div id="guardia-hoy-modal-backdrop" class="modal-backdrop guardia-hoy-modal-backdrop" aria-hidden="true">
-  <div class="modal guardia-hoy-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-hoy-modal-title" onclick="event.stopPropagation()">
-    <h3 id="guardia-hoy-modal-title">Activar guardia hoy</h3>
-    <p class="clinical-registration-lead guardia-hoy-modal-lead">
-      Declara quién es el R1 de guardia en tu sala. Puedes activar guardia aunque no sea tu día de ciclo.
-    </p>
-    <form id="guardia-hoy-form">
-      <div id="guardia-hoy-modal-body" class="guardia-hoy-modal-body"></div>
-      <div class="modal-actions guardia-hoy-modal-actions">
-        <button type="button" class="btn-cancel" id="guardia-hoy-btn-cancel">Cancelar</button>
-        <button type="button" class="btn-med-secondary" id="guardia-hoy-btn-skip">Continuar sin activar</button>
-        <button type="submit" class="btn-save" id="guardia-hoy-btn-confirm">Activar guardia</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<div id="guardia-patient-action-backdrop" class="modal-backdrop guardia-patient-action-backdrop" aria-hidden="true">
-  <div class="modal guardia-patient-action-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-patient-action-title" onclick="event.stopPropagation()">
-    <h3 id="guardia-patient-action-title">Paciente</h3>
-    <div id="guardia-patient-action-body" class="guardia-patient-action-body"></div>
-    <div class="modal-actions guardia-patient-action-footer">
-      <button type="button" class="btn-cancel" id="guardia-patient-action-cancel">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<div id="guardia-fin-turno-backdrop" class="modal-backdrop guardia-fin-turno-backdrop" aria-hidden="true">
-  <div class="modal guardia-fin-turno-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-fin-turno-title" onclick="event.stopPropagation()">
-    <h3 id="guardia-fin-turno-title">Cierre de guardia</h3>
-    <div id="guardia-fin-turno-body" class="guardia-fin-turno-body"></div>
-    <div class="modal-actions guardia-fin-turno-footer">
-      <button type="button" class="btn-cancel" id="guardia-fin-turno-dismiss">Cerrar sin enviar</button>
-    </div>
-  </div>
-</div>
 
 <div id="guardia-rotation-config-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal guardia-rotation-config-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-rotation-config-title" onclick="event.stopPropagation()">
@@ -2222,7 +1992,7 @@
     </header>
     <div class="settings-dropdown-body" id="settings-dropdown-scroll">
       <div id="settings-clinical-sync-mode" class="settings-clinical-sync-mode" hidden>
-        <p class="settings-acc-hint settings-clinical-sync-mode-lead">R+ está en modo <strong>solo este equipo</strong> (para médicos ajenos a medicina interna): sin ⇄ LiveSync, Mi rotación ni sala compartida.</p>
+        <p class="settings-acc-hint settings-clinical-sync-mode-lead">R+ está en modo <strong>solo este equipo</strong> (para médicos fuera de este equipo): sin ⇄ LiveSync, Mi rotación ni sala compartida.</p>
         <button type="button" class="btn-settings-row" onclick="enableClinicalLanFromSettings()">Activar guardia con R+ Cloud…</button>
       </div>
 
@@ -2266,7 +2036,7 @@
             <button type="button" class="settings-theme-btn" id="settings-motion-expresivo" onclick="setMotionMode('expresivo')" data-i18n="settings.motionExpresivo">Expresivo</button>
           </div>
           </div>
-          <p class="settings-form-foot overview-hint settings-acc-hint" data-i18n="settings.appearanceFoot">⌘G/I/S cambian modo Guardia/Inter/Sala. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.</p>
+          <p class="settings-form-foot overview-hint settings-acc-hint" data-i18n="settings.appearanceFoot">⌘I/S cambian modo Inter/Sala. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.</p>
         </div>
       </details>
 
@@ -2321,15 +2091,6 @@
               <label class="settings-card__action settings-card__toggle-label" for="settings-hide-listado-ai-prompt">
                 <input type="checkbox" class="settings-card__toggle" id="settings-hide-listado-ai-prompt" onchange="setHideListadoProblemasAiPrompt(this.checked)">
               </label>
-            </div>
-            <div class="settings-card" id="btn-export-censo-settings-row" style="display:none;">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Exportar censo de guardia (PDF)</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight" id="btn-export-censo-settings-hint">Tabla landscape con todos los pacientes activos (diagnósticos en Datos del paciente).</p>
-              </div>
-              <div class="settings-card__action">
-                <button type="button" class="btn-settings-row" id="btn-export-censo-settings" onclick="closeSettingsDropdown(); exportCensoPdfFromHelp();">Exportar censo de guardia (PDF)…</button>
-              </div>
             </div>
             <div class="settings-card-stack__foot">
               <p class="overview-hint" data-i18n="settings.docsFolderHint">Los .docx generados se guardan aquí (si no eliges carpeta, se usa Descargas).</p>
@@ -2658,6 +2419,15 @@
                 <button type="button" class="btn-settings-row" onclick="exportClinicalDbBackupDb()">Exportar copia .db cifrada…</button>
               </div>
             </div>
+            <div class="settings-card">
+              <div class="settings-card__copy">
+                <p class="settings-card__title">Código de administración</p>
+                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Requerido para dar o quitar rango Admin. Guardado solo en este equipo.</p>
+              </div>
+              <div class="settings-card__action">
+                <button type="button" class="btn-settings-row" onclick="changeAdminAccessCode()">Cambiar código de administración…</button>
+              </div>
+            </div>
           </div>
         </div>
       </details>
@@ -2837,16 +2607,6 @@
   </div>
 </div>
 
-<div id="equipos-lista-backdrop" class="modal-backdrop equipos-lista-backdrop" aria-hidden="true">
-  <div class="modal equipos-lista-modal" role="dialog" aria-modal="true" aria-labelledby="equipos-lista-title" onclick="event.stopPropagation()">
-    <header class="equipos-lista-modal-head">
-      <h3 id="equipos-lista-title">R+ Lista de espera</h3>
-      <button type="button" class="clinical-teams-dismiss" id="btn-equipos-lista-close" aria-label="Cerrar">×</button>
-    </header>
-    <div id="equipos-lista-panel-body" class="equipos-lista-panel-body"></div>
-  </div>
-</div>
-
 <div id="clinical-teams-backdrop" class="modal-backdrop clinical-teams-backdrop" aria-hidden="true">
   <div class="modal clinical-teams-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-teams-title" onclick="event.stopPropagation()">
     <header class="clinical-teams-modal-head">
@@ -2891,7 +2651,7 @@
 <div id="clinical-registration-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal clinical-registration-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-registration-title" onclick="event.stopPropagation()">
     <h3 id="clinical-registration-title" class="clinical-onboarding-title">Registro de guardia</h3>
-    <p class="clinical-registration-lead">Identifícate para el censo de guardia, firmado clínico y acceso al Modo Guardia. Tras actualizar a <strong>6.6.6</strong> debes volver a escribir usuario y nombre (son datos distintos).</p>
+    <p class="clinical-registration-lead">Identifícate para el censo de guardia y el firmado clínico. Tras actualizar a <strong>6.6.6</strong> debes volver a escribir usuario y nombre (son datos distintos).</p>
     <div class="clinical-onboard-form-shell clinical-onboard-form-shell--in-modal">
       <form id="clinical-registration-form" class="clinical-teams-create-form clinical-onboard-form">
         <div class="field-group">
@@ -2902,15 +2662,12 @@
         <div class="field-group">
           <label for="clinical-reg-name">Nombre en guardia *</label>
           <input id="clinical-reg-name" type="text" class="profile-input" placeholder="ej. Dr. Mendoza" autocomplete="name" required>
-          <p class="clinical-teams-hint"><strong>Nombre en guardia</strong> — cómo te ven en el censo (p. ej. <code>Dr. Mendoza</code> o <code>R1 García</code>).</p>
+          <p class="clinical-teams-hint"><strong>Nombre en guardia</strong> — cómo te ven en el censo (p. ej. <code>Dr. Mendoza</code> o <code>García</code>).</p>
         </div>
         <div class="field-group">
           <label for="clinical-reg-rank">Rango</label>
           <select id="clinical-reg-rank" class="profile-input">
-            <option value="R1">R1</option>
-            <option value="R2">R2</option>
-            <option value="R3">R3</option>
-            <option value="R4">R4</option>
+            <option value="Team">Team</option>
             <option value="Admin">Admin</option>
           </select>
         </div>
@@ -2997,8 +2754,6 @@
         <canvas id="tend-detail-canvas"></canvas>
       </div>
     </div>
-    <div id="tend-detail-events-slot" class="tend-detail-events-slot" aria-hidden="true"></div>
-    <button type="button" class="ea-btn ea-btn--ghost tend-detail-add-event-btn" id="tend-detail-add-event" data-tend-action="add-event-day">Agregar evento este día</button>
   </div>
 </div>
 
@@ -3020,6 +2775,28 @@
       <div class="tend-group-table-actions">
         <button type="button" class="btn-primary" onclick="copyTendGroupTablePng()">Copiar</button>
         <button type="button" class="btn-secondary" onclick="copyTendGroupTableText()">Copiar como texto</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tend-dynamic-table-backdrop" class="tend-group-backdrop" style="display:none" aria-hidden="true">
+  <div id="tend-dynamic-table-modal" role="dialog" aria-modal="true" aria-labelledby="tend-dynamic-table-title">
+    <header class="tend-group-header">
+      <h2 id="tend-dynamic-table-title">Tabla dinámica</h2>
+    </header>
+    <div class="tend-group-range-row" id="tend-dynamic-table-range-row">
+      <span class="tend-group-range-label">Rango</span>
+      <input type="date" class="tend-group-range-input" id="tend-dynamic-table-range-from" />
+      <span class="tend-group-range-sep">a</span>
+      <input type="date" class="tend-group-range-input" id="tend-dynamic-table-range-to" />
+      <button type="button" class="tend-group-range-clear" id="tend-dynamic-table-range-clear" hidden>Quitar rango</button>
+    </div>
+    <div class="tend-group-panel">
+      <div id="tend-dynamic-table-wrap"></div>
+      <div class="tend-group-table-actions">
+        <button type="button" class="btn-primary" onclick="copyTendDynamicTablePng()">Copiar</button>
+        <button type="button" class="btn-secondary" onclick="copyTendDynamicTableText()">Copiar como texto</button>
       </div>
     </div>
   </div>

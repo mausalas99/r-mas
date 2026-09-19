@@ -609,10 +609,6 @@ html.dark .btn-intro-skip:hover {
   border-radius: var(--radius-lg);
   padding: 14px 14px 12px;
 }
-#tour-dock.tour-dock--guardia .tour-dock-inner {
-  border-left: 4px solid var(--action);
-  background: color-mix(in oklab, var(--color-accent-soft) 22%, var(--surface));
-}
 .tour-dock-head {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
   margin-bottom: 10px;
@@ -1982,6 +1978,34 @@ html.dark .tend-group-drag-hovercard.tend-group-panel-card {
 .tend-group-show-all-btn { margin-left: auto; font-size: 12px; padding: 6px 12px; }
 .tend-group-row--data-hidden td:not(:first-child) { display: none !important; }
 .tend-group-row--data-hidden td:first-child { opacity: 0.72; }
+.tend-analyte-picker-bar { margin-bottom: 10px; position: relative; }
+.tend-analyte-picker-dropdown {
+  position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; width: min(360px, 100%);
+  border: 1px solid var(--border); border-radius: var(--radius-field); background: var(--surface);
+  box-shadow: var(--shadow-md, var(--shadow-sm)); padding: 8px;
+}
+.tend-analyte-picker-input {
+  width: 100%; box-sizing: border-box; font-family: inherit; font-size: 13px; padding: 7px 10px;
+  border: 1px solid var(--border); border-radius: var(--radius-field); background: var(--bg); color: var(--text);
+  margin-bottom: 6px;
+}
+.tend-analyte-picker-list { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.tend-analyte-picker-option {
+  font-family: inherit; font-size: 12.5px; text-align: left; padding: 7px 8px; border-radius: var(--radius-field);
+  border: none; background: transparent; color: var(--text); cursor: pointer;
+}
+.tend-analyte-picker-option:hover { background: rgba(37, 99, 235, 0.08); }
+.tend-analyte-picker-back {
+  font-family: inherit; font-size: 12.5px; font-weight: 700; text-align: left; padding: 7px 8px;
+  border: none; border-bottom: 1px solid var(--border); border-radius: 0; background: transparent;
+  color: var(--text-muted); cursor: pointer; margin-bottom: 2px;
+}
+.tend-analyte-picker-back:hover { color: var(--text); }
+.tend-analyte-picker-empty { margin: 6px 4px; font-size: 12px; color: var(--text-muted); }
+.tend-group-extra-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; }
+.tend-group-extra-chip:hover {
+  border-color: rgba(239, 68, 68, 0.45); background: rgba(239, 68, 68, 0.08);
+}
 .tend-group-row-toggle, .tend-group-col-toggle {
   display: inline-flex; align-items: center; gap: 6px; font-weight: inherit; cursor: pointer;
 }

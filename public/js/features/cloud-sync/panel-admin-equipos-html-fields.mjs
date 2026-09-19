@@ -1,14 +1,12 @@
 import { esc } from '../../dom-escape.mjs';
-import { formatCycleOptionLabel } from '../clinical-teams/teams-roster-directory-render.mjs';
 import { CLINICAL_SALAS } from '../clinical-teams/shared.mjs';
-import { getCycleLetterOptionsForRank } from '../../clinico-access.mjs';
-import { resolveMembershipCycleForUser } from '../../clinico-access.mjs';
+import { CLINICAL_RANKS } from '../../../../lib/clinical-ranks.mjs';
 
-export const CLINICAL_RANK_OPTIONS = ['R1', 'R2', 'R3', 'R4', 'Admin'];
+export const CLINICAL_RANK_OPTIONS = CLINICAL_RANKS;
 
 /** @param {string} selectedRank */
 export function rankSelectOptionsHtml(selectedRank) {
-  const selected = String(selectedRank || 'R1');
+  const selected = String(selectedRank || 'Team');
   return CLINICAL_RANK_OPTIONS.map((rank) => {
     const sel = rank === selected ? ' selected' : '';
     return '<option value="' + esc(rank) + '"' + sel + '>' + esc(rank) + '</option>';
@@ -107,22 +105,4 @@ export function renderEquiposAssignTeamOptionsHtml(teams, selectedTeamId, salaFi
     .map((salaKey) => renderTeamOptgroupHtml(salaKey, bySala.get(salaKey) || [], selected))
     .join('');
   return '<option value="">Sin asignar</option>' + groups;
-}
-
-/** @param {object | null | undefined} team @param {string} userId @param {string} userRank @param {string} [selectedCycle] */
-export function cycleOptionsForTeam(team, userId, userRank, selectedCycle) {
-  if (!team) return '<option value="">Ciclo</option>';
-  const service = String(team.service || 'Sala');
-  const rank = String(userRank || 'R1');
-  const letters = getCycleLetterOptionsForRank(service, rank);
-  const defaultCycle = resolveMembershipCycleForUser(team, userId, rank);
-  const selected = String(selectedCycle || '').trim() || defaultCycle;
-  if (!letters.length) return '<option value="">Ciclo</option>';
-  return letters
-    .map((letter) => {
-      const label = formatCycleOptionLabel(letter, rank);
-      const sel = letter === selected ? ' selected' : '';
-      return '<option value="' + esc(letter) + '"' + sel + '>' + esc(label) + '</option>';
-    })
-    .join('');
 }

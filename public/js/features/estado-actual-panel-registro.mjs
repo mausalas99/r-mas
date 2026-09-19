@@ -14,7 +14,13 @@ import {
 } from './estado-actual-panel-vitals.mjs';
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { wireFormInteractions } from './estado-actual-panel-registro-wire.mjs';
-import { syncIoBalanceFromForm, clearIoFields, syncEaRegistroInsulinRescateFlag, syncEaRegistroInsulinPumpFlag } from './estado-actual-panel-registro-io.mjs';
+import {
+  syncIoBalanceFromForm,
+  clearIoFields,
+  syncEaRegistroInsulinRescateFlag,
+  syncEaRegistroInsulinPumpFlag,
+  IO_TURNO_IDS,
+} from './estado-actual-panel-registro-io.mjs';
 import { applyEstadoActualParsedToForm } from './estado-actual-panel-registro-apply.mjs';
 
 export { applyEstadoActualParsedToForm };
@@ -61,6 +67,47 @@ function buildRegistroGluSectionHtml() {
   );
 }
 
+function buildIoTurnoBoxHtml(prefix, turno, inputmode, placeholder) {
+  var id = 'ea-io-' + prefix + '-' + turno;
+  return (
+    '<div class="ea-turno-box">' +
+    '<span class="ea-turno-box-label">' +
+    turno.toUpperCase() +
+    '<button type="button" class="ea-turno-nc-btn" data-ea-io-turno-nc aria-pressed="false" title="Marcar turno como NC">NC</button>' +
+    '</span>' +
+    '<input type="text" id="' +
+    id +
+    '" inputmode="' +
+    inputmode +
+    '" autocomplete="off" placeholder="' +
+    placeholder +
+    '" data-ea-io-turno="' +
+    prefix +
+    '">' +
+    '</div>'
+  );
+}
+
+function buildIoTurnoGroupHtml(prefix, label, totalId, inputmode, placeholder) {
+  return (
+    '<div class="ea-turno-group">' +
+    '<div class="ea-turno-group-head">' +
+    '<span class="ea-label">' +
+    label +
+    '</span>' +
+    '<span class="ea-turno-total" id="' +
+    totalId +
+    '">NC</span>' +
+    '</div>' +
+    '<div class="ea-turno-row">' +
+    IO_TURNO_IDS.map(function (t) {
+      return buildIoTurnoBoxHtml(prefix, t, inputmode, placeholder);
+    }).join('') +
+    '</div>' +
+    '</div>'
+  );
+}
+
 function buildRegistroIoSectionHtml() {
   return (
     '<section class="ea-registro-section" aria-labelledby="ea-io-section-lbl">' +
@@ -68,24 +115,23 @@ function buildRegistroIoSectionHtml() {
     '<h4 id="ea-io-section-lbl" class="ea-registro-section-label">Ingresos / egresos</h4>' +
     '</div>' +
     '<div class="ea-io-grid">' +
-    '<label class="ea-field">' +
-    '<span class="ea-label ea-label--with-action">Ingresos (cc)' +
-    '<button type="button" class="ea-btn ea-btn--ghost ea-io-nc-btn" data-ea-io-nc title="Marcar ingresos, egresos y balance como NC">NC</button>' +
-    '</span>' +
-    '<input type="text" class="ea-input" id="ea-io-ing" inputmode="text" autocomplete="off" placeholder="cc o NC">' +
-    '</label>' +
-    '<label class="ea-field">' +
+    buildIoTurnoGroupHtml('ing', 'Ingresos (cc) — por turno', 'ea-io-ing-total', 'decimal', 'cc') +
+    buildIoTurnoGroupHtml('egr', 'Egresos (cc) — por turno', 'ea-io-egr-total', 'text', 'cc, detalle o NC') +
+    '<div class="ea-field ea-field--full ea-io-extra">' +
+    '<div class="ea-io-extra-head">' +
+    '<span class="ea-label">Otras fuentes cuantificables</span>' +
+    '<button type="button" class="ea-btn ea-btn--ghost" id="ea-add-io-extra">+ Agregar fuente</button>' +
+    '</div>' +
+    '<div id="ea-io-extra-list" class="ea-io-extra-list"></div>' +
+    '</div>' +
+    '<label class="ea-field ea-field--full">' +
     '<span class="ea-label">Evacuaciones</span>' +
     '<input type="text" class="ea-input" id="ea-io-evac" inputmode="text" autocomplete="off" placeholder="NC, cc o texto">' +
     '</label>' +
-    '<div class="ea-field ea-io-balance">' +
+    '<div class="ea-field ea-field--full ea-io-balance">' +
     '<span class="ea-label">Balance</span>' +
     '<span id="ea-balance-turno-live" class="ea-balance-live">—</span>' +
     '</div>' +
-    '<label class="ea-field ea-field--full">' +
-    '<span class="ea-label">Egresos (diuresis, drenajes, nefrostomías…)</span>' +
-    '<input type="text" class="ea-input" id="ea-io-egr" inputmode="text" autocomplete="off" placeholder="DIURESIS NC, DRENAJE 50 CC, NEFRO IZQ 20 CC">' +
-    '</label>' +
     '</div>' +
     '</section>'
   );

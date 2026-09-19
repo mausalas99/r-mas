@@ -51,6 +51,34 @@ export async function userFromAuthHeader(db, request) {
   return row || null;
 }
 
+/**
+ * Best-effort: stamp app_version from the X-App-Version header on every
+ * authenticated request, not just login — sessions last 14 days, so
+ * login-only stamping leaves fleet-adoption data stale for weeks. Never
+ * throws; a stamp failure must not block the actual request.
+ * @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request
+ */
+export async function stampAppVersionFromRequest(db, request) {
+  const version = String(request.headers.get('X-App-Version') ?? '').trim().slice(0, 32);
+  if (!version) return;
+  const h = request.headers.get('Authorization') || '';
+  const m = /^Bearer\s+(.+)$/i.exec(h);
+  if (!m) return;
+  try {
+    const tokenHash = await sha256Hex(m[1].trim());
+    const now = new Date().toISOString();
+    await db
+      .prepare(
+        `UPDATE users SET app_version = ?, app_version_at = ?
+         WHERE id = (SELECT user_id FROM sessions WHERE token_hash = ? AND expires_at > ?)`
+      )
+      .bind(version, now, tokenHash, now)
+      .run();
+  } catch {
+    // best-effort only — never block the request over a stamp failure
+  }
+}
+
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request */
 export async function revokeSession(db, request) {
   const h = request.headers.get('Authorization') || '';

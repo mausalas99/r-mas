@@ -25,7 +25,7 @@ export const CLINICAL_LAN_USERNAME_HINT_HTML =
 
 export const CLINICAL_LAN_DISPLAY_NAME_HINT_HTML =
   '<strong>Nombre en guardia</strong> — cómo te ven en el censo y las entregas: ' +
-  'p. ej. <code>Dr. Mendoza</code> o <code>R1 García</code>.';
+  'p. ej. <code>Dr. Mendoza</code> o <code>García</code>.';
 
 /** Device uses SQLCipher only — no LAN LiveSync, Mi rotación, or @usuario in sala. */
 export function isClinicalLocalOnlyMode(settings = readRpcSettings()) {

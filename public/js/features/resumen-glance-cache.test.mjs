@@ -23,7 +23,7 @@ describe('resumenGlanceCacheSuffix', () => {
   it('changes when eventualidades appear', () => {
     var empty = resumenGlanceCacheSuffix({}, []);
     var withEv = resumenGlanceCacheSuffix(
-      { eventualidades: { updatedAt: '2026-08-13T18:00:00.000Z', entries: [{ id: 'e1', text: 'AAAAA' }] } },
+      { cardio: { eventualidadesSeguimiento: [{ date: '2026-08-13' }] } },
       []
     );
     assert.notEqual(empty, withEv);

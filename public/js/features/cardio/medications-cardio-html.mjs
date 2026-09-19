@@ -6,7 +6,7 @@
  * medications-panel-rows.mjs, rather than adding new CSS files.
  */
 import { esc } from "../medications-utils.mjs";
-import { FANTASTICO_DRUGS_BY_CLASS } from "../../../../lib/cardio/med-segments.mjs";
+import { FANTASTICO_DRUGS_BY_CLASS, STANDARD_DOSES_BY_DRUG } from "../../../../lib/cardio/med-segments.mjs";
 import {
   normalizeFantasticosRows,
   fantasticoEstadoMeta,
@@ -19,6 +19,22 @@ import {
 // (DIURETIC_DRUG_NAMES is a private const), so this is a local suggestion
 // list for the Diuréticos "tipo" field only — not authoritative catalog data.
 var DIURETIC_TIPO_SUGGESTIONS = ["Furosemida", "Bumetanida", "Torasemida", "Metolazona"];
+
+// Segment rows (Otros medicamentos / Diuréticos) share one 5-column grid —
+// tipo | dosis | inicio | indicación-or-mgTotal | acción — so the header,
+// each saved row, and the "add new" row all line up and none of the fields
+// gets squeezed narrow by a flex row with no room to grow.
+var SEGMENT_ROW_GRID =
+  "display:grid;grid-template-columns:minmax(150px,1.6fr) minmax(110px,1fr) minmax(120px,1fr) minmax(110px,1.4fr) 84px;gap:8px;align-items:center;";
+var SEGMENT_FIELD_STYLE =
+  "width:100%;box-sizing:border-box;font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);";
+
+// 2026 ESC guidelines: consider a GLP-1 RA for T2DM + additional CV risk
+// factor (prevention), and semaglutide/tirzepatide for symptomatic HF with
+// LVEF >=45% and BMI >=30 regardless of diabetes status. Not one of the 4
+// GDMT pillars, so it's a datalist suggestion on the free-text "Otros
+// medicamentos" field rather than a new Fantásticos class.
+var GLP1_TIPO_SUGGESTIONS = ["Semaglutida", "Tirzepatida"];
 
 function toneVar(tone) {
   if (tone === "success") return "var(--success)";
@@ -45,31 +61,6 @@ function pillHtml(label, tone) {
   );
 }
 
-function cardShell(titleIconSvg, title, bodyHtml, opts) {
-  var extra = opts && opts.headerRight ? opts.headerRight : "";
-  return (
-    '<div class="card med-active-card">' +
-    '<div class="card-header card-header-row med-active-card-header">' +
-    '<span class="med-active-card-title">' +
-    titleIconSvg +
-    "<span>" +
-    esc(title) +
-    "</span>" +
-    "</span>" +
-    (extra ? '<span class="med-active-header-actions">' + extra + "</span>" : "") +
-    "</div>" +
-    '<div class="card-body med-active-card-body">' +
-    bodyHtml +
-    "</div>" +
-    "</div>"
-  );
-}
-
-var ROW_STYLE =
-  'style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border);"';
-var LAST_ROW_STYLE =
-  'style="display:flex;align-items:center;gap:10px;padding:10px 4px;"';
-
 function optionsWithExtra(list, current) {
   var opts = list.slice();
   if (current && opts.indexOf(current) === -1) opts.push(current);
@@ -90,7 +81,29 @@ function selectFieldHtml(options, current, attrs, style) {
   );
 }
 
-function fantasticoRowHtml(row, idx, isLast) {
+// Compact pillar "card" used two-per-row in a CSS grid, instead of one
+// full-width row per pillar — halves the vertical stack height (2 grid
+// rows instead of 4) at the same field set and font size.
+function fantasticoDosisFieldHtml(row, fieldStyle) {
+  var doses = STANDARD_DOSES_BY_DRUG[row.drug];
+  if (!doses || !doses.length) {
+    return (
+      '<input type="text" value="' +
+      esc(row.dosis) +
+      '" placeholder="Dosis" data-cardio-fant-field="dosis" ' +
+      'data-cardio-fant-class="' + esc(row.className) + '" ' +
+      'style="' + fieldStyle + '"/>'
+    );
+  }
+  return selectFieldHtml(
+    optionsWithExtra(doses, row.dosis),
+    row.dosis,
+    'data-cardio-fant-field="dosis" data-cardio-fant-class="' + esc(row.className) + '"',
+    fieldStyle
+  );
+}
+
+function fantasticoRowHtml(row) {
   var meta = fantasticoEstadoMeta(row.estado);
   var suggestions = FANTASTICO_DRUGS_BY_CLASS[row.className] || [];
   var estadoOpts = FANTASTICO_ESTADOS.map(function (e) {
@@ -104,52 +117,65 @@ function fantasticoRowHtml(row, idx, isLast) {
       "</option>"
     );
   }).join("");
+  var fieldStyle =
+    "width:100%;box-sizing:border-box;font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);";
   return (
-    '<div ' +
-    (isLast ? LAST_ROW_STYLE : ROW_STYLE) +
-    ' data-cardio-fant-row="' +
+    '<div style="border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg);padding:7px 9px;" ' +
+    'data-cardio-fant-row="' +
     esc(row.className) +
     '">' +
-    '<div style="flex:0 0 132px;font-size:12px;font-weight:600;color:var(--text);">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">' +
+    '<span style="font-size:12px;font-weight:700;color:var(--text);">' +
     esc(row.className) +
+    "</span>" +
+    pillHtml(meta.label, meta.tone) +
     "</div>" +
-    '<div style="flex:1 1 190px;min-width:0;">' +
+    '<div style="display:flex;gap:6px;margin-bottom:6px;">' +
+    '<div style="flex:1 1 auto;min-width:0;">' +
     selectFieldHtml(
       optionsWithExtra(suggestions, row.drug),
       row.drug,
       'data-cardio-fant-field="drug" data-cardio-fant-class="' + esc(row.className) + '"',
-      "width:100%;box-sizing:border-box;font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);"
+      fieldStyle
     ) +
     "</div>" +
-    '<div style="flex:0 0 108px;">' +
-    '<input type="text" value="' +
-    esc(row.dosis) +
-    '" placeholder="Dosis" data-cardio-fant-field="dosis" ' +
-    'data-cardio-fant-class="' + esc(row.className) + '" ' +
-    'style="width:100%;box-sizing:border-box;font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);"/>' +
+    '<div style="flex:0 0 96px;">' +
+    fantasticoDosisFieldHtml(row, fieldStyle) +
     "</div>" +
-    '<div style="flex:0 0 128px;">' +
-    '<input type="date" value="' +
+    '<div style="flex:0 0 118px;">' +
+    '<input type="date" class="rpc-date-input" value="' +
     esc(row.inicio) +
     '" data-cardio-fant-field="inicio" ' +
     'data-cardio-fant-class="' + esc(row.className) + '" ' +
-    'style="width:100%;box-sizing:border-box;font-size:12px;padding:4px 6px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);"/>' +
+    'style="' + fieldStyle.replace("padding:5px 8px", "padding:4px 6px") + '"/>' +
     "</div>" +
-    '<div style="flex:1 1 150px;min-width:0;">' +
+    "</div>" +
+    '<div style="display:flex;gap:6px;">' +
+    '<div style="flex:1 1 auto;min-width:0;">' +
     '<input type="text" value="' +
     esc(row.tolerancia) +
     '" placeholder="Tolerancia / nota" data-cardio-fant-field="tolerancia" ' +
     'data-cardio-fant-class="' + esc(row.className) + '" ' +
-    'style="width:100%;box-sizing:border-box;font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);"/>' +
+    'style="' + fieldStyle + '"/>' +
     "</div>" +
-    '<div style="flex:0 0 148px;display:flex;flex-direction:column;gap:4px;align-items:flex-start;">' +
-    pillHtml(meta.label, meta.tone) +
+    '<div style="flex:0 0 118px;">' +
     '<select data-cardio-fant-field="estado" data-cardio-fant-class="' +
     esc(row.className) +
-    '" style="font-size:11px;padding:3px 6px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);">' +
+    '" style="' + fieldStyle.replace("padding:5px 8px", "padding:4px 6px") + '">' +
     estadoOpts +
     "</select>" +
     "</div>" +
+    "</div>" +
+    "</div>"
+  );
+}
+
+function fantasticosBodyHtml(cardio) {
+  var rows = normalizeFantasticosRows(cardio && cardio.fantasticos);
+  return (
+    '<p class="med-section-lead">Los 4 pilares de terapia médica dirigida por guías (GDMT). Marca el estado de titulación de cada uno.</p>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+    rows.map(fantasticoRowHtml).join("") +
     "</div>"
   );
 }
@@ -157,50 +183,33 @@ function fantasticoRowHtml(row, idx, isLast) {
 /**
  * @param {{ fantasticos?: unknown }} cardio
  */
-export function buildFantasticosCardHtml(cardio) {
+export function buildFantasticosSummaryHtml(cardio) {
   var rows = normalizeFantasticosRows(cardio && cardio.fantasticos);
-  var head =
-    '<div style="display:flex;gap:10px;padding:0 4px 6px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted);">' +
-    '<span style="flex:0 0 132px;">Pilar</span>' +
-    '<span style="flex:1 1 190px;">Fármaco</span>' +
-    '<span style="flex:0 0 108px;">Dosis</span>' +
-    '<span style="flex:0 0 128px;">Inicio</span>' +
-    '<span style="flex:1 1 150px;">Tolerancia</span>' +
-    '<span style="flex:0 0 148px;">Estado</span>' +
-    "</div>";
-  var body =
-    '<p class="med-section-lead">Los 4 pilares de terapia médica dirigida por guías (GDMT). Marca el estado de titulación de cada uno.</p>' +
-    '<div style="border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--bg);padding:6px 10px;">' +
-    head +
-    rows
-      .map(function (row, idx) {
-        return fantasticoRowHtml(row, idx, idx === rows.length - 1);
-      })
-      .join("") +
-    "</div>";
-  var icon =
-    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 2l2.4 7.4H22l-6 4.4 2.3 7.2L12 16.6 5.7 21l2.3-7.2-6-4.4h7.6z"/></svg>';
-  return cardShell(icon, "4 Fantásticos (GDMT)", body);
+  var started = rows.filter(function (r) { return !!r.drug; }).length;
+  var target = rows.filter(function (r) { return r.estado === "objetivo"; }).length;
+  var glance = started + "/4 iniciados · " + target + "/4 en dosis objetivo";
+  return glanceCardHtml("4 Fantásticos (GDMT)", glance, "fantasticos");
 }
 
 function segmentRowHtml(row, opts) {
   var muted = row.active ? "" : "opacity:.55;";
   var actionLabel = row.active ? "Finalizar" : "Finalizada";
   return (
-    '<div style="display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px solid var(--border);' +
+    '<div style="' +
+    SEGMENT_ROW_GRID +
+    "padding:9px 4px;border-bottom:1px solid var(--border);" +
     muted +
     '" data-' +
     opts.group +
     '-row="' +
     esc(row.id) +
     '">' +
-    '<div style="flex:1 1 150px;min-width:0;">' +
     (opts.tipoOptions
       ? selectFieldHtml(
           optionsWithExtra(opts.tipoOptions, row.tipo),
           row.tipo,
           'data-' + opts.group + '-field="tipo" data-' + opts.group + '-id="' + esc(row.id) + '"',
-          "width:100%;box-sizing:border-box;font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);"
+          SEGMENT_FIELD_STYLE
         )
       : '<input type="text" value="' +
         esc(row.tipo) +
@@ -210,9 +219,11 @@ function segmentRowHtml(row, opts) {
         opts.group +
         '-id="' +
         esc(row.id) +
-        '" style="width:100%;box-sizing:border-box;font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);"/>') +
-    "</div>" +
-    '<div style="flex:0 0 130px;">' +
+        '"' +
+        (opts.tipoDatalistId ? ' list="' + esc(opts.tipoDatalistId) + '"' : "") +
+        ' style="' +
+        SEGMENT_FIELD_STYLE +
+        '"/>') +
     '<input type="text" value="' +
     esc(row.dosis) +
     '" placeholder="Dosis (p.ej. 40 mg IV cada 12h)" data-' +
@@ -221,10 +232,10 @@ function segmentRowHtml(row, opts) {
     opts.group +
     '-id="' +
     esc(row.id) +
-    '" style="width:100%;box-sizing:border-box;font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);"/>' +
-    "</div>" +
-    '<div style="flex:0 0 118px;">' +
-    '<input type="date" value="' +
+    '" style="' +
+    SEGMENT_FIELD_STYLE +
+    '"/>' +
+    '<input type="date" class="rpc-date-input" value="' +
     esc(row.inicio) +
     '" data-' +
     opts.group +
@@ -232,11 +243,11 @@ function segmentRowHtml(row, opts) {
     opts.group +
     '-id="' +
     esc(row.id) +
-    '" style="width:100%;box-sizing:border-box;font-size:12px;padding:4px 6px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);"/>' +
-    "</div>" +
+    '" style="' +
+    SEGMENT_FIELD_STYLE +
+    '"/>' +
     (opts.showIndicacion
-      ? '<div style="flex:1 1 130px;min-width:0;">' +
-        '<input type="text" value="' +
+      ? '<input type="text" value="' +
         esc(row.indicacion) +
         '" placeholder="Indicación" data-' +
         opts.group +
@@ -244,12 +255,12 @@ function segmentRowHtml(row, opts) {
         opts.group +
         '-id="' +
         esc(row.id) +
-        '" style="width:100%;box-sizing:border-box;font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);"/>' +
-        "</div>"
+        '" style="' +
+        SEGMENT_FIELD_STYLE +
+        '"/>'
       : "") +
     (opts.showMgTotal
-      ? '<div style="flex:0 0 92px;">' +
-        '<input type="number" step="1" min="0" value="' +
+      ? '<input type="number" step="1" min="0" value="' +
         (row.mgTotal != null ? esc(String(row.mgTotal)) : "") +
         '" placeholder="mg total" data-' +
         opts.group +
@@ -257,10 +268,11 @@ function segmentRowHtml(row, opts) {
         opts.group +
         '-id="' +
         esc(row.id) +
-        '" style="width:100%;box-sizing:border-box;font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);"/>' +
-        "</div>"
+        '" style="' +
+        SEGMENT_FIELD_STYLE +
+        '"/>'
       : "") +
-    '<div style="flex:0 0 84px;text-align:right;">' +
+    '<div style="text-align:right;">' +
     '<button type="button" data-' +
     opts.group +
     '-action="toggle-end" data-' +
@@ -279,32 +291,35 @@ function segmentRowHtml(row, opts) {
 
 function addSegmentFormHtml(group, opts) {
   var tipoNewField = opts.tipoOptions
-    ? selectFieldHtml(
-        opts.tipoOptions,
-        "",
-        'data-' + group + '-new="tipo"',
-        "flex:1 1 150px;min-width:0;box-sizing:border-box;font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);"
-      )
-    : '<input type="text" placeholder="Medicamento" data-' + group + '-new="tipo" style="flex:1 1 150px;min-width:0;box-sizing:border-box;font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);"/>';
+    ? selectFieldHtml(opts.tipoOptions, "", 'data-' + group + '-new="tipo"', SEGMENT_FIELD_STYLE)
+    : '<input type="text" placeholder="Medicamento" data-' +
+      group +
+      '-new="tipo"' +
+      (opts.tipoDatalistId ? ' list="' + esc(opts.tipoDatalistId) + '"' : "") +
+      ' style="' +
+      SEGMENT_FIELD_STYLE +
+      '"/>';
   var fields = [
     tipoNewField,
-    '<input type="text" placeholder="Dosis" data-' + group + '-new="dosis" style="flex:0 0 130px;box-sizing:border-box;font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);"/>',
-    '<input type="date" data-' + group + '-new="inicio" style="flex:0 0 118px;box-sizing:border-box;font-size:12px;padding:4px 6px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);"/>',
+    '<input type="text" placeholder="Dosis" data-' + group + '-new="dosis" style="' + SEGMENT_FIELD_STYLE + '"/>',
+    '<input type="date" class="rpc-date-input" data-' + group + '-new="inicio" style="' + SEGMENT_FIELD_STYLE + '"/>',
   ];
   if (opts.showIndicacion) {
     fields.push(
-      '<input type="text" placeholder="Indicación" data-' + group + '-new="indicacion" style="flex:1 1 130px;min-width:0;box-sizing:border-box;font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);"/>'
+      '<input type="text" placeholder="Indicación" data-' + group + '-new="indicacion" style="' + SEGMENT_FIELD_STYLE + '"/>'
     );
   }
   if (opts.showMgTotal) {
     fields.push(
-      '<input type="number" step="1" min="0" placeholder="mg total" data-' + group + '-new="mgTotal" style="flex:0 0 92px;box-sizing:border-box;font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);"/>'
+      '<input type="number" step="1" min="0" placeholder="mg total" data-' + group + '-new="mgTotal" style="' + SEGMENT_FIELD_STYLE + '"/>'
     );
   }
   return (
-    '<div style="display:flex;align-items:center;gap:8px;padding:9px 4px 2px;">' +
+    '<div style="' +
+    SEGMENT_ROW_GRID +
+    'padding:9px 4px 2px;">' +
     fields.join("") +
-    '<div style="flex:0 0 84px;text-align:right;">' +
+    '<div style="text-align:right;">' +
     '<button type="button" class="btn-add-row" data-' +
     group +
     '-action="add" style="font-size:11px;padding:4px 8px;white-space:nowrap;">+ Agregar</button>' +
@@ -313,47 +328,65 @@ function addSegmentFormHtml(group, opts) {
   );
 }
 
-/**
- * @param {{ medSegments?: unknown }} cardio
- */
-export function buildOtrosMedsCardHtml(cardio) {
+function otrosMedsBodyHtml(cardio) {
   var rows = buildSegmentRows(cardio && cardio.medSegments);
   var head =
-    '<div style="display:flex;gap:8px;padding:0 4px 6px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted);">' +
-    '<span style="flex:1 1 150px;">Medicamento</span>' +
-    '<span style="flex:0 0 130px;">Dosis</span>' +
-    '<span style="flex:0 0 118px;">Inicio</span>' +
-    '<span style="flex:1 1 130px;">Indicación</span>' +
-    '<span style="flex:0 0 84px;"></span>' +
+    '<div style="' +
+    SEGMENT_ROW_GRID +
+    'padding:0 4px 6px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted);">' +
+    "<span>Medicamento</span>" +
+    "<span>Dosis</span>" +
+    "<span>Inicio</span>" +
+    "<span>Indicación</span>" +
+    "<span></span>" +
     "</div>";
-  var opts = { group: "cardio-med", showIndicacion: true, showMgTotal: false };
-  var body =
-    '<p class="med-section-lead">Otros medicamentos cardiovasculares fuera de los 4 Fantásticos y de los diuréticos.</p>' +
+  var opts = {
+    group: "cardio-med",
+    showIndicacion: true,
+    showMgTotal: false,
+    tipoDatalistId: "cardio-med-tipo-suggestions",
+  };
+  return (
+    '<p class="med-section-lead">Otros medicamentos cardiovasculares fuera de los 4 Fantásticos y de los diuréticos. ' +
+    'Considerar un agonista GLP-1 (semaglutida/tirzepatida) en IC sintomática con FEVI ≥45% y obesidad, o en DM2 con ' +
+    'otro factor de riesgo CV (guía ESC 2026).</p>' +
+    '<datalist id="' +
+    opts.tipoDatalistId +
+    '">' +
+    GLP1_TIPO_SUGGESTIONS.map(function (name) { return '<option value="' + esc(name) + '"></option>'; }).join("") +
+    "</datalist>" +
     '<div style="border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--bg);padding:6px 10px;">' +
     head +
     (rows.length
       ? rows.map(function (row) { return segmentRowHtml(row, opts); }).join("")
       : '<p class="med-empty-hint" style="margin:6px 0;">Sin otros medicamentos registrados.</p>') +
     addSegmentFormHtml("cardio-med", opts) +
-    "</div>";
-  var icon =
-    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>';
-  return cardShell(icon, "Otros medicamentos", body);
+    "</div>"
+  );
 }
 
 /**
- * @param {{ diureticSegments?: unknown }} cardio
+ * @param {{ medSegments?: unknown }} cardio
  */
-export function buildDiureticosCardHtml(cardio) {
+export function buildOtrosMedsSummaryHtml(cardio) {
+  var rows = buildSegmentRows(cardio && cardio.medSegments);
+  var active = rows.filter(function (r) { return r.active; }).length;
+  var glance = active ? active + " medicamento" + (active === 1 ? "" : "s") + " activo" + (active === 1 ? "" : "s") : "Sin otros medicamentos registrados";
+  return glanceCardHtml("Otros medicamentos", glance, "otros");
+}
+
+function diureticosBodyHtml(cardio) {
   var rows = buildSegmentRows(cardio && cardio.diureticSegments);
   var totals = diureticTotals(cardio && cardio.diureticSegments);
   var head =
-    '<div style="display:flex;gap:8px;padding:0 4px 6px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted);">' +
-    '<span style="flex:1 1 150px;">Diurético</span>' +
-    '<span style="flex:0 0 130px;">Dosis</span>' +
-    '<span style="flex:0 0 118px;">Inicio</span>' +
-    '<span style="flex:0 0 92px;">mg total</span>' +
-    '<span style="flex:0 0 84px;"></span>' +
+    '<div style="' +
+    SEGMENT_ROW_GRID +
+    'padding:0 4px 6px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted);">' +
+    "<span>Diurético</span>" +
+    "<span>Dosis</span>" +
+    "<span>Inicio</span>" +
+    "<span>mg total</span>" +
+    "<span></span>" +
     "</div>";
   var opts = { group: "cardio-diur", showIndicacion: false, showMgTotal: true, tipoOptions: DIURETIC_TIPO_SUGGESTIONS };
   var summary =
@@ -365,7 +398,7 @@ export function buildDiureticosCardHtml(cardio) {
     esc(String(Math.round(totals.furosemidaMg))) +
     ' mg</strong> furosemida acumulada</span>' +
     "</div>";
-  var body =
+  return (
     '<p class="med-section-lead">Diuréticos con dosis y fecha de inicio; la furosemida acumulada usa dosis × días cuando no hay mg total explícito.</p>' +
     '<div style="border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--bg);padding:6px 10px;">' +
     head +
@@ -374,8 +407,69 @@ export function buildDiureticosCardHtml(cardio) {
       : '<p class="med-empty-hint" style="margin:6px 0;">Sin diuréticos registrados.</p>') +
     addSegmentFormHtml("cardio-diur", opts) +
     summary +
-    "</div>";
-  var icon =
-    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 2s7 7.5 7 12.5A7 7 0 0 1 5 14.5C5 9.5 12 2 12 2z"/></svg>';
-  return cardShell(icon, "Diuréticos", body);
+    "</div>"
+  );
+}
+
+/**
+ * @param {{ diureticSegments?: unknown }} cardio
+ */
+export function buildDiureticosSummaryHtml(cardio) {
+  var totals = diureticTotals(cardio && cardio.diureticSegments);
+  var mg = Math.round(totals.furosemidaMg);
+  var glance = mg > 0 ? mg + " mg furosemida acumulada" : "Sin diuréticos registrados";
+  return glanceCardHtml("Diuréticos", glance, "diureticos");
+}
+
+// ---------------------------------------------------------------------
+// Compact glance-card + modal shell — same visual pattern as the
+// Consulta IC wizard's `.hf-glance-card` / `.modal-backdrop` /
+// `.modal.ea-registro-modal.hf-consulta-modal` (see estado-actual.css and
+// consulta-ic-html.mjs's glanceCard()/renderModalHtml()), copied locally
+// rather than imported — those are private to that file and specific to
+// its own wizard.
+// ---------------------------------------------------------------------
+
+function glanceCardHtml(title, glanceText, modalKey) {
+  return (
+    '<button type="button" class="hf-glance-card" data-cardio-modal-open="' +
+    esc(modalKey) +
+    '">' +
+    '<span class="hf-glance-card-title">' +
+    esc(title) +
+    "</span>" +
+    '<span class="hf-glance-card-glance">' +
+    esc(glanceText) +
+    "</span>" +
+    "</button>"
+  );
+}
+
+var CARDIO_MODAL_DEFS = {
+  fantasticos: { title: "4 Fantásticos (GDMT)", body: fantasticosBodyHtml },
+  otros: { title: "Otros medicamentos", body: otrosMedsBodyHtml },
+  diureticos: { title: "Diuréticos", body: diureticosBodyHtml },
+};
+
+/**
+ * @param {string} key one of "fantasticos" | "otros" | "diureticos"
+ * @param {{ fantasticos?: unknown, medSegments?: unknown, diureticSegments?: unknown }} cardio
+ */
+export function buildCardioModalHtml(key, cardio) {
+  var def = CARDIO_MODAL_DEFS[key];
+  if (!def) return "";
+  return (
+    '<div class="modal-backdrop open" data-cardio-modal-backdrop aria-hidden="false">' +
+    '<div class="modal ea-registro-modal hf-consulta-modal" role="dialog" aria-modal="true">' +
+    '<header class="ea-registro-modal-head"><div class="ea-registro-modal-head-text"><h3>' +
+    esc(def.title) +
+    "</h3></div></header>" +
+    '<div class="ea-registro-modal-body"><div class="hf-consulta-modal-body-pad">' +
+    def.body(cardio) +
+    "</div></div>" +
+    '<footer class="ea-registro-modal-foot"><div class="modal-actions ea-registro-modal-actions">' +
+    '<button type="button" class="ea-btn" data-cardio-modal-close>Cerrar</button>' +
+    "</div></footer>" +
+    "</div></div>"
+  );
 }

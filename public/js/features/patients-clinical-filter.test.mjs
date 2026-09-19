@@ -20,29 +20,29 @@ function filterPatientsByScopeRules(patients, user, scopeContext) {
   });
 }
 
-const userR1 = { user_id: 'u1', rank: 'R1', sala: 'Sala 1' };
+const userTeam = { user_id: 'u1', rank: 'Team', sala: 'Sala 1' };
 const patients = [
   { id: 'p1', servicio: 'Sala', area: 'Sala A', sala: 'Sala 1' },
   { id: 'p2', servicio: 'Sala', area: 'Sala A', sala: 'Sala 2' },
 ];
 
-test('R1 sidebar includes only same sala when not on a team', () => {
-  const out = filterPatientsByScopeRules(patients, userR1, {
+test('Team sidebar includes every patient, regardless of sala', () => {
+  const out = filterPatientsByScopeRules(patients, userTeam, {
     teams: [],
     guardias: [],
     assignments: [],
     cycle: null,
     now: '2026-06-01T12:00:00Z',
   });
-  assert.deepEqual(out.map((p) => p.id), ['p1']);
+  assert.deepEqual(out.map((p) => p.id).sort(), ['p1', 'p2']);
 });
 
-test('R1 on team sidebar excludes other team in same sala', () => {
+test('Team sidebar includes every patient, regardless of team assignment', () => {
   const census = [
     { id: 'p-mine', servicio: 'Sala', area: 'Sala B', sala: 'Sala 1' },
     { id: 'p-other', servicio: 'Sala', area: 'Sala A', sala: 'Sala 1' },
   ];
-  const out = filterPatientsByScopeRules(census, userR1, {
+  const out = filterPatientsByScopeRules(census, userTeam, {
     teams: [
       {
         team_id: 't1',
@@ -60,7 +60,7 @@ test('R1 on team sidebar excludes other team in same sala', () => {
     cycle: null,
     now: '2026-06-02T12:00:00Z',
   });
-  assert.deepEqual(out.map((p) => p.id), ['p-mine']);
+  assert.deepEqual(out.map((p) => p.id).sort(), ['p-mine', 'p-other']);
 });
 
 test('Admin guardia census includes all patients with Todos equipos filter on desktop', () => {
@@ -78,7 +78,7 @@ test('Admin guardia census includes all patients with Todos equipos filter on de
   assert.equal(out.length, 2);
 });
 
-test('R1 desktop guardia census shows all; Filtros narrow by equipo', () => {
+test('Team desktop guardia census shows all; Filtros narrow by equipo', () => {
   const leslieTeam = {
     team_id: 't-leslie',
     name: 'Dra. Leslie',
@@ -95,7 +95,7 @@ test('R1 desktop guardia census shows all; Filtros narrow by equipo', () => {
     sala: 'Sala 2',
     members: [],
   };
-  const user = { user_id: 'u-drapaloma', rank: 'R1', sala: 'Sala 2' };
+  const user = { user_id: 'u-drapaloma', rank: 'Team', sala: 'Sala 2' };
   const census = [
     { id: 'p-leslie', servicio: 'Sala', area: 'A', sala: 'Sala 2' },
     { id: 'p-chris', servicio: 'Sala', area: 'B', sala: 'Sala 2' },
@@ -110,8 +110,6 @@ test('R1 desktop guardia census shows all; Filtros narrow by equipo', () => {
     ],
     cycle: null,
     now: '2026-06-02T12:00:00Z',
-    guardiaMode: false,
-    onCallGuardiaReceiver: false,
   };
   const all = filterPatientsForGuardiaCensus(census, user, scope, null, {
     sala: '__all__',
@@ -139,10 +137,10 @@ test('R1 desktop guardia census shows all; Filtros narrow by equipo', () => {
   assert.deepEqual(sala2.map((p) => p.id).sort(), ['p-chris', 'p-leslie']);
 });
 
-test('R4 sidebar includes all patients', () => {
+test('Admin sidebar includes all patients', () => {
   const out = filterPatientsForClinicalSidebar(
     patients,
-    { user_id: 'r4', rank: 'R4', is_program_admin: 0 },
+    { user_id: 'admin2', rank: 'Admin', is_program_admin: 0 },
     { teams: [], guardias: [], assignments: [], cycle: null, now: '2026-06-01T12:00:00Z' }
   );
   assert.equal(out.length, 2);
@@ -166,7 +164,7 @@ test('team filter matches explicit patient_team_assignment', () => {
   );
   const out = filterPatientsForGuardiaCensus(
     [patient, { id: 'p2', servicio: 'Sala', area: 'B', sala: 'Sala 1' }],
-    { user_id: 'admin', rank: 'R1', is_program_admin: 1 },
+    { user_id: 'admin', rank: 'Team', is_program_admin: 1 },
     {
       teams: [team],
       guardias: [],
@@ -196,7 +194,7 @@ test('team filter matches structural Sala slice when unassigned', () => {
   );
   const out = filterPatientsForGuardiaCensus(
     [patient, { id: 'p2', servicio: 'Sala', area: 'B', sala: 'Sala 1' }],
-    { user_id: 'r4', rank: 'R4' },
+    { user_id: 'admin3', rank: 'Admin' },
     { teams, guardias: [], assignments: [], cycle: null, now: '2026-06-01T12:00:00Z' },
     null,
     { sala: '__all__', teamId: 't-melissa', service: '' }
@@ -204,7 +202,7 @@ test('team filter matches structural Sala slice when unassigned', () => {
   assert.deepEqual(out.map((p) => p.id), ['p1']);
 });
 
-test('R4 elevated filter shows only patients without explicit team assignment', () => {
+test('Admin elevated filter shows only patients without explicit team assignment', () => {
   const census = [
     { id: 'p-assigned', sala: 'Sala 1', servicio: 'Sala', _noExplicitTeamAssignment: false },
     { id: 'p-open', sala: 'Sala 1', servicio: 'Sala', _noExplicitTeamAssignment: true },
@@ -215,7 +213,7 @@ test('R4 elevated filter shows only patients without explicit team assignment', 
   assert.deepEqual(out.map((p) => p.id), ['p-open']);
 });
 
-test('iPad Filtros censo narrows team-mirror sidebar by equipo', () => {
+test('iPad census shows every patient by default; Filtros still narrows by equipo', () => {
   globalThis.__RPC_MOBILE_WEB__ = true;
   globalThis.window = {};
   try {
@@ -242,12 +240,12 @@ test('iPad Filtros censo narrows team-mirror sidebar by equipo', () => {
       now: '2026-06-02T12:00:00Z',
     };
     const user = { user_id: 'u-admin', rank: 'Admin', sala: 'Sala 2' };
-    const mirrored = filterPatientsForGuardiaCensus(census, user, scope, null, {
+    const full = filterPatientsForGuardiaCensus(census, user, scope, null, {
       sala: '__all__',
       teamId: '',
       service: '',
     });
-    assert.deepEqual(mirrored.map((p) => p.id), ['p-melissa']);
+    assert.deepEqual(full.map((p) => p.id).sort(), ['p-melissa', 'p-other']);
     const narrowed = filterPatientsForGuardiaCensus(census, user, scope, null, {
       sala: '__all__',
       teamId: 't-melissa',
@@ -260,13 +258,13 @@ test('iPad Filtros censo narrows team-mirror sidebar by equipo', () => {
   }
 });
 
-test('R2 sidebar without team includes same-sala census', () => {
+test('Team sidebar without team membership still includes every patient', () => {
   const out = filterPatientsByScopeRules(
     patients,
-    { user_id: 'r2', rank: 'R2', sala: 'Sala 1', is_program_admin: 0 },
+    { user_id: 'r2', rank: 'Team', sala: 'Sala 1', is_program_admin: 0 },
     { teams: [], guardias: [], assignments: [], cycle: null, now: '2026-06-01T12:00:00Z' }
   );
-  assert.deepEqual(out.map((p) => p.id), ['p1']);
+  assert.deepEqual(out.map((p) => p.id).sort(), ['p1', 'p2']);
 });
 
 test('Interconsultas sala filter includes patient assigned to Interconsultas team with UX stamp', () => {

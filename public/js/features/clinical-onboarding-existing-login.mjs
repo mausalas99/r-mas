@@ -147,7 +147,7 @@ export async function finishExistingAccountProfile(ctx) {
   await bridgeCloudIdentityToLocal({
     username: ctx.username,
     displayName: ctx.displayName,
-    rank: ctx.rank || clinicalSessionContext.user?.rank || 'R1',
+    rank: ctx.rank || clinicalSessionContext.user?.rank || 'Team',
     sala: ctx.sala,
   });
 
@@ -155,7 +155,7 @@ export async function finishExistingAccountProfile(ctx) {
     userId: clinicalSessionContext.user?.user_id,
     username: ctx.username,
     displayName: ctx.displayName,
-    rank: ctx.rank || clinicalSessionContext.user?.rank || 'R1',
+    rank: ctx.rank || clinicalSessionContext.user?.rank || 'Team',
     sala: ctx.sala,
     registered: true,
     lanProfileGateComplete: true,
@@ -211,7 +211,7 @@ async function runExistingAccountLogin(fields, { errEl, toast, setStatus }) {
   const displayName =
     String(loginOut.displayName || clinicalSessionContext.user?.clinical_name || '').trim() ||
     fields.username;
-  const rank = String(loginOut.rank || clinicalSessionContext.user?.rank || 'R1');
+  const rank = String(loginOut.rank || clinicalSessionContext.user?.rank || 'Team');
 
   const finishOut = await finishExistingAccountProfile({
     username: fields.username,
@@ -276,7 +276,7 @@ function readStoredCloudTokenIdentity(settings) {
     displayName: String(
       settings.clinicalDisplayName || clinicalSessionContext.user?.clinical_name || ''
     ).trim(),
-    rank: String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'R1'),
+    rank: String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'Team'),
   };
 }
 

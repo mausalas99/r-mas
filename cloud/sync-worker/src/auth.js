@@ -8,7 +8,16 @@ import {
   recordFailure,
 } from './rate-limit.mjs';
 import { createSession, revokeSession, userFromAuthHeader } from './session.js';
-import { dbBlobToHex, userPayload, parseJsonBody, normalizeUsername, validateUsername, validatePassword } from './auth-util.js';
+import {
+  dbBlobToHex,
+  userPayload,
+  parseJsonBody,
+  normalizeUsername,
+  validateUsername,
+  validatePassword,
+  sanitizeAppVersion,
+  assertNubeAppVersion,
+} from './auth-util.js';
 import {
   mintRecoveryForUser,
   userNeedsRecoveryMint,
@@ -18,13 +27,14 @@ import {
 
 export { normalizeUsername, validateUsername, validatePassword } from './auth-util.js';
 
-/** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request @param {string} ip */
-async function handleRegister(db, request, ip) {
+/** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request @param {string} ip @param {boolean} gateEnabled */
+async function handleRegister(db, request, ip, gateEnabled) {
   const body = await parseJsonBody(request);
   const username = normalizeUsername(body?.username);
   const password = body?.password ?? '';
   const displayName = String(body?.displayName ?? '').trim();
 
+  if (gateEnabled) assertNubeAppVersion(body?.appVersion);
   validateUsername(username);
   validatePassword(password);
 
@@ -47,14 +57,15 @@ async function handleRegister(db, request, ip) {
   const { salt, hash, iterations } = await hashPassword(password);
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
+  const appVersion = sanitizeAppVersion(body?.appVersion);
 
   try {
     await db
       .prepare(
-        `INSERT INTO users (id, username, password_salt, password_hash, password_iterations, display_name, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO users (id, username, password_salt, password_hash, password_iterations, display_name, created_at, updated_at, app_version, app_version_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      .bind(id, username, salt, hash, iterations, displayName, now, now)
+      .bind(id, username, salt, hash, iterations, displayName, now, now, appVersion || null, appVersion ? now : null)
       .run();
   } catch (err) {
     if (String(err?.message || '').includes('UNIQUE')) {
@@ -75,8 +86,8 @@ async function handleRegister(db, request, ip) {
   });
 }
 
-/** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request @param {string} ip */
-async function handleLogin(db, request, ip) {
+/** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request @param {string} ip @param {boolean} gateEnabled */
+async function handleLogin(db, request, ip, gateEnabled) {
   const body = await parseJsonBody(request);
   const username = normalizeUsername(body?.username);
   const password = body?.password ?? '';
@@ -84,6 +95,7 @@ async function handleLogin(db, request, ip) {
   if (!username || !password) {
     throw new SyncError('invalid_request', 'Usuario y contraseña requeridos.');
   }
+  if (gateEnabled) assertNubeAppVersion(body?.appVersion);
 
   const rlKey = rateLimitKey(ip, username);
   checkRateLimit(rateLimitKey(ip));
@@ -115,6 +127,13 @@ async function handleLogin(db, request, ip) {
   }
 
   clearFailures(rlKey);
+  const appVersion = sanitizeAppVersion(body?.appVersion);
+  if (appVersion) {
+    await db
+      .prepare('UPDATE users SET app_version = ?, app_version_at = ? WHERE id = ?')
+      .bind(appVersion, new Date().toISOString(), row.id)
+      .run();
+  }
   const session = await createSession(db, row.id);
   const payload = {
     token: session.token,
@@ -159,12 +178,13 @@ export async function handleAuth(request, env, subpath) {
 
   const ip = clientIp(request);
   const method = request.method;
+  const gateEnabled = Boolean(env.NUBE_VERSION_GATE_ENABLED);
 
   if (subpath === '/register' && method === 'POST') {
-    return handleRegister(db, request, ip);
+    return handleRegister(db, request, ip, gateEnabled);
   }
   if (subpath === '/login' && method === 'POST') {
-    return handleLogin(db, request, ip);
+    return handleLogin(db, request, ip, gateEnabled);
   }
   if (subpath === '/logout' && method === 'POST') {
     return handleLogout(db, request);

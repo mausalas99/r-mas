@@ -1,64 +1,42 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  buildInterconsultaBarHtml,
-  mountInterconsultaBar,
   registerInterconsultaChromeRuntime,
   renderConsultBandForActivePatient,
   syncInterconsultaModeChrome,
 } from './interconsulta-mode-chrome.mjs';
 import { setPatients } from '../app-state.mjs';
-
-describe('buildInterconsultaBarHtml', () => {
-  it('renders the primary action, a demoted "Generar nota" menu item, and the shortcut', () => {
-    var html = buildInterconsultaBarHtml();
-    assert.match(html, /wb-mode-frame-name">Consulta Externa/);
-    assert.match(html, /data-wb-ic-primary>Actualizar pacientes/);
-    assert.match(html, /data-wb-ic-generar-nota>Generar nota \(\.docx\)/);
-    assert.match(html, /data-wb-shortcut/);
-    // "Generar nota" must not be a primary button.
-    assert.doesNotMatch(html.replace(/data-wb-ic-generar-nota[^<]*<\/button>/, ''), /wb-btn-primary[^>]*>Generar nota/);
-  });
-});
-
-describe('mountInterconsultaBar', () => {
-  it('wires primary, shortcut and the menu item click handlers', () => {
-    if (typeof document === 'undefined') return;
-    var host = document.createElement('div');
-    var primaryClicked = false;
-    var shortcutClicked = false;
-    var generarClicked = false;
-    mountInterconsultaBar(host, {
-      onPrimary: () => (primaryClicked = true),
-      onShortcut: () => (shortcutClicked = true),
-      onGenerarNota: () => (generarClicked = true),
-    });
-    host.querySelector('[data-wb-ic-primary]').click();
-    host.querySelector('[data-wb-shortcut]').click();
-    host.querySelector('[data-wb-ic-generar-nota]').click();
-    assert.equal(primaryClicked, true);
-    assert.equal(shortcutClicked, true);
-    assert.equal(generarClicked, true);
-  });
-});
+import { setActivePatientAreaGetter } from './active-patient-area.mjs';
+import { attachProfileSettingsGetter } from './profile-runtime.mjs';
 
 describe('syncInterconsultaModeChrome + renderConsultBandForActivePatient', () => {
   beforeEach(() => {
     if (typeof document === 'undefined') return;
-    document.body.innerHTML =
-      '<div id="interconsulta-mode-frame" hidden></div>' +
-      '<div id="interconsulta-consult-band" hidden></div>';
+    document.body.innerHTML = '<div id="interconsulta-consult-band" hidden></div>';
   });
 
-  it('hides the frame and band when not in interconsulta mode', () => {
+  it('leaves the band untouched when not in interconsulta mode', () => {
     if (typeof document === 'undefined') return;
     registerInterconsultaChromeRuntime({
       getActiveId: () => null,
     });
     // No settings registered => isModeSala defaults true => sala, not interconsulta.
     syncInterconsultaModeChrome();
-    assert.equal(document.getElementById('interconsulta-mode-frame').hidden, true);
-    assert.equal(document.getElementById('interconsulta-consult-band').hidden, true);
+    assert.equal(document.getElementById('interconsulta-consult-band').innerHTML, '');
+  });
+
+  it('a ward patient (área not "Consulta Externa") does not paint the band even when the app-wide toggle is on interconsulta', () => {
+    if (typeof document === 'undefined') return;
+    try {
+      registerInterconsultaChromeRuntime({ getActiveId: () => '1' });
+      attachProfileSettingsGetter(() => ({ appMode: 'interconsulta' }));
+      setActivePatientAreaGetter(() => 'CARDIOLOGÍA');
+      syncInterconsultaModeChrome();
+      assert.equal(document.getElementById('interconsulta-consult-band').innerHTML, '');
+    } finally {
+      setActivePatientAreaGetter(() => '');
+      attachProfileSettingsGetter(() => ({}));
+    }
   });
 
   it('paints the consult band for the active patient once mounted', () => {
@@ -73,7 +51,7 @@ describe('syncInterconsultaModeChrome + renderConsultBandForActivePatient', () =
     assert.equal(typeof bandMount.innerHTML, 'string');
   });
 
-  it('renders the HF follow-up band (fase/fenotipo/etiología/internamiento/consulta) for a real patient', () => {
+  it('renders the HF follow-up band (fase/internamiento/consulta — no fenotipo/etiología, already shown in Resumen) for a real patient', () => {
     if (typeof document === 'undefined') return;
     var bandMount = document.getElementById('interconsulta-consult-band');
     bandMount.hidden = false;
@@ -101,14 +79,13 @@ describe('syncInterconsultaModeChrome + renderConsultBandForActivePatient', () =
     var html = bandMount.innerHTML;
     assert.match(html, /Fase de seguimiento/);
     assert.match(html, /Optimización\/estable/);
-    assert.match(html, /HFrEF/);
-    assert.match(html, /Isquémica/);
     assert.match(html, /2026-07-10/);
     assert.match(html, /Descompensación congestiva/);
     assert.match(html, /2026-08-01/);
     assert.match(html, /Abrir consulta de hoy/);
     assert.doesNotMatch(html, /Servicio solicitante/);
     assert.doesNotMatch(html, /Motivo de consulta/);
+    assert.doesNotMatch(html, /Fenotipo/);
     setPatients([]);
   });
 });

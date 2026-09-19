@@ -1,5 +1,4 @@
 /** LAN directorio HTML rendering. */
-import { getCycleLetterOptionsForRank } from '../../clinico-access.mjs';
 import { getClinicalOpsTrace } from '../../clinical-ops-sync.mjs';
 import { canViewUserDirectory } from '../../clinical-privileges.mjs';
 import { escapeHtml, escapeAttr } from './shared.mjs';
@@ -19,12 +18,6 @@ export function renderDirectoryUsersTopButtonHtml(user) {
 /** @deprecated — use renderDirectoryUsersTopButtonHtml in create top bar */
 export function renderDirectoryUsersEntryHtml(user) {
   return renderDirectoryUsersTopButtonHtml(user);
-}
-
-export function cycleLettersForAssign(team, userRank) {
-  const service = String(team?.service || 'Sala');
-  const rank = String(userRank || 'R1');
-  return getCycleLetterOptionsForRank(service, rank);
 }
 
 export function renderAssignTeamOptionsHtml(teams, selectedTeamId) {
@@ -74,27 +67,11 @@ function groupUsersByRank(users) {
   /** @type {object[]} */
   const other = [];
   for (const user of users) {
-    const rank = String(user?.rank || 'R1');
+    const rank = String(user?.rank || 'Team');
     if (groups.has(rank)) groups.get(rank).push(user);
     else other.push(user);
   }
   return { groups, other };
-}
-
-/** @param {string} letter @param {string} userRank */
-export function formatCycleOptionLabel(letter, userRank) {
-  const frac = String(letter || '').trim();
-  if (!frac) return '— Ciclo —';
-  const rank = String(userRank || '').trim();
-  // Sala R1 subcycles (A1–D2) — letter shape wins.
-  if (/^[A-D][12]$/i.test(frac)) return `Subciclo R1 · ${frac.toUpperCase()}`;
-  // Prefer explicit rank so Inters/UX/Eme R3 is not labeled "Ciclo R2".
-  if (rank === 'R1') return `Subciclo R1 · ${frac}`;
-  if (rank === 'R2') return `Ciclo R2 · ${frac}`;
-  if (rank === 'R3') return `Ciclo R3 · ${frac}`;
-  if (rank === 'R4') return `Ciclo R4 · ${frac}`;
-  if (/^[A-F]$/i.test(frac)) return `Ciclo R2 · ${frac}`;
-  return `Ciclo · ${frac}`;
 }
 
 /** @param {object[]} users */

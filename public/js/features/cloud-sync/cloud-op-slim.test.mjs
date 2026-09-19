@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CLOUD_LAB_MUTATION_MAX_BYTES,
@@ -11,6 +11,7 @@ import {
   utf8JsonBytes,
   CLOUD_LAB_SET_ALLOWLIST,
 } from './cloud-op-slim.mjs';
+import { noteCloudOpsAttempted } from './cloud-sync-echo-guard.mjs';
 
 describe('slimLabSetForCloud', () => {
   it('drops non-SOME paste and keeps parsed fields', () => {
@@ -180,5 +181,40 @@ describe('sanitizeOpsForCloudPush', () => {
     assert.equal(ops.length, 1);
     assert.ok(ops[0].value.historial.length < historial.length);
     assert.ok(ops[0].value.historial.length >= 1);
+  });
+
+  describe('echo guard (skip already-tried updatedAt)', () => {
+    const prev = globalThis.localStorage;
+
+    beforeEach(() => {
+      globalThis.localStorage = {
+        store: {},
+        getItem(key) {
+          return this.store[key] ?? null;
+        },
+        setItem(key, value) {
+          this.store[key] = String(value);
+        },
+        removeItem(key) {
+          delete this.store[key];
+        },
+      };
+    });
+
+    afterEach(() => {
+      if (prev) globalThis.localStorage = prev;
+      else delete globalThis.localStorage;
+    });
+
+    it('drops an op already attempted with this exact updatedAt, keeps a genuinely new one', () => {
+      const stale = { path: 'entries/p1/fields', value: { nombre: 'A' }, updatedAt: 't1', actorId: 'a' };
+      noteCloudOpsAttempted([stale]);
+      const { ops } = sanitizeOpsForCloudPush([
+        stale,
+        { path: 'entries/p1/monitoreo', value: { historial: [] }, updatedAt: 't2', actorId: 'a' },
+      ]);
+      assert.equal(ops.length, 1);
+      assert.equal(ops[0].path, 'entries/p1/monitoreo');
+    });
   });
 });

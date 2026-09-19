@@ -15,7 +15,6 @@ import {
 } from './tour-engine.mjs';
 import {
   maybeMarkFundamentosChapterComplete,
-  maybeMarkGuardiaV7ChapterComplete,
 } from './tour-flow-chapter.mjs';
 import { renderTourStep } from './tour-flow-render.mjs';
 import { finishGuidedTour } from './tour-flow-lifecycle.mjs';
@@ -74,7 +73,6 @@ function guidedTourClickNext() {
     closeSOAPModal();
   }
   maybeMarkFundamentosChapterComplete(tourState.tourStepId);
-  maybeMarkGuardiaV7ChapterComplete(tourState.tourStepId);
   if (i + 1 >= steps.length) {
     finishGuidedTour();
     return;

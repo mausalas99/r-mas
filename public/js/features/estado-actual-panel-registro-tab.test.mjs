@@ -215,9 +215,13 @@ function mockFormHtml() {
     '<input type="checkbox" data-ea-glu-altered />' +
     '</div>' +
     '</div>' +
-    '<input id="ea-io-ing" />' +
-    '<input id="ea-io-evac" />' +
-    '<input id="ea-io-egr" />'
+    '<input id="ea-io-ing-t1" />' +
+    '<input id="ea-io-ing-t2" />' +
+    '<input id="ea-io-ing-t3" />' +
+    '<input id="ea-io-egr-t1" />' +
+    '<input id="ea-io-egr-t2" />' +
+    '<input id="ea-io-egr-t3" />' +
+    '<input id="ea-io-evac" />'
   );
 }
 
@@ -253,7 +257,7 @@ describe('registro tab spine', () => {
     assert.match(REGISTRO_TAB_SKIP_SELECTOR, /ea-add-glu/);
     assert.match(REGISTRO_TAB_SKIP_SELECTOR, /ea-add-bomba/);
     assert.match(REGISTRO_TAB_SKIP_SELECTOR, /ea-bomba-enabled/);
-    assert.match(REGISTRO_TAB_SKIP_SELECTOR, /data-ea-io-nc/);
+    assert.match(REGISTRO_TAB_SKIP_SELECTOR, /data-ea-io-turno-nc/);
     assert.match(REGISTRO_TAB_SKIP_SELECTOR, /ea-registro-paste-btn/);
   });
 
@@ -278,9 +282,13 @@ describe('registro tab spine', () => {
     );
     const gluValues = spine.filter((el) => el.hasAttribute('data-ea-glu-value'));
     assert.equal(gluValues.length, 2);
-    assert.equal(spine[spine.length - 3].getAttribute('id'), 'ea-io-ing');
-    assert.equal(spine[spine.length - 2].getAttribute('id'), 'ea-io-evac');
-    assert.equal(spine[spine.length - 1].getAttribute('id'), 'ea-io-egr');
+    assert.equal(spine[spine.length - 7].getAttribute('id'), 'ea-io-ing-t1');
+    assert.equal(spine[spine.length - 6].getAttribute('id'), 'ea-io-ing-t2');
+    assert.equal(spine[spine.length - 5].getAttribute('id'), 'ea-io-ing-t3');
+    assert.equal(spine[spine.length - 4].getAttribute('id'), 'ea-io-egr-t1');
+    assert.equal(spine[spine.length - 3].getAttribute('id'), 'ea-io-egr-t2');
+    assert.equal(spine[spine.length - 2].getAttribute('id'), 'ea-io-egr-t3');
+    assert.equal(spine[spine.length - 1].getAttribute('id'), 'ea-io-evac');
   });
 
   it('Tab from first glu goes to second glu not Alterada', () => {

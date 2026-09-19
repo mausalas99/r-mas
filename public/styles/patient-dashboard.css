@@ -42,6 +42,12 @@
 
 .patient-dash .id-name-row .meta { margin-top: 0; }
 
+/* HF follow-up band nested in the name row (Consulta Externa only) — see
+ * .hf-follow-band below for the fields/action it paints. */
+.patient-dash .id-name-row-band {
+  min-width: 0;
+}
+
 .patient-dash .dash-name {
   margin: 0;
   padding: 0;
@@ -241,17 +247,12 @@ html.dark .patient-dash .svc.is-on {
   font-size: 0.72em;
 }
 
-/* GDMT / 4 Fantásticos — compact on/off pill row, one line, no card chrome. */
-.patient-dash .gdmt-row {
+/* GDMT / 4 Fantásticos — compact on/off pill card, sits as the 3rd card in
+   .bento.cardio-primary (see above) instead of its own full-width row. */
+.patient-dash .gdmt-pills {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  flex: 0 0 auto;
-  border: 0;
-  background: none;
-  padding: 0;
-  text-align: left;
-  cursor: pointer;
 }
 
 .patient-dash .gdmt-pill {
@@ -291,12 +292,18 @@ html.dark .patient-dash .svc.is-on {
   align-self: start;
 }
 
+/* Eventualidades / Pendientes (+ GDMT, when present) — GDMT rides along as
+   a 3rd card here instead of its own full-width row, since it fits inside
+   the taller Eventualidades/Pendientes row height without growing it. */
 .patient-dash .bento.rest {
   flex: 0 0 auto;
   min-height: min-content;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto;
   margin-top: 0;
+}
+.patient-dash .bento.rest:has(.gdmt-row) {
+  grid-template-columns: minmax(0, 0.8fr) 1fr 1fr;
 }
 
 .patient-dash .bento.meds-band {
@@ -812,57 +819,59 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z2[data-soap] em {
 
 #patient-ronda-dashboard-host { min-width: 0; }
 
-/* ── Interconsulta consult band (screen 10b) ───────────────────────
- * Shown above the same Resumen used by Sala when appMode=interconsulta.
+/* ── HF follow-up band (screen 10b) ───────────────────────
+ * Mounted INSIDE .wb-ic-bar-mid (interconsulta-mode-chrome.mjs moves this
+ * element there on first render) so it reads as one merged, un-boxed row
+ * with the mode label and actions — matches the upstream interconsultas
+ * header layout, re-themed for this app's light UI. No padding of its own:
+ * the parent .wb-ic-bar already supplies it.
  */
-.ic-consult-band {
+.hf-follow-band {
   display: flex;
-  gap: 24px;
-  padding: 10px 24px;
-  background: var(--color-elevated);
-  border-bottom: 1px solid var(--border);
+  align-items: center;
+  gap: 16px;
 }
-.ic-consult-field {
+.hf-follow-band-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 28px;
+  flex: 1;
+  min-width: 0;
+}
+.hf-follow-band-field {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
-.ic-consult-field--reason {
-  flex: 1;
-}
-.ic-consult-label {
+.hf-follow-band-label {
   font: var(--type-wb-metadata, 500 10px/1.2 var(--font-ui));
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-ink-tertiary);
 }
-.ic-consult-value {
+.hf-follow-band-value {
   font: var(--type-wb-mono, 500 12.5px/1.4 var(--font-mono));
   color: var(--color-ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.ic-consult-empty {
+.hf-follow-band-empty {
   color: var(--color-ink-tertiary);
   font-style: italic;
 }
-.ic-consult-status--en_curso { color: var(--warn, #8a4208); }
-.ic-consult-status--resuelta { color: var(--color-ink-muted); }
-.ic-consult-status--pendiente { color: var(--color-ink); }
-.ic-consult-fase-select {
+.hf-follow-band-fase-select {
   font: var(--type-wb-mono, 500 12.5px/1.4 var(--font-mono));
   color: var(--color-ink);
-  background: var(--color-elevated);
+  background: var(--color-canvas, transparent);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 2px 6px;
   max-width: 220px;
 }
-.ic-consult-field--action {
-  margin-left: auto;
-  justify-content: center;
+.hf-follow-band-action {
+  flex: 0 0 auto;
 }
 #interconsulta-mode-frame[hidden],
 #interconsulta-consult-band[hidden] {

@@ -98,15 +98,6 @@ const rootProcessCommonjs = {
   },
 };
 
-const rootProcessEsm = {
-  files: ['generate-censo.js'],
-  languageOptions: {
-    ecmaVersion: 2022,
-    sourceType: 'module',
-    globals: { ...globals.node },
-  },
-};
-
 const rootProcessRecetaHu = {
   files: ['generate-receta-hu.js', 'generate-receta-hu.test.js'],
   languageOptions: {
@@ -128,7 +119,6 @@ const scriptsBlock = {
 const unusedVarsIgnoreUnderscore = {
   files: [
     'main.js', 'server.js', 'preload.js',
-    'generate-censo.js',
     'generate-receta-hu.js', 'generate-receta-hu.test.js',
     'scripts/**/*.mjs', 'scripts/**/*.js', 'scripts/**/*.cjs',
   ],
@@ -162,7 +152,6 @@ export default [
   bootHubs,
   tier1Tests,
   rootProcessCommonjs,
-  rootProcessEsm,
   rootProcessRecetaHu,
   scriptsBlock,
   scriptsEsm,

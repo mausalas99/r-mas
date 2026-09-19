@@ -51,7 +51,6 @@ describe('mobile-web', () => {
     if (typeof document === 'undefined') return;
     activateMobileWebRoot();
     document.body.innerHTML =
-      '<button id="btn-export-censo-header"></button>' +
       '<button id="profile-toggle-btn"></button>' +
       '<button id="btn-open-settings"></button>' +
       '<button id="itab-salida"></button>' +
@@ -64,7 +63,6 @@ describe('mobile-web', () => {
       '<div id="appcontent-agenda"></div>' +
       '<div id="tour-dock" class="tour-dock-visible"></div>';
     syncMobileBarebonesChrome();
-    assert.equal(document.getElementById('btn-export-censo-header').style.display, 'none');
     assert.equal(document.getElementById('profile-toggle-btn').style.display, 'none');
     assert.equal(document.getElementById('btn-open-settings').style.display, 'none');
     assert.equal(document.getElementById('itab-salida').style.display, 'none');

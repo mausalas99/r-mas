@@ -28,15 +28,6 @@ function monitoreoOpUpdatedAt(monitoreo) {
   return String(monitoreoUpdatedAt(monitoreo) || '').trim();
 }
 
-/** @param {unknown} ev @param {string} fallback */
-function eventualidadesOpUpdatedAt(ev, fallback) {
-  if (!ev || typeof ev !== 'object') return fallback;
-  /** @type {{ updatedAt?: unknown }} */
-  const row = ev;
-  const at = String(row.updatedAt || '').trim();
-  return at || fallback;
-}
-
 /** @param {unknown} set @param {number} index */
 export function labSetId(set, index) {
   const row = set && typeof set === 'object' ? set : {};
@@ -83,7 +74,7 @@ export function pushCensusFieldsOp(ops, patientId, patient, actorId) {
   );
 }
 
-/** Monitoreo + eventualidades only (no HC) — fits debounced Nube bundle without note/lab quota blow-up. */
+/** Monitoreo only (no HC) — fits debounced Nube bundle without note/lab quota blow-up. */
 export function pushCloudLiveClinicalOps(ops, patientId, patient, actorId, batchAt) {
   if (patient.monitoreo) {
     // Fall back to batchAt so a vitals row with no resolvable content clock still
@@ -95,16 +86,6 @@ export function pushCloudLiveClinicalOps(ops, patientId, patient, actorId, batch
         value: patient.monitoreo,
         actorId,
         updatedAt: monAt,
-      })
-    );
-  }
-  if (patient.eventualidades) {
-    ops.push(
-      cloudOp({
-        path: `entries/${patientId}/eventualidades`,
-        value: patient.eventualidades,
-        actorId,
-        updatedAt: eventualidadesOpUpdatedAt(patient.eventualidades, batchAt),
       })
     );
   }
@@ -197,7 +178,7 @@ export function mapPatientEntryToCensusSeedOps(entry, meta) {
 }
 
 /**
- * Debounced Nube bundle: census fields + estado actual / eventualidades (not notes/labs/HC).
+ * Debounced Nube bundle: census fields + estado actual (not notes/labs/HC).
  * @param {object} entry
  * @param {{ actorId: string, updatedAt: string }} meta
  * @returns {CloudSyncOp[]}
@@ -291,33 +272,6 @@ export function countPatientEntryOps(ops) {
     if (String(ops[i]?.path || '').startsWith('entries/')) count += 1;
   }
   return count;
-}
-
-/**
- * Sidecar op — upserts sala_interno_access in Worker D1 (not LWW room state).
- * @param {{ sala?: string, access_token?: string, is_active?: number, rotated_at?: string|null, rotated_by?: string|null }} row
- */
-export function buildInternoAccessUpsertOp(row) {
-  const sala = String(row?.sala || '').trim();
-  return {
-    type: 'internoAccessUpsert',
-    sala,
-    accessToken: String(row?.access_token || ''),
-    isActive: Number(row?.is_active) === 1,
-    rotatedAt: row?.rotated_at ? String(row.rotated_at) : null,
-    rotatedBy: row?.rotated_by ? String(row.rotated_by) : null,
-  };
-}
-
-/**
- * Stable mutation id per sala + rotation clock (retry-safe).
- * @param {{ sala?: string, access_token?: string, is_active?: number, rotated_at?: string|null, rotated_by?: string|null }} row
- */
-export function internoAccessMutationId(row) {
-  const sala = String(row?.sala || '').trim();
-  const rotatedAt = String(row?.rotated_at || '').trim();
-  const active = Number(row?.is_active) === 1 ? '1' : '0';
-  return `internoAccess/${sala}/${rotatedAt || 'na'}/${active}`;
 }
 
 /** @param {CloudSyncOp[]} ops */

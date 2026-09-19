@@ -15,11 +15,8 @@ describe('nube-sync-policy', () => {
     }
   });
 
-  it('shows Nube for all clinical wards', () => {
-    assert.equal(shouldShowNubePanel('Sala 1'), true);
-    assert.equal(shouldShowNubePanel('UX'), true);
-    assert.equal(shouldShowNubePanel('Interconsultas'), true);
-    assert.equal(shouldShowNubePanel('Eme'), true);
+  it('shows Nube for the R+ HF sala', () => {
+    assert.equal(shouldShowNubePanel('Unidad IC'), true);
   });
 
   it('shows Nube panel before profile sala is chosen', () => {
@@ -31,13 +28,11 @@ describe('nube-sync-policy', () => {
     assert.equal(shouldShowNubePanel('Laboratorio'), false);
   });
 
-  it('uses Nube not LAN when cloud room connected for any cloud sala', () => {
-    assert.equal(shouldUseNubeNotLan('UX', true), true);
-    assert.equal(shouldUseNubeNotLan('Sala 1', false), false);
-    assert.equal(shouldUseNubeNotLan('Sala 1', true), true);
+  it('uses Nube not LAN when cloud room connected for the cloud sala', () => {
+    assert.equal(shouldUseNubeNotLan('Unidad IC', true), true);
+    assert.equal(shouldUseNubeNotLan('Unidad IC', false), false);
     setCloudRoomConnected(true);
-    assert.equal(shouldUseNubeNotLan('Torre HU'), true);
-    assert.equal(shouldUseNubeNotLan('Interconsultas'), true);
+    assert.equal(shouldUseNubeNotLan('Unidad IC'), true);
   });
 
   it('isCloudSyncActive reflects connection flag', () => {

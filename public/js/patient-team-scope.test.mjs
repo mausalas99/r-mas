@@ -53,20 +53,20 @@ const baseContext = {
 };
 
 describe('patient-team-scope', () => {
-  it('R2 syncs only patients assigned to joined team', () => {
-    const user = { user_id: 'r2', rank: 'R2', sala: 'Sala 1' };
+  it('Team (desktop) syncs every patient, not just joined-team ones', () => {
+    const user = { user_id: 'r2', rank: 'Team', sala: 'Sala 1' };
     assert.equal(
       isPatientInLanTeamSyncScopeRules(user, { id: 'p1', service: 'Sala' }, null, baseContext),
       true
     );
     assert.equal(
       isPatientInLanTeamSyncScopeRules(user, { id: 'p2', service: 'Torre HU' }, null, baseContext),
-      false
+      true
     );
   });
 
-  it('R1 syncs only team-assigned patients', () => {
-    const user = { user_id: 'r1', rank: 'R1', sala: 'Sala 1' };
+  it('Team (desktop) syncs patients regardless of team assignment', () => {
+    const user = { user_id: 'r1', rank: 'Team', sala: 'Sala 1' };
     const ctx = {
       teams: [
         {
@@ -90,19 +90,19 @@ describe('patient-team-scope', () => {
     );
     assert.equal(
       isPatientInLanTeamSyncScopeRules(user, { id: 'p2', service: 'Sala', sala: 'Sala 1' }, null, ctx),
-      false
+      true
     );
   });
 
-  it('R4 on desktop syncs all patients', () => {
-    const user = { user_id: 'r4', rank: 'R4' };
+  it('Admin on desktop syncs all patients', () => {
+    const user = { user_id: 'admin', rank: 'Admin' };
     assert.equal(
       isPatientInLanTeamSyncScope(user, { id: 'p9', service: 'Torre HU' }, null, baseContext),
       true
     );
   });
 
-  it('Admin on Safari LAN syncs only team-assigned patients', () => {
+  it('Admin on Safari LAN syncs every patient, not just team-assigned ones', () => {
     mockWebClinicalClient();
     const user = { user_id: 'u-admin', rank: 'Admin', is_program_admin: 1 };
     const ctx = {
@@ -126,7 +126,7 @@ describe('patient-team-scope', () => {
     );
     assert.equal(
       isPatientInLanTeamSyncScope(user, { id: 'p9', service: 'Torre HU' }, null, ctx),
-      false
+      true
     );
   });
 
@@ -135,14 +135,13 @@ describe('patient-team-scope', () => {
     assert.equal(filterPatientEntriesForLanTeamScope(entries, null, baseContext, null).length, 0);
   });
 
-  it('filterPatientEntriesForLanTeamScope drops out-of-scope entries', () => {
-    const user = { user_id: 'r2', rank: 'R2', sala: 'Sala 1' };
+  it('filterPatientEntriesForLanTeamScope keeps every entry for a Team (desktop) user', () => {
+    const user = { user_id: 'r2', rank: 'Team', sala: 'Sala 1' };
     const entries = [
       { patient: { id: 'p1', servicio: 'Sala' } },
       { patient: { id: 'p2', servicio: 'Torre HU' } },
     ];
     const filtered = filterEntriesByLanTeamScopeRules(entries, user, baseContext, null);
-    assert.equal(filtered.length, 1);
-    assert.equal(filtered[0].patient.id, 'p1');
+    assert.equal(filtered.length, 2);
   });
 });

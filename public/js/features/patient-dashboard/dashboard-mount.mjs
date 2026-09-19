@@ -7,7 +7,7 @@ import { storage } from '../../storage.js';
 import { openPatientDatosModal } from '../../patient-datos-modal.mjs';
 import { resolveEaAbxFechaActualizacion } from '../estado-actual-meds-core.mjs';
 import { collectEaGlanceSoap } from './ea-glance-meds.mjs';
-import { sortEntriesDesc, resolveEventualidadEntryText } from '../eventualidades-store.mjs';
+import { listEventualidadDatesDesc, findEventualidadEntry } from '../../../../lib/cardio/eventualidad-seguimiento.mjs';
 import { toggleInterconsultId } from './interconsult-catalog.mjs';
 import { buildDashboardModel } from './dashboard-model.mjs';
 import { renderDashboardHtml, renderLabsHtml } from './dashboard-html.mjs';
@@ -90,11 +90,13 @@ export function buildEaInputFromPatient(patient, opts) {
 }
 
 function collectEventualidades(patient) {
-  var entries = patient && patient.eventualidades && patient.eventualidades.entries;
-  return sortEntriesDesc(entries).map(function (e) {
+  var cardio = patient && patient.cardio;
+  return listEventualidadDatesDesc(cardio).map(function (date) {
+    var entry = findEventualidadEntry(cardio, date) || {};
+    var summary = String(entry.impresionDiagnostica || entry.planTerapeutico || '').trim();
     return {
-      at: e && e.at,
-      text: resolveEventualidadEntryText(e && e.text, e && e.kind),
+      time: date,
+      text: summary || 'Sin impresión registrada',
     };
   });
 }

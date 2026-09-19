@@ -10,6 +10,7 @@ public/js/app.bundle.mjs
 public/js/app.bundle.mjs.map
 public/js/app.bundle.meta.json
 public/js/chunks/
+cloud/sync-pages/public/mobile/js/chunks/
 public/styles/app.bundle.css
 .worktrees/
 .opencode/
@@ -20,6 +21,7 @@ scripts/debug-clinical-unlock.mjs
 scripts/.native-cache/
 scripts/.sqlite-*.tgz
 scripts/.sqlite-*-tmp/
+resources/tessdata/
 
 .DS_Store
 .superpowers/

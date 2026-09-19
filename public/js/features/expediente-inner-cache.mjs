@@ -14,11 +14,10 @@ import {
   migrateGranularInner,
 } from '../expediente-tabs.mjs';
 import { renderEstadoActualPanel } from './estado-actual-panel.mjs';
-import { renderVpo } from './vpo.mjs';
 import { ensureChartsLoaded } from '../lazy-feature-routes.mjs';
 import { renderIndicaForm } from './notes-indicaciones.mjs';
 import { renderNotaEvolucionPrimaryTab } from './nota-evolucion/nota-evolucion-primary-tab.mjs';
-import { renderEventualidadesPanel } from './eventualidades-panel.mjs';
+import { renderEventualidadSeguimientoPanel } from './cardio/eventualidad-seguimiento-wire.mjs';
 import { renderEvaluacionInicialPanel } from './cardio/evaluacion-inicial-wire.mjs';
 import { ensureConsultaIcLoaded } from '../lazy-feature-routes.mjs';
 import {
@@ -60,7 +59,11 @@ export function granularMountIsEmpty(tab) {
   }
   if (tab === "eventualidades") {
     var ev = document.getElementById("exp-pane-eventualidades");
-    return !!ev && !ev.querySelector(".ev-panel");
+    return !!ev && !ev.querySelector(".hf-ei-form");
+  }
+  if (tab === "consultaIC") {
+    var ic = document.getElementById("consulta-ic-container");
+    return !!ic && !String(ic.innerHTML || "").trim();
   }
   if (tab === "tend") {
     var tend = document.getElementById("tendencias-container");
@@ -270,10 +273,6 @@ function renderResumenInnerTab(tab, opts) {
 var GRANULAR_TAB_RENDERERS = {
   resumen: renderResumenInnerTab,
   estadoActual: renderEstadoActualInnerTab,
-  vpo: function (tab) {
-    renderVpo();
-    markInnerTabRendered(tab);
-  },
   tend: renderTendInnerTab,
   // Screen 9a (Nota de evolución) is the primary content of this tab in
   // both Sala and Interconsulta — `renderNotaEvolucionPrimaryTab` owns the
@@ -292,7 +291,7 @@ var GRANULAR_TAB_RENDERERS = {
     markInnerTabRendered(tab);
   },
   eventualidades: function (tab) {
-    renderEventualidadesPanel(document.getElementById('exp-pane-eventualidades'));
+    renderEventualidadSeguimientoPanel(document.getElementById('exp-pane-eventualidades'));
     markInnerTabRendered(tab);
   },
   evaluacionInicial: function (tab) {

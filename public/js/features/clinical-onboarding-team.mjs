@@ -9,7 +9,7 @@ import { getCloudSyncToken } from './cloud-sync/settings.mjs';
 import { isCloudSala } from './cloud-sync/sala-allowlist.mjs';
 
 function buildTeamOnboardLeadHtml() {
-  const rank = String(clinicalSessionContext.user?.rank || 'R1').trim();
+  const rank = String(clinicalSessionContext.user?.rank || 'Team').trim();
   const sala = String(clinicalSessionContext.user?.sala || '').trim();
   const handle = normalizeUsername(clinicalSessionContext.user?.username || '');
   const who = [handle ? '@' + handle : '', rank, sala].filter(Boolean).join(' · ');

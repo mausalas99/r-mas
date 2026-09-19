@@ -3,10 +3,7 @@
  */
 import { storage } from '../../storage.js';
 import { getPatients, getNotes, getIndicaciones, getLabHistory, getMedRecetaByPatient, getMedPharmProfileByPatient, getVpoByPatient, getListadoProblemas, persistClinicalState, scheduleIdleClinicalPersist } from '../../app-state.mjs';
-import {
-  mergeEventualidades,
-  mergeLabHistorySets,
-} from '../../patient-merge.mjs';
+import { mergeLabHistorySets } from '../../patient-merge.mjs';
 import { reparseLabSetsFromSome } from '../../lab-history-some-reparse.mjs';
 import { bumpLabHistoryRevision } from '../../lab-history-cache.mjs';
 import { mergePatientMonitoreoFromImported } from '../estado-actual-data.mjs';
@@ -223,13 +220,6 @@ function applyLanPatientCharts(existing, entry) {
 
 function applyLanPatientNested(existing, entry, p) {
   var changed = false;
-  if (p.eventualidades && typeof p.eventualidades === 'object') {
-    var mergedEv = mergeEventualidades(existing.eventualidades, p.eventualidades) || p.eventualidades;
-    if (!lanJsonEqual(existing.eventualidades, mergedEv)) {
-      existing.eventualidades = mergedEv;
-      changed = true;
-    }
-  }
   if (applyLanPatientCharts(existing, entry)) changed = true;
   var monBefore = JSON.stringify(existing);
   mergePatientMonitoreoFromImported(existing, p);

@@ -14,13 +14,11 @@ const _equiposDir = dirname(fileURLToPath(import.meta.url));
 const assignSrc = readFileSync(join(_equiposDir, 'panel-admin-equipos-actions.mjs'), 'utf8');
 const bulkSrc = readFileSync(join(_equiposDir, 'panel-admin-equipos-bulk.mjs'), 'utf8');
 import {
-  cycleOptionsForTeam,
   equiposListHtml,
   equiposShellHtml,
   renderEquiposAssignTeamOptionsHtml,
   userSalaSelectOptionsHtml,
 } from './panel-admin-equipos-html.mjs';
-import { formatCycleOptionLabel } from '../clinical-teams/teams-roster-directory-render.mjs';
 import {
   equiposPurgeConfirmMessage,
   resolveEquiposTeamSalaScope,
@@ -30,14 +28,14 @@ describe('mergeCloudUsersForEquipos', () => {
   it('merges cloud users with local clinical profiles by username', () => {
     const rows = mergeCloudUsersForEquipos(
       [
-        { id: 'c1', username: 'r2garcia', display_name: 'García', disabled: false },
+        { id: 'c1', username: 'admingarcia', display_name: 'García', disabled: false },
         { id: 'c2', username: 'disabled', display_name: 'X', disabled: true },
       ],
-      [{ user_id: 'u1', username: 'r2garcia', clinical_name: 'Ana García', rank: 'R2', sala: 'Sala 1' }]
+      [{ user_id: 'u1', username: 'admingarcia', clinical_name: 'Ana García', rank: 'Admin', sala: 'Sala 1' }]
     );
     assert.equal(rows.length, 1);
     assert.equal(rows[0].user_id, 'u1');
-    assert.equal(rows[0].rank, 'R2');
+    assert.equal(rows[0].rank, 'Admin');
     assert.equal(rows[0].hasLocalProfile, true);
   });
 
@@ -48,7 +46,7 @@ describe('mergeCloudUsersForEquipos', () => {
     );
     assert.equal(rows[0].hasLocalProfile, false);
     assert.equal(rows[0].clinical_name, 'Nuevo');
-    assert.equal(rows[0].rank, 'R1');
+    assert.equal(rows[0].rank, 'Team');
   });
 
   it('includes clinical-only users that have no Nube account', () => {
@@ -59,14 +57,14 @@ describe('mergeCloudUsersForEquipos', () => {
           user_id: 'u-cloud',
           username: 'drmauricios',
           clinical_name: 'Dr. Mauricio',
-          rank: 'R1',
+          rank: 'Team',
           sala: 'Sala 2',
         },
         {
           user_id: 'u-test',
           username: 'teasteagtag',
           clinical_name: 'TEASTEATA',
-          rank: 'R1',
+          rank: 'Team',
           sala: 'Sala 2',
         },
       ]
@@ -135,7 +133,6 @@ describe('equiposShellHtml', () => {
     assert.match(html, /data-admin-equipos-activity/);
     assert.match(html, /data-admin-equipos-team-status/);
     assert.match(html, /refresh-equipos/);
-    assert.match(html, /seed-agosto-2026-equipos/);
     assert.match(html, /save-equipos-bulk/);
     assert.match(html, /purge-equipos-bulk/);
     assert.match(html, /Quitar seleccionados/);
@@ -145,29 +142,9 @@ describe('equiposShellHtml', () => {
 
 describe('userSalaSelectOptionsHtml', () => {
   it('lists clinical salas with selected value', () => {
-    const html = userSalaSelectOptionsHtml('Interconsultas');
+    const html = userSalaSelectOptionsHtml('Unidad IC');
     assert.match(html, /option value=""/);
-    assert.match(html, /Interconsultas" selected/);
-    assert.match(html, /Área A\/Pensionistas/);
-  });
-});
-
-describe('formatCycleOptionLabel rank labels', () => {
-  it('labels Interconsultas R3 as Ciclo R3, not R2', () => {
-    assert.equal(formatCycleOptionLabel('A', 'R3'), 'Ciclo R3 · A');
-    assert.equal(formatCycleOptionLabel('B', 'R2'), 'Ciclo R2 · B');
-    assert.equal(formatCycleOptionLabel('A1', 'R1'), 'Subciclo R1 · A1');
-  });
-
-  it('cycleOptionsForTeam for Interconsultas R3 offers A–D as Ciclo R3', () => {
-    const html = cycleOptionsForTeam(
-      { service: 'Interconsultas', sala: 'Interconsultas', members: [] },
-      'u-axel',
-      'R3',
-      'A'
-    );
-    assert.match(html, /Ciclo R3 · A/);
-    assert.doesNotMatch(html, /Ciclo R2 ·/);
+    assert.match(html, /Unidad IC" selected/);
   });
 });
 
@@ -226,7 +203,7 @@ describe('equiposListHtml', () => {
           user_id: 'u1',
           username: 'r2test',
           clinical_name: 'Test',
-          rank: 'R2',
+          rank: 'Admin',
           sala: 'Sala 1',
           hasLocalProfile: true,
         },
@@ -246,7 +223,6 @@ describe('equiposListHtml', () => {
     assert.match(html, /cloud-sync-admin-equipos-field-label">Sala</);
     assert.match(html, /cloud-sync-admin-equipos-field-label">Rango</);
     assert.match(html, /cloud-sync-admin-equipos-field-label">Equipo</);
-    assert.match(html, /cloud-sync-admin-equipos-field-label">Ciclo</);
     assert.match(html, /Sin asignar/);
     assert.doesNotMatch(html, /title="Sala clínica"/);
     assert.match(html, /@r2test/);
@@ -259,7 +235,7 @@ describe('equiposListHtml', () => {
           user_id: 'u-cindy',
           username: 'cindy',
           clinical_name: 'Cindy',
-          rank: 'R1',
+          rank: 'Team',
           sala: 'Sala 1',
           last_activity_at: new Date().toISOString(),
           hasLocalProfile: true,
@@ -279,7 +255,7 @@ describe('equiposListHtml', () => {
           user_id: 'u-cindy',
           username: 'cindypsc',
           clinical_name: 'Cindy',
-          rank: 'R1',
+          rank: 'Team',
           sala: 'Sala E',
           last_activity_at: '2026-08-07T16:00:00.000Z',
           activity_history: [
@@ -306,7 +282,7 @@ describe('equiposListHtml', () => {
           user_id: 'u1',
           username: 'r1test',
           clinical_name: 'Test',
-          rank: 'R1',
+          rank: 'Team',
           sala: 'Sala 1',
           hasLocalProfile: true,
         },
@@ -327,7 +303,7 @@ describe('equiposListHtml', () => {
           user_id: '',
           username: 'local_6128e5c0db',
           clinical_name: 'Hector Guerra',
-          rank: 'R1',
+          rank: 'Team',
           sala: '',
           cloudId: 'cloud-hector-1',
           hasLocalProfile: false,
@@ -351,7 +327,7 @@ describe('equiposListHtml', () => {
           user_id: 'u-cindy',
           username: 'cindy',
           clinical_name: 'Cindy',
-          rank: 'R2',
+          rank: 'Admin',
           sala: 'Sala 1',
           cloudId: 'cloud-cindy-1',
           hasLocalProfile: true,
@@ -361,7 +337,7 @@ describe('equiposListHtml', () => {
           user_id: 'u-solo',
           username: 'r1solo',
           clinical_name: 'Solo clínico',
-          rank: 'R1',
+          rank: 'Team',
           sala: 'Sala 1',
           cloudId: '',
           hasLocalProfile: true,

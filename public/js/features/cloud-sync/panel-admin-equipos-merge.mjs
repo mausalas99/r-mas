@@ -13,7 +13,7 @@ function equiposActivityFields(clinical) {
 function equiposClinicalFields(clinical, displayNameFallback) {
   return {
     clinical_name: String(clinical?.clinical_name || displayNameFallback || '').trim(),
-    rank: String(clinical?.rank || 'R1'),
+    rank: String(clinical?.rank || 'Team'),
     sala: String(clinical?.sala || '').trim(),
     ...equiposActivityFields(clinical),
   };

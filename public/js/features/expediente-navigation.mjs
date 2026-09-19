@@ -2,7 +2,6 @@
  * Expediente inner-tab navigation (nota sub-tabs).
  */
 import { isModeSala } from '../mode-features.mjs';
-import { invalidateEventualidadesPanel } from './eventualidades-panel.mjs';
 import { invalidateEaPanelCache, refreshEaCopyFabVisibility } from './estado-actual-panel.mjs';
 import { renderEstadoActualBar } from './soap-estado.mjs';
 import {
@@ -19,6 +18,7 @@ import {
   isClinicoCompositeVisible,
   shouldShowConsolidatedTab,
   migrateGranularInner,
+  mountPaneInComposite,
   resetExpedientePaneLayoutCache,
   syncConsolidatedPaneVisibility,
   syncConsolidatedSegmentBars,
@@ -55,7 +55,6 @@ export function refreshExpedienteForAppModeChange() {
   cancelExpedienteWarm();
   cancelDeferredIdleWork();
   invalidateEaPanelCache();
-  invalidateEventualidadesPanel();
   invalidateInnerTabRenderCache();
   var settings = rt.getSettings();
   var tab = migrateGranularInner(rt.getActiveInner() || "resumen", settings);
@@ -72,6 +71,8 @@ export function refreshExpedienteAfterPatientSelect(opts) {
   invalidateEaPanelCache();
   var settings = rt.getSettings();
   var tab = migrateGranularInner(rt.getActiveInner() || "resumen", settings);
+  mountPaneInComposite(tab, settings);
+  syncConsolidatedPaneVisibility(tab, settings, opts);
   var forceRender = !!opts.patientChanged || granularMountIsEmpty(tab);
   if (forceRender || !isInnerTabContentFresh(tab, settings)) {
     renderGranularInnerTab(
@@ -202,6 +203,7 @@ export function switchInnerTab(tab, opts) {
   var nextComposite = expedienteCompositeTab(tab, settings);
   ensureAppTabForInner(tab);
   rt.setActiveInner(tab);
+  mountPaneInComposite(tab, settings);
   syncLabInnerVisibility();
   syncConsolidatedInnerTabButtons(tab, settings);
   syncConsolidatedPaneVisibility(tab, settings, opts);

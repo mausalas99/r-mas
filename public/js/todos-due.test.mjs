@@ -195,6 +195,18 @@ test('parseDuePreset — hoy-18 sets local today at 18:00', () => {
   assert.equal(result.reminderAt, expected.toISOString());
 });
 
+test('parseDuePreset — hoy-18 after 18:00 rolls to tomorrow (never born overdue)', () => {
+  const ref = new Date('2026-06-11T09:00:00.000Z');
+  ref.setHours(19, 0, 0, 0); // local 19:00, already past today's 18:00
+  const result = parseDuePreset('hoy-18', ref);
+  const due = new Date(result.dueDate);
+  assert.ok(due.getTime() > ref.getTime());
+  const expected = new Date(ref);
+  expected.setDate(expected.getDate() + 1);
+  expected.setHours(18, 0, 0, 0);
+  assert.equal(result.dueDate, expected.toISOString());
+});
+
 test('parseDuePreset — manana-8 sets next local day at 08:00', () => {
   const ref = new Date('2026-06-11T09:00:00.000Z');
   const expected = new Date(ref);

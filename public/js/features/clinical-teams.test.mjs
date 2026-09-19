@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFeatureSrc } from '../../../scripts/lib/read-feature-src.mjs';
-import { filterJoinedTeams, CLINICAL_TEAM_SERVICES } from './clinical-teams.mjs';
+import { filterJoinedTeams } from './clinical-teams.mjs';
 
 const featureDir = join(dirname(fileURLToPath(import.meta.url)), 'clinical-teams');
 const clinicalTeamsSrc = readFeatureSrc(featureDir, [
@@ -83,10 +83,6 @@ describe('clinical-teams', () => {
     assert.equal(joined.length, 1);
   });
 
-  it('exports service enum', () => {
-    assert.ok(CLINICAL_TEAM_SERVICES.includes('Sala'));
-  });
-
   it('Integrantes rows expose Quitar for roster managers', () => {
     assert.match(clinicalTeamsSrc, /clinical-teams-member-remove-btn/);
     assert.match(clinicalTeamsSrc, /handleRemoveMemberClick/);
@@ -148,30 +144,12 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /dbClinicalTeamsMemberRemove/);
   });
 
-  it('handleMyCycleSubmit publishes to Nube/LAN after cycle save', () => {
-    const idx = clinicalTeamsSrc.indexOf('async function handleMyCycleSubmit');
-    assert.ok(idx >= 0);
-    const end = clinicalTeamsSrc.indexOf('async function resolveTeamIdForInviteInput', idx);
-    const body = clinicalTeamsSrc.slice(idx, end > idx ? end : idx + 1200);
-    assert.match(body, /publishClinicalTeamsAfterChange/);
-    assert.match(body, /rpc-clinical-teams-changed/);
-  });
-
   it('handleProfileFormSubmit pushes to the newly picked sala, not just joined teams', () => {
     const idx = clinicalTeamsSrc.indexOf('export async function handleProfileFormSubmit');
     assert.ok(idx >= 0);
     const body = clinicalTeamsSrc.slice(idx, idx + 2200);
     assert.match(body, /rpc-clinical-teams-changed[\s\S]*sala:\s*fields\.sala/);
     assert.match(body, /publishClinicalTeamsAfterChange\(\{\s*sala:\s*fields\.sala\s*\}\)/);
-  });
-
-  it('renderJoinedTeamCard defines user before cycle edit block', () => {
-    const fnStart = clinicalTeamsSrc.indexOf('function renderJoinedTeamCard(team)');
-    assert.ok(fnStart >= 0);
-    const fnEnd = clinicalTeamsSrc.indexOf('\nfunction renderDirectoryTeamCard', fnStart);
-    const fnBody = clinicalTeamsSrc.slice(fnStart, fnEnd > fnStart ? fnEnd : fnStart + 2500);
-    assert.match(fnBody, /const user = clinicalSessionContext\.user/);
-    assert.match(fnBody, /renderMyCycleEditBlock\(team, user\)/);
   });
 
   it('Mi rotación opens LAN user directory in separate modal', () => {
@@ -193,7 +171,6 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /Crear equipo vacío/);
     assert.match(clinicalTeamsSrc, /clinical-directory-assign-btn/);
     assert.match(clinicalTeamsSrc, /clinical-directory-users-placement/);
-    assert.match(clinicalTeamsSrc, /resolveMembershipCycleForUser/);
     assert.match(clinicalTeamsSrc, /rpc-clinical-ops-synced/);
   });
 

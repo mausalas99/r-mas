@@ -32,19 +32,6 @@ function _rpcDeferInit(fn) {
   }
 }
 
-/** Expose clinical handoff entry points on window.appShell. */
-export function installClinicalAppShell() {
-  if (typeof window === 'undefined') return;
-  window.appShell = window.appShell || {};
-  void importLazyRoutes()
-    .then(function (routes) {
-      return routes.ensureEntregaLoaded();
-    })
-    .then(function (mod) {
-      window.appShell.openEntregaModal = mod.openEntregaModal;
-    });
-}
-
 function deferMobileWebBoot_() {
   void import('./app-shell-mobile-boot.mjs').then(function (mod) {
     return mod.initMobileWebBoot();
@@ -53,7 +40,6 @@ function deferMobileWebBoot_() {
 
 /** @param {(msg: string, type?: string) => void} _showToast */
 export function scheduleDeferredShellInits(_showToast) {
-  _rpcDeferInit(installClinicalAppShell);
   _rpcDeferInit(function () {
     void import('./features/paste-smart.mjs').then(function (mod) {
       mod.initPasteSmart();

@@ -13,10 +13,9 @@ export function loadTourProgress(storage = localStorage) {
     const p = JSON.parse(raw);
     if (!p || !p.stepId || !p.branch) return null;
     const branch =
-      p.branch === 'guardia-v7' ? 'guardia-v7'
-        : p.branch === 'quick-route' ? 'quick-route'
-          : p.branch === 'interconsulta' ? 'interconsulta'
-            : 'sala';
+      p.branch === 'quick-route' ? 'quick-route'
+        : p.branch === 'interconsulta' ? 'interconsulta'
+          : 'sala';
     const stepId = migrateTourStepId(p.stepId, branch);
     if (!isValidStepForBranch(stepId, branch, 'base')) return null;
     return { ...p, branch, stepId, mode: 'base' };
@@ -27,10 +26,9 @@ export function loadTourProgress(storage = localStorage) {
 
 export function saveTourProgress(payload, storage = localStorage) {
   const branch =
-    payload.branch === 'guardia-v7' ? 'guardia-v7'
-      : payload.branch === 'quick-route' ? 'quick-route'
-        : payload.branch === 'interconsulta' ? 'interconsulta'
-          : 'sala';
+    payload.branch === 'quick-route' ? 'quick-route'
+      : payload.branch === 'interconsulta' ? 'interconsulta'
+        : 'sala';
   const body = {
     branch,
     track: payload.track || branch,

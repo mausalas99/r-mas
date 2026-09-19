@@ -8,7 +8,7 @@ describe('claimClinicalUsernameIfNeeded confirm gating', () => {
   const prevUser = clinicalSessionContext.user;
 
   beforeEach(() => {
-    clinicalSessionContext.user = { user_id: 'u1', username: 'rold', rank: 'R2' };
+    clinicalSessionContext.user = { user_id: 'u1', username: 'rold', rank: 'Team' };
   });
 
   afterEach(() => {

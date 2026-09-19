@@ -5,26 +5,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   buildGuardiasMap,
-  mapPatientForGuardiaGrid,
   resolveClinicalRank,
   assertClinicalWriteAllowed,
   clinicalSessionContext,
 } from './clinical-access-runtime.mjs';
-
-test('mapPatientForGuardiaGrid maps bed and service fields', () => {
-  const row = mapPatientForGuardiaGrid({
-    id: 'p1',
-    cuarto: '101',
-    cama: 'A',
-    nombre: 'Test Patient',
-    servicio: 'Sala A',
-    negativa_maniobras_firmada: 1,
-  });
-  assert.equal(row.id, 'p1');
-  assert.equal(row.bed_label, '101-A');
-  assert.equal(row.service, 'Sala A');
-  assert.equal(row.negativa_maniobras_firmada, 1);
-});
 
 test('buildGuardiasMap indexes by patient_id', () => {
   const map = buildGuardiasMap([
@@ -35,9 +19,9 @@ test('buildGuardiasMap indexes by patient_id', () => {
   assert.equal(map.size, 2);
 });
 
-test('resolveClinicalRank defaults to R1', () => {
-  assert.equal(resolveClinicalRank({ clinicalRank: 'R4' }), 'R4');
-  assert.equal(resolveClinicalRank({ clinicalRank: 'invalid' }), 'R1');
+test('resolveClinicalRank defaults to Team', () => {
+  assert.equal(resolveClinicalRank({ clinicalRank: 'Admin' }), 'Admin');
+  assert.equal(resolveClinicalRank({ clinicalRank: 'invalid' }), 'Team');
 });
 
 test('assertClinicalWriteAllowed allows Admin writes', () => {

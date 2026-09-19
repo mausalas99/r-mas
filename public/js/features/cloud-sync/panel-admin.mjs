@@ -1,4 +1,4 @@
-import { hasProgramAdminPrivileges, effectiveClinicalRank } from '../../clinical-privileges.mjs';
+import { hasProgramAdminPrivileges } from '../../clinical-privileges.mjs';
 import { getSessionAdminKey } from './panel-admin-helpers.mjs';
 import {
   buildAdminShellHtml,
@@ -21,7 +21,7 @@ import { wireCloudEquiposPanel } from './panel-admin-equipos-actions.mjs';
 export function canAccessCloudAdmin(user, opts = {}) {
   if (opts.hasCloudSession) return true;
   if (!user) return false;
-  return hasProgramAdminPrivileges(user) || effectiveClinicalRank(user) === 'R4';
+  return hasProgramAdminPrivileges(user);
 }
 
 /** @returns {boolean} */

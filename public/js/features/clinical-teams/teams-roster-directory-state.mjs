@@ -23,4 +23,4 @@ export const LAN_DIRECTORY_FILTER_SELECT_IDS = new Set([
   'clinical-directory-activity-filter',
 ]);
 
-export const DIRECTORY_USER_RANK_ORDER = ['R1', 'R2', 'R3', 'R4', 'Admin'];
+export const DIRECTORY_USER_RANK_ORDER = ['Admin', 'Team'];

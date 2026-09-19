@@ -160,7 +160,7 @@ describe('buildGuardiaCensusTableRowHtml', () => {
 
 describe('buildGuardiaCensusTableHtml', () => {
   it('wraps the table in the shared wb-table-card grammar with column heads and chips', () => {
-    const html = buildGuardiaCensusTableHtml([{ id: 'p1', name: 'X', cama: '1' }], new Map(), 'R1');
+    const html = buildGuardiaCensusTableHtml([{ id: 'p1', name: 'X', cama: '1' }], new Map(), 'Team');
     assert.match(html, /wb-table-card/);
     assert.match(html, /wb-table-colhead/);
     assert.match(html, /Cama.*Paciente.*Alterados.*Pendiente.*Estado/s);
@@ -169,22 +169,13 @@ describe('buildGuardiaCensusTableHtml', () => {
     assert.match(html, /Ingresos/);
   });
 
-  it('groups R4 by team with dividers', () => {
-    const patients = [
-      { id: 'p1', name: 'A', cama: '1' },
-      { id: 'p2', name: 'B', cama: '2' },
-    ];
-    const html = buildGuardiaCensusTableHtml(patients, new Map(), 'R4', { teams: [], assignments: [] });
-    assert.match(html, /gct-divider/);
-  });
-
   it('filters to admitted-today patients under the Ingresos chip', () => {
     const today = new Date().toISOString().slice(0, 10);
     const patients = [
       { id: 'p1', name: 'NUEVO', cama: '1', fimiFecha: today },
       { id: 'p2', name: 'VIEJO', cama: '2', fimiFecha: '2020-01-01' },
     ];
-    const html = buildGuardiaCensusTableHtml(patients, new Map(), 'R1', {}, 'ingresos');
+    const html = buildGuardiaCensusTableHtml(patients, new Map(), 'Team', {}, 'ingresos');
     assert.match(html, /NUEVO/);
     assert.doesNotMatch(html, /VIEJO/);
   });
@@ -194,13 +185,13 @@ describe('buildGuardiaCensusTableHtml', () => {
       { id: 'p1', name: 'RECIEN LLEGADO', cama: '3', registeredAt: new Date().toISOString() },
       { id: 'p2', name: 'VIEJO', cama: '2', registeredAt: '2020-01-01T00:00:00.000Z' },
     ];
-    const html = buildGuardiaCensusTableHtml(patients, new Map(), 'R1', {}, 'ingresos');
+    const html = buildGuardiaCensusTableHtml(patients, new Map(), 'Team', {}, 'ingresos');
     assert.match(html, /RECIEN LLEGADO/);
     assert.doesNotMatch(html, /VIEJO/);
   });
 
   it('shows a closing summary line for patients with no alterados or pendientes', () => {
-    const html = buildGuardiaCensusTableHtml([{ id: 'p1', name: 'X', cama: '1' }], new Map(), 'R1');
+    const html = buildGuardiaCensusTableHtml([{ id: 'p1', name: 'X', cama: '1' }], new Map(), 'Team');
     assert.match(html, /wb-table-summary/);
     assert.match(html, /1 paciente sin alterados ni pendientes/);
   });

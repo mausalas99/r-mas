@@ -17,7 +17,7 @@ import {
 
 describe('teams-roster-inherit-patients', () => {
   beforeEach(() => {
-    clinicalSessionContext.user = { user_id: 'u1', rank: 'R2', sala: 'Sala 2' };
+    clinicalSessionContext.user = { user_id: 'u1', rank: 'Team', sala: 'Sala 2' };
     clinicalSessionContext.teams = [
       {
         team_id: 't-leslie',

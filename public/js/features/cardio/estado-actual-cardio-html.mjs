@@ -125,7 +125,7 @@ export function renderDescongestionFormHtml(stats) {
     '</div>' +
     '<label class="ea-field">' +
     '<span class="ea-label">Inicio descongestión</span>' +
-    '<input type="date" class="ea-input" data-ea-cardio="inicioDescongestion" value="' +
+    '<input type="date" class="ea-input rpc-date-input" data-ea-cardio="inicioDescongestion" value="' +
     escAttr(stats.inicioDescongestion) +
     '">' +
     '</label>' +
@@ -152,7 +152,7 @@ export function renderDescongestionFormHtml(stats) {
       overrides.furosemidaAcumuladaMg != null ? manualBadge : null
     ) +
     statHtml(
-      'Balance acum.',
+      'Balance hídrico acum.',
       overrideInputHtml('balanceAcumuladoMl', stats.balanceAcumuladoMl),
       'mL',
       overrides.balanceAcumuladoMl != null ? manualBadge : null
@@ -323,13 +323,14 @@ function renderLungZonesGridHtml(zones) {
 }
 
 /**
- * POCUS draft form fields — rendered inside the Registro Congestión modal
- * (`estado-actual-congestion-modal.mjs`), not inline in the panel.
- * @param {Record<string, unknown>} day one `pocusByDay` record (or an empty
- *   draft shape when starting a new day).
+ * Section builders shared by `renderPocusFormHtml` (legacy single-screen
+ * form, kept for tests) and the two-step `renderPocusStep1Html`/
+ * `renderPocusStep2Html` used by the Registro Congestión modal — same
+ * markup, just grouped onto two screens so each one fits 1280×800 without
+ * scrolling (see estado-actual-congestion-modal.mjs).
+ * @param {Record<string, unknown>} d normalized POCUS day draft
  */
-export function renderPocusFormHtml(day) {
-  var d = day || {};
+function pocusStep1SectionsHtml(d) {
   var checklist = d.checklist || {};
   var checklistInputs = CONGESTION_CHECKLIST_FIELDS.map(function (f) {
     return (
@@ -351,7 +352,7 @@ export function renderPocusFormHtml(day) {
     '<div class="hf-field-grid">' +
     '<label class="ea-field ea-field--inline">' +
     '<span class="ea-label">Fecha</span>' +
-    '<input type="date" class="ea-input" data-ea-cardio-pocus="date" value="' +
+    '<input type="date" class="ea-input rpc-date-input" data-ea-cardio-pocus="date" value="' +
     escAttr(d.date) +
     '">' +
     '</label>' +
@@ -435,6 +436,39 @@ export function renderPocusFormHtml(day) {
     '</div>' +
     '</div>';
 
+  // Legacy free-text lung-pattern fields ride along with step 1 (not step
+  // 2's 8-zone grid) purely for headroom — with the grid's 4 stacked rows,
+  // step 2 doesn't have room for them at 1280×800 without scrolling; step 1
+  // does. Same fields, same section heading, just grouped onto the screen
+  // that fits them.
+  var usPulmonarGeneralSection =
+    '<div class="hf-section">' +
+    '<h4 class="hf-section-title">US pulmonar — patrón general</h4>' +
+    '<div class="hf-field-grid">' +
+    '<label class="ea-field ea-field--inline">' +
+    '<span class="ea-label">Patrón pulmonar</span>' +
+    '<input type="text" class="ea-input" data-ea-cardio-pocus="lungPattern" value="' +
+    escAttr(d.lungPattern) +
+    '">' +
+    '</label>' +
+    '<label class="ea-field ea-field--inline">' +
+    '<span class="ea-label">Líneas B</span>' +
+    '<input type="text" class="ea-input" data-ea-cardio-pocus="lungLinesB" value="' +
+    escAttr(d.lungLinesB) +
+    '">' +
+    '</label>' +
+    '</div>' +
+    '</div>';
+
+  return evaluacionClinicaSection + vciVexusSection + escalasSection + usPulmonarGeneralSection;
+}
+
+/**
+ * @param {Record<string, unknown>} d normalized POCUS day draft
+ */
+function pocusStep2SectionsHtml(d) {
+  var lungZonesSection = renderLungZonesGridHtml(d.lungZones);
+
   var notaSection =
     '<label class="ea-field">' +
     '<span class="ea-label">Nota</span>' +
@@ -443,13 +477,46 @@ export function renderPocusFormHtml(day) {
     '</textarea>' +
     '</label>';
 
+  return lungZonesSection + notaSection;
+}
+
+/**
+ * Step 1 of the Registro Congestión modal: clinical eval (checklist +
+ * llenado capilar) + VCI/VExUS + escalas (Stevenson-Nohria, 6MWT) + the
+ * legacy free-text lung-pattern fields (grouped here for headroom, see
+ * `pocusStep1SectionsHtml`).
+ * @param {Record<string, unknown>} day one `pocusByDay` record (or an empty
+ *   draft shape when starting a new day).
+ */
+export function renderPocusStep1Html(day) {
+  var d = day || {};
+  return '<div class="ea-clinico-cardio-congestion-form">' + pocusStep1SectionsHtml(d) + '</div>';
+}
+
+/**
+ * Step 2 of the Registro Congestión modal: 8-zone lung-US grid + note.
+ * @param {Record<string, unknown>} day one `pocusByDay` record (or an empty
+ *   draft shape when starting a new day).
+ */
+export function renderPocusStep2Html(day) {
+  var d = day || {};
+  return '<div class="ea-clinico-cardio-congestion-form">' + pocusStep2SectionsHtml(d) + '</div>';
+}
+
+/**
+ * Legacy single-screen POCUS form (all fields on one page) — kept for
+ * existing tests; the Registro Congestión modal itself now uses
+ * `renderPocusStep1Html`/`renderPocusStep2Html` instead so each screen fits
+ * 1280×800 without scrolling.
+ * @param {Record<string, unknown>} day one `pocusByDay` record (or an empty
+ *   draft shape when starting a new day).
+ */
+export function renderPocusFormHtml(day) {
+  var d = day || {};
   return (
     '<div class="ea-clinico-cardio-congestion-form">' +
-    evaluacionClinicaSection +
-    vciVexusSection +
-    usPulmonarSection +
-    escalasSection +
-    notaSection +
+    pocusStep1SectionsHtml(d) +
+    pocusStep2SectionsHtml(d) +
     '</div>'
   );
 }

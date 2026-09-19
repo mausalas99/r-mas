@@ -1,10 +1,9 @@
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 import { isLegacyMachineUsername } from '../clinical-username.mjs';
 import { persistClinicalUserBinding, readRpcSettings } from '../clinical-settings.mjs';
-import { clinicalSessionContext } from '../clinical-session-context.mjs';
+import { clinicalSessionContext, buildGuardiasMap } from '../clinical-session-context.mjs';
 import { electronApi } from './electron-api.mjs';
 import { ensureElevatedWardCensusOnDevice } from './census-nube-pull.mjs';
-import { buildGuardiasMap } from './guardia-grid.mjs';
 import { fetchClinicalScopeContextFromDb, fetchClinicalTeamsFromDb } from './scope-db.mjs';
 import { refreshClinicalUserProfile } from './session-profile.mjs';
 import { migrateLocalPatientsClinicalSala } from './session-user.mjs';
@@ -19,7 +18,7 @@ async function mergeBootstrapProfileFromDb(userId) {
     if (!profile || !clinicalSessionContext.user) return;
     const profileRank = String(profile.rank || '');
     clinicalSessionContext.user.rank =
-      profileRank === 'Admin' ? 'R1' : profileRank || clinicalSessionContext.user.rank;
+      profileRank === 'Admin' ? 'Team' : profileRank || clinicalSessionContext.user.rank;
     clinicalSessionContext.user.sala = profile.sala ?? null;
     clinicalSessionContext.user.clinical_name = profile.clinical_name ?? null;
     clinicalSessionContext.user.is_program_admin =

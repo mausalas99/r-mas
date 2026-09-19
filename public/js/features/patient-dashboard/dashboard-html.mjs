@@ -6,6 +6,7 @@ import { isGlucometriaMarkedAltered, isVitalAltered } from '../estado-actual-ran
 import { isTodoOverdue } from '../../todos-due.mjs';
 import { serviceById, hueForService } from './interconsult-catalog.mjs';
 import { packSoapCols } from './ea-glance-model.mjs';
+import { isInterconsultaModeActive } from '../cardio/rplushf-gates.mjs';
 
 function numText(value) {
   if (value == null || value === '') return '';
@@ -164,16 +165,24 @@ function renderIdentityHtml(model) {
       return '<span class="chip">' + escHtml(d) + '</span>';
     })
     .join('');
+  var ceMode = isInterconsultaModeActive();
+  // Consulta Externa: no interconsult-service assignment (an IM hospital-ward
+  // concept, not used in outpatient cardiology follow-up) — the HF follow-up
+  // band (Fase de seguimiento etc., painted by interconsulta-mode-chrome.mjs
+  // into #interconsulta-consult-band right after this renders) takes its
+  // place on the name row instead.
+  var icChipsHtml = ceMode ? '' : renderIcAssignedHtml(idn.interconsultServiceIds);
   return (
     '<div class="idrow"><div>' +
     '<div class="id-name-row">' +
     '<h1><button class="dash-name" type="button" data-dash-action="datos">' +
     escHtml(idn.nombre || 'Paciente') +
     '</button></h1>' +
+    (ceMode ? '<div id="interconsulta-consult-band" class="id-name-row-band"></div>' : '') +
     '</div>' +
     '<div class="chips" id="ic-assigned">' +
     dxHtml +
-    renderIcAssignedHtml(idn.interconsultServiceIds) +
+    icChipsHtml +
     '</div></div>' +
     '<button type="button" class="btn-med-secondary" data-dash-action="actualizar-labs">Actualizar labs</button>' +
     '</div>'
@@ -266,6 +275,8 @@ function renderDiuresisCardHtml(model) {
 /**
  * Compact GDMT ("4 Fantásticos") pillar row — always renders the 4 fixed
  * classes so a resident can scan on/off at a glance without opening Manejo.
+ * Rendered as a third card alongside Congestión/Diuresis (bento.cardio-primary)
+ * instead of its own full-width row, to save vertical space on the glance.
  */
 function renderGdmtRowHtml(model) {
   var gdmt = (model && model.cardio && model.cardio.gdmt) || [];
@@ -285,9 +296,11 @@ function renderGdmtRowHtml(model) {
     })
     .join('');
   return (
-    '<button class="gdmt-row" type="button" data-dash-action="estadoActual" aria-label="GDMT / 4 fantásticos">' +
+    '<button class="card clickable cardio-card gdmt-row" type="button" data-dash-action="estadoActual" aria-label="GDMT / 4 fantásticos">' +
+    '<div class="card-h"><span>GDMT</span></div>' +
+    '<div class="card-b"><div class="gdmt-pills">' +
     pills +
-    '</button>'
+    '</div></div></button>'
   );
 }
 
@@ -638,12 +651,12 @@ export function renderDashboardHtml(model) {
     renderCongestionCardHtml(m) +
     renderDiuresisCardHtml(m) +
     '</div>' +
-    renderGdmtRowHtml(m) +
     '<div class="bento vitals-labs">' +
     renderVitalsHtml(m) +
     renderLabsHtml(m) +
     '</div>' +
     '<div class="bento rest">' +
+    renderGdmtRowHtml(m) +
     renderListCardHtml('Eventualidades', 'eventualidades', m.eventualidades, 'Sin eventualidades') +
     renderListCardHtml('Pendientes', 'pendientes', m.pendientes, 'Sin pendientes', true) +
     '</div>' +

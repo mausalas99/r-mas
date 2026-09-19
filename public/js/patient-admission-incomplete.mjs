@@ -5,10 +5,19 @@ import { isModeSala } from './mode-features.mjs';
 
 /**
  * @param {object | null | undefined} patient
+ */
+function isOutpatient(patient) {
+  var area = String((patient && patient.area) || '').trim().toUpperCase();
+  return area.indexOf('CONSULTA EXTERNA') !== -1;
+}
+
+/**
+ * @param {object | null | undefined} patient
  * @param {object | null | undefined} [settings]
  */
 export function isPatientAdmissionIncomplete(patient, settings) {
   if (!patient || patient.isDemo) return false;
+  if (isOutpatient(patient)) return false;
   var cuarto = String(patient.cuarto || '').trim();
   var cama = String(patient.cama || '').trim();
   var servicio = String(patient.servicio || '').trim();
@@ -25,7 +34,7 @@ export function isPatientAdmissionIncomplete(patient, settings) {
  * @returns {string[]}
  */
 export function patientAdmissionMissingFields(patient, settings) {
-  if (!patient) return [];
+  if (!patient || isOutpatient(patient)) return [];
   var missing = [];
   if (!String(patient.cuarto || '').trim()) missing.push('cuarto');
   if (!String(patient.cama || '').trim()) missing.push('cama');

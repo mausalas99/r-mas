@@ -11,6 +11,7 @@ import {
   getDefaultServicio,
   getDefaultCuarto,
   getDefaultCama,
+  UI_EXAMPLE_SERVICIO,
 } from '../mode-features.mjs';
 import { getTourDemoAdmitDefaults } from '../tour-demo-patient.mjs';
 import {
@@ -124,7 +125,7 @@ function _syncPatientModalModeFields() {
   var servicioInput = document.getElementById('m-servicio');
   if (areaGroup) areaGroup.style.display = sala ? 'none' : '';
   if (servicioLabel) servicioLabel.textContent = sala ? 'Área / Servicio *' : 'Servicio *';
-  if (servicioInput) servicioInput.placeholder = 'ej. CIRUGÍA GENERAL';
+  if (servicioInput) servicioInput.placeholder = 'ej. ' + UI_EXAMPLE_SERVICIO;
 }
 
 function setElementDisplay(el, visible) {
@@ -481,7 +482,7 @@ export function savePatient() {
   if (modalRegistroTunnelMode) {
     var registros = collectRegistroModalRegistros();
     if (!registros.length) {
-      rt.showToast('Indica el registro', 'error');
+      openAddModalFullManual();
       return;
     }
     var registrationTeamId = readPatientRegistrationTeamId();

@@ -1,14 +1,19 @@
 /**
- * Encabezado del PDF de censo: ubicación (sala o torre) y equipo de guardia.
+ * Encabezado del PDF de censo: equipo de guardia (HF es el único servicio,
+ * no hay ubicación/sala que elegir).
  */
 
-export const CENSO_UBICACION_TORRE = 'torre';
-export const CENSO_TORRE_HU_LABEL = 'Torre HU';
 export const DEFAULT_CENSO_FIMI_LABEL = 'FIMI';
+export const DEFAULT_CENSO_FIUX_LABEL = 'FIUX';
 
 /** Etiqueta configurable para ingreso al servicio (antes «medicina interna» fijo). */
 export function resolveCensoFimiLabel(settings) {
   return String(settings?.censoFimiLabel || '').trim() || DEFAULT_CENSO_FIMI_LABEL;
+}
+
+/** Etiqueta configurable para ingreso a urgencias (antes fija «FIUX»). */
+export function resolveCensoFiuxLabel(settings) {
+  return String(settings?.censoFiuxLabel || '').trim() || DEFAULT_CENSO_FIUX_LABEL;
 }
 
 /** @param {Record<string, unknown>} settings */
@@ -23,46 +28,38 @@ function pick(v) {
 }
 
 /**
- * Normaliza valor guardado (incluye migración de censoTorre suelto).
- * @param {Record<string, unknown>} settings
+ * HF es el único servicio — el título del censo ya no varía por sala/ubicación.
+ * @param {Record<string, unknown>} _settings
  * @returns {string}
  */
-export function normalizeCensoUbicacionValue(settings) {
-  var st = settings || {};
-  var sala = pick(st.censoSala);
-  if (sala) {
-    if (/^torre/i.test(sala) || sala === CENSO_UBICACION_TORRE) return CENSO_UBICACION_TORRE;
-    return sala;
-  }
-  if (pick(st.censoTorre)) return CENSO_UBICACION_TORRE;
-  return '';
+export function formatCensoSalaTitleLine(_settings) {
+  return 'Censo';
 }
 
 /**
+ * Flat equipo member list (no rank labels) + department head name.
+ * Falls back to the legacy rank-tagged fields so existing profiles don't
+ * lose data silently after the switch away from the R1-R4 ladder.
  * @param {Record<string, unknown>} settings
- * @returns {string}
- */
-export function formatCensoSalaTitleLine(settings) {
-  var ubic = normalizeCensoUbicacionValue(settings);
-  if (ubic === CENSO_UBICACION_TORRE) return 'Censo de ' + CENSO_TORRE_HU_LABEL;
-  if (ubic) return 'Censo de Sala ' + ubic;
-  return 'Censo de Sala';
-}
-
-/**
- * @param {Record<string, unknown>} settings
- * @returns {{ r2: string, r1a: string, r1b: string, maestro: string }}
+ * @returns {{ equipo: string[], jefe: string }}
  */
 export function resolveCensoEquipoMembers(settings) {
   var st = settings || {};
-  var tpl = medTpl(st);
-  var legacyR1 = pick(st.residenteR1);
-  return {
-    r2: pick(st.residenteR2) || pick(tpl.r2),
-    r1a: pick(st.residenteR1a) || pick(tpl.r1a) || legacyR1,
-    r1b: pick(st.residenteR1b) || pick(tpl.r1b),
-    maestro: pick(st.profesorName) || pick(tpl.profesor),
-  };
+  var raw = pick(st.censoEquipo);
+  var equipo = raw
+    ? raw.split('\n').map(pick).filter(Boolean)
+    : [];
+  if (!equipo.length) {
+    var tpl = medTpl(st);
+    var legacyR1 = pick(st.residenteR1);
+    equipo = [
+      pick(st.residenteR2) || pick(tpl.r2),
+      pick(st.residenteR1a) || pick(tpl.r1a) || legacyR1,
+      pick(st.residenteR1b) || pick(tpl.r1b),
+    ].filter(Boolean);
+  }
+  var jefe = pick(st.censoJefe) || pick(st.profesorName) || pick(medTpl(st).profesor);
+  return { equipo: equipo, jefe: jefe };
 }
 
 /**
@@ -71,21 +68,16 @@ export function resolveCensoEquipoMembers(settings) {
  */
 export function formatCensoEquipoLine(settings) {
   var m = resolveCensoEquipoMembers(settings);
-  return [m.r2, m.r1a, m.r1b, m.maestro].filter(Boolean).join(' · ');
+  return m.equipo.concat(m.jefe ? [m.jefe] : []).filter(Boolean).join(' · ');
 }
 
 /**
  * @param {Record<string, unknown>} settings
- * @returns {{ titleLine: string, equipoLine: string, sala: string, torre: string, ubicacion: string }}
+ * @returns {{ titleLine: string, equipoLine: string }}
  */
 export function buildCensoDocumentHeader(settings) {
-  var ubic = normalizeCensoUbicacionValue(settings);
-  var isTorre = ubic === CENSO_UBICACION_TORRE;
   return {
     titleLine: formatCensoSalaTitleLine(settings),
     equipoLine: formatCensoEquipoLine(settings),
-    ubicacion: isTorre ? CENSO_TORRE_HU_LABEL : ubic,
-    sala: isTorre ? '' : ubic,
-    torre: isTorre ? CENSO_TORRE_HU_LABEL : '',
   };
 }

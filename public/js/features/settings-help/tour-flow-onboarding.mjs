@@ -24,12 +24,11 @@ const rt = getSettingsHelpRuntime();
 
 function resolveTourBranch(branch) {
   if (branch === 'interconsulta') return 'interconsulta';
-  if (branch === 'guardia-v7') return 'guardia-v7';
   if (branch === 'quick-route') return 'quick-route';
   return 'sala';
 }
 
-function setupNonGuardiaTourMode() {
+function setupTourMode() {
   setUiDensity('normal');
   var st = rt.getSettings();
   var prevMode = st.appMode;
@@ -67,12 +66,11 @@ function startOnboarding(branch, opts) {
   opts = opts || {};
   if (opts.resumeStepId) resetTourUiBeforeResume();
   tourState.guidedTourBranch = resolveTourBranch(branch);
-  var isGuardiaV7 = tourState.guidedTourBranch === 'guardia-v7';
   if (!opts.resumeStepId) {
     tourState.guidedTourChapterScope = null;
     tourState.guidedTourModuleOnly = false;
   }
-  if (!isGuardiaV7) setupNonGuardiaTourMode();
+  setupTourMode();
   tourState.guidedTourActive = true;
   tourState.tourStepId = resolveTourStartStep(opts);
   renderPatientList();

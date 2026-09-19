@@ -7,21 +7,20 @@ import {
 
 describe('patient-sala-ui', () => {
   it('resolveRegistrationSalaDefault prefers team sala over profile', () => {
-    const teams = [{ team_id: 't-ux', sala: 'UX', service: 'UX' }];
+    const teams = [{ team_id: 't-ic', sala: 'Unidad IC-Equipo', service: 'Unidad IC' }];
     assert.equal(
-      resolveRegistrationSalaDefault({ sala: 'Sala 1' }, 't-ux', teams),
-      'UX'
+      resolveRegistrationSalaDefault({ sala: 'Otra' }, 't-ic', teams),
+      'Unidad IC-Equipo'
     );
   });
 
   it('resolveRegistrationSalaDefault falls back to profile sala', () => {
-    assert.equal(resolveRegistrationSalaDefault({ sala: 'UX' }, '', []), 'UX');
+    assert.equal(resolveRegistrationSalaDefault({ sala: 'Unidad IC' }, '', []), 'Unidad IC');
   });
 
   it('buildPatientSalaFieldHtml includes selected sala', () => {
-    const html = buildPatientSalaFieldHtml({ sala: 'UX' });
+    const html = buildPatientSalaFieldHtml({ sala: 'Unidad IC' });
     assert.match(html, /patient-sala-select/);
-    assert.match(html, /value="UX" selected/);
-    assert.match(html, /Interconsultas/);
+    assert.match(html, /value="Unidad IC" selected/);
   });
 });

@@ -11,6 +11,7 @@ const platformHandlerNames = {
   exportClinicalDbBackupJson: 'exportClinicalDbBackupJson',
   exportRecoverCensusRangeJson: 'exportRecoverCensusRangeJson',
   exportClinicalDbBackupDb: 'exportClinicalDbBackupDb',
+  changeAdminAccessCode: 'changeAdminAccessCode',
   exportAuditLog: 'exportAuditLog',
   exportMedCatalogBundle: 'exportMedCatalogBundle',
   triggerImportMedCatalog: 'triggerImportMedCatalog',
@@ -69,8 +70,6 @@ export function buildSettingsHelpWindowHandlersLazy(ensureSettingsHelpLoaded) {
       startMiniTour: 'startMiniTour',
       startHelpTourMain: 'startHelpTourMain',
       togglePresentationModeFromHelp: 'togglePresentationModeFromHelp',
-      seedPitchGuardiaCensusFromHelp: 'seedPitchGuardiaCensusFromHelp',
-      exportCensoPdfFromHelp: 'exportCensoPdfFromHelp',
       guidedTourIntroChooseSala: 'guidedTourIntroChooseSala',
       guidedTourIntroChooseInterconsulta: 'guidedTourIntroChooseInterconsulta',
       guidedTourIntroSkip: 'guidedTourIntroSkip',
@@ -89,7 +88,6 @@ export function buildSettingsHelpWindowHandlersLazy(ensureSettingsHelpLoaded) {
       resumeGuidedTourFromProgress: 'resumeGuidedTourFromProgress',
       openLearnHub: 'openLearnHub',
       closeLearnHub: 'closeLearnHub',
-      dismissGuardiaV7UpgradeCard: 'dismissGuardiaV7UpgradeCard',
     },
     ensureSettingsHelpLoaded
   );

@@ -44,15 +44,15 @@ describe('clinical-rotation preview window', () => {
     assert.equal(isIncomingPreviewWindow({}, new Date()), false);
   });
 
-  it('syncRotationConfigButton hides control for non-R4 users', () => {
+  it('syncRotationConfigButton hides control for non-Admin users', () => {
     if (typeof document === 'undefined') return;
     document.body.innerHTML =
       '<button type="button" id="btn-rotation-config-open"></button>';
     const prev = clinicalSessionContext.user;
-    clinicalSessionContext.user = { rank: 'R2' };
+    clinicalSessionContext.user = { rank: 'Team' };
     syncRotationConfigButton();
     assert.equal(document.getElementById('btn-rotation-config-open').hidden, true);
-    clinicalSessionContext.user = { rank: 'R4' };
+    clinicalSessionContext.user = { rank: 'Admin' };
     syncRotationConfigButton();
     assert.equal(document.getElementById('btn-rotation-config-open').hidden, false);
     clinicalSessionContext.user = prev;

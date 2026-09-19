@@ -90,64 +90,9 @@ html.tab-bar-indicators-ready html.dark .lab-inner-nav .inner-tab.active {
   display: none;
 }
 
-#appcontent-lab #lab-input-section.card {
-  border-radius: 12px !important;
-}
-
-#appcontent-lab #lab-input-section > .card-header,
 #appcontent-lab .lab-active-shell .card > .card-header {
   padding-left: calc(12px * var(--density-space, 1));
   padding-right: calc(12px * var(--density-space, 1));
-}
-
-#appcontent-lab #lab-input-section > .card-header {
-  border-radius: 12px 12px 0 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.lab-paste-details {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-top: 1px solid var(--border);
-  background: transparent;
-}
-
-.lab-paste-details > summary {
-  list-style: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  font-weight: 600;
-  color: var(--color-ink);
-  border: 0;
-  outline: none;
-}
-
-.lab-paste-details > summary::-webkit-details-marker,
-.lab-paste-details > summary::marker {
-  display: none;
-  content: none;
-}
-
-.lab-paste-details > summary::before {
-  content: "";
-  width: 0.4em;
-  height: 0.4em;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: rotate(-45deg);
-  flex: 0 0 auto;
-}
-
-.lab-paste-details[open] > summary::before {
-  transform: rotate(45deg);
-}
-
-.lab-paste-details > summary:hover {
-  background: var(--state-hover-bg);
 }
 
 .lab-inner-panel > .exp-segment-panel.active {

@@ -4,13 +4,7 @@ import {
   normalizeQuickOutputFormat,
   syncAppModeRadioControls,
 } from "./profile-runtime.mjs";
-
-function resolveCensoSalaValue(st) {
-  var ubic = st.censoSala || "";
-  if (!ubic && st.censoTorre) ubic = "torre";
-  if (/^torre/i.test(ubic) && ubic !== "torre") ubic = "torre";
-  return ubic;
-}
+import { resolveCensoEquipoMembers } from "../censo-header-format.mjs";
 
 function syncProfileToggleLabel(st) {
   var lbl = document.getElementById("profile-toggle-label");
@@ -32,23 +26,21 @@ function syncProfileToggleLabel(st) {
 }
 
 export function populateProfileIdentityFields(st) {
+  var equipo = resolveCensoEquipoMembers(st);
   var fields = [
     ["profile-doctor", st.doctorName],
     ["profile-cedula", st.cedulaProfesional],
     ["profile-profesor", st.profesorName],
-    ["profile-r2", st.residenteR2],
-    ["profile-r1a", st.residenteR1a || st.residenteR1],
-    ["profile-r1b", st.residenteR1b],
-    ["profile-maestro", st.profesorName],
+    ["profile-censo-equipo", st.censoEquipo || equipo.equipo.join("\n")],
+    ["profile-censo-jefe", st.censoJefe || equipo.jefe],
     ["profile-censo-fimi-label", st.censoFimiLabel],
+    ["profile-censo-fiux-label", st.censoFiuxLabel],
     ["profile-grado", st.grado],
   ];
   fields.forEach(function (pair) {
     var el = document.getElementById(pair[0]);
     if (el) el.value = pair[1] || "";
   });
-  var censoSalaEl = document.getElementById("profile-censo-sala");
-  if (censoSalaEl) censoSalaEl.value = resolveCensoSalaValue(st);
   syncAppModeRadioControls();
   var srvEl = document.getElementById("settings-default-servicio");
   if (srvEl) srvEl.value = st.defaultServicio || "";

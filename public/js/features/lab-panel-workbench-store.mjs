@@ -289,50 +289,6 @@ function isDuplicateInPatientHistory(patientId, payload) {
   });
 }
 
-/**
- * @param {{ id: string }} patient
- * @param {Array<{ fecha?: string, hora?: string, resLabs?: string[], sourceText?: string, bhExtras?: object }>} labSets
- */
-export async function applyDriveImportLabSets(patient, labSets) {
-  if (!patient || !patient.id || !labSets || !labSets.length) {
-    return { added: 0, skipped: 0 };
-  }
-  var patientId = patient.id;
-  var added = 0;
-  var skipped = 0;
-  labSets.forEach(function (set, idx) {
-    var payload = {
-      fecha: set.fecha,
-      hora: set.hora || '',
-      resLabs: set.resLabs || [],
-      sourceText: set.sourceText || '',
-    };
-    if (!payload.resLabs.length) return;
-    var upsert = upsertLabHistory(
-      patientId,
-      payload.resLabs,
-      payload.fecha,
-      payload.hora,
-      payload.sourceText,
-      set.bhExtras || {},
-      {},
-      'drive-import-' + idx
-    );
-    if (!upsert || upsert.action === 'skipped') {
-      skipped += 1;
-      return;
-    }
-    added += 1;
-  });
-  if (!added) return { added: 0, skipped: skipped };
-
-  rt.rebuildEstudiosFromLabHistory(patientId);
-  rt.ensureParsedLabHistory(patientId);
-  renderLabHistoryPanel();
-  rt.refreshTendenciasOrCultivosPanel();
-  return { added: added, skipped: skipped };
-}
-
 function finalizeLabHistoryImport(patientId) {
   var consolidation = autoConsolidateLabHistoryForPatient(patientId);
   if (consolidation.merged > 0) {

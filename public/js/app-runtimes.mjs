@@ -4,6 +4,7 @@
 import { storage } from './storage.js';
 import { getPatients, getLabHistory, persistClinicalState } from './app-state.mjs';
 import { migrateToV3 } from './mode-features.mjs';
+import { setActivePatientAreaGetter } from './features/active-patient-area.mjs';
 import {
   splitResLabsByTipo,
   primaryTipoForLabSet,
@@ -38,10 +39,7 @@ import {
 } from './features/cloud-sync/mutate-bridge.mjs';
 import { syncSettingsLanHostDiskSection } from './features/cloud-sync/panel-chrome.mjs';
 import { configurePatientEntries } from './features/sync-apply/patient-entries.mjs';
-import {
-  registerPatientsRuntime,
-  filterPatientsForGuardiaCensus,
-} from './features/patients.mjs';
+import { registerPatientsRuntime } from './features/patients.mjs';
 import {
   registerLabBulkPreviewModalRuntime,
   getBulkLabPreviewSourceText,
@@ -85,10 +83,6 @@ import {
   wireEstadoActualPasteModal,
 } from './features/estado-actual-paste-modal.mjs';
 import {
-  registerDriveImportRuntime,
-  wireDriveImportModal,
-} from './features/drive-import-modal.mjs';
-import {
   registerEstadoActualRegistroModalRuntime,
   openEstadoActualRegistroModal,
   wireEaModalDismiss,
@@ -102,7 +96,6 @@ import {
 import {
   registerExpedienteRuntime,
 } from './features/expediente.mjs';
-import { registerEventualidadesRuntime } from './features/eventualidades-panel.mjs';
 import {
   extractParsedValues,
   buildParsedBySectionFromResLabs,
@@ -114,7 +107,6 @@ import {
   registerProductivityRuntime,
   pushUndoSnapshot,
 } from './features/productivity.mjs';
-import { registerCensoRuntime, syncCensoExportButtonVisibility } from './censo-export.mjs';
 import {
   bindLazyLabsRuntimeCtx,
   bindLazyChartsRuntimeCtx,
@@ -155,10 +147,6 @@ import {
   renderTodoForm,
 } from './features/todos.mjs';
 import {
-  registerVpoRuntime,
-  renderVpo,
-} from './features/vpo.mjs';
-import {
   registerRecetaHuRuntime,
   renderRecetaHu,
 } from './features/receta-hu.mjs';
@@ -173,7 +161,6 @@ import {
   invalidateInnerTabRenderCache,
   syncInnerTabVisualOnly,
 } from './features/expediente-inner-cache.mjs';
-import { renderGuardiaBoard } from './features/guardia-board.mjs';
 import {
   renderMedRecetaPanel,
 } from './features/medications.mjs';
@@ -256,9 +243,6 @@ function buildRuntimeContextUiDeps() {
     switchAppTab,
     renderPatientList,
     scrollActiveRondaCardIntoView,
-    renderGuardiaBoard: function () {
-      return renderGuardiaBoard(rt.getSettings());
-    },
     renderInnerTabs,
     invalidateInnerTabRenderCache,
     refreshExpedienteAfterPatientSelect,
@@ -276,7 +260,6 @@ function buildRuntimeContextUiDeps() {
     refreshAllTodoUIs,
     refreshTodoUIsForPatient,
     refreshTodoUIsForPatients,
-    renderVpo,
     renderRecetaHu,
     pushUndoSnapshot,
     ...platformRuntimeProxies,
@@ -393,6 +376,15 @@ export async function registerAllFeatureRuntimes() {
   installAppRuntimeContextDeps();
   var ctx = getAppRuntimeContext();
 
+  setActivePatientAreaGetter(function () {
+    var id = ctx.getActiveId();
+    if (!id) return '';
+    var patient = getPatients().find(function (p) {
+      return String(p.id) === String(id);
+    });
+    return (patient && patient.area) || '';
+  });
+
   registerMedicationsRuntime(ctx);
   registerMedPharmProfileRuntime(ctx);
   registerProfileRuntime(ctx);
@@ -442,16 +434,7 @@ export async function registerAllFeatureRuntimes() {
     })
   );
   reminderScheduler.rescheduleAllTodos();
-  registerVpoRuntime(ctx);
   registerRecetaHuRuntime(ctx);
-  registerCensoRuntime(
-    Object.assign({}, ctx, {
-      getCensusPatients: function () {
-        return filterPatientsForGuardiaCensus(getPatients());
-      },
-    })
-  );
-  registerEventualidadesRuntime(ctx);
   const { registerPatientDashboardRuntime } = await import('./features/patient-dashboard/dashboard-mount.mjs');
   registerPatientDashboardRuntime(
     Object.assign({}, ctx, {
@@ -472,7 +455,6 @@ export async function registerAllFeatureRuntimes() {
   registerSoapEstadoRuntime(ctx);
   bindLazyNotaEvolucionRuntimeCtx(ctx);
   registerEstadoActualPanelRuntime(ctx);
-  registerDriveImportRuntime(ctx);
   registerEstadoActualPasteModalRuntime(ctx);
   registerEstadoActualRegistroModalRuntime(ctx);
   registerLabBulkPreviewModalRuntime(ctx);
@@ -502,18 +484,13 @@ export async function registerAllFeatureRuntimes() {
     };
     void mod.runLanBlobRetireIfNeeded({ pruneDbBlobs });
   });
-  void import('./equipos-cloud-config.mjs').then((mod) => {
-    mod.runEquiposCloudBootIfNeeded();
-  });
   // 7.9 Nube: cloud-sync ⇄ UI mounts lazily from connection-panel (no static import here).
 }
 
 export function runInitialFeatureBoot() {
   initChromeAppearance();
   wireEstadoActualPasteModal();
-  wireDriveImportModal();
   wireEaModalDismiss();
   wireEaCongestionModalDismiss();
   wireEaCardModalDismiss();
-  syncCensoExportButtonVisibility();
 }

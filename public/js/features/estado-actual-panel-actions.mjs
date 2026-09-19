@@ -13,7 +13,10 @@ import {
   parseIoEvacField,
   parseIoIngresoField,
   diuresisValueFromParts,
+  sumIoTurnos,
+  ioTurnoAggregate,
 } from './estado-actual-io.mjs';
+import { readIoExtraPartsFromForm } from './estado-actual-panel-registro-io.mjs';
 import {
   datetimeLocalToIso,
   isoToHHmm,
@@ -82,10 +85,19 @@ function parseFormMedicion() {
   var glucometrias = bombaOn ? [] : parseGlucometriasFromForm(form, defaultTime);
   var bombaInsulina = bombaOn ? parseBombaFromForm(form, defaultTime) : [];
 
-  var ingEl = document.getElementById('ea-io-ing');
-  var egrEl = document.getElementById('ea-io-egr');
+  var ingRaw = ['ea-io-ing-t1', 'ea-io-ing-t2', 'ea-io-ing-t3'].map(function (id) {
+    var el = document.getElementById(id);
+    return el && 'value' in el ? el.value : '';
+  });
+  var egrRaw = ['ea-io-egr-t1', 'ea-io-egr-t2', 'ea-io-egr-t3'].map(function (id) {
+    var el = document.getElementById(id);
+    return el && 'value' in el ? el.value : '';
+  });
   var evacEl = document.getElementById('ea-io-evac');
-  var egrParts = parseIoEgresoLine(egrEl && 'value' in egrEl ? String(egrEl.value) : '');
+  var ingTotals = sumIoTurnos(ingRaw.map(parseIoIngresoField));
+  var egrPartsPerTurno = egrRaw.map(parseIoEgresoLine);
+  var egrExtra = readIoExtraPartsFromForm(form);
+  var egrParts = [].concat.apply([], egrPartsPerTurno).concat(egrExtra);
 
   return {
     id: Date.now().toString() + '-ea',
@@ -96,10 +108,13 @@ function parseFormMedicion() {
     glucometrias: glucometrias,
     bombaInsulina: bombaInsulina,
     io: {
-      ing: parseIoIngresoField(ingEl && 'value' in ingEl ? ingEl.value : ''),
+      ing: ioTurnoAggregate(ingTotals),
       egr: diuresisValueFromParts(egrParts),
       egrParts: egrParts,
+      egrExtra: egrExtra.map(function (p) { return { kind: p.kind, value: p.value }; }),
       evac: parseIoEvacField(evacEl && 'value' in evacEl ? evacEl.value : ''),
+      ingTurnos: ingRaw,
+      egrTurnos: egrRaw,
     },
   };
 }

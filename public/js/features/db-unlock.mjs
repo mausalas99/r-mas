@@ -23,6 +23,7 @@ export {
   openChangeMasterPasswordModal,
   closeChangeMasterPasswordModal,
   submitChangeMasterPassword,
+  changeAdminAccessCode,
 } from './db-unlock-change-pass.mjs';
 
 import { applyClinicalDbUnlockCompletion } from './db-unlock-completion.mjs';

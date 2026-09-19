@@ -58,14 +58,6 @@ export function setSelectAllVisibleEquipos(root, checked) {
   }
 }
 
-/** @param {ReturnType<typeof readEquiposRowDraft>[]} drafts */
-function validateBulkSaveDrafts(drafts) {
-  const withTeam = drafts.filter((d) => d.teamId);
-  const missingCycle = withTeam.filter((d) => !d.subAreaFraction);
-  if (!missingCycle.length) return { ok: true };
-  return { ok: false, error: 'Falta el ciclo en ' + missingCycle.length + ' seleccionado(s).' };
-}
-
 /**
  * @param {ReturnType<typeof readEquiposRowDraft>[]} drafts
  * @param {ReturnType<typeof equiposDbApi>} api
@@ -91,7 +83,7 @@ async function persistBulkEquiposDrafts(drafts, api) {
 }
 
 /**
- * Save rank (+ team/cycle when set) for every checked visible row — one reload at the end.
+ * Save rank (+ team when set) for every checked visible row — one reload at the end.
  * @param {HTMLElement} root
  * @param {object[]} teams
  * @param {() => ReturnType<import('./api-client.mjs').createCloudSyncApi>} getApi
@@ -100,7 +92,7 @@ async function persistBulkEquiposDrafts(drafts, api) {
 export async function handleCloudEquiposBulkSave(root, teams, getApi, toast) {
   const selected = listSelectedEquiposRows(root);
   if (!selected.length) {
-    toast('Marca uno o más usuarios y elige equipo/ciclo; luego Guardar seleccionados.', 'info');
+    toast('Marca uno o más usuarios y elige equipo; luego Guardar seleccionados.', 'info');
     return;
   }
 
@@ -111,11 +103,6 @@ export async function handleCloudEquiposBulkSave(root, teams, getApi, toast) {
   }
 
   const drafts = selected.map((row) => readEquiposRowDraft(row, teams));
-  const validation = validateBulkSaveDrafts(drafts);
-  if (!validation.ok) {
-    toast(validation.error || 'Error al guardar.', 'error');
-    return;
-  }
 
   const btn = root.querySelector('[data-admin-action="save-equipos-bulk"]');
   setBulkButtonDisabled(btn, true);

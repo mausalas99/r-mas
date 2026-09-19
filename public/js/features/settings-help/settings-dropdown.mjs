@@ -1,4 +1,5 @@
 /** Settings gear panel: centered modal (como ⇄ / Mi rotación). */
+import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
 import { isMobileWeb } from '../../mobile-web.mjs';
 import { closeModalAnimated } from '../../ui-motion.mjs';
 import { closeConnectionDropdown } from '../cloud-sync/panel-chrome.mjs';
@@ -271,7 +272,12 @@ export function expandSettingsAccordionBackupSync() {
 export function syncTeamSyncHeaderButton() {
   var btn = document.getElementById('btn-header-team-sync');
   if (!btn) return;
-  btn.style.display = 'none';
+  if (isClinicalLocalOnlyMode(readRpcSettings())) {
+    btn.style.display = 'none';
+    return;
+  }
+  var desktop = !!(window.electronAPI && typeof window.electronAPI.getAppVersion === 'function');
+  btn.style.display = desktop || isMobileWeb() ? 'flex' : 'none';
 }
 
 export function ensureSettingsDropdownOpen() {

@@ -14,7 +14,7 @@ const scopeFixture = {
       service: 'Sala',
       sub_area_fraction: 'B',
       sala: 'Sala 2',
-      members: [{ user_id: 'u-admin' }, { user_id: 'u-r1' }],
+      members: [{ user_id: 'u-admin' }, { user_id: 'u-team' }],
     },
   ],
   assignments: [
@@ -56,7 +56,7 @@ afterEach(() => {
 
 test('shouldUseElevatedPatientCensus is false on iPad even for Admin', () => {
   assert.equal(shouldUseElevatedPatientCensus({ rank: 'Admin' }), false);
-  assert.equal(shouldUseElevatedPatientCensus({ rank: 'R4' }), false);
+  assert.equal(shouldUseElevatedPatientCensus({ rank: 'Team' }), false);
 });
 
 test('shouldUseElevatedPatientCensus is false on Safari LAN without mobile flag', () => {
@@ -64,7 +64,7 @@ test('shouldUseElevatedPatientCensus is false on Safari LAN without mobile flag'
   assert.equal(shouldUseElevatedPatientCensus({ rank: 'Admin' }), false);
 });
 
-test('Admin on iPad sidebar filters by joined team', () => {
+test('Admin on iPad sidebar sees every patient (no team-based hiding on mobile)', () => {
   const census = [
     { id: 'p-mine', servicio: 'Sala', area: 'Sala B', sala: 'Sala 2' },
     { id: 'p-other', servicio: 'Sala', area: 'Sala A', sala: 'Sala 2' },
@@ -74,10 +74,10 @@ test('Admin on iPad sidebar filters by joined team', () => {
     { user_id: 'u-admin', rank: 'Admin', is_program_admin: 1, sala: 'Sala 2' },
     scopeFixture
   );
-  assert.deepEqual(out.map((p) => p.id), ['p-mine']);
+  assert.deepEqual(out.map((p) => p.id).sort(), ['p-mine', 'p-other']);
 });
 
-test('Admin on Safari LAN (no mobile flag) sees team-matched patients plus ones they registered themselves', () => {
+test('Admin on Safari LAN (no mobile flag) sees every patient', () => {
   delete globalThis.__RPC_MOBILE_WEB__;
   const census = [
     { id: 'p-mine', servicio: 'Sala', area: 'Sala B', sala: 'Sala 2' },
@@ -89,10 +89,10 @@ test('Admin on Safari LAN (no mobile flag) sees team-matched patients plus ones 
     { user_id: 'u-admin', rank: 'Admin', is_program_admin: 1, sala: 'Sala 2' },
     scopeFixture
   );
-  assert.deepEqual(out.map((p) => p.id), ['p-mine', 'p-reg']);
+  assert.deepEqual(out.map((p) => p.id).sort(), ['p-mine', 'p-other', 'p-reg']);
 });
 
-test('Admin on iPad without team membership does not get sala-wide census', () => {
+test('Admin on iPad without team membership still gets the full census', () => {
   const census = [
     { id: 'p1', servicio: 'Sala', area: 'Sala A', sala: 'Sala 2' },
     { id: 'p2', servicio: 'Sala', area: 'Sala B', sala: 'Sala 2' },
@@ -108,10 +108,10 @@ test('Admin on iPad without team membership does not get sala-wide census', () =
       now: '2026-06-02T12:00:00Z',
     }
   );
-  assert.deepEqual(out, []);
+  assert.deepEqual(out.map((p) => p.id).sort(), ['p1', 'p2']);
 });
 
-test('R1 desktop Nube shows full census (Filtros narrow; no hard team hide)', () => {
+test('Team desktop Nube shows full census (Filtros narrow; no hard team hide)', () => {
   delete globalThis.__RPC_MOBILE_WEB__;
   delete globalThis.window;
   setCloudRoomConnected(true);
@@ -121,14 +121,14 @@ test('R1 desktop Nube shows full census (Filtros narrow; no hard team hide)', ()
   ];
   const out = filterPatientsForClinicalSidebar(
     census,
-    { user_id: 'u-r1', rank: 'R1', sala: 'Sala 2' },
+    { user_id: 'u-team', rank: 'Team', sala: 'Sala 2' },
     scopeFixture
   );
   // Sidebar hard-filter is off on desktop; Guardia census applies Filtros separately.
   assert.deepEqual(out.map((p) => p.id).sort(), ['p-mine', 'p-sala']);
 });
 
-test('R1 desktop Nube keeps unassigned structural match after sidebar re-filter', () => {
+test('Team desktop Nube keeps unassigned structural match after sidebar re-filter', () => {
   delete globalThis.__RPC_MOBILE_WEB__;
   delete globalThis.window;
   setCloudRoomConnected(true);
@@ -139,7 +139,7 @@ test('R1 desktop Nube keeps unassigned structural match after sidebar re-filter'
   ];
   const out = filterPatientsForClinicalSidebar(
     census,
-    { user_id: 'u-r1', rank: 'R1', sala: 'Sala 2' },
+    { user_id: 'u-team', rank: 'Team', sala: 'Sala 2' },
     {
       ...scopeFixture,
       assignments: [
@@ -151,7 +151,7 @@ test('R1 desktop Nube keeps unassigned structural match after sidebar re-filter'
   assert.deepEqual(out.map((p) => p.id).sort(), ['p-mine', 'p-other', 'p-slice']);
 });
 
-test('R1 desktop LAN without Nube keeps same-sala census', () => {
+test('Team desktop LAN without Nube keeps same-sala census', () => {
   delete globalThis.__RPC_MOBILE_WEB__;
   delete globalThis.window;
   setCloudRoomConnected(false);
@@ -162,7 +162,7 @@ test('R1 desktop LAN without Nube keeps same-sala census', () => {
   ];
   const out = filterPatientsForClinicalSidebar(
     census,
-    { user_id: 'u-r1', rank: 'R1', sala: 'Sala 2' },
+    { user_id: 'u-team', rank: 'Team', sala: 'Sala 2' },
     {
       teams: [
         {

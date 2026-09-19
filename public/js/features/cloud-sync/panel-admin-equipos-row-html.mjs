@@ -1,9 +1,6 @@
 import { esc } from '../../dom-escape.mjs';
 import { userActionsHtml } from './panel-admin-html.mjs';
-import {
-  formatCycleOptionLabel,
-  resolveUserPlacement,
-} from '../clinical-teams/teams-roster-directory-render.mjs';
+import { resolveUserPlacement } from '../clinical-teams/teams-roster-directory-render.mjs';
 import { normalizeUsername } from '../../clinical-username.mjs';
 import {
   clinicalUserActivityTier,
@@ -13,7 +10,6 @@ import {
 } from '../../../../lib/clinical-user-activity.mjs';
 import { equiposRowHistoryButtonHtml } from './panel-admin-equipos-history-modal.mjs';
 import {
-  cycleOptionsForTeam,
   rankSelectOptionsHtml,
   renderEquiposAssignTeamOptionsHtml,
   userSalaSelectOptionsHtml,
@@ -132,7 +128,7 @@ function equiposRowActionBtnsHtml(resetPasswordBtn, purgeBtn) {
 /**
  * @param {object} row
  * @param {string} userRank
- * @param {{ teamId?: string, teamName?: string, cycle?: string } | null} placement
+ * @param {{ teamId?: string, teamName?: string } | null} placement
  * @param {object[]} teams
  */
 function equiposRowAssignFieldsHtml(row, userRank, placement, teams) {
@@ -141,10 +137,6 @@ function equiposRowAssignFieldsHtml(row, userRank, placement, teams) {
     placement?.teamId,
     String(row.sala || '').trim()
   );
-  const team = placement?.teamId
-    ? teams.find((t) => String(t.team_id) === String(placement.teamId))
-    : null;
-  const cycleOptions = cycleOptionsForTeam(team, String(row.user_id || '').trim(), userRank, placement?.cycle);
   return (
     '<div class="cloud-sync-admin-equipos-assign">' +
     '<label class="cloud-sync-admin-equipos-field">' +
@@ -162,27 +154,16 @@ function equiposRowAssignFieldsHtml(row, userRank, placement, teams) {
     '<select class="profile-input cloud-sync-admin-equipos-team" aria-label="Equipo">' +
     teamOptions +
     '</select></label>' +
-    '<label class="cloud-sync-admin-equipos-field">' +
-    '<span class="cloud-sync-admin-equipos-field-label">Ciclo</span>' +
-    '<select class="profile-input cloud-sync-admin-equipos-cycle" aria-label="Ciclo"' +
-    (placement?.teamId ? '' : ' disabled') +
-    '>' +
-    cycleOptions +
-    '</select></label>' +
     '</div>'
   );
 }
 
-/** @param {{ teamId?: string, teamName?: string, cycle?: string } | null} placement @param {string} userRank */
-function equiposRowPlacementLabelHtml(placement, userRank) {
+/** @param {{ teamId?: string, teamName?: string } | null} placement */
+function equiposRowPlacementLabelHtml(placement) {
   if (!placement?.teamId) {
     return '<span class="cloud-sync-admin-equipos-unassigned">Sin equipo</span>';
   }
-  return esc(
-    [placement.teamName, placement.cycle ? formatCycleOptionLabel(placement.cycle, userRank) : '']
-      .filter(Boolean)
-      .join(' · ')
-  );
+  return esc(String(placement.teamName || ''));
 }
 
 /**
@@ -257,7 +238,7 @@ function equiposRowNubeWrapHtml(cloudId, handle) {
 /** @param {object} row @param {object[]} teams */
 export function renderEquiposUserRow(row, teams) {
   const userId = String(row.user_id || '').trim();
-  const userRank = String(row.rank || 'R1');
+  const userRank = String(row.rank || 'Team');
   const handle = normalizeUsername(row.username || '');
   const name = esc(String(row.clinical_name || '').trim() || 'Sin nombre');
   const placement = userId ? resolveUserPlacement(userId, teams) : null;
@@ -273,7 +254,7 @@ export function renderEquiposUserRow(row, teams) {
       name,
       row,
       activity,
-      equiposRowPlacementLabelHtml(placement, userRank)
+      equiposRowPlacementLabelHtml(placement)
     ) +
     equiposRowAssignFieldsHtml(row, userRank, placement, teams) +
     equiposRowActionBtnsHtml(resetPasswordBtn, purgeBtn) +

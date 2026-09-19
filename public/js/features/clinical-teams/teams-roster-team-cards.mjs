@@ -2,15 +2,8 @@
 import { getClinicalScopeContextForEvaluate, clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { getPatients } from '../../app-state.mjs';
 import { resolvePatientTeamIdFromAssignments } from '../../clinico-access.mjs';
-import {
-  getCycleLettersForTeamCreate,
-  getCycleLetterOptionsForRank,
-  formatMemberCycleLabel,
-  isSalaWardService,
-} from '../../clinico-access.mjs';
 import { teamInviteCode } from '../../clinical-team-invite.mjs';
-import { effectiveClinicalRank, canManageTeamRoster } from '../../clinical-privileges.mjs';
-import { normalizeUsername } from '../../clinical-username.mjs';
+import { canManageTeamRoster } from '../../clinical-privileges.mjs';
 import { escapeHtml, escapeAttr, CLINICAL_SALAS, renderClinicalTeamsCollapsible } from './shared.mjs';
 import { shouldShowInheritPatientsUi } from './teams-roster-inherit-gate.mjs';
 
@@ -74,47 +67,6 @@ export function renderTeamPatientCountLine(team) {
   return `<p class="clinical-teams-card-meta clinical-teams-card-patients">${escapeHtml(label)}</p>`;
 }
 
-/**
- * @param {object} team
- * @param {string} rank
- * @param {string} [current]
- * @param {string} selectId
- */
-export function renderCycleSelectForRank(team, rank, current, selectId) {
-  const service = String(team.service || 'Sala');
-  const id = selectId || 'clinical-cycle-select';
-  const cur = String(current || '').trim();
-  const letters = getCycleLetterOptionsForRank(service, rank);
-  const opts = letters
-    .map(
-      (l) =>
-        `<option value="${escapeAttr(l)}" ${l === cur ? 'selected' : ''}>${escapeHtml(l)}</option>`
-    )
-    .join('');
-  return `<select id="${escapeAttr(id)}" class="profile-input clinical-teams-cycle-select" required>${opts}</select>`;
-}
-
-/** @param {object} team */
-export function renderAddMemberCycleSelect(team) {
-  const teamId = String(team.team_id || '');
-  const service = String(team.service || 'Sala');
-  const id = `clinical-add-cycle-${teamId}`;
-  if (!isSalaWardService(service)) {
-    const letters = getCycleLetterOptionsForRank(service, 'R2');
-    return `<select id="${escapeAttr(id)}" class="profile-input clinical-teams-add-member-cycle" required>
-      ${letters.map((l) => `<option value="${escapeAttr(l)}">${escapeHtml(l)}</option>`).join('')}
-    </select>`;
-  }
-  const r2 = getCycleLettersForTeamCreate('Sala', 'R2');
-  const r1a = getCycleLettersForTeamCreate('Sala', 'R1', 0);
-  const r1b = getCycleLettersForTeamCreate('Sala', 'R1', 1);
-  return `<select id="${escapeAttr(id)}" class="profile-input clinical-teams-add-member-cycle" required>
-    <optgroup label="R2 · A–F">${r2.map((l) => `<option value="${escapeAttr(l)}">${escapeHtml(l)}</option>`).join('')}</optgroup>
-    <optgroup label="R1 · primera línea">${r1a.map((l) => `<option value="${escapeAttr(l)}">${escapeHtml(l)}</option>`).join('')}</optgroup>
-    <optgroup label="R1 · segunda línea">${r1b.map((l) => `<option value="${escapeAttr(l)}">${escapeHtml(l)}</option>`).join('')}</optgroup>
-  </select>`;
-}
-
 function renderMemberRemoveButton(m, handle, memberUserId, opts) {
   const canRemove =
     opts.canRemove &&
@@ -132,18 +84,14 @@ function renderMemberRemoveButton(m, handle, memberUserId, opts) {
 export function renderMemberRow(m, opts = {}) {
   const handle = escapeHtml(m.username || m.user_id);
   const name = String(m.clinical_name || '').trim();
-  const rank = escapeHtml(effectiveClinicalRank({ rank: m.rank }));
+  const rank = String(m.rank || '') === 'Admin' ? 'Admin' : '';
   const displayName = name ? escapeHtml(name) : handle;
-  const cycle = formatMemberCycleLabel(m);
-  const meta = name ? `@${handle} · ${rank}` : rank;
-  const cycleHtml = cycle
-    ? `<span class="clinical-teams-member-cycle">${escapeHtml(cycle)}</span>`
-    : '';
+  const meta = name ? (rank ? `@${handle} · ${rank}` : `@${handle}`) : rank || handle;
   const memberUserId = String(m.user_id || '').trim();
   const removeBtn = renderMemberRemoveButton(m, handle, memberUserId, opts);
   return `<li class="clinical-teams-member-row">
     <span class="clinical-teams-member-row-name">${displayName}</span>
-    <span class="clinical-teams-member-row-meta">${meta}${cycleHtml ? ` · ${cycleHtml}` : ''}</span>
+    <span class="clinical-teams-member-row-meta">${meta}</span>
     ${removeBtn}
   </li>`;
 }
@@ -175,52 +123,6 @@ export function renderMembersBlock(members, { compact = false, teamId = '' } = {
     className: `clinical-teams-collapse--card-block clinical-teams-card-members${compact ? ' clinical-teams-card-members--compact' : ''}`,
     summaryHtml: `<span class="clinical-teams-members-heading">${heading}</span>`,
     bodyHtml: listHtml,
-  });
-}
-
-/**
- * @param {object} team
- * @param {{ user_id?: string, username?: string }} user
- */
-export function renderMyCycleEditBlock(team, user) {
-  const teamId = String(team.team_id || '');
-  const userId = String(user?.user_id || '');
-  const handle = normalizeUsername(user?.username || '');
-  const members = Array.isArray(team.members) ? team.members : [];
-  const me = members.find((m) => {
-    if (userId && String(m.user_id) === userId) return true;
-    if (handle && normalizeUsername(m.username || '') === handle) return true;
-    return false;
-  });
-  if (!me) return '';
-
-  const rank = effectiveClinicalRank({ rank: me.rank });
-  const current = String(me.sub_area_fraction || '').trim();
-  const selectId = `clinical-my-cycle-${teamId}`;
-  const service = String(team.service || 'Sala');
-  const hint = isSalaWardService(service)
-    ? rank === 'R2'
-      ? 'Tu letra A–F en el ciclo de sala.'
-      : rank === 'R1'
-        ? 'Tu subciclo (A1–D1 o A2–D2), independiente del resto del equipo.'
-        : 'Letra de rotación para este servicio.'
-    : 'Letra de rotación A–D (misma para todos los rangos en este servicio).';
-
-  const formHtml = `
-      <form class="clinical-teams-my-cycle-form" data-team-id="${escapeAttr(teamId)}">
-        <p class="clinical-teams-hint">${escapeHtml(hint)}</p>
-        <div class="clinical-teams-my-cycle-row">
-          <label class="visually-hidden" for="${escapeAttr(selectId)}">Mi ciclo</label>
-          ${renderCycleSelectForRank(team, rank, current, selectId)}
-          <button type="submit" class="btn-save">Guardar</button>
-        </div>
-      </form>`;
-  return renderClinicalTeamsCollapsible({
-    collapseKey: `card.${teamId}.cycle`,
-    defaultOpen: true,
-    className: 'clinical-teams-collapse--card-block clinical-teams-my-cycle-box',
-    summaryHtml: '<span class="clinical-teams-my-cycle-title">Mi ciclo en este equipo</span>',
-    bodyHtml: formHtml,
   });
 }
 
@@ -314,13 +216,9 @@ export function renderTeamInviteCollapsible(team, teamId) {
               <label for="clinical-add-member-${escapeAttr(tid)}">@usuario</label>
               <input id="clinical-add-member-${escapeAttr(tid)}" type="text" class="profile-input clinical-teams-add-member-input" placeholder="sin @" required aria-describedby="clinical-add-hint-${escapeAttr(tid)}">
             </div>
-            <div class="field-group clinical-teams-add-cycle-group">
-              <label for="clinical-add-cycle-${escapeAttr(tid)}">Ciclo del integrante</label>
-              ${renderAddMemberCycleSelect(team)}
-            </div>
             <button type="submit" class="btn-save clinical-teams-btn-add">Agregar</button>
           </div>
-          <p class="clinical-teams-invite-hint" id="clinical-add-hint-${escapeAttr(tid)}">Debe existir en Mi rotación (@usuario, sin @). Cada R1/R2 lleva su propio ciclo (D1, D2, A–F).</p>
+          <p class="clinical-teams-invite-hint" id="clinical-add-hint-${escapeAttr(tid)}">Debe existir en Mi rotación (@usuario, sin @).</p>
         </form>`;
   return renderClinicalTeamsCollapsible({
     collapseKey: `card.${tid}.invite`,
@@ -335,7 +233,6 @@ export function renderTeamInviteCollapsible(team, teamId) {
  * @param {object} team
  */
 export function renderJoinedTeamCard(team) {
-  const user = clinicalSessionContext.user || {};
   const teamId = String(team.team_id || '');
   const members = Array.isArray(team.members) ? team.members : [];
   const manage = renderTeamManageBlock(team);
@@ -353,7 +250,6 @@ export function renderJoinedTeamCard(team) {
       </div>
       ${manage.editPanelHtml}
       ${renderMembersBlock(members, { teamId })}
-      ${renderMyCycleEditBlock(team, user)}
       ${shouldShowInheritPatientsUi() ? renderInheritPatientsBox(team) : ''}
       ${renderLeaveTeamBox(team)}
       ${renderTeamInviteCollapsible(team, teamId)}

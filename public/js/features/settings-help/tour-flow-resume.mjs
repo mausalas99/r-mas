@@ -9,9 +9,8 @@ function resumeGuidedTourFromProgress() {
   if (!p) return false;
   tourState.guidedTourBranch =
     p.branch === 'interconsulta' ? 'interconsulta'
-      : p.branch === 'guardia-v7' ? 'guardia-v7'
-        : p.branch === 'quick-route' ? 'quick-route'
-          : 'sala';
+      : p.branch === 'quick-route' ? 'quick-route'
+        : 'sala';
   tourState.guidedTourMode = 'base';
   tourState.guidedTourModuleOnly = !!p.moduleOnly;
   tourState.guidedTourChapterScope = p.moduleOnly ? p.chapterId || null : null;

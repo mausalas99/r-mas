@@ -17,9 +17,9 @@ function seedScope() {
     service: 'Sala',
     sub_area_fraction: 'A',
     sala: 'Sala 2',
-    members: [{ user_id: 'u-r2' }],
+    members: [{ user_id: 'u-team' }],
   };
-  clinicalSessionContext.user = { user_id: 'u-r2', rank: 'R2', sala: 'Sala 2' };
+  clinicalSessionContext.user = { user_id: 'u-team', rank: 'Team', sala: 'Sala 2' };
   clinicalSessionContext.scopeContext = {
     teams: [team],
     guardias: [],
@@ -59,17 +59,16 @@ test('prunePatientsOutsideVisibleScope does not hard-delete on desktop Nube', ()
   }
 });
 
-test('prunePatientsOutsideVisibleScope removes foreign census on mobile team mirror', () => {
+test('prunePatientsOutsideVisibleScope keeps every patient on mobile too (no team-based visibility gate)', () => {
   const prevMobile = globalThis.__RPC_MOBILE_WEB__;
   globalThis.__RPC_MOBILE_WEB__ = true;
   setCloudRoomConnected(true);
   try {
     seedScope();
     const removed = prunePatientsOutsideVisibleScope();
-    assert.equal(removed, 1);
-    assert.equal(getPatients().length, 1);
-    assert.equal(getPatients()[0].id, 'p-mine');
-    assert.equal(getNotes()['p-other'], undefined);
+    assert.equal(removed, 0);
+    assert.equal(getPatients().length, 2);
+    assert.equal(getNotes()['p-other']?.fecha, '01/01/2026');
   } finally {
     cleanup(prevMobile);
   }

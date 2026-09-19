@@ -4,8 +4,8 @@ import { resolveClinicalUserRowFromOpsSnapshot } from '../clinical-scope-from-op
 
 /** @param {unknown} resolvedRank @param {unknown} sessionRank */
 function normalizeOpsRank(resolvedRank, sessionRank) {
-  const rank = String(resolvedRank || sessionRank || 'R1').trim() || 'R1';
-  return rank === 'Admin' ? 'R1' : rank;
+  const rank = String(resolvedRank || sessionRank || 'Team').trim() || 'Team';
+  return rank === 'Admin' ? 'Team' : rank;
 }
 
 /** @param {object} resolved */

@@ -15,10 +15,7 @@ import {
   bindDirectoryFilterControls,
 } from './teams-roster-directory-filters.mjs';
 import { renderDirectoryUsersModalBodyHtml } from './teams-roster-directory-render.mjs';
-import {
-  initUserRowAssignState,
-  syncAssignCycleSelect,
-} from './teams-roster-directory-assign.mjs';
+import { initUserRowAssignState } from './teams-roster-directory-assign.mjs';
 
 /** @param {object[]} users @param {object[]} teams */
 function buildDirectoryFingerprint(users, teams) {
@@ -149,7 +146,7 @@ function isDirectoryUserInteracting() {
   if (active instanceof HTMLElement && bd.contains(active)) {
     if (
       active.closest(
-        '.clinical-directory-assign-team, .clinical-directory-assign-cycle, .clinical-directory-assign-btn, .clinical-directory-delete-user-btn, .clinical-directory-rank-group-summary, .clinical-directory-refresh-btn, .clinical-directory-search, #clinical-directory-status-filter, #clinical-directory-sala-filter, #clinical-directory-activity-filter'
+        '.clinical-directory-assign-team, .clinical-directory-assign-btn, .clinical-directory-delete-user-btn, .clinical-directory-rank-group-summary, .clinical-directory-refresh-btn, .clinical-directory-search, #clinical-directory-status-filter, #clinical-directory-sala-filter, #clinical-directory-activity-filter'
       )
     ) {
       return true;
@@ -168,22 +165,20 @@ function isDirectoryUserInteracting() {
 
 /** @param {HTMLElement} host */
 function captureDirectoryDraftState(host) {
-  /** @type {Map<string, { team: string, cycle: string }>} */
+  /** @type {Map<string, { team: string }>} */
   const draft = new Map();
   host.querySelectorAll('.clinical-lan-user-row').forEach((row) => {
     const uid = String(row.dataset.userId || '').trim();
     if (!uid) return;
     const teamEl = row.querySelector('.clinical-directory-assign-team');
-    const cycleEl = row.querySelector('.clinical-directory-assign-cycle');
     draft.set(uid, {
       team: teamEl instanceof HTMLSelectElement ? String(teamEl.value || '') : '',
-      cycle: cycleEl instanceof HTMLSelectElement ? String(cycleEl.value || '') : '',
     });
   });
   return draft;
 }
 
-/** @param {HTMLElement} host @param {Map<string, { team: string, cycle: string }>} draft */
+/** @param {HTMLElement} host @param {Map<string, { team: string }>} draft */
 function restoreDirectoryDraftState(host, draft) {
   if (!draft || !draft.size) return;
   host.querySelectorAll('.clinical-lan-user-row').forEach((row) => {
@@ -193,13 +188,6 @@ function restoreDirectoryDraftState(host, draft) {
     const teamSelect = row.querySelector('.clinical-directory-assign-team');
     if (teamSelect instanceof HTMLSelectElement && saved.team) {
       teamSelect.value = saved.team;
-      syncAssignCycleSelect(teamSelect, saved.cycle);
-      if (saved.cycle) {
-        const cycleSelect = row.querySelector('.clinical-directory-assign-cycle');
-        if (cycleSelect instanceof HTMLSelectElement) {
-          cycleSelect.value = saved.cycle;
-        }
-      }
     }
   });
 }

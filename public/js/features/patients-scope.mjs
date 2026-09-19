@@ -5,7 +5,6 @@ import {
 } from './patients-default-id.mjs';
 import {
   ensureTeamAssignedPatientsOnDevice,
-  renderGuardiaCensusGrid,
   clinicalSessionContext,
   getClinicalScopeContextForEvaluate,
   isClinicalScopeReadyForPatientApply,
@@ -26,7 +25,6 @@ import {
   wireCensusFilterInputs,
 } from './patients-scope-filters-bar.mjs';
 import { getPatientsForDisplay } from '../clinical-read-model-demo.mjs';
-import { isGuardiaMode } from './chrome.mjs';
 import { rt } from './patients-runtime-state.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
 import { isEaRegistroFormOpenForPatient } from './estado-actual-panel-core.mjs';
@@ -66,12 +64,19 @@ export function patientMatchesSearch(p) {
   );
 }
 
+/** Directorio (full roster) owns non-hospitalizado patients — sidebar only shows the small active/archived census. */
+function filterPatientsForHospitalizadoSidebar(patients) {
+  return patients.filter(function (p) {
+    return !!p && (p.hospitalizado !== false || p.archived);
+  });
+}
+
 export function patientsVisibleInSidebar() {
   const base = getPatientsForDisplay(() => getPatients());
   if (shouldEnforceTeamPatientMirror() && !isClinicalScopeReadyForPatientApply()) {
     return [];
   }
-  return filterPatientsForGuardiaCensus(base);
+  return filterPatientsForHospitalizadoSidebar(filterPatientsForGuardiaCensus(base));
 }
 
 export function pickDefaultVisiblePatientId() {
@@ -151,11 +156,9 @@ export function refreshCensusViewsAfterFilterChange() {
   if (user) syncCensusScalarFilterInputs(user);
   // Force flush so coalesced rAF renders cannot drop Equipo/Sala/Servicio changes under load.
   patientsBridge.renderPatientList({ force: true });
-  if (isGuardiaMode()) renderGuardiaCensusGrid(rt.getSettings());
   if (shouldEnforceTeamPatientMirror()) return;
   void ensureTeamAssignedPatientsOnDevice({ allowLanPull: true, lanPullDelayMs: 5000 }).then(() => {
     patientsBridge.renderPatientList({ silent: true });
-    if (isGuardiaMode()) renderGuardiaCensusGrid(rt.getSettings());
   });
 }
 

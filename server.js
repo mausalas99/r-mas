@@ -11,10 +11,6 @@ const {
   shouldSkipGlobalRateLimit,
   shouldSkipGlobalJsonBodyParser,
 } = require('./lib/server-http-security.js');
-const { createInternoRouter, broadcastInterno } = require('./lib/interno/interno-router.js');
-const { createInternoHostStoreFromDb } = require('./lib/interno/host-store-db.cjs');
-const { createEquiposRouter } = require('./lib/equipos/equipos-router.js');
-const { scheduleEquiposPhotoPurge } = require('./lib/equipos/equipos-photo-purge.mjs');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 
@@ -60,10 +56,7 @@ function applyLanCorsHeaders(req, res) {
       res.setHeader('Access-Control-Allow-Origin', rawOrigin);
       res.setHeader('Vary', 'Origin');
       res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,PATCH,DELETE,OPTIONS');
-      res.setHeader(
-        'Access-Control-Allow-Headers',
-        'Content-Type, Authorization, X-Interno-Token, X-Interno-Sala, X-Equipos-Token'
-      );
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     }
   } catch (_e) {
     /* ignore malformed Origin */
@@ -122,17 +115,6 @@ appExpress.get('/join/:ticketId', (_req, res) => {
   res.redirect(302, '/mobile/');
 });
 
-const INTERNO_SLUGS = ['sala-1', 'sala-2', 'sala-e'];
-for (const slug of INTERNO_SLUGS) {
-  appExpress.get(`/interno/${slug}`, (_req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'interno', 'index.html'));
-  });
-}
-
-appExpress.get('/equipos', (_req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'equipos', 'index.html'));
-});
-
 appExpress.get('/health', (_req, res) => {
   try {
     res.json({ ok: true, app: 'r-plus' });
@@ -159,11 +141,6 @@ appExpress.get('/manifest.webmanifest', (_req, res) => {
 appExpress.use(express.static(path.join(__dirname, 'public')));
 
 const DOWNLOADS = path.join(os.homedir(), 'Downloads');
-const userData = process.env.R_PLUS_USER_DATA || require('node:os').tmpdir();
-const equiposPhotosDir = path.join(userData, 'equipos-photos');
-
-const { getLanDbManager } = require('./lib/db/lan-db-bridge.cjs');
-const lanDbManager = getLanDbManager();
 
 const documentExportAuth = createDocumentExportAuthMiddleware(() => ({}));
 
@@ -207,16 +184,6 @@ appExpress.post('/generate-listado', generateLimiter, documentExportAuth, async 
     sendDocxBuffer(res, { buf: buffer, fileName, type: 'listado', patient });
   } catch (e) {
     docExportHttpError(res, e, { type: 'listado', patient });
-  }
-});
-
-appExpress.post('/generate-censo', generateLimiter, documentExportAuth, async (req, res) => {
-  const { header, rows, servicio } = req.body;
-  try {
-    const { buffer, fileName } = await docExport.exportCensoPdf({ header, rows, servicio });
-    sendPdfBuffer(res, { buf: buffer, fileName, type: 'censo' });
-  } catch (e) {
-    docExportHttpError(res, e);
   }
 });
 
@@ -271,44 +238,7 @@ appExpress.use('/api/lan/v1', (_req, res) => {
   });
 });
 
-function getClinicalDbForInterno() {
-  if (!lanDbManager || typeof lanDbManager.isUnlocked !== 'function') return null;
-  if (!lanDbManager.isUnlocked()) return null;
-  return typeof lanDbManager.getDb === 'function' ? lanDbManager.getDb() : null;
-}
-
-const internoBoardStore = createInternoHostStoreFromDb(getClinicalDbForInterno);
-
-/** @type {(obj: object) => void} */
-let onInternoHostSync = null;
-
-function setOnInternoHostSync(fn) {
-  onInternoHostSync = typeof fn === 'function' ? fn : null;
-}
-
 const httpServer = http.createServer(appExpress);
-
-appExpress.use(
-  '/api/interno/v1',
-  createInternoRouter({
-    store: internoBoardStore,
-    getDb: getClinicalDbForInterno,
-    broadcastSync: undefined,
-    onHostSync: (obj) => {
-      if (typeof onInternoHostSync === 'function') onInternoHostSync(obj);
-    },
-    httpServer,
-  })
-);
-
-appExpress.use(
-  '/api/equipos/v1',
-  createEquiposRouter({
-    getDb: getClinicalDbForInterno,
-    photosDir: equiposPhotosDir,
-    httpServer,
-  })
-);
 
 appExpress.use((err, req, res, _next) => {
   console.error('[express]', {
@@ -347,11 +277,6 @@ function startLanServer() {
     const srv = httpServer.listen(PORT, () => {
       console.log(`R+ → http://localhost:${PORT}`);
       serverInstance = srv;
-      try {
-        scheduleEquiposPhotoPurge(equiposPhotosDir, getClinicalDbForInterno);
-      } catch (e) {
-        console.error('[equipos-purge]', e && e.message ? e.message : e);
-      }
       resolve(srv);
     });
     srv.once('error', (err) => {
@@ -411,6 +336,4 @@ module.exports = {
   stopLanServer,
   flushHostStoreNow,
   getLanWardHostRegistry,
-  setOnInternoHostSync,
-  broadcastInterno,
 };

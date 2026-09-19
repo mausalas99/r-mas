@@ -39,7 +39,7 @@ import {
   LINEAS_B_CAMPO,
 } from '../../../../lib/cardio/hf-enums.mjs';
 
-function field(labelText, inputHtml) {
+export function field(labelText, inputHtml) {
   return (
     '<label class="ea-field ea-field--inline">' +
     '<span class="ea-label">' +
@@ -50,7 +50,7 @@ function field(labelText, inputHtml) {
   );
 }
 
-function textInput(dataAttr, key, val, type) {
+export function textInput(dataAttr, key, val, type) {
   return (
     '<input type="' +
     (type || 'text') +
@@ -132,7 +132,7 @@ function durationField(labelText, dataAttr, key, val) {
   );
 }
 
-function numberInput(dataAttr, key, val) {
+export function numberInput(dataAttr, key, val) {
   return (
     '<input type="number" step="any" class="ea-input" data-' +
     dataAttr +
@@ -144,12 +144,35 @@ function numberInput(dataAttr, key, val) {
   );
 }
 
-function sectionTitle(text) {
+export function sectionTitle(text) {
   return '<h4 class="hf-section-title">' + escHtml(text) + '</h4>';
 }
 
-function row(html) {
+// Collapsible variant of an `.hf-section`, using native <details>/<summary>
+// (same mechanism as `estado-actual-med-block-html.mjs`'s `.ea-med-cat`
+// blocks — no JS wiring needed, the browser handles the toggle). Starts
+// expanded when the section already has data, so a returning user isn't
+// hiding their own entries behind an extra click.
+function collapsibleSection(title, bodyHtml, hasData) {
+  return (
+    '<details class="hf-section"' +
+    (hasData ? ' open' : '') +
+    '>' +
+    '<summary class="hf-section-title">' +
+    escHtml(title) +
+    '</summary>' +
+    bodyHtml +
+    '</details>'
+  );
+}
+
+export function row(html) {
   return '<div class="hf-ei-row hf-field-grid">' + html + '</div>';
+}
+
+function hasTratamientoPrevioData(t) {
+  var d = t || {};
+  return !!(d.ieca_ara || d.arni || d.sglt2 || d.arm || d.bb || d.asa || d.anticoagulante);
 }
 
 function tratamientoPrevioHtml(t) {
@@ -165,7 +188,7 @@ function tratamientoPrevioHtml(t) {
   );
 }
 
-function exploracionHtml(e) {
+export function exploracionHtml(e) {
   var d = e || {};
   return row(
     field('TA', textInput('hf-ei-expl', 'ta', d.ta)) +
@@ -187,7 +210,7 @@ function exploracionHtml(e) {
   );
 }
 
-function vexusInicialHtml(v) {
+export function vexusInicialHtml(v) {
   var d = v || {};
   return (
     row(
@@ -233,81 +256,173 @@ function usPulmonarCampoHtml(campo, idx) {
   );
 }
 
-function usPulmonarHtml(us) {
-  var d = us || {};
-  var campos = Array.isArray(d.campos) ? d.campos : [];
-  var right = campos.slice(0, 4).map(usPulmonarCampoHtml).join('');
-  var left = campos
-    .slice(4, 8)
+// US pulmonar and Rx tórax used to render their full 8-zone grid / checklist
+// inline, which is what pushed the Exploración step past its one-screen
+// budget (see the split-step comment above). Both now render as a compact
+// card in the step body; the actual fields open in a modal (`data-hf-ei-modal-open`,
+// wired in evaluacion-inicial-wire.mjs), same `.modal-backdrop`/`.modal` chrome
+// used elsewhere in this codebase (see `lab.css`) rather than a new overlay
+// system. US pulmonar's modal splits Derecho/Izquierdo into a two-tab toggle
+// (`data-hf-ei-uspulmonar-side`) instead of the old side-by-side columns, so
+// only 4 zones render at once.
+function usPulmonarSideZonesHtml(campos, side) {
+  var start = side === 'I' ? 4 : 0;
+  return campos
+    .slice(start, start + 4)
     .map(function (c, i) {
-      return usPulmonarCampoHtml(c, i + 4);
+      return usPulmonarCampoHtml(c, start + i);
     })
     .join('');
+}
+
+function usPulmonarSideTabsHtml(side) {
   return (
-    '<div class="hf-lung-grid">' +
+    '<div class="hf-side-tabs" role="tablist">' +
+    ['D', 'I']
+      .map(function (v) {
+        var active = v === side;
+        return (
+          '<button type="button" class="hf-side-tab' +
+          (active ? ' is-active' : '') +
+          '" data-hf-ei-uspulmonar-side="' +
+          v +
+          '" role="tab" aria-selected="' +
+          (active ? 'true' : 'false') +
+          '">' +
+          (v === 'D' ? 'Derecho' : 'Izquierdo') +
+          '</button>'
+        );
+      })
+      .join('') +
+    '</div>'
+  );
+}
+
+export function usPulmonarModalBodyHtml(us, side) {
+  var d = us || {};
+  var campos = Array.isArray(d.campos) ? d.campos : [];
+  var activeSide = side === 'I' ? 'I' : 'D';
+  return (
+    usPulmonarSideTabsHtml(activeSide) +
     '<div class="hf-lung-grid-col">' +
-    '<h5 class="hf-lung-grid-side-title">Derecho</h5>' +
-    right +
-    '</div>' +
-    '<div class="hf-lung-grid-col">' +
-    '<h5 class="hf-lung-grid-side-title">Izquierdo</h5>' +
-    left +
-    '</div>' +
+    usPulmonarSideZonesHtml(campos, activeSide) +
     '</div>' +
     narrativeTextarea('hf-ei-uspulmonar', 'nota', d.nota, 'Nota US pulmonar')
   );
 }
 
+export function usPulmonarCardHtml(us) {
+  var nota = (us || {}).nota;
+  return (
+    '<button type="button" class="hf-ei-card" data-hf-ei-modal-open="usPulmonar">' +
+    '<span class="hf-ei-card-title">US pulmonar</span>' +
+    '<span class="hf-ei-card-sub">' +
+    (nota ? escHtml(String(nota)) : 'Editar hallazgos por lado') +
+    '</span>' +
+    '</button>'
+  );
+}
+
+// Chip-style checkbox (`.hf-chip-checkbox`) instead of a bare
+// `<input type="checkbox">` label — same `data-hf-ei-rxtorax-hallazgo`
+// attribute, only the visual wrapper changes, so `wireRxTorax` needs no edit.
 function rxToraxHallazgoCheckboxHtml(opt, selected) {
   var checked = selected.indexOf(opt.value) >= 0;
   return (
-    '<label class="ea-field ea-field--inline">' +
+    '<label class="hf-chip-checkbox">' +
     '<input type="checkbox" data-hf-ei-rxtorax-hallazgo="' +
     escAttr(opt.value) +
     '"' +
     (checked ? ' checked' : '') +
-    '> ' +
+    '>' +
+    '<span>' +
     escHtml(opt.label) +
+    '</span>' +
     '</label>'
   );
 }
 
-function rxToraxHtml(rx) {
+export function rxToraxModalBodyHtml(rx) {
   var d = rx || {};
   var selected = Array.isArray(d.hallazgos) ? d.hallazgos : [];
   return (
-    row(RX_TORAX_HALLAZGOS.map(function (opt) { return rxToraxHallazgoCheckboxHtml(opt, selected); }).join('')) +
+    '<div class="hf-chip-row">' +
+    RX_TORAX_HALLAZGOS.map(function (opt) { return rxToraxHallazgoCheckboxHtml(opt, selected); }).join('') +
+    '</div>' +
     narrativeTextarea('hf-ei-rxtorax', 'nota', d.nota, 'Nota Rx tórax')
   );
 }
 
-function labsIngresoHtml(labs) {
-  var d = labs || {};
-  var rows = [
-    ['na', 'Na'],
-    ['k', 'K'],
-    ['mg', 'Mg'],
-    ['creat', 'Creatinina'],
-    ['bun', 'BUN'],
-    ['fa', 'FA'],
-    ['hb', 'Hb'],
-    ['ntProBnp', 'NT-proBNP'],
-    ['lactato', 'Lactato'],
-    ['bilTotal', 'Bilirrubina total'],
-    ['bilDirecta', 'Bilirrubina directa'],
-    ['bicarbonato', 'Bicarbonato'],
-    ['ph', 'pH'],
-    ['troponina', 'Troponina'],
-  ];
+function rxToraxSelectedLabels(rx) {
+  var selected = Array.isArray((rx || {}).hallazgos) ? rx.hallazgos : [];
+  if (!selected.length) return 'Editar hallazgos';
+  return RX_TORAX_HALLAZGOS.filter(function (opt) {
+    return selected.indexOf(opt.value) >= 0;
+  })
+    .map(function (opt) { return opt.label; })
+    .join(', ');
+}
+
+export function rxToraxCardHtml(rx) {
   return (
-    row(field('Fecha de labs', textInput('hf-ei-labs', 'fecha', d.fecha, 'date'))) +
-    row(
-      rows
-        .map(function (r) {
-          return field(r[1], numberInput('hf-ei-labs', r[0], d[r[0]]));
-        })
-        .join('')
-    )
+    '<button type="button" class="hf-ei-card" data-hf-ei-modal-open="rxTorax">' +
+    '<span class="hf-ei-card-title">Rx tórax</span>' +
+    '<span class="hf-ei-card-sub">' +
+    escHtml(rxToraxSelectedLabels(rx)) +
+    '</span>' +
+    '</button>'
+  );
+}
+
+export function explorationModalHtml(modal, side, d) {
+  if (!modal) return '';
+  var title = modal === 'usPulmonar' ? 'US pulmonar' : 'Rx tórax';
+  var body = modal === 'usPulmonar' ? usPulmonarModalBodyHtml(d.usPulmonar, side) : rxToraxModalBodyHtml(d.rxTorax);
+  return (
+    '<div class="modal-backdrop open" data-hf-ei-modal-backdrop>' +
+    '<div class="modal hf-ei-modal" role="dialog" aria-modal="true" aria-label="' +
+    escAttr(title) +
+    '" onclick="event.stopPropagation()">' +
+    '<header class="hf-ei-modal-head">' +
+    '<h4>' +
+    escHtml(title) +
+    '</h4>' +
+    '<button type="button" class="ea-btn ea-btn--ghost" data-hf-ei-modal-action="close">Cerrar</button>' +
+    '</header>' +
+    '<div class="hf-ei-modal-body">' +
+    body +
+    '</div>' +
+    '</div>' +
+    '</div>'
+  );
+}
+
+var LABS_INGRESO_ROWS = [
+  ['na', 'Na'],
+  ['k', 'K'],
+  ['mg', 'Mg'],
+  ['creat', 'Creatinina'],
+  ['bun', 'BUN'],
+  ['fa', 'FA'],
+  ['hb', 'Hb'],
+  ['ntProBnp', 'NT-proBNP'],
+  ['lactato', 'Lactato'],
+  ['bilTotal', 'Bilirrubina total'],
+  ['bilDirecta', 'Bilirrubina directa'],
+  ['bicarbonato', 'Bicarbonato'],
+  ['ph', 'pH'],
+  ['troponina', 'Troponina'],
+];
+
+// "Fecha de labs" moved up into the Datos generales row (see
+// `stepFeviLabsHtml`) so it shares a row with FEVI/Fenotipo instead of
+// sitting alone on its own row — trims one row's worth of vertical space.
+export function labsIngresoNumbersHtml(labs) {
+  var d = labs || {};
+  return row(
+    LABS_INGRESO_ROWS.map(function (r) {
+      return field(r[1], numberInput('hf-ei-labs', r[0], d[r[0]]));
+    }).join('')
   );
 }
 
@@ -319,6 +434,7 @@ export var EVALUACION_INICIAL_STEP_TITLES = [
   'Identificación',
   'Historia de IC',
   'Exploración',
+  'VExUS de ingreso',
   'FEVI y labs',
   'Impresión y plan',
 ];
@@ -356,10 +472,11 @@ function stepHistoriaIcHtml(d, c) {
         field('Última FEVI', numberInput('hf-ei', 'ultimaFevi', d.ultimaFevi))
     ) +
     '</div>' +
-    '<div class="hf-section">' +
-    sectionTitle('Tratamiento previo') +
-    tratamientoPrevioHtml(d.tratamientoPrevio) +
-    '</div>' +
+    collapsibleSection(
+      'Tratamiento previo',
+      tratamientoPrevioHtml(d.tratamientoPrevio),
+      hasTratamientoPrevioData(d.tratamientoPrevio)
+    ) +
     '<div class="hf-section">' +
     sectionTitle('FA/Flutter y dispositivo') +
     row(
@@ -373,7 +490,10 @@ function stepHistoriaIcHtml(d, c) {
   );
 }
 
-function stepExploracionHtml(d) {
+// Exam findings only — VExUS de ingreso moved to its own step
+// (`stepVexusIngresoHtml`), splitting the former ~1653px-overflow step in
+// two (see the streamlining plan, section 4).
+function stepExploracionHtml(d, modal, side) {
   return (
     '<div class="hf-section hf-section--primary">' +
     sectionTitle('Datos generales') +
@@ -383,34 +503,33 @@ function stepExploracionHtml(d) {
     sectionTitle('Exploración física') +
     exploracionHtml(d.exploracion) +
     '</div>' +
-    '<div class="hf-section">' +
-    sectionTitle('VExUS de ingreso') +
-    vexusInicialHtml(d.vexusInicial) +
+    '<div class="hf-ei-card-row">' +
+    usPulmonarCardHtml(d.usPulmonar) +
+    rxToraxCardHtml(d.rxTorax) +
     '</div>' +
-    '<div class="hf-section">' +
-    sectionTitle('US pulmonar') +
-    usPulmonarHtml(d.usPulmonar) +
-    '</div>' +
-    '<div class="hf-section">' +
-    sectionTitle('Rx tórax') +
-    rxToraxHtml(d.rxTorax) +
-    '</div>' +
-    narrativeTextarea('hf-ei', 'ecgIngreso', d.ecgIngreso, 'ECG de ingreso')
+    narrativeTextarea('hf-ei', 'ecgIngreso', d.ecgIngreso, 'ECG de ingreso') +
+    explorationModalHtml(modal, side, d)
   );
 }
 
+function stepVexusIngresoHtml(d) {
+  return '<div class="hf-section hf-section--primary">' + sectionTitle('VExUS de ingreso') + vexusInicialHtml(d.vexusInicial) + '</div>';
+}
+
 function stepFeviLabsHtml(d, c) {
+  var labs = d.labsIngreso || {};
   return (
     '<div class="hf-section hf-section--primary">' +
     sectionTitle('Datos generales') +
     row(
       field('FEVI estimada inicial', numberInput('hf-ei', 'feviEstimadaInicial', d.feviEstimadaInicial)) +
-        field('Fenotipo', enumSelect('ea-cardio', 'fenotipo', c.fenotipo, FENOTIPOS))
+        field('Fenotipo', enumSelect('ea-cardio', 'fenotipo', c.fenotipo, FENOTIPOS)) +
+        field('Fecha de labs', textInput('hf-ei-labs', 'fecha', labs.fecha, 'date'))
     ) +
     '</div>' +
     '<div class="hf-section">' +
     sectionTitle('Labs de ingreso') +
-    labsIngresoHtml(d.labsIngreso) +
+    labsIngresoNumbersHtml(d.labsIngreso) +
     '</div>'
   );
 }
@@ -419,13 +538,14 @@ function stepImpresionPlanHtml(d) {
   return (
     narrativeTextarea('hf-ei', 'impresionDiagnostica', d.impresionDiagnostica, 'Impresión diagnóstica') +
     narrativeTextarea('hf-ei', 'planTerapeutico', d.planTerapeutico, 'Plan terapéutico') +
-    '<div class="hf-section">' +
-    sectionTitle('Diuresis y gasto urinario') +
-    row(
-      field('Diuresis 2h post-bolo', numberInput('hf-ei', 'nau2hPostBolo', d.nau2hPostBolo)) +
-        field('Gasto urinario 6h', numberInput('hf-ei', 'gastoUrinario6h', d.gastoUrinario6h))
+    collapsibleSection(
+      'Diuresis y gasto urinario',
+      row(
+        field('Diuresis 2h post-bolo', numberInput('hf-ei', 'nau2hPostBolo', d.nau2hPostBolo)) +
+          field('Gasto urinario 6h', numberInput('hf-ei', 'gastoUrinario6h', d.gastoUrinario6h))
+      ),
+      d.nau2hPostBolo != null && d.nau2hPostBolo !== '' || d.gastoUrinario6h != null && d.gastoUrinario6h !== ''
     ) +
-    '</div>' +
     narrativeTextarea('hf-ei', 'eventualidades', d.eventualidades, 'Eventualidades')
   );
 }
@@ -435,12 +555,46 @@ function stepImpresionPlanHtml(d) {
  * @param {Record<string, unknown>} d normalized evaluacionInicial
  * @param {{ etiologia?: string, fenotipo?: string }} c patient.cardio
  */
-function stepBodyHtml(step, d, c) {
+function stepBodyHtml(step, d, c, modal, side) {
   if (step === 1) return stepHistoriaIcHtml(d, c);
-  if (step === 2) return stepExploracionHtml(d);
-  if (step === 3) return stepFeviLabsHtml(d, c);
-  if (step === 4) return stepImpresionPlanHtml(d);
+  if (step === 2) return stepExploracionHtml(d, modal, side);
+  if (step === 3) return stepVexusIngresoHtml(d);
+  if (step === 4) return stepFeviLabsHtml(d, c);
+  if (step === 5) return stepImpresionPlanHtml(d);
   return stepIdentificacionHtml(d);
+}
+
+/**
+ * Clickable step pills — one per step, numbered, current step highlighted —
+ * so the user can jump directly to any step instead of clicking Atrás/
+ * Siguiente repeatedly. Not a linear gate: every pill is always clickable,
+ * visited or not (see the task's "move quickly" requirement). Shares
+ * `.hf-wizard-step*` with Consulta IC's own step wizard (converges on one
+ * visual pattern — see `estado-actual.css`). Numbers only (not full titles)
+ * to keep this a single compact row and not reopen the step-overflow issue
+ * the step split itself fixed; the full title still shows in the step head.
+ */
+function stepPillsHtml(step) {
+  return (
+    '<div class="hf-wizard-steps" role="tablist" aria-label="Pasos">' +
+    EVALUACION_INICIAL_STEP_TITLES.map(function (title, i) {
+      var current = i === step;
+      return (
+        '<button type="button" class="hf-wizard-step' +
+        (current ? ' is-current' : '') +
+        '" data-hf-ei-step-jump="' +
+        i +
+        '" role="tab" aria-selected="' +
+        (current ? 'true' : 'false') +
+        '" title="' +
+        escHtml(title) +
+        '">' +
+        (i + 1) +
+        '</button>'
+      );
+    }).join('') +
+    '</div>'
+  );
 }
 
 function stepNavHtml(step) {
@@ -464,13 +618,18 @@ function stepNavHtml(step) {
  * @param {{ etiologia?: string, fenotipo?: string }} cardio
  *   canonical top-level `patient.cardio` fields (etiología/fenotipo).
  * @param {number} [step] 0-based current step index (default 0).
+ * @param {{modal?: 'usPulmonar'|'rxTorax'|null, side?: 'D'|'I'}} [modalState]
+ *   which Exploración-step sub-modal (if any) is open, and its active side
+ *   tab for US pulmonar — see `evaluacion-inicial-wire.mjs`.
  */
-export function buildEvaluacionInicialHtml(evaluacionInicial, cardio, step) {
+export function buildEvaluacionInicialHtml(evaluacionInicial, cardio, step, modalState) {
   var d = evaluacionInicial || {};
   var c = cardio || {};
   var s = Math.max(0, Math.min(EVALUACION_INICIAL_STEP_COUNT - 1, Number(step) || 0));
+  var ms = modalState || {};
   return (
     '<div class="hf-ei-form rpc-form-stack">' +
+    stepPillsHtml(s) +
     '<div class="hf-ei-step-head" style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px">' +
     '<h3 class="ea-snapshot-zone-title" style="margin:0">' +
     escHtml(EVALUACION_INICIAL_STEP_TITLES[s]) +
@@ -482,7 +641,7 @@ export function buildEvaluacionInicialHtml(evaluacionInicial, cardio, step) {
     '</span>' +
     '</div>' +
     '<div class="hf-ei-step-body">' +
-    stepBodyHtml(s, d, c) +
+    stepBodyHtml(s, d, c, ms.modal, ms.side) +
     '</div>' +
     stepNavHtml(s) +
     '</div>'

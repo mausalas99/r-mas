@@ -31,23 +31,20 @@ afterEach(() => {
 
 describe('clinical census filters visibility', () => {
   it('shouldShowClinicalCensusFilters on iPad for any signed-in user', () => {
-    assert.equal(shouldShowClinicalCensusFilters({ user_id: 'u1', rank: 'R1' }), true);
+    assert.equal(shouldShowClinicalCensusFilters({ user_id: 'u1', rank: 'Team' }), true);
     assert.equal(shouldShowClinicalCensusFilters({ user_id: 'u1', rank: 'Admin' }), true);
     assert.equal(shouldShowClinicalCensusFilters(null), false);
   });
 
-  it('elevated only for R4 Admin program admin', () => {
-    assert.equal(hasElevatedTeamPrivileges({ rank: 'R4' }), true);
+  it('elevated only for Admin or program admin', () => {
     assert.equal(hasElevatedTeamPrivileges({ rank: 'Admin' }), true);
-    assert.equal(hasElevatedTeamPrivileges({ rank: 'R1', is_program_admin: 1 }), true);
-    assert.equal(hasElevatedTeamPrivileges({ rank: 'R1' }), false);
-    assert.equal(hasElevatedTeamPrivileges({ rank: 'R2' }), false);
-    assert.equal(hasElevatedTeamPrivileges({ rank: 'R3' }), false);
+    assert.equal(hasElevatedTeamPrivileges({ rank: 'Team', is_program_admin: 1 }), true);
+    assert.equal(hasElevatedTeamPrivileges({ rank: 'Team' }), false);
   });
 });
 
 describe('clinical census team filter', () => {
-  const user = { user_id: 'u1', rank: 'R4', sala: 'Sala 1' };
+  const user = { user_id: 'u1', rank: 'Admin', sala: 'Sala 1' };
   const teams = [
     { team_id: 't1', name: 'Dra. Gabriela', sala: 'Sala 1', members: [{ user_id: 'u1' }] },
     { team_id: 't2', name: 'Otro equipo', sala: 'Sala 2', members: [{ user_id: 'u1' }] },
@@ -122,24 +119,24 @@ describe('clinical census team filter', () => {
     assert.equal(reconcileCensusTeamFilterForSala('t1', []), 't1');
   });
 
-  it('censusTeamCatalogForFilters on iPad shows all teams for Admin/R4', () => {
+  it('censusTeamCatalogForFilters on iPad shows all teams for Admin', () => {
     const catalog = censusTeamCatalogForFilters(user, teams, '__all__');
     assert.equal(catalog.length, 2);
   });
 
-  it('censusTeamCatalogForFilters on iPad limits residents to joined teams', () => {
-    const r1 = {
+  it('censusTeamCatalogForFilters on iPad limits Team members to joined teams', () => {
+    const teamMember = {
       user_id: 'u9',
-      rank: 'R1',
+      rank: 'Team',
       sala: 'Sala 1',
     };
     const teamsWithMembership = [
       { ...teams[0], members: [{ user_id: 'u9' }] },
       teams[1],
     ];
-    const r1Catalog = censusTeamCatalogForFilters(r1, teamsWithMembership, '__all__');
-    assert.equal(r1Catalog.length, 1);
-    assert.equal(r1Catalog[0].team_id, 't1');
+    const teamCatalog = censusTeamCatalogForFilters(teamMember, teamsWithMembership, '__all__');
+    assert.equal(teamCatalog.length, 1);
+    assert.equal(teamCatalog[0].team_id, 't1');
   });
 
   it('resolveCensusTeamFilterId defaults to Todos equipos for Admin on iPad', () => {
@@ -152,19 +149,19 @@ describe('clinical census team filter', () => {
     assert.equal(resolveCensusTeamFilterId(user, teams, '', storage), '');
   });
 
-  it('resolveCensusTeamFilterId defaults to joined team for R1 on iPad', () => {
+  it('resolveCensusTeamFilterId defaults to joined team for Team on iPad', () => {
     const mem = new Map();
     const storage = {
       getItem: (k) => mem.get(k) ?? null,
       setItem: (k, v) => mem.set(k, v),
       removeItem: (k) => mem.delete(k),
     };
-    const r1 = { user_id: 'u9', rank: 'R1', sala: 'Sala 1' };
+    const teamMember = { user_id: 'u9', rank: 'Team', sala: 'Sala 1' };
     const oneTeam = [{ ...teams[0], members: [{ user_id: 'u9' }] }];
-    assert.equal(resolveCensusTeamFilterId(r1, oneTeam, '', storage), 't1');
+    assert.equal(resolveCensusTeamFilterId(teamMember, oneTeam, '', storage), 't1');
   });
 
-  it('resolveCensusTeamFilterId defaults to joined team for R1 desktop Nube', async () => {
+  it('resolveCensusTeamFilterId defaults to joined team for Team desktop Nube', async () => {
     delete globalThis.__RPC_MOBILE_WEB__;
     delete globalThis.window;
     const { setCloudRoomConnected } = await import('./cloud-sync/nube-sync-policy.mjs');
@@ -175,13 +172,13 @@ describe('clinical census team filter', () => {
       setItem: (k, v) => mem.set(k, v),
       removeItem: (k) => mem.delete(k),
     };
-    const r1 = { user_id: 'u9', rank: 'R1', sala: 'Sala 1' };
+    const teamMember = { user_id: 'u9', rank: 'Team', sala: 'Sala 1' };
     const oneTeam = [{ ...teams[0], members: [{ user_id: 'u9' }] }];
-    assert.equal(resolveCensusTeamFilterId(r1, oneTeam, '', storage), 't1');
+    assert.equal(resolveCensusTeamFilterId(teamMember, oneTeam, '', storage), 't1');
     setCloudRoomConnected(false);
   });
 
-  it('resolveCensusSalaFilterId defaults to profile sala for R1', () => {
+  it('resolveCensusSalaFilterId defaults to profile sala for Team', () => {
     const mem = new Map();
     const storage = {
       getItem: (k) => mem.get(k) ?? null,
@@ -189,11 +186,11 @@ describe('clinical census team filter', () => {
       removeItem: (k) => mem.delete(k),
     };
     assert.equal(
-      resolveCensusSalaFilterId({ user_id: 'u9', rank: 'R1', sala: 'Sala E' }, storage),
+      resolveCensusSalaFilterId({ user_id: 'u9', rank: 'Team', sala: 'Sala E' }, storage),
       'Sala E'
     );
     assert.equal(
-      resolveCensusSalaFilterId({ user_id: 'u1', rank: 'R4', sala: 'Sala E' }, storage),
+      resolveCensusSalaFilterId({ user_id: 'u1', rank: 'Admin', sala: 'Sala E' }, storage),
       '__all__'
     );
   });

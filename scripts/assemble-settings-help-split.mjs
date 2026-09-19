@@ -38,7 +38,6 @@ import {
 } from '../../tour-demo-monitoreo.mjs';
 import { buildTourDemoDates, buildTourDemoLabPasteBoth } from '../../tour-demo-dates.mjs';
 import { seedTourDemoTodos, clearTourDemoTodos } from '../../tour-demo-todos.mjs';
-import { buildTourDemoEventualidades } from '../../tour-demo-eventualidades.mjs';
 import { buildBulkLabPreview, extractLabPatientFromBulkBlock } from '../../lab-bulk-paste.mjs';
 import {
   DEMO_PATIENT_ID,

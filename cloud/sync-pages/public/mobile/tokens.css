@@ -1,31 +1,43 @@
-/* Hybrid H · soft workbench + glass floating · 2026-08-03
- * Solid chrome/content; glass only on overlays (Spec B+). Ink accent.
- * contrast: pass (tokens + HC)
+/* Teal workbench · 2026-08-17 · docs/superpowers/specs/2026-08-17-teal-workbench-ui-design.md
+ * Solid chrome/content; glass only on overlays (Spec B+). Teal accent, semantic-only red/amber/green.
+ * Supersedes Hybrid H (2026-08-03) — see design.md "Historial" for the prior system.
  */
 
 :root {
   --color-paper: #eceae6;
-  --color-surface: #f7f6f3;
+  --color-surface: #f8f7f4;
   --color-content: #f2f1ed;
   --color-elevated: #ffffff;
-  --color-ink: #1c1c1e;
+  --color-ink: #1a1a1c;
   --color-ink-muted: #6c6c70;
+  --color-ink-tertiary: #98989d;
   --color-warm: oklch(0.55 0.02 52);
-  --color-accent: var(--color-ink);
-  --color-accent-hover: #000000;
-  --color-accent-soft: color-mix(in oklab, var(--color-ink) 8%, var(--color-elevated));
-  --color-accent-soft-text: var(--color-ink);
+  --color-accent: oklch(0.52 0.09 195);
+  --color-accent-hover: oklch(0.42 0.09 195);
+  --color-accent-soft: color-mix(in oklab, var(--color-accent) 12%, var(--color-elevated));
+  --color-accent-soft-text: var(--color-accent);
   --color-on-accent: #ffffff;
   --color-section-header-bg: color-mix(in oklab, var(--color-ink) 6%, var(--color-surface));
   --color-section-accent: var(--color-accent);
   --color-channel-pill-bg: color-mix(in oklab, var(--color-ink) 12%, var(--color-surface));
   --color-channel-pill-fg: var(--color-ink);
-  --color-focus-ring: color-mix(in oklab, var(--color-ink) 26%, transparent);
+  --color-focus-ring: color-mix(in oklab, var(--color-accent) 26%, transparent);
   --color-danger: #d70015;
-  --color-success: #248a3d;
+  --color-danger-deep: #a8000f;
+  --color-danger-tint: rgba(215, 0, 21, 0.045);
+  --color-danger-tint-strong: rgba(215, 0, 21, 0.06);
+  --color-danger-ring: rgba(215, 0, 21, 0.16);
+  --color-warn: #8a4208;
+  --color-success: #1c6b31;
   --color-success-emphasis: var(--color-success);
   --color-success-emphasis-hover: color-mix(in oklab, var(--color-success) 88%, #000000);
   --color-on-success: #ffffff;
+  --color-border-strong: rgba(28, 28, 30, 0.18);
+  --color-border-dashed: rgba(28, 28, 30, 0.22);
+  --color-empty-fill: rgba(28, 28, 30, 0.02);
+  --color-rail: rgb(246, 245, 242);
+  --color-panel-header: rgb(242, 240, 236);
+  --color-table-head: rgb(249, 248, 245);
   /* LiveSync header · estado de conexión */
   --color-livesync-live: var(--color-success);
   --color-livesync-syncing: #b45309;
@@ -43,19 +55,19 @@
   --color-update-banner-btn-border: rgba(255, 255, 255, 0.4);
 
   /* Legacy aliases (app CSS) */
-  --primary: #334155;
+  --primary: var(--color-accent);
   --action: var(--color-accent);
   --action-hover: var(--color-accent-hover);
   --bg: var(--color-paper);
   --surface: var(--color-surface);
-  --border: color-mix(in oklab, var(--color-ink) 14%, transparent);
-  --divider: color-mix(in oklab, var(--color-ink) 8%, transparent);
+  --border: color-mix(in oklab, var(--color-ink) 11%, transparent);
+  --divider: color-mix(in oklab, var(--color-ink) 6%, transparent);
   --text: var(--color-ink);
   --text-muted: var(--color-ink-muted);
   --error: var(--color-danger);
   --danger: var(--color-danger);
   --color-danger-hover-bg: color-mix(in oklab, var(--error) 14%, var(--surface));
-  --warn: var(--color-livesync-syncing);
+  --warn: var(--color-warn);
   --color-warn-surface: color-mix(in oklab, var(--warn) 7%, transparent);
   --color-warn-border: color-mix(in oklab, var(--warn) 20%, transparent);
   --color-warn-border-strong: color-mix(in oklab, var(--warn) 35%, transparent);
@@ -84,7 +96,10 @@
   /* Controls + inner workbench frame (Arc-style radial default) */
   --radius-control: 8px;
   --radius-field: 8px;
-  --radius-chip: 8px;
+  --radius-badge: 6px;
+  --radius-row-btn: 7px;
+  /* Chip / progress bar only — never action buttons (design.md "No hacer"). */
+  --radius-chip: 999px;
   --radius-inner: var(--radius-md);
   --radius-container: 12px;
   --radius-sheet: 14px;
@@ -100,6 +115,9 @@
   --shadow-sm: none;
   --shadow: none;
   --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.12);
+  --shadow-window: 0 18px 48px rgba(28, 28, 30, 0.16);
+  --shadow-modal: 0 24px 64px rgba(28, 28, 30, 0.28);
+  --shadow-counter-alert: inset 0 -2px 0 var(--color-danger);
   /* Rams · flat equipment — hairline borders, no card lift */
   --elev-flat: none;
   --elev-raised: none;
@@ -125,7 +143,7 @@
   --overlay-border: var(--material-glass-border);
   --focus-ring: 0 0 0 3px var(--color-focus-ring);
   --color-scrim: oklch(0 0 0);
-  --scrim-bg: color-mix(in oklab, var(--color-scrim) 32%, transparent);
+  --scrim-bg: color-mix(in oklab, var(--color-scrim) 42%, transparent);
   --app-height: 100vh;
   /* Overlay z-index scale (ui audit track 1) */
   --z-base: 0;
@@ -222,6 +240,25 @@
   --type-body: 400 calc(13.5px * var(--density-font)) / 1.5 var(--font-ui);
   --type-caption: 500 calc(11.5px * var(--density-font)) / 1.4 var(--font-ui);
   --tracking-section: 0.04em;
+
+  /* Dense workbench data scale — README "Tipografía", uppercase labels carry
+     their own letter-spacing token since `font` shorthand cannot set it. */
+  --type-wb-section-label: 700 11px/1 var(--font-ui);
+  --tracking-wb-section-label: 0.08em;
+  --type-wb-counter-label: 700 10px/1 var(--font-ui);
+  --tracking-wb-counter-label: 0.09em;
+  --type-wb-column-head: 700 9.5px/1 var(--font-ui);
+  --tracking-wb-column-head: 0.08em;
+  --type-wb-counter-figure: 600 13px/1.2 var(--font-ui);
+  --type-wb-patient-name: 600 12.5px/1.35 var(--font-ui);
+  --type-wb-row: 500 12px/1.35 var(--font-ui);
+  --type-wb-row-2line: 500 12.5px/1.55 var(--font-ui);
+  --type-wb-mono: 500 11.5px/1.3 var(--font-mono);
+  --type-wb-mono-strong: 600 11.5px/1.3 var(--font-mono);
+  --type-wb-status-label: 600 10.5px/1 var(--font-mono);
+  --type-wb-button: 600 11.5px/1 var(--font-ui);
+  --type-wb-button-secondary: 600 11px/1 var(--font-ui);
+  --type-wb-metadata: 500 11.5px/1 var(--font-ui);
 }
 
 html.ui-density-normal {
@@ -231,28 +268,44 @@ html.ui-density-normal {
 }
 
 html.dark {
-  --color-paper: #0c0e14;
-  --color-surface: #14161e;
-  --color-content: #0c0e14;
-  --color-elevated: #1c1e26;
-  --color-ink: #f5f5f7;
-  --color-ink-muted: #98989d;
-  /* Clinical blue accent — selected controls / CTAs (not grey-on-grey) */
+  /* Stepped surface ladder (paper < content < surface < elevated) so cards
+     and bars actually separate from the background instead of sitting on
+     one flat plane. Muted/tertiary ink carries a cool slate tint to match
+     the blue-black ground instead of reading as neutral, washed-out grey. */
+  --color-paper: #12141a;
+  --color-content: #181b23;
+  --color-surface: #1f232d;
+  --color-elevated: #262b36;
+  --color-ink: #e8eaed;
+  --color-ink-muted: #97a3b8;
+  --color-ink-tertiary: #6b7385;
+  /* Teal accent, lightened from light-mode value to clear 4.5:1 on #1e222b */
   --color-warm: oklch(0.78 0.02 52);
-  --color-accent: #6eb6ff;
-  --color-accent-hover: #8ec7ff;
+  --color-accent: oklch(0.62 0.09 195);
+  --color-accent-hover: oklch(0.7 0.09 195);
   --color-accent-soft: color-mix(in oklab, var(--color-accent) 18%, transparent);
-  --color-accent-soft-text: var(--color-ink);
+  --color-accent-soft-text: var(--color-accent);
   --color-on-accent: #0c0e14;
   --color-section-header-bg: color-mix(in oklab, var(--color-ink) 8%, var(--color-surface));
   --color-channel-pill-bg: color-mix(in oklab, var(--color-ink) 18%, var(--color-surface));
   --color-channel-pill-fg: var(--color-ink);
-  --color-focus-ring: color-mix(in oklab, var(--color-ink) 22%, transparent);
-  --color-danger: #ff453a;
-  --color-success: #30d158;
+  --color-focus-ring: color-mix(in oklab, var(--color-accent) 22%, transparent);
+  --color-danger: #ff6b6b;
+  --color-danger-deep: #ff8a8a;
+  --color-danger-tint: rgba(255, 107, 107, 0.08);
+  --color-danger-tint-strong: rgba(255, 107, 107, 0.12);
+  --color-danger-ring: rgba(255, 107, 107, 0.22);
+  --color-warn: #f0a35e;
+  --color-success: #5fd18a;
   --color-success-emphasis: var(--color-success);
   --color-success-emphasis-hover: color-mix(in oklab, var(--color-success) 88%, #ffffff);
   --color-on-success: #0c0e14;
+  --color-border-strong: rgba(148, 163, 184, 0.28);
+  --color-border-dashed: rgba(148, 163, 184, 0.30);
+  --color-empty-fill: rgba(148, 163, 184, 0.04);
+  --color-rail: #232834;
+  --color-panel-header: color-mix(in oklab, var(--color-ink) 4%, var(--color-surface));
+  --color-table-head: color-mix(in oklab, var(--color-ink) 6%, var(--color-surface));
   --color-livesync-live: var(--color-success);
   --color-livesync-syncing: #fbbf24;
   --color-livesync-degraded: #fb923c;
@@ -263,7 +316,7 @@ html.dark {
   --color-update-banner-bg: #14532d;
   --color-update-banner-fg: #bbf7d0;
 
-  --primary: #6eb6ff;
+  --primary: var(--color-accent);
   --action: var(--color-accent);
   --action-hover: var(--color-accent-hover);
   --bg: var(--color-paper);
@@ -275,7 +328,7 @@ html.dark {
   --error: var(--color-danger);
   --danger: var(--error);
   --color-danger-hover-bg: color-mix(in oklab, var(--error) 14%, var(--surface));
-  --warn: var(--color-livesync-syncing);
+  --warn: var(--color-warn);
   --success: var(--color-success);
   --lab-header-slate: color-mix(in oklab, #4b5563 36%, var(--surface));
   --lab-header-green: color-mix(in oklab, #065f46 40%, var(--surface));

@@ -22,7 +22,7 @@ beforeEach(() => {
       delete store[k];
     },
   };
-  clinicalSessionContext.user = { rank: 'R2', clinical_name: 'Vargas' };
+  clinicalSessionContext.user = { rank: 'Team', clinical_name: 'Vargas' };
 });
 
 afterEach(() => {

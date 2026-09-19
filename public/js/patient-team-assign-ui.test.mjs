@@ -9,7 +9,7 @@ import {
 
 describe('patient-team-assign-ui', () => {
   beforeEach(() => {
-    clinicalSessionContext.user = { user_id: 'u1', rank: 'R2' };
+    clinicalSessionContext.user = { user_id: 'u1', rank: 'Team' };
     clinicalSessionContext.teams = [
       { team_id: 't1', name: 'Equipo A', members: [{ user_id: 'u1' }] },
     ];
@@ -54,7 +54,7 @@ describe('patient-team-assign-ui', () => {
     assert.equal(activePatientTeamId('p-missing'), '');
   });
 
-  it('R2 team select only lists joined teams', () => {
+  it('team select only lists joined teams', () => {
     clinicalSessionContext.teams = [
       { team_id: 't1', name: 'Mio', sala: 'Sala 1', members: [{ user_id: 'u1' }] },
       { team_id: 't2', name: 'Ajeno', sala: 'Sala 2', members: [{ user_id: 'other' }] },

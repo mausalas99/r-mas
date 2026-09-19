@@ -191,7 +191,6 @@ const EAGER_BOOT_BUDGET_FILES = 98;
  * to silence a *new* violation — fix the import instead.
  */
 const KNOWN_EAGER_LAZY_ONLY = new Set([
-  'features/clinical-entrega.mjs',
   'features/lab-panel.mjs',
   'features/platform/audit.mjs',
   'features/platform/import-backup.mjs',

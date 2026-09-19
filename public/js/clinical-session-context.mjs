@@ -1,9 +1,9 @@
 /**
  * Shared clinical session bag — leaf module (no imports) to avoid ESM cycles
- * with LAN orchestrator / guardia-board / clinical-access-runtime.
+ * with LAN orchestrator / clinical-access-runtime.
  */
 
-/** @type {{ user: object|null, guardias: object[], guardiasMap: Map<string, object>, teams: object[], scopeContext: object|null, guardiaMode: boolean, decryptedPrivateKeyPem: string|null, lastBlockHashByPatient: Map<string, string> }} */
+/** @type {{ user: object|null, guardias: object[], guardiasMap: Map<string, object>, teams: object[], scopeContext: object|null, decryptedPrivateKeyPem: string|null, lastBlockHashByPatient: Map<string, string> }} */
 export const clinicalSessionContext = {
   user: null,
   guardias: [],
@@ -11,10 +11,18 @@ export const clinicalSessionContext = {
   orphanGuardias: [],
   teams: [],
   scopeContext: null,
-  guardiaMode: false,
   decryptedPrivateKeyPem: null,
   lastBlockHashByPatient: new Map(),
 };
+
+/** @param {object[]} guardias */
+export function buildGuardiasMap(guardias) {
+  const map = new Map();
+  (guardias || []).forEach((g) => {
+    if (g && g.patient_id) map.set(String(g.patient_id), g);
+  });
+  return map;
+}
 
 /** Active clinical user id (session bag, then rpc-settings fallback). */
 export function resolveClinicalSessionUserId() {
