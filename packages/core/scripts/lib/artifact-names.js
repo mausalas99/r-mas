@@ -6,7 +6,7 @@
 const path = require('path');
 
 function getVersion(pkg) {
-  return pkg.version || require(path.join(__dirname, '..', '..', 'package.json')).version;
+  return pkg.version || require(path.join(__dirname, '..', '..', '..', '..', 'package.json')).version;
 }
 
 function productName(pkg) {

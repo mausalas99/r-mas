@@ -18,7 +18,7 @@ const {
   ensureElectronPackFiles,
 } = require('./electron-pack-files');
 
-const ROOT = path.join(__dirname, '../..');
+const ROOT = path.join(__dirname, '../../../..');
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
 test('lista canónica incluye lib/**/*.js / lib/**/*.cjs', () => {

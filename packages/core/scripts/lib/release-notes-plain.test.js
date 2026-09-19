@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const path = require('path');
 const { releaseNotesPlainFromDoc } = require('./release-notes-plain.js');
 
-const ROOT = path.join(__dirname, '../..');
+const ROOT = path.join(__dirname, '../../../..');
 
 describe('release-notes-plain', () => {
   it('extracts Nuevo/mejorado bullets from RELEASE_NOTES doc', () => {

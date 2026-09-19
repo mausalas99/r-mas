@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { buildPitchDemoPatientExport } from '../public/js/pitch-demo-export.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname, '../../..');
 const outDir = path.resolve(root, process.argv[2] || 'docs/demo-patients');
 /** Fecha «hoy» al exportar: monitoreo y glucometrías alineados con la ventana actual. */
 const exportRef = new Date();

@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '../..');
+const ROOT = path.join(__dirname, '../../../..');
 const { readPackageVersion } = require('./release-notes-body');
 
 test('RELEASE_NOTES_6.6.8 has no TODO placeholders', () => {

@@ -25,7 +25,7 @@ const auto = argv.includes('--auto');
 let macOnly = argv.includes('--mac-only');
 let winOnly = argv.includes('--win-only');
 
-const root = path.join(__dirname, '..');
+const root = path.join(__dirname, '../../..');
 const pkg = require(path.join(root, 'package.json'));
 const ver = pkg.version;
 const dist = path.join(root, 'dist');

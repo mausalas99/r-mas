@@ -9,20 +9,20 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
 /** Binary/asset twins and one-line worker gitignores — not code to merge. */
 const ALLOW_PAIRS = new Set([
-  'cloud/equipos-worker/.gitignore | cloud/sync-worker/.gitignore',
+  'packages/core/cloud/equipos-worker/.gitignore | packages/core/cloud/sync-worker/.gitignore',
   'design/icon/signal-from-noise/layer-1-field.svg | design/icon/single-glass-cross/layer-1-field.svg',
-  'public/equipos/icons/apple-touch-icon.png | public/equipos/icons/icon-192.png',
-  'public/equipos/icons/apple-touch-icon.png | public/equipos/icons/v2/apple-touch-icon.png',
-  'public/equipos/icons/apple-touch-icon.png | public/equipos/icons/v2/icon-192.png',
-  'public/equipos/icons/icon-192.png | public/equipos/icons/v2/apple-touch-icon.png',
-  'public/equipos/icons/icon-192.png | public/equipos/icons/v2/icon-192.png',
-  'public/equipos/icons/icon-512-maskable.png | public/equipos/icons/v2/icon-512-maskable.png',
-  'public/equipos/icons/icon-512.png | public/equipos/icons/v2/icon-512.png',
-  'public/equipos/icons/v2/apple-touch-icon.png | public/equipos/icons/v2/icon-192.png',
+  'packages/core/public/equipos/icons/apple-touch-icon.png | packages/core/public/equipos/icons/icon-192.png',
+  'packages/core/public/equipos/icons/apple-touch-icon.png | packages/core/public/equipos/icons/v2/apple-touch-icon.png',
+  'packages/core/public/equipos/icons/apple-touch-icon.png | packages/core/public/equipos/icons/v2/icon-192.png',
+  'packages/core/public/equipos/icons/icon-192.png | packages/core/public/equipos/icons/v2/apple-touch-icon.png',
+  'packages/core/public/equipos/icons/icon-192.png | packages/core/public/equipos/icons/v2/icon-192.png',
+  'packages/core/public/equipos/icons/icon-512-maskable.png | packages/core/public/equipos/icons/v2/icon-512-maskable.png',
+  'packages/core/public/equipos/icons/icon-512.png | packages/core/public/equipos/icons/v2/icon-512.png',
+  'packages/core/public/equipos/icons/v2/apple-touch-icon.png | packages/core/public/equipos/icons/v2/icon-192.png',
 ]);
 
 function pairKey(a, b) {

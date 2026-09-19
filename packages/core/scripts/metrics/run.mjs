@@ -11,7 +11,7 @@ import {
 } from './score.mjs';
 import { measureTrackedSize } from './tracked-size.mjs';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const REPORT = path.join(ROOT, 'scripts/metrics/report.json');
 const BASELINE = path.join(ROOT, 'scripts/metrics/baseline.json');
 const writeBaseline = process.argv.includes('--write-baseline');

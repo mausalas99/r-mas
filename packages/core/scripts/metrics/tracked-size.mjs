@@ -5,17 +5,26 @@ import { execSync } from 'node:child_process';
 const SRC_RE = /\.(mjs|js|cjs)$/;
 const TEST_RE = /\.test\.(mjs|js|cjs)$/;
 const MODULE_RE =
-  /^(public\/js\/|lib\/|cloud\/[^/]+-worker\/|scripts\/|main\.js$|preload\.js$|server\.js$|generate-)/;
+  /^(packages\/core\/)?(public\/js\/|lib\/|cloud\/[^/]+-worker\/|scripts\/|main\.js$|preload\.js$|server\.js$|generate-)/;
 
 /**
  * Count tracked text LOC and product module files (git ls-files only).
  * @param {string} root
  */
 export function measureTrackedSize(root) {
-  const files = execSync('git ls-files', { cwd: root, encoding: 'utf8' })
+  // Root-level bridge symlinks (main.js, preload.js, generate-*.js) point at a
+  // real file also tracked at its own path under packages/core — readFileSync
+  // follows the symlink, so counting both would double the real file's LOC.
+  const files = execSync('git ls-files -s', { cwd: root, encoding: 'utf8' })
     .trim()
     .split('\n')
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((line) => {
+      const m = line.match(/^(\d+)\s+\S+\s+\S+\s+(.+)$/);
+      return m ? { mode: m[1], rel: m[2] } : null;
+    })
+    .filter((f) => f && f.mode !== '120000')
+    .map((f) => f.rel);
   let trackedLoc = 0;
   let moduleCount = 0;
   for (const rel of files) {

@@ -43,7 +43,7 @@ const {
 const { ensureElectronPackFiles } = require('./lib/electron-pack-files');
 const { curatedConstName } = require('./lib/release-notes-body');
 
-const ROOT = path.join(__dirname, '..');
+const ROOT = path.join(__dirname, '../../..');
 const REPO = 'mausalas99/r-mas';
 const {
   allReleaseArtifactNames,

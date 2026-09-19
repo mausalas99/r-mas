@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { filterLintableTier1Paths, gitChangedFilesAgainst } from './changed-files.mjs';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const REPORT = path.join(ROOT, 'scripts/metrics/report.json');
 const BASELINE = path.join(ROOT, 'scripts/metrics/baseline.json');
 

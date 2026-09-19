@@ -358,7 +358,7 @@ module.exports = {
 };
 
 if (require.main === module) {
-  const root = path.join(__dirname, '../..');
+  const root = path.join(__dirname, '../../../..');
   const write = process.argv.includes('--write');
   try {
     if (write) {
