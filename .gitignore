@@ -54,8 +54,6 @@ __pycache__/
 /garden-skills/
 /.tmp/
 /skills-lock.json
-/CLAUDE.md
-/AGENTS.md
 /plans/
 docs/logs/agent-changelog.md
 # One-off chores / local-only maintenance
