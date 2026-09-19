@@ -17,6 +17,8 @@ import {
   toggleMedRecetaStanfordSolutionParaNota,
   toggleMedRecetaStanfordSolutionSuspendido,
   setMedRecetaSoapCategory,
+} from "./medications-actions.mjs";
+import {
   limpiarManejoActual,
   mediAnadirATratamiento,
   mediLlevarASOAP,
@@ -24,7 +26,7 @@ import {
   limpiarRecetaInput,
   copiarMedicamentosAlPortapapeles,
   setMedOutputTab,
-} from "./medications-actions.mjs";
+} from "./medications-receta-processing.mjs";
 import {
   registerMedPharmProfileRuntime,
   medPharmProfileWindowHandlers,

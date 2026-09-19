@@ -15,7 +15,7 @@ import { switchConsolidatedTab, switchInnerTab, getActiveInnerTab } from './feat
 import { rt } from './features/app-tabs-runtime.mjs';
 import { getMedSubview, setMedSubview } from './features/med-pharm-profile-panel.mjs';
 import { medOutputTab } from './features/medications-runtime-state.mjs';
-import { setMedOutputTab } from './features/medications-actions.mjs';
+import { setMedOutputTab } from './features/medications-receta-processing.mjs';
 import {
   navigateProcedureAgendaWeek,
   resetProcedureAgendaWeek,

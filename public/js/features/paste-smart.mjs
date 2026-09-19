@@ -13,7 +13,7 @@ import {
   shouldSkipGlobalSmartPaste,
   appTabForSmartPasteKind,
 } from './paste-smart-model.mjs';
-import { procesarRecetaFromText } from './medications-actions.mjs';
+import { procesarRecetaFromText } from './medications-receta-processing.mjs';
 import { cancelOverlayClose, closeOverlayAnimated } from '../ui-motion.mjs';
 
 var wired = false;
