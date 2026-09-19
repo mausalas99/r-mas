@@ -47,6 +47,34 @@ describe('notifyRoomRevision', () => {
     assert.equal(body.revision, 42);
   });
 
+  it('awaits the DO subrequest — a fire-and-forget notify dies with the request context', async () => {
+    let settled = false;
+    const env = {
+      ROOM_SYNC_HUB: {
+        idFromName: (id) => id,
+        get: () => ({
+          fetch: async () => {
+            await new Promise((resolve) => setTimeout(resolve, 5));
+            settled = true;
+            return new Response(JSON.stringify({ ok: true }));
+          },
+        }),
+      },
+    };
+    await notifyRoomRevision(env, 'room-abc', 42);
+    assert.equal(settled, true, 'notifyRoomRevision must not return before the DO answers');
+  });
+
+  it('swallows a failing DO subrequest — a lost broadcast must not fail the push', async () => {
+    const env = {
+      ROOM_SYNC_HUB: {
+        idFromName: (id) => id,
+        get: () => ({ fetch: async () => { throw new Error('DO unreachable'); } }),
+      },
+    };
+    await notifyRoomRevision(env, 'room-abc', 42);
+  });
+
   it('omits ops when the ops array is empty', async () => {
     let body = null;
     const env = envCapturingBody((b) => (body = b));

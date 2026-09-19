@@ -194,6 +194,26 @@ export async function decryptOpsFromPull(dek, ops) {
 }
 
 /**
+ * True when an op still carries a locked `{enc:1,...}` envelope after
+ * `decryptOpsFromPull` — this device has no usable key for it yet. Pull-apply
+ * then drops that value (see pull-apply-state.mjs's isCiphertext guard), so the
+ * caller must NOT advance the local revision past this op: a later `since`-based
+ * pull asks only for what comes after it and would never send it again.
+ * Checks the sub-key keys too — a locked `registro` rides inside the op value
+ * for an `entries/{id}` or `entries/{id}/fields` path, not as the value itself.
+ * @param {unknown[]} ops
+ */
+export function hasLockedOpValue(ops) {
+  if (!Array.isArray(ops)) return false;
+  return ops.some((op) => {
+    const value = /** @type {any} */ (op)?.value;
+    if (isEncryptedEnvelope(value)) return true;
+    if (!value || typeof value !== 'object') return false;
+    return PATIENT_LOCKED_FIELD_KEYS.some((key) => isEncryptedEnvelope(value[key]));
+  });
+}
+
+/**
  * Enumerates every content (path, value) pair in a full room snapshot — the same
  * fields `decryptRoomStateFromPull` walks, kept in one place so the migration sweep
  * (`room-dek-migrate.mjs`) can't drift out of sync on "which fields are content".

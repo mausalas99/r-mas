@@ -1,5 +1,6 @@
 import { applyOps } from '../lww.js';
 import { commitMutationBatch, loadRoomState as loadSyncRoomState } from '../sync.js';
+import { notifyRoomRevision } from '../room-sync-notify.js';
 import { assertInternoPatientOnBoard, readInternoRelayBoard } from './board.js';
 import { resolveRoomForSala } from './room-resolve.js';
 
@@ -64,6 +65,10 @@ async function commitInternoVitalsOps(env, db, roomId, ops, actorId, clientMutat
       labSetBytes: freshState.labSetBytes,
     });
     if (committed.ok) {
+      // Same broadcast handleMutations sends. Without it a vital signs entry
+      // from a phone bumps the room revision with no live signal at all, and
+      // the desktop windows only notice on their next safety poll (up to 90s).
+      await notifyRoomRevision(env, roomId, committed.revision, appliedResult.applied);
       return { ok: true, version: nextRevision };
     }
     if (committed.reason === 'duplicate_client') {

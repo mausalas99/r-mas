@@ -32,15 +32,17 @@ export async function notifyRoomRevision(env, roomId, revision, ops) {
   }
 
   try {
+    // Awaited, not fire-and-forget: the Worker may tear the request context
+    // down as soon as handleMutations returns its Response, cancelling an
+    // un-awaited subrequest. The push would be committed with every connected
+    // client left waiting for its next poll. `ctx.waitUntil` is not reachable
+    // here — worker-app.mjs's `fetch(request, env)` never takes an
+    // ExecutionContext — and the DO call is same-colo, so awaiting is cheap.
     const stub = hub.get(hub.idFromName(id));
-    void stub
-      .fetch('https://room-sync-hub/notify', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
-      .catch((err) => {
-        console.warn('[rplus-sync] room revision notify failed:', err?.message || err);
-      });
+    await stub.fetch('https://room-sync-hub/notify', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   } catch (err) {
     console.warn('[rplus-sync] room revision notify failed:', err?.message || err);
   }

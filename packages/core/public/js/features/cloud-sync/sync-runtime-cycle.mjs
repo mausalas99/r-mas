@@ -5,8 +5,8 @@ import { createCloudPollScheduler } from './sync-runtime-schedule.mjs';
 import { cloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 import { isCloudTransientServerError } from './cloud-sync-timing.mjs';
 import { createPullPush, isCloudRevisionStaleError } from './sync-runtime-pull-push.mjs';
-import { decryptOpsFromPull } from './cloud-sync-crypto-wire.mjs';
-import { getCachedRoomDek } from './room-dek.mjs';
+import { decryptOpsFromPull, hasLockedOpValue } from './cloud-sync-crypto-wire.mjs';
+import { getCachedRoomDek, markRoomUnprotected } from './room-dek.mjs';
 import {
   cloudSyncErrorCode,
   getLastCloudPushAt,
@@ -256,6 +256,15 @@ async function applyRoomWsOpsMessage(deps, ctx, ops, revision) {
     const dek = roomId ? getCachedRoomDek(roomId) : null;
     const decrypted = await decryptOpsFromPull(dek, ops);
     if (deps.applyPullResult) await deps.applyPullResult({ ops: decrypted, revision });
+    // Ops this device could not open were dropped by pull-apply, so the local
+    // revision must stay behind: it is what keeps the debounced hint and the
+    // next pull asking for them again. Bumping it here would satisfy
+    // flushSignal's `rev > local` check and lose them until a full resync.
+    if (hasLockedOpValue(decrypted)) {
+      if (roomId) markRoomUnprotected(roomId);
+      recordCloudSyncTrace('ws_ops_locked', { revision, opsCount: decrypted.length });
+      return;
+    }
     deps.setRevision(revision);
     recordCloudSyncTrace('ws_ops_applied', { revision, opsCount: decrypted.length });
   } catch (err) {

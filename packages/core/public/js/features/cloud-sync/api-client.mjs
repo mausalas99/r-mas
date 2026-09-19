@@ -8,6 +8,7 @@ import {
   encryptOpsForPush,
   decryptOpsFromPull,
   decryptRoomStateFromPull,
+  hasLockedOpValue,
   listContentFieldEntries,
 } from './cloud-sync-crypto-wire.mjs';
 import { noteServerDate } from './cloud-sync-clock.mjs';
@@ -107,15 +108,23 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
       if (opts?.mobile) q.set('mobile', '1');
       const data = await req(`/rooms/${roomId}/pull?${q.toString()}`);
       const dek = getRoomDek(roomId);
+      // `locked` rides back on the result so the runtime can hold the local
+      // revision back. Anything still ciphertext here is dropped by pull-apply;
+      // advancing past it would make the next `since` pull skip it forever.
+      let locked = false;
       if (Array.isArray(data?.ops)) {
         data.ops = await decryptOpsFromPull(dek, data.ops);
-        if (data.ops.some((op) => isEncryptedEnvelope(op?.value))) markRoomUnprotected(roomId);
+        if (hasLockedOpValue(data.ops)) locked = true;
       }
       if (data?.state) {
         data.state = await decryptRoomStateFromPull(dek, data.state);
         if (listContentFieldEntries(data.state).some((e) => isEncryptedEnvelope(e.value))) {
-          markRoomUnprotected(roomId);
+          locked = true;
         }
+      }
+      if (locked) {
+        markRoomUnprotected(roomId);
+        data.locked = true;
       }
       return data;
     },
