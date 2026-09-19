@@ -429,3 +429,59 @@ describe('createSyncFailCycle — backoff-class errors with pending ops', () => 
     assert.equal(statuses[statuses.length - 1].status, 'error');
   });
 });
+
+describe('WS instant-apply revision gate', () => {
+  const LOCKED = { enc: 1, iv: 'x', ct: 'y' };
+
+  /** Drives one `revision` broadcast through the runtime and returns the revisions it set. */
+  async function runWsOpsMessage(ops) {
+    const setRevisions = [];
+    const prevOnline = Object.getOwnPropertyDescriptor(globalThis.navigator || {}, 'onLine');
+    Object.defineProperty(globalThis.navigator, 'onLine', { configurable: true, get: () => true });
+    const prevWs = globalThis.WebSocket;
+    globalThis.WebSocket = class MockWs {
+      constructor() {
+        setTimeout(() => {
+          this.onopen?.();
+          this.onmessage?.({ data: JSON.stringify({ type: 'revision', revision: 9, ops }) });
+        }, 0);
+      }
+      send() {}
+      close() {}
+    };
+    const runtime = createSyncRuntimeCycle({
+      api: { pull: async () => ({ revision: 9, ops: [] }), push: async () => ({ revision: 9 }) },
+      outbox: makeOutbox(),
+      getRoomId: () => 'room-1',
+      getRevision: () => 5,
+      setRevision: (rev) => setRevisions.push(rev),
+      applyPullResult: async () => {},
+      liveRoomWs: { getBaseUrl: () => 'https://sync.example.com', getToken: () => 'tok' },
+      deferBootCycle: true,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    runtime.stop();
+    globalThis.WebSocket = prevWs;
+    if (prevOnline) Object.defineProperty(globalThis.navigator, 'onLine', prevOnline);
+    return setRevisions;
+  }
+
+  it('bumps the local revision when every carried op was readable', async () => {
+    const set = await runWsOpsMessage([{ path: 'entries/p1/note', value: 'estable' }]);
+    assert.deepEqual(set, [9]);
+  });
+
+  it('holds the revision back when a carried op is still ciphertext', async () => {
+    // No room DEK is cached here, so the op stays locked and pull-apply drops
+    // it. Bumping to 9 would make the next `since=9` pull skip it forever.
+    const set = await runWsOpsMessage([{ path: 'entries/p1/note', value: LOCKED }]);
+    assert.deepEqual(set, [], 'a dropped op must not advance the revision');
+  });
+
+  it('holds the revision back for a locked sub-key inside an identity op', async () => {
+    const set = await runWsOpsMessage([
+      { path: 'entries/p1/fields', value: { cama: '12', registro: LOCKED } },
+    ]);
+    assert.deepEqual(set, []);
+  });
+});

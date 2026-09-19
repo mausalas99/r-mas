@@ -389,6 +389,42 @@ describe('interno vitals', () => {
     assert.equal(db.getMutations().length, 1);
   });
 
+  it('broadcasts the new revision to the room DO — desktop must not wait for its next poll', async () => {
+    const notified = [];
+    const env = {
+      ...TEST_KEY,
+      ROOM_SYNC_HUB: {
+        idFromName: (id) => id,
+        get: (id) => ({
+          fetch: async (_url, opts) => {
+            notified.push({ id, body: JSON.parse(String(opts.body)) });
+            return new Response(JSON.stringify({ ok: true }));
+          },
+        }),
+      },
+    };
+    const db = createInternoDb({ sala: 'Torre HU', revision: 3, roomId: 'room-torre' });
+    await db.setState({
+      revision: 3,
+      entries: [{ id: 'p1', nombre: 'GONZALEZ TEST', cama: '01', sala: 'Torre HU' }],
+      entityVersions: {},
+      todos: {},
+      agenda: [],
+      clinicalOps: sampleClinicalOps(),
+      labSidecars: {},
+    });
+
+    const res = await applyInternoVitals(env, db, 'Torre HU', 'p1', {
+      medicionId: 'med-1',
+      monitoreoEnvelope: { enc: 1, iv: 'new-iv', ct: 'new-ct' },
+    });
+    assert.equal(res.status, 200);
+    assert.equal(notified.length, 1, 'a committed vitals write must signal the room');
+    assert.equal(notified[0].id, 'room-torre');
+    assert.equal(notified[0].body.revision, 4);
+    assert.ok(Array.isArray(notified[0].body.ops) && notified[0].body.ops.length);
+  });
+
   it('rejects a vitals write for a patient not in this sala\'s room', async () => {
     const db = createInternoDb({ sala: 'Torre HU', revision: 3 });
     await db.setState({

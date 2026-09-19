@@ -85,12 +85,21 @@ function applyServerRevisionImpl(getRevision, setRevision, revision) {
 }
 
 /**
+ * `locked` (set by api-client) means this device could not open part of the
+ * payload, so pull-apply dropped it. Holding the revision back is what keeps
+ * those ops inside the next pull's `since` window — they come back on their
+ * own once the room DEK loads. Advancing would lose them for good.
  * @param {object} pctx
  * @param {number} revision
  * @param {number} since
  * @param {number} opsCount
+ * @param {boolean} [locked]
  */
-function reconcileServerRevision(pctx, revision, since, opsCount) {
+function reconcileServerRevision(pctx, revision, since, opsCount, locked) {
+  if (locked) {
+    recordCloudSyncTrace('pull_locked', { since, opsCount });
+    return;
+  }
   const next = Number(revision);
   if (!Number.isFinite(next) || next <= 0) return;
   const sinceNum = Number(since) || 0;
@@ -179,7 +188,7 @@ async function runPullLatest(pctx) {
     const result = await api.pull(roomId, since, pollMobile ? { mobile: true } : undefined);
     const opsCount = pullOpsCount(result);
     if (result?.revision != null) {
-      reconcileServerRevision(pctx, Number(result.revision), since, opsCount);
+      reconcileServerRevision(pctx, Number(result.revision), since, opsCount, !!result.locked);
     }
     const labIngress = pollMobile ? await recordLabPullIngress(result) : null;
     await finalizePull(pctx, result, since, opsCount, labIngress);

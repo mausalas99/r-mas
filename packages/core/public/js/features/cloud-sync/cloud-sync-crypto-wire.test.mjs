@@ -6,6 +6,7 @@ import {
   encryptOpsForPush,
   decryptOpsFromPull,
   decryptRoomStateFromPull,
+  hasLockedOpValue,
   listContentFieldEntries,
   needsReencryption,
 } from './cloud-sync-crypto-wire.mjs';
@@ -264,5 +265,44 @@ describe('needsReencryption', () => {
   it('any other path: never needs re-encryption', () => {
     assert.equal(needsReencryption('agenda', { anything: true }), false);
     assert.equal(needsReencryption('tombstones/p1', { registro: '2026-1' }), false);
+  });
+});
+
+describe('hasLockedOpValue', () => {
+  const LOCKED = { enc: 1, iv: 'x', ct: 'y' };
+
+  it('is false for ops this device could read', () => {
+    assert.equal(hasLockedOpValue([]), false);
+    assert.equal(hasLockedOpValue(null), false);
+    assert.equal(
+      hasLockedOpValue([
+        { path: 'entries/p1/note', value: 'estable' },
+        { path: 'entries/p1/fields', value: { cama: '12', registro: '2026-1' } },
+      ]),
+      false
+    );
+  });
+
+  it('is true for a whole value left as ciphertext', () => {
+    assert.equal(hasLockedOpValue([{ path: 'entries/p1/note', value: LOCKED }]), true);
+  });
+
+  it('is true for a locked sub-key inside an identity op value', () => {
+    assert.equal(
+      hasLockedOpValue([{ path: 'entries/p1/fields', value: { cama: '12', registro: LOCKED } }]),
+      true
+    );
+    assert.equal(
+      hasLockedOpValue([{ path: 'entries/p1', value: { diagnosticosText: LOCKED } }]),
+      true
+    );
+  });
+
+  it('agrees with what decryptOpsFromPull leaves behind without a key', async () => {
+    const dek = await generateDek();
+    const ops = [{ path: 'entries/p1/fields', value: { cama: '12', registro: '2026-001234' } }];
+    const wire = await encryptOpsForPush(dek, ops);
+    assert.equal(hasLockedOpValue(await decryptOpsFromPull(null, wire)), true, 'no key: stays locked');
+    assert.equal(hasLockedOpValue(await decryptOpsFromPull(dek, wire)), false, 'right key: opens');
   });
 });

@@ -133,8 +133,32 @@ describe('createCloudSyncApi push/pull encryption', () => {
     });
 
     assert.equal(isRoomUnprotected('room-unprotected-1'), false);
-    await api.pull('room-unprotected-1', 1);
+    const data = await api.pull('room-unprotected-1', 1);
     assert.equal(isRoomUnprotected('room-unprotected-1'), true);
+    // The runtime reads this flag to hold its local revision back.
+    assert.equal(data.locked, true);
+  });
+
+  it('flags a locked sub-key inside an identity op, not just a whole locked value', async () => {
+    clearRoomDekCache();
+    const dek = await generateDek();
+    const envelope = await encryptValue(dek, '2026-001234');
+    stubFetch(() => ({
+      body: {
+        revision: 2,
+        ops: [{ path: 'entries/p1/fields', value: { cama: '12', registro: envelope } }],
+      },
+    }));
+
+    const api = createCloudSyncApi({
+      getBaseUrl: () => 'https://x',
+      getToken: () => 'tok',
+      getRoomDek: () => null,
+    });
+
+    const data = await api.pull('room-unprotected-3', 1);
+    assert.equal(data.locked, true);
+    assert.equal(isRoomUnprotected('room-unprotected-3'), true);
   });
 
   it('does not flag the room when the pull decrypts cleanly', async () => {
@@ -151,8 +175,9 @@ describe('createCloudSyncApi push/pull encryption', () => {
       getRoomDek: () => dek,
     });
 
-    await api.pull('room-unprotected-2', 1);
+    const data = await api.pull('room-unprotected-2', 1);
     assert.equal(isRoomUnprotected('room-unprotected-2'), false);
+    assert.equal(data.locked, undefined);
   });
 });
 
