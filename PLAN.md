@@ -11,6 +11,9 @@ tech: Electron main/preload, public/js/app-runtimes.mjs
 - [x] Build the app's screen code when the build command runs {#shell-build-main-guard}
   by: claude
   tech: root scripts/ is a symlink into packages/core, so process.argv[1] never equalled fileURLToPath(import.meta.url) and the isMain guard never fired — build-ui.mjs, bundle-renderer.mjs, build-cloud-mobile.mjs and build-cloud-interno.mjs each exited 0 having built nothing; replaced with import.meta.main
+- [x] Start the app without waiting for the animation library {#shell-motion-lazy}
+  by: claude
+  tech: ui-motion.mjs used `animate` from `motion` in springTo only, but its static import put ~262 KB (motion-dom + framer-motion + motion-utils) on the eager boot bundle; now `import('motion')` inside springTo's non-reduced-motion branch. Eager payload 3,339,755 B -> 3,179,707 B, from 6,755 B over budget to 153,293 B under
 files: [main.js, preload.js, public/js/app.js, public/js/app-runtimes.mjs, public/js/boot/**, scripts/build-ui.mjs, scripts/bundle-renderer.mjs]
 
 ## Keep patient data on the device {#db}
@@ -332,6 +335,8 @@ files: [public/js/features/db-unlock-migration.mjs, public/js/features/db-unlock
   from: agent
 
 ## decisions
+
+- 2026-09-19, Jev (routed by claude, confidence 0.98): the eager boot payload was 6,755 B over its 3,333,000 B budget with the file count exactly at its 130 cap. Jev chose making an eager import dynamic over raising the budget number, grounded on the failing assertion, the ratchet's history (red since 2026-09-18 from an unrelated `medications-actions.mjs` split, creeping from 6,695 B to 6,755 B over) and the TTD north star. Carried out on `ui-motion.mjs`: `animate` from `motion` was reachable only inside `springTo`'s non-reduced-motion branch, yet its static import pulled the whole motion stack onto the boot path. Callers of `springTo`/`settlePasteSurface` ignore the return value, and the handle keeps its synchronous shape, so no call site changed. Trade-off accepted: the first spring animation in a session now waits one module load. `baseline.json` untouched, no owner sign-off needed, 153,293 B of headroom.
 
 - 2026-09-19, claude: fixed the four build scripts' main guard with `import.meta.main` instead of `fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)`. Both survive the root symlinks; `import.meta.main` is one word, needs no fs call, and exists in every runtime this repo actually uses (verified directly: Node 22.22.2 and Electron 41's bundled Node 24.18.0). Recorded after implementing rather than before — the bug was found mid-investigation, not planned. Known trade-off: on Node older than 22.14 `import.meta.main` is `undefined`, which would silently no-op the build again; accepted because nothing in the toolchain is that old, and `public/js/app-boot-imports.test.mjs` fails loudly whenever the bundle is missing, which is exactly how this bug surfaced.
 

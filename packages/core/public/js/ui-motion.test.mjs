@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {
   resolvePatientFieldIds,
   getReleaseVelocity,
@@ -209,4 +210,14 @@ test('settlePasteSurface reduced motion snaps opacity on fake el', async () => {
   } finally {
     globalThis.matchMedia = prev;
   }
+});
+
+test('motion is loaded on demand, never statically', () => {
+  const src = fs.readFileSync(new URL('./ui-motion.mjs', import.meta.url), 'utf8');
+  assert.doesNotMatch(
+    src,
+    /^import\s[^\n]*from\s*['"]motion['"]/m,
+    'a static `motion` import puts ~262 KB back on the eager boot bundle'
+  );
+  assert.match(src, /import\('motion'\)/, 'springTo should still reach motion dynamically');
 });
