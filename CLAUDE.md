@@ -34,6 +34,28 @@ Spawn `lead-dev`, `dev-haiku`, or `Explore` (Haiku) from the default session. Sp
 
 Run spawned agents in the background so their tool calls stay out of your context; only the result comes back. Add `isolation: "worktree"` on any agent that edits files, so parallel agents do not collide on the same working tree.
 
+## Jev decides
+
+Jev makes every judgment call. No exceptions. Claude Code executes the result.
+
+Jev is TypeSafe System One. Scripts live in `scripts/jev/`:
+
+```bash
+node scripts/jev/choice.mjs "<question>" <label1> <label2> [--state <file>]
+node scripts/jev/score.mjs "<question>" <level0> <level1> [...] [--state <file>]
+node scripts/jev/screen.mjs <file> "<yes/no question about the file>"
+```
+
+Ground every call with `--state` on real text, never on a guess. The cap is 50,000 characters, with no chunking.
+
+A judgment call has no single right answer: which option, where a file belongs, is this worth doing, how risky.
+
+Anything a command answers is not a judgment call. Does the build pass, does the test go green, does the import break a boundary — run the command. A real run beats an estimate of code nobody ran.
+
+Confidence below 0.5 is not a decision. Give the call to the user.
+
+Jev needs `TYPESAFE_API_KEY` in the environment and network access to `api.typesafe.ai`. A cloud session has neither by default. When Jev cannot run, say so and give the call to the user. An unavailable Jev is never permission to decide alone.
+
 ## Boundaries
 
 UI bugs, Nube crypto, and graph-memory are closed. Do not reopen the same issues; if a new, distinct problem appears in one of those areas, confirm with the user before treating it as new work.
