@@ -3,6 +3,9 @@ import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Resolves to packages/core, not the true repo root — every OUTPUTS path below
+// already lives inside packages/core, so this is correct as-is. Don't "fix" it
+// to true root without checking OUTPUTS still needs no packages/core/ prefix.
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 /** Build scripts whose output must stay gitignored. */

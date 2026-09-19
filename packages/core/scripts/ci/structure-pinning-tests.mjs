@@ -8,6 +8,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Resolves to packages/core, not the true repo root — structure-pinning-allowlist.txt
+// is written in that unprefixed shape (e.g. "lib/foo.test.mjs"). Don't "fix" this to
+// true root without also rewriting every allowlist entry with a packages/core/ prefix.
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 const ALLOW = new Set(
