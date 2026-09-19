@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
+import { GATE_EXCLUDED_RE } from './constants.mjs';
 
 const SRC_RE = /\.(mjs|js|cjs)$/;
 const TEST_RE = /\.test\.(mjs|js|cjs)$/;
@@ -24,7 +25,8 @@ export function measureTrackedSize(root) {
       return m ? { mode: m[1], rel: m[2] } : null;
     })
     .filter((f) => f && f.mode !== '120000')
-    .map((f) => f.rel);
+    .map((f) => f.rel)
+    .filter((rel) => !GATE_EXCLUDED_RE.test(rel));
   let trackedLoc = 0;
   let moduleCount = 0;
   for (const rel of files) {

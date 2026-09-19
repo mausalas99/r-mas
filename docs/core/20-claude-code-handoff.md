@@ -2,8 +2,104 @@
 type: "core"
 name: "Claude Code Handoff"
 status: "active"
-description: "registro/diagnosis Nube encryption + instant WS sync: shipped in 8.4.0, owner-verified live, committed. Older jobs below."
+description: "Debt gate scoped off the vendored HF subtree and docs/: built and green, uncommitted. Older jobs below."
 ---
+
+# Handoff — debt gate scoped off packages/hf and docs/ (#shrink-gate-scope) — BUILT AND GREEN, uncommitted
+
+**Date:** 2026-09-19
+**Branch:** `claude/project-thread-lfqtjl`
+**Plan row:** PLAN.md `#shrink-gate-scope`, decision recorded under `## decisions`
+
+## What was wrong
+
+`npm run metrics:check` was red on `main` at `ad5b244c` with no local changes:
+
+```
+LOC REGRESSION: tracked 912214 > baseline 353700
+```
+
+`totalScore` was 0, so complexity debt was clean. Only the LOC ratchet failed,
+and because `check.mjs` is first in the `&&` chain every later gate
+(`no-duplicate-files`, `build-output-ignored`, `structure-pinning-tests`,
+`forbid-lan-imports`) never ran.
+
+Two causes, both measured, not estimated:
+
+| cause | lines | what it is |
+|---|---|---|
+| `packages/hf` | 477,537 | vendored subtree from the monorepo split, waiting on Phase C |
+| `docs/superpowers` | 81,164 | plan archive un-gitignored the same day in `c19e871` |
+
+Non-HF measured 434,677 against the 353,700 baseline — a gap of 80,977, which
+`docs/superpowers` alone explains. Core product code had not grown.
+`trackedLoc` counts every tracked non-binary file with no code filter; only
+`moduleCount` has one. Duplicate pairs re-measured with the
+`no-duplicate-files.mjs` rule: 1,180 total, 1,170 touching `packages/hf`, and
+the script already allowlists exactly the other 10. Core and `im` are clean.
+
+## The decision
+
+Routed through Jev, per the project rule. Three calls:
+
+1. Scope the gate to `packages/core` and `packages/im` and skip `packages/hf`
+   until Phase C cleans it (0.61), over raising the baseline to 912,214 and
+   blessing all 1,170 pairs (0.00).
+2. Exclude `docs/superpowers` from the counter (0.97) over baselining it in at
+   434,677.
+3. Exclude **all** of `docs/` (0.95) over leaving the exclusion at
+   `docs/superpowers`. Excluding only `docs/superpowers` left 69 lines of
+   headroom, and this change's own required handoff and plan entries are 94
+   lines of markdown — so the next job following the documented process would
+   have turned the gate red on prose alone.
+
+## Files changed
+
+- `packages/core/scripts/metrics/constants.mjs` — new `GATE_EXCLUDED_RE`,
+  `/^(packages\/hf\/|docs\/)/`. One source of truth so both gates cut the
+  same tree.
+- `packages/core/scripts/metrics/tracked-size.mjs` — one `.filter()` on the
+  tracked-file list.
+- `packages/core/scripts/ci/no-duplicate-files.mjs` — one `continue` in
+  `trackedRegularFiles()`, importing the same constant.
+- `packages/core/scripts/metrics/tracked-size.test.mjs` — new test asserting
+  `fileCount` equals tracked non-symlink files minus the excluded ones, using
+  `git ls-files` as the oracle and failing loudly if nothing matches.
+
+## Result — baseline.json was NOT touched and needs no raise
+
+| | measured | baseline | margin |
+|---|---|---|---|
+| `trackedLoc` | 346,176 | 353,700 | 7,524 under |
+| `moduleCount` | 1,269 | 1,272 | 3 under |
+
+Neither option predicted this. Excluding both paths puts the tree back *under*
+the existing ceiling, so `scripts/metrics/baseline.json` is untouched and no
+owner sign-off is needed for it.
+
+## Tests / gates
+
+- `node --test 'packages/core/scripts/metrics/*.test.mjs'` — 9 pass, 0 fail.
+- `npm run metrics:check` — whole chain green: `metrics:check OK`,
+  `build-output-ignored OK`, `no-duplicate-files OK`,
+  `structure-pinning-tests OK`, `forbid-lan-imports: ok (0 hits)`.
+- `npx eslint` on the 4 changed files reports 4 pre-existing `no-undef` errors
+  in `no-duplicate-files.mjs` (`console`/`process` at the bottom of the file).
+  Verified identical at `HEAD` via `git stash` — not from this change, and
+  `scripts/ci` is not a Tier 1 lint path.
+
+## Status
+
+**Not committed, not pushed.** Owner commits by hand.
+
+## Do not
+
+- Do not raise `baseline.json` for the HF subtree. The exclusion replaced that
+  need; raising it would hide real growth in `packages/core`.
+- Do not add `packages/hf` back to the gate before Phase C cleans it.
+- Do not put `docs/` back in the LOC count. `trackedLoc` has no code filter of
+  its own (only `moduleCount`'s `MODULE_RE` does), so every handoff entry the
+  rules require would spend the ratchet's headroom.
 
 # Handoff — registro/diagnosis Nube encryption + instant WS sync — SHIPPED in 8.4.0
 
