@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.3.9](https://github.com/mausalas99/r-mas/releases/tag/v8.3.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.4.0](https://github.com/mausalas99/r-mas/releases/tag/v8.4.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -66,6 +66,14 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.4.0 (estable — release 8.4.0)
+
+- **Arreglado (Nube, importante):** el número de historia clínica y los diagnósticos ahora se cifran igual que la nota y las indicaciones.
+- **Mejorado (Nube):** los cambios de otro equipo aparecen al instante en las ventanas abiertas de la misma sala.
+- **Arreglado:** la impresión del censo ya no achica el texto más allá de un límite legible.
+
+Notas: `docs/RELEASE_NOTES_8.4.0.txt`.
 ## R+ 8.3.9 (estable — release 8.3.9)
 
 - **Arreglado (Nube, importante):** una sincronización parcial ya no borra el manejo/estado actual de los pacientes.

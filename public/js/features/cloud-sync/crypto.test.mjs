@@ -12,6 +12,7 @@ import {
   encryptValue,
   decryptValue,
   isEncryptedEnvelope,
+  fingerprintValue,
   importAdminPublicKey,
   importAdminPrivateKey,
   wrapDekForAdmin,
@@ -42,6 +43,28 @@ describe('cloud-sync crypto', () => {
     assert.equal(await decryptValue(dek, 'plain string'), 'plain string');
     assert.deepEqual(await decryptValue(dek, { foo: 'bar' }), { foo: 'bar' });
     assert.equal(await decryptValue(dek, null), null);
+  });
+
+  it('fingerprintValue is deterministic for the same dek + input', async () => {
+    const dek = await generateDek();
+    const a = await fingerprintValue(dek, '2026-001234');
+    const b = await fingerprintValue(dek, '2026-001234');
+    assert.equal(a, b);
+  });
+
+  it('fingerprintValue differs for a different input or a different dek', async () => {
+    const dek = await generateDek();
+    const other = await generateDek();
+    const base = await fingerprintValue(dek, '2026-001234');
+    assert.notEqual(base, await fingerprintValue(dek, '2026-001235'));
+    assert.notEqual(base, await fingerprintValue(other, '2026-001234'));
+  });
+
+  it('fingerprintValue is one-way: output reveals nothing about the plaintext', async () => {
+    const dek = await generateDek();
+    const fp = await fingerprintValue(dek, '2026-001234');
+    assert.notEqual(fp, '2026-001234');
+    assert.equal(Buffer.from(fp, 'base64').toString('utf8').includes('2026-001234'), false);
   });
 
   it('isEncryptedEnvelope only recognizes enc:1 objects', () => {

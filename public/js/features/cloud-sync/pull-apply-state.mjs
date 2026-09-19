@@ -31,16 +31,31 @@ export function assembleLabHistoryFromSidecars(sidecarMap) {
   return Object.values(sidecarMap).filter((row) => row && typeof row === 'object' && !isCiphertext(row));
 }
 
+/**
+ * Wire-only key riding inside `fields` alongside registro (Part A's one-way
+ * fingerprint for re-admit matching) — never a real patient property, never
+ * merged into local state.
+ */
+const FIELDS_WIRE_ONLY_KEYS = new Set(['registroFp']);
+
 /** @param {Record<string, unknown>} entry */
 function buildPatientFromCloudEntry(entry) {
   const patientId = String(entry.id).trim();
   const fields = entry.fields;
-  const patient = {
-    id: patientId,
-    ...(fields && typeof fields === 'object' ? fields : {}),
-  };
+  const patient = { id: patientId };
+  if (fields && typeof fields === 'object') {
+    // Same ciphertext guard as note/medReceta below — registro/diagnosticosList/
+    // diagnosticosText inside `fields` can still be a locked {enc:1,...} envelope
+    // when this device has no room DEK yet (no password entered this session).
+    // Leaving the key unset here is what shows the same blank/locked placeholder
+    // notes already show in that case, instead of leaking the raw ciphertext object.
+    for (const [key, value] of Object.entries(fields)) {
+      if (FIELDS_WIRE_ONLY_KEYS.has(key) || isCiphertext(value)) continue;
+      patient[key] = value;
+    }
+  }
   for (const [key, value] of Object.entries(entry)) {
-    if (ENTRY_SKIP_KEYS.has(key) || isCiphertext(value)) continue;
+    if (ENTRY_SKIP_KEYS.has(key) || FIELDS_WIRE_ONLY_KEYS.has(key) || isCiphertext(value)) continue;
     patient[key] = value;
   }
   if (entry.eventualidades && !isCiphertext(entry.eventualidades)) patient.eventualidades = entry.eventualidades;

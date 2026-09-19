@@ -189,6 +189,62 @@ describe('sweepRoomForPlaintextContent — full-state pull (large room)', () => 
   });
 });
 
+describe('sweepRoomForPlaintextContent — registro/diagnosis backfill', () => {
+  it('re-pushes a plaintext root registro and a fields blob with a locked key, skips a fields blob with none', async () => {
+    const state = {
+      revision: 500,
+      entries: [
+        {
+          id: 'p1',
+          registro: '2026-001234', // root-stub admit merge — plaintext, old room
+          fields: { cama: '12', registro: '2026-001234', diagnosticosList: ['NEUMONIA'] },
+        },
+        { id: 'p2', fields: { cama: '4', nombre: 'Ana' } }, // no locked key — nothing to sweep
+      ],
+      entityVersions: {
+        'entries/p1': { updatedAt: '2026-08-01T00:00:00.000Z', actorId: 'device-a' },
+        'entries/p1/fields': { updatedAt: '2026-08-01T00:00:00.000Z', actorId: 'device-a' },
+        'entries/p2/fields': { updatedAt: '2026-08-01T00:00:00.000Z', actorId: 'device-a' },
+      },
+      labSidecars: {},
+      todos: {},
+    };
+    const api = makeFakeApi({ pullResponse: { revision: 500, state } });
+
+    const result = await sweepRoomForPlaintextContent(api, 'room-1', 'device-owner');
+    assert.equal(result.swept, 2); // entries/p1 root + entries/p1/fields, p2 skipped
+    const pushedOps = api.pushedBatches.flatMap((b) => b.ops);
+    const rootOp = pushedOps.find((op) => op.path === 'entries/p1');
+    const fieldsOp = pushedOps.find((op) => op.path === 'entries/p1/fields');
+    assert.deepEqual(rootOp.value, { registro: '2026-001234' });
+    assert.deepEqual(fieldsOp.value, { cama: '12', registro: '2026-001234', diagnosticosList: ['NEUMONIA'] });
+    assert.ok(!pushedOps.some((op) => op.path === 'entries/p2/fields'));
+  });
+
+  it('does nothing once registro/diagnosis are already encrypted envelopes', async () => {
+    const state = {
+      revision: 500,
+      entries: [
+        {
+          id: 'p1',
+          registro: { enc: 1, iv: 'x', ct: 'y' },
+          fields: { cama: '12', registro: { enc: 1, iv: 'x', ct: 'y' } },
+        },
+      ],
+      entityVersions: {
+        'entries/p1': { updatedAt: '2026-08-01T00:00:00.000Z', actorId: 'a' },
+        'entries/p1/fields': { updatedAt: '2026-08-01T00:00:00.000Z', actorId: 'a' },
+      },
+      labSidecars: {},
+      todos: {},
+    };
+    const api = makeFakeApi({ pullResponse: { revision: 500, state } });
+    const result = await sweepRoomForPlaintextContent(api, 'room-1', 'device-owner');
+    assert.equal(result.swept, 0);
+    assert.equal(api.pushedBatches.length, 0);
+  });
+});
+
 describe('sweepRoomForPlaintextContent — ops fold (small/new room)', () => {
   it('folds the ops list and sweeps plaintext content the same way', async () => {
     const ops = [

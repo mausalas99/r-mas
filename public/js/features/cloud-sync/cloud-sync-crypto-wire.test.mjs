@@ -7,6 +7,7 @@ import {
   decryptOpsFromPull,
   decryptRoomStateFromPull,
   listContentFieldEntries,
+  needsReencryption,
 } from './cloud-sync-crypto-wire.mjs';
 
 describe('isEncryptedContentPath', () => {
@@ -62,6 +63,77 @@ describe('encryptOpsForPush / decryptOpsFromPull', () => {
   });
 });
 
+describe('registro/diagnosis sub-key encryption inside patient identity ops', () => {
+  it('fields op: locks registro + diagnosis keys, leaves cama/servicio/nombre plaintext, attaches registroFp', async () => {
+    const dek = await generateDek();
+    const ops = [
+      {
+        path: 'entries/p1/fields',
+        value: {
+          nombre: 'Juan Perez',
+          cama: '12',
+          servicio: 'UCI',
+          registro: '2026-001234',
+          diagnosticosList: ['NEUMONIA'],
+          diagnosticosText: '1. NEUMONIA',
+        },
+        updatedAt: 't1',
+        actorId: 'a1',
+      },
+    ];
+    const [encrypted] = await encryptOpsForPush(dek, ops);
+    assert.equal(encrypted.value.nombre, 'Juan Perez');
+    assert.equal(encrypted.value.cama, '12');
+    assert.equal(encrypted.value.servicio, 'UCI');
+    assert.equal(encrypted.value.registro.enc, 1);
+    assert.equal(encrypted.value.diagnosticosList.enc, 1);
+    assert.equal(encrypted.value.diagnosticosText.enc, 1);
+    assert.equal(typeof encrypted.value.registroFp, 'string');
+    assert.ok(encrypted.value.registroFp.length > 0);
+    assert.notEqual(encrypted.value.registroFp, '2026-001234');
+
+    const [decrypted] = await decryptOpsFromPull(dek, [encrypted]);
+    assert.equal(decrypted.value.registro, '2026-001234');
+    assert.deepEqual(decrypted.value.diagnosticosList, ['NEUMONIA']);
+    assert.equal(decrypted.value.diagnosticosText, '1. NEUMONIA');
+    assert.equal(decrypted.value.cama, '12'); // sibling untouched throughout
+  });
+
+  it('root-stub op (entries/{id}): same registro lock + fingerprint applies', async () => {
+    const dek = await generateDek();
+    const ops = [{ path: 'entries/p1', value: { id: 'p1', registro: '2026-005555' }, updatedAt: 't1', actorId: 'a1' }];
+    const [encrypted] = await encryptOpsForPush(dek, ops);
+    assert.equal(encrypted.value.id, 'p1');
+    assert.equal(encrypted.value.registro.enc, 1);
+    assert.ok(encrypted.value.registroFp);
+
+    const [decrypted] = await decryptOpsFromPull(dek, [encrypted]);
+    assert.equal(decrypted.value.registro, '2026-005555');
+  });
+
+  it('no dek: patient identity ops pass through unchanged (no registroFp attached)', async () => {
+    const ops = [{ path: 'entries/p1/fields', value: { registro: '2026-1', cama: '3' } }];
+    const out = await encryptOpsForPush(null, ops);
+    assert.deepEqual(out, ops);
+  });
+
+  it('tombstone op: real registro is swapped for registroFp, never leaves the device as plaintext', async () => {
+    const dek = await generateDek();
+    const ops = [{ path: 'tombstones/p1', value: { registro: '2026-009999', deletedAt: 't1' }, updatedAt: 't1', actorId: 'a1' }];
+    const [encrypted] = await encryptOpsForPush(dek, ops);
+    assert.equal(encrypted.value.registro, undefined);
+    assert.equal(typeof encrypted.value.registroFp, 'string');
+    assert.equal(encrypted.value.deletedAt, 't1');
+  });
+
+  it('tombstone op with no registro is untouched', async () => {
+    const dek = await generateDek();
+    const ops = [{ path: 'tombstones/p1', value: { deletedAt: 't1' }, updatedAt: 't1', actorId: 'a1' }];
+    const [encrypted] = await encryptOpsForPush(dek, ops);
+    assert.deepEqual(encrypted.value, { deletedAt: 't1' });
+  });
+});
+
 describe('decryptRoomStateFromPull', () => {
   it('decrypts clinicalOps, entry content fields, labSidecars, and todos in place', async () => {
     const dek = await generateDek();
@@ -92,6 +164,33 @@ describe('decryptRoomStateFromPull', () => {
     assert.deepEqual(out.todos.t1, { text: 'pendiente' });
   });
 
+  it('decrypts registro at the entry root and registro/diagnosis nested under entry.fields', async () => {
+    const dek = await generateDek();
+    const { encryptValue } = await import('./crypto.mjs');
+    const state = {
+      entries: [
+        {
+          id: 'p1',
+          registro: await encryptValue(dek, '2026-001234'), // root-stub admit merge
+          fields: {
+            nombre: 'Juan Perez',
+            cama: '12',
+            registro: await encryptValue(dek, '2026-001234'), // fields merge
+            diagnosticosList: await encryptValue(dek, ['NEUMONIA']),
+            diagnosticosText: await encryptValue(dek, '1. NEUMONIA'),
+          },
+        },
+      ],
+    };
+    const out = await decryptRoomStateFromPull(dek, state);
+    assert.equal(out.entries[0].registro, '2026-001234');
+    assert.equal(out.entries[0].fields.registro, '2026-001234');
+    assert.deepEqual(out.entries[0].fields.diagnosticosList, ['NEUMONIA']);
+    assert.equal(out.entries[0].fields.diagnosticosText, '1. NEUMONIA');
+    assert.equal(out.entries[0].fields.cama, '12'); // sibling untouched
+    assert.equal(out.entries[0].fields.nombre, 'Juan Perez');
+  });
+
   it('passes through an unencrypted (legacy) snapshot unchanged', async () => {
     const state = {
       clinicalOps: { teams: [] },
@@ -103,7 +202,7 @@ describe('decryptRoomStateFromPull', () => {
 });
 
 describe('listContentFieldEntries', () => {
-  it('enumerates clinicalOps, entry content fields, labSidecars, and todos — never identity fields', () => {
+  it('enumerates clinicalOps, entry content fields, labSidecars, and todos, plus any entries/{id}/fields blob', () => {
     const state = {
       clinicalOps: { teams: [] },
       entries: [
@@ -118,16 +217,52 @@ describe('listContentFieldEntries', () => {
       { path: 'clinicalOps', value: { teams: [] } },
       { path: 'entries/p1/note', value: 'nota' },
       { path: 'entries/p1/medReceta', value: { items: [] } },
+      { path: 'entries/p1/fields', value: { cama: '12' } }, // no locked key here, listed anyway
       { path: 'entries/p2/indicaciones', value: 'omeprazol' },
       { path: 'labSidecars/p1/set1', value: { resLabs: ['Hb 12'] } },
       { path: 'todos/t1', value: { text: 'pendiente' } },
     ]);
-    // Identity fields never appear.
-    assert.ok(!out.some((e) => e.path.endsWith('/fields')));
+  });
+
+  it('also lists the entries/{id} root when it carries a registro', () => {
+    const state = {
+      entries: [
+        {
+          id: 'p1',
+          registro: '2026-001234', // root-stub admit merge
+          fields: { registro: '2026-001234', diagnosticosList: ['NEUMONIA'] },
+        },
+        { id: 'p2', nombre: 'no registro at all — no root entry listed' },
+      ],
+    };
+    const out = listContentFieldEntries(state);
+    assert.deepEqual(out, [
+      { path: 'entries/p1', value: { registro: '2026-001234' } },
+      { path: 'entries/p1/fields', value: { registro: '2026-001234', diagnosticosList: ['NEUMONIA'] } },
+    ]);
   });
 
   it('returns an empty list for an empty or malformed state', () => {
     assert.deepEqual(listContentFieldEntries(null), []);
     assert.deepEqual(listContentFieldEntries({}), []);
+  });
+});
+
+describe('needsReencryption', () => {
+  it('content paths: true only while the value is not yet an encrypted envelope', () => {
+    assert.equal(needsReencryption('entries/p1/note', 'plano'), true);
+    assert.equal(needsReencryption('entries/p1/note', { enc: 1, iv: 'x', ct: 'y' }), false);
+  });
+
+  it('identity paths: true only when a locked sub-key is still plaintext', () => {
+    assert.equal(needsReencryption('entries/p1', { registro: '2026-1' }), true);
+    assert.equal(needsReencryption('entries/p1', { registro: { enc: 1, iv: 'x', ct: 'y' } }), false);
+    assert.equal(needsReencryption('entries/p1/fields', { cama: '12' }), false); // no locked key present
+    assert.equal(needsReencryption('entries/p1/fields', { diagnosticosText: '1. NEUMONIA' }), true);
+  });
+
+  it('any other path: never needs re-encryption', () => {
+    assert.equal(needsReencryption('agenda', { anything: true }), false);
+    assert.equal(needsReencryption('tombstones/p1', { registro: '2026-1' }), false);
   });
 });

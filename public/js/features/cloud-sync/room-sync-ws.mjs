@@ -10,6 +10,7 @@ import { createRoomWsController } from './room-sync-ws-internals.mjs';
  *   getRoomId: () => string,
  *   getRevision: () => number,
  *   onRevisionHint?: (revision: number) => void,
+ *   onOpsMessage?: (ops: unknown[], revision: number) => void,
  *   onTransportChange?: (transport: CloudSyncTransport) => void,
  * }} deps
  */

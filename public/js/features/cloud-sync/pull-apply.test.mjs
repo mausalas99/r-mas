@@ -58,6 +58,48 @@ describe('pull-apply cloud snapshot merge', () => {
     assert.equal(cleared.medReceta, null);
   });
 
+  it('cloudEntryToLanEntry leaves registro/diagnosis unset (not raw ciphertext) when still locked', () => {
+    const envelope = { enc: 1, iv: 'x', ct: 'y' };
+    const entry = cloudEntryToLanEntry(
+      {
+        id: 'p1',
+        fields: {
+          nombre: 'PACIENTE',
+          cama: '12',
+          registro: envelope,
+          diagnosticosList: envelope,
+          diagnosticosText: envelope,
+          registroFp: 'fp-abc',
+        },
+      },
+      {}
+    );
+    assert.equal(entry.patient.nombre, 'PACIENTE');
+    assert.equal(entry.patient.cama, '12');
+    assert.ok(!('registro' in entry.patient)); // no room password yet — never leaks ciphertext
+    assert.ok(!('diagnosticosList' in entry.patient));
+    assert.ok(!('diagnosticosText' in entry.patient));
+    assert.ok(!('registroFp' in entry.patient)); // wire-only key, never a patient property
+  });
+
+  it('cloudEntryToLanEntry carries registro/diagnosis once decrypted (plain values)', () => {
+    const entry = cloudEntryToLanEntry(
+      {
+        id: 'p1',
+        fields: {
+          nombre: 'PACIENTE',
+          registro: '2026-001234',
+          diagnosticosList: ['NEUMONIA'],
+          diagnosticosText: '1. NEUMONIA',
+        },
+      },
+      {}
+    );
+    assert.equal(entry.patient.registro, '2026-001234');
+    assert.deepEqual(entry.patient.diagnosticosList, ['NEUMONIA']);
+    assert.equal(entry.patient.diagnosticosText, '1. NEUMONIA');
+  });
+
   it('cloudEntryToLanEntry omits note/indicaciones when the entry never had the key', () => {
     const partial = cloudEntryToLanEntry({ id: 'p1', fields: { cuarto: '204' } }, {});
     assert.ok(!('note' in partial));
@@ -238,14 +280,63 @@ describe('pull-apply tombstone guard', () => {
     patientList.push({ id: 'p-new', registro: '2166042-4', nombre: 'REINGRESO' });
     try {
       assert.equal(
-        shouldApplyCloudTombstone('p-old', { registro: '2166042-4' }),
+        await shouldApplyCloudTombstone('p-old', { registro: '2166042-4' }),
         false
       );
-      assert.equal(shouldApplyCloudTombstone('p-old', { registro: '' }), true);
+      assert.equal(await shouldApplyCloudTombstone('p-old', { registro: '' }), true);
     } finally {
       patientList.length = 0;
       patientList.push(...before);
     }
+  });
+
+  it('shouldApplyCloudTombstone falls back to registroFp fingerprint matching in an E2EE room', async () => {
+    const { shouldApplyCloudTombstone } = await import('./pull-apply.mjs');
+    const { getPatients } = await import('../../app-state.mjs');
+    const { generateDek, exportDekRaw, fingerprintValue } = await import('./crypto.mjs');
+    const { hydrateRoomDeksFromPersistence, clearRoomDekCache } = await import('./room-dek.mjs');
+    const { setCloudSyncRoomSnapshot } = await import('./settings.mjs');
+    const patientList = getPatients();
+    const before = patientList.slice();
+    patientList.length = 0;
+    patientList.push({ id: 'p-new', registro: '2166042-4', nombre: 'REINGRESO' });
+
+    const dek = await generateDek();
+    const fp = await fingerprintValue(dek, '2166042-4');
+    const memoryStore = () => {
+      const map = new Map();
+      return {
+        getItem: (k) => (map.has(k) ? map.get(k) : null),
+        setItem: (k, v) => map.set(String(k), String(v)),
+        removeItem: (k) => map.delete(String(k)),
+      };
+    };
+    const prevSession = globalThis.sessionStorage;
+    const prevLocal = globalThis.localStorage;
+    globalThis.sessionStorage = memoryStore();
+    globalThis.localStorage = memoryStore();
+    setCloudSyncRoomSnapshot({ id: 'room-1', code: 'ABC123' });
+    await hydrateRoomDeksFromPersistence({ 'room-1': await exportDekRaw(dek) });
+    try {
+      // Matching fingerprint — skip the stale tombstone, the resurrection already landed.
+      assert.equal(await shouldApplyCloudTombstone('p-old', { registroFp: fp }), false);
+      // A different fingerprint — no local patient matches, apply the tombstone.
+      assert.equal(await shouldApplyCloudTombstone('p-old', { registroFp: 'fp-unrelated' }), true);
+    } finally {
+      clearRoomDekCache();
+      setCloudSyncRoomSnapshot(null);
+      if (prevSession) globalThis.sessionStorage = prevSession;
+      else delete globalThis.sessionStorage;
+      if (prevLocal) globalThis.localStorage = prevLocal;
+      else delete globalThis.localStorage;
+      patientList.length = 0;
+      patientList.push(...before);
+    }
+  });
+
+  it('shouldApplyCloudTombstone fails open (applies the tombstone) with no cached DEK yet', async () => {
+    const { shouldApplyCloudTombstone } = await import('./pull-apply.mjs');
+    assert.equal(await shouldApplyCloudTombstone('p-old', { registroFp: 'fp-anything' }), true);
   });
 });
 

@@ -40,6 +40,7 @@ export function buildRoomLiveWsUrl(deps) {
  * @param {{
  *   getRevision: () => number,
  *   onRevisionHint?: (revision: number) => void,
+ *   onOpsMessage?: (ops: unknown[], revision: number) => void,
  * }} deps
  */
 export function createRoomWsSignalQueue(deps) {
@@ -71,6 +72,14 @@ export function createRoomWsSignalQueue(deps) {
       const rev = Number(msg?.revision);
       if (!Number.isFinite(rev) || rev <= 0) return;
       if (type === 'revision') {
+        // Instant apply when the broadcast carries the actual change (Part C).
+        // The debounced revision signal below still queues regardless — the
+        // safety net stays armed; once onOpsMessage's consumer bumps the local
+        // revision to match, flushSignal's own `rev > local` check turns that
+        // queued signal into a no-op instead of a redundant extra pull.
+        if (Array.isArray(msg?.ops) && msg.ops.length) {
+          deps.onOpsMessage?.(msg.ops, rev);
+        }
         queueRevisionSignal(rev);
         return;
       }
@@ -243,6 +252,7 @@ function roomWsScheduleReconnect(state, deps) {
  *   getRoomId: () => string,
  *   getRevision: () => number,
  *   onRevisionHint?: (revision: number) => void,
+ *   onOpsMessage?: (ops: unknown[], revision: number) => void,
  *   onTransportChange?: (transport: CloudSyncTransport) => void,
  * }} deps
  */

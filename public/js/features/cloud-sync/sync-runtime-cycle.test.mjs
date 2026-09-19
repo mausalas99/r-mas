@@ -312,6 +312,82 @@ describe('createSyncRuntimeCycle status', () => {
 
     assert.equal(statuses[statuses.length - 1], 'idle');
   });
+
+  it('an instant WS ops message applies via applyPullResult and bumps local revision (Part C)', async () => {
+    const original = globalThis.WebSocket;
+    const applied = [];
+    let revision = 5;
+    const ops = [{ path: 'entries/p1/note', value: { text: 'estable' } }];
+    globalThis.WebSocket = class MockWs {
+      constructor() {
+        setTimeout(() => {
+          if (this.onopen) this.onopen();
+          if (this.onmessage) this.onmessage({ data: JSON.stringify({ type: 'revision', revision: 6, ops }) });
+        }, 0);
+      }
+      close() {}
+    };
+
+    const runtime = createSyncRuntimeCycle({
+      api: { pull: async () => ({ revision, ops: [] }), push: async () => ({ revision }) },
+      outbox: makeOutbox(),
+      getRoomId: () => 'room-1',
+      getRevision: () => revision,
+      setRevision: (next) => { revision = next; },
+      applyPullResult: async (result) => { applied.push(result); },
+      liveRoomWs: { getBaseUrl: () => 'https://sync.example.com', getToken: () => 't' },
+      deferBootCycle: true,
+      onStatus() {},
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    runtime.stop();
+    globalThis.WebSocket = original;
+
+    assert.deepEqual(applied, [{ ops, revision: 6 }]);
+    assert.equal(revision, 6);
+  });
+
+  it('a bare-revision WS message (no ops) never calls applyPullResult — the debounced pull is the safety net', async () => {
+    const original = globalThis.WebSocket;
+    const applied = [];
+    let revision = 5;
+    let pulls = 0;
+    globalThis.WebSocket = class MockWs {
+      constructor() {
+        setTimeout(() => {
+          if (this.onopen) this.onopen();
+          if (this.onmessage) this.onmessage({ data: JSON.stringify({ type: 'revision', revision: 9 }) });
+        }, 0);
+      }
+      close() {}
+    };
+
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => { pulls += 1; return { revision: 9, ops: [] }; },
+        push: async () => ({ revision }),
+      },
+      outbox: makeOutbox(),
+      getRoomId: () => 'room-1',
+      getRevision: () => revision,
+      setRevision: (next) => { revision = next; },
+      applyPullResult: async (result) => { applied.push(result); },
+      liveRoomWs: { getBaseUrl: () => 'https://sync.example.com', getToken: () => 't' },
+      deferBootCycle: true,
+      onStatus() {},
+    });
+
+    // Debounce is 300ms — wait past it so the fallback pull has a chance to fire.
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    runtime.stop();
+    globalThis.WebSocket = original;
+
+    assert.ok(pulls >= 1); // the debounced revision hint still triggered a real pull
+    // applyPullResult was reached only via that real pull (api.pull's {ops:[]} shape),
+    // never via the direct WS-ops path — this message never carried ops to begin with.
+    assert.ok(applied.every((r) => Array.isArray(r?.ops) && r.ops.length === 0));
+  });
 });
 
 describe('createSyncFailCycle — backoff-class errors with pending ops', () => {

@@ -1,0 +1,24 @@
+R+ 8.4.0 (estable — release 8.4.0)
+======================================
+
+Fecha: 2026-09-19
+
+## Resumen
+
+Cifra el número de historia clínica y los diagnósticos en Nube igual que la nota y las indicaciones, hace que los cambios de otras ventanas se vean al instante, y evita que el censo impreso achique el texto demasiado.
+
+## Nuevo / mejorado
+
+- **Arreglado (Nube, importante):** el número de historia clínica (registro) y los diagnósticos ahora se cifran de extremo a extremo igual que la nota y las indicaciones. Antes viajaban en texto plano por el servidor.
+- **Mejorado (Nube):** un cambio hecho en un equipo ahora aparece al instante en las otras ventanas abiertas de la misma sala, sin esperar el siguiente ciclo de sincronización.
+- **Arreglado:** la vista de impresión del censo ya no achica el texto más allá de un límite legible; si el censo es muy largo, ahora pagina en vez de encogerse demasiado.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.4.0-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.4.0-Mac-Intel.dmg`
+- Windows: `R+-8.4.0-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

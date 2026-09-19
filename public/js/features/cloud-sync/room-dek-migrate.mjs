@@ -9,8 +9,7 @@
  * (cloud/sync-worker/src/room-dek.js: handlePutRoomDek, 403 otherwise).
  */
 import { ensureRoomDek, loadRoomDek, getCachedRoomDek } from './room-dek.mjs';
-import { isEncryptedEnvelope } from './crypto.mjs';
-import { isEncryptedContentPath, listContentFieldEntries } from './cloud-sync-crypto-wire.mjs';
+import { needsReencryption, listContentFieldEntries } from './cloud-sync-crypto-wire.mjs';
 import { pushCloudOpsDirect } from './cloud-push-direct.mjs';
 import { auditDekEvent, DEK_EVENTS } from './cloud-sync-audit.mjs';
 
@@ -73,8 +72,7 @@ function foldStateToLatestByPath(state) {
 function buildReencryptOps(byPath, actorId) {
   const ops = [];
   for (const [path, entry] of Object.entries(byPath)) {
-    if (!isEncryptedContentPath(path)) continue;
-    if (isEncryptedEnvelope(entry.value)) continue;
+    if (!needsReencryption(path, entry.value)) continue;
     if (!entry.updatedAt) continue;
     ops.push({ path, value: entry.value, updatedAt: bumpTimestamp(entry.updatedAt), actorId });
   }
@@ -99,11 +97,12 @@ function groupOpsByEntity(ops) {
 }
 
 /**
- * Pulls the room's authoritative current content and re-pushes any field that
- * isn't an encrypted envelope yet. `api.push` (api-client.mjs) already encrypts
- * any op whose path matches `isEncryptedContentPath` transparently once a DEK is
- * cached — this only has to get the (path, value, clock) right and reuse the
- * existing push pipeline (chunking, retries) via `pushCloudOpsDirect`.
+ * Pulls the room's authoritative current content and re-pushes any field
+ * `needsReencryption` still flags — a whole-value content field, or an
+ * identity payload with a plaintext locked sub-key. `api.push` (api-client.mjs)
+ * already encrypts those transparently once a DEK is cached — this only has
+ * to get the (path, value, clock) right and reuse the existing push pipeline
+ * (chunking, retries) via `pushCloudOpsDirect`.
  *
  * Pushed one entity (patient/lab/todo) at a time instead of one giant batch: a
  * failure on one patient's oversized history (D1's 2MB row cap, base64 overhead)
@@ -176,7 +175,7 @@ async function countRemainingPlaintext(api, roomId) {
   const byPath = data?.state ? foldStateToLatestByPath(data.state) : foldOpsToLatestByPath(data?.ops);
   let count = 0;
   for (const [path, entry] of Object.entries(byPath)) {
-    if (isEncryptedContentPath(path) && !isEncryptedEnvelope(entry.value)) count += 1;
+    if (needsReencryption(path, entry.value)) count += 1;
   }
   return count;
 }

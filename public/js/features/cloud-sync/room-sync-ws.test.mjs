@@ -76,6 +76,83 @@ describe('createRoomSyncWs', () => {
     });
   });
 
+  it('onOpsMessage fires with the carried ops when the broadcast has them (instant apply, Part C)', () => {
+    const opsMessages = [];
+    const hints = [];
+    const prevOnline = Object.getOwnPropertyDescriptor(globalThis.navigator || {}, 'onLine');
+    Object.defineProperty(globalThis.navigator, 'onLine', { configurable: true, get: () => true });
+    const original = globalThis.WebSocket;
+    const ops = [{ path: 'entries/p1/note', value: { text: 'estable' } }];
+    globalThis.WebSocket = class MockWs {
+      constructor() {
+        setTimeout(() => {
+          if (this.onopen) this.onopen();
+          if (this.onmessage) {
+            this.onmessage({ data: JSON.stringify({ type: 'revision', revision: 7, ops }) });
+          }
+        }, 0);
+      }
+      close() {}
+    };
+
+    const ws = createRoomSyncWs({
+      getBaseUrl: () => 'https://sync.example.com',
+      getToken: () => 't',
+      getRoomId: () => 'r',
+      getRevision: () => 5,
+      onRevisionHint: (rev) => hints.push(rev),
+      onOpsMessage: (msgOps, rev) => opsMessages.push({ ops: msgOps, rev }),
+    });
+    ws.start();
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        assert.deepEqual(opsMessages, [{ ops, rev: 7 }]);
+        // The debounced fallback still queues (safety net) — see assertion in
+        // sync-runtime-cycle.test.mjs that it becomes a no-op once local revision
+        // catches up, rather than testing the internal debounce timing here.
+        assert.deepEqual(hints, [7]);
+        ws.stop();
+        globalThis.WebSocket = original;
+        if (prevOnline) Object.defineProperty(globalThis.navigator, 'onLine', prevOnline);
+        resolve();
+      }, 400);
+    });
+  });
+
+  it('a bare-revision message (no ops, size-cap fallback) never calls onOpsMessage', () => {
+    const opsMessages = [];
+    const prevOnline = Object.getOwnPropertyDescriptor(globalThis.navigator || {}, 'onLine');
+    Object.defineProperty(globalThis.navigator, 'onLine', { configurable: true, get: () => true });
+    const original = globalThis.WebSocket;
+    globalThis.WebSocket = class MockWs {
+      constructor() {
+        setTimeout(() => {
+          if (this.onopen) this.onopen();
+          if (this.onmessage) this.onmessage({ data: JSON.stringify({ type: 'revision', revision: 8 }) });
+        }, 0);
+      }
+      close() {}
+    };
+
+    const ws = createRoomSyncWs({
+      getBaseUrl: () => 'https://sync.example.com',
+      getToken: () => 't',
+      getRoomId: () => 'r',
+      getRevision: () => 5,
+      onOpsMessage: (msgOps, rev) => opsMessages.push({ ops: msgOps, rev }),
+    });
+    ws.start();
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        assert.deepEqual(opsMessages, []);
+        ws.stop();
+        globalThis.WebSocket = original;
+        if (prevOnline) Object.defineProperty(globalThis.navigator, 'onLine', prevOnline);
+        resolve();
+      }, 400);
+    });
+  });
+
   it('pings on an interval so an idle iOS socket does not get NAT-dropped silently', () => {
     const prevOnline = Object.getOwnPropertyDescriptor(globalThis.navigator || {}, 'onLine');
     Object.defineProperty(globalThis.navigator, 'onLine', { configurable: true, get: () => true });

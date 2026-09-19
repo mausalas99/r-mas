@@ -5,6 +5,8 @@ import { createCloudPollScheduler } from './sync-runtime-schedule.mjs';
 import { cloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 import { isCloudTransientServerError } from './cloud-sync-timing.mjs';
 import { createPullPush, isCloudRevisionStaleError } from './sync-runtime-pull-push.mjs';
+import { decryptOpsFromPull } from './cloud-sync-crypto-wire.mjs';
+import { getCachedRoomDek } from './room-dek.mjs';
 import {
   cloudSyncErrorCode,
   getLastCloudPushAt,
@@ -237,6 +239,31 @@ export function createSyncFailCycle(getScheduler, setStatus, pendingCount) {
 }
 
 /**
+ * Applies ops the WS broadcast carried directly (Part C) — same apply path a
+ * normal pull already uses, decrypted the same way. Bumping the local revision
+ * on success is what makes the debounced revision-hint queued alongside this
+ * same message a no-op instead of a redundant extra pull (see
+ * room-sync-ws-internals.mjs's handleMessage). Any failure here (bad/missing
+ * DEK, apply error) is swallowed — that debounced signal is the safety net and
+ * still fires a normal pullLatest() a moment later.
+ * @param {object} deps @param {object} ctx @param {unknown[]} ops @param {number} revision
+ */
+async function applyRoomWsOpsMessage(deps, ctx, ops, revision) {
+  const local = Number(deps.getRevision() ?? 0);
+  if (!Number.isFinite(revision) || revision <= local) return;
+  try {
+    const roomId = ctx.getRoomId();
+    const dek = roomId ? getCachedRoomDek(roomId) : null;
+    const decrypted = await decryptOpsFromPull(dek, ops);
+    if (deps.applyPullResult) await deps.applyPullResult({ ops: decrypted, revision });
+    deps.setRevision(revision);
+    recordCloudSyncTrace('ws_ops_applied', { revision, opsCount: decrypted.length });
+  } catch (err) {
+    recordCloudSyncTrace('ws_ops_apply_failed', { message: String(err?.message || err) });
+  }
+}
+
+/**
  * @param {object} deps
  * @param {object} ctx
  */
@@ -252,6 +279,9 @@ function startLiveRoomSyncWs(deps, ctx) {
       const local = Number(deps.getRevision() ?? 0);
       if (revision > local) void ctx.syncCycle();
       ctx.scheduler.armNextTimer(false);
+    },
+    onOpsMessage: function (ops, revision) {
+      void applyRoomWsOpsMessage(deps, ctx, ops, revision);
     },
     onTransportChange: function (transport) {
       noteCloudSyncTransport(transport);

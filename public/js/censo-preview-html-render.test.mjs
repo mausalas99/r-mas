@@ -9,10 +9,14 @@ test('censoPrintFitScale: content within one page stays at scale 1', () => {
   assert.equal(censoPrintFitScale(900, 600), 1);
 });
 
-test('censoPrintFitScale: tall content shrinks to fit page height', () => {
-  var scale = censoPrintFitScale(900, 2000);
+test('censoPrintFitScale: moderately tall content shrinks to fit page height', () => {
+  var scale = censoPrintFitScale(900, 900);
   assert.ok(scale > 0 && scale < 1);
-  assert.ok(2000 * scale <= (215.9 - 20) * (96 / 25.4) + 0.01);
+  assert.ok(900 * scale <= (215.9 - 20) * (96 / 25.4) + 0.01);
+});
+
+test('censoPrintFitScale: very tall content stops shrinking at the readability floor', () => {
+  assert.equal(censoPrintFitScale(900, 2000), 0.8);
 });
 
 test('censoPrintFitScale: missing dimensions default to no scaling', () => {

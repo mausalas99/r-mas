@@ -17,7 +17,7 @@ export function emptyState() {
 }
 
 /**
- * @typedef {{ revision: number, entries: object[], entityVersions: Record<string, { updatedAt: string, actorId: string }>, todos: Record<string, unknown>, agenda: unknown[], clinicalOps: unknown, labSidecars: Record<string, Record<string, unknown>>, tombstones?: Record<string, { registro?: string, deletedAt: string, actorId?: string }> }} RoomSyncState
+ * @typedef {{ revision: number, entries: object[], entityVersions: Record<string, { updatedAt: string, actorId: string }>, todos: Record<string, unknown>, agenda: unknown[], clinicalOps: unknown, labSidecars: Record<string, Record<string, unknown>>, tombstones?: Record<string, { registroFp?: string, registro?: string, deletedAt: string, actorId?: string }> }} RoomSyncState
  * @typedef {{ path: string, value: unknown, updatedAt: string, actorId: string }} SyncOp
  * @typedef {{ op: SyncOp, reason: string }} RejectedOp
  */
@@ -60,12 +60,28 @@ function isPatientEntryOpPath(path) {
   );
 }
 
+/**
+ * Matching key for re-admit detection. `registroFp` is a one-way fingerprint the
+ * client attaches once a room has E2EE (public/js/features/cloud-sync/crypto.mjs's
+ * fingerprintValue) — the Worker never reads the real chart number. `registro`
+ * plaintext is the fallback for a room with no DEK yet (encryptOpsForPush is a
+ * no-op there, so no fingerprint ever gets attached) and for reading a tombstone
+ * row written before this shipped (see applyTombstone).
+ * @param {unknown} value
+ */
+function registroMatchKeyFromValue(value) {
+  if (!value || typeof value !== 'object') return '';
+  const row = /** @type {{ registroFp?: string, registro?: string }} */ (value);
+  return String(row.registroFp || row.registro || '').trim();
+}
+
 /** @param {SyncOp} op */
 function registroFromEntryOp(op) {
-  const value = op.value;
-  if (!value || typeof value !== 'object') return '';
-  const row = /** @type {{ registro?: string, fields?: { registro?: string } }} */ (value);
-  return String(row.registro || row.fields?.registro || '').trim();
+  // Note: an op's OWN value for a `fields`-path op IS the flat fields object
+  // directly (never nested one level further under a `.fields` key) — the
+  // nesting into `entry.fields.*` only happens once lww merges it into state.
+  // A `row.fields?.registro` fallback on the op itself would always be empty.
+  return registroMatchKeyFromValue(op.value);
 }
 
 /** @param {RoomSyncState} state @param {string} patientId */
@@ -87,15 +103,15 @@ function tryClearTombstoneForResurrection(state, patientId, op) {
   clearPatientTombstone(state, patientId);
 }
 
-/** @param {RoomSyncState} state @param {string} registro @param {SyncOp} op @param {string} [exceptPatientId] */
-function clearRegistroTombstonesForReAdmit(state, registro, op, exceptPatientId) {
-  const reg = String(registro || '').trim();
+/** @param {RoomSyncState} state @param {string} registroKey @param {SyncOp} op @param {string} [exceptPatientId] */
+function clearRegistroTombstonesForReAdmit(state, registroKey, op, exceptPatientId) {
+  const reg = String(registroKey || '').trim();
   if (!reg || !state.tombstones) return;
   const opAt = String(op.updatedAt || '');
   for (const pid of Object.keys(state.tombstones)) {
     if (exceptPatientId && pid === exceptPatientId) continue;
     const meta = state.tombstones[pid];
-    if (String(meta?.registro || '').trim() !== reg) continue;
+    if (registroMatchKeyFromValue(meta) !== reg) continue;
     const tombAt = getTombstoneDeletedAt(state, pid);
     if (tombAt && opAt.localeCompare(tombAt) < 0) continue;
     delete state.tombstones[pid];
@@ -211,10 +227,17 @@ function applyTombstone(state, patientId, op) {
   if (!state.tombstones) state.tombstones = {};
   const meta =
     typeof op.value === 'object' && op.value !== null
-      ? /** @type {{ registro?: string, deletedAt?: string }} */ (op.value)
+      ? /** @type {{ registroFp?: string, registro?: string, deletedAt?: string }} */ (op.value)
       : {};
+  // Stored under registroFp going forward — the client (Part A, encryptOpsForPush)
+  // already swapped the real chart number for its one-way fingerprint before this
+  // op ever reached the Worker. A tombstone written before this shipped still has
+  // a plaintext `registro` on disk; registroMatchKeyFromValue reads that as a
+  // fallback, but it is never written again here. Accepted edge case, not fixed:
+  // a patient discharged before this ships and re-admitted after won't auto-clear
+  // their old tombstone (fresh entry instead — no data loss, just not de-duped).
   state.tombstones[patientId] = {
-    registro: meta.registro,
+    registroFp: registroMatchKeyFromValue(meta) || undefined,
     deletedAt: meta.deletedAt || op.updatedAt,
     actorId: op.actorId,
   };

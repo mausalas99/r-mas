@@ -225,7 +225,7 @@ describe('applyOps LWW', () => {
     assert.equal(s.labSidecars.p1, undefined);
     assert.equal(s.todos.t1, undefined);
     assert.equal(s.agenda.length, 0);
-    assert.equal(s.tombstones.p1.registro, '2166042-4');
+    assert.equal(s.tombstones.p1.registroFp, '2166042-4');
     assert.equal(s.tombstones.p1.actorId, 'a');
 
     ({ state: s } = applyOps(s, [
@@ -408,6 +408,97 @@ describe('applyOps LWW', () => {
     assert.equal(s.entries.length, 1);
     assert.equal(s.entries[0].id, 'p-new');
     assert.equal(s.tombstones['p-old'], undefined);
+  });
+
+  it('re-admit matches by registroFp (fingerprint) instead of the real chart number — E2EE room', () => {
+    let s = emptyState();
+    // Simulates what the client actually sends once a room has a DEK: registro
+    // itself is an {enc:1,...} envelope (opaque to the Worker), registroFp is the
+    // one-way fingerprint public/js/features/cloud-sync/crypto.mjs computed.
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'tombstones/p-old',
+        value: { registroFp: 'fp-9a8b7c', deletedAt: '2026-09-18T12:00:00.000Z' },
+        updatedAt: '2026-09-18T12:00:00.000Z',
+        actorId: 'admin',
+      },
+    ]));
+    assert.ok(s.tombstones['p-old']);
+    assert.equal(s.tombstones['p-old'].registroFp, 'fp-9a8b7c');
+
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p-new/fields',
+        value: {
+          nombre: 'NUEVO',
+          cama: '4',
+          registro: { enc: 1, iv: 'iv', ct: 'ct' }, // Worker never reads this
+          registroFp: 'fp-9a8b7c',
+        },
+        updatedAt: '2026-09-18T13:00:00.000Z',
+        actorId: 'a',
+      },
+    ]));
+    assert.equal(s.entries.length, 1);
+    assert.equal(s.entries[0].id, 'p-new');
+    assert.equal(s.tombstones['p-old'], undefined); // cleared via fingerprint match, not plaintext
+  });
+
+  it('a different registroFp does not clear an unrelated tombstone', () => {
+    let s = emptyState();
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'tombstones/p-old',
+        value: { registroFp: 'fp-aaaa', deletedAt: '2026-09-18T12:00:00.000Z' },
+        updatedAt: '2026-09-18T12:00:00.000Z',
+        actorId: 'admin',
+      },
+    ]));
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p-new/fields',
+        value: { nombre: 'NUEVO', registroFp: 'fp-bbbb' },
+        updatedAt: '2026-09-18T13:00:00.000Z',
+        actorId: 'a',
+      },
+    ]));
+    assert.ok(s.tombstones['p-old']); // untouched — different chart number
+  });
+
+  it('legacy tombstone row (pre-ship, plaintext under the old `registro` key) still matches on re-admit', () => {
+    let s = emptyState();
+    // Written before this shipped — applyTombstone no longer produces this shape,
+    // but a room's already-stored state may still have it (see applyTombstone's
+    // comment on the accepted edge case). registroMatchKeyFromValue's fallback
+    // read must still recognize it.
+    s.tombstones['p-old'] = { registro: '7777-2', deletedAt: '2026-09-01T00:00:00.000Z' };
+
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p-new/fields',
+        value: { nombre: 'NUEVO', registro: '7777-2' }, // non-E2EE room: no dek, no fingerprint
+        updatedAt: '2026-09-18T13:00:00.000Z',
+        actorId: 'a',
+      },
+    ]));
+    assert.equal(s.tombstones['p-old'], undefined);
+  });
+
+  it('fields op merges an encrypted registro/diagnosis envelope alongside plaintext cama/servicio unchanged — regression', () => {
+    let s = emptyState();
+    const value = {
+      nombre: 'Juan Perez',
+      cama: '12',
+      servicio: 'UCI',
+      registro: { enc: 1, iv: 'iv1', ct: 'ct1' },
+      diagnosticosList: { enc: 1, iv: 'iv2', ct: 'ct2' },
+      diagnosticosText: { enc: 1, iv: 'iv3', ct: 'ct3' },
+      registroFp: 'fp-xyz',
+    };
+    ({ state: s } = applyOps(s, [
+      { path: 'entries/p1/fields', value, updatedAt: '2026-09-18T10:00:00.000Z', actorId: 'a' },
+    ]));
+    assert.deepEqual(s.entries[0].fields, value); // whole-object LWW replace, untouched by the Worker
   });
 
   it('monitoreo merges historial by id instead of the newer push wiping the older one', () => {

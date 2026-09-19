@@ -18,6 +18,10 @@ export function isTombstoneOutboxMutationId(clientMutationId) {
 
 /**
  * Slim LWW tombstone value — omit empty registro (Worker already falls back on deletedAt/updatedAt).
+ * Built synchronously with a plaintext `registro` on purpose (this stays sync, no
+ * dek/await here) — encryptOpsForPush (cloud-sync-crypto-wire.mjs, Part A) is where
+ * a `tombstones/{id}` op's plaintext registro gets swapped for its one-way
+ * `registroFp` fingerprint right before the push, same as every other locked field.
  * @param {string} patientId
  * @param {{ registro?: string, actorId: string, updatedAt: string }} meta
  */

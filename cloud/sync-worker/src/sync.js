@@ -546,7 +546,9 @@ async function handleMutations(request, env, db, roomId) {
       labSetBytes,
     });
     if (committed.ok) {
-      await notifyRoomRevision(env, roomId, committed.revision);
+      // appliedResult.applied only — not sidecarApplied (internoAccessUpsert rows
+      // aren't {path,value} LWW ops the client's ops-apply path understands).
+      await notifyRoomRevision(env, roomId, committed.revision, appliedResult.applied);
       return Response.json({
         revision: committed.revision,
         applied: lastApplied,

@@ -209,8 +209,13 @@ export const CENSO_PRINT_PAGE_H_MM = 215.9 - 20;
 export const CENSO_PRINT_PAGE_W_MM = 355.6 - 20;
 export const CENSO_PRINT_MM_TO_PX = 96 / 25.4;
 
+// Below this, text stops shrinking and the table spills onto more pages instead.
+export const CENSO_PRINT_MIN_SCALE = 0.8;
+
 /**
  * Factor de zoom para que el contenido quepa en una página al imprimir.
+ * El ancho siempre se respeta (no hay paginado horizontal); el alto se
+ * encoge solo hasta CENSO_PRINT_MIN_SCALE y de ahí en más pagina.
  * @param {number} contentWidthPx
  * @param {number} contentHeightPx
  * @returns {number}
@@ -219,7 +224,9 @@ export function censoPrintFitScale(contentWidthPx, contentHeightPx) {
   if (!contentWidthPx || !contentHeightPx) return 1;
   var maxH = CENSO_PRINT_PAGE_H_MM * CENSO_PRINT_MM_TO_PX;
   var maxW = CENSO_PRINT_PAGE_W_MM * CENSO_PRINT_MM_TO_PX;
-  return Math.min(1, maxH / contentHeightPx, maxW / contentWidthPx);
+  var widthScale = Math.min(1, maxW / contentWidthPx);
+  var heightScale = Math.max(CENSO_PRINT_MIN_SCALE, Math.min(1, maxH / contentHeightPx));
+  return Math.min(widthScale, heightScale);
 }
 
 function censoPrintFitScript() {
@@ -228,7 +235,9 @@ function censoPrintFitScript() {
   return (
     '<script>(function(){function fit(){document.body.style.zoom="";' +
     'var r=document.body.getBoundingClientRect();' +
-    'var s=Math.min(1,' + maxH + '/r.height,' + maxW + '/r.width);' +
+    'var ws=Math.min(1,' + maxW + '/r.width);' +
+    'var hs=Math.max(' + CENSO_PRINT_MIN_SCALE + ',Math.min(1,' + maxH + '/r.height));' +
+    'var s=Math.min(ws,hs);' +
     'if(s<1)document.body.style.zoom=String(s);}' +
     'window.addEventListener("beforeprint",fit);' +
     'window.addEventListener("afterprint",function(){document.body.style.zoom="";});' +

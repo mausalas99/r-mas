@@ -208,6 +208,24 @@ export async function encryptValue(dek, value) {
   return { enc: 1, iv: toBase64(iv), ct: toBase64(ct) };
 }
 
+/**
+ * One-way, deterministic fingerprint of a plaintext value, keyed by the room DEK
+ * (HMAC-SHA-256 over the DEK's raw bytes). Same dek + same input always produces
+ * the same output; the output cannot be reversed back into the input. Used only
+ * so the server can recognize a repeated value (e.g. the same chart number on a
+ * re-admit) without ever reading the real value — not a general-purpose search
+ * index, and not a substitute for encryptValue when the real value is needed back.
+ * @param {CryptoKey} dek
+ * @param {string} value
+ * @returns {Promise<string>}
+ */
+export async function fingerprintValue(dek, value) {
+  const raw = await crypto.subtle.exportKey('raw', dek);
+  const hmacKey = await crypto.subtle.importKey('raw', raw, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', hmacKey, new TextEncoder().encode(String(value ?? '')));
+  return toBase64(sig);
+}
+
 /** @param {unknown} value */
 export function isEncryptedEnvelope(value) {
   return !!value && typeof value === 'object' && /** @type {any} */ (value).enc === 1;

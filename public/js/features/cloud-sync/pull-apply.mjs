@@ -24,6 +24,9 @@ import {
 } from './pull-apply-state.mjs';
 import { bumpLabHistoryRevision } from '../../lab-history-cache.mjs';
 import { getLabHistory } from '../../app-state.mjs';
+import { getCloudSyncRoomSnapshot } from './settings.mjs';
+import { getCachedRoomDek } from './room-dek.mjs';
+import { fingerprintValue } from './crypto.mjs';
 
 /** @type {Promise<typeof import('../cloud-mobile/lab-sync-diagnostics.mjs')> | null} */
 let _labSyncDiagMod = null;
@@ -147,26 +150,51 @@ export function excludeTombstonedEntries(entries, tombstones) {
   });
 }
 
-/** @param {string} patientId @param {unknown} tombstoneMeta */
-export function shouldApplyCloudTombstone(patientId, tombstoneMeta) {
+/**
+ * Guards against a same-pull-batch race: a tombstone op and a later resurrection
+ * (re-admit under the same chart number, different patient id) can both land in
+ * one incremental ops batch — this must not delete the resurrected patient.
+ *
+ * A non-E2EE room's tombstone still carries a plaintext `registro` (compared
+ * directly). An E2EE room's tombstone only carries the one-way `registroFp`
+ * (Part A/B) — this device fingerprints each other local patient's own registro
+ * with the room DEK to compare, the same way the Worker never reads the real
+ * value either. No DEK cached yet: fail open (apply the tombstone), same as an
+ * empty registro — there's nothing to compare against.
+ * @param {string} patientId @param {unknown} tombstoneMeta
+ */
+export async function shouldApplyCloudTombstone(patientId, tombstoneMeta) {
   const pid = String(patientId || '').trim();
   if (!pid) return false;
-  const reg = String(
+  const meta =
     tombstoneMeta && typeof tombstoneMeta === 'object'
-      ? /** @type {{ registro?: string }} */ (tombstoneMeta).registro || ''
-      : ''
-  ).trim();
-  if (!reg) return true;
-  return !getSyncablePatients().some(function (p) {
-    return p && String(p.id || '') !== pid && String(p.registro || '').trim() === reg;
-  });
+      ? /** @type {{ registro?: string, registroFp?: string }} */ (tombstoneMeta)
+      : {};
+  const reg = String(meta.registro || '').trim();
+  if (reg) {
+    return !getSyncablePatients().some(function (p) {
+      return p && String(p.id || '') !== pid && String(p.registro || '').trim() === reg;
+    });
+  }
+  const fp = String(meta.registroFp || '').trim();
+  if (!fp) return true;
+  const roomId = getCloudSyncRoomSnapshot()?.id || '';
+  const dek = roomId ? getCachedRoomDek(roomId) : null;
+  if (!dek) return true;
+  const candidates = getSyncablePatients().filter(
+    (p) => p && String(p.id || '') !== pid && String(p.registro || '').trim()
+  );
+  for (const p of candidates) {
+    if ((await fingerprintValue(dek, String(p.registro).trim())) === fp) return false;
+  }
+  return true;
 }
 
 /** @param {Record<string, unknown>} tombstones */
-function applyCloudTombstones(tombstones) {
+async function applyCloudTombstones(tombstones) {
   let removed = false;
   for (const patientId of Object.keys(tombstones || {})) {
-    if (!shouldApplyCloudTombstone(patientId, tombstones[patientId])) continue;
+    if (!(await shouldApplyCloudTombstone(patientId, tombstones[patientId]))) continue;
     if (removePatientLocally(patientId)) removed = true;
   }
   return removed;
@@ -349,7 +377,7 @@ export async function applyCloudState(state, opts) {
       idMap
     );
   }
-  const removed = applyCloudTombstones(snapshot.tombstones || {});
+  const removed = await applyCloudTombstones(snapshot.tombstones || {});
   pruneOrphanTodos(
     getSyncablePatients().map(function (p) {
       return p && p.id;
@@ -377,7 +405,7 @@ async function applyFoldedCloudPull(fold, labCounts) {
     : { added: 0, updated: 0 };
   const todoPatients = applyCloudTodosMap(fold.todos, idMap);
   applyCloudAgendaMap(fold.agenda, idMap);
-  const removed = applyCloudTombstones(fold.tombstones);
+  const removed = await applyCloudTombstones(fold.tombstones);
   pruneOrphanTodos(
     getSyncablePatients().map(function (p) {
       return p && p.id;

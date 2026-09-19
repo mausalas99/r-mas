@@ -1,27 +1,25 @@
 import { DurableObject } from 'cloudflare:workers';
+import { buildRevisionBroadcastMessage } from './room-sync-hub-message.js';
 
 /**
- * Per-room WebSocket hub — fans out revision hints after HTTP push (no PHI on wire).
+ * Per-room WebSocket hub — fans out revision hints (now optionally carrying the
+ * applied ops themselves, see room-sync-hub-message.js) after HTTP push.
  */
 export class RoomSyncHub extends DurableObject {
   /** @type {number} */
   lastRevision = 0;
 
   /**
-   * @param {{ revision: number, at?: string }} payload
+   * @param {{ revision: number, at?: string, ops?: unknown[] }} payload
    */
   broadcastRevision(payload) {
-    const rev = Number(payload?.revision);
-    if (!Number.isFinite(rev) || rev <= 0) return;
-    this.lastRevision = Math.max(this.lastRevision, rev);
-    const msg = JSON.stringify({
-      type: 'revision',
-      revision: rev,
-      at: payload?.at || new Date().toISOString(),
-    });
+    const msg = buildRevisionBroadcastMessage(payload);
+    if (!msg) return;
+    this.lastRevision = Math.max(this.lastRevision, msg.revision);
+    const text = JSON.stringify(msg);
     for (const ws of this.ctx.getWebSockets()) {
       try {
-        ws.send(msg);
+        ws.send(text);
       } catch {
         /* closed */
       }
