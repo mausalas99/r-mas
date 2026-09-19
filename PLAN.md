@@ -8,7 +8,10 @@ tech: Electron main/preload, public/js/app-runtimes.mjs
   tech: server.js
 - [x] Load renderer features on demand {#shell-features}
   tech: public/js/app.js, public/js/app-runtimes.mjs
-files: [main.js, preload.js, public/js/app.js, public/js/app-runtimes.mjs, public/js/boot/**]
+- [x] Build the app's screen code when the build command runs {#shell-build-main-guard}
+  by: claude
+  tech: root scripts/ is a symlink into packages/core, so process.argv[1] never equalled fileURLToPath(import.meta.url) and the isMain guard never fired — build-ui.mjs, bundle-renderer.mjs, build-cloud-mobile.mjs and build-cloud-interno.mjs each exited 0 having built nothing; replaced with import.meta.main
+files: [main.js, preload.js, public/js/app.js, public/js/app-runtimes.mjs, public/js/boot/**, scripts/build-ui.mjs, scripts/bundle-renderer.mjs]
 
 ## Keep patient data on the device {#db}
 tech: SQLCipher local DB, schema v27
@@ -329,6 +332,8 @@ files: [public/js/features/db-unlock-migration.mjs, public/js/features/db-unlock
   from: agent
 
 ## decisions
+
+- 2026-09-19, claude: fixed the four build scripts' main guard with `import.meta.main` instead of `fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)`. Both survive the root symlinks; `import.meta.main` is one word, needs no fs call, and exists in every runtime this repo actually uses (verified directly: Node 22.22.2 and Electron 41's bundled Node 24.18.0). Recorded after implementing rather than before — the bug was found mid-investigation, not planned. Known trade-off: on Node older than 22.14 `import.meta.main` is `undefined`, which would silently no-op the build again; accepted because nothing in the toolchain is that old, and `public/js/app-boot-imports.test.mjs` fails loudly whenever the bundle is missing, which is exactly how this bug surfaced.
 
 - 2026-09-16, claude: owner asked to "move clinical data to IndexedDB" after hitting a full localStorage (11 MB on-disk, vs Chromium's ~10 MB per-origin ceiling). Planned via ceo-fable instead of building the literal request: desktop clinical data already lives in SQLCipher (encrypted) once unlocked — `storage-core.mjs`'s `skipClinicalLocalPersist()` blocks every clinical write to localStorage, verified zero unguarded writes. IndexedDB is plaintext on disk, so moving PHI there would be a security regression, not a fix. Real cause: dead legacy `rpc-*` clinical-key copies never deleted after the SQLCipher migration (`migration-probe.mjs` only clears them when the DB was empty at migration time), plus `rpc-preimport-backup` (full clinical snapshot on every backup import, never deleted). Owner approved the smaller #ls-slim plan over the full migration.
 - 2026-09-14, claude: built #cloud-sync-outbox-sqlcipher as a write-through cache, not a full async rewrite. The 6+ call sites (mutate-bridge.mjs, sync-runtime-cycle.mjs, etc.) call outbox.enqueue/list synchronously today, on the hot path of every clinical edit — converting them to await an encrypted-DB IPC round trip on every keystroke-level save risked real typing latency against the TTD north star. Instead createSqlcipherOutbox() keeps the same synchronous in-memory API and mirrors the whole queue to SQLCipher in the background (fire-and-forget, serialized so replies can't land out of order); a startup hydrate() repopulates the cache. Trade-off: a save made in the last few ms before a hard crash (not a normal quit) could still be lost — acceptable given the prior state was zero persistence at all. `metrics:check` shows a 30-point / ~1800-LOC regression against baseline; verified via git diff --stat that this change is ~300 lines across small, uncomplicated files, nowhere near the cause — the regression predates this change (Phase 1-3 of the same outbox-pacing plan, already uncommitted per the row above).
