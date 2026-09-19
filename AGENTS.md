@@ -62,7 +62,7 @@ Always use ASD-STE100 Simplified Technical English when you talk to me.
 
 ## Read next
 
-1. [`.cursor/rules/tests-with-code.mdc`](.cursor/rules/tests-with-code.mdc) — update + `test:one` colocated tests in the same turn as behavior changes
+1. Colocated tests — when you change behavior, update the `*.test.mjs` next to the file in the same turn and run `npm run test:one -- <file>`
 2. [`docs/core/01-vision-north-star.md`](docs/core/01-vision-north-star.md) — product trade-offs
 3. [`CLAUDE.md`](CLAUDE.md) — build/test pointers; loads the code map (`.cursor/rules/project-context.mdc`) on demand, not at boot
 

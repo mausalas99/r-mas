@@ -49,8 +49,11 @@ Finishing a task that has a row in that doc is not done until the row is updated
 ```bash
 npm run test:one -- path/to/file.test.mjs   # only this
 npm run build:ui                            # after public/js edits
+npm run lint                                # eslint on root + scripts
 npm run metrics:check                       # before merge
 ```
+
+CI (`.github/workflows/ci.yml`, Node 22) gates all four on every push and PR, in this order: `build:ui`, `lint`, `metrics:check`, `test`.
 
 Tests use Electron Node. Do not use bare `node --test` for DB.
 
@@ -89,6 +92,8 @@ Then add a row to the **Active plans** table in `docs/core/20-claude-code-handof
 UI → `public/js/features/`
 Node logic → `lib/`
 Schema → `lib/db/schema.mjs`
+
+This is an npm workspaces monorepo since 2026-09-19. Real files live in `packages/core` (lib, public, cloud, scripts, data), `packages/im` (main.js, preload.js) and `packages/hf` (the separate R+ HF app — do not touch it for R+ work). The root paths above are committed symlinks into `packages/core`; keep writing through them.
 
 ## Git commits
 
