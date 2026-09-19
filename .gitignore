@@ -24,6 +24,7 @@ public/index.html
 scripts/debug-clinical-unlock-electron.cjs
 scripts/debug-clinical-unlock.mjs
 scripts/.native-cache/
+scripts/jev/.cache/
 scripts/.sqlite-*.tgz
 scripts/.sqlite-*-tmp/
 
