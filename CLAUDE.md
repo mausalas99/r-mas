@@ -18,19 +18,41 @@ Read `docs/core/01-vision-north-star.md` before a product change.
 
 ## Chain of command
 
-| Role | Model | Effort | Job |
+Jev decides. Claude Code executes.
+
+| Role | Who | Job |
+|------|-----|-----|
+| Boss | Jev (TypeSafe System One) | Makes the judgment calls. Returns a pick, a score, or a probability. Writes no code. |
+| Executer | Claude Code | Does the work the call points to. Runs the gates. Reports back. |
+
+Send to Jev every call that has no single right answer: which option, where a file belongs, is this worth doing, how risky is this. Ground each call in real text with `--state <file>`. Never ask Jev about a guess.
+
+Do not send to Jev what a command can answer: does the build pass, does the path resolve, does the test go green, does an import break a boundary. Run the thing instead. A real run beats a model's estimate of code it never ran.
+
+Below 0.5 confidence is not a decision. Stop and ask the owner.
+
+Jev reads `TYPESAFE_API_KEY` from the environment. No key means no Jev. Then stop and ask the owner — do not decide the call yourself.
+
+```bash
+node scripts/jev/choice.mjs "<question>" <label1> <label2> --state <file>   # pick one
+node scripts/jev/score.mjs  "<question>" <level0> <level1> [...] --state <file>   # rate on a named scale
+node scripts/jev/screen.mjs <file> "<yes/no question about the file>"          # screen before you read it in
+```
+
+Claude Code runs its own work on these tiers:
+
+| Tier | Model | Effort | Job |
 |------|--------|--------|-----|
-| CEO | Fable | xhigh | Plan only. No code. |
 | Senior | Opus | max | Hard review. Stuck bugs. Spec check. Can spawn Lead/Dev. |
 | Lead | Sonnet | high | Default implementer. Can spawn Dev. |
 | Dev | Haiku | low | Search. Tests. Mechanical edits. Spawns nobody. |
 
-Default session: Sonnet + high. Do not stay on Fable after the plan exists.
+Default session: Sonnet + high. Fable plans only, and never runs as a nested agent.
 
-Capability graph — a role may spawn any role below it, never sideways or up:
-CEO → Senior, Lead, Dev. Senior → Lead, Dev. Lead → Dev. Dev → nobody.
+Capability graph — a tier may spawn any tier below it, never sideways or up:
+Senior → Lead, Dev. Lead → Dev. Dev → nobody.
 
-Spawn `lead-dev`, `dev-haiku`, or `Explore` (Haiku) from the default session. Spawn `senior-dev` only when Sonnet is stuck — that is an advisor call, not a spawn down the graph. Do not spawn Fable as a nested agent, ever, from any role.
+Spawn `lead-dev`, `dev-haiku`, or `Explore` (Haiku) from the default session. Spawn `senior-dev` only when Sonnet is stuck — that is an advisor call, not a spawn down the graph.
 
 Run spawned agents in the background so their tool calls stay out of your context; only the result comes back. Add `isolation: "worktree"` on any agent that edits files, so parallel agents do not collide on the same working tree.
 
