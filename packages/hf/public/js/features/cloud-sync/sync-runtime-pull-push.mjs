@@ -266,6 +266,7 @@ async function flushOutboxItem(ctx, roomId, item) {
     recordCloudSyncTrace('push_drop', {
       clientMutationId: item.clientMutationId,
       dropped: sanitized.dropped,
+      ops: sanitized.droppedOps,
     });
   }
   if (!sanitized.ops.length) {

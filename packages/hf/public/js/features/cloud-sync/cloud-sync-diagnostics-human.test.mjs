@@ -80,6 +80,35 @@ describe('cloud-sync-diagnostics-human', () => {
     assert.equal(wsIssue, undefined);
   });
 
+  it('buildCloudDiagnosticsHumanView surfaces a silently dropped oversized vitals push', () => {
+    const view = buildCloudDiagnosticsHumanView({
+      status: 'idle',
+      online: true,
+      tokenPresent: true,
+      roomId: 'room-1',
+      transport: 'poll',
+      lastCycleOk: true,
+      outbox: { count: 0, byKind: {} },
+      syncTrace: [
+        {
+          at: '2026-09-19T12:00:00.000Z',
+          boundary: 'push_drop',
+          data: {
+            clientMutationId: 'entries/p1',
+            dropped: 1,
+            ops: [{ path: 'entries/p1/monitoreo', bytes: 200000 }],
+          },
+        },
+      ],
+    });
+    const dropIssue = view.issues.find(function (item) {
+      return item.fixId === 'push_drop';
+    });
+    assert.ok(dropIssue);
+    assert.match(dropIssue.detail, /signos/i);
+    assert.match(dropIssue.detail, /195 KB/);
+  });
+
   it('buildCloudDiagnosticsHumanView hides stale lastErrors after sync recovered', () => {
     const view = buildCloudDiagnosticsHumanView({
       status: 'idle',

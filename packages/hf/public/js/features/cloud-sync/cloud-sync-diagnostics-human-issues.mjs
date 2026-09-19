@@ -4,7 +4,7 @@ import { CLOUD_LAB_BACKFILL_MUTATION_ID } from './constants.mjs';
 import {
   CLOUD_PUSH_WARN_BODY_BYTES,
 } from './cloud-op-slim.mjs';
-import { isToxicCloudOutboxEntry } from './cloud-sync-diagnostics.mjs';
+import { classifyCloudOpPath, isToxicCloudOutboxEntry } from './cloud-sync-diagnostics.mjs';
 import {
   CLOUD_SYNC_CLIENT_NOT_READY,
   isCloudSyncNetworkErrorMessage,
@@ -264,6 +264,35 @@ function pushOutboxIssues(issues, d, outboxCount, toxicRows) {
   }
 }
 
+/**
+ * A push that exceeds the per-field quota (e.g. a large vitals historial) is dropped
+ * silently by sanitizeOpsForCloudPush — nothing else surfaces this to the user, so it
+ * must be read out of the raw syncTrace ring buffer here.
+ * @param {Array<{ boundary: string, data: Record<string, unknown> }>} syncTrace
+ */
+function pushDroppedOpIssues(issues, syncTrace) {
+  const row = (Array.isArray(syncTrace) ? syncTrace : []).find(function (e) {
+    return e && e.boundary === 'push_drop' && Array.isArray(e.data?.ops) && e.data.ops.length;
+  });
+  if (!row) return;
+  const worst = row.data.ops.reduce(function (a, b) {
+    return Number(b?.bytes) > Number(a?.bytes) ? b : a;
+  });
+  const kind = OUTBOX_KIND_LABELS[classifyCloudOpPath(worst.path)] || 'datos';
+  issues.push({
+    fixId: 'push_drop',
+    severity: 'error',
+    title: 'Un cambio no se pudo enviar a Nube por ser muy grande',
+    detail:
+      'Se descartó una actualización de ' +
+      kind +
+      ' (~' +
+      formatCloudDiagBytes(worst.bytes) +
+      ') porque supera el límite de envío. Ese cambio no llegó a Nube.',
+    hint: 'Revisa el registro más reciente de ese paciente; puede que falte recortar texto largo antes de guardarlo.',
+  });
+}
+
 function pushSyncStatusIssues(issues, d, now, status, recentErrors) {
   if (status === 'error' && recentErrors.length === 0) {
     issues.push({
@@ -336,6 +365,7 @@ export function buildIssues(d, now, status, transport, wsClose, recentErrors, ou
   const syncFailing = isSyncFailureActive(d);
   pushConnectivityIssues(issues, d, syncFailing, recentErrors);
   pushOutboxIssues(issues, d, outboxCount, toxicRows);
+  pushDroppedOpIssues(issues, d.syncTrace);
   pushSyncStatusIssues(issues, d, now, status, recentErrors);
   pushWsIssues(issues, d, transport, wsClose);
   return issues;

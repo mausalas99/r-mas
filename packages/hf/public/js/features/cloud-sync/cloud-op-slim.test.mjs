@@ -134,7 +134,7 @@ describe('slimCloudOp for monitoreo paths', () => {
 
 describe('sanitizeOpsForCloudPush', () => {
   it('keeps parsed lab ops and drops impossible fat blobs', () => {
-    const { ops, dropped } = sanitizeOpsForCloudPush([
+    const { ops, dropped, droppedOps } = sanitizeOpsForCloudPush([
       {
         path: 'labSidecars/p1/ok',
         value: { id: 'ok', resLabs: ['Hb 12'], sourceText: 'ignored raw' },
@@ -156,6 +156,9 @@ describe('sanitizeOpsForCloudPush', () => {
     ]);
     assert.equal(ops.length, 2);
     assert.equal(dropped, 1);
+    assert.equal(droppedOps.length, 1);
+    assert.equal(droppedOps[0].path, 'labSidecars/p1/fat');
+    assert.ok(droppedOps[0].bytes > CLOUD_LAB_MUTATION_MAX_BYTES);
     const lab = ops.find((op) => op.path === 'labSidecars/p1/ok');
     assert.ok(lab?.value?.resLabs);
     assert.equal(lab?.value?.sourceText, undefined);

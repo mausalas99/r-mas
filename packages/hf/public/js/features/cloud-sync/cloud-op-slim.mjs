@@ -173,28 +173,29 @@ export function slimCloudOp(op) {
  * Slim + drop ops that still exceed worker quotas (poison pills). Also silently skips
  * an op already pushed with this exact (path, updatedAt) — see cloud-sync-echo-guard.mjs.
  * @param {unknown[]} ops
- * @returns {{ ops: unknown[], dropped: number }}
+ * @returns {{ ops: unknown[], dropped: number, droppedOps: { path: string, bytes: number }[] }}
  */
 export function sanitizeOpsForCloudPush(ops) {
-  if (!Array.isArray(ops) || !ops.length) return { ops: [], dropped: 0 };
+  if (!Array.isArray(ops) || !ops.length) return { ops: [], dropped: 0, droppedOps: [] };
   const next = [];
-  let dropped = 0;
+  const droppedOps = [];
   for (let i = 0; i < ops.length; i += 1) {
     if (wasCloudOpAlreadyAttempted(/** @type {{ path?: string, updatedAt?: string }} */ (ops[i]))) continue;
     const slimmed = slimCloudOp(/** @type {{ path?: string, value?: unknown }} */ (ops[i]));
     if (!slimmed || typeof slimmed !== 'object') {
-      dropped += 1;
       const dropPath = String(ops[i]?.path || '');
       if (dropPath.startsWith('labSidecars/')) markCloudLabOpPoison(dropPath);
+      droppedOps.push({ path: dropPath, bytes: utf8JsonBytes(ops[i]) });
       continue;
     }
     const path = String(slimmed.path || '');
-    if (utf8JsonBytes(slimmed.value) > maxBytesForPath(path)) {
-      dropped += 1;
+    const bytes = utf8JsonBytes(slimmed.value);
+    if (bytes > maxBytesForPath(path)) {
       if (path.startsWith('labSidecars/')) markCloudLabOpPoison(path);
+      droppedOps.push({ path, bytes });
       continue;
     }
     next.push(slimmed);
   }
-  return { ops: next, dropped };
+  return { ops: next, dropped: droppedOps.length, droppedOps };
 }

@@ -67,7 +67,7 @@ describe('computeTomaSignosSummary', () => {
 
 describe('computeIngresosNocheSummary', () => {
   it('counts admissions today and how many have an incomplete chart (cuarto/cama/servicio/area)', () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toLocaleDateString('sv-SE');
     const patients = [
       { id: 'p1', fimiFecha: today }, // no cuarto/cama/servicio set -> incomplete
       { id: 'p2', fimiFecha: '2020-01-01' }, // not today
@@ -80,7 +80,7 @@ describe('computeIngresosNocheSummary', () => {
 
 describe('buildLoPrimeroRows', () => {
   it('orders vencido before en_espera before en_curso, and caps to the limit', () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toLocaleDateString('sv-SE');
     storage.saveTodos('p-vencido', [
       { id: 't1', text: 'Revalorar carga', completed: false, dueDate: '2020-01-01' },
     ]);

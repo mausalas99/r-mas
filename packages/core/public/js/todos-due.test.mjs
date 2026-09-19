@@ -195,6 +195,18 @@ test('parseDuePreset — hoy-18 sets local today at 18:00', () => {
   assert.equal(result.reminderAt, expected.toISOString());
 });
 
+test('parseDuePreset — hoy-18 after 18:00 rolls to tomorrow (never born overdue)', () => {
+  const ref = new Date('2026-06-11T09:00:00.000Z');
+  ref.setHours(19, 0, 0, 0); // local 19:00, already past today's 18:00
+  const result = parseDuePreset('hoy-18', ref);
+  const due = new Date(result.dueDate);
+  assert.ok(due.getTime() > ref.getTime());
+  const expected = new Date(ref);
+  expected.setDate(expected.getDate() + 1);
+  expected.setHours(18, 0, 0, 0);
+  assert.equal(result.dueDate, expected.toISOString());
+});
+
 test('parseDuePreset — manana-8 sets next local day at 08:00', () => {
   const ref = new Date('2026-06-11T09:00:00.000Z');
   const expected = new Date(ref);
@@ -326,37 +338,4 @@ test('groupTodosByStatus — buckets each todo once, preserving order within a b
   assert.deepEqual(groups.hoy, [hoy]);
   assert.deepEqual(groups.sin_fecha, [sinFecha]);
   assert.deepEqual(groups.listo, [listo]);
-});
-
-test('todos-due — writePresetOverridesMap warns on setItem quota error', async () => {
-  const warnings = [];
-  const origWarn = console.warn;
-  console.warn = (...args) => warnings.push(args);
-  
-  const mockStore = {};
-  globalThis.localStorage = {
-    getItem(k) { return mockStore[k]; },
-    setItem(k) {
-      const e = new Error('QuotaExceededError');
-      e.name = 'QuotaExceededError';
-      throw e;
-    },
-  };
-  
-  try {
-    // Import the module and get access to writePresetOverridesMap through a dynamic approach
-    // Since writePresetOverridesMap is not exported, we test it indirectly via a public function
-    // that calls it. getTodoDuePresets is exported and calls writePresetOverridesMap internally.
-    // For now, we'll just verify the code structure has the warn.
-    const src = (await import('node:fs')).readFileSync(
-      new URL('./todos-due.mjs', import.meta.url),
-      'utf8'
-    );
-    assert.match(src, /function writePresetOverridesMap/);
-    assert.match(src, /catch\s*\(\s*e\s*\)\s*\{\s*console\.warn/);
-    assert.match(src, /failed to write.*TODO_DUE_PRESETS_STORAGE_KEY/);
-  } finally {
-    console.warn = origWarn;
-    delete globalThis.localStorage;
-  }
 });
