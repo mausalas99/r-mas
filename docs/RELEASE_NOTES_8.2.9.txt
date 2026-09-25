@@ -1,0 +1,27 @@
+R+ 8.2.9 (estable — release 8.2.9)
+======================================
+
+Fecha: 2026-09-02
+
+## Resumen
+
+Copiar labs ahora conserva negritas al pegar en Word/Docs, se separan los electrolitos urinarios de EGO, y cambiar de sala saca al usuario del equipo anterior.
+
+## Nuevo / mejorado
+
+- **Copiar labs con formato:** al copiar labs (panel o "copiar varios días") ahora se pega con negritas en Word, Google Docs, etc. Antes solo pegaba texto plano.
+- **Electrolitos urinarios (EU) separados de EGO:** Na/K/Cl/Cr en orina ahora forman su propia sección "EU" en vez de mezclarse dentro de EGO.
+- **Pegado múltiple más tolerante:** si un bloque de reportes pegados mezcla 2 expedientes, ahora solo se excluye ese bloque — el resto de los reportes sí se guarda.
+- **Corrección — cambio de sala:** al cambiar la sala/rotación de un usuario (perfil propio o admin), ahora se le quita automáticamente del equipo de la sala anterior. Antes seguía apareciendo en ese roster.
+- **Equipos de próxima rotación:** en el selector de "Asignar equipo" ahora se marca "Próxima rotación, aún no activo" para equipos todavía no activos.
+- **Mac:** el instalador ya no incluye binarios nativos de otra arquitectura (Intel/Apple Silicon mezclados), que podían hacer que macOS marcara la app como dañada.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.2.9-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.2.9-Mac-Intel.dmg`
+- Windows: `R+-8.2.9-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

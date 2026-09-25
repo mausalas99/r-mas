@@ -1,0 +1,26 @@
+R+ 8.2.8 (estable — release 8.2.8)
+======================================
+
+Fecha: 2026-08-31
+
+## Resumen
+
+Arranca el cifrado de extremo a extremo en Nube y deja armar los equipos del próximo mes antes de que empiece la rotación.
+
+## Nuevo / mejorado
+
+- **Cifrado de extremo a extremo en Nube:** notas, labs, indicaciones y monitoreo ahora se guardan cifrados. El servidor deja de poder leerlos.
+- **Equipos de la próxima rotación:** R4/Admin arma y publica los equipos del mes siguiente antes de que empiece, con vínculo al equipo que reemplazan para heredar pacientes.
+- **Autounión anticipada:** un residente puede ver y unirse a su equipo de la próxima rotación desde ya, sin esperar a que R4 lo asigne.
+- **Vista previa de traspaso:** la tarjeta del equipo nuevo muestra qué pacientes tiene ahora mismo el equipo que va a reemplazar.
+- **Corrección:** el selector "Hereda pacientes de" en Mis equipos ya no mostraba solo "Ninguno" — ahora lista toda la sala.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.2.8-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.2.8-Mac-Intel.dmg`
+- Windows: `R+-8.2.8-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

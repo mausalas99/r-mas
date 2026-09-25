@@ -1,0 +1,145 @@
+/** Mi rotación — panel open/close and post-change refresh. */
+import { closeModalAnimated } from '../../ui-motion.mjs';
+import {
+  ensureClinicalPanelSession,
+  getClinicalTeamsPanelHost,
+  setClinicalTeamsPanelError,
+  showClinicalTeamsPanelShell,
+} from '../clinical-panel-host.mjs';
+import { renderClinicalTeamsPanel } from './teams-roster-render.mjs';
+import { isEquipoEmbedActive } from '../cloud-sync/panel-equipo-embed.mjs';
+
+export function teamsModalEl() {
+  return document.getElementById('clinical-teams-backdrop');
+}
+
+function isClinicalTeamsPanelOpen() {
+  const bd = teamsModalEl();
+  return !!(bd && bd.classList.contains('open'));
+}
+
+export function isClinicalTeamsPanelActive() {
+  return isClinicalTeamsPanelOpen() || isEquipoEmbedActive();
+}
+
+/**
+ * Tras cambios de equipos: actualiza caché y panel si está abierto (sin «Cargando…»).
+ * @param {{ force?: boolean }} [opts] — force: re-render aunque haya borradores abiertos
+ */
+export async function refreshTeamsUiAfterChange(opts = {}) {
+  const { isDirectoryModalOpen } = await import('./teams-roster-users.mjs');
+  if (isDirectoryModalOpen()) return;
+
+  const { refreshClinicalPatientListForScope } = await import('../../clinical-access-runtime.mjs');
+  try {
+    await refreshClinicalPatientListForScope({ allowLanPull: true });
+  } catch (err) {
+    // A patient-list refresh failure must not stop the teams panel below from
+    // picking up the change (e.g. a rotation edit) — it left the badge stuck
+    // on stale data until the whole window was closed and reopened.
+    console.error('[Mi rotación] refreshClinicalPatientListForScope failed', err);
+  }
+  import('../clinical-rotation-entry.mjs').then((m) => m.syncClinicalRotationEntryChrome());
+  if (isClinicalTeamsPanelActive()) {
+    if (!opts.force) {
+      const { isClinicalTeamsPanelUserInteracting } = await import('./teams-roster-panel-draft.mjs');
+      if (isClinicalTeamsPanelUserInteracting()) return;
+    }
+    await renderClinicalTeamsPanel({ silent: true, skipLanPull: true, preserveDraft: !opts.force });
+  }
+}
+
+/**
+ * @param {{ skipProfileGate?: boolean }} [opts]
+ *   skipProfileGate — post–Sala tutorial: open join-team UI even if profile onboarding pending.
+ */
+export async function openClinicalTeamsPanel(opts = {}) {
+  const { openConexionEquipoPanel } = await import('../cloud-sync/panel-equipo-nav.mjs');
+  await openConexionEquipoPanel({
+    skipProfileGate: opts.skipProfileGate,
+    toast(msg, kind) {
+      if (typeof window.showToast === 'function') window.showToast(msg, kind);
+    },
+  });
+}
+
+/**
+ * Legacy modal host — fallback when ⇄ Conexión no está montado.
+ * @param {{ skipProfileGate?: boolean }} [opts]
+ */
+export async function openClinicalTeamsPanelModal(opts = {}) {
+  const bd = teamsModalEl();
+  if (!bd) return;
+
+  showClinicalTeamsPanelShell();
+
+  try {
+    const { wireClinicalTeamsModalChrome } = await import('./teams-roster-modal-chrome.mjs');
+    wireClinicalTeamsModalChrome();
+  } catch {
+    /* modal chrome optional on first paint */
+  }
+
+  void import('../lan/panel.mjs')
+    .then((m) => {
+      if (typeof m.stopLanAutoDiscovery === 'function') m.stopLanAutoDiscovery();
+    })
+    .catch(() => {});
+
+  const sessionOk = await ensureClinicalPanelSession({ interactive: true });
+  if (!sessionOk) {
+    closeClinicalTeamsPanel();
+    const mainMod = await import('../clinical-onboarding-main.mjs');
+    const msg = await mainMod.describeOnboardingSessionBlock();
+    if (typeof window.showToast === 'function') {
+      window.showToast(msg, 'error');
+    }
+    if (!opts.skipProfileGate && !mainMod.focusMainClinicalOnboarding()) {
+      await mainMod.showMainClinicalOnboarding();
+    }
+    return;
+  }
+
+  try {
+    if (!opts.skipProfileGate) {
+      const { needsClinicalOnboarding } = await import('../clinical-onboarding.mjs');
+      if (needsClinicalOnboarding()) {
+        closeClinicalTeamsPanel();
+        const mainMod = await import('../clinical-onboarding-main.mjs');
+        await mainMod.showMainClinicalOnboarding();
+        mainMod.focusMainClinicalOnboarding();
+        return;
+      }
+    }
+  } catch (err) {
+    console.error('[Mi rotación]', err);
+    setClinicalTeamsPanelError(
+      err instanceof Error ? err.message : 'No se pudo ejemplo Modelo casoba.'
+    );
+    return;
+  }
+
+  try {
+    await renderClinicalTeamsPanel();
+    const panelBody = getClinicalTeamsPanelHost();
+    if (panelBody) panelBody.scrollTop = 0;
+  } catch (err) {
+    console.error('[Mi rotación]', err);
+    setClinicalTeamsPanelError(
+      err instanceof Error ? err.message : 'No se pudo ejemplo Modelo casoba.'
+    );
+  }
+}
+
+export function closeClinicalTeamsPanel() {
+  const bd = teamsModalEl();
+  if (!bd?.classList.contains('open')) return;
+  closeModalAnimated(bd, function () {
+    document.body.classList.remove('clinical-teams-modal-open');
+    void import('../lan/panel.mjs')
+      .then((m) => {
+        if (typeof m.startLanAutoDiscovery === 'function') m.startLanAutoDiscovery();
+      })
+      .catch(() => {});
+  });
+}

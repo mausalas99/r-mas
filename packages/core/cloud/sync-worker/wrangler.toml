@@ -1,0 +1,37 @@
+name = "rplus-sync"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+# Workers Paid — 30s CPU (Free was 10ms). Needed for Sala snapshot LWW.
+[limits]
+cpu_ms = 30_000
+
+[[durable_objects.bindings]]
+name = "ROOM_SYNC_HUB"
+class_name = "RoomSyncHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RoomSyncHub"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "rplus-sync"
+database_id = "e8e36134-36a9-40d4-9c36-3f893e2b612c"
+migrations_dir = "schema"
+
+[assets]
+directory = "../sync-pages/public"
+binding = "ASSETS"
+
+[triggers]
+crons = ["0 6 * * *"]
+
+[observability]
+enabled = true
+
+[vars]
+# On 2026-08-25: block any Nube login/register below MIN_NUBE_APP_VERSION
+# (8.2.1). Only login/register are gated — not the DEK/E2EE work, which
+# is not shipped yet.
+NUBE_VERSION_GATE_ENABLED = true

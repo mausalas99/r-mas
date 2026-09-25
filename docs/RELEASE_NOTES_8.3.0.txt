@@ -1,0 +1,33 @@
+R+ 8.3.0 (estable — release 8.3.0)
+======================================
+
+Fecha: 2026-09-03
+
+## Resumen
+
+Corrige un equipo clínico que podía quedarse desactualizado en la nube sin
+mostrar error, un choque al unirse a una sala al mismo tiempo desde dos
+dispositivos, y el orden de captura del recuento celular en líquidos.
+
+## Nuevo / mejorado
+
+- **Corrección — equipo desactualizado en la nube:** un cambio de equipo que no
+  se pudo guardar por un bloqueo momentáneo de la base local ya no se perdía
+  en silencio — ahora se reintenta en cada inicio de sesión, no solo durante
+  la configuración inicial. Diagnóstico Nube también muestra este estado.
+- **Corrección — choque al unirse a una sala:** unirse a una sala nube desde
+  dos dispositivos casi al mismo tiempo podía mostrar un error de base de
+  datos en vez de simplemente confirmar la membresía.
+- **Corrección — recuento celular (líquidos):** el número de recuento ya no se
+  confundía con la letra del tubo al capturarlo; además Rec, Linf y Eri ahora
+  aparecen en las tendencias de líquidos.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.3.0-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.3.0-Mac-Intel.dmg`
+- Windows: `R+-8.3.0-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

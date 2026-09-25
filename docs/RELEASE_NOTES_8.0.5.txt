@@ -1,0 +1,59 @@
+R+ 8.0.5 (LAN retirado — Nube único + Interno MIP)
+============================================================
+
+Fecha: 2026-08-07
+
+## Resumen
+
+**8.0.5** completa la **jubilación de LAN LiveSync**: el turno clínico sincroniza solo por **R+ Cloud**; el servidor ward **:3738** ya no va empaquetado en producción (dev: `R_PLUS_DEV_WARD_SERVER=1`). **Interno MIP** y **Equipos** operan en Nube; se retira **Historia clínica** del expediente y del push Nube. Tours y documentación reflejan Conexión Nube (sin PIN/beacon/LAN).
+
+## Nuevo / mejorado
+
+### Nube como única sala en vivo
+
+- **LAN LiveSync retirado** — Eliminados `lan-squad/` y `features/lan/` del producto; ⇄ Conexión usa facades `cloud-sync/` (`panel-chrome`, `mutate-bridge`, `connection-panel`).
+- **Escritorio sin ward server en release** — `server.js` fuera del pack de electron-builder; export `.docx` e interno dev bajo `R_PLUS_DEV_WARD_SERVER=1`.
+- **Offline intacto** — SQLCipher local + respaldos JSON; Nube sigue opt-in desde ⇄.
+
+### Interno MIP y Equipos
+
+- **QR Internos (MIP) en ⇄** — Enlace/QR Nube por sala (`/interno/{slug}`); tokens en D1 vía sidecar `internoAccessUpsert` (migración `005-interno-access.sql`).
+- **Equipos cloud-only** — Cola Lumify/EKG/US solo por Worker (`equipos-cloud-config`); sin host LAN.
+
+### Producto simplificado
+
+- **Historia clínica retirada** — Panel HC, parsers dedicados y push `historiaClinica` fuera del expediente; texto clínico compartido en `lib/clinical-text.mjs`.
+- **Drive import** — Catálogos HC conservados solo para revisión/apply legacy donde aplique.
+
+### Onboarding
+
+- Tours Guardia/Sala: pasos de **PIN LAN y beacon** eliminados; copy y ayuda apuntan a **⇄ Conexión Nube**, Mi rotación e iPad/R+ Móvil.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v8.0.5
+
+- Mac: `R+-8.0.5-arm64.dmg`, `R+-8.0.5-x64.dmg` (y zip para auto-update).
+- Windows: `R+-8.0.5-x64.exe`.
+
+Descarga **8.0.5 en todas las Macs** del turno y **despliega el Worker** el mismo día (Interno MIP + sidecars).
+
+**Operador cloud (recomendado antes del turno):**
+
+```bash
+cd /Users/mauriciosalas/R+
+npm run build:cloud-mobile
+cd cloud/sync-worker
+npm run deploy
+cd ../..
+curl -sS "https://rplus-sync.rmas-workersdev.workers.dev/api/sync/v1/ping"
+```
+
+Tras el build local: `npm run build:mac` / `npm run build:win`.
+
+## Notas
+
+- Si aún buscabas PIN de anfitrión o escaneo beacon en ⇄, actualiza a **8.0.5** — solo cuenta Nube + sala.
+- Internos: QR desde ⇄ → **QR Internos (MIP)**; no requiere Wi‑Fi LAN ni Mac host.
+- Peers en **8.0.4** o anteriores con LAN activo deben migrar a Nube antes del turno.
+- Dev local con ward server: `R_PLUS_DEV_WARD_SERVER=1 npm start`.

@@ -1,0 +1,28 @@
+R+ 7.7.2 (colas guardia, paste SOME y ⌘K acciones)
+======================================================
+
+Fecha: 2026-07-22
+
+## Resumen
+
+**7.7.2** acelera la guardia con colas globales (labs, docs, cultivos), paste inteligente de SOME en cualquier pantalla, acciones rápidas en ⌘K y checklist pre-entrega; los labs nuevos pueden enviarse solos a Eventualidades.
+
+## Nuevo / mejorado
+
+- **Paste-anywhere / Procesar SOME** — Pega SOME en cualquier vista o usa ⌘K «Procesar SOME»: R+ propone paciente por registro/nombre, confirmas una vez y abre Laboratorio listo para procesar.
+- **⌘K acciones** — La paleta incluye acciones directas: batch labs mi equipo, cola docs, EA, export, pendiente, pase; con query vacío muestra pins frecuentes primero.
+- **Cola docs (mi equipo)** — Badge en header: labs de hoy + pendientes de documentar → un clic a Labs, Nota o Pendientes.
+- **Cola cultivos** — Cultivos con ATB pendiente o sin nota de seguimiento en cola lateral → abre Cultivos del paciente.
+- **Labs → Eventualidades** — Tras Procesar, import repo o Actualizar batch, hallazgos relevantes se envían automáticamente a Eventualidades (fallback compacto si no hay frases anormales).
+- **Checklist pre-entrega** — Panel mi equipo: HC incompleta, EA sin nota hoy, pendientes vencidos, cultivos sin seguimiento → un clic al gap.
+- **Copiar indicaciones EA** — Desde Estado actual: copia meds + bomba al portapapeles para mensajes/indicaciones.
+- **Paneles hospitalarios + teach overlay** — Scaffold de paneles (TIR/ENDO/CARD/…) y wizard 2 páginas SOME residual → PanelDef con sync LAN.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.7.2
+
+- Mac: `R+-7.7.2-arm64.dmg`, `R+-7.7.2-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.7.2-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

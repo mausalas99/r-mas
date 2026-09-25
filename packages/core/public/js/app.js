@@ -1,0 +1,662 @@
+import { storage } from './storage.js';
+import { initInlineActionDispatch } from './inline-action-dispatch.mjs';
+
+initInlineActionDispatch();
+
+if (typeof globalThis !== 'undefined' && globalThis.__RPC_CLOUD_MOBILE__) {
+  void import('./features/cloud-mobile/boot.mjs')
+    .then(function (mod) {
+      return mod.initCloudMobileBoot();
+    })
+    .catch(function (err) {
+      console.error('[R+ Móvil] boot failed:', err);
+      try {
+        var gate = document.getElementById('rpc-cloud-mobile-gate');
+        if (gate) {
+          gate.hidden = true;
+          gate.innerHTML = '';
+        }
+        document.body.classList.remove('rpc-cloud-mobile-gated');
+      } catch (_e) {
+        void _e;
+      }
+    });
+}
+
+void import('./perf-markers.mjs').then(function (perf) {
+  perf.perfMark('app-boot-start');
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(function () {
+      perf.perfMark('app-first-paint');
+      perf.perfMeasure('boot-to-first-paint', 'app-boot-start', 'app-first-paint');
+    });
+  }
+});
+import { isDbMode, isWebClinicalClient, isElectronDesktopShell } from './db-storage-bridge.mjs';
+import {
+  ensureClinicalDbUnlocked,
+  dbUnlockWindowHandlers,
+  describeClinicalDbBootFailure,
+  sweepLegacyClinicalLocalStorage,
+} from './features/db-unlock.mjs';
+import { getBlobCache } from './storage/storage-core.mjs';
+import {
+  bootHydrateFromDb,
+  initAppState,
+  setSaveStateHooks,
+  flushSaveState,
+  clearWebSessionClinicalMemory,
+} from './app-state.mjs';
+import { recoverPresentationPatientsOnBoot } from './presentation-mode.mjs';
+import './censo-export.mjs';
+import './features/interconsulta-demo-toggle.mjs';
+import {
+  registerAppRuntimeContext,
+  registerAllFeatureRuntimes,
+  runInitialFeatureBoot,
+  notaEvolucionPrimaryTabWindowHandlers,
+  expedienteInnerCacheWindowHandlers,
+} from './app-runtimes.mjs';
+import {
+  registerAppShellContext,
+  appShellWindowHandlers,
+  showToast,
+  scheduleDeferredShellInits,
+  scheduleDeferredUiInits,
+  initModalDismiss,
+  syncWorkContextChrome,
+} from './app-shell.mjs';
+import { attachProfileSettingsGetter, loadSettings, syncProfileSectionVisibility } from './features/profile.mjs';
+import { windowHandlers as chromeWindowHandlers } from './features/chrome.mjs';
+import { windowHandlers as lanWindowHandlers } from './features/cloud-sync/panel-chrome.mjs';
+import {
+  windowHandlers as patientsWindowHandlers,
+  renderPatientList,
+  ensureActivePatientInSidebarScope,
+  initSidebarAutoHide,
+  initPatientModalEnterSave,
+} from './features/patients.mjs';
+import { windowHandlers as labBulkPreviewWindowHandlers } from './features/lab-bulk-preview-modal.mjs';
+import { windowHandlers as labHistoryBatchCopyWindowHandlers } from './features/lab-history-batch-copy-modal.mjs';
+import { windowHandlers as soapEstadoWindowHandlers } from './features/soap-estado.mjs';
+import { windowHandlers as estadoActualPanelWindowHandlers } from './features/estado-actual-panel.mjs';
+import { windowHandlers as estadoActualPasteWindowHandlers } from './features/estado-actual-paste-modal.mjs';
+import { windowHandlers as driveImportWindowHandlers } from './features/drive-import-modal.mjs';
+import { windowHandlers as estadoActualRegistroWindowHandlers } from './features/estado-actual-registro-modal.mjs';
+import { windowHandlers as agendaWindowHandlers } from './features/agenda.mjs';
+import { windowHandlers as expedienteWindowHandlers } from './features/expediente.mjs';
+import { windowHandlers as notesIndicacionesWindowHandlers } from './features/notes-indicaciones.mjs';
+import { productivityWindowHandlers } from './features/productivity.mjs';
+import {
+  ensureLabsLoaded,
+  labPanelWindowHandlersLazy,
+  chartsWindowHandlersLazy,
+  settingsHelpWindowHandlersLazy,
+  platformWindowHandlersLazy,
+  commandPaletteWindowHandlersLazy,
+  clinicalSyncModeSettingsHandlersLazy,
+  eaVitalHistoryWindowHandlersLazy,
+} from './lazy-feature-routes.mjs';
+import { todosWindowHandlers } from './features/todos.mjs';
+import { windowHandlers as expedienteNavWindowHandlers, renderInnerTabs } from './features/expediente-navigation.mjs';
+import { syncMainAppTabA11y } from './features/app-tabs.mjs';
+import { initTabBarMotion } from './ui-tab-motion.mjs';
+import { medicationsWindowHandlers, registerMedicationsRuntime } from './features/medications.mjs';
+import {
+  profileWindowHandlers,
+  hydrateProfileSettings,
+} from './features/profile.mjs';
+import { initRpcDatePicker } from './rpc-date-picker.mjs';
+import {
+  initClinicalAccessRuntime,
+  resumeClinicalSession,
+} from './clinical-access-runtime.mjs';
+import { windowHandlers as clinicalRegistrationWindowHandlers } from './features/clinical-registration.mjs';
+import {
+  windowHandlers as clinicalRotationEntryHandlers,
+  wireClinicalRotationEntryControls,
+  syncClinicalRotationEntryChrome,
+} from './features/clinical-rotation-entry.mjs';
+import { wireClinicalTeamsControls } from './features/clinical-teams.mjs';
+import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
+import { syncGuardiaModeButtonVisibility } from './features/guardia-mode-button.mjs';
+import { resolveClinicalClientId } from './clinical-settings.mjs';
+
+function lazyWindowHandler(exportName, loader) {
+  return function lazyHandlerProxy() {
+    var args = arguments;
+    void loader().then(function (mod) { mod[exportName].apply(null, args); });
+  };
+}
+const patientDashboardWindowHandlers = {
+  renderPatientDashboard: lazyWindowHandler('renderPatientDashboard', function () {
+    return import('./features/patient-dashboard/dashboard-mount.mjs');
+  }),
+};
+const labInnerWindowHandlers = {
+  switchLabInner: lazyWindowHandler('switchLabInner', function () {
+    return import('./features/patient-dashboard/lab-inner.mjs');
+  }),
+};
+
+function isMobileWeb() {
+  var g = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : null;
+  if (!g) return false;
+  return !!(
+    g.__RPC_MOBILE_WEB__ ||
+    (typeof document !== 'undefined' &&
+      document.documentElement &&
+      document.documentElement.classList.contains('rpc-mobile-web'))
+  );
+}
+
+const allWindowHandlers = Object.assign(
+  {},
+  dbUnlockWindowHandlers,
+  chromeWindowHandlers,
+  lanWindowHandlers,
+  patientsWindowHandlers,
+  labPanelWindowHandlersLazy,
+  labBulkPreviewWindowHandlers,
+  labHistoryBatchCopyWindowHandlers,
+  soapEstadoWindowHandlers,
+  estadoActualPanelWindowHandlers,
+  estadoActualPasteWindowHandlers,
+  driveImportWindowHandlers,
+  estadoActualRegistroWindowHandlers,
+  eaVitalHistoryWindowHandlersLazy,
+  chartsWindowHandlersLazy,
+  agendaWindowHandlers,
+  expedienteWindowHandlers,
+  patientDashboardWindowHandlers,
+  labInnerWindowHandlers,
+  notesIndicacionesWindowHandlers,
+  productivityWindowHandlers,
+  settingsHelpWindowHandlersLazy,
+  platformWindowHandlersLazy,
+  todosWindowHandlers,
+  expedienteNavWindowHandlers,
+  notaEvolucionPrimaryTabWindowHandlers,
+  expedienteInnerCacheWindowHandlers,
+  commandPaletteWindowHandlersLazy,
+  medicationsWindowHandlers,
+  profileWindowHandlers,
+  clinicalRegistrationWindowHandlers,
+  clinicalRotationEntryHandlers,
+  clinicalSyncModeSettingsHandlersLazy,
+  appShellWindowHandlers,
+  {
+    showToast,
+    loadSettings,
+    resumeClinicalSession: function () {
+      return resumeClinicalSession(currentSettings(), getClinicalClientId());
+    },
+  }
+);
+
+try {
+  Object.assign(window, allWindowHandlers);
+} catch (assignErr) {
+  console.error('[R+] No se pudieron registrar handlers en window:', assignErr);
+}
+
+const appStateReady = (async function loadClinicalStateOnBoot() {
+  if (isElectronDesktopShell() && !isDbMode()) {
+    // preload exposes electronAPI synchronously, so this normally exits on i=0;
+    // short budget only covers a slow/failed preload before falling back.
+    for (let i = 0; i < 10 && !isDbMode(); i += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  }
+  if (isDbMode()) {
+    return loadClinicalStateFromDb();
+  }
+  if (isWebClinicalClient()) {
+    try {
+      const { wipeSessionClinicalStorage } = await import('./session-clinical-wipe.mjs');
+      wipeSessionClinicalStorage({ includeLanSession: false });
+    } catch (_wipeBoot) {
+      void _wipeBoot;
+    }
+    clearWebSessionClinicalMemory();
+  }
+  initAppState();
+})();
+
+async function loadClinicalStateFromDb() {
+  const unlockResult = await ensureClinicalDbUnlocked();
+  if (unlockResult && unlockResult.unlocked) {
+    await bootHydrateFromDb();
+    sweepLegacyClinicalLocalStorage(getBlobCache());
+    try {
+      const { flushPendingClinicalOpsSnapshot } = await import('./clinical-ops-sync.mjs');
+      const flushed = await flushPendingClinicalOpsSnapshot();
+      if (flushed.changed && typeof document !== 'undefined') {
+        document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+      }
+    } catch (_eOps) {
+      void _eOps;
+    }
+    return;
+  }
+  const reason = (unlockResult && unlockResult.reason) || 'locked';
+  console.warn('[R+] Clinical DB not ready at boot:', reason);
+  const bootMsg = describeClinicalDbBootFailure(unlockResult);
+  if (bootMsg) {
+    showToast(bootMsg, 'error');
+  }
+  initAppState();
+}
+
+setSaveStateHooks({
+  onSaveResult(result) {
+    if (!result || result.ok) {
+      if (result && result.level === 'warn' && !isMobileWeb()) {
+        showToast(
+          'El almacenamiento local está casi lleno. Archiva pacientes egresados, exporta un respaldo y elimina duplicados de labs.',
+          'error'
+        );
+      }
+      return;
+    }
+    if (result.code === 'QUOTA_EXCEEDED') {
+      showToast(
+        isMobileWeb()
+          ? 'Safari no tiene espacio para ajustes locales. Cierra otras pestañas de R+ y vuelve a abrir el enlace del turno; los pacientes se resincronizan del anfitrión.'
+          : 'No se pudo guardar: almacenamiento local lleno. Exporta un respaldo JSON, archiva o elimina historial de labs antes de seguir.',
+        'error'
+      );
+    }
+  },
+});
+
+void import('./session-clinical-wipe.mjs').then(function (mod) {
+  mod.installSessionClinicalWipeOnExit();
+});
+
+window.addEventListener('beforeunload', function () {
+  flushSaveState();
+});
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'hidden') flushSaveState();
+});
+
+var activeId = null;
+var activeInner = 'resumen';
+var activeAppTab = 'nota';
+var settings = hydrateProfileSettings(storage.getSettings());
+var settingsSeenRaw = localStorage.getItem('rpc-settings');
+
+// Some modules write rpc-settings straight to localStorage (clinical binding,
+// sync mode, Nube URL). Pull those writes into this shared object, in place,
+// so a later whole-object save does not write back a stale copy.
+function currentSettings() {
+  var raw = localStorage.getItem('rpc-settings');
+  if (raw === settingsSeenRaw) return settings;
+  settingsSeenRaw = raw;
+  if (raw === JSON.stringify(settings)) return settings;
+  var fresh = hydrateProfileSettings(storage.getSettings());
+  Object.keys(settings).forEach(function (k) {
+    delete settings[k];
+  });
+  Object.assign(settings, fresh);
+  return settings;
+}
+
+attachProfileSettingsGetter(function () {
+  return currentSettings();
+});
+
+registerAppShellContext({
+  getActiveId: function () {
+    return activeId;
+  },
+  getActiveAppTab: function () {
+    return activeAppTab;
+  },
+  getActiveInner: function () {
+    return activeInner;
+  },
+  getSettings: function () {
+    return currentSettings();
+  },
+});
+
+registerAppRuntimeContext({
+  getActiveId: function () {
+    return activeId;
+  },
+  setActiveId: function (id) {
+    activeId = id;
+  },
+  getActiveAppTab: function () {
+    return activeAppTab;
+  },
+  setActiveAppTab: function (v) {
+    activeAppTab = v;
+  },
+  getActiveInner: function () {
+    return activeInner;
+  },
+  setActiveInner: function (v) {
+    activeInner = v;
+  },
+  getSettings: function () {
+    return currentSettings();
+  },
+});
+
+registerMedicationsRuntime({
+  getActiveId: function () {
+    return activeId;
+  },
+  showToast: showToast,
+  getSettings: function () {
+    return currentSettings();
+  },
+});
+
+async function registerFeatureRuntimesForBoot() {
+  if (isMobileWeb()) {
+    void registerAllFeatureRuntimes();
+    runInitialFeatureBoot();
+    return;
+  }
+  await registerAllFeatureRuntimes();
+  runInitialFeatureBoot();
+}
+
+const runtimesReady = appStateReady
+  .then(async function () {
+    try {
+      await registerFeatureRuntimesForBoot();
+    } catch (bootErr) {
+      console.error('[R+] Error registrando runtimes de features:', bootErr);
+    }
+  })
+  .catch(async function (stateErr) {
+    console.error('[R+] Error cargando estado clínico:', stateErr);
+    try {
+      initAppState();
+      await registerFeatureRuntimesForBoot();
+    } catch (bootErr) {
+      console.error('[R+] Error registrando runtimes de features:', bootErr);
+    }
+  });
+
+function getClinicalClientId() {
+  return resolveClinicalClientId(currentSettings());
+}
+
+function syncHeaderTodayDate() {
+  var todayEl = document.getElementById('today-date');
+  if (!todayEl) return;
+  var d = new Date();
+  var long = d.toLocaleDateString('es-MX', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  var compact = d.toLocaleDateString('es-MX', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+  var narrow = typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 920px)').matches;
+  todayEl.textContent = narrow ? compact : long;
+  todayEl.title = long;
+}
+
+const CLINICAL_DB_BOOT_STEPS = [
+  {
+    id: 'onboarding-dynamic-import',
+    async run() {
+      loadSettings();
+      const mod = await import('./features/clinical-onboarding-main.mjs');
+      if (typeof mod.showEarlySyncModeOnboardingIfNeeded === 'function') {
+        mod.showEarlySyncModeOnboardingIfNeeded();
+      }
+      if (typeof window.rpcNeedsEarlySyncModeChoice === 'function' && window.rpcNeedsEarlySyncModeChoice()) {
+        return;
+      }
+      await mod.showMainClinicalOnboarding();
+    },
+  },
+  {
+    id: 'clinical-access-init',
+    async run(ctx) {
+      if (typeof window.rpcNeedsEarlySyncModeChoice === 'function' && window.rpcNeedsEarlySyncModeChoice()) {
+        return;
+      }
+      await initClinicalAccessRuntime(ctx.settings, ctx.getClinicalClientId());
+    },
+  },
+  {
+    id: 'clinical-teams-dynamic-import',
+    async run(ctx) {
+      wireClinicalRotationEntryControls();
+      wireClinicalTeamsControls();
+      syncClinicalRotationEntryChrome();
+      syncGuardiaModeButtonVisibility();
+      ctx.teamsMod = await import('./features/clinical-teams.mjs');
+    },
+  },
+  {
+    id: 'consume-team-join-url',
+    async run(ctx) {
+      const teamsMod = ctx.teamsMod;
+      if (teamsMod && typeof teamsMod.consumeClinicalTeamJoinFromUrl === 'function') {
+        await teamsMod.consumeClinicalTeamJoinFromUrl();
+      }
+    },
+  },
+];
+
+function isClinicalOnboardingBootActive() {
+  return (
+    typeof document !== 'undefined' &&
+    document.documentElement.classList.contains('clinical-onboarding-active')
+  );
+}
+
+let deferredShellBootDone = false;
+
+function runDeferredShellAfterOnboarding() {
+  if (deferredShellBootDone) return;
+  deferredShellBootDone = true;
+  void import('./perf-markers.mjs').then(function (perf) {
+    perf.perfMark('deferred-shell-start');
+  });
+  syncWorkContextChrome();
+  syncMainAppTabA11y(activeAppTab);
+  renderInnerTabs();
+  void import('./perf-markers.mjs').then(function (perf) {
+    perf.perfMark('deferred-shell-eager-paint-done');
+    perf.perfMeasure(
+      'deferred-shell-eager-paint',
+      'deferred-shell-start',
+      'deferred-shell-eager-paint-done'
+    );
+  });
+  // Tab-bar slide-indicator setup (resize listener, indicator DOM, rAF sync)
+  // is cosmetic — the active tab is already correct via plain CSS border
+  // before this runs (see html.tab-bar-indicators-ready rules), so it does
+  // not need to block first paint. Runs right after paint instead of inline
+  // (same double-rAF "after paint" pattern as deferred-work.mjs's
+  // scheduleAfterPaint, inlined here to avoid a new boot-hub import).
+  var runInitTabBarMotionAfterPaint = function () {
+    initTabBarMotion();
+    void import('./perf-markers.mjs').then(function (perf) {
+      perf.perfMark('deferred-shell-tab-bar-motion-ready');
+    });
+  };
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(function () {
+      requestAnimationFrame(runInitTabBarMotionAfterPaint);
+    });
+  } else {
+    setTimeout(runInitTabBarMotionAfterPaint, 0);
+  }
+  scheduleDeferredShellInits();
+  scheduleDeferredUiInits();
+  initRpcDatePicker();
+  _rpcDeferInit(initSidebarAutoHide);
+  _rpcDeferInit(initPatientModalEnterSave);
+  syncProfileSectionVisibility();
+}
+
+function wireOnboardingFinishedBootResume(finishPatientListBoot) {
+  if (document._rpcOnboardingFinishBootWired) return;
+  document._rpcOnboardingFinishBootWired = true;
+  document.addEventListener(
+    'rpc-clinical-onboarding-finished',
+    function () {
+      runDeferredShellAfterOnboarding();
+      finishPatientListBoot();
+    },
+    { once: true }
+  );
+}
+
+function runDomBoot() {
+  runtimesReady.then(function () {
+    runDomBootAfterState();
+  }).catch(function () {
+    runDomBootAfterState();
+  });
+}
+
+function runDomBootAfterState() {
+  try {
+    const onboardingBootActive = isClinicalOnboardingBootActive();
+    tryMountClinicalTeamInviteBrowserGate();
+    if (!onboardingBootActive && recoverPresentationPatientsOnBoot()) {
+      showToast('Se restauró tu lista de pacientes tras el modo presentación.', 'info');
+    }
+    initModalDismiss();
+    syncHeaderTodayDate();
+    if (!window._rpcHeaderDateResizeWired && typeof window.matchMedia === 'function') {
+      window._rpcHeaderDateResizeWired = true;
+      window.matchMedia('(max-width: 920px)').addEventListener('change', syncHeaderTodayDate);
+    }
+    loadSettings();
+    if (!onboardingBootActive) {
+      runDeferredShellAfterOnboarding();
+    }
+    function selectDefaultPatientAndLoadLabs() {
+      if (ensureActivePatientInSidebarScope()) return;
+      // Cold boot: the patient list can still be settling here, so the first pass
+      // sometimes sees zero visible patients — retry once after a paint.
+      requestAnimationFrame(function () {
+        ensureActivePatientInSidebarScope();
+      });
+      void ensureLabsLoaded().then(function (mod) {
+        mod.renderLabHistoryPanel();
+      });
+    }
+
+    if (!onboardingBootActive) {
+      renderPatientList();
+      selectDefaultPatientAndLoadLabs();
+    }
+
+    function finishPatientListBoot() {
+      if (isClinicalOnboardingBootActive()) {
+        wireOnboardingFinishedBootResume(finishPatientListBoot);
+        return;
+      }
+      void import('./clinical-access-runtime.mjs')
+        .then(function (mod) {
+          renderPatientList();
+          selectDefaultPatientAndLoadLabs();
+          if (typeof mod.refreshClinicalPatientListForScope === 'function') {
+            // Background team/LAN/Nube reconcile — must NOT block default-patient
+            // selection above: it does a network pull that can be slow or hang.
+            void mod
+              .refreshClinicalPatientListForScope()
+              .then(selectDefaultPatientAndLoadLabs)
+              .catch(function () {});
+          }
+        })
+        .catch(function () {
+          renderPatientList();
+          selectDefaultPatientAndLoadLabs();
+        })
+        .then(function () {
+          if (globalThis.__RPC_CLOUD_MOBILE__) return;
+          _rpcDeferInit(function () {
+            void import('./features/cloud-sync/autostart.mjs').then(function (mod) {
+              return mod.autostartCloudSyncIfConfigured({ toast: showToast });
+            });
+          });
+        });
+    }
+    if (isDbMode()) {
+      void import('./boot/boot-steps.mjs')
+        .then(function (boot) {
+          return boot.runBootSteps(CLINICAL_DB_BOOT_STEPS, {
+            settings: currentSettings(),
+            getClinicalClientId,
+            teamsMod: null,
+          });
+        })
+        .then(finishPatientListBoot)
+        .catch(function (err) {
+          console.warn('[R+] Clinical access runtime init:', err && err.message);
+          finishPatientListBoot();
+        });
+    } else {
+      finishPatientListBoot();
+    }
+  } catch (domErr) {
+    console.error('[R+] Error en arranque de UI:', domErr);
+  }
+}
+
+function runEarlyClinicalOnboarding() {
+  if (typeof window.rpcMountEarlySyncModeOnboardingIfNeeded === 'function') {
+    window.rpcMountEarlySyncModeOnboardingIfNeeded();
+    return;
+  }
+  if (!isDbMode()) return;
+  void import('./features/clinical-onboarding-main.mjs').then(function (mod) {
+    if (typeof mod.showEarlySyncModeOnboardingIfNeeded === 'function') {
+      mod.showEarlySyncModeOnboardingIfNeeded();
+    }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function () {
+    runEarlyClinicalOnboarding();
+    runDomBoot();
+  });
+} else {
+  runEarlyClinicalOnboarding();
+  runDomBoot();
+}
+
+function _rpcDeferInit(fn) {
+  if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(
+      function () {
+        try {
+          fn();
+        } catch (e) {
+          console.error('deferInit error:', e && e.message);
+        }
+      },
+      { timeout: 1500 }
+    );
+  } else {
+    setTimeout(function () {
+      try {
+        fn();
+      } catch (e) {
+        console.error('deferInit error:', e && e.message);
+      }
+    }, 200);
+  }
+}

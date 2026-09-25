@@ -1,0 +1,1006 @@
+<div class="modal-backdrop" id="modal" aria-hidden="true">
+  <div class="modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <header class="wb-modal-head">
+      <h3 id="modal-title" class="wb-modal-title">Nuevo Paciente</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+
+    <div id="modal-prefilled" style="display:none;">
+      <div class="modal-section-label">Del reporte de laboratorio</div>
+      <div class="modal-section" style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px;">
+        <div class="field-group"><label>Nombre</label><input id="m-nombre" type="text" style="text-transform:uppercase;"></div>
+        <div class="field-group"><label>Registro</label><input id="m-registro" type="text"></div>
+      </div>
+      <div class="modal-section" style="display:grid;grid-template-columns:80px 80px 70px;gap:10px;">
+        <div class="field-group"><label>Edad *</label>
+          <input id="m-edad-num" type="number" min="0" max="120" placeholder="45">
+        </div>
+        <div class="field-group"><label>Unidad</label>
+          <select id="m-edad-unit"><option value="años">años</option><option value="meses">meses</option><option value="días">días</option></select>
+        </div>
+        <div class="field-group"><label>Sexo *</label>
+          <select id="m-sexo-ro"><option value="F">F</option><option value="M">M</option></select>
+        </div>
+      </div>
+      <hr class="modal-divider">
+      <div class="modal-section-label">Completar manualmente</div>
+    </div>
+
+    <div id="modal-manual" class="modal-section">
+      <div id="modal-manual-full" style="display:none;">
+        <div class="field-group" style="margin-bottom:12px;">
+          <label>Nombre completo *</label>
+          <input id="m-nombre-manual" type="text" placeholder="APELLIDO APELLIDO, Nombre" style="text-transform:uppercase;">
+        </div>
+        <div style="margin-bottom:12px;" id="m-registro-manual-wrap">
+          <div class="field-group">
+            <label id="m-registro-manual-label">Registro</label>
+            <div class="vpo-toolbar" id="m-registro-toolbar" hidden>
+              <button type="button" class="btn-add-row" data-onclick="addRegistroModalRow">+ Agregar registro</button>
+            </div>
+            <div class="vpo-dx-list" id="m-registro-list"></div>
+          </div>
+          <p class="profile-hint profile-hint--field" id="m-registro-manual-hint" hidden>Un expediente por caja.</p>
+          <div class="vpo-dx-paste" id="m-registro-paste-wrap" hidden style="margin-top:8px;">
+            <span class="ea-label">Pegar varios (uno por línea)</span>
+            <textarea class="ea-input" id="m-registro-paste" rows="2" placeholder="0000000-0&#10;0000001-0" data-oninput="onRegistroModalPasteAreaInput"></textarea>
+            <button type="button" class="wb-btn wb-btn-secondary" data-onclick="splitRegistroModalPaste">Separar en cajas</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:80px 80px 70px;gap:10px;margin-bottom:12px;">
+          <div class="field-group"><label>Edad *</label>
+            <input id="m-edad-num-manual" type="number" min="0" max="120" placeholder="45">
+          </div>
+          <div class="field-group"><label>Unidad</label>
+            <select id="m-edad-unit-manual"><option value="años">años</option><option value="meses">meses</option><option value="días">días</option></select>
+          </div>
+          <div class="field-group"><label>Sexo *</label>
+            <select id="m-sexo"><option value="F">F</option><option value="M">M</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="field-group" id="m-area-group"><label>Área / Departamento *</label><input id="m-area" type="text" placeholder="ej. CIRUGÍA AB" style="text-transform:uppercase;"></div>
+      <div class="field-group" id="m-servicio-group"><label id="m-servicio-label">Servicio *</label><input id="m-servicio" type="text" placeholder="ej. CIRUGÍA GENERAL" style="text-transform:uppercase;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="field-group"><label>Cuarto *</label><input id="m-cuarto" type="text" placeholder="440"></div>
+        <div class="field-group"><label>Cama *</label><input id="m-cama" type="text" placeholder="05"></div>
+      </div>
+      <div class="field-group" id="m-sala-group" style="margin-top:10px;">
+        <label for="m-sala">Sala</label>
+        <select id="m-sala" class="profile-input" style="font-size:13px;width:100%;">
+          <option value="">— Seleccionar —</option>
+        </select>
+        <p class="profile-hint profile-hint--field" id="m-sala-hint" style="margin-top:6px;">Ubicación clínica para censo y ⇄.</p>
+      </div>
+      <div class="field-group" id="m-team-group" style="display:none;margin-top:10px;">
+        <label for="m-team">Equipo</label>
+        <select id="m-team" class="profile-input" style="font-size:13px;width:100%;">
+          <option value="">— Sin asignar —</option>
+        </select>
+        <p class="profile-hint profile-hint--field" id="m-team-hint" style="margin-top:6px;">Asigna al equipo que cubrirá el caso en ⇄.</p>
+      </div>
+    </div>
+    </div>
+
+    <div class="modal-actions wb-modal-foot">
+      <button class="wb-btn wb-btn-primary wb-btn-lg" data-onclick="savePatient">Agregar Paciente</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="procedure-agenda-modal" aria-hidden="true">
+  <div class="modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="procedure-agenda-modal-title">
+    <header class="wb-modal-head">
+      <h3 id="procedure-agenda-modal-title" class="wb-modal-title">Procedimiento agendado</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <input type="hidden" id="pa-edit-id" value="">
+    <div class="wb-modal-body">
+    <div class="modal-section">
+      <div class="field-group">
+        <label for="pa-patient">Paciente</label>
+        <select id="pa-patient" class="profile-input" style="font-size:13px;width:100%;"></select>
+      </div>
+      <div class="field-group">
+        <label for="pa-procedure">Procedimiento</label>
+        <input id="pa-procedure" type="text" class="profile-input" style="font-size:13px;" placeholder="Ej. IQ programada">
+      </div>
+      <div class="field-group">
+        <label for="pa-location">Lugar</label>
+        <input id="pa-location" type="text" class="profile-input" style="font-size:13px;" placeholder="Quirofano / sala…">
+      </div>
+      <div class="field-group">
+        <label for="pa-start">Inicio (fecha y hora)</label>
+        <input id="pa-start" type="datetime-local" class="profile-input rpc-datetime-input" style="font-size:13px;width:100%;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer;">
+          <input type="checkbox" id="pa-material" style="flex-shrink:0;">
+          Material aprobado
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer;">
+          <input type="checkbox" id="pa-anesthesia" style="flex-shrink:0;">
+          Anestesio agendado
+        </label>
+      </div>
+    </div>
+    <div id="pa-modal-error" style="display:none;font-size:12px;font-weight:600;color:var(--error);margin-bottom:10px;"></div>
+    </div>
+    <div class="modal-actions wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-danger-outline wb-btn-lg" id="pa-btn-delete" style="margin-right:auto;display:none;" data-onclick="deleteProcedureAgendaFromModal">Eliminar</button>
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-onclick="saveProcedureAgendaFromModal">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="exp-datos-modal-backdrop" aria-hidden="true">
+  <div class="modal exp-datos-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="exp-datos-modal-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="exp-datos-modal-title" class="wb-modal-title">Datos del paciente</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close exp-datos-modal-close" data-onclick="closePatientDatosModal" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div id="exp-datos-modal-mount" class="exp-datos-modal-body wb-modal-body"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="todo-due-modal-backdrop" aria-hidden="true">
+  <div class="modal todo-due-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="todo-due-modal-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="todo-due-modal-title" class="wb-modal-title">Fecha límite</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body todo-due-modal-body">
+    <p class="todo-due-modal-lead">Atajo o fecha libre · recordatorio opcional al vencer</p>
+    <div class="todo-due-modal-presets-zone" id="todo-due-modal-presets-zone">
+      <div class="todo-due-modal-presets-head">
+        <span class="profile-field-label todo-due-modal-section-label">Atajos</span>
+        <div class="todo-due-modal-presets-head-actions">
+          <button type="button" class="todo-due-reset-presets-btn" id="todo-due-reset-presets-btn" hidden>Restablecer</button>
+          <button type="button" class="todo-due-edit-presets-btn" id="todo-due-edit-presets-btn" aria-expanded="false">Editar</button>
+        </div>
+      </div>
+      <div class="todo-due-modal-presets" id="todo-due-modal-presets" role="group" aria-label="Atajos de fecha límite"></div>
+      <div class="todo-due-modal-preset-edit" id="todo-due-modal-preset-edit" hidden>
+        <div class="todo-due-modal-preset-edit-rows" id="todo-due-modal-preset-edit-rows"></div>
+        <div class="todo-due-add-preset-actions">
+          <button type="button" class="todo-due-add-preset-btn" id="todo-due-add-preset-offset-btn">+ Relativo</button>
+          <button type="button" class="todo-due-add-preset-btn" id="todo-due-add-preset-time-btn">+ Hora fija</button>
+        </div>
+      </div>
+    </div>
+    <div class="field-group todo-due-modal-when">
+      <span class="profile-field-label">Fecha y hora</span>
+      <input id="todo-due-modal-datetime" type="datetime-local" class="rpc-datetime-input todo-due-modal-datetime" aria-label="Fecha y hora del pendiente">
+    </div>
+    <label class="todo-due-modal-remind" for="todo-due-modal-remind">
+      <input type="checkbox" id="todo-due-modal-remind">
+      Recordarme
+    </label>
+    </div>
+    <div class="modal-actions todo-due-modal-actions wb-modal-foot">
+      <div class="todo-due-modal-actions__secondary">
+        <button type="button" class="wb-btn wb-btn-ghost" id="todo-due-modal-cancel" data-wb-cancel>Cancelar</button>
+        <button type="button" class="wb-btn wb-btn-ghost" id="todo-due-modal-clear">Quitar fecha</button>
+      </div>
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" id="todo-due-modal-save">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toast-stack" role="status" aria-live="polite" aria-atomic="false"></div>
+
+<!-- Templates modal -->
+<div class="templates-modal-backdrop" id="templates-modal" style="display:none;" aria-hidden="true">
+  <div class="templates-modal templates-modal--wide material-glass wb-modal" role="dialog" aria-modal="true" aria-labelledby="templates-modal-title">
+    <header class="wb-modal-head">
+      <h3 id="templates-modal-title" class="wb-modal-title">Formatos clínicos en blanco</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+    <p class="templates-modal-lead">Edita a la izquierda; a la derecha ves cómo se verán las secciones en el expediente (Nota e Indicaciones).</p>
+    <div class="templates-modal-layout">
+      <div class="templates-modal-editor">
+        <div class="templates-modal-group">
+          <h4 class="templates-modal-group-title">Nota de evolución</h4>
+          <div class="templates-modal-field">
+            <label for="tmpl-nota-evolucion">Evolución (N / V / HD / HI / NM)</label>
+            <textarea id="tmpl-nota-evolucion" rows="6" placeholder="N: [Neurológico]&#10;V: [Ventilatorio]…"></textarea>
+          </div>
+          <div class="templates-modal-field">
+            <label for="tmpl-nota-estudios">Estudios auxiliares</label>
+            <textarea id="tmpl-nota-estudios" rows="6" placeholder="FECHA (DD/MM/AA)&#10;QS&#10;BH…"></textarea>
+          </div>
+        </div>
+        <div class="templates-modal-group">
+          <h4 class="templates-modal-group-title">Indicaciones</h4>
+          <div class="templates-modal-field">
+            <label for="tmpl-dieta">Dieta</label>
+            <textarea id="tmpl-dieta" rows="3" placeholder="(vacío o esquema propio)"></textarea>
+          </div>
+          <div class="templates-modal-field">
+            <label for="tmpl-cuidados">Cuidados</label>
+            <textarea id="tmpl-cuidados" rows="3" placeholder="(vacío o esquema propio)"></textarea>
+          </div>
+          <div class="templates-modal-field">
+            <label for="tmpl-meds">Medicamentos</label>
+            <textarea id="tmpl-meds" rows="3" placeholder="(vacío o esquema propio)"></textarea>
+          </div>
+          <div class="templates-modal-field">
+            <label for="tmpl-ind-estudios">Estudios</label>
+            <textarea id="tmpl-ind-estudios" rows="3" placeholder="(vacío o esquema propio)"></textarea>
+          </div>
+          <div class="templates-modal-field">
+            <label for="tmpl-ind-inter">Interconsultas</label>
+            <textarea id="tmpl-ind-inter" rows="3" placeholder="(vacío o esquema propio)"></textarea>
+          </div>
+        </div>
+      </div>
+      <aside class="templates-modal-preview-pane" aria-label="Vista previa en el expediente">
+        <p class="templates-preview-pane-title">Vista previa · como en la app</p>
+        <div class="templates-preview-scroll">
+          <p class="templates-preview-section-label">Nota · Clínico</p>
+          <div id="templates-preview-nota"></div>
+          <p class="templates-preview-section-label">Indicaciones</p>
+          <div id="templates-preview-indica"></div>
+        </div>
+      </aside>
+    </div>
+    </div>
+    <div class="templates-modal-actions wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" data-onclick="closeTemplatesModal">Cancelar</button>
+      <button class="wb-btn wb-btn-primary wb-btn-lg" data-onclick="saveTemplates">Guardar formatos</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── SOAP Evolution Modal ──────────────────────────── -->
+<div class="soap-modal-backdrop" id="soap-modal-backdrop" aria-hidden="true">
+  <div class="soap-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="soap-modal-title-text">
+    <header class="wb-modal-head">
+      <h3 class="wb-modal-title" id="soap-modal-title-text">Plantilla de Evolución</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="soap-modal-body wb-modal-body">
+      <!-- S: Subjetivo -->
+      <div class="soap-section soap-section-s" style="flex-shrink:0;">
+        <div class="soap-section-header">S — Subjetivo</div>
+        <div class="soap-section-body">
+          <textarea id="soap-s" rows="2" placeholder="Refiere / niega…"></textarea>
+        </div>
+      </div>
+      <!-- N: Neurológico -->
+      <div class="soap-section">
+        <div class="soap-section-header">N — Neurológico</div>
+        <div class="soap-section-body">
+          <div style="display:grid;grid-template-columns:140px 120px 1fr;gap:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">FOUR Score</div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <input type="number" id="soap-four" placeholder="—" style="width:64px;text-align:center;">
+                <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">/16 pts</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Esferas</div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <input type="number" id="soap-esferas" placeholder="—" style="width:64px;text-align:center;">
+                <span style="font-size:12px;color:var(--text-muted);">esf.</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Analgesia</div>
+              <input type="text" id="soap-analgesia" placeholder="Fármaco dosis vía frecuencia">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antieméticos</div>
+              <input type="text" id="soap-antiemeticos" placeholder="Ondansetrón, metoclopramida…">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Sedación</div>
+              <input type="text" id="soap-sedacion" placeholder="Midazolam, haloperidol…">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antiepilépticos</div>
+              <input type="text" id="soap-antiepilepticos" placeholder="Levetiracetam, fenitoína…">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antiparkinsonianos</div>
+              <input type="text" id="soap-antiparkinsonianos" placeholder="Levodopa, pramipexol…">
+            </div>
+            <div style="grid-column:1 / -1;">
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antídotos</div>
+              <input type="text" id="soap-antidotos" placeholder="Naloxona, flumazenil…">
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <!-- V: Ventilatorio -->
+      <div class="soap-section">
+        <div class="soap-section-header">V — Ventilatorio</div>
+        <div class="soap-section-body">
+          <div style="display:grid;grid-template-columns:100px 100px 1fr;gap:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">FR (rpm)</div>
+              <input type="number" id="soap-fr" placeholder="—" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">SatO2 (%)</div>
+              <input type="number" id="soap-sat" placeholder="—" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Soporte O2</div>
+              <select id="soap-soporte">
+                <option value="Aire ambiente">Aire ambiente</option>
+                <option value="Puntillas nasales">Puntillas nasales</option>
+                <option value="Mascarilla simple">Mascarilla simple</option>
+                <option value="Mascarilla reservorio">Mascarilla reservorio</option>
+                <option value="Alto flujo">Alto flujo</option>
+                <option value="VMNI">VMNI</option>
+                <option value="Ventilación mecánica">Ventilación mecánica</option>
+                <option value="Traqueostomía">Traqueostomía</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top:10px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Vía aérea (broncodilatadores / mucolíticos)</div>
+            <input type="text" id="soap-via-aerea" placeholder="Salbutamol, ambroxol…">
+          </div>
+
+        </div>
+      </div>
+      <!-- HD: Hemodinámico -->
+      <div class="soap-section">
+        <div class="soap-section-header">HD — Hemodinámico</div>
+        <div class="soap-section-body">
+          <div style="display:grid;grid-template-columns:100px 100px 100px;gap:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">TAS (mmHg)</div>
+              <input type="number" id="soap-tas" placeholder="—" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">TAD (mmHg)</div>
+              <input type="number" id="soap-tad" placeholder="—" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">FC (lpm)</div>
+              <input type="number" id="soap-fc" placeholder="—" style="text-align:center;">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antihipertensivos</div>
+              <input type="text" id="soap-antihta" placeholder="Ninguno o detalle">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Tromboprofilaxis</div>
+              <input type="text" id="soap-antitromboticos" placeholder="Enoxaparina 40 mg, clopidogrel…">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Vasopresores</div>
+              <input type="text" id="soap-vasop" placeholder="Ninguno o detalle">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Diuréticos</div>
+              <input type="text" id="soap-diureticos" placeholder="Furosemida, espironolactona…">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Estatinas</div>
+              <input type="text" id="soap-estatinas" placeholder="Atorvastatina…">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antiarrítmicos</div>
+              <input type="text" id="soap-antiarritmicos" placeholder="Amiodarona, lidocaína…">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Anticoagulación terapéutica</div>
+              <input type="text" id="soap-anticoagulacion" placeholder="Warfarina, apixaban, alteplasa…">
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <!-- HI: Infeccioso -->
+      <div class="soap-section">
+        <div class="soap-section-header">HI — Infeccioso / Térmico</div>
+        <div class="soap-section-body">
+          <div style="display:grid;grid-template-columns:140px 1fr;gap:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Temperatura (°C)</div>
+              <input type="number" id="soap-temp" placeholder="—" step="0.1" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antibióticos</div>
+              <input type="text" id="soap-abx" placeholder="Ninguno o fármaco dosis vía">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Transfusiones</div>
+              <input type="text" id="soap-transfusiones" placeholder="Concentrado eritrocitario, plaquetas…">
+            </div>
+
+          </div>
+        </div>
+      </div>
+      <!-- NM: Nutricional/Metabólico -->
+      <div class="soap-section">
+        <div class="soap-section-header">NM — Nutricional / Metabólico</div>
+        <div class="soap-section-body">
+          <div style="display:grid;grid-template-columns:1fr 80px 80px 80px;gap:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Dieta</div>
+              <input type="text" id="soap-dieta" placeholder="Tipo de dieta">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Kcal/kg</div>
+              <input type="number" id="soap-kcalkg" placeholder="—" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Total Kcal</div>
+              <input type="number" id="soap-kcal" placeholder="—" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Peso (kg)</div>
+              <input type="number" id="soap-peso" placeholder="—" style="text-align:center;">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Ingresos (cc)</div>
+              <input type="number" id="soap-ing" placeholder="—" data-oninput="updateSOAPBalance" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Egresos (cc)</div>
+              <input type="number" id="soap-egr" placeholder="—" data-oninput="updateSOAPBalance" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Balance (cc)</div>
+              <input type="text" id="soap-balance" class="soap-field-readonly" readonly placeholder="auto" style="text-align:center;">
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Glucometrías capilares (mg/dL)</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Soporte NM</div>
+              <input type="text" id="soap-nm-soporte" placeholder="Omeprazol, electrolitos, crónicos…">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Insulina programada</div>
+              <input type="text" id="soap-insulina" placeholder="Glargina, NPH…">
+            </div>
+            <div style="grid-column:1 / -1;">
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Rescates de insulina</div>
+              <input type="text" id="soap-rescates-insulina" placeholder="RESCATES DE INSULINA DISPONIBLES">
+            </div>
+          </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+              <input type="number" id="soap-glu1" placeholder="1ª" style="text-align:center;">
+              <input type="number" id="soap-glu2" placeholder="2ª" style="text-align:center;">
+              <input type="number" id="soap-glu3" placeholder="3ª" style="text-align:center;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /soap-modal-body -->
+    <div class="soap-modal-footer wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg btn-soap-insert" data-onclick="insertSOAPText">Insertar en evolución</button>
+      <button type="button" class="wb-btn wb-btn-secondary wb-btn-lg btn-soap-only-copy" data-onclick="estadoActualOnlyGuardar" style="display:none;">Guardar</button>
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg btn-soap-save-copy" data-onclick="estadoActualSaveAndCopy" style="display:none;">Guardar y copiar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Focus mode pill -->
+<div id="focus-mode-pill" aria-hidden="true">Modo enfoque · F6 para salir</div>
+
+<!-- Unified search modal -->
+<div class="modal-backdrop" id="unified-search-backdrop" aria-hidden="true">
+  <div class="modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="unified-search-title" style="width:640px;max-width:95vw;">
+    <header class="wb-modal-head">
+      <h3 id="unified-search-title" class="wb-modal-title">Búsqueda unificada</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+    <div class="modal-section" style="gap:8px;">
+      <input id="unified-search-input" type="search" autocomplete="off" placeholder="Buscar por nombre, registro, nota o indicación…" data-oninput="updateUnifiedSearchResults" style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;background:var(--surface);color:var(--text);width:100%;box-sizing:border-box;">
+      <p style="font-size:11px;color:var(--text-muted);margin:0;">Coincidencias con pacientes, notas de evolución e indicaciones.</p>
+    </div>
+    <div id="unified-search-results" class="modal-section" style="gap:6px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Extra templates manager modal -->
+<div class="templates-modal-backdrop" id="extra-templates-modal" style="display:none;">
+  <div class="templates-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="extra-templates-title" style="max-width:520px;">
+    <header class="wb-modal-head">
+      <h3 id="extra-templates-title" class="wb-modal-title">Plantillas guardadas</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+    <p style="font-size:12px;color:var(--text-muted);margin:0 0 12px;">Guarda combinaciones reutilizables de dieta, cuidados y medicamentos. Aplícalas desde Indicaciones.</p>
+    <div id="extra-templates-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+    <div id="extra-template-editor" style="display:none;border-top:1px solid var(--border);padding-top:12px;margin-top:12px;flex-direction:column;gap:10px;">
+      <div><label>Nombre</label><input id="extra-tmpl-label" type="text" placeholder="Ej. DM2 descompensado"></div>
+      <div><label>Dieta</label><textarea id="extra-tmpl-dieta" rows="2" placeholder="DIETA NORMAL DIABÉTICA…"></textarea></div>
+      <div><label>Cuidados</label><textarea id="extra-tmpl-cuidados" rows="2" placeholder="CSV c/8h…"></textarea></div>
+      <div><label>Medicamentos</label><textarea id="extra-tmpl-meds" rows="2" placeholder="(vacío opcional)"></textarea></div>
+      <div class="templates-modal-actions">
+        <button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" data-onclick="cancelExtraTemplateEdit">Cancelar</button>
+        <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-onclick="saveExtraTemplateFromEditor">Guardar plantilla</button>
+      </div>
+    </div>
+    </div>
+    <div class="templates-modal-actions wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-onclick="startNewExtraTemplate">+ Nueva plantilla</button>
+    </div>
+  </div>
+</div>
+
+<div id="rpc-db-unlock-overlay" role="dialog" aria-modal="true" aria-labelledby="rpc-db-unlock-title" aria-hidden="true">
+  <div class="rpc-db-unlock-panel">
+    <h2 id="rpc-db-unlock-title">Recuperar acceso a la base</h2>
+    <div id="rpc-db-unlock-form-main">
+    <p id="rpc-db-unlock-hint">Si guardaste un código de recuperación al configurar R+ en este equipo, ingrésalo abajo.</p>
+    <p id="rpc-db-unlock-rate-limited" class="rpc-db-unlock-rate-limited" role="alert" style="display:none;">Demasiados intentos fallidos. Espera unos minutos antes de volver a intentar.</p>
+    <div id="rpc-db-unlock-pass-wrap" style="display:none;" aria-hidden="true"></div>
+    <div id="rpc-db-unlock-confirm-wrap" style="display:none;" aria-hidden="true"></div>
+    <div id="rpc-db-unlock-recovery-wrap">
+      <label class="profile-field-label" for="rpc-db-unlock-recovery-code">Código de recuperación</label>
+      <input id="rpc-db-unlock-recovery-code" type="text" autocomplete="off" placeholder="Código de recuperación" aria-required="true">
+    </div>
+    <div class="rpc-db-unlock-error" id="rpc-db-unlock-error" role="alert"></div>
+    <div class="rpc-db-unlock-actions">
+      <button type="button" class="btn-unlock" id="rpc-db-unlock-submit" data-onclick="submitRecoveryCode">Recuperar acceso</button>
+    </div>
+    </div>
+    <div id="rpc-db-unlock-recovery-reveal" class="rpc-db-unlock-recovery-reveal" style="display:none;" role="status">
+      <h3 class="rpc-db-unlock-recovery-reveal-title">Guarda tu código de recuperación</h3>
+      <p class="settings-acc-hint settings-acc-hint--tight">Este código es único de esta instalación. Guárdalo en un lugar seguro por si cambias de equipo.</p>
+      <p class="rpc-db-unlock-recovery-reveal-code" id="rpc-db-unlock-recovery-reveal-code"></p>
+      <div class="rpc-db-unlock-actions">
+        <button type="button" class="btn-unlock" data-onclick="dismissRecoveryCodeReveal">Ya lo guardé, continuar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="rpc-idle-lock-overlay" role="dialog" aria-modal="true" aria-labelledby="rpc-idle-lock-title" aria-hidden="true">
+  <div class="rpc-idle-lock-panel">
+    <h2 id="rpc-idle-lock-title">R+ está bloqueado</h2>
+    <p>Ingresa tu PIN de 4 a 8 dígitos para continuar. Esta pantalla apareció por inactividad.</p>
+    <input id="rpc-idle-lock-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="PIN" aria-label="PIN de bloqueo">
+    <div class="rpc-idle-lock-error" id="rpc-idle-lock-error" role="alert"></div>
+    <div class="rpc-idle-lock-actions">
+      <button type="button" class="btn-unlock" data-onclick="submitIdleLockPin">Desbloquear</button>
+    </div>
+  </div>
+</div>
+
+<div id="entrega-modal-backdrop" class="modal-backdrop entrega-modal-backdrop" aria-hidden="true">
+  <div class="modal entrega-modal entrega-modal--wide wb-modal" id="entrega-modal" role="dialog" aria-modal="true" aria-labelledby="entrega-modal-nav-name" data-stop-propagation>
+    <header class="entrega-modal-nav wb-modal-head" id="entrega-modal-nav">
+      <button type="button" class="entrega-nav-btn" id="entrega-nav-prev" aria-label="Paciente anterior" disabled>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="entrega-nav-patient wb-modal-title">
+        <span class="entrega-nav-patient-name" id="entrega-modal-nav-name">—</span>
+        <span class="entrega-nav-patient-dx" id="entrega-modal-nav-dx"></span>
+      </div>
+      <div class="entrega-nav-meta">
+        <span class="entrega-active-badge hidden" id="entrega-modal-active-badge">
+          <svg width="6" height="6" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="4" fill="currentColor"/></svg>
+          Entrega activa
+        </span>
+        <span class="entrega-nav-counter" id="entrega-modal-nav-counter"></span>
+      </div>
+      <button type="button" class="entrega-nav-btn" id="entrega-nav-next" aria-label="Paciente siguiente" disabled>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <h3 id="entrega-modal-title" class="visually-hidden">Entrega de paciente</h3>
+    <form id="entrega-form" class="entrega-modal-form">
+      <div class="entrega-form-body wb-modal-body">
+        <section class="entrega-top-strip clinical-teams-create-form" aria-label="Datos de entrega">
+          <div class="field-group entrega-field-group--r1">
+            <label for="entrega-covering-user">R1 de guardia</label>
+            <p id="entrega-covering-hint" class="clinical-teams-section-desc entrega-field-hint hidden"></p>
+            <select id="entrega-covering-user" class="profile-input" required></select>
+          </div>
+          <div class="field-group entrega-field-group--patient-team">
+            <label for="entrega-source-team">Equipo del paciente</label>
+            <p id="entrega-source-team-hint" class="clinical-teams-section-desc entrega-field-hint hidden"></p>
+            <select id="entrega-source-team" class="profile-input" required></select>
+          </div>
+          <div id="entrega-clinical-status-slot" class="field-group"></div>
+        </section>
+
+        <p id="entrega-flow-hint" class="clinical-teams-section-desc entrega-modal-lead hidden"></p>
+
+        <div id="entrega-handoff-panel" class="entrega-handoff-panel"></div>
+
+        <p id="entrega-handoff-summary" class="entrega-handoff-summary" aria-live="polite"></p>
+
+        <section class="clinical-teams-section clinical-teams-section--directory entrega-panel entrega-panel--pendientes" aria-label="Procedimientos y estudios">
+          <details class="entrega-proc-details">
+            <summary class="entrega-proc-summary">
+              <h4 class="clinical-teams-section-title">Procedimientos y estudios</h4>
+            </summary>
+            <div class="entrega-panel-body entrega-proc-block">
+              <div class="entrega-proc-toolbar">
+                <button type="button" id="btn-entrega-add-proc" class="wb-btn wb-btn-secondary">
+                  + Procedimiento
+                </button>
+              </div>
+              <ul id="entrega-proc-list" class="entrega-proc-list"></ul>
+              <div id="entrega-proc-form" class="entrega-proc-form hidden" aria-hidden="true"></div>
+            </div>
+          </details>
+        </section>
+      </div>
+      <footer class="modal-actions entrega-modal-foot wb-modal-foot">
+        <button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" id="btn-entrega-cancel" data-wb-cancel>Cancelar</button>
+        <button type="submit" class="wb-btn wb-btn-primary wb-btn-lg" id="btn-entrega-save">Guardar paciente</button>
+      </footer>
+    </form>
+  </div>
+</div>
+
+<div id="guardia-patient-action-backdrop" class="modal-backdrop guardia-patient-action-backdrop" aria-hidden="true">
+  <div class="modal guardia-patient-action-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-patient-action-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="guardia-patient-action-title" class="wb-modal-title">Paciente</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div id="guardia-patient-action-body" class="guardia-patient-action-body wb-modal-body"></div>
+    <div class="modal-actions guardia-patient-action-footer wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" id="guardia-patient-action-cancel" data-wb-cancel>Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="guardia-rotation-config-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal guardia-rotation-config-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-rotation-config-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="guardia-rotation-config-title" class="wb-modal-title">Configuración rotación</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <form id="guardia-rotation-config-form">
+      <div class="wb-modal-body">
+      <p class="clinical-registration-lead">Define el calendario del ciclo (R4 o Admin). La ventana Incoming abre <code>preview_days</code> antes de la vigencia.</p>
+      <div class="field-group">
+        <label for="rotation-config-month-end">Fin de mes (referencia)</label>
+        <input id="rotation-config-month-end" type="datetime-local" class="profile-input" required>
+      </div>
+      <div class="field-group">
+        <label for="rotation-config-effective">Vigencia (effective_at)</label>
+        <input id="rotation-config-effective" type="datetime-local" class="profile-input" required>
+      </div>
+      <div class="field-group">
+        <label for="rotation-config-preview-days">Días de preview</label>
+        <input id="rotation-config-preview-days" type="number" class="profile-input" min="0" max="14" value="2" required>
+      </div>
+      </div>
+      <div class="modal-actions wb-modal-foot">
+        <button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" id="btn-rotation-config-cancel" data-wb-cancel>Cancelar</button>
+        <button type="submit" class="wb-btn wb-btn-primary wb-btn-lg">Guardar ciclo</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="inherit-patients-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal inherit-patients-modal material-glass wb-modal" role="dialog" aria-modal="true" aria-labelledby="inherit-patients-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="inherit-patients-title" class="wb-modal-title">Heredar pacientes</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div id="inherit-patients-body" class="inherit-patients-body wb-modal-body"></div>
+    <div class="modal-actions inherit-patients-actions wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" id="inherit-patients-cancel" data-wb-cancel>Más tarde</button>
+      <button type="button" class="wb-btn wb-btn-secondary" id="inherit-patients-back" hidden>Atrás</button>
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg ui-pressable" id="inherit-patients-confirm">Continuar</button>
+    </div>
+  </div>
+</div>
+
+<div id="rotation-rejoin-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal rotation-rejoin-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="rotation-rejoin-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="rotation-rejoin-title" class="wb-modal-title">Nueva rotación</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+    <div id="rotation-rejoin-lead" class="clinical-registration-lead"></div>
+    <div class="field-group">
+      <label for="rotation-rejoin-sala">Tu sala este mes</label>
+      <select id="rotation-rejoin-sala" class="profile-input" required></select>
+      <p class="profile-hint profile-hint--field">Si cambiaste de sala en la rotación, ajústala aquí antes de unirte al equipo.</p>
+    </div>
+    </div>
+    <div class="modal-actions wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" id="rotation-rejoin-later" data-wb-cancel>Más tarde</button>
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" id="rotation-rejoin-open">Confirmar sala y elegir equipo</button>
+    </div>
+  </div>
+</div>
+
+<!-- @include settings-dropdown.html -->
+
+<div id="connection-dropdown-backdrop" class="modal-backdrop connection-dropdown-backdrop" aria-hidden="true">
+  <div class="modal connection-dropdown connection-dropdown-modal material-glass wb-modal" id="connection-dropdown" role="dialog" aria-modal="true" aria-labelledby="connection-dropdown-title" data-stop-propagation>
+    <h2 class="visually-hidden" id="connection-dropdown-title">Conexión · R+ Cloud</h2>
+    <header class="connection-dropdown-modal-head wb-modal-head">
+      <button type="button" class="connection-dropdown-back" id="btn-connection-dropdown-back" data-cloud-action="nav-back" hidden>
+        <span class="connection-dropdown-back-chevron" aria-hidden="true">‹</span>
+        <span class="connection-dropdown-back-label">Conexión</span>
+      </button>
+      <div class="connection-dropdown-head">
+        <div class="connection-dropdown-head-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></div>
+        <div class="connection-dropdown-head-text">
+          <div class="connection-dropdown-head-title wb-modal-title" id="connection-dropdown-head-title">Conexión guardia</div>
+          <p class="connection-dropdown-head-sub">Red local del hospital. Conéctate a la sala de guardia y administra tu equipo.</p>
+        </div>
+      </div>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" id="btn-connection-dropdown-close" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="connection-dropdown-body wb-modal-body" id="connection-dropdown-scroll">
+      <div id="lan-connection-panel-root" class="lan-connection-panel-root"></div>
+    </div>
+  </div>
+</div>
+
+<div id="equipos-lista-backdrop" class="modal-backdrop equipos-lista-backdrop" aria-hidden="true">
+  <div class="modal equipos-lista-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="equipos-lista-title" data-stop-propagation>
+    <header class="equipos-lista-modal-head wb-modal-head">
+      <h3 id="equipos-lista-title" class="wb-modal-title">R+ Lista de espera</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" id="btn-equipos-lista-close" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div id="equipos-lista-panel-body" class="equipos-lista-panel-body wb-modal-body"></div>
+  </div>
+</div>
+
+<div id="clinical-teams-backdrop" class="modal-backdrop clinical-teams-backdrop" aria-hidden="true">
+  <div class="modal clinical-teams-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-teams-title" data-stop-propagation>
+    <header class="clinical-teams-modal-head wb-modal-head">
+      <h3 id="clinical-teams-title" class="wb-modal-title">Mi rotación</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" id="btn-clinical-teams-close" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div id="clinical-teams-panel-body" class="clinical-teams-panel-body wb-modal-body"></div>
+  </div>
+</div>
+
+<div id="clinical-directory-users-backdrop" class="modal-backdrop clinical-directory-users-backdrop" aria-hidden="true">
+  <div class="modal clinical-directory-users-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-directory-users-title" data-stop-propagation>
+    <header class="clinical-directory-users-modal-head wb-modal-head">
+      <h3 id="clinical-directory-users-title" class="wb-modal-title">Directorio de usuarios</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" id="btn-clinical-directory-users-close" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div id="clinical-directory-users-panel-body" class="clinical-directory-users-panel-body wb-modal-body"></div>
+  </div>
+</div>
+
+<div id="clinical-admin-code-backdrop" class="modal-backdrop clinical-admin-code-backdrop" aria-hidden="true">
+  <div class="modal clinical-admin-code-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-admin-code-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="clinical-admin-code-title" class="wb-modal-title">Privilegios de administración</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" id="btn-clinical-admin-code-close" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <form id="clinical-admin-code-form">
+      <div class="wb-modal-body">
+      <p id="clinical-admin-code-lead" class="clinical-admin-code-lead">Introduce tu código personal para activar acceso de administración.</p>
+      <div class="field-group" id="clinical-admin-code-current-group">
+        <label for="clinical-admin-code-input" id="clinical-admin-code-input-label">Código</label>
+        <input id="clinical-admin-code-input" type="password" class="profile-input" autocomplete="off">
+      </div>
+      <div class="field-group" id="clinical-admin-code-new-group" hidden>
+        <label for="clinical-admin-code-new">Nuevo código (mínimo 6 caracteres)</label>
+        <input id="clinical-admin-code-new" type="password" class="profile-input" autocomplete="new-password" minlength="6">
+      </div>
+      <div class="field-group" id="clinical-admin-code-confirm-group" hidden>
+        <label for="clinical-admin-code-confirm">Repite el nuevo código</label>
+        <input id="clinical-admin-code-confirm" type="password" class="profile-input" autocomplete="new-password">
+      </div>
+      <p id="clinical-admin-code-error" class="clinical-admin-code-error" role="alert" hidden></p>
+      </div>
+      <div class="modal-actions wb-modal-foot">
+        <button type="button" class="wb-btn wb-btn-secondary" id="btn-clinical-admin-code-cancel">Cancelar</button>
+        <button type="submit" class="wb-btn wb-btn-primary wb-btn-lg" id="btn-clinical-admin-code-submit">Activar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="clinical-registration-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal clinical-registration-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-registration-title" data-wb-no-close data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="clinical-registration-title" class="clinical-onboarding-title wb-modal-title">Registro de guardia</h3>
+    </header>
+    <div class="wb-modal-body">
+    <p class="clinical-registration-lead">Identifícate para el censo de guardia, firmado clínico y acceso al Modo Guardia. Tras actualizar a <strong>6.6.6</strong> debes volver a escribir usuario y nombre (son datos distintos).</p>
+    <div class="clinical-onboard-form-shell clinical-onboard-form-shell--in-modal">
+      <form id="clinical-registration-form" class="clinical-teams-create-form clinical-onboard-form">
+        <div class="field-group">
+          <label for="clinical-reg-username">Usuario (@usuario) *</label>
+          <input id="clinical-reg-username" type="text" class="profile-input" placeholder="ej. drmendoza" autocomplete="off" spellcheck="false" required pattern="[a-z][a-z0-9_]{2,31}">
+          <p class="clinical-teams-hint"><strong>Usuario (@usuario)</strong> — minúsculas, sin espacios: apellido + inicio del nombre (p. ej. <code>drmendoza</code>). No uses «Dr. …» ni tu nombre en guardia aquí.</p>
+        </div>
+        <div class="field-group">
+          <label for="clinical-reg-name">Nombre en guardia *</label>
+          <input id="clinical-reg-name" type="text" class="profile-input" placeholder="ej. Dr. Mendoza" autocomplete="name" required>
+          <p class="clinical-teams-hint"><strong>Nombre en guardia</strong> — cómo te ven en el censo (p. ej. <code>Dr. Mendoza</code> o <code>R1 García</code>).</p>
+        </div>
+        <div class="field-group">
+          <label for="clinical-reg-rank">Rango</label>
+          <select id="clinical-reg-rank" class="profile-input">
+            <option value="R1">R1</option>
+            <option value="R2">R2</option>
+            <option value="R3">R3</option>
+            <option value="R4">R4</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="clinical-reg-sala">Rotación</label>
+          <select id="clinical-reg-sala" class="profile-input">
+            <option value="">— Sin sala —</option>
+            <option value="Sala 1">Sala 1</option>
+            <option value="Sala 2">Sala 2</option>
+            <option value="Sala E">Sala E</option>
+            <option value="Torre HU">Torre HU</option>
+            <option value="Área A/Pensionistas">Área A/Pensionistas</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="clinical-reg-shift-pin">PIN del turno (⇄)</label>
+          <input id="clinical-reg-shift-pin" type="text" class="profile-input" inputmode="numeric"
+            pattern="[0-9]{6}" maxlength="6" placeholder="6 dígitos del anfitrión" autocomplete="off">
+          <p class="clinical-teams-hint">Opcional al guardar. También puedes ingresarlo después en ⇄ (Wi‑Fi) o en <strong>Conectar al turno</strong> en Mi rotación.</p>
+        </div>
+        <p id="clinical-reg-error" class="clinical-registration-error" hidden></p>
+      </form>
+    </div>
+    </div>
+    <div class="modal-actions clinical-onboard-form-actions wb-modal-foot">
+      <button type="submit" form="clinical-registration-form" class="wb-btn wb-btn-primary wb-btn-lg">Continuar</button>
+    </div>
+  </div>
+</div>
+
+<div id="rpc-wipe-modal" role="dialog" aria-modal="true" aria-labelledby="rpc-wipe-title" aria-hidden="true">
+  <div class="rpc-wipe-panel wb-modal" data-stop-propagation>
+    <div id="rpc-wipe-step-choose" class="rpc-wipe-step">
+      <header class="wb-modal-head">
+        <h3 id="rpc-wipe-title" class="wb-modal-title">Borrar datos de R+ en este equipo</h3>
+        <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      </header>
+      <div class="wb-modal-body">
+        <p>Elige qué información eliminar. Esta acción <strong>no se puede deshacer</strong>. Se registrará en la bitácora antes de borrar.</p>
+        <button type="button" class="rpc-wipe-option" data-onclick="wipeCacheConfirmed">
+          <strong>Solo caché y temporales</strong>
+          <span>Elimina respaldo pre-importación, bitácora, auto-respaldos guardados y el recordatorio de tiempo de bloqueo (conserva el hash del PIN). No toca pacientes, notas, indicaciones ni ajustes.</span>
+        </button>
+        <button type="button" class="rpc-wipe-option rpc-wipe-danger" data-onclick="wipeAllConfirmed">
+          <strong>Borrado completo</strong>
+          <span>Elimina <strong>todos</strong> los datos clínicos, ajustes, plantillas, historial de labs, bitácora, PIN de bloqueo y preferencias. R+ se reiniciará vacío.</span>
+        </button>
+      </div>
+      <div class="wb-modal-foot">
+        <button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" data-wipe-action="close">Cancelar</button>
+      </div>
+    </div>
+    <div id="rpc-wipe-step-cache" class="rpc-wipe-step" hidden>
+      <header class="wb-modal-head">
+        <h3 id="rpc-wipe-cache-title" class="wb-modal-title">Confirmar borrado de caché</h3>
+        <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      </header>
+      <div class="wb-modal-body">
+        <p>Se eliminarán caché y temporales: respaldo pre-importación, bitácora, auto-respaldos y el recordatorio de tiempo de bloqueo. No se puede deshacer.</p>
+      </div>
+      <div class="wb-modal-foot">
+        <button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" data-wipe-action="choose">Volver</button>
+        <button type="button" class="wb-btn wb-btn-danger wb-btn-lg" data-wipe-action="cache-exec">Continuar</button>
+      </div>
+    </div>
+    <div id="rpc-wipe-step-full" class="rpc-wipe-step" hidden>
+      <header class="wb-modal-head">
+        <h3 id="rpc-wipe-full-title" class="wb-modal-title">Confirmar borrado completo</h3>
+        <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      </header>
+      <div class="wb-modal-body">
+        <p>Esto <strong>borrará todos</strong> los pacientes, notas, indicaciones, historial de labs, ajustes y PIN de bloqueo de esta computadora. R+ se reiniciará vacío.</p>
+        <label class="rpc-wipe-confirm-label" for="rpc-wipe-full-input">Escribe <strong>BORRAR</strong> en mayúsculas para confirmar:</label>
+        <input id="rpc-wipe-full-input" class="rpc-wipe-confirm-input profile-input" type="text" autocomplete="off" spellcheck="false" inputmode="text">
+        <p id="rpc-wipe-full-error" class="rpc-wipe-confirm-error" hidden></p>
+      </div>
+      <div class="wb-modal-foot">
+        <button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" data-wipe-action="choose">Volver</button>
+        <button type="button" class="wb-btn wb-btn-danger wb-btn-lg" data-wipe-action="full-exec">Borrar todo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tend-detail-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1100;align-items:center;justify-content:center;" aria-hidden="true">
+  <div id="tend-detail-modal" class="wb-modal" role="dialog" aria-modal="true" aria-labelledby="tend-detail-title" data-stop-propagation style="background:var(--surface);border-radius:12px;width:min(90vw,640px);position:relative;">
+    <header class="wb-modal-head">
+      <h3 id="tend-detail-title" class="wb-modal-title"></h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+    <div class="tend-detail-chart-row">
+      <div class="tend-detail-chart-cell">
+        <canvas id="tend-detail-canvas"></canvas>
+      </div>
+    </div>
+    <div id="tend-detail-events-slot" class="tend-detail-events-slot" aria-hidden="true"></div>
+    <button type="button" class="ea-btn ea-btn--ghost tend-detail-add-event-btn" id="tend-detail-add-event" data-tend-action="add-event-day">Agregar evento este día</button>
+    </div>
+  </div>
+</div>
+
+<div id="tend-group-backdrop" class="tend-group-backdrop" style="display:none" aria-hidden="true">
+  <div id="tend-group-modal" class="wb-modal" role="dialog" aria-modal="true" aria-labelledby="tend-group-title">
+    <header class="tend-group-header wb-modal-head">
+      <h2 id="tend-group-title" class="wb-modal-title" contenteditable="true" spellcheck="false" title="Editar título"></h2>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="tend-group-range-row" id="tend-group-range-row">
+      <span class="tend-group-range-label">Rango</span>
+      <input type="date" class="tend-group-range-input" id="tend-group-range-from" />
+      <span class="tend-group-range-sep">a</span>
+      <input type="date" class="tend-group-range-input" id="tend-group-range-to" />
+      <button type="button" class="tend-group-range-clear" id="tend-group-range-clear" hidden>Quitar rango</button>
+    </div>
+    <div class="tend-group-tabs-wrap">
+      <nav class="tend-group-tabs" id="tend-group-tabs-track" role="tablist" aria-label="Vista del estudio" data-active="charts">
+        <span class="tend-group-tab-pill" aria-hidden="true"></span>
+        <button type="button" role="tab" class="tend-group-tab active" data-tab="charts" aria-selected="true" data-onclick="setTendGroupTab" data-onclick-args='["charts"]'>Gráficas</button>
+        <button type="button" role="tab" class="tend-group-tab" data-tab="table" aria-selected="false" data-onclick="setTendGroupTab" data-onclick-args='["table"]'>Tabla</button>
+      </nav>
+    </div>
+    <div id="tend-group-panel-charts" class="tend-group-panel wb-modal-body" role="tabpanel"></div>
+    <div id="tend-group-panel-table" class="tend-group-panel wb-modal-body" role="tabpanel" hidden>
+      <div id="tend-group-table-wrap"></div>
+      <div class="tend-group-table-actions">
+        <button type="button" class="btn-primary" data-onclick="copyTendGroupTablePng">Copiar</button>
+        <button type="button" class="btn-secondary" data-onclick="copyTendGroupTableText">Copiar como texto</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tend-dynamic-table-backdrop" class="tend-group-backdrop" style="display:none" aria-hidden="true">
+  <div id="tend-dynamic-table-modal" class="tend-group-modal-panel wb-modal" role="dialog" aria-modal="true" aria-labelledby="tend-dynamic-table-title">
+    <header class="tend-group-header wb-modal-head">
+      <h2 id="tend-dynamic-table-title" class="wb-modal-title" contenteditable="true" spellcheck="false" title="Editar título">Tabla dinámica</h2>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="tend-group-range-row" id="tend-dynamic-table-range-row">
+      <span class="tend-group-range-label">Rango</span>
+      <input type="date" class="tend-group-range-input" id="tend-dynamic-table-range-from" />
+      <span class="tend-group-range-sep">a</span>
+      <input type="date" class="tend-group-range-input" id="tend-dynamic-table-range-to" />
+      <button type="button" class="tend-group-range-clear" id="tend-dynamic-table-range-clear" hidden>Quitar rango</button>
+    </div>
+    <div class="tend-group-panel wb-modal-body">
+      <div id="tend-dynamic-table-wrap"></div>
+      <div class="tend-group-table-actions">
+        <button type="button" class="btn-primary" data-onclick="copyTendDynamicTablePng">Copiar</button>
+        <button type="button" class="btn-secondary" data-onclick="copyTendDynamicTableText">Copiar como texto</button>
+      </div>
+    </div>
+  </div>
+</div>

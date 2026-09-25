@@ -1,0 +1,88 @@
+/**
+ * Model for the grouped expediente navigation row (premium UI phase 2).
+ * Pure: derives group pills + sections from the existing expediente maps so
+ * Sala/Interconsulta differences and the mobile Salida rule are inherited.
+ *
+ * Paciente (Resumen) is a leaf group: datos lives in the collapsible <details>
+ * inside the pane; resumen is the default view. No Datos sub-pill in the row.
+ *
+ * Pendientes (mockup 10a) is appended as its own always-visible leaf pill
+ * (teal-workbench Phase 6, fix #1) instead of nesting it under Paciente:
+ * nesting would make Paciente non-leaf, and the active-group CSS collapses a
+ * non-leaf pill's own name to show only its sections — that would hide the
+ * "Resumen" label whenever Resumen itself is the active view. A sibling pill
+ * avoids that regression and matches how every other pill in this row works.
+ */
+import {
+  getConsolidatedTabs,
+  getClinicoSections,
+  getSalidaSections,
+  RESULTADOS_SECTIONS,
+  resolveConsolidatedTarget,
+} from './expediente-tabs.mjs';
+
+export var GROUP_LABELS = {
+  paciente: 'Resumen',
+  clinico: 'Clínico',
+  resultados: 'Resultados',
+  salida: 'Salida',
+};
+
+export var LAB_INNER_SECTIONS = ['labs', 'tend', 'cult'];
+
+export var SECTION_LABELS = {
+  datos: 'Datos',
+  labs: 'Labs',
+  todo: 'Pendientes',
+  notas: 'Nota de evolución',
+  indica: 'Indicaciones',
+  historia: 'Historia Clínica',
+  estadoActual: 'Estado actual',
+  eventualidades: 'Eventualidades',
+  medAdmin: 'Medicamentos',
+  vpo: 'VPO',
+  tend: 'Tendencias',
+  cult: 'Cultivos',
+  listado: 'Listado',
+};
+
+export function groupSections(group, settings) {
+  if (group === 'paciente') return [];
+  if (group === 'clinico') return getClinicoSections(settings || {});
+  if (group === 'resultados') return RESULTADOS_SECTIONS.slice();
+  if (group === 'salida') return getSalidaSections(settings || {});
+  return [];
+}
+
+export function buildGroupRowModel(activeGranular, settings) {
+  var st = settings || {};
+  var granular = activeGranular || 'resumen';
+  var target = resolveConsolidatedTarget(granular, st);
+  var groups = getConsolidatedTabs(st).map(function (group) {
+    // Pendientes has its own pill; Resumen is not also "active" while it shows.
+    var activeGroup = group === target.tab && !(group === 'paciente' && granular === 'todo');
+    var sections = groupSections(group, st);
+    return {
+      id: group,
+      label: GROUP_LABELS[group] || group,
+      active: activeGroup,
+      leaf: sections.length === 0,
+      sections: sections.map(function (section) {
+        return {
+          id: section,
+          label: SECTION_LABELS[section] || section,
+          active: activeGroup && target.section === section,
+        };
+      }),
+    };
+  });
+  groups.push({
+    id: 'todo',
+    label: SECTION_LABELS.todo,
+    active: granular === 'todo',
+    leaf: true,
+    granularTarget: 'todo',
+    sections: [],
+  });
+  return groups;
+}

@@ -1,0 +1,516 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import {
+  cloudEntryToLanEntry,
+  cloudStateToLanEntries,
+  foldCloudOp,
+  createOpFold,
+  opFoldToLanEntries,
+  assembleLabHistoryFromSidecars,
+} from './pull-apply-state.mjs';
+
+const pullApplySrc = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), 'pull-apply.mjs'),
+  'utf8'
+);
+
+describe('pull-apply cloud snapshot merge', () => {
+  it('assembles lab sidecars into labHistory arrays', () => {
+    const labs = assembleLabHistoryFromSidecars({
+      s1: { id: 's1', fecha: '2026-08-01' },
+      s2: { id: 's2', fecha: '2026-08-02' },
+    });
+    assert.equal(labs.length, 2);
+    assert.ok(labs.some((set) => set.id === 's1'));
+  });
+
+  it('cloudEntryToLanEntry merges fields and sidecars', () => {
+    const entry = cloudEntryToLanEntry(
+      {
+        id: 'p1',
+        fields: { nombre: 'PACIENTE', registro: '99' },
+        note: { texto: 'Nota remota' },
+        indicaciones: {},
+      },
+      { lab1: { id: 'lab1', fecha: '2026-08-01' } }
+    );
+    assert.equal(entry?.patient?.nombre, 'PACIENTE');
+    assert.equal(entry?.note?.texto, 'Nota remota');
+    assert.equal(entry?.labHistory?.length, 1);
+    assert.ok(!('medReceta' in entry));
+    assert.ok(!('medReceta' in entry.patient));
+  });
+
+  it('cloudEntryToLanEntry carries medReceta only when the cloud entry has it', () => {
+    const withMeds = cloudEntryToLanEntry(
+      { id: 'p1', fields: { nombre: 'PACIENTE' }, medReceta: { items: [{ id: 'm1' }] } },
+      {}
+    );
+    assert.deepEqual(withMeds.medReceta, { items: [{ id: 'm1' }] });
+
+    const cleared = cloudEntryToLanEntry(
+      { id: 'p1', fields: { nombre: 'PACIENTE' }, medReceta: null },
+      {}
+    );
+    assert.equal(cleared.medReceta, null);
+  });
+
+  it('cloudEntryToLanEntry leaves registro/diagnosis unset (not raw ciphertext) when still locked', () => {
+    const envelope = { enc: 1, iv: 'x', ct: 'y' };
+    const entry = cloudEntryToLanEntry(
+      {
+        id: 'p1',
+        fields: {
+          nombre: 'PACIENTE',
+          cama: '12',
+          registro: envelope,
+          diagnosticosList: envelope,
+          diagnosticosText: envelope,
+          registroFp: 'fp-abc',
+        },
+      },
+      {}
+    );
+    assert.equal(entry.patient.nombre, 'PACIENTE');
+    assert.equal(entry.patient.cama, '12');
+    assert.ok(!('registro' in entry.patient)); // no room password yet — never leaks ciphertext
+    assert.ok(!('diagnosticosList' in entry.patient));
+    assert.ok(!('diagnosticosText' in entry.patient));
+    assert.ok(!('registroFp' in entry.patient)); // wire-only key, never a patient property
+  });
+
+  it('cloudEntryToLanEntry carries registro/diagnosis once decrypted (plain values)', () => {
+    const entry = cloudEntryToLanEntry(
+      {
+        id: 'p1',
+        fields: {
+          nombre: 'PACIENTE',
+          registro: '2026-001234',
+          diagnosticosList: ['NEUMONIA'],
+          diagnosticosText: '1. NEUMONIA',
+        },
+      },
+      {}
+    );
+    assert.equal(entry.patient.registro, '2026-001234');
+    assert.deepEqual(entry.patient.diagnosticosList, ['NEUMONIA']);
+    assert.equal(entry.patient.diagnosticosText, '1. NEUMONIA');
+  });
+
+  it('cloudEntryToLanEntry omits note/indicaciones when the entry never had the key', () => {
+    const partial = cloudEntryToLanEntry({ id: 'p1', fields: { cuarto: '204' } }, {});
+    assert.ok(!('note' in partial));
+    assert.ok(!('indicaciones' in partial));
+  });
+
+  it('cloudStateToLanEntries builds LAN entries from tiny snapshot', () => {
+    const entries = cloudStateToLanEntries({
+      entries: [
+        {
+          id: 'p1',
+          fields: { nombre: 'UNO', registro: '1' },
+          note: { texto: 'hola' },
+        },
+      ],
+      labSidecars: {
+        p1: { l1: { id: 'l1', fecha: '2026-08-01' } },
+      },
+      todos: {},
+      agenda: [],
+    });
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].patient.nombre, 'UNO');
+    assert.equal(entries[0].labHistory.length, 1);
+  });
+
+  it('foldCloudOp accumulates incremental ops into LAN entries', () => {
+    const fold = createOpFold();
+    foldCloudOp(fold, {
+      path: 'entries/p1/fields',
+      value: { nombre: 'DOS', registro: '2' },
+    });
+    foldCloudOp(fold, {
+      path: 'entries/p1/note',
+      value: { texto: 'sync' },
+    });
+    foldCloudOp(fold, {
+      path: 'labSidecars/p1/l1',
+      value: { id: 'l1', fecha: '2026-08-02' },
+    });
+    foldCloudOp(fold, {
+      path: 'entries/p1/medReceta',
+      value: { items: [{ id: 'm1' }] },
+    });
+    const entries = opFoldToLanEntries(fold);
+    assert.equal(entries[0].patient.nombre, 'DOS');
+    assert.equal(entries[0].note.texto, 'sync');
+    assert.equal(entries[0].labHistory[0].id, 'l1');
+    assert.deepEqual(entries[0].medReceta, { items: [{ id: 'm1' }] });
+  });
+
+  it('eventualidades path overrides stale packed fields copy', () => {
+    const fold = createOpFold();
+    foldCloudOp(fold, {
+      path: 'entries/p1/fields',
+      value: {
+        nombre: 'PAC',
+        eventualidades: {
+          entries: [
+            { id: 'ev_a', text: 'OLD' },
+            { id: 'ev_b', text: 'KEEP' },
+          ],
+        },
+      },
+    });
+    foldCloudOp(fold, {
+      path: 'entries/p1/eventualidades',
+      value: {
+        entries: [{ id: 'ev_b', text: 'KEEP' }],
+        deletedIds: { ev_a: '2026-08-03T12:00:00.000Z' },
+      },
+    });
+    const entries = opFoldToLanEntries(fold);
+    assert.deepEqual(entries[0].patient.eventualidades.entries.map((e) => e.id), ['ev_b']);
+    assert.ok(entries[0].patient.eventualidades.deletedIds.ev_a);
+  });
+
+  it('never merges an unreadable ciphertext envelope as if it were the real value', () => {
+    const envelope = { enc: 1, iv: 'x', ct: 'y' };
+    const entry = cloudEntryToLanEntry(
+      { id: 'p1', fields: { nombre: 'PAC' }, monitoreo: envelope, note: envelope, medReceta: envelope },
+      { s1: envelope }
+    );
+    assert.equal(entry.patient.monitoreo, undefined);
+    assert.ok(!('note' in entry));
+    assert.ok(!('medReceta' in entry));
+    assert.deepEqual(entry.labHistory, []);
+
+    const fold = createOpFold();
+    foldCloudOp(fold, { path: 'entries/p1/monitoreo', value: envelope });
+    const entries = opFoldToLanEntries(fold);
+    assert.equal(entries[0].patient.monitoreo, undefined);
+  });
+
+  it('monitoreo path overrides stale packed fields copy', () => {
+    const fold = createOpFold();
+    foldCloudOp(fold, {
+      path: 'entries/p1/fields',
+      value: {
+        nombre: 'PAC',
+        cuarto: '100',
+        monitoreo: { estadoClinico: { four: '10' } },
+      },
+    });
+    foldCloudOp(fold, {
+      path: 'entries/p1/monitoreo',
+      value: {
+        estadoClinico: { four: '15' },
+        estadoClinicoUpdatedAt: '2026-08-03T12:00:00.000Z',
+      },
+    });
+    const entries = opFoldToLanEntries(fold);
+    assert.equal(entries[0].patient.cuarto, '100');
+    assert.equal(entries[0].patient.monitoreo.estadoClinico.four, '15');
+  });
+});
+
+describe('pull-apply cloud todo registro remap', () => {
+  it('applyCloudOps stores todos under local patient id by registro', async () => {
+    const { storage } = await import('../../storage.js');
+    const { getPatients } = await import('../../app-state.mjs');
+    const patientList = getPatients();
+    const saved = {};
+    const origGet = storage.getTodos;
+    const origSave = storage.saveTodos;
+    const origAgenda = storage.saveScheduledProcedures;
+    const origList = storage.listTodoPatientIds;
+    const before = patientList.slice();
+    patientList.length = 0;
+    patientList.push({ id: 'local_a', registro: 'REG1', nombre: 'A' });
+    storage.getTodos = function (pid) {
+      return saved[pid] ? saved[pid].slice() : [];
+    };
+    storage.saveTodos = function (pid, list) {
+      saved[pid] = list;
+    };
+    storage.listTodoPatientIds = function () {
+      return Object.keys(saved);
+    };
+    storage.saveScheduledProcedures = function () {};
+    try {
+      const { applyCloudOps } = await import('./pull-apply.mjs');
+      await applyCloudOps([
+        {
+          path: 'todos/t1',
+          value: {
+            id: 't1',
+            patientId: 'remote_a',
+            registro: 'REG1',
+            text: 'Lab',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          },
+        },
+      ]);
+      assert.ok(saved.local_a);
+      assert.equal(saved.local_a.length, 1);
+      assert.equal(saved.local_a[0].text, 'Lab');
+      assert.equal(saved.local_a[0].patientId, 'local_a');
+      assert.equal(saved.remote_a, undefined);
+    } finally {
+      storage.getTodos = origGet;
+      storage.saveTodos = origSave;
+      storage.saveScheduledProcedures = origAgenda;
+      storage.listTodoPatientIds = origList;
+      patientList.length = 0;
+      patientList.push(...before);
+    }
+  });
+});
+
+describe('pull-apply tombstone guard', () => {
+  it('shouldApplyCloudTombstone skips stale id when registro was re-admitted', async () => {
+    const { shouldApplyCloudTombstone } = await import('./pull-apply.mjs');
+    const { getPatients } = await import('../../app-state.mjs');
+    const patientList = getPatients();
+    const before = patientList.slice();
+    patientList.length = 0;
+    patientList.push({ id: 'p-new', registro: '9000013-4', nombre: 'REINGRESO' });
+    try {
+      assert.equal(
+        await shouldApplyCloudTombstone('p-old', { registro: '9000013-4' }),
+        false
+      );
+      assert.equal(await shouldApplyCloudTombstone('p-old', { registro: '' }), true);
+    } finally {
+      patientList.length = 0;
+      patientList.push(...before);
+    }
+  });
+
+  it('shouldApplyCloudTombstone falls back to registroFp fingerprint matching in an E2EE room', async () => {
+    const { shouldApplyCloudTombstone } = await import('./pull-apply.mjs');
+    const { getPatients } = await import('../../app-state.mjs');
+    const { generateDek, exportDekRaw, fingerprintValue } = await import('./crypto.mjs');
+    const { hydrateRoomDeksFromPersistence, clearRoomDekCache } = await import('./room-dek.mjs');
+    const { setCloudSyncRoomSnapshot } = await import('./settings.mjs');
+    const patientList = getPatients();
+    const before = patientList.slice();
+    patientList.length = 0;
+    patientList.push({ id: 'p-new', registro: '9000013-4', nombre: 'REINGRESO' });
+
+    const dek = await generateDek();
+    const fp = await fingerprintValue(dek, '9000013-4');
+    const memoryStore = () => {
+      const map = new Map();
+      return {
+        getItem: (k) => (map.has(k) ? map.get(k) : null),
+        setItem: (k, v) => map.set(String(k), String(v)),
+        removeItem: (k) => map.delete(String(k)),
+      };
+    };
+    const prevSession = globalThis.sessionStorage;
+    const prevLocal = globalThis.localStorage;
+    globalThis.sessionStorage = memoryStore();
+    globalThis.localStorage = memoryStore();
+    setCloudSyncRoomSnapshot({ id: 'room-1', code: 'ABC123' });
+    await hydrateRoomDeksFromPersistence({ 'room-1': await exportDekRaw(dek) });
+    try {
+      // Matching fingerprint — skip the stale tombstone, the resurrection already landed.
+      assert.equal(await shouldApplyCloudTombstone('p-old', { registroFp: fp }), false);
+      // A different fingerprint — no local patient matches, apply the tombstone.
+      assert.equal(await shouldApplyCloudTombstone('p-old', { registroFp: 'fp-unrelated' }), true);
+    } finally {
+      clearRoomDekCache();
+      setCloudSyncRoomSnapshot(null);
+      if (prevSession) globalThis.sessionStorage = prevSession;
+      else delete globalThis.sessionStorage;
+      if (prevLocal) globalThis.localStorage = prevLocal;
+      else delete globalThis.localStorage;
+      patientList.length = 0;
+      patientList.push(...before);
+    }
+  });
+
+  it('shouldApplyCloudTombstone fails open (applies the tombstone) with no cached DEK yet', async () => {
+    const { shouldApplyCloudTombstone } = await import('./pull-apply.mjs');
+    assert.equal(await shouldApplyCloudTombstone('p-old', { registroFp: 'fp-anything' }), true);
+  });
+});
+
+describe('pull-apply tombstone vs entry race', () => {
+  it('drops entries for a patient id that has an active tombstone in the same pull', async () => {
+    const { excludeTombstonedEntries } = await import('./pull-apply.mjs');
+    const entries = [
+      { patient: { id: 'p-deleted' } },
+      { patient: { id: 'p-live' } },
+    ];
+    const result = excludeTombstonedEntries(entries, { 'p-deleted': { registro: '123' } });
+    assert.deepEqual(result.map((e) => e.patient.id), ['p-live']);
+  });
+
+  it('is a no-op when there are no tombstones', async () => {
+    const { excludeTombstonedEntries } = await import('./pull-apply.mjs');
+    const entries = [{ patient: { id: 'p-live' } }];
+    assert.equal(excludeTombstonedEntries(entries, {}), entries);
+    assert.equal(excludeTombstonedEntries(entries, undefined), entries);
+  });
+
+  it('applies every eligible tombstone directly, with no pending-confirm notification', () => {
+    assert.doesNotMatch(pullApplySrc, /remote-patient-delete-confirm/);
+    assert.doesNotMatch(pullApplySrc, /scheduleRemotePatientDeleteConfirm/);
+    assert.doesNotMatch(pullApplySrc, /partitionCloudTombstonesForConfirm/);
+    const start = pullApplySrc.indexOf('function applyCloudTombstones');
+    assert.ok(start >= 0);
+    const body = pullApplySrc.slice(start, start + 400);
+    assert.match(body, /shouldApplyCloudTombstone/);
+    assert.match(body, /removePatientLocally/);
+  });
+});
+
+describe('pull-apply fresh-sync own-team-first staging', () => {
+  it('splits entries so the joined-team patient goes first, the rest second', async () => {
+    const { splitEntriesByOwnTeamFirst } = await import('./pull-apply.mjs');
+    const { clinicalSessionContext } = await import('../../clinical-session-context.mjs');
+    const prevUser = clinicalSessionContext.user;
+    const prevScope = clinicalSessionContext.scopeContext;
+    clinicalSessionContext.user = { user_id: 'r1', rank: 'R1', sala: 'Sala 1' };
+    clinicalSessionContext.scopeContext = {
+      teams: [
+        {
+          team_id: 't-mine',
+          service: 'Sala',
+          sub_area_fraction: 'B',
+          sala: 'Sala 1',
+          members: [{ user_id: 'r1' }],
+        },
+      ],
+      assignments: [
+        { patient_id: 'p1', team_id: 't-mine', effective_at: '2026-06-01T00:00:00Z' },
+        { patient_id: 'p2', team_id: 't-other', effective_at: '2026-06-01T00:00:00Z' },
+      ],
+      guardias: [],
+      now: '2026-06-02T12:00:00Z',
+    };
+    try {
+      const entries = [
+        { patient: { id: 'p2', service: 'Sala', sala: 'Sala 1' } },
+        { patient: { id: 'p1', service: 'Sala', sala: 'Sala 1' } },
+      ];
+      const { own, rest } = splitEntriesByOwnTeamFirst(entries);
+      assert.deepEqual(own.map((e) => e.patient.id), ['p1']);
+      assert.deepEqual(rest.map((e) => e.patient.id), ['p2']);
+    } finally {
+      clinicalSessionContext.user = prevUser;
+      clinicalSessionContext.scopeContext = prevScope;
+    }
+  });
+
+  it('is a no-op (everything in "rest") when there is no signed-in user', async () => {
+    const { splitEntriesByOwnTeamFirst } = await import('./pull-apply.mjs');
+    const { clinicalSessionContext } = await import('../../clinical-session-context.mjs');
+    const prevUser = clinicalSessionContext.user;
+    clinicalSessionContext.user = null;
+    try {
+      const entries = [{ patient: { id: 'p1' } }];
+      const { own, rest } = splitEntriesByOwnTeamFirst(entries);
+      assert.deepEqual(own, []);
+      assert.equal(rest, entries);
+    } finally {
+      clinicalSessionContext.user = prevUser;
+    }
+  });
+
+  it('applyCloudState stages patient entries and yields a paint between batches', () => {
+    const start = pullApplySrc.indexOf('async function applyPatientEntriesStaged');
+    assert.ok(start >= 0);
+    const body = pullApplySrc.slice(start, start + 500);
+    assert.match(body, /splitEntriesByOwnTeamFirst/);
+    assert.match(body, /yieldToPaint/);
+    assert.match(pullApplySrc, /const patientSync = await applyPatientEntriesStaged\(entries\);/);
+  });
+});
+
+describe('pull-apply sync-apply wiring (Phase 3)', () => {
+  it('imports patient apply/delete from sync-apply not lan', () => {
+    assert.match(pullApplySrc, /sync-apply\/patient-entries/);
+    assert.match(pullApplySrc, /sync-apply\/patient-delete/);
+    assert.equal(/from ['"]\.\.\/lan\/patient-entries/.test(pullApplySrc), false);
+    assert.equal(/from ['"]\.\.\/lan\/patient-delete/.test(pullApplySrc), false);
+    assert.match(pullApplySrc, /clinical-ops-sync\.mjs/);
+  });
+
+  it('hydrates teams UI after applying clinicalOps from census pull', () => {
+    assert.match(pullApplySrc, /hydrateClinicalTeamsAfterCloudPull/);
+  });
+
+  it('refreshes patient sidebar after cloud pull applies changes', () => {
+    assert.match(pullApplySrc, /refreshSidebarAfterCloudPull/);
+    assert.match(pullApplySrc, /renderPatientList/);
+  });
+
+  it('also repaints the chart already open, not just the sidebar row, so a phone edit shows up without a reload', () => {
+    assert.match(pullApplySrc, /await refreshActivePatientChartAfterCloudPull\(applied\)/);
+    const start = pullApplySrc.indexOf('async function refreshActivePatientChartAfterCloudPull');
+    assert.ok(start >= 0);
+    const fn = pullApplySrc.slice(start, start + 500);
+    assert.match(fn, /refreshActivePatientViewIfOpen/);
+    assert.match(fn, /patients-select\.mjs/);
+  });
+
+  it('debounces SQLCipher persist after census pull', () => {
+    assert.match(pullApplySrc, /persistClinicalState\(\{ domains: \['patients'\] \}\)/);
+    assert.match(pullApplySrc, /scheduleIdleClinicalPersist/);
+    assert.doesNotMatch(pullApplySrc, /persistClinicalState\(\{ immediate: true \}\)/);
+  });
+
+  it('desktop Nube applies full sala census; mobile keeps entries until team scope is ready', () => {
+    const start = pullApplySrc.indexOf('function shouldSkipTeamScopeFilterOnCloudPull');
+    assert.ok(start >= 0);
+    const body = pullApplySrc.slice(start, start + 700);
+    assert.match(body, /shouldEnforceTeamPatientMirror/);
+    assert.match(body, /isClinicalScopeReadyForPatientApply/);
+    assert.match(body, /return true/);
+    assert.doesNotMatch(body, /shouldUseElevatedPatientCensus/);
+  });
+
+  it('remaps cloud todos by registro on pull apply', () => {
+    assert.match(pullApplySrc, /resolveCloudTodoLocalPatientId/);
+    assert.match(pullApplySrc, /buildLiveSyncPatientIdMap/);
+  });
+
+  it('does not apply cloud todos for patients missing from the local census', () => {
+    const start = pullApplySrc.indexOf('function mergeCloudTodoIntoMap');
+    assert.ok(start >= 0);
+    const body = pullApplySrc.slice(start, start + 900);
+    assert.match(body, /getSyncablePatients\(\)\.some/);
+    assert.match(pullApplySrc, /pruneOrphanTodos/);
+  });
+});
+
+describe('pull-apply clinicalOps ops-mode fold', () => {
+  it('a later empty clinicalOps push does not hide earlier teams', () => {
+    const fold = createOpFold();
+    const team = { team_id: 't-a', name: 'EQUIPO A', sala: 'Sala 1' };
+    foldCloudOp(fold, {
+      path: 'clinicalOps',
+      value: { version: 1, teams: [team], team_membership: [{ team_id: 't-a', user_id: 'u1' }], patient_team_assignment: [] },
+    });
+    foldCloudOp(fold, {
+      path: 'clinicalOps',
+      value: { version: 1, exportedAt: 'later', teams: [], team_membership: [], patient_team_assignment: [] },
+    });
+    assert.deepEqual(fold.clinicalOps.teams, [team]);
+    assert.equal(fold.clinicalOps.team_membership.length, 1);
+    assert.equal(fold.clinicalOps.exportedAt, 'later');
+  });
+
+  it('a newer team row replaces the older one by team_id', () => {
+    const fold = createOpFold();
+    foldCloudOp(fold, { path: 'clinicalOps', value: { teams: [{ team_id: 't-a', name: 'OLD' }] } });
+    foldCloudOp(fold, { path: 'clinicalOps', value: { teams: [{ team_id: 't-a', name: 'NEW' }] } });
+    assert.deepEqual(fold.clinicalOps.teams, [{ team_id: 't-a', name: 'NEW' }]);
+  });
+});

@@ -1,0 +1,56 @@
+R+ 8.0.3 (reingreso Nube + admin equipos + revisión estable)
+============================================================
+
+Fecha: 2026-08-06
+
+## Resumen
+
+**8.0.3** corrige el **reingreso de pacientes en Nube** tras un borrado (tombstone LWW ya no bloquea un alta intencional), evita que la **revisión de sync retroceda** en respuestas duplicadas del Worker, deja de forzar el **gate de perfil LAN** en equipos que ya completaron registro, y añade **asignación de usuarios Nube a equipos** desde el panel Admin Nube (como el directorio LAN).
+
+## Nuevo / mejorado
+
+- **Eventualidades sin Labs** — Se quita la pestaña **Labs / interpretación** de Eventualidades. Solo bitácora clínica + formulario **Agregar** abajo (registro restaurado).
+- **Admin Nube — Equipos** — Pestaña **Equipos** en Conexión → Admin: lista usuarios de la nube, asigna equipo + ciclo; crea perfil clínico local si falta y sincroniza `clinicalOps` al turno.
+- **Reingreso Nube** — Alta de paciente empuja censo a Nube (`enqueueCloudPatientAdmit`); el Worker limpia tombstones cuando llega una op de entrada más nueva. Mismo **registro** con id nuevo también revive el censo.
+- **Pull seguro** — `shouldApplyCloudTombstone` ignora tombstones obsoletos si el mismo registro ya está admitido con otro `patientId`.
+- **Revisión estable** — `advanceCloudSyncRevision` y el ciclo push/pull solo avanzan la revisión local; no retroceden ante `clientMutationId` duplicado (p. ej. `clinicalOps` en 541 vs sala en 779).
+- **Sync automático** — Tras un cambio local corre el mismo ciclo que **Forzar sincronización** (push+pull); los `clientMutationId` de wire llevan `enqueuedAt` para que re-edits de clinicalOps/todos/agenda no los ignore el Worker; el poll no se apaga si la ventana está oculta.
+- **Equipos al conectar** — Al unirse a Nube se hace pull+push de `clinicalOps` por sala (sin esperar un edit en Mi rotación); hidratar desde pull ya no re-pushea en bucle.
+- **Onboarding equipo** — Tras Unirme/Crear, el paso «Únete a un equipo» se cierra solo (recarga `teams` de SQLCipher antes de evaluar el gate; ya no hace falta refresh).
+- **Sin re-registro con equipo** — Si ya perteneces a un equipo, no se relanza el panel de registro; cambiar @usuario reusa el mismo `user_id` (no crea `peer_*` huérfanos).
+- **Copy R+ Cloud** — Ayuda, tour/aprendizaje, onboarding y diálogos dejan de hablar de «LAN / Migración 7.9»; el turno se describe como **R+ Cloud / Nube** (⇄ Conexión).
+- **Censo Nube más vivo** — Poll ~15 s + pull al enfocar la ventana; censo se construye sin depender del stub LAN; la barra de pacientes se refresca tras pull (nombre/datos ya no esperan un edit del otro).
+- **Nombre real gana** — `PACIENTE SIN NOMBRE` (alta/SOME sin nombre) ya no pisa un nombre escrito (p. ej. Cynthia) por LWW con reloj de seed.
+- **Censo Leslie / equipo** — En desktop el pull aplica el room completo de la sala; el filtro por equipo (asignaciones) es solo en la barra. Así no se pierden los 5 de Leslie si las asignaciones llegan después del censo.
+- **Gate de perfil** — Dispositivos que ya tenían `@usuario`, nombre y sala no vuelven a ver onboarding de perfil en cada arranque.
+- **⇄ Conexión** — El chip de estado resuelve `toast` desde `deps` (evita ReferenceError al montar el panel).
+- **Worker** — `maybeResurrectPatientFromOp` en `lww.js`; tests de re-admit y registro duplicado.
+- **Tests** — `lww`, `pull-apply`, `sync-runtime-cycle`, `settings`, `clinical-settings`, `panel-conexion`, `panel-admin-equipos`, `clinical-access-users-provision`.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v8.0.3
+
+- Mac: `R+-8.0.3-arm64.dmg`, `R+-8.0.3-x64.dmg` (y zip para auto-update).
+- Windows: `R+-8.0.3-x64.exe`.
+
+Descarga **8.0.3 en todas las Macs** del turno. **Despliega el Worker el mismo día** — la lógica de reingreso vive en `cloud/sync-worker`.
+
+**Operador cloud (recomendado antes del turno):**
+
+```bash
+cd /Users/mauriciosalas/R+
+npm run build:cloud-mobile
+cd cloud/sync-worker
+npm run deploy
+cd ../..
+curl -sS "https://rplus-sync.rmas-workersdev.workers.dev/api/sync/v1/ping"
+```
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Notas
+
+- Si en 8.0.x un paciente borrado en Nube no volvía al censo tras re-admitirlo, 8.0.3 lo corrige en cliente y Worker.
+- Sin redeploy del Worker, el cliente mejora revisión estable y gate de perfil; el **reingreso** en sala requiere Worker actualizado.
+- R+ Móvil hereda el comportamiento de tombstones al hacer pull; no hay cambios de UI móvil en esta versión.

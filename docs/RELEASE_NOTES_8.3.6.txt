@@ -1,0 +1,26 @@
+R+ 8.3.6 (estable — release 8.3.6)
+======================================
+
+Fecha: 2026-09-14
+
+## Resumen
+
+Internos vuelve a funcionar con un QR cifrado por sala, Modo Guardia se rediseña con marcadores por paciente, y la sincronización con la Nube resiste mejor las caídas de conexión.
+
+## Nuevo / mejorado
+
+- **Nuevo:** Internos (acceso desde el celular por escaneo de QR) vuelve a estar disponible. El QR es por sala, cifrado de extremo a extremo — el servidor nunca ve los datos del paciente ni de los signos vitales.
+- **Nuevo:** Modo Guardia se rediseña — vista de tarjetas por paciente, se declara la sala al iniciar el turno, y cada paciente puede marcar esfuerzo terapéutico, pronóstico de la noche y una nota corta.
+- **Mejorado:** la sincronización con la Nube resiste mejor una reconexión después de una caída de conexión, y el chip de estado ahora muestra cuántos cambios faltan por enviar.
+- **Arreglado:** eliminar un paciente desde Administración → Red ya no se siente lento.
+- **Arreglado:** el reticulocito corregido (RetC) ya no reaparecía en estudios de sangre posteriores donde no correspondía.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.3.6-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.3.6-Mac-Intel.dmg`
+- Windows: `R+-8.3.6-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

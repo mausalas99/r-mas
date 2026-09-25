@@ -1,0 +1,23 @@
+R+ 7.7.8 (Actualizar labs equipo y polish Labs externos)
+============================================================
+
+Fecha: 2026-07-31
+
+## Resumen
+
+**7.7.8** corrige Actualizar labs para abrir el modal de mi equipo cuando hay 2+ pacientes, y afina Labs externos (orden del toolbar y etiquetas sin doblete).
+
+## Nuevo / mejorado
+
+- **Actualizar labs** — Con 2 o más pacientes de mi equipo (con registro) abre el modal con checkboxes aunque haya uno activo. Solo fechas cuando es un único paciente.
+- **Toolbar Laboratorio** — Orden: Procesar → Actualizar labs → Separador → Limpiar → Labs externos.
+- **Labs externos** — El selector de tipo ya no muestra códigos duplicados (p. ej. «Biometría (BH) (BH)»).
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.7.8
+
+- Mac: `R+-7.7.8-arm64.dmg`, `R+-7.7.8-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.7.8-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

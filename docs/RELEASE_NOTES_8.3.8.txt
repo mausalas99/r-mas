@@ -1,0 +1,26 @@
+R+ 8.3.8 (estable — release 8.3.8)
+======================================
+
+Fecha: 2026-09-16
+
+## Resumen
+
+Arregla dos errores de lectura de laboratorios pegados, hace más confiable la sincronización en Nube, y limpia datos viejos que podían llenar el almacenamiento local del equipo.
+
+## Nuevo / mejorado
+
+- **Arreglado:** una fila de laboratorio sin resultado (solo `*`, muestra hemolizada o rechazada) ya no tomaba el mínimo del rango de referencia como si fuera el valor real — ahora se ignora correctamente.
+- **Arreglado:** el reticulocito corregido (RetC) ahora encuentra el hematocrito en bloques de GASOMETRIA aunque la etiqueta esté separada por tabulador o salto de línea, no solo por espacio.
+- **Mejorado (Nube):** la sincronización es más resistente a reintentos casi simultáneos y a reinicios de la app — el índice que evita reenviar datos ya sincronizados ahora persiste de forma confiable en vez de perderse en memoria.
+- **Arreglado:** datos viejos y muertos (copias de respaldo previas a una importación, índices de sincronización obsoletos) ya no se acumulan sin límite en el almacenamiento local del equipo. En instalaciones antiguas esto podía llenar ese espacio en silencio y hacer que ciertas acciones (como ocultar una columna en Tendencias) dejaran de guardar cambios sin ningún aviso.
+- **Nuevo:** si el almacenamiento local del equipo se acerca a su límite, R+ ahora avisa una vez por sesión en vez de fallar en silencio.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.3.8-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.3.8-Mac-Intel.dmg`
+- Windows: `R+-8.3.8-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

@@ -1,0 +1,57 @@
+R+ 8.1.2 (Paciente Resumen + SOAP catálogo + labs del día)
+============================================================
+
+Fecha: 2026-08-13
+
+## Resumen
+
+**8.1.2** abre el expediente en **Paciente → Resumen** (glance: estado, labs del día, medicamentos N/HD/HI). El historial de labs se navega **por día**. La receta SOAP usa el catálogo SOME (destino + packs IV→VO) y admite reposición de K mixta. Login Nube pinta sesión al instante; el buscador de actualizaciones es silencioso salvo desde Ajustes.
+
+## Nuevo / mejorado
+
+### Paciente / Resumen
+
+- **Glance home** — Al abrir un expediente caes en Resumen (KPIs de estado clínico, labs del día, medicamentos como lista N/HD/HI — sin pastillas).
+- **Laboratorio** — Labs, Tendencias y Cultivos viven bajo Laboratorio. Resultados ya no es pestaña de Paciente.
+- **Pase** — La ronda usa el mismo glance que Resumen.
+- **Arranque** — Tras hidratar el censo se selecciona al momento el último paciente (o fijado / primero visible), sin esperar a Nube.
+
+### Receta / SOAP / Manejo
+
+- **Catálogo SOME** — Destino SOAP (N → V → HD → HI → NM) con grafías del formulario; paracetamol/metamizol = analgesia/antipiréticos; buprenorfina = analgesia. Amplía EA, no los filtros de Manejo.
+- **IV → VO** — Packs orales del catálogo (p. ej. dexametasona 8 mg IV → 2 tabletas de 4 mg); no inventa fracciones.
+- **Reposición de K** — Una bolsa puede llevar KCl + KPO4 (mEq sumados).
+- **Sueros** — Hartmann / NaCl 0.9% fuera de EA; hipertónico y KCl sí entran.
+
+### Laboratorio
+
+- **Historial por día** — Un renglón por fecha; dentro del día, ventanas horarias (mismas reglas que consolidar al pegar).
+- **Panel FEB** — Febriles (Tífico O/H, Paratífico A/B) en el overlay de paneles.
+
+### Nube / plataforma
+
+- **Login session-first** — El token y el panel Conexión se pintan en cuanto responde la API; código de recuperación y perfil/sala no bloquean ni deshacen la sesión.
+- **Actualizaciones silenciosas** — Chequeo al arrancar, al Actualizar labs y al cambiar de paciente (máx. cada 30 min). El toast «ya actualizado» solo aparece si buscaste desde Ajustes.
+- **Atajos** — ⌘1 / ⌘E / ⌘T (y vecinos) ya no los come Chromium: Electron los reenvía al renderer.
+- **Pendientes huérfanos** — Al borrar un expediente se limpian toasts de recordatorio de ese paciente.
+
+### Onboarding / Learn Hub
+
+- Curriculum **v17** — Primero estructura de la app, **+ Agregar** y completar cuarto/cama/servicio; Tendencias se enseña bajo Laboratorio.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v8.1.2
+
+- Mac: `R+-8.1.2-arm64.dmg`, `R+-8.1.2-x64.dmg` (y zip para auto-update).
+- Windows: `R+-8.1.2-x64.exe`.
+
+Instala **8.1.2 en todas las Macs** del turno. El Worker de **8.1.0** sigue vigente (sin deploy extra).
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Notas
+
+- Peers en **8.1.1** son compatibles en el mismo turno; conviene actualizar todas las Macs el mismo día.
+- **Sin wipe al actualizar** — SQLCipher y `userData` persisten; schema **v23** (de 8.1.1) no cambia.
+- **Recuérdame** guarda token en el dispositivo; no usar en Macs compartidas.

@@ -1,0 +1,27 @@
+version: 8.4.1
+files:
+  - url: R+-8.4.1-autoupdate-mac-arm64.zip
+    sha512: T6amRk/IDT9ALbQuJdcO9VkyEtTrKDjG8auoxvo/RaQFkG2FJbK/LJTu4/mJwaqghipXYubgpyAvIk0+5ETRHg==
+    size: 141401970
+  - url: R+-8.4.1-arm64.dmg
+    sha512: CwUVmQsPvKAZeVWZvwckBiXCDgxt9g7f2l8hYJqI4mmBFI4T1+3nI3w1SjM/AgbsJ4TXlsOO3c/b14wemkQcKw==
+    size: 142070297
+  - url: R+-8.4.1-autoupdate-mac-x64.zip
+    sha512: 7gERAPa/VFboQwA3hV8TLmMRyv3s3dEhtihTuCVmSgh0W+Xd4sXVY65lPMbi6tSEqgHURqprBZPWI6aZiETR+A==
+    size: 150071200
+  - url: R+-8.4.1-x64.dmg
+    sha512: 6gvKApIuVeUbOTtW9eoG3kDCy87M82O0OSfHZw7HuWVS3A48PVM8erXi6sjSr7EtUIF/huu4Vm9w9eQ1Mpp+5w==
+    size: 150700763
+path: R+-8.4.1-autoupdate-mac-arm64.zip
+sha512: T6amRk/IDT9ALbQuJdcO9VkyEtTrKDjG8auoxvo/RaQFkG2FJbK/LJTu4/mJwaqghipXYubgpyAvIk0+5ETRHg==
+releaseDate: '2026-09-25T19:42:00.000Z'
+releaseNotes: |
+  Corrige dos errores en el historial de laboratorios y uno en el panel de electrolitos. Activa por defecto la telemetría anónima de actualización.
+  
+  Arreglado (labs): al fusionar automáticamente dos tomas de labs del mismo día, si compartían un analito con valores distintos (p. ej. un potasio de la 1am y otro de las 2am), la fusión se quedaba solo con una toma. Ahora detecta el conflicto y deja las dos tomas por separado. La fusión manual (el usuario elige y revisa los sets) sigue permitida.
+  
+  Arreglado (labs): un set fusionado con más de un reporte podía perder su hora guardada, porque el código tomaba la hora del primer reporte del texto combinado. Ya no la sobreescribe en ese caso.
+  
+  Arreglado (panel de electrolitos): si faltaba el sodio, el panel completo (ESC) desaparecía aunque hubiera otros electrolitos (p. ej. un potasio de control). Ahora solo desaparece si faltan todos.
+  
+  Nuevo (actualizaciones): la telemetría anónima de actualización ahora viene activada. Al terminar una actualización, R+ envía solo tres datos: versión, si funcionó o falló, y el sistema (Mac o Windows). Nunca datos clínicos, del usuario ni del equipo. Se desactiva en Ajustes → Aplicación y actualizaciones.

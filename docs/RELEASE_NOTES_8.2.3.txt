@@ -1,0 +1,22 @@
+R+ 8.2.3 (estable — release 8.2.3)
+======================================
+
+Fecha: 2026-08-27
+
+## Resumen
+
+Corrige el instalador Mac de 8.2.2: no estaba firmado ni notarizado, por lo que macOS bloqueaba la apertura de la app.
+
+## Nuevo / mejorado
+
+- **Instalador Mac firmado y notarizado:** 8.2.2 se publicó sin firma de Apple; macOS mostraba "R+ no se puede abrir". 8.2.3 corrige el proceso de release para firmar y notarizar el DMG antes de publicar.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.2.3-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.2.3-Mac-Intel.dmg`
+- Windows: `R+-8.2.3-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

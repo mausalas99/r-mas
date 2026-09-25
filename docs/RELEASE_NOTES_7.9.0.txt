@@ -1,0 +1,43 @@
+R+ 7.9.0 (Nube piloto Free — Sala y Torre)
+=============================================
+
+Fecha: 2026-08-02
+
+## Resumen
+
+**7.9.0** introduce **Nube**, un piloto opt-in en Cloudflare Free para sincronizar el censo del turno sin depender de un Mac anfitrión en LAN. Disponible solo para perfiles de sala **Sala** y **Torre**; el resto de salas sigue en LiveSync LAN como hasta ahora.
+
+## Nuevo / mejorado
+
+- **Nube en el panel ⇄** — Registro e inicio de sesión (usuario + contraseña) y unión a sala de turno desde el mismo panel de sincronización. Solo visible para **Sala** y **Torre**.
+- **Nube sustituye anfitrión LAN** — En esas salas, cuando Nube está conectada, la autoridad del turno es la sala en la nube: no hace falta elegir ni mantener un host Mac en la red local.
+- **Otras salas sin cambios** — **Interconsultas**, **UX**, **Eme** y **Área A** (Pensionistas) permanecen en LiveSync LAN (host + PIN).
+- **Offline + outbox** — SQLCipher local sigue siendo la caché del turno; sin Internet las ediciones se encolan y se envían al reconectar.
+- **Labs sin tope de sets** — En el piloto no hay límite por paciente en cantidad de sets de laboratorio; el freno es la cuota de tamaño de sala (censo vivo + almacenamiento Free tier).
+- **Despliegue del worker** — Desde la raíz del repo: `node cloudflare/setup-sync.mjs` (D1, secretos, deploy). Estimación de cuota Free: `cd cloud/sync-worker && npm run estimate:free`.
+
+## Corte de usuarios (7.9)
+
+Con **7.9** se reinician los **usuarios clínicos** locales (y en la nube del piloto si se resetea D1). **No se borran pacientes ni labs** del turno.
+
+Al abrir **7.9** por primera vez verás **Migración 7.9** en **Configura tu rotación** (mismo landing de registro):
+
+1. La app **guarda una captura** de usuarios, equipos y pacientes, y luego limpia las cuentas locales (crash-safe: si se interrumpe, no vuelve a borrar).
+2. **Elige tu @usuario anterior** de la lista **o crea uno nuevo** (nombre + rango + sala).
+3. **Recupera tu equipo** (unirte / recrear) y **reclama pacientes** con la lista de casillas.
+4. **Sala / Torre:** crea o entra a Nube (contraseña ≥10), la app hace `ensure-turn` y **pull** si la sala nube ya tiene censo, o **empuja** el censo local si está vacía (merge LWW).
+5. **Interconsultas, UX, Eme y Área A** — mismos pasos 1–3; siguen en LiveSync LAN (sin contraseña nube).
+6. **Administración nube (R4 / admin de programa)** — menú en ⇄; primer admin con `SYNC_ADMIN_KEY` (ver `cloud/sync-worker/README.md`).
+
+**Nota:** Si el piloto arranca con D1 vacío el mismo día del deploy, el censo vivo depende de quién empuje primero a la sala de turno tras la migración.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.9.0
+
+- Mac: `R+-7.9.0-arm64.dmg`, `R+-7.9.0-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.9.0-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+Para activar Nube en el equipo: perfil **Sala** o **Torre** → **⇄** → Nube → pegar la URL del worker desplegado.

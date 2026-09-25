@@ -1,0 +1,6 @@
+{
+  "name": "@rplus/shared-signing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module"
+}

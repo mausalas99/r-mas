@@ -1,0 +1,230 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { parseBH_, flattenBhHemOnlyVisible, mergeBhResLabRows_, procesarLabs } from './labs.js';
+
+const BH_REAL = [
+  'HEMATOLOGIA',
+  'BIOMETRIA HEMATICA COMPLETA',
+  'Estudio Resultado Unidades Valor de Referencia',
+  'RBC B 3.11 M/uL 4.04 - 6.13',
+  'HGB B 9.39 g/dL 12.20 - 18.10',
+  'HCT B 29.1 % 37.7 - 53.7',
+  'MCV * 93 fL 80 - 97',
+  'MCH * 30.2 pg 27.0 - 31.2',
+  'MCHC * 32.3 g/dL 29.9 - 34.2',
+  'RDW A 16.8 % 11.6 - 14.8',
+  'WBC A 23.10 K/uL 4.00 - 11.00',
+  'NEU A 21.70 K/uL 2.00 - 6.90',
+  'NEU% A 93.8 % 37.0 - 80.0',
+  'LYM B 0.50 K/uL 0.60 - 3.40',
+  'LYM% B 2.2 % 10.0 - 50.0',
+  'MONO * 0.847 K/uL 0.000 - 0.900',
+  'MONO% * 3.67 % 0.00 - 12.00',
+  'EOS * 0.000 K/uL 0.000 - 0.700',
+  'EOS% * 0.00 % 0.00 - 7.00',
+  'BASO * 0.072 K/uL 0.000 - 0.200',
+  'BASO% * 0.31 % 0.00 - 2.50',
+  'PLT * 156.00 K/uL 142.00 - 424.00',
+  'MPV * 7.7 fL 7.4 - 10.4'
+].join('\n');
+
+describe('parseBH_ extended', () => {
+  it('returns an object with `visible` and `extras` (refactored shape)', () => {
+    const r = parseBH_(BH_REAL);
+    assert.ok(r && typeof r === 'object', 'parseBH_ should return an object');
+    assert.strictEqual(typeof r.visible, 'string');
+    assert.ok(r.extras && typeof r.extras === 'object');
+  });
+
+  it('visible line is compact BH (core indices + Neu/Eos absolutes; sin RBC/CHCM/RDW/MPV)', () => {
+    const { visible } = parseBH_(BH_REAL);
+    assert.match(visible, /\bHb\b/);
+    assert.match(visible, /\bHto\b/);
+    assert.match(visible, /\bVCM\b/);
+    assert.match(visible, /\bHCM\b/);
+    assert.match(visible, /\bLeu\b/);
+    assert.match(visible, /\bNeu\b/);
+    assert.match(visible, /\bEos\b/);
+    assert.match(visible, /\bPlt\b/);
+    assert.match(visible, /\bNeu\s+21\.7\*?/);
+    assert.match(visible, /\bEos\s+0\b/);
+    assert.doesNotMatch(visible, /\bRBC\b/);
+    assert.doesNotMatch(visible, /\bCHCM\b/);
+    assert.doesNotMatch(visible, /\bRDW\b/);
+    assert.doesNotMatch(visible, /\bMPV\b/);
+    assert.doesNotMatch(visible, /\bLin\b/);
+    assert.doesNotMatch(visible, /\bMono\b/);
+    assert.doesNotMatch(visible, /\bBaso\b/);
+    assert.doesNotMatch(visible, /Pct\b|%/);
+  });
+
+  it('adds Ret to the compact visible line, before Leu, when RETICULOCITOS is present', () => {
+    const withRet = BH_REAL + '\nRETICULOCITOS * 1.0 % 0.5 - 1.5';
+    const { visible } = parseBH_(withRet);
+    assert.match(visible, /\bHCM\s+\S+\s+Ret\s+1\s+RetC\s+[\d.]+\s+\([a-z]+\)\s+Leu\b/);
+  });
+
+  it('RetC toma Hto de la toma previa cuando la actual solo trae Ret', () => {
+    const soloRet = 'HEMATOLOGIA\nRETICULOCITOS * 4.0 % 0.5 - 2.5';
+    const { visible } = parseBH_(soloRet, null, { Hto: 30 });
+    assert.match(visible, /RetC\s+2\.67\s+\(regenerativa\)/);
+  });
+
+  it('RetC no combina Ret y Hto si ambos faltan en la toma actual', () => {
+    const sinNada = 'HEMATOLOGIA\nWBC B 6.0 10^3/uL 4 - 11';
+    const { visible } = parseBH_(sinNada, null, { Hto: 30, Ret: 4 });
+    assert.doesNotMatch(visible, /RetC/);
+  });
+
+  it('muestra hemolizada: fila sin resultado (solo *) no toma el mínimo del rango como valor', () => {
+    const hemolizada = [
+      'HEMATOLOGIA',
+      'BIOMETRIA HEMATICA COMPLETA',
+      'Estudio\t\tResultado\tUnidades\tValor de Referencia',
+      'RBC\t',
+      '*',
+      'M/uL\t3.94 - 5.32',
+      'HGB\t',
+      '*',
+      'g/dL\t12.00 - 15.70',
+      'HCT\t',
+      '*',
+      '%\t35.5 - 47.3',
+      'PLT\t',
+      '*',
+      'K/uL\t142.00 - 424.00',
+    ].join('\n');
+    const { visible } = parseBH_(hemolizada);
+    assert.doesNotMatch(visible, /Hb\s+12\b/);
+    assert.doesNotMatch(visible, /Hto\s+35\.5\b/);
+    assert.doesNotMatch(visible, /Plt\s+142\b/);
+  });
+
+  it('muestra hemolizada: diferencial (%) sin resultado no toma el mínimo del rango', () => {
+    const hemolizadaDif = [
+      'HEMATOLOGIA',
+      'BIOMETRIA HEMATICA COMPLETA',
+      'Estudio\t\tResultado\tUnidades\tValor de Referencia',
+      'NEU%\t',
+      '*',
+      '%\t38.6 - 75.2',
+      'LYM%\t',
+      '*',
+      '%\t15.0 - 48.5',
+    ].join('\n');
+    const { visible } = parseBH_(hemolizadaDif);
+    assert.doesNotMatch(visible, /Seg\s+38\.6/);
+    assert.doesNotMatch(visible, /Lin\s+15/);
+  });
+
+  it('RetC toma Hto del bloque GASOMETRIA de la misma toma, con etiqueta separada por tab', () => {
+    const retMasGases = [
+      'HEMATOLOGIA',
+      'RETICULOCITOS',
+      'RETICULOCITOS\t*\t2.8\t%\t0.5 - 1.5',
+      'GASOMETRIA ARTERIAL',
+      'HCT\t*\t37\t%\t37 - 53',
+    ].join('\n');
+    const { visible } = parseBH_(retMasGases);
+    assert.match(visible, /RetC\s+2\.3\s+\(regenerativa\)/);
+  });
+
+  it('Ret-only MIXTO is a compact BH line, not a Hem. sub-row', () => {
+    const { visible } = parseBH_('HEMATOLOGIA\nRETICULOCITOS * 1.0 % 0.5 - 1.5');
+    assert.match(visible, /^BH\tRet\s+1/);
+    assert.doesNotMatch(visible, /^BH:/);
+    assert.doesNotMatch(visible, /Hem\./);
+  });
+
+  it('reads RETICULOCITOS after DIFERENCIAL MANUAL + FROTIS (Actualizar / SOME)', () => {
+    const src =
+      'HEMATOLOGIA\n' +
+      'DIFERENCIAL MANUAL\n' +
+      'SEGMENTADOS\n*\n95\n%\nBANDAS\n*\n2\n%\t0 - 5\n' +
+      'RETICULOCITOS\n' +
+      'Estudio\t\tResultado\tUnidades\tValor de Referencia\n' +
+      'RETICULOCITOS\n*\n1.0\n%\t0.5 - 1.5\n' +
+      'FROTIS DE SANGRE PERIFERICA\nHIPOCROMIA +';
+    const { visible } = parseBH_(src);
+    assert.match(visible, /\bRet\s+1\b/);
+    const { resLabs } = procesarLabs(src);
+    const bh = resLabs.find((l) => /^BH\b/i.test(l));
+    assert.ok(bh);
+    assert.match(bh, /\bRet\s+1\b/);
+  });
+
+  it('mergeBhResLabRows_ keeps Ret from a poorer BH row when consolidating', () => {
+    const merged = mergeBhResLabRows_([
+      'BH\tHb 8.84*  Hto 25.5*  VCM 93  HCM 32.4  Leu 2.89*  Neu 2.65  Eos 0.02  Plt 12.5*',
+      'BH\tRet 1',
+    ]);
+    assert.match(merged.bh, /^BH\t/);
+    assert.match(merged.bh, /\bHb\s+8\.84\*/);
+    assert.match(merged.bh, /\bHCM\s+32\.4\s+Ret\s+1\s+RetC\s+0\.57\s+\(arregenerativa\)\s+Leu\b/);
+    assert.match(merged.bh, /\bPlt\s+12\.5\*/);
+  });
+
+  it('mergeBhResLabRows_ keeps a RetC computed from a borrowed cross-draw value when its cluster has only that one row', () => {
+    const merged = mergeBhResLabRows_([
+      'BH\tRet 2.8  RetC 0.72 (arregenerativa)',
+    ]);
+    assert.match(merged.bh, /\bRet\s+2\.8\s+RetC\s+0\.72\s+\(arregenerativa\)/);
+  });
+
+  it('flattenBhHemOnlyVisible folds a stored Hem. Ret row into BH', () => {
+    assert.equal(flattenBhHemOnlyVisible('BH:\n  Hem.\tRet 1'), 'BH\tRet 1');
+    assert.equal(flattenBhHemOnlyVisible('BH:\n  Hem.\tEri 3.11  Ret 1'), 'BH\tEri 3.11  Ret 1');
+    const withDif = 'BH:\n  Hem.\tRet 1\n  Dif.\tSeg 71%*';
+    assert.equal(flattenBhHemOnlyVisible(withDif), withDif);
+    assert.equal(flattenBhHemOnlyVisible('BH\tHb 8.84'), 'BH\tHb 8.84');
+  });
+
+  it('extras contains RBC/CHCM/RDW/MPV and other white-cell absolutes and percentages (not Neu/Eos)', () => {
+    const { extras } = parseBH_(BH_REAL);
+    assert.strictEqual(extras.RBC, '3.11*');
+    assert.strictEqual(extras.CHCM, '32.3');
+    assert.strictEqual(extras.RDW, '16.8*');
+    assert.strictEqual(extras.MPV, '7.7');
+    assert.strictEqual(extras.Neu, undefined);
+    assert.strictEqual(extras.Eos, undefined);
+    assert.strictEqual(extras.Lin,  '0.50');
+    assert.strictEqual(extras.Mono, '0.847');
+    assert.strictEqual(extras.Baso, '0.072');
+    assert.strictEqual(extras.NeuPct,  '93.8');
+    assert.strictEqual(extras.LinPct,  '2.2');
+    assert.strictEqual(extras.MonoPct, '3.67');
+    assert.strictEqual(extras.EosPct,  '0.00');
+    assert.strictEqual(extras.BasoPct, '0.31');
+  });
+
+  it('distinguishes NEU from NEU% (no key collision)', () => {
+    const { visible, extras } = parseBH_(BH_REAL);
+    assert.match(visible, /\bNeu\s+/);
+    assert.strictEqual(extras.Neu, undefined);
+    assert.notStrictEqual(extras.NeuPct, '21.7');
+    assert.strictEqual(extras.NeuPct, '93.8');
+  });
+
+  it('parses MCHC, RDW, MPV into extras (extended line) correctly', () => {
+    const { extras } = parseBH_(BH_REAL);
+    assert.strictEqual(extras.CHCM, '32.3');
+    assert.strictEqual(extras.RDW, '16.8*');
+    assert.strictEqual(extras.MPV, '7.7');
+  });
+
+  it('manual frotis fields (Bandas, Mielo, ...) end up in extras when present', () => {
+    const withFrotis = BH_REAL + '\n\nFROTIS DE SANGRE PERIFERICA\nBANDAS 4 %\nMIELOCITOS 1 %\nMETAMIELOCITOS 0 %\nPROMIELOCITOS 0 %\nBLASTOS 0 %';
+    const { extras } = parseBH_(withFrotis);
+    assert.strictEqual(extras.Bandas, '4');
+    assert.strictEqual(extras.Mielo, '1');
+    assert.strictEqual(extras.Metamielo, '0');
+    assert.strictEqual(extras.Promielo, '0');
+    assert.strictEqual(extras.Blastos, '0');
+  });
+
+  it('returns empty visible (`""`) when no BH or coag data present', () => {
+    const r = parseBH_('NO HAY BH AQUI');
+    assert.strictEqual(r.visible, '');
+    assert.deepStrictEqual(r.extras, {});
+  });
+});

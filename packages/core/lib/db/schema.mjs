@@ -1,0 +1,18 @@
+export { SCHEMA_VERSION, readSchemaVersion, tableExists } from './schema-primitives.mjs';
+export {
+  applyMigrations,
+  migrateToV15LanHostTables,
+  migrateToV16UserLastActivity,
+  migrateToV17UserActivityBackfill,
+} from './schema-migrate-v15-v17.mjs';
+export { migrateToV18Equipos } from './schema-migrate-v18-equipos.mjs';
+export { migrateToV19EquiposAlertPhotos } from './schema-migrate-v19-equipos-alert-photos.mjs';
+export { migrateToV20EquiposPush } from './schema-migrate-v20-equipos-push.mjs';
+export { migrateToV21ClinicalSalaCheck } from './schema-migrate-v21-clinical-sala-check.mjs';
+export { migrateToV22UserActivityLog } from './schema-migrate-v22-user-activity-log.mjs';
+export { migrateToV23ClinicalChangeLog } from './schema-migrate-v23-clinical-change-log.mjs';
+export { migrateToV24ActiveGuardiasIndex } from './schema-migrate-v24-active-guardias-index.mjs';
+export { migrateToV25InterconsultUnder } from './schema-migrate-v25-interconsult-under.mjs';
+export { migrateToV26TeamsSucceedsTeamId } from './schema-migrate-v26-teams-succeeds.mjs';
+export { migrateToV27CloudOutbox } from './schema-migrate-v27-cloud-outbox.mjs';
+export { migrateToV28SyncWriteClocks } from './schema-migrate-v28-sync-write-clocks.mjs';

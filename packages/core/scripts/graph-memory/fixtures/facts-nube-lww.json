@@ -1,0 +1,44 @@
+{
+  "entities": [
+    {
+      "name": "clinicalOps LWW",
+      "type": "decision",
+      "description": "Union-on-join last-write-wins; do not drop unpulled patient_team_assignment"
+    },
+    {
+      "name": "Nube sync worker",
+      "type": "service",
+      "description": "Cloudflare Worker for room sync; 30s CPU for sala snapshot"
+    },
+    {
+      "name": "patient_team_assignment",
+      "type": "module",
+      "description": "Team assignment field that join/profile push must preserve"
+    },
+    {
+      "name": "Mauricio",
+      "type": "person",
+      "description": "Maintainer who confirmed the LWW rule"
+    }
+  ],
+  "edges": [
+    {
+      "source": "Mauricio",
+      "target": "clinicalOps LWW",
+      "relation": "decided",
+      "valid_from": "2026-08-14"
+    },
+    {
+      "source": "clinicalOps LWW",
+      "target": "Nube sync worker",
+      "relation": "located_in",
+      "valid_from": "2026-08-14"
+    },
+    {
+      "source": "clinicalOps LWW",
+      "target": "patient_team_assignment",
+      "relation": "uses",
+      "valid_from": "2026-08-14"
+    }
+  ]
+}

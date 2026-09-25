@@ -1,0 +1,25 @@
+R+ 8.4.2 (estable — release 8.4.2)
+======================================
+
+Fecha: 2026-09-25
+
+## Resumen
+
+La app ya no trae la dirección del portal de laboratorio del hospital. Cada usuario la pega una vez en Ajustes → Laboratorio. Se quitaron datos institucionales del código y de la documentación.
+
+## Nuevo / mejorado
+
+- **Importante (instalaciones existentes):** después de actualizar, pega una vez la dirección del portal de laboratorio en **Ajustes → Laboratorio**. Sin ella, la consulta de labs y la actualización de cultivos no se conectan.
+- **Nuevo (labs):** si falta la dirección, R+ muestra el aviso «Falta la dirección del portal de laboratorio — pégala en Ajustes → Laboratorio.» y abre Ajustes en ese campo.
+- **Arreglado (labs):** algunos reportes en PDF del portal no se leían («Invalid PDF structure»). Ahora se leen bien.
+- **Privacidad:** se quitaron nombres y datos institucionales del código, las pruebas y las notas de versión. Las pruebas del portal usan ahora datos sintéticos.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.4.2-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.4.2-Mac-Intel.dmg`
+- Windows: `R+-8.4.2-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

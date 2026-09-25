@@ -1,0 +1,24 @@
+R+ 8.1.9 (estable — release 8.1.9)
+======================================
+
+Fecha: 2026-08-23
+
+## Resumen
+
+Relación BUN/CR automática en Química Clínica y Tendencias, copiar gráfica de Tendencias como imagen, y orden de leyenda por arrastre.
+
+## Nuevo / mejorado
+
+- **Relación BUN/CR:** cuando el reporte trae BUN y creatinina, R+ calcula y muestra BUN/CR junto a ellos, en Química Clínica y en Tendencias (con su propio rango de normalidad).
+- **Tendencias — copiar gráfica:** botón nuevo en cada panel para copiar la gráfica como imagen PNG, con título y leyenda de series activas.
+- **Tendencias — orden de leyenda:** arrastra los renglones de la leyenda de un panel para reordenar las series. R+ recuerda el orden por paciente y panel.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.1.9-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.1.9-Mac-Intel.dmg`
+- Windows: `R+-8.1.9-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

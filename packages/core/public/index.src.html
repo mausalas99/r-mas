@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' http: https: ws: wss:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>R+</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="R+">
+<meta name="theme-color" content="#4a52e8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" media="print">
+<noscript><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="/tokens.css">
+<script src="/js/early-boot-flags.js"></script>
+<link rel="stylesheet" href="/styles/base.css">
+<link rel="stylesheet" href="/styles/layout.css">
+<link rel="stylesheet" href="/styles/pase-board.css">
+<link rel="stylesheet" href="/styles/sidebar.css">
+<link rel="stylesheet" href="/styles/lab.css">
+<link rel="stylesheet" href="/styles/expediente.css">
+<link rel="stylesheet" href="/styles/group-row.css">
+<link rel="stylesheet" href="/styles/estado-actual.css">
+<link rel="stylesheet" href="/styles/eventualidades.css">
+<link rel="stylesheet" href="/styles/vpo.css">
+<link rel="stylesheet" href="/styles/med-pharm-profile.css">
+<link rel="stylesheet" href="/styles/settings.css">
+<link rel="stylesheet" href="/styles/cloud-sync.css">
+<link rel="stylesheet" href="/styles/modals.css">
+<link rel="stylesheet" href="/styles/motion.css">
+<link rel="stylesheet" href="/styles/ui-patterns.css">
+<link rel="stylesheet" href="/styles/skeleton.css">
+<link rel="stylesheet" href="/styles/components.css">
+<link rel="stylesheet" href="/styles/workbench-tokens.css">
+<link rel="stylesheet" href="/styles/soft-ui.css">
+<link rel="stylesheet" href="/styles/workbench-surfaces.css">
+<link rel="stylesheet" href="/styles/rams-tufte-workbench.css">
+<link rel="stylesheet" href="/styles/patient-dashboard.css">
+<link rel="stylesheet" href="/styles/workbench-kit.css">
+<link rel="stylesheet" href="/styles/lab-inner.css">
+<link rel="stylesheet" href="/styles/mobile.css">
+<link rel="stylesheet" href="/styles/rpc-date-picker.css">
+<link rel="stylesheet" href="/styles/overlays.css?v=hybrid-polish-3">
+<link rel="stylesheet" href="/styles/cmdk.css">
+<link rel="stylesheet" href="/styles/sala-views.css">
+<link rel="stylesheet" href="/styles/mobile-surfaces.css">
+</head>
+<body>
+<!-- @include partials/chrome/overlays.html -->
+<!-- @include partials/chrome/header.html -->
+<div id="sidebar-hover-strip" class="sidebar-hover-strip" aria-hidden="true"></div>
+<!-- @include partials/layout/app-body.html -->
+<!-- @include partials/modals/root.html -->
+<script src="/js/clinical-onboarding-boot-progress.js"></script>
+<script src="/js/clinical-onboarding-early-boot.js"></script>
+<!-- app.bundle + vendors injected by clinical-onboarding-early-boot.js after sync-mode choice (or immediately if skipped) -->
+</body>
+</html>

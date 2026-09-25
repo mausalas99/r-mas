@@ -1,0 +1,39 @@
+R+ 7.9.9 (app:// polish — sin banner offline falso + updater limpio)
+====================================================================
+
+Fecha: 2026-08-05
+
+## Resumen
+
+**7.9.9** afina el corte **app://rplus** de 7.9.8: ya no aparece el banner rojo «sin servidor local» cuando la app genera .docx por IPC, Conexión muestra errores de red en español en lugar de «Failed to fetch», y el modal de actualización deja de inundar con HTML de release notes. El Worker acepta `X-Sync-Admin-Key` en preflight desde `app://rplus`.
+
+## Nuevo / mejorado
+
+- **Sin banner offline falso** — En escritorio (`app://rplus`), export de notas/indicaciones/listado usa IPC; no se consulta `/health` en :3738 ni se muestra la franja «servidor local».
+- **Conexión — errores legibles** — «Failed to fetch» / fallos de red → hint corto en español (Wi‑Fi / VPN / reintento) en el chip de ⇄.
+- **Modal actualización** — Errores de electron-updater se sanitizan (sin muro de HTML); notas de versión acortadas; caja de error con scroll acotado.
+- **Worker CORS** — Preflight desde `app://rplus` permite `X-Sync-Admin-Key` y `Authorization` (admin Nube desde Electron).
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.9.9
+
+- Mac: `R+-7.9.9-arm64.dmg`, `R+-7.9.9-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.9.9-x64.exe`.
+
+Descarga **7.9.9 en todas las Macs** del turno. No es obligatorio redeploy del Worker salvo que quieras el fix CORS de admin en el mismo día.
+
+**Operador cloud (opcional — CORS admin):**
+
+```bash
+cd /Users/mauriciosalas/R+
+cd cloud/sync-worker
+npm run deploy
+```
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Notas
+
+- Si el modal de actualización mostró HTML crudo al bajar 7.9.8, 7.9.9 lo corrige; reintenta o usa «Abrir instalador en GitHub».
+- El banner offline solo aplica a clientes sin IPC (browser / legacy HTTP renderer).

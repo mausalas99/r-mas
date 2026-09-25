@@ -1,0 +1,12 @@
+name = "rmas-update-feed"
+main = "src/index.mjs"
+compatibility_date = "2026-06-01"
+
+# Fetch + rewrite, plus one write-only Analytics Engine dataset for the
+# anonymous update telemetry ({ version, result, platform } — nothing else).
+# GitHub (mausalas99/r-mas) and GitLab (rmas-group1/rmas) are both public repos —
+# no auth headers, no tokens, no PHI ever touches this Worker.
+
+[[analytics_engine_datasets]]
+binding = "UPDATE_EVENTS"
+dataset = "rmas_update_telemetry"

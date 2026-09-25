@@ -1,0 +1,28 @@
+R+ 8.2.6 (estable — release 8.2.6)
+======================================
+
+Fecha: 2026-08-30
+
+## Resumen
+
+Versión puente, solo Mac: repara la auto-actualización de las instalaciones que quedaron atoradas en 8.1.4/8.1.5, y trae mejoras de Tendencias (rango de fechas, agrupar por día, gráficas más nítidas) y la hora de glucometría extra con lista. Windows pasa directo a 8.2.7 con estos mismos cambios.
+
+## Nuevo / mejorado
+
+- **Auto-actualización de Mac reparada:** las instalaciones en 8.1.4/8.1.5 no podían actualizarse solas por un cambio interno de identidad de la app. 8.2.6 sí les llega por el actualizador normal, y una vez instalada descarga y aplica la siguiente versión por sí sola, sin pasos manuales.
+- **Rango de fechas en Tendencias:** nueva fila desde/hasta arriba del modal de grupo para acotar la gráfica y la tabla a un periodo; "Quitar rango" restaura todo.
+- **Agrupar por día en la tabla de Tendencias:** una casilla nueva fusiona varias tomas del mismo día en una sola columna; si una toma es parcial (p. ej. solo plaquetas), conserva los valores de tomas anteriores de ese día. La preferencia se recuerda por paciente y sección.
+- **Gráficas más nítidas:** las gráficas de Tendencias se dibujan a la resolución real de la pantalla (Retina/4K) y el PNG que se copia sale a 3x.
+- **Etiquetas de eventos sin desbordarse:** las cajitas de eventos ya no se salen del borde izquierdo o derecho de la gráfica.
+- **Eje X sin columnas vacías:** al ocultar campos desde la leyenda, la gráfica recalcula las fechas y elimina columnas que quedaron vacías.
+- **Hora de glucometría extra con lista:** en Estado Actual, la hora de una glucometría extra se elige de una lista (04:00, 12:00, 20:00) en vez de teclearla.
+- **Llave de rescate del administrador:** si el cambio de identidad de la app deja ilegible la llave guardada en el Llavero, R+ genera una nueva automáticamente.
+
+## Instalación
+
+Esta versión es **solo para Mac** (Windows recibe todo esto en 8.2.7). El bloque **Descargar** al inicio de las notas en GitHub tiene los instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.2.6-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.2.6-Mac-Intel.dmg`
+
+Tras el build local: `npm run build:mac` (incluye write-release-yml.js).

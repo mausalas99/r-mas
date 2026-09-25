@@ -1,0 +1,33 @@
+R+ 7.9.7 (Nube sync fiable — pendientes, EA y mutate por entidad)
+============================================================
+
+Fecha: 2026-08-05
+
+## Resumen
+
+**7.9.7** corrige sincronización Nube/LAN que se quedaba corta: pendientes que no refrescaban tras pull, signos EA que no salían al guardar, y ops de mutate que se pisaban en el outbox. Cada entidad (pendiente, agenda, baja) lleva su propio `clientMutationId`; el push de censo distingue monitoreo/campos de entradas de paciente.
+
+## Nuevo / mejorado
+
+- **Mutate por entidad** — Pendientes, agenda y bajas usan `clientMutationId` propio (no batch compartido); menos colisiones en el outbox Nube.
+- **Censo push** — El reintento de censo reconoce ops de monitoreo/campos además de `entries/`; evita reintentos infinitos cuando el paciente ya tiene datos clínicos en cola.
+- **Pendientes tras pull** — Pull Nube refresca la UI de pendientes en los pacientes tocados (paridad con LAN).
+- **EA → sync inmediato** — Registrar signos en EA dispara `scheduleLiveSyncPush()` al guardar; monitoreo llega al turno sin esperar otro evento.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.9.7
+
+- Mac: `R+-7.9.7-arm64.dmg`, `R+-7.9.7-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.9.7-x64.exe`.
+
+Descarga **7.9.7 en todas las Macs** del turno el mismo día.
+
+No requiere redeploy del Worker Nube (solo cliente desktop). Requiere **7.9.5+** en Nube.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Notas
+
+- iPad: sin instalación — enlace desde ⇄ en Safari.
+- Interconsultas, UX, Eme y Área A siguen solo LAN (sin cambios).

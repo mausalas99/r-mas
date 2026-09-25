@@ -1,0 +1,627 @@
+[
+  {
+    "id": "cycle-config-sala-r2",
+    "fn": "getCycleConfig",
+    "args": [
+      "Sala",
+      "R2"
+    ],
+    "expected": {
+      "letters": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "length": 6
+    }
+  },
+  {
+    "id": "cycle-config-sala-r1",
+    "fn": "getCycleConfig",
+    "args": [
+      "Sala",
+      "R1"
+    ],
+    "expected": {
+      "letters": [
+        "A1",
+        "B1",
+        "C1",
+        "D1",
+        "A2",
+        "B2",
+        "C2",
+        "D2"
+      ],
+      "length": 8
+    }
+  },
+  {
+    "id": "cycle-config-eme-abcd",
+    "fn": "getCycleConfig",
+    "args": [
+      "Eme",
+      "R2"
+    ],
+    "expected": {
+      "letters": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "length": 4
+    }
+  },
+  {
+    "id": "cycle-config-torre-r1",
+    "fn": "getCycleConfig",
+    "args": [
+      "Torre HU",
+      "R1"
+    ],
+    "expected": {
+      "letters": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "length": 4
+    }
+  },
+  {
+    "id": "cycle-letters-sala-r1-lines",
+    "fn": "getCycleLettersForTeamCreate",
+    "args": [
+      "Sala",
+      "R1",
+      0
+    ],
+    "expected": [
+      "A1",
+      "B1",
+      "C1",
+      "D1"
+    ]
+  },
+  {
+    "id": "cycle-letters-sala-r1-line2",
+    "fn": "getCycleLettersForTeamCreate",
+    "args": [
+      "Sala",
+      "R1",
+      1
+    ],
+    "expected": [
+      "A2",
+      "B2",
+      "C2",
+      "D2"
+    ]
+  },
+  {
+    "id": "cycle-letters-sala-r2",
+    "fn": "getCycleLettersForTeamCreate",
+    "args": [
+      "Sala",
+      "R2",
+      0
+    ],
+    "expected": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F"
+    ]
+  },
+  {
+    "id": "cycle-options-torre-r1",
+    "fn": "getCycleLetterOptionsForRank",
+    "args": [
+      "Torre HU",
+      "R1"
+    ],
+    "expected": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ]
+  },
+  {
+    "id": "cycle-options-sala-r1-all",
+    "fn": "getCycleLetterOptionsForRank",
+    "args": [
+      "Sala",
+      "R1"
+    ],
+    "expected": [
+      "A1",
+      "B1",
+      "C1",
+      "D1",
+      "A2",
+      "B2",
+      "C2",
+      "D2"
+    ]
+  },
+  {
+    "id": "uses-sala-r1-picker-sala1",
+    "fn": "usesSalaR1LinePicker",
+    "args": [
+      "Sala",
+      "Sala 1"
+    ],
+    "expected": true
+  },
+  {
+    "id": "uses-sala-r1-picker-torre-false",
+    "fn": "usesSalaR1LinePicker",
+    "args": [
+      "Torre HU",
+      "Torre HU"
+    ],
+    "expected": false
+  },
+  {
+    "id": "uses-sala-r1-picker-area-a-false",
+    "fn": "usesSalaR1LinePicker",
+    "args": [
+      "Área A/Pensionistas",
+      "Área A/Pensionistas"
+    ],
+    "expected": false
+  },
+  {
+    "id": "is-sala-ward-service-true",
+    "fn": "isSalaWardService",
+    "args": [
+      "Sala"
+    ],
+    "expected": true
+  },
+  {
+    "id": "is-sala-ward-service-false",
+    "fn": "isSalaWardService",
+    "args": [
+      "Torre HU"
+    ],
+    "expected": false
+  },
+  {
+    "id": "letter-index-sala-r2-c",
+    "fn": "letterIndexForTeam",
+    "args": [
+      {
+        "service": "Sala",
+        "sub_area_fraction": "C"
+      },
+      "R2"
+    ],
+    "expected": 2
+  },
+  {
+    "id": "letter-index-sala-r1-a2",
+    "fn": "letterIndexForTeam",
+    "args": [
+      {
+        "service": "Sala",
+        "sub_area_fraction": "A2"
+      },
+      "R1"
+    ],
+    "expected": 4
+  },
+  {
+    "id": "letter-index-unknown",
+    "fn": "letterIndexForTeam",
+    "args": [
+      {
+        "service": "Sala",
+        "sub_area_fraction": "Z"
+      },
+      "R2"
+    ],
+    "expected": -1
+  },
+  {
+    "id": "letter-index-missing",
+    "fn": "letterIndexForTeam",
+    "args": [
+      {
+        "service": "Sala"
+      },
+      "R2"
+    ],
+    "expected": -1
+  },
+  {
+    "id": "oncall-r2-day1-a",
+    "fn": "isOnCallToday",
+    "args": [
+      {
+        "service": "Sala",
+        "sub_area_fraction": "A"
+      },
+      "R2",
+      "2026-06-01T12:00:00Z"
+    ],
+    "expected": true
+  },
+  {
+    "id": "oncall-r2-day2-a-false",
+    "fn": "isOnCallToday",
+    "args": [
+      {
+        "service": "Sala",
+        "sub_area_fraction": "A"
+      },
+      "R2",
+      "2026-06-02T12:00:00Z"
+    ],
+    "expected": false
+  },
+  {
+    "id": "oncall-r2-wrap-day7-a",
+    "fn": "isOnCallToday",
+    "args": [
+      {
+        "service": "Sala",
+        "sub_area_fraction": "A"
+      },
+      "R2",
+      "2026-06-07T12:00:00Z"
+    ],
+    "expected": true
+  },
+  {
+    "id": "oncall-r1-day1-a1",
+    "fn": "isOnCallToday",
+    "args": [
+      {
+        "service": "Sala",
+        "sub_area_fraction": "A1"
+      },
+      "R1",
+      "2026-06-01T12:00:00Z"
+    ],
+    "expected": true
+  },
+  {
+    "id": "oncall-r1-day5-a2",
+    "fn": "isOnCallToday",
+    "args": [
+      {
+        "service": "Sala",
+        "sub_area_fraction": "A2"
+      },
+      "R1",
+      "2026-06-05T12:00:00Z"
+    ],
+    "expected": true
+  },
+  {
+    "id": "oncall-eme-day1-a",
+    "fn": "isOnCallToday",
+    "args": [
+      {
+        "service": "Eme",
+        "sub_area_fraction": "A"
+      },
+      "R2",
+      "2026-06-01T12:00:00Z"
+    ],
+    "expected": true
+  },
+  {
+    "id": "active-letter-sala-r1-jun8-d2",
+    "fn": "activeCycleLetterForDate",
+    "args": [
+      "Sala",
+      "R1",
+      "2026-06-08T12:00:00Z"
+    ],
+    "expected": "D2"
+  },
+  {
+    "id": "incoming-preview-in-window",
+    "fn": "isIncomingPreviewWindow",
+    "args": [
+      {
+        "preview_start_at": "2026-06-01T10:00:00Z",
+        "effective_at": "2026-06-01T14:00:00Z"
+      },
+      "2026-06-01T12:00:00Z"
+    ],
+    "expected": true
+  },
+  {
+    "id": "incoming-preview-outside",
+    "fn": "isIncomingPreviewWindow",
+    "args": [
+      {
+        "preview_start_at": "2026-06-01T10:00:00Z",
+        "effective_at": "2026-06-01T14:00:00Z"
+      },
+      "2026-06-01T15:00:00Z"
+    ],
+    "expected": false
+  },
+  {
+    "id": "member-oncall-uses-subcycle",
+    "fn": "isMemberOnCallToday",
+    "args": [
+      {
+        "user_id": "r1-mauri",
+        "rank": "R1",
+        "sub_area_fraction": "D2"
+      },
+      {
+        "service": "Sala",
+        "sub_area_fraction": "A",
+        "members": [
+          {
+            "user_id": "r1-mauri",
+            "rank": "R1",
+            "sub_area_fraction": "D2"
+          }
+        ]
+      },
+      "R1",
+      "2026-06-08T12:00:00Z"
+    ],
+    "expected": true
+  },
+  {
+    "id": "team-rank-oncall-r1-true",
+    "fn": "isTeamRankOnCallToday",
+    "args": [
+      {
+        "service": "Sala",
+        "sub_area_fraction": "A",
+        "members": [
+          {
+            "user_id": "r1-mauri",
+            "rank": "R1",
+            "sub_area_fraction": "D2"
+          }
+        ]
+      },
+      "R1",
+      "2026-06-08T12:00:00Z"
+    ],
+    "expected": true
+  },
+  {
+    "id": "infer-membership-free-a1",
+    "fn": "inferMembershipCycleForJoin",
+    "args": [
+      {
+        "service": "Sala",
+        "members": [
+          {
+            "rank": "R1",
+            "sub_area_fraction": "D2"
+          }
+        ]
+      },
+      "R1"
+    ],
+    "expected": "A1"
+  },
+  {
+    "id": "resolve-membership-keeps-saved",
+    "fn": "resolveMembershipCycleForUser",
+    "args": [
+      {
+        "service": "Sala",
+        "members": [
+          {
+            "user_id": "u1",
+            "rank": "R1",
+            "sub_area_fraction": "D2"
+          }
+        ]
+      },
+      "u1",
+      "R1"
+    ],
+    "expected": "D2"
+  },
+  {
+    "id": "resolve-membership-infers-for-new",
+    "fn": "resolveMembershipCycleForUser",
+    "args": [
+      {
+        "service": "Sala",
+        "members": [
+          {
+            "user_id": "u1",
+            "rank": "R1",
+            "sub_area_fraction": "D2"
+          }
+        ]
+      },
+      "u2",
+      "R1"
+    ],
+    "expected": "A1"
+  },
+  {
+    "id": "format-label-r1-subcycle",
+    "fn": "formatMemberCycleLabel",
+    "args": [
+      {
+        "rank": "R1",
+        "sub_area_fraction": "D1"
+      }
+    ],
+    "expected": "Subciclo R1 · D1"
+  },
+  {
+    "id": "format-label-r3-abcd",
+    "fn": "formatMemberCycleLabel",
+    "args": [
+      {
+        "rank": "R3",
+        "sub_area_fraction": "A"
+      }
+    ],
+    "expected": "Ciclo R3 · A"
+  },
+  {
+    "id": "format-label-r2",
+    "fn": "formatMemberCycleLabel",
+    "args": [
+      {
+        "rank": "R2",
+        "sub_area_fraction": "A"
+      }
+    ],
+    "expected": "Ciclo R2 · A"
+  },
+  {
+    "id": "field-meta-sala-r2",
+    "fn": "getCycleFieldMetaForTeamCreate",
+    "args": [
+      "Sala",
+      "R2"
+    ],
+    "expectedIncludes": {
+      "label": "R2"
+    }
+  },
+  {
+    "id": "field-meta-sala-r1-line2",
+    "fn": "getCycleFieldMetaForTeamCreate",
+    "args": [
+      "Sala",
+      "R1",
+      1
+    ],
+    "expectedIncludes": {
+      "label": "segunda"
+    }
+  },
+  {
+    "id": "infer-membership-non-sala-eme",
+    "fn": "inferMembershipCycleForJoin",
+    "args": [
+      {
+        "service": "Eme",
+        "members": []
+      },
+      "R1"
+    ],
+    "expected": "A"
+  },
+  {
+    "id": "infer-membership-sala-r2",
+    "fn": "inferMembershipCycleForJoin",
+    "args": [
+      {
+        "service": "Sala",
+        "members": []
+      },
+      "R2"
+    ],
+    "expected": "A"
+  },
+  {
+    "id": "infer-membership-full-slots-fallback",
+    "fn": "inferMembershipCycleForJoin",
+    "args": [
+      {
+        "service": "Sala",
+        "members": [
+          {
+            "rank": "R1",
+            "sub_area_fraction": "A1"
+          },
+          {
+            "rank": "R1",
+            "sub_area_fraction": "B1"
+          },
+          {
+            "rank": "R1",
+            "sub_area_fraction": "C1"
+          },
+          {
+            "rank": "R1",
+            "sub_area_fraction": "D1"
+          },
+          {
+            "rank": "R1",
+            "sub_area_fraction": "A2"
+          },
+          {
+            "rank": "R1",
+            "sub_area_fraction": "B2"
+          },
+          {
+            "rank": "R1",
+            "sub_area_fraction": "C2"
+          },
+          {
+            "rank": "R1",
+            "sub_area_fraction": "D2"
+          }
+        ]
+      },
+      "R1"
+    ],
+    "expected": "A1"
+  },
+  {
+    "id": "member-oncall-offcycle-false",
+    "fn": "isMemberOnCallToday",
+    "args": [
+      {
+        "user_id": "r1-mauri",
+        "rank": "R1",
+        "sub_area_fraction": "D2"
+      },
+      {
+        "service": "Sala",
+        "sub_area_fraction": "A",
+        "members": [
+          {
+            "user_id": "r1-mauri",
+            "rank": "R1",
+            "sub_area_fraction": "D2"
+          }
+        ]
+      },
+      "R1",
+      "2026-06-01T12:00:00Z"
+    ],
+    "expected": false
+  },
+  {
+    "id": "team-rank-oncall-r1-offcycle-false",
+    "fn": "isTeamRankOnCallToday",
+    "args": [
+      {
+        "service": "Sala",
+        "sub_area_fraction": "A",
+        "members": [
+          {
+            "user_id": "r1-mauri",
+            "rank": "R1",
+            "sub_area_fraction": "D2"
+          }
+        ]
+      },
+      "R1",
+      "2026-06-01T12:00:00Z"
+    ],
+    "expected": false
+  }
+]
