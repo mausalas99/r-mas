@@ -1,0 +1,22 @@
+R+ 8.3.5 (estable — release 8.3.5)
+======================================
+
+Fecha: 2026-09-11
+
+## Resumen
+
+Arreglo del foco visual en el modal de Registrar medición: el recuadro de acento queda en toda la tarjeta del signo vital, no en el número.
+
+## Nuevo / mejorado
+
+- **Arreglado:** en Registrar medición, el signo vital que recibe foco automático (TAS) mostraba un recuadro también alrededor del número; ahora el recuadro rodea solo la tarjeta completa.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.3.5-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.3.5-Mac-Intel.dmg`
+- Windows: `R+-8.3.5-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

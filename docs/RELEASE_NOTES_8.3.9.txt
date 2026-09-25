@@ -1,0 +1,29 @@
+R+ 8.3.9 (estable — release 8.3.9)
+======================================
+
+Fecha: 2026-09-17
+
+## Resumen
+
+Arregla dos bugs graves de Nube (borrado de manejo/estado actual en sync parcial, y ediciones de iPad que nunca llegaban al Mac), hace la sincronización más resistente en general, arregla que pacientes recién admitidos desaparecieran de la sincronización, corrige la animación de Pendientes, y hace que el censo para imprimir entre en una sola hoja.
+
+## Nuevo / mejorado
+
+- **Arreglado (Nube, importante):** una sincronización parcial que llegaba sin el campo de manejo/estado actual de un paciente lo borraba como si hubiera sido vaciado a propósito — podía pasar de golpe para todos los pacientes del censo. Ya no: la ausencia del campo en un payload parcial ya no se trata como "se vació".
+- **Arreglado (Nube, importante):** ediciones de signos vitales y registros de pacientes nuevos hechos desde el iPad podían no llegar nunca a la Mac — el equipo que no creó la sala nunca cargaba la llave de cifrado y aplicaba los datos en silencio como si vinieran vacíos. También: la pantalla de un paciente ya abierto ahora se actualiza sola cuando llegan datos nuevos de otro equipo, sin tener que cambiar de paciente y volver.
+- **Mejorado (Nube):** la conexión en vivo ahora detecta y reconecta sola cuando queda "zombi" (pasa silenciosamente inactiva, común en redes celulares de iPhone/iPad).
+- **Mejorado (Nube):** una edición hecha mientras se está bajando un historial grande de laboratorios ya no espera a que termine esa descarga — se envía de inmediato.
+- **Arreglado (Nube):** un paciente recién admitido podía perderse de la sincronización para siempre si su asignación de equipo llegaba en un ciclo de red distinto al del paciente mismo — ya no se descarta, y ahora se muestra "Descargando pacientes…" mientras un equipo nuevo se une a una sala y baja todo el historial.
+- **Arreglado (Nube):** asignar un paciente a un equipo ahora reintenta una vez si la Nube no responde a tiempo, en vez de perder esa asignación en silencio para siempre.
+- **Arreglado:** al agregar un pendiente, la fila ya no se armaba dos veces seguidas, lo que borraba la animación de entrada antes de que se viera. Al completar un pendiente ahora hay un color de éxito breve en vez de solo desaparecer.
+- **Arreglado:** el censo en vista de impresión ahora se ajusta para entrar en una sola hoja en vez de cortarse en varias páginas.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.3.9-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.3.9-Mac-Intel.dmg`
+- Windows: `R+-8.3.9-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

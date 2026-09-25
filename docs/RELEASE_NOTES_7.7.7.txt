@@ -1,0 +1,23 @@
+R+ 7.7.7 (labs externos y Actualizar labs unificado)
+=======================================================
+
+Fecha: 2026-07-31
+
+## Resumen
+
+**7.7.7** permite capturar un estudio de lab externo a mano (elige tipo y llena celdas) y unifica **Actualizar labs**: con paciente activo solo pedirá fechas; sin paciente, la lista de mi equipo.
+
+## Nuevo / mejorado
+
+- **Labs externos** — En Laboratorio: elige tipo (BH, QS, GASES, paneles extendidos…), fecha (hora opcional) y valores en celdas. Se guarda en el historial como set normal (`origin: externo`, etiqueta · Ext) para tendencias, nota y LiveSync.
+- **Actualizar labs** — Un solo botón (se retira «Importar del repositorio»). Paciente activo con registro → modal solo fechas; si no hay paciente → checkboxes de mi equipo + cola lateral.
+- **⌘K** — Acciones «Labs externos» y «Actualizar labs».
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.7.7
+
+- Mac: `R+-7.7.7-arm64.dmg`, `R+-7.7.7-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.7.7-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

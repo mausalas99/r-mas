@@ -1,0 +1,288 @@
+[
+  {
+    "id": "extract-sala-1",
+    "fn": "extractSalaLetter",
+    "args": [
+      "Sala 1"
+    ],
+    "expected": ""
+  },
+  {
+    "id": "extract-sala-2",
+    "fn": "extractSalaLetter",
+    "args": [
+      "Sala 2"
+    ],
+    "expected": ""
+  },
+  {
+    "id": "extract-sala-e",
+    "fn": "extractSalaLetter",
+    "args": [
+      "Sala E"
+    ],
+    "expected": "E"
+  },
+  {
+    "id": "extract-lone-a",
+    "fn": "extractSalaLetter",
+    "args": [
+      "A"
+    ],
+    "expected": "A"
+  },
+  {
+    "id": "extract-empty",
+    "fn": "extractSalaLetter",
+    "args": [
+      "Torre HU"
+    ],
+    "expected": ""
+  },
+  {
+    "id": "sala-letter-from-a1",
+    "fn": "salaLetterForTeamOrArea",
+    "args": [
+      {
+        "sub_area_fraction": "A1",
+        "service": "Sala"
+      }
+    ],
+    "expected": "A"
+  },
+  {
+    "id": "sala-letter-from-b2",
+    "fn": "salaLetterForTeamOrArea",
+    "args": [
+      {
+        "sub_area_fraction": "B2",
+        "service": "Sala"
+      }
+    ],
+    "expected": "B"
+  },
+  {
+    "id": "sala-letter-from-name",
+    "fn": "salaLetterForTeamOrArea",
+    "args": [
+      {
+        "name": "Equipo Sala C",
+        "service": "Sala"
+      }
+    ],
+    "expected": "C"
+  },
+  {
+    "id": "resolve-explicit-sala",
+    "fn": "resolvePatientSala",
+    "args": [
+      {
+        "sala": "Sala 2",
+        "servicio": "Sala",
+        "area": "A"
+      }
+    ],
+    "expected": "Sala 2"
+  },
+  {
+    "id": "resolve-explicit-sala-1",
+    "fn": "resolvePatientSala",
+    "args": [
+      {
+        "sala": "Sala 1",
+        "servicio": "Sala"
+      }
+    ],
+    "expected": "Sala 1"
+  },
+  {
+    "id": "resolve-infer-sala-1",
+    "fn": "resolvePatientSala",
+    "args": [
+      {
+        "servicio": "Sala 1"
+      }
+    ],
+    "expected": ""
+  },
+  {
+    "id": "resolve-infer-sala-2-empty",
+    "fn": "resolvePatientSala",
+    "args": [
+      {
+        "service": "Sala 2"
+      }
+    ],
+    "expected": ""
+  },
+  {
+    "id": "resolve-infer-sala-e",
+    "fn": "resolvePatientSala",
+    "args": [
+      {
+        "service": "Sala E"
+      }
+    ],
+    "expected": "Sala E"
+  },
+  {
+    "id": "resolve-infer-torre",
+    "fn": "resolvePatientSala",
+    "args": [
+      {
+        "servicio": "Torre HU"
+      }
+    ],
+    "expected": "Torre HU"
+  },
+  {
+    "id": "resolve-infer-area-a",
+    "fn": "resolvePatientSala",
+    "args": [
+      {
+        "servicio": "Área A / Pensionistas"
+      }
+    ],
+    "expected": "Área A/Pensionistas"
+  },
+  {
+    "id": "patient-in-user-sala-match",
+    "fn": "patientInUserSala",
+    "args": [
+      {
+        "sala": "Sala 1"
+      },
+      "Sala 1"
+    ],
+    "expected": true
+  },
+  {
+    "id": "patient-in-user-sala-mismatch",
+    "fn": "patientInUserSala",
+    "args": [
+      {
+        "sala": "Sala 2"
+      },
+      "Sala 1"
+    ],
+    "expected": false
+  },
+  {
+    "id": "patient-in-user-sala-inferred",
+    "fn": "patientInUserSala",
+    "args": [
+      {
+        "servicio": "Sala E"
+      },
+      "Sala E"
+    ],
+    "expected": true
+  },
+  {
+    "id": "patient-in-user-sala-empty-infer",
+    "fn": "patientInUserSala",
+    "args": [
+      {
+        "servicio": "Sala 1"
+      },
+      "Sala 1"
+    ],
+    "expected": false
+  },
+  {
+    "id": "stamp-profile-sala",
+    "fn": "stampPatientClinicalSala",
+    "patient": {
+      "id": "p1",
+      "servicio": "Sala",
+      "area": "A"
+    },
+    "user": {
+      "sala": "Sala 2"
+    },
+    "opts": null,
+    "expectedSala": "Sala 2"
+  },
+  {
+    "id": "stamp-team-over-profile",
+    "fn": "stampPatientClinicalSala",
+    "patient": {
+      "id": "p-ic",
+      "servicio": "Cardiología",
+      "area": ""
+    },
+    "user": {
+      "sala": "UX"
+    },
+    "opts": {
+      "team": {
+        "team_id": "t-ic",
+        "service": "Interconsultas",
+        "sala": "Interconsultas"
+      }
+    },
+    "expectedSala": "Interconsultas"
+  },
+  {
+    "id": "stamp-infer-when-no-profile",
+    "fn": "stampPatientClinicalSala",
+    "patient": {
+      "id": "p3",
+      "servicio": "Sala E"
+    },
+    "user": {},
+    "opts": null,
+    "expectedSala": "Sala E"
+  },
+  {
+    "id": "stamp-lookup-team-by-id",
+    "fn": "stampPatientClinicalSala",
+    "patient": {
+      "id": "p4",
+      "servicio": "Sala"
+    },
+    "user": {
+      "sala": "Sala 1"
+    },
+    "opts": {
+      "teamId": "t-sala2",
+      "teams": [
+        {
+          "team_id": "t-sala2",
+          "service": "Sala",
+          "sala": "Sala 2"
+        }
+      ]
+    },
+    "expectedSala": "Sala 2"
+  },
+  {
+    "id": "migrate-untagged-only",
+    "fn": "migratePatientsClinicalSala",
+    "patients": [
+      {
+        "id": "p1",
+        "servicio": "Sala"
+      },
+      {
+        "id": "p2",
+        "servicio": "Sala",
+        "sala": "Sala 1"
+      },
+      {
+        "id": "demo-pitch",
+        "servicio": "Sala",
+        "isDemo": true
+      }
+    ],
+    "user": {
+      "sala": "Sala 2"
+    },
+    "expectedCount": 1,
+    "expectedSalas": [
+      "Sala 2",
+      "Sala 1",
+      null
+    ]
+  }
+]

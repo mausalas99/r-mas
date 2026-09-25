@@ -1,0 +1,55 @@
+export {
+  getCloudSyncUrl,
+  setCloudSyncUrl,
+  getCloudSyncToken,
+  setCloudSyncToken,
+  clearCloudSyncToken,
+  getCloudSyncRoomId,
+  setCloudSyncRoomId,
+  getCloudSyncRevision,
+  setCloudSyncRevision,
+  advanceCloudSyncRevision,
+  getCloudSyncSettings,
+  clearCloudSyncSession,
+} from './settings.mjs';
+
+export { createCloudSyncApi } from './api-client.mjs';
+export { createOutbox, OUTBOX_STORAGE_KEY } from './outbox.mjs';
+export { startCloudSyncRuntime, stopCloudSyncRuntime } from './sync-runtime.mjs';
+
+export {
+  CLOUD_SALAS,
+  normalizeCloudSala,
+  displayCloudSalaLabel,
+  isCloudSala,
+} from './sala-allowlist.mjs';
+
+export {
+  shouldShowNubePanel,
+  shouldUseNubeNotLan,
+  isCloudSyncActive,
+  setCloudRoomConnected,
+} from './nube-sync-policy.mjs';
+
+export { mountNubeSection } from './panel-nube-section.mjs';
+
+export { bridgeCloudIdentityToLocal, normalizeCloudIdentityUsername } from './identity-bridge.mjs';
+
+export {
+  configureCloudMutateBridge,
+  mapPatientEntryToOps,
+  mapBundleEnvelopeToOps,
+  maybeScheduleCloudSyncPush,
+  scheduleCloudSyncPush,
+  pushCloudClinicalOpsNow,
+} from './mutate-bridge.mjs';
+
+export { applyCloudPullResult, applyCloudState, applyCloudOps } from './pull-apply.mjs';
+
+export { registerCloudDuringOnboarding } from './register-during-onboarding.mjs';
+export {
+  maybeMarkCloudSalaUpgrade,
+  isCloudSalaUpgradePending,
+  clearCloudSalaUpgradePending,
+} from './cloud-sala-upgrade.mjs';
+

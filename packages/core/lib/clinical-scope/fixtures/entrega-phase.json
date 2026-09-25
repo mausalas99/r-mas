@@ -1,0 +1,51 @@
+[
+  {
+    "id": "entrega-phase-active",
+    "fn": "readEntregaPhaseActive",
+    "storage": {
+      "guardia.entregaPhase": "{\"active\":true,\"at\":\"2026-06-01T12:00:00Z\"}"
+    },
+    "expected": true
+  },
+  {
+    "id": "entrega-phase-inactive",
+    "fn": "readEntregaPhaseActive",
+    "storage": {
+      "guardia.entregaPhase": "{\"active\":false}"
+    },
+    "expected": false
+  },
+  {
+    "id": "entrega-phase-missing-key",
+    "fn": "readEntregaPhaseActive",
+    "storage": {},
+    "expected": false
+  },
+  {
+    "id": "entrega-phase-null-storage",
+    "fn": "readEntregaPhaseActive",
+    "storage": null,
+    "expected": false
+  },
+  {
+    "id": "entrega-phase-malformed-json",
+    "fn": "readEntregaPhaseActive",
+    "storage": {
+      "guardia.entregaPhase": "{not-json"
+    },
+    "expected": false
+  },
+  {
+    "id": "entrega-phase-empty-string",
+    "fn": "readEntregaPhaseActive",
+    "storage": {
+      "guardia.entregaPhase": ""
+    },
+    "expected": false
+  },
+  {
+    "id": "entrega-phase-ls-key",
+    "fn": "ENTREGA_PHASE_LS_KEY",
+    "expected": "guardia.entregaPhase"
+  }
+]

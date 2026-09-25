@@ -1,0 +1,675 @@
+/**
+ * Entrada masiva de laboratorios SOME: separadores de paciente, split por Expediente:,
+ * vista previa y consolidación por día + tipo dentro de ventana de 2 h.
+ */
+import {
+  procesarLabs,
+  looksLikeSomeLabReport,
+  extractLabExpedienteFromReport,
+  reprocessLabResultLines_,
+  collectPriorRefsFromHistory,
+  collectPriorBhValuesFromHistory,
+  refreshCitoquimicoInterpretacionInResLabs_,
+  extractLabReportFechaDMY,
+} from './labs.js';
+import { getLabHistory } from './app-state.mjs';
+import { normalizeFechaLabHistory, normalizeHoraLabHistory, parseFechaLabToMs, sortLabHistoryChronological } from './tend-core.mjs';
+import { normalizeLabLine } from './lab-history-auto-store-core.mjs';
+import { resLabsHasGasometria, primaryTipoForLabSet } from './lab-history-format.mjs';
+import {
+  clusterByDayTipoAndTimeWindow,
+  clusterLabworkByTimeWindow,
+  labTimestampMsFromFechaHora,
+} from './lab-consolidation-cluster.mjs';
+import { sanitizeResLabsChunks } from './labs-reslabs-sanitize.mjs';
+import { dedupeConsolidatedLabRows } from './lab-bulk-dedupe.mjs';
+import { buildParsedBySectionFromResLabs } from './features/diagrams-parse.mjs';
+
+export { dedupeConsolidatedLabRows } from './lab-bulk-dedupe.mjs';
+
+export const LAB_BULK_PATIENT_SEPARATOR = '--- PACIENTE ---';
+
+function primaryTipoForResLabs(resLabs) {
+  return primaryTipoForLabSet(resLabs);
+}
+
+export function dayKeyFromResult(result) {
+  var fecha = normalizeFechaLabHistory(result.patient && result.patient.fecha) || '';
+  var hora = normalizeHoraLabHistory(result.patient && result.patient.hora);
+  if (fecha === 'Anterior') return 'Anterior';
+  var ms = parseFechaLabToMs(fecha, hora);
+  if (typeof ms === 'number' && isFinite(ms)) {
+    var d = new Date(ms);
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  }
+  return 'unknown';
+}
+
+export function isLabBulkPatientSeparatorLine(line) {
+  return /^\s*---\s*PACIENTE\s*---\s*$/i.test(String(line || '').trim());
+}
+
+/** Parte el pegado masivo en bloques por separador de paciente. */
+export function splitBulkLabTextByPatient(text) {
+  var raw = String(text || '');
+  if (!raw.trim()) return [];
+  var lines = raw.split(/\r?\n/);
+  var blocks = [];
+  var current = [];
+  lines.forEach(function (line) {
+    if (isLabBulkPatientSeparatorLine(line)) {
+      if (current.length) {
+        var chunk = current.join('\n').trim();
+        if (chunk) blocks.push(chunk);
+        current = [];
+      }
+      return;
+    }
+    current.push(line);
+  });
+  if (current.length) {
+    var tail = current.join('\n').trim();
+    if (tail) blocks.push(tail);
+  }
+  return blocks;
+}
+
+/** Dentro de un bloque de paciente, separa reportes SOME por encabezado Expediente:. */
+export function splitSomeReportsInBlock(blockText) {
+  var raw = String(blockText || '').trim();
+  if (!raw) return [];
+  return raw
+    .split(/(?=^\s*Expediente\s*:)/im)
+    .map(function (s) {
+      return s.trim();
+    })
+    .filter(Boolean);
+}
+
+function sortDaysDesc(days) {
+  return days.slice().sort(function (a, b) {
+    var ma = parseFechaLabToMs(a, '');
+    var mb = parseFechaLabToMs(b, '');
+    if (typeof ma === 'number' && typeof mb === 'number' && ma !== mb) return mb - ma;
+    return String(b).localeCompare(String(a));
+  });
+}
+
+function parseReportChunkFailure(reportIndex, error, meta) {
+  return { reportIndex, ok: false, error, ...meta };
+}
+
+function parseReportChunkSuccess(reportText, reportIndex, result) {
+  return {
+    reportIndex: reportIndex,
+    ok: true,
+    reportText: reportText,
+    result: result,
+    expediente: String((result.patient && result.patient.expediente) || '').trim(),
+    nombre: String((result.patient && result.patient.name) || '').trim(),
+    fecha: normalizeFechaLabHistory(result.patient && result.patient.fecha) || '',
+    hora: normalizeHoraLabHistory(result.patient && result.patient.hora),
+    bloques: result.resLabs.length,
+  };
+}
+
+function resolveChartPatientForReport_(reportText, findPatient) {
+  if (!findPatient) return null;
+  var exp = extractLabExpedienteFromReport(reportText);
+  if (!exp) return null;
+  return findPatient(exp) || null;
+}
+
+function priorRefsForPatient_(patient) {
+  if (!patient || !patient.id) return Object.create(null);
+  return collectPriorRefsFromHistory(sortLabHistoryChronological(getLabHistory()[patient.id] || []));
+}
+
+/** Hto/Ret de otra toma del mismo día para completar RetC cuando la toma actual solo trae uno. */
+function priorBhValuesForPatient_(patient, fecha) {
+  if (!patient || !patient.id) return Object.create(null);
+  return collectPriorBhValuesFromHistory(sortLabHistoryChronological(getLabHistory()[patient.id] || []), fecha);
+}
+
+function parseReportChunk(reportText, reportIndex, findPatient, batchBhValues) {
+  if (!looksLikeSomeLabReport(reportText)) {
+    return parseReportChunkFailure(reportIndex, 'No parece reporte SOME (copia desde «Expediente:»)');
+  }
+  try {
+    var chartPatient = resolveChartPatientForReport_(reportText, findPatient);
+    var priorRefs = priorRefsForPatient_(chartPatient);
+    var priorBhValues = Object.assign(
+      Object.create(null),
+      priorBhValuesForPatient_(chartPatient, extractLabReportFechaDMY(reportText)),
+      batchBhValues || Object.create(null)
+    );
+    var result = procesarLabs(reportText, {
+      patient: chartPatient || undefined,
+      priorRefsBySection: priorRefs,
+      priorBhValues: priorBhValues,
+    });
+    if (!result.resLabs) result.resLabs = [];
+    return parseReportChunkSuccess(reportText, reportIndex, result);
+  } catch (e) {
+    return parseReportChunkFailure(reportIndex, e && e.message ? e.message : 'Error al parsear');
+  }
+}
+
+function collectUniqueExpedientes(okReports) {
+  var expedientes = [];
+  okReports.forEach(function (r) {
+    if (r.expediente && expedientes.indexOf(r.expediente) === -1) expedientes.push(r.expediente);
+  });
+  return expedientes;
+}
+
+/** Same normalization as findPatientByRegistro: base before "-" when long enough. */
+function expedienteBase_(reg) {
+  var s = String(reg || '').trim();
+  if (!s) return '';
+  var base = s.split('-')[0];
+  return base.length >= 5 ? base : s;
+}
+
+/** Distinct patient identities among expedientes — "9000002" and "9000002-2" count as one. */
+function collectDistinctExpedienteBases(expedientes) {
+  var bases = [];
+  (expedientes || []).forEach(function (exp) {
+    var base = expedienteBase_(exp);
+    if (base && bases.indexOf(base) === -1) bases.push(base);
+  });
+  return bases;
+}
+
+function filterUsableReportsForPatient(okReports, match) {
+  if (!match) return okReports;
+  var patientReg = String(match.registro || '').trim();
+  if (!patientReg) return okReports;
+  return okReports.filter(function (r) {
+    return r.expediente === patientReg;
+  });
+}
+
+/**
+ * SEGURIDAD: el sistema SOME a veces junta datos de 2 pacientes distintos en
+ * un solo pegado. Un bloque con 2+ expedientes que no son el mismo paciente
+ * (base distinta, ver expedienteBase_) es sospechoso de mezcla.
+ */
+function isMixedExpedienteBlock(expedientes) {
+  return collectDistinctExpedienteBases(expedientes).length > 1;
+}
+
+/**
+ * Entre expedientes de bases distintas, busca si exactamente UN paciente del
+ * censo calza (ej.: re-consulta del portal trae el ingreso actual + un
+ * expediente viejo del mismo paciente, ya no vigente). Ese caso no es mezcla:
+ * se conserva el paciente conocido y se excluyen — con aviso, nunca en
+ * silencio — los reportes del expediente ajeno. Si 2+ expedientes calzan con
+ * pacientes DISTINTOS del censo, o ninguno calza, no hay forma segura de
+ * resolver de cuál paciente se trata → null (el bloque se bloquea completo).
+ */
+function resolveKnownPatientAmongExpedientes(expedientes, findPatient) {
+  if (!findPatient) return null;
+  var found = null;
+  for (var i = 0; i < expedientes.length; i += 1) {
+    var m = findPatient(expedientes[i]);
+    if (!m || !m.id) continue;
+    if (found && String(found.id) !== String(m.id)) return null;
+    found = m;
+  }
+  return found;
+}
+
+/** Mensaje en español para mostrar cuando se descarta un bloque por mezcla de pacientes. */
+export function mixedExpedienteWarning(blocks) {
+  var mixed = (blocks || []).find(function (b) {
+    return b && b.status === 'mixed-expediente';
+  });
+  if (mixed) {
+    var list = (mixed.expedientes || []).join(' y ');
+    var otherReportsOk = (blocks || []).some(function (b) {
+      return b !== mixed && b && b.okReportCount > 0;
+    });
+    return (
+      'Un bloque del texto pegado tiene 2 expedientes distintos (' +
+      list +
+      '). Puede tener datos de otro paciente. Ese bloque se excluyó. ' +
+      (otherReportsOk ? 'El resto del pegado sí se procesó. ' : 'No se guardó nada. ') +
+      'Separa los reportes por paciente y pega de nuevo.'
+    );
+  }
+  var withConflicts = (blocks || []).find(function (b) {
+    return b && b.conflictReports && b.conflictReports.length;
+  });
+  if (!withConflicts) return null;
+  var kept = withConflicts.primaryExpediente || '';
+  var excluded = withConflicts.conflictReports
+    .map(function (r) {
+      return r.expediente;
+    })
+    .filter(function (v, i, arr) {
+      return v && arr.indexOf(v) === i;
+    })
+    .join(' y ');
+  return (
+    'Un bloque del texto pegado trae otro expediente (' +
+    excluded +
+    (kept ? ') distinto del paciente conocido (' + kept + ')' : ') distinto del paciente conocido') +
+    '. Ese reporte se excluyó, no se guardó. El resto del pegado sí se procesó.'
+  );
+}
+
+function collectReportDays(usableReports) {
+  var days = [];
+  usableReports.forEach(function (r) {
+    if (r.fecha && days.indexOf(r.fecha) === -1) days.push(r.fecha);
+  });
+  return days;
+}
+
+function resolveBulkBlockStatus(chunks, okReports, match, expedientes, usableReports, isMixed) {
+  if (!chunks.length) return 'empty';
+  if (!okReports.length) return 'parse-errors';
+  if (isMixed) return 'mixed-expediente';
+  if (!match) return 'no-patient';
+  if (!usableReports.length) return 'parse-errors';
+  return 'ok';
+}
+
+function resolvePrimaryMatch(knownMatch, isMixed, primaryExp, findPatient) {
+  if (knownMatch) return knownMatch;
+  if (isMixed || !primaryExp || !findPatient) return null;
+  return findPatient(primaryExp);
+}
+
+function computeConflictReports(hasMultipleExpedientes, isMixed, okReports, usableReports) {
+  if (!hasMultipleExpedientes || isMixed) return [];
+  return okReports.filter(function (r) {
+    return usableReports.indexOf(r) === -1;
+  });
+}
+
+function computeSetsAfterMerge(usableReports) {
+  if (!usableReports.length) return 0;
+  return mergeBulkParseResultsForStorage(
+    usableReports.map(function (r) {
+      return { result: r.result, reportText: r.reportText };
+    })
+  ).length;
+}
+
+function computePatientName(match, okReports) {
+  if (match) return match.nombre || 'Sin nombre';
+  return okReports[0] ? okReports[0].nombre || '—' : '—';
+}
+
+/** Hto/Ret de cada chunk del bloque, para que un chunk sin Hto (o sin Ret) tome el de otro
+ * chunk del mismo pegado y del mismo día. Cada chunk mira solo su BH más cercano en el tiempo
+ * de ese día (un solo salto) y usa lo que ese BH tenga — si ese vecino tampoco trae Ret, no sigue
+ * buscando. Un Ret de otro día nunca completa RetC. */
+function collectBatchBhValues_(chunks, findPatient) {
+  var parsed = chunks.map(function (chunk, ri) {
+    var r = parseReportChunk(chunk, ri, findPatient);
+    var bh = r.ok && r.result ? buildParsedBySectionFromResLabs(r.result.resLabs, r.result.bhExtras).BH : null;
+    return { ri: ri, bh: bh, fecha: r.ok ? r.fecha : null, ms: r.ok ? labTimestampMsFromFechaHora(r.fecha, r.hora) : null };
+  });
+  return parsed.map(function (p) {
+    if (p.ms == null) return Object.create(null);
+    var nearest = null;
+    var nearestGap = Infinity;
+    parsed.forEach(function (o) {
+      if (o.ri === p.ri || !o.bh || o.ms == null || o.fecha !== p.fecha) return;
+      var gap = Math.abs(o.ms - p.ms);
+      if (gap < nearestGap) {
+        nearest = o;
+        nearestGap = gap;
+      }
+    });
+    return nearest ? Object.assign(Object.create(null), nearest.bh) : Object.create(null);
+  });
+}
+
+function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
+  var chunks = splitSomeReportsInBlock(blockText);
+  var batchBhValues = collectBatchBhValues_(chunks, findPatient);
+  var reports = chunks.map(function (chunk, ri) {
+    return parseReportChunk(chunk, ri, findPatient, batchBhValues[ri]);
+  });
+  var okReports = reports.filter(function (r) {
+    return r.ok;
+  });
+  var expedientes = collectUniqueExpedientes(okReports);
+  var hasMultipleExpedientes = isMixedExpedienteBlock(expedientes);
+  var knownMatch = hasMultipleExpedientes ? resolveKnownPatientAmongExpedientes(expedientes, findPatient) : null;
+  var isMixed = hasMultipleExpedientes && !knownMatch;
+  var primaryExp = expedientes[0] || '';
+  var match = resolvePrimaryMatch(knownMatch, isMixed, primaryExp, findPatient);
+  var usableReports = isMixed ? [] : filterUsableReportsForPatient(okReports, match);
+  var conflictReports = computeConflictReports(hasMultipleExpedientes, isMixed, okReports, usableReports);
+  var days = collectReportDays(usableReports);
+  var status = resolveBulkBlockStatus(chunks, okReports, match, expedientes, usableReports, isMixed);
+  var patientReg = match ? String(match.registro || '').trim() : '';
+  var setsAfterMerge = computeSetsAfterMerge(usableReports);
+
+  return {
+    blockIndex: blockIndex,
+    reportCount: chunks.length,
+    okReportCount: usableReports.length,
+    reports: reports,
+    expedientes: expedientes,
+    patient: match,
+    patientName: computePatientName(match, okReports),
+    primaryExpediente: patientReg || primaryExp,
+    days: sortDaysDesc(days),
+    daysLabel: sortDaysDesc(days).join(', ') || '—',
+    setsAfterMerge: setsAfterMerge,
+    status: status,
+    canProcess: !isMixed && !!match && usableReports.length > 0,
+    conflictReports: conflictReports,
+    rawText: String(blockText || '').trim(),
+  };
+}
+
+/**
+ * @param {string} text
+ * @param {{ findPatientByRegistro: (reg: string) => { id: string, nombre?: string, registro?: string } | null }} opts
+ */
+export function buildBulkLabPreview(text, opts) {
+  var findPatient = opts && opts.findPatientByRegistro;
+  var blocks = splitBulkLabTextByPatient(text);
+  if (!blocks.length && String(text || '').trim()) {
+    blocks = [String(text).trim()];
+  }
+  return blocks.map(function (blockText, blockIndex) {
+    return buildBulkBlockPreview(blockText, blockIndex, findPatient);
+  });
+}
+
+function buildMergedPayloadFromGroup(items, tipo) {
+  var mergeOrder = (items || []).slice().sort(function (a, b) {
+    var sa =
+      a && a.reportText && looksLikeSomeLabReport(a.reportText) ? 1 : 0;
+    var sb =
+      b && b.reportText && looksLikeSomeLabReport(b.reportText) ? 1 : 0;
+    if (sa !== sb) return sa - sb;
+    return 0;
+  });
+  var merged = [];
+  var sourceParts = [];
+  var mergedBhExtras = {};
+  var mergedRefs = {};
+  var newestHora = '';
+  var horaSome = '';
+  mergeOrder.forEach(function (item, _idx) {
+    var result = item.result;
+    var rows = (result.resLabs || []).slice();
+    if (merged.length && rows.length) merged.push('');
+    merged = merged.concat(rows);
+    if (item.reportText && String(item.reportText).trim()) sourceParts.push(String(item.reportText).trim());
+    if (result.bhExtras && typeof result.bhExtras === 'object') {
+      Object.keys(result.bhExtras).forEach(function (k) {
+        mergedBhExtras[k] = result.bhExtras[k];
+      });
+    }
+    if (result.refsBySection && typeof result.refsBySection === 'object') {
+      Object.keys(result.refsBySection).forEach(function (k) {
+        mergedRefs[k] = result.refsBySection[k];
+      });
+    }
+    var h = normalizeHoraLabHistory(result.patient && result.patient.hora);
+    if (h) newestHora = h;
+    if (item.reportText && looksLikeSomeLabReport(item.reportText) && h) horaSome = h;
+  });
+  var sourceText = sourceParts.join('\n\n---\n\n');
+  var deduped = dedupeConsolidatedLabRows(merged, tipo);
+  // Cada chunk se parseó por separado (portal: química/bacteriología llegan como
+  // reportes distintos), así que LCR/Liq quedan incompletos por chunk; el dedupe
+  // por riqueza no los fusiona campo a campo. Reconstruirlos desde el texto
+  // combinado (mismo blob que un pegado manual completo) sí los fusiona.
+  deduped = refreshCitoquimicoInterpretacionInResLabs_(deduped, sourceText);
+  // Prior gas refs ya se aplicaron en parseReportChunk; aquí el reporte del merge
+  // gana y DEFAULT_GASO_REFS cubre campos sin rango.
+  deduped = sanitizeResLabsChunks(
+    reprocessLabResultLines_(deduped, {
+      gasRefs: mergedRefs.GASES,
+    })
+  );
+  var first = mergeOrder[0].result;
+  var fecha = normalizeFechaLabHistory(first.patient && first.patient.fecha) || '';
+  return {
+    resLabs: deduped,
+    fecha: fecha,
+    hora: horaSome || newestHora,
+    sourceText: sourceText,
+    bhExtras: mergedBhExtras,
+    refsBySection: mergedRefs,
+    patient: first.patient,
+  };
+}
+
+function timestampMsFromParsedItem(item) {
+  var result = item && item.result;
+  if (!result) return null;
+  return labTimestampMsFromFechaHora(result.patient && result.patient.fecha, result.patient && result.patient.hora);
+}
+
+/**
+ * Agrupa reportes del mismo día y tipo homogéneo si caen en ventana de 2 h consecutiva.
+ * @param {{ result: object, reportText: string }[]} parsedItems
+ */
+function isGasoChunk(chunk) {
+  var s = String(chunk || '').trim();
+  return /^GASES\b/i.test(s) || /^INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A\s*:/i.test(s);
+}
+
+/**
+ * El sistema SOME incluye secciones como EGO en TODOS los reportes del día
+ * (uno por toma de gases). Al guardar, cada cluster retiene esas secciones y
+ * las secciones no-GASES quedan duplicadas entre sets del mismo día.
+ * Esta función elimina, de los payloads posteriores, los chunks no-GASES cuyo
+ * contenido normalizado ya aparece en un payload anterior del mismo día.
+ * @param {object[]} payloads
+ * @returns {object[]}
+ */
+function stripDuplicateNonGasoChunksAcrossPayloads(payloads) {
+  if (!payloads || payloads.length < 2) return payloads;
+  var seenByDay = Object.create(null);
+  return payloads.map(function (payload) {
+    var dk = normalizeFechaLabHistory(payload.fecha) || String(payload.fecha || '').trim();
+    if (!dk) return payload;
+    if (!seenByDay[dk]) seenByDay[dk] = Object.create(null);
+    var seen = seenByDay[dk];
+    var filtered = (payload.resLabs || []).filter(function (chunk) {
+      if (isGasoChunk(chunk)) return true;
+      var norm = normalizeLabLine(String(chunk || ''));
+      if (!norm) return true;
+      if (seen[norm]) return false;
+      seen[norm] = true;
+      return true;
+    });
+    if (filtered.length === payload.resLabs.length) return payload;
+    return Object.assign({}, payload, { resLabs: filtered });
+  });
+}
+
+export function mergeBulkParseResults(parsedItems) {
+  var clusters = clusterByDayTipoAndTimeWindow(
+    (parsedItems || []).filter(function (item) {
+      return item && item.result && item.result.resLabs && item.result.resLabs.length;
+    }),
+    function (item) {
+      return dayKeyFromResult(item.result);
+    },
+    function (item) {
+      return primaryTipoForResLabs(item.result.resLabs || []);
+    },
+    timestampMsFromParsedItem,
+    function (item) {
+      // Cupo de gasometría: set que ya trae GASES (solo-gaso o labs+gaso).
+      return resLabsHasGasometria(item.result.resLabs || []);
+    }
+  );
+  var payloads = clusters.map(function (cluster) {
+    var tipo = primaryTipoForResLabs(cluster[0].result.resLabs || []);
+    return buildMergedPayloadFromGroup(cluster, tipo);
+  });
+  return stripDuplicateNonGasoChunksAcrossPayloads(payloads);
+}
+
+/**
+ * Historial (repo / pegado masivo): misma consolidación que preview —
+ * día + tipo homogéneo dentro de ventana ≤2 h; empareja la gaso más cercana;
+ * nunca dos gasometrías en el mismo conjunto. Así la BH matutina no se copia
+ * a electrolitos/gases q4h.
+ *
+ * (Antes: un conjunto por día calendario, lo que sobreponía la BH en todas las series.)
+ */
+export function mergeBulkParseResultsForStorage(parsedItems) {
+  return mergeBulkParseResults(parsedItems);
+}
+
+function latestDayKeyFromParsedItems(parsedItems) {
+  var latestMs = -Infinity;
+  (parsedItems || []).forEach(function (item) {
+    if (!item || !item.result) return;
+    var fecha = normalizeFechaLabHistory(item.result.patient && item.result.patient.fecha) || '';
+    var hora = normalizeHoraLabHistory(item.result.patient && item.result.patient.hora);
+    var ms = parseFechaLabToMs(fecha, hora);
+    if (typeof ms === 'number' && isFinite(ms) && ms > latestMs) latestMs = ms;
+  });
+  if (!(latestMs > -Infinity)) return '';
+  var d = new Date(latestMs);
+  return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+}
+
+function wrapSingleParsedLabDisplay(item) {
+  if (!item || !item.result) return null;
+  return {
+    patient: item.result.patient,
+    resLabs: item.result.resLabs,
+    bhExtras: item.result.bhExtras,
+    refsBySection: item.result.refsBySection,
+    sourceText: item.reportText,
+    expediente: item.result.patient && item.result.patient.expediente,
+  };
+}
+
+/**
+ * Resultados tras pegado: día más reciente; fusiona solicitudes del mismo bloque horario (≤2 h).
+ * @param {{ result: object, reportText: string }[]} parsedItems
+ */
+export function pickLatestDayMergedLabDisplay(parsedItems) {
+  var withLabs = (parsedItems || []).filter(function (item) {
+    return item && item.result && item.result.resLabs && item.result.resLabs.length;
+  });
+  var items = withLabs.length
+    ? withLabs
+    : (parsedItems || []).filter(function (item) {
+        return item && item.result && Array.isArray(item.result.resLabs);
+      });
+  if (!items.length) return null;
+  if (items.length === 1) return wrapSingleParsedLabDisplay(items[0]);
+
+  var latestDayKey = latestDayKeyFromParsedItems(items);
+  var dayItems = latestDayKey
+    ? items.filter(function (item) {
+        return dayKeyFromResult(item.result) === latestDayKey;
+      })
+    : items.slice();
+  if (!dayItems.length) dayItems = items.slice();
+  if (dayItems.length === 1) return wrapSingleParsedLabDisplay(dayItems[0]);
+
+  var latestItem = dayItems[0];
+  var latestMs = timestampMsFromParsedItem(latestItem);
+  dayItems.slice(1).forEach(function (item) {
+    var ms = timestampMsFromParsedItem(item);
+    if (typeof ms === 'number' && isFinite(ms)) {
+      if (typeof latestMs !== 'number' || !isFinite(latestMs) || ms > latestMs) {
+        latestItem = item;
+        latestMs = ms;
+      }
+    }
+  });
+
+  var dayClusters = clusterLabworkByTimeWindow(
+    dayItems,
+    timestampMsFromParsedItem,
+    function (item) {
+      return resLabsHasGasometria(item.result.resLabs || []);
+    }
+  );
+  var targetCluster = dayClusters.find(function (cluster) {
+    return cluster.indexOf(latestItem) !== -1;
+  }) || [latestItem];
+  if (targetCluster.length === 1) return wrapSingleParsedLabDisplay(targetCluster[0]);
+
+  var tipo = primaryTipoForResLabs(targetCluster[0].result.resLabs || []);
+  return buildMergedPayloadFromGroup(targetCluster, tipo);
+}
+
+function bulkBlocksHaveProcessablePatient(blocks) {
+  return blocks.some(function (b) {
+    return b && b.canProcess && b.okReportCount > 0 && b.patient;
+  });
+}
+
+function bulkBlocksHaveDisplayableReports(blocks) {
+  return blocks.some(function (b) {
+    return b && b.okReportCount > 0;
+  });
+}
+
+/** Muestra vista previa antes de guardar cuando hay pegado masivo o avisos. */
+export function shouldShowBulkLabPreview(blocks, totalOkReports, opts) {
+  if (!Array.isArray(blocks) || !blocks.length) return false;
+  var quickLabOutput = !!(opts && opts.quickLabOutput);
+  // Salida rápida: si ningún expediente está en la lista, formatear sin modal
+  // (varios días/reportes en un pegado también aplican).
+  if (
+    quickLabOutput &&
+    bulkBlocksHaveDisplayableReports(blocks) &&
+    !bulkBlocksHaveProcessablePatient(blocks)
+  ) {
+    return false;
+  }
+  // Un solo bloque sin paciente: MODELO SIMULADO GENERICO CASOZl (alta directa o formateo).
+  if (blocks.length === 1 && blocks[0] && blocks[0].status === 'no-patient') {
+    return false;
+  }
+  // A report excluded for another expediente must be shown, never dropped in silence.
+  if (blocks.some(function (b) { return b && Array.isArray(b.conflictReports) && b.conflictReports.length; })) {
+    return true;
+  }
+  if (blocks.length > 1) return true;
+  if (totalOkReports > 1) return true;
+  return blocks.some(function (b) {
+    return b && b.status !== 'ok';
+  });
+}
+
+/** Datos SOME del paciente para el modal de alta (primer reporte válido del bloque). */
+export function extractLabPatientFromBulkBlock(block) {
+  if (!block || !Array.isArray(block.reports)) return null;
+  var ok = block.reports.find(function (r) {
+    return r.ok && r.result && r.result.patient;
+  });
+  if (!ok || !ok.result.patient) return null;
+  return ok.result.patient;
+}
+
+export function bulkPreviewStatusLabel(status) {
+  switch (status) {
+    case 'ok':
+      return 'Listo';
+    case 'mixed-expediente':
+      return 'Posible mezcla de 2 pacientes — no guardado';
+    case 'no-patient':
+      return 'Paciente no encontrado';
+    case 'parse-errors':
+      return 'Error al parsear';
+    case 'empty':
+      return 'Vacío';
+    default:
+      return status || '—';
+  }
+}

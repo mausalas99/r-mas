@@ -1,0 +1,43 @@
+R+ 8.0.1 (hotfix — pull Nube + push concurrente Worker)
+===========================================================
+
+Fecha: 2026-08-05
+
+## Resumen
+
+**8.0.1** corrige el toast **«No se pudieron aplicar los cambios de la nube»** al conectar o sincronizar en salas Nube (el pull no montaba las dependencias de apply de pacientes sin LAN). En el Worker, el **push** ahora confirma mutaciones con **revisión atómica** y reintento ante carreras concurrentes entre Macs/iPads del turno.
+
+## Nuevo / mejorado
+
+- **Pull Nube — apply de censo** — Salas Nube configuran `configureLanSyncDomainModules` sin montar LAN; `patient-entries` hace fallback a `getLanRuntime()` si faltaba wiring. El censo remoto vuelve a aplicarse al conectar ⇄.
+- **Worker — push atómico** — `commitMutationBatch` gatea INSERT/UPDATE de mutación + bump de `revision` + cifrado de estado; hasta 5 reintentos si dos dispositivos escriben a la vez. Menos `revision_stale` espurios y sin commits parciales.
+- **Worker CORS** — Preflight acepta `X-Sync-Admin-Key` y `Accept` (admin Nube / herramientas desde `app://rplus`).
+- **Tests** — `patient-entries-nube.test.mjs` + wiring en `lan-sync-wiring` / `lan-sync-clinical-ops`.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v8.0.1
+
+- Mac: `R+-8.0.1-arm64.dmg`, `R+-8.0.1-x64.dmg` (y zip para auto-update).
+- Windows: `R+-8.0.1-x64.exe`.
+
+Descarga **8.0.1 en todas las Macs** del turno. **Despliega el Worker el mismo día** — el fix de push concurrente vive en cloud.
+
+**Operador cloud (recomendado antes del turno):**
+
+```bash
+cd /Users/mauriciosalas/R+
+npm run build:cloud-mobile
+cd cloud/sync-worker
+npm run deploy
+cd ../..
+curl -sS "https://rplus-sync.rmas-workersdev.workers.dev/api/sync/v1/ping"
+```
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Notas
+
+- Si en 8.0.0 veías el toast al abrir ⇄ o tras un pull, 8.0.1 lo corrige en escritorio y R+ Móvil (mismo `pull-apply`).
+- Sin redeploy del Worker, el cliente mejora el apply local; el push atómico requiere Worker actualizado.
+- No cambia el modelo Nube-first de 8.0.0 (LAN sigue opt-in con `R_PLUS_ENABLE_LAN_SYNC=1`).

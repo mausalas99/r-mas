@@ -1,0 +1,27 @@
+R+ 8.1.4 (estable — release 8.1.4)
+======================================
+
+Fecha: 2026-08-15
+
+## Resumen
+
+Cifrado AES-256-GCM en Nube, botón de descarga directa en el modal de versión mínima, deduplicación de secciones SOME en pegado múltiple de gases, y correcciones de sincronización de campos censo.
+
+## Nuevo / mejorado
+
+- **Nube — cifrado AES-256-GCM reactivado:** cada snapshot se almacena cifrado en el Worker. Blobs anteriores siguen siendo compatibles.
+- **Actualización bloqueante — descarga directa:** el modal de versión mínima ahora muestra un botón con el instalador correcto según plataforma (Mac Apple Silicon, Mac Intel, Windows).
+- **Pegado de labs — deduplicación SOME:** al pegar múltiples tomas de gases del mismo día, las secciones no-gasométricas (EGO, etc.) ya no se duplican entre envíos.
+- **Workbench labs — multi-envío:** cuando hay más de un grupo de resultados en el día, cada grupo muestra su hora y tipo como encabezado.
+- **Censo — reloj de campos:** se estampa `lanUpdatedAt` al guardar diagnósticos y medicamentos para que la Nube no rechace la operación como obsoleta.
+- **Fusión censo — opción local gana:** `mergeCensoPatientFields` preserva valores locales cuando el reloj remoto es anterior.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.1.4-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.1.4-Mac-Intel.dmg`
+- Windows: `R+-8.1.4-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

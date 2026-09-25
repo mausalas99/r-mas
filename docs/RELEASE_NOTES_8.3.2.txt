@@ -1,0 +1,27 @@
+R+ 8.3.2 (estable — release 8.3.2)
+======================================
+
+Fecha: 2026-09-06
+
+## Resumen
+
+Nueva pestaña de administración de medicamentos, balance de líquidos por turno con recordatorio de hemodiálisis, y los estudios/procedimientos del pegado de Manejo ahora se agregan solos a Pendientes.
+
+## Nuevo / mejorado
+
+- **Nuevo — pestaña Medicamentos:** en Sala, Paciente → Clínico tiene una pestaña de administración con horario por toma (marca solo lo no administrado) y un registro aparte para PRN.
+- **Nuevo — balance de líquidos por turno:** Estado actual separa entradas y salidas en T1/T2/T3, con una sección de otras fuentes cuantificables (ultrafiltrado, drenaje, toracocentesis o una propia).
+- **Nuevo — recordatorio de hemodiálisis:** si hay una hemodiálisis pendiente, el registro del día avisa con un botón para posponerla sin cerrar el pendiente.
+- **Nuevo — estudios y procedimientos a Pendientes:** al pegar el bloque de Manejo, los estudios de imagen (TAC, RM, RX, etc.) y procedimientos se agregan solos a Pendientes.
+- **Mejorado — Solución Stanford:** los medicamentos marcados para Solución Stanford se agrupan en una sola línea, en Estado actual y en Manejo.
+- **Mejorado — copiar Estado actual:** el texto copiado ahora pega en negritas reales en Word, Docs o Gmail, en vez de asteriscos sueltos.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.3.2-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.3.2-Mac-Intel.dmg`
+- Windows: `R+-8.3.2-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

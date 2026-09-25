@@ -1,0 +1,24 @@
+R+ 7.7.3 (labs simplificados y alta desde SOME)
+===================================================
+
+Fecha: 2026-07-23
+
+## Resumen
+
+**7.7.3** simplifica Laboratorio: se retira el wizard «Configurar lectura», el orden de secciones SOME es estable (BH → QS → … → EGO al final) y un paciente nuevo en un solo reporte abre el alta directa sin modal intermedio.
+
+## Nuevo / mejorado
+
+- **Alta desde SOME** — Un solo reporte de paciente no registrado abre el modal de alta con datos del laboratorio; al guardar, Procesar continúa sin paso extra de confirmación.
+- **Orden de secciones** — Resultados SOME se muestran en orden clínico fijo: BH, QS, ESC, PFHs, GASES, otros bloques, EGO al final.
+- **Labs sin wizard teach** — Retirado el flujo de 2 páginas «Configurar lectura»; los paneles hospitalarios siguen vía overlay PanelDef + sync LAN (como en 7.7.2).
+- **UI Laboratorio** — Estilos y preview batch más ligeros; menos superficie muerta en el panel.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.7.3
+
+- Mac: `R+-7.7.3-arm64.dmg`, `R+-7.7.3-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.7.3-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

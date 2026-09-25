@@ -1,0 +1,53 @@
+R+ 8.0.8 (EA ventilatorio + dieta parenteral + KV lite)
+===========================================================
+
+Fecha: 2026-08-08
+
+## Resumen
+
+**8.0.8** añade **soporte respiratorio** en Estado Actual (PaFi, driving pressure, ROX, ml/kg), **dieta parenteral** (KAVIBEN, SMOFKABIVEN, NPT) en paste SOME y un **dashboard de diagnóstico Nube** más claro. En el Worker, la caché KV de revisiones pasa a modo **lite** (solo escritura en push, sin TTL). **Recuérdame** y token Nube se conservan al actualizar — sin migración de base ni cierre de sesión forzado.
+
+## Nuevo / mejorado
+
+### Estado Actual — ventilatorio
+
+- **Soporte respiratorio** — Modalidad (litros, alto flujo, VMNI, VM, TQT) con campos por tier y cálculos clínicos (PaFi, SpO2/FiO2, driving pressure, ROX, ml/kg, Tobin RRS).
+- **Gasometría** — Integración con labs para PaFi cuando aplica.
+
+### Dieta parenteral
+
+- **Paste SOME** — `NUTRICION PARENTERAL`, KAVIBEN, SMOFKABIVEN, OLICLINOMEL y NPT se clasifican como dieta (no medicamento).
+- **Macros** — kcal y proteína extraídos del texto; etiqueta `PARENTERAL — producto` en EA y censo.
+
+### Nube — diagnóstico y sesión
+
+- **Diagnóstico Nube** — Dashboard legible en ⇄ → Opciones con guías de corrección y reintento de cola.
+- **Conexión estable** — Menos parpadeo de sala al reconectar; panel Nube visible también en onboarding previo a perfil.
+- **Recuérdame** — Sin cambios de contrato: token persistido omite onboarding tras actualizar (compatible con 8.0.7).
+
+### Worker — KV lite
+
+- **Revision cache** — Lectura en pull; un `put` solo tras push exitoso (sin TTL ni escrituras duplicadas).
+- **Circuit breaker** — Al cupo diario KV Free, pivota a D1 hasta reset UTC.
+
+### Onboarding
+
+- **Cambiar modo** — Botón en perfil y «Ya tengo cuenta» para volver al paso 1.
+- **Solo mi equipo** — Pantalla de confirmación antes de registrar perfil local.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v8.0.8
+
+- Mac: `R+-8.0.8-arm64.dmg`, `R+-8.0.8-x64.dmg` (y zip para auto-update).
+- Windows: `R+-8.0.8-x64.exe`.
+
+Instala **8.0.8 en todas las Macs** del turno. **Despliega el Worker** el mismo día: `npm run deploy` en `cloud/sync-worker`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Notas
+
+- Peers en **8.0.7** son compatibles en el mismo turno.
+- No hay bump de schema SQLCipher — datos clínicos y sesión Nube persisten en `userData`.
+- **Recuérdame** guarda token en el dispositivo; no usar en Macs compartidas.

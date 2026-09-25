@@ -1,0 +1,487 @@
+<a class="skip-to-main" href="#main-area">Saltar al contenido principal</a>
+
+<div id="rpc-mobile-boot-banner" aria-live="polite" aria-hidden="true"></div>
+
+<div id="update-banner">
+  <span id="update-banner-text">Descargando actualización…</span>
+  <div id="update-progress-track">
+    <div id="update-progress-fill"></div>
+  </div>
+  <div id="update-actions">
+    <button type="button" class="update-banner-btn-primary" data-onclick="installUpdate">Instalar y reiniciar</button>
+    <button type="button" class="update-banner-btn-secondary" data-onclick="dismissUpdateBanner">Más tarde</button>
+  </div>
+</div>
+
+<div id="update-modal-backdrop" aria-hidden="true">
+  <div id="update-modal" class="wb-modal" role="dialog" aria-modal="true" aria-labelledby="update-modal-title" tabindex="-1">
+    <header class="wb-modal-head">
+      <h2 id="update-modal-title" class="wb-modal-title">Nueva versión<span class="version-pill" id="update-modal-version-pill" style="display:none;"></span><span class="channel-pill" id="update-modal-channel-pill" style="display:none;">Pre-release</span></h2>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+    <div class="release-notes" id="update-modal-notes"></div>
+    <div class="update-state-msg" id="update-modal-state"></div>
+    <div class="error-box" id="update-modal-error" style="display:none;"></div>
+    <div class="progress-wrap" id="update-modal-progress-wrap">
+      <div class="progress-fill" id="update-modal-progress-fill"></div>
+    </div>
+    <div class="progress-label" id="update-modal-progress-label"></div>
+    </div>
+    <div class="wb-modal-foot">
+      <div class="modal-actions" id="update-modal-actions-secondary" style="margin:0 auto 0 0;"></div>
+      <div class="modal-actions" id="update-modal-actions-primary" style="margin:0;"></div>
+    </div>
+  </div>
+</div>
+
+<div id="min-version-backdrop" aria-hidden="true">
+  <div id="min-version-modal" class="wb-modal" role="alertdialog" aria-modal="true" aria-labelledby="min-version-title" aria-describedby="min-version-message" data-wb-no-close>
+    <header class="wb-modal-head">
+      <h2 id="min-version-title" class="wb-modal-title">Actualización requerida</h2>
+    </header>
+    <div class="wb-modal-body">
+    <p id="min-version-message">Esta versión de R+ ya no es compatible. Instala la versión mínima soportada para continuar usando la aplicación.</p>
+    <div class="min-version-meta" id="min-version-meta"></div>
+    </div>
+    <div class="min-version-actions wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" id="min-version-releases-btn">Descargar desde GitHub</button>
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" id="min-version-check-btn">Buscar actualización</button>
+    </div>
+  </div>
+</div>
+
+<div id="tend-hidden-modal-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal tend-hidden-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="tend-hidden-modal-title">
+    <header class="wb-modal-head">
+      <h3 id="tend-hidden-modal-title" class="wb-modal-title">Analitos ocultos</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+    <p class="tend-hidden-modal-hint">Pulsa un analito o el ícono del ojo para volver a mostrarlo en la cuadrícula de tendencias.</p>
+    <div id="tend-hidden-modal-chips" class="tend-hidden-modal-chips"></div>
+    </div>
+    <div class="modal-actions wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-tend-action="reset-hidden">Mostrar todos</button>
+    </div>
+  </div>
+</div>
+
+<div id="lab-display-prefs-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal lab-display-prefs-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="lab-display-prefs-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="lab-display-prefs-title" class="wb-modal-title">Vista de laboratorio</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+    <p class="lab-display-prefs-hint">Solo en este equipo · vista de resultados y copiar al portapapeles.</p>
+    <div class="lab-display-prefs-fields">
+      <div class="lab-pref-row">
+        <span class="lab-pref-row-label" id="lab-pref-bh-extended-lbl">BH extendida</span>
+        <label class="rpc-switch">
+          <input type="checkbox" id="lab-pref-bh-extended" class="rpc-switch-input" role="switch" aria-labelledby="lab-pref-bh-extended-lbl" data-onchange="onLabDisplayPrefsChanged" />
+          <span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span>
+        </label>
+      </div>
+      <div class="lab-pref-row">
+        <span class="lab-pref-row-label" id="lab-pref-gaso-extended-lbl">Gasometría extendida</span>
+        <label class="rpc-switch">
+          <input type="checkbox" id="lab-pref-gaso-extended" class="rpc-switch-input" role="switch" aria-labelledby="lab-pref-gaso-extended-lbl" data-onchange="onLabDisplayPrefsChanged" />
+          <span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span>
+        </label>
+      </div>
+      <div class="lab-pref-row lab-pref-row--stack">
+        <div class="lab-pref-row-copy">
+          <span class="lab-pref-row-label" id="lab-pref-quick-output-lbl">Salida rápida</span>
+          <span class="lab-pref-row-hint">Formatea aunque el expediente no esté en tu lista. No guarda historial.</span>
+        </div>
+        <label class="rpc-switch">
+          <input type="checkbox" id="lab-pref-quick-output" class="rpc-switch-input" role="switch" aria-labelledby="lab-pref-quick-output-lbl" data-onchange="onLabDisplayPrefsChanged" />
+          <span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span>
+        </label>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+
+<div id="lab-paste-modal-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal lab-paste-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="lab-paste-modal-title" data-stop-propagation>
+    <header class="lab-paste-modal-head wb-modal-head">
+      <h3 id="lab-paste-modal-title" class="wb-modal-title">Pegar SOME / Procesar</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeLabPasteModal" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="lab-paste-modal-body wb-modal-body">
+      <div class="field-group">
+        <label for="lab-input">Pega reportes SOME (uno o varios días; separador entre pacientes distintos)</label>
+        <textarea id="lab-input" rows="10" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" placeholder="Copia reportes SOME completos desde «Expediente:»…&#10;Varios días del mismo paciente van seguidos.&#10;Entre pacientes distintos usa el separador."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button id="btn-procesar" class="wb-btn wb-btn-primary wb-btn-lg ui-pressable" data-onclick="procesarReporte" style="min-width:140px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Procesar
+        </button>
+        <button type="button" id="btn-lab-manual-entry" class="wb-btn wb-btn-secondary" data-onclick="openLabManualEntryModal" title="Captura manual de un estudio (lab externo)">Labs externos</button>
+        <button type="button" id="btn-lab-patient-separator" class="wb-btn wb-btn-secondary" data-onclick="insertLabPatientSeparator">Separador de paciente</button>
+        <button type="button" class="wb-btn wb-btn-secondary" data-onclick="limpiarReporte">Limpiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="lab-some-tables-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal lab-some-tables-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="lab-some-tables-modal-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="lab-some-tables-modal-title" class="wb-modal-title">Tablas del reporte</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+      <p class="lab-some-tables-modal-sub">Columnas del SOME · exporta por sección</p>
+      <div id="lab-some-tables-modal-body" class="lab-some-tables-modal-body"></div>
+    </div>
+  </div>
+</div>
+
+<div id="ea-charts-backdrop" class="ea-charts-backdrop" aria-hidden="true">
+  <div class="ea-charts-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="ea-charts-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="ea-charts-title" class="wb-modal-title">Gráficas de monitoreo</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeEstadoActualChartsModal" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div id="ea-charts-modal-mount" class="ea-charts-modal-body wb-modal-body">
+      <nav id="ea-charts-tab-nav" class="ea-charts-tabs" role="tablist" aria-label="Gráficas de monitoreo"></nav>
+      <nav id="ea-charts-vitals-nav" class="ea-vitals-family-nav" role="tablist" aria-label="Familia de signos vitales" hidden></nav>
+      <h4 id="ea-charts-chart-title" class="ea-chart-subtitle"></h4>
+      <div class="ea-charts-canvas-cell">
+        <canvas id="ea-charts-canvas"></canvas>
+      </div>
+      <div id="ea-charts-empty" class="ea-charts-empty empty-state empty-state--compact" role="status" hidden>
+        <span class="empty-state-title">Sin datos para graficar</span>
+        <span class="empty-state-lead">Registra al menos 2 mediciones para ver gráficas.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="ea-vital-history-backdrop" class="ea-vital-history-backdrop" aria-hidden="true">
+  <div class="ea-vital-history-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="ea-vital-history-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="ea-vital-history-title" class="wb-modal-title">Historial</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeEaVitalHistoryModal" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div id="ea-vital-history-body" class="ea-vital-history-modal-body wb-modal-body"></div>
+  </div>
+</div>
+
+<div id="ea-registro-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal ea-registro-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="ea-registro-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="ea-registro-title" class="wb-modal-title">Registrar medición</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeEstadoActualRegistroModal" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div id="ea-registro-modal-body" class="ea-registro-modal-body"></div>
+    <div id="ea-paste-backdrop" class="ea-paste-nested-backdrop" aria-hidden="true">
+      <div class="modal ea-paste-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="ea-paste-title" data-stop-propagation>
+        <header class="wb-modal-head">
+          <h3 id="ea-paste-title" class="wb-modal-title">Pegar monitoreo</h3>
+          <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeEstadoActualPasteModal" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </header>
+        <div class="wb-modal-body">
+        <p class="ea-paste-hint">Pega T°, FC, FR, TA, DXT, <strong>SAT/SATURACION</strong>, I, E, EVAC y opcional B (se ignora). Balance = ingresos − salidas en cc. DXT: <code>198@08:30</code>.</p>
+        <textarea id="ea-paste-input" class="ea-paste-input" rows="9" spellcheck="false" aria-label="Texto de monitoreo"></textarea>
+        <p id="ea-paste-preview" class="ea-paste-preview" aria-live="polite"></p>
+        </div>
+        <div class="modal-actions ea-paste-actions wb-modal-foot">
+          <button type="button" class="wb-btn wb-btn-ghost" data-onclick="closeEstadoActualPasteModal">Cancelar</button>
+          <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-onclick="confirmEstadoActualPaste">Aplicar al formulario</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="drive-import-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal drive-import-modal wb-modal" data-drive-step="paste" role="dialog" aria-modal="true" aria-labelledby="drive-import-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="drive-import-title" class="wb-modal-title">Importar desde Drive</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeDriveImportModal" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+    <p id="drive-import-hint" class="drive-import-hint">Pega el documento copiado desde Google Docs. Revisarás cada sección antes de importar.</p>
+
+    <div id="drive-import-step-paste" class="drive-import-pane drive-import-pane--paste">
+      <fieldset id="drive-import-mode-fieldset" class="drive-import-modes">
+        <legend class="visually-hidden">Modo de aplicación</legend>
+        <label class="drive-import-radio"><input type="radio" name="drive-import-mode" value="fill" checked /> Completar vacíos</label>
+        <label class="drive-import-radio"><input type="radio" name="drive-import-mode" value="replace" /> Reemplazar HC</label>
+        <label class="drive-import-radio"><input type="radio" name="drive-import-mode" value="eventos" /> Solo eventualidades</label>
+      </fieldset>
+      <p id="drive-import-warning" class="drive-import-warning" hidden></p>
+      <label for="drive-import-input" class="drive-import-dropzone">
+        <span class="drive-import-dropzone-label">Documento de Drive</span>
+        <textarea
+          id="drive-import-input"
+          class="drive-import-input"
+          rows="3"
+          spellcheck="false"
+          placeholder="Ctrl+V o ⌘V para pegar aquí…"
+        ></textarea>
+        <span class="drive-import-dropzone-meta">Análisis local · no se envía a ningún servidor</span>
+      </label>
+      <p id="drive-import-parse-hint" class="drive-import-parse-hint" hidden aria-live="polite"></p>
+    </div>
+
+    <div id="drive-import-step-review" class="drive-import-pane drive-import-pane--review" hidden>
+      <div class="drive-import-doc-bar">
+        <span id="drive-import-doc-summary" class="drive-import-doc-summary"></span>
+        <button type="button" class="drive-import-doc-edit" id="drive-import-back-paste">Cambiar texto</button>
+      </div>
+      <div class="drive-import-review-top">
+        <p id="drive-import-review-progress" class="drive-import-review-progress" aria-live="polite"></p>
+        <div class="drive-import-review-dots" id="drive-import-review-dots" role="tablist" aria-label="Secciones a revisar"></div>
+      </div>
+      <article class="drive-import-review-card">
+        <h4 id="drive-import-review-title" class="drive-import-review-title"></h4>
+        <p id="drive-import-review-hint" class="drive-import-review-hint"></p>
+        <label id="drive-import-review-include-wrap" class="drive-import-review-include">
+          <input type="checkbox" id="drive-import-review-include" checked />
+          <span>Incluir al importar</span>
+        </label>
+        <div id="drive-import-review-structured" class="drive-import-review-structured" hidden></div>
+        <textarea
+          id="drive-import-review-editor"
+          class="drive-import-review-editor"
+          rows="10"
+          spellcheck="true"
+          aria-labelledby="drive-import-review-title"
+        ></textarea>
+        <div id="drive-import-review-list" class="drive-import-review-list" hidden></div>
+      </article>
+    </div>
+    </div>
+
+    <div class="modal-actions drive-import-actions wb-modal-foot">
+      <div id="drive-import-actions-paste" class="drive-import-actions-group">
+        <button type="button" class="wb-btn wb-btn-ghost" id="drive-import-cancel" data-onclick="closeDriveImportModal">Cancelar</button>
+        <button type="button" class="wb-btn wb-btn-secondary" id="drive-import-apply-fast">Importar sin revisar</button>
+        <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" id="drive-import-confirm" disabled>Revisar secciones…</button>
+      </div>
+      <div id="drive-import-actions-review" class="drive-import-actions-group" hidden>
+        <button type="button" class="wb-btn wb-btn-ghost" id="drive-import-cancel-review" data-onclick="closeDriveImportModal">Cancelar</button>
+        <button type="button" class="wb-btn wb-btn-ghost" id="drive-import-review-prev">Anterior</button>
+        <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" id="drive-import-review-next">Importar lo aprobado</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="lab-manual-entry-modal" class="modal-backdrop" aria-hidden="true" hidden>
+  <div class="modal lab-manual-entry-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="lab-manual-entry-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="lab-manual-entry-title" class="wb-modal-title">Labs externos</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeLabManualEntryModal" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="lab-manual-entry-fields wb-modal-body">
+      <p id="lab-manual-patient-meta" class="lab-manual-patient-meta"></p>
+      <div class="lab-manual-meta-row">
+        <div class="field-group">
+          <label for="lab-manual-type">Tipo de estudio</label>
+          <select id="lab-manual-type" class="profile-input"></select>
+        </div>
+        <div class="field-group">
+          <label for="lab-manual-fecha">Fecha</label>
+          <input id="lab-manual-fecha" type="date" class="rpc-date-input" />
+        </div>
+        <div class="field-group">
+          <label for="lab-manual-hora">Hora <span class="lab-manual-optional">(opcional)</span></label>
+          <input id="lab-manual-hora" type="time" class="profile-input" />
+        </div>
+      </div>
+      <div id="lab-manual-fields" class="lab-manual-fields" role="group" aria-label="Valores del estudio"></div>
+    </div>
+    <div class="modal-actions lab-manual-entry-actions wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-ghost" data-onclick="closeLabManualEntryModal">Cancelar</button>
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" id="lab-manual-entry-confirm" data-onclick="confirmLabManualEntry">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="lab-repo-batch-modal" class="modal-backdrop" aria-hidden="true" hidden>
+  <div class="modal lab-repo-batch-modal material-glass wb-modal" role="dialog" aria-modal="true" aria-labelledby="lab-repo-batch-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="lab-repo-batch-title" class="wb-modal-title">Actualizar labs</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeLabRepoBatchModal" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="lab-repo-batch-fields wb-modal-body">
+      <p id="lab-repo-batch-hint" class="lab-repo-batch-hint">Mi equipo · rango compartido · la cola queda en la barra lateral</p>
+      <section class="lab-repo-batch-section" aria-labelledby="lab-repo-batch-range-label">
+        <div class="lab-repo-batch-section-head">
+          <h4 id="lab-repo-batch-range-label" class="lab-repo-batch-section-label">Rango</h4>
+        </div>
+        <div class="lab-repo-batch-dates">
+          <div class="field-group">
+            <label for="lab-repo-batch-desde">Desde</label>
+            <input id="lab-repo-batch-desde" type="date" class="rpc-date-input" />
+          </div>
+          <div class="field-group">
+            <label for="lab-repo-batch-hasta">Hasta</label>
+            <input id="lab-repo-batch-hasta" type="date" class="rpc-date-input" />
+          </div>
+        </div>
+      </section>
+      <div id="lab-repo-batch-team-block" class="lab-repo-batch-team-block">
+        <section class="lab-repo-batch-section lab-repo-batch-section--patients" aria-labelledby="lab-repo-batch-patients-label">
+          <div class="lab-repo-batch-section-head">
+            <h4 id="lab-repo-batch-patients-label" class="lab-repo-batch-section-label">Pacientes</h4>
+            <span id="lab-repo-batch-count" class="lab-repo-batch-count"></span>
+          </div>
+          <div class="lab-repo-batch-toolbar" role="group" aria-label="Selección rápida">
+            <div class="lab-repo-batch-seg">
+              <button type="button" class="lab-repo-batch-seg-btn" id="lab-repo-batch-select-all" data-onclick="labRepoBatchSelectAll">Todos</button>
+              <button type="button" class="lab-repo-batch-seg-btn" id="lab-repo-batch-select-active" data-onclick="labRepoBatchSelectActive">Solo activo</button>
+              <button type="button" class="lab-repo-batch-seg-btn" id="lab-repo-batch-select-none" data-onclick="labRepoBatchSelectNone">Ninguno</button>
+            </div>
+          </div>
+          <div id="lab-repo-batch-list" class="lab-repo-batch-list" role="group" aria-label="Pacientes de mi equipo"></div>
+        </section>
+      </div>
+      <p id="lab-repo-batch-progress" class="lab-repo-batch-progress" hidden></p>
+    </div>
+    <div class="modal-actions lab-repo-batch-actions wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-ghost" id="lab-repo-batch-cancel" data-onclick="closeLabRepoBatchModal">Cancelar</button>
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" id="lab-repo-batch-confirm" data-onclick="confirmLabRepoBatchImport">Actualizar</button>
+    </div>
+  </div>
+</div>
+
+<div id="lab-bulk-preview-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal lab-bulk-preview-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="lab-bulk-preview-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="lab-bulk-preview-title" class="wb-modal-title">Confirmar laboratorios</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeLabBulkPreviewModal" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+      <p id="lab-bulk-preview-summary" class="lab-bulk-preview-summary"></p>
+      <div id="lab-bulk-preview-body" class="lab-bulk-preview-scroll"></div>
+    </div>
+    <div class="modal-actions lab-bulk-preview-actions wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-ghost" data-onclick="closeLabBulkPreviewModal">Cancelar</button>
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" id="lab-bulk-preview-confirm" data-onclick="confirmLabBulkPreview">Procesar todo</button>
+    </div>
+  </div>
+</div>
+
+<div id="lab-bulk-tour-hint-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal lab-bulk-tour-hint-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="lab-bulk-tour-hint-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="lab-bulk-tour-hint-title" class="wb-modal-title">Varios días y varios pacientes</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeLabBulkTourHintModal" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+    <p class="lab-bulk-tour-hint-lead">En el cuadro ya están cargados <strong>DEMO PÉREZ</strong> (dos días) y <strong>DEMO GARCÍA</strong> tras el separador. R+ los distingue por paciente y por fecha al procesar.</p>
+    <p class="lab-bulk-tour-hint-lead">Referencia del separador y del segundo paciente (ya insertado en el cuadro):</p>
+    <pre id="lab-bulk-tour-hint-sample" class="lab-bulk-tour-hint-sample" aria-label="Ejemplo de segundo paciente"></pre>
+    </div>
+    <div class="modal-actions lab-bulk-tour-hint-actions wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-secondary" data-onclick="insertLabTourSecondPatientExample">Insertar ejemplo en el cuadro</button>
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-onclick="closeLabBulkTourHintModal">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<div id="med-receta-paste-modal" class="modal-backdrop med-pharm-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="med-receta-paste-title" hidden>
+  <div class="med-pharm-modal med-pharm-paste-dialog wb-modal" role="document" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h2 id="med-receta-paste-title" class="wb-modal-title">Importar desde SOME</h2>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeMedRecetaPasteModal" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="med-pharm-paste-body wb-modal-body">
+      <p class="med-pharm-paste-hint">Pega el bloque de <strong>medicamentos</strong> y <strong>dietas</strong> copiado del hospital (columnas con <strong>tabulador</strong>). Cuidados y estudios se omiten.</p>
+      <label class="med-pharm-paste-field" for="med-input">
+        <span class="med-pharm-paste-field-label">Texto del hospital</span>
+        <textarea id="med-input" class="med-pharm-paste-input" rows="12" spellcheck="false" autocomplete="off" autocorrect="off" placeholder="MEDICAMENTOS, MEDICAMENTOS P2, DIETAS…" aria-label="Listado SOME del hospital"></textarea>
+      </label>
+    </div>
+    <div class="med-pharm-paste-actions wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-ghost" data-onclick="limpiarRecetaInput">Limpiar</button>
+      <button type="button" class="wb-btn wb-btn-secondary" data-onclick="closeMedRecetaPasteModal">Cancelar</button>
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-onclick="procesarRecetaMed">Procesar receta</button>
+    </div>
+  </div>
+</div>
+
+<div id="med-pharm-paste-modal" class="modal-backdrop med-pharm-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="med-pharm-paste-title" hidden>
+  <div class="med-pharm-modal med-pharm-paste-dialog wb-modal" role="document" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h2 id="med-pharm-paste-title" class="wb-modal-title">Pegar mes SOME</h2>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeMedPharmModals" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="med-pharm-paste-body wb-modal-body">
+      <p class="med-pharm-paste-hint">Pega la matriz mensual del hospital: columnas separadas por <strong>tabulador</strong>, cabecera con días <code>01</code>–<code>31</code>.</p>
+      <label class="med-pharm-paste-field" for="med-pharm-paste">
+        <span class="med-pharm-paste-field-label">Matriz SOME</span>
+        <textarea id="med-pharm-paste" class="med-pharm-paste-input" rows="12" spellcheck="false" placeholder="Pega aquí el bloque copiado del sistema SOME…" aria-label="Matriz mensual SOME"></textarea>
+      </label>
+    </div>
+    <div class="med-pharm-paste-actions wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-ghost" data-onclick="closeMedPharmModals">Cancelar</button>
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" id="med-pharm-import-btn">Importar mes</button>
+    </div>
+  </div>
+</div>
+
+<div id="med-pharm-modal-one" class="modal-backdrop med-pharm-modal-backdrop med-pharm-modal--one" role="dialog" aria-modal="true" aria-labelledby="med-pharm-modal-one-title" hidden>
+  <div class="med-pharm-modal med-pharm-dialog-one wb-modal" data-stop-propagation>
+    <header class="med-pharm-full-header wb-modal-head">
+      <div class="med-pharm-full-header-text wb-modal-title">
+        <h2 id="med-pharm-modal-one-title"></h2>
+        <p id="med-pharm-modal-one-sub" class="med-pharm-full-header-sub"></p>
+      </div>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeMedPharmModals" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="modal-body-scroll wb-modal-body" id="med-pharm-modal-one-body"></div>
+    <div class="med-pharm-modal-legend med-pharm-legend">
+      <span><i class="med-pharm-swatch med-pharm-swatch-ind"></i> Indicado (administrado por defecto)</span>
+      <span><i class="med-pharm-swatch med-pharm-swatch-na"></i> No administrado (clic en celda)</span>
+      <span><i class="med-pharm-swatch med-pharm-swatch-today"></i> Hoy</span>
+    </div>
+  </div>
+</div>
+
+<div id="med-pharm-modal-full" class="modal-backdrop med-pharm-modal-backdrop full" role="dialog" aria-modal="true" aria-labelledby="med-pharm-modal-full-title" hidden>
+  <div class="med-pharm-modal full wb-modal" data-stop-propagation>
+    <header class="med-pharm-full-header wb-modal-head">
+      <div class="med-pharm-full-header-text wb-modal-title">
+        <h2 id="med-pharm-modal-full-title"></h2>
+        <p id="med-pharm-modal-full-sub" class="med-pharm-full-header-sub" hidden></p>
+      </div>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeMedPharmModals" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="modal-body-scroll wb-modal-body" id="med-pharm-modal-full-body"></div>
+    <div class="med-pharm-modal-legend med-pharm-legend">
+      <span><i class="med-pharm-swatch med-pharm-swatch-ind"></i> Indicado (administrado por defecto)</span>
+      <span><i class="med-pharm-swatch med-pharm-swatch-na"></i> No administrado (clic en celda)</span>
+      <span><i class="med-pharm-swatch med-pharm-swatch-today"></i> Hoy</span>
+    </div>
+  </div>
+</div>
+
+<div id="clinico-unlock-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal clinico-unlock-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="clinico-unlock-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="clinico-unlock-title" class="wb-modal-title">Guía clínica de orientación</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeClinicoUnlockModal" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+    <p class="clinico-unlock-lead">Las sugerencias de Manejo y Guía clínica en R+ son material de <strong>orientación</strong> y apoyo a la decisión. No sustituyen el juicio clínico: el <strong>criterio clínico del médico tratante siempre va primero</strong>, conforme al contexto del paciente, comorbilidades y protocolos institucionales vigentes.</p>
+    <label for="clinico-unlock-input" class="clinico-unlock-label">Para activar la pestaña Clínico, escribe la frase siguiente:</label>
+    <input type="text" id="clinico-unlock-input" class="clinico-unlock-input" autocomplete="off" spellcheck="false" aria-describedby="clinico-unlock-phrase-hint clinico-unlock-error" data-onkeydown="confirmClinicoUnlock" data-onkeydown-keys="Enter">
+    <p id="clinico-unlock-phrase-hint" class="clinico-unlock-phrase-hint">entiendo, usare mi criterio clincio</p>
+    <p id="clinico-unlock-error" class="clinico-unlock-error" hidden aria-live="polite"></p>
+    </div>
+    <div class="modal-actions clinico-unlock-actions wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-ghost" data-onclick="closeClinicoUnlockModal">Cancelar</button>
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-onclick="confirmClinicoUnlock">Activar guía clínica</button>
+    </div>
+  </div>
+</div>

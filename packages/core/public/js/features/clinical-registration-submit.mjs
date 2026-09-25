@@ -1,0 +1,229 @@
+/**
+ * Clinical registration form submit — extracted from clinical-registration.mjs.
+ */
+import { normalizeUsername, isValidUsernameFormat } from '../clinical-username.mjs';
+import {
+  persistClinicalUserBinding,
+  resolveClinicalClientId,
+} from '../clinical-settings.mjs';
+import { resumeClinicalIdentityByUsername } from '../clinical-access-runtime.mjs';
+
+const RANKS = ['R1', 'R2', 'R3', 'R4', 'Admin'];
+
+function dbApi() {
+  if (typeof window === 'undefined') return null;
+  return window.rplusDb || window.electronAPI || null;
+}
+
+async function resumeBoundUsername_(username, settings, clientId) {
+  var resumeRes = await resumeClinicalIdentityByUsername(username, settings, clientId);
+  if (!resumeRes?.ok) {
+    throw new Error(resumeRes?.error || 'Ese @usuario ya está en uso.');
+  }
+  return String(resumeRes.userId || '');
+}
+
+async function claimUsernameIfMismatch_(api, clientId, userId, username, safeRank, settings) {
+  void safeRank;
+  var claimRes = await api.dbClinicalUsernameClaim({ userId, username });
+  if (claimRes?.ok) return userId;
+  var errMsg = String(claimRes?.error || '');
+  if (!/ya está en uso/i.test(errMsg)) {
+    throw new Error(errMsg || 'No se pudo registrar el @usuario.');
+  }
+  // Resume the existing @usuario — never bootstrap a second peer_* identity.
+  return resumeBoundUsername_(username, settings, clientId);
+}
+
+async function upsertClinicalProfile_(api, userId, name, safeRank, sala) {
+  if (typeof api.dbClinicalProfileUpsert !== 'function') return;
+  var profileRes = await api.dbClinicalProfileUpsert({
+    userId,
+    clinicalName: name,
+    rank: safeRank,
+    sala: sala || null,
+  });
+  if (!profileRes?.ok) {
+    throw new Error(profileRes?.error || 'No se guardó el perfil clínico.');
+  }
+}
+
+async function bootstrapClinicalUser_({ clientId, username, safeRank, settings, api, name, sala }) {
+  var boot = await api.dbClinicalAccessBootstrap({
+    clientId,
+    rank: safeRank,
+    preferredUserId: String(settings.clinicalUserId || ''),
+    preferredUsername: username,
+  });
+  var userId = String(boot?.user?.userId || '');
+  if (!userId || boot?.ok === false) {
+    throw new Error(boot?.error || 'No se pudo iniciar la sesión clínica.');
+  }
+  var bootHandle = normalizeUsername(boot?.user?.username || '');
+  if (bootHandle !== username && typeof api.dbClinicalUsernameClaim === 'function') {
+    userId = await claimUsernameIfMismatch_(api, clientId, userId, username, safeRank, settings);
+  }
+  await upsertClinicalProfile_(api, userId, name, safeRank, sala);
+  return userId;
+}
+
+function readRegistrationFormFields_() {
+  return {
+    usernameRaw: String(document.getElementById('clinical-reg-username')?.value || '').trim(),
+    name: String(document.getElementById('clinical-reg-name')?.value || '').trim(),
+    rank: String(document.getElementById('clinical-reg-rank')?.value || 'R1'),
+    sala: String(document.getElementById('clinical-reg-sala')?.value || '').trim(),
+    shiftPin: String(document.getElementById('clinical-reg-shift-pin')?.value || '').trim(),
+  };
+}
+
+function validateRegistrationFields_(fields, errEl) {
+  var username = normalizeUsername(fields.usernameRaw);
+  if (!isValidUsernameFormat(username)) {
+    if (errEl) {
+      errEl.textContent =
+        'Usuario inválido. Usa 3–32 letras minúsculas (a-z, 0-9, _), p. ej. drmendoza — no tu nombre en guardia.';
+      errEl.hidden = false;
+    }
+    return null;
+  }
+  if (!fields.name) {
+    if (errEl) {
+      errEl.textContent = 'Escribe tu nombre en guardia.';
+      errEl.hidden = false;
+    }
+    return null;
+  }
+  return { username, safeRank: RANKS.includes(fields.rank) ? fields.rank : 'R1' };
+}
+
+async function connectShiftPinIfNeeded_(_shiftPin, _sala, _runtime) {
+  /* LAN shift-pin connect retired — Nube is authority. */
+}
+
+function readRpcSettingsFromStorage_() {
+  try {
+    return JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function showRegistrationError_(errEl, message) {
+  if (!errEl) return;
+  errEl.textContent = message;
+  errEl.hidden = false;
+}
+
+async function persistClinicalUserFromApi_(api, clientId, username, safeRank, settings, name, sala) {
+  if (!api || typeof api.dbClinicalAccessBootstrap !== 'function') {
+    return String(settings.clinicalUserId || '');
+  }
+  return bootstrapClinicalUser_({ clientId, username, safeRank, settings, api, name, sala });
+}
+
+function resolvePendingRegistration_(deps) {
+  var pendingResolve = deps.getPendingResolve ? deps.getPendingResolve() : null;
+  if (pendingResolve) {
+    if (deps.setPendingResolve) deps.setPendingResolve(null);
+    pendingResolve(true);
+  }
+  if (deps.onResolved) deps.onResolved(true);
+}
+
+function maybePersistMobilePairing_() {
+  /* legacy mobile LAN pairing retired */
+}
+
+/**
+ * @param {{
+ *   runtime: { showToast: (msg: string, kind?: string) => void },
+ *   closeModal: () => void,
+ *   onResolved?: (ok: boolean) => void,
+ *   getPendingResolve?: () => ((ok: boolean) => void) | null,
+ *   setPendingResolve?: (fn: null) => void,
+ * }} deps
+ */
+export async function handleClinicalRegistrationSubmit(deps) {
+  var errEl = document.getElementById('clinical-reg-error');
+  var fields = readRegistrationFormFields_();
+  var validated = validateRegistrationFields_(fields, errEl);
+  if (!validated) return;
+
+  var username = validated.username;
+  var safeRank = validated.safeRank;
+  var name = fields.name;
+  var sala = fields.sala;
+  var settings = readRpcSettingsFromStorage_();
+  var clientId = resolveClinicalClientId(settings);
+  if (!clientId) {
+    showRegistrationError_(errEl, 'No se encontró el identificador del dispositivo. Reinicia R+.');
+    return;
+  }
+  if (!settings.clientId) {
+    persistClinicalUserBinding({ userId: String(settings.clinicalUserId || '') });
+    settings = readRpcSettingsFromStorage_();
+  }
+
+  var {
+    assertRoomForUsernameRegister,
+    flushClinicalProfileToCloud,
+    PROFILE_PUSH_FAILED_MSG,
+    isBenignPushSkipCode,
+    notifyProfilePushResult,
+  } = await import('../clinical-profile-cloud-stubs.mjs');
+  var lanRoom = await assertRoomForUsernameRegister({ sala });
+
+  try {
+    var savedUserId = await persistClinicalUserFromApi_(
+      dbApi(),
+      clientId,
+      username,
+      safeRank,
+      settings,
+      name,
+      sala
+    );
+    persistClinicalUserBinding({
+      userId: savedUserId,
+      username,
+      displayName: name,
+      rank: safeRank,
+      sala: sala || '',
+      registered: true,
+      lanProfileGateComplete: true,
+    });
+  } catch (err) {
+    showRegistrationError_(errEl, err?.message || 'Error al guardar el registro.');
+    return;
+  }
+
+  if (errEl) errEl.hidden = true;
+
+  const { refreshClinicalUserProfile } = await import('../clinical-access-runtime.mjs');
+  await refreshClinicalUserProfile();
+
+  deps.closeModal();
+  maybePersistMobilePairing_();
+  resolvePendingRegistration_(deps);
+
+  try {
+    const { refreshMainClinicalOnboardingIfNeeded } = await import('./clinical-onboarding-main.mjs');
+    await refreshMainClinicalOnboardingIfNeeded();
+  } catch {
+    /* onboarding shell optional */
+  }
+
+  void (async () => {
+    await connectShiftPinIfNeeded_(fields.shiftPin, sala, deps.runtime);
+    var lanPush = await flushClinicalProfileToCloud({ sala, roomId: lanRoom.roomId });
+    notifyProfilePushResult(lanPush, (msg, kind) => deps.runtime.showToast(msg, kind));
+    if (
+      !lanPush.ok &&
+      !isBenignPushSkipCode(lanPush.code) &&
+      !(lanPush.channels && lanPush.channels.outbox)
+    ) {
+      deps.runtime.showToast(PROFILE_PUSH_FAILED_MSG, 'warning');
+    }
+  })();
+}

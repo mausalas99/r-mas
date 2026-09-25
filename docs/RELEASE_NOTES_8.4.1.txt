@@ -1,0 +1,25 @@
+R+ 8.4.1 (estable — release 8.4.1)
+======================================
+
+Fecha: 2026-09-25
+
+## Resumen
+
+Corrige dos errores en el historial de laboratorios y uno en el panel de electrolitos. Activa por defecto la telemetría anónima de actualización.
+
+## Nuevo / mejorado
+
+- **Arreglado (labs):** al fusionar automáticamente dos tomas de labs del mismo día, si compartían un analito con valores distintos (p. ej. un potasio de la 1am y otro de las 2am), la fusión se quedaba solo con una toma. Ahora detecta el conflicto y deja las dos tomas por separado. La fusión manual (el usuario elige y revisa los sets) sigue permitida.
+- **Arreglado (labs):** un set fusionado con más de un reporte podía perder su hora guardada, porque el código tomaba la hora del primer reporte del texto combinado. Ya no la sobreescribe en ese caso.
+- **Arreglado (panel de electrolitos):** si faltaba el sodio, el panel completo (ESC) desaparecía aunque hubiera otros electrolitos (p. ej. un potasio de control). Ahora solo desaparece si faltan todos.
+- **Nuevo (actualizaciones):** la telemetría anónima de actualización ahora viene activada. Al terminar una actualización, R+ envía solo tres datos: versión, si funcionó o falló, y el sistema (Mac o Windows). Nunca datos clínicos, del usuario ni del equipo. Se desactiva en Ajustes → Aplicación y actualizaciones.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.4.1-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.4.1-Mac-Intel.dmg`
+- Windows: `R+-8.4.1-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

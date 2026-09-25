@@ -1,0 +1,4 @@
+ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'member';
+ALTER TABLE users ADD COLUMN disabled INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE rooms ADD COLUMN turn_key TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_rooms_sala_turn ON rooms(sala, turn_key);

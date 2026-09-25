@@ -1,0 +1,9 @@
+{
+  "name": "@rplus/im",
+  "version": "8.4.0",
+  "private": true,
+  "main": "main.js",
+  "dependencies": {
+    "@rplus/core": "*"
+  }
+}

@@ -1,0 +1,23 @@
+R+ 7.9.1 (recuperación Nube + borrado masivo)
+=================================================
+
+Fecha: 2026-08-03
+
+## Resumen
+
+**7.9.1** añade códigos de recuperación y un panel Conexión por pasos para Nube (Sala / Torre HU), y borrado masivo de pacientes en la lista con purge en LAN/Nube para que no regresen al sincronizar.
+
+## Nuevo / mejorado
+
+- **Código de recuperación Nube** — Al registrarte recibes un código de un solo uso (guárdalo). Con él puedes recuperar la cuenta si olvidaste la contraseña; también puedes regenerarlo. Admin de programa puede restablecer contraseña.
+- **Panel ⇄ por pasos** — Conectar → Sala → Equipo → Más. Sin sesión Nube solo ves Conectar; el chrome de Conexión se reconstruye al login/logout.
+- **Borrado masivo** — Multi-select en la lista de pacientes y borrado unificado (local + tombstone + purge en host LAN / Nube / WS) para que los borrados no reaparezcan.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.9.1
+
+- Mac: `R+-7.9.1-arm64.dmg`, `R+-7.9.1-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.9.1-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

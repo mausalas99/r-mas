@@ -1,0 +1,104 @@
+import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
+import { isLegacyMachineUsername } from '../clinical-username.mjs';
+import { persistClinicalUserBinding, readRpcSettings } from '../clinical-settings.mjs';
+import { clinicalSessionContext } from '../clinical-session-context.mjs';
+import { electronApi } from './electron-api.mjs';
+import { ensureElevatedWardCensusOnDevice, refreshClinicalPatientListForScope } from './census-nube-pull.mjs';
+import { buildGuardiasMap } from './guardia-grid.mjs';
+import { fetchClinicalScopeContextFromDb, fetchClinicalTeamsFromDb } from './scope-db.mjs';
+import { refreshClinicalUserProfile } from './session-profile.mjs';
+import { migrateLocalPatientsClinicalSala } from './session-user.mjs';
+
+/** @param {string} userId */
+async function mergeBootstrapProfileFromDb(userId) {
+  const api = electronApi();
+  if (!api || typeof api.dbClinicalProfileGet !== 'function') return;
+  try {
+    const profileRes = await api.dbClinicalProfileGet({ userId });
+    const profile = profileRes?.profile;
+    if (!profile || !clinicalSessionContext.user) return;
+    const profileRank = String(profile.rank || '');
+    clinicalSessionContext.user.rank =
+      profileRank === 'Admin' ? 'R1' : profileRank || clinicalSessionContext.user.rank;
+    clinicalSessionContext.user.sala = profile.sala ?? null;
+    clinicalSessionContext.user.clinical_name = profile.clinical_name ?? null;
+    clinicalSessionContext.user.is_program_admin =
+      profile.is_program_admin === 1 || profileRank === 'Admin' ? 1 : 0;
+    if (profile.sala != null) {
+      persistClinicalUserBinding({ sala: String(profile.sala) });
+    }
+  } catch { /* profile IPC optional */ }
+}
+
+function applyBootstrapGuardiaState(res) {
+  clinicalSessionContext.decryptedPrivateKeyPem = res.user.privateKeyPem || null;
+  clinicalSessionContext.guardias = Array.isArray(res.guardias) ? res.guardias : [];
+  clinicalSessionContext.guardiasMap = buildGuardiasMap(clinicalSessionContext.guardias);
+  clinicalSessionContext.orphanGuardias = Array.isArray(res.orphans) ? res.orphans : [];
+}
+
+function persistBootstrapUserBinding(res) {
+  const settings = readRpcSettings();
+  const clientId = String(settings.clientId || '');
+  const patch = {
+    userId: res.user.userId,
+    username: res.user.username,
+  };
+  if (isLegacyMachineUsername(res.user.username, clientId)) {
+    patch.staleDeviceUserId = res.user.userId;
+  }
+  persistClinicalUserBinding(patch);
+}
+
+async function refreshBootstrapProfile(userId) {
+  // Same DB row read twice back-to-back (merge below normalizes a legacy
+  // 'Admin' rank value that refreshClinicalUserProfile does not, and is the
+  // fallback if that second read fails) — kept sequential, but the whole
+  // chain runs alongside the unrelated teams/scope chain instead of after it.
+  await mergeBootstrapProfileFromDb(userId);
+  await refreshClinicalUserProfile();
+}
+
+async function refreshBootstrapTeamsAndScope() {
+  // Scope read must follow teams: it overwrites clinicalSessionContext.teams
+  // with the scope-filtered list when present, and that overwrite has to be
+  // the one left standing.
+  await fetchClinicalTeamsFromDb();
+  await fetchClinicalScopeContextFromDb();
+}
+
+async function refreshBootstrapScopeAndCensus(userId) {
+  await Promise.all([refreshBootstrapProfile(userId), refreshBootstrapTeamsAndScope()]);
+  // Render now, from what's already on this device, using the Filtros default
+  // that teams/scope just resolved — otherwise nothing repaints the census
+  // until the Nube sync event fires later, so it sits on its pre-login
+  // "show everyone" render in the meantime.
+  void refreshClinicalPatientListForScope({ allowLanPull: false });
+  if (hasElevatedTeamPrivileges(clinicalSessionContext.user)) {
+    void ensureElevatedWardCensusOnDevice({
+      allowLanPull: true,
+      lanPullDelayMs: 8000,
+      teamFilterId: '',
+    });
+  }
+  if (typeof document !== 'undefined') {
+    void import('../clinical-profile-cloud-stubs.mjs')
+      .then((mod) => mod.flushClinicalProfileToCloud())
+      .catch(() => {});
+  }
+  migrateLocalPatientsClinicalSala();
+}
+
+/** @param {object} res Bootstrap IPC payload with `user` and `guardias`. */
+export async function applyBootstrapResult(res) {
+  clinicalSessionContext.user = {
+    user_id: res.user.userId,
+    username: res.user.username,
+    rank: res.user.rank,
+    is_program_admin: res.user.isProgramAdmin ? 1 : 0,
+    public_key: res.user.publicKeyPem,
+  };
+  applyBootstrapGuardiaState(res);
+  persistBootstrapUserBinding(res);
+  await refreshBootstrapScopeAndCensus(res.user.userId);
+}

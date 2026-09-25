@@ -1,0 +1,22 @@
+R+ 7.8.1 (diagnósticos LAN en Datos)
+====================================
+
+Fecha: 2026-08-01
+
+## Resumen
+
+**7.8.1** corrige la pérdida de diagnósticos (y texto de censo/meds) en Datos del paciente al sincronizar por LAN: el merge ya no descartaba esos campos ni los pisaba con listas vacías.
+
+## Nuevo / mejorado
+
+- **Diagnósticos en Datos** — Al fusionar expedientes en LiveSync se conservan `diagnosticosList` / `diagnosticosText` y `censoMedsText` del peer con contenido (priorizando el más reciente).
+- **Sin borrado fantasma** — Una lista vacía `['']` (placeholder de UI) ya no sobrescribe diagnósticos reales al aplicar el host.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.8.1
+
+- Mac: `R+-7.8.1-arm64.dmg`, `R+-7.8.1-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.8.1-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

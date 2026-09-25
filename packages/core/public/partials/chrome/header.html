@@ -1,0 +1,184 @@
+<header>
+  <h1 id="app-brand" role="button" tabindex="0" title="Abrir Mi Perfil" aria-label="R+, abrir Mi Perfil" data-onclick="openProfileFromHeader" data-onclick-pass="event" data-onkeydown="openProfileFromHeader" data-onkeydown-pass="event" data-onkeydown-keys="Enter,Space">R+</h1>
+  <div class="header-center" aria-live="polite">
+    <span id="today-date" role="button" tabindex="0" aria-haspopup="dialog" aria-label="Abrir calendario" title="Calendario" data-onclick="openHeaderDatePopoverFromChrome" data-onclick-pass="event" data-onkeydown="openHeaderDatePopoverFromChrome" data-onkeydown-pass="event" data-onkeydown-keys="Enter,Space"></span>
+    <span id="estado-actual-meta" class="estado-actual-meta"></span>
+    <span id="header-context" class="header-context">
+      <span id="header-context-patient" class="header-context-patient"></span>
+      <span id="header-context-path" class="header-context-path"></span>
+    </span>
+  </div>
+  <div class="header-right">
+    <div class="header-work-cluster" aria-label="Contexto de trabajo">
+      <button type="button" id="btn-header-cmdk" class="header-cmdk-hint" data-onclick="openCommandPalette" title="Ir a… o acción (⌘K)" aria-label="Ir a sección, paciente o acción">
+        <svg class="header-cmdk-hint-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </button>
+      <button type="button" class="btn-header-icon ui-pressable" id="btn-header-shortcuts" data-onclick="openShortcutsModal" title="Atajos de teclado (⌘/)" aria-label="Ver atajos de teclado">
+        <svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/></svg>
+      </button>
+
+      <button type="button" id="btn-export-censo-header" class="btn-export-censo-header" style="display:none;" data-onclick="exportCensoPdfFromHelp" title="PDF de guardia con todos los pacientes activos">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
+        Censo
+      </button>
+      <div id="header-mode-seg" class="header-mode-seg" role="group" aria-label="Modo de trabajo" aria-expanded="false">
+        <button type="button" class="header-mode-seg-btn" data-mode="sala" data-onclick="setWorkModeFromHeader" data-onclick-args='["sala"]' aria-pressed="false" title="Modo Sala — Estado actual, Historia, Listado de problemas">Sala</button>
+        <button type="button" class="header-mode-seg-btn" data-mode="interconsulta" data-onclick="setWorkModeFromHeader" data-onclick-args='["interconsulta"]' aria-pressed="false" title="Modo Interconsulta — Nota de evolución, Indicaciones">Interconsulta</button>
+        <button type="button" class="header-mode-seg-btn" data-mode="guardia" data-onclick="setWorkModeFromHeader" data-onclick-args='["guardia"]' aria-pressed="false" title="Guardia — censo, entrega y turno activo">Guardia</button>
+        <div class="header-mode-seg-dots" aria-hidden="true">
+          <span class="header-mode-seg-dot" data-mode="sala"></span>
+          <span class="header-mode-seg-dot" data-mode="interconsulta"></span>
+          <span class="header-mode-seg-dot" data-mode="guardia"></span>
+        </div>
+      </div>
+    </div>
+    <span id="pending-jobs-pill" class="pending-jobs-pill" role="status" aria-live="polite" aria-atomic="true" title="Tareas en curso"></span>
+    <div class="header-session-cluster" aria-label="Sesión y ajustes">
+      <button type="button" class="btn-header-icon btn-livesync-header ui-pressable btn-livesync-header--idle" id="btn-header-team-sync" style="display:none;" data-onclick="toggleConnectionDropdown" data-onclick-pass="event" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.teamSyncAria" data-i18n-title="settings.teamSyncTitle" title="Conexión · Nube"><svg class="livesync-wifi-icon btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="livesync-wifi-bar livesync-wifi-bar--3" d="M2 8.82a15 15 0 0 1 20 0"/><path class="livesync-wifi-bar livesync-wifi-bar--2" d="M5 12.55a11 11 0 0 1 14 0"/><path class="livesync-wifi-bar livesync-wifi-bar--1" d="M8.5 16.14a6 6 0 0 1 7 0"/><circle class="livesync-wifi-dot" cx="12" cy="20" r="1.35" fill="currentColor" stroke="none"/></svg></button>
+      <span class="header-session-divider" aria-hidden="true"></span>
+      <div class="header-util-cluster">
+      <button type="button" class="btn-header-icon ui-pressable" id="profile-toggle-btn" data-onclick="openProfileModal" title="Mi Perfil" aria-label="Mi Perfil"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+      <span id="profile-toggle-label" class="visually-hidden">Mi Perfil</span>
+      <button type="button" class="btn-header-icon ui-pressable" id="btn-open-learn" hidden data-onclick="openLearnHub" title="Aprender R+" aria-label="Aprender R+"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg></button>
+      <button class="btn-header-icon ui-pressable" id="btn-open-settings" data-onclick="toggleSettingsDropdown" title="Ajustes" aria-label="Abrir ajustes" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.open" data-i18n-title="settings.openTitle"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <button type="button" id="theme-toggle" class="btn-header-icon ui-pressable" data-onclick="toggleTheme" title="Cambiar tema" aria-label="Cambiar tema claro u oscuro" data-i18n-aria-label="theme.toggle" data-i18n-title="theme.toggleTitle"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div id="rpc-offline-banner" class="rpc-offline-banner" role="alert" aria-live="assertive">
+  Sin conexión con el servidor local. No podrás generar documentos hasta reiniciar R+ o recuperar el servicio en segundo plano.
+</div>
+
+<div id="shortcuts-backdrop" class="modal-backdrop shortcuts-backdrop" aria-hidden="true">
+  <div class="shortcuts-sheet wb-modal" role="dialog" aria-modal="true" aria-labelledby="shortcuts-modal-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="shortcuts-modal-title" class="shortcuts-title wb-modal-title">Atajos de teclado</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeShortcutsModal" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+      <p class="shortcuts-lead" id="shortcuts-hint-bar">
+        <kbd class="shortcuts-key shortcuts-key--hint" id="shortcuts-modal-hint-mod">⌘</kbd><kbd class="shortcuts-key shortcuts-key--hint">/</kbd>
+        abre esta hoja · también el botón del encabezado
+      </p>
+      <div id="shortcuts-modal-body" class="shortcuts-body" aria-live="polite"></div>
+    </div>
+    <footer class="shortcuts-foot wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" data-onclick="openShortcutsHelpCenter">Centro de ayuda completo</button>
+    </footer>
+  </div>
+</div>
+
+<div id="help-quick-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal help-center-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="help-quick-title" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="help-quick-title" class="wb-modal-title">Centro de ayuda</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeQuickHelp" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+    <div class="help-search-wrap">
+      <input type="search" id="help-search-input" class="help-search-input"
+             placeholder="Buscar en la ayuda…" autocomplete="off"
+             aria-label="Buscar en la ayuda"
+             data-oninput="onHelpSearchInput" data-oninput-pass="value"
+             data-onkeydown="onHelpSearchKeydown" data-onkeydown-pass="event">
+    </div>
+    <div class="help-layout">
+      <div id="help-articles-list" class="help-articles-list" role="listbox"
+           aria-label="Artículos de ayuda" data-onkeydown="onHelpListKeydown" data-onkeydown-pass="event"></div>
+      <div id="help-article-content" class="help-article-content" role="region"
+           aria-live="polite" aria-label="Contenido del artículo"></div>
+    </div>
+    <div class="help-learn-hub" id="help-learn-hub">
+      <h4 class="help-learn-title">Aprender R+</h4>
+      <button type="button" class="help-tour-btn help-learn-continue" id="btn-learn-continue" style="display:none;" data-onclick="resumeGuidedTourFromProgress">Continuar tutorial</button>
+      <button type="button" class="help-tour-btn" data-onclick="resetAndStartOnboarding">Reiniciar tutorial · Sala</button>
+      <button type="button" class="help-tour-btn" data-onclick="startHelpTourInterconsulta">Tutorial · Interconsulta</button>
+      <p class="help-learn-sub">Módulos</p>
+      <button type="button" class="help-tour-btn" data-onclick="startTourModule" data-onclick-args='["ch-patient-lab"]'>Laboratorio y pacientes</button>
+      <button type="button" class="help-tour-btn" data-onclick="startTourModule" data-onclick-args='["ch-chart"]'>Expediente · Clínico</button>
+      <button type="button" class="help-tour-btn" data-onclick="startTourModule" data-onclick-args='["ch-results"]'>Resultados</button>
+      <button type="button" class="help-tour-btn" data-onclick="startTourModule" data-onclick-args='["ch-salida"]'>Medicamentos y salida</button>
+      <button type="button" class="help-tour-btn" data-onclick="startTourModule" data-onclick-args='["ch-agenda"]'>Agenda del turno</button>
+      <button type="button" class="help-tour-btn" data-onclick="startTourModule" data-onclick-args='["ch-team"]'>Equipo (LiveSync)</button>
+      <details class="help-learn-advanced">
+        <summary>Avanzado</summary>
+        <div class="help-learn-advanced-body">
+          <button type="button" class="help-tour-btn" id="btn-export-censo" style="display:none;" data-onclick="exportCensoPdfFromHelp">Exportar censo (PDF)</button>
+          <button type="button" class="help-tour-btn" id="btn-start-presentation" data-onclick="togglePresentationModeFromHelp">Modo presentación (DEMO PÉREZ)</button>
+          <button type="button" class="help-tour-btn" data-onclick="importBundledDemoPerez">Importar DEMO PÉREZ (JSON incluido)</button>
+        </div>
+      </details>
+    </div>
+    </div>
+  </div>
+</div>
+
+<div id="learn-hub-backdrop" class="learn-hub-backdrop" aria-hidden="true">
+  <div class="learn-hub-sheet wb-modal" role="dialog" aria-modal="true" aria-labelledby="learn-hub-title" tabindex="-1" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h2 id="learn-hub-title" class="learn-hub-title wb-modal-title">Aprender R+</h2>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close learn-hub-close" data-onclick="closeLearnHub" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div id="learn-hub-body" class="learn-hub-body wb-modal-body"></div>
+  </div>
+</div>
+
+<div id="release-notes-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal release-notes-modal wb-modal" role="dialog" aria-modal="true" aria-labelledby="release-notes-title" tabindex="-1" data-stop-propagation>
+    <header class="wb-modal-head">
+      <h3 id="release-notes-title" class="wb-modal-title">Novedades</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-onclick="closeReleaseNotes" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+    <p class="release-notes-intro" id="release-notes-intro">Esto es nuevo o mejorado en la versión recién instalada. Pulsa fuera o <strong>Esc</strong> para cerrar; esta ventana no volverá a aparecer en esta versión.</p>
+    <ul id="release-notes-list" class="release-notes-list"></ul>
+    </div>
+    <div class="release-notes-actions wb-modal-foot">
+      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg release-notes-dismiss-btn" data-onclick="closeReleaseNotes">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<div id="onboarding-intro-backdrop" aria-hidden="true">
+  <div class="onboarding-intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-modal-title">
+    <h2 id="intro-modal-title">Bienvenido a R+</h2>
+    <p class="intro-lead">Recorrido guiado (~15&nbsp;min) con <strong>DEMO PÉREZ</strong>: no guarda datos reales y puedes <strong>pausar</strong> cuando quieras.</p>
+    <div class="intro-skip-above-paths">
+      <button type="button" class="btn-intro-skip" id="intro-btn-skip" data-onclick="guidedTourIntroSkip">Omitir tutorial</button>
+    </div>
+    <div class="intro-options-grid">
+      <article class="intro-option-card">
+        <span class="intro-option-kicker">Hospitalización</span>
+        <h3 class="intro-option-h">Sala</h3>
+        <p class="intro-option-lead">Laboratorio y pacientes, luego el expediente clínico y la ronda de guardia. Al cierre: sincronizar con tu equipo (<strong>LiveSync</strong> y móvil en la misma Wi‑Fi).</p>
+        <button type="button" class="btn-intro-pick" data-onclick="guidedTourIntroChooseSala">Empezar · Sala</button>
+      </article>
+      <article class="intro-option-card intro-option-card-accent">
+        <span class="intro-option-kicker">Consulta externa</span>
+        <h3 class="intro-option-h">Interconsulta</h3>
+        <p class="intro-option-lead">Mismo laboratorio y expediente, más nota e indicaciones en Word y receta. Al final: sincronización con el equipo.</p>
+        <button type="button" class="btn-intro-pick btn-intro-pick-secondary" data-onclick="guidedTourIntroChooseInterconsulta">Empezar · Interconsulta</button>
+      </article>
+    </div>
+  </div>
+</div>
+
+<div id="tour-dock" aria-live="polite">
+  <div class="tour-dock-inner" data-onclick="onTourDockClick" data-onclick-pass="event">
+    <div class="tour-dock-head">
+      <span id="tour-step-badge"></span>
+      <div class="tour-dock-head-actions">
+        <button type="button" class="btn-tour-collapse" id="btn-tour-collapse" title="Minimizar / expandir" aria-label="Minimizar tutorial" data-onclick="toggleTourDockCollapsed">–</button>
+      </div>
+    </div>
+    <div id="tour-dock-body"></div>
+    <div class="tour-dock-foot">
+      <button type="button" class="btn-tour-prev" id="tour-btn-prev" data-onclick="guidedTourClickPrev" disabled>Anterior</button>
+      <button type="button" class="btn-tour-pause" id="tour-btn-pause" data-onclick="guidedTourPause">Pausar y salir</button>
+      <button type="button" class="btn-tour-skip" data-onclick="skipGuidedTour">Omitir tutorial</button>
+      <button type="button" class="btn-tour-next" id="tour-btn-next" data-onclick="guidedTourClickNext">Siguiente</button>
+    </div>
+  </div>
+</div>

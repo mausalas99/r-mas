@@ -1,0 +1,379 @@
+import { describe, it, beforeEach, afterEach } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  todoRowDetailBits,
+  buildTodoGroupPlan,
+  appendGroupedTodoSections,
+  updateExpPendientesTabBadge,
+  renderTodoListSection,
+  renderTodoFormIn,
+} from './todos-list-render.mjs';
+import { registerTodosRuntime } from './todos-runtime.mjs';
+import { addTodoWithFields, toggleTodo } from './todos-mutations.mjs';
+import { storage } from '../storage.js';
+
+function todo(overrides) {
+  return Object.assign(
+    { id: '1', text: 'x', completed: false, priority: 'media', dueDate: null },
+    overrides
+  );
+}
+
+describe('todoRowDetailBits', () => {
+  it('omits Estado pendiente and Estado completado', () => {
+    var open = todoRowDetailBits({ text: 'RX TORAX', completed: false });
+    var done = todoRowDetailBits({ text: 'RX TORAX', completed: true });
+    assert.deepEqual(open, []);
+    assert.deepEqual(done, []);
+    assert.equal(open.join(' ').includes('pendiente'), false);
+    assert.equal(done.join(' ').includes('completado'), false);
+  });
+
+  it('keeps due, overdue, and handoff bits', () => {
+    var bits = todoRowDetailBits(
+      { due: 'hoy 18:00', dueDate: '2000-01-01T00:00:00.000Z', completed: false },
+      { handoff: true }
+    );
+    assert.ok(bits.includes('Vence: hoy 18:00'));
+    assert.ok(bits.includes('Atrasado'));
+    assert.ok(bits.includes('De entrega'));
+    assert.equal(bits.some(function (b) { return /Estado:/.test(b); }), false);
+  });
+});
+
+describe('buildTodoGroupPlan', () => {
+  const NOW = new Date('2026-06-11T12:00:00.000Z');
+
+  it('orders groups vencido -> hoy -> sin_fecha -> listo (collapsed)', () => {
+    const todos = [
+      todo({ id: 'listo', text: 'Resuelto', completed: true }),
+      todo({ id: 'sin-fecha', text: 'Sin fecha' }),
+      todo({ id: 'hoy', text: 'Vence hoy', dueDate: '2026-06-11T18:00:00.000Z' }),
+      todo({ id: 'vencido', text: 'Atrasado', dueDate: '2026-06-10T12:00:00.000Z' }),
+    ];
+    const plan = buildTodoGroupPlan(todos, NOW);
+    assert.deepEqual(plan.map((g) => g.status), ['vencido', 'hoy', 'sin_fecha', 'listo']);
+    assert.deepEqual(plan.map((g) => g.collapsed), [false, false, false, true]);
+    assert.equal(plan.find((g) => g.status === 'vencido').todos[0].id, 'vencido');
+    assert.equal(plan.find((g) => g.status === 'listo').todos[0].id, 'listo');
+  });
+
+  it('omits empty groups entirely', () => {
+    const todos = [todo({ id: 'a', text: 'Solo sin fecha' })];
+    const plan = buildTodoGroupPlan(todos, NOW);
+    assert.deepEqual(plan.map((g) => g.status), ['sin_fecha']);
+  });
+
+  it('renders the "Vencidos" wb-table-card group header, PRIOR/PENDIENTE/QUIÉN/VENCE table for the vencido row', () => {
+    if (typeof document === 'undefined') return;
+    const todos = [todo({ id: 'v', text: 'Atrasado', dueDate: '2026-06-10T12:00:00.000Z' })];
+    const list = document.createElement('div');
+    appendGroupedTodoSections(list, todos, null, null, NOW);
+    const card = list.querySelector('.todo-group');
+    assert.match(card.querySelector('.todo-group-header').innerHTML, /Vencidos · 1/);
+    assert.ok(card.querySelector('.wb-table-colhead'), 'first open group renders the column head');
+    const row = card.querySelector('.wb-row[data-todo-id="v"]');
+    assert.ok(row, 'row is rendered with the wb-row grammar');
+    assert.match(row.className, /wb-row--alert/);
+    assert.match(row.querySelector('.wb-todo-prior').textContent, /MEDIA/);
+    assert.notEqual(row.querySelector('.wb-todo-vence').textContent.trim(), '—');
+  });
+
+  it('gates delete behind the shared destructive confirm kit (Phase 9, mockup #11a) instead of deleting on click', () => {
+    if (typeof document === 'undefined') return;
+    const todos = [todo({ id: 'del-me', text: 'Borrar esto' })];
+    const list = document.createElement('div');
+    document.body.appendChild(list);
+    appendGroupedTodoSections(list, todos, null, null, NOW);
+    const delBtn = list.querySelector('.wb-todo-del-btn');
+    assert.ok(delBtn, 'delete button renders');
+    delBtn.click();
+    // No window.confirm involved (jsdom/Electron-node has none), and the row must
+    // still exist immediately after the click — deletion only happens after the
+    // confirm modal's own onConfirm, never synchronously on the "x" click.
+    assert.ok(list.querySelector('.wb-row[data-todo-id="del-me"]'), 'row is not removed before confirming');
+    const modal = document.querySelector('.wb-confirm-modal--destructive');
+    assert.ok(modal, 'destructive confirm modal opened');
+    assert.match(document.querySelector('.wb-confirm-title')?.textContent || '', /Eliminar/);
+    document.querySelector('[data-wb-confirm-cancel]')?.click();
+    document.body.removeChild(list);
+  });
+
+  it('shows a reversible-weight undo toast (mockup #11a) when marking a pendiente as listo', () => {
+    if (typeof document === 'undefined') return;
+    registerTodosRuntime({ getActiveId: () => 'p1' });
+    storage.saveTodos('p1', []);
+    const added = addTodoWithFields('Pendiente de prueba', { priority: 'media' });
+    const list = document.createElement('div');
+    document.body.appendChild(list);
+    appendGroupedTodoSections(list, [added], null, null, NOW);
+    const listoBtn = list.querySelector('.wb-todo-listo-btn');
+    assert.ok(listoBtn, 'listo button renders');
+    listoBtn.click();
+    const toast = document.querySelector('.wb-undo-toast');
+    assert.ok(toast, 'undo toast opened instead of a silent toggle');
+    assert.match(toast.textContent, /Pendiente marcado como listo/);
+    assert.match(toast.textContent, /Deshacer/);
+    document.body.removeChild(list);
+    document.querySelector('.wb-undo-toast')?.remove();
+  });
+
+  it('renders closed rows strikethrough with no Prior./acción columns', () => {
+    if (typeof document === 'undefined') return;
+    const todos = [todo({ id: 'c', text: 'Resuelto', completed: true, updatedAt: '2026-06-11T05:10:00.000Z' })];
+    const list = document.createElement('div');
+    appendGroupedTodoSections(list, todos, null, null, NOW);
+    const row = list.querySelector('.wb-row[data-todo-id="c"]');
+    assert.ok(row);
+    assert.doesNotMatch(row.className, /wb-todo-row--prio/);
+    assert.equal(row.querySelector('.wb-todo-prior'), null);
+    assert.equal(row.querySelector('.wb-todo-accion'), null);
+    assert.match(row.querySelector('.wb-todo-pendiente--closed').textContent, /Resuelto/);
+  });
+});
+
+describe('renderTodoListSection row-enter diffing', () => {
+  it('marks only rows new since the previous paint, so a repaint of unchanged rows does not re-fade them', () => {
+    if (typeof document === 'undefined') return;
+    registerTodosRuntime({ getActiveId: () => 'p-row-enter' });
+    const a = todo({ id: 'a', text: 'Primero' });
+    storage.saveTodos('p-row-enter', [a]);
+    const container = document.createElement('div');
+
+    renderTodoListSection(container);
+    const rowA1 = container.querySelector('.wb-row[data-todo-id="a"]');
+    assert.ok(rowA1, 'first paint renders row a');
+    assert.match(rowA1.className, /row-enter/);
+
+    renderTodoListSection(container);
+    const rowA2 = container.querySelector('.wb-row[data-todo-id="a"]');
+    assert.doesNotMatch(rowA2.className, /row-enter/, 're-render of an unchanged row must not re-enter');
+
+    storage.saveTodos('p-row-enter', [a, todo({ id: 'b', text: 'Segundo' })]);
+    renderTodoListSection(container);
+    const rowA3 = container.querySelector('.wb-row[data-todo-id="a"]');
+    const rowB = container.querySelector('.wb-row[data-todo-id="b"]');
+    assert.doesNotMatch(rowA3.className, /row-enter/, 'existing row stays unmarked');
+    assert.match(rowB.className, /row-enter/, 'newly added row enters');
+
+    registerTodosRuntime({ getActiveId: () => null });
+  });
+
+  it('leaves a fading ghost of a row that is removed from the data, instead of popping it away instantly', () => {
+    if (typeof document === 'undefined') return;
+    registerTodosRuntime({ getActiveId: () => 'p-row-exit' });
+    const a = todo({ id: 'a', text: 'Primero' });
+    const b = todo({ id: 'b', text: 'Segundo' });
+    storage.saveTodos('p-row-exit', [a, b]);
+    const container = document.createElement('div');
+
+    renderTodoListSection(container);
+    assert.ok(container.querySelector('.wb-row[data-todo-id="b"]'));
+
+    storage.saveTodos('p-row-exit', [a]);
+    renderTodoListSection(container);
+    assert.equal(container.querySelector('.wb-row[data-todo-id="b"]'), null, 'removed row is gone from the live list');
+    const ghost = container.querySelector('.row-exit');
+    assert.ok(ghost, 'a ghost copy of the removed row is appended to animate out');
+    assert.match(ghost.textContent, /Segundo/);
+
+    registerTodosRuntime({ getActiveId: () => null });
+  });
+
+  it('leaves a fading ghost of a row marked Listo, not just a deleted one', () => {
+    if (typeof document === 'undefined') return;
+    registerTodosRuntime({ getActiveId: () => 'p-row-exit-listo' });
+    const a = todo({ id: 'a', text: 'Primero' });
+    const b = todo({ id: 'b', text: 'Segundo' });
+    storage.saveTodos('p-row-exit-listo', [a, b]);
+    const container = document.createElement('div');
+
+    renderTodoListSection(container);
+    assert.ok(container.querySelector('.wb-row[data-todo-id="b"]'));
+
+    toggleTodo('b');
+    renderTodoListSection(container);
+    const ghost = container.querySelector('.row-exit');
+    assert.ok(ghost, 'marking a pendiente Listo must still leave a fading ghost row');
+    assert.match(ghost.textContent, /Segundo/);
+    assert.ok(
+      ghost.closest('.todo-list'),
+      'the ghost must sit inside the list, next to where the row used to be, not tacked onto the end of the panel'
+    );
+
+    registerTodosRuntime({ getActiveId: () => null });
+  });
+
+  it('does not re-flash an already-closed pendiente as just-done when an unrelated one is added', () => {
+    if (typeof document === 'undefined') return;
+    registerTodosRuntime({ getActiveId: () => 'p-stale-done' });
+    const a = todo({ id: 'a', text: 'Abierto' });
+    const closed = todo({ id: 'closed', text: 'Ya cerrado antes', completed: true });
+    storage.saveTodos('p-stale-done', [a, closed]);
+    const container = document.createElement('div');
+
+    renderTodoListSection(container);
+    assert.equal(container.querySelector('.row-exit-done'), null, 'first paint must not flash an already-closed row');
+
+    storage.saveTodos('p-stale-done', [a, closed, todo({ id: 'b', text: 'Nuevo' })]);
+    renderTodoListSection(container);
+    assert.equal(
+      container.querySelector('.row-exit-done'),
+      null,
+      'adding an unrelated pendiente must not re-flash an already-closed one as just done'
+    );
+
+    registerTodosRuntime({ getActiveId: () => null });
+  });
+
+  it('still ghost-fades a removed row on the real refresh path (renderTodoFormIn), which pre-cleared the container before this fix', () => {
+    if (typeof document === 'undefined') return;
+    registerTodosRuntime({ getActiveId: () => 'p-form-refresh' });
+    const a = todo({ id: 'a', text: 'Primero' });
+    const b = todo({ id: 'b', text: 'Segundo' });
+    storage.saveTodos('p-form-refresh', [a, b]);
+    const container = document.createElement('div');
+
+    renderTodoFormIn(container);
+    assert.ok(container.querySelector('.wb-row[data-todo-id="b"]'));
+
+    storage.saveTodos('p-form-refresh', [a]);
+    renderTodoFormIn(container);
+    assert.equal(container.querySelector('.wb-row[data-todo-id="b"]'), null);
+    const ghost = container.querySelector('.row-exit');
+    assert.ok(ghost, 'renderTodoFormIn refresh must still leave a fading ghost row');
+
+    registerTodosRuntime({ getActiveId: () => null });
+  });
+
+  it('does not row-enter/row-exit stagger the whole list when the active patient changes', () => {
+    if (typeof document === 'undefined') return;
+    const a = todo({ id: 'a', text: 'Paciente 1 pendiente' });
+    const b = todo({ id: 'b', text: 'Paciente 2 pendiente' });
+    storage.saveTodos('p-switch-1', [a]);
+    storage.saveTodos('p-switch-2', [b]);
+    const container = document.createElement('div');
+
+    registerTodosRuntime({ getActiveId: () => 'p-switch-1' });
+    renderTodoListSection(container);
+    const rowA = container.querySelector('.wb-row[data-todo-id="a"]');
+    assert.match(rowA.className, /row-enter/, 'first paint for a patient still enters normally');
+
+    registerTodosRuntime({ getActiveId: () => 'p-switch-2' });
+    renderTodoListSection(container);
+    const rowB = container.querySelector('.wb-row[data-todo-id="b"]');
+    assert.doesNotMatch(rowB.className, /row-enter/, 'switching patients swaps the panel as one, not row-by-row');
+    assert.equal(container.querySelector('.row-exit'), null, 'no ghost of the previous patient\'s row is left behind');
+
+    registerTodosRuntime({ getActiveId: () => null });
+  });
+
+  it('the real "+ Pendiente" toolbar flow leaves the new row with row-enter, not clobbered by a second render', () => {
+    if (typeof document === 'undefined') return;
+    registerTodosRuntime({ getActiveId: () => 'p-toolbar-add' });
+    storage.saveTodos('p-toolbar-add', []);
+    const container = document.createElement('div');
+    container.id = 'todo-form'; // refreshAllTodoUIs() looks this up by id
+    document.body.appendChild(container);
+
+    renderTodoListSection(container);
+    container.querySelector('.todo-toolbar-add-btn').click();
+    document.querySelector('.wb-todo-add-text').value = 'Nuevo desde el botón';
+    document.querySelector('[data-wb-todo-add-ok]').click();
+
+    const row = [...container.querySelectorAll('.todo-text-input')].find(
+      (i) => i.value === 'Nuevo desde el botón'
+    )?.closest('.wb-row');
+    assert.ok(row, 'the new row renders');
+    assert.match(row.className, /row-enter/, 'the newly added row must keep its enter animation, not get rebuilt away');
+
+    container.remove();
+    registerTodosRuntime({ getActiveId: () => null });
+  });
+
+  it('does not re-settle the whole list when adding or clearing a pendiente for the same patient', () => {
+    if (typeof document === 'undefined') return;
+    registerTodosRuntime({ getActiveId: () => 'p-inplace' });
+    const a = todo({ id: 'a', text: 'Primero' });
+    storage.saveTodos('p-inplace', [a]);
+    const container = document.createElement('div');
+
+    renderTodoListSection(container);
+    const list1 = container.querySelector('.todo-list');
+    assert.equal(list1.style.opacity, '0', 'first paint of the panel still settles as a whole');
+
+    storage.saveTodos('p-inplace', [a, todo({ id: 'b', text: 'Segundo' })]);
+    renderTodoListSection(container);
+    const list2 = container.querySelector('.todo-list');
+    assert.notEqual(list2.style.opacity, '0', 'adding a pendiente to an already-shown list must not re-fade the whole panel');
+
+    storage.saveTodos('p-inplace', [a]);
+    renderTodoListSection(container);
+    const list3 = container.querySelector('.todo-list');
+    assert.notEqual(list3.style.opacity, '0', 'clearing a pendiente must not re-fade the whole panel either');
+
+    registerTodosRuntime({ getActiveId: () => null });
+  });
+});
+
+/** Real, always-visible Pendientes entry point (Phase 6 fix): the tab-bar
+ * badge tracks the open (non-completed) count, mockup L416's red "4". */
+describe('updateExpPendientesTabBadge', () => {
+  const store = {};
+
+  beforeEach(() => {
+    globalThis.localStorage = {
+      getItem: (k) => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v); },
+      removeItem: (k) => { delete store[k]; },
+    };
+    registerTodosRuntime({ getActiveId: () => 'p1' });
+  });
+
+  afterEach(() => {
+    Object.keys(store).forEach((k) => delete store[k]);
+    delete globalThis.localStorage;
+    delete globalThis.document;
+    registerTodosRuntime({ getActiveId: () => null });
+  });
+
+  it('shows the open-pendientes dot and hides it at zero, without a count', () => {
+    const attrs = {};
+    const badge = {
+      textContent: '',
+      hidden: false,
+      setAttribute: (k, v) => { attrs[k] = v; },
+      getAttribute: (k) => (Object.prototype.hasOwnProperty.call(attrs, k) ? attrs[k] : null),
+      removeAttribute: (k) => { delete attrs[k]; },
+    };
+    globalThis.document = { getElementById: (id) => (id === 'exp-pendientes-badge' ? badge : null) };
+
+    addTodoWithFields({ text: 'Reponer potasio', priority: 'alta' });
+    addTodoWithFields({ text: 'Solicitar TAC', priority: 'media' });
+    updateExpPendientesTabBadge();
+    assert.equal(badge.textContent, '');
+    assert.equal(badge.hidden, false);
+    assert.equal(badge.getAttribute('aria-label'), 'Pendientes abiertos');
+
+    const first = storage.getTodos('p1')[0];
+    toggleTodo(first.id);
+    updateExpPendientesTabBadge();
+    assert.equal(badge.textContent, '');
+    assert.equal(badge.hidden, false);
+
+    toggleTodo(first.id); // un-resolve — back to 2 open
+
+    const second = storage.getTodos('p1')[1];
+    toggleTodo(first.id);
+    toggleTodo(second.id);
+    updateExpPendientesTabBadge();
+    assert.equal(badge.textContent, '');
+    assert.equal(badge.hidden, true);
+    assert.equal(badge.getAttribute('aria-label'), null);
+  });
+
+  it('does nothing when the badge element is not mounted', () => {
+    globalThis.document = { getElementById: () => null };
+    assert.doesNotThrow(() => updateExpPendientesTabBadge());
+  });
+});

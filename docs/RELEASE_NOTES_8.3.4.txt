@@ -1,0 +1,28 @@
+R+ 8.3.4 (estable — release 8.3.4)
+======================================
+
+Fecha: 2026-09-11
+
+## Resumen
+
+Rediseño de las pantallas Admin/Red, Equipo y Mi Perfil, nuevo soporte de laboratorio para DEPCR y reticulocito corregido, y un arreglo de un congelamiento en diálogos de confirmación.
+
+## Nuevo / mejorado
+
+- **Nuevo:** Admin → Usuarios/Red, Equipo y Mi Perfil tienen un rediseño real — filas con menú de acciones unificado, selección múltiple, tarjetas de equipo colapsadas por defecto, y Mi Perfil agrupado en "Cómo trabajo" y "Firma y formatos".
+- **Nuevo:** los equipos clínicos pueden marcar si un integrante empieza en la rotación actual o en la próxima.
+- **Nuevo:** DEPCR (depuración de creatinina de 24h) se reconoce como su propio estudio de laboratorio, ya no se mezcla con química/orina.
+- **Nuevo:** cálculo de reticulocito corregido (RetC = Ret × Hto/45), con su propio umbral de regenerativo/arregenerativo.
+- **Arreglado:** un diálogo de confirmación destructivo abierto sobre el panel de Administración podía congelar la app por un bucle de foco infinito.
+- **Mejorado:** las acciones de eliminar/quitar (equipos, procedimientos, entregas huérfanas) ahora se ven en rojo.
+- **Mejorado:** en Pendientes, una fila que se completa o elimina desaparece junto a su lugar original en la lista, no al final.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.3.4-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.3.4-Mac-Intel.dmg`
+- Windows: `R+-8.3.4-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

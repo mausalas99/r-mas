@@ -1,0 +1,270 @@
+/* Modo Sala — vista de tarjetas. Todo cuelga de body[data-sala-view]; en vista barra no aplica nada. */
+
+body[data-sala-view] .patient-sidebar,
+body[data-sala-view] .sidebar-edge-reveal {
+  display: none !important;
+}
+
+body[data-sala-view] .main-col {
+  position: relative;
+}
+
+/* Inicio: tarjetas sobre el área de trabajo */
+#sala-view-home {
+  display: none;
+}
+
+body[data-sala-home] #sala-view-home {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow-y: auto;
+  padding: 20px 24px 32px;
+  background: var(--surface);
+}
+
+.sv-home-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.sv-home-head strong {
+  font-size: 1.2rem;
+  color: var(--text);
+}
+
+.sv-home-head > span {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.sv-home-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.sv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.sv-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  min-height: 210px;
+  padding: 16px 18px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--color-elevated, var(--surface));
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+
+.sv-card:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+}
+
+.sv-card:focus-visible,
+#sala-view-rail button:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 1px;
+}
+
+.sv-card-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sv-bed {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--action);
+  margin-right: auto;
+}
+
+.sv-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.sv-label {
+  margin-top: 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.sv-dx {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.sv-ic {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.sv-none {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.sv-tag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.sv-tag--dnr {
+  color: var(--error);
+  background: color-mix(in oklab, var(--error) 12%, transparent);
+}
+
+.sv-tag--warn {
+  color: var(--warning, var(--error));
+  background: color-mix(in oklab, var(--warning, var(--error)) 14%, transparent);
+}
+
+/* Paciente abierto: barra delgada de camas */
+#sala-view-rail {
+  display: none;
+}
+
+body[data-sala-view]:not([data-sala-home]) #sala-view-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 60px;
+  flex-shrink: 0;
+  padding: 8px 6px;
+  overflow-y: auto;
+  border-radius: var(--radius-shell, 12px);
+  background: var(--surface);
+}
+
+#sala-view-rail button {
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 6px 2px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--text);
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#sala-view-rail button:hover {
+  background: color-mix(in oklab, var(--action) 8%, transparent);
+}
+
+#sala-view-rail button.is-active {
+  color: var(--action);
+  background: color-mix(in oklab, var(--action) 14%, transparent);
+}
+
+#sala-view-rail .sv-rail-home {
+  position: sticky;
+  top: -8px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 2px 6px;
+  margin-bottom: 4px;
+  font-family: inherit;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface);
+  box-shadow: 0 1px 0 var(--divider);
+  border-radius: 8px 8px 0 0;
+}
+
+#sala-view-rail .sv-rail-home:hover {
+  color: var(--action);
+  background: var(--surface);
+}
+
+/* Mismo chip de interconsulta que el Resumen del paciente (.patient-dash .svc). */
+.sv-card .svc {
+  border-radius: var(--radius-badge);
+  padding: 3px 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: oklch(0.93 0.045 var(--h, 220));
+  color: oklch(0.36 0.09 var(--h, 220));
+}
+
+html.dark .sv-card .svc {
+  background: oklch(0.32 0.06 var(--h, 220));
+  color: oklch(0.86 0.08 var(--h, 220));
+}
+
+/* Botón «tarjetas» junto al buscador de la barra lateral */
+.patient-search-wrap:has(#btn-sala-view-cards:not([hidden])) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.patient-search-wrap:has(#btn-sala-view-cards:not([hidden])) .patient-search-input {
+  flex: 1;
+  min-width: 0;
+}
+
+#btn-sala-view-cards {
+  flex-shrink: 0;
+}
+
+/* Onboarding una sola vez: burbuja bajo el botón resaltado (.tour-spotlight-soap da el pulso). */
+.sv-hint::after {
+  content: attr(data-sv-hint);
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 60;
+  width: max-content;
+  max-width: 240px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: normal;
+  text-align: left;
+  color: var(--surface);
+  background: var(--action);
+  pointer-events: none;
+}
+
+#btn-sala-view-cards.sv-hint::after {
+  top: calc(100% + 8px);
+}

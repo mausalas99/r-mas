@@ -1,0 +1,24 @@
+R+ 7.9.2 (censo meds + Conexión)
+====================================
+
+Fecha: 2026-08-03
+
+## Resumen
+
+**7.9.2** alinea el censo con Estado Actual (rescates de insulina y dieta suplemento), simplifica el panel ⇄ Conexión a una hoja de estado con Opciones, y limpia membrete SOME en cultivos / SV del día.
+
+## Nuevo / mejorado
+
+- **Censo — ATB / Meds** — Las insulinas rápidas PRN SC salen como **RESCATES DE INSULINA** (una línea). El suplemento nutricional SOME (`ALIMENTACION… SUPLEMENTO`) va a **DIETA SUPLEMENTO**, no como medicamento.
+- **Conexión Nube** — Vista de estado al abrir ⇄; R4 / admin / LAN avanzado en **Opciones** (fuera del primer viewport).
+- **Cultivos** — Filtra membrete SOME (USER / Labo) para no contaminar ATB y resultado.
+- **Estado Actual — signos** — Prefill del modal solo con lecturas del mismo día calendario (no arrastra SV de ayer).
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.9.2
+
+- Mac: `R+-7.9.2-arm64.dmg`, `R+-7.9.2-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.9.2-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

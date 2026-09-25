@@ -1,0 +1,374 @@
+/**
+ * Expediente inner-tab render cache, warm-up, and preload.
+ */
+import { isModeSala } from '../mode-features.mjs';
+import { buildEaMonitoreoRevision } from './estado-actual-data.mjs';
+import { buildMedAdminCacheRevision } from './estado-actual-data-revision.mjs';
+import { getPatients, getMedRecetaByPatient } from '../app-state.mjs';
+import { getLabHistoryRevision } from '../lab-history-cache.mjs';
+import { storage } from '../storage.js';
+import { scheduleIdle } from '../deferred-work.mjs';
+import {
+  consolidatedTabForGranular,
+  consolidatedInnerTabButtonId,
+  defaultGranularForConsolidatedTab,
+  migrateGranularInner,
+} from '../expediente-tabs.mjs';
+import { renderEstadoActualPanel } from './estado-actual-panel.mjs';
+import { renderVpo } from './vpo.mjs';
+import { ensureChartsLoaded } from '../lazy-feature-routes.mjs';
+import { renderIndicaForm } from './notes-indicaciones.mjs';
+import { renderNotaEvolucionPrimaryTab } from './nota-evolucion/nota-evolucion-primary-tab.mjs';
+import { renderEventualidadesPanel } from './eventualidades-panel.mjs';
+import {
+  renderPatientDataPane,
+  renderCultivosTable,
+  renderListadoForm,
+} from './expediente.mjs';
+import { renderTodoForm } from './todos.mjs';
+import { renderPatientDashboard } from './patient-dashboard/dashboard-mount.mjs';
+import { resumenGlanceCacheSuffix } from './resumen-glance-cache.mjs';
+import { rt } from './app-tabs-runtime.mjs';
+import {
+  syncConsolidatedPaneVisibility,
+  syncConsolidatedSegmentBars,
+} from '../expediente-tabs.mjs';
+import { syncInnerTabIndicator } from '../ui-tab-motion.mjs';
+import { renderExpedienteGroupRow } from './expediente-group-row-ui.mjs';
+
+/** Evita re-render completo al volver a una pestaña ya pintada (mismo paciente). */
+var innerTabRenderCache = Object.create(null);
+var expedientePreloadTimer = null;
+var expedientePreloadTab = null;
+var expedienteTabPreloadWired = false;
+
+export function invalidateInnerTabRenderCache(tab) {
+  if (tab) {
+    delete innerTabRenderCache[tab];
+    return;
+  }
+  innerTabRenderCache = Object.create(null);
+}
+
+function mountLacksMarker(mountId, markerSelector) {
+  var el = document.getElementById(mountId);
+  return !!el && !el.querySelector(markerSelector);
+}
+
+var GRANULAR_MOUNT_EMPTY_CHECKS = {
+  estadoActual: function () {
+    return mountLacksMarker("exp-pane-estado-actual", ".estado-actual-panel");
+  },
+  eventualidades: function () {
+    return mountLacksMarker("exp-pane-eventualidades", ".ev-panel");
+  },
+  medAdmin: function () {
+    return mountLacksMarker("exp-pane-medAdmin", ".med-admin-panel");
+  },
+  tend: function () {
+    var tend = document.getElementById("tendencias-container");
+    if (!tend) return true;
+    return !tend.querySelector(".tend-grid, .tend-toolbar, .tend-empty");
+  },
+  resumen: function () {
+    var dash = document.getElementById("patient-dashboard-mount");
+    if (!dash) return true;
+    return !dash.querySelector(".dash");
+  },
+  todo: function () {
+    var tf = document.getElementById("todo-form");
+    if (!tf) return true;
+    return !tf.querySelector(".todo-add-row") && !tf.querySelector(".todo-list");
+  },
+  datos: function () {
+    var pdf = document.getElementById("patient-data-form");
+    if (!pdf) return true;
+    return !String(pdf.innerHTML || "").trim();
+  },
+};
+
+export function granularMountIsEmpty(tab) {
+  var check = GRANULAR_MOUNT_EMPTY_CHECKS[tab];
+  return check ? check() : false;
+}
+
+function estadoActualCacheSuffix(patientId) {
+  var p = getPatients().find(function (x) {
+    return String(x.id) === String(patientId);
+  });
+  if (!p || !p.monitoreo) return "0";
+  return buildEaMonitoreoRevision(p.monitoreo, patientId, getMedRecetaByPatient());
+}
+
+/** eventualidades has no dedicated revision counter — its store's own
+ * `updatedAt` (bumped on every local edit and adopted from whichever side
+ * is newer on merge, see mergeEventualidades) already changes exactly when
+ * the list does, so it doubles as one for free. */
+function eventualidadesCacheSuffix(patientId) {
+  var p = getPatients().find(function (x) {
+    return String(x.id) === String(patientId);
+  });
+  var ev = p && p.eventualidades;
+  return (ev && typeof ev === "object" && ev.updatedAt) || "0";
+}
+
+function innerTabRenderCacheKey(tab) {
+  var pid = String(rt.getActiveId() || "");
+  var settings = rt.getSettings();
+  var key =
+    String(tab || "") +
+    "|" +
+    pid +
+    "|M" +
+    (settings && settings.appMode ? settings.appMode : "sala");
+  if (tab === "tend" || tab === "cult" || tab === "resumen") {
+    key += "|L" + getLabHistoryRevision(pid);
+  }
+  if (tab === "estadoActual" || tab === "resumen") {
+    key += "|E" + estadoActualCacheSuffix(pid);
+  }
+  if (tab === "medAdmin") {
+    key += "|A" + buildMedAdminCacheRevision(pid, getMedRecetaByPatient());
+  }
+  if (tab === "eventualidades") {
+    key += "|V" + eventualidadesCacheSuffix(pid);
+  }
+  if (tab === "resumen") {
+    var patient = getPatients().find(function (x) {
+      return String(x.id) === pid;
+    });
+    var todos = [];
+    try {
+      todos = storage.getTodos(pid) || [];
+    } catch {
+      todos = [];
+    }
+    // The labs card shows "today" only: a new day must repaint it.
+    var now = new Date();
+    key += resumenGlanceCacheSuffix(patient, todos) + "|D" + now.getFullYear() + "-" + now.getMonth() + "-" + now.getDate();
+  }
+  return key;
+}
+
+/**
+ * The tab may still hold another patient's content (it was hidden during a
+ * patient switch): its render stamp names another patient, or the stamp was
+ * dropped while the mount still has content from some earlier render.
+ */
+export function isInnerTabRenderedForOtherPatient(tab, settings) {
+  tab = migrateGranularInner(tab, settings);
+  var cached = innerTabRenderCache[tab];
+  if (!cached) return !granularMountIsEmpty(tab);
+  return cached.split("|")[1] !== String(rt.getActiveId() || "");
+}
+
+export function isInnerTabContentFresh(tab, settings) {
+  tab = migrateGranularInner(tab, settings);
+  return innerTabRenderCache[tab] === innerTabRenderCacheKey(tab);
+}
+
+function markInnerTabRendered(tab) {
+  innerTabRenderCache[tab] = innerTabRenderCacheKey(tab);
+}
+
+var _expedienteWarmQueued = false;
+var _expedienteWarmGen = 0;
+
+export function cancelExpedienteWarm() {
+  _expedienteWarmGen += 1;
+  _expedienteWarmQueued = false;
+  if (expedientePreloadTimer) {
+    clearTimeout(expedientePreloadTimer);
+    expedientePreloadTimer = null;
+    expedientePreloadTab = null;
+  }
+}
+
+export function expedienteCompositeTab(granularTab, settings) {
+  return consolidatedTabForGranular(granularTab, settings);
+}
+
+
+/** Precalienta Estado actual + Tendencias en idle (Sala). */
+export function warmExpedienteHeavyTabs() {
+  if (_expedienteWarmQueued || typeof document === "undefined") return;
+  if (!isModeSala(rt.getSettings())) return;
+  if (!rt.getActiveId() || rt.getActiveAppTab() !== "nota") return;
+  _expedienteWarmQueued = true;
+  var warmGen = _expedienteWarmGen;
+  scheduleIdle(function () {
+    _expedienteWarmQueued = false;
+    if (warmGen !== _expedienteWarmGen) return;
+    if (!rt.getActiveId() || rt.getActiveAppTab() !== "nota") return;
+    var settings = rt.getSettings();
+    var active = migrateGranularInner(rt.getActiveInner() || "resumen", settings);
+    var rest = ["estadoActual", "tend"].filter(function (tab) {
+      return tab !== active && !isInnerTabContentFresh(tab, settings);
+    });
+    function warmNext() {
+      if (warmGen !== _expedienteWarmGen) return;
+      var tab = rest.shift();
+      if (!tab) return;
+      renderGranularInnerTab(tab);
+      if (rest.length) scheduleIdle(warmNext, 8000);
+    }
+    warmNext();
+  }, 8000);
+}
+
+function resolvePreloadGranularTab(el) {
+  if (!el || !el.id) return null;
+  var settings = rt.getSettings();
+  if (el.classList.contains('exp-consolidated-tab')) {
+    var composite = el.id.replace(/^itab-/, '');
+    return defaultGranularForConsolidatedTab(composite, settings);
+  }
+  if (el.classList.contains('exp-segment-btn')) {
+    var section = el.getAttribute('data-exp-segment');
+    if (section) return migrateGranularInner(section, settings);
+  }
+  return null;
+}
+
+function scheduleExpedienteTabPreload(granularTab) {
+  if (!granularTab) return;
+  if (innerTabRenderCache[granularTab] === innerTabRenderCacheKey(granularTab)) return;
+  if (expedientePreloadTab === granularTab && expedientePreloadTimer) return;
+  if (expedientePreloadTimer) clearTimeout(expedientePreloadTimer);
+  expedientePreloadTab = granularTab;
+  expedientePreloadTimer = setTimeout(function () {
+    expedientePreloadTimer = null;
+    expedientePreloadTab = null;
+    if (innerTabRenderCache[granularTab] === innerTabRenderCacheKey(granularTab)) return;
+    renderGranularInnerTab(granularTab);
+  }, 70);
+}
+
+export function initExpedienteTabPreload() {
+  if (expedienteTabPreloadWired || typeof document === 'undefined') return;
+  expedienteTabPreloadWired = true;
+  document.addEventListener(
+    'pointerenter',
+    function (ev) {
+      var target = ev.target;
+      if (!target || typeof target.closest !== 'function') return;
+      var btn = target.closest('.exp-consolidated-tab, .exp-segment-btn');
+      if (!btn) return;
+      scheduleExpedienteTabPreload(resolvePreloadGranularTab(btn));
+    },
+    true
+  );
+}
+
+function renderHeavyInnerTab(tab, run, opts) {
+  if (opts && opts.force) {
+    run(function () {});
+    return;
+  }
+  run(markInnerTabRendered.bind(null, tab));
+}
+
+export function syncConsolidatedInnerTabButtons(granularTab, settings) {
+  // Pendientes ("todo") has its own tab button outside .exp-consolidated-tab;
+  // don't also light up the composite tab its content happens to be nested in.
+  var composite =
+    granularTab === "todo" ? "" : consolidatedInnerTabButtonId(granularTab, settings).replace(/^itab-/, "");
+  document.querySelectorAll(".exp-consolidated-tab").forEach(function (btn) {
+    var id = btn.id || "";
+    var name = id.replace(/^itab-/, "");
+    btn.classList.toggle("active", name === composite);
+  });
+}
+
+function renderEstadoActualInnerTab(tab, opts) {
+  renderHeavyInnerTab(tab, function (done) {
+    renderEstadoActualPanel({ onReady: done, syncHeavy: !!opts.force });
+  }, opts);
+}
+
+function renderTendInnerTab(tab, opts) {
+  renderHeavyInnerTab(tab, function (done) {
+    void ensureChartsLoaded().then(function (mods) {
+      mods.tendencias.renderTendencias({ onReady: done, syncHeavy: !!opts.force });
+    });
+  }, opts);
+}
+
+function renderLightGranularTab(tab) {
+  if (tab === 'datos' || tab === 'todo') renderPatientDataPane();
+  if (tab === 'cult') renderCultivosTable();
+  if (tab === 'listado') renderListadoForm();
+  if (tab === 'todo') renderTodoForm();
+  markInnerTabRendered(tab);
+}
+
+function renderResumenInnerTab(tab, opts) {
+  renderPatientDashboard(null, {
+    deferLabs: !!(opts && opts.deferLabs),
+    onLabsReady: markInnerTabRendered.bind(null, tab),
+  });
+}
+
+var GRANULAR_TAB_RENDERERS = {
+  resumen: renderResumenInnerTab,
+  estadoActual: renderEstadoActualInnerTab,
+  vpo: function (tab) {
+    renderVpo();
+    markInnerTabRendered(tab);
+  },
+  tend: renderTendInnerTab,
+  // Screen 9a (Nota de evolución) is the primary content of this tab in
+  // both Sala and Interconsulta — `renderNotaEvolucionPrimaryTab` owns the
+  // toggle back to the legacy free-text template ("Plantilla clásica")
+  // itself. Before 2026-08-19 this pointed straight at the legacy
+  // `renderNoteForm()`, so clicking this tab silently clobbered the S/O/A/P
+  // screen any time it had been rendered by the Interconsulta mode-switch
+  // side effect (`applyAppModeSwitchEffects` in profile-app-mode.mjs) —
+  // reachable only by accident, never by clicking the tab itself.
+  notas: function (tab) {
+    renderNotaEvolucionPrimaryTab();
+    markInnerTabRendered(tab);
+  },
+  indica: function (tab) {
+    renderIndicaForm();
+    markInnerTabRendered(tab);
+  },
+  eventualidades: function (tab) {
+    renderEventualidadesPanel(document.getElementById('exp-pane-eventualidades'));
+    markInnerTabRendered(tab);
+  },
+  medAdmin: function (tab, opts) {
+    renderHeavyInnerTab(tab, function (done) {
+      void import('./med-admin-panel.mjs').then(function (mod) {
+        mod.renderMedAdminPanel(document.getElementById('exp-pane-medAdmin'));
+        done();
+      });
+    }, opts);
+  },
+};
+
+export function renderGranularInnerTab(tab, opts) {
+  opts = opts || {};
+  if (!opts.force && innerTabRenderCache[tab] === innerTabRenderCacheKey(tab)) return;
+
+  var renderer = GRANULAR_TAB_RENDERERS[tab];
+  if (renderer) {
+    renderer(tab, opts);
+    return;
+  }
+  renderLightGranularTab(tab);
+}
+
+export function syncInnerTabVisualOnly() {
+  var settings = rt.getSettings();
+  var tab = migrateGranularInner(rt.getActiveInner() || "resumen", settings);
+  syncConsolidatedInnerTabButtons(tab, settings);
+  syncConsolidatedPaneVisibility(tab, settings);
+  syncConsolidatedSegmentBars(tab, settings);
+  renderExpedienteGroupRow(tab, settings);
+  syncInnerTabIndicator(tab, { consolidated: true, settings: settings });
+}
+
+export const windowHandlers = {
+  invalidateInnerTabRenderCache,
+};

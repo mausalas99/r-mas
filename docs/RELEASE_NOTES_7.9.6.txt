@@ -1,0 +1,48 @@
+R+ 7.9.6 (Nube — Sala 1/2/E + censo por alcance)
+====================================================
+
+Fecha: 2026-08-05
+
+## Resumen
+
+**7.9.6** separa **Sala 1**, **Sala 2** y **Sala E** como salas Nube distintas (ya no un bucket genérico «Sala») y corrige el censo que ve cada residente: R1/R2 solo su equipo; R4/Admin el censo completo de la sala. Incluye limpieza de pacientes «fantasma» tras pull Nube y protección de monitoreo EA contra stubs vacíos del censo.
+
+## Nuevo / mejorado
+
+- **Nube — salas distintas** — `ensure-turn` y allowlist reconocen **Sala 1**, **Sala 2**, **Sala E** y **Torre HU** como rooms separados; cada una con su código mensual `YYYY-MM` (CDMX).
+- **Censo por alcance** — Pull Nube filtra por equipo unido; **R4/Admin** en escritorio ven censo completo de la sala; iPad/Safari LAN siempre por equipo (sin censo sala-wide aunque seas Admin).
+- **Sin fantasmas** — Tras pull Nube, escritorio poda pacientes fuera de alcance y refresca sidebar/guardia; módulo compartido `patient-scope-prune`.
+- **EA / monitoreo** — Stubs vacíos de censo Nube ya no pisan monitoreo local con datos reales.
+- **Mutate bridge** — Ops de campos/monitoreo usan relojes de contenido (no `batch updatedAt`); mejor mapeo de sidecars.
+- **LAN** — Dashboard de host y ranking de equipos más claros al asignar pacientes.
+- **Cloud mobile** — `build:cloud-mobile` empaqueta `/mobile/` en `cloud/sync-pages/` para deploy del Worker.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.9.6
+
+- Mac: `R+-7.9.6-arm64.dmg`, `R+-7.9.6-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.9.6-x64.exe`.
+
+Descarga **7.9.6 en todas las Macs** del turno el mismo día que actualizas el Worker.
+
+**Operador cloud (antes del turno):**
+
+```bash
+cd /Users/mauriciosalas/R+
+npm run build:cloud-mobile
+cd cloud/sync-worker
+npm run db:migrate:remote   # 004-active-room.sql si aún no aplicada
+npm run deploy
+cd ../..
+curl -sS "https://rplus-sync.rmas-workersdev.workers.dev/api/sync/v1/ping"
+curl -sS "https://rplus-sync.rmas-workersdev.workers.dev/mobile/" | head
+```
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Notas
+
+- Requiere **7.9.5+** en Nube. Si venías del bucket «Sala», reconecta en ⇄ para unirte a la sala canónica de tu unidad (Sala 1/2/E).
+- iPad: sin instalación — enlace desde ⇄ en Safari.
+- Interconsultas, UX, Eme y Área A siguen solo LAN (sin cambios).

@@ -1,0 +1,324 @@
+// Patient list, ronda navigation, pin/archive, add/save modal, delete — barrel + sidebar chrome
+import { getPatients, getNotes, getIndicaciones, persistClinicalState } from '../app-state.mjs';
+import { applyProfileToNoteIfEmpty } from './notes-indicaciones.mjs';
+import { applyNotaFormatScaffoldIfEmpty } from '../profile-templates.mjs';
+import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
+import { isCloudSyncActive } from './cloud-sync/nube-sync-policy.mjs';
+import { rt, registerPatientsRuntime as _registerRt } from './patients-runtime-state.mjs';
+import { patientsBridge } from './patients-bridge.mjs';
+import {
+  pickDefaultVisiblePatientId,
+  ensureActivePatientInSidebarScope,
+  filterPatientsForGuardiaCensus,
+  syncClinicalCensusFiltersChrome,
+  togglePatientCensusFilters,
+} from './patients-scope.mjs';
+import { renderPatientList } from './patients-list.mjs';
+import {
+  selectPatient,
+  deletePatient,
+  confirmBulkDeletePatients,
+} from './patients-select.mjs';
+import {
+  cancelPatientBulkSelect,
+  togglePatientBulkSelect,
+} from './patients-bulk-bar.mjs';
+import { setArchivedSectionCollapsed } from './patients-list.mjs';
+import {
+  onPatientSearchInput,
+  advanceRondaPatient,
+  scrollActiveRondaCardIntoView,
+} from './patients-round.mjs';
+import {
+  openAddModal,
+  openAddModalFromLab,
+  openAddModalFromLabPatient,
+  openCompleteAdmissionModal,
+  closeModal,
+  confirmCloseAddPatientModal,
+  savePatient,
+  initPatientModalEnterSave,
+  focusPatientSearchInput,
+} from './patients-modal.mjs';
+import {
+  generatePatientId,
+  buildPatientEntry,
+  findPatientByRegistro,
+  ensureUniquePatientName,
+} from './patients-modal-commit.mjs';
+import { patientRegistroModalWindowHandlers } from '../patient-registro-modal-ui.mjs';
+
+patientsBridge.renderPatientList = renderPatientList;
+patientsBridge.selectPatient = selectPatient;
+
+export { rt };
+export {
+  pickDefaultVisiblePatientId,
+  ensureActivePatientInSidebarScope,
+  filterPatientsForGuardiaCensus,
+  syncClinicalCensusFiltersChrome,
+};
+
+export function invalidateMobileSidebarPatientCache() {
+  /* no-op — kept for LAN scope refresh hooks */
+}
+
+export function registerPatientsRuntime(ctx) {
+  _registerRt(ctx);
+}
+
+export function applyDefaultsToNewPatient(patientId) {
+  if (!getNotes()[patientId]) return;
+  applyProfileToNoteIfEmpty(getNotes()[patientId]);
+  applyNotaFormatScaffoldIfEmpty(getNotes()[patientId], rt.getSettings() || {});
+}
+
+export function applyDefaultsToNewIndicaciones(patientId) {
+  if (!getIndicaciones()[patientId]) return;
+  var st = rt.getSettings() || {};
+  if (st.defaultDieta && !getIndicaciones()[patientId].dieta) getIndicaciones()[patientId].dieta = st.defaultDieta;
+  if (st.defaultCuidados && !getIndicaciones()[patientId].cuidados) {
+    getIndicaciones()[patientId].cuidados = st.defaultCuidados;
+  }
+  if (st.defaultMedicamentos && !getIndicaciones()[patientId].medicamentos) {
+    getIndicaciones()[patientId].medicamentos = st.defaultMedicamentos;
+  }
+  if (st.defaultIndicacionesEstudios && !getIndicaciones()[patientId].estudios) {
+    getIndicaciones()[patientId].estudios = st.defaultIndicacionesEstudios;
+  }
+  if (st.defaultIndicacionesInterconsultas && !getIndicaciones()[patientId].interconsultas) {
+    getIndicaciones()[patientId].interconsultas = st.defaultIndicacionesInterconsultas;
+  }
+}
+
+var ARCHIVED_SECTION_COLLAPSED_LS = 'rpc-archived-section-collapsed';
+var SIDEBAR_AUTO_HIDE_LS = 'rpc-sidebar-auto-hide';
+
+export {
+  onPatientSearchInput,
+  advanceRondaPatient,
+  scrollActiveRondaCardIntoView,
+};
+
+export { renderPatientList, selectPatient, deletePatient };
+
+function patientSectionKey(p) {
+  if (p && p.archived) return 'archived';
+  if (p && p.pinned) return 'pinned';
+  return 'active';
+}
+
+function movePatientBefore(targetId, beforeId) {
+  if (!targetId || !beforeId || targetId === beforeId) return;
+  var from = getPatients().findIndex(function (p) {
+    return p.id === targetId;
+  });
+  var to = getPatients().findIndex(function (p) {
+    return p.id === beforeId;
+  });
+  if (from < 0 || to < 0 || from === to) return;
+  var moved = getPatients().splice(from, 1)[0];
+  if (from < to) to -= 1;
+  getPatients().splice(to, 0, moved);
+}
+
+export function toggleArchivedSection(ev) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  try {
+    var collapsed = localStorage.getItem(ARCHIVED_SECTION_COLLAPSED_LS) === '1';
+    setArchivedSectionCollapsed(!collapsed);
+  } catch {
+    setArchivedSectionCollapsed(false);
+  }
+  patientsBridge.renderPatientList();
+}
+
+export function movePatientByOffset(ev, id, dir) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  var p = getPatients().find(function (x) {
+    return x.id === id;
+  });
+  if (!p) return;
+  var sec = patientSectionKey(p);
+  var ids = getPatients()
+    .filter(function (x) {
+      return patientSectionKey(x) === sec;
+    })
+    .map(function (x) {
+      return x.id;
+    });
+  var idx = ids.indexOf(id);
+  if (idx < 0) return;
+  var next = idx + dir;
+  if (next < 0 || next >= ids.length) return;
+  movePatientBefore(id, ids[next]);
+  persistClinicalState();
+  patientsBridge.renderPatientList();
+}
+
+export function togglePatientPinned(id, ev) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  var p = getPatients().find(function (x) {
+    return x.id === id;
+  });
+  if (!p) return;
+  p.pinned = !p.pinned;
+  if (p.pinned) p.archived = false;
+  persistClinicalState();
+  patientsBridge.renderPatientList();
+}
+
+export function togglePatientArchived(id, ev) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  var p = getPatients().find(function (x) {
+    return x.id === id;
+  });
+  if (!p) return;
+  p.archived = !p.archived;
+  if (p.archived) p.pinned = false;
+  if (!p.archived) setArchivedSectionCollapsed(false);
+  persistClinicalState();
+  patientsBridge.renderPatientList();
+  if (isCloudSyncActive()) {
+    scheduleCloudSyncPush();
+  }
+}
+
+function readSidebarAutoHide() {
+  try {
+    return localStorage.getItem(SIDEBAR_AUTO_HIDE_LS) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeSidebarAutoHide(on) {
+  try {
+    localStorage.setItem(SIDEBAR_AUTO_HIDE_LS, on ? '1' : '0');
+  } catch (e) { console.warn("[patients] failed to write " + SIDEBAR_AUTO_HIDE_LS, e); }
+}
+
+function applySidebarAutoHideUi() {
+  var on = readSidebarAutoHide();
+  document.documentElement.classList.toggle('sidebar-auto-hide', on);
+  /* Reset reveal on every toggle: enabling starts collapsed, disabling has no reveal state to keep. */
+  document.documentElement.classList.remove('sidebar-reveal');
+  var btn = document.getElementById('btn-sidebar-auto-hide');
+  if (btn) {
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.title = on
+      ? 'Mostrar barra de pacientes fija'
+      : 'Ocultar barra de pacientes (reaparece al acercar el mouse)';
+  }
+}
+
+export function toggleSidebarAutoHide() {
+  writeSidebarAutoHide(!readSidebarAutoHide());
+  applySidebarAutoHideUi();
+}
+
+/** True when the pointer is on the window or workbench left edge (hidden-sidebar reveal). */
+export function shouldRevealSidebarAt(clientX, appLeft) {
+  var x = Number(clientX);
+  var left = Number(appLeft) || 0;
+  return x <= 36 || x <= left + 36;
+}
+
+/** Once open, keep the census visible until the pointer leaves the sidebar column. */
+export function shouldKeepSidebarRevealed(clientX, appLeft, sidebarWidth) {
+  var x = Number(clientX);
+  var left = Number(appLeft) || 0;
+  var w = Number(sidebarWidth);
+  if (!(w > 40)) w = 260;
+  return shouldRevealSidebarAt(x, left) || x <= left + w + 12;
+}
+
+export function initSidebarAutoHide() {
+  var strip = document.getElementById('sidebar-hover-strip');
+  var aside = document.getElementById('patient-sidebar');
+  if (typeof document !== 'undefined' && document.documentElement.classList.contains('rpc-mobile-web')) {
+    writeSidebarAutoHide(false);
+  }
+  applySidebarAutoHideUi();
+  if (!strip || !aside) return;
+  function reveal() {
+    if (readSidebarAutoHide()) document.documentElement.classList.add('sidebar-reveal');
+  }
+  function hide() {
+    document.documentElement.classList.remove('sidebar-reveal');
+  }
+  function appLeft() {
+    var app = document.querySelector('.app');
+    return app ? app.getBoundingClientRect().left : 0;
+  }
+  function asideWidth() {
+    var w = aside.getBoundingClientRect().width;
+    return w > 40 ? w : 260;
+  }
+  function pointerOverAside(node) {
+    return !!(aside && node && (aside === node || aside.contains(node)));
+  }
+  strip.addEventListener('mouseenter', reveal);
+  aside.addEventListener('mouseenter', reveal);
+  document.addEventListener('mousemove', function (e) {
+    if (!readSidebarAutoHide()) return;
+    var left = appLeft();
+    var revealed = document.documentElement.classList.contains('sidebar-reveal');
+    if (shouldRevealSidebarAt(e.clientX, left) || pointerOverAside(e.target)) {
+      reveal();
+      return;
+    }
+    if (revealed && shouldKeepSidebarRevealed(e.clientX, left, asideWidth())) return;
+    hide();
+  });
+}
+
+export {
+  openAddModal,
+  openAddModalFromLab,
+  openAddModalFromLabPatient,
+  openCompleteAdmissionModal,
+  closeModal,
+  confirmCloseAddPatientModal,
+  savePatient,
+  generatePatientId,
+  buildPatientEntry,
+  findPatientByRegistro,
+  ensureUniquePatientName,
+  focusPatientSearchInput,
+  initPatientModalEnterSave,
+};
+
+export const windowHandlers = {
+  onPatientSearchInput,
+  focusPatientSearchInput,
+  togglePatientPinned,
+  togglePatientArchived,
+  movePatientByOffset,
+  toggleArchivedSection,
+  toggleSidebarAutoHide,
+  openAddModal,
+  openAddModalFromLab,
+  openCompleteAdmissionModal,
+  closeModal,
+  savePatient,
+  selectPatient,
+  deletePatient,
+  togglePatientBulkSelect,
+  cancelPatientBulkSelect,
+  confirmBulkDeletePatients,
+  togglePatientCensusFilters,
+  ...patientRegistroModalWindowHandlers,
+};

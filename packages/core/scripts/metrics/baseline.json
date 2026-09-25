@@ -1,0 +1,761 @@
+{
+  "version": 1,
+  "updatedAt": "2026-09-25T13:40:29.404Z",
+  "totalScore": 736,
+  "trackedLoc": 792800,
+  "moduleCount": 2077,
+  "bootGraphHash": "1610b345bfdfc570",
+  "bootGraph": {
+    "hash": "1610b345bfdfc570",
+    "imports": [
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./app-shell.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./app-state.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./censo-export.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./equipos-cloud-config.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/agenda.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/agenda.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/app-tabs-runtime.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/app-tabs.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/chrome.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/chrome.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/cloud-sync/mutate-bridge.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/cloud-sync/panel-chrome.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/diagrams.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/drive-import-modal.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/estado-actual-panel.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/estado-actual-paste-modal.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/estado-actual-registro-defaults.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/estado-actual-registro-modal.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/eventualidades-panel.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/expediente-inner-cache.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/expediente-navigation.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/expediente.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/expediente.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/expediente.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/interconsulta-mode-chrome.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/lab-bulk-preview-modal.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/lab-history-batch-copy-modal.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/med-admin-panel.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/medications.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/medications.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/nota-evolucion/nota-evolucion-primary-tab.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/notes-indicaciones.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/patient-dashboard/dashboard-mount.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/patient-dashboard/lab-inner.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/patients.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/patients.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/patients.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/productivity.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/profile.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/receta-hu.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/soap-estado.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/soap-estado.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/sync-apply/patient-delete-local.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/sync-apply/patient-delete.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/sync-apply/patient-entries.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/todos.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/todos.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/vpo.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./lab-bulk-paste.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./lab-history-set.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./lab-history-set.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./lazy-feature-routes.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./mobile-web.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./mode-features.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./patient-name-cleanup-once.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./storage.js",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./tend-core.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./todos-reminder-scheduler.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./app-shell-deferred.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./app-shell-modals.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./app-shell-patient-update.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./clinical-access-runtime.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./clinical-quick-export.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./clinical-quick-export.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./document-export-client.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./document-export-client.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./features/chrome.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./features/chrome.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./features/command-palette.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./features/guardia-mode-button.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./features/header-context.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./features/patients.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./features/profile.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./lazy-feature-routes.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./ui-overlay.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./ui-toast.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./ui-toast.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./app-runtimes.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./app-shell.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./app-state.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./boot/boot-steps.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./clinical-access-runtime.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./clinical-access-runtime.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./clinical-ops-sync.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./clinical-settings.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./clinical-team-invite.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./db-storage-bridge.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/agenda.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/app-tabs.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/chrome.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/clinical-onboarding-main.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/clinical-onboarding-main.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/clinical-registration.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/clinical-rotation-entry.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/clinical-teams.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/clinical-teams.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/cloud-mobile/boot.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/cloud-sync/autostart.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/cloud-sync/panel-chrome.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/db-unlock.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/drive-import-modal.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/estado-actual-panel.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/estado-actual-paste-modal.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/estado-actual-registro-modal.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/expediente-navigation.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/expediente.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/guardia-mode-button.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/lab-bulk-preview-modal.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/lab-history-batch-copy-modal.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/medications.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/notes-indicaciones.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/patient-dashboard/dashboard-mount.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/patient-dashboard/lab-inner.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/patients.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/productivity.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/profile.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/profile.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/receta-hu.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/soap-estado.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/todos.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./inline-action-dispatch.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./lazy-feature-routes.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./perf-markers.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./perf-markers.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./perf-markers.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./perf-markers.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./presentation-mode.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./rpc-date-picker.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./session-clinical-wipe.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./session-clinical-wipe.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./storage.js",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./storage/storage-core.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./ui-tab-motion.mjs",
+        "isDynamic": false
+      }
+    ]
+  },
+  "byFile": {},
+  "changelog": [
+    {
+      "date": "2026-08-07",
+      "note": "Baseline refresh totalScore=130 (was 0; LAN excision WS3 — deleted lan-squad/, features/lan/, historia-clinica; boot graph hash change)"
+    },
+    {
+      "date": "2026-08-24",
+      "note": "Baseline refresh totalScore=306"
+    },
+    {
+      "date": "2026-09-03",
+      "note": "Baseline refresh totalScore=140, trackedLoc=337166→350000, moduleCount=1305→1244 (codebase-reduction branch, chore/codebase-reduction). Owner set the 350k LOC ceiling deliberately, as headroom above the real measured count (337,166) after merging 3 feature commits from main, so normal feature work does not hit this gate every release. Not a silent refresh: owner approved via chat, PLAN.md #shrink-fold3."
+    },
+    {
+      "date": "2026-09-06",
+      "note": "Baseline refresh totalScore=225 (was 140), moduleCount=1244->1246, trackedLoc unchanged at 350000 (measured 344541, still under headroom). Owner-approved via chat for 8.3.2 prep: complexityOverage carries 15 pre-existing complexity violations (lab-bulk-paste.mjs, soap-estado.mjs, clinical-ops-sync-export.mjs, clinical-access-teams-core.mjs x2, interconsulta-team-board.mjs, panel-conexion-bootstrap.mjs, cloud-sync/settings.mjs, estado-actual-meds-dropdown.mjs, estado-actual-meds.mjs, nota-evolucion-state.mjs, labs-lcr-scan.mjs, expediente-tabs.mjs, clinical-rotation.mjs, workbench/mode-frame.mjs) that predate this session and were never caught by an earlier baseline capture; one new violation this session (estado-actual-panel-registro.mjs handleFormClick) was fixed in the same change, not folded into this raise. moduleCount rose from 5 new files this session (med-admin-panel.mjs, med-admin-schedule.mjs, stanford-solution-detect.mjs, stanford-solution-display.mjs, estado-actual-clipboard.mjs), net +2 after other folds. Handoff to pay the 15 pre-existing violations to zero: docs/superpowers/plans/2026-09-06-complexity-debt-handoff.md."
+    },
+    {
+      "date": "2026-09-06",
+      "note": "Correccion de conteo: moduleCount quedo en 1246 por error (medido con git ls-files antes de que los 5 archivos nuevos de esta sesion quedaran en el indice). Valor real post-commit: 1251 (git ls-files ya los incluye). trackedLoc sin cambio (350000 techo, 345907 medido)."
+    },
+    {
+      "date": "2026-09-09",
+      "note": "Baseline refresh: moduleCount 1251->1257 (6 new files this session: admin-roles.js, cloud-sync-clock.mjs, cloud-sync-echo-guard.mjs, network-census.mjs, scope-cloud-state-to-patient.mjs, patient-name-cleanup-once.mjs, for the Red tab cross-area admin census feature). trackedLoc ceiling 350000->348800 (measured 348603, rounded up). totalScore 225->0 (this session fixed the 3 new complexity violations the Red tab feature introduced instead of carrying them as debt; the 15 pre-existing violations from the 2026-09-06 raise are untouched, still tracked in docs/superpowers/plans/2026-09-06-complexity-debt-handoff.md). Owner-approved via chat 2026-09-09. Also fixes a script bug: run.mjs --write-baseline was dropping trackedLoc/moduleCount from the file entirely (only totalScore/bootGraph were ever written back), so every baseline refresh silently blanked the LOC/module ratchets until the next check() run failed on it."
+    },
+    {
+      "date": "2026-09-14",
+      "note": "Baseline refresh totalScore=0"
+    },
+    {
+      "date": "2026-09-16",
+      "note": "Baseline refresh totalScore=0"
+    },
+    {
+      "date": "2026-09-16",
+      "note": "Baseline refresh totalScore=0"
+    },
+    {
+      "date": "2026-09-16",
+      "note": "Baseline refresh totalScore=25"
+    },
+    {
+      "date": "2026-09-16",
+      "note": "Baseline refresh totalScore=0"
+    },
+    {
+      "date": "2026-09-16",
+      "note": "Baseline refresh totalScore=0"
+    },
+    {
+      "date": "2026-09-18",
+      "note": "Baseline refresh totalScore=0"
+    },
+    {
+      "date": "2026-09-21",
+      "note": "Baseline refresh totalScore=0"
+    },
+    {
+      "date": "2026-09-21",
+      "note": "Baseline refresh totalScore=968"
+    },
+    {
+      "date": "2026-09-21",
+      "note": "Baseline refresh totalScore=968"
+    },
+    {
+      "date": "2026-09-21",
+      "note": "Baseline refresh totalScore=968"
+    },
+    {
+      "date": "2026-09-21",
+      "note": "moduleCount 2057->2077 (+20 headroom). Live module updates phase 2 (packages/core/lib/module-update-fetch.mjs) needed +1 with 0 headroom left after #61's ceiling extension; owner asked for a 20-module buffer instead of a bare +1, so phase 3 (activation) does not need another ask. Owner-approved via project thread, PR #62."
+    },
+    {
+      "date": "2026-09-23",
+      "note": "Baseline refresh totalScore=755 (was 968; trimmed repeated setup in 49 test files). moduleCount kept at 2077 to keep the 2026-09-21 owner-approved headroom."
+    },
+    {
+      "date": "2026-09-25",
+      "note": "Baseline refresh for 8.4.1: trackedLoc 790100->792800 (owner-approved, E2E-gaps migration adding new .e2e.mjs files ahead of the old unit-test deletes; expected to drop once later groups finish), totalScore=736. moduleCount kept at 2077 (2026-09-21 owner-approved headroom, unrelated to this bump)."
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+import { closeEstadoActualPasteModal } from './estado-actual-paste-modal.mjs';
+import { setEaFormOpenPatientId } from './estado-actual-panel-core.mjs';
+import { setEaRegistroEditMode } from './estado-actual-panel-registro-edit.mjs';
+import { toDatetimeLocalValue } from './estado-actual-panel-format.mjs';
+import { syncIoBalanceFromForm, buildIoExtraRow } from './estado-actual-panel-registro.mjs';
+
+/** @type {{ ensureForm(): void, resetForm(): void, showToast(msg: string, type?: string): void }} */
+let rt = {
+  ensureForm() {},
+  resetForm() {},
+  showToast() {},
+};
+
+var dismissWired = false;
+
+export function registerEstadoActualRegistroModalRuntime(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
+}
+
+function getBackdrop() {
+  return document.getElementById('ea-registro-backdrop');
+}
+
+function getPasteBackdrop() {
+  return document.getElementById('ea-paste-backdrop');
+}
+
+function handleEaModalEscape(ev) {
+  if (ev.key !== 'Escape' && ev.key !== 'Esc') return;
+  var pasteBd = getPasteBackdrop();
+  if (pasteBd && pasteBd.classList.contains('open')) {
+    closeEstadoActualPasteModal();
+    ev.preventDefault();
+    ev.stopPropagation();
+    return;
+  }
+  var reg = getBackdrop();
+  if (reg && reg.classList.contains('open')) {
+    closeEstadoActualRegistroModal();
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+}
+
+/** Escape y clic fuera (registro + pegar anidado). */
+export function wireEaModalDismiss() {
+  if (dismissWired) return;
+  dismissWired = true;
+  document.addEventListener('keydown', handleEaModalEscape, true);
+  var reg = getBackdrop();
+  var pasteBd = getPasteBackdrop();
+  if (reg) {
+    reg.addEventListener('click', function (ev) {
+      if (!reg.classList.contains('open')) return;
+      if (ev.target !== reg) return;
+      closeEstadoActualRegistroModal();
+    });
+  }
+  if (pasteBd) {
+    pasteBd.addEventListener('click', function (ev) {
+      if (!pasteBd.classList.contains('open')) return;
+      var panel = pasteBd.querySelector('.ea-paste-modal');
+      if (panel && panel.contains(/** @type {Node} */ (ev.target))) return;
+      closeEstadoActualPasteModal();
+    });
+  }
+}
+
+/**
+ * @param {{ preserveForm?: boolean } | undefined} [opts]
+ */
+export function openEstadoActualRegistroModal(opts) {
+  var backdrop = getBackdrop();
+  if (!backdrop) {
+    rt.showToast('Formulario de registro no disponible', 'error');
+    return;
+  }
+  rt.ensureForm();
+  if (!opts || !opts.preserveForm) rt.resetForm();
+  else if (typeof rt.syncGluMode === 'function') rt.syncGluMode();
+  backdrop.classList.add('open');
+  backdrop.setAttribute('aria-hidden', 'false');
+  document.documentElement.classList.add('ea-registro-modal-open');
+  var first = backdrop.querySelector('[data-ea-vital="tas"], [data-ea-vital="temp"]');
+  if (first && 'focus' in first) first.focus();
+}
+
+/**
+ * Abre un registro nuevo (en blanco) para anotar retroactivamente una
+ * hemodiálisis pasada: fecha en "ayer" y una fila de ultrafiltrado lista
+ * para escribir el valor — fuera de T1/T2/T3, junto a las demás fuentes
+ * cuantificables sueltas.
+ */
+export function openPastHemodialisisRegistro() {
+  openEstadoActualRegistroModal();
+  var form = document.getElementById('ea-form');
+  if (!form) return;
+  var yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  var recorded = document.getElementById('ea-recorded-at');
+  if (recorded && 'value' in recorded) recorded.value = toDatetimeLocalValue(yesterday);
+  var extraList = form.querySelector('#ea-io-extra-list');
+  if (extraList) {
+    var row = buildIoExtraRow({ kind: 'ultrafiltrado' });
+    extraList.appendChild(row);
+    var valueEl = row.querySelector('[data-ea-io-extra-value]');
+    if (valueEl && 'focus' in valueEl) valueEl.focus();
+  }
+  syncIoBalanceFromForm(form);
+}
+
+export function closeEstadoActualRegistroModal() {
+  closeEstadoActualPasteModal();
+  setEaFormOpenPatientId(null);
+  // A cancelled edit must not linger: the next open (even preserveForm) appends, not replaces.
+  setEaRegistroEditMode(document.getElementById('ea-form'), null);
+  var backdrop = getBackdrop();
+  if (!backdrop) return;
+  backdrop.classList.remove('open');
+  backdrop.setAttribute('aria-hidden', 'true');
+  document.documentElement.classList.remove('ea-registro-modal-open');
+}
+
+export const windowHandlers = {
+  openEstadoActualRegistroModal,
+  closeEstadoActualRegistroModal,
+  openPastHemodialisisRegistro,
+};

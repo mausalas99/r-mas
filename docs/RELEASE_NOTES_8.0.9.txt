@@ -1,0 +1,49 @@
+R+ 8.0.9 (reposición K + Nube deletes + Tendencias)
+========================================================
+
+Fecha: 2026-08-10
+
+## Resumen
+
+**8.0.9** agrupa **reposición de potasio IV** en Estado Actual / NM (con duración de infusión), evita avisos falsos de PaFi en **aire ambiente**, y agrupa **insulina preprandial**. La Nube endurece pull y borrados (D1 antes de KV, tombstones coalescidos, cupo de push ampliado, snapshot JSON en Free) y corrige **Tendencias/Cultivos** en escritorio. El origen sigue en **`app://rplus`** con fetch Nube por IPC — **sin wipe** al actualizar desde 8.0.8.
+
+## Nuevo / mejorado
+
+### Manejo / Estado Actual
+
+- **Reposición de potasio** — Cloruro / fosfato / acetato de K IV se agrupan en NM como `REPOSICIÓN DE POTASIO`, con duración del diluyente (p. ej. PARA 20 HORAS).
+- **Aire ambiente** — Sin hints de PaFi / gasometría cuando el soporte es aire ambiente (no soporte activo ni parámetros de VM).
+- **Insulina preprandial** — Esquema SC agrupado en Manejo, EA y censo; selección y suspensión en bloque.
+
+### Nube / escritorio
+
+- **Borrados en lote** — Tombstones de pacientes se coalescen en un solo push (presupuesto por mutación HTTP); Diagnóstico Nube refresca pendientes en vivo.
+- **Worker Free** — `room_state` nuevo en JSON UTF-8 (sin AES-GCM por push); blobs legacy siguen desencriptando. Cupo de push por sala sube a 120.
+- **Pull fiable** — Revisión D1 antes de KV; reconcile de revisión; reintento en 503.
+- **Fetch por IPC** — `cloud-sync-fetch` en main evita CORS del renderer; **no** se cambia el origen de la UI (sigue `app://rplus`).
+- **Tendencias / Cultivos** — Remount de paneles del expediente tras reset DOM (ya no quedan en blanco en escritorio).
+- **Equipo en ⇄** — Menos parpadeo al hidratar Nube; scroll del roster en el scrollport del modal.
+- **Pack asar** — `data/release-notes-highlights.mjs` en `build.files`; gate de release escanea imports del renderer fuera de `public/`.
+
+### Ingreso / móvil (si aplica en el turno)
+
+- **Agregar por registro** / completar ingreso incompleto.
+- **R+ Móvil** — historial de labs acotado; pestañas Lab/Nota; outbox notifica cambios al diagnóstico.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v8.0.9
+
+- Mac: `R+-8.0.9-arm64.dmg`, `R+-8.0.9-x64.dmg` (y zip para auto-update).
+- Windows: `R+-8.0.9-x64.exe`.
+
+Instala **8.0.9 en todas las Macs** del turno. **Despliega el Worker** el mismo día: `npm run deploy` en `cloud/sync-worker`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Notas
+
+- Peers en **8.0.8** son compatibles en el mismo turno.
+- **Sin wipe al actualizar** — El cutover 7.9 (snapshot + wipe de usuarios) **no** se re-ejecuta en 8.0.x. SQLCipher y `userData` persisten; Recuérdame / `rpc-settings` siguen en el mismo origen `app://rplus`.
+- No hay bump de schema SQLCipher.
+- **Recuérdame** guarda token en el dispositivo; no usar en Macs compartidas.
