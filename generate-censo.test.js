@@ -50,3 +50,12 @@ test('renderCensusPdf devuelve buffer PDF con fichas', async () => {
   assert.equal(String.fromCharCode(buf[0], buf[1], buf[2], buf[3]), '%PDF');
   assert.ok(buf.length > 500);
 });
+
+test('renderCensusPdf no truena con texto fuera de WinAnsi (emoji, NFD, Δ, ≥, árabe, zero-width)', async () => {
+  var odd = 'DEMO JOSÉ 😀 Δ ≥ μ مريض 测试 ​‮ \ud83d';
+  var buf = await renderCensusPdf({
+    header: { mes: odd, fecha: '25/09/2026', servicio: odd },
+    rows: [{ num: '1', cama: '201', pacienteNombre: odd, dx: odd, labs: odd, meds: odd, pendientes: odd }],
+  });
+  assert.equal(Buffer.from(buf.slice(0, 5)).toString(), '%PDF-');
+});

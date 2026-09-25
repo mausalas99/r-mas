@@ -375,6 +375,12 @@ html.dark .btn-add:hover {
 .patient-sort-zone--virtual-active .virtual-scroll-inner .patient-card {
   margin-bottom: 0;
 }
+/* Virtual rows sit at a fixed stride (PATIENT_ACTIVE_ITEM_STRIDE): a 2-line
+   name makes the card taller than the stride and it overlaps the next one.
+   One line here; the full name stays in the card's title tooltip. */
+.patient-sort-zone--virtual-active .virtual-scroll-inner .patient-card .p-name {
+  -webkit-line-clamp: 1;
+}
 .patient-sort-zone .sortable-chosen:not(.sortable-ghost):not(.sortable-drag) {
   box-shadow: 0 4px 18px rgba(79, 86, 255, 0.12);
 }

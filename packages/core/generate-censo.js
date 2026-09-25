@@ -12,7 +12,7 @@ import {
   CENSO_OPTIONAL_COL_KEYS,
   resolveCensoColWeights,
 } from './public/js/censo-table-columns.mjs';
-import { pdfSafeLine } from './lib/pdf-safe-line.js';
+import { pdfSafeLine, winAnsiSafeDeep } from './lib/pdf-safe-line.js';
 
 const PAGE_W = 1008;
 const PAGE_H = 612;
@@ -882,6 +882,7 @@ function buildEquipoLine(header) {
  * @returns {CensoPayload}
  */
 function normalizePayload(raw) {
+  raw = winAnsiSafeDeep(raw || {});
   var header = raw.header || {};
   var titleLine = String(header.titleLine || '').trim();
   if (!titleLine) {
