@@ -10,6 +10,9 @@ const ENTRY_MAP_KEYS = Object.freeze({
   notes: 'note',
   indicaciones: 'indicaciones',
   medRecetaByPatient: 'medReceta',
+  vpoByPatient: 'vpo',
+  listadoProblemas: 'listadoProblemas',
+  medPharmProfileByPatient: 'medPharmProfile',
 });
 
 
@@ -159,7 +162,7 @@ function encodeBlobKeyOps(key, value, actorId, fallback) {
   if (entryField) {
     return encodePatientMapBlob(entryField, value, actorId, fallback);
   }
-  // Unmapped keys (vpo/listado/medPharmProfile) have no Worker LWW path yet — skip, empty → projector marks synced.
+  // Unmapped keys have no Worker LWW path — skip, empty → projector marks synced.
   return [];
 }
 

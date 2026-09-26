@@ -63,7 +63,7 @@ describe('op-encoder-persist', () => {
     assert.equal(ops[1].path, 'labSidecars/p1/2026-08-02');
   });
 
-  it('skips vpo/listado/medPharmProfile keys (no blobs/* — Worker rejects unsupported_path)', () => {
+  it('maps vpo/listado/medPharmProfile maps to entries/{id}/<field>', () => {
     const ops = encodePersistSnapshotOps({
       commandType: 'clinical.persistSnapshot',
       blobKeys: [
@@ -72,15 +72,21 @@ describe('op-encoder-persist', () => {
         'medPharmProfileByPatient',
       ],
       blobs: {
-        vpoByPatient: { p1: { texto: 'vpo' } },
-        listadoProblemas: { items: [] },
+        vpoByPatient: { p1: { texto: 'vpo', updatedAt: '2026-08-10T00:00:00.000Z' } },
+        listadoProblemas: { p1: { items: [] } },
         medPharmProfileByPatient: { p1: {} },
       },
       actorId: 'u1',
       fallbackUpdatedAt: '2026-08-11T12:00:00.000Z',
     });
-    assert.deepEqual(ops, []);
-    assert.ok(!ops.some((op) => String(op.path || '').startsWith('blobs/')));
+    assert.deepEqual(
+      ops.map((op) => [op.path, op.updatedAt]),
+      [
+        ['entries/p1/vpo', '2026-08-10T00:00:00.000Z'],
+        ['entries/p1/listadoProblemas', '2026-08-11T12:00:00.000Z'],
+        ['entries/p1/medPharmProfile', '2026-08-11T12:00:00.000Z'],
+      ]
+    );
   });
 
   it('maps medRecetaByPatient to entries/{id}/medReceta', () => {

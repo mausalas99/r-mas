@@ -10,6 +10,9 @@ const ENTRY_SKIP_KEYS = new Set([
   'eventualidades',
   'monitoreo',
   'medReceta',
+  'vpo',
+  'listadoProblemas',
+  'medPharmProfile',
   'fields',
 ]);
 
@@ -85,8 +88,8 @@ export function cloudEntryToLanEntry(entry, labSidecarsForPatient) {
     const indicaciones = entry.indicaciones;
     out.indicaciones = indicaciones && typeof indicaciones === 'object' ? indicaciones : {};
   }
-  if (Object.prototype.hasOwnProperty.call(entry, 'medReceta') && !isCiphertext(entry.medReceta)) {
-    out.medReceta = entry.medReceta;
+  for (const key of ['medReceta', 'vpo', 'listadoProblemas', 'medPharmProfile']) {
+    if (Object.prototype.hasOwnProperty.call(entry, key) && !isCiphertext(entry[key])) out[key] = entry[key];
   }
   return out;
 }
@@ -220,7 +223,7 @@ export function foldCloudOp(fold, op) {
   }
 
   const entryField =
-    /^entries\/([^/]+)\/(note|indicaciones|historiaClinica|eventualidades|monitoreo|medReceta|fields)$/.exec(
+    /^entries\/([^/]+)\/(note|indicaciones|historiaClinica|eventualidades|monitoreo|medReceta|vpo|listadoProblemas|medPharmProfile|fields)$/.exec(
       path
     );
   if (entryField) {

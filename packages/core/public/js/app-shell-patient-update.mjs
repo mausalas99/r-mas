@@ -6,13 +6,7 @@ import { dateInputValueToAccesoFecha } from './patient-date-fields.mjs';
 import { renderPatientList } from './features/patients.mjs';
 import { getPatients, persistClinicalState } from './app-state.mjs';
 import { scheduleCloudSyncPush } from './features/cloud-sync/mutate-bridge.mjs';
-
-function touchPatientLanUpdatedAt(pid) {
-  const p = getPatients().find(function (row) {
-    return String(row.id) === String(pid);
-  });
-  if (p) p.lanUpdatedAt = new Date().toISOString();
-}
+import { stampCensoFieldsClock } from './patient-diagnosticos.mjs';
 
 function normalizePatientFieldValue(field, value) {
   if (field === 'nombre' || field === 'area' || field === 'servicio') {
@@ -61,7 +55,8 @@ export function createPatientUpdateHandler(shellCtx, syncWorkContextChrome) {
     if (String(p[field] || '') === String(next || '')) return;
     p[field] = next;
     applyPatientAccesoField(p, field, next);
-    touchPatientLanUpdatedAt(pid);
+    // Own key clock: a peer's newer edit to another field must not undo this one.
+    stampCensoFieldsClock(p, undefined, field);
     refreshPatientChromeAfterUpdate();
     scheduleCloudSyncPush();
   }

@@ -54,6 +54,7 @@ function dispatchSimpleAction(action, deps, btn) {
       const input = deps.root.querySelector('[data-admin-key-input]');
       if (input instanceof HTMLInputElement) setSessionAdminKey(input.value);
       deps.toast('Clave guardada solo para esta sesión.', 'info');
+      reloadAdminData(deps);
     },
     'promote-self': () => void handlePromoteSelf(deps),
     'refresh-resumen': () => void loadAdminResumen(deps.root, deps.getApi),
@@ -381,6 +382,13 @@ function dispatchUserAction(action, btn, deps) {
   if (action && action in userMap) userMap[action]();
 }
 
+/** The first load ran without admin rights — reload so its "Se requiere rol admin" goes away. */
+function reloadAdminData(deps) {
+  void loadAdminResumen(deps.root, deps.getApi);
+  void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps));
+  void loadAdminNetworkCensus(deps.root, deps.outerDeps);
+}
+
 /** @param {object} deps */
 async function handlePromoteSelf(deps) {
   try {
@@ -393,6 +401,7 @@ async function handlePromoteSelf(deps) {
     if (!(await confirmAction('¿Promover tu cuenta a admin en la nube?'))) return;
     await deps.getApi().adminPromote(userId, 'admin');
     deps.toast('Cuenta promovida a admin.', 'success');
+    reloadAdminData(deps);
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo promover.', 'error');
   }

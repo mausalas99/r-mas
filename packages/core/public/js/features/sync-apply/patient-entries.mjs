@@ -10,7 +10,7 @@ import {
 import { reparseLabSetsFromSome } from '../../lab-history-some-reparse.mjs';
 import { bumpLabHistoryRevision } from '../../lab-history-cache.mjs';
 import { mergePatientMonitoreoFromImported } from '../estado-actual-data.mjs';
-import { mergeCensoPatientFields, mergeFieldClocks } from '../../patient-diagnosticos.mjs';
+import { mergeCensoPatientFields, mergeFieldClocks, compareFieldClock } from '../../patient-diagnosticos.mjs';
 
 /** Set by applyLanPatientScalars when this device holds a newer censo key than the room. */
 var censusRepushNeeded = false;
@@ -207,15 +207,22 @@ function applyLanGuardiaMarks(existing, p) {
   return changed;
 }
 
+/** A per-key clock (set by Datos edits) beats the shared patient clock. */
+function scalarKeyTakesIncoming(existing, p, key, takeIncoming) {
+  var cmp = compareFieldClock(existing, p, key);
+  return cmp == null ? takeIncoming : cmp === 1;
+}
+
 function applyLanPatientScalars(existing, p) {
   var changed = false;
   var takeIncoming = incomingScalarsAreAuthoritative(existing, p);
   var scalarKeys = [
-    'nombre', 'edad', 'sexo', 'area', 'servicio', 'cuarto', 'cama', 'peso', 'talla', 'viaAcceso', 'registro',
+    'nombre', 'edad', 'sexo', 'area', 'servicio', 'sala', 'cuarto', 'cama', 'peso', 'talla', 'viaAcceso',
+    'fiuxFecha', 'fimiFecha', 'registro',
   ];
   for (var sk = 0; sk < scalarKeys.length; sk += 1) {
     var key = scalarKeys[sk];
-    if (assignLanScalarIfChanged(existing, key, p[key], existing[key], takeIncoming)) changed = true;
+    if (assignLanScalarIfChanged(existing, key, p[key], existing[key], scalarKeyTakesIncoming(existing, p, key, takeIncoming))) changed = true;
   }
   if (takeIncoming && applyLanGuardiaMarks(existing, p)) changed = true;
   if (takeIncoming && p.lanUpdatedAt && String(p.lanUpdatedAt) !== String(existing.lanUpdatedAt || '')) {
@@ -406,6 +413,8 @@ function applyLanMedPharmField(existing, entry) {
 }
 
 function applyLanVpoField(existing, entry) {
+  // A cloud entry without `vpo` (partial fold, or an older peer) must not wipe the local copy.
+  if (!Object.prototype.hasOwnProperty.call(entry, 'vpo')) return false;
   if (entry.vpo) {
     if (lanJsonEqual(getVpoByPatient()[existing.id], entry.vpo)) return false;
     getVpoByPatient()[existing.id] = entry.vpo;
