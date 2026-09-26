@@ -207,7 +207,9 @@ export function parseSomePharmMonthPaste(text, opts) {
   const monthIndex = opts.monthIndex;
   const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
   const monthKey = monthKeyFromParts(year, monthIndex);
+  // Same as Manejo import: «µG» must not upper-case to «ΜG» (reads as MG).
   const lines = String(text || '')
+    .replace(/[µμ]/g, 'MC')
     .split(/\r?\n/)
     .map(trimStr)
     .filter(Boolean);

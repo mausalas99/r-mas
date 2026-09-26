@@ -64,6 +64,11 @@
 
 .med-pharm-profile-card {
   overflow: hidden;
+  /* Toolbar breakpoint follows the card width, not the window: with the
+     sidebar open or text at 125 % a 1024 px window left the 3-column toolbar
+     too narrow and «Importar mes SOME» / «Vista SOME» sat on top of the
+     filter and month controls. */
+  container-type: inline-size;
 }
 
 .med-pharm-toolbar {
@@ -200,7 +205,7 @@
   text-overflow: ellipsis;
 }
 
-@media (max-width: 960px) {
+@container (max-width: 900px) {
   .med-pharm-toolbar {
     grid-template-columns: 1fr;
     gap: 8px;
@@ -712,7 +717,7 @@ html.dark .med-pharm-modal-legend {
   font-size: 10px;
   font-weight: 600;
   padding: 4px 8px;
-  border-radius: var(--radius-row-btn);
+  border-radius: var(--radius-pill);
   border: 1px solid var(--primary);
   background: var(--surface);
   color: var(--primary);
@@ -1479,7 +1484,7 @@ html.dark .med-pharm-adh-panel {
   color: var(--text); font-size: 14px; padding: 6px 10px; font-family: inherit; min-width: 96px;
 }
 .med-admin-prn-register {
-  background: var(--action); color: var(--color-update-banner-fg, #fff); border: none;
+  background: var(--action); color: var(--color-on-accent); /* dark: white on light teal was 1.8:1 */ border: none;
   border-radius: var(--radius-field); padding: 5px 12px; font-size: 12px; font-weight: 700;
   cursor: pointer;
 }
@@ -1497,7 +1502,7 @@ html.dark .med-pharm-adh-panel {
 }
 .med-admin-prn-fab:hover { transform: scale(1.05); box-shadow: 0 6px 24px rgba(15, 23, 42, 0.18); }
 .med-admin-prn-fab-count {
-  background: var(--action); color: var(--color-update-banner-fg, #fff); border-radius: 999px;
+  background: var(--action); color: var(--color-on-accent); /* dark: white on light teal was 1.8:1 */ border-radius: 999px;
   font-size: 10px; /* --type-wb-counter-label scale */ min-width: 14px; height: 14px; padding: 0 3px; display: inline-flex;
   align-items: center; justify-content: center;
 }
