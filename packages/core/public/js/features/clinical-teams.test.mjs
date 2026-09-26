@@ -197,7 +197,6 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /openDirectoryUsersModal/);
     assert.match(clinicalTeamsSrc, /clinical-directory-users-backdrop/);
     assert.match(clinicalTeamsSrc, /renderDirectoryUsersTopButtonHtml/);
-    assert.match(clinicalTeamsSrc, /clinical-teams-top-actions/);
     assert.match(clinicalTeamsSrc, /Directorio LAN/);
     assert.match(clinicalTeamsSrc, /getClinicalTeamsPanelHost\(\)[\s\S]*_rpcLanDirOpenDelegated/);
     assert.match(clinicalTeamsSrc, /clinical-directory-open/);
@@ -262,9 +261,9 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /data-collapse-key/);
     assert.match(clinicalTeamsSrc, /writeClinicalTeamsCollapseOpen/);
     assert.match(clinicalTeamsSrc, /wireClinicalTeamsCollapsePersistence/);
-    assert.match(clinicalTeamsSrc, /section\.joined/);
-    assert.match(clinicalTeamsSrc, /section\.directory/);
-    assert.match(clinicalTeamsSrc, /card\.\$\{tid\}\.members/);
+    // Crear and código open in native dialogs; the team list is always open.
+    assert.match(clinicalTeamsSrc, /clinical-team-join-code-dialog/);
+    assert.match(clinicalTeamsSrc, /showModal\(\)/);
   });
 
   it('R4/Admin see Cambiar de rotación at top of Mi rotación', () => {

@@ -56,6 +56,11 @@ function buildConexionGoView(section, deps, ui) {
           toast: ui.toast,
         });
       },
+      onCuenta() {
+        void import('../clinical-teams/teams-roster-interactions.mjs').then((m) =>
+          m.mountClinicalProfileInHost(section.querySelector('[data-cloud-profile-host]'))
+        );
+      },
       onStatusHome() {
         ui.refreshStatusChipFromRuntime?.();
       },

@@ -61,7 +61,7 @@ describe('cloud-sync-diagnostics-human', () => {
     assert.equal(wsIssue.severity, 'info');
   });
 
-  it('buildCloudDiagnosticsHumanView hides stale WS 1006 when sync is healthy on poll', () => {
+  it('buildCloudDiagnosticsHumanView hides stale WS 1006 issue when sync is healthy on poll, but still flags the channel as down', () => {
     const view = buildCloudDiagnosticsHumanView({
       status: 'idle',
       online: true,
@@ -73,7 +73,10 @@ describe('cloud-sync-diagnostics-human', () => {
       lastCycleOk: true,
       outbox: { count: 0, byKind: {} },
     });
-    assert.equal(view.verdict.level, 'ok');
+    // A live room always wants a WS — sitting on poll means the channel is
+    // down/reconnecting, so the overall verdict must not read as green.
+    assert.equal(view.verdict.level, 'warn');
+    assert.match(view.verdict.headline, /sin canal en vivo/i);
     const wsIssue = view.issues.find(function (item) {
       return item.title.includes('interrumpido');
     });

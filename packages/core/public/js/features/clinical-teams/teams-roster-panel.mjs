@@ -22,7 +22,7 @@ import {
 } from './shared.mjs';
 import { refreshClinicalOpsDirectory } from './teams-guardia-bridge.mjs';
 import { wireDirectoryUsersControls } from './teams-roster-users.mjs';
-import { renderCreateTeamSectionHtml, renderJoinWithCodeSectionHtml } from './teams-roster-create.mjs';
+import { renderNewTeamCardHtml } from './teams-roster-create.mjs';
 import {
   resolveBrowseSala,
   renderDirectorySectionHtml,
@@ -33,11 +33,9 @@ import { isRotationRejoinPending } from '../clinical-rotation-rejoin-modal.mjs';
 import {
   resolveDisplayLanHandle,
   resolveClinicalTeamsPanelContext,
-  buildClinicalTeamsHandleHint,
   buildClinicalProfileSectionHtml,
-  buildJoinedTeamsSectionHtml,
+  buildProfileLinkRowHtml,
   buildClinicalTeamsConfigSectionHtml,
-  buildJoinedTeamsEmptyHtml,
   buildRotationAdminSectionHtml,
   buildPickTeamsBannerHtml,
   shouldUsePickTeamPanelLayout,
@@ -113,103 +111,76 @@ async function maybeRefreshClinicalOpsDirectory(skipPull, browseSala, homeSala) 
   void renderClinicalTeamsPanel({ silent: true, skipLanPull: true, preserveDraft: true });
 }
 
-async function resolveClinicalTeamsPanelSections(userId, user, joined, ctx, elevated) {
+/**
+ * @param {boolean} embedded true inside ⇄ Conexión, where the profile form
+ *   lives in Cuenta; the legacy modal keeps it under «Configuración».
+ */
+async function resolveClinicalTeamsPanelSections(userId, user, joined, ctx, elevated, embedded) {
   const siblingTeams = Array.isArray(clinicalSessionContext.teams) ? clinicalSessionContext.teams : [];
-  const joinedHtml = joined.length
-    ? joined.map((team) => renderJoinedTeamCard(team, siblingTeams)).join('')
-    : buildJoinedTeamsEmptyHtml(ctx.displayHandle, false);
-  const profileSection = buildClinicalProfileSectionHtml(ctx, user);
   const browseSala = resolveBrowseSala(elevated, ctx.sala);
-  const joinCodeSection = renderJoinWithCodeSectionHtml();
   const lanMemberHint = await resolveTeamMemberHintHtml(joined);
-  // Once you belong to a team, its card leads the same Explorar grid instead
-  // of sitting in its own full-width "Mis equipos" box — that box, with just
-  // 1-3 narrow cards in it, left a dead empty strip beside it.
+  const mineSection = joined.length
+    ? `<section class="clinical-teams-mine">${lanMemberHint}${joined
+        .map((team) => renderJoinedTeamCard(team, siblingTeams))
+        .join('')}</section>`
+    : '';
+
+  // Crear is the primary action only when there is no team to join or be in.
   const { html: directorySection, count: directoryCount } = await renderDirectorySectionHtml({
     userId,
     elevated,
     browseSala,
     homeSala: ctx.sala,
-    leadingCardsHtml: joined.length ? `${lanMemberHint}${joinedHtml}` : '',
-    leadingCount: joined.length,
+    mineCount: joined.length,
+    trailingCard: (count) => renderNewTeamCardHtml({ primary: !count && !joined.length }),
   });
-
   const pickTeamLayout = shouldUsePickTeamPanelLayout(joined.length, directoryCount, elevated);
-  const rejoinPending = isRotationRejoinPending();
+
   const pickBanner = buildPickTeamsBannerHtml({
     directoryCount,
     sala: browseSala === '__all__' ? ctx.sala : browseSala || ctx.sala,
     elevated,
-    rejoinPending,
+    rejoinPending: isRotationRejoinPending(),
   });
 
-  const joinedContentHtml = joined.length ? '' : buildJoinedTeamsEmptyHtml(ctx.displayHandle, pickTeamLayout);
-  const joinedSection = joined.length ? '' : buildJoinedTeamsSectionHtml(ctx, joinedContentHtml, lanMemberHint);
-  const createSection = renderCreateTeamSectionHtml();
-  const rotationSection = buildRotationAdminSectionHtml(user);
-  const configSection = buildClinicalTeamsConfigSectionHtml(profileSection);
-  const handleHint = buildClinicalTeamsHandleHint(ctx);
-
+  const profileSection = buildClinicalProfileSectionHtml(ctx, user);
   return {
     pickTeamLayout,
     pickBanner,
+    mineSection,
     directorySection,
-    handleHint,
-    joinedSection,
-    createSection,
-    joinCodeSection,
-    configSection,
-    rotationSection,
+    rotationSection: buildRotationAdminSectionHtml(user),
+    configSection: embedded ? '' : buildClinicalTeamsConfigSectionHtml(profileSection),
+    profileRow: embedded ? buildProfileLinkRowHtml(ctx, user) : '',
   };
 }
 
 function renderClinicalTeamsPanelBody(host, sections, hasJoinedTeam) {
-  const { pickTeamLayout, pickBanner, directorySection, handleHint, joinedSection, createSection, joinCodeSection, configSection, rotationSection } = sections;
+  const { pickTeamLayout, pickBanner, mineSection, directorySection, rotationSection, configSection, profileRow } = sections;
   host.classList.toggle('clinical-teams-panel-body--pick-team', pickTeamLayout);
   host.classList.toggle('clinical-teams-panel-body--has-joined', hasJoinedTeam);
 
-  // Fixed order regardless of state: light identity hint, then whichever of
-  // "your team" / "pick a team" is primary right now, then the rare stuff
-  // (rotation, create, join-by-code, config) always last — so the screen
-  // doesn't reshuffle itself between visits.
-  if (pickTeamLayout) {
-    host.innerHTML = `
-    ${pickBanner}
-    ${handleHint}
+  // Rare actions (rotation for R4/admin, profile in the legacy modal) share
+  // one «Otras opciones» list, same as the shortcuts sheet.
+  const otherOptions = rotationSection || configSection
+    ? `
+    <section class="clinical-teams-other" aria-labelledby="clinical-teams-other-label">
+      <h4 id="clinical-teams-other-label" class="clinical-teams-group-label">Otras opciones</h4>
+      <div class="clinical-teams-other-list">
+        ${rotationSection}
+        ${configSection}
+      </div>
+    </section>`
+    : '';
+  // Fixed order so the screen never reshuffles between visits: your team
+  // (status card), the sala's teams ending in «¿No ves tu equipo?», rare
+  // options, then the link to your profile in Cuenta.
+  host.innerHTML = `
+    ${pickTeamLayout ? pickBanner : ''}
+    ${mineSection}
     ${directorySection}
-    ${joinedSection}
-    ${rotationSection}
-    ${createSection}
-    ${joinCodeSection}
-    ${configSection}`;
-  } else if (hasJoinedTeam) {
-    // joinedSection is '' here — your team card already leads directorySection's grid.
-    host.innerHTML = `
-    ${handleHint}
-    ${directorySection}
-    ${rotationSection}
-    ${createSection}
-    ${joinCodeSection}
-    ${configSection}`;
-  } else {
-    host.innerHTML = `
-    ${handleHint}
-    ${directorySection}
-    ${joinedSection}
-    ${rotationSection}
-    ${createSection}
-    ${joinCodeSection}
-    ${configSection}`;
-  }
-
-  if (pickTeamLayout) {
-    requestAnimationFrame(() => {
-      host.querySelector('.clinical-teams-section--directory')?.scrollIntoView({
-        block: 'nearest',
-        behavior: 'smooth',
-      });
-    });
-  }
+    ${otherOptions}
+    ${profileRow}`;
 }
 
 export async function renderClinicalTeamsPanelInto(host, opts = {}) {
@@ -231,7 +202,8 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
   const ctx = await resolveClinicalTeamsPanelContext(user, joined);
   const elevated = hasElevatedTeamPrivileges(user);
 
-  const sections = await resolveClinicalTeamsPanelSections(userId, user, joined, ctx, elevated);
+  const embedded = !!host.closest('.cloud-sync-equipo-embed');
+  const sections = await resolveClinicalTeamsPanelSections(userId, user, joined, ctx, elevated, embedded);
   renderClinicalTeamsPanelBody(host, sections, joined.length > 0);
 
   wireDirectoryUsersControls();

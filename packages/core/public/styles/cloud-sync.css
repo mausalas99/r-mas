@@ -661,9 +661,9 @@
 .cloud-sync-btn {
   align-self: flex-start;
   margin: 0;
-  padding: calc(7px * var(--density-space)) calc(12px * var(--density-space));
+  padding: calc(7px * var(--density-space)) calc(14px * var(--density-space));
   border: var(--border-hairline);
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-pill);
   background: var(--color-elevated);
   color: var(--text);
   font-family: inherit;
@@ -835,9 +835,7 @@
   padding: 10px 12px 12px;
 }
 
-.cloud-sync-equipo-embed .clinical-teams-section--create,
-.cloud-sync-equipo-embed .clinical-teams-section--joined,
-.cloud-sync-equipo-embed .clinical-teams-section--directory {
+.cloud-sync-equipo-embed .clinical-teams-section--joined {
   padding: 10px 12px;
   gap: 8px;
 }
@@ -877,20 +875,10 @@
 }
 
 .cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-handle-hint,
-.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--create,
-.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--more,
-.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--join-code,
-.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--rotation {
+.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-other {
   grid-column: 1 / -1;
 }
 
-/* Two concerns share this stack — rotación/crear equipo (admin) vs.
-   explorar/unirse/mis equipos (encontrar equipo) — so the boundary
-   between them needs more than the 12px used inside each group. */
-.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--directory,
-.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--more {
-  margin-top: calc(12px * var(--density-space));
-}
 
 .cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--joined {
   grid-column: 1;
@@ -910,32 +898,12 @@
  * Explorar's grid (teams-roster-panel.mjs) instead of a separate "Mis
  * equipos" section — no has-joined override needed here any more. */
 
-.cloud-sync-equipo-embed .clinical-teams-list--directory {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14.5rem), 1fr));
-}
-
-.cloud-sync-equipo-embed .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team {
-  grid-template-columns: 1fr;
-}
-
 .cloud-sync-equipo-embed
   .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
   > .clinical-teams-pick-banner,
 .cloud-sync-equipo-embed
   .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
   > .clinical-teams-handle-hint,
-.cloud-sync-equipo-embed
-  .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
-  > .clinical-teams-section--create,
-.cloud-sync-equipo-embed
-  .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
-  > .clinical-teams-section--more,
-.cloud-sync-equipo-embed
-  .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
-  > .clinical-teams-section--join-code,
-.cloud-sync-equipo-embed
-  .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
-  > .clinical-teams-section--joined,
 .cloud-sync-equipo-embed
   .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
   > .clinical-teams-section--directory {

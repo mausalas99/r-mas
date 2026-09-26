@@ -28,8 +28,13 @@ import {
   rememberAdminAccessCode,
   clearAdminAccessGrant,
   writeClinicalTeamsCollapseOpen,
+  filterJoinedTeams,
 } from './shared.mjs';
 import { getClinicalTeamsPanelHost } from '../clinical-panel-host.mjs';
+import {
+  resolveClinicalTeamsPanelContext,
+  buildClinicalProfileSectionHtml,
+} from './teams-roster-panel-build.mjs';
 import { wireTeamManageModalDelegation } from './teams-roster-manage.mjs';
 import {
   syncCreateTeamCycleField,
@@ -111,42 +116,58 @@ function wireAdminCheckboxGate() {
   });
 }
 
-function wireCreateTeamPanel() {
-  const openBtn = document.getElementById('btn-clinical-team-create-open');
-  const panel = document.getElementById('clinical-team-create-panel');
-  if (!(openBtn instanceof HTMLButtonElement) || !(panel instanceof HTMLElement)) return;
-  if (openBtn._rpcCreateOpenWired) return;
-  openBtn._rpcCreateOpenWired = true;
-
-  const showPanel = () => {
-    panel.hidden = false;
-    openBtn.hidden = true;
-    syncCreateTeamServiceFromSala();
-    const firstField = panel.querySelector('input, select, textarea');
-    if (firstField instanceof HTMLElement) firstField.focus();
-  };
-  const hidePanel = () => {
-    panel.hidden = true;
-    openBtn.hidden = false;
-  };
-
-  openBtn.addEventListener('click', showPanel);
-  panel.querySelectorAll('.clinical-teams-create-cancel').forEach((btn) => {
-    if (!(btn instanceof HTMLButtonElement) || btn._rpcCreateCancelWired) return;
-    btn._rpcCreateCancelWired = true;
-    btn.addEventListener('click', hidePanel);
-  });
+/** «Crear equipo» and «Tengo un código» each open their form in a native <dialog>. */
+function wireTeamDialogs() {
+  for (const [btnId, dialogId] of [
+    ['btn-clinical-team-create-open', 'clinical-team-create-panel'],
+    ['btn-clinical-team-join-code-open', 'clinical-team-join-code-dialog'],
+  ]) {
+    const openBtn = document.getElementById(btnId);
+    const dialog = document.getElementById(dialogId);
+    if (!(openBtn instanceof HTMLButtonElement) || !(dialog instanceof HTMLDialogElement)) continue;
+    if (openBtn._rpcDialogWired) continue;
+    openBtn._rpcDialogWired = true;
+    openBtn.addEventListener('click', () => {
+      if (dialogId === 'clinical-team-create-panel') syncCreateTeamServiceFromSala();
+      dialog.showModal();
+    });
+    dialog.querySelectorAll('.clinical-teams-create-cancel').forEach((btn) => {
+      btn.addEventListener('click', () => dialog.close());
+    });
+  }
 }
 
-export function wireClinicalTeamsPanelInteractions() {
-  syncSalaFieldVisibility();
-  wireCreateTeamPanel();
+/** Admin switch gate and «Cambiar código» for the profile form, wherever it is shown. */
+function wireProfileFormControls() {
   wireAdminCheckboxGate();
   const changeCodeBtn = document.getElementById('btn-clinical-admin-code-change');
   if (changeCodeBtn && !changeCodeBtn._rpcWired) {
     changeCodeBtn._rpcWired = true;
     changeCodeBtn.addEventListener('click', () => void openChangeAdminCodeModal());
   }
+}
+
+/**
+ * ⇄ Conexión → Cuenta: the clinical profile form (name, @usuario, rango,
+ * sala, admin). Submit goes through the section's form delegation.
+ * @param {HTMLElement | null} host
+ */
+export async function mountClinicalProfileInHost(host) {
+  if (!(host instanceof HTMLElement)) return;
+  const user = clinicalSessionContext.user;
+  if (!user || !currentUserId()) {
+    host.innerHTML = '';
+    return;
+  }
+  const ctx = await resolveClinicalTeamsPanelContext(user, filterJoinedTeams(clinicalSessionContext.teams, user));
+  host.innerHTML = buildClinicalProfileSectionHtml(ctx, user);
+  wireProfileFormControls();
+}
+
+export function wireClinicalTeamsPanelInteractions() {
+  syncSalaFieldVisibility();
+  wireTeamDialogs();
+  wireProfileFormControls();
 
   const salaSelect = document.getElementById('clinical-team-create-sala');
   if (salaSelect && !salaSelect._rpcSalaWired) {
@@ -177,22 +198,6 @@ export function wireBrowseSalaControl(elevated) {
       localStorage.setItem(BROWSE_SALA_LS, String(select.value || ''));
     } catch (e) { console.warn("[teams-roster-interactions] failed to write " + BROWSE_SALA_LS, e); }
     void renderClinicalTeamsPanel({ silent: true, skipLanPull: true, preserveDraft: true });
-  });
-}
-
-export function wireQuickSalaControl() {
-  const select = document.getElementById('clinical-quick-sala');
-  if (!select || select._rpcQuickSalaWired) return;
-  select._rpcQuickSalaWired = true;
-  select.addEventListener('change', async () => {
-    const target = document.getElementById('clinical-profile-sala');
-    if (!target || !select.value) {
-      select.value = target ? target.value : '';
-      return;
-    }
-    target.value = select.value;
-    const m = await import('./teams-roster.mjs');
-    await m.handleProfileFormSubmit({ preventDefault() {} });
   });
 }
 
@@ -261,12 +266,6 @@ function wireClinicalTeamsCollapsePersistence() {
       writeClinicalTeamsCollapseOpen(key, el.open);
     });
   });
-  host.querySelectorAll('.clinical-teams-collapse-summary-actions').forEach((wrap) => {
-    if (!(wrap instanceof HTMLElement) || wrap._rpcCollapseActionsWired) return;
-    wrap._rpcCollapseActionsWired = true;
-    wrap.addEventListener('click', (ev) => ev.stopPropagation());
-    wrap.addEventListener('mousedown', (ev) => ev.stopPropagation());
-  });
 }
 
 /** Called from render after panel HTML is injected (dynamic import avoids render↔roster cycle). */
@@ -277,6 +276,5 @@ export function wireRenderedClinicalTeamsPanel(elevated) {
   wireInheritPatientsButtons();
   wireCopyInviteButtons();
   wireBrowseSalaControl(elevated);
-  wireQuickSalaControl();
   wireClinicalTeamsCollapsePersistence();
 }

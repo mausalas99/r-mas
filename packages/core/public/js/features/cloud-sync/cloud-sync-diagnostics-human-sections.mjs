@@ -90,6 +90,13 @@ export function buildVerdict(status, transport, issues, recentErrors) {
   let level = 'ok';
   let headline = STATUS_LABELS.idle;
   let subline = 'Los cambios locales coinciden con la sala en Nube.';
+  // The sync cycle can look done over the HTTP poll fallback while the live
+  // WS channel is still down/reconnecting — don't say "Nube al día" then.
+  // `status` is usually already 'reconnecting' (resolveCloudConexionChipStatus
+  // collapses idle/pending + poll transport into it); the transport check is
+  // a fallback for any caller that passes a raw runtime status directly.
+  const channelDown =
+    status === 'reconnecting' || ((status === 'idle' || status === 'pending') && transport === 'poll');
 
   if (status === 'syncing') {
     level = 'info';
@@ -99,6 +106,10 @@ export function buildVerdict(status, transport, issues, recentErrors) {
     level = 'error';
     headline = 'Hay problemas de sincronización';
     subline = 'Revisa las alertas más abajo.';
+  } else if (channelDown) {
+    level = 'warn';
+    headline = 'Sin canal en vivo';
+    subline = 'Tus cambios están a salvo aquí. Se envían solos al volver.';
   } else if (hasWarn || status === 'pending') {
     level = 'warn';
     headline = status === 'pending' ? STATUS_LABELS.pending : 'Revisa la sincronización';
@@ -136,7 +147,7 @@ function activityTileStatus(iso, now, offline) {
   return 'warn';
 }
 
-function buildLiveTileFields(d, transport, wsClose) {
+export function buildLiveTileFields(d, transport, wsClose) {
   if (transport === 'offline' || d.online === false) {
     return { liveValue: 'Sin conexión', liveStatus: 'error', liveHint: 'Sin red' };
   }
@@ -146,11 +157,9 @@ function buildLiveTileFields(d, transport, wsClose) {
     }
     return { liveValue: 'En vivo', liveStatus: 'ok', liveHint: 'WebSocket activo' };
   }
-  return {
-    liveValue: 'Sondeo HTTP',
-    liveStatus: 'ok',
-    liveHint: wsClose.code === 1006 ? 'En vivo en pausa' : 'Activo',
-  };
+  // A live room's runtime always requests a WS — 'poll' here means the
+  // channel is down and falling back to HTTP, not a deliberate ok mode.
+  return { liveValue: 'Reconectando', liveStatus: 'warn', liveHint: 'Sondeo HTTP mientras reconecta' };
 }
 
 /**

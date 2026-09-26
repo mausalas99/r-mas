@@ -2,14 +2,14 @@ import { describe, it, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { renderDirectorySectionHtml } from './teams-roster-directory.mjs';
 
-describe('renderDirectorySectionHtml leading cards (own joined team, merged grid)', () => {
+describe('renderDirectorySectionHtml: team grid closed by the «¿No ves tu equipo?» card', () => {
   const prevWindow = globalThis.window;
 
   afterEach(() => {
     globalThis.window = prevWindow;
   });
 
-  it('puts leadingCardsHtml first in the grid, ahead of the browsable teams', async () => {
+  it('puts the trailing card last, after the browsable teams, and passes it their count', async () => {
     globalThis.window = {
       rplusDb: {
         dbClinicalTeamsListBySala: async () => ({
@@ -19,22 +19,25 @@ describe('renderDirectorySectionHtml leading cards (own joined team, merged grid
       },
     };
 
+    let seen = -1;
     const { html, count } = await renderDirectorySectionHtml({
       userId: 'u1',
       elevated: false,
       browseSala: 'Sala 2',
       homeSala: 'Sala 2',
-      leadingCardsHtml: '<article class="clinical-teams-card clinical-teams-card--mine" data-team-id="t1">Mine</article>',
-      leadingCount: 1,
+      trailingCard: (n) => {
+        seen = n;
+        return '<article class="clinical-teams-card clinical-teams-card--new">Nuevo</article>';
+      },
     });
 
-    const mineIdx = html.indexOf('clinical-teams-card--mine');
-    const otherIdx = html.indexOf('Equipo B');
-    assert.ok(mineIdx >= 0 && otherIdx >= 0 && mineIdx < otherIdx, 'own card renders before the directory cards');
-    assert.equal(count, 1, 'count still reflects only the browsable (non-member) teams');
+    assert.ok(html.indexOf('Equipo B') < html.indexOf('clinical-teams-card--new'));
+    assert.equal(seen, 1);
+    assert.equal(count, 1);
+    assert.match(html, /Equipos en Sala 2/);
   });
 
-  it('includes the leading count in the section title even when there are no other teams to browse', async () => {
+  it('once you have a team, the list is «Otros equipos» and still ends in the new-team card', async () => {
     globalThis.window = {
       rplusDb: {
         dbClinicalTeamsListBySala: async () => ({ ok: true, teams: [] }),
@@ -46,30 +49,13 @@ describe('renderDirectorySectionHtml leading cards (own joined team, merged grid
       elevated: false,
       browseSala: 'Sala 2',
       homeSala: 'Sala 2',
-      leadingCardsHtml: '<article class="clinical-teams-card clinical-teams-card--mine" data-team-id="t1">Mine</article>',
-      leadingCount: 1,
+      mineCount: 1,
+      trailingCard: () => '<article class="clinical-teams-card clinical-teams-card--new">Nuevo</article>',
     });
 
-    assert.match(html, /clinical-teams-card--mine/);
-    assert.match(html, /1 equipo/);
-    assert.equal(count, 0);
-  });
-
-  it('without leadingCardsHtml and no other teams, still shows the plain empty state', async () => {
-    globalThis.window = {
-      rplusDb: {
-        dbClinicalTeamsListBySala: async () => ({ ok: true, teams: [] }),
-      },
-    };
-
-    const { html } = await renderDirectorySectionHtml({
-      userId: 'u1',
-      elevated: false,
-      browseSala: 'Sala 2',
-      homeSala: 'Sala 2',
-    });
-
+    assert.match(html, /Otros equipos en Sala 2/);
     assert.match(html, /clinical-teams-empty/);
-    assert.doesNotMatch(html, /clinical-teams-card--mine/);
+    assert.match(html, /clinical-teams-card--new/);
+    assert.equal(count, 0);
   });
 });

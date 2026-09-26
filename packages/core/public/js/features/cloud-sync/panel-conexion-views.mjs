@@ -2,11 +2,12 @@ import { esc } from '../../dom-escape.mjs';
 import { readRpcSettings } from '../../clinical-settings.mjs';
 import { normalizeUsername } from '../../clinical-username.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
-import { advancedUrlFieldsHtml } from './panel-conexion-html.mjs';
+import { advancedUrlFieldsHtml, statusHeroHtml, pipelineChainHtml } from './panel-conexion-html.mjs';
 import { canAccessCloudAdmin } from './panel-admin.mjs';
 import { canManageInternoQr } from '../../clinical-privileges.mjs';
 import { setClinicalTeamsEmbedHost } from '../clinical-panel-host.mjs';
 import { stopCloudSyncDiagnosticsLiveRefresh } from './panel-cloud-diagnostics.mjs';
+import { buildPipeline, buildLiveTileFields, formatRoomLabel } from './cloud-sync-diagnostics-human-sections.mjs';
 
 /**
  * @param {{ username?: string, displayName?: string } | null} cloudUser
@@ -82,6 +83,42 @@ function optionsGroup(label, rowsHtml) {
 }
 
 /**
+ * 4 chain steps (Internet, Sesión, Sala from buildPipeline; En vivo from
+ * buildLiveTileFields) for the status hero.
+ * ponytail: Conexión doesn't track WS close codes (diagnostics-only); a
+ * neutral wsClose only affects the 'ws' abnormal-close nuance, not the
+ * poll-fallback "reconnecting" case that matters here.
+ * @param {{ status: string, transport: string, room: object | null, tokenPresent: boolean }} ctx
+ */
+function heroPipelineSteps({ status, transport, room, tokenPresent }) {
+  const roomLabel = formatRoomLabel(room, String(room?.id || ''));
+  const d = {
+    online: typeof navigator !== 'undefined' ? navigator.onLine : true,
+    tokenPresent: !!tokenPresent,
+    roomId: room?.id || '',
+  };
+  const [internet, sesion, sala] = buildPipeline(d, status, roomLabel, []);
+  const live = buildLiveTileFields(d, transport, { code: 0, reason: '' });
+  return [internet, sesion, sala, { label: 'En vivo', state: live.liveStatus, detail: live.liveValue }];
+}
+
+/**
+ * Status hero + 4-step chain, wrapped for live in-place refresh (see
+ * renderStatusChip in panel-conexion.mjs, which re-renders this whole block
+ * on every status tick — cheap, and it never touches the mounted Equipo/
+ * Admin subviews sitting elsewhere in the section).
+ * @param {{ status: string, detail?: string, transport?: string, displaySala?: string, room?: object | null, tokenPresent?: boolean }} ctx
+ */
+export function conexionHeroBlockHtml(ctx) {
+  return (
+    '<div class="cloud-sync-hero-block" data-cloud-hero-block>' +
+    statusHeroHtml(ctx) +
+    pipelineChainHtml(heroPipelineSteps(ctx)) +
+    '</div>'
+  );
+}
+
+/**
  * @param {{ username?: string, displayName?: string } | null} cloudUser
  */
 function statusIdentityHtml(cloudUser) {
@@ -115,6 +152,8 @@ function cuentaBodyHtml(cloudUser) {
     (display
       ? '<p class="cloud-sync-status-display">' + esc(display) + '</p>'
       : '') +
+    // Clinical profile form (nombre, @usuario, rango, sala, admin), mounted on open.
+    '<div class="cloud-sync-profile-host" data-cloud-profile-host></div>' +
     '<button type="button" class="cloud-sync-btn ui-pressable" data-cloud-action="regenerate-recovery">Código de recuperación</button>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-action="logout">Cerrar sesión Nube</button></div>'
   );
@@ -128,6 +167,7 @@ function cuentaBodyHtml(cloudUser) {
  *   adminHtml?: string,
  *   url: string,
  *   hasCloudSession?: boolean,
+ *   techSummary?: string,
  * }} opts
  */
 export function connectedViewsHtml({
@@ -137,6 +177,7 @@ export function connectedViewsHtml({
   adminHtml = '',
   url,
   hasCloudSession = false,
+  techSummary = '',
 }) {
   const showAdmin =
     !!String(adminHtml || '').trim() ||
@@ -145,15 +186,19 @@ export function connectedViewsHtml({
     ? String(adminHtml || '').trim() ||
       '<div class="cloud-sync-admin-host" data-cloud-admin-host></div>'
     : '';
+  // Both rows reuse existing destinations via the generic nav-view action
+  // (see onCloudActionClick in panel-conexion-bootstrap.mjs): 'options' is
+  // the same Opciones list, 'nube' the same Diagnóstico view.
+  const statusNavRows =
+    optionsRow('Equipo y administración', 'Equipo, cuenta y administración', 'options') +
+    optionsRow('Detalles técnicos', techSummary || '—', 'nube');
   const statusBody =
     '<div class="cloud-sync-status-sheet">' +
     statusIdentityHtml(cloudUser) +
     roomHtml +
-    '<button type="button" class="cloud-sync-options-entry" data-cloud-action="nav-options">' +
-    '<span class="cloud-sync-options-entry-text">' +
-    '<span class="cloud-sync-options-entry-title">Opciones</span>' +
-    '<span class="cloud-sync-options-entry-meta">Equipo, cuenta y administración</span></span>' +
-    '<span class="cloud-sync-options-row-chevron" aria-hidden="true">›</span></button></div>';
+    '<div class="cloud-sync-options-card">' +
+    statusNavRows +
+    '</div></div>';
 
   const showInternoQr = canManageInternoQr(clinicalSessionContext.user);
   let guardiaRows =
@@ -320,6 +365,7 @@ const CONEXION_VIEW_HOOK = {
   'interno-qr': 'onInternoQr',
   nube: 'onNube',
   equipo: 'onEquipo',
+  cuenta: 'onCuenta',
 };
 
 function syncConexionHead(section, next, hooks) {
@@ -338,7 +384,7 @@ function invokeConexionViewHook(next, hooks) {
 /**
  * @param {HTMLElement} section
  * @param {string} view
- * @param {{ onAdmin?: () => void | Promise<void>, onMobile?: () => void | Promise<void>, onInternoQr?: () => void | Promise<void>, onNube?: () => void | Promise<void>, onEquipo?: () => void | Promise<void>, onStatusHome?: () => void }} [hooks]
+ * @param {{ onAdmin?: () => void | Promise<void>, onMobile?: () => void | Promise<void>, onInternoQr?: () => void | Promise<void>, onNube?: () => void | Promise<void>, onEquipo?: () => void | Promise<void>, onCuenta?: () => void | Promise<void>, onStatusHome?: () => void }} [hooks]
  */
 export function applyConexionView(section, view, hooks) {
   let next = String(view || 'status').trim() || 'status';

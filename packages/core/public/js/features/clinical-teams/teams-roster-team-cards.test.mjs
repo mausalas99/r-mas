@@ -24,11 +24,13 @@ describe('renderTeamEditPanelHtml rotation override', () => {
 });
 
 describe('joined-team card stays short by default', () => {
-  it('renderMembersBlock collapses the roster instead of opening it', () => {
+  it('renderMembersBlock shows the roster open, with a count', () => {
     const html = renderMembersBlock([{ user_id: 'u1', username: 'drmendoza', rank: 'R2' }], {
       teamId: 't1',
+      compact: true,
     });
-    assert.match(html, /<details class="clinical-teams-collapse[^"]*"[^>]*data-collapse-key="card\.t1\.members2"(?![^>]*open)/);
+    assert.doesNotMatch(html, /<details/);
+    assert.match(html, /Integrantes \(1\)/);
   });
 
   it('renderMyCycleEditBlock collapses the cycle form instead of opening it', () => {
@@ -37,7 +39,7 @@ describe('joined-team card stays short by default', () => {
     assert.match(html, /<details class="clinical-teams-collapse[^"]*"[^>]*data-collapse-key="card\.t1\.cycle2"(?![^>]*open)/);
   });
 
-  it('renderJoinedTeamCard collapses Integrantes/Mi ciclo/Salir/Invitar behind one closed "Detalles del equipo" toggle', () => {
+  it('renderJoinedTeamCard leads with «Estás en» + Invitar, members open, Salir last', () => {
     const prevUser = clinicalSessionContext.user;
     clinicalSessionContext.user = { user_id: 'u1', username: 'drmendoza', rank: 'R2' };
     try {
@@ -50,9 +52,9 @@ describe('joined-team card stays short by default', () => {
         members: [{ user_id: 'u1', username: 'drmendoza', rank: 'R2', sub_area_fraction: 'A1' }],
       };
       const html = renderJoinedTeamCard(team, [team]);
-      assert.match(html, /<details class="clinical-teams-collapse[^"]*"[^>]*data-collapse-key="card\.t1\.details"(?![^>]*open)/);
-      assert.match(html, /Detalles del equipo/);
-      assert.match(html, /Salir del equipo/);
+      assert.match(html, /Estás en[\s\S]*Equipo A[\s\S]*>Invitar</);
+      assert.doesNotMatch(html, /Detalles del equipo/);
+      assert.ok(html.indexOf('Integrantes (1)') < html.indexOf('Salir del equipo'));
     } finally {
       clinicalSessionContext.user = prevUser;
     }

@@ -48,7 +48,7 @@ describe('panel-equipo embed', () => {
     );
     assert.ok(embedBlock, 'embed panel-body rule missing');
     assert.match(embedBlock[1], /overflow:\s*visible/);
-    assert.match(css, /\.clinical-teams-list--directory/);
-    assert.match(css, /grid-template-columns:\s*repeat\(auto-fill/);
+    // Team list is one column of rows (pase-board.css), not a card grid.
+    assert.doesNotMatch(css, /\.clinical-teams-list--directory\s*\{[^}]*grid-template-columns/);
   });
 });
