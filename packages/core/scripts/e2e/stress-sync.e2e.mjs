@@ -48,7 +48,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRun, dismissLearnHub, closeToasts, pasteAndSave, pasteAndProcess, openPatient } from './harness.mjs';
-import { startWorker, stopWorker, nubeDevices, onboardNube, patientVisible, until } from './nube-worker.mjs';
+import { startWorker, stopWorker, nubeDevices, onboardNube, patientVisible, until, openNubePanel } from './nube-worker.mjs';
 import { fullLabs, header, TABLE } from './some-fixtures.mjs';
 
 const tag = Date.now().toString(36).slice(-6);
@@ -185,7 +185,7 @@ async function addManualMed(page, cat, text) {
 /** Conexión dropdown status line (STATUS_LABELS) — opened and closed again. */
 async function nubeStatusText(page) {
   await closeToasts(page);
-  await page.locator('#btn-header-team-sync').click();
+  await openNubePanel(page);
   await page.waitForTimeout(600);
   const t = await page.locator('#connection-dropdown, .connection-dropdown').first().innerText().catch(() => '');
   await page.locator('#btn-connection-dropdown-close').click().catch(() => {});
@@ -423,7 +423,7 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
 
   for (const [name, dv] of [['a', A], ['b', B]]) {
     await closeToasts(dv.page);
-    await dv.page.locator('#btn-header-team-sync').click();
+    await openNubePanel(dv.page);
     const navOptions = dv.page.locator('[data-cloud-action="nav-options"]');
     if (await navOptions.isVisible().catch(() => false)) await navOptions.click();
     await dv.page.locator('.cloud-sync-view[data-cloud-view="options"] [data-cloud-action="nav-view"][data-cloud-view="nube"]').click().catch(() => {});

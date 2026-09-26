@@ -36,7 +36,7 @@
  *     - an uncaught page error on either device
  */
 import { createRun, dismissLearnHub, closeToasts, pasteAndSave, openPatient } from './harness.mjs';
-import { startWorker, stopWorker, d1Query, nubeDevices, onboardNube, roomMeta, patientVisible, flat, until, BASE, PASSWORD } from './nube-worker.mjs';
+import { startWorker, stopWorker, d1Query, nubeDevices, onboardNube, roomMeta, patientVisible, flat, until, BASE, PASSWORD, openNubePanel } from './nube-worker.mjs';
 import { fullLabs, gas } from './some-fixtures.mjs';
 
 const tag = Date.now().toString(36).slice(-6);
@@ -58,14 +58,14 @@ const pickLabDay = (page, day) =>
 
 /** Header ⇄ button → Opciones → one named sub-view (mobile/equipo/cuenta/admin/nube/advanced). */
 const openConexion = async (page, view) => {
-  await page.locator('#btn-header-team-sync').click();
+  await openNubePanel(page);
   const navOptions = page.locator('[data-cloud-action="nav-options"]');
   if (await navOptions.isVisible().catch(() => false)) await navOptions.click();
   // The status home has its own «Detalles técnicos» row to the same view; use the Opciones one.
   if (view) await page.locator(`.cloud-sync-view[data-cloud-view="options"] [data-cloud-action="nav-view"][data-cloud-view="${view}"]`).click();
 };
 const closeConexion = (page) => page.locator('#btn-connection-dropdown-close').click().catch(() => {});
-/** #btn-header-team-sync carries btn-livesync-header--{idle,live,syncing,degraded,local}. */
+/** #btn-header-team-sync carries btn-livesync-header--{idle,live,syncing,degraded,local,offline}. */
 const headerSyncModifier = (page) =>
   page.locator('#btn-header-team-sync').getAttribute('class').then((c) => (String(c || '').match(/btn-livesync-header--(\w+)/) || [])[1] || null);
 
@@ -135,10 +135,10 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   check('Worker D1 holds no readable names / expedientes / lab values', leaks.length === 0, leaks);
 
   // ── Header chip + Diagnóstico Nube + Avanzado + Móvil, while online ───
-  check('B: header ⇄ chip is live/local while synced, not degraded', !/degraded/.test((await headerSyncModifier(B.page)) || ''), await headerSyncModifier(B.page));
+  check('B: header ⇄ chip is live/local while synced, not degraded', !/degraded|offline/.test((await headerSyncModifier(B.page)) || ''), await headerSyncModifier(B.page));
   await openConexion(B.page, 'nube');
   const diagHost = B.page.locator('[data-cloud-nube-diagnostics-host]');
-  check('B: Diagnóstico Nube dashboard renders while online', await until(() => diagHost.locator('.cloud-nube-dash-chip').first().isVisible(), 10000));
+  check('B: Diagnóstico Nube dashboard renders while online', await until(() => diagHost.locator('.cloud-nube-dash-hero .cloud-sync-hero-title').first().isVisible(), 10000));
   await r.shot(B.page, 'b-diagnostico-nube-online');
   await closeConexion(B.page);
   await openConexion(B.page, 'advanced');
@@ -153,7 +153,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   // or the reopen's toggle can race the close animation and just close it again.
   await B.page.waitForTimeout(500);
   // Reopen with the bare ⇄ click: openConexion() would itself press «Opciones» and hide the home view.
-  await B.page.locator('#btn-header-team-sync').click(); // panel-conexion-tour — subview resets to Conexión home, not stuck on Móvil
+  await openNubePanel(B.page); // panel-conexion-tour — subview resets to Conexión home, not stuck on Móvil
   const backOnHome = B.page.locator('[data-cloud-action="nav-options"]');
   check('B: reopening the dropdown after close resets to the Conexión home view', await until(() => backOnHome.isVisible(), 5000));
   await closeConexion(B.page);
@@ -227,7 +227,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
 
   // ── Recovery: log out on A, recover the account with the code ─────────
   const recoveryCode = oa.recovery.match(/R\+[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}/)[0];
-  await A2.page.locator('#btn-header-team-sync').click();
+  await openNubePanel(A2.page);
   await A2.page.locator('[data-cloud-action="logout"]').locator('visible=true').first().click();
   const recoverTab = A2.page.locator('[data-cloud-tab="recover"]');
   await recoverTab.waitFor({ state: 'visible', timeout: 10000 });
@@ -291,14 +291,16 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await closeToasts(A2.page);
   await openPatient(A2.page, P1);
   await stopWorker();
-  check('A: header ⇄ chip turns degraded while the Worker is down', await until(async () => (await headerSyncModifier(A2.page)) === 'degraded', 25000), await headerSyncModifier(A2.page));
+  check('A: header ⇄ chip turns degraded/offline while the Worker is down',
+    await until(async () => /^(degraded|offline)$/.test((await headerSyncModifier(A2.page)) || ''), 25000), await headerSyncModifier(A2.page));
   await openEventualidades(A2.page);
   await A2.page.locator('#eventualidades-input').fill(evText);
   await A2.page.locator('#eventualidades-add').click();
   check('A: eventualidad saved for P1 while offline', await until(() => A2.page.getByText(evText).first().isVisible(), 8000));
   await openConexion(A2.page, 'nube');
   const diagHostA2 = A2.page.locator('[data-cloud-nube-diagnostics-host]');
-  check('A: Diagnóstico Nube shows live pendientes for the queued offline eventualidad', await until(() => diagHostA2.getByText(/Pendientes/).first().isVisible(), 10000));
+  check('A: Diagnóstico Nube shows the queued offline eventualidad «en espera de envío»',
+    await until(() => diagHostA2.locator('.cloud-nube-dash-waiting .cloud-nube-dash-count', { hasText: /^\d+ cambios?$/ }).isVisible(), 10000));
   await r.shot(A2.page, 'a-diagnostico-nube-offline');
   await closeConexion(A2.page);
   check('Worker back up for the final phase', await startWorker());

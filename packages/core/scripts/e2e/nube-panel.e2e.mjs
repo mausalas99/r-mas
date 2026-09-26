@@ -10,6 +10,11 @@
  * técnicos).
  *
  * Ways it can go wrong (each one is a check below):
+ *   Quick look (board «Nube C»)
+ *     - the icon opens nothing, or the quick look lacks state, code or stats
+ *     - it opens away from the icon, off-screen, or without keyboard focus
+ *     - Escape leaves it open or drops focus; «Abrir panel» does not open the panel
+ *     - with the Worker down, the icon stays green or the quick look says «al día»
  *   Status home
  *     - no hero, or the hero title does not say the state in words
  *     - more than one filled (primary) button
@@ -81,8 +86,39 @@ await r.finish('Nube panel: status home (board A)', async () => {
   await A.page.waitForTimeout(1500);
   await closeToasts(A.page);
 
+  // ── Quick look under the icon (board «Nube C») ───────────────────────
+  const POP = '#nube-popover';
   await A.page.locator('#btn-header-team-sync').click();
-  check('⇄ opens the Nube status home', await until(() => A.page.locator(HOME).isVisible(), 8000));
+  check('icon opens the quick look', await until(() => A.page.locator(POP).isVisible(), 5000));
+  await until(async () => /Todo al día/.test(await A.page.locator(POP).innerText()), 15000);
+  const pop = await A.page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    const icon = document.getElementById('btn-header-team-sync').getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    return {
+      title: el.querySelector('.nube-pop-title')?.textContent || '',
+      code: el.querySelector('.nube-pop-code')?.textContent || '',
+      stats: [...el.querySelectorAll('.nube-pop-stat span')].map((s) => s.textContent),
+      primaries: el.querySelectorAll('.cloud-sync-btn--primary').length,
+      focus: document.activeElement?.getAttribute('data-nube-pop') || '',
+      below: r.top >= icon.bottom && Math.abs(r.right - icon.right) < 16,
+      inside: r.left >= 0 && r.right <= window.innerWidth,
+      label: document.getElementById('btn-header-team-sync').getAttribute('aria-label') || '',
+    };
+  }, POP);
+  await r.shot(A.page, 'quick-look');
+  check('quick look says «Todo al día» and shows the sala code', pop.title === 'Todo al día' && /^[A-Z0-9]{4,}$/.test(pop.code), pop);
+  check('quick look: En espera · Envío · Descarga, one filled button', pop.stats.join(',') === 'En espera,Envío,Descarga' && pop.primaries === 1, pop);
+  check('quick look opens under the icon, inside the window, focus on «Sincronizar»', pop.below && pop.inside && pop.focus === 'sync', pop);
+  check('icon names its state for screen readers', /^Nube: Todo al día/.test(pop.label), pop.label);
+  await A.page.keyboard.press('Escape');
+  const closed = await until(async () => !(await A.page.locator(POP).isVisible()), 2000);
+  const focusBack = await A.page.evaluate(() => document.activeElement?.id);
+  check('Escape closes the quick look and returns focus to the icon', closed && focusBack === 'btn-header-team-sync', focusBack);
+
+  await A.page.locator('#btn-header-team-sync').click();
+  await A.page.locator(`${POP} [data-nube-pop="open-panel"]`).click();
+  check('«Abrir panel» opens the Nube status home', await until(() => A.page.locator(HOME).isVisible(), 8000));
   // Let the runtime settle into «al día» (first pull + WS connect).
   await until(async () => (await readHome(A.page)).heroTitle === 'Todo al día', 15000);
   await A.page.waitForTimeout(600);
@@ -155,6 +191,18 @@ await r.finish('Nube panel: status home (board A)', async () => {
   check('Worker down: the home hero no longer says «Todo al día»', h.heroTitle !== 'Todo al día', h.heroTitle);
   const heroText = await A.page.locator('#connection-dropdown [data-cloud-hero]').innerText().catch(() => '');
   check('Worker down: the hero speaks plain Spanish, no raw net::ERR code', !/ERR_|net::/.test(heroText), heroText);
+
+  // Icon + quick look while the Worker is down.
+  await A.page.locator('#btn-connection-dropdown-close').click();
+  const iconMod = () => A.page.locator('#btn-header-team-sync').getAttribute('class').then((c) => (String(c).match(/btn-livesync-header--(\w+)/) || [])[1]);
+  check('Worker down: the icon turns amber or the red square', /^(degraded|offline)$/.test((await iconMod()) || ''), await iconMod());
+  await A.page.locator('#btn-header-team-sync').click();
+  await until(() => A.page.locator(POP).isVisible(), 5000);
+  const popDown = await A.page.locator(POP).innerText().catch(() => '');
+  await r.shot(A.page, 'quick-look-falla');
+  check('Worker down: the quick look no longer says «Todo al día»', !/Todo al día/.test(popDown), popDown);
+  await A.page.locator(`${POP} [data-nube-pop="open-panel"]`).click();
+  await until(() => A.page.locator(HOME).isVisible(), 8000);
 
   check('Worker comes back', await startWorker());
   await A.page.locator('#connection-dropdown [data-cloud-action="sync-now"]').click().catch(() => {});

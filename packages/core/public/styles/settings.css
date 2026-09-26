@@ -188,6 +188,38 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
   opacity: 0.18;
   animation: livesync-wifi-live-pulse 2.4s ease-in-out infinite;
 }
+/* «Sin conexión» (error/offline): red, and a square outline so it never reads by colour alone. */
+.btn-livesync-header--offline { --livesync-tone: var(--color-danger); }
+.btn-livesync-header--offline .livesync-wifi-dot,
+.btn-livesync-header--offline .livesync-wifi-bar--1 { opacity: 0.95; }
+.btn-livesync-header--offline .livesync-wifi-bar--2,
+.btn-livesync-header--offline .livesync-wifi-bar--3 { opacity: 0.18; }
+.btn-header-icon.btn-livesync-header--offline,
+.header-session-cluster .btn-header-icon.btn-livesync-header--offline {
+  color: var(--livesync-tone);
+  border: 2px solid color-mix(in oklab, var(--livesync-tone) 60%, transparent);
+  border-radius: 12px;
+}
+.btn-livesync-header { position: relative; }
+/* Changes waiting to be sent, while not «al día». */
+.livesync-badge {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+  background: var(--livesync-tone, var(--color-livesync-degraded));
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+.livesync-badge[hidden] { display: none; }
 @keyframes livesync-wifi-cascade {
   0%, 18%, 100% { opacity: 0.16; }
   35%, 55% { opacity: 1; }

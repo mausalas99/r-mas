@@ -102,6 +102,18 @@ export async function onboardNube(page, user) {
   return { recovery, lockedBeforeCheck, done };
 }
 
+/**
+ * Header ⇄ icon → the full Nube panel. Signed in with a sala, the icon first
+ * opens the quick look (board «Nube C»); press its «Abrir panel».
+ */
+export async function openNubePanel(page) {
+  await page.locator('#btn-header-team-sync').click();
+  const openPanel = page.locator('#nube-popover [data-nube-pop="open-panel"]');
+  const panel = page.locator('#connection-dropdown.open');
+  await until(async () => (await openPanel.isVisible().catch(() => false)) || (await panel.isVisible().catch(() => false)), 5000);
+  if (await openPanel.isVisible().catch(() => false)) await openPanel.click();
+}
+
 export const roomMeta = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('rpc-cloud-sync-room-meta') || 'null'));
 export const patientVisible = (page, p) =>
   page.locator(`.p-name[title*="${p.exp}"]`).evaluateAll((els) => els.some((e) => e.getBoundingClientRect().width > 0));

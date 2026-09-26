@@ -35,6 +35,15 @@ function ensureSharedOutbox() {
  */
 let statusListener = null;
 
+async function paintHeaderIcon() {
+  const [{ resolveCloudConexionChipStatus }, { applyHeaderTeamSyncVisual }] = await Promise.all([
+    import('./cloud-sync-status-snapshot.mjs'),
+    import('./cloud-sync-header-chrome.mjs'),
+  ]);
+  const live = resolveCloudConexionChipStatus();
+  applyHeaderTeamSyncVisual(live.status, live.transport, sharedOutbox?.list?.()?.length || 0);
+}
+
 /** @param {((status: string, detail?: string) => void) | null} fn */
 export function setSharedNubeStatusListener(fn) {
   statusListener = fn;
@@ -72,6 +81,8 @@ export function startSharedNubeRuntime(deps) {
     onStatus: function (status, detail) {
       deps.onStatus?.(status, detail);
       if (statusListener && statusListener !== deps.onStatus) statusListener(status, detail);
+      // Before Conexión is first opened nothing else paints the header icon.
+      else if (!statusListener) void paintHeaderIcon();
     },
     applyPullResult: async function (result) {
       try {

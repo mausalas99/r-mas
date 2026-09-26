@@ -2238,3 +2238,130 @@
   font-size: calc(11px * var(--density-font));
   color: var(--text-muted);
 }
+
+/* ── Nube C · quick look under the header icon ─────────────────────── */
+.nube-popover {
+  position: fixed;
+  z-index: var(--z-floating);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(360px, calc(100vw - 24px));
+  box-sizing: border-box;
+  padding: 16px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-container);
+  background: var(--color-elevated);
+  color: var(--text);
+  box-shadow: var(--shadow-lg, 0 18px 40px rgba(15, 23, 42, 0.18));
+}
+
+.nube-popover[hidden] {
+  display: none;
+}
+
+.nube-pop-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nube-pop-dot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-livesync-live);
+}
+
+.nube-pop-dot:is([data-mod='degraded'], [data-mod='syncing']) {
+  background: var(--color-livesync-degraded);
+}
+
+.nube-pop-dot[data-mod='offline'] {
+  border-radius: 3px;
+  background: var(--color-danger);
+}
+
+.nube-pop-title {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: calc(16px * var(--density-font));
+  font-weight: 700;
+}
+
+.nube-pop-when {
+  flex-shrink: 0;
+}
+
+.nube-pop-when,
+.nube-pop-code {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: calc(12px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.nube-pop-room {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  background: color-mix(in oklab, var(--text) 5%, transparent);
+}
+
+.nube-pop-room-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: calc(12px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.nube-pop-room-text b {
+  font-size: calc(14px * var(--density-font));
+  color: var(--text);
+}
+
+.nube-pop-code {
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--text);
+}
+
+.nube-pop-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.nube-pop-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  background: color-mix(in oklab, var(--text) 5%, transparent);
+  font-size: calc(11px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.nube-pop-stat b {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: calc(13px * var(--density-font));
+  color: var(--text);
+}
+
+.nube-pop-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.nube-pop-actions .cloud-sync-btn {
+  flex: 1;
+  min-height: 38px;
+  text-align: center;
+}

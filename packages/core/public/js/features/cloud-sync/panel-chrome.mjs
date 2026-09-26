@@ -115,8 +115,26 @@ export function toggleConnectionDropdown(ev) {
     ev.preventDefault();
     ev.stopPropagation();
   }
-  if (isLanConnectionDropdownOpen()) closeConnectionDropdown();
-  else openConnectionDropdown();
+  if (isLanConnectionDropdownOpen()) {
+    closeConnectionDropdown();
+    return;
+  }
+  void openHeaderQuickLook();
+}
+
+/**
+ * Signed in with a sala → the quick-look popover (board «Nube C»); its
+ * «Abrir panel» opens the full panel. Otherwise (login, pick a sala) the
+ * full panel opens straight away.
+ */
+async function openHeaderQuickLook() {
+  const settings = await import('./settings.mjs');
+  if (isCloudMobileClient() || !settings.getCloudSyncToken() || !settings.getCloudSyncRoomId()) {
+    openConnectionDropdown();
+    return;
+  }
+  const chrome = await import('./cloud-sync-header-chrome.mjs');
+  await chrome.toggleNubePopover({ openPanel: () => openConnectionDropdown() });
 }
 
 export function openTeamSyncFromHeader() {

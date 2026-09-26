@@ -109,6 +109,11 @@ export function noteCloudSyncPush() {
   lastPushAt = new Date().toISOString();
 }
 
+/** @returns {string | null} ISO timestamp of the last successful pull, or null. */
+export function getLastCloudPullAt() {
+  return lastPullAt;
+}
+
 /** @returns {string | null} ISO timestamp of the last successful push, or null. */
 export function getLastCloudPushAt() {
   return lastPushAt;
