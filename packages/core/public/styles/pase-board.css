@@ -4229,6 +4229,13 @@ html.guided-tour-running #clinical-onboarding-main {
   display: none !important;
 }
 
+/* Tabs row is hidden here: drop the frame inset so the paper fills the rounded shell (no inner ring). */
+html.clinical-onboarding-active .main-col {
+  padding: 0;
+  gap: 0;
+  background: var(--color-paper);
+}
+
 html.clinical-onboarding-active #main-area {
   overflow: hidden;
   min-height: 0;

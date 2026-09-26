@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global window, document, getComputedStyle */
+/* global window, document, getComputedStyle, localStorage */
 /**
  * E2E stress: SCREEN LAYOUT. Tries to break how every screen looks, with a
  * busy synthetic DEMO patient (long name, 45 meds, 6 lab days, long
@@ -15,6 +15,8 @@
  *   - text is cut off with no ellipsis and no tooltip (title)
  *   - dark mode: text contrast under WCAG AA (4.5:1, 3:1 for large text)
  *   - a text button is not a pill (owner rule: text buttons are round)
+ *   - a rounded box holds an inset child whose corners do not follow its
+ *     curve: a second ring or a cut corner (the onboarding frame bug)
  *   - Tab never reaches a visible button, or the focused element shows no
  *     focus ring, or Tab leaves an open dialog (focus escapes the modal)
  *   - a screen cannot be reached at a given size (nav target missing)
@@ -33,6 +35,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRun, onboardLocalOnly, pasteAndSave, pasteAndProcess, openPatient, closeToasts, until, dismissLearnHub } from './harness.mjs';
 import { header, fullLabs, gas, TABLE } from './some-fixtures.mjs';
+import { FEATURE_HINTS } from '../../public/js/feature-hints.mjs';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const dayStr = (back, h = 8) => {
@@ -92,7 +95,7 @@ async function jpeg(page, label) {
 // ── Probe (runs in the page) ─────────────────────────────────────────────
 function probe({ rootSel, dark }) {
   const roots = rootSel.split(',').map((s) => document.querySelector(s.trim())).filter(Boolean);
-  const out = { hscroll: [], overlap: [], clipped: [], contrast: [], pill: [] };
+  const out = { hscroll: [], overlap: [], clipped: [], contrast: [], pill: [], corner: [] };
   if (!roots.length) return { missing: rootSel, ...out };
   const desc = (el) =>
     (el.id ? '#' + el.id : el.tagName.toLowerCase() + '.' + String(typeof el.className === 'string' ? el.className : '').split(/\s+/).filter(Boolean).slice(0, 2).join('.')) +
@@ -100,7 +103,10 @@ function probe({ rootSel, dark }) {
   const shown = (el) => {
     const b = el.getBoundingClientRect();
     const cs = getComputedStyle(el);
-    return b.width > 2 && b.height > 2 && cs.visibility !== 'hidden' && cs.opacity !== '0' && !el.closest('.visually-hidden, .sr-only');
+    // A closed <details> still lays out its body for getBoundingClientRect, but paints only the summary.
+    const shut = el.closest('details:not([open])');
+    return b.width > 2 && b.height > 2 && cs.visibility !== 'hidden' && cs.opacity !== '0' && !el.closest('.visually-hidden, .sr-only') &&
+      !(shut && shut !== el && !el.closest('summary'));
   };
   const visibleRect = (el) => {
     const b = el.getBoundingClientRect();
@@ -179,7 +185,7 @@ function probe({ rootSel, dark }) {
           }
         }
       }
-      if (el.matches('button, a.wb-btn') && !el.matches('[role="tab"], [role="tablist"] *, .inner-tab, .app-tab, [role="menuitem"], [role="option"], [role="switch"], .toast-close')) {
+      if (el.matches('button, a.wb-btn') && !el.matches('[role="tab"], [role="tablist"] *, .inner-tab, .app-tab, [role="menuitem"], [role="option"], [role="switch"], .toast-close, .tend-section-toggle')) {
         const label = (el.innerText || '').trim();
         const b = el.getBoundingClientRect();
         const r0 = parseFloat(cs.borderTopLeftRadius) || 0;
@@ -197,6 +203,9 @@ function probe({ rootSel, dark }) {
         return shown(k) && kc.position !== 'absolute' && kc.position !== 'fixed' && kc.display !== 'inline' && kc.display !== 'contents' && !['OPTION', 'COLGROUP', 'COL'].includes(k.tagName);
       });
       if (kids.length < 2 || kids.length > 400) continue;
+      // CSS columns: a child that spills into the next column has a box spanning both. By design.
+      const pcs = getComputedStyle(parent);
+      if (pcs.columnCount !== 'auto' || pcs.columnWidth !== 'auto') continue;
       const rects = kids.map(visibleRect);
       for (let i = 0; i < kids.length; i++) {
         for (let j = i + 1; j < kids.length; j++) {
@@ -225,6 +234,37 @@ function probe({ rootSel, dark }) {
   const vcards = [...document.querySelectorAll('.virtual-scroll-inner .patient-card')].filter((c) => shown(c) && !visibleRect(c).empty);
   const vr = vcards.map((c) => c.getBoundingClientRect()).sort((a, b) => a.top - b.top);
   for (let i = 1; i < vr.length; i++) if (vr[i].top < vr[i - 1].bottom - 1) out.overlap.push(`virtual patient card ${i} overlaps the one above by ${(vr[i - 1].bottom - vr[i].top).toFixed(0)}px`);
+  // Corners: whole page (the shell frame sits above every root). A child set in
+  // from a rounded parent must round its own corner to fit inside the curve.
+  const paint = (cs) => (cs.backgroundColor.match(/[\d.]+/g) || []).length === 4 ? parseFloat(cs.backgroundColor.match(/[\d.]+/g)[3]) > 0.05 : cs.backgroundColor !== 'transparent';
+  const edge = (cs) => parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== 'none';
+  const CORNERS = [['TopLeft', 'left', 'top'], ['TopRight', 'right', 'top'], ['BottomLeft', 'left', 'bottom'], ['BottomRight', 'right', 'bottom']];
+  for (const par of document.querySelectorAll('body *')) {
+    const ps = getComputedStyle(par);
+    if (!(parseFloat(ps.borderTopLeftRadius) > 3 || parseFloat(ps.borderBottomRightRadius) > 3) || !shown(par)) continue;
+    if (!paint(ps) && !edge(ps)) continue;
+    const pb = par.getBoundingClientRect();
+    const bw = parseFloat(ps.borderTopWidth) || 0;
+    for (const ch of par.children) {
+      const cs = getComputedStyle(ch);
+      if (cs.position === 'fixed' || cs.position === 'absolute' || !shown(ch)) continue;
+      if (!(paint(cs) && cs.backgroundColor !== ps.backgroundColor) && !edge(cs)) continue;
+      const cb = ch.getBoundingClientRect();
+      if (visibleRect(ch).empty) continue;
+      for (const [k, x, y] of CORNERS) {
+        const r = Math.min(parseFloat(ps[`border${k}Radius`]), pb.width / 2, pb.height / 2) - bw;
+        if (r <= 3) continue;
+        const dx = Math.abs(cb[x] - pb[x]) - bw;
+        const dy = Math.abs(cb[y] - pb[y]) - bw;
+        const cr = Math.min(parseFloat(cs[`border${k}Radius`]) || 0, cb.width / 2, cb.height / 2);
+        if (dx < -0.5 || dy < -0.5 || Math.max(dx, dy) < 0.5) continue; // flush: clipped cleanly
+        if (dx + cr >= r || dy + cr >= r) continue; // corner sits past the curve
+        if (Math.hypot(r - dx - cr, r - dy - cr) + cr > r + 1) {
+          out.corner.push(`${desc(par)} r=${r.toFixed(0)} > ${desc(ch)} ${k} inset ${dx.toFixed(0)},${dy.toFixed(0)} r=${cr.toFixed(0)}`);
+        }
+      }
+    }
+  }
   for (const k of Object.keys(out)) out[k] = [...new Set(out[k])].slice(0, 15);
   return out;
 }
@@ -318,6 +358,7 @@ async function runScreen(page, pageErrors, key, cond, rootSel, go) {
     check(`${key} @ ${cond.id}: no cut-off text`, !iss.clipped.length, iss.clipped);
     if (cond.dark) check(`${key} @ ${cond.id}: dark contrast AA`, !iss.contrast.length, iss.contrast);
     check(`${key} @ ${cond.id}: text buttons are pills`, !iss.pill.length, iss.pill);
+    check(`${key} @ ${cond.id}: inset corners follow the curve`, !iss.corner.length, iss.corner);
   }
   check(`${key} @ ${cond.id}: no page error`, rec.pageErrors.length === 0, rec.pageErrors);
   return rec;
@@ -405,6 +446,10 @@ await r.finish('Screen layout: every screen x size x theme x text size, busy pat
   }
   await applyCond(page, CONDS[0]);
   await onboardLocalOnly(page);
+  // «Guía» hint bubbles sit over real controls; this run measures the screens, not the hints.
+  await page.evaluate((ids) => localStorage.setItem('rpc-feature-hints-done', JSON.stringify(ids)), FEATURE_HINTS.map((h) => h.id));
+  await page.reload();
+  await page.locator('#apptab-lab').waitFor({ state: 'visible' });
 
   // ── Seed: busy one, 1 kB name, 33 fillers → 35 active ───────────────────
   for (let back = 5; back >= 0; back--) await pasteAndSave(page, fullLabs(BUSY, dayStr(back, 6 + back)));
@@ -427,16 +472,25 @@ await r.finish('Screen layout: every screen x size x theme x text size, busy pat
   await page.locator('#med-input').fill(SOME_MEDS);
   await page.getByRole('button', { name: 'Procesar receta' }).click();
   await page.waitForTimeout(800);
+  // The «día» list for 45 meds is taller than the window: its Guardar must still be reachable.
+  const diaSave = page.locator('.lab-conflict-modal').getByRole('button', { name: 'Guardar' });
+  if (await diaSave.count()) {
+    await diaSave.click({ timeout: 5000 }).then(() => check('seed: «día» list for 45 meds saves', true))
+      .catch((e) => check('seed: «día» list for 45 meds saves', false, String(e.message).split('\n')[0]));
+  }
   const medCount = Number(((await page.locator('#med-turno-title-text').innerText().catch(() => '')).match(/(\d+)/) || [])[1] || 0);
   check('seed: busy one has 40+ meds on screen', medCount >= 40, medCount);
   await closeToasts(page);
   try {
     await call(page, 'switchAppTab', 'nota');
+    await call(page, 'switchConsolidatedTab', 'paciente');
     await page.locator('.dash-name:visible').first().click({ timeout: 5000 });
-    await page.locator('#patient-dx-paste').fill(LONG_NOTE);
-    await page.getByRole('button', { name: 'Separar por +' }).click();
+    // Datos has no paste box any more: type the long diagnosis into the first dx row.
+    await page.locator('#patient-dx-1').fill(LONG_NOTE, { timeout: 5000 });
+    await page.keyboard.press('Tab');
+    const dxRows = await page.locator('#patient-dx-list input').evaluateAll((els) => els.filter((e) => e.value).length);
     await page.keyboard.press('Escape');
-    check('seed: long diagnosis text saved', true);
+    check('seed: long diagnosis text saved', dxRows >= 1, dxRows);
   } catch (e) {
     check('seed: long diagnosis text saved', false, String(e.message).split('\n')[0]);
     await page.keyboard.press('Escape').catch(() => {});
@@ -591,11 +645,10 @@ await r.finish('Screen layout: every screen x size x theme x text size, busy pat
       ['phone-lab-labs', async (p) => { await call(p, 'switchAppTab', 'lab'); await call(p, 'switchLabInner', 'labs'); }],
       ['phone-lab-tendencias', async (p) => { await call(p, 'switchAppTab', 'lab'); await call(p, 'switchLabInner', 'tend'); }],
       ['phone-lab-cultivos', async (p) => { await call(p, 'switchAppTab', 'lab'); await call(p, 'switchLabInner', 'cult'); }],
+      // No Ajustes here: R+ Móvil hides it on purpose (mobile.css «barebones»).
       ['phone-expediente', async (p) => { await call(p, 'switchAppTab', 'nota'); }],
-      ['phone-ajustes', async (p) => { await p.locator('#btn-open-settings').click(); }],
     ]) {
       await runScreen(page, pageErrors, key, c, 'body', go);
-      if (key === 'phone-ajustes') await page.keyboard.press('Escape');
     }
   }
   await page.evaluate(() => localStorage.removeItem('rpc-mobile-mode'));

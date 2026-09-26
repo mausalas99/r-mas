@@ -81,9 +81,9 @@ async function finalizeSuccessfulTeamJoin(team, teamId, cycle) {
   toast(`Te uniste al equipo ${team.name || ''} (ciclo ${cycle}).`, 'success');
   markClinicalEverJoinedTeam();
   const sala = String(team?.sala || clinicalSessionContext.user?.sala || '').trim();
-  const { closeClinicalTeamsPanel, refreshTeamsUiAfterChange } = await import('./teams-roster-shell.mjs');
+  const { closeTeamsUiAfterJoin, refreshTeamsUiAfterChange } = await import('./teams-roster-shell.mjs');
   await fetchClinicalTeamsFromDb();
-  closeClinicalTeamsPanel();
+  closeTeamsUiAfterJoin();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { sala } }));
   await publishClinicalTeamsAfterChange({ sala });
   void import('../cloud-sync/ensure-turn-room.mjs').then(({ ensureTurnRoomAfterTeamJoin }) =>

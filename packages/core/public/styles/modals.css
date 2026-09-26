@@ -30,6 +30,8 @@
   background: var(--surface); border-radius: 10px; padding: 20px;
   width: 90%; max-width: 400px; box-shadow: var(--shadow-md);
   display: flex; flex-direction: column; gap: 14px;
+  /* A long list (e.g. 45 meds) must scroll inside, or its buttons land off screen. */
+  max-height: calc(100dvh - 32px); overflow-y: auto; box-sizing: border-box;
 }
 .lab-conflict-modal h3 { font-size: 14px; font-weight: 700; color: var(--text); }
 .lab-conflict-modal p  { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
@@ -488,13 +490,12 @@ html.dark .tour-spotlight-soap { outline-color: var(--color-accent-soft-text) !i
 }
 .shortcuts-backdrop.open {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding: 10vh 20px 24px;
+  padding: 16px;
 }
 .shortcuts-sheet {
-  width: min(760px, 94vw);
-  max-height: min(78vh, 720px);
+  width: min(1080px, 96vw);
   display: flex;
   flex-direction: column;
   border-radius: var(--radius-container, 16px);
@@ -517,25 +518,23 @@ html.dark .tour-spotlight-soap { outline-color: var(--color-accent-soft-text) !i
   line-height: 1.25;
 }
 .shortcuts-lead {
-  margin: 8px 0 0;
+  margin: 0 0 8px;
   font-size: 12px;
   line-height: 1.45;
   color: var(--text-muted);
 }
 
 .shortcuts-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 8px 10px 12px;
-  background: color-mix(in oklab, var(--color-elevated, var(--surface)) 96%, var(--bg));
+  columns: 3 280px;
+  column-gap: 24px;
 }
-.shortcuts-section + .shortcuts-section {
-  margin-top: 10px;
+.shortcuts-section {
+  break-inside: avoid;
+  margin-bottom: 10px;
 }
 .shortcuts-section-title {
   margin: 0;
-  padding: 8px 10px 6px;
+  padding: 4px 8px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -551,9 +550,9 @@ html.dark .tour-spotlight-soap { outline-color: var(--color-accent-soft-text) !i
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  min-height: 40px;
-  padding: 8px 10px;
+  gap: 12px;
+  min-height: 30px;
+  padding: 3px 8px;
   border-radius: calc(var(--radius-md) - 2px);
 }
 .shortcuts-row:hover {
@@ -564,30 +563,25 @@ html.dark .tour-spotlight-soap { outline-color: var(--color-accent-soft-text) !i
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
 }
 .shortcuts-row-label {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 550;
   letter-spacing: -0.01em;
   color: var(--text);
   line-height: 1.35;
 }
 .shortcuts-row-hint {
-  font-size: 11.5px;
-  line-height: 1.35;
+  font-size: 11px;
+  line-height: 1.3;
   color: var(--text-muted);
 }
 .shortcuts-key-group {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   flex-shrink: 0;
-  padding: 3px 6px;
-  border-radius: var(--radius-field, 8px);
-  background: color-mix(in oklab, var(--bg) 70%, var(--surface));
-  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
-  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--surface) 60%, transparent);
 }
 .shortcuts-key {
   font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
@@ -595,7 +589,7 @@ html.dark .tour-spotlight-soap { outline-color: var(--color-accent-soft-text) !i
   font-weight: 600;
   line-height: 1.2;
   min-width: 20px;
-  padding: 4px 7px;
+  padding: 2px 6px;
   border-radius: var(--radius-badge);
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
   background: var(--surface);
@@ -1419,7 +1413,7 @@ html.dark .tend-section-toggle:hover { background: rgba(96, 165, 250, 0.08); }
   display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0;
 }
 .tend-section-count {
-  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  font-size: 12px; font-weight: 600; color: color-mix(in oklab, var(--text-muted) 70%, var(--text));
   padding: 4px 10px; border-radius: var(--radius-pill); background: var(--lab-chip-bg);
   line-height: 1.2; min-width: 1.75em; text-align: center;
 }
@@ -2715,3 +2709,30 @@ html.dark .tend-gaso-tip {
   .agua-iny-row > .agua-iny-in:not(.agua-iny-in--name) { grid-column: 2; }
 }
 @media (prefers-reduced-motion: reduce) { .agua-iny-in { transition: none; } }
+
+/* «Nuevo» feature hints (feature-hints.mjs): a dot, then a bubble. No overlay. */
+.fh-layer { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-toast); }
+.fh-dot {
+  position: fixed; width: 12px; height: 12px; padding: 0; pointer-events: auto; cursor: pointer;
+  border: 2px solid var(--surface); border-radius: 999px; background: var(--action);
+  animation: fh-dot-pulse 2s ease-in-out infinite;
+}
+.fh-dot:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
+@keyframes fh-dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--action) 55%, transparent); }
+  50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--action) 0%, transparent); }
+}
+.fh-bubble {
+  position: fixed; width: min(300px, calc(100vw - 16px)); padding: 10px 12px; pointer-events: auto;
+  color: var(--text); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md); font-size: 13px; line-height: 1.4;
+}
+.fh-bubble[hidden] { display: none; }
+.fh-bubble-head { display: flex; justify-content: space-between; align-items: center; }
+.fh-bubble-badge { font-size: 11px; font-weight: 600; color: var(--action); text-transform: uppercase; letter-spacing: 0.04em; }
+.fh-close { border: 0; background: none; color: var(--text-muted); font-size: 18px; line-height: 1; cursor: pointer; padding: 0 2px; }
+.fh-bubble-text { margin: 6px 0 0; }
+.fh-bubble-foot { display: flex; justify-content: flex-end; margin-top: 8px; }
+.fh-target { outline: 2px solid var(--action) !important; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .fh-dot { animation: none; } }

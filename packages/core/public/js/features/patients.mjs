@@ -204,6 +204,22 @@ function readSidebarAutoHide() {
   }
 }
 
+/* Narrow window: a pinned list leaves the main panel ~290 px wide, so hide it like
+   auto-hide does, without touching the saved setting. The phone surface has its own layout. */
+var SIDEBAR_NARROW_MQ = '(max-width: 760px)';
+
+function isNarrowWindow() {
+  try {
+    return !document.documentElement.classList.contains('rpc-mobile-web') && window.matchMedia(SIDEBAR_NARROW_MQ).matches;
+  } catch {
+    return false;
+  }
+}
+
+function sidebarAutoHideOn() {
+  return readSidebarAutoHide() || isNarrowWindow();
+}
+
 function writeSidebarAutoHide(on) {
   try {
     localStorage.setItem(SIDEBAR_AUTO_HIDE_LS, on ? '1' : '0');
@@ -211,7 +227,7 @@ function writeSidebarAutoHide(on) {
 }
 
 function applySidebarAutoHideUi() {
-  var on = readSidebarAutoHide();
+  var on = sidebarAutoHideOn();
   document.documentElement.classList.toggle('sidebar-auto-hide', on);
   /* Reset reveal on every toggle: enabling starts collapsed, disabling has no reveal state to keep. */
   document.documentElement.classList.remove('sidebar-reveal');
@@ -252,9 +268,12 @@ export function initSidebarAutoHide() {
     writeSidebarAutoHide(false);
   }
   applySidebarAutoHideUi();
+  try {
+    window.matchMedia(SIDEBAR_NARROW_MQ).addEventListener('change', applySidebarAutoHideUi);
+  } catch { /* no matchMedia: keep the saved setting only */ }
   if (!strip || !aside) return;
   function reveal() {
-    if (readSidebarAutoHide()) document.documentElement.classList.add('sidebar-reveal');
+    if (sidebarAutoHideOn()) document.documentElement.classList.add('sidebar-reveal');
   }
   function hide() {
     document.documentElement.classList.remove('sidebar-reveal');
@@ -273,7 +292,7 @@ export function initSidebarAutoHide() {
   strip.addEventListener('mouseenter', reveal);
   aside.addEventListener('mouseenter', reveal);
   document.addEventListener('mousemove', function (e) {
-    if (!readSidebarAutoHide()) return;
+    if (!sidebarAutoHideOn()) return;
     var left = appLeft();
     var revealed = document.documentElement.classList.contains('sidebar-reveal');
     if (shouldRevealSidebarAt(e.clientX, left) || pointerOverAside(e.target)) {

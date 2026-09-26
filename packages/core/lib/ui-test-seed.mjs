@@ -22,6 +22,7 @@ import { upsertBlob } from './db/clinical-blobs.mjs';
 import { createTeam, listActiveTeams } from './db/clinical-access-teams-core.mjs';
 import { ensureClinicalUser, findClinicalUserByUsername } from './db/clinical-access-users.mjs';
 import { joinTeam } from './db/clinical-access-teams-membership.mjs';
+import { assignPatientToTeam } from './db/clinical-access-assignments.mjs';
 import { procesarLabs } from '../public/js/labs.js';
 import { extractParsedValues } from '../public/js/features/diagrams-parse.mjs';
 import { DEMO_SOME_LAB_REPORT, OLDER_DEMO_SOME_LAB_REPORT } from '../public/js/tour-demo-some-lab.mjs';
@@ -183,8 +184,12 @@ export function buildUiTestRoster(now) {
         : {}),
     });
 
+    // Two sets on different dates, so Tendencias has something to chart.
     if (def.labs === 'structured') {
-      labHistory[id] = [buildLabHistoryEntry(id + '-l1', DEMO_SOME_LAB_REPORT, new Date(today.getTime() - 2 * 86400000))];
+      labHistory[id] = [
+        buildLabHistoryEntry(id + '-l1', OLDER_DEMO_SOME_LAB_REPORT, new Date(today.getTime() - 5 * 86400000)),
+        buildLabHistoryEntry(id + '-l2', DEMO_SOME_LAB_REPORT, new Date(today.getTime() - 2 * 86400000)),
+      ];
     } else if (def.labs === 'raw-fixture') {
       labHistory[id] = [
         buildLabHistoryEntry(id + '-l1', OLDER_DEMO_SOME_LAB_REPORT, new Date(today.getTime() - 3 * 86400000)),
@@ -220,6 +225,29 @@ export function seedUiTestTeams(db) {
   return SALAS.map((sala) =>
     createTeam(db, { name: `Equipo ${sala}`, service: SALA_TO_SERVICE[sala], sala, onCallDayIndex: 0 })
   );
+}
+
+/** Grouping field → the real seeded team whose members see those patients. */
+const GROUP_SALA = {
+  [UI_TEST_TEAMS.CENSO]: 'Sala 1',
+  [UI_TEST_TEAMS.SALA]: 'Sala 2',
+  [UI_TEST_TEAMS.GUARDIA]: 'Eme',
+};
+
+/**
+ * Puts each seeded patient on a real seeded team (real `assignPatientToTeam`,
+ * same write as the team picker), so a user who joins that team sees them.
+ * Call after `seedUiTestData` and `seedUiTestTeams`.
+ * @param {import('better-sqlite3').Database} db
+ * @param {Date} [now]
+ */
+export function seedUiTestAssignments(db, now) {
+  const effectiveAt = (now instanceof Date ? now : new Date()).toISOString();
+  const teamBySala = new Map(listActiveTeams(db).map((t) => [t.sala, t.team_id]));
+  for (const p of buildUiTestRoster(now).patients) {
+    const teamId = teamBySala.get(GROUP_SALA[p.censusTeamId]);
+    if (teamId) assignPatientToTeam(db, { patientId: p.id, teamId, effectiveAt });
+  }
 }
 
 /**

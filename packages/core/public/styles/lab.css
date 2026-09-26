@@ -2806,7 +2806,7 @@ html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36
   justify-content: center;
   font-size: 11px;
   font-weight: 800;
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .toast-text {

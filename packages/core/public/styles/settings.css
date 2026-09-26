@@ -709,6 +709,8 @@ input[type="checkbox"].settings-card__toggle:focus-visible {
 .settings-dropdown-modal #settings-clinical-sync-mode .settings-clinical-sync-mode-lead {
   flex: 1;
   margin: 0;
+  /* Muted text on the accent strip is under AA in dark mode; this line is the message. */
+  color: var(--text);
 }
 .settings-dropdown-modal #settings-clinical-sync-mode .wb-btn {
   flex-shrink: 0;

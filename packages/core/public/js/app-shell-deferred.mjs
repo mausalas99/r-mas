@@ -108,4 +108,9 @@ export function scheduleDeferredUiInits(showToast) {
   void import('./keyboard-shortcuts-nudge.mjs').then(function (mod) {
     mod.initKeyboardShortcutsNudge(showToast);
   });
+  _rpcDeferInit(function () {
+    void import('./feature-hints.mjs').then(function (mod) {
+      mod.initFeatureHints();
+    });
+  });
 }

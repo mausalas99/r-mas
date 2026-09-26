@@ -12,7 +12,7 @@
  *   - a tour step highlights nothing (a broken selector with no working
  *     fallback)
  *   - the upgrade card shows during onboarding, or once the track is done
- *   - a fresh install never opens Fundamentos; an upgrade re-opens it
+ *   - a fresh install pops the Learn Hub open (the «Guía» dots teach instead); an upgrade re-opens it
  *   - a module completion isn't announced (or is announced twice), reset
  *     doesn't clear it, progress doesn't survive a restart
  *   - the tour's Pendientes/Listado steps show no demo data, or "Modo
@@ -200,16 +200,15 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   );
   await relaunch2.app.close();
 
-  // ── guardia-v7-gating: fresh registered install → Fundamentos auto-opens ─
+  // ── fresh registered install → no Learn Hub pop-up; an in-app «Guía» dot instead ─
   const fresh = await r.launch({ profile: 'fresh' });
   await onboardLocalOnly(fresh.page);
   await fresh.page.waitForTimeout(3000);
   check(
-    'guardia-v7-gating: fresh registered install opens Learn Hub on Fundamentos',
-    await fresh.page.locator('#learn-hub-backdrop.open .learn-hub-track[open]').first().evaluate((el) =>
-      el.querySelector('.learn-hub-track-name')?.textContent === 'Fundamentos'
-    ).catch(() => false)
+    'fresh registered install does not pop the Learn Hub open',
+    (await fresh.page.locator('#learn-hub-backdrop.open').count()) === 0
   );
+  check('fresh registered install shows one «Guía» dot', (await fresh.page.locator('.fh-dot').count()) === 1);
   await closeLearnHubUi(fresh.page);
 
   // guardia-v7-gating: last-seen 6.7.0 (a real upgrade) + not mid-onboarding → upgrade card.

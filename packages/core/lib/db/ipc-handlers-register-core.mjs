@@ -5,7 +5,7 @@ import { clinicalDbPath, clinicalUnlockMetaPath } from './db-path.mjs';
 import { readHostState } from './host-state-persistence.mjs';
 import { verifyChainRows } from './forensic-audit.mjs';
 import { touchClinicalUserActivity } from './clinical-access-db.mjs';
-import { seedUiTestData, seedUiTestTeams, seedUiTestUser } from '../ui-test-seed.mjs';
+import { seedUiTestAssignments, seedUiTestData, seedUiTestTeams, seedUiTestUser } from '../ui-test-seed.mjs';
 import { listActiveTeams } from './clinical-access-teams-core.mjs';
 import { listCloudOutbox, replaceCloudOutbox } from './cloud-outbox.mjs';
 import {
@@ -132,8 +132,10 @@ function registerDbCoreStatusHandlers(ctx) {
 export async function seedUiTestModeIfNeeded(ctx) {
   if (process.env.R_PLUS_UI_TEST_MODE !== '1') return;
   await ctx.dbManager.withTransaction((db) => {
-    if (!getBlob(db, 'patients')) seedUiTestData(db);
+    const freshPatients = !getBlob(db, 'patients');
+    if (freshPatients) seedUiTestData(db);
     if (!listActiveTeams(db).length) seedUiTestTeams(db);
+    if (freshPatients) seedUiTestAssignments(db);
     seedUiTestUser(db);
   });
 }

@@ -124,10 +124,12 @@ export async function onboardLocalOnly(page) {
   await dismissLearnHub(page);
 }
 
-/** The first-run help sheet can open a moment after boot. Close it like a user. */
+/**
+ * Close the Learn Hub like a user if it is open. Nothing opens it on its own
+ * any more (in-app hint dots replaced the first-run pop-up), so no wait.
+ */
 export async function dismissLearnHub(page) {
   const hub = page.locator('#learn-hub-backdrop.open');
-  await hub.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
   if (await hub.count()) {
     await page.keyboard.press('Escape');
     await hub.waitFor({ state: 'detached', timeout: 5000 }).catch(() => {});
