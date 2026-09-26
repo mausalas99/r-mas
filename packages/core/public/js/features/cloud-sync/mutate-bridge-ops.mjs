@@ -86,10 +86,13 @@ export function pushCensusFieldsOp(ops, patientId, patient, actorId) {
 
 /** Monitoreo + eventualidades only (no HC) — fits debounced Nube bundle without note/lab quota blow-up. */
 export function pushCloudLiveClinicalOps(ops, patientId, patient, actorId, batchAt) {
+  // No content clock → use the patient clock, not the batch "now": a fresh "now" on every
+  // bundle defeats the echo guard, so each save re-sent every patient's block (429 flood),
+  // and an empty template stamped "now" beat a teammate's real edit on the server.
+  const stableAt = fieldsOpUpdatedAt(patient) || batchAt;
   if (patient.monitoreo) {
-    // Fall back to batchAt so a vitals row with no resolvable content clock still
-    // reaches the cloud instead of being silently dropped (was: skipped when monAt was empty).
-    const monAt = monitoreoOpUpdatedAt(patient.monitoreo) || batchAt;
+    // Still pushed (never dropped) when a vitals row has no resolvable content clock.
+    const monAt = monitoreoOpUpdatedAt(patient.monitoreo) || stableAt;
     ops.push(
       cloudOp({
         path: `entries/${patientId}/monitoreo`,
@@ -105,7 +108,7 @@ export function pushCloudLiveClinicalOps(ops, patientId, patient, actorId, batch
         path: `entries/${patientId}/eventualidades`,
         value: patient.eventualidades,
         actorId,
-        updatedAt: eventualidadesOpUpdatedAt(patient.eventualidades, batchAt),
+        updatedAt: eventualidadesOpUpdatedAt(patient.eventualidades, stableAt),
       })
     );
   }

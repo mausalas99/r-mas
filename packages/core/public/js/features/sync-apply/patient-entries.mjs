@@ -307,10 +307,25 @@ export function applyLanLabSetsToExistingPatients(labsByPatientId) {
   return changed;
 }
 
+/** Order-free content of an eventualidades store (entries, deletions, labsText), clock left out. */
+function eventualidadesContentKey(store) {
+  var s = store || {};
+  var rows = (Array.isArray(s.entries) ? s.entries : []).map(function (e) {
+    return JSON.stringify([e && e.id, e && e.at, e && e.text]);
+  });
+  return JSON.stringify([rows.sort(), Object.keys(s.deletedIds || {}).sort(), String(s.labsText || '').trim()]);
+}
+
 function applyLanPatientNested(existing, entry, p) {
   var changed = false;
   if (p.eventualidades && typeof p.eventualidades === 'object') {
     var mergedEv = mergeEventualidades(existing.eventualidades, p.eventualidades) || p.eventualidades;
+    if (eventualidadesContentKey(mergedEv) !== eventualidadesContentKey(p.eventualidades)) {
+      // We hold entries the room lacks (a same-time add lost the whole-blob LWW):
+      // re-push the union with a fresh clock, or the other device never gets ours.
+      mergedEv.updatedAt = new Date().toISOString();
+      censusRepushNeeded = true;
+    }
     if (!lanJsonEqual(existing.eventualidades, mergedEv)) {
       existing.eventualidades = mergedEv;
       changed = true;
@@ -319,8 +334,37 @@ function applyLanPatientNested(existing, entry, p) {
   if (applyLanPatientCharts(existing, entry)) changed = true;
   var monBefore = JSON.stringify(existing);
   mergePatientMonitoreoFromImported(existing, p);
+  if (monitoreoAddsToIncoming(existing.monitoreo, p.monitoreo)) {
+    // Same as eventualidades: the room's monitoreo is a whole-blob LWW, so a same-time
+    // edit on this device lost there — re-push the merged blob with a fresh clock.
+    existing.monitoreo.estadoClinicoUpdatedAt = new Date().toISOString();
+    censusRepushNeeded = true;
+  }
   if (JSON.stringify(existing) !== monBefore) changed = true;
   return changed;
+}
+
+/** @param {Record<string, unknown>} mine @param {Record<string, unknown>} theirs */
+function ecHasExtra(mine, theirs) {
+  return Object.keys(mine).some(function (k) {
+    return String(mine[k] || '').trim() !== '' && String(mine[k]) !== String(theirs[k] || '');
+  });
+}
+
+/** @param {Record<string, string[]>} mine @param {Record<string, string[]>} theirs */
+function manualMedsHaveExtra(mine, theirs) {
+  return Object.keys(mine).some(function (cat) {
+    var have = Array.isArray(theirs[cat]) ? theirs[cat] : [];
+    return (mine[cat] || []).some(function (x) { return have.indexOf(x) < 0; });
+  });
+}
+
+/** True when the merged local monitoreo holds content the incoming room copy lacks. */
+function monitoreoAddsToIncoming(merged, incoming) {
+  if (!merged || !incoming || typeof incoming !== 'object') return false;
+  if (ecHasExtra(merged.estadoClinico || {}, incoming.estadoClinico || {})) return true;
+  if (manualMedsHaveExtra(merged.manualMeds || {}, incoming.manualMeds || {})) return true;
+  return (merged.historial || []).length > (incoming.historial || []).length;
 }
 
 function applyLanPatientMedArtifacts(existing, entry) {

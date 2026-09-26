@@ -2,7 +2,7 @@ import { displayCloudSalaLabel, normalizeCloudSala } from './sala-allowlist.mjs'
 import { shouldShowNubePanel } from './nube-sync-policy.mjs';
 import { statusChipModifier, formatCloudStatusChipLabel } from './panel-conexion-html.mjs';
 import { createConexionRenderers, saveUrlFromUi } from './panel-conexion-ui.mjs';
-import { createNubeRuntime, getSharedNubeRuntime } from './panel-conexion-runtime.mjs';
+import { createNubeRuntime, getSharedNubeRuntime, setSharedNubeStatusListener } from './panel-conexion-runtime.mjs';
 import {
   bootstrapConexionState,
   mountAdminShell,
@@ -128,6 +128,7 @@ export function mountNubeSection(root, deps) {
   section.setAttribute('data-cloud-nube-section', '1');
 
   const statusChip = bindStatusChip(section, deps);
+  setSharedNubeStatusListener(statusChip.renderStatusChip);
 
   const { startRuntime: startRuntimeInner, stopRuntime } = createNubeRuntime({
     getApi: deps.getApi,

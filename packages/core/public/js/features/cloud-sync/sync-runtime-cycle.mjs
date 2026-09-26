@@ -3,7 +3,7 @@
 import { createRoomSyncWs } from './room-sync-ws.mjs';
 import { createCloudPollScheduler } from './sync-runtime-schedule.mjs';
 import { cloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
-import { isCloudTransientServerError } from './cloud-sync-timing.mjs';
+import { isCloudTransientServerError, isCloudUnreachableError } from './cloud-sync-timing.mjs';
 import { createPullPush, isCloudRevisionStaleError } from './sync-runtime-pull-push.mjs';
 import { decryptOpsFromPull, hasLockedOpValue } from './cloud-sync-crypto-wire.mjs';
 import { getCachedRoomDek, markRoomUnprotected } from './room-dek.mjs';
@@ -228,6 +228,9 @@ export function createSyncFailCycle(getScheduler, setStatus, pendingCount) {
       // saturation reason as detail) is honest here; "Error" would read as a
       // sync failure the owner needs to act on.
       setStatus('pending', msg);
+    } else if (pending && isCloudUnreachableError(err)) {
+      // Same reasoning: queued ops go out on reconnect, nothing for the owner to fix.
+      setStatus('pending', 'Sin conexión con el servidor Nube. Se enviará al reconectar.');
     } else if (transient && !pending) {
       setStatus('idle');
     } else {
@@ -418,6 +421,7 @@ export function createSyncRuntimeCycle(deps) {
     getRoomId,
     syncCycle: cycleController.syncCycle,
     scheduler,
+    outboxSync,
     onStatus,
     getCurrentStatus: () => currentStatus,
     getLastDetail: () => lastDetail,

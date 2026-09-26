@@ -28,6 +28,19 @@ function ensureSharedOutbox() {
 }
 
 /**
+ * The Conexión panel's chip + header renderer. Autostart and onboarding start the
+ * shared runtime with a no-op onStatus, so without this the chip stayed on
+ * «Nube al día» while the Worker was down and changes were queued.
+ * @type {((status: string, detail?: string) => void) | null}
+ */
+let statusListener = null;
+
+/** @param {((status: string, detail?: string) => void) | null} fn */
+export function setSharedNubeStatusListener(fn) {
+  statusListener = fn;
+}
+
+/**
  * @param {{
  *   getApi: () => ReturnType<import('./api-client.mjs').createCloudSyncApi>,
  *   getCloudSyncRoomId: () => string,
@@ -56,7 +69,10 @@ export function startSharedNubeRuntime(deps) {
     getRoomId: deps.getCloudSyncRoomId,
     getRevision: deps.getCloudSyncRevision,
     setRevision: deps.setCloudSyncRevision,
-    onStatus: deps.onStatus || function () {},
+    onStatus: function (status, detail) {
+      deps.onStatus?.(status, detail);
+      if (statusListener && statusListener !== deps.onStatus) statusListener(status, detail);
+    },
     applyPullResult: async function (result) {
       try {
         await applyCloudPullResult(result);
