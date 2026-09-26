@@ -3,13 +3,23 @@ const path = require('path');
 const fs = require('fs');
 const JSZip = require('jszip');
 
+// XML 1.0 forbids these; one in document.xml and Word refuses the whole file.
+// eslint-disable-next-line no-control-regex -- matching control chars is the point
+const XML_INVALID = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g;
+
+/**
+ * Text → safe inside <w:t>. "$" becomes &#36; because callers splice the
+ * result in with String.replace, where "$'" / "$&" would paste template XML.
+ */
 function esc(text) {
   if (text == null || text === '') return '';
   return String(text)
+    .replace(XML_INVALID, ' ')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/\$/g, '&#36;');
 }
 
 function replaceT(xml, oldVal, newVal) {

@@ -6,7 +6,7 @@ import path from 'node:path';
  * @returns {string}
  */
 export function censoSafeName(str) {
-  return String(str || '').replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]/g, '_');
+  return String(str || '').normalize('NFC').replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]/g, '_').slice(0, 80);
 }
 
 /**

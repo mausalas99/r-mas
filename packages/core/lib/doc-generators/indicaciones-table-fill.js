@@ -70,15 +70,21 @@ function fillIndicacionesPatientFields(xml, patient, servicio, constants) {
   const cuarto = patient.cuarto || '';
   const cama = patient.cama || '';
 
+  const slots = [
+    [constants.ORIG_NOMBRE, ` ${nombre}`],
+    [constants.ORIG_REGISTRO, registro],
+    [constants.ORIG_EDAD, edad],
+    [constants.ORIG_SEXO, sexo],
+    [constants.ORIG_AREA, area],
+    [constants.ORIG_SERVICIO, servicio],
+    [constants.ORIG_CUARTO, cuarto],
+    [constants.ORIG_CAMA, ` ${cama}`],
+  ];
+  // Mark every anchor before writing any value: area "MEDICINA INTERNA" must
+  // not be taken for the servicio anchor.
   let out = xml;
-  out = replaceT(out, constants.ORIG_NOMBRE, ` ${nombre}`);
-  out = replaceT(out, constants.ORIG_REGISTRO, registro);
-  out = replaceT(out, constants.ORIG_EDAD, edad);
-  out = replaceT(out, constants.ORIG_SEXO, sexo);
-  out = replaceT(out, constants.ORIG_AREA, area);
-  out = replaceT(out, constants.ORIG_SERVICIO, servicio);
-  out = replaceT(out, constants.ORIG_CUARTO, cuarto);
-  out = replaceT(out, constants.ORIG_CAMA, ` ${cama}`);
+  slots.forEach(([orig], i) => { out = replaceT(out, orig, `\uE000${i}`); });
+  slots.forEach(([, val], i) => { out = replaceT(out, `\uE000${i}`, val); });
   return out;
 }
 
