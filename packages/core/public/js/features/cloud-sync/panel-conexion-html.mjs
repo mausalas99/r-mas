@@ -205,15 +205,16 @@ const HERO_TITLE_BY_STATUS = {
  */
 export function statusHeroHtml({ status, detail, displaySala, room }) {
   const iconState = HERO_ICON_STATE_BY_STATUS[status] || 'ok';
-  const title =
-    status === 'error'
-      ? humanizeCloudSyncErrorMessage(String(detail || '').trim()) || STATUS_LABELS.error
-      : HERO_TITLE_BY_STATUS[status] || STATUS_LABELS[status] || status;
+  const title = status === 'error' ? 'Hay un problema con Nube' : HERO_TITLE_BY_STATUS[status] || STATUS_LABELS[status] || status;
   const lastPush = getLastCloudPushAt();
-  const subline = [String(displaySala || '').trim(), formatTurnMonth(room?.turnKey)]
-    .filter(Boolean)
-    .concat(lastPush ? ['último envío ' + formatCloudDiagWhen(lastPush, Date.now())] : [])
-    .join(' · ');
+  // An error says what happened in plain words; every other state says where and when.
+  const subline =
+    status === 'error'
+      ? humanizeCloudSyncErrorMessage(String(detail || '').trim()) || 'Tus cambios están a salvo aquí.'
+      : [String(displaySala || '').trim(), formatTurnMonth(room?.turnKey)]
+          .filter(Boolean)
+          .concat(lastPush ? ['último envío ' + formatCloudDiagWhen(lastPush, Date.now())] : [])
+          .join(' · ');
   return (
     '<div class="cloud-sync-hero" data-cloud-hero>' +
     '<div class="cloud-sync-hero-icon" data-state="' +
@@ -328,7 +329,7 @@ export function advancedUrlHtml(url) {
  */
 export function conexionShellHtml(normalizedSala, bodyHtml, status, detail = '', heroBlockHtml = '') {
   const detailText = String(detail || '').trim();
-  const showDetail = status === 'error' && !!detailText;
+  const showDetail = status === 'error' && !!detailText && !heroBlockHtml;
   const headContent =
     heroBlockHtml ||
     '<div class="cloud-sync-conexion-head-text">' +
