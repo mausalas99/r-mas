@@ -138,9 +138,13 @@ async function notifyPatientTeamAssigned(pid, tid) {
   syncLocalPatientSalaFromTeamAssignment(pid, tid);
   await fetchClinicalScopeContextFromDb();
   const teamSala = resolveTeamSalaById(tid);
-  await pushClinicalOpsAfterTeamAssign(teamSala);
-  await mirrorAssignedPatientToCloud(pid);
-  dispatchPatientTeamAssignedEvents(pid, tid, teamSala);
+  // Local scope is ready here — callers can render now. Nube push/mirror can
+  // take seconds (or stall offline); awaiting it kept a new patient out of the
+  // sidebar until the user switched patients.
+  void pushClinicalOpsAfterTeamAssign(teamSala)
+    .then(() => mirrorAssignedPatientToCloud(pid))
+    .catch((err) => console.error(err))
+    .then(() => dispatchPatientTeamAssignedEvents(pid, tid, teamSala));
 }
 
 function syncLocalPatientSalaFromTeamAssignment(patientId, teamId) {

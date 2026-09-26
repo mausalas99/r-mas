@@ -103,4 +103,13 @@ describe('patient-team-assign-ui', () => {
     assert.match(fnBody, /for \(let attempt = 0; attempt < 2; attempt \+= 1\)/);
     assert.match(fnBody, /setTimeout/);
   });
+
+  it('does not block the caller on the Nube push (new patient shows at once)', () => {
+    const fnStart = src.indexOf('async function notifyPatientTeamAssigned');
+    assert.ok(fnStart > -1);
+    const fnBody = src.slice(fnStart, src.indexOf('\n}\n', fnStart));
+    assert.match(fnBody, /await fetchClinicalScopeContextFromDb\(\)/);
+    assert.doesNotMatch(fnBody, /await pushClinicalOpsAfterTeamAssign/);
+    assert.doesNotMatch(fnBody, /await mirrorAssignedPatientToCloud/);
+  });
 });
