@@ -255,7 +255,7 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   await openLearnHubUi(salidaDevice.page);
   await salidaDevice.page.locator('[data-learn-chapter="ch-salida"]').first().click();
   await salidaDevice.page.locator('#tour-dock').waitFor({ state: 'visible', timeout: 6000 });
-  // ch-salida: sala_med, listado_problemas, sala_vpo, sala_receta_hu.
+  // ch-salida: sala_med, listado_problemas, sala_vpo.
   await salidaDevice.page.waitForTimeout(600);
   await salidaDevice.page.locator('#tour-btn-next').click(); // -> listado_problemas
   await salidaDevice.page.waitForTimeout(800);

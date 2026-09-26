@@ -9,7 +9,6 @@ if (process.env.NODE_ENV !== 'production' && !process.env.ELECTRON_DISABLE_SECUR
 const { app, BrowserWindow, Menu, shell, dialog, ipcMain, clipboard, safeStorage, session, protocol, net } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
 const execFileAsync = promisify(execFile);
@@ -25,7 +24,6 @@ const { UPDATE_FEED_MODE, UPDATE_WORKER_URL } = require('../core/lib/update-feed
 const { probeNativeRuntime } = require('../core/lib/native-runtime-probe.js');
 const { isAllowedExternalUrl } = require('../core/lib/window-open-policy.cjs');
 const { isReservedShellShortcutInput, hasCmdOrCtrl } = require('../core/lib/shell-shortcut-input.cjs');
-const { cleanupLegacyAppIdFiles } = require('../core/lib/legacy-appid-cleanup.js');
 const { PERF_CONFIG_FILE, normalizePerfConfig, readPerfConfig, writePerfConfig } = require('../core/lib/perf-config.js');
 const { setLanDbManager, getLanDbManager } = require('../core/lib/db/lan-db-bridge.cjs');
 const { checkUiTestModeBoot } = require('../core/lib/ui-test-mode-guard.js');
@@ -1324,12 +1322,6 @@ app.whenReady().then(async () => {
       );
     }
     process.env.R_PLUS_USER_DATA = app.getPath('userData');
-    // One-time sweep of OS-level leftovers under the retired hospital-name appId
-    // (com.hospitaluniversitario.rplusclinical → com.rmas.rplusclinical). No patient
-    // data lives there — safe to run every launch, no-ops once the files are gone.
-    try {
-      cleanupLegacyAppIdFiles(fs, os.homedir(), process.platform);
-    } catch (_e) { /* best-effort, never block startup */ }
     applyUpdateChannel(readUpdateChannelFromDisk());
     captureDefaultUpdaterFeed();
     bootMark('updater-feed');

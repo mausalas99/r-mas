@@ -416,19 +416,19 @@ IDENTIFICACION POR ESPECTROMETRIA DE MASAS (MALDI TOF)
   assert.match(out, /S:.*AMP-SULB/);
   assert.match(out, /CFTX|CFZ|CIPRO|NITRO|GENT|LVX|PIP\/TAZO|TMP\/SMX/);
   assert.match(out, /Cuenta:\s*80,000\s*UFC\/ML/i);
-  assert.doesNotMatch(out, /USER|Labo\s*-?647|DJEG|Feme/i);
+  assert.doesNotMatch(out, /USER|Labo\s*-?647|LABX|Feme/i);
 
   const r = procesarLabs(raw);
   const joined = (r.resLabs || []).join('\n');
   assert.match(joined, /\bATB R: AMP\b/);
-  assert.doesNotMatch(joined, /USER|Labo\s*-?647|DJEG|Feme/i);
+  assert.doesNotMatch(joined, /USER|Labo\s*-?647|LABX|Feme/i);
 
   const dirtyCopy = formatCultivoCondensedForCopy(
-    out + '\nUSER CP1 -647* Labo -647* DJEG 64460\nUSER CP1 -647 Labo -647 DJEG 64460 Feme 74',
+    out + '\nUSER CP1 -647* Labo -647* LABX 90001\nUSER CP1 -647 Labo -647 LABX 90001 Feme 74',
     '20/07/2026'
   );
   assert.match(dirtyCopy, /\bATB R: AMP\b/);
-  assert.doesNotMatch(dirtyCopy, /USER|Labo|DJEG|Feme/i);
+  assert.doesNotMatch(dirtyCopy, /USER|Labo|LABX|Feme/i);
 });
 
 test('formatCultivoCondensedForCopy: sin Preliminar ni fecha/hora del envío', () => {

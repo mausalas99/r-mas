@@ -84,7 +84,7 @@ test('migrateGranularInner keeps known tabs and falls back to resumen', () => {
   assert.equal(migrateGranularInner('unknown', INTER), 'resumen');
   assert.equal(migrateGranularInner(null, INTER), 'resumen');
   assert.equal(migrateGranularInner('notas', SALA), 'estadoActual');
-  assert.equal(migrateGranularInner('recetaHu', SALA), 'resumen');
+  assert.equal(migrateGranularInner('removedTab', SALA), 'resumen');
   assert.equal(migrateGranularInner('listado', INTER), 'resumen');
   assert.equal(migrateGranularInner('estadoActual', SALA), 'estadoActual');
   assert.equal(migrateGranularInner('estadoActual', INTER), 'estadoActual');

@@ -5,8 +5,7 @@
  * Squirrel.Mac validates an update against the running app's designated
  * requirement, which pins both Team ID and bundle id — so two families of
  * install are stuck on the normal update feed: pre-8.1.6 old-cert installs,
- * and 8.1.4/8.1.5 installs (current team, but the OLD bundle id
- * `com.hospitaluniversitario.rplusclinical`). The 8.2.6 bridge build ships
+ * and 8.1.4/8.1.5 installs (current team, but the OLD bundle id). The 8.2.6 bridge build ships
  * with the OLD bundle id (so stuck installs' electron-updater still accepts
  * it as an update) and carries this module to silently install 8.2.7
  * (current team + current bundle id) in the background — no relaunch, no

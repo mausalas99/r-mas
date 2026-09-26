@@ -4,7 +4,7 @@ import { isMobileWeb } from './mobile-web.mjs';
 
 function migrateGranularMobile(granularTab, settings) {
   if (!isMobileWeb()) return null;
-  if (granularTab === 'listado' || granularTab === 'recetaHu') {
+  if (granularTab === 'listado') {
     return isModeSala(settings) ? 'estadoActual' : 'resumen';
   }
   if (isModeSala(settings) && granularTab === 'vpo') return 'estadoActual';

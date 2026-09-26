@@ -5,7 +5,7 @@ function isCultivoChromeBodyLine_(line) {
   var t = String(line || '').trim();
   if (!t) return true;
   if (/^USER\b/i.test(t)) return true;
-  if (/\bLabo\s*-?\d+/i.test(t) && /\b(DJEG|UANL|Campo|Feme)\b/i.test(t)) return true;
+  if (/\bLabo\s*-?\d+/i.test(t) && /\b(Campo|Feme)\b|\bLabo\s*-?\d+\*?\s+[A-Z]{2,6}\s+\d+/i.test(t)) return true;
   return false;
 }
 

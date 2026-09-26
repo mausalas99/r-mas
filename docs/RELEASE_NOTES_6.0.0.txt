@@ -1,11 +1,11 @@
-R+ 6.0.0 (expediente reorganizado, Manejo y Receta HU)
+R+ 6.0.0 (expediente reorganizado y Manejo)
 ======================================================
 
 Fecha: 2026-05-25
 
 ## Resumen
 
-Versión mayor centrada en el **Expediente**: cuatro pestañas consolidadas en Sala e Interconsulta, **Manejo electrolítico/gasométrico**, **Receta médica HU** (PDF oficial) y datos del paciente en bloque colapsable. El **Modo Pase** mantiene el mismo resumen de ronda en pantalla principal; la nueva organización aparece al abrir el detalle en pestañas (vista Normal).
+Versión mayor centrada en el **Expediente**: cuatro pestañas consolidadas en Sala e Interconsulta, **Manejo electrolítico/gasométrico** y datos del paciente en bloque colapsable. El **Modo Pase** mantiene el mismo resumen de ronda en pantalla principal; la nueva organización aparece al abrir el detalle en pestañas (vista Normal).
 
 ## Nuevo / mejorado
 
@@ -15,10 +15,9 @@ Versión mayor centrada en el **Expediente**: cuatro pestañas consolidadas en S
   - **Paciente** — *Datos del paciente* (colapsable, cerrado por defecto) + **Pendientes**.
   - **Clínico** — Sala: **Manejo** electrolítico. Interconsulta: **Nota**, **Indicaciones** y **Manejo** (barra de segmentos).
   - **Resultados** — **Tendencias** y **Cultivos**.
-  - **Salida** — Sala: **Listado de problemas**. Interconsulta: **Receta médica HU** (PDF 000-061-R-06-12).
+  - **Salida** — Sala: **Listado de problemas**.
 - **Datos del paciente** — Peso, talla y vía para Manejo; edición en el bloque colapsable de **Paciente** (Interconsulta ya no duplica el formulario en Nota).
 - **Manejo** — Interpretación de alteraciones electrolíticas y gasométricas: dosis adultas, dilución, vía, bloque SOME copiable y envío a Pendientes.
-- **Receta HU** — Formulario unificado (una sola hoja visual), medicamentos y estudios con **Agregar** / **Enter**, exportación PDF vía servidor local.
 - **Deep links** — Atajos y enlaces internos (`switchInnerTab('notas')`, etc.) resuelven a la pestaña compuesta correcta.
 
 ### Modo Pase (sin cambios en el resumen)
@@ -33,7 +32,6 @@ Versión mayor centrada en el **Expediente**: cuatro pestañas consolidadas en S
 
 ## Correcciones
 
-- **Receta HU:** scroll en pestaña Salida; botón **Exportar PDF** ya no arrastra la ventana en macOS (región de arrastre acotada al header principal).
 - **Datos del paciente:** el formulario se renderiza al abrir el bloque colapsable y al estar en **Paciente**, no solo en la pestaña Datos antigua.
 - **Exportar PDF:** ya no queda deshabilitado por estado offline del servidor RPC.
 

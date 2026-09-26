@@ -1,17 +1,16 @@
-R+ 7.7.5 (gasometrías seriadas, química y receta HU)
+R+ 7.7.5 (gasometrías seriadas y química)
 ========================================================
 
 Fecha: 2026-07-28
 
 ## Resumen
 
-**7.7.5** importa todas las gasometrías del repositorio (empareja la más cercana a labs ≤2 h y deja el resto aparte), une mejor QS/ESC/PFH al consolidar, y mejora el llenado de la receta HU oficial.
+**7.7.5** importa todas las gasometrías del repositorio (empareja la más cercana a labs ≤2 h y deja el resto aparte), une mejor QS/ESC/PFH al consolidar.
 
 ## Nuevo / mejorado
 
 - **Gasometrías del repo** — Trae todas las tomas; junta solo la gaso más cercana a labs dentro de ≤2 h; un conjunto nunca absorbe una segunda gasometría (tampoco si ya trae GASES).
 - **Química al consolidar** — QS/ESC/PFHs/Lipasa se fusionan por campos (p. ej. CPK no se pierde); más alias de CPK/CK en el parser.
-- **Receta HU** — Plantilla oficial HU 000-061-R-06-12: ejemplar izquierdo legible (rotación landscape) y PDF de plantilla actualizado.
 - **Consolidar UI** — Tras fusionar, el historial selecciona el conjunto keeper y refresca tendencias/estudios.
 
 ## Instalación

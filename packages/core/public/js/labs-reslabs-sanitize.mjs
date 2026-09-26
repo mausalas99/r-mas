@@ -39,15 +39,15 @@ function isCultivoStartLineLocal(first) {
 }
 
 /**
- * Collapsed Impresión / membrete lines (USER, Labo -647*, DJEG, Feme…).
+ * Collapsed Impresión / membrete lines (USER, Labo -647*, Feme…).
  * @param {string} line
  */
 export function isSomeReportChromeLine(line) {
   var t = String(line == null ? '' : line).trim();
   if (!t) return false;
   if (/^USER\b/i.test(t)) return true;
-  if (/\bLabo\s*-?\d+/i.test(t) && /\b(DJEG|UANL|Campo|Feme)\b/i.test(t)) return true;
-  if (/Sistema\s+SOME|UNIVERSIDAD\s+AUT[OÓ]NOMA|MOP-HU-\d+|REPORTE\s+DE\s+RESULTADOS/i.test(t)) {
+  if (/\bLabo\s*-?\d+/i.test(t) && /\b(Campo|Feme)\b|\bLabo\s*-?\d+\*?\s+[A-Z]{2,6}\s+\d+/i.test(t)) return true;
+  if (/Sistema\s+SOME|\bUNIVERSIDAD\b|FACULTAD\s+DE\s+MEDICINA|\b[A-Z]{2,5}-[A-Z]{2,4}-\d{2,4}-\d{2}-[A-Z]{2}-\d{2,4}\b|REPORTE\s+DE\s+RESULTADOS/i.test(t)) {
     return true;
   }
   if (/^(Expediente|Solicitud|Nombre|Sexo|Ubicaci[oó]n|Edad|Medico)\s*:/i.test(t)) return true;
@@ -79,7 +79,7 @@ export function stripTrailingSomeReportChrome(text) {
   var t = String(text == null ? '' : text);
   if (!t) return '';
   t = t.replace(
-    /\s*(?:Sistema\s+SOME|UNIVERSIDAD\s+AUT[OÓ]NOMA|MOP-HU-\d+|REPORTE\s+DE\s+RESULTADOS)[\s\S]*$/i,
+    /\s*(?:Sistema\s+SOME|\bUNIVERSIDAD\b|FACULTAD\s+DE\s+MEDICINA|\b[A-Z]{2,5}-[A-Z]{2,4}-\d{2,4}-\d{2}-[A-Z]{2}-\d{2,4}\b|REPORTE\s+DE\s+RESULTADOS)[\s\S]*$/i,
     ''
   );
   t = t.replace(/\s*(?:Expediente|Solicitud)\s*:[\s\S]*$/i, '');

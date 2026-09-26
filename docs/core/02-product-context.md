@@ -8,7 +8,7 @@ description: "Personas, clinical domain, and product boundaries for R+."
 
 # Product Context: R+
 
-R+ serves **Hospital Universitario** guardia and sala workflows. It is a **coadyuvante** (adjunct) for documentation and lab extraction—not the hospital's certified EMR.
+R+ serves **el hospital sede** guardia and sala workflows. It is a **coadyuvante** (adjunct) for documentation and lab extraction—not the hospital's certified EMR.
 
 ## Primary persona
 
@@ -33,7 +33,7 @@ R+ serves **Hospital Universitario** guardia and sala workflows. It is a **coady
 | Mode | Primary surfaces |
 |------|------------------|
 | **Sala** | Estado actual, HC ingreso, eventualidades, listado, censo guardia |
-| **Interconsulta** | Nota, indicaciones, VPO, receta HU |
+| **Interconsulta** | Nota, indicaciones, VPO |
 | **Modo Pase** | Round board; expediente opens in tabbed detail |
 
 ## Domain glossary (short)

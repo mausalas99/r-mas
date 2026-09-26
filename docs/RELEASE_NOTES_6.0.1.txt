@@ -5,7 +5,7 @@ Fecha: 2026-05-25
 
 ## Resumen
 
-Parche sobre 6.0.0: el cuadro principal de **Laboratorio** procesa **varios reportes SOME** a la vez (varios días del mismo paciente o varios pacientes con separador). Incluye **Receta HU PDF** desde servidor local y ajustes menores del tour y la cáscara.
+Parche sobre 6.0.0: el cuadro principal de **Laboratorio** procesa **varios reportes SOME** a la vez (varios días del mismo paciente o varios pacientes con separador). Incluye ajustes menores del tour y la cáscara.
 
 ## Nuevo / mejorado
 
@@ -17,9 +17,8 @@ Parche sobre 6.0.0: el cuadro principal de **Laboratorio** procesa **varios repo
 - **Varios pacientes** — botón **Separador de paciente** inserta `--- PACIENTE ---` entre bloques; cada expediente debe existir en la lista.
 - **Historial y nota** — cada conjunto guardado alimenta historial, tendencias y reconstrucción de `estudios` en la nota.
 
-### Receta HU
+### Interfaz
 
-- **Exportar PDF** — endpoint `/generate-receta-hu` con plantilla oficial HU 000-061-R-06-12.
 - **Tokens de cáscara** — ajustes de radius/shell en la UI (Arc).
 
 ### Tutorial

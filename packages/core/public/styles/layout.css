@@ -41,7 +41,7 @@ header {
   /* Menús ⇄ / ⚙ cuelgan bajo .header-right; overflow:hidden los recortaba por completo */
   overflow: visible;
 }
-/* Solo la barra superior de la app — no otros <header> del contenido (p. ej. receta-hu-head) */
+/* Solo la barra superior de la app — no otros <header> del contenido */
 html.electron-macos-inset-bar body > header {
   margin-left: 0;
   padding-left: var(--titlebar-traffic-gap);

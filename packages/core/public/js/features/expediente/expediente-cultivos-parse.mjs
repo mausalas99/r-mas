@@ -115,7 +115,7 @@ function parseCultureBlockFromLineArray(lines, set, seq) {
       var t = String(ln || '').trim();
       if (!t || /^Cuenta:/i.test(t)) return false;
       if (/^USER\b/i.test(t)) return false;
-      if (/\bLabo\s*-?\d+/i.test(t) && /\b(DJEG|UANL|Campo|Feme)\b/i.test(t)) return false;
+      if (/\bLabo\s*-?\d+/i.test(t) && /\b(Campo|Feme)\b|\bLabo\s*-?\d+\*?\s+[A-Z]{2,6}\s+\d+/i.test(t)) return false;
       return true;
     })
     .join('\n')
@@ -205,7 +205,7 @@ function buildCultivoOutputHtmlFragments(text, sourceText) {
       if (!t) return;
       // Membrete SOME colapsado (no es ATB ni cuenta).
       if (/^USER\b/i.test(t)) return;
-      if (/\bLabo\s*-?\d+/i.test(t) && /\b(DJEG|UANL|Campo|Feme)\b/i.test(t)) return;
+      if (/\bLabo\s*-?\d+/i.test(t) && /\b(Campo|Feme)\b|\bLabo\s*-?\d+\*?\s+[A-Z]{2,6}\s+\d+/i.test(t)) return;
       if (/^ATB\b/i.test(t) && sens && sens.length) {
         parts.push(
           '<div class="out-line cultivos-atb-chips lab-out-atb">' + buildAtbRisSummaryHtml(sens) + '</div>'

@@ -165,7 +165,6 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 }
 
 /* Hojas autocontenidas: un solo marco (evita ventana-dentro-de-ventana) */
-.patient-expediente-classic .exp-segment-panel .receta-hu-sheet,
 .patient-expediente-classic .exp-segment-panel .ev-panel,
 .patient-expediente-classic .exp-segment-panel .vpo-panel {
   border: none;
@@ -188,12 +187,6 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   border-radius: var(--radius-md);
   box-shadow: none;
   background: color-mix(in oklab, var(--surface) 72%, var(--bg));
-}
-
-.patient-expediente-classic .exp-segment-panel #receta-hu-container {
-  padding: 0;
-  max-width: none;
-  margin: 0;
 }
 
 .patient-expediente-classic .exp-segment-panel .hc-read-view {

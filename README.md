@@ -81,7 +81,6 @@ Notas de cada versión: [GitHub Releases](https://github.com/mausalas99/r-mas/re
 - **Nota de Evolución** — Formulario estructurado que genera un archivo `.docx` listo para imprimir, con membrete y formato clínico. **Plantilla SOAP** integrada (Interconsulta). Formatos en blanco editables desde Mi Perfil (pestaña Nota).
 - **Indicaciones médicas** — Generación de hoja de indicaciones en `.docx` con secciones configurables (Interconsulta). Formatos en blanco editables desde Mi Perfil (pestaña Indicaciones).
 - **Valoración preoperatoria (VPO)** — Calculadora de riesgo, plantillas EKG/Rx, fármacos perioperatorios y texto copiable; **Interconsulta** en Clínico, **Sala** en Salida.
-- **Receta médica HU** — PDF oficial 000-061-R-06-12 desde **Salida** (Interconsulta).
 - **Listado de problemas** — Generación desde **Salida** (Sala).
 - **Salida configurable** — Exportación clínica rápida del paciente actual en `.docx`, `.html` o `.txt` desde Nota/Indicaciones.
 - **Auto-actualización** — La app detecta nuevas versiones automáticamente y se actualiza con un clic.

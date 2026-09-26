@@ -11,7 +11,7 @@ import {
   runQuietSwap,
 } from './mac-quiet-swap.mjs';
 
-const OLD_APP_ID = 'com.hospitaluniversitario.rplusclinical';
+const OLD_APP_ID = 'com.example.oldbundle';
 
 // Real-shaped `codesign -dv --verbose=4` stderr excerpts.
 const OLD_CERT_STDERR = `Executable=/Applications/R+.app/Contents/MacOS/R+
