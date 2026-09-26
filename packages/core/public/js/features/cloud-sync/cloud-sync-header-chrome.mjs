@@ -12,7 +12,7 @@ export function cloudHeaderSyncModifier(status, transport) {
   const key = String(status || 'idle');
   const mode = String(transport || 'poll');
   if (key === 'syncing') return 'syncing';
-  if (key === 'error' || key === 'offline' || key === 'pending') return 'degraded';
+  if (key === 'error' || key === 'offline' || key === 'pending' || key === 'reconnecting') return 'degraded';
   if (key === 'idle' && mode === 'ws') return 'live';
   if (key === 'idle' && mode === 'poll') return 'local';
   return 'idle';

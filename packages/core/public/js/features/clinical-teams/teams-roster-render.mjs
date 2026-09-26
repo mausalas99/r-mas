@@ -5,8 +5,7 @@ export {
   renderCreateTeamForm,
   renderCreateTeamFormElevated,
   renderCreateTeamFormStandard,
-  renderCreateTeamSectionHtml,
-  renderJoinWithCodeSectionHtml,
+  renderNewTeamCardHtml,
 } from './teams-roster-create.mjs';
 
 export {

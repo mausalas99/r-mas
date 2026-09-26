@@ -13,6 +13,7 @@ import { isCloudSyncActive } from './nube-sync-policy.mjs';
 import { isCloudMutateBridgeConfigured } from './mutate-bridge.mjs';
 import { getSyncablePatients } from '../../app-state.mjs';
 import { getSharedNubeOutbox, getSharedNubeRuntime } from './panel-conexion-runtime.mjs';
+import { resolveCloudConexionChipStatus } from './cloud-sync-status-snapshot.mjs';
 import { showCloudNubeFixModal } from './cloud-nube-fix-guides.mjs';
 import { pruneLabSidecarsFromOutbox } from './outbox-lab.mjs';
 import { CLOUD_OUTBOX_CHANGED_EVENT } from './cloud-outbox-events.mjs';
@@ -20,10 +21,13 @@ import { CLOUD_OUTBOX_CHANGED_EVENT } from './cloud-outbox-events.mjs';
 function readCloudDiagnosticsRuntime() {
   const runtime = getSharedNubeRuntime();
   const outbox = getSharedNubeOutbox();
+  // Same resolver Conexión's chip uses — one live source for status/transport
+  // so the two panels can never disagree on what "now" looks like.
+  const live = resolveCloudConexionChipStatus({ runtime, outbox });
   return {
-    status: runtime?.getStatus?.() || 'idle',
-    detail: runtime?.getDetail?.() || '',
-    transport: runtime?.getTransportState?.() || 'poll',
+    status: live.status,
+    detail: live.detail,
+    transport: live.transport,
     runtimeActive: !!runtime,
     outboxEntries: outbox?.list?.() || [],
   };

@@ -82,8 +82,8 @@ function hasDraftTextInTeamsPanel() {
   const createPanel = document.getElementById('clinical-team-create-panel');
   const createName = document.getElementById('clinical-team-create-name');
   if (
-    createPanel instanceof HTMLElement &&
-    !createPanel.hidden &&
+    createPanel instanceof HTMLDialogElement &&
+    createPanel.open &&
     createName instanceof HTMLInputElement &&
     createName.value.trim()
   ) {
@@ -108,8 +108,7 @@ export function isClinicalTeamsPanelUserInteracting() {
     if (!bd?.classList.contains('open')) return false;
   }
 
-  const createPanel = document.getElementById('clinical-team-create-panel');
-  if (createPanel instanceof HTMLElement && !createPanel.hidden) return true;
+  if (document.querySelector('dialog.clinical-teams-dialog[open]')) return true;
 
   if (document.querySelector('.clinical-teams-edit-panel:not([hidden])')) return true;
 
@@ -132,7 +131,6 @@ export function isClinicalTeamsPanelUserInteracting() {
 /** @param {HTMLElement} host */
 export function captureClinicalTeamsPanelDraft(host) {
   const createPanel = document.getElementById('clinical-team-create-panel');
-  const openBtn = document.getElementById('btn-clinical-team-create-open');
 
   /** @type {Array<{ teamId: string, username: string, cycle: string }>} */
   const addMember = [];
@@ -161,8 +159,7 @@ export function captureClinicalTeamsPanelDraft(host) {
 
   return {
     scrollTop: scrollHost instanceof HTMLElement ? scrollHost.scrollTop : 0,
-    createPanelOpen: createPanel instanceof HTMLElement ? !createPanel.hidden : false,
-    createOpenBtnHidden: openBtn instanceof HTMLElement ? openBtn.hidden : false,
+    createPanelOpen: createPanel instanceof HTMLDialogElement && createPanel.open,
     create: captureFieldGroup(CREATE_FIELD_IDS),
     profile: {
       ...captureFieldGroup(PROFILE_FIELD_IDS),
@@ -177,11 +174,8 @@ export function captureClinicalTeamsPanelDraft(host) {
 
 function restoreCreateTeamPanelDraft(draft) {
   const createPanel = document.getElementById('clinical-team-create-panel');
-  const openBtn = document.getElementById('btn-clinical-team-create-open');
-  if (!(createPanel instanceof HTMLElement) || !(openBtn instanceof HTMLElement)) return;
-  createPanel.hidden = !draft.createPanelOpen;
-  openBtn.hidden = draft.createOpenBtnHidden;
-  if (!draft.createPanelOpen) return;
+  if (!(createPanel instanceof HTMLDialogElement) || !draft.createPanelOpen) return;
+  createPanel.showModal();
   void import('./teams-roster-create.mjs').then((m) => {
     m.syncCreateTeamServiceFromSala();
     m.syncCreateTeamCycleField();
@@ -238,9 +232,7 @@ export function restoreClinicalTeamsPanelDraft(host, draft) {
 
 export function closeCreateTeamPanelAfterSuccess() {
   const panel = document.getElementById('clinical-team-create-panel');
-  const openBtn = document.getElementById('btn-clinical-team-create-open');
   const form = document.getElementById('clinical-team-create-form');
-  if (panel instanceof HTMLElement) panel.hidden = true;
-  if (openBtn instanceof HTMLElement) openBtn.hidden = false;
+  if (panel instanceof HTMLDialogElement) panel.close();
   if (form instanceof HTMLFormElement) form.reset();
 }
