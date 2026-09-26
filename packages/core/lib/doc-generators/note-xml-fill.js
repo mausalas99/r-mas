@@ -16,6 +16,11 @@ function findParagraphs(xml) {
   return paragraphs;
 }
 
+/** The template has a fixed number of slots: fold any extra lines into the last one, never drop them. */
+function fitSlots(lines, n) {
+  return lines.length <= n ? lines : [...lines.slice(0, n - 1), lines.slice(n - 1).join(' | ')];
+}
+
 function getTx(tratamiento, i) {
   return i < tratamiento.length ? tratamiento[i].toUpperCase() : '';
 }
@@ -70,12 +75,18 @@ function fillPatientHeaderCopy(xml, patient, replaceTBound) {
   const cuarto = patient.cuarto || '';
   const cama = patient.cama || '';
 
+  // Mark every anchor before writing any value: area "MEDICINA INTERNA" must
+  // not be taken for the servicio anchor (it swapped ÁREA and SERVICIO).
+  const slots = [
+    [TEMPLATE_HEADER_NAME, nombre],
+    ['8100023-2', registro],
+    ['CIRUGÍA AB', area],
+    ['MEDICINA INTERNA', servicio],
+  ];
   let out = xml;
-  out = out.replace(TEMPLATE_HEADER_NAME, esc(nombre));
-  out = out.replace('8100023-2', esc(registro));
+  slots.forEach(([anchor], i) => { out = out.replace(anchor, `\uE000${i}\uE000`); });
+  slots.forEach(([, val], i) => { out = out.replace(`\uE000${i}\uE000`, () => esc(val)); });
   out = replaceTBound(out, '77', edad);
-  out = out.replace('CIRUGÍA AB', esc(area));
-  out = out.replace('MEDICINA INTERNA', esc(servicio));
   out = out.replace('<w:t>F</w:t>', `<w:t>${esc(sexo)}</w:t>`);
   out = replaceTBound(out, '440', cuarto);
   out = out.replace(
@@ -95,6 +106,7 @@ function fillNoteDateTime(xml, note, replaceTBound) {
 
 function fillLineReplacements(xml, lines, origLines, replaceTBound) {
   let out = xml;
+  lines = fitSlots(lines, origLines.length);
   for (let i = 0; i < origLines.length; i += 1) {
     const newVal = i < lines.length ? lines[i] : '';
     out = replaceTBound(out, origLines[i], newVal);
@@ -174,8 +186,18 @@ function fillTratamiento(xml, tratamiento, medico, txLeftOrig, txRightOrig, orig
     const orig = txRightOrig[i];
     const num = i + 7;
     const tx = getTx(tratamiento, i + 6);
-    const newTx = tx ? `${num}. ${tx}` : orig;
-    out = out.replace(orig, esc(newTx));
+    if (!tx) continue;
+    if (out.includes(orig)) {
+      out = out.replace(orig, esc(`${num}. ${tx}`));
+      continue;
+    }
+    // Slots 7–9: the template splits "7.  " and its blank line into separate runs.
+    const para = findParagraphs(out).find((p) => p.includes(`>${num}.  </w:t>`));
+    if (!para) continue;
+    const filled = para
+      .replace(`>${num}.  </w:t>`, `>${esc(`${num}. ${tx}`)}</w:t>`)
+      .replace(/>_{39}<\/w:t>/, '></w:t>');
+    out = out.replace(para, () => filled);
   }
 
   const medicoStr = medico || '';
@@ -211,7 +233,7 @@ function fillNoteDocumentXml(xml, patient, note, constants) {
   out = replaceTBound(out, 'CONTROL METABÓLICO', dx1);
   out = replaceTBound(out, 'ABSCESO HEPÁTICO EN LÓBULO HEPÁTICO IZQUIERDO', dx2);
   out = fillVitals(out, note, replaceTBound);
-  const tratamiento = normalizeStringList(note.tratamiento);
+  const tratamiento = fitSlots(normalizeStringList(note.tratamiento), 10);
   out = fillTratamiento(
     out,
     tratamiento,

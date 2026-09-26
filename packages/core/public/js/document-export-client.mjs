@@ -203,7 +203,11 @@ export async function exportWithOutputDirFallback(opts) {
     if (typeof opts.selectOutputDir === 'function' && isOutputDirError(message)) {
       return retryExportAfterOutputDirPrompt(opts, message);
     }
-    if (typeof opts.onError === 'function') opts.onError(message);
+    if (typeof opts.onError === 'function') {
+      opts.onError(message);
+      // Callers' .catch() shows «Error de conexión» only for errors nobody reported yet.
+      if (e && typeof e === 'object') e.reported = true;
+    }
     throw e;
   }
 }

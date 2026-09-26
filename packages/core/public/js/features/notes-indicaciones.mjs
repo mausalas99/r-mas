@@ -226,8 +226,8 @@ function generateWord() {
     onCancel: function() { rt.showToast('No se guardó el documento: no se eligió carpeta.', 'error'); },
     onError: function(msg) { rt.showToast('Error: ' + msg, 'error'); },
   })
-  .catch(function(){
-    rt.showToast('Error de conexión','error');
+  .catch(function(e){
+    if (!(e && e.reported)) rt.showToast('Error de conexión','error');
     if (typeof rt.onPitchTourDocFailed === 'function') rt.onPitchTourDocFailed('ic_nota');
   })
   .finally(function(){
@@ -412,8 +412,8 @@ function generateIndicaciones() {
     onCancel: function() { rt.showToast('No se guardó el documento: no se eligió carpeta.', 'error'); },
     onError: function(msg) { rt.showToast('Error: ' + msg, 'error'); },
   })
-  .catch(function(){
-    rt.showToast('Error de conexión','error');
+  .catch(function(e){
+    if (!(e && e.reported)) rt.showToast('Error de conexión','error');
     if (typeof rt.onPitchTourDocFailed === 'function') rt.onPitchTourDocFailed('ic_indica');
   })
   .finally(function(){

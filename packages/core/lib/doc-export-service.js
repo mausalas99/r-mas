@@ -6,8 +6,9 @@ const { generateListadoBuffer } = require('./doc-generators/listado.js');
 const { renderCensusPdf } = require('../generate-censo.js');
 const { resolveAllowedOutputDir } = require('./output-dir-policy.js');
 
+/** File-name part: NFC so macOS "É" stays one letter; capped so the name fits the 255-byte limit. */
 function safeName(str) {
-  return (str || '').replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]/g, '_');
+  return (str || '').normalize('NFC').replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]/g, '_').slice(0, 80);
 }
 
 function badRequest(message) {
