@@ -300,7 +300,8 @@ html.dark .patient-dash .svc.is-on {
   font: var(--type-wb-metadata);
   text-transform: none;
   letter-spacing: 0;
-  color: var(--color-ink-muted);
+  /* Muted text on a tinted chip: pull toward ink so it stays AA in dark mode. */
+  color: color-mix(in oklab, var(--color-ink-muted) 70%, var(--color-ink));
   white-space: nowrap;
 }
 
@@ -589,6 +590,10 @@ html.dark .patient-dash .svc.is-on {
 
 .patient-dash .draw-value {
   font: 600 1.35em/1 var(--font-mono);
+}
+/* Danger on the danger tint is under AA in dark: lighten the digits only. */
+html.dark .patient-dash .draw-value.abn {
+  color: color-mix(in oklab, var(--color-danger) 80%, white);
 }
 
 .patient-dash .draw-delta {

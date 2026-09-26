@@ -131,6 +131,14 @@ export async function openClinicalTeamsPanelModal(opts = {}) {
   }
 }
 
+/** After a join: close the teams modal and the Conexión sheet that may embed it, back to the app. */
+export function closeTeamsUiAfterJoin() {
+  closeClinicalTeamsPanel();
+  void import('../cloud-sync/panel-chrome.mjs').then((m) => {
+    if (m.isLanConnectionDropdownOpen()) m.closeConnectionDropdown();
+  });
+}
+
 export function closeClinicalTeamsPanel() {
   const bd = teamsModalEl();
   if (!bd?.classList.contains('open')) return;

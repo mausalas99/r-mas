@@ -8,6 +8,9 @@ import {
 } from './clinical-username.mjs';
 import { readMigratedClientId } from './live-sync-room.mjs';
 
+/** Done list of the in-app hint dots. Lives here, not in lazy feature-hints.mjs, to keep that module off the boot bundle. */
+export const FEATURE_HINTS_DONE_LS_KEY = 'rpc-feature-hints-done';
+
 /** Bump when every device must re-confirm LAN profile (admin directory / team assign). */
 export const CLINICAL_LAN_PROFILE_GATE_VERSION = '7.9.0';
 
@@ -238,7 +241,14 @@ export function persistClinicalUserBinding(patch) {
   if (patch.displayName) settings.clinicalDisplayName = String(patch.displayName);
   if (patch.rank) settings.clinicalRank = String(patch.rank);
   if (patch.sala != null) settings.clinicalSala = String(patch.sala);
-  if (patch.registered === true) settings.clinicalRegistered = true;
+  if (patch.registered === true && settings.clinicalRegistered !== true) {
+    settings.clinicalRegistered = true;
+    // First registration on this device: claim the «Guía» hints before the
+    // deferred hint module can mistake this fresh install for a returning one.
+    try {
+      if (localStorage.getItem(FEATURE_HINTS_DONE_LS_KEY) === null) localStorage.setItem(FEATURE_HINTS_DONE_LS_KEY, '[]');
+    } catch { /* storage off: hints fall back to their own seed */ }
+  }
   if (patch.lanProfileGateComplete === true) {
     settings.clinicalLanProfileGateVersion = CLINICAL_LAN_PROFILE_GATE_VERSION;
   }

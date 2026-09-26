@@ -67,6 +67,7 @@
     "e2e:drive-import": "node scripts/e2e/drive-import.e2e.mjs",
     "e2e:db-unlock": "node scripts/e2e/db-unlock.e2e.mjs",
     "e2e:learn-hub-tour": "node scripts/e2e/learn-hub-tour.e2e.mjs",
+    "e2e:feature-hints": "node scripts/e2e/feature-hints.e2e.mjs",
     "e2e:sala-view": "node scripts/e2e/sala-view.e2e.mjs",
     "e2e:censo-columnas": "node scripts/e2e/censo-columnas.e2e.mjs",
     "e2e:sala-cards-archive": "node scripts/e2e/sala-cards-archive.e2e.mjs",

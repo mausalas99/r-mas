@@ -43,12 +43,8 @@ export async function tryShowPostRegistrationEducationIfNeeded() {
     maybeShowGuardiaV7UpgradeCard({ delayMs: 2000 });
     return;
   }
+  // Fresh install: no Learn Hub pop-up. The in-app «Guía» dots (feature-hints.mjs) teach in place.
   if (shouldShowFundamentosTourIntro({ curVersion: cur, storedDoneVersion: stored, needsOnboarding: false })) {
     markGuidedTourVersionDone();
-    setTimeout(() => {
-      void import('./learn-hub.mjs').then((hub) => {
-        if (typeof hub.openLearnHub === 'function') hub.openLearnHub({ focusTrack: 'fundamentos' });
-      });
-    }, 80);
   }
 }

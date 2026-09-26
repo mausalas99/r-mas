@@ -5,6 +5,7 @@ import { applyMigrations } from './db/schema.mjs';
 import { getBlob } from './db/clinical-blobs.mjs';
 import {
   buildUiTestRoster,
+  seedUiTestAssignments,
   seedUiTestData,
   seedUiTestTeams,
   seedUiTestUser,
@@ -35,6 +36,8 @@ describe('ui-test-seed', () => {
     const withLabs = patients.filter((p) => labHistory[p.id]);
     assert.ok(withLabs.length > 0);
     for (const p of withLabs) {
+      const fechas = new Set(labHistory[p.id].map((e) => e.fecha));
+      assert.ok(fechas.size >= 2, `${p.id}: Tendencias needs 2+ lab sets on different dates`);
       for (const entry of labHistory[p.id]) {
         assert.ok(Array.isArray(entry.resLabs) && entry.resLabs.length > 0, `${p.id} resLabs`);
         assert.ok(entry.sourceText && entry.sourceText.includes('Expediente'));
@@ -51,6 +54,19 @@ describe('ui-test-seed', () => {
     const labHistory = JSON.parse(getBlob(db, 'labHistory'));
     assert.equal(patients.length, result.patientCount);
     assert.equal(Object.keys(labHistory).length, result.labHistoryPatientCount);
+    db.close();
+  });
+
+  it('seedUiTestAssignments puts every seeded patient on a real seeded team', () => {
+    const db = new Database(':memory:');
+    applyMigrations(db);
+    const now = new Date('2026-09-18T12:00:00Z');
+    seedUiTestData(db, now);
+    const teamIds = new Set(seedUiTestTeams(db).map((t) => t.team_id));
+    seedUiTestAssignments(db, now);
+    const rows = db.prepare('SELECT patient_id, team_id FROM patient_team_assignment').all();
+    assert.equal(rows.length, buildUiTestRoster(now).patients.length);
+    assert.ok(rows.every((r) => teamIds.has(r.team_id)));
     db.close();
   });
 

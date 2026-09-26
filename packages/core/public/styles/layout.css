@@ -944,6 +944,7 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  max-width: 100%;
 }
 
 .header-context-patient {
@@ -953,7 +954,16 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 28vw;
+  max-width: min(28vw, 100%);
+}
+/* Thin center column (narrow window, big text): date + patient do not fit, so the
+   patient wins; too thin for either, show nothing rather than a cut-off stub. */
+.header-center { container-type: inline-size; }
+@container (max-width: 220px) {
+  .header-center:has(.header-context-patient:not(:empty)) #today-date { display: none; }
+}
+@container (max-width: 80px) {
+  #today-date, .header-context { display: none; }
 }
 
 .header-context-path {

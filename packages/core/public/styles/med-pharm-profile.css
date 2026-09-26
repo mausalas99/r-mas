@@ -1341,7 +1341,7 @@ html.dark .med-pharm-adh-panel {
   flex: 0 0 auto;
   font-size: 10px;
   font-weight: 700;
-  color: var(--text-muted);
+  color: color-mix(in oklab, var(--text-muted) 70%, var(--text));
   background: color-mix(in oklab, var(--text-muted) 16%, transparent);
   border-radius: 999px;
   padding: 2px 8px;
