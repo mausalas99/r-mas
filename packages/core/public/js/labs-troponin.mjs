@@ -1,4 +1,4 @@
-import { marcarSegunRango, fmt, esValorDelRango_ } from './labs-extract.mjs';
+import { marcarSegunRango, fmt, esValorDelRango_, matchValorLab_, labValueNumber_ } from './labs-extract.mjs';
 
 /** Umbral URL hs-cTnI (ng/L) cuando el reporte no trae rango numérico útil. */
 export const TROPONINA_HS_NORMAL_MAX_NG_L = 34;
@@ -28,11 +28,11 @@ function troponinaRefsFromHit_(hit) {
 
 function formatTnIDisplay_(valorStr, qual, minRef, maxRef) {
   var out = fmt(marcarSegunRango(valorStr, minRef, maxRef));
-  var v = parseFloat(String(valorStr).replace(',', '.'));
+  var v = labValueNumber_(valorStr);
   var flagged =
     qual === 'indet' ||
     qual === 'pos' ||
-    (isFinite(v) && (v > maxRef || v < minRef));
+    (v != null && (v > maxRef || v < minRef));
   if (flagged && out !== '---' && !String(out).endsWith('*')) out += '*';
   return out;
 }
@@ -75,7 +75,7 @@ export function extractAllTroponinaFromText_(textoBruto) {
       if (idx === -1) break;
       var sub = texto.substring(idx, idx + 320);
       var subText = texto.substring(idx + nameUp.length, idx + nameUp.length + 220);
-      var mValor = subText.match(/(-?\d+[.,]?\d*)/);
+      var mValor = matchValorLab_(subText);
       var mRango = mValor ? subText.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/) : null;
       if (mValor && !esValorDelRango_(mValor, mRango)) {
         hits.push({
@@ -127,7 +127,7 @@ export function parseTnIDisplayTokensFromResLabRow_(row) {
   var s = String(row || '');
   if (!/^TROP\b/i.test(s.trim())) return [];
   var out = [];
-  var re = /\bTnI(\d?)\s+([\d.]+\*?)/gi;
+  var re = /\bTnI(\d?)\s+([<>]?[\d.]+\*?)/gi;
   var m;
   while ((m = re.exec(s))) {
     out.push({ display: m[2], raw: parseTnINum_(m[2]) });
@@ -184,7 +184,7 @@ export function parseTroponina_(textoBruto) {
     var refs = troponinaRefsFromHit_(hit);
     return {
       display: formatTnIDisplay_(hit.valor, hit.qual, refs.min, refs.max),
-      raw: parseFloat(String(hit.valor).replace(',', '.')),
+      raw: parseFloat(String(hit.valor).replace(',', '.')), // «<3» → NaN: sin Δ% derivado
     };
   });
   if (values.length === 1) {

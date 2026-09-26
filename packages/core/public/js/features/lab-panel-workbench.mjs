@@ -4,6 +4,7 @@ import { closeLabSomeTablesModal } from './lab-some-tables-modal.mjs';
 import { closeLabPasteModal } from './lab-paste-modal.mjs';
 import {
   LAB_BULK_PATIENT_SEPARATOR,
+  unknownLabRowsWarning,
 } from '../lab-bulk-paste.mjs';
 import { sortLabHistoryChronological, normalizeFechaLabHistory } from '../tend-core.mjs';
 import { labLinesToClipboardPayload } from '../lab-clipboard.mjs';
@@ -413,6 +414,8 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports, opts) {
     quickOut,
     displayResult
   );
+  var unknownRowsMsg = unknownLabRowsWarning(processable);
+  if (unknownRowsMsg) rt.showToast(unknownRowsMsg, 'warn');
 
   clearLabInputAfterSuccessfulParse();
   closeLabPasteModal();

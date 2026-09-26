@@ -1,3 +1,5 @@
+import { labValueNumber_ } from './labs-extract.mjs';
+
 function normalizeText(value) {
   return String(value == null ? '' : value).trim();
 }
@@ -232,9 +234,10 @@ export function analyteFingerprintFromResLabs(resLabs) {
       var tok = tokens[i];
       var next = tokens[i + 1];
       if (next !== undefined) {
-        var n = parseFloat(String(next).replace('*', '').replace(',', '.'));
-        if (isFinite(n)) {
-          pairs.push(sec + '.' + String(tok).toUpperCase() + ':' + n);
+        var n = labValueNumber_(next);
+        if (n != null) {
+          var sign = /^[<>]/.test(next) ? next[0] : '';
+          pairs.push(sec + '.' + String(tok).toUpperCase() + ':' + sign + n);
           i += 2;
           continue;
         }

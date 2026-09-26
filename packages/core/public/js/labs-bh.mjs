@@ -172,7 +172,7 @@ function parseBhTokenPairs_(text, into) {
       i++;
       continue;
     }
-    var m = next.match(/^(-?\d+(?:[.,]\d+)?)(?:%)?(\*)?$/);
+    var m = next.match(/^([<>]?-?\d+(?:[.,]\d+)?)(?:%)?(\*)?$/);
     if (m) {
       var fk = bhFieldKeyFromOutputLabel(label);
       var val = m[1].replace(',', '.');

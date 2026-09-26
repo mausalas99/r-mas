@@ -121,7 +121,7 @@ export function parseTrendNumeric(raw) {
   if (raw == null || raw === '') return null;
   var s = String(typeof raw === 'object' && raw.val != null ? raw.val : raw).trim();
   if (!s || s === '---') return null;
-  s = s.replace(/\*/g, '').replace(/^<\s*/, '').trim();
+  s = s.replace(/\*/g, '').replace(/^[<>]\s*/, '').trim();
   if (!s) return null;
   var n = parseFloat(s.replace(',', '.'));
   return isFinite(n) ? n : null;

@@ -120,9 +120,7 @@ function mountSectionSparkCharts(sectionKey, history, chartAnim) {
 function applyTendSectionExpandedState(sectionEl, sectionKey, expanded) {
   var btn = sectionEl.querySelector('.tend-section-toggle');
   var body = sectionEl.querySelector('.tend-section-body');
-  var chevron = sectionEl.querySelector('.tend-section-chevron');
   if (btn) btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-  if (chevron) chevron.textContent = expanded ? '▼' : '▶';
   if (body) body.classList.toggle('tend-section-body--collapsed', !expanded);
 
   if (!expanded) {

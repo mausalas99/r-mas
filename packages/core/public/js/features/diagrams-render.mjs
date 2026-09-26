@@ -330,17 +330,22 @@ export function syncLabDiagramsCollapseUI() {
   if (btn) btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
 }
 
-export function renderDiagramas(resLabs) {
-  var secs = parsearSecciones(resLabs);
-  var grid = document.getElementById("diagrams-grid");
-  grid.innerHTML = "";
-  var cards = [
+/** Diagram cards for one day of resLabs; `svg` is null when the panel is missing. */
+export function buildDiagramCards(resLabs) {
+  var secs = parsearSecciones(resLabs || []);
+  return [
     { title: "Biometría Hemática", svg: svgBH(secs), w: 260, vw: 300, vh: 192 },
     { title: "Coagulación", svg: svgCoag(secs), w: 240, vw: 270, vh: 172 },
     { title: "Electrolitos / QS", svg: svgGamble(secs), w: 480, vw: 470, vh: 130 },
     { title: "Función Hepática", svg: svgPFH(secs), w: 220, vw: 270, vh: 230 },
     { title: "Gasometría", svg: svgGases(secs), w: 240, vw: 270, vh: 162 },
   ];
+}
+
+export function renderDiagramas(resLabs) {
+  var grid = document.getElementById("diagrams-grid");
+  grid.innerHTML = "";
+  var cards = buildDiagramCards(resLabs);
   var any = false;
   cards.forEach(function (c) {
     if (!c.svg) return;
