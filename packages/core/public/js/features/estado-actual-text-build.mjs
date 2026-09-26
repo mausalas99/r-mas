@@ -4,7 +4,7 @@
 import { resolveDietWeightKg, computeDietKcalTotal, isDietaSuplemento } from './estado-actual-data.mjs';
 import { formatNmDietClause } from './estado-actual-diet-text.mjs';
 import { formatInsulinRescatesClause } from './estado-actual-glu-rescue.mjs';
-import { formatIoClauseForSoap } from './estado-actual-io.mjs';
+import { formatIoClauseForSoap, toEaSalidaText } from './estado-actual-io.mjs';
 import { partitionAnalgesiaForSoap, partitionNmMedsForSoap } from './estado-actual-med-soap-split.mjs';
 import { isTempFebrile, isTempFeverPeak } from './estado-actual-ranges.mjs';
 import {
@@ -99,7 +99,7 @@ export function medsListForSoap(fieldVal, joiner, bold) {
     })
     .filter(Boolean)
     .map(function (part) {
-      var upper = part.toUpperCase();
+      var upper = toEaSalidaText(part);
       return bold ? '**' + upper + '**' : upper;
     })
     .join(joiner);

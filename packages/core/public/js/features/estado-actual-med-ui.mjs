@@ -27,10 +27,26 @@ export const EA_MED_FIELD_LABELS = {
   antiarritmicos: 'Antiarrítmicos',
   estatinas: 'Estatinas',
   vasop: 'Vasopresores',
-  nm: 'NM (soporte, crónicos, etc.)',
+  nm: 'NM',
 };
 
 import { escHtml, escAttr } from '../dom-escape.mjs';
+
+// Two fixed halves: acute on the left, chronic on the right. Each category
+// always sits in the same half and order, so the layout holds still when
+// the user switches patients.
+var MED_GRID_COLUMNS = [
+  ['analgesia', 'antiemeticos', 'sedacion', 'antiepilepticos', 'antiparkinsonianos', 'antidotos',
+    'viaAerea', 'abx', 'transfusiones', 'vasop', 'antitromboticos', 'anticoagulacion'],
+  ['antihta', 'antiarritmicos', 'diureticos', 'estatinas', 'nm'],
+];
+
+function medGridColumnIndex(key) {
+  for (var i = 0; i < MED_GRID_COLUMNS.length; i++) {
+    if (MED_GRID_COLUMNS[i].indexOf(key) >= 0) return i;
+  }
+  return MED_GRID_COLUMNS.length - 1;
+}
 
 export function parseMedFieldItems(raw) {
   if (raw == null || !String(raw).trim()) return [];
@@ -94,12 +110,15 @@ export function removeMedFieldItem(monitoreo, key, index) {
   monitoreo.confirmado[key] = items.length > 0;
 }
 
+// A folded group lists its drug names only, doses dropped: short enough
+// to wrap under the title without cutting a name in half.
 function medCatPreviewText(items) {
-  if (!items.length) return '';
-  var first = items[0];
-  var short = first.length > 52 ? first.slice(0, 49) + '…' : first;
-  if (items.length === 1) return short;
-  return short + ' (+' + (items.length - 1) + ')';
+  return items
+    .map(function (item) {
+      var cut = item.search(/\s\d/);
+      return (cut > 0 ? item.slice(0, cut) : item).replace(/[:,;]\s*$/, '');
+    })
+    .join(' · ');
 }
 
 function displayAbxLine(text, activeId, medRecetaByPatient, monitoreo, refDate) {
@@ -135,12 +154,9 @@ export function medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatie
   return block.items.length > 0 || block.pendingVal.length > 0;
 }
 
-function medCategoryBadgeHtml(pendingVal, monitoreo, key, items) {
-  if (pendingVal) return '<span class="ea-pendiente-badge">Propuesta</span>';
-  if (monitoreo.confirmado && monitoreo.confirmado[key] && items.length) {
-    return '<span class="ea-confirmed-badge">Confirmado</span>';
-  }
-  return '';
+// Only a pending proposal gets a badge; confirmed is the normal state.
+function medCategoryBadgeHtml(pendingVal) {
+  return pendingVal ? '<span class="ea-pendiente-badge">Propuesta</span>' : '';
 }
 
 function medSelectOptionsHtml(key, options) {
@@ -154,6 +170,17 @@ function medSelectOptionsHtml(key, options) {
   );
 }
 
+// Name first, dose/route/frequency muted: the eye scans drug names down the
+// column and reads the dose only when it needs it.
+function medItemTextHtml(item) {
+  var cut = item.search(/\s\d/);
+  if (cut <= 0) return escHtml(item);
+  return (
+    '<span class="ea-med-item-name">' + escHtml(item.slice(0, cut)) + '</span> ' +
+    '<span class="ea-med-item-dose">' + escHtml(item.slice(cut + 1)) + '</span>'
+  );
+}
+
 function medItemRowHtml(item, key, idx) {
   return (
     '<div class="ea-med-item">' +
@@ -161,7 +188,7 @@ function medItemRowHtml(item, key, idx) {
     '<span class="ea-med-item-text" title="' +
     escAttr(item) +
     '">' +
-    escHtml(item) +
+    medItemTextHtml(item) +
     '</span>' +
     '<button type="button" class="ea-btn ea-btn--icon ea-med-item-remove" data-ea-med-remove="' +
     escAttr(key) +
@@ -188,32 +215,35 @@ function medItemsListHtmlWithIndices(items, key, indices) {
     .join('');
 }
 
-function renderNmAntidiabeticSubsectionHtml(key, items) {
-  var part = partitionNmMedLines(items);
-  if (!part.antidiabeticos.length) return '';
-  var itemsHtml = medItemsListHtmlWithIndices(part.antidiabeticos, key, part.antidiabeticIndices);
+function renderNmSubsectionHtml(key, title, mod, lines, indices) {
   return (
-    '<details class="ea-med-subcat ea-med-subcat--antidiabeticos" open>' +
+    '<details class="ea-med-subcat ea-med-subcat--' + mod + '" open>' +
     '<summary class="ea-med-subcat-summary">' +
-    '<span class="ea-med-subcat-title">Antidiabéticos</span>' +
+    '<span class="ea-med-subcat-title">' + title + '</span>' +
     '<span class="ea-med-subcat-preview ea-muted">' +
-    escHtml(medCatPreviewText(part.antidiabeticos)) +
+    escHtml(medCatPreviewText(lines)) +
     '</span>' +
     '</summary>' +
     '<div class="ea-med-subcat-body">' +
     '<div class="ea-med-item-list">' +
-    itemsHtml +
+    medItemsListHtmlWithIndices(lines, key, indices) +
     '</div></div></details>'
   );
 }
 
+// With an Antidiabéticos group, the rest get their own "NM" row: headless
+// lines under it read as antidiabetics.
 function renderNmMedItemsBodyHtml(key, items) {
   var part = partitionNmMedLines(items);
-  var antidiabeticHtml = renderNmAntidiabeticSubsectionHtml(key, items);
-  var otherHtml = part.other.length
-    ? '<div class="ea-med-item-list">' + medItemsListHtmlWithIndices(part.other, key, part.otherIndices) + '</div>'
-    : '';
-  return antidiabeticHtml + otherHtml;
+  if (!part.antidiabeticos.length) {
+    return part.other.length
+      ? '<div class="ea-med-item-list">' + medItemsListHtmlWithIndices(part.other, key, part.otherIndices) + '</div>'
+      : '';
+  }
+  return (
+    renderNmSubsectionHtml(key, 'Antidiabéticos', 'antidiabeticos', part.antidiabeticos, part.antidiabeticIndices) +
+    (part.other.length ? renderNmSubsectionHtml(key, 'NM', 'otros', part.other, part.otherIndices) : '')
+  );
 }
 
 function medMoveTargetOptionsHtml(fromKey) {
@@ -350,10 +380,14 @@ function revealMedCategoryKey(mount, grid, key, ctx) {
   grid.setAttribute('data-ea-med-revealed', JSON.stringify(revealed));
   var monitoreo = liveMonitoreoFromCtx(ctx);
   if (!grid.querySelector('[data-ea-med-cat="' + key + '"]')) {
-    var addBar = grid.querySelector('.ea-med-add-category-row');
+    var col = grid.querySelector('[data-ea-med-col="' + medGridColumnIndex(key) + '"]');
     var html = renderMedCategoryBlock(key, monitoreo, ctx.getActiveId(), ctx.medRecetaByPatient, { forceOpen: true });
-    if (addBar) addBar.insertAdjacentHTML('beforebegin', html);
-    else grid.insertAdjacentHTML('beforeend', html);
+    var order = MED_FIELD_KEYS.indexOf(key);
+    var next = col && Array.prototype.find.call(col.children, function (el) {
+      return MED_FIELD_KEYS.indexOf(el.getAttribute('data-ea-med-cat')) > order;
+    });
+    if (next) next.insertAdjacentHTML('beforebegin', html);
+    else if (col) col.insertAdjacentHTML('beforeend', html);
   }
   var det = grid.querySelector('[data-ea-med-cat="' + key + '"]');
   if (det && 'open' in det) det.open = true;
@@ -392,7 +426,7 @@ export function renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPati
     (previewText
       ? '<span class="ea-med-cat-preview ea-muted">' + escHtml(previewText) + '</span>'
       : '') +
-    medCategoryBadgeHtml(pendingVal, monitoreo, key, items) +
+    medCategoryBadgeHtml(pendingVal) +
     '</summary>' +
     '<div class="ea-med-cat-body">' +
     medPendingBlockHtml(key, pendingVal) +
@@ -427,15 +461,21 @@ export function renderMedCategoryGrid(monitoreo, activeId, medRecetaByPatient, r
       revealedKeys.indexOf(key) >= 0
     );
   });
-  var blocks = shownKeys
-    .map(function (key) {
-      var forceOpen =
-        revealedKeys.indexOf(key) >= 0 &&
-        !medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatient, refDate);
-      return renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient, {
-        forceOpen: forceOpen,
-        refDate: refDate,
-      });
+  var columns = MED_GRID_COLUMNS.map(function () {
+    return '';
+  });
+  shownKeys.forEach(function (key) {
+    var forceOpen =
+      revealedKeys.indexOf(key) >= 0 &&
+      !medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatient, refDate);
+    columns[medGridColumnIndex(key)] += renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient, {
+      forceOpen: forceOpen,
+      refDate: refDate,
+    });
+  });
+  var blocks = columns
+    .map(function (html, i) {
+      return '<div class="ea-med-col" data-ea-med-col="' + i + '">' + html + '</div>';
     })
     .join('');
   var hiddenKeys = MED_FIELD_KEYS.filter(function (key) {
@@ -516,6 +556,8 @@ export function wireMedCategoryGrid(mount, ctx) {
   grid.addEventListener('click', function (ev) {
     var target = /** @type {HTMLElement | null} */ (ev.target);
     if (!target || !grid.contains(target)) return;
+    // Groups are rows that always show their meds: a title click must not fold them.
+    if (target.closest('summary') && !target.closest('button, select, input, a')) ev.preventDefault();
     handleMedGridClick(ev, grid, mount, ctx, liveMonitoreoFromCtx, function (blockMount, key, monitoreo) {
       refreshMedCategoryBlock(blockMount, key, monitoreo, ctx.getActiveId(), ctx.medRecetaByPatient);
     });

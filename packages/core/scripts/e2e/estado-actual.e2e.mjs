@@ -433,6 +433,10 @@ async function run() {
   await page.keyboard.press('Escape');
   await modal.waitFor({ state: 'hidden' });
 
+  // Historial starts folded so the panel fits one screen; open it like a user would.
+  const histFolded = !(await page.locator('#ea-historial').evaluate((el) => el.open));
+  check('historial starts folded', histFolded);
+  if (histFolded) await page.locator('#ea-historial > summary').click();
   const hist = await page.locator('#ea-historial').innerText();
   check('historial lists both registros', (await page.locator('.ea-historial-row').count()) === 2);
   check('historial keeps the turn events', hist.includes('T3 RETO DE FUROSEMIDA'), hist.slice(0, 300));

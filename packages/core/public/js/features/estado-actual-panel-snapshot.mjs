@@ -7,7 +7,7 @@ import {
   formatHistorialWhen,
   buildHistorialRowParts,
 } from './estado-actual-panel-snapshot-html.mjs';
-import { escAttr } from '../dom-escape.mjs';
+import { escAttr, escHtml } from '../dom-escape.mjs';
 
 export { formatSnapshotEgresos } from './estado-actual-panel-snapshot-html.mjs';
 
@@ -51,7 +51,7 @@ export function renderHistorialSection(historial) {
   var recent = sorted.slice(0, 8);
   if (!recent.length) {
     return (
-      '<details class="ea-section ea-card ea-historial" id="ea-historial" open>' +
+      '<details class="ea-section ea-card ea-historial" id="ea-historial">' +
       '<summary class="ea-historial-summary">Historial reciente</summary>' +
       '<p class="ea-muted ea-historial-empty">Sin mediciones registradas.</p>' +
       '</details>'
@@ -71,7 +71,7 @@ export function renderHistorialSection(historial) {
         when +
         '</span>' +
         '<span class="ea-historial-summary">' +
-        summary +
+        escHtml(summary) +
         '</span>' +
         '</div>' +
         '<div class="ea-historial-actions">' +
@@ -88,7 +88,7 @@ export function renderHistorialSection(historial) {
     .join('');
 
   return (
-    '<details class="ea-section ea-card ea-historial" id="ea-historial" open>' +
+    '<details class="ea-section ea-card ea-historial" id="ea-historial">' +
     '<summary class="ea-historial-summary">Historial reciente' +
     '<span class="ea-historial-count">' +
     recent.length +

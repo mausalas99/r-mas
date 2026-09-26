@@ -1,4 +1,5 @@
 // Built from app.js refactor — Plantilla SOAP (modal) + Estado Actual (Sala)
+import { toEaSalidaText } from "./estado-actual-io.mjs";
 import { getPatients, getNotes, persistClinicalState } from "../app-state.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { closeModalAnimated } from "../ui-motion.mjs";
@@ -350,7 +351,7 @@ function soapFieldValue(id) {
 }
 
 function soapUpperOrBlank(v) {
-  return v ? v.toUpperCase() : '___';
+  return v ? toEaSalidaText(v) : '___';
 }
 
 function soapNumOrBlank(v) {
@@ -377,7 +378,7 @@ var SOAP_SOPORTE_MAP = {
 
 function legacyMedsClause(fieldId, g) {
   var v = g(fieldId);
-  return v ? v.toUpperCase() : "";
+  return v ? toEaSalidaText(v) : "";
 }
 
 function collectSoapLegacyMedClauses(g) {
