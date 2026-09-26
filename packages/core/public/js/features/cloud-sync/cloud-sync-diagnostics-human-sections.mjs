@@ -115,7 +115,9 @@ export function buildVerdict(status, transport, issues, recentErrors) {
     }) || recentErrors.length > 0;
 
   if (status === 'syncing') return verdict('info', STATUS_LABELS.syncing, 'Enviando o descargando cambios…');
-  if (hasError) return verdict('error', 'Hay problemas de sincronización', 'Revisa las alertas más abajo.');
+  if (hasError) {
+    return verdict('error', 'Hay problemas de sincronización', 'Tus cambios están a salvo en este equipo. Abajo dice qué pasa.');
+  }
   if (isLiveChannelDown(status, transport)) {
     return verdict('warn', 'Sin canal en vivo', 'Tus cambios están a salvo aquí. Se envían solos al volver.');
   }

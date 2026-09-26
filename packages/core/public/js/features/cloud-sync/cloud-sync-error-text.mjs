@@ -14,6 +14,8 @@ export function isCloudSyncNetworkErrorMessage(raw) {
   if (/^failed to fetch$/i.test(s) || /networkerror when attempting to fetch/i.test(s)) return true;
   if (/load failed|network request failed/i.test(s)) return true;
   if (/ERR_NETWORK_CHANGED/i.test(s)) return true;
+  // Chromium's own fetch errors, e.g. «net::ERR_CONNECTION_REFUSED».
+  if (/net::ERR_[A-Z_]+/.test(s)) return true;
   if (/sin red hacia nube/i.test(s)) return true;
   if (/no hubo respuesta de nube/i.test(s)) return true;
   return false;
@@ -26,7 +28,8 @@ export function humanizeCloudSyncErrorMessage(raw) {
   const s = String(raw || '').trim();
   if (!s) return '';
   if (isCloudSyncNetworkErrorMessage(s)) {
-    if (/no hubo respuesta de nube/i.test(s)) {
+    // Reached the network but Nube did not answer (server down or restarting).
+    if (/no hubo respuesta de nube|net::ERR_(CONNECTION_(REFUSED|RESET|CLOSED|FAILED)|TIMED_OUT|EMPTY_RESPONSE)/i.test(s)) {
       return 'No hubo respuesta de Nube. Revisa la conexión e inténtalo de nuevo.';
     }
     return 'Sin red hacia Nube. Revisa Wi‑Fi / VPN e inténtalo de nuevo.';

@@ -21,11 +21,17 @@
  *     - the panel scrolls sideways, or the hero spills over «Tu sala»
  *   Live refresh
  *     - «Sincronizar ahora» throws or leaves the hero stuck on «Sincronizando…»
+ *   Diagnóstico (board «Nube B»), Worker down
+ *     - «Detalles técnicos» does not open it
+ *     - the hero still says all is well, or offers no «Reintentar ahora»
+ *     - no «Qué puedes hacer» steps, or no «Herramientas de reparación»
+ *     - the home hero does not leave «Todo al día»
+ *     - after the Worker is back, the hero does not return to «Todo al día»
  *   Throughout
  *     - an uncaught page error
  */
 import { createRun, closeToasts, dismissLearnHub } from './harness.mjs';
-import { startWorker, nubeDevices, onboardNube, until } from './nube-worker.mjs';
+import { startWorker, stopWorker, nubeDevices, onboardNube, until } from './nube-worker.mjs';
 
 const tag = Date.now().toString(36).slice(-6);
 const R4 = { username: `demo_r4_${tag}`, name: 'Dra. Demo Nube', rank: 'R4' };
@@ -107,6 +113,53 @@ await r.finish('Nube panel: status home (board A)', async () => {
 
   await A.page.locator('#btn-connection-dropdown-back').click();
   check('back returns to the status home', await until(() => A.page.locator(HOME).isVisible(), 4000));
+
+  // ── Diagnóstico (board «Nube B»): take the Worker down ───────────────
+  const DIAG = '#connection-dropdown .cloud-sync-view[data-cloud-view="nube"]';
+  const readDiag = () => A.page.evaluate((sel) => {
+    const v = document.querySelector(sel);
+    return {
+      level: v?.querySelector('.cloud-nube-dashboard')?.dataset.level || '',
+      title: v?.querySelector('.cloud-sync-hero-title')?.textContent.trim() || '',
+      action: v?.querySelector('.cloud-sync-hero-sync')?.textContent.trim() || '',
+      steps: !!v?.querySelector('.cloud-nube-dash-steps'),
+      tools: v?.querySelector('.cloud-nube-dash-tools')?.innerText || '',
+      tech: v?.querySelector('.cloud-nube-dash-tech')?.textContent.trim() || '',
+    };
+  }, DIAG);
+  await A.page.locator(`${HOME} [data-cloud-view="nube"]`).click();
+  check('«Detalles técnicos» opens Diagnóstico', await until(() => A.page.locator(DIAG).isVisible(), 4000));
+  await until(async () => (await readDiag()).level === 'ok', 8000);
+  let dg = await readDiag();
+  await r.shot(A.page, 'diagnostico-ok');
+  check('Diagnóstico, all well: ok hero with «Sincronizar ahora», no steps',
+    dg.level === 'ok' && dg.action === 'Sincronizar ahora' && !dg.steps, dg);
+  check('Diagnóstico shows repair tools and the tech line',
+    /Forzar sync/.test(dg.tools) && /Reenviar censo/.test(dg.tools) && /^Rev\. \d+ local · /.test(dg.tech), dg);
+
+  await stopWorker();
+  // Force a cycle so the runtime notices the Worker is gone.
+  await A.page.locator(`${DIAG} [data-cloud-diag-action="sync"]`).click().catch(() => {});
+  const wentBad = await until(async () => ['warn', 'error'].includes((await readDiag()).level), 45000);
+  dg = await readDiag();
+  await r.shot(A.page, 'diagnostico-falla');
+  check('Worker down: Diagnóstico hero turns warn/error', wentBad, dg);
+  check('Worker down: «Reintentar ahora» is the main button', dg.action === 'Reintentar ahora', dg.action);
+  check('Worker down: «Qué puedes hacer» steps are shown', dg.steps);
+
+  await A.page.locator('#btn-connection-dropdown-back').click();
+  await A.page.locator('#btn-connection-dropdown-back').click().catch(() => {});
+  await until(() => A.page.locator(HOME).isVisible(), 4000);
+  h = await readHome(A.page);
+  await r.shot(A.page, 'home-falla');
+  check('Worker down: the home hero no longer says «Todo al día»', h.heroTitle !== 'Todo al día', h.heroTitle);
+  const heroText = await A.page.locator('#connection-dropdown [data-cloud-hero]').innerText().catch(() => '');
+  check('Worker down: the hero speaks plain Spanish, no raw net::ERR code', !/ERR_|net::/.test(heroText), heroText);
+
+  check('Worker comes back', await startWorker());
+  await A.page.locator('#connection-dropdown [data-cloud-action="sync-now"]').click().catch(() => {});
+  const back = await until(async () => (await readHome(A.page)).heroTitle === 'Todo al día', 60000);
+  check('after the Worker is back the hero returns to «Todo al día»', back, (await readHome(A.page)).heroTitle);
 
   // Dark theme: same screen, for a visual check.
   await A.page.evaluate(() => document.documentElement.classList.add('dark'));

@@ -59,8 +59,10 @@ describe('Nube status hero (board «Nube A»)', () => {
   });
 
   it('turns an error into plain words, never a raw code', () => {
-    const html = statusHeroHtml({ status: 'error', detail: '', displaySala: 'Sala 1', room });
-    assert.match(html, /cloud-sync-hero-title">Error</);
+    const html = statusHeroHtml({ status: 'error', detail: 'net::ERR_CONNECTION_REFUSED', displaySala: 'Sala 1', room });
+    assert.match(html, /cloud-sync-hero-title">Hay un problema con Nube</);
+    assert.match(html, /No hubo respuesta de Nube/);
+    assert.doesNotMatch(html, /ERR_/);
     assert.match(html, /data-state="error"/);
   });
 

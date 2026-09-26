@@ -37,3 +37,16 @@ describe('cloud-sync-error-text', () => {
     );
   });
 });
+
+describe('Chromium net::ERR_* codes', () => {
+  it('a refused or reset connection reads as «no hubo respuesta de Nube»', () => {
+    assert.equal(isCloudSyncNetworkErrorMessage('net::ERR_CONNECTION_REFUSED'), true);
+    assert.match(humanizeCloudSyncErrorMessage('net::ERR_CONNECTION_REFUSED'), /^No hubo respuesta de Nube/);
+    assert.match(humanizeCloudSyncErrorMessage('net::ERR_TIMED_OUT'), /^No hubo respuesta de Nube/);
+  });
+
+  it('no internet reads as «sin red hacia Nube»', () => {
+    assert.match(humanizeCloudSyncErrorMessage('net::ERR_INTERNET_DISCONNECTED'), /^Sin red hacia Nube/);
+    assert.match(humanizeCloudSyncErrorMessage('net::ERR_NAME_NOT_RESOLVED'), /^Sin red hacia Nube/);
+  });
+});

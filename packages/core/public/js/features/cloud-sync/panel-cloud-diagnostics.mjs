@@ -17,6 +17,7 @@ import { resolveCloudConexionChipStatus } from './cloud-sync-status-snapshot.mjs
 import { showCloudNubeFixModal } from './cloud-nube-fix-guides.mjs';
 import { pruneLabSidecarsFromOutbox } from './outbox-lab.mjs';
 import { CLOUD_OUTBOX_CHANGED_EVENT } from './cloud-outbox-events.mjs';
+import { confirmAction } from './panel-admin-helpers.mjs';
 
 function readCloudDiagnosticsRuntime() {
   const runtime = getSharedNubeRuntime();
@@ -82,13 +83,15 @@ function renderCloudDiagnosticsReport(host, deps) {
   return { diagDeps, diag, view, report };
 }
 
-function createDiagnosticsButton(label) {
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'cloud-sync-btn cloud-sync-btn--ghost';
-  btn.style.width = '100%';
-  btn.textContent = label;
-  return btn;
+/** «Copiar informe» (step 3 of Qué puedes hacer): the redacted JSON report. */
+function copyDiagnosticsReport(host, deps) {
+  const built = renderCloudDiagnosticsReport(host, deps);
+  void copyToClipboardSafe(built.report).then(function (ok) {
+    deps?.toast?.(
+      ok ? 'Informe técnico copiado (tokens redactados).' : 'No se pudo copiar el informe.',
+      ok ? 'success' : 'error'
+    );
+  });
 }
 
 function runDiagnosticsRetry(host, deps) {
@@ -149,12 +152,14 @@ function runDiagnosticsRepairTeamSalas(host, deps) {
   });
 }
 
-function runDiagnosticsPruneLabs(host, deps) {
+async function runDiagnosticsPruneLabs(host, deps) {
   const outbox = getSharedNubeOutbox();
   if (!outbox) {
     deps?.toast?.('Runtime Nube inactivo. Reconecta en Conexión.', 'warn');
     return;
   }
+  const ok = await confirmAction('Se borran los labs que aún no se envían a Nube. No se puede deshacer.');
+  if (!ok) return;
   const result = pruneLabSidecarsFromOutbox(outbox);
   const runtime = getSharedNubeRuntime();
   runtime?.refreshIdleStatus?.();
@@ -168,6 +173,14 @@ function runDiagnosticsPruneLabs(host, deps) {
   }
   refreshCloudSyncDiagnostics(host, deps);
 }
+
+const DASHBOARD_ACTIONS = {
+  retry: runDiagnosticsRetry,
+  sync: runDiagnosticsSync,
+  'repair-team-salas': runDiagnosticsRepairTeamSalas,
+  'prune-labs': runDiagnosticsPruneLabs,
+  'copy-report': copyDiagnosticsReport,
+};
 
 function wireDashboardActions(host, deps) {
   const panel = host.querySelector('[data-cloud-diag-dashboard]');
@@ -193,11 +206,8 @@ function wireDashboardActions(host, deps) {
 
     const btn = target.closest('[data-cloud-diag-action]');
     if (!btn || !panel.contains(btn)) return;
-    const action = btn.getAttribute('data-cloud-diag-action');
-    if (action === 'retry') runDiagnosticsRetry(host, deps);
-    else if (action === 'sync') runDiagnosticsSync(host, deps);
-    else if (action === 'repair-team-salas') runDiagnosticsRepairTeamSalas(host, deps);
-    else if (action === 'prune-labs') runDiagnosticsPruneLabs(host, deps);
+    const run = DASHBOARD_ACTIONS[btn.getAttribute('data-cloud-diag-action') || ''];
+    if (run) void run(host, deps);
   });
 }
 
@@ -269,19 +279,6 @@ export function mountCloudSyncDiagnostics(host, deps) {
   reportPre.className = 'cloud-sync-diagnostics-pre';
   technical.appendChild(reportPre);
   wrap.appendChild(technical);
-
-  const copyBtn = createDiagnosticsButton('Copiar informe técnico');
-  copyBtn.style.marginTop = '6px';
-  copyBtn.onclick = function () {
-    const built = renderCloudDiagnosticsReport(host, deps);
-    void copyToClipboardSafe(built.report).then(function (ok) {
-      deps?.toast?.(
-        ok ? 'Informe técnico copiado (tokens redactados).' : 'No se pudo copiar el informe.',
-        ok ? 'success' : 'error'
-      );
-    });
-  };
-  wrap.appendChild(copyBtn);
 
   host.appendChild(wrap);
   wireDashboardActions(host, deps);

@@ -1,19 +1,10 @@
 /**
- * Dashboard HTML for Diagnóstico Nube — matches Conexión inset groups.
+ * Diagnóstico Nube (board «Nube B · algo falla»): a hero that says what is
+ * wrong and what is safe, the Internet → Sesión → Sala → En vivo chain, what
+ * waits to be sent, numbered steps, and repair tools in plain words.
  */
 import { esc } from '../../dom-escape.mjs';
-
-/**
- * @param {string} displayStatusKey
- * @param {string} verdictLevel
- */
-function statusChipClass(displayStatusKey, verdictLevel) {
-  const key = String(displayStatusKey || '');
-  if (key === 'error' || verdictLevel === 'error') return 'is-error';
-  if (key === 'syncing' || verdictLevel === 'info') return 'is-syncing';
-  if (key === 'pending' || key === 'offline' || verdictLevel === 'warn') return 'is-pending';
-  return 'is-idle';
-}
+import { pipelineChainHtml } from './panel-conexion-html.mjs';
 
 /**
  * @param {{ fixId?: string, severity?: string, title?: string, detail?: string, hint?: string }} item
@@ -40,91 +31,6 @@ function renderClickableAlert(item) {
     '<span class="cloud-nube-dash-alert-cta">Cómo arreglar</span>' +
     '</span>' +
     '<span class="cloud-sync-options-row-chevron" aria-hidden="true">›</span></button>';
-  return html;
-}
-
-function renderDashHead(v, verdict, chipClass) {
-  let html =
-    '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-nube-dash-head">' +
-    '<div class="cloud-nube-dash-head-main">' +
-    '<span class="cloud-sync-status-chip cloud-nube-dash-chip ' +
-    esc(chipClass) +
-    '">' +
-    esc(verdict.headline) +
-    '</span>';
-
-  if (v.roomLabel) {
-    html += '<span class="cloud-nube-dash-room">' + esc(v.roomLabel) + '</span>';
-  }
-  html += '</div>';
-  if (verdict.subline) {
-    html += '<p class="cloud-nube-dash-subline">' + esc(verdict.subline) + '</p>';
-  }
-  html += '</div>';
-  return html;
-}
-
-function renderDashTiles(tiles) {
-  if (!Array.isArray(tiles) || tiles.length === 0) return '';
-  return tiles
-    .map(function (tile) {
-      const dd =
-        esc(tile.value) + (tile.hint ? '<span class="cloud-nube-dash-kv-muted"> · ' + esc(tile.hint) + '</span>' : '');
-      return (
-        '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv cloud-nube-dash-kv" data-status="' +
-        esc(tile.status) +
-        '">' +
-        '<dt>' +
-        esc(tile.label) +
-        '</dt><dd>' +
-        dd +
-        '</dd></div>'
-      );
-    })
-    .join('');
-}
-
-function renderDashPipeline(pipeline) {
-  if (!Array.isArray(pipeline) || pipeline.length === 0) return '';
-  let html = '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-nube-dash-pipeline-wrap">';
-  html += '<span class="cloud-nube-dash-pipeline-label">Conexión</span>';
-  html += '<div class="cloud-nube-dash-pipeline">';
-  pipeline.forEach(function (step) {
-    const pipeFix =
-      step.label === 'Sync' && (step.state === 'error' || step.state === 'warn')
-        ? ' data-cloud-diag-pipe-fix="sync_not_active"'
-        : '';
-    html +=
-      '<span class="cloud-nube-dash-pipe" data-state="' +
-      esc(step.state) +
-      '"' +
-      pipeFix +
-      '><span class="cloud-nube-dash-pipe-dot" aria-hidden="true"></span>' +
-      '<span class="cloud-nube-dash-pipe-text">' +
-      esc(step.label) +
-      '<small>' +
-      esc(step.detail) +
-      '</small></span></span>';
-  });
-  html += '</div></div>';
-  return html;
-}
-
-function renderDashOutboxBreakdown(outboxBreakdown) {
-  if (!Array.isArray(outboxBreakdown) || outboxBreakdown.length === 0) return '';
-  let html = '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-nube-dash-outbox-head">Cola por tipo</div>';
-  outboxBreakdown.forEach(function (row) {
-    html +=
-      '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv cloud-nube-dash-outbox-row">' +
-      '<dt>' +
-      esc(row.label) +
-      '</dt><dd><span class="cloud-nube-dash-outbox-track" aria-hidden="true">' +
-      '<span class="cloud-nube-dash-outbox-bar" style="width:' +
-      String(row.share) +
-      '%"></span></span> ' +
-      esc(String(row.count)) +
-      '</dd></div>';
-  });
   return html;
 }
 
@@ -174,14 +80,105 @@ function renderDashAlerts(issues, recentErrors) {
   return html;
 }
 
-function renderDashActions() {
+const HERO_ICON = {
+  ok: '<path d="m5 12 5 5 9-10"/>',
+  info: '<path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/>',
+  warn: '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>',
+  error: '<circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5h.01"/>',
+};
+
+/** @param {{ level: string, headline: string, subline: string }} verdict @param {Array} chain */
+function renderDashHero(verdict, chain) {
+  const level = HERO_ICON[verdict.level] ? verdict.level : 'ok';
+  const ok = level === 'ok' || level === 'info';
+  const action = ok
+    ? '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary cloud-sync-hero-sync" data-cloud-diag-action="sync">Sincronizar ahora</button>'
+    : '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary cloud-sync-hero-sync" data-cloud-diag-action="retry">Reintentar ahora</button>';
   return (
-    '<div class="cloud-nube-dash-actions">' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-diag-action="repair-team-salas">Reempujar censo a salas de equipo</button>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-diag-action="retry">Reintentar cola</button>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-diag-action="sync">Forzar sync</button>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-diag-action="prune-labs">Descartar labs en cola</button>' +
-    '</div></div>'
+    '<div class="cloud-nube-dash-hero" data-level="' + esc(level) + '">' +
+    '<div class="cloud-sync-hero">' +
+    '<div class="cloud-sync-hero-icon" data-state="' + esc(level) + '">' +
+    '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    HERO_ICON[level] +
+    '</svg></div>' +
+    '<div class="cloud-sync-hero-text"><p class="cloud-sync-hero-title">' + esc(verdict.headline) + '</p>' +
+    (verdict.subline ? '<p class="cloud-sync-hero-sub">' + esc(verdict.subline) + '</p>' : '') +
+    '</div>' + action + '</div>' +
+    pipelineChainHtml(chain) +
+    '</div>'
+  );
+}
+
+/** @param {string} kind */
+function capitalize(kind) {
+  const s = String(kind || '');
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** «En espera de envío»: count by kind and how long the oldest waits. @param {object} v */
+function renderDashWaiting(v) {
+  const count = Number(v.outboxCount) || 0;
+  let html =
+    '<div class="cloud-sync-inset-group cloud-nube-dash-card cloud-nube-dash-waiting">' +
+    '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-nube-dash-card-head">' +
+    '<span class="cloud-nube-dash-label">En espera de envío</span>' +
+    '<span class="cloud-nube-dash-count">' + (count ? count + (count === 1 ? ' cambio' : ' cambios') : 'Nada') + '</span></div>';
+  (v.outboxBreakdown || []).forEach(function (row) {
+    html +=
+      '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv cloud-nube-dash-outbox-row"><dt>' +
+      esc(capitalize(row.label)) + '</dt><dd>' + esc(String(row.count)) + '</dd></div>';
+  });
+  html += renderDashToxicOutbox(v.toxicOutbox);
+  const foot = count
+    ? v.oldestWait ? 'El más antiguo espera desde ' + v.oldestWait + '.' : ''
+    : 'Todo lo que cambiaste ya está en Nube.';
+  if (foot) html += '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-nube-dash-foot">' + esc(foot) + '</div>';
+  return html + '</div>';
+}
+
+/** Numbered «Qué puedes hacer», only when something is off. @param {{ level: string }} verdict */
+function renderDashSteps(verdict) {
+  if (verdict.level === 'ok' || verdict.level === 'info') return '';
+  const step = (n, title, body, extra = '') =>
+    '<div class="cloud-nube-dash-step"><span class="cloud-nube-dash-step-num" aria-hidden="true">' + n + '</span>' +
+    '<span class="cloud-nube-dash-step-text"><b>' + esc(title) + '</b><span>' + esc(body) + '</span></span>' + extra + '</div>';
+  return (
+    '<div class="cloud-sync-inset-group cloud-nube-dash-card cloud-nube-dash-steps">' +
+    '<div class="cloud-nube-dash-label">Qué puedes hacer</div>' +
+    step(1, 'Espera un momento', 'Casi siempre vuelve solo en menos de un minuto.') +
+    step(2, 'Pulsa Reintentar ahora', 'Envía lo que está en espera y vuelve a descargar.') +
+    step(3, '¿Sigue así en 5 min?', 'Copia el informe y mándalo a soporte.',
+      '<button type="button" class="cloud-sync-btn" data-cloud-diag-action="copy-report">Copiar informe</button>') +
+    '</div>'
+  );
+}
+
+/** @param {string} action @param {string} title @param {string} body @param {string} label @param {boolean} [danger] */
+function toolRow(action, title, body, label, danger = false) {
+  return (
+    '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-nube-dash-tool">' +
+    '<span class="cloud-sync-options-entry-text"><span class="cloud-nube-dash-tool-title">' + esc(title) + '</span>' +
+    '<span class="cloud-sync-status-display">' + esc(body) + '</span></span>' +
+    '<button type="button" class="cloud-sync-btn' + (danger ? ' cloud-sync-btn--danger' : '') +
+    '" data-cloud-diag-action="' + esc(action) + '">' + esc(label) + '</button></div>'
+  );
+}
+
+/** «Herramientas de reparación» + the one-line technical summary. @param {object} v */
+function renderDashTools(v) {
+  const labs = Number(v.labsQueued) || 0;
+  return (
+    '<div class="cloud-sync-inset-group cloud-nube-dash-card cloud-nube-dash-tools">' +
+    '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-nube-dash-card-head">' +
+    '<span class="cloud-nube-dash-label">Herramientas de reparación</span></div>' +
+    toolRow('sync', 'Forzar sync', 'Descarga y envía todo otra vez.', 'Forzar') +
+    toolRow('repair-team-salas', 'Reenviar censo a salas de equipo', 'Úsalo si un compañero no ve a un paciente.', 'Reenviar') +
+    (labs
+      ? toolRow('prune-labs', 'Descartar labs en espera',
+        'Borra ' + labs + (labs === 1 ? ' lab' : ' labs') + ' sin enviar. No se puede deshacer.', 'Descartar…', true)
+      : '') +
+    '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-nube-dash-tech">' + esc(v.techLine || '') + '</div>' +
+    '</div>'
   );
 }
 
@@ -191,18 +188,13 @@ function renderDashActions() {
 export function renderCloudNubeDashboardHtml(view) {
   const v = view && typeof view === 'object' ? view : {};
   const verdict = v.verdict || { level: 'ok', headline: '—', subline: '' };
-  const chipClass = statusChipClass(v.displayStatusKey || v.statusKey, verdict.level);
-
-  let html = '<div class="cloud-nube-dashboard">' + '<div class="cloud-sync-inset-group cloud-nube-dash-card">';
-  html += renderDashHead(v, verdict, chipClass);
-  html += renderDashTiles(v.tiles);
-  html += renderDashPipeline(v.pipeline);
-  html += renderDashOutboxBreakdown(v.outboxBreakdown);
-  html += renderDashToxicOutbox(v.toxicOutbox);
-  html += '</div>';
-
-  html += renderDashAlerts(v.issues, v.recentErrors);
-  html += renderDashActions();
-
-  return html;
+  return (
+    '<div class="cloud-nube-dashboard" data-level="' + esc(verdict.level) + '">' +
+    renderDashHero(verdict, v.chain || []) +
+    renderDashWaiting(v) +
+    renderDashSteps(verdict) +
+    renderDashAlerts(v.issues, v.recentErrors) +
+    renderDashTools(v) +
+    '</div>'
+  );
 }

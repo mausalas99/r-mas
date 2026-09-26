@@ -35,11 +35,13 @@ function checkRoomUnprotectedBadge(deps) {
  * @param {boolean} unprotected
  * @param {string} resolvedStatus
  * @param {unknown} resolvedDetail
+ * @param {boolean} heroShown
  * @returns {string}
  */
-function statusDetailText(unprotected, resolvedStatus, resolvedDetail) {
+function statusDetailText(unprotected, resolvedStatus, resolvedDetail, heroShown) {
   if (unprotected) return 'Esta sala tiene datos cifrados que este equipo aún no puede leer. Reintentando…';
-  if (resolvedStatus !== 'error') return '';
+  // The status hero already says the error in plain words.
+  if (resolvedStatus !== 'error' || heroShown) return '';
   return humanizeCloudSyncErrorMessage(String(resolvedDetail || '').trim());
 }
 
@@ -60,7 +62,8 @@ function bindStatusChip(section, deps, displaySala) {
     }
     const detailEl = section.querySelector('[data-cloud-status-detail]');
     if (detailEl) {
-      const text = statusDetailText(checkRoomUnprotectedBadge(deps), resolvedStatus, resolvedDetail);
+      const heroShown = !!section.querySelector('[data-cloud-hero-block]');
+      const text = statusDetailText(checkRoomUnprotectedBadge(deps), resolvedStatus, resolvedDetail, heroShown);
       detailEl.textContent = text;
       detailEl.hidden = !text;
     }
