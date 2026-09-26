@@ -14,7 +14,6 @@ import { canExecuteClinicalCommand, executeClinicalCommand } from './clinical-re
 import { _applyRepoSnapshot } from './clinical-read-model.mjs';
 import { isWebClinicalClient } from './db-storage-bridge.mjs';
 import { storage } from './storage.js';
-import { scheduleIdle } from './deferred-work.mjs';
 import {
   getClinicalPersistSnapshot,
   invokeBeforeSaveHook,
@@ -35,6 +34,26 @@ const PERSIST_DEBOUNCE_MS = 400;
 const IDLE_FULL_PERSIST_MS = 8000;
 
 let _idleFullPersistQueued = false;
+/**
+ * Domains asked for since the last run started: undefined = none, null = all.
+ * A later domain-limited call (a sync pull's `['patients']`) must not replace a
+ * pending full save it cancels — that left receta/notes only in memory.
+ * @type {Set<string>|null|undefined}
+ */
+let _pendingDomains;
+
+/** @param {{ domains?: string[] }} opts */
+function addPendingDomains(opts) {
+  const d = Array.isArray(opts?.domains) && opts.domains.length ? opts.domains : null;
+  _pendingDomains = d && _pendingDomains !== null ? new Set([...(_pendingDomains || []), ...d]) : null;
+}
+
+/** @template T @param {T} opts @returns {T & { domains?: string[] }} */
+function takePendingDomains(opts) {
+  const d = _pendingDomains;
+  _pendingDomains = undefined;
+  return { ...opts, domains: d ? [...d] : undefined };
+}
 
 /**
  * @param {{ domains?: string[] }} [opts]
@@ -161,7 +180,7 @@ function enqueueCoalescedFollowUp(opts = {}) {
       _coalesceTail = null;
       if (!_flushQueued) return { ok: true };
       _flushQueued = false;
-      return runPersistNow({ ...opts, immediate: true });
+      return runPersistNow(takePendingDomains({ ...opts, immediate: true }));
     });
   }
   return _coalesceTail;
@@ -175,6 +194,7 @@ function enqueueCoalescedFollowUp(opts = {}) {
  */
 export function persistClinicalState(opts = {}) {
   const immediate = !!(opts && opts.immediate);
+  addPendingDomains(opts);
 
   if (_persistTimer) {
     clearTimeout(_persistTimer);
@@ -184,7 +204,7 @@ export function persistClinicalState(opts = {}) {
   if (immediate) {
     const run = _persistInFlight
       ? enqueueCoalescedFollowUp(opts)
-      : runPersistNow(opts);
+      : runPersistNow(takePendingDomains(opts));
     resolveDebounceWaiters(run);
     return run;
   }
@@ -195,7 +215,7 @@ export function persistClinicalState(opts = {}) {
       _persistTimer = null;
       const run = _persistInFlight
         ? enqueueCoalescedFollowUp(opts)
-        : runPersistNow(opts);
+        : runPersistNow(takePendingDomains(opts));
       resolveDebounceWaiters(run);
     }, PERSIST_DEBOUNCE_MS);
   });
@@ -207,9 +227,10 @@ export function persistClinicalState(opts = {}) {
  */
 export async function flushPersistClinicalState() {
   clearPersistTimer();
+  _pendingDomains = null;
   const run = _persistInFlight
     ? enqueueCoalescedFollowUp({ immediate: true, source: 'flush' })
-    : runPersistNow({ immediate: true, source: 'flush' });
+    : runPersistNow(takePendingDomains({ immediate: true, source: 'flush' }));
   resolveDebounceWaiters(run);
   return run;
 }
@@ -221,7 +242,9 @@ export async function flushPersistClinicalState() {
 export function scheduleIdleClinicalPersist() {
   if (_idleFullPersistQueued) return;
   _idleFullPersistQueued = true;
-  scheduleIdle(function () {
+  // Plain timer, not scheduleIdle: a tab / patient switch cancels scheduleIdle work,
+  // which dropped this save and left the flag stuck — synced data never hit disk.
+  setTimeout(function () {
     _idleFullPersistQueued = false;
     persistClinicalState();
   }, IDLE_FULL_PERSIST_MS);
@@ -235,4 +258,5 @@ export function resetPersistClinicalStateForTests() {
   _flushQueued = false;
   _debounceResolvers = [];
   _idleFullPersistQueued = false;
+  _pendingDomains = undefined;
 }

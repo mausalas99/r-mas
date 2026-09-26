@@ -8,6 +8,7 @@ import {
   CLOUD_PUSH_DEBOUNCE_MS,
   CLOUD_PUSH_FIRST_MS,
   CLOUD_LAB_BACKFILL_DEFERRED_MS,
+  CLOUD_OUTBOX_COALESCE_MS,
 } from './cloud-sync-timing.mjs';
 import { getSyncablePatients, getLabHistory } from '../../app-state.mjs';
 import { stampCloudTodoRow, registroForPatientId } from '../../livesync-patient-ids.mjs';
@@ -113,7 +114,19 @@ function enqueueEntityOps(clientMutationId, ops) {
     ops: prepared,
     baseRevision: bridgeRuntime.getRevision?.() ?? 0,
   });
-  void bridgeRuntime.flush?.();
+  requestOutboxFlush();
+}
+
+/** @type {ReturnType<typeof setTimeout> | null} */
+let outboxFlushTimer = null;
+
+/** Coalesce a burst of enqueues into one flush (see CLOUD_OUTBOX_COALESCE_MS). */
+function requestOutboxFlush() {
+  if (outboxFlushTimer) return;
+  outboxFlushTimer = setTimeout(function () {
+    outboxFlushTimer = null;
+    void bridgeRuntime?.flush?.();
+  }, CLOUD_OUTBOX_COALESCE_MS);
 }
 
 /** @param {unknown} clinicalOps @returns {boolean} */
@@ -337,7 +350,7 @@ export async function enqueueCloudLabSidecarsBackfill() {
     // made this loop quadratic against localStorage and blocked the main
     // thread for hundreds of ms right after connecting Nube.
     bridgeRuntime.outbox.enqueueMany(items);
-    void bridgeRuntime.flush?.();
+    requestOutboxFlush();
     return true;
   }
 

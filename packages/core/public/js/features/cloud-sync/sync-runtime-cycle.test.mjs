@@ -387,6 +387,36 @@ describe('createSyncRuntimeCycle status', () => {
   });
 });
 
+describe('WS reconnect flushes the outbox', () => {
+  it('socket open with queued ops pushes right away, not after the error backoff (was: ctx had no outboxSync, so the flush never fired)', async () => {
+    const prevOnline = Object.getOwnPropertyDescriptor(globalThis.navigator || {}, 'onLine');
+    Object.defineProperty(globalThis.navigator, 'onLine', { configurable: true, get: () => true });
+    const original = globalThis.WebSocket;
+    globalThis.WebSocket = class MockWs {
+      constructor() {
+        setTimeout(() => { if (this.onopen) this.onopen(); }, 0);
+      }
+      close() {}
+    };
+    let pushes = 0;
+    const runtime = createSyncRuntimeCycle({
+      api: { pull: async () => ({ revision: 1, ops: [] }), push: async () => { pushes += 1; return { revision: 1 }; } },
+      outbox: makeOutbox([{ clientMutationId: 'm1', ops: [{ path: 'entries/p1/medReceta', value: {}, updatedAt: '2026-09-25T10:00:00.000Z' }], enqueuedAt: 1 }]),
+      getRoomId: () => 'room-1',
+      getRevision: () => 1,
+      setRevision: () => {},
+      liveRoomWs: { getBaseUrl: () => 'https://sync.example.com', getToken: () => 't' },
+      deferBootCycle: true,
+      onStatus() {},
+    });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    runtime.stop();
+    globalThis.WebSocket = original;
+    if (prevOnline) Object.defineProperty(globalThis.navigator, 'onLine', prevOnline);
+    assert.equal(pushes, 1);
+  });
+});
+
 describe('createSyncFailCycle — backoff-class errors with pending ops', () => {
   function fakeScheduler() {
     const calls = [];
@@ -414,6 +444,23 @@ describe('createSyncFailCycle — backoff-class errors with pending ops', () => 
     err.status = 503;
     failCycle(err);
     assert.equal(statuses[statuses.length - 1].status, 'idle');
+  });
+
+  it('server unreachable with pending ops reads «Pendiente · sin conexión», not error', () => {
+    for (const make of [
+      () => Object.assign(new Error('net::ERR_CONNECTION_REFUSED'), { status: 0 }),
+      () => new TypeError('Failed to fetch'),
+    ]) {
+      const statuses = [];
+      const failCycle = createSyncFailCycle(() => fakeScheduler(), (status, detail) => statuses.push({ status, detail }), () => 1);
+      failCycle(make());
+      assert.equal(statuses.at(-1).status, 'pending');
+      assert.match(statuses.at(-1).detail, /Sin conexión/);
+    }
+    const statuses = [];
+    const failCycle = createSyncFailCycle(() => fakeScheduler(), (status) => statuses.push({ status }), () => 1);
+    failCycle(Object.assign(new Error('URL nube no configurada'), { status: 0, data: { error: 'missing_url' } }));
+    assert.equal(statuses.at(-1).status, 'error', 'a setup error is still an error');
   });
 
   it('a permanent error still reports error even with pending ops', () => {

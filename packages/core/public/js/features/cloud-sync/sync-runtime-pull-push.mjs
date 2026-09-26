@@ -1,6 +1,6 @@
 import { cloudPullProgress } from '../../clinical-session-context.mjs';
 import { sanitizeOpsForCloudPush } from './cloud-op-slim.mjs';
-import { drainCloudOps, recordRejectedCloudOps } from './cloud-push-direct.mjs';
+import { drainCloudOps, recordRejectedCloudOps, MAX_OPS_PER_CHUNK } from './cloud-push-direct.mjs';
 import { nextWireIdStamp, resolveCloudPushMutationId } from './push-mutation-id.mjs';
 import { cloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 import {
@@ -248,19 +248,20 @@ async function pushSingleWithStaleRetry(ctx, roomId, item, chunk, attempt) {
 }
 
 /**
- * Drain one outbox row's ops through the Worker, AIMD-paced. Each chunk is
- * removed from the outbox as soon as it's acked (or dropped by the
+ * Drain a group of outbox rows' ops through the Worker, AIMD-paced. Each chunk
+ * is removed from the outbox as soon as it's acked (or dropped by the
  * sanitizer) — a later chunk's failure leaves only the unsent ops behind,
- * not the whole row.
+ * not the whole group.
  *
  * @param {object} ctx
  * @param {string} roomId
- * @param {{ clientMutationId: string, baseRevision?: number, enqueuedAt?: number }} item
- * @param {unknown[]} ops raw ops for the whole row
+ * @param {{ clientMutationId: string, baseRevision?: number, enqueuedAt?: number }} item wire-id source
+ * @param {unknown[]} ops raw ops for the whole group
  * @param {(sent: number, total: number) => void} [onProgress]
+ * @param {(chunk: unknown[]) => void} removeAcked drops a chunk's ops from their own rows
  */
-async function pushWithStaleRetry(ctx, roomId, item, ops, onProgress) {
-  const { applyServerRevision, pullLatest, outbox } = ctx;
+async function pushWithStaleRetry(ctx, roomId, item, ops, onProgress, removeAcked) {
+  const { applyServerRevision, pullLatest } = ctx;
   if (!Array.isArray(ops) || !ops.length) return null;
   let lastResult = null;
   let totalDropped = 0;
@@ -272,7 +273,7 @@ async function pushWithStaleRetry(ctx, roomId, item, ops, onProgress) {
       totalDropped += sanitized.dropped;
       // Removed whether it was actually sent or fully dropped by the
       // sanitizer (echoed/poison ops must not come back forever).
-      outbox.removeOps(item.clientMutationId, chunk);
+      removeAcked(chunk);
       if (!pushResult) return;
       noteCloudOpsAttempted(sanitized.ops);
       recordRejectedCloudOps(pushResult);
@@ -292,34 +293,57 @@ async function pushWithStaleRetry(ctx, roomId, item, ops, onProgress) {
   return lastResult;
 }
 
+/** @param {{ ops?: unknown[] }} row */
+const rowOps = (row) => (Array.isArray(row?.ops) ? row.ops : []);
+
 /**
+ * Push several outbox rows as one op stream, so a burst of small rows (bulk
+ * paste: census, clinicalOps, per-patient labs) shares POSTs instead of one
+ * POST each against the Worker's per-room rate limit. Chunk size stays with
+ * the AIMD pacer; acked ops are removed from their own row.
+ *
  * @param {object} ctx
  * @param {string} roomId
- * @param {{ clientMutationId: string, baseRevision?: number, enqueuedAt?: number, ops: unknown[] }} item
+ * @param {{ clientMutationId: string, baseRevision?: number, enqueuedAt?: number, ops: unknown[] }[]} rows
  * @param {(sent: number, total: number) => void} [onProgress]
- * @returns {Promise<unknown>} error, if the item is still pending after the attempt
+ * @returns {Promise<unknown>} error, if any row is still pending after the attempt
  */
-async function flushOutboxItem(ctx, roomId, item, onProgress) {
+async function flushOutboxRows(ctx, roomId, rows, onProgress) {
   const { outbox, pace, applyServerRevision } = ctx;
+  const item = rows[0];
+  const owner = new Map();
+  for (const row of rows) for (const op of rowOps(row)) owner.set(op, row.clientMutationId);
+  /** @param {unknown[]} chunk */
+  function removeAcked(chunk) {
+    const byRow = new Map();
+    for (const op of chunk) {
+      const id = owner.get(op);
+      if (!byRow.has(id)) byRow.set(id, []);
+      byRow.get(id).push(op);
+    }
+    for (const [id, ops] of byRow) outbox.removeOps(id, ops);
+  }
   try {
-    const result = await pushWithStaleRetry(ctx, roomId, item, item.ops, onProgress);
-    // Matches the row snapshot taken at the start of this flush — ops merged
+    const result = await pushWithStaleRetry(ctx, roomId, item, rows.flatMap(rowOps), onProgress, removeAcked);
+    // Matches the row snapshots taken at the start of this flush — ops merged
     // into the same clientMutationId while this drain was in flight have a
     // different (path, updatedAt) and are not touched, so they survive.
-    outbox.removeOps(item.clientMutationId, item.ops);
+    for (const row of rows) outbox.removeOps(row.clientMutationId, rowOps(row));
     pace.markLocalWrite();
     if (result?.revision != null) applyServerRevision(Number(result.revision));
     noteCloudSyncPush();
     recordCloudSyncTrace('push', {
       clientMutationId: item.clientMutationId,
-      opCount: Array.isArray(item.ops) ? item.ops.length : 0,
+      rows: rows.length,
+      opCount: rows.reduce((sum, row) => sum + rowOps(row).length, 0),
       revision: result?.revision != null ? Number(result.revision) : null,
     });
     return null;
   } catch (err) {
     drainSyncedLabSidecarsFromOutbox(outbox);
+    const ids = new Set(rows.map((row) => String(row?.clientMutationId || '')));
     const stillPending = outbox.list().some(function (row) {
-      return String(row?.clientMutationId || '') === String(item.clientMutationId || '');
+      return ids.has(String(row?.clientMutationId || ''));
     });
     if (!stillPending) return null;
     recordCloudSyncError({
@@ -337,19 +361,30 @@ function outboxRowKey(row) {
 }
 
 /**
- * First not-yet-tried non-lab row wins the turn, so a live edit never waits
- * behind a lab backfill; falls back to the first not-yet-tried row otherwise.
- * @param {{ clientMutationId?: string, enqueuedAt?: number }[]} pending
+ * Rows for this turn: not-yet-tried non-lab rows first, so a live edit never
+ * waits behind a lab backfill, then lab rows. Small rows are grouped up to one
+ * chunk's worth of ops (one POST); the list is re-read every turn, so a live
+ * edit enqueued mid-backfill still goes next. `solo` returns one row only —
+ * used after a grouped push failed, so one stuck row can't block the rest.
+ * @param {{ clientMutationId?: string, enqueuedAt?: number, ops?: unknown[] }[]} pending
  * @param {Set<string>} tried
+ * @param {boolean} solo
  */
-function pickNextOutboxRow(pending, tried) {
-  let fallback = null;
+function pickNextOutboxRows(pending, tried, solo) {
+  const live = [];
+  const lab = [];
   for (const row of pending) {
     if (tried.has(outboxRowKey(row))) continue;
-    if (!isLabSidecarOutboxMutationId(row.clientMutationId)) return row;
-    if (!fallback) fallback = row;
+    (isLabSidecarOutboxMutationId(row.clientMutationId) ? lab : live).push(row);
   }
-  return fallback;
+  const group = [];
+  let ops = 0;
+  for (const row of [...live, ...lab]) {
+    if (group.length && (solo || ops + rowOps(row).length > MAX_OPS_PER_CHUNK)) break;
+    group.push(row);
+    ops += rowOps(row).length;
+  }
+  return group;
 }
 
 /** @param {object} ctx */
@@ -371,20 +406,23 @@ async function runFlushOutbox(ctx) {
   // enqueued (or merged with new ops) after this flush started is seen and
   // preferred on the very next turn — not only after a lab backfill drains.
   const tried = new Set();
+  let solo = false;
   for (;;) {
     const pending = outbox.list();
-    const item = pending.length ? pickNextOutboxRow(pending, tried) : null;
-    if (!item) break;
-    tried.add(outboxRowKey(item));
-    const total = doneOps + pending.reduce(
-      (sum, row) => sum + (Array.isArray(row?.ops) ? row.ops.length : 0),
-      0
-    );
+    const rows = pickNextOutboxRows(pending, tried, solo);
+    if (!rows.length) break;
+    const total = doneOps + pending.reduce((sum, row) => sum + rowOps(row).length, 0);
     const baseDone = doneOps;
-    const err = await flushOutboxItem(ctx, roomId, item, (sent) => {
+    const err = await flushOutboxRows(ctx, roomId, rows, (sent) => {
       setStatus('syncing', `Enviando ${baseDone + sent}/${total} cambios`);
     });
-    doneOps = baseDone + (Array.isArray(item.ops) ? item.ops.length : 0);
+    doneOps = baseDone + rows.reduce((sum, row) => sum + rowOps(row).length, 0);
+    if (err && rows.length > 1) {
+      // Retry the group's rows one by one, so the rest still go out.
+      solo = true;
+      continue;
+    }
+    for (const row of rows) tried.add(outboxRowKey(row));
     if (err && !firstErr) firstErr = err;
   }
   if (firstErr) {

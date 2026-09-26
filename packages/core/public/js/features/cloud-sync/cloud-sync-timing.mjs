@@ -27,6 +27,9 @@ export const CLOUD_POLL_ERROR_OVERLOAD_MAX_MS = 120_000;
 export const CLOUD_PUSH_DEBOUNCE_MS = 1_500;
 /** First edit in a burst pushes right away — only repeat edits debounce. */
 export const CLOUD_PUSH_FIRST_MS = 0;
+/** One save enqueues census, monitoreo, labs and clinicalOps within ~400 ms —
+ * wait this long before flushing so they share one POST, not four. */
+export const CLOUD_OUTBOX_COALESCE_MS = 500;
 
 /** Backfill patients outside the active Filtros after this delay, once the priority set is pushed. */
 export const CLOUD_LAB_BACKFILL_DEFERRED_MS = 5_000;
@@ -92,6 +95,21 @@ export function nextCloudPollDelayMs(opts = {}) {
     return activeMs;
   }
   return idleMs;
+}
+
+/**
+ * The Worker was never reached: desktop net.fetch failure (IPC answers status 0)
+ * or a browser fetch TypeError / timeout. A missing URL is a setup error, not this.
+ * @param {unknown} err
+ */
+export function isCloudUnreachableError(err) {
+  if (!err || typeof err !== 'object') return false;
+  if (err.data?.error === 'missing_url') return false;
+  if (err.status === 0) return true;
+  if (err.status != null) return false;
+  const name = String(err.name || '');
+  if (name === 'TimeoutError' || name === 'AbortError') return true;
+  return name === 'TypeError' && /fetch|network|load failed/i.test(String(err.message || ''));
 }
 
 /** D1 overload, matched on the Worker's 500/503 message body. */

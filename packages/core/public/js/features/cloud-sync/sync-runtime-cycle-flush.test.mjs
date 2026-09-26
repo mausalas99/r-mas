@@ -466,15 +466,19 @@ describe('createSyncRuntimeCycle flush/push behavior', () => {
     assert.equal(outbox.list().length, 0, 'the tail eventually drains on the second cycle');
   });
 
-  it('reports send progress as "syncing" detail while draining the outbox', async () => {
+  it('sends small rows together in one POST and reports send progress', async () => {
     const statuses = [];
+    const pushed = [];
     const outbox = makeOutbox([
       { clientMutationId: 'm1', ops: [{ path: 'a', value: 1, updatedAt: 't1' }], baseRevision: 0, enqueuedAt: 1 },
       { clientMutationId: 'm2', ops: [{ path: 'b', value: 2, updatedAt: 't2' }], baseRevision: 0, enqueuedAt: 2 },
     ]);
     const runtime = makeRuntime({
       api: {
-        push: async () => ({ revision: 1 }),
+        push: async (_roomId, body) => {
+          pushed.push(body.ops.map((op) => op.path));
+          return { revision: 1 };
+        },
       },
       outbox,
       onStatus(status, detail) {
@@ -484,10 +488,36 @@ describe('createSyncRuntimeCycle flush/push behavior', () => {
 
     await runCycle(runtime);
 
+    assert.deepEqual(pushed, [['a', 'b']], 'one POST for both rows');
+    assert.equal(outbox.list().length, 0);
     const progress = statuses
       .filter((s) => s.status === 'syncing' && s.detail)
       .map((s) => s.detail);
-    assert.deepEqual(progress, ['Enviando 1/2 cambios', 'Enviando 2/2 cambios']);
+    assert.deepEqual(progress, ['Enviando 2/2 cambios']);
+  });
+
+  it('a failed grouped POST retries rows one by one, so the good row still goes out', async () => {
+    const pushed = [];
+    const outbox = makeOutbox([
+      { clientMutationId: 'bad', ops: [{ path: 'x', value: 1, updatedAt: 't1' }], baseRevision: 0, enqueuedAt: 1 },
+      { clientMutationId: 'good', ops: [{ path: 'y', value: 2, updatedAt: 't2' }], baseRevision: 0, enqueuedAt: 2 },
+    ]);
+    const runtime = makeRuntime({
+      api: {
+        push: async (_roomId, body) => {
+          const paths = body.ops.map((op) => op.path);
+          pushed.push(paths);
+          if (paths.includes('x')) throw Object.assign(new Error('bad request'), { status: 400 });
+          return { revision: 1 };
+        },
+      },
+      outbox,
+    });
+
+    await runCycle(runtime);
+
+    assert.deepEqual(pushed, [['x', 'y'], ['x'], ['y']]);
+    assert.deepEqual(outbox.list().map((r) => r.clientMutationId), ['bad']);
   });
 
   it('while hidden still flushes outbox and keeps polling armed', async () => {

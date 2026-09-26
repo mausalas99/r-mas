@@ -95,7 +95,9 @@ export async function onboardNube(page, user) {
   const lockedBeforeCheck = await cont.isDisabled();
   await page.getByText('Lo guardé en un lugar seguro').click();
   await cont.click();
-  await page.getByRole('button', { name: 'Ejemplo Modelo casoba' }).waitFor({ timeout: 15000 });
+  // R4/admin skip the "join a team" gate and land in the app.
+  const landing = user.rank === 'R4' ? page.locator('#apptab-lab') : page.getByRole('button', { name: 'Abrir Mi rotación' });
+  await landing.waitFor({ timeout: 15000 });
   const done = flat(await page.locator('body').innerText());
   return { recovery, lockedBeforeCheck, done };
 }

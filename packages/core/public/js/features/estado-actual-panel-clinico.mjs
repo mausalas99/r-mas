@@ -311,7 +311,15 @@ function wireEstadoClinicoInteractions(mount, patient) {
     patient: patient,
     medRecetaByPatient: getMedRecetaByPatient(),
     getActiveId: function () { return getEaPanelRuntime().getActiveId(); },
-    persistClinicalState: persistClinicalState,
+    // Same tail as applyEstadoClinicoFieldChange: a med added/removed by hand must
+    // move the estado clínico clock and reach Nube, or the next pull merge keeps
+    // the room's older copy and the edit is lost.
+    persistClinicalState: function () {
+      if (patient.monitoreo) patient.monitoreo.estadoClinicoUpdatedAt = new Date().toISOString();
+      if (patient.id) touchPatientLanUpdatedAt(String(patient.id));
+      persistClinicalState();
+      scheduleCloudSyncPush();
+    },
     syncTextarea: function () {},
   });
 }
