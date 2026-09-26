@@ -14,7 +14,7 @@ export const CENSO_COL_WEIGHTS = [
 ];
 
 /** Columnas que se ocultan si ningún paciente tiene contenido. */
-export const CENSO_OPTIONAL_COL_KEYS = ['accesos', 'cultivos', 'pend'];
+export const CENSO_OPTIONAL_COL_KEYS = ['meds', 'accesos', 'cultivos', 'pend'];
 
 /** Reparto del peso liberado al ocultar columnas opcionales. */
 const OPTIONAL_FREED_WEIGHT_SHARE = {

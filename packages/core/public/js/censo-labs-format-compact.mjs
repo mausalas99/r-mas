@@ -52,6 +52,18 @@ function mergedResLabsForCensoDay_(daySets) {
   return dedupeConsolidatedLabRows(allResLabs, 'labs');
 }
 
+/**
+ * Lab chunks of the latest census day, for the diagram mode.
+ * @param {unknown[]} sets
+ * @returns {{ fecha: string, resLabs: string[] }}
+ */
+export function latestCensoDayLabChunks(sets) {
+  var picked = setsFromLatestCensoDay(sets);
+  if (!picked.daySets.length) return { fecha: '', resLabs: [] };
+  var labs = splitResLabsByTipo(mergedResLabsForCensoDay_(picked.daySets)).labs;
+  return { fecha: picked.fecha, resLabs: labs.filter(function (c) { return String(c || '').trim(); }) };
+}
+
 /** @param {unknown[]} sets @returns {string[]} */
 export function formatLabsForCensoCompactBody(sets) {
   var picked = setsFromLatestCensoDay(sets);

@@ -13,6 +13,10 @@ import {
   resolveCensoColWeights,
 } from './public/js/censo-table-columns.mjs';
 import { pdfSafeLine, winAnsiSafeDeep } from './lib/pdf-safe-line.js';
+import {
+  layoutCensoLabDiagrams,
+  censoLabDiagramsMinHeight,
+} from './public/js/censo-labs-diagrams-layout.mjs';
 
 const PAGE_W = 1008;
 const PAGE_H = 612;
@@ -536,6 +540,28 @@ function measureRowLineCount(font, fontBold, row, layout) {
   return { lineCount: maxLines, tallestCol: tallestCol };
 }
 
+const DIAGRAM_GAP = 4;
+
+/** Labs cell floor in diagram mode: date line + every diagram on one line. */
+function labsDiagramsHeight(row, innerW) {
+  var d = row.labsDiagrams;
+  return (d.fecha ? LINE_H_LABS : 0) + censoLabDiagramsMinHeight(d.images, innerW, DIAGRAM_GAP);
+}
+
+/** Date on top, then the diagrams grown to fill the rest of the cell. */
+function drawLabsDiagrams(page, row, x, yTop, innerW, rowH, fontBold) {
+  var d = row.labsDiagrams;
+  var top = yTop - ROW_PAD;
+  if (d.fecha) {
+    safeDrawText(page, d.fecha, { x: x, y: top - FONT_LABS, size: FONT_LABS, font: fontBold, color: COLORS.accent });
+    top -= LINE_H_LABS;
+  }
+  var boxH = top - (yTop - rowH + ROW_PAD);
+  layoutCensoLabDiagrams(d.images, innerW, boxH, DIAGRAM_GAP).forEach(function (p, i) {
+    page.drawImage(d.images[i].pdfImage, { x: x + p.x, y: top - p.y - p.h, width: p.w, height: p.h });
+  });
+}
+
 /**
  * @param {import('pdf-lib').PDFFont} font
  * @param {import('pdf-lib').PDFFont} fontBold
@@ -559,6 +585,7 @@ function measureRowHeight(font, fontBold, row, layout) {
       return;
     }
     var colH = rowHeightForColLines(col.key, Math.max(1, lines.length));
+    if (col.key === 'labs' && row.labsDiagrams) colH = ROW_PAD * 2 + labsDiagramsHeight(row, innerW);
     if (colH > maxH) maxH = colH;
   });
   return maxH;
@@ -801,6 +828,11 @@ function drawTableRow(page, row, yTop, rowH, font, fontBold, zebra, layout) {
       return;
     }
     var innerW = col.w - CELL_PAD_X * 2;
+    if (col.key === 'labs' && row.labsDiagrams) {
+      drawLabsDiagrams(page, row, tx + CELL_PAD_X, yTop, innerW, rowH, fontBold);
+      tx += col.w;
+      return;
+    }
     var cellText = cells[col.key] || '';
     var lines = cellLines(font, fontBold, cellText, innerW, rowH, col.key);
     drawCellText(page, lines, tx, col.w, innerW, yTop, rowH, font, fontBold, col.key);
@@ -969,6 +1001,14 @@ export async function renderCensusPdf(payload) {
   var font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   var fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   var rows = data.rows || [];
+  for (var row of rows) {
+    if (!row.labsDiagrams) continue;
+    try {
+      for (var img of row.labsDiagrams.images) img.pdfImage = await pdfDoc.embedPng(img.dataUrl);
+    } catch {
+      delete row.labsDiagrams; // bad image: text labs kept
+    }
+  }
   var tbl = tableLayout(rows);
   var layouts = layoutRows(rows, font, fontBold, tbl);
 
