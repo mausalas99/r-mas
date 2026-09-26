@@ -1,6 +1,7 @@
 import {
   bulkPreviewStatusLabel,
   extractLabPatientFromBulkBlock,
+  unknownLabRowsWarning,
 } from '../lab-bulk-paste.mjs';
 import { closePatientDatosModal } from '../patient-datos-modal.mjs';
 
@@ -256,6 +257,9 @@ function renderPreviewList(blocks) {
           '</div>' +
           '</div>' +
           (issues || '') +
+          (unknownLabRowsWarning([block])
+            ? '<div class="lab-bulk-preview-unknown-rows">' + esc(unknownLabRowsWarning([block])) + '</div>'
+            : '') +
           renderConflictReports(block) +
           renderBlockRawText(block) +
           '</li>'

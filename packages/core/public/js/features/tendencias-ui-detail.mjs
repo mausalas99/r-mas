@@ -2,7 +2,7 @@ import { getNotes, getPatients } from '../app-state.mjs';
 import { formatDMYDate, inferFechaLabSetFromId } from '../lab-set-date.mjs';
 import { dedupeTrendSetsForSeries, getSetTrendValueForSeries, buildTendChartLabels, parseFechaLabToMs, normalizeFechaLabHistory } from '../tend-core.mjs';
 import { cancelOverlayClose, closeOverlayAnimated } from '../ui-motion.mjs';
-import { TREND_DETAIL_DOWNSAMPLE } from '../lab-history-cache.mjs';
+import { TREND_DETAIL_DOWNSAMPLE, downsampleTrendChartSeries } from '../lab-history-cache.mjs';
 import { loadChartJs } from '../vendor-loader.mjs';
 import { rt } from './tendencias-runtime-state.mjs';
 import { aid, tendStore } from './tendencias-state.mjs';
@@ -361,23 +361,6 @@ function syncTendDetailVbar(ref, latest) {
   vbarSlot.setAttribute('aria-hidden', 'true');
 }
 
-function downsampleTrendChartSeries(labels, values, maxPoints) {
-  var slots = maxPoints == null ? TREND_DETAIL_DOWNSAMPLE : maxPoints;
-  if (!labels || !labels.length || labels.length <= slots) {
-    return { labels: labels || [], values: values || [] };
-  }
-  var outL = [];
-  var outV = [];
-  var n = labels.length;
-  for (var i = 0; i < slots; i += 1) {
-    var idx = Math.round((i * (n - 1)) / (slots - 1));
-    outL.push(labels[idx]);
-    outV.push(values[idx]);
-  }
-  return { labels: outL, values: outV };
-}
-
-
 function siblingFieldKeys(sectionKey, fieldKey, history) {
   var keys = {};
   (history || []).forEach(function (set) {
@@ -532,17 +515,18 @@ function openTendDetailAsync(sectionKey, fieldKey) {
     fieldKey
   );
   if (setsDesc.length < 2) return Promise.resolve();
-  var setsAsc = toTrendAscendingSets(setsDesc);
+  var allAsc = toTrendAscendingSets(setsDesc);
+  // Sample the sets (not just labels) so chart index → set stays true for events/clicks.
+  var sampled = downsampleTrendChartSeries(
+    allAsc,
+    allAsc.map(function (s) {
+      return getSetTrendValueForSeries(s, sectionKey, fieldKey);
+    }),
+    TREND_DETAIL_DOWNSAMPLE
+  );
+  var setsAsc = sampled.labels;
+  var values = sampled.values;
   var labels = buildTendChartLabels(setsAsc);
-  var values = setsAsc.map(function (s) {
-    return getSetTrendValueForSeries(s, sectionKey, fieldKey);
-  });
-  var sampled =
-    labels.length > TREND_DETAIL_DOWNSAMPLE
-      ? downsampleTrendChartSeries(labels, values, TREND_DETAIL_DOWNSAMPLE)
-      : { labels: labels, values: values };
-  labels = sampled.labels;
-  values = sampled.values;
   var labelParts = tendCardLabelParts(sectionKey, fieldKey);
   var title = labelParts.title;
   var unit = labelParts.unit;

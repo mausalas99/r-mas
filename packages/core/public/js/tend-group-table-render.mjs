@@ -160,9 +160,7 @@ export function renderTableHiddenBar(ctx) {
     '<button type="button" class="tend-group-hidden-bar-toggle" aria-expanded="' +
     (collapsed ? 'false' : 'true') +
     '">' +
-    '<span class="tend-section-chevron" aria-hidden="true">' +
-    (collapsed ? '▶' : '▼') +
-    '</span>' +
+    '<span class="tend-section-chevron rp-dot" aria-hidden="true"></span>' +
     '<span class="tend-group-hidden-label">Ocultos en copia (' +
     count +
     ')</span></button>' +

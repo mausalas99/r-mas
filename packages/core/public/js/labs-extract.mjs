@@ -1,5 +1,29 @@
 import { resolveLabFieldRange_ } from './labs-default-refs.mjs';
 
+/**
+ * Primer resultado numérico de `s` → { index, 1: valorStr } (forma de RegExp match), o null.
+ * «1,234.5» es separador de miles (SOME usa punto decimal) → «1234.5», no 1.234.
+ * «1e5» no es un resultado de laboratorio → null (antes se leía como 1).
+ * «<0.01» / «> 1000» conservan el signo pegado («<0.01», «>1000»): el valor real está fuera
+ * del límite de medición. `index` sigue apuntando al número.
+ */
+export function matchValorLab_(s) {
+  s = String(s || '');
+  var m = s.match(/-?\d{1,3}(?:,\d{3})+(?:\.\d+)?(?![\d,])|-?\d+[.,]?\d*/);
+  if (!m) return null;
+  if (/^[eE][+-]?\d/.test(s.slice(m.index + m[0].length))) return null;
+  var v = /^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(m[0]) ? m[0].replace(/,/g, '') : m[0];
+  var sign = s.slice(Math.max(0, m.index - 2), m.index).match(/([<>]) ?$/);
+  return { index: m.index, 1: (sign ? sign[1] : '') + v };
+}
+
+/** Número de un valor de salida («12.3», «<0.01*», «>1000») sin signo ni «*», o null. */
+export function labValueNumber_(v) {
+  if (v == null) return null;
+  var n = parseFloat(String(v).replace(/\*/g, '').replace(/^[<>]\s*/, '').replace(',', '.'));
+  return isFinite(n) ? n : null;
+}
+
 export function extraer(nombres, bloque) {
   if (!bloque) return '---';
   for (var i = 0; i < nombres.length; i++) {
@@ -35,7 +59,7 @@ export function extraerConRango(nombres, texto) {
     // Start AFTER the test name to avoid matching digits within it
     var start = idx + nombre.length;
     var sub = texto.substring(start, start + 220);
-    var mValor = sub.match(/(-?\d+[.,]?\d*)/);
+    var mValor = matchValorLab_(sub);
     if (!mValor) continue;
     var mRango = sub.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
     if (esValorDelRango_(mValor, mRango)) continue;
@@ -105,7 +129,7 @@ export function extraerConRangoBH(nombres, texto) {
       }
       var subStart = idx + nombre.length;
       var sub = texto.substring(subStart, subStart + 220);
-      var mValor = sub.match(/(-?\d+[.,]?\d*)/);
+      var mValor = matchValorLab_(sub);
       if (!mValor) {
         start = idx + nombre.length;
         continue;
@@ -144,7 +168,7 @@ function esOcurrenciaExcluidaSuero_(texto, idx, nombre) {
  * ahí, o si el "valor" es en realidad el mínimo del rango de referencia. */
 function extraerValorRangoTrasIndice_(texto, subStart) {
   var sub = texto.substring(subStart, subStart + 220);
-  var mValor = sub.match(/(-?\d+[.,]?\d*)/);
+  var mValor = matchValorLab_(sub);
   if (!mValor) return null;
   var mRango = sub.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
   if (esValorDelRango_(mValor, mRango)) return null;
@@ -199,7 +223,7 @@ export function extraerIndiceAterogenico_(texto) {
       var idx = t.indexOf(nombre, start);
       if (idx === -1) break;
       var sub = texto.substring(idx + nombre.length, idx + nombre.length + 220);
-      var mValor = sub.match(/(-?\d+[.,]?\d*)/);
+      var mValor = matchValorLab_(sub);
       if (!mValor) {
         start = idx + nombre.length;
         continue;
@@ -285,7 +309,7 @@ function parseCoagValorRango_(sub) {
   var rangoIdx = mRango ? clean.search(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/) : -1;
   // Solo números ANTES del rango = resultado. Si falta el resultado, no usar el mín. del rango.
   var beforeRango = rangoIdx >= 0 ? clean.substring(0, rangoIdx) : clean;
-  var mValor = beforeRango.match(/(-?\d+[.,]?\d*)/);
+  var mValor = matchValorLab_(beforeRango);
   if (!mValor) return null;
   return { valor: mValor[1], min: min, max: max };
 }
@@ -314,14 +338,14 @@ function shouldSkipCoagMatch_(tUpper, nombre, idx) {
 }
 
 function isImplausibleInr_(valorStr, maxInr) {
-  var inrN = parseFloat(String(valorStr || '').replace(',', '.'));
-  return isFinite(inrN) && inrN > maxInr;
+  var inrN = labValueNumber_(valorStr);
+  return inrN != null && inrN > maxInr;
 }
 
 /** Fibrinógeno >2000 mg/dL suele ser id de membrete SOME, no resultado clínico. */
 function isImplausibleFib_(valorStr) {
-  var fibN = parseFloat(String(valorStr || '').replace(',', '.'));
-  return !isFinite(fibN) || fibN < 10 || fibN > 2000;
+  var fibN = labValueNumber_(valorStr);
+  return fibN == null || fibN < 10 || fibN > 2000;
 }
 
 function tryParseCoagAt_(texto, tUpper, nombre, idx, maxInr) {
@@ -371,7 +395,7 @@ export function extraerConRangoPanel(nombres, texto) {
     var stripped = sub;
     var reName = new RegExp(nombre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
     stripped = stripped.replace(reName, ' ');
-    var mValor = stripped.match(/(-?\d+[.,]?\d*)/);
+    var mValor = matchValorLab_(stripped);
     if (!mValor) continue;
     var mRango = stripped.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
     if (esValorDelRango_(mValor, mRango)) continue;
@@ -388,17 +412,19 @@ export function extraerConRangoPanel(nombres, texto) {
 
 export function marcarSegunRango(valorStr, min, max) {
   if (valorStr === '---' || valorStr == null) return valorStr;
-  var v = parseFloat(String(valorStr).replace(',','.'));
-  if (isNaN(v) || min == null || max == null) return valorStr;
+  var v = labValueNumber_(valorStr);
+  if (v == null || min == null || max == null) return valorStr;
   return (v < min || v > max) ? valorStr + '*' : valorStr;
 }
 
 export function fmt(val) {
   if (!val || val === '---') return val;
   var star = val.endsWith('*');
-  var n = parseFloat((star ? val.slice(0,-1) : val).replace(',','.'));
+  var body = star ? val.slice(0, -1) : val;
+  var sign = /^[<>]/.test(body) ? body[0] : '';
+  var n = parseFloat(body.slice(sign.length).replace(',', '.'));
   if (isNaN(n)) return val;
-  return String(n) + (star ? '*' : '');
+  return sign + String(n) + (star ? '*' : '');
 }
 
 /**
@@ -415,6 +441,7 @@ export function fmtLabRanged_(data, fieldKey, priorRefs, defaults) {
   return fmt(marcarSegunRango(data.valor, range[0], range[1]));
 }
 
+/** Número para cálculos derivados (eTFG, BUN/Cr, AG…). «<x»/«>x» → null: sin valor exacto no se deriva. */
 export function toNum_(v) {
   if (v === '---' || v == null) return null;
   var n = parseFloat(String(v).replace(',', '.'));

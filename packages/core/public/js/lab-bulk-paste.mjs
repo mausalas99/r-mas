@@ -12,6 +12,7 @@ import {
   refreshCitoquimicoInterpretacionInResLabs_,
   extractLabReportFechaDMY,
 } from './labs.js';
+import { matchValorLab_ } from './labs-extract.mjs';
 import { getLabHistory } from './app-state.mjs';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory, parseFechaLabToMs, sortLabHistoryChronological } from './tend-core.mjs';
 import { normalizeLabLine } from './lab-history-auto-store-core.mjs';
@@ -148,7 +149,10 @@ function parseReportChunk(reportText, reportIndex, findPatient, batchBhValues) {
       priorRefsBySection: priorRefs,
       priorBhValues: priorBhValues,
     });
-    if (!result.resLabs) result.resLabs = [];
+    // A header with no readable result (cut-off copy) must not admit a patient or count as saved.
+    if (!result.resLabs || !result.resLabs.length) {
+      return parseReportChunkFailure(reportIndex, 'Sin resultados de laboratorio legibles en este reporte');
+    }
     return parseReportChunkSuccess(reportText, reportIndex, result);
   } catch (e) {
     return parseReportChunkFailure(reportIndex, e && e.message ? e.message : 'Error al parsear');
@@ -259,6 +263,90 @@ export function mixedExpedienteWarning(blocks) {
   );
 }
 
+/** Standard SOME rows R+ leaves out on purpose (never «no reconocidas»). Grow as real reports show more. */
+var LAB_ROWS_READ_NOT_STORED = { LYM: 1, MONO: 1, BASO: 1, 'RELACION A/G': 1, 'EX. BASE': 1, 'SAT 02': 1, 'SAT O2': 1 };
+var LAB_TABLE_HEAD = 'Estudio\t\tResultado\tUnidades\tValor de Referencia';
+/** probe text → procesarLabs output key. Names repeat across pastes, so probes stay few. */
+var labProbeCache = new Map();
+
+function isFlagCell_(c) {
+  return !c || /^[*A-Z]$/.test(c);
+}
+
+function probeLabRows_(header, ctx, rowLines) {
+  var mini = header.concat(ctx, [LAB_TABLE_HEAD], rowLines).join('\n');
+  if (!labProbeCache.has(mini)) {
+    var key;
+    try {
+      var res = procesarLabs(mini, {});
+      var extras = res.bhExtras && Object.keys(res.bhExtras).length ? res.bhExtras : null;
+      key = (res.resLabs && res.resLabs.length) || extras ? JSON.stringify([res.resLabs, extras]) : '';
+    } catch {
+      key = null; // never warn on a probe crash
+    }
+    labProbeCache.set(mini, key);
+  }
+  return labProbeCache.get(mini);
+}
+
+/**
+ * SOME table rows with a numeric result that procesarLabs reads nothing from.
+ * Probe 1: the row alone under its section titles. Probe 2 (panels such as gaso
+ * that need an anchor row like PH): the section's known rows with vs without it.
+ * ponytail: text-only results (NEGATIVO) are never flagged — a probe cannot tell an
+ * unknown text row from a known one read only in its full panel.
+ * @returns {string[]}
+ */
+export function unknownLabRowNames(reportText) {
+  var header = [];
+  var titles = [];
+  var inTable = false;
+  var rows = [];
+  String(reportText || '').split(/\r?\n/).forEach(function (line) {
+    var cells = line.split('\t').map(function (c) { return c.trim(); });
+    if (/^[^\t]+:\t/.test(line)) { header.push(line); return; }
+    if (/^Estudio\t/i.test(line)) { inTable = true; return; }
+    if (cells.length < 4 || !cells[0]) {
+      if (line.trim() && line.indexOf('\t') < 0) titles.push(line.trim());
+      return;
+    }
+    if (!inTable) return;
+    var result = cells.slice(1).find(function (c) { return !isFlagCell_(c); }) || '';
+    if (LAB_ROWS_READ_NOT_STORED[cells[0].toUpperCase()] || !matchValorLab_(result)) return;
+    var ctx = titles.slice(-2);
+    rows.push({ name: cells[0], line: line, ctx: ctx, ctxKey: ctx.join('|'), probe: probeLabRows_(header, ctx, [line]) });
+  });
+  var out = [];
+  rows.forEach(function (r) {
+    if (r.probe !== '' || out.indexOf(r.name) >= 0) return;
+    var anchors = rows
+      .filter(function (o) { return o.ctxKey === r.ctxKey && o.probe; })
+      .map(function (o) { return o.line; });
+    if (anchors.length) {
+      var without = probeLabRows_(header, r.ctx, anchors);
+      var withRow = probeLabRows_(header, r.ctx, anchors.concat([r.line]));
+      if (without == null || withRow == null || withRow !== without) return;
+    }
+    out.push(r.name);
+  });
+  return out;
+}
+
+/** «N filas no reconocidas no se guardaron: A, B, C…» for the saved blocks, or null. */
+export function unknownLabRowsWarning(blocks) {
+  var names = [];
+  (blocks || []).forEach(function (b) {
+    (b && b.unknownRowNames || []).forEach(function (n) {
+      if (names.indexOf(n) < 0) names.push(n);
+    });
+  });
+  if (!names.length) return null;
+  return (
+    names.length + (names.length === 1 ? ' fila no reconocida no se guardó: ' : ' filas no reconocidas no se guardaron: ') +
+    names.slice(0, 3).join(', ') + (names.length > 3 ? '…' : '')
+  );
+}
+
 function collectReportDays(usableReports) {
   var days = [];
   usableReports.forEach(function (r) {
@@ -366,6 +454,9 @@ function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
     status: status,
     canProcess: !isMixed && !!match && usableReports.length > 0,
     conflictReports: conflictReports,
+    unknownRowNames: usableReports.reduce(function (acc, r) {
+      return acc.concat(unknownLabRowNames(r.reportText));
+    }, []),
     rawText: String(blockText || '').trim(),
   };
 }

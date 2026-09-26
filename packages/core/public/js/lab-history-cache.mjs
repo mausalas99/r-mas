@@ -8,6 +8,37 @@ export const TREND_CATALOG_WINDOW = 12;
 export const TREND_DETAIL_DOWNSAMPLE = 100;
 export const TREND_REFRESH_DEBOUNCE_MS = 80;
 
+/**
+ * Cuts a long series to at most `maxPoints` while keeping each bucket's lowest and
+ * highest value, so one extreme day never vanishes from the chart. First and last
+ * points always stay. Output keeps the original order. `labels` may be any parallel
+ * array (e.g. the lab sets themselves).
+ */
+export function downsampleTrendChartSeries(labels, values, maxPoints) {
+  var slots = maxPoints == null ? TREND_DETAIL_DOWNSAMPLE : maxPoints;
+  var n = labels ? labels.length : 0;
+  if (!n || n <= slots) return { labels: labels || [], values: values || [] };
+  var keep = [0];
+  var buckets = Math.floor((slots - 2) / 2);
+  for (var b = 0; b < buckets; b += 1) {
+    var from = 1 + Math.floor((b * (n - 2)) / buckets);
+    var to = 1 + Math.floor(((b + 1) * (n - 2)) / buckets);
+    var lo = from;
+    var hi = from;
+    for (var i = from; i < to; i += 1) {
+      if (Number(values[i]) < Number(values[lo])) lo = i;
+      if (Number(values[i]) > Number(values[hi])) hi = i;
+    }
+    if (to > from) keep.push(Math.min(lo, hi));
+    if (hi !== lo) keep.push(Math.max(lo, hi));
+  }
+  keep.push(n - 1);
+  return {
+    labels: keep.map(function (i) { return labels[i]; }),
+    values: keep.map(function (i) { return values[i]; }),
+  };
+}
+
 /** @type {Record<string, number>} */
 var _revisionByPatient = Object.create(null);
 

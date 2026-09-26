@@ -3,6 +3,7 @@
  */
 import { bhFieldKeyFromOutputLabel, flattenBhHemOnlyVisible } from './labs-bh.mjs';
 import { insertSpaceAfterCultivoKeyword_ } from './labs-cultivo-scan.mjs';
+import { labValueNumber_ } from './labs-extract.mjs';
 
 function normalizeGasometryInterpretationLine_(line) {
   var s = String(line == null ? '' : line);
@@ -59,7 +60,7 @@ function fieldLabelsByValueIndex_(tokens) {
       i++;
       continue;
     }
-    if (!isNaN(parseFloat(next.replace('*', '')))) {
+    if (labValueNumber_(next) != null) {
       map[i + 1] = label;
       i += 2;
     } else {

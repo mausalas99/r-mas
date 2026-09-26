@@ -191,9 +191,7 @@ function buildTendenciaSectionHtml(sectionKey, list, seriesIndex) {
     '"><div class="tend-section-head">' +
     '<button type="button" class="tend-section-toggle" aria-expanded="' +
     (expanded ? 'true' : 'false') +
-    '"><span class="tend-section-chevron" aria-hidden="true">' +
-    (expanded ? '▼' : '▶') +
-    '</span><span class="tend-section-title">' +
+    '"><span class="tend-section-chevron rp-dot" aria-hidden="true"></span><span class="tend-section-title">' +
     tc.esc(secLabel) +
     '</span></button><span class="tend-section-toggle-end"><span class="tend-section-count">' +
     list.length +

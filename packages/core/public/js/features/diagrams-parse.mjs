@@ -2,6 +2,7 @@
 import { parseBhTrendValuesFromResLab } from "../labs.js";
 import { tendEligibleSectionKey } from "../tend-core.mjs";
 import { normalizeTropTrendFields_ } from "../labs-troponin.mjs";
+import { labValueNumber_ } from "../labs-extract.mjs";
 
 export function parsearSecciones(resLabs) {
   var secs = {};
@@ -18,7 +19,7 @@ export function parsearSecciones(resLabs) {
         continue;
       }
       var next = tokens[i + 1];
-      if (next !== undefined && !isNaN(parseFloat(next.replace("*", "")))) {
+      if (next !== undefined && labValueNumber_(next) != null) {
         vals[tok] = { val: next.replace("*", ""), ab: next.endsWith("*") };
         i += 2;
       } else {
@@ -42,7 +43,7 @@ export function extractParsedValues(resLabs) {
   var secs = parsearSecciones(resLabs);
   function num(sec, key) {
     var v = g(secs, sec, key);
-    return v ? parseFloat(v.val) : null;
+    return v ? labValueNumber_(v.val) : null;
   }
   return {
     Hb: num("BH", "Hb"),
@@ -80,8 +81,8 @@ export function buildParsedBySectionFromResLabs(resLabs, bhExtras) {
     Object.keys(tbl).forEach(function (k) {
       var cell = tbl[k];
       if (!cell || cell.val == null || cell.val === "---") return;
-      var n = parseFloat(String(cell.val).replace(/\*/g, "").replace(",", "."));
-      if (!isFinite(n)) return;
+      var n = labValueNumber_(cell.val);
+      if (n == null) return;
       row[k] = n;
     });
     if (Object.keys(row).length) {
@@ -96,8 +97,8 @@ export function buildParsedBySectionFromResLabs(resLabs, bhExtras) {
     Object.keys(bhCells).forEach(function (k) {
       var cell = bhCells[k];
       if (!cell || cell.val == null || cell.val === "---") return;
-      var n = parseFloat(String(cell.val).replace(/\*/g, "").replace(",", "."));
-      if (!isFinite(n)) return;
+      var n = labValueNumber_(cell.val);
+      if (n == null) return;
       if (!out.BH) out.BH = {};
       if (out.BH[k] == null) out.BH[k] = n;
     });
@@ -105,8 +106,8 @@ export function buildParsedBySectionFromResLabs(resLabs, bhExtras) {
   if (bhExtras && typeof bhExtras === "object") {
     if (!out.BH) out.BH = {};
     Object.keys(bhExtras).forEach(function (k) {
-      var n = parseFloat(String(bhExtras[k]).replace(/\*/g, "").replace(",", "."));
-      if (isFinite(n) && out.BH[k] == null) out.BH[k] = n;
+      var n = labValueNumber_(bhExtras[k]);
+      if (n != null && out.BH[k] == null) out.BH[k] = n;
     });
   }
   return out;
