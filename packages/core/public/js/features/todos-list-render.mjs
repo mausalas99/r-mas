@@ -598,9 +598,8 @@ export function appendGroupedTodoSections(list, todos, preservedRow, preserveTod
   });
 }
 
-export function renderTodoFormIn(container, idPrefix) {
+export function renderTodoFormIn(container, _idPrefix) {
   if (!container) return;
-  idPrefix = idPrefix == null ? '' : String(idPrefix);
 
   if (!aid()) {
     while (container.firstChild) container.removeChild(container.firstChild);

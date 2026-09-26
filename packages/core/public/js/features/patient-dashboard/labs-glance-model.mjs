@@ -102,10 +102,6 @@ function tokenStatsFromTokens(tokens) {
   return { chips, normalCount, valuesByLabel };
 }
 
-function alteredChipsFromTokens(tokens) {
-  return tokenStatsFromTokens(tokens).chips;
-}
-
 function countLabSections(labRows) {
   const seen = new Set();
   labRows.forEach((row) => {

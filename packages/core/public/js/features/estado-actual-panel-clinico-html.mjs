@@ -192,7 +192,7 @@ export function renderSoporteCalcHintsHtml(ec, vitalsCtx) {
  * @param {Record<string, unknown>} ec
  * @param {{ fr?: unknown, sat?: unknown, pesoKg?: unknown, lab?: unknown }} [vitalsCtx]
  */
-export function renderSoporteVentilatorioBlockHtml(ec, vitalsCtx) {
+export function renderSoporteVentilatorioBlockHtml(ec, _vitalsCtx) {
   var tier = soporteTier(ec.soporte != null ? String(ec.soporte) : '');
   if (!tier) return '';
   return renderSoporteParamsHtml(ec, tier);
