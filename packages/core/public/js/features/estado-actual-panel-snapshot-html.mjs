@@ -197,6 +197,11 @@ function resolveVitalStamp(reading, fallbackKey, snapshot) {
   return '';
 }
 
+function todayDayMonth() {
+  var d = new Date();
+  return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
 /**
  * @param {{ label: string, value: string, unit: string, stamp: string, vitalKey: string, altered: boolean, hasHistory: boolean }} opts
  */
@@ -208,7 +213,8 @@ function renderSnapshotVitalRow(opts) {
   var unitHtml = opts.unit
     ? '<span class="ea-snapshot-row-unit">' + escHtml(opts.unit) + '</span>'
     : '';
-  var stampHtml = opts.stamp
+  // Today's date on every vital is noise: only an older reading shows its date.
+  var stampHtml = opts.stamp && opts.stamp !== todayDayMonth()
     ? '<span class="ea-snapshot-row-stamp">' + escHtml(opts.stamp) + '</span>'
     : '<span class="ea-snapshot-row-stamp ea-snapshot-row-stamp--empty" aria-hidden="true"></span>';
   return (

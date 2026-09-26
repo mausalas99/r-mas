@@ -102,6 +102,23 @@ test('renderSnapshotVitalsHtml — muestra dd/mm sin hora en la franja compacta'
   assert.match(html, /ea-snapshot-row--altered/);
 });
 
+test('renderSnapshotVitalsHtml — oculta la fecha de hoy, conserva las viejas', () => {
+  var now = new Date();
+  var old = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3, 6, 0, 0);
+  /** @type {any} */
+  var snap = {
+    vitals: { fc: 80, temp: 36.5 },
+    vitalSeries: {
+      fc: [{ value: 80, recordedAt: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 6, 0, 0).toISOString() }],
+      temp: [{ value: 36.5, recordedAt: old.toISOString() }],
+    },
+  };
+  var html = renderSnapshotVitalsHtml(snap);
+  var oldStamp = String(old.getDate()).padStart(2, '0') + '/' + String(old.getMonth() + 1).padStart(2, '0');
+  assert.equal((html.match(/ea-snapshot-row-stamp">/g) || []).length, 1);
+  assert.match(html, new RegExp('ea-snapshot-row-stamp">' + oldStamp + '<'));
+});
+
 test('vitalHasHistory y historial modal — FC con lecturas previas', () => {
   /** @type {any} */
   var snap = {

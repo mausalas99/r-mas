@@ -20,6 +20,7 @@ import {
   IO_TURNO_EVENT_KINDS,
   ioTurnosBreakdown,
   evacFromTurnos,
+  toEaSalidaText,
 } from './estado-actual-io.mjs';
 import { persistEstadoClinicoLight } from './estado-actual-panel-clinico.mjs';
 import { VITAL_KEYS } from './estado-actual-panel-constants.mjs';
@@ -144,7 +145,7 @@ export function readIoExtraPartsFromForm(form) {
     if (kind === IO_EXTRA_CUSTOM_VALUE) {
       var customEl = ioExtraCustomInput(row);
       var name = customEl && 'value' in customEl ? String(customEl.value).trim() : '';
-      meta = name ? { kind: 'custom', label: name.toUpperCase() } : null;
+      meta = name ? { kind: 'custom', label: toEaSalidaText(name) } : null;
     } else {
       meta = IO_EXTRA_SOURCE_KINDS.find(function (k) { return k.kind === kind; });
     }

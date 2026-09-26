@@ -4,12 +4,13 @@
 
 /**
  * Texto visible al usuario (vista previa, SOAP, balance en vivo): siempre mayúsculas.
+ * µ se queda: su mayúscula es la Μ griega y «µG» se leería «MG» (1000×).
  * @param {unknown} raw
  * @returns {string}
  */
 export function toEaSalidaText(raw) {
   if (raw == null || raw === '') return '';
-  return String(raw).toUpperCase();
+  return String(raw).split('µ').map(function (s) { return s.toUpperCase(); }).join('µ');
 }
 
 /**
@@ -204,7 +205,7 @@ export function parseIoEvacField(raw) {
   }
   var n2 = parseIoNumber(s);
   if (n2 != null) return n2;
-  return s.toUpperCase();
+  return toEaSalidaText(s);
 }
 
 /**
@@ -234,7 +235,7 @@ function parseSegmentValue(seg) {
   }
   var n2 = parseIoNumber(s);
   if (n2 != null) return n2;
-  return s.toUpperCase();
+  return toEaSalidaText(s);
 }
 
 /**
@@ -452,8 +453,8 @@ export function formatEgresoPartForText(part) {
       ? 'NC'
       : isIoNumericValue(val)
         ? String(val) + ' CC'
-        : String(val).toUpperCase();
-  return part.label.toUpperCase() + ' ' + valStr;
+        : toEaSalidaText(val);
+  return toEaSalidaText(part.label) + ' ' + valStr;
 }
 
 /**
@@ -543,7 +544,7 @@ export function formatEvacForText(evac) {
   var norm = normalizeEvacAbbrev(evac);
   if (norm === 'NC' || String(norm).toUpperCase() === 'NC') return 'NC';
   if (isIoNumericValue(evac)) return String(evac);
-  return String(evac).toUpperCase();
+  return toEaSalidaText(evac);
 }
 
 /** @param {string[]} clauses @param {unknown} egr */
@@ -551,7 +552,7 @@ function appendLegacyEgrClause(clauses, egr) {
   var egrNorm = normalizeIoNcAbbrev(egr);
   if (isIoNumericValue(egrNorm)) clauses.push('DIURESIS ' + String(egrNorm) + ' CC');
   else if (egrNorm === 'NC') clauses.push('DIURESIS NC');
-  else clauses.push(String(egrNorm).toUpperCase());
+  else clauses.push(toEaSalidaText(egrNorm));
 }
 
 /** @param {string[]} clauses @param {{ egr?: unknown, egrParts?: IoEgresoPart[] }} io */
@@ -648,7 +649,7 @@ export function formatIoTurnoEvent(ev) {
   var meta = IO_TURNO_EVENT_KINDS.find(function (k) { return k.kind === ev.kind; });
   if (!meta) return '';
   var turno = ev.turno ? String(ev.turno).toUpperCase() + ' ' : '';
-  var detail = ev.detail != null && String(ev.detail).trim() ? String(ev.detail).trim().toUpperCase() : '';
+  var detail = ev.detail != null && String(ev.detail).trim() ? toEaSalidaText(String(ev.detail).trim()) : '';
   var ml = parseIoNumber(ev.ml);
   if (meta.kind === 'furosemida') {
     var dose = detail ? ' ' + (/^\d+([.,]\d+)?$/.test(detail) ? detail + ' MG' : detail) : '';

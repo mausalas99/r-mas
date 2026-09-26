@@ -77,7 +77,57 @@ test('renderMedCategoryGrid avanza día de ATB sin reimportar SOME', () => {
     },
   };
   const html = renderMedCategoryGrid(m, 'p1', receta, undefined, new Date(2026, 7, 13));
-  assert.match(html, /ea-med-item-text[^>]*>[^<]*DIA 8/);
-  assert.doesNotMatch(html, /ea-med-item-text[^>]*>[^<]*DÍA 5/);
-  assert.doesNotMatch(html, /ea-med-item-text[^>]*>[^<]*DIA 5/);
+  assert.match(html, /ea-med-item-text" title="[^"]*DIA 8/);
+  assert.doesNotMatch(html, /ea-med-item-text" title="[^"]*DÍA 5/);
+  assert.doesNotMatch(html, /ea-med-item-text" title="[^"]*DIA 5/);
+});
+
+test('renderMedCategoryGrid titula "NM" junto a Antidiabéticos', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.nm = serializeMedFieldItems([
+    'INSULINA GLARGINA 30UI SC C/24H',
+    'ACIDO FOLICO 5MG VO C/24H',
+  ]);
+  const html = renderMedCategoryGrid(m, null, {});
+  assert.match(html, /Antidiabéticos[\s\S]*INSULINA GLARGINA[\s\S]*ea-med-subcat-title">NM<[\s\S]*ACIDO FOLICO/);
+  assert.match(html, /data-ea-med-remove="nm" data-ea-med-idx="1"/);
+  m.estadoClinico.nm = 'ACIDO FOLICO 5MG VO C/24H';
+  assert.doesNotMatch(renderMedCategoryGrid(m, null, {}), /ea-med-subcat/);
+});
+
+test('renderMedCategoryGrid fija cada categoría a su mitad', () => {
+  const colOf = (html, key) => {
+    const i = html.indexOf('data-ea-med-cat="' + key + '"');
+    return html.slice(0, i).match(/data-ea-med-col="(\d)"/g).pop();
+  };
+  const a = emptyMonitoreo();
+  a.estadoClinico.estatinas = 'ATORVASTATINA 40MG VO C/24H';
+  a.estadoClinico.nm = 'LEVOTIROXINA 175MCG VO C/24H';
+  const b = emptyMonitoreo();
+  b.estadoClinico.analgesia = 'PARACETAMOL 1 G VO C/8H';
+  b.estadoClinico.abx = 'CEFTRIAXONA 1 G IV C/24H';
+  b.estadoClinico.estatinas = 'ATORVASTATINA 40MG VO C/24H';
+  b.estadoClinico.nm = 'LEVOTIROXINA 175MCG VO C/24H';
+  const ha = renderMedCategoryGrid(a, null, {});
+  const hb = renderMedCategoryGrid(b, null, {});
+  assert.equal((ha.match(/class="ea-med-col"/g) || []).length, 2);
+  assert.equal(colOf(ha, 'estatinas'), colOf(hb, 'estatinas'));
+  assert.equal(colOf(ha, 'nm'), colOf(hb, 'nm'));
+  assert.equal(colOf(hb, 'nm'), 'data-ea-med-col="1"');
+  assert.equal(colOf(hb, 'abx'), 'data-ea-med-col="0"');
+});
+
+test('renderMedCategoryGrid separa nombre y dosis sin perder texto', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.antihta = serializeMedFieldItems(['NIFEDIPINO 30MG VO C/24H', 'RESCATES DE INSULINA']);
+  const html = renderMedCategoryGrid(m, null, {});
+  assert.match(html, /<span class="ea-med-item-name">NIFEDIPINO<\/span> <span class="ea-med-item-dose">30MG VO C\/24H<\/span>/);
+  assert.match(html, /title="RESCATES DE INSULINA">RESCATES DE INSULINA</);
+});
+
+test('grupo plegado muestra solo nombres de fármacos', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.antihta = serializeMedFieldItems(['NIFEDIPINO 30MG VO C/24H', 'TELMISARTAN 40MG VO C/24H']);
+  const html = renderMedCategoryGrid(m, null, {});
+  assert.match(html, /ea-med-cat-preview ea-muted">NIFEDIPINO · TELMISARTAN</);
 });

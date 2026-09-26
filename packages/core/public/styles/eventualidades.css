@@ -101,33 +101,6 @@
   background: color-mix(in oklab, var(--action) 6%, transparent);
 }
 
-.ev-day__chevron {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  border-radius: var(--radius-sm);
-  background: color-mix(in oklab, var(--action) 12%, var(--surface));
-  position: relative;
-  transition: transform 0.2s ease, background 0.15s ease;
-}
-
-.ev-day__chevron::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 6px;
-  height: 6px;
-  border-right: 2px solid var(--action);
-  border-bottom: 2px solid var(--action);
-  transform: translateY(-1px) rotate(45deg);
-}
-
-.ev-day[open] .ev-day__chevron {
-  transform: rotate(180deg);
-  background: color-mix(in oklab, var(--action) 18%, var(--surface));
-}
-
 .ev-day__titles {
   display: flex;
   flex-direction: column;
@@ -426,6 +399,7 @@
 
 .ev-compose__submit {
   min-width: 7.5rem;
+  border-radius: var(--radius-pill);
 }
 
 html.dark .ev-day {
@@ -462,7 +436,6 @@ html.dark .ev-compose__input:focus {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ev-day__chevron,
   .ev-card__foot {
     transition: none;
   }

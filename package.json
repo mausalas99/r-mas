@@ -59,6 +59,7 @@
     "e2e:agenda": "node scripts/e2e/agenda.e2e.mjs",
     "e2e:nota-evolucion": "node scripts/e2e/nota-evolucion.e2e.mjs",
     "e2e:estado-actual": "node scripts/e2e/estado-actual.e2e.mjs",
+    "e2e:estado-actual-stress": "node scripts/e2e/estado-actual-stress.e2e.mjs",
     "e2e:listado": "node scripts/e2e/listado.e2e.mjs",
     "e2e:vpo": "node scripts/e2e/vpo.e2e.mjs",
     "e2e:admin-code": "node scripts/e2e/admin-code.e2e.mjs",

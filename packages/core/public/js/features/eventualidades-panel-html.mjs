@@ -67,7 +67,7 @@ function renderDaySection(dayGroup, editingId, now, dayOpenPrefs) {
     esc(dayGroup.day) +
     '">' +
     '<summary class="ev-day__summary">' +
-    '<span class="ev-day__chevron" aria-hidden="true"></span>' +
+    '<span class="rp-dot" aria-hidden="true"></span>' +
     '<div class="ev-day__titles">' +
     '<span class="ev-day__pill">' +
     esc(dayGroup.label) +

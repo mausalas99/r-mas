@@ -1,3 +1,4 @@
+import { toEaSalidaText } from './estado-actual-io.mjs';
 import { isDietaSuplemento, isDietaAyuno, isDietaParenteral } from './estado-actual-data.mjs';
 
 /**
@@ -5,7 +6,7 @@ import { isDietaSuplemento, isDietaAyuno, isDietaParenteral } from './estado-act
  * @returns {string}
  */
 function upperVal(v) {
-  return v ? String(v).toUpperCase() : '___';
+  return v ? toEaSalidaText(v) : '___';
 }
 
 /**
