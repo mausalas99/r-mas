@@ -1,3 +1,4 @@
+import { copyToClipboardSafe } from '../soap-estado.mjs';
 import { confirmAction, fmtRole } from './panel-admin-helpers.mjs';
 import { rewrapRoomDekForNewCode } from './room-dek.mjs';
 import { joinRoomByCode } from './panel-conexion-handlers.mjs';
@@ -131,8 +132,19 @@ function deleteNetworkPatientAction(btn, deps) {
   }
 }
 
+/** «Copiar invitación» from a sala card's ··· menu: the room code. */
+function copyRoomInviteAction(btn, deps) {
+  const code = btn.getAttribute('data-room-code') || '';
+  if (!code) return;
+  btn.closest('details')?.removeAttribute('open');
+  void copyToClipboardSafe(code).then((ok) =>
+    deps.toast(ok ? 'Código ' + code + ' copiado.' : 'No se pudo copiar el código.', ok ? 'success' : 'error')
+  );
+}
+
 const ROOM_ACTIONS = {
   'room-detail': roomDetailAction,
+  'copy-room-invite': copyRoomInviteAction,
   'rotate-code': rotateCodeAction,
   'purge-room': purgeRoomAction,
   'switch-network-room': switchNetworkRoomAction,
@@ -407,6 +419,8 @@ async function handlePromoteSelf(deps) {
     if (!(await confirmAction('¿Promover tu cuenta a admin en la nube?'))) return;
     await deps.getApi().adminPromote(userId, 'admin');
     deps.toast('Cuenta promovida a admin.', 'success');
+    // Once admin, the key box has done its job.
+    deps.root.querySelector('[data-admin-bootstrap]')?.remove();
     // The panel's first loads ran before the promotion (403): load them again as admin.
     reloadAdminData(deps);
   } catch (err) {

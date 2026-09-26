@@ -1,15 +1,40 @@
 import { adminTableHtml } from './panel-admin-helpers.mjs';
 import {
   adminErrorHtml,
+  applyAdminSalasFilters,
   applyCachedLabVerifications,
   mutationsListHtml,
+  networkCensusRows,
   redCensusHtml,
+  resumenExtrasHtml,
   resumenHtml,
   roomDetailHtml,
   salasTableHtml,
   roomDetailHostHtml,
   userActionsHtml,
 } from './panel-admin-html.mjs';
+import { getCloudSyncRoomId } from './settings.mjs';
+
+/** What each section loaded, so the Resumen can reuse it without refetching. @param {HTMLElement} root */
+function adminData(root) {
+  root._adminData ||= { rooms: null, patients: null };
+  return root._adminData;
+}
+
+/** @param {HTMLElement} root @param {string} tab @param {number | null} n */
+function setAdminCount(root, tab, n) {
+  const el = root.querySelector('[data-admin-count="' + tab + '"]');
+  if (el) el.textContent = n == null ? '' : String(n);
+}
+
+/** Resumen's attention list, space bars and patient card. @param {HTMLElement} root */
+export function renderAdminResumenExtras(root) {
+  const d = adminData(root);
+  const extras = root.querySelector('[data-admin-resumen-extras]');
+  if (extras) extras.innerHTML = resumenExtrasHtml(d);
+  const card = root.querySelector('[data-admin-stat="patients"] .cloud-sync-admin-card-value');
+  if (card && d.patients) card.textContent = String(d.patients.filter((p) => !p.archived).length);
+}
 import { fetchNetworkCensus } from './network-census.mjs';
 import { autoVerifyStaleNetworkLabs } from './panel-admin-labs-verify.mjs';
 import {
@@ -27,6 +52,8 @@ export async function loadAdminResumen(root, getApi) {
   try {
     const data = await getApi().adminOverview();
     el.innerHTML = resumenHtml(data);
+    setAdminCount(root, 'equipos', Number(data?.counts?.users ?? 0));
+    renderAdminResumenExtras(root);
   } catch (err) {
     el.innerHTML = adminErrorHtml(err?.data?.message || err?.message || 'No se pudo cargar el resumen.');
   }
@@ -45,7 +72,14 @@ export async function loadAdminSalas(root, getApi, ctx) {
     ctx.roomsCache.length = 0;
     ctx.roomsCache.push(...(data.rooms || []));
     ctx.updateMutacionesRoomSelect();
-    el.innerHTML = salasTableHtml(ctx.roomsCache) + (ctx.openRoomDetailId ? roomDetailHostHtml() : '');
+    el.innerHTML =
+      salasTableHtml(ctx.roomsCache, getCloudSyncRoomId()) + (ctx.openRoomDetailId ? roomDetailHostHtml() : '');
+    applyAdminSalasFilters(root);
+    const months = ctx.roomsCache.map((r) => String(r.turnKey || '')).sort();
+    const latest = months[months.length - 1] || '';
+    setAdminCount(root, 'salas', ctx.roomsCache.filter((r) => String(r.turnKey || '') === latest).length);
+    adminData(root).rooms = ctx.roomsCache.filter((r) => String(r.turnKey || '') === latest);
+    renderAdminResumenExtras(root);
     if (ctx.openRoomDetailId) await ctx.loadRoomDetail(ctx.openRoomDetailId);
   } catch (err) {
     el.innerHTML = adminErrorHtml(err?.data?.message || err?.message || 'No se pudieron cargar las salas.');
@@ -84,6 +118,10 @@ export async function loadAdminNetworkCensus(root, deps) {
     const census = await fetchNetworkCensus(deps.getApi());
     const scope = clinicalSessionContext.scopeContext || getClinicalScopeContextForEvaluate();
     el.innerHTML = redCensusHtml(census, scope.users || []);
+    const rows = networkCensusRows(census, scope.users || []);
+    adminData(root).patients = rows;
+    setAdminCount(root, 'red', rows.filter((r) => !r.archived).length);
+    renderAdminResumenExtras(root);
     applyCachedLabVerifications(root);
     void autoVerifyStaleNetworkLabs(root);
   } catch (err) {
