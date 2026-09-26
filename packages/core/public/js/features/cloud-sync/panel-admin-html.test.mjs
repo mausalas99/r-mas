@@ -13,6 +13,7 @@ import {
   markNetworkRowLabsVerified,
   setSelectAllVisibleNetwork,
   peligroHtml,
+  resumenExtrasHtml,
 } from './panel-admin-html.mjs';
 
 function isoDaysAgo(n) {
@@ -34,6 +35,11 @@ describe('buildAdminShellHtml', () => {
     assert.match(html, /data-admin-tab="mutaciones"/);
     assert.match(html, /data-admin-tab="peligro"/);
     assert.match(html, /data-admin-section="resumen"/);
+    // Side menu: Pacientes / Registro labels, Zona de peligro after the spacer.
+    assert.match(html, /aria-orientation="vertical"/);
+    assert.match(html, />Pacientes</);
+    assert.match(html, />Registro</);
+    assert.ok(html.indexOf('cloud-sync-admin-nav-spacer') < html.indexOf('data-admin-tab="peligro"'));
     assert.doesNotMatch(html, /<details/);
     assert.doesNotMatch(html, /cloud-sync-admin-title/);
     assert.doesNotMatch(html, /Consola de operaciones/);
@@ -54,16 +60,37 @@ describe('buildAdminShellHtml', () => {
 });
 
 describe('resumenHtml', () => {
-  it('uses two-column stats with wide storage cell', () => {
+  it('board «Admin · Resumen»: four cards, the patient card fills in later', () => {
     const html = resumenHtml({
-      counts: { users: 2, rooms: 3, members: 4, storageBytes: 1024 },
+      counts: { users: 2, rooms: 3, members: 1, storageBytes: 1024 },
       meters: { storageSoftBytes: 25e6, storageHardBytes: 50e6, maxMembersPerRoom: 12 },
     });
-    assert.match(html, /cloud-sync-admin-stats__wide/);
-    assert.match(html, /Almacenamiento/);
+    const labels = [...html.matchAll(/cloud-sync-admin-card-label">([^<]+)</g)].map((m) => m[1]);
+    assert.deepEqual(labels, ['Salas activas', 'Usuarios', 'Pacientes', 'Espacio usado']);
     assert.match(html, /1\.0 KB/);
-    assert.match(html, /cloud-sync-admin-stat-meta/);
+    assert.match(html, /1 lugar en salas/);
+    assert.match(html, /data-admin-stat="patients"/);
+    assert.match(html, /data-admin-resumen-extras/);
     assert.match(html, /data-admin-action="refresh-resumen"/);
+  });
+
+  it('resumenExtrasHtml: needs-attention items and space per sala, largest first', () => {
+    const html = resumenExtrasHtml({
+      rooms: [
+        { sala: 'Sala 1', storageBytes: 300 * 1024 },
+        { sala: 'Sala 2', storageBytes: 1.5 * 1024 * 1024 },
+      ],
+      patients: [
+        { sala: 'Área A', nombre: '(sin nombre)', staleLabs: false },
+        { sala: 'Sala 1', nombre: 'DEMO', staleLabs: true, archived: false },
+        { sala: 'Sala 1', nombre: 'DEMO 2', staleLabs: true, archived: true },
+      ],
+    });
+    assert.match(html, /1 paciente sin nombre en Área A/);
+    assert.match(html, /1 paciente activo sin labs recientes/);
+    assert.match(html, /Sala 2 usa 1\.50 MB/);
+    assert.ok(html.indexOf('>Sala 2<') < html.indexOf('>Sala 1<'), 'largest sala first');
+    assert.equal(resumenExtrasHtml({ rooms: [], patients: null }), '');
   });
 });
 
@@ -477,6 +504,24 @@ describe('salasTableHtml', () => {
     assert.match(html, /Torre HU/);
     assert.doesNotMatch(html, />Storage</);
     assert.doesNotMatch(html, /1 · 2 · E/);
+  });
+
+  it('board «Admin · Salas»: cards, «Tu sala», purge only inside the ··· menu', () => {
+    const html = salasTableHtml(
+      [
+        { id: 'r1', sala: 'Sala 1', turnKey: '2026-09', code: 'RC65RH', revision: 3, memberCount: 1, storageBytes: 10 },
+        { id: 'r0', sala: 'Sala 1', turnKey: '2026-08', code: 'OLD111', revision: 9, memberCount: 2, storageBytes: 20 },
+      ],
+      'r1'
+    );
+    assert.equal((html.match(/data-admin-sala-card/g) || []).length, 2);
+    assert.match(html, /is-mine/);
+    assert.match(html, /Tu sala/);
+    assert.match(html, /1 miembro · Rev\. 3/);
+    assert.match(html, /<option value="2026-09" selected>Septiembre 2026<\/option>/);
+    assert.doesNotMatch(html, /cloud-sync-btn--danger[^>]*purge-room/);
+    assert.match(html, /<details class="cloud-sync-admin-more[\s\S]*data-admin-action="purge-room"/);
+    assert.match(html, /data-admin-action="copy-room-invite" data-room-code="RC65RH"/);
   });
 });
 

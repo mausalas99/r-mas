@@ -8,40 +8,71 @@ import { getCachedLabVerify } from './lab-verify-cache.mjs';
 /** Sentinel team-filter value meaning "sin equipo" (no resolved team), distinct from "" = todos. */
 const NO_TEAM_FILTER_VALUE = '__sin_equipo__';
 
+const ADMIN_ICON_PATHS = {
+  resumen:
+    '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>' +
+    '<rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  salas: '<path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16"/><path d="M2 21h20"/><path d="M14 12h.01"/>',
+  red: '<path d="M2 18V6"/><path d="M2 14h20v4"/><path d="M22 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="10.5" r="2"/>',
+  equipos:
+    '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/>' +
+    '<path d="M18 14a6 6 0 0 1 3.5 6"/>',
+  mutaciones: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  peligro: '<path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4"/><path d="M12 17h.01"/>',
+};
+
+/**
+ * Board «Nube + Admin»: a side menu instead of tabs. Ids stay the same
+ * (data-admin-tab / data-admin-section) — «red» shows as Pacientes and
+ * «mutaciones» as Registro; Zona de peligro sits at the bottom.
+ */
 const ADMIN_TABS = [
   { id: 'resumen', label: 'Resumen' },
-  { id: 'salas', label: 'Salas' },
-  { id: 'red', label: 'Red' },
+  { id: 'salas', label: 'Salas', count: true },
+  { id: 'red', label: 'Pacientes', count: true },
   // Equipos + cuentas Nube (antes pestaña Usuarios) en un solo panel.
-  { id: 'equipos', label: 'Usuarios' },
-  { id: 'mutaciones', label: 'Mutaciones' },
-  { id: 'peligro', label: 'Peligro', danger: true },
+  { id: 'equipos', label: 'Usuarios', count: true },
+  { id: 'mutaciones', label: 'Registro' },
+  { id: 'peligro', label: 'Zona de peligro', danger: true },
 ];
+
+/** @param {string} id */
+function adminIconSvg(id) {
+  return (
+    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    (ADMIN_ICON_PATHS[id] || '') +
+    '</svg>'
+  );
+}
+
+/** @param {{ id: string, label: string, count?: boolean, danger?: boolean }} t @param {boolean} active */
+function adminNavItemHtml(t, active) {
+  return (
+    '<button type="button" class="cloud-sync-admin-nav-item' +
+    (t.danger ? ' cloud-sync-admin-nav-item--danger' : '') +
+    (active ? ' is-active' : '') +
+    '" role="tab" data-admin-tab="' +
+    esc(t.id) +
+    '" aria-selected="' +
+    (active ? 'true' : 'false') +
+    '">' +
+    adminIconSvg(t.id) +
+    '<span>' +
+    esc(t.label) +
+    '</span>' +
+    (t.count ? '<span class="cloud-sync-admin-nav-count" data-admin-count="' + esc(t.id) + '"></span>' : '') +
+    '</button>'
+  );
+}
 
 /** @param {boolean} [showBootstrap] */
 export function buildAdminShellHtml(showBootstrap = true) {
-  const tabs = ADMIN_TABS.map((t, i) => {
-    const active = i === 0;
-    return (
-      '<button type="button" class="cloud-sync-tab cloud-sync-admin-tab' +
-      (t.danger ? ' cloud-sync-admin-tab--danger' : '') +
-      (active ? ' is-active' : '') +
-      '" role="tab" data-admin-tab="' +
-      esc(t.id) +
-      '" aria-selected="' +
-      (active ? 'true' : 'false') +
-      '">' +
-      esc(t.label) +
-      '</button>'
-    );
-  }).join('');
-
+  const main = ADMIN_TABS.filter((t) => !t.danger);
+  const danger = ADMIN_TABS.filter((t) => t.danger);
   const panels = ADMIN_TABS.map((t, i) => {
     const active = i === 0;
-    const loading =
-      t.id === 'resumen' || t.id === 'salas'
-        ? adminSkeletonHtml()
-        : '';
+    const loading = t.id === 'resumen' || t.id === 'salas' ? adminSkeletonHtml() : '';
     return (
       '<div class="cloud-sync-admin-panel" role="tabpanel" data-admin-section="' +
       esc(t.id) +
@@ -56,13 +87,31 @@ export function buildAdminShellHtml(showBootstrap = true) {
 
   return (
     '<div class="cloud-sync-admin-shell">' +
+    '<nav class="cloud-sync-admin-nav" role="tablist" aria-orientation="vertical" aria-label="Secciones de administración">' +
+    main.map((t, i) => adminNavItemHtml(t, i === 0)).join('') +
+    '<span class="cloud-sync-admin-nav-spacer" aria-hidden="true"></span>' +
+    danger.map((t) => adminNavItemHtml(t, false)).join('') +
+    '</nav>' +
+    '<div class="cloud-sync-admin-main">' +
     (showBootstrap ? bootstrapHtml() : '') +
-    '<div class="cloud-sync-tabs cloud-sync-admin-tabs" role="tablist" aria-label="Secciones de administración">' +
-    tabs +
-    '</div>' +
     '<div class="cloud-sync-admin-panels">' +
     panels +
-    '</div></div>'
+    '</div></div></div>'
+  );
+}
+
+/** Section title, one grey line, and optional controls on the right. @param {string} title @param {string} sub @param {string} [right] */
+function adminHeadHtml(title, sub, right = '') {
+  return (
+    // A <div>, not <header>: layout.css styles every <header> as the app bar.
+    '<div class="cloud-sync-admin-head">' +
+    '<div class="cloud-sync-admin-head-text"><h4 class="cloud-sync-admin-h">' +
+    esc(title) +
+    '</h4>' +
+    (sub ? '<p class="cloud-sync-admin-sub">' + sub + '</p>' : '') +
+    '</div>' +
+    (right ? '<div class="cloud-sync-admin-head-right">' + right + '</div>' : '') +
+    '</div>'
   );
 }
 
@@ -90,81 +139,216 @@ export function adminSkeletonHtml() {
   );
 }
 
-/** @param {object} data */
+const MONTHS_ES = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+];
+
+/** «2026-09» → «Septiembre 2026». @param {unknown} key */
+function monthLabel(key) {
+  const m = /^(\d{4})-(\d{2})$/.exec(String(key || '').trim());
+  const name = m ? MONTHS_ES[Number(m[2]) - 1] : '';
+  return name ? name.charAt(0).toUpperCase() + name.slice(1) + ' ' + m[1] : String(key || '');
+}
+
+/** @param {string} label @param {string} value @param {string} meta @param {string} [id] */
+function statCardHtml(label, value, meta, id = '') {
+  return (
+    '<div class="cloud-sync-admin-card"' +
+    (id ? ' data-admin-stat="' + esc(id) + '"' : '') +
+    '><span class="cloud-sync-admin-card-label">' +
+    esc(label) +
+    '</span><span class="cloud-sync-admin-card-value">' +
+    esc(value) +
+    '</span><span class="cloud-sync-admin-card-meta">' +
+    esc(meta) +
+    '</span></div>'
+  );
+}
+
+const ONE_MB = 1024 * 1024;
+
+/**
+ * Resumen (board «Admin · Resumen»): four cards, what needs attention, and
+ * space per sala. The attention list and the patient card fill in once the
+ * salas and the network census load (see renderAdminResumenExtras).
+ * @param {object} data
+ */
 export function resumenHtml(data) {
   const c = data.counts || {};
   const m = data.meters || {};
   const storage = Number(c.storageBytes ?? m.storageBytes ?? 0);
   const soft = Number(m.storageSoftBytes ?? 0);
   const hard = Number(m.storageHardBytes ?? 0);
-  const storageMeta = [
-    soft ? 'soft ' + formatBytes(soft) : '',
-    hard ? 'tope ' + formatBytes(hard) : '',
-  ]
+  const storageMeta = [soft ? 'aviso ' + formatBytes(soft) : '', hard ? 'tope ' + formatBytes(hard) : '']
     .filter(Boolean)
     .join(' · ');
+  const now = new Date();
+  const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   return (
-    '<div class="cloud-sync-admin-panel-head">' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="refresh-resumen">Actualizar</button></div>' +
-    '<dl class="cloud-sync-admin-stats">' +
-    '<div class="cloud-sync-admin-stat"><dt>Usuarios</dt><dd>' +
-    esc(String(c.users ?? 0)) +
-    '</dd></div>' +
-    '<div class="cloud-sync-admin-stat"><dt>Salas</dt><dd>' +
-    esc(String(c.rooms ?? 0)) +
-    '</dd></div>' +
-    '<div class="cloud-sync-admin-stat"><dt>Miembros</dt><dd>' +
-    esc(String(c.members ?? 0)) +
-    '</dd></div>' +
-    '<div class="cloud-sync-admin-stat"><dt>Máx. por sala</dt><dd>' +
-    esc(String(m.maxMembersPerRoom ?? '—')) +
-    ' miembros</dd></div>' +
-    '<div class="cloud-sync-admin-stat cloud-sync-admin-stats__wide"><dt>Almacenamiento</dt><dd>' +
-    '<span class="cloud-sync-admin-stat-value">' +
-    esc(formatBytes(storage)) +
-    '</span>' +
-    (storageMeta
-      ? '<span class="cloud-sync-admin-stat-meta">' + esc(storageMeta) + '</span>'
-      : '') +
-    '</dd></div></dl>'
+    adminHeadHtml(
+      'Resumen',
+      esc(monthLabel(thisMonth)) + ' · actualizado ahora',
+      '<button type="button" class="cloud-sync-btn" data-admin-action="refresh-resumen">Actualizar</button>'
+    ) +
+    '<div class="cloud-sync-admin-cards">' +
+    statCardHtml('Salas activas', String(c.rooms ?? 0), 'Hasta ' + (m.maxMembersPerRoom ?? '—') + ' miembros por sala', 'rooms') +
+    statCardHtml('Usuarios', String(c.users ?? 0), String(c.members ?? 0) + (Number(c.members) === 1 ? ' lugar' : ' lugares') + ' en salas', 'users') +
+    statCardHtml('Pacientes', '…', 'En todas las salas', 'patients') +
+    statCardHtml('Espacio usado', formatBytes(storage), storageMeta || 'En Nube', 'storage') +
+    '</div>' +
+    '<div class="cloud-sync-admin-resumen-extras" data-admin-resumen-extras></div>'
   );
 }
 
-/** @param {Array<Record<string, unknown>>} rooms */
-export function salasTableHtml(rooms) {
-  const cols = [
-    { label: 'Sala', key: 'sala' },
-    { label: 'Mes', cell: (row) => esc(String(row.turnKey || '—')) },
-    { label: 'Código', key: 'code' },
-    { label: 'Rev.', key: 'revision' },
-    { label: 'Miembros', key: 'memberCount' },
-    {
-      label: 'Almacenamiento',
-      cell: (row) => esc(formatBytes(Number(row.storageBytes) || 0)),
-    },
-    {
-      label: 'Acciones',
-      cell: (row) =>
-        '<div class="cloud-sync-admin-row-actions">' +
-        '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="room-detail" data-room-id="' +
-        esc(String(row.id)) +
-        '">Ver detalle</button>' +
-        '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="rotate-code" data-room-id="' +
-        esc(String(row.id)) +
-        '">Rotar código</button>' +
-        '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger cloud-sync-btn--compact" data-admin-action="purge-room" data-room-id="' +
-        esc(String(row.id)) +
-        '" data-room-code="' +
-        esc(String(row.code || '')) +
-        '">Purgar</button></div>',
-    },
-  ];
+/**
+ * «Necesita atención» + «Espacio por sala», from what the other sections
+ * already loaded (no extra requests). Any part with no data is left out.
+ * @param {{ rooms?: Array<{ sala?: string, turnKey?: string, storageBytes?: number }>, patients?: Array<{ sala: string, nombre: string, staleLabs?: boolean, archived?: boolean }> | null }} d
+ */
+export function resumenExtrasHtml(d) {
+  const rooms = Array.isArray(d.rooms) ? d.rooms : [];
+  const patients = Array.isArray(d.patients) ? d.patients : null;
+  const items = [];
+  if (patients) {
+    const unnamed = new Map();
+    patients.filter((p) => p.nombre === '(sin nombre)').forEach((p) => unnamed.set(p.sala, (unnamed.get(p.sala) || 0) + 1));
+    for (const [sala, n] of unnamed) {
+      items.push([n + (n === 1 ? ' paciente sin nombre en ' : ' pacientes sin nombre en ') + sala, 'Revisar', 'red']);
+    }
+    const stale = patients.filter((p) => p.staleLabs && !p.archived).length;
+    if (stale) items.push([stale + (stale === 1 ? ' paciente activo' : ' pacientes activos') + ' sin labs recientes', 'Ver', 'red']);
+  }
+  rooms
+    .filter((r) => Number(r.storageBytes) > ONE_MB)
+    .forEach((r) => items.push([(r.sala || 'Una sala') + ' usa ' + formatBytes(Number(r.storageBytes)), 'Salas', 'salas']));
+  const attention = items.length
+    ? '<section class="cloud-sync-admin-block"><h5 class="cloud-sync-options-label">Necesita atención</h5>' +
+      '<div class="cloud-sync-inset-group">' +
+      items
+        .map(
+          ([text, cta, tab]) =>
+            '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-admin-attention">' +
+            '<span>' + esc(text) + '</span>' +
+            '<button type="button" class="cloud-sync-btn" data-admin-tab="' + esc(tab) + '">' + esc(cta) + '</button></div>'
+        )
+        .join('') +
+      '</div></section>'
+    : '';
+  const sorted = rooms.slice().sort((a, b) => Number(b.storageBytes || 0) - Number(a.storageBytes || 0));
+  const max = Math.max(1, ...sorted.map((r) => Number(r.storageBytes) || 0));
+  const space = sorted.length
+    ? '<section class="cloud-sync-admin-block"><h5 class="cloud-sync-options-label">Espacio por sala</h5>' +
+      '<div class="cloud-sync-inset-group cloud-sync-admin-space">' +
+      sorted
+        .map((r) => {
+          const bytes = Number(r.storageBytes) || 0;
+          const pct = Math.max(2, Math.round((bytes / max) * 100));
+          return (
+            '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-admin-space-row">' +
+            '<span class="cloud-sync-admin-space-name">' + esc(r.sala || '—') + '</span>' +
+            '<span class="cloud-sync-admin-space-track" aria-hidden="true"><span style="width:' + pct + '%"></span></span>' +
+            '<span class="cloud-sync-admin-space-value">' + esc(formatBytes(bytes)) + '</span></div>'
+          );
+        })
+        .join('') +
+      '</div></section>'
+    : '';
+  return attention + space;
+}
+
+/** @param {Record<string, unknown>} row @param {string} currentRoomId */
+function salaCardHtml(row, currentRoomId) {
+  const id = esc(String(row.id));
+  const code = String(row.code || '');
+  const mine = currentRoomId && String(row.id) === currentRoomId;
   return (
-    '<div class="cloud-sync-admin-panel-head">' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="refresh-salas">Actualizar</button></div>' +
-    '<p class="cloud-sync-hint cloud-sync-admin-salas-hint">Cada sala de guardia (Sala 1, Sala 2, Sala E, Torre HU) tiene su propio espacio por mes (YYYY-MM).</p>' +
-    adminTableHtml(rooms, cols)
+    '<article class="cloud-sync-admin-sala' +
+    (mine ? ' is-mine' : '') +
+    '" data-admin-sala-card data-sala="' +
+    esc(String(row.sala || '')) +
+    '" data-turn="' +
+    esc(String(row.turnKey || '')) +
+    '">' +
+    '<div class="cloud-sync-admin-sala-top"><h5 class="cloud-sync-admin-sala-name">' +
+    esc(String(row.sala || '—')) +
+    '</h5>' +
+    (mine ? '<span class="cloud-sync-admin-pill">Tu sala</span>' : '') +
+    '<span class="cloud-sync-admin-sala-bytes">' +
+    esc(formatBytes(Number(row.storageBytes) || 0)) +
+    '</span></div>' +
+    '<code class="cloud-sync-admin-sala-code">' +
+    esc(code || '—') +
+    '</code>' +
+    '<p class="cloud-sync-admin-sala-meta">' +
+    esc(String(row.memberCount ?? 0) + (Number(row.memberCount) === 1 ? ' miembro' : ' miembros') + ' · Rev. ' + String(row.revision ?? 0)) +
+    '</p>' +
+    '<div class="cloud-sync-admin-sala-actions">' +
+    '<button type="button" class="cloud-sync-btn" data-admin-action="room-detail" data-room-id="' + id + '">Ver detalle</button>' +
+    '<details class="cloud-sync-admin-more wb-menu">' +
+    '<summary class="cloud-sync-admin-more-btn" aria-label="Más acciones de ' + esc(String(row.sala || 'la sala')) + '">···</summary>' +
+    '<div class="wb-menu-panel">' +
+    '<button type="button" class="wb-menu-item" data-admin-action="rotate-code" data-room-id="' + id + '">Cambiar código</button>' +
+    '<button type="button" class="wb-menu-item" data-admin-action="copy-room-invite" data-room-code="' + esc(code) + '">Copiar invitación</button>' +
+    '<button type="button" class="wb-menu-item wb-menu-item--danger" data-admin-action="purge-room" data-room-id="' + id +
+    '" data-room-code="' + esc(code) + '">Purgar sala…</button>' +
+    '</div></details></div></article>'
   );
+}
+
+/**
+ * Salas (board «Admin · Salas en tarjetas»): one card per sala, a month
+ * picker and a search box (client-side, see applyAdminSalasFilters). Purge
+ * sits in the ··· menu, never as a red button on every card.
+ * @param {Array<Record<string, unknown>>} rooms
+ * @param {string} [currentRoomId] this device's room → «Tu sala»
+ */
+export function salasTableHtml(rooms, currentRoomId = '') {
+  const list = Array.isArray(rooms) ? rooms : [];
+  const months = [...new Set(list.map((r) => String(r.turnKey || '')).filter(Boolean))].sort().reverse();
+  const latest = months[0] || '';
+  const byBytes = list.slice().sort((a, b) => Number(b.storageBytes || 0) - Number(a.storageBytes || 0));
+  const monthOptions = months
+    .map((k) => '<option value="' + esc(k) + '"' + (k === latest ? ' selected' : '') + '>' + esc(monthLabel(k)) + '</option>')
+    .join('');
+  return (
+    adminHeadHtml(
+      'Salas',
+      'Cada sala de guardia tiene su propio espacio por mes.',
+      '<button type="button" class="cloud-sync-btn" data-admin-action="refresh-salas">Actualizar</button>'
+    ) +
+    '<div class="cloud-sync-admin-filters">' +
+    (months.length > 1
+      ? '<label class="cloud-sync-admin-filter"><span>Mes</span><select class="profile-input" data-admin-salas-month>' +
+        monthOptions +
+        '<option value="">Todos</option></select></label>'
+      : '') +
+    '<input type="search" class="profile-input cloud-sync-admin-search" data-admin-salas-search placeholder="Buscar sala" aria-label="Buscar sala" />' +
+    '</div>' +
+    (list.length
+      ? '<div class="cloud-sync-admin-sala-grid" data-admin-sala-grid>' +
+        byBytes.map((row) => salaCardHtml(row, String(currentRoomId || ''))).join('') +
+        '</div>'
+      : '<p class="cloud-sync-hint">Sin salas todavía.</p>')
+  );
+}
+
+/**
+ * Month + search filters for the Salas cards — no re-fetch.
+ * @param {HTMLElement} root
+ */
+export function applyAdminSalasFilters(root) {
+  const panel = root.querySelector('[data-admin-salas]');
+  if (!panel) return;
+  const month = panel.querySelector('[data-admin-salas-month]');
+  const search = panel.querySelector('[data-admin-salas-search]');
+  const m = month instanceof HTMLSelectElement ? month.value : '';
+  const q = search instanceof HTMLInputElement ? search.value.trim().toLowerCase() : '';
+  panel.querySelectorAll('[data-admin-sala-card]').forEach((card) => {
+    const okMonth = !m || card.getAttribute('data-turn') === m;
+    const okText = !q || String(card.getAttribute('data-sala') || '').toLowerCase().includes(q);
+    card.hidden = !(okMonth && okText);
+  });
 }
 
 /** Newest `{ updatedAt, actorId }` among a patient's own entity-version keys (`entries/{id}`, `entries/{id}/fields`, …). */
@@ -294,6 +478,14 @@ function buildNetworkCensusRows(census, now, users) {
       String(a.cama).localeCompare(String(b.cama), 'es', { numeric: true })
   );
   return { rows, errors, teamOptions };
+}
+
+/**
+ * Flat patient rows for the Resumen (counts, «sin nombre», stale labs).
+ * @param {object[]} census @param {Array<{ user_id?: string }>} [users]
+ */
+export function networkCensusRows(census, users) {
+  return buildNetworkCensusRows(census, new Date(), users).rows;
 }
 
 /** @param {string} iso */

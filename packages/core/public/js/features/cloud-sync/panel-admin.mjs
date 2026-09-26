@@ -1,6 +1,7 @@
 import { hasProgramAdminPrivileges, effectiveClinicalRank } from '../../clinical-privileges.mjs';
 import { getSessionAdminKey } from './panel-admin-helpers.mjs';
 import {
+  applyAdminSalasFilters,
   buildAdminShellHtml,
   mutacionesShellHtml,
   mutationsRoomOptionsHtml,
@@ -36,7 +37,7 @@ function shouldShowAdminBootstrap() {
 function selectAdminTab(root, tabId) {
   const raw = String(tabId || 'resumen').trim() || 'resumen';
   const next = raw === 'usuarios' ? 'equipos' : raw;
-  root.querySelectorAll('[data-admin-tab]').forEach(function (btn) {
+  root.querySelectorAll('[role="tab"][data-admin-tab]').forEach(function (btn) {
     const active = btn.getAttribute('data-admin-tab') === next;
     btn.classList.toggle('is-active', active);
     btn.setAttribute('aria-selected', active ? 'true' : 'false');
@@ -136,9 +137,17 @@ export function mountCloudAdminPanel(host, deps) {
     createAdminClickHandler(clickDeps)(ev);
   });
 
+  root.addEventListener('input', function (ev) {
+    if (ev.target instanceof Element && ev.target.matches('[data-admin-salas-search]')) applyAdminSalasFilters(root);
+  });
+
   root.addEventListener('change', function (ev) {
     const target = ev.target instanceof Element ? ev.target : null;
     if (!target) return;
+    if (target.matches('[data-admin-salas-month]')) {
+      applyAdminSalasFilters(root);
+      return;
+    }
     if (target.closest('[data-network-filter]')) {
       applyNetworkCensusFilters(root);
       return;

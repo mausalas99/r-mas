@@ -392,6 +392,7 @@ function syncConexionModalChrome(view) {
   if (icon) icon.hidden = !isHome;
   modal.classList.toggle('connection-dropdown-modal--subview', !isHome);
   modal.classList.toggle('connection-dropdown-modal--equipo', view === 'equipo');
+  modal.classList.toggle('connection-dropdown-modal--admin', view === 'admin');
 }
 
 const CONEXION_VIEW_HOOK = {
