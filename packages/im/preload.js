@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   onShellShortcut: function(cb) {
@@ -7,6 +7,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // true cuando main.js desactivó la aceleración por hardware (performance.json):
   // el renderer degrada efectos caros en software (glass blur → no-blur).
   isSoftwareRender: process.argv.includes('--rplus-sw-render'),
+  // Tamaño de texto (Ajustes): zoom real de Chromium, así las media queries
+  // ven el ancho escalado. html { zoom } no las movía y la UI se desbordaba.
+  setZoomFactor: function(f) { webFrame.setZoomFactor(f); },
   onUpdateAvailable: function(cb) {
     ipcRenderer.on('update-available', function(_e, payload) { cb(payload); });
   },

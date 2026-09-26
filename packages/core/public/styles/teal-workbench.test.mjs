@@ -36,15 +36,15 @@ test('scrim dims with black, not light ink, and stays at spec 42% (rgba(28,28,30
   assert.equal(/html\.dark\s*\{[^}]*--scrim-bg:[^;]*--color-ink/s.test(css), false);
 });
 
-test('Phase 0: chip radius is a true 999px pill, badges and row buttons get their own tokens', () => {
+test('Phase 0: chip radius is a true 999px pill, service chips are pills too, row buttons get their own token', () => {
   const css = read('public/tokens.css');
   assert.match(css, /--radius-chip:\s*999px/);
   assert.match(css, /--radius-badge:\s*6px/);
   assert.match(css, /--radius-row-btn:\s*7px/);
   const dash = read('public/styles/patient-dashboard.css');
   assert.match(dash, /\.patient-dash \.chip\s*\{[^}]*border-radius:\s*var\(--radius-chip\)/s);
-  assert.match(dash, /\.patient-dash \.svc\s*\{[^}]*border-radius:\s*var\(--radius-badge\)/s);
-  assert.match(dash, /\.patient-dash \.svc-add\s*\{[^}]*border-radius:\s*var\(--radius-badge\)/s);
+  assert.match(dash, /\.patient-dash \.svc\s*\{[^}]*border-radius:\s*var\(--radius-pill\)/s);
+  assert.match(dash, /\.patient-dash \.svc-add\s*\{[^}]*border-radius:\s*var\(--radius-pill\)/s);
   const kit = read('public/styles/workbench-kit.css');
   assert.match(kit, /\.wb-date-popover-nav-btn\s*\{[^}]*border-radius:\s*var\(--radius-row-btn\)/s);
 });
@@ -130,11 +130,11 @@ test('guided-empty primary has no indigo glow', () => {
   assert.equal(/rgba\(\s*79\s*,\s*86\s*,\s*255/.test(css), false);
 });
 
-test('action buttons use --radius-control, not pill (wb-btn kit is pill by design)', () => {
+test('text action buttons are pills (owner rule), btn-sec stays --radius-control', () => {
   const layout = read('public/styles/layout.css');
   const dash = read('public/styles/patient-dashboard.css');
   const kit = read('public/styles/workbench-kit.css');
-  assert.match(layout, /\.guided-empty-actions button\s*\{[^}]*border-radius:\s*var\(--radius-control\)/s);
+  assert.match(layout, /\.guided-empty-actions button\s*\{[^}]*border-radius:\s*var\(--radius-pill\)/s);
   assert.match(dash, /\.patient-dash \.btn-sec\s*\{[^}]*border-radius:\s*var\(--radius-control\)/s);
   assert.match(kit, /\.wb-btn\s*\{[^}]*border-radius:\s*var\(--radius-pill\)/s);
 });

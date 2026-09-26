@@ -15,6 +15,9 @@
   flex-direction: column;
   gap: 10px;
   padding: 0 0 10px;
+  /* Columns follow the panel's width, not the window (sidebar + 125 % text
+     left ~540 px at a 1024 px window and cut the right column). */
+  container-type: inline-size;
 }
 
 .vpo-columns {
@@ -30,7 +33,7 @@
   min-width: 0;
 }
 
-@media (max-width: 1000px) {
+@container (max-width: 600px) {
   .vpo-columns {
     grid-template-columns: 1fr;
     gap: 0;

@@ -685,7 +685,7 @@ html.sidebar-auto-hide.sidebar-reveal:not(.ui-density-normal) #main-area {
   font-size: 13px;
   font-weight: 600;
   padding: 9px 16px;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-pill);
   cursor: pointer;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -696,7 +696,7 @@ html.sidebar-auto-hide.sidebar-reveal:not(.ui-density-normal) #main-area {
   color: var(--color-on-accent);
   border: none;
   box-shadow: none;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-pill);
 }
 .empty-state .empty-state-title {
   margin: 0;
@@ -925,12 +925,13 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
   box-shadow: var(--focus-ring);
 }
 
-/* Colapsado: solo el modo activo; expande al hover o al pulsar el activo */
-.header-mode-seg:not(:hover):not(.is-expanded) {
+/* Colapsado: solo el modo activo; expande al hover, al pulsar el activo o con
+   el foco del teclado dentro (Tab caía en botones invisibles de 0 px). */
+.header-mode-seg:not(:hover):not(.is-expanded):not(:focus-within) {
   gap: 0;
 }
 
-.header-mode-seg:not(:hover):not(.is-expanded) .header-mode-seg-btn:not(.is-active):not([hidden]) {
+.header-mode-seg:not(:hover):not(.is-expanded):not(:focus-within) .header-mode-seg-btn:not(.is-active):not([hidden]) {
   position: absolute;
   left: 0;
   top: 0;
@@ -945,7 +946,7 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
   pointer-events: none;
 }
 
-.header-mode-seg:not(:hover):not(.is-expanded) .header-mode-seg-btn.is-active {
+.header-mode-seg:not(:hover):not(.is-expanded):not(:focus-within) .header-mode-seg-btn.is-active {
   padding-left: 10px;
   padding-right: 10px;
 }
@@ -959,6 +960,7 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
 }
 
 .header-mode-seg:hover .header-mode-seg-btn:not([hidden]),
+.header-mode-seg:focus-within .header-mode-seg-btn:not([hidden]),
 .header-mode-seg.is-expanded .header-mode-seg-btn:not([hidden]) {
   position: static;
   max-width: 9rem;

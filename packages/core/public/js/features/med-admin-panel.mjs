@@ -141,7 +141,7 @@ export function buildMedAdminHiddenFooterHtml(hiddenItems, expanded) {
     .join('');
   return '<div class="med-admin-hidden-footer">' +
     '<button type="button" class="med-admin-hidden-toggle" data-med-admin-toggle-hidden aria-expanded="' + !!expanded + '">' +
-    esc(label) + (expanded ? ' ▴' : ' ▾') + '</button>' +
+    '<span class="rp-dot" aria-hidden="true"></span> ' + esc(label) + '</button>' +
     (expanded ? '<div class="med-admin-hidden-list">' + rows + '</div>' : '') +
     '</div>';
 }

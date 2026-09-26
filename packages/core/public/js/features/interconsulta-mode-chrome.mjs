@@ -420,9 +420,7 @@ function icArchivedToggleHtml(collapsed, count) {
     (!collapsed ? 'true' : 'false') +
     '">Archivados <span>(' +
     count +
-    ')</span> <span>' +
-    (collapsed ? '▶' : '▼') +
-    '</span></button>'
+    ')</span> <span class="rp-dot" aria-hidden="true"></span></button>'
   );
 }
 

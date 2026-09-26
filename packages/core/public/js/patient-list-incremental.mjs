@@ -139,7 +139,7 @@ export function syncSectionCounts(list, zones) {
   if (activeLabel) activeLabel.textContent = String(zones.active.length);
   const archivedToggle = list.querySelector('.patient-list-section-toggle');
   if (archivedToggle && zones.archived.length) {
-    archivedToggle.innerHTML = `Archivados <span>(${zones.archived.length})</span> <span>${archivedToggle.getAttribute('aria-expanded') === 'true' ? '▼' : '▶'}</span>`;
+    archivedToggle.innerHTML = `Archivados <span>(${zones.archived.length})</span> <span class="rp-dot" aria-hidden="true"></span>`;
   }
 }
 

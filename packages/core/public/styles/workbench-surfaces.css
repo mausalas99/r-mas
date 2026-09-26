@@ -388,11 +388,45 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 .exp-pendientes-mount .wb-todo-quien {
   font: 500 11.5px/1.3 var(--font-ui, -apple-system, sans-serif);
   color: var(--color-ink-muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .exp-pendientes-mount .wb-todo-vence {
   font: 600 11.5px/1.3 var(--font-mono, 'IBM Plex Mono', monospace);
   color: var(--color-ink-muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Narrow panel (720 px window, or text 125 %): 5 columns do not fit, so Quién
+   is hidden and Vence shrinks. The
+   row grid is an inline style, hence !important. */
+.exp-pendientes-mount {
+  container-type: inline-size;
+}
+.exp-pendientes-mount .wb-table-colhead > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@container (max-width: 640px) {
+  .exp-pendientes-mount .wb-todo-row:not(.wb-todo-row--closed),
+  .exp-pendientes-mount .wb-table-colhead {
+    grid-template-columns: 52px minmax(0, 1fr) 0 minmax(0, 72px) 104px !important;
+  }
+  .exp-pendientes-mount .wb-todo-row--closed {
+    grid-template-columns: minmax(0, 1fr) 0 minmax(0, 72px) !important;
+  }
+  .exp-pendientes-mount .wb-todo-quien,
+  .exp-pendientes-mount .wb-table-colhead > span:nth-child(3) {
+    visibility: hidden;
+  }
 }
 
 .exp-pendientes-mount .wb-todo-vence--vencido {
@@ -425,8 +459,9 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 .exp-pendientes-mount .wb-todo-encurso-btn {
   background: none;
   border: 1px solid var(--border);
-  border-radius: var(--radius-badge);
+  border-radius: var(--radius-pill);
   padding: 2px 7px;
+  white-space: nowrap; /* a narrow Acción column wrapped it to "EN / CURSO" */
   cursor: pointer;
   font: 600 10px/1 var(--font-mono, 'IBM Plex Mono', monospace);
   letter-spacing: 0.04em;
