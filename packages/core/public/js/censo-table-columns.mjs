@@ -24,6 +24,17 @@ const OPTIONAL_FREED_WEIGHT_SHARE = {
   dx: 0.08,
 };
 
+/** Sección de respaldo (row.sections) de cada columna. */
+const CENSO_SECTION_LABEL = {
+  dx: 'Diagnósticos',
+  atb: 'Antibióticos',
+  meds: 'Medicamentos',
+  labs: 'Laboratorios',
+  accesos: 'Accesos',
+  cultivos: 'Cultivos',
+  pend: 'Pendientes',
+};
+
 /**
  * @param {string} value
  * @returns {boolean}
@@ -59,16 +70,7 @@ export function censoRowColumnText(row, key) {
   }
   var direct = row[key];
   if (direct) return String(direct).trim();
-  var labelByKey = {
-    dx: 'Diagnósticos',
-    atb: 'Antibióticos',
-    meds: 'Medicamentos',
-    labs: 'Laboratorios',
-    accesos: 'Accesos',
-    cultivos: 'Cultivos',
-    pend: 'Pendientes',
-  };
-  var label = labelByKey[key];
+  var label = CENSO_SECTION_LABEL[key];
   if (!label) return '';
   var sec = (row.sections || []).find(function (s) {
     return s.label === label;
@@ -77,12 +79,52 @@ export function censoRowColumnText(row, key) {
 }
 
 /**
+ * Aplica el texto editado en la vista previa a la fila, para que el PDF lo use.
+ * @param {Record<string, any>} row
+ * @param {string} key
+ * @param {string} text
+ */
+export function applyCensoCellEdit(row, key, text) {
+  var lines = String(text || '')
+    .replace(/\r/g, '')
+    .split('\n')
+    .map(function (l) {
+      return l.trim();
+    })
+    .filter(Boolean);
+  var t = lines.join('\n');
+  var dropLabels = key === 'signos' ? ['Signos / I-O', 'Signos / Estado actual'] : [CENSO_SECTION_LABEL[key]];
+  row.sections = (row.sections || []).filter(function (s) {
+    return dropLabels.indexOf(s.label) < 0;
+  });
+  if (key === 'paciente') {
+    row.pacienteNombre = lines[0] || '';
+    row.pacienteMeta = lines.slice(1).join('\n');
+  } else if (key === 'signos') {
+    row.signosCol = t;
+    row.ioCol = '';
+    row.signos = '';
+  } else if (key === 'pend') {
+    row.pendientes = t;
+  } else {
+    if (key === 'labs') delete row.labsDiagrams;
+    if (key === 'accesos' || key === 'cultivos') row.accCult = '';
+    row[key] = t;
+  }
+}
+
+/**
  * @param {Array<Record<string, unknown>>} [rows]
+ * @param {string[]} [hiddenKeys] columnas que el usuario ocultó
  * @returns {typeof CENSO_COL_WEIGHTS}
  */
-export function resolveCensoColWeights(rows) {
+export function resolveCensoColWeights(rows, hiddenKeys) {
   var optionalHidden = {};
+  (hiddenKeys || []).forEach(function (key) {
+    if (key !== 'num') optionalHidden[key] = true;
+  });
   CENSO_OPTIONAL_COL_KEYS.forEach(function (key) {
+    if (optionalHidden[key]) return;
     optionalHidden[key] = !(rows || []).some(function (row) {
       return censoCellHasContent(censoRowColumnText(row, key));
     });

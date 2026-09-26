@@ -46,7 +46,7 @@ export function buildPatientSections(patient, ctx) {
   if (dx && dx !== '—') pushSection(sections, 'Diagnósticos', [dx]);
 
   pushSection(sections, 'Antibióticos', atbLines(patient, ctx, pid));
-  if (!ctx.omitMeds) pushSection(sections, 'Medicamentos', medsLines(patient, ctx, pid));
+  pushSection(sections, 'Medicamentos', medsLines(patient, ctx, pid));
 
   var signosIo = formatCensoSignosIoFromPatient(patient);
   var signosLines = [];
@@ -67,7 +67,7 @@ export function buildPatientSections(patient, ctx) {
   pushSection(
     sections,
     'Pendientes',
-    formatPendientesForCenso(ctx.todosByPatient[pid] || [], { all: !!ctx.showAllPendientes })
+    formatPendientesForCenso(ctx.todosByPatient[pid] || [])
   );
 
   return { sections: sections, signosIo: signosIo };

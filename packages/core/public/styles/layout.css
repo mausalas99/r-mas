@@ -509,6 +509,114 @@ html.censo-preview-open {
   flex: 1 1 200px;
   font-size: 11px;
 }
+.modal.censo-export-dialog {
+  max-width: 440px;
+  width: min(420px, calc(100vw - 32px));
+}
+.censo-export-dialog .modal-title {
+  margin: 0 0 2px;
+}
+.censo-export-date {
+  margin: 0 0 18px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.censo-export-dialog .censo-export-options {
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0 14px;
+}
+.censo-export-options .lab-pref-row {
+  min-height: 52px;
+  padding: 6px 0;
+}
+.censo-export-options .lab-pref-row + .lab-pref-row {
+  border-top: 1px solid var(--border);
+}
+.censo-export-options .lab-pref-row-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+.censo-export-options .lab-pref-row-copy {
+  gap: 2px;
+}
+.censo-export-note {
+  margin: 12px 2px 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.censo-col-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--surface, var(--color-surface)) 70%, transparent);
+}
+.censo-col-chips::before {
+  content: 'Columnas';
+  padding: 0 8px 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.censo-col-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--dur-fast, 120ms) ease, color var(--dur-fast, 120ms) ease;
+}
+.censo-col-chip:hover {
+  background: var(--state-hover-bg);
+  color: var(--text);
+}
+.censo-col-chip input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+.censo-col-chip::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  opacity: 0.6;
+  transition: inherit;
+}
+.censo-col-chip:has(input:checked) {
+  background: color-mix(in oklab, var(--color-accent) 16%, transparent);
+  color: var(--text);
+}
+.censo-col-chip:has(input:checked)::before {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  opacity: 1;
+}
+.censo-col-chip:has(input:not(:checked)) {
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklab, currentColor 50%, transparent);
+}
+.censo-col-chip:has(input:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
 .censo-preview-frame {
   flex: 1 1 auto;
   min-height: 0;

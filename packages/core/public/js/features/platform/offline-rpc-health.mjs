@@ -67,7 +67,7 @@ function syncDocExportButtonOfflineState(btn) {
 
 function syncOfflineButtonStates() {
   try {
-    var exportButtons = document.querySelectorAll('.rpc-doc-export, #censo-export-confirm');
+    var exportButtons = document.querySelectorAll('.rpc-doc-export, #censo-preview-generate');
     exportButtons.forEach(function (b) {
       syncDocExportButtonOfflineState(b);
     });

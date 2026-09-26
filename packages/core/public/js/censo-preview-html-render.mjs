@@ -166,7 +166,8 @@ function renderCensoPreviewCell(row, key) {
   return '<td class="censo-data-cell ' + censoPreviewCellClass(key) + '"></td>';
 }
 
-export function buildCensoPreviewBodyHtml(rows, weights) {
+/** @param {boolean} [editable] celdas editables (menos labs en diagrama) */
+export function buildCensoPreviewBodyHtml(rows, weights, editable) {
   var cols = resolveCensoColWeights(rows || []);
   if (weights && weights.length) cols = weights;
   return (rows || [])
@@ -177,7 +178,9 @@ export function buildCensoPreviewBodyHtml(rows, weights) {
         '">' +
         cols
           .map(function (col) {
-            return renderCensoPreviewCell(row, col.key);
+            var cell = renderCensoPreviewCell(row, col.key);
+            if (!editable || (col.key === 'labs' && row.labsDiagrams)) return cell;
+            return cell.replace('<td ', '<td contenteditable="plaintext-only" data-r="' + idx + '" data-k="' + col.key + '" ');
           })
           .join('') +
         '</tr>'
@@ -220,7 +223,9 @@ export const CENSO_PREVIEW_STYLES =
   'td.censo-num .censo-num-val{color:var(--color-accent);font-weight:700}' +
   'td.censo-cama .censo-cama-vline{display:block;margin:0 auto}' +
   '.censo-cama-vline{font-weight:700;font-size:9px;color:var(--color-accent);writing-mode:vertical-rl;text-orientation:mixed;line-height:1;white-space:nowrap}' +
-  '.censo-paciente-nombre,.censo-line--emphasis.censo-paciente-nombre{font-weight:700;color:#1a2332}';
+  '.censo-paciente-nombre,.censo-line--emphasis.censo-paciente-nombre{font-weight:700;color:#1a2332}' +
+  '@media screen{td[contenteditable]{cursor:text}td[contenteditable]:hover{outline:1px dashed #9aa3b2;outline-offset:-2px}' +
+  'td[contenteditable]:focus{outline:2px solid #0f766e;outline-offset:-2px}}';
 
 export function buildCensoPreviewStyles(weights) {
   return CENSO_PREVIEW_STYLES + censoColgroupCssRules(weights);
@@ -268,7 +273,7 @@ function censoPrintFitScript() {
 }
 
 export function buildCensoPreviewDocumentHtml(header, bodyHtml, rows) {
-  var weights = resolveCensoColWeights(rows || []);
+  var weights = resolveCensoColWeights(rows || [], header.hiddenCols);
   var titleLine = header.titleLine || 'Censo de Sala';
   var equipoLine = header.equipoLine || '';
   return (

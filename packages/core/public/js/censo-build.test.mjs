@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { sortPatientsForCensus, formatCensusMonthLabel, truncateCensusCell, buildCensusPayload, formatPacienteMetaForCenso, formatCamaCellForCenso, formatPatientNameForCenso } from './censo-build.mjs';
-import { resolveCensoColWeights } from './censo-table-columns.mjs';
+import { resolveCensoColWeights, censoRowColumnText, applyCensoCellEdit } from './censo-table-columns.mjs';
 
 test('formatCamaCellForCenso cuarto solo si cama 0 o vacía', () => {
   assert.equal(formatCamaCellForCenso({ cuarto: '201', cama: '0' }), '201');
@@ -292,20 +292,25 @@ test('buildCensusPayload pendientes — sin alta usa media', () => {
   assert.deepEqual(pend.lines, ['Media 1']);
 });
 
-test('buildCensusPayload omitMeds quita Medicamentos y su columna', () => {
-  var opts = {
+test('columnas ocultas y celdas editadas llegan al censo', () => {
+  var payload = buildCensusPayload({
     settings: {},
     patients: [{ id: '1', nombre: 'PEREZ SOTO ANA', censoMedsText: 'OMEPRAZOL', censoAtbText: 'CEFTRIAXONA' }],
     includeArchived: false,
     labHistoryByPatient: { 1: [] },
     medRecetaByPatient: {},
     todosByPatient: { 1: [] },
-  };
-  var withMeds = buildCensusPayload(opts);
-  assert.equal(withMeds.rows[0].meds, 'OMEPRAZOL');
-  assert.ok(resolveCensoColWeights(withMeds.rows).some(function (c) { return c.key === 'meds'; }));
-  var noMeds = buildCensusPayload(Object.assign({}, opts, { omitMeds: true }));
-  assert.equal(noMeds.rows[0].meds, '');
-  assert.equal(noMeds.rows[0].atb, 'CEFTRIAXONA');
-  assert.ok(!resolveCensoColWeights(noMeds.rows).some(function (c) { return c.key === 'meds'; }));
+  });
+  var row = payload.rows[0];
+  assert.ok(resolveCensoColWeights(payload.rows).some(function (c) { return c.key === 'meds'; }));
+  var keys = resolveCensoColWeights(payload.rows, ['meds', 'num']).map(function (c) { return c.key; });
+  assert.ok(keys.indexOf('meds') < 0, 'meds oculto');
+  assert.ok(keys.indexOf('num') >= 0, '# nunca se oculta');
+  applyCensoCellEdit(row, 'dx', '  NAC grave \n\n EPOC ');
+  assert.equal(censoRowColumnText(row, 'dx'), 'NAC grave\nEPOC');
+  applyCensoCellEdit(row, 'atb', '');
+  assert.equal(censoRowColumnText(row, 'atb'), '', 'celda vaciada no vuelve a la sección');
+  applyCensoCellEdit(row, 'paciente', 'PEREZ A.\n45 a');
+  assert.equal(row.pacienteNombre, 'PEREZ A.');
+  assert.equal(row.pacienteMeta, '45 a');
 });
