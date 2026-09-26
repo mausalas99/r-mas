@@ -17,7 +17,7 @@ import { getCloudSyncRoomId } from './settings.mjs';
 
 /** What each section loaded, so the Resumen can reuse it without refetching. @param {HTMLElement} root */
 function adminData(root) {
-  root._adminData ||= { rooms: null, patients: null };
+  root._adminData ||= { rooms: null, patients: null, accounts: null };
   return root._adminData;
 }
 
@@ -25,6 +25,28 @@ function adminData(root) {
 function setAdminCount(root, tab, n) {
   const el = root.querySelector('[data-admin-count="' + tab + '"]');
   if (el) el.textContent = n == null ? '' : String(n);
+}
+
+/**
+ * Mutations carry the Nube account id as actor, so Registro names people
+ * from the Nube account list (one request, cached for the panel's life).
+ * @param {HTMLElement} root @param {() => ReturnType<import('./api-client.mjs').createCloudSyncApi>} getApi
+ */
+async function nubeAccountsForNames(root, getApi) {
+  const d = adminData(root);
+  if (!d.accounts) {
+    try {
+      const data = await getApi().adminUsers('');
+      d.accounts = (data.users || []).map((u) => ({
+        user_id: String(u.id || ''),
+        clinical_name: String(u.display_name || ''),
+        username: String(u.username || ''),
+      }));
+    } catch {
+      return [];
+    }
+  }
+  return d.accounts;
 }
 
 /** Resumen's attention list, space bars and patient card. @param {HTMLElement} root */
@@ -181,11 +203,11 @@ export async function loadAdminMutations(root, getApi, toast) {
     const data = await getApi().adminMutations(roomId, 50);
     const mutations = data.mutations || [];
     if (!mutations.length) {
-      list.innerHTML = '<p class="cloud-sync-hint">Sin mutaciones en esta sala.</p>';
+      list.innerHTML = '<p class="cloud-sync-hint">Sin cambios registrados en esta sala.</p>';
       return;
     }
-    list.innerHTML = mutationsListHtml(mutations);
+    list.innerHTML = mutationsListHtml(mutations, await nubeAccountsForNames(root, getApi));
   } catch (err) {
-    list.innerHTML = adminErrorHtml(err?.data?.message || err?.message || 'No se pudieron cargar mutaciones.');
+    list.innerHTML = adminErrorHtml(err?.data?.message || err?.message || 'No se pudo cargar el registro.');
   }
 }

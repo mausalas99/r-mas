@@ -10,7 +10,7 @@ import {
   setSelectAllVisibleNetwork,
   updateNetworkBulkBarVisibility,
 } from './panel-admin-html.mjs';
-import { loadAdminResumen, loadAdminSalas, loadAdminNetworkCensus } from './panel-admin-data.mjs';
+import { loadAdminResumen, loadAdminSalas, loadAdminNetworkCensus, loadAdminMutations } from './panel-admin-data.mjs';
 import { createAdminClickHandler } from './panel-admin-actions.mjs';
 import { equiposShellHtml } from './panel-admin-equipos-html.mjs';
 import { wireCloudEquiposPanel } from './panel-admin-equipos-actions.mjs';
@@ -105,6 +105,20 @@ export function mountCloudAdminPanel(host, deps) {
       el.innerHTML = opts;
       if (keep) el.value = keep;
     });
+    // Registro starts on this device's sala (or the first one), no «Cargar» click.
+    const mut = root.querySelector('[data-admin-mutations-room]');
+    if (mut instanceof HTMLSelectElement && !mut.value && roomsCache.length) {
+      const mine = deps.getCloudSyncRoomId?.() || '';
+      mut.value = roomsCache.some((r) => r.id === mine) ? mine : String(roomsCache[0].id);
+    }
+  }
+
+  function loadMutacionesIfEmpty() {
+    const list = root.querySelector('[data-admin-mutations-list]');
+    const sel = root.querySelector('[data-admin-mutations-room]');
+    if (list && !list.textContent.trim() && sel instanceof HTMLSelectElement && sel.value) {
+      void loadAdminMutations(root, deps.getApi, toast);
+    }
   }
 
   const clickDeps = {
@@ -131,6 +145,7 @@ export function mountCloudAdminPanel(host, deps) {
         selectAdminTab(root, tabId);
         const resolved = tabId === 'usuarios' ? 'equipos' : tabId;
         if (resolved === 'equipos') void equiposPanel.refresh();
+        if (resolved === 'mutaciones') loadMutacionesIfEmpty();
       }
       return;
     }
@@ -138,12 +153,18 @@ export function mountCloudAdminPanel(host, deps) {
   });
 
   root.addEventListener('input', function (ev) {
-    if (ev.target instanceof Element && ev.target.matches('[data-admin-salas-search]')) applyAdminSalasFilters(root);
+    if (!(ev.target instanceof Element)) return;
+    if (ev.target.matches('[data-admin-salas-search]')) applyAdminSalasFilters(root);
+    else if (ev.target.matches('[data-network-filter="q"]')) applyNetworkCensusFilters(root);
   });
 
   root.addEventListener('change', function (ev) {
     const target = ev.target instanceof Element ? ev.target : null;
     if (!target) return;
+    if (target.matches('[data-admin-mutations-room]')) {
+      void loadAdminMutations(root, deps.getApi, toast);
+      return;
+    }
     if (target.matches('[data-admin-salas-month]')) {
       applyAdminSalasFilters(root);
       return;

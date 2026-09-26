@@ -84,6 +84,44 @@ await r.finish('Administración: side menu and its five sections (board «Nube +
     check(`${id}: no sideways scroll`, (await sideScroll(A.page)) <= 0, await sideScroll(A.page));
   }
 
+  // ── Salas: purge lives only in the ··· menu ──────────────────────────
+  await A.page.locator(`${ADMIN} [role="tab"][data-admin-tab="salas"]`).click();
+  const salas = A.page.locator(section('salas'));
+  check('Salas: no red purge button on the cards',
+    (await salas.locator('.cloud-sync-btn--danger').count()) === 0 && (await salas.locator('[data-admin-sala-card]').count()) >= 1);
+  await salas.locator('.cloud-sync-admin-more-btn').first().click();
+  const menu = await salas.locator('.cloud-sync-admin-more[open] .wb-menu-panel').innerText().catch(() => '');
+  await r.shot(A.page, 'salas-menu');
+  check('Salas: ··· menu offers Cambiar código, Copiar invitación, Purgar sala…',
+    /Cambiar código/.test(menu) && /Copiar invitación/.test(menu) && /Purgar sala/.test(menu), menu);
+  await salas.locator('.cloud-sync-admin-more-btn').first().click();
+
+  // ── Pacientes: search, and the action bar only with a selection ─────
+  await A.page.locator(`${ADMIN} [role="tab"][data-admin-tab="red"]`).click();
+  const red = A.page.locator(section('red'));
+  const bar = red.locator('[data-admin-red-bulk-actions]');
+  check('Pacientes: no action bar before anything is picked', !(await bar.isVisible()));
+  await red.locator('tbody input[data-network-select]').first().check();
+  check('Pacientes: picking a row shows the bar with the count',
+    await until(async () => (await bar.isVisible()) && /1 seleccionado/.test(await bar.innerText()), 3000), await bar.innerText().catch(() => ''));
+  await r.shot(A.page, 'pacientes-seleccion');
+  await bar.locator('[data-admin-action="clear-network-selection"]').click();
+  check('Pacientes: × clears the selection and hides the bar', !(await bar.isVisible()));
+  await red.locator('[data-network-filter="q"]').fill('uno');
+  const shown = await red.locator('tbody tr:not([hidden])').count();
+  check('Pacientes: search narrows the list to matching patients', shown === 1, shown);
+  await red.locator('[data-network-filter="q"]').fill('');
+
+  // ── Registro: loads by itself, names people ──────────────────────────
+  await A.page.locator(`${ADMIN} [role="tab"][data-admin-tab="mutaciones"]`).click();
+  const reg = A.page.locator(section('mutaciones'));
+  const loaded = await until(async () => (await reg.locator('.cloud-sync-admin-event').count()) > 0, 10000);
+  const regText = await reg.locator('.cloud-sync-admin-events').innerText().catch(() => '');
+  check('Registro loads on its own (no «Cargar»)', loaded && !(await reg.locator('[data-admin-action="load-mutations"]').count()));
+  check('Registro names the person, not a user ID', regText.includes(R4.name) && !/[0-9a-f]{8}-[0-9a-f]{4}-/.test(regText), regText.slice(0, 200));
+  await reg.locator('.cloud-sync-admin-event summary').first().click();
+  await r.shot(A.page, 'registro-detalle');
+
   check('no uncaught page errors', !A.pageErrors.length, A.pageErrors.slice(0, 5));
   await A.app.close();
 });

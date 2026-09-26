@@ -14,6 +14,7 @@ import {
   setSelectAllVisibleNetwork,
   peligroHtml,
   resumenExtrasHtml,
+  mutationsListHtml,
 } from './panel-admin-html.mjs';
 
 function isoDaysAgo(n) {
@@ -110,7 +111,7 @@ describe('redCensusHtml', () => {
     assert.match(html, /data-admin-action="switch-network-room"/);
     assert.match(html, /data-room-code="AAAA"/);
     assert.match(html, /data-patient-id="p1"/);
-    assert.match(html, /Sin sala activa este mes\./);
+    assert.match(html, /Sin sala activa este mes: Eme\./);
     assert.match(html, /data-network-filter="sala"/);
     assert.match(html, /data-network-filter="team"/);
     assert.match(html, /data-network-filter="activity"/);
@@ -541,5 +542,39 @@ describe('adminSkeletonHtml', () => {
     const html = adminSkeletonHtml();
     assert.match(html, /cloud-sync-admin-skeleton/);
     assert.match(html, /aria-busy="true"/);
+  });
+});
+
+describe('Pacientes and Registro (board «Nube + Admin»)', () => {
+  const census = [
+    { sala: 'Área A', roomId: 'r-a', code: 'AAAA', entries: [{ id: 'p1', fields: { registro: '1', nombre: '' } }, { id: 'p2', fields: { registro: '2', nombre: 'DEMO' } }] },
+  ];
+
+  it('Pacientes: sin-nombre banner, search attributes, bulk bar hidden until a pick', () => {
+    const html = redCensusHtml(census, []);
+    assert.match(html, /1 registro sin nombre en Área A\./);
+    assert.match(html, /data-admin-action="filter-unnamed"/);
+    assert.match(html, /data-network-filter="q"/);
+    assert.match(html, /data-search="demo 2"/);
+    assert.match(html, /<th><input type="checkbox" data-network-select-all/);
+    assert.match(html, /data-admin-red-bulk-actions hidden/);
+    assert.match(html, /data-admin-action="clear-network-selection"/);
+  });
+
+  it('Registro: people by name, plain-words verb, stats, grouped by hour', () => {
+    const now = Date.parse('2026-09-26T15:30:00');
+    const html = mutationsListHtml(
+      [
+        { revision: 3, actorId: 'u1', createdAt: '2026-09-26T15:25:13', totalBytes: 2048, maxOpPath: 'clinicalOps', opCount: 1 },
+        { revision: 2, actorId: 'u9', createdAt: '2026-09-26T15:10:00', totalBytes: 4096, maxOpPath: 'labSidecars/p1/s1', opCount: 2 },
+      ],
+      [{ user_id: 'u1', clinical_name: 'Dra. Demo Ruiz' }],
+      now
+    );
+    assert.match(html, /<b>Dra\. Demo Ruiz<\/b> guardó la lista clínica/);
+    assert.match(html, /<b>Otro dispositivo<\/b> agregó laboratorios/);
+    assert.match(html, />2 cambios</);
+    assert.match(html, /Hoy · 15 h/);
+    assert.match(html, /<dt>ID de usuario<\/dt><dd>u1<\/dd>/);
   });
 });

@@ -373,10 +373,10 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   check('A: admin Resumen tab shows account/room stats (panel-admin-data resumen)',
     await until(() => adminRoot.locator('.cloud-sync-admin-stat-value').first().isVisible(), 10000));
 
-  await A2.page.locator('[data-admin-tab="salas"]').click();
+  await A2.page.locator('[role="tab"][data-admin-tab="salas"]').click();
   check('A: admin Salas tab lists the Sala 1 room (panel-admin-data salas)', await until(() => adminRoot.getByText('Sala 1').first().isVisible(), 10000));
 
-  await A2.page.locator('[data-admin-tab="red"]').click();
+  await A2.page.locator('[role="tab"][data-admin-tab="red"]').click();
   await A2.page.locator('[data-admin-action="refresh-red"]').click();
   const redPanel = adminRoot.locator('[data-admin-red]');
   check('A: admin Red (network census) lists the room\'s patients (admin-network-census, network-census)',
@@ -404,7 +404,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   check('A: archive-network-patient restores it back to active', await until(() => restoreToast.isVisible(), 10000));
   await closeToasts(A2.page);
 
-  await A2.page.locator('[data-admin-tab="equipos"]').click();
+  await A2.page.locator('[role="tab"][data-admin-tab="equipos"]').click();
   const equiposList = adminRoot.locator('[data-admin-equipos-list]');
   check('A: admin Equipos (Usuarios) tab lists accounts (panel-admin-equipos)', await until(() => equiposList.locator('.cloud-sync-admin-equipos-row').first().isVisible(), 10000));
   await A2.page.locator('[data-admin-equipos-search]').fill(USER_B.username);
@@ -427,15 +427,15 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   check('A: promote-user changes a Nube account\'s role (panel-admin-equipos-summary)', await until(() => roleToast.isVisible(), 10000));
   await closeToasts(A2.page);
 
-  await A2.page.locator('[data-admin-tab="mutaciones"]').click();
+  await A2.page.locator('[role="tab"][data-admin-tab="mutaciones"]').click();
   const mutRoomSel = A2.page.locator('[data-admin-mutations-room]');
   await until(async () => (await mutRoomSel.locator('option').count()) > 1, 8000);
   await mutRoomSel.selectOption({ index: 1 });
-  await A2.page.locator('[data-admin-action="load-mutations"]').click();
+  // Registro loads on its own once a sala is picked (no «Cargar» button).
   check('A: admin Mutaciones loads a room\'s op history', await until(() => adminRoot.locator('[data-admin-mutations-list]').innerText().then((t) => t.trim().length > 0), 10000));
 
   // ── Finish: bulk-delete every network patient, delete B's account, purge the room ──
-  await A2.page.locator('[data-admin-tab="red"]').click();
+  await A2.page.locator('[role="tab"][data-admin-tab="red"]').click();
   await A2.page.locator('[data-admin-action="refresh-red"]').click();
   await until(() => redPanel.locator('tbody tr').first().isVisible(), 8000);
   await A2.page.locator('[data-network-select-all]').check();
@@ -445,7 +445,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   check('A: bulk-delete-network removes every selected patient with a summary toast (patient-delete-batch bulk delete)', await until(() => bulkDelToast.isVisible(), 15000));
   check('B: P1 and P3 gone after the admin bulk delete', await until(async () => !(await patientVisible(B.page, P1)) && !(await patientVisible(B.page, P3)), 45000));
 
-  await A2.page.locator('[data-admin-tab="equipos"]').click();
+  await A2.page.locator('[role="tab"][data-admin-tab="equipos"]').click();
   await until(() => equiposList.locator('.cloud-sync-admin-equipos-row').first().isVisible(), 10000);
   await A2.page.locator('[data-admin-equipos-search]').fill(USER_B.username);
   const bRow2 = equiposList.locator('.cloud-sync-admin-equipos-row', { hasText: '@' + USER_B.username });
@@ -455,7 +455,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   const delUserToast = A2.page.locator('.toast', { hasText: /[Nn]ube/ });
   check('A: delete-user removes the Nube account and runs the clinical purge (panel-admin-clinical-purge)', await until(() => delUserToast.isVisible(), 10000));
 
-  await A2.page.locator('[data-admin-tab="peligro"]').click();
+  await A2.page.locator('[role="tab"][data-admin-tab="peligro"]').click();
   const peligroRoomSel = A2.page.locator('[data-admin-peligro-room]');
   await until(async () => (await peligroRoomSel.locator('option').count()) > 1, 8000);
   await peligroRoomSel.selectOption({ index: 1 });
