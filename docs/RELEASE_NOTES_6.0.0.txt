@@ -5,7 +5,7 @@ Fecha: 2026-05-25
 
 ## Resumen
 
-Versión mayor centrada en el **Expediente**: cuatro pestañas consolidadas en Sala e Interconsulta, **Manejo electrolítico/gasométrico**, **Receta médica HU** (PDF oficial) y datos del paciente en bloque colapsable. El **Modo Pase** mantiene el mismo resumen de ronda en pantalla principal; la nueva organización aparece al abrir el detalle en pestañas (vista Normal).
+Versión mayor centrada en el **Expediente**: cuatro pestañas consolidadas en Sala e Interconsulta, **Manejo electrolítico/gasométrico** y datos del paciente en bloque colapsable. El **Modo Pase** mantiene el mismo resumen de ronda en pantalla principal; la nueva organización aparece al abrir el detalle en pestañas (vista Normal).
 
 ## Nuevo / mejorado
 

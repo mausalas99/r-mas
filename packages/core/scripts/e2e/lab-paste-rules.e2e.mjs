@@ -688,10 +688,10 @@ await r.finish('SOME paste rules', async () => {
     !(await page.locator('#lab-some-tables-backdrop').isVisible()));
 
   const LETTERHEAD =
-    'Sistema SOME UNIVERSIDAD AUTONOMA DE NUEVO LEON MOP-HU-647-07-RC-040 ' +
-    'FACULTAD DE MEDICINA Y HOSPITAL UNIVERSITARIO "DR. JOSE ELEUTERIO GONZALEZ" ' +
-    'AV. MADERO Y AV. GONZALITOS, COL. MITRAS CENTRO, MONTERREY, N.L. CP. 64460 ' +
-    'REPORTE DE RESULTADOS DE LABORATORIO Campo 12234309 Labo -647* DJEG 64460 UANL -647* Feme 1';
+    'Sistema SOME UNIVERSIDAD EJEMPLO FORM-XX-647-07-RC-040 ' +
+    'FACULTAD DE MEDICINA Y HOSPITAL EJEMPLO ' +
+    'AV. EJEMPLO 100, COL. CENTRO, CIUDAD EJEMPLO CP. 90001 ' +
+    'REPORTE DE RESULTADOS DE LABORATORIO Campo 90001234 Labo -647* LABX 90001 LABY -647* Feme 1';
   await pasteAndSave(
     header(TRES, 'May 25 2026 8:00AM') +
       'HEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\n' + TABLE +
@@ -699,7 +699,7 @@ await r.finish('SOME paste rules', async () => {
   );
   sets = await daySets(TRES, '25/05/2026');
   check('hospital letterhead glued into a report is not saved as its own lab chunk',
-    sets.some((s) => /Hb 9\.1/.test(s.text)) && !sets.some((s) => /UNIVERSIDAD AUTONOMA|MITRAS CENTRO/.test(s.text)),
+    sets.some((s) => /Hb 9\.1/.test(s.text)) && !sets.some((s) => /UNIVERSIDAD EJEMPLO|CIUDAD EJEMPLO/.test(s.text)),
     sets.map((s) => s.text.slice(0, 260)));
 
   // "Copiar" floating button → labLinesToClipboardPayload → success toast.

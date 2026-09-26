@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-25T13:40:29.404Z",
-  "totalScore": 736,
+  "updatedAt": "2026-09-26T19:21:18.870Z",
+  "totalScore": 685,
   "trackedLoc": 792800,
-  "moduleCount": 2077,
-  "bootGraphHash": "1610b345bfdfc570",
+  "moduleCount": 1268,
+  "bootGraphHash": "7c79a4f65815fa2c",
   "bootGraph": {
-    "hash": "1610b345bfdfc570",
+    "hash": "7c79a4f65815fa2c",
     "imports": [
       {
         "hub": "public/js/app-runtimes.mjs",
@@ -201,11 +201,6 @@
       {
         "hub": "public/js/app-runtimes.mjs",
         "from": "./features/profile.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-runtimes.mjs",
-        "from": "./features/receta-hu.mjs",
         "isDynamic": false
       },
       {
@@ -595,11 +590,6 @@
       },
       {
         "hub": "public/js/app.js",
-        "from": "./features/receta-hu.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app.js",
         "from": "./features/soap-estado.mjs",
         "isDynamic": false
       },
@@ -678,10 +668,6 @@
   "byFile": {},
   "changelog": [
     {
-      "date": "2026-08-07",
-      "note": "Baseline refresh totalScore=130 (was 0; LAN excision WS3 — deleted lan-squad/, features/lan/, historia-clinica; boot graph hash change)"
-    },
-    {
       "date": "2026-08-24",
       "note": "Baseline refresh totalScore=306"
     },
@@ -756,6 +742,10 @@
     {
       "date": "2026-09-25",
       "note": "Baseline refresh for 8.4.1: trackedLoc 790100->792800 (owner-approved, E2E-gaps migration adding new .e2e.mjs files ahead of the old unit-test deletes; expected to drop once later groups finish), totalScore=736. moduleCount kept at 2077 (2026-09-21 owner-approved headroom, unrelated to this bump)."
+    },
+    {
+      "date": "2026-09-26",
+      "note": "Baseline refresh totalScore=685"
     }
   ]
 }
