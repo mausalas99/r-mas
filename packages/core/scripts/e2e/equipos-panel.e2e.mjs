@@ -23,6 +23,7 @@
  *     - «¿No ves tu equipo?» is not the last card, or lacks Crear / código
  *     - the profile form still sits in Equipo instead of a «Mi perfil» link
  *     - the code dialog does not open, or forgets the «not the sala link» warning
+ *     - the code dialog opens top-left, or its fields hug the right edge
  *     - the panel scrolls sideways
  *   Narrow (700 px) viewport
  *     - the grid spills sideways
@@ -127,6 +128,19 @@ await r.finish('Equipo panel: pick a published team, then the joined view', asyn
   check('«Tengo un código» opens its dialog', await until(() => codeDialog.isVisible(), 4000));
   const codeBody = flat(await codeDialog.innerText().catch(() => ''));
   check('code dialog still warns not to paste the sala link', /enlace/.test(codeBody) && /Conexión guardia/.test(codeBody), codeBody);
+  const box = await codeDialog.evaluate((d) => {
+    const r = d.getBoundingClientRect();
+    const input = d.querySelector('#clinical-team-join-code-input').getBoundingClientRect();
+    const form = d.querySelector('form').getBoundingClientRect();
+    return {
+      offCenterX: Math.round(Math.abs(r.left + r.right - window.innerWidth) / 2),
+      offCenterY: Math.round(Math.abs(r.top + r.bottom - window.innerHeight) / 2),
+      inputLeft: Math.round(input.left - form.left),
+      inputWidthPct: Math.round((input.width / form.width) * 100),
+    };
+  });
+  check('code dialog is centered in the window', box.offCenterX <= 4 && box.offCenterY <= 4, box);
+  check('code dialog fields start at the left and span the form', box.inputLeft <= 1 && box.inputWidthPct >= 98, box);
   await r.shot(B.page, 'pick-wide-code-open');
   await codeDialog.getByRole('button', { name: 'Cancelar' }).click();
   check('Cancelar closes the code dialog, panel stays', !(await codeDialog.isVisible()) && (await B.page.locator(PANEL).isVisible()));
