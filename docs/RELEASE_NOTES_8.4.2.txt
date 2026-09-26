@@ -1,18 +1,29 @@
 R+ 8.4.2 (estable — release 8.4.2)
 ======================================
 
-Fecha: 2026-09-25
+Fecha: 2026-09-26
 
 ## Resumen
 
-La app ya no trae la dirección del portal de laboratorio del hospital. Cada usuario la pega una vez en Ajustes → Laboratorio. Se quitaron datos institucionales del código y de la documentación.
+Guías dentro de la app: burbujas junto a los botones reales te enseñan R+ y lo nuevo de esta versión. La dirección del portal de laboratorio ya no viene en la app: pégala una vez en Ajustes → Laboratorio. Nuevo diseño de Datos y Resumen, censo con columnas a elegir, archivar desde la tarjeta, día de antibiótico editable y más sincronización con Nube.
 
 ## Nuevo / mejorado
 
-- **Importante (instalaciones existentes):** después de actualizar, pega una vez la dirección del portal de laboratorio en **Ajustes → Laboratorio**. Sin ella, la consulta de labs y la actualización de cultivos no se conectan.
-- **Nuevo (labs):** si falta la dirección, R+ muestra el aviso «Falta la dirección del portal de laboratorio — pégala en Ajustes → Laboratorio.» y abre Ajustes en ese campo.
-- **Arreglado (labs):** algunos reportes en PDF del portal no se leían («Invalid PDF structure»). Ahora se leen bien.
-- **Privacidad:** se quitaron nombres y datos institucionales del código, las pruebas y las notas de versión. Las pruebas del portal usan ahora datos sintéticos.
+- **Importante (instalaciones existentes):** después de actualizar, pega una vez la dirección del portal de laboratorio en **Ajustes → Laboratorio**. Sin ella, **Actualizar labs** y la actualización de cultivos no se conectan. Si falta, R+ muestra el aviso «Falta la dirección del portal de laboratorio — pégala en Ajustes → Laboratorio.» y abre Ajustes en ese campo.
+- **Nuevo (guías):** burbujas «Guía» y «Nuevo» aparecen solas junto al botón real, sin tapar la pantalla. «Guía» enseña lo básico (pegar labs, Tendencias, importar medicamentos, Pendientes, buscar, Conexión, interconsultas); «Nuevo» muestra lo de esta versión. En 8.4.2 las ven todos, también quien ya usaba R+. La × termina una guía para siempre. El Centro de aprendizaje ya no se abre solo en una instalación nueva.
+- **Nuevo (Datos):** diseño nuevo. Datos, diagnósticos y accesos en un solo lugar; lo que sale en el censo a un lado, con **↻ Tomar de lista**. Los cultivos se agrupan por sitio de la muestra.
+- **Nuevo (Resumen):** muestra soporte, dieta, líneas, cultivos y día de antibiótico de un vistazo. Pasa el cursor sobre un cultivo para ver su antibiograma.
+- **Nuevo (censo):** elige las columnas del censo y ve los labs como diagramas. R+ recuerda tu elección.
+- **Nuevo (Estado actual):** medicamentos en dos mitades (agudos y crónicos). Con alto flujo o ventilación, pasa el cursor sobre Soporte respiratorio para ver la gasometría y los cálculos. El título de signos vitales siempre lleva la fecha.
+- **Nuevo (antibióticos):** toca el día del antibiótico para corregirlo; R+ sigue contando desde ahí. Si SOME trae días que R+ no tiene, te lo pregunta.
+- **Nuevo (medicamentos):** R+ encuentra fármacos escondidos en órdenes de AGUA INYECTABLE y te deja revisarlos antes de agregarlos.
+- **Nuevo (sala):** archiva y restaura pacientes desde la esquina de cada tarjeta.
+- **Nuevo (Pendientes):** los pendientes con fecha en otro día van en **Próximos**.
+- **Nuevo (Nube):** se sincronizan también Datos, VPO, la lista de problemas y el perfil farmacológico. Los envíos grandes van por lotes.
+- **Arreglado (labs):** algunos reportes en PDF del portal no se leían («Invalid PDF structure»). Las dosis en µG ya no se leen como MG. El pegado masivo y la lectura de valores son más robustos.
+- **Arreglado (exportar):** Word, PDF y censo aguantan texto raro; los nombres largos caben en la barra lateral.
+- **Arreglado:** un reporte pegado se conserva si cambias de paciente a la mitad; un paciente nuevo aparece en la lista de inmediato; la fecha y el nombre del paciente en la barra superior ya no se enciman; se corrigieron botones con nombres rotos (p. ej. «Enviar a Estado Actual»).
+- **Privacidad:** se quitaron nombres y datos institucionales del código, las pruebas y las notas de versión. Las pruebas usan datos sintéticos.
 
 ## Instalación
 

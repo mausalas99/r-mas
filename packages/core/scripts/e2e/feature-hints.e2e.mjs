@@ -127,6 +127,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   check('real-control click moves the flow to step 2', /GUÍA · 2\/3/.test(await bubbleMatch(page, /2\/3/)), await bubbleText(page));
   check('step 2 teaches the paste-anywhere shortcut', /⌘V.*cualquier parte/.test(await bubbleText(page)), await bubbleText(page));
   check('no overlay: only the bubble in the layer', (await page.locator('.fh-layer > :not(.fh-bubble)').count()) === 0);
+  await shot(page, 'labs-step2');
   if (!(await page.locator('#lab-input').isVisible())) await page.locator('#btn-lab-paste').click();
   check('action step advances on the user click', /3\/3/.test(await bubbleMatch(page, /3\/3/)), await bubbleText(page));
   check('step 3 points at Procesar', (await page.locator('#btn-procesar.fh-target').count()) === 1);
@@ -194,6 +195,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   check('using the real control of a one-step hint ends it for good',
     (await done(page)).includes('g-buscar') && (await bubbleOf(page, 'g-buscar').count()) === 0, await done(page));
   await walkHint(page, 'g-buscar', 1);
+  await walkHint(page, 'g-sync', 1);
   // Two lab sets on different days now (Sep 25 + 3 days ago): Tendencias has its Gráfica step.
   await go('#apptab-lab');
   // Tendencias › Gráfica window: range, hide a series, Tabla, hide a row, copy.
