@@ -1,30 +1,23 @@
 import { accesoFechaToDateInputValue } from './patient-date-fields.mjs';
 import { resolveCensoFimiLabel } from './censo-header-format.mjs';
+import { esc } from './dom-escape.mjs';
+
+function dateInputHtml(field, value) {
+  return (
+    '<input type="date" class="rpc-date-input" value="' + esc(accesoFechaToDateInputValue(value)) +
+    '" data-oninput="updatePatient" data-oninput-args=\'["' + field + '"]\' data-oninput-pass="value">'
+  );
+}
 
 /**
- * FIUX (urgencias) y FIMI/servicio — fechas con calendario rpc-date.
+ * FIUX (urgencias) y FIMI/servicio — fechas con calendario rpc-date, one row each.
  * @param {Record<string, unknown>} patient
- * @param {Record<string, unknown>} [settings]
+ * @param {Record<string, unknown>} settings
+ * @param {(label: string, control: string, title?: string) => string} prop
  */
-
-import { esc } from './dom-escape.mjs';
-export function buildPatientIngresoFechasHtml(patient, settings) {
-  var fimiLabel = resolveCensoFimiLabel(settings || {});
+export function buildPatientIngresoFechasHtml(patient, settings, prop) {
   return (
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-    '<div class="field-group"><label>FIUX (urgencias)</label>' +
-    '<input type="date" class="rpc-date-input" value="' +
-    esc(accesoFechaToDateInputValue(patient.fiuxFecha)) +
-    '" data-oninput="updatePatient" data-oninput-args=\'["fiuxFecha"]\' data-oninput-pass="value" aria-label="FIUX ingreso urgencias">' +
-    '</div>' +
-    '<div class="field-group"><label>' +
-    esc(fimiLabel) +
-    ' (servicio)</label>' +
-    '<input type="date" class="rpc-date-input" value="' +
-    esc(accesoFechaToDateInputValue(patient.fimiFecha)) +
-    '" data-oninput="updatePatient" data-oninput-args=\'["fimiFecha"]\' data-oninput-pass="value" aria-label="' +
-    esc(fimiLabel) +
-    ' ingreso servicio">' +
-    '</div></div>'
+    prop('FIUX', dateInputHtml('fiuxFecha', patient.fiuxFecha), 'Ingreso a urgencias') +
+    prop(resolveCensoFimiLabel(settings || {}), dateInputHtml('fimiFecha', patient.fimiFecha), 'Ingreso al servicio')
   );
 }

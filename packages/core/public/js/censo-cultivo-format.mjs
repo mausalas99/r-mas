@@ -10,6 +10,7 @@ import {
   isCultureTableHeaderLine,
   parseCultureBlockFromLineArray,
   findCultivoChunkInSet,
+  cultivoSeriesKey,
 } from './cultivo-block-core.mjs';
 
 export { splitResLabsByTipo } from './cultivo-block-core.mjs';
@@ -120,19 +121,9 @@ function extractCultivoTableRowsFromLabHistory(history) {
 
 /** Mismo criterio que la tabla de cultivos. */
 function filterCultivoRowsSignificantFlip(rows) {
-  function seriesKey(r) {
-    return (
-      (r.tipoKey || 'otro') +
-      '\x01' +
-      String(r.sitio || '')
-        .toLowerCase()
-        .replace(/\s+/g, ' ')
-        .trim()
-    );
-  }
   var bySeries = Object.create(null);
   rows.forEach(function (r) {
-    var k = seriesKey(r);
+    var k = cultivoSeriesKey(r);
     if (!bySeries[k]) bySeries[k] = [];
     bySeries[k].push(r);
   });

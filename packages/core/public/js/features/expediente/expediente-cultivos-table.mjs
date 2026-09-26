@@ -2,7 +2,6 @@
 import { sortLabHistoryChronological } from '../../tend-core.mjs';
 import { normalizeLabLine } from '../../lab-history-auto-store-core.mjs';
 import { getLabHistoryRevision, TREND_REFRESH_DEBOUNCE_MS } from '../../lab-history-cache.mjs';
-import { scheduleIdle } from '../../deferred-work.mjs';
 import { rt, aid, esc } from './expediente-runtime.mjs';
 import {
   parseCultureBlockFromLineArray,
@@ -19,21 +18,43 @@ import {
   cultivoRefreshOutcomeMessage,
 } from '../cultivo-queue-refresh.mjs';
 import { deleteLabHistorySet } from '../lab-panel-history.mjs';
+import { cultivoSeriesKey, hemoSitioGrupo, HEMO_SITIO_LABELS } from '../../cultivo-block-core.mjs';
 
-var CULTIVO_TIPO_ORDER = ['hemo', 'uro', 'cateter', 'gram', 'fungi', 'otro'];
-var CULTIVO_TIPO_LABELS = {
-  hemo: 'Hemocultivo',
-  uro: 'Urocultivo',
-  cateter: 'Cultivo de catéter',
-  gram: 'Tinción Gram',
-  fungi: 'Fungicultivo',
-  otro: 'Otros cultivos',
-};
+function cultivoRowMs(r) {
+  return r.sortKeyMs != null ? r.sortKeyMs : r.sortMs || 0;
+}
+
+/** Aislamiento real: ni negativo ni muestra contaminada. */
+function cultivoRowIsIsolate(r) {
+  return !r.negativo && !/CONTAMINAD/i.test(r.organismo || '');
+}
+
+var CULTIVO_TAG_ALERT_RE = /^(BLEE|ESBL|Carb-?R|MRSA|SARM|VRE|ERV)$/i;
+
+/** "ESCHERICHIA COLI · BLEE · Preliminar" → nombre + etiquetas en píldora. */
 function cultivoOrganismoCellHtml(r) {
-  var html = esc(r.organismo);
-  if (r.cuenta && !r.negativo) {
-    html += '<div class="cultivos-cuenta">' + esc(r.cuenta) + '</div>';
-  }
+  var parts = String(r.organismo || '').split(/\s*·\s*/);
+  var html =
+    '<span class="cult-org-name' +
+    (cultivoRowIsIsolate(r) ? ' cult-org-name--isolate' : '') +
+    '">' +
+    esc(parts[0]) +
+    '</span>';
+  parts.slice(1).forEach(function (tag) {
+    if (!tag) return;
+    html +=
+      ' <span class="cult-org-tag' +
+      (CULTIVO_TAG_ALERT_RE.test(tag) ? ' cult-org-tag--alert' : '') +
+      '">' +
+      esc(tag) +
+      '</span>';
+  });
+  // Cuenta sin número ("X") no aporta nada. En hemocultivos agrupados, el
+  // sitio real (brazo/mano) va aquí porque el encabezado solo dice el grupo.
+  var sub = [];
+  if (hemoSitioGrupo(r)) sub.push(cultivoRawSiteLabel(r));
+  if (r.cuenta && !r.negativo && /\d/.test(r.cuenta)) sub.push(r.cuenta);
+  if (sub.length) html += '<div class="cultivos-cuenta">' + esc(sub.join(' · ')) + '</div>';
   return html;
 }
 
@@ -115,49 +136,34 @@ function extractCultivoTableRowsFromHistory(patientId) {
   });
 }
 
-/** Agrupa por tipo de cultivo y ordena del más reciente al más antiguo. */
-function groupCultivoRowsByTipoChronologic(rows) {
+/**
+ * Un grupo por sitio (tipo + muestra), filas del más reciente al más antiguo.
+ * Sitios ordenados por su resultado más reciente.
+ */
+function groupCultivoRowsBySite(rows) {
   var byKey = Object.create(null);
+  var sites = [];
   rows.forEach(function (r) {
-    var k = r.tipoKey || 'otro';
-    if (!byKey[k]) byKey[k] = [];
-    byKey[k].push(r);
+    var k = cultivoSeriesKey(r);
+    if (!byKey[k]) sites.push((byKey[k] = { rows: [] }));
+    byKey[k].rows.push(r);
   });
-  CULTIVO_TIPO_ORDER.forEach(function (k) {
-    if (!byKey[k]) return;
-    byKey[k].sort(function (a, b) {
-      var da = a.sortKeyMs != null ? a.sortKeyMs : a.sortMs || 0;
-      var db = b.sortKeyMs != null ? b.sortKeyMs : b.sortMs || 0;
-      if (da !== db) return db - da;
-      return (b._seq || 0) - (a._seq || 0);
+  sites.forEach(function (s) {
+    s.rows.sort(function (a, b) {
+      return cultivoRowMs(b) - cultivoRowMs(a) || (b._seq || 0) - (a._seq || 0);
     });
+    s.positive = s.rows.some(cultivoRowIsIsolate);
   });
-  return CULTIVO_TIPO_ORDER.filter(function (k) {
-    return byKey[k] && byKey[k].length;
-  }).map(function (k) {
-    return {
-      key: k,
-      label: CULTIVO_TIPO_LABELS[k] || CULTIVO_TIPO_LABELS.otro,
-      rows: byKey[k],
-    };
+  return sites.sort(function (a, b) {
+    return cultivoRowMs(b.rows[0]) - cultivoRowMs(a.rows[0]);
   });
 }
 
 /** Resumen: positivos siempre; negativos solo si hay cambio de signo vs. otro resultado del mismo tipo+muestra (cronológico). */
 function filterCultivoRowsSignificantFlip(rows) {
-  function seriesKey(r) {
-    return (
-      (r.tipoKey || 'otro') +
-      '\x01' +
-      String(r.sitio || '')
-        .toLowerCase()
-        .replace(/\s+/g, ' ')
-        .trim()
-    );
-  }
   var bySeries = Object.create(null);
   rows.forEach(function (r) {
-    var k = seriesKey(r);
+    var k = cultivoSeriesKey(r);
     if (!bySeries[k]) bySeries[k] = [];
     bySeries[k].push(r);
   });
@@ -184,7 +190,6 @@ function filterCultivoRowsSignificantFlip(rows) {
 }
 
 var _cultivosTableCacheKey = '';
-var CULTIVOS_CHUNK_ROWS = 40;
 var _cultivoRefreshBusy = false;
 var _cultivoToolbarWired = false;
 
@@ -209,7 +214,6 @@ function buildCultivosToolbarHtml(patientId) {
     ' title="' +
     esc(title) +
     '">Actualizar</button>' +
-    '<p class="cultivos-table-hint">Por categoría (tipo de estudio), orden cronológico de más reciente a más antiguo.</p>' +
     '</div>'
   );
 }
@@ -255,68 +259,10 @@ async function handleCultivoRefreshClick() {
 export function invalidateCultivosTableCache() {
   _cultivosTableCacheKey = '';
 }
-var CULTIVOS_CHUNKED_THRESHOLD = 72;
-
-function renderCultivosTableBodyChunked(container, shellHtml, rowChunks, onDone) {
-  container.innerHTML = shellHtml;
-  var tbody = container.querySelector(".cultivos-table tbody");
-  if (!tbody || !rowChunks.length) {
-    onDone();
-    return;
-  }
-  var i = 0;
-  function appendChunk() {
-    var end = Math.min(i + CULTIVOS_CHUNK_ROWS, rowChunks.length);
-    for (; i < end; i += 1) {
-      tbody.insertAdjacentHTML("beforeend", rowChunks[i]);
-    }
-    if (i < rowChunks.length) {
-      scheduleIdle(appendChunk, 12);
-      return;
-    }
-    onDone();
-  }
-  scheduleIdle(appendChunk, 0);
-}
 
 function rowFechaDisplay(r) {
   if (r.fechaMuestra && r.fechaMuestra !== '—') return r.fechaMuestra;
   return r.studyDate || '—';
-}
-
-export function buildCultivosNegStrip(negs) {
-  if (!negs.length) return '';
-  var chips = negs
-    .map(function (r) {
-      var fd = rowFechaDisplay(r);
-      var sitio = r.sitio || '—';
-      return (
-        '<li class="cultivos-neg-chip">' +
-        '<span class="cultivos-neg-chip-tipo">' +
-        esc(r.tipoLabel || '') +
-        '</span> · ' +
-        esc(fd) +
-        ' · ' +
-        esc(sitio) +
-        cultivoRowRemoveBtnHtml(r) +
-        '</li>'
-      );
-    })
-    .join('');
-  return (
-    '<div class="cultivos-neg-strip" role="status">' +
-    '<div class="cultivos-neg-header">' +
-    '<strong>Cultivos negativos</strong>' +
-    '<span class="cultivos-neg-count">' +
-    negs.length +
-    '</span>' +
-    '</div>' +
-    '<p class="cultivos-neg-hint">En la tabla, por tipo y fecha</p>' +
-    '<ul class="cultivos-neg-chips">' +
-    chips +
-    '</ul>' +
-    '</div>'
-  );
 }
 
 function cultivoRowRemoveBtnHtml(r) {
@@ -328,31 +274,112 @@ function cultivoRowRemoveBtnHtml(r) {
   );
 }
 
-function collectCultivoTableRowChunks(groups, rowFechaDisplayFn) {
-  var rowChunks = [];
-  var totalRows = 0;
-  groups.forEach(function (g) {
-    rowChunks.push('<tr class="cultivos-section-row"><td colspan="5">' + esc(g.label) + '</td></tr>');
-    g.rows.forEach(function (r) {
-      totalRows += 1;
-      rowChunks.push(
-        '<tr class="' +
-          (r.negativo ? 'cultivos-row-neg' : '') +
-          '"><td>' +
-          esc(rowFechaDisplayFn(r)) +
-          '</td><td>' +
-          esc(r.sitio) +
-          '</td><td class="cultivos-cell-org">' +
-          cultivoOrganismoCellHtml(r) +
-          '</td><td class="cultivos-cell-atb">' +
-          cultivoAntibiogramCellHtml(r) +
-          '</td><td class="cultivos-cell-remove">' +
-          cultivoRowRemoveBtnHtml(r) +
-          '</td></tr>'
-      );
-    });
+/** "HEMOCULTIVO (PERIFERICO DERECHO)" ya va bajo "Hemocultivo" → "PERIFERICO DERECHO". */
+function cultivoRawSiteLabel(r) {
+  var s = String(r.sitio || '').trim();
+  var m = /^\S*CULTIVO\S*\s*\((.+)\)$/i.exec(s);
+  return m ? m[1] : s || '—';
+}
+
+/** Hemocultivos agrupados (periférico/central) muestran el grupo, no el brazo. */
+function cultivoSiteLabel(r) {
+  return HEMO_SITIO_LABELS[hemoSitioGrupo(r)] || cultivoRawSiteLabel(r);
+}
+
+var CULTIVO_SITE_MAX_DOTS = 12;
+
+/** Un punto por fecha de muestra (positivo si algún aislamiento lo es), antiguo → reciente. */
+function cultivoSiteDotsHtml(rows) {
+  var byFecha = Object.create(null);
+  var fechas = [];
+  rows.forEach(function (r) {
+    var f = rowFechaDisplay(r);
+    if (!byFecha[f]) fechas.push((byFecha[f] = { fecha: f, orgs: [] }));
+    if (cultivoRowIsIsolate(r)) byFecha[f].orgs.push(r.organismo);
   });
-  return { rowChunks: rowChunks, totalRows: totalRows };
+  return fechas
+    .slice(0, CULTIVO_SITE_MAX_DOTS)
+    .reverse()
+    .map(function (d) {
+      return (
+        '<span class="cult-dot cult-dot--' +
+        (d.orgs.length ? 'pos' : 'neg') +
+        '" title="' +
+        esc(d.fecha + ' · ' + (d.orgs.length ? d.orgs.join(', ') : 'Negativo')) +
+        '"></span>'
+      );
+    })
+    .join('');
+}
+
+function cultivoSiteHtml(site) {
+  var last = site.rows[0];
+  var rowsHtml = site.rows
+    .map(function (r, i) {
+      var fecha = rowFechaDisplay(r);
+      // Varios aislamientos de la misma muestra: la fecha solo en el primero.
+      var sameAsPrev = i > 0 && rowFechaDisplay(site.rows[i - 1]) === fecha;
+      return (
+        '<tr class="' +
+        (r.negativo ? 'cultivos-row-neg' : cultivoRowIsIsolate(r) ? '' : 'cult-row-muted') +
+        '" data-fecha="' +
+        esc(fecha) +
+        '"><td class="cultivos-cell-fecha">' +
+        (sameAsPrev ? '' : esc(fecha)) +
+        '</td><td class="cultivos-cell-org">' +
+        cultivoOrganismoCellHtml(r) +
+        '</td><td class="cultivos-cell-atb">' +
+        cultivoAntibiogramCellHtml(r) +
+        '</td><td class="cultivos-cell-remove">' +
+        cultivoRowRemoveBtnHtml(r) +
+        '</td></tr>'
+      );
+    })
+    .join('');
+  return (
+    '<details class="cult-site' +
+    (site.positive ? ' cult-site--pos" open>' : '">') +
+    '<summary class="cult-site-head"><span class="rp-dot" aria-hidden="true"></span>' +
+    '<span class="cult-site-title"><span class="cult-site-tipo">' +
+    esc(last.tipoLabel || 'Otros cultivos') +
+    '</span> · ' +
+    esc(cultivoSiteLabel(last)) +
+    '</span><span class="cult-site-dots" aria-hidden="true">' +
+    cultivoSiteDotsHtml(site.rows) +
+    '</span><span class="cult-site-last">' +
+    esc((last.negativo ? 'Negativo' : last.organismo) + ' · ' + rowFechaDisplay(last)) +
+    '</span></summary>' +
+    '<table class="cultivos-table"><tbody>' +
+    rowsHtml +
+    '</tbody></table></details>'
+  );
+}
+
+/** Sitios con algún positivo abiertos arriba; sitios solo negativos plegados abajo. */
+function buildCultivoSitesHtml(rows) {
+  var sites = groupCultivoRowsBySite(rows);
+  var pos = sites.filter(function (s) {
+    return s.positive;
+  });
+  var neg = sites.filter(function (s) {
+    return !s.positive;
+  });
+  var negCount = neg.reduce(function (n, s) {
+    return n + s.rows.length;
+  }, 0);
+  var negHtml = neg.length
+    ? '<details class="cultivos-neg-fold"' +
+      (pos.length ? '' : ' open') +
+      '><summary class="cultivos-neg-head"><span class="rp-dot" aria-hidden="true"></span>Sin aislamientos <span class="cultivos-neg-count">' +
+      negCount +
+      '</span><span class="cultivos-neg-sites">' +
+      neg.length +
+      (neg.length === 1 ? ' sitio' : ' sitios') +
+      '</span></summary>' +
+      neg.map(cultivoSiteHtml).join('') +
+      '</details>'
+    : '';
+  return pos.map(cultivoSiteHtml).join('') + negHtml;
 }
 
 function renderCultivosTable() {
@@ -380,47 +407,8 @@ function renderCultivosTable() {
       '<p class="tend-empty">No hay cultivos en el historial. Aparecen urocultivos, hemocultivos, tinción Gram y cultivos de catéter enviados desde Laboratorio.</p>';
     return;
   }
-  var groups = groupCultivoRowsByTipoChronologic(flatRows);
-  var negs = flatRows
-    .filter(function (r) {
-      return r.negativo;
-    })
-    .sort(function (a, b) {
-      var oa = CULTIVO_TIPO_ORDER.indexOf(a.tipoKey || 'otro');
-      var ob = CULTIVO_TIPO_ORDER.indexOf(b.tipoKey || 'otro');
-      if (oa !== ob) return oa - ob;
-      var da = a.sortKeyMs != null ? a.sortKeyMs : a.sortMs || 0;
-      var db = b.sortKeyMs != null ? b.sortKeyMs : b.sortMs || 0;
-      if (da !== db) return db - da;
-      return (b._seq || 0) - (a._seq || 0);
-    });
-  var negStrip = buildCultivosNegStrip(negs);
-  var toolbar = buildCultivosToolbarHtml(aid());
-  var thead =
-    '<thead><tr><th>Fecha</th><th>Sitio / muestra</th><th>Organismo</th><th>Antibiograma</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>';
-  var built = collectCultivoTableRowChunks(groups, rowFechaDisplay);
-  var finishTable = function () {
-    wireAtbRisHoverPanels(container);
-  };
-  if (built.totalRows > CULTIVOS_CHUNKED_THRESHOLD) {
-    var shellHtml =
-      negStrip +
-      toolbar +
-      '<div class="cultivos-table-wrap"><table class="cultivos-table">' +
-      thead +
-      '<tbody></tbody></table></div>';
-    renderCultivosTableBodyChunked(container, shellHtml, built.rowChunks, finishTable);
-    return;
-  }
-  container.innerHTML =
-    negStrip +
-    toolbar +
-    '<div class="cultivos-table-wrap"><table class="cultivos-table">' +
-    thead +
-    '<tbody>' +
-    built.rowChunks.join('') +
-    '</tbody></table></div>';
-  finishTable();
+  container.innerHTML = buildCultivosToolbarHtml(pid) + buildCultivoSitesHtml(flatRows);
+  wireAtbRisHoverPanels(container);
 }
 
 var _tendRefreshTimer = null;

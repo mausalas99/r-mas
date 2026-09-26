@@ -83,6 +83,8 @@ export function closePatientDatosModal() {
   backdrop.setAttribute('aria-hidden', 'true');
   returnDatosPaneToHost();
   restoreDatosModalContext();
+  // Datos edits (name, diagnoses, lines/tubes) feed the Resumen: repaint it.
+  if (typeof rt.invalidateInnerTabRenderCache === 'function') rt.invalidateInnerTabRenderCache('resumen');
   if (typeof rt.refreshExpedienteAfterPatientSelect === 'function') {
     rt.refreshExpedienteAfterPatientSelect();
   }
