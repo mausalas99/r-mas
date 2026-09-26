@@ -283,7 +283,7 @@ describe('clinical-teams', () => {
     assert.match(joinHandlerSrc, /closeTeamsUiAfterJoin\(\)/);
     assert.match(inviteSrc, /closeTeamsUiAfterJoin\(\)/);
     // The helper closes Mi rotación and the Conexión sheet that may embed it.
-    assert.match(shellSrc, /export function closeTeamsUiAfterJoin\(\) \{\n  closeClinicalTeamsPanel\(\);/);
+    assert.match(shellSrc, /export function closeTeamsUiAfterJoin\(\) \{\n {2}closeClinicalTeamsPanel\(\);/);
   });
 
   it('joining a team does not auto-open inherit; bring is opt-in on team card', () => {

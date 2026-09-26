@@ -3,7 +3,7 @@
   "updatedAt": "2026-09-26T19:27:49.089Z",
   "totalScore": 665,
   "trackedLoc": 792800,
-  "moduleCount": 1279,
+  "moduleCount": 1280,
   "bootGraphHash": "7c79a4f65815fa2c",
   "bootGraph": {
     "hash": "7c79a4f65815fa2c",
@@ -746,6 +746,10 @@
     {
       "date": "2026-09-26",
       "note": "Baseline refresh totalScore=665"
+    },
+    {
+      "date": "2026-09-26",
+      "note": "moduleCount 1279->1280 for 8.4.2: new public/js/feature-hints.mjs (in-app «Guía»/«Nuevo» hints), loaded lazily from app-shell-deferred.mjs, so the eager boot set is unchanged. Owner asked to unblock the 8.4.2 release in chat. totalScore, trackedLoc and boot budget unchanged."
     }
   ]
 }
