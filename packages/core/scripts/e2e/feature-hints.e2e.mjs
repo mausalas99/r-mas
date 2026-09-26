@@ -12,6 +12,7 @@
  *   - a step whose target is missing blocks the flow instead of being skipped
  *   - the bubble covers the page with an overlay (anything besides the bubble)
  *   - a finished flow is not remembered, or comes back after a restart
+ *   - a user updating from a version without hints (registered, no done list) skips the «Guía»
  *   - × does not end the flow for good
  *   - a hint never opens on its screen, or a step is skipped while its target exists
  *   - a bubble sits on top of the control it points at
@@ -23,14 +24,14 @@
  */
 import { createRun, onboardLocalOnly, pasteAndSave, openPatient, closeToasts, until } from './harness.mjs';
 import { fullLabs, header } from './some-fixtures.mjs';
-import { FEATURE_HINTS } from '../../public/js/feature-hints.mjs';
+import { activeHints } from '../../public/js/feature-hints.mjs';
 
 const P = { exp: '7000911-1', name: 'DEMO GUIA UNO', room: '611' };
 const P2 = { exp: '7000912-2', name: 'DEMO GUIA DOS', room: '612' };
 const r = createRun('feature-hints');
 const { check, shot } = r;
 
-const ALL = FEATURE_HINTS.map((h) => h.id);
+const ALL = activeHints().map((h) => h.id);
 const pad = (n) => String(n).padStart(2, '0');
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const someWhen = (off) => { const d = new Date(Date.now() + off * 86400000); return `${MON[d.getMonth()]} ${d.getDate()} ${d.getFullYear()} 7:00AM`; };
@@ -58,11 +59,11 @@ const hintState = (page) => page.evaluate(() => {
     covers = !(br.right < tr.left || br.left > tr.right || br.bottom < tr.top || br.top > tr.bottom);
   }
   return { bubble: b ? b.innerText.replace(/\s+/g, ' ') : '', covers, hint: b ? b.dataset.hint : '',
-    done: JSON.parse(localStorage.getItem('rpc-feature-hints-done') || '[]') };
+    done: JSON.parse(globalThis.localStorage.getItem('rpc-feature-hints-done') || '[]') };
 });
 
 const onlyUnfinished = (page, id) =>
-  page.evaluate(([a, keep]) => localStorage.setItem('rpc-feature-hints-done', JSON.stringify(a.filter((x) => x !== keep))), [ALL, id]);
+  page.evaluate(([a, keep]) => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(a.filter((x) => x !== keep))), [ALL, id]);
 const bubbleOf = (page, id) => page.locator(`.fh-bubble[data-hint="${id}"]:not([hidden])`);
 
 /** Leave only hint `id` unfinished; it must open by itself. Walk every step like a user. Checks step count, no cover, done. */
@@ -95,7 +96,7 @@ async function walkHint(page, id, steps) {
 }
 
 const bubbleText = (page) => page.locator('.fh-bubble:not([hidden])').innerText().catch(() => '');
-const done = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('rpc-feature-hints-done') || '[]'));
+const done = (page) => page.evaluate(() => JSON.parse(globalThis.localStorage.getItem('rpc-feature-hints-done') || '[]'));
 /** Wait (short poll) until the open bubble text matches re; returns that text. */
 const bubbleMatch = async (page, re) => (await until(async () => re.test(await bubbleText(page)), 5000, 100), bubbleText(page));
 /** Header mode switch: 'sala' | 'interconsulta' (same as nota-evolucion.e2e.mjs). */
@@ -154,7 +155,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
     { tendChart: await tendChart(), tendDone: await tendDone() });
   await shot(page, 'tendencias');
   // Leave the other guides unfinished so one of them opens after the restart.
-  await page.evaluate(() => localStorage.setItem('rpc-feature-hints-done', JSON.stringify(['g-labs', 'g-tendencias'])));
+  await page.evaluate(() => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(['g-labs', 'g-tendencias'])));
 
   await app.close();
   ({ app, page, pageErrors } = await r.launch());
@@ -165,7 +166,15 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   check('hint layer is live after restart', await visible(page.locator('.fh-bubble:not([hidden])'), 8000), await hintState(page));
   await shot(page, 'after-restart');
   check('a finished hint never opens again', (await bubbleOf(page, 'g-labs').count()) === 0);
-  await page.evaluate(([a]) => localStorage.setItem('rpc-feature-hints-done', JSON.stringify(a)), [ALL]);
+  // Update from 8.4.1: a registered user with no done list gets the «Guía» too, not only «Nuevo».
+  await page.evaluate(() => globalThis.localStorage.removeItem('rpc-feature-hints-done'));
+  await app.close();
+  ({ app, page, pageErrors } = await r.launch());
+  await page.locator('#apptab-lab').click();
+  check('updating user (registered, no done list) gets the «Guía» hints',
+    await visible(bubbleOf(page, 'g-labs'), 8000), await hintState(page));
+  await shot(page, 'updating-user-guia');
+  await page.evaluate(([a]) => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(a)), [ALL]);
   await page.locator('.fh-close').click().catch(() => {});
 
   // ── Every other hint on its own screen, with a busy synthetic patient ──
@@ -195,7 +204,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   await go('#apptab-med'); await go('#med-itab-receta');
   await walkHint(page, 'g-manejo', 1);
   // agua-iny: set it up first, the review opens in the middle of Procesar receta.
-  await page.evaluate(([a]) => localStorage.setItem('rpc-feature-hints-done', JSON.stringify(a.filter((x) => x !== 'agua-iny-842'))), [ALL]);
+  await page.evaluate(([a]) => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(a.filter((x) => x !== 'agua-iny-842'))), [ALL]);
   await go('#med-import-open-btn');
   await page.locator('#med-input').fill(SOME);
   await page.getByRole('button', { name: 'Procesar receta' }).click();
@@ -218,6 +227,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   await go('#apptab-nota');
   await page.locator('.exp-group-pill', { hasText: 'Resumen' }).first().click();
   await walkHint(page, 'resumen-842', 2);
+  await walkHint(page, 'actualizar-labs-842', 1);
   // Fill the census meds from the receta first, so Datos has a med line to explain removing.
   await page.locator('#btn-exp-datos-open:visible, #patient-dashboard-mount .dash-name:visible').first().click();
   await page.locator('[data-onclick="censoTomarDeMedicamentos"]').click();

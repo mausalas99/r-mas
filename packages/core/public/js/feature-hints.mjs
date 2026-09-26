@@ -11,9 +11,15 @@ import { FEATURE_HINTS_DONE_LS_KEY } from './clinical-settings.mjs';
 
 /**
  * Step: sel = CSS target, text = bubble HTML, action = wait for a click on the target.
- * kind 'guia' = how to use R+ (fresh installs only); default = «Nuevo» in this version.
+ * kind 'guia' = how to use R+: every user until they finish it, returning users
+ * included (8.4.2 is the first release with hints, so everyone gets the Guía once).
+ * Default = «Nuevo»: `release` names the version it presents; only the hints of
+ * HINTS_RELEASE show. A later release adds its own «Nuevo» hints and bumps
+ * HINTS_RELEASE; users who finished the Guía then only see those.
  * Order is priority: only the first unfinished hint on screen opens.
  */
+export const HINTS_RELEASE = '8.4.2';
+
 export const FEATURE_HINTS = [
   {
     id: 'g-labs',
@@ -97,6 +103,7 @@ export const FEATURE_HINTS = [
   },
   {
     id: 'censo-842',
+    release: '8.4.2',
     title: 'Censo: columnas y diagramas',
     steps: [
       { sel: '#btn-export-censo-header', action: true, text: 'El censo ahora te deja elegir columnas y ver los labs como diagramas. Ábrelo aquí.' },
@@ -106,7 +113,16 @@ export const FEATURE_HINTS = [
     ],
   },
   {
+    id: 'actualizar-labs-842',
+    release: '8.4.2',
+    title: 'Actualizar labs',
+    steps: [
+      { sel: '#patient-dashboard-mount [data-dash-action="actualizar-labs"]', text: '<strong>Actualizar labs</strong> trae del portal los estudios nuevos del paciente. R+ ya no trae la dirección del portal: pégala una vez en <strong>Ajustes → Laboratorio</strong>. Si falta, R+ te lleva ahí.' },
+    ],
+  },
+  {
     id: 'resumen-842',
+    release: '8.4.2',
     title: 'Resumen de un vistazo',
     steps: [
       { sel: '#patient-dashboard-mount .ctx-group', text: 'Resumen ahora muestra soporte, dieta, líneas, cultivos y día de antibiótico. Toca un grupo para ir a donde se edita.' },
@@ -115,6 +131,7 @@ export const FEATURE_HINTS = [
   },
   {
     id: 'datos-842',
+    release: '8.4.2',
     title: 'Datos',
     steps: [
       { sel: '#btn-exp-datos-open, #patient-dashboard-mount .dash-name', action: true, text: 'Datos tiene un diseño nuevo. Ábrelo aquí.' },
@@ -125,6 +142,7 @@ export const FEATURE_HINTS = [
   },
   {
     id: 'cultivos-842',
+    release: '8.4.2',
     title: 'Cultivos por sitio',
     steps: [
       { sel: '.cult-site-head', text: 'Los cultivos ahora se agrupan por sitio de la muestra. Los sitios con solo negativos se juntan en <strong>Sin aislamientos</strong>.' },
@@ -132,6 +150,7 @@ export const FEATURE_HINTS = [
   },
   {
     id: 'estado-actual-842',
+    release: '8.4.2',
     title: 'Estado actual',
     steps: [
       { sel: '.ea-clinico-med-grid', text: 'Los medicamentos van en dos mitades: agudos a la izquierda, crónicos a la derecha. Una fila por categoría.' },
@@ -140,6 +159,7 @@ export const FEATURE_HINTS = [
   },
   {
     id: 'proximos-842',
+    release: '8.4.2',
     title: 'Pendientes próximos',
     steps: [
       { sel: '.todo-group--proximo .todo-group-header', text: 'Los pendientes con fecha en otro día ahora van en <strong>Próximos</strong>, entre Hoy y Sin fecha.' },
@@ -147,6 +167,7 @@ export const FEATURE_HINTS = [
   },
   {
     id: 'sala-archivo-842',
+    release: '8.4.2',
     title: 'Archivar desde la tarjeta',
     steps: [
       { sel: '#sala-view-home .sv-card-archive', text: 'Archiva desde la esquina de cada tarjeta.' },
@@ -156,6 +177,7 @@ export const FEATURE_HINTS = [
   },
   {
     id: 'agua-iny-842',
+    release: '8.4.2',
     title: 'Fármacos en agua inyectable',
     steps: [
       { sel: '.agua-iny-modal .agua-iny-row .rpc-switch', text: 'R+ ahora encuentra fármacos escondidos en órdenes de agua inyectable. Corrige lo que haga falta y apaga los que no quieras agregar.' },
@@ -163,6 +185,7 @@ export const FEATURE_HINTS = [
   },
   {
     id: 'abx-dia-842',
+    release: '8.4.2',
     title: 'Día de antibiótico',
     steps: [
       { sel: '.med-receta-dia', action: true, text: 'Toca el día del antibiótico para corregirlo. R+ sigue contando desde ahí.' },
@@ -228,17 +251,9 @@ function badgeOf(hint) {
   return hint.kind === 'guia' ? 'Guía' : 'Nuevo';
 }
 
-/**
- * First run of this module: an install that is already registered knows the
- * basics, so it only gets the «Nuevo» hints. A fresh install gets everything.
- */
-function seedDoneForReturningUser() {
-  try {
-    if (localStorage.getItem(FEATURE_HINTS_DONE_LS_KEY) !== null) return;
-    const settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
-    const guides = FEATURE_HINTS.filter(function (h) { return h.kind === 'guia'; }).map(function (h) { return h.id; });
-    localStorage.setItem(FEATURE_HINTS_DONE_LS_KEY, JSON.stringify(settings.clinicalRegistered === true ? guides : []));
-  } catch { /* storage off: every hint shows */ }
+/** Hints this release offers: every «Guía», plus the «Nuevo» hints of HINTS_RELEASE. */
+export function activeHints(hints = FEATURE_HINTS) {
+  return hints.filter(function (h) { return h.kind === 'guia' || h.release === HINTS_RELEASE; });
 }
 
 function tourBusy() {
@@ -266,7 +281,7 @@ function placeBubble() {
 function openNext() {
   if (flow || tourBusy()) return;
   const done = readDone();
-  for (const hint of FEATURE_HINTS) {
+  for (const hint of activeHints()) {
     if (done.indexOf(hint.id) >= 0) continue;
     const at = paused.get(hint.id) || 0;
     if (findVisible(hint.steps[at].sel, false)) {
@@ -362,7 +377,6 @@ function tick() {
 
 export function initFeatureHints() {
   if (layer || typeof document === 'undefined' || isMobileWeb()) return;
-  seedDoneForReturningUser();
   layer = document.createElement('div');
   layer.className = 'fh-layer';
   bubble = document.createElement('div');

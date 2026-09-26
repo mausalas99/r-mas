@@ -241,14 +241,7 @@ export function persistClinicalUserBinding(patch) {
   if (patch.displayName) settings.clinicalDisplayName = String(patch.displayName);
   if (patch.rank) settings.clinicalRank = String(patch.rank);
   if (patch.sala != null) settings.clinicalSala = String(patch.sala);
-  if (patch.registered === true && settings.clinicalRegistered !== true) {
-    settings.clinicalRegistered = true;
-    // First registration on this device: claim the «Guía» hints before the
-    // deferred hint module can mistake this fresh install for a returning one.
-    try {
-      if (localStorage.getItem(FEATURE_HINTS_DONE_LS_KEY) === null) localStorage.setItem(FEATURE_HINTS_DONE_LS_KEY, '[]');
-    } catch { /* storage off: hints fall back to their own seed */ }
-  }
+  if (patch.registered === true) settings.clinicalRegistered = true;
   if (patch.lanProfileGateComplete === true) {
     settings.clinicalLanProfileGateVersion = CLINICAL_LAN_PROFILE_GATE_VERSION;
   }
