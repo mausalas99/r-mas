@@ -1,4 +1,5 @@
 import { parseCamaCellForCenso, formatCamaCellLabel } from './censo-build.mjs';
+import { CENSO_FULL_SET_W } from './censo-labs-diagrams-layout.mjs';
 import { classifyCensoTableLine } from './censo-table-style.mjs';
 import {
   censoColgroupCssRules,
@@ -91,6 +92,27 @@ function censoPreviewCellClass(key) {
   return key;
 }
 
+/** Diagram image when the census was built in diagram mode, else text labs. */
+function renderCensoLabsCell(row) {
+  var d = row.labsDiagrams;
+  if (!d) return renderCensoSectionCell(row, 'labs', 'Laboratorios');
+  // One line, one scale for all; never bigger than a full set, so a lone diagram stays small.
+  var totalW = d.images.reduce(function (sum, img) { return sum + img.w; }, 0);
+  var unitPct = 100 / Math.max(totalW, CENSO_FULL_SET_W);
+  var imgs = d.images
+    .map(function (img) {
+      return (
+        '<img alt="" style="width:' + (img.w * unitPct).toFixed(2) + '%;min-width:0" src="' +
+        escCensoHtml(img.dataUrl) + '">'
+      );
+    })
+    .join('');
+  return (
+    (d.fecha ? '<span class="' + censoLineClass('lab-date') + '">' + escCensoHtml(d.fecha) + '</span>' : '') +
+    '<div style="display:flex;gap:4px;align-items:center">' + imgs + '</div>'
+  );
+}
+
 function renderCensoPreviewCell(row, key) {
   if (key === 'num') {
     return (
@@ -120,7 +142,7 @@ function renderCensoPreviewCell(row, key) {
     return '<td class="censo-data-cell censo-center censo-meds">' + renderCensoSectionCell(row, 'meds', 'Medicamentos') + '</td>';
   }
   if (key === 'labs') {
-    return '<td class="censo-data-cell censo-labs">' + renderCensoSectionCell(row, 'labs', 'Laboratorios') + '</td>';
+    return '<td class="censo-data-cell censo-labs">' + renderCensoLabsCell(row) + '</td>';
   }
   if (key === 'signos') {
     var signosIo = [String(row.signosCol || '').trim(), String(row.ioCol || '').trim()]

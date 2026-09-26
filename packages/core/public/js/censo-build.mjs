@@ -1,4 +1,5 @@
 import { buildPatientSections } from './censo-build-sections.mjs';
+import { latestCensoDayLabChunks } from './censo-labs-format-compact.mjs';
 import { buildCensoDocumentHeader, resolveCensoEquipoMembers } from './censo-header-format.mjs';
 import { formatAccesoFechaDisplay } from './patient-date-fields.mjs';
 import { resolveCensoFimiLabel } from './censo-header-format.mjs';
@@ -171,6 +172,7 @@ export function formatPacienteMetaForCenso(patient, settings, teamLabel) {
  *   medRecetaByPatient: Record<string, unknown>,
  *   todosByPatient: Record<string, Array<{ text?: string, completed?: boolean }>>,
  *   teamLabelByPatientId?: Record<string, string>,
+ *   labDiagrams?: boolean,
  *   now?: Date,
  * }} opts
  */
@@ -207,6 +209,7 @@ export function buildCensusPayload(opts) {
     todosByPatient: opts.todosByPatient,
     now: now,
     showAllPendientes: !!opts.showAllPendientes,
+    omitMeds: !!opts.omitMeds,
   };
 
   var teamLabelByPatientId = opts.teamLabelByPatientId || {};
@@ -231,6 +234,9 @@ export function buildCensusPayload(opts) {
       accesos: flat.accesos,
       cultivos: flat.cultivos,
       pendientes: flat.pendientes,
+      labsDiagramSrc: opts.labDiagrams
+        ? latestCensoDayLabChunks(ctx.labHistoryByPatient[String(patient.id)] || [])
+        : undefined,
     };
   });
   return { header: header, rows: rows, servicio: servicio };

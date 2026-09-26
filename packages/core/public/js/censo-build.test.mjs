@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { sortPatientsForCensus, formatCensusMonthLabel, truncateCensusCell, buildCensusPayload, formatPacienteMetaForCenso, formatCamaCellForCenso, formatPatientNameForCenso } from './censo-build.mjs';
+import { resolveCensoColWeights } from './censo-table-columns.mjs';
 
 test('formatCamaCellForCenso cuarto solo si cama 0 o vacía', () => {
   assert.equal(formatCamaCellForCenso({ cuarto: '201', cama: '0' }), '201');
@@ -289,4 +290,22 @@ test('buildCensusPayload pendientes — sin alta usa media', () => {
   ]);
   var pend = (payload.rows[0].sections || []).find((s) => s.label === 'Pendientes');
   assert.deepEqual(pend.lines, ['Media 1']);
+});
+
+test('buildCensusPayload omitMeds quita Medicamentos y su columna', () => {
+  var opts = {
+    settings: {},
+    patients: [{ id: '1', nombre: 'PEREZ SOTO ANA', censoMedsText: 'OMEPRAZOL', censoAtbText: 'CEFTRIAXONA' }],
+    includeArchived: false,
+    labHistoryByPatient: { 1: [] },
+    medRecetaByPatient: {},
+    todosByPatient: { 1: [] },
+  };
+  var withMeds = buildCensusPayload(opts);
+  assert.equal(withMeds.rows[0].meds, 'OMEPRAZOL');
+  assert.ok(resolveCensoColWeights(withMeds.rows).some(function (c) { return c.key === 'meds'; }));
+  var noMeds = buildCensusPayload(Object.assign({}, opts, { omitMeds: true }));
+  assert.equal(noMeds.rows[0].meds, '');
+  assert.equal(noMeds.rows[0].atb, 'CEFTRIAXONA');
+  assert.ok(!resolveCensoColWeights(noMeds.rows).some(function (c) { return c.key === 'meds'; }));
 });

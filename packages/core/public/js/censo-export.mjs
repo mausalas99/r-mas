@@ -4,6 +4,7 @@ import { getPatients, getLabHistory, getMedRecetaByPatient, getVpoByPatient, per
 import { storage } from './storage.js';
 import { buildCensusPayload } from './censo-build.mjs';
 import { openCensoPreviewInApp } from './censo-preview-html.mjs';
+import { attachCensoLabDiagrams } from './censo-labs-diagrams.mjs';
 import { migratePatientDiagnosticosFromVpo } from './patient-diagnosticos.mjs';
 import { setAsyncButtonLoading } from './ui-motion.mjs';
 import { activePatientTeamId, activeRotationTeamIds, teamLabelById } from './patient-team-assign-ui.mjs';
@@ -103,15 +104,29 @@ function ensureCensoModal() {
   backdrop.id = 'censo-export-modal';
   backdrop.setAttribute('aria-hidden', 'true');
   backdrop.innerHTML =
-    '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="censo-export-title">' +
+    '<div class="modal lab-display-prefs-modal" role="dialog" aria-modal="true" aria-labelledby="censo-export-title">' +
     '<h3 id="censo-export-title" class="modal-title">Exportar censo (PDF)</h3>' +
-    '<p class="profile-hint" id="censo-export-fecha-label"></p>' +
-    '<p class="profile-hint" id="censo-export-mes-label"></p>' +
-    '<p class="profile-hint">Diagnósticos: máx. 3 primeros · filas según contenido (labs largos → más altura).</p>' +
-    '<label class="profile-radio" style="display:flex;gap:8px;margin:12px 0;">' +
-    '<input type="checkbox" id="censo-export-archived"> Incluir pacientes archivados</label>' +
-    '<label class="profile-radio" style="display:flex;gap:8px;margin:0 0 12px;">' +
-    '<input type="checkbox" id="censo-export-pancenso"> Pancenso (todos los equipos de la rotación)</label>' +
+    '<p class="lab-display-prefs-hint"><span id="censo-export-fecha-label"></span> · <span id="censo-export-mes-label"></span><br>' +
+    'Diagnósticos: máx. 3 primeros · filas según contenido (labs largos → más altura).</p>' +
+    '<div class="lab-display-prefs-fields">' +
+    '<div class="lab-pref-row">' +
+    '<span class="lab-pref-row-label" id="censo-export-archived-lbl">Incluir pacientes archivados</span>' +
+    '<label class="rpc-switch"><input type="checkbox" id="censo-export-archived" class="rpc-switch-input" role="switch" aria-labelledby="censo-export-archived-lbl">' +
+    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></label></div>' +
+    '<div class="lab-pref-row lab-pref-row--stack"><div class="lab-pref-row-copy">' +
+    '<span class="lab-pref-row-label" id="censo-export-pancenso-lbl">Pancenso</span>' +
+    '<span class="lab-pref-row-hint">Todos los equipos de la rotación.</span></div>' +
+    '<label class="rpc-switch"><input type="checkbox" id="censo-export-pancenso" class="rpc-switch-input" role="switch" aria-labelledby="censo-export-pancenso-lbl">' +
+    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></label></div>' +
+    '<div class="lab-pref-row">' +
+    '<span class="lab-pref-row-label" id="censo-export-meds-lbl">Incluir medicamentos</span>' +
+    '<label class="rpc-switch"><input type="checkbox" id="censo-export-meds" class="rpc-switch-input" role="switch" aria-labelledby="censo-export-meds-lbl" checked>' +
+    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></label></div>' +
+    '<div class="lab-pref-row">' +
+    '<span class="lab-pref-row-label" id="censo-export-diagramas-lbl">Labs como diagramas</span>' +
+    '<label class="rpc-switch"><input type="checkbox" id="censo-export-diagramas" class="rpc-switch-input" role="switch" aria-labelledby="censo-export-diagramas-lbl">' +
+    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></label></div>' +
+    '</div>' +
     '<div class="modal-actions">' +
     '<button type="button" class="wb-btn wb-btn-secondary" id="censo-export-cancel">Cancelar</button>' +
     '<button type="button" class="wb-btn wb-btn-secondary" id="censo-export-preview">Vista previa</button>' +
@@ -130,7 +145,6 @@ export function openCensoExportDialog() {
   var mesEl = document.getElementById('censo-export-mes-label');
   if (fechaEl) {
     fechaEl.textContent =
-      'Fecha: ' +
       String(now.getDate()).padStart(2, '0') +
       '/' +
       String(now.getMonth() + 1).padStart(2, '0') +
@@ -139,7 +153,7 @@ export function openCensoExportDialog() {
   }
   if (mesEl) {
     mesEl.textContent =
-      'Mes: ' + now.toLocaleString('es-MX', { month: 'long' }).toUpperCase() + ' ' + now.getFullYear();
+      now.toLocaleString('es-MX', { month: 'long' }).replace(/^./, function (c) { return c.toUpperCase(); }) + ' ' + now.getFullYear();
   }
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
@@ -204,8 +218,8 @@ function runCensoPdfExport(payload, opts) {
       rt.showToast('Error: ' + message, 'error');
     },
   })
-    .catch(function () {
-      rt.showToast('Error de conexión al generar el ' + successLabel.toLowerCase(), 'error');
+    .catch(function (e) {
+      if (!(e && e.reported)) rt.showToast('Error de conexión al generar el ' + successLabel.toLowerCase(), 'error');
     })
     .finally(function () {
       exportBtns.forEach(function (btn) {
@@ -216,7 +230,12 @@ function runCensoPdfExport(payload, opts) {
     });
 }
 
-export function exportCensoPdf(includeArchived) {
+/** Diagram mode: labs cell becomes the Laboratorio diagrams (text labs when a patient has none). */
+function withLabDiagrams(payload, labDiagrams) {
+  return labDiagrams ? attachCensoLabDiagrams(payload) : Promise.resolve(payload);
+}
+
+export function exportCensoPdf(includeArchived, labDiagrams, omitMeds) {
   if (!isModeSala(rt.getSettings())) return;
   if (rt.guardMobileDocExport()) return;
   if (guardDocExportBlocked({ isRpcOffline: rt.isRpcOffline, showToast: rt.showToast })) return;
@@ -229,12 +248,16 @@ export function exportCensoPdf(includeArchived) {
     labHistoryByPatient: getLabHistory(),
     medRecetaByPatient: getMedRecetaByPatient(),
     todosByPatient: buildTodosMap(),
+    labDiagrams: !!labDiagrams,
+    omitMeds: !!omitMeds,
   });
   if (!payload.rows.length) {
     rt.showToast('Sin pacientes para el censo', 'error');
     return;
   }
-  return runCensoPdfExport(payload, { defaultFileName: 'Censo.pdf', successLabel: 'Censo' });
+  return withLabDiagrams(payload, labDiagrams).then(function () {
+    return runCensoPdfExport(payload, { defaultFileName: 'Censo.pdf', successLabel: 'Censo' });
+  });
 }
 
 export function exportCensoPdfFromHelp() {
@@ -269,7 +292,7 @@ function patientsForPancensoExport() {
 }
 
 /** Censo de la rotación completa (todos los equipos de la sala), con etiqueta de equipo por paciente. */
-export function exportPancensoPdf(includeArchived) {
+export function exportPancensoPdf(includeArchived, labDiagrams, omitMeds) {
   if (!isModeSala(rt.getSettings())) return;
   if (rt.guardMobileDocExport()) return;
   if (guardDocExportBlocked({ isRpcOffline: rt.isRpcOffline, showToast: rt.showToast })) return;
@@ -283,16 +306,20 @@ export function exportPancensoPdf(includeArchived) {
     medRecetaByPatient: getMedRecetaByPatient(),
     todosByPatient: buildTodosMap(),
     teamLabelByPatientId: buildTeamLabelMap(censusPatients),
+    labDiagrams: !!labDiagrams,
+    omitMeds: !!omitMeds,
   });
   if (!payload.rows.length) {
     rt.showToast('Sin pacientes para el pancenso', 'error');
     return;
   }
   payload.header.titleLine = 'Pancenso de Sala';
-  return runCensoPdfExport(payload, { defaultFileName: 'Pancenso.pdf', successLabel: 'Pancenso' });
+  return withLabDiagrams(payload, labDiagrams).then(function () {
+    return runCensoPdfExport(payload, { defaultFileName: 'Pancenso.pdf', successLabel: 'Pancenso' });
+  });
 }
 
-function previewCenso(includeArchived, pancenso) {
+function previewCenso(includeArchived, pancenso, labDiagrams, omitMeds) {
   if (!isModeSala(rt.getSettings())) return;
   preparePatientsForCensus();
   var censusPatients = pancenso ? patientsForPancensoExport() : patientsForCensoExport();
@@ -305,37 +332,53 @@ function previewCenso(includeArchived, pancenso) {
     todosByPatient: buildTodosMap(),
     teamLabelByPatientId: pancenso ? buildTeamLabelMap(censusPatients) : undefined,
     showAllPendientes: true,
+    labDiagrams: !!labDiagrams,
+    omitMeds: !!omitMeds,
   });
   if (!payload.rows.length) {
     rt.showToast('Sin pacientes para el censo', 'error');
     return;
   }
   if (pancenso) payload.header.titleLine = 'Pancenso de Sala';
-  openCensoPreviewInApp(payload);
+  withLabDiagrams(payload, labDiagrams).then(function () {
+    openCensoPreviewInApp(payload);
+  });
+}
+
+/** Switch off = no Medicamentos column in the census. */
+function censoOmitMedsChecked() {
+  var el = document.getElementById('censo-export-meds');
+  return !!el && !el.checked;
 }
 
 function wireCensoModalOnce() {
   if (wireCensoModalOnce._done) return;
   wireCensoModalOnce._done = true;
   document.addEventListener('click', function (e) {
-    if (e.target.id === 'censo-export-cancel') {
+    // After one export the button label sits in a <span>: match the button, not the click target.
+    var btn = e.target.closest ? e.target.closest('button') : null;
+    var id = btn ? btn.id : '';
+    if (id === 'censo-export-cancel') {
       closeCensoModal();
       return;
     }
-    if (e.target.id === 'censo-export-preview') {
+    if (id === 'censo-export-preview') {
       var archivedPreview = !!document.getElementById('censo-export-archived')?.checked;
       var pancensoPreview = !!document.getElementById('censo-export-pancenso')?.checked;
-      previewCenso(archivedPreview, pancensoPreview);
+      var diagramasPreview = !!document.getElementById('censo-export-diagramas')?.checked;
+      previewCenso(archivedPreview, pancensoPreview, diagramasPreview, censoOmitMedsChecked());
       return;
     }
-    if (e.target.id === 'censo-export-confirm') {
+    if (id === 'censo-export-confirm') {
       var archived = !!document.getElementById('censo-export-archived')?.checked;
       var pancenso = !!document.getElementById('censo-export-pancenso')?.checked;
+      var diagramas = !!document.getElementById('censo-export-diagramas')?.checked;
+      var omitMeds = censoOmitMedsChecked();
       closeCensoModal();
       if (pancenso) {
-        exportPancensoPdf(archived);
+        exportPancensoPdf(archived, diagramas, omitMeds);
       } else {
-        exportCensoPdf(archived);
+        exportCensoPdf(archived, diagramas, omitMeds);
       }
       return;
     }
