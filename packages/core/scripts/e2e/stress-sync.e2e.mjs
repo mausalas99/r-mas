@@ -206,7 +206,7 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
   await A.page.locator('#btn-clinical-team-create-open').click();
   await A.page.locator('#clinical-team-create-name').fill('EQUIPO DEMO SYNC');
   await A.page.locator('#clinical-team-create-sala').selectOption('Sala 1').catch(() => {});
-  await A.page.getByRole('button', { name: 'Crear equipo' }).click();
+  await A.page.locator('#clinical-team-create-form [type="submit"]').click();
   await B.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
   const joinBtn = B.page.getByRole('button', { name: 'Unirme' });
   check('B sees A\'s team and joins', await until(() => joinBtn.isVisible(), 20000));
@@ -426,7 +426,7 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
     await dv.page.locator('#btn-header-team-sync').click();
     const navOptions = dv.page.locator('[data-cloud-action="nav-options"]');
     if (await navOptions.isVisible().catch(() => false)) await navOptions.click();
-    await dv.page.locator('[data-cloud-action="nav-view"][data-cloud-view="nube"]').click().catch(() => {});
+    await dv.page.locator('.cloud-sync-view[data-cloud-view="options"] [data-cloud-action="nav-view"][data-cloud-view="nube"]').click().catch(() => {});
     await dv.page.waitForTimeout(1500);
     digests['diag-' + name] = await dv.page.locator('[data-cloud-nube-diagnostics-host]').innerText().catch(() => '');
     await dv.page.locator('#btn-connection-dropdown-close').click().catch(() => {});
