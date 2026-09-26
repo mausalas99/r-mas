@@ -47,6 +47,16 @@ function findChartChunkImportUrl(metafile, outDir = OUT_DIR) {
   return null;
 }
 
+/** Delete chunks/ files this build did not write (and their .map files). */
+function removeStaleChunks(metafile) {
+  const chunksDir = path.join(OUT_DIR, 'chunks');
+  if (!fs.existsSync(chunksDir)) return;
+  const fresh = new Set(Object.keys(metafile.outputs).map((p) => path.basename(p)));
+  for (const f of fs.readdirSync(chunksDir)) {
+    if (!fresh.has(f)) fs.rmSync(path.join(chunksDir, f), { force: true });
+  }
+}
+
 function buildOptions({ prod = false, write = true } = {}) {
   return {
     entryPoints: [ENTRY],
@@ -102,24 +112,19 @@ export async function bundleRenderer(opts = {}) {
     return ctx;
   }
 
-  const chunksDir = path.join(OUT_DIR, 'chunks');
-  if (fs.existsSync(chunksDir)) {
-    fs.rmSync(chunksDir, { recursive: true, force: true });
-  }
-
+  // Write over the old build, then drop stale chunks. Wiping chunks/ first left a
+  // window where a running app (npm start, an e2e) lazy-loaded a 404 and hung on
+  // "Preparando R+". Renames overwrite in place for the same reason.
   const result = await esbuild.build(buildOptions({ prod, write: true }));
   const bundleJs = path.join(OUT_DIR, 'app.bundle.js');
   if (!fs.existsSync(bundleJs)) {
     throw new Error('bundle build produced no public/js/app.bundle.js');
   }
-  if (fs.existsSync(OUTFILE)) fs.unlinkSync(OUTFILE);
   fs.renameSync(bundleJs, OUTFILE);
   const bundleJsMap = path.join(OUT_DIR, 'app.bundle.js.map');
   const bundleMjsMap = path.join(OUT_DIR, 'app.bundle.mjs.map');
-  if (fs.existsSync(bundleJsMap)) {
-    if (fs.existsSync(bundleMjsMap)) fs.unlinkSync(bundleMjsMap);
-    fs.renameSync(bundleJsMap, bundleMjsMap);
-  }
+  if (fs.existsSync(bundleJsMap)) fs.renameSync(bundleJsMap, bundleMjsMap);
+  removeStaleChunks(result.metafile);
   fs.writeFileSync(META_FILE, JSON.stringify(result.metafile, null, 2) + '\n');
   const chartChunkManifest = path.join(OUT_DIR, 'chart-chunk.json');
   const chartImportUrl = findChartChunkImportUrl(result.metafile);
