@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* global process, console, URL */
 /**
  * Pre-commit guard: refuse a commit whose ADDED lines carry hospital
  * identifiers or likely real patient data. Only staged, added lines are read,
@@ -18,6 +17,9 @@
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import process from 'node:process';
+import console from 'node:console';
+import { URL } from 'node:url';
 
 const RULES = [
   ['hospital: UANL', /\bUANL\b/i],

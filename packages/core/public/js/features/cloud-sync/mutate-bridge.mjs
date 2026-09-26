@@ -19,7 +19,6 @@ import {
   hasNonEntryCloudOps,
   mapBundleEnvelopeToOps,
   mapPatientEntryToCloudBundleOps,
-  pushCensusFieldsOp,
   labSetId,
   pickCensusFields,
   mapPatientEntryToOps,

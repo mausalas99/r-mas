@@ -173,7 +173,7 @@ export function resolveFebrilLabel(v) {
  * @param {Record<string, unknown>} v
  * @param {Record<string, unknown>} ec
  */
-export function resolveHemodynamicLabel(v, ec) {
+export function resolveHemodynamicLabel(_v, _ec) {
   return 'ESTABLE';
 }
 

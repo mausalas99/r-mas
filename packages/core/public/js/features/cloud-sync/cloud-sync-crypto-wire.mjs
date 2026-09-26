@@ -151,7 +151,8 @@ async function encryptTombstoneValue(dek, value) {
   const row = /** @type {Record<string, unknown>} */ (value);
   const plainRegistro = typeof row.registro === 'string' ? row.registro.trim() : '';
   if (!plainRegistro) return value;
-  const { registro, ...rest } = row;
+  const rest = { ...row };
+  delete rest.registro;
   return { ...rest, registroFp: await fingerprintValue(dek, plainRegistro) };
 }
 

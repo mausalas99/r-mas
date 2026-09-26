@@ -213,6 +213,23 @@ function scalarKeyTakesIncoming(existing, p, key, takeIncoming) {
   return cmp == null ? takeIncoming : cmp === 1;
 }
 
+/** Fields only the authoritative (incoming) side may overwrite. */
+function applyLanIncomingOnlyFields(existing, p) {
+  var changed = applyLanGuardiaMarks(existing, p);
+  if (p.lanUpdatedAt && String(p.lanUpdatedAt) !== String(existing.lanUpdatedAt || '')) {
+    existing.lanUpdatedAt = p.lanUpdatedAt;
+    changed = true;
+  }
+  if (Array.isArray(p.interconsultServiceIds)) {
+    var nextIc = p.interconsultServiceIds.slice();
+    if (JSON.stringify(existing.interconsultServiceIds || []) !== JSON.stringify(nextIc)) {
+      existing.interconsultServiceIds = nextIc;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 function applyLanPatientScalars(existing, p) {
   var changed = false;
   var takeIncoming = incomingScalarsAreAuthoritative(existing, p);
@@ -224,11 +241,7 @@ function applyLanPatientScalars(existing, p) {
     var key = scalarKeys[sk];
     if (assignLanScalarIfChanged(existing, key, p[key], existing[key], scalarKeyTakesIncoming(existing, p, key, takeIncoming))) changed = true;
   }
-  if (takeIncoming && applyLanGuardiaMarks(existing, p)) changed = true;
-  if (takeIncoming && p.lanUpdatedAt && String(p.lanUpdatedAt) !== String(existing.lanUpdatedAt || '')) {
-    existing.lanUpdatedAt = p.lanUpdatedAt;
-    changed = true;
-  }
+  if (takeIncoming && applyLanIncomingOnlyFields(existing, p)) changed = true;
   var censoBefore = JSON.stringify(existing);
   mergeCensoPatientFields(existing, p, { keepLocalWhenPresent: !takeIncoming });
   var clocks = mergeFieldClocks(existing, p);
@@ -245,13 +258,6 @@ function applyLanPatientScalars(existing, p) {
   if (p.fromLab && !existing.fromLab) {
     existing.fromLab = true;
     changed = true;
-  }
-  if (takeIncoming && Array.isArray(p.interconsultServiceIds)) {
-    var nextIc = p.interconsultServiceIds.slice();
-    if (JSON.stringify(existing.interconsultServiceIds || []) !== JSON.stringify(nextIc)) {
-      existing.interconsultServiceIds = nextIc;
-      changed = true;
-    }
   }
   return changed;
 }

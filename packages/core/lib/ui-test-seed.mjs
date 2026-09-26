@@ -64,7 +64,6 @@ export const UI_TEST_TEAMS = {
   GUARDIA: 'ui-test-team-guardia',
 };
 
-const SERVICIOS = ['Sala', 'Torre HU', 'Eme', 'UX', 'Área A/Pensionistas'];
 
 /** @type {{nombre:string, edad:string, sexo:'M'|'F', servicio:string, team:string, interconsultType?:string, interconsultStatus?:string, reason?:string, labs?:'structured'|'raw-fixture'}[]} */
 const ROSTER = [
