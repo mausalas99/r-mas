@@ -94,14 +94,49 @@ describe('dashboard assembler', () => {
     assert.deepEqual(model.vitals.glucometrias, [{ value: 142, time: '10:10' }]);
   });
 
-  it('keeps the 3 most recent eventualidades when collect is newest-first', () => {
+  it('caps lists at 30: newest-first eventualidades keep the head, pendientes the tail', () => {
+    const ev = Array.from({ length: 35 }, (_, i) => 'e' + i);
+    const pe = Array.from({ length: 35 }, (_, i) => 'p' + i);
+    const model = buildDashboardModel({ patient: { nombre: 'X' }, eventualidades: ev, pendientes: pe });
+    assert.deepEqual(model.eventualidades, ev.slice(0, 30));
+    assert.deepEqual(model.pendientes, pe.slice(5));
+    assert.equal(model.eventualidadesTotal, 35);
+    assert.equal(model.pendientesTotal, 35);
+  });
+
+  it('lists lines/tubes with their day (insertion day = día 1) and the newest positive cultures', () => {
     const model = buildDashboardModel({
-      patient: { nombre: 'X' },
-      eventualidades: ['newest', 'mid', 'older', 'oldest'],
-      pendientes: ['p1', 'p2', 'p3', 'p4'],
+      patient: {
+        nombre: 'X',
+        accesosList: [
+          { via: 'cvc', fecha: '2026-09-20' },
+          { via: 'foley', fecha: '25/09/2026' },
+          { via: 'picc', fecha: '' },
+          { via: '', fecha: '2026-09-01' },
+        ],
+      },
+      refDate: new Date(2026, 8, 25, 23, 30),
+      todayKey: '2026-9-25',
+      labSets: [
+        { id: 'a', fecha: '10/09/2026', hora: '08:00', resLabs: ['UROCULTIVO: E. COLI\nATB S: CIPRO'] },
+        { id: 'b', fecha: '20/09/2026', hora: '08:00', resLabs: ['HEMOCULTIVO: S. AUREUS'] },
+        { id: 'c', fecha: '21/09/2026', hora: '08:00', resLabs: ['UROCULTIVO: NEGATIVO'] },
+        { id: 'd', fecha: '22/09/2026', hora: '08:00', resLabs: ['UROCULTIVO POR SONDA: MUESTRA CONTAMINADA'] },
+      ],
     });
-    assert.deepEqual(model.eventualidades, ['newest', 'mid', 'older']);
-    assert.deepEqual(model.pendientes, ['p2', 'p3', 'p4']);
+    assert.deepEqual(model.accesos, [
+      { label: 'CVC', dia: 6 },
+      { label: 'Sonda Foley', dia: 1 },
+      { label: 'PICC', dia: null },
+    ]);
+    assert.deepEqual(
+      model.labs.cultivos.map((c) => [c.sitio, c.organismo, c.atbPendiente, c.atb]),
+      [
+        ['Hemocultivo', 'S. aureus', true, []],
+        ['Urocultivo', 'E. coli', false, [{ k: 'S', drugs: 'CIPRO' }]],
+      ],
+    );
+    assert.equal(model.labs.cultivosTotal, 2);
   });
 
   it('composes non-empty labs and ea via child models', () => {

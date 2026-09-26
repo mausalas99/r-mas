@@ -134,6 +134,50 @@ function renderVitalsHtml(model) {
   );
 }
 
+function ctxPillHtml(label, value) {
+  return (
+    '<span class="ctx-pill"><small>' +
+    escHtml(label) +
+    '</small>' +
+    (value ? ' ' + escHtml(value) : '') +
+    '</span>'
+  );
+}
+
+/**
+ * One slim row above vitals: care plan (soporte, dieta, bomba → Estado actual)
+ * and lines/tubes with their day count (→ Datos). Nothing to show → no row.
+ */
+function renderContextHtml(model) {
+  var kpis = (model.ea && model.ea.kpis) || [];
+  var accesos = Array.isArray(model.accesos) ? model.accesos : [];
+  if (!kpis.length && !accesos.length) return '';
+  return (
+    '<div class="dash-context">' +
+    (kpis.length
+      ? '<button type="button" class="ctx-group" data-dash-action="estadoActual">' +
+        kpis
+          .map(function (k) {
+            return k.label === 'Bomba' && !k.value
+              ? ctxPillHtml('Bomba de insulina', '')
+              : ctxPillHtml(k.label, k.value);
+          })
+          .join('') +
+        '</button>'
+      : '') +
+    (accesos.length
+      ? '<button type="button" class="ctx-group" data-dash-action="datos">' +
+        accesos
+          .map(function (a) {
+            return ctxPillHtml(a.label, a.dia ? 'día ' + a.dia : '');
+          })
+          .join('') +
+        '</button>'
+      : '') +
+    '</div>'
+  );
+}
+
 function renderIcAssignedHtml(ids) {
   var chips = (Array.isArray(ids) ? ids : [])
     .map(function (id) {
@@ -161,7 +205,7 @@ function renderIdentityHtml(model) {
   var dx = Array.isArray(idn.diagnosticos) ? idn.diagnosticos : [];
   var dxHtml = dx
     .map(function (d) {
-      return '<span class="chip">' + escHtml(d) + '</span>';
+      return '<span class="chip" title="' + escAttr(d) + '">' + escHtml(d) + '</span>';
     })
     .join('');
   return (
@@ -276,35 +320,26 @@ function sortDrawChips(chips) {
   });
 }
 
-function visibleDrawChips(envio) {
+function renderDrawHtml(envio, showHead) {
   var all = (envio.groups || []).reduce(function (acc, g) {
     return acc.concat(g.chips || []);
   }, []);
-  return sortDrawChips(all).slice(0, MAX_DRAW_CELLS);
-}
-
-function renderDrawHtml(envio, totalAltered) {
-  var visible = visibleDrawChips(envio);
-  var cells = visible.map(renderDrawCellHtml).join('');
-  var count = visible.length;
+  var visible = sortDrawChips(all).slice(0, MAX_DRAW_CELLS);
+  var hidden = all.length - visible.length;
   return (
     '<button class="draw' +
     (envio.wide ? ' is-wide' : '') +
     '" type="button" data-dash-action="labs-envio" data-lab-set-id="' +
     escAttr(String(envio.id || '')) +
     '">' +
-    '<div class="draw-head">' +
-    '<span class="draw-head-label">LABS FUERA DE RANGO' +
-    (totalAltered ? ' &middot; ' + count + ' DE ' + totalAltered : '') +
-    '</span>' +
-    (envio.hora
-      ? '<span class="draw-head-caption">corte ' +
+    (showHead && envio.hora
+      ? '<div class="draw-head"><span class="draw-head-label">Corte ' +
         escHtml(envio.hora) +
-        ' &middot; el resto en Laboratorio</span>'
+        '</span></div>'
       : '') +
-    '</div>' +
     '<div class="draw-grid">' +
-    cells +
+    visible.map(renderDrawCellHtml).join('') +
+    (hidden > 0 ? '<span class="draw-cell draw-more">+' + hidden + ' más</span>' : '') +
     '</div></button>'
   );
 }
@@ -340,14 +375,88 @@ function dedupeChipsAcrossEnvios(visibleEnvios) {
   });
 }
 
+function renderAtbPopHtml(c) {
+  var groups = Array.isArray(c.atb) ? c.atb : [];
+  if (!groups.length) return '';
+  return (
+    '<span class="cult-pop" role="tooltip"><span class="cult-pop-h">' +
+    escHtml(c.sitioFull || c.sitio) +
+    '</span>' +
+    groups
+      .map(function (g) {
+        return (
+          '<span class="cult-pop-row"><b class="atb-k is-' +
+          escAttr(String(g.k).toLowerCase()) +
+          '">' +
+          escHtml(g.k) +
+          '</b>' +
+          escHtml(g.drugs) +
+          '</span>'
+        );
+      })
+      .join('') +
+    '</span>'
+  );
+}
+
+/**
+ * Newest positive cultures; «ATB pendiente» while the antibiograma is missing.
+ * Hover / focus shows the antibiogram when there is one. Click → Cultivos.
+ */
+function renderCultivosHtml(labs) {
+  var list = Array.isArray(labs.cultivos) ? labs.cultivos : [];
+  if (!list.length) return '';
+  var more = (Number(labs.cultivosTotal) || 0) - list.length;
+  return (
+    '<div class="cultivos"><div class="cultivos-h"><span>Cultivos</span>' +
+    (more > 0
+      ? '<button type="button" class="card-h-count" data-dash-action="cultivos">+' + more + ' más</button>'
+      : '') +
+    '</div><div class="cult-grid">' +
+    list
+      .map(function (c) {
+        var fecha = String(c.fecha || '').replace(/\/\d{4}$/, '');
+        return (
+          '<button type="button" class="cult' +
+          (c.atbPendiente ? ' is-pending' : '') +
+          '" data-dash-action="cultivos"><span class="cult-row"><b class="cult-sitio">' +
+          escHtml(c.sitio) +
+          '</b><span class="cult-date">' +
+          escHtml(fecha + (c.preliminar ? ' · prelim.' : '')) +
+          '</span></span><span class="cult-row"><i class="cult-org">' +
+          escHtml(c.organismo) +
+          '</i>' +
+          (c.atbPendiente ? '<em>ATB pendiente</em>' : '') +
+          '</span>' +
+          renderAtbPopHtml(c) +
+          '</button>'
+        );
+      })
+      .join('') +
+    '</div></div>'
+  );
+}
+
+function labsHeaderHtml(visibleEnvios, enRango) {
+  if (!visibleEnvios.length) return '<div class="card-h">Labs</div>';
+  var meta = [];
+  if (visibleEnvios.length === 1 && visibleEnvios[0].hora) {
+    meta.push('corte ' + escHtml(visibleEnvios[0].hora));
+  }
+  if (enRango > 0) meta.push(enRango + ' en rango');
+  return (
+    '<div class="card-h"><span>Labs: fuera de rango</span>' +
+    (meta.length ? '<span class="card-h-meta">' + meta.join(' &middot; ') + '</span>' : '') +
+    '</div>'
+  );
+}
+
 export function renderLabsHtml(model) {
   var labs = (model && model.labs) || {};
   var pending = !!labs.pending;
   var envios = Array.isArray(labs.envios) ? labs.envios : [];
   var visibleEnvios = dedupeChipsAcrossEnvios(envios.slice(-2));
-  var totalAltered = envios.reduce(function (n, e) {
-    return n + envioChipCount(e);
-  }, 0);
+  var single = visibleEnvios.length === 1;
   var enRango = Number(labs.enRangoCount) || 0;
   var enRangoHtml =
     !pending && enRango > 0
@@ -361,11 +470,10 @@ export function renderLabsHtml(model) {
       '<div class="day-draws">' +
       visibleEnvios
         .map(function (envio) {
-          return renderDrawHtml(envio, totalAltered);
+          return renderDrawHtml(envio, !single);
         })
         .join('') +
-      '</div>' +
-      enRangoHtml;
+      '</div>';
   } else if (enRango > 0) {
     body = enRangoHtml;
   } else {
@@ -376,9 +484,10 @@ export function renderLabsHtml(model) {
   }
   return (
     '<div class="card labs-card clickable" data-dash-labs data-dash-action="labs-full">' +
-    '<div class="card-h">Labs' + (visibleEnvios.length ? ': fuera de rango' : '') + '</div>' +
+    labsHeaderHtml(pending ? [] : visibleEnvios, enRango) +
     '<div class="card-b">' +
     body +
+    (pending ? '' : renderCultivosHtml(labs)) +
     '</div></div>'
   );
 }
@@ -400,7 +509,7 @@ function renderMedItemHtml(item) {
   var token = medItemToken(item);
   var emphasis = item && typeof item === 'object' && item.emphasis;
   return (
-    '<div class="med"><span class="name">' +
+    '<div class="med" data-fit-item><span class="name">' +
     escHtml(name) +
     '</span>' +
     (token
@@ -410,35 +519,28 @@ function renderMedItemHtml(item) {
   );
 }
 
-function renderSoapZoneHtml(zone, headingClass) {
+/** All meds render; dashboard-fit.mjs hides the rows that do not fit and fills «+N más». */
+function renderSoapZoneHtml(zone) {
   var meds = (zone.items || []).map(renderMedItemHtml).join('');
   var letter = String(zone.letter || '');
   return (
-    '<span class="' +
-    (headingClass || 'z') +
-    '" data-soap="' +
+    '<div class="soap-zone" data-fit-zone><span class="z" data-soap="' +
     escAttr(letter) +
     '">' +
     escHtml(letter) +
     (zone.subtitle ? ' <em>' + escHtml(zone.subtitle) + '</em>' : '') +
+    '<small class="zone-more" data-fit-more hidden></small>' +
     '</span>' +
-    meds
+    meds +
+    '</div>'
   );
 }
 
+/** Clinical zone order from packSoapCols, flattened: CSS columns balance the layout. */
 function renderEaSoapHtml(soap) {
   return packSoapCols(soap || [])
-    .map(function (col) {
-      return (
-        '<section>' +
-        col
-          .map(function (zone, i) {
-            return renderSoapZoneHtml(zone, i === 0 ? 'z' : 'z2');
-          })
-          .join('') +
-        '</section>'
-      );
-    })
+    .flat()
+    .map(renderSoapZoneHtml)
     .join('');
 }
 
@@ -449,7 +551,7 @@ function renderMedsHtml(model) {
     '<div class="bento meds-band">' +
     '<button class="card clickable meds-card" type="button" data-dash-action="estadoActual">' +
     '<div class="card-h">Medicamentos</div>' +
-    '<div class="card-b"><div class="soap-pack">' +
+    '<div class="card-b" data-fit><div class="soap-pack" data-fit-cols="2,3">' +
     renderEaSoapHtml(soap) +
     '</div></div></button></div>'
   );
@@ -475,19 +577,17 @@ function rowText(item) {
   return String(item.text || '');
 }
 
-function renderRowsHtml(items, emptyText, markOverdue) {
-  var list = Array.isArray(items) ? items : [];
-  if (!list.length) {
-    return '<p class="empty-hint">' + escHtml(emptyText || 'Sin registros') + '</p>';
-  }
+function renderRowsHtml(list, markOverdue, fromStart) {
   return (
-    '<ul class="rows">' +
+    '<ul class="rows" data-fit-zone' +
+    (fromStart ? ' data-fit-from-start' : '') +
+    '>' +
     list
       .map(function (item) {
         var overdue = !!markOverdue && isTodoOverdue(item);
         var t = rowTime(item);
         return (
-          '<li' +
+          '<li data-fit-item' +
           (overdue ? ' class="is-overdue"' : '') +
           '>' +
           (overdue
@@ -504,14 +604,29 @@ function renderRowsHtml(items, emptyText, markOverdue) {
   );
 }
 
-function renderListCardHtml(title, action, items, emptyText, markOverdue) {
+/**
+ * Empty list → no card, the others take its space. The header shows the total;
+ * when rows are cut (model cap or dashboard-fit.mjs) it shows «+N más».
+ * Pendientes keep the newest rows, so they cut from the start.
+ */
+function renderListCardHtml(title, action, items, total, markOverdue) {
+  var list = Array.isArray(items) ? items : [];
+  if (!list.length) return '';
+  var base = Math.max(0, (Number(total) || 0) - list.length);
   return (
     '<button class="card clickable" type="button" data-dash-action="' +
     escAttr(action) +
-    '"><div class="card-h">' +
+    '"><div class="card-h"><span>' +
     escHtml(title) +
-    '</div><div class="card-b">' +
-    renderRowsHtml(items, emptyText, markOverdue) +
+    '</span><span class="card-h-count" data-fit-more data-fit-base="' +
+    base +
+    '" data-fit-idle="' +
+    list.length +
+    '">' +
+    escHtml(base > 0 ? '+' + base + ' más' : String(list.length)) +
+    '</span></div>' +
+    '<div class="card-b" data-fit>' +
+    renderRowsHtml(list, markOverdue, markOverdue) +
     '</div></button>'
   );
 }
@@ -522,18 +637,19 @@ function renderListCardHtml(title, action, items, emptyText, markOverdue) {
  */
 export function renderDashboardHtml(model) {
   var m = model || {};
+  var lists =
+    renderListCardHtml('Pendientes', 'pendientes', m.pendientes, m.pendientesTotal, true) +
+    renderListCardHtml('Eventualidades', 'eventualidades', m.eventualidades, m.eventualidadesTotal);
+  var bottom = (lists ? '<div class="bento rest">' + lists + '</div>' : '') + renderMedsHtml(m);
   return (
     '<div class="patient-dash dash">' +
     renderIdentityHtml(m) +
+    renderContextHtml(m) +
     '<div class="bento vitals-labs">' +
     renderVitalsHtml(m) +
     renderLabsHtml(m) +
     '</div>' +
-    '<div class="bento rest">' +
-    renderListCardHtml('Eventualidades', 'eventualidades', m.eventualidades, 'Sin eventualidades') +
-    renderListCardHtml('Pendientes', 'pendientes', m.pendientes, 'Sin pendientes', true) +
-    '</div>' +
-    renderMedsHtml(m) +
+    (bottom ? '<div class="dash-bottom">' + bottom + '</div>' : '') +
     '</div>'
   );
 }

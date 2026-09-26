@@ -113,7 +113,7 @@ describe('dashboard html', () => {
     assert.equal(html.includes('Furosemida 40 mg'), false);
   });
 
-  it('uses distinct empty copy for labs, eventualidades and pendientes', () => {
+  it('empty labs say so; empty eventualidades and pendientes render no card', () => {
     const html = renderDashboardHtml(
       buildDashboardModel({
         patient: {
@@ -130,9 +130,9 @@ describe('dashboard html', () => {
     );
     assert.match(html, /class="card-h">Labs</);
     assert.match(html, /Sin labs de hoy/);
-    assert.match(html, /Sin eventualidades/);
-    assert.match(html, /Sin pendientes/);
-    assert.equal(html.includes('Sin registros'), false);
+    assert.equal(html.includes('Eventualidades'), false);
+    assert.equal(html.includes('Pendientes'), false);
+    assert.equal(html.includes('dash-bottom'), false);
   });
 
   it('pending labs keep the card without claiming there are none', () => {
@@ -167,9 +167,9 @@ describe('dashboard html', () => {
         todayKey: '2026-8-13',
       }),
     );
-    assert.match(html, /<li class="is-overdue"><b class="due-tag">Vencido<\/b> Control K vencido<\/li>/);
-    assert.match(html, /<li><time>[^<]*<\/time> Retirar sonda mañana<\/li>/);
-    assert.match(html, /<li><time>Vence<\/time> Disnea al deambular<\/li>/);
+    assert.match(html, /<li data-fit-item class="is-overdue"><b class="due-tag">Vencido<\/b> Control K vencido<\/li>/);
+    assert.match(html, /<li data-fit-item><time>[^<]*<\/time> Retirar sonda mañana<\/li>/);
+    assert.match(html, /<li data-fit-item><time>Vence<\/time> Disnea al deambular<\/li>/);
   });
 
   it('omits Medicamentos when SOAP is empty', () => {
@@ -301,7 +301,7 @@ describe('dashboard html', () => {
     assert.match(html, /vitals-alert-count">1 fuera de rango/);
   });
 
-  it('splits labs into a fuera-de-rango draw table and an en-rango one-liner', () => {
+  it('one draw: corte and en-rango count sit in the Labs header, no second header', () => {
     const html = renderLabsHtml({
       labs: {
         envios: [
@@ -315,10 +315,11 @@ describe('dashboard html', () => {
         pending: false,
       },
     });
-    assert.match(html, /class="draw-head-label">LABS FUERA DE RANGO/);
+    assert.match(html, /<span>Labs: fuera de rango<\/span><span class="card-h-meta">corte 07:14 &middot; 12 en rango<\/span>/);
+    assert.equal(html.includes('draw-head'), false);
+    assert.equal(html.includes('labs-en-rango'), false);
     assert.match(html, /class="draw-cell">/);
     assert.match(html, /class="draw-delta">.*-0\.4<\/span>/);
-    assert.match(html, /class="labs-en-rango">12 valores en rango<\/p>/);
   });
 
   it('sorts worsening (trend down) chips by drop magnitude, worst first', () => {
@@ -377,7 +378,7 @@ describe('dashboard html', () => {
     assert.ok(kIdx < colIdx, 'K outranks COL on the clinical-importance list');
   });
 
-  it('caps the visible draw cells at 8 and updates the N of M count', () => {
+  it('caps the visible draw cells at 8 and shows the rest as +N más', () => {
     const chips = [];
     for (let i = 0; i < 17; i += 1) {
       chips.push({ label: 'X' + i, value: (i + 1) + '*' });
@@ -390,8 +391,7 @@ describe('dashboard html', () => {
       },
     });
     assert.equal((html.match(/class="draw-cell"/g) || []).length, 8);
-    assert.match(html, /LABS FUERA DE RANGO &middot; 8 DE 17/);
-    assert.match(html, /el resto en Laboratorio/);
+    assert.match(html, /class="draw-cell draw-more">\+9 más</);
   });
 
   it('drops a label repeated across draws from the older draw, keeps it in the newer one', () => {
@@ -441,7 +441,7 @@ describe('dashboard html', () => {
     assert.equal(html.includes('data-lab-set-id="older"'), false);
   });
 
-  it('keeps the N DE M denominator counting all altered labs, duplicates included', () => {
+  it('two draws: each gets its own corte head', () => {
     const html = renderLabsHtml({
       labs: {
         envios: [
@@ -476,9 +476,54 @@ describe('dashboard html', () => {
         pending: false,
       },
     });
-    // 4 chips total across both envios (Lactato duplicated, counted once per envio for M).
-    assert.match(html, /LABS FUERA DE RANGO &middot; 1 DE 4/);
-    assert.match(html, /LABS FUERA DE RANGO &middot; 2 DE 4/);
+    assert.match(html, /draw-head-label">Corte 04:21</);
+    assert.match(html, /draw-head-label">Corte 07:38</);
+    assert.equal(html.includes('draw-more'), false);
+  });
+
+  it('empty lists render no card; every row renders for dashboard-fit to trim', () => {
+    const html = renderDashboardHtml(
+      buildDashboardModel({
+        patient: { nombre: 'X' },
+        inner: 'resumen',
+        eventualidades: [],
+        pendientes: ['a', 'b', 'c', 'd', 'e'],
+      }),
+    );
+    assert.equal(html.includes('data-dash-action="eventualidades"'), false);
+    assert.match(html, /<span>Pendientes<\/span><span class="card-h-count" data-fit-more data-fit-base="0" data-fit-idle="5">5<\/span>/);
+    assert.match(html, /<ul class="rows" data-fit-zone data-fit-from-start>/);
+    const meds = renderDashboardHtml({
+      ea: { soap: [{ letter: 'HD', subtitle: 'Hemo', items: ['A1', 'A2', 'A3', 'A4', 'A5'] }] },
+    });
+    assert.equal((meds.match(/class="name">A/g) || []).length, 5);
+    assert.match(meds, /<div class="card-b" data-fit><div class="soap-pack" data-fit-cols="2,3">/);
+    assert.match(meds, /class="zone-more" data-fit-more hidden>/);
+  });
+
+  it('shows care plan, lines/tubes, cultures and antibiotic day', () => {
+    const html = renderDashboardHtml({
+      ea: {
+        kpis: [{ label: 'Soporte', value: 'Puntillas 3 L' }, { label: 'Bomba', value: '' }],
+        soap: [{ letter: 'HI', subtitle: 'Infeccioso', items: [{ name: 'Meropenem', token: 'día 6', emphasis: true }] }],
+      },
+      accesos: [{ label: 'CVC', dia: 6 }, { label: 'PICC', dia: null }],
+      labs: {
+        envios: [],
+        cultivos: [
+          { sitio: 'Hemocultivo', sitioFull: 'HEMOCULTIVO (PERIFERICO)', organismo: 'S. aureus', fecha: '20/09/2026', atbPendiente: true, atb: [] },
+          { sitio: 'Urocultivo', organismo: 'Escherichia coli', fecha: '18/09/2026', preliminar: true, atbPendiente: false, atb: [{ k: 'R', drugs: 'AMP' }, { k: 'S', drugs: 'MERO' }] },
+        ],
+        cultivosTotal: 5,
+      },
+    });
+    assert.match(html, /data-dash-action="estadoActual"><span class="ctx-pill"><small>Soporte<\/small> Puntillas 3 L<\/span><span class="ctx-pill"><small>Bomba de insulina<\/small><\/span>/);
+    assert.match(html, /data-dash-action="datos"><span class="ctx-pill"><small>CVC<\/small> día 6<\/span><span class="ctx-pill"><small>PICC<\/small><\/span>/);
+    assert.match(html, /<button type="button" class="cult is-pending" data-dash-action="cultivos"><span class="cult-row"><b class="cult-sitio">Hemocultivo<\/b><span class="cult-date">20\/09<\/span><\/span><span class="cult-row"><i class="cult-org">S\. aureus<\/i><em>ATB pendiente<\/em><\/span><\/button>/);
+    assert.match(html, /<span class="cult-date">18\/09 · prelim\.<\/span><\/span><span class="cult-row"><i class="cult-org">Escherichia coli<\/i><\/span><span class="cult-pop" role="tooltip"><span class="cult-pop-h">Urocultivo<\/span><span class="cult-pop-row"><b class="atb-k is-r">R<\/b>AMP<\/span><span class="cult-pop-row"><b class="atb-k is-s">S<\/b>MERO<\/span><\/span>/);
+    assert.match(html, /class="card-h-count" data-dash-action="cultivos">\+3 más</);
+    assert.match(html, /class="name">Meropenem<\/span><span class="meta is-key">día 6</);
+    assert.equal(renderDashboardHtml({}).includes('dash-context'), false);
   });
 
   it('omits the header meta line when there are no vitals at all', () => {

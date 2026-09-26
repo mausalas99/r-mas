@@ -27,7 +27,7 @@ test('fuera-de-rango draws sit in a horizontal row, not stacked', () => {
   const css = readDashboardCss();
   assert.match(css, /\.day-draws\s*\{[^}]*flex-direction:\s*row/s);
   assert.match(css, /\.day-draws\s*\{[^}]*flex-wrap:\s*wrap/s);
-  assert.match(css, /\.draw-head\s*\{[^}]*background:\s*var\(--color-danger-tint-strong\)/s);
+  assert.match(css, /\.draw-cell\s*\{[^}]*background:\s*var\(--color-danger-tint\)/s);
   assert.match(css, /\.draw-grid\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit/s);
   assert.match(css, /\.draw-cell\s*\{[^}]*display:\s*flex/s);
   assert.match(css, /\.draw\.is-wide\s*\{[^}]*(?:flex:\s*1\s+1\s+100%|flex-basis:\s*100%|width:\s*100%)/s);
@@ -90,7 +90,8 @@ function readLabInnerCss() {
 
 test('SOAP meds are a left-aligned zoned list, not centered pills', () => {
   const css = readDashboardCss();
-  assert.match(css, /\.soap-pack\s*\{[^}]*display:\s*flex/s);
+  assert.match(css, /\.soap-pack\s*\{[^}]*columns:\s*3/s);
+  assert.equal(/\.soap-pack[^{]*\{[^}]*border-(?:top|bottom|right):\s*1px/s.test(css), false);
   assert.match(css, /\.soap-pack \.med\s*\{[^}]*justify-content:\s*space-between/s);
   assert.equal(/\.soap-pack \.med\s*\{[^}]*border-radius:\s*999px/s.test(css), false);
   assert.equal(/\.ea-cat\s*\{[^}]*border-left/s.test(css), false);
@@ -151,24 +152,29 @@ test('dashboard chips use accent-soft tokens', () => {
   );
 });
 
-test('medicamentos sizes to the list; no inner scrollbar', () => {
+test('medicamentos fills the free height and clips (dashboard-fit trims rows); no inner scrollbar', () => {
   const css = readDashboardCss();
-  assert.match(css, /\.bento\.meds-band\s*\{[^}]*flex:\s*0\s+0\s+auto/s);
-  assert.match(css, /\.bento\.meds-band\s*\{[^}]*min-height:\s*min-content/s);
-  assert.match(css, /\.bento\.meds-band \.card-b\s*\{[^}]*overflow:\s*visible/s);
-  assert.match(css, /\.bento\.meds-band \.soap-pack\s*\{[^}]*overflow:\s*visible/s);
+  assert.match(css, /\.bento\.meds-band\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)/s);
+  assert.match(css, /\.bento\.meds-band \.card-b\s*\{[^}]*overflow:\s*hidden/s);
   assert.equal(/\.bento\.meds-band \.soap-pack\s*\{[^}]*overflow-y:\s*auto/s.test(css), false);
   assert.equal(/\.bento\.meds-band \.card-b\s*\{[^}]*overflow-y:\s*auto/s.test(css), false);
   assert.equal(/mask-image/.test(css), false);
   assert.equal(/\.bento\.meds-band \.soap-pack\s*\{[^}]*font-size:\s*22px/s.test(css), false);
 });
 
-test('eventualidades and pendientes stay two columns and do not shrink', () => {
+test('eventualidades and pendientes: two columns alone, stacked beside meds; bottom row takes the free height', () => {
   const css = readDashboardCss();
-  assert.match(css, /\.bento\.rest\s*\{[^}]*flex:\s*0\s+0\s+auto/s);
   assert.match(css, /\.bento\.rest\s*\{[^}]*grid-template-columns:\s*1fr\s+1fr/s);
-  assert.match(css, /\.bento\.rest\s*>\s*\.card[^}]*min-height:\s*min-content/s);
+  assert.match(css, /\.dash-bottom\s*\{[^}]*flex:\s*1\s+1\s+0/s);
+  assert.match(css, /\[data-fit-item\]\[hidden\]/);
   assert.equal(/repeat\(\s*3/.test(css), false);
+});
+
+test('bottom row: lists stack left, medicamentos right', () => {
+  const css = readDashboardCss();
+  assert.match(css, /\.dash-bottom\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*2fr\)/s);
+  assert.match(css, /\.rows li\s*\{[^}]*text-overflow:\s*ellipsis/s);
+  assert.match(css, /\.dash-bottom:has\(> :only-child\),\s*\.patient-dash \.bento\.rest:has\(> :only-child\)\s*\{[^}]*minmax\(0,\s*1fr\)/s);
 });
 
 test('SOAP zone headings use a hue token per letter', () => {

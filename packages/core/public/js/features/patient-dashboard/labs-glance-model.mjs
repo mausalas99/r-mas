@@ -3,6 +3,7 @@
  * Same-minute clones / complementary panels collapse; different hours stay split.
  */
 import { dayKeyFromLabSet } from '../../lab-history-format.mjs';
+import { labValueNumber_ } from '../../labs-extract.mjs';
 import { splitResLabsByTipo } from '../../cultivo-block-core.mjs';
 import { normalizeHoraLabHistory, parseFechaLabToMs } from '../../tend-core.mjs';
 import { dedupeConsolidatedLabRows } from '../../lab-bulk-paste.mjs';
@@ -90,7 +91,7 @@ function tokenStatsFromTokens(tokens) {
       i += 1;
       continue;
     }
-    if (next !== undefined && !Number.isNaN(parseFloat(String(next).replace('*', '')))) {
+    if (next !== undefined && labValueNumber_(next) != null) {
       valuesByLabel[tok.toUpperCase()] = next;
       normalCount += 1;
       i += 2;

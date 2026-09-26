@@ -130,8 +130,8 @@ function renderLabView(bodyEl, nextBtn) {
 function renderIcExpedienteTabs(bodyEl, nextBtn) {
   var mod = getPlatformShortcutKey();
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, <strong>Paciente</strong> abre en <strong>Resumen</strong>. Grupos: <strong>Resumen</strong>, <strong>Clínico</strong> (Nota, Indicaciones) y <strong>Salida</strong> (Receta HU en PDF). Labs, tendencias y cultivos viven en <strong>Laboratorio</strong>.</p>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Receta HU</strong> exporta el PDF oficial 000-061-R-06-12. Atajos: <strong>' +
+    '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, <strong>Paciente</strong> abre en <strong>Resumen</strong>. Grupos: <strong>Resumen</strong>, <strong>Clínico</strong> (Nota, Indicaciones) y <strong>Salida</strong>. Labs, tendencias y cultivos viven en <strong>Laboratorio</strong>.</p>' +
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Atajos: <strong>' +
     mod +
     '+1</strong> cicla grupos · <strong>E/T/D</strong> saltan a EA, tendencias o datos.</p>';
   showNext(nextBtn);
