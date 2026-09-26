@@ -153,11 +153,16 @@ function layoutProbe(rootSel) {
     const g = grid.getBoundingClientRect();
     for (const cat of grid.querySelectorAll('.ea-med-cat')) {
       const c = cat.getBoundingClientRect();
-      // Long lists may continue in the next column; a title may not be left alone.
+      // A title may not be left alone: its first med sits either under it (stacked,
+      // narrow window) or on the same row, right of its label column (wide window).
       const sum = cat.querySelector(':scope > summary');
       const first = cat.querySelector('.ea-med-item');
-      if (sum && first && Math.abs(sum.getBoundingClientRect().left - first.getBoundingClientRect().left) > 2) {
-        issues.push('med title left alone in another column ' + desc(sum));
+      if (sum && first && sum.getBoundingClientRect().width > 1) {
+        const s = sum.getBoundingClientRect();
+        const f = first.getBoundingClientRect();
+        const stacked = Math.abs(s.left - f.left) <= 2;
+        const sameRow = f.left >= s.right - 1 && f.top < s.bottom && f.bottom > s.top;
+        if (!stacked && !sameRow) issues.push('med title left alone in another column ' + desc(sum));
       }
       if (c.right > g.right + 1 || c.left < g.left - 1 || c.bottom > g.bottom + 1) issues.push('med block outside grid ' + desc(cat));
       for (const el of cat.querySelectorAll('*')) {
@@ -407,7 +412,9 @@ await r.finish('Estado actual worst-case input, volume, restart', async () => {
     const form = await openRegistro(page);
     await setRecordedAt(page, 20 - i * 2);
     await typeInto(page, form.locator('[data-ea-vital="tas"][data-ea-layer-idx="0"]'), junk);
-    await typeInto(page, form.locator('[data-ea-vital="fc"][data-ea-layer-idx="0"]'), String(80 + i));
+    // The app allows at most 4 FC readings per turn. With 2 h spacing, a run after
+    // ~08:00 puts 5+ of these in the night turn, so only the first 4 carry FC.
+    if (i < 4) await typeInto(page, form.locator('[data-ea-vital="fc"][data-ea-layer-idx="0"]'), String(80 + i));
     await typeInto(page, form.locator('[data-ea-glu-value]').first(), junk);
     await form.locator('#ea-io-ing-t1').fill(junk);
     await form.locator('#ea-io-egr-t1').fill(NUM_JUNK[(i + 3) % NUM_JUNK.length]);
