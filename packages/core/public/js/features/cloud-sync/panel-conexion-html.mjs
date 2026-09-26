@@ -94,32 +94,49 @@ export function nextStepHtml(getToken) {
   );
 }
 
+const MONTHS_ES = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+];
+
 /**
- * "Tu sala" card — name, month/member count, invite code (+ Copiar), leave.
- * Revisión moved to Detalles técnicos (component 5) — it always needs the
- * live `getRevision()` getter there, never `room.revision` (a join-time
- * snapshot that goes stale the moment a push advances the counter).
+ * «2026-09» → «septiembre 2026». Anything else is returned trimmed, as is.
+ * @param {unknown} turnKey
+ */
+export function formatTurnMonth(turnKey) {
+  const raw = String(turnKey || '').trim();
+  const m = /^(\d{4})-(\d{2})$/.exec(raw);
+  const month = m ? MONTHS_ES[Number(m[2]) - 1] : '';
+  return month ? month + ' ' + m[1] : raw;
+}
+
+/**
+ * "Tu sala" card — sala, month · members, invite code (+ Copiar), leave.
+ * Revisión lives in Detalles técnicos: it needs the live `getRevision()`
+ * getter, never `room.revision` (a join-time snapshot that goes stale the
+ * moment a push advances the counter).
  * @param {object} room
  */
 export function roomConnectedHtml(room) {
   const code = String(room?.code || '').trim();
-  const turn = String(room?.turnKey || '').trim();
-  const name = String(room?.name || room?.sala || '').trim() || 'Sala';
-  const meta = appendMemberCount(turn, room?.memberCount).replace(/^ · /, '');
+  const name = String(room?.sala || room?.name || '').trim() || 'Sala';
+  const month = formatTurnMonth(room?.turnKey);
+  const meta = appendMemberCount(month ? month.charAt(0).toUpperCase() + month.slice(1) : '', room?.memberCount)
+    .replace(/^ · /, '');
   return (
     '<div class="cloud-sync-room cloud-sync-room--connected">' +
     '<p class="cloud-sync-options-label">Tu sala</p>' +
     '<dl class="cloud-sync-inset-group" aria-label="Sala nube">' +
     '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-inset-row--identity">' +
     '<span class="cloud-sync-options-entry-text">' +
-    '<span class="cloud-sync-status-handle">' +
+    '<span class="cloud-sync-room-name">' +
     esc(name) +
     '</span>' +
     (meta ? '<span class="cloud-sync-status-display">' + esc(meta) + '</span>' : '') +
     '</span></div>' +
-    '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv"><dt>Código</dt><dd>' +
+    '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv"><dt>Código para invitar</dt><dd>' +
     '<span class="cloud-sync-room-code-group">' +
-    '<code data-cloud-room-code>' +
+    '<code class="cloud-sync-room-code" data-cloud-room-code>' +
     esc(code || '—') +
     '</code>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-room-copy" data-cloud-action="copy-room-code">Copiar</button>' +
@@ -192,9 +209,8 @@ export function statusHeroHtml({ status, detail, displaySala, room }) {
     status === 'error'
       ? humanizeCloudSyncErrorMessage(String(detail || '').trim()) || STATUS_LABELS.error
       : HERO_TITLE_BY_STATUS[status] || STATUS_LABELS[status] || status;
-  const turn = String(room?.turnKey || '').trim();
   const lastPush = getLastCloudPushAt();
-  const subline = [String(displaySala || '').trim(), turn]
+  const subline = [String(displaySala || '').trim(), formatTurnMonth(room?.turnKey)]
     .filter(Boolean)
     .concat(lastPush ? ['último envío ' + formatCloudDiagWhen(lastPush, Date.now())] : [])
     .join(' · ');

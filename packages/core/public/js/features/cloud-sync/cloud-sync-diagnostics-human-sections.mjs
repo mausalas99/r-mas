@@ -72,6 +72,36 @@ export function buildFacts(d, now, status, transport, outboxCount, roomLabel) {
   ];
 }
 
+/** @param {string} level @param {string} headline @param {string} subline */
+function verdict(level, headline, subline) {
+  return { level, headline, subline };
+}
+
+/**
+ * The sync cycle can look done over the HTTP poll fallback while the live WS
+ * channel is still down/reconnecting — don't say "Nube al día" then.
+ * `status` is usually already 'reconnecting' (resolveCloudConexionChipStatus
+ * collapses idle/pending + poll transport into it); the transport check is a
+ * fallback for any caller that passes a raw runtime status directly.
+ * @param {string} status @param {string} transport
+ */
+function isLiveChannelDown(status, transport) {
+  return status === 'reconnecting' || ((status === 'idle' || status === 'pending') && transport === 'poll');
+}
+
+/** Warnings, a pending queue or no contact with Nube; null when none apply. @param {string} status @param {Array} issues */
+function softVerdict(status, issues) {
+  const warn = issues.find(function (item) {
+    return item.severity === 'warn';
+  });
+  if (warn || status === 'pending') {
+    const headline = status === 'pending' ? STATUS_LABELS.pending : 'Revisa la sincronización';
+    return verdict('warn', headline, warn?.detail || 'Hay avisos que conviene revisar.');
+  }
+  if (status === 'offline') return verdict('warn', STATUS_LABELS.offline, 'Sin contacto con el servicio de Nube.');
+  return null;
+}
+
 /**
  * @param {string} status
  * @param {string} transport
@@ -83,54 +113,22 @@ export function buildVerdict(status, transport, issues, recentErrors) {
     issues.some(function (item) {
       return item.severity === 'error';
     }) || recentErrors.length > 0;
-  const hasWarn = issues.some(function (item) {
-    return item.severity === 'warn';
-  });
 
-  let level = 'ok';
-  let headline = STATUS_LABELS.idle;
-  let subline = 'Los cambios locales coinciden con la sala en Nube.';
-  // The sync cycle can look done over the HTTP poll fallback while the live
-  // WS channel is still down/reconnecting — don't say "Nube al día" then.
-  // `status` is usually already 'reconnecting' (resolveCloudConexionChipStatus
-  // collapses idle/pending + poll transport into it); the transport check is
-  // a fallback for any caller that passes a raw runtime status directly.
-  const channelDown =
-    status === 'reconnecting' || ((status === 'idle' || status === 'pending') && transport === 'poll');
-
-  if (status === 'syncing') {
-    level = 'info';
-    headline = STATUS_LABELS.syncing;
-    subline = 'Enviando o descargando cambios…';
-  } else if (hasError) {
-    level = 'error';
-    headline = 'Hay problemas de sincronización';
-    subline = 'Revisa las alertas más abajo.';
-  } else if (channelDown) {
-    level = 'warn';
-    headline = 'Sin canal en vivo';
-    subline = 'Tus cambios están a salvo aquí. Se envían solos al volver.';
-  } else if (hasWarn || status === 'pending') {
-    level = 'warn';
-    headline = status === 'pending' ? STATUS_LABELS.pending : 'Revisa la sincronización';
-    subline =
-      issues.find(function (item) {
-        return item.severity === 'warn';
-      })?.detail || 'Hay avisos que conviene revisar.';
-  } else if (status === 'offline') {
-    level = 'warn';
-    headline = STATUS_LABELS.offline;
-    subline = 'Sin contacto con el servicio de Nube.';
-  } else if (status === 'idle') {
-    level = 'ok';
-    headline = STATUS_LABELS.idle;
-    subline =
-      transport === 'ws'
-        ? 'Canal en vivo conectado; la cola está vacía.'
-        : 'Sync por sondeo HTTP; la cola está vacía.';
+  if (status === 'syncing') return verdict('info', STATUS_LABELS.syncing, 'Enviando o descargando cambios…');
+  if (hasError) return verdict('error', 'Hay problemas de sincronización', 'Revisa las alertas más abajo.');
+  if (isLiveChannelDown(status, transport)) {
+    return verdict('warn', 'Sin canal en vivo', 'Tus cambios están a salvo aquí. Se envían solos al volver.');
   }
-
-  return { level, headline, subline };
+  const soft = softVerdict(status, issues);
+  if (soft) return soft;
+  if (status === 'idle') {
+    return verdict(
+      'ok',
+      STATUS_LABELS.idle,
+      transport === 'ws' ? 'Canal en vivo conectado; la cola está vacía.' : 'Sync por sondeo HTTP; la cola está vacía.'
+    );
+  }
+  return verdict('ok', STATUS_LABELS.idle, 'Los cambios locales coinciden con la sala en Nube.');
 }
 
 /**
