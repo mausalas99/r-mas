@@ -1,6 +1,7 @@
 /** Snapshot strip + historial section HTML for Estado Actual panel. */
 import {
   renderSnapshotVitalsHtml,
+  renderSnapshotVitalsZoneTitle,
   renderSnapshotGluHtml,
   renderSnapshotGluZoneTitle,
   renderSnapshotIoHtml,
@@ -21,7 +22,7 @@ export function renderSnapshotSection(snapshot, balTurno, balGlobal) {
     '<section class="ea-section ea-card ea-snapshot-strip ea-snapshot-strip--primary" id="ea-snapshot">' +
     '<div class="ea-snapshot-strip-body">' +
     '<div class="ea-snapshot-zone ea-snapshot-zone--vitals">' +
-    '<h4 class="ea-snapshot-zone-title">Signos vitales</h4>' +
+    '<h4 class="ea-snapshot-zone-title">' + renderSnapshotVitalsZoneTitle(snapshot) + '</h4>' +
     '<div class="ea-snapshot-vitals">' +
     renderSnapshotVitalsHtml(snapshot) +
     '</div>' +

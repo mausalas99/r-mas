@@ -204,8 +204,9 @@ function todayDayMonth() {
 
 /**
  * @param {{ label: string, value: string, unit: string, stamp: string, vitalKey: string, altered: boolean, hasHistory: boolean }} opts
+ * @param {string} headStamp date already shown beside the zone title
  */
-function renderSnapshotVitalRow(opts) {
+function renderSnapshotVitalRow(opts, headStamp) {
   var cls =
     'ea-snapshot-row' +
     (opts.altered ? ' ea-snapshot-row--altered' : '') +
@@ -214,7 +215,8 @@ function renderSnapshotVitalRow(opts) {
     ? '<span class="ea-snapshot-row-unit">' + escHtml(opts.unit) + '</span>'
     : '';
   // Today's date on every vital is noise: only an older reading shows its date.
-  var stampHtml = opts.stamp && opts.stamp !== todayDayMonth()
+  // The date shared by most rows sits beside the title; a row shows only a different one.
+  var stampHtml = opts.stamp && opts.stamp !== todayDayMonth() && opts.stamp !== headStamp
     ? '<span class="ea-snapshot-row-stamp">' + escHtml(opts.stamp) + '</span>'
     : '<span class="ea-snapshot-row-stamp ea-snapshot-row-stamp--empty" aria-hidden="true"></span>';
   return (
@@ -241,7 +243,7 @@ function renderSnapshotVitalRow(opts) {
  * @param {string} key
  * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
  */
-function renderVitalSnapshotItem(key, snapshot) {
+function vitalSnapshotRowOpts(key, snapshot) {
   var unit = VITAL_UNITS[key] || '';
   var series =
     snapshot.vitalSeries && Array.isArray(snapshot.vitalSeries[key]) ? snapshot.vitalSeries[key] : [];
@@ -254,7 +256,7 @@ function renderVitalSnapshotItem(key, snapshot) {
         ? latestFromSeries.value
         : null;
 
-  return renderSnapshotVitalRow({
+  return {
     label: SNAPSHOT_STRIP_LABELS[key] || VITAL_LABELS[key] || key,
     value: displayValue(displayVal),
     unit: unit,
@@ -262,13 +264,13 @@ function renderVitalSnapshotItem(key, snapshot) {
     vitalKey: key,
     altered: isVitalAltered(key, displayVal),
     hasHistory: vitalHasHistory(key, snapshot),
-  });
+  };
 }
 
 /**
  * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
  */
-function renderBpSnapshotItem(snapshot) {
+function bpSnapshotRowOpts(snapshot) {
   /** @type {Array<{ tas: number | null, tad: number | null, recordedAt?: string, time?: string }>} */
   var pairs = Array.isArray(snapshot.bpPairs) ? snapshot.bpPairs : [];
   if (!pairs.length) {
@@ -279,7 +281,7 @@ function renderBpSnapshotItem(snapshot) {
     }
   }
   if (!pairs.length) {
-    return renderSnapshotVitalRow({
+    return {
       label: 'T/A',
       value: '—',
       unit: 'mmHg',
@@ -287,11 +289,11 @@ function renderBpSnapshotItem(snapshot) {
       vitalKey: 'bp',
       altered: false,
       hasHistory: false,
-    });
+    };
   }
 
   var latest = pairs[pairs.length - 1];
-  return renderSnapshotVitalRow({
+  return {
     label: 'T/A',
     value: formatBpPairValue(latest.tas, latest.tad),
     unit: 'mmHg',
@@ -299,18 +301,53 @@ function renderBpSnapshotItem(snapshot) {
     vitalKey: 'bp',
     altered: isVitalAltered('tas', latest.tas) || isVitalAltered('tad', latest.tad),
     hasHistory: vitalHasHistory('bp', snapshot),
+  };
+}
+
+/**
+ * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
+ */
+function snapshotVitalRowsOpts(snapshot) {
+  return [bpSnapshotRowOpts(snapshot)].concat(
+    SNAPSHOT_STRIP_VITAL_KEYS.map(function (key) {
+      return vitalSnapshotRowOpts(key, snapshot);
+    }),
+  );
+}
+
+/** Most common dd/mm among the vital rows (today included), or ''. */
+function vitalsHeadStamp(rows) {
+  /** @type {Record<string, number>} */
+  var counts = {};
+  var best = '';
+  rows.forEach(function (r) {
+    if (!r.stamp) return;
+    counts[r.stamp] = (counts[r.stamp] || 0) + 1;
+    if (!best || counts[r.stamp] > counts[best]) best = r.stamp;
   });
+  return best;
+}
+
+/**
+ * Zone title with the vitals date beside it, so the reader sees which day the numbers are from.
+ * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
+ */
+export function renderSnapshotVitalsZoneTitle(snapshot) {
+  var stamp = vitalsHeadStamp(snapshotVitalRowsOpts(snapshot));
+  return 'Signos vitales' + (stamp ? ' <span class="ea-snapshot-zone-stamp">' + escHtml(stamp) + '</span>' : '');
 }
 
 /**
  * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
  */
 export function renderSnapshotVitalsHtml(snapshot) {
-  var html = renderBpSnapshotItem(snapshot);
-  for (var ki = 0; ki < SNAPSHOT_STRIP_VITAL_KEYS.length; ki++) {
-    html += renderVitalSnapshotItem(SNAPSHOT_STRIP_VITAL_KEYS[ki], snapshot);
-  }
-  return html;
+  var rows = snapshotVitalRowsOpts(snapshot);
+  var headStamp = vitalsHeadStamp(rows);
+  return rows
+    .map(function (r) {
+      return renderSnapshotVitalRow(r, headStamp);
+    })
+    .join('');
 }
 
 function renderBombaChip(b) {

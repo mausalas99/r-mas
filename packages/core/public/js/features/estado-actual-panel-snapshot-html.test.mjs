@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { deriveSnapshot } from './estado-actual-data.mjs';
 import {
   renderSnapshotVitalsHtml,
+  renderSnapshotVitalsZoneTitle,
   getVitalHistoryEntries,
   vitalHasHistory,
   renderVitalHistoryListHtml,
@@ -75,7 +76,8 @@ test('renderSnapshotVitalsHtml — T/A unificada, fecha en cierre sin @ 00:00', 
   var html = renderSnapshotVitalsHtml(snap);
   assert.match(html, /ea-snapshot-row-label">T\/A</);
   assert.match(html, /ea-snapshot-row-value">130\/80<\/span>/);
-  assert.match(html, /ea-snapshot-row-stamp">26\/06</);
+  assert.match(renderSnapshotVitalsZoneTitle(snap), /ea-snapshot-zone-stamp">26\/06</);
+  assert.doesNotMatch(html, /ea-snapshot-row-stamp">/);
   assert.match(html, /ea-snapshot-row-label">SatO₂</);
   assert.match(html, /ea-snapshot-row--interactive/);
   assert.match(html, /data-onclick="openEaVitalHistoryModal" data-onclick-args='\[&quot;bp&quot;\]'/);
@@ -97,12 +99,11 @@ test('renderSnapshotVitalsHtml — muestra dd/mm sin hora en la franja compacta'
   };
   var html = renderSnapshotVitalsHtml(snap);
   assert.match(html, /ea-snapshot-row-value">38\.2<\/span>/);
-  assert.match(html, /ea-snapshot-row-stamp">22\/06</);
-  assert.doesNotMatch(html, /ea-snapshot-row-stamp">22\/06 14:30</);
+  assert.equal(renderSnapshotVitalsZoneTitle(snap), 'Signos vitales <span class="ea-snapshot-zone-stamp">22/06</span>');
   assert.match(html, /ea-snapshot-row--altered/);
 });
 
-test('renderSnapshotVitalsHtml — oculta la fecha de hoy, conserva las viejas', () => {
+test('renderSnapshotVitalsZoneTitle — muestra la fecha de hoy en el título, la vieja en su fila', () => {
   var now = new Date();
   var old = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3, 6, 0, 0);
   /** @type {any} */
@@ -115,8 +116,33 @@ test('renderSnapshotVitalsHtml — oculta la fecha de hoy, conserva las viejas',
   };
   var html = renderSnapshotVitalsHtml(snap);
   var oldStamp = String(old.getDate()).padStart(2, '0') + '/' + String(old.getMonth() + 1).padStart(2, '0');
+  var todayStamp = String(now.getDate()).padStart(2, '0') + '/' + String(now.getMonth() + 1).padStart(2, '0');
+  assert.match(renderSnapshotVitalsZoneTitle(snap), new RegExp('ea-snapshot-zone-stamp">' + todayStamp + '<'));
   assert.equal((html.match(/ea-snapshot-row-stamp">/g) || []).length, 1);
   assert.match(html, new RegExp('ea-snapshot-row-stamp">' + oldStamp + '<'));
+});
+
+test('renderSnapshotVitalsZoneTitle — fecha común en el título, la distinta queda en su fila', () => {
+  var at = function (d) {
+    return new Date(2026, 5, d, 6, 0, 0).toISOString();
+  };
+  /** @type {any} */
+  var snap = {
+    vitals: { fc: 80, fr: 18, temp: 36.5 },
+    vitalSeries: {
+      fc: [{ value: 80, recordedAt: at(25) }],
+      fr: [{ value: 18, recordedAt: at(25) }],
+      temp: [{ value: 36.5, recordedAt: at(21) }],
+    },
+  };
+  var html = renderSnapshotVitalsHtml(snap);
+  assert.match(renderSnapshotVitalsZoneTitle(snap), /ea-snapshot-zone-stamp">25\/06</);
+  assert.equal((html.match(/ea-snapshot-row-stamp">/g) || []).length, 1);
+  assert.match(html, /ea-snapshot-row-stamp">21\/06</);
+});
+
+test('renderSnapshotVitalsZoneTitle — sin fecha cuando no hay lecturas', () => {
+  assert.equal(renderSnapshotVitalsZoneTitle(/** @type {any} */ ({ vitals: {} })), 'Signos vitales');
 });
 
 test('vitalHasHistory y historial modal — FC con lecturas previas', () => {
