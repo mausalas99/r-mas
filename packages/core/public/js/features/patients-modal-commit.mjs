@@ -294,11 +294,17 @@ function finalizeStubPatientSidebar(patient, teamId) {
     patientsBridge.selectPatient(patient.id, { bypassIncomingBlock: true });
     return;
   }
+  var activeAtCommit = String(rt.getActiveId() ?? '');
+  // Resolves only after the Nube team sync (seconds on a slow link or a bulk
+  // paste). If the user moved on, re-selecting this one yanks the view back and
+  // wipes the next report already typed into #lab-input.
   void assignPatientToTeamClinical(patient.id, tid).then(function (res) {
     if (!res || !res.ok) {
       rt.showToast('Paciente en censo, pero no se pudo asignar al equipo', 'warn');
     }
     patientsBridge.renderPatientList();
+    var activeNow = String(rt.getActiveId() ?? '');
+    if (activeNow !== activeAtCommit && activeNow !== String(patient.id)) return;
     patientsBridge.selectPatient(patient.id, { bypassIncomingBlock: true });
   });
 }

@@ -39,8 +39,9 @@ function clearLabInputAfterSuccessfulParse() {
   } catch (_e) { void _e; }
 }
 
-export function limpiarReporte() {
-  document.getElementById('lab-input').value = '';
+/** @param {{ keepInput?: boolean }} [opts] */
+export function limpiarReporte(opts) {
+  if (!(opts && opts.keepInput)) document.getElementById('lab-input').value = '';
   document.getElementById('lab-banner').style.display = 'none';
   document.getElementById('lab-diagrams-section').style.display = 'none';
   document.getElementById('diagrams-grid').innerHTML = '';
