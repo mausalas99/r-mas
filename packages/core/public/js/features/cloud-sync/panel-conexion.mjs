@@ -1,7 +1,7 @@
 import { displayCloudSalaLabel, normalizeCloudSala } from './sala-allowlist.mjs';
 import { shouldShowNubePanel } from './nube-sync-policy.mjs';
 import { statusChipModifier, formatCloudStatusChipLabel } from './panel-conexion-html.mjs';
-import { createConexionRenderers, saveUrlFromUi } from './panel-conexion-ui.mjs';
+import { createConexionRenderers, saveUrlFromUi, refreshNubeStatusHome } from './panel-conexion-ui.mjs';
 import { createNubeRuntime, getSharedNubeRuntime, setSharedNubeStatusListener } from './panel-conexion-runtime.mjs';
 import {
   bootstrapConexionState,
@@ -43,8 +43,8 @@ function statusDetailText(unprotected, resolvedStatus, resolvedDetail) {
   return humanizeCloudSyncErrorMessage(String(resolvedDetail || '').trim());
 }
 
-/** @param {HTMLElement} section @param {object} deps */
-function bindStatusChip(section, deps) {
+/** @param {HTMLElement} section @param {object} deps @param {string} displaySala */
+function bindStatusChip(section, deps, displaySala) {
   const toast = typeof deps.toast === 'function' ? deps.toast : function () {};
   function renderStatusChip(status, detail) {
     const chip = section.querySelector('[data-cloud-status-chip]');
@@ -64,6 +64,7 @@ function bindStatusChip(section, deps) {
       detailEl.textContent = text;
       detailEl.hidden = !text;
     }
+    refreshNubeStatusHome(section, deps, displaySala);
     applyHeaderTeamSyncVisual(resolvedStatus, transport);
     deps.setStatus?.(resolvedStatus, resolvedDetail);
     if (section.dataset.cloudView === 'nube') {
@@ -127,7 +128,7 @@ export function mountNubeSection(root, deps) {
   section.className = 'cloud-sync-conexion';
   section.setAttribute('data-cloud-nube-section', '1');
 
-  const statusChip = bindStatusChip(section, deps);
+  const statusChip = bindStatusChip(section, deps, displaySala);
   setSharedNubeStatusListener(statusChip.renderStatusChip);
 
   const { startRuntime: startRuntimeInner, stopRuntime } = createNubeRuntime({

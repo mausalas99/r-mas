@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import {
   formatCloudStatusChipLabel,
   cloudSyncTransportLabel,
+  statusHeroHtml,
+  pipelineChainHtml,
+  techSummaryLine,
 } from './panel-conexion-html.mjs';
+import { conexionHeroBlockHtml } from './panel-conexion-views.mjs';
 
 describe('formatCloudStatusChipLabel', () => {
   it('appends WS or Poll for healthy states', () => {
@@ -40,5 +44,48 @@ describe('cloudSyncTransportLabel', () => {
     assert.equal(cloudSyncTransportLabel('ws'), 'WS');
     assert.equal(cloudSyncTransportLabel('poll'), 'Poll');
     assert.equal(cloudSyncTransportLabel('offline'), '—');
+  });
+});
+
+describe('Nube status hero (board «Nube A»)', () => {
+  const room = { id: 'r1', sala: 'Sala 1', turnKey: '2026-09', code: 'ABC123' };
+
+  it('says the state in words, names sala and month, and has one sync button', () => {
+    const html = statusHeroHtml({ status: 'idle', displaySala: 'Sala 1', room });
+    assert.match(html, /cloud-sync-hero-title">Todo al día</);
+    assert.match(html, /Sala 1 · septiembre 2026/);
+    assert.equal((html.match(/data-cloud-action="sync-now"/g) || []).length, 1);
+    assert.match(html, /data-state="ok"/);
+  });
+
+  it('turns an error into plain words, never a raw code', () => {
+    const html = statusHeroHtml({ status: 'error', detail: '', displaySala: 'Sala 1', room });
+    assert.match(html, /cloud-sync-hero-title">Error</);
+    assert.match(html, /data-state="error"/);
+  });
+
+  it('dashes the link into a step that is not ok', () => {
+    const html = pipelineChainHtml([
+      { label: 'Internet', state: 'ok', detail: 'Conectado' },
+      { label: 'En vivo', state: 'warn', detail: 'Reconectando' },
+    ]);
+    assert.match(html, /cloud-sync-chain-link is-broken/);
+    assert.equal(pipelineChainHtml([]), '');
+  });
+
+  it('hero block chain: 4 steps, sala step shows only the sala, live ok reads «Conectado»', () => {
+    const html = conexionHeroBlockHtml({
+      status: 'idle', transport: 'ws', displaySala: 'Sala 1', room, tokenPresent: true,
+    });
+    const labels = [...html.matchAll(/cloud-sync-chain-label">([^<]+)</g)].map((m) => m[1]);
+    assert.deepEqual(labels, ['Internet', 'Sesión', 'Sala', 'En vivo']);
+    const details = [...html.matchAll(/cloud-sync-chain-detail">([^<]+)</g)].map((m) => m[1]);
+    assert.equal(details[2], 'Sala 1');
+    assert.equal(details[3], 'Conectado');
+  });
+
+  it('techSummaryLine reads cola, rev. and local patients', () => {
+    assert.equal(techSummaryLine(0, 13516, 50), 'Cola 0 · Rev. 13516 · 50 pacientes locales');
+    assert.equal(techSummaryLine('x', 'y', null), 'Cola 0 · Rev. 0 · 0 pacientes locales');
   });
 });

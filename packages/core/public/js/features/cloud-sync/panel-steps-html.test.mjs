@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { connectStepHtml, connectedStepsHtml } from './panel-steps-html.mjs';
-import { roomConnectedHtml } from './panel-conexion-html.mjs';
+import { roomConnectedHtml, formatTurnMonth } from './panel-conexion-html.mjs';
 import {
   applyConexionView,
   syncCloudSecondaryPanels,
@@ -38,6 +38,9 @@ describe('connectedStepsHtml', () => {
     assert.match(html, /data-cloud-view="status"/);
     assert.match(html, /data-cloud-action="nav-options"/);
     assert.match(html, /cloud-sync-options-entry/);
+    // Board «Nube A»: Tu sala first, then the account, then the two rows.
+    assert.ok(html.indexOf('data-test-room') < html.indexOf('cloud-sync-status-identity'));
+    assert.match(html, /data-cloud-tech-summary>—</);
     assert.match(html, /data-cloud-view="options"/);
     assert.match(html, /data-cloud-view="admin"/);
     assert.match(html, /Administración/);
@@ -164,6 +167,8 @@ function collectMatches(root, sel) {
 }
 
 function matchesSel(node, sel) {
+  const scoped = sel.match(/^\.([\w-]+)(\[.+\])$/);
+  if (scoped) return node.className === scoped[1] && matchesSel(node, scoped[2]);
   if (sel.startsWith('.') && node.className === sel.slice(1)) return true;
   if (sel === '[data-cloud-view]') return node.getAttribute('data-cloud-view') != null;
   if (sel === '[data-cloud-views]') return node.getAttribute('data-cloud-views') != null;
@@ -185,9 +190,13 @@ describe('applyConexionView', () => {
     views.className = 'cloud-sync-views';
     views.setAttribute('data-cloud-views', '1');
     views.attributes['data-cloud-views'] = '1';
-    views.appendChild(makeNode({ 'data-cloud-view': 'status' }));
-    views.appendChild(makeNode({ 'data-cloud-view': 'ops', hidden: true }));
-    views.appendChild(makeNode({ 'data-cloud-view': 'admin', hidden: true }));
+    for (const [id, hidden] of [['status', false], ['ops', true], ['admin', true]]) {
+      const v = views.appendChild(makeNode({ 'data-cloud-view': id, hidden }));
+      v.className = 'cloud-sync-view';
+    }
+    // A nav row on the home view names its target in data-cloud-view too.
+    const navRow = views.children[0].appendChild(makeNode({ 'data-cloud-view': 'admin' }));
+    navRow.className = 'cloud-sync-options-row';
     section.appendChild(head);
     section.appendChild(views);
     const stack = makeNode();
@@ -205,6 +214,7 @@ describe('applyConexionView', () => {
     assert.equal(stack.hidden, true);
     assert.equal(ops.hidden, true);
     assert.equal(head.hidden, false);
+    assert.equal(navRow.hidden, false, 'nav rows are not views; they stay visible');
 
     applyConexionView(/** @type {any} */ (section), 'admin');
     assert.equal(stack.hidden, true);
@@ -239,6 +249,7 @@ describe('applyConexionView', () => {
     views.setAttribute('data-cloud-views', '1');
     views.attributes['data-cloud-views'] = '1';
     const status = makeNode({ 'data-cloud-view': 'status' });
+    status.className = 'cloud-sync-view';
     views.appendChild(status);
     section.appendChild(views);
 
@@ -266,18 +277,23 @@ describe('connectedViewsHtml equipo embed', () => {
 });
 
 describe('roomConnectedHtml', () => {
-  it('omits opaque Sala bucket row; keeps month code revision', () => {
-    const html = roomConnectedHtml(
-      { sala: 'Sala 1', turnKey: '2026-08', code: 'RC65RH', revision: 1 },
-      () => 0
-    );
-    assert.doesNotMatch(html, /<dt>Sala<\/dt>/);
-    assert.match(html, /<dt>Mes<\/dt>/);
-    assert.match(html, /RC65RH/);
-    assert.match(html, /data-cloud-room-revision/);
-    assert.match(html, /cloud-sync-inset-group/);
+  it('names the sala and month, shows the invite code, one card with leave', () => {
+    const html = roomConnectedHtml({ sala: 'Sala 1', name: 'Sala 1 2026-08', turnKey: '2026-08', code: 'RC65RH', memberCount: 3 });
+    assert.match(html, /cloud-sync-room-name">Sala 1</);
+    assert.match(html, /Agosto 2026 · 3 miembros/);
+    assert.doesNotMatch(html, /2026-08/);
+    assert.match(html, /data-cloud-room-code>RC65RH</);
+    assert.match(html, /data-cloud-action="copy-room-code"/);
     assert.match(html, /leave-room/);
-    // Leave shares the same inset group as Mes/Código/Revisión (one card).
+    // Revisión lives in Detalles técnicos, never as a stale join-time snapshot here.
+    assert.doesNotMatch(html, /Revisi/);
     assert.equal((html.match(/cloud-sync-inset-group/g) || []).length, 1);
+  });
+
+  it('formatTurnMonth reads «2026-09» as «septiembre 2026» and leaves other keys alone', () => {
+    assert.equal(formatTurnMonth('2026-09'), 'septiembre 2026');
+    assert.equal(formatTurnMonth('2026-13'), '2026-13');
+    assert.equal(formatTurnMonth(''), '');
+    assert.equal(formatTurnMonth('turno-a'), 'turno-a');
   });
 });

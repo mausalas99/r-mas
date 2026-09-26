@@ -2080,3 +2080,226 @@
   }
 }
 
+
+/* ── Nube A · status home: hero, 4-step chain, sala, account ─────────── */
+.cloud-sync-conexion-head:has(.cloud-sync-hero-block) {
+  /* layout.css styles every <header> as the 54px app bar; undo that here. */
+  display: block;
+  height: auto;
+  margin: 0;
+  padding: calc(20px * var(--density-space));
+  box-shadow: none;
+  z-index: auto;
+}
+
+.cloud-sync-hero-block {
+  display: flex;
+  flex-direction: column;
+  gap: calc(18px * var(--density-space));
+}
+
+.cloud-sync-hero {
+  --hero-tone: var(--color-accent);
+  display: flex;
+  align-items: center;
+  gap: calc(16px * var(--density-space));
+}
+
+.cloud-sync-hero-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  color: var(--chain-tone, var(--color-accent));
+  background: color-mix(in oklab, var(--chain-tone, var(--color-accent)) 14%, transparent);
+}
+
+.cloud-sync-hero-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cloud-sync-hero-title {
+  margin: 0;
+  font-size: calc(22px * var(--density-font));
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.cloud-sync-hero-sub {
+  margin: 0;
+  font-size: calc(13px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.cloud-sync-hero-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: center;
+  flex-shrink: 0;
+  min-height: 40px;
+  padding-inline: calc(18px * var(--density-space));
+  font-size: calc(13px * var(--density-font));
+}
+
+.cloud-sync-hero-sync:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.cloud-sync-chain {
+  display: flex;
+  align-items: flex-start;
+  padding-top: calc(16px * var(--density-space));
+  border-top: 1px solid var(--divider);
+}
+
+.cloud-sync-chain-step {
+  --chain-tone: var(--color-accent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 96px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.cloud-sync-chain-step:not([data-state='ok']),
+.cloud-sync-hero-icon:is([data-state='warn'], [data-state='info']) {
+  --chain-tone: var(--color-livesync-degraded, #b45309);
+}
+
+.cloud-sync-chain-step[data-state='error'],
+.cloud-sync-hero-icon[data-state='error'] {
+  --chain-tone: var(--color-danger);
+}
+
+.cloud-sync-chain-bubble {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  color: var(--chain-tone);
+  background: color-mix(in oklab, var(--chain-tone) 14%, transparent);
+}
+
+.cloud-sync-chain-label {
+  font-size: calc(13px * var(--density-font));
+  font-weight: 650;
+  color: var(--text);
+}
+
+.cloud-sync-chain-step:not([data-state='ok']) .cloud-sync-chain-label {
+  color: var(--chain-tone);
+}
+
+.cloud-sync-chain-detail {
+  font-size: calc(11px * var(--density-font));
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.cloud-sync-chain-link {
+  flex: 1;
+  min-width: 12px;
+  height: 0;
+  margin-top: 19px;
+  border-top: 2px solid color-mix(in oklab, var(--color-accent) 55%, transparent);
+}
+
+.cloud-sync-chain-link.is-broken {
+  border-top-style: dashed;
+  border-top-color: var(--color-livesync-degraded, #b45309);
+}
+
+.cloud-sync-room-name,
+.cloud-sync-account-name {
+  font-size: calc(15px * var(--density-font));
+  font-weight: 700;
+  color: var(--text);
+}
+
+.cloud-sync-room-code-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cloud-sync-room-code {
+  padding: 4px 10px;
+  border-radius: var(--radius-control);
+  background: color-mix(in oklab, var(--text) 6%, transparent);
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: calc(15px * var(--density-font));
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--text);
+}
+
+.cloud-sync-room-copy.cloud-sync-btn--ghost {
+  padding-left: 10px;
+  font-family: var(--font-ui);
+  color: var(--color-accent);
+}
+
+.cloud-sync-account-row {
+  align-items: center;
+  gap: calc(12px * var(--density-space));
+}
+
+.cloud-sync-account-row .cloud-sync-options-entry-text {
+  flex: 1;
+}
+
+.cloud-sync-account-row .cloud-sync-status-handle {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: calc(12px * var(--density-font));
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.cloud-sync-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--color-accent) 16%, var(--color-elevated));
+  color: var(--color-accent);
+  font-size: calc(13px * var(--density-font));
+  font-weight: 700;
+}
+
+.cloud-sync-account-row .cloud-sync-btn--danger {
+  align-self: center;
+  border-color: transparent;
+  background: transparent;
+}
+
+@media (max-width: 640px) {
+  .cloud-sync-hero {
+    flex-wrap: wrap;
+  }
+
+  .cloud-sync-hero-sync {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cloud-sync-chain-step {
+    width: 72px;
+  }
+}

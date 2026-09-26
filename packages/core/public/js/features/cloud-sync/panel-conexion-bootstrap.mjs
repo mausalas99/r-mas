@@ -22,6 +22,36 @@ import { mountInternoQrPanelInHost } from './panel-interno-qr.mjs';
 import { refreshCloudSyncDiagnostics } from './panel-cloud-diagnostics.mjs';
 import { hydrateRoomDeksFromPersistence } from './room-dek.mjs';
 import { getStoredRoomDeks } from './settings.mjs';
+import { getSharedNubeRuntime } from './panel-conexion-runtime.mjs';
+import { copyToClipboardSafe } from '../soap-estado.mjs';
+
+/** «Sincronizar ahora»: one push + pull cycle on the shared runtime. @param {HTMLElement} section @param {object} ui */
+async function runSyncNow(section, ui) {
+  const runtime = getSharedNubeRuntime();
+  if (!runtime) {
+    ui.startRuntime?.();
+    return;
+  }
+  const btn = section.querySelector('[data-cloud-action="sync-now"]');
+  if (btn) btn.disabled = true;
+  try {
+    await runtime.syncCycle();
+  } catch {
+    ui.toast?.('No se pudo sincronizar. Tus cambios siguen guardados aquí.', 'error');
+  } finally {
+    ui.refreshStatusChipFromRuntime?.();
+    const fresh = section.querySelector('[data-cloud-action="sync-now"]');
+    if (fresh) fresh.disabled = false;
+  }
+}
+
+/** @param {HTMLElement} section @param {object} ui */
+async function copyRoomCode(section, ui) {
+  const code = section.querySelector('[data-cloud-room-code]')?.textContent.trim() || '';
+  if (!code || code === '—') return;
+  const ok = await copyToClipboardSafe(code);
+  ui.toast?.(ok ? 'Código copiado.' : 'No se pudo copiar el código.', ok ? 'success' : 'error');
+}
 
 /** @param {boolean} [hasCloudSession] @returns {string} */
 export function adminShellHtml(hasCloudSession = false) {
@@ -81,6 +111,8 @@ function buildConexionClickActions(handlerDeps, ui, goView) {
     logout: () => void handleLogout(handlerDeps),
     'open-rotation': () => void handleOpenRotation(ui.toast),
     'toggle-admin': () => void ui.ensureAdminOpen?.(),
+    'sync-now': () => void runSyncNow(handlerDeps.section, ui),
+    'copy-room-code': () => void copyRoomCode(handlerDeps.section, ui),
     'nav-options': () => goView('options'),
     'nav-back': () => {
       const cur = handlerDeps.section.dataset.cloudView || 'status';
