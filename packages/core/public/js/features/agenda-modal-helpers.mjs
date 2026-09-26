@@ -1,5 +1,6 @@
 import { storage } from '../storage.js';
 import { mountRpcDatetimeInput } from '../rpc-date-picker.mjs';
+import { mondayStartLocal, addDaysLocal } from '../procedure-agenda-week.mjs';
 
 export function paIsoToDatetimeLocalValue(isoStr) {
   const d = new Date(String(isoStr || '').trim());
@@ -83,6 +84,11 @@ export function validateProcedureAgendaForm(elig) {
   if (!procedure) return { ok: false, msg: 'Indica el procedimiento.' };
   if (!location) return { ok: false, msg: 'Indica el lugar.' };
   if (!sd) return { ok: false, msg: 'Fecha u hora de inicio inválidas.' };
+  // The board only navigates last week → next week (offset -1..+1 in agenda.mjs).
+  const monday = mondayStartLocal(new Date());
+  if (sd < addDaysLocal(monday, -7) || sd >= addDaysLocal(monday, 14)) {
+    return { ok: false, msg: 'La agenda solo muestra la semana pasada, esta y la siguiente. Elige una fecha en ese rango.' };
+  }
   return { ok: true, patientId, procedure, location, sd, editId };
 }
 

@@ -61,11 +61,8 @@ test('computeReminderAt — prefers reminderAt over dueDate', () => {
   );
 });
 
-test('computeReminderAt — falls back to dueDate when reminderAt is null', () => {
-  assert.equal(
-    computeReminderAt(todo({ dueDate: '2026-06-12T08:00:00.000Z' })),
-    '2026-06-12T08:00:00.000Z'
-  );
+test('computeReminderAt — null when only dueDate is set (no «Recordarme»)', () => {
+  assert.equal(computeReminderAt(todo({ dueDate: '2026-06-12T08:00:00.000Z' })), null);
 });
 
 test('computeReminderAt — null when neither field is set', () => {
@@ -320,8 +317,9 @@ test('todoStatus — dueDate later today, not overdue, is hoy', () => {
   assert.equal(todoStatus(todo({ dueDate: '2026-06-11T18:00:00.000Z' }), NOW), 'hoy');
 });
 
-test('todoStatus — dueDate on a future day is sin_fecha', () => {
-  assert.equal(todoStatus(todo({ dueDate: '2026-06-12T12:00:00.000Z' }), NOW), 'sin_fecha');
+test('todoStatus — dueDate on a future day is proximo', () => {
+  assert.equal(todoStatus(todo({ dueDate: '2026-06-12T12:00:00.000Z' }), NOW), 'proximo');
+  assert.equal(todoStatus(todo({ dueDate: '2099-12-31T23:00:00.000Z' }), NOW), 'proximo');
 });
 
 test('todoStatus — no dueDate is sin_fecha', () => {
@@ -331,11 +329,13 @@ test('todoStatus — no dueDate is sin_fecha', () => {
 test('groupTodosByStatus — buckets each todo once, preserving order within a bucket', () => {
   const vencido = todo({ id: 'v', dueDate: '2026-06-10T12:00:00.000Z' });
   const hoy = todo({ id: 'h', dueDate: '2026-06-11T18:00:00.000Z' });
+  const proximo = todo({ id: 'p', dueDate: '2026-06-12T12:00:00.000Z' });
   const sinFecha = todo({ id: 'a', dueDate: null });
   const listo = todo({ id: 'l', completed: true });
-  const groups = groupTodosByStatus([vencido, hoy, sinFecha, listo], NOW);
+  const groups = groupTodosByStatus([vencido, hoy, proximo, sinFecha, listo], NOW);
   assert.deepEqual(groups.vencido, [vencido]);
   assert.deepEqual(groups.hoy, [hoy]);
+  assert.deepEqual(groups.proximo, [proximo]);
   assert.deepEqual(groups.sin_fecha, [sinFecha]);
   assert.deepEqual(groups.listo, [listo]);
 });

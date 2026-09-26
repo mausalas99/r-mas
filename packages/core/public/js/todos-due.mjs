@@ -68,14 +68,13 @@ export function isTodoOverdue(todo, now) {
 }
 
 /**
- * Coarse bucket for grouped Pendientes rendering (vencido → hoy → sin_fecha → listo),
- * matching the mockup's VENCIDOS/HOY/SIN FECHA/CERRADOS table groups. The todo
- * model has no explicit workflow state, so this derives one from what exists
- * today: completed wins as "listo"; an unmet dueDate in the past is "vencido";
- * a dueDate that falls on today (and isn't overdue) is "hoy"; anything else —
- * no dueDate, or a dueDate on a future day — is the catch-all "sin_fecha".
+ * Coarse bucket for grouped Pendientes rendering (vencido → hoy → proximo → sin_fecha → listo).
+ * The todo model has no explicit workflow state, so this derives one from what
+ * exists today: completed wins as "listo"; an unmet dueDate in the past is
+ * "vencido"; a dueDate that falls on today (and isn't overdue) is "hoy"; a
+ * dueDate on a later day is "proximo"; no (valid) dueDate is "sin_fecha".
  * @param {{ completed?: boolean, dueDate?: string|null }} todo
- * @returns {'vencido'|'hoy'|'sin_fecha'|'listo'}
+ * @returns {'vencido'|'hoy'|'proximo'|'sin_fecha'|'listo'}
  */
 export function todoStatus(todo, now) {
   if (!todo) return 'sin_fecha';
@@ -84,17 +83,17 @@ export function todoStatus(todo, now) {
   if (todo.dueDate) {
     var due = toDate(todo.dueDate);
     var ref = now == null ? new Date() : toDate(now);
-    if (!Number.isNaN(due.getTime()) && isSameLocalDay(due, ref)) return 'hoy';
+    if (!Number.isNaN(due.getTime())) return isSameLocalDay(due, ref) ? 'hoy' : 'proximo';
   }
   return 'sin_fecha';
 }
 
 /**
  * @param {Array<Record<string, unknown>>} todos
- * @returns {{ vencido: Array, hoy: Array, sin_fecha: Array, listo: Array }}
+ * @returns {{ vencido: Array, hoy: Array, proximo: Array, sin_fecha: Array, listo: Array }}
  */
 export function groupTodosByStatus(todos, now) {
-  var groups = { vencido: [], hoy: [], sin_fecha: [], listo: [] };
+  var groups = { vencido: [], hoy: [], proximo: [], sin_fecha: [], listo: [] };
   (todos || []).forEach(function (t) {
     var status = todoStatus(t, now);
     (groups[status] || groups.sin_fecha).push(t);
@@ -125,9 +124,8 @@ export function todoCompareForDueSort(a, b, now) {
 
 export function computeReminderAt(todo) {
   if (!todo) return null;
-  if (todo.reminderAt) return String(todo.reminderAt);
-  if (todo.dueDate) return String(todo.dueDate);
-  return null;
+  // A due date alone never reminds: only «Recordarme» sets reminderAt.
+  return todo.reminderAt ? String(todo.reminderAt) : null;
 }
 
 export function isoToDatetimeLocalValue(isoStr) {

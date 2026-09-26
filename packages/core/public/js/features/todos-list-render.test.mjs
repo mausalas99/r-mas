@@ -44,16 +44,17 @@ describe('todoRowDetailBits', () => {
 describe('buildTodoGroupPlan', () => {
   const NOW = new Date('2026-06-11T12:00:00.000Z');
 
-  it('orders groups vencido -> hoy -> sin_fecha -> listo (collapsed)', () => {
+  it('orders groups vencido -> hoy -> proximo -> sin_fecha -> listo (collapsed)', () => {
     const todos = [
       todo({ id: 'listo', text: 'Resuelto', completed: true }),
+      todo({ id: 'proximo', text: 'Mañana', dueDate: '2026-06-12T12:00:00.000Z' }),
       todo({ id: 'sin-fecha', text: 'Sin fecha' }),
       todo({ id: 'hoy', text: 'Vence hoy', dueDate: '2026-06-11T18:00:00.000Z' }),
       todo({ id: 'vencido', text: 'Atrasado', dueDate: '2026-06-10T12:00:00.000Z' }),
     ];
     const plan = buildTodoGroupPlan(todos, NOW);
-    assert.deepEqual(plan.map((g) => g.status), ['vencido', 'hoy', 'sin_fecha', 'listo']);
-    assert.deepEqual(plan.map((g) => g.collapsed), [false, false, false, true]);
+    assert.deepEqual(plan.map((g) => g.status), ['vencido', 'hoy', 'proximo', 'sin_fecha', 'listo']);
+    assert.deepEqual(plan.map((g) => g.collapsed), [false, false, false, false, true]);
     assert.equal(plan.find((g) => g.status === 'vencido').todos[0].id, 'vencido');
     assert.equal(plan.find((g) => g.status === 'listo').todos[0].id, 'listo');
   });

@@ -181,9 +181,9 @@ await r.finish('Pendientes: add, dates, priority, edit, listo/deshacer, delete, 
   const rxRow = rowOf(s, RX);
   // The compact row drops the trailing time for anything but "Hoy" (matches TAC's "23 sep" above);
   // the picker's own selection text keeps the full "Mañana 08:00" the preset chip promises.
-  check('«Mañana 08:00» quick-preset chip sets the same due date the picker would (Sin fecha, no bell)',
+  check('«Mañana 08:00» quick-preset chip sets the same due date the picker would (Próximos, no bell)',
     presetLabel === 'Mañana 08:00' && presetSelection === 'Mañana 08:00' &&
-      /^Sin fecha/.test(groupOf(s, RX)?.title || '') && rxRow?.vence === 'Mañana' && !rxRow?.vence.includes('🔔') && rxRow?.enCurso === false,
+      /^Próximos/.test(groupOf(s, RX)?.title || '') && rxRow?.vence === 'Mañana' && !rxRow?.vence.includes('🔔') && rxRow?.enCurso === false,
     { presetLabel, presetSelection, group: groupOf(s, RX) });
   const rxRowClass = await page.evaluate((t) => {
     for (const el of document.querySelectorAll('.wb-row')) {
@@ -288,10 +288,10 @@ await r.finish('Pendientes: add, dates, priority, edit, listo/deshacer, delete, 
   // Sample every frame while Pendientes opens: P1's rows must never paint, not even for a moment.
   await page.evaluate(() => {
     window.__seen = new Set();
-    const end = performance.now() + 2500;
+    const end = window.performance.now() + 2500;
     const tick = () => {
       for (const i of document.querySelectorAll('.todo-text-input')) if (i.getBoundingClientRect().width > 0) window.__seen.add(i.value);
-      if (performance.now() < end) requestAnimationFrame(tick);
+      if (window.performance.now() < end) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
   });
@@ -332,7 +332,7 @@ await r.finish('Pendientes: add, dates, priority, edit, listo/deshacer, delete, 
   check('restart: edited Hemocultivos still Hoy, BAJA, bell', /^Hoy/.test(groupOf(s, HC2)?.title || '') && rowOf(s, HC2)?.prio === 'BAJA' && rowOf(s, HC2)?.vence.includes('🔔'), rowOf(s, HC2));
   check('restart: Interconsulta still closed', /^Cerrados/.test(groupOf(s, IC)?.title || ''), groupOf(s, IC));
   check('restart: deleted Eco stays deleted', !rowOf(s, ECO));
-  check('restart: preset-added Rx still Sin fecha, Mañana', /^Sin fecha/.test(groupOf(s, RX)?.title || '') && rowOf(s, RX)?.vence === 'Mañana', groupOf(s, RX));
+  check('restart: preset-added Rx still Próximos, Mañana', /^Próximos/.test(groupOf(s, RX)?.title || '') && rowOf(s, RX)?.vence === 'Mañana', groupOf(s, RX));
   check('no uncaught page errors', !errors.length && !again.pageErrors.length, [...errors, ...again.pageErrors].slice(0, 5));
   await again.app.close();
 

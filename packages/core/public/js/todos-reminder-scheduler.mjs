@@ -11,6 +11,8 @@ var deps = {
 
 /** @type {Map<string, ReturnType<typeof setTimeout>>} */
 var timeouts = new Map();
+/** Reminders already shown this session ("patient:todo@time"): every add/edit reschedules, and an overdue one must not toast again each time. */
+var fired = new Set();
 
 function scheduleKey(patientId, todoId) {
   return String(patientId) + ':' + String(todoId);
@@ -62,13 +64,17 @@ function scheduleTodoReminder(patientId, todo) {
   var targetMs = new Date(reminderAt).getTime();
   if (Number.isNaN(targetMs)) return;
 
+  var firedKey = key + '@' + reminderAt;
+  if (fired.has(firedKey)) return;
   var delay = Math.max(0, targetMs - Date.now());
   if (delay === 0) {
+    fired.add(firedKey);
     fireReminder(patientId, todo);
     return;
   }
   var timeoutId = setTimeout(function () {
     timeouts.delete(key);
+    fired.add(firedKey);
     fireReminder(patientId, todo);
   }, delay);
   timeouts.set(key, timeoutId);
@@ -163,6 +169,7 @@ export function cancelTodoReminder(todoId, patientId) {
 
 /** @internal tests */
 export function resetTodoReminderSchedulerForTests() {
+  fired.clear();
   Array.from(timeouts.keys()).forEach(function (key) {
     clearTimeoutForKey(key);
   });
