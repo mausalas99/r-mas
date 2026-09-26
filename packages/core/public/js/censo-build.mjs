@@ -208,8 +208,6 @@ export function buildCensusPayload(opts) {
     labHistoryByPatient: opts.labHistoryByPatient,
     todosByPatient: opts.todosByPatient,
     now: now,
-    showAllPendientes: !!opts.showAllPendientes,
-    omitMeds: !!opts.omitMeds,
   };
 
   var teamLabelByPatientId = opts.teamLabelByPatientId || {};

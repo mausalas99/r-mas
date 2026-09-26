@@ -97,8 +97,8 @@ function safeDrawText(page, text, options) {
  * @param {CensoRow[]} [rows]
  * @returns {{ cols: { key: string, title: string, w: number, maxLines: number }[], tableW: number, contentW: number, weights: typeof CENSO_COL_WEIGHTS }}
  */
-function tableLayout(rows) {
-  var weights = resolveCensoColWeights(rows || []);
+function tableLayout(rows, hiddenCols) {
+  var weights = resolveCensoColWeights(rows || [], hiddenCols);
   var contentW = PAGE_W - MARGIN * 2;
   var weightSum = weights.reduce(function (s, c) {
     return s + c.weight;
@@ -933,6 +933,7 @@ function normalizePayload(raw) {
     equipoLine: String(header.equipoLine || raw.equipo || buildEquipoLine(header)).trim(),
     equipo: String(header.equipoLine || raw.equipo || buildEquipoLine(header)).trim(),
     rows: raw.rows || [],
+    hiddenCols: Array.isArray(header.hiddenCols) ? header.hiddenCols : [],
   };
 }
 
@@ -1009,7 +1010,7 @@ export async function renderCensusPdf(payload) {
       delete row.labsDiagrams; // bad image: text labs kept
     }
   }
-  var tbl = tableLayout(rows);
+  var tbl = tableLayout(rows, data.hiddenCols);
   var layouts = layoutRows(rows, font, fontBold, tbl);
 
   layouts.forEach(function (layout, pageIdx) {
