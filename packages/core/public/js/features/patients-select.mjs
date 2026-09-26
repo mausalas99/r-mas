@@ -155,9 +155,19 @@ function scrollLabOutputIntoView() {
   }, 0);
 }
 
-function handleLabTabAfterPatientChange(wasOnLab, patientChanged) {
-  if (!wasOnLab || !patientChanged) return false;
-  rt.limpiarReporte();
+function labInputValue() {
+  var ta = document.getElementById('lab-input');
+  return ta ? ta.value : '';
+}
+
+/** Clear the paste box only on a hand-picked switch whose box text is still the
+ * text it held at the click. A background switch (sidebar re-render, Nube team
+ * assign landing late) or text pasted after the switch must survive — else the
+ * next SOME report is wiped before «Procesar». */
+function handleLabTabAfterPatientChange(ctx) {
+  if (!ctx.wasOnLab || !ctx.patientChanged) return false;
+  var keepInput = !ctx.byHand || labInputValue() !== ctx.labInputAtSelect;
+  rt.limpiarReporte({ keepInput: keepInput });
   rt.renderLabHistoryPanel();
   rt.switchAppTab('lab');
   scrollLabOutputIntoView();
@@ -225,7 +235,7 @@ function paintSelectedPatientChart(id, ctx) {
   rt.refreshExpedienteAfterPatientSelect({ patientChanged: ctx.patientChanged });
   if (ctx.appTab === 'lab') rt.renderLabHistoryPanel();
   if (ctx.appTab === 'med') rt.renderMedRecetaPanel();
-  handleLabTabAfterPatientChange(ctx.wasOnLab, ctx.patientChanged);
+  handleLabTabAfterPatientChange(ctx);
   rt.refreshTendenciasOrCultivosPanel();
   if (rt.getActiveId()) {
     requestAnimationFrame(function () {
@@ -268,6 +278,9 @@ function selectPatientCore(id) {
     prevId: prevId,
     wasOnLab: wasOnLab,
     appTab: appTab,
+    // Synchronous inside a trusted click/key → the user picked this patient.
+    byHand: !!(typeof window !== 'undefined' && window.event && window.event.isTrusted),
+    labInputAtSelect: labInputValue(),
   });
 }
 
