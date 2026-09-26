@@ -1,4 +1,5 @@
-import { classifyMedicationSoapCategory, SOAP_DESTINATION_KEYS } from "../med-receta-core.mjs";
+import { classifyMedicationSoapCategory, SOAP_DESTINATION_KEYS, effectiveDiaTratamiento } from "../med-receta-core.mjs";
+import { setItemDiaForDate } from "../med-receta-dates.mjs";
 import { getMedRecetaByPatient, persistClinicalState } from "../app-state.mjs";
 import { scheduleCloudSyncPush } from "./cloud-sync/mutate-bridge.mjs";
 import { resolveGlobalFn } from "./resolve-global-fn.mjs";
@@ -36,6 +37,50 @@ export function toggleMedRecetaSuspendido(itemId, suspended) {
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
   renderMedRecetaPanel();
+}
+
+/**
+ * Modal para fijar el día de antibiótico de hoy en ítems de la receta activa.
+ * @param {string} activeId
+ * @param {any[]} items
+ * @param {string} title
+ * @param {string} message
+ */
+export function promptAbxDias(activeId, items, title, message) {
+  var block = getMedRecetaByPatient()[activeId];
+  if (!block || !items.length) return Promise.resolve();
+  var fecha = block.fechaActualizacion;
+  var rows = items.map(function (it) {
+    return {
+      id: String(it.id),
+      label: String(it.nombreRaw || "").trim(),
+      dia: effectiveDiaTratamiento(it.diaTratamiento, fecha),
+    };
+  });
+  // Lazy: keeps the modal (and the shared stacked-overlay chunk) out of the eager boot payload.
+  return import("./medications-abx-dia-modal.mjs").then(function (mod) {
+    return mod.openAbxDiaModal({ title: title, message: message, rows: rows });
+  }).then(function (map) {
+    if (!map) return;
+    items.forEach(function (it) {
+      if (map[String(it.id)] != null) setItemDiaForDate(it, map[String(it.id)], fecha);
+    });
+    persistClinicalState();
+    scheduleCloudSyncPush();
+    invalidateEaPanelCache();
+    invalidateInnerTabRenderCache("estadoActual");
+    renderMedRecetaPanel();
+  });
+}
+
+export function editMedRecetaAbxDia(itemId) {
+  var activeId = rt.getActiveId();
+  var block = activeId && getMedRecetaByPatient()[activeId];
+  var it = block && (block.items || []).find(function (x) {
+    return String(x.id) === String(itemId);
+  });
+  if (!it || it.diaTratamiento == null) return;
+  promptAbxDias(activeId, [it], "Día de antibiótico", "Escribe el día de hoy de este esquema. R+ sigue contando desde aquí.");
 }
 
 export function toggleMedRecetaParaNota(itemId, selected) {

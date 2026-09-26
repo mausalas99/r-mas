@@ -1853,3 +1853,5 @@ html.dark .drive-import-lab-status--new {
 .drive-import-structured-label {
   line-height: 1.3;
 }
+button.med-receta-dia { border: 0; font-family: inherit; cursor: pointer; }
+button.med-receta-dia:hover { filter: brightness(0.95); }

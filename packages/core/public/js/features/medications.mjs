@@ -7,6 +7,7 @@ import { openMedRecetaPasteModal, closeMedRecetaPasteModal } from "./medications
 import { renderMedRecetaPanel } from "./medications-panel-render.mjs";
 import {
   toggleMedRecetaSuspendido,
+  editMedRecetaAbxDia,
   toggleMedRecetaParaNota,
   toggleMedRecetaInsulinRescateParaNota,
   toggleMedRecetaInsulinRescateSuspendido,
@@ -72,6 +73,7 @@ export const medicationsWindowHandlers = {
   copiarMedicamentosAlPortapapeles,
   setMedOutputTab,
   toggleMedRecetaSuspendido,
+  editMedRecetaAbxDia,
   toggleMedRecetaParaNota,
   toggleMedRecetaInsulinRescateParaNota,
   toggleMedRecetaInsulinRescateSuspendido,

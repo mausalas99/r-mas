@@ -37,7 +37,9 @@ import { rt, medToast, medOutputTab, bustMedPanelCache, setMedOutputTabState } f
 import { getMedNotaSelMap, manejoDiaOpts } from "./medications-utils.mjs";
 import { closeMedRecetaPasteModal } from "./medications-paste-modal.mjs";
 import { renderMedRecetaPanel } from "./medications-panel-render.mjs";
-import { switchInnerTab, invalidateInnerTabRenderCache } from "./medications-actions.mjs";
+import { switchInnerTab, invalidateInnerTabRenderCache, promptAbxDias } from "./medications-actions.mjs";
+import { reconcileAbxDias } from "../med-receta-dates.mjs";
+import { reviewAguaInyectableAlerts } from "./agua-inyectable-review.mjs";
 
 function hasMedRecetaContent(block) {
   return (
@@ -415,6 +417,7 @@ function commitProcessedReceta(activeId, raw, parsed) {
     "/" +
     today.getFullYear();
   var fecha = resolveFechaActualizacion(parsed.fechas, fallback);
+  var untrackedAbx = reconcileAbxDias(getMedRecetaByPatient()[activeId], parsed.items, fecha);
   getMedRecetaByPatient()[activeId] = {
     fechaActualizacion: fecha,
     items: parsed.items,
@@ -435,6 +438,14 @@ function commitProcessedReceta(activeId, raw, parsed) {
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
   renderMedRecetaPanel();
+  if (untrackedAbx.length) {
+    promptAbxDias(
+      activeId,
+      untrackedAbx,
+      "Días de antibiótico sin registro",
+      "SOME trae días que R+ no tiene registrados. Si hubo reinicio, SOME puede contar toda la estancia. Revisa el día de hoy."
+    );
+  }
 }
 
 function getMedRecetaPasteRaw() {
@@ -443,7 +454,7 @@ function getMedRecetaPasteRaw() {
   return ta ? String(ta.value || "") : "";
 }
 
-export function procesarRecetaMed() {
+export async function procesarRecetaMed() {
   var activeId = rt.getActiveId();
   if (!activeId) {
     medToast("Selecciona un paciente primero", "error");
@@ -453,6 +464,7 @@ export function procesarRecetaMed() {
   try {
     var parsed = parseIndicacionesPaste(raw || "");
     if (toastParseRecetaFailure(raw, parsed)) return;
+    await reviewAguaInyectableAlerts(parsed.aguaInyectableAlerts || []);
     commitProcessedReceta(activeId, raw, parsed);
     medToast(buildRecetaProcessToast(parsed), "success");
     closeMedRecetaPasteModal();
@@ -465,7 +477,7 @@ export function procesarRecetaMed() {
   }
 }
 
-export function procesarRecetaFromText(raw) {
+export async function procesarRecetaFromText(raw) {
   var activeId = rt.getActiveId();
   if (!activeId) {
     medToast("Selecciona un paciente primero", "error");
@@ -474,6 +486,7 @@ export function procesarRecetaFromText(raw) {
   try {
     var parsed = parseIndicacionesPaste(raw || "");
     if (toastParseRecetaFailure(raw, parsed)) return false;
+    await reviewAguaInyectableAlerts(parsed.aguaInyectableAlerts || []);
     commitProcessedReceta(activeId, raw, parsed);
     medToast(buildRecetaProcessToast(parsed), "success");
     return true;
