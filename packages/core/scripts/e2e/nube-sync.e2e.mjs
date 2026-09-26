@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global document, window, MutationObserver */
 /**
  * E2E: Nube sync between two desktop devices, driven through the real
  * Electron app against a LOCAL copy of the real sync Worker (`wrangler dev
@@ -17,6 +18,8 @@
  *   Device B → device A (both ways)
  *     - a lab set added on B for an existing patient does not reach A
  *     - the new set replaces the old one instead of adding to the history
+ *   Datos (census fields)
+ *     - an ingreso date (FIUX) set in Datos on B never reaches A
  *   Offline
  *     - work done while the Worker is down is lost, or never pushed later
  *     - the app crashes or blocks the paste while offline
@@ -148,7 +151,8 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   // resetConexionPanelOnClose runs off a dynamic import — give it a tick before reopening,
   // or the reopen's toggle can race the close animation and just close it again.
   await B.page.waitForTimeout(500);
-  await openConexion(B.page); // reopen, no view: panel-conexion-tour — subview resets to Conexión home, not stuck on Móvil
+  // Reopen with the bare ⇄ click: openConexion() would itself press «Opciones» and hide the home view.
+  await B.page.locator('#btn-header-team-sync').click(); // panel-conexion-tour — subview resets to Conexión home, not stuck on Móvil
   const backOnHome = B.page.locator('[data-cloud-action="nav-options"]');
   check('B: reopening the dropdown after close resets to the Conexión home view', await until(() => backOnHome.isVisible(), 5000));
   await closeConexion(B.page);
@@ -164,6 +168,39 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await pickLabDay(A.page, '20/09/2026');
   check('A: the old set is still there (Hb 11.85): added, not replaced', await until(async () => /Hb 11\.85/.test(await labText(A)), 5000));
   await r.shot(A.page, 'a-p1-gas-from-b');
+
+  // ── B → A: a Datos field (FIUX date) for P1, set on B ────────────────
+  const FIUX = '2026-09-19';
+  const fiuxInput = (page) => page.locator('#patient-data-form input.rpc-date-input[data-oninput-args=\'["fiuxFecha"]\']');
+  const openDatos = async (page) => {
+    await page.locator('#apptab-nota').click();
+    await page.locator('.dash-name:visible').first().click();
+    await fiuxInput(page).waitFor({ state: 'attached', timeout: 5000 });
+  };
+  const closeDatos = async (page) => {
+    await page.keyboard.press('Escape');
+    await until(async () => !(await page.locator('#exp-datos-modal-backdrop.open').count()), 3000);
+  };
+  await openPatient(B.page, P1);
+  await openDatos(B.page);
+  await fiuxInput(B.page).evaluate((el, v) => {
+    el.value = v;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }, FIUX);
+  await closeDatos(B.page);
+  await openPatient(A.page, P1);
+  let fiuxOnA = '';
+  check('A: FIUX date set in Datos on B arrives (19/09/2026)',
+    await until(async () => {
+      // until() swallows throws: close in finally, or one slow open leaves the modal blocking every retry.
+      try {
+        await openDatos(A.page);
+        fiuxOnA = await fiuxInput(A.page).inputValue();
+      } finally {
+        await closeDatos(A.page).catch(() => {});
+      }
+      return fiuxOnA === FIUX;
+    }, 45000), fiuxOnA);
 
   // ── Offline: Worker down, A keeps working, then catches up ────────────
   await stopWorker();
@@ -298,9 +335,17 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await C.page.locator('#onboard-rank').selectOption('R2');
   await C.page.locator('#onboard-sala').selectOption('Sala 1');
   await C.page.locator('#onboard-nube-password').fill(PASSWORD);
+  // A local pull can finish between two 500 ms polls — watch the DOM instead of polling it.
+  await C.page.evaluate(() => {
+    new MutationObserver((_, obs) => {
+      if (/Descargando pacientes/.test(document.getElementById('patient-list')?.textContent || '')) {
+        window.__sawDownloading = true;
+        obs.disconnect();
+      }
+    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  });
   await C.page.getByRole('button', { name: 'Guardar perfil' }).click();
-  const downloadingMsg = C.page.getByText(/Descargando pacientes/i);
-  const sawDownloading = await until(() => downloadingMsg.isVisible(), 6000);
+  const sawDownloading = await until(() => C.page.evaluate(() => !!window.__sawDownloading), 6000);
   const cCont = C.page.locator('button:visible', { hasText: /^Continuar/ });
   await cCont.waitFor({ timeout: 20000 });
   await C.page.getByText('Lo guardé en un lugar seguro').click();
@@ -336,7 +381,8 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await A2.page.locator('[data-network-filter="activity"]').selectOption('active');
   await A2.page.locator('[data-network-filter="activity"]').selectOption('');
   check('A: Red activity filter narrows visible rows without a re-fetch (applyNetworkCensusFilters)', true);
-  const p3Row = redPanel.locator('tr', { has: redPanel.locator(`input[data-registro="${P3.exp}"]`) });
+  // `has` takes a locator relative to the row — one rooted at redPanel never matches.
+  const p3Row = redPanel.locator('tr', { has: A2.page.locator(`input[data-registro="${P3.exp}"]`) });
   await p3Row.locator('[data-admin-action="switch-network-room"]').click();
   const switchToast = A2.page.locator('.toast', { hasText: /Cambiado a la sala/i });
   check('A: Red "Abrir expediente" switches room + pulls just that patient (scope-cloud-state-to-patient)', await until(() => switchToast.isVisible(), 10000));
@@ -347,7 +393,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   check('A: archive-network-patient archives a patient (admin can act on unjoined rooms — sync-require-member bypass)', await until(() => archiveToast.isVisible(), 10000));
   await closeToasts(A2.page);
   await A2.page.locator('[data-admin-action="refresh-red"]').click();
-  const p3RowAfter = redPanel.locator('tr', { has: redPanel.locator(`input[data-registro="${P3.exp}"]`) });
+  const p3RowAfter = redPanel.locator('tr', { has: A2.page.locator(`input[data-registro="${P3.exp}"]`) });
   await until(() => p3RowAfter.isVisible(), 8000);
   await p3RowAfter.locator('.cloud-sync-admin-equipos-edit summary').click();
   await p3RowAfter.locator('[data-admin-action="archive-network-patient"]').click();

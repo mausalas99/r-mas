@@ -2,7 +2,8 @@
  * Wires crypto.mjs into the push/pull wire format.
  *
  * Scope (2026-09-18): clinical *content* is whole-value encrypted — note, indicaciones,
- * historiaClinica, eventualidades, monitoreo, medReceta, labSidecars, todos, clinicalOps.
+ * historiaClinica, eventualidades, monitoreo, medReceta, vpo, listadoProblemas, medPharmProfile,
+ * labSidecars, todos, clinicalOps.
  * Patient identity (entries/{id} root + entries/{id}/fields: nombre, cama, servicio) stays
  * plaintext — Interno's board and the admin census view both read those fields server-side
  * today, and rebuilding them to work on ciphertext is a separate, larger follow-up (see
@@ -26,7 +27,17 @@
  */
 import { encryptValue, decryptValue, isEncryptedEnvelope, fingerprintValue } from './crypto.mjs';
 
-const ENTRY_CONTENT_FIELDS = ['note', 'indicaciones', 'historiaClinica', 'eventualidades', 'monitoreo', 'medReceta'];
+const ENTRY_CONTENT_FIELDS = [
+  'note',
+  'indicaciones',
+  'historiaClinica',
+  'eventualidades',
+  'monitoreo',
+  'medReceta',
+  'vpo',
+  'listadoProblemas',
+  'medPharmProfile',
+];
 
 /**
  * Clinical-content keys that ride bundled inside the patient-identity payload

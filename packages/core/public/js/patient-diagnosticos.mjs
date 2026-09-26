@@ -157,7 +157,7 @@ function diagnosticosListHasContent(list) {
  * as stale and the old remote value comes back on the next pull.
  * @param {Record<string, unknown>|null|undefined} patient
  * @param {string} [now]
- * @param {'diagnosticosList'|'censoMedsText'|'censoAtbText'} [key] also stamp that key's own clock
+ * @param {string} [key] also stamp that key's own clock (dx, censo meds/ATB, Datos fields)
  */
 export function stampCensoFieldsClock(patient, now, key) {
   if (!patient) return;

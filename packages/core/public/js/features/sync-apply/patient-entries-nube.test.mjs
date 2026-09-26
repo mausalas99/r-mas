@@ -2,7 +2,18 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { getPatients, getLabHistory, getNotes, getIndicaciones } from '../../app-state.mjs';
+import {
+  getPatients,
+  getLabHistory,
+  getNotes,
+  getIndicaciones,
+  getVpoByPatient,
+  getListadoProblemas,
+  getMedPharmProfileByPatient,
+} from '../../app-state.mjs';
+import { encodePersistSnapshotOps } from '../../../../lib/clinical-repo/sync/op-encoder-persist.mjs';
+import { applyOps, emptyState } from '../../../../cloud/sync-worker/src/lww.js';
+import { cloudStateToLanEntries, opsToLanEntries } from '../cloud-sync/pull-apply-state.mjs';
 import {
   getLabHistoryRevision,
   resetLabHistoryCacheForTests,
@@ -61,6 +72,40 @@ describe('applyLanPatientEntries on Nube path', () => {
     });
     assert.equal(getPatients().length, 1);
     assert.equal(getPatients()[0].nombre, 'PACIENTE NUBE');
+  });
+
+  it('same-time eventualidad on two devices: the one that lost the room LWW re-stamps the union so it gets re-pushed', () => {
+    const mine = { id: 'ev-a', at: '2026-09-25T10:00:00.000Z', text: 'DEMO DESDE A' };
+    const theirs = { id: 'ev-b', at: '2026-09-25T10:00:01.000Z', text: 'DEMO DESDE B' };
+    getPatients().push({ id: 'e1', eventualidades: { entries: [mine], updatedAt: '2026-09-25T10:00:00.000Z' } });
+    const incoming = { entries: [theirs], updatedAt: '2026-09-25T10:00:01.000Z' };
+    applyLanPatientEntries([{ patient: { id: 'e1', eventualidades: incoming } }], { skipTeamScopeFilter: true });
+    const ev = getPatients()[0].eventualidades;
+    assert.deepEqual(ev.entries.map((e) => e.id).sort(), ['ev-a', 'ev-b']);
+    assert.ok(ev.updatedAt > incoming.updatedAt, 'union must carry a newer clock than the room copy');
+  });
+
+  it('eventualidades equal to the room copy keep the room clock (no re-push ping-pong)', () => {
+    const row = { id: 'ev-a', at: '2026-09-25T10:00:00.000Z', text: 'DEMO' };
+    getPatients().push({ id: 'e2', eventualidades: { entries: [row], updatedAt: '2026-09-25T10:00:00.000Z' } });
+    applyLanPatientEntries(
+      [{ patient: { id: 'e2', eventualidades: { entries: [row], updatedAt: '2026-09-25T10:00:00.000Z' } } }],
+      { skipTeamScopeFilter: true }
+    );
+    assert.equal(getPatients()[0].eventualidades.updatedAt, '2026-09-25T10:00:00.000Z');
+  });
+
+  it('same-time estado actual med on two devices: local category kept and the clock moves past the room copy', () => {
+    getPatients().push({
+      id: 'm1',
+      monitoreo: { estadoClinico: { abx: 'DEMO ABX A' }, manualMeds: { abx: ['DEMO ABX A'] }, estadoClinicoUpdatedAt: '2026-09-25T10:00:00.000Z' },
+    });
+    const incoming = { estadoClinico: { analgesia: 'DEMO ANALGESIA B' }, manualMeds: { analgesia: ['DEMO ANALGESIA B'] }, estadoClinicoUpdatedAt: '2026-09-25T10:00:01.000Z' };
+    applyLanPatientEntries([{ patient: { id: 'm1', monitoreo: incoming } }], { skipTeamScopeFilter: true });
+    const mon = getPatients()[0].monitoreo;
+    assert.deepEqual(mon.manualMeds.abx, ['DEMO ABX A']);
+    assert.deepEqual(mon.manualMeds.analgesia, ['DEMO ANALGESIA B']);
+    assert.ok(mon.estadoClinicoUpdatedAt > incoming.estadoClinicoUpdatedAt);
   });
 
   it('keeps a newer local key when a peer blob is newer only from an unrelated touch', () => {
@@ -132,6 +177,59 @@ describe('applyLanPatientEntries on Nube path', () => {
     }
   });
 
+  it('VPO, problem list and drug profile ride desktop A → Worker → desktop B, and a fields-only poll keeps them', () => {
+    const vpo = { texto: 'Riesgo quirúrgico ASA II', updatedAt: '2026-09-26T09:00:00.000Z' };
+    const listado = { items: [{ id: 'pr1', texto: 'HAS' }], updatedAt: '2026-09-26T09:01:00.000Z' };
+    const pharm = { alergias: 'Penicilina', updatedAt: '2026-09-26T09:02:00.000Z' };
+    // Desktop A saves the three maps → projector ops.
+    const ops = encodePersistSnapshotOps({
+      commandType: 'clinical.persistSnapshot',
+      blobKeys: ['patients', 'vpoByPatient', 'listadoProblemas', 'medPharmProfileByPatient'],
+      blobs: {
+        patients: [{ id: 'p-rt', nombre: 'DEMO RT', registro: '777', lanUpdatedAt: '2026-09-26T08:00:00.000Z' }],
+        vpoByPatient: { 'p-rt': vpo },
+        listadoProblemas: { 'p-rt': listado },
+        medPharmProfileByPatient: { 'p-rt': pharm },
+      },
+      actorId: 'dev-a',
+      fallbackUpdatedAt: '2026-09-26T09:05:00.000Z',
+    });
+    // Worker accepts every op (no unsupported_path).
+    const { state, rejected } = applyOps(emptyState(), ops);
+    assert.deepEqual(rejected, []);
+    try {
+      // Desktop B full-state pull adds the patient with all three.
+      applyLanPatientEntries(cloudStateToLanEntries(state), { skipTeamScopeFilter: true });
+      assert.deepEqual(getVpoByPatient()['p-rt'], vpo);
+      assert.deepEqual(getListadoProblemas()['p-rt'], listado);
+      assert.deepEqual(getMedPharmProfileByPatient()['p-rt'], pharm);
+      // Peer edits the VPO → ops-mode pull updates it on B.
+      const vpo2 = { texto: 'Riesgo quirúrgico ASA III', updatedAt: '2026-09-26T10:00:00.000Z' };
+      applyLanPatientEntries(
+        opsToLanEntries([{ path: 'entries/p-rt/vpo', value: vpo2, updatedAt: vpo2.updatedAt, actorId: 'dev-a' }]),
+        { skipTeamScopeFilter: true }
+      );
+      assert.deepEqual(getVpoByPatient()['p-rt'], vpo2);
+      // A later poll that only moved the bed must not wipe any of them.
+      applyLanPatientEntries(
+        opsToLanEntries([
+          { path: 'entries/p-rt/fields', value: { registro: '777', cama: '12' }, updatedAt: '2026-09-26T11:00:00.000Z', actorId: 'dev-a' },
+        ]),
+        { skipTeamScopeFilter: true }
+      );
+      assert.deepEqual(getVpoByPatient()['p-rt'], vpo2);
+      assert.deepEqual(getListadoProblemas()['p-rt'], listado);
+      assert.deepEqual(getMedPharmProfileByPatient()['p-rt'], pharm);
+    } finally {
+      delete getVpoByPatient()['p-rt'];
+      delete getListadoProblemas()['p-rt'];
+      delete getMedPharmProfileByPatient()['p-rt'];
+      delete getNotes()['p-rt'];
+      delete getIndicaciones()['p-rt'];
+      delete getLabHistory()['p-rt'];
+    }
+  });
+
   it('isPlaceholderPatientName detects default admit labels', () => {
     assert.equal(isPlaceholderPatientName('PACIENTE SIN NOMBRE'), true);
     assert.equal(isPlaceholderPatientName('cynthia'), false);
@@ -166,6 +264,68 @@ describe('applyLanPatientEntries on Nube path', () => {
     );
     assert.equal(result.updated, 1);
     assert.equal(getPatients()[0].nombre, 'CYNTHIA');
+  });
+
+  it('takes newer remote Datos fields: sala and ingreso dates', () => {
+    getPatients().push({
+      id: 'p-datos',
+      nombre: 'ANA',
+      registro: '7',
+      sala: 'A',
+      fiuxFecha: '01/09/2026',
+      lanUpdatedAt: '2026-09-20T10:00:00.000Z',
+    });
+    applyLanPatientEntries(
+      [
+        {
+          patient: {
+            id: 'p-datos',
+            nombre: 'ANA',
+            registro: '7',
+            sala: 'B',
+            fiuxFecha: '02/09/2026',
+            fimiFecha: '03/09/2026',
+            lanUpdatedAt: '2026-09-20T12:00:00.000Z',
+          },
+        },
+      ],
+      { skipTeamScopeFilter: true }
+    );
+    const p = getPatients()[0];
+    assert.equal(p.sala, 'B');
+    assert.equal(p.fiuxFecha, '02/09/2026');
+    assert.equal(p.fimiFecha, '03/09/2026');
+  });
+
+  it('a peer Datos edit wins by its own key clock even when the local patient clock is newer', () => {
+    getPatients().push({
+      id: 'p-key',
+      nombre: 'ANA',
+      registro: '8',
+      fiuxFecha: '01/09/2026',
+      cama: '2',
+      lanUpdatedAt: '2026-09-20T12:00:00.000Z',
+      fieldClocks: { cama: '2026-09-20T12:00:00.000Z' },
+    });
+    applyLanPatientEntries(
+      [
+        {
+          patient: {
+            id: 'p-key',
+            nombre: 'ANA',
+            registro: '8',
+            fiuxFecha: '02/09/2026',
+            cama: '1',
+            lanUpdatedAt: '2026-09-20T11:00:00.000Z',
+            fieldClocks: { fiuxFecha: '2026-09-20T11:00:00.000Z', cama: '2026-09-20T09:00:00.000Z' },
+          },
+        },
+      ],
+      { skipTeamScopeFilter: true }
+    );
+    const p = getPatients()[0];
+    assert.equal(p.fiuxFecha, '02/09/2026');
+    assert.equal(p.cama, '2');
   });
 
   it('accepts a real remote name when local is still the placeholder', () => {

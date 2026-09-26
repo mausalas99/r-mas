@@ -178,7 +178,8 @@ async function runPullLatest(pctx) {
     if (typeof document !== 'undefined') {
       try {
         const { renderPatientList } = await import('../patients.mjs');
-        renderPatientList({ silent: true });
+        // force: the silent path is debounced, and a fast pull ended before it painted.
+        renderPatientList({ silent: true, force: true });
       } catch {
         /* list optional during boot */
       }
