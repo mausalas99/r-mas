@@ -29,14 +29,19 @@ import {
 import { settlePasteSurface, appendExitingRows, appendExitingRowsInPlace } from '../ui-motion.mjs';
 
 /** wb-table grid — columns Prior. / Pendiente / Quién / Vence / (acción), mockup L416. */
-var OPEN_ROW_GRID = '62px 1fr 118px 104px 74px';
+// Pendiente keeps ≥ 10rem; Quién/Vence give way first (at a 720 px window the
+// fixed 118/104 px columns squeezed the Pendiente text to zero width). The acción
+// column fits «En curso» + «Listo» on one line. Narrow panels drop Quién
+// (workbench-surfaces.css @container).
+var OPEN_ROW_GRID = '62px minmax(10rem, 1fr) minmax(0, 118px) minmax(0, 104px) 104px';
 /** Cerrados rows drop Prior. and the acción column. */
-var CLOSED_ROW_GRID = '1fr 118px 104px';
+var CLOSED_ROW_GRID = 'minmax(10rem, 1fr) minmax(0, 118px) minmax(0, 104px)';
 var OPEN_COLUMNS = ['Prior.', 'Pendiente', 'Quién', 'Vence', ''];
 
 var GROUP_META = {
   vencido: { title: 'Vencidos', headerClass: 'wb-table-card-header--alert', titleClass: 'wb-table-card-title--alert' },
   hoy: { title: 'Hoy' },
+  proximo: { title: 'Próximos' },
   sin_fecha: { title: 'Sin fecha' },
   listo: { title: 'Cerrados · últimas 24 h', titleClass: 'wb-table-card-title--muted' },
 };
@@ -156,6 +161,7 @@ function buildTodoQuienCell(t) {
   cell.className = 'wb-todo-quien';
   var creatorLabel = formatTodoCreatorLabel(t.createdBy);
   cell.textContent = isHandoffTodo(t, getClinicalUsername()) ? 'De ' + creatorLabel : creatorLabel;
+  cell.title = cell.textContent; // the column can shrink to an ellipsis
   return cell;
 }
 
@@ -269,7 +275,7 @@ function buildTodoTextInput(t) {
   return txtInput;
 }
 
-/** Open (vencido/hoy/sin_fecha) row: PRIOR / PENDIENTE / QUIÉN / VENCE / acción. */
+/** Open (vencido/hoy/proximo/sin_fecha) row: PRIOR / PENDIENTE / QUIÉN / VENCE / acción. */
 function buildOpenTodoRow(t, status, now) {
   var row = document.createElement('div');
   row.className = 'wb-row wb-todo-row wb-todo-row--prio-' + normalizeTodoPriority(t.priority);
@@ -476,7 +482,7 @@ export function renderTodoListSection(container, preserveTodoId) {
     markNewTodoRows(list, prevRows);
     var openGroups = groupTodosByStatus(todos);
     var openIds = new Set(
-      openGroups.vencido.concat(openGroups.hoy, openGroups.sin_fecha).map(function (t) { return t.id; })
+      openGroups.vencido.concat(openGroups.hoy, openGroups.proximo, openGroups.sin_fecha).map(function (t) { return t.id; })
     );
     /* Still present (just moved to Cerrados) = completed, gets the success
      * flash. Gone entirely = deleted, gets the plain exit. */
@@ -494,8 +500,8 @@ export function renderTodoListSection(container, preserveTodoId) {
   updateExpPendientesTabBadge();
 }
 
-/** Vencidos first, then hoy, then sin fecha, then resueltos (cerrados) collapsed at the bottom. */
-var TODO_OPEN_GROUP_ORDER = ['vencido', 'hoy', 'sin_fecha'];
+/** Vencidos first, then hoy, próximos, sin fecha, then resueltos (cerrados) collapsed at the bottom. */
+var TODO_OPEN_GROUP_ORDER = ['vencido', 'hoy', 'proximo', 'sin_fecha'];
 
 /**
  * Pure planning step (no DOM): sorted, non-empty groups in display order,
@@ -529,7 +535,7 @@ function rowForTodo(t, status, now, preservedRow, preserveTodoId) {
 }
 
 /**
- * Group card header: "Vencidos · N" / "Hoy · N" / "Sin fecha · N" as the wb
+ * Group card header: "Vencidos · N" / "Hoy · N" / "Próximos · N" / "Sin fecha · N" as the wb
  * table-card title (mockup L416); Cerrados keeps its fixed title and shows
  * the count as a separate trailing span instead.
  */
@@ -581,7 +587,7 @@ function appendTodoGroupSection(list, group, now, preservedRow, preserveTodoId, 
   list.appendChild(root);
 }
 
-/** Groups pendientes vencido → hoy → sin_fecha → listo (cerrados, collapsed). */
+/** Groups pendientes vencido → hoy → proximo → sin_fecha → listo (cerrados, collapsed). */
 export function appendGroupedTodoSections(list, todos, preservedRow, preserveTodoId, now) {
   var plan = buildTodoGroupPlan(todos, now);
   var colheadShown = false;

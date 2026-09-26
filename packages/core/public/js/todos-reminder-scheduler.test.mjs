@@ -84,6 +84,16 @@ test('fires immediately for past reminderAt', () => {
   assert.equal(toasts[0], 'Pendiente · Cama 12 — Revisar labs');
 });
 
+test('overdue dueDate without «Recordarme» never fires', () => {
+  const toasts = [];
+  configureTodoReminderScheduler({ showToast: (msg) => toasts.push(msg) });
+  const past = new Date(NOW.getTime() - 5 * 60 * 1000).toISOString();
+  seedTodos([todo({ dueDate: past })]);
+  rescheduleAllTodos(PATIENT);
+  mock.timers.tick(24 * 60 * 60 * 1000);
+  assert.equal(toasts.length, 0);
+});
+
 test('cancel on reschedule clears old timeout', () => {
   const toasts = [];
   configureTodoReminderScheduler({

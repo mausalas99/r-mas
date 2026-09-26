@@ -15,6 +15,7 @@
  *   New procedure
  *     - the patient list is empty, or does not preselect the open patient
  *     - «Guardar» with no procedure / no place saves anyway, or closes the form
+ *     - a date the board cannot show (past next week) saves and is never seen
  *     - Escape saves what was typed
  *     - the chosen day or hour (custom date + hour pickers) is lost on save
  *     - the block lands on the wrong day or hour, or shows the wrong patient
@@ -215,6 +216,12 @@ await r.finish('Agenda: week board, new/edit/delete, two devices over Nube, rest
   const err2 = (await m.locator('#pa-modal-error').textContent()).trim();
   check('Guardar with no procedure / no place is refused and the form stays open',
     err1 === 'Indica el procedimiento.' && err2 === 'Indica el lugar.' && (await m.locator('#pa-procedure').isVisible()), { err1, err2 });
+  await m.locator('#pa-location').fill('QUIROFANO 3');
+  await setStart(page, new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 21), 10, 0);
+  await m.getByRole('button', { name: 'Guardar' }).click();
+  const err3 = (await m.locator('#pa-modal-error').textContent()).trim();
+  check('a date 3 weeks ahead (off the board) is refused with a message; the form stays open',
+    /solo muestra la semana pasada, esta y la siguiente/.test(err3) && (await m.locator('#pa-procedure').isVisible()), err3);
   await page.keyboard.press('Escape');
   await m.locator('#pa-procedure').waitFor({ state: 'hidden' });
   check('Escape closes the form and saves nothing', (await blocks(page)).length === 0, await blocks(page));
