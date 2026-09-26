@@ -17,7 +17,7 @@ R+ 6.2.0 añade **monitoreo estructurado en Sala** con la pestaña **Estado actu
 - **Estado clínico general** — Bloque colapsable (FOUR, esferas, soporte, dieta con kcal/kg calculadas por peso del paciente, medicamentos con propuestas desde SOAP).
 - **Historial y gráficas** — Mediciones recientes; tendencias de SV, glucometrías e I/O con Chart.js (a partir de 2 registros).
 - **Texto Estado Actual** — Generación automática tipo SOAP (sin S:); copiar o guardar con timestamp; campos vacíos como `___`.
-- **Medicamentos** — En Sala, «Inventado a Ficticio Casoap» propone líneas de medicación para confirmar en el panel (no sobrescribe campos confirmados).
+- **Medicamentos** — En Sala, «Enviar a Estado Actual» propone líneas de medicación para confirmar en el panel (no sobrescribe campos confirmados).
 - **Sincronización LAN** — `patient.monitoreo` se fusiona entre equipos de la sala; migración automática desde `patient.estadoActual` legacy.
 
 ### Laboratorio

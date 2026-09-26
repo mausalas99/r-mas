@@ -61,7 +61,7 @@ export function renderTeamOnboardingInto(host, opts = {}) {
         : 'Buscando equipos en tu sala…') +
       '</p>' +
       '<div class="clinical-onboard-team-actions">' +
-      '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-team-onboard-open>Ejemplo Modelo casoba</button>' +
+      '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-team-onboard-open>Abrir Mi rotación</button>' +
       '</div>',
   });
   if (opts.skipCloudSync || host._rpcTeamOnboardSyncDone) return;

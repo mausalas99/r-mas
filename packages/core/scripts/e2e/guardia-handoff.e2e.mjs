@@ -102,11 +102,11 @@ await r.finish('Guardia handoff: R2 → on-call R1 over Nube, both ways, restart
   await onboardNube(A.page, R2);
   const B = await launchDevice('b', 3792);
   await onboardNube(B.page, R1);
-  await A.page.getByRole('button', { name: 'Ejemplo Modelo casoba' }).click();
+  await A.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
   await A.page.locator('#btn-clinical-team-create-open').click();
   await A.page.locator('#clinical-team-create-name').fill('EQUIPO DEMO GUARDIA');
   await A.page.getByRole('button', { name: 'Crear equipo' }).click();
-  await B.page.getByRole('button', { name: 'Ejemplo Modelo casoba' }).click();
+  await B.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
   const joinBtn = B.page.getByRole('button', { name: 'Unirme' });
   check('R1 sees the R2\'s team through Nube', await until(() => joinBtn.isVisible(), 20000));
   await joinBtn.click();

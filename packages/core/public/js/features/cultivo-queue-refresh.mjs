@@ -14,8 +14,7 @@ import {
   classifyCultivoFollowUps,
 } from './cultivo-queue-model.mjs';
 import {
-  getLabPortalUrlSetting,
-  isLabRepoMissingPortalUrlError,
+  fetchLabRepoRange,
   promptForLabPortalUrl,
   LAB_PORTAL_URL_MISSING_MESSAGE,
 } from '../lab-repo-portal-prompt.mjs';
@@ -147,15 +146,10 @@ export async function refreshCultivoLabsForPatient(patientId, items) {
   var registro = inputs.registro;
   var range = inputs.range;
   try {
-    var res = await window.electronAPI.labRepoFetch({
-      registro: registro,
-      desde: range.desde.toISOString(),
-      hasta: range.hasta.toISOString(),
-      portalUrl: getLabPortalUrlSetting(),
-    });
-    var studies = (res && res.studies) || [];
-    var errors = (res && res.errors) || [];
-    if (isLabRepoMissingPortalUrlError(errors[0] && errors[0].message)) {
+    var res = await fetchLabRepoRange(registro, range);
+    var studies = res.studies;
+    var errors = res.errors;
+    if (res.missingPortalUrl) {
       promptForLabPortalUrl();
       return { ok: false, kind: 'missing-portal-url' };
     }

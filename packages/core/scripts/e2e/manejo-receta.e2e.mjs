@@ -25,7 +25,7 @@
  *   Turn list
  *     - "Excl." does not drop the med from the discharge text / copy
  *     - an "Otros" med ticked for SOAP is sent with no Destino
- *     - Generico a Casoav adds nothing / wrong count
+ *     - Añadir a Tratamiento adds nothing / wrong count
  *   Discharge text
  *     - the raw "||" SOME marker leaks into the window
  *     - "Nombre + Día" loses the advanced day, or the diet line is missing
@@ -200,7 +200,7 @@ await r.finish('Manejo + Perfil histórico', async () => {
   await medRow('XYZ').locator('input[data-med-soap-chk]').check();
   await page.waitForTimeout(300);
   await closeToasts(page);
-  await page.getByRole('button', { name: 'Inventado a Ficticio Casoap' }).click();
+  await page.getByRole('button', { name: 'Enviar a Estado Actual' }).click();
   check('"Otros" med with SOAP and no Destino is refused', await toast(/Elige destino para 1 medicamento\(s\) «Otros»/), await toastTexts());
   const destSelectHtml = await medRow('XYZ').locator('select.med-receta-dest').innerHTML();
   check('destino picker offers every therapeutic optgroup (N/HD/HI/NM)',
@@ -209,16 +209,16 @@ await r.finish('Manejo + Perfil histórico', async () => {
   await medRow('XYZ').locator('select.med-receta-dest').selectOption({ label: 'NM (soporte, crónicos, etc.)' });
   await page.waitForTimeout(300);
   await closeToasts(page);
-  await page.getByRole('button', { name: 'Inventado a Ficticio Casoap' }).click();
+  await page.getByRole('button', { name: 'Enviar a Estado Actual' }).click();
   check('with a Destino it is sent to Estado Actual', await toast(/Propuesta en Estado Actual/), await toastTexts());
 
   await openManejo();
   await closeToasts(page);
-  await page.getByRole('button', { name: 'Generico a Casoav' }).click();
+  await page.getByRole('button', { name: 'Añadir a Tratamiento' }).click();
   const txToast = await page.locator('.toast', { hasText: /línea\(s\) añadidas a Tratamiento/ }).first().innerText().catch(() => '');
   const txN = Number((txToast.match(/(\d+) línea/) || [])[1] || 0);
   // 7 rows carry SOAP; losartán is one of them but is Excl., so 6 lines.
-  check('Generico a Casoav adds the 6 active SOAP meds (Excl. losartán left out)', txN === 6, txToast);
+  check('Añadir a Tratamiento adds the 6 active SOAP meds (Excl. losartán left out)', txN === 6, txToast);
 
   // ── Diet-only list (patient B) ──────────────────────────────────────────
   await openPatient(page, B);

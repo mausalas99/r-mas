@@ -260,7 +260,7 @@ export function applyRecetaProposal(monitoreo, buckets) {
  * Como applyRecetaProposal, pero una categoría ya confirmada también recibe
  * propuesta cuando la receta trae contenido distinto al confirmado (p. ej.
  * bomba de insulina o reposición de potasio agregados después de confirmar
- * NM). Solo la usa el envío explícito «Inventado a Ficticio Casoap» — el sync
+ * NM). Solo la usa el envío explícito «Enviar a Estado Actual» — el sync
  * pasivo en segundo plano sigue respetando el bloqueo de applyRecetaProposal.
  * @param {Record<string, unknown>} monitoreo
  * @param {Record<string, string>} buckets

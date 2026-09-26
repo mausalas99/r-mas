@@ -50,7 +50,7 @@ const MULTI_PATIENT_TERMS = [
 // data-entry or install-touching one.
 const ALWAYS_BLOCKED_TERMS = [
   "confirmar", "descartar", "eliminar", "borrar", "^guardar", "actualizar labs",
-  "enviar a estado", "importar", "procesar", "archivar", "generico a casoav",
+  "enviar a estado", "importar", "procesar", "archivar", "añadir a tratamiento",
   "^limpiar$",
   "reinstalar", "restaurar", "instalador", "actualiz", "telemetr", "exportar",
   "copia de seguridad", "revisar duplicados", "abrir\\.\\.\\.", "abrir…",

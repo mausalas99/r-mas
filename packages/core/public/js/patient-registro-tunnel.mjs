@@ -16,8 +16,7 @@ import {
 import { parseRegistrosFromBulkInput } from './patient-registro-parse.mjs';
 import { rt } from './features/patients-runtime-state.mjs';
 import {
-  getLabPortalUrlSetting,
-  isLabRepoMissingPortalUrlError,
+  fetchLabRepoRange,
   promptForLabPortalUrl,
   LAB_PORTAL_URL_MISSING_MESSAGE,
 } from './lab-repo-portal-prompt.mjs';
@@ -42,7 +41,7 @@ function parseLabPatientFromStudies(studies, registro) {
       edad: p.edad,
       sexo: p.sexo,
     };
-  } catch (_e) {
+  } catch {
     return { expediente: registro, name: '' };
   }
 }
@@ -154,15 +153,9 @@ export async function admitPatientViaRegistroTunnel(registro, opts) {
   }
   rt.showToast('Consultando repositorio…', 'info');
   try {
-    var res = await window.electronAPI.labRepoFetch({
-      registro: reg,
-      desde: range.desde.toISOString(),
-      hasta: range.hasta.toISOString(),
-      portalUrl: getLabPortalUrlSetting(),
-    });
-    var studies = (res && res.studies) || [];
-    var errors = (res && res.errors) || [];
-    if (isLabRepoMissingPortalUrlError(errors[0] && errors[0].message)) {
+    var res = await fetchLabRepoRange(reg, range);
+    var studies = res.studies;
+    if (res.missingPortalUrl) {
       rt.showToast(LAB_PORTAL_URL_MISSING_MESSAGE, 'error');
       promptForLabPortalUrl();
       return null;

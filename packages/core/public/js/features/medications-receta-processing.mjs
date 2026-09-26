@@ -211,7 +211,7 @@ export function mediLlevarASOAP() {
     medToast(
       "Elige destino para " +
         pendingOtros.length +
-        " medicamento(s) «Otros» antes de inventado a Ficticio Casoap",
+        " medicamento(s) «Otros» antes de enviar a Estado Actual",
       "error"
     );
     return;

@@ -8,8 +8,7 @@ import {
 import { openLabBulkPreviewModal } from './lab-bulk-preview-modal.mjs';
 import { finalizeBulkLabPaste } from './lab-panel-workbench.mjs';
 import {
-  getLabPortalUrlSetting,
-  isLabRepoMissingPortalUrlError,
+  fetchLabRepoRange,
   promptForLabPortalUrl,
   LAB_PORTAL_URL_MISSING_MESSAGE,
 } from '../lab-repo-portal-prompt.mjs';
@@ -168,15 +167,10 @@ export async function confirmLabRepoImport() {
   setLabRepoImportBusy(true);
   rt.showToast('Consultando repositorio…', 'info');
   try {
-    var res = await window.electronAPI.labRepoFetch({
-      registro: fields.registro,
-      desde: range.desde.toISOString(),
-      hasta: range.hasta.toISOString(),
-      portalUrl: getLabPortalUrlSetting(),
-    });
-    var studies = (res && res.studies) || [];
-    var errors = (res && res.errors) || [];
-    if (isLabRepoMissingPortalUrlError(errors[0] && errors[0].message)) {
+    var res = await fetchLabRepoRange(fields.registro, range);
+    var studies = res.studies;
+    var errors = res.errors;
+    if (res.missingPortalUrl) {
       rt.showToast(LAB_PORTAL_URL_MISSING_MESSAGE, 'error');
       promptForLabPortalUrl();
       return;

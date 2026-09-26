@@ -32,8 +32,7 @@ import {
 } from './lab-repo-batch-mode.mjs';
 import { requestSilentUpdateCheck } from './platform/updater/silent-check.mjs';
 import {
-  getLabPortalUrlSetting,
-  isLabRepoMissingPortalUrlError,
+  fetchLabRepoRange,
   promptForLabPortalUrl,
   LAB_PORTAL_URL_MISSING_MESSAGE,
 } from '../lab-repo-portal-prompt.mjs';
@@ -427,15 +426,10 @@ function applyFetchKindToTotals(kind, studies, errors, totals, row) {
 
 async function fetchOneBatchPatient(row, range) {
   try {
-    var res = await window.electronAPI.labRepoFetch({
-      registro: row.registro,
-      desde: range.desde.toISOString(),
-      hasta: range.hasta.toISOString(),
-      portalUrl: getLabPortalUrlSetting(),
-    });
-    var studies = (res && res.studies) || [];
-    var errors = (res && res.errors) || [];
-    if (isLabRepoMissingPortalUrlError(errors[0] && errors[0].message)) {
+    var res = await fetchLabRepoRange(row.registro, range);
+    var studies = res.studies;
+    var errors = res.errors;
+    if (res.missingPortalUrl) {
       return { kind: 'missing-portal-url', studies: [], errors: [] };
     }
     return {

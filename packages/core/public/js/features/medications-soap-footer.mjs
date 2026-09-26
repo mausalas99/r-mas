@@ -205,14 +205,14 @@ export function renderMedNotaFooter() {
 
   var allItems = block && block.items ? block.items : [];
   var previewHtml = buildSoapPreviewHtml(soapItems, allItems);
-  var soapBtnLabel = isModeSala(rt.getSettings()) ? "Inventado a Ficticio Casoap" : "Abrir plantilla SOAP";
+  var soapBtnLabel = isModeSala(rt.getSettings()) ? "Enviar a Estado Actual" : "Abrir plantilla SOAP";
 
   foot.innerHTML =
     '<div class="med-nota-toolbar">' +
     '<p class="med-nota-hint">Los medicamentos con <strong>SOAP</strong> activo se clasifican por nombre; los marcados como <strong>Otros</strong> requieren elegir destino en la columna <strong>Destino</strong>.</p>' +
     previewHtml +
     '<div class="med-nota-actions">' +
-    '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-onclick="mediAnadirATratamiento">Generico a Casoav</button>' +
+    '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-onclick="mediAnadirATratamiento">Añadir a Tratamiento</button>' +
     '<button type="button" class="wb-btn wb-btn-secondary" data-onclick="mediLlevarASOAP">' +
     soapBtnLabel +
     '</button>' +

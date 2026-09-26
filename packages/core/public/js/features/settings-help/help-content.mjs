@@ -175,7 +175,7 @@ var HELP_ARTICLES = [
       '<li><strong>Excl.</strong> excluye el fármaco del texto de egreso; <strong>SOAP</strong> marca qué filas se volcarán a la plantilla SOAP o al tratamiento.</li>' +
       '<li>La vista previa inferior agrupa por categoría (analgésicos, antiHTA, antibióticos, vasopresores, otros). Los <strong>PARA SOLUCIÓN STANFORD</strong> se muestran agrupados en una sola línea.</li>' +
       '<li>Los renglones de <strong>ESTUDIOS de imagen</strong> (TAC, RM, RX, USG y similares) y <strong>PROCEDIMIENTO</strong> del mismo pegado se agregan como <strong>Pendientes</strong> automáticamente.</li>' +
-      '<li><strong>Generico a Casoav</strong> inserta líneas en la nota; <strong>Abrir plantilla SOAP</strong> rellena los campos del modal según esa clasificación.</li>' +
+      '<li><strong>Añadir a Tratamiento</strong> inserta líneas en la nota; <strong>Abrir plantilla SOAP</strong> rellena los campos del modal según esa clasificación.</li>' +
       '<li><strong>Copiar</strong> en la tarjeta inferior genera texto tipo nota de egreso.</li>' +
       '<li>Atajos: <strong>Ctrl/⌘ + 3</strong> cicla Manejo actual ↔ Perfil histórico; <strong>Ctrl/⌘ + Shift + 3</strong> alterna Completa / Nombre+Día; <strong>Ctrl/⌘ + M</strong> es alias de Medicamentos.</li>' +
       '</ul>'

@@ -21,6 +21,27 @@ export function isLabRepoMissingPortalUrlError(message) {
   return String(message || '').indexOf(LAB_REPO_MISSING_PORTAL_URL_CODE) !== -1;
 }
 
+/**
+ * One portal fetch with the saved address. `missingPortalUrl` → no address is
+ * set; the caller prompts for it instead of treating it as "no studies".
+ * @param {string} registro
+ * @param {{ desde: Date, hasta: Date }} range
+ */
+export async function fetchLabRepoRange(registro, range) {
+  var res = await window.electronAPI.labRepoFetch({
+    registro: registro,
+    desde: range.desde.toISOString(),
+    hasta: range.hasta.toISOString(),
+    portalUrl: getLabPortalUrlSetting(),
+  });
+  var errors = (res && res.errors) || [];
+  return {
+    studies: (res && res.studies) || [],
+    errors: errors,
+    missingPortalUrl: isLabRepoMissingPortalUrlError(errors[0] && errors[0].message),
+  };
+}
+
 /** Opens Ajustes scrolled to the lab portal field and focuses it. */
 export function promptForLabPortalUrl() {
   return import('./features/settings-help/settings-dropdown.mjs').then(function (mod) {
