@@ -9,7 +9,6 @@ if (process.env.NODE_ENV !== 'production' && !process.env.ELECTRON_DISABLE_SECUR
 const { app, BrowserWindow, Menu, shell, dialog, ipcMain, clipboard, safeStorage, session, protocol, net } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
 const execFileAsync = promisify(execFile);

@@ -1,4 +1,4 @@
-R+ 7.7.5 (gasometrías seriadas, y química)
+R+ 7.7.5 (gasometrías seriadas y química)
 ========================================================
 
 Fecha: 2026-07-28

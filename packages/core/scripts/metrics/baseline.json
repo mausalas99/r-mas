@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-26T19:21:18.870Z",
-  "totalScore": 685,
+  "updatedAt": "2026-09-26T19:27:49.089Z",
+  "totalScore": 665,
   "trackedLoc": 792800,
-  "moduleCount": 1268,
+  "moduleCount": 1279,
   "bootGraphHash": "7c79a4f65815fa2c",
   "bootGraph": {
     "hash": "7c79a4f65815fa2c",
@@ -745,7 +745,7 @@
     },
     {
       "date": "2026-09-26",
-      "note": "Baseline refresh totalScore=685"
+      "note": "Baseline refresh totalScore=665"
     }
   ]
 }
