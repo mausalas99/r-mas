@@ -1,0 +1,34 @@
+name = "rplus-sync-staging"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+# Workers Paid — 30s CPU (Free was 10ms). Needed for Sala snapshot LWW.
+[limits]
+cpu_ms = 30_000
+
+[[durable_objects.bindings]]
+name = "ROOM_SYNC_HUB"
+class_name = "RoomSyncHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RoomSyncHub"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "rplus-sync-staging"
+database_id = "641e8d06-1c46-41b1-b6f9-d39cbbb6bd06"
+migrations_dir = "schema"
+
+[assets]
+directory = "../sync-pages/public"
+binding = "ASSETS"
+
+[triggers]
+crons = ["0 6 * * *"]
+
+[observability]
+enabled = true
+
+[vars]
+NUBE_VERSION_GATE_ENABLED = false
