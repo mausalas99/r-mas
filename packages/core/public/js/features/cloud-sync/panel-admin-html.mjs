@@ -4,6 +4,7 @@ import { adminTableHtml, fmtRole } from './panel-admin-helpers.mjs';
 import { formatCloudRoomLabel } from './room-label.mjs';
 import { resolvePatientCensusTeamId } from '../patients-clinical-filter.mjs';
 import { getCachedLabVerify } from './lab-verify-cache.mjs';
+import { classifyCloudOpPath } from './cloud-sync-diagnostics.mjs';
 
 /** Sentinel team-filter value meaning "sin equipo" (no resolved team), distinct from "" = todos. */
 const NO_TEAM_FILTER_VALUE = '__sin_equipo__';
@@ -521,6 +522,7 @@ function networkCensusCols() {
   return [
     {
       label: '',
+      headHtml: '<input type="checkbox" data-network-select-all aria-label="Seleccionar todos los visibles" />',
       cell: (row) =>
         '<input type="checkbox" data-network-select data-room-id="' +
         esc(String(row.roomId || '')) +
@@ -577,12 +579,19 @@ function networkCensusCols() {
   ];
 }
 
+/** Salas the census could not read, grouped by reason: «Sin sala activa este mes: Sala 2, Sala E». */
 function networkCensusErrorsHtml(errors) {
-  return errors.length
-    ? '<p class="cloud-sync-hint">Sin acceso aún: ' +
-      errors.map((a) => esc(a.sala) + ' (' + esc(a.error) + ')').join(', ') +
-      '</p>'
-    : '';
+  if (!errors.length) return '';
+  const byReason = new Map();
+  for (const a of errors) {
+    const reason = String(a.error || 'Sin acceso').replace(/\.$/, '');
+    byReason.set(reason, (byReason.get(reason) || []).concat(a.sala));
+  }
+  return (
+    '<p class="cloud-sync-hint">' +
+    [...byReason].map(([reason, salas]) => esc(reason + ': ' + salas.join(', ') + '.')).join(' ') +
+    '</p>'
+  );
 }
 
 function networkCensusFiltersHtml(census, teamOptions) {
@@ -596,7 +605,7 @@ function networkCensusFiltersHtml(census, teamOptions) {
     .join('');
 
   return (
-    '<div class="cloud-sync-admin-red-filters">' +
+    '<div class="cloud-sync-admin-filters cloud-sync-admin-red-filters">' +
     '<select class="profile-input" data-network-filter="sala" aria-label="Filtrar por área">' +
     '<option value="">Todas las áreas</option>' +
     salaOptionsHtml +
@@ -616,7 +625,7 @@ function networkCensusFiltersHtml(census, teamOptions) {
     '<option value="stale">Más de 6 días</option>' +
     '<option value="fresh">Menos de 6 días</option>' +
     '</select>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" ' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-admin-filters-end" ' +
     'data-admin-action="verify-red-labs" title="Consulta el repositorio de labs por cada paciente visible">' +
     'Verificar labs</button>' +
     '</div>'
@@ -634,19 +643,15 @@ function networkCensusFiltersHtml(census, teamOptions) {
  */
 export function redCensusHtml(census, users) {
   const { rows, errors, teamOptions } = buildNetworkCensusRows(census, new Date(), users);
-
   return (
-    '<div class="cloud-sync-admin-panel-head">' +
-    '<label class="cloud-sync-admin-red-select-all">' +
-    '<input type="checkbox" data-network-select-all aria-label="Seleccionar todos los visibles" /> Todos</label>' +
-    '<div class="cloud-sync-admin-equipos-bulk-actions" data-admin-red-bulk-actions hidden>' +
-    '<span class="cloud-sync-admin-equipos-bulk-count" data-admin-red-bulk-count></span>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="bulk-archive-network">Archivar seleccionados</button>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger cloud-sync-btn--compact" data-admin-action="bulk-delete-network">Eliminar seleccionados</button>' +
-    '</div>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="refresh-red">Actualizar</button></div>' +
-    '<p class="cloud-sync-hint">Todos los pacientes, en todas las áreas, con la sala actual de cada una.</p>' +
+    adminHeadHtml(
+      'Pacientes',
+      'Todos los pacientes de la red, con su sala actual.',
+      '<input type="search" class="profile-input cloud-sync-admin-search" data-network-filter="q" placeholder="Buscar" aria-label="Buscar paciente o registro" />' +
+        '<button type="button" class="cloud-sync-btn" data-admin-action="refresh-red">Actualizar</button>'
+    ) +
     networkCensusFiltersHtml(census, teamOptions) +
+    unnamedBannerHtml(rows) +
     networkCensusErrorsHtml(errors) +
     adminTableHtml(rows, networkCensusCols(), {
       emptyHtml: '<p class="cloud-sync-hint">Sin pacientes en ninguna área.</p>',
@@ -659,9 +664,35 @@ export function redCensusHtml(census, users) {
         (row.archived ? '1' : '0') +
         '" data-no-labs="' +
         (row.lastLabAt ? '0' : '1') +
+        '" data-search="' +
+        esc((row.nombre + ' ' + row.registro).toLowerCase()) +
         '"' +
         (row.staleLabs ? ' class="cloud-sync-admin-row--stale-labs"' : ''),
-    })
+    }) +
+    // Board: the action bar appears only after rows are picked.
+    '<div class="cloud-sync-admin-bulkbar" data-admin-red-bulk-actions hidden>' +
+    '<span class="cloud-sync-admin-equipos-bulk-count" data-admin-red-bulk-count></span>' +
+    '<button type="button" class="cloud-sync-btn" data-admin-action="bulk-archive-network">Archivar</button>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger" data-admin-action="bulk-delete-network">Eliminar…</button>' +
+    '<button type="button" class="cloud-sync-admin-bulkbar-close" data-admin-action="clear-network-selection" aria-label="Quitar selección">×</button>' +
+    '</div>'
+  );
+}
+
+/** «4 registros sin nombre en Área A» with a button that filters to them. @param {Array<{ sala: string, nombre: string }>} rows */
+function unnamedBannerHtml(rows) {
+  const unnamed = rows.filter((r) => r.nombre === '(sin nombre)');
+  if (!unnamed.length) return '';
+  const salas = [...new Set(unnamed.map((r) => r.sala))];
+  const n = unnamed.length;
+  return (
+    '<div class="cloud-sync-admin-banner" role="status">' +
+    '<span><b>' +
+    esc(n + (n === 1 ? ' registro sin nombre' : ' registros sin nombre') + ' en ' + salas.join(', ') + '.') +
+    '</b> Parecen vacíos o repetidos.</span>' +
+    '<button type="button" class="cloud-sync-btn" data-admin-action="filter-unnamed">Revisar ' +
+    (n === 1 ? 'el registro' : 'los ' + n) +
+    '</button></div>'
   );
 }
 
@@ -686,8 +717,10 @@ export function applyNetworkCensusFilters(root) {
   const team = val('team');
   const activity = val('activity');
   const labs = val('labs');
+  const qEl = panel.querySelector('[data-network-filter="q"]');
+  const q = qEl instanceof HTMLInputElement ? qEl.value.trim().toLowerCase() : '';
   panel.querySelectorAll('tbody tr').forEach((tr) => {
-    let show = true;
+    let show = !q || String(tr.getAttribute('data-search') || '').includes(q);
     if (sala && tr.getAttribute('data-sala') !== sala) show = false;
     if (team && tr.getAttribute('data-team-id') !== team) show = false;
     if (activity === 'active' && tr.getAttribute('data-archived') === '1') show = false;
@@ -910,12 +943,15 @@ export function userActionsHtml(user, opts = {}) {
   );
 }
 
+/** Registro (board «Admin · Registro»): loads on its own when a sala is picked. */
 export function mutacionesShellHtml() {
   return (
-    '<div class="cloud-sync-admin-toolbar">' +
-    '<label class="cloud-sync-admin-toolbar-label">Sala</label>' +
-    '<select class="profile-input" data-admin-mutations-room><option value="">— Elige una sala —</option></select>' +
-    '<button type="button" class="cloud-sync-btn" data-admin-action="load-mutations">Cargar</button></div>' +
+    adminHeadHtml(
+      'Registro de cambios',
+      'Quién cambió qué, en cada sala. Se carga solo al elegir sala.',
+      '<select class="profile-input cloud-sync-admin-search" data-admin-mutations-room aria-label="Sala">' +
+        '<option value="">— Elige una sala —</option></select>'
+    ) +
     '<div data-admin-mutations-list></div>'
   );
 }
@@ -933,59 +969,122 @@ export function mutationsRoomOptionsHtml(rooms) {
   );
 }
 
-/** @param {unknown[]} mutations */
-export function mutationsListHtml(mutations) {
-  const cols = [
-    { label: 'Rev.', key: 'revision' },
-    { label: 'Actor', key: 'actorId' },
-    { label: 'Cliente', key: 'clientMutationId' },
-    { label: '#Ops', key: 'opCount' },
-    {
-      label: 'Tamaño',
-      cell: (m) => {
-        const total = Number(m.totalBytes);
-        const maxB = Number(m.maxOpBytes);
-        if (!Number.isFinite(total) && !Number.isFinite(maxB)) return '—';
-        const parts = [];
-        if (Number.isFinite(total)) parts.push(String(Math.round(total / 1024)) + ' KB');
-        if (Number.isFinite(maxB)) parts.push('max ' + String(Math.round(maxB / 1024)) + ' KB');
-        return esc(parts.join(' · '));
-      },
-    },
-    {
-      label: 'Path max',
-      cell: (m) => esc(String(m.maxOpPath || '—')),
-    },
-    {
-      label: 'Ops (truncado)',
-      cell: (m) => {
-        const txt = String(m.opsJson || '');
-        const suffix = m.opsJsonTruncated ? '…' : '';
-        return '<code class="cloud-sync-admin-ops">' + esc(txt) + esc(suffix) + '</code>';
-      },
-    },
-    { label: 'Fecha', key: 'createdAt' },
-  ];
-  return adminTableHtml(mutations, cols);
+/** What a mutation did, in words, from its biggest op path. @param {Record<string, unknown>} m */
+function mutationVerb(m) {
+  const path = String(m.maxOpPath || (Array.isArray(m.paths) ? m.paths[0] : '') || '');
+  if (/medReceta/i.test(path)) return 'cambió la receta de un paciente';
+  const verbs = {
+    clinicalOps: 'guardó la lista clínica',
+    labs: 'agregó laboratorios',
+    censo: 'actualizó el censo',
+    patient: 'actualizó un paciente',
+    signos: 'registró signos',
+    eventualidades: 'anotó una eventualidad',
+    pendientes: 'cambió pendientes',
+    agenda: 'cambió la agenda',
+    delete: 'borró un registro',
+  };
+  return verbs[classifyCloudOpPath(path)] || 'guardó cambios';
+}
+
+/** @param {unknown} bytes */
+function kb(bytes) {
+  const n = Number(bytes);
+  return Number.isFinite(n) ? Math.max(1, Math.round(n / 1024)) + ' KB' : '';
+}
+
+/** @param {string} name */
+function initials(name) {
+  const words = String(name || '').replace(/^(dra?|dr)\.?\s+/i, '').split(/\s+/).filter(Boolean);
+  if (!words.length) return '?';
+  return (words[0].charAt(0) + (words.length > 1 ? words[words.length - 1].charAt(0) : '')).toUpperCase();
+}
+
+/** «Hoy · 15 h» / «25/09 · 9 h». @param {Date} d @param {Date} now */
+function hourGroup(d, now) {
+  const sameDay = d.toDateString() === now.toDateString();
+  const day = sameDay ? 'Hoy' : String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+  return day + ' · ' + d.getHours() + ' h';
+}
+
+/** @param {Record<string, unknown>} m @param {string} who */
+function mutationEventHtml(m, who) {
+  const when = new Date(String(m.createdAt || ''));
+  const time = Number.isNaN(when.getTime()) ? String(m.createdAt || '') : when.toLocaleTimeString('es-MX', { hour12: false });
+  const meta = ['Rev. ' + String(m.revision ?? '—'), kb(m.totalBytes), String(m.maxOpPath || '')].filter(Boolean).join(' · ');
+  const ops = String(m.opsJson || '') + (m.opsJsonTruncated ? '…' : '');
+  return (
+    '<details class="cloud-sync-admin-event">' +
+    '<summary><span class="cloud-sync-avatar" aria-hidden="true">' + esc(initials(who)) + '</span>' +
+    '<span class="cloud-sync-options-entry-text"><span><b>' + esc(who) + '</b> ' + esc(mutationVerb(m)) + '</span>' +
+    '<span class="cloud-sync-admin-event-meta">' + esc(meta) + '</span></span>' +
+    '<span class="cloud-sync-admin-event-time">' + esc(time) + '</span></summary>' +
+    '<dl class="cloud-sync-admin-event-kv">' +
+    '<dt>Qué cambió</dt><dd>' + esc(String(m.maxOpPath || '—')) + '</dd>' +
+    '<dt>Operaciones</dt><dd>' + esc(String(m.opCount ?? '—')) + '</dd>' +
+    '<dt>Equipo</dt><dd>' + esc(String(m.clientMutationId || '—')) + '</dd>' +
+    '<dt>ID de usuario</dt><dd>' + esc(String(m.actorId || '—')) + '</dd>' +
+    '</dl>' +
+    '<code class="cloud-sync-admin-ops">' + esc(ops) + '</code>' +
+    '</details>'
+  );
+}
+
+/**
+ * Registro: last-hour count, typical size and active people, then one line
+ * per change with a person's name (not a user ID), grouped by hour.
+ * @param {Array<Record<string, unknown>>} mutations
+ * @param {Array<{ user_id?: string, clinical_name?: string, username?: string }>} [users]
+ * @param {number} [nowMs]
+ */
+export function mutationsListHtml(mutations, users = [], nowMs = Date.now()) {
+  const list = Array.isArray(mutations) ? mutations : [];
+  const byId = new Map((users || []).filter((u) => u && u.user_id).map((u) => [String(u.user_id), u]));
+  const who = (id) => {
+    const u = byId.get(String(id || ''));
+    return u ? String(u.clinical_name || u.username || 'Usuario') : 'Otro dispositivo';
+  };
+  const now = new Date(nowMs);
+  const lastHour = list.filter((m) => nowMs - Date.parse(String(m.createdAt || '')) < 3600e3).length;
+  const sizes = list.map((m) => Number(m.totalBytes)).filter(Number.isFinite).sort((a, b) => a - b);
+  const typical = sizes.length ? kb(sizes[Math.floor(sizes.length / 2)]) : '—';
+  const people = new Set(list.map((m) => String(m.actorId || '')).filter(Boolean)).size;
+  let html =
+    '<div class="cloud-sync-admin-cards">' +
+    statCardHtml('Última hora', lastHour + (lastHour === 1 ? ' cambio' : ' cambios'), 'En esta sala') +
+    statCardHtml('Tamaño típico', typical, 'Por cambio') +
+    statCardHtml('Personas activas', String(people), 'En los últimos ' + list.length) +
+    '</div><div class="cloud-sync-inset-group cloud-sync-admin-events">';
+  let group = '';
+  for (const m of list) {
+    const d = new Date(String(m.createdAt || ''));
+    const g = Number.isNaN(d.getTime()) ? '' : hourGroup(d, now);
+    if (g && g !== group) {
+      group = g;
+      html += '<div class="cloud-sync-admin-event-group">' + esc(g) + '</div>';
+    }
+    html += mutationEventHtml(m, who(m.actorId));
+  }
+  return html + '</div>';
 }
 
 export function peligroHtml() {
   return (
+    adminHeadHtml('Zona de peligro', 'Solo afecta datos en Nube. Lo guardado en cada equipo no se borra.') +
     '<div class="cloud-sync-admin-danger">' +
-    '<p class="cloud-sync-hint">Solo afecta datos en la nube del piloto (D1). Lo local en cada Mac no se borra.</p>' +
     '<section class="cloud-sync-admin-danger-card">' +
     '<h5 class="cloud-sync-admin-danger-title">Purgar sala</h5>' +
-    '<p class="cloud-sync-hint">Elimina miembros, mutaciones, estado y la sala.</p>' +
+    '<p class="cloud-sync-hint">Elimina miembros, cambios, estado y la sala. No se puede deshacer.</p>' +
     '<div class="cloud-sync-admin-toolbar">' +
     '<label class="cloud-sync-admin-toolbar-label" for="cloud-admin-peligro-room">Sala</label>' +
     '<select id="cloud-admin-peligro-room" class="profile-input" data-admin-peligro-room>' +
     '<option value="">— Elige una sala —</option></select>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger" data-admin-action="purge-room-selected">Purgar</button>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger" data-admin-action="purge-room-selected">Purgar…</button>' +
     '</div></section>' +
     '<section class="cloud-sync-admin-danger-card">' +
-    '<h5 class="cloud-sync-admin-danger-title">Usuarios</h5>' +
-    '<p class="cloud-sync-hint">Revocar sesiones, deshabilitar o borrar cuentas (pestaña Usuarios).</p>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-admin-tab="equipos">Ir a Usuarios</button>' +
+    '<h5 class="cloud-sync-admin-danger-title">Cuentas</h5>' +
+    '<p class="cloud-sync-hint">Revocar sesiones, deshabilitar o borrar cuentas se hace en Usuarios.</p>' +
+    '<button type="button" class="cloud-sync-btn" data-admin-tab="equipos">Ir a Usuarios</button>' +
     '</section></div>'
   );
 }

@@ -447,7 +447,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   const mutRoomSel = A2.page.locator('[data-admin-mutations-room]');
   await until(async () => (await mutRoomSel.locator('option').count()) > 1, 8000);
   await mutRoomSel.selectOption({ index: 1 });
-  await A2.page.locator('[data-admin-action="load-mutations"]').click();
+  // Registro loads on its own once a sala is picked (no «Cargar» button).
   check('A: admin Mutaciones loads a room\'s op history', await until(() => adminRoot.locator('[data-admin-mutations-list]').innerText().then((t) => t.trim().length > 0), 10000));
 
   // ── Finish: bulk-delete every network patient, delete B's account, purge the room ──

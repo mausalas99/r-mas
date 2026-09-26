@@ -19,6 +19,7 @@ import {
   listSelectedNetworkPatients,
   listVisibleNetworkRowsWithRegistro,
   applyNetworkCensusFilters,
+  updateNetworkBulkBarVisibility,
 } from './panel-admin-html.mjs';
 import { verifyNetworkLabsRows, labRepoCheckAvailable } from './panel-admin-labs-verify.mjs';
 import { loadAdminEquipos } from './panel-admin-equipos-data.mjs';
@@ -63,6 +64,8 @@ function dispatchSimpleAction(action, deps, btn) {
     'refresh-salas': () => void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps)),
     'refresh-red': () => void loadAdminNetworkCensus(deps.root, deps.outerDeps),
     'bulk-archive-network': () => void handleBulkArchiveNetwork(deps),
+    'filter-unnamed': () => filterUnnamedNetwork(deps.root),
+    'clear-network-selection': () => clearNetworkSelection(deps.root),
     'bulk-delete-network': () => void handleBulkDeleteNetwork(deps),
     'verify-red-labs': () => void handleVerifyRedLabs(deps, btn),
     'search-users': () => void loadAdminEquipos(deps.root, deps.getApi),
@@ -79,6 +82,23 @@ function dispatchSimpleAction(action, deps, btn) {
   if (!action || !(action in map)) return false;
   map[action]();
   return true;
+}
+
+/** «Revisar los N» on the sin-nombre banner: search for them. @param {HTMLElement} root */
+function filterUnnamedNetwork(root) {
+  const q = root.querySelector('[data-admin-red] [data-network-filter="q"]');
+  if (!(q instanceof HTMLInputElement)) return;
+  q.value = '(sin nombre)';
+  applyNetworkCensusFilters(root);
+  q.focus();
+}
+
+/** The bulk bar's ×: uncheck every row. @param {HTMLElement} root */
+function clearNetworkSelection(root) {
+  root.querySelectorAll('[data-admin-red] input[data-network-select], [data-admin-red] input[data-network-select-all]').forEach((cb) => {
+    if (cb instanceof HTMLInputElement) cb.checked = false;
+  });
+  updateNetworkBulkBarVisibility(root);
 }
 
 /** @param {object} deps */

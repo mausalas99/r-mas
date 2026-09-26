@@ -1301,8 +1301,141 @@
   left: auto;
 }
 
-.wb-menu-item--danger {
+.wb-menu-panel .wb-menu-item--danger {
   color: var(--color-danger);
+}
+
+.cloud-sync-admin-filters-end {
+  margin-left: auto;
+}
+
+.cloud-sync-admin-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid color-mix(in oklab, var(--color-livesync-degraded) 35%, var(--divider));
+  border-radius: var(--radius-container);
+  background: color-mix(in oklab, var(--color-livesync-degraded) 8%, var(--color-elevated));
+  font-size: calc(13px * var(--density-font));
+  color: var(--text);
+}
+
+.cloud-sync-admin-banner > span {
+  flex: 1;
+}
+
+/* Pacientes: the action bar floats at the bottom and only exists with a selection. */
+.cloud-sync-admin-bulkbar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  align-self: center;
+  padding: 8px 10px 8px 18px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-pill);
+  background: var(--color-elevated);
+  box-shadow: var(--shadow-lg, 0 18px 40px rgba(15, 23, 42, 0.18));
+  font-size: calc(13px * var(--density-font));
+  font-weight: 600;
+}
+
+.cloud-sync-admin-bulkbar[hidden] {
+  display: none;
+}
+
+.cloud-sync-admin-bulkbar-close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.cloud-sync-admin-bulkbar-close:hover {
+  background: var(--state-hover-bg);
+}
+
+.cloud-sync-admin-events {
+  padding: 0;
+}
+
+.cloud-sync-admin-event-group {
+  padding: 12px 16px 6px;
+  font-size: calc(11px * var(--density-font));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-event {
+  border-top: 1px solid var(--divider);
+}
+
+.cloud-sync-admin-event > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  list-style: none;
+  cursor: pointer;
+  font-size: calc(13px * var(--density-font));
+}
+
+.cloud-sync-admin-event > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cloud-sync-admin-event > summary:hover {
+  background: var(--state-hover-bg);
+}
+
+.cloud-sync-admin-event .cloud-sync-options-entry-text {
+  flex: 1;
+}
+
+.cloud-sync-admin-event-meta,
+.cloud-sync-admin-event-time {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: calc(11px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-event[open] {
+  background: color-mix(in oklab, var(--text) 3%, transparent);
+}
+
+.cloud-sync-admin-event-kv {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 6px 16px;
+  margin: 0;
+  padding: 4px 16px 10px 68px;
+  font-size: calc(12px * var(--density-font));
+}
+
+.cloud-sync-admin-event-kv dt {
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-event-kv dd {
+  margin: 0;
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  overflow-wrap: anywhere;
+}
+
+.cloud-sync-admin-event .cloud-sync-admin-ops {
+  display: block;
+  margin: 0 16px 12px 68px;
+  max-height: 120px;
+  overflow: auto;
 }
 
 /* Administración needs room for the side menu. */

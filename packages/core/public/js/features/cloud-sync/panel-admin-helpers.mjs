@@ -43,7 +43,8 @@ export function confirmAction(message) {
 
 /**
  * @param {Array<Record<string, unknown>>} rows
- * @param {Array<{ label: string, key?: string, cell?: (row: Record<string, unknown>) => string }>} cols
+ * @param {Array<{ label: string, headHtml?: string, key?: string, cell?: (row: Record<string, unknown>) => string }>} cols
+ *   headHtml: raw header cell markup (e.g. a select-all checkbox) instead of the escaped label
  * @param {{ emptyHtml?: string }} [opts]
  */
 export function adminTableHtml(rows, cols, opts = {}) {
@@ -53,7 +54,7 @@ export function adminTableHtml(rows, cols, opts = {}) {
       '<p class="cloud-sync-hint">Sin registros.</p>'
     );
   }
-  const head = cols.map((c) => '<th>' + esc(c.label) + '</th>').join('');
+  const head = cols.map((c) => '<th>' + (c.headHtml ?? esc(c.label)) + '</th>').join('');
   const body = rows
     .map((row) => {
       const tds = cols
