@@ -920,6 +920,13 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   justify-self: end;
 }
 
+.ea-snapshot-zone-stamp {
+  margin-left: 6px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
 .ea-snapshot-row-stamp--empty {
   visibility: hidden;
 }
