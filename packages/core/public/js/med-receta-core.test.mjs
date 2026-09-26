@@ -1,6 +1,7 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { applyAguaInyectableSuggestion } from './med-receta-parse.mjs';
 import {
   parseMedicationPaste,
   parseIndicacionesPaste,
@@ -83,6 +84,56 @@ test('parseMedicationPaste lee DIA# en ertapenem (1 G // *DIA# 3*)', () => {
   assert.equal(r.items.length, 1);
   assert.equal(r.items[0].diaTratamiento, 3);
   assert.equal(r.items[0].dosisRaw, '1 G // *DIA# 3*');
+});
+
+test('parseMedicationPaste saca el fármaco real de AGUA INYECTABLE placeholder', () => {
+  var paste = [
+    '26/09/2026 08:14:12 a.m.\tCUIDADOS\tGLUCOMETRIA CAPILAR\t \tPOR TURNO\t \tNW',
+    '26/09/2026 08:14:19 a.m.\tMEDICAMENTOS\tAGUA INYECTABLE SOL INY 10 ML\tVIA INTRAVENOSA\t1 ML // FINERRENONA 10MG VIA ORAL CADA 24 HORAS\tCADA 24 HORAS\tNW',
+    '26/09/2026 08:14:21 a.m.\tMEDICAMENTOS\tAGUA INYECTABLE SOL INY 10 ML\tVIA INTRAVENOSA\t1 ML DILUIR EN: DAPAGLIFOZINA 10MG VIA ORAL VEL.INF: CADA 24HORAS //\tCADA 24 HORAS\tNW',
+    '26/09/2026 08:14:22 a.m.\tMEDICAMENTOS\tAGUA INYECTABLE SOL INY 10 ML\tVIA INTRAVENOSA\t10 ML DILUIR EN: EN 250 ML SSN AL 0.9% //\tCADA 24 HORAS\tNW',
+    '26/09/2026 08:21:46 a.m.\tMEDICAMENTOS\tBICARBONATO DE SODIO 7.5 % SOL INY 10 ML (+)\tVIA INTRAVENOSA\t80 ML DILUIR EN: EN 420CC DE AGUA LIBRE VEL.INF: 40 CC/HORA // //\tCADA 24 HORAS\tNW',
+  ].join('\n');
+  var r = parseMedicationPaste(paste);
+  var byName = Object.fromEntries(r.items.map((it) => [it.nombreRaw, it]));
+  assert.deepEqual(
+    [byName['FINERRENONA 10MG'].viaRaw, byName['FINERRENONA 10MG'].dosisRaw, byName['FINERRENONA 10MG'].frecuenciaRaw],
+    ['VIA ORAL', '10MG', 'CADA 24 HORAS']
+  );
+  assert.equal(byName['DAPAGLIFOZINA 10MG'].viaRaw, 'VIA ORAL');
+  assert.equal(byName['AGUA INYECTABLE SOL INY 10 ML'].dosisRaw, '10 ML DILUIR EN: EN 250 ML SSN AL 0.9% //');
+  assert.ok(byName['BICARBONATO DE SODIO 7.5 % SOL INY 10 ML (+)']);
+  var receta = buildMedRecetaCopyText(r.items);
+  assert.match(receta, /FINERRENONA/);
+  assert.match(receta, /DAPAGLIFOZINA/);
+  assert.equal(shouldIncludeMedicationInSoap(byName['FINERRENONA 10MG']), true);
+});
+
+test('parseIndicacionesPaste avisa AGUA INYECTABLE con fármaco no reconocido', () => {
+  var rows = [
+    '1 ML // SEMAGLUTIDA SUBCUTANEA SEMANAL',
+    '1 ML // 2 TABLETAS DE RIFAXIMINA 550MG',
+    '1 ML // ACIDO FOLICO VIA ORAL',
+    '1 ML // VITAMINA B12 1000 MCG VIA ORAL',
+    '1 ML // FINERRENONA 10MG VIA ORAL CADA 24 HORAS',
+    '10 ML DILUIR EN: EN 250 ML SSN AL 0.9% //',
+    '10 ML //',
+  ];
+  var paste = rows
+    .map((d) => '26/09/2026 08:14:19 a.m.\tMEDICAMENTOS\tAGUA INYECTABLE SOL INY 10 ML\tVIA INTRAVENOSA\t' + d + '\tCADA 24 HORAS\tNW')
+    .join('\n');
+  var r = parseIndicacionesPaste(paste);
+  assert.deepEqual(
+    r.aguaInyectableAlerts.map((a) => a.farmaco),
+    ['SEMAGLUTIDA', 'RIFAXIMINA', 'ACIDO FOLICO']
+  );
+  assert.equal(r.items[3].nombreRaw, 'VITAMINA B12 1000 MCG');
+  assert.equal(r.aguaInyectableAlerts[1].texto, '2 TABLETAS DE RIFAXIMINA 550MG');
+  var rifax = r.aguaInyectableAlerts[1];
+  assert.deepEqual([rifax.farmaco, rifax.dosis, rifax.viaRaw], ['RIFAXIMINA', '550MG', 'VIA ORAL']);
+  assert.equal(r.aguaInyectableAlerts[0].viaRaw, 'VIA SUBCUTANEA');
+  applyAguaInyectableSuggestion(rifax.item, { nombre: 'RIFAXIMINA', dosis: '1100 MG', via: 'VIA ORAL' });
+  assert.deepEqual([rifax.item.nombreRaw, rifax.item.dosisRaw, rifax.item.viaRaw], ['RIFAXIMINA 1100 MG', '1100 MG', 'VIA ORAL']);
 });
 
 test('calendarDaysSinceFechaDMY cuenta días calendario hasta refDate', () => {

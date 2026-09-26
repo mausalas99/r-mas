@@ -275,7 +275,7 @@ const BY_DEST = {
     'PAPAVERINA',
     'TAMSULOSINA',
   ],
-  diuretico: ['HIDROCLOROTIAZIDA'],
+  diuretico: ['HIDROCLOROTIAZIDA', 'FINERENONA', 'FINERRENONA'],
   anticoagulacion: [
     'PARNAPARINA',
     'ACENOCUMAROL',

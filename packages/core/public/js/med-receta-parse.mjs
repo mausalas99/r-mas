@@ -106,16 +106,116 @@ function indicacionesMinCols_(tipoEarly) {
   return 6;
 }
 
+var PLACEHOLDER_DRUG_RE =
+  /(?:\/\/|DILUIR\s+EN:)\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s/-]{3,}?\s+\d+(?:[.,]\d+)?\s*(?:MG|MCG|G|UI|MEQ|ML)\b)\s*(V[IÍ]A\s+[A-ZÁÉÍÓÚ]+)?/i;
+var PLACEHOLDER_NOT_DRUG_RE = /^(?:EN|AGUA|SSN|SOL|SOLUCION|CLORURO|GLUCOSA|DEXTROSA|HARTMANN)\b/i;
+
+/**
+ * SOME lacks some drugs; staff order them as "AGUA INYECTABLE" with the real drug in the dose text
+ * ("1 ML // FINERRENONA 10MG VIA ORAL CADA 24 HORAS"). Return the real drug, or null.
+ * @param {string} nombre @param {string} dosis
+ */
+export function unwrapAguaInyectablePlaceholder(nombre, dosis) {
+  if (!/\bAGUA\s+INYECTABLE\b/i.test(nombre)) return null;
+  var m = PLACEHOLDER_DRUG_RE.exec(dosis);
+  if (!m || PLACEHOLDER_NOT_DRUG_RE.test(m[1])) return null;
+  var nombreReal = trimStr(m[1].replace(/\s+/g, ' '));
+  return {
+    nombreRaw: nombreReal,
+    viaRaw: m[2] ? trimStr(m[2]).toUpperCase().replace('VÍA', 'VIA') : '',
+    dosisRaw: trimStr((/\d+(?:[.,]\d+)?\s*[A-Z]+$/i.exec(nombreReal) || [''])[0]),
+  };
+}
+
+var PLACEHOLDER_DILUENT_RE = /\b(?:SSN|SOLUCION|CLORURO|GLUCOSA|DEXTROSA|HARTMANN|AGUA|NACL)\b/i;
+var PLACEHOLDER_STOP_WORDS = new Set(
+  (
+    'TABLETA TABLETAS CAPSULA CAPSULAS GRAGEA SOBRE SOBRES AMPULA AMPOLLETA FRASCO VIAL VIA ORAL ' +
+    'INTRAVENOSA SUBCUTANEA INTRAMUSCULAR SUBLINGUAL TOPICA CADA HORAS HORA SEMANAL DIARIO DIARIA ' +
+    'DILUIR TOMAR PASAR PARA BOLO LENTO DOSIS UNICA AYUNO NOCHE MANANA ALIMENTOS CRITERIO CASO ' +
+    'MINUTOS INFUSION APLICAR ADMINISTRAR'
+  ).split(' ')
+);
+
+var PLACEHOLDER_UNIT_RE = /^(?:\d+(?:[.,]\d+)?(?:MG|MCG|G|UI|MEQ|ML)?|MG|MCG|G|UI|MEQ|ML|DE|EN|LA|EL)$/;
+
+/**
+ * Drug name from free text: skip leading counts, units and forms ("2 TABLETAS DE"),
+ * then keep words until the dose or a route/frequency word ("VITAMINA B12 1000 MCG" → "VITAMINA B12").
+ * @param {string} texto
+ */
+function drugNameFromText(texto) {
+  var words = texto
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .split(/\s+/);
+  var skip = function (w) { return PLACEHOLDER_UNIT_RE.test(w) || PLACEHOLDER_STOP_WORDS.has(w); };
+  var i = 0;
+  while (i < words.length && skip(words[i])) i += 1;
+  var name = [];
+  for (; i < words.length; i += 1) {
+    var w = words[i];
+    if (/^\d/.test(w) || PLACEHOLDER_STOP_WORDS.has(w)) break;
+    name.push(w);
+  }
+  while (name.length && PLACEHOLDER_UNIT_RE.test(name[name.length - 1])) name.pop();
+  var out = name.join(' ');
+  return /[A-Z]{4,}/.test(out) ? out : '';
+}
+
+/**
+ * AGUA INYECTABLE row whose dose text names something we could not read as "DRUG DOSE".
+ * @param {{ nombreRaw?: string, dosisRaw?: string }} item
+ * @returns {{ item: object, texto: string, farmaco: string, dosis: string, viaRaw: string } | null}
+ */
+export function aguaInyectableMissHint(item) {
+  if (!/\bAGUA\s+INYECTABLE\b/i.test(String(item.nombreRaw || ''))) return null;
+  var m = /(?:\/\/|DILUIR\s+EN:)(.*)$/i.exec(String(item.dosisRaw || ''));
+  if (!m) return null;
+  var texto = trimStr(m[1].replace(/VEL\.INF:|\/\//gi, ' ').replace(/\s+/g, ' '));
+  if (!texto || PLACEHOLDER_DILUENT_RE.test(texto)) return null;
+  var farmaco = drugNameFromText(texto);
+  if (!farmaco) return null;
+  var dosis = (/\d+(?:[.,]\d+)?\s*(?:MG|MCG|G|UI|MEQ)\b/i.exec(texto) || [''])[0].replace(/\s+/g, '').toUpperCase();
+  var via = /\b(ORAL|INTRAVENOSA|SUBCUT[AÁ]NEA|INTRAMUSCULAR|SUBLINGUAL|T[OÓ]PICA|RECTAL)\b/i.exec(texto);
+  var viaRaw = via
+    ? 'VIA ' + via[1].toUpperCase().replace('Á', 'A').replace('Ó', 'O')
+    : /\b(TABLETAS?|C[AÁ]PSULAS?|GRAGEAS?)\b/i.test(texto)
+      ? 'VIA ORAL'
+      : '';
+  return {
+    item: item,
+    texto: texto,
+    farmaco: farmaco,
+    dosis: dosis,
+    viaRaw: viaRaw,
+  };
+}
+
+/**
+ * Turn an AGUA INYECTABLE item into the drug the user confirmed.
+ * @param {{ nombreRaw: string, dosisRaw: string, viaRaw: string }} item
+ * @param {{ nombre: string, dosis?: string, via?: string }} med
+ */
+export function applyAguaInyectableSuggestion(item, med) {
+  var dosis = trimStr(med.dosis || '');
+  item.nombreRaw = trimStr(med.nombre + ' ' + dosis);
+  item.dosisRaw = dosis;
+  if (med.via) item.viaRaw = med.via;
+}
+
 function parseMedRow(cols, lineIndex, lineText) {
   var dosisRaw = trimStr(cols[4]);
   var dia = extractDiaTratamiento(dosisRaw);
   if (dia == null) dia = extractDiaTratamiento(lineText);
+  var real = unwrapAguaInyectablePlaceholder(trimStr(cols[2]), dosisRaw);
   return {
     id: 'med-' + Date.now().toString(36) + '-' + lineIndex + '-' + Math.random().toString(36).slice(2, 5),
     tipoRaw: trimStr(cols[1]).toUpperCase(),
-    nombreRaw: trimStr(cols[2]),
-    viaRaw: trimStr(cols[3]),
-    dosisRaw: dosisRaw,
+    nombreRaw: real ? real.nombreRaw : trimStr(cols[2]),
+    viaRaw: real && real.viaRaw ? real.viaRaw : trimStr(cols[3]),
+    dosisRaw: real ? real.dosisRaw : dosisRaw,
     frecuenciaRaw: trimStr(cols[5]),
     suspendido: false,
     diaTratamiento: dia,
@@ -233,6 +333,7 @@ export function parseIndicacionesPaste(text) {
     fechas: fechas,
     skipped: skipped,
     skippedSummary: skippedSummary,
+    aguaInyectableAlerts: items.map(aguaInyectableMissHint).filter(Boolean),
   };
 }
 

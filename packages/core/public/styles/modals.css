@@ -2682,3 +2682,36 @@ html.dark .tend-gaso-tip {
 }
 .tend-event-tag__del:hover { opacity: 1; }
 
+/* Teal workbench · solid workbench + glass floating · 2026-08-17
+ * contrast: pass (tokens + HC)
+ * AGUA INYECTABLE review: wb-confirm shell + wb-table rows, one editable row per drug.
+ */
+.wb-confirm-modal.agua-iny-modal { width: min(620px, 94vw); }
+.agua-iny-table { border-top: 1px solid var(--border); }
+.agua-iny-grid,
+.agua-iny-row { --wb-grid: 56px minmax(0, 1.6fr) minmax(0, 0.9fr) minmax(0, 1.2fr); }
+.agua-iny-list { list-style: none; margin: 0; padding: 0; max-height: 52vh; overflow-y: auto; }
+.wb-row.agua-iny-row { align-items: center; row-gap: 4px; background: var(--color-elevated); }
+.agua-iny-row:last-child { border-bottom: 0; }
+.agua-iny-in {
+  min-width: 0; height: 30px; padding: 0 8px;
+  font: var(--type-wb-row); color: var(--color-ink);
+  background: var(--color-surface); border: 1px solid var(--border); border-radius: var(--radius-field);
+  transition: border-color var(--dur-ui) var(--ease-out);
+}
+.agua-iny-in:focus { outline: 2px solid var(--color-accent); outline-offset: -1px; border-color: var(--color-accent); }
+.agua-iny-in--name { font: var(--type-wb-patient-name); }
+.agua-iny-in--dose { font: var(--type-wb-mono); }
+.agua-iny-row.is-nodose .agua-iny-in--dose { border-color: var(--color-warn); }
+.agua-iny-row.is-nodose .agua-iny-in--dose::placeholder { color: var(--color-warn); opacity: 1; }
+.agua-iny-some { grid-column: 2 / -1; margin: 0; font: var(--type-wb-metadata); line-height: 1.4; color: var(--color-ink-muted); }
+.agua-iny-row.is-off .agua-iny-in,
+.agua-iny-row.is-off .agua-iny-some { opacity: 0.45; }
+.agua-iny-row.is-off .agua-iny-in--name { text-decoration: line-through; }
+.agua-iny-count { font: var(--type-wb-metadata); color: var(--color-ink-muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) {
+  .agua-iny-grid { display: none; }
+  .agua-iny-row { --wb-grid: 56px minmax(0, 1fr); }
+  .agua-iny-row > .agua-iny-in:not(.agua-iny-in--name) { grid-column: 2; }
+}
+@media (prefers-reduced-motion: reduce) { .agua-iny-in { transition: none; } }
