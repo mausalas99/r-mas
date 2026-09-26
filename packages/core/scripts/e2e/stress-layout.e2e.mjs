@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global window, document, getComputedStyle, localStorage */
+/* global window, document, getComputedStyle */
 /**
  * E2E stress: SCREEN LAYOUT. Tries to break how every screen looks, with a
  * busy synthetic DEMO patient (long name, 45 meds, 6 lab days, long
@@ -292,11 +292,11 @@ async function setMode(page, mode) {
 async function applyCond(page, c) {
   await page.setViewportSize({ width: c.w, height: c.h });
   await page.evaluate(({ dark, zoom }) => {
-    localStorage.setItem('theme', dark ? 'dark' : 'light');
+    globalThis.localStorage.setItem('theme', dark ? 'dark' : 'light');
     document.documentElement.classList.toggle('dark', dark);
     // The app's own Ajustes path (Electron zoom via the preload bridge).
     // Before onboarding the handler is not loaded yet: same bridge, by hand.
-    localStorage.setItem('rpc-font-zoom', String(zoom));
+    globalThis.localStorage.setItem('rpc-font-zoom', String(zoom));
     if (window.setFontZoom) window.setFontZoom(zoom);
     else window.electronAPI.setZoomFactor(zoom / 100);
   }, c);
@@ -447,7 +447,7 @@ await r.finish('Screen layout: every screen x size x theme x text size, busy pat
   await applyCond(page, CONDS[0]);
   await onboardLocalOnly(page);
   // «Guía» hint bubbles sit over real controls; this run measures the screens, not the hints.
-  await page.evaluate((ids) => localStorage.setItem('rpc-feature-hints-done', JSON.stringify(ids)), FEATURE_HINTS.map((h) => h.id));
+  await page.evaluate((ids) => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(ids)), FEATURE_HINTS.map((h) => h.id));
   await page.reload();
   await page.locator('#apptab-lab').waitFor({ state: 'visible' });
 
@@ -582,7 +582,7 @@ await r.finish('Screen layout: every screen x size x theme x text size, busy pat
   await setMode(page, 'sala');
 
   // ── Sala card view ──────────────────────────────────────────────────────
-  await page.evaluate(() => localStorage.setItem('rplus-sala-view', 'cards'));
+  await page.evaluate(() => globalThis.localStorage.setItem('rplus-sala-view', 'cards'));
   await page.reload();
   await dismissLearnHub(page);
   await page.waitForTimeout(1500);
@@ -590,7 +590,7 @@ await r.finish('Screen layout: every screen x size x theme x text size, busy pat
     await applyCond(page, c);
     await runScreen(page, pageErrors, 'sala-cards', c, MAIN, async () => {});
   }
-  await page.evaluate(() => localStorage.setItem('rplus-sala-view', 'bar'));
+  await page.evaluate(() => globalThis.localStorage.setItem('rplus-sala-view', 'bar'));
   await page.reload();
   await dismissLearnHub(page);
   await page.waitForTimeout(1500);
@@ -632,7 +632,7 @@ await r.finish('Screen layout: every screen x size x theme x text size, busy pat
   }
 
   // ── Phone width 390 (LAN / mobile surface) ──────────────────────────────
-  await page.evaluate(() => localStorage.setItem('rpc-mobile-mode', '1'));
+  await page.evaluate(() => globalThis.localStorage.setItem('rpc-mobile-mode', '1'));
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
   await dismissLearnHub(page);
@@ -651,7 +651,7 @@ await r.finish('Screen layout: every screen x size x theme x text size, busy pat
       await runScreen(page, pageErrors, key, c, 'body', go);
     }
   }
-  await page.evaluate(() => localStorage.removeItem('rpc-mobile-mode'));
+  await page.evaluate(() => globalThis.localStorage.removeItem('rpc-mobile-mode'));
 
   fs.writeFileSync(path.join(r.artifactDir, 'results.json'), JSON.stringify(results, null, 1));
   check('no page errors in the whole run', pageErrors.length === 0, pageErrors.slice(0, 10));

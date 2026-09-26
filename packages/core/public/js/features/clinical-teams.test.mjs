@@ -279,8 +279,11 @@ describe('clinical-teams', () => {
   it('joining a team closes Mi rotación after success', () => {
     const joinHandlerSrc = readFileSync(join(featureDir, 'teams-roster-interactions.mjs'), 'utf8');
     const inviteSrc = readFileSync(join(featureDir, 'teams-invite.mjs'), 'utf8');
-    assert.match(joinHandlerSrc, /closeClinicalTeamsPanel\(\)/);
-    assert.match(inviteSrc, /closeClinicalTeamsPanel\(\)/);
+    const shellSrc = readFileSync(join(featureDir, 'teams-roster-shell.mjs'), 'utf8');
+    assert.match(joinHandlerSrc, /closeTeamsUiAfterJoin\(\)/);
+    assert.match(inviteSrc, /closeTeamsUiAfterJoin\(\)/);
+    // The helper closes Mi rotación and the Conexión sheet that may embed it.
+    assert.match(shellSrc, /export function closeTeamsUiAfterJoin\(\) \{\n  closeClinicalTeamsPanel\(\);/);
   });
 
   it('joining a team does not auto-open inherit; bring is opt-in on team card', () => {
