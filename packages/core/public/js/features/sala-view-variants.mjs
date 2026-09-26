@@ -10,6 +10,7 @@ import { getWorkMode } from './chrome.mjs';
 import { sortPatientsForCensus, formatCamaCellForCenso } from '../censo-build.mjs';
 import { ensurePatientDiagnosticos } from '../patient-diagnosticos.mjs';
 import { escSidebarHtml as esc } from '../patient-sidebar-card.mjs';
+import { escAttr } from '../dom-escape.mjs';
 import { isPatientAdmissionIncomplete } from '../patient-admission-incomplete.mjs';
 import { serviceById, hueForService } from './patient-dashboard/interconsult-catalog.mjs';
 import { hasCriticalLabValue } from '../labs-critical-values.mjs';
@@ -17,11 +18,16 @@ import { soporteTier } from './estado-actual-ventilatorio.mjs';
 
 var VENT_TIERS = { hfnc: 'Alto flujo', vmni: 'VMNI', vm: 'VM' };
 
+var ARCHIVE_ICON =
+  '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
+var RESTORE_ICON =
+  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg>';
 var VIEW_LS = 'rplus-sala-view';
 var HINT_BAR_LS = 'rplus-sala-hint-bar';
 var HINT_CARDS_LS = 'rplus-sala-hint-cards';
 var home = true;
 var wired = false;
+var archView = false;
 var GRID_ICON =
   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>';
 
@@ -62,8 +68,8 @@ function hintOnce(btn, key, text) {
   }, { capture: true, once: true });
 }
 
-function rows() {
-  return sortPatientsForCensus(patientsVisibleInSidebar().filter(function (p) { return !p.archived; }));
+function rows(archived) {
+  return sortPatientsForCensus(patientsVisibleInSidebar().filter(function (p) { return !p.archived === !archived; }));
 }
 
 function isActive(p) {
@@ -85,6 +91,17 @@ function bedLine(p) {
   return [cuarto && 'Cto. ' + cuarto, cama && 'Cama ' + cama].filter(Boolean).join(' · ') || 'Sin cama';
 }
 
+/** Esquina de la tarjeta: archivar en Sala, «Restaurar» en Archivados. */
+function cornerBtnHtml(p) {
+  var arch = !!p.archived;
+  return (
+    '<button type="button" class="' + (arch ? 'sv-card-restore' : 'sv-card-archive') + '" title="' + (arch ? 'Restaurar a sala' : 'Archivar paciente') +
+    '" aria-label="' + (arch ? 'Restaurar ' : 'Archivar ') + esc(p.nombre || 'paciente') +
+    '" data-onclick="togglePatientArchived" data-onclick-args=\'' + escAttr(JSON.stringify([p.id])) + '\' data-onclick-pass="event">' +
+    (arch ? RESTORE_ICON + '<span>Restaurar</span>' : ARCHIVE_ICON) + '</button>'
+  );
+}
+
 function cardHtml(p) {
   ensurePatientDiagnosticos(p);
   var dx = p.diagnosticosList.filter(Boolean);
@@ -100,7 +117,8 @@ function cardHtml(p) {
     tags += '<span class="sv-tag sv-tag--dnr">Lab crítico</span>';
   }
   return (
-    '<button type="button" class="sv-card' + (isActive(p) ? ' is-active' : '') + '" data-sv-open="' + esc(p.id) + '">' +
+    '<div class="sv-card-wrap">' +
+    '<button type="button" class="sv-card' + (isActive(p) ? ' is-active' : '') + (p.archived ? ' is-archived' : '') + '" data-sv-open="' + esc(p.id) + '">' +
     '<span class="sv-card-top"><span class="sv-bed">' + esc(bedLine(p)) + '</span>' + tags + '</span>' +
     '<span class="sv-name">' + esc(p.nombre || 'Sin nombre') + '</span>' +
     '<span class="sv-label">Diagnósticos</span>' +
@@ -113,23 +131,37 @@ function cardHtml(p) {
         return '<span class="svc" style="--h:' + hueForService(s) + '">' + esc(s.name) + '</span>';
       }).join('') + '</span>'
       : '<span class="sv-none">Ninguna</span>') +
-    '</button>'
+    '</button>' +
+    // Hermano, no hijo: un botón dentro de otro botón no es HTML válido.
+    cornerBtnHtml(p) +
+    '</div>'
   );
 }
 
 function renderHome(list) {
   var main = document.querySelector('.main-col');
   var panel = el('sala-view-home', 'section', main, main.firstChild);
-  panel.setAttribute('aria-label', 'Pacientes de sala');
+  var archived = rows(true);
+  if (!archived.length) archView = false;
+  var shown = archView ? archived : list;
+  panel.setAttribute('aria-label', archView ? 'Pacientes archivados' : 'Pacientes de sala');
   panel.innerHTML =
-    '<div class="sv-home-head"><strong>Pacientes</strong><span>' + list.length + ' en sala</span>' +
+    '<div class="sv-home-head">' +
+    (archView
+      ? '<button type="button" class="wb-btn wb-btn-secondary" data-sv-arch>‹ Sala</button><strong>Archivados</strong><span>' + archived.length + '</span>'
+      : '<strong>Pacientes</strong><span>' + list.length + ' en sala</span>') +
     '<span class="sv-home-actions">' +
-    '<button type="button" class="wb-btn wb-btn-secondary" data-sv-view="bar">Barra lateral</button>' +
-    '<button type="button" class="wb-btn wb-btn-secondary" data-sv-labs>Actualizar labs</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary" onclick="openAddModal()">+ Agregar</button>' +
+    (archView
+      ? ''
+      : (archived.length
+        ? '<button type="button" class="wb-btn wb-btn-secondary" data-sv-arch>' + ARCHIVE_ICON + ' Archivados <span class="sv-count">' + archived.length + '</span></button>'
+        : '') +
+        '<button type="button" class="wb-btn wb-btn-secondary" data-sv-view="bar">Barra lateral</button>' +
+        '<button type="button" class="wb-btn wb-btn-secondary" data-sv-labs>Actualizar labs</button>' +
+        '<button type="button" class="wb-btn wb-btn-primary" onclick="openAddModal()">+ Agregar</button>') +
     '</span></div>' +
-    (list.length
-      ? '<div class="sv-grid">' + list.map(cardHtml).join('') + '</div>'
+    (shown.length
+      ? '<div class="sv-grid">' + shown.map(cardHtml).join('') + '</div>'
       : '<p class="sv-none">Sin pacientes aún.</p>');
   hintOnce(panel.querySelector('[data-sv-view="bar"]'), HINT_BAR_LS, 'Nuevo: vuelve a la barra lateral cuando quieras');
 }
@@ -181,13 +213,16 @@ function wire() {
   if (wired) return;
   wired = true;
   document.addEventListener('click', function (ev) {
-    var t = ev.target.closest('[data-sv-view],[data-sv-open],[data-sv-home],[data-sv-labs]');
+    var t = ev.target.closest('[data-sv-view],[data-sv-open],[data-sv-home],[data-sv-labs],[data-sv-arch]');
     if (!t) return;
     if (t.hasAttribute('data-sv-view')) {
       setView(t.getAttribute('data-sv-view'));
     } else if (t.hasAttribute('data-sv-open')) {
       home = false;
       patientsBridge.selectPatient(t.getAttribute('data-sv-open'));
+      syncSalaView();
+    } else if (t.hasAttribute('data-sv-arch')) {
+      archView = !archView;
       syncSalaView();
     } else if (t.hasAttribute('data-sv-home')) {
       home = true;

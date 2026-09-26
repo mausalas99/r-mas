@@ -53,6 +53,40 @@ body[data-sala-home] #sala-view-home {
   gap: 14px;
 }
 
+.sv-card-wrap {
+  position: relative;
+  display: grid;
+  min-width: 0;
+}
+
+.sv-card-archive {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.sv-card-archive:hover,
+.sv-card-archive:focus-visible {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+.sv-card-archive:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 1px;
+}
+
 .sv-card {
   display: flex;
   flex-direction: column;
@@ -267,4 +301,58 @@ html.dark .sv-card .svc {
 
 #btn-sala-view-cards.sv-hint::after {
   top: calc(100% + 8px);
+}
+
+
+/* Archivados: misma rejilla, tarjetas atenuadas */
+.sv-home-head [data-sv-arch] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sv-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  line-height: 20px;
+  text-align: center;
+  background: color-mix(in oklab, var(--text-muted) 18%, transparent);
+}
+
+.sv-card.is-archived {
+  background: transparent;
+  border-style: dashed;
+}
+
+.sv-card.is-archived > * {
+  opacity: 0.65;
+}
+
+.sv-card-restore {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--action);
+  background: color-mix(in oklab, var(--action) 12%, transparent);
+  border: 1px solid color-mix(in oklab, var(--action) 35%, transparent);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.sv-card-restore:hover {
+  background: color-mix(in oklab, var(--action) 20%, transparent);
+}
+
+.sv-card-restore:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 1px;
 }
