@@ -369,3 +369,43 @@ export function equipoEmbedHostHtml() {
 export function equipoStepHtml(_getToken) {
   return equipoEmbedHostHtml();
 }
+
+/**
+ * Quick look under the header icon (board «Nube C»). Lives here, not in
+ * cloud-sync-header-chrome.mjs, so the header chrome stays import-free.
+ * @param {{
+ *   status: string, lastCycleAt?: string | null, room?: { sala?: string, turnKey?: string, code?: string, memberCount?: number } | null,
+ *   pending: number, lastPushAt?: string | null, lastPullAt?: string | null, now?: number,
+ *   formatWhen?: (iso: string | null | undefined, now: number) => string,
+ *   stateWords: (status: string) => string, modifier: (status: string, transport: string) => string,
+ * }} v
+ */
+export function nubePopoverHtml(v) {
+  const now = v.now || Date.now();
+  const when = v.formatWhen || formatCloudDiagWhen;
+  const mod = v.modifier(v.status, 'ws');
+  const room = v.room || {};
+  const month = formatTurnMonth(room.turnKey);
+  const meta = [month ? month.charAt(0).toUpperCase() + month.slice(1) : '']
+    .concat(Number.isFinite(Number(room.memberCount)) ? [room.memberCount + ' miembros'] : [])
+    .filter(Boolean)
+    .join(' · ');
+  const stat = (label, value) =>
+    '<div class="nube-pop-stat"><span>' + esc(label) + '</span><b>' + esc(value) + '</b></div>';
+  return (
+    '<div class="nube-pop-head"><span class="nube-pop-dot" data-mod="' + esc(mod) + '" aria-hidden="true"></span>' +
+    '<span class="nube-pop-title">' + esc(v.stateWords(v.status)) + '</span>' +
+    '<span class="nube-pop-when">' + esc(v.lastPullAt ? when(v.lastPullAt, now) : '') + '</span></div>' +
+    '<div class="nube-pop-room"><span class="nube-pop-room-text"><b>' + esc(room.sala || 'Sin sala') + '</b>' +
+    (meta ? '<span>' + esc(meta) + '</span>' : '') + '</span>' +
+    (room.code ? '<code class="nube-pop-code" aria-label="Código de sala">' + esc(room.code) + '</code>' : '') + '</div>' +
+    '<div class="nube-pop-stats">' +
+    stat('En espera', String(Number(v.pending) || 0)) +
+    stat('Envío', when(v.lastPushAt, now)) +
+    stat('Descarga', when(v.lastPullAt, now)) +
+    '</div>' +
+    '<div class="nube-pop-actions">' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary" data-nube-pop="sync">Sincronizar</button>' +
+    '<button type="button" class="cloud-sync-btn" data-nube-pop="open-panel">Abrir panel</button></div>'
+  );
+}

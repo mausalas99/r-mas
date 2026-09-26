@@ -2,7 +2,12 @@ import { displayCloudSalaLabel, normalizeCloudSala } from './sala-allowlist.mjs'
 import { shouldShowNubePanel } from './nube-sync-policy.mjs';
 import { statusChipModifier, formatCloudStatusChipLabel } from './panel-conexion-html.mjs';
 import { createConexionRenderers, saveUrlFromUi, refreshNubeStatusHome } from './panel-conexion-ui.mjs';
-import { createNubeRuntime, getSharedNubeRuntime, setSharedNubeStatusListener } from './panel-conexion-runtime.mjs';
+import {
+  createNubeRuntime,
+  getSharedNubeRuntime,
+  getSharedNubeOutbox,
+  setSharedNubeStatusListener,
+} from './panel-conexion-runtime.mjs';
 import {
   bootstrapConexionState,
   mountAdminShell,
@@ -68,7 +73,7 @@ function bindStatusChip(section, deps, displaySala) {
       detailEl.hidden = !text;
     }
     refreshNubeStatusHome(section, deps, displaySala);
-    applyHeaderTeamSyncVisual(resolvedStatus, transport);
+    applyHeaderTeamSyncVisual(resolvedStatus, transport, getSharedNubeOutbox()?.list?.()?.length || 0);
     deps.setStatus?.(resolvedStatus, resolvedDetail);
     if (section.dataset.cloudView === 'nube') {
       refreshCloudSyncDiagnostics(section.querySelector('[data-cloud-nube-diagnostics-host]'), {
