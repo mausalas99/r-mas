@@ -61,7 +61,8 @@ const openConexion = async (page, view) => {
   await page.locator('#btn-header-team-sync').click();
   const navOptions = page.locator('[data-cloud-action="nav-options"]');
   if (await navOptions.isVisible().catch(() => false)) await navOptions.click();
-  if (view) await page.locator(`[data-cloud-action="nav-view"][data-cloud-view="${view}"]`).click();
+  // The status home has its own «Detalles técnicos» row to the same view; use the Opciones one.
+  if (view) await page.locator(`.cloud-sync-view[data-cloud-view="options"] [data-cloud-action="nav-view"][data-cloud-view="${view}"]`).click();
 };
 const closeConexion = (page) => page.locator('#btn-connection-dropdown-close').click().catch(() => {});
 /** #btn-header-team-sync carries btn-livesync-header--{idle,live,syncing,degraded,local}. */
@@ -98,7 +99,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   check('A: «Crear equipo» sala select lists every ward (cloud-census-sala-push cross-sala routing)',
     CLOUD_SALAS.every((s) => teamSalaOptions.includes(s)), teamSalaOptions);
   await A.page.locator('#clinical-team-create-sala').selectOption('Sala 1').catch(() => {});
-  await A.page.getByRole('button', { name: 'Crear equipo' }).click();
+  await A.page.locator('#clinical-team-create-form [type="submit"]').click();
   await r.shot(A.page, 'a-team-created');
   await B.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
   const joinBtn = B.page.getByRole('button', { name: 'Unirme' });

@@ -349,7 +349,7 @@ await r.finish('Pendientes: add, dates, priority, edit, listo/deshacer, delete, 
   await A.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
   await A.page.locator('#btn-clinical-team-create-open').click();
   await A.page.locator('#clinical-team-create-name').fill('EQUIPO DEMO PENDIENTES');
-  await A.page.getByRole('button', { name: 'Crear equipo' }).click();
+  await A.page.locator('#clinical-team-create-form [type="submit"]').click();
   await B.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
   const joinBtn = B.page.getByRole('button', { name: 'Unirme' });
   check('R1 sees the R2\'s team through Nube', await until(() => joinBtn.isVisible(), 20000));
