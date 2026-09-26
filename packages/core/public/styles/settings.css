@@ -1260,26 +1260,7 @@ body.connection-dropdown-open {
   position: absolute;
   top: 50%;
   right: 14px;
-  margin-top: -0.22em;
-  content: '';
-  width: 7px;
-  height: 7px;
-  border: none;
-  border-right: 1.5px solid var(--text-muted);
-  border-bottom: 1.5px solid var(--text-muted);
-  border-radius: 0;
-  background: transparent;
-  font-size: inherit;
-  font-weight: normal;
-  color: inherit;
-  transform: rotate(-45deg);
-  opacity: 0.72;
-  transition: transform var(--dur-fast) var(--ease-out);
-}
-.lan-connection-stack .rpc-disclosure[open] > .rpc-disclosure__summary--stacked::after,
-.lan-connection-stack .rpc-disclosure[open] > .lan-settings-card-summary::after {
-  transform: rotate(45deg);
-  margin-top: -0.28em;
+  margin-top: -4px;
 }
 .lan-connection-stack .rpc-disclosure__summary--stacked .lan-connect-card-title,
 .lan-connection-stack .lan-settings-card-summary .settings-card__title,
@@ -2394,13 +2375,6 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .settings-accordion > summary::-webkit-details-marker { display: none; }
 .settings-accordion > summary::marker { content: ''; font-size: 0; }
-.settings-accordion > summary::after {
-  content: '▾';
-  font-size: 11px;
-  opacity: 0.55;
-  transition: transform var(--dur-fast) ease;
-}
-.settings-accordion[open] > summary::after { transform: rotate(-180deg); }
 .settings-accordion[open] > summary {
   border-bottom: 1px solid var(--border);
   background: var(--lab-chip-bg);

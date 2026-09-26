@@ -101,22 +101,47 @@ html:not(.ui-density-normal) .sidebar-ronda-hint { display: flex; }
   content: '';
   font-size: 0;
 }
+/* Collapse marker: hollow ring when closed, ring with a center dot when
+   open. Replaces chevrons app-wide. Distinct from solid result dots
+   (e.g. .cult-dot). */
+.rp-dot,
 .rpc-disclosure > summary::after,
-.rpc-disclosure__summary::after {
+.rpc-disclosure__summary::after,
+.ea-estado-clinico > summary::after,
+.settings-accordion > summary::after,
+details.todo-group summary.todo-group-header::before,
+.lab-some-dept-summary::before,
+.lab-bulk-preview-issues summary::before,
+.lab-bulk-preview-rawtext summary::before {
   content: '';
+  display: inline-block;
   flex-shrink: 0;
-  width: 0.42em;
-  height: 0.42em;
-  border-right: 1.5px solid var(--text-muted);
-  border-bottom: 1.5px solid var(--text-muted);
-  transform: rotate(-45deg);
-  opacity: 0.75;
-  transition: transform var(--dur-fast, 0.15s) var(--ease-out, ease);
+  box-sizing: border-box;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--text-muted);
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  opacity: 1;
+  vertical-align: middle;
+  transition: background var(--dur-fast, 0.15s) var(--ease-out, ease), box-shadow var(--dur-fast, 0.15s) var(--ease-out, ease);
 }
+details[open] > summary .rp-dot,
+[aria-expanded="true"] .rp-dot,
+.is-open .rp-dot,
 .rpc-disclosure[open] > summary::after,
-.rpc-disclosure[open] > .rpc-disclosure__summary::after {
-  transform: rotate(45deg);
-  margin-top: 1px;
+.rpc-disclosure[open] > .rpc-disclosure__summary::after,
+.ea-estado-clinico[open] > summary::after,
+.settings-accordion[open] > summary::after,
+details.todo-group[open] summary.todo-group-header::before,
+.lab-some-dept-details[open] > .lab-some-dept-summary::before,
+.lab-bulk-preview-issues[open] summary::before,
+.lab-bulk-preview-rawtext[open] summary::before {
+  background: var(--text-muted);
+  box-shadow: inset 0 0 0 1.5px var(--surface, #fff);
+  transform: none;
 }
 .rpc-disclosure[open] > summary,
 .rpc-disclosure[open] > .rpc-disclosure__summary {

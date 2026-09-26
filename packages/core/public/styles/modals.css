@@ -1414,7 +1414,6 @@ html.dark .tend-section-head:hover { border-color: rgba(96, 165, 250, 0.3); }
 }
 .tend-section-toggle:hover { background: rgba(37, 99, 235, 0.04); }
 html.dark .tend-section-toggle:hover { background: rgba(96, 165, 250, 0.08); }
-.tend-section-chevron { font-size: 10px; color: var(--muted); width: 1em; flex-shrink: 0; }
 .tend-section-title { flex: 1; min-width: 0; }
 .tend-section-toggle-end {
   display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0;
@@ -1652,9 +1651,6 @@ html.dark .tend-group-drag-hovercard.tend-group-panel-card {
   cursor: pointer; text-align: left;
 }
 .tend-group-hidden-bar-toggle:hover { background: var(--surface); }
-.tend-group-hidden-bar-toggle .tend-section-chevron {
-  font-size: 10px; color: var(--muted); flex-shrink: 0;
-}
 .tend-group-hidden-bar-body {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
   padding: 0 12px 10px 12px;

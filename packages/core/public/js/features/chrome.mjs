@@ -151,7 +151,11 @@ export function applyFontZoom() {
   if (!Number.isFinite(p)) p = 100;
   if (p < 90) p = 90;
   if (p > 140) p = 140;
-  document.documentElement.style.zoom = String(p / 100);
+  // Electron: Chromium zoom, so @media breakpoints see the scaled width.
+  // Plain browser (LAN phone view): no bridge, fall back to html zoom.
+  const setZoom = window.electronAPI?.setZoomFactor;
+  if (setZoom) setZoom(p / 100);
+  document.documentElement.style.zoom = setZoom ? '' : String(p / 100);
 }
 
 export function syncFontZoomButtons() {

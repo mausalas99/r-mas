@@ -120,7 +120,9 @@
   }
 }
 
-.exp-group-name:focus-visible {
+/* Same weight as .exp-group-pill.is-active > .exp-group-name (declared later,
+   so it wins): the active pill's box-shadow was hiding the focus ring. */
+.exp-group-pill > .exp-group-name:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }

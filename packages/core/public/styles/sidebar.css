@@ -67,6 +67,10 @@ html.dark.sidebar-auto-hide.sidebar-reveal aside.patient-sidebar {
   padding: calc(14px * var(--density-space)) calc(16px * var(--density-space)) calc(15px * var(--density-space));
   border-bottom: none;
   display: flex; align-items: center; justify-content: space-between;
+  /* Narrow sidebar (720 px window): the actions go to a 2nd line instead of
+     sliding over the auto-hide button (min-width: 0 let the title row shrink
+     to nothing and the button sat under the filter button). */
+  flex-wrap: wrap;
   gap: 8px;
   background: transparent;
   position: relative;
@@ -76,7 +80,7 @@ html.dark.sidebar-auto-hide.sidebar-reveal aside.patient-sidebar {
   display: flex;
   align-items: center;
   gap: 6px;
-  min-width: 0;
+  min-width: min-content;
   flex: 1;
 }
 .btn-sidebar-auto-hide {
@@ -380,6 +384,18 @@ html.dark .btn-add:hover {
    One line here; the full name stays in the card's title tooltip. */
 .patient-sort-zone--virtual-active .virtual-scroll-inner .patient-card .p-name {
   -webkit-line-clamp: 1;
+}
+/* Same stride rule for the Cto./Cama/servicio line: in a narrow sidebar
+   (720 px window, text 125 %) it wrapped to 2 lines and overlapped the next card. */
+.patient-sort-zone--virtual-active .virtual-scroll-inner .patient-card .p-meta {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.patient-sort-zone--virtual-active .virtual-scroll-inner .patient-card .p-meta > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .patient-sort-zone .sortable-chosen:not(.sortable-ghost):not(.sortable-drag) {
   box-shadow: 0 4px 18px rgba(79, 86, 255, 0.12);
