@@ -10,34 +10,15 @@ import {
   parseCuentaFromCultivoChunkLines,
 } from '../../labs.js';
 import { insertSpaceAfterCultivoKeyword_ } from '../../labs-cultivo-scan.mjs';
-import { findCultivoChunkInSet } from '../../cultivo-block-core.mjs';
+import {
+  findCultivoChunkInSet,
+  classifyCultureTipoKeyFromHeaderLine,
+  CULTIVO_TIPO_LABELS,
+} from '../../cultivo-block-core.mjs';
 import { rt, aid } from './expediente-runtime.mjs';
-
-var CULTIVO_TIPO_LABELS = {
-  hemo: 'Hemocultivo',
-  uro: 'Urocultivo',
-  cateter: 'Cultivo de catéter',
-  gram: 'Tinción Gram',
-  fungi: 'Fungicultivo',
-  otro: 'Otros cultivos',
-};
 
 function isCultureTableHeaderLine(t) {
   return isParsedCultivoHeaderLine(t);
-}
-
-/** Clave estable desde la línea cabecera del bloque (UROCULTIVO / HEMOCULTIVO / …). */
-function classifyCultureTipoKeyFromHeaderLine(rawLine) {
-  var s = String(rawLine || '').replace(/\s+/g, ' ').trim();
-  var beforeColon = (s.split(':')[0] || s).toUpperCase();
-  // Sin \b tras la palabra clave: el texto extraído del PDF a veces la pega
-  // directo a la siguiente palabra ("UROCULTIVOPOR SONDA"), sin espacio.
-  if (/^HEMOCULTIVO/.test(beforeColon)) return 'hemo';
-  if (/^UROCULTIVO/.test(beforeColon)) return 'uro';
-  if (/^FUNGICULTIVO/.test(beforeColon)) return 'fungi';
-  if (/^TINCION(\s+DE)?\s+GRAM\b/.test(beforeColon)) return 'gram';
-  if (/^CATETER\b/.test(beforeColon)) return 'cateter';
-  return 'otro';
 }
 
 function completePartialFechaForCultivo(dm, set) {

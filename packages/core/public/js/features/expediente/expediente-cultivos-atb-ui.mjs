@@ -19,7 +19,7 @@ export function buildCultivoAntibiogramCellHtmlForPatient(r, patientId) {
     set && r.labSetId != null && String(r.labSetId) !== ''
       ? '<button type="button" class="cultivos-copy-full-btn" data-onclick="copyCultivoCondensado" data-onclick-args=\'' +
         escAttr(JSON.stringify([String(r.labSetId), String(r.organismo || '')])) +
-        '\'>Copiar informe completo</button>'
+        '\' title="Copiar informe completo">Copiar</button>'
       : '';
   if (sens && sens.length) {
     return (
@@ -31,11 +31,10 @@ export function buildCultivoAntibiogramCellHtmlForPatient(r, patientId) {
       '</div>'
     );
   }
+  var fallback = r.resistencias || r.risSummary || '';
   return (
     '<div class="cultivos-atb-wrap">' +
-    '<pre class="cultivos-atb-fallback">' +
-    esc(r.resistencias || r.risSummary || '—') +
-    '</pre>' +
+    (fallback && fallback !== '—' ? '<pre class="cultivos-atb-fallback">' + esc(fallback) + '</pre>' : '') +
     copyBtn +
     '</div>'
   );

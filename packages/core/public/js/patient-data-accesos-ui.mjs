@@ -1,6 +1,6 @@
 import { accesoFechaToDateInputValue } from './patient-date-fields.mjs';
 import { refreshRpcDateFields } from './rpc-date-picker.mjs';
-import { ensurePatientAccesos, syncLegacyAccesoFields } from './patient-accesos.mjs';
+import { ensurePatientAccesos, syncLegacyAccesoFields, VIA_ACCESO_LABELS } from './patient-accesos.mjs';
 import { getPatients, persistClinicalState } from './app-state.mjs';
 
 import { esc } from './dom-escape.mjs';
@@ -19,69 +19,59 @@ function accesoRows(patient) {
 function viaSelectHtml(index, via) {
   var v = String(via || '');
   return (
-    '<select class="ea-input patient-acceso-via" data-onchange="onPatientAccesoVia" data-onchange-args="[' +
+    '<select class="exp-datos-q patient-acceso-via" data-onchange="onPatientAccesoVia" data-onchange-args="[' +
     index +
     ']" data-onchange-pass="value" aria-label="Vía de acceso">' +
     '<option value=""' +
     (!v ? ' selected' : '') +
     '>— Vía —</option>' +
-    '<option value="periferica"' +
-    (v === 'periferica' ? ' selected' : '') +
-    '>EV periférica</option>' +
-    '<option value="cvc"' +
-    (v === 'cvc' ? ' selected' : '') +
-    '>CVC / catéter central</option>' +
-    '<option value="picc"' +
-    (v === 'picc' ? ' selected' : '') +
-    '>PICC</option>' +
-    '<option value="foley"' +
-    (v === 'foley' ? ' selected' : '') +
-    '>Sonda Foley</option>' +
+    Object.keys(VIA_ACCESO_LABELS)
+      .map(function (key) {
+        return '<option value="' + key + '"' + (v === key ? ' selected' : '') + '>' + VIA_ACCESO_LABELS[key] + '</option>';
+      })
+      .join('') +
     '</select>'
   );
+}
+
+/** Whole days from the access date to today, or '' when there is no valid date. */
+function accesoDiaHtml(fecha) {
+  var iso = accesoFechaToDateInputValue(fecha);
+  if (!iso) return '';
+  var days = Math.floor((Date.now() - new Date(iso + 'T00:00:00').getTime()) / 86400000);
+  return days >= 0 ? '<span class="exp-datos-tag exp-datos-tag--muted">día ' + days + '</span>' : '';
 }
 
 function renderAccesosListHtml(patient) {
   var rows = accesoRows(patient);
   return rows
     .map(function (row, i) {
-      var canRemove = rows.length > 1;
+      var name = 'Acceso' + (rows.length > 1 ? ' ' + (i + 1) : '');
       return (
-        '<div class="patient-acceso-row list-row">' +
-        '<div class="field-group" style="margin:0;">' +
+        '<div class="exp-datos-prop patient-acceso-row">' +
+        '<span class="exp-datos-prop__k">' + name + '</span>' +
+        '<div class="exp-datos-acc">' +
         viaSelectHtml(i, row.via) +
-        '</div>' +
-        '<div class="field-group" style="margin:0;">' +
+        '<label class="exp-datos-acc__date"><span class="visually-hidden">Fecha ' + name + '</span>' +
         '<input type="date" class="rpc-date-input patient-acceso-fecha" value="' +
         esc(accesoFechaToDateInputValue(row.fecha)) +
         '" data-oninput="onPatientAccesoFecha" data-oninput-args="[' +
         i +
-        ']" data-oninput-pass="value" aria-label="Fecha acceso">' +
-        '</div>' +
-        '<button type="button" class="btn-remove" data-onclick="removePatientAccesoRow" data-onclick-args="[' +
-        i +
-        ']"' +
-        (canRemove ? '' : ' style="visibility:hidden"') +
-        ' aria-label="Quitar acceso">×</button>' +
-        '</div>'
+        ']" data-oninput-pass="value"></label>' +
+        accesoDiaHtml(row.fecha) +
+        (rows.length > 1
+          ? '<button type="button" class="exp-datos-list__rm" data-onclick="removePatientAccesoRow" data-onclick-args="[' + i + ']" aria-label="Quitar ' + name + '">×</button>'
+          : '') +
+        '</div></div>'
       );
     })
     .join('');
 }
 
-/** @param {Record<string, unknown>} patient */
+/** Access rows for the Ingreso group; "+ Acceso" lives in the group title. */
 export function buildPatientAccesosSectionHtml(patient) {
   ensurePatientAccesos(patient);
-  return (
-    '<div class="patient-accesos-block">' +
-    '<div class="vpo-toolbar" style="margin-top:2px;">' +
-    '<span class="ea-label" style="flex:1;">Accesos</span>' +
-    '<button type="button" class="btn-add-row" data-onclick="addPatientAccesoRow">+ Agregar acceso</button>' +
-    '</div>' +
-    '<div class="patient-accesos-list" id="patient-accesos-list">' +
-    renderAccesosListHtml(patient) +
-    '</div></div>'
-  );
+  return '<div class="patient-accesos-list" id="patient-accesos-list">' + renderAccesosListHtml(patient) + '</div>';
 }
 
 function refreshAccesosListDom(patientId) {
@@ -121,6 +111,7 @@ export function onPatientAccesoFecha(index, value) {
   touchAccesos(patient, function (p) {
     p.accesosList[index].fecha = String(value || '').trim();
   });
+  refreshAccesosListDom(pid);
 }
 
 export function addPatientAccesoRow() {
@@ -131,6 +122,8 @@ export function addPatientAccesoRow() {
     p.accesosList.push({ via: '', fecha: '' });
   });
   refreshAccesosListDom(pid);
+  var vias = document.querySelectorAll('#patient-accesos-list .patient-acceso-via');
+  if (vias.length) vias[vias.length - 1].focus();
 }
 
 export function removePatientAccesoRow(index) {

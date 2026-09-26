@@ -108,15 +108,85 @@ export function splitResLabsByTipo(rows) {
   return { labs: labs, cultivo: cultivo };
 }
 
-function classifyCultureTipoKeyFromHeaderLine(rawLine) {
+export var CULTIVO_TIPO_LABELS = {
+  hemo: 'Hemocultivo',
+  uro: 'Urocultivo',
+  cateter: 'Cultivo de catéter',
+  gram: 'Tinción Gram',
+  fungi: 'Fungicultivo',
+  myco: 'Micobacterias',
+  copro: 'Coprocultivo',
+  herida: 'Herida / tejido',
+  liquido: 'Líquido estéril',
+  resp: 'Respiratorio',
+  otro: 'Otros cultivos',
+};
+
+// Orden importa: la primera regla que coincide gana ("SECRECION DE HERIDA
+// (TRAQUEO)" es herida, no respiratorio). Anclas al inicio solo en los tipos
+// con nombre propio; el resto busca en todo el sitio porque el reporte a veces
+// antepone "CULTIVO DE" / "OTROS CULTIVOS".
+var CULTIVO_TIPO_RULES = [
+  ['hemo', /^HEMOCULTIVO/],
+  ['uro', /^UROCULTIVO/],
+  ['fungi', /^FUNGICULTIVO|\bHONGOS\b/],
+  ['gram', /^TINCION(\s+DE)?\s+GRAM\b/],
+  ['myco', /MICOBACTERIA|BACILOSCOPIA|\bBAAR\b|TUBERCUL/],
+  ['cateter', /\bCATETER|\bPUNTA\b|\bCVC\b/],
+  ['copro', /^COPROCULTIVO|\bHECES\b/],
+  ['herida', /\bHX\b|HERIDA|ABSCESO|TEJIDO|BIOPSIA|HUESO|ULCERA|QUIRURGIC/],
+  ['liquido', /LIQUIDO|\bL\.?\s?C\.?\s?R\b|ASCITIS|PERITONEAL|PLEURAL|SINOVIAL/],
+  ['resp', /ASPIRADO|LAVADO\s+BRONQ|BRONQUIAL|\bL\.?\s?B\.?\s?A\b|\bBAL\b|ESPUTO|EXPECTORACI|TRAQUEAL|FARING/],
+];
+
+/** Clave estable desde la línea cabecera del bloque (UROCULTIVO / ASPIRADO TRAQUEAL / …). */
+export function classifyCultureTipoKeyFromHeaderLine(rawLine) {
   var s = String(rawLine || '').replace(/\s+/g, ' ').trim();
-  var beforeColon = (s.split(':')[0] || s).toUpperCase();
-  if (/^HEMOCULTIVO\b/.test(beforeColon)) return 'hemo';
-  if (/^UROCULTIVO\b/.test(beforeColon)) return 'uro';
-  if (/^FUNGICULTIVO\b/.test(beforeColon)) return 'fungi';
-  if (/^TINCION(\s+DE)?\s+GRAM\b/.test(beforeColon)) return 'gram';
-  if (/^CATETER\b/.test(beforeColon)) return 'cateter';
+  // Sin \b tras HEMO/URO…CULTIVO: el texto del PDF a veces la pega a la
+  // siguiente palabra ("UROCULTIVOPOR SONDA"). Sin acentos: "LÍQUIDO" = "LIQUIDO".
+  var beforeColon = (s.split(':')[0] || s)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+  for (var i = 0; i < CULTIVO_TIPO_RULES.length; i++) {
+    if (CULTIVO_TIPO_RULES[i][1].test(beforeColon)) return CULTIVO_TIPO_RULES[i][0];
+  }
   return 'otro';
+}
+
+// Hemocultivos: cada brazo/mano es la misma serie clínica (punción
+// periférica); catéteres y líneas centrales son otra.
+var HEMO_SITIO_GRUPOS = [
+  ['central', /CATETER|\bCVC\b|CENTRAL|\bPICC\b|\bLINEA\b|SUBCLAV|YUGULAR|NIAGARA|MAHURKAR/],
+  ['periferico', /PERIFERIC|BRAZO|\bMANO\b|MUNECA|\bCODO\b|\bPIE\b|PIERNA|DORSO|RADIAL|CUBITAL/],
+];
+
+export var HEMO_SITIO_LABELS = { central: 'CENTRAL', periferico: 'PERIFÉRICO' };
+
+/** 'central' | 'periferico' | '' para un renglón de hemocultivo. */
+export function hemoSitioGrupo(r) {
+  if (!r || r.tipoKey !== 'hemo') return '';
+  var s = String(r.sitio || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+  for (var i = 0; i < HEMO_SITIO_GRUPOS.length; i++) {
+    if (HEMO_SITIO_GRUPOS[i][1].test(s)) return HEMO_SITIO_GRUPOS[i][0];
+  }
+  return '';
+}
+
+/** Misma serie = mismo tipo de estudio + mismo sitio de muestra. */
+export function cultivoSeriesKey(r) {
+  return (
+    (r.tipoKey || 'otro') +
+    '\x01' +
+    (hemoSitioGrupo(r) ||
+      String(r.sitio || '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim())
+  );
 }
 
 function completePartialFechaForCultivo(dm, set) {

@@ -32,17 +32,13 @@ function buildSalaOptionsHtml(selected) {
   );
 }
 
-/** Sala dropdown for Expediente → Datos. */
+/** Sala dropdown for Expediente → Datos; the caller supplies the label. */
 export function buildPatientSalaFieldHtml(patient) {
   const sala = String(patient?.sala || '').trim();
   return (
-    '<div class="field-group patient-sala-field">' +
-    '<label for="patient-sala-select">Sala</label>' +
-    '<select id="patient-sala-select" class="profile-input" data-onchange="updatePatient" data-onchange-args=\'["sala"]\' data-onchange-pass="value">' +
+    '<select id="patient-sala-select" class="exp-datos-q" title="Ubicación clínica para censo y ⇄" data-onchange="updatePatient" data-onchange-args=\'["sala"]\' data-onchange-pass="value">' +
     buildSalaOptionsHtml(sala) +
-    '</select>' +
-    '<p class="profile-hint profile-hint--field">Ubicación clínica para censo y ⇄. Al asignar equipo, la sala del equipo puede actualizarla.</p>' +
-    '</div>'
+    '</select>'
   );
 }
 

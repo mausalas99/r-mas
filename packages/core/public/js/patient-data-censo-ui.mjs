@@ -32,58 +32,226 @@ function renderDxListHtml(patient) {
   var rows = dxRows(patient);
   return rows
     .map(function (dx, i) {
-      var canRemove = rows.length > 1;
+      var n = i + 1;
       return (
-        '<div class="vpo-dx-row list-row">' +
-        '<input type="text" class="ea-input" value="' +
-        esc(dx) +
-        '" placeholder="Diagnóstico ' +
-        (i + 1) +
-        '" data-oninput="onPatientDxInput" data-oninput-args="[' +
-        i +
-        ']" data-oninput-pass="value" style="text-transform:uppercase;">' +
-        '<button type="button" class="btn-remove" data-onclick="removePatientDxRow" data-onclick-args="[' +
-        i +
-        ']"' +
-        (canRemove ? '' : ' style="visibility:hidden"') +
-        ' aria-label="Eliminar">×</button></div>'
+        '<li><label class="exp-datos-list__n" for="patient-dx-' + n + '">' + n + '</label>' +
+        '<input type="text" id="patient-dx-' + n + '" class="exp-datos-q" value="' + esc(dx) + '"' +
+        (dx ? '' : ' placeholder="Diagnóstico · pegar DX1 + DX2"') +
+        ' aria-label="Diagnóstico ' + n + '" style="text-transform:uppercase;"' +
+        ' data-oninput="onPatientDxInput" data-oninput-args="[' + i + ']" data-oninput-pass="value"' +
+        ' data-onpaste="splitPatientDxPaste" data-onpaste-args="[' + i + ']" data-onpaste-pass="event"' +
+        ' data-onkeydown="addPatientDxRow" data-onkeydown-keys="Enter">' +
+        (rows.length > 1
+          ? '<button type="button" class="exp-datos-list__rm" data-onclick="removePatientDxRow" data-onclick-args="[' + i + ']" aria-label="Quitar diagnóstico ' + n + '">×</button>'
+          : '') +
+        '</li>'
       );
     })
     .join('');
 }
 
-/** @param {Record<string, unknown>} patient */
-export function buildPatientCensoDatosSectionsHtml(patient) {
+/* ATB / meds stay plain text; each non-empty line is one item. The census
+   formatter puts "Día N" on its own line under the drug, so that line joins
+   the item above it; "DRUG · Día N" on one line works too. */
+var CENSO_LINES = {
+  atb: { field: 'censoAtbText', label: 'Antibiótico', empty: 'Sin antibióticos · clic para agregar' },
+  meds: { field: 'censoMedsText', label: 'Medicamento', empty: 'Sin medicamentos · clic para agregar' },
+};
+var DIA_LINE_RE = /^D[ií]a\s*\d+$/i;
+var DIA_TAIL_RE = /\s*·\s*(D[ií]a\s*\d+)$/i;
+
+/** @param {string} line @param {string} [sep] */
+function parseCensoItem(line, sep) {
+  var m = DIA_TAIL_RE.exec(line);
+  return m ? { name: line.slice(0, m.index), dia: m[1], sep: sep || ' · ' } : { name: line, dia: '', sep: sep || '\n' };
+}
+
+/** @param {unknown} text */
+export function parseCensoLines(text) {
+  var items = [];
+  String(text || '')
+    .split('\n')
+    .map(function (s) {
+      return s.trim();
+    })
+    .filter(Boolean)
+    .forEach(function (line) {
+      var prev = items[items.length - 1];
+      if (prev && !prev.dia && DIA_LINE_RE.test(line)) {
+        prev.dia = line;
+        prev.sep = '\n';
+      } else {
+        items.push(parseCensoItem(line));
+      }
+    });
+  return items;
+}
+
+/** @param {{ name: string, dia: string, sep: string }[]} items */
+export function joinCensoLines(items) {
+  return items
+    .map(function (it) {
+      return it.name + (it.dia ? it.sep + it.dia : '');
+    })
+    .join('\n');
+}
+
+function censoItemText(it) {
+  return it.name + (it.dia ? ' · ' + it.dia : '');
+}
+
+/** Pending new line: { kind, index } while its editor is open, not yet saved. */
+var draftLine = null;
+
+function censoRenderItems(patient, kind) {
+  var items = parseCensoLines(patient[CENSO_LINES[kind].field]);
+  if (draftLine && draftLine.kind === kind) items.splice(draftLine.index, 0, { name: '', dia: '', sep: '\n' });
+  return items;
+}
+
+function censoListHtml(patient, kind, editIndex) {
+  var cfg = CENSO_LINES[kind];
+  var items = censoRenderItems(patient, kind);
+  var lis = items.map(function (it, i) {
+    if (i === editIndex) {
+      return (
+        '<li><input type="text" class="exp-datos-q" value="' + esc(censoItemText(it)) + '" aria-label="' + cfg.label + ' ' + (i + 1) + '"' +
+        ' data-onkeydown="onCensoLineKey" data-onkeydown-keys="Enter,Escape" data-onkeydown-args=\'["' + kind + '",' + i + ']\' data-onkeydown-pass="event"' +
+        ' data-onblur="commitCensoLine" data-onblur-args=\'["' + kind + '",' + i + ']\' data-onblur-pass="event"></li>'
+      );
+    }
+    var tag = it.dia
+      ? '<span class="exp-datos-tag">' + esc(it.dia) + '</span>'
+      : kind === 'atb'
+        ? '<span class="exp-datos-tag exp-datos-tag--muted">sin día</span>'
+        : '';
+    return (
+      '<li><button type="button" class="exp-datos-line" data-line="' + i + '" data-onclick="editCensoLine" data-onclick-args=\'["' + kind + '",' + i + ']\'' +
+      ' aria-label="Editar ' + esc(censoItemText(it)) + '"><span class="exp-datos-line__t">' + esc(it.name) + '</span>' + tag + '</button></li>'
+    );
+  });
+  if (!lis.length) {
+    lis.push(
+      '<li><button type="button" class="exp-datos-line exp-datos-line--empty" data-onclick="editCensoLine" data-onclick-args=\'["' + kind + '",0]\'>' +
+        cfg.empty + '</button></li>'
+    );
+  }
+  return (
+    '<ul class="exp-datos-list' + (kind === 'meds' ? ' exp-datos-list--cols' : '') + '" id="patient-censo-' + kind + '">' + lis.join('') + '</ul>'
+  );
+}
+
+function censoCountHtml(patient, kind) {
+  var n = parseCensoLines(patient[CENSO_LINES[kind].field]).length;
+  return '<span class="exp-datos-sec__count" id="patient-censo-' + kind + '-count">' + (n ? '· ' + n : '') + '</span>';
+}
+
+var TOMAR_BTN = function (fn, what) {
+  return (
+    '<button type="button" class="exp-datos-sec__action exp-datos-sec__action--muted" data-onclick="' + fn + '" title="Tomar de ' + what + '">↻ Tomar de lista</button>'
+  );
+};
+
+/**
+ * Censo blocks for Expediente → Datos, each wrapped by the caller's section builder.
+ * @param {Record<string, unknown>} patient
+ * @param {(title: string, body: string, action?: string) => string} section
+ */
+export function buildPatientCensoDatosSectionsHtml(patient, section) {
   migratePatientDiagnosticosFromVpo(patient, getVpoByPatient()[patient.id]);
   ensurePatientDiagnosticos(patient);
+  draftLine = null;
   return (
-    '<div class="card" style="margin-top:10px;"><div class="card-header">Diagnósticos (censo)</div><div class="card-body">' +
-    '<div class="vpo-toolbar">' +
-    '<button type="button" class="btn-add-row" data-onclick="addPatientDxRow">+ Agregar diagnóstico</button>' +
-    '</div>' +
-    '<div class="vpo-dx-list" id="patient-dx-list">' +
-    renderDxListHtml(patient) +
-    '</div>' +
-    '<div class="vpo-dx-paste" style="margin-top:8px;">' +
-    '<span class="ea-label">Pegar con « + » entre diagnósticos</span>' +
-    '<textarea class="ea-input" id="patient-dx-paste" rows="2" placeholder="DX1 + DX2…"></textarea>' +
-    '<button type="button" class="wb-btn wb-btn-secondary" data-onclick="splitPatientDxPaste">Separar por +</button>' +
-    '</div></div></div>' +
-    '<div class="card" style="margin-top:10px;"><div class="card-header">Censo — Antibióticos</div><div class="card-body">' +
-    '<div class="vpo-toolbar">' +
-    '<button type="button" class="wb-btn wb-btn-secondary" data-onclick="censoTomarDeAntibioticos">Tomar de Antibióticos</button>' +
-    '</div>' +
-    '<textarea class="ea-input" id="patient-censo-atb" rows="4" placeholder="Texto para columna ATB del PDF…" data-oninput="updatePatientCensoAtb" data-oninput-pass="value">' +
-    esc(patient.censoAtbText || '') +
-    '</textarea></div></div>' +
-    '<div class="card" style="margin-top:10px;"><div class="card-header">Censo — Medicamentos</div><div class="card-body">' +
-    '<div class="vpo-toolbar">' +
-    '<button type="button" class="wb-btn wb-btn-secondary" data-onclick="censoTomarDeMedicamentos">Tomar de Medicamentos</button>' +
-    '</div>' +
-    '<textarea class="ea-input" id="patient-censo-meds" rows="6" placeholder="Texto para columna Meds del PDF…" data-oninput="updatePatientCensoMeds" data-oninput-pass="value">' +
-    esc(patient.censoMedsText || '') +
-    '</textarea></div></div>'
+    section(
+      'Diagnósticos',
+      '<ol class="exp-datos-list exp-datos-list--dx" id="patient-dx-list">' + renderDxListHtml(patient) + '</ol>',
+      '<button type="button" class="exp-datos-sec__action" data-onclick="addPatientDxRow">+ Agregar</button>'
+    ) +
+    section('Antibióticos ' + censoCountHtml(patient, 'atb'), censoListHtml(patient, 'atb', -1), TOMAR_BTN('censoTomarDeAntibioticos', 'Antibióticos')) +
+    section('Medicamentos ' + censoCountHtml(patient, 'meds'), censoListHtml(patient, 'meds', -1), TOMAR_BTN('censoTomarDeMedicamentos', 'Medicamentos'))
   );
+}
+
+function refreshCensoLines(kind, editIndex) {
+  var patient = activePatient(currentPatientId());
+  var listEl = document.getElementById('patient-censo-' + kind);
+  if (!patient || !listEl) return;
+  listEl.outerHTML = censoListHtml(patient, kind, editIndex);
+  var countEl = document.getElementById('patient-censo-' + kind + '-count');
+  if (countEl) countEl.outerHTML = censoCountHtml(patient, kind);
+  if (editIndex >= 0) {
+    var input = document.querySelector('#patient-censo-' + kind + ' input');
+    if (input) {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+  }
+}
+
+function saveCensoText(kind, text) {
+  if (kind === 'atb') updatePatientCensoAtb(text);
+  else updatePatientCensoMeds(text);
+}
+
+/** Write one edited line back: empty removes it, a draft is inserted. @returns {boolean} kept */
+function applyCensoLine(kind, index, value) {
+  var patient = activePatient(currentPatientId());
+  if (!patient) return false;
+  var isDraft = !!(draftLine && draftLine.kind === kind && draftLine.index === index);
+  draftLine = null;
+  var items = parseCensoLines(patient[CENSO_LINES[kind].field]);
+  var v = String(value || '').trim();
+  var next = v ? parseCensoItem(v, items[index] && !isDraft ? items[index].sep : '\n') : null;
+  if (isDraft) {
+    if (!next) return false;
+    items.splice(index, 0, next);
+  } else if (next) {
+    items[index] = next;
+  } else {
+    items.splice(index, 1);
+  }
+  var text = joinCensoLines(items);
+  if (text !== String(patient[CENSO_LINES[kind].field] || '')) saveCensoText(kind, text);
+  return !!next;
+}
+
+export function editCensoLine(kind, index) {
+  var patient = activePatient(currentPatientId());
+  if (!patient) return;
+  if (!parseCensoLines(patient[CENSO_LINES[kind].field]).length) draftLine = { kind: kind, index: 0 };
+  refreshCensoLines(kind, index);
+}
+
+/** Enter saves and opens a new line below; Escape drops the edit. */
+export function onCensoLineKey(kind, index, ev) {
+  var el = ev.target;
+  el.dataset.done = '1';
+  if (ev.key === 'Escape') {
+    ev.preventDefault();
+    ev.stopPropagation();
+    draftLine = null;
+    refreshCensoLines(kind, -1);
+    return;
+  }
+  ev.preventDefault();
+  if (applyCensoLine(kind, index, el.value)) {
+    draftLine = { kind: kind, index: index + 1 };
+    refreshCensoLines(kind, index + 1);
+  } else {
+    refreshCensoLines(kind, -1);
+  }
+}
+
+/** Blur saves. Focus moving to another line of the same list opens that line. */
+export function commitCensoLine(kind, index, ev) {
+  var el = ev.target;
+  if (el.dataset.done) return;
+  el.dataset.done = '1';
+  var to = ev.relatedTarget && ev.relatedTarget.closest ? ev.relatedTarget.closest('#patient-censo-' + kind + ' [data-line]') : null;
+  var kept = applyCensoLine(kind, index, el.value);
+  var j = to ? Number(to.dataset.line) : -1;
+  if (j > index && !kept) j -= 1;
+  refreshCensoLines(kind, j);
 }
 
 function refreshDxListDom(patientId) {
@@ -118,6 +286,8 @@ export function addPatientDxRow() {
   stampCensoAndPush(patient, 'diagnosticosList');
   persistClinicalState();
   refreshDxListDom(pid);
+  var inputs = document.querySelectorAll('#patient-dx-list input');
+  if (inputs.length) inputs[inputs.length - 1].focus();
 }
 
 export function removePatientDxRow(index) {
@@ -132,14 +302,17 @@ export function removePatientDxRow(index) {
   refreshDxListDom(pid);
 }
 
-export function splitPatientDxPaste() {
+/** Pasting "DX1 + DX2" (or several lines) into a diagnosis splits it into rows. */
+export function splitPatientDxPaste(index, ev) {
   var pid = currentPatientId();
   var patient = activePatient(pid);
-  var ta = document.getElementById('patient-dx-paste');
-  if (!patient || !ta) return;
-  var parsed = parseDiagnosticosText(ta.value);
-  if (!parsed.length) return;
-  applyPatientDiagnosticosList(patient, parsed.concat(['']));
+  var parsed = parseDiagnosticosText(ev && ev.clipboardData ? ev.clipboardData.getData('text') : '');
+  if (!patient || parsed.length < 2) return;
+  ev.preventDefault();
+  var list = dxRows(patient);
+  if (list[index]) list.splice.apply(list, [index + 1, 0].concat(parsed));
+  else list.splice.apply(list, [index, 1].concat(parsed));
+  applyPatientDiagnosticosList(patient, list);
   stampCensoAndPush(patient, 'diagnosticosList');
   persistClinicalState();
   refreshDxListDom(pid);
@@ -170,8 +343,7 @@ export function censoTomarDeMedicamentos() {
   var text = formatCensoMedsFromReceta(getMedRecetaByPatient()[pid]);
   patient.censoMedsText = text;
   stampCensoAndPush(patient, 'censoMedsText');
-  var ta = document.getElementById('patient-censo-meds');
-  if (ta) ta.value = text;
+  refreshCensoLines('meds', -1);
   persistClinicalState();
 }
 
@@ -182,8 +354,7 @@ export function censoTomarDeAntibioticos() {
   var text = formatCensoAtbFromReceta(getMedRecetaByPatient()[pid]);
   patient.censoAtbText = text;
   stampCensoAndPush(patient, 'censoAtbText');
-  var ta = document.getElementById('patient-censo-atb');
-  if (ta) ta.value = text;
+  refreshCensoLines('atb', -1);
   persistClinicalState();
 }
 
@@ -196,4 +367,7 @@ export const patientDataCensoWindowHandlers = {
   updatePatientCensoAtb,
   censoTomarDeMedicamentos,
   censoTomarDeAntibioticos,
+  editCensoLine,
+  onCensoLineKey,
+  commitCensoLine,
 };

@@ -7,14 +7,17 @@
  * workbench-surfaces/soft-ui/rams-tufte theme layers (which hard-style
  * .listado-section/.card with !important) do not fight this screen.
  * Rules are scoped under #listado-form so no other screen changes. */
-#listado-form { display: block; }
+/* Breakpoints follow the form's own width, not the window: with the sidebar
+   open and text at 125 % a 1024 px window left ~540 px here and the
+   side column (patient, fecha y hora, médicos) was cut off on the right. */
+#listado-form { display: block; container-type: inline-size; }
 #listado-form .listado-layout {
   display: grid;
   grid-template-columns: 1.6fr 1fr;
   gap: 28px;
   align-items: start;
 }
-@media (max-width: 1000px) {
+@container (max-width: 900px) {
   #listado-form .listado-layout { grid-template-columns: 1fr; }
 }
 #listado-form .listado-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
@@ -26,7 +29,7 @@
   padding-left: 24px;
   border-left: 1px solid var(--divider);
 }
-@media (max-width: 1000px) {
+@container (max-width: 900px) {
   #listado-form .listado-side { padding-left: 0; border-left: 0; padding-top: 16px; border-top: 1px solid var(--divider); }
 }
 #listado-form .listado-group + .listado-group { padding-top: 18px; border-top: 1px solid var(--divider); }
@@ -137,8 +140,6 @@ html.dark .listado-drag-hovercard.listado-row {
 }
 .lab-history-toggle:hover { background: rgba(255,255,255,0.1); }
 html:not(.dark) .lab-history-toggle:hover { background: rgba(0,0,0,0.06); }
-.lab-history-chevron { transition: transform 0.2s ease; }
-#lab-history-card.is-collapsed .lab-history-chevron { transform: rotate(-90deg); }
 #lab-history-body {
   max-height: min(120vh, 2400px);
   opacity: 1;
@@ -705,10 +706,399 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   flex: 1 0 auto;
 }
 
+/* Datos: property list left, census lists right. Values are "quiet" controls:
+   plain text at rest, a tint on hover, the normal input border on focus. */
 .exp-datos-fields {
   display: flex;
-  flex-direction: column;
-  gap: calc(10px * var(--density-space, 1));
+  min-height: 100%;
+}
+
+.exp-datos-col {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 12px 22px 16px;
+}
+
+.exp-datos-col + .exp-datos-col {
+  flex-grow: 1.15;
+  border-left: 1px solid var(--divider);
+}
+
+.exp-datos-col--props .exp-datos-sec + .exp-datos-sec {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--divider);
+}
+
+.exp-datos-col--censo .exp-datos-sec + .exp-datos-sec {
+  margin-top: 10px;
+}
+
+.exp-datos-sec__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 22px;
+  margin-bottom: 2px;
+}
+
+.exp-datos-sec__title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.exp-datos-sec__count {
+  letter-spacing: 0;
+}
+
+.exp-datos-fields .exp-datos-sec__action {
+  min-height: 22px;
+  margin: 0;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--action);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.exp-datos-fields .exp-datos-sec__action--muted {
+  color: var(--text-muted);
+}
+
+.exp-datos-fields .exp-datos-sec__action:hover {
+  background: color-mix(in oklab, var(--text) 6%, transparent);
+}
+
+.exp-datos-prop {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  min-height: 32px;
+  margin: 0;
+}
+
+.exp-datos-prop__k {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.exp-datos-pair {
+  display: grid;
+  grid-template-columns: 96px 96px;
+  gap: 12px;
+}
+
+.exp-datos-unit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.exp-datos-unit small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.exp-datos-fields .exp-datos-q,
+.exp-datos-fields .exp-datos-prop .rpc-date-field__trigger.profile-input {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  min-height: 30px;
+  box-sizing: border-box;
+  margin: 0 0 0 -8px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 400;
+}
+
+/* Native selects inset their text ~4px; trim it so values line up with inputs. */
+.exp-datos-fields select.exp-datos-q {
+  padding-left: 4px;
+  cursor: pointer;
+}
+
+.exp-datos-fields .exp-datos-q:hover,
+.exp-datos-fields .exp-datos-prop .rpc-date-field__trigger.profile-input:hover {
+  border-color: transparent;
+  background: color-mix(in oklab, var(--text) 5%, transparent);
+}
+
+.exp-datos-fields .exp-datos-q:focus,
+.exp-datos-fields .exp-datos-prop .rpc-date-field__trigger.profile-input:focus-visible {
+  outline: none;
+  border-color: color-mix(in oklab, var(--action) 55%, var(--border));
+  background: var(--input-fill);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--action) 18%, transparent);
+}
+
+.exp-datos-fields .exp-datos-q::placeholder {
+  color: color-mix(in oklab, var(--text-muted) 70%, transparent);
+}
+
+.exp-datos-fields .exp-datos-prop .rpc-date-field__label {
+  font-weight: 400;
+}
+
+.exp-datos-fields .exp-datos-prop .rpc-date-field__icon {
+  color: var(--text-muted);
+  opacity: 0;
+}
+
+.exp-datos-fields .exp-datos-prop .rpc-date-field__trigger:hover .rpc-date-field__icon,
+.exp-datos-fields .exp-datos-prop .rpc-date-field__trigger:focus-visible .rpc-date-field__icon,
+.exp-datos-fields .exp-datos-prop .rpc-date-field__trigger.is-placeholder .rpc-date-field__icon {
+  opacity: 1;
+}
+
+/* Acceso: vía, fecha, day count, remove. */
+.exp-datos-acc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Boxes as wide as their text; an empty date shows only the calendar icon. */
+.exp-datos-fields .exp-datos-acc select.exp-datos-q {
+  flex: none;
+  width: auto;
+  field-sizing: content;
+}
+
+.exp-datos-acc__date {
+  flex: none;
+  padding-left: 8px;
+}
+
+.exp-datos-acc .rpc-date-field {
+  width: auto;
+}
+
+.exp-datos-fields .exp-datos-acc .rpc-date-field__trigger.profile-input {
+  width: auto;
+}
+
+.exp-datos-acc .rpc-date-field__trigger.is-placeholder .rpc-date-field__label {
+  display: none;
+}
+
+.exp-datos-tag {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--action) 14%, transparent);
+  color: color-mix(in oklab, var(--action) 80%, var(--text));
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.exp-datos-tag--muted {
+  background: color-mix(in oklab, var(--text) 8%, transparent);
+  color: var(--text-muted);
+}
+
+/* Census lists: one item per line, same quiet look as the properties. */
+.exp-datos-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exp-datos-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  margin: 0 -8px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 13.5px;
+}
+
+.exp-datos-list li:hover {
+  background: color-mix(in oklab, var(--text) 5%, transparent);
+}
+
+.exp-datos-list--dx li {
+  gap: 0;
+  padding: 0 8px 0 0;
+  margin-left: 0;
+}
+
+.exp-datos-list__n {
+  flex: none;
+  width: 24px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.exp-datos-list--dx .exp-datos-q:hover {
+  background: transparent;
+}
+
+.exp-datos-list--cols {
+  columns: 2;
+  column-gap: 20px;
+}
+
+.exp-datos-list--cols li {
+  break-inside: avoid;
+}
+
+.exp-datos-list .exp-datos-q {
+  margin-left: -8px;
+}
+
+.exp-datos-line {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 30px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: text;
+}
+
+.exp-datos-line:focus-visible,
+.exp-datos-list__rm:focus-visible,
+.exp-datos-fields .exp-datos-sec__action:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--action) 60%, transparent);
+  outline-offset: 1px;
+  border-radius: 6px;
+}
+
+.exp-datos-line__t {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exp-datos-line--empty {
+  color: var(--text-muted);
+}
+
+.exp-datos-list__rm {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+}
+
+li:hover > .exp-datos-list__rm,
+.exp-datos-acc:hover > .exp-datos-list__rm,
+.exp-datos-list__rm:focus-visible,
+li:focus-within > .exp-datos-list__rm {
+  opacity: 1;
+}
+
+.exp-datos-list__rm:hover {
+  color: var(--text);
+  background: color-mix(in oklab, var(--text) 8%, transparent);
+}
+
+/* Banner: patient name; Equipo pill and close on the right. */
+.exp-datos-head.wb-modal-head {
+  padding: 12px 14px 12px 22px;
+}
+
+.exp-datos-head .wb-modal-title {
+  overflow: hidden;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Equipo pill in the modal header. */
+.exp-datos-team-slot {
+  margin-left: auto;
+  min-width: 0;
+}
+
+.exp-datos-team-slot .patient-team-assign-block {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 2px;
+  max-width: 320px;
+  margin: 0;
+  padding: 0 4px 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--input-fill);
+}
+
+.exp-datos-team-slot .patient-team-assign-block > label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.exp-datos-team-slot .patient-team-assign-select,
+.exp-datos-team-slot .field-readonly {
+  height: 30px;
+  min-height: 30px;
+  max-width: 240px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.exp-datos-team-slot .patient-team-assign-select ~ .profile-hint,
+.exp-datos-team-slot .field-readonly ~ .profile-hint,
+.exp-datos-team-slot .profile-hint ~ .profile-hint {
+  display: none;
+}
+
+.exp-datos-team-slot .profile-hint {
+  margin: 0;
+  padding: 0 8px;
+  font-size: 12px;
+  line-height: 30px;
+  white-space: nowrap;
 }
 
 .patient-team-assign-block {
@@ -722,8 +1112,8 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
 }
 
 .exp-datos-modal {
-  width: min(94vw, 720px);
-  max-height: min(90vh, 840px);
+  width: min(96vw, 1040px);
+  max-height: min(94vh, 860px);
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -737,6 +1127,10 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   min-height: 0;
 }
 
+.exp-datos-modal .exp-datos-modal-body.wb-modal-body {
+  padding: 0;
+}
+
 .exp-datos-modal-body > .exp-segment-panel {
   display: flex;
   flex-direction: column;
@@ -744,29 +1138,6 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   min-height: auto;
   padding: 0;
   flex: 1;
-}
-
-.patient-accesos-block {
-  display: flex;
-  flex-direction: column;
-  gap: calc(8px * var(--density-space, 1));
-}
-
-.patient-accesos-list {
-  display: flex;
-  flex-direction: column;
-  gap: calc(8px * var(--density-space, 1));
-}
-
-.patient-acceso-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(120px, 150px) 32px;
-  gap: calc(8px * var(--density-space, 1));
-  align-items: end;
-}
-
-.patient-acceso-row .field-group label {
-  display: none;
 }
 
 .exp-pendientes-mount {

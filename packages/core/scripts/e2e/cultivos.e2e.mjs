@@ -177,13 +177,17 @@ await r.finish('Cultivos table + Actualizar', async () => {
     await page.locator('#lab-inner-cult-btn').click();
     await container.locator('.cultivos-table').first().waitFor({ state: 'visible' });
     await page.waitForTimeout(300);
+    // Negative-only sites start folded; open every site so innerText sees all rows.
+    await container.evaluate((el) => el.querySelectorAll('details').forEach((d) => { d.open = true; }));
   }
   const tableRows = () =>
-    container.locator('.cultivos-table tr:not(.cultivos-section-row)').evaluateAll((trs) =>
-      trs.filter((tr) => tr.querySelector('td')).map((tr) => ({
-        neg: tr.classList.contains('cultivos-row-neg'),
-        cells: [...tr.querySelectorAll('td')].slice(0, 4).map((td) => td.innerText.replace(/\s+/g, ' ').trim()),
-      }))
+    container.locator('.cultivos-table tr').evaluateAll((trs) =>
+      trs.filter((tr) => tr.querySelector('td')).map((tr) => {
+        const clean = (el) => (el?.innerText || '').replace(/\s+/g, ' ').trim();
+        const td = [...tr.querySelectorAll('td')].map(clean);
+        // cells: fecha, sitio (from the site header), organismo, antibiograma
+        return { neg: tr.classList.contains('cultivos-row-neg'), cells: [tr.dataset.fecha || td[0], clean(tr.closest('.cult-site')?.querySelector('.cult-site-title')), td[1], td[2]] };
+      })
     );
 
   await openCultivos();
@@ -200,10 +204,10 @@ await r.finish('Cultivos table + Actualizar', async () => {
   check('glued "UROCULTIVOPOR SONDA" shows spaced', !!glued && /UROCULTIVO POR SONDA/i.test(glued.cells[1] + ' ' + (await container.innerText())) &&
     !/UROCULTIVOPOR/i.test(await container.innerText()), glued);
 
-  const negStrip = container.locator('.cultivos-neg-strip');
-  const negCount = await negStrip.locator('.cultivos-neg-count').innerText().catch(() => '');
-  const negChips = await negStrip.locator('.cultivos-neg-chip').allInnerTexts().catch(() => []);
-  check('negative hemocultivo is in the "Cultivos negativos" strip (1)', negCount.trim() === '1' && /20\/04/.test(negChips.join(' ')), { negCount, negChips });
+  const negStrip = container.locator('.cultivos-neg-fold');
+  const negCount = await negStrip.locator('.cultivos-neg-count').textContent().catch(() => '');
+  const negChips = await negStrip.locator('tr').allTextContents().catch(() => []);
+  check('negative hemocultivo is folded under "Sin crecimiento" (1)', (negCount || '').trim() === '1' && /20\/04/.test(negChips.join(' ')), { negCount, negChips });
   check('negative is not a positive row', !rows.some((x) => !x.neg && x.cells[0].startsWith('20/04')), byDate('20/04'));
 
   // Positive hemocultivo, periférico site, BLEE Pseudomonas.
@@ -246,7 +250,7 @@ await r.finish('Cultivos table + Actualizar', async () => {
   check('glued PDF-extraction report: both organisms show (E. coli + Enterococcus)',
     glued12.length === 2 && glued12.some((x) => /coli/i.test(x.cells[2])) && glued12.some((x) => /faecalis/i.test(x.cells[2])), glued12);
   // Drug names live in the (visibility-hidden) hover panel, so read innerHTML, not innerText.
-  const coliChips = container.locator('.cultivos-atb-chips', { has: page.locator('text=AMIKACINA') }).first();
+  const coliChips = page.locator('tr[data-fecha^="12/05"]').filter({ hasText: 'ESCHERICHIA COLI' }).locator('.cultivos-atb-chips').first();
   const coliHtml = (await coliChips.count()) ? await coliChips.innerHTML() : '';
   check('glued antibiogram parses: E. coli carries AMIKACINA/AMPICILINA', /AMIKACINA/i.test(coliHtml) && /AMPICILINA/i.test(coliHtml), coliHtml.slice(0, 300));
   check('E. coli chips exclude the Enterococcus-only drugs (no NITROFURANTOINA, no PENICILINA)',
@@ -264,17 +268,17 @@ await r.finish('Cultivos table + Actualizar', async () => {
     /PENICILINA/.test(entHtml) && /CMI<\/span>\s*8\b/.test(entHtml), entHtml.slice(0, 600));
 
   // "Copiar informe completo" on the glued-PDF rows.
-  async function copyFullFor(chipsLocator) {
+  async function copyFullFor(row) {
     await closeToasts(page);
-    const wrap = container.locator('.cultivos-atb-wrap', { has: chipsLocator });
-    await wrap.locator('.cultivos-copy-full-btn').first().click();
+    await row.hover();
+    await row.locator('.cultivos-copy-full-btn').first().click();
     await page.waitForTimeout(200);
     return app.evaluate(({ clipboard }) => clipboard.readText());
   }
-  const coliCopy = await copyFullFor(page.locator('.cultivos-atb-chips', { has: page.locator('text=AMIKACINA') }).first());
+  const coliCopy = await copyFullFor(page.locator('tr[data-fecha^="12/05"]').filter({ hasText: 'ESCHERICHIA COLI' }).first());
   check('"Copiar informe completo" on the glued-PDF E. coli row → "ATB R: AMP | I: AMP-SULB | S: AMIK"',
     /ATB R: AMP \| I: AMP-SULB \| S: AMIK/.test(coliCopy), coliCopy);
-  const entCopy = await copyFullFor(page.locator('.cultivos-atb-chips', { has: page.locator('text=NITROFURANTOINA') }).first());
+  const entCopy = await copyFullFor(page.locator('tr', { has: page.locator('text=NITROFURANTOINA') }).first());
   check('"Copiar informe completo" on the glued-PDF Enterococcus row → "ATB S: AMP, NITRO, PEN"',
     /ATB S: AMP, NITRO, PEN/.test(entCopy), entCopy);
 
@@ -283,7 +287,7 @@ await r.finish('Cultivos table + Actualizar', async () => {
   const copro13 = byDate('13/05');
   check('coprocultivo preliminar (no organism) still shows a row', copro13.length === 1, copro13);
   check('13/05 coprocultivo row: type cell (Sitio / muestra) shows COPROCULTIVO',
-    copro13.length === 1 && copro13[0].cells[1] === 'COPROCULTIVO', copro13);
+    copro13.length === 1 && /· COPROCULTIVO$/.test(copro13[0].cells[1]), copro13);
   check('coprocultivo text keeps MICROBIOTA COLIBACILAR NORMAL AUSENTE, no trailing comma',
     copro13.length === 1 && /MICROBIOTA COLIBACILAR NORMAL AUSENTE/i.test(copro13[0].cells.join(' ')) &&
     !/PRELIMINAR,\s*(<|$)/i.test(copro13[0].cells.join(' ')), copro13);
@@ -304,7 +308,7 @@ await r.finish('Cultivos table + Actualizar', async () => {
   rows = await tableRows();
   const kleb15 = byDate('15/05');
   check('after the antibiogram arrives, Klebsiella is still exactly one row', kleb15.length === 1, kleb15);
-  const klebChips = container.locator('.cultivos-atb-chips', { has: page.locator('text=CEFTRIAXONA') }).first();
+  const klebChips = container.locator('tr', { hasText: 'KLEBSIELLA' }).locator('.cultivos-atb-chips').first();
   const klebHtml = (await klebChips.count()) ? await klebChips.innerHTML() : '';
   check('Klebsiella row now carries the antibiogram (not the ATB-less early copy)', /CEFTRIAXONA/i.test(klebHtml), klebHtml.slice(0, 200));
   check('R/I/S chips are split into Resistencias / Indeterminado / Sensible',
@@ -366,10 +370,9 @@ await r.finish('Cultivos table + Actualizar', async () => {
   // Group + count: the peritoneal row sits under "Otros cultivos" and shows its Cuenta.
   const groupedRows = await container.locator('.cultivos-table tr').evaluateAll((trs) =>
     trs.reduce((acc, tr) => {
-      if (tr.classList.contains('cultivos-section-row')) { acc.group = tr.textContent.trim(); return acc; }
       if (!tr.querySelector('td')) return acc;
       acc.rows.push({
-        group: acc.group,
+        group: tr.closest('.cult-site')?.querySelector('.cult-site-tipo')?.textContent.trim() || '',
         fecha: tr.querySelectorAll('td')[0].innerText.trim(),
         cuenta: !!tr.querySelector('.cultivos-cuenta'),
         cuentaText: tr.querySelector('.cultivos-cuenta')?.innerText.trim() || '',
@@ -410,13 +413,14 @@ await r.finish('Cultivos table + Actualizar', async () => {
   // Remove the negative hemocultivo with its × (MICOBACT above also left 2 negative
   // rows in the strip, so this only checks that THIS chip is gone, not an empty strip).
   await closeToasts(page);
-  const hemoNegChip = negStrip.locator('.cultivos-neg-chip', { hasText: '20/04' });
+  await container.evaluate((el) => el.querySelectorAll('details').forEach((d) => { d.open = true; }));
+  const hemoNegChip = negStrip.locator('tr', { hasText: '20/04' });
   await hemoNegChip.locator('.cultivos-row-remove-btn').click();
   const confirmOk = page.locator('.wb-confirm-modal [data-wb-confirm-ok]');
   if (await confirmOk.isVisible({ timeout: 1500 }).catch(() => false)) await confirmOk.click();
   await page.waitForTimeout(600);
   await openCultivos();
-  check('× removes the negative culture', (await negStrip.locator('.cultivos-neg-chip', { hasText: '20/04' }).count()) === 0);
+  check('× removes the negative culture', (await container.locator('tr', { hasText: '20/04' }).count()) === 0);
   await r.shot(page, 'after-remove');
 
   // ── More report shapes (labs-cultivo-scan / labs-cultivo-from-tests gaps) ──
