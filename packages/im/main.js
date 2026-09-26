@@ -28,6 +28,7 @@ const { isReservedShellShortcutInput, hasCmdOrCtrl } = require('../core/lib/shel
 const { cleanupLegacyAppIdFiles } = require('../core/lib/legacy-appid-cleanup.js');
 const { PERF_CONFIG_FILE, normalizePerfConfig, readPerfConfig, writePerfConfig } = require('../core/lib/perf-config.js');
 const { setLanDbManager, getLanDbManager } = require('../core/lib/db/lan-db-bridge.cjs');
+const { checkUiTestModeBoot } = require('../core/lib/ui-test-mode-guard.js');
 const { installElectronLanCors } = require('../core/lib/electron-lan-cors.cjs');
 const {
   registerRendererProtocolSchemes,
@@ -57,6 +58,22 @@ app.on('second-instance', () => {
   mainWindow.show();
   mainWindow.focus();
 });
+
+// Safety guard for the isolated UI test mode (scripts/dev-ui-test-app.mjs). Never touch
+// real patient data or the real Cloudflare Worker — refuse to boot otherwise.
+if (process.env.R_PLUS_UI_TEST_MODE === '1') {
+  const guard = checkUiTestModeBoot({
+    uiTestMode: true,
+    cloudSyncUrl: process.env.R_PLUS_CLOUD_SYNC_URL || '',
+    userDataPath: app.getPath('userData'),
+    defaultUserDataPath: path.join(app.getPath('appData'), app.name),
+  });
+  if (!guard.ok) {
+    console.error(guard.reason);
+    app.quit();
+    process.exit(1);
+  }
+}
 
 // Aceleración por hardware ACTIVADA por defecto: las animaciones del premium UI
 // (transform/opacity/backdrop-filter) componen en GPU; en software se ven
@@ -1386,7 +1403,12 @@ app.whenReady().then(async () => {
     const { registerAdminRescueKeyIpcHandlers } = await import('../core/lib/admin-rescue-key-ipc.mjs');
     registerAdminRescueKeyIpcHandlers({ ipcMain, app, safeStorage });
 
-    unlockPromise = unlockClinicalDbAtStartup(dbManager);
+    unlockPromise = unlockClinicalDbAtStartup(dbManager).then(async () => {
+      if (process.env.R_PLUS_UI_TEST_MODE === '1') {
+        const { seedUiTestModeIfNeeded } = await import('../core/lib/db/ipc-handlers-register-core.mjs');
+        await seedUiTestModeIfNeeded({ dbManager });
+      }
+    });
     unlockPromise.catch((unlockErr) => {
       // The renderer surfaces this through db:status + the unlock overlay
       // (public/js/features/db-unlock-boot.mjs). Log only — do not quit here.

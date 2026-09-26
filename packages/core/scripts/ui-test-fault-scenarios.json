@@ -1,0 +1,13 @@
+{
+  "$comment": "Fault-injection config for scripts/ui-test-mock-nube-server.mjs. Loaded once at launch (path via --scenarios=<file> or R_PLUS_UI_TEST_SCENARIOS env var; this file is the default). Every key is optional — omit or leave at defaults for a happy-path mock. Shape:",
+  "$shape": {
+    "syncTimeoutMs": "number|null — pull/mutations requests hang this long before responding (simulates 'La Nube no respondió a tiempo'). null/0 disables.",
+    "stuckNoKeyRoomCodes": "string[] — room codes whose GET .../dek always returns { dek: null }, simulating an encrypted room with no key delivered yet.",
+    "staleRevisionRoomCodes": "string[] — room codes whose POST .../mutations always fails with 409 revision_stale.",
+    "rateLimitedLoginUsernames": "string[] — usernames whose POST /auth/login always fails with 429 rate_limited + Retry-After."
+  },
+  "syncTimeoutMs": null,
+  "stuckNoKeyRoomCodes": [],
+  "staleRevisionRoomCodes": [],
+  "rateLimitedLoginUsernames": []
+}

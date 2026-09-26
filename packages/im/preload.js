@@ -1,4 +1,25 @@
 const { contextBridge, ipcRenderer, webFrame } = require('electron');
+/* global window */
+
+// Isolated UI test mode (R_PLUS_UI_TEST_MODE=1, scripts/dev-ui-test-app.mjs):
+// pre-seed the session so a fresh profile skips onboarding entirely and
+// lands straight on the main app. Must run here, before app.bundle.mjs's own
+// boot script reads localStorage — 'uitest' matches the DB row main.js seeds
+// via seedUiTestUser (lib/ui-test-seed.mjs); needsProfileOnboarding() skips
+// every onboarding gate once that user already belongs to a team.
+if (process.env.R_PLUS_UI_TEST_MODE === '1') {
+  try {
+    if (!window.localStorage.getItem('rpc-settings')) {
+      window.localStorage.setItem('rpc-settings', JSON.stringify({
+        clinicalUsername: 'uitest',
+        clinicalRegistered: true,
+        clinicalDisplayName: 'Dra. UI Test',
+        clinicalSala: 'Sala 1',
+        clinicalRank: 'R2',
+      }));
+    }
+  } catch (_e) { /* ignored — worst case, onboarding shows once */ }
+}
 
 contextBridge.exposeInMainWorld('electronAPI', {
   onShellShortcut: function(cb) {
