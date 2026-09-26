@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global document */
+/* global document, DataTransfer, ClipboardEvent */
 /**
  * E2E: Nota de evolución and Indicaciones (Interconsulta › Clínico), driven
  * through the real Electron app. A busy day: the census diagnoses are set in
@@ -172,11 +172,17 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   // ── Sala › Resumen › Datos: census diagnoses ──────────────────────────
   await page.locator('#apptab-nota').click();
   await page.locator('.dash-name:visible').first().click();
-  await page.locator('#patient-dx-paste').waitFor({ state: 'visible' });
-  await page.locator('#patient-dx-paste').fill(`${DX_A.toLowerCase()} + ${DX_B.toLowerCase()}`);
-  await page.getByRole('button', { name: 'Separar por +' }).click();
+  // Datos has no separate paste box any more: pasting "DX1 + DX2" into the
+  // first diagnosis row splits it into rows.
+  await page.locator('#patient-dx-1').waitFor({ state: 'visible' });
+  await page.locator('#patient-dx-1').evaluate((el, text) => {
+    const dt = new DataTransfer();
+    dt.setData('text/plain', text);
+    el.focus();
+    el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+  }, `${DX_A.toLowerCase()} + ${DX_B.toLowerCase()}`);
   const censoDx = await page.locator('#patient-dx-list input').evaluateAll((els) => els.map((e) => e.value).filter(Boolean));
-  check('Datos: «Separar por +» makes two upper-case census diagnoses', censoDx.join('|') === `${DX_A}|${DX_B}`, censoDx);
+  check('Datos: pasting «DX1 + DX2» makes two upper-case census diagnoses', censoDx.join('|') === `${DX_A}|${DX_B}`, censoDx);
   await page.keyboard.press('Escape');
   check('Escape closes «Datos del paciente»', await until(async () => !(await page.locator('#exp-datos-modal-backdrop.open').count()), 3000));
 

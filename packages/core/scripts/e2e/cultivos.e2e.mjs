@@ -204,16 +204,18 @@ await r.finish('Cultivos table + Actualizar', async () => {
   check('glued "UROCULTIVOPOR SONDA" shows spaced', !!glued && /UROCULTIVO POR SONDA/i.test(glued.cells[1] + ' ' + (await container.innerText())) &&
     !/UROCULTIVOPOR/i.test(await container.innerText()), glued);
 
-  const negStrip = container.locator('.cultivos-neg-fold');
-  const negCount = await negStrip.locator('.cultivos-neg-count').textContent().catch(() => '');
-  const negChips = await negStrip.locator('tr').allTextContents().catch(() => []);
-  check('negative hemocultivo is folded under "Sin crecimiento" (1)', (negCount || '').trim() === '1' && /20\/04/.test(negChips.join(' ')), { negCount, negChips });
+  // Left and right periférico share one "Hemocultivo · PERIFÉRICO" site. That site has a
+  // positive (11/04), so the 20/04 negative stays in it as a negative row, not in the
+  // "Sin aislamientos" fold (which only holds sites with no isolate at all).
+  const hemoNeg = byDate('20/04');
+  check('negative hemocultivo sits as a negative row in the periférico hemocultivo site',
+    hemoNeg.length === 1 && hemoNeg[0].neg && /Hemocultivo · PERIF[EÉ]RICO/i.test(hemoNeg[0].cells[1]), hemoNeg);
   check('negative is not a positive row', !rows.some((x) => !x.neg && x.cells[0].startsWith('20/04')), byDate('20/04'));
 
   // Positive hemocultivo, periférico site, BLEE Pseudomonas.
   const hemoPos = byDate('11/04');
   check('positive hemocultivo (periférico izquierdo, Pseudomonas) shows one row',
-    hemoPos.length === 1 && /PERIFERICO IZQUIERDO/i.test(hemoPos[0].cells[1]) &&
+    hemoPos.length === 1 && /PERIF[EÉ]RICO/i.test(hemoPos[0].cells[1]) && /IZQUIERDO/i.test(hemoPos[0].cells[2]) &&
     /Pseudomonas/i.test(hemoPos[0].cells[2]) && /\bR\b/.test(hemoPos[0].cells[3]), hemoPos);
 
   // R chip panel from the keyboard.
@@ -367,7 +369,7 @@ await r.finish('Cultivos table + Actualizar', async () => {
   await r.shot(page, 'after-refresh');
   check('peritoneal row now has its antibiogram (R chip)', perit.length === 1 && /\bR\b/.test(perit[0].cells[3]), perit);
 
-  // Group + count: the peritoneal row sits under "Otros cultivos" and shows its Cuenta.
+  // Group + count: the peritoneal row sits under "Líquido estéril" and shows its Cuenta.
   const groupedRows = await container.locator('.cultivos-table tr').evaluateAll((trs) =>
     trs.reduce((acc, tr) => {
       if (!tr.querySelector('td')) return acc;
@@ -381,12 +383,12 @@ await r.finish('Cultivos table + Actualizar', async () => {
     }, { group: '', rows: [] }).rows
   );
   const peritGrouped = groupedRows.find((x) => x.fecha.startsWith('07/05'));
-  check('peritoneal row sits in the "Otros cultivos" group and shows its Cuenta',
-    !!peritGrouped && peritGrouped.group === 'Otros cultivos' && peritGrouped.cuenta && /120,000/.test(peritGrouped.cuentaText),
+  check('peritoneal row sits in the "Líquido estéril" group and shows its Cuenta',
+    !!peritGrouped && peritGrouped.group === 'Líquido estéril' && peritGrouped.cuenta && /120,000/.test(peritGrouped.cuentaText),
     peritGrouped);
 
   // Sala mode censo export preview: one condensed Cultivos line, no "/2026", no full uppercase organism.
-  await page.locator('#btn-export-censo-sidebar').click();
+  await page.locator('#btn-export-censo-header').click();
   await page.locator('#censo-export-preview').click();
   const censoFrame = page.frameLocator('#censo-preview-frame');
   await censoFrame.locator('body').waitFor({ state: 'attached' });
@@ -410,11 +412,10 @@ await r.finish('Cultivos table + Actualizar', async () => {
   await press();
   check('pressing it anyway → "No hay cultivos con ATB pendiente"', await toastText(/No hay cultivos con ATB pendiente en este paciente/));
 
-  // Remove the negative hemocultivo with its × (MICOBACT above also left 2 negative
-  // rows in the strip, so this only checks that THIS chip is gone, not an empty strip).
+  // Remove the negative hemocultivo with its × (it lives in the periférico site, see above).
   await closeToasts(page);
   await container.evaluate((el) => el.querySelectorAll('details').forEach((d) => { d.open = true; }));
-  const hemoNegChip = negStrip.locator('tr', { hasText: '20/04' });
+  const hemoNegChip = container.locator('.cult-site tr', { hasText: '20/04' });
   await hemoNegChip.locator('.cultivos-row-remove-btn').click();
   const confirmOk = page.locator('.wb-confirm-modal [data-wb-confirm-ok]');
   if (await confirmOk.isVisible({ timeout: 1500 }).catch(() => false)) await confirmOk.click();
@@ -503,8 +504,10 @@ await r.finish('Cultivos table + Actualizar', async () => {
     !/^MICROORGANISMO/i.test(byDate('17/06')[0].cells[2] || ''), byDate('17/06'));
   check('TINCION DE GRAM is not used as the sample (sitio/tipo cell)',
     byDate('18/06').length === 1 && !/TINCION/i.test(byDate('18/06')[0].cells[1]), byDate('18/06'));
-  check('HEMOCULTIVO (CATETER NIAGARA): a row with that site',
-    byDate('19/06').length === 1 && /CATETER NIAGARA/i.test(byDate('19/06')[0].cells[1]), byDate('19/06'));
+  // Catheter-drawn hemocultivos group under the "CENTRAL" site; the raw sample name stays on the row.
+  check('HEMOCULTIVO (CATETER NIAGARA): a row in the central site that keeps the sample name',
+    byDate('19/06').length === 1 && /Hemocultivo · CENTRAL/i.test(byDate('19/06')[0].cells[1]) &&
+    /CATETER NIAGARA/i.test(byDate('19/06')[0].cells[2]), byDate('19/06'));
   check('CATETER (PUNTA CVC): a row with that site',
     byDate('20/06').length === 1 && /PUNTA CVC/i.test(byDate('20/06')[0].cells[1]), byDate('20/06'));
   check('SECRECION DE HERIDA: a row',
