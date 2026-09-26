@@ -1,10 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { loadAllBlobs, upsertBlob, deleteBlobs } from './clinical-blobs.mjs';
+import { loadAllBlobs, upsertBlob, deleteBlobs, getBlob } from './clinical-blobs.mjs';
 import { clinicalDbPath, clinicalUnlockMetaPath } from './db-path.mjs';
 import { readHostState } from './host-state-persistence.mjs';
 import { verifyChainRows } from './forensic-audit.mjs';
 import { touchClinicalUserActivity } from './clinical-access-db.mjs';
+import { seedUiTestData, seedUiTestTeams, seedUiTestUser } from '../ui-test-seed.mjs';
+import { listActiveTeams } from './clinical-access-teams-core.mjs';
 import { listCloudOutbox, replaceCloudOutbox } from './cloud-outbox.mjs';
 import {
   exportClinicalOpsSnapshot,
@@ -115,6 +117,27 @@ function registerDbCoreStatusHandlers(ctx) {
   });
 }
 
+/**
+ * Idempotent (checks before writing) — safe to call on every unlock.
+ * Exported so main.js can call it right after unlockClinicalDbAtStartup:
+ * that startup call — not this file's db:auto-unlock handler — is what
+ * actually opens a fresh profile's DB for the first time (it happens
+ * before the renderer exists to hit any IPC channel, so db:status already
+ * reports "unlocked" and the renderer's own auto-unlock poll never fires).
+ * Also called here from db:unlock/db:auto-unlock for the remaining case
+ * where the DB was locked again after startup (e.g. db:lock) and reopened
+ * later.
+ * @param {import('./ipc-handlers-context.mjs').IpcHandlerContext} ctx
+ */
+export async function seedUiTestModeIfNeeded(ctx) {
+  if (process.env.R_PLUS_UI_TEST_MODE !== '1') return;
+  await ctx.dbManager.withTransaction((db) => {
+    if (!getBlob(db, 'patients')) seedUiTestData(db);
+    if (!listActiveTeams(db).length) seedUiTestTeams(db);
+    seedUiTestUser(db);
+  });
+}
+
 /** @param {import('./ipc-handlers-context.mjs').IpcHandlerContext} ctx */
 function registerDbCoreUnlockHandlers(ctx) {
   const { ipcMain, dbManager } = ctx;
@@ -131,6 +154,7 @@ function registerDbCoreUnlockHandlers(ctx) {
     } catch (err) {
       return ipcError(err);
     }
+    await seedUiTestModeIfNeeded(ctx);
     return finishDbUnlockResponse(ctx, lsSnapshot, unlockResult);
   });
 
@@ -139,6 +163,7 @@ function registerDbCoreUnlockHandlers(ctx) {
       payload.lsSnapshot && typeof payload.lsSnapshot === 'object' ? payload.lsSnapshot : {};
     try {
       const unlockResult = await dbManager.ensureUnlocked();
+      await seedUiTestModeIfNeeded(ctx);
       return finishDbUnlockResponse(ctx, lsSnapshot, unlockResult);
     } catch (err) {
       return ipcError(err);
