@@ -195,16 +195,29 @@ export function renderSoporteCalcHintsHtml(ec, vitalsCtx) {
 export function renderSoporteVentilatorioBlockHtml(ec, vitalsCtx) {
   var tier = soporteTier(ec.soporte != null ? String(ec.soporte) : '');
   if (!tier) return '';
+  return renderSoporteParamsHtml(ec, tier);
+}
+
+/**
+ * Soporte label; with gaso/cálculos it is highlighted and hover shows them over the page.
+ * @param {Record<string, unknown>} ec
+ * @param {{ fr?: unknown, sat?: unknown, pesoKg?: unknown, lab?: unknown }} [vitalsCtx]
+ */
+function renderSoporteHeadHtml(ec, vitalsCtx) {
+  var tier = soporteTier(ec.soporte != null ? String(ec.soporte) : '');
+  if (tier !== 'hfnc' && tier !== 'vmni' && tier !== 'vm' && tier !== 'tqt') {
+    return '<span class="ea-label">Soporte respiratorio</span>';
+  }
   var labCtx = vitalsCtx && vitalsCtx.lab ? vitalsCtx.lab : null;
-  var showInsights = tier === 'hfnc' || tier === 'vmni' || tier === 'vm' || tier === 'tqt';
-  var params = renderSoporteParamsHtml(ec, tier);
-  if (!showInsights) return params;
-  var insights =
+  return (
+    '<div class="ea-soporte-head" tabindex="0">' +
+    '<span class="ea-label ea-soporte-label--hints">Soporte respiratorio</span>' +
     '<div class="ea-soporte-insights">' +
     renderSoporteLabFeedHtml(labCtx) +
     renderSoporteCalcHintsHtml(ec, vitalsCtx) +
-    '</div>';
-  return params + insights;
+    '</div>' +
+    '</div>'
+  );
 }
 
 function resolveSoporteTierFlags(tier) {
@@ -298,12 +311,12 @@ function renderVitalsRowHtml(ec, vitalsCtx) {
     escAttrNumeric(ec.esferas) +
     '">' +
     '</label>' +
-    '<label class="ea-field ea-field--soporte">' +
-    '<span class="ea-label">Soporte respiratorio</span>' +
-    '<select class="ea-input" data-ea-ec="soporte">' +
+    '<div class="ea-field ea-field--soporte">' +
+    renderSoporteHeadHtml(ec, vitalsCtx) +
+    '<select class="ea-input" data-ea-ec="soporte" aria-label="Soporte respiratorio">' +
     renderSoporteOptions(ec) +
     '</select>' +
-    '</label>' +
+    '</div>' +
     '</div>' +
     (soporteBlock
       ? '<div class="ea-soporte-vent-block" data-ea-soporte-wrap>' + soporteBlock + '</div>'

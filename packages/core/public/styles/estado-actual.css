@@ -294,10 +294,38 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   align-items: start;
 }
 
+.ea-soporte-head {
+  position: relative;
+  min-width: 0;
+  outline: none;
+}
+
+.ea-soporte-label--hints {
+  cursor: help;
+  color: var(--accent);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
 .ea-soporte-insights {
-  display: flex;
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  width: min(22rem, 80vw);
   flex-direction: column;
   gap: 8px;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+}
+
+.ea-soporte-head:hover .ea-soporte-insights,
+.ea-soporte-head:focus-within .ea-soporte-insights {
+  display: flex;
 }
 
 .ea-soporte-calc-list {
@@ -3589,38 +3617,47 @@ select.ea-io-link {
   font-size: 12.5px;
 }
 
-/* Clínico fields on one line: FOUR · Esferas · Soporte · Dieta · Kcal · Proteína.
-   Ventilator params (when any) drop below the line. */
+/* Clínico fields flow on one line: FOUR · Esferas · Soporte · params · Dieta · Kcal · Proteína.
+   Wraps only when the ventilator params do not fit. */
 @media (min-width: 1001px) {
   .estado-actual-panel .ea-clinico-grid {
-    display: grid;
-    grid-template-columns: 4.5rem 4.5rem minmax(0, 1.3fr) minmax(0, 1.5fr) 4.5rem 5rem 5.5rem;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 6px 8px;
     align-items: end;
   }
 
   .estado-actual-panel .ea-clinico-vitals-row,
-  .estado-actual-panel .ea-clinico-nutrition-row {
+  .estado-actual-panel .ea-clinico-nutrition-row,
+  .estado-actual-panel .ea-soporte-vent-block,
+  .estado-actual-panel .ea-soporte-params,
+  .estado-actual-panel .ea-soporte-params-grid {
     display: contents;
   }
 
-  .estado-actual-panel .ea-clinico-grid > :not(.ea-clinico-vitals-row, .ea-clinico-nutrition-row) {
-    grid-column: 1 / -1;
-    order: 1;
+  .estado-actual-panel .ea-clinico-grid .ea-field {
+    flex: 0 0 4.5rem;
   }
 
-  /* Puntillas/mascarilla: the one Litros O₂ field stays on the line, next to Soporte */
-  .estado-actual-panel .ea-clinico-grid:has(> .ea-soporte-vent-block .ea-soporte-tier-litros:not([style])) {
-    grid-template-columns: 4.5rem 4.5rem minmax(0, 1.3fr) 4.5rem minmax(0, 1.5fr) 4.5rem 5rem 5.5rem;
+  .estado-actual-panel .ea-clinico-grid .ea-field--soporte {
+    flex-basis: 12rem;
   }
 
-  .estado-actual-panel .ea-clinico-grid > .ea-soporte-vent-block:has(.ea-soporte-tier-litros:not([style])) {
-    grid-column: auto;
-    order: 0;
+  .estado-actual-panel .ea-clinico-grid .ea-soporte-params-grid > .ea-field {
+    flex-basis: 6rem;
   }
 
-  .estado-actual-panel .ea-soporte-vent-block:has(.ea-soporte-tier-litros:not([style])) .ea-soporte-params-grid {
-    display: block;
+  .estado-actual-panel .ea-clinico-grid .ea-field--dieta {
+    flex: 1 1 10rem;
+  }
+
+  .estado-actual-panel .ea-clinico-grid .ea-clinico-nutrition-row > .ea-field:not(.ea-field--dieta) {
+    flex-basis: 5.5rem;
+  }
+
+  .estado-actual-panel .ea-clinico-grid > :not(.ea-clinico-vitals-row, .ea-clinico-nutrition-row, .ea-soporte-vent-block) {
+    flex-basis: 100%;
   }
 }
 
