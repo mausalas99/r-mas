@@ -203,4 +203,9 @@ describe('EA glance', () => {
     assert.deepEqual(zoneNames(glance, 'NM'), ['Insulina Glargina']);
     assert.equal(zoneItem(glance, 'NM', 'Insulina Glargina').token, '');
   });
+  it('keeps the antibiotic day as the only med token', () => {
+    const glance = buildEaGlance({ soap: { abx: ['MEROPENEM 1G IV C/8H DIA 6'], antihta: ['LOSARTAN 50 MG VO C/12H'] } });
+    assert.deepEqual(glance.soap.find((z) => z.letter === 'HI').items[0], { name: 'Meropenem', token: 'día 6', emphasis: true });
+    assert.equal(glance.soap.find((z) => z.letter === 'HD').items[0].token, '');
+  });
 });

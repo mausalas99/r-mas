@@ -9,10 +9,11 @@ import { resolveEaAbxFechaActualizacion } from '../estado-actual-meds-core.mjs';
 import { collectEaGlanceSoap } from './ea-glance-meds.mjs';
 import { sortEntriesDesc, resolveEventualidadEntryText } from '../eventualidades-store.mjs';
 import { toggleInterconsultId } from './interconsult-catalog.mjs';
-import { buildDashboardModel } from './dashboard-model.mjs';
+import { buildDashboardModel, buildLabsForDashboard } from './dashboard-model.mjs';
 import { renderDashboardHtml, renderLabsHtml } from './dashboard-html.mjs';
-import { buildLabsGlanceForDay } from './labs-glance-model.mjs';
+import { watchDashboardFit } from './dashboard-fit.mjs';
 import { openInterconsultModal } from './ic-modal.mjs';
+import { switchLabInner } from './lab-inner.mjs';
 import { onLabHistoryRevision, TREND_REFRESH_DEBOUNCE_MS } from '../../lab-history-cache.mjs';
 import { scheduleCloudSyncPush } from '../cloud-sync/mutate-bridge.mjs';
 
@@ -193,6 +194,10 @@ function handleDashboardAction(action, el) {
     persistIcToggle(el.getAttribute('data-ic-id'));
     return;
   }
+  if (action === 'cultivos') {
+    switchLabInner('cult');
+    return;
+  }
   if (action === 'labs-envio' || action === 'labs-full') {
     openLabs(el.getAttribute('data-lab-set-id'));
     return;
@@ -296,7 +301,7 @@ function fillDashboardLabs(targets, pid) {
   if (String(rt.getActiveId() || '') !== String(pid || '')) return false;
   var html = renderLabsHtml({
     labs: pid
-      ? buildLabsGlanceForDay({
+      ? buildLabsForDashboard({
           todayKey: localTodayKey(),
           orderedSets: getLabHistory()[pid] || [],
         })
@@ -328,6 +333,7 @@ export function renderPatientDashboard(hostEl, opts) {
   targets.forEach(function (mount) {
     wireDashboardHost(mount);
     mount.innerHTML = html;
+    watchDashboardFit(mount);
   });
   syncInterconsultaModeChrome();
   if (!deferLabs) {

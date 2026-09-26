@@ -124,10 +124,12 @@ export function glanceMedToken(raw) {
   return { text: '', emphasis: false };
 }
 
+/** Name only, except the antibiotic day («DIA 6» → «día 6»), which rounds need at a glance. */
 function glanceMedItem(raw) {
   const name = glanceMedName(raw);
   if (!name) return null;
-  return { name, token: '', emphasis: false };
+  const dia = String(raw).match(/\bD[IÍ]A\s*#?\s*(\d+)/i);
+  return { name, token: dia ? 'día ' + dia[1] : '', emphasis: !!dia };
 }
 
 function dedupeItems(items) {
