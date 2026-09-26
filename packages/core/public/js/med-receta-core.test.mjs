@@ -972,3 +972,14 @@ test('buildMedRecetaListHtml — dest picker visible for SOAP meds', async () =>
   assert.match(html, /Analgésicos \/ antipiréticos/);
   assert.equal((html.match(/med-receta-dest-picker/g) || []).length, 2);
 });
+
+test('formatMedicationSoapShort — dosis en tabletas conserva el espacio', () => {
+  var item = {
+    nombreRaw: 'CALCIO/VITAMINA D TABLETA',
+    viaRaw: 'VIA ORAL',
+    dosisRaw: '1 TABLETA //',
+    frecuenciaRaw: 'CADA 12 HORAS',
+    suspendido: false,
+  };
+  assert.match(formatMedicationSoapShort(item), /1 TABLETA VO C\/12H$/);
+});

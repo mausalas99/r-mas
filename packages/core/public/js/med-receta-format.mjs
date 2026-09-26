@@ -176,7 +176,8 @@ function compactRecetaDoseToken(dosePhrase) {
     .replace(/(\d(?:[.,]\d+)?)\s*(MG|G|ML|MCG|UI|U)\b/gi, function (_m, n, u) {
       return String(n).replace(',', '.') + String(u).toUpperCase();
     })
-    .replace(/\s+/g, '');
+    // Tighten only around slashes: "1 TABLETA" must keep its space.
+    .replace(/\s*\/\s*/g, '/');
 }
 
 /**

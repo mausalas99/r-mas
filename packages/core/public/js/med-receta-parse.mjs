@@ -88,7 +88,8 @@ function splitIndicacionesCols(line) {
 }
 
 function normalizeIndicacionesPasteText(text) {
-  var raw = String(text || '');
+  // «µG» upper-cases to Greek «ΜG», which reads as «MG» (1000× dose error): spell micro as MC.
+  var raw = String(text || '').replace(/[µμ]/g, 'MC');
   if (/\t/.test(raw)) return raw;
   return raw
     .split(/\r?\n/)
