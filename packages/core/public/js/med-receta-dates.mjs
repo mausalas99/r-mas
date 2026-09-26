@@ -159,3 +159,49 @@ export function setDiaTratamientoInDosis(dosisRaw, dia) {
     return pre + String(n) + post;
   });
 }
+
+function abxToken(item) {
+  var t = String((item && item.nombreRaw) || '').trim().split(/\s+/)[0].toUpperCase();
+  return t.length >= 4 ? t : '';
+}
+
+/**
+ * Nueva receta pegada: si el ATB ya se seguía en la receta anterior, gana el conteo
+ * interno (DIA guardado avanzado a la nueva fecha). Devuelve los ATB con DIA > 1 sin
+ * registro previo (reinicio o conteo de toda la estancia) para que el usuario confirme.
+ * Muta items.
+ * @param {{ items?: any[], fechaActualizacion?: string } | null | undefined} prevBlock
+ * @param {any[]} items
+ * @param {string} fecha dd/mm/yyyy de la nueva receta
+ */
+export function reconcileAbxDias(prevBlock, items, fecha) {
+  var prevItems = prevBlock && Array.isArray(prevBlock.items) ? prevBlock.items : [];
+  var ref = parseFechaDMYToLocalDate(fecha) || undefined;
+  var untracked = [];
+  (items || []).forEach(function (it) {
+    if (!it || it.diaTratamiento == null) return;
+    var tok = abxToken(it);
+    var prev = tok
+      ? prevItems.find(function (p) {
+          return p && !p.suspendido && p.diaTratamiento != null && abxToken(p) === tok;
+        })
+      : null;
+    if (prev) {
+      setItemDiaTratamiento(it, effectiveDiaTratamiento(prev.diaTratamiento, prevBlock.fechaActualizacion, ref));
+    } else if (it.diaTratamiento > 1) {
+      untracked.push(it);
+    }
+  });
+  return untracked;
+}
+
+/** Guarda DIA como base relativa a fechaActualizacion para que hoy muestre diaHoy. */
+export function setItemDiaForDate(item, diaHoy, fechaActualizacion, refDate) {
+  var fecha = trimStr(fechaActualizacion);
+  setItemDiaTratamiento(item, diaHoy - (fecha ? calendarDaysSinceFechaDMY(fecha, refDate) : 0));
+}
+
+function setItemDiaTratamiento(item, dia) {
+  item.diaTratamiento = dia;
+  item.dosisRaw = setDiaTratamientoInDosis(item.dosisRaw, dia);
+}

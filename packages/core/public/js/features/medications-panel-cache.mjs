@@ -48,6 +48,7 @@ export function buildMedPanelCacheKey(activeId) {
     if (it.suspendido) suspendIds.push(id);
     if (selMap[id]) selIds.push(id);
     if (it.soapCatOverride) overrideSig.push(id + ":" + it.soapCatOverride);
+    if (it.diaTratamiento != null) overrideSig.push(id + "#" + it.diaTratamiento);
   });
   suspendIds.sort();
   selIds.sort();

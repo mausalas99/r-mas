@@ -294,7 +294,12 @@ function buildMedRecetaRowHtml(activeId, it, fechaActualizacion, allItems) {
     it.diaTratamiento != null ? effectiveDiaTratamiento(it.diaTratamiento, fechaActualizacion) : null;
   var diaCell =
     diaDisplay != null
-      ? '<span class="med-receta-dia">Día ' + esc(String(diaDisplay)) + "</span>"
+      ? '<button type="button" class="med-receta-dia" title="Cambiar día de antibiótico"' +
+        " data-onclick=\"editMedRecetaAbxDia\" data-onclick-args='" +
+        escAttr(JSON.stringify([sid])) +
+        "'>Día " +
+        esc(String(diaDisplay)) +
+        "</button>"
       : "";
   return (
     '<div class="med-receta-row' +
