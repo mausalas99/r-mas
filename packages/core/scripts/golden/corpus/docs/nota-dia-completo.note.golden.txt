@@ -1,0 +1,48 @@
+NOMBRE: DEMO GOLDEN NOTA
+REGISTRO: 7000990-1	EDAD: 64	SEXO: F
+ÁREA:  HOSPITALIZACION
+SERVICIO: MEDICINA INTERNA
+CUARTO: 512	CAMA: 02
+
+REGISTRO: 	EDAD:	SEXO:
+ÁREA:
+SERVICIO:
+CUARTO:	CAMA:
+HOSPITAL UNIVERSITARIO
+“Dr. José Eleuterio González”
+Francisco I. Madero pte. y Av. Gonzalitos s/n Col. Mitras Centro, C.P. 64460,
+Monterrey, N.L. Tel: (81) 83-46-78-00
+
+Favor de escribir con letra legible, sin abreviaciones, sin faltar fecha, hora, nombre completo y firma de quien realiza la nota NOM-168-SSA1-1998. (6.2, 7.2, 8.3).
+NOTA DE EVOLUCIÓN
+PACIENTE FEMENINA DEMO DE 64 AÑOS CON DM2 E HAS, HOSPITALIZADA POR NEUMONIA ADQUIRIDA EN LA COMUNIDAD. EVOLUCIONA AFEBRIL.
+Fecha: 2026-09-21	   Hora: 08:30	 Resume n del interrogatorio, exploración física y estado mental:
+Evolución y actualización del cuadro clínico (tabaquismo, alcoholismo y adicciones):
+N: ALERTA, ORIENTADA || SIN FOCALIZACION
+V: FR 18 RPM, SATO2 95% AL AIRE AMBIENTE
+HD: TA 128/76 MMHG, FC 80 LPM
+HI: AFEBRIL || CEFTRIAXONA 1 G IV CADA 24 HORAS (DIA 3)
+NM: DIETA DIABETICA || GLUCOMETRIAS 142, 160, 131 MG/DL
+
+21.09.26
+HB 12.1 HTO 36.4 LEU 9.2 PLT 231
+GLU 138 CR 0.9 BUN 14
+NA 138 K 4.1 CL 102
+
+Resultados de Estudios Auxiliares:          Diagnóstico(s):	Signos Vitales:
+NEUMONIA ADQUIRIDA EN LA COMUNIDAD
+DIABETES MELLITUS TIPO 2 | HIPERTENSION ARTERIAL SISTEMICA
+TA 128/76  FR 18
+FC 80   T.  36.6°C
+Peso (kg.)  71
+
+Tratamiento e indicaciones médicas (indicar en caso de medicamentos: dosis, vía y periodicidad):
+1. CEFTRIAXONA 1 G IV CADA 24 H                    6. ___________________________________
+2. INSULINA GLARGINA 14 UI SC CADA 24 H    7.   _______________________________________
+3. LOSARTAN 50 MG VO CADA 12 H    8.   _______________________________________
+4.____________________________________    9.   _______________________________________
+5.____________________________________    10._______________________________________
+Médico Tratante (Nombre completo, firma): DRA. DEMO RESIDENTE
+Profesor Responsable: DR. DEMO PROFESOR _____
+
+00-005-R-11/05

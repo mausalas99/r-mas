@@ -1,0 +1,17 @@
+Expediente:	9000017-4	Solicitud:	9000000024
+Nombre:	SIMULADO GENERICO CASOAM	Fecha Registro:	May 7 2026 6:43AM
+Sexo:	MASCULINO	Ubicación:	SERVICIO CLÍNICO 1
+Edad:	58	Medico:	FICTICIO SINTETICO EJEMPLO A
+
+
+GASOMETRIAS
+GASOMETRIA VENOSA PARCIAL
+Estudio		Resultado	Unidades	Valor de Referencia
+PH	*	7.39		7.32 - 7.43
+pCO2	B	35	mmHg	40 - 45
+pO2	A	60	mmHg	N/A
+Lactato	B	0.7	mmol/L	0.9 - 1.9
+HCO3	B	21.2	mmol/L	24.0 - 30.0
+EX. BASE	B	-3.4	mmol/L	-2.0 - 2.0
+SAT 02	A	90	%	0 - 0
+OBSERVACIONES	*	Ca++ IONIZADO: 0.92 mmol/L	&

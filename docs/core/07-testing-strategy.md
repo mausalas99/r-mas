@@ -70,6 +70,56 @@ npm test                                        # CI / release: todos (~120 arch
 mismo ABI de SQLCipher que la app). No uses `node --test` directo para suites
 de DB/nativos.
 
+## Otros métodos
+
+Tres métodos complementan a E2E y unit tests. Los tres corren con `npm test`
+(los dos primeros) o `npm run e2e` (el tercero); no hay nada extra que invocar.
+
+### Property-based (parsers SOME)
+
+`public/js/labs-procesar.property.test.mjs` usa [fast-check](https://fast-check.dev)
+para generar miles de reportes SOME con las formas reales de fila (subconjunto
+de analitos, valores y banderas al azar, espacios/CRLF) y comprobar reglas que
+siempre deben cumplirse: cada valor pegado sale bajo su propia etiqueta sin
+cambios, nunca aparece un analito que no se pegó, CRLF y espacios finales no
+cambian el resultado, el orden de los bloques no importa, y un reporte
+mutilado nunca rompe el parser. Con semilla fija para que CI sea reproducible;
+para buscar más: `FC_RUNS=5000 FC_SEED=7 npm run test:one -- public/js/labs-procesar.property.test.mjs`.
+Si falla, imprime el reporte mínimo que lo reproduce: pégalo en la app.
+
+Al tocar un parser, agrega aquí una propiedad nueva (una regla general) antes
+que otro ejemplo suelto.
+
+### Golden files (corpus)
+
+`scripts/golden/golden-corpus.test.mjs` corre los parsers y generadores reales
+sobre `scripts/golden/corpus/` y compara con la salida esperada guardada al lado:
+
+| Entrada | Proceso | Esperado |
+|---------|---------|----------|
+| `labs/<n>.txt` (pegado SOME) | `procesarLabs` | `labs/<n>.golden.json` |
+| `receta/<n>.tsv` (indicaciones SOME) | `parseIndicacionesPaste` | `receta/<n>.golden.json` |
+| `docs/<n>.note.json` | Nota de evolución .docx | `docs/<n>.note.golden.txt` (texto visible) |
+| `docs/<n>.indicaciones.json` | Indicaciones .docx | `docs/<n>.indicaciones.golden.txt` |
+
+Un cambio en valores o en el texto del documento aparece como diff legible en
+el PR. Si el cambio es intencional: `npm run test:golden:update` y revisa el
+diff antes de commitear. Para agregar un caso de regresión: deja un archivo de
+entrada nuevo (nombres DEMO, expedientes inventados) y corre el mismo comando.
+
+### Accesibilidad (ratchet)
+
+Cada captura de pantalla de un escenario E2E corre también axe-core (WCAG 2.1
+A/AA) sobre esa pantalla; solo cuentan problemas *serious/critical*. Los ya
+conocidos viven en `scripts/e2e/a11y-baseline.json`; el check de accesibilidad
+del escenario falla si aparece una regla nueva en una pantalla o más elementos
+fallan una regla. Al arreglar problemas, vuelve a grabar para bajar el techo:
+
+```bash
+A11Y_UPDATE=1 npm run e2e -- <escenario>   # regraba el baseline de ese escenario
+E2E_A11Y=0 npm run e2e                    # sin escaneo (depurar otra cosa)
+```
+
 ## CI
 
 Orden de gates en `.github/workflows/ci.yml`: `build:ui` → `npm run lint` →

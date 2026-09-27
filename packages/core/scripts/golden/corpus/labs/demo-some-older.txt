@@ -1,0 +1,37 @@
+Expediente:	9000095-7	Solicitud:	2603050188
+Nombre:	DEMO PÉREZ JUAN	Fecha Registro:	Mar 05 2026 7:18AM
+Sexo:	MASCULINO	Ubicación:	SERVICIO DEMO
+Edad:	67	Medico:	SERVICIO DEMO
+
+HEMATOLOGIA
+BIOMETRIA HEMATICA COMPLETA
+Estudio		Resultado	Unidades	Valor de Referencia
+RBC		4.55	M/uL	4.04 - 6.13
+HGB		*	10.20	g/dL	12.20 - 18.10
+HCT		*	35.8	%	37.7 - 53.7
+MCV		*	81	fL	80 - 97
+WBC		*	5.40	K/uL	4.00 - 11.00
+PLT		*	198	K/uL	142.00 - 424.00
+
+QUIMICA CLINICA
+GLUCOSA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+GLUCOSA EN SANGRE		*	108	mg/dL	60 - 100
+NITROGENO DE LA UREA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+NITROGENO DE LA UREA EN SANGRE		A	28	mg/dL	7 - 20
+CREATININA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+CREATININA EN SANGRE		A	1.55	mg/dL	0.6 - 1.4
+COLESTEROL
+Estudio		Resultado	Unidades	Valor de Referencia
+COLESTEROL		B	155	mg/dL	130 - 200
+TRIGLICERIDOS
+Estudio		Resultado	Unidades	Valor de Referencia
+TRIGLICERIDOS		*	132	mg/dL	35 - 150
+SODIO
+Estudio		Resultado	Unidades	Valor de Referencia
+SODIO		B	134	mmol/L	135.0 - 145.0
+POTASIO
+Estudio		Resultado	Unidades	Valor de Referencia
+POTASIO		*	3.5	mmol/L	3.6 - 5.0

@@ -8,3 +8,5 @@ lib/renderer-protocol.test.mjs
 public/js/features/cloud-sync/pull-apply.test.mjs
 public/js/med-receta-core.test.mjs
 scripts/lib/electron-pack-files.test.js
+# Golden corpus: reads input/expected data files under scripts/golden/corpus/, never source.
+scripts/golden/golden-corpus.test.mjs

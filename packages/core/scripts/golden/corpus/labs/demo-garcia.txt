@@ -1,0 +1,19 @@
+Expediente:	9000094-3	Solicitud:	2605110312
+Nombre:	DEMO GARCÍA ANA	Fecha Registro:	Apr 11 2026 11:05AM
+Sexo:	FEMENINO	Ubicación:	SERVICIO DEMO
+Edad:	54	Medico:	SERVICIO DEMO
+
+HEMATOLOGIA
+BIOMETRIA HEMATICA COMPLETA
+Estudio		Resultado	Unidades	Valor de Referencia
+HGB		*	10.40	g/dL	12.20 - 18.10
+HCT		*	33.1	%	37.7 - 53.7
+WBC		*	8.20	K/uL	4.00 - 11.00
+PLT		*	210	K/uL	142.00 - 424.00
+QUIMICA SANGUINEA
+GLUCOSA
+Estudio		Resultado	Unidades	Valor de Referencia
+GLUCOSA		*	142	mg/dL	70 - 110
+CREATININA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+CREATININA EN SANGRE		A	0.92	mg/dL	0.6 - 1.4

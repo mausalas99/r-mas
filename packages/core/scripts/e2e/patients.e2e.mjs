@@ -163,7 +163,7 @@ await r.finish('Patient census: search, walk, pin/archive, delete one/many, undo
   for (const p of [BETA, GAMMA]) await card(page, p).locator('.p-name').click();
   const n2 = await page.locator('#patient-bulk-bar-count').innerText();
   check('clicking two cards selects them: "2 seleccionados"', /2 seleccionados/.test(n2), n2);
-  check('selected cards are marked', (await page.locator('.patient-card--bulk-selected').count()) === 2);
+  check('selected cards are marked', await until(async () => (await page.locator('.patient-card--bulk-selected').count()) === 2, 3000));
   await page.locator('.btn-patient-bulk-cancel').click();
   await page.waitForTimeout(300);
   const afterCancel = await allRegs(page);

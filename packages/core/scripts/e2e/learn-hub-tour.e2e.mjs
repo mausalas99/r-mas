@@ -72,6 +72,7 @@ async function runGuardiaModule(page, chapter) {
   await openLearnHubUi(page);
   await page.locator(`[data-learn-chapter="${chapter.id}"][data-learn-branch="guardia-v7"]`).first().click();
   await page.locator('#tour-dock').waitFor({ state: 'visible', timeout: 6000 });
+  if (chapter.id === 'ch-guardia-modo') await r.shot(page, 'tour-dock');
   const spotlightSeen = [];
   const nextBtn = page.locator('#tour-btn-next');
   for (let i = 0; i < chapter.steps.length; i++) {
@@ -128,6 +129,7 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
 
   // ── onboarding-curriculum.guardia-v7: module list is structurally correct ──
   await openLearnHubUi(page);
+  await r.shot(page, 'learn-hub');
   const rows = page.locator('.learn-hub-track [data-learn-branch="guardia-v7"]');
   const chapterIds = await rows.evaluateAll((els) => els.map((e) => e.getAttribute('data-learn-chapter')));
   check('exactly 4 guardia-v7 modules, no Modo Entrega', chapterIds.length === 4 && !chapterIds.includes('ch-guardia-entrega'), chapterIds);
@@ -148,7 +150,8 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
     }
     check(`${chapter.id}: every step (${chapter.steps.length}) highlighted a real target`, seen.every(Boolean), { chapter: chapter.id, seen, steps: chapter.steps });
     const toast = page.locator('.toast', { hasText: 'Módulo completado' });
-    check(`${chapter.id}: completion toast shown once`, await toast.first().isVisible().catch(() => false));
+    check(`${chapter.id}: completion toast shown once`,
+      await toast.first().waitFor({ state: 'visible', timeout: 4000 }).then(() => true, () => false));
     if (chapter === GUARDIA_CHAPTERS[GUARDIA_CHAPTERS.length - 1]) {
       check(
         'guardia-v7-progress: track-complete toast shown',

@@ -1,0 +1,57 @@
+Expediente:	9000095-7	Solicitud:	2608180501
+Nombre:	DEMO PÉREZ JUAN	Fecha Registro:	Aug 18 2026 5:50AM
+Sexo:	MASCULINO	Ubicación:	SERVICIO DEMO
+Edad:	67	Medico:	SERVICIO DEMO
+
+HEMATOLOGIA
+BIOMETRIA HEMATICA COMPLETA
+Estudio		Resultado	Unidades	Valor de Referencia
+RBC		A	3.10	M/uL	4.04 - 6.13
+HGB		A	7.90	g/dL	12.20 - 18.10
+HCT		A	24.6	%	37.7 - 53.7
+MCV		A	72	fL	80 - 97
+WBC		A	18.90	K/uL	4.00 - 11.00
+NEU		A	15.40	K/uL	2.00 - 6.90
+LYM		A	0.42	K/uL	0.60 - 3.40
+PLT		A	68	K/uL	142.00 - 424.00
+
+QUIMICA CLINICA
+GLUCOSA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+GLUCOSA EN SANGRE		A	312	mg/dL	60 - 100
+NITROGENO DE LA UREA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+NITROGENO DE LA UREA EN SANGRE		A	58	mg/dL	7 - 20
+CREATININA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+CREATININA EN SANGRE		A	3.20	mg/dL	0.6 - 1.4
+ACIDO URICO EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+ACIDO URICO EN SANGRE		A	9.8	mg/dL	4.8 - 8.7
+AST(ASPARTATO AMINOTRANSFERASA)
+Estudio		Resultado	Unidades	Valor de Referencia
+AST(ASPARTATO AMINOTRANSFERASA)		A	96	UI/L	10 - 42
+ALT ALANIN AMINO TRANSFERASA
+Estudio		Resultado	Unidades	Valor de Referencia
+ALT ALANIN AMINO TRANSFERASA		A	88	UI/L	10 - 42
+BILIRRUBINA
+Estudio		Resultado	Unidades	Valor de Referencia
+BILIRRUBINA TOTAL		A	3.1	mg/dL	0.2 - 1.0
+LDH DESHIDROGENASA LACTICA
+Estudio		Resultado	Unidades	Valor de Referencia
+LDH DESHIDROGENASA LACTICA		A	410	UI/L	91 - 180
+CLORO
+Estudio		Resultado	Unidades	Valor de Referencia
+CLORO		A	92	mmol/L	101.0 - 110.0
+SODIO
+Estudio		Resultado	Unidades	Valor de Referencia
+SODIO		A	122	mmol/L	135.0 - 145.0
+POTASIO
+Estudio		Resultado	Unidades	Valor de Referencia
+POTASIO		A	6.4	mmol/L	3.6 - 5.0
+CALCIO
+Estudio		Resultado	Unidades	Valor de Referencia
+CALCIO EN SUERO		A	6.9	mg/dL	8.4 - 10.2
+FOSFORO EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+FOSFORO		A	6.8	mg/dL	2.5 - 4.6

@@ -1,0 +1,15 @@
+Expediente:	9000095-7	Solicitud:	2608190644
+Nombre:	DEMO PÉREZ JUAN	Fecha Registro:	Aug 19 2026 4:15PM
+Sexo:	MASCULINO	Ubicación:	SERVICIO DEMO
+Edad:	67	Medico:	SERVICIO DEMO
+
+QUIMICA CLINICA
+GLUCOSA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+GLUCOSA EN SANGRE		A	118	mg/dL	60 - 100
+POTASIO
+Estudio		Resultado	Unidades	Valor de Referencia
+POTASIO		*	3.8	mmol/L	3.6 - 5.0
+CREATININA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+CREATININA EN SANGRE		A	1.9	mg/dL	0.6 - 1.4

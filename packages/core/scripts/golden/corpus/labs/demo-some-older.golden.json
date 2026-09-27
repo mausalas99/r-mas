@@ -1,0 +1,79 @@
+{
+  "patient": {
+    "name": "DEMO PÉREZ JUAN",
+    "expediente": "9000095-7",
+    "sexo": "M",
+    "edad": "67 años",
+    "fecha": "05/03/2026",
+    "hora": "07:18",
+    "ubicacion": "SERVICIO DEMO"
+  },
+  "resLabs": [
+    "BH\tHb 10.2*  Hto 35.8*  VCM 81  Leu 5.4  Plt 198",
+    "QS\tGlu 108* Cr 1.55* BUN 28* BUN/CR 18.1 COL 155 TGL 132",
+    "ESC\tNa 134* K 3.5*"
+  ],
+  "bhExtras": {
+    "RBC": "4.55"
+  },
+  "refsBySection": {
+    "BH": {
+      "Hb": [
+        12.2,
+        18.1
+      ],
+      "Hto": [
+        37.7,
+        53.7
+      ],
+      "VCM": [
+        80,
+        97
+      ],
+      "Leu": [
+        4,
+        11
+      ],
+      "Plt": [
+        142,
+        424
+      ],
+      "RBC": [
+        4.04,
+        6.13
+      ]
+    },
+    "QS": {
+      "Glu": [
+        60,
+        100
+      ],
+      "Cr": [
+        0.6,
+        1.4
+      ],
+      "BUN": [
+        7,
+        20
+      ],
+      "COL": [
+        130,
+        200
+      ],
+      "TGL": [
+        35,
+        150
+      ]
+    },
+    "ESC": {
+      "Na": [
+        135,
+        145
+      ],
+      "K": [
+        3.6,
+        5
+      ]
+    }
+  }
+}

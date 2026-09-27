@@ -131,6 +131,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-09-27** `test-methods`: property-based SOME parser tests (fast-check), golden corpus for parsers + .docx text (`scripts/golden/`), axe accessibility ratchet on every E2E screenshot (`scripts/e2e/harness.mjs`, baseline `scripts/e2e/a11y-baseline.json`). See `docs/core/07-testing-strategy.md`.
 - **2026-09-27** `e2e-first`: unit suite pruned 663 → 123 files (keep: clinical parsers/calcs, data integrity, crypto/security, Nube Worker); `npm run e2e` runner; new `patients` and `paste-smart` scenarios; learn-hub tour runs on a local Nube team.
 - **2026-09-02** `codebase-reduction`: gitignore build mirrors + index.html; dead-code sweep; file-length ratchet replaced by total-LOC + module-count; glob test discovery; tracked code map; LAN ward server + 7.9 cutover wizard removed; Interno/Equipos origin-only (no :3738 probe).
 - **2026-08-14** `agent-graph-memory`: cached extraction vs subgraph reasoning for Claude Code; validate-before-write; `scripts/graph-memory/`, `docs/core/19-agent-graph-memory.md`.

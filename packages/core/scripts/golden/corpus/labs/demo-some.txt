@@ -1,0 +1,98 @@
+Expediente:	9000095-7	Solicitud:	2605110244
+Nombre:	DEMO PÉREZ JUAN	Fecha Registro:	Apr 11 2026 9:42AM
+Sexo:	MASCULINO	Ubicación:	SERVICIO DEMO
+Edad:	67	Medico:	SERVICIO DEMO
+
+HEMATOLOGIA
+BIOMETRIA HEMATICA COMPLETA
+Estudio		Resultado	Unidades	Valor de Referencia
+RBC		4.71	M/uL	4.04 - 6.13
+HGB		*	11.85	g/dL	12.20 - 18.10
+HCT		*	38.4	%	37.7 - 53.7
+MCV		*	82	fL	80 - 97
+MCH		B	26.1	pg	27.0 - 31.2
+MCHC		*	32.0	g/dL	29.9 - 34.2
+RDW		*	13.2	%	11.6 - 14.8
+WBC		*	6.12	K/uL	4.00 - 11.00
+NEU		*	3.88	K/uL	2.00 - 6.90
+NEU%		*	63.4	%	37.0 - 80.0
+LYM		*	1.05	K/uL	0.60 - 3.40
+LYM%		*	17.2	%	10.0 - 50.0
+MONO		*	0.71	K/uL	0.000 - 0.900
+MONO%		*	11.6	%	0.00 - 12.00
+EOS		*	0.11	K/uL	0.000 - 0.700
+EOS%		*	1.8	%	0.00 - 7.00
+BASO		*	0.12	K/uL	0.000 - 0.200
+BASO%		*	2.0	%	0.00 - 2.50
+PLT		*	248	K/uL	142.00 - 424.00
+MPV		B	7.2	fL	7.4 - 10.4
+
+QUIMICA CLINICA
+COMENTARIO DE MUESTRA
+Estudio		Resultado	Unidades	Valor de Referencia
+COMENTARIO DE LA MUESTRA		*	
+GLUCOSA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+GLUCOSA EN SANGRE		*	94	mg/dL	60 - 100
+NITROGENO DE LA UREA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+NITROGENO DE LA UREA EN SANGRE		A	22	mg/dL	7 - 20
+CREATININA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+CREATININA EN SANGRE		A	1.35	mg/dL	0.6 - 1.4
+ACIDO URICO EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+ACIDO URICO EN SANGRE		A	7.4	mg/dL	4.8 - 8.7
+PROTEINAS TOTALES
+Estudio		Resultado	Unidades	Valor de Referencia
+PROTEINAS TOTALES		A	7.6	g/dL	6.1 - 7.9
+ALBUMINA
+Estudio		Resultado	Unidades	Valor de Referencia
+ALBUMINA		*	4.1	g/dL	3.2 - 5.5
+GLOBULINA SERICA
+Estudio		Resultado	Unidades	Valor de Referencia
+GLOBULINA SERICA		*	3.5	g/dL	
+RELACION A/G
+Estudio		Resultado	Unidades	Valor de Referencia
+RELACION A/G		*	1.17	
+AST(ASPARTATO AMINOTRANSFERASA)
+Estudio		Resultado	Unidades	Valor de Referencia
+AST(ASPARTATO AMINOTRANSFERASA)		*	19	UI/L	10 - 42
+ALT ALANIN AMINO TRANSFERASA
+Estudio		Resultado	Unidades	Valor de Referencia
+ALT ALANIN AMINO TRANSFERASA		*	14	UI/L	10 - 42
+ALP FOSFATASA ALCALINA
+Estudio		Resultado	Unidades	Valor de Referencia
+ALP FOSFATASA ALCALINA		A	118	UI/L	38 - 126
+BILIRRUBINA
+Estudio		Resultado	Unidades	Valor de Referencia
+BILIRRUBINA TOTAL		A	1.2	mg/dL	0.2 - 1.0
+BILIRRUBINA DIRECTA		A	0.5	mg/dL	0.0 - 0.2
+BILIRRUBINA INDIRECTA		A	0.7	mg/dL	0.2 - 0.8
+LDH DESHIDROGENASA LACTICA
+Estudio		Resultado	Unidades	Valor de Referencia
+LDH DESHIDROGENASA LACTICA		*	142	UI/L	91 - 180
+AMILASA SERICA
+Estudio		Resultado	Unidades	Valor de Referencia
+AMILASA		*	68	U/L	28 - 100
+COLESTEROL
+Estudio		Resultado	Unidades	Valor de Referencia
+COLESTEROL		B	142	mg/dL	130 - 200
+TRIGLICERIDOS
+Estudio		Resultado	Unidades	Valor de Referencia
+TRIGLICERIDOS		*	118	mg/dL	35 - 150
+CLORO
+Estudio		Resultado	Unidades	Valor de Referencia
+CLORO		*	102	mmol/L	101.0 - 110.0
+SODIO
+Estudio		Resultado	Unidades	Valor de Referencia
+SODIO		*	138	mmol/L	135.0 - 145.0
+POTASIO
+Estudio		Resultado	Unidades	Valor de Referencia
+POTASIO		*	3.9	mmol/L	3.6 - 5.0
+CALCIO
+Estudio		Resultado	Unidades	Valor de Referencia
+CALCIO EN SUERO		*	8.8	mg/dL	8.4 - 10.2
+FOSFORO EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+FOSFORO		*	3.8	mg/dL	2.5 - 4.6
