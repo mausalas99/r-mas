@@ -88,6 +88,9 @@ export function createConexionRenderers(section, normalizedSala, deps, ctx) {
 
   /** @param {string} roomHtml @param {object | null} [room] joined room → status hero */
   function renderConnectedBody(roomHtml, room = null) {
+    // Stay in Administración when a room switch re-renders from inside it
+    // («Abrir expediente» in Pacientes); every other view returns home.
+    const stayInAdmin = section.dataset.cloudView === 'admin';
     const hasCloudSession = !!deps.getCloudSyncToken();
     const chip = resolveCloudConexionChipStatus();
     renderShell(
@@ -104,7 +107,7 @@ export function createConexionRenderers(section, normalizedSala, deps, ctx) {
       chip.detail,
       room ? nubeHeroBlockHtml(deps, displaySala, room) : ''
     );
-    applyConexionView(section, 'status', { onAdmin: ctx.ensureAdminOpen });
+    applyConexionView(section, stayInAdmin ? 'admin' : 'status', { onAdmin: ctx.ensureAdminOpen });
   }
 
   /**

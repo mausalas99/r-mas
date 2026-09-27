@@ -26,7 +26,6 @@ import { loadAdminEquipos } from './panel-admin-equipos-data.mjs';
 import { purgeClinicalUserMatchingCloudHandle } from './panel-admin-clinical-purge.mjs';
 import { openEquiposActivityHistoryFromButton } from './panel-admin-equipos-history-modal.mjs';
 import { scopeCloudStateToPatient } from './scope-cloud-state-to-patient.mjs';
-import { foldOpsToLatestByPath } from './room-dek-migrate.mjs';
 
 /**
  * @param {HTMLElement} root
@@ -215,10 +214,26 @@ async function handleSwitchNetworkRoom(deps, code, patientId) {
  */
 async function pullNetworkPatientFields(api, roomId, patientId) {
   const { state, ops, revision } = await api.pull(roomId, 0);
-  const fields = state
-    ? (state.entries || []).find((e) => String(e?.id) === patientId)?.fields
-    : foldOpsToLatestByPath(ops)[`entries/${patientId}/fields`]?.value;
-  return { revision: Number(revision) || 0, fields: fields || null };
+  if (state) {
+    const entry = (state.entries || []).find((e) => String(e?.id) === patientId);
+    return { revision: Number(revision) || 0, fields: entry?.fields || null };
+  }
+  // A small room answers `since=0` with its op log, not a snapshot.
+  return { revision: Number(revision) || 0, fields: fieldsFromOps(ops, patientId) };
+}
+
+/**
+ * Latest `fields` for one patient from a pulled op log (oldest first).
+ * @param {unknown} ops @param {string} patientId
+ */
+export function fieldsFromOps(ops, patientId) {
+  let fields = null;
+  for (const op of Array.isArray(ops) ? ops : []) {
+    const path = String(op?.path || '');
+    if (path === 'entries/' + patientId + '/fields' && op.value && typeof op.value === 'object') fields = op.value;
+    else if (path === 'entries/' + patientId && op.value?.fields) fields = op.value.fields;
+  }
+  return fields;
 }
 
 /**

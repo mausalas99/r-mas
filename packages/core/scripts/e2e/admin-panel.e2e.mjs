@@ -111,6 +111,33 @@ await r.finish('Administración: side menu and its five sections (board «Nube +
   const shown = await red.locator('tbody tr:not([hidden])').count();
   check('Pacientes: search narrows the list to matching patients', shown === 1, shown);
   await red.locator('[data-network-filter="q"]').fill('');
+  await red.locator('[data-admin-action="switch-network-room"]').first().click();
+  await until(() => A.page.locator('.toast', { hasText: /Cambiado a la sala/i }).isVisible(), 10000);
+  await A.page.waitForTimeout(800);
+  const stillAdmin = await A.page.locator(section('red')).isVisible().catch(() => false);
+  check('Pacientes: «Abrir expediente» keeps Administración open on Pacientes', stillAdmin);
+  await closeToasts(A.page);
+  const row2 = red.locator('tr', { has: A.page.locator(`input[data-registro="${PATIENTS[1].exp}"]`) });
+  await row2.locator('.cloud-sync-admin-equipos-edit summary').click();
+  await row2.locator('[data-admin-action="archive-network-patient"]').click();
+  const result = A.page.locator('.toast', { hasText: /archivado|No se pudo|error/i }).last();
+  await until(() => result.isVisible(), 10000);
+  const toastText = await result.innerText().catch(() => '');
+  await r.shot(A.page, 'pacientes-archivar');
+  check('Pacientes: ··· › Archivar archives the patient', /archivado/i.test(toastText), toastText);
+  await closeToasts(A.page);
+
+  // ── Usuarios: chips with counts filter the list ─────────────────────
+  await A.page.locator(`${ADMIN} [role="tab"][data-admin-tab="equipos"]`).click();
+  const users = A.page.locator(section('equipos'));
+  await until(async () => (await users.locator('.cloud-sync-admin-equipos-row').count()) > 0, 10000);
+  const chipCount = (id) => users.locator(`[data-admin-equipos-chip-count="${id}"]`).innerText();
+  check('Usuarios: «Todos» counts every row', Number(await chipCount('all')) === (await users.locator('.cloud-sync-admin-equipos-row').count()), await chipCount('all'));
+  await users.locator('[data-admin-equipos-chip="unassigned"]').click();
+  const unassignedShown = await users.locator('.cloud-sync-admin-equipos-row:not([hidden])').count();
+  check('Usuarios: «Sin equipo» shows exactly its count', unassignedShown === Number(await chipCount('unassigned')), { unassignedShown, count: await chipCount('unassigned') });
+  await r.shot(A.page, 'usuarios-sin-equipo');
+  await users.locator('[data-admin-equipos-chip="all"]').click();
 
   // ── Registro: loads by itself, names people ──────────────────────────
   await A.page.locator(`${ADMIN} [role="tab"][data-admin-tab="mutaciones"]`).click();

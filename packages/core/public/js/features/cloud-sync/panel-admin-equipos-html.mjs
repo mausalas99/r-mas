@@ -1,5 +1,5 @@
 import { esc } from '../../dom-escape.mjs';
-import { adminErrorHtml, userActionsHtml } from './panel-admin-html.mjs';
+import { adminErrorHtml, adminHeadHtml, userActionsHtml } from './panel-admin-html.mjs';
 import {
   formatCycleOptionLabel,
   resolveUserPlacement,
@@ -27,28 +27,45 @@ export {
   cycleOptionsForTeam,
 } from './panel-admin-equipos-html-fields.mjs';
 
+/** Board «Admin · Usuarios» chips: id → label (counts fill in after the list loads). */
+export const EQUIPOS_CHIPS = [
+  ['all', 'Todos'],
+  ['unassigned', 'Sin equipo'],
+  ['nosala', 'Sin sala'],
+  ['new', 'Nuevos'],
+  ['idle', 'Sin uso 30 d'],
+];
+
 export function equiposShellHtml() {
+  const chips = EQUIPOS_CHIPS.map(
+    ([id, label], i) =>
+      '<button type="button" class="cloud-sync-admin-chip' +
+      (i === 0 ? ' is-active' : '') +
+      '" data-admin-equipos-chip="' +
+      id +
+      '" aria-pressed="' +
+      (i === 0 ? 'true' : 'false') +
+      '">' +
+      esc(label) +
+      ' <b data-admin-equipos-chip-count="' +
+      id +
+      '"></b></button>'
+  ).join('');
   return (
-    '<div class="cloud-sync-admin-panel-head">' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="refresh-equipos">Actualizar</button></div>' +
-    '<p class="cloud-sync-hint cloud-sync-admin-equipos-hint">Usuarios clínicos + cuenta Nube. Marca → Sala / rango / equipo / ciclo → <strong>Guardar</strong> o <strong>Quitar seleccionados</strong>. En filas con Nube usa <strong>Restablecer clave</strong>; abre <strong>Nube</strong> para rol y sesiones. Los filtros no quitan las marcas.</p>' +
-    '<div class="cloud-sync-admin-toolbar cloud-sync-admin-equipos-toolbar">' +
-    '<input type="search" class="profile-input" data-admin-equipos-search placeholder="Buscar @usuario o nombre" />' +
-    '<label class="cloud-sync-admin-toolbar-label" for="cloud-admin-equipos-sala">Sala</label>' +
+    adminHeadHtml(
+      'Usuarios',
+      '<span data-admin-equipos-summary title="Usuarios = filas de esta lista (perfil clínico + cuenta Nube). Cuentas Nube = @usuarios únicos. Membresías = inscripciones en salas de sync (un usuario en varias salas cuenta varias veces).">Cargando…</span>',
+      '<input type="search" class="profile-input cloud-sync-admin-search" data-admin-equipos-search placeholder="Buscar @usuario o nombre" aria-label="Buscar usuario" />' +
+        '<button type="button" class="cloud-sync-btn" data-admin-action="refresh-equipos">Actualizar</button>'
+    ) +
+    '<div class="cloud-sync-admin-filters">' +
+    '<div class="cloud-sync-admin-chips" role="group" aria-label="Filtrar usuarios">' +
+    chips +
+    '</div>' +
+    '<label class="cloud-sync-admin-filter cloud-sync-admin-filters-end" for="cloud-admin-equipos-sala"><span>Sala</span>' +
     '<select id="cloud-admin-equipos-sala" class="profile-input" data-admin-equipos-sala>' +
-    '<option value="">Todas</option></select>' +
-    '<label class="cloud-sync-admin-toolbar-label" for="cloud-admin-equipos-activity">Uso</label>' +
-    '<select id="cloud-admin-equipos-activity" class="profile-input" data-admin-equipos-activity>' +
-    '<option value="all" selected>Todos</option>' +
-    '<option value="has">Con última actividad</option>' +
-    '<option value="none">Sin última actividad</option></select>' +
-    '<label class="cloud-sync-admin-toolbar-label" for="cloud-admin-equipos-team-status">Equipo</label>' +
-    '<select id="cloud-admin-equipos-team-status" class="profile-input" data-admin-equipos-team-status>' +
-    '<option value="all" selected>Todos</option>' +
-    '<option value="unassigned">Sin equipo</option>' +
-    '<option value="assigned">Con equipo</option></select></div>' +
-    '<p class="cloud-sync-hint cloud-sync-admin-equipos-summary" data-admin-equipos-summary title="Usuarios = filas de esta lista (perfil clínico + cuenta Nube). Cuentas Nube = @usuarios únicos. Membresías = inscripciones en salas de sync (un usuario en varias salas cuenta varias veces).">' +
-    'Cargando resumen…</p>' +
+    '<option value="">Todas</option></select></label></div>' +
+    '<p class="cloud-sync-hint cloud-sync-admin-equipos-hint">Marca usuarios y usa <strong>Guardar seleccionados</strong> o <strong>Quitar seleccionados</strong>; ··· en cada fila cambia sala, rango, equipo y ciclo, y la cuenta Nube (Restablecer clave, rol, sesiones). Los filtros no quitan las marcas.</p>' +
     '<div class="cloud-sync-admin-equipos-bulk">' +
     '<label class="cloud-sync-admin-equipos-select-all-label">' +
     '<input type="checkbox" class="cloud-sync-admin-equipos-check" data-admin-equipos-select-all /> Seleccionar visibles</label>' +
@@ -69,28 +86,33 @@ export function equiposSalaOptionsHtml(salas) {
   return '<option value="">Todas las salas</option>' + opts;
 }
 
-/** @param {object[]} rows @param {object[]} teams */
+/**
+ * Rows grouped «Sin equipo · N» first, then one group per team «Equipo · N»
+ * (rows arrive sorted that way from sortEquiposRowsForAdmin).
+ * @param {object[]} rows @param {object[]} teams
+ */
 export function equiposListHtml(rows, teams) {
   if (!rows.length) {
     return '<p class="cloud-sync-hint">No hay usuarios Nube ni perfiles clínicos locales para asignar.</p>';
   }
-  let sawUnassigned = false;
-  let sawAssigned = false;
-  const cards = rows
-    .map((row) => {
-      const hasTeam = !!resolveUserPlacement(String(row.user_id || ''), teams)?.teamId;
-      let label = '';
-      if (!hasTeam && !sawUnassigned) {
-        sawUnassigned = true;
-        label = '<p class="cloud-sync-admin-equipos-group-label">Sin equipo — primero</p>';
-      } else if (hasTeam && !sawAssigned) {
-        sawAssigned = true;
-        label = '<p class="cloud-sync-admin-equipos-group-label">Ya asignados</p>';
-      }
-      return label + renderEquiposUserRow(row, teams);
-    })
+  const groups = [];
+  for (const row of rows) {
+    const placement = resolveUserPlacement(String(row.user_id || ''), teams);
+    const key = placement?.teamId ? String(placement.teamName || placement.teamId) : 'Sin equipo';
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.rows.push(row);
+    else groups.push({ key, rows: [row] });
+  }
+  const html = groups
+    .map(
+      (g) =>
+        '<p class="cloud-sync-admin-equipos-group-label">' +
+        esc(g.key + ' · ' + g.rows.length) +
+        '</p>' +
+        g.rows.map((row) => renderEquiposUserRow(row, teams)).join('')
+    )
     .join('');
-  return '<div class="cloud-sync-admin-equipos-list">' + cards + '</div>';
+  return '<div class="cloud-sync-admin-equipos-list">' + html + '</div>';
 }
 
 /** @param {object} row */
@@ -284,6 +306,10 @@ function equiposRowArticleOpenHtml(row, userId, userRank, handle, placement, act
     esc(String(row.sala || '')) +
     '" data-has-team="' +
     (placement?.teamId ? '1' : '0') +
+    '" data-new="' +
+    (row.hasLocalProfile ? '0' : '1') +
+    '" data-idle="' +
+    (activity.activityTier === 'stale' || activity.activityTier === 'unknown' ? '1' : '0') +
     '" data-activity="' +
     esc(activity.activityHas) +
     '" data-search="' +
@@ -300,6 +326,19 @@ function equiposRowMetaLineHtml(row, userRank) {
   );
 }
 
+/** «Dra. Ana Ríos» → «AR»; falls back to the @usuario. @param {string} name @param {string} handle */
+function equiposInitials(name, handle) {
+  const words = String(name || '')
+    .replace(/&[a-z#0-9]+;/gi, ' ')
+    .replace(/^(dra?|dr)\.?\s+/i, '')
+    .split(/\s+/)
+    .filter(Boolean);
+  const letters = words.length && name !== 'Sin nombre'
+    ? words[0].charAt(0) + (words.length > 1 ? words[words.length - 1].charAt(0) : '')
+    : String(handle || '').slice(0, 2);
+  return letters.toUpperCase() || '?';
+}
+
 /**
  * Identity line: who this is — checkbox, handle, name, "nuevo" state. Bold weight.
  * @param {string} handle @param {string} name @param {object} row
@@ -309,11 +348,14 @@ function equiposRowIdentityLineHtml(handle, name, row) {
     '<div class="cloud-sync-admin-equipos-row-identity">' +
     '<label class="cloud-sync-admin-equipos-check-label" title="Incluir en Guardar seleccionados">' +
     '<input type="checkbox" class="cloud-sync-admin-equipos-check" data-admin-equipos-select /></label>' +
-    '<span class="cloud-sync-admin-equipos-handle">@' +
-    esc(handle) +
+    '<span class="cloud-sync-avatar" aria-hidden="true">' +
+    esc(equiposInitials(name, handle)) +
     '</span>' +
     '<span class="cloud-sync-admin-equipos-name">' +
     name +
+    '</span>' +
+    '<span class="cloud-sync-admin-equipos-handle">@' +
+    esc(handle) +
     '</span>' +
     equiposRowPendingBadgeHtml(row) +
     '</div>'

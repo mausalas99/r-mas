@@ -382,10 +382,11 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await closeToasts(A2.page);
   const adminRoot = A2.page.locator('.cloud-sync-admin');
   check('A: admin Resumen tab shows account/room stats (panel-admin-data resumen)',
-    await until(() => adminRoot.locator('.cloud-sync-admin-stat-value').first().isVisible(), 10000));
+    await until(() => adminRoot.locator('.cloud-sync-admin-card-value').first().isVisible(), 10000));
 
   await A2.page.locator('[role="tab"][data-admin-tab="salas"]').click();
-  check('A: admin Salas tab lists the Sala 1 room (panel-admin-data salas)', await until(() => adminRoot.getByText('Sala 1').first().isVisible(), 10000));
+  check('A: admin Salas tab lists the Sala 1 room (panel-admin-data salas)',
+    await until(() => adminRoot.locator('[data-admin-sala-card]', { hasText: 'Sala 1' }).first().isVisible(), 10000));
 
   await A2.page.locator('[role="tab"][data-admin-tab="red"]').click();
   await A2.page.locator('[data-admin-action="refresh-red"]').click();
@@ -435,7 +436,8 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await A2.page.locator('[data-admin-equipos-search]').fill(USER_B.username);
   const bRow = equiposList.locator('.cloud-sync-admin-equipos-row', { hasText: '@' + USER_B.username });
   check('A: Equipos search finds @' + USER_B.username + ' (panel-admin-equipos filters)', await until(() => bRow.isVisible(), 8000));
-  await bRow.locator('summary.cloud-sync-admin-equipos-edit-summary').click();
+  // Cuenta Nube actions live in the row's ··· menu.
+  await bRow.locator('.cloud-sync-admin-equipos-edit summary').first().click();
   await bRow.locator('[data-admin-promote-role]').selectOption('admin');
   await bRow.locator('[data-admin-action="promote-user"]').click();
   await A2.page.locator('#cloud-sync-admin-confirm [data-approval-confirm]').click();
@@ -465,7 +467,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await until(() => equiposList.locator('.cloud-sync-admin-equipos-row').first().isVisible(), 10000);
   await A2.page.locator('[data-admin-equipos-search]').fill(USER_B.username);
   const bRow2 = equiposList.locator('.cloud-sync-admin-equipos-row', { hasText: '@' + USER_B.username });
-  await bRow2.locator('summary.cloud-sync-admin-equipos-edit-summary').click();
+  await bRow2.locator('.cloud-sync-admin-equipos-edit summary').first().click();
   await bRow2.locator('[data-admin-action="delete-user"]').click();
   await A2.page.locator('#cloud-sync-admin-confirm [data-approval-confirm]').click();
   const delUserToast = A2.page.locator('.toast', { hasText: /[Nn]ube/ });
@@ -499,6 +501,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
     s.clinicalSala = 'Sala 1';
     localStorage.setItem('rpc-settings', JSON.stringify(s));
   });
+  await dismissLearnHub(D.page);
   await D.page.locator('#btn-open-settings').click();
   const lanModeBtn = D.page.locator('[data-onclick="enableClinicalLanFromSettings"]');
   check('D: local-only Ajustes shows "Activar guardia con R+ Cloud…" (clinical-sync-mode-settings)', await until(() => lanModeBtn.isVisible(), 8000));

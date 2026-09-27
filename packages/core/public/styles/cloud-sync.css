@@ -1438,6 +1438,55 @@
   overflow: auto;
 }
 
+.cloud-sync-admin-equipos-bulk-actions[hidden],
+.cloud-sync-admin-equipos-group-label[hidden] {
+  display: none;
+}
+
+.cloud-sync-admin-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cloud-sync-admin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-pill);
+  background: var(--color-elevated);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: calc(12px * var(--density-font));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cloud-sync-admin-chip b {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cloud-sync-admin-chip:hover {
+  background: var(--state-hover-bg);
+}
+
+.cloud-sync-admin-chip.is-active {
+  border-color: color-mix(in oklab, var(--color-accent) 45%, var(--divider));
+  background: color-mix(in oklab, var(--color-accent) 14%, transparent);
+  color: var(--color-accent);
+}
+
+.cloud-sync-admin-equipos-row-identity .cloud-sync-avatar {
+  width: 32px;
+  height: 32px;
+  font-size: calc(11px * var(--density-font));
+}
+
 /* Administración needs room for the side menu. */
 #connection-dropdown-backdrop .connection-dropdown.connection-dropdown-modal.connection-dropdown-modal--admin {
   width: min(98vw, 1280px);
@@ -1453,6 +1502,18 @@
     flex-direction: row;
     min-height: 0;
     overflow-x: auto;
+  }
+
+  /* Edge cue: fades to the nav's own background. */
+  .cloud-sync-admin-nav::after {
+    content: '';
+    position: sticky;
+    right: 0;
+    flex: 0 0 28px;
+    align-self: stretch;
+    margin-left: -28px;
+    pointer-events: none;
+    background: linear-gradient(to left, color-mix(in oklab, var(--text) 3%, var(--color-elevated)), transparent);
   }
 
   .cloud-sync-admin-nav-spacer {
@@ -2019,12 +2080,14 @@
 }
 
 .cloud-sync-admin-equipos-handle {
-  font-weight: 600;
-  color: var(--text-primary);
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: 0.85em;
+  color: var(--text-muted);
 }
 
 .cloud-sync-admin-equipos-name {
-  color: var(--text-secondary);
+  font-weight: 650;
+  color: var(--text);
 }
 
 .cloud-sync-admin-equipos-meta {
