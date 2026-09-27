@@ -488,7 +488,7 @@ function seedIcConsultBandDemoForTour() {
 }
 
 function seedTourDemosForStep(id) {
-  if (TOUR_STEPS_USE_DEMO_PEREZ[id]) ensureTourPrimaryDemoPatientActive();
+  if (TOUR_STEPS_USE_DEMO_PEREZ[id]) ensureTourPrimaryDemoPatientActive(() => applyTourTargetForStep(id));
   if (id === 'listado_problemas') seedDemoListadoProblemas();
   if (id === 'estado_actual' || id === 'estado_actual_registro' || isEstadoActualPostRegistroTourStep(id)) {
     seedDemoMonitoreoOnActivePatient();

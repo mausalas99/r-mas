@@ -160,10 +160,71 @@ function seedTourDemoPerezClinicalData() {
   return true;
 }
 
-function ensureTourPrimaryDemoPatientActive() {
+var perezModuleSeed = null;
+
+/**
+ * Fundamentos' first chapter admits DEMO PÉREZ from the tour's demo SOME paste.
+ * A later module started on its own (Aprender R+ lets you open any of them)
+ * would otherwise show empty screens, so admit him the same way — stub commit
+ * (adopted as the demo patient while the tour runs) + the demo labs through the
+ * normal bulk pipeline. Resolves true once he exists.
+ */
+function admitTourDemoPerezForModule() {
+  if (perezModuleSeed) return perezModuleSeed;
+  perezModuleSeed = Promise.all([import('../patients-modal-commit.mjs'), import('../../lazy-feature-routes.mjs')])
+    .then(function (mods) {
+      var commit = mods[0];
+      commit.commitStubPatientFromLab({ expediente: DEMO_REGISTRO, name: 'DEMO PÉREZ JUAN', edad: '67', sexo: 'M' });
+      var p = findTourDemoPerezPatient();
+      if (!p) return false;
+      applyTourDemoPatientBundle(p.id, DEMO_REGISTRO);
+      selectPatient(p.id);
+      return mods[1]
+        .ensureLabsLoaded()
+        .then(function () {
+          return Promise.all([import('../../lab-bulk-paste.mjs'), import('../lab-panel-workbench.mjs')]);
+        })
+        .then(function (labMods) {
+          var text = getDemoTourLabPaste(new Date());
+          var blocks = labMods[0]
+            .buildBulkLabPreview(text, { findPatientByRegistro: commit.findPatientByRegistro })
+            .filter(function (b) {
+              return b && b.canProcess && b.patient && b.patient.id === p.id;
+            });
+          var totalOk = blocks.reduce(function (n, b) {
+            return n + (b.okReportCount || 0);
+          }, 0);
+          if (totalOk) labMods[1].finalizeBulkLabPaste(text, blocks, totalOk);
+          return true;
+        });
+    })
+    .catch(function (err) {
+      console.warn('[tour-demo-seed] could not admit DEMO PÉREZ for a standalone module', err);
+      return false;
+    })
+    .finally(function () {
+      perezModuleSeed = null;
+    });
+  return perezModuleSeed;
+}
+
+/**
+ * @param {() => void} [onLateSeed] re-apply the current step once DEMO PÉREZ
+ *   had to be admitted for a module started on its own.
+ */
+function ensureTourPrimaryDemoPatientActive(onLateSeed) {
   if (!tourState.guidedTourActive || tourState.guidedTourBranch === 'interconsulta') return false;
   var p = findTourDemoPerezPatient();
-  if (!p) return false;
+  if (!p) {
+    if (!tourState.guidedTourModuleOnly) return false;
+    var stepId = tourState.tourStepId;
+    void admitTourDemoPerezForModule().then(function (ok) {
+      if (ok && tourState.guidedTourActive && tourState.tourStepId === stepId && typeof onLateSeed === 'function') {
+        onLateSeed();
+      }
+    });
+    return false;
+  }
   var changed = rt.getActiveId() !== p.id;
   if (changed) {
     selectPatient(p.id);

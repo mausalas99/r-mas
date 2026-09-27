@@ -276,9 +276,14 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   await salidaDevice.page.waitForTimeout(800);
   // The module's steps use DEMO PÉREZ, whom only Fundamentos' first chapter
   // admits. Started on its own from the hub (as users can), is he there?
+  await until(async () => (await salidaDevice.page.locator('.patient-card').count()) > 0, 10000);
+  await salidaDevice.page.waitForTimeout(800); // the step re-applies once he is admitted
   const demoPatientCount = await salidaDevice.page.locator('.patient-card').count();
   check('a Fundamentos module started on its own has its demo patient (DEMO PÉREZ)', demoPatientCount > 0, demoPatientCount);
-  const listadoText = await salidaDevice.page.locator('#listado-form, #itab-content-listado').first().innerText().catch(() => '');
+  // The A)/B)/C) blocks sit in textareas, whose values are not part of innerText.
+  const listadoText = await salidaDevice.page.locator('#listado-form, #itab-content-listado').first().evaluate((el) =>
+    [el.innerText, ...[...el.querySelectorAll('textarea, input')].map((f) => f.value)].join('\n'),
+  ).catch(() => '');
   check('tour-demo-listado-problemas: A)/B)/C) blocks in capitals show on the tour Listado step', /A\) CL[ÍI]NICA/.test(listadoText) && /B\) EXPLORACI[ÓO]N/.test(listadoText), listadoText.slice(0, 300));
   check('tour-demo-listado-problemas: at least one inactivo listed', /inactivo/i.test(listadoText) || (await salidaDevice.page.locator('.listado-inactivo, [data-listado-inactivo]').count()) >= 1);
   await salidaDevice.page.locator('#tour-btn-pause').click().catch(() => {});
