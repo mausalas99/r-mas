@@ -12,6 +12,7 @@ import {
   setCloudSyncRoomSnapshot,
   getCloudSyncRoomId,
   getCloudSyncRevision,
+  getCloudSyncRoomSnapshot,
 } from './settings.mjs';
 import { ensureTurnRoom } from './ensure-turn-room.mjs';
 import { applyCloudPullResult } from './pull-apply.mjs';
@@ -21,6 +22,7 @@ import { startSharedNubeRuntime } from './panel-conexion-runtime.mjs';
 import { setCloudRoomConnected } from './nube-sync-policy.mjs';
 import { isCloudSala } from './sala-allowlist.mjs';
 import { showRecoveryCodeModal } from './recovery-modal.mjs';
+import { loadRoomDek } from './room-dek.mjs';
 
 function createApi() {
   return createCloudSyncApi({
@@ -192,9 +194,14 @@ async function pullShowingDownload(client, roomId) {
 
 async function pullOrSeed(client, roomId, setStatus) {
   setStatus('Sincronizando equipos y censo…');
+  // Key first: a sala with a key sends registro, diagnoses and clinical
+  // content encrypted — pulled before the key, they would be dropped.
+  await loadRoomDek(client, roomId, getCloudSyncRoomSnapshot()?.code || '').catch(() => null);
   const pull = await pullShowingDownload(client, roomId);
   await applyCloudPullResult(pull);
-  if (pull?.revision != null) setCloudSyncRevision(Number(pull.revision) || 0);
+  // Still locked (key not opened): keep the revision at 0 so the runtime's
+  // next pull asks for everything again instead of skipping what was dropped.
+  if (pull?.revision != null && !pull.locked) setCloudSyncRevision(Number(pull.revision) || 0);
   await hydrateClinicalTeamsAfterCloudPull();
   if (Number(getCloudSyncRevision() || 0) > 0) {
     setStatus('Sincronizado con la sala nube.');
