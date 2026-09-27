@@ -26,20 +26,36 @@ const wEnv = { ...process.env, WRANGLER_SEND_METRICS: 'false', CI: '1' };
 let worker = null;
 export const workerLog = [];
 
-export function startWorker() {
-  worker = spawn(
+/**
+ * `wrangler dev`'s own dev proxy sometimes dies when a client connection drops
+ * ("Error inside ProxyWorker … Network connection lost", exit code 1), taking
+ * the local Worker down mid-scenario: every device then gets
+ * ERR_CONNECTION_REFUSED. That is dev tooling, not R+, so an exit nobody asked
+ * for (not stopWorker) restarts it on the same port and the same persisted
+ * data — the outage the app already rides out in the "Worker down" steps.
+ */
+function spawnWorker() {
+  const w = spawn(
     WRANGLER,
     ['dev', '--local', '--persist-to', stateDir, '--port', String(PORT), '--ip', '127.0.0.1',
       '--var', 'SYNC_ADMIN_KEY:e2e-admin-key', '--var', 'WORKER_DATA_KEY:' + 'ab'.repeat(32)],
     // Own process group: wrangler runs workerd as grandchildren, so kill the whole group.
     { cwd: WORKER_DIR, env: wEnv, stdio: ['ignore', 'pipe', 'pipe'], detached: true },
   );
-  worker.stdout.on('data', (b) => workerLog.push(...String(b).split('\n').filter((l) => /\] (GET|POST|PUT|DELETE)|rror/.test(l))));
-  // stderr unfiltered + how it ended: a Worker that dies mid-scenario shows up
-  // on the devices only as ERR_CONNECTION_REFUSED.
-  worker.stderr.on('data', (b) => workerLog.push(...String(b).split('\n').filter((l) => l.trim())));
-  const w = worker;
-  w.on('exit', (code, signal) => workerLog.push(`[e2e] wrangler (pid ${w.pid}) exited code=${code} signal=${signal} at ${new Date().toISOString()}${w === worker ? '' : ' (after stopWorker)'}`));
+  w.stdout.on('data', (b) => workerLog.push(...String(b).split('\n').filter((l) => /\] (GET|POST|PUT|DELETE)|rror/.test(l))));
+  // stderr unfiltered + how it ended, for diagnosis.
+  w.stderr.on('data', (b) => workerLog.push(...String(b).split('\n').filter((l) => l.trim())));
+  w.on('exit', (code, signal) => {
+    const unexpected = w === worker;
+    workerLog.push(`[e2e] wrangler (pid ${w.pid}) exited code=${code} signal=${signal} at ${new Date().toISOString()}${unexpected ? ' — restarting' : ' (stopWorker)'}`);
+    if (!unexpected) return;
+    killGroup(w, 'SIGKILL'); // leftover workerd would keep the port
+    worker = spawnWorker();
+  });
+  return w;
+}
+export function startWorker() {
+  worker = spawnWorker();
   return until(() => fetch(`${API}/ping`).then((res) => res.ok), 60000);
 }
 function killGroup(w, sig) {
@@ -50,9 +66,9 @@ export function stopWorker() {
   const w = worker;
   worker = null;
   return new Promise((res) => {
-    w.once('exit', () => setTimeout(res, 500));
+    const force = setTimeout(() => { killGroup(w, 'SIGKILL'); res(); }, 8000);
+    w.once('exit', () => { clearTimeout(force); setTimeout(res, 500); });
     killGroup(w, 'SIGTERM');
-    setTimeout(() => { killGroup(w, 'SIGKILL'); res(); }, 8000);
   });
 }
 /** Read-only look at the Worker's D1, straight from the local sqlite file. */
