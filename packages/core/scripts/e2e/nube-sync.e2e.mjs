@@ -319,14 +319,15 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
     obs.observe(document.body, { childList: true, subtree: true, characterData: true });
   });
   await C.page.getByRole('button', { name: 'Guardar perfil' }).click();
-  await until(() => C.page.evaluate(() => window.__sawDownloading), 6000);
-  const sawDownloading = await C.page.evaluate(() => window.__sawDownloading);
   const cCont = C.page.locator('button:visible', { hasText: /^Continuar/ });
   await cCont.waitFor({ timeout: 20000 });
   await C.page.getByText('Lo guardé en un lugar seguro').click();
+  // The room join + first pull start only after the recovery-code modal closes
+  // (and after «Abrir Mi rotación» is already on screen).
   await cCont.click();
   await C.page.getByRole('button', { name: 'Abrir Mi rotación' }).waitFor({ timeout: 15000 });
   const roomC = await until(() => roomMeta(C.page), 15000);
+  const sawDownloading = await until(() => C.page.evaluate(() => window.__sawDownloading), 10000);
   check('C: a late joiner attaches to the SAME existing Sala 1 room, not a new one (register-during-onboarding, sync-runtime late-joiner)',
     roomC?.id === roomA?.id, { a: roomA?.id, c: roomC?.id });
   check('C: patients-list showed a loading message («Descargando pacientes…» / «Sincronizando equipo…») while the late pull ran, not «Sin pacientes aún»', !!sawDownloading, sawDownloading);
@@ -389,19 +390,13 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await A2.page.locator('[role="tab"][data-admin-tab="equipos"]').click();
   const equiposList = adminRoot.locator('[data-admin-equipos-list]');
   check('A: admin Equipos (Usuarios) tab lists accounts (panel-admin-equipos)', await until(() => equiposList.locator('.cloud-sync-admin-equipos-row').first().isVisible(), 10000));
+  // No Historial check here: activity history comes from this device's clinical
+  // directory, which only R4 / program admins may list (db:clinical-users-list) —
+  // A is an R2 Nube admin, so every row is a Nube account without a local profile.
   await A2.page.locator('[data-admin-equipos-search]').fill(USER_B.username);
   const bRow = equiposList.locator('.cloud-sync-admin-equipos-row', { hasText: '@' + USER_B.username });
   check('A: Equipos search finds @' + USER_B.username + ' (panel-admin-equipos filters)', await until(() => bRow.isVisible(), 8000));
-  const histBtn = bRow.locator('[data-admin-action="equipos-activity-history"]');
-  if (await histBtn.count()) {
-    await histBtn.click();
-    const histModal = A2.page.locator('[data-equipos-activity-history-modal]');
-    check('A: Historial de actividad modal opens for a user (panel-admin-equipos-history-modal)', await until(() => histModal.isVisible(), 8000));
-    await histModal.locator('[data-equipos-history-close]').click();
-  } else {
-    check('A: Historial de actividad modal opens for a user (panel-admin-equipos-history-modal)', false, 'no history button rendered — @' + USER_B.username + ' has 0 logged activity yet');
-  }
-  await bRow.locator('summary', { hasText: 'Nube' }).first().click();
+  await bRow.locator('summary.cloud-sync-admin-equipos-edit-summary').click();
   await bRow.locator('[data-admin-promote-role]').selectOption('admin');
   await bRow.locator('[data-admin-action="promote-user"]').click();
   await A2.page.locator('#cloud-sync-admin-confirm [data-approval-confirm]').click();
@@ -431,7 +426,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await until(() => equiposList.locator('.cloud-sync-admin-equipos-row').first().isVisible(), 10000);
   await A2.page.locator('[data-admin-equipos-search]').fill(USER_B.username);
   const bRow2 = equiposList.locator('.cloud-sync-admin-equipos-row', { hasText: '@' + USER_B.username });
-  await bRow2.locator('summary', { hasText: 'Nube' }).first().click();
+  await bRow2.locator('summary.cloud-sync-admin-equipos-edit-summary').click();
   await bRow2.locator('[data-admin-action="delete-user"]').click();
   await A2.page.locator('#cloud-sync-admin-confirm [data-approval-confirm]').click();
   const delUserToast = A2.page.locator('.toast', { hasText: /[Nn]ube/ });
@@ -458,6 +453,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await D.page.locator('[data-sync-mode="local"]').click();
   await D.page.locator('#clinical-onboard-local-confirm-btn').click();
   await D.page.locator('#apptab-lab').waitFor({ timeout: 15000 });
+  await dismissLearnHub(D.page);
   // A device previously configured for a Nube sala, now local-only — the settings row this button drives.
   await D.page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('rpc-settings') || '{}');

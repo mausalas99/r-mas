@@ -190,6 +190,13 @@ async function pullWithKeyRetry(api, roomId, since, pollMobile) {
   return api.pull(roomId, since, opts);
 }
 
+/** First pull finished: clear the flag and let the list settle on its real message. */
+function settleFreshPull() {
+  cloudPullProgress.freshInFlight = false;
+  if (typeof document === 'undefined') return;
+  void import('../patients-list.mjs').then((m) => m.settlePatientListAfterDownload()).catch(() => {});
+}
+
 /** @param {object} pctx */
 async function runPullLatest(pctx) {
   const { api, getRoomId, getRevision, pollMobile } = pctx;
@@ -208,8 +215,8 @@ async function runPullLatest(pctx) {
     cloudPullProgress.freshInFlight = true;
     if (typeof document !== 'undefined') {
       try {
-        const { renderPatientList } = await import('../patients.mjs');
-        renderPatientList({ silent: true });
+        const { showPatientListDownloadingIfEmpty } = await import('../patients-list.mjs');
+        showPatientListDownloadingIfEmpty();
       } catch {
         /* list optional during boot */
       }
@@ -224,7 +231,7 @@ async function runPullLatest(pctx) {
     const labIngress = pollMobile ? await recordLabPullIngress(result) : null;
     await finalizePull(pctx, result, since, opsCount, labIngress);
   } finally {
-    if (freshJoin) cloudPullProgress.freshInFlight = false;
+    if (freshJoin) settleFreshPull();
   }
 }
 

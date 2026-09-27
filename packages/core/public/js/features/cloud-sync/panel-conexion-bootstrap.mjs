@@ -138,9 +138,14 @@ export function wireConexionClicks(section, deps, ui) {
   }
 
   section.addEventListener('click', onCloudActionClick);
-  document
-    .getElementById('connection-dropdown')
-    ?.addEventListener('click', onCloudActionClick);
+  // The dropdown contains the section: only take clicks from outside it (the
+  // modal-head back button), or every in-section action runs twice — two
+  // logouts, two recoveries each rotating the recovery code.
+  document.getElementById('connection-dropdown')?.addEventListener('click', (ev) => {
+    if (!section.isConnected) return;
+    if (ev.target instanceof Node && section.contains(ev.target)) return;
+    onCloudActionClick(ev);
+  });
   wireClinicalTeamsFormDelegation(section);
 }
 

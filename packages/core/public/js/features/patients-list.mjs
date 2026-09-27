@@ -215,6 +215,22 @@ export function patchPatientListActiveHighlight(nextId) {
   return true;
 }
 
+/**
+ * First Nube pull in flight: swap an empty list's «Sin pacientes aún» for
+ * «Descargando pacientes…» right now (renderPatientList's silent path is
+ * debounced and would land after a fast pull). Never touches a non-empty list.
+ */
+export function showPatientListDownloadingIfEmpty() {
+  var list = document.getElementById('patient-list');
+  if (!list || patientsVisibleInSidebar().length) return;
+  renderPatientListMessage(list, 'Descargando pacientes…', { silent: true });
+}
+
+/** Pull done (flag cleared): re-render so an empty result doesn't keep «Descargando pacientes…». */
+export function settlePatientListAfterDownload() {
+  renderPatientList({ silent: true });
+}
+
 /** @param {{ silent?: boolean, force?: boolean }|undefined} [opts] — silent: LAN/incremental; force: flush now (Filtros censo) */
 export function renderPatientList(opts) {
   opts = normalizePatientListRenderOpts(opts);

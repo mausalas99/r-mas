@@ -15,6 +15,7 @@ import {
 } from './settings.mjs';
 import { ensureTurnRoom } from './ensure-turn-room.mjs';
 import { applyCloudPullResult } from './pull-apply.mjs';
+import { cloudPullProgress } from '../../clinical-session-context.mjs';
 import { hydrateClinicalTeamsAfterCloudPull } from './clinical-ops-hydrate.mjs';
 import { startSharedNubeRuntime } from './panel-conexion-runtime.mjs';
 import { setCloudRoomConnected } from './nube-sync-policy.mjs';
@@ -173,9 +174,25 @@ async function joinTurnRoom(client, chosenUser, toast, setStatus) {
   return roomId;
 }
 
+/**
+ * A late joiner's first pull happens here, not in the runtime's runPullLatest —
+ * flag it the same way so the sidebar reads «Descargando pacientes…» meanwhile
+ * instead of «Sin pacientes aún».
+ */
+async function pullShowingDownload(client, roomId) {
+  cloudPullProgress.freshInFlight = true;
+  await import('../patients-list.mjs').then((m) => m.showPatientListDownloadingIfEmpty()).catch(() => {});
+  try {
+    return await client.pull(roomId, 0);
+  } finally {
+    cloudPullProgress.freshInFlight = false;
+    void import('../patients-list.mjs').then((m) => m.settlePatientListAfterDownload()).catch(() => {});
+  }
+}
+
 async function pullOrSeed(client, roomId, setStatus) {
   setStatus('Sincronizando equipos y censo…');
-  const pull = await client.pull(roomId, 0);
+  const pull = await pullShowingDownload(client, roomId);
   await applyCloudPullResult(pull);
   if (pull?.revision != null) setCloudSyncRevision(Number(pull.revision) || 0);
   await hydrateClinicalTeamsAfterCloudPull();
