@@ -76,6 +76,28 @@ export function shouldSkipCloudMedRecetaPush(patientId, medReceta, index, field 
   return idx[path] === cloudMedRecetaFingerprint(medReceta);
 }
 
+/** Index value meaning "deleted on this device, clear not sent yet". */
+const CLEAR_PENDING = '__clear_pending__';
+
+/**
+ * A user deleted this record on this device: the next bundle sends a clear (null).
+ * Only an explicit delete marks it — a record merely missing locally is never sent
+ * as a clear, or a device that never had it would wipe a teammate's copy.
+ * @param {string} patientId @param {string} field one of FP_FIELDS
+ */
+export function markCloudEntryCleared(patientId, field) {
+  const pid = String(patientId || '').trim();
+  if (!pid) return;
+  const idx = readMedRecetaFingerprintIndex();
+  idx[`entries/${pid}/${field}`] = CLEAR_PENDING;
+  writeMedRecetaFingerprintIndex(idx);
+}
+
+/** @param {string} patientId @param {string} field */
+export function isCloudEntryClearPending(patientId, field) {
+  return readMedRecetaFingerprintIndex()[`entries/${String(patientId || '').trim()}/${field}`] === CLEAR_PENDING;
+}
+
 /** Call once ops actually got sent (chunk acked, applied or rejected). @param {unknown[]} ops */
 export function noteCloudMedRecetaOpsSent(ops) {
   if (!Array.isArray(ops) || !ops.length) return 0;

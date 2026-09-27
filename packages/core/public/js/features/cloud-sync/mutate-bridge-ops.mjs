@@ -3,7 +3,7 @@
  */
 import { slimLabSetForCloud } from './cloud-op-slim.mjs';
 import { labSetTimestamp, monitoreoUpdatedAt } from '../../patient-merge.mjs';
-import { shouldSkipCloudMedRecetaPush, FP_FIELDS } from './cloud-med-receta-index.mjs';
+import { shouldSkipCloudMedRecetaPush, isCloudEntryClearPending, FP_FIELDS } from './cloud-med-receta-index.mjs';
 
 /** @typedef {{ path: string, value: unknown, updatedAt: string, actorId: string }} CloudSyncOp */
 
@@ -219,7 +219,13 @@ export function mapPatientEntryToCensusSeedOps(entry, meta) {
 function pushClocklessEntryOps(ops, patientId, entry, actorId, batchAt) {
   for (const field of FP_FIELDS) {
     let value = entry?.[field];
-    if (!value) continue;
+    if (!value) {
+      // Deleted here on purpose → send the clear, clocked now like any edit.
+      if (isCloudEntryClearPending(patientId, field)) {
+        ops.push(cloudOp({ path: `entries/${patientId}/${field}`, value: null, actorId, updatedAt: batchAt }));
+      }
+      continue;
+    }
     // The perfil paste draft is this device's unsent textarea, not shared data.
     if (field === 'medPharmProfile' && value.draftPaste !== undefined) {
       value = { ...value };

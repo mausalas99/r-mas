@@ -23,6 +23,8 @@
  *   VPO, listado de problemas, perfil farmacológico
  *     - edits made in the UI on A are saved locally but never pushed, or B
  *       never shows them
+ *     - a problem removed or a perfil month deleted on B stays on A
+ *     - a med imported in Manejo on A never shows in B's perfil histórico
  *   Offline
  *     - work done while the Worker is down is lost, or never pushed later
  *     - the app crashes or blocks the paste while offline
@@ -208,7 +210,13 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   // ── VPO, listado de problemas, perfil farmacológico: A → B ─────────────
   const VPO_TEXT = 'DEMO VALORACION PREOPERATORIA SINCRONIA';
   const PROBLEMA = 'DEMO PROBLEMA ACTIVO SINCRONIA';
-  const segment = (page, id) => page.evaluate((sel) => document.getElementById(sel)?.click(), id);
+  // Like a real click, move focus off the last field (a focused field blocks the
+  // live repaint on pull). The tab paints after the next frame: wait, or a quick
+  // next click cancels that paint.
+  const segment = async (page, id) => {
+    await page.evaluate((sel) => { document.activeElement?.blur?.(); document.getElementById(sel)?.click(); }, id);
+    await page.waitForTimeout(300);
+  };
   const vpoIntro = (page) => page.locator('[data-vpo-field="valoracionIntro"]');
   const listadoRows = (page) => page.locator('#listado-form [data-seccion-group="activos"] .listado-row textarea');
   const openPerfil = async (page) => {
@@ -253,6 +261,27 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
     return vpo === VPO_TEXT && problems.includes(PROBLEMA) && pharm === 1;
   }, 45000);
   check('B: VPO, problem list and pharm month edited on A arrive for P1', arrived, seenOnB);
+
+  // Deletes on B must clear A too (perfil changes almost daily through Manejo).
+  await segment(B.page, 'apptab-nota');
+  await segment(B.page, 'exp-segment-listado');
+  await B.page.locator('#listado-form [data-seccion-group="activos"] .btn-remove-listado').first().click();
+  await openPerfil(B.page);
+  await B.page.locator('#med-pharm-output-more summary').click();
+  await B.page.locator('#med-pharm-delete-month-btn').click();
+  await B.page.locator('.wb-confirm-modal [data-wb-confirm-ok]').click();
+  check('B: problem removed and perfil month deleted for P1', await until(async () => (await pharmRow(B.page).count()) === 0, 8000));
+  await openPatient(A.page, P1);
+  let seenOnA = {};
+  check('A: the problem and perfil month deleted on B are gone for P1', await until(async () => {
+    await segment(A.page, 'apptab-nota');
+    await segment(A.page, 'exp-segment-listado');
+    const problems = await listadoRows(A.page).evaluateAll((els) => els.map((e) => e.value)).catch(() => []);
+    await openPerfil(A.page);
+    const pharm = await pharmRow(A.page).count();
+    seenOnA = { problems, pharm };
+    return !problems.includes(PROBLEMA) && pharm === 0;
+  }, 45000), seenOnA);
 
   // ── Offline: Worker down, A keeps working, then catches up ────────────
   await stopWorker();
@@ -373,6 +402,9 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await B.page.locator('#med-itab-receta').click();
   check('B: the receta pushed on A reaches B (Manejo push/pull, cloud-med-receta-index)',
     await until(() => B.page.getByText(/DEMO CEFALOSPORINA/).first().isVisible(), 30000));
+  await segment(B.page, 'med-itab-perfil');
+  check('B: that Manejo med also shows in B\'s perfil histórico for P1',
+    await until(() => B.page.locator('#med-pharm-list .med-pharm-name', { hasText: 'DEMO CEFALOSPORINA' }).first().isVisible(), 15000));
 
   // ── Late joiner: device C joins the SAME room after data already exists ─
   const C = await launchDevice('c', 3793);

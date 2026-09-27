@@ -1,5 +1,6 @@
 import { getMedPharmProfileByPatient, persistClinicalState } from '../app-state.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
+import { markCloudEntryCleared } from './cloud-sync/cloud-med-receta-index.mjs';
 import { openConfirm } from './workbench/confirm.mjs';
 import {
   parseSomePharmMonthPaste,
@@ -161,6 +162,7 @@ export async function deleteMedPharmProfileAll() {
     return;
   }
   delete getMedPharmProfileByPatient()[pid];
+  markCloudEntryCleared(pid, 'medPharmProfile');
   closeModals();
   persistClinicalState();
   scheduleCloudSyncPush();

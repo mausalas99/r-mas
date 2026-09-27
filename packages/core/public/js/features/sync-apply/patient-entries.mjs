@@ -385,13 +385,20 @@ function applyLanPatientMedArtifacts(existing, entry) {
   changed = applyLanMedRecetaField(existing, entry) || changed;
   changed = applyLanMedPharmField(existing, entry) || changed;
   changed = applyLanVpoField(existing, entry) || changed;
-  if (entry.listadoProblemas) {
-    if (!lanJsonEqual(getListadoProblemas()[existing.id], entry.listadoProblemas)) {
-      getListadoProblemas()[existing.id] = entry.listadoProblemas;
-      changed = true;
-    }
-  }
+  changed = applyLanListadoField(existing, entry) || changed;
   return changed;
+}
+
+function applyLanListadoField(existing, entry) {
+  if (!Object.prototype.hasOwnProperty.call(entry, 'listadoProblemas')) return false;
+  if (entry.listadoProblemas) {
+    if (lanJsonEqual(getListadoProblemas()[existing.id], entry.listadoProblemas)) return false;
+    getListadoProblemas()[existing.id] = entry.listadoProblemas;
+    return true;
+  }
+  if (!getListadoProblemas()[existing.id]) return false;
+  delete getListadoProblemas()[existing.id];
+  return true;
 }
 
 function applyLanMedRecetaField(existing, entry) {

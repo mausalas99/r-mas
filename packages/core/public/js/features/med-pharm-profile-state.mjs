@@ -1,5 +1,6 @@
 import { getPatients, getMedPharmProfileByPatient, persistClinicalState } from '../app-state.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
+import { markCloudEntryCleared } from './cloud-sync/cloud-med-receta-index.mjs';
 import {
   listSomePharmFilterLabels,
   isSomePharmCategoryLabel,
@@ -245,6 +246,7 @@ export function renderFilterSelect(filtro) {
 export function persistMedPharmProfile(pid, profile) {
   if (!profile || (!profileHasMonthData(profile) && !profile.draftPaste)) {
     delete getMedPharmProfileByPatient()[pid];
+    markCloudEntryCleared(pid, 'medPharmProfile');
   } else {
     getMedPharmProfileByPatient()[pid] = profile;
   }

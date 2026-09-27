@@ -162,8 +162,17 @@ export function isInnerTabRenderedForOtherPatient(tab, settings) {
   return cached.split("|")[1] !== String(rt.getActiveId() || "");
 }
 
+/**
+ * VPO and listado repaint themselves on every local edit, outside this cache, so a
+ * cached key can't tell what they show: a Nube pull could bring back the exact
+ * content of the last cached render and leave the local edit on screen. Small
+ * forms — always repaint them.
+ */
+var UNCACHED_TABS = { vpo: true, listado: true };
+
 export function isInnerTabContentFresh(tab, settings) {
   tab = migrateGranularInner(tab, settings);
+  if (UNCACHED_TABS[tab]) return false;
   return innerTabRenderCache[tab] === innerTabRenderCacheKey(tab);
 }
 
@@ -349,7 +358,7 @@ var GRANULAR_TAB_RENDERERS = {
 
 export function renderGranularInnerTab(tab, opts) {
   opts = opts || {};
-  if (!opts.force && innerTabRenderCache[tab] === innerTabRenderCacheKey(tab)) return;
+  if (!opts.force && !UNCACHED_TABS[tab] && innerTabRenderCache[tab] === innerTabRenderCacheKey(tab)) return;
 
   var renderer = GRANULAR_TAB_RENDERERS[tab];
   if (renderer) {
