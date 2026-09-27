@@ -69,7 +69,7 @@ function updateRotationRejoinOpenButton() {
   if (!(btn instanceof HTMLButtonElement)) return;
   const elevated = hasElevatedTeamPrivileges(clinicalSessionContext.user);
   btn.textContent = elevated
-    ? 'Confirmar sala y ejemplo Modelo casoba'
+    ? 'Confirmar sala y abrir Mi rotación'
     : 'Confirmar sala y elegir equipo';
 }
 

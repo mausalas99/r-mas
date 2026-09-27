@@ -92,8 +92,10 @@ function wireAdminCheckboxGate() {
     markAdminAccessGrantedThisSession();
   }
 
+  // A checkbox is already toggled when click listeners run: checked here means
+  // the user is turning admin ON (ask for the code), unchecked means OFF.
   cb.addEventListener('click', (ev) => {
-    if (cb.checked) {
+    if (!cb.checked) {
       clearAdminAccessGrant();
       return;
     }

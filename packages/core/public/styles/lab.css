@@ -1183,6 +1183,7 @@ html.dark .card-header-soft-btn {
 html.dark .card-header-soft-btn:hover { background: rgba(255, 255, 255, 0.11); }
 .card-body { padding: calc(18px * var(--density-space)) calc(20px * var(--density-space)); background: var(--card-body-bg); }
 .field-group { display: flex; flex-direction: column; gap: calc(6px * var(--density-space)); }
+.field-group[hidden] { display: none; }
 .field-group label { font-size: calc(12px * var(--density-font)); font-weight: 600; color: var(--text-muted); text-transform: none; letter-spacing: 0.01em; }
 .field-group input:not([type="checkbox"]):not([type="radio"]),
 .field-group select,

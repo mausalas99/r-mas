@@ -86,7 +86,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   check('B: same Sala 1 room as A', roomB?.id === roomA?.id, { a: roomA?.id, b: roomB?.id });
 
   // ── Team: A creates it, B finds it through Nube and joins ─────────────
-  await A.page.getByRole('button', { name: 'Ejemplo Modelo casoba' }).click();
+  await A.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
   await A.page.locator('#btn-clinical-team-create-open').click();
   const createName = A.page.locator('#clinical-team-create-name');
   check('A: «Crear nuevo equipo» opens the form', await createName.isVisible().catch(() => false));
@@ -97,7 +97,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await A.page.locator('#clinical-team-create-sala').selectOption('Sala 1').catch(() => {});
   await A.page.getByRole('button', { name: 'Crear equipo' }).click();
   await r.shot(A.page, 'a-team-created');
-  await B.page.getByRole('button', { name: 'Ejemplo Modelo casoba' }).click();
+  await B.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
   const joinBtn = B.page.getByRole('button', { name: 'Unirme' });
   check('B: sees A\'s team «EQUIPO DEMO ALFA» through Nube', await until(() => joinBtn.isVisible(), 20000));
   await joinBtn.click();

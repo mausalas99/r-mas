@@ -47,6 +47,7 @@
     "dev:lan-peer-app": "node scripts/dev-lan-peer-app.mjs",
     "dev:lan-peer-fresh": "node scripts/dev-lan-peer-app.mjs --fresh",
     "dev:nube-test": "node scripts/dev-nube-test-app.mjs",
+    "e2e": "node scripts/e2e/run-all.mjs",
     "e2e:labs-to-docx": "node scripts/e2e/labs-to-docx.e2e.mjs",
     "e2e:lab-paste-rules": "node scripts/e2e/lab-paste-rules.e2e.mjs",
     "e2e:lab-trends": "node scripts/e2e/lab-trends.e2e.mjs",
@@ -67,6 +68,8 @@
     "e2e:db-unlock": "node scripts/e2e/db-unlock.e2e.mjs",
     "e2e:learn-hub-tour": "node scripts/e2e/learn-hub-tour.e2e.mjs",
     "e2e:sala-view": "node scripts/e2e/sala-view.e2e.mjs",
+    "e2e:patients": "node scripts/e2e/patients.e2e.mjs",
+    "e2e:paste-smart": "node scripts/e2e/paste-smart.e2e.mjs",
     "dev:nube-test-fresh": "node scripts/dev-nube-test-app.mjs --fresh",
     "ci:forbid-lan": "node scripts/ci/forbid-lan-imports.mjs"
   },

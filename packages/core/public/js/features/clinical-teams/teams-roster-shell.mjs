@@ -114,7 +114,7 @@ export async function openClinicalTeamsPanelModal(opts = {}) {
   } catch (err) {
     console.error('[Mi rotación]', err);
     setClinicalTeamsPanelError(
-      err instanceof Error ? err.message : 'No se pudo ejemplo Modelo casoba.'
+      err instanceof Error ? err.message : 'No se pudo abrir Mi rotación.'
     );
     return;
   }
@@ -126,7 +126,7 @@ export async function openClinicalTeamsPanelModal(opts = {}) {
   } catch (err) {
     console.error('[Mi rotación]', err);
     setClinicalTeamsPanelError(
-      err instanceof Error ? err.message : 'No se pudo ejemplo Modelo casoba.'
+      err instanceof Error ? err.message : 'No se pudo abrir Mi rotación.'
     );
   }
 }

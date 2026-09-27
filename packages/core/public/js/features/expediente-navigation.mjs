@@ -66,7 +66,7 @@ export function refreshExpedienteForAppModeChange() {
   syncInnerTabVisualOnly();
 }
 
-/** Tras cambiar de paciente: SINTETICO EJEMPLO MODELO SIMULADO CASOZb activa (sin reset de layout). */
+/** Tras cambiar de paciente: re-render de la pestaña interna activa (sin reset de layout). */
 export function refreshExpedienteAfterPatientSelect(opts) {
   opts = opts || {};
   cancelExpedienteWarm();

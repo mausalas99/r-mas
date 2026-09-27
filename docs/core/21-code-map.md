@@ -102,12 +102,12 @@ npm start                 # electron (prestart rebuilds natives + bundle)
 npm run release:publish   # release pipeline (see README § Desarrollo)
 ```
 
-**Testing policy (agents):** Do **not** run `npm test` during normal dev — it still launches ~348 files in a single `node --test` (~35s+, poor feedback loop). That monolithic full-suite run is **not** the target workflow; we are moving toward **targeted** runs and CI sharding instead.
+**Testing policy (agents):** E2E first — see `docs/core/07-testing-strategy.md`.
 
-- **Local / agent:** `npm run test:one -- path/to/changed.test.mjs` (runs under Electron's Node via `scripts/run-with-electron-node.mjs` — same SQLCipher ABI as the app). Do **not** use bare `node --test` for DB/native suites.
-- **LAN kernel refactors:** gate with `orchestrator.test.mjs` + `push`/`room`/`transport` + `lan-sync-wiring.test.mjs` (see `docs/core/07-testing-strategy.md`).
+- **Behavior:** `npm run e2e -- <scenario>` (real Electron app + Playwright, `scripts/e2e/*.e2e.mjs`). Add checks to the area's scenario instead of UI unit tests.
+- **Unit tests** (~120 files) only for pure clinical logic, data integrity, crypto/security and the Nube Worker. Local: `npm run test:one -- path/to/changed.test.mjs` (Electron's Node, same SQLCipher ABI). Do **not** use bare `node --test` for DB/native suites.
 - **DB IPC channels:** `lib/db/ipc-handlers.test.mjs` — fake `ipcMain` + `createUnlockedDbManager` teardown pattern.
-- **CI / release:** `npm test` in `.github/workflows/ci.yml` and `scripts/release.js` — full suite gate only there.
+- **CI / release:** `npm test` in `.github/workflows/ci.yml` and `scripts/release.js`.
 
 New renderer code: edit `public/js/**/*.mjs`, then `npm run build:ui` (or `npm start` which bundles). Do not edit `app.bundle.mjs` by hand.
 
@@ -131,6 +131,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-09-27** `e2e-first`: unit suite pruned 663 → 123 files (keep: clinical parsers/calcs, data integrity, crypto/security, Nube Worker); `npm run e2e` runner; new `patients` and `paste-smart` scenarios; learn-hub tour runs on a local Nube team.
 - **2026-09-02** `codebase-reduction`: gitignore build mirrors + index.html; dead-code sweep; file-length ratchet replaced by total-LOC + module-count; glob test discovery; tracked code map; LAN ward server + 7.9 cutover wizard removed; Interno/Equipos origin-only (no :3738 probe).
 - **2026-08-14** `agent-graph-memory`: cached extraction vs subgraph reasoning for Claude Code; validate-before-write; `scripts/graph-memory/`, `docs/core/19-agent-graph-memory.md`.
 - **2026-08-14** `release-8.1.3`: warm instrument + SOME Nube `sourceText` + censo ↑/↓; Worker clinicalOps LWW union + mutation cupo; `ui-physics.mjs`, `lab-history-some-reparse.mjs`, `clinical-ops-lww.js`.

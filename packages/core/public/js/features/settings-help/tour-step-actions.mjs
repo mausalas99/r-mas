@@ -462,9 +462,14 @@ function applyTourDensityForStep(id, t) {
  * (back/forward) never double-seeds. Cleared on tour exit by
  * destroyDemoAndClose() (tour-flow-demo-cleanup.mjs). */
 function seedIcBoardDemoForTour() {
-  void import('../interconsulta-demo-toggle.mjs').then((m) => {
-    if (!m.isInterconsultaDemoActive()) m.seedInterconsultaDemoOnMainApp(new Date());
-  });
+  void Promise.all([import('../interconsulta-demo-toggle.mjs'), import('../interconsulta-mode-chrome.mjs')]).then(
+    ([m, ic]) => {
+      if (m.isInterconsultaDemoActive()) return;
+      m.seedInterconsultaDemoOnMainApp(new Date());
+      // Seeding only changes state; the board this step spotlights must redraw.
+      ic.renderInterconsultaBoardView();
+    }
+  );
 }
 
 /** Drills into the first demo patient so the consult-info card (Servicio

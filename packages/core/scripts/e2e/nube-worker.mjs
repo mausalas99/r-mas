@@ -95,7 +95,7 @@ export async function onboardNube(page, user) {
   const lockedBeforeCheck = await cont.isDisabled();
   await page.getByText('Lo guardé en un lugar seguro').click();
   await cont.click();
-  await page.getByRole('button', { name: 'Ejemplo Modelo casoba' }).waitFor({ timeout: 15000 });
+  await page.getByRole('button', { name: 'Abrir Mi rotación' }).waitFor({ timeout: 15000 });
   const done = flat(await page.locator('body').innerText());
   return { recovery, lockedBeforeCheck, done };
 }

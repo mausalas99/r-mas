@@ -383,7 +383,7 @@ await r.finish('Cultivos table + Actualizar', async () => {
     peritGrouped);
 
   // Sala mode censo export preview: one condensed Cultivos line, no "/2026", no full uppercase organism.
-  await page.locator('#btn-export-censo-sidebar').click();
+  await page.locator('#btn-export-censo-header').click();
   await page.locator('#censo-export-preview').click();
   const censoFrame = page.frameLocator('#censo-preview-frame');
   await censoFrame.locator('body').waitFor({ state: 'attached' });
