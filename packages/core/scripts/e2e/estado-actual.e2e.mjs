@@ -7,7 +7,7 @@
  * Scenario (medium-hard on purpose):
  *   1. Fresh userData → admit DEMO PÉREZ JUAN from the demo SOME lab paste.
  *   2. Interconsulta → Clínico › Estado actual.
- *   3. Add 7 medications across 6 categories by hand.
+ *   3. Add 8 medications across 6 categories by hand.
  *   4. Registro 1 (3 h ago): stacked vitals (2 readings each), 2 glucometrías,
  *      T1/T2/T3 intake and output, UF 2000 as another source, and two turn
  *      events: T2 hemodiálisis (turn goes NC) and T3 furosemide challenge with
@@ -79,7 +79,10 @@ const MEDS = [
   ['antitromboticos', 'ENOXAPARINA 40 MG SC C/24 H'],
   ['analgesia', 'PARACETAMOL 1 G IV C/8 H'],
   ['nm', 'INSULINA GLARGINA 10 UI SC C/24 H'],
+  ['nm', 'ACIDO FOLICO 5 MG VO C/24 H'],
 ];
+const ACUTE_CATS = ['abx', 'antitromboticos', 'analgesia'];
+const CHRONIC_CATS = ['antihta', 'diureticos', 'nm'];
 
 async function launch() {
   const app = await electron.launch({
@@ -183,6 +186,34 @@ async function addMeds(page) {
     await block.locator(`[data-ea-med-manual-save="${cat}"]`).click();
     await page.locator(`[data-ea-med-cat="${cat}"]`, { hasText: text }).waitFor({ state: 'visible' });
   }
+}
+
+/** Acute categories in the left column, chronic on the right; name / dose split; NM subgroups. */
+async function checkMedGrid(page) {
+  const colOf = (cat) => page.locator(`[data-ea-med-cat="${cat}"]`).evaluate((el) => el.closest('[data-ea-med-col]')?.getAttribute('data-ea-med-col'));
+  const acute = await Promise.all(ACUTE_CATS.map(colOf));
+  const chronic = await Promise.all(CHRONIC_CATS.map(colOf));
+  check('abx / antitrombóticos / analgesia sit in the left (acute) med column', acute.every((c) => c === '0'), acute);
+  check('antihta / diuréticos / NM sit in the right (chronic) med column', chronic.every((c) => c === '1'), chronic);
+  const ceftri = page.locator('[data-ea-med-cat="abx"] .ea-med-item-text', { hasText: 'CEFTRIAXONA' }).first();
+  const split = {
+    name: (await ceftri.locator('.ea-med-item-name').innerText().catch(() => '')).trim(),
+    dose: (await ceftri.locator('.ea-med-item-dose').innerText().catch(() => '')).trim(),
+  };
+  check('CEFTRIAXONA row splits drug name and dose', split.name === 'CEFTRIAXONA' && /^1 G IV C\/24 H/.test(split.dose), split);
+  // The panel never folds a group by a title click and hides the preview with CSS,
+  // so fold it programmatically and read the preview text it would show.
+  const preview = await page.locator('[data-ea-med-cat="antihta"]').evaluate((el) => {
+    el.open = false;
+    const text = el.querySelector('.ea-med-cat-preview')?.textContent || '';
+    el.open = true;
+    return text;
+  });
+  check('folded group preview lists drug names only, no doses', /LOSARTÁN/.test(preview) && /AMLODIPINO/.test(preview) && !/\d|MG|VO/.test(preview), preview);
+  const subcats = await page.locator('[data-ea-med-cat="nm"] .ea-med-subcat-title').allInnerTexts();
+  check('NM group: Antidiabéticos subgroup, then an NM row for the rest', subcats.map((t) => t.trim().toUpperCase()).join('|') === 'ANTIDIABÉTICOS|NM', subcats);
+  const nmRest = await page.locator('[data-ea-med-cat="nm"] .ea-med-subcat--otros').innerText().catch(() => '');
+  check('ACIDO FOLICO sits under the NM row, not Antidiabéticos', /ACIDO FOLICO/.test(nmRest) && !/INSULINA/.test(nmRest), nmRest);
 }
 
 /** Sets the registro clinical time to `hoursAgo` hours before now. */
@@ -356,10 +387,16 @@ async function run() {
   await checkSalaActionBar(page);
   await openEstadoActual(page);
   await shot(page, 'estado-actual-empty');
+  check(
+    'empty Signos vitales title carries no date stamp',
+    (await page.locator('#ea-snapshot .ea-snapshot-zone-stamp').count()) === 0,
+    await page.locator('#ea-snapshot .ea-snapshot-zone-title').first().innerText()
+  );
 
   await addMeds(page);
   const medCount = await page.locator('.ea-estado-clinico .ea-med-item-list [data-ea-med-remove]').count();
-  check('7 medications listed in 6 categories', medCount === 7 && (await page.locator('[data-ea-med-cat]').count()) === 6, medCount);
+  check('8 medications listed in 6 categories', medCount === 8 && (await page.locator('[data-ea-med-cat]').count()) === 6, medCount);
+  await checkMedGrid(page);
 
   const medsShown = () => page.locator('.ea-estado-clinico [data-ea-med-remove]').count();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
@@ -367,7 +404,7 @@ async function run() {
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
   await page.locator('.exp-group-section', { hasText: 'Estado actual' }).click();
   await page.locator('#ea-snapshot').waitFor({ state: 'visible' });
-  check('medications survive leaving the screen', (await medsShown()) === 7, await medsShown());
+  check('medications survive leaving the screen', (await medsShown()) === 8, await medsShown());
 
   await page.locator('[data-ea-ec="dieta"]').fill('BLANDA PICADA');
   await page.locator('[data-ea-ec="kcalKg"]').fill('25');
@@ -380,7 +417,7 @@ async function run() {
   await page.waitForTimeout(200);
 
   await busyRegistro(page);
-  check('medications survive a registro', (await medsShown()) === 7, await medsShown());
+  check('medications survive a registro', (await medsShown()) === 8, await medsShown());
   await vitalsOnlyRegistro(page);
   await page.waitForTimeout(400);
   await shot(page, 'estado-actual-busy');
@@ -397,6 +434,15 @@ async function run() {
   const strip = await page.locator('#ea-snapshot').boundingBox();
   check('snapshot strip stays short', !!strip && strip.height < 220, strip && Math.round(strip.height));
   const snap = await page.locator('#ea-snapshot').innerText();
+  // Readings are from 3 h ago and now: all today unless the run is right after midnight.
+  if (new Date().getHours() >= 4) {
+    const now = new Date();
+    const dm = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const zoneStamp = (await page.locator('#ea-snapshot .ea-snapshot-zone-stamp').allInnerTexts()).map((t) => t.trim());
+    check('Signos vitales title carries today\'s dd/mm', zoneStamp.length === 1 && zoneStamp[0] === dm, { zoneStamp, dm });
+    const rowStamps = await page.locator('#ea-snapshot .ea-snapshot-row-stamp:not(.ea-snapshot-row-stamp--empty)').allInnerTexts();
+    check('no per-row date stamp when every reading is today', rowStamps.length === 0, rowStamps);
+  }
   check('latest T/A is the newest registro', snap.includes('128/78'), snap.split('\n').slice(0, 6));
   check('a vitals-only registro keeps the last balance', /Ingresos\s+2100 CC/.test(snap) && /Turno\s*›?\s*●?\s*-450 CC/.test(snap), snap.slice(snap.indexOf('Ingresos')));
   check('2 of 3 quantified turns collapse into one DIURESIS line, no NC leaks in', /DIURESIS\s*\(?550/.test(snap) || /DIURESIS.*550.*2T/.test(snap), snap.slice(snap.indexOf('Egresos'), snap.indexOf('Egresos') + 80));
