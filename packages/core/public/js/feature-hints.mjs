@@ -264,8 +264,9 @@ function tourBusy() {
 function placeBubble() {
   if (!flow || !flow.el) return;
   const r = flow.el.getBoundingClientRect();
-  // Target gone for a moment (a view is changing): hide, never jump to the corner.
-  bubble.style.visibility = flow.el.isConnected && onScreen(r) ? '' : 'hidden';
+  // Target gone or covered for a moment (a view is changing, the «Preparando R+»
+  // boot screen): hide at once, never jump to the corner or float over it.
+  bubble.style.visibility = flow.el.isConnected && onScreen(r) && !flow.lostAt ? '' : 'hidden';
   const bw = bubble.offsetWidth;
   const bh = bubble.offsetHeight;
   let top = r.bottom + 12;

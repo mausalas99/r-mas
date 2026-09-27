@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global document */
+/* global document, getComputedStyle */
 /**
  * E2E: in-app «Guía» / «Nuevo» hints (public/js/feature-hints.mjs), driven
  * through the real Electron app on a fresh profile with synthetic DEMO patients.
@@ -171,6 +171,16 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   await page.evaluate(() => globalThis.localStorage.removeItem('rpc-feature-hints-done'));
   await app.close();
   ({ app, page, pageErrors } = await r.launch());
+  // Sample the first seconds of boot: a bubble never floats over «Preparando R+».
+  let overBoot = 0;
+  for (let i = 0; i < 60; i++) {
+    overBoot += await page.evaluate(() => {
+      const shown = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+      return shown(document.querySelector('.clinical-onboarding-stage')) && shown(document.querySelector('.fh-bubble:not([hidden])')) ? 1 : 0;
+    }).catch(() => 0);
+    await page.waitForTimeout(100);
+  }
+  check('no hint bubble over the «Preparando R+» boot screen', overBoot === 0, { samplesOverBoot: overBoot });
   await page.locator('#apptab-lab').click();
   check('updating user (registered, no done list) gets the «Guía» hints',
     await visible(bubbleOf(page, 'g-labs'), 8000), await hintState(page));
@@ -195,7 +205,6 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   check('using the real control of a one-step hint ends it for good',
     (await done(page)).includes('g-buscar') && (await bubbleOf(page, 'g-buscar').count()) === 0, await done(page));
   await walkHint(page, 'g-buscar', 1);
-  await walkHint(page, 'g-sync', 1);
   // Two lab sets on different days now (Sep 25 + 3 days ago): Tendencias has its Gráfica step.
   await go('#apptab-lab');
   // Tendencias › Gráfica window: range, hide a series, Tabla, hide a row, copy.
@@ -292,6 +301,11 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   await nube.onboardNube(n.page, { username: `demo_fh_${Date.now().toString(36).slice(-6)}`, name: 'Dra. Demo Guia', rank: 'R4' });
   check('Nube user joined a ward room', !!(await until(() => nube.roomMeta(n.page), 15000)));
   await closeToasts(n.page);
+  // Local-only users never get the Conexión button, so this «Guía» only shows with Nube.
+  // A fresh profile opens g-labs first (priority order): finish it, then walk g-sync.
+  await n.page.evaluate(([a]) => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(a)), [ALL]);
+  await n.page.locator('.fh-close').click({ timeout: 3000 }).catch(() => {});
+  await walkHint(n.page, 'g-sync', 1);
   await n.page.locator('#btn-header-team-sync').click();
   await n.page.locator('.cloud-sync-conexion [data-cloud-room-code]').waitFor({ timeout: 10000 });
   // Chip, code, Opciones (the user opens it), then Equipo, iPad / R+ Móvil, Diagnóstico Nube inside.
