@@ -2,7 +2,10 @@
 import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
 import { isMobileWeb } from '../../mobile-web.mjs';
 import { closeModalAnimated } from '../../ui-motion.mjs';
-import { closeConnectionDropdown } from '../cloud-sync/panel-chrome.mjs';
+import { closeConnectionDropdown, openConnectionDropdown } from '../cloud-sync/panel-chrome.mjs';
+import { getIdleLockStatus } from '../platform/offline.mjs';
+import { isDbMode } from '../../db-storage-bridge.mjs';
+import { initPerfilPanel } from '../profile-modal.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
 
 let settingsModalChromeWired = false;
@@ -73,7 +76,7 @@ export function syncSettingsNavVisibility() {
     }
   });
   if (activeHidden) {
-    var fallback = document.querySelector('.settings-nav-item:not([hidden])');
+    var fallback = document.querySelector('.settings-nav-item[data-settings-target]:not([hidden])');
     if (fallback) showSettingsPanel(fallback.getAttribute('data-settings-target'));
   }
 }
@@ -90,7 +93,7 @@ export function showSettingsPanel(panelId) {
     panel.classList.toggle('is-active', active);
     if (active) found = true;
   });
-  document.querySelectorAll('.settings-nav-item').forEach(function (btn) {
+  document.querySelectorAll('.settings-nav-item[data-settings-target]').forEach(function (btn) {
     var active = btn.getAttribute('data-settings-target') === panelId && !btn.hidden;
     btn.classList.toggle('is-active', active);
     btn.setAttribute('aria-selected', active ? 'true' : 'false');
@@ -102,6 +105,10 @@ export function showSettingsPanel(panelId) {
   if (panelId === 'settings-accordion-updates') {
     document.dispatchEvent(new CustomEvent('rpc-settings-updates-panel-shown'));
   }
+  if (panelId === 'settings-accordion-perfil') {
+    initPerfilPanel();
+  }
+  syncSettingsStatusCards();
 }
 
 function demoteDetailsToPanel(det) {
@@ -117,6 +124,92 @@ function demoteDetailsToPanel(det) {
   return panel;
 }
 
+const SETTINGS_ICON_PATHS = {
+  perfil: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  apariencia: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  respaldos: '<path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+  documentos: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>',
+  plantillas: '<path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/>',
+  seguridad: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  aplicacion: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18"/>',
+  nube: '<path d="M7 18a5 5 0 1 1 .9-9.9A6 6 0 0 1 19 10a4 4 0 0 1-1 8z"/>',
+  peligro: '<path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4"/><path d="M12 17h.01"/>',
+};
+
+function settingsIconSvg(key) {
+  var path = SETTINGS_ICON_PATHS[key];
+  if (!path) return '';
+  return (
+    '<svg class="settings-nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    path +
+    '</svg>'
+  );
+}
+
+/** One side-menu button for a section (board «Ajustes A»). */
+function buildSettingsNavItem(panelId, label, iconKey) {
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'settings-nav-item';
+  btn.id = 'settings-nav-' + panelId;
+  btn.setAttribute('role', 'tab');
+  btn.setAttribute('data-settings-target', panelId);
+  btn.setAttribute('aria-controls', panelId);
+  btn.innerHTML = settingsIconSvg(iconKey) + '<span></span>';
+  btn.querySelector('span').textContent = label;
+  if (iconKey === 'peligro') btn.classList.add('settings-nav-item--danger');
+  return btn;
+}
+
+/** «Nube y equipo ↗» — not a section: opens the Nube panel. */
+function buildNubeNavLink() {
+  var link = document.createElement('button');
+  link.type = 'button';
+  link.className = 'settings-nav-item settings-nav-link';
+  link.innerHTML = settingsIconSvg('nube') + '<span>Nube y equipo ↗</span>';
+  link.addEventListener('click', function () {
+    closeSettingsDropdown();
+    openConnectionDropdown();
+  });
+  return link;
+}
+
+/** Turns one <details> section into a panel + its menu item (with group label / bottom pin). */
+function addSettingsSection(det, index, nav, panels) {
+  var summary = det.querySelector(':scope > summary');
+  var label = summary ? summary.textContent.trim() : 'Sección';
+  var panelId = det.id || 'settings-panel-' + index;
+  if (!det.id) det.id = panelId;
+  var group = det.getAttribute('data-settings-group');
+  var pinned = det.getAttribute('data-settings-pin') === 'bottom';
+  if (pinned) {
+    if (!nav.querySelector('.settings-nav-link')) nav.appendChild(buildNubeNavLink());
+    var spacer = document.createElement('span');
+    spacer.className = 'settings-nav-spacer';
+    spacer.setAttribute('aria-hidden', 'true');
+    nav.appendChild(spacer);
+  } else if (group) {
+    var groupLabel = document.createElement('p');
+    groupLabel.className = 'settings-nav-group';
+    groupLabel.textContent = group;
+    nav.appendChild(groupLabel);
+  }
+  nav.appendChild(buildSettingsNavItem(panelId, label, det.getAttribute('data-settings-icon') || ''));
+  if (summary) summary.remove();
+  var panel = demoteDetailsToPanel(det);
+  panel.classList.add('settings-panel');
+  panel.setAttribute('role', 'tabpanel');
+  panel.setAttribute('aria-labelledby', 'settings-nav-' + panelId);
+  if (panel.classList.contains('settings-accordion--full')) panel.classList.add('settings-panel--wide');
+  var title = document.createElement('h4');
+  title.className = 'settings-panel-title';
+  title.textContent = label;
+  panel.insertBefore(title, panel.firstChild);
+  panels.appendChild(panel);
+  return panel;
+}
+
 function initSettingsSplitPane() {
   if (settingsSplitPaneWired) {
     syncSettingsNavVisibility();
@@ -126,7 +219,7 @@ function initSettingsSplitPane() {
   if (!grid) return;
   settingsSplitPaneWired = true;
 
-  var items = Array.from(grid.querySelectorAll('.settings-accordion'));
+  var items = Array.from(grid.querySelectorAll(':scope > .settings-accordion'));
   if (!items.length) return;
 
   var split = document.createElement('div');
@@ -136,6 +229,7 @@ function initSettingsSplitPane() {
   nav.className = 'settings-nav';
   nav.id = 'settings-nav';
   nav.setAttribute('role', 'tablist');
+  nav.setAttribute('aria-orientation', 'vertical');
   nav.setAttribute('aria-label', 'Secciones de ajustes');
 
   var panels = document.createElement('div');
@@ -144,54 +238,105 @@ function initSettingsSplitPane() {
 
   var initialId = '';
   items.forEach(function (det, index) {
-    var summary = det.querySelector(':scope > summary');
-    var label = summary ? summary.textContent.trim() : 'Sección';
-    var panelId = det.id || 'settings-panel-' + index;
-    if (!det.id) det.id = panelId;
-
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'settings-nav-item';
-    btn.id = 'settings-nav-' + panelId;
-    btn.setAttribute('role', 'tab');
-    btn.setAttribute('data-settings-target', panelId);
-    btn.setAttribute('aria-controls', panelId);
-    btn.textContent = label;
-    nav.appendChild(btn);
-
-    if (summary) summary.remove();
-    var panel = demoteDetailsToPanel(det);
-    panel.classList.add('settings-panel');
-    panel.setAttribute('role', 'tabpanel');
-    panel.setAttribute('aria-labelledby', 'settings-nav-' + panelId);
-    if (panelId === 'settings-accordion-backup-sync') {
-      panel.classList.add('settings-panel--wide');
-    }
-
-    panels.appendChild(panel);
-
-    if (!initialId && panel.style.display !== 'none' && !isSettingsPanelEmpty(panel)) {
-      initialId = panelId;
-    }
+    var panel = addSettingsSection(det, index, nav, panels);
+    if (!initialId && panel.style.display !== 'none' && !isSettingsPanelEmpty(panel)) initialId = panel.id;
   });
-
-  if (!initialId) {
-    var firstBtn = nav.querySelector('.settings-nav-item:not([hidden])');
-    initialId = firstBtn ? firstBtn.getAttribute('data-settings-target') : '';
-  }
+  if (!nav.querySelector('.settings-nav-link')) nav.appendChild(buildNubeNavLink());
 
   split.appendChild(nav);
   split.appendChild(panels);
   grid.replaceWith(split);
 
   nav.addEventListener('click', function (ev) {
-    var btn = ev.target.closest('.settings-nav-item');
+    var btn = ev.target.closest('.settings-nav-item[data-settings-target]');
     if (!btn || btn.hidden) return;
     showSettingsPanel(btn.getAttribute('data-settings-target'));
+  });
+  // «Ir a Respaldos primero» and similar in-panel jumps.
+  panels.addEventListener('click', function (ev) {
+    var jump = ev.target.closest('[data-settings-goto]');
+    if (jump) showSettingsPanel(jump.getAttribute('data-settings-goto'));
   });
 
   syncSettingsNavVisibility();
   showSettingsPanel(initialId);
+}
+
+/** «hace 2 h» for an epoch ms. */
+function agoLabel(ms) {
+  if (!ms) return '';
+  var mins = Math.floor((Date.now() - ms) / 60000);
+  if (mins < 1) return 'ahora';
+  if (mins < 60) return 'hace ' + mins + ' min';
+  var h = Math.floor(mins / 60);
+  if (h < 48) return 'hace ' + h + ' h';
+  return 'hace ' + Math.floor(h / 24) + ' días';
+}
+
+function readAutoBackupStatus() {
+  try {
+    var raw = JSON.parse(localStorage.getItem('rpc-auto-backup-settings') || '{}');
+    return {
+      frequency: raw.frequency === 'daily' || raw.frequency === 'weekly' ? raw.frequency : 'off',
+      retention: [3, 7, 14].indexOf(Number(raw.retention)) >= 0 ? Number(raw.retention) : 7,
+      lastRunAt: Number(raw.lastRunAt) || 0,
+    };
+  } catch {
+    return { frequency: 'off', retention: 7, lastRunAt: 0 };
+  }
+}
+
+/** Respaldos card: when the last backup ran and what auto-backup does. */
+function syncBackupStatusCard() {
+  var card = document.querySelector('[data-settings-backup-status]');
+  if (!card) return;
+  var st = readAutoBackupStatus();
+  var title = card.querySelector('[data-settings-backup-title]');
+  var sub = card.querySelector('[data-settings-backup-sub]');
+  var stale = !st.lastRunAt || Date.now() - st.lastRunAt > 8 * 24 * 3600000;
+  if (title) title.textContent = st.lastRunAt ? 'Respaldado ' + agoLabel(st.lastRunAt) : 'Sin respaldos todavía';
+  if (sub) {
+    sub.textContent =
+      st.frequency === 'off'
+        ? 'Auto-respaldo desactivado · Descargas'
+        : 'Auto-respaldo ' + (st.frequency === 'daily' ? 'diario' : 'semanal') + ' · se guardan ' + st.retention + ' archivos · Descargas';
+  }
+  card.querySelector('.settings-status-icon')?.setAttribute('data-state', stale ? 'warn' : 'ok');
+}
+
+/** Seguridad card: lock time and PIN. */
+function syncSecurityStatusCard() {
+  var sub = document.querySelector('[data-settings-security-sub]');
+  if (!sub) return;
+  var st = getIdleLockStatus();
+  sub.textContent =
+    (st.minutes ? 'Se bloquea tras ' + st.minutes + ' min sin uso' : 'Sin bloqueo automático') +
+    ' · ' +
+    (st.hasPin ? 'PIN activo' : 'Sin PIN');
+  document
+    .querySelector('[data-settings-security-status] .settings-status-icon')
+    ?.setAttribute('data-state', st.hasPin && st.minutes ? 'ok' : 'warn');
+}
+
+/** Aplicación card: channel in words. */
+function syncAppStatusCard() {
+  var sub = document.querySelector('[data-settings-app-sub]');
+  if (!sub) return;
+  var sel = document.getElementById('rpc-update-channel');
+  var channel = sel && sel.value === 'beta' ? 'Pre-releases' : 'Estable';
+  sub.textContent = 'Canal ' + channel + '. Tus datos locales no se tocan al actualizar.';
+}
+
+export function syncSettingsStatusCards() {
+  var db = isDbMode();
+  document.querySelectorAll('#settings-dropdown [data-settings-db-only]').forEach(function (el) {
+    el.hidden = !db;
+  });
+  var secTitle = document.querySelector('[data-settings-security-title]');
+  if (secTitle) secTitle.textContent = db ? 'Datos cifrados en este equipo' : 'Bloqueo de este equipo';
+  syncBackupStatusCard();
+  syncSecurityStatusCard();
+  syncAppStatusCard();
 }
 
 function foldDiacritics(s) {
@@ -213,7 +358,7 @@ function navItemSearchText(btn, panelId) {
 export function filterSettingsNav(query) {
   initSettingsSplitPane();
   var q = foldDiacritics(query).trim();
-  var items = Array.from(document.querySelectorAll('.settings-nav-item'));
+  var items = Array.from(document.querySelectorAll('.settings-nav-item[data-settings-target]'));
   if (!q) {
     items.forEach(function (btn) {
       btn.hidden = false;
@@ -282,6 +427,7 @@ export function toggleSettingsDropdown() {
     .catch(() => {});
   initSettingsSplitPane();
   syncSettingsNavVisibility();
+  syncSettingsStatusCards();
   var searchInput = document.getElementById('settings-search-input');
   if (searchInput && searchInput.value) {
     searchInput.value = '';
@@ -305,7 +451,7 @@ export function closeSettingsDropdown() {
   finishCloseSettingsDropdown();
 }
 
-/** Abre el desplegable y la sección «Respaldos, sync y recuperación». */
+/** Abre Ajustes en Respaldos. */
 export function expandSettingsAccordionBackupSync() {
   if (!isSettingsDropdownOpen()) toggleSettingsDropdown();
   showSettingsPanel('settings-accordion-backup-sync');
@@ -324,4 +470,10 @@ export function syncTeamSyncHeaderButton() {
 
 export function ensureSettingsDropdownOpen() {
   if (!isSettingsDropdownOpen()) toggleSettingsDropdown();
+}
+
+/** Opens Ajustes on one section (e.g. Perfil from «Mi perfil»). */
+export function openSettingsPanel(panelId) {
+  if (!isSettingsDropdownOpen()) toggleSettingsDropdown();
+  showSettingsPanel(panelId);
 }

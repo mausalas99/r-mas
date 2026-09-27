@@ -243,7 +243,7 @@ body.settings-dropdown-open {
   overflow: hidden;
 }
 #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-modal {
-  width: min(96vw, 820px);
+  width: min(96vw, 1040px);
   max-width: none;
   max-height: min(92dvh, calc(var(--app-height) - 32px));
   /* Fixed height: switching sections must not make the window jump */
@@ -409,9 +409,8 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   color: var(--text);
 }
 .settings-nav-item.is-active {
-  background: var(--color-accent-soft);
-  color: var(--color-ink);
-  box-shadow: inset 2.5px 0 0 var(--color-ink);
+  background: color-mix(in oklab, var(--color-accent) 14%, transparent);
+  color: var(--color-accent);
 }
 .settings-nav-item:focus-visible {
   outline: 2px solid color-mix(in oklab, var(--action) 55%, transparent);
@@ -2935,4 +2934,311 @@ select.profile-input.profile-select {
 .lan-connect-back-to-local,
 .lan-disconnect-banner-pref {
   display: none !important;
+}
+
+/* ── Ajustes A (board «Ajustes + Perfil»): grouped side menu, status cards ── */
+.settings-nav {
+  width: 220px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+.settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  font-size: 13px;
+}
+.settings-nav-icon {
+  flex-shrink: 0;
+}
+.settings-nav-group {
+  margin: 12px 12px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.settings-nav-group:first-child {
+  margin-top: 4px;
+}
+.settings-nav-spacer {
+  flex: 1;
+  min-height: 16px;
+}
+.settings-nav-item--danger,
+.settings-nav-item--danger.is-active {
+  color: var(--color-danger);
+}
+.settings-nav-item--danger.is-active {
+  background: color-mix(in oklab, var(--color-danger) 10%, transparent);
+}
+.settings-panels {
+  padding: 20px 24px 24px;
+}
+.settings-panel-title {
+  margin: 0 0 14px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.settings-status-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 16px 18px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-container, 16px);
+  background: color-mix(in oklab, var(--text) 3%, var(--color-elevated));
+}
+.settings-status-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--color-accent) 14%, transparent);
+  position: relative;
+}
+.settings-status-icon::after {
+  content: '';
+  position: absolute;
+  inset: 12px 11px 14px 12px;
+  border-left: 2.5px solid var(--color-accent);
+  border-bottom: 2.5px solid var(--color-accent);
+  transform: rotate(-45deg);
+}
+.settings-status-icon[data-state='warn'] {
+  background: color-mix(in oklab, var(--color-livesync-degraded, #b45309) 14%, transparent);
+}
+.settings-status-icon[data-state='warn']::after {
+  content: '!';
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-livesync-degraded, #b45309);
+  transform: none;
+}
+.settings-status-text {
+  flex: 1;
+  min-width: 0;
+}
+.settings-status-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+.settings-status-sub {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.settings-status-title .settings-acc-version {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-weight: 600;
+}
+.settings-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.settings-tools {
+  margin-top: 14px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-md);
+}
+.settings-tools > summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+.settings-tools > summary::-webkit-details-marker {
+  display: none;
+}
+.settings-tools > summary::after {
+  content: '›';
+  position: absolute;
+  right: 16px;
+}
+.settings-tools {
+  position: relative;
+}
+.settings-tools[open] > summary::after {
+  transform: rotate(90deg);
+}
+.settings-tools > .settings-card-stack {
+  margin: 0 10px 10px;
+}
+.settings-card--danger {
+  border-color: color-mix(in oklab, var(--color-danger) 30%, var(--divider));
+}
+.settings-danger-backup {
+  margin-top: 12px;
+}
+/* Pill switch (Sala / Interconsulta). */
+.settings-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--text) 4%, transparent);
+}
+.settings-seg-opt {
+  position: relative;
+}
+.settings-seg-opt input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.settings-seg-opt span {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.settings-seg-opt input:checked + span {
+  background: color-mix(in oklab, var(--color-accent) 16%, transparent);
+  color: var(--color-accent);
+}
+.settings-seg-opt input:focus-visible + span {
+  outline: 2px solid color-mix(in oklab, var(--action) 55%, transparent);
+}
+/* Mi perfil B: form + live preview. */
+.settings-dropdown-modal .settings-panel.settings-accordion:not([hidden]) > .settings-acc-body.settings-perfil {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.settings-perfil-id {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 8px;
+  padding: 14px 16px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--text) 3%, var(--color-elevated));
+}
+.settings-perfil-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--color-accent) 16%, var(--color-elevated));
+  color: var(--color-accent);
+  font-weight: 700;
+}
+.settings-perfil-id-text {
+  flex: 1;
+  min-width: 0;
+}
+.settings-perfil-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.settings-perfil-meta {
+  margin: 2px 0 0;
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.settings-perfil-saved {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+.settings-perfil-doctor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+}
+.settings-perfil-foot {
+  margin-top: 14px;
+}
+.settings-perfil-preview {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--text) 3%, var(--color-elevated));
+}
+.settings-perfil-doc {
+  padding: 12px 14px;
+  border-radius: var(--radius-badge);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+.settings-perfil-doc[hidden] {
+  display: none;
+}
+.settings-perfil-doc-label {
+  margin: 0 0 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.settings-perfil-doc-title {
+  margin: 0;
+  font-weight: 700;
+  color: var(--text);
+}
+.settings-perfil-doc-sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.settings-perfil-doc-sign {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px;
+  font-style: italic;
+  color: var(--text);
+}
+#settings-panels {
+  container-type: inline-size;
+}
+.settings-perfil-preview {
+  position: static;
+}
+@container (min-width: 700px) {
+  .settings-dropdown-modal .settings-panel.settings-accordion:not([hidden]) > .settings-acc-body.settings-perfil {
+    grid-template-columns: minmax(0, 1fr) 260px;
+  }
+  .settings-perfil-preview {
+    position: sticky;
+  }
+}
+[data-settings-db-only][hidden] {
+  display: none;
 }

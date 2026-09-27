@@ -18,6 +18,7 @@ const platformHandlerNames = {
   openUserDataFolderFromSettings: 'openUserDataFolderFromSettings',
   onIdleLockSelectChange: 'onIdleLockSelectChange',
   changeIdleLockPin: 'changeIdleLockPin',
+  lockScreenNow: 'lockScreenNow',
   submitIdleLockPin: 'submitIdleLockPin',
   openWipeDataModal: 'openWipeDataModal',
   closeWipeDataModal: 'closeWipeDataModal',

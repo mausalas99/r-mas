@@ -58,6 +58,7 @@
     "e2e:equipos-panel": "node scripts/e2e/equipos-panel.e2e.mjs",
     "e2e:nube-panel": "node scripts/e2e/nube-panel.e2e.mjs",
     "e2e:admin-panel": "node scripts/e2e/admin-panel.e2e.mjs",
+    "e2e:ajustes-panel": "node scripts/e2e/ajustes-panel.e2e.mjs",
     "e2e:pendientes": "node scripts/e2e/pendientes.e2e.mjs",
     "e2e:agenda": "node scripts/e2e/agenda.e2e.mjs",
     "e2e:nota-evolucion": "node scripts/e2e/nota-evolucion.e2e.mjs",
