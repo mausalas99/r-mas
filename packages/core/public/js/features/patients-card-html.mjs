@@ -141,9 +141,9 @@ export function renderPatientCardHtml(p) {
       p.id +
       '"' +
       (svcHue != null ? ' style="--svc-hue:' + svcHue + '"' : '') +
-      ' role="button" tabindex="0">' +
+      '>' +
       renderPatientCardToolbarHtml(p, pinOn, archOn) +
-      renderPatientSidebarBodyHtml(p, patientSidebarCardOpts()) +
+      renderPatientSidebarBodyHtml(p, patientSidebarCardOpts({ openButton: true })) +
       '</div>'
   );
 }

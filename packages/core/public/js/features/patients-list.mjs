@@ -104,7 +104,8 @@ function mountPatientListSortables() {
       animation: 200,
       easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
       draggable: '.patient-card',
-      filter: 'button, a[href], input, textarea, select',
+      // .patient-card-open covers the whole card, so it must still start a drag.
+      filter: 'button:not(.patient-card-open), a[href], input, textarea, select',
       preventOnFilter: true,
       delay: 0,
       delayOnTouchOnly: true,
@@ -488,12 +489,6 @@ function ensurePatientListClickDelegation() {
   root.addEventListener('click', selectPatientFromListEvent);
   root.addEventListener('pointerup', function (ev) {
     if (!shouldHandleTouchPointerUp(ev)) return;
-    selectPatientFromListEvent(ev);
-  });
-  root.addEventListener('keydown', function (ev) {
-    if (ev.key !== 'Enter' && ev.key !== ' ') return;
-    if (!patientCardIdFromEvent(ev)) return;
-    ev.preventDefault();
     selectPatientFromListEvent(ev);
   });
 }

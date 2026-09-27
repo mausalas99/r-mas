@@ -5,6 +5,9 @@
  * closing summary line rendered as centered ink-2 text (NOT a table row).
  * Row hover `rgba(28,28,30,0.03)`; alert-tint rows keep their tint on hover.
  * Row click opens the caller-supplied handler; in-row buttons stop propagation.
+ * Rows are plain divs: a row that opens something carries one real, empty
+ * button (`openLabel` → .wb-row-open.card-open-btn) whose ::after covers the
+ * row, so it never becomes a role="button" wrapping other buttons.
  */
 import { escHtml, escAttr } from '../../dom-escape.mjs';
 
@@ -14,6 +17,7 @@ import { escHtml, escAttr } from '../../dom-escape.mjs';
  *   cellsHtml: string[],
  *   alert?: boolean,
  *   twoLine?: boolean,
+ *   openLabel?: string,
  * }} TableRow
  */
 
@@ -43,14 +47,19 @@ export function buildColumnHeadHtml(columns, gridTemplate) {
 /**
  * @param {TableRow & { gridTemplate?: string }} row
  */
-export function buildRowHtml({ id, cellsHtml = [], alert = false, twoLine = false, gridTemplate } = {}) {
+export function buildRowHtml({ id, cellsHtml = [], alert = false, twoLine = false, gridTemplate, openLabel } = {}) {
   const classes = ['wb-row'];
   if (alert) classes.push('wb-row--alert');
   if (twoLine) classes.push('wb-row--twoline');
+  if (openLabel) classes.push('wb-row--openable');
   const style = gridTemplate ? ` style="--wb-grid:${escAttr(gridTemplate)}"` : '';
+  // Inside the first cell, not as its own grid item.
+  const openBtn = openLabel
+    ? `<button type="button" class="wb-row-open card-open-btn" aria-label="${escAttr(openLabel)}"></button>`
+    : '';
   return (
-    `<div class="${classes.join(' ')}"${style} data-wb-row-id="${escAttr(id)}" role="button" tabindex="0">` +
-    cellsHtml.map((h) => `<span class="wb-cell">${h}</span>`).join('') +
+    `<div class="${classes.join(' ')}"${style} data-wb-row-id="${escAttr(id)}">` +
+    cellsHtml.map((h, i) => `<span class="wb-cell">${h}${i === 0 ? openBtn : ''}</span>`).join('') +
     '</div>'
   );
 }
@@ -96,14 +105,9 @@ export function mountTableCard(container, opts) {
     const id = row.getAttribute('data-wb-row-id');
     const open = () => onRowClick(id);
     row.addEventListener('click', open);
-    row.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter' || ev.key === ' ') {
-        ev.preventDefault();
-        open();
-      }
-    });
-    // In-row buttons never bubble to the row's open-patient handler.
-    row.querySelectorAll('button').forEach((btn) => {
+    // In-row buttons (other than the row's own .wb-row-open) never bubble to
+    // the row's open-patient handler.
+    row.querySelectorAll('button:not(.wb-row-open)').forEach((btn) => {
       btn.addEventListener('click', (ev) => ev.stopPropagation());
     });
   });

@@ -24,7 +24,9 @@ function elementFromNode(node) {
 export function patientCardIdFromEvent(ev) {
   var el = elementFromNode(eventStartNode(ev));
   if (!el) return '';
-  if (el.closest(INTERACTIVE)) return '';
+  // The card's own open button (.patient-card-open) is the one control that opens it.
+  var hit = el.closest(INTERACTIVE);
+  if (hit && !hit.classList.contains('patient-card-open')) return '';
   var card = el.closest('.patient-card[data-patient-id]');
   if (!card) return '';
   return card.getAttribute('data-patient-id') || '';

@@ -147,7 +147,7 @@ function buildTendenciaCardHtml(sectionKey, spec, seriesIndex, expanded) {
     : null;
   var insightHtml = buildTendInsightHtml(tc.esc, latest, prev, isAb, idxCard ? idxCard.ref : null);
   return (
-    '<div class="tend-card" role="button" tabindex="0" data-series-key="' +
+    '<div class="tend-card" data-series-key="' +
     tc.esc(seriesKey) +
     '" data-abnormal="' +
     (isAb ? '1' : '0') +
@@ -156,6 +156,10 @@ function buildTendenciaCardHtml(sectionKey, spec, seriesIndex, expanded) {
     '<span class="tend-card-title">' +
     '<span class="tend-param-name">' +
     tc.esc(labelParts.title) +
+    // One real button opens the card; its ::after covers the card (.card-open-btn).
+    '<button type="button" class="tend-card-open card-open-btn" aria-label="Ver tendencia de ' +
+    tc.esc(labelParts.title) +
+    '"></button>' +
     '</span>' +
     unitHtml +
     '</span>' +
