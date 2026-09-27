@@ -227,6 +227,27 @@ function patientShortName(name) {
  * @param {object} p
  * @returns {string}
  */
+/**
+ * Right-hand marks on a census card, plus the card classes they imply.
+ * Handoff markers (CR/NF/SH) and the critical accent come from
+ * enrichPatientForGuardiaCard; same classes as the unified grid chip (pase-board.css).
+ * @param {object} p
+ * @param {string[]} classes  mutated: gets the stale-labs / critical modifiers
+ */
+function guardiaCardMarksHtml(p, classes) {
+  const staleLabs = !isPatientAdmissionIncomplete(p) && isProbableDischargeCandidate(p);
+  if (staleLabs) classes.push('gct-card--stale-labs');
+  if (p.isCritical) classes.push('gct-card--critical');
+  const staleLabsChip = staleLabs
+    ? '<span class="gct-chip gct-chip--stale-labs" title="Sin laboratorios en 7 días: posible alta" aria-label="Sin laboratorios en 7 días: posible alta">⏳</span>'
+    : '';
+  const entregaSymbols = buildEntregaMarkerSymbolsHtml(Array.isArray(p.entregaMarkers) ? p.entregaMarkers : []);
+  const criticalHint = p.isCritical
+    ? '<span class="patient-chip-critical-hint" title="Paciente crítico">Crítico</span>'
+    : '';
+  return entregaSymbols + criticalHint + staleLabsChip + buildGuardiaMarksBadgesHtml(p);
+}
+
 export function buildGuardiaCensusCardHtml(p) {
   const pendientes = patientPendientes(p.id);
   const status = guardiaPatientStatus(pendientes);
@@ -234,25 +255,14 @@ export function buildGuardiaCensusCardHtml(p) {
   const morePend = task ? pendientes.open.length - 1 : 0;
   const classes = ['gct-card'];
   if (status === 'vencido') classes.push('gct-card--alert');
-  const staleLabs = !isPatientAdmissionIncomplete(p) && isProbableDischargeCandidate(p);
-  if (staleLabs) classes.push('gct-card--stale-labs');
-  const staleLabsChip = staleLabs
-    ? '<span class="gct-chip gct-chip--stale-labs" title="Sin laboratorios en 7 días: posible alta" aria-label="Sin laboratorios en 7 días: posible alta">⏳</span>'
-    : '';
-  // Handoff markers (CR/NF/SH) and the critical accent — enrichPatientForGuardiaCard
-  // computes both; same classes as the unified grid chip (pase-board.css).
-  if (p.isCritical) classes.push('gct-card--critical');
-  const entregaSymbols = buildEntregaMarkerSymbolsHtml(Array.isArray(p.entregaMarkers) ? p.entregaMarkers : []);
-  const criticalHint = p.isCritical
-    ? '<span class="patient-chip-critical-hint" title="Paciente crítico">Crítico</span>'
-    : '';
+  const marks = guardiaCardMarksHtml(p, classes);
   const name = String(p.name || p.nombre || '—');
   return (
     `<div class="${classes.join(' ')}" data-wb-row-id="${escAttr(p.id)}" role="button" tabindex="0">` +
     '<div class="gct-card__row">' +
     `<span class="gct-cell-bed">${escHtml(bedLabel(p))}</span>` +
     `<span class="gct-cell-name" title="${escAttr(name)}" aria-label="${escAttr(name)}">${escHtml(patientShortName(name))}</span>` +
-    `<span class="gct-card__marks">${entregaSymbols}${criticalHint}${staleLabsChip}${buildGuardiaMarksBadgesHtml(p)}</span>` +
+    `<span class="gct-card__marks">${marks}</span>` +
     '</div>' +
     '<div class="gct-task-row">' +
     `<span class="gct-task"${task ? ` title="${escAttr(String(task.text || ''))}"` : ''}>` +

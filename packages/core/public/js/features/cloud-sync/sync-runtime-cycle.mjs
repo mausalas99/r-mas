@@ -153,7 +153,7 @@ function createSyncCycleController(ctx) {
  * @param {{ deferBootCycle?: boolean }} [opts]
  */
 function attachSyncRuntimeListeners(ctx, opts = {}) {
-  const { syncCycle, scheduler, pace, outboxSync, roomWs, setStatus, getCurrentStatus } = ctx;
+  const { syncCycle, scheduler, pace, outboxSync, roomWs, getCurrentStatus } = ctx;
 
   function onOnline() { void syncCycle(); }
   function onVisibility() {
