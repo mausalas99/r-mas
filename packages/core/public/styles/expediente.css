@@ -706,32 +706,16 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   flex: 1 0 auto;
 }
 
-/* Datos: property list left, census lists right. Values are "quiet" controls:
-   plain text at rest, a tint on hover, the normal input border on focus. */
+/* Datos (board «Datos B»): summary card, section chips, one pane at a time.
+   Values are "quiet" controls: plain text at rest, a tint on hover, the
+   normal input border on focus. */
 .exp-datos-fields {
   display: flex;
+  flex-direction: column;
+  gap: 14px;
   min-height: 100%;
-}
-
-.exp-datos-col {
-  flex: 1 1 0;
-  min-width: 0;
-  padding: 12px 22px 16px;
-}
-
-.exp-datos-col + .exp-datos-col {
-  flex-grow: 1.15;
-  border-left: 1px solid var(--divider);
-}
-
-.exp-datos-col--props .exp-datos-sec + .exp-datos-sec {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--divider);
-}
-
-.exp-datos-col--censo .exp-datos-sec + .exp-datos-sec {
-  margin-top: 10px;
+  padding: 18px 22px 22px;
+  box-sizing: border-box;
 }
 
 .exp-datos-sec__head {
@@ -953,15 +937,6 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
 
 .exp-datos-list--dx .exp-datos-q:hover {
   background: transparent;
-}
-
-.exp-datos-list--cols {
-  columns: 2;
-  column-gap: 20px;
-}
-
-.exp-datos-list--cols li {
-  break-inside: avoid;
 }
 
 .exp-datos-list .exp-datos-q {
@@ -1854,3 +1829,209 @@ html.dark .drive-import-lab-status--new {
 }
 button.med-receta-dia { border: 0; font-family: inherit; cursor: pointer; }
 button.med-receta-dia:hover { filter: brightness(0.95); }
+
+/* Datos B · summary card */
+.exp-datos-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: color-mix(in oklab, var(--text) 3%, var(--surface));
+}
+
+.exp-datos-summary__bed {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  height: 52px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--action) 15%, transparent);
+  color: color-mix(in oklab, var(--action) 85%, var(--text));
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.exp-datos-summary__who {
+  flex: 1;
+  min-width: 0;
+}
+
+.exp-datos-summary__name {
+  margin: 0;
+  overflow: hidden;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exp-datos-summary__meta,
+.exp-datos-summary__since {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.exp-datos-summary__stay {
+  flex: none;
+  text-align: right;
+}
+
+.exp-datos-summary__day {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.exp-datos-summary__stay.is-empty .exp-datos-summary__day {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.exp-datos-summary .exp-datos-team-slot {
+  flex: none;
+  margin-left: 4px;
+}
+
+/* Datos B · section chips */
+.exp-datos-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.exp-datos-tab {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.exp-datos-tab:hover {
+  color: var(--text);
+}
+
+.exp-datos-tab.is-on {
+  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+  background: color-mix(in oklab, var(--action) 14%, transparent);
+  color: color-mix(in oklab, var(--action) 85%, var(--text));
+}
+
+.exp-datos-tab:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--action) 60%, transparent);
+  outline-offset: 2px;
+}
+
+/* Datos B · panes: each section is a card */
+.exp-datos-pane[hidden] {
+  display: none;
+}
+
+.exp-datos-pane--censo,
+.exp-datos-pane--cama {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.exp-datos-pane--identidad {
+  max-width: 560px;
+}
+
+.exp-datos-censo-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.exp-datos-pane .exp-datos-sec {
+  min-width: 0;
+  padding: 10px 16px 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.exp-datos-sec__actions {
+  display: inline-flex;
+  gap: 2px;
+}
+
+@media (max-width: 760px) {
+  .exp-datos-pane--censo,
+  .exp-datos-pane--cama {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .exp-datos-summary {
+    flex-wrap: wrap;
+  }
+}
+
+/* Datos B · antibióticos and meds as chips */
+.exp-datos-list--chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 0 2px;
+}
+
+.exp-datos-list.exp-datos-list--chips li {
+  max-width: 100%;
+  min-height: 30px;
+  margin: 0;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--text) 7%, transparent);
+}
+
+.exp-datos-list.exp-datos-list--chips li:hover {
+  background: color-mix(in oklab, var(--text) 11%, transparent);
+}
+
+.exp-datos-list.exp-datos-list--chips li:has(> input) {
+  flex-basis: 100%;
+  padding: 0;
+  border-radius: 10px;
+  background: transparent;
+}
+
+.exp-datos-list.exp-datos-list--chips li:has(> .exp-datos-line--empty) {
+  padding: 0;
+  background: transparent;
+}
+
+.exp-datos-list--chips .exp-datos-line {
+  flex: 0 1 auto;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.exp-datos-list--chips .exp-datos-line__t {
+  flex: 0 1 auto;
+}
+
+.exp-datos-list--chips .exp-datos-tag {
+  margin-right: -6px;
+}
+
+.exp-datos-list.exp-datos-list--chips .exp-datos-q {
+  margin-left: 0;
+}

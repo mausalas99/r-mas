@@ -137,7 +137,7 @@ function censoListHtml(patient, kind, editIndex) {
     );
   }
   return (
-    '<ul class="exp-datos-list' + (kind === 'meds' ? ' exp-datos-list--cols' : '') + '" id="patient-censo-' + kind + '">' + lis.join('') + '</ul>'
+    '<ul class="exp-datos-list exp-datos-list--chips" id="patient-censo-' + kind + '">' + lis.join('') + '</ul>'
   );
 }
 
@@ -152,6 +152,13 @@ var TOMAR_BTN = function (fn, what) {
   );
 };
 
+function censoActionsHtml(kind, fn, what) {
+  return (
+    '<span class="exp-datos-sec__actions">' + TOMAR_BTN(fn, what) +
+    '<button type="button" class="exp-datos-sec__action" data-onclick="addCensoLine" data-onclick-args=\'["' + kind + '"]\'>+ Agregar</button></span>'
+  );
+}
+
 /**
  * Censo blocks for Expediente → Datos, each wrapped by the caller's section builder.
  * @param {Record<string, unknown>} patient
@@ -162,13 +169,16 @@ export function buildPatientCensoDatosSectionsHtml(patient, section) {
   ensurePatientDiagnosticos(patient);
   draftLine = null;
   return (
+    '<div class="exp-datos-censo-col">' +
     section(
       'Diagnósticos',
       '<ol class="exp-datos-list exp-datos-list--dx" id="patient-dx-list">' + renderDxListHtml(patient) + '</ol>',
       '<button type="button" class="exp-datos-sec__action" data-onclick="addPatientDxRow">+ Agregar</button>'
     ) +
-    section('Antibióticos ' + censoCountHtml(patient, 'atb'), censoListHtml(patient, 'atb', -1), TOMAR_BTN('censoTomarDeAntibioticos', 'Antibióticos')) +
-    section('Medicamentos ' + censoCountHtml(patient, 'meds'), censoListHtml(patient, 'meds', -1), TOMAR_BTN('censoTomarDeMedicamentos', 'Medicamentos'))
+    '</div><div class="exp-datos-censo-col">' +
+    section('Antibióticos ' + censoCountHtml(patient, 'atb'), censoListHtml(patient, 'atb', -1), censoActionsHtml('atb', 'censoTomarDeAntibioticos', 'Antibióticos')) +
+    section('Medicamentos ' + censoCountHtml(patient, 'meds'), censoListHtml(patient, 'meds', -1), censoActionsHtml('meds', 'censoTomarDeMedicamentos', 'Medicamentos')) +
+    '</div>'
   );
 }
 
@@ -220,6 +230,15 @@ export function editCensoLine(kind, index) {
   if (!patient) return;
   if (!parseCensoLines(patient[CENSO_LINES[kind].field]).length) draftLine = { kind: kind, index: 0 };
   refreshCensoLines(kind, index);
+}
+
+/** «+ Agregar»: open an empty line at the end of the list. */
+export function addCensoLine(kind) {
+  var patient = activePatient(currentPatientId());
+  if (!patient || !CENSO_LINES[kind]) return;
+  var n = parseCensoLines(patient[CENSO_LINES[kind].field]).length;
+  draftLine = { kind: kind, index: n };
+  refreshCensoLines(kind, n);
 }
 
 /** Enter saves and opens a new line below; Escape drops the edit. */
@@ -368,6 +387,7 @@ export const patientDataCensoWindowHandlers = {
   censoTomarDeMedicamentos,
   censoTomarDeAntibioticos,
   editCensoLine,
+  addCensoLine,
   onCensoLineKey,
   commitCensoLine,
 };

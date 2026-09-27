@@ -6,6 +6,7 @@ import { buildPatientTeamAssignSectionHtml, wirePatientTeamAssignRefresh } from 
 import { buildPatientSalaFieldHtml } from '../../patient-sala-ui.mjs';
 import { buildPatientIngresoFechasHtml } from '../../patient-data-ingreso-ui.mjs';
 import { refreshRpcDateFields } from '../../rpc-date-picker.mjs';
+import { accesoFechaToDateInputValue } from '../../patient-date-fields.mjs';
 import { buildPatientCensoDatosSectionsHtml } from '../../patient-data-censo-ui.mjs';
 import { rt, aid, esc } from './expediente-runtime.mjs';
 
@@ -51,20 +52,23 @@ function sectionHtml(title, body, action) {
   );
 }
 
-function buildPatientDemographicsFieldsHtml(patient, teamInHeader) {
+function identidadHtml(patient) {
   var sexo =
     '<select class="exp-datos-q" data-onchange="updatePatient" data-onchange-args=\'["sexo"]\' data-onchange-pass="value">' +
     '<option value="M"' + (patient.sexo === 'M' ? ' selected' : '') + '>M</option>' +
     '<option value="F"' + (patient.sexo === 'F' ? ' selected' : '') + '>F</option></select>';
-  var props =
-    sectionHtml('Identidad',
-      propHtml('Nombre', qInput('nombre', patient.nombre, UPPER)) +
-      propHtml('Registro', qInput('registro', patient.registro)) +
-      pairHtml('Edad · Sexo', [['Edad', qInput('edad', patient.edad, ' inputmode="numeric"')], ['Sexo', sexo]]) +
-      pairHtml('Peso · Talla', [
-        ['Peso', qInput('peso', patient.peso, ' inputmode="decimal" placeholder="—"'), 'kg'],
-        ['Talla', qInput('talla', patient.talla, ' inputmode="decimal" placeholder="—"'), 'm'],
-      ])) +
+  return sectionHtml('Identidad',
+    propHtml('Nombre', qInput('nombre', patient.nombre, UPPER)) +
+    propHtml('Registro', qInput('registro', patient.registro)) +
+    pairHtml('Edad · Sexo', [['Edad', qInput('edad', patient.edad, ' inputmode="numeric"')], ['Sexo', sexo]]) +
+    pairHtml('Peso · Talla', [
+      ['Peso', qInput('peso', patient.peso, ' inputmode="decimal" placeholder="—"'), 'kg'],
+      ['Talla', qInput('talla', patient.talla, ' inputmode="decimal" placeholder="—"'), 'm'],
+    ]));
+}
+
+function camaIngresoHtml(patient) {
+  return (
     sectionHtml('Cama',
       pairHtml('Cuarto · Cama', [['Cuarto', qInput('cuarto', patient.cuarto)], ['Cama', qInput('cama', patient.cama)]]) +
       propHtml('Sala', buildPatientSalaFieldHtml(patient)) +
@@ -72,18 +76,133 @@ function buildPatientDemographicsFieldsHtml(patient, teamInHeader) {
       propHtml('Área', qInput('area', patient.area, UPPER))) +
     sectionHtml('Ingreso',
       buildPatientIngresoFechasHtml(patient, rt.getSettings(), propHtml) + buildPatientAccesosSectionHtml(patient),
-      '<button type="button" class="exp-datos-sec__action" data-onclick="addPatientAccesoRow">+ Acceso</button>') +
-    (teamInHeader ? '' : sectionHtml('Equipo', buildPatientTeamAssignSectionHtml(patient)));
-  var censo = isModeSala(rt.getSettings()) ? buildPatientCensoDatosSectionsHtml(patient, sectionHtml) : '';
-  return (
-    '<div class="exp-datos-col exp-datos-col--props">' + props + '</div>' +
-    (censo ? '<div class="exp-datos-col exp-datos-col--censo">' + censo + '</div>' : '')
+      '<button type="button" class="exp-datos-sec__action" data-onclick="addPatientAccesoRow">+ Acceso</button>')
   );
 }
 
-/** @param {Record<string, unknown>} patient @param {{ embedded?: boolean, teamInHeader?: boolean }} [opts] */
+/* Board «Datos B»: summary card, then one section at a time behind chips. */
+var DATOS_TABS = [
+  { id: 'censo', label: 'Censo' },
+  { id: 'cama', label: 'Cama e ingreso' },
+  { id: 'identidad', label: 'Identidad' },
+];
+var datosTab = 'censo';
+
+function datosTabsFor(sala) {
+  return DATOS_TABS.filter(function (t) {
+    return sala || t.id !== 'censo';
+  });
+}
+
+function datosTabsHtml(tabs, active) {
+  return (
+    '<div class="exp-datos-tabs" role="tablist" aria-label="Secciones">' +
+    tabs
+      .map(function (t) {
+        var on = t.id === active;
+        return (
+          '<button type="button" role="tab" class="exp-datos-tab' + (on ? ' is-on' : '') + '" data-datos-tab="' + t.id + '"' +
+          ' aria-selected="' + on + '" aria-controls="exp-datos-pane-' + t.id + '">' + t.label + '</button>'
+        );
+      })
+      .join('') +
+    '</div>'
+  );
+}
+
+function datosPaneHtml(id, active, body) {
+  return (
+    '<div class="exp-datos-pane exp-datos-pane--' + id + '" id="exp-datos-pane-' + id + '" role="tabpanel" data-datos-pane="' + id + '"' +
+    (id === active ? '' : ' hidden') + '>' + body + '</div>'
+  );
+}
+
+function buildPatientDemographicsFieldsHtml(patient) {
+  var sala = isModeSala(rt.getSettings());
+  var tabs = datosTabsFor(sala);
+  var active = tabs.some(function (t) { return t.id === datosTab; }) ? datosTab : tabs[0].id;
+  return (
+    datosSummaryHtml() +
+    datosTabsHtml(tabs, active) +
+    (sala ? datosPaneHtml('censo', active, buildPatientCensoDatosSectionsHtml(patient, sectionHtml)) : '') +
+    datosPaneHtml('cama', active, camaIngresoHtml(patient)) +
+    datosPaneHtml('identidad', active, identidadHtml(patient))
+  );
+}
+
+function showDatosTab(wrap, id) {
+  datosTab = id;
+  wrap.querySelectorAll('[data-datos-tab]').forEach(function (b) {
+    var on = b.getAttribute('data-datos-tab') === id;
+    b.classList.toggle('is-on', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+  wrap.querySelectorAll('[data-datos-pane]').forEach(function (el) {
+    el.hidden = el.getAttribute('data-datos-pane') !== id;
+  });
+}
+
+/** Día 1 is the admission day (FIMI, else FIUX). */
+function stayDay(patient) {
+  var iso = accesoFechaToDateInputValue(patient.fimiFecha) || accesoFechaToDateInputValue(patient.fiuxFecha);
+  var start = iso ? new Date(iso + 'T00:00:00') : null;
+  if (!start || isNaN(start.getTime())) return null;
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+  var day = Math.round((today.getTime() - start.getTime()) / 86400000) + 1;
+  if (day < 1) return null;
+  return { day: day, since: start.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }).replace('.', '') };
+}
+
+function bedLabel(patient) {
+  var cuarto = String(patient.cuarto || '').trim();
+  var cama = String(patient.cama || '').trim();
+  if (!cama) return cuarto || '—';
+  return cuarto + (/^[a-z]$/i.test(cama) ? '' : '-') + cama;
+}
+
+function summaryMeta(patient) {
+  var bits = [];
+  if (patient.edad) bits.push(patient.edad + ' a');
+  if (patient.sexo) bits.push(patient.sexo);
+  if (patient.peso) bits.push(patient.peso + ' kg');
+  if (patient.talla) bits.push(patient.talla + ' m');
+  if (patient.registro) bits.push('Reg. ' + patient.registro);
+  return bits.join(' · ');
+}
+
+function datosSummaryHtml() {
+  return (
+    '<div class="exp-datos-summary" data-datos-summary>' +
+    '<span class="exp-datos-summary__bed" data-datos-sum="bed"></span>' +
+    '<div class="exp-datos-summary__who"><p class="exp-datos-summary__name" data-datos-sum="name"></p>' +
+    '<p class="exp-datos-summary__meta" data-datos-sum="meta"></p></div>' +
+    '<div class="exp-datos-summary__stay"><p class="exp-datos-summary__day" data-datos-sum="day"></p>' +
+    '<p class="exp-datos-summary__since" data-datos-sum="since"></p></div>' +
+    '<div id="exp-datos-team-slot" class="exp-datos-team-slot"></div>' +
+    '</div>'
+  );
+}
+
+/** Refresh the summary text in place (the Equipo select is left alone). */
+function paintDatosSummary(wrap, patient) {
+  var set = function (key, text) {
+    var el = wrap.querySelector('[data-datos-sum="' + key + '"]');
+    if (el) el.textContent = text;
+  };
+  var stay = stayDay(patient);
+  set('bed', bedLabel(patient));
+  set('name', String(patient.nombre || '').trim() || 'Sin nombre');
+  set('meta', summaryMeta(patient));
+  set('day', stay ? 'Día ' + stay.day : 'Sin fecha de ingreso');
+  set('since', stay ? 'desde ' + stay.since : 'Agrégala en Cama e ingreso');
+  var stayEl = wrap.querySelector('.exp-datos-summary__stay');
+  if (stayEl) stayEl.classList.toggle('is-empty', !stay);
+}
+
+/** @param {Record<string, unknown>} patient @param {{ embedded?: boolean }} [opts] */
 function buildPatientDemographicsCardHtml(patient, opts) {
-  var fields = buildPatientDemographicsFieldsHtml(patient, opts && opts.teamInHeader);
+  var fields = buildPatientDemographicsFieldsHtml(patient);
   if (opts && opts.embedded) {
     return '<div class="exp-datos-fields">' + fields + '</div>';
   }
@@ -94,18 +213,28 @@ function buildPatientDemographicsCardHtml(patient, opts) {
   );
 }
 
-/** Modal title shows who is open; the form below holds the rest. */
-function renderDatosModalHeader(patient) {
-  var title = document.getElementById('exp-datos-modal-title');
-  if (title) title.textContent = (patient && String(patient.nombre || '').trim()) || 'Datos del paciente';
-}
-
 function patientById(id) {
   return id
     ? getPatients().find(function (p) {
         return String(p.id) === String(id);
       })
     : null;
+}
+
+function wireDatosPane(wrap) {
+  if (wrap._datosWired) return;
+  wrap._datosWired = true;
+  // Edits land first (document-capture dispatch); keep the summary in step.
+  var sync = function () {
+    var patient = patientById(wrap.dataset.patientId);
+    if (patient) paintDatosSummary(wrap, patient);
+  };
+  wrap.addEventListener('input', sync);
+  wrap.addEventListener('change', sync);
+  wrap.addEventListener('click', function (ev) {
+    var btn = ev.target.closest && ev.target.closest('[data-datos-tab]');
+    if (btn && wrap.contains(btn)) showDatosTab(wrap, btn.getAttribute('data-datos-tab'));
+  });
 }
 
 /** Demographics editable en pestaña Datos (#patient-data-form). */
@@ -115,11 +244,6 @@ function renderPatientDataPane(patientIdOverride) {
   var targetId =
     patientIdOverride != null && patientIdOverride !== '' ? patientIdOverride : aid();
   var patient = patientById(targetId);
-  // In the modal, name and Equipo live in the header, not in the form.
-  var inModal = !!wrap.closest('#exp-datos-modal-mount');
-  var teamSlot = inModal ? document.getElementById('exp-datos-team-slot') : null;
-  if (teamSlot) teamSlot.innerHTML = patient ? buildPatientTeamAssignSectionHtml(patient) : '';
-  if (inModal) renderDatosModalHeader(patient);
   if (!patient) {
     wrap.innerHTML = '';
     return;
@@ -127,18 +251,13 @@ function renderPatientDataPane(patientIdOverride) {
   wrap.dataset.patientId = String(patient.id);
   var datosMount = wrap.closest('.exp-datos-modal-body') || wrap.closest('#exp-datos-modal-mount');
   if (datosMount) datosMount.dataset.patientId = String(patient.id);
-  wrap.innerHTML = buildPatientDemographicsCardHtml(patient, { embedded: true, teamInHeader: !!teamSlot });
+  wrap.innerHTML = buildPatientDemographicsCardHtml(patient, { embedded: true });
+  var teamSlot = wrap.querySelector('#exp-datos-team-slot');
+  if (teamSlot) teamSlot.innerHTML = buildPatientTeamAssignSectionHtml(patient);
+  paintDatosSummary(wrap, patient);
   refreshRpcDateFields(wrap);
   wirePatientTeamAssignRefresh();
-  // Edits land first (document-capture dispatch); keep the banner in step.
-  if (!wrap._datosHeaderWired) {
-    wrap._datosHeaderWired = true;
-    var sync = function () {
-      if (wrap.closest('#exp-datos-modal-mount')) renderDatosModalHeader(patientById(wrap.dataset.patientId));
-    };
-    wrap.addEventListener('input', sync);
-    wrap.addEventListener('change', sync);
-  }
+  wireDatosPane(wrap);
 }
 
 export { buildPatientDemographicsCardHtml, renderPatientDataPane };
