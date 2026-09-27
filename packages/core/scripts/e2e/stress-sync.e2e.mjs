@@ -21,7 +21,8 @@
  *   Offline, then reconnect
  *     - edits made on both devices while the Worker is down are lost, or only
  *       one side survives after reconnect
- *     - the Conexión status says «Nube al día» while changes are pending
+ *     - the Conexión status says «Todo al día» while changes are pending, or
+ *       anything but «Pendiente · sin conexión» while the Worker is down
  *   Fast double-click
  *     - a double-click on «Agregar» (eventualidad) saves the entry twice
  *     - a double-click on «Procesar receta» doubles the meds
@@ -189,8 +190,10 @@ async function nubeStatusText(page) {
   await page.waitForTimeout(600);
   const t = await page.locator('#connection-dropdown, .connection-dropdown').first().innerText().catch(() => '');
   await page.locator('#btn-connection-dropdown-close').click().catch(() => {});
-  const m = t.match(/Nube al día|Sincronizando…|Pendiente[^\n]*|Sin conexión Nube|Error[^\n]*/);
-  return m ? m[0] : t.replace(/\s+/g, ' ').slice(0, 120);
+  // Nube A hero: «Todo al día» / «Reconectando» / «Pendiente» + the runtime's detail line.
+  const m = t.match(/Todo al día|Nube al día|Reconectando|Sincronizando…|Pendiente[^\n]*|Sin conexión Nube|Error[^\n]*/);
+  const why = t.match(/Sin conexión con el servidor Nube[^\n]*/);
+  return m ? m[0] + (why ? ' · ' + why[0] : '') : t.replace(/\s+/g, ' ').slice(0, 120);
 }
 const evOf = (dg, p) => dg.out[p.exp]?.ev || [];
 
@@ -284,7 +287,8 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
   await importReceta(A.page, PO, ['DEMO PARACETAMOL OFFLINE A']);
   await A.page.waitForTimeout(3000);
   const offStatus = await nubeStatusText(A.page);
-  check('offline with pending changes: status is NOT «Nube al día»', !/Nube al día/.test(offStatus), offStatus);
+  check('offline with pending changes: «Pendiente · sin conexión», not «Todo al día» or «Reconectando»',
+    /^Pendiente/.test(offStatus) && /sin conexi/i.test(offStatus), offStatus);
   await shot(A.page, 'a-offline-status');
   check('Worker comes back', await startWorker());
   let t = Date.now();
@@ -295,9 +299,9 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
     s.ok && off.includes('DEMO OFFLINE DESDE A') && off.includes('DEMO OFFLINE DESDE B'), { a: evOf(s.a, PO), b: evOf(s.b, PO) });
   check('offline receta from A reaches B (≤ 4 min)', (s.b.out[PO.exp]?.meds || []).includes('DEMO PARACETAMOL OFFLINE A'), { meds: s.b.out[PO.exp]?.meds, ms: offlineMs });
   check('offline edits reach the other device within 60 s of reconnect', s.ok && offlineMs <= 60000, { ms: offlineMs });
-  await until(async () => /Nube al día/.test(await nubeStatusText(A.page)), 30000, 3000);
+  await until(async () => /Todo al día/.test(await nubeStatusText(A.page)), 30000, 3000);
   const backStatus = await nubeStatusText(A.page);
-  check('after reconnect and drain: status says «Nube al día»', /Nube al día/.test(backStatus), backStatus);
+  check('after reconnect and drain: status says «Todo al día»', /Todo al día/.test(backStatus), backStatus);
 
   // ── Fast double-click ────────────────────────────────────────────────────
   await addEv(A.page, PD, 'DEMO DOBLE CLIC EV', { dbl: true });
@@ -358,7 +362,10 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
     await C.page.getByRole('button', { name: 'Crear equipo vacío' }).last().click();
     await C.page.getByText('Equipo vacío creado').first().waitFor({ timeout: 20000 });
     step = 'C makes the second team active';
-    const editBtn = C.page.locator('div, li, article').filter({ hasText: 'EQUIPO DEMO OTRO' }).filter({ hasNotText: 'EQUIPO DEMO SYNC' }).locator('.clinical-teams-edit-btn').first();
+    // Variant B directory: one article card per team, re-rendered after the create toast.
+    const otroCard = C.page.locator('article.clinical-teams-card', { hasText: 'EQUIPO DEMO OTRO' }).first();
+    await otroCard.locator('.clinical-teams-edit-btn').waitFor({ state: 'visible', timeout: 20000 });
+    const editBtn = otroCard.locator('.clinical-teams-edit-btn');
     const otroId = await editBtn.getAttribute('data-team-id');
     await editBtn.click();
     const panel = C.page.locator(`.clinical-teams-edit-panel[data-team-id="${otroId}"]`);
