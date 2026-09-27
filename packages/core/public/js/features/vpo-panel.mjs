@@ -49,6 +49,7 @@ function scheduleSave() {
   _saveTimer = setTimeout(function () {
     _saveTimer = null;
     persistClinicalState();
+    scheduleCloudSyncPush();
   }, 400);
 }
 

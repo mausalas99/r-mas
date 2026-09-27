@@ -1,4 +1,5 @@
 import { getMedPharmProfileByPatient, persistClinicalState } from '../app-state.mjs';
+import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import { openConfirm } from './workbench/confirm.mjs';
 import {
   parseSomePharmMonthPaste,
@@ -133,6 +134,7 @@ export async function deleteMedPharmViewMonth() {
   persistMedPharmProfile(pid, next);
   closeModals();
   persistClinicalState();
+  scheduleCloudSyncPush();
   medPharmProfileBridge.renderMedPharmProfilePanel();
   mp.rt.showToast('Mes eliminado del perfil', 'success');
 }
@@ -161,6 +163,7 @@ export async function deleteMedPharmProfileAll() {
   delete getMedPharmProfileByPatient()[pid];
   closeModals();
   persistClinicalState();
+  scheduleCloudSyncPush();
   medPharmProfileBridge.renderMedPharmProfilePanel();
   mp.rt.showToast('Perfil farmacoterapéutico borrado', 'success');
 }
@@ -246,6 +249,7 @@ export function importMedPharmMonthPaste() {
   getMedPharmProfileByPatient()[pid] = applySomePasteToProfile(profile, parsed);
   if (getMedPharmProfileByPatient()[pid].draftPaste) delete getMedPharmProfileByPatient()[pid].draftPaste;
   persistClinicalState();
+  scheduleCloudSyncPush();
   if (ta) ta.value = '';
   closeModals();
   medPharmProfileBridge.renderMedPharmProfilePanel();

@@ -3,7 +3,7 @@
  */
 import { slimLabSetForCloud } from './cloud-op-slim.mjs';
 import { labSetTimestamp, monitoreoUpdatedAt } from '../../patient-merge.mjs';
-import { shouldSkipCloudMedRecetaPush } from './cloud-med-receta-index.mjs';
+import { shouldSkipCloudMedRecetaPush, FP_FIELDS } from './cloud-med-receta-index.mjs';
 
 /** @typedef {{ path: string, value: unknown, updatedAt: string, actorId: string }} CloudSyncOp */
 
@@ -210,23 +210,36 @@ export function mapPatientEntryToCensusSeedOps(entry, meta) {
   return ops;
 }
 
-/** @param {CloudSyncOp[]} ops @param {string} patientId @param {unknown} medReceta @param {string} actorId @param {string} batchAt */
-function pushMedRecetaOp(ops, patientId, medReceta, actorId, batchAt) {
-  if (!medReceta) return;
-  if (shouldSkipCloudMedRecetaPush(patientId, medReceta)) return;
-  ops.push(
-    cloudOp({
-      path: `entries/${patientId}/medReceta`,
-      value: medReceta,
-      actorId,
-      updatedAt: noteOpUpdatedAt(medReceta, batchAt),
-    })
-  );
+/**
+ * medReceta, VPO, listado de problemas, perfil farmacológico: no real edit clock, so
+ * they go out only when their content changed since the last send/pull (see
+ * cloud-med-receta-index) — a stale copy stamped "now" would beat a teammate's edit.
+ * @param {CloudSyncOp[]} ops @param {string} patientId @param {object} entry @param {string} actorId @param {string} batchAt
+ */
+function pushClocklessEntryOps(ops, patientId, entry, actorId, batchAt) {
+  for (const field of FP_FIELDS) {
+    let value = entry?.[field];
+    if (!value) continue;
+    // The perfil paste draft is this device's unsent textarea, not shared data.
+    if (field === 'medPharmProfile' && value.draftPaste !== undefined) {
+      value = { ...value };
+      delete value.draftPaste;
+    }
+    if (shouldSkipCloudMedRecetaPush(patientId, value, undefined, field)) continue;
+    ops.push(
+      cloudOp({
+        path: `entries/${patientId}/${field}`,
+        value,
+        actorId,
+        updatedAt: noteOpUpdatedAt(value, batchAt),
+      })
+    );
+  }
 }
 
 /**
- * Debounced Nube bundle: census fields + estado actual / eventualidades / medReceta
- * (not notes/labs/HC — those stay on the heavier full-doc push).
+ * Debounced Nube bundle: census fields + estado actual / eventualidades / medReceta,
+ * VPO, listado, perfil farmacológico (not notes/labs/HC — those stay on the heavier full-doc push).
  * @param {object} entry
  * @param {{ actorId: string, updatedAt: string }} meta
  * @returns {CloudSyncOp[]}
@@ -238,7 +251,7 @@ export function mapPatientEntryToCloudBundleOps(entry, meta) {
   const ops = [];
   pushCensusFieldsOp(ops, patientId, entry.patient, meta.actorId);
   pushCloudLiveClinicalOps(ops, patientId, entry.patient, meta.actorId, meta.updatedAt);
-  pushMedRecetaOp(ops, patientId, entry.medReceta, meta.actorId, meta.updatedAt);
+  pushClocklessEntryOps(ops, patientId, entry, meta.actorId, meta.updatedAt);
   return ops;
 }
 

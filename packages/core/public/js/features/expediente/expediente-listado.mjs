@@ -1,5 +1,6 @@
 // Listado de problemas UI + docx export
 import { getPatients, getListadoProblemas, persistClinicalState } from '../../app-state.mjs';
+import { scheduleCloudSyncPush } from '../cloud-sync/mutate-bridge.mjs';
 import { setAsyncButtonLoading } from '../../ui-motion.mjs';
 import {
   exportWithOutputDirFallback,
@@ -36,7 +37,7 @@ function updateListadoMedico(field, value) {
   var lst = ensureListadoForActive(); if (!lst) return;
   if (!lst.medicos) lst.medicos = {};
   lst.medicos[field] = value;
-  persistClinicalState();
+  saveListado();
 }
 
 // ── Listado sala ─────────────────────────────────────────────────────-
@@ -59,6 +60,10 @@ function ensureListadoForActive() {
   if (!Array.isArray(l.activos)) l.activos = [];
   if (!Array.isArray(l.inactivos)) l.inactivos = [];
   return l;
+}
+function saveListado() {
+  persistClinicalState();
+  scheduleCloudSyncPush();
 }
 function _autoGrowTextarea(el) {
   if (!el) return;
@@ -178,7 +183,7 @@ function mountListadoSortables() {
         if (evt.oldIndex === evt.newIndex && evt.from === evt.to) return;
         syncListadoOrderFromDom(seccion);
         refreshListadoRowNumbers(seccion);
-        persistClinicalState();
+        saveListado();
       }
     });
     _listadoSortables.push(sortable);
@@ -233,7 +238,7 @@ function renderListadoForm() {
 function updateListadoMeta(field, value) {
   var lst = ensureListadoForActive(); if (!lst) return;
   lst[field] = value;
-  persistClinicalState();
+  saveListado();
 }
 function updateProblemaField(seccion, id, field, value) {
   var lst = ensureListadoForActive(); if (!lst) return;
@@ -241,12 +246,12 @@ function updateProblemaField(seccion, id, field, value) {
   var p = arr.find(function(x){ return x.id === id; });
   if (!p) return;
   p[field] = value;
-  persistClinicalState();
+  saveListado();
 }
 function addProblemaUI(seccion) {
   var lst = ensureListadoForActive(); if (!lst) return;
   getListadoProblemas()[aid()] = listadoAddProblema(lst, seccion, { fecha: '', descripcion: '' });
-  persistClinicalState();
+  saveListado();
   renderListadoForm();
   setTimeout(function(){
     var rows = document.querySelectorAll('[data-seccion-rows="' + seccion + '"] .listado-row textarea');
@@ -256,7 +261,7 @@ function addProblemaUI(seccion) {
 function removeProblemaUI(seccion, id) {
   var lst = ensureListadoForActive(); if (!lst) return;
   getListadoProblemas()[aid()] = listadoRemoveProblema(lst, seccion, id);
-  persistClinicalState();
+  saveListado();
   renderListadoForm();
 }
 function _renderListadoMedicosCard(lst) {

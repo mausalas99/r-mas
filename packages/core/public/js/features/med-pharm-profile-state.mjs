@@ -1,4 +1,5 @@
 import { getPatients, getMedPharmProfileByPatient, persistClinicalState } from '../app-state.mjs';
+import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import {
   listSomePharmFilterLabels,
   isSomePharmCategoryLabel,
@@ -137,7 +138,10 @@ export function reclassifyMonthIfLegacy(pid, month) {
     row.cat = next.cat;
     changed = true;
   });
-  if (changed) persistClinicalState();
+  if (changed) {
+    persistClinicalState();
+    scheduleCloudSyncPush();
+  }
   return month;
 }
 

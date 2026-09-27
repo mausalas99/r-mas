@@ -20,6 +20,9 @@
  *     - the new set replaces the old one instead of adding to the history
  *   Datos (census fields)
  *     - an ingreso date (FIUX) set in Datos on B never reaches A
+ *   VPO, listado de problemas, perfil farmacológico
+ *     - edits made in the UI on A are saved locally but never pushed, or B
+ *       never shows them
  *   Offline
  *     - work done while the Worker is down is lost, or never pushed later
  *     - the app crashes or blocks the paste while offline
@@ -201,6 +204,55 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
       }
       return fiuxOnA === FIUX;
     }, 45000), fiuxOnA);
+
+  // ── VPO, listado de problemas, perfil farmacológico: A → B ─────────────
+  const VPO_TEXT = 'DEMO VALORACION PREOPERATORIA SINCRONIA';
+  const PROBLEMA = 'DEMO PROBLEMA ACTIVO SINCRONIA';
+  const segment = (page, id) => page.evaluate((sel) => document.getElementById(sel)?.click(), id);
+  const vpoIntro = (page) => page.locator('[data-vpo-field="valoracionIntro"]');
+  const listadoRows = (page) => page.locator('#listado-form [data-seccion-group="activos"] .listado-row textarea');
+  const openPerfil = async (page) => {
+    await closeToasts(page);
+    // Programmatic clicks: a «Guía» hint popover can pop over the tab bar mid-run.
+    await segment(page, 'apptab-med');
+    await segment(page, 'med-itab-perfil');
+    await page.waitForTimeout(400);
+  };
+  const pharmRow = (page) => page.locator('#med-pharm-list .med-pharm-row', { has: page.locator('.med-pharm-name', { hasText: 'DEMO PARACETAMOL' }) });
+  const now = new Date();
+  const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const MONTH = [
+    ['Medicamento', 'Dosis', 'Freq', 'Via', ...Array.from({ length: dim }, (_, i) => pad2(i + 1))].join('\t'),
+    ['DEMO PARACETAMOL 500 MG TAB', '1 G //', 'Q8H', 'VIA ORAL', ...Array.from({ length: dim }, (_, i) => (i + 1 === now.getDate() ? '1' : ''))].join('\t'),
+  ].join('\n');
+
+  await openPatient(A.page, P1);
+  await segment(A.page, 'apptab-nota');
+  await segment(A.page, 'exp-segment-vpo');
+  await vpoIntro(A.page).fill(VPO_TEXT);
+  await segment(A.page, 'exp-segment-listado');
+  await A.page.locator('#listado-form [data-seccion-group="activos"] .listado-add-row').click();
+  await listadoRows(A.page).last().fill(PROBLEMA);
+  await openPerfil(A.page);
+  await A.page.locator('#med-pharm-paste-open-btn').click();
+  await A.page.locator('#med-pharm-paste').fill(MONTH);
+  await A.page.locator('#med-pharm-import-btn').click();
+  check('A: VPO, problem and pharm month saved for P1', await until(() => pharmRow(A.page).isVisible(), 8000));
+  await openPatient(B.page, P1);
+  let seenOnB = {};
+  const arrived = await until(async () => {
+    await segment(B.page, 'apptab-nota');
+    await segment(B.page, 'exp-segment-vpo');
+    const vpo = await vpoIntro(B.page).inputValue().catch(() => '');
+    await segment(B.page, 'exp-segment-listado');
+    const problems = await listadoRows(B.page).evaluateAll((els) => els.map((e) => e.value)).catch(() => []);
+    await openPerfil(B.page);
+    const pharm = await pharmRow(B.page).count();
+    seenOnB = { vpo, problems, pharm };
+    return vpo === VPO_TEXT && problems.includes(PROBLEMA) && pharm === 1;
+  }, 45000);
+  check('B: VPO, problem list and pharm month edited on A arrive for P1', arrived, seenOnB);
 
   // ── Offline: Worker down, A keeps working, then catches up ────────────
   await stopWorker();

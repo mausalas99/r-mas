@@ -13,6 +13,10 @@ import { canonicalStringify } from '../../../../lib/db/canonical-json.mjs';
 import { createOpFold, foldCloudOp } from './pull-apply-state.mjs';
 import { createIdbBackedSlot } from './idb-index-store.mjs';
 
+/** Entry paths with no real edit clock — all ride this same skip-if-unchanged guard. */
+export const FP_FIELDS = ['medReceta', 'vpo', 'listadoProblemas', 'medPharmProfile'];
+const FP_PATH_RE = /^entries\/[^/]+\/(medReceta|vpo|listadoProblemas|medPharmProfile)$/;
+
 export const CLOUD_MED_RECETA_FP_INDEX_KEY = 'rpc-cloud-sync-med-receta-fp-index';
 
 const slot = createIdbBackedSlot(CLOUD_MED_RECETA_FP_INDEX_KEY, () => ({}));
@@ -62,11 +66,12 @@ function writeMedRecetaFingerprintIndex(index) {
  * @param {string} patientId
  * @param {unknown} medReceta
  * @param {Record<string, string>} [index]
+ * @param {string} [field] one of FP_FIELDS
  */
-export function shouldSkipCloudMedRecetaPush(patientId, medReceta, index) {
+export function shouldSkipCloudMedRecetaPush(patientId, medReceta, index, field = 'medReceta') {
   const pid = String(patientId || '').trim();
   if (!pid) return true;
-  const path = `entries/${pid}/medReceta`;
+  const path = `entries/${pid}/${field}`;
   const idx = index || readMedRecetaFingerprintIndex();
   return idx[path] === cloudMedRecetaFingerprint(medReceta);
 }
@@ -79,7 +84,7 @@ export function noteCloudMedRecetaOpsSent(ops) {
   for (const op of ops) {
     if (!op || typeof op !== 'object') continue;
     const path = String(/** @type {{ path?: unknown }} */ (op).path || '');
-    if (!/^entries\/[^/]+\/medReceta$/.test(path)) continue;
+    if (!FP_PATH_RE.test(path)) continue;
     idx[path] = cloudMedRecetaFingerprint(/** @type {{ value?: unknown }} */ (op).value);
     n += 1;
   }
@@ -94,11 +99,12 @@ function seedMedRecetaFingerprintsFromEntries(entries) {
   let n = 0;
   for (const entry of entries) {
     const pid = String(/** @type {{ id?: unknown }} */ (entry)?.id || '').trim();
-    if (!pid || !Object.prototype.hasOwnProperty.call(entry, 'medReceta')) continue;
-    idx[`entries/${pid}/medReceta`] = cloudMedRecetaFingerprint(
-      /** @type {{ medReceta?: unknown }} */ (entry).medReceta
-    );
-    n += 1;
+    if (!pid) continue;
+    for (const field of FP_FIELDS) {
+      if (!Object.prototype.hasOwnProperty.call(entry, field)) continue;
+      idx[`entries/${pid}/${field}`] = cloudMedRecetaFingerprint(/** @type {Record<string, unknown>} */ (entry)[field]);
+      n += 1;
+    }
   }
   if (n) writeMedRecetaFingerprintIndex(idx);
   return n;
