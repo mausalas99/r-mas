@@ -79,8 +79,6 @@ export async function enableClinicalLanFromSettings() {
         'Los expedientes en esta Mac se conservan.',
       confirmLabel: 'Activar',
       cancelLabel: 'Cancelar',
-      // Opened from Ajustes (a modal): without this it renders behind it.
-      stacked: true,
     });
     if (!okNube) return;
     setClinicalSyncModeLocalOnly(false);
@@ -98,7 +96,6 @@ export async function enableClinicalLanFromSettings() {
       'Los expedientes en esta Mac se conservan.',
     confirmLabel: 'Activar',
     cancelLabel: 'Cancelar',
-    stacked: true,
   });
   if (!ok) return;
 
