@@ -46,6 +46,8 @@ await r.finish('Administración: side menu and its five sections (board «Nube +
   const A = await launchDevice('a', 3791);
   await onboardNube(A.page, R4);
   await dismissLearnHub(A.page);
+  await A.page.waitForTimeout(1500);
+  await dismissLearnHub(A.page); // it can open a moment after onboarding
   for (const p of PATIENTS) await pasteAndSave(A.page, fullLabs(p, 'Sep 20 2026 8:00AM'));
   await A.page.waitForTimeout(2500);
   await closeToasts(A.page);

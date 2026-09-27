@@ -39,9 +39,8 @@ describe('localStorage quota error handling', () => {
   });
 
   it('logs console.warn when quota is exceeded', () => {
-    let warned = false;
     const prevWarn = console.warn;
-    console.warn = (msg) => { warned = true; };
+    console.warn = () => {};
     globalThis.localStorage.setItem = () => {
       const e = new Error('QuotaExceededError');
       e.name = 'QuotaExceededError';
@@ -136,6 +135,14 @@ describe('cloud sync remember me settings', () => {
       turnKey: '2026-08',
       name: '',
     });
+  });
+
+  it('keeps the owner/member role with the sala (the owner device keys the sala)', () => {
+    setCloudSyncRemember(true);
+    setCloudSyncRoomSnapshot({ id: 'room-9', code: 'W8N6CW', sala: 'Sala 1', role: 'owner' });
+    assert.equal(getCloudSyncRoomSnapshot().role, 'owner');
+    setCloudSyncRoomSnapshot({ id: 'room-9', code: 'W8N6CW', sala: 'Sala 1' });
+    assert.equal(getCloudSyncRoomSnapshot().role, undefined);
   });
 
   it('advanceCloudSyncRevision ignores stale lower server revisions', () => {

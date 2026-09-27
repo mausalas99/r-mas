@@ -8,7 +8,7 @@
  * Owner-only because the Worker only lets the room owner set a DEK
  * (cloud/sync-worker/src/room-dek.js: handlePutRoomDek, 403 otherwise).
  */
-import { ensureRoomDek, loadRoomDek, getCachedRoomDek } from './room-dek.mjs';
+import { ensureRoomDek, loadRoomDek, getCachedRoomDek, NUBE_E2EE_ENABLED } from './room-dek.mjs';
 import { needsReencryption, listContentFieldEntries } from './cloud-sync-crypto-wire.mjs';
 import { pushCloudOpsDirect } from './cloud-push-direct.mjs';
 import { auditDekEvent, DEK_EVENTS } from './cloud-sync-audit.mjs';
@@ -229,4 +229,34 @@ async function sweepAndVerify(api, roomId, actorId) {
     });
     return null;
   }
+}
+
+/** roomId → when this run last tried to key the sala (ms). */
+const ownerKeyAttempts = new Map();
+const OWNER_KEY_RETRY_MS = 10 * 60 * 1000;
+
+/**
+ * Any online moment of the owner in their sala (every successful sync cycle
+ * calls this): a sala without a key gets one, and its stored content is
+ * encrypted. Cheap when there is nothing to do — the device already holds
+ * the key, it is not the owner, or it tried less than 10 minutes ago.
+ * @param {ReturnType<import('./api-client.mjs').createCloudSyncApi>} api
+ * @param {{ id?: string, role?: string, code?: string } | null} room
+ * @param {string} actorId
+ * @param {number} [now]
+ * @returns {Promise<{ swept: number, failed: number, remaining: number } | null>}
+ */
+export async function ensureOwnerRoomKey(api, room, actorId, now = Date.now()) {
+  const roomId = String(room?.id || '');
+  if (!NUBE_E2EE_ENABLED || !roomId || room?.role !== 'owner' || !room?.code) return null;
+  if (getCachedRoomDek(roomId)) return null;
+  const last = ownerKeyAttempts.get(roomId);
+  if (last != null && now - last < OWNER_KEY_RETRY_MS) return null;
+  ownerKeyAttempts.set(roomId, now);
+  return backfillRoomEncryption(api, room, actorId).catch(() => null);
+}
+
+/** Tests only. */
+export function resetOwnerRoomKeyAttempts() {
+  ownerKeyAttempts.clear();
 }

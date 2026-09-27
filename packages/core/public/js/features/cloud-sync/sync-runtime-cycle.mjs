@@ -80,6 +80,7 @@ function createSyncCycleController(ctx) {
     failCycle,
     getScheduler,
     cycleInflightRef,
+    onCycleOk,
   } = ctx;
 
   /** Push-only while hidden; always re-arms the poll timer. */
@@ -115,6 +116,7 @@ function createSyncCycleController(ctx) {
       outboxSync.refreshIdleStatus();
       scheduler.noteSuccess();
       noteCloudSyncCycle(true);
+      if (onCycleOk) void Promise.resolve().then(onCycleOk).catch(() => {});
     } catch (err) {
       failCycle(err);
     }
@@ -401,6 +403,7 @@ export function createSyncRuntimeCycle(deps) {
     failCycle,
     getScheduler: () => scheduler,
     cycleInflightRef,
+    onCycleOk: deps.onCycleOk,
   });
 
   /** @type {ReturnType<typeof createRoomSyncWs> | null} */
