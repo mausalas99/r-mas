@@ -20,6 +20,9 @@
  *     - the new set replaces the old one instead of adding to the history
  *   Datos (census fields)
  *     - an ingreso date (FIUX) set in Datos on B never reaches A
+ *   Local responsiveness
+ *     - joining a team leaves Mi rotación or the Conexión sheet open
+ *     - a new patient waits on the Nube push before showing in A's own list
  *   Offline
  *     - work done while the Worker is down is lost, or never pushed later
  *     - the app crashes or blocks the paste while offline
@@ -105,6 +108,9 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   const joinBtn = B.page.getByRole('button', { name: 'Unirme' });
   check('B: sees A\'s team «EQUIPO DEMO ALFA» through Nube', await until(() => joinBtn.isVisible(), 20000));
   await joinBtn.click();
+  check('B: joining closes Mi rotación and the Conexión sheet within 5 s',
+    await until(async () => !(await B.page.locator('#clinical-teams-backdrop.open').count()) && !(await B.page.locator('#connection-dropdown.open').count()), 5000, 100),
+    { teams: await B.page.locator('#clinical-teams-backdrop.open').count(), conexion: await B.page.locator('#connection-dropdown.open').count() });
   await r.shot(B.page, 'b-joined');
   for (const d of [A, B]) {
     await closeToasts(d.page);
@@ -116,6 +122,8 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
 
   // ── A → B: two new patients with labs ──────────────────────────────────
   await pasteAndSave(A.page, fullLabs(P1, 'Sep 20 2026 8:00AM'));
+  // The team assignment must not hold the list back until the Nube push answers.
+  check('A: a new patient shows in A\'s own list within 1.5 s of saving', await until(() => patientVisible(A.page, P1), 1500, 100));
   await pasteAndSave(A.page, fullLabs(P2, 'Sep 20 2026 8:30AM'));
   await openPatient(A.page, P1);
   await openPatient(A.page, P2);

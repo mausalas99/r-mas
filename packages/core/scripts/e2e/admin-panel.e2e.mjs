@@ -17,6 +17,7 @@
  *   - Salas has a red «Purgar» button on every card instead of a ··· menu
  *   - Pacientes shows the bulk bar before anything is picked, or not after
  *   - Registro needs a «Cargar» click, or shows raw user IDs as the actor
+ *   - joining with the code from before «Cambiar código» does not say an admin may have changed it
  *   - an uncaught page error
  */
 import { createRun, dismissLearnHub, closeToasts, pasteAndSave } from './harness.mjs';
@@ -166,6 +167,24 @@ await r.finish('Administración: side menu and its five sections (board «Nube +
   check('Registro names the person, not a user ID', regText.includes(R4.name) && !/[0-9a-f]{8}-[0-9a-f]{4}-/.test(regText), regText.slice(0, 200));
   await reg.locator('.cloud-sync-admin-event summary').first().click();
   await r.shot(A.page, 'registro-detalle');
+
+  // ── Old code after «Cambiar código»: leave, try to join with it ───────
+  await A.page.locator('#btn-connection-dropdown-close').click().catch(() => {});
+  await closeToasts(A.page);
+  await openNubePanel(A.page);
+  const leave = A.page.locator('#connection-dropdown [data-cloud-action="leave-room"]');
+  if (!(await leave.isVisible().catch(() => false))) await A.page.locator('#connection-dropdown [data-cloud-action="nav-options"]').click().catch(() => {});
+  await leave.click();
+  await until(() => A.page.locator('.toast', { hasText: /Saliste de la sala/ }).isVisible(), 10000);
+  const joinCode = A.page.locator('#connection-dropdown [data-cloud-join-code]').locator('visible=true').first();
+  await joinCode.waitFor({ state: 'visible', timeout: 10000 });
+  await closeToasts(A.page);
+  await joinCode.fill(before.code);
+  await A.page.locator('#connection-dropdown [data-cloud-action="join-room"]').locator('visible=true').first().click();
+  const joinErr = A.page.locator('.toast', { hasText: /No hay ninguna sala|si un admin|No se pudo|Unido a la sala/i }).last();
+  await until(() => joinErr.isVisible(), 10000);
+  const joinErrText = await joinErr.innerText().catch(() => '');
+  check('joining with the old code says an admin may have changed it', /si un admin lo cambió/.test(joinErrText), joinErrText);
 
   check('no uncaught page errors', !A.pageErrors.length, A.pageErrors.slice(0, 5));
   await A.app.close();
