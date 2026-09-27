@@ -1788,6 +1788,9 @@ html.dark .tend-hidden-chip:hover .tend-hidden-chip-eye { color: var(--success);
   flex-shrink: 0;
 }
 .tend-card-hide-btn {
+  /* Above the card's .card-open-btn overlay. */
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;

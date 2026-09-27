@@ -400,9 +400,12 @@ export function updateExpPendientesTabBadge() {
   badges.forEach(function (badge) {
     badge.textContent = '';
     badge.hidden = count === 0;
+    // role="img": aria-label is not allowed on a role-less span.
     if (count === 0) {
+      badge.removeAttribute('role');
       badge.removeAttribute('aria-label');
     } else {
+      badge.setAttribute('role', 'img');
       badge.setAttribute('aria-label', 'Pendientes abiertos');
     }
   });

@@ -22,7 +22,6 @@ html.high-contrast ::-moz-selection {
 }
 html.ui-density-normal .patient-list-section-label {
   font-size: calc(10px * var(--density-font));
-  opacity: 0.88;
 }
 /* En Guardia se ocultan acciones secundarias; no usar esta clase en controles que deban verse siempre (p. ej. engrane de Laboratorio). */
 html.ui-density-normal .card-header-soft-btn-secondary { display: none !important; }

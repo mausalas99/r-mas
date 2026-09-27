@@ -1485,7 +1485,6 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
 .drive-import-dropzone-meta {
   font-size: 10px;
   color: var(--text-muted);
-  opacity: 0.85;
 }
 
 .drive-import-parse-hint {

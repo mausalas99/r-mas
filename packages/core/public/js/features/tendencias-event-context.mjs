@@ -277,7 +277,7 @@ export function buildTendDetailEventsLegendHtml(markerMap, labels) {
     const label = eventLegendDateLabel(labels && labels[idx] != null ? labels[idx] : '');
     const kind = bucket && bucket.kind ? bucket.kind : 'otro';
     return (
-      '<div class="tend-event-legend-item" data-kind="' +
+      '<div class="tend-event-legend-item" role="listitem" data-kind="' +
       esc(kind) +
       '">' +
       '<span class="tend-event-legend-date">' +

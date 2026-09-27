@@ -66,22 +66,27 @@ function renderDashHead(v, verdict, chipClass) {
 
 function renderDashTiles(tiles) {
   if (!Array.isArray(tiles) || tiles.length === 0) return '';
-  return tiles
-    .map(function (tile) {
-      const dd =
-        esc(tile.value) + (tile.hint ? '<span class="cloud-nube-dash-kv-muted"> · ' + esc(tile.hint) + '</span>' : '');
-      return (
-        '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv cloud-nube-dash-kv" data-status="' +
-        esc(tile.status) +
-        '">' +
-        '<dt>' +
-        esc(tile.label) +
-        '</dt><dd>' +
-        dd +
-        '</dd></div>'
-      );
-    })
-    .join('');
+  // Each dt/dd pair sits in a div (allowed in a dl) so rows keep their layout.
+  return (
+    '<dl class="cloud-nube-dash-kv-list">' +
+    tiles
+      .map(function (tile) {
+        const dd =
+          esc(tile.value) + (tile.hint ? '<span class="cloud-nube-dash-kv-muted"> · ' + esc(tile.hint) + '</span>' : '');
+        return (
+          '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv cloud-nube-dash-kv" data-status="' +
+          esc(tile.status) +
+          '">' +
+          '<dt>' +
+          esc(tile.label) +
+          '</dt><dd>' +
+          dd +
+          '</dd></div>'
+        );
+      })
+      .join('') +
+    '</dl>'
+  );
 }
 
 function renderDashPipeline(pipeline) {
@@ -113,6 +118,7 @@ function renderDashPipeline(pipeline) {
 function renderDashOutboxBreakdown(outboxBreakdown) {
   if (!Array.isArray(outboxBreakdown) || outboxBreakdown.length === 0) return '';
   let html = '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-nube-dash-outbox-head">Cola por tipo</div>';
+  html += '<dl class="cloud-nube-dash-kv-list">';
   outboxBreakdown.forEach(function (row) {
     html +=
       '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv cloud-nube-dash-outbox-row">' +
@@ -125,13 +131,14 @@ function renderDashOutboxBreakdown(outboxBreakdown) {
       esc(String(row.count)) +
       '</dd></div>';
   });
-  return html;
+  return html + '</dl>';
 }
 
 function renderDashToxicOutbox(toxicOutbox) {
   if (!Array.isArray(toxicOutbox) || toxicOutbox.length === 0) return '';
   let html =
     '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-nube-dash-toxic-head">Lotes pesados en cola</div>';
+  html += '<dl class="cloud-nube-dash-kv-list">';
   toxicOutbox.forEach(function (row) {
     html +=
       '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv cloud-nube-dash-toxic-row" data-status="error">' +
@@ -141,7 +148,7 @@ function renderDashToxicOutbox(toxicOutbox) {
       esc(String(row.opCount || 0) + ' ops · ~' + String(row.totalLabel || '') + (row.maxOpPath ? ' · ' + row.maxOpPath : '')) +
       '</dd></div>';
   });
-  return html;
+  return html + '</dl>';
 }
 
 function renderDashAlerts(issues, recentErrors) {

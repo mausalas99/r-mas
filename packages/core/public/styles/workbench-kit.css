@@ -499,6 +499,16 @@
   background: color-mix(in oklab, var(--color-ink) 3%, transparent);
 }
 
+/* Rows with an open button (wb-table.mjs openLabel): its ::after covers the
+   row; the row's other buttons stay above it. */
+.wb-row--openable {
+  position: relative;
+}
+.wb-row--openable button:not(.wb-row-open) {
+  position: relative;
+  z-index: 1;
+}
+
 .wb-row--twoline {
   padding: 11px 16px;
   font: var(--type-wb-row-2line);
