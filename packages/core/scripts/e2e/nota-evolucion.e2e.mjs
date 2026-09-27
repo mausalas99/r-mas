@@ -158,9 +158,9 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   await onboardLocalOnly(page);
 
   await page.locator('#profile-toggle-btn').click();
+  await page.locator('#profile-doctor-pick').selectOption('__otro__');
   await page.locator('#profile-doctor').fill(DOCTOR);
-  await page.getByRole('button', { name: 'Guardar perfil' }).click();
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(900); // Mi perfil saves on its own
   await page.keyboard.press('Escape');
 
   await page.locator('#apptab-lab').click();
@@ -254,8 +254,7 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   // «Profesor en nota» only shows in Interconsulta: set it now, the open note fills in.
   await page.locator('#profile-toggle-btn').click();
   await page.locator('#profile-profesor').fill(PROFESOR);
-  await page.getByRole('button', { name: 'Guardar perfil' }).click();
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(900); // Mi perfil saves on its own
   await page.keyboard.press('Escape');
   await closeToasts(page);
   s = await noteState(page);

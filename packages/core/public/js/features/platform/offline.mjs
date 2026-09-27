@@ -185,6 +185,28 @@ function triggerIdleLock() {
   addAuditEntry('idle-lock-lock', 'ok', idleLockEnabledMinutes, 'inactivity');
 }
 
+/**
+ * Ajustes › Seguridad «Bloquear ahora»: lock the screen with the PIN now.
+ * Without a PIN yet, ask for one first (same flow as Cambiar PIN).
+ */
+async function lockScreenNow() {
+  if (!getIdleLockPinHash()) {
+    var setup = await promptForIdleLockPinSetup('create');
+    if (!setup.ok) return;
+  }
+  idleLockIsActive = true;
+  if (idleLockTimerId) { clearTimeout(idleLockTimerId); idleLockTimerId = null; }
+  if (idleLockDebounceId) { clearTimeout(idleLockDebounceId); idleLockDebounceId = null; }
+  closeSettingsDropdown();
+  showIdleLockOverlay();
+  addAuditEntry('idle-lock-lock', 'ok', 0, 'manual');
+}
+
+/** For the Seguridad status card: minutes (0 = never) and whether a PIN exists. */
+function getIdleLockStatus() {
+  return { minutes: getIdleLockMinutes(), hasPin: !!getIdleLockPinHash() };
+}
+
 function showIdleLockOverlay() {
   var overlay = document.getElementById('rpc-idle-lock-overlay');
   if (!overlay) return;
@@ -452,6 +474,8 @@ export {
   syncIdleLockSelectUi,
   onIdleLockSelectChange,
   changeIdleLockPin,
+  lockScreenNow,
+  getIdleLockStatus,
   submitIdleLockPin,
   initIdleLockFeature,
   openWipeDataModal,
