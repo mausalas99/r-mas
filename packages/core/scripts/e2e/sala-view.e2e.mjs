@@ -59,18 +59,22 @@ await r.finish('Resumen labs card: today envíos, altered chips only', async () 
     await page.locator('button:visible', { hasText: /^\s*Resumen\s*$/ }).first().click().catch(() => {});
     const card = page.locator('#patient-dashboard-mount .labs-card');
     await card.waitFor({ timeout: 5000 });
-    const draws = await card.locator('.draw').evaluateAll((ds) =>
+    // Several draws: each says «Corte HH:MM»; a single draw puts «corte HH:MM» in the card header.
+    const single = (await card.locator('.draw').count()) === 1;
+    const headerMeta = single ? await card.locator('.card-h-meta').textContent().catch(() => '') : '';
+    const draws = await card.locator('.draw').evaluateAll((ds, meta) =>
       ds.map((d) => ({
-        caption: (d.querySelector('.draw-head-caption') || {}).textContent || '',
+        caption: ((d.querySelector('.draw-head-label') || {}).textContent || meta || '').toLowerCase(),
         wide: d.classList.contains('is-wide'),
         cells: [...d.querySelectorAll('.draw-cell')].map((c) => ({
           label: c.querySelector('.draw-label').textContent.trim(),
           value: c.querySelector('.draw-value').textContent.trim(),
           delta: c.querySelector('.draw-delta').textContent.trim(),
         })),
-      }))
+      })), headerMeta
     );
-    return { draws, text: (await card.innerText()).replace(/\s+/g, ' ') };
+    const drawsText = (await card.locator('.day-draws').innerText().catch(() => '')).replace(/\s+/g, ' ');
+    return { draws, drawsText, text: (await card.innerText()).replace(/\s+/g, ' ') };
   }
   const at = (draws, hhmm) => draws.find((d) => d.caption.includes('corte ' + hhmm));
   const cellWith = (draw, v) => draw && draw.cells.find((c) => c.value.startsWith(v));
@@ -102,7 +106,7 @@ await r.finish('Resumen labs card: today envíos, altered chips only', async () 
   check('A: no PaFi chip from the gas values', !a.draws.some((d) => d.cells.some((c) => /pafi/i.test(c.label))), a.draws);
   const hb = cellWith(a3, '8');
   check('A: chip keeps analyte + value (label, then 8 without trailing zeros or "*")', !!hb && !!hb.label && hb.label !== hb.value && !/\*/.test(hb.value), a3);
-  const enRango = Number((a.text.match(/(\d+) valores en rango/) || [])[1] || 0);
+  const enRango = Number((a.text.match(/(\d+) (?:valores )?en rango/) || [])[1] || 0);
   check('A: "valores en rango" counts the all-normal 02:20 draw too (Hto, Cr, pH, pCO2 → 4+)', enRango >= 4, a.text);
 
   // ── B: same hour, two reports → one draw; trend vs the earlier draw ──────
@@ -139,7 +143,8 @@ await r.finish('Resumen labs card: today envíos, altered chips only', async () 
   await shot(page, 'patient-d-labs-card');
   check('D: mixed BH + culture report → its BH altered chip shows', !!cellWith(at(dd.draws, '01:30'), '8.2'), dd.draws);
   check('D: culture-only report has no card', !at(dd.draws, '02:30'), dd.draws);
-  check('D: no culture text in the card (urocultivo, organism, antibiotic)', !/cultivo|klebsiella|escherichia|ceftriaxona|amikacina/i.test(dd.text), dd.text);
+  // Cultures have their own block on the card since the Resumen glance rework; not in the draws.
+  check('D: no culture text in the lab draws (urocultivo, organism, antibiotic)', !/cultivo|klebsiella|escherichia|ceftriaxona|amikacina/i.test(dd.drawsText), dd.drawsText);
 
   check('no page errors', pageErrors.length === 0, pageErrors);
   await app.close();

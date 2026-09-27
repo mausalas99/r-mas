@@ -198,7 +198,8 @@ await r.finish('Nube panel: status home (board A)', async () => {
   const heroText = await A.page.locator('#connection-dropdown [data-cloud-hero]').innerText().catch(() => '');
   check('Worker down: the hero speaks plain Spanish, no raw net::ERR code', !/ERR_|net::/.test(heroText), heroText);
 
-  // Icon + quick look while the Worker is down.
+  // Icon + quick look while the Worker is down. The «aún no están protegidos» toast sits over ×.
+  await closeToasts(A.page);
   await A.page.locator('#btn-connection-dropdown-close').click();
   const iconMod = () => A.page.locator('#btn-header-team-sync').getAttribute('class').then((c) => (String(c).match(/btn-livesync-header--(\w+)/) || [])[1]);
   check('Worker down: the icon turns amber or the red square', /^(degraded|offline)$/.test((await iconMod()) || ''), await iconMod());

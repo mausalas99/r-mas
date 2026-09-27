@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { FEATURE_HINTS } from '../../public/js/feature-hints.mjs';
 
 export const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
@@ -25,7 +26,11 @@ export const until = async (fn, timeout = 30000, step = 500) => {
   }
 };
 
-export function createRun(name) {
+/**
+ * hints: keep the «Guía»/«Nuevo» hint bubbles (per run, or per launch()).
+ * Off by default: a bubble over a control swallows the scenario's click on it.
+ */
+export function createRun(name, { hints: runHints = false } = {}) {
   const runId = new Date().toISOString().replace(/[:.]/g, '-');
   const artifactDir = path.join(repoRoot, 'e2e-artifacts', name, runId);
   // One throwaway userData per profile: a second profile is a second device (Nube sync runs).
@@ -52,7 +57,7 @@ export function createRun(name) {
     await a11y.scan(page, label);
   }
 
-  async function launch({ profile = 'a', lanPort = 3791, fakePortal = false } = {}) {
+  async function launch({ profile = 'a', lanPort = 3791, fakePortal = false, hints = runHints } = {}) {
     const userDataDir = userDataFor(profile);
     const app = await electron.launch({
       executablePath: electronPath,
@@ -93,7 +98,11 @@ export function createRun(name) {
     const page = await app.firstWindow();
     // Sala opens in the card view by default; these scenarios drive the sidebar.
     await page.waitForLoadState('domcontentloaded');
-    const salaCards = await page.evaluate(() => { globalThis.localStorage.setItem('rplus-sala-view', 'bar'); return !!globalThis.document.body.dataset.salaView; });
+    const salaCards = await page.evaluate((hintIds) => {
+      globalThis.localStorage.setItem('rplus-sala-view', 'bar');
+      if (hintIds) globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(hintIds));
+      return !!globalThis.document.body.dataset.salaView;
+    }, hints ? null : FEATURE_HINTS.map((h) => h.id));
     if (salaCards) await page.reload();
     lastPage = page;
     const pageErrors = [];
@@ -250,6 +259,14 @@ export async function setPortalScript(app, steps) {
 }
 
 /** Click patient p ({ exp, room }) in the list; fill "Completar ingreso" the first time. */
+/** After a relaunch, wait out the «Preparando R+» boot screen that covers the app. */
+export async function waitForBoot(page) {
+  await page.waitForFunction(() => {
+    const d = globalThis.document;
+    return !d.documentElement.classList.contains('clinical-onboarding-active') && !d.querySelector('.clinical-onboard-boot-loader');
+  }, null, { timeout: 30000 });
+}
+
 export async function openPatient(page, p) {
   await closeToasts(page);
   // A refused paste leaves the paste box open over the list: close it like a user.

@@ -37,7 +37,7 @@
  *
  *   npm run e2e:patients
  */
-import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub, until } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub, until, waitForBoot } from './harness.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 
 const P = [
@@ -177,6 +177,7 @@ await r.finish('Patient census: search, walk, pin/archive, delete one/many, undo
   await page.locator('.btn-patient-bulk-delete').click();
   if (await confirmOk.isVisible({ timeout: 1500 }).catch(() => false)) await confirmOk.click();
   check('«Eliminar» → "2 pacientes eliminados"', await toast(page, /2 pacientes eliminados/));
+  await until(async () => (await allRegs(page)).length === 2, 5000);
   const afterBulk = await allRegs(page);
   check('bulk delete removed exactly the two selected', JSON.stringify([...afterBulk].sort()) === JSON.stringify([DELTA.exp, EPSILON.exp].sort()), afterBulk);
   check('selection mode ends after deleting', !(await page.locator('#patient-bulk-bar').isVisible()));
@@ -208,6 +209,7 @@ await r.finish('Patient census: search, walk, pin/archive, delete one/many, undo
   // ── Restart ──────────────────────────────────────────────────────────────
   ({ app, page, pageErrors } = await r.launch());
   await page.locator('#patient-list').waitFor({ state: 'visible', timeout: 30000 });
+  await waitForBoot(page);
   await dismissLearnHub(page);
   await until(async () => (await allRegs(page)).length > 0, 15000);
   const afterRestart = await allRegs(page);

@@ -135,6 +135,15 @@ export async function openNubePanel(page) {
   if (await openPanel.isVisible().catch(() => false)) await openPanel.click();
 }
 
+/** ⇄ → panel → Opciones → one sub-view (equipo/cuenta/mobile/admin/nube/advanced). */
+export async function openNubeView(page, view) {
+  await openNubePanel(page);
+  const navOptions = page.locator('[data-cloud-action="nav-options"]');
+  // The panel can still be rebuilding its home view (e.g. right after a join).
+  if (await until(() => navOptions.isVisible().catch(() => false), 5000)) await navOptions.click();
+  await page.locator(`.cloud-sync-view[data-cloud-view="options"] [data-cloud-action="nav-view"][data-cloud-view="${view}"]`).click();
+}
+
 export const roomMeta = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('rpc-cloud-sync-room-meta') || 'null'));
 export const patientVisible = (page, p) =>
   page.locator(`.p-name[title*="${p.exp}"]`).evaluateAll((els) => els.some((e) => e.getBoundingClientRect().width > 0));

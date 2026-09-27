@@ -70,7 +70,8 @@ await r.finish('prompt() callers use the in-app dialog', async () => {
     return (await t.count()) > 0;
   };
   // Buttons live in the settings sheet; fire their click the way the sheet would.
-  const pressSettingsButton = (label) => page.locator('button', { hasText: label }).first().dispatchEvent('click');
+  // Ajustes A labels most of them just «Exportar…», so pick them by handler.
+  const pressSettingsButton = (handler) => page.locator(`button[data-onclick="${handler}"]`).first().dispatchEvent('click');
   async function answer(value, { expectType = 'text', label } = {}) {
     await dialog.waitFor({ state: 'visible', timeout: 5000 });
     const type = await input.getAttribute('type');
@@ -130,13 +131,13 @@ await r.finish('prompt() callers use the in-app dialog', async () => {
   check('idle lock set to 5 min', (await page.locator('#settings-idle-lock').inputValue()) === '5');
   await closeToasts(page);
 
-  await pressSettingsButton('Cambiar PIN de bloqueo');
+  await pressSettingsButton('changeIdleLockPin');
   await answer('0000', { expectType: 'password', label: 'current PIN' });
   check('wrong current PIN → "PIN incorrecto"', await toastText(/PIN incorrecto/i));
   check('wrong current PIN → hash unchanged', (await pinHash()) === sha256('1234'));
   await closeToasts(page);
 
-  await pressSettingsButton('Cambiar PIN de bloqueo');
+  await pressSettingsButton('changeIdleLockPin');
   await answer('1234', { expectType: 'password' });
   await answer('5678', { expectType: 'password' });
   await answer('5678', { expectType: 'password' });
@@ -155,7 +156,7 @@ await r.finish('prompt() callers use the in-app dialog', async () => {
     }
     return null;
   };
-  await pressSettingsButton('Exportar por rango');
+  await pressSettingsButton('exportRangeBackupPrompt');
   await dialog.waitFor({ state: 'visible' });
   await shot(page, 'range-dialog');
   await answer('01/01/2020 - 31/12/2030', { expectType: 'text', label: 'date range' });
@@ -166,7 +167,7 @@ await r.finish('prompt() callers use the in-app dialog', async () => {
   await closeToasts(page);
 
   // ── 3. Encrypted sync export ─────────────────────────────────────────────
-  await pressSettingsButton('Exportar paquete sync');
+  await pressSettingsButton('exportSyncBundlePrompt');
   await dialog.waitFor({ state: 'visible' });
   await shot(page, 'sync-passphrase-dialog');
   await answer(PASS, { expectType: 'password', label: 'export passphrase' });

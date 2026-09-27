@@ -104,15 +104,18 @@ await r.finish('Worst-case input: odd names, volume, junk labs, restart', async 
   const big = { exp: '7200001-1', name: 'DEMO REPORTE GIGANTE', room: '700' };
   const t0 = Date.now();
   const before = pageErrors.length;
-  await pasteAndSave(page, header(big, TODAY(3)) + 'QUIMICA CLINICA\nQUIMICA SANGUINEA\n' + TABLE + rows + bh('7.9').split(TABLE)[1]);
+  // Unknown rows are not stored; the preview and a «filas no reconocidas no se guardaron» toast name them.
+  const junkNotice = await pasteAndSave(page, header(big, TODAY(3)) + 'QUIMICA CLINICA\nQUIMICA SANGUINEA\n' + TABLE + rows + bh('7.9').split(TABLE)[1]);
   const pasteMs = Date.now() - t0;
+  const unknownToast = page.locator('.toast', { hasText: /no reconocidas? no se guard/ }).first();
+  const unknownNamed = await unknownToast.waitFor({ state: 'visible', timeout: 20000 }).then(() => unknownToast.innerText(), () => '');
   await openBySearch(page, big);
   await page.locator('#apptab-lab').click();
   const t1 = Date.now();
   const alive = await page.evaluate(() => 1).catch(() => 0);
   await shot(page, 'junk-report');
   const shown = await page.locator('#tab-lab, main').first().innerText().catch(() => '');
-  check('400-row junk report: unknown analytes kept somewhere visible', /ANALITO/i.test(shown), shown.replace(/\s+/g, ' ').slice(0, 200));
+  check('400-row junk report: unknown analytes named to the user', /ANALITO/i.test(shown) || /ANALITO/.test(junkNotice + unknownNamed), (junkNotice + unknownNamed).replace(/\s+/g, ' ').slice(0, 300));
   check('400-row junk report: no page error', pageErrors.length === before, pageErrors.slice(before));
   check('400-row junk report: paste under 15 s, UI answers', pasteMs < 15000 && alive === 1, { pasteMs, pingMs: Date.now() - t1 });
 

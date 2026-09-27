@@ -49,7 +49,7 @@
  *     - an uncaught page error on either device
  */
 import { createRun, dismissLearnHub, closeToasts, pasteAndSave, openPatient, repoRoot } from './harness.mjs';
-import { startWorker, nubeDevices, onboardNube, patientVisible, until, BASE } from './nube-worker.mjs';
+import { startWorker, nubeDevices, onboardNube, openNubeView, patientVisible, until, BASE } from './nube-worker.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 import path from 'node:path';
 
@@ -112,9 +112,11 @@ await r.finish('Guardia handoff: R2 → on-call R1 over Nube, both ways, restart
   check('R1 sees the R2\'s team through Nube', await until(() => joinBtn.isVisible(), 20000));
   await joinBtn.click();
   await B.page.waitForTimeout(1500);
+  // Joining closes the panel; reopen Equipo for «Mi ciclo».
+  await closeToasts(B.page);
+  await openNubeView(B.page, 'equipo');
 
   const letter = activeCycleLetterForDate('Sala', 'R1', new Date());
-  await B.page.locator('summary', { hasText: 'Detalles del equipo' }).first().click();
   await B.page.locator('summary', { hasText: 'Mi ciclo en este equipo' }).first().click();
   await B.page.locator('select[id^="clinical-my-cycle-"]').first().selectOption(letter);
   await B.page.locator('.clinical-teams-my-cycle-form button[type=submit]').first().click();

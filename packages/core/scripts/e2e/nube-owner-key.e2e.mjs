@@ -17,7 +17,7 @@
  *     recovery for Macs that already lost fields that way)
  */
 import { createRun, dismissLearnHub, closeToasts, pasteAndSave } from './harness.mjs';
-import { startWorker, d1Query, nubeDevices, onboardNube, patientVisible, until, BASE } from './nube-worker.mjs';
+import { startWorker, d1Query, nubeDevices, onboardNube, patientVisible, roomMeta, until, BASE } from './nube-worker.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 
 globalThis.__RPC_CLOUD_MOBILE_APP_VERSION__ = '8.4.2';
@@ -39,7 +39,8 @@ await r.finish('Owner sala keyed on any online moment', async () => {
   const A = await launchDevice('a', 3793);
   await onboardNube(A.page, OWNER);
   await dismissLearnHub(A.page);
-  const snap = await A.page.evaluate(() => JSON.parse(globalThis.localStorage.getItem('rpc-cloud-sync-room-meta') || 'null'));
+  // The room meta lands a moment after onboarding returns (first sync cycle).
+  const snap = await until(() => roomMeta(A.page), 15000, 500);
   check('the device remembers it owns the sala', snap?.role === 'owner', snap);
 
   await A.page.waitForTimeout(1500);

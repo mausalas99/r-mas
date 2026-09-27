@@ -113,7 +113,7 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   await page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
   await page.locator('#btn-clinical-team-create-open').click();
   await page.locator('#clinical-team-create-name').fill('EQUIPO DEMO TOUR');
-  await page.getByRole('button', { name: 'Crear equipo' }).click();
+  await page.locator('#clinical-team-create-form [type="submit"]').click();
   await page.waitForTimeout(1500);
   await closeToasts(page);
   await page.locator('#btn-connection-dropdown-close').click().catch(() => {});
@@ -209,7 +209,7 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   await relaunch2.app.close();
 
   // ── fresh registered install → no Learn Hub pop-up; an in-app «Guía» hint instead ─
-  const fresh = await r.launch({ profile: 'fresh' });
+  const fresh = await r.launch({ profile: 'fresh', hints: true });
   await onboardLocalOnly(fresh.page);
   await fresh.page.waitForTimeout(3000);
   check(

@@ -28,7 +28,7 @@ import { activeHints } from '../../public/js/feature-hints.mjs';
 
 const P = { exp: '7000911-1', name: 'DEMO GUIA UNO', room: '611' };
 const P2 = { exp: '7000912-2', name: 'DEMO GUIA DOS', room: '612' };
-const r = createRun('feature-hints');
+const r = createRun('feature-hints', { hints: true });
 const { check, shot } = r;
 
 const ALL = activeHints().map((h) => h.id);
@@ -326,7 +326,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   await n.page.evaluate(([a]) => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(a)), [ALL]);
   await n.page.locator('.fh-close').click({ timeout: 3000 }).catch(() => {});
   await walkHint(n.page, 'g-sync', 1);
-  await n.page.locator('#btn-header-team-sync').click();
+  await nube.openNubePanel(n.page); // ⇄ opens the quick look first, then the panel
   await n.page.locator('.cloud-sync-conexion [data-cloud-room-code]').waitFor({ timeout: 10000 });
   // Chip, code, Opciones (the user opens it), then Equipo, iPad / R+ Móvil, Diagnóstico Nube inside.
   await walkHint(n.page, 'g-conexion', 6);

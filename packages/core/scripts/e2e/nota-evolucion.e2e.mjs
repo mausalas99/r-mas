@@ -54,7 +54,7 @@
 import JSZip from 'jszip';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub, until } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub, until, waitForBoot } from './harness.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 
 const P1 = { exp: '7000621-1', name: 'DEMO NOTA UNO', room: '521' };
@@ -101,12 +101,19 @@ async function newDocx(since, label) {
 
 /** Interconsulta has no side list: Resumen › «← Tablero», then the patient's card on the team board. */
 async function pickPatient(page, p) {
+  await waitForBoot(page);
   await closeToasts(page);
-  if (!(await page.locator('#ic-board-mount .p-name').locator('visible=true').count())) {
+  const board = page.locator('#ic-board-mount');
+  if (!(await board.isVisible())) {
     await page.locator('#apptab-nota').click();
+    await board.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
+  }
+  // The Paciente tab may already land on the board; otherwise Resumen › «← Tablero».
+  if (!(await board.isVisible())) {
     await page.locator('.exp-group-pill[data-group="paciente"]').click();
     await page.locator('[data-ic-back-to-board]').click();
   }
+  await board.locator('.p-name').first().waitFor({ state: 'visible' });
   await openPatient(page, p);
 }
 

@@ -34,7 +34,7 @@
  *     - an uncaught page error
  */
 import { createRun, closeToasts } from './harness.mjs';
-import { startWorker, nubeDevices, onboardNube, until, flat } from './nube-worker.mjs';
+import { startWorker, nubeDevices, onboardNube, openNubeView, until, flat } from './nube-worker.mjs';
 
 const tag = Date.now().toString(36).slice(-6);
 const R2 = { username: `demo_r2_${tag}`, name: 'Dr. Demo Día', rank: 'R2' };
@@ -164,9 +164,8 @@ await r.finish('Equipo panel: pick a published team, then the joined view', asyn
   if (!(await B.page.locator(PANEL).isVisible())) {
     await B.page.locator('#btn-connection-dropdown-close').click().catch(() => {});
     await B.page.keyboard.press('Escape');
-    const open = B.page.getByRole('button', { name: 'Abrir Mi rotación' });
-    if (await open.isVisible().catch(() => false)) await open.click();
-    else await B.page.evaluate(() => window.openClinicalTeamsPanel?.());
+    // Joining closes the panel; reopen it the way a user would.
+    await openNubeView(B.page, 'equipo').catch(() => {});
   }
   const joinedShown = await until(() => B.page.locator(PANEL).isVisible(), 8000);
   if (joinedShown) {
