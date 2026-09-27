@@ -393,6 +393,10 @@ async function handlePromoteSelf(deps) {
     if (!(await confirmAction('¿Promover tu cuenta a admin en la nube?'))) return;
     await deps.getApi().adminPromote(userId, 'admin');
     deps.toast('Cuenta promovida a admin.', 'success');
+    // The panel's first loads ran before the promotion (403): load them again as admin.
+    void loadAdminResumen(deps.root, deps.getApi);
+    void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps));
+    void loadAdminNetworkCensus(deps.root, deps.outerDeps);
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo promover.', 'error');
   }
