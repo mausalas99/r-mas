@@ -85,6 +85,20 @@ function applyServerRevisionImpl(getRevision, setRevision, revision) {
 }
 
 /**
+ * A push answers with the room's revision after its commit. `needPull` means
+ * other devices committed after our cursor: taking that revision would skip
+ * their ops for good (the next pull asks only for newer ones) — a peer's
+ * newer receta, or the delete of a patient we still show. Keep the cursor
+ * and let the pull move it.
+ * @param {(revision: number) => void} applyServerRevision
+ * @param {{ revision?: unknown, needPull?: unknown } | null | undefined} pushResult
+ */
+function applyPushRevision(applyServerRevision, pushResult) {
+  if (pushResult?.revision == null || pushResult.needPull) return;
+  applyServerRevision(Number(pushResult.revision));
+}
+
+/**
  * `locked` (set by api-client) means this device could not open part of the
  * payload, so pull-apply dropped it. Holding the revision back is what keeps
  * those ops inside the next pull's `since` window — they come back on their
@@ -279,7 +293,7 @@ async function pushWithStaleRetry(ctx, roomId, item, ops, onProgress, removeAcke
       if (!pushResult) return;
       noteCloudOpsAttempted(sanitized.ops);
       recordRejectedCloudOps(pushResult);
-      if (pushResult.revision != null) applyServerRevision(Number(pushResult.revision));
+      applyPushRevision(applyServerRevision, pushResult);
       noteCloudLabSidecarOpsSent(chunk, sanitized.ops);
       noteCloudMedRecetaOpsSent(sanitized.ops);
       lastResult = pushResult;
@@ -332,7 +346,7 @@ async function flushOutboxRows(ctx, roomId, rows, onProgress) {
     // different (path, updatedAt) and are not touched, so they survive.
     for (const row of rows) outbox.removeOps(row.clientMutationId, rowOps(row));
     pace.markLocalWrite();
-    if (result?.revision != null) applyServerRevision(Number(result.revision));
+    applyPushRevision(applyServerRevision, result);
     noteCloudSyncPush();
     recordCloudSyncTrace('push', {
       clientMutationId: item.clientMutationId,
