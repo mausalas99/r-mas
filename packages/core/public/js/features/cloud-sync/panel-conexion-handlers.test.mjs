@@ -164,3 +164,40 @@ describe('enterCloudSession', () => {
     );
   });
 });
+
+describe('join errors and sign-out', () => {
+  it('a code that matches no sala says it may have been changed', async () => {
+    const { joinRoomErrorText } = await import('./panel-conexion-handlers.mjs');
+    assert.match(joinRoomErrorText({ data: { error: 'not_found', message: 'Sala no encontrada.' } }), /si un admin lo cambió, pide el nuevo/);
+    assert.equal(joinRoomErrorText({ data: { error: 'quota', message: 'Otra cosa.' } }), 'Otra cosa.');
+    assert.equal(joinRoomErrorText(null), 'No se pudo unir a la sala.');
+  });
+
+  it('logout marks a deliberate sign-out before stopping sync', () => {
+    const src = readFileSync(new URL('./panel-conexion-handlers.mjs', import.meta.url), 'utf8');
+    const body = src.slice(src.indexOf('export async function handleLogout'));
+    assert.ok(body.indexOf('noteNubeSignedOut(prevToken)') >= 0 && body.indexOf('noteNubeSignedOut(prevToken)') < body.indexOf('deps.stopRuntime()'));
+  });
+
+  it('after «Cerrar sesión», the old token’s 403 does not show «Tu sesión expiró»; a new login clears it', async () => {
+    const els = { 'nube-session-banner': { hidden: true }, 'profile-nube-session': { hidden: true } };
+    const prev = globalThis.document;
+    globalThis.document = { getElementById: (id) => els[id] || null };
+    try {
+      const m = await import('./session-expired-prompt.mjs');
+      m.noteNubeAuthResponse(403, { error: 'auth_required' }, 'tok-old');
+      assert.equal(els['nube-session-banner'].hidden, false, 'a real expiry shows the banner');
+      m.noteNubeSignedOut('tok-old');
+      assert.equal(els['nube-session-banner'].hidden, true);
+      // The logout call itself answers 200, then in-flight requests get 403.
+      m.noteNubeAuthResponse(200, {}, 'tok-old');
+      m.noteNubeAuthResponse(403, { error: 'auth_required' }, 'tok-old');
+      assert.equal(els['nube-session-banner'].hidden, true, 'signed out on purpose: stays hidden');
+      m.noteNubeAuthResponse(200, {}, 'tok-new');
+      m.noteNubeAuthResponse(403, { error: 'auth_required' }, 'tok-new');
+      assert.equal(els['nube-session-banner'].hidden, false, 'a new session that expires shows it again');
+    } finally {
+      globalThis.document = prev;
+    }
+  });
+});

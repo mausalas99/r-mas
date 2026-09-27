@@ -194,7 +194,15 @@ async function runPullLatest(pctx) {
     const labIngress = pollMobile ? await recordLabPullIngress(result) : null;
     await finalizePull(pctx, result, since, opsCount, labIngress);
   } finally {
-    if (freshJoin) cloudPullProgress.freshInFlight = false;
+    if (freshJoin) {
+      cloudPullProgress.freshInFlight = false;
+      // A pull that failed (sign-out, offline) never repaints: clear the message.
+      if (typeof document !== 'undefined') {
+        void import('../patients.mjs')
+          .then((m) => m.renderPatientList({ silent: true, force: true }))
+          .catch(() => {});
+      }
+    }
   }
 }
 

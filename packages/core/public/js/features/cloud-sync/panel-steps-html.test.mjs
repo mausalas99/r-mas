@@ -290,6 +290,16 @@ describe('roomConnectedHtml', () => {
     assert.equal((html.match(/cloud-sync-inset-group/g) || []).length, 1);
   });
 
+  it('without a code on this device: «—», Copiar disabled, and where the code comes from', () => {
+    const html = roomConnectedHtml({ sala: 'Sala 1', turnKey: '2026-08', code: '' });
+    assert.match(html, /data-cloud-room-code>—</);
+    assert.match(html, /data-cloud-action="copy-room-code" disabled/);
+    assert.match(html, /Se descarga al conectar con la Nube/);
+    const withCode = roomConnectedHtml({ sala: 'Sala 1', code: 'RC65RH' });
+    assert.doesNotMatch(withCode, / disabled/);
+    assert.doesNotMatch(withCode, /data-cloud-room-code-missing/);
+  });
+
   it('formatTurnMonth reads «2026-09» as «septiembre 2026» and leaves other keys alone', () => {
     assert.equal(formatTurnMonth('2026-09'), 'septiembre 2026');
     assert.equal(formatTurnMonth('2026-13'), '2026-13');

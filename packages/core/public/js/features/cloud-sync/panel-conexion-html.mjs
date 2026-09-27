@@ -134,12 +134,16 @@ export function roomConnectedHtml(room) {
     '</span>' +
     (meta ? '<span class="cloud-sync-status-display">' + esc(meta) + '</span>' : '') +
     '</span></div>' +
-    '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv"><dt>Código para invitar</dt><dd>' +
+    '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv"><dt>Código para invitar' +
+    (code ? '' : '<span class="cloud-sync-room-code-missing" data-cloud-room-code-missing>Se descarga al conectar con la Nube.</span>') +
+    '</dt><dd>' +
     '<span class="cloud-sync-room-code-group">' +
     '<code class="cloud-sync-room-code" data-cloud-room-code>' +
     esc(code || '—') +
     '</code>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-room-copy" data-cloud-action="copy-room-code">Copiar</button>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-room-copy" data-cloud-action="copy-room-code"' +
+    (code ? '' : ' disabled') +
+    '>Copiar</button>' +
     '</span></dd></div>' +
     '<button type="button" class="cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger" data-cloud-action="leave-room">Salir de la sala</button>' +
     '</dl></div>'

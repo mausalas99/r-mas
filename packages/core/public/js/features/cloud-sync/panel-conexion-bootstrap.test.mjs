@@ -49,13 +49,12 @@ describe('localRoomFromSession', () => {
     });
   });
 
-  it('re-renders when snapshot code is missing', () => {
+  it('re-renders when the server code differs from the snapshot (missing or changed by an admin)', () => {
     const src = readFileSync(
       new URL('./panel-conexion-bootstrap.mjs', import.meta.url),
       'utf8'
     );
-    assert.match(src, /!snapCode/);
-    assert.match(src, /roomCode/);
+    assert.match(src, /roomCode !== snapCode/);
   });
 
   it('teams-changed while connected does not remount Equipo (skeleton flash)', () => {

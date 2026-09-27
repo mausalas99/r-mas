@@ -17,16 +17,27 @@ function setPromptVisible(expired) {
   }
 }
 
+/** Token of a deliberate «Cerrar sesión»: its answers say nothing about expiry. */
+let signedOutToken = '';
+
 /**
  * Called by the API client on every response sent with a token.
  * @param {number} status
  * @param {Record<string, unknown>} data
+ * @param {string} [token] the token the request was sent with
  */
-export function noteNubeAuthResponse(status, data) {
+export function noteNubeAuthResponse(status, data, token) {
   // R+ Móvil has its own login gate; ⇄ Conexión does not exist there.
   if (isCloudMobileClient()) return;
+  if (token && token === signedOutToken) return;
   if (status >= 200 && status < 300) setPromptVisible(false);
   else if (status === 403 && data?.error === 'auth_required') setPromptVisible(true);
+}
+
+/** «Cerrar sesión»: hide the prompt; requests still out with this token are ignored. */
+export function noteNubeSignedOut(token) {
+  signedOutToken = String(token || '');
+  setPromptVisible(false);
 }
 
 export async function openNubeLogin() {

@@ -243,7 +243,8 @@ function reconcileCanonicalCloudRoom(section, deps, ui, cachedRoomId) {
     const nextId = String(room.id || '').trim();
     const cachedId = String(cachedRoomId || '').trim();
     const roomCode = String(room.code || '').trim();
-    if (roomCode && (!snapCode || (nextId && nextId !== cachedId))) {
+    // A code an admin changed arrives here too: show it, not the stale one.
+    if (roomCode && (roomCode !== snapCode || (nextId && nextId !== cachedId))) {
       ui.renderConnected(room);
     }
   });

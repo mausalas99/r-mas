@@ -15,6 +15,7 @@ import {
 import { backfillRoomEncryption } from './room-dek-migrate.mjs';
 import { getCloudSyncClientId } from './client-id.mjs';
 import { setStoredRoomDeks } from './settings.mjs';
+import { noteNubeSignedOut } from './session-expired-prompt.mjs';
 import { showConfirmDialog } from '../../ui-approval-card.mjs';
 import { getSharedNubeRuntime, getSharedNubeOutbox } from './panel-conexion-runtime.mjs';
 
@@ -199,9 +200,9 @@ export function persistCloudRoom(deps, room) {
  * the new one the moment it drains. Throws (blocking the switch) if the
  * queue can't be drained — e.g. offline — rather than risk it draining into
  * the wrong room later.
- * @param {object} deps
+ * @param {object} _deps
  */
-async function flushOutboxBeforeRoomSwitch(deps) {
+async function flushOutboxBeforeRoomSwitch(_deps) {
   const outbox = getSharedNubeOutbox();
   if (!outbox || outbox.list().length === 0) return;
   try {
@@ -386,8 +387,16 @@ export async function handleJoinRoom(deps) {
     const room = await joinRoomByCode(deps, code);
     deps.toast('Unido a la sala ' + room.code + '.', 'success');
   } catch (err) {
-    deps.toast(err?.data?.message || err?.message || 'No se pudo unir a la sala.', 'error');
+    deps.toast(joinRoomErrorText(err), 'error');
   }
+}
+
+/** «Sala no encontrada» also covers a code an admin has since changed. */
+export function joinRoomErrorText(err) {
+  if (err?.data?.error === 'not_found') {
+    return 'No hay ninguna sala con ese código. Revísalo; si un admin lo cambió, pide el nuevo.';
+  }
+  return err?.data?.message || err?.message || 'No se pudo unir a la sala.';
 }
 
 /** @param {object} deps */
@@ -412,6 +421,9 @@ export async function handleLeaveRoom(deps) {
 /** @param {object} deps */
 export async function handleLogout(deps) {
   const prevToken = deps.getCloudSyncToken();
+  // Requests still in flight with the old token come back 403: that is this
+  // sign-out, not an expired session.
+  noteNubeSignedOut(prevToken);
   deps.stopRuntime();
   try { await deps.getApi().logout(); } catch { /* ignore */ }
   clearRoomDekCache();
