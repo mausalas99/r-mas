@@ -197,8 +197,8 @@ function statusSheetHtml({ cloudUser, roomHtml, showAdmin, techSummary }) {
     ) + optionsRow('Detalles técnicos', techSummary || '—', 'nube');
   return (
     '<div class="cloud-sync-status-sheet">' +
-    roomHtml +
     statusIdentityHtml(cloudUser) +
+    roomHtml +
     '<div class="cloud-sync-options-card">' +
     navRows +
     '</div></div>'
