@@ -265,7 +265,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   const medLine = page.locator('#patient-censo-meds .exp-datos-line:not(.exp-datos-line--empty)').first();
   check('Tomar de lista fills the census meds', await visible(medLine));
   await page.keyboard.press('Escape');
-  await page.locator('.exp-datos-col--censo').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+  await page.locator('.exp-datos-summary').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
   await walkHint(page, 'datos-842', 4);
   await page.keyboard.press('Escape');
   await go('#apptab-nota');
@@ -328,8 +328,8 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   await walkHint(n.page, 'g-sync', 1);
   await nube.openNubePanel(n.page); // ⇄ opens the quick look first, then the panel
   await n.page.locator('.cloud-sync-conexion [data-cloud-room-code]').waitFor({ timeout: 10000 });
-  // Chip, code, Opciones (the user opens it), then Equipo, iPad / R+ Móvil, Diagnóstico Nube inside.
-  await walkHint(n.page, 'g-conexion', 6);
+  // Status hero, invite code, Detalles técnicos, then Equipo (the user opens it).
+  await walkHint(n.page, 'g-conexion', 4);
   check('no page errors (Nube)', n.pageErrors.length === 0, n.pageErrors);
   await n.app.close();
   await nube.stopWorker();
