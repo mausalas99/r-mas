@@ -60,6 +60,7 @@ export function buildSettingsHelpWindowHandlersLazy(ensureSettingsHelpLoaded) {
       syncTeamSyncHeaderButton: 'syncTeamSyncHeaderButton',
       openQuickHelp: 'openQuickHelp',
       closeQuickHelp: 'closeQuickHelp',
+      resetFeatureHintsFromHelp: 'resetFeatureHintsFromHelp',
       openShortcutsModal: 'openShortcutsModal',
       closeShortcutsModal: 'closeShortcutsModal',
       openShortcutsHelpCenter: 'openShortcutsHelpCenter',

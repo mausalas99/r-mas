@@ -17,6 +17,7 @@ import {
 import {
   openQuickHelp,
   closeQuickHelp,
+  resetFeatureHintsFromHelp,
   onHelpSearchInput,
   onHelpSearchKeydown,
   onHelpListKeydown,
@@ -130,6 +131,7 @@ export const settingsHelpWindowHandlers = {
   filterSettingsNav,
   openQuickHelp,
   closeQuickHelp,
+  resetFeatureHintsFromHelp,
   onHelpSearchInput,
   onHelpSearchKeydown,
   onHelpListKeydown,

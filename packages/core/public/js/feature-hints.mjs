@@ -398,6 +398,13 @@ function tick() {
   openNext();
 }
 
+/** Help center «Ver pistas de nuevo»: clear the done list, every hint shows again. */
+export function resetFeatureHints() {
+  try { localStorage.removeItem(FEATURE_HINTS_DONE_LS_KEY); } catch { /* private storage */ }
+  endFlow(false);
+  paused.clear();
+}
+
 export function initFeatureHints() {
   if (layer || typeof document === 'undefined' || isMobileWeb()) return;
   layer = document.createElement('div');

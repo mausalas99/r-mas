@@ -2,6 +2,7 @@
 import { esc } from '../patients-html.mjs';
 import { settingsHelpBridge } from './bridges.mjs';
 import { closeSettingsDropdown } from './settings-dropdown.mjs';
+import { getSettingsHelpRuntime } from './runtime.mjs';
 
 
 
@@ -292,6 +293,14 @@ export function closeQuickHelp() {
   if (!el) return;
   el.classList.remove('open');
   el.setAttribute('aria-hidden', 'true');
+}
+
+export function resetFeatureHintsFromHelp() {
+  void import('../../feature-hints.mjs').then(function (mod) {
+    mod.resetFeatureHints();
+    closeQuickHelp();
+    getSettingsHelpRuntime().showToast('Pistas reiniciadas. Aparecerán otra vez junto a cada botón.', 'success');
+  });
 }
 
 function onHelpSearchInput(value) {
