@@ -38,8 +38,8 @@ describe('connectedStepsHtml', () => {
     assert.match(html, /data-cloud-view="status"/);
     assert.match(html, /data-cloud-action="nav-options"/);
     assert.match(html, /cloud-sync-options-entry/);
-    // Board «Nube A»: Tu sala first, then the account, then the two rows.
-    assert.ok(html.indexOf('data-test-room') < html.indexOf('cloud-sync-status-identity'));
+    // Account first, then Tu sala, then the two rows (reordered from board «Nube A»).
+    assert.ok(html.indexOf('cloud-sync-status-identity') < html.indexOf('data-test-room'));
     assert.match(html, /data-cloud-tech-summary>—</);
     assert.match(html, /data-cloud-view="options"/);
     assert.match(html, /data-cloud-view="admin"/);
