@@ -314,7 +314,10 @@ async function pushWithStaleRetry(ctx, roomId, item, ops, onProgress) {
       if (!pushResult) return;
       noteCloudOpsAttempted(sanitized.ops);
       recordRejectedCloudOps(pushResult);
-      if (pushResult.revision != null) applyServerRevision(Number(pushResult.revision));
+      // needPull: other devices wrote since our base revision. Jumping to the
+      // post-push revision first made the pull below start past their ops —
+      // they never arrived (e.g. a teammate's new patients) until a full resync.
+      if (pushResult.revision != null && !pushResult.needPull) applyServerRevision(Number(pushResult.revision));
       noteCloudLabSidecarOpsSent(chunk, sanitized.ops);
       noteCloudMedRecetaOpsSent(sanitized.ops);
       lastResult = pushResult;
@@ -346,7 +349,7 @@ async function flushOutboxItem(ctx, roomId, item, onProgress) {
     // different (path, updatedAt) and are not touched, so they survive.
     outbox.removeOps(item.clientMutationId, item.ops);
     pace.markLocalWrite();
-    if (result?.revision != null) applyServerRevision(Number(result.revision));
+    if (result?.revision != null && !result.needPull) applyServerRevision(Number(result.revision));
     noteCloudSyncPush();
     recordCloudSyncTrace('push', {
       clientMutationId: item.clientMutationId,

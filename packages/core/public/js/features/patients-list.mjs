@@ -343,7 +343,6 @@ function trySilentPatientListUpdate(list, bundle, opts) {
 function buildDefaultZonePartsHtml(bundle, rondaNav) {
   var pinned = bundle.zones.pinned;
   var active = bundle.zones.active;
-  var archived = bundle.zones.archived;
   var parts = [];
   if (pinned.length) {
     parts.push(renderPinnedSectionLabelHtml(pinned.length));

@@ -251,6 +251,10 @@ export function createSyncFailCycle(getScheduler, setStatus, pendingCount) {
 async function applyRoomWsOpsMessage(deps, ctx, ops, revision) {
   const local = Number(deps.getRevision() ?? 0);
   if (!Number.isFinite(revision) || revision <= local) return;
+  // One broadcast carries one revision's ops. After a missed message (socket
+  // reconnect), applying this one and jumping to it would skip the gap; leave
+  // it to the debounced pull, which asks from `local`.
+  if (revision !== local + 1) return;
   try {
     const roomId = ctx.getRoomId();
     const dek = roomId ? getCachedRoomDek(roomId) : null;
