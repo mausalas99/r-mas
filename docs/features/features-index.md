@@ -37,6 +37,7 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 | Modo entrega | `lib/entrega/`, `clinical-entrega.mjs` | |
 | Clinical teams | `public/js/features/clinical-teams/` | |
 | Onboarding / Learn Hub | `onboarding-curriculum.mjs`, `clinical-onboarding*.mjs`, `learn-hub.mjs` | Curriculum v17: structure + alta + incompletos first; Labs under Laboratorio |
+| Guía / Nuevo hints | `feature-hints.mjs` (lazy, from `app-shell-deferred.mjs`), E2E `e2e:feature-hints` | Bubbles next to real controls. «Guía» until finished; «Nuevo» only for `HINTS_RELEASE`: each release adds its hints and bumps it. Done list in `rpc-feature-hints-done` |
 | Interno MIP (Nube) | `interno-access-sync.mjs`, `cloud/sync-worker/src/interno/` | [feat-interno-mip-nube.md](./feat-interno-mip-nube.md); QR ⇄ → `/interno/{sala}` |
 | Cloud mobile (iPad / R+ Móvil Nube) | `cloud/sync-pages/`, `public/js/features/cloud-mobile/`, `cloud/sync-worker/` ASSETS | [spec](../superpowers/specs/2026-08-05-cloud-mobile-ipad-design.md) |
 | Equipos (Lumify/EKG/US) | `lib/equipos/`, `public/equipos/`, `cloud/equipos-worker/`, `equipos-cloud-config.mjs` | [spec](../superpowers/specs/2026-06-23-equipos-tracking-design.md); cloud deploy: `cloud/equipos-worker/README.md` |
