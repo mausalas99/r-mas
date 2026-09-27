@@ -34,7 +34,12 @@ export function startWorker() {
     // Own process group: wrangler runs workerd as grandchildren, so kill the whole group.
     { cwd: WORKER_DIR, env: wEnv, stdio: ['ignore', 'pipe', 'pipe'], detached: true },
   );
-  for (const s of [worker.stdout, worker.stderr]) s.on('data', (b) => workerLog.push(...String(b).split('\n').filter((l) => /\] (GET|POST|PUT|DELETE)|rror/.test(l))));
+  worker.stdout.on('data', (b) => workerLog.push(...String(b).split('\n').filter((l) => /\] (GET|POST|PUT|DELETE)|rror/.test(l))));
+  // stderr unfiltered + how it ended: a Worker that dies mid-scenario shows up
+  // on the devices only as ERR_CONNECTION_REFUSED.
+  worker.stderr.on('data', (b) => workerLog.push(...String(b).split('\n').filter((l) => l.trim())));
+  const w = worker;
+  w.on('exit', (code, signal) => workerLog.push(`[e2e] wrangler (pid ${w.pid}) exited code=${code} signal=${signal} at ${new Date().toISOString()}${w === worker ? '' : ' (after stopWorker)'}`));
   return until(() => fetch(`${API}/ping`).then((res) => res.ok), 60000);
 }
 function killGroup(w, sig) {
