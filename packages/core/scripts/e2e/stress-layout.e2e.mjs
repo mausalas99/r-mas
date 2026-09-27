@@ -160,7 +160,7 @@ function probe({ rootSel, dark }) {
       const scroller = ox === 'auto' || ox === 'scroll';
       // Strips and grids that scroll sideways on purpose (fade edge cue / time grid).
       const designed = el.matches('[data-scroll-x], .ea-historial-list, .table-scroll, .lab-table-wrap, .tend-table-wrap, [class*="scroll-x"], table, .tend-scroll, ' +
-        '.inner-tab-bar, .exp-segment-bar, #settings-nav, #procedure-agenda-scroll-host, .med-pharm-scroll');
+        '.inner-tab-bar, .exp-segment-bar, #exp-group-row, #settings-nav, #procedure-agenda-scroll-host, .med-pharm-scroll');
       if (scroller && !designed && el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0 && el.tagName !== 'TEXTAREA' && el.tagName !== 'INPUT') {
         out.hscroll.push(desc(el) + ' +' + (el.scrollWidth - el.clientWidth) + 'px');
       }

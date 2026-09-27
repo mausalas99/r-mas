@@ -256,9 +256,16 @@ export function activeHints(hints = FEATURE_HINTS) {
   return hints.filter(function (h) { return h.kind === 'guia' || h.release === HINTS_RELEASE; });
 }
 
+/**
+ * A guided tour, or the onboarding / «Preparando R+» boot screen that replaces
+ * the app while it starts (class set by clinical-onboarding-main.mjs; not
+ * imported, to keep that module out of this lazy chunk).
+ */
 function tourBusy() {
   const dock = document.getElementById('tour-dock');
-  return isGuidedTourRunning() || !!(dock && dock.offsetParent);
+  return isGuidedTourRunning() || !!(dock && dock.offsetParent) ||
+    document.documentElement.classList.contains('clinical-onboarding-active') ||
+    !!document.querySelector('.clinical-onboard-boot-loader');
 }
 
 function placeBubble() {
@@ -359,6 +366,11 @@ function endFlow(done) {
 }
 
 function tick() {
+  // Busy (tour, boot screen): step aside now; the flow comes back at this step.
+  if (flow && tourBusy()) {
+    endFlow(false);
+    return;
+  }
   if (flow && flow.el && !bubble.hidden) {
     const step = flow.hint.steps[flow.i];
     const again = findVisible(step.sel, false);
@@ -400,5 +412,7 @@ export function initFeatureHints() {
   addEventListener('scroll', placeBubble, true);
   // chisle: 700 ms poll over a MutationObserver — the app re-renders often; 8 selectors is cheap.
   setInterval(tick, 700);
+  // Except the boot / onboarding screen: react on the class flip, not up to 700 ms later.
+  new MutationObserver(tick).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
   tick();
 }
