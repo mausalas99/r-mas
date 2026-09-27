@@ -191,6 +191,8 @@ await r.finish('Resumen glance: care plan, lines/tubes, antibiotic day, cultures
   await openResumen(page);
   // Lines/tubes through Datos, like a user: CVC placed 3 days ago, Foley today, PICC with no date.
   await page.locator('#patient-dashboard-mount .dash-name').click();
+  // Datos B: lines/tubes live on the «Cama e ingreso» tab.
+  await page.locator('#exp-datos-modal-backdrop.open [data-datos-tab="cama"]').click();
   await page.locator('#patient-accesos-list').waitFor({ state: 'visible' });
   const setAcceso = async (i, via, fecha) => {
     const rows = page.locator('#patient-accesos-list .patient-acceso-row');
@@ -265,7 +267,7 @@ await r.finish('Resumen glance: care plan, lines/tubes, antibiotic day, cultures
   check('care plan click opens Estado actual', await page.locator('#ea-snapshot').isVisible().catch(() => false));
   await openResumen(page);
   await page.locator('#patient-dashboard-mount .ctx-group[data-dash-action="datos"]').click();
-  check('lines click opens Datos', await page.locator('#patient-accesos-list').isVisible().catch(() => false));
+  check('lines click opens Datos', await page.locator('#exp-datos-modal-backdrop.open').isVisible().catch(() => false));
   await page.keyboard.press('Escape');
 
   await page.setViewportSize({ width: 1280, height: 800 });

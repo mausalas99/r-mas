@@ -63,7 +63,8 @@ const pickLabDay = (page, day) =>
 const openConexion = async (page, view) => {
   await openNubePanel(page);
   const navOptions = page.locator('[data-cloud-action="nav-options"]');
-  if (await navOptions.isVisible().catch(() => false)) await navOptions.click();
+  // The panel can still be rebuilding its home view (e.g. right after a room switch).
+  if (await until(() => navOptions.isVisible().catch(() => false), 5000)) await navOptions.click();
   // The status home has its own «Detalles técnicos» row to the same view; use the Opciones one.
   if (view) await page.locator(`.cloud-sync-view[data-cloud-view="options"] [data-cloud-action="nav-view"][data-cloud-view="${view}"]`).click();
 };
@@ -412,12 +413,11 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await closeToasts(A2.page);
   // Joining the room rebuilds the ⇄ panel on its home view and opens the chart:
   // back to Administración › Red, from whatever state the panel was left in.
-  if (!(await A2.page.locator('#connection-dropdown.open').isVisible().catch(() => false))) {
-    await A2.page.locator('#btn-header-team-sync').click();
+  if (await A2.page.locator('#connection-dropdown.open').isVisible().catch(() => false)) {
+    await closeConexion(A2.page);
+    await A2.page.waitForTimeout(500);
   }
-  const navOptions = A2.page.locator('[data-cloud-action="nav-options"]');
-  if (await navOptions.isVisible().catch(() => false)) await navOptions.click();
-  await A2.page.locator('[data-cloud-action="nav-view"][data-cloud-view="admin"]').click();
+  await openConexion(A2.page, 'admin');
   await A2.page.locator('[role="tab"][data-admin-tab="red"]').click();
   await A2.page.locator('[data-admin-action="refresh-red"]').click();
   await until(() => p3Row.isVisible(), 15000);
