@@ -394,9 +394,12 @@ export function updateExpPendientesTabBadge() {
   badges.forEach(function (badge) {
     badge.textContent = '';
     badge.hidden = count === 0;
+    // role="img": aria-label is not allowed on a role-less span.
     if (count === 0) {
+      badge.removeAttribute('role');
       badge.removeAttribute('aria-label');
     } else {
+      badge.setAttribute('role', 'img');
       badge.setAttribute('aria-label', 'Pendientes abiertos');
     }
   });
@@ -592,9 +595,8 @@ export function appendGroupedTodoSections(list, todos, preservedRow, preserveTod
   });
 }
 
-export function renderTodoFormIn(container, idPrefix) {
+export function renderTodoFormIn(container, _idPrefix) {
   if (!container) return;
-  idPrefix = idPrefix == null ? '' : String(idPrefix);
 
   if (!aid()) {
     while (container.firstChild) container.removeChild(container.firstChild);

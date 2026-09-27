@@ -66,22 +66,27 @@ function renderDashHead(v, verdict, chipClass) {
 
 function renderDashTiles(tiles) {
   if (!Array.isArray(tiles) || tiles.length === 0) return '';
-  return tiles
-    .map(function (tile) {
-      const dd =
-        esc(tile.value) + (tile.hint ? '<span class="cloud-nube-dash-kv-muted"> · ' + esc(tile.hint) + '</span>' : '');
-      return (
-        '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv cloud-nube-dash-kv" data-status="' +
-        esc(tile.status) +
-        '">' +
-        '<dt>' +
-        esc(tile.label) +
-        '</dt><dd>' +
-        dd +
-        '</dd></div>'
-      );
-    })
-    .join('');
+  // Each dt/dd pair sits in a div (allowed in a dl) so rows keep their layout.
+  return (
+    '<dl class="cloud-nube-dash-kv-list">' +
+    tiles
+      .map(function (tile) {
+        const dd =
+          esc(tile.value) + (tile.hint ? '<span class="cloud-nube-dash-kv-muted"> · ' + esc(tile.hint) + '</span>' : '');
+        return (
+          '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv cloud-nube-dash-kv" data-status="' +
+          esc(tile.status) +
+          '">' +
+          '<dt>' +
+          esc(tile.label) +
+          '</dt><dd>' +
+          dd +
+          '</dd></div>'
+        );
+      })
+      .join('') +
+    '</dl>'
+  );
 }
 
 function renderDashPipeline(pipeline) {

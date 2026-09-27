@@ -237,7 +237,9 @@ function renderEventosStep(step) {
       '<span class="drive-import-review-row-date">' +
       escapeHtml(date) +
       '</span></label>' +
-      '<textarea class="drive-import-review-row-text" rows="3" spellcheck="true">' +
+      '<textarea class="drive-import-review-row-text" rows="3" spellcheck="true" aria-label="Texto de la eventualidad ' +
+      (idx + 1) +
+      '">' +
       escapeHtml(entry.text) +
       '</textarea></div>';
   });

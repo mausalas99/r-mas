@@ -249,7 +249,18 @@
   box-sizing: border-box;
 }
 
-.cloud-sync-inset-row:not(:last-child)::after {
+/* dl around the Nube dashboard's key/value rows (panel-cloud-diagnostics-html.mjs):
+   lays them out like direct rows of the group, divider after the last one too
+   when more rows follow. */
+.cloud-nube-dash-kv-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
+
+.cloud-sync-inset-row:not(:last-child)::after,
+.cloud-nube-dash-kv-list:not(:last-child) > .cloud-sync-inset-row:last-child::after {
   content: '';
   position: absolute;
   left: 16px;
