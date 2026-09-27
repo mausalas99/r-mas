@@ -24,6 +24,10 @@ export const CLOUD_POLL_ERROR_MAX_MS = 5 * 60_000;
 /** Overload (D1/rate-limit) backoff caps lower than a generic/permanent error — the
  * room usually recovers fast, and a shorter ceiling drains the backlog sooner. */
 export const CLOUD_POLL_ERROR_OVERLOAD_MAX_MS = 120_000;
+/** While the Worker is unreachable, a cheap GET /ping this often (jittered) — the
+ * full sync keeps its 30 s→5 min backoff, but work done offline goes out within
+ * ~10 s of the Worker answering again instead of waiting out that backoff. */
+export const CLOUD_REACHABILITY_PROBE_MS = 10_000;
 export const CLOUD_PUSH_DEBOUNCE_MS = 1_500;
 /** First edit in a burst pushes right away — only repeat edits debounce. */
 export const CLOUD_PUSH_FIRST_MS = 0;
@@ -136,6 +140,17 @@ export function isCloudRateLimitError(err) {
     (err && typeof err === 'object' && (err.data?.message || err.message)) || ''
   );
   return /rate.?limit|too many|429|demasiados intentos/i.test(msg);
+}
+
+/**
+ * Could not reach the Worker at all (network down, Worker not running): no HTTP
+ * status. Distinct from overload (429/5xx), where probing sooner would only add load.
+ * @param {unknown} err
+ */
+export function isCloudUnreachableError(err) {
+  if (isCloudBackoffError(err)) return false;
+  const status = Number(err && typeof err === 'object' ? err.status : 0);
+  return !status;
 }
 
 /** @param {unknown} err */

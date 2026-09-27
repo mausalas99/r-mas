@@ -24,6 +24,7 @@
  *       pre-pressed before anyone picked one
  *     - «Crítico» / «Negativas firmadas» / «Show» have no control to set them,
  *       so isGuardiaChipCritical / entregaChipMarkerIds can never turn on
+ *       (found: the controls were never rendered; now pills in the markers block)
  *     - checking Vasopresor doesn't reveal its dose fields or reset the card
  *       to inactive when unchecked, or doesn't autofill the norepinefrina
  *       default dose/unit
@@ -182,6 +183,7 @@ await r.finish('Guardia handoff: R2 → on-call R1 over Nube, both ways, restart
     (await m.locator('.entrega-vaso-unit-pill.is-selected').textContent()) === 'mcg/kg/min');
 
   await m.locator('.guardia-marks-btn[data-value="no"]').click();
+  await m.locator('label.entrega-check-pill', { hasText: 'Negativas firmadas' }).click();
   await m.locator('#entrega-handoff-notes').fill(NOTE1);
   await m.locator('#btn-entrega-add-proc').click();
   await m.locator('[data-action="add-item"]').click(); // empty label: must be refused
@@ -233,10 +235,10 @@ await r.finish('Guardia handoff: R2 → on-call R1 over Nube, both ways, restart
     check('R1 census card keeps the real bed (cuarto/cama), not «Cama —» (enrichPatientForGuardiaCard)',
       cardHtml.includes(`${P1.room} · 01`), cardHtml.slice(0, 200));
     check('R1 census card shows a critical indicator for the active vasopresor (isGuardiaChipCritical)',
-      /critical|patient-chip-symbol/i.test(cardHtml),
-      'guardia-census-table.mjs buildGuardiaCensusCardHtml/buildGuardiaCensusTableHtml never reads ' +
-      'p.isCritical / p.entregaMarkers, even though enrichPatientForGuardiaCard (guardia-board-chrome.mjs:133-134) ' +
-      'computes them — card html: ' + cardHtml.slice(0, 200));
+      /gct-card--critical/.test(await card(B.page, P1).getAttribute('class')) && /Crítico/.test(cardHtml),
+      cardHtml.slice(0, 300));
+    check('R1 census card shows the «Negativas firmadas» marker (NF) the R2 set',
+      /patient-chip-symbol--negativas/.test(cardHtml), cardHtml.slice(0, 300));
   }
   m = await openHandoff(B.page, P1);
   check('R1 opens P1: sees the R2\'s notes', (await m.locator('#entrega-handoff-notes').inputValue()) === NOTE1);

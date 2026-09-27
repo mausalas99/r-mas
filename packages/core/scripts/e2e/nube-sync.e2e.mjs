@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global window, document, MutationObserver */
 /**
  * E2E: Nube sync between two desktop devices, driven through the real
  * Electron app against a LOCAL copy of the real sync Worker (`wrangler dev
@@ -148,7 +149,9 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   // resetConexionPanelOnClose runs off a dynamic import — give it a tick before reopening,
   // or the reopen's toggle can race the close animation and just close it again.
   await B.page.waitForTimeout(500);
-  await openConexion(B.page); // reopen, no view: panel-conexion-tour — subview resets to Conexión home, not stuck on Móvil
+  // Reopen with the header button alone (openConexion() would click «Opciones»
+  // itself): panel-conexion-tour must land on Conexión home, not stay on Móvil.
+  await B.page.locator('#btn-header-team-sync').click();
   const backOnHome = B.page.locator('[data-cloud-action="nav-options"]');
   check('B: reopening the dropdown after close resets to the Conexión home view', await until(() => backOnHome.isVisible(), 5000));
   await closeConexion(B.page);
@@ -298,9 +301,21 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await C.page.locator('#onboard-rank').selectOption('R2');
   await C.page.locator('#onboard-sala').selectOption('Sala 1');
   await C.page.locator('#onboard-nube-password').fill(PASSWORD);
+  // The message only lives while the first pull is in flight — against the local
+  // Worker that is well under a second, so record it with an observer instead of polling.
+  await C.page.evaluate(() => {
+    window.__sawDownloading = false;
+    const obs = new MutationObserver(() => {
+      if (/Descargando pacientes/.test(document.getElementById('patient-list')?.textContent || '')) {
+        window.__sawDownloading = true;
+        obs.disconnect();
+      }
+    });
+    obs.observe(document.body, { childList: true, subtree: true, characterData: true });
+  });
   await C.page.getByRole('button', { name: 'Guardar perfil' }).click();
-  const downloadingMsg = C.page.getByText(/Descargando pacientes/i);
-  const sawDownloading = await until(() => downloadingMsg.isVisible(), 6000);
+  await until(() => C.page.evaluate(() => window.__sawDownloading), 6000);
+  const sawDownloading = await C.page.evaluate(() => window.__sawDownloading);
   const cCont = C.page.locator('button:visible', { hasText: /^Continuar/ });
   await cCont.waitFor({ timeout: 20000 });
   await C.page.getByText('Lo guardé en un lugar seguro').click();

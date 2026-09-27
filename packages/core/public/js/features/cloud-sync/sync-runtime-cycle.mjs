@@ -294,9 +294,13 @@ function startLiveRoomSyncWs(deps, ctx) {
     },
     onTransportChange: function (transport) {
       noteCloudSyncTransport(transport);
-      // Socket back = Worker reachable again: flush work queued during the outage
-      // now, not after the error backoff (up to 5 min) that the outage left armed.
-      if (transport === 'ws' && ctx.outboxSync?.pendingCount() > 0) void ctx.syncCycle();
+      // Socket (back) up = Worker reachable: run one cycle now, not after the error
+      // backoff the outage left armed. It pushes work queued offline AND pulls what
+      // other devices pushed while this socket was down — the socket only signals
+      // changes made after it opened. (This used to check ctx.outboxSync, which was
+      // never passed in, so it never ran; and a device with nothing queued never
+      // caught up until its next idle poll, 30-90 s later.)
+      if (transport === 'ws') void ctx.syncCycle();
       ctx.scheduler.armNextTimer(false);
       ctx.onStatus?.(ctx.getCurrentStatus(), ctx.getLastDetail() || undefined);
     },
@@ -408,6 +412,16 @@ export function createSyncRuntimeCycle(deps) {
     pendingCount: outboxSync.pendingCount,
     getLastLocalWriteAt: function () { return lastLocalWriteAt; },
     pollMobile: deps.pollMobile,
+    probe: deps.api && typeof deps.api.ping === 'function' ? () => deps.api.ping() : undefined,
+    // Back from an outage = a fresh connect for the sala rooms too: team
+    // directories and patient→team assignments made offline only go out here
+    // (otherwise at the next app start), and a peer's census hides a patient
+    // whose assignment it has not pulled.
+    onRecovered: function () {
+      void import('./cloud-clinical-ops-sala.mjs')
+        .then(function (m) { return m.syncCloudClinicalOpsOnConnect(); })
+        .catch(function () { /* next recovery or app start retries */ });
+    },
     getTransportState: function () {
       if (roomWs) return roomWs.getTransportState();
       return typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'poll';

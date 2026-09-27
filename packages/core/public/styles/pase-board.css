@@ -77,6 +77,12 @@
   transition: background var(--dur-fast, 140ms) var(--ease-out);
 }
 .gct-card:hover { background: color-mix(in oklab, var(--color-ink) 3%, transparent); }
+.gct-card--critical {
+  border-left-width: 3px;
+  border-left-color: var(--error);
+  border-color: color-mix(in oklab, var(--error) 22%, var(--border));
+}
+
 .gct-card--alert,
 .gct-card--alert:hover {
   background: var(--color-danger-tint);
@@ -2129,7 +2135,8 @@ html.dark #entrega-modal-backdrop .modal.entrega-modal {
   border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--error) 12%, var(--surface));
   border: 1px solid color-mix(in oklab, var(--error) 40%, var(--border));
-  color: var(--error);
+  /* --error on its own tint fails WCAG AA at this size; the deep variant passes in both themes. */
+  color: var(--color-danger-deep);
   flex-shrink: 0;
 }
 
