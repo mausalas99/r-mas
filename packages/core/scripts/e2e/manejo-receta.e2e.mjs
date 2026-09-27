@@ -41,7 +41,7 @@
  *
  *   npm run e2e:manejo-receta
  */
-import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, acceptAbxDias } from './harness.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 
 const A = { exp: '7000007-7', name: 'DEMO MANEJO UNO', room: '307' };
@@ -114,6 +114,7 @@ await r.finish('Manejo + Perfil histórico', async () => {
     await page.locator('#med-input').fill(text);
     await page.getByRole('button', { name: 'Procesar receta' }).click();
     await page.waitForTimeout(400);
+    await acceptAbxDias(page);
   }
 
   // ── Import ─────────────────────────────────────────────────────────────

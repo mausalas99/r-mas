@@ -48,7 +48,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRun, dismissLearnHub, closeToasts, pasteAndSave, pasteAndProcess, openPatient } from './harness.mjs';
+import { createRun, dismissLearnHub, closeToasts, pasteAndSave, pasteAndProcess, openPatient, acceptAbxDias } from './harness.mjs';
 import { startWorker, stopWorker, nubeDevices, onboardNube, patientVisible, until, openNubePanel } from './nube-worker.mjs';
 import { fullLabs, header, TABLE } from './some-fixtures.mjs';
 
@@ -164,6 +164,7 @@ async function importReceta(page, p, meds, { dbl = false } = {}) {
   if (dbl) await btn.dblclick();
   else await btn.click();
   await page.waitForTimeout(800);
+  await acceptAbxDias(page);
 }
 async function openEstadoActual(page, p) {
   await openBySearch(page, p);

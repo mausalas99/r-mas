@@ -144,6 +144,19 @@ export async function dismissLearnHub(page) {
 }
 
 /**
+ * A SOME list whose antibiotics carry a DIA# that R+ has no record of opens
+ * «Días de antibiótico sin registro» (8.4.2): keep SOME's day, like a user
+ * who checks it and presses Guardar. No dialog → returns after `timeout`.
+ */
+export async function acceptAbxDias(page, timeout = 1500) {
+  const ok = page.locator('[data-abx-dia-ok]');
+  if (await ok.waitFor({ state: 'visible', timeout }).then(() => true, () => false)) {
+    await ok.click();
+    await ok.waitFor({ state: 'detached', timeout: 5000 }).catch(() => {});
+  }
+}
+
+/**
  * Dismiss toasts without a real mouse click: toasts slide while others close,
  * and a positional click can land on the header mode switch under them.
  */

@@ -53,7 +53,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts, dismissLearnHub } from './harness.mjs';
+import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts, dismissLearnHub, acceptAbxDias } from './harness.mjs';
 import { header, TABLE, fullLabs } from './some-fixtures.mjs';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -316,6 +316,7 @@ await r.finish('Data input stress: lab paste, Tendencias, Cultivos, Manejo, Pend
     await page.locator('#med-input').fill(text);
     await page.getByRole('button', { name: 'Procesar receta' }).click();
     await page.waitForTimeout(600);
+    await acceptAbxDias(page);
   };
   await openManejo();
   t = Date.now();

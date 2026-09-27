@@ -37,7 +37,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createA11yRecorder } from './harness.mjs';
+import { createA11yRecorder, acceptAbxDias } from './harness.mjs';
 import { DEMO_TOUR_LAB_PASTE, DEMO_GARCIA_LAB_REPORT } from '../../public/js/tour-demo-some-lab.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../../public/js/lab-bulk-paste.mjs';
 
@@ -144,6 +144,7 @@ async function importSomeMeds(page) {
   await page.locator('#med-input').fill(SOME_MEDS);
   await page.getByRole('button', { name: 'Procesar receta' }).click();
   await page.waitForTimeout(400);
+  await acceptAbxDias(page);
   await closeToasts(page);
 }
 
