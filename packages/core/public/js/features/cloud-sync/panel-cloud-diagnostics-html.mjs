@@ -118,6 +118,7 @@ function renderDashPipeline(pipeline) {
 function renderDashOutboxBreakdown(outboxBreakdown) {
   if (!Array.isArray(outboxBreakdown) || outboxBreakdown.length === 0) return '';
   let html = '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-nube-dash-outbox-head">Cola por tipo</div>';
+  html += '<dl class="cloud-nube-dash-kv-list">';
   outboxBreakdown.forEach(function (row) {
     html +=
       '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv cloud-nube-dash-outbox-row">' +
@@ -130,13 +131,14 @@ function renderDashOutboxBreakdown(outboxBreakdown) {
       esc(String(row.count)) +
       '</dd></div>';
   });
-  return html;
+  return html + '</dl>';
 }
 
 function renderDashToxicOutbox(toxicOutbox) {
   if (!Array.isArray(toxicOutbox) || toxicOutbox.length === 0) return '';
   let html =
     '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-nube-dash-toxic-head">Lotes pesados en cola</div>';
+  html += '<dl class="cloud-nube-dash-kv-list">';
   toxicOutbox.forEach(function (row) {
     html +=
       '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv cloud-nube-dash-toxic-row" data-status="error">' +
@@ -146,7 +148,7 @@ function renderDashToxicOutbox(toxicOutbox) {
       esc(String(row.opCount || 0) + ' ops · ~' + String(row.totalLabel || '') + (row.maxOpPath ? ' · ' + row.maxOpPath : '')) +
       '</dd></div>';
   });
-  return html;
+  return html + '</dl>';
 }
 
 function renderDashAlerts(issues, recentErrors) {
