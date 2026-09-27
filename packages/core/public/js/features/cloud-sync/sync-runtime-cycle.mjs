@@ -251,10 +251,10 @@ export function createSyncFailCycle(getScheduler, setStatus, pendingCount) {
 async function applyRoomWsOpsMessage(deps, ctx, ops, revision) {
   const local = Number(deps.getRevision() ?? 0);
   if (!Number.isFinite(revision) || revision <= local) return;
-  // One broadcast carries one revision's ops. After a missed message (socket
-  // reconnect), applying this one and jumping to it would skip the gap; leave
-  // it to the debounced pull, which asks from `local`.
-  if (revision !== local + 1) return;
+  // One broadcast carries one revision's ops. After a missed one (reconnect, or
+  // our own push answered with needPull) the ops still apply — last-writer-wins,
+  // safe to see again — but the revision stays put so the next pull asks for the gap.
+  const contiguous = revision === local + 1;
   try {
     const roomId = ctx.getRoomId();
     const dek = roomId ? getCachedRoomDek(roomId) : null;
@@ -269,8 +269,8 @@ async function applyRoomWsOpsMessage(deps, ctx, ops, revision) {
       recordCloudSyncTrace('ws_ops_locked', { revision, opsCount: decrypted.length });
       return;
     }
-    deps.setRevision(revision);
-    recordCloudSyncTrace('ws_ops_applied', { revision, opsCount: decrypted.length });
+    if (contiguous) deps.setRevision(revision);
+    recordCloudSyncTrace('ws_ops_applied', { revision, opsCount: decrypted.length, contiguous });
   } catch (err) {
     recordCloudSyncTrace('ws_ops_apply_failed', { message: String(err?.message || err) });
   }
