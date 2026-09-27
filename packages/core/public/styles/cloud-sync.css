@@ -2526,6 +2526,11 @@
   --chain-tone: var(--color-danger);
 }
 
+/* Waiting on an earlier step (signed out): grey, not a warning. */
+.cloud-sync-chain-step[data-state='off'] {
+  --chain-tone: var(--text-muted);
+}
+
 .cloud-sync-chain-bubble {
   display: flex;
   align-items: center;
@@ -2564,6 +2569,10 @@
 .cloud-sync-chain-link.is-broken {
   border-top-style: dashed;
   border-top-color: var(--color-livesync-degraded, #b45309);
+}
+
+.cloud-sync-chain-link.is-waiting {
+  border-top-color: var(--divider);
 }
 
 .cloud-sync-room-name,
@@ -2888,4 +2897,126 @@
   flex: 1;
   min-height: 38px;
   text-align: center;
+}
+
+/* Signed out (board «Nube sin sesión» D): the account card is the form. */
+.cloud-sync-auth-card {
+  padding: calc(18px * var(--density-space)) calc(20px * var(--density-space));
+}
+
+.cloud-sync-auth-card .cloud-sync-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: calc(14px * var(--density-space));
+}
+
+.cloud-sync-auth-card .cloud-sync-tab-panel[hidden] {
+  display: none;
+}
+
+.cloud-sync-auth-head {
+  display: flex;
+  align-items: center;
+  gap: calc(12px * var(--density-space));
+}
+
+.cloud-sync-avatar--empty {
+  background: color-mix(in oklab, var(--text) 8%, var(--color-elevated));
+  color: var(--text-muted);
+}
+
+.cloud-sync-auth-title {
+  flex: 1;
+  margin: 0;
+  font-size: calc(16px * var(--density-font));
+  font-weight: 700;
+  color: var(--text);
+}
+
+.cloud-sync-auth-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(12px * var(--density-space));
+}
+
+.cloud-sync-auth-card .cloud-sync-field label {
+  font-size: calc(12.5px * var(--density-font));
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cloud-sync-auth-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12px * var(--density-space));
+}
+
+.cloud-sync-auth-foot .cloud-sync-btn--primary {
+  margin-left: auto;
+}
+
+.cloud-sync-auth-remember {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: calc(13px * var(--density-font));
+  color: var(--text);
+}
+
+.cloud-sync-auth-hint {
+  margin: 0;
+  font-size: calc(12px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.cloud-sync-auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 -8px;
+  padding-top: calc(8px * var(--density-space));
+  border-top: 1px solid var(--divider);
+}
+
+.cloud-sync-auth-links .cloud-sync-btn--ghost,
+.cloud-sync-auth-back.cloud-sync-btn--ghost {
+  color: var(--color-accent);
+}
+
+.cloud-sync-room--waiting .cloud-sync-inset-group {
+  opacity: 0.6;
+}
+
+.cloud-sync-advanced--row {
+  padding: 0;
+  border: var(--border-hairline);
+  border-radius: var(--radius-container);
+  background: color-mix(in oklab, var(--text) 3%, var(--color-elevated));
+}
+
+.cloud-sync-advanced--row > summary {
+  display: flex;
+  align-items: center;
+  padding: calc(12px * var(--density-space)) calc(16px * var(--density-space));
+  list-style: none;
+}
+
+.cloud-sync-advanced--row > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cloud-sync-advanced--row[open] > summary {
+  margin-bottom: 0;
+}
+
+.cloud-sync-advanced--row > .cloud-sync-field {
+  padding: 0 calc(16px * var(--density-space)) calc(14px * var(--density-space));
+}
+
+@media (max-width: 640px) {
+  .cloud-sync-auth-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

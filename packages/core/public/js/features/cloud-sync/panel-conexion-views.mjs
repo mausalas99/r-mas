@@ -105,6 +105,15 @@ function heroPipelineSteps({ status, transport, room, tokenPresent, displaySala 
     roomId: room?.id || '',
   };
   const [internet, sesion, sala] = buildPipeline(d, status, roomLabel, []);
+  // Signed out, the chain points at the form under it; sala and live wait.
+  if (!d.tokenPresent) {
+    return [
+      internet,
+      { ...sesion, state: 'warn', detail: 'Entra abajo' },
+      { label: 'Sala', state: 'off', detail: displaySala || '—' },
+      { label: 'En vivo', state: 'off', detail: 'En espera' },
+    ];
+  }
   const live = buildLiveTileFields(d, transport, { code: 0, reason: '' });
   // The hero's subline already names the month; the step only needs the sala.
   const salaStep = sala.state === 'ok' && displaySala ? { ...sala, detail: displaySala } : sala;

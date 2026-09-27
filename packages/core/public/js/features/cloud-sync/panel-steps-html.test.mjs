@@ -18,6 +18,19 @@ describe('connectStepHtml', () => {
     assert.match(html, /data-cloud-recover-code/);
   });
 
+  it('signed out (board D): the account card is the form, «Tu sala» waits, no old step', () => {
+    const html = connectStepHtml('https://example.workers.dev', 'Sala 1');
+    assert.match(html, /data-cloud-signed-out/);
+    assert.match(html, /cloud-sync-auth-card/);
+    assert.match(html, /Entra a tu cuenta/);
+    assert.match(html, /data-cloud-tab-panel="login"[^]*data-cloud-tab="register"[^]*data-cloud-tab="recover"/);
+    assert.match(html, /cloud-sync-room--waiting[^]*Sala 1[^]*Se conecta al entrar/);
+    assert.doesNotMatch(html, /Conectar a Nube/);
+    assert.ok(html.indexOf('cloud-sync-auth-card') < html.indexOf('cloud-sync-room--waiting'));
+    assert.ok(html.indexOf('cloud-sync-room--waiting') < html.indexOf('data-cloud-sync-url'));
+    assert.doesNotMatch(connectStepHtml('', ''), /Tu sala/);
+  });
+
   it('defaults login tab panel visible', () => {
     const html = connectStepHtml('');
     assert.match(html, /data-cloud-tab-panel="login"[^>]*role="tabpanel"/);

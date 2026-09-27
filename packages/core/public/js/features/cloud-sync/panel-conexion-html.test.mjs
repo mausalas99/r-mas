@@ -50,6 +50,12 @@ describe('cloudSyncTransportLabel', () => {
 describe('Nube status hero (board «Nube A»)', () => {
   const room = { id: 'r1', sala: 'Sala 1', turnKey: '2026-09', code: 'ABC123' };
 
+  it('signed out: «Sin sesión», no «Sincronizar ahora»', () => {
+    const html = statusHeroHtml({ status: 'offline', displaySala: 'Sala 1', room: null, tokenPresent: false });
+    assert.match(html, /Sin sesión/);
+    assert.doesNotMatch(html, /sync-now/);
+  });
+
   it('says the state in words, names sala and month, and has one sync button', () => {
     const html = statusHeroHtml({ status: 'idle', displaySala: 'Sala 1', room });
     assert.match(html, /cloud-sync-hero-title">Todo al día</);
