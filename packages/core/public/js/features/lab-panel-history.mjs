@@ -356,7 +356,30 @@ function maybeShowLabHistoryForActivePatient(opts) {
   loadLabHistorySetIntoOutput(selectedId, { silent: true });
 }
 
+/** Clear the processed-lab output area (not the paste box). */
+export function clearLabOutputDom() {
+  ['lab-banner', 'lab-diagrams-section'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  ['diagrams-grid', 'lab-output-box'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+}
+
+/** Output left over from another patient: a patient switch whose deferred
+ * clear got replaced (a Nube pull repaint) or cancelled (a quick tab click)
+ * would otherwise keep the previous patient's labs on screen. */
+function dropOtherPatientsLabOutput() {
+  if (!labPanelBridge.getActiveLab()) return;
+  if (String(labPanelBridge.getActiveLabPatientId() ?? '') === String(rt.getActiveId() ?? '')) return;
+  labPanelBridge.setActiveLab(null);
+  clearLabOutputDom();
+}
+
 export function renderLabHistoryPanel() {
+  dropOtherPatientsLabOutput();
   wireLabHistoryDayKeys();
   ensureMobileLabOutputShellVisible();
   var selectedId = syncLabHistoryDateSelect();

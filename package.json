@@ -50,6 +50,7 @@
     "e2e:labs-to-docx": "node scripts/e2e/labs-to-docx.e2e.mjs",
     "e2e:lab-paste-rules": "node scripts/e2e/lab-paste-rules.e2e.mjs",
     "e2e:lab-trends": "node scripts/e2e/lab-trends.e2e.mjs",
+    "e2e:lab-patient-switch": "node scripts/e2e/lab-patient-switch.e2e.mjs",
     "e2e:cultivos": "node scripts/e2e/cultivos.e2e.mjs",
     "e2e:lab-repo-update": "node scripts/e2e/lab-repo-update.e2e.mjs",
     "e2e:manejo-receta": "node scripts/e2e/manejo-receta.e2e.mjs",
