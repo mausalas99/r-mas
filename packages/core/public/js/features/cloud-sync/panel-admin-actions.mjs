@@ -505,17 +505,17 @@ async function roomKeyState(deps, roomId) {
   }
 }
 
+const ROTATE_REFUSED = {
+  unknown: 'Cambia el código desde un equipo que esté en esa sala: ahí está su llave de cifrado.',
+  'locked-elsewhere': 'Este equipo no tiene la llave de cifrado de esta sala. Cambia el código desde un equipo que la tenga.',
+};
+
 /** @param {object} deps @param {string} roomId */
 async function handleRotateCode(deps, roomId) {
   // The new code must re-lock the sala's key; only a device holding it can.
   const lock = await roomKeyState(deps, roomId);
   if (lock === 'unknown' || lock === 'locked-elsewhere') {
-    deps.toast(
-      lock === 'unknown'
-        ? 'Cambia el código desde un equipo que esté en esa sala: ahí está su llave de cifrado.'
-        : 'Este equipo no tiene la llave de cifrado de esta sala. Cambia el código desde un equipo que la tenga.',
-      'error'
-    );
+    deps.toast(ROTATE_REFUSED[lock], 'error');
     return;
   }
   if (!(await confirmAction('¿Rotar el código de esta sala? Quienes tengan el código anterior no podrán unirse.'))) return;
