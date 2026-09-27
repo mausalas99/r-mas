@@ -52,9 +52,13 @@ export function formatPatientBedMetaHtml(p) {
  * The card's one real button (see patients-card-html.mjs): empty, its ::after
  * (.card-open-btn) stretches over the whole card. Lives inside .p-name so
  * clicks on the name land on it.
- * @param {string} name
+ * @param {{ openButton?: boolean }} opts
+ * @param {string} nombreRaw
+ * @param {string} nombreDisplay
  */
-function patientCardOpenButtonHtml(name) {
+function patientCardOpenButtonHtml(opts, nombreRaw, nombreDisplay) {
+  if (!opts.openButton) return '';
+  const name = nombreRaw || nombreDisplay;
   return `<button type="button" class="patient-card-open card-open-btn" aria-label="${escSidebarHtml(name)}"></button>`;
 }
 
@@ -81,7 +85,7 @@ export function renderPatientSidebarBodyHtml(p, opts) {
     ? `<div class="p-meta">${metaParts.join('')}</div>`
     : '';
 
-  const openBtn = opts.openButton ? patientCardOpenButtonHtml(nombreRaw || nombreDisplay) : '';
+  const openBtn = patientCardOpenButtonHtml(opts, nombreRaw, nombreDisplay);
 
   const bodyClass = opts.roundRow ? 'patient-card-body patient-card-body--round' : 'patient-card-body';
 
