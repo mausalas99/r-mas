@@ -40,7 +40,7 @@ async function parseJsonBody(request) {
 }
 
 /** @param {unknown} body */
-function readWrappedFields(body) {
+export function readWrappedFields(body) {
   const ct = String(body?.ct || '').trim();
   const iv = String(body?.iv || '').trim();
   const salt = String(body?.salt || '').trim();
