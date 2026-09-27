@@ -119,6 +119,12 @@ function clearRegistroTombstonesForReAdmit(state, registroKey, op, exceptPatient
   }
 }
 
+/** @param {RoomSyncState} state @param {string} path `entries/{id}…` or `labSidecars/{id}/…` of a deleted patient */
+function isTombstonedTarget(state, path) {
+  const m = /^(?:entries|labSidecars)\/([^/]+)/.exec(path);
+  return !!m && isTombstoned(state, m[1]);
+}
+
 /** @param {RoomSyncState} state @param {SyncOp} op */
 function maybeResurrectPatientFromOp(state, op) {
   const entryMatch = /^entries\/([^/]+)/.exec(op.path);
@@ -382,6 +388,12 @@ export function applyOps(state, ops) {
       }
 
       applyOpToState(next, op);
+      // A chart op for a patient still deleted after the op was a no-op here. Counting it
+      // as applied would broadcast it, and a peer applying it recreates the patient.
+      if (isTombstonedTarget(next, op.path)) {
+        rejected.push({ op, reason: 'tombstoned' });
+        continue;
+      }
       next.entityVersions[op.path] = {
         updatedAt: op.updatedAt,
         actorId: op.actorId,
