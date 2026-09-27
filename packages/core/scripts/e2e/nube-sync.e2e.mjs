@@ -270,7 +270,8 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await openPatient(B.page, P1);
   await openEventualidades(B.page);
   check('B: the eventualidad queued offline on A reaches B once reconnected (clinical-repo-sync-drain, op-encoder-eventualidades)',
-    await until(() => B.page.getByText(evText).first().isVisible(), 30000));
+    // The same text also sits in the (hidden) Resumen card: look for a visible copy.
+    await until(() => B.page.getByText(evText).locator('visible=true').first().isVisible(), 30000));
 
   // ── Manejo/Receta pushed on A2 for P1 → pulls to B (cloud-med-receta-index) ──
   const now2 = new Date();
@@ -286,7 +287,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await B.page.locator('#apptab-med').click();
   await B.page.locator('#med-itab-receta').click();
   check('B: the receta pushed on A reaches B (Manejo push/pull, cloud-med-receta-index)',
-    await until(() => B.page.getByText(/DEMO CEFALOSPORINA/).first().isVisible(), 30000));
+    await until(() => B.page.getByText(/DEMO CEFALOSPORINA/).locator('visible=true').first().isVisible(), 30000));
 
   // ── Late joiner: device C joins the SAME room after data already exists ─
   const C = await launchDevice('c', 3793);

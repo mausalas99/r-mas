@@ -159,6 +159,29 @@ async function finalizePull(pctx, result, since, opsCount, labIngress) {
   });
 }
 
+/**
+ * A pull came back with content this device cannot open, and it holds no key
+ * for the room: the room got its key after this device last looked (another
+ * member created it, e.g. on their next login). Fetch it now with the room's
+ * join code. Before, only rendering the ⇄ panel retried this, so the device
+ * silently showed nothing new until someone opened ⇄.
+ * @returns {Promise<boolean>} true when a key is now cached
+ */
+async function loadMissingRoomDek(api, roomId) {
+  try {
+    const [{ getCachedRoomDek, loadRoomDek }, { getCloudSyncRoomSnapshot }] = await Promise.all([
+      import('./room-dek.mjs'),
+      import('./settings.mjs'),
+    ]);
+    if (getCachedRoomDek(roomId)) return false; // a key that still cannot open it: nothing to retry
+    const snap = getCloudSyncRoomSnapshot();
+    const code = snap && snap.id === roomId ? snap.code : '';
+    return !!(code && (await loadRoomDek(api, roomId, code)));
+  } catch {
+    return false;
+  }
+}
+
 /** @param {object} pctx */
 async function runPullLatest(pctx) {
   const { api, getRoomId, getRevision, pollMobile } = pctx;
@@ -185,7 +208,10 @@ async function runPullLatest(pctx) {
     }
   }
   try {
-    const result = await api.pull(roomId, since, pollMobile ? { mobile: true } : undefined);
+    let result = await api.pull(roomId, since, pollMobile ? { mobile: true } : undefined);
+    if (result?.locked && (await loadMissingRoomDek(api, roomId))) {
+      result = await api.pull(roomId, since, pollMobile ? { mobile: true } : undefined);
+    }
     const opsCount = pullOpsCount(result);
     if (result?.revision != null) {
       reconcileServerRevision(pctx, Number(result.revision), since, opsCount, !!result.locked);
