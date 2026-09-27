@@ -84,9 +84,9 @@ await r.finish('Admin code set + change in app', async () => {
   const D = await launchDevice('nube-admin', 3795);
   await onboardNube(D.page, { username: `demo_admin_${tag}`, name: 'Dra. Demo Admin', rank: 'R2' });
   await D.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
-  // The profile form lives under the collapsed «Configuración» section.
-  await D.page.locator('details.clinical-teams-collapse summary', { hasText: 'Configuración' }).first().click();
-  const cb = D.page.locator('#clinical-profile-admin');
+  // Equipo (board B) links to the profile form: «Mi perfil» opens ⇄ Cuenta.
+  await D.page.locator('.clinical-teams-profile-link button').first().click();
+  const cb = D.page.locator('[data-cloud-view="cuenta"] #clinical-profile-admin');
   await cb.waitFor({ state: 'visible' });
   check('checkbox starts unchecked', (await cb.isChecked()) === false);
   await cb.click();

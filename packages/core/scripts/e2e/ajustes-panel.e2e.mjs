@@ -9,7 +9,8 @@
  * Ways it can go wrong (each one is a check below):
  *   Menu
  *     - not the 7 sections + Zona de peligro, or not in the three groups
- *     - «Cuenta y equipo» link cards, Laboratorio or Rendimiento still there
+ *     - «Cuenta y equipo» link cards or Rendimiento still there
+ *     - Laboratorio (8.4.2's portal address) missing between Respaldos and Documentos
  *     - Zona de peligro is not the last item
  *   Sections
  *     - a section is empty or scrolls sideways
@@ -46,11 +47,12 @@ await r.finish('Ajustes A + Mi perfil B', async () => {
     [...document.querySelector(sel).children]
       .filter((el) => el.getBoundingClientRect().height > 0 || el.classList.contains('settings-nav-spacer'))
       .map((el) => (el.classList.contains('settings-nav-group') ? '#' : '') + el.textContent.trim()), NAV);
-  check('menu: Tú · Perfil, Apariencia · Datos · Respaldos, Documentos, Plantillas · Equipo y app · Seguridad, Aplicación, Nube ↗ · … Zona de peligro',
-    nav.join('|') === '#Tú|Perfil|Apariencia|#Datos|Respaldos|Documentos|Plantillas|#Equipo y app|Seguridad|Aplicación|Nube y equipo ↗||Zona de peligro', nav);
+  // Laboratorio holds 8.4.2's lab portal address (kept on top of board A, agreed with the owner).
+  check('menu: Tú · Perfil, Apariencia · Datos · Respaldos, Laboratorio, Documentos, Plantillas · Equipo y app · Seguridad, Aplicación, Nube ↗ · … Zona de peligro',
+    nav.join('|') === '#Tú|Perfil|Apariencia|#Datos|Respaldos|Laboratorio|Documentos|Plantillas|#Equipo y app|Seguridad|Aplicación|Nube y equipo ↗||Zona de peligro', nav);
   const all = await A.page.locator('#settings-dropdown').innerText();
-  check('no «Cuenta y equipo» cards, Laboratorio or Rendimiento section',
-    !/Cuenta y equipo/.test(all) && !nav.includes('Laboratorio') && !nav.includes('Rendimiento'), nav);
+  check('no «Cuenta y equipo» cards or Rendimiento section',
+    !/Cuenta y equipo/.test(all) && !nav.includes('Rendimiento'), nav);
 
   for (const [id, name] of [
     ['settings-accordion-perfil', 'perfil'],
