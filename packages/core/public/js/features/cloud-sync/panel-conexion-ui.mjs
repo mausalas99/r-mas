@@ -122,7 +122,7 @@ export function createConexionRenderers(section, normalizedSala, deps, ctx) {
   function renderDisconnected() {
     const hasToken = !!deps.getCloudSyncToken();
     if (!hasToken) {
-      renderShell(authFormsHtml(deps.getCloudSyncUrl()), 'offline');
+      renderShell(authFormsHtml(deps.getCloudSyncUrl(), displaySala), 'offline', '', nubeHeroBlockHtml(deps, displaySala, null));
       wireCloudAuthTabs(section);
       return;
     }

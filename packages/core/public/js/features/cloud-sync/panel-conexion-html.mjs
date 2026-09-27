@@ -78,9 +78,9 @@ export function accountSummaryHtml(cloudUser) {
   );
 }
 
-/** @param {string} url */
-export function authFormsHtml(url) {
-  return connectStepHtml(url);
+/** @param {string} url @param {string} [displaySala] */
+export function authFormsHtml(url, displaySala) {
+  return connectStepHtml(url, displaySala);
 }
 
 /** @param {() => string} getToken */
@@ -201,13 +201,24 @@ const HERO_TITLE_BY_STATUS = {
   reconnecting: STATUS_LABELS.reconnecting,
 };
 
+/** Signed out: same spot as the status hero, no main button (the form is below). */
+function signedOutHeroHtml() {
+  return (
+    '<div class="cloud-sync-hero" data-cloud-hero data-signed-out>' +
+    '<div class="cloud-sync-hero-icon" data-state="warn">' + heroIconSvg('warn') + '</div>' +
+    '<div class="cloud-sync-hero-text"><p class="cloud-sync-hero-title">Sin sesión</p>' +
+    '<p class="cloud-sync-hero-sub">Tus cambios se guardan en este equipo, pero no llegan a tu sala.</p></div></div>'
+  );
+}
+
 /**
  * Status hero — big round icon, title, "Sala · mes · último envío hace X",
  * and the "Sincronizar ahora" pill (reuses the shared Nube runtime's syncCycle
  * via data-cloud-action="sync-now", wired in panel-conexion-bootstrap.mjs).
  * @param {{ status: CloudSyncStatus, detail?: string, transport?: string, displaySala?: string, room?: object | null }} ctx
  */
-export function statusHeroHtml({ status, detail, displaySala, room }) {
+export function statusHeroHtml({ status, detail, displaySala, room, tokenPresent }) {
+  if (tokenPresent === false) return signedOutHeroHtml();
   const iconState = HERO_ICON_STATE_BY_STATUS[status] || 'ok';
   const title = status === 'error' ? 'Hay un problema con Nube' : HERO_TITLE_BY_STATUS[status] || STATUS_LABELS[status] || status;
   const lastPush = getLastCloudPushAt();
@@ -267,7 +278,8 @@ export function pipelineChainHtml(steps) {
   steps.forEach(function (step, i) {
     if (i > 0) {
       const broken = step.state !== 'ok' || steps[i - 1].state !== 'ok';
-      html += '<span class="cloud-sync-chain-link' + (broken ? ' is-broken' : '') + '"></span>';
+      const waiting = step.state === 'off';
+      html += '<span class="cloud-sync-chain-link' + (broken ? ' is-broken' : '') + (waiting ? ' is-waiting' : '') + '"></span>';
     }
     html +=
       '<div class="cloud-sync-chain-step" data-state="' +

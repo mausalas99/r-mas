@@ -36,7 +36,7 @@
  *     - an uncaught page error
  */
 import { createRun, closeToasts, dismissLearnHub } from './harness.mjs';
-import { startWorker, stopWorker, nubeDevices, onboardNube, until } from './nube-worker.mjs';
+import { startWorker, stopWorker, nubeDevices, onboardNube, until, PASSWORD } from './nube-worker.mjs';
 
 const tag = Date.now().toString(36).slice(-6);
 const R4 = { username: `demo_r4_${tag}`, name: 'Dra. Demo Nube', rank: 'R4' };
@@ -225,13 +225,66 @@ await r.finish('Nube panel: status home (board A)', async () => {
 
   // ── «Cerrar sesión» on purpose: no «expiró» banner, no stuck «Descargando» ─
   await A.page.locator('[data-cloud-action="logout"]').locator('visible=true').first().click();
-  await A.page.locator('[data-cloud-tab="login"]').waitFor({ state: 'visible', timeout: 10000 });
+  const OUT = '#connection-dropdown [data-cloud-signed-out]';
+  await A.page.locator(`${OUT} [data-cloud-action="login"]`).waitFor({ state: 'visible', timeout: 10000 });
   await A.page.waitForTimeout(4000); // let requests sent with the old token come back
   const banner = await A.page.locator('#nube-session-banner').isVisible().catch(() => false);
   const listText = await A.page.locator('#patient-list').innerText().catch(() => '');
   await r.shot(A.page, 'signed-out');
   check('after «Cerrar sesión» there is no «Tu sesión de Nube expiró» banner', !banner);
   check('after «Cerrar sesión» the patient list is not stuck on «Descargando pacientes…»', !/Descargando pacientes/.test(listText), listText);
+
+  // ── Signed out = the same home (board «Nube sin sesión» D) ────────────
+  const out = await A.page.evaluate((sel) => {
+    const root = document.querySelector(sel);
+    const top = (q) => document.querySelector(q)?.getBoundingClientRect().top ?? null;
+    const section = root?.closest('#connection-dropdown');
+    return {
+      hero: section?.querySelector('.cloud-sync-hero-title')?.textContent.trim() || '',
+      syncBtn: !!section?.querySelector('[data-cloud-action="sync-now"]'),
+      sesion: [...(section?.querySelectorAll('.cloud-sync-chain-step') || [])].map((st) => st.querySelector('.cloud-sync-chain-label')?.textContent.trim() + ':' + st.dataset.state).join(','),
+      heroTop: top('#connection-dropdown [data-cloud-hero]'),
+      formTop: top(sel + ' .cloud-sync-auth-card'),
+      salaTop: top(sel + ' .cloud-sync-room--waiting'),
+      advTop: top(sel + ' .cloud-sync-advanced--row'),
+      sala: root?.querySelector('.cloud-sync-room--waiting')?.innerText || '',
+      oldStep: /Conectar a Nube/.test(section?.innerText || ''),
+      side: section ? section.scrollWidth - section.clientWidth : -1,
+    };
+  }, OUT);
+  check('signed out: hero says «Sin sesión», no «Sincronizar ahora»', out.hero === 'Sin sesión' && !out.syncBtn, out);
+  check('signed out: the chain points at the form (Sesión warn), Sala and En vivo wait (grey)',
+    out.sesion === 'Internet:ok,Sesión:warn,Sala:off,En vivo:off', out.sesion);
+  check('signed out: hero, then the sign-in card, then «Tu sala», then Avanzado',
+    out.heroTop < out.formTop && out.formTop < out.salaTop && out.salaTop < out.advTop, out);
+  check('signed out: «Tu sala» waits with «Se conecta al entrar»', /Sala 1/.test(out.sala) && /Se conecta al entrar/.test(out.sala), out.sala);
+  check('signed out: the old «1 · Conectar a Nube» step is gone', !out.oldStep);
+  check('signed out: no sideways scroll', out.side <= 0, out.side);
+
+  const title = () => A.page.locator(`${OUT} [data-cloud-tab-panel]:not([hidden]) .cloud-sync-auth-title`).innerText();
+  await A.page.locator(`${OUT} [data-cloud-tab-panel="login"] [data-cloud-tab="register"]`).click();
+  const regTitle = await title();
+  await r.shot(A.page, 'signed-out-crear');
+  check('«Crear cuenta» swaps the card to «Crea tu cuenta» in place', regTitle === 'Crea tu cuenta', regTitle);
+  await A.page.locator(`${OUT} [data-cloud-tab-panel="register"] [data-cloud-tab="login"]`).click();
+  check('«‹ Entrar» goes back', (await title()) === 'Entra a tu cuenta');
+  await A.page.locator(`${OUT} [data-cloud-tab-panel="login"] [data-cloud-tab="recover"]`).click();
+  const recTitle = await title();
+  await r.shot(A.page, 'signed-out-recuperar');
+  check('«¿Olvidaste tu contraseña?» swaps to «Recupera tu cuenta»', recTitle === 'Recupera tu cuenta', recTitle);
+  await A.page.locator(`${OUT} [data-cloud-tab-panel="recover"] [data-cloud-tab="login"]`).click();
+
+  await A.page.evaluate(() => document.documentElement.classList.add('dark'));
+  await A.page.waitForTimeout(250);
+  await r.shot(A.page, 'signed-out-dark');
+  await A.page.evaluate(() => document.documentElement.classList.remove('dark'));
+
+  await A.page.locator(`${OUT} [data-cloud-login-user]`).fill(R4.username);
+  await A.page.locator(`${OUT} [data-cloud-login-pass]`).fill(PASSWORD);
+  await A.page.locator(`${OUT} [data-cloud-action="login"]`).click();
+  const backIn = await until(async () => (await readHome(A.page)).account.includes('@' + R4.username), 20000);
+  await r.shot(A.page, 'signed-back-in');
+  check('signing in from the card lands on the home with your account', backIn, (await readHome(A.page)).account);
 
   check('no uncaught page errors', !A.pageErrors.length, A.pageErrors.slice(0, 5));
   await A.app.close();
