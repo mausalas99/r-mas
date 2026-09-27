@@ -9,7 +9,7 @@ import { handleSync } from './sync.js';
 import { userFromAuthHeader } from './session.js';
 
 /** Unambiguous uppercase alphanumeric (no 0/O, 1/I/L). */
-const ROOM_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+export const ROOM_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 /** @returns {Record<string, unknown>} */
 export function emptyRoomState() {
