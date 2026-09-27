@@ -169,6 +169,8 @@ await r.finish('Equipo panel: pick a published team, then the joined view', asyn
   }
   const joinedShown = await until(() => B.page.locator(PANEL).isVisible(), 8000);
   if (joinedShown) {
+    // The reopened panel shows a loading skeleton until the team list arrives.
+    await until(() => B.page.locator(`${PANEL} .clinical-teams-card`).first().isVisible().catch(() => false), 10000);
     p = await readPanel(B.page);
     await r.shot(B.page, 'joined-wide');
     check('after joining: pick layout off, own team card leads', !p.pick && p.cards[0] === TEAM, { pick: p.pick, cards: p.cards });

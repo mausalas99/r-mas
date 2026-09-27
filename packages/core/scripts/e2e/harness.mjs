@@ -260,11 +260,19 @@ export async function setPortalScript(app, steps) {
 
 /** Click patient p ({ exp, room }) in the list; fill "Completar ingreso" the first time. */
 /** After a relaunch, wait out the «Preparando R+» boot screen that covers the app. */
+/** Wait out the «Preparando R+» boot screen. It can appear a moment after
+ * the census renders, so it must stay gone for 1.5 s. */
 export async function waitForBoot(page) {
   await page.waitForFunction(() => {
     const d = globalThis.document;
-    return !d.documentElement.classList.contains('clinical-onboarding-active') && !d.querySelector('.clinical-onboard-boot-loader');
-  }, null, { timeout: 30000 });
+    const now = Date.now();
+    if (d.documentElement.classList.contains('clinical-onboarding-active') || d.querySelector('.clinical-onboard-boot-loader')) {
+      globalThis.__e2eBootClearSince = 0;
+      return false;
+    }
+    globalThis.__e2eBootClearSince ||= now;
+    return now - globalThis.__e2eBootClearSince >= 1500;
+  }, null, { timeout: 30000, polling: 100 });
 }
 
 export async function openPatient(page, p) {

@@ -183,6 +183,8 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   await closeToasts(page);
 
   // guardia-v7-progress: restart → progress kept.
+  // Chromium writes localStorage to disk a moment after the change.
+  await page.waitForTimeout(2000);
   await app.close();
   const relaunch1 = await r.launch();
   await openLearnHubUi(relaunch1.page);
@@ -196,6 +198,7 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   // with an initScript + reload reproduces "already opened Ajustes on the
   // old version, then relaunched" without importing any app module.
   await relaunch1.page.evaluate(() => localStorage.setItem('rplus-last-seen-app-version', '6.7.0'));
+  await relaunch1.page.waitForTimeout(2000);
   await relaunch1.app.close();
 
   const relaunch2 = await r.launch();

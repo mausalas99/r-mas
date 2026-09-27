@@ -105,10 +105,12 @@ await r.finish('Worst-case input: odd names, volume, junk labs, restart', async 
   const t0 = Date.now();
   const before = pageErrors.length;
   // Unknown rows are not stored; the preview and a «filas no reconocidas no se guardaron» toast name them.
+  // The warning toast shows right after the save and times out before pasteAndSave returns: watch for it from the start.
+  const unknownToast = page.locator('.toast', { hasText: /no reconocidas? no se guard/ }).first();
+  const unknownNamedP = unknownToast.waitFor({ state: 'visible', timeout: 20000 }).then(() => unknownToast.innerText(), () => '');
   const junkNotice = await pasteAndSave(page, header(big, TODAY(3)) + 'QUIMICA CLINICA\nQUIMICA SANGUINEA\n' + TABLE + rows + bh('7.9').split(TABLE)[1]);
   const pasteMs = Date.now() - t0;
-  const unknownToast = page.locator('.toast', { hasText: /no reconocidas? no se guard/ }).first();
-  const unknownNamed = await unknownToast.waitFor({ state: 'visible', timeout: 20000 }).then(() => unknownToast.innerText(), () => '');
+  const unknownNamed = await unknownNamedP;
   await openBySearch(page, big);
   await page.locator('#apptab-lab').click();
   const t1 = Date.now();

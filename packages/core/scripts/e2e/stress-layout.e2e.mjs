@@ -185,7 +185,7 @@ function probe({ rootSel, dark }) {
           }
         }
       }
-      if (el.matches('button, a.wb-btn') && !el.matches('[role="tab"], [role="tablist"] *, .inner-tab, .app-tab, [role="menuitem"], [role="option"], [role="switch"], .toast-close, .tend-section-toggle')) {
+      if (el.matches('button, a.wb-btn') && !el.matches('[role="tab"], [role="tablist"] *, .settings-nav-item, .inner-tab, .app-tab, [role="menuitem"], [role="option"], [role="switch"], .toast-close, .tend-section-toggle')) {
         const label = (el.innerText || '').trim();
         const b = el.getBoundingClientRect();
         const r0 = parseFloat(cs.borderTopLeftRadius) || 0;
