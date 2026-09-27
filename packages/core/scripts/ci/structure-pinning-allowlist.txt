@@ -5,6 +5,8 @@ lib/db/migrate-from-legacy.test.mjs
 lib/drive-import/parse-drive-labs.test.mjs
 lib/module-update-fetch.test.mjs
 lib/renderer-protocol.test.mjs
+# Eager boot budget (metrics:check gate): reads the build's metafile and boot hubs.
+public/js/app-boot-imports.test.mjs
 public/js/features/cloud-sync/pull-apply.test.mjs
 public/js/med-receta-core.test.mjs
 scripts/lib/electron-pack-files.test.js
