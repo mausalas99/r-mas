@@ -14,6 +14,24 @@ describe('panel-admin-actions rotate code', () => {
     assert.ok(rotateAt >= 0 && rewrapAt > rotateAt, 'rewrap must run after the code rotates server-side');
     assert.match(body, /rewrapRoomDekForNewCode\(deps\.getApi\(\), roomId, data\.code\)/);
   });
+
+  it('checks the sala key before asking: held or none go ahead, anything else stops', () => {
+    const start = src.indexOf('async function handleRotateCode');
+    const body = src.slice(start, src.indexOf('\nasync function ', start + 1));
+    const guardAt = body.indexOf("lock === 'unknown' || lock === 'locked-elsewhere'");
+    assert.ok(guardAt > 0 && guardAt < body.indexOf('confirmAction('), 'guard runs before asking');
+    assert.match(body, /lock === 'none' \|\|/, 'a sala with no key has nothing to re-lock');
+    const ks = src.slice(src.indexOf('async function roomKeyState'), start);
+    assert.match(ks, /getCachedRoomDek\(roomId\)\) return 'held'/);
+    assert.match(ks, /res\?\.dek \? 'locked-elsewhere' : 'none'/);
+    assert.match(ks, /return 'unknown'/);
+  });
+
+  it('a failed re-lock is an error, not «Nuevo código»', () => {
+    const start = src.indexOf('async function handleRotateCode');
+    const body = src.slice(start, src.indexOf('\nasync function ', start + 1));
+    assert.ok(body.indexOf('if (!relocked)') > 0 && body.indexOf('if (!relocked)') < body.indexOf("'Nuevo código: '"));
+  });
 });
 
 describe('panel-admin-actions archive-network-patient (Red tab)', () => {

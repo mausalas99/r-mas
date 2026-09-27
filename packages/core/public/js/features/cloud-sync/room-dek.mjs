@@ -233,18 +233,21 @@ export async function retryRoomDekIfUnprotected(api, roomId, roomCode) {
  * @param {ReturnType<import('./api-client.mjs').createCloudSyncApi>} api
  * @param {string} roomId
  * @param {string} newRoomCode
+ * @returns {Promise<boolean>} true once the server holds the key locked with the new code
  */
 export async function rewrapRoomDekForNewCode(api, roomId, newRoomCode) {
   const dek = getCachedRoomDek(roomId);
-  if (!dek || !newRoomCode) return;
+  if (!dek || !newRoomCode) return false;
   try {
     const salt = generateWrapSalt();
     const wrapKey = await deriveWrapKey(newRoomCode, salt);
     const wrapped = await wrapDek(dek, wrapKey);
     await api.rotateRoomDek(roomId, { ct: wrapped.ct, iv: wrapped.iv, salt });
     await auditDekEvent(DEK_EVENTS.WRAP_PUT, { roomId, reason: 'code-rotated' });
+    return true;
   } catch (err) {
     await auditDekEvent(DEK_EVENTS.WRAP_FAILED, { roomId, phase: 'rotate', message: String(err?.message || err) });
+    return false;
   }
 }
 

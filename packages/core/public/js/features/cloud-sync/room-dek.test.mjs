@@ -217,7 +217,7 @@ describe('rewrapRoomDekForNewCode (admin rotates the room code)', () => {
     const api = makeFakeApi();
     const dek = await ensureRoomDek(api, 'room-1', 'OLD-CODE');
 
-    await rewrapRoomDekForNewCode(api, 'room-1', 'NEW-CODE');
+    assert.equal(await rewrapRoomDekForNewCode(api, 'room-1', 'NEW-CODE'), true);
 
     clearRoomDekCache();
     assert.equal(await loadRoomDek(api, 'room-1', 'OLD-CODE'), null);
@@ -231,7 +231,7 @@ describe('rewrapRoomDekForNewCode (admin rotates the room code)', () => {
 
   it('is a no-op with no cached DEK for that room', async () => {
     const api = makeFakeApi();
-    await rewrapRoomDekForNewCode(api, 'room-1', 'NEW-CODE');
+    assert.equal(await rewrapRoomDekForNewCode(api, 'room-1', 'NEW-CODE'), false);
     assert.equal(api.store.size, 0);
   });
 
@@ -250,5 +250,6 @@ describe('rewrapRoomDekForNewCode (admin rotates the room code)', () => {
       throw new Error('network error');
     };
     await assert.doesNotReject(() => rewrapRoomDekForNewCode(api, 'room-1', 'NEW-CODE'));
+    assert.equal(await rewrapRoomDekForNewCode(api, 'room-1', 'NEW-CODE'), false, 'reports the failure');
   });
 });

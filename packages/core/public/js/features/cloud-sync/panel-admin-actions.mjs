@@ -1,6 +1,6 @@
 import { copyToClipboardSafe } from '../soap-estado.mjs';
 import { confirmAction, fmtRole } from './panel-admin-helpers.mjs';
-import { rewrapRoomDekForNewCode } from './room-dek.mjs';
+import { rewrapRoomDekForNewCode, getCachedRoomDek } from './room-dek.mjs';
 import { getCloudSyncRoomId, getCloudSyncRoomSnapshot, setCloudSyncRoomSnapshot } from './settings.mjs';
 import { joinRoomByCode } from './panel-conexion-handlers.mjs';
 import { resolveCloudActorId } from './mutate-bridge.mjs';
@@ -485,13 +485,48 @@ function showRotatedCodeHere(roomId, code) {
   });
 }
 
+/**
+ * «held»: this device has the key · «none»: the sala has no key (nothing to
+ * re-lock) · «locked-elsewhere»: it has one this device lacks · «unknown»:
+ * this device can't ask (not a member of that sala).
+ * @param {object} deps @param {string} roomId
+ */
+async function roomKeyState(deps, roomId) {
+  if (getCachedRoomDek(roomId)) return 'held';
+  try {
+    const res = await deps.getApi().getRoomDek(roomId);
+    return res?.dek ? 'locked-elsewhere' : 'none';
+  } catch {
+    return 'unknown';
+  }
+}
+
 /** @param {object} deps @param {string} roomId */
 async function handleRotateCode(deps, roomId) {
+  // The new code must re-lock the sala's key; only a device holding it can.
+  const lock = await roomKeyState(deps, roomId);
+  if (lock === 'unknown' || lock === 'locked-elsewhere') {
+    deps.toast(
+      lock === 'unknown'
+        ? 'Cambia el código desde un equipo que esté en esa sala: ahí está su llave de cifrado.'
+        : 'Este equipo no tiene la llave de cifrado de esta sala. Cambia el código desde un equipo que la tenga.',
+      'error'
+    );
+    return;
+  }
   if (!(await confirmAction('¿Rotar el código de esta sala? Quienes tengan el código anterior no podrán unirse.'))) return;
   try {
     const data = await deps.getApi().adminRotateCode(roomId);
-    if (data.code) await rewrapRoomDekForNewCode(deps.getApi(), roomId, data.code);
+    const relocked = lock === 'none' || (data.code ? await rewrapRoomDekForNewCode(deps.getApi(), roomId, data.code) : false);
     if (data.code) showRotatedCodeHere(roomId, data.code);
+    if (!relocked) {
+      deps.toast(
+        'El código cambió, pero la llave de cifrado no se actualizó. Vuelve a pulsar «Cambiar código» desde este equipo antes de cerrar R+.',
+        'error'
+      );
+      void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps));
+      return;
+    }
     deps.toast('Nuevo código: ' + (data.code || '—'), 'success');
     void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps));
   } catch (err) {
