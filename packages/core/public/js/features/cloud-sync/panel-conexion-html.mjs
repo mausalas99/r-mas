@@ -222,11 +222,16 @@ export function statusHeroHtml({ status, detail, displaySala, room, tokenPresent
   const iconState = HERO_ICON_STATE_BY_STATUS[status] || 'ok';
   const title = status === 'error' ? 'Hay un problema con Nube' : HERO_TITLE_BY_STATUS[status] || STATUS_LABELS[status] || status;
   const lastPush = getLastCloudPushAt();
-  // An error says what happened in plain words; every other state says where and when.
+  // An error says what happened in plain words, and so does «Pendiente» when the
+  // runtime gave a reason (Worker unreachable or busy); every other state says
+  // where and when.
+  const reason = String(detail || '').trim();
   const subline =
     status === 'error'
-      ? humanizeCloudSyncErrorMessage(String(detail || '').trim()) || 'Tus cambios están a salvo aquí.'
-      : [String(displaySala || '').trim(), formatTurnMonth(room?.turnKey)]
+      ? humanizeCloudSyncErrorMessage(reason) || 'Tus cambios están a salvo aquí.'
+      : status === 'pending' && reason
+        ? reason
+        : [String(displaySala || '').trim(), formatTurnMonth(room?.turnKey)]
           .filter(Boolean)
           .concat(lastPush ? ['último envío ' + formatCloudDiagWhen(lastPush, Date.now())] : [])
           .join(' · ');

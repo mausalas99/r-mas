@@ -27,16 +27,20 @@ export function resolveCloudConexionChipStatus(sources) {
 }
 
 /**
- * The sync cycle can settle on 'idle'/'pending' over the HTTP poll fallback
- * while the live WS channel itself is down and still reconnecting — that used
- * to read as green "Nube al día" even though the channel was not live. A
- * room's runtime always requests a WS (see startSharedNubeRuntime), so seeing
- * 'poll' here means the channel isn't up, not a deliberate mode.
+ * The sync cycle can settle on 'idle' over the HTTP poll fallback while the
+ * live WS channel itself is down and still reconnecting — that used to read as
+ * green "Nube al día" even though the channel was not live. A room's runtime
+ * always requests a WS (see startSharedNubeRuntime), so seeing 'poll' here
+ * means the channel isn't up, not a deliberate mode.
+ *
+ * A runtime that reports 'pending' itself could not reach the Worker (or it
+ * was busy) and holds queued changes: keep «Pendiente · sin conexión» — the
+ * cause is the server, not only the live channel.
  * @param {any} runtime @param {number} pending @param {string} transport
  */
 function liveChipStatus(runtime, pending, transport) {
   const raw = String(runtime?.getStatus?.() || 'idle');
-  const status = pending > 0 && raw === 'idle' ? 'pending' : raw;
-  const settled = status === 'idle' || status === 'pending';
-  return runtime && settled && transport === 'poll' ? 'reconnecting' : status;
+  if (raw !== 'idle') return raw;
+  if (runtime && transport === 'poll') return 'reconnecting';
+  return pending > 0 ? 'pending' : raw;
 }

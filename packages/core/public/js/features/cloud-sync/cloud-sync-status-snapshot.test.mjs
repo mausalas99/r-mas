@@ -52,4 +52,13 @@ describe('resolveCloudConexionChipStatus — live channel down never reads as gr
       );
     }
   });
+
+  it('Worker unreachable with queued changes keeps «Pendiente · sin conexión», not «Reconectando»', () => {
+    const outbox = createSqlcipherOutbox();
+    outbox.enqueue({ clientMutationId: 'm1', ops: [{ path: 'a', value: 1 }] });
+    const runtime = { ...fakeRuntime('pending', 'poll'), getDetail: () => 'Sin conexión con el servidor Nube. Se enviará al reconectar.' };
+    const chip = resolveCloudConexionChipStatus({ runtime, outbox });
+    assert.equal(chip.status, 'pending');
+    assert.match(chip.detail, /Sin conexión/);
+  });
 });
