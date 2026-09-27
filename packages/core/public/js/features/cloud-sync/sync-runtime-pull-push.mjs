@@ -182,6 +182,14 @@ async function loadMissingRoomDek(api, roomId) {
   }
 }
 
+/** One pull; if it came back locked and the room's key was missing, fetch the key and pull again. */
+async function pullWithKeyRetry(api, roomId, since, pollMobile) {
+  const opts = pollMobile ? { mobile: true } : undefined;
+  const result = await api.pull(roomId, since, opts);
+  if (!result?.locked || !(await loadMissingRoomDek(api, roomId))) return result;
+  return api.pull(roomId, since, opts);
+}
+
 /** @param {object} pctx */
 async function runPullLatest(pctx) {
   const { api, getRoomId, getRevision, pollMobile } = pctx;
@@ -208,10 +216,7 @@ async function runPullLatest(pctx) {
     }
   }
   try {
-    let result = await api.pull(roomId, since, pollMobile ? { mobile: true } : undefined);
-    if (result?.locked && (await loadMissingRoomDek(api, roomId))) {
-      result = await api.pull(roomId, since, pollMobile ? { mobile: true } : undefined);
-    }
+    const result = await pullWithKeyRetry(api, roomId, since, pollMobile);
     const opsCount = pullOpsCount(result);
     if (result?.revision != null) {
       reconcileServerRevision(pctx, Number(result.revision), since, opsCount, !!result.locked);
