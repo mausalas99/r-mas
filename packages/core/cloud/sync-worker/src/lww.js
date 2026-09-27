@@ -53,11 +53,9 @@ function getTombstoneDeletedAt(state, patientId) {
   return String(meta?.deletedAt || ver?.updatedAt || '');
 }
 
-/** @param {string} path */
-function isPatientEntryOpPath(path) {
-  return /^entries\/[^/]+(\/fields|\/note|\/indicaciones|\/historiaClinica|\/eventualidades|\/monitoreo|\/medReceta|\/vpo|\/listadoProblemas|\/medPharmProfile)?$/.test(
-    path
-  );
+/** @param {string} path identity op: `entries/{id}` root or `entries/{id}/fields` */
+function isPatientIdentityOpPath(path) {
+  return /^entries\/[^/]+(\/fields)?$/.test(path);
 }
 
 /**
@@ -93,11 +91,14 @@ function clearPatientTombstone(state, patientId) {
 /**
  * Explicit census re-admit (any actor) clears a delete tombstone when newer.
  * Tombstones only block stale sync sidecars/todos — not intentional alta.
+ * Only identity ops (`entries/{id}` root or `/fields`) count as a re-admit: a
+ * content op (note, monitoreo, …) from a device that edited offline before it
+ * saw the alta must not reborn the patient as a nameless shell.
  * @param {RoomSyncState} state @param {string} patientId @param {SyncOp} op
  */
 function tryClearTombstoneForResurrection(state, patientId, op) {
   if (!isTombstoned(state, patientId)) return;
-  if (!isPatientEntryOpPath(op.path)) return;
+  if (!isPatientIdentityOpPath(op.path)) return;
   const tombAt = getTombstoneDeletedAt(state, patientId);
   if (tombAt && String(op.updatedAt).localeCompare(tombAt) < 0) return;
   clearPatientTombstone(state, patientId);

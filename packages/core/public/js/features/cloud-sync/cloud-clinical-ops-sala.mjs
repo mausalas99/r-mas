@@ -187,6 +187,56 @@ export async function pushClinicalOpsForSala(sala) {
   return { ok: true, sala: normalized, roomId: String(room.id), ...pushed };
 }
 
+/**
+ * Rows a peer's whole-doc push can drop from the room (encrypted clinicalOps is a
+ * blind replace on the Worker). Membership is left out: its user_ids are remapped
+ * per device, so a key compare would re-push forever.
+ */
+const CLINICAL_OPS_ROW_KEYS = [
+  ['teams', ['team_id']],
+  ['patient_team_assignment', ['patient_id', 'team_id']],
+];
+
+// ponytail: one re-push per sala per minute caps a push storm if two exports never agree.
+const CLINICAL_OPS_REPUSH_COOLDOWN_MS = 60_000;
+const lastClinicalOpsRepushAt = new Map();
+
+/** @param {unknown} snapshot @param {string} table @param {string[]} fields */
+function clinicalOpsRowKeys(snapshot, table, fields) {
+  const rows = Array.isArray(snapshot?.[table]) ? snapshot[table] : [];
+  return new Set(rows.map((row) => fields.map((f) => String(row?.[f] || '').trim()).join('\0')));
+}
+
+/** True when the local export holds a team or patient assignment the room copy lacks. */
+export function clinicalOpsHasRowsRoomLacks(local, room) {
+  return CLINICAL_OPS_ROW_KEYS.some(([table, fields]) => {
+    const roomKeys = clinicalOpsRowKeys(room, table, fields);
+    for (const key of clinicalOpsRowKeys(local, table, fields)) {
+      if (!key.split('\0').includes('') && !roomKeys.has(key)) return true;
+    }
+    return false;
+  });
+}
+
+/**
+ * After a pull merge: a peer's push may have replaced the room's clinicalOps with
+ * a copy that lacks our teams/assignments. The local merge kept them — push them back,
+ * same as eventualidades/monitoreo re-push their union.
+ * @param {string} sala @param {unknown} roomClinicalOps decrypted room copy just merged
+ */
+export async function repushClinicalOpsIfRoomLacksLocal(sala, roomClinicalOps) {
+  if (!roomClinicalOps || typeof roomClinicalOps !== 'object' || roomClinicalOps.enc === 1) return false;
+  const normalized = normalizeCloudSala(sala);
+  if (!isCloudSala(normalized)) return false;
+  const now = Date.now();
+  if (now - (lastClinicalOpsRepushAt.get(normalized) || 0) < CLINICAL_OPS_REPUSH_COOLDOWN_MS) return false;
+  const local = await collectClinicalOpsForSala(normalized);
+  if (!local || !clinicalOpsHasRowsRoomLacks(local, roomClinicalOps)) return false;
+  lastClinicalOpsRepushAt.set(normalized, now);
+  const res = await pushClinicalOpsForSala(normalized).catch(() => null);
+  return !!res?.ok;
+}
+
 /** @param {string} normalized @param {{ id: string }} room @param {number} revision */
 function advanceRevisionFromPull(normalized, room, revision) {
   const next = Number(revision) || 0;
@@ -251,7 +301,10 @@ export async function pullClinicalOpsForSala(sala, opts = {}) {
   }
 
   const { ops, clinicalOps } = resolveClinicalOpsFromPull(pull);
-  if (clinicalOps != null) await applyClinicalOpsSnapshot(clinicalOps);
+  if (clinicalOps != null) {
+    await applyClinicalOpsSnapshot(clinicalOps);
+    await repushClinicalOpsIfRoomLacksLocal(normalized, clinicalOps);
+  }
 
   await hydrateClinicalTeamsAfterCloudPull();
   return { ok: true, sala: normalized, ops: ops.length };

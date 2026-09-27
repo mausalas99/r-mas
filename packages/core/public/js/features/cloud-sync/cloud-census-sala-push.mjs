@@ -28,6 +28,7 @@ import {
   pushCensusFieldsOp,
 } from './mutate-bridge-ops.mjs';
 import { cloudSyncNowIso } from './cloud-sync-clock.mjs';
+import { buildDirtyLabSidecarOpsForPatient } from './cloud-lab-sidecar-index.mjs';
 
 /** @returns {string} */
 export function getActiveCloudSala() {
@@ -163,6 +164,40 @@ export async function mirrorPatientCensusToOperationalSala(patient, opts = {}) {
   const sala = resolveOperationalPatientSala(patient, context);
   if (!sala || !isCloudSala(sala)) return { ok: false, reason: 'no_sala' };
   const ops = await buildPatientCensusMirrorOps(patient, opts.actorId || 'local');
+  if (!ops.length) return { ok: false, reason: 'no_ops' };
+  return pushOpsToSalaRoom(sala, ops);
+}
+
+/**
+ * Ops that bring back a patient whose delete was undone locally. The room's
+ * delete tombstone wiped the chart and its labs, and it only clears for an
+ * identity op newer than `deletedAt`, while every entityVersion from before the
+ * delete still beats the chart's own old clocks. So: whole chart plus every lab
+ * set (fingerprint skip off), all stamped `at`.
+ * @param {object} patient @param {unknown[]} labs @param {string} actorId @param {string} at
+ */
+export async function buildRestoredPatientOps(patient, labs, actorId, at) {
+  const pid = String(patient?.id || '').trim();
+  if (!pid || pid.indexOf('demo-') === 0) return [];
+  const ops = [
+    ...(await buildPatientCensusMirrorOps({ ...patient, lanUpdatedAt: at }, actorId)),
+    ...buildDirtyLabSidecarOpsForPatient(pid, Array.isArray(labs) ? labs : [], { actorId, updatedAt: at }, {}),
+  ];
+  return ops.map((op) => ({ ...op, updatedAt: at }));
+}
+
+/**
+ * Push a restored patient to its sala room now (direct, not the outbox: undo
+ * reloads the app right after).
+ * ponytail: offline undo → push fails, team stays without the patient; outbox
+ * retry if that shows up.
+ * @param {object} patient @param {unknown[]} labs @param {{ actorId: string, context?: object|null }} opts
+ */
+export async function pushRestoredPatientToCloud(patient, labs, opts) {
+  if (!isCloudSyncActive()) return { ok: false, reason: 'inactive' };
+  const own = resolveOperationalPatientSala(patient, opts.context || null);
+  const sala = isCloudSala(own) ? own : getActiveCloudSala();
+  const ops = await buildRestoredPatientOps(patient, labs, opts.actorId, cloudSyncNowIso());
   if (!ops.length) return { ok: false, reason: 'no_ops' };
   return pushOpsToSalaRoom(sala, ops);
 }

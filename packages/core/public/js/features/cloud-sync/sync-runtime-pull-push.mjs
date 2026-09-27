@@ -14,6 +14,7 @@ import {
 } from './cloud-med-receta-index.mjs';
 import { drainSyncedLabSidecarsFromOutbox, splitLabBackfillInOutbox } from './outbox-lab.mjs';
 import { noteCloudOpsAttempted } from './cloud-sync-echo-guard.mjs';
+import { dropPullValuesOlderThanPending } from './pull-pending-wins.mjs';
 import {
   cloudSyncErrorCode,
   noteCloudSyncPull,
@@ -145,6 +146,7 @@ function pullOpsCount(result) {
  */
 async function finalizePull(pctx, result, since, opsCount, labIngress) {
   const { applyPullResult, outbox, outboxSync } = pctx;
+  dropPullValuesOlderThanPending(result, outbox?.list?.());
   if (applyPullResult) await applyPullResult(result);
   noteCloudLabSidecarsFromPullResult(result);
   noteCloudMedRecetaFromPullResult(result);

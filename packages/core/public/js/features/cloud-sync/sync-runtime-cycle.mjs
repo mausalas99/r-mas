@@ -7,6 +7,7 @@ import { isCloudTransientServerError, isCloudUnreachableError } from './cloud-sy
 import { createPullPush, isCloudRevisionStaleError } from './sync-runtime-pull-push.mjs';
 import { decryptOpsFromPull, hasLockedOpValue } from './cloud-sync-crypto-wire.mjs';
 import { getCachedRoomDek, markRoomUnprotected } from './room-dek.mjs';
+import { dropPullValuesOlderThanPending } from './pull-pending-wins.mjs';
 import {
   cloudSyncErrorCode,
   getLastCloudPushAt,
@@ -258,7 +259,9 @@ async function applyRoomWsOpsMessage(deps, ctx, ops, revision) {
     const roomId = ctx.getRoomId();
     const dek = roomId ? getCachedRoomDek(roomId) : null;
     const decrypted = await decryptOpsFromPull(dek, ops);
-    if (deps.applyPullResult) await deps.applyPullResult({ ops: decrypted, revision });
+    const wsResult = { ops: decrypted, revision };
+    dropPullValuesOlderThanPending(wsResult, deps.outbox?.list?.());
+    if (deps.applyPullResult) await deps.applyPullResult(wsResult);
     // Ops this device could not open were dropped by pull-apply, so the local
     // revision must stay behind: it is what keeps the debounced hint and the
     // next pull asking for them again. Bumping it here would satisfy

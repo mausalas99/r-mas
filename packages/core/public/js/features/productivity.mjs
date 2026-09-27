@@ -166,7 +166,11 @@ export async function undoLastOperation() {
   if (result !== 'confirm') return;
   var rest = stack.slice(1);
   await saveUndoStack(rest);
+  var idsBefore = new Set(getPatients().map(function (p) { return String(p && p.id); }));
   replaceAppStateFromBackupData(snap.data || {});
+  var restored = getPatients().filter(function (p) { return p && !idsBefore.has(String(p.id)); });
+  var restoredAt = new Date().toISOString();
+  restored.forEach(function (p) { p.lanUpdatedAt = restoredAt; });
   try {
     localStorage.setItem(
       "rpc-scheduled-procedures",
@@ -181,8 +185,27 @@ export async function undoLastOperation() {
   }
   if (snap.theme === "dark" || snap.theme === "light") localStorage.setItem("theme", snap.theme);
   await persistClinicalState({ immediate: true });
+  await pushRestoredPatientsToCloud(restored);
   rt.addAuditEntry("undo-restore", "ok", 0, snap.label || "");
   location.reload();
+}
+
+/** Undoing a delete must reach the team: the Nube room still holds the tombstone. */
+async function pushRestoredPatientsToCloud(patients) {
+  if (!patients.length) return;
+  try {
+    var salaPush = await import("./cloud-sync/cloud-census-sala-push.mjs");
+    var bridge = await import("./cloud-sync/mutate-bridge.mjs");
+    var access = await import("../clinical-access-runtime.mjs");
+    var opts = { actorId: bridge.resolveCloudActorId(), context: access.getClinicalScopeContextForEvaluate() };
+    for (var i = 0; i < patients.length; i += 1) {
+      var p = patients[i];
+      var res = await salaPush.pushRestoredPatientToCloud(p, getLabHistory()[p.id], opts);
+      if (res && !res.ok && res.reason !== "inactive") console.warn("[productivity] restore push failed", p.id, res);
+    }
+  } catch (e) {
+    console.warn("[productivity] restore push failed", e);
+  }
 }
 
 export function applyFocusModeFromStorage() {

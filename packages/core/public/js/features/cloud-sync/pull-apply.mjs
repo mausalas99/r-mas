@@ -231,6 +231,9 @@ async function applyClinicalOpsSnapshot(clinicalOps) {
       if (result.ok) {
         await refreshClinicalOpsSnapshotCache();
         applied = true;
+        // The census room is the home sala's room (ensureTurnRoomForSala).
+        const { repushClinicalOpsIfRoomLacksLocal } = await import('./cloud-clinical-ops-sala.mjs');
+        void repushClinicalOpsIfRoomLacksLocal(getCloudSyncRoomSnapshot()?.sala || '', clinicalOps);
       }
     } else {
       applied = !!(await applyClinicalScopeFromOpsSnapshot(clinicalOps));
