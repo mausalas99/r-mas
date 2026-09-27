@@ -113,6 +113,16 @@ export const FEATURE_HINTS = [
     ],
   },
   {
+    // Actualizar labs with no portal address opens Ajustes on this field; the
+    // hint only shows while it is empty (the placeholder is visible).
+    id: 'portal-url-842',
+    release: '8.4.2',
+    title: 'Dirección del portal',
+    steps: [
+      { sel: '#settings-lab-portal-url:placeholder-shown', text: 'Pega aquí la dirección del portal de laboratorio: la misma que abres en el navegador para ver los labs. R+ la guarda al salir del campo; luego vuelve a tocar <strong>Actualizar labs</strong>.' },
+    ],
+  },
+  {
     id: 'actualizar-labs-842',
     release: '8.4.2',
     title: 'Actualizar labs',

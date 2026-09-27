@@ -170,7 +170,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   // Update from 8.4.1: a registered user with no done list gets the «Guía» too, not only «Nuevo».
   await page.evaluate(() => globalThis.localStorage.removeItem('rpc-feature-hints-done'));
   await app.close();
-  ({ app, page, pageErrors } = await r.launch());
+  ({ app, page, pageErrors } = await r.launch({ fakePortal: true })); // real lab-repo-fetch: the no-address path below
   // Sample the first seconds of boot: a bubble never floats over «Preparando R+».
   let overBoot = 0;
   for (let i = 0; i < 60; i++) {
@@ -239,6 +239,26 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   await page.locator('.exp-group-pill', { hasText: 'Resumen' }).first().click();
   await walkHint(page, 'resumen-842', 2);
   await walkHint(page, 'actualizar-labs-842', 1);
+  // Actualizar labs with no portal address (a fresh profile never has one): R+ stops
+  // before the network, opens Ajustes → Laboratorio, and the hint explains the field.
+  await onlyUnfinished(page, 'portal-url-842');
+  await closeToasts(page);
+  await page.locator('#patient-dashboard-mount [data-dash-action="actualizar-labs"]').click();
+  await page.locator('#lab-repo-batch-confirm').click();
+  check('Actualizar labs with no address says so',
+    await visible(page.locator('.toast', { hasText: /Falta la dirección del portal de laboratorio/ })));
+  check('… and opens Ajustes on the empty address field', await visible(page.locator('#settings-lab-portal-url')));
+  await walkHint(page, 'portal-url-842', 1);
+  // With an address saved the hint has nothing to explain: it stays closed.
+  await onlyUnfinished(page, 'portal-url-842');
+  await page.locator('#settings-lab-portal-url').fill('http://portal.invalid/laboratorio/index.aspx');
+  await page.waitForTimeout(2000);
+  check('with an address in the field the portal hint does not open', (await bubbleOf(page, 'portal-url-842').count()) === 0);
+  await page.locator('#settings-lab-portal-url').fill('');
+  await page.locator('#settings-lab-portal-url').blur();
+  await page.evaluate(([a]) => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(a)), [ALL]);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
   // Fill the census meds from the receta first, so Datos has a med line to explain removing.
   await page.locator('#btn-exp-datos-open:visible, #patient-dashboard-mount .dash-name:visible').first().click();
   await page.locator('[data-onclick="censoTomarDeMedicamentos"]').click();
