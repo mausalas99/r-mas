@@ -166,11 +166,11 @@
             <div class="settings-card-stack">
               <div class="settings-card settings-card--toggle">
                 <div class="settings-card__copy">
-                  <p class="settings-card__title">Aceleración por hardware</p>
+                  <p class="settings-card__title" id="settings-hardware-acceleration-title">Aceleración por hardware</p>
                   <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight" id="settings-hardware-acceleration-hint">Gráficas más suaves. Usa más memoria. Pide reiniciar R+.</p>
                 </div>
                 <label class="settings-card__action settings-card__toggle-label" for="settings-hardware-acceleration">
-                  <input type="checkbox" class="settings-card__toggle" id="settings-hardware-acceleration" data-onchange="onHardwareAccelerationChange" data-onchange-pass="checked">
+                  <input type="checkbox" class="settings-card__toggle" id="settings-hardware-acceleration" aria-labelledby="settings-hardware-acceleration-title" aria-describedby="settings-hardware-acceleration-hint" data-onchange="onHardwareAccelerationChange" data-onchange-pass="checked">
                 </label>
               </div>
             </div>

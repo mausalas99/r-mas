@@ -71,7 +71,7 @@ export function syncSettingsNavVisibility() {
     btn.hidden = hidden;
     if (hidden && btn.classList.contains('is-active')) {
       btn.classList.remove('is-active');
-      btn.setAttribute('aria-selected', 'false');
+      btn.removeAttribute('aria-current');
       activeHidden = true;
     }
   });
@@ -96,7 +96,8 @@ export function showSettingsPanel(panelId) {
   document.querySelectorAll('.settings-nav-item[data-settings-target]').forEach(function (btn) {
     var active = btn.getAttribute('data-settings-target') === panelId && !btn.hidden;
     btn.classList.toggle('is-active', active);
-    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    if (active) btn.setAttribute('aria-current', 'true');
+    else btn.removeAttribute('aria-current');
     if (active) found = true;
   });
   if (!found) return;
@@ -154,7 +155,6 @@ function buildSettingsNavItem(panelId, label, iconKey) {
   btn.type = 'button';
   btn.className = 'settings-nav-item';
   btn.id = 'settings-nav-' + panelId;
-  btn.setAttribute('role', 'tab');
   btn.setAttribute('data-settings-target', panelId);
   btn.setAttribute('aria-controls', panelId);
   btn.innerHTML = settingsIconSvg(iconKey) + '<span></span>';
@@ -200,8 +200,6 @@ function addSettingsSection(det, index, nav, panels) {
   if (summary) summary.remove();
   var panel = demoteDetailsToPanel(det);
   panel.classList.add('settings-panel');
-  panel.setAttribute('role', 'tabpanel');
-  panel.setAttribute('aria-labelledby', 'settings-nav-' + panelId);
   if (panel.classList.contains('settings-accordion--full')) panel.classList.add('settings-panel--wide');
   var title = document.createElement('h4');
   title.className = 'settings-panel-title';
@@ -226,11 +224,11 @@ function initSettingsSplitPane() {
   var split = document.createElement('div');
   split.className = 'settings-split';
 
+  // A plain nav of buttons, not a tablist: it also holds group labels and the
+  // Nube link, and has no arrow-key roving. aria-current marks the open section.
   var nav = document.createElement('nav');
   nav.className = 'settings-nav';
   nav.id = 'settings-nav';
-  nav.setAttribute('role', 'tablist');
-  nav.setAttribute('aria-orientation', 'vertical');
   nav.setAttribute('aria-label', 'Secciones de ajustes');
 
   var panels = document.createElement('div');
