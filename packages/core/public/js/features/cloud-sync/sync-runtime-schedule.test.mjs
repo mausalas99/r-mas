@@ -5,6 +5,9 @@ import { createCloudPollScheduler } from './sync-runtime-schedule.mjs';
 /** Scheduler with fake timers, a counting syncCycle and a controllable probe. */
 function setup(probeImpl, { pending = 1 } = {}) {
   mock.timers.enable({ apis: ['setTimeout'] });
+  // Top of the jitter range: the 30 s backoff lands at ~30 s and each ping at
+  // ~10 s. Random jitter let the backoff fire at 15–20 s, inside the 20 s window.
+  mock.method(Math, 'random', () => 0.999);
   const calls = { sync: 0, probe: 0, recovered: 0 };
   const scheduler = createCloudPollScheduler({
     syncCycle: () => { calls.sync += 1; },
@@ -25,7 +28,7 @@ async function advance(ms) {
 }
 
 test('unreachable Worker: the first ping that answers runs the sync within ~10 s, not after the 30 s backoff', async (t) => {
-  t.after(() => mock.timers.reset());
+  t.after(() => { mock.timers.reset(); mock.restoreAll(); });
   const { scheduler, calls } = setup(() => Promise.resolve({ ok: true }));
   scheduler.noteFailure(new TypeError('fetch failed'));
   await advance(10_000);
@@ -35,7 +38,7 @@ test('unreachable Worker: the first ping that answers runs the sync within ~10 s
 });
 
 test('probe keeps pinging while the Worker is still down', async (t) => {
-  t.after(() => mock.timers.reset());
+  t.after(() => { mock.timers.reset(); mock.restoreAll(); });
   const { scheduler, calls } = setup(() => Promise.reject(new TypeError('fetch failed')));
   scheduler.noteFailure(new TypeError('fetch failed'));
   await advance(10_000);
@@ -46,7 +49,7 @@ test('probe keeps pinging while the Worker is still down', async (t) => {
 });
 
 test('overloaded Worker (503 / 429): no extra pings on top of the backoff', async (t) => {
-  t.after(() => mock.timers.reset());
+  t.after(() => { mock.timers.reset(); mock.restoreAll(); });
   const { scheduler, calls } = setup(() => Promise.resolve({ ok: true }));
   scheduler.noteFailure(Object.assign(new Error('busy'), { status: 503 }));
   await advance(20_000);
@@ -58,7 +61,7 @@ test('overloaded Worker (503 / 429): no extra pings on top of the backoff', asyn
 });
 
 test('a successful cycle or stop() ends the probing', async (t) => {
-  t.after(() => mock.timers.reset());
+  t.after(() => { mock.timers.reset(); mock.restoreAll(); });
   const { scheduler, calls } = setup(() => Promise.reject(new TypeError('fetch failed')));
   scheduler.noteFailure(new TypeError('fetch failed'));
   scheduler.noteSuccess();
@@ -71,7 +74,7 @@ test('a successful cycle or stop() ends the probing', async (t) => {
 });
 
 test('right after the Worker comes back, a device with nothing queued polls at the active rate (catch up on peers)', async (t) => {
-  t.after(() => mock.timers.reset());
+  t.after(() => { mock.timers.reset(); mock.restoreAll(); });
   const { scheduler, calls } = setup(() => Promise.resolve({ ok: true }), { pending: 0 });
   scheduler.noteFailure(new TypeError('fetch failed'));
   scheduler.noteSuccess();
@@ -81,7 +84,7 @@ test('right after the Worker comes back, a device with nothing queued polls at t
 });
 
 test('without a recent outage, an idle device keeps the idle poll', async (t) => {
-  t.after(() => mock.timers.reset());
+  t.after(() => { mock.timers.reset(); mock.restoreAll(); });
   const { scheduler, calls } = setup(() => Promise.resolve({ ok: true }), { pending: 0 });
   scheduler.noteSuccess();
   await advance(8_000);
@@ -92,7 +95,7 @@ test('without a recent outage, an idle device keeps the idle poll', async (t) =>
 });
 
 test('recovering from an unreachable Worker fires onRecovered once (sala-room catch-up); overload recovery does not', async (t) => {
-  t.after(() => mock.timers.reset());
+  t.after(() => { mock.timers.reset(); mock.restoreAll(); });
   const { scheduler, calls } = setup(() => Promise.reject(new TypeError('fetch failed')), { pending: 0 });
   scheduler.noteFailure(new TypeError('fetch failed'));
   scheduler.noteFailure(new TypeError('fetch failed'));
