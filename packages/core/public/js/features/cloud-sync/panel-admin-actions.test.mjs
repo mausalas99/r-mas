@@ -6,7 +6,7 @@ describe('panel-admin-actions rotate code', () => {
   const src = readFileSync(new URL('./panel-admin-actions.mjs', import.meta.url), 'utf8');
 
   it('rotating the room code re-wraps the room DEK under the new code', () => {
-    const start = src.indexOf('async function handleRotateCode');
+    const start = src.indexOf('async function handleRotateCodeLegacy');
     const end = src.indexOf('\nasync function ', start + 1);
     const body = src.slice(start, end > start ? end : undefined);
     const rotateAt = body.indexOf('adminRotateCode(roomId)');
@@ -16,7 +16,7 @@ describe('panel-admin-actions rotate code', () => {
   });
 
   it('checks the sala key before asking: held or none go ahead, anything else stops', () => {
-    const start = src.indexOf('async function handleRotateCode');
+    const start = src.indexOf('async function handleRotateCodeLegacy');
     const body = src.slice(start, src.indexOf('\nasync function ', start + 1));
     const guardAt = body.indexOf("lock === 'unknown' || lock === 'locked-elsewhere'");
     assert.ok(guardAt > 0 && guardAt < body.indexOf('confirmAction('), 'guard runs before asking');
@@ -27,8 +27,22 @@ describe('panel-admin-actions rotate code', () => {
     assert.match(ks, /return 'unknown'/);
   });
 
+  it('the atomic path plans first (legacy / refused stop before the confirm) and never says «Nuevo código» on failure', () => {
+    const start = src.indexOf('async function handleRotateCode(');
+    const body = src.slice(start, src.indexOf('\nasync function ', start + 1));
+    const confirmAt = body.indexOf('confirmAction(');
+    assert.ok(body.indexOf('planOrExplain(') < confirmAt && body.indexOf('if (!plan) return;') < confirmAt);
+    assert.ok(body.indexOf("plan.kind === 'legacy'") < confirmAt);
+    const helper = src.slice(src.indexOf('async function planOrExplain'), start);
+    assert.match(helper, /planRoomCodeChange\(/);
+    assert.match(helper, /plan\.kind !== 'refused'/);
+    const tryAt = body.indexOf('rotateRoomCodeAtomically(');
+    const catchAt = body.indexOf('} catch (err) {', tryAt);
+    assert.ok(body.indexOf("'Nuevo código: '") > tryAt && body.indexOf("'Nuevo código: '") < catchAt);
+  });
+
   it('a failed re-lock is an error, not «Nuevo código»', () => {
-    const start = src.indexOf('async function handleRotateCode');
+    const start = src.indexOf('async function handleRotateCodeLegacy');
     const body = src.slice(start, src.indexOf('\nasync function ', start + 1));
     assert.ok(body.indexOf('if (!relocked)') > 0 && body.indexOf('if (!relocked)') < body.indexOf("'Nuevo código: '"));
   });
