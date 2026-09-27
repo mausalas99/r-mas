@@ -1,4 +1,5 @@
 import { cloudPullProgress } from '../../clinical-session-context.mjs';
+import { getCachedRoomDek } from './room-dek.mjs';
 import { sanitizeOpsForCloudPush } from './cloud-op-slim.mjs';
 import { drainCloudOps, recordRejectedCloudOps, MAX_OPS_PER_CHUNK } from './cloud-push-direct.mjs';
 import { nextWireIdStamp, resolveCloudPushMutationId } from './push-mutation-id.mjs';
@@ -159,6 +160,55 @@ async function finalizePull(pctx, result, since, opsCount, labIngress) {
   });
 }
 
+const KEYED_REPULL_KEY = 'rpc-cloud-keyed-repull-v1';
+
+function keyedRepullDone() {
+  try {
+    const list = JSON.parse(globalThis.localStorage?.getItem(KEYED_REPULL_KEY) || '[]');
+    return new Set(Array.isArray(list) ? list.map(String) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+/** Needed once per sala, and only when this device holds its key. @param {string} roomId */
+function needsKeyedRepull(roomId) {
+  return !!getCachedRoomDek(roomId) && !keyedRepullDone().has(String(roomId));
+}
+
+/** @param {string} roomId */
+function markKeyedRepullDone(roomId) {
+  try {
+    const done = keyedRepullDone();
+    done.add(String(roomId));
+    globalThis.localStorage?.setItem(KEYED_REPULL_KEY, JSON.stringify([...done]));
+  } catch {
+    /* storage full or unavailable: it simply runs again next time */
+  }
+}
+
+/** «Descargando pacientes…» instead of «Sin pacientes aún» while a whole-sala pull runs. */
+async function beginFreshPull() {
+  cloudPullProgress.freshInFlight = true;
+  if (typeof document === 'undefined') return;
+  try {
+    const { renderPatientList } = await import('../patients.mjs');
+    // force: the silent path is debounced, and a fast pull ended before it painted.
+    renderPatientList({ silent: true, force: true });
+  } catch {
+    /* list optional during boot */
+  }
+}
+
+function endFreshPull() {
+  cloudPullProgress.freshInFlight = false;
+  // A pull that failed (sign-out, offline) never repaints: clear the message.
+  if (typeof document === 'undefined') return;
+  void import('../patients.mjs')
+    .then((m) => m.renderPatientList({ silent: true, force: true }))
+    .catch(() => {});
+}
+
 /** @param {object} pctx */
 async function runPullLatest(pctx) {
   const { api, getRoomId, getRevision, pollMobile } = pctx;
@@ -167,24 +217,16 @@ async function runPullLatest(pctx) {
   if (!api || typeof api.pull !== 'function') {
     throw new Error('Cliente Nube no configurado');
   }
-  const since = getRevision() ?? 0;
+  // One full re-pull per keyed sala after the 8.4.1 onboarding bug: a device
+  // that joined before its key loaded dropped encrypted fields for good.
+  const keyedRepull = needsKeyedRepull(roomId);
+  const since = keyedRepull ? 0 : (getRevision() ?? 0);
   // since === 0 means this client has no local revision yet — a fresh room
   // join, about to pull the whole history. The sidebar sits empty for that
   // whole round trip; "Descargando pacientes…" replaces "Sin pacientes aún"
   // for real reasons while this is true, not because there truly are none.
   const freshJoin = since === 0;
-  if (freshJoin) {
-    cloudPullProgress.freshInFlight = true;
-    if (typeof document !== 'undefined') {
-      try {
-        const { renderPatientList } = await import('../patients.mjs');
-        // force: the silent path is debounced, and a fast pull ended before it painted.
-        renderPatientList({ silent: true, force: true });
-      } catch {
-        /* list optional during boot */
-      }
-    }
-  }
+  if (freshJoin) await beginFreshPull();
   try {
     const result = await api.pull(roomId, since, pollMobile ? { mobile: true } : undefined);
     const opsCount = pullOpsCount(result);
@@ -193,16 +235,9 @@ async function runPullLatest(pctx) {
     }
     const labIngress = pollMobile ? await recordLabPullIngress(result) : null;
     await finalizePull(pctx, result, since, opsCount, labIngress);
+    if (keyedRepull && !result?.locked) markKeyedRepullDone(roomId);
   } finally {
-    if (freshJoin) {
-      cloudPullProgress.freshInFlight = false;
-      // A pull that failed (sign-out, offline) never repaints: clear the message.
-      if (typeof document !== 'undefined') {
-        void import('../patients.mjs')
-          .then((m) => m.renderPatientList({ silent: true, force: true }))
-          .catch(() => {});
-      }
-    }
+    if (freshJoin) endFreshPull();
   }
 }
 

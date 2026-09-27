@@ -14,6 +14,8 @@
  *     the admin census read them server-side)
  *   - a member who joins afterwards gets the patient without its chart
  *     number (the first pull ran before the key and was never re-sent)
+ *   - a Mac holding the key never does its one full re-download (the
+ *     recovery for Macs that already lost fields that way)
  */
 import { createRun, dismissLearnHub, closeToasts, pasteAndSave } from './harness.mjs';
 import { startWorker, d1Query, nubeDevices, onboardNube, patientVisible, until, BASE } from './nube-worker.mjs';
@@ -65,6 +67,12 @@ await r.finish('Owner sala keyed on any online moment', async () => {
   const seen = await until(async () => patientVisible(B.page, P), 60000, 1000);
   await r.shot(B.page, 'member-sees-patient');
   check('a member who joins afterwards gets the patient with its chart number', seen);
+
+  // Recovery for Macs hit by the 8.4.1 onboarding drop: one full re-pull per
+  // keyed sala, remembered so it never repeats.
+  const repulled = async (dev) => until(async () => (await dev.page.evaluate(() => localStorage.getItem('rpc-cloud-keyed-repull-v1') || '')).includes(snap.id), 30000, 1000);
+  check('the owner’s Mac re-downloads the keyed sala once', await repulled(A));
+  check('the member’s Mac re-downloads the keyed sala once', await repulled(B));
 
   check('no uncaught page errors', !A.pageErrors.length && !B.pageErrors.length, [...A.pageErrors, ...B.pageErrors].slice(0, 5));
   await B.app.close();
