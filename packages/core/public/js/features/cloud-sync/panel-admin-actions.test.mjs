@@ -180,3 +180,17 @@ describe('panel-admin-actions bulk archive/delete on the Red tab (multiselect)',
     assert.doesNotMatch(body, /for \(const p of targets\)/);
   });
 });
+
+describe('fieldsFromOps (archive from a small room)', () => {
+  it('takes the latest fields for that patient from an op log', async () => {
+    const { fieldsFromOps } = await import('./panel-admin-actions.mjs');
+    const ops = [
+      { path: 'entries/p1', value: { id: 'p1', fields: { nombre: 'A', archived: false } } },
+      { path: 'entries/p2/fields', value: { nombre: 'OTRO' } },
+      { path: 'entries/p1/fields', value: { nombre: 'A', cama: '3', archived: false } },
+    ];
+    assert.deepEqual(fieldsFromOps(ops, 'p1'), { nombre: 'A', cama: '3', archived: false });
+    assert.equal(fieldsFromOps(ops, 'p9'), null);
+    assert.equal(fieldsFromOps(undefined, 'p1'), null);
+  });
+});

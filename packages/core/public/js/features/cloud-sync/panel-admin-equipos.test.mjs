@@ -132,8 +132,10 @@ describe('equiposShellHtml', () => {
     assert.match(html, /no quitan las marcas/i);
     assert.match(html, /cuenta Nube/i);
     assert.match(html, /Restablecer clave/i);
-    assert.match(html, /data-admin-equipos-activity/);
-    assert.match(html, /data-admin-equipos-team-status/);
+    // Board «Admin · Usuarios»: chips instead of the uso / equipo selects.
+    const chips = [...html.matchAll(/data-admin-equipos-chip="([a-z]+)"/g)].map((m) => m[1]);
+    assert.deepEqual(chips, ['all', 'unassigned', 'nosala', 'new', 'idle']);
+    assert.match(html, /aria-pressed="true">Todos/);
     assert.match(html, /refresh-equipos/);
     assert.match(html, /save-equipos-bulk/);
     assert.match(html, /purge-equipos-bulk/);

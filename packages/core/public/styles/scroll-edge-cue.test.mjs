@@ -52,11 +52,12 @@ test('lab.css: every horizontal scroller has a cue, except the documented flex-w
   assert.match(css, /(?<!--modal )\.lab-some-table-wrap \{[^}]*display:\s*flex;/s);
 });
 
-test('cloud-sync.css: admin tabs, table wrap, and equipos-bulk toolbar all fade', () => {
+test('cloud-sync.css: admin side menu (narrow), table wrap, and equipos-bulk toolbar all fade', () => {
   const css = read('public/styles/cloud-sync.css');
   const count = assertEveryScrollerHasCueOrException(css, 'cloud-sync.css');
   assert.equal(count, 3);
-  assert.match(css, /\.cloud-sync-admin-tabs\.cloud-sync-tabs::after\s*\{[^}]*linear-gradient\(to left, var\(--color-elevated\), transparent\)/s);
+  // Below 760px the side menu becomes a row that scrolls sideways.
+  assert.match(css, /\.cloud-sync-admin-nav::after\s*\{[^}]*linear-gradient\(to left, color-mix\(in oklab, var\(--text\) 3%, var\(--color-elevated\)\), transparent\)/s);
   assert.match(css, /\.cloud-sync-admin-table-wrap \{[^}]*display:\s*flex;/s);
   assert.match(css, /\.cloud-sync-admin-table-wrap::after\s*\{[^}]*linear-gradient\(to left, var\(--surface\), transparent\)/s);
   // The toolbar is already sticky-top + a color-mix background; the fade

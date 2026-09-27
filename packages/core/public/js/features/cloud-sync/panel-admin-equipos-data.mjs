@@ -48,9 +48,18 @@ function matchesEquiposTeamStatus(hasTeam, teamStatus) {
   return true;
 }
 
+/** Board chips: Sin equipo / Sin sala / Nuevos / Sin uso 30 d. @param {HTMLElement} row @param {string} chip */
+export function rowMatchesEquiposChip(row, chip) {
+  if (chip === 'unassigned') return row.getAttribute('data-has-team') !== '1';
+  if (chip === 'nosala') return !rowSalaForFilter(row);
+  if (chip === 'new') return row.getAttribute('data-new') === '1';
+  if (chip === 'idle') return row.getAttribute('data-idle') === '1';
+  return true;
+}
+
 /**
  * @param {HTMLElement} row
- * @param {{ q?: string, sala?: string, activity?: string, teamStatus?: string }} opts
+ * @param {{ q?: string, sala?: string, activity?: string, teamStatus?: string, chip?: string }} opts
  */
 export function rowMatchesEquiposFilters(row, opts) {
   const term = String(opts.q || '')
@@ -67,6 +76,7 @@ export function rowMatchesEquiposFilters(row, opts) {
   const hasTeam = String(row.getAttribute('data-has-team') || '0') === '1';
 
   return (
+    rowMatchesEquiposChip(row, String(opts.chip || 'all')) &&
     matchesEquiposSearch(hay, term) &&
     matchesEquiposSala(rowSala, salaFilter) &&
     matchesEquiposActivity(activityFlag, activity) &&
@@ -83,6 +93,25 @@ export function applyEquiposClientFilters(host, opts = {}) {
   host.querySelectorAll('.cloud-sync-admin-equipos-row').forEach((row) => {
     if (!(row instanceof HTMLElement)) return;
     row.hidden = !rowMatchesEquiposFilters(row, opts);
+  });
+  // A group label with nothing visible under it hides too.
+  host.querySelectorAll('.cloud-sync-admin-equipos-group-label').forEach((label) => {
+    let el = label.nextElementSibling;
+    let any = false;
+    while (el && !el.classList.contains('cloud-sync-admin-equipos-group-label')) {
+      if (el.classList.contains('cloud-sync-admin-equipos-row') && !el.hidden) any = true;
+      el = el.nextElementSibling;
+    }
+    label.hidden = !any;
+  });
+}
+
+/** Counts per chip over every row (search and sala aside). @param {HTMLElement} root */
+function paintEquiposChipCounts(root) {
+  const rows = [...root.querySelectorAll('[data-admin-equipos-list] .cloud-sync-admin-equipos-row')];
+  root.querySelectorAll('[data-admin-equipos-chip-count]').forEach((el) => {
+    const chip = el.getAttribute('data-admin-equipos-chip-count') || 'all';
+    el.textContent = String(rows.filter((r) => r instanceof HTMLElement && rowMatchesEquiposChip(r, chip)).length);
   });
 }
 
@@ -267,12 +296,15 @@ export function applyEquiposFiltersFromToolbar(root) {
   const activitySel = root.querySelector('[data-admin-equipos-activity]');
   const teamSel = root.querySelector('[data-admin-equipos-team-status]');
   const sala = salaSel instanceof HTMLSelectElement ? salaSel.value : '';
+  const chip = root.querySelector('[data-admin-equipos-chip].is-active')?.getAttribute('data-admin-equipos-chip') || 'all';
   applyEquiposClientFilters(list, {
+    chip,
     q: search instanceof HTMLInputElement ? search.value : '',
     sala,
     activity: activitySel instanceof HTMLSelectElement ? activitySel.value : 'all',
     teamStatus: teamSel instanceof HTMLSelectElement ? teamSel.value : 'all',
   });
+  paintEquiposChipCounts(root);
   const counts = countVisibleEquiposRows(list);
   paintEquiposFilterSummary(root, {
     ...counts,

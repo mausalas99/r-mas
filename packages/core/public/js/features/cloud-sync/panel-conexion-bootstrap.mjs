@@ -327,6 +327,12 @@ export function mountAdminShell(section, deps, toast, extra = {}) {
       // device's active room — see joinRoomByCode in panel-conexion-handlers.mjs.
       adminMount = mountCloudAdminPanel(host, { ...deps, ...extra, toast });
     } else {
+      // renderConnected rebuilds the section (room switch, re-login): move the
+      // live admin into the new host instead of refreshing a detached one.
+      if (!host.contains(adminMount.root)) {
+        host.textContent = '';
+        host.appendChild(adminMount.root);
+      }
       adminMount.refresh?.();
     }
   }

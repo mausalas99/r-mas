@@ -102,7 +102,7 @@ export function buildAdminShellHtml(showBootstrap = true) {
 }
 
 /** Section title, one grey line, and optional controls on the right. @param {string} title @param {string} sub @param {string} [right] */
-function adminHeadHtml(title, sub, right = '') {
+export function adminHeadHtml(title, sub, right = '') {
   return (
     // A <div>, not <header>: layout.css styles every <header> as the app bar.
     '<div class="cloud-sync-admin-head">' +

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global document */
+/* global document, window */
 /**
  * E2E: the Nube panel (header ⇄) a signed-in R4 sees, against the local
  * sync Worker (nube-worker.mjs). DEMO users only.
