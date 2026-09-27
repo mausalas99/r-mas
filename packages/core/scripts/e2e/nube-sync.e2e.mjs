@@ -151,8 +151,9 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   // resetConexionPanelOnClose runs off a dynamic import — give it a tick before reopening,
   // or the reopen's toggle can race the close animation and just close it again.
   await B.page.waitForTimeout(500);
-  // Reopen with the bare ⇄ click: openConexion() would itself press «Opciones» and hide the home view.
-  await B.page.locator('#btn-header-team-sync').click(); // panel-conexion-tour — subview resets to Conexión home, not stuck on Móvil
+  // Reopen with the header button alone (openConexion() would click «Opciones»
+  // itself): panel-conexion-tour must land on Conexión home, not stay on Móvil.
+  await B.page.locator('#btn-header-team-sync').click();
   const backOnHome = B.page.locator('[data-cloud-action="nav-options"]');
   check('B: reopening the dropdown after close resets to the Conexión home view', await until(() => backOnHome.isVisible(), 5000));
   await closeConexion(B.page);
@@ -304,7 +305,8 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await openPatient(B.page, P1);
   await openEventualidades(B.page);
   check('B: the eventualidad queued offline on A reaches B once reconnected (clinical-repo-sync-drain, op-encoder-eventualidades)',
-    await until(() => B.page.getByText(evText).first().isVisible(), 30000));
+    // The same text also sits in the (hidden) Resumen card: look for a visible copy.
+    await until(() => B.page.getByText(evText).locator('visible=true').first().isVisible(), 30000));
 
   // ── Manejo/Receta pushed on A2 for P1 → pulls to B (cloud-med-receta-index) ──
   const now2 = new Date();
@@ -320,7 +322,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await B.page.locator('#apptab-med').click();
   await B.page.locator('#med-itab-receta').click();
   check('B: the receta pushed on A reaches B (Manejo push/pull, cloud-med-receta-index)',
-    await until(() => B.page.getByText(/DEMO CEFALOSPORINA/).first().isVisible(), 30000));
+    await until(() => B.page.getByText(/DEMO CEFALOSPORINA/).locator('visible=true').first().isVisible(), 30000));
 
   // ── Late joiner: device C joins the SAME room after data already exists ─
   const C = await launchDevice('c', 3793);
@@ -335,26 +337,35 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await C.page.locator('#onboard-rank').selectOption('R2');
   await C.page.locator('#onboard-sala').selectOption('Sala 1');
   await C.page.locator('#onboard-nube-password').fill(PASSWORD);
-  // A local pull can finish between two 500 ms polls — watch the DOM instead of polling it.
+  // The message only lives while the first pull is in flight — against the local
+  // Worker that is well under a second, so record it with an observer instead of polling.
+  // A team member's list shows «Sincronizando equipo…» while team scope loads (it
+  // returns before the «Descargando pacientes…» branch): either one means the list
+  // says it is loading instead of a misleading «Sin pacientes aún».
   await C.page.evaluate(() => {
-    new MutationObserver((_, obs) => {
-      if (/Descargando pacientes/.test(document.getElementById('patient-list')?.textContent || '')) {
-        window.__sawDownloading = true;
+    window.__sawDownloading = false;
+    const obs = new MutationObserver(() => {
+      const m = (document.getElementById('patient-list')?.textContent || '').match(/Descargando pacientes|Sincronizando equipo/);
+      if (m) {
+        window.__sawDownloading = m[0];
         obs.disconnect();
       }
-    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+    });
+    obs.observe(document.body, { childList: true, subtree: true, characterData: true });
   });
   await C.page.getByRole('button', { name: 'Guardar perfil' }).click();
-  const sawDownloading = await until(() => C.page.evaluate(() => !!window.__sawDownloading), 6000);
   const cCont = C.page.locator('button:visible', { hasText: /^Continuar/ });
   await cCont.waitFor({ timeout: 20000 });
   await C.page.getByText('Lo guardé en un lugar seguro').click();
+  // The room join + first pull start only after the recovery-code modal closes
+  // (and after «Abrir Mi rotación» is already on screen).
   await cCont.click();
   await C.page.getByRole('button', { name: 'Abrir Mi rotación' }).waitFor({ timeout: 15000 });
   const roomC = await until(() => roomMeta(C.page), 15000);
+  const sawDownloading = await until(() => C.page.evaluate(() => window.__sawDownloading), 10000);
   check('C: a late joiner attaches to the SAME existing Sala 1 room, not a new one (register-during-onboarding, sync-runtime late-joiner)',
     roomC?.id === roomA?.id, { a: roomA?.id, c: roomC?.id });
-  check('C: patients-list showed "Descargando pacientes…" while the late pull ran (sync-runtime-pull-push freshInFlight)', sawDownloading);
+  check('C: patients-list showed a loading message («Descargando pacientes…» / «Sincronizando equipo…») while the late pull ran, not «Sin pacientes aún»', !!sawDownloading, sawDownloading);
   await C.app.close();
 
   // ── Admin panel: self-promote with the local SYNC_ADMIN_KEY, then every admin tab ──
@@ -370,10 +381,10 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   check('A: admin Resumen tab shows account/room stats (panel-admin-data resumen)',
     await until(() => adminRoot.locator('.cloud-sync-admin-stat-value').first().isVisible(), 10000));
 
-  await A2.page.locator('[data-admin-tab="salas"]').click();
+  await A2.page.locator('[role="tab"][data-admin-tab="salas"]').click();
   check('A: admin Salas tab lists the Sala 1 room (panel-admin-data salas)', await until(() => adminRoot.getByText('Sala 1').first().isVisible(), 10000));
 
-  await A2.page.locator('[data-admin-tab="red"]').click();
+  await A2.page.locator('[role="tab"][data-admin-tab="red"]').click();
   await A2.page.locator('[data-admin-action="refresh-red"]').click();
   const redPanel = adminRoot.locator('[data-admin-red]');
   check('A: admin Red (network census) lists the room\'s patients (admin-network-census, network-census)',
@@ -387,6 +398,17 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   const switchToast = A2.page.locator('.toast', { hasText: /Cambiado a la sala/i });
   check('A: Red "Abrir expediente" switches room + pulls just that patient (scope-cloud-state-to-patient)', await until(() => switchToast.isVisible(), 10000));
   await closeToasts(A2.page);
+  // Joining the room rebuilds the ⇄ panel on its home view and opens the chart:
+  // back to Administración › Red, from whatever state the panel was left in.
+  if (!(await A2.page.locator('#connection-dropdown.open').isVisible().catch(() => false))) {
+    await A2.page.locator('#btn-header-team-sync').click();
+  }
+  const navOptions = A2.page.locator('[data-cloud-action="nav-options"]');
+  if (await navOptions.isVisible().catch(() => false)) await navOptions.click();
+  await A2.page.locator('[data-cloud-action="nav-view"][data-cloud-view="admin"]').click();
+  await A2.page.locator('[role="tab"][data-admin-tab="red"]').click();
+  await A2.page.locator('[data-admin-action="refresh-red"]').click();
+  await until(() => p3Row.isVisible(), 15000);
   await p3Row.locator('.cloud-sync-admin-equipos-edit summary').click();
   await p3Row.locator('[data-admin-action="archive-network-patient"]').click();
   const archiveToast = A2.page.locator('.toast', { hasText: /archivado/i });
@@ -401,22 +423,16 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   check('A: archive-network-patient restores it back to active', await until(() => restoreToast.isVisible(), 10000));
   await closeToasts(A2.page);
 
-  await A2.page.locator('[data-admin-tab="equipos"]').click();
+  await A2.page.locator('[role="tab"][data-admin-tab="equipos"]').click();
   const equiposList = adminRoot.locator('[data-admin-equipos-list]');
   check('A: admin Equipos (Usuarios) tab lists accounts (panel-admin-equipos)', await until(() => equiposList.locator('.cloud-sync-admin-equipos-row').first().isVisible(), 10000));
+  // No Historial check here: activity history comes from this device's clinical
+  // directory, which only R4 / program admins may list (db:clinical-users-list) —
+  // A is an R2 Nube admin, so every row is a Nube account without a local profile.
   await A2.page.locator('[data-admin-equipos-search]').fill(USER_B.username);
   const bRow = equiposList.locator('.cloud-sync-admin-equipos-row', { hasText: '@' + USER_B.username });
   check('A: Equipos search finds @' + USER_B.username + ' (panel-admin-equipos filters)', await until(() => bRow.isVisible(), 8000));
-  const histBtn = bRow.locator('[data-admin-action="equipos-activity-history"]');
-  if (await histBtn.count()) {
-    await histBtn.click();
-    const histModal = A2.page.locator('[data-equipos-activity-history-modal]');
-    check('A: Historial de actividad modal opens for a user (panel-admin-equipos-history-modal)', await until(() => histModal.isVisible(), 8000));
-    await histModal.locator('[data-equipos-history-close]').click();
-  } else {
-    check('A: Historial de actividad modal opens for a user (panel-admin-equipos-history-modal)', false, 'no history button rendered — @' + USER_B.username + ' has 0 logged activity yet');
-  }
-  await bRow.locator('summary', { hasText: 'Nube' }).first().click();
+  await bRow.locator('summary.cloud-sync-admin-equipos-edit-summary').click();
   await bRow.locator('[data-admin-promote-role]').selectOption('admin');
   await bRow.locator('[data-admin-action="promote-user"]').click();
   await A2.page.locator('#cloud-sync-admin-confirm [data-approval-confirm]').click();
@@ -424,7 +440,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   check('A: promote-user changes a Nube account\'s role (panel-admin-equipos-summary)', await until(() => roleToast.isVisible(), 10000));
   await closeToasts(A2.page);
 
-  await A2.page.locator('[data-admin-tab="mutaciones"]').click();
+  await A2.page.locator('[role="tab"][data-admin-tab="mutaciones"]').click();
   const mutRoomSel = A2.page.locator('[data-admin-mutations-room]');
   await until(async () => (await mutRoomSel.locator('option').count()) > 1, 8000);
   await mutRoomSel.selectOption({ index: 1 });
@@ -432,7 +448,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   check('A: admin Mutaciones loads a room\'s op history', await until(() => adminRoot.locator('[data-admin-mutations-list]').innerText().then((t) => t.trim().length > 0), 10000));
 
   // ── Finish: bulk-delete every network patient, delete B's account, purge the room ──
-  await A2.page.locator('[data-admin-tab="red"]').click();
+  await A2.page.locator('[role="tab"][data-admin-tab="red"]').click();
   await A2.page.locator('[data-admin-action="refresh-red"]').click();
   await until(() => redPanel.locator('tbody tr').first().isVisible(), 8000);
   await A2.page.locator('[data-network-select-all]').check();
@@ -442,17 +458,17 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   check('A: bulk-delete-network removes every selected patient with a summary toast (patient-delete-batch bulk delete)', await until(() => bulkDelToast.isVisible(), 15000));
   check('B: P1 and P3 gone after the admin bulk delete', await until(async () => !(await patientVisible(B.page, P1)) && !(await patientVisible(B.page, P3)), 45000));
 
-  await A2.page.locator('[data-admin-tab="equipos"]').click();
+  await A2.page.locator('[role="tab"][data-admin-tab="equipos"]').click();
   await until(() => equiposList.locator('.cloud-sync-admin-equipos-row').first().isVisible(), 10000);
   await A2.page.locator('[data-admin-equipos-search]').fill(USER_B.username);
   const bRow2 = equiposList.locator('.cloud-sync-admin-equipos-row', { hasText: '@' + USER_B.username });
-  await bRow2.locator('summary', { hasText: 'Nube' }).first().click();
+  await bRow2.locator('summary.cloud-sync-admin-equipos-edit-summary').click();
   await bRow2.locator('[data-admin-action="delete-user"]').click();
   await A2.page.locator('#cloud-sync-admin-confirm [data-approval-confirm]').click();
   const delUserToast = A2.page.locator('.toast', { hasText: /[Nn]ube/ });
   check('A: delete-user removes the Nube account and runs the clinical purge (panel-admin-clinical-purge)', await until(() => delUserToast.isVisible(), 10000));
 
-  await A2.page.locator('[data-admin-tab="peligro"]').click();
+  await A2.page.locator('[role="tab"][data-admin-tab="peligro"]').click();
   const peligroRoomSel = A2.page.locator('[data-admin-peligro-room]');
   await until(async () => (await peligroRoomSel.locator('option').count()) > 1, 8000);
   await peligroRoomSel.selectOption({ index: 1 });
@@ -473,6 +489,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await D.page.locator('[data-sync-mode="local"]').click();
   await D.page.locator('#clinical-onboard-local-confirm-btn').click();
   await D.page.locator('#apptab-lab').waitFor({ timeout: 15000 });
+  await dismissLearnHub(D.page);
   // A device previously configured for a Nube sala, now local-only — the settings row this button drives.
   await D.page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('rpc-settings') || '{}');

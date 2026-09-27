@@ -1,0 +1,16 @@
+{
+  "patient": {
+    "name": "DEMO PÉREZ JUAN",
+    "expediente": "9000095-7",
+    "sexo": "M",
+    "edad": "67 años",
+    "fecha": "07/05/2026",
+    "hora": "14:04",
+    "ubicacion": "SERVICIO DEMO"
+  },
+  "resLabs": [
+    "LIQUIDO PERITONEAL (EN FRASCO DE HEMOCULTIVO ANAEROBIO) 07/05: PSEUDOMONAS AERUGINOSA\nATB R: CAZ, FEP, PIP/TAZO | S: CIPRO, IMI, LVX, MERO, TOBRA\nCuenta: 120,000 UFC/ML"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+}

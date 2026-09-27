@@ -24,6 +24,7 @@ import { loadAdminEquipos } from './panel-admin-equipos-data.mjs';
 import { purgeClinicalUserMatchingCloudHandle } from './panel-admin-clinical-purge.mjs';
 import { openEquiposActivityHistoryFromButton } from './panel-admin-equipos-history-modal.mjs';
 import { scopeCloudStateToPatient } from './scope-cloud-state-to-patient.mjs';
+import { foldOpsToLatestByPath } from './room-dek-migrate.mjs';
 
 /**
  * @param {HTMLElement} root
@@ -175,12 +176,17 @@ async function handleSwitchNetworkRoom(deps, code, patientId) {
 /**
  * Pull a room's current revision + one patient's `fields` — shared by the
  * single-row and bulk archive/delete actions so the pull step lives once.
+ * A `since:0` pull of a small/new room answers with raw `ops`, not a `state`
+ * snapshot (PULL_REVISION_GAP in cloud/sync-worker/src/pull-strategy.js), so
+ * the latest `entries/{id}/fields` op stands in for the snapshot entry there.
  * @param {ReturnType<import('./api-client.mjs').createCloudSyncApi>} api @param {string} roomId @param {string} patientId
  */
 async function pullNetworkPatientFields(api, roomId, patientId) {
-  const { state, revision } = await api.pull(roomId, 0);
-  const entry = (state?.entries || []).find((e) => String(e?.id) === patientId);
-  return { revision: Number(revision) || 0, fields: entry?.fields || null };
+  const { state, ops, revision } = await api.pull(roomId, 0);
+  const fields = state
+    ? (state.entries || []).find((e) => String(e?.id) === patientId)?.fields
+    : foldOpsToLatestByPath(ops)[`entries/${patientId}/fields`]?.value;
+  return { revision: Number(revision) || 0, fields: fields || null };
 }
 
 /**
@@ -401,6 +407,7 @@ async function handlePromoteSelf(deps) {
     if (!(await confirmAction('¿Promover tu cuenta a admin en la nube?'))) return;
     await deps.getApi().adminPromote(userId, 'admin');
     deps.toast('Cuenta promovida a admin.', 'success');
+    // The panel's first loads ran before the promotion (403): load them again as admin.
     reloadAdminData(deps);
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo promover.', 'error');

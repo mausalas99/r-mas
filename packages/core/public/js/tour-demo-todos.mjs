@@ -1,13 +1,28 @@
 /**
  * Pendientes del tour guiado (demo-onboarding). storage.saveTodos omite demo-*;
- * se escribe directo en rpc-todos como en pitch.
+ * se escriben directo en rpc-todos (y en el caché de escritorio) como en pitch.
  */
 import { DEMO_PATIENT_ID } from './tour-demo-patient.mjs';
+import { getBlobCache, invalidateParsed } from './storage/storage-core.mjs';
 
 const TODOS_LS_KEY = 'rpc-todos';
 
+/**
+ * Desktop/Electron reads todos from the in-memory blob cache, not localStorage
+ * (storage-core.mjs readClinicalBlob): read from it when present, so the real
+ * patients' pendientes are kept, and mirror writes into it without persisting
+ * to the DB (demo data must not survive to disk). Same fix as
+ * tour-pitch-demo-todos.mjs; without it the tour's demo pendientes never showed
+ * ("Sin pendientes") once the DB was unlocked.
+ */
 function readTodosMap() {
   try {
+    const cache = getBlobCache();
+    if (cache) {
+      const v = cache.todos;
+      if (v == null) return {};
+      return typeof v === 'string' ? JSON.parse(v) : { ...v };
+    }
     const raw = localStorage.getItem(TODOS_LS_KEY);
     return raw ? JSON.parse(raw) : {};
   } catch {
@@ -16,9 +31,15 @@ function readTodosMap() {
 }
 
 function writeTodosMap(map) {
+  const json = JSON.stringify(map || {});
   try {
-    localStorage.setItem(TODOS_LS_KEY, JSON.stringify(map || {}));
+    localStorage.setItem(TODOS_LS_KEY, json);
   } catch (e) { console.warn('[tour-demo-todos] failed to write ' + TODOS_LS_KEY, e); }
+  const cache = getBlobCache();
+  if (cache) {
+    cache.todos = json;
+    invalidateParsed('todos');
+  }
 }
 
 function todoEntry(id, text, priority, completed) {

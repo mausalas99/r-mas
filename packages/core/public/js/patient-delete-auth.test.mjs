@@ -32,6 +32,17 @@ describe('canDeletePatientChart', () => {
     );
   });
 
+  it('«Solo este equipo» (no teams, no clinical user) may delete any chart', () => {
+    const prev = globalThis.localStorage;
+    globalThis.localStorage = { getItem: (k) => (k === 'rpc-settings' ? JSON.stringify({ clinicalLocalOnly: true }) : null) };
+    try {
+      assert.equal(canDeletePatientChart(null, 'p-free', null), true);
+      assert.equal(canDeletePatientChart(null, '', null), false);
+    } finally {
+      globalThis.localStorage = prev;
+    }
+  });
+
   it('R1 may delete only patients on their joined team', () => {
     const r1 = { user_id: 'u-r1', rank: 'R1' };
     assert.equal(canDeletePatientChart(r1, 'p-mine', scope), true);

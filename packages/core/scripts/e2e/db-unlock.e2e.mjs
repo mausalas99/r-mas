@@ -79,6 +79,7 @@ await r.finish('DB unlock: auto-unlock confirmed, master-password UI confirmed U
   const settingsDropdown = page.locator('#settings-dropdown.open, #settings-dropdown[aria-hidden="false"]');
   await settingsDropdown.first().waitFor({ timeout: 5000 }).catch(() => {});
   const settingsText = await page.locator('#settings-dropdown').innerText().catch(() => '');
+  await r.shot(page, 'ajustes');
   check(
     'UNREACHABLE — no "contraseña maestra" / DB-security entry in Ajustes today',
     !/contraseña maestra/i.test(settingsText),

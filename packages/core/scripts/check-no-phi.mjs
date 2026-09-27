@@ -10,7 +10,9 @@
  * «Torre HU» stays allowed: it is a ward name in the data rules.
  *
  * A synthetic fixture line that must match can carry the marker
- * `phi-scan: synthetic` on the same line.
+ * `phi-scan: synthetic` on the same line. The .docx templates' golden text
+ * (scripts/golden/corpus/docs) is exempt from the hospital rules only: it is
+ * the hospital's own format. Patient-data rules still apply there.
  *
  * Usage: node scripts/check-no-phi.mjs            (reads the staged diff)
  *        node scripts/check-no-phi.mjs --diff F   (reads a diff file, for tests)
@@ -33,6 +35,9 @@ const RULES = [
   ['PHI: CURP', /\b[A-Z]{4}\d{6}[HM][A-Z]{5}[0-9A-Z]\d\b/],
 ];
 const SELF = /scripts\/check-no-phi(\.test)?\.mjs$/; // these two list the terms on purpose
+// Text of the .docx templates (golden output): they carry the hospital's own
+// letterhead on purpose, since notes and indicaciones use the hospital's format.
+const TEMPLATE_TEXT = /scripts\/golden\/corpus\/docs\/[^/]+\.golden\.txt$/;
 const ALLOW = 'phi-scan: synthetic';
 
 /** @param {string} diff unified diff with -U0 @returns {string[]} */
@@ -53,7 +58,9 @@ export function findHits(diff) {
     if (!raw.startsWith('+')) continue;
     const text = raw.slice(1);
     if (!SELF.test(file) && !text.includes(ALLOW)) {
+      const templateText = TEMPLATE_TEXT.test(file);
       for (const [label, re] of RULES) {
+        if (templateText && label.startsWith('hospital:')) continue;
         if (re.test(text)) hits.push(`${file}:${line}  ${label}  «${text.trim().slice(0, 100)}»`);
       }
     }

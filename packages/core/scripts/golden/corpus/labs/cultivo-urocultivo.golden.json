@@ -1,0 +1,16 @@
+{
+  "patient": {
+    "name": "DEMO PÉREZ JUAN",
+    "expediente": "9000095-7",
+    "sexo": "M",
+    "edad": "67 años",
+    "fecha": "05/05/2026",
+    "hora": "18:16",
+    "ubicacion": "SERVICIO DEMO"
+  },
+  "resLabs": [
+    "UROCULTIVO POR SONDA 05/05: PSEUDOMONAS AERUGINOSA · Carb-R\nATB R: AMIK, AZTREONAM, CAZ, CAZ-AVI, CIPRO, FEP, IMI, LVX, MERO, TOBRA | S: PIP/TAZO\nCuenta: 50,000 UFC/ML"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+}

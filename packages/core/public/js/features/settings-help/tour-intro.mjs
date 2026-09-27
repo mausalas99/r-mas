@@ -157,7 +157,7 @@ export function syncLearnHubContinueVisibility() {
   var hubBd = document.getElementById('learn-hub-backdrop');
   if (hubBd && hubBd.classList.contains('open')) {
     void import('./learn-hub.mjs').then(function (hub) {
-      if (typeof hub.renderLearnHubBody === 'function') hub.renderLearnHubBody('guardia-v7');
+      if (typeof hub.renderLearnHubBody === 'function') hub.renderLearnHubBody();
     });
   }
 }

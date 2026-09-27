@@ -138,9 +138,14 @@ export function wireConexionClicks(section, deps, ui) {
   }
 
   section.addEventListener('click', onCloudActionClick);
-  document
-    .getElementById('connection-dropdown')
-    ?.addEventListener('click', onCloudActionClick);
+  // The dropdown contains the section: only take clicks from outside it (the
+  // modal-head back button), or every in-section action runs twice — two
+  // logouts, two recoveries each rotating the recovery code.
+  document.getElementById('connection-dropdown')?.addEventListener('click', (ev) => {
+    if (!section.isConnected) return;
+    if (ev.target instanceof Node && section.contains(ev.target)) return;
+    onCloudActionClick(ev);
+  });
   wireClinicalTeamsFormDelegation(section);
 }
 
@@ -283,7 +288,10 @@ export function mountAdminShell(section, deps, toast, extra = {}) {
   async function ensureAdminOpen() {
     const host = section.querySelector('[data-cloud-admin-host]');
     if (!host) return;
-    if (!adminMount) {
+    // renderConnected (e.g. after the Red tab's «Abrir expediente» joins a room)
+    // rebuilds the ⇄ panel with a fresh, empty host: a panel mounted in the old
+    // DOM would only refresh itself off-screen and Administración stayed blank.
+    if (!adminMount || !host.contains(adminMount.root)) {
       const { mountCloudAdminPanel } = await import('./panel-admin.mjs');
       host.textContent = '';
       // Full deps (not just getApi) so the "Red" tab can switch this

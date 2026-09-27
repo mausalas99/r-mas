@@ -1,0 +1,15 @@
+Expediente:	9000095-7	Solicitud:	2608190601	phi-scan: synthetic
+Nombre:	DEMO PÉREZ JUAN	Fecha Registro:	Aug 19 2026 6:30AM
+Sexo:	MASCULINO	Ubicación:	SERVICIO DEMO
+Edad:	67	Medico:	SERVICIO DEMO
+
+QUIMICA CLINICA
+GLUCOSA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+GLUCOSA EN SANGRE		A	142	mg/dL	60 - 100
+POTASIO
+Estudio		Resultado	Unidades	Valor de Referencia
+POTASIO		A	3.1	mmol/L	3.6 - 5.0
+SODIO
+Estudio		Resultado	Unidades	Valor de Referencia
+SODIO		*	138	mmol/L	135.0 - 145.0

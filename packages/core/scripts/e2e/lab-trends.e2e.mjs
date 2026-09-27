@@ -282,7 +282,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   await page.waitForTimeout(800);
   await card('BH|Plt').first().scrollIntoViewIfNeeded();
   await card('BH|Plt').first().click({ position: { x: 20, y: 60 } });
-  const detail = page.locator('#tend-detail-backdrop');
+  let detail = page.locator('#tend-detail-backdrop');
   await detail.waitFor({ state: 'visible' });
   await page.waitForTimeout(400);
   const band = await page.evaluate(() => {
@@ -931,9 +931,12 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   }, { order: reversedCardOrder, groupKey: realGroupKey });
   const qsKeysBefore = keys.filter((k) => k && k.startsWith('QS|'));
 
+  check('before restart: QS is collapsed', (await page.locator('.tend-section[data-section="QS"] .tend-section-toggle').getAttribute('aria-expanded')) === 'false');
+
   // ── Restart: hidden card, collapsed section, saved card order and the event persist ──
   await app.close();
   ({ app, page, pageErrors } = await r.launch());
+  detail = page.locator('#tend-detail-backdrop');
   await page.locator('#apptab-lab').waitFor({ state: 'visible', timeout: 30000 });
   await dismissLearnHub(page);
   await openPatient(page, P);

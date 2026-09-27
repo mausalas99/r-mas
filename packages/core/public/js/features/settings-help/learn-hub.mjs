@@ -30,6 +30,8 @@ import { buildModuleRow, LEARN_HUB_CHEVRON } from './learn-hub-module-row.mjs';
 
 let learnHubDismissWired = false;
 let learnHubLastFocus = null;
+/** Track the open hub was focused on; a re-render keeps it. */
+let learnHubFocusTrack = 'guardia-v7';
 
 function stepCountForChapter(chapterId, branch) {
   if (branch === 'quick-route') {
@@ -232,9 +234,10 @@ function renderLearnHubFundamentosTrack(parts, focusTrack, fundamentosProgress, 
   parts.push('</div></details>');
 }
 
-export function renderLearnHubBody(focusTrack = 'guardia-v7') {
+export function renderLearnHubBody(focusTrack = learnHubFocusTrack) {
   const host = document.getElementById('learn-hub-body');
   if (!host) return;
+  learnHubFocusTrack = focusTrack;
 
   const progress = loadGuardiaV7Progress();
   const fundamentosProgress = loadFundamentosProgress();

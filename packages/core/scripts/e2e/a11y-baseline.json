@@ -1,0 +1,622 @@
+{
+  "admin-code": {
+    "admin-code-setup": {
+      "color-contrast": 2
+    }
+  },
+  "agenda": {
+    "two-on-wednesday": {
+      "color-contrast": 5,
+      "nested-interactive": 2
+    },
+    "r2-after-edits": {
+      "color-contrast": 5,
+      "nested-interactive": 2
+    },
+    "r1-agenda": {
+      "color-contrast": 5,
+      "nested-interactive": 2
+    },
+    "r2-sees-r1-changes": {
+      "color-contrast": 5,
+      "nested-interactive": 2
+    },
+    "r2-after-restart": {
+      "color-contrast": 5,
+      "nested-interactive": 2
+    }
+  },
+  "cultivos": {
+    "cultivos": {
+      "aria-required-children": 8,
+      "color-contrast": 3,
+      "nested-interactive": 1
+    },
+    "atb-panel": {
+      "aria-required-children": 8,
+      "color-contrast": 3,
+      "nested-interactive": 1
+    },
+    "more-formats": {
+      "aria-required-children": 11,
+      "color-contrast": 3,
+      "nested-interactive": 1
+    },
+    "after-refresh": {
+      "aria-required-children": 12,
+      "color-contrast": 3,
+      "nested-interactive": 1
+    },
+    "censo-preview": {
+      "aria-required-children": 12,
+      "color-contrast": 6,
+      "nested-interactive": 1
+    },
+    "after-remove": {
+      "aria-required-children": 12,
+      "color-contrast": 3,
+      "nested-interactive": 1
+    }
+  },
+  "db-unlock": {
+    "ajustes": {
+      "color-contrast": 3,
+      "nested-interactive": 1
+    }
+  },
+  "drive-import": {
+    "drive-import-modal": {
+      "aria-required-children": 1,
+      "color-contrast": 4,
+      "nested-interactive": 1
+    },
+    "drive-import-modal#2": {
+      "aria-required-children": 1,
+      "color-contrast": 5,
+      "nested-interactive": 1
+    },
+    "drive-import-modal#3": {
+      "aria-required-children": 1,
+      "color-contrast": 5,
+      "nested-interactive": 1
+    },
+    "drive-import-modal#4": {
+      "aria-required-children": 1,
+      "color-contrast": 5,
+      "nested-interactive": 1
+    },
+    "drive-import-modal#5": {
+      "aria-required-children": 1,
+      "color-contrast": 5,
+      "nested-interactive": 1
+    },
+    "drive-import-modal#6": {
+      "aria-required-children": 1,
+      "color-contrast": 5,
+      "nested-interactive": 1
+    },
+    "drive-import-modal#7": {
+      "aria-required-children": 1,
+      "color-contrast": 5,
+      "nested-interactive": 1
+    },
+    "drive-import-modal#8": {
+      "aria-required-children": 1,
+      "color-contrast": 5,
+      "nested-interactive": 1
+    },
+    "drive-import-modal#9": {
+      "aria-required-children": 1,
+      "color-contrast": 5,
+      "nested-interactive": 1
+    },
+    "drive-import-review": {
+      "aria-required-children": 2,
+      "color-contrast": 4,
+      "label": 2,
+      "nested-interactive": 1
+    },
+    "drive-import-modal#10": {
+      "aria-required-children": 1,
+      "color-contrast": 5,
+      "nested-interactive": 1
+    },
+    "drive-import-review#2": {
+      "aria-required-children": 2,
+      "color-contrast": 4,
+      "label": 1,
+      "nested-interactive": 1
+    },
+    "drive-import-modal#11": {
+      "aria-required-children": 1,
+      "color-contrast": 5,
+      "nested-interactive": 1
+    },
+    "drive-import-review#3": {
+      "aria-required-children": 2,
+      "color-contrast": 4,
+      "label": 2,
+      "nested-interactive": 1
+    },
+    "drive-import-modal#12": {
+      "aria-required-children": 1,
+      "color-contrast": 5,
+      "nested-interactive": 1
+    },
+    "drive-import-review#4": {
+      "aria-required-children": 2,
+      "color-contrast": 4,
+      "label": 1,
+      "nested-interactive": 1
+    },
+    "drive-import-modal#13": {
+      "aria-required-children": 1,
+      "color-contrast": 5,
+      "nested-interactive": 1
+    },
+    "drive-import-review#5": {
+      "aria-required-children": 2,
+      "color-contrast": 4,
+      "label": 1,
+      "nested-interactive": 1
+    },
+    "drive-import-modal#14": {
+      "aria-required-children": 1,
+      "color-contrast": 4,
+      "nested-interactive": 1
+    },
+    "drive-import-review#6": {
+      "aria-required-children": 2,
+      "color-contrast": 4,
+      "label": 4,
+      "nested-interactive": 1
+    },
+    "drive-import-modal#15": {
+      "aria-required-children": 1,
+      "color-contrast": 4,
+      "nested-interactive": 1
+    }
+  },
+  "estado-actual": {
+    "estado-actual-empty": {
+      "color-contrast": 2,
+      "nested-interactive": 2
+    },
+    "registro-empty": {
+      "color-contrast": 8,
+      "nested-interactive": 2,
+      "select-name": 6
+    },
+    "registro-busy": {
+      "color-contrast": 8,
+      "nested-interactive": 2,
+      "select-name": 6
+    },
+    "estado-actual-busy": {
+      "color-contrast": 8,
+      "nested-interactive": 2,
+      "select-name": 6
+    },
+    "balance-por-turno": {
+      "color-contrast": 8,
+      "nested-interactive": 2,
+      "select-name": 6
+    },
+    "enviar-a-nota": {
+      "color-contrast": 2,
+      "nested-interactive": 2
+    },
+    "graficas-monitoreo": {
+      "color-contrast": 8,
+      "nested-interactive": 2,
+      "select-name": 6
+    },
+    "registro-bomba": {
+      "color-contrast": 8,
+      "nested-interactive": 2,
+      "select-name": 6
+    }
+  },
+  "guardia-handoff": {
+    "r1-cycle-saved": {
+      "color-contrast": 12
+    },
+    "r2-p1-handoff-filled": {
+      "color-contrast": 2
+    },
+    "r2-census-after-handoffs": {
+      "color-contrast": 2
+    },
+    "r1-p1-received": {
+      "color-contrast": 2
+    },
+    "r2-sees-agendado": {
+      "color-contrast": 2
+    }
+  },
+  "lab-paste-rules": {
+    "setup": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "grouping-done": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "mixed-known-refused": {
+      "color-contrast": 4,
+      "nested-interactive": 2
+    },
+    "foreign": {
+      "aria-prohibited-attr": 2,
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "partial-mix": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "garbage": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    }
+  },
+  "lab-repo-update": {
+    "single-mode": {
+      "color-contrast": 3,
+      "nested-interactive": 1
+    },
+    "team-list": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "team-run": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "review": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "no-network": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "bulk-paste": {
+      "color-contrast": 3,
+      "nested-interactive": 4
+    },
+    "portal-address-missing": {
+      "color-contrast": 3,
+      "nested-interactive": 1
+    },
+    "portal-address-saved": {
+      "color-contrast": 3,
+      "nested-interactive": 1
+    }
+  },
+  "lab-trends": {
+    "arrows-jan2": {
+      "aria-prohibited-attr": 4,
+      "color-contrast": 3,
+      "nested-interactive": 1
+    },
+    "arrows-jan5": {
+      "aria-prohibited-attr": 3,
+      "color-contrast": 3,
+      "nested-interactive": 1
+    },
+    "tendencias": {
+      "color-contrast": 3,
+      "nested-interactive": 30
+    },
+    "events-two": {
+      "aria-required-children": 1,
+      "color-contrast": 3,
+      "nested-interactive": 28
+    },
+    "events-after-delete": {
+      "aria-required-children": 1,
+      "color-contrast": 3,
+      "nested-interactive": 28
+    },
+    "group-modal-bh": {
+      "color-contrast": 3,
+      "nested-interactive": 33
+    },
+    "group-modal-show-all": {
+      "color-contrast": 3,
+      "nested-interactive": 33
+    },
+    "after-restart": {
+      "color-contrast": 3,
+      "nested-interactive": 34
+    },
+    "restored": {
+      "color-contrast": 3,
+      "nested-interactive": 39
+    }
+  },
+  "labs-to-docx": {
+    "onboarded": {
+      "color-contrast": 5
+    },
+    "mixed-paste-refused": {
+      "color-contrast": 3
+    },
+    "preview": {
+      "color-contrast": 11
+    },
+    "both-admitted": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "perez-labs": {
+      "aria-prohibited-attr": 2,
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "interconsulta": {
+      "color-contrast": 2,
+      "nested-interactive": 4
+    },
+    "note": {
+      "color-contrast": 2,
+      "nested-interactive": 2
+    },
+    "exported": {
+      "color-contrast": 2,
+      "nested-interactive": 2
+    },
+    "past-notes": {
+      "color-contrast": 2,
+      "nested-interactive": 2
+    },
+    "restarted": {
+      "color-contrast": 2,
+      "nested-interactive": 4
+    }
+  },
+  "learn-hub-tour": {
+    "learn-hub": {
+      "color-contrast": 4,
+      "nested-interactive": 1
+    },
+    "tour-dock": {
+      "color-contrast": 3,
+      "nested-interactive": 1
+    },
+    "tour-dock#2": {
+      "color-contrast": 3,
+      "nested-interactive": 1
+    }
+  },
+  "listado": {
+    "listado-empty": {
+      "color-contrast": 3,
+      "nested-interactive": 1
+    },
+    "listado-busy": {
+      "color-contrast": 3,
+      "nested-interactive": 1
+    }
+  },
+  "manejo-receta": {
+    "manejo": {
+      "aria-allowed-attr": 2,
+      "aria-required-children": 1,
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "pendientes": {
+      "aria-prohibited-attr": 1,
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "egreso-completa": {
+      "aria-allowed-attr": 2,
+      "aria-required-children": 1,
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "diet-only": {
+      "aria-allowed-attr": 2,
+      "aria-required-children": 1,
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "perfil": {
+      "aria-allowed-attr": 2,
+      "aria-required-children": 1,
+      "color-contrast": 3,
+      "nested-interactive": 3
+    },
+    "not-admin": {
+      "aria-allowed-attr": 2,
+      "aria-required-children": 1,
+      "color-contrast": 4,
+      "nested-interactive": 3
+    },
+    "month-deleted": {
+      "aria-allowed-attr": 2,
+      "aria-required-children": 1,
+      "color-contrast": 3,
+      "nested-interactive": 3
+    }
+  },
+  "nota-evolucion": {
+    "note-open": {
+      "color-contrast": 2,
+      "nested-interactive": 2
+    },
+    "note-filled": {
+      "color-contrast": 2,
+      "nested-interactive": 2
+    },
+    "past-notes": {
+      "color-contrast": 2,
+      "nested-interactive": 2
+    },
+    "indicaciones": {
+      "color-contrast": 2,
+      "nested-interactive": 2
+    },
+    "after-restart": {
+      "color-contrast": 2,
+      "nested-interactive": 2
+    }
+  },
+  "nube-sync": {
+    "a-signed-up": {
+      "color-contrast": 2
+    },
+    "a-team-created": {
+      "color-contrast": 12
+    },
+    "b-joined": {
+      "color-contrast": 12
+    },
+    "b-received": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "b-p1-labs": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "b-diagnostico-nube-online": {
+      "color-contrast": 3,
+      "dlitem": 12,
+      "nested-interactive": 2
+    },
+    "a-p1-gas-from-b": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "a-offline": {
+      "color-contrast": 3,
+      "nested-interactive": 3
+    },
+    "a-restarted": {
+      "color-contrast": 3,
+      "nested-interactive": 3
+    },
+    "a-recovered": {
+      "color-contrast": 3,
+      "nested-interactive": 3
+    },
+    "b-after-delete": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "a-diagnostico-nube-offline": {
+      "aria-required-children": 1,
+      "color-contrast": 5,
+      "dlitem": 14,
+      "nested-interactive": 2
+    }
+  },
+  "paste-smart": {
+    "routed": {
+      "color-contrast": 3,
+      "nested-interactive": 5
+    },
+    "unknown-expediente": {
+      "color-contrast": 6,
+      "nested-interactive": 5
+    },
+    "cmdk": {
+      "color-contrast": 3,
+      "nested-interactive": 5
+    }
+  },
+  "patients": {
+    "census": {
+      "color-contrast": 3,
+      "nested-interactive": 5
+    },
+    "pin-archive": {
+      "color-contrast": 4,
+      "nested-interactive": 5
+    },
+    "bulk-selected": {
+      "color-contrast": 4
+    },
+    "after-restart": {
+      "color-contrast": 4,
+      "nested-interactive": 3
+    }
+  },
+  "pendientes": {
+    "three-added": {
+      "aria-prohibited-attr": 1,
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "after-edits": {
+      "aria-prohibited-attr": 1,
+      "color-contrast": 4,
+      "nested-interactive": 2
+    },
+    "p2-pendientes": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "after-restart": {
+      "aria-prohibited-attr": 1,
+      "color-contrast": 3,
+      "nested-interactive": 2
+    }
+  },
+  "prompt-dialogs": {
+    "pin-setup-dialog": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "range-dialog": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "sync-passphrase-dialog": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "conflict-dialog": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "indica-merge-dialog": {
+      "color-contrast": 2,
+      "nested-interactive": 3
+    },
+    "indica-after": {
+      "color-contrast": 2,
+      "nested-interactive": 3
+    }
+  },
+  "sala-view": {
+    "patient-a-labs-card": {
+      "color-contrast": 3,
+      "nested-interactive": 1
+    },
+    "patient-b-labs-card": {
+      "color-contrast": 3,
+      "nested-interactive": 2
+    },
+    "patient-d-labs-card": {
+      "color-contrast": 3,
+      "nested-interactive": 4
+    }
+  },
+  "vpo": {
+    "vpo-empty": {
+      "color-contrast": 2,
+      "nested-interactive": 2
+    },
+    "vpo-busy": {
+      "color-contrast": 2,
+      "label": 5,
+      "nested-interactive": 2
+    }
+  }
+}

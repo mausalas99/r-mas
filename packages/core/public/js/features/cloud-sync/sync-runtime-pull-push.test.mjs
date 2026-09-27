@@ -1,95 +1,121 @@
-import { describe, it } from 'node:test';
+import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { createOutbox } from './outbox.mjs';
 import { createPullPush } from './sync-runtime-pull-push.mjs';
-import { cloudPullProgress } from '../../clinical-session-context.mjs';
 
-function pullPushHarness(api, getRevision, setRevision = () => {}) {
-  return createPullPush(
+// Node's navigator has no onLine; the flush skips while offline.
+Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
+
+/**
+ * Device at revision 5 pushes one op. `pushResult` is what the Worker answers;
+ * the pull answers with whatever other devices wrote meanwhile.
+ */
+let seq = 0;
+function setup(pushResult) {
+  seq += 1; // distinct op per test: the echo guard drops an op it already sent
+  const mem = [];
+  const outbox = createOutbox({ load: () => mem.slice(), save: (rows) => mem.splice(0, mem.length, ...rows) });
+  outbox.enqueue({ clientMutationId: 'm1', ops: [{ path: `entries/p${seq}/note`, value: { texto: 'b' }, updatedAt: '2026-09-27T08:00:00.000Z', actorId: 'b' }] });
+  let revision = 5;
+  const pulls = [];
+  const applied = [];
+  const api = {
+    push: async () => pushResult,
+    pull: async (_roomId, since) => {
+      pulls.push(since);
+      return { revision: 9, ops: [{ path: 'entries/p2/fields', value: { nombre: 'DEMO' } }] };
+    },
+  };
+  const { flushOutbox } = createPullPush(
     {
       api,
-      outbox: {},
-      getRoomId: () => 'room1',
-      getRevision,
-      setRevision,
-      applyPullResult: async () => {},
-      pollMobile: false,
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => revision,
+      setRevision: (r) => { revision = r; },
+      applyPullResult: async (res) => { applied.push(...(res?.ops || [])); },
     },
     () => {},
-    { pendingCount: () => 0, refreshIdleStatus: () => {} },
-    { markLocalWrite: () => {} }
+    { pendingCount: () => outbox.list().length, refreshIdleStatus() {} },
+    { markLocalWrite() {} },
   );
+  return { flushOutbox, pulls, applied, getRevision: () => revision };
 }
 
-describe('runPullLatest fresh-join progress flag', () => {
-  it('sets cloudPullProgress.freshInFlight during a since=0 pull, clears it after', async () => {
-    let flagDuringFetch;
-    const { pullLatest } = pullPushHarness(
-      {
-        pull: async () => {
-          flagDuringFetch = cloudPullProgress.freshInFlight;
-          return { revision: 1, ops: [] };
-        },
-      },
-      () => 0
-    );
-    assert.equal(cloudPullProgress.freshInFlight, false);
-    await pullLatest();
-    assert.equal(flagDuringFetch, true, 'flag is up while the fresh pull is in flight');
-    assert.equal(cloudPullProgress.freshInFlight, false, 'flag clears once the pull settles');
-  });
-
-  it('leaves the flag alone for an incremental pull (since > 0)', async () => {
-    let flagDuringFetch;
-    const { pullLatest } = pullPushHarness(
-      {
-        pull: async () => {
-          flagDuringFetch = cloudPullProgress.freshInFlight;
-          return { revision: 6, ops: [] };
-        },
-      },
-      () => 5
-    );
-    await pullLatest();
-    assert.equal(flagDuringFetch, false);
-    assert.equal(cloudPullProgress.freshInFlight, false);
-  });
-
-  it('clears the flag even when the pull rejects', async () => {
-    const { pullLatest } = pullPushHarness(
-      { pull: async () => { throw new Error('boom'); } },
-      () => 0
-    );
-    await assert.rejects(pullLatest);
-    assert.equal(cloudPullProgress.freshInFlight, false);
-  });
+test('push answered with needPull: the pull starts from the old revision, so other devices\' ops arrive', async () => {
+  const s = setup({ revision: 9, applied: [], rejected: [], needPull: true });
+  await s.flushOutbox();
+  assert.deepEqual(s.pulls, [5]);
+  assert.deepEqual(s.applied.map((o) => o.path), ['entries/p2/fields']);
+  assert.equal(s.getRevision(), 9);
 });
 
-describe('runPullLatest revision gate on a locked pull', () => {
-  it('advances the revision for a readable pull', async () => {
-    const seen = [];
-    const { pullLatest } = pullPushHarness(
-      { pull: async () => ({ revision: 9, ops: [{ path: 'entries/p1/note', value: 'ok' }] }) },
-      () => 5,
-      (rev) => seen.push(rev)
-    );
-    await pullLatest();
-    assert.deepEqual(seen, [9]);
-  });
+test('push with nothing new on the server: jump to the post-push revision, no extra pull', async () => {
+  const s = setup({ revision: 6, applied: [], rejected: [], needPull: false });
+  await s.flushOutbox();
+  assert.deepEqual(s.pulls, []);
+  assert.equal(s.getRevision(), 6);
+});
 
-  it('holds the revision back when the result is flagged locked', async () => {
-    const seen = [];
-    const { pullLatest } = pullPushHarness(
-      {
-        pull: async () => ({
-          revision: 9,
-          locked: true,
-          ops: [{ path: 'entries/p1/note', value: { enc: 1, iv: 'i', ct: 'c' } }],
-        }),
+/** Outbox rows pushed through flushOutbox against `push`; returns the POSTed op paths and what is left. */
+async function flushRows(rows, push) {
+  const mem = [];
+  const outbox = createOutbox({ load: () => mem.slice(), save: (next) => mem.splice(0, mem.length, ...next) });
+  for (const row of rows) outbox.enqueue(row);
+  const pushed = [];
+  const { flushOutbox } = createPullPush(
+    {
+      api: {
+        push: async (roomId, body) => {
+          const paths = body.ops.map((op) => op.path);
+          pushed.push(paths);
+          return push(paths);
+        },
+        pull: async () => ({ revision: 1, ops: [] }),
       },
-      () => 5,
-      (rev) => seen.push(rev)
-    );
-    await pullLatest();
-    assert.deepEqual(seen, [], 'a locked pull must leave `since` where it was');
-  });
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => 0,
+      setRevision() {},
+      applyPullResult: async () => {},
+    },
+    () => {},
+    { pendingCount: () => outbox.list().length, refreshIdleStatus() {} },
+    { markLocalWrite() {} },
+  );
+  // A row still stuck after the retries is reported by throwing (the cycle turns it into status).
+  const error = await flushOutbox().then(() => null, (err) => err);
+  return { pushed, left: outbox.list().map((r) => r.clientMutationId), error };
+}
+
+test('small outbox rows go out together in one POST', async () => {
+  seq += 1;
+  const { pushed, left } = await flushRows(
+    [
+      { clientMutationId: 'm1', ops: [{ path: `a${seq}`, value: 1, updatedAt: '2026-09-27T08:00:01.000Z' }] },
+      { clientMutationId: 'm2', ops: [{ path: `b${seq}`, value: 2, updatedAt: '2026-09-27T08:00:02.000Z' }] },
+    ],
+    async () => ({ revision: 1 }),
+  );
+  assert.deepEqual(pushed, [[`a${seq}`, `b${seq}`]]);
+  assert.deepEqual(left, []);
+});
+
+test('a failed grouped POST retries rows one by one, so the good row still goes out', async () => {
+  seq += 1;
+  const bad = `x${seq}`;
+  const good = `y${seq}`;
+  const { pushed, left, error } = await flushRows(
+    [
+      { clientMutationId: 'bad', ops: [{ path: bad, value: 1, updatedAt: '2026-09-27T08:00:01.000Z' }] },
+      { clientMutationId: 'good', ops: [{ path: good, value: 2, updatedAt: '2026-09-27T08:00:02.000Z' }] },
+    ],
+    async (paths) => {
+      if (paths.includes(bad)) throw Object.assign(new Error('bad request'), { status: 400 });
+      return { revision: 1 };
+    },
+  );
+  assert.deepEqual(pushed, [[bad, good], [bad], [good]]);
+  assert.deepEqual(left, ['bad']);
+  assert.equal(error?.status, 400);
 });

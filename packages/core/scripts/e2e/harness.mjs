@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 export const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
@@ -42,9 +43,13 @@ export function createRun(name) {
     console.log(`${ok ? 'PASS' : 'FAIL'}  ${label}${detail !== undefined ? '  — ' + JSON.stringify(detail) : ''}`);
   }
 
+  // One accessibility scan per screenshot (see a11y.mjs).
+  const a11y = createA11yRecorder(name);
+
   async function shot(page, label) {
     shotN += 1;
     await page.screenshot({ path: path.join(artifactDir, `${String(shotN).padStart(2, '0')}-${label}.png`) });
+    await a11y.scan(page, label);
   }
 
   async function launch({ profile = 'a', lanPort = 3791, fakePortal = false } = {}) {
@@ -104,8 +109,10 @@ export function createRun(name) {
       if (lastPage) await shot(lastPage, 'crash').catch(() => {});
       check('scenario ran to the end', false, String((err && err.stack) || err).split('\n').slice(0, 6).join('\n'));
     }
+    const a11yCheck = a11y.verdict();
+    if (a11yCheck) check(a11yCheck.name, a11yCheck.ok, a11yCheck.detail);
     const passed = checks.filter((c) => c.ok).length;
-    const report = { scenario, runId, passed, failed: checks.length - passed, checks };
+    const report = { scenario, runId, passed, failed: checks.length - passed, checks, a11y: a11y.screens };
     fs.writeFileSync(path.join(artifactDir, 'report.json'), JSON.stringify(report, null, 2) + '\n');
     for (const dir of Object.values(userDataDirs)) fs.rmSync(dir, { recursive: true, force: true });
     fs.rmSync(downloadsDir, { recursive: true, force: true });
@@ -247,4 +254,104 @@ export async function openPatient(page, p) {
     await page.getByRole('button', { name: 'Agregar Paciente' }).click();
     await servicio.waitFor({ state: 'hidden' });
   }
+}
+
+// ── Accessibility ratchet ────────────────────────────────────────────────
+// Every screenshot a scenario takes also runs axe-core (WCAG 2.1 A/AA) on that
+// screen. Only serious/critical issues count. Issues already recorded in
+// a11y-baseline.json are tolerated; a new rule on a screen, or more elements
+// failing a rule, fails the scenario's accessibility check. Fixing issues and
+// re-recording lowers the baseline.
+//   A11Y_UPDATE=1 npm run e2e -- <scenario>   re-record that scenario's baseline
+//   E2E_A11Y=0 npm run e2e                    skip the scans
+const A11Y_BASELINE_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'a11y-baseline.json');
+const AXE_SOURCE = createRequire(import.meta.url)('axe-core').source;
+const COUNTED_IMPACTS = new Set(['serious', 'critical']);
+
+export const a11yEnabled = process.env.E2E_A11Y !== '0';
+
+/**
+ * Serious/critical axe violations on the current screen, as { ruleId: { count, help, sample } }.
+ * page.evaluate runs outside the page's CSP, so axe can be injected into the app:// window.
+ */
+export async function scanA11y(page) {
+  const violations = await page.evaluate(async (source) => {
+    if (!globalThis.axe) (0, eval)(source);
+    // Toasts come and go with timing; scanning them would make counts flaky.
+    const res = await globalThis.axe.run({ exclude: [['#toast-stack']] }, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
+      resultTypes: ['violations'],
+    });
+    return res.violations.map((v) => ({
+      id: v.id,
+      impact: v.impact,
+      help: v.help,
+      targets: v.nodes.map((n) => String(n.target[0])),
+    }));
+  }, AXE_SOURCE);
+  const out = {};
+  for (const v of violations) {
+    if (!COUNTED_IMPACTS.has(v.impact)) continue;
+    out[v.id] = { count: v.targets.length, help: v.help, sample: v.targets.slice(0, 3) };
+  }
+  return out;
+}
+
+function readBaseline() {
+  try {
+    return JSON.parse(fs.readFileSync(A11Y_BASELINE_FILE, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Compare this run's scans with the baseline for `scenario`.
+ * @param {string} scenario
+ * @param {Record<string, Record<string, { count: number, help: string, sample: string[] }>>} screens
+ * @returns {{ ok: boolean, detail: object }}
+ */
+export function a11yVerdict(scenario, screens) {
+  const all = readBaseline();
+  if (process.env.A11Y_UPDATE === '1') {
+    all[scenario] = Object.fromEntries(
+      Object.entries(screens).map(([screen, rules]) => [screen, Object.fromEntries(Object.entries(rules).map(([id, r]) => [id, r.count]))]),
+    );
+    const sorted = Object.fromEntries(Object.keys(all).sort().map((k) => [k, all[k]]));
+    fs.writeFileSync(A11Y_BASELINE_FILE, JSON.stringify(sorted, null, 2) + '\n');
+    return { ok: true, detail: { recorded: Object.keys(screens).length } };
+  }
+  const base = all[scenario] || {};
+  const regressions = [];
+  for (const [screen, rules] of Object.entries(screens)) {
+    for (const [id, r] of Object.entries(rules)) {
+      const allowed = base[screen]?.[id] ?? 0;
+      if (r.count > allowed) regressions.push({ screen, rule: id, count: r.count, allowed, help: r.help, sample: r.sample });
+    }
+  }
+  return { ok: regressions.length === 0, detail: regressions.length ? regressions : { screens: Object.keys(screens).length } };
+}
+
+/**
+ * Per-run recorder: scan(page, label) after each screenshot, then verdict()
+ * once at the end → { name, ok, detail } for the scenario's report, or null
+ * when scans are off or nothing was captured.
+ */
+export function createA11yRecorder(scenario) {
+  const screens = {};
+  return {
+    screens,
+    async scan(page, label) {
+      if (!a11yEnabled || label === 'crash') return;
+      let screen = label;
+      for (let i = 2; screen in screens; i += 1) screen = `${label}#${i}`;
+      screens[screen] = await scanA11y(page).catch((err) => ({ 'axe-error': { count: 1, help: String(err).slice(0, 200), sample: [] } }));
+    },
+    verdict() {
+      const n = Object.keys(screens).length;
+      if (!a11yEnabled || !n) return null;
+      const v = a11yVerdict(scenario, screens);
+      return { name: `accessibility: no new serious/critical axe issues on the ${n} screens captured`, ok: v.ok, detail: v.detail };
+    },
+  };
 }

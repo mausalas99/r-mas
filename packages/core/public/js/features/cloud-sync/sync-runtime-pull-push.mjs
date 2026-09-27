@@ -159,6 +159,44 @@ async function finalizePull(pctx, result, since, opsCount, labIngress) {
   });
 }
 
+/**
+ * A pull came back with content this device cannot open, and it holds no key
+ * for the room: the room got its key after this device last looked (another
+ * member created it, e.g. on their next login). Fetch it now with the room's
+ * join code. Before, only rendering the ⇄ panel retried this, so the device
+ * silently showed nothing new until someone opened ⇄.
+ * @returns {Promise<boolean>} true when a key is now cached
+ */
+async function loadMissingRoomDek(api, roomId) {
+  try {
+    const [{ getCachedRoomDek, loadRoomDek }, { getCloudSyncRoomSnapshot }] = await Promise.all([
+      import('./room-dek.mjs'),
+      import('./settings.mjs'),
+    ]);
+    if (getCachedRoomDek(roomId)) return false; // a key that still cannot open it: nothing to retry
+    const snap = getCloudSyncRoomSnapshot();
+    const code = snap && snap.id === roomId ? snap.code : '';
+    return !!(code && (await loadRoomDek(api, roomId, code)));
+  } catch {
+    return false;
+  }
+}
+
+/** One pull; if it came back locked and the room's key was missing, fetch the key and pull again. */
+async function pullWithKeyRetry(api, roomId, since, pollMobile) {
+  const opts = pollMobile ? { mobile: true } : undefined;
+  const result = await api.pull(roomId, since, opts);
+  if (!result?.locked || !(await loadMissingRoomDek(api, roomId))) return result;
+  return api.pull(roomId, since, opts);
+}
+
+/** First pull finished: clear the flag and let the list settle on its real message. */
+function settleFreshPull() {
+  cloudPullProgress.freshInFlight = false;
+  if (typeof document === 'undefined') return;
+  void import('../patients-list.mjs').then((m) => m.settlePatientListAfterDownload()).catch(() => {});
+}
+
 /** @param {object} pctx */
 async function runPullLatest(pctx) {
   const { api, getRoomId, getRevision, pollMobile } = pctx;
@@ -177,16 +215,15 @@ async function runPullLatest(pctx) {
     cloudPullProgress.freshInFlight = true;
     if (typeof document !== 'undefined') {
       try {
-        const { renderPatientList } = await import('../patients.mjs');
-        // force: the silent path is debounced, and a fast pull ended before it painted.
-        renderPatientList({ silent: true, force: true });
+        const { showPatientListDownloadingIfEmpty } = await import('../patients-list.mjs');
+        showPatientListDownloadingIfEmpty();
       } catch {
         /* list optional during boot */
       }
     }
   }
   try {
-    const result = await api.pull(roomId, since, pollMobile ? { mobile: true } : undefined);
+    const result = await pullWithKeyRetry(api, roomId, since, pollMobile);
     const opsCount = pullOpsCount(result);
     if (result?.revision != null) {
       reconcileServerRevision(pctx, Number(result.revision), since, opsCount, !!result.locked);
@@ -194,7 +231,7 @@ async function runPullLatest(pctx) {
     const labIngress = pollMobile ? await recordLabPullIngress(result) : null;
     await finalizePull(pctx, result, since, opsCount, labIngress);
   } finally {
-    if (freshJoin) cloudPullProgress.freshInFlight = false;
+    if (freshJoin) settleFreshPull();
   }
 }
 
@@ -278,7 +315,10 @@ async function pushWithStaleRetry(ctx, roomId, item, ops, onProgress, removeAcke
       if (!pushResult) return;
       noteCloudOpsAttempted(sanitized.ops);
       recordRejectedCloudOps(pushResult);
-      if (pushResult.revision != null) applyServerRevision(Number(pushResult.revision));
+      // needPull: other devices wrote since our base revision. Jumping to the
+      // post-push revision first made the pull below start past their ops —
+      // they never arrived (e.g. a teammate's new patients) until a full resync.
+      if (pushResult.revision != null && !pushResult.needPull) applyServerRevision(Number(pushResult.revision));
       noteCloudLabSidecarOpsSent(chunk, sanitized.ops);
       noteCloudMedRecetaOpsSent(sanitized.ops);
       lastResult = pushResult;
@@ -331,7 +371,7 @@ async function flushOutboxRows(ctx, roomId, rows, onProgress) {
     // different (path, updatedAt) and are not touched, so they survive.
     for (const row of rows) outbox.removeOps(row.clientMutationId, rowOps(row));
     pace.markLocalWrite();
-    if (result?.revision != null) applyServerRevision(Number(result.revision));
+    if (result?.revision != null && !result.needPull) applyServerRevision(Number(result.revision));
     noteCloudSyncPush();
     recordCloudSyncTrace('push', {
       clientMutationId: item.clientMutationId,

@@ -72,6 +72,7 @@ export async function enableClinicalLanFromSettings() {
   if (shouldShowNubePanel(settingsSala())) {
     const okNube = await showConfirmDialog({
       id: 'clinical-sync-mode-nube-confirm',
+      stacked: true, // opened from Ajustes — must sit above it
       title: 'Activar sincronización del turno',
       question:
         'Tu sala usa Nube (⇄ Conexión), no LAN. ' +
@@ -88,6 +89,7 @@ export async function enableClinicalLanFromSettings() {
 
   const ok = await showConfirmDialog({
     id: 'clinical-sync-mode-lan-confirm',
+    stacked: true,
     title: 'Activar guardia en red (LAN)',
     question:
       'Configurarás usuario @usuario, sala y podrás usar Mi rotación y ⇄ LiveSync. ' +

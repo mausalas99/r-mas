@@ -1,0 +1,34 @@
+{
+  "patient": {
+    "name": "DEMO PÉREZ JUAN",
+    "expediente": "9000095-7",
+    "sexo": "M",
+    "edad": "67 años",
+    "fecha": "19/08/2026",
+    "hora": "16:15",
+    "ubicacion": "SERVICIO DEMO"
+  },
+  "resLabs": [
+    "QS\tGlu 118* Cr 1.9*",
+    "ESC\tK 3.8"
+  ],
+  "bhExtras": {},
+  "refsBySection": {
+    "QS": {
+      "Glu": [
+        60,
+        100
+      ],
+      "Cr": [
+        0.6,
+        1.4
+      ]
+    },
+    "ESC": {
+      "K": [
+        3.6,
+        5
+      ]
+    }
+  }
+}

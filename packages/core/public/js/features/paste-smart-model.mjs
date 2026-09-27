@@ -405,13 +405,25 @@ function emptyPlan(kind, message) {
   };
 }
 
+/**
+ * Name matching is only a fallback for census patients with no registro yet:
+ * the lab workbench refuses to file expediente X under a patient whose
+ * registro is Y, so offering that patient would be a dead-end confirm.
+ */
+function patientsWithoutRegistro(patients) {
+  return (patients || []).filter(function (p) {
+    return p && !String(p.registro || '').trim();
+  });
+}
+
 function resolveBlocksWithNombre(blocks, patients) {
   var ambiguousCandidates = [];
   var pendingConfirm = null;
+  var nameMatchPool = patientsWithoutRegistro(patients);
   var nextBlocks = (blocks || []).map(function (block) {
     if (!block || block.canProcess || !(block.okReportCount > 0)) return block;
     if (block.status !== 'no-patient') return block;
-    var enrich = enrichBlockWithNombreMatches(block, patients);
+    var enrich = enrichBlockWithNombreMatches(block, nameMatchPool);
     if (enrich.ambiguous) {
       pushUniquePatients(ambiguousCandidates, enrich.candidates);
       return block;

@@ -1,8 +1,11 @@
 import {
   isCloudBackoffError,
+  isCloudUnreachableError,
   nextCloudPollDelayMs,
   cloudDrainPacer,
+  jitterMs,
   CLOUD_POLL_ERROR_OVERLOAD_MAX_MS,
+  CLOUD_REACHABILITY_PROBE_MS,
 } from './cloud-sync-timing.mjs';
 
 /**
@@ -14,6 +17,8 @@ import {
  *   getTransportState?: () => 'ws' | 'poll' | 'offline',
  *   pollMobile?: boolean,
  *   drainPacer?: typeof cloudDrainPacer,
+ *   probe?: () => Promise<unknown>,  cheap reachability check (GET /ping); resolves when the Worker answers
+ *   onRecovered?: () => void,  first successful cycle after the Worker was unreachable
  * }} deps
  */
 export function createCloudPollScheduler(deps) {
@@ -23,7 +28,40 @@ export function createCloudPollScheduler(deps) {
   let errorStreak = 0;
   /** @type {number | undefined} */
   let maxErrorMs;
+  /** @type {ReturnType<typeof setTimeout> | null} */
+  let probeId = null;
+  /** When the Worker last came back after being unreachable (0 = not recently). */
+  let recoveredAt = 0;
+  let unreachableStreak = false;
   const drainPacer = deps.drainPacer ?? cloudDrainPacer;
+
+  function stopProbe() {
+    if (probeId != null) {
+      clearTimeout(probeId);
+      probeId = null;
+    }
+  }
+
+  /** Unreachable: ping every ~10 s; the first answer runs the sync cycle now. */
+  function startProbe() {
+    if (stopped || probeId != null || typeof deps.probe !== 'function') return;
+    probeId = setTimeout(function () {
+      probeId = null;
+      if (stopped || errorStreak === 0) return;
+      Promise.resolve()
+        .then(deps.probe)
+        .then(
+          function () {
+            if (stopped || errorStreak === 0) return;
+            clearTimer();
+            void deps.syncCycle();
+          },
+          function () {
+            startProbe();
+          }
+        );
+    }, jitterMs(CLOUD_REACHABILITY_PROBE_MS));
+  }
 
   function clearTimer() {
     if (timerId != null) {
@@ -47,7 +85,9 @@ export function createCloudPollScheduler(deps) {
       pending: deps.pendingCount() > 0,
       errored,
       errorStreak,
-      lastLocalWriteAt: deps.getLastLocalWriteAt(),
+      // Right after an outage, peers are flushing what they queued offline: poll
+      // at the active rate for a while, as if this device had just written.
+      lastLocalWriteAt: Math.max(deps.getLastLocalWriteAt(), recoveredAt),
       mobile: deps.pollMobile,
       transport: deps.getTransportState?.() ?? 'poll',
       maxErrorMs,
@@ -56,6 +96,11 @@ export function createCloudPollScheduler(deps) {
   }
 
   function noteSuccess() {
+    stopProbe();
+    const recovered = unreachableStreak;
+    if (recovered) recoveredAt = Date.now();
+    unreachableStreak = false;
+    if (recovered) deps.onRecovered?.();
     errorStreak = 0;
     maxErrorMs = undefined;
     armNextTimer(false);
@@ -78,12 +123,16 @@ export function createCloudPollScheduler(deps) {
     } else {
       maxErrorMs = undefined;
     }
+    const unreachable = isCloudUnreachableError(err);
+    unreachableStreak = unreachableStreak || unreachable;
     armNextTimer(true);
+    if (unreachable) startProbe();
   }
 
   function stop() {
     stopped = true;
     clearTimer();
+    stopProbe();
   }
 
   return {

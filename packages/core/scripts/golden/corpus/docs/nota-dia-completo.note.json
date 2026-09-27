@@ -1,0 +1,28 @@
+{
+  "patient": {
+    "nombre": "DEMO GOLDEN NOTA",
+    "registro": "7000990-1",
+    "edad": "64",
+    "sexo": "F",
+    "area": "HOSPITALIZACION",
+    "servicio": "MEDICINA INTERNA",
+    "cuarto": "512",
+    "cama": "02"
+  },
+  "note": {
+    "fecha": "2026-09-21",
+    "hora": "08:30",
+    "interrogatorio": "PACIENTE FEMENINA DEMO DE 64 AÑOS CON DM2 E HAS, HOSPITALIZADA POR NEUMONIA ADQUIRIDA EN LA COMUNIDAD. EVOLUCIONA AFEBRIL.",
+    "evolucion": "N: ALERTA, ORIENTADA || SIN FOCALIZACION\nV: FR 18 RPM, SATO2 95% AL AIRE AMBIENTE\nHD: TA 128/76 MMHG, FC 80 LPM\nHI: AFEBRIL || CEFTRIAXONA 1 G IV CADA 24 HORAS (DIA 3)\nNM: DIETA DIABETICA || GLUCOMETRIAS 142, 160, 131 MG/DL",
+    "estudios": "21.09.26\nHb 12.1 Hto 36.4 Leu 9.2 Plt 231\nGlu 138 Cr 0.9 BUN 14\nNa 138 K 4.1 Cl 102",
+    "diagnosticos": ["NEUMONIA ADQUIRIDA EN LA COMUNIDAD", "DIABETES MELLITUS TIPO 2", "HIPERTENSION ARTERIAL SISTEMICA"],
+    "tratamiento": ["CEFTRIAXONA 1 G IV CADA 24 H", "INSULINA GLARGINA 14 UI SC CADA 24 H", "LOSARTAN 50 MG VO CADA 12 H"],
+    "ta": "128/76",
+    "fr": "18",
+    "fc": "80",
+    "temp": "36.6",
+    "peso": "71",
+    "medico": "DRA. DEMO RESIDENTE",
+    "profesor": "DR. DEMO PROFESOR"
+  }
+}
