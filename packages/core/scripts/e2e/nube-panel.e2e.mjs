@@ -6,7 +6,7 @@
  *
  * Layout: design board «Nube + Admin» — A (todo al día): a status hero with
  * one main button and the Internet → Sesión → Sala → En vivo chain, then
- * «Tu sala», your account, and two rows (Equipo y administración, Detalles
+ * your account, «Tu sala», and two rows (Equipo y administración, Detalles
  * técnicos).
  *
  * Ways it can go wrong (each one is a check below):
@@ -68,11 +68,16 @@ const readHome = (page) => page.evaluate((sel) => {
     account: home?.querySelector('.cloud-sync-status-identity')?.innerText || '',
     tech: home?.querySelector('[data-cloud-tech-summary]')?.textContent.trim() || '',
     sideScroll: modal ? modal.scrollWidth - modal.clientWidth : -1,
-    // The hero's head must end above «Tu sala» (a fixed-height head let it spill over).
+    // The hero's head must end above the first card (a fixed-height head let it spill over).
     heroOverlap: (() => {
       const head = q('.cloud-sync-conexion-head')?.getBoundingClientRect();
+      const first = home?.querySelector('.cloud-sync-status-identity')?.getBoundingClientRect();
+      return head && first ? Math.round(head.bottom - first.top) : null;
+    })(),
+    accountAboveRoom: (() => {
+      const acc = home?.querySelector('.cloud-sync-status-identity')?.getBoundingClientRect();
       const room = home?.querySelector('.cloud-sync-room')?.getBoundingClientRect();
-      return head && room ? Math.round(head.bottom - room.top) : null;
+      return acc && room ? acc.bottom <= room.top : null;
     })(),
   };
 }, HOME);
@@ -134,9 +139,10 @@ await r.finish('Nube panel: status home (board A)', async () => {
   check('«Tu sala» names the room and shows the code', /Sala 1/.test(h.room) && /^[A-Z0-9]{4,}$/.test(h.code), { room: h.room, code: h.code });
   check('account card shows @usuario and Cerrar sesión',
     h.account.includes('@' + R4.username) && /Cerrar sesión/.test(h.account), h.account);
+  check('your account sits above «Tu sala»', h.accountAboveRoom === true, h.accountAboveRoom);
   check('«Detalles técnicos» shows cola / rev. / pacientes', /^Cola \d+ · Rev\. \d+ · \d+ pacientes locales$/.test(h.tech), h.tech);
   check('panel does not scroll sideways', h.sideScroll <= 0, h.sideScroll);
-  check('hero ends above «Tu sala» (no overlap)', h.heroOverlap !== null && h.heroOverlap <= 0, h.heroOverlap);
+  check('hero ends above the first card (no overlap)', h.heroOverlap !== null && h.heroOverlap <= 0, h.heroOverlap);
 
   await A.page.locator('#connection-dropdown [data-cloud-action="sync-now"]').click();
   const settled = await until(async () => (await readHome(A.page)).heroTitle === 'Todo al día', 15000);
