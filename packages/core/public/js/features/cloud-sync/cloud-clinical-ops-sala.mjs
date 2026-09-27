@@ -10,8 +10,6 @@ import { isCloudSala, normalizeCloudSala } from './sala-allowlist.mjs';
 import {
   getCloudSyncToken,
   getCloudSyncUrl,
-  advanceCloudSyncRevision,
-  getCloudSyncRoomId,
   getCloudSyncRoomSnapshot,
 } from './settings.mjs';
 import { isCloudSyncActive } from './nube-sync-policy.mjs';
@@ -176,12 +174,9 @@ export async function pushClinicalOpsForSala(sala) {
       },
     ],
     () => getSalaRoomCache(normalized).revision,
-    (revision) => {
-      advanceSalaRoomRevision(normalized, revision);
-      if (getCloudSyncRoomId() === String(room.id)) {
-        advanceCloudSyncRevision(revision);
-      }
-    }
+    // Sala cursor only: the main sync cursor moves on its own pull, which also
+    // brings the entry ops committed before ours (moving it here skipped them).
+    (revision) => advanceSalaRoomRevision(normalized, revision)
   );
 
   return { ok: true, sala: normalized, roomId: String(room.id), ...pushed };
@@ -237,14 +232,6 @@ export async function repushClinicalOpsIfRoomLacksLocal(sala, roomClinicalOps) {
   return !!res?.ok;
 }
 
-/** @param {string} normalized @param {{ id: string }} room @param {number} revision */
-function advanceRevisionFromPull(normalized, room, revision) {
-  const next = Number(revision) || 0;
-  advanceSalaRoomRevision(normalized, next);
-  if (getCloudSyncRoomId() === String(room.id)) {
-    advanceCloudSyncRevision(next);
-  }
-}
 
 /** @param {unknown[]} ops */
 function foldClinicalOpsFromOps(ops) {
@@ -297,7 +284,9 @@ export async function pullClinicalOpsForSala(sala, opts = {}) {
   const since = opts.since != null ? Number(opts.since) || 0 : cached.revision;
   const pull = await createApi().pull(String(room.id), since);
   if (pull?.revision != null) {
-    advanceRevisionFromPull(normalized, room, pull.revision);
+    // Sala cursor only: this pull applies clinicalOps alone, so the main cursor
+    // must stay behind for the entry ops in the same range.
+    advanceSalaRoomRevision(normalized, Number(pull.revision) || 0);
   }
 
   const { ops, clinicalOps } = resolveClinicalOpsFromPull(pull);
