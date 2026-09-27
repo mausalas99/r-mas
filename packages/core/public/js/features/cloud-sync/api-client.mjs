@@ -143,7 +143,7 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
     adminRooms: () => req('/admin/rooms'),
     adminNetworkCensus: () => req('/admin/network-census'),
     adminRoom: (roomId) => req(`/admin/rooms/${roomId}`),
-    adminRotateCode: (roomId) => req(`/admin/rooms/${roomId}/rotate-code`, { method: 'POST', body: {} }),
+    adminRotateCode: (roomId, body = {}) => req(`/admin/rooms/${roomId}/rotate-code`, { method: 'POST', body }),
     adminPurgeRoom: (roomId) => req(`/admin/rooms/${roomId}/purge`, { method: 'POST', body: {} }),
     adminMutations: (roomId, limit = 50) =>
       req(`/admin/rooms/${roomId}/mutations?limit=${encodeURIComponent(String(limit))}`),

@@ -1,6 +1,6 @@
 import { copyToClipboardSafe } from '../soap-estado.mjs';
 import { confirmAction, fmtRole } from './panel-admin-helpers.mjs';
-import { rewrapRoomDekForNewCode, getCachedRoomDek } from './room-dek.mjs';
+import { rewrapRoomDekForNewCode, getCachedRoomDek, planRoomCodeChange, rotateRoomCodeAtomically } from './room-dek.mjs';
 import { getCloudSyncRoomId, getCloudSyncRoomSnapshot, setCloudSyncRoomSnapshot } from './settings.mjs';
 import { joinRoomByCode } from './panel-conexion-handlers.mjs';
 import { resolveCloudActorId } from './mutate-bridge.mjs';
@@ -510,8 +510,45 @@ const ROTATE_REFUSED = {
   'locked-elsewhere': 'Este equipo no tiene la llave de cifrado de esta sala. Cambia el código desde un equipo que la tenga.',
 };
 
-/** @param {object} deps @param {string} roomId */
+/** The plan for this sala, or null after telling the admin why not. @param {object} deps @param {string} roomId */
+async function planOrExplain(deps, roomId) {
+  try {
+    const plan = await planRoomCodeChange(deps.getApi(), roomId);
+    if (plan.kind !== 'refused') return plan;
+    deps.toast('No se pudo abrir la llave de cifrado de esta sala con su código actual. No se cambió nada.', 'error');
+  } catch (err) {
+    deps.toast(err?.data?.message || err?.message || 'No se pudo revisar la sala.', 'error');
+  }
+  return null;
+}
+
+/**
+ * Admin «Cambiar código»: the new code and the sala's key locked under it are
+ * saved together by the Worker (planRoomCodeChange / rotateRoomCodeAtomically).
+ * @param {object} deps @param {string} roomId
+ */
 async function handleRotateCode(deps, roomId) {
+  const plan = await planOrExplain(deps, roomId);
+  if (!plan) return;
+  if (plan.kind === 'legacy') return handleRotateCodeLegacy(deps, roomId);
+  if (!(await confirmAction('¿Rotar el código de esta sala? Quienes tengan el código anterior no podrán unirse.'))) return;
+  try {
+    const { code } = await rotateRoomCodeAtomically(deps.getApi(), roomId, plan);
+    showRotatedCodeHere(roomId, code);
+    deps.toast('Nuevo código: ' + code, 'success');
+  } catch (err) {
+    deps.toast((err?.data?.message || err?.message || 'No se pudo cambiar el código.') + ' No se cambió nada.', 'error');
+  }
+  void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps));
+}
+
+/**
+ * Same action against a Worker without the atomic change: rotate, then
+ * re-lock as a member. Only from a device that holds the key or when the
+ * sala has none.
+ * @param {object} deps @param {string} roomId
+ */
+async function handleRotateCodeLegacy(deps, roomId) {
   // The new code must re-lock the sala's key; only a device holding it can.
   const lock = await roomKeyState(deps, roomId);
   if (lock === 'unknown' || lock === 'locked-elsewhere') {

@@ -251,6 +251,79 @@ export async function rewrapRoomDekForNewCode(api, roomId, newRoomCode) {
   }
 }
 
+/** Same alphabet as the Worker (rooms.js): no 0/O, 1/I/L. */
+const ROOM_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+function randomRoomCode() {
+  const bytes = crypto.getRandomValues(new Uint8Array(6));
+  let code = '';
+  for (const b of bytes) code += ROOM_CODE_ALPHABET[b % ROOM_CODE_ALPHABET.length];
+  return code;
+}
+
+/** Unwrap without caching: an admin device must not keep other salas' keys. */
+async function unwrapOnce(wrapped, roomCode) {
+  if (!wrapped || !roomCode) return null;
+  try {
+    const wrapKey = await deriveWrapKey(roomCode, wrapped.salt);
+    return await unwrapDek({ ct: wrapped.ct, iv: wrapped.iv }, wrapKey);
+  } catch {
+    return null;
+  }
+}
+
+/** @param {CryptoKey} dek @param {string} roomCode */
+async function lockDekForCode(dek, roomCode) {
+  const salt = generateWrapSalt();
+  const wrapped = await wrapDek(dek, await deriveWrapKey(roomCode, salt));
+  return { ct: wrapped.ct, iv: wrapped.iv, salt };
+}
+
+/**
+ * What admin «Cambiar código» needs for this sala, read from the admin sala
+ * detail (no membership needed):
+ *   none    — no key: just a new code
+ *   key     — has a key and this device can open it (cache, or its current code)
+ *   refused — has a key nobody here can open: change nothing
+ *   legacy  — a Worker without the atomic change (detail has no `dek` field)
+ * @param {ReturnType<import('./api-client.mjs').createCloudSyncApi>} api @param {string} roomId
+ */
+export async function planRoomCodeChange(api, roomId) {
+  const room = (await api.adminRoom(roomId))?.room || {};
+  if (!('dek' in room)) return { kind: 'legacy' };
+  if (!room.dek) return { kind: 'none' };
+  const dek = getCachedRoomDek(roomId) || (await unwrapOnce(room.dek, room.code));
+  return dek ? { kind: 'key', dek } : { kind: 'refused' };
+}
+
+/**
+ * New code and the key locked under it go up in one request; the Worker
+ * saves both or neither. A code clash or a key re-locked meanwhile comes
+ * back as a conflict and is retried with a fresh code.
+ * @param {ReturnType<import('./api-client.mjs').createCloudSyncApi>} api @param {string} roomId
+ * @param {{ kind: 'none' } | { kind: 'key', dek: CryptoKey }} plan
+ * @returns {Promise<{ code: string, relocked: boolean }>}
+ */
+export async function rotateRoomCodeAtomically(api, roomId, plan) {
+  if (plan.kind === 'none') {
+    const data = await api.adminRotateCode(roomId, {});
+    return { code: data.code, relocked: false };
+  }
+  for (let attempt = 0; ; attempt += 1) {
+    const code = randomRoomCode();
+    try {
+      const data = await api.adminRotateCode(roomId, { code, dek: await lockDekForCode(plan.dek, code) });
+      await auditDekEvent(DEK_EVENTS.WRAP_PUT, { roomId, reason: 'code-rotated' });
+      return { code: data.code, relocked: true };
+    } catch (err) {
+      if (err?.data?.error !== 'conflict' || attempt >= 2) {
+        await auditDekEvent(DEK_EVENTS.WRAP_FAILED, { roomId, phase: 'rotate', message: String(err?.message || err) });
+        throw err;
+      }
+    }
+  }
+}
+
 /**
  * Raw (unwrapped) DEKs for every cached room, base64, keyed by roomId — for
  * writing to the durable Recuérdame store only. Never sent to the server.
