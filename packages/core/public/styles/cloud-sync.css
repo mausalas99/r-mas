@@ -2607,6 +2607,21 @@
   color: var(--color-accent);
 }
 
+.cloud-sync-room-copy.cloud-sync-btn--ghost:disabled {
+  color: var(--text-muted);
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* No code on this device yet: say where it comes from. */
+.cloud-sync-room-code-missing {
+  display: block;
+  margin-top: 2px;
+  font-size: calc(12px * var(--density-font));
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
 .cloud-sync-account-row {
   align-items: center;
   gap: calc(12px * var(--density-space));

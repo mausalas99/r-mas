@@ -78,7 +78,7 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
 
     noteServerDate(res.headers.get('Date'));
     const data = await res.json().catch(() => ({}));
-    if (token) noteNubeAuthResponse(res.status, data);
+    if (token) noteNubeAuthResponse(res.status, data, token);
     if (!res.ok) throw httpErrorFromResponse(res, data);
     return data;
   }

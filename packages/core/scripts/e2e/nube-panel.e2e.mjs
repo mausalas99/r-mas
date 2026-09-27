@@ -221,6 +221,17 @@ await r.finish('Nube panel: status home (board A)', async () => {
   h = await readHome(A.page);
   await r.shot(A.page, 'home-dark');
   check('dark theme: hero still shown', h.heroVisible);
+  await A.page.evaluate(() => document.documentElement.classList.remove('dark'));
+
+  // ── «Cerrar sesión» on purpose: no «expiró» banner, no stuck «Descargando» ─
+  await A.page.locator('[data-cloud-action="logout"]').locator('visible=true').first().click();
+  await A.page.locator('[data-cloud-tab="login"]').waitFor({ state: 'visible', timeout: 10000 });
+  await A.page.waitForTimeout(4000); // let requests sent with the old token come back
+  const banner = await A.page.locator('#nube-session-banner').isVisible().catch(() => false);
+  const listText = await A.page.locator('#patient-list').innerText().catch(() => '');
+  await r.shot(A.page, 'signed-out');
+  check('after «Cerrar sesión» there is no «Tu sesión de Nube expiró» banner', !banner);
+  check('after «Cerrar sesión» the patient list is not stuck on «Descargando pacientes…»', !/Descargando pacientes/.test(listText), listText);
 
   check('no uncaught page errors', !A.pageErrors.length, A.pageErrors.slice(0, 5));
   await A.app.close();

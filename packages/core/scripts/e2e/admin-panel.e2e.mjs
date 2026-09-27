@@ -20,7 +20,7 @@
  *   - an uncaught page error
  */
 import { createRun, dismissLearnHub, closeToasts, pasteAndSave } from './harness.mjs';
-import { startWorker, nubeDevices, onboardNube, until, openNubePanel } from './nube-worker.mjs';
+import { startWorker, nubeDevices, onboardNube, until, openNubePanel, roomMeta } from './nube-worker.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 
 const tag = Date.now().toString(36).slice(-6);
@@ -95,6 +95,22 @@ await r.finish('Administración: side menu and its five sections (board «Nube +
   check('Salas: ··· menu offers Cambiar código, Copiar invitación, Purgar sala…',
     /Cambiar código/.test(menu) && /Copiar invitación/.test(menu) && /Purgar sala/.test(menu), menu);
   await salas.locator('.cloud-sync-admin-more-btn').first().click();
+
+  // ── Salas › Cambiar código on the sala this device is in ─────────────
+  const before = await roomMeta(A.page);
+  const myCard = salas.locator('[data-admin-sala-card]', { has: A.page.locator(`[data-admin-action="rotate-code"][data-room-id="${before.id}"]`) });
+  await myCard.locator('.cloud-sync-admin-more-btn').click();
+  await myCard.locator('[data-admin-action="rotate-code"]').click();
+  await A.page.locator('#cloud-sync-admin-confirm [data-approval-confirm]').click();
+  const rotated = A.page.locator('.toast', { hasText: /Nuevo código/ }).last();
+  await until(() => rotated.isVisible(), 10000);
+  const newCode = ((await rotated.innerText().catch(() => '')).match(/Nuevo código: (\S+)/) || [])[1] || '';
+  const after = await roomMeta(A.page);
+  const cardCode = await A.page.locator('#connection-dropdown [data-cloud-room-code]').first().textContent().catch(() => '');
+  check('Cambiar código: a new code, different from the old one', !!newCode && newCode !== before.code, { before: before.code, newCode });
+  check('Cambiar código: this device stores the new code', after?.code === newCode, { stored: after?.code, newCode });
+  check('Cambiar código: «Tu sala» shows the new code without reopening', cardCode.trim() === newCode, { cardCode, newCode });
+  await closeToasts(A.page);
 
   // ── Pacientes: search, and the action bar only with a selection ─────
   await A.page.locator(`${ADMIN} [role="tab"][data-admin-tab="red"]`).click();

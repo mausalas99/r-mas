@@ -1,6 +1,7 @@
 import { copyToClipboardSafe } from '../soap-estado.mjs';
 import { confirmAction, fmtRole } from './panel-admin-helpers.mjs';
 import { rewrapRoomDekForNewCode } from './room-dek.mjs';
+import { getCloudSyncRoomId, getCloudSyncRoomSnapshot, setCloudSyncRoomSnapshot } from './settings.mjs';
 import { joinRoomByCode } from './panel-conexion-handlers.mjs';
 import { resolveCloudActorId } from './mutate-bridge.mjs';
 import { buildCloudTombstoneOp } from './outbox-tombstones.mjs';
@@ -477,12 +478,24 @@ function handlePurgeRoomSelected(deps) {
   void handlePurgeRoom(deps, roomId, (room && room.code) || roomId);
 }
 
+/** The admin's own device is in that sala: «Tu sala» shows the new code now. */
+function showRotatedCodeHere(roomId, code) {
+  if (String(getCloudSyncRoomId() || '') !== String(roomId)) return;
+  const snap = getCloudSyncRoomSnapshot();
+  if (snap) setCloudSyncRoomSnapshot({ ...snap, code });
+  if (typeof document === 'undefined') return;
+  document.querySelectorAll('[data-cloud-room-code]').forEach((el) => {
+    el.textContent = code;
+  });
+}
+
 /** @param {object} deps @param {string} roomId */
 async function handleRotateCode(deps, roomId) {
   if (!(await confirmAction('¿Rotar el código de esta sala? Quienes tengan el código anterior no podrán unirse.'))) return;
   try {
     const data = await deps.getApi().adminRotateCode(roomId);
     if (data.code) await rewrapRoomDekForNewCode(deps.getApi(), roomId, data.code);
+    if (data.code) showRotatedCodeHere(roomId, data.code);
     deps.toast('Nuevo código: ' + (data.code || '—'), 'success');
     void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps));
   } catch (err) {
