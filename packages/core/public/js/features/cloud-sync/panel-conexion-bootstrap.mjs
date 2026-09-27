@@ -283,7 +283,10 @@ export function mountAdminShell(section, deps, toast, extra = {}) {
   async function ensureAdminOpen() {
     const host = section.querySelector('[data-cloud-admin-host]');
     if (!host) return;
-    if (!adminMount) {
+    // renderConnected (e.g. after the Red tab's «Abrir expediente» joins a room)
+    // rebuilds the ⇄ panel with a fresh, empty host: a panel mounted in the old
+    // DOM would only refresh itself off-screen and Administración stayed blank.
+    if (!adminMount || !host.contains(adminMount.root)) {
       const { mountCloudAdminPanel } = await import('./panel-admin.mjs');
       host.textContent = '';
       // Full deps (not just getApi) so the "Red" tab can switch this
