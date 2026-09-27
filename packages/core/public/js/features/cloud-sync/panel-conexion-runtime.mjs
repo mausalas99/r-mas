@@ -5,7 +5,9 @@ import { configureCloudMutateBridge, scheduleInitialCloudSeed } from './mutate-b
 import { applyCloudPullResult } from './pull-apply.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { getCloudSyncClientId } from './client-id.mjs';
-import { getCloudSyncUrl } from './settings.mjs';
+import { getCloudSyncUrl, getCloudSyncRoomSnapshot, setStoredRoomDeks } from './settings.mjs';
+import { ensureOwnerRoomKey } from './room-dek-migrate.mjs';
+import { exportCachedDeksForPersistence } from './room-dek.mjs';
 import { withTombstoneCoalesce } from './outbox-tombstones.mjs';
 
 /** @type {ReturnType<typeof createSqlcipherOutbox> | null} */
@@ -47,6 +49,21 @@ async function paintHeaderIcon() {
 /** @param {((status: string, detail?: string) => void) | null} fn */
 export function setSharedNubeStatusListener(fn) {
   statusListener = fn;
+}
+
+/**
+ * The owner's sala gets its key on any online moment, not only a sign-in.
+ * @param {object} api @param {string} roomId @param {(msg: string, kind?: string) => void} toast
+ */
+async function keyOwnerRoomIfNeeded(api, roomId, toast) {
+  const snap = getCloudSyncRoomSnapshot();
+  if (!snap || String(snap.id) !== String(roomId)) return;
+  const result = await ensureOwnerRoomKey(api, { ...snap, id: String(roomId) }, getCloudSyncClientId());
+  if (!result) return;
+  setStoredRoomDeks(await exportCachedDeksForPersistence());
+  if (result.failed > 0 || result.remaining !== 0) {
+    toast('Sala ' + (snap.sala || snap.code) + ': algunos datos aún no están protegidos. Se reintenta solo.', 'error');
+  }
 }
 
 /**
@@ -96,6 +113,9 @@ export function startSharedNubeRuntime(deps) {
       getToken: deps.getCloudSyncToken,
     },
     deferBootCycle: true,
+    onCycleOk: function () {
+      return keyOwnerRoomIfNeeded(api, deps.getCloudSyncRoomId(), toast);
+    },
   });
   configureCloudMutateBridge({
     outbox: sharedOutbox,

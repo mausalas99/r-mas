@@ -272,7 +272,7 @@ export function setCloudSyncRoomId(roomId) {
 
 /**
  * Persist display fields so Conexión can label the sala after restart (Recuérdame).
- * @param {{ id?: string, code?: string, sala?: string, turnKey?: string, name?: string, revision?: number } | null | undefined} room
+ * @param {{ id?: string, code?: string, sala?: string, turnKey?: string, name?: string, role?: string, revision?: number } | null | undefined} room
  */
 export function setCloudSyncRoomSnapshot(room) {
   if (!room || !room.id) {
@@ -290,11 +290,13 @@ export function setCloudSyncRoomSnapshot(room) {
       sala: String(room.sala || ''),
       turnKey: String(room.turnKey || ''),
       name: String(room.name || ''),
+      // Owner vs member: the owner's device is the one that creates the sala key.
+      role: String(room.role || ''),
     })
   );
 }
 
-/** @returns {{ id: string, code: string, sala: string, turnKey: string, name: string } | null} */
+/** @returns {{ id: string, code: string, sala: string, turnKey: string, name: string, role?: string } | null} */
 export function getCloudSyncRoomSnapshot() {
   const raw = readDual(ROOM_META_KEY);
   if (!raw) return null;
@@ -307,6 +309,7 @@ export function getCloudSyncRoomSnapshot() {
       sala: String(o.sala || ''),
       turnKey: String(o.turnKey || ''),
       name: String(o.name || ''),
+      ...(o.role ? { role: String(o.role) } : {}),
     };
   } catch {
     return null;
