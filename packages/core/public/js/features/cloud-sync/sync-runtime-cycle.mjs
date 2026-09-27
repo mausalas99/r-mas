@@ -4,10 +4,9 @@ import { createRoomSyncWs } from './room-sync-ws.mjs';
 import { createCloudPollScheduler } from './sync-runtime-schedule.mjs';
 import { cloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 import { isCloudTransientServerError, isCloudUnreachableError } from './cloud-sync-timing.mjs';
-import { createPullPush, isCloudRevisionStaleError } from './sync-runtime-pull-push.mjs';
+import { createPullPush, dropPullValuesOlderThanPending, isCloudRevisionStaleError } from './sync-runtime-pull-push.mjs';
 import { decryptOpsFromPull, hasLockedOpValue } from './cloud-sync-crypto-wire.mjs';
 import { getCachedRoomDek, markRoomUnprotected } from './room-dek.mjs';
-import { dropPullValuesOlderThanPending } from './pull-pending-wins.mjs';
 import {
   cloudSyncErrorCode,
   getLastCloudPushAt,

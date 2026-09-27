@@ -264,9 +264,8 @@ describe('localStorage quota error handling', () => {
   });
 
   it('logs console.warn when quota is exceeded', () => {
-    let warned = false;
     const prevWarn = console.warn;
-    console.warn = (msg) => { warned = true; };
+    console.warn = () => {};
     globalThis.localStorage.setItem = () => {
       const e = new Error('QuotaExceededError');
       e.name = 'QuotaExceededError';
