@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* global localStorage, sessionStorage */
 /**
  * E2E: the owner's sala gets its own key on any online moment — no sign-in
  * through ⇄ needed. The owner onboards (which creates the monthly sala), adds
@@ -40,7 +39,7 @@ await r.finish('Owner sala keyed on any online moment', async () => {
   const A = await launchDevice('a', 3793);
   await onboardNube(A.page, OWNER);
   await dismissLearnHub(A.page);
-  const snap = await A.page.evaluate(() => JSON.parse(localStorage.getItem('rpc-cloud-sync-room-meta') || 'null'));
+  const snap = await A.page.evaluate(() => JSON.parse(globalThis.localStorage.getItem('rpc-cloud-sync-room-meta') || 'null'));
   check('the device remembers it owns the sala', snap?.role === 'owner', snap);
 
   await A.page.waitForTimeout(1500);
@@ -51,7 +50,7 @@ await r.finish('Owner sala keyed on any online moment', async () => {
   const keyed = await until(async () => hasKey(snap.id), 60000, 1000);
   check('the sala gets a key without signing in again', keyed);
 
-  const token = await A.page.evaluate(() => localStorage.getItem('rpc-cloud-sync-token') || sessionStorage.getItem('rpc-cloud-sync-token'));
+  const token = await A.page.evaluate(() => globalThis.localStorage.getItem('rpc-cloud-sync-token') || globalThis.sessionStorage.getItem('rpc-cloud-sync-token'));
   const serverView = createCloudSyncApi({ getBaseUrl: () => BASE, getToken: () => token, getRoomDek: () => null });
   const sealed = await until(async () => {
     const data = await serverView.pull(snap.id, 0);
@@ -70,7 +69,7 @@ await r.finish('Owner sala keyed on any online moment', async () => {
 
   // Recovery for Macs hit by the 8.4.1 onboarding drop: one full re-pull per
   // keyed sala, remembered so it never repeats.
-  const repulled = async (dev) => until(async () => (await dev.page.evaluate(() => localStorage.getItem('rpc-cloud-keyed-repull-v1') || '')).includes(snap.id), 30000, 1000);
+  const repulled = async (dev) => until(async () => (await dev.page.evaluate(() => globalThis.localStorage.getItem('rpc-cloud-keyed-repull-v1') || '')).includes(snap.id), 30000, 1000);
   check('the owner’s Mac re-downloads the keyed sala once', await repulled(A));
   check('the member’s Mac re-downloads the keyed sala once', await repulled(B));
 
