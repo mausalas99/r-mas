@@ -1034,3 +1034,19 @@ test('formatMedicationSoapShort — dosis en tabletas conserva el espacio', () =
   };
   assert.match(formatMedicationSoapShort(item), /1 TABLETA VO C\/12H$/);
 });
+
+test('buildMedRecetaListHtml — Manejo-B groups: Falta destino first, Excluidos last; name/dose split', async () => {
+  var { buildMedRecetaListHtml, splitMedLabel } = await import('./features/medications-panel-rows.mjs');
+  var html = buildMedRecetaListHtml('p1', {
+    items: [
+      { id: 'a', nombreRaw: 'CEFTRIAXONA 1 G SOL INY', viaRaw: 'VIA INTRAVENOSA', dosisRaw: '1 G //', frecuenciaRaw: 'CADA 24 HORAS' },
+      { id: 'b', nombreRaw: 'FARMACO NUEVO XYZ 100 MG SOL INY', viaRaw: 'VIA INTRAVENOSA', dosisRaw: '100 MG //', frecuenciaRaw: 'CADA 24 HORAS' },
+      { id: 'c', nombreRaw: 'LOSARTAN 50 MG COMPRIMIDO', viaRaw: 'VIA ORAL', dosisRaw: '50 MG //', frecuenciaRaw: 'CADA 24 HORAS', suspendido: true },
+    ],
+  });
+  var groups = (html.match(/data-med-group="([^"]+)"/g) || []).map((m) => m.slice(16, -1));
+  assert.deepEqual(groups, ['falta', 'abx', 'excl']);
+  assert.match(html, /Restaurar/);
+  assert.deepEqual(splitMedLabel('CEFTRIAXONA 1G IV C/24H'), { name: 'Ceftriaxona', dose: '1 g IV c/24 h' });
+  assert.deepEqual(splitMedLabel('CLORURO DE POTASIO 40MEQ EN 12ML'), { name: 'Cloruro de potasio', dose: '40 mEq en 12 mL' });
+});

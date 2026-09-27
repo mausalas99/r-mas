@@ -37,7 +37,7 @@
  *
  *   npm run e2e:cultivos
  */
-import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, goArea, quietHints } from './harness.mjs';
 import { header } from './some-fixtures.mjs';
 import {
   PITCH_CULTIVO_URO_SOME,
@@ -157,12 +157,13 @@ const { check } = r;
 
 await r.finish('Cultivos table + Actualizar', async () => {
   const { app, page, pageErrors } = await r.launch();
+  await quietHints(page); // the ⌘K hint bubble sits over the page toolbar under the top bar
   await onboardLocalOnly(page);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
 
   await pasteAndSave(page, URO); // one report, new expediente: admitted straight away
   await openPatient(page, P);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   await pasteAndSave(
     page,
     [URO_GLUED, mine(PITCH_CULTIVO_ASPIRADO_1805_SOME), mine(PITCH_CULTIVO_ASPIRADO_2804_SOME),
@@ -173,7 +174,7 @@ await r.finish('Cultivos table + Actualizar', async () => {
   const container = page.locator('#cultivos-table-container');
   async function openCultivos() {
     await closeToasts(page);
-    if (!(await page.locator('#lab-inner-cult-btn').isVisible())) await page.locator('#apptab-lab').click();
+    if (!(await page.locator('#lab-inner-cult-btn').isVisible())) await goArea(page, 'lab');
     await page.locator('#lab-inner-cult-btn').click();
     await container.locator('.cultivos-table').first().waitFor({ state: 'visible' });
     await page.waitForTimeout(300);

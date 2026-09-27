@@ -116,11 +116,32 @@ export function createRun(name) {
   return { artifactDir, downloadsDir, check, shot, launch, finish };
 }
 
+/**
+ * Mark every in-app «Guía» / «Nuevo» hint as seen, so no hint bubble covers a
+ * control the scenario clicks. Call right after launch(); it survives restarts.
+ */
+export async function quietHints(page) {
+  const { activeHints } = await import('../../public/js/feature-hints.mjs');
+  const ids = activeHints().map((h) => h.id);
+  await page.evaluate((a) => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(a)), ids);
+}
+
+/**
+ * Switch the main area (Paciente, Laboratorio, Manejo, Agenda). The top bar
+ * folds the areas into one pill that shows the active one: hover it first.
+ */
+export async function goArea(page, id) {
+  const tab = page.locator(`#apptab-${id}`);
+  if (await tab.evaluate((el) => el.classList.contains('active'))) return;
+  await page.locator('#app-main-tablist').hover();
+  await tab.click();
+}
+
 /** Fresh install → "Solo este equipo" → app ready, help sheet closed. */
 export async function onboardLocalOnly(page) {
   await page.locator('[data-sync-mode="local"]').click();
   await page.locator('#clinical-onboard-local-confirm-btn').click();
-  await page.locator('#apptab-lab').waitFor({ state: 'visible' });
+  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
   await dismissLearnHub(page);
 }
 
@@ -155,7 +176,7 @@ export async function pasteAndProcess(page, text) {
   // active by a prior labsCard()-style read) — switch tabs first.
   const labTab = page.locator('#apptab-lab');
   if ((await labTab.count()) && !(await page.locator('#btn-lab-paste').isVisible().catch(() => false))) {
-    await labTab.click();
+    await goArea(page, 'lab');
   }
   if (!(await page.locator('#lab-input').isVisible())) {
     await page.locator('#btn-lab-paste').click();

@@ -239,7 +239,8 @@ function uncovered(el, r) {
   const x = Math.min(Math.max(r.left + r.width / 2, 0), innerWidth - 1);
   const y = Math.min(Math.max(r.top + Math.min(r.height / 2, 20), 0), innerHeight - 1);
   const hit = document.elementFromPoint(x, y);
-  return !!hit && (el.contains(hit) || layer.contains(hit));
+  // A toast goes away by itself: it does not hide the target.
+  return !!hit && (el.contains(hit) || layer.contains(hit) || !!hit.closest('.toast-stack'));
 }
 
 /** First match that is on screen and not covered. scroll=true brings a step target into view. */
@@ -247,6 +248,11 @@ function findVisible(sel, scroll) {
   for (const el of document.querySelectorAll(sel)) {
     if (layer.contains(el)) continue;
     let r = el.getBoundingClientRect();
+    // An area tab folded into the top-bar pill: judge the pill, which opens while a tab in it is the target.
+    if (r.width < 4 && el.matches('.topbar-nav .app-tab')) {
+      const pill = el.parentElement.getBoundingClientRect();
+      if (onScreen(pill) && uncovered(el.parentElement, pill)) return el;
+    }
     // Hidden by an inner scroll box (or a sticky bar) counts too, not only the window edge.
     if (scroll && r.width && !(onScreen(r) && uncovered(el, r))) {
       el.scrollIntoView({ block: 'center' });

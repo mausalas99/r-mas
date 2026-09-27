@@ -70,6 +70,7 @@ import {
   visiblePatientCount,
   pasteAndSave as harnessPasteAndSave,
   openPatient as harnessOpenPatient,
+  goArea,
 } from './harness.mjs';
 import { TABLE, header, fullLabs, gas } from './some-fixtures.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../../public/js/lab-bulk-paste.mjs';
@@ -139,13 +140,13 @@ const flat = (s) => String(s || '').replace(/\s+/g, ' ').trim();
 await r.finish('SOME paste rules', async () => {
   const { app, page, pageErrors } = await r.launch();
   await onboardLocalOnly(page);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
 
   const pasteAndSave = (text) => harnessPasteAndSave(page, text);
 
   async function openPatient(p) {
     await harnessOpenPatient(page, p);
-    if (!(await page.locator('#lab-history-date-select').isVisible())) await page.locator('#apptab-lab').click();
+    if (!(await page.locator('#lab-history-date-select').isVisible())) await goArea(page, 'lab');
     await page.locator('#lab-history-date-select').waitFor({ state: 'visible' });
   }
 

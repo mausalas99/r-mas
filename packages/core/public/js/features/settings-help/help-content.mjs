@@ -12,7 +12,7 @@ var HELP_ARTICLES = [
     title: 'Modo Guardia',
     keywords: 'guardia modo chip tablero turno censo alcance rango solo entregados toggle nube',
     html:
-      '<p><strong>Modo Guardia</strong> es una vista de trabajo centrada en el turno: censo, entrega y monitoreo. Se abre desde el botón <strong>Guardia</strong> en la barra superior.</p>' +
+      '<p><strong>Modo Guardia</strong> es una vista de trabajo centrada en el turno: censo, entrega y monitoreo. Se abre desde el botón <strong>Guardia</strong>, junto a Sala e IC, al lado de <strong>Mi rotación</strong>.</p>' +
       '<ul>' +
       '<li><strong>Chip Guardia</strong> — entra y sale sin bloquear Laboratorio ni Paciente.</li>' +
       '<li><strong>Franja Nube · sala · equipo</strong> — confirma conexión Nube, sala del turno y equipo activo antes de confiar en el censo compartido.</li>' +
@@ -228,7 +228,7 @@ var HELP_ARTICLES = [
     title: 'Atajos de teclado',
     keywords: 'atajos shortcuts teclado ctrl cmd escape tab flechas censo paciente',
     html:
-      '<p>Ahorra tiempo con estos atajos:</p>' +
+      '<p>Ahorra tiempo con estos atajos. Esta lista también se abre desde <strong>Ayuda (?)</strong> en la barra superior.</p>' +
       '<ul>' +
       '<li><strong>Ctrl/⌘ + ↩</strong> — Volver a Resumen (desde cualquier sitio, incluso con un campo o modal abierto)</li>' +
       '<li><strong>Ctrl/⌘ + 1</strong> — Paciente · <strong>2</strong> — Laboratorio · <strong>3</strong> — Manejo · <strong>4</strong> — Agenda. <strong>Repite el mismo número</strong> para ciclar subvistas: <strong>1</strong> Resumen→Clínico→Salida · <strong>2</strong> Labs→Tendencias→Cultivos · <strong>3</strong> Manejo↔Perfil · <strong>4</strong> semana actual</li>' +

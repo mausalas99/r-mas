@@ -27,7 +27,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, visiblePatientCount } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, visiblePatientCount, goArea } from './harness.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 
 const A = { exp: '7000011-1', name: 'DEMO DIALOGO UNO', room: '311' };
@@ -56,9 +56,9 @@ await r.finish('prompt() callers use the in-app dialog', async () => {
     }, patch);
   await saveSettings({ extraTemplates: [TEMPLATE] });
   await page.reload();
-  await page.locator('#apptab-lab').waitFor({ state: 'visible' });
+  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
 
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   await pasteAndSave(page, fullLabs(A, 'Jan 12 2026 8:00AM'));
   await pasteAndSave(page, fullLabs(B, 'Jan 12 2026 9:00AM'));
 
@@ -83,7 +83,7 @@ await r.finish('prompt() callers use the in-app dialog', async () => {
   }
   async function selectInList(p) {
     await closeToasts(page);
-    await page.locator('#apptab-nota').click();
+    await goArea(page, 'nota');
     await openPatient(page, p);
     await closeToasts(page);
   }
@@ -209,8 +209,8 @@ await r.finish('prompt() callers use the in-app dialog', async () => {
   // ── 6. Indicaciones template merge ───────────────────────────────────────
   await saveSettings({ appMode: 'interconsulta' });
   await page.reload();
-  await page.locator('#apptab-nota').waitFor({ state: 'visible' });
-  await page.locator('#apptab-nota').click();
+  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
+  await goArea(page, 'nota');
   // No active patient after reload: pick A from the team board.
   await page.getByText('DEMO UNO', { exact: true }).locator('visible=true').first().click();
   await page.evaluate(() => window.switchInnerTab('indica'));

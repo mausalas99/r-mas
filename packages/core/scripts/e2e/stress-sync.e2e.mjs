@@ -47,7 +47,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRun, dismissLearnHub, closeToasts, pasteAndSave, pasteAndProcess, openPatient } from './harness.mjs';
+import { createRun, dismissLearnHub, closeToasts, pasteAndSave, pasteAndProcess, openPatient, goArea } from './harness.mjs';
 import { startWorker, stopWorker, nubeDevices, onboardNube, patientVisible, until } from './nube-worker.mjs';
 import { fullLabs, header, TABLE } from './some-fixtures.mjs';
 
@@ -139,9 +139,9 @@ async function openBySearch(page, p) {
   await page.locator('#patient-search').fill('');
 }
 async function openEventualidades(page) {
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
-  await page.locator('.exp-group-section', { hasText: 'Eventualidades' }).click();
+  await page.locator('.exp-group-section[data-section="eventualidades"]').click();
   await page.locator('#eventualidades-input').waitFor({ state: 'visible', timeout: 8000 });
 }
 async function addEv(page, p, text, { dbl = false, wait = true } = {}) {
@@ -154,7 +154,7 @@ async function addEv(page, p, text, { dbl = false, wait = true } = {}) {
 }
 async function importReceta(page, p, meds, { dbl = false } = {}) {
   await openBySearch(page, p);
-  await page.locator('#apptab-med').click();
+  await goArea(page, 'med');
   await page.locator('#med-itab-receta').click();
   await page.locator('#med-import-open-btn').click();
   const lines = meds.map((m) => [`${DMY} 08:01 a.m.`, 'MEDICAMENTOS', m, 'VIA ORAL', '1 TAB //', 'CADA 24 HORAS', 'NW'].join('\t'));
@@ -166,9 +166,9 @@ async function importReceta(page, p, meds, { dbl = false } = {}) {
 }
 async function openEstadoActual(page, p) {
   await openBySearch(page, p);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
-  await page.locator('.exp-group-section', { hasText: 'Estado actual' }).click();
+  await page.locator('.exp-group-section[data-section="estadoActual"]').click();
   await page.locator('#ea-snapshot').waitFor({ state: 'visible', timeout: 8000 });
 }
 async function addManualMed(page, cat, text) {
@@ -216,7 +216,7 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
     await dv.page.locator('#btn-connection-dropdown-close').click().catch(() => {});
     await dv.page.keyboard.press('Escape');
     await dismissLearnHub(dv.page);
-    await dv.page.locator('#apptab-lab').click();
+    await goArea(dv.page, 'lab');
   }
 
   // ── Volume + odd names: 73 patients pasted on A ──────────────────────────
@@ -329,7 +329,7 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
   await importReceta(A.page, PX, ['DEMO CIERRE RECETA']);
   await A.app.close();
   A = await launchDevice('a', 3791);
-  await A.page.locator('#apptab-lab').waitFor({ timeout: 30000 });
+  await A.page.locator('#app-main-tablist').waitFor({ timeout: 30000 });
   await dismissLearnHub(A.page);
   await A.page.waitForTimeout(3000);
   dg = await digest(A.page);
@@ -378,7 +378,7 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
     await B.page.locator('#eventualidades-input').fill('DEMO EQUIPO EV DESDE B');
     step = 'open team select on C';
     // C opens the patient data pane and moves PT to the other team while B saves.
-    await C.page.locator('#apptab-nota').click();
+    await goArea(C.page, 'nota');
     await C.page.getByRole('button', { name: 'Datos', exact: true }).click();
     const sel = C.page.locator('#patient-team-assign-select');
     await sel.waitFor({ state: 'visible', timeout: 8000 });

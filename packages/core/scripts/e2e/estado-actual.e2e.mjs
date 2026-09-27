@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global document, window */
+/* global document, window, getComputedStyle */
 /**
  * E2E: Estado actual with a busy synthetic patient, driven through the real
  * Electron app with Playwright. Synthetic DEMO fixtures only.
@@ -48,6 +48,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEMO_TOUR_LAB_PASTE, DEMO_GARCIA_LAB_REPORT } from '../../public/js/tour-demo-some-lab.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../../public/js/lab-bulk-paste.mjs';
+import { quietHints, goArea } from './harness.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const runId = new Date().toISOString().replace(/[:.]/g, '-');
@@ -95,6 +96,7 @@ async function launch() {
   await page.waitForLoadState('domcontentloaded');
   const salaCards = await page.evaluate(() => { globalThis.localStorage.setItem('rplus-sala-view', 'bar'); return !!globalThis.document.body.dataset.salaView; });
   if (salaCards) await page.reload();
+  await quietHints(page);
   const pageErrors = [];
   page.on('pageerror', (err) => pageErrors.push(err.message));
   return { app, page, pageErrors };
@@ -107,11 +109,11 @@ async function closeToasts(page) {
 async function admitDemoPatient(page) {
   await page.locator('[data-sync-mode="local"]').click();
   await page.locator('#clinical-onboard-local-confirm-btn').click();
-  await page.locator('#apptab-lab').waitFor({ state: 'visible' });
+  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
   const hub = page.locator('#learn-hub-backdrop.open');
   await hub.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
   if (await hub.count()) await page.keyboard.press('Escape');
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   if (!(await page.locator('#lab-input').isVisible())) await page.locator('#btn-lab-paste').click();
   await page
     .locator('#lab-input')
@@ -142,24 +144,24 @@ async function openEstadoActual(page) {
   await icBtn.click();
   await page.locator('.toast', { hasText: 'Interconsulta' }).waitFor({ state: 'visible' });
   await closeToasts(page);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.waitForTimeout(500);
   const boardCard = page.getByText('DEMO JUAN', { exact: true }).locator('visible=true').first();
   if (await boardCard.isVisible().catch(() => false)) await boardCard.click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
-  await page.locator('.exp-group-section', { hasText: 'Estado actual' }).click();
+  await page.locator('.exp-group-section[data-section="estadoActual"]').click();
   await page.locator('#ea-snapshot').waitFor({ state: 'visible' });
 }
 
 /** Sala is the default mode after admitting a patient: no note to send to. */
 async function checkSalaActionBar(page) {
   await closeToasts(page);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.waitForTimeout(400);
   const boardCard = page.getByText('DEMO JUAN', { exact: true }).locator('visible=true').first();
   if (await boardCard.isVisible().catch(() => false)) await boardCard.click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
-  await page.locator('.exp-group-section', { hasText: 'Estado actual' }).click();
+  await page.locator('.exp-group-section[data-section="estadoActual"]').click();
   await page.locator('#ea-snapshot').waitFor({ state: 'visible' });
   const bar = await page.evaluate(() => {
     const texts = Array.from(document.querySelectorAll('.estado-actual-panel button')).map((b) => b.textContent.trim());
@@ -360,9 +362,9 @@ async function run() {
 
   const medsShown = () => page.locator('.ea-estado-clinico [data-ea-med-remove]').count();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
-  await page.locator('.exp-group-section', { hasText: 'Nota de evolución' }).click();
+  await page.locator('.exp-group-section[data-section="notas"]').click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
-  await page.locator('.exp-group-section', { hasText: 'Estado actual' }).click();
+  await page.locator('.exp-group-section[data-section="estadoActual"]').click();
   await page.locator('#ea-snapshot').waitFor({ state: 'visible' });
   check('medications survive leaving the screen', (await medsShown()) === 7, await medsShown());
 
@@ -455,11 +457,11 @@ async function run() {
     { text: clip.text.slice(0, 80), html: (clip.html || '').slice(0, 120) }
   );
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
-  await page.locator('.exp-group-section', { hasText: 'Nota de evolución' }).click();
+  await page.locator('.exp-group-section[data-section="notas"]').click();
   await page.waitForTimeout(200);
   check('copy FAB hides outside Estado actual', await fab.isHidden());
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
-  await page.locator('.exp-group-section', { hasText: 'Estado actual' }).click();
+  await page.locator('.exp-group-section[data-section="estadoActual"]').click();
   await page.locator('#ea-snapshot').waitFor({ state: 'visible' });
 
   await page.getByRole('button', { name: 'Enviar a nota' }).click();
@@ -500,7 +502,7 @@ async function run() {
   );
   await closeToasts(page);
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
-  await page.locator('.exp-group-section', { hasText: 'Estado actual' }).click();
+  await page.locator('.exp-group-section[data-section="estadoActual"]').click();
   await page.locator('#ea-snapshot').waitFor({ state: 'visible' });
 
   const chartsBtn = page.locator('#ea-charts-summary');
@@ -508,8 +510,41 @@ async function run() {
   const chartsModal = page.locator('#ea-charts-backdrop.open');
   await chartsModal.waitFor({ state: 'visible' });
   await page.waitForTimeout(400);
-  await shot(page, 'graficas-monitoreo');
-  check('Gráficas de monitoreo opens with a rendered canvas', await page.locator('#ea-charts-canvas').isVisible());
+  await shot(page, 'graficas-signos');
+  const chartsMount = page.locator('#ea-charts-modal-mount');
+  const plots = await chartsMount.locator('.ea-charts-row-plot').evaluateAll((els) => els.map((e) => e.dataset.eaPlot));
+  const groups = await chartsMount.locator('.ea-charts-group-label').allInnerTexts();
+  check('Gráficas: one row per sign, grouped Hemodinámico / Respiratorio / Metabólico',
+    plots.join() === 'ta,fc,fr,sat,temp' && groups.map((g) => g.toUpperCase()).join() === 'HEMODINÁMICO,RESPIRATORIO,METABÓLICO', { plots, groups });
+  check('Gráficas: «Últimas 5» is the default period',
+    (await page.locator('#ea-charts-controls [data-ea-range="last5"]').getAttribute('aria-selected')) === 'true');
+  check('Gráficas: at rest each row shows «Último · <fecha>»',
+    (await chartsMount.locator('.ea-charts-row-when').allInnerTexts()).every((t) => /^Último · \d\d\/\d\d/.test(t)));
+  const ticks = await chartsMount.locator('.ea-charts-axis-tick').evaluateAll((els) =>
+    els.map((e) => ({ day: e.querySelector('strong').textContent, hour: e.querySelector('span').textContent })));
+  const days = ticks.map((t) => t.day).filter(Boolean);
+  check('Gráficas: X axis writes each day once, hours only on a day with >1 reading',
+    ticks.length >= 2 && new Set(days).size === days.length && days.length === 1 && ticks.every((t) => /^\d\d:\d\d$/.test(t.hour)), ticks);
+  await chartsMount.locator('[data-ea-hit-plot="ta"][data-ea-hit="0"]').hover();
+  const guides = await chartsMount.locator('.ea-charts-guide').evaluateAll((els) => els.map((e) => (e.hidden ? 'hidden' : e.style.left)));
+  const whenFc = await chartsMount.locator('.ea-charts-row').nth(1).locator('.ea-charts-row-when').innerText();
+  check('Gráficas: hovering T/A moves one crosshair across every row and the axis',
+    guides.length === 6 && new Set(guides).size === 1 && guides[0] !== 'hidden' && !/^Último/.test(whenFc), { guides, whenFc });
+  await shot(page, 'graficas-crosshair');
+  const fonts = await page.evaluate(() => [getComputedStyle(document.getElementById('ea-charts-title')).fontFamily, getComputedStyle(document.body).fontFamily]);
+  check('Gráficas: title uses the body font', fonts[0] === fonts[1], fonts);
+  for (const [tab, label] of [['glu', 'glucometrias'], ['bal', 'balance']]) {
+    const btn = page.locator(`#ea-charts-controls [data-ea-tab="${tab}"]`);
+    if (await btn.isDisabled()) continue;
+    await btn.click();
+    await page.waitForTimeout(200);
+    await shot(page, 'graficas-' + label);
+  }
+  check('Gráficas: Balance hídrico shows 3 cards, mirrored bars and the running total',
+    (await chartsMount.locator('.ea-charts-bal-card').count()) === 3 &&
+      (await chartsMount.locator('.ea-charts-bal-bar--in').count()) >= 1 &&
+      (await chartsMount.locator('.ea-charts-bal-bar--out').count()) >= 1 &&
+      (await chartsMount.locator('.ea-charts-bal-cum-line').count()) === 1);
   await page.keyboard.press('Escape');
   await chartsModal.waitFor({ state: 'hidden' });
 

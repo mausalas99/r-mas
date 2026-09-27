@@ -67,52 +67,13 @@ aside.patient-sidebar .btn-add:hover {
 }
 
 /* ── Tufte · chart frames + summary tiles ───────────────────────── */
-.ea-chart-block {
-  border: var(--border-hairline);
-  border-radius: var(--equipment-radius);
-  background: var(--wb-chart-surface);
-  box-shadow: none;
-}
-
-.ea-chart-block-title,
-.ea-chart-subtitle,
 #appcontent-lab .lab-value,
 #appcontent-lab .lab-grid .lab-item .lab-value {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
-
-.ea-chart-canvas-wrap,
-.ea-charts-canvas-cell {
-  background: color-mix(in oklab, var(--color-paper) 55%, var(--surface));
-  border: 1px solid color-mix(in oklab, var(--color-ink) 6%, transparent);
-  border-radius: var(--equipment-radius);
-}
-
-/* Vitals family nav · Rams signal dot */
-.ea-vitals-family-btn--active {
-  padding-left: 16px;
-}
-
-.ea-vitals-family-btn--active::before {
-  content: "";
-  position: absolute;
-  left: 6px;
-  top: 50%;
-  width: 5px;
-  height: 5px;
-  margin-top: -2.5px;
-  border-radius: 50%;
-  background: var(--equipment-active-dot);
-}
-
-.ea-vitals-family-btn--active {
-  position: relative;
-}
-
 html.high-contrast .ea-card,
-html.high-contrast .ea-chart-block,
 html.high-contrast #appcontent-lab .card {
   box-shadow: none !important;
   border: 1px solid var(--border) !important;

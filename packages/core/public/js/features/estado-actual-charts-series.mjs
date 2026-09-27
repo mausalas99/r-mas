@@ -1,30 +1,11 @@
 import { isVitalAltered, isGlucometriaMarkedAltered } from './estado-actual-ranges.mjs';
 import { gluPointMs, isGluPointInRegistroWindow } from './estado-actual-registro-defaults.mjs';
 
-/** @type {Record<string, string>} */
-const VITAL_LABELS = {
-  tas: 'TAS',
-  tad: 'TAD',
-  fc: 'FC',
-  fr: 'FR',
-  temp: 'Temp',
-  sat: 'SatO₂',
-};
-
 /** @type {readonly { id: string, title: string, keys: readonly string[] }[]} */
-export const VITAL_FAMILIES = [
+const VITAL_FAMILIES = [
   { id: 'hemo', title: 'Hemodinámico', keys: ['tas', 'tad', 'fc'] },
   { id: 'resp', title: 'Respiratorio', keys: ['fr', 'sat'] },
   { id: 'metab', title: 'Metabólico', keys: ['temp'] },
-];
-
-const VITAL_COLOR_TOKENS = [
-  '--ea-chart-vital-1',
-  '--ea-chart-vital-2',
-  '--ea-chart-vital-3',
-  '--ea-chart-vital-4',
-  '--ea-chart-vital-5',
-  '--ea-chart-vital-6',
 ];
 
 const CHART_TOKEN_FALLBACKS = {
@@ -37,7 +18,8 @@ const CHART_TOKEN_FALLBACKS = {
   '--ea-chart-glu': '#047857',
   '--ea-chart-io-ing': '#60a5fa',
   '--ea-chart-io-egr': '#f87171',
-  '--ea-chart-io-balance': 'var(--color-accent)',
+  '--ea-chart-io-balance': '#6f97d6',
+  '--ea-chart-sign': '#6f97d6',
   '--ea-chart-altered': '#b45309',
 };
 
@@ -68,15 +50,6 @@ function ensureChartColorCache() {
 export function chartColor(token) {
   var cache = ensureChartColorCache();
   return cache[token] || CHART_TOKEN_FALLBACKS[token] || 'var(--color-accent)';
-}
-
-/**
- * @param {number} index
- * @returns {string}
- */
-function vitalSeriesColor(index) {
-  var token = VITAL_COLOR_TOKENS[index % VITAL_COLOR_TOKENS.length];
-  return chartColor(token);
 }
 
 function pad2(n) {
@@ -180,91 +153,6 @@ export function buildIoChartData(histAsc) {
 
 /**
  * @param {unknown[]} histAsc
- * @param {string} key
- */
-export function buildVitalsSeries(histAsc, key) {
-  /** @type {string[]} */
-  var labels = [];
-  /** @type {(number | null)[]} */
-  var values = [];
-  /** @type {boolean[]} */
-  var alteredFlags = [];
-
-  for (var i = 0; i < histAsc.length; i++) {
-    var row = histAsc[i];
-    if (!row || typeof row !== 'object') continue;
-    var vit =
-      /** @type {any} */ (row).vitals && typeof /** @type {any} */ (row).vitals === 'object'
-        ? /** @type {any} */ (/** @type {any} */ (row).vitals)
-        : {};
-    var raw = vit[key];
-    if (raw == null || raw === '') continue;
-    var n = Number(raw);
-    if (!Number.isFinite(n)) continue;
-    var rowAlt =
-      /** @type {any} */ (row).alteredAt && typeof /** @type {any} */ (row).alteredAt === 'object'
-        ? /** @type {Record<string, string>} */ (/** @type {any} */ (row).alteredAt)
-        : {};
-    var altered = isVitalAltered(key, raw) || !!(rowAlt && rowAlt[key]);
-    var label = formatChartLabel(/** @type {any} */ (row).recordedAt);
-    if (rowAlt && rowAlt[key]) {
-      label = String(rowAlt[key]) + ' · ' + label;
-    }
-    labels.push(label);
-    values.push(n);
-    alteredFlags.push(altered);
-  }
-
-  return { labels, values, alteredFlags };
-}
-
-/**
- * @param {string[]} labels
- * @param {(number | null)[]} values
- * @param {boolean[]} alteredFlags
- * @param {string} color
- */
-export function lineDataset(labels, values, alteredFlags, color) {
-  var hasAltered = false;
-  for (var ai = 0; ai < alteredFlags.length; ai += 1) {
-    if (alteredFlags[ai]) {
-      hasAltered = true;
-      break;
-    }
-  }
-  if (!hasAltered) {
-    return {
-      label: '',
-      data: values,
-      borderColor: color,
-      backgroundColor: color,
-      pointRadius: 2,
-      tension: 0,
-      spanGaps: true,
-    };
-  }
-  var alteredColor = chartColor('--ea-chart-altered');
-  var pointRadius = values.map(function (_v, i) {
-    return alteredFlags[i] ? 6 : 3;
-  });
-  var pointBackgroundColor = values.map(function (_v, i) {
-    return alteredFlags[i] ? alteredColor : color;
-  });
-  return {
-    label: '',
-    data: values,
-    borderColor: color,
-    backgroundColor: color,
-    pointRadius: pointRadius,
-    pointBackgroundColor: pointBackgroundColor,
-    pointBorderColor: pointBackgroundColor,
-    tension: 0,
-    spanGaps: true,
-  };
-}
-
-/**
- * @param {unknown[]} histAsc
  * @param {readonly string[]} keys
  */
 function rowHasVitalKeys(row, keys) {
@@ -288,65 +176,6 @@ function filterHistorialWithVitals(histAsc, keys) {
     if (rowHasVitalKeys(row, keys)) rows.push(row);
   }
   return rows;
-}
-
-function buildVitalDatasetForKey(rows, labels, key, k) {
-  /** @type {(number | null)[]} */
-  var values = [];
-  /** @type {boolean[]} */
-  var alteredFlags = [];
-  var count = 0;
-  for (var j = 0; j < rows.length; j++) {
-    var r2 = rows[j];
-    var vit2 =
-      /** @type {any} */ (r2).vitals && typeof /** @type {any} */ (r2).vitals === 'object'
-        ? /** @type {any} */ (/** @type {any} */ (r2).vitals)
-        : {};
-    var raw2 = vit2[key];
-    if (raw2 == null || raw2 === '') {
-      values.push(null);
-      alteredFlags.push(false);
-      continue;
-    }
-    var n = Number(raw2);
-    if (!Number.isFinite(n)) {
-      values.push(null);
-      alteredFlags.push(false);
-      continue;
-    }
-    values.push(n);
-    count++;
-    var rowAlt =
-      /** @type {any} */ (r2).alteredAt && typeof /** @type {any} */ (r2).alteredAt === 'object'
-        ? /** @type {Record<string, string>} */ (/** @type {any} */ (r2).alteredAt)
-        : {};
-    alteredFlags.push(isVitalAltered(key, raw2) || !!(rowAlt && rowAlt[key]));
-  }
-  if (count < 2) return null;
-  var color = vitalSeriesColor(k);
-  var ds = lineDataset(labels, values, alteredFlags, color);
-  ds.label = VITAL_LABELS[key] || key;
-  return ds;
-}
-
-export function buildVitalsFamilyData(histAsc, keys) {
-  var rows = filterHistorialWithVitals(histAsc, keys);
-  if (rows.length < 2) return null;
-
-  var labels = rows.map(function (r) {
-    return formatChartLabel(/** @type {any} */ (r).recordedAt);
-  });
-
-  /** @type {object[]} */
-  var datasets = [];
-  for (var k = 0; k < keys.length; k++) {
-    var key = keys[k];
-    var ds = buildVitalDatasetForKey(rows, labels, key, k);
-    if (ds) datasets.push(ds);
-  }
-
-  if (!datasets.length) return null;
-  return { labels: labels, datasets: datasets };
 }
 
 /**
@@ -466,18 +295,6 @@ function eaHistorialRowFingerprint(row) {
 }
 
 /**
- * @param {unknown[]} histAsc
- * @returns {string}
- */
-export function buildEaChartsSignatureFromHist(histAsc) {
-  var parts = ['n' + histAsc.length];
-  for (var i = 0; i < histAsc.length; i += 1) {
-    parts.push(eaHistorialRowFingerprint(histAsc[i]));
-  }
-  return parts.join('|');
-}
-
-/**
  * @param {unknown[]} hist
  * @returns {string}
  */
@@ -518,6 +335,119 @@ function scanFamilyChartReady(histAsc, keys) {
     if (countFiniteVitalValues(rows, keys[k]) >= 2) return true;
   }
   return false;
+}
+
+/** All vital keys that appear as a graphable row in the Gráficas modal. */
+const EA_ALL_VITAL_KEYS = ['tas', 'tad', 'fc', 'fr', 'temp', 'sat'];
+
+/**
+ * Rows (ascending) that carry any of the given vital keys — the shared time
+ * axis for a group of rows that must line up under one crosshair.
+ * @param {unknown[]} histAsc
+ * @param {readonly string[]} [keys]
+ * @returns {unknown[]}
+ */
+export function buildSharedVitalRows(histAsc, keys) {
+  return filterHistorialWithVitals(histAsc, keys || EA_ALL_VITAL_KEYS);
+}
+
+/**
+ * One vital's values aligned to `rows` (null where that row has no value for
+ * this key, so every row in a shared-axis group stays index-aligned).
+ * @param {unknown[]} rows
+ * @param {string} key
+ * @returns {{ values: (number | null)[], altered: boolean[] }}
+ */
+export function buildAlignedVitalSeries(rows, key) {
+  /** @type {(number | null)[]} */
+  var values = [];
+  /** @type {boolean[]} */
+  var altered = [];
+  for (var i = 0; i < rows.length; i++) {
+    var row = /** @type {any} */ (rows[i]);
+    var vit = row.vitals && typeof row.vitals === 'object' ? row.vitals : {};
+    var raw = vit[key];
+    if (raw == null || raw === '' || !Number.isFinite(Number(raw))) {
+      values.push(null);
+      altered.push(false);
+      continue;
+    }
+    var n = Number(raw);
+    values.push(n);
+    var rowAlt = row.alteredAt && typeof row.alteredAt === 'object' ? row.alteredAt : {};
+    altered.push(isVitalAltered(key, raw) || !!(rowAlt && rowAlt[key]));
+  }
+  return { values: values, altered: altered };
+}
+
+/**
+ * Axis tick text for a shared row of "dd/mm hh:mm" labels: the day is
+ * written only the first time it appears, and the hour only on days that
+ * have more than one reading (avoids repeating "23/09 00:00" per row).
+ * @param {string[]} labels
+ * @returns {{ day: string, hour: string }[]}
+ */
+export function buildEaAxisTicks(labels) {
+  /** @type {Record<string, number>} */
+  var perDay = {};
+  for (var i = 0; i < labels.length; i++) {
+    var d0 = String(labels[i] || '').slice(0, 5);
+    perDay[d0] = (perDay[d0] || 0) + 1;
+  }
+  /** @type {Record<string, boolean>} */
+  var seen = {};
+  return labels.map(function (l) {
+    var s = String(l || '');
+    var day = s.slice(0, 5);
+    var hour = s.slice(6);
+    var first = !seen[day];
+    seen[day] = true;
+    return { day: first ? day : '', hour: perDay[day] > 1 ? hour : '' };
+  });
+}
+
+/**
+ * Balance hídrico grouped by calendar day (not per-turn): totals in/out per
+ * day, the day's net, and the running (cumulative) total since ingreso.
+ * @param {unknown[]} histAsc
+ * @returns {{ days: string[], ing: number[], egr: number[], net: number[], cumulative: number[] }}
+ */
+export function buildDailyBalanceSeries(histAsc) {
+  /** @type {string[]} */
+  var days = [];
+  /** @type {Record<string, { ing: number, egr: number }>} */
+  var map = {};
+  for (var i = 0; i < histAsc.length; i++) {
+    var row = histAsc[i];
+    if (!row || typeof row !== 'object') continue;
+    var io =
+      /** @type {any} */ (row).io && typeof /** @type {any} */ (row).io === 'object'
+        ? /** @type {any} */ (row).io
+        : {};
+    if (!hasIoPair(io)) continue;
+    var day = formatChartLabel(/** @type {any} */ (row).recordedAt).slice(0, 5);
+    if (!map[day]) {
+      map[day] = { ing: 0, egr: 0 };
+      days.push(day);
+    }
+    map[day].ing += Number(io.ing);
+    map[day].egr += Number(io.egr);
+  }
+  var ing = days.map(function (d) {
+    return map[d].ing;
+  });
+  var egr = days.map(function (d) {
+    return map[d].egr;
+  });
+  var net = ing.map(function (v, i2) {
+    return v - egr[i2];
+  });
+  var running = 0;
+  var cumulative = net.map(function (v) {
+    running += v;
+    return running;
+  });
+  return { days: days, ing: ing, egr: egr, net: net, cumulative: cumulative };
 }
 
 /**

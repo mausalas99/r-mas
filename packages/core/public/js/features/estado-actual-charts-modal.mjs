@@ -1,5 +1,3 @@
-import { getChartJsIfLoaded, loadChartJs } from '../vendor-loader.mjs';
-import { destroyEaChartInstance } from './estado-actual-charts-chartjs.mjs';
 import { stripMonitoreoChartRuntimeCache } from './estado-actual-charts-display.mjs';
 import { destroyEstadoActualCharts, renderEstadoActualCharts } from './estado-actual-charts.mjs';
 
@@ -31,14 +29,10 @@ function getMount() {
 export function closeEstadoActualChartsModal() {
   var backdrop = getBackdrop();
   if (!backdrop) return;
-  destroyEaChartInstance();
+  var mount = getMount();
+  if (mount) destroyEstadoActualCharts(mount);
   backdrop.classList.remove('open');
   backdrop.setAttribute('aria-hidden', 'true');
-}
-
-function paintEaChartsModal(mount, monitoreo, ChartCtor) {
-  if (!mount) return;
-  renderEstadoActualCharts(mount, monitoreo, ChartCtor, { showTitle: false });
 }
 
 export function openEstadoActualChartsModal() {
@@ -53,46 +47,13 @@ export function openEstadoActualChartsModal() {
     return;
   }
   var mount = getMount();
-  var activeId = rt.getActiveId ? rt.getActiveId() : null;
   stripMonitoreoChartRuntimeCache(patient.monitoreo);
-  if (mount) {
-    destroyEstadoActualCharts(mount);
-    mount._eaChartsSig = '';
-    mount._eaChartsLayoutKey = '';
-    mount._eaChartsPatientId = activeId;
-  }
+  if (mount) destroyEstadoActualCharts(mount);
 
   backdrop.classList.add('open');
   backdrop.setAttribute('aria-hidden', 'false');
 
-  function paint(ChartCtor) {
-    if (!ChartCtor) {
-      if (mount) {
-        var empty = document.getElementById('ea-charts-empty');
-        if (empty) {
-          empty.className = 'ea-charts-empty empty-state empty-state--compact';
-          empty.setAttribute('role', 'status');
-          empty.innerHTML =
-            '<span class="empty-state-title">Gráficas no disponibles</span>' +
-            '<span class="empty-state-lead">Chart.js no está disponible. Recarga la aplicación.</span>';
-          empty.hidden = false;
-        }
-      }
-      return;
-    }
-    paintEaChartsModal(mount, patient.monitoreo, ChartCtor);
-  }
-
-  var Chart = getChartJsIfLoaded();
-  if (Chart) {
-    paint(Chart);
-    return;
-  }
-  void loadChartJs()
-    .then(paint)
-    .catch(function () {
-      paint(undefined);
-    });
+  if (mount) renderEstadoActualCharts(mount, patient.monitoreo);
 }
 
 function handleEaChartsEscape(ev) {

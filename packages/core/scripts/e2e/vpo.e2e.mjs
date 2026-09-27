@@ -39,6 +39,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEMO_TOUR_LAB_PASTE, DEMO_GARCIA_LAB_REPORT } from '../../public/js/tour-demo-some-lab.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../../public/js/lab-bulk-paste.mjs';
+import { goArea } from './harness.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const runId = new Date().toISOString().replace(/[:.]/g, '-');
@@ -106,11 +107,11 @@ async function closeToasts(page) {
 async function admitDemoPatient(page) {
   await page.locator('[data-sync-mode="local"]').click();
   await page.locator('#clinical-onboard-local-confirm-btn').click();
-  await page.locator('#apptab-lab').waitFor({ state: 'visible' });
+  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
   const hub = page.locator('#learn-hub-backdrop.open');
   await hub.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
   if (await hub.count()) await page.keyboard.press('Escape');
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   if (!(await page.locator('#lab-input').isVisible())) await page.locator('#btn-lab-paste').click();
   await page
     .locator('#lab-input')
@@ -134,7 +135,7 @@ async function admitDemoPatient(page) {
 
 async function importSomeMeds(page) {
   await closeToasts(page);
-  await page.locator('#apptab-med').click();
+  await goArea(page, 'med');
   await page.locator('#med-itab-receta').click();
   await page.waitForTimeout(300);
   await page.locator('#med-import-open-btn').click();
@@ -154,7 +155,7 @@ async function openVpo(page) {
   const icToast = page.locator('.toast', { hasText: 'Interconsulta' });
   if (await icToast.count()) await icToast.waitFor({ state: 'visible' }).catch(() => {});
   await closeToasts(page);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.waitForTimeout(500);
   const boardCard = page.getByText('DEMO JUAN', { exact: true }).locator('visible=true').first();
   if (await boardCard.isVisible().catch(() => false)) await boardCard.click();

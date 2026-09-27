@@ -7,13 +7,13 @@
 }
 
 @media (min-width: 1100px) {
-  #patient-expediente-classic > .exp-expediente-nav > .inner-tab-bar {
+  .exp-expediente-nav > .inner-tab-bar {
     display: none;
   }
   #patient-expediente-classic .exp-segment-bar {
     display: none !important; /* beats the inline display set by sync code */
   }
-  #patient-expediente-classic > .exp-expediente-nav > #exp-group-row {
+  .exp-expediente-nav > #exp-group-row {
     display: flex;
     align-items: center;
     gap: calc(8px * var(--density-space, 1));
@@ -31,7 +31,7 @@
    * margin-left cancels only the row's own gap (not its 28px width too) — that
    * puts the fade flush against the last pill's edge, so its 28px then paints
    * over the reserved padding-right above instead of biting into the pill. */
-  #patient-expediente-classic > .exp-expediente-nav > #exp-group-row::after {
+  .exp-expediente-nav > #exp-group-row::after {
     content: "";
     position: sticky;
     right: 0;
@@ -248,7 +248,7 @@ html.motion-sobrio .exp-group-pill {
 }
 
 /* Mobile web (iPad PWA / LAN): grouped row at all widths; tap-to-expand only */
-html.rpc-mobile-web #patient-expediente-classic > .exp-expediente-nav > .inner-tab-bar {
+html.rpc-mobile-web .exp-expediente-nav > .inner-tab-bar {
   display: none;
 }
 
@@ -256,7 +256,7 @@ html.rpc-mobile-web #patient-expediente-classic .exp-segment-bar {
   display: none !important;
 }
 
-html.rpc-mobile-web #patient-expediente-classic > .exp-expediente-nav > #exp-group-row {
+html.rpc-mobile-web .exp-expediente-nav > #exp-group-row {
   display: flex;
   align-items: center;
   gap: calc(8px * var(--density-space, 1));
@@ -270,7 +270,7 @@ html.rpc-mobile-web #patient-expediente-classic > .exp-expediente-nav > #exp-gro
   position: relative;
 }
 /* Edge cue: fades to var(--surface), the .exp-expediente-nav background it sits on. */
-html.rpc-mobile-web #patient-expediente-classic > .exp-expediente-nav > #exp-group-row::after {
+html.rpc-mobile-web .exp-expediente-nav > #exp-group-row::after {
   content: "";
   position: sticky;
   right: 0;

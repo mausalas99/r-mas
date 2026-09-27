@@ -187,7 +187,8 @@
   --ea-chart-glu: var(--color-success-emphasis);
   --ea-chart-io-ing: color-mix(in oklab, var(--color-accent) 52%, var(--color-success-emphasis));
   --ea-chart-io-egr: var(--error);
-  --ea-chart-io-balance: var(--color-accent);
+  --ea-chart-io-balance: #6f97d6;
+  --ea-chart-sign: #6f97d6;
   --ea-chart-altered: var(--todo-prio-media);
 
   /* Tufte · clinical charts — max data-ink (EA + Tendencias) */

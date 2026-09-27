@@ -46,7 +46,7 @@
  *
  *   npm run e2e:agenda
  */
-import { createRun, dismissLearnHub, closeToasts, pasteAndSave, openPatient } from './harness.mjs';
+import { createRun, dismissLearnHub, closeToasts, pasteAndSave, openPatient, goArea } from './harness.mjs';
 import { startWorker, nubeDevices, onboardNube, patientVisible, until, BASE } from './nube-worker.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 
@@ -72,7 +72,7 @@ const launchDevice = nubeDevices(r);
 
 async function goAgenda(page) {
   await closeToasts(page);
-  await page.locator('#apptab-agenda').click();
+  await goArea(page, 'agenda');
   await page.locator('#procedure-agenda-range').waitFor();
   await until(async () => (await page.locator('#procedure-agenda-range').textContent()).trim().length > 0, 5000);
 }
@@ -170,7 +170,7 @@ await r.finish('Agenda: week board, new/edit/delete, two devices over Nube, rest
     await d.page.locator('#btn-connection-dropdown-close').click().catch(() => {});
     await d.page.keyboard.press('Escape');
     await dismissLearnHub(d.page);
-    await d.page.locator('#apptab-lab').click();
+    await goArea(d.page, 'lab');
   }
 
   await pasteAndSave(A.page, fullLabs(P1, 'Sep 22 2026 8:00AM'));
@@ -335,7 +335,7 @@ await r.finish('Agenda: week board, new/edit/delete, two devices over Nube, rest
   const errors = [...A.pageErrors, ...B.pageErrors];
   await A.app.close();
   const again = await launchDevice('a', 3791);
-  await again.page.locator('#apptab-lab').waitFor({ state: 'visible', timeout: 30000 });
+  await again.page.locator('#app-main-tablist').waitFor({ state: 'visible', timeout: 30000 });
   await dismissLearnHub(again.page);
   await goAgenda(again.page);
   const afterNow = await blocks(again.page);

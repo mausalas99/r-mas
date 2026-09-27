@@ -29,7 +29,7 @@ function getMapTabsCopy() {
     );
   }
   return (
-    '<p style="margin:0;line-height:1.5;">Arriba: <strong>Paciente</strong>, <strong>Laboratorio</strong>, <strong>Manejo</strong> y <strong>Agenda</strong>. <strong>' +
+    '<p style="margin:0;line-height:1.5;">Arriba: <strong>Paciente</strong>, <strong>Laboratorio</strong>, <strong>Manejo</strong> y <strong>Agenda</strong>, en una sola píldora que muestra dónde estás; pasa el cursor para ver las demás. <strong>' +
     mod +
     '+1…4</strong> cambia de pestaña. <strong>Repite ' +
     mod +

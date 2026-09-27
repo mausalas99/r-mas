@@ -22,9 +22,14 @@
  *     - "KIT PARA …" leaks into the pendiente text
  *     - a lab study (BIOMETRÍA) becomes a pendiente
  *     - importing the same list again duplicates the pendientes
- *   Turn list
- *     - "Excl." does not drop the med from the discharge text / copy
- *     - an "Otros" med ticked for SOAP is sent with no Destino
+ *   Turn list (grouped by destino, Manejo-B)
+ *     - the unknown drug is not in «Falta destino», or «Falta destino» is not first
+ *     - a «Falta destino» row offers «Nota» before it has a destino
+ *     - «Cambiar destino» does not move the row to its new group
+ *     - ⊘ does not drop the med from the discharge text / copy, or the
+ *       «Excluidos» group is not last, or «Restaurar» does not bring it back
+ *     - the potassium group row cannot be excluded / restored
+ *     - names show in ALL CAPS, or the dose is not split from the name
  *     - Añadir a Tratamiento adds nothing / wrong count
  *   Discharge text
  *     - the raw "||" SOME marker leaks into the window
@@ -41,7 +46,7 @@
  *
  *   npm run e2e:manejo-receta
  */
-import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, quietHints, goArea } from './harness.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 
 const A = { exp: '7000007-7', name: 'DEMO MANEJO UNO', room: '307' };
@@ -92,8 +97,9 @@ const flat = (s) => String(s || '').replace(/\s+/g, ' ').trim();
 
 await r.finish('Manejo + Perfil histórico', async () => {
   let { app, page, pageErrors } = await r.launch();
+  await quietHints(page);
   await onboardLocalOnly(page);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   await pasteAndSave(page, fullLabs(A, 'Jan 10 2026 8:00AM'));
   await pasteAndSave(page, fullLabs(B, 'Jan 11 2026 8:00AM'));
   await openPatient(page, B);
@@ -104,7 +110,7 @@ await r.finish('Manejo + Perfil histórico', async () => {
   const toastTexts = () => page.locator('.toast').allInnerTexts();
   async function openManejo() {
     await closeToasts(page);
-    await page.locator('#apptab-med').click();
+    await goArea(page, 'med');
     await page.locator('#med-itab-receta').click();
     await page.waitForTimeout(300);
   }
@@ -114,6 +120,12 @@ await r.finish('Manejo + Perfil histórico', async () => {
     await page.locator('#med-input').fill(text);
     await page.getByRole('button', { name: 'Procesar receta' }).click();
     await page.waitForTimeout(400);
+    // "Días de antibiótico sin registro" asks once for the DIA# it has not seen: keep SOME's day.
+    const abxDia = page.locator('.wb-modal, [role="dialog"]', { hasText: 'Días de antibiótico sin registro' });
+    if (await abxDia.first().isVisible().catch(() => false)) {
+      await abxDia.first().getByRole('button', { name: 'Guardar' }).click();
+      await page.waitForTimeout(300);
+    }
   }
 
   // ── Import ─────────────────────────────────────────────────────────────
@@ -135,19 +147,31 @@ await r.finish('Manejo + Perfil histórico', async () => {
   check('potassium lines show as one row', (await page.locator('.med-receta-row--potassium-repos').count()) === 1 &&
     (await medRow('CLORURO DE POTASIO').count()) === 0);
   check('DIA# 3 two days ago shows Día 5', flat(await medRow('CEFTRIAXONA').locator('.med-receta-dia').innerText()) === 'Día 5');
-  check('diet card shows the diet with kcal and protein', /BLANDA PICADA ALTA EN FIBRA.*1500 kcal.*60 g proteína/.test(flat(await page.locator('.med-receta-diet-card').innerText())));
+  check('diet chip in the header shows the diet with kcal and protein', /BLANDA PICADA ALTA EN FIBRA.*1500 kcal.*60 g proteína/.test(flat(await page.locator('#med-diet-chip').innerText())));
   check('Última importación date is the SOME date', (await page.locator('#med-fecha-actualizacion').innerText()).trim() === D);
-  check('teaser: 8 medicamentos · diet · O₂', flat(await page.locator('#med-egreso-preview').innerText()) === '8 medicamentos · BLANDA PICADA ALTA EN FIBRA · O₂');
-  const soapOn = async (name) => medRow(name).locator('input[data-med-soap-chk]').isChecked();
-  check('SOAP pre-ticked for ceftriaxona, not for PRN ondansetrón or the unknown drug',
-    (await soapOn('CEFTRIAXONA')) && (await medRow('ONDANSETR').locator('input[data-med-soap-chk]').count()) === 0 && !(await soapOn('XYZ')));
+  const groupOf = (name) => medRow(name).evaluate((el) => el.closest('[data-med-group]').dataset.medGroup);
+  const groups = () => page.locator('#med-items-list [data-med-group]').evaluateAll((els) => els.map((e) => e.dataset.medGroup));
+  let g = await groups();
+  check('groups: «Falta destino» first, holding the unknown drug XYZ; ceftriaxona under Antibióticos',
+    g[0] === 'falta' && (await groupOf('XYZ')) === 'falta' && (await groupOf('CEFTRIAXONA')) === 'abx', g);
+  check('«Falta destino» label is amber-classed and counted', /FALTA DESTINO · 1/i.test(flat(await page.locator('[data-med-group="falta"] .med-group-label').innerText())));
+  check('names in sentence case, dose split out (Paracetamol · 1 g VO c/8 h)',
+    flat(await medRow('PARACETAMOL').locator('.med-row-name').innerText()) === 'Paracetamol' &&
+    flat(await medRow('PARACETAMOL').locator('.med-row-dose').innerText()) === '1 g VO c/8 h',
+    flat(await medRow('PARACETAMOL').innerText()));
+  check('PRN tag on ondansetrón, and it sits in «Solo egreso»', (await medRow('ONDANSETR').locator('.med-prn-tag').count()) === 1 && (await groupOf('ONDANSETR')) === 'solo');
+  check('Egreso button is in the header', await page.locator('#med-egreso-open-btn').isVisible());
+  const soapOn = async (name) => (await medRow(name).locator('[data-med-soap-chk][aria-pressed="true"]').count()) === 1;
+  check('Nota pre-pressed for ceftriaxona; no Nota for PRN ondansetrón nor the «Falta destino» drug',
+    (await soapOn('CEFTRIAXONA')) && (await medRow('ONDANSETR').locator('[data-med-soap-chk]').count()) === 0 &&
+    (await medRow('XYZ').locator('[data-med-soap-chk]').count()) === 0);
   check('SOAP auto-pick also covers antiHTA (losartán) and antitrombótico (enoxaparina), not just antibiotics',
     (await soapOn('LOSART')) && (await soapOn('ENOXAPARINA')));
 
   // ── Pendientes ─────────────────────────────────────────────────────────
   const pendientes = async () => {
     await closeToasts(page);
-    await page.locator('#apptab-nota').click();
+    await goArea(page, 'nota');
     await page.evaluate(() => window.switchInnerTab('todo'));
     await page.waitForTimeout(500);
     return page.locator('#todo-form').evaluate((el) =>
@@ -168,10 +192,31 @@ await r.finish('Manejo + Perfil histórico', async () => {
 
   // ── Turn list: Excl., Destino, Tratamiento ──────────────────────────────
   await openManejo();
-  await medRow('LOSART').locator('.med-receta-checkcell input').first().check();
+  await medRow('LOSART').locator('.med-excl-btn').click();
   await page.waitForTimeout(300);
+  g = await groups();
+  check('⊘ moves losartán to «Excluidos», the last group, with «Restaurar»',
+    g[g.length - 1] === 'excl' && (await groupOf('LOSART')) === 'excl' && (await medRow('LOSART').locator('.med-restore-btn').count()) === 1, g);
+  const kRow = page.locator('.med-receta-row--potassium-repos');
+  await kRow.locator('.med-excl-btn').click();
+  await page.waitForTimeout(300);
+  // An excluded K line is no longer a "reposición": each line waits in «Excluidos» on its own.
+  const kExcl = (await groupOf('CLORURO DE POTASIO')) === 'excl' && (await groupOf('FOSFATO DE POTASIO')) === 'excl' && (await kRow.count()) === 0;
+  for (const name of ['CLORURO DE POTASIO', 'FOSFATO DE POTASIO']) {
+    await medRow(name).locator('.med-restore-btn').click();
+    await page.waitForTimeout(300);
+  }
+  const kBack = (await kRow.count()) === 1 && (await kRow.evaluate((el) => el.closest('[data-med-group]').dataset.medGroup)) === 'repo';
+  check('potassium group row: ⊘ → both lines in «Excluidos», Restaurar each → one row back in «Reposiciones»', kExcl && kBack, { kExcl, kBack });
+  await medRow('PARACETAMOL').locator('[data-med-soap-chk]').click();
+  await page.waitForTimeout(200);
+  const notaOff = !(await soapOn('PARACETAMOL'));
+  await medRow('PARACETAMOL').locator('[data-med-soap-chk]').click();
+  await page.waitForTimeout(200);
+  check('Nota chip toggles off and back on (same row, no re-render)', notaOff && (await soapOn('PARACETAMOL')));
+  await r.shot(page, 'manejo-grupos');
   await closeToasts(page);
-  await page.getByRole('button', { name: 'Abrir texto de egreso' }).click();
+  await page.locator('#med-egreso-open-btn').click();
   const egreso = page.locator('#med-egreso-modal-backdrop');
   await egreso.waitFor({ state: 'visible' });
   const lines = () => egreso.locator('#med-egreso-modal-list li').allInnerTexts();
@@ -197,17 +242,16 @@ await r.finish('Manejo + Perfil histórico', async () => {
   await egreso.locator('#med-egreso-modal-tab-full').click();
   await egreso.getByRole('button', { name: 'Cerrar' }).click();
 
-  await medRow('XYZ').locator('input[data-med-soap-chk]').check();
-  await page.waitForTimeout(300);
-  await closeToasts(page);
-  await page.getByRole('button', { name: 'Enviar a Estado Actual' }).click();
-  check('"Otros" med with SOAP and no Destino is refused', await toast(/Elige destino para 1 medicamento\(s\) «Otros»/), await toastTexts());
   const destSelectHtml = await medRow('XYZ').locator('select.med-receta-dest').innerHTML();
   check('destino picker offers every therapeutic optgroup (N/HD/HI/NM)',
     ['label="N"', 'label="HD"', 'label="HI"', 'label="NM"'].every((g) => destSelectHtml.includes(g)) &&
     /Analg[eé]sicos/.test(destSelectHtml));
   await medRow('XYZ').locator('select.med-receta-dest').selectOption({ label: 'NM (soporte, crónicos, etc.)' });
   await page.waitForTimeout(300);
+  g = await groups();
+  check('«Cambiar destino» moves XYZ to NM and «Falta destino» disappears', (await groupOf('XYZ')) === 'nm' && !g.includes('falta'), g);
+  await medRow('XYZ').locator('[data-med-soap-chk]').click();
+  await page.waitForTimeout(200);
   await closeToasts(page);
   await page.getByRole('button', { name: 'Enviar a Estado Actual' }).click();
   check('with a Destino it is sent to Estado Actual', await toast(/Propuesta en Estado Actual/), await toastTexts());
@@ -231,25 +275,25 @@ await r.finish('Manejo + Perfil histórico', async () => {
   await openPatient(page, A);
   await openPatient(page, B);
   await openManejo();
-  check('emptying the paste box and closing it keeps the diet', /AYUNO/.test(await page.locator('#med-items-list').innerText().catch(() => '')));
+  check('emptying the paste box and closing it keeps the diet', /AYUNO/.test(await page.locator('#med-diet-chip').innerText().catch(() => '')));
   await r.shot(page, 'diet-only');
 
   // ── IV → oral conversion and RHZE combo (patient C) ───────────────────────
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   await pasteAndSave(page, fullLabs(C, 'Jan 13 2026 8:00AM'));
   await openPatient(page, C);
   await openManejo();
   await importSome(IV_ORAL_LIST);
   check('toast counts 4 meds for patient C', await toast(/Manejo actualizado \(4 medicamento\(s\)\)/), await toastTexts());
-  check('IV dexametasona shows the oral dose/units in the turn list (VO C/24H)',
-    flat(await medRow('DEXAMETASONA').innerText()).includes('DEXAMETASONA 8MG VO C/24H'));
+  check('IV dexametasona shows the oral dose/units in the turn list (VO c/24 h)',
+    flat(await medRow('DEXAMETASONA').locator('.med-row-dose').innerText()) === '8 mg VO c/24 h', flat(await medRow('DEXAMETASONA').innerText()));
   check('IV ketorolaco converts 30mg → 10mg oral in the turn list',
-    flat(await medRow('KETOROLACO').innerText()).includes('KETOROLACO 10MG VO C/8H'));
+    flat(await medRow('KETOROLACO').locator('.med-row-dose').innerText()) === '10 mg VO c/8 h', flat(await medRow('KETOROLACO').innerText()));
   check('RHZE combo shows as DOTBAL with the LUN-MIE-VIE schedule and its Día pill advanced (DIA# 7, 2 days ago → Día 9)',
-    flat(await medRow('DOTBAL').innerText()).includes('DOTBAL 4 TABLETAS LUN-MIE-VIE') &&
+    /Dotbal/.test(flat(await medRow('DOTBAL').innerText())) && /4 tabletas lun-mie-vie/.test(flat(await medRow('DOTBAL').innerText())) &&
     /Día 9/.test(await medRow('DOTBAL').locator('.med-receta-dia').innerText()));
   await closeToasts(page);
-  await page.getByRole('button', { name: 'Abrir texto de egreso' }).click();
+  await page.locator('#med-egreso-open-btn').click();
   const egresoC = page.locator('#med-egreso-modal-backdrop');
   await egresoC.waitFor({ state: 'visible' });
   const linesC = await egresoC.locator('#med-egreso-modal-list li').allInnerTexts();
@@ -307,19 +351,19 @@ await r.finish('Manejo + Perfil histórico', async () => {
   // ── Restart: everything above must still be there ────────────────────────
   await app.close();
   ({ app, page, pageErrors } = await r.launch());
-  await page.locator('#apptab-lab').waitFor({ state: 'visible' });
+  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
   await openPatient(page, A);
   await openManejo();
   check('after restart: A still has 8 meds, losartán still Excl.',
     flat(await page.locator('#med-turno-title-text').innerText()) === 'Medicamentos del turno · 8' &&
-    (await medRow('LOSART').locator('.med-receta-checkcell input').first().isChecked()));
+    (await medRow('LOSART').locator('.med-restore-btn').count()) === 1);
   await openPerfil();
   cells = await openDays('VANCOMICINA');
   check('after restart: the "no administrado" day is kept', (await oneModal.locator('td.not-admin').count()) === 1);
   await page.keyboard.press('Escape');
   await openPatient(page, B);
   await openManejo();
-  check('after restart: B keeps its diet', /AYUNO/.test(await page.locator('#med-items-list').innerText().catch(() => '')));
+  check('after restart: B keeps its diet', /AYUNO/.test(await page.locator('#med-diet-chip').innerText().catch(() => '')));
 
   // ── Eliminar mes ─────────────────────────────────────────────────────────
   await openPatient(page, A);

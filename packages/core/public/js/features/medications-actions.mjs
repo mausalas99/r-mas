@@ -247,6 +247,6 @@ export function setMedRecetaSoapCategory(itemId, category) {
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
   bustMedPanelCache();
-  if (!patchMedRecetaRowSoapUi(itemId)) renderMedRecetaPanel();
-  else renderMedNotaFooter();
+  // A new destino moves the row to another group card: full render.
+  renderMedRecetaPanel();
 }

@@ -1,15 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  buildEaChartsLayoutKey,
-  buildEaChartsSignature,
   buildEaChartsSummary,
   buildGluSeries,
   buildIoChartData,
-  buildVitalsSeries,
-  downsampleEaChartSeries,
-  updateEstadoActualChartsInPlace,
+  stripMonitoreoChartRuntimeCache,
 } from './estado-actual-charts.mjs';
+import {
+  buildAlignedVitalSeries,
+  buildDailyBalanceSeries,
+  buildEaAxisTicks,
+} from './estado-actual-charts-series.mjs';
 
 function gluHistRow(glucometrias) {
   return {
@@ -36,32 +37,11 @@ test('buildGluSeries labels use actual reading datetime, not recordedAt midnight
   assert.doesNotMatch(s.labels.join('|'), / · | - \d/);
 });
 
-test('stripMonitoreoChartRuntimeCache drops persisted chart bundle', async () => {
-  var { stripMonitoreoChartRuntimeCache, getCachedEaChartBundle } = await import(
-    './estado-actual-charts-display.mjs'
-  );
+test('stripMonitoreoChartRuntimeCache drops persisted chart caches', () => {
   /** @type {any} */
-  var monitoreo = {
-    historial: [
-      {
-        recordedAt: new Date(2026, 5, 19, 0, 0, 0).toISOString(),
-        glucometrias: [{ value: 138, time: '16:00' }],
-      },
-      {
-        recordedAt: new Date(2026, 5, 20, 0, 0, 0).toISOString(),
-        glucometrias: [{ value: 142, time: '08:00' }],
-      },
-    ],
-    _eaChartBundle: {
-      slotData: {
-        glu: { labels: ['16:00 · 19/06 00:00'], datasets: [{ data: [138] }] },
-      },
-    },
-    _eaChartBundleRev: 'stale',
-  };
+  var monitoreo = { historial: [], _eaChartBundle: {}, _eaChartBundleRev: 'x', _eaChartsSummary: {}, _eaChartsSummaryRev: 'x' };
   stripMonitoreoChartRuntimeCache(monitoreo);
-  var bundle = getCachedEaChartBundle(monitoreo);
-  assert.match(bundle.slotData.glu.labels[0], /^18\/06 16:00$/);
+  assert.deepEqual(Object.keys(monitoreo), ['historial']);
 });
 
 test('buildGluSeries includes all glucometrias when forCharts is true', () => {
@@ -154,61 +134,47 @@ test('buildIoChartData produces turn balance and global line', () => {
   assert.equal(d.globalBalance[1], 350);
 });
 
-test('buildVitalsSeries collects numeric points with altered flags', () => {
-  const hist = [
+test('buildAlignedVitalSeries keeps rows index-aligned with altered flags', () => {
+  const rows = [
     { recordedAt: '2026-05-26T08:00:00.000Z', vitals: { fc: 82 } },
+    { recordedAt: '2026-05-26T10:00:00.000Z', vitals: { tas: 120 } },
     { recordedAt: '2026-05-26T12:00:00.000Z', vitals: { fc: 120 }, alteredAt: { fc: '11:40' } },
   ];
-  const s = buildVitalsSeries(hist, 'fc');
-  assert.equal(s.values.length, 2);
-  assert.equal(s.values[1], 120);
-  assert.equal(s.alteredFlags[0], false);
-  assert.equal(s.alteredFlags[1], true);
+  const s = buildAlignedVitalSeries(rows, 'fc');
+  assert.deepEqual(s.values, [82, null, 120]);
+  assert.deepEqual(s.altered, [false, false, true]);
 });
 
-test('downsampleEaChartSeries keeps endpoints and full series metadata', () => {
-  const labels = [];
-  const values = [];
-  for (let i = 0; i < 150; i += 1) {
-    labels.push('t' + i);
-    values.push(i);
-  }
-  const sampled = downsampleEaChartSeries(labels, values, [], 100);
-  assert.equal(sampled.labels.length, 100);
-  assert.equal(sampled.values[0], 0);
-  assert.equal(sampled.values[99], 149);
-  assert.equal(sampled.fullLabels.length, 150);
-  assert.equal(sampled.fullValues[149], 149);
-});
-
-test('updateEstadoActualChartsInPlace patches datasets without remount', () => {
-  const hist = [
-    { recordedAt: '2026-05-26T06:00:00.000Z', vitals: { fc: 70 } },
-    { recordedAt: '2026-05-26T12:00:00.000Z', vitals: { fc: 88 } },
+test('buildAlignedVitalSeries out-of-range count uses the real clinical RANGES, not made-up thresholds', () => {
+  const rows = [
+    { recordedAt: '2026-05-26T08:00:00.000Z', vitals: { tas: 145 } }, // RANGES.tas.max = 140
+    { recordedAt: '2026-05-26T10:00:00.000Z', vitals: { tas: 120 } }, // in range
+    { recordedAt: '2026-05-26T12:00:00.000Z', vitals: { tas: 88 } }, // RANGES.tas.min = 90
   ];
-  const monitoreo = { historial: hist };
-  const layoutKey = buildEaChartsLayoutKey(monitoreo);
-  const updates = [];
-  const chart = {
-    data: {
-      labels: ['a', 'b'],
-      datasets: [{ data: [70, 80], borderColor: '#000' }],
-    },
-    update(mode) {
-      updates.push(mode);
-    },
-  };
-  const mountEl = {
-    _eaChartInstance: chart,
-    _eaChartSlotIds: ['vital:hemo'],
-    _eaActiveChartTab: 'vitals',
-    _eaChartsLayoutKey: layoutKey,
-    _eaChartsSig: 'stale',
-  };
-  hist[1].vitals.fc = 95;
-  const ok = updateEstadoActualChartsInPlace(mountEl, monitoreo);
-  assert.equal(ok, true);
-  assert.equal(chart.data.datasets[0].data[1], 95);
-  assert.deepEqual(updates, ['none']);
-  assert.notEqual(buildEaChartsSignature(monitoreo), 'stale');
+  const s = buildAlignedVitalSeries(rows, 'tas');
+  assert.deepEqual(s.altered, [true, false, true]);
+  assert.equal(s.altered.filter(Boolean).length, 2);
+});
+
+test('buildEaAxisTicks writes each day once and the hour only on busy days', () => {
+  const ticks = buildEaAxisTicks(['23/09 06:00', '23/09 14:00', '24/09 08:00', '25/09 08:00']);
+  assert.deepEqual(ticks, [
+    { day: '23/09', hour: '06:00' },
+    { day: '', hour: '14:00' },
+    { day: '24/09', hour: '' },
+    { day: '25/09', hour: '' },
+  ]);
+});
+
+test('buildDailyBalanceSeries sums per day and keeps a running total', () => {
+  const hist = [
+    { recordedAt: new Date(2026, 8, 23, 8).toISOString(), io: { ing: 1000, egr: 600 } },
+    { recordedAt: new Date(2026, 8, 23, 20).toISOString(), io: { ing: 500, egr: 700 } },
+    { recordedAt: new Date(2026, 8, 24, 8).toISOString(), io: { ing: 900, egr: 1200 } },
+  ];
+  const d = buildDailyBalanceSeries(hist);
+  assert.deepEqual(d.days, ['23/09', '24/09']);
+  assert.deepEqual(d.ing, [1500, 900]);
+  assert.deepEqual(d.net, [200, -300]);
+  assert.deepEqual(d.cumulative, [200, -100]);
 });

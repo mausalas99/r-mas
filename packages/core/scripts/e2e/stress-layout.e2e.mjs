@@ -328,7 +328,7 @@ function desktopScreens(sections) {
 
 const MODALS = [
   ['modal-ajustes', '#settings-dropdown', (p) => p.locator('#btn-open-settings').click()],
-  ['modal-atajos', '#shortcuts-backdrop', (p) => p.locator('#btn-header-shortcuts').click()],
+  ['modal-atajos', '#shortcuts-backdrop', async (p) => { await p.locator('.topbar-help-btn').click(); await p.locator('.topbar-help-menu [role="menuitem"]', { hasText: 'Atajos' }).click(); }],
   ['modal-busqueda', '#unified-search-backdrop', (p) => call(p, 'openUnifiedSearch')],
   ['modal-learn-hub', '#learn-hub-backdrop', (p) => call(p, 'openLearnHub')],
   ['modal-pegar-some', '#lab-paste-modal-backdrop, #lab-input', async (p) => { await call(p, 'switchAppTab', 'lab'); await p.locator('#btn-lab-paste').click(); }],
@@ -449,7 +449,7 @@ await r.finish('Screen layout: every screen x size x theme x text size, busy pat
   // «Guía» hint bubbles sit over real controls; this run measures the screens, not the hints.
   await page.evaluate((ids) => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(ids)), FEATURE_HINTS.map((h) => h.id));
   await page.reload();
-  await page.locator('#apptab-lab').waitFor({ state: 'visible' });
+  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
 
   // ── Seed: busy one, 1 kB name, 33 fillers → 35 active ───────────────────
   for (let back = 5; back >= 0; back--) await pasteAndSave(page, fullLabs(BUSY, dayStr(back, 6 + back)));

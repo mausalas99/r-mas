@@ -28,7 +28,7 @@
  *
  *   npm run e2e:drive-import
  */
-import { createRun, onboardLocalOnly, closeToasts, openPatient, pasteAndSave, until } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, openPatient, pasteAndSave, until, goArea } from './harness.mjs';
 import { header, TABLE } from './some-fixtures.mjs';
 
 const P1 = { exp: '7000123-4', name: 'DEMO DRIVE IMPORT', room: '410' };
@@ -63,9 +63,9 @@ async function importFast(page, mode, text) {
 /** Paciente → Clínico → Eventualidades, where the "Importar desde Drive" button lives. */
 async function goEventualidades(page) {
   await closeToasts(page);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
-  await page.locator('.exp-group-section', { hasText: 'Eventualidades' }).click();
+  await page.locator('.exp-group-section[data-section="eventualidades"]').click();
 }
 
 async function closeDriveImport(page) {
@@ -115,14 +115,14 @@ const eventualidadesCount = (page) => page.locator('#exp-pane-eventualidades .ev
 await r.finish('Drive import: eventualidades dedupe + HC patch UNREACHABLE', async () => {
   const { app, page, pageErrors } = await r.launch();
   await onboardLocalOnly(page);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   const doc0 =
     header(P1, 'Sep 24 2026 8:00AM') + 'BIOMETRIA HEMATICA\n' + TABLE + 'HEMOGLOBINA\tB\t13.2\tg/dL\t14.0 - 18.0\n';
   await pasteAndSave(page, doc0);
   await openPatient(page, P1);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
-  await page.locator('.exp-group-section', { hasText: 'Eventualidades' }).click();
+  await page.locator('.exp-group-section[data-section="eventualidades"]').click();
 
   // ── 1: first import adds one eventualidad ───────────────────────────────
   const doc1 = 'EVENTUALIDADES\n01/06\nSE INDICA DIETA';
@@ -289,7 +289,7 @@ await r.finish('Drive import: eventualidades dedupe + HC patch UNREACHABLE', asy
   const msgA = await importApproved(page);
   check('import → toast reports 4 fechas de laboratorio nuevas', /4 fechas de laboratorio nuevas/.test(msgA), msgA);
 
-  if (!(await page.locator('#lab-inner-labs-btn').isVisible())) await page.locator('#apptab-lab').click();
+  if (!(await page.locator('#lab-inner-labs-btn').isVisible())) await goArea(page, 'lab');
   await page.locator('#lab-inner-labs-btn').click().catch(() => {});
   const histDays = await page.locator('#lab-history-date-select option').allTextContents();
   check('lab history lists the 4 Drive days', ['01/06/2025', '02/06/2025', '03/06/2025', '04/06/2025'].every((d) => histDays.includes(d)), histDays);

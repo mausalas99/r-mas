@@ -46,7 +46,7 @@
  *
  *   npm run e2e:pendientes
  */
-import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub, until } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub, until, goArea } from './harness.mjs';
 import { startWorker, stopWorker, nubeDevices, onboardNube, patientVisible, BASE } from './nube-worker.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 
@@ -72,7 +72,7 @@ const { check } = r;
 /** Paciente → Pendientes pill. */
 async function goPendientes(page) {
   await closeToasts(page);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.locator('button:visible', { hasText: /^\s*Pendientes\s*$/ }).first().click();
   await page.locator('.todo-toolbar-add-btn:visible').waitFor();
 }
@@ -131,7 +131,7 @@ async function addPendiente(page, { text, prio = 'MEDIA', due = null, remind = f
 await r.finish('Pendientes: add, dates, priority, edit, listo/deshacer, delete, scope, restart', async () => {
   const { app, page, pageErrors } = await r.launch();
   await onboardLocalOnly(page);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   await pasteAndSave(page, fullLabs(P1, 'Sep 20 2026 8:00AM'));
   await pasteAndSave(page, fullLabs(P2, 'Sep 20 2026 8:30AM'));
   await openPatient(page, P2);
@@ -321,7 +321,7 @@ await r.finish('Pendientes: add, dates, priority, edit, listo/deshacer, delete, 
   const errors = [...pageErrors];
   await app.close();
   const again = await r.launch();
-  await again.page.locator('#apptab-lab').waitFor({ state: 'visible', timeout: 30000 });
+  await again.page.locator('#app-main-tablist').waitFor({ state: 'visible', timeout: 30000 });
   await dismissLearnHub(again.page);
   await openPatient(again.page, P1);
   await goPendientes(again.page);
@@ -360,7 +360,7 @@ await r.finish('Pendientes: add, dates, priority, edit, listo/deshacer, delete, 
     await d.page.locator('#btn-connection-dropdown-close').click().catch(() => {});
     await d.page.keyboard.press('Escape');
     await dismissLearnHub(d.page);
-    await d.page.locator('#apptab-lab').click();
+    await goArea(d.page, 'lab');
   }
   const P3 = { exp: '7000603-3', name: 'DEMO PENDIENTE TRES', room: '503' };
   await pasteAndSave(A.page, fullLabs(P3, 'Sep 20 2026 9:00AM'));

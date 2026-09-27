@@ -127,7 +127,7 @@ const TARGETS = {
   profile:           { appTab: null,   selector: '#profile-modal .modal',                    focus: false,
                        openProfile: true },
   wrap:              { appTab: null,   selector: '#ic-board-mount:not([hidden]), aside .sidebar-header', focus: false },
-  quick_wrap:        { appTab: null,   selector: '#btn-open-learn, aside .sidebar-header', focus: false },
+  quick_wrap:        { appTab: null,   selector: '.topbar-help-btn, #btn-open-learn, aside .sidebar-header', focus: false },
   livesync_desktop:  { appTab: null,   selector: '#btn-header-team-sync, #connection-dropdown',                    focus: false,
                        openConnection: true,
                        spotlightClass: 'tour-spotlight-action' },
