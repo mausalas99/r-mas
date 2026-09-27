@@ -794,6 +794,10 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z[data-soap] em {
   margin: 0 0 8px;
   font: 600 1.05em/1.3 var(--font-ui);
 }
+/* The Resumen keeps chips on one line; the picker must wrap them. */
+.patient-dash-ic-modal .chips {
+  flex-wrap: wrap;
+}
 #patient-ic-panel.patient-dash-ic-modal [data-ic-done],
 #patient-svc-pick-panel.patient-dash-ic-modal [data-svc-pick-done] {
   margin-top: 12px;

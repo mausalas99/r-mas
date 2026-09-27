@@ -14,6 +14,7 @@ import { labPanelBridge } from './lab-panel-bridge.mjs';
 import {
   renderLabHistoryPanel,
   maybeShowLabHistoryForActivePatient,
+  clearLabOutputDom,
 } from './lab-panel-history.mjs';
 import { pushLabHistory, finalizeLabHistoryImport, fillPlaceholderNameFromLab } from './lab-panel-workbench-store.mjs';
 import { bumpLabHistoryRevision } from '../lab-history-cache.mjs';
@@ -42,10 +43,7 @@ function clearLabInputAfterSuccessfulParse() {
 /** @param {{ keepInput?: boolean }} [opts] */
 export function limpiarReporte(opts) {
   if (!(opts && opts.keepInput)) document.getElementById('lab-input').value = '';
-  document.getElementById('lab-banner').style.display = 'none';
-  document.getElementById('lab-diagrams-section').style.display = 'none';
-  document.getElementById('diagrams-grid').innerHTML = '';
-  document.getElementById('lab-output-box').innerHTML = '';
+  clearLabOutputDom();
   labPanelBridge.setActiveLab(null);
   closeLabSomeTablesModal();
   maybeShowLabHistoryForActivePatient({ forceReload: true });

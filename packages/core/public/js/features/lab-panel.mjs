@@ -65,12 +65,15 @@ import {
 } from './lab-manual-entry.mjs';
 import { openLabPasteModal, closeLabPasteModal } from './lab-paste-modal.mjs';
 var activeLab = null;
+/** Patient on screen when activeLab was set — lab output must never outlive a patient switch. */
+var activeLabPatientId = null;
 
 labPanelBridge.getActiveLab = function () {
   return activeLab;
 };
-labPanelBridge.setActiveLab = function (next) {
-  activeLab = next;
+labPanelBridge.setActiveLab = setActiveLab;
+labPanelBridge.getActiveLabPatientId = function () {
+  return activeLabPatientId;
 };
 labPanelBridge.renderOutput = renderOutput;
 labPanelBridge.syncLabOutputChrome = syncLabOutputChrome;
@@ -89,6 +92,7 @@ export function getActiveLab() {
 
 export function setActiveLab(next) {
   activeLab = next;
+  activeLabPatientId = next ? rt.getActiveId() : null;
 }
 
 export function rerenderParsedLabOutputAfterPrefsChange() {
