@@ -124,7 +124,7 @@ const TARGETS = {
                        spotlightClass: 'tour-spotlight-soap' },
   ic_exports:        { appTab: null,   selector: '#settings-dropdown',                       focus: false,
                        openSettings: true },
-  profile:           { appTab: null,   selector: '#settings-accordion-perfil',               focus: false,
+  profile:           { appTab: null,   selector: '#profile-modal .modal',                            focus: false,
                        openProfile: true },
   wrap:              { appTab: null,   selector: '#ic-board-mount:not([hidden]), aside .sidebar-header', focus: false },
   quick_wrap:        { appTab: null,   selector: '.topbar-help-btn, #btn-open-learn, aside .sidebar-header', focus: false },

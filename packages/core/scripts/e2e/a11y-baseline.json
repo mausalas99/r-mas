@@ -55,9 +55,6 @@
     }
   },
   "ajustes-panel": {
-    "ajustes-perfil": {
-      "color-contrast": 3
-    },
     "ajustes-apariencia": {
       "color-contrast": 1
     },
@@ -79,9 +76,13 @@
     "ajustes-peligro": {
       "color-contrast": 1
     },
+    "perfil-interconsulta": {
+      "color-contrast": 5
+    },
     "perfil-autosave": {
-      "color-contrast": 3
-    }
+      "color-contrast": 7
+    },
+    "perfil-dark": {}
   },
   "censo-columnas": {
     "export-dialog": {

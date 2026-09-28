@@ -1,37 +1,35 @@
 /**
- * Perfil — lives in Ajustes › Perfil (boards «Ajustes A» + «Mi perfil B»):
- * autosave, a live preview of how it prints, and Médico tratante picked
- * from the Nube team. «Mi perfil» entry points open Ajustes on this panel.
+ * Mi perfil — its own window (person icon in the top bar): autosave and
+ * Médico tratante picked from the Nube team.
  */
 import { isMobileWeb } from "../mobile-web.mjs";
+import { closeModalAnimated } from "../ui-motion.mjs";
 import { loadSettings } from "./profile-load.mjs";
 import { saveSettings } from "./profile-save.mjs";
 import { clinicalSessionContext } from "../clinical-session-context.mjs";
 import { filterJoinedTeams } from "./clinical-teams/shared.mjs";
 import { readRpcSettings } from "../clinical-settings.mjs";
 
-const PERFIL_PANEL = "settings-accordion-perfil";
 const OTHER = "__otro__";
 const RANK_ORDER = ["R4", "R3", "R2", "R1"];
 
 export function openProfileModal() {
   if (isMobileWeb()) return;
-  void import("./settings-help/settings-dropdown.mjs").then(function (m) {
-    m.openSettingsPanel(PERFIL_PANEL);
-  });
+  var modal = document.getElementById("profile-modal");
+  if (!modal) return;
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden", "false");
+  queueMicrotask(initPerfilPanel);
 }
 
 export function closeProfileModal() {
-  void import("./settings-help/settings-dropdown.mjs").then(function (m) {
-    var active = document.querySelector(".settings-panel.is-active");
-    if (m.isSettingsDropdownOpen() && active && active.id === PERFIL_PANEL) m.closeSettingsDropdown();
-  });
+  closeModalAnimated(document.getElementById("profile-modal"));
 }
 
 export function toggleProfileSection() {
-  var active = document.querySelector(".settings-panel.is-active");
-  var open = document.getElementById("settings-dropdown-backdrop")?.classList.contains("open");
-  if (open && active && active.id === PERFIL_PANEL) closeProfileModal();
+  var modal = document.getElementById("profile-modal");
+  if (!modal) return;
+  if (modal.classList.contains("open")) closeProfileModal();
   else openProfileModal();
 }
 
@@ -116,8 +114,8 @@ function val(id) {
   return el ? String(el.value || "").trim() : "";
 }
 
-/** Identity card + «Así sale en tus documentos», from what the form holds right now. */
-export function renderPerfilPreview(root) {
+/** Identity card, from what the form holds right now. */
+export function renderPerfilIdentity(root) {
   var doctor = val("profile-doctor");
   var user = clinicalSessionContext.user || {};
   var st = readRpcSettings();
@@ -129,21 +127,6 @@ export function renderPerfilPreview(root) {
   setText("[data-perfil-avatar]", initialsOf(name));
   setText("[data-perfil-name]", name);
   setText("[data-perfil-meta]", [user.username ? "@" + user.username : "", user.sala || st.clinicalSala || ""].filter(Boolean).join(" · "));
-  var salaSel = document.getElementById("profile-censo-sala");
-  var salaText = salaSel && salaSel.selectedIndex > 0 ? salaSel.options[salaSel.selectedIndex].text : "";
-  setText("[data-prev-censo-title]", "Censo de guardia" + (salaText ? " · " + salaText : ""));
-  var today = new Date().toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
-  setText("[data-prev-censo-sub]", [val("profile-censo-fimi-label"), val("settings-default-servicio") || "Sin servicio", today].filter(Boolean).join(" · "));
-  setText("[data-prev-firma]", doctor || "—");
-  var medicos = [["Prof.", "profesor"], ["R4", "r4"], ["R2", "r2"], ["R1", "r1a"]]
-    .map(function (pair) {
-      var v = val("settings-medico-" + pair[1]);
-      if (pair[1] === "r1a" && val("settings-medico-r1b")) v = [v, val("settings-medico-r1b")].filter(Boolean).join(", ");
-      return v ? pair[0] + " " + v : "";
-    })
-    .filter(Boolean)
-    .join(" · ");
-  setText("[data-prev-medicos]", medicos || "—");
 }
 
 var autosaveTimer = null;
@@ -171,11 +154,11 @@ function onPerfilInput(root, ev) {
       else input.focus();
     }
   }
-  renderPerfilPreview(root);
+  renderPerfilIdentity(root);
   if (t.matches("input[type=text], select") && !t.matches('[name="app-mode"]')) scheduleAutosave(root);
 }
 
-/** Wire Ajustes › Perfil once, then refresh it every time it shows. */
+/** Wire Mi perfil once, then refresh it every time it opens. */
 export function initPerfilPanel() {
   var root = document.getElementById("profile-body");
   if (!root) return;
@@ -186,7 +169,7 @@ export function initPerfilPanel() {
     root.addEventListener("change", function (ev) { onPerfilInput(root, ev); });
     root.querySelector("[data-perfil-fill-team]")?.addEventListener("click", function () {
       if (fillCensoTeamFromNube()) scheduleAutosave(root);
-      renderPerfilPreview(root);
+      renderPerfilIdentity(root);
     });
     // Censo PDF fields sit in Documentos but save with the profile.
     var docs = document.getElementById("settings-accordion-documents");
@@ -197,7 +180,7 @@ export function initPerfilPanel() {
     });
   }
   syncDoctorPicker(root);
-  renderPerfilPreview(root);
+  renderPerfilIdentity(root);
   var chip = root.querySelector("[data-perfil-saved]");
   if (chip) chip.textContent = "Se guarda solo";
 }

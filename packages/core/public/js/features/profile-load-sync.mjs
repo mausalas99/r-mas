@@ -35,7 +35,7 @@ export function syncProfileModalLayout() {
   var bridge = document.getElementById("profile-clinical-bridge");
   if (bridge) bridge.hidden = !isDbMode();
   // Each part shows only in the mode that uses it (Sala: censo y listado; Interconsulta: notas e indicaciones).
-  document.querySelectorAll("#settings-dropdown [data-profile-mode]").forEach(function (el) {
+  document.querySelectorAll("#settings-dropdown [data-profile-mode], #profile-modal [data-profile-mode]").forEach(function (el) {
     el.hidden = el.getAttribute("data-profile-mode") !== (sala ? "sala" : "interconsulta");
   });
 }

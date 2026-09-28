@@ -3123,18 +3123,59 @@ select.profile-input.profile-select {
 .settings-seg-opt input:focus-visible + span {
   outline: 2px solid color-mix(in oklab, var(--action) 55%, transparent);
 }
-/* Mi perfil B: form + live preview. */
-.settings-dropdown-modal .settings-panel.settings-accordion:not([hidden]) > .settings-acc-body.settings-perfil {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
-  align-items: start;
+/* Mi perfil: its own window. Two columns of form + live preview, sized to fit without scrolling. */
+.profile-modal--perfil {
+  width: min(820px, calc(100vw - 28px));
+  max-height: min(92vh, 900px);
 }
-.settings-perfil-id {
+.settings-perfil-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+  align-content: start;
+  min-width: 0;
+}
+.settings-perfil-form > .settings-perfil-id,
+.settings-perfil-form > .profile-row,
+.settings-perfil-form > .settings-perfil-foot {
+  grid-column: 1 / -1;
+}
+.settings-perfil-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+[data-profile-mode][hidden] {
+  display: none !important;
+}
+/* Interconsulta has no team column: the form takes the full width. */
+.settings-perfil-form:has(> .settings-perfil-col[hidden]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+/* Narrow column: title + hint on top, control under it. */
+.settings-perfil-form .settings-card {
+  grid-template-columns: minmax(0, 1fr);
+}
+.settings-perfil-form .settings-card__action {
+  justify-content: flex-start;
+}
+.settings-perfil-form .settings-section-label {
+  margin: 0;
+}
+.settings-perfil-form label.settings-card__title {
+  display: block;
+  margin: 0;
+  line-height: 1.35;
+}
+.settings-perfil-form .settings-card__action .profile-input {
+  width: 100%;
+  min-width: 0;
+}
+.settings-perfil-form .settings-perfil-id {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 8px;
   padding: 14px 16px;
   border: var(--border-hairline);
   border-radius: var(--radius-md);
@@ -3177,70 +3218,30 @@ select.profile-input.profile-select {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-width: 220px;
+  max-width: 100%;
+}
+.settings-perfil-doctor .profile-input {
+  width: 100%;
+  min-width: 0;
 }
 .settings-perfil-foot {
   margin-top: 14px;
 }
-.settings-perfil-preview {
-  position: sticky;
-  top: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 16px;
-  border: var(--border-hairline);
-  border-radius: var(--radius-md);
-  background: color-mix(in oklab, var(--text) 3%, var(--color-elevated));
-}
-.settings-perfil-doc {
-  padding: 12px 14px;
-  border-radius: var(--radius-badge);
-  background: var(--surface);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-}
-.settings-perfil-doc[hidden] {
-  display: none;
-}
-.settings-perfil-doc-label {
-  margin: 0 0 4px;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-.settings-perfil-doc-title {
-  margin: 0;
-  font-weight: 700;
-  color: var(--text);
-}
-.settings-perfil-doc-sub {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-.settings-perfil-doc-sign {
-  margin: 0;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 16px;
-  font-style: italic;
-  color: var(--text);
-}
-#settings-panels {
-  container-type: inline-size;
-}
-.settings-perfil-preview {
-  position: static;
-}
-@container (min-width: 700px) {
-  .settings-dropdown-modal .settings-panel.settings-accordion:not([hidden]) > .settings-acc-body.settings-perfil {
-    grid-template-columns: minmax(0, 1fr) 260px;
-  }
-  .settings-perfil-preview {
-    position: sticky;
-  }
-}
 [data-settings-db-only][hidden] {
   display: none;
+}
+/* Mi perfil: both columns start on the same line and end flush with their cards. */
+.settings-perfil-form .settings-section-label,
+.settings-perfil-form .settings-section-head {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  margin: 0;
+}
+.settings-perfil-form .settings-section-head {
+  justify-content: space-between;
+}
+.settings-perfil-form .settings-section-head .wb-btn,
+.settings-perfil-foot .wb-btn {
+  padding-inline: 0;
 }

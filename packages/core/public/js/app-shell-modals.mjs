@@ -9,6 +9,7 @@ import {
 } from './modal-dismiss.mjs';
 import { isRpcDatePopoverOpen, closeRpcDatePopover } from './rpc-date-picker.mjs';
 import { closeTemplatesModal } from './features/profile.mjs';
+import { closeModalAnimated } from './ui-motion.mjs';
 import { closeClinicoUnlockModal } from './clinico-access.mjs';
 import { closeSOAPModal } from './features/soap-estado.mjs';
 import { closeProcedureAgendaModal } from './features/agenda.mjs';
@@ -157,6 +158,7 @@ function wireModalDismissLayers(registry) {
     panelSelector: '.modal',
   });
   regOpenClass(registry, 'modal', closeModal, { confirmClose: confirmCloseAddPatientModal });
+  regOpenClass(registry, 'profile-modal', () => closeModalAnimated(document.getElementById('profile-modal')));
   regOverlay(registry, 'templates-modal', closeTemplatesModal);
   regOverlay(registry, 'extra-templates-modal', closeExtraTemplatesManager);
   regOpenClass(registry, 'unified-search-backdrop', closeUnifiedSearch);
