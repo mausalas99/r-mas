@@ -1,0 +1,16 @@
+{
+  "patient": {
+    "name": "DEMO PÉREZ JUAN",
+    "expediente": "9000095-7",
+    "sexo": "M",
+    "edad": "67 años",
+    "fecha": "18/05/2026",
+    "hora": "16:58",
+    "ubicacion": "SERVICIO DEMO"
+  },
+  "resLabs": [
+    "ASPIRADO TRAQUEAL 18/05: ESCHERICHIA COLI · BLEE\nATB R: AMP, AMP-SULB, CAZ-AVI, CIPRO, FEP, GENT, LVX, PIP/TAZO, TETRA, TMP/SMX, TOBRA | I: CFXN | ESBL: AZTREONAM, CAZ, CFTX, CTX | S: AMIK, ERTA, IMI, MERO\nCuenta: 50,000 UFC/ML\n\nASPIRADO TRAQUEAL 18/05: ACINETOBACTER BAUMANNII COMPLEX\nATB R: AMIK, AMP-SULB, CAZ, CFTX, CIPRO, GENT, IMI, MERO, TMP/SMX, TOBRA | I: COLISTINA, FEP\nCuenta: 80,000 UFC/ML"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+}

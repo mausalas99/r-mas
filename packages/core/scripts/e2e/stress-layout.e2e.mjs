@@ -185,7 +185,7 @@ function probe({ rootSel, dark }) {
           }
         }
       }
-      if (el.matches('button, a.wb-btn') && !el.matches('[role="tab"], [role="tablist"] *, .inner-tab, .app-tab, [role="menuitem"], [role="option"], [role="switch"], .toast-close, .tend-section-toggle')) {
+      if (el.matches('button, a.wb-btn') && !el.matches('[role="tab"], [role="tablist"] *, .settings-nav-item, .inner-tab, .app-tab, [role="menuitem"], [role="option"], [role="switch"], .toast-close, .tend-section-toggle')) {
         const label = (el.innerText || '').trim();
         const b = el.getBoundingClientRect();
         const r0 = parseFloat(cs.borderTopLeftRadius) || 0;
@@ -374,8 +374,16 @@ async function tabWalk(page, presses, scopeSel) {
       const el = document.activeElement;
       if (!el || el === document.body) return { body: true };
       const cs = getComputedStyle(el);
-      const b = el.getBoundingClientRect();
-      const ring = (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0) || cs.boxShadow !== 'none';
+      const ca = getComputedStyle(el, '::after');
+      let b = el.getBoundingClientRect();
+      // .card-open-btn is 0×0; its ::after covers the card and carries the ring.
+      if (!b.width && !b.height && ca.content !== 'none' && ca.position === 'absolute') {
+        let host = el.parentElement;
+        while (host && getComputedStyle(host).position === 'static') host = host.parentElement;
+        if (host) b = host.getBoundingClientRect();
+      }
+      const ring = (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0) || cs.boxShadow !== 'none' ||
+        (ca.outlineStyle !== 'none' && parseFloat(ca.outlineWidth) > 0);
       const name = (el.id ? '#' + el.id : el.tagName.toLowerCase() + '.' + String(el.className || '').split(/\s+/)[0]) + ' «' + ((el.getAttribute('aria-label') || el.innerText || el.value || '').trim().slice(0, 24)) + '»';
       return {
         name, ring, fv: el.matches(':focus-visible'),

@@ -84,12 +84,15 @@ await r.finish('Admin code set + change in app', async () => {
   const D = await launchDevice('nube-admin', 3795);
   await onboardNube(D.page, { username: `demo_admin_${tag}`, name: 'Dra. Demo Admin', rank: 'R2' });
   await D.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
-  const cb = D.page.locator('#clinical-profile-admin');
+  // Equipo (board B) links to the profile form: «Mi perfil» opens ⇄ Cuenta.
+  await D.page.locator('.clinical-teams-profile-link button').first().click();
+  const cb = D.page.locator('[data-cloud-view="cuenta"] #clinical-profile-admin');
   await cb.waitFor({ state: 'visible' });
   check('checkbox starts unchecked', (await cb.isChecked()) === false);
   await cb.click();
   const modal = D.page.locator('#clinical-admin-code-backdrop.open');
   await modal.waitFor({ state: 'visible' });
+  await r.shot(D.page, 'admin-code-setup');
   const setupLead = await D.page.locator('#clinical-admin-code-lead').textContent();
   check('no code yet → modal opens in setup mode', /Aún no hay código de administración/.test(setupLead), setupLead);
   check('setup mode hides the "current code" field', await D.page.locator('#clinical-admin-code-current-group').isHidden());

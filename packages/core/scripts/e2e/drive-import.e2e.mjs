@@ -42,6 +42,7 @@ async function openDriveImportAndPaste(page, mode, text) {
   await page.locator('#btn-drive-import').click();
   const backdrop = page.locator('#drive-import-backdrop.open');
   await backdrop.waitFor({ state: 'visible' });
+  await r.shot(page, 'drive-import-modal');
   await page.locator(`input[name="drive-import-mode"][value="${mode}"]`).check();
   await page.locator('#drive-import-input').fill(text);
   return backdrop;
@@ -81,6 +82,7 @@ async function openReview(page, mode, text) {
   await review.waitFor({ state: 'visible', timeout: 1500 }).catch(() => {});
   if (!(await review.isVisible())) await page.locator('#drive-import-confirm').click();
   await review.waitFor({ state: 'visible', timeout: 4000 });
+  await r.shot(page, 'drive-import-review');
 }
 
 /** Registro-mismatch warning text, '' when hidden. */

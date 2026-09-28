@@ -83,12 +83,11 @@ export const FEATURE_HINTS = [
     kind: 'guia',
     title: 'Ventana Conexión',
     steps: [
-      { sel: '.cloud-sync-conexion [data-cloud-status-chip]', text: '<strong>Nube al día</strong> quiere decir que tus cambios ya se subieron y tu equipo los ve. <strong>Pendiente</strong> quiere decir que aún faltan por subir.' },
-      { sel: '.cloud-sync-conexion [data-cloud-room-code]', text: 'Este <strong>Código</strong> es de tu sala. Compártelo con tu equipo: con él se unen y ven el mismo censo.' },
-      { sel: '.cloud-sync-conexion .cloud-sync-options-entry', action: true, text: 'Toca <strong>Opciones</strong>.' },
-      { sel: '.cloud-sync-conexion [data-cloud-view="equipo"]', text: '<strong>Equipo</strong>: tu @usuario, tus equipos y tu sala.' },
-      { sel: '.cloud-sync-conexion [data-cloud-view="mobile"]', text: '<strong>iPad / R+ Móvil</strong>: un QR para ver el censo en el iPad o el celular.' },
-      { sel: '.cloud-sync-conexion [data-cloud-view="nube"]', text: '<strong>Diagnóstico Nube</strong>: si algo no sube, aquí ves el estado y las alertas.' },
+      { sel: '.cloud-sync-conexion .cloud-sync-conexion-head:has([data-cloud-hero]:not([data-signed-out]))', text: '<strong>Todo al día</strong> quiere decir que tus cambios ya subieron y tu equipo los ve. Si algo falla, aquí lo dice y te da el botón para reintentar.' },
+      { sel: '.cloud-sync-conexion .cloud-sync-inset-row--kv:has([data-cloud-room-code])', text: 'Este <strong>Código para invitar</strong> es de tu sala. Compártelo: con él tu equipo se une y ve el mismo censo.' },
+      { sel: '.cloud-sync-conexion .cloud-sync-options-row[data-cloud-view="nube"]', text: '<strong>Detalles técnicos</strong>: si algo no sube, aquí ves el estado y las alertas.' },
+      // Last: the click leaves this screen. The row says «Equipo y administración» for admins, «Equipo y cuenta» otherwise.
+      { sel: '.cloud-sync-conexion .cloud-sync-options-row[data-cloud-action="nav-options"]', action: true, text: 'Toca <strong>Equipo</strong>: tu @usuario, tus equipos y el iPad.' },
     ],
   },
   {
@@ -145,8 +144,8 @@ export const FEATURE_HINTS = [
     title: 'Datos',
     steps: [
       { sel: '#btn-exp-datos-open, #patient-dashboard-mount .dash-name', action: true, text: 'Datos tiene un diseño nuevo. Ábrelo aquí.' },
-      { sel: '.exp-datos-col--props', text: 'Datos, diagnósticos y accesos en un solo lugar. Cada cambio se guarda solo.' },
-      { sel: '.exp-datos-col--censo', text: 'Esto es lo que sale en el censo. <strong>↻ Tomar de lista</strong> lo llena desde el expediente.' },
+      { sel: '.exp-datos-summary', text: 'Arriba, lo esencial: cama, edad, peso, registro y día de estancia. El <strong>Equipo</strong> se cambia aquí.' },
+      { sel: '.exp-datos-tabs', text: '<strong>Censo</strong>, <strong>Cama e ingreso</strong> e <strong>Identidad</strong>: toca uno para verlo. Cada cambio se guarda solo.' },
       { sel: '#patient-censo-meds .exp-datos-line:not(.exp-datos-line--empty)', text: '¿Un medicamento no va en el censo? Tócalo, borra el texto y sal del campo. Solo se quita del censo, no de la receta.' },
     ],
   },

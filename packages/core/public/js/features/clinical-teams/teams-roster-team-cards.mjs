@@ -164,25 +164,12 @@ export function renderMembersBlock(members, { compact = false, teamId = '' } = {
     : '<li class="clinical-teams-empty clinical-teams-empty--inline">Sin integrantes</li>';
   const heading = count === 1 ? 'Integrantes (1)' : `Integrantes (${count})`;
   const listHtml = `<ul class="clinical-teams-member-rows">${rows}</ul>`;
-  const tid = String(teamId || '').trim();
-  const compactClass = compact ? ' clinical-teams-card-members--compact' : '';
-  if (!tid) {
-    return `
-    <div class="clinical-teams-card-members${compactClass}">
+  // Always open: in the card grid you pick a team by who is in it.
+  return `
+    <div class="clinical-teams-card-members${compact ? ' clinical-teams-card-members--compact' : ''}">
       <h6 class="clinical-teams-members-heading">${heading}</h6>
       ${listHtml}
     </div>`;
-  }
-  // ".members2" (not ".members"): the joined-team card used to default this open, so many
-  // users already have the old key stuck at open in localStorage — a new key name is the
-  // only way to actually land the new collapsed-by-default card for them.
-  return renderClinicalTeamsCollapsible({
-    collapseKey: `card.${tid}.members2`,
-    defaultOpen: false,
-    className: `clinical-teams-collapse--card-block clinical-teams-card-members${compactClass}`,
-    summaryHtml: `<span class="clinical-teams-members-heading">${heading}</span>`,
-    bodyHtml: listHtml,
-  });
 }
 
 /**
@@ -431,34 +418,31 @@ export function renderJoinedTeamCard(team, siblingTeams = []) {
   const teamId = String(team.team_id || '');
   const members = Array.isArray(team.members) ? team.members : [];
   const manage = renderTeamManageBlock(team, siblingTeams);
+  const check = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"></path></svg>';
 
-  const detailsBody = `
-      ${renderInheritedPatientsPreview(team, siblingTeams)}
-      ${renderMembersBlock(members, { teamId })}
-      ${renderMyCycleEditBlock(team, user)}
-      ${shouldShowInheritPatientsUi() ? renderInheritPatientsBox(team) : ''}
-      ${renderLeaveTeamBox(team)}
-      ${renderTeamInviteCollapsible(team, teamId)}`;
-
+  // Status first (like Nube): which team you are in, then its people, then the rare stuff.
   return `
     <article class="clinical-teams-card clinical-teams-card--mine" data-team-id="${escapeAttr(teamId)}">
-      <div class="clinical-teams-card-top${manage.actionsHtml ? ' clinical-teams-card-top--directory' : ''}">
+      <div class="clinical-teams-mine-hero">
+        <span class="clinical-teams-mine-check">${check}</span>
         <div class="clinical-teams-card-top-text">
-          <p class="clinical-teams-card-eyebrow">Residente líder</p>
+          <p class="clinical-teams-card-eyebrow">Estás en</p>
           <h5 class="clinical-teams-card-title">${escapeHtml(team.name || 'Equipo')}</h5>
           ${renderTeamMetaLine(team)}
           ${renderTeamPatientCountLine(team)}
         </div>
-        ${manage.actionsHtml ? `<div class="clinical-teams-card-actions">${manage.actionsHtml}</div>` : ''}
+        <div class="clinical-teams-card-actions">
+          <button type="button" class="wb-btn wb-btn-primary clinical-teams-copy-invite-btn" data-team-id="${escapeAttr(teamId)}">Invitar</button>
+          ${manage.actionsHtml}
+        </div>
       </div>
       ${manage.editPanelHtml}
-      ${renderClinicalTeamsCollapsible({
-        collapseKey: `card.${teamId}.details`,
-        defaultOpen: false,
-        className: 'clinical-teams-collapse--card-block',
-        summaryHtml: '<span class="clinical-teams-invite-summary">Detalles del equipo</span>',
-        bodyHtml: detailsBody,
-      })}
+      ${renderInheritedPatientsPreview(team, siblingTeams)}
+      ${renderMembersBlock(members, { compact: true, teamId })}
+      ${renderMyCycleEditBlock(team, user)}
+      ${shouldShowInheritPatientsUi() ? renderInheritPatientsBox(team) : ''}
+      ${renderTeamInviteCollapsible(team, teamId)}
+      ${renderLeaveTeamBox(team)}
     </article>`;
 }
 
@@ -476,25 +460,23 @@ export function renderDirectoryTeamCard(team, opts = {}) {
   const patientsPreview = opts.patientsPreviewHtml || '';
   const actionButtons = [joinBtn, manage].filter(Boolean).join('');
   const staged = Number(team.rotation_active) === 0;
-  const eyebrowClass = staged
-    ? 'clinical-teams-card-eyebrow clinical-teams-card-eyebrow--staged'
-    : 'clinical-teams-card-eyebrow';
-  const eyebrowLabel = staged ? 'Próxima rotación · aún no activo' : 'Equipo en sala';
+  // Only a staged team needs a label; «Equipo en sala» fit every card in the list.
+  const eyebrow = staged
+    ? '<p class="clinical-teams-card-eyebrow clinical-teams-card-eyebrow--staged">Próxima rotación · aún no activo</p>'
+    : '';
 
   return `
     <article class="clinical-teams-card clinical-teams-card--directory" data-team-id="${escapeAttr(teamId)}">
-      <div class="clinical-teams-card-top clinical-teams-card-top--directory">
-        <div class="clinical-teams-card-top-text">
-          <p class="${eyebrowClass}">${escapeHtml(eyebrowLabel)}</p>
-          <h5 class="clinical-teams-card-title">${escapeHtml(team.name || '')}</h5>
-          ${renderTeamMetaLine(team)}
-          ${renderTeamPatientCountLine(team)}
-        </div>
-        ${actionButtons ? `<div class="clinical-teams-card-actions">${actionButtons}</div>` : ''}
+      <div class="clinical-teams-card-top-text">
+        ${eyebrow}
+        <h5 class="clinical-teams-card-title">${escapeHtml(team.name || '')}</h5>
+        ${renderTeamMetaLine(team)}
+        ${renderTeamPatientCountLine(team)}
       </div>
-      ${joinHint ? `<p class="clinical-teams-card-join-reason">${escapeHtml(joinHint)}</p>` : ''}
       ${patientsPreview}
-      ${editPanel}
       ${renderMembersBlock(members, { compact: true, teamId })}
+      ${joinHint ? `<p class="clinical-teams-card-join-reason">${escapeHtml(joinHint)}</p>` : ''}
+      ${editPanel}
+      ${actionButtons ? `<div class="clinical-teams-card-actions">${actionButtons}</div>` : ''}
     </article>`;
 }

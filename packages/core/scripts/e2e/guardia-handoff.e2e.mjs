@@ -24,6 +24,7 @@
  *       pre-pressed before anyone picked one
  *     - «Crítico» / «Negativas firmadas» / «Show» have no control to set them,
  *       so isGuardiaChipCritical / entregaChipMarkerIds can never turn on
+ *       (found: the controls were never rendered; now pills in the markers block)
  *     - checking Vasopresor doesn't reveal its dose fields or reset the card
  *       to inactive when unchecked, or doesn't autofill the norepinefrina
  *       default dose/unit
@@ -48,7 +49,7 @@
  *     - an uncaught page error on either device
  */
 import { createRun, dismissLearnHub, closeToasts, pasteAndSave, openPatient, repoRoot, goArea } from './harness.mjs';
-import { startWorker, nubeDevices, onboardNube, patientVisible, until, BASE } from './nube-worker.mjs';
+import { startWorker, nubeDevices, onboardNube, openNubeView, patientVisible, until, BASE } from './nube-worker.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 import path from 'node:path';
 
@@ -105,15 +106,17 @@ await r.finish('Guardia handoff: R2 → on-call R1 over Nube, both ways, restart
   await A.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
   await A.page.locator('#btn-clinical-team-create-open').click();
   await A.page.locator('#clinical-team-create-name').fill('EQUIPO DEMO GUARDIA');
-  await A.page.getByRole('button', { name: 'Crear equipo' }).click();
+  await A.page.locator('#clinical-team-create-form [type="submit"]').click();
   await B.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
   const joinBtn = B.page.getByRole('button', { name: 'Unirme' });
   check('R1 sees the R2\'s team through Nube', await until(() => joinBtn.isVisible(), 20000));
   await joinBtn.click();
   await B.page.waitForTimeout(1500);
+  // Joining closes the panel; reopen Equipo for «Mi ciclo».
+  await closeToasts(B.page);
+  await openNubeView(B.page, 'equipo');
 
   const letter = activeCycleLetterForDate('Sala', 'R1', new Date());
-  await B.page.locator('summary', { hasText: 'Detalles del equipo' }).first().click();
   await B.page.locator('summary', { hasText: 'Mi ciclo en este equipo' }).first().click();
   await B.page.locator('select[id^="clinical-my-cycle-"]').first().selectOption(letter);
   await B.page.locator('.clinical-teams-my-cycle-form button[type=submit]').first().click();
@@ -144,7 +147,8 @@ await r.finish('Guardia handoff: R2 → on-call R1 over Nube, both ways, restart
 
   // ── R2 hands P1 off: critical details ─────────────────────────────────
   await enterGuardia(A.page);
-  check('R2 Guardia census lists both patients', (await card(A.page, P1).count()) === 1 && (await card(A.page, P2).count()) === 1);
+  check('R2 Guardia census lists both patients',
+    await until(async () => (await card(A.page, P1).count()) === 1 && (await card(A.page, P2).count()) === 1, 15000));
   let m = await openHandoff(A.page, P1);
   const cover = await m.locator('#entrega-covering-user').evaluate((e) => e.selectedOptions[0]?.textContent || '');
   check('handoff goes to the R1 on call (not the sender)', cover.includes(R1.username), cover);
@@ -181,6 +185,7 @@ await r.finish('Guardia handoff: R2 → on-call R1 over Nube, both ways, restart
     (await m.locator('.entrega-vaso-unit-pill.is-selected').textContent()) === 'mcg/kg/min');
 
   await m.locator('.guardia-marks-btn[data-value="no"]').click();
+  await m.locator('label.entrega-check-pill', { hasText: 'Negativas firmadas' }).click();
   await m.locator('#entrega-handoff-notes').fill(NOTE1);
   await m.locator('#btn-entrega-add-proc').click();
   await m.locator('[data-action="add-item"]').click(); // empty label: must be refused
@@ -232,10 +237,10 @@ await r.finish('Guardia handoff: R2 → on-call R1 over Nube, both ways, restart
     check('R1 census card keeps the real bed (cuarto/cama), not «Cama —» (enrichPatientForGuardiaCard)',
       cardHtml.includes(`${P1.room} · 01`), cardHtml.slice(0, 200));
     check('R1 census card shows a critical indicator for the active vasopresor (isGuardiaChipCritical)',
-      /critical|patient-chip-symbol/i.test(cardHtml),
-      'guardia-census-table.mjs buildGuardiaCensusCardHtml/buildGuardiaCensusTableHtml never reads ' +
-      'p.isCritical / p.entregaMarkers, even though enrichPatientForGuardiaCard (guardia-board-chrome.mjs:133-134) ' +
-      'computes them — card html: ' + cardHtml.slice(0, 200));
+      /gct-card--critical/.test(await card(B.page, P1).getAttribute('class')) && /Crítico/.test(cardHtml),
+      cardHtml.slice(0, 300));
+    check('R1 census card shows the «Negativas firmadas» marker (NF) the R2 set',
+      /patient-chip-symbol--negativas/.test(cardHtml), cardHtml.slice(0, 300));
   }
   m = await openHandoff(B.page, P1);
   check('R1 opens P1: sees the R2\'s notes', (await m.locator('#entrega-handoff-notes').inputValue()) === NOTE1);

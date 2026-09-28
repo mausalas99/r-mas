@@ -5,7 +5,8 @@ import { SyncError } from './errors.js';
 import { summarizeMutationOpsJson } from './mutation-guard.mjs';
 import { hashPassword } from './password.js';
 import { QUOTAS } from './quotas.js';
-import { randomRoomCode } from './rooms.js';
+import { randomRoomCode, ROOM_CODE_ALPHABET } from './rooms.js';
+import { readWrappedFields } from './room-dek.js';
 import { ADMIN_ROLES } from './admin-roles.js';
 import { CLOUD_SALAS } from './sala-allowlist.js';
 import { userFromAuthHeader } from './session.js';
@@ -216,7 +217,8 @@ export async function handleNetworkCensus(env, db) {
 async function handleRoomDetail(db, roomId) {
   const room = await db
     .prepare(
-      `SELECT id, code, name, sala, turn_key, owner_user_id, revision, storage_bytes, created_at, updated_at
+      `SELECT id, code, name, sala, turn_key, owner_user_id, revision, storage_bytes, created_at, updated_at,
+              wrapped_dek_ct, wrapped_dek_iv, wrapped_dek_salt
        FROM rooms WHERE id = ?`
     )
     .bind(roomId)
@@ -257,26 +259,84 @@ async function handleRoomDetail(db, roomId) {
       storageBytes: room.storage_bytes,
       createdAt: room.created_at,
       updatedAt: room.updated_at,
+      // Locked key only (opaque without the code); admins already get it in network-census.
+      dek: room.wrapped_dek_ct
+        ? { ct: room.wrapped_dek_ct, iv: room.wrapped_dek_iv, salt: room.wrapped_dek_salt }
+        : null,
     },
     members,
   });
 }
 
-/** @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */
-async function handleRotateCode(db, roomId) {
-  const room = await db.prepare('SELECT id FROM rooms WHERE id = ?').bind(roomId).first();
+const ROOM_CODE_RE = new RegExp('^[' + ROOM_CODE_ALPHABET + ']{6}$');
+
+/** Body is optional (older apps send `{}`). @param {Request} request */
+async function readOptionalJson(request) {
+  const text = await request.text().catch(() => '');
+  if (!text.trim()) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new SyncError('invalid_request', 'JSON inválido.');
+  }
+}
+
+/** @param {unknown} raw */
+function proposedRoomCode(raw) {
+  const code = String(raw || '').trim().toUpperCase();
+  if (!ROOM_CODE_RE.test(code)) throw new SyncError('invalid_request', 'Código de sala inválido.');
+  return code;
+}
+
+/**
+ * Admin «Cambiar código». A sala whose content is encrypted keeps its key
+ * locked with its code, so the new code and the key re-locked under it
+ * arrive together (`{ code, dek: { ct, iv, salt } }`) and land in ONE update:
+ * there is never a moment where the code changed but the key did not. A
+ * locked sala without a new lock is refused (`dek_rewrap_required`) — older
+ * apps send `{}`. A sala with no key just gets a new code.
+ * @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request @param {string} roomId
+ */
+export async function handleRotateCode(db, request, roomId) {
+  const room = await db.prepare('SELECT id, wrapped_dek_ct FROM rooms WHERE id = ?').bind(roomId).first();
   if (!room) {
     throw new SyncError('not_found', 'Sala no encontrada.');
   }
-
-  const code = await generateUniqueRoomCode(db);
+  const body = await readOptionalJson(request);
+  const locked = !!room.wrapped_dek_ct;
+  if (locked && !body?.dek) {
+    throw new SyncError('dek_rewrap_required', 'Esta sala está cifrada: actualiza R+ para cambiar su código.');
+  }
+  const code = body?.code ? proposedRoomCode(body.code) : await generateUniqueRoomCode(db);
   const now = new Date().toISOString();
-  await db
-    .prepare('UPDATE rooms SET code = ?, updated_at = ? WHERE id = ?')
-    .bind(code, now, roomId)
-    .run();
-
-  return Response.json({ ok: true, code });
+  let stmt;
+  if (locked) {
+    const w = readWrappedFields(body.dek);
+    // Guard on the old wrap: a key re-locked meanwhile makes this a no-op.
+    stmt = db
+      .prepare(
+        `UPDATE rooms SET code = ?, wrapped_dek_ct = ?, wrapped_dek_iv = ?, wrapped_dek_salt = ?, updated_at = ?
+         WHERE id = ? AND wrapped_dek_ct = ?`
+      )
+      .bind(code, w.ct, w.iv, w.salt, now, roomId, room.wrapped_dek_ct);
+  } else {
+    stmt = db
+      .prepare('UPDATE rooms SET code = ?, updated_at = ? WHERE id = ? AND wrapped_dek_ct IS NULL')
+      .bind(code, now, roomId);
+  }
+  let res;
+  try {
+    res = await stmt.run();
+  } catch (err) {
+    if (/UNIQUE/i.test(String(err?.message || ''))) {
+      throw new SyncError('conflict', 'Ese código ya existe. Intenta de nuevo.');
+    }
+    throw err;
+  }
+  if (!res?.meta?.changes) {
+    throw new SyncError('conflict', 'La llave de la sala cambió mientras tanto. Intenta de nuevo.');
+  }
+  return Response.json({ ok: true, code, relocked: locked });
 }
 
 /**
@@ -615,7 +675,7 @@ export async function handleAdmin(request, env, subpath) {
   const rotateMatch = /^\/rooms\/([^/]+)\/rotate-code$/.exec(subpath);
   if (rotateMatch && method === 'POST') {
     await requireAdminUser(db, request, env);
-    return handleRotateCode(db, rotateMatch[1]);
+    return handleRotateCode(db, request, rotateMatch[1]);
   }
 
   const purgeMatch = /^\/rooms\/([^/]+)\/purge$/.exec(subpath);

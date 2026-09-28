@@ -28,7 +28,7 @@ import { activeHints } from '../../public/js/feature-hints.mjs';
 
 const P = { exp: '7000911-1', name: 'DEMO GUIA UNO', room: '611' };
 const P2 = { exp: '7000912-2', name: 'DEMO GUIA DOS', room: '612' };
-const r = createRun('feature-hints');
+const r = createRun('feature-hints', { hints: true });
 const { check, shot } = r;
 
 const ALL = activeHints().map((h) => h.id);
@@ -142,7 +142,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   check('× ends the flow and remembers it', (await done(page)).includes('g-labs'), await done(page));
 
   // A step with no target on screen is skipped, not stuck: Tendencias with one lab has no Gráfica button.
-  await pasteAndSave(page, fullLabs(P, 'Sep 25 2026 8:00AM'));
+  await pasteAndSave(page, fullLabs(P, someWhen(-10)));
   await openPatient(page, P);
   await goArea(page, 'lab');
   await onlyUnfinished(page, 'g-tendencias');
@@ -205,7 +205,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   check('using the real control of a one-step hint ends it for good',
     (await done(page)).includes('g-buscar') && (await bubbleOf(page, 'g-buscar').count()) === 0, await done(page));
   await walkHint(page, 'g-buscar', 1);
-  // Two lab sets on different days now (Sep 25 + 3 days ago): Tendencias has its Gráfica step.
+  // Two lab sets on different days now (10 days ago + 3 days ago): Tendencias has its Gráfica step.
   await go('#apptab-lab');
   // Tendencias › Gráfica window: range, hide a series, Tabla, hide a row, copy.
   await walkHint(page, 'g-tendencias', 7);
@@ -265,7 +265,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   const medLine = page.locator('#patient-censo-meds .exp-datos-line:not(.exp-datos-line--empty)').first();
   check('Tomar de lista fills the census meds', await visible(medLine));
   await page.keyboard.press('Escape');
-  await page.locator('.exp-datos-col--censo').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+  await page.locator('.exp-datos-summary').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
   await walkHint(page, 'datos-842', 4);
   await page.keyboard.press('Escape');
   await go('#apptab-nota');
@@ -326,10 +326,10 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   await n.page.evaluate(([a]) => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(a)), [ALL]);
   await n.page.locator('.fh-close').click({ timeout: 3000 }).catch(() => {});
   await walkHint(n.page, 'g-sync', 1);
-  await n.page.locator('#btn-header-team-sync').click();
+  await nube.openNubePanel(n.page); // ⇄ opens the quick look first, then the panel
   await n.page.locator('.cloud-sync-conexion [data-cloud-room-code]').waitFor({ timeout: 10000 });
-  // Chip, code, Opciones (the user opens it), then Equipo, iPad / R+ Móvil, Diagnóstico Nube inside.
-  await walkHint(n.page, 'g-conexion', 6);
+  // Status hero, invite code, Detalles técnicos, then Equipo (the user opens it).
+  await walkHint(n.page, 'g-conexion', 4);
   check('no page errors (Nube)', n.pageErrors.length === 0, n.pageErrors);
   await n.app.close();
   await nube.stopWorker();

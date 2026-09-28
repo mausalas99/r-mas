@@ -75,7 +75,7 @@ function trendArrowHtml_(info) {
   var cls = info.trend === 'up' ? 'lab-trend-up' : 'lab-trend-down';
   var label = info.trend === 'up' ? 'en aumento' : 'en descenso';
   return (
-    '<span class="lab-trend-arrow ' + cls + '" aria-label="' + label + '" title="' + label + ' vs. toma previa"></span>'
+    '<span class="lab-trend-arrow ' + cls + '" role="img" aria-label="' + label + '" title="' + label + ' vs. toma previa"></span>'
   );
 }
 

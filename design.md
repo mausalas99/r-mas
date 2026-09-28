@@ -86,6 +86,8 @@ Legacy aliases (`--action`, `--surface`, `--text`, `--overlay-bg`, `--primary`, 
 
 ## Estado del programa
 
+**Texto secundario sin opacidad extra (2026-09-27)** — `#today-date`, `.header-context-path` y la etiqueta de sección de la lista de pacientes (`.patient-list-section-label` en densidad normal) usaban `var(--text-muted)` + `opacity: 0.88`, que las bajaba de 5.0–5.6:1 a 3.9–4.3:1 (axe `color-contrast`, < 4.5:1). Se quitó la opacidad: ahora se ven en `--text-muted` puro, un poco más oscuras. El hover de la fecha ya no sube la opacidad (solo el fondo). Regla: para texto secundario, usar el token `--text-muted`/`--color-ink-muted` tal cual, sin bajarle opacidad encima.
+
 **Oscuro: profundidad de superficies (2026-08-18)** — `paper`/`content`/`surface`/`elevated` eran solo dos tonos (`paper==content`, `surface==elevated`), así que tarjetas y barras no se despegaban del fondo — plano y apagado. Ahora escalan en cuatro pasos (`#12141a → #181b23 → #1f232d → #262b36`) para dar profundidad real. `ink-muted`/`ink-tertiary` pasaron de gris neutro (`#98989d`/`#6c6c70`) a slate con tinte frío (`#97a3b8`/`#6b7385`) para no leer como gris lavado sobre el fondo azul-negro — contraste igual o mejor (verificado ≥ 4.5:1 contra `elevated` y `paper`). `teal-workbench.test.mjs` sigue en verde: acento y semánticos no tocados.
 
 **Teal workbench: fase 1 completa** (tokens, fuentes, animaciones, docs) — ver `docs/superpowers/plans/2026-08-17-teal-workbench-ui-redesign.md`. La pantalla piloto real es `patient-dashboard/` (ya 100% basada en tokens, recoloreó gratis); faltan las piezas de layout nuevas (banda de contadores, filas alert-tint, estados vacíos) y las 11 pantallas restantes — roadmap en el plan.

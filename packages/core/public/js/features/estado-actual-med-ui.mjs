@@ -280,7 +280,7 @@ function medPendingBlockHtml(key, pendingVal) {
     '<div class="ea-med-reclassify-controls">' +
     '<select class="ea-input ea-med-reclassify-select" data-ea-med-reclassify-select="' +
     escAttr(key) +
-    '">' +
+    '" aria-label="Categoría destino (SOAP)">' +
     '<option value="">Seleccionar categoría…</option>' +
     medMoveTargetOptionsHtml(key) +
     '</select>' +
@@ -434,7 +434,7 @@ export function renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPati
     '<div class="ea-med-add-row">' +
     '<select class="ea-io-link ea-med-add-select" data-ea-med-add-select="' +
     escAttr(key) +
-    '">' +
+    '" aria-label="Agregar a ' + escAttr(label) + '">' +
     medSelectOptionsHtml(key, options) +
     '</select>' +
     '<button type="button" class="ea-io-link ea-med-manual-toggle" data-ea-med-manual-toggle="' +

@@ -1,8 +1,13 @@
 import { displayCloudSalaLabel, normalizeCloudSala } from './sala-allowlist.mjs';
 import { shouldShowNubePanel } from './nube-sync-policy.mjs';
 import { statusChipModifier, formatCloudStatusChipLabel } from './panel-conexion-html.mjs';
-import { createConexionRenderers, saveUrlFromUi } from './panel-conexion-ui.mjs';
-import { createNubeRuntime, getSharedNubeRuntime, setSharedNubeStatusListener } from './panel-conexion-runtime.mjs';
+import { createConexionRenderers, saveUrlFromUi, refreshNubeStatusHome } from './panel-conexion-ui.mjs';
+import {
+  createNubeRuntime,
+  getSharedNubeRuntime,
+  getSharedNubeOutbox,
+  setSharedNubeStatusListener,
+} from './panel-conexion-runtime.mjs';
 import {
   bootstrapConexionState,
   mountAdminShell,
@@ -35,16 +40,18 @@ function checkRoomUnprotectedBadge(deps) {
  * @param {boolean} unprotected
  * @param {string} resolvedStatus
  * @param {unknown} resolvedDetail
+ * @param {boolean} heroShown
  * @returns {string}
  */
-function statusDetailText(unprotected, resolvedStatus, resolvedDetail) {
+function statusDetailText(unprotected, resolvedStatus, resolvedDetail, heroShown) {
   if (unprotected) return 'Esta sala tiene datos cifrados que este equipo aún no puede leer. Reintentando…';
-  if (resolvedStatus !== 'error') return '';
+  // The status hero already says the error in plain words.
+  if (resolvedStatus !== 'error' || heroShown) return '';
   return humanizeCloudSyncErrorMessage(String(resolvedDetail || '').trim());
 }
 
-/** @param {HTMLElement} section @param {object} deps */
-function bindStatusChip(section, deps) {
+/** @param {HTMLElement} section @param {object} deps @param {string} displaySala */
+function bindStatusChip(section, deps, displaySala) {
   const toast = typeof deps.toast === 'function' ? deps.toast : function () {};
   function renderStatusChip(status, detail) {
     const chip = section.querySelector('[data-cloud-status-chip]');
@@ -60,11 +67,13 @@ function bindStatusChip(section, deps) {
     }
     const detailEl = section.querySelector('[data-cloud-status-detail]');
     if (detailEl) {
-      const text = statusDetailText(checkRoomUnprotectedBadge(deps), resolvedStatus, resolvedDetail);
+      const heroShown = !!section.querySelector('[data-cloud-hero-block]');
+      const text = statusDetailText(checkRoomUnprotectedBadge(deps), resolvedStatus, resolvedDetail, heroShown);
       detailEl.textContent = text;
       detailEl.hidden = !text;
     }
-    applyHeaderTeamSyncVisual(resolvedStatus, transport);
+    refreshNubeStatusHome(section, deps, displaySala);
+    applyHeaderTeamSyncVisual(resolvedStatus, transport, getSharedNubeOutbox()?.list?.()?.length || 0);
     deps.setStatus?.(resolvedStatus, resolvedDetail);
     if (section.dataset.cloudView === 'nube') {
       refreshCloudSyncDiagnostics(section.querySelector('[data-cloud-nube-diagnostics-host]'), {
@@ -127,7 +136,7 @@ export function mountNubeSection(root, deps) {
   section.className = 'cloud-sync-conexion';
   section.setAttribute('data-cloud-nube-section', '1');
 
-  const statusChip = bindStatusChip(section, deps);
+  const statusChip = bindStatusChip(section, deps, displaySala);
   setSharedNubeStatusListener(statusChip.renderStatusChip);
 
   const { startRuntime: startRuntimeInner, stopRuntime } = createNubeRuntime({

@@ -14,9 +14,14 @@ function readProfileField(id) {
   return (document.getElementById(id)?.value || "").trim();
 }
 
+/** Only fields present on screen are written (Cédula left the form; keep what is stored). */
+function applyIfPresent(st, key, id) {
+  if (document.getElementById(id)) st[key] = readProfileField(id);
+}
+
 function applyProfileFormToSettings(st) {
-  st.doctorName = readProfileField("profile-doctor");
-  st.cedulaProfesional = readProfileField("profile-cedula");
+  applyIfPresent(st, "doctorName", "profile-doctor");
+  applyIfPresent(st, "cedulaProfesional", "profile-cedula");
   st.profesorName = readProfileField("profile-profesor");
   st.medicosPlantilla = Object.assign({}, st.medicosPlantilla);
   ["profesor", "r4", "r2", "r1a", "r1b"].forEach(function (k) {
@@ -29,7 +34,8 @@ function applyProfileFormToSettings(st) {
   st.quickOutputFormat = normalizeQuickOutputFormat(st.quickOutputFormat);
 }
 
-export function saveSettings() {
+/** @param {{ silent?: boolean }} [opts] silent: autosave from Ajustes › Perfil, no toast */
+export function saveSettings(opts) {
   var st = settingsRef();
   applyProfileFormToSettings(st);
   localStorage.setItem("rpc-settings", JSON.stringify(st));
@@ -43,7 +49,7 @@ export function saveSettings() {
   var invalidate = resolveGlobalFn("invalidateInnerTabRenderCache");
   if (invalidate) invalidate();
   if (getProfileRuntime().getActiveId()) renderNotaEvolucionPrimaryTab();
-  getProfileRuntime().showToast("Perfil guardado ✓", "success");
+  if (!opts?.silent) getProfileRuntime().showToast("Perfil guardado ✓", "success");
 }
 
 export function saveQuickOutputFormat(format) {

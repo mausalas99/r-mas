@@ -21,7 +21,8 @@
  *   Offline, then reconnect
  *     - edits made on both devices while the Worker is down are lost, or only
  *       one side survives after reconnect
- *     - the Conexión status says «Nube al día» while changes are pending
+ *     - the Conexión status says «Todo al día» while changes are pending, or
+ *       anything but «Pendiente · sin conexión» while the Worker is down
  *   Fast double-click
  *     - a double-click on «Agregar» (eventualidad) saves the entry twice
  *     - a double-click on «Procesar receta» doubles the meds
@@ -47,8 +48,8 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRun, dismissLearnHub, closeToasts, pasteAndSave, pasteAndProcess, openPatient, goArea } from './harness.mjs';
-import { startWorker, stopWorker, nubeDevices, onboardNube, patientVisible, until } from './nube-worker.mjs';
+import { createRun, dismissLearnHub, closeToasts, pasteAndSave, pasteAndProcess, openPatient, goArea, acceptAbxDias } from './harness.mjs';
+import { startWorker, stopWorker, nubeDevices, onboardNube, patientVisible, until, openNubePanel } from './nube-worker.mjs';
 import { fullLabs, header, TABLE } from './some-fixtures.mjs';
 
 const tag = Date.now().toString(36).slice(-6);
@@ -163,6 +164,7 @@ async function importReceta(page, p, meds, { dbl = false } = {}) {
   if (dbl) await btn.dblclick();
   else await btn.click();
   await page.waitForTimeout(800);
+  await acceptAbxDias(page);
 }
 async function openEstadoActual(page, p) {
   await openBySearch(page, p);
@@ -185,12 +187,14 @@ async function addManualMed(page, cat, text) {
 /** Conexión dropdown status line (STATUS_LABELS) — opened and closed again. */
 async function nubeStatusText(page) {
   await closeToasts(page);
-  await page.locator('#btn-header-team-sync').click();
+  await openNubePanel(page);
   await page.waitForTimeout(600);
   const t = await page.locator('#connection-dropdown, .connection-dropdown').first().innerText().catch(() => '');
   await page.locator('#btn-connection-dropdown-close').click().catch(() => {});
-  const m = t.match(/Nube al día|Sincronizando…|Pendiente[^\n]*|Sin conexión Nube|Error[^\n]*/);
-  return m ? m[0] : t.replace(/\s+/g, ' ').slice(0, 120);
+  // Nube A hero: «Todo al día» / «Reconectando» / «Pendiente» + the runtime's detail line.
+  const m = t.match(/Todo al día|Nube al día|Reconectando|Sincronizando…|Pendiente[^\n]*|Sin conexión Nube|Error[^\n]*/);
+  const why = t.match(/Sin conexión con el servidor Nube[^\n]*/);
+  return m ? m[0] + (why ? ' · ' + why[0] : '') : t.replace(/\s+/g, ' ').slice(0, 120);
 }
 const evOf = (dg, p) => dg.out[p.exp]?.ev || [];
 
@@ -206,7 +210,7 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
   await A.page.locator('#btn-clinical-team-create-open').click();
   await A.page.locator('#clinical-team-create-name').fill('EQUIPO DEMO SYNC');
   await A.page.locator('#clinical-team-create-sala').selectOption('Sala 1').catch(() => {});
-  await A.page.getByRole('button', { name: 'Crear equipo' }).click();
+  await A.page.locator('#clinical-team-create-form [type="submit"]').click();
   await B.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
   const joinBtn = B.page.getByRole('button', { name: 'Unirme' });
   check('B sees A\'s team and joins', await until(() => joinBtn.isVisible(), 20000));
@@ -284,7 +288,8 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
   await importReceta(A.page, PO, ['DEMO PARACETAMOL OFFLINE A']);
   await A.page.waitForTimeout(3000);
   const offStatus = await nubeStatusText(A.page);
-  check('offline with pending changes: status is NOT «Nube al día»', !/Nube al día/.test(offStatus), offStatus);
+  check('offline with pending changes: «Pendiente · sin conexión», not «Todo al día» or «Reconectando»',
+    /^Pendiente/.test(offStatus) && /sin conexi/i.test(offStatus), offStatus);
   await shot(A.page, 'a-offline-status');
   check('Worker comes back', await startWorker());
   let t = Date.now();
@@ -295,9 +300,9 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
     s.ok && off.includes('DEMO OFFLINE DESDE A') && off.includes('DEMO OFFLINE DESDE B'), { a: evOf(s.a, PO), b: evOf(s.b, PO) });
   check('offline receta from A reaches B (≤ 4 min)', (s.b.out[PO.exp]?.meds || []).includes('DEMO PARACETAMOL OFFLINE A'), { meds: s.b.out[PO.exp]?.meds, ms: offlineMs });
   check('offline edits reach the other device within 60 s of reconnect', s.ok && offlineMs <= 60000, { ms: offlineMs });
-  await until(async () => /Nube al día/.test(await nubeStatusText(A.page)), 30000, 3000);
+  await until(async () => /Todo al día/.test(await nubeStatusText(A.page)), 30000, 3000);
   const backStatus = await nubeStatusText(A.page);
-  check('after reconnect and drain: status says «Nube al día»', /Nube al día/.test(backStatus), backStatus);
+  check('after reconnect and drain: status says «Todo al día»', /Todo al día/.test(backStatus), backStatus);
 
   // ── Fast double-click ────────────────────────────────────────────────────
   await addEv(A.page, PD, 'DEMO DOBLE CLIC EV', { dbl: true });
@@ -358,7 +363,10 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
     await C.page.getByRole('button', { name: 'Crear equipo vacío' }).last().click();
     await C.page.getByText('Equipo vacío creado').first().waitFor({ timeout: 20000 });
     step = 'C makes the second team active';
-    const editBtn = C.page.locator('div, li, article').filter({ hasText: 'EQUIPO DEMO OTRO' }).filter({ hasNotText: 'EQUIPO DEMO SYNC' }).locator('.clinical-teams-edit-btn').first();
+    // Variant B directory: one article card per team, re-rendered after the create toast.
+    const otroCard = C.page.locator('article.clinical-teams-card', { hasText: 'EQUIPO DEMO OTRO' }).first();
+    await otroCard.locator('.clinical-teams-edit-btn').waitFor({ state: 'visible', timeout: 20000 });
+    const editBtn = otroCard.locator('.clinical-teams-edit-btn');
     const otroId = await editBtn.getAttribute('data-team-id');
     await editBtn.click();
     const panel = C.page.locator(`.clinical-teams-edit-panel[data-team-id="${otroId}"]`);
@@ -379,7 +387,9 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
     step = 'open team select on C';
     // C opens the patient data pane and moves PT to the other team while B saves.
     await goArea(C.page, 'nota');
-    await C.page.getByRole('button', { name: 'Datos', exact: true }).click();
+    // Nav-G: Datos is an icon-only button now (aria-label «Datos del
+    // paciente», no visible "Datos" text) — id selector, same as top-bar.e2e.
+    await C.page.locator('#btn-exp-datos-open').click();
     const sel = C.page.locator('#patient-team-assign-select');
     await sel.waitFor({ state: 'visible', timeout: 8000 });
     const opts = await sel.locator('option').evaluateAll((os) => os.map((o) => [o.value, o.textContent.trim()]));
@@ -398,7 +408,7 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
     check('team move during B\'s save: B\'s entry still reaches the R4 who moved it', cEv, evOf(await digest(C.page), PT));
     step = 'C moves PT back';
     await sel.selectOption(home).catch(async () => {
-      await C.page.getByRole('button', { name: 'Datos', exact: true }).click();
+      await C.page.locator('#btn-exp-datos-open').click();
       await C.page.locator('#patient-team-assign-select').selectOption(home);
     });
     const back = await until(async () => (await inList(A.page, PT)) && inList(B.page, PT), 60000);
@@ -423,10 +433,10 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
 
   for (const [name, dv] of [['a', A], ['b', B]]) {
     await closeToasts(dv.page);
-    await dv.page.locator('#btn-header-team-sync').click();
+    await openNubePanel(dv.page);
     const navOptions = dv.page.locator('[data-cloud-action="nav-options"]');
     if (await navOptions.isVisible().catch(() => false)) await navOptions.click();
-    await dv.page.locator('[data-cloud-action="nav-view"][data-cloud-view="nube"]').click().catch(() => {});
+    await dv.page.locator('.cloud-sync-view[data-cloud-view="options"] [data-cloud-action="nav-view"][data-cloud-view="nube"]').click().catch(() => {});
     await dv.page.waitForTimeout(1500);
     digests['diag-' + name] = await dv.page.locator('[data-cloud-nube-diagnostics-host]').innerText().catch(() => '');
     await dv.page.locator('#btn-connection-dropdown-close').click().catch(() => {});

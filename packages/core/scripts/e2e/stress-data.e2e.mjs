@@ -53,7 +53,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts, dismissLearnHub, goArea } from './harness.mjs';
+import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts, dismissLearnHub, goArea, acceptAbxDias } from './harness.mjs';
 import { header, TABLE, fullLabs } from './some-fixtures.mjs';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -316,6 +316,7 @@ await r.finish('Data input stress: lab paste, Tendencias, Cultivos, Manejo, Pend
     await page.locator('#med-input').fill(text);
     await page.getByRole('button', { name: 'Procesar receta' }).click();
     await page.waitForTimeout(600);
+    await acceptAbxDias(page);
   };
   await openManejo();
   t = Date.now();
@@ -326,12 +327,13 @@ await r.finish('Data input stress: lab paste, Tendencias, Cultivos, Manejo, Pend
   const medNames = await page.locator('.med-receta-row .med-receta-name').allInnerTexts();
   await shot(page, 'manejo-45');
   check('45 meds → "Medicamentos del turno · 45"', medTitle === 'Medicamentos del turno · 45', { medTitle, toast: flat(medToast).slice(0, 200) });
-  const missingMeds = MED_NAMES.map((m) => m.slice(0, 13)).filter((k) => !medNames.some((x) => x.includes(k)));
+  // Med names render sentence-case by design (medications-panel-rows.mjs splitMedLabel), so match case-insensitively.
+  const missingMeds = MED_NAMES.map((m) => m.slice(0, 13)).filter((k) => !medNames.some((x) => x.toUpperCase().includes(k)));
   check('every DEMOFARMACO row is shown', missingMeds.length === 0, missingMeds);
-  const oddMed = medNames.find((x) => x.includes('DEMOFARMACO04')) || '';
+  const oddMed = medNames.find((x) => x.toUpperCase().includes('DEMOFARMACO04')) || '';
   check('HTML in a drug name shows as text, never runs', /<img/i.test(oddMed) && !(await xss(page)), oddMed.slice(0, 120));
-  const microRows = (await page.locator('.med-receta-row').allInnerTexts()).filter((x) => /DEMOFARMACO(04|14|24|34|44)/.test(x));
-  check('"µG" dose never shows as Greek "ΜG" (reads as MG, a 1000× error); shows MCG', microRows.length === 5 && microRows.every((x) => /MCG/.test(x) && !/Μ/.test(x)), microRows.map((x) => flat(x).slice(0, 90)));
+  const microRows = (await page.locator('.med-receta-row').allInnerTexts()).filter((x) => /DEMOFARMACO(04|14|24|34|44)/i.test(x));
+  check('"µG" dose never shows as Greek "ΜG" (reads as MG, a 1000× error); shows MCG', microRows.length === 5 && microRows.every((x) => /MCG/i.test(x) && !/Μ/.test(x)), microRows.map((x) => flat(x).slice(0, 90)));
   await importSome(MED_LIST);
   const medTitle2 = flat(await page.locator('#med-turno-title-text').innerText().catch(() => ''));
   check('same 45-med list again: still 45', medTitle2 === 'Medicamentos del turno · 45', medTitle2);

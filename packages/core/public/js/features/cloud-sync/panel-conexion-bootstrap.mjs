@@ -22,6 +22,36 @@ import { mountInternoQrPanelInHost } from './panel-interno-qr.mjs';
 import { refreshCloudSyncDiagnostics } from './panel-cloud-diagnostics.mjs';
 import { hydrateRoomDeksFromPersistence } from './room-dek.mjs';
 import { getStoredRoomDeks } from './settings.mjs';
+import { getSharedNubeRuntime } from './panel-conexion-runtime.mjs';
+import { copyToClipboardSafe } from '../soap-estado.mjs';
+
+/** «Sincronizar ahora»: one push + pull cycle on the shared runtime. @param {HTMLElement} section @param {object} ui */
+async function runSyncNow(section, ui) {
+  const runtime = getSharedNubeRuntime();
+  if (!runtime) {
+    ui.startRuntime?.();
+    return;
+  }
+  const btn = section.querySelector('[data-cloud-action="sync-now"]');
+  if (btn) btn.disabled = true;
+  try {
+    await runtime.syncCycle();
+  } catch {
+    ui.toast?.('No se pudo sincronizar. Tus cambios siguen guardados aquí.', 'error');
+  } finally {
+    ui.refreshStatusChipFromRuntime?.();
+    const fresh = section.querySelector('[data-cloud-action="sync-now"]');
+    if (fresh) fresh.disabled = false;
+  }
+}
+
+/** @param {HTMLElement} section @param {object} ui */
+async function copyRoomCode(section, ui) {
+  const code = section.querySelector('[data-cloud-room-code]')?.textContent.trim() || '';
+  if (!code || code === '—') return;
+  const ok = await copyToClipboardSafe(code);
+  ui.toast?.(ok ? 'Código copiado.' : 'No se pudo copiar el código.', ok ? 'success' : 'error');
+}
 
 /** @param {boolean} [hasCloudSession] @returns {string} */
 export function adminShellHtml(hasCloudSession = false) {
@@ -56,6 +86,11 @@ function buildConexionGoView(section, deps, ui) {
           toast: ui.toast,
         });
       },
+      onCuenta() {
+        void import('../clinical-teams/teams-roster-interactions.mjs').then((m) =>
+          m.mountClinicalProfileInHost(section.querySelector('[data-cloud-profile-host]'))
+        );
+      },
       onStatusHome() {
         ui.refreshStatusChipFromRuntime?.();
       },
@@ -76,6 +111,8 @@ function buildConexionClickActions(handlerDeps, ui, goView) {
     logout: () => void handleLogout(handlerDeps),
     'open-rotation': () => void handleOpenRotation(ui.toast),
     'toggle-admin': () => void ui.ensureAdminOpen?.(),
+    'sync-now': () => void runSyncNow(handlerDeps.section, ui),
+    'copy-room-code': () => void copyRoomCode(handlerDeps.section, ui),
     'nav-options': () => goView('options'),
     'nav-back': () => {
       const cur = handlerDeps.section.dataset.cloudView || 'status';
@@ -138,9 +175,14 @@ export function wireConexionClicks(section, deps, ui) {
   }
 
   section.addEventListener('click', onCloudActionClick);
-  document
-    .getElementById('connection-dropdown')
-    ?.addEventListener('click', onCloudActionClick);
+  // The dropdown contains the section: only take clicks from outside it (the
+  // modal-head back button), or every in-section action runs twice — two
+  // logouts, two recoveries each rotating the recovery code.
+  document.getElementById('connection-dropdown')?.addEventListener('click', (ev) => {
+    if (!section.isConnected) return;
+    if (ev.target instanceof Node && section.contains(ev.target)) return;
+    onCloudActionClick(ev);
+  });
   wireClinicalTeamsFormDelegation(section);
 }
 
@@ -206,7 +248,8 @@ function reconcileCanonicalCloudRoom(section, deps, ui, cachedRoomId) {
     const nextId = String(room.id || '').trim();
     const cachedId = String(cachedRoomId || '').trim();
     const roomCode = String(room.code || '').trim();
-    if (roomCode && (!snapCode || (nextId && nextId !== cachedId))) {
+    // A code an admin changed arrives here too: show it, not the stale one.
+    if (roomCode && (roomCode !== snapCode || (nextId && nextId !== cachedId))) {
       ui.renderConnected(room);
     }
   });
@@ -283,13 +326,22 @@ export function mountAdminShell(section, deps, toast, extra = {}) {
   async function ensureAdminOpen() {
     const host = section.querySelector('[data-cloud-admin-host]');
     if (!host) return;
-    if (!adminMount) {
+    // renderConnected (e.g. after the Red tab's «Abrir expediente» joins a room)
+    // rebuilds the ⇄ panel with a fresh, empty host: a panel mounted in the old
+    // DOM would only refresh itself off-screen and Administración stayed blank.
+    if (!adminMount || !host.contains(adminMount.root)) {
       const { mountCloudAdminPanel } = await import('./panel-admin.mjs');
       host.textContent = '';
       // Full deps (not just getApi) so the "Red" tab can switch this
       // device's active room — see joinRoomByCode in panel-conexion-handlers.mjs.
       adminMount = mountCloudAdminPanel(host, { ...deps, ...extra, toast });
     } else {
+      // renderConnected rebuilds the section (room switch, re-login): move the
+      // live admin into the new host instead of refreshing a detached one.
+      if (!host.contains(adminMount.root)) {
+        host.textContent = '';
+        host.appendChild(adminMount.root);
+      }
       adminMount.refresh?.();
     }
   }

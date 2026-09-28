@@ -46,7 +46,7 @@
  *
  *   npm run e2e:manejo-receta
  */
-import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, quietHints, goArea } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, quietHints, goArea, acceptAbxDias } from './harness.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 
 const A = { exp: '7000007-7', name: 'DEMO MANEJO UNO', room: '307' };
@@ -120,12 +120,7 @@ await r.finish('Manejo + Perfil histórico', async () => {
     await page.locator('#med-input').fill(text);
     await page.getByRole('button', { name: 'Procesar receta' }).click();
     await page.waitForTimeout(400);
-    // "Días de antibiótico sin registro" asks once for the DIA# it has not seen: keep SOME's day.
-    const abxDia = page.locator('.wb-modal, [role="dialog"]', { hasText: 'Días de antibiótico sin registro' });
-    if (await abxDia.first().isVisible().catch(() => false)) {
-      await abxDia.first().getByRole('button', { name: 'Guardar' }).click();
-      await page.waitForTimeout(300);
-    }
+    await acceptAbxDias(page);
   }
 
   // ── Import ─────────────────────────────────────────────────────────────

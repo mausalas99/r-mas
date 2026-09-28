@@ -151,7 +151,9 @@ function parseReportChunk(reportText, reportIndex, findPatient, batchBhValues) {
     });
     // A header with no readable result (cut-off copy) must not admit a patient or count as saved.
     if (!result.resLabs || !result.resLabs.length) {
-      return parseReportChunkFailure(reportIndex, 'Sin resultados de laboratorio legibles en este reporte');
+      return parseReportChunkFailure(reportIndex, 'Sin resultados de laboratorio legibles en este reporte', {
+        expediente: String(extractLabExpedienteFromReport(reportText) || '').trim(),
+      });
     }
     return parseReportChunkSuccess(reportText, reportIndex, result);
   } catch (e) {
@@ -370,11 +372,22 @@ function resolvePrimaryMatch(knownMatch, isMixed, primaryExp, findPatient) {
   return findPatient(primaryExp);
 }
 
-function computeConflictReports(hasMultipleExpedientes, isMixed, okReports, usableReports) {
-  if (!hasMultipleExpedientes || isMixed) return [];
-  return okReports.filter(function (r) {
-    return usableReports.indexOf(r) === -1;
-  });
+function computeConflictReports(hasMultipleExpedientes, isMixed, okReports, usableReports, reports, match) {
+  if (isMixed) return [];
+  var conflicts = hasMultipleExpedientes
+    ? okReports.filter(function (r) {
+      return usableReports.indexOf(r) === -1;
+    })
+    : [];
+  // A report for another expediente with no readable labs (e.g. an antibiogram)
+  // is still someone else's: show it, never drop it in silence.
+  var matchBase = match ? expedienteBase_(match.registro) : '';
+  if (!matchBase) return conflicts;
+  return conflicts.concat(
+    reports.filter(function (r) {
+      return !r.ok && r.expediente && expedienteBase_(r.expediente) !== matchBase;
+    })
+  );
 }
 
 function computeSetsAfterMerge(usableReports) {
@@ -433,7 +446,7 @@ function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
   var primaryExp = expedientes[0] || '';
   var match = resolvePrimaryMatch(knownMatch, isMixed, primaryExp, findPatient);
   var usableReports = isMixed ? [] : filterUsableReportsForPatient(okReports, match);
-  var conflictReports = computeConflictReports(hasMultipleExpedientes, isMixed, okReports, usableReports);
+  var conflictReports = computeConflictReports(hasMultipleExpedientes, isMixed, okReports, usableReports, reports, match);
   var days = collectReportDays(usableReports);
   var status = resolveBulkBlockStatus(chunks, okReports, match, expedientes, usableReports, isMixed);
   var patientReg = match ? String(match.registro || '').trim() : '';

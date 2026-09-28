@@ -1,0 +1,16 @@
+{
+  "patient": {
+    "name": "DEMO PÉREZ JUAN",
+    "expediente": "9000095-7",
+    "sexo": "M",
+    "edad": "67 años",
+    "fecha": "11/04/2026",
+    "hora": "08:00",
+    "ubicacion": "SERVICIO DEMO"
+  },
+  "resLabs": [
+    "HEMOCULTIVO (PERIFERICO IZQUIERDO) 11/04: PSEUDOMONAS AERUGINOSA · BLEE\nATB R: CAZ | I: FEP | S: CIPRO, MERO, PIP/TAZO\nCuenta: 2 COLONIAS"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+}

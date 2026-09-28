@@ -27,7 +27,7 @@ function extraName(sala, name) {
 }
 
 /** @param {string} label @param {unknown} members */
-function appendMemberCount(label, members) {
+export function appendMemberCount(label, members) {
   if (members == null || !Number.isFinite(Number(members))) return label;
   const n = Number(members);
   return label + ' · ' + n + (n === 1 ? ' miembro' : ' miembros');

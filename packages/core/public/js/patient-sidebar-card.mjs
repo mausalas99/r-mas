@@ -49,8 +49,22 @@ export function formatPatientBedMetaHtml(p) {
 }
 
 /**
+ * The card's one real button (see patients-card-html.mjs): empty, its ::after
+ * (.card-open-btn) stretches over the whole card. Lives inside .p-name so
+ * clicks on the name land on it.
+ * @param {{ openButton?: boolean }} opts
+ * @param {string} nombreRaw
+ * @param {string} nombreDisplay
+ */
+function patientCardOpenButtonHtml(opts, nombreRaw, nombreDisplay) {
+  if (!opts.openButton) return '';
+  const name = nombreRaw || nombreDisplay;
+  return `<button type="button" class="patient-card-open card-open-btn" aria-label="${escSidebarHtml(name)}"></button>`;
+}
+
+/**
  * @param {object} p
- * @param {{ roundRow?: boolean, showServicio?: boolean }|undefined} [opts]
+ * @param {{ roundRow?: boolean, showServicio?: boolean, openButton?: boolean }|undefined} [opts]
  */
 export function renderPatientSidebarBodyHtml(p, opts) {
   opts = opts || {};
@@ -71,11 +85,13 @@ export function renderPatientSidebarBodyHtml(p, opts) {
     ? `<div class="p-meta">${metaParts.join('')}</div>`
     : '';
 
+  const openBtn = patientCardOpenButtonHtml(opts, nombreRaw, nombreDisplay);
+
   const bodyClass = opts.roundRow ? 'patient-card-body patient-card-body--round' : 'patient-card-body';
 
   return (
     `<div class="${bodyClass}">` +
-    `<div class="p-name"${nameTitleAttr}>${escSidebarHtml(nombreDisplay)}</div>` +
+    `<div class="p-name"${nameTitleAttr}>${escSidebarHtml(nombreDisplay)}${openBtn}</div>` +
     metaHtml +
     `</div>`
   );

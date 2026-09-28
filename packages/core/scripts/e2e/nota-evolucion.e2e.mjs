@@ -54,7 +54,7 @@
 import JSZip from 'jszip';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub, until, goArea, quietHints } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub, until, goArea, quietHints, waitForBoot } from './harness.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 
 const P1 = { exp: '7000621-1', name: 'DEMO NOTA UNO', room: '521' };
@@ -101,12 +101,19 @@ async function newDocx(since, label) {
 
 /** Interconsulta has no side list: Resumen › «← Tablero», then the patient's card on the team board. */
 async function pickPatient(page, p) {
+  await waitForBoot(page);
   await closeToasts(page);
-  if (!(await page.locator('#ic-board-mount .p-name').locator('visible=true').count())) {
+  const board = page.locator('#ic-board-mount');
+  if (!(await board.isVisible())) {
     await goArea(page, 'nota');
+    await board.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
+  }
+  // The Paciente tab may already land on the board; otherwise Resumen › «← Tablero».
+  if (!(await board.isVisible())) {
     await page.locator('.exp-group-pill[data-group="paciente"]').click();
     await page.locator('[data-ic-back-to-board]').click();
   }
+  await board.locator('.p-name').first().waitFor({ state: 'visible' });
   await openPatient(page, p);
 }
 
@@ -159,9 +166,9 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   await onboardLocalOnly(page);
 
   await page.locator('#profile-toggle-btn').click();
+  await page.locator('#profile-doctor-pick').selectOption('__otro__');
   await page.locator('#profile-doctor').fill(DOCTOR);
-  await page.getByRole('button', { name: 'Guardar perfil' }).click();
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(900); // Mi perfil saves on its own
   await page.keyboard.press('Escape');
 
   await goArea(page, 'lab');
@@ -255,8 +262,7 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   // «Profesor en nota» only shows in Interconsulta: set it now, the open note fills in.
   await page.locator('#profile-toggle-btn').click();
   await page.locator('#profile-profesor').fill(PROFESOR);
-  await page.getByRole('button', { name: 'Guardar perfil' }).click();
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(900); // Mi perfil saves on its own
   await page.keyboard.press('Escape');
   await closeToasts(page);
   s = await noteState(page);

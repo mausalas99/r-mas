@@ -27,3 +27,12 @@ test('flags likely patient data and reports file:line', () => {
   assert.equal(hits.length, 3);
   assert.match(hits[0], /^x\.mjs:2 /);
 });
+
+test('template golden text keeps the hospital letterhead, but not patient data', () => {
+  const at = (file, ...added) =>
+    ['+++ b/' + file, '@@ -1,0 +1,' + added.length + ' @@', ...added.map((l) => '+' + l)].join('\n');
+  const tpl = 'packages/core/scripts/golden/corpus/docs/nota.note.golden.txt';
+  assert.deepEqual(findHits(at(tpl, 'HOSPITAL UNIVERSITARIO', 'Av. Gonzalitos s/n')), []);
+  assert.equal(findHits(at(tpl, EXP)).length, 1);
+  assert.equal(findHits(at('packages/core/scripts/golden/corpus/labs/x.golden.json', 'HOSPITAL UNIVERSITARIO')).length, 1);
+});

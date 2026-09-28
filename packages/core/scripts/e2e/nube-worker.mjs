@@ -26,15 +26,36 @@ const wEnv = { ...process.env, WRANGLER_SEND_METRICS: 'false', CI: '1' };
 let worker = null;
 export const workerLog = [];
 
-export function startWorker() {
-  worker = spawn(
+/**
+ * `wrangler dev`'s own dev proxy sometimes dies when a client connection drops
+ * ("Error inside ProxyWorker … Network connection lost", exit code 1), taking
+ * the local Worker down mid-scenario: every device then gets
+ * ERR_CONNECTION_REFUSED. That is dev tooling, not R+, so an exit nobody asked
+ * for (not stopWorker) restarts it on the same port and the same persisted
+ * data — the outage the app already rides out in the "Worker down" steps.
+ */
+function spawnWorker() {
+  const w = spawn(
     WRANGLER,
     ['dev', '--local', '--persist-to', stateDir, '--port', String(PORT), '--ip', '127.0.0.1',
       '--var', 'SYNC_ADMIN_KEY:e2e-admin-key', '--var', 'WORKER_DATA_KEY:' + 'ab'.repeat(32)],
     // Own process group: wrangler runs workerd as grandchildren, so kill the whole group.
     { cwd: WORKER_DIR, env: wEnv, stdio: ['ignore', 'pipe', 'pipe'], detached: true },
   );
-  for (const s of [worker.stdout, worker.stderr]) s.on('data', (b) => workerLog.push(...String(b).split('\n').filter((l) => /\] (GET|POST|PUT|DELETE)|rror/.test(l))));
+  w.stdout.on('data', (b) => workerLog.push(...String(b).split('\n').filter((l) => /\] (GET|POST|PUT|DELETE)|rror/.test(l))));
+  // stderr unfiltered + how it ended, for diagnosis.
+  w.stderr.on('data', (b) => workerLog.push(...String(b).split('\n').filter((l) => l.trim())));
+  w.on('exit', (code, signal) => {
+    const unexpected = w === worker;
+    workerLog.push(`[e2e] wrangler (pid ${w.pid}) exited code=${code} signal=${signal} at ${new Date().toISOString()}${unexpected ? ' — restarting' : ' (stopWorker)'}`);
+    if (!unexpected) return;
+    killGroup(w, 'SIGKILL'); // leftover workerd would keep the port
+    worker = spawnWorker();
+  });
+  return w;
+}
+export function startWorker() {
+  worker = spawnWorker();
   return until(() => fetch(`${API}/ping`).then((res) => res.ok), 60000);
 }
 function killGroup(w, sig) {
@@ -45,9 +66,9 @@ export function stopWorker() {
   const w = worker;
   worker = null;
   return new Promise((res) => {
-    w.once('exit', () => setTimeout(res, 500));
+    const force = setTimeout(() => { killGroup(w, 'SIGKILL'); res(); }, 8000);
+    w.once('exit', () => { clearTimeout(force); setTimeout(res, 500); });
     killGroup(w, 'SIGTERM');
-    setTimeout(() => { killGroup(w, 'SIGKILL'); res(); }, 8000);
   });
 }
 /** Read-only look at the Worker's D1, straight from the local sqlite file. */
@@ -100,6 +121,27 @@ export async function onboardNube(page, user) {
   await landing.waitFor({ timeout: 15000 });
   const done = flat(await page.locator('body').innerText());
   return { recovery, lockedBeforeCheck, done };
+}
+
+/**
+ * Header ⇄ icon → the full Nube panel. Signed in with a sala, the icon first
+ * opens the quick look (board «Nube C»); press its «Abrir panel».
+ */
+export async function openNubePanel(page) {
+  await page.locator('#btn-header-team-sync').click();
+  const openPanel = page.locator('#nube-popover [data-nube-pop="open-panel"]');
+  const panel = page.locator('#connection-dropdown.open');
+  await until(async () => (await openPanel.isVisible().catch(() => false)) || (await panel.isVisible().catch(() => false)), 5000);
+  if (await openPanel.isVisible().catch(() => false)) await openPanel.click();
+}
+
+/** ⇄ → panel → Opciones → one sub-view (equipo/cuenta/mobile/admin/nube/advanced). */
+export async function openNubeView(page, view) {
+  await openNubePanel(page);
+  const navOptions = page.locator('[data-cloud-action="nav-options"]');
+  // The panel can still be rebuilding its home view (e.g. right after a join).
+  if (await until(() => navOptions.isVisible().catch(() => false), 5000)) await navOptions.click();
+  await page.locator(`.cloud-sync-view[data-cloud-view="options"] [data-cloud-action="nav-view"][data-cloud-view="${view}"]`).click();
 }
 
 export const roomMeta = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('rpc-cloud-sync-room-meta') || 'null'));

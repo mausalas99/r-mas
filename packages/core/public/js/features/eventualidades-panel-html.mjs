@@ -154,7 +154,7 @@ export function buildEventualidadesPanelHtml(byDay, hasEntries, editingEntry, _s
     '</header>' +
     '<div class="ev-timeline' +
     (!hasEntries ? ' ev-timeline--empty' : '') +
-    '" role="feed" aria-label="Eventualidades por día" data-ev-timeline="note">' +
+    '" role="group" aria-label="Eventualidades por día" data-ev-timeline="note">' +
     timelineInner +
     '</div>' +
     renderNoteCompose(editingEntry) +

@@ -511,6 +511,18 @@ export function wireCloudEquiposPanel(root, deps) {
     if (search instanceof HTMLInputElement) applyEquiposFiltersFromToolbar(root);
   });
 
+  // Board chips (Todos / Sin equipo / Sin sala / Nuevos / Sin uso 30 d): one at a time.
+  root.addEventListener('click', function (ev) {
+    const chip = ev.target instanceof Element ? ev.target.closest('[data-admin-equipos-chip]') : null;
+    if (!chip) return;
+    root.querySelectorAll('[data-admin-equipos-chip]').forEach((c) => {
+      const on = c === chip;
+      c.classList.toggle('is-active', on);
+      c.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    applyEquiposFiltersFromToolbar(root);
+  });
+
   return {
     handleAssign(btn) {
       return handleCloudEquiposAssign(root, btn, teamsCache, deps.getApi, deps.toast);

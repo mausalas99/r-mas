@@ -22,6 +22,7 @@
  *     - an inline text edit is lost
  *     - «En curso» does not stick, or a second click does not turn it back off
  *   Close / undo / delete
+ *     - the groups are out of order (Vencidos, Hoy, Próximos, Sin fecha, Cerrados last)
  *     - «Listo» does not move the row to «Cerrados», or Deshacer does not bring it back
  *     - the undo toast's wording or the Deshacer button is wrong
  *     - closing a pendiente that was «En curso» leaves it «En curso» in «Cerrados»
@@ -239,6 +240,9 @@ await r.finish('Pendientes: add, dates, priority, edit, listo/deshacer, delete, 
   check('«Listo» offers Deshacer with the "Pendiente marcado como listo" toast',
     undoOffered && /Pendiente marcado como listo/.test(undoToastText) && /Deshacer/.test(undoToastText), undoToastText);
   check('«Listo» moves it to «Cerrados»', await until(async () => /^Cerrados/.test(groupOf(await listState(page), IC)?.title || ''), 3000), groupOf(await listState(page), IC));
+  const order = (await listState(page)).map((g) => (g.title || '').replace(/\s*·?\s*\d+\s*$/, '').trim());
+  check('groups read Vencidos, Hoy, Próximos, Sin fecha, then Cerrados last',
+    order.length === 5 && JSON.stringify(order.slice(0, 4)) === JSON.stringify(['Vencidos', 'Hoy', 'Próximos', 'Sin fecha']) && /^Cerrados/.test(order[4]), order);
   await undo.click();
   await page.waitForTimeout(400);
   check('Deshacer brings it back open with its priority', rowOf(await listState(page), IC)?.prio === icPrio, rowOf(await listState(page), IC));
@@ -349,7 +353,7 @@ await r.finish('Pendientes: add, dates, priority, edit, listo/deshacer, delete, 
   await A.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
   await A.page.locator('#btn-clinical-team-create-open').click();
   await A.page.locator('#clinical-team-create-name').fill('EQUIPO DEMO PENDIENTES');
-  await A.page.getByRole('button', { name: 'Crear equipo' }).click();
+  await A.page.locator('#clinical-team-create-form [type="submit"]').click();
   await B.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
   const joinBtn = B.page.getByRole('button', { name: 'Unirme' });
   check('R1 sees the R2\'s team through Nube', await until(() => joinBtn.isVisible(), 20000));

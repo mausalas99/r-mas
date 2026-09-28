@@ -22,7 +22,6 @@ html.high-contrast ::-moz-selection {
 }
 html.ui-density-normal .patient-list-section-label {
   font-size: calc(10px * var(--density-font));
-  opacity: 0.88;
 }
 /* En Guardia se ocultan acciones secundarias; no usar esta clase en controles que deban verse siempre (p. ej. engrane de Laboratorio). */
 html.ui-density-normal .card-header-soft-btn-secondary { display: none !important; }
@@ -105,6 +104,8 @@ html:not(.ui-density-normal) .sidebar-ronda-hint { display: flex; }
    open. Replaces chevrons app-wide. Distinct from solid result dots
    (e.g. .cult-dot). */
 .rp-dot,
+.clinical-teams-collapse--section > .clinical-teams-collapse-summary::before,
+.clinical-teams-collapse--card-block > .clinical-teams-collapse-summary::before,
 .rpc-disclosure > summary::after,
 .rpc-disclosure__summary::after,
 .ea-estado-clinico > summary::after,
@@ -129,6 +130,8 @@ details.todo-group summary.todo-group-header::before,
   transition: background var(--dur-fast, 0.15s) var(--ease-out, ease), box-shadow var(--dur-fast, 0.15s) var(--ease-out, ease);
 }
 details[open] > summary .rp-dot,
+.clinical-teams-collapse--section[open] > .clinical-teams-collapse-summary::before,
+.clinical-teams-collapse--card-block[open] > .clinical-teams-collapse-summary::before,
 [aria-expanded="true"] .rp-dot,
 .is-open .rp-dot,
 .rpc-disclosure[open] > summary::after,

@@ -1,0 +1,46 @@
+{
+  "patient": {
+    "name": "DEMO GARCÍA ANA",
+    "expediente": "9000094-3",
+    "sexo": "F",
+    "edad": "54 años",
+    "fecha": "11/04/2026",
+    "hora": "11:05",
+    "ubicacion": "SERVICIO DEMO"
+  },
+  "resLabs": [
+    "BH\tHb 10.4*  Hto 33.1*  Leu 8.2  Plt 210",
+    "QS\tGlu 142* Cr 0.92"
+  ],
+  "bhExtras": {},
+  "refsBySection": {
+    "BH": {
+      "Hb": [
+        12.2,
+        18.1
+      ],
+      "Hto": [
+        37.7,
+        53.7
+      ],
+      "Leu": [
+        4,
+        11
+      ],
+      "Plt": [
+        142,
+        424
+      ]
+    },
+    "QS": {
+      "Glu": [
+        70,
+        110
+      ],
+      "Cr": [
+        0.6,
+        1.4
+      ]
+    }
+  }
+}

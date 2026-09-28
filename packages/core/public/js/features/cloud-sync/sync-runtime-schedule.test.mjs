@@ -1,117 +1,109 @@
-import { describe, it } from 'node:test';
+import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { createCloudPollScheduler } from './sync-runtime-schedule.mjs';
-import { createDrainPacer, CLOUD_POLL_ERROR_OVERLOAD_MAX_MS } from './cloud-sync-timing.mjs';
 
-function makeScheduler(drainPacer) {
-  return createCloudPollScheduler({
-    syncCycle: () => {},
-    pendingCount: () => 0,
+/** Scheduler with fake timers, a counting syncCycle and a controllable probe. */
+function setup(probeImpl, { pending = 1 } = {}) {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  // Top of the jitter range: the 30 s backoff lands at ~30 s and each ping at
+  // ~10 s. Random jitter let the backoff fire at 15–20 s, inside the 20 s window.
+  mock.method(Math, 'random', () => 0.999);
+  const calls = { sync: 0, probe: 0, recovered: 0 };
+  const scheduler = createCloudPollScheduler({
+    syncCycle: () => { calls.sync += 1; },
+    pendingCount: () => pending,
     getLastLocalWriteAt: () => 0,
-    drainPacer,
+    drainPacer: { onCongested() {} },
+    probe: () => { calls.probe += 1; return probeImpl(); },
+    onRecovered: () => { calls.recovered += 1; },
   });
+  return { scheduler, calls };
 }
 
-function stubSetTimeoutCapture() {
-  const originalSetTimeout = globalThis.setTimeout;
-  const captured = { delay: null };
-  globalThis.setTimeout = (fn, ms) => {
-    captured.delay = ms;
-    return originalSetTimeout(() => {}, 0); // never actually fires in this test
-  };
-  return {
-    captured,
-    restore() {
-      globalThis.setTimeout = originalSetTimeout;
-    },
-  };
+const flush = () => new Promise((resolve) => setImmediate(resolve));
+async function advance(ms) {
+  mock.timers.tick(ms);
+  await flush();
+  await flush();
 }
 
-describe('createCloudPollScheduler — overload backoff cap', () => {
-  it('a backoff-class error backs off the shared AIMD drain pacer too', () => {
-    const pacer = createDrainPacer({ random: () => 0 });
-    const startingChunkOps = pacer.chunkOps();
-    const scheduler = makeScheduler(pacer);
-    const err = new Error('overloaded');
-    err.status = 503;
-    scheduler.noteFailure(err);
-    assert.ok(
-      pacer.chunkOps() < startingChunkOps,
-      'a whole-cycle overload failure must congest the drain pacer, not just the poll timer'
-    );
-    scheduler.stop();
-  });
-
-  it('a permanent error does not touch the drain pacer', () => {
-    const pacer = createDrainPacer({ random: () => 0 });
-    const startingChunkOps = pacer.chunkOps();
-    const scheduler = makeScheduler(pacer);
-    const err = new Error('bad request');
-    err.status = 400;
-    scheduler.noteFailure(err);
-    assert.equal(pacer.chunkOps(), startingChunkOps);
-    scheduler.stop();
-  });
+test('unreachable Worker: the first ping that answers runs the sync within ~10 s, not after the 30 s backoff', async (t) => {
+  t.after(() => { mock.timers.reset(); mock.restoreAll(); });
+  const { scheduler, calls } = setup(() => Promise.resolve({ ok: true }));
+  scheduler.noteFailure(new TypeError('fetch failed'));
+  await advance(10_000);
+  assert.equal(calls.probe, 1);
+  assert.equal(calls.sync, 1);
+  scheduler.stop();
 });
 
-describe('createCloudPollScheduler — timer scheduling reflects the right cap', () => {
-  it('schedules the next cycle within the 2-minute overload cap after repeated 503s', async () => {
-    const { captured, restore } = stubSetTimeoutCapture();
-    try {
-      const scheduler = makeScheduler(createDrainPacer({ random: () => 0 }));
-      for (let i = 0; i < 6; i += 1) {
-        const err = new Error('overloaded');
-        err.status = 503;
-        scheduler.noteFailure(err);
-      }
-      assert.ok(captured.delay <= CLOUD_POLL_ERROR_OVERLOAD_MAX_MS);
-      scheduler.stop();
-    } finally {
-      restore();
-    }
-  });
+test('probe keeps pinging while the Worker is still down', async (t) => {
+  t.after(() => { mock.timers.reset(); mock.restoreAll(); });
+  const { scheduler, calls } = setup(() => Promise.reject(new TypeError('fetch failed')));
+  scheduler.noteFailure(new TypeError('fetch failed'));
+  await advance(10_000);
+  await advance(10_000);
+  assert.equal(calls.probe, 2);
+  assert.equal(calls.sync, 0);
+  scheduler.stop();
+});
 
-  it('schedules up to the full 5-minute cap for a permanent error, not the 2-minute overload cap', async () => {
-    const { captured, restore } = stubSetTimeoutCapture();
-    try {
-      // random()=1 -> jitterMs returns the full exp value
-      const scheduler = makeScheduler(createDrainPacer({ random: () => 1 }));
-      for (let i = 0; i < 8; i += 1) {
-        const err = new Error('unreachable');
-        err.status = 0;
-        scheduler.noteFailure(err);
-      }
-      // Uncapped exponential (30s * 2^4 = 480s) clamps to the 5-minute ceiling.
-      assert.ok(captured.delay > CLOUD_POLL_ERROR_OVERLOAD_MAX_MS);
-      assert.ok(captured.delay <= 5 * 60_000);
-      scheduler.stop();
-    } finally {
-      restore();
-    }
-  });
+test('overloaded Worker (503 / 429): no extra pings on top of the backoff', async (t) => {
+  t.after(() => { mock.timers.reset(); mock.restoreAll(); });
+  const { scheduler, calls } = setup(() => Promise.resolve({ ok: true }));
+  scheduler.noteFailure(Object.assign(new Error('busy'), { status: 503 }));
+  await advance(20_000);
+  assert.equal(calls.probe, 0);
+  scheduler.noteFailure(Object.assign(new Error('slow down'), { status: 429 }));
+  await advance(20_000);
+  assert.equal(calls.probe, 0);
+  scheduler.stop();
+});
 
-  it('an overload cap does not stick after a success — a later permanent-error streak still reaches the 5-minute cap', async () => {
-    const { captured, restore } = stubSetTimeoutCapture();
-    try {
-      const scheduler = makeScheduler(createDrainPacer({ random: () => 1 }));
-      for (let i = 0; i < 6; i += 1) {
-        const err = new Error('overloaded');
-        err.status = 503;
-        scheduler.noteFailure(err);
-      }
-      scheduler.noteSuccess();
-      for (let i = 0; i < 8; i += 1) {
-        const permanentErr = new Error('unreachable');
-        permanentErr.status = 0;
-        scheduler.noteFailure(permanentErr);
-      }
-      // If the 120s overload cap had stuck around from the earlier streak,
-      // this could never exceed it. It does — the cap reset on success.
-      assert.ok(captured.delay > CLOUD_POLL_ERROR_OVERLOAD_MAX_MS);
-      assert.ok(captured.delay <= 5 * 60_000);
-      scheduler.stop();
-    } finally {
-      restore();
-    }
-  });
+test('a successful cycle or stop() ends the probing', async (t) => {
+  t.after(() => { mock.timers.reset(); mock.restoreAll(); });
+  const { scheduler, calls } = setup(() => Promise.reject(new TypeError('fetch failed')));
+  scheduler.noteFailure(new TypeError('fetch failed'));
+  scheduler.noteSuccess();
+  await advance(20_000);
+  assert.equal(calls.probe, 0);
+  scheduler.noteFailure(new TypeError('fetch failed'));
+  scheduler.stop();
+  await advance(20_000);
+  assert.equal(calls.probe, 0);
+});
+
+test('right after the Worker comes back, a device with nothing queued polls at the active rate (catch up on peers)', async (t) => {
+  t.after(() => { mock.timers.reset(); mock.restoreAll(); });
+  const { scheduler, calls } = setup(() => Promise.resolve({ ok: true }), { pending: 0 });
+  scheduler.noteFailure(new TypeError('fetch failed'));
+  scheduler.noteSuccess();
+  await advance(8_000); // active fallback poll, not the 20 s idle one
+  assert.equal(calls.sync, 1);
+  scheduler.stop();
+});
+
+test('without a recent outage, an idle device keeps the idle poll', async (t) => {
+  t.after(() => { mock.timers.reset(); mock.restoreAll(); });
+  const { scheduler, calls } = setup(() => Promise.resolve({ ok: true }), { pending: 0 });
+  scheduler.noteSuccess();
+  await advance(8_000);
+  assert.equal(calls.sync, 0);
+  await advance(12_000);
+  assert.equal(calls.sync, 1);
+  scheduler.stop();
+});
+
+test('recovering from an unreachable Worker fires onRecovered once (sala-room catch-up); overload recovery does not', async (t) => {
+  t.after(() => { mock.timers.reset(); mock.restoreAll(); });
+  const { scheduler, calls } = setup(() => Promise.reject(new TypeError('fetch failed')), { pending: 0 });
+  scheduler.noteFailure(new TypeError('fetch failed'));
+  scheduler.noteFailure(new TypeError('fetch failed'));
+  scheduler.noteSuccess();
+  scheduler.noteSuccess();
+  assert.equal(calls.recovered, 1);
+  scheduler.noteFailure(Object.assign(new Error('busy'), { status: 503 }));
+  scheduler.noteSuccess();
+  assert.equal(calls.recovered, 1);
+  scheduler.stop();
 });

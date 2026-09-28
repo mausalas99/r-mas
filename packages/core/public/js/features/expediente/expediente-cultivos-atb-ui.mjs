@@ -24,7 +24,7 @@ export function buildCultivoAntibiogramCellHtmlForPatient(r, patientId) {
   if (sens && sens.length) {
     return (
       '<div class="cultivos-atb-wrap">' +
-      '<div class="cultivos-atb-chips" role="list">' +
+      '<div class="cultivos-atb-chips">' +
       buildAtbRisSummaryHtml(sens) +
       '</div>' +
       copyBtn +

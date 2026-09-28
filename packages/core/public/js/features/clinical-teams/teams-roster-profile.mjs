@@ -102,6 +102,14 @@ export async function handleProfileFormSubmit(ev) {
   if (!ok) return;
 
   await refreshClinicalUserProfile();
+  // ⇄ Cuenta hosts this form outside the teams panel, so nothing else redraws
+  // it: without this, «Cambiar código de administración» only showed up after
+  // reopening Cuenta.
+  const cuentaHost = document.querySelector('[data-cloud-profile-host]');
+  if (cuentaHost?.isConnected) {
+    const { mountClinicalProfileInHost } = await import('./teams-roster-interactions.mjs');
+    await mountClinicalProfileInHost(cuentaHost);
+  }
   const msg =
     adminChange.wantsProgramAdmin &&
     (adminChange.isProgramAdmin === true || adminChange.wasProgramAdmin)

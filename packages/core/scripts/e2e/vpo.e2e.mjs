@@ -37,6 +37,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createA11yRecorder, acceptAbxDias } from './harness.mjs';
 import { DEMO_TOUR_LAB_PASTE, DEMO_GARCIA_LAB_REPORT } from '../../public/js/tour-demo-some-lab.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../../public/js/lab-bulk-paste.mjs';
 import { goArea } from './harness.mjs';
@@ -49,6 +50,7 @@ fs.mkdirSync(artifactDir, { recursive: true });
 
 const checks = [];
 let shotN = 0;
+const a11y = createA11yRecorder('vpo');
 
 function check(name, ok, detail) {
   checks.push({ name, ok: !!ok, detail: detail === undefined ? null : detail });
@@ -58,6 +60,7 @@ function check(name, ok, detail) {
 async function shot(page, label) {
   shotN += 1;
   await page.screenshot({ path: path.join(artifactDir, `${String(shotN).padStart(2, '0')}-${label}.png`) });
+  await a11y.scan(page, label);
 }
 
 /** SOME "indicaciones" block (tab separated), dated two days ago — same shape as manejo-receta.e2e.mjs. */
@@ -142,6 +145,7 @@ async function importSomeMeds(page) {
   await page.locator('#med-input').fill(SOME_MEDS);
   await page.getByRole('button', { name: 'Procesar receta' }).click();
   await page.waitForTimeout(400);
+  await acceptAbxDias(page);
   await closeToasts(page);
 }
 
@@ -333,6 +337,8 @@ try {
   check('scenario ran to the end', false, crash);
 }
 
+const a11yCheck = a11y.verdict();
+if (a11yCheck) check(a11yCheck.name, a11yCheck.ok, a11yCheck.detail);
 const passed = checks.filter((c) => c.ok).length;
 const report = { scenario: 'VPO busy patient, one screen no scroll', runId, passed, failed: checks.length - passed, checks };
 fs.writeFileSync(path.join(artifactDir, 'report.json'), JSON.stringify(report, null, 2) + '\n');

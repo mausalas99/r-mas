@@ -11,6 +11,8 @@ import {
   isRoomUnprotected,
   retryRoomDekIfUnprotected,
   markRoomUnprotected,
+  planRoomCodeChange,
+  rotateRoomCodeAtomically,
 } from './room-dek.mjs';
 import { encryptValue, decryptValue } from './crypto.mjs';
 
@@ -217,7 +219,7 @@ describe('rewrapRoomDekForNewCode (admin rotates the room code)', () => {
     const api = makeFakeApi();
     const dek = await ensureRoomDek(api, 'room-1', 'OLD-CODE');
 
-    await rewrapRoomDekForNewCode(api, 'room-1', 'NEW-CODE');
+    assert.equal(await rewrapRoomDekForNewCode(api, 'room-1', 'NEW-CODE'), true);
 
     clearRoomDekCache();
     assert.equal(await loadRoomDek(api, 'room-1', 'OLD-CODE'), null);
@@ -231,7 +233,7 @@ describe('rewrapRoomDekForNewCode (admin rotates the room code)', () => {
 
   it('is a no-op with no cached DEK for that room', async () => {
     const api = makeFakeApi();
-    await rewrapRoomDekForNewCode(api, 'room-1', 'NEW-CODE');
+    assert.equal(await rewrapRoomDekForNewCode(api, 'room-1', 'NEW-CODE'), false);
     assert.equal(api.store.size, 0);
   });
 
@@ -250,5 +252,92 @@ describe('rewrapRoomDekForNewCode (admin rotates the room code)', () => {
       throw new Error('network error');
     };
     await assert.doesNotReject(() => rewrapRoomDekForNewCode(api, 'room-1', 'NEW-CODE'));
+    assert.equal(await rewrapRoomDekForNewCode(api, 'room-1', 'NEW-CODE'), false, 'reports the failure');
+  });
+});
+
+/** Fake Worker for admin «Cambiar código»: the atomic endpoint plus the admin detail. */
+function makeAdminApi(api, codes, { legacy = false, conflictsFirst = 0 } = {}) {
+  let conflicts = conflictsFirst;
+  return Object.assign(api, {
+    async adminRoom(roomId) {
+      const room = { id: roomId, code: codes.get(roomId) };
+      if (!legacy) room.dek = api.store.get(roomId) || null;
+      return { room };
+    },
+    async adminRotateCode(roomId, body) {
+      const locked = api.store.has(roomId);
+      if (locked && !body?.dek) {
+        throw Object.assign(new Error('Esta sala está cifrada'), { data: { error: 'dek_rewrap_required' } });
+      }
+      if (conflicts > 0) {
+        conflicts -= 1;
+        throw Object.assign(new Error('Ese código ya existe.'), { data: { error: 'conflict' } });
+      }
+      const code = body?.code || 'SRV234';
+      codes.set(roomId, code);
+      if (locked) api.store.set(roomId, body.dek);
+      return { ok: true, code, relocked: locked };
+    },
+  });
+}
+
+describe('admin «Cambiar código» with the atomic Worker endpoint', () => {
+  beforeEach(() => {
+    clearRoomDekCache();
+  });
+
+  it('plans «none» for a sala with no key and just changes the code', async () => {
+    const codes = new Map([['room-1', 'OLD111']]);
+    const api = makeAdminApi(makeFakeApi(), codes);
+    const plan = await planRoomCodeChange(api, 'room-1');
+    assert.equal(plan.kind, 'none');
+    const res = await rotateRoomCodeAtomically(api, 'room-1', plan);
+    assert.deepEqual(res, { code: 'SRV234', relocked: false });
+  });
+
+  it('an admin NOT in the sala opens the key with the current code, and the new code opens it after', async () => {
+    const codes = new Map([['room-1', 'OLD111']]);
+    const api = makeAdminApi(makeFakeApi(), codes);
+    const dek = await ensureRoomDek(api, 'room-1', 'OLD111');
+    clearRoomDekCache(); // this admin device never had it
+    const plan = await planRoomCodeChange(api, 'room-1');
+    assert.equal(plan.kind, 'key');
+    assert.equal(getCachedRoomDek('room-1'), null, 'another sala’s key is not kept on this device');
+    const { code, relocked } = await rotateRoomCodeAtomically(api, 'room-1', plan);
+    assert.equal(relocked, true);
+    assert.match(code, /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/);
+    assert.equal(codes.get('room-1'), code);
+    assert.equal(await loadRoomDek(api, 'room-1', 'OLD111'), null, 'old code no longer opens it');
+    clearRoomDekCache();
+    const reopened = await loadRoomDek(api, 'room-1', code);
+    const value = { dx: 'NAC CURB-65 2' };
+    assert.deepEqual(await decryptValue(reopened, await encryptValue(dek, value)), value);
+  });
+
+  it('retries with a fresh code on a conflict, gives up after three', async () => {
+    const codes = new Map([['room-1', 'OLD111']]);
+    const api = makeAdminApi(makeFakeApi(), codes, { conflictsFirst: 2 });
+    await ensureRoomDek(api, 'room-1', 'OLD111');
+    const res = await rotateRoomCodeAtomically(api, 'room-1', await planRoomCodeChange(api, 'room-1'));
+    assert.equal(res.relocked, true);
+    const api2 = makeAdminApi(makeFakeApi(), new Map([['room-2', 'OLD222']]), { conflictsFirst: 3 });
+    await ensureRoomDek(api2, 'room-2', 'OLD222');
+    const plan = await planRoomCodeChange(api2, 'room-2');
+    await assert.rejects(() => rotateRoomCodeAtomically(api2, 'room-2', plan), (err) => err.data.error === 'conflict');
+    assert.equal(api2.store.size, 1);
+  });
+
+  it('refuses when the key cannot be opened with the current code', async () => {
+    const codes = new Map([['room-1', 'WRONG9']]);
+    const api = makeAdminApi(makeFakeApi(), codes);
+    await ensureRoomDek(api, 'room-1', 'OLD111');
+    clearRoomDekCache();
+    assert.equal((await planRoomCodeChange(api, 'room-1')).kind, 'refused');
+  });
+
+  it('a Worker without the atomic endpoint is detected as «legacy»', async () => {
+    const api = makeAdminApi(makeFakeApi(), new Map([['room-1', 'OLD111']]), { legacy: true });
+    assert.equal((await planRoomCodeChange(api, 'room-1')).kind, 'legacy');
   });
 });

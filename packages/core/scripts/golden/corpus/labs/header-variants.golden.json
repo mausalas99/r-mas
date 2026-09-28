@@ -1,0 +1,14 @@
+{
+  "patient": {
+    "name": "SINTETICO EJEMPLO CASOAR",
+    "expediente": "9000107-1",
+    "sexo": "F",
+    "edad": "8 meses",
+    "fecha": "11/06/2026",
+    "hora": "09:15",
+    "ubicacion": "URGENCIAS PEDIATRIA"
+  },
+  "resLabs": [],
+  "bhExtras": {},
+  "refsBySection": {}
+}

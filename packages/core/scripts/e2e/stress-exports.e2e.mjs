@@ -75,7 +75,8 @@ const missing = (text, list) => list.filter((m) => !up(text).includes(up(m)));
 const MAIN = { exp: '7300001-1', name: `DEMO ${ODD.replace(/[\u0000-\u001f]/g, '')} ${LONG}`, room: '801' };
 const CENSUS = Array.from({ length: 32 }, (_, i) => ({
   exp: `73${String(i + 10).padStart(5, '0')}-${i % 10}`,
-  name: `DEMO CENSO ${i} ${['😀', 'JOSÉ'.normalize('NFD'), 'Δ≥→', `O'BRIEN`, '& <b>', "$'", LONG][i % 7]}`,
+  // Arabic, CJK, zero-width and bidi control: all outside WinAnsi.
+  name: `DEMO CENSO ${i} ${['😀', 'JOSÉ'.normalize('NFD'), 'Δ≥→', `O'BRIEN`, '& <b>', "$'", LONG, 'مريض', '测试', 'X\u200bY', '\u202eX\u202c'][i % 11]}`,
   room: String(810 + i),
 }));
 

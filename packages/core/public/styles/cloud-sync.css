@@ -249,7 +249,18 @@
   box-sizing: border-box;
 }
 
-.cloud-sync-inset-row:not(:last-child)::after {
+/* dl around the Nube dashboard's key/value rows (panel-cloud-diagnostics-html.mjs):
+   lays them out like direct rows of the group, divider after the last one too
+   when more rows follow. */
+.cloud-nube-dash-kv-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
+
+.cloud-sync-inset-row:not(:last-child)::after,
+.cloud-nube-dash-kv-list:not(:last-child) > .cloud-sync-inset-row:last-child::after {
   content: '';
   position: absolute;
   left: 16px;
@@ -661,9 +672,9 @@
 .cloud-sync-btn {
   align-self: flex-start;
   margin: 0;
-  padding: calc(7px * var(--density-space)) calc(12px * var(--density-space));
+  padding: calc(7px * var(--density-space)) calc(14px * var(--density-space));
   border: var(--border-hairline);
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-pill);
   background: var(--color-elevated);
   color: var(--text);
   font-family: inherit;
@@ -835,9 +846,7 @@
   padding: 10px 12px 12px;
 }
 
-.cloud-sync-equipo-embed .clinical-teams-section--create,
-.cloud-sync-equipo-embed .clinical-teams-section--joined,
-.cloud-sync-equipo-embed .clinical-teams-section--directory {
+.cloud-sync-equipo-embed .clinical-teams-section--joined {
   padding: 10px 12px;
   gap: 8px;
 }
@@ -877,20 +886,10 @@
 }
 
 .cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-handle-hint,
-.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--create,
-.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--more,
-.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--join-code,
-.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--rotation {
+.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-other {
   grid-column: 1 / -1;
 }
 
-/* Two concerns share this stack — rotación/crear equipo (admin) vs.
-   explorar/unirse/mis equipos (encontrar equipo) — so the boundary
-   between them needs more than the 12px used inside each group. */
-.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--directory,
-.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--more {
-  margin-top: calc(12px * var(--density-space));
-}
 
 .cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--joined {
   grid-column: 1;
@@ -910,32 +909,12 @@
  * Explorar's grid (teams-roster-panel.mjs) instead of a separate "Mis
  * equipos" section — no has-joined override needed here any more. */
 
-.cloud-sync-equipo-embed .clinical-teams-list--directory {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14.5rem), 1fr));
-}
-
-.cloud-sync-equipo-embed .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team {
-  grid-template-columns: 1fr;
-}
-
 .cloud-sync-equipo-embed
   .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
   > .clinical-teams-pick-banner,
 .cloud-sync-equipo-embed
   .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
   > .clinical-teams-handle-hint,
-.cloud-sync-equipo-embed
-  .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
-  > .clinical-teams-section--create,
-.cloud-sync-equipo-embed
-  .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
-  > .clinical-teams-section--more,
-.cloud-sync-equipo-embed
-  .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
-  > .clinical-teams-section--join-code,
-.cloud-sync-equipo-embed
-  .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
-  > .clinical-teams-section--joined,
 .cloud-sync-equipo-embed
   .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
   > .clinical-teams-section--directory {
@@ -993,9 +972,553 @@
 }
 
 .cloud-sync-admin-shell {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: calc(20px * var(--density-space));
+  align-items: start;
+}
+
+/* Board «Nube + Admin»: side menu, Zona de peligro pinned at the bottom. */
+.cloud-sync-admin-nav {
+  position: sticky;
+  top: 0;
   display: flex;
   flex-direction: column;
-  gap: calc(12px * var(--density-space));
+  gap: 2px;
+  min-height: min(520px, 60dvh);
+  padding: 8px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-container);
+  background: color-mix(in oklab, var(--text) 3%, var(--color-elevated));
+}
+
+.cloud-sync-admin-nav-spacer {
+  flex: 1;
+  min-height: 16px;
+}
+
+.cloud-sync-admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: calc(13px * var(--density-font));
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cloud-sync-admin-nav-item:hover {
+  background: var(--state-hover-bg);
+  color: var(--text);
+}
+
+.cloud-sync-admin-nav-item:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--action) 45%, transparent);
+  outline-offset: -2px;
+}
+
+.cloud-sync-admin-nav-item.is-active {
+  background: color-mix(in oklab, var(--color-accent) 14%, transparent);
+  color: var(--color-accent);
+}
+
+.cloud-sync-admin-nav-item--danger,
+.cloud-sync-admin-nav-item--danger.is-active {
+  color: var(--color-danger);
+}
+
+.cloud-sync-admin-nav-item--danger.is-active {
+  background: color-mix(in oklab, var(--color-danger) 10%, transparent);
+}
+
+.cloud-sync-admin-nav-count {
+  margin-left: auto;
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: calc(11px * var(--density-font));
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-main {
+  display: flex;
+  flex-direction: column;
+  gap: calc(14px * var(--density-space));
+  min-width: 0;
+}
+
+.cloud-sync-admin-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cloud-sync-admin-h {
+  margin: 0;
+  font-size: calc(20px * var(--density-font));
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.cloud-sync-admin-sub {
+  margin: 2px 0 0;
+  font-size: calc(13px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-head-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cloud-sync-admin-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.cloud-sync-admin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-container);
+  background: color-mix(in oklab, var(--text) 3%, var(--color-elevated));
+}
+
+.cloud-sync-admin-card-label {
+  font-size: calc(11px * var(--density-font));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-card-value {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: calc(22px * var(--density-font));
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cloud-sync-admin-card-meta {
+  font-size: calc(12px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-resumen-extras,
+.cloud-sync-admin-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cloud-sync-admin-resumen-extras {
+  gap: 16px;
+}
+
+.cloud-sync-admin-attention {
+  justify-content: space-between;
+  font-size: calc(13px * var(--density-font));
+}
+
+.cloud-sync-admin-space-row {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr) 80px;
+  gap: 12px;
+  align-items: center;
+  font-size: calc(13px * var(--density-font));
+}
+
+.cloud-sync-admin-space-track {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--text) 8%, transparent);
+  overflow: hidden;
+}
+
+.cloud-sync-admin-space-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-accent);
+}
+
+.cloud-sync-admin-space-value {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  text-align: right;
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.cloud-sync-admin-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: calc(12px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-filters .profile-input,
+.cloud-sync-admin-search {
+  width: auto;
+  min-width: 0;
+  height: 36px;
+  border-radius: var(--radius-pill);
+}
+
+.cloud-sync-admin-search {
+  margin-left: auto;
+  width: 220px;
+}
+
+.cloud-sync-admin-sala-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.cloud-sync-admin-sala {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-container);
+  background: color-mix(in oklab, var(--text) 3%, var(--color-elevated));
+}
+
+.cloud-sync-admin-sala[hidden] {
+  display: none;
+}
+
+.cloud-sync-admin-sala.is-mine {
+  border-color: color-mix(in oklab, var(--color-accent) 45%, var(--divider));
+}
+
+.cloud-sync-admin-sala-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cloud-sync-admin-sala-name {
+  margin: 0;
+  font-size: calc(16px * var(--density-font));
+  font-weight: 700;
+  color: var(--text);
+}
+
+.cloud-sync-admin-pill {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--color-accent) 14%, transparent);
+  color: var(--color-accent);
+  font-size: calc(10px * var(--density-font));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cloud-sync-admin-sala-bytes {
+  margin-left: auto;
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: calc(12px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-sala-code {
+  align-self: flex-start;
+  padding: 3px 8px;
+  border-radius: var(--radius-control);
+  background: color-mix(in oklab, var(--text) 6%, transparent);
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: calc(14px * var(--density-font));
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--text);
+}
+
+.cloud-sync-admin-sala-meta {
+  margin: 0;
+  font-size: calc(12px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-sala-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.cloud-sync-admin-more {
+  position: relative;
+  margin-left: auto;
+}
+
+.cloud-sync-admin-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  font-weight: 700;
+  list-style: none;
+  cursor: pointer;
+}
+
+.cloud-sync-admin-more-btn::-webkit-details-marker {
+  display: none;
+}
+
+.cloud-sync-admin-more-btn:hover {
+  background: var(--state-hover-bg);
+  color: var(--text);
+}
+
+.cloud-sync-admin-more .wb-menu-panel {
+  right: 0;
+  left: auto;
+}
+
+.wb-menu-panel .wb-menu-item--danger {
+  color: var(--color-danger);
+}
+
+.cloud-sync-admin-filters-end {
+  margin-left: auto;
+}
+
+.cloud-sync-admin-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid color-mix(in oklab, var(--color-livesync-degraded) 35%, var(--divider));
+  border-radius: var(--radius-container);
+  background: color-mix(in oklab, var(--color-livesync-degraded) 8%, var(--color-elevated));
+  font-size: calc(13px * var(--density-font));
+  color: var(--text);
+}
+
+.cloud-sync-admin-banner > span {
+  flex: 1;
+}
+
+/* Pacientes: the action bar floats at the bottom and only exists with a selection. */
+.cloud-sync-admin-bulkbar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  align-self: center;
+  padding: 8px 10px 8px 18px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-pill);
+  background: var(--color-elevated);
+  box-shadow: var(--shadow-lg, 0 18px 40px rgba(15, 23, 42, 0.18));
+  font-size: calc(13px * var(--density-font));
+  font-weight: 600;
+}
+
+.cloud-sync-admin-bulkbar[hidden] {
+  display: none;
+}
+
+.cloud-sync-admin-bulkbar-close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.cloud-sync-admin-bulkbar-close:hover {
+  background: var(--state-hover-bg);
+}
+
+.cloud-sync-admin-events {
+  padding: 0;
+}
+
+.cloud-sync-admin-event-group {
+  padding: 12px 16px 6px;
+  font-size: calc(11px * var(--density-font));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-event {
+  border-top: 1px solid var(--divider);
+}
+
+.cloud-sync-admin-event > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  list-style: none;
+  cursor: pointer;
+  font-size: calc(13px * var(--density-font));
+}
+
+.cloud-sync-admin-event > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cloud-sync-admin-event > summary:hover {
+  background: var(--state-hover-bg);
+}
+
+.cloud-sync-admin-event .cloud-sync-options-entry-text {
+  flex: 1;
+}
+
+.cloud-sync-admin-event-meta,
+.cloud-sync-admin-event-time {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: calc(11px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-event[open] {
+  background: color-mix(in oklab, var(--text) 3%, transparent);
+}
+
+.cloud-sync-admin-event-kv {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 6px 16px;
+  margin: 0;
+  padding: 4px 16px 10px 68px;
+  font-size: calc(12px * var(--density-font));
+}
+
+.cloud-sync-admin-event-kv dt {
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-event-kv dd {
+  margin: 0;
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  overflow-wrap: anywhere;
+}
+
+.cloud-sync-admin-event .cloud-sync-admin-ops {
+  display: block;
+  margin: 0 16px 12px 68px;
+  max-height: 120px;
+  overflow: auto;
+}
+
+.cloud-sync-admin-equipos-bulk-actions[hidden],
+.cloud-sync-admin-equipos-group-label[hidden] {
+  display: none;
+}
+
+.cloud-sync-admin-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cloud-sync-admin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-pill);
+  background: var(--color-elevated);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: calc(12px * var(--density-font));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cloud-sync-admin-chip b {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cloud-sync-admin-chip:hover {
+  background: var(--state-hover-bg);
+}
+
+.cloud-sync-admin-chip.is-active {
+  border-color: color-mix(in oklab, var(--color-accent) 45%, var(--divider));
+  background: color-mix(in oklab, var(--color-accent) 14%, transparent);
+  color: var(--color-accent);
+}
+
+.cloud-sync-admin-equipos-row-identity .cloud-sync-avatar {
+  width: 32px;
+  height: 32px;
+  font-size: calc(11px * var(--density-font));
+}
+
+/* Administración needs room for the side menu. */
+#connection-dropdown-backdrop .connection-dropdown.connection-dropdown-modal.connection-dropdown-modal--admin {
+  width: min(98vw, 1280px);
+}
+
+@media (max-width: 760px) {
+  .cloud-sync-admin-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .cloud-sync-admin-nav {
+    position: static;
+    flex-direction: row;
+    min-height: 0;
+    overflow-x: auto;
+  }
+
+  /* Edge cue: fades to the nav's own background. */
+  .cloud-sync-admin-nav::after {
+    content: '';
+    position: sticky;
+    right: 0;
+    flex: 0 0 28px;
+    align-self: stretch;
+    margin-left: -28px;
+    pointer-events: none;
+    background: linear-gradient(to left, color-mix(in oklab, var(--text) 3%, var(--color-elevated)), transparent);
+  }
+
+  .cloud-sync-admin-nav-spacer {
+    display: none;
+  }
 }
 
 .cloud-sync-admin-bootstrap {
@@ -1021,43 +1544,6 @@
 
 .cloud-sync-admin-bootstrap-actions .cloud-sync-btn--primary {
   margin-left: auto;
-}
-
-/* Admin sections reuse .cloud-sync-tabs track; equal-width pills */
-.cloud-sync-admin-tabs.cloud-sync-tabs {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  position: relative;
-}
-/* Edge cue: fades to var(--color-elevated), .cloud-sync-tabs' own background. */
-.cloud-sync-admin-tabs.cloud-sync-tabs::after {
-  content: "";
-  position: sticky;
-  right: 0;
-  flex: 0 0 28px;
-  align-self: stretch;
-  margin-left: -28px;
-  pointer-events: none;
-  background: linear-gradient(to left, var(--color-elevated), transparent);
-}
-
-.cloud-sync-admin-tabs .cloud-sync-admin-tab {
-  flex: 1 1 0;
-  min-width: 4.5rem;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.cloud-sync-admin-tab--danger {
-  color: color-mix(in oklab, var(--danger, #c0392b) 72%, var(--text-muted));
-}
-
-.cloud-sync-admin-tab--danger.is-active,
-.cloud-sync-admin-tab--danger[aria-selected='true'] {
-  color: var(--danger, #c0392b);
-  border-color: color-mix(in oklab, var(--danger, #c0392b) 35%, var(--divider));
-  background: color-mix(in oklab, var(--danger, #c0392b) 10%, var(--surface));
 }
 
 .cloud-sync-admin-panels {
@@ -1594,12 +2080,14 @@
 }
 
 .cloud-sync-admin-equipos-handle {
-  font-weight: 600;
-  color: var(--text-primary);
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: 0.85em;
+  color: var(--text-muted);
 }
 
 .cloud-sync-admin-equipos-name {
-  color: var(--text-secondary);
+  font-weight: 650;
+  color: var(--text);
 }
 
 .cloud-sync-admin-equipos-meta {
@@ -1803,134 +2291,8 @@
   margin: 0;
 }
 
-.cloud-nube-dash-head {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-  padding-bottom: calc(10px * var(--density-space));
-}
-
-.cloud-nube-dash-head-main {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 10px;
-  min-width: 0;
-}
-
-.cloud-nube-dash-chip {
-  font-size: calc(12px * var(--density-font));
-}
-
-.cloud-nube-dash-room {
-  font-size: calc(13px * var(--density-font));
-  font-weight: 650;
-  color: var(--text);
-  line-height: 1.35;
-}
-
-.cloud-nube-dash-subline {
-  margin: 0;
-  font-size: calc(12px * var(--density-font));
-  color: var(--text-muted);
-  line-height: 1.45;
-}
-
-.cloud-nube-dash-kv dd {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.cloud-nube-dash-kv[data-status='warn'] dd {
-  color: color-mix(in oklab, var(--color-warning, #f59e0b) 82%, var(--text));
-}
-
-.cloud-nube-dash-kv[data-status='error'] dd {
-  color: var(--color-danger);
-}
-
-.cloud-nube-dash-kv-muted {
-  font-weight: 400;
-  color: var(--text-muted);
-}
-
-.cloud-nube-dash-pipeline-wrap {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  padding-top: calc(4px * var(--density-space));
-}
-
-.cloud-nube-dash-pipeline-label {
-  font-size: calc(10px * var(--density-font));
-  font-weight: 650;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.cloud-nube-dash-pipeline {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.cloud-nube-dash-pipe {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  min-width: 0;
-  padding: 6px 8px;
-  border-radius: var(--radius-control);
-  background: color-mix(in oklab, var(--text) 4%, transparent);
-}
-
-.cloud-nube-dash-pipe-dot {
-  width: 8px;
-  height: 8px;
-  margin-top: 3px;
-  border-radius: var(--radius-pill);
-  background: var(--text-muted);
-  flex-shrink: 0;
-}
-
-.cloud-nube-dash-pipe[data-state='ok'] .cloud-nube-dash-pipe-dot {
-  background: var(--color-livesync-live, #16a34a);
-}
-
-.cloud-nube-dash-pipe[data-state='warn'] .cloud-nube-dash-pipe-dot,
-.cloud-nube-dash-pipe[data-state='info'] .cloud-nube-dash-pipe-dot {
-  background: var(--color-livesync-degraded, #f59e0b);
-}
-
-.cloud-nube-dash-pipe[data-state='error'] .cloud-nube-dash-pipe-dot {
-  background: var(--color-danger);
-}
-
-.cloud-nube-dash-pipe-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-  font-size: calc(11px * var(--density-font));
-  font-weight: 650;
-  color: var(--text);
-  line-height: 1.3;
-}
-
-.cloud-nube-dash-pipe-text small {
-  font-size: calc(10px * var(--density-font));
-  font-weight: 500;
-  color: var(--text-muted);
-  line-height: 1.35;
-  word-break: break-word;
-}
-
-.cloud-nube-dash-outbox-head,
-.cloud-nube-dash-alerts-head {
+.cloud-nube-dash-alerts-head,
+.cloud-nube-dash-label {
   font-size: calc(10px * var(--density-font));
   font-weight: 650;
   letter-spacing: 0.04em;
@@ -1943,23 +2305,6 @@
   align-items: center;
   gap: 8px;
   justify-content: flex-end;
-}
-
-.cloud-nube-dash-outbox-track {
-  display: block;
-  width: 72px;
-  height: 6px;
-  border-radius: var(--radius-pill);
-  background: color-mix(in oklab, var(--text) 8%, var(--divider));
-  overflow: hidden;
-}
-
-.cloud-nube-dash-outbox-bar {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: color-mix(in oklab, var(--color-warning, #f59e0b) 72%, var(--text));
-  min-width: 4px;
 }
 
 .cloud-nube-dash-alerts-card .cloud-sync-inset-row--static {
@@ -2020,10 +2365,6 @@
   color: var(--color-danger);
 }
 
-.cloud-nube-dash-pipe[data-cloud-diag-pipe-fix] {
-  cursor: pointer;
-}
-
 .cloud-nube-fix-modal {
   max-width: min(96vw, 420px);
   gap: 12px;
@@ -2071,16 +2412,6 @@
   min-width: 96px;
 }
 
-.cloud-nube-dash-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.cloud-nube-dash-actions .cloud-sync-btn {
-  width: 100%;
-}
-
 .cloud-sync-diag-technical {
   margin: calc(4px * var(--density-space)) 0 calc(8px * var(--density-space));
   font-size: calc(12px * var(--density-font));
@@ -2102,13 +2433,601 @@
   margin-top: 0;
 }
 
-@media (max-width: 520px) {
-  .cloud-nube-dash-pipeline {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+
+/* ── Nube A · status home: hero, 4-step chain, sala, account ─────────── */
+.cloud-sync-conexion-head:has(.cloud-sync-hero-block) {
+  /* layout.css styles every <header> as the 54px app bar; undo that here. */
+  display: block;
+  height: auto;
+  margin: 0;
+  padding: calc(20px * var(--density-space));
+  box-shadow: none;
+  z-index: auto;
+}
+
+.cloud-sync-hero-block {
+  display: flex;
+  flex-direction: column;
+  gap: calc(18px * var(--density-space));
+}
+
+.cloud-sync-hero {
+  --hero-tone: var(--color-accent);
+  display: flex;
+  align-items: center;
+  gap: calc(16px * var(--density-space));
+}
+
+.cloud-sync-hero-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  color: var(--chain-tone, var(--color-accent));
+  background: color-mix(in oklab, var(--chain-tone, var(--color-accent)) 14%, transparent);
+}
+
+.cloud-sync-hero-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cloud-sync-hero-title {
+  margin: 0;
+  font-size: calc(22px * var(--density-font));
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.cloud-sync-hero-sub {
+  margin: 0;
+  font-size: calc(13px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.cloud-sync-hero-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: center;
+  flex-shrink: 0;
+  min-height: 40px;
+  padding-inline: calc(18px * var(--density-space));
+  font-size: calc(13px * var(--density-font));
+}
+
+.cloud-sync-hero-sync:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.cloud-sync-chain {
+  display: flex;
+  align-items: flex-start;
+  padding-top: calc(16px * var(--density-space));
+  border-top: 1px solid var(--divider);
+}
+
+.cloud-sync-chain-step {
+  --chain-tone: var(--color-accent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 96px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.cloud-sync-chain-step:not([data-state='ok']),
+.cloud-sync-hero-icon:is([data-state='warn'], [data-state='info']) {
+  --chain-tone: var(--color-livesync-degraded, #b45309);
+}
+
+.cloud-sync-chain-step[data-state='error'],
+.cloud-sync-hero-icon[data-state='error'] {
+  --chain-tone: var(--color-danger);
+}
+
+/* Waiting on an earlier step (signed out): grey, not a warning. */
+.cloud-sync-chain-step[data-state='off'] {
+  --chain-tone: var(--text-muted);
+}
+
+.cloud-sync-chain-bubble {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  color: var(--chain-tone);
+  background: color-mix(in oklab, var(--chain-tone) 14%, transparent);
+}
+
+.cloud-sync-chain-label {
+  font-size: calc(13px * var(--density-font));
+  font-weight: 650;
+  color: var(--text);
+}
+
+.cloud-sync-chain-step:not([data-state='ok']) .cloud-sync-chain-label {
+  color: var(--chain-tone);
+}
+
+.cloud-sync-chain-detail {
+  font-size: calc(11px * var(--density-font));
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.cloud-sync-chain-link {
+  flex: 1;
+  min-width: 12px;
+  height: 0;
+  margin-top: 19px;
+  border-top: 2px solid color-mix(in oklab, var(--color-accent) 55%, transparent);
+}
+
+.cloud-sync-chain-link.is-broken {
+  border-top-style: dashed;
+  border-top-color: var(--color-livesync-degraded, #b45309);
+}
+
+.cloud-sync-chain-link.is-waiting {
+  border-top-color: var(--divider);
+}
+
+.cloud-sync-room-name,
+.cloud-sync-account-name {
+  font-size: calc(15px * var(--density-font));
+  font-weight: 700;
+  color: var(--text);
+}
+
+.cloud-sync-room-code-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cloud-sync-room-code {
+  padding: 4px 10px;
+  border-radius: var(--radius-control);
+  background: color-mix(in oklab, var(--text) 6%, transparent);
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: calc(15px * var(--density-font));
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--text);
+}
+
+.cloud-sync-room-copy.cloud-sync-btn--ghost {
+  padding-left: 10px;
+  font-family: var(--font-ui);
+  color: var(--color-accent);
+}
+
+.cloud-sync-room-copy.cloud-sync-btn--ghost:disabled {
+  color: var(--text-muted);
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* No code on this device yet: say where it comes from. */
+.cloud-sync-room-code-missing {
+  display: block;
+  margin-top: 2px;
+  font-size: calc(12px * var(--density-font));
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.cloud-sync-account-row {
+  align-items: center;
+  gap: calc(12px * var(--density-space));
+}
+
+.cloud-sync-account-row .cloud-sync-options-entry-text {
+  flex: 1;
+}
+
+.cloud-sync-account-row .cloud-sync-status-handle {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: calc(12px * var(--density-font));
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.cloud-sync-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--color-accent) 16%, var(--color-elevated));
+  color: var(--color-accent);
+  font-size: calc(13px * var(--density-font));
+  font-weight: 700;
+}
+
+.cloud-sync-account-row .cloud-sync-btn--danger {
+  align-self: center;
+  border-color: transparent;
+  background: transparent;
+}
+
+@media (max-width: 640px) {
+  .cloud-sync-hero {
+    flex-wrap: wrap;
   }
 
-  .cloud-nube-dash-actions {
-    grid-template-columns: 1fr;
+  .cloud-sync-hero-sync {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cloud-sync-chain-step {
+    width: 72px;
   }
 }
 
+/* ── Nube B · Diagnóstico: what is wrong, what is safe, what to do ─────── */
+.cloud-nube-dash-hero {
+  display: flex;
+  flex-direction: column;
+  gap: calc(18px * var(--density-space));
+  padding: calc(20px * var(--density-space));
+  border: var(--border-hairline);
+  border-radius: var(--radius-container);
+  background: color-mix(in oklab, var(--text) 3%, var(--color-elevated));
+}
+
+.cloud-nube-dash-hero:is([data-level='warn'], [data-level='error']) {
+  border-color: color-mix(in oklab, var(--color-livesync-degraded, #b45309) 35%, var(--divider));
+  background: color-mix(in oklab, var(--color-livesync-degraded, #b45309) 7%, var(--color-elevated));
+}
+
+.cloud-nube-dash-hero[data-level='error'] {
+  border-color: color-mix(in oklab, var(--color-danger) 35%, var(--divider));
+  background: color-mix(in oklab, var(--color-danger) 6%, var(--color-elevated));
+}
+
+.cloud-nube-dash-card-head {
+  justify-content: space-between;
+  min-height: 0;
+  padding-bottom: calc(6px * var(--density-space));
+}
+
+.cloud-nube-dash-card-head::after {
+  display: none;
+}
+
+.cloud-nube-dash-count,
+.cloud-nube-dash-outbox-row dd {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cloud-nube-dash-foot {
+  font-size: calc(12px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.cloud-nube-dash-steps {
+  gap: calc(14px * var(--density-space));
+  padding: calc(16px * var(--density-space));
+}
+
+.cloud-nube-dash-step {
+  display: flex;
+  align-items: center;
+  gap: calc(12px * var(--density-space));
+}
+
+.cloud-nube-dash-step-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--text) 8%, transparent);
+  font-size: calc(13px * var(--density-font));
+  font-weight: 700;
+  color: var(--text);
+}
+
+.cloud-nube-dash-step-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: calc(13px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.cloud-nube-dash-step-text b,
+.cloud-nube-dash-tool-title {
+  font-size: calc(13px * var(--density-font));
+  font-weight: 650;
+  color: var(--text);
+}
+
+.cloud-nube-dash-step .cloud-sync-btn,
+.cloud-nube-dash-tool .cloud-sync-btn {
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.cloud-nube-dash-tool .cloud-sync-options-entry-text {
+  flex: 1;
+}
+
+.cloud-nube-dash-tech {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: calc(11px * var(--density-font));
+  color: var(--text-muted);
+}
+
+/* ── Nube C · quick look under the header icon ─────────────────────── */
+.nube-popover {
+  position: fixed;
+  z-index: var(--z-floating);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(360px, calc(100vw - 24px));
+  box-sizing: border-box;
+  padding: 16px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-container);
+  background: var(--color-elevated);
+  color: var(--text);
+  box-shadow: var(--shadow-lg, 0 18px 40px rgba(15, 23, 42, 0.18));
+}
+
+.nube-popover[hidden] {
+  display: none;
+}
+
+.nube-pop-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nube-pop-dot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-livesync-live);
+}
+
+.nube-pop-dot:is([data-mod='degraded'], [data-mod='syncing']) {
+  background: var(--color-livesync-degraded);
+}
+
+.nube-pop-dot[data-mod='offline'] {
+  border-radius: 3px;
+  background: var(--color-danger);
+}
+
+.nube-pop-title {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: calc(16px * var(--density-font));
+  font-weight: 700;
+}
+
+.nube-pop-when {
+  flex-shrink: 0;
+}
+
+.nube-pop-when,
+.nube-pop-code {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: calc(12px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.nube-pop-room {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  background: color-mix(in oklab, var(--text) 5%, transparent);
+}
+
+.nube-pop-room-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: calc(12px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.nube-pop-room-text b {
+  font-size: calc(14px * var(--density-font));
+  color: var(--text);
+}
+
+.nube-pop-code {
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--text);
+}
+
+.nube-pop-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.nube-pop-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  background: color-mix(in oklab, var(--text) 5%, transparent);
+  font-size: calc(11px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.nube-pop-stat b {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: calc(13px * var(--density-font));
+  color: var(--text);
+}
+
+.nube-pop-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.nube-pop-actions .cloud-sync-btn {
+  flex: 1;
+  min-height: 38px;
+  text-align: center;
+}
+
+/* Signed out (board «Nube sin sesión» D): the account card is the form. */
+.cloud-sync-auth-card {
+  padding: calc(18px * var(--density-space)) calc(20px * var(--density-space));
+}
+
+.cloud-sync-auth-card .cloud-sync-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: calc(14px * var(--density-space));
+}
+
+.cloud-sync-auth-card .cloud-sync-tab-panel[hidden] {
+  display: none;
+}
+
+.cloud-sync-auth-head {
+  display: flex;
+  align-items: center;
+  gap: calc(12px * var(--density-space));
+}
+
+.cloud-sync-avatar--empty {
+  background: color-mix(in oklab, var(--text) 8%, var(--color-elevated));
+  color: var(--text-muted);
+}
+
+.cloud-sync-auth-title {
+  flex: 1;
+  margin: 0;
+  font-size: calc(16px * var(--density-font));
+  font-weight: 700;
+  color: var(--text);
+}
+
+.cloud-sync-auth-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(12px * var(--density-space));
+}
+
+.cloud-sync-auth-card .cloud-sync-field label {
+  font-size: calc(12.5px * var(--density-font));
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cloud-sync-auth-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12px * var(--density-space));
+}
+
+.cloud-sync-auth-foot .cloud-sync-btn--primary {
+  margin-left: auto;
+}
+
+.cloud-sync-auth-remember {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: calc(13px * var(--density-font));
+  color: var(--text);
+}
+
+.cloud-sync-auth-hint {
+  margin: 0;
+  font-size: calc(12px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.cloud-sync-auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 -8px;
+  padding-top: calc(8px * var(--density-space));
+  border-top: 1px solid var(--divider);
+}
+
+.cloud-sync-auth-links .cloud-sync-btn--ghost,
+.cloud-sync-auth-back.cloud-sync-btn--ghost {
+  color: var(--color-accent);
+}
+
+.cloud-sync-room--waiting .cloud-sync-inset-group {
+  opacity: 0.6;
+}
+
+.cloud-sync-advanced--row {
+  padding: 0;
+  border: var(--border-hairline);
+  border-radius: var(--radius-container);
+  background: color-mix(in oklab, var(--text) 3%, var(--color-elevated));
+}
+
+.cloud-sync-advanced--row > summary {
+  display: flex;
+  align-items: center;
+  padding: calc(12px * var(--density-space)) calc(16px * var(--density-space));
+  list-style: none;
+}
+
+.cloud-sync-advanced--row > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cloud-sync-advanced--row[open] > summary {
+  margin-bottom: 0;
+}
+
+.cloud-sync-advanced--row > .cloud-sync-field {
+  padding: 0 calc(16px * var(--density-space)) calc(14px * var(--density-space));
+}
+
+@media (max-width: 640px) {
+  .cloud-sync-auth-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

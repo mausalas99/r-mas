@@ -67,26 +67,30 @@ export async function resolveClinicalTeamsPanelContext(user, joined) {
   };
 }
 
-function buildQuickSalaSelect(ctx) {
-  const options = [`<option value="">— Seleccionar —</option>`]
-    .concat(
-      CLINICAL_SALAS.map(
-        (s) => `<option value="${escapeAttr(s)}" ${ctx.sala === s ? 'selected' : ''}>${escapeHtml(s)}</option>`
-      )
-    )
-    .join('');
-  return `<select id="clinical-quick-sala" class="profile-input clinical-teams-browse-select" aria-label="Mi sala">${options}</select>`;
-}
-
-export function buildClinicalTeamsHandleHint(ctx) {
-  if (!ctx.displayHandle) return '';
-  let salaLabel = '';
-  if (!ctx.profileGatePending) {
-    salaLabel = ` · Sala ${buildQuickSalaSelect(ctx)}`;
-  } else if (ctx.sala) {
-    salaLabel = ` · Sala <strong>${escapeHtml(ctx.sala)}</strong>`;
-  }
-  return `<p class="clinical-teams-lead clinical-teams-handle-hint">Tu @usuario: <strong>@${escapeHtml(ctx.displayHandle)}</strong>${salaLabel} — compártelo para que te agreguen a un equipo.${ctx.savedHandle !== ctx.displayHandle ? ' Pulsa <strong>Guardar perfil</strong> para publicarlo en R+ Cloud.' : ''}</p>`;
+/**
+ * One «Mi perfil» row inside ⇄ Conexión: who you are, and a link to Cuenta,
+ * where the profile form lives. Same markup as the Opciones rows.
+ */
+export function buildProfileLinkRowHtml(ctx, user) {
+  const meta = [
+    String(user?.clinical_name || '').trim(),
+    ctx.displayHandle ? `@${ctx.displayHandle}` : '',
+    ctx.rank,
+    ctx.sala,
+  ]
+    .filter(Boolean)
+    .map((p) => escapeHtml(p))
+    .join(' · ');
+  return `
+    <div class="cloud-sync-options-card clinical-teams-profile-link">
+      <button type="button" class="cloud-sync-options-row" data-cloud-action="nav-view" data-cloud-view="cuenta">
+        <span class="cloud-sync-options-row-text">
+          <span class="cloud-sync-options-row-title">Mi perfil</span>
+          <span class="cloud-sync-options-row-meta">${meta || 'Nombre, @usuario, rango y sala'}</span>
+        </span>
+        <span class="cloud-sync-options-row-chevron" aria-hidden="true">›</span>
+      </button>
+    </div>`;
 }
 
 export function buildClinicalProfileSectionHtml(ctx, user) {
@@ -158,21 +162,6 @@ export function buildClinicalProfileSectionHtml(ctx, user) {
     </div>`;
 }
 
-export function buildJoinedTeamsSectionHtml(ctx, joinedHtml, lanMemberHint) {
-  return `
-    <section class="clinical-teams-section clinical-teams-section--joined">
-      ${renderClinicalTeamsCollapsible({
-        collapseKey: 'section.joined',
-        defaultOpen: true,
-        className: 'clinical-teams-collapse--section',
-        summaryHtml: `
-          <h4 class="clinical-teams-section-title">Mis equipos</h4>
-          <p class="clinical-teams-section-desc">Equipos donde ya eres integrante.</p>`,
-        bodyHtml: `${lanMemberHint}<div class="clinical-teams-list">${joinedHtml}</div>`,
-      })}
-    </section>`;
-}
-
 /**
  * R4/Admin only, monthly-at-most action — collapsed by default so it doesn't
  * dominate the screen every time (a resident using this panel daily shouldn't
@@ -217,17 +206,6 @@ export function buildClinicalTeamsConfigSectionHtml(profileSection) {
     </section>`;
 }
 
-export function buildJoinedTeamsEmptyHtml(displayHandle, pickTeamMode = false) {
-  if (pickTeamMode) {
-    return '<p class="clinical-teams-empty clinical-teams-empty--section">Aún no te has unido. Elige un equipo disponible arriba y pulsa <strong>Unirme</strong>.</p>';
-  }
-  return `<p class="clinical-teams-empty clinical-teams-empty--section">Aún no perteneces a ningún equipo. ${displayHandle ? 'Pide que te agreguen con tu @usuario o ' : ''}explora equipos en tu sala abajo.</p>`;
-}
-
-/**
- * Banner when residents should pick from existing teams (nueva rotación or directory already populated).
- * @param {{ directoryCount: number, sala: string, elevated: boolean, rejoinPending: boolean }} opts
- */
 export function buildPickTeamsBannerHtml(opts) {
   const { directoryCount, sala, elevated, rejoinPending } = opts;
   if (directoryCount <= 0) return '';
@@ -242,9 +220,9 @@ export function buildPickTeamsBannerHtml(opts) {
     return `<div class="clinical-teams-pick-banner clinical-teams-pick-banner--elevated" role="status">${lead}</div>`;
   }
 
-  const lead = rejoinPending
-    ? `Nueva rotación: tu R2 o R4 ya publicó <strong>${countLabel}</strong> en <strong>${salaLabel}</strong>. Elige el tuyo abajo — no hace falta crear uno nuevo.`
-    : `Ya hay <strong>${countLabel}</strong> en <strong>${salaLabel}</strong>. Elige el tuyo y pulsa <strong>Unirme</strong>.`;
+  // Plain case: the list's own description already says «pulsa Unirme».
+  if (!rejoinPending) return '';
+  const lead = `Nueva rotación: tu R2 o R4 ya publicó <strong>${countLabel}</strong> en <strong>${salaLabel}</strong>. Elige el tuyo abajo — no hace falta crear uno nuevo.`;
   return `<div class="clinical-teams-pick-banner" role="status">${lead}</div>`;
 }
 

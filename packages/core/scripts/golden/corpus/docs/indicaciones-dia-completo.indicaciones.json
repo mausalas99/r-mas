@@ -1,0 +1,28 @@
+{
+  "patient": {
+    "nombre": "DEMO GOLDEN NOTA",
+    "registro": "7000990-1",
+    "edad": "64",
+    "sexo": "F",
+    "area": "HOSPITALIZACION",
+    "servicio": "MEDICINA INTERNA",
+    "cuarto": "512",
+    "cama": "02"
+  },
+  "indicaciones": {
+    "fecha": "2026-09-21",
+    "hora": "09:00",
+    "medicos": "DRA. DEMO RESIDENTE",
+    "dieta": "DIETA PARA DIABETICO 1800 KCAL",
+    "cuidados": "SIGNOS VITALES POR TURNO\nGLUCOMETRIA CAPILAR PREPRANDIAL",
+    "estudios": "BH, QS, ES MAÑANA",
+    "medicamentos": "CEFTRIAXONA 1 G IV CADA 24 H\nINSULINA GLARGINA 14 UI SC CADA 24 H",
+    "interconsultas": "",
+    "otros": [
+      {
+        "titulo": "Vigilancia",
+        "contenido": "REPORTAR TA MAYOR A 160/100"
+      }
+    ]
+  }
+}

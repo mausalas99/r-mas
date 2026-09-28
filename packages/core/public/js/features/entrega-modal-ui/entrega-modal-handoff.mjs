@@ -195,6 +195,11 @@ function buildHandoffPanelMarkup(ctx, isCritical, patientId) {
 
   return `
     <div class="entrega-markers-block">
+      <div class="entrega-check-pills entrega-chip-marker-pills" role="group" aria-label="Marcadores de entrega">
+        ${checkPill('entrega-critical', 'Crítico', isCritical, '', 'entrega-critical')}
+        ${checkPill('entrega-signed-refusal', 'Negativas firmadas', norm.signedRefusal, '', 'entrega-signed-refusal')}
+        ${checkPill('entrega-show', 'Show', norm.show, '', 'entrega-show')}
+      </div>
       ${
         marks
           ? guardiaMarksGroupHtml('Esfuerzo terapéutico', 'guardiaEsfuerzo', GUARDIA_ESFUERZO_OPTIONS, marks.guardiaEsfuerzo) +

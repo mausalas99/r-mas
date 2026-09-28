@@ -1,4 +1,5 @@
 import { cloudPullProgress } from '../../clinical-session-context.mjs';
+import { getCachedRoomDek } from './room-dek.mjs';
 import { sanitizeOpsForCloudPush } from './cloud-op-slim.mjs';
 import { drainCloudOps, recordRejectedCloudOps, MAX_OPS_PER_CHUNK } from './cloud-push-direct.mjs';
 import { nextWireIdStamp, resolveCloudPushMutationId } from './push-mutation-id.mjs';
@@ -174,6 +175,83 @@ async function finalizePull(pctx, result, since, opsCount, labIngress) {
   });
 }
 
+const KEYED_REPULL_KEY = 'rpc-cloud-keyed-repull-v1';
+
+function keyedRepullDone() {
+  try {
+    const list = JSON.parse(globalThis.localStorage?.getItem(KEYED_REPULL_KEY) || '[]');
+    return new Set(Array.isArray(list) ? list.map(String) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+/** Needed once per sala, and only when this device holds its key. @param {string} roomId */
+function needsKeyedRepull(roomId) {
+  return !!getCachedRoomDek(roomId) && !keyedRepullDone().has(String(roomId));
+}
+
+/** @param {string} roomId */
+function markKeyedRepullDone(roomId) {
+  try {
+    const done = keyedRepullDone();
+    done.add(String(roomId));
+    globalThis.localStorage?.setItem(KEYED_REPULL_KEY, JSON.stringify([...done]));
+  } catch {
+    /* storage full or unavailable: it simply runs again next time */
+  }
+}
+
+/** «Descargando pacientes…» instead of «Sin pacientes aún» while a whole-sala pull runs. */
+async function beginFreshPull() {
+  cloudPullProgress.freshInFlight = true;
+  if (typeof document === 'undefined') return;
+  try {
+    const { showPatientListDownloadingIfEmpty } = await import('../patients-list.mjs');
+    showPatientListDownloadingIfEmpty();
+  } catch {
+    /* list optional during boot */
+  }
+}
+
+/**
+ * A pull came back with content this device cannot open, and it holds no key
+ * for the room: the room got its key after this device last looked (another
+ * member created it, e.g. on their next login). Fetch it now with the room's
+ * join code. Before, only rendering the ⇄ panel retried this, so the device
+ * silently showed nothing new until someone opened ⇄.
+ * @returns {Promise<boolean>} true when a key is now cached
+ */
+async function loadMissingRoomDek(api, roomId) {
+  try {
+    const [{ loadRoomDek }, { getCloudSyncRoomSnapshot }] = await Promise.all([
+      import('./room-dek.mjs'),
+      import('./settings.mjs'),
+    ]);
+    if (getCachedRoomDek(roomId)) return false; // a key that still cannot open it: nothing to retry
+    const snap = getCloudSyncRoomSnapshot();
+    const code = snap && snap.id === roomId ? snap.code : '';
+    return !!(code && (await loadRoomDek(api, roomId, code)));
+  } catch {
+    return false;
+  }
+}
+
+/** One pull; if it came back locked and the room's key was missing, fetch the key and pull again. */
+async function pullWithKeyRetry(api, roomId, since, pollMobile) {
+  const opts = pollMobile ? { mobile: true } : undefined;
+  const result = await api.pull(roomId, since, opts);
+  if (!result?.locked || !(await loadMissingRoomDek(api, roomId))) return result;
+  return api.pull(roomId, since, opts);
+}
+
+/** First pull finished: clear the flag and let the list settle on its real message. */
+function settleFreshPull() {
+  cloudPullProgress.freshInFlight = false;
+  if (typeof document === 'undefined') return;
+  void import('../patients-list.mjs').then((m) => m.settlePatientListAfterDownload()).catch(() => {});
+}
+
 /** @param {object} pctx */
 async function runPullLatest(pctx) {
   const { api, getRoomId, getRevision, pollMobile } = pctx;
@@ -182,34 +260,27 @@ async function runPullLatest(pctx) {
   if (!api || typeof api.pull !== 'function') {
     throw new Error('Cliente Nube no configurado');
   }
-  const since = getRevision() ?? 0;
+  // One full re-pull per keyed sala after the 8.4.1 onboarding bug: a device
+  // that joined before its key loaded dropped encrypted fields for good.
+  const keyedRepull = needsKeyedRepull(roomId);
+  const since = keyedRepull ? 0 : (getRevision() ?? 0);
   // since === 0 means this client has no local revision yet — a fresh room
   // join, about to pull the whole history. The sidebar sits empty for that
   // whole round trip; "Descargando pacientes…" replaces "Sin pacientes aún"
   // for real reasons while this is true, not because there truly are none.
   const freshJoin = since === 0;
-  if (freshJoin) {
-    cloudPullProgress.freshInFlight = true;
-    if (typeof document !== 'undefined') {
-      try {
-        const { renderPatientList } = await import('../patients.mjs');
-        // force: the silent path is debounced, and a fast pull ended before it painted.
-        renderPatientList({ silent: true, force: true });
-      } catch {
-        /* list optional during boot */
-      }
-    }
-  }
+  if (freshJoin) await beginFreshPull();
   try {
-    const result = await api.pull(roomId, since, pollMobile ? { mobile: true } : undefined);
+    const result = await pullWithKeyRetry(api, roomId, since, pollMobile);
     const opsCount = pullOpsCount(result);
     if (result?.revision != null) {
       reconcileServerRevision(pctx, Number(result.revision), since, opsCount, !!result.locked);
     }
     const labIngress = pollMobile ? await recordLabPullIngress(result) : null;
     await finalizePull(pctx, result, since, opsCount, labIngress);
+    if (keyedRepull && !result?.locked) markKeyedRepullDone(roomId);
   } finally {
-    if (freshJoin) cloudPullProgress.freshInFlight = false;
+    if (freshJoin) settleFreshPull();
   }
 }
 

@@ -947,7 +947,7 @@ test('applyMedCatalogOverlay clasifica tokens personalizados antes que listas in
 
 test('parseIndicacionesPaste — bloque real usuario 2026-07-19 (14 meds, P1, dieta)', () => {
   var paste = readFileSync(
-    new URL('./fixtures/some-paste-user-2026-07-19.tsv', import.meta.url),
+    new URL('../../scripts/golden/corpus/receta/indicaciones-2026-07-19.tsv', import.meta.url),
     'utf8'
   );
   var r = parseIndicacionesPaste(paste);

@@ -557,7 +557,7 @@ html.motion-sobrio .ui-loading-cell {
 .tend-insight-delta--jump {
   font-weight: 700;
 }
-.tend-card:focus-visible {
+.tend-card:has(.tend-card-open:focus-visible) {
   outline: none;
   border-color: color-mix(in oklab, var(--color-ink) 22%, var(--border));
   box-shadow: var(--shadow-sm);
@@ -712,4 +712,37 @@ html.motion-sobrio .ui-loading-cell {
 .todo-list {
   overflow: hidden;
   border-radius: inherit;
+}
+
+/* Clickable card with its own controls inside (.patient-card, .tend-card,
+   .wb-row): the card is a plain div and one real, empty <button> opens it.
+   Its ::after stretches over the nearest positioned ancestor (the card) so the
+   whole card stays clickable and looks the same; the card's other buttons sit
+   above it (position + z-index). Avoids role="button" wrapping buttons
+   (axe nested-interactive). */
+.card-open-btn {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  width: 0;
+  height: 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+  cursor: inherit;
+}
+.card-open-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-container, 8px);
+}
+.card-open-btn:focus-visible {
+  outline: none;
+}
+.card-open-btn:focus-visible::after {
+  outline: 2px solid var(--action);
+  outline-offset: -2px;
 }

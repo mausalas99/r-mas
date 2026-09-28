@@ -2,11 +2,12 @@ import { esc } from '../../dom-escape.mjs';
 import { readRpcSettings } from '../../clinical-settings.mjs';
 import { normalizeUsername } from '../../clinical-username.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
-import { advancedUrlFieldsHtml } from './panel-conexion-html.mjs';
+import { advancedUrlFieldsHtml, statusHeroHtml, pipelineChainHtml } from './panel-conexion-html.mjs';
 import { canAccessCloudAdmin } from './panel-admin.mjs';
 import { canManageInternoQr } from '../../clinical-privileges.mjs';
 import { setClinicalTeamsEmbedHost } from '../clinical-panel-host.mjs';
 import { stopCloudSyncDiagnosticsLiveRefresh } from './panel-cloud-diagnostics.mjs';
+import { buildPipeline, buildLiveTileFields, formatRoomLabel } from './cloud-sync-diagnostics-human-sections.mjs';
 
 /**
  * @param {{ username?: string, displayName?: string } | null} cloudUser
@@ -50,17 +51,24 @@ function viewBlock(id, title, body, opts) {
   );
 }
 
-/** @param {string} title @param {string} meta @param {string} view */
-function optionsRow(title, meta, view) {
+/**
+ * @param {string} title @param {string} meta @param {string} view
+ * @param {string} [action] defaults to the generic nav-view
+ */
+function optionsRow(title, meta, view, action = 'nav-view') {
   return (
-    '<button type="button" class="cloud-sync-options-row" data-cloud-action="nav-view" data-cloud-view="' +
+    '<button type="button" class="cloud-sync-options-row" data-cloud-action="' +
+    esc(action) +
+    '" data-cloud-view="' +
     esc(view) +
     '">' +
     '<span class="cloud-sync-options-row-text">' +
     '<span class="cloud-sync-options-row-title">' +
     esc(title) +
     '</span>' +
-    '<span class="cloud-sync-options-row-meta">' +
+    '<span class="cloud-sync-options-row-meta"' +
+    (view === 'nube' ? ' data-cloud-tech-summary' : '') +
+    '>' +
     esc(meta) +
     '</span></span>' +
     '<span class="cloud-sync-options-row-chevron" aria-hidden="true">›</span></button>'
@@ -82,23 +90,83 @@ function optionsGroup(label, rowsHtml) {
 }
 
 /**
+ * 4 chain steps (Internet, Sesión, Sala from buildPipeline; En vivo from
+ * buildLiveTileFields) for the status hero.
+ * ponytail: Conexión doesn't track WS close codes (diagnostics-only); a
+ * neutral wsClose only affects the 'ws' abnormal-close nuance, not the
+ * poll-fallback "reconnecting" case that matters here.
+ * @param {{ status: string, transport: string, room: object | null, tokenPresent: boolean, displaySala?: string }} ctx
+ */
+function heroPipelineSteps({ status, transport, room, tokenPresent, displaySala }) {
+  const roomLabel = formatRoomLabel(room, String(room?.id || ''));
+  const d = {
+    online: typeof navigator !== 'undefined' ? navigator.onLine : true,
+    tokenPresent: !!tokenPresent,
+    roomId: room?.id || '',
+  };
+  const [internet, sesion, sala] = buildPipeline(d, status, roomLabel, []);
+  // Signed out, the chain points at the form under it; sala and live wait.
+  if (!d.tokenPresent) {
+    return [
+      internet,
+      { ...sesion, state: 'warn', detail: 'Entra abajo' },
+      { label: 'Sala', state: 'off', detail: displaySala || '—' },
+      { label: 'En vivo', state: 'off', detail: 'En espera' },
+    ];
+  }
+  const live = buildLiveTileFields(d, transport, { code: 0, reason: '' });
+  // The hero's subline already names the month; the step only needs the sala.
+  const salaStep = sala.state === 'ok' && displaySala ? { ...sala, detail: displaySala } : sala;
+  const liveDetail = live.liveStatus === 'ok' ? 'Conectado' : live.liveValue;
+  return [internet, sesion, salaStep, { label: 'En vivo', state: live.liveStatus, detail: liveDetail }];
+}
+
+/**
+ * Status hero + 4-step chain, wrapped for live in-place refresh (see
+ * renderStatusChip in panel-conexion.mjs, which re-renders this whole block
+ * on every status tick — cheap, and it never touches the mounted Equipo/
+ * Admin subviews sitting elsewhere in the section).
+ * @param {{ status: string, detail?: string, transport?: string, displaySala?: string, room?: object | null, tokenPresent?: boolean }} ctx
+ */
+export function conexionHeroBlockHtml(ctx) {
+  return (
+    '<div class="cloud-sync-hero-block" data-cloud-hero-block>' +
+    statusHeroHtml(ctx) +
+    pipelineChainHtml(heroPipelineSteps(ctx)) +
+    '</div>'
+  );
+}
+
+/** «Dra. Ana Ríos» → «AR»; falls back to the @usuario. @param {string} display @param {string} handle */
+function initialsFor(display, handle) {
+  const words = String(display || '')
+    .replace(/^(dra?|dr)\.?\s+/i, '')
+    .split(/\s+/)
+    .filter(Boolean);
+  const letters = words.length
+    ? words[0].charAt(0) + (words.length > 1 ? words[words.length - 1].charAt(0) : '')
+    : String(handle || '').slice(0, 2);
+  return letters.toUpperCase() || '?';
+}
+
+/**
  * @param {{ username?: string, displayName?: string } | null} cloudUser
  */
 function statusIdentityHtml(cloudUser) {
   const { handle, display } = resolveIdentity(cloudUser);
   return (
     '<div class="cloud-sync-inset-group cloud-sync-status-identity" aria-label="Cuenta">' +
-    '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-inset-row--identity">' +
+    '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-account-row">' +
+    '<span class="cloud-sync-avatar" aria-hidden="true">' +
+    esc(initialsFor(display, handle)) +
+    '</span>' +
     '<span class="cloud-sync-options-entry-text">' +
+    (display ? '<span class="cloud-sync-account-name">' + esc(display) + '</span>' : '') +
     '<span class="cloud-sync-status-handle">@' +
     esc(handle || '—') +
-    '</span>' +
-    (display
-      ? '<span class="cloud-sync-status-display">' + esc(display) + '</span>'
-      : '') +
-    '</span></div>' +
-    '<button type="button" class="cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger" data-cloud-action="logout">Cerrar sesión</button>' +
-    '</div>'
+    '</span></span>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger" data-cloud-action="logout">Cerrar sesión</button>' +
+    '</div></div>'
   );
 }
 
@@ -115,8 +183,34 @@ function cuentaBodyHtml(cloudUser) {
     (display
       ? '<p class="cloud-sync-status-display">' + esc(display) + '</p>'
       : '') +
+    // Clinical profile form (nombre, @usuario, rango, sala, admin), mounted on open.
+    '<div class="cloud-sync-profile-host" data-cloud-profile-host></div>' +
     '<button type="button" class="cloud-sync-btn ui-pressable" data-cloud-action="regenerate-recovery">Código de recuperación</button>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-action="logout">Cerrar sesión Nube</button></div>'
+  );
+}
+
+/**
+ * Board «Nube A» body under the hero: Tu sala, your account, then two rows.
+ * nav-options opens the Opciones list; nav-view 'nube' opens Diagnóstico
+ * (see onCloudActionClick in panel-conexion-bootstrap.mjs).
+ * @param {{ cloudUser: { username?: string, displayName?: string } | null, roomHtml: string, showAdmin: boolean, techSummary: string }} opts
+ */
+function statusSheetHtml({ cloudUser, roomHtml, showAdmin, techSummary }) {
+  const navRows =
+    optionsRow(
+      showAdmin ? 'Equipo y administración' : 'Equipo y cuenta',
+      showAdmin ? 'Equipo, cuenta y administración' : 'Equipo, cuenta e iPad',
+      'options',
+      'nav-options'
+    ) + optionsRow('Detalles técnicos', techSummary || '—', 'nube');
+  return (
+    '<div class="cloud-sync-status-sheet">' +
+    statusIdentityHtml(cloudUser) +
+    roomHtml +
+    '<div class="cloud-sync-options-card">' +
+    navRows +
+    '</div></div>'
   );
 }
 
@@ -128,6 +222,7 @@ function cuentaBodyHtml(cloudUser) {
  *   adminHtml?: string,
  *   url: string,
  *   hasCloudSession?: boolean,
+ *   techSummary?: string,
  * }} opts
  */
 export function connectedViewsHtml({
@@ -137,6 +232,7 @@ export function connectedViewsHtml({
   adminHtml = '',
   url,
   hasCloudSession = false,
+  techSummary = '',
 }) {
   const showAdmin =
     !!String(adminHtml || '').trim() ||
@@ -145,15 +241,7 @@ export function connectedViewsHtml({
     ? String(adminHtml || '').trim() ||
       '<div class="cloud-sync-admin-host" data-cloud-admin-host></div>'
     : '';
-  const statusBody =
-    '<div class="cloud-sync-status-sheet">' +
-    statusIdentityHtml(cloudUser) +
-    roomHtml +
-    '<button type="button" class="cloud-sync-options-entry" data-cloud-action="nav-options">' +
-    '<span class="cloud-sync-options-entry-text">' +
-    '<span class="cloud-sync-options-entry-title">Opciones</span>' +
-    '<span class="cloud-sync-options-entry-meta">Equipo, cuenta y administración</span></span>' +
-    '<span class="cloud-sync-options-row-chevron" aria-hidden="true">›</span></button></div>';
+  const statusBody = statusSheetHtml({ cloudUser, roomHtml, showAdmin, techSummary });
 
   const showInternoQr = canManageInternoQr(clinicalSessionContext.user);
   let guardiaRows =
@@ -213,6 +301,7 @@ export function connectedStepsHtml(opts) {
     adminHtml: opts.masBodyHtml || opts.adminHtml || '',
     url: opts.url || '',
     hasCloudSession: opts.hasCloudSession,
+    techSummary: opts.techSummary || '',
   });
 }
 
@@ -312,6 +401,7 @@ function syncConexionModalChrome(view) {
   if (icon) icon.hidden = !isHome;
   modal.classList.toggle('connection-dropdown-modal--subview', !isHome);
   modal.classList.toggle('connection-dropdown-modal--equipo', view === 'equipo');
+  modal.classList.toggle('connection-dropdown-modal--admin', view === 'admin');
 }
 
 const CONEXION_VIEW_HOOK = {
@@ -320,6 +410,7 @@ const CONEXION_VIEW_HOOK = {
   'interno-qr': 'onInternoQr',
   nube: 'onNube',
   equipo: 'onEquipo',
+  cuenta: 'onCuenta',
 };
 
 function syncConexionHead(section, next, hooks) {
@@ -338,15 +429,17 @@ function invokeConexionViewHook(next, hooks) {
 /**
  * @param {HTMLElement} section
  * @param {string} view
- * @param {{ onAdmin?: () => void | Promise<void>, onMobile?: () => void | Promise<void>, onInternoQr?: () => void | Promise<void>, onNube?: () => void | Promise<void>, onEquipo?: () => void | Promise<void>, onStatusHome?: () => void }} [hooks]
+ * @param {{ onAdmin?: () => void | Promise<void>, onMobile?: () => void | Promise<void>, onInternoQr?: () => void | Promise<void>, onNube?: () => void | Promise<void>, onEquipo?: () => void | Promise<void>, onCuenta?: () => void | Promise<void>, onStatusHome?: () => void }} [hooks]
  */
 export function applyConexionView(section, view, hooks) {
   let next = String(view || 'status').trim() || 'status';
-  if (next !== 'status' && !section.querySelector('[data-cloud-view="' + next + '"]')) {
+  if (next !== 'status' && !section.querySelector('.cloud-sync-view[data-cloud-view="' + next + '"]')) {
     next = 'status';
   }
   section.dataset.cloudView = next;
-  section.querySelectorAll('[data-cloud-view]').forEach(function (el) {
+  // Views only: nav rows carry data-cloud-view too (their target), and the
+  // section itself carries it via dataset.cloudView.
+  section.querySelectorAll('.cloud-sync-view[data-cloud-view]').forEach(function (el) {
     el.hidden = el.getAttribute('data-cloud-view') !== next;
   });
   syncConexionHead(section, next, hooks);

@@ -26,6 +26,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createA11yRecorder } from './harness.mjs';
 import {
   DEMO_TOUR_LAB_PASTE,
   DEMO_GARCIA_LAB_REPORT,
@@ -42,6 +43,7 @@ fs.mkdirSync(artifactDir, { recursive: true });
 
 const checks = [];
 let shotN = 0;
+const a11y = createA11yRecorder('labs-to-docx');
 
 function check(name, ok, detail) {
   checks.push({ name, ok: !!ok, detail: detail === undefined ? null : detail });
@@ -52,6 +54,7 @@ async function shot(page, label) {
   shotN += 1;
   const file = `${String(shotN).padStart(2, '0')}-${label}.png`;
   await page.screenshot({ path: path.join(artifactDir, file) });
+  await a11y.scan(page, label);
 }
 
 async function launch() {
@@ -292,6 +295,8 @@ try {
   check('scenario ran to the end', false, crash);
 }
 
+const a11yCheck = a11y.verdict();
+if (a11yCheck) check(a11yCheck.name, a11yCheck.ok, a11yCheck.detail);
 const passed = checks.filter((c) => c.ok).length;
 const report = {
   scenario: 'SOME paste → structured labs → .docx',

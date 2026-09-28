@@ -1,4 +1,4 @@
-import { touchClinicalUserActivity, getDeletedUserIds } from './clinical-access-db.mjs';
+import { appendClinicalUserActivityLog, touchClinicalUserActivity, getDeletedUserIds } from './clinical-access-db.mjs';
 import { isValidUsernameFormat, normalizeUsername } from './clinical-username.mjs';
 
 function isLanStubUsername(raw) {
@@ -121,6 +121,8 @@ export function mergeClinicalUsers(db, incomingRows) {
       row.is_program_admin != null ? Number(row.is_program_admin) : 0,
       row.last_activity_at ? String(row.last_activity_at) : null
     );
+    // Seed the Historial log too — the UPDATE paths get it via touchClinicalUserActivity.
+    if (row.last_activity_at) appendClinicalUserActivityLog(db, uid, String(row.last_activity_at), 'sync');
     stats.inserted += 1;
   }
   return stats;

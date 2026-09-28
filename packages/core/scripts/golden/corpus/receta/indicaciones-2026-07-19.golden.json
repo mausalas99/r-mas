@@ -1,0 +1,210 @@
+{
+  "items": [
+    {
+      "id": "<id>",
+      "tipoRaw": "MEDICAMENTOS",
+      "nombreRaw": "ACIDO ACETILSALICILICO 100 MG TAB LIB PROL",
+      "viaRaw": "VIA ORAL",
+      "dosisRaw": "100 MG //",
+      "frecuenciaRaw": "CADA 24 HORAS",
+      "suspendido": false,
+      "diaTratamiento": null
+    },
+    {
+      "id": "<id>",
+      "tipoRaw": "MEDICAMENTOS",
+      "nombreRaw": "ATORVASTATINA 80 MG TABLETA (*)",
+      "viaRaw": "VIA ORAL",
+      "dosisRaw": "80 MG //",
+      "frecuenciaRaw": "CADA 24 HORAS",
+      "suspendido": false,
+      "diaTratamiento": null
+    },
+    {
+      "id": "<id>",
+      "tipoRaw": "MEDICAMENTOS",
+      "nombreRaw": "BUPRENORFINA 0.3 MG SOL INY 1 ML",
+      "viaRaw": "VIA INTRAVENOSA",
+      "dosisRaw": "75 MCG // COMENTAR A AREA MEDICA ANTES DE APLICAR CRITERIO PRN: EN CASO DE DOLOR INTENSO, CADA 6 HRS",
+      "frecuenciaRaw": "PRN",
+      "suspendido": false,
+      "diaTratamiento": null
+    },
+    {
+      "id": "<id>",
+      "tipoRaw": "MEDICAMENTOS",
+      "nombreRaw": "CLOPIDOGREL 75 MG TABLETA",
+      "viaRaw": "VIA ORAL",
+      "dosisRaw": "75 MG //",
+      "frecuenciaRaw": "CADA 24 HORAS",
+      "suspendido": false,
+      "diaTratamiento": null
+    },
+    {
+      "id": "<id>",
+      "tipoRaw": "MEDICAMENTOS",
+      "nombreRaw": "DEXTROSA 50 % SOL INY 50 ML",
+      "viaRaw": "VIA INTRAVENOSA",
+      "dosisRaw": "50 ML // CRITERIO PRN: GLUCOSA MENOR A 200, CADA 8 HRS",
+      "frecuenciaRaw": "PRN",
+      "suspendido": false,
+      "diaTratamiento": null
+    },
+    {
+      "id": "<id>",
+      "tipoRaw": "MEDICAMENTOS",
+      "nombreRaw": "FUROSEMIDA 20 MG SOL INY 2 ML (*)",
+      "viaRaw": "VIA INTRAVENOSA",
+      "dosisRaw": "160 MG //",
+      "frecuenciaRaw": "CADA 12 HORAS",
+      "suspendido": false,
+      "diaTratamiento": null
+    },
+    {
+      "id": "<id>",
+      "tipoRaw": "MEDICAMENTOS",
+      "nombreRaw": "GLUCONATO DE CALCIO 10 % SOL INY 10 ML (+)",
+      "viaRaw": "VIA INTRAVENOSA",
+      "dosisRaw": "20 ML DILUIR EN: CLORURO DE SODIO AL 0.9% 50 ML VEL.INF: 30 MIN //",
+      "frecuenciaRaw": "CADA 8 HORAS",
+      "suspendido": false,
+      "diaTratamiento": null
+    },
+    {
+      "id": "<id>",
+      "tipoRaw": "MEDICAMENTOS",
+      "nombreRaw": "HEPARINA 5000 UI SOL INY 10 ML (+*)",
+      "viaRaw": "VIA INTRAVENOSA",
+      "dosisRaw": "5000 UI // PARA PROCEDIMIENTO",
+      "frecuenciaRaw": "UNICA VEZ",
+      "suspendido": false,
+      "diaTratamiento": null
+    },
+    {
+      "id": "<id>",
+      "tipoRaw": "MEDICAMENTOS",
+      "nombreRaw": "LIDOCAINA 2 % SOL INY 10 ML",
+      "viaRaw": "VIA SUBCUTANEA",
+      "dosisRaw": "10 ML // PARA PROCEDIMIENTO",
+      "frecuenciaRaw": "UNICA VEZ",
+      "suspendido": false,
+      "diaTratamiento": null
+    },
+    {
+      "id": "<id>",
+      "tipoRaw": "MEDICAMENTOS",
+      "nombreRaw": "NOREPINEFRINA 4 MG SOL INY 4 ML",
+      "viaRaw": "VIA INTRAVENOSA",
+      "dosisRaw": "16 MG DILUIR EN: GLUCOSADO 5% 125 CC VEL.INF: 5 MCG /MIN // PERMITIR TITULAR",
+      "frecuenciaRaw": "CADA 24 HORAS",
+      "suspendido": false,
+      "diaTratamiento": null
+    },
+    {
+      "id": "<id>",
+      "tipoRaw": "MEDICAMENTOS",
+      "nombreRaw": "OMEPRAZOL 40 MG SOL INY 10 ML (*)",
+      "viaRaw": "VIA INTRAVENOSA",
+      "dosisRaw": "40 MG //",
+      "frecuenciaRaw": "CADA 12 HORAS",
+      "suspendido": false,
+      "diaTratamiento": null
+    },
+    {
+      "id": "<id>",
+      "tipoRaw": "MEDICAMENTOS",
+      "nombreRaw": "PARACETAMOL 1 G SOL INY 100 ML (*)",
+      "viaRaw": "VIA INTRAVENOSA",
+      "dosisRaw": "1 G //",
+      "frecuenciaRaw": "CADA 8 HORAS",
+      "suspendido": false,
+      "diaTratamiento": null
+    },
+    {
+      "id": "<id>",
+      "tipoRaw": "MEDICAMENTOS P1",
+      "nombreRaw": "CLORURO DE SODIO 0.9 % SOL INY 100 ML",
+      "viaRaw": "VIA INTRAVENOSA",
+      "dosisRaw": "100 ML / VEL.INF: BOMBA ALGORITMO 1",
+      "frecuenciaRaw": "CADA 24 HORAS",
+      "suspendido": false,
+      "diaTratamiento": null
+    },
+    {
+      "id": "<id>",
+      "tipoRaw": "MEDICAMENTOS P1",
+      "nombreRaw": "INSULINA HUMANA RAPIDA",
+      "viaRaw": "VIA INTRAVENOSA",
+      "dosisRaw": "100 UI",
+      "frecuenciaRaw": "-",
+      "suspendido": false,
+      "diaTratamiento": null
+    }
+  ],
+  "dietas": [
+    {
+      "id": "<id>",
+      "descripcionRaw": "AYUNO",
+      "detalleRaw": "",
+      "kcal": null,
+      "proteinG": null,
+      "suspendido": false
+    }
+  ],
+  "pendientes": [
+    {
+      "id": "<id>",
+      "kind": "estudio",
+      "nombreRaw": "RX TORAX PORTATIL",
+      "detalleRaw": "POSTERIOR A COLOCACION DE CVC"
+    },
+    {
+      "id": "<id>",
+      "kind": "procedimiento",
+      "nombreRaw": "COLOCACION DE CATETER VENOSO CENTRAL MEDIANTE GUIADO",
+      "detalleRaw": "KIT PARA CVC"
+    }
+  ],
+  "fechas": [
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026",
+    "19/07/2026"
+  ],
+  "skipped": 16,
+  "skippedSummary": {
+    "cuidados": 12,
+    "estudios": 4,
+    "other": 0
+  },
+  "aguaInyectableAlerts": []
+}

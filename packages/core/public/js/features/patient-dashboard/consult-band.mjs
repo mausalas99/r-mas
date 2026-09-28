@@ -117,7 +117,7 @@ export function renderConsultBandHtml(info, teamCtx) {
     '<div class="ic-consult-field">' +
     '<label class="ic-consult-label">Seguimiento</label>' +
     '<select class="ic-consult-input ic-consult-status ic-consult-status--' + escHtml(statusKey || 'sin_definir') + '" ' +
-    'data-consult-field="followUpStatus">' +
+    'data-consult-field="followUpStatus" aria-label="Seguimiento">' +
     renderStatusOptionsHtml(statusKey) +
     '</select>' +
     '</div>' +

@@ -932,6 +932,8 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   }, { order: reversedCardOrder, groupKey: realGroupKey });
   const qsKeysBefore = keys.filter((k) => k && k.startsWith('QS|'));
 
+  check('before restart: QS is collapsed', (await page.locator('.tend-section[data-section="QS"] .tend-section-toggle').getAttribute('aria-expanded')) === 'false');
+
   // ── Restart: hidden card, collapsed section, saved card order and the event persist ──
   await app.close();
   ({ app, page, pageErrors } = await r.launch());
@@ -952,8 +954,9 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   check('a reordered spark-card order persists after reopen', bhKeysAfterReorderSaved.join(',') === reversedCardOrder.join(','), { reversedCardOrder, bhKeysAfterReorder });
   const qsKeysAfter = (await page.locator('.tend-card[data-series-key]').evaluateAll((els) => els.map((e) => e.getAttribute('data-series-key')))).filter((k) => k && k.startsWith('QS|'));
   check('reordering BH cards does not touch QS card order', qsKeysAfter.join(',') === qsKeysBefore.join(','), { qsKeysBefore, qsKeysAfter });
-  // Keyboard: Enter on a focused card opens the detail.
-  await card('BH|Plt').first().focus();
+  // Keyboard: Enter on a focused card opens the detail. The card's focus
+  // target is its open button (.tend-card-open), not the card div.
+  await card('BH|Plt').first().locator('.tend-card-open').focus();
   await page.keyboard.press('Enter');
   check('Enter on a focused card opens the detail', await page.locator('#tend-detail-backdrop').waitFor({ state: 'visible', timeout: 5000 }).then(() => true, () => false));
   await page.waitForTimeout(400);

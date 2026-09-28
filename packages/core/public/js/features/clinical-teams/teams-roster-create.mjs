@@ -18,7 +18,6 @@ import {
   hintHtml,
   CLINICAL_TEAM_SERVICES,
   CLINICAL_SALAS,
-  renderClinicalTeamsCollapsible,
 } from './shared.mjs';
 import { renderDirectoryUsersTopButtonHtml } from './teams-roster-users.mjs';
 import { renderCycleSelectForRank } from './teams-roster-team-cards.mjs';
@@ -194,31 +193,12 @@ export function renderCreateTeamFormStandard() {
     </form>`;
 }
 
-export function renderCreateTeamSectionHtml() {
-  const user = clinicalSessionContext.user || {};
-  const elevatedCreate = canManageTeamRoster(user);
-  const openLabel = elevatedCreate ? 'Crear equipo vacío' : 'Crear nuevo equipo';
-  const lanDirBtn = renderDirectoryUsersTopButtonHtml(user);
-  const actionsClass = lanDirBtn
-    ? 'clinical-teams-top-actions clinical-teams-top-actions--split'
-    : 'clinical-teams-top-actions';
+function renderJoinWithCodeFormHtml() {
   return `
-    <section class="clinical-teams-section clinical-teams-section--create">
-      <div class="${actionsClass}">
-        <button type="button" id="btn-clinical-team-create-open" class="wb-btn wb-btn-primary wb-btn-lg clinical-teams-create-open-btn">${escapeHtml(openLabel)}</button>
-        ${lanDirBtn}
-      </div>
-      <div id="clinical-team-create-panel" class="clinical-teams-create-panel" hidden>
-        ${renderCreateTeamForm()}
-      </div>
-    </section>`;
-}
-
-export function renderJoinWithCodeSectionHtml() {
-  const joinForm = `
+      <p class="clinical-teams-hint clinical-teams-join-code-warn"><strong>No</strong> pegues aquí el enlace ⇄ de sala (<code>http://…/join/req_…</code>) — ese va en <strong>Wi‑Fi → Conexión guardia</strong>.</p>
       <form id="clinical-team-join-code-form" class="clinical-teams-join-code-form">
-        <div class="clinical-teams-invite-row clinical-teams-join-code-code-row">
-          <label class="visually-hidden" for="clinical-team-join-code-input">Código de equipo</label>
+        <div class="field-group">
+          <label for="clinical-team-join-code-input">Código de equipo</label>
           <input id="clinical-team-join-code-input" type="text" class="profile-input" placeholder="ej. 2017936e" maxlength="36" autocomplete="off" required>
         </div>
         <div class="field-group clinical-teams-add-cycle-group">
@@ -234,20 +214,43 @@ export function renderJoinWithCodeSectionHtml() {
             'clinical-team-join-code-cycle'
           )}
         </div>
-        <div class="clinical-teams-join-submit-wrap">
+        <div class="modal-actions clinical-teams-create-submit-wrap">
           <button type="submit" class="wb-btn wb-btn-primary wb-btn-lg">Unirme</button>
+          <button type="button" class="wb-btn wb-btn-secondary clinical-teams-create-cancel">Cancelar</button>
         </div>
       </form>`;
+}
+
+/**
+ * Last card of the team grid: create a team or join one by code. Each form
+ * opens in a native <dialog>, so the grid never grows a half-open form.
+ * @param {{ primary?: boolean }} [opts] primary=false while the resident should pick an existing team
+ */
+export function renderNewTeamCardHtml({ primary = true } = {}) {
+  const user = clinicalSessionContext.user || {};
+  const createLabel = canManageTeamRoster(user) ? 'Crear equipo vacío' : 'Crear equipo';
+  const lead = primary
+    ? ['Equipo nuevo', 'Tú quedas como líder y se publica en tu sala.']
+    : ['¿No ves tu equipo?', 'Crea uno o usa el código que te envió tu R2.'];
   return `
-    <section class="clinical-teams-section clinical-teams-section--join-code">
-      ${renderClinicalTeamsCollapsible({
-        collapseKey: 'section.joinCode',
-        defaultOpen: false,
-        className: 'clinical-teams-collapse--section',
-        summaryHtml: `
-          <h4 class="clinical-teams-section-title">Unirte con código de equipo</h4>
-          <p class="clinical-teams-section-desc">Pega el código que te envió tu R2 (8 caracteres). <strong>No</strong> pegues aquí el enlace ⇄ de sala (<code>http://…/join/req_…</code>) — ese va en <strong>Wi‑Fi → Conexión guardia</strong>.</p>`,
-        bodyHtml: joinForm,
-      })}
-    </section>`;
+    <article class="clinical-teams-card clinical-teams-card--new">
+      <div class="clinical-teams-card-top-text">
+        <h5 class="clinical-teams-card-title">${lead[0]}</h5>
+        <p class="clinical-teams-card-meta">${lead[1]}</p>
+      </div>
+      <div class="clinical-teams-card-actions">
+        <button type="button" id="btn-clinical-team-create-open" class="wb-btn ${primary ? 'wb-btn-primary' : 'wb-btn-secondary'} clinical-teams-create-open-btn">${createLabel}</button>
+        <button type="button" id="btn-clinical-team-join-code-open" class="wb-btn wb-btn-secondary">Tengo un código</button>
+        ${renderDirectoryUsersTopButtonHtml(user)}
+      </div>
+      <dialog id="clinical-team-create-panel" class="clinical-teams-dialog" aria-labelledby="clinical-team-create-title">
+        <h4 id="clinical-team-create-title" class="clinical-teams-dialog-title">${createLabel}</h4>
+        ${renderCreateTeamForm()}
+      </dialog>
+      <dialog id="clinical-team-join-code-dialog" class="clinical-teams-dialog" aria-labelledby="clinical-team-join-code-title">
+        <h4 id="clinical-team-join-code-title" class="clinical-teams-dialog-title">Unirte con código</h4>
+        <p class="clinical-teams-section-desc">Escribe el código de 8 caracteres que te envió tu R2.</p>
+        ${renderJoinWithCodeFormHtml()}
+      </dialog>
+    </article>`;
 }

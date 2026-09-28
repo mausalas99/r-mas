@@ -260,13 +260,6 @@ function ensureTendenciasClickDelegation() {
   }
   _tendenciasClickDelegationWired = true;
   root.addEventListener('click', onTendenciasContainerClick);
-  root.addEventListener('keydown', function (ev) {
-    if (ev.key !== 'Enter' && ev.key !== ' ') return;
-    var t = ev.target;
-    if (!t || !t.closest || !t.closest('.tend-card')) return;
-    ev.preventDefault();
-    onTendenciasContainerClick(ev);
-  });
 }
 
 function handleTendenciasToolbarClick(t, ev) {
@@ -473,7 +466,8 @@ function createTendCardDragState(zone, scrollRoot, sectionKey) {
   }
   function onPointerDown(e) {
     if (state || e.button !== 0) return;
-    if (e.target.closest('button, a[href], input, textarea, select')) return;
+    // .tend-card-open covers the whole card, so it must still start a drag.
+    if (e.target.closest('button:not(.tend-card-open), a[href], input, textarea, select')) return;
     var card = e.target.closest('.tend-card');
     if (!card || !zone.contains(card)) return;
     state = {

@@ -160,13 +160,25 @@ describe('paste-smart-model', () => {
 
   it('planSmartPaste: nombre sin registro en censo → confirm-single', () => {
     const text = GASO_VENOSA_SOLO.replace('9000017-4', '9999999-9');
-    const census = [{ id: 'px', nombre: 'SIMULADO GENERICO CASOAM', registro: 'other', cuarto: '1' }];
+    const census = [{ id: 'px', nombre: 'SIMULADO GENERICO CASOAM', registro: '', cuarto: '1' }];
     const plan = planSmartPaste(text, {
       patients: census,
       findPatientByRegistro: (reg) => matchPatientByRegistro(reg, census),
     });
     assert.equal(plan.kind, 'confirm-single');
     assert.equal(plan.primaryPatient.id, 'px');
+  });
+
+  it('planSmartPaste: mismo nombre pero otro registro en censo → no se ofrece (el workbench lo rechazaría)', () => {
+    const text = GASO_VENOSA_SOLO.replace('9000017-4', '9999999-9');
+    const census = [{ id: 'px', nombre: 'SIMULADO GENERICO CASOAM', registro: '1234567-1', cuarto: '1' }];
+    const plan = planSmartPaste(text, {
+      patients: census,
+      findPatientByRegistro: (reg) => matchPatientByRegistro(reg, census),
+    });
+    assert.notEqual(plan.kind, 'confirm-single');
+    assert.notEqual(plan.kind, 'ambiguous');
+    assert.equal(plan.candidates.some((p) => p.id === 'px'), false);
   });
 
   it('planSmartPaste: nombres ambiguos → ambiguous', () => {
@@ -181,8 +193,8 @@ Estudio\t\tResultado\tUnidades\tValor de Referencia
 PH\t*\t7.39\t\t7.32 - 7.43
 `;
     const census = [
-      { id: 'a', nombre: 'SIMULADO GENERICO CASOAM', registro: '1' },
-      { id: 'b', nombre: 'SIMULADO GENERICO CASOAS', registro: '2' },
+      { id: 'a', nombre: 'SIMULADO GENERICO CASOAM', registro: '' },
+      { id: 'b', nombre: 'SIMULADO GENERICO CASOAS', registro: '' },
     ];
     const plan = planSmartPaste(text, {
       patients: census,

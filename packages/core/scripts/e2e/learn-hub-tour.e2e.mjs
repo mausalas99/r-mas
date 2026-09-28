@@ -20,26 +20,25 @@
  *   - the interconsulta demo board seeds the wrong patient/team counts, or
  *     the ⌥⌘⇧I toggle leaves real data mixed in
  *
- * KNOWN GAP: gv7_guardia_toggle (Modo Guardia, step 4/5). Was a confirmed app
- * bug — the tour targeted #btn-guardia-mode-toggle, which nothing in the app
- * ever created — now fixed to target the real "Con pendiente" census filter
- * chip, with matching copy. Still fails in THIS harness: that chip only
- * renders once a patient resolves into the guardia census, which needs a
- * clinical team whose `sala` matches declaredSala (Nube-scoped concept). This
- * scenario is local-only, so no patient ever qualifies and the chip never
- * renders. Not built here — would need a Nube team-seed, out of scope for a
- * local-only harness.
+ * The main device signs up to Nube (a LOCAL copy of the real sync Worker,
+ * nube-worker.mjs) and creates a team, so its patient resolves into the
+ * guardia census and gv7_guardia_toggle's target (the «Con pendiente» census
+ * chip) really renders. The other profiles stay local-only.
  *
  * Artifact: e2e-artifacts/learn-hub-tour/<run-id>/ (report.json + screenshots).
  *
  *   npm run e2e:learn-hub-tour
  */
-import { createRun, onboardLocalOnly, closeToasts, until, pasteAndSave, goArea } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, until, pasteAndSave, goArea, dismissLearnHub } from './harness.mjs';
+import { startWorker, stopWorker, nubeDevices, onboardNube, BASE } from './nube-worker.mjs';
 import { header, TABLE } from './some-fixtures.mjs';
 
 const r = createRun('learn-hub-tour');
 const { check } = r;
 const P1 = { exp: '7000789-0', name: 'DEMO GUARDIA TOUR', room: '512' };
+const R2 = { username: `demo_tour_${Date.now().toString(36).slice(-6)}`, name: 'Dr. Demo Tour', rank: 'R2' };
+const launchDevice = nubeDevices(r);
+let guardiaChipFound = null;
 
 const GUARDIA_CHAPTERS = [
   { id: 'ch-guardia-modo', title: 'Modo Guardia', steps: ['gv7_guardia_chip', 'gv7_guardia_tab', 'gv7_guardia_scope', 'gv7_guardia_toggle', 'gv7_guardia_exit'] },
@@ -51,6 +50,9 @@ const ACTION_STEPS = new Set(['gv7_guardia_toggle', 'gv7_lan_wifi', 'gv7_mobile_
 
 async function openLearnHubUi(page) {
   await closeToasts(page);
+  // The Nube module's tour leaves the ⇄ connection panel open over the header.
+  const connClose = page.locator('#btn-connection-dropdown-close');
+  if (await connClose.isVisible().catch(() => false)) await connClose.click().catch(() => {});
   // Top bar: Aprender R+ lives in the «?» Ayuda menu.
   const btn = page.locator('.topbar-help-btn');
   await until(() => btn.isVisible(), 5000);
@@ -72,6 +74,7 @@ async function runGuardiaModule(page, chapter) {
   await openLearnHubUi(page);
   await page.locator(`[data-learn-chapter="${chapter.id}"][data-learn-branch="guardia-v7"]`).first().click();
   await page.locator('#tour-dock').waitFor({ state: 'visible', timeout: 6000 });
+  if (chapter.id === 'ch-guardia-modo') await r.shot(page, 'tour-dock');
   const spotlightSeen = [];
   const nextBtn = page.locator('#tour-btn-next');
   for (let i = 0; i < chapter.steps.length; i++) {
@@ -86,25 +89,10 @@ async function runGuardiaModule(page, chapter) {
         // chips) render at all.
         const salaStart = page.locator('#guardia-sala-picker-start');
         if (await salaStart.isVisible().catch(() => false)) await salaStart.click().catch(() => {});
-        await page.locator('.guardia-census-table [data-wb-chip-id="pendiente"]').click().catch(() => {});
-        // KNOWN GAP (test seeding, not an app bug — the app-side fix for this
-        // step is done: it now targets the real "Con pendiente" chip with
-        // correct copy). The chip only exists once a patient resolves into
-        // the guardia census, which needs a clinical team whose `sala`
-        // matches declaredSala (buildGuardiaCensusPatients →
-        // filterPatientsByTeamSala, patients-clinical-filter.mjs:161-168).
-        // Team assignment in this app is a Nube-scoped concept; this harness
-        // only exercises the local-only onboarding path, so no patient ever
-        // resolves into scope here and the chip never renders. Documented
-        // rather than built: seeding a real team needs the Nube flow this
-        // scenario deliberately avoids.
-        if ((await page.locator('.guardia-census-table [data-wb-chip-id="pendiente"]').count()) === 0) {
-          throw new Error(
-            'KNOWN GAP — gv7_guardia_toggle: no patient resolves into the guardia census for a local-only profile ' +
-              '(needs a Nube clinical team whose sala matches declaredSala), so the "Con pendiente" chip never ' +
-              'renders and the tour cannot progress past step 4/5 in this harness. Tour target/copy itself is fixed.'
-          );
-        }
+        const chip = page.locator('.guardia-census-table [data-wb-chip-id="pendiente"]');
+        await chip.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {});
+        guardiaChipFound = (await chip.count()) > 0;
+        await chip.click().catch(() => {});
       }
       // gv7_lan_wifi / gv7_mobile_link: the tour auto-opens the connection
       // panel on its own; the 800ms action-poll in tour-step-actions.mjs
@@ -119,8 +107,20 @@ async function runGuardiaModule(page, chapter) {
 }
 
 await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', async () => {
-  const { app, page, pageErrors } = await r.launch();
-  await onboardLocalOnly(page);
+  check('local Worker answers /ping', await startWorker(), BASE);
+  const { app, page, pageErrors } = await launchDevice('a', 3791);
+  await onboardNube(page, R2);
+  // A team whose sala matches the profile's: its patients resolve into the
+  // guardia census (buildGuardiaCensusPatients → filterPatientsByTeamSala).
+  await page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
+  await page.locator('#btn-clinical-team-create-open').click();
+  await page.locator('#clinical-team-create-name').fill('EQUIPO DEMO TOUR');
+  await page.locator('#clinical-team-create-form [type="submit"]').click();
+  await page.waitForTimeout(1500);
+  await closeToasts(page);
+  await page.locator('#btn-connection-dropdown-close').click().catch(() => {});
+  await page.keyboard.press('Escape');
+  await dismissLearnHub(page);
 
   // A guardia census with zero patients never renders the filter chips at all
   // (empty state replaces the table) — seed one so gv7_guardia_toggle's real
@@ -131,6 +131,7 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
 
   // ── onboarding-curriculum.guardia-v7: module list is structurally correct ──
   await openLearnHubUi(page);
+  await r.shot(page, 'learn-hub');
   const rows = page.locator('.learn-hub-track [data-learn-branch="guardia-v7"]');
   const chapterIds = await rows.evaluateAll((els) => els.map((e) => e.getAttribute('data-learn-chapter')));
   check('exactly 4 guardia-v7 modules, no Modo Entrega', chapterIds.length === 4 && !chapterIds.includes('ch-guardia-entrega'), chapterIds);
@@ -146,21 +147,28 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   // ── tour-targets.guardia-v7 + guardia-v7-progress: run every module ──────
   for (const chapter of GUARDIA_CHAPTERS) {
     const seen = await runGuardiaModule(page, chapter);
+    if (chapter.id === 'ch-guardia-modo') {
+      check('gv7_guardia_toggle: the «Con pendiente» census chip renders for a team patient, so the step can be done', guardiaChipFound === true);
+    }
     check(`${chapter.id}: every step (${chapter.steps.length}) highlighted a real target`, seen.every(Boolean), { chapter: chapter.id, seen, steps: chapter.steps });
     const toast = page.locator('.toast', { hasText: 'Módulo completado' });
-    check(`${chapter.id}: completion toast shown once`, await toast.first().isVisible().catch(() => false));
+    check(`${chapter.id}: completion toast shown once`,
+      await toast.first().waitFor({ state: 'visible', timeout: 4000 }).then(() => true, () => false));
+    if (chapter === GUARDIA_CHAPTERS[GUARDIA_CHAPTERS.length - 1]) {
+      check(
+        'guardia-v7-progress: track-complete toast shown',
+        await page.locator('.toast', { hasText: '¡Guía de guardia completada!' }).first()
+          .waitFor({ state: 'visible', timeout: 5000 }).then(() => true, () => false)
+      );
+    }
     await closeToasts(page);
   }
 
   // guardia-v7-progress: completed modules show "Hecho"; percent on the card.
   await openLearnHubUi(page);
-  const doneCount = await page.locator('.learn-hub-track [data-learn-branch="guardia-v7"].is-complete').count();
+  const doneCount = await page.locator('.learn-hub-track .learn-hub-module-card.is-complete [data-learn-branch="guardia-v7"]').count();
   check('all 4 modules show completed after finishing them', doneCount === 4, doneCount);
   await closeLearnHubUi(page);
-  check(
-    'guardia-v7-progress: track-complete toast shown',
-    await page.locator('.toast', { hasText: '¡Guía de guardia completada!' }).first().isVisible().catch(() => false)
-  );
 
   // Reset one module → toast + no longer marked done.
   await openLearnHubUi(page);
@@ -177,10 +185,12 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   await closeToasts(page);
 
   // guardia-v7-progress: restart → progress kept.
+  // Chromium writes localStorage to disk a moment after the change.
+  await page.waitForTimeout(2000);
   await app.close();
   const relaunch1 = await r.launch();
   await openLearnHubUi(relaunch1.page);
-  const doneAfterRestart = await relaunch1.page.locator('.learn-hub-track [data-learn-branch="guardia-v7"].is-complete').count();
+  const doneAfterRestart = await relaunch1.page.locator('.learn-hub-track .learn-hub-module-card.is-complete [data-learn-branch="guardia-v7"]').count();
   check('progress survives a restart (4 modules still done)', doneAfterRestart === 4, doneAfterRestart);
   await closeLearnHubUi(relaunch1.page);
 
@@ -190,6 +200,7 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   // with an initScript + reload reproduces "already opened Ajustes on the
   // old version, then relaunched" without importing any app module.
   await relaunch1.page.evaluate(() => localStorage.setItem('rplus-last-seen-app-version', '6.7.0'));
+  await relaunch1.page.waitForTimeout(2000);
   await relaunch1.app.close();
 
   const relaunch2 = await r.launch();
@@ -203,7 +214,7 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   await relaunch2.app.close();
 
   // ── fresh registered install → no Learn Hub pop-up; an in-app «Guía» hint instead ─
-  const fresh = await r.launch({ profile: 'fresh' });
+  const fresh = await r.launch({ profile: 'fresh', hints: true });
   await onboardLocalOnly(fresh.page);
   await fresh.page.waitForTimeout(3000);
   check(
@@ -220,9 +231,10 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   await upgraded.page.addInitScript(() => {
     window.__RPC_PREV_APP_VERSION__ = '6.7.0';
   }).catch(() => {});
-  await upgraded.page.waitForTimeout(3000);
   const card = upgraded.page.locator('#guardia-v7-upgrade-card');
-  check('guardia-v7-gating: registered, upgraded from 6.7.0 → upgrade card shows', await card.isVisible().catch(() => false));
+  // The card is scheduled ~2 s after boot finishes (maybeShowGuardiaV7UpgradeCard delayMs).
+  check('guardia-v7-gating: registered, upgraded from 6.7.0 → upgrade card shows',
+    await card.waitFor({ state: 'visible', timeout: 12000 }).then(() => true, () => false));
   check(
     'guardia-v7-gating: upgrade card offers to start/continue the guardia guide',
     await card.locator('#guardia-v7-upgrade-start').isVisible().catch(() => false)
@@ -254,26 +266,41 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   const salidaDevice = await r.launch({ profile: 'salida' });
   await onboardLocalOnly(salidaDevice.page);
   await openLearnHubUi(salidaDevice.page);
+  // The header button opens the hub on «Guardia y R+ Cloud»; Sala modules sit under Fundamentos.
+  const fundamentos = salidaDevice.page.locator('.learn-hub-track', { has: salidaDevice.page.locator('.learn-hub-track-name', { hasText: 'Fundamentos' }) });
+  if (!(await fundamentos.evaluate((el) => el.open))) await fundamentos.locator('summary').click();
   await salidaDevice.page.locator('[data-learn-chapter="ch-salida"]').first().click();
   await salidaDevice.page.locator('#tour-dock').waitFor({ state: 'visible', timeout: 6000 });
   // ch-salida: sala_med, listado_problemas, sala_vpo.
   await salidaDevice.page.waitForTimeout(600);
   await salidaDevice.page.locator('#tour-btn-next').click(); // -> listado_problemas
   await salidaDevice.page.waitForTimeout(800);
-  const listadoText = await salidaDevice.page.locator('#listado-form, #itab-content-listado').first().innerText().catch(() => '');
+  // The module's steps use DEMO PÉREZ, whom only Fundamentos' first chapter
+  // admits. Started on its own from the hub (as users can), is he there?
+  await until(async () => (await salidaDevice.page.locator('.patient-card').count()) > 0, 10000);
+  await salidaDevice.page.waitForTimeout(800); // the step re-applies once he is admitted
+  const demoPatientCount = await salidaDevice.page.locator('.patient-card').count();
+  check('a Fundamentos module started on its own has its demo patient (DEMO PÉREZ)', demoPatientCount > 0, demoPatientCount);
+  // The A)/B)/C) blocks sit in textareas, whose values are not part of innerText.
+  const listadoText = await salidaDevice.page.locator('#listado-form, #itab-content-listado').first().evaluate((el) =>
+    [el.innerText, ...[...el.querySelectorAll('textarea, input')].map((f) => f.value)].join('\n'),
+  ).catch(() => '');
   check('tour-demo-listado-problemas: A)/B)/C) blocks in capitals show on the tour Listado step', /A\) CL[ÍI]NICA/.test(listadoText) && /B\) EXPLORACI[ÓO]N/.test(listadoText), listadoText.slice(0, 300));
   check('tour-demo-listado-problemas: at least one inactivo listed', /inactivo/i.test(listadoText) || (await salidaDevice.page.locator('.listado-inactivo, [data-listado-inactivo]').count()) >= 1);
   await salidaDevice.page.locator('#tour-btn-pause').click().catch(() => {});
   await closeToasts(salidaDevice.page);
 
   // Pendientes for the fundamentals demo patient (DEMO PÉREZ), seeded by the same tour.
-  await goArea(salidaDevice.page, 'nota');
-  await salidaDevice.page.locator('button:visible', { hasText: /^\s*Pendientes\s*$/ }).first().click();
-  const todoRows = salidaDevice.page.locator('.wb-todo-row');
-  await todoRows.first().waitFor({ timeout: 5000 }).catch(() => {});
-  const todoTexts = await todoRows.evaluateAll((els) =>
-    els.map((e) => e.querySelector('.todo-text-input')?.value || e.querySelector('.wb-todo-pendiente')?.textContent || '')
-  );
+  let todoTexts = [];
+  if (demoPatientCount > 0) {
+    await goArea(salidaDevice.page, 'nota');
+    await salidaDevice.page.locator('button:visible', { hasText: /^\s*Pendientes\s*$/ }).first().click();
+    const todoRows = salidaDevice.page.locator('.wb-todo-row');
+    await todoRows.first().waitFor({ timeout: 5000 }).catch(() => {});
+    todoTexts = await todoRows.evaluateAll((els) =>
+      els.map((e) => e.querySelector('.todo-text-input')?.value || e.querySelector('.wb-todo-pendiente')?.textContent || '')
+    );
+  }
   check('tour-demo-todos: demo patient has 4+ pendientes', todoTexts.length >= 4, todoTexts);
   check('tour-demo-todos: one pendiente mentions BH/QS', todoTexts.some((t) => /BH|QS/i.test(t)), todoTexts);
   check(
@@ -358,7 +385,11 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
     await icDevice.page.locator('button', { hasText: 'Tutorial · Interconsulta' }).first().click();
   });
   await icDevice.page.locator('#tour-dock').waitFor({ state: 'visible', timeout: 6000 });
-  await icDevice.page.waitForTimeout(800); // ic_board_map step auto-seeds the 12-patient demo
+  // ch-ic-map opens on map_tabs; the next step, ic_board_map, seeds the 12-patient demo.
+  await icDevice.page.waitForTimeout(400);
+  await icDevice.page.locator('#tour-btn-next').click();
+  await until(async () => /Equipo Demo/.test(await icDevice.page.locator('#ic-board-mount').innerText().catch(() => '')), 10000);
+  await icDevice.page.waitForTimeout(400);
   const icHtml = await icDevice.page.locator('#ic-board-mount').innerText().catch(() => '');
   check('interconsulta-demo-seed: demo board shows "Equipo Demo" teams', /Equipo Demo/.test(icHtml), icHtml.slice(0, 300));
   const icCardCount = await icDevice.page.locator('#ic-board-mount .patient-card').count();
@@ -413,4 +444,5 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   // PARTIAL; see the report to the owner.
 
   check('no page errors on the main device', pageErrors.length === 0, pageErrors);
+  await stopWorker();
 });

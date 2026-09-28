@@ -232,7 +232,7 @@ export async function pushCloudOpsDirect(api, roomId, ops, getRevision, setRevis
       chunksSent += 1;
       if (!pushResult) return;
       noteCloudOpsAttempted(sanitized.ops);
-      // needPull: peers committed past our cursor; taking this revision would skip their ops.
+      // Not past ops other devices wrote meanwhile (needPull): the next pull fetches them.
       if (pushResult.revision != null && !pushResult.needPull) {
         const next = Number(pushResult.revision);
         const current = Number(getRevision() ?? 0);

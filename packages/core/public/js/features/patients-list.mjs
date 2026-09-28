@@ -104,7 +104,8 @@ function mountPatientListSortables() {
       animation: 200,
       easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
       draggable: '.patient-card',
-      filter: 'button, a[href], input, textarea, select',
+      // .patient-card-open covers the whole card, so it must still start a drag.
+      filter: 'button:not(.patient-card-open), a[href], input, textarea, select',
       preventOnFilter: true,
       delay: 0,
       delayOnTouchOnly: true,
@@ -213,6 +214,22 @@ export function patchPatientListActiveHighlight(nextId) {
   });
   syncPatientListIndicator(list, nextId);
   return true;
+}
+
+/**
+ * First Nube pull in flight: swap an empty list's «Sin pacientes aún» for
+ * «Descargando pacientes…» right now (renderPatientList's silent path is
+ * debounced and would land after a fast pull). Never touches a non-empty list.
+ */
+export function showPatientListDownloadingIfEmpty() {
+  var list = document.getElementById('patient-list');
+  if (!list || patientsVisibleInSidebar().length) return;
+  renderPatientListMessage(list, 'Descargando pacientes…', { silent: true });
+}
+
+/** Pull done (flag cleared): re-render so an empty result doesn't keep «Descargando pacientes…». */
+export function settlePatientListAfterDownload() {
+  renderPatientList({ silent: true });
 }
 
 /** @param {{ silent?: boolean, force?: boolean }|undefined} [opts] — silent: LAN/incremental; force: flush now (Filtros censo) */
@@ -327,7 +344,6 @@ function trySilentPatientListUpdate(list, bundle, opts) {
 function buildDefaultZonePartsHtml(bundle, rondaNav) {
   var pinned = bundle.zones.pinned;
   var active = bundle.zones.active;
-  var archived = bundle.zones.archived;
   var parts = [];
   if (pinned.length) {
     parts.push(renderPinnedSectionLabelHtml(pinned.length));
@@ -473,12 +489,6 @@ function ensurePatientListClickDelegation() {
   root.addEventListener('click', selectPatientFromListEvent);
   root.addEventListener('pointerup', function (ev) {
     if (!shouldHandleTouchPointerUp(ev)) return;
-    selectPatientFromListEvent(ev);
-  });
-  root.addEventListener('keydown', function (ev) {
-    if (ev.key !== 'Enter' && ev.key !== ' ') return;
-    if (!patientCardIdFromEvent(ev)) return;
-    ev.preventDefault();
     selectPatientFromListEvent(ev);
   });
 }

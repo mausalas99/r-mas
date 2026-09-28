@@ -5,6 +5,8 @@ import {
   foldOpsToLatestByPath,
   sweepRoomForPlaintextContent,
   backfillRoomEncryption,
+  ensureOwnerRoomKey,
+  resetOwnerRoomKeyAttempts,
 } from './room-dek-migrate.mjs';
 import { clearRoomDekCache, getCachedRoomDek } from './room-dek.mjs';
 import { __resetEchoGuardForTests } from './cloud-sync-echo-guard.mjs';
@@ -434,5 +436,60 @@ describe('backfillRoomEncryption', () => {
 
     const result = await backfillRoomEncryption(api, { id: 'room-1', role: 'owner', code: 'ABCD-1234' }, 'device-owner');
     assert.equal(result.remaining, 0);
+  });
+});
+
+describe('ensureOwnerRoomKey — any online moment of the owner keys the sala', () => {
+  const room = { id: 'room-k', code: 'KEY234', role: 'owner' };
+  function keyApi() {
+    const stored = new Map();
+    const api = makeFakeApi({ pullResponse: { revision: 1, state: { revision: 1, entries: [], entityVersions: {}, labSidecars: {}, todos: {} } } });
+    api.stored = stored;
+    api.getRoomDek = async (id) => ({ dek: stored.get(id) || null });
+    api.setRoomDek = async (id, w) => {
+      stored.set(id, w);
+      return { ok: true };
+    };
+    return api;
+  }
+  beforeEach(() => {
+    clearRoomDekCache();
+    resetOwnerRoomKeyAttempts();
+  });
+
+  it('creates the key for an owner whose sala has none', async () => {
+    const api = keyApi();
+    const res = await ensureOwnerRoomKey(api, room, 'dev-owner', 1000);
+    assert.ok(res, 'ran');
+    assert.ok(api.stored.has('room-k'));
+    assert.ok(getCachedRoomDek('room-k'));
+  });
+
+  it('does nothing for a member, or once the device holds the key', async () => {
+    const api = keyApi();
+    assert.equal(await ensureOwnerRoomKey(api, { ...room, role: 'member' }, 'dev', 1000), null);
+    assert.equal(api.stored.size, 0);
+    await ensureOwnerRoomKey(api, room, 'dev', 1000);
+    const pulls = api.pushedBatches.length;
+    assert.equal(await ensureOwnerRoomKey(api, room, 'dev', 999999999), null, 'key held: no second run');
+    assert.equal(api.pushedBatches.length, pulls);
+  });
+
+  it('after a failure it waits 10 minutes before trying again', async () => {
+    const api = keyApi();
+    api.setRoomDek = async () => {
+      throw new Error('offline');
+    };
+    await ensureOwnerRoomKey(api, room, 'dev', 0);
+    let calls = 0;
+    api.setRoomDek = async (id, w) => {
+      calls += 1;
+      api.stored.set(id, w);
+      return { ok: true };
+    };
+    assert.equal(await ensureOwnerRoomKey(api, room, 'dev', 5 * 60 * 1000), null, 'too soon');
+    assert.equal(calls, 0);
+    await ensureOwnerRoomKey(api, room, 'dev', 11 * 60 * 1000);
+    assert.equal(calls, 1);
   });
 });

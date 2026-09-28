@@ -1,0 +1,588 @@
+{
+  "admin-code": {
+    "admin-code-setup": {}
+  },
+  "admin-panel": {
+    "admin-resumen": {
+      "color-contrast": 1
+    },
+    "admin-salas": {
+      "color-contrast": 2
+    },
+    "admin-red": {
+      "color-contrast": 1
+    },
+    "admin-equipos": {
+      "color-contrast": 3
+    },
+    "admin-mutaciones": {
+      "color-contrast": 9
+    },
+    "admin-peligro": {
+      "color-contrast": 1
+    },
+    "salas-menu": {
+      "color-contrast": 2
+    },
+    "pacientes-seleccion": {
+      "color-contrast": 1
+    },
+    "pacientes-archivar": {
+      "color-contrast": 1
+    },
+    "usuarios-sin-equipo": {
+      "color-contrast": 3
+    },
+    "registro-detalle": {
+      "color-contrast": 8
+    }
+  },
+  "agenda": {
+    "two-on-wednesday": {
+      "color-contrast": 3
+    },
+    "r2-after-edits": {
+      "color-contrast": 2
+    },
+    "r1-agenda": {
+      "color-contrast": 2
+    },
+    "r2-sees-r1-changes": {
+      "color-contrast": 2
+    },
+    "r2-after-restart": {
+      "color-contrast": 2
+    }
+  },
+  "ajustes-panel": {
+    "ajustes-perfil": {
+      "color-contrast": 3
+    },
+    "ajustes-apariencia": {
+      "color-contrast": 1
+    },
+    "ajustes-respaldos": {
+      "color-contrast": 1
+    },
+    "ajustes-documentos": {
+      "color-contrast": 1
+    },
+    "ajustes-plantillas": {
+      "color-contrast": 1
+    },
+    "ajustes-seguridad": {
+      "color-contrast": 1
+    },
+    "ajustes-aplicacion": {
+      "color-contrast": 1
+    },
+    "ajustes-peligro": {
+      "color-contrast": 1
+    },
+    "perfil-autosave": {
+      "color-contrast": 3
+    }
+  },
+  "censo-columnas": {
+    "export-dialog": {
+      "color-contrast": 5
+    },
+    "preview-edited": {
+      "color-contrast": 5
+    }
+  },
+  "cultivos": {
+    "cultivos": {
+      "color-contrast": 6
+    },
+    "atb-panel": {
+      "color-contrast": 6
+    },
+    "more-formats": {
+      "color-contrast": 5
+    },
+    "after-refresh": {
+      "color-contrast": 5
+    },
+    "censo-preview": {
+      "color-contrast": 1
+    },
+    "after-remove": {
+      "color-contrast": 3
+    }
+  },
+  "datos-panel": {
+    "datos-open": {
+      "color-contrast": 2
+    },
+    "datos-censo": {
+      "color-contrast": 2
+    },
+    "datos-cama": {
+      "color-contrast": 2
+    },
+    "datos-identidad": {
+      "color-contrast": 2
+    },
+    "datos-dark": {}
+  },
+  "db-unlock": {
+    "ajustes": {
+      "color-contrast": 3
+    }
+  },
+  "drive-import": {
+    "drive-import-modal": {
+      "color-contrast": 1
+    },
+    "drive-import-modal#2": {
+      "color-contrast": 2
+    },
+    "drive-import-modal#3": {
+      "color-contrast": 2
+    },
+    "drive-import-modal#4": {
+      "color-contrast": 2
+    },
+    "drive-import-modal#5": {
+      "color-contrast": 2
+    },
+    "drive-import-modal#6": {
+      "color-contrast": 2
+    },
+    "drive-import-modal#7": {
+      "color-contrast": 2
+    },
+    "drive-import-modal#8": {
+      "color-contrast": 2
+    },
+    "drive-import-modal#9": {
+      "color-contrast": 2
+    },
+    "drive-import-review": {
+      "color-contrast": 1
+    },
+    "drive-import-modal#10": {
+      "color-contrast": 2
+    },
+    "drive-import-review#2": {
+      "color-contrast": 1
+    },
+    "drive-import-modal#11": {
+      "color-contrast": 2
+    },
+    "drive-import-review#3": {
+      "color-contrast": 1
+    },
+    "drive-import-modal#12": {
+      "color-contrast": 2
+    },
+    "drive-import-review#4": {
+      "color-contrast": 1
+    },
+    "drive-import-modal#13": {
+      "color-contrast": 2
+    },
+    "drive-import-review#5": {
+      "color-contrast": 1
+    },
+    "drive-import-modal#14": {
+      "color-contrast": 1
+    },
+    "drive-import-review#6": {
+      "color-contrast": 1
+    },
+    "drive-import-modal#15": {
+      "color-contrast": 1
+    }
+  },
+  "estado-actual": {
+    "estado-actual-empty": {},
+    "registro-empty": {},
+    "registro-busy": {},
+    "estado-actual-busy": {},
+    "balance-por-turno": {},
+    "enviar-a-nota": {},
+    "graficas-signos": {
+      "color-contrast": 2
+    },
+    "graficas-crosshair": {
+      "color-contrast": 2
+    },
+    "graficas-glucometrias": {
+      "color-contrast": 2
+    },
+    "graficas-balance": {
+      "color-contrast": 2
+    },
+    "registro-bomba": {}
+  },
+  "feature-hints": {
+    "fresh-open": {
+      "color-contrast": 3
+    },
+    "labs-step2": {
+      "color-contrast": 1
+    },
+    "labs-step3": {},
+    "tendencias": {},
+    "after-restart": {},
+    "updating-user-guia": {},
+    "g-buscar-1": {},
+    "g-tendencias-1": {},
+    "cultivos-842-noopen": {},
+    "g-manejo-1": {},
+    "agua-iny-842-1": {},
+    "abx-dia-842-1": {},
+    "abx-dia-842-2": {},
+    "estado-actual-842-1": {},
+    "estado-actual-842-2": {},
+    "resumen-842-1": {},
+    "resumen-842-2": {},
+    "actualizar-labs-842-1": {},
+    "portal-url-842-1": {
+      "color-contrast": 1
+    },
+    "datos-842-1": {},
+    "datos-842-2": {
+      "color-contrast": 2
+    },
+    "datos-842-3": {
+      "color-contrast": 2
+    },
+    "datos-842-4": {
+      "color-contrast": 2
+    },
+    "g-pendientes-1": {},
+    "g-pendientes-2": {},
+    "proximos-842-1": {},
+    "sala-archivo-842-1": {
+      "color-contrast": 3
+    },
+    "sala-archivo-842-2": {
+      "color-contrast": 3
+    },
+    "archivados-after-archive": {
+      "color-contrast": 2
+    },
+    "card-after-archivados": {
+      "color-contrast": 2
+    },
+    "g-interconsultas-1": {},
+    "g-interconsultas-2": {},
+    "g-interconsultas-3": {},
+    "censo-842-1": {
+      "color-contrast": 3
+    },
+    "censo-842-2": {
+      "color-contrast": 1
+    },
+    "censo-842-3": {
+      "color-contrast": 1
+    },
+    "censo-842-4": {
+      "color-contrast": 3
+    },
+    "g-sync-1": {
+      "color-contrast": 3
+    },
+    "g-conexion-1": {
+      "color-contrast": 1
+    },
+    "g-conexion-2": {
+      "color-contrast": 1
+    },
+    "g-conexion-3": {
+      "color-contrast": 1
+    },
+    "g-conexion-4": {
+      "color-contrast": 1
+    }
+  },
+  "guardia-handoff": {
+    "r1-cycle-saved": {
+      "color-contrast": 10
+    },
+    "r2-p1-handoff-filled": {},
+    "r2-census-after-handoffs": {},
+    "r1-p1-received": {},
+    "r2-sees-agendado": {}
+  },
+  "lab-paste-rules": {
+    "setup": {},
+    "grouping-done": {},
+    "mixed-known-refused": {
+      "color-contrast": 1
+    },
+    "foreign": {},
+    "partial-mix": {},
+    "garbage": {
+      "color-contrast": 1
+    }
+  },
+  "lab-repo-update": {
+    "single-mode": {
+      "color-contrast": 2
+    },
+    "team-list": {
+      "color-contrast": 4
+    },
+    "team-run": {},
+    "review": {},
+    "no-network": {},
+    "bulk-paste": {},
+    "portal-address-missing": {
+      "color-contrast": 1
+    },
+    "portal-address-saved": {
+      "color-contrast": 1
+    }
+  },
+  "lab-trends": {
+    "arrows-jan2": {},
+    "arrows-jan5": {},
+    "tendencias": {},
+    "events-two": {},
+    "events-after-delete": {},
+    "group-modal-bh": {},
+    "group-modal-show-all": {},
+    "after-restart": {},
+    "restored": {}
+  },
+  "labs-to-docx": {
+    "onboarded": {
+      "color-contrast": 3
+    },
+    "mixed-paste-refused": {
+      "color-contrast": 1
+    },
+    "preview": {
+      "color-contrast": 9
+    },
+    "both-admitted": {},
+    "perez-labs": {},
+    "interconsulta": {},
+    "note": {},
+    "exported": {},
+    "past-notes": {},
+    "restarted": {}
+  },
+  "learn-hub-tour": {
+    "learn-hub": {
+      "color-contrast": 2
+    },
+    "tour-dock": {},
+    "tour-dock#2": {}
+  },
+  "listado": {
+    "listado-empty": {},
+    "listado-busy": {}
+  },
+  "manejo-receta": {
+    "manejo": {},
+    "pendientes": {},
+    "manejo-grupos": {
+      "color-contrast": 2
+    },
+    "egreso-completa": {
+      "color-contrast": 2
+    },
+    "diet-only": {},
+    "perfil": {},
+    "not-admin": {
+      "color-contrast": 1
+    },
+    "month-deleted": {}
+  },
+  "nota-evolucion": {
+    "note-open": {},
+    "note-filled": {},
+    "past-notes": {},
+    "indicaciones": {},
+    "after-restart": {}
+  },
+  "nube-owner-key": {
+    "member-sees-patient": {
+      "color-contrast": 2
+    }
+  },
+  "nube-panel": {
+    "quick-look": {
+      "color-contrast": 3
+    },
+    "home": {
+      "color-contrast": 1
+    },
+    "diagnostico-falla": {
+      "color-contrast": 1
+    },
+    "home-falla": {
+      "color-contrast": 1
+    },
+    "quick-look-falla": {
+      "color-contrast": 3
+    },
+    "signed-out": {
+      "color-contrast": 2
+    },
+    "signed-out-crear": {
+      "color-contrast": 2
+    },
+    "signed-out-recuperar": {
+      "color-contrast": 2
+    },
+    "signed-out-dark": {
+      "color-contrast": 1
+    }
+  },
+  "nube-sync": {
+    "a-signed-up": {},
+    "a-team-created": {
+      "color-contrast": 10
+    },
+    "b-joined": {
+      "color-contrast": 10
+    },
+    "b-received": {},
+    "b-p1-labs": {},
+    "b-diagnostico-nube-online": {},
+    "a-p1-gas-from-b": {},
+    "a-offline": {},
+    "a-restarted": {},
+    "a-recovered": {},
+    "b-after-delete": {},
+    "a-diagnostico-nube-offline": {
+      "color-contrast": 2
+    }
+  },
+  "paste-smart": {
+    "routed": {},
+    "unknown-expediente": {
+      "color-contrast": 3
+    },
+    "cmdk": {}
+  },
+  "patients": {
+    "census": {},
+    "pin-archive": {},
+    "bulk-selected": {},
+    "after-restart": {}
+  },
+  "pendientes": {
+    "three-added": {},
+    "after-edits": {
+      "color-contrast": 1
+    },
+    "p2-pendientes": {},
+    "after-restart": {}
+  },
+  "prompt-dialogs": {
+    "pin-setup-dialog": {},
+    "range-dialog": {},
+    "sync-passphrase-dialog": {},
+    "conflict-dialog": {},
+    "indica-merge-dialog": {},
+    "indica-after": {}
+  },
+  "resumen-glance": {
+    "culture-hover-antibiogram": {
+      "color-contrast": 3
+    }
+  },
+  "sala-cards-archive": {
+    "archived-view": {
+      "color-contrast": 14
+    },
+    "after-restore": {
+      "color-contrast": 2
+    },
+    "after-restart": {
+      "color-contrast": 2
+    }
+  },
+  "sala-view": {
+    "patient-a-labs-card": {},
+    "patient-b-labs-card": {
+      "color-contrast": 3
+    },
+    "patient-d-labs-card": {
+      "color-contrast": 2
+    }
+  },
+  "stress": {
+    "odd-names-sidebar": {},
+    "odd-name-open": {},
+    "volume-68": {
+      "color-contrast": 7
+    },
+    "junk-report": {},
+    "after-restart": {}
+  },
+  "stress-data": {
+    "cut-off-report": {},
+    "two-patients-no-separator": {
+      "color-contrast": 1
+    },
+    "junk-values": {},
+    "400-rows-unknown-warning": {},
+    "400-rows-unknown-analytes": {},
+    "tendencias-180-days": {},
+    "tendencias-hb-detail": {},
+    "cultivos-32": {},
+    "manejo-45": {},
+    "pendientes-110": {},
+    "agenda-this-week-50": {
+      "color-contrast": 56
+    },
+    "agenda-next-week-50": {
+      "color-contrast": 59
+    },
+    "after-restart-agenda": {
+      "color-contrast": 59
+    }
+  },
+  "stress-exports": {
+    "census-preview": {
+      "color-contrast": 5
+    },
+    "census-exported": {},
+    "pancenso": {
+      "color-contrast": 5
+    },
+    "listado-45-problems": {},
+    "listado-exported": {},
+    "note-filled": {},
+    "note-exported": {},
+    "indicaciones-filled": {},
+    "indicaciones-exported": {},
+    "area-servicio-datos": {
+      "color-contrast": 2
+    },
+    "area-servicio-exported": {},
+    "vpo-copied": {},
+    "save-failed-one-toast": {}
+  },
+  "top-bar": {
+    "paciente": {},
+    "area-pill-open": {},
+    "laboratorio-tendencias": {},
+    "manejo-perfil": {},
+    "clinico-eventualidades": {},
+    "pendientes-dot": {},
+    "dark": {
+      "color-contrast": 1
+    },
+    "sala-1280": {},
+    "sala-1389": {},
+    "sala-1440": {},
+    "interconsulta-1280": {},
+    "interconsulta-1389": {},
+    "interconsulta-1440": {}
+  },
+  "vpo": {
+    "vpo-empty": {},
+    "vpo-busy": {
+      "label": 5
+    }
+  }
+}

@@ -28,15 +28,21 @@
  *     - a click on a culture pill does not open Laboratorio › Cultivos
  *   Fit
  *     - the Resumen scrolls at the maximized window size
+ *   Another patient first (one lab draw, 35 pendientes, no eventualidades)
+ *     - the Labs header drops «corte HH:MM · N en rango»
+ *     - shown pendiente rows + «+N más» do not add up to all 35, or the card scrolls
+ *     - an empty Eventualidades card shows
  *
  * Artifact: e2e-artifacts/resumen-glance/<run-id>/ (report.json + screenshots).
  *
  *   node scripts/e2e/resumen-glance.e2e.mjs
  */
 import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts, goArea } from './harness.mjs';
-import { header, TABLE } from './some-fixtures.mjs';
+import { header, TABLE, fullLabs } from './some-fixtures.mjs';
 
 const P = { exp: '7000411-1', name: 'DEMO GLANCE EXTRAS', room: '511' };
+const P2 = { exp: '7000412-2', name: 'DEMO GLANCE PENDIENTES', room: '512' };
+const PEND_N = 35;
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 function when(dayOff, h, m) {
@@ -134,6 +140,39 @@ await r.finish('Resumen glance: care plan, lines/tubes, antibiotic day, cultures
   const { page, pageErrors } = await r.launch();
   await onboardLocalOnly(page);
   await goArea(page, 'lab');
+  // Another patient first: one draw, many pendientes, no eventualidades.
+  await pasteAndSave(page, fullLabs(P2, when(0, 7, 15)));
+  await openPatient(page, P2);
+  await goArea(page, 'nota');
+  await page.locator('button:visible', { hasText: /^\s*Pendientes\s*$/ }).first().click();
+  await page.locator('.todo-toolbar-add-btn:visible').waitFor();
+  const addModal = page.locator('.wb-todo-add-modal');
+  for (let i = 1; i <= PEND_N; i++) {
+    await page.locator('.todo-toolbar-add-btn:visible').click();
+    await addModal.locator('.wb-todo-add-text').fill(`DEMO PENDIENTE ${i}`);
+    await addModal.locator('[data-wb-todo-add-ok]').click();
+    await addModal.waitFor({ state: 'detached' });
+  }
+  await openResumen(page);
+  const p2 = await page.evaluate(() => {
+    const root = document.querySelector('#patient-dashboard-mount');
+    const dash = root.querySelector('.dash');
+    const pend = root.querySelector('.card[data-dash-action="pendientes"]');
+    return {
+      labsMeta: (root.querySelector('.labs-card .card-h-meta') || {}).textContent || '',
+      shown: pend ? [...pend.querySelectorAll('[data-fit-item]')].filter((el) => !el.hidden).length : 0,
+      more: pend ? (pend.querySelector('[data-fit-more]') || {}).textContent || '' : '',
+      eventualidades: root.querySelectorAll('.card[data-dash-action="eventualidades"]').length,
+      fit: { scrollHeight: dash.scrollHeight, clientHeight: dash.clientHeight },
+    };
+  });
+  const moreN = +((p2.more.match(/\+(\d+) más/) || [])[1] || 0);
+  check('Labs header reads «corte HH:MM · N en rango» for a single draw', /corte \d{2}:\d{2} · \d+ en rango/.test(p2.labsMeta.replace(/\s+/g, ' ')), p2.labsMeta);
+  check(`pendientes: shown rows + «+N más» = ${PEND_N}, no scroll`, p2.shown >= 1 && p2.shown + moreN === PEND_N && p2.fit.scrollHeight <= p2.fit.clientHeight + 1, { ...p2, moreN });
+  check('no Eventualidades card when the patient has none', p2.eventualidades === 0, p2.eventualidades);
+
+  await closeToasts(page);
+  await goArea(page, 'lab');
 
   await pasteAndSave(page, headerSol(P, when(-6, 7, 0), '2600411101') + URO_ATB);
   await pasteAndSave(page, headerSol(P, when(-2, 7, 0), '2600411102') + HEMO_NO_ATB);
@@ -152,6 +191,8 @@ await r.finish('Resumen glance: care plan, lines/tubes, antibiotic day, cultures
   await openResumen(page);
   // Lines/tubes through Datos, like a user: CVC placed 3 days ago, Foley today, PICC with no date.
   await page.locator('#patient-dashboard-mount .dash-name').click();
+  // Datos B: lines/tubes live on the «Cama e ingreso» tab.
+  await page.locator('#exp-datos-modal-backdrop.open [data-datos-tab="cama"]').click();
   await page.locator('#patient-accesos-list').waitFor({ state: 'visible' });
   const setAcceso = async (i, via, fecha) => {
     const rows = page.locator('#patient-accesos-list .patient-acceso-row');
@@ -226,7 +267,7 @@ await r.finish('Resumen glance: care plan, lines/tubes, antibiotic day, cultures
   check('care plan click opens Estado actual', await page.locator('#ea-snapshot').isVisible().catch(() => false));
   await openResumen(page);
   await page.locator('#patient-dashboard-mount .ctx-group[data-dash-action="datos"]').click();
-  check('lines click opens Datos', await page.locator('#patient-accesos-list').isVisible().catch(() => false));
+  check('lines click opens Datos', await page.locator('#exp-datos-modal-backdrop.open').isVisible().catch(() => false));
   await page.keyboard.press('Escape');
 
   await page.setViewportSize({ width: 1280, height: 800 });

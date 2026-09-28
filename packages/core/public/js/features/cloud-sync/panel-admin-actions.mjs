@@ -1,5 +1,7 @@
+import { copyToClipboardSafe } from '../soap-estado.mjs';
 import { confirmAction, fmtRole } from './panel-admin-helpers.mjs';
-import { rewrapRoomDekForNewCode } from './room-dek.mjs';
+import { rewrapRoomDekForNewCode, getCachedRoomDek, planRoomCodeChange, rotateRoomCodeAtomically } from './room-dek.mjs';
+import { getCloudSyncRoomId, getCloudSyncRoomSnapshot, setCloudSyncRoomSnapshot } from './settings.mjs';
 import { joinRoomByCode } from './panel-conexion-handlers.mjs';
 import { resolveCloudActorId } from './mutate-bridge.mjs';
 import { buildCloudTombstoneOp } from './outbox-tombstones.mjs';
@@ -18,6 +20,7 @@ import {
   listSelectedNetworkPatients,
   listVisibleNetworkRowsWithRegistro,
   applyNetworkCensusFilters,
+  updateNetworkBulkBarVisibility,
 } from './panel-admin-html.mjs';
 import { verifyNetworkLabsRows, labRepoCheckAvailable } from './panel-admin-labs-verify.mjs';
 import { loadAdminEquipos } from './panel-admin-equipos-data.mjs';
@@ -61,6 +64,8 @@ function dispatchSimpleAction(action, deps, btn) {
     'refresh-salas': () => void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps)),
     'refresh-red': () => void loadAdminNetworkCensus(deps.root, deps.outerDeps),
     'bulk-archive-network': () => void handleBulkArchiveNetwork(deps),
+    'filter-unnamed': () => filterUnnamedNetwork(deps.root),
+    'clear-network-selection': () => clearNetworkSelection(deps.root),
     'bulk-delete-network': () => void handleBulkDeleteNetwork(deps),
     'verify-red-labs': () => void handleVerifyRedLabs(deps, btn),
     'search-users': () => void loadAdminEquipos(deps.root, deps.getApi),
@@ -77,6 +82,23 @@ function dispatchSimpleAction(action, deps, btn) {
   if (!action || !(action in map)) return false;
   map[action]();
   return true;
+}
+
+/** «Revisar los N» on the sin-nombre banner: search for them. @param {HTMLElement} root */
+function filterUnnamedNetwork(root) {
+  const q = root.querySelector('[data-admin-red] [data-network-filter="q"]');
+  if (!(q instanceof HTMLInputElement)) return;
+  q.value = '(sin nombre)';
+  applyNetworkCensusFilters(root);
+  q.focus();
+}
+
+/** The bulk bar's ×: uncheck every row. @param {HTMLElement} root */
+function clearNetworkSelection(root) {
+  root.querySelectorAll('[data-admin-red] input[data-network-select], [data-admin-red] input[data-network-select-all]').forEach((cb) => {
+    if (cb instanceof HTMLInputElement) cb.checked = false;
+  });
+  updateNetworkBulkBarVisibility(root);
 }
 
 /** @param {object} deps */
@@ -130,8 +152,19 @@ function deleteNetworkPatientAction(btn, deps) {
   }
 }
 
+/** «Copiar invitación» from a sala card's ··· menu: the room code. */
+function copyRoomInviteAction(btn, deps) {
+  const code = btn.getAttribute('data-room-code') || '';
+  if (!code) return;
+  btn.closest('details')?.removeAttribute('open');
+  void copyToClipboardSafe(code).then((ok) =>
+    deps.toast(ok ? 'Código ' + code + ' copiado.' : 'No se pudo copiar el código.', ok ? 'success' : 'error')
+  );
+}
+
 const ROOM_ACTIONS = {
   'room-detail': roomDetailAction,
+  'copy-room-invite': copyRoomInviteAction,
   'rotate-code': rotateCodeAction,
   'purge-room': purgeRoomAction,
   'switch-network-room': switchNetworkRoomAction,
@@ -175,12 +208,33 @@ async function handleSwitchNetworkRoom(deps, code, patientId) {
 /**
  * Pull a room's current revision + one patient's `fields` — shared by the
  * single-row and bulk archive/delete actions so the pull step lives once.
+ * A `since:0` pull of a small/new room answers with raw `ops`, not a `state`
+ * snapshot (PULL_REVISION_GAP in cloud/sync-worker/src/pull-strategy.js), so
+ * the latest `entries/{id}/fields` op stands in for the snapshot entry there.
  * @param {ReturnType<import('./api-client.mjs').createCloudSyncApi>} api @param {string} roomId @param {string} patientId
  */
 async function pullNetworkPatientFields(api, roomId, patientId) {
-  const { state, revision } = await api.pull(roomId, 0);
-  const entry = (state?.entries || []).find((e) => String(e?.id) === patientId);
-  return { revision: Number(revision) || 0, fields: entry?.fields || null };
+  const { state, ops, revision } = await api.pull(roomId, 0);
+  if (state) {
+    const entry = (state.entries || []).find((e) => String(e?.id) === patientId);
+    return { revision: Number(revision) || 0, fields: entry?.fields || null };
+  }
+  // A small room answers `since=0` with its op log, not a snapshot.
+  return { revision: Number(revision) || 0, fields: fieldsFromOps(ops, patientId) };
+}
+
+/**
+ * Latest `fields` for one patient from a pulled op log (oldest first).
+ * @param {unknown} ops @param {string} patientId
+ */
+export function fieldsFromOps(ops, patientId) {
+  let fields = null;
+  for (const op of Array.isArray(ops) ? ops : []) {
+    const path = String(op?.path || '');
+    if (path === 'entries/' + patientId + '/fields' && op.value && typeof op.value === 'object') fields = op.value;
+    else if (path === 'entries/' + patientId && op.value?.fields) fields = op.value.fields;
+  }
+  return fields;
 }
 
 /**
@@ -401,6 +455,9 @@ async function handlePromoteSelf(deps) {
     if (!(await confirmAction('¿Promover tu cuenta a admin en la nube?'))) return;
     await deps.getApi().adminPromote(userId, 'admin');
     deps.toast('Cuenta promovida a admin.', 'success');
+    // Once admin, the key box has done its job.
+    deps.root.querySelector('[data-admin-bootstrap]')?.remove();
+    // The panel's first loads ran before the promotion (403): load them again as admin.
     reloadAdminData(deps);
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo promover.', 'error');
@@ -421,12 +478,96 @@ function handlePurgeRoomSelected(deps) {
   void handlePurgeRoom(deps, roomId, (room && room.code) || roomId);
 }
 
-/** @param {object} deps @param {string} roomId */
+/** The admin's own device is in that sala: «Tu sala» shows the new code now. */
+function showRotatedCodeHere(roomId, code) {
+  if (String(getCloudSyncRoomId() || '') !== String(roomId)) return;
+  const snap = getCloudSyncRoomSnapshot();
+  if (snap) setCloudSyncRoomSnapshot({ ...snap, code });
+  if (typeof document === 'undefined') return;
+  document.querySelectorAll('[data-cloud-room-code]').forEach((el) => {
+    el.textContent = code;
+  });
+}
+
+/**
+ * «held»: this device has the key · «none»: the sala has no key (nothing to
+ * re-lock) · «locked-elsewhere»: it has one this device lacks · «unknown»:
+ * this device can't ask (not a member of that sala).
+ * @param {object} deps @param {string} roomId
+ */
+async function roomKeyState(deps, roomId) {
+  if (getCachedRoomDek(roomId)) return 'held';
+  try {
+    const res = await deps.getApi().getRoomDek(roomId);
+    return res?.dek ? 'locked-elsewhere' : 'none';
+  } catch {
+    return 'unknown';
+  }
+}
+
+const ROTATE_REFUSED = {
+  unknown: 'Cambia el código desde un equipo que esté en esa sala: ahí está su llave de cifrado.',
+  'locked-elsewhere': 'Este equipo no tiene la llave de cifrado de esta sala. Cambia el código desde un equipo que la tenga.',
+};
+
+/** The plan for this sala, or null after telling the admin why not. @param {object} deps @param {string} roomId */
+async function planOrExplain(deps, roomId) {
+  try {
+    const plan = await planRoomCodeChange(deps.getApi(), roomId);
+    if (plan.kind !== 'refused') return plan;
+    deps.toast('No se pudo abrir la llave de cifrado de esta sala con su código actual. No se cambió nada.', 'error');
+  } catch (err) {
+    deps.toast(err?.data?.message || err?.message || 'No se pudo revisar la sala.', 'error');
+  }
+  return null;
+}
+
+/**
+ * Admin «Cambiar código»: the new code and the sala's key locked under it are
+ * saved together by the Worker (planRoomCodeChange / rotateRoomCodeAtomically).
+ * @param {object} deps @param {string} roomId
+ */
 async function handleRotateCode(deps, roomId) {
+  const plan = await planOrExplain(deps, roomId);
+  if (!plan) return;
+  if (plan.kind === 'legacy') return handleRotateCodeLegacy(deps, roomId);
+  if (!(await confirmAction('¿Rotar el código de esta sala? Quienes tengan el código anterior no podrán unirse.'))) return;
+  try {
+    const { code } = await rotateRoomCodeAtomically(deps.getApi(), roomId, plan);
+    showRotatedCodeHere(roomId, code);
+    deps.toast('Nuevo código: ' + code, 'success');
+  } catch (err) {
+    deps.toast((err?.data?.message || err?.message || 'No se pudo cambiar el código.') + ' No se cambió nada.', 'error');
+  }
+  void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps));
+}
+
+/**
+ * Same action against a Worker without the atomic change: rotate, then
+ * re-lock as a member. Only from a device that holds the key or when the
+ * sala has none.
+ * @param {object} deps @param {string} roomId
+ */
+async function handleRotateCodeLegacy(deps, roomId) {
+  // The new code must re-lock the sala's key; only a device holding it can.
+  const lock = await roomKeyState(deps, roomId);
+  if (lock === 'unknown' || lock === 'locked-elsewhere') {
+    deps.toast(ROTATE_REFUSED[lock], 'error');
+    return;
+  }
   if (!(await confirmAction('¿Rotar el código de esta sala? Quienes tengan el código anterior no podrán unirse.'))) return;
   try {
     const data = await deps.getApi().adminRotateCode(roomId);
-    if (data.code) await rewrapRoomDekForNewCode(deps.getApi(), roomId, data.code);
+    const relocked = lock === 'none' || (data.code ? await rewrapRoomDekForNewCode(deps.getApi(), roomId, data.code) : false);
+    if (data.code) showRotatedCodeHere(roomId, data.code);
+    if (!relocked) {
+      deps.toast(
+        'El código cambió, pero la llave de cifrado no se actualizó. Vuelve a pulsar «Cambiar código» desde este equipo antes de cerrar R+.',
+        'error'
+      );
+      void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps));
+      return;
+    }
     deps.toast('Nuevo código: ' + (data.code || '—'), 'success');
     void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps));
   } catch (err) {
