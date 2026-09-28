@@ -1430,20 +1430,45 @@ html.rpc-topbar .topbar-l2 .exp-group-pill:not(.exp-group-pill--leaf):is(.is-act
 html.rpc-topbar .topbar-l2 .exp-expediente-nav > #exp-group-row {
   padding-right: 4px;
 }
-.topbar-listhead {
-  display: none;
-}
-html.rpc-topbar #patient-sidebar .sidebar-header {
-  flex-wrap: wrap;
-}
-html.rpc-topbar .topbar-listhead:not(:empty) {
-  flex: 0 0 100%;
+/* Sidebar head (board «A · Dos filas»): row 1 hide · Censo · + Agregar;
+ * row 2 search with Filtros inside, cards toggle, Seleccionar varios. */
+html.rpc-topbar #patient-sidebar .patient-search-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 6px;
 }
-html.rpc-topbar .topbar-listhead #btn-export-censo-header,
+html.rpc-topbar #patient-sidebar .patient-search-input {
+  flex: 1;
+  min-width: 0;
+  order: 0;
+}
+html.rpc-topbar #patient-sidebar .patient-search-wrap:has(#btn-patient-filters:not([hidden])) .patient-search-input {
+  padding-right: 34px;
+}
+html.rpc-topbar #patient-sidebar .patient-search-wrap .patient-filters-anchor {
+  order: 1;
+  margin-left: -38px;
+}
+html.rpc-topbar #patient-sidebar .patient-search-wrap .btn-patient-filters {
+  border-color: transparent;
+  background: transparent;
+}
+html.rpc-topbar #patient-sidebar #btn-sala-view-cards {
+  order: 2;
+}
+html.rpc-topbar #patient-sidebar #btn-patient-bulk-select {
+  order: 3;
+}
+/* Icon only in the sidebar, so «+ Agregar» fits; the name stays for screen readers and the tooltip. */
+html.rpc-topbar #patient-sidebar .sidebar-header-actions #btn-export-censo-header {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  gap: 0;
+  justify-content: center;
+  font-size: 0;
+}
+html.rpc-topbar #patient-sidebar .sidebar-header-actions #btn-export-censo-header,
 html.rpc-topbar .sv-home-actions #btn-export-censo-header,
 html.rpc-topbar .ic-board-header #btn-export-censo-header {
   align-items: center;

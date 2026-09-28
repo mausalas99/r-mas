@@ -77,8 +77,9 @@ export function mountTopBar() {
 
 // Room for every level-2 pill (owner pick 2026-09-27, «Una pastilla»): the
 // area tabs fold into one pill that grows on hover or keyboard focus (CSS),
-// Atajos + Aprender become one «Ayuda» menu, Censo and the mode switcher
-// leave the header, and pill labels shorten below 1440 px.
+// Atajos + Aprender become one «Ayuda» menu, Censo leaves the header, and
+// pill labels shorten below 1440 px. The mode switcher stays in the header
+// (owner 2026-09-28).
 var SHORT = {
   'Estado actual': 'Estado',
   Eventualidades: 'Eventual.',
@@ -97,38 +98,31 @@ function visible(el) {
 }
 
 function makeRoom(header, row, tablist) {
-  var moves = ['btn-export-censo-header', 'header-mode-seg'].map(function (id) {
+  var moves = ['btn-export-censo-header'].map(function (id) {
     var el = document.getElementById(id);
     return el && { el: el, parent: el.parentNode, next: el.nextSibling };
   }).filter(Boolean);
   buildHelpMenu(header);
-
-  // Sidebar list view: one extra row in its header for the moved items.
-  var sideRow = document.createElement('div');
-  sideRow.className = 'topbar-listhead';
-  var sideHead = document.querySelector('#patient-sidebar .sidebar-header');
-  if (sideHead) sideHead.appendChild(sideRow);
+  arrangeSidebar();
 
   /**
-   * Censo goes to the patient list head; the mode switcher next to
-   * «Mi rotación» when that bar shows, else the list head. Card view, the
-   * interconsulta board and the sidebar each have their own head; no list on
-   * screen → back to the header, so the switcher is never out of reach.
+   * Censo goes to the patient list head. Card view, the interconsulta board
+   * and the sidebar each have their own head; no list on screen → back to
+   * the header.
    */
   function place() {
     if (document.querySelector('.modal-backdrop.open')) return; // a dialog covers every head: keep the last spot
-    var heads = ['.sv-home-head .sv-home-actions', '.ic-board-header', '#patient-sidebar .topbar-listhead'];
+    var sideActions = document.querySelector('#patient-sidebar .sidebar-header-actions');
+    var heads = ['.sv-home-head .sv-home-actions', '.ic-board-header', '#patient-sidebar .sidebar-header-actions'];
     moves.forEach(function (m) {
       var target = null;
-      var list = m.el.id === 'header-mode-seg' ? ['#clinical-context-bar'].concat(heads) : heads;
-      for (var i = 0; i < list.length && !target; i++) {
-        var el = document.querySelector(list[i]);
-        // The sidebar row is empty until an item lands in it: judge its header instead.
-        if (el && visible(el === sideRow ? sideHead : el)) target = el;
+      for (var i = 0; i < heads.length && !target; i++) {
+        var el = document.querySelector(heads[i]);
+        if (el && visible(el)) target = el;
       }
       if (target) {
-        // Board and card heads: after their own buttons, so «+ Agregar» stays first.
-        var first = target.id === 'clinical-context-bar' || target === sideRow;
+        // Board and card heads: after their own buttons. Sidebar: before «+ Agregar».
+        var first = target === sideActions;
         if (m.el.parentNode !== target) target.insertBefore(m.el, first ? target.firstChild : null);
       } else if (m.el.parentNode !== m.parent) {
         m.parent.insertBefore(m.el, m.next && m.next.parentNode === m.parent ? m.next : null);
@@ -184,6 +178,22 @@ function makeRoom(header, row, tablist) {
   addEventListener('resize', queue);
 
   refresh();
+}
+
+/**
+ * Sidebar head, owner pick 2026-09-28 (board «A · Dos filas»): row 1 is the
+ * hide toggle, Censo and «+ Agregar»; row 2 is the search with Filtros inside
+ * it, the cards toggle and «Seleccionar varios».
+ */
+function arrangeSidebar() {
+  var search = document.querySelector('#patient-sidebar .patient-search-wrap');
+  if (!search) return;
+  var input = document.getElementById('patient-search');
+  if (input) input.placeholder = 'Buscar';
+  ['patient-filters-anchor', 'btn-patient-bulk-select'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) search.appendChild(el);
+  });
 }
 
 /** One «Ayuda» icon with a small click-open menu for Atajos and Aprender R+. */

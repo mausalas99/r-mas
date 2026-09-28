@@ -17,8 +17,8 @@
  *   Room
  *     - Atajos / Aprender R+ show as their own icons, or the «?» Ayuda menu
  *       does not open them
- *     - Censo or the Sala/IC/Guardia switcher stay in the header while the
- *       patient list shows
+ *     - Censo stays in the header while the patient list shows, or the
+ *       Sala/IC/Guardia switcher leaves the header
  *     - a short label loses its full name (aria-label + tooltip)
  *     - a header button has no accessible name
  *     - the old tab row, the date or the context path still show
@@ -172,7 +172,7 @@ await r.finish('Top bar (Nav-G)', async () => {
     const h = document.querySelector('body > header');
     return { censo: h.contains(document.getElementById('btn-export-censo-header')), seg: h.contains(document.getElementById('header-mode-seg')) };
   });
-  check('Censo and the mode switcher left the header (patient list on screen)', !moved.censo && !moved.seg, moved);
+  check('Censo left the header, the mode switcher stayed (patient list on screen)', !moved.censo && moved.seg, moved);
   const unnamed = await page.$$eval('body > header button', (bs) =>
     bs.filter((b) => b.getClientRects().length && b.getBoundingClientRect().width > 4)
       .filter((b) => !(b.getAttribute('aria-label') || b.textContent.trim() || b.title)).map((b) => b.id || b.className));
