@@ -35,3 +35,9 @@ enabled = true
 # (8.2.1). Only login/register are gated — not the DEK/E2EE work, which
 # is not shipped yet.
 NUBE_VERSION_GATE_ENABLED = true
+# Per-patient room rows (schema 013, plan 2026-09-28-cheap-room-pushes.md).
+# Off unless set to "1". ROLLBACK ORDER: set to "0", deploy, then
+# POST /admin/rooms/:id/refatten for each room. Never deploy a Worker older
+# than the one that first read schema 013 while any room is split: it would
+# return empty patient lists.
+# PATIENT_SHARD_WRITE = "1"
