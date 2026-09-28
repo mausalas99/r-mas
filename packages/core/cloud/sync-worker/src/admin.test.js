@@ -1,3 +1,4 @@
+/* global Request -- Node 18+ has the Fetch API; the Worker tests build real Requests. */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { SyncError } from './errors.js';
