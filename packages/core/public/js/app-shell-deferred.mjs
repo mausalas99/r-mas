@@ -104,8 +104,6 @@ export function scheduleDeferredUiInits(showToast) {
   // Shell shortcuts: wire as soon as shell boots (no second idle defer — sala/EA forms keep focus in inputs).
   void import('./app-shell-keyboard.mjs').then(function (mod) {
     mod.initShellKeyboardShortcuts(showToast);
-  });
-  void import('./modal-inert.mjs').then(function (mod) {
     mod.initModalInert();
   });
   void import('./keyboard-shortcuts-nudge.mjs').then(function (mod) {
