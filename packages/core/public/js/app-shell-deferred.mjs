@@ -105,6 +105,9 @@ export function scheduleDeferredUiInits(showToast) {
   void import('./app-shell-keyboard.mjs').then(function (mod) {
     mod.initShellKeyboardShortcuts(showToast);
   });
+  void import('./modal-inert.mjs').then(function (mod) {
+    mod.initModalInert();
+  });
   void import('./keyboard-shortcuts-nudge.mjs').then(function (mod) {
     mod.initKeyboardShortcutsNudge(showToast);
   });

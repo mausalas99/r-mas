@@ -84,9 +84,18 @@ await r.finish('Ajustes A + Mi perfil B', async () => {
   check('Censo PDF lives in Documentos', /Censo PDF/.test(await A.page.locator('#settings-accordion-documents').innerText()));
   check('Formatos clínicos live in Plantillas', /Formatos de nota/.test(await A.page.locator('#settings-accordion-templates').innerText()));
 
+  // The app behind an open panel is inert (out of reach for keyboard and screen readers).
+  const appInert = () => A.page.evaluate(() => [...document.querySelectorAll('body > header, body > .app')].map((el) => el.inert));
+  const whileOpen = await appInert();
+  check('while Ajustes is open, header and app behind it are inert', whileOpen.length === 2 && whileOpen.every(Boolean), whileOpen);
+
   // ── Mi perfil B ────────────────────────────────────────────────────────
   await A.page.locator('#btn-settings-dropdown-close').click();
   await A.page.waitForTimeout(400);
+  const afterClose = await appInert();
+  const focusAfterClose = await A.page.evaluate(() => document.activeElement?.id || document.activeElement?.tagName);
+  check('after closing Ajustes the app is live again and focus is not lost',
+    afterClose.every((x) => !x) && focusAfterClose !== 'BODY', { afterClose, focusAfterClose });
   await A.page.locator('#profile-toggle-btn').click();
   const perfil = A.page.locator('#settings-accordion-perfil');
   check('header «Mi perfil» opens Ajustes › Perfil', await until(() => perfil.isVisible(), 5000));
