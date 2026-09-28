@@ -67,3 +67,11 @@ test('procesarLabs incluye bloque HECES cuando viene parasitologia', () => {
   const heces = resLabs.find((l) => l.startsWith('HECES\t'));
   assert.ok(heces, 'debe incluir bloque HECES');
 });
+
+test('heces: ERITROCITOS no se lee como RBC de BH y la firma no entra en Obs', () => {
+  const texto = MUESTRA_HECES.replace(/OBSERVACIONES[\s\S]*$/, 'OBSERVACIONES\n*\nDR. FICTICIO EJEMPLO DOCTOR\nCED. PROF. 12234309\n');
+  const { resLabs } = procesarLabs(texto);
+  assert.ok(!resLabs.some((l) => l.startsWith('BH')), resLabs.join('\n'));
+  const heces = resLabs.find((l) => l.startsWith('HECES'));
+  assert.ok(heces && !/DR\.|Obs/.test(heces), heces);
+});

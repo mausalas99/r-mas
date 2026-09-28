@@ -39,7 +39,9 @@ function findHecesBlock_(lineas) {
     if (
       /^(BACTERIOLOGIA|HEMATOLOGIA|QUIMICA CLINICA|INMUNOLOGIA|GASOMETRIA|COAGULACION|URIANALISIS|EXAMEN GENERAL DE ORINA|CULTIVO)\b/i.test(
         lineas[j]
-      )
+      ) ||
+      // Pie de firma del laboratorio (DR./DRA./Q.F.B./CÉDULA): no es parte del estudio.
+      /^(DRA?\.?\s|Q\.?\s?F\.?\s?B\b|C[EÉ]D(ULA|\.)?\s)/i.test(lineas[j])
     ) {
       i1 = j;
       break;

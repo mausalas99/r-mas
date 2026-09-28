@@ -62,13 +62,19 @@ function segmentLabReportBlocks_(deps, textoBruto, tNorm) {
     /(?:URIANALISIS|EXAMEN GENERAL DE ORINA|ANALISIS DE ORINA).*?(?=BACTERIOLOGIA|CULTIVO|COMENTARIO DE MUESTRA|$)/i
   );
   var bloqueEGO = mEGO ? mEGO[0] : '';
+  // Parasitología (heces) trae ERITROCITOS/GLUCOSA/PROTEINAS: BH y QS no deben leerlos.
+  var mHeces = tNorm.match(
+    /(?:PARASITOLOGIA|FISICOQUIMICO DE HECES).*?(?=HEMATOLOGIA|BIOMETRIA|QUIMICA CLINICA|GASOMETRIA|URIANALISIS|BACTERIOLOGIA|CULTIVO|COAGULACION|$)/i
+  );
+  var bloqueHeces = mHeces ? mHeces[0] : '';
   var tSinLiqCorp = tNorm;
   for (var lc = 0; lc < citoBlocksNorm.length; lc++) {
     tSinLiqCorp = tSinLiqCorp.replace(citoBlocksNorm[lc], ' ');
   }
-  var textoQS = tSinLiqCorp.replace(bloqueGaso, ' ').replace(bloqueEGO, ' ');
+  var textoQS = tSinLiqCorp.replace(bloqueGaso, ' ').replace(bloqueEGO, ' ').replace(bloqueHeces, ' ');
   var textoParaBh = tSinLiqCorp;
   if (bloqueEGO) textoParaBh = textoParaBh.replace(bloqueEGO, ' ');
+  if (bloqueHeces) textoParaBh = textoParaBh.replace(bloqueHeces, ' ');
   var esSoloGaso =
     /GASOMETRIA/i.test(tNorm) &&
     !/BIOMETRIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CULTIVO/i.test(tNorm);
