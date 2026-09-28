@@ -94,7 +94,7 @@ export function syncMobileBarebonesChrome() {
     'itab-salida',
     'btn-header-team-sync',
     'lab-input-section',
-    'lab-diagrams-section',
+    'lab-diagrams-btn',
     'lab-banner',
     'btn-header-cmdk',
     'btn-header-shortcuts',
@@ -160,7 +160,7 @@ function syncMobileLabReferenceHeaderState() {
 export function syncMobileLabReferenceChrome() {
   if (!isMobileWeb() || typeof document === 'undefined') return;
   document.documentElement.classList.add('rpc-mobile-lab-reference');
-  ['lab-input-section', 'lab-diagrams-section', 'lab-banner'].forEach(function (id) {
+  ['lab-input-section', 'lab-diagrams-btn', 'lab-banner'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });

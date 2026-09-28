@@ -1050,3 +1050,10 @@ test('buildMedRecetaListHtml — Manejo-B groups: Falta destino first, Excluidos
   assert.deepEqual(splitMedLabel('CEFTRIAXONA 1G IV C/24H'), { name: 'Ceftriaxona', dose: '1 g IV c/24 h' });
   assert.deepEqual(splitMedLabel('CLORURO DE POTASIO 40MEQ EN 12ML'), { name: 'Cloruro de potasio', dose: '40 mEq en 12 mL' });
 });
+
+test('buildMedRecetaListHtml — 16+ rows go dense, short lists stay roomy', async () => {
+  var { buildMedRecetaListHtml, MED_DENSE_MIN_ROWS } = await import('./features/medications-panel-rows.mjs');
+  var mk = (n) => Array.from({ length: n }, (_, i) => ({ id: 'm' + i, nombreRaw: 'FARMACO' + i + ' 10 MG TABLETA', viaRaw: 'VIA ORAL', dosisRaw: '10 MG //', frecuenciaRaw: 'CADA 24 HORAS' }));
+  assert.match(buildMedRecetaListHtml('p1', { items: mk(MED_DENSE_MIN_ROWS) }), /med-groups--dense/);
+  assert.doesNotMatch(buildMedRecetaListHtml('p1', { items: mk(MED_DENSE_MIN_ROWS - 1) }), /med-groups--dense/);
+});

@@ -191,6 +191,38 @@ export function syncLabOutputChrome() {
   var show = outputVisible && isLabAppTabActive();
   syncLabCopyFab(show);
   syncLabSomeTablesBtn(show);
+  syncLabWhoAndFetchButtons(outputVisible);
+}
+
+// 8.4.3 board Labs 1 + 4: patient name and bed over the panel; Pegar SOME and
+// Actualizar labs sit at the end of the Resultados header while it shows, and
+// go back to the top row when there are no results (so paste stays reachable).
+function syncLabWhoAndFetchButtons(outputVisible) {
+  var p = typeof rt.getActivePatient === 'function' ? rt.getActivePatient() : null;
+  var who = document.getElementById('lab-who');
+  if (who) {
+    var name = p ? String(p.nombre || p.name || '').trim() : '';
+    var bed = p
+      ? [p.cuarto && 'Cto. ' + String(p.cuarto).trim(), p.cama && 'Cama ' + String(p.cama).trim()]
+          .filter(Boolean)
+          .join(' · ')
+      : '';
+    document.getElementById('lab-who-name').textContent = name;
+    document.getElementById('lab-who-bed').textContent = bed;
+    who.hidden = !name;
+  }
+  if (document.documentElement.classList.contains('rpc-mobile-web')) return;
+  var host = outputVisible
+    ? document.querySelector('#lab-output-section .lab-output-header-tools')
+    : document.querySelector('#lab-input-section .lab-report-header-actions');
+  if (!host) return;
+  var anchor = outputVisible ? null : host.firstChild;
+  ['btn-lab-repo-batch', 'btn-lab-paste'].forEach(function (id) {
+    var btn = document.getElementById(id);
+    if (!btn) return;
+    if (outputVisible) host.appendChild(btn);
+    else anchor = host.insertBefore(btn, anchor);
+  });
 }
 
 export { openLabSomeTablesModal, closeLabSomeTablesModal };

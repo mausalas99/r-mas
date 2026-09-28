@@ -138,3 +138,12 @@ test('resolveSoporteClause incluye índices calculados', () => {
   assert.match(clause, /POR ALTO FLUJO 50 L\/MIN FI O2 60%/);
   assert.match(clause, /ROX/);
 });
+
+test('formatVentilatorioCalcClause — gaso venosa: no advice, no SpO₂/FiO₂ in the copy', () => {
+  var ec = { soporte: 'Alto flujo', soporteFlujoLmin: 50, soporteFio2: 28 };
+  var ctx = { fr: 20, sat: 99, lab: { kind: 'venous', pO2: 40 } };
+  assert.ok(buildVentilatorioCalcHints(ec, ctx).some(function (h) { return h.indexOf('Gaso venosa') === 0; }));
+  var clause = formatVentilatorioCalcClause(ec, ctx);
+  assert.ok(clause.indexOf('Gaso venosa') < 0, clause);
+  assert.ok(clause.indexOf('SpO₂/FiO₂') < 0, clause);
+});

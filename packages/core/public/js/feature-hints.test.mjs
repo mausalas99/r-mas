@@ -9,7 +9,7 @@ test('every «Guía» and this release\'s «Nuevo» hints are offered', () => {
     else if (h.release === HINTS_RELEASE) assert.ok(ids.includes(h.id), h.id);
   }
   assert.ok(ids.includes('g-labs'));
-  assert.ok(ids.includes('datos-tachar-843'));
+  for (const id of ['datos-tachar-843', 'lab-843', 'resumen-843', 'lista-843', 'manejo-843']) assert.ok(ids.includes(id), id);
   assert.ok(!ids.includes('datos-842'));
 });
 

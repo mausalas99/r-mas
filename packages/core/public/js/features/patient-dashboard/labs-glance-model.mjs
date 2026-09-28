@@ -194,20 +194,25 @@ function chronoSortKey(hora, idx) {
   return (hora || '99:99') + '_' + String(idx).padStart(6, '0');
 }
 
-/**
- * Fills in `chip.delta` / `chip.trend` ('up'|'down'|'flat') for altered chips
- * by comparing against the most recent earlier envío of the same day with a
- * value for that tipo+label, walked in chronological (not array) order.
- */
-function attachTrend(candidates) {
+function chronoSorted(candidates) {
   const indexed = candidates.map((c, i) => ({ c, i }));
   indexed.sort((a, b) => {
     const ka = chronoSortKey(a.c.hora, a.i);
     const kb = chronoSortKey(b.c.hora, b.i);
     return ka < kb ? -1 : ka > kb ? 1 : 0;
   });
-  const running = Object.create(null);
-  indexed.forEach(({ c }) => {
+  return indexed.map((x) => x.c);
+}
+
+/**
+ * Fills in `chip.prev` / `chip.delta` / `chip.trend` ('up'|'down'|'flat') for
+ * altered chips by comparing against the most recent earlier envío with a
+ * value for that tipo+label, walked in chronological (not array) order.
+ * `seed` holds the last values of the previous lab day (8.4.3 board A1: «antes»).
+ */
+function attachTrend(candidates, seed) {
+  const running = Object.assign(Object.create(null), seed || {});
+  chronoSorted(candidates).forEach((c) => {
     c.groups.forEach((g) => {
       const tipoKey = String(g.tipo || '').toUpperCase();
       g.chips.forEach((chip) => {
@@ -218,6 +223,7 @@ function attachTrend(candidates) {
         const curNum = parseFloat(String(chip.value).replace('*', ''));
         if (Number.isNaN(prevNum) || Number.isNaN(curNum)) return;
         const diff = Math.round((curNum - prevNum) * 100) / 100;
+        chip.prev = String(prevRaw);
         chip.trend = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat';
         chip.delta = (diff > 0 ? '+' : diff < 0 ? '-' : '') + Math.abs(diff);
       });
@@ -250,14 +256,43 @@ function latestLabFecha(orderedSets) {
  *   enRangoCount: number,
  * }}
  */
+/**
+ * Last value per tipo|label on the newest lab day before `todayKey`, plus
+ * that day's fecha. Empty when there is no earlier day.
+ */
+function previousDaySeed(orderedSets, todayKey) {
+  let prevKey = null;
+  let prevMs = -Infinity;
+  let prevFecha = null;
+  const [y, m, d] = String(todayKey || '').split('-').map(Number);
+  const todayStart = new Date(y, m - 1, d).getTime();
+  (orderedSets || []).forEach((set) => {
+    if (!set || !set.resLabs || !set.resLabs.length) return;
+    const key = dayKeyFromLabSet(set);
+    const ms = parseFechaLabToMs(set.fecha, set.hora);
+    if (!key || key === 'Anterior' || !(ms < todayStart)) return;
+    if (ms > prevMs) {
+      prevMs = ms;
+      prevKey = key;
+      prevFecha = set.fecha;
+    }
+  });
+  const seed = Object.create(null);
+  if (!prevKey) return { seed, fecha: null };
+  const prev = clusterSetsByHora(setsForDayKey(orderedSets, prevKey)).map(buildEnvioFromCluster).filter(Boolean);
+  chronoSorted(prev).forEach((c) => Object.assign(seed, c.valuesByKey));
+  return { seed, fecha: prevFecha };
+}
+
 export function buildLabsGlanceForDay({ todayKey, orderedSets } = {}) {
   const daySets = setsForDayKey(orderedSets, todayKey);
   if (!daySets.length) return { envios: [], enRangoCount: 0, lastFecha: latestLabFecha(orderedSets) };
   const candidates = clusterSetsByHora(daySets).map(buildEnvioFromCluster).filter(Boolean);
-  attachTrend(candidates);
+  const prev = previousDaySeed(orderedSets, todayKey);
+  attachTrend(candidates, prev.seed);
   const enRangoCount = candidates.reduce((sum, c) => sum + c.normalCount, 0);
   const envios = candidates
     .filter((c) => c.groups.length > 0)
     .map((c) => ({ id: c.id, hora: c.hora, wide: c.wide, groups: c.groups }));
-  return { envios, enRangoCount };
+  return { envios, enRangoCount, prevFecha: prev.fecha };
 }

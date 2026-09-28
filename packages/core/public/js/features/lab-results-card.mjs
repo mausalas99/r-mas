@@ -12,6 +12,8 @@
  * Se llama después de poblar la caja (ver `lab-panel-parse.mjs#renderOutput`).
  */
 import { escTxt } from '../labs-display.mjs';
+import { fitOneRow } from './fit-one-row.mjs';
+import { isCriticalLabValue, clinicalPriorityRank } from '../labs-critical-values.mjs';
 
 function pluralAlterados(n) {
   return n === 1 ? '1 alterado' : n + ' alterados';
@@ -62,10 +64,79 @@ export function restyleLabHourGroupHeaders(box) {
   });
 }
 
+/**
+ * 8.4.3 «Alterados primero»: one line of chips (label + value) above the table.
+ * One chip per analyte: with several tomas the latest hour wins.
+ */
+export function renderLabAlteredChips(box) {
+  var host = document.getElementById('lab-altered-chips');
+  if (!host || !box) return;
+  var byLabel = Object.create(null);
+  var order = [];
+  var hour = '';
+  Array.prototype.forEach.call(box.children, function (child) {
+    if (child.classList.contains('lab-hour-group-h')) {
+      var t = child.querySelector('.lab-hour-time');
+      hour = t ? t.textContent.trim().padStart(5, '0') : hour;
+      return;
+    }
+    child.querySelectorAll('.lab-value-altered').forEach(function (el) {
+      var cell = el.closest('.lab-row-value');
+      var prev = cell && cell.previousElementSibling;
+      if (!prev || !prev.classList.contains('lab-row-value')) return;
+      var label = prev.textContent.trim();
+      var value = el.firstChild ? el.firstChild.textContent : el.textContent;
+      var arrow = el.querySelector('.lab-trend-arrow');
+      var seen = byLabel[label];
+      if (!seen) order.push(label);
+      if (!seen || hour >= seen.hour) {
+        byLabel[label] = {
+          hour: hour,
+          value: value,
+          critical: isCriticalLabValue(label, value),
+          trend: arrow ? (arrow.classList.contains('lab-trend-up') ? '↑' : '↓') : '',
+        };
+      }
+    });
+  });
+  // Most important first, so the ones cut by «+N más» matter least: panic
+  // values, then values that moved since the last toma, then clinical order.
+  var rank = function (c) {
+    return c.critical ? 0 : c.trend ? 1 : 2;
+  };
+  order.sort(function (a, b) {
+    return rank(byLabel[a]) - rank(byLabel[b]) || clinicalPriorityRank(a) - clinicalPriorityRank(b);
+  });
+  host.innerHTML = order.length
+    ? '<span class="lab-altered-chips-lbl">Alterados</span>' +
+      order
+        .map(function (label) {
+          var c = byLabel[label];
+          return (
+            '<span class="lab-altered-chip' +
+            (c.critical ? ' lab-altered-chip--critical' : '') +
+            '" data-fit-chip' +
+            (c.critical ? ' title="Valor crítico"' : '') +
+            '>' +
+            escTxt(label) +
+            ' <strong>' +
+            escTxt(c.value) +
+            (c.trend ? ' ' + c.trend : '') +
+            '</strong></span>'
+          );
+        })
+        .join('') +
+      '<span class="lab-altered-chip lab-altered-chip--more" data-fit-chip-more hidden></span>'
+    : '';
+  host.hidden = !order.length;
+  fitOneRow(host);
+}
+
 /** Llamar una vez por render, después de que `#lab-output-box` quede poblado. */
 export function syncLabResultsCardChrome() {
   var box = document.getElementById('lab-output-box');
   if (!box) return;
   restyleLabHourGroupHeaders(box);
   updateLabResultsCardTitle(box);
+  renderLabAlteredChips(box);
 }

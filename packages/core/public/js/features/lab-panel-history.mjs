@@ -358,10 +358,10 @@ function maybeShowLabHistoryForActivePatient(opts) {
 
 /** Clear the processed-lab output area (not the paste box). */
 export function clearLabOutputDom() {
-  ['lab-banner', 'lab-diagrams-section'].forEach(function (id) {
-    var el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
+  var banner = document.getElementById('lab-banner');
+  if (banner) banner.style.display = 'none';
+  var diagramsBtn = document.getElementById('lab-diagrams-btn');
+  if (diagramsBtn) diagramsBtn.hidden = true;
   ['diagrams-grid', 'lab-output-box'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.innerHTML = '';

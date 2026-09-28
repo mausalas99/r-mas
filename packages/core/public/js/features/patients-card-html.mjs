@@ -52,6 +52,9 @@ function isInterconsultaModeUi() {
   }
 }
 
+var PIN_ICON =
+  '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"></path><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3z"></path></svg>';
+
 export function renderPatientCardToolbarHtml(p, pinOn, archOn) {
   if (isPatientBulkSelectMode()) {
     return (
@@ -81,20 +84,23 @@ export function renderPatientCardToolbarHtml(p, pinOn, archOn) {
   // team-labs/estado-actual) — only this UI trigger is dropped, not the field.
   var pinBtn = isInterconsultaModeUi()
     ? ''
-    : '<button type="button" class="patient-toolbar-chip btn-pinned-text' +
+    : '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-pinned-text' +
       (pinOn ? ' patient-toolbar-chip--on' : '') +
       '" title="' +
       pinTitle +
       '" aria-label="' +
       pinTitle +
+      '" aria-pressed="' +
+      pinOn +
       '" data-onclick="togglePatientPinned" data-onclick-args=\'' +
       escAttr(JSON.stringify([p.id])) +
       '\' data-onclick-pass="event">' +
-      (pinOn ? 'Fijado' : 'Fijar') +
+      PIN_ICON +
       '</button>';
   return (
     '<div class="patient-card-toolbar">' +
     '<div class="patient-card-toolbar-left">' +
+    pinBtn +
     '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' +
     archTitle +
     '" aria-label="' +
@@ -104,7 +110,6 @@ export function renderPatientCardToolbarHtml(p, pinOn, archOn) {
     '\' data-onclick-pass="event">' +
     archiveIcon +
     '</button>' +
-    pinBtn +
     '</div>' +
     deleteBtn +
     '</div>'

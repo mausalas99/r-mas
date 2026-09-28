@@ -14,6 +14,10 @@ var RELEASE_NOTES_843 = [
     body: 'Toca un medicamento en Datos › Censo para tacharlo. Sale del censo y regresa con otro toque.',
   },
   {
+    title: 'Tarjetas, Resumen y Laboratorio más claros',
+    body: 'Tarjetas de la lista en dos líneas, con acciones al pasar el cursor. Resumen con tendencias de signos y labs. Laboratorio muestra quién es y los alterados primero.',
+  },
+  {
     title: 'Nube, Admin y Ajustes nuevos',
     body: 'Nueva pantalla de estado de Nube, Admin rediseñado, Mi perfil en Ajustes y nuevo panel de Equipos.',
   },

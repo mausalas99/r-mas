@@ -298,36 +298,19 @@ export function copiarDiagrama(svgStr, vw, vh, title, btn) {
   img.src = url;
 }
 
-const LAB_DIAGRAMS_COLLAPSED_KEY = "rpc-lab-diagrams-collapsed-v1";
-
-function labDiagramsIsCollapsed() {
-  try {
-    return localStorage.getItem(LAB_DIAGRAMS_COLLAPSED_KEY) === "1";
-  } catch {
-    return false;
-  }
+/** 8.4.3: diagrams open in a window from «Diagramas» in the Resultados header. */
+export function openLabDiagramsModal() {
+  var backdrop = document.getElementById("lab-diagrams-backdrop");
+  if (!backdrop) return;
+  backdrop.classList.add("open");
+  backdrop.setAttribute("aria-hidden", "false");
 }
 
-export function setLabDiagramsCollapsed(collapsed) {
-  try {
-    localStorage.setItem(LAB_DIAGRAMS_COLLAPSED_KEY, collapsed ? "1" : "0");
-  } catch (e) {
-    console.warn('[diagrams-render] failed to write ' + LAB_DIAGRAMS_COLLAPSED_KEY, e);
-  }
-  syncLabDiagramsCollapseUI();
-}
-
-export function toggleLabDiagramsSection() {
-  setLabDiagramsCollapsed(!labDiagramsIsCollapsed());
-}
-
-export function syncLabDiagramsCollapseUI() {
-  var sec = document.getElementById("lab-diagrams-section");
-  var btn = document.querySelector(".lab-diagrams-toggle");
-  if (!sec) return;
-  var collapsed = labDiagramsIsCollapsed();
-  sec.classList.toggle("is-collapsed", collapsed);
-  if (btn) btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+export function closeLabDiagramsModal() {
+  var backdrop = document.getElementById("lab-diagrams-backdrop");
+  if (!backdrop) return;
+  backdrop.classList.remove("open");
+  backdrop.setAttribute("aria-hidden", "true");
 }
 
 /** Diagram cards for one day of resLabs; `svg` is null when the panel is missing. */
@@ -367,6 +350,7 @@ export function renderDiagramas(resLabs) {
     div.appendChild(btn);
     grid.appendChild(div);
   });
-  document.getElementById("lab-diagrams-section").style.display = any ? "block" : "none";
-  syncLabDiagramsCollapseUI();
+  var btn = document.getElementById("lab-diagrams-btn");
+  if (btn) btn.hidden = !any;
+  if (!any) closeLabDiagramsModal();
 }

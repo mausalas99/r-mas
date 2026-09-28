@@ -59,9 +59,14 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 - **Nuevo:** barra superior con una sola pastilla para Paciente, Laboratorio, Manejo y Agenda; menú Ayuda (?) único.
 - **Nuevo:** tacha medicamentos suspendidos en Datos › Censo.
+- **Nuevo:** tarjetas de la lista en dos líneas; fijar, archivar y eliminar salen al pasar el cursor.
+- **Nuevo:** Resumen con tendencias (rango de 24 h, valor anterior de labs), Medicamentos y Pendientes a todo lo ancho y cultivos en tarjetas; sin Eventualidades.
+- **Nuevo:** Laboratorio muestra nombre y cama arriba, alterados primero, Pegar SOME / Actualizar labs en Resultados y Diagramas en una ventana.
+- **Nuevo:** Manejo con muchos medicamentos se compacta y cabe sin desplazarte.
 - **Nuevo:** pantallas de Nube, Admin, Ajustes (Mi perfil) y Equipos rediseñadas.
 - **Arreglado:** sincronización con Nube de VPO, lista de problemas, perfil farmacológico y registros restaurados con «deshacer».
 - **Arreglado:** Laboratorio mostraba labs del expediente anterior; un pegado de heces ensuciaba BH.
+- **Arreglado:** bomba de insulina en «MEDICAMENTOS P3»; la copia de Estado actual ya no lleva el aviso de gaso venosa.
 - **Problema conocido:** dos eventualidades simultáneas desde dos equipos pueden perder una; notas e indicaciones aún no van a Nube. Ambos en 8.4.4.
 
 Notas: `docs/RELEASE_NOTES_8.4.3.txt`.

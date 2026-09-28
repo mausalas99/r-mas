@@ -9,30 +9,34 @@ description: "Strategic vision, North Star metric, trade-offs, anti-goals, and d
 # 🌟 Vision & North Star: R+
 
 ## 🔭 The Vision
-**R+** is a local-first clinical workstation for hospital guardia and sala—**Laboratoriazo + documentación clínica**. It is designed to shrink the gap between raw clinical inputs (SOME labs, vitals, handoff context) and compliant, ready-to-print documentation. R+ acts as a **cognitive extension** for the resident on a high-intensity shift: it absorbs tedious extraction and formatting so the clinician can stay with the patient and the team.
+**R+** is the **resident's desk and the team's shared board** for the hospital guardia and sala. It works on two layers:
+
+1. **The resident's desk (one place per patient):** labs arrive on their own from the lab portal (or by paste), next to trends, cultivos, Estado actual (vitals, glucometrías, balance, medications), pendientes and agenda. Documents (evolution note, indicaciones, censo) are *outputs* of that desk, not its purpose.
+2. **The team's shared board (one truth per shift):** every resident, iPad and interno phone in the room sees the same patients, the same state and the same pendientes, live via **Nube**, and still fully usable **offline** (local SQLCipher only). The shift changes hands without losing anything.
 
 ## 🚩 The North Star Goal
-**"Paste the lab, print the note—before the next patient calls."**
+**"Everyone on the shift knows how every patient is—and nothing gets lost at handoff."**
 
-Every feature exists to shorten **Time-to-Document (TTD)** from acquired data to a compliant evolution note or order set. The goal is to make R+ the indispensable **documentation and extraction layer** for the **R1/R2 resident on a 24-hour guardia**—with the team censo shared via **Nube** sync across all clinical wards, and still fully usable **offline** (local SQLCipher only).
+Every feature exists to make the current state of any patient **complete, current and shared** without anyone retyping it: data flows in by itself (labs, cultivos, medications), the team sees it live, and the handoff carries every open pendiente across the turn. Target user: the **R1/R2 resident on a 24-hour guardia** and the team they share the room with.
 
 ---
 
 ## ⚠️ The Problem & The Alternative
-Residents on high-intensity guardia (urgencias + sala, multiple handoffs) face significant friction. Their primary alternative is **Word templates + EMR fragments + manual SOME copy-paste**, which fails because:
+Residents on high-intensity guardia (urgencias + sala, multiple handoffs) face significant friction. Their primary alternative is **paper/Word censo + EMR fragments + messages between residents + manual lab copy-paste**, which fails because:
 
-1. **Documentation latency:** Labs arrive as disorganized SOME text; formatting trends, cultivos, and SOAP blocks steals minutes per patient when the shift is already cognitively overloaded.
-2. **Transcription and version chaos:** Vitals and lab values are copied by hand; several residents touch the same patient without a shared, trustworthy view of the turn—silent overwrites and stale census erode team trust.
+1. **Scattered patient state:** labs live in the portal, vitals on paper, meds in the EMR, pendientes in chat. Building "how is this patient" steals minutes per patient on an overloaded shift.
+2. **Lost handoffs and version chaos:** several residents touch the same patient without a shared, trustworthy view of the turn—pendientes fall through at entrega, stale census and silent overwrites erode team trust.
+3. **Transcription error:** values copied by hand between systems introduce mistakes.
 
 ## 🛡️ The Solution & Magic Moment
-R+ provides a **single desktop workbench**—labs, expediente, notes, orders, guardia board—synchronized across the turn via **Nube** (Cloudflare) room sync for **all clinical wards** so the room stays shared without a host Mac. **LAN LiveSync is retired** (8.0.5).
+R+ provides a **single desktop workbench** (with iPad and interno-phone companions)—patient desk, census, guardia board, handoff—synchronized across the turn via **Nube** (Cloudflare) room sync for **all clinical wards**. **LAN LiveSync is retired** (8.0.5).
 
-- **✨ The Magic Moment:** The user pastes a disorganized SOME report and, in one flow, sees **structured clinical data**, **trends**, and a **formatted `.docx` evolution note** ready to print—without rebuilding Word templates or retyping values.
-- **Laboratoriazo + expediente:** SOME parsing, historial, tendencias, cultivos, and Estado actual directly attack documentation latency and copy-paste error.
-- **Team sync (⇄):** **Nube** Drive-style push/pull to a Cloudflare room (username/password, opt-in from ⇄) keeps the censo updated for the team without a host Mac. **LAN sync is retired.** Offline local SQLCipher cache + outbox remain first-class.
+- **✨ The Magic Moment:** a resident opens any patient on any device and sees today's labs already there, the trend, the current state and the open pendientes—exactly what the previous shift left—without asking anyone or retyping anything.
+- **Resident's desk:** Actualizar labs (portal) + lab paste parsing, historial, tendencias, cultivos, Estado actual, pendientes, agenda, VPO, interconsultas; `.docx` notes, indicaciones and censo as outputs.
+- **Shared board:** Nube room sync (opt-in, client E2EE for clinical content), Modo Guardia, entrega/pase, Internos by encrypted room QR, live updates across windows. Offline local SQLCipher cache + outbox remain first-class.
 
-**Code paths (magic moment pipeline):** `public/js/labs*.mjs` → `public/js/features/tendencias.mjs` → `lib/doc-generators/note.js` via `lib/doc-export-http.js` / `document-export-client.mjs`.  
-**Cloud sync (7.9):** `cloud/sync-worker` + `public/js/features/cloud-sync/`.
+**Code paths:** labs `public/js/labs*.mjs` + `public/js/features/lab-*` → `tendencias*`; patient state `public/js/features/estado-*`, `todos*`, `agenda*`; shift `guardia*`, `clinical-entrega*`; outputs `lib/doc-generators/`.
+**Cloud sync:** `cloud/sync-worker` + `public/js/features/cloud-sync/`.
 
 ---
 
@@ -48,9 +52,10 @@ When faced with competing priorities or feature requests, the team should use th
 ## 🚫 Out of Bounds (Anti-Goals)
 To maintain focus, we explicitly say **NO** to:
 
-- **Unmanaged public EMR SaaS:** R+ is not a hospital system of record in the vendor cloud; the **Nube Free pilot** stores **opt-in turn rooms** on Cloudflare. HTTPS in transit; clinical *content* fields (notes/labs/indicaciones/monitoreo/clinicalOps) are client E2EE, live since 2026-08-31 (8.2.8) — opaque to Cloudflare. Patient *identity* fields (name/bed/service/diagnoses) are still plaintext in D1 — see [15-security.md](./15-security.md). Not a general-purpose cloud expediente product.
+- **Unmanaged public EMR SaaS:** R+ is not a hospital system of record in the vendor cloud; the **Nube Free pilot** stores **opt-in turn rooms** on Cloudflare. HTTPS in transit; clinical *content* fields (notes/labs/indicaciones/monitoreo/clinicalOps) are client E2EE, live since 2026-08-31 (8.2.8) — opaque to Cloudflare. Registro and diagnoses are E2EE since 8.4.0; remaining identity fields (name/bed/service) are still plaintext in D1 — see [15-security.md](./15-security.md). Not a general-purpose cloud expediente product.
 - **EMR replacement:** R+ is not the system of record; formal boundary with the hospital EMR stays explicit.
 - **Autonomous clinical decisions:** No opaque diagnostic or treatment engines; Manejo automático-style suggestions remain retired.
+- **Clinical interpretation:** R+ calculates from lab values (eTFG, corrected calcium, BUN/Cr, corrected reticulocytes) and flags values outside the lab's reference range. It emits no interpretations, diagnoses, or treatment suggestions—in the app or in its marketing.
 - **Forced cloud:** Nube is **opt-in**; offline device unlock (local SQLCipher only) must keep working without an account.
 - **Tool time over patient time:** If a feature makes residents manage R+ instead of patients, it violates the North Star.
 
@@ -75,9 +80,10 @@ To guide the Product Owner's backlog, our roadmap is bucketed into three horizon
 ## 📈 Success Metrics
 R+ is succeeding when we see an increase in:
 
-- **Primary:** **Lower Time-to-Document (TTD)** — median time from lab acquisition (paste/import) to compliant, ready-to-print evolution note or order set.
-- **Secondary:** **LiveSync trust factor** — turn census fully consistent across stations without manual refresh, conflict storms, or silent overwrites.
-- **Secondary:** **Transcription accuracy** — fewer manual copy-paste errors for vitals and lab values (measured via audit/safety events and user-reported near-misses).
+- **Primary:** **Handoff completeness** — share of open pendientes and patient states that survive a turn change without being re-asked or re-typed (target: nothing lost at entrega).
+- **Secondary:** **Hands-free data** — share of lab values and cultivos that arrive in R+ by portal update instead of manual typing.
+- **Secondary:** **Sync trust factor** — turn census fully consistent across stations and devices without manual refresh, conflict storms, or silent overwrites.
+- **Secondary:** **Time-to-Document (TTD)** — median time from lab arrival to a ready-to-print note or order set (an output of the desk, still tracked).
 
 ---
 

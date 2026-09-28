@@ -126,3 +126,9 @@ test('isInsulinPumpCarrierMedicationItem — cloruro con algoritmo, no la insuli
     false
   );
 });
+
+test('MEDICAMENTOS P3 rows are read: the pump is found', () => {
+  var parsed = parseIndicacionesPaste(SAMPLE_SOME.replace(/MEDICAMENTOS P2/g, 'MEDICAMENTOS P3').replace('BOMBA EN', 'BOMBA DE INSULINA'));
+  assert.equal(parsed.skipped, 0);
+  assert.equal(detectInsulinPumpAlgorithmFromRecetaItems(parsed.items), 2);
+});

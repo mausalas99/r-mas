@@ -323,7 +323,6 @@ html.high-contrast .card-header-soft-btn {
   border-width: 2px;
   color: var(--text);
 }
-html.high-contrast #lab-diagrams-section > .card-header,
 html.high-contrast #lab-output-section > .card-header,
 html.high-contrast #med-output-section > .card-header,
 html.high-contrast #lab-history-card > .card-header {
@@ -331,7 +330,6 @@ html.high-contrast #lab-history-card > .card-header {
   color: var(--text) !important;
   border-bottom: 2px solid var(--border);
 }
-html.high-contrast #lab-diagrams-section > .card-header svg,
 html.high-contrast #lab-output-section > .card-header svg,
 html.high-contrast #med-output-section > .card-header svg,
 html.high-contrast #lab-history-card > .card-header svg {

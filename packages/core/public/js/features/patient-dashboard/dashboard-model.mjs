@@ -41,11 +41,6 @@ function lastItems(items, count) {
   return items.slice(-count);
 }
 
-function firstItems(items, count) {
-  if (!Array.isArray(items) || !items.length) return [];
-  return items.slice(0, count);
-}
-
 // Flora-only reports and contaminated samples name no isolate worth following.
 const NO_ISOLATE_RE = /^(REPORTE\s+PRELIMINAR,?\s*)?MICROBIOTA\b|\bCONTAMINAD/i;
 const PRELIM_RE = /\s*·\s*Preliminar\b/i;
@@ -144,7 +139,6 @@ function lastVitalsAt(monitoreo) {
  *   inner?: string,
  *   labSets?: unknown[],
  *   eaInput?: Record<string, unknown>,
- *   eventualidades?: unknown[],
  *   pendientes?: unknown[],
  *   todayKey?: string,
  *   refDate?: Date,
@@ -156,7 +150,6 @@ export function buildDashboardModel({
   inner,
   labSets,
   eaInput,
-  eventualidades,
   pendientes,
   todayKey,
   refDate,
@@ -177,9 +170,7 @@ export function buildDashboardModel({
     labs,
     ea: eaInput ? buildEaGlance(eaInput) : { kpis: [], soap: [] },
     // Upper bound only: dashboard-fit.mjs shows as many as the screen holds.
-    eventualidades: firstItems(eventualidades, 30),
     pendientes: lastItems(pendientes, 30),
-    eventualidadesTotal: Array.isArray(eventualidades) ? eventualidades.length : 0,
     pendientesTotal: Array.isArray(pendientes) ? pendientes.length : 0,
   };
 }

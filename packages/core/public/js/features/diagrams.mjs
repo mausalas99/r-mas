@@ -6,7 +6,6 @@ export {
 export {
   renderDiagramas,
   copiarDiagrama,
-  toggleLabDiagramsSection,
-  syncLabDiagramsCollapseUI,
-  setLabDiagramsCollapsed,
+  openLabDiagramsModal,
+  closeLabDiagramsModal,
 } from "./diagrams-render.mjs";

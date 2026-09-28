@@ -366,7 +366,14 @@ export function formatSoporteVentilatorioClause(ec) {
  * @param {{ fr?: unknown, sat?: unknown, pesoKg?: unknown, lab?: { kind?: string | null, pO2?: number | null, pCO2?: number | null, pH?: number | null, sourceLabel?: string } | null }} [ctx]
  */
 export function formatVentilatorioCalcClause(ec, ctx) {
-  var hints = buildVentilatorioCalcHints(ec, ctx);
+  // The copy skips the invalid-gaso advice and, with a venous or unknown gaso,
+  // the SpO₂/FiO₂ that stands in for PaFi: they help on screen, not in the note.
+  var lab = ctx && ctx.lab;
+  var gasoInvalid = !!(lab && (lab.kind === 'venous' || (lab.kind === 'unknown' && lab.pO2 != null)));
+  var hints = buildVentilatorioCalcHints(ec, ctx).filter(function (h) {
+    if (/^(Gaso venosa|Tipo de gaso no identificado)/.test(h)) return false;
+    return !(gasoInvalid && h.indexOf('SpO₂/FiO₂') === 0);
+  });
   if (!hints.length) return '';
   return ' [' + hints.join('; ') + ']';
 }

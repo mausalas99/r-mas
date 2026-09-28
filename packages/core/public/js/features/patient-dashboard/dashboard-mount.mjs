@@ -7,7 +7,6 @@ import { storage } from '../../storage.js';
 import { openPatientDatosModal } from '../../patient-datos-modal.mjs';
 import { resolveEaAbxFechaActualizacion } from '../estado-actual-meds-core.mjs';
 import { collectEaGlanceSoap } from './ea-glance-meds.mjs';
-import { sortEntriesDesc, resolveEventualidadEntryText } from '../eventualidades-store.mjs';
 import { toggleInterconsultId } from './interconsult-catalog.mjs';
 import { buildDashboardModel, buildLabsForDashboard } from './dashboard-model.mjs';
 import { renderDashboardHtml, renderLabsHtml } from './dashboard-html.mjs';
@@ -91,16 +90,6 @@ export function buildEaInputFromPatient(patient, opts) {
   };
 }
 
-function collectEventualidades(patient) {
-  var entries = patient && patient.eventualidades && patient.eventualidades.entries;
-  return sortEntriesDesc(entries).map(function (e) {
-    return {
-      at: e && e.at,
-      text: resolveEventualidadEntryText(e && e.text, e && e.kind),
-    };
-  });
-}
-
 function collectPendientes(patientId) {
   if (!patientId) return [];
   return (storage.getTodos(patientId) || []).filter(function (t) {
@@ -117,7 +106,6 @@ function collectDashboardModel(inner, opts) {
     inner: inner || rt.getActiveInner(),
     labSets: skipLabs ? null : pid ? getLabHistory()[pid] || [] : [],
     eaInput: buildEaInputFromPatient(patient),
-    eventualidades: collectEventualidades(patient),
     pendientes: collectPendientes(pid),
     skipLabs: skipLabs,
   });
@@ -203,7 +191,6 @@ function handleDashboardAction(action, el) {
     return;
   }
   if (action === 'estadoActual') switchDashInner('estadoActual');
-  else if (action === 'eventualidades') switchDashInner('eventualidades');
   else if (action === 'pendientes') switchDashInner('todo');
 }
 

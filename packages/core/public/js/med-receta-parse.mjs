@@ -16,7 +16,7 @@ import { classifyMedicationSoapCategory, shouldIncludeMedicationInSoap } from '.
 import { trimStr } from './med-receta-util.mjs';
 
 var SOME_TS_CLASS_RE =
-  /^(\d{2}\/\d{2}\/\d{4}\s+\d{1,2}:\d{2}:\d{2}\s+(?:a\.m\.|p\.m\.))\s+(MEDICAMENTOS(?:\s+P[12])?|MEDICAMENTO(?:\s+P[12])?|DIETAS|CUIDADOS|ESTUDIOS|PROCEDIMIENTO)\s+(.*)$/i;
+  /^(\d{2}\/\d{2}\/\d{4}\s+\d{1,2}:\d{2}:\d{2}\s+(?:a\.m\.|p\.m\.))\s+(MEDICAMENTOS(?:\s+P\d)?|MEDICAMENTO(?:\s+P\d)?|DIETAS|CUIDADOS|ESTUDIOS|PROCEDIMIENTO)\s+(.*)$/i;
 
 var SOME_MED_VIA_RE =
   /\s+(VIA\s+(?:ORAL|INTRAVENOSA|SUBCUT[AÁ]NEA|RECTAL|T[OÓ]PICA|INHALATORIA|NEBULIZACI[OÓ]N|GASTROENTERICA|INTRAMUSCULAR))\s+/i;
@@ -26,7 +26,7 @@ var SOME_MED_FREC_TAIL_RE =
 
 /** @param {string} tipo */
 function isIndicacionesMedClass(tipo) {
-  return /^MEDICAMENTOS?(?:\s+P[12])?$/i.test(trimStr(tipo));
+  return /^MEDICAMENTOS?(?:\s+P\d)?$/i.test(trimStr(tipo));
 }
 
 /**

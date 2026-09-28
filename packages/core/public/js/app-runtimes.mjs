@@ -105,8 +105,7 @@ import {
   extractParsedValues,
   buildParsedBySectionFromResLabs,
   renderDiagramas,
-  toggleLabDiagramsSection,
-  syncLabDiagramsCollapseUI,
+  openLabDiagramsModal,
 } from './features/diagrams.mjs';
 import {
   registerProductivityRuntime,
@@ -349,8 +348,7 @@ function buildRuntimeContextFeatureDeps() {
     ...settingsHelpRuntimeProxies,
     findPatientByRegistro,
     renderDiagramas,
-    toggleLabDiagramsSection,
-    syncLabDiagramsCollapseUI,
+    openLabDiagramsModal,
     extractParsedValues,
     ...labsRuntimeProxies,
     buildParsedBySectionFromResLabs,

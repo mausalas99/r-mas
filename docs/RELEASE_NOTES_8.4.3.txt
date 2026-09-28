@@ -5,18 +5,24 @@ Fecha: 2026-09-28
 
 ## Resumen
 
-Barra superior más limpia: Paciente, Laboratorio, Manejo y Agenda en una sola pastilla. Tacha medicamentos suspendidos en Datos. Nuevas pantallas de Nube, Admin y Ajustes, y una sincronización con Nube mucho más confiable.
+Barra superior más limpia: Paciente, Laboratorio, Manejo y Agenda en una sola pastilla. Tacha medicamentos suspendidos en Datos. Tarjetas de la lista más compactas, Resumen a todo lo ancho y Laboratorio con alterados primero. Nuevas pantallas de Nube, Admin y Ajustes, y una sincronización con Nube mucho más confiable.
 
 ## Nuevo / mejorado
 
 - **Nuevo (barra superior):** Paciente, Laboratorio, Manejo y Agenda comparten una pastilla que muestra solo el área activa y se abre al pasar el cursor. Censo y el cambio Sala / IC / Guardia van junto a la lista de pacientes. Atajos y Aprender R+ se unen en un solo menú **Ayuda (?)**.
 - **Nuevo (Manejo y Gráficas):** nuevo diseño.
+- **Nuevo (lista lateral):** tarjetas de dos líneas: nombre y cuarto·cama. Fijar, archivar y eliminar salen solo al pasar el cursor sobre la tarjeta. Fijar ahora es un ícono.
+- **Nuevo (Resumen):** signos con su mínimo y máximo de 24 h. Cada lab alterado muestra el valor anterior y la flecha. Medicamentos y Pendientes a todo lo ancho; Pendientes en dos columnas. Los cultivos salen como tarjetas en tres columnas dentro de Labs. Eventualidades ya no sale en Resumen; sigue en su pestaña.
+- **Nuevo (Laboratorio):** nombre, cuarto y cama arriba del panel. Los valores alterados salen en una línea de chips arriba de la tabla: uno por estudio, los críticos primero y marcados. Pegar SOME y Actualizar labs pasan al final del encabezado de Resultados. Los diagramas se abren en una ventana con el botón **Diagramas**.
 - **Nuevo (Datos):** toca un medicamento en Datos › Censo para tacharlo. Sale del texto del censo pero queda a un toque; tócalo otra vez para regresarlo. **Tomar de lista** borra los tachados. Se sincroniza con Nube.
 - **Nuevo (Nube):** nueva pantalla de estado de Nube con vista rápida bajo el ícono del encabezado, y nuevo Diagnóstico Nube. Cambia el código y la llave de una sala cerrada en un solo paso.
 - **Nuevo (Admin y Ajustes):** Admin rediseñado (Resumen, Salas, Usuarios, Pacientes, Registro, Zona de peligro). Ajustes con nuevo Mi perfil, nuevo panel de Equipos y nueva pantalla de Nube sin sesión.
 - **Arreglado (Nube):** VPO, lista de problemas y perfil farmacológico ahora se envían al editarlos, también al borrar. Si restauras un registro con «deshacer», ya no se pierde al recargar. Un miembro nuevo recibe todo el historial de la sala. R+ se pone al día en segundos cuando Nube regresa.
 - **Arreglado (labs):** al cambiar de expediente, Laboratorio ya no muestra los labs del anterior. Un coproparasitoscópico pegado ya no ensucia BH ni Observaciones.
 - **Arreglado:** los servicios en el selector de interconsulta ya no se salen del panel.
+- **Nuevo (Manejo):** con 16 medicamentos o más, las filas se compactan a una línea y la lista usa tres columnas, así cabe sin desplazarte.
+- **Arreglado (Manejo):** la bomba de insulina se detecta también cuando SOME la manda como «MEDICAMENTOS P3». Se quitó el cuadro repetido de medicamentos al final de Manejo actual; **Nota** queda alineado en todas las filas.
+- **Arreglado (Estado actual):** con gaso venosa, la copia ya no incluye el aviso «PaFi no válida» ni el SpO₂/FiO₂.
 - **Accesibilidad:** con un panel abierto, el resto de la app queda inactivo; más botones tienen nombre para lectores de pantalla.
 - **Problema conocido:** si dos equipos agregan a la vez una eventualidad al mismo expediente, una puede perderse. Se arregla en 8.4.4.
 - **Problema conocido:** notas e indicaciones todavía no se sincronizan con Nube. Llega en 8.4.4.

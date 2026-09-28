@@ -308,6 +308,8 @@ export function medGroupOrder() {
   return ["falta"].concat(SOAP_DESTINATION_KEYS, ["repo", "solo", "excl"]);
 }
 
+export var MED_DENSE_MIN_ROWS = 16;
+
 /** Manejo-B: rows grouped by destino, each group a card with an uppercase label + count. */
 export function buildMedRecetaListHtml(activeId, block) {
   var items = block.items || [];
@@ -347,7 +349,10 @@ export function buildMedRecetaListHtml(activeId, block) {
       );
     })
     .join("");
-  return '<div class="med-receta-wrap med-groups">' + html + "</div>";
+  // Long lists go dense (one-line rows, 3 columns) so they fit without scrolling.
+  // ponytail: row-count threshold, not a measured fit; measure the viewport if 16 misfires.
+  var dense = rows.length >= MED_DENSE_MIN_ROWS ? " med-groups--dense" : "";
+  return '<div class="med-receta-wrap med-groups' + dense + '">' + html + "</div>";
 }
 
 /**

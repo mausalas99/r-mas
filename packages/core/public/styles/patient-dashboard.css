@@ -249,13 +249,13 @@ html.dark .patient-dash .svc.is-on {
   margin-top: 0;
 }
 
-/* Pendientes + Eventualidades stack left, Medicamentos right. The row takes
-   all height left on screen; dashboard-fit.mjs hides the list rows that do
+/* Medicamentos on top, Pendientes below, both full width (8.4.3 board A1).
+   The block takes all height left on screen; dashboard-fit.mjs hides the list rows that do
    not fit ([data-fit] boxes clip) and shows «+N más». */
 .patient-dash .dash-bottom {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: clamp(6px, 1cqi, 12px);
   align-items: stretch;
   flex: 1 1 0;
@@ -271,23 +271,24 @@ html.dark .patient-dash .svc.is-on {
 /* A missing card (empty list, no meds) → the rest take its space. */
 .patient-dash .dash-bottom:has(> :only-child),
 .patient-dash .bento.rest:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
+.patient-dash .dash-bottom:has(> :only-child) { grid-template-rows: minmax(0, 1fr); }
 
-/* Stacked lists share the column by content size; each can shrink. */
+/* Medicamentos on top takes the height it needs (up to 55%); Pendientes below
+   gets the rest, with rows side by side in 2+ columns. */
+.patient-dash .dash-bottom .bento.meds-band { max-height: 55cqb; }
 .patient-dash .dash-bottom:has(.meds-band) .bento.rest {
   display: flex;
   flex-direction: column;
 }
-
-/* Pendientes (first) gets the leftover height; Eventualidades takes what it
-   needs, up to half. */
-.patient-dash .dash-bottom:has(.meds-band) .bento.rest > .card {
-  flex: 1 1 0;
-  min-height: 5em; /* header + one row: never cut a row in half */
+.patient-dash .bento.rest .rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16em, 1fr));
+  column-gap: 24px;
 }
 
-.patient-dash .dash-bottom:has(.meds-band) .bento.rest > .card:last-child:not(:only-child) {
-  flex: 0 1 auto;
-  max-height: 50%;
+.patient-dash .dash-bottom:has(.meds-band) .bento.rest > .card {
+  flex: 1 1 auto;
+  min-height: 5em; /* header + one row: never cut a row in half */
 }
 
 .patient-dash .bento.rest .card-b { padding: 4px 12px 6px; }
@@ -486,6 +487,14 @@ html.dark .patient-dash .svc.is-on {
   color: var(--color-danger);
 }
 
+/* 8.4.3 board A1: last-24 h low–high under each vital. */
+.patient-dash .vital-range {
+  font: var(--type-wb-mono);
+  font-size: 0.7em;
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
 .patient-dash .labs-card,
 .patient-dash .labs-card .card-b {
   height: auto;
@@ -618,12 +627,13 @@ html.dark .patient-dash .draw-value.abn {
   color: var(--color-ink-muted);
 }
 
+
 /* Zones flow through balanced columns so a long zone spills into the next
    column instead of leaving a gap; no inner rules. */
 .patient-dash .bento.meds-band .soap-pack {
   display: block;
-  columns: 3 10em;
-  column-gap: 20px;
+  columns: 3 12em;
+  column-gap: 28px;
   column-fill: balance;
   flex: 0 0 auto;
   min-height: min-content;
@@ -967,9 +977,10 @@ html.dark .ic-consult-band .svc {
   letter-spacing: 0.06em;
 }
 
+/* Three culture tiles per row instead of one list going down (board A1). */
 .patient-dash .cult-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 }
 

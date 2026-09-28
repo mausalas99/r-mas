@@ -6,6 +6,7 @@ import { isGlucometriaMarkedAltered, isVitalAltered } from '../estado-actual-ran
 import { isTodoOverdue } from '../../todos-due.mjs';
 import { serviceById, hueForService } from './interconsult-catalog.mjs';
 import { packSoapCols } from './ea-glance-model.mjs';
+import { clinicalPriorityRank } from '../../labs-critical-values.mjs';
 
 function numText(value) {
   if (value == null || value === '') return '';
@@ -42,7 +43,7 @@ function ioBalance(io) {
   return (delta > 0 ? '+' : '') + String(delta);
 }
 
-function vitalCell(label, value, hi) {
+function vitalCell(label, value, hi, range) {
   if (!value) return '';
   return (
     '<div class="vital' +
@@ -51,8 +52,37 @@ function vitalCell(label, value, hi) {
     escHtml(label) +
     '</small><b>' +
     escHtml(value) +
-    '</b></div>'
+    '</b>' +
+    (range ? '<span class="vital-range">' + escHtml(range) + '</span>' : '') +
+    '</div>'
   );
+}
+
+/**
+ * 8.4.3 board A1: lowest–highest reading of the last 24 h (counted back from
+ * the newest reading), shown under the value. Fewer than 2 readings → none.
+ */
+function range24h(series) {
+  var list = Array.isArray(series) ? series : [];
+  var at = function (r) {
+    var t = Date.parse(r && r.recordedAt);
+    return Number.isFinite(t) ? t : NaN;
+  };
+  var newest = list.reduce(function (max, r) {
+    var t = at(r);
+    return t > max ? t : max;
+  }, -Infinity);
+  var values = list
+    .filter(function (r) {
+      return at(r) >= newest - 86400000 && Number.isFinite(Number(r.value));
+    })
+    .map(function (r) {
+      return Number(r.value);
+    });
+  if (values.length < 2) return '';
+  var lo = Math.min.apply(null, values);
+  var hi = Math.max.apply(null, values);
+  return lo === hi ? '' : lo + '–' + hi;
 }
 
 function vitalAlteredFlags(v, gluLast, glu) {
@@ -66,13 +96,14 @@ function vitalAlteredFlags(v, gluLast, glu) {
   ];
 }
 
-function buildVitalsCellsHtml(v, ta, glu, flags, io) {
+function buildVitalsCellsHtml(v, ta, glu, flags, io, series) {
+  var s = series || {};
   return (
-    vitalCell('T/A', ta, flags[0]) +
-    vitalCell('FC', numText(v.fc), flags[1]) +
-    vitalCell('FR', numText(v.fr), flags[2]) +
-    vitalCell('Temp', numText(v.temp), flags[3]) +
-    vitalCell('SatO₂', numText(v.sat) ? numText(v.sat) + '%' : '', flags[4]) +
+    vitalCell('T/A', ta, flags[0], range24h(s.tas)) +
+    vitalCell('FC', numText(v.fc), flags[1], range24h(s.fc)) +
+    vitalCell('FR', numText(v.fr), flags[2], range24h(s.fr)) +
+    vitalCell('Temp', numText(v.temp), flags[3], range24h(s.temp)) +
+    vitalCell('SatO₂', numText(v.sat) ? numText(v.sat) + '%' : '', flags[4], range24h(s.sat)) +
     vitalCell('Glu', glu, flags[5]) +
     vitalCell('I/O', io, false)
   );
@@ -115,7 +146,7 @@ function renderVitalsHtml(model) {
   var glu = lastGlu(gluList);
   var io = ioBalance(r.io);
   var flags = vitalAlteredFlags(v, gluLast, glu);
-  var cells = buildVitalsCellsHtml(v, ta, glu, flags, io);
+  var cells = buildVitalsCellsHtml(v, ta, glu, flags, io, model && model.vitals && model.vitals.vitalSeries);
   var hasCoreVitals = hasCoreVitalsData(v, ta, glu);
   var emptyClass = hasCoreVitals ? '' : ' vitals-card--empty';
   var alteredCount = flags.filter(Boolean).length;
@@ -242,11 +273,11 @@ function renderDrawCellHtml(chip) {
     '<span class="draw-value abn">' +
     escHtml(value) +
     '</span>' +
-    (chip && chip.delta
-      ? '<span class="draw-delta">' +
-        trendArrowHtml(chip.trend) +
+    (chip && chip.prev
+      ? '<span class="draw-delta">antes ' +
+        escHtml(String(chip.prev)) +
         ' ' +
-        escHtml(String(chip.delta)) +
+        trendArrowHtml(chip.trend) +
         '</span>'
       : '<span class="draw-delta"></span>') +
     '</div>'
@@ -257,35 +288,6 @@ function envioChipCount(envio) {
   return (envio.groups || []).reduce(function (n, g) {
     return n + (g.chips ? g.chips.length : 0);
   }, 0);
-}
-
-/**
- * Clinical-importance fallback order for altered-lab chips that are not
- * worsening (trend !== 'down'). Earlier = more important = shown first.
- * A clinician can review/edit this list directly; keep it as the single
- * source of ordering truth — do not duplicate it elsewhere.
- */
-var CLINICAL_PRIORITY_LABELS = [
-  'lactato', 'lac',
-  'ph',
-  'pco2',
-  'po2',
-  'bica', 'bicarbonato', 'hco3',
-  'k', 'potasio',
-  'na', 'sodio',
-  'glu', 'glucosa',
-  'cr', 'creatinina',
-  'bun',
-  'hb', 'hemoglobina',
-  'hto', 'hematocrito',
-  'plaquetas', 'plt',
-  'tp', 'inr',
-];
-
-function clinicalPriorityRank(label) {
-  var norm = String(label || '').trim().toLowerCase();
-  var idx = CLINICAL_PRIORITY_LABELS.indexOf(norm);
-  return idx === -1 ? CLINICAL_PRIORITY_LABELS.length : idx;
 }
 
 var MAX_DRAW_CELLS = 8;
@@ -437,13 +439,14 @@ function renderCultivosHtml(labs) {
   );
 }
 
-function labsHeaderHtml(visibleEnvios, enRango) {
+function labsHeaderHtml(visibleEnvios, enRango, prevFecha) {
   if (!visibleEnvios.length) return '<div class="card-h">Labs</div>';
   var meta = [];
   if (visibleEnvios.length === 1 && visibleEnvios[0].hora) {
     meta.push('corte ' + escHtml(visibleEnvios[0].hora));
   }
   if (enRango > 0) meta.push(enRango + ' en rango');
+  if (prevFecha) meta.push('vs ' + escHtml(String(prevFecha).replace(/\/\d{4}$/, '')));
   return (
     '<div class="card-h"><span>Labs: fuera de rango</span>' +
     (meta.length ? '<span class="card-h-meta">' + meta.join(' &middot; ') + '</span>' : '') +
@@ -484,7 +487,7 @@ export function renderLabsHtml(model) {
   }
   return (
     '<div class="card labs-card clickable" data-dash-labs data-dash-action="labs-full">' +
-    labsHeaderHtml(pending ? [] : visibleEnvios, enRango) +
+    labsHeaderHtml(pending ? [] : visibleEnvios, enRango, labs.prevFecha) +
     '<div class="card-b">' +
     body +
     (pending ? '' : renderCultivosHtml(labs)) +
@@ -551,7 +554,7 @@ function renderMedsHtml(model) {
     '<div class="bento meds-band">' +
     '<button class="card clickable meds-card" type="button" data-dash-action="estadoActual">' +
     '<div class="card-h">Medicamentos</div>' +
-    '<div class="card-b" data-fit><div class="soap-pack" data-fit-cols="2,3">' +
+    '<div class="card-b" data-fit><div class="soap-pack" data-fit-cols="3,4">' +
     renderEaSoapHtml(soap) +
     '</div></div></button></div>'
   );
@@ -637,10 +640,9 @@ function renderListCardHtml(title, action, items, total, markOverdue) {
  */
 export function renderDashboardHtml(model) {
   var m = model || {};
-  var lists =
-    renderListCardHtml('Pendientes', 'pendientes', m.pendientes, m.pendientesTotal, true) +
-    renderListCardHtml('Eventualidades', 'eventualidades', m.eventualidades, m.eventualidadesTotal);
-  var bottom = (lists ? '<div class="bento rest">' + lists + '</div>' : '') + renderMedsHtml(m);
+  // 8.4.3 (board A1): no Eventualidades card; Medicamentos then Pendientes, both full width.
+  var lists = renderListCardHtml('Pendientes', 'pendientes', m.pendientes, m.pendientesTotal, true);
+  var bottom = renderMedsHtml(m) + (lists ? '<div class="bento rest">' + lists + '</div>' : '');
   return (
     '<div class="patient-dash dash">' +
     renderIdentityHtml(m) +

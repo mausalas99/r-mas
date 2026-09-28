@@ -1102,7 +1102,7 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
   transform: translateX(-50%);
   display: flex;
   gap: 4px;
-  margin-top: 4px;
+  margin-top: 5px;
   transition: opacity var(--dur-normal) var(--ease-out);
 }
 
@@ -1135,12 +1135,12 @@ html.tab-bar-indicators-ready .app-tab.active {
 }
 
 /* ── Top bar (Nav-G / E2, owner pick 2026-09-27) ─────────────────────────
- * One 48 px bar: R+ · area segmented · divider · the area's level-2 bar ·
+ * One 54 px bar: R+ · area segmented · divider · the area's level-2 bar ·
  * actions. top-bar.mjs moves the bars in and sets html.rpc-topbar. */
 html.rpc-topbar body > header {
-  --header-bar-height: 48px;
-  height: 48px;
-  min-height: 48px;
+  --header-bar-height: 54px;
+  height: 54px;
+  min-height: 54px;
   gap: 10px;
 }
 /* Actions never shrink under the tabs; Guardia (no tabs) keeps the base
@@ -1459,15 +1459,6 @@ html.rpc-topbar #patient-sidebar #btn-sala-view-cards {
 html.rpc-topbar #patient-sidebar #btn-patient-bulk-select {
   order: 3;
 }
-/* Icon only in the sidebar, so «+ Agregar» fits; the name stays for screen readers and the tooltip. */
-html.rpc-topbar #patient-sidebar .sidebar-header-actions #btn-export-censo-header {
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  gap: 0;
-  justify-content: center;
-  font-size: 0;
-}
 html.rpc-topbar #patient-sidebar .sidebar-header-actions #btn-export-censo-header,
 html.rpc-topbar .sv-home-actions #btn-export-censo-header,
 html.rpc-topbar .ic-board-header #btn-export-censo-header {
@@ -1478,6 +1469,30 @@ html.rpc-topbar .ic-board-header #btn-export-censo-header {
 }
 html.rpc-topbar .ic-board-header {
   align-items: center;
+}
+/* Icon only in the sidebar, so «+ Agregar» fits; the name stays for screen readers and the tooltip.
+   Same square as the hide-sidebar button next to it. */
+html.rpc-topbar #patient-sidebar .sidebar-header-actions #btn-export-censo-header {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  gap: 0;
+  justify-content: center;
+  font-size: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+}
+html.rpc-topbar #patient-sidebar .sidebar-header-actions #btn-export-censo-header:hover {
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+  color: var(--action);
+  background: color-mix(in oklab, var(--action) 8%, var(--surface));
+}
+html.rpc-topbar #patient-sidebar .sidebar-header-actions #btn-export-censo-header svg {
+  width: 16px;
+  height: 16px;
+  opacity: 1;
 }
 html.rpc-topbar .clinical-context-bar #header-mode-seg {
   margin-left: 8px;

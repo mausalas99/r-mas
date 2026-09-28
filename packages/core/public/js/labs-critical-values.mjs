@@ -15,6 +15,22 @@ var CRITICAL_LAB_CHECKS = [
   { section: 'GASES', field: 'Bica', low: 10, high: 40 },
 ];
 
+/**
+ * One shown value (label as printed, e.g. «K», «Plt») past a panic threshold.
+ * Plt prints in miles (248) or units (248000); both compare in units.
+ * @param {string} label @param {string|number} value
+ */
+export function isCriticalLabValue(label, value) {
+  var v = parseFloat(String(value).replace(',', '.'));
+  if (Number.isNaN(v)) return false;
+  var key = String(label || '').trim().toUpperCase();
+  return CRITICAL_LAB_CHECKS.some(function (c) {
+    if (c.field.toUpperCase() !== key) return false;
+    var n = c.field === 'Plt' && v < 1000 ? v * 1000 : v;
+    return (c.low != null && n < c.low) || (c.high != null && n > c.high);
+  });
+}
+
 /** @param {unknown[]} sets historial de laboratorios de un paciente */
 export function hasCriticalLabValue(sets) {
   var latest = sortLabHistoryChronological(sets || [])[0];
@@ -26,4 +42,33 @@ export function hasCriticalLabValue(sets) {
     if (c.high != null && v > c.high) return true;
     return false;
   });
+}
+
+/**
+ * Clinical-importance fallback order for altered-lab chips (Resumen tiles,
+ * Labs «Alterados» chips). Earlier = more important = shown first.
+ * A clinician can review/edit this list directly; keep it as the single
+ * source of ordering truth — do not duplicate it elsewhere.
+ */
+var CLINICAL_PRIORITY_LABELS = [
+  'lactato', 'lac',
+  'ph',
+  'pco2',
+  'po2',
+  'bica', 'bicarbonato', 'hco3',
+  'k', 'potasio',
+  'na', 'sodio',
+  'glu', 'glucosa',
+  'cr', 'creatinina',
+  'bun',
+  'hb', 'hemoglobina',
+  'hto', 'hematocrito',
+  'plaquetas', 'plt',
+  'tp', 'inr',
+];
+
+export function clinicalPriorityRank(label) {
+  var norm = String(label || '').trim().toLowerCase();
+  var idx = CLINICAL_PRIORITY_LABELS.indexOf(norm);
+  return idx === -1 ? CLINICAL_PRIORITY_LABELS.length : idx;
 }

@@ -107,6 +107,7 @@
 
         <div id="lab-input-section" class="card" style="flex-shrink:0;">
           <div class="card-header card-header-row lab-report-header-row--actions-only">
+            <div id="lab-who" class="lab-who" hidden><span id="lab-who-name" class="lab-who-name"></span> <span id="lab-who-bed" class="lab-who-bed"></span></div>
             <div class="card-header-actions lab-report-header-actions">
               <button type="button" id="btn-lab-paste" class="wb-btn wb-btn-secondary" data-onclick="openLabPasteModal" title="Pegar reporte SOME y procesar">Pegar SOME</button>
               <button type="button" id="btn-lab-repo-batch" class="wb-btn wb-btn-secondary" data-onclick="openLabRepoBatchModal" title="Actualiza labs desde el repositorio (paciente activo o mi equipo)">Actualizar labs</button>
@@ -166,6 +167,7 @@
                   <button type="button" class="lab-output-more-item lab-output-more-item--danger" role="menuitem" data-onclick="closeLabHistoryMoreMenu" data-onclick-2="deleteAllLabHistorySets" title="Borra todos los conjuntos de laboratorio del paciente activo">Eliminar todos los estudios</button>
                 </div>
               </details>
+              <button type="button" id="lab-diagrams-btn" class="wb-btn wb-btn-secondary" hidden data-onclick="openLabDiagramsModal" title="Diagramas de los labs del día">Diagramas</button>
               <button type="button" id="lab-some-tables-btn" class="lab-icon-square-btn" hidden data-onclick="openLabSomeTablesModal" title="Tablas del reporte SOME" aria-label="Abrir tablas del reporte">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
               </button>
@@ -173,22 +175,8 @@
           </div>
           <div class="card-body">
             <p id="lab-output-history-hint" class="lab-history-hint" style="display:none;"></p>
+            <div id="lab-altered-chips" class="lab-altered-chips" hidden></div>
             <div id="lab-output-box" style="line-height:2;"></div>
-          </div>
-        </div>
-
-        <div id="lab-diagrams-section" class="card" style="display:none;flex-shrink:0;">
-          <div class="card-header lab-diagrams-card-header">
-            <button type="button" class="lab-diagrams-toggle" data-onclick="toggleLabDiagramsSection" aria-label="Mostrar u ocultar diagramas" aria-expanded="true">
-              <span class="rp-dot" aria-hidden="true"></span>
-            </button>
-            <span class="lab-diagrams-card-title">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-              Diagramas
-            </span>
-          </div>
-          <div id="lab-diagrams-body" class="card-body">
-            <div id="diagrams-grid" class="diagrams-wrap"></div>
           </div>
         </div>
 

@@ -324,12 +324,29 @@ body.rpc-med-receta-paste-open {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Fixed slots (Nota · Cambiar destino · ⊘), so Nota lines up on rows that
+   have no destino picker (rescates, repos, Stanford). */
 .med-receta-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 36px 36px;
   align-items: center;
+  justify-items: center;
   gap: 2px;
   flex-shrink: 0;
 }
+.med-receta-actions > .med-nota-chip { grid-column: 1; }
+.med-receta-actions > .med-receta-dest-picker { grid-column: 2; }
+.med-receta-actions > .med-excl-btn { grid-column: 3; }
+.med-receta-actions > .med-restore-btn { grid-column: 1 / -1; justify-self: end; }
+/* Dense (16+ rows): name and dose on one line, 3 columns on wide screens. */
+.med-groups--dense.med-receta-wrap.med-groups { columns: 3 300px; column-gap: 14px; }
+.med-groups--dense .med-group { gap: 4px; margin-bottom: 10px; }
+.med-groups--dense .med-receta-row { min-height: 40px; padding: 3px 6px 3px 12px; }
+.med-groups--dense .med-receta-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.med-groups--dense .med-row-dose { display: inline; margin: 0 0 0 8px; }
+.med-groups--dense .med-nota-chip { height: 26px; padding: 0 10px; }
+.med-groups--dense .med-receta-actions { grid-template-columns: auto 32px 32px; }
+.med-groups--dense .med-receta-actions .wb-btn-icon { width: 32px; min-width: 32px; height: 32px; }
 .med-receta-dia,
 .med-prn-tag {
   display: inline-flex;
@@ -374,9 +391,8 @@ body.rpc-med-receta-paste-open {
 .med-excl-btn { color: var(--text-muted); }
 .med-restore-btn { color: var(--color-accent-soft-text); }
 .med-diet-chip {
-  display: inline-flex;
-  align-items: center;
-  height: 30px;
+  display: inline-block;
+  line-height: 28px;
   padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
@@ -390,32 +406,6 @@ body.rpc-med-receta-paste-open {
 }
 .med-diet-chip[hidden] { display: none; }
 .med-nota-toolbar { display: flex; flex-direction: column; gap: 12px; }
-.med-nota-hint { margin: 0; font-size: 12px; line-height: 1.45; color: var(--text-muted); }
-.med-soap-preview {
-  margin: 0; padding: 12px; border-radius: var(--radius-lg); background: var(--surface);
-  border: 1px solid var(--border);
-}
-.med-soap-preview-empty { margin: 0; font-size: 12px; line-height: 1.45; color: var(--text-muted); font-style: italic; }
-.med-soap-preview-sec { margin-bottom: 12px; }
-.med-soap-preview-sec:last-child { margin-bottom: 0; }
-.med-soap-preview-sec-title {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.02em;
-  color: var(--text-muted); margin-bottom: 6px;
-}
-.med-soap-preview-sec--otros .med-soap-preview-sec-title { color: var(--warn); }
-html.dark .med-soap-preview-sec--otros .med-soap-preview-sec-title { color: var(--color-livesync-syncing); }
-.med-soap-preview-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; }
-.med-soap-preview-chip {
-  font-size: 11px; line-height: 1.35; padding: 5px 9px; border-radius: var(--radius-md);
-  background: var(--bg); border: 1px solid var(--border); color: var(--text); max-width: 100%;
-  word-break: break-word;
-}
-.med-soap-preview-sec--otros .med-soap-preview-chip {
-  border-color: rgba(180, 83, 9, 0.4); background: rgba(180, 83, 9, 0.06);
-}
-html.dark .med-soap-preview-sec--otros .med-soap-preview-chip {
-  border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.08);
-}
 .med-insulin-pump-alg-pill {
   display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: var(--radius-pill);
   font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
@@ -429,7 +419,6 @@ html.dark .med-insulin-pump-alg-pill {
   color: var(--color-accent-soft-text);
   border-color: color-mix(in oklab, var(--color-ink) 38%, var(--border));
 }
-.med-soap-preview-chip--insulin-pump .med-insulin-pump-alg-pill { margin-left: 8px; }
 .med-nota-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .med-output-tabs {
   position: relative;

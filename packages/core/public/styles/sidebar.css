@@ -720,3 +720,41 @@ html.dark .patient-drag-hovercard.patient-card {
   border-radius: var(--radius-chip);
   border: 1px solid color-mix(in oklab, var(--action) 35%, var(--border));
 }
+/* K1 (8.4.3): sidebar card actions stay hidden until the card is hovered or
+   focused, then float on its right edge. Touch screens keep them visible. */
+@media (hover: hover) {
+  aside.patient-sidebar .patient-card-toolbar:not(.patient-card-toolbar--bulk) {
+    position: absolute;
+    top: 50%;
+    right: calc(8px * var(--density-space));
+    transform: translateY(-50%);
+    margin: 0;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity var(--dur-fast) var(--ease-out);
+  }
+  /* Only the button area reveals them: hovering the rest of the card (to
+     open it) keeps the card clean. Keyboard focus on a button shows them too. */
+  aside.patient-sidebar .patient-card-toolbar:is(:hover, :focus-within) {
+    opacity: 1;
+  }
+  /* Name and bed stay one line each. While the buttons show, they make room
+     and end in «…», so nothing sits under the buttons. */
+  aside.patient-sidebar .patient-card .p-name {
+    display: block;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow-wrap: normal;
+  }
+  aside.patient-sidebar .patient-card .p-meta {
+    flex-wrap: nowrap;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  aside.patient-sidebar .patient-card:has(.patient-card-toolbar:is(:hover, :focus-within)) .patient-card-body {
+    padding-right: 88px;
+  }
+}
+aside.patient-sidebar .btn-pinned-text {
+  min-width: 24px;
+}

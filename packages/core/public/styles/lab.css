@@ -1084,6 +1084,75 @@ html.dark .card { box-shadow: var(--shadow); }
   padding-bottom: 0;
 }
 #lab-input-section:hover { box-shadow: none; }
+/* 8.4.3 «Quién es»: patient name + bed on the left of the top row. */
+#lab-input-section .card-header.lab-report-header-row--actions-only:has(> .lab-who:not([hidden])) {
+  justify-content: space-between;
+}
+.lab-who {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+.lab-who-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lab-who-bed {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+/* 8.4.3 «Alterados primero»: out-of-range values in one line of chips.
+   fit-one-row.mjs sets the row's font-size; chips scale with it (em). */
+.lab-altered-chips {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  align-items: center;
+  gap: 0.6em;
+  padding-bottom: 10px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--divider);
+}
+.lab-altered-chips[hidden] { display: none; }
+.lab-altered-chips-lbl {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+.lab-altered-chip {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 0.2em 0.9em;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  color: var(--text);
+  background: color-mix(in oklab, var(--error) 10%, transparent);
+  border: 1px solid color-mix(in oklab, var(--error) 35%, transparent);
+}
+/* Danger on the danger tint is under AA: pull the digits toward the text color. */
+.lab-altered-chip strong { color: color-mix(in oklab, var(--color-danger) 70%, var(--text)); }
+/* Panic value (labs-critical-values.mjs): stronger ring and fill, bold. */
+.lab-altered-chip--critical {
+  background: color-mix(in oklab, var(--error) 24%, transparent);
+  border: 2px solid var(--color-danger);
+  font-weight: 700;
+}
+.lab-altered-chip--more {
+  background: transparent;
+  border-color: var(--divider);
+  color: var(--text-muted);
+}
 /* Barras de sección con tono — texto claro en light y dark */
 .card-header[class*="card-header--tone"] {
   color: var(--color-on-accent);
@@ -1459,7 +1528,6 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
 }
 #appcontent-lab #lab-output-section.card,
 #appcontent-lab #lab-input-section.card,
-#appcontent-lab #lab-diagrams-section.card,
 #appcontent-lab #lab-banner.card,
 #appcontent-lab .main-work-scroll > .card {
   overflow: visible;
@@ -1549,53 +1617,6 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
 html.dark .lab-output-more-item--danger:hover {
   background: rgba(248, 113, 113, 0.12);
 }
-.lab-diagrams-card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.lab-diagrams-toggle {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: none;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.lab-diagrams-toggle:hover {
-  background: color-mix(in oklab, var(--text) 8%, transparent);
-}
-#lab-diagrams-body {
-  max-height: min(120vh, 3200px);
-  opacity: 1;
-  /* No edge cue: #diagrams-grid is flex-wrap, so cards reflow to new rows
-     instead of overflowing sideways. overflow-x is a defensive fallback only. */
-  overflow-x: auto;
-  overflow-y: hidden;
-  transition:
-    max-height var(--dur-normal) var(--ease-out),
-    opacity var(--dur-fast) var(--ease-out),
-    padding var(--dur-normal) var(--ease-out);
-}
-#lab-diagrams-section.is-collapsed #lab-diagrams-body {
-  max-height: 0;
-  opacity: 0;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
-.lab-diagrams-card-title {
-  flex: 1;
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
 #lab-some-tables-btn {
   flex-shrink: 0;
 }
@@ -1637,6 +1658,14 @@ html.lab-some-tables-modal-open .lab-copy-fab {
   display: none !important;
   pointer-events: none !important;
 }
+#lab-diagrams-backdrop .lab-diagrams-modal {
+  width: min(1180px, calc(100vw - 24px));
+  max-width: none;
+  max-height: min(92vh, calc(100dvh - 24px));
+  overflow: auto;
+}
+#lab-diagrams-backdrop .diagrams-wrap { justify-content: center; }
+#lab-diagrams-btn[hidden] { display: none; }
 #lab-some-tables-backdrop .lab-some-tables-modal {
   width: min(920px, calc(100vw - 24px));
   height: min(92vh, calc(100dvh - 24px));

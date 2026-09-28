@@ -2,9 +2,6 @@
  * Antidiabéticos dentro de NM (insulinas, rescates, preprandial, bomba, orales).
  */
 import { normalizeNombreForSoapClassify } from './med-receta-nombre.mjs';
-import { isInsulinRescateMedicationItem } from './insulin-rescate-detect.mjs';
-import { isInsulinPrandialMedicationItem } from './insulin-prandial-detect.mjs';
-import { isInsulinIvMedicationItem } from './insulin-pump-some-detect.mjs';
 
 export const ANTIDIABETIC_MED_RE =
   /\b(INSULINA|GLARGINA|DEGLUDEC|DETEMIR|ASPARTA|LISPRO|GLULISINA|NPH|METFORMINA|REPAGLINIDA|GLIBENCLAMIDA|GLIMEPIRIDA|PIOGLITAZON|EMPAGLIFLOZINA|DAPAGLIFLOZINA|SITAGLIPTINA|SEMAGLUTIDA|LIRAGLUTIDA|DULAGLUTIDA|EXENATIDA|CANAGLIFLOZINA|LINAGLIPTINA|SAXAGLIPTINA|ALOGLIPTINA|GLICLAZIDA|NATEGLINIDA|ACARBOSE|MIGLITOL|ROSIGLITAZONA|HUMANA\s+RAPIDA)\b/i;
@@ -36,22 +33,6 @@ export function isAntidiabeticNmLine(line) {
   if (BOMBA_NM_LINE_RE.test(s)) return true;
   if (INSULIN_NM_LINE_RE.test(s)) return true;
   return ANTIDIABETIC_MED_RE.test(normalizeNombreForSoapClassify(s));
-}
-
-/**
- * @param {unknown} item
- * @returns {boolean}
- */
-export function isAntidiabeticRecetaItem(item) {
-  if (!item || typeof item !== 'object') return false;
-  var chip = /** @type {{ _insulinPumpChip?: boolean, _insulinRescateChip?: boolean, _insulinPrandialChip?: boolean }} */ (
-    item
-  );
-  if (chip._insulinPumpChip || chip._insulinRescateChip || chip._insulinPrandialChip) return true;
-  if (isInsulinRescateMedicationItem(item)) return true;
-  if (isInsulinPrandialMedicationItem(item)) return true;
-  if (isInsulinIvMedicationItem(item)) return true;
-  return isAntidiabeticMedNombre(/** @type {{ nombreRaw?: unknown }} */ (item).nombreRaw);
 }
 
 /**

@@ -28,7 +28,7 @@ export const FEATURE_HINTS = [
     steps: [
       { sel: '#apptab-lab', action: true, text: 'Empieza aquí: los laboratorios del SOME entran por <strong>Laboratorio</strong>.' },
       { sel: '#btn-lab-paste', action: true, text: 'Abre el cuadro para pegar el reporte. Atajo: copia el reporte del SOME y pulsa <strong>⌘V</strong> (Ctrl+V) en cualquier parte de R+, fuera de un campo de texto. R+ lo lleva al paciente correcto.' },
-      { sel: '#btn-procesar', action: true, text: 'Pega el reporte tal cual y pulsa <strong>Procesar</strong>. Verás diagramas y una tabla con los valores alterados resaltados.' },
+      { sel: '#btn-procesar', action: true, text: 'Pega el reporte tal cual y pulsa <strong>Procesar</strong>. Verás los alterados arriba y la tabla con los valores. Los diagramas se abren con <strong>Diagramas</strong>.' },
     ],
   },
   {
@@ -155,6 +155,41 @@ export const FEATURE_HINTS = [
     title: 'Tachar medicamentos',
     steps: [
       { sel: '#patient-censo-meds .exp-datos-line--toggle', text: 'Toca un medicamento para tacharlo: sale del censo. Tócalo otra vez para regresarlo. La receta no cambia.' },
+    ],
+  },
+  {
+    id: 'lab-843',
+    release: '8.4.3',
+    title: 'Laboratorio: alterados primero',
+    steps: [
+      { sel: '#lab-altered-chips:not([hidden])', text: 'Los valores alterados salen aquí, uno por estudio. Los críticos van primero y marcados.' },
+      { sel: '#lab-diagrams-btn:not([hidden])', text: 'Los diagramas ahora se abren en una ventana con <strong>Diagramas</strong>. <strong>Pegar SOME</strong> y <strong>Actualizar labs</strong> están al final de este encabezado.' },
+    ],
+  },
+  {
+    id: 'resumen-843',
+    release: '8.4.3',
+    title: 'Resumen con tendencias',
+    steps: [
+      { sel: '#patient-dashboard-mount .draw-cell', text: 'Si un lab alterado cambió, abajo ves su valor anterior y hacia dónde va. Los signos muestran su mínimo y máximo de 24 h. Eventualidades sigue en su pestaña.' },
+    ],
+  },
+  {
+    id: 'manejo-843',
+    release: '8.4.3',
+    title: 'Manejo en grupos',
+    steps: [
+      { sel: '#med-subview-receta .med-nota-chip', text: 'Cada medicamento ya sale en su grupo. <strong>Nota</strong> lo manda a Estado actual.' },
+      { sel: '#med-subview-receta .med-receta-dest-picker', text: '¿Va en otro grupo? Cámbialo aquí.' },
+      { sel: '#med-nota-footer .med-nota-actions', text: 'Con los marcados en <strong>Nota</strong>, añádelos a Tratamiento o envíalos a Estado actual.' },
+    ],
+  },
+  {
+    id: 'lista-843',
+    release: '8.4.3',
+    title: 'Tarjetas de la lista',
+    steps: [
+      { sel: 'aside.patient-sidebar .patient-card-toolbar:not(.patient-card-toolbar--bulk)', text: 'Pasa el cursor por el borde derecho de una tarjeta: ahí salen fijar, archivar y eliminar.' },
     ],
   },
   {
