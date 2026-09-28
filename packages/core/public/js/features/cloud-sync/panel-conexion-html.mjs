@@ -126,7 +126,7 @@ export function roomConnectedHtml(room) {
   return (
     '<div class="cloud-sync-room cloud-sync-room--connected">' +
     '<p class="cloud-sync-options-label">Tu sala</p>' +
-    '<dl class="cloud-sync-inset-group" aria-label="Sala nube">' +
+    '<div class="cloud-sync-inset-group" role="group" aria-label="Sala nube">' +
     '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-inset-row--identity">' +
     '<span class="cloud-sync-options-entry-text">' +
     '<span class="cloud-sync-room-name">' +
@@ -134,7 +134,7 @@ export function roomConnectedHtml(room) {
     '</span>' +
     (meta ? '<span class="cloud-sync-status-display">' + esc(meta) + '</span>' : '') +
     '</span></div>' +
-    '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv"><dt>Código para invitar' +
+    '<dl class="cloud-sync-inset-row cloud-sync-inset-row--kv"><dt>Código para invitar' +
     (code ? '' : '<span class="cloud-sync-room-code-missing" data-cloud-room-code-missing>Se descarga al conectar con la Nube.</span>') +
     '</dt><dd>' +
     '<span class="cloud-sync-room-code-group">' +
@@ -144,9 +144,9 @@ export function roomConnectedHtml(room) {
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-room-copy" data-cloud-action="copy-room-code"' +
     (code ? '' : ' disabled') +
     '>Copiar</button>' +
-    '</span></dd></div>' +
+    '</span></dd></dl>' +
     '<button type="button" class="cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger" data-cloud-action="leave-room">Salir de la sala</button>' +
-    '</dl></div>'
+    '</div></div>'
   );
 }
 

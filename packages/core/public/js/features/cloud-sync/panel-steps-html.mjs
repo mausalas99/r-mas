@@ -136,7 +136,8 @@ export function wireCloudAuthTabs(section) {
     section.querySelectorAll('[data-cloud-tab]').forEach(function (b) {
       const active = b === btn;
       b.classList.toggle('is-active', active);
-      b.setAttribute('aria-selected', active ? 'true' : 'false');
+      // Only real tabs carry aria-selected; the «Crear cuenta» / «‹ Entrar» links are plain buttons.
+      if (b.getAttribute('role') === 'tab') b.setAttribute('aria-selected', active ? 'true' : 'false');
     });
     section.querySelectorAll('[data-cloud-tab-panel]').forEach(function (p) {
       p.hidden = p.getAttribute('data-cloud-tab-panel') !== tab;

@@ -1025,7 +1025,7 @@ function mutationEventHtml(m, who) {
     '<dt>Equipo</dt><dd>' + esc(String(m.clientMutationId || '—')) + '</dd>' +
     '<dt>ID de usuario</dt><dd>' + esc(String(m.actorId || '—')) + '</dd>' +
     '</dl>' +
-    '<code class="cloud-sync-admin-ops">' + esc(ops) + '</code>' +
+    '<code class="cloud-sync-admin-ops" tabindex="0">' + esc(ops) + '</code>' +
     '</details>'
   );
 }

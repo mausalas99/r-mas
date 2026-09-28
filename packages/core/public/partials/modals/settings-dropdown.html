@@ -406,7 +406,7 @@
                 <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Quita el botón del listado de problemas.</p>
               </div>
               <label class="settings-card__action settings-card__toggle-label" for="settings-hide-listado-ai-prompt">
-                <input type="checkbox" class="settings-card__toggle" id="settings-hide-listado-ai-prompt" data-onchange="setHideListadoProblemasAiPrompt" data-onchange-pass="checked">
+                <input type="checkbox" class="settings-card__toggle" id="settings-hide-listado-ai-prompt" aria-label="Ocultar «Copiar prompt IA»" data-onchange="setHideListadoProblemasAiPrompt" data-onchange-pass="checked">
               </label>
             </div>
           </div>
@@ -561,7 +561,7 @@
                 <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight"><strong>Pre-releases</strong> incluye borradores de GitHub; <strong>Estable</strong> solo versiones oficiales.</p>
               </div>
               <div class="settings-card__action">
-                <select id="rpc-update-channel" class="settings-acc-select settings-acc-select--compact" data-onchange="setUpdateChannel" data-onchange-pass="value">
+                <select id="rpc-update-channel" aria-label="Canal de actualizaciones" class="settings-acc-select settings-acc-select--compact" data-onchange="setUpdateChannel" data-onchange-pass="value">
                   <option value="estable">Estable</option>
                   <option value="beta">Pre-releases</option>
                 </select>
@@ -573,7 +573,7 @@
                 <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Solo versión, resultado y plataforma. <strong>No</strong> incluye datos clínicos. Activado por defecto.</p>
               </div>
               <label class="settings-card__action settings-card__toggle-label" for="rpc-update-telemetry-toggle">
-                <input type="checkbox" class="settings-card__toggle" id="rpc-update-telemetry-toggle" data-onchange="setUpdateTelemetryEnabled" data-onchange-pass="checked">
+                <input type="checkbox" class="settings-card__toggle" id="rpc-update-telemetry-toggle" aria-label="Enviar telemetría anónima de actualización" data-onchange="setUpdateTelemetryEnabled" data-onchange-pass="checked">
               </label>
             </div>
           </div>
@@ -598,7 +598,7 @@
                   <p class="settings-card__title">Versión estable</p>
                 </div>
                 <div class="settings-card__action">
-                  <select id="rpc-stable-downgrade-select" class="settings-acc-select settings-acc-select--compact"></select>
+                  <select id="rpc-stable-downgrade-select" aria-label="Versión estable" class="settings-acc-select settings-acc-select--compact"></select>
                 </div>
               </div>
               <div class="settings-card">
