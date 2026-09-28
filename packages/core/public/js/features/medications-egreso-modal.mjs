@@ -44,7 +44,7 @@ function buildEgresoModalHtml(lines, dietLine, mode) {
   return (
     '<div class="lab-conflict-modal" style="max-width:620px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;padding:0;gap:0;">' +
     '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;">' +
-    '<span style="font-size:14px;font-weight:700;color:var(--text);">Texto de egreso</span>' +
+    '<span style="font-size:16px;font-weight:700;color:var(--text);">Texto de egreso</span>' +
     '<div style="display:flex;align-items:center;gap:8px;">' +
     '<span class="med-output-tabs" id="med-egreso-modal-tabs-track" role="tablist" aria-label="Vista de texto de medicamentos" data-active="' +
     (mode === 'simple' ? 'simple' : 'full') +
@@ -61,12 +61,17 @@ function buildEgresoModalHtml(lines, dietLine, mode) {
     (mode === 'simple' ? ' active' : '') +
     '" data-onclick="setMedEgresoModalTab" data-onclick-args=\'["simple"]\'>Nombre + Día</button>' +
     '</span>' +
-    '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg" style="padding:7px 14px;font-size:12.5px;min-height:0;" data-onclick="copiarMedEgresoModalTexto">Copiar</button>' +
-    '<button type="button" title="Cerrar" aria-label="Cerrar" style="width:30px;height:30px;border:none;background:transparent;color:var(--text-muted);border-radius:8px;font-size:18px;line-height:1;cursor:pointer;" data-onclick="closeMedEgresoModal">×</button>' +
+    '<button type="button" class="wb-btn wb-btn-ghost wb-btn-icon" title="Cerrar" aria-label="Cerrar" data-onclick="closeMedEgresoModal">×</button>' +
     '</div></div>' +
-    '<div style="flex:1;min-height:0;overflow-y:auto;padding:16px 18px 20px;font-family:var(--font-mono);font-size:12.5px;line-height:1.85;color:var(--text);">' +
+    '<div style="flex:1;min-height:0;overflow-y:auto;padding:16px 20px 18px;font-size:14px;line-height:1.6;color:var(--text);">' +
     buildEgresoListHtml(lines) +
     buildSummaryHtml(dietLine) +
+    '</div>' +
+    '<div style="display:flex;align-items:center;gap:10px;padding:12px 16px 12px 20px;border-top:1px solid var(--border);flex-shrink:0;">' +
+    '<span style="flex:1;font-size:12px;color:var(--text-muted);">' +
+    esc(lines.length + (lines.length === 1 ? ' va' : ' van') + ' a la receta de egreso. Los excluidos no.') +
+    '</span>' +
+    '<button type="button" class="wb-btn wb-btn-primary" data-onclick="copiarMedEgresoModalTexto">Copiar</button>' +
     '</div></div>'
   );
 }

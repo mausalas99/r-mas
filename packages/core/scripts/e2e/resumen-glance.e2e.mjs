@@ -33,7 +33,7 @@
  *
  *   node scripts/e2e/resumen-glance.e2e.mjs
  */
-import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts } from './harness.mjs';
+import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts, goArea } from './harness.mjs';
 import { header, TABLE } from './some-fixtures.mjs';
 
 const P = { exp: '7000411-1', name: 'DEMO GLANCE EXTRAS', room: '511' };
@@ -74,9 +74,9 @@ const { check, shot } = r;
 
 async function openEstadoActual(page) {
   await closeToasts(page);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
-  await page.locator('.exp-group-section', { hasText: 'Estado actual' }).click();
+  await page.locator('.exp-group-section[data-section="estadoActual"]').click();
   await page.locator('#ea-snapshot').waitFor({ state: 'visible' });
 }
 
@@ -96,7 +96,7 @@ async function addMeds(page) {
 
 async function openResumen(page) {
   await closeToasts(page);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.locator('button:visible', { hasText: /^\s*Resumen\s*$/ }).first().click().catch(() => {});
   await page.locator('#patient-dashboard-mount .labs-card').waitFor({ timeout: 5000 });
   await page.waitForTimeout(400);
@@ -133,7 +133,7 @@ function readDash() {
 await r.finish('Resumen glance: care plan, lines/tubes, antibiotic day, cultures', async () => {
   const { page, pageErrors } = await r.launch();
   await onboardLocalOnly(page);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
 
   await pasteAndSave(page, headerSol(P, when(-6, 7, 0), '2600411101') + URO_ATB);
   await pasteAndSave(page, headerSol(P, when(-2, 7, 0), '2600411102') + HEMO_NO_ATB);

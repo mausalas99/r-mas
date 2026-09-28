@@ -34,7 +34,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts, until, dismissLearnHub } from './harness.mjs';
+import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts, quietHints, until, dismissLearnHub, goArea } from './harness.mjs';
 import { header, TABLE } from './some-fixtures.mjs';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -247,13 +247,13 @@ async function openBySearch(page, p) {
 
 async function openEstadoActual(page, p) {
   await closeToasts(page);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.waitForTimeout(500);
   // The board shows a short name ("DEMO ALFA"): match on the last word.
   const card = page.getByText(new RegExp('^DEMO.*' + p.name.split(' ').pop() + '$')).locator('visible=true').first();
   if (await card.isVisible().catch(() => false)) await card.click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
-  await page.locator('.exp-group-section', { hasText: 'Estado actual' }).click();
+  await page.locator('.exp-group-section[data-section="estadoActual"]').click();
   await page.locator('#ea-snapshot').waitFor({ state: 'visible' });
   await page.mouse.move(5, 5);
 }
@@ -348,6 +348,8 @@ await r.finish('Estado actual worst-case input, volume, restart', async () => {
   const userClipboard = await app.evaluate(({ clipboard }) => clipboard.readText()).catch(() => '');
   await onboardLocalOnly(page);
   const vp = await sizeWindow(app, page);
+  // Top bar (Nav-G): the «Buscar» hint bubble hangs over the page toolbar.
+  await quietHints(page);
   check('window is 1440×902', vp[0] === 1440 && vp[1] === 902, vp);
 
   for (const p of [ALFA, BETA]) await pasteAndSave(page, header(p, TODAY(1)) + bh('9.1'));

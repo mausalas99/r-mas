@@ -40,7 +40,7 @@
  *
  *   npm run e2e:db-unlock
  */
-import { createRun, onboardLocalOnly, pasteAndSave } from './harness.mjs';
+import { createRun, onboardLocalOnly, pasteAndSave, goArea } from './harness.mjs';
 import { header, TABLE } from './some-fixtures.mjs';
 
 const P1 = { exp: '7000456-7', name: 'DEMO DB UNLOCK', room: '512' };
@@ -58,7 +58,7 @@ await r.finish('DB unlock: auto-unlock confirmed, master-password UI confirmed U
     await overlay.evaluate((el) => getComputedStyle(el).display === 'none').catch(() => true)
   );
   await onboardLocalOnly(page);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   // Real clinical write (a lab paste creates + persists a patient) with zero
   // passphrase prompts — proves the encrypted DB is fully usable, not just
   // "no overlay flashed".

@@ -48,7 +48,7 @@
  *   Throughout
  *     - an uncaught page error on either device
  */
-import { createRun, dismissLearnHub, closeToasts, pasteAndSave, openPatient } from './harness.mjs';
+import { createRun, dismissLearnHub, closeToasts, pasteAndSave, openPatient, goArea } from './harness.mjs';
 import { startWorker, stopWorker, d1Query, nubeDevices, onboardNube, roomMeta, patientVisible, flat, until, BASE, PASSWORD } from './nube-worker.mjs';
 import { fullLabs, gas } from './some-fixtures.mjs';
 import { decodeRoomState } from '../../cloud/sync-worker/src/crypto-at-rest.js';
@@ -185,7 +185,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
     await d.page.locator('#btn-connection-dropdown-close').click().catch(() => {});
     await d.page.keyboard.press('Escape');
     await dismissLearnHub(d.page);
-    await d.page.locator('#apptab-lab').click();
+    await goArea(d.page, 'lab');
   }
 
   // ── A → B: two new patients with labs ──────────────────────────────────
@@ -233,7 +233,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await closeConexion(B.page);
 
   // ── B → A: a new gas for P1, added on B ────────────────────────────────
-  await B.page.locator('#apptab-lab').click();
+  await goArea(B.page, 'lab');
   await pasteAndSave(B.page, gas(P1, 'Sep 21 2026 6:00AM', '7.21'));
   await openPatient(A.page, P1);
   check('A: gas day from B shows up (21/09/2026) next to the old one (20/09/2026)',
@@ -248,7 +248,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   const FIUX = '2026-09-19';
   const fiuxInput = (page) => page.locator('#patient-data-form input.rpc-date-input[data-oninput-args=\'["fiuxFecha"]\']');
   const openDatos = async (page) => {
-    await page.locator('#apptab-nota').click();
+    await goArea(page, 'nota');
     await page.locator('.dash-name:visible').first().click();
     await fiuxInput(page).waitFor({ state: 'attached', timeout: 5000 });
   };
@@ -365,10 +365,10 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   // ── Restart A: session remembered, no duplicates ───────────────────────
   await A.app.close();
   const A2 = await launchDevice('a', 3791);
-  const lab2 = A2.page.locator('#apptab-lab');
+  const lab2 = A2.page.locator('#app-main-tablist');
   check('A restarted: no login screen (Recuérdame kept the session)', await until(() => lab2.isVisible(), 30000) && !(await A2.page.locator('[data-sync-mode]').first().isVisible().catch(() => false)));
   await dismissLearnHub(A2.page);
-  await lab2.click();
+  await goArea(A2.page, 'lab');
   await A2.page.waitForTimeout(4000);
   const counts = await A2.page.locator('.p-name').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).map((e) => e.getAttribute('title') || ''));
   const n = (p) => counts.filter((t) => t.includes(p.exp)).length;
@@ -432,9 +432,9 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
 
   // ── Eventualidad added on A2 *while offline* → header/diagnostics reflect it, then drains to B ──
   const openEventualidades = async (page) => {
-    await page.locator('#apptab-nota').click();
+    await goArea(page, 'nota');
     await page.locator('.exp-group-pill[data-group="clinico"]').hover();
-    await page.locator('.exp-group-section', { hasText: 'Eventualidades' }).click();
+    await page.locator('.exp-group-section[data-section="eventualidades"]').click();
     await page.locator('#eventualidades-input').waitFor({ state: 'visible', timeout: 8000 });
   };
   const evText = 'DEMO SINCRONIA: caida sin lesion evidente, se avisa a familia.';
@@ -461,14 +461,14 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   const now2 = new Date();
   const dmy2 = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   const medLine = [`${dmy2(now2)} 08:01 a.m.`, 'MEDICAMENTOS', 'DEMO CEFALOSPORINA 1 G SOL INY', 'VIA INTRAVENOSA', '1 G //', 'CADA 24 HORAS', 'NW'].join('\t');
-  await A2.page.locator('#apptab-med').click();
+  await goArea(A2.page, 'med');
   await A2.page.locator('#med-itab-receta').click();
   await A2.page.locator('#med-import-open-btn').click();
   await A2.page.locator('#med-input').fill(medLine);
   await A2.page.getByRole('button', { name: 'Procesar receta' }).click();
   await A2.page.waitForTimeout(500);
   check('A: receta imported for P1 shows the new med', await until(() => A2.page.getByText(/DEMO CEFALOSPORINA/).first().isVisible(), 8000));
-  await B.page.locator('#apptab-med').click();
+  await goArea(B.page, 'med');
   await B.page.locator('#med-itab-receta').click();
   check('B: the receta pushed on A reaches B (Manejo push/pull, cloud-med-receta-index)',
     await until(() => B.page.getByText(/DEMO CEFALOSPORINA/).first().isVisible(), 30000));
@@ -727,7 +727,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   const D = await launchDevice('d', 3794);
   await D.page.locator('[data-sync-mode="local"]').click();
   await D.page.locator('#clinical-onboard-local-confirm-btn').click();
-  await D.page.locator('#apptab-lab').waitFor({ timeout: 15000 });
+  await D.page.locator('#app-main-tablist').waitFor({ timeout: 15000 });
   // A device previously configured for a Nube sala, now local-only — the settings row this button drives.
   await D.page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('rpc-settings') || '{}');

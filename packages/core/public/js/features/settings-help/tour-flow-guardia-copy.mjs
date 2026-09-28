@@ -84,7 +84,7 @@ function getGuardiaV7StepBody(stepId) {
   const rank = getClinicalRankForTour();
   const bodies = {
     gv7_guardia_chip:
-      '<p style="margin:0;line-height:1.5;">El botón <strong>Guardia</strong> en la barra superior abre el tablero de turno: censo y monitoreo. No bloquea el resto de R+.</p>',
+      '<p style="margin:0;line-height:1.5;">El botón <strong>Guardia</strong> (junto a Sala e IC, al lado de <strong>Mi rotación</strong>) abre el tablero de turno: censo y monitoreo. No bloquea el resto de R+.</p>',
     gv7_guardia_tab:
       '<p style="margin:0;line-height:1.5;">En <strong>Modo Guardia</strong> el centro muestra el panel de guardia: métricas y grilla de pacientes.</p>',
     gv7_guardia_scope:

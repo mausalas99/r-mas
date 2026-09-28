@@ -53,7 +53,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts, dismissLearnHub } from './harness.mjs';
+import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts, dismissLearnHub, goArea } from './harness.mjs';
 import { header, TABLE, fullLabs } from './some-fixtures.mjs';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -93,7 +93,7 @@ async function openBySearch(page, p) {
 }
 async function labTab(page) {
   await closeToasts(page);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   if (await page.locator('#lab-inner-labs-btn').isVisible().catch(() => false)) await page.locator('#lab-inner-labs-btn').click();
 }
 async function labDays(page, p) {
@@ -281,7 +281,7 @@ await r.finish('Data input stress: lab paste, Tendencias, Cultivos, Manejo, Pend
   await openBySearch(page, CU);
   const cultRows = async () => {
     await closeToasts(page);
-    await page.locator('#apptab-lab').click();
+    await goArea(page, 'lab');
     await page.locator('#lab-inner-cult-btn').click();
     await page.locator('#cultivos-table-container .cultivos-table').first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
     await page.waitForTimeout(300);
@@ -306,7 +306,7 @@ await r.finish('Data input stress: lab paste, Tendencias, Cultivos, Manejo, Pend
   await openBySearch(page, MJ);
   const openManejo = async () => {
     await closeToasts(page);
-    await page.locator('#apptab-med').click();
+    await goArea(page, 'med');
     await page.locator('#med-itab-receta').click();
     await page.waitForTimeout(300);
   };
@@ -342,7 +342,7 @@ await r.finish('Data input stress: lab paste, Tendencias, Cultivos, Manejo, Pend
   await pasteAndSave(page, fullLabs(PE, some(d0)));
   await openBySearch(page, PE);
   await closeToasts(page);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.locator('button:visible', { hasText: /^\s*Pendientes\s*$/ }).first().click();
   await page.locator('.todo-toolbar-add-btn:visible').waitFor();
   const localInput = (d) => `${iso(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -406,7 +406,7 @@ await r.finish('Data input stress: lab paste, Tendencias, Cultivos, Manejo, Pend
 
   // ── F. Agenda: 100 procedures ────────────────────────────────────────────
   await closeToasts(page);
-  await page.locator('#apptab-agenda').click();
+  await goArea(page, 'agenda');
   await page.locator('#procedure-agenda-range').waitFor();
   const monday = addDays(TODAY, -((TODAY.getDay() + 6) % 7));
   const modal = page.locator('#procedure-agenda-modal');
@@ -515,14 +515,14 @@ await r.finish('Data input stress: lab paste, Tendencias, Cultivos, Manejo, Pend
   check('restart: 45 meds kept', flat(await page.locator('#med-turno-title-text').innerText().catch(() => '')) === 'Medicamentos del turno · 45');
   await openBySearch(page, PE);
   await closeToasts(page);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.locator('button:visible', { hasText: /^\s*Pendientes\s*$/ }).first().click();
   await page.locator('.todo-toolbar-add-btn:visible').waitFor();
   ps = await pendState();
   pRows = ps.flatMap((g) => g.rows);
   check('restart: 110 pendientes kept, odd text exact', pRows.length === 110 && ODD_TEXT.every(([, x]) => pRows.includes(x)), pRows.length);
   await closeToasts(page);
-  await page.locator('#apptab-agenda').click();
+  await goArea(page, 'agenda');
   await page.locator('#procedure-agenda-range').waitFor();
   await page.waitForTimeout(400);
   const wk0b = await blocks();

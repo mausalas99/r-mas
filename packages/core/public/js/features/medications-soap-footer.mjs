@@ -160,7 +160,7 @@ function soapPreviewSection(cat, title, groups) {
 
 function buildSoapPreviewHtml(soapItems, allItems) {
   if (!soapItems.length) {
-    return '<p class="med-soap-preview-empty">Marca <strong>SOAP</strong> en el listado para ver aquí cómo se repartirán en la plantilla.</p>';
+    return '<p class="med-soap-preview-empty">Pulsa <strong>Nota</strong> en el listado para ver aquí cómo se repartirán en la plantilla.</p>';
   }
   var groups = groupSoapPreviewItems(soapItems, allItems);
   return (
@@ -209,7 +209,7 @@ export function renderMedNotaFooter() {
 
   foot.innerHTML =
     '<div class="med-nota-toolbar">' +
-    '<p class="med-nota-hint">Los medicamentos con <strong>SOAP</strong> activo se clasifican por nombre; los marcados como <strong>Otros</strong> requieren elegir destino en la columna <strong>Destino</strong>.</p>' +
+    '<p class="med-nota-hint">Los medicamentos con <strong>Nota</strong> se agrupan por destino. Para mover uno, usa <strong>Cambiar destino</strong>.</p>' +
     previewHtml +
     '<div class="med-nota-actions">' +
     '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-onclick="mediAnadirATratamiento">Añadir a Tratamiento</button>' +

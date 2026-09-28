@@ -45,7 +45,7 @@ import JSZip from 'jszip';
 import { PDFDocument } from 'pdf-lib';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts, until } from './harness.mjs';
+import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts, quietHints, until, goArea } from './harness.mjs';
 import { header, TABLE } from './some-fixtures.mjs';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -142,7 +142,7 @@ async function setMode(page, mode) {
 async function pickPatientIc(page, p) {
   await closeToasts(page);
   if (!(await page.locator('#ic-board-mount .p-name').locator('visible=true').count())) {
-    await page.locator('#apptab-nota').click();
+    await goArea(page, 'nota');
     await page.locator('.exp-group-pill[data-group="paciente"]').click();
     await page.locator('[data-ic-back-to-board]').click();
   }
@@ -151,7 +151,7 @@ async function pickPatientIc(page, p) {
 
 async function goClinico(page, section, ready) {
   await closeToasts(page);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.locator('.exp-group-pill[data-group="clinico"]').hover({ timeout: 5000 }).catch(() => {});
   await page.locator(`.exp-group-section[data-section="${section}"]`).click();
   await page.locator(ready).waitFor({ state: 'visible' });
@@ -168,6 +168,8 @@ async function fillRows(page, list, addBtn, items) {
 await r.finish('Worst-case input through every export: Word x3, census PDF, VPO copy', async () => {
   const { app, page, pageErrors } = await r.launch({ lanPort: 3797 });
   await onboardLocalOnly(page);
+  // Top bar (Nav-G): the «Buscar» hint bubble hangs over the page toolbar.
+  await quietHints(page);
 
   // ── 33 patients: one worst-case main patient + 32 for the census ───────
   const toast = await pasteAndSave(page, header(MAIN, TODAY(1)) + bh('8.1'));
@@ -231,7 +233,7 @@ await r.finish('Worst-case input through every export: Word x3, census PDF, VPO 
 
   // ── Listado de problemas: 40 activos + 5 inactivos ──────────────────────
   await openPatient(page, MAIN);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.evaluate(() => window.switchInnerTab('listado'));
   const form = page.locator('#listado-form');
   await form.locator('.listado-layout').waitFor({ state: 'visible' });
@@ -327,7 +329,7 @@ await r.finish('Worst-case input through every export: Word x3, census PDF, VPO 
 
   // ── VPO: copy the whole valoración ──────────────────────────────────────
   await closeToasts(page);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
   await page.locator('.exp-group-section', { hasText: 'VPO' }).click();
   await page.locator('#vpo-container .vpo-panel').waitFor({ state: 'visible' });

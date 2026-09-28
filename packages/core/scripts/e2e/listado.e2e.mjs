@@ -21,7 +21,7 @@
  *
  *   npm run e2e:listado
  */
-import { createRun, onboardLocalOnly, pasteAndSave, openPatient } from './harness.mjs';
+import { createRun, onboardLocalOnly, pasteAndSave, openPatient, goArea } from './harness.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 import { buildTourDemoListadoProblemas, TOUR_DEMO_PERITONITIS_BLOCK } from '../../public/js/tour-demo-listado-problemas.mjs';
 
@@ -55,13 +55,13 @@ await r.finish('Listado de problemas — one screen, busy patient', async () => 
   });
   await page.waitForTimeout(200);
   await onboardLocalOnly(page);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   await pasteAndSave(page, fullLabs(A, 'Jan 12 2026 8:00AM'));
   await openPatient(page, A);
 
   const form = page.locator('#listado-form');
   async function openListado() {
-    await page.locator('#apptab-nota').click();
+    await goArea(page, 'nota');
     await page.evaluate(() => window.switchInnerTab('listado'));
     await form.locator('.listado-layout').waitFor({ state: 'visible' });
   }
@@ -236,8 +236,8 @@ await r.finish('Listado de problemas — one screen, busy patient', async () => 
   await page.waitForTimeout(700);
   await app.close();
   ({ app, page, pageErrors } = await r.launch());
-  await page.locator('#apptab-lab').waitFor({ state: 'visible', timeout: 30000 });
-  await page.locator('#apptab-nota').click();
+  await page.locator('#app-main-tablist').waitFor({ state: 'visible', timeout: 30000 });
+  await goArea(page, 'nota');
   await openPatient(page, A);
   await page.evaluate(() => window.switchInnerTab('listado'));
   await page.locator('#listado-form .listado-layout').waitFor({ state: 'visible' });

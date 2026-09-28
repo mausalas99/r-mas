@@ -257,74 +257,138 @@ body.rpc-med-receta-paste-open {
   overflow: hidden;
 }
 
-/* Medicamentos: lista alineada y pie SOAP compacto */
-.med-receta-wrap {
-  display: grid;
-  grid-template-columns: 40px 40px minmax(0, 1fr) minmax(168px, 1.25fr) minmax(52px, auto);
-  column-gap: 10px;
-  border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg);
+/* Medicamentos del turno (Manejo-B, 2026-09-27): rows grouped by destino, two
+ * columns of hairline group cards. Amber = needs attention (Falta destino). */
+.med-receta-wrap.med-groups {
+  columns: 2 320px;
+  column-gap: 18px;
 }
-.med-receta-head {
-  display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; align-items: center;
-  padding: 10px 14px; font-size: 10px; font-weight: 700;
-  letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted);
-  background: color-mix(in oklab, var(--surface) 88%, var(--lab-chip-bg));
-  border-bottom: 1px solid var(--border);
+.med-group {
+  break-inside: avoid;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
 }
-.med-receta-head span:nth-child(1), .med-receta-head span:nth-child(2) { text-align: center; }
-.med-receta-head span:nth-child(4) { font-size: 10px; }
-.med-receta-head span:last-child { text-align: right; }
+.med-group-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-left: 4px;
+}
+.med-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.med-group-hint { font-size: 12px; color: var(--text-muted); }
+.med-group-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+.med-group--warn .med-group-label { color: var(--warn); }
+.med-group--warn .med-group-card {
+  border-color: var(--color-warn-border-strong);
+  background: var(--color-warn-surface);
+}
+.med-group--muted .med-group-card { background: color-mix(in oklab, var(--surface) 70%, var(--bg)); }
 .med-receta-row {
-  display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; align-items: center;
-  padding: 12px 14px; border-bottom: 1px solid var(--border); background: transparent;
-  transition: background 0.18s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 8px 8px 8px 16px;
+  border-top: 1px solid var(--divider);
+  box-sizing: border-box;
 }
-.med-receta-row:hover { background: var(--lab-chip-bg); }
-html.dark .med-receta-row:hover { background: rgba(96, 165, 250, 0.07); }
-.med-receta-row:last-child { border-bottom: none; }
-.med-receta-checkcell { display: flex; justify-content: center; align-items: center; }
-.med-receta-checkcell input[type="checkbox"] {
-  width: 18px; height: 18px; margin: 0; cursor: pointer; accent-color: var(--action);
-}
+.med-receta-row:first-child { border-top: 0; }
+.med-receta-row.is-excluded .med-receta-name { opacity: 0.6; }
 .med-receta-name {
-  font-size: 13px; line-height: 1.45; color: var(--text); min-width: 0;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--text);
 }
-.med-receta-destcell { min-width: 0; display: flex; align-items: center; }
-.med-receta-diacell {
-  display: flex; justify-content: flex-end; align-items: center; min-width: 0;
+.med-row-name { font-weight: 600; }
+.med-row-dose {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.med-receta-dest-picker {
-  position: relative; display: block; width: 100%; min-width: 0; cursor: pointer;
+.med-receta-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
 }
-.med-receta-dest-label {
-  display: block; width: 100%; min-height: 28px; box-sizing: border-box;
-  font-size: 11px; line-height: 1.3; padding: 6px 26px 6px 8px;
-  border-radius: var(--radius-md); border: 1px solid var(--border);
-  background: var(--surface); color: var(--text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none;
+.med-receta-dia,
+.med-prn-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  margin-left: 8px;
+  padding: 0 9px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: middle;
+  white-space: nowrap;
 }
-.med-receta-dest-picker::after {
-  content: "▾"; position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-  font-size: 10px; color: var(--text-muted); pointer-events: none;
+.med-receta-dia { background: var(--lab-chip-bg); color: var(--lab-chip-txt); }
+.med-prn-tag { background: color-mix(in oklab, var(--text-muted) 16%, transparent); color: var(--text); }
+.med-nota-chip {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
 }
+.med-nota-chip:hover { background: var(--state-hover-bg); color: var(--text); }
+.med-nota-chip.is-on {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in oklab, var(--color-accent) 45%, transparent);
+  color: var(--color-accent-soft-text);
+}
+.med-nota-chip:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; }
+/* «Cambiar destino»: icon button with the real native select laid over it */
+.med-receta-dest-picker { position: relative; color: var(--text-muted); }
+.med-receta-dest-picker:focus-within { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; }
 .med-receta-dest {
   position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0;
   opacity: 0; cursor: pointer; font-size: 16px;
 }
-html.dark .med-receta-dest-label {
-  border-color: color-mix(in oklab, var(--border) 55%, var(--text));
-  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+.med-excl-btn { color: var(--text-muted); }
+.med-restore-btn { color: var(--color-accent-soft-text); }
+.med-diet-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.med-receta-row--needs-dest .med-receta-dest-label { border-color: var(--warn); }
-html.dark .med-receta-row--needs-dest .med-receta-dest-label {
-  border-color: var(--color-livesync-syncing);
-}
-.med-receta-dia {
-  font-size: 10px; font-weight: 700;
-  background: var(--lab-chip-bg); color: var(--lab-chip-txt);
-  padding: 3px 8px; border-radius: var(--radius-pill); white-space: nowrap;
-}
+.med-diet-chip[hidden] { display: none; }
 .med-nota-toolbar { display: flex; flex-direction: column; gap: 12px; }
 .med-nota-hint { margin: 0; font-size: 12px; line-height: 1.45; color: var(--text-muted); }
 .med-soap-preview {
@@ -451,46 +515,6 @@ html.dark .med-output-tab-pill {
 }
 html.dark .med-output-tab.active {
   color: var(--text);
-}
-/* Texto de egreso — collapsed teaser row (mockup #4a). Full text lives in the
-   "Texto de egreso" modal opened via openMedEgresoModal(); this row is only a
-   compact summary + entry point, never the full medication list. */
-.med-egreso-teaser {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-  border-radius: var(--radius-container);
-}
-.med-egreso-teaser-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-.med-egreso-teaser-label {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-.med-egreso-teaser-preview {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  line-height: 1.4;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.med-egreso-teaser-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
 }
 .lab-history-meta { font-size: 13px; color: var(--text); flex: 1; min-width: 140px; }
 .lab-history-actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }

@@ -62,7 +62,7 @@ export function innerTabButtonId(tab, opts) {
 }
 
 function getExpedienteInnerTabBar() {
-  return document.querySelector('.patient-expediente-classic > .exp-expediente-nav > .inner-tab-bar');
+  return document.querySelector('.exp-expediente-nav > .inner-tab-bar');
 }
 
 export function syncMedSubviewTabIndicator() {

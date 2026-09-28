@@ -15,7 +15,7 @@
  *
  *   npm run e2e:lab-patient-switch
  */
-import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts } from './harness.mjs';
+import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts, goArea } from './harness.mjs';
 import { gas } from './some-fixtures.mjs';
 
 const A = { exp: '7000011-1', name: 'DEMO CAMBIO ALFA', room: '311', ph: '7.11' };
@@ -27,7 +27,7 @@ const r = createRun('lab-patient-switch');
 await r.finish('Lab tab follows the patient on screen', async () => {
   const { page, pageErrors } = await r.launch();
   await onboardLocalOnly(page);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   for (const p of [A, B, C]) await pasteAndSave(page, gas(p, 'Jan 5 2026 8:00AM', p.ph));
   for (const p of [A, B, C]) await openPatient(page, p);
 
@@ -42,7 +42,7 @@ await r.finish('Lab tab follows the patient on screen', async () => {
 
   // Slow, normal switch.
   await openPatient(page, A);
-  if (!(await page.locator('#lab-output-box').isVisible())) await page.locator('#apptab-lab').click();
+  if (!(await page.locator('#lab-output-box').isVisible())) await goArea(page, 'lab');
   await expectShows('slow switch → A labs', A, [B, C]);
   await r.shot(page, 'A');
 
@@ -56,7 +56,7 @@ await r.finish('Lab tab follows the patient on screen', async () => {
   // Tab click inside 120 ms cancels the deferred repaint.
   await closeToasts(page);
   await nameLink(C).click();
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   await expectShows('switch + tab click → C labs, not B', C, [A, B]);
   await r.shot(page, 'C-tab-click');
 

@@ -325,7 +325,7 @@ html.ui-density-normal #main-area {
   background: var(--surface);
   overflow: hidden;
 }
-.patient-expediente-classic > .exp-expediente-nav > .inner-tab-bar {
+.exp-expediente-nav > .inner-tab-bar {
   margin-bottom: 0;
   background: transparent;
 }
@@ -1135,4 +1135,368 @@ html.tab-bar-indicators-ready .app-tab.active {
 }
 .app-tab[role="tab"] {
   transition: color var(--dur-fast) var(--ease-out);
+}
+
+/* ── Top bar (Nav-G / E2, owner pick 2026-09-27) ─────────────────────────
+ * One 48 px bar: R+ · area segmented · divider · the area's level-2 bar ·
+ * actions. top-bar.mjs moves the bars in and sets html.rpc-topbar. */
+html.rpc-topbar body > header {
+  --header-bar-height: 48px;
+  height: 48px;
+  min-height: 48px;
+  gap: 10px;
+}
+/* Actions never shrink under the tabs; Guardia (no tabs) keeps the base
+ * shrinkable column so a narrow window does not scroll sideways. */
+html.rpc-topbar.ui-density-normal body > header {
+  grid-template-columns: auto minmax(0, 1fr) max-content;
+}
+html.rpc-topbar body > header .header-center,
+html.rpc-topbar .app-tabs-row {
+  display: none;
+}
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  height: 100%;
+}
+.topbar-nav button,
+.topbar-nav .exp-group-pill {
+  -webkit-app-region: no-drag;
+}
+html:not(.ui-density-normal) .topbar-nav {
+  display: none; /* Guardia: no area tabs, same as the old tab row */
+}
+.topbar-sep {
+  width: 1px;
+  height: 24px;
+  flex-shrink: 0;
+  background: var(--border);
+}
+.topbar-l2 {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+.topbar-l2 > .topbar-l2-off {
+  display: none !important;
+}
+/* Pendientes dot: amber (open work), not the red error dot. */
+.topbar-l2 .wb-pendientes-tab-badge {
+  background: var(--todo-prio-media);
+  border-color: var(--header-bg, var(--surface));
+}
+.topbar-nav .tab-bar-indicator,
+.topbar-nav .app-tab svg,
+.topbar-nav .inner-tab > svg {
+  display: none !important;
+}
+
+/* Level 1: segmented pill */
+.topbar-nav .app-tabs {
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+}
+.topbar-nav .app-tab,
+html.dark .topbar-nav .app-tab {
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  line-height: 1;
+}
+.topbar-nav .app-tab.active,
+html.dark .topbar-nav .app-tab.active,
+html.tab-bar-indicators-ready .topbar-nav .app-tab.active {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-soft-text);
+}
+
+/* Level 2: plain pills; the active one is teal-soft */
+.topbar-l2 .exp-expediente-nav,
+.topbar-l2 .inner-tab-bar,
+.topbar-l2 .lab-inner-nav.inner-tab-bar {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  gap: 2px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.topbar-l2 .inner-tab-bar::after {
+  display: none;
+}
+.topbar-l2 .exp-expediente-nav > #exp-group-row {
+  padding: 0 12px 0 0;
+  gap: 2px;
+  scrollbar-width: none; /* beats group-row.css «thin» (same selector + .topbar-l2) */
+}
+.topbar-l2 .exp-expediente-nav > #exp-group-row::after {
+  background: linear-gradient(to left, var(--surface), transparent);
+}
+.topbar-l2 .exp-expediente-nav-actions {
+  padding: 0;
+  gap: 2px;
+}
+.topbar-l2 .exp-group-name,
+.topbar-l2 .exp-group-section,
+.topbar-l2 .inner-tab,
+.topbar-l2 .lab-inner-nav .inner-tab,
+html.dark .topbar-l2 .exp-group-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  margin: 0;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.topbar-l2 .exp-group-pill.is-active > .exp-group-name,
+.topbar-l2 .exp-group-section.is-active,
+.topbar-l2 .inner-tab.active,
+html.dark .topbar-l2 .inner-tab.active,
+html.tab-bar-indicators-ready .topbar-l2 .inner-tab.active,
+.topbar-l2 .lab-inner-nav .inner-tab.active {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-soft-text);
+  border: 0;
+  box-shadow: none;
+}
+/* Clínico open (hover, focus or one of its sections active): one hairline
+ * group with its grey «Clínico» name and its sections (Nav-G). The label
+ * stays in place, so the pointer never loses the pill while it opens. */
+.topbar-l2 .exp-group-pill:not(.exp-group-pill--leaf) > .exp-group-sections .exp-group-sections-inner {
+  gap: 2px;
+}
+.topbar-l2 .exp-group-pill:not(.exp-group-pill--leaf) {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+}
+.topbar-l2 .exp-group-pill:not(.exp-group-pill--leaf):is(.is-active, :focus-within, :hover) {
+  border-color: var(--border);
+  padding: 1px;
+}
+.topbar-l2 .exp-group-pill:not(.exp-group-pill--leaf):is(.is-active, :focus-within, :hover) > .exp-group-name {
+  max-width: 11rem;
+  height: 26px;
+  padding: 0 4px 0 10px;
+  opacity: 1;
+  pointer-events: auto;
+  background: transparent;
+  color: var(--text-muted); /* same font as every pill (owner 2026-09-27); grey marks the group */
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.topbar-l2 .exp-group-section {
+  height: 26px;
+}
+.topbar-l2 #exp-group-row,
+.topbar-l2 .inner-tab-bar {
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.topbar-l2 *,
+.topbar-l2 {
+  scrollbar-width: none;
+}
+.topbar-l2 ::-webkit-scrollbar,
+.topbar-l2::-webkit-scrollbar {
+  display: none;
+}
+
+/* Keyboard ring: the flat pill rules above (box-shadow: none) must not eat it. */
+html.rpc-topbar .topbar-l2 .exp-group-pill > .exp-group-name:focus-visible,
+html.rpc-topbar .topbar-l2 .exp-group-section:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Toasts bottom-center (owner 2026-09-27): top-right sat over the page
+ * toolbar buttons under the 48 px bar. */
+html.rpc-topbar .toast-stack {
+  top: auto;
+  bottom: 24px;
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+}
+html.rpc-topbar .toast {
+  transform: translateY(10px) scale(0.97);
+}
+html.rpc-topbar .toast.show {
+  transform: translateY(0) scale(1);
+}
+html.rpc-topbar .toast.toast--leave {
+  transform: translateY(6px) scale(0.98);
+}
+
+/* Header icons (owner 2026-09-27): Drive, Datos and Buscar get the same
+ * 34 px round icon-button box and spacing as the rest of the bar. */
+.topbar-l2 .exp-expediente-nav-actions {
+  gap: 6px;
+  margin-left: 6px;
+}
+.topbar-l2 .exp-expediente-nav-actions .wb-btn-icon,
+html.rpc-topbar .header-work-cluster .header-cmdk-hint {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+html.rpc-topbar .header-work-cluster .header-cmdk-hint-icon {
+  width: 17px;
+  height: 17px;
+}
+
+/* Room for every pill (owner pick 2026-09-27, «Una pastilla»): Atajos +
+ * Aprender become one «Ayuda» menu; Censo and the mode switcher leave the
+ * header (top-bar.mjs moves them); tighter pills. */
+.topbar-help {
+  position: relative;
+  display: inline-flex;
+}
+html.rpc-topbar #btn-header-shortcuts,
+html.rpc-topbar #btn-open-learn {
+  display: none !important;
+}
+.topbar-help-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: var(--z-dropdown);
+  display: flex;
+  flex-direction: column;
+  min-width: 190px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--elev-overlay);
+}
+.topbar-help-menu[hidden] {
+  display: none;
+}
+.topbar-help-menu button {
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.topbar-help-menu button:hover,
+.topbar-help-menu button:focus-visible {
+  background: var(--state-hover-bg);
+}
+html.rpc-topbar .topbar-l2 .exp-group-name,
+html.rpc-topbar .topbar-l2 .exp-group-section,
+html.rpc-topbar .topbar-l2 .inner-tab {
+  padding: 0 8px;
+}
+html.rpc-topbar .topbar-l2 .exp-group-pill:not(.exp-group-pill--leaf):is(.is-active, :focus-within, :hover) > .exp-group-name {
+  padding: 0 2px 0 8px;
+}
+html.rpc-topbar .topbar-l2 .exp-expediente-nav > #exp-group-row {
+  padding-right: 4px;
+}
+.topbar-listhead {
+  display: none;
+}
+html.rpc-topbar #patient-sidebar .sidebar-header {
+  flex-wrap: wrap;
+}
+html.rpc-topbar .topbar-listhead:not(:empty) {
+  flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+html.rpc-topbar .topbar-listhead #btn-export-censo-header,
+html.rpc-topbar .sv-home-actions #btn-export-censo-header,
+html.rpc-topbar .ic-board-header #btn-export-censo-header {
+  align-items: center;
+  height: 32px;
+  gap: 6px;
+  padding: 0 12px;
+}
+html.rpc-topbar .ic-board-header {
+  align-items: center;
+}
+html.rpc-topbar .clinical-context-bar #header-mode-seg {
+  margin-left: 8px;
+}
+
+/* The area tabs fold into one pill, the active area. Hover or keyboard focus grows it in place,
+ * same motion as the Clínico pill (group-row.css). A Clínico section that is
+ * active hides the «Clínico» name. */
+html.rpc-topbar .topbar-nav .app-tabs {
+  gap: 0;
+}
+html.rpc-topbar .topbar-nav .app-tab.active {
+  order: -1;
+}
+html.rpc-topbar .topbar-nav .app-tab:not(.active) {
+  max-width: 0;
+  padding-inline: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition:
+    max-width var(--dur-slow) var(--ease-out),
+    padding var(--dur-slow) var(--ease-out),
+    opacity var(--dur-normal) var(--ease-out);
+}
+/* Open: hover, keyboard focus, or the tour / a feature hint points at it or
+ * at a folded tab. */
+html.rpc-topbar .topbar-nav .app-tabs:is(:hover, :has(:focus-visible), .tour-spotlight-action, :has(.tour-spotlight-action, .tour-spotlight-soap, .fh-target)) > .app-tab:not(.active) {
+  max-width: 10rem;
+  padding-inline: 12px;
+  opacity: 1;
+  transition-delay: 0s, 0s, 45ms;
+}
+html.motion-sobrio.rpc-topbar .topbar-nav .app-tab {
+  transition: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.rpc-topbar .topbar-nav .app-tab {
+    transition: none !important;
+  }
+}
+html.rpc-topbar .topbar-l2 .exp-group-pill.is-active:not(.exp-group-pill--leaf) > .exp-group-name {
+  display: none !important;
 }

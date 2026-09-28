@@ -58,7 +58,10 @@ export function buildGroupRowModel(activeGranular, settings) {
   var st = settings || {};
   var granular = activeGranular || 'resumen';
   var target = resolveConsolidatedTarget(granular, st);
-  var groups = getConsolidatedTabs(st).map(function (group) {
+  // Resultados (Tendencias / Cultivos) lives in Laboratorio; the top bar (Nav-G) omits it.
+  var groups = getConsolidatedTabs(st).filter(function (group) {
+    return group !== 'resultados';
+  }).map(function (group) {
     // Pendientes has its own pill; Resumen is not also "active" while it shows.
     var activeGroup = group === target.tab && !(group === 'paciente' && granular === 'todo');
     var sections = groupSections(group, st);

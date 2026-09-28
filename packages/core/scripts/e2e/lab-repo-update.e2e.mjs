@@ -44,7 +44,7 @@
  *
  *   npm run e2e:lab-repo-update
  */
-import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, setPortalScript } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, setPortalScript, goArea } from './harness.mjs';
 import { fullLabs, gas } from './some-fixtures.mjs';
 import {
   portalIndexHtml,
@@ -79,14 +79,14 @@ await r.finish('Actualizar labs', async () => {
   const toastTexts = () => page.locator('.toast').allInnerTexts();
   async function openUpdate() {
     await closeToasts(page);
-    if (!(await page.locator('#btn-lab-repo-batch').isVisible())) await page.locator('#apptab-lab').click();
+    if (!(await page.locator('#btn-lab-repo-batch').isVisible())) await goArea(page, 'lab');
     await page.locator('#lab-inner-labs-btn').click().catch(() => {});
     await page.locator('#btn-lab-repo-batch').click();
     await page.waitForTimeout(300);
   }
   async function days(p) {
     await openPatient(page, p);
-    if (!(await page.locator('#lab-inner-labs-btn').isVisible())) await page.locator('#apptab-lab').click();
+    if (!(await page.locator('#lab-inner-labs-btn').isVisible())) await goArea(page, 'lab');
     await page.locator('#lab-inner-labs-btn').click().catch(() => {});
     return page.locator('#lab-history-date-select option').allTextContents();
   }
@@ -105,12 +105,12 @@ await r.finish('Actualizar labs', async () => {
     await pickDate('lab-repo-batch-hasta', hasta);
   }
 
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
 
   // ── A alone: dates-only window ────────────────────────────────────────────
   await pasteAndSave(page, fullLabs(A, 'Jan 10 2026 8:00AM'));
   await openPatient(page, A);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   await openUpdate();
   await modal.waitFor({ state: 'visible' });
   const hint1 = await page.locator('#lab-repo-batch-hint').innerText();
@@ -375,10 +375,10 @@ await r.finish('Actualizar labs', async () => {
   const FOREIGN_PORTAL = { exp: '7599999-9', name: 'DEMO AJENO MIC' };
   const run2 = await r.launch({ fakePortal: true, profile: 'b' });
   await onboardLocalOnly(run2.page);
-  await run2.page.locator('#apptab-lab').click();
+  await goArea(run2.page, 'lab');
   await pasteAndSave(run2.page, fullLabs(P, 'Jan 10 2026 8:00AM'));
   await openPatient(run2.page, P);
-  await run2.page.locator('#apptab-lab').click();
+  await goArea(run2.page, 'lab');
   await run2.page.locator('#lab-inner-labs-btn').click().catch(() => {});
   const modal2 = run2.page.locator('#lab-repo-batch-modal');
   const portalCalls2 = () => run2.app.evaluate(() => globalThis.__e2e.portalCalls);
@@ -490,7 +490,7 @@ await r.finish('Actualizar labs', async () => {
     new URLSearchParams(calls2[2].body).get('TextBox2') === P.exp,
     { drop1Body: calls2[1].body, buscarBody: calls2[2].body });
 
-  await run2.page.locator('#apptab-lab').click();
+  await goArea(run2.page, 'lab');
   await run2.page.locator('#lab-inner-labs-btn').click().catch(() => {});
   const pDays = await run2.page.locator('#lab-history-date-select option').allTextContents();
   check('portal: embedded-HTML, Impresion-hop and PDF reports all saved (20/01, 19/01, 18/01)',

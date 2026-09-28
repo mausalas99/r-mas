@@ -22,7 +22,7 @@
  *
  *   npm run e2e:feature-hints
  */
-import { createRun, onboardLocalOnly, pasteAndSave, openPatient, closeToasts, until } from './harness.mjs';
+import { createRun, onboardLocalOnly, pasteAndSave, openPatient, closeToasts, until, goArea } from './harness.mjs';
 import { fullLabs, header } from './some-fixtures.mjs';
 import { activeHints } from '../../public/js/feature-hints.mjs';
 
@@ -123,7 +123,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   await shot(page, 'fresh-open');
 
   // Pegar laboratorios: the user clicks the real Laboratorio tab.
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   check('real-control click moves the flow to step 2', /GUÍA · 2\/3/.test(await bubbleMatch(page, /2\/3/)), await bubbleText(page));
   check('step 2 teaches the paste-anywhere shortcut', /⌘V.*cualquier parte/.test(await bubbleText(page)), await bubbleText(page));
   check('no overlay: only the bubble in the layer', (await page.locator('.fh-layer > :not(.fh-bubble)').count()) === 0);
@@ -144,7 +144,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   // A step with no target on screen is skipped, not stuck: Tendencias with one lab has no Gráfica button.
   await pasteAndSave(page, fullLabs(P, 'Sep 25 2026 8:00AM'));
   await openPatient(page, P);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   await onlyUnfinished(page, 'g-tendencias');
   check('Tendencias opens by itself once the others are done', await visible(bubbleOf(page, 'g-tendencias')));
   await page.locator('#lab-inner-tend-btn').click();
@@ -160,7 +160,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
 
   await app.close();
   ({ app, page, pageErrors } = await r.launch());
-  await page.locator('#apptab-lab').waitFor({ state: 'visible' });
+  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
   const after = await done(page);
   check('finished hints survive a restart', after.includes('g-labs'), after);
   // The hint layer is live once any hint opens; g-labs must never be the one.
@@ -181,7 +181,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
     await page.waitForTimeout(100);
   }
   check('no hint bubble over the «Preparando R+» boot screen', overBoot === 0, { samplesOverBoot: overBoot });
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   check('updating user (registered, no done list) gets the «Guía» hints',
     await visible(bubbleOf(page, 'g-labs'), 8000), await hintState(page));
   await shot(page, 'updating-user-guia');
@@ -189,7 +189,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   await page.locator('.fh-close').click().catch(() => {});
 
   // ── Every other hint on its own screen, with a busy synthetic patient ──
-  const go = async (sel) => { await closeToasts(page); await page.locator(sel).click(); };
+  const go = async (sel) => { await closeToasts(page); if (sel.startsWith('#apptab-')) await goArea(page, sel.slice(8)); else await page.locator(sel).click(); };
   await pasteAndSave(page, fullLabs(P, someWhen(-3)));
   // A second patient, so a card is still in sala after one is archived.
   await pasteAndSave(page, fullLabs(P2, someWhen(-1)));
@@ -229,7 +229,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   // Estado actual with alto flujo, so the soporte hover step has a target.
   await go('#apptab-nota');
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
-  await page.locator('.exp-group-section', { hasText: 'Estado actual' }).click();
+  await page.locator('.exp-group-section[data-section="estadoActual"]').click();
   await page.locator('#ea-snapshot').waitFor({ state: 'visible' });
   await page.locator('[data-ea-ec="dieta"]').fill('BLANDA PICADA');
   await page.locator('[data-ea-ec="dieta"]').press('Tab');

@@ -19,7 +19,7 @@
  *
  *   npm run e2e:sala-view
  */
-import { createRun, onboardLocalOnly, openPatient, pasteAndSave } from './harness.mjs';
+import { createRun, onboardLocalOnly, openPatient, pasteAndSave, goArea } from './harness.mjs';
 import { header, TABLE } from './some-fixtures.mjs';
 
 const A = { exp: '7000301-1', name: 'DEMO GLANCE UNO', room: '501' };
@@ -50,12 +50,12 @@ const { check, shot } = r;
 await r.finish('Resumen labs card: today envíos, altered chips only', async () => {
   const { app, page, pageErrors } = await r.launch();
   await onboardLocalOnly(page);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
 
   /** Open p's Resumen and read the Labs card. */
   async function labsCard(p) {
     await openPatient(page, p);
-    await page.locator('#apptab-nota').click();
+    await goArea(page, 'nota');
     await page.locator('button:visible', { hasText: /^\s*Resumen\s*$/ }).first().click().catch(() => {});
     const card = page.locator('#patient-dashboard-mount .labs-card');
     await card.waitFor({ timeout: 5000 });

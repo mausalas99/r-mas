@@ -18,7 +18,7 @@
  *
  *   node scripts/e2e/stress.e2e.mjs
  */
-import { createRun, onboardLocalOnly, openPatient, pasteAndSave, pasteAndProcess, closeToasts, until, dismissLearnHub } from './harness.mjs';
+import { createRun, onboardLocalOnly, openPatient, pasteAndSave, pasteAndProcess, closeToasts, until, dismissLearnHub, goArea } from './harness.mjs';
 import { header, TABLE } from './some-fixtures.mjs';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -69,7 +69,7 @@ await r.finish('Worst-case input: odd names, volume, junk labs, restart', async 
     const before = pageErrors.length;
     try {
       await openPatient(page, p);
-      await page.locator('#apptab-lab').click();
+      await goArea(page, 'lab');
       await page.waitForTimeout(300);
       check(`odd name opens without error: ${p.label}`, pageErrors.length === before, pageErrors.slice(before));
     } catch (e) {
@@ -107,7 +107,7 @@ await r.finish('Worst-case input: odd names, volume, junk labs, restart', async 
   await pasteAndSave(page, header(big, TODAY(3)) + 'QUIMICA CLINICA\nQUIMICA SANGUINEA\n' + TABLE + rows + bh('7.9').split(TABLE)[1]);
   const pasteMs = Date.now() - t0;
   await openBySearch(page, big);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   const t1 = Date.now();
   const alive = await page.evaluate(() => 1).catch(() => 0);
   await shot(page, 'junk-report');

@@ -34,7 +34,7 @@
  *
  *   npm run e2e:learn-hub-tour
  */
-import { createRun, onboardLocalOnly, closeToasts, until, pasteAndSave } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, until, pasteAndSave, goArea } from './harness.mjs';
 import { header, TABLE } from './some-fixtures.mjs';
 
 const r = createRun('learn-hub-tour');
@@ -51,9 +51,11 @@ const ACTION_STEPS = new Set(['gv7_guardia_toggle', 'gv7_lan_wifi', 'gv7_mobile_
 
 async function openLearnHubUi(page) {
   await closeToasts(page);
-  const btn = page.locator('#btn-open-learn');
+  // Top bar: Aprender R+ lives in the «?» Ayuda menu.
+  const btn = page.locator('.topbar-help-btn');
   await until(() => btn.isVisible(), 5000);
   await btn.click();
+  await page.locator('.topbar-help-menu [role="menuitem"]', { hasText: 'Aprender R+' }).click();
   await page.locator('#learn-hub-backdrop.open').waitFor({ state: 'visible' });
 }
 
@@ -123,7 +125,7 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   // A guardia census with zero patients never renders the filter chips at all
   // (empty state replaces the table) — seed one so gv7_guardia_toggle's real
   // target (the "Con pendiente" chip) exists when the module reaches it.
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   const doc0 = header(P1, 'Sep 24 2026 8:00AM') + 'BIOMETRIA HEMATICA\n' + TABLE + 'HEMOGLOBINA\tB\t13.2\tg/dL\t14.0 - 18.0\n';
   await pasteAndSave(page, doc0);
 
@@ -265,7 +267,7 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   await closeToasts(salidaDevice.page);
 
   // Pendientes for the fundamentals demo patient (DEMO PÉREZ), seeded by the same tour.
-  await salidaDevice.page.locator('#apptab-nota').click();
+  await goArea(salidaDevice.page, 'nota');
   await salidaDevice.page.locator('button:visible', { hasText: /^\s*Pendientes\s*$/ }).first().click();
   const todoRows = salidaDevice.page.locator('.wb-todo-row');
   await todoRows.first().waitFor({ timeout: 5000 }).catch(() => {});
@@ -295,7 +297,7 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   await pitchDevice.page.locator('#help-quick-backdrop').evaluate((el) => el.classList.remove('open')).catch(() => {});
   await pitchDevice.page.keyboard.press('Escape').catch(() => {});
   await closeToasts(pitchDevice.page);
-  await pitchDevice.page.locator('#apptab-nota').click();
+  await goArea(pitchDevice.page, 'nota');
   await pitchDevice.page.locator('button:visible', { hasText: /^\s*Pendientes\s*$/ }).first().click();
   const pitchRows = pitchDevice.page.locator('.wb-todo-row');
   await pitchRows.first().waitFor({ timeout: 5000 }).catch(() => {});
@@ -322,7 +324,7 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
     const d = new Date(Date.now() + off * 86400000);
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   };
-  await pp.locator('#apptab-lab').click();
+  await goArea(pp, 'lab');
   await pp.locator('#lab-inner-labs-btn').click().catch(() => {});
   const pitchDays = await pp.locator('#lab-history-date-select option').allTextContents();
   async function pitchDay(off) {

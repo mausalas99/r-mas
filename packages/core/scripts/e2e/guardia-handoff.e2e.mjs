@@ -47,7 +47,7 @@
  *   Throughout
  *     - an uncaught page error on either device
  */
-import { createRun, dismissLearnHub, closeToasts, pasteAndSave, openPatient, repoRoot } from './harness.mjs';
+import { createRun, dismissLearnHub, closeToasts, pasteAndSave, openPatient, repoRoot, goArea } from './harness.mjs';
 import { startWorker, nubeDevices, onboardNube, patientVisible, until, BASE } from './nube-worker.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 import path from 'node:path';
@@ -131,7 +131,7 @@ await r.finish('Guardia handoff: R2 → on-call R1 over Nube, both ways, restart
     await d.page.locator('#btn-connection-dropdown-close').click().catch(() => {});
     await d.page.keyboard.press('Escape');
     await dismissLearnHub(d.page);
-    await d.page.locator('#apptab-lab').click();
+    await goArea(d.page, 'lab');
   }
 
   // ── Two patients on the R2's device, both reach the R1 ────────────────
@@ -288,7 +288,7 @@ await r.finish('Guardia handoff: R2 → on-call R1 over Nube, both ways, restart
   // ── Restart the R1 ────────────────────────────────────────────────────
   await B.app.close();
   const B2 = await launchDevice('b', 3792);
-  await B2.page.locator('#apptab-lab').waitFor({ state: 'visible', timeout: 30000 });
+  await B2.page.locator('#app-main-tablist').waitFor({ state: 'visible', timeout: 30000 });
   await dismissLearnHub(B2.page);
   check('R1 restarted: both handoffs still there', await until(async () => (await handoffs(B2.page)).length === 2, 15000));
 

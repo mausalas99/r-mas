@@ -54,7 +54,7 @@
 import JSZip from 'jszip';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub, until } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub, until, goArea, quietHints } from './harness.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 
 const P1 = { exp: '7000621-1', name: 'DEMO NOTA UNO', room: '521' };
@@ -103,7 +103,7 @@ async function newDocx(since, label) {
 async function pickPatient(page, p) {
   await closeToasts(page);
   if (!(await page.locator('#ic-board-mount .p-name').locator('visible=true').count())) {
-    await page.locator('#apptab-nota').click();
+    await goArea(page, 'nota');
     await page.locator('.exp-group-pill[data-group="paciente"]').click();
     await page.locator('[data-ic-back-to-board]').click();
   }
@@ -125,7 +125,7 @@ async function setMode(page, mode) {
 /** Interconsulta › Clínico › section ('notas' | 'indica'). */
 async function goClinico(page, section) {
   await closeToasts(page);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   const sec = page.locator(`.exp-group-section[data-section="${section}"]`);
   await page.locator('.exp-group-pill[data-group="clinico"]').hover({ timeout: 5000 }).catch(() => {});
   await sec.click();
@@ -155,6 +155,7 @@ const indField = (page, arg) => page.locator(`#indica-form [data-oninput-args='[
 
 await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Word x2, past copies, restart', async () => {
   const { app, page, pageErrors } = await r.launch();
+  await quietHints(page); // the ⌘K hint bubble sits over the page toolbar under the top bar
   await onboardLocalOnly(page);
 
   await page.locator('#profile-toggle-btn').click();
@@ -163,14 +164,14 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   await page.waitForTimeout(400);
   await page.keyboard.press('Escape');
 
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   await pasteAndSave(page, fullLabs(P1, 'Sep 22 2026 8:00AM'));
   await pasteAndSave(page, fullLabs(P2, 'Sep 22 2026 8:30AM'));
   await openPatient(page, P2);
   await openPatient(page, P1);
 
   // ── Sala › Resumen › Datos: census diagnoses ──────────────────────────
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.locator('.dash-name:visible').first().click();
   // Datos has no separate paste box any more: pasting "DX1 + DX2" into the
   // first diagnosis row splits it into rows.
@@ -400,7 +401,7 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   const errors = [...pageErrors];
   await app.close();
   const again = await r.launch();
-  await again.page.locator('#apptab-lab').waitFor({ state: 'visible', timeout: 30000 });
+  await again.page.locator('#app-main-tablist').waitFor({ state: 'visible', timeout: 30000 });
   await dismissLearnHub(again.page);
   await pickPatient(again.page, P1);
   await goClinico(again.page, 'notas');

@@ -1671,8 +1671,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 /*
  * EA charts modal — size is CSS-only (reload app, no bundle).
- * Perf contract: one #ea-charts-canvas, one Chart.js instance, no modal-backdrop class.
- * Wider/taller dialog is fine; lag came from multi-canvas + innerHTML churn, not width.
+ * Rendered as plain SVG/DOM rows (no Chart.js) so one shared crosshair can
+ * span every row without juggling multiple canvases.
  */
 .ea-charts-backdrop {
   display: none;
@@ -1826,7 +1826,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-charts-modal {
   position: relative;
-  width: min(96vw, 1080px);
+  width: min(96vw, 1240px);
   max-height: min(92dvh, calc(var(--app-height) - 28px));
   display: flex;
   flex-direction: column;
@@ -1859,21 +1859,354 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   padding: 12px 16px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
-.ea-charts-canvas-cell {
-  position: relative;
-  width: 100%;
-  /* ~40% viewport height, capped — scales up on large screens without fixed 880px shell */
-  height: clamp(320px, 42vh, 440px);
+/* Segmented pill controls (tipo de gráfica, periodo) — .wb-btn gives the pill
+ * radius/sizing; only the group chrome and on-state are custom here. */
+.ea-charts-seg-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   flex-shrink: 0;
 }
 
-.ea-charts-canvas-cell canvas {
-  display: block;
-  width: 100% !important;
-  height: 100% !important;
+.ea-charts-modal-body > .ea-charts-seg-row {
+  margin-bottom: 10px;
+}
+
+.ea-charts-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--bg) 55%, var(--surface));
+  border: 1px solid var(--divider);
+}
+
+.ea-charts-seg-btn {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: var(--text-muted);
+}
+
+.ea-charts-seg-btn--active {
+  color: var(--color-accent) !important;
+  background: color-mix(in oklab, var(--color-accent) 16%, var(--surface)) !important;
+}
+
+/* One row per sign: label/value column + shared-axis plot. */
+.ea-charts-group-label {
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 12px 0 4px;
+}
+
+.ea-charts-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 6px 0;
+  border-top: 1px solid var(--divider);
+}
+
+.ea-charts-row-info {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ea-charts-row-label {
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.ea-charts-row-big {
+  font-size: calc(20px * var(--density-font, 1));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.ea-charts-row-when {
+  font-size: calc(11px * var(--density-font, 1));
+  color: var(--text-muted);
+}
+
+.ea-charts-row-badge {
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.ea-charts-row-badge--out {
+  color: var(--ea-chart-altered);
+}
+
+.ea-charts-row-plot {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 64px;
+}
+
+.ea-charts-row-plot svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ea-charts-band {
+  fill: var(--color-accent);
+  opacity: 0.08;
+}
+
+.ea-charts-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  margin: -4px;
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+}
+
+.ea-charts-dot--out {
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ea-chart-altered);
+}
+
+.ea-charts-dot--sel {
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--text);
+}
+
+.ea-charts-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in oklab, var(--text) 45%, transparent);
+  pointer-events: none;
+}
+
+.ea-charts-guide[hidden] {
+  display: none;
+}
+
+.ea-charts-hit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: crosshair;
+}
+
+.ea-charts-legend-key {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 220px;
+  flex-shrink: 0;
+  font-size: calc(11px * var(--density-font, 1));
+  color: var(--text-muted);
+}
+
+.ea-charts-legend-key .ea-charts-dot {
+  position: static;
+  margin: 0;
+}
+
+.ea-charts-axis-row {
+  display: flex;
+  gap: 16px;
+  padding-top: 8px;
+}
+
+.ea-charts-axis-plot {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 34px;
+}
+
+.ea-charts-axis-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  white-space: nowrap;
+  font-size: calc(10px * var(--density-font, 1));
+  color: var(--text-muted);
+}
+
+.ea-charts-axis-tick strong {
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Balance hídrico — per-day summary cards + mirrored bars + running total. */
+.ea-charts-bal-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 10px 0 4px;
+}
+
+.ea-charts-bal-card {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--divider);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ea-charts-bal-card-label {
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ea-charts-bal-card-value {
+  font-size: calc(20px * var(--density-font, 1));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ea-charts-bal-card-value small {
+  font-size: calc(13px * var(--density-font, 1));
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.ea-charts-bal-legend {
+  gap: 8px;
+  font-size: calc(12px * var(--density-font, 1));
+}
+
+.ea-charts-bal-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ea-charts-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.ea-charts-swatch--in {
+  background: var(--ea-chart-io-ing);
+}
+
+.ea-charts-swatch--out {
+  background: var(--ea-chart-io-egr);
+}
+
+.ea-charts-swatch--net {
+  height: 3px;
+  background: var(--text);
+}
+
+.ea-charts-bal-card-value .ing {
+  color: var(--ea-chart-io-ing);
+}
+
+.ea-charts-bal-card-value .egr {
+  color: var(--ea-chart-io-egr);
+}
+
+.ea-charts-bal-card-sub {
+  font-size: calc(11px * var(--density-font, 1));
+  color: var(--text-muted);
+}
+
+.ea-charts-bal-bars {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 140px;
+}
+
+.ea-charts-bal-zero {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--divider);
+}
+
+.ea-charts-bal-bar {
+  position: absolute;
+  border-radius: 4px;
+}
+
+.ea-charts-bal-bar--in {
+  background: var(--ea-chart-io-ing);
+  opacity: 0.85;
+  border-radius: 4px 4px 0 0;
+}
+
+.ea-charts-bal-bar--out {
+  background: var(--ea-chart-io-egr);
+  opacity: 0.85;
+  border-radius: 0 0 4px 4px;
+}
+
+.ea-charts-bal-net {
+  position: absolute;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--text);
+}
+
+.ea-charts-bal-net-lbl {
+  position: absolute;
+  transform: translateY(-50%);
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.ea-charts-bal-net-lbl--sel {
+  color: var(--text);
+}
+
+.ea-charts-bal-cum {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 84px;
+}
+
+.ea-charts-bal-cum-line {
+  stroke: var(--ea-chart-io-balance);
+  stroke-width: 2.5;
+  fill: none;
+}
+
+.ea-charts-bal-cum-area {
+  fill: var(--ea-chart-io-balance);
+  opacity: 0.12;
 }
 
 .ea-charts-empty {
@@ -1899,75 +2232,6 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   line-height: 1.45;
   color: var(--text-muted);
   max-width: 36ch;
-}
-
-.ea-charts-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
-  flex-shrink: 0;
-  border-bottom: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
-  padding-bottom: 0;
-}
-
-.ea-charts-tab {
-  appearance: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--text-muted);
-  border-radius: 0;
-  padding: 6px 12px 5px;
-  font-size: calc(12px * var(--density-font, 1));
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.ea-charts-tab:hover:not(:disabled) {
-  color: var(--text);
-  background: transparent;
-}
-
-.ea-charts-tab--active {
-  color: var(--color-accent);
-  border-bottom-color: var(--color-accent);
-  background: transparent;
-}
-
-.ea-charts-tab:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.ea-vitals-family-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
-  flex-shrink: 0;
-}
-
-.ea-vitals-family-btn {
-  appearance: none;
-  border: 1px solid var(--divider);
-  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
-  color: var(--text-muted);
-  border-radius: var(--radius-sm);
-  padding: 5px 10px;
-  font-size: calc(11px * var(--density-font, 1));
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.ea-vitals-family-btn:hover {
-  color: var(--text);
-  border-color: color-mix(in oklab, var(--color-accent) 35%, var(--divider));
-}
-
-.ea-vitals-family-btn--active {
-  color: var(--text);
-  border-color: color-mix(in oklab, var(--color-accent) 55%, var(--divider));
-  background: color-mix(in oklab, var(--color-accent) 12%, var(--surface));
 }
 
 .ea-registro-lead {

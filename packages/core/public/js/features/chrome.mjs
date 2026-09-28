@@ -6,6 +6,9 @@ import { ensureParsedLabHistory } from '../lab-history-set.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { daySelectValue } from '../lab-history-day-view.mjs';
 
+// Re-exported so app.js mounts the top bar without a new boot-hub import.
+export { mountTopBar } from './top-bar.mjs';
+
 /** Runtime hooks supplied by app.js once shell functions exist. */
 let runtime = {
   switchAppTab() {},

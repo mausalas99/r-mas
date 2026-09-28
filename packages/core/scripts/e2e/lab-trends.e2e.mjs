@@ -55,7 +55,7 @@
  *
  *   npm run e2e:lab-trends
  */
-import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub, goArea, quietHints } from './harness.mjs';
 import { TABLE, header, fullLabs, gas } from './some-fixtures.mjs';
 
 const P = { exp: '7000003-3', name: 'DEMO TENDENCIA', room: '303' };
@@ -119,14 +119,15 @@ const flat = (s) => String(s || '').replace(/\s+/g, ' ').trim();
 
 await r.finish('Lab trend arrows + Tendencias', async () => {
   let { app, page, pageErrors } = await r.launch();
+  await quietHints(page); // the ⌘K hint bubble sits over the page toolbar under the top bar
   await onboardLocalOnly(page);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
 
   // ── History: 5 days, one day with two sets, one day with no blood count ──────────────
   // One report for a new expediente: saved straight away as a new patient.
   await pasteAndSave(page, fullLabs(P, 'Dec 30 2025 8:00AM'));
   await openPatient(page, P);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   await pasteAndSave(
     page,
     [
@@ -141,7 +142,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
     ].join('\n\n')
   );
   await openPatient(page, P);
-  if (!(await page.locator('#lab-history-date-select').isVisible())) await page.locator('#apptab-lab').click();
+  if (!(await page.locator('#lab-history-date-select').isVisible())) await goArea(page, 'lab');
   const days = await page.locator('#lab-history-date-select option').allTextContents();
   check('all 7 lab days saved', ['30/12/2025', '02/01/2026', '03/01/2026', '04/01/2026', '05/01/2026', '06/01/2026', '07/01/2026'].every((d) => days.includes(d)), days);
 
@@ -282,7 +283,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   await page.waitForTimeout(800);
   await card('BH|Plt').first().scrollIntoViewIfNeeded();
   await card('BH|Plt').first().click({ position: { x: 20, y: 60 } });
-  const detail = page.locator('#tend-detail-backdrop');
+  let detail = page.locator('#tend-detail-backdrop');
   await detail.waitFor({ state: 'visible' });
   await page.waitForTimeout(400);
   const band = await page.evaluate(() => {
@@ -934,10 +935,11 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   // ── Restart: hidden card, collapsed section, saved card order and the event persist ──
   await app.close();
   ({ app, page, pageErrors } = await r.launch());
-  await page.locator('#apptab-lab').waitFor({ state: 'visible', timeout: 30000 });
+  detail = page.locator('#tend-detail-backdrop'); // the old one points at the closed window
+  await page.locator('#app-main-tablist').waitFor({ state: 'visible', timeout: 30000 });
   await dismissLearnHub(page);
   await openPatient(page, P);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   await openTend();
   await r.shot(page, 'after-restart');
   check('after restart: WBC still hidden', (await card('BH|Leu').count()) === 0);

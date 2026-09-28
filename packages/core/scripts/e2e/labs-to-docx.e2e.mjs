@@ -31,6 +31,7 @@ import {
   DEMO_GARCIA_LAB_REPORT,
 } from '../../public/js/tour-demo-some-lab.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../../public/js/lab-bulk-paste.mjs';
+import { goArea } from './harness.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const runId = new Date().toISOString().replace(/[:.]/g, '-');
@@ -135,13 +136,13 @@ async function run() {
   let { app, page, pageErrors } = await launch();
   await page.locator('[data-sync-mode="local"]').click();
   await page.locator('#clinical-onboard-local-confirm-btn').click();
-  await page.locator('#apptab-lab').waitFor({ state: 'visible' });
+  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
   await dismissLearnHub(page);
   await shot(page, 'onboarded');
   check('fresh install starts with 0 patients', (await sidebarCount(page)) === 0);
 
   // ── Mixed paste without separator → refused ─────────────────────────────
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   await pasteAndProcess(page, DEMO_TOUR_LAB_PASTE + '\n\n' + DEMO_GARCIA_LAB_REPORT);
   const refusal = page.locator('.toast', { hasText: 'expedientes distintos' });
   await refusal.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
@@ -199,7 +200,7 @@ async function run() {
   await icBtn.click();
   await page.locator('.toast', { hasText: 'Interconsulta' }).waitFor({ state: 'visible' });
   await closeToasts(page);
-  await page.locator('#apptab-nota').click();
+  await goArea(page, 'nota');
   await page.waitForTimeout(500); // let the IC screen settle
   await shot(page, 'interconsulta');
   // With a patient already open, IC mode may skip its team board.
@@ -260,7 +261,7 @@ async function run() {
 
   // ── Boot 2: same userData → data persists ───────────────────────────────
   ({ app, page, pageErrors } = await launch());
-  await page.locator('#apptab-lab').waitFor({ state: 'visible' });
+  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
   const onboardAgain = page.locator('#clinical-onboard-local-confirm-btn');
   await onboardAgain.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
   const settingsAfter = await page.evaluate(() => globalThis.localStorage.getItem('rpc-settings'));
@@ -275,7 +276,7 @@ async function run() {
   await juan.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
   check('both patients survive restart', (await juan.isVisible()) && (await ana.isVisible()));
   await juan.click();
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   await page.locator('#lab-history-date-select').waitFor({ state: 'visible' });
   const dates2 = await page.locator('#lab-history-date-select option').allTextContents();
   check('Pérez lab days survive restart', dates2.includes('11/04/2026') && dates2.includes('05/03/2026'), dates2);

@@ -19,7 +19,7 @@
  *
  *   npm run e2e:sala-cards-archive
  */
-import { createRun, onboardLocalOnly, openPatient, pasteAndSave } from './harness.mjs';
+import { createRun, onboardLocalOnly, openPatient, pasteAndSave, goArea } from './harness.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 
 const A = { exp: '7000901-1', name: 'DEMO ARCHIVO UNO', room: '601' };
@@ -32,7 +32,7 @@ const { check, shot } = r;
 await r.finish('Sala cards: see and restore archived patients', async () => {
   let { app, page, pageErrors } = await r.launch();
   await onboardLocalOnly(page);
-  await page.locator('#apptab-lab').click();
+  await goArea(page, 'lab');
   for (const p of [A, B, C]) {
     await pasteAndSave(page, fullLabs(p, 'Sep 25 2026 8:00AM'));
     await openPatient(page, p);

@@ -81,8 +81,6 @@ const GRANULAR_PANE_ORDER = [
   'medAdmin',
 ];
 
-let layoutMode = null;
-
 function granularToConsolidatedMap(settings) {
   var sala = isModeSala(settings);
   var map = {
@@ -274,19 +272,15 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
 }
 
 export function applyExpedientePaneLayout(settings) {
-  var sala = isModeSala(settings);
   syncConsolidatedSegmentBarVisibility(settings || {});
-  var next = sala ? 'consolidated-sala' : 'consolidated-inter';
   // Always remount: host CSS hides unmounted granular panes (`display:none !important`).
   // Skipping remount after a DOM reset left Tendencias/Cultivos blank on desktop.
-  layoutMode = next;
   mountConsolidatedNested(settings || {});
   syncConsolidatedSegmentBarVisibility(settings || {});
 }
 
-export function resetExpedientePaneLayoutCache() {
-  layoutMode = null;
-}
+/** No cache left to reset (the layout always remounts); kept for its callers. */
+export function resetExpedientePaneLayoutCache() {}
 
 export function syncConsolidatedSegmentBars(granularTab, settings) {
   var target = resolveConsolidatedTarget(granularTab, settings);
@@ -324,7 +318,8 @@ export function getConsolidatedCompositeState(granularTab, settings) {
 function syncDatosActionsVisibility(compositeState) {
   var datosActions = document.getElementById('exp-paciente-datos-actions');
   if (!datosActions) return;
-  datosActions.hidden = !(compositeState.paciente && compositeState.paciente.active);
+  // Top bar (Nav-G): the Datos icon is always there while a patient is open.
+  datosActions.hidden = !compositeState.paciente;
 }
 
 function syncDriveActionsVisibility(settings, compositeState) {
@@ -369,8 +364,7 @@ function syncPendientesMounts(granularTab) {
   pendTabBtn.setAttribute('aria-selected', String(pendActive));
 }
 
-export function syncConsolidatedPaneVisibility(granularTab, settings, opts) {
-  opts = opts || {};
+export function syncConsolidatedPaneVisibility(granularTab, settings) {
   var target = resolveConsolidatedTarget(granularTab, settings);
   var compositeState = getConsolidatedCompositeState(granularTab, settings);
   COMPOSITE_PANE_IDS.forEach(function (tab) {

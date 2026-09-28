@@ -35,7 +35,7 @@ function renderQuickRouteStepCopy(bodyEl, nextBtn) {
   var id = tourState.tourStepId;
   if (id === 'map_tabs') {
     bodyEl.innerHTML =
-      '<p style="margin:0;line-height:1.5;">Ruta rápida: arriba están <strong>Paciente</strong>, <strong>Laboratorio</strong>, <strong>Manejo</strong> y <strong>Agenda</strong>. Luego das de alta y procesas labs.</p>';
+      '<p style="margin:0;line-height:1.5;">Ruta rápida: arriba están <strong>Paciente</strong>, <strong>Laboratorio</strong>, <strong>Manejo</strong> y <strong>Agenda</strong>, en una sola píldora; pasa el cursor para verlas todas. Luego das de alta y procesas labs.</p>';
     nextBtn.textContent = 'Siguiente';
     return true;
   }
@@ -105,7 +105,7 @@ function applyTourStepUserActionGate(nextBtn) {
 
 function renderQuickRouteWrap(bodyEl, nextBtn, prevBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">Listo. Explora más en <strong>Aprender R+</strong>: módulos de guardia o el tutorial completo en <strong>Fundamentos</strong>.</p>';
+    '<p style="margin:0;line-height:1.5;">Listo. Explora más en <strong>Ayuda (?) → Aprender R+</strong>: módulos de guardia o el tutorial completo en <strong>Fundamentos</strong>.</p>';
   nextBtn.textContent = 'Finalizar';
   nextBtn.style.display = '';
   nextBtn.setAttribute('onclick', 'guidedTourFinish()');

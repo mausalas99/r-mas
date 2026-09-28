@@ -71,7 +71,7 @@ export function buildMedPanelCacheKey(activeId) {
     (block.dietas ? block.dietas.length : 0) +
     "|V" +
     getMedSubview() +
-    "|destUi4" +
+    "|destUi5" +
     "|cal" +
     (function () {
       var n = new Date();
@@ -86,10 +86,18 @@ function findMedRecetaRow(listEl, itemId) {
   return listEl.querySelector('[data-med-item-id="' + escaped + '"]');
 }
 
+/** «Nota» chip: pressed state + the next toggle value in its click args. */
+function setNotaChip(chip, on) {
+  if (!chip) return;
+  chip.setAttribute("aria-pressed", on ? "true" : "false");
+  chip.classList.toggle("is-on", on);
+  var args = JSON.parse(chip.getAttribute("data-onclick-args") || "[]");
+  args[args.length ? args.length - 1 : 0] = !on;
+  chip.setAttribute("data-onclick-args", JSON.stringify(args));
+}
+
 function syncRowSoapCheckbox(row, activeId, itemId) {
-  var soapChk = row.querySelector("[data-med-soap-chk]");
-  if (!soapChk) return;
-  soapChk.checked = !!getMedNotaSelMap(activeId)[String(itemId || "")];
+  setNotaChip(row.querySelector("[data-med-soap-chk]"), !!getMedNotaSelMap(activeId)[String(itemId || "")]);
 }
 
 function patchInsulinRescateRowSoapUi(activeId, listEl) {
@@ -97,12 +105,12 @@ function patchInsulinRescateRowSoapUi(activeId, listEl) {
   var items = block && block.items ? block.items : [];
   var row = listEl.querySelector('[data-med-item-id="' + INSULIN_RESCATE_GROUP_ID + '"]');
   if (!row) return false;
-  var soapChk = row.querySelector("[data-med-soap-chk]");
-  if (soapChk) {
-    soapChk.checked = isInsulinRescateGroupSoapSelected(activeId, items, function (pid, id) {
+  setNotaChip(
+    row.querySelector("[data-med-soap-chk]"),
+    isInsulinRescateGroupSoapSelected(activeId, items, function (pid, id) {
       return !!getMedNotaSelMap(pid)[id];
-    });
-  }
+    })
+  );
   return true;
 }
 
@@ -111,12 +119,12 @@ function patchInsulinPrandialRowSoapUi(activeId, listEl) {
   var items = block && block.items ? block.items : [];
   var row = listEl.querySelector('[data-med-item-id="' + INSULIN_PRANDIAL_GROUP_ID + '"]');
   if (!row) return false;
-  var soapChk = row.querySelector("[data-med-soap-chk]");
-  if (soapChk) {
-    soapChk.checked = isInsulinPrandialGroupSoapSelected(activeId, items, function (pid, id) {
+  setNotaChip(
+    row.querySelector("[data-med-soap-chk]"),
+    isInsulinPrandialGroupSoapSelected(activeId, items, function (pid, id) {
       return !!getMedNotaSelMap(pid)[id];
-    });
-  }
+    })
+  );
   return true;
 }
 
@@ -125,12 +133,12 @@ function patchPotassiumReposRowSoapUi(activeId, listEl) {
   var items = block && block.items ? block.items : [];
   var row = listEl.querySelector('[data-med-item-id="' + POTASSIUM_REPOS_GROUP_ID + '"]');
   if (!row) return false;
-  var soapChk = row.querySelector("[data-med-soap-chk]");
-  if (soapChk) {
-    soapChk.checked = isPotassiumReposGroupSoapSelected(activeId, items, function (pid, id) {
+  setNotaChip(
+    row.querySelector("[data-med-soap-chk]"),
+    isPotassiumReposGroupSoapSelected(activeId, items, function (pid, id) {
       return !!getMedNotaSelMap(pid)[id];
-    });
-  }
+    })
+  );
   return true;
 }
 
