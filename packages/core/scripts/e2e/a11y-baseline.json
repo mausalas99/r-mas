@@ -2,9 +2,44 @@
   "admin-code": {
     "admin-code-setup": {}
   },
+  "admin-panel": {
+    "admin-resumen": {
+      "color-contrast": 1
+    },
+    "admin-salas": {
+      "color-contrast": 2
+    },
+    "admin-red": {
+      "color-contrast": 1
+    },
+    "admin-equipos": {
+      "color-contrast": 3
+    },
+    "admin-mutaciones": {
+      "color-contrast": 9
+    },
+    "admin-peligro": {
+      "color-contrast": 1
+    },
+    "salas-menu": {
+      "color-contrast": 2
+    },
+    "pacientes-seleccion": {
+      "color-contrast": 1
+    },
+    "pacientes-archivar": {
+      "color-contrast": 1
+    },
+    "usuarios-sin-equipo": {
+      "color-contrast": 3
+    },
+    "registro-detalle": {
+      "color-contrast": 8
+    }
+  },
   "agenda": {
     "two-on-wednesday": {
-      "color-contrast": 2
+      "color-contrast": 3
     },
     "r2-after-edits": {
       "color-contrast": 2
@@ -19,21 +54,72 @@
       "color-contrast": 2
     }
   },
+  "ajustes-panel": {
+    "ajustes-perfil": {
+      "color-contrast": 3
+    },
+    "ajustes-apariencia": {
+      "color-contrast": 1
+    },
+    "ajustes-respaldos": {
+      "color-contrast": 1
+    },
+    "ajustes-documentos": {
+      "color-contrast": 1
+    },
+    "ajustes-plantillas": {
+      "color-contrast": 1
+    },
+    "ajustes-seguridad": {
+      "color-contrast": 1
+    },
+    "ajustes-aplicacion": {
+      "color-contrast": 1
+    },
+    "ajustes-peligro": {
+      "color-contrast": 1
+    },
+    "perfil-autosave": {
+      "color-contrast": 3
+    }
+  },
+  "censo-columnas": {
+    "export-dialog": {
+      "color-contrast": 3
+    },
+    "preview-edited": {
+      "color-contrast": 3
+    }
+  },
   "cultivos": {
-    "cultivos": {},
-    "atb-panel": {},
-    "more-formats": {},
-    "after-refresh": {},
+    "cultivos": {
+      "color-contrast": 5
+    },
+    "atb-panel": {
+      "color-contrast": 5
+    },
+    "more-formats": {
+      "color-contrast": 5
+    },
+    "after-refresh": {
+      "color-contrast": 5
+    },
     "censo-preview": {
       "color-contrast": 3
     },
-    "after-remove": {}
+    "after-remove": {
+      "color-contrast": 2
+    }
   },
   "db-unlock": {
-    "ajustes": {}
+    "ajustes": {
+      "color-contrast": 3
+    }
   },
   "drive-import": {
-    "drive-import-modal": {},
+    "drive-import-modal": {
+      "color-contrast": 1
+    },
     "drive-import-modal#2": {
       "color-contrast": 1
     },
@@ -85,11 +171,15 @@
     "drive-import-review#5": {
       "color-contrast": 1
     },
-    "drive-import-modal#14": {},
+    "drive-import-modal#14": {
+      "color-contrast": 1
+    },
     "drive-import-review#6": {
       "color-contrast": 1
     },
-    "drive-import-modal#15": {}
+    "drive-import-modal#15": {
+      "color-contrast": 2
+    }
   },
   "estado-actual": {
     "estado-actual-empty": {},
@@ -119,6 +209,56 @@
       "select-name": 6
     }
   },
+  "feature-hints": {
+    "fresh-open": {
+      "color-contrast": 3
+    },
+    "labs-step2": {
+      "color-contrast": 1
+    },
+    "portal-url-842-1": {
+      "color-contrast": 1
+    },
+    "sala-archivo-842-1": {
+      "color-contrast": 4
+    },
+    "sala-archivo-842-2": {
+      "color-contrast": 4
+    },
+    "archivados-after-archive": {
+      "color-contrast": 2
+    },
+    "card-after-archivados": {
+      "color-contrast": 2
+    },
+    "censo-842-1": {
+      "color-contrast": 4
+    },
+    "censo-842-2": {
+      "color-contrast": 1
+    },
+    "censo-842-3": {
+      "color-contrast": 1
+    },
+    "censo-842-4": {
+      "color-contrast": 2
+    },
+    "g-sync-1": {
+      "color-contrast": 3
+    },
+    "g-conexion-1": {
+      "color-contrast": 1
+    },
+    "g-conexion-2": {
+      "color-contrast": 1
+    },
+    "g-conexion-3": {
+      "color-contrast": 1
+    },
+    "g-conexion-4": {
+      "color-contrast": 1
+    }
+  },
   "guardia-handoff": {
     "r1-cycle-saved": {
       "color-contrast": 10
@@ -144,9 +284,15 @@
     "team-run": {},
     "review": {},
     "no-network": {},
-    "bulk-paste": {},
-    "portal-address-missing": {},
-    "portal-address-saved": {}
+    "bulk-paste": {
+      "color-contrast": 5
+    },
+    "portal-address-missing": {
+      "color-contrast": 1
+    },
+    "portal-address-saved": {
+      "color-contrast": 1
+    }
   },
   "lab-trends": {
     "arrows-jan2": {},
@@ -206,6 +352,40 @@
     "indicaciones": {},
     "after-restart": {}
   },
+  "nube-owner-key": {
+    "member-sees-patient": {
+      "color-contrast": 2
+    }
+  },
+  "nube-panel": {
+    "quick-look": {
+      "color-contrast": 3
+    },
+    "home": {
+      "color-contrast": 1
+    },
+    "diagnostico-falla": {
+      "color-contrast": 1
+    },
+    "home-falla": {
+      "color-contrast": 1
+    },
+    "quick-look-falla": {
+      "color-contrast": 3
+    },
+    "signed-out": {
+      "color-contrast": 2
+    },
+    "signed-out-crear": {
+      "color-contrast": 2
+    },
+    "signed-out-recuperar": {
+      "color-contrast": 2
+    },
+    "signed-out-dark": {
+      "color-contrast": 1
+    }
+  },
   "nube-sync": {
     "a-signed-up": {},
     "a-team-created": {
@@ -255,10 +435,56 @@
     "indica-merge-dialog": {},
     "indica-after": {}
   },
+  "resumen-glance": {
+    "culture-hover-antibiogram": {
+      "color-contrast": 3
+    }
+  },
+  "sala-cards-archive": {
+    "archived-view": {
+      "color-contrast": 14
+    },
+    "after-restore": {
+      "color-contrast": 2
+    },
+    "after-restart": {
+      "color-contrast": 2
+    }
+  },
   "sala-view": {
     "patient-a-labs-card": {},
     "patient-b-labs-card": {},
     "patient-d-labs-card": {}
+  },
+  "stress": {
+    "volume-68": {
+      "color-contrast": 2
+    }
+  },
+  "stress-data": {
+    "two-patients-no-separator": {
+      "color-contrast": 1
+    },
+    "agenda-this-week-50": {
+      "color-contrast": 49
+    },
+    "agenda-next-week-50": {
+      "color-contrast": 52
+    },
+    "after-restart-agenda": {
+      "color-contrast": 52
+    }
+  },
+  "stress-exports": {
+    "census-preview": {
+      "color-contrast": 3
+    },
+    "pancenso": {
+      "color-contrast": 3
+    },
+    "area-servicio-datos": {
+      "color-contrast": 1
+    }
   },
   "vpo": {
     "vpo-empty": {},
