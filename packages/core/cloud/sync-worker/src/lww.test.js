@@ -623,4 +623,52 @@ describe('applyOps LWW', () => {
     const row = s.entries.find((e) => e.id === 'p1');
     assert.deepEqual(row.monitoreo, { enc: 1, iv: 'AAAA', ct: 'BBBB' });
   });
+
+  describe('stale monitoreo op', () => {
+    const NEW = '2026-08-01T10:00:00.000Z';
+    const OLD = '2026-08-01T08:00:00.000Z';
+    const row1 = { id: 'm1', recordedAt: '2026-08-01T08:00:00.000Z', tas: 120 };
+    const row2 = { id: 'm2', recordedAt: '2026-08-01T09:00:00.000Z', tas: 122 };
+    const seed = () =>
+      applyOps(emptyState(), [
+        { path: 'entries/p1/monitoreo', value: { historial: [row1] }, updatedAt: NEW, actorId: 'desktop' },
+      ]).state;
+
+    it('older clock with an extra historial row merges it in and keeps the newer version', () => {
+      const op = {
+        path: 'entries/p1/monitoreo',
+        value: { historial: [row1, row2] },
+        updatedAt: OLD,
+        actorId: 'ipad',
+      };
+      const r = applyOps(seed(), [op]);
+      assert.equal(r.applied.length, 1);
+      assert.equal(r.rejected.length, 0);
+      const ids = r.state.entries.find((e) => e.id === 'p1').monitoreo.historial.map((x) => x.id);
+      assert.deepEqual(ids, ['m1', 'm2']);
+      assert.deepEqual(r.state.entityVersions['entries/p1/monitoreo'], { updatedAt: NEW, actorId: 'desktop' });
+    });
+
+    it('older clock with nothing new is not applied (no revision bump)', () => {
+      const op = {
+        path: 'entries/p1/monitoreo',
+        value: { historial: [row1] },
+        updatedAt: OLD,
+        actorId: 'ipad',
+      };
+      const r = applyOps(seed(), [op]);
+      assert.equal(r.applied.length, 0);
+      assert.deepEqual(r.rejected, [{ op, reason: 'stale' }]);
+    });
+
+    it('other paths still reject stale ops', () => {
+      let s = applyOps(emptyState(), [
+        { path: 'entries/p1/note', value: 'new', updatedAt: NEW, actorId: 'desktop' },
+      ]).state;
+      const r = applyOps(s, [{ path: 'entries/p1/note', value: 'old', updatedAt: OLD, actorId: 'ipad' }]);
+      assert.equal(r.applied.length, 0);
+      assert.equal(r.rejected[0].reason, 'stale');
+      assert.equal(r.state.entries.find((e) => e.id === 'p1').note, 'new');
+    });
+  });
 });
