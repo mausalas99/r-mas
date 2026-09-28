@@ -1,6 +1,7 @@
 import { isCloudSala, normalizeCloudSala } from './sala-allowlist.mjs';
 import { setCloudRoomConnected } from './nube-sync-policy.mjs';
 import { loadRoomDek, exportCachedDeksForPersistence, getCachedRoomDek } from './room-dek.mjs';
+import { getCloudSyncRoomId, getCloudSyncRevision } from './settings.mjs';
 
 /**
  * Every connect to a turn room must have its DEK loaded — otherwise this device
@@ -33,8 +34,19 @@ function loadDekAfterTurnConnect(deps, room) {
     .catch(() => {});
 }
 
-/** @param {object} deps @param {object} room */
-function applyEnsureTurnSuccess(deps, room) {
+/**
+ * The revision to keep for the turn room. Same room: this device's own — taking
+ * the server's would skip every op it has not pulled yet. Another room: 0, so
+ * the first pull brings its whole history.
+ * @param {object} room
+ */
+function turnRoomRevision(room) {
+  return String(room.id) === String(getCloudSyncRoomId() || '') ? Number(getCloudSyncRevision()) || 0 : 0;
+}
+
+/** @param {object} deps @param {object} turnRoom */
+function applyEnsureTurnSuccess(deps, turnRoom) {
+  const room = { ...turnRoom, revision: turnRoomRevision(turnRoom) };
   if (typeof deps.setCloudSyncRoomSnapshot === 'function') {
     deps.setCloudSyncRoomSnapshot(room);
   } else {
