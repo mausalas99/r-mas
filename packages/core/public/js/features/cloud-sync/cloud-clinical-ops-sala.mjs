@@ -195,6 +195,7 @@ const CLINICAL_OPS_ROW_KEYS = [
 // ponytail: one re-push per sala per minute caps a push storm if two exports never agree.
 const CLINICAL_OPS_REPUSH_COOLDOWN_MS = 60_000;
 const lastClinicalOpsRepushAt = new Map();
+const deferredClinicalOpsRepush = new Map();
 
 /** @param {unknown} snapshot @param {string} table @param {string[]} fields */
 function clinicalOpsRowKeys(snapshot, table, fields) {
@@ -224,7 +225,20 @@ export async function repushClinicalOpsIfRoomLacksLocal(sala, roomClinicalOps) {
   const normalized = normalizeCloudSala(sala);
   if (!isCloudSala(normalized)) return false;
   const now = Date.now();
-  if (now - (lastClinicalOpsRepushAt.get(normalized) || 0) < CLINICAL_OPS_REPUSH_COOLDOWN_MS) return false;
+  const wait = CLINICAL_OPS_REPUSH_COOLDOWN_MS - (now - (lastClinicalOpsRepushAt.get(normalized) || 0));
+  if (wait > 0) {
+    // Check again when the cooldown ends: no later pull carries this peer copy
+    // again, so a need seen inside the cooldown was lost for good.
+    if (!deferredClinicalOpsRepush.has(normalized)) {
+      const timer = setTimeout(() => {
+        deferredClinicalOpsRepush.delete(normalized);
+        void repushClinicalOpsIfRoomLacksLocal(normalized, roomClinicalOps);
+      }, wait);
+      /** @type {{ unref?: () => void }} */ (timer).unref?.();
+      deferredClinicalOpsRepush.set(normalized, timer);
+    }
+    return false;
+  }
   const local = await collectClinicalOpsForSala(normalized);
   if (!local || !clinicalOpsHasRowsRoomLacks(local, roomClinicalOps)) return false;
   lastClinicalOpsRepushAt.set(normalized, now);
