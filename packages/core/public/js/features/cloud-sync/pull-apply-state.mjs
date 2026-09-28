@@ -165,6 +165,20 @@ function foldTombstone(fold, patientId, value, op) {
   fold.tombstones[patientId] = base;
 }
 
+/**
+ * Same rule as the Worker's tryClearTombstoneForResurrection: an identity op
+ * (root or /fields) not older than the delete re-admits the patient. Without
+ * it, one ops batch holding a delete and its undo drops the patient again.
+ * @param {OpFold} fold @param {string} patientId @param {unknown} op
+ */
+function clearFoldTombstoneOnReAdmit(fold, patientId, op) {
+  const tomb = /** @type {{ deletedAt?: string } | undefined} */ (fold.tombstones[patientId]);
+  if (!tomb) return;
+  const opAt = String(/** @type {{ updatedAt?: string }} */ (op)?.updatedAt || '');
+  if (tomb.deletedAt && opAt.localeCompare(String(tomb.deletedAt)) < 0) return;
+  delete fold.tombstones[patientId];
+}
+
 /** Newer cycle letter wins — same rule as the Worker's mergeClinicalOpsLww. */
 function cycleIsNewer(stored, incoming) {
   if (!incoming?.sub_area_fraction) return false;
@@ -219,6 +233,7 @@ export function foldCloudOp(fold, op) {
   const entryRoot = /^entries\/([^/]+)$/.exec(path);
   if (entryRoot) {
     foldEntryRoot(fold, entryRoot[1], value);
+    clearFoldTombstoneOnReAdmit(fold, entryRoot[1], op);
     return;
   }
 
@@ -228,6 +243,7 @@ export function foldCloudOp(fold, op) {
     );
   if (entryField) {
     foldEntryField(fold, entryField[1], entryField[2], value);
+    if (entryField[2] === 'fields') clearFoldTombstoneOnReAdmit(fold, entryField[1], op);
     return;
   }
 

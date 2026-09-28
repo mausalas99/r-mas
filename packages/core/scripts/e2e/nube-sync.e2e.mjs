@@ -37,12 +37,21 @@
  *       labs (the recovery code only proves account ownership, not the room)
  *   Delete
  *     - a patient removed on A stays on B, or comes back after the next sync
+ *   Nube fixes (own block before Admin)
+ *     - undoing a delete on A leaves the patient gone on B, or gone on A
+ *       itself after the undo reload (one pull holds the delete and the undo)
+ *     - a device offline during a delete pushes chart ops on reconnect and the
+ *       patient comes back for everyone as a nameless shell, or it never drops
+ *       the patient because its own push moved its cursor past the delete
+ *     - a peer's whole clinicalOps push drops a team A made, and A never pushes
+ *       it back (a need seen inside the re-push cooldown was lost)
  *   Throughout
  *     - an uncaught page error on either device
  */
 import { createRun, dismissLearnHub, closeToasts, pasteAndSave, openPatient } from './harness.mjs';
 import { startWorker, stopWorker, d1Query, nubeDevices, onboardNube, roomMeta, patientVisible, flat, until, BASE, PASSWORD } from './nube-worker.mjs';
 import { fullLabs, gas } from './some-fixtures.mjs';
+import { decodeRoomState } from '../../cloud/sync-worker/src/crypto-at-rest.js';
 
 const tag = Date.now().toString(36).slice(-6);
 const USER_A = { username: `demo_a_${tag}`, name: 'Dr. Demo Alfa' };
@@ -50,6 +59,8 @@ const USER_B = { username: `demo_b_${tag}`, name: 'Dra. Demo Bravo' };
 const P1 = { exp: '7000411-1', name: 'DEMO SINCRONIA UNO', room: '301' };
 const P2 = { exp: '7000412-2', name: 'DEMO SINCRONIA DOS', room: '302' };
 const P3 = { exp: '7000413-3', name: 'DEMO SINCRONIA TRES', room: '303' };
+const P4 = { exp: '7000414-4', name: 'DEMO SINCRONIA CUATRO', room: '304' };
+const P5 = { exp: '7000415-5', name: 'DEMO SINCRONIA CINCO', room: '305' };
 /** lib/clinical-salas.mjs CLINICAL_SALA_VALUES === cloud-sync/sala-allowlist.mjs CLOUD_SALAS. */
 const CLOUD_SALAS = ['Sala 1', 'Sala 2', 'Sala E', 'Torre HU', 'Interconsultas', 'UX', 'Eme', 'Área A/Pensionistas'];
 
@@ -72,6 +83,65 @@ const closeConexion = (page) => page.locator('#btn-connection-dropdown-close').c
 /** #btn-header-team-sync carries btn-livesync-header--{idle,live,syncing,degraded,local}. */
 const headerSyncModifier = (page) =>
   page.locator('#btn-header-team-sync').getAttribute('class').then((c) => (String(c || '').match(/btn-livesync-header--(\w+)/) || [])[1] || null);
+
+/** Room state as the local Worker holds it (entries/tombstones readable; clinical values stay client-encrypted). */
+const roomState = async (roomId) => {
+  const out = JSON.parse(d1Query(`SELECT hex(ciphertext) AS c, hex(iv) AS i FROM room_state WHERE room_id='${roomId}'`));
+  const row = out[0]?.results?.[0];
+  const u8 = (h) => Uint8Array.from(Buffer.from(h || '', 'hex'));
+  return decodeRoomState({ WORKER_DATA_KEY: 'ab'.repeat(32) }, u8(row.c), u8(row.i));
+};
+/**
+ * All Nube HTTP runs in the main process ('cloud-sync-fetch' IPC → net), so renderer
+ * routes never see it. Wrap that handler to log pushed paths or fail requests by "METHOD /path".
+ */
+const tapNet = (d) => d.app.evaluate(({ ipcMain }) => {
+  const g = (globalThis.__e2e ||= {});
+  if (g.netTapped) return;
+  const orig = ipcMain._invokeHandlers.get('cloud-sync-fetch');
+  if (!orig) throw new Error('cloud-sync-fetch handler not found');
+  Object.assign(g, { netTapped: true, net: [], block: null });
+  ipcMain.removeHandler('cloud-sync-fetch');
+  ipcMain.handle('cloud-sync-fetch', async (e, payload) => {
+    const key = `${payload?.method || 'GET'} ${new URL(String(payload?.url || ''), 'http://x').pathname}`;
+    const body = typeof payload?.body === 'string' ? payload.body : '';
+    g.net.push({ at: Date.now(), key, paths: [...body.matchAll(/"path":"([^"]+)"/g)].map((m) => m[1]) });
+    if (g.block && new RegExp(g.block).test(key)) return { ok: false, status: 0, statusText: 'e2e offline', data: { error: 'e2e offline' }, retryAfterMs: null };
+    return orig(e, payload);
+  });
+});
+const netBlock = (d, block) => d.app.evaluate((_, b) => { globalThis.__e2e.block = b; }, block);
+/** Paths of every POST …/mutations a device sent (or tried) since `since`. */
+const pushedPaths = (d, since = 0) => d.app.evaluate((_, s) =>
+  globalThis.__e2e.net.filter((x) => x.at >= s && /^POST .*\/mutations$/.test(x.key)).flatMap((x) => x.paths), since);
+const patientIdOf = (page, p) =>
+  page.locator(`.p-name[title*="${p.exp}"]`).first().evaluate((el) => el.closest('[data-patient-id]')?.dataset.patientId || null);
+const deleteCard = async (page, p) => {
+  await closeToasts(page);
+  const card = page.locator('.patient-card, [class*=patient-card]', { has: page.locator(`.p-name[title*="${p.exp}"]`) }).first();
+  await card.hover();
+  await card.locator('.btn-delete-card').click();
+};
+const clinicalOpsOf = (page) => page.evaluate(() => window.electronAPI.dbClinicalOpsExport({})).then((res) => res?.snapshot || res || {});
+const hasTeam = (ops, name) => JSON.stringify(ops.teams || []).includes(name);
+/** Conexión › Opciones › Equipo › «Crear equipo» (the nav-view button can be hidden: DOM click). */
+const createTeam = async (page, name) => {
+  await page.locator('#btn-header-team-sync').click();
+  const navOptions = page.locator('[data-cloud-action="nav-options"]');
+  if (await navOptions.isVisible().catch(() => false)) await navOptions.click();
+  await page.locator('[data-cloud-action="nav-view"][data-cloud-view="equipo"]').first().evaluate((el) => el.click());
+  await page.locator('#btn-clinical-team-create-open').click();
+  await page.locator('#clinical-team-create-name').fill(name);
+  await page.locator('#clinical-team-create-sala').selectOption('Sala 1').catch(() => {});
+  await page.getByRole('button', { name: 'Crear equipo' }).click();
+};
+const backToLabs = async (page) => {
+  await closeToasts(page);
+  await page.locator('#btn-connection-dropdown-close').click().catch(() => {});
+  await page.keyboard.press('Escape');
+  await dismissLearnHub(page);
+  await page.locator('#apptab-lab').click();
+};
 
 await r.finish('Nube sync: two devices, both ways, offline, restart, delete', async () => {
   check('local Worker answers /ping', await startWorker(), BASE);
@@ -440,6 +510,107 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
     roomC?.id === roomA?.id, { a: roomA?.id, c: roomC?.id });
   check('C: patients-list showed "Descargando pacientes…" while the late pull ran (sync-runtime-pull-push freshInFlight)', sawDownloading);
   await C.app.close();
+
+  // ── Nube fixes: undo delete, deleted patient stays deleted, team re-push ──
+  // Own block before Admin: the known admin «Red» failure aborts every step after it.
+  // E joins before the new patients exist (team scope: a late joiner is its own case above).
+  let E = await launchDevice('e', 3795);
+  await onboardNube(E.page, { username: `demo_e_${tag}`, name: 'Dr. Demo Eco' });
+  await E.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
+  const eJoinBtn = E.page.getByRole('button', { name: 'Unirme' });
+  check('fixes: E joins EQUIPO DEMO ALFA', await until(() => eJoinBtn.isVisible(), 20000));
+  await eJoinBtn.click().catch(() => {});
+  await backToLabs(E.page);
+  for (const d of [A2, B]) await tapNet(d);
+  await backToLabs(A2.page);
+  await pasteAndSave(A2.page, fullLabs(P4, 'Sep 22 2026 8:00AM'));
+  await pasteAndSave(A2.page, fullLabs(P5, 'Sep 22 2026 8:30AM'));
+  check('fixes: B gets P4 and P5', await until(async () => (await patientVisible(B.page, P4)) && (await patientVisible(B.page, P5)), 60000));
+
+  // Undo a delete on A2 → P4 back on B (chart + labs) and on A2 after the undo reload.
+  await deleteCard(A2.page, P4);
+  check('fixes: B drops P4 after A deletes it', await until(async () => !(await patientVisible(B.page, P4)), 45000));
+  await A2.page.locator('#btn-open-settings').click();
+  const undoBtn = A2.page.locator('#btn-undo-op');
+  check('fixes: A undo offers the P4 delete', await until(async () => undoBtn.isEnabled(), 8000), await undoBtn.textContent().catch(() => null));
+  await undoBtn.evaluate((el) => el.click());
+  await A2.page.locator('.wb-confirm-modal [data-wb-confirm-ok]').click();
+  await A2.page.waitForLoadState('domcontentloaded');
+  await A2.page.locator('#apptab-lab').waitFor({ timeout: 30000 });
+  await backToLabs(A2.page);
+  check('fixes: A keeps P4 after the undo reload (one pull holds delete + undo: pull-apply-state fold)',
+    await until(async () => patientVisible(A2.page, P4), 30000));
+  check('fixes: B gets P4 back after A undid the delete (pushRestoredPatientToCloud)', await until(async () => patientVisible(B.page, P4), 45000));
+  await backToLabs(B.page);
+  await openPatient(B.page, P4);
+  check('fixes: B P4 chart back, no «Completar ingreso»', !(await B.page.locator('#m-servicio').isVisible()));
+  const labB4 = () => B.page.locator('#appcontent-lab').innerText().then(flat);
+  check('fixes: B P4 labs back (Hb 11.85)', await until(async () => /Hb 11\.85/.test(await labB4()), 30000), (await labB4()).slice(0, 160));
+  await r.shot(B.page, 'fixes-b-p4-restored');
+
+  // E is offline when A deletes P5; on reconnect E pushes P5 chart ops. The room keeps the
+  // tombstone (lww.js rejects them), B never sees P5 again, E drops P5, and E stops re-pushing.
+  check('fixes: E lists P5', await until(async () => patientVisible(E.page, P5), 60000));
+  const p5 = await patientIdOf(E.page, P5);
+  await E.app.close();
+  await deleteCard(A2.page, P5);
+  check('fixes: B drops P5 after A deletes it', await until(async () => !(await patientVisible(B.page, P5)), 45000));
+  check('fixes: room holds the P5 tombstone', await until(async () => !!(await roomState(roomA.id)).tombstones?.[p5], 15000));
+  await stopWorker();
+  E = await launchDevice('e', 3795);
+  await backToLabs(E.page);
+  check('fixes: E (offline, has not seen the delete) still lists P5', await until(async () => patientVisible(E.page, P5), 20000));
+  await tapNet(E);
+  const tE = Date.now();
+  check('Worker back up', await startWorker());
+  const p5Pushed = async () => (await pushedPaths(E, tE)).filter((x) => x.includes(p5));
+  check('fixes: E pushes its P5 chart ops on reconnect', await until(async () => (await p5Pushed()).length > 0, 45000), await p5Pushed());
+  await E.page.waitForTimeout(8000);
+  const st = await roomState(roomA.id);
+  const p5Entry = (st.entries || []).find((e) => String(e?.id) === p5) || null;
+  check('fixes: room keeps the P5 tombstone and no nameless P5 entry (lww.js tombstoned)', !!st.tombstones?.[p5] && !p5Entry,
+    { tomb: !!st.tombstones?.[p5], entryKeys: p5Entry && Object.keys(p5Entry) });
+  check('fixes: B does not get P5 back', !(await patientVisible(B.page, P5)));
+  check('fixes: E drops P5 once it pulls the delete (push keeps the cursor on needPull)', await until(async () => !(await patientVisible(E.page, P5)), 45000));
+  const n1 = (await p5Pushed()).length;
+  await E.page.waitForTimeout(30000);
+  const n2 = (await p5Pushed()).length;
+  check('fixes: E stops pushing P5 ops once the delete landed (no re-push loop)', n2 === n1, { before: n1, after: n2 });
+  await r.shot(B.page, 'fixes-b-no-p5');
+
+  // A2 makes a team; E (pulls blocked) pushes its whole clinicalOps without it → A2 re-pushes once.
+  const TEAM_X = 'EQUIPO DEMO RAYOS';
+  await E.app.close();
+  await createTeam(A2.page, TEAM_X);
+  await backToLabs(A2.page);
+  check(`fixes: ${TEAM_X} in A's clinicalOps`, await until(async () => hasTeam(await clinicalOpsOf(A2.page), TEAM_X), 15000));
+  check(`fixes: B gets ${TEAM_X}`, await until(async () => hasTeam(await clinicalOpsOf(B.page), TEAM_X), 30000));
+  await stopWorker();
+  E = await launchDevice('e', 3795);
+  await tapNet(E);
+  await netBlock(E, '^GET .*/pull$');
+  await dismissLearnHub(E.page);
+  check(`fixes: E's clinicalOps lacks ${TEAM_X}`, !hasTeam(await clinicalOpsOf(E.page), TEAM_X));
+  check('Worker back up', await startWorker());
+  await E.page.waitForTimeout(3000);
+  const tOps = Date.now();
+  await createTeam(E.page, 'EQUIPO DEMO ECO');
+  const opsPushes = async (d) => (await pushedPaths(d, tOps)).filter((x) => x === 'clinicalOps').length;
+  check('fixes: E pushes its whole clinicalOps (pulls blocked)', await until(async () => (await opsPushes(E)) > 0, 20000));
+  // The peer copy lands once; a re-push held by the 60 s cooldown must still run when it ends.
+  await until(async () => (await opsPushes(A2)) > 0, 90000);
+  await A2.page.waitForTimeout(30000);
+  const opsCounts = { a: await opsPushes(A2), b: await opsPushes(B), e: await opsPushes(E) };
+  check('fixes: A re-pushes its clinicalOps exactly once (repushClinicalOpsIfRoomLacksLocal)', opsCounts.a === 1, opsCounts);
+  await netBlock(E, null);
+  await E.app.close();
+  const F = await launchDevice('f', 3796);
+  await onboardNube(F.page, { username: `demo_f_${tag}`, name: 'Dra. Demo Foxtrot' });
+  let fOps = {};
+  check(`fixes: fresh device F sees ${TEAM_X}`, await until(async () => hasTeam((fOps = await clinicalOpsOf(F.page)), TEAM_X), 30000),
+    (fOps.teams || []).map((t) => t?.name || t?.team_name || t?.team_id));
+  await F.app.close();
+  await backToLabs(A2.page);
 
   // ── Admin panel: self-promote with the local SYNC_ADMIN_KEY, then every admin tab ──
   await openConexion(A2.page, 'admin');

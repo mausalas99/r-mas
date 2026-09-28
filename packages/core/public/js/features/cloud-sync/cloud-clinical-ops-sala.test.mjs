@@ -127,6 +127,61 @@ describe('cloud-clinical-ops-sala', () => {
     });
   });
 
+  describe('re-push when a peer push dropped our rows', () => {
+    // Device B holds team t2 + its patient assignment. Device A pushed a whole-doc
+    // copy made before it pulled B's rows — the Worker replaced the room blob.
+    const local = {
+      teams: [{ team_id: 't1' }, { team_id: 't2' }],
+      patient_team_assignment: [
+        { patient_id: 'p1', team_id: 't1' },
+        { patient_id: 'p2', team_id: 't2' },
+      ],
+      team_membership: [{ team_id: 't2', user_id: '@b' }],
+    };
+    const roomFromPeerA = {
+      teams: [{ team_id: 't1' }],
+      patient_team_assignment: [{ patient_id: 'p1', team_id: 't1' }],
+      team_membership: [{ team_id: 't1', user_id: 'host-a' }],
+    };
+
+    afterEach(() => {
+      delete globalThis.window;
+    });
+
+    it('detects a team or assignment the room lost', async () => {
+      const mod = await import('./cloud-clinical-ops-sala.mjs');
+      assert.equal(mod.clinicalOpsHasRowsRoomLacks(local, roomFromPeerA), true);
+      const onlyAssignment = { ...roomFromPeerA, teams: local.teams };
+      assert.equal(mod.clinicalOpsHasRowsRoomLacks(local, onlyAssignment), true);
+    });
+
+    it('ignores membership id differences and rows with a missing key', async () => {
+      const mod = await import('./cloud-clinical-ops-sala.mjs');
+      const roomHasAll = { ...local, team_membership: [] };
+      assert.equal(mod.clinicalOpsHasRowsRoomLacks(local, roomHasAll), false);
+      const partial = { patient_team_assignment: [{ patient_id: 'p9', team_id: '' }] };
+      assert.equal(mod.clinicalOpsHasRowsRoomLacks(partial, {}), false);
+    });
+
+    it('checks at most once per sala per cooldown and skips a locked room copy', async () => {
+      let exports = 0;
+      globalThis.window = {
+        rplusDb: {
+          async dbClinicalOpsExport() {
+            exports += 1;
+            return { ok: true, snapshot: local };
+          },
+        },
+      };
+      const mod = await import('./cloud-clinical-ops-sala.mjs');
+      assert.equal(await mod.repushClinicalOpsIfRoomLacksLocal('Sala 1', { enc: 1 }), false);
+      assert.equal(exports, 0);
+      await mod.repushClinicalOpsIfRoomLacksLocal('Sala 1', roomFromPeerA);
+      await mod.repushClinicalOpsIfRoomLacksLocal('Sala 1', roomFromPeerA);
+      assert.equal(exports, 1);
+    });
+  });
+
   describe('ensureTurnRoomForSala active-room pointer', () => {
     let calls;
     const prevFetch = globalThis.fetch;
@@ -209,9 +264,8 @@ describe('localStorage quota error handling', () => {
   });
 
   it('logs console.warn when quota is exceeded', () => {
-    let warned = false;
     const prevWarn = console.warn;
-    console.warn = (msg) => { warned = true; };
+    console.warn = () => {};
     globalThis.localStorage.setItem = () => {
       const e = new Error('QuotaExceededError');
       e.name = 'QuotaExceededError';

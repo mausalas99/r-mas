@@ -1,7 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { applyOps, emptyState } from '../../../../cloud/sync-worker/src/lww.js';
 import {
   buildPatientAdmitOpsForCloud,
+  buildRestoredPatientOps,
   partitionPatientEntriesByOperationalSala,
   resolveOperationalPatientSala,
 } from './cloud-census-sala-push.mjs';
@@ -45,5 +47,26 @@ describe('cloud-census-sala-push', () => {
     );
     assert.ok(ops.some((op) => String(op.path).includes('/fields')));
     assert.ok(ops.some((op) => op.path === 'entries/p1' && op.value?.registro === '123'));
+  });
+
+  it('undo of a delete: restored chart clears the room tombstone and brings labs back', async () => {
+    const T0 = '2026-09-27T10:00:00.000Z';
+    const patient = { id: 'p1', nombre: 'SINTETICO', registro: '9000013-4', lanUpdatedAt: T0 };
+    const labs = [{ id: 'set1', fecha: T0, resultados: { Hb: 12 } }];
+    let s = emptyState();
+    // Room before the delete: chart + one lab set, all on the chart's own clock.
+    ({ state: s } = applyOps(s, await buildRestoredPatientOps(patient, labs, 'a', T0)));
+    ({ state: s } = applyOps(s, [
+      { path: 'tombstones/p1', value: { deletedAt: '2026-09-27T10:05:00.000Z' }, updatedAt: '2026-09-27T10:05:00.000Z', actorId: 'a' },
+    ]));
+    assert.ok(s.tombstones.p1);
+    assert.equal(s.labSidecars.p1, undefined);
+
+    // Undo restores the old local copy (old clocks); push it with a fresh stamp.
+    const ops = await buildRestoredPatientOps(patient, labs, 'a', '2026-09-27T10:10:00.000Z');
+    ({ state: s } = applyOps(s, ops));
+    assert.equal(s.tombstones.p1, undefined);
+    assert.equal(s.entries.find((e) => e.id === 'p1')?.fields?.nombre, 'SINTETICO');
+    assert.ok(s.labSidecars.p1?.set1, 'lab set pushed again despite fingerprint index');
   });
 });

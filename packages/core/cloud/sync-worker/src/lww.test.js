@@ -279,6 +279,38 @@ describe('applyOps LWW', () => {
     assert.equal(s.tombstones.p1, undefined);
   });
 
+  it('late content op from an offline device does not reborn a tombstoned patient', () => {
+    let s = emptyState();
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p1/fields',
+        value: { nombre: 'BORRAR', registro: '9000013-4' },
+        updatedAt: '2026-08-05T10:00:00.000Z',
+        actorId: 'a',
+      },
+      {
+        path: 'tombstones/p1',
+        value: { registro: '9000013-4', deletedAt: '2026-08-05T12:00:00.000Z' },
+        updatedAt: '2026-08-05T12:00:00.000Z',
+        actorId: 'a',
+      },
+    ]));
+
+    let applied;
+    let rejected;
+    ({ state: s, applied, rejected } = applyOps(s, [
+      { path: 'entries/p1/note', value: { text: 'offline' }, updatedAt: '2026-08-05T12:05:00.000Z', actorId: 'b' },
+      { path: 'entries/p1/monitoreo', value: { historial: [] }, updatedAt: '2026-08-05T12:05:00.000Z', actorId: 'b' },
+      { path: 'labSidecars/p1/set-1', value: { enc: 1 }, updatedAt: '2026-08-05T12:05:00.000Z', actorId: 'b' },
+    ]));
+    assert.equal(s.entries.length, 0);
+    assert.ok(s.tombstones.p1);
+    // Not "applied": the Worker broadcasts applied ops, and a peer would recreate p1 from them.
+    assert.deepEqual(applied, []);
+    assert.deepEqual(rejected.map((r) => r.reason), ['tombstoned', 'tombstoned', 'tombstoned']);
+    assert.equal(s.entityVersions['entries/p1/note'], undefined);
+  });
+
   it('all-stale ops keep the same state object (no snapshot clone)', () => {
     let s = emptyState();
     ({ state: s } = applyOps(s, [
