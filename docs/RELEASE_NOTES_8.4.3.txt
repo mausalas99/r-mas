@@ -1,0 +1,32 @@
+R+ 8.4.3 (estable — release 8.4.3)
+======================================
+
+Fecha: 2026-09-28
+
+## Resumen
+
+Barra superior más limpia: Paciente, Laboratorio, Manejo y Agenda en una sola pastilla. Tacha medicamentos suspendidos en Datos. Nuevas pantallas de Nube, Admin y Ajustes, y una sincronización con Nube mucho más confiable.
+
+## Nuevo / mejorado
+
+- **Nuevo (barra superior):** Paciente, Laboratorio, Manejo y Agenda comparten una pastilla que muestra solo el área activa y se abre al pasar el cursor. Censo y el cambio Sala / IC / Guardia van junto a la lista de pacientes. Atajos y Aprender R+ se unen en un solo menú **Ayuda (?)**.
+- **Nuevo (Manejo y Gráficas):** nuevo diseño.
+- **Nuevo (Datos):** toca un medicamento en Datos › Censo para tacharlo. Sale del texto del censo pero queda a un toque; tócalo otra vez para regresarlo. **Tomar de lista** borra los tachados. Se sincroniza con Nube.
+- **Nuevo (Nube):** nueva pantalla de estado de Nube con vista rápida bajo el ícono del encabezado, y nuevo Diagnóstico Nube. Cambia el código y la llave de una sala cerrada en un solo paso.
+- **Nuevo (Admin y Ajustes):** Admin rediseñado (Resumen, Salas, Usuarios, Pacientes, Registro, Zona de peligro). Ajustes con nuevo Mi perfil, nuevo panel de Equipos y nueva pantalla de Nube sin sesión.
+- **Arreglado (Nube):** VPO, lista de problemas y perfil farmacológico ahora se envían al editarlos, también al borrar. Si restauras un registro con «deshacer», ya no se pierde al recargar. Un miembro nuevo recibe todo el historial de la sala. R+ se pone al día en segundos cuando Nube regresa.
+- **Arreglado (labs):** al cambiar de expediente, Laboratorio ya no muestra los labs del anterior. Un coproparasitoscópico pegado ya no ensucia BH ni Observaciones.
+- **Arreglado:** los servicios en el selector de interconsulta ya no se salen del panel.
+- **Accesibilidad:** con un panel abierto, el resto de la app queda inactivo; más botones tienen nombre para lectores de pantalla.
+- **Problema conocido:** si dos equipos agregan a la vez una eventualidad al mismo expediente, una puede perderse. Se arregla en 8.4.4.
+- **Problema conocido:** notas e indicaciones todavía no se sincronizan con Nube. Llega en 8.4.4.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.4.3-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.4.3-Mac-Intel.dmg`
+- Windows: `R+-8.4.3-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

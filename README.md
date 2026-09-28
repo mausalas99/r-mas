@@ -51,9 +51,20 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.4.2](https://github.com/mausalas99/r-mas/releases/tag/v8.4.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.4.3](https://github.com/mausalas99/r-mas/releases/tag/v8.4.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.4.3 (estable — release 8.4.3)
+
+- **Nuevo:** barra superior con una sola pastilla para Paciente, Laboratorio, Manejo y Agenda; menú Ayuda (?) único.
+- **Nuevo:** tacha medicamentos suspendidos en Datos › Censo.
+- **Nuevo:** pantallas de Nube, Admin, Ajustes (Mi perfil) y Equipos rediseñadas.
+- **Arreglado:** sincronización con Nube de VPO, lista de problemas, perfil farmacológico y registros restaurados con «deshacer».
+- **Arreglado:** Laboratorio mostraba labs del expediente anterior; un pegado de heces ensuciaba BH.
+- **Problema conocido:** dos eventualidades simultáneas desde dos equipos pueden perder una; notas e indicaciones aún no van a Nube. Ambos en 8.4.4.
+
+Notas: `docs/RELEASE_NOTES_8.4.3.txt`.
 
 ## R+ 8.4.2 (estable — release 8.4.2)
 

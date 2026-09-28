@@ -4,27 +4,27 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_842 = [
+var RELEASE_NOTES_843 = [
   {
-    title: 'Guías junto a los botones',
-    body: 'Burbujas «Guía» y «Nuevo» te enseñan R+ y lo nuevo de esta versión, junto al botón real. La × termina una guía.',
+    title: 'Barra superior en una pastilla',
+    body: 'Paciente, Laboratorio, Manejo y Agenda comparten una pastilla que se abre al pasar el cursor. Atajos y Aprender R+ viven en Ayuda (?).',
   },
   {
-    title: 'Pega la dirección del portal de laboratorio',
-    body: 'R+ ya no trae la dirección del portal. Pégala una vez en Ajustes → Laboratorio para usar Actualizar labs y cultivos.',
+    title: 'Tacha medicamentos en Datos',
+    body: 'Toca un medicamento en Datos › Censo para tacharlo. Sale del censo y regresa con otro toque.',
   },
   {
-    title: 'Datos, Resumen y censo nuevos',
-    body: 'Datos con nuevo diseño, cultivos por sitio, Resumen de un vistazo y censo con columnas a elegir y labs como diagramas.',
+    title: 'Nube, Admin y Ajustes nuevos',
+    body: 'Nueva pantalla de estado de Nube, Admin rediseñado, Mi perfil en Ajustes y nuevo panel de Equipos.',
   },
   {
-    title: 'Sala y medicamentos',
-    body: 'Archiva desde la tarjeta, corrige el día de antibiótico y revisa fármacos escondidos en agua inyectable.',
+    title: 'Sincronización más confiable',
+    body: 'VPO, lista de problemas y perfil farmacológico se sincronizan con Nube. Lo que restauras con «deshacer» ya no se pierde.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_842;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_843;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.4.2': RELEASE_NOTES_842,
+  '8.4.3': RELEASE_NOTES_843,
 };
