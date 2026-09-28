@@ -46,5 +46,18 @@ describe('mutate-bridge op mapping', () => {
     assert.equal(clocks('2026-08-04T10:00:00.000Z').length, 2);
   });
 
+  it('a patient with no clock at all gets a fixed floor clock, never the batch "now" (fresh "now" each cycle defeated the echo guard and re-sent every 12 s)', () => {
+    const entry = {
+      patient: { id: 'p1', nombre: 'PAC', monitoreo: { historial: [] }, eventualidades: { entries: [] } },
+      note: {},
+      indicaciones: {},
+      labHistory: [],
+    };
+    const clocks = (at) =>
+      mapBundleEnvelopeToOps({ entries: [entry] }, { ...meta, updatedAt: at })
+        .filter((op) => /\/(monitoreo|eventualidades)$/.test(op.path))
+        .map((op) => op.updatedAt);
+    assert.deepEqual(clocks('2026-08-04T10:00:00.000Z'), clocks('2026-08-04T10:00:12.000Z'));
+    assert.equal(clocks('2026-08-04T10:00:00.000Z').length, 2);
+  });
 });
-
