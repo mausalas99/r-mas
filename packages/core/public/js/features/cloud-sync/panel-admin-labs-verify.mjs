@@ -3,6 +3,7 @@ import {
   markNetworkRowLabsVerified,
   applyNetworkCensusFilters,
 } from './panel-admin-html.mjs';
+import { getLabPortalUrlSetting } from '../../lab-repo-portal-prompt.mjs';
 import { getCachedLabVerify, setCachedLabVerify } from './lab-verify-cache.mjs';
 
 export function labRepoCheckAvailable() {
@@ -23,7 +24,7 @@ export async function verifyNetworkLabsRows(rows, onProgress) {
   for (let i = 0; i < rows.length; i += 1) {
     onProgress?.({ index: i, total: rows.length });
     try {
-      const res = await window.electronAPI.labRepoCheck({ registro: rows[i].registro });
+      const res = await window.electronAPI.labRepoCheck({ registro: rows[i].registro, portalUrl: getLabPortalUrlSetting() });
       if (res && typeof res.hasStudies === 'boolean') {
         markNetworkRowLabsVerified(rows[i].tr, res.hasStudies, res.lastFechaSolicitud);
         if (rows[i].patientId) setCachedLabVerify(rows[i].patientId, res.hasStudies, res.lastFechaSolicitud);
