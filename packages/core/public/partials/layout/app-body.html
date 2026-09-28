@@ -453,4 +453,99 @@
   </div>
 </div>
 
-<!-- Mi perfil lives in Ajustes › Perfil (board «Ajustes A» / «Mi perfil B»). -->
+<div class="modal-backdrop" id="profile-modal" aria-hidden="true">
+  <div class="modal profile-modal profile-modal--perfil wb-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+    <header class="wb-modal-head">
+      <h3 id="profile-modal-title" class="profile-modal-title wb-modal-title">Mi Perfil</h3>
+      <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="wb-modal-body">
+      <div class="settings-perfil" id="profile-body">
+          <div class="settings-perfil-form" data-perfil-autosave>
+            <div class="settings-perfil-id">
+              <span class="settings-perfil-avatar" data-perfil-avatar aria-hidden="true">?</span>
+              <div class="settings-perfil-id-text">
+                <p class="settings-perfil-name" data-perfil-name>—</p>
+                <p class="settings-perfil-meta" data-perfil-meta></p>
+              </div>
+              <span class="settings-perfil-saved" data-perfil-saved role="status" aria-live="polite">Se guarda solo</span>
+            </div>
+            <section class="profile-row" id="profile-nube-session" hidden>
+              <div class="profile-row-head">
+                <h4 class="profile-row-title">Cuenta Nube</h4>
+                <p class="profile-hint">Tu sesión expiró. Tus cambios se guardan en este equipo, pero no se comparten con tu equipo.</p>
+              </div>
+              <div class="profile-row-body">
+                <div class="profile-actions"><button type="button" class="wb-btn wb-btn-secondary wb-btn-sm" data-onclick="openNubeLogin">Entrar a Nube →</button></div>
+              </div>
+            </section>
+            <div class="settings-perfil-col">
+            <p class="settings-section-label">Modo de trabajo</p>
+            <div class="settings-card-stack">
+              <div class="settings-card">
+                <div class="settings-card__copy">
+                  <p class="settings-card__title" id="profile-mode-label">Cómo usas R+</p>
+                  <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Sala: estado actual y listado. Interconsulta: nota e indicaciones.</p>
+                </div>
+                <div class="settings-card__action">
+                  <div class="settings-seg" role="radiogroup" aria-labelledby="profile-mode-label">
+                    <label class="settings-seg-opt"><input type="radio" name="app-mode" value="sala" id="app-mode-sala" data-onchange="onAppModeChange"><span>Sala</span></label>
+                    <label class="settings-seg-opt"><input type="radio" name="app-mode" value="interconsulta" id="app-mode-inter" data-onchange="onAppModeChange"><span>Interconsulta</span></label>
+                  </div>
+                </div>
+              </div>
+              <div class="settings-card" id="profile-default-servicio-wrap" data-profile-mode="sala">
+                <div class="settings-card__copy">
+                  <label class="settings-card__title" for="settings-default-servicio">Servicio predeterminado</label>
+                  <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Se llena solo al agregar pacientes.</p>
+                  <p id="default-servicio-warning" class="settings-card__desc settings-acc-hint settings-acc-hint--tight profile-hint--warn" style="display:none;">Usa el nombre completo del servicio (evita abreviaturas de 1–3 letras).</p>
+                </div>
+                <div class="settings-card__action">
+                  <input class="profile-input" id="settings-default-servicio" type="text" placeholder="MEDICINA INTERNA" style="text-transform:uppercase;" data-onblur="onDefaultServicioBlur">
+                </div>
+              </div>
+            </div>
+            <p class="settings-section-label">Firma en documentos</p>
+            <div class="settings-card-stack">
+              <div class="settings-card">
+                <div class="settings-card__copy">
+                  <label class="settings-card__title" for="profile-doctor-pick">Médico tratante</label>
+                  <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Elige de tu equipo en Nube.</p>
+                </div>
+                <div class="settings-card__action settings-perfil-doctor">
+                  <select class="profile-input profile-select" id="profile-doctor-pick" data-perfil-doctor-pick></select>
+                  <input class="profile-input" id="profile-doctor" type="text" placeholder="Dr. Nombre Apellido" aria-label="Médico tratante (otro)" hidden>
+                </div>
+              </div>
+              <div class="settings-card" data-profile-mode="interconsulta">
+                <div class="settings-card__copy"><label class="settings-card__title" for="profile-profesor">Profesor en nota</label></div>
+                <div class="settings-card__action"><input class="profile-input" id="profile-profesor" type="text" placeholder="Dr. Nombre Apellido"></div>
+              </div>
+              <div class="settings-card" data-profile-mode="interconsulta">
+                <div class="settings-card__copy"><label class="settings-card__title" for="profile-grado">Grado / servicio en nota</label></div>
+                <div class="settings-card__action"><input class="profile-input" id="profile-grado" type="text" placeholder="R3 · Medicina Interna"></div>
+              </div>
+            </div>
+            </div>
+            <div class="settings-perfil-col" data-profile-mode="sala">
+              <div class="settings-section-head">
+                <p class="settings-section-label">Equipo en el censo</p>
+                <button type="button" class="wb-btn wb-btn-ghost wb-btn-sm" data-perfil-fill-team>Llenar desde mi equipo</button>
+              </div>
+              <div class="settings-card-stack settings-perfil-team">
+                <div class="settings-card"><div class="settings-card__copy"><label class="settings-card__title" for="settings-medico-profesor">Profesor</label></div><div class="settings-card__action"><input class="profile-input" id="settings-medico-profesor" type="text" placeholder="Nombre" data-onblur="onMedicoTemplateBlur"></div></div>
+                <div class="settings-card"><div class="settings-card__copy"><label class="settings-card__title" for="settings-medico-r4">R4</label></div><div class="settings-card__action"><input class="profile-input" id="settings-medico-r4" type="text" placeholder="Nombre" data-onblur="onMedicoTemplateBlur"></div></div>
+                <div class="settings-card"><div class="settings-card__copy"><label class="settings-card__title" for="settings-medico-r2">R2</label></div><div class="settings-card__action"><input class="profile-input" id="settings-medico-r2" type="text" placeholder="Nombre" data-onblur="onMedicoTemplateBlur"></div></div>
+                <div class="settings-card"><div class="settings-card__copy"><label class="settings-card__title" for="settings-medico-r1a">R1</label></div><div class="settings-card__action"><input class="profile-input" id="settings-medico-r1a" type="text" placeholder="Nombre" data-onblur="onMedicoTemplateBlur"></div></div>
+                <div class="settings-card"><div class="settings-card__copy"><label class="settings-card__title" for="settings-medico-r1b">R1 (2)</label></div><div class="settings-card__action"><input class="profile-input" id="settings-medico-r1b" type="text" placeholder="Nombre" data-onblur="onMedicoTemplateBlur"></div></div>
+              </div>
+            </div>
+            <div class="settings-perfil-foot">
+              <button type="button" class="wb-btn wb-btn-ghost wb-btn-sm" data-onclick="closeSettingsDropdown" data-onclick-2="resetAndStartOnboarding">Ver tutorial de inicio</button>
+            </div>
+          </div>
+                </div>
+    </div>
+  </div>
+</div>
+

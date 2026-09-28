@@ -17,7 +17,7 @@
  *     - Respaldos / Seguridad / Aplicación open without their status card
  *     - Búsqueda unificada or Modo enfoque still listed in Ajustes
  *   Mi perfil
- *     - the header «Mi perfil» button does not open Ajustes › Perfil
+ *     - the header «Mi perfil» button does not open its own window
  *     - «Cédula profesional» is still in «Firma en documentos»
  *     - a typed Médico tratante is not saved without pressing anything
  *     - the preview does not show it as the signature
@@ -48,14 +48,13 @@ await r.finish('Ajustes A + Mi perfil B', async () => {
       .filter((el) => el.getBoundingClientRect().height > 0 || el.classList.contains('settings-nav-spacer'))
       .map((el) => (el.classList.contains('settings-nav-group') ? '#' : '') + el.textContent.trim()), NAV);
   // Laboratorio holds 8.4.2's lab portal address (kept on top of board A, agreed with the owner).
-  check('menu: Tú · Perfil, Apariencia · Datos · Respaldos, Laboratorio, Documentos, Plantillas · Equipo y app · Seguridad, Aplicación, Nube ↗ · … Zona de peligro',
-    nav.join('|') === '#Tú|Perfil|Apariencia|#Datos|Respaldos|Laboratorio|Documentos|Plantillas|#Equipo y app|Seguridad|Aplicación|Nube y equipo ↗||Zona de peligro', nav);
+  check('menu: Tú · Apariencia · Datos · Respaldos, Laboratorio, Documentos, Plantillas · Equipo y app · Seguridad, Aplicación, Nube ↗ · … Zona de peligro',
+    nav.join('|') === '#Tú|Apariencia|#Datos|Respaldos|Laboratorio|Documentos|Plantillas|#Equipo y app|Seguridad|Aplicación|Nube y equipo ↗||Zona de peligro', nav);
   const all = await A.page.locator('#settings-dropdown').innerText();
   check('no «Cuenta y equipo» cards or Rendimiento section',
     !/Cuenta y equipo/.test(all) && !nav.includes('Rendimiento'), nav);
 
   for (const [id, name] of [
-    ['settings-accordion-perfil', 'perfil'],
     ['settings-accordion-appearance', 'apariencia'],
     ['settings-accordion-backup-sync', 'respaldos'],
     ['settings-accordion-documents', 'documentos'],
@@ -97,18 +96,33 @@ await r.finish('Ajustes A + Mi perfil B', async () => {
   check('after closing Ajustes the app is live again and focus is not lost',
     afterClose.every((x) => !x) && focusAfterClose !== 'BODY', { afterClose, focusAfterClose });
   await A.page.locator('#profile-toggle-btn').click();
-  const perfil = A.page.locator('#settings-accordion-perfil');
-  check('header «Mi perfil» opens Ajustes › Perfil', await until(() => perfil.isVisible(), 5000));
+  const perfil = A.page.locator('#profile-modal');
+  check('header «Mi perfil» opens its own window, not Ajustes', await until(() => perfil.isVisible(), 5000));
+  const noScroll = () => A.page.evaluate(() => {
+    const scrolls = [...document.querySelectorAll('#profile-modal .modal, #profile-modal .wb-modal-body')]
+      .map((el) => el.scrollHeight - el.clientHeight);
+    return { over: Math.max(...scrolls), viewport: innerHeight };
+  });
+  const salaFit = await noScroll();
+  check('Mi perfil (Sala) fits without scrolling', salaFit.over <= 1, salaFit);
+  await A.page.locator('#profile-modal label:has(#app-mode-inter)').click();
+  await A.page.waitForTimeout(300);
+  const interFit = await noScroll();
+  check('Mi perfil (Interconsulta) fits without scrolling', interFit.over <= 1, interFit);
+  await r.shot(A.page, 'perfil-interconsulta');
+  await A.page.locator('#profile-modal label:has(#app-mode-sala)').click();
+  await A.page.waitForTimeout(300);
+  await A.page.waitForTimeout(500); // let the window finish opening
   const firma = await perfil.innerText();
   check('«Cédula profesional» is gone from Firma en documentos', !/Cédula/i.test(firma));
   await A.page.locator('#profile-doctor-pick').selectOption('__otro__');
   await A.page.locator('#profile-doctor').fill('Dra. Demo Perfil');
   await A.page.waitForTimeout(900);
   const chip = await perfil.locator('[data-perfil-saved]').innerText();
-  const preview = await perfil.locator('[data-prev-firma]').innerText();
+  const preview = await perfil.locator('[data-perfil-name]').innerText();
   await r.shot(A.page, 'perfil-autosave');
   check('typing a Médico tratante saves on its own', chip === 'Guardado', chip);
-  check('the preview signs with it', preview === 'Dra. Demo Perfil', preview);
+  check('the name card shows it', preview === 'Dra. Demo Perfil', preview);
   const stored = await A.page.evaluate(() => JSON.parse(localStorage.getItem('rpc-settings') || '{}').doctorName);
   check('it is in the saved settings', stored === 'Dra. Demo Perfil', stored);
 

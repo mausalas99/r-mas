@@ -18,6 +18,8 @@ Barra superior más limpia: Paciente, Laboratorio, Manejo y Agenda en una sola p
 - **Nuevo (Nube):** nueva pantalla de estado de Nube con vista rápida bajo el ícono del encabezado, y nuevo Diagnóstico Nube. Cambia el código y la llave de una sala cerrada en un solo paso.
 - **Nuevo (Admin y Ajustes):** Admin rediseñado (Resumen, Salas, Usuarios, Pacientes, Registro, Zona de peligro). Ajustes con nuevo Mi perfil, nuevo panel de Equipos y nueva pantalla de Nube sin sesión.
 - **Arreglado (Nube):** VPO, lista de problemas y perfil farmacológico ahora se envían al editarlos, también al borrar. Si restauras un registro con «deshacer», ya no se pierde al recargar. Un miembro nuevo recibe todo el historial de la sala. R+ se pone al día en segundos cuando Nube regresa.
+- **Arreglado (Admin):** eliminar muchos pacientes de la red ya no falla con «DB is overloaded». Se borra en grupos pequeños y se reintenta solo. Si un grupo falla, los demás siguen.
+- **Arreglado (Admin):** verificar labs de la red usa la dirección del portal de Ajustes › Laboratorio.
 - **Arreglado (labs):** al cambiar de expediente, Laboratorio ya no muestra los labs del anterior. Un coproparasitoscópico pegado ya no ensucia BH ni Observaciones.
 - **Arreglado:** los servicios en el selector de interconsulta ya no se salen del panel.
 - **Nuevo (Manejo):** con 16 medicamentos o más, las filas se compactan a una línea y la lista usa tres columnas, así cabe sin desplazarte.

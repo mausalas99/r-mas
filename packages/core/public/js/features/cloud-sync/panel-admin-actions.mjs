@@ -347,6 +347,63 @@ async function handleBulkArchiveNetwork(deps) {
   void loadAdminNetworkCensus(deps.root, deps.outerDeps);
 }
 
+const OVERLOAD_RE = /overloaded|queued for too long|SQLITE_BUSY/i;
+
+/** Retries a push up to 5 times (1s, 2s, 4s, 8s) only when D1 reports overload. */
+async function pushWithOverloadRetry(api, roomId, body) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await api.push(roomId, body);
+    } catch (err) {
+      const msg = String(err?.data?.message || err?.message || '');
+      if (attempt >= 4 || !OVERLOAD_RE.test(msg)) throw err;
+      await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+    }
+  }
+}
+
+/**
+ * One push per room per chunk (Worker cap: 16 ops/push). One push per patient
+ * in parallel piled 24 writes on the same room and D1 answered "DB is
+ * overloaded" after 4. Even 16 ops in one push still overloaded it on the
+ * second push, so chunks are small, run one after another, and retry with
+ * backoff when D1 says it is overloaded. A failed chunk doesn't stop the rest.
+ * @param {ReturnType<import('./api-client.mjs').createCloudSyncApi>} api
+ * @param {Array<{roomId: string, patientId: string, registro: string}>} targets
+ */
+async function deleteNetworkPatientsBatched(api, targets) {
+  const MAX_OPS = 4;
+  const byRoom = new Map();
+  for (const p of targets) {
+    if (!byRoom.has(p.roomId)) byRoom.set(p.roomId, []);
+    byRoom.get(p.roomId).push(p);
+  }
+  let ok = 0;
+  let lastErr = null;
+  for (const [roomId, list] of byRoom) {
+    for (let i = 0; i < list.length; i += MAX_OPS) {
+      const chunk = list.slice(i, i + MAX_OPS);
+      try {
+        await pushWithOverloadRetry(api, roomId, {
+          clientMutationId: `admin-delete-bulk-${roomId}-${i}-${Date.now()}`,
+          ops: chunk.map((p) =>
+            buildCloudTombstoneOp(p.patientId, {
+              registro: p.registro,
+              actorId: resolveCloudActorId(),
+              updatedAt: cloudSyncNowIso(),
+            })
+          ),
+          baseRevision: 0,
+        });
+        ok += chunk.length;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+  }
+  return { ok, lastErr };
+}
+
 /**
  * Bulk-delete every selected patient, one room each.
  * @param {object} deps
@@ -366,13 +423,11 @@ async function handleBulkDeleteNetwork(deps) {
     return;
   }
   const api = deps.getApi();
-  // Parallel: each delete is an independent tombstone push to its own room, so
-  // N sequential round trips was the remaining bottleneck once the per-item
-  // pull was already cut (docs/core/20-claude-code-handoff.md, 2026-09-13).
-  const results = await Promise.allSettled(
-    targets.map((p) => deleteOneNetworkPatient(api, p.roomId, p.patientId, p.registro))
-  );
-  const ok = results.filter((r) => r.status === 'fulfilled').length;
+  const { ok, lastErr } = await deleteNetworkPatientsBatched(api, targets);
+  if (lastErr && !ok) {
+    deps.toast(lastErr?.data?.message || lastErr?.message || 'No se pudo eliminar.', 'error');
+    return;
+  }
   deps.toast(ok + ' de ' + targets.length + ' eliminado(s).', ok === targets.length ? 'success' : 'warn');
   void loadAdminNetworkCensus(deps.root, deps.outerDeps);
 }

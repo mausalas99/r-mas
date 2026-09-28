@@ -5,7 +5,6 @@ import { closeModalAnimated } from '../../ui-motion.mjs';
 import { closeConnectionDropdown, openConnectionDropdown } from '../cloud-sync/panel-chrome.mjs';
 import { getIdleLockStatus } from '../platform/offline.mjs';
 import { isDbMode } from '../../db-storage-bridge.mjs';
-import { initPerfilPanel } from '../profile-modal.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
 
 let settingsModalChromeWired = false;
@@ -105,9 +104,6 @@ export function showSettingsPanel(panelId) {
   if (panels) panels.scrollTop = 0;
   if (panelId === 'settings-accordion-updates') {
     document.dispatchEvent(new CustomEvent('rpc-settings-updates-panel-shown'));
-  }
-  if (panelId === 'settings-accordion-perfil') {
-    initPerfilPanel();
   }
   syncSettingsStatusCards();
 }

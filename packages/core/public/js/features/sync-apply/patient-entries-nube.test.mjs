@@ -54,6 +54,19 @@ describe('applyLanPatientEntries on Nube path', () => {
     assert.ok(mon.estadoClinicoUpdatedAt > incoming.estadoClinicoUpdatedAt);
   });
 
+  it('room copy that never absorbs our extras: the second pull does not re-stamp the clock (no 12 s re-push loop)', () => {
+    getPatients().push({
+      id: 'loop1',
+      monitoreo: { estadoClinico: { abx: 'DEMO ABX A' }, manualMeds: { abx: ['DEMO ABX A'] }, estadoClinicoUpdatedAt: '2026-09-25T10:00:00.000Z' },
+    });
+    const incoming = () => ({ estadoClinico: { analgesia: 'DEMO B' }, manualMeds: { analgesia: ['DEMO B'] }, estadoClinicoUpdatedAt: '2026-09-25T10:00:01.000Z' });
+    applyLanPatientEntries([{ patient: { id: 'loop1', monitoreo: incoming() } }], { skipTeamScopeFilter: true });
+    const first = getPatients()[0].monitoreo.estadoClinicoUpdatedAt;
+    for (const t0 = Date.now(); Date.now() - t0 < 5; ); // a re-stamp must show as a different ms
+    applyLanPatientEntries([{ patient: { id: 'loop1', monitoreo: incoming() } }], { skipTeamScopeFilter: true });
+    assert.equal(getPatients()[0].monitoreo.estadoClinicoUpdatedAt, first);
+  });
+
   it('a peer Datos edit wins by its own key clock even when the local patient clock is newer', () => {
     getPatients().push({
       id: 'p-key',

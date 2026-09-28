@@ -194,6 +194,38 @@ function setMonitoreoField(state, patientId, value) {
   state.entries[idx] = { ...state.entries[idx], monitoreo: merged };
 }
 
+const MONITOREO_PATH = /^entries\/([^/]+)\/monitoreo$/;
+
+/** Key-order-proof compare: merge output order may differ from stored order. */
+function canonical(v) {
+  if (Array.isArray(v)) return v.map(canonical);
+  if (v && typeof v === 'object') {
+    return Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical(v[k])]));
+  }
+  return v;
+}
+
+/**
+ * An op older than the stored monitoreo clock still may carry rows the server
+ * lacks. Merge it in; keep the stored (newer) entityVersion. Returns the merged
+ * op when the stored value changed, else null (caller reports it stale).
+ * @param {RoomSyncState} state @param {SyncOp} op
+ */
+function mergeStaleMonitoreo(state, op) {
+  const m = MONITOREO_PATH.exec(op.path);
+  if (!m || isTombstoned(state, m[1])) return null;
+  const idx = findEntryIndex(state, m[1]);
+  if (idx < 0) return null;
+  const current = state.entries[idx].monitoreo;
+  if (!current || isEncryptedEnvelope(current) || isEncryptedEnvelope(op.value)) return null;
+  const merged = mergeMonitoreoLww(current, op.value);
+  // merge fills defaults, so compare against current merged with itself, not raw current
+  const baseline = mergeMonitoreoLww(current, current);
+  if (JSON.stringify(canonical(merged)) === JSON.stringify(canonical(baseline))) return null;
+  state.entries[idx] = { ...state.entries[idx], monitoreo: merged };
+  return { ...op, value: merged };
+}
+
 /** @param {RoomSyncState} state @param {string} itemId @param {unknown} value */
 function upsertAgendaItem(state, itemId, value) {
   const idx = state.agenda.findIndex((item) => item && item.id === itemId);
@@ -347,7 +379,9 @@ export function applyOps(state, ops) {
   const staleRejected = [];
   let hasFresh = false;
   for (const op of list) {
-    if (!isNewerVersion(op, state.entityVersions[op.path])) {
+    if (MONITOREO_PATH.test(op.path)) {
+      hasFresh = true; // stale monitoreo may still merge; decided in the main loop
+    } else if (!isNewerVersion(op, state.entityVersions[op.path])) {
       staleRejected.push({ op, reason: 'stale' });
     } else {
       hasFresh = true;
@@ -383,7 +417,9 @@ export function applyOps(state, ops) {
     try {
       const current = next.entityVersions[op.path];
       if (!isNewerVersion(op, current)) {
-        rejected.push({ op, reason: 'stale' });
+        const mergedOp = mergeStaleMonitoreo(next, op);
+        if (mergedOp) applied.push(mergedOp);
+        else rejected.push({ op, reason: 'stale' });
         continue;
       }
 

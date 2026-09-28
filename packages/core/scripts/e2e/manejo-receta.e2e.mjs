@@ -382,6 +382,27 @@ await r.finish('Manejo + Perfil histórico', async () => {
   await page.getByRole('button', { name: 'Limpiar' }).locator('visible=true').first().click();
   check('Limpiar empties Manejo', (await toast(/Manejo actual limpiado/)) && /Importar SOME/.test(await page.locator('#med-hint').innerText()));
 
+  // ── Long list (22 meds): dense rows, 3 columns, no scrolling ─────────────
+  const LONG = ['ACIDO FOLICO 5 MG TABLETA', 'AZATIOPRINA 50 MG TABLETA', 'BENZONATATO 100 MG PERLA', 'FENAZOPIRIDINA 100 MG TABLETA',
+    'HIDROXICLOROQUINA 200 MG TABLETA', 'POLIETILENGLICOL 3350 POLVO 17 G', 'PREDNISONA 20 MG TABLETA', 'SENOSIDOS A-B 8.6 MG TABLETA',
+    'LOSARTAN 50 MG COMPRIMIDO', 'ATORVASTATINA 40 MG TABLETA', 'FUROSEMIDA 40 MG TABLETA', 'ENALAPRIL 10 MG TABLETA',
+    'NIFEDIPINO 30 MG TABLETA', 'METFORMINA 850 MG TABLETA', 'SERTRALINA 50 MG TABLETA', 'OMEPRAZOL 20 MG CAPSULA',
+    'PARACETAMOL 500 MG TABLETA', 'ONDANSETRON 8 MG TABLETA', 'AMLODIPINO 5 MG TABLETA', 'ESPIRONOLACTONA 25 MG TABLETA',
+    'LEVOTIROXINA 100 MCG TABLETA', 'TAMSULOSINA 0.4 MG CAPSULA']
+    .map((n, i) => row(pad(10 + i), 'MEDICAMENTOS', n, 'VIA ORAL', n.match(/[\d.]+ (?:MG|MCG|G)/)[0] + ' //', 'CADA 24 HORAS')).join('\n');
+  await importSome(LONG);
+  await closeToasts(page);
+  const dense = await page.evaluate(() => {
+    const wrap = globalThis.document.querySelector('#med-subview-receta .med-groups');
+    const area = globalThis.document.getElementById('med-work-area');
+    const rows = [...globalThis.document.querySelectorAll('#med-subview-receta .med-receta-row')];
+    return { dense: !!wrap && wrap.classList.contains('med-groups--dense'), rows: rows.length,
+      tallest: Math.max(...rows.map((x) => x.getBoundingClientRect().height)),
+      fits: area.scrollHeight <= area.clientHeight + 2, scroll: area.scrollHeight, view: area.clientHeight };
+  });
+  check('22 meds: dense rows (≤44 px) and the list fits with no scrolling', dense.dense && dense.rows === 22 && dense.tallest <= 44 && dense.fits, dense);
+  await r.shot(page, 'manejo-dense');
+
   check('no page errors', pageErrors.length === 0, pageErrors.slice(0, 5));
   await app.close();
 });

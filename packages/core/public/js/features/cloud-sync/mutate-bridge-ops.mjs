@@ -10,6 +10,13 @@ import { shouldSkipCloudMedRecetaPush, isCloudEntryClearPending, FP_FIELDS } fro
 /** Packed into dedicated LWW paths — must not ride along on `fields` with a fresh batch clock. */
 export const FIELD_SKIP = new Set(['historiaClinica', 'id', 'monitoreo', 'eventualidades', 'medReceta']);
 
+/**
+ * Floor clock for content with no clock of its own and a patient with no census clock.
+ * Fixed, so the echo guard sees the same (path, updatedAt) every cycle; low, so it never
+ * beats a peer's real edit.
+ */
+export const CLOCKLESS_FLOOR_CLOCK = '2000-01-01T00:00:00.000Z';
+
 /** @param {unknown} note @param {string} fallback */
 function noteOpUpdatedAt(note, fallback) {
   if (!note || typeof note !== 'object') return fallback;
@@ -85,11 +92,12 @@ export function pushCensusFieldsOp(ops, patientId, patient, actorId) {
 }
 
 /** Monitoreo + eventualidades only (no HC) — fits debounced Nube bundle without note/lab quota blow-up. */
-export function pushCloudLiveClinicalOps(ops, patientId, patient, actorId, batchAt) {
-  // No content clock → use the patient clock, not the batch "now": a fresh "now" on every
-  // bundle defeats the echo guard, so each save re-sent every patient's block (429 flood),
-  // and an empty template stamped "now" beat a teammate's real edit on the server.
-  const stableAt = fieldsOpUpdatedAt(patient) || batchAt;
+export function pushCloudLiveClinicalOps(ops, patientId, patient, actorId) {
+  // No content clock → use the patient clock, else the fixed floor — never the batch "now":
+  // a fresh "now" on every bundle defeats the echo guard, so each save re-sent every
+  // patient's block (429 flood), and an empty template stamped "now" beat a teammate's
+  // real edit on the server.
+  const stableAt = fieldsOpUpdatedAt(patient) || CLOCKLESS_FLOOR_CLOCK;
   if (patient.monitoreo) {
     // Still pushed (never dropped) when a vitals row has no resolvable content clock.
     const monAt = monitoreoOpUpdatedAt(patient.monitoreo) || stableAt;
@@ -114,9 +122,9 @@ export function pushCloudLiveClinicalOps(ops, patientId, patient, actorId, batch
   }
 }
 
-/** @param {CloudSyncOp[]} ops @param {string} patientId @param {object} patient @param {string} actorId @param {string} batchAt */
-function pushClinicalBlockOps(ops, patientId, patient, actorId, batchAt) {
-  pushCloudLiveClinicalOps(ops, patientId, patient, actorId, batchAt);
+/** @param {CloudSyncOp[]} ops @param {string} patientId @param {object} patient @param {string} actorId */
+function pushClinicalBlockOps(ops, patientId, patient, actorId) {
+  pushCloudLiveClinicalOps(ops, patientId, patient, actorId);
 }
 
 /** @param {CloudSyncOp[]} ops @param {string} patientId @param {object} entry @param {string} actorId @param {string} batchAt */
@@ -188,7 +196,7 @@ export function mapPatientEntryToOps(entry, meta) {
   const batchAt = meta.updatedAt;
   const ops = [];
   pushCensusFieldsOp(ops, patientId, entry.patient, actorId);
-  pushClinicalBlockOps(ops, patientId, entry.patient, actorId, batchAt);
+  pushClinicalBlockOps(ops, patientId, entry.patient, actorId);
   pushDocOps(ops, patientId, entry, actorId, batchAt);
   const labs = Array.isArray(entry.labHistory) ? entry.labHistory : [];
   pushLabSidecarOps(ops, patientId, labs, actorId, batchAt);
@@ -256,7 +264,7 @@ export function mapPatientEntryToCloudBundleOps(entry, meta) {
   if (!patientId || patientId.indexOf('demo-') === 0) return [];
   const ops = [];
   pushCensusFieldsOp(ops, patientId, entry.patient, meta.actorId);
-  pushCloudLiveClinicalOps(ops, patientId, entry.patient, meta.actorId, meta.updatedAt);
+  pushCloudLiveClinicalOps(ops, patientId, entry.patient, meta.actorId);
   pushClocklessEntryOps(ops, patientId, entry, meta.actorId, meta.updatedAt);
   return ops;
 }

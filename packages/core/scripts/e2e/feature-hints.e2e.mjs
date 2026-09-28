@@ -210,6 +210,13 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   // Tendencias › Gráfica window: range, hide a series, Tabla, hide a row, copy.
   await walkHint(page, 'g-tendencias', 7);
   await page.keyboard.press('Escape');
+  // 8.4.3 Laboratorio: today's labs, so the altered chips, Diagramas and the Resumen deltas show.
+  await go('#lab-inner-labs-btn');
+  await pasteAndSave(page, fullLabs(P, someWhen(0)));
+  await openPatient(page, P);
+  await go('#apptab-lab');
+  await walkHint(page, 'lab-843', 2);
+  await walkHint(page, 'lista-843', 1);
   await go('#apptab-med'); await go('#med-itab-receta');
   await walkHint(page, 'g-manejo', 1);
   // A receta, so Datos can take its census meds from it (the agua inyectable review and the day modal open on the way).
@@ -219,8 +226,10 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   await page.locator('.agua-iny-modal [data-save]').click();
   const abxCancel = page.locator('[data-abx-dia-modal] button', { hasText: 'Cancelar' });
   if (await visible(abxCancel, 3000)) await abxCancel.click();
+  await walkHint(page, 'manejo-843', 3);
   await go('#apptab-nota');
   await page.locator('.exp-group-pill', { hasText: 'Resumen' }).first().click();
+  await walkHint(page, 'resumen-843', 1);
   // Actualizar labs with no portal address (a fresh profile never has one): R+ stops
   // before the network and opens Ajustes → Laboratorio on the empty field.
   await closeToasts(page);

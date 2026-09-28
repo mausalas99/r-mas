@@ -24,6 +24,7 @@ import {
   mapPatientEntryToOps,
   mapPatientEntryToCensusSeedOps,
   buildInternoAccessUpsertOp,
+  CLOCKLESS_FLOOR_CLOCK,
   internoAccessMutationId,
 } from './mutate-bridge-ops.mjs';
 import {
@@ -207,7 +208,7 @@ function scheduleTombstoneFlush() {
  * Floor clock for patients that never got a real edit — lets empty-room seed emit
  * `fields` without beating a peer who typed a real nombre (was Date.now() before).
  */
-const CENSUS_SEED_CLOCK = '2000-01-01T00:00:00.000Z';
+const CENSUS_SEED_CLOCK = CLOCKLESS_FLOOR_CLOCK;
 
 /**
  * One-time census clock on live patients so empty-room seed can emit `fields`.
