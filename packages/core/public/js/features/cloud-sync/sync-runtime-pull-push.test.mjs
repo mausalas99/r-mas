@@ -180,21 +180,29 @@ describe('one full re-pull per keyed sala (recovers the 8.4.1 onboarding drop)',
     }
   });
 
-  it('a pull that comes back locked is not marked done and runs again', async () => {
+  it('a pull that comes back locked is not marked done, and retries only after the wait', async () => {
     const prev = globalThis.localStorage;
+    const realNow = Date.now;
     globalThis.localStorage = memStorage();
     clearRoomDekCache();
     try {
       await keyRoom1();
+      let now = realNow();
+      Date.now = () => now;
       const seen = [];
       let locked = true;
       const api = { pull: async (_id, since) => { seen.push(since); return { revision: 9, ops: [], locked }; } };
       await pullPushHarness(api, () => 7).pullLatest();
+      // Still locked, inside the wait: plain incremental pulls, not whole-room ones.
+      await pullPushHarness(api, () => 7).pullLatest();
+      await pullPushHarness(api, () => 7).pullLatest();
+      now += 10 * 60_000;
       locked = false;
       await pullPushHarness(api, () => 7).pullLatest();
       await pullPushHarness(api, () => 7).pullLatest();
-      assert.deepEqual(seen, [0, 0, 7]);
+      assert.deepEqual(seen, [0, 7, 7, 0, 7]);
     } finally {
+      Date.now = realNow;
       clearRoomDekCache();
       globalThis.localStorage = prev;
     }
