@@ -103,6 +103,18 @@ function censoItemText(it) {
 /** Pending new line: { kind, index } while its editor is open, not yet saved. */
 var draftLine = null;
 
+/* Crossed-out meds live in `censoMedsStruckText`, same line format as
+   censoMedsText. They are already gone from censoMedsText (so from the census);
+   this list only lets a click bring them back. */
+function struckMedsHtml(patient, offset) {
+  return parseCensoLines(patient.censoMedsStruckText).map(function (it, j) {
+    return (
+      '<li><button type="button" class="exp-datos-line exp-datos-line--struck" data-onclick="toggleCensoMed" data-onclick-args="[' + (offset + j) + ']"' +
+      ' aria-label="Restaurar ' + esc(censoItemText(it)) + '"><span class="exp-datos-line__t">' + esc(it.name) + '</span></button></li>'
+    );
+  });
+}
+
 function censoRenderItems(patient, kind) {
   var items = parseCensoLines(patient[CENSO_LINES[kind].field]);
   if (draftLine && draftLine.kind === kind) items.splice(draftLine.index, 0, { name: '', dia: '', sep: '\n' });
@@ -125,11 +137,18 @@ function censoListHtml(patient, kind, editIndex) {
       : kind === 'atb'
         ? '<span class="exp-datos-tag exp-datos-tag--muted">sin día</span>'
         : '';
+    if (kind === 'meds') {
+      return (
+        '<li><button type="button" class="exp-datos-line exp-datos-line--toggle" data-onclick="toggleCensoMed" data-onclick-args="[' + i + ']"' +
+        ' aria-label="Tachar ' + esc(censoItemText(it)) + '"><span class="exp-datos-line__t">' + esc(it.name) + '</span>' + tag + '</button></li>'
+      );
+    }
     return (
       '<li><button type="button" class="exp-datos-line" data-line="' + i + '" data-onclick="editCensoLine" data-onclick-args=\'["' + kind + '",' + i + ']\'' +
       ' aria-label="Editar ' + esc(censoItemText(it)) + '"><span class="exp-datos-line__t">' + esc(it.name) + '</span>' + tag + '</button></li>'
     );
   });
+  if (kind === 'meds' && editIndex < 0) lis = lis.concat(struckMedsHtml(patient, lis.length));
   if (!lis.length) {
     lis.push(
       '<li><button type="button" class="exp-datos-line exp-datos-line--empty" data-onclick="editCensoLine" data-onclick-args=\'["' + kind + '",0]\'>' +
@@ -273,6 +292,22 @@ export function commitCensoLine(kind, index, ev) {
   refreshCensoLines(kind, j);
 }
 
+/** Click a med: cross it out and move it to the bottom. Click a crossed-out med: bring it back. */
+export function toggleCensoMed(index) {
+  var pid = currentPatientId();
+  var patient = activePatient(pid);
+  if (!patient) return;
+  var items = parseCensoLines(patient.censoMedsText);
+  var struck = parseCensoLines(patient.censoMedsStruckText);
+  if (index < items.length) struck.push(items.splice(index, 1)[0]);
+  else if (struck[index - items.length]) items.push(struck.splice(index - items.length, 1)[0]);
+  else return;
+  patient.censoMedsStruckText = joinCensoLines(struck);
+  stampCensoFieldsClock(patient, undefined, 'censoMedsStruckText');
+  saveCensoText('meds', joinCensoLines(items));
+  refreshCensoLines('meds', -1);
+}
+
 function refreshDxListDom(patientId) {
   var patient = activePatient(patientId);
   var listEl = document.getElementById('patient-dx-list');
@@ -360,6 +395,10 @@ export function censoTomarDeMedicamentos() {
   var patient = activePatient(pid);
   if (!patient) return;
   var text = formatCensoMedsFromReceta(getMedRecetaByPatient()[pid]);
+  if (patient.censoMedsStruckText) {
+    patient.censoMedsStruckText = '';
+    stampCensoFieldsClock(patient, undefined, 'censoMedsStruckText');
+  }
   patient.censoMedsText = text;
   stampCensoAndPush(patient, 'censoMedsText');
   refreshCensoLines('meds', -1);
@@ -390,4 +429,5 @@ export const patientDataCensoWindowHandlers = {
   addCensoLine,
   onCensoLineKey,
   commitCensoLine,
+  toggleCensoMed,
 };

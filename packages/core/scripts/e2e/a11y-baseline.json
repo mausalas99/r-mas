@@ -112,18 +112,10 @@
     }
   },
   "datos-panel": {
-    "datos-open": {
-      "color-contrast": 2
-    },
-    "datos-censo": {
-      "color-contrast": 2
-    },
-    "datos-cama": {
-      "color-contrast": 2
-    },
-    "datos-identidad": {
-      "color-contrast": 2
-    },
+    "datos-open": {},
+    "datos-censo": {},
+    "datos-cama": {},
+    "datos-identidad": {},
     "datos-dark": {}
   },
   "db-unlock": {

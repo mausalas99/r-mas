@@ -146,7 +146,7 @@ export const FEATURE_HINTS = [
       { sel: '#btn-exp-datos-open, #patient-dashboard-mount .dash-name', action: true, text: 'Datos tiene un diseño nuevo. Ábrelo aquí.' },
       { sel: '.exp-datos-summary', text: 'Arriba, lo esencial: cama, edad, peso, registro y día de estancia. El <strong>Equipo</strong> se cambia aquí.' },
       { sel: '.exp-datos-tabs', text: '<strong>Censo</strong>, <strong>Cama e ingreso</strong> e <strong>Identidad</strong>: toca uno para verlo. Cada cambio se guarda solo.' },
-      { sel: '#patient-censo-meds .exp-datos-line:not(.exp-datos-line--empty)', text: '¿Un medicamento no va en el censo? Tócalo, borra el texto y sal del campo. Solo se quita del censo, no de la receta.' },
+      { sel: '#patient-censo-meds .exp-datos-line:not(.exp-datos-line--empty)', text: '¿Un medicamento ya no va en el censo? Tócalo y queda tachado. Tócalo otra vez para regresarlo. Solo cambia el censo, no la receta.' },
     ],
   },
   {

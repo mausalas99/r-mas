@@ -229,6 +229,7 @@ export function mergeCensoPatientFields(target, source, options) {
   mergeAccesosPatientFields(target, source);
   mergeCensoTextField(target, source, 'censoMedsText', keepLocal);
   mergeCensoTextField(target, source, 'censoAtbText', keepLocal);
+  mergeCensoTextField(target, source, 'censoMedsStruckText', keepLocal);
   var dxCmp = compareFieldClock(target, source, 'diagnosticosList');
   if (dxCmp === 1) {
     // Newer key clock: take it even when empty — that is how a removed dx syncs.

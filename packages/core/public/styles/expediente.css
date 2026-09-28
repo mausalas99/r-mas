@@ -1004,6 +1004,16 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   color: var(--text-muted);
 }
 
+.exp-datos-line--toggle,
+.exp-datos-line--struck {
+  cursor: pointer;
+}
+
+.exp-datos-line--struck {
+  color: color-mix(in oklab, var(--text-muted) 55%, var(--text));
+  text-decoration: line-through;
+}
+
 .exp-datos-list__rm {
   flex: none;
   width: 24px;
@@ -1940,7 +1950,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
   border: 1px solid var(--border);
   border-radius: 999px;
   background: transparent;
-  color: var(--text-muted);
+  color: color-mix(in oklab, var(--text-muted) 55%, var(--text));
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -1954,7 +1964,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 .exp-datos-tab.is-on {
   border-color: color-mix(in oklab, var(--action) 45%, var(--border));
   background: color-mix(in oklab, var(--action) 14%, transparent);
-  color: color-mix(in oklab, var(--action) 85%, var(--text));
+  color: color-mix(in oklab, var(--action) 60%, var(--text));
 }
 
 .exp-datos-tab:focus-visible {
