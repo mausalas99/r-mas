@@ -227,11 +227,13 @@ async function flushOutboxBeforeRoomSwitch(_deps) {
  * @param {object} deps
  * @param {string} code
  */
-export async function joinRoomByCode(deps, code) {
+export async function joinRoomByCode(deps, code, opts = {}) {
   await flushOutboxBeforeRoomSwitch(deps);
   const data = await deps.getApi().joinRoom({ code });
   const room = data.room;
-  persistCloudRoom(deps, room);
+  // `fullPull`: start from revision 0 so the first pull brings the room's history.
+  // Storing room.revision would make it pull "since now" and miss everything before.
+  persistCloudRoom(deps, opts.fullPull ? { ...room, revision: 0 } : room);
   deps.renderConnected(room);
   // Loading the room key is best-effort AFTER the join itself succeeded — a
   // key-load hiccup should never read to the user as "couldn't join."
@@ -384,7 +386,7 @@ export async function handleJoinRoom(deps) {
     return;
   }
   try {
-    const room = await joinRoomByCode(deps, code);
+    const room = await joinRoomByCode(deps, code, { fullPull: true });
     deps.toast('Unido a la sala ' + room.code + '.', 'success');
   } catch (err) {
     deps.toast(joinRoomErrorText(err), 'error');
