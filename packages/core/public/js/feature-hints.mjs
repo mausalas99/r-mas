@@ -18,7 +18,7 @@ import { FEATURE_HINTS_DONE_LS_KEY } from './clinical-settings.mjs';
  * HINTS_RELEASE; users who finished the Guía then only see those.
  * Order is priority: only the first unfinished hint on screen opens.
  */
-export const HINTS_RELEASE = '8.4.2';
+export const HINTS_RELEASE = '8.4.3';
 
 export const FEATURE_HINTS = [
   {
@@ -147,6 +147,14 @@ export const FEATURE_HINTS = [
       { sel: '.exp-datos-summary', text: 'Arriba, lo esencial: cama, edad, peso, registro y día de estancia. El <strong>Equipo</strong> se cambia aquí.' },
       { sel: '.exp-datos-tabs', text: '<strong>Censo</strong>, <strong>Cama e ingreso</strong> e <strong>Identidad</strong>: toca uno para verlo. Cada cambio se guarda solo.' },
       { sel: '#patient-censo-meds .exp-datos-line:not(.exp-datos-line--empty)', text: '¿Un medicamento ya no va en el censo? Tócalo y queda tachado. Tócalo otra vez para regresarlo. Solo cambia el censo, no la receta.' },
+    ],
+  },
+  {
+    id: 'datos-tachar-843',
+    release: '8.4.3',
+    title: 'Tachar medicamentos',
+    steps: [
+      { sel: '#patient-censo-meds .exp-datos-line--toggle', text: 'Toca un medicamento para tacharlo: sale del censo. Tócalo otra vez para regresarlo. La receta no cambia.' },
     ],
   },
   {

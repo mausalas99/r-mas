@@ -210,68 +210,47 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   // Tendencias › Gráfica window: range, hide a series, Tabla, hide a row, copy.
   await walkHint(page, 'g-tendencias', 7);
   await page.keyboard.press('Escape');
-  await go('#apptab-lab'); await go('#lab-inner-cult-btn');
-  await walkHint(page, 'cultivos-842', 1);
   await go('#apptab-med'); await go('#med-itab-receta');
   await walkHint(page, 'g-manejo', 1);
-  // agua-iny: set it up first, the review opens in the middle of Procesar receta.
-  await page.evaluate(([a]) => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(a.filter((x) => x !== 'agua-iny-842'))), [ALL]);
+  // A receta, so Datos can take its census meds from it (the agua inyectable review and the day modal open on the way).
   await go('#med-import-open-btn');
   await page.locator('#med-input').fill(SOME);
   await page.getByRole('button', { name: 'Procesar receta' }).click();
-  await walkHint(page, 'agua-iny-842', 1);
   await page.locator('.agua-iny-modal [data-save]').click();
   const abxCancel = page.locator('[data-abx-dia-modal] button', { hasText: 'Cancelar' });
   if (await visible(abxCancel, 3000)) await abxCancel.click();
-  await go('#apptab-med'); await go('#med-itab-receta');
-  await walkHint(page, 'abx-dia-842', 2);
-  if (await abxCancel.isVisible()) await abxCancel.click();
-  // Estado actual with alto flujo, so the soporte hover step has a target.
-  await go('#apptab-nota');
-  await page.locator('.exp-group-pill[data-group="clinico"]').hover();
-  await page.locator('.exp-group-section[data-section="estadoActual"]').click();
-  await page.locator('#ea-snapshot').waitFor({ state: 'visible' });
-  await page.locator('[data-ea-ec="dieta"]').fill('BLANDA PICADA');
-  await page.locator('[data-ea-ec="dieta"]').press('Tab');
-  await page.locator('[data-ea-ec="soporte"]').selectOption('Alto flujo');
-  await walkHint(page, 'estado-actual-842', 2);
   await go('#apptab-nota');
   await page.locator('.exp-group-pill', { hasText: 'Resumen' }).first().click();
-  await walkHint(page, 'resumen-842', 2);
-  await walkHint(page, 'actualizar-labs-842', 1);
   // Actualizar labs with no portal address (a fresh profile never has one): R+ stops
-  // before the network, opens Ajustes → Laboratorio, and the hint explains the field.
-  await onlyUnfinished(page, 'portal-url-842');
+  // before the network and opens Ajustes → Laboratorio on the empty field.
   await closeToasts(page);
   await page.locator('#patient-dashboard-mount [data-dash-action="actualizar-labs"]').click();
   await page.locator('#lab-repo-batch-confirm').click();
   check('Actualizar labs with no address says so',
     await visible(page.locator('.toast', { hasText: /Falta la dirección del portal de laboratorio/ })));
   check('… and opens Ajustes on the empty address field', await visible(page.locator('#settings-lab-portal-url')));
-  await walkHint(page, 'portal-url-842', 1);
-  // With an address saved the hint has nothing to explain: it stays closed.
-  await onlyUnfinished(page, 'portal-url-842');
-  await page.locator('#settings-lab-portal-url').fill('http://portal.invalid/laboratorio/index.aspx');
-  await page.waitForTimeout(2000);
-  check('with an address in the field the portal hint does not open', (await bubbleOf(page, 'portal-url-842').count()) === 0);
-  await page.locator('#settings-lab-portal-url').fill('');
-  await page.locator('#settings-lab-portal-url').blur();
   await page.evaluate(([a]) => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(a)), [ALL]);
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
-  // Fill the census meds from the receta first, so Datos has a med line to explain removing.
+  // Fill the census meds from the receta first, so Datos has a med to cross out.
   await page.locator('#btn-exp-datos-open:visible, #patient-dashboard-mount .dash-name:visible').first().click();
   await page.locator('[data-onclick="censoTomarDeMedicamentos"]').click();
   const medLine = page.locator('#patient-censo-meds .exp-datos-line:not(.exp-datos-line--empty)').first();
   check('Tomar de lista fills the census meds', await visible(medLine));
-  await page.keyboard.press('Escape');
-  await page.locator('.exp-datos-summary').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
-  await walkHint(page, 'datos-842', 4);
+  // Tapping the med the 8.4.3 hint points at crosses it out and ends the hint for good.
+  await onlyUnfinished(page, 'datos-tachar-843');
+  await visible(bubbleOf(page, 'datos-tachar-843'));
+  await page.locator('#patient-censo-meds .fh-target').click();
+  await page.waitForTimeout(1500);
+  check('tapping the pointed med crosses it out and ends the Datos hint',
+    (await page.locator('#patient-censo-meds .exp-datos-line--struck').count()) === 1 &&
+    (await done(page)).includes('datos-tachar-843') && (await bubbleOf(page, 'datos-tachar-843').count()) === 0, await done(page));
+  await walkHint(page, 'datos-tachar-843', 1);
   await page.keyboard.press('Escape');
   await go('#apptab-nota');
   await page.locator('.exp-group-pill', { hasText: 'Pendientes' }).first().click();
   await walkHint(page, 'g-pendientes', 2);
-  // g-pendientes leaves the add box open: add one due tomorrow so Próximos exists.
+  // g-pendientes leaves the add box open: save one due tomorrow to close it.
   const m = page.locator('.wb-todo-add-modal');
   await m.locator('.wb-todo-add-text').fill('ECO RENAL');
   await m.locator('.todo-due-toggle').click();
@@ -280,36 +259,11 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   await page.locator('#todo-due-modal-save').click();
   await m.locator('[data-wb-todo-add-ok]').click();
   await m.waitFor({ state: 'detached' });
-  await walkHint(page, 'proximos-842', 1);
-  await go('#btn-sala-view-cards');
-  await page.locator('#sala-view-home .sv-grid').waitFor({ timeout: 5000 });
-  // Archivar: the user archives from the card, then «Archivados» is pointed out.
-  const restore = async () => {
-    await go('#sala-view-home [data-sv-arch]');
-    await go('#sala-view-home .sv-card-restore');
-    await page.locator('#sala-view-home .sv-card-archive').first().waitFor({ timeout: 5000 });
-  };
-  // Step 2 (Archivados) has no target while nothing is archived: skipped. Step 3 opens a card.
-  await walkHint(page, 'sala-archivo-842', 2);
-  await go('[data-sv-home]:visible');
-  await page.locator('#sala-view-home .sv-grid').waitFor({ timeout: 5000 });
-  await onlyUnfinished(page, 'sala-archivo-842');
-  await visible(bubbleOf(page, 'sala-archivo-842'));
-  await page.locator('#sala-view-home .sv-card-archive').first().click();
-  check('archiving from a card (real control) points at «Archivados»',
-    /2\/3/.test(await bubbleMatch(page, /2\/3/)) && (await page.locator('#sala-view-home [data-sv-arch].fh-target').count()) === 1, await bubbleText(page));
-  await shot(page, 'archivados-after-archive');
-  await page.locator('.fh-bubble .fh-next').click();
-  check('then a patient card is pointed out',
-    /3\/3/.test(await bubbleMatch(page, /3\/3/)) && (await page.locator('#sala-view-home .sv-card.fh-target').count()) === 1, await bubbleText(page));
-  await shot(page, 'card-after-archivados');
-  await page.locator('.fh-close').click();
-  await restore();
   // Interconsultas: the team board.
   await setMode(page, 'interconsulta');
   await walkHint(page, 'g-interconsultas', 3);
   await setMode(page, 'sala');
-  await walkHint(page, 'censo-842', 4);
+  check('8.4.2 «Nuevo» hints are retired in 8.4.3', !ALL.some((id) => id.endsWith('-842')), ALL);
 
   check('no page errors', pageErrors.length === 0, pageErrors);
   await app.close();
