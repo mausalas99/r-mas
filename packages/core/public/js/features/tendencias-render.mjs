@@ -1,4 +1,3 @@
-import { scheduleAfterPaint } from '../deferred-work.mjs';
 import { buildTextSkeletonPanel } from '../ui-skeleton.mjs';
 import {
   buildTrendSeriesIndexCached,
@@ -410,7 +409,12 @@ function renderTendencias(opts) {
   if (!container.querySelector('.tend-rows, .tend-toolbar, .tend-empty')) {
     container.innerHTML = buildTextSkeletonPanel('tend-skeleton skel-panel', 4);
   }
-  scheduleAfterPaint(paint);
+  // Not scheduleAfterPaint: tab/patient switches cancel it, which left the skeleton stuck and onReady unfired.
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(function () {
+      requestAnimationFrame(paint);
+    });
+  } else setTimeout(paint, 0);
 }
 
 export { renderTendencias };

@@ -8,7 +8,9 @@ import {
   copyTendGroupTableText,
 } from './tend-group-modal-open.mjs';
 import { readGroupExtraFields, writeGroupExtraFields, seriesColorKey, toggleSpecInList } from './tend-prefs.mjs';
-import { renderGroupTable } from './tend-group-table-render.mjs';
+import { renderGroupTable, tableLegendLabelForSpec } from './tend-group-table-render.mjs';
+import { renderGroupCharts, destroyGroupCharts } from './tend-group-charts-render.mjs';
+import { renderAnalytePickerBar } from './tend-group-analyte-picker.mjs';
 import { mountRpcDateInput } from './rpc-date-picker.mjs';
 import { closeOverlayAnimated, cancelOverlayClose } from './ui-motion.mjs';
 import { showTendPane, hideTendPane } from './tend-pane.mjs';
@@ -35,11 +37,116 @@ export function createTendDynamicTableModal(deps) {
 
   var listeners = [];
 
-  function renderTable() {
-    renderGroupTable(deps, state, DYNAMIC_TABLE_SECTION_KEY, renderTable, {
-      wrapId: 'tend-dynamic-table-wrap',
-      daymodeSlotId: 'tend-dynamic-table-daymode-slot',
+  // Sub-tab ('tabla' | 'charts') survives close/open for the session.
+  var dynTab = 'tabla';
+  // One chart view per real section: the chart engine is single-section, so each view
+  // inherits the shared state (history, range, patient) and owns charts + specs of its section.
+  var chartViews = Object.create(null);
+
+  function chartsWrap() {
+    return document.getElementById('tend-dynamic-charts-wrap');
+  }
+
+  function destroyDynCharts() {
+    Object.keys(chartViews).forEach(function (sk) {
+      destroyGroupCharts(chartViews[sk].view, chartViews[sk].sortRef);
     });
+    chartViews = Object.create(null);
+  }
+
+  function renderDynCharts() {
+    var wrap = chartsWrap();
+    if (!wrap) return;
+    destroyDynCharts();
+    wrap.innerHTML = '<div id="tend-group-analyte-picker-slot"></div><div id="tend-dynamic-charts-body"></div>';
+    renderAnalytePickerBar({
+      slot: wrap.querySelector('#tend-group-analyte-picker-slot'),
+      deps: deps,
+      state: state,
+      sectionKey: DYNAMIC_TABLE_SECTION_KEY,
+      renderTable: renderTable,
+    });
+    var body = wrap.querySelector('#tend-dynamic-charts-body');
+    if (!state.tableExtraSpecs.length) {
+      body.innerHTML = '<p class="tend-pivot-hint">Aún no hay analitos. Marca uno en la lista de la izquierda.</p>';
+      return;
+    }
+    var bySection = Object.create(null);
+    state.tableExtraSpecs.forEach(function (sp) {
+      (bySection[sp.sectionKey] = bySection[sp.sectionKey] || []).push(sp);
+    });
+    Object.keys(bySection).forEach(function (sk) {
+      var view = Object.create(state);
+      view.sectionKey = sk;
+      view.charts = [];
+      view.specsByField = Object.create(null);
+      bySection[sk].forEach(function (sp) {
+        view.specsByField[sp.fieldKey] = sp;
+      });
+      var sortRef = { current: null };
+      chartViews[sk] = { view: view, sortRef: sortRef };
+      var sec = document.createElement('div');
+      sec.className = 'tend-dynamic-charts-section';
+      body.appendChild(sec);
+      renderGroupCharts(
+        deps,
+        view,
+        sk,
+        function (sectionKey, spec) {
+          return tableLegendLabelForSpec(deps, sectionKey, spec);
+        },
+        sortRef,
+        renderDynCharts,
+        sec
+      );
+    });
+  }
+
+  function applyDynTab() {
+    var isCharts = dynTab === 'charts';
+    var tw = document.getElementById('tend-dynamic-table-wrap');
+    var cw = chartsWrap();
+    var actions = document.getElementById('tend-dynamic-table-actions');
+    var slot = document.getElementById('tend-dynamic-table-daymode-slot');
+    if (tw) tw.hidden = isCharts;
+    if (cw) cw.hidden = !isCharts;
+    if (actions) actions.hidden = isCharts;
+    if (slot) slot.hidden = isCharts;
+    var nav = document.getElementById('tend-dynamic-tabs');
+    if (nav) {
+      nav.setAttribute('data-active', dynTab);
+      nav.querySelectorAll('[data-dyn-tab]').forEach(function (b) {
+        var on = b.getAttribute('data-dyn-tab') === dynTab;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+    }
+  }
+
+  var _tabsWired = false;
+  function wireTabs() {
+    if (_tabsWired) return;
+    var nav = document.getElementById('tend-dynamic-tabs');
+    if (!nav) return;
+    _tabsWired = true;
+    nav.addEventListener('click', function (ev) {
+      var b = ev.target.closest ? ev.target.closest('[data-dyn-tab]') : null;
+      if (!b) return;
+      dynTab = b.getAttribute('data-dyn-tab');
+      applyDynTab();
+      renderTable();
+    });
+  }
+
+  function renderTable() {
+    if (dynTab === 'charts') {
+      renderDynCharts();
+    } else {
+      renderGroupTable(deps, state, DYNAMIC_TABLE_SECTION_KEY, renderTable, {
+        wrapId: 'tend-dynamic-table-wrap',
+        daymodeSlotId: 'tend-dynamic-table-daymode-slot',
+      });
+    }
     listeners.forEach(function (cb) {
       cb();
     });
@@ -100,6 +207,9 @@ export function createTendDynamicTableModal(deps) {
     var bd = backdropEl();
     closeOverlayAnimated(bd, function () {
       if (bd) bd.style.display = 'none';
+      destroyDynCharts();
+      var cw = chartsWrap();
+      if (cw) cw.innerHTML = '';
       var wrap = document.getElementById('tend-dynamic-table-wrap');
       if (wrap) wrap.innerHTML = '';
     });
@@ -171,6 +281,8 @@ export function createTendDynamicTableModal(deps) {
     showTendPane('pivot');
     wireRangeRow();
     resetRangeRow();
+    wireTabs();
+    applyDynTab();
     renderTable();
   }
 

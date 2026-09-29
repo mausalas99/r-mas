@@ -490,7 +490,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   // (#btn-lab-paste lives on the Labs inner tab; openTend() above switched to
   // the Tendencias inner tab, where it's hidden — switch back first.)
   await page.locator('#lab-inner-labs-btn').click();
-  await page.locator('#btn-lab-paste').waitFor({ state: 'visible' });
+  await page.locator('#btn-lab-repo-batch').waitFor({ state: 'visible' });
   // A 2nd GASES draw makes GASES eligible for its own Tendencias por Grupo chart.
   await pasteAndSave(page, gas(P, 'Jan 10 2026 8:00AM', '7.30'));
   // Same-day full draw + later partial draw: groupByDay must take each field from
