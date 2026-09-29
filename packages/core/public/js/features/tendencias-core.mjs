@@ -34,7 +34,7 @@ export {
   onLabDisplayPrefsChanged,
 } from './tendencias-series.mjs';
 export {
-  patchTendCardsFromIndex,
+  patchTendRowsFromIndex,
   destroySparkChartEntry,
   sparkChartAnim,
   updateSparkChartsFromJobs,

@@ -57,6 +57,19 @@ export function seriesColorKey(sectionKey, fieldKey) {
   return String(sectionKey) + '|' + String(fieldKey);
 }
 
+/** Pivot selection: same spec list with `spec` removed if present, else appended. Never mutates. */
+export function toggleSpecInList(list, spec) {
+  var k = seriesColorKey(spec.sectionKey, spec.fieldKey);
+  var has = list.some(function (sp) {
+    return seriesColorKey(sp.sectionKey, sp.fieldKey) === k;
+  });
+  return has
+    ? list.filter(function (sp) {
+        return seriesColorKey(sp.sectionKey, sp.fieldKey) !== k;
+      })
+    : list.concat([spec]);
+}
+
 export function readSeriesColor(sectionKey, fieldKey) {
   var map = readJson(LS_SERIES_COLORS, {});
   return map[seriesColorKey(sectionKey, fieldKey)] || null;

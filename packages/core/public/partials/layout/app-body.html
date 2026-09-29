@@ -412,7 +412,116 @@
           <div id="itab-content-datos" class="tab-content" hidden><div id="patient-data-form" class="rpc-form-stack"></div></div>
           <div id="itab-content-notas" class="tab-content"><div id="note-form" class="rpc-form-stack"></div></div>
           <div id="itab-content-indica" class="tab-content"><div id="indica-form" class="rpc-form-stack"></div></div>
-          <div id="itab-content-tend" class="tab-content"><div id="tendencias-container"></div></div>
+          <div id="itab-content-tend" class="tab-content">
+          <div id="tend-split" class="tend-split">
+            <div id="tendencias-container"></div>
+            <div id="tend-pane" class="tend-pane" role="complementary" aria-label="Detalle de tendencias" aria-hidden="true" inert>
+              <div id="tend-detail-backdrop" class="tend-pane-panel" style="display:none" aria-hidden="true">
+                <section id="tend-detail-modal" class="tend-pane-card" role="region" aria-labelledby="tend-detail-title">
+                  <div class="tend-pane-head">
+                    <div class="tend-pane-titles">
+                      <h3 id="tend-detail-title" class="tend-pane-title"></h3>
+                      <div id="tend-detail-sub" class="tend-pane-sub"></div>
+                    </div>
+                    <div class="tend-pane-head-actions">
+                      <span id="tend-detail-badge"></span>
+                      <kbd class="tend-pane-esc" aria-hidden="true">Esc</kbd>
+                      <button type="button" class="tend-pane-close" aria-label="Cerrar" title="Cerrar (Esc)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                    </div>
+                  </div>
+                  <div class="tend-pane-body">
+                    <div id="tend-detail-hero" class="tend-detail-hero"></div>
+                    <div class="tend-detail-refline">
+                      <span id="tend-detail-ref" class="tend-detail-ref"></span>
+                      <div id="tend-detail-compare-host" class="tend-detail-compare-host"></div>
+                    </div>
+                    <div class="tend-detail-chart-row">
+                      <div class="tend-detail-chart-cell">
+                        <canvas id="tend-detail-canvas"></canvas>
+                      </div>
+                    </div>
+                    <div id="tend-detail-events-slot" class="tend-detail-events-slot" aria-hidden="true"></div>
+                    <div id="tend-detail-readings" class="tend-detail-readings"></div>
+                    <div class="tend-detail-actions">
+                      <button type="button" class="tend-pill" id="tend-detail-add-event" data-tend-action="add-event-day">Agregar evento este día</button>
+                      <button type="button" class="tend-pill" id="tend-detail-copy" data-tend-action="copy-values">Copiar valores</button>
+                      <button type="button" class="tend-pill" id="tend-detail-hide" data-tend-action="hide-analyte">Ocultar analito</button>
+                      <button type="button" class="tend-pill" id="tend-detail-pivot" data-tend-action="add-to-pivot">Agregar a tabla dinámica</button>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <div id="tend-group-backdrop" class="tend-group-backdrop tend-pane-panel" style="display:none" aria-hidden="true">
+                <div id="tend-group-modal" class="wb-modal tend-pane-card" role="region" aria-labelledby="tend-group-title">
+                  <header class="tend-group-header tend-pane-head">
+                    <div class="tend-pane-titles">
+                      <h2 id="tend-group-title" class="tend-pane-title" contenteditable="true" spellcheck="false" title="Editar título"></h2>
+                      <div id="tend-group-sub" class="tend-pane-sub"></div>
+                    </div>
+                    <div class="tend-pane-head-actions">
+                      <kbd class="tend-pane-esc" aria-hidden="true">Esc</kbd>
+                      <button type="button" class="tend-pane-close" aria-label="Cerrar" title="Cerrar (Esc)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                    </div>
+                  </header>
+                  <div class="tend-group-range-row" id="tend-group-range-row">
+                    <span class="tend-group-range-label">Rango</span>
+                    <input type="date" class="tend-group-range-input" id="tend-group-range-from" />
+                    <span class="tend-group-range-sep">a</span>
+                    <input type="date" class="tend-group-range-input" id="tend-group-range-to" />
+                    <button type="button" class="tend-group-range-clear" id="tend-group-range-clear" hidden>Quitar rango</button>
+                  </div>
+                  <div class="tend-group-tabs-wrap">
+                    <nav class="tend-group-tabs" id="tend-group-tabs-track" role="tablist" aria-label="Vista del estudio" data-active="charts">
+                      <span class="tend-group-tab-pill" aria-hidden="true"></span>
+                      <button type="button" role="tab" class="tend-group-tab active" data-tab="charts" aria-selected="true" data-onclick="setTendGroupTab" data-onclick-args='["charts"]'>Gráficas</button>
+                      <button type="button" role="tab" class="tend-group-tab" data-tab="table" aria-selected="false" data-onclick="setTendGroupTab" data-onclick-args='["table"]'>Tabla</button>
+                    </nav>
+                  </div>
+                  <div id="tend-group-panel-charts" class="tend-group-panel wb-modal-body" role="tabpanel"></div>
+                  <div id="tend-group-panel-table" class="tend-group-panel wb-modal-body" role="tabpanel" hidden>
+                    <div id="tend-group-table-wrap"></div>
+                    <div class="tend-group-table-actions">
+                      <button type="button" class="tend-pill tend-pill--accent" data-onclick="copyTendGroupTablePng">Copiar tabla</button>
+                      <button type="button" class="tend-pill" data-onclick="copyTendGroupTableText">Copiar como texto</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="tend-dynamic-table-backdrop" class="tend-group-backdrop tend-pane-panel" style="display:none" aria-hidden="true">
+                <div id="tend-dynamic-table-modal" class="wb-modal tend-pane-card" role="region" aria-labelledby="tend-dynamic-table-title">
+                  <header class="tend-group-header tend-pane-head">
+                    <div class="tend-pane-titles">
+                      <h2 id="tend-dynamic-table-title" class="tend-pane-title" contenteditable="true" spellcheck="false" title="Editar título">Tabla dinámica</h2>
+                      <div class="tend-pane-sub">Junta analitos de varios estudios en una sola tabla</div>
+                    </div>
+                    <div class="tend-pane-head-actions">
+                      <kbd class="tend-pane-esc" aria-hidden="true">Esc</kbd>
+                      <button type="button" class="tend-pane-close" aria-label="Cerrar tabla dinámica" title="Cerrar (Esc)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                    </div>
+                  </header>
+                  <div class="tend-group-range-row" id="tend-dynamic-table-range-row">
+                    <span class="tend-group-range-label">Rango</span>
+                    <input type="date" class="tend-group-range-input" id="tend-dynamic-table-range-from" />
+                    <span class="tend-group-range-sep">a</span>
+                    <input type="date" class="tend-group-range-input" id="tend-dynamic-table-range-to" />
+                    <button type="button" class="tend-group-range-clear" id="tend-dynamic-table-range-clear" hidden>Quitar rango</button>
+                    <span class="tend-head-spacer"></span>
+                    <span id="tend-dynamic-table-daymode-slot"></span>
+                  </div>
+                  <div class="tend-group-panel wb-modal-body" id="tend-dynamic-table-body">
+                    <div id="tend-dynamic-table-wrap"></div>
+                    <div class="tend-group-table-actions">
+                      <button type="button" class="tend-pill tend-pill--solid" data-onclick="copyTendDynamicTablePng">Copiar</button>
+                      <button type="button" class="tend-pill" data-onclick="copyTendDynamicTableText">Copiar como texto</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
           <div id="itab-content-cult" class="tab-content"><div id="cultivos-table-container"></div></div>
           <div id="itab-content-listado" class="tab-content"><div id="listado-form" class="rpc-form-stack"></div></div>
           <div id="itab-content-todo" class="tab-content"><div id="todo-form" class="rpc-form-stack-tight"></div></div>

@@ -133,7 +133,7 @@ function applyTendSectionExpandedState(sectionEl, sectionKey, expanded) {
     return;
   }
 
-  sectionEl.querySelectorAll('.tend-card').forEach(function (card) {
+  sectionEl.querySelectorAll('.tend-row').forEach(function (card) {
     var seriesKey = card.getAttribute('data-series-key');
     if (!seriesKey) return;
     var pipe = seriesKey.indexOf('|');
@@ -163,7 +163,7 @@ function toggleTendSection(ev, sectionKey) {
   var sectionEl =
     container &&
     container.querySelector('.tend-section[data-section="' + String(sectionKey).replace(/"/g, '\\"') + '"]');
-  if (sectionEl && container.querySelector('.tend-grid') && tendStore._tendRenderState.seriesIndex) {
+  if (sectionEl && container.querySelector('.tend-rows') && tendStore._tendRenderState.seriesIndex) {
     applyTendSectionExpandedState(sectionEl, sectionKey, next);
     return;
   }
@@ -339,32 +339,50 @@ export function closeTendHiddenModal() {
 function buildTendInlineControlsHtml(hiddenCount, opts) {
   opts = opts || {};
   var on = tendAbnormalOnlyRead();
-  var hint = on
-    ? 'Solo analitos con último valor fuera del rango de referencia del laboratorio (si hay referencia).'
-    : 'Vista completa: todos los analitos con datos suficientes para tendencia.';
-  var toggleLabel = on ? 'Ver todas' : 'Solo fuera de rango';
+  var total = opts.totalCount != null ? opts.totalCount : 0;
+  var oor = opts.abnormalCount != null ? opts.abnormalCount : 0;
+  var searchSvg =
+    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+  var eyeOffSvg =
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 6.1A10 10 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3 3.6M6.5 7.5C3.9 9.3 2.5 12 2.5 12S6 18 12 18c1.4 0 2.7-.3 3.9-.8"/></svg>';
+  function seg(kind, label, count, pressed) {
+    return (
+      '<button type="button" class="tend-seg-btn' +
+      (pressed ? ' is-active' : '') +
+      '" data-tend-filter="' +
+      kind +
+      '" aria-pressed="' +
+      (pressed ? 'true' : 'false') +
+      '">' +
+      label +
+      ' <span class="tend-seg-count">' +
+      count +
+      '</span></button>'
+    );
+  }
   var ocultosBtn =
     hiddenCount > 0
-      ? '<button type="button" class="tend-toolbar-btn tend-ocultos-trigger">Ocultos (' +
+      ? '<button type="button" class="tend-pill tend-ocultos-trigger" title="Ocultos" aria-label="Ocultos ' + hiddenCount + '">' +
+        eyeOffSvg +
+        '<span class="tend-ocultos-label">Ocultos</span> <span class="tend-seg-count">' +
         hiddenCount +
-        ')</button>'
+        '</span></button>'
       : '';
   var gasoBtn = opts.showGasoExtended
-    ? '<button type="button" class="tend-toolbar-btn tend-gaso-ext-trigger" data-tend-action="gaso-extended">Gasometría extendida</button>'
+    ? '<button type="button" class="tend-pill tend-gaso-ext-trigger" data-tend-action="gaso-extended">Gasometría extendida</button>'
     : '';
   var dynamicTableBtn =
-    '<button type="button" class="tend-toolbar-btn tend-dynamic-table-trigger" title="Combina analitos de distintos estudios en una sola tabla">Tablas Dinámicas</button>';
+    '<button type="button" class="tend-pill tend-pill--accent tend-dynamic-table-trigger" title="Combina analitos de distintos estudios en una sola tabla">Tablas dinámicas</button>';
   return (
-    '<div class="tend-inline-controls">' +
-    '<button type="button" class="tend-toolbar-toggle' +
-    (on ? ' is-active' : '') +
-    '" aria-pressed="' +
-    (on ? 'true' : 'false') +
-    '" title="' +
-    esc(hint) +
-    '">' +
-    esc(toggleLabel) +
-    '</button>' +
+    '<div class="tend-inline-controls tend-toolbar">' +
+    '<label class="tend-search">' +
+    searchSvg +
+    '<input type="search" class="tend-search-input" placeholder="Buscar analito" aria-label="Buscar analito" autocomplete="off"></label>' +
+    '<div class="tend-seg" role="group" aria-label="Filtro de analitos">' +
+    seg('all', 'Todos', total, !on) +
+    seg('abn', 'Fuera de rango', oor, on) +
+    '</div>' +
+    '<span class="tend-head-spacer"></span>' +
     ocultosBtn +
     gasoBtn +
     dynamicTableBtn +

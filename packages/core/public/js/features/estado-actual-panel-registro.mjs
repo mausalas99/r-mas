@@ -90,6 +90,8 @@ export function syncEaRegistroInsulinPumpFlag(form, monitoreo) {
 }
 
 var IO_TURNO_IDS = ['t1', 't2', 't3'];
+/** Shift names shown in the registro panel (t1/t2/t3 stay the stored ids). */
+var IO_TURNO_NAMES = { t1: 'Matutino', t2: 'Vespertino', t3: 'Nocturno' };
 
 /**
  * @param {HTMLElement} form
@@ -564,7 +566,7 @@ function buildRegistroGluSectionHtml() {
     '<input type="checkbox" id="ea-bomba-enabled" class="rpc-switch-input" role="switch" aria-labelledby="ea-bomba-enabled-lbl">' +
     '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span>' +
     '</label>' +
-    '<button type="button" class="ea-btn ea-btn--ghost ea-glu-add-inline" id="ea-add-glu">+ Extra</button>' +
+    '<button type="button" class="ea-btn ea-btn--ghost ea-glu-add-inline" id="ea-add-glu">+ Agregar hora</button>' +
     '</div>' +
     '</div>' +
     '<div id="ea-glu-normal-block" class="ea-glu-pane ea-glu-block">' +
@@ -812,7 +814,7 @@ function ioTurnoCellsHtml(prefix, label, inputmode, placeholder) {
  */
 function buildRegistroIoSectionHtml() {
   var cols = IO_TURNO_IDS.map(function (t) {
-    return '<span class="ea-io-table-head">' + t.toUpperCase() + '</span>';
+    return '<span class="ea-io-table-head" title="' + t.toUpperCase() + '">' + IO_TURNO_NAMES[t] + '</span>';
   }).join('');
   return (
     '<section class="ea-registro-section" aria-labelledby="ea-io-section-lbl">' +

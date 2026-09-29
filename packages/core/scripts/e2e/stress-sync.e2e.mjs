@@ -334,7 +334,7 @@ await r.finish('Nube sync + bad timing: volume, big note, same-patient edits, of
   await importReceta(A.page, PX, ['DEMO CIERRE RECETA']);
   await A.app.close();
   A = await launchDevice('a', 3791);
-  await A.page.locator('#app-main-tablist').waitFor({ timeout: 30000 });
+  await A.page.locator('.topbar-area-btn').waitFor({ timeout: 30000 });
   await dismissLearnHub(A.page);
   await A.page.waitForTimeout(3000);
   dg = await digest(A.page);

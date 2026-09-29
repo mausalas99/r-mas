@@ -160,7 +160,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
 
   await app.close();
   ({ app, page, pageErrors } = await r.launch());
-  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
+  await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
   const after = await done(page);
   check('finished hints survive a restart', after.includes('g-labs'), after);
   // The hint layer is live once any hint opens; g-labs must never be the one.

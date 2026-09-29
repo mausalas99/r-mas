@@ -101,7 +101,7 @@ await r.finish('Ajustes A + Mi perfil B', async () => {
   const noScroll = () => A.page.evaluate(() => {
     const scrolls = [...document.querySelectorAll('#profile-modal .modal, #profile-modal .wb-modal-body')]
       .map((el) => el.scrollHeight - el.clientHeight);
-    return { over: Math.max(...scrolls), viewport: innerHeight };
+    return { over: Math.max(...scrolls), viewport: globalThis.innerHeight };
   });
   const salaFit = await noScroll();
   check('Mi perfil (Sala) fits without scrolling', salaFit.over <= 1, salaFit);

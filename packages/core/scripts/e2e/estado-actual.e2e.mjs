@@ -115,7 +115,7 @@ async function closeToasts(page) {
 async function admitDemoPatient(page) {
   await page.locator('[data-sync-mode="local"]').click();
   await page.locator('#clinical-onboard-local-confirm-btn').click();
-  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
+  await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
   const hub = page.locator('#learn-hub-backdrop.open');
   await hub.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
   if (await hub.count()) await page.keyboard.press('Escape');
@@ -331,7 +331,13 @@ async function busyRegistro(page) {
     const el = document.querySelector('.ea-registro-form-scroll');
     return { scroll: el.scrollHeight, client: el.clientHeight, vh: window.innerHeight };
   });
-  check('busy registro fits on one screen, no scroll', fit.scroll <= fit.client + 1, fit);
+  // The side panel scrolls its body when busy; the footer with «Registrar» must stay on screen.
+  const footIn = await page.evaluate(() => {
+    const b = document.querySelector('#ea-registro-backdrop .ea-registro-submit');
+    const r = b && b.getBoundingClientRect();
+    return !!r && r.bottom <= window.innerHeight && r.top >= 0;
+  });
+  check('busy registro: body scrolls inside the panel, Registrar stays on screen', footIn, fit);
   const table = await page.evaluate(() => ({
     bal: ['t1', 't2', 't3'].map((t) => document.getElementById('ea-io-bal-' + t).textContent),
     total: document.getElementById('ea-balance-turno-live').textContent,

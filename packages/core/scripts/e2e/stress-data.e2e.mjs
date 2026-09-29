@@ -253,11 +253,11 @@ await r.finish('Data input stress: lab paste, Tendencias, Cultivos, Manejo, Pend
   check('paste chunk time does not climb (last ≤ 2× first)', tc[5] <= tc[0] * 2, tc);
   t = Date.now();
   await page.locator('#lab-inner-tend-btn').click();
-  await page.locator('.tend-card[data-series-key="BH|Hb"]').locator('visible=true').first().waitFor({ timeout: 20000 });
+  await page.locator('.tend-row[data-series-key="BH|Hb"]').locator('visible=true').first().waitFor({ timeout: 20000 });
   timings.openTendMs = Date.now() - t;
   check('Tendencias opens in under 5 s with 180 days', timings.openTendMs < 5000, timings.openTendMs);
   await shot(page, 'tendencias-180-days');
-  await page.locator('.tend-card[data-series-key="BH|Hb"]').locator('visible=true').first().click({ position: { x: 20, y: 60 } });
+  await page.locator('.tend-row[data-series-key="BH|Hb"]').locator('visible=true').first().click({ position: { x: 20, y: 24 } });
   await page.locator('#tend-detail-backdrop').waitFor({ state: 'visible' });
   await page.waitForTimeout(600);
   const hbPts = await page.evaluate(() => {

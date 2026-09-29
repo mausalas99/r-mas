@@ -457,7 +457,7 @@ await r.finish('Screen layout: every screen x size x theme x text size, busy pat
   // «Guía» hint bubbles sit over real controls; this run measures the screens, not the hints.
   await page.evaluate((ids) => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(ids)), FEATURE_HINTS.map((h) => h.id));
   await page.reload();
-  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
+  await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
 
   // ── Seed: busy one, 1 kB name, 33 fillers → 35 active ───────────────────
   for (let back = 5; back >= 0; back--) await pasteAndSave(page, fullLabs(BUSY, dayStr(back, 6 + back)));

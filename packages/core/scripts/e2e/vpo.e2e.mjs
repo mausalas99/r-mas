@@ -95,7 +95,7 @@ async function launch() {
   const page = await app.firstWindow();
   // Sala opens in the card view by default; these scenarios drive the sidebar.
   await page.waitForLoadState('domcontentloaded');
-  const salaCards = await page.evaluate(() => { globalThis.localStorage.setItem('rplus-sala-view', 'bar'); return !!globalThis.document.body.dataset.salaView; });
+  const salaCards = await page.evaluate(() => { globalThis.localStorage.setItem('rplus-sala-view', 'bar'); globalThis.localStorage.setItem('rpc-registro-autoopen', 'off'); return !!globalThis.document.body.dataset.salaView; });
   if (salaCards) await page.reload();
   await page.setViewportSize({ width: 1440, height: 902 });
   const pageErrors = [];
@@ -110,7 +110,7 @@ async function closeToasts(page) {
 async function admitDemoPatient(page) {
   await page.locator('[data-sync-mode="local"]').click();
   await page.locator('#clinical-onboard-local-confirm-btn').click();
-  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
+  await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
   const hub = page.locator('#learn-hub-backdrop.open');
   await hub.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
   if (await hub.count()) await page.keyboard.press('Escape');

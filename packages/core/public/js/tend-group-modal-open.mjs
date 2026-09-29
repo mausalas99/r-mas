@@ -9,6 +9,7 @@ import { readGroupVisibleFields } from './tend-prefs.mjs';
 import { toAscendingHistory } from './tend-group-chart-helpers.mjs';
 import { buildTableTsv, copyTableModelAsPng, copyTableText } from './tend-export.mjs';
 import { cancelOverlayClose } from './ui-motion.mjs';
+import { showTendPane } from './tend-pane.mjs';
 
 export function eligibleSpecs(deps, sectionKey, historyDesc) {
   var catalog = deps.getCatalogSpecs(sectionKey, historyDesc) || [];
@@ -129,6 +130,7 @@ export function prepareTendGroupOpen(deps, state, sectionKey) {
   state.historyDescFull = historyDesc;
   state.rangeFrom = '';
   state.rangeTo = '';
+  state.scaleMode = 'values';
   state.historyDesc = historyDesc;
   state.historyAsc = toAscendingHistory(historyDesc);
   state.specsByField = Object.create(null);
@@ -163,18 +165,32 @@ export function setTendGroupTab(state, name) {
   if (track) track.setAttribute('data-active', state.activeTab);
 }
 
+function shortDate(set) {
+  var ms = set ? parseFechaLabToMs(set.fecha, set.hora) : NaN;
+  if (!isFinite(ms)) return '';
+  return new Date(ms).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }).replace('.', '');
+}
+
+/** Sub-heading «Gráfica del estudio · first – last date» for the visible range. */
+export function refreshTendGroupSub(state) {
+  var subEl = document.getElementById('tend-group-sub');
+  if (!subEl) return;
+  var asc = state.historyAsc || [];
+  var a = shortDate(asc[0]);
+  var b = shortDate(asc[asc.length - 1]);
+  subEl.textContent = 'Gráfica del estudio' + (a ? ' · ' + a + (b && b !== a ? ' – ' + b : '') : '');
+}
+
 export function showTendGroupBackdrop(deps, state, activeTab) {
   var titleEl = document.getElementById('tend-group-title');
-  if (titleEl) {
-    titleEl.textContent =
-      (deps.getSectionLabel(state.sectionKey) || state.sectionKey) + ' — Gráfica del estudio';
-  }
+  if (titleEl) titleEl.textContent = deps.getSectionLabel(state.sectionKey) || state.sectionKey;
+  refreshTendGroupSub(state);
   var bd = document.getElementById('tend-group-backdrop');
   if (!bd) return null;
   cancelOverlayClose(bd);
   bd.style.display = 'flex';
   bd.setAttribute('aria-hidden', 'false');
-  document.body.classList.add('tend-group-modal-open');
+  showTendPane('estudio');
   return { backdrop: bd, activeTab: activeTab || 'charts' };
 }
 

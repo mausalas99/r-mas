@@ -43,7 +43,26 @@ function ioBalance(io) {
   return (delta > 0 ? '+' : '') + String(delta);
 }
 
-function vitalCell(label, value, hi, range) {
+function vitalCell(label, value, hi, range, quickKey) {
+  var rangeHtml = range ? '<span class="vital-range">' + escHtml(range) + '</span>' : '';
+  if (quickKey) {
+    // Quick input (nav redesign): always shown, even empty. Saved by dashboard-mount on change.
+    return (
+      '<label class="vital vital-quick' +
+      (hi ? ' hi' : '') +
+      '"><small>' +
+      escHtml(label) +
+      '</small><input class="vital-input" data-vital-quick="' +
+      quickKey +
+      '" value="' +
+      escAttr(value) +
+      '" placeholder="—" inputmode="decimal" autocomplete="off" aria-label="' +
+      escAttr(label) +
+      '">' +
+      rangeHtml +
+      '</label>'
+    );
+  }
   if (!value) return '';
   return (
     '<div class="vital' +
@@ -53,7 +72,7 @@ function vitalCell(label, value, hi, range) {
     '</small><b>' +
     escHtml(value) +
     '</b>' +
-    (range ? '<span class="vital-range">' + escHtml(range) + '</span>' : '') +
+    rangeHtml +
     '</div>'
   );
 }
@@ -99,11 +118,11 @@ function vitalAlteredFlags(v, gluLast, glu) {
 function buildVitalsCellsHtml(v, ta, glu, flags, io, series) {
   var s = series || {};
   return (
-    vitalCell('T/A', ta, flags[0], range24h(s.tas)) +
-    vitalCell('FC', numText(v.fc), flags[1], range24h(s.fc)) +
-    vitalCell('FR', numText(v.fr), flags[2], range24h(s.fr)) +
-    vitalCell('Temp', numText(v.temp), flags[3], range24h(s.temp)) +
-    vitalCell('SatO₂', numText(v.sat) ? numText(v.sat) + '%' : '', flags[4], range24h(s.sat)) +
+    vitalCell('T/A', ta, flags[0], range24h(s.tas), 'ta') +
+    vitalCell('FC', numText(v.fc), flags[1], range24h(s.fc), 'fc') +
+    vitalCell('FR', numText(v.fr), flags[2], range24h(s.fr), 'fr') +
+    vitalCell('Temp', numText(v.temp), flags[3], range24h(s.temp), 'temp') +
+    vitalCell('SatO₂ %', numText(v.sat), flags[4], range24h(s.sat), 'sat') +
     vitalCell('Glu', glu, flags[5]) +
     vitalCell('I/O', io, false)
   );
@@ -153,16 +172,24 @@ function renderVitalsHtml(model) {
   var atLabel = vitalsAtLabel(model && model.vitalsAt);
   var metaHtml = buildVitalsMetaHtml(atLabel, hasCoreVitals, alteredCount);
   return (
-    '<button class="card clickable vitals-card' +
+    '<div class="card vitals-card' +
     emptyClass +
-    '" type="button" data-dash-action="estadoActual">' +
+    '">' +
     '<div class="card-h"><span>Signos vitales</span>' +
     metaHtml +
+    '<button type="button" class="wb-btn wb-btn-secondary vitals-full-btn" data-dash-action="registro-completo">Registro completo</button>' +
     '</div>' +
     '<div class="card-b"><div class="vitals">' +
-    (cells || '<p class="meta">Sin signos vitales</p>') +
-    '</div></div></button>'
+    cells +
+    '</div></div></div>'
   );
+}
+
+/** True when the snapshot has no core vital saved (the full-record panel then opens by itself). */
+export function dashboardHasNoVitals(model) {
+  var r = readingsFromModel(model);
+  var glu = lastGlu(r.glucometrias);
+  return !hasCoreVitalsData(r.vitals, taLabel(r.vitals), glu);
 }
 
 function ctxPillHtml(label, value) {
@@ -251,8 +278,10 @@ function renderIdentityHtml(model) {
     dxHtml +
     renderIcAssignedHtml(idn.interconsultServiceIds) +
     '</div></div>' +
+    '<div class="id-actions">' +
+    '<button type="button" class="wb-btn wb-btn-primary" data-dash-action="pegar-some" title="Pegar reporte SOME y procesar">Pegar SOME</button>' +
     '<button type="button" class="wb-btn wb-btn-secondary" data-dash-action="actualizar-labs">Actualizar labs</button>' +
-    '</div>'
+    '</div></div>'
   );
 }
 

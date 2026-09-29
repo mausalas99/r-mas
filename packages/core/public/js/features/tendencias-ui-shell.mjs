@@ -2,6 +2,7 @@ import { createTendGroupModal } from '../tend-group-modal.mjs';
 import { createTendDynamicTableModal } from '../tend-dynamic-table-modal.mjs';
 import { writeTendCardOrder } from '../tend-prefs.mjs';
 import { guidedTourAdvanceAfter, getGuidedTourContext } from './settings-help/tour-flow.mjs';
+import { flipSegThumb, segActiveLeft } from '../ui-motion.mjs';
 import { loadChartJs } from '../vendor-loader.mjs';
 import { isAbgAnalysisHidden } from './tendencias-lab-prefs.mjs';
 import { aid, tendStore, esc } from './tendencias-state.mjs';
@@ -23,9 +24,17 @@ import {
   toggleTendSection,
   toggleTendAbnormalOnlyFilter,
 } from './tendencias-series.mjs';
-import { openTendDetail } from './tendencias-ui-detail.mjs';
+import { openTendDetail, closeTendDetail } from './tendencias-ui-detail.mjs';
+import { registerTendPane, currentTendPaneMode, registerTendPivotApi, toggleTendPivotRow, setTendPivotOpener } from '../tend-pane.mjs';
 
 var tendGroupModal = null;
+
+registerTendPane('estudio', function () {
+  closeTendGroupModal();
+});
+registerTendPane('pivot', function () {
+  closeTendDynamicTableModal();
+});
 
 export function closeTendGroupModal() {
   var ctx = getGuidedTourContext();
@@ -119,12 +128,21 @@ function initTendDynamicTableModal() {
       rt.showToast(a, b);
     },
   });
+  registerTendPivotApi(tendDynamicTableModal);
   return tendDynamicTableModal;
 }
 
 function openTendDynamicTableModal() {
   initTendDynamicTableModal().open();
 }
+
+/** Analito pane pill: open the pivot pane with this analyte already in the table. */
+function openTendDynamicTableWithSeries(seriesKey) {
+  var modal = initTendDynamicTableModal();
+  modal.open();
+  modal.addSeries(seriesKey);
+}
+setTendPivotOpener(openTendDynamicTableWithSeries);
 
 function closeTendDynamicTableModal() {
   if (tendDynamicTableModal) tendDynamicTableModal.close();
@@ -183,7 +201,7 @@ function syncTendCardOrderFromDom(sectionKey) {
   });
   if (!zone) return;
   var order = [];
-  zone.querySelectorAll('.tend-card[data-series-key]').forEach(function (el) {
+  zone.querySelectorAll('.tend-row[data-series-key]').forEach(function (el) {
     var k = el.getAttribute('data-series-key');
     if (k) order.push(k);
   });
@@ -260,12 +278,44 @@ function ensureTendenciasClickDelegation() {
   }
   _tendenciasClickDelegationWired = true;
   root.addEventListener('click', onTendenciasContainerClick);
+  root.addEventListener('input', onTendenciasContainerInput);
+}
+
+function tendNorm(str) {
+  return String(str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+/** Client-side «Buscar analito»: hides rows and empty groups, no re-render, no persistence. */
+function onTendenciasContainerInput(ev) {
+  var input = ev.target;
+  if (!input || !input.classList || !input.classList.contains('tend-search-input')) return;
+  var q = tendNorm(input.value).trim();
+  var root = ev.currentTarget;
+  var anyVisible = false;
+  root.querySelectorAll('.tend-section').forEach(function (sec) {
+    var secVisible = false;
+    sec.querySelectorAll('.tend-row').forEach(function (row) {
+      var name = row.querySelector('.tend-row-name');
+      var match = !q || tendNorm(name ? name.textContent : '').indexOf(q) !== -1;
+      row.hidden = !match;
+      if (match) secVisible = true;
+    });
+    sec.hidden = !secVisible;
+    if (secVisible) anyVisible = true;
+  });
+  var none = root.querySelector('.tend-search-empty');
+  if (none) none.hidden = anyVisible || !q;
 }
 
 function handleTendenciasToolbarClick(t, ev) {
-  if (t.closest('.tend-toolbar-toggle')) {
+  var segBtn = t.closest('.tend-seg-btn');
+  if (segBtn) {
     ev.preventDefault();
-    toggleTendAbnormalOnlyFilter();
+    if (segBtn.getAttribute('aria-pressed') !== 'true') {
+      var from = segActiveLeft(segBtn.closest('.tend-seg'));
+      toggleTendAbnormalOnlyFilter();
+      flipSegThumb(document.querySelector('.tend-toolbar .tend-seg'), from);
+    }
     return true;
   }
   if (t.closest('.tend-ocultos-trigger')) {
@@ -305,9 +355,9 @@ function handleTendenciasSectionClick(t, ev) {
 }
 
 function handleTendenciasCardClick(t, ev) {
-  var hideCardBtn = t.closest('.tend-card-hide-btn');
+  var hideCardBtn = t.closest('.tend-row-hide-btn');
   if (hideCardBtn) {
-    var hideCard = hideCardBtn.closest('.tend-card');
+    var hideCard = hideCardBtn.closest('.tend-row');
     var hideKey = hideCard && hideCard.getAttribute('data-series-key');
     if (hideKey) {
       var hidePipe = hideKey.indexOf('|');
@@ -319,7 +369,7 @@ function handleTendenciasCardClick(t, ev) {
     }
     return true;
   }
-  var card = t.closest('.tend-card');
+  var card = t.closest('.tend-row');
   if (!card) return false;
   var key = card.getAttribute('data-series-key');
   if (!key) return false;
@@ -345,42 +395,21 @@ function tendCardActivate(ev, sectionKey, fieldKey) {
     }
     return;
   }
+  if (toggleTendPivotRow(sectionKey + '|' + fieldKey)) return;
+  var ctx = tendStore.detailContext;
+  if (
+    currentTendPaneMode() === 'analito' &&
+    ctx && ctx.sectionKey === sectionKey && ctx.fieldKey === fieldKey
+  ) {
+    closeTendDetail();
+    return;
+  }
   openTendDetail(sectionKey, fieldKey);
 }
 
-function findInsertInCardBounds(cards, clientX, clientY) {
-  for (var i = 0; i < cards.length; i++) {
-    var r = cards[i].getBoundingClientRect();
-    if (clientX < r.left || clientX > r.right || clientY < r.top || clientY > r.bottom) continue;
-    if (clientX < r.left + r.width * 0.5) return cards[i];
-    return cards[i + 1] || null;
-  }
-  return undefined;
-}
-
-function findInsertInRowGap(cards, clientX, clientY) {
-  for (var i = 0; i < cards.length - 1; i++) {
-    var ra = cards[i].getBoundingClientRect();
-    var rb = cards[i + 1].getBoundingClientRect();
-    var sameRow = Math.abs(ra.top - rb.top) < Math.min(ra.height, rb.height) * 0.45;
-    if (!sameRow) continue;
-    if (
-      clientX > ra.right &&
-      clientX < rb.left &&
-      clientY >= Math.min(ra.top, rb.top) - 10 &&
-      clientY <= Math.max(ra.bottom, rb.bottom) + 10
-    ) {
-      return cards[i + 1];
-    }
-  }
-  return undefined;
-}
-
+/** Vertical list: insert before the first row whose midpoint is below the pointer. */
 function findTendInsertBeforeCard(cards, clientX, clientY) {
-  var inBounds = findInsertInCardBounds(cards, clientX, clientY);
-  if (inBounds !== undefined) return inBounds;
-  var inGap = findInsertInRowGap(cards, clientX, clientY);
-  if (inGap !== undefined) return inGap;
+  void clientX;
   for (var i = 0; i < cards.length; i++) {
     var rj = cards[i].getBoundingClientRect();
     if (clientY < rj.top + rj.height * 0.5) return cards[i];
@@ -399,7 +428,7 @@ function tendDragBeginVisuals(state) {
     'position:fixed;left:' + rect.left + 'px;top:' + rect.top + 'px;width:' + rect.width +
     'px;height:' + rect.height + 'px;margin:0;box-sizing:border-box;pointer-events:none;z-index:10060;transition:none;opacity:1';
   document.body.appendChild(ghost);
-  card.classList.add('tend-card--sort-source');
+  card.classList.add('tend-row--sort-source');
   state.ghost = ghost;
   state.offsetX = state.startX - rect.left;
   state.offsetY = state.startY - rect.top;
@@ -408,7 +437,7 @@ function tendDragBeginVisuals(state) {
 function tendDragClearState(state) {
   if (!state) return;
   if (state.ghost && state.ghost.parentNode) state.ghost.parentNode.removeChild(state.ghost);
-  state.card.classList.remove('tend-card--sort-source');
+  state.card.classList.remove('tend-row--sort-source');
   state.card.style.width = '';
   state.card.style.maxWidth = '';
 }
@@ -449,7 +478,7 @@ function createTendCardDragState(zone, scrollRoot, sectionKey) {
   var state = null;
   function zoneCards() {
     return Array.prototype.slice.call(zone.children).filter(function (el) {
-      return el.classList && el.classList.contains('tend-card') && el.hasAttribute('data-series-key');
+      return el.classList && el.classList.contains('tend-row') && el.hasAttribute('data-series-key');
     });
   }
   function cleanupListeners() {
@@ -466,9 +495,9 @@ function createTendCardDragState(zone, scrollRoot, sectionKey) {
   }
   function onPointerDown(e) {
     if (state || e.button !== 0) return;
-    // .tend-card-open covers the whole card, so it must still start a drag.
-    if (e.target.closest('button:not(.tend-card-open), a[href], input, textarea, select')) return;
-    var card = e.target.closest('.tend-card');
+    // .tend-row-open covers the whole card, so it must still start a drag.
+    if (e.target.closest('button:not(.tend-row-open), a[href], input, textarea, select')) return;
+    var card = e.target.closest('.tend-row');
     if (!card || !zone.contains(card)) return;
     state = {
       card: card,
@@ -506,7 +535,7 @@ function mountTendCardSortables() {
   if (!aid()) return;
   document.querySelectorAll('.tend-sort-zone[data-section-key]').forEach(function (zone) {
     var sectionKey = zone.getAttribute('data-section-key');
-    if (!sectionKey || !zone.querySelector('.tend-card')) return;
+    if (!sectionKey || !zone.querySelector('.tend-row')) return;
     tendStore._tendCardSortables.push(mountTendCardPointerSort(zone, sectionKey));
   });
 }

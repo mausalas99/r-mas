@@ -248,20 +248,6 @@
   cursor: pointer; font-family: inherit;
 }
 .cultivos-copy-full-btn:hover { filter: brightness(1.06); }
-.tend-spark-wrap {
-  width:100%; height:40px; margin-top:6px; position:relative; border-radius:var(--radius-badge); overflow:hidden;
-}
-.tend-spark-canvas-cell {
-  position:relative; width:100%; height:100%; overflow:hidden; border-radius:var(--radius-badge);
-}
-.tend-spark-canvas-cell canvas { display:block; width:100% !important; height:100% !important; }
-.tend-card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; gap:8px; }
-.tend-card-title { display:inline-flex; align-items:baseline; gap:6px; min-width:0; flex:1 1 auto; flex-wrap:wrap; }
-.tend-card-header-end { flex:0 0 auto; }
-.tend-param-name  { font-size:16px; font-weight:650; color:var(--text); letter-spacing:0.01em; line-height:1.2; overflow-wrap:break-word; }
-.tend-param-value { font-size:18px; font-weight:700; color:var(--text); }
-.tend-param-value.tend-abnormal { color: var(--error); }
-.tend-unit  { font-size:12px; color:var(--muted); margin-top:0; font-weight:500; line-height:1.2; white-space:nowrap; }
 /* Barra de rango: modal de tendencia (derecha); sparkline del grid sin barra */
 .tend-detail-chart-row {
   display: flex;

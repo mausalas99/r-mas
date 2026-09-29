@@ -18,6 +18,39 @@ function formatAxisTickValue(v) {
   return String(r);
 }
 
+/**
+ * Value as % of its reference range: 0 = low limit, 100 = high limit. Out-of-range values keep
+ * their sign and go below 0 / above 100. No usable range (missing, or lo >= hi) -> null.
+ * @param {(number|null)[]} values @param {number[]|null} ref @returns {(number|null)[]|null}
+ */
+function relativeToRange(values, ref) {
+  if (!ref || ref.length !== 2) return null;
+  var lo = Number(ref[0]);
+  var hi = Number(ref[1]);
+  if (!isFinite(lo) || !isFinite(hi) || hi <= lo) return null;
+  return (values || []).map(function (v) {
+    return v == null || !isFinite(v) ? null : ((v - lo) / (hi - lo)) * 100;
+  });
+}
+
+/**
+ * Push label y positions apart so neighbours are at least minGap px away. Input order is kept
+ * (result[i] belongs to ys[i]). Optional top/bottom keep the stack inside the chart.
+ */
+function spreadEndLabels(ys, minGap, top, bottom) {
+  var idx = ys.map(function (_y, i) { return i; }).sort(function (a, b) { return ys[a] - ys[b] || a - b; });
+  var pos = idx.map(function (i) { return ys[i]; });
+  if (top != null && pos.length && pos[0] < top) pos[0] = top;
+  for (var k = 1; k < pos.length; k++) pos[k] = Math.max(pos[k], pos[k - 1] + minGap);
+  if (bottom != null && pos.length && pos[pos.length - 1] > bottom) {
+    pos[pos.length - 1] = bottom;
+    for (var j = pos.length - 2; j >= 0; j--) pos[j] = Math.min(pos[j], pos[j + 1] - minGap);
+  }
+  var out = new Array(ys.length);
+  idx.forEach(function (i, k2) { out[i] = pos[k2]; });
+  return out;
+}
+
 function yScaleBoundsForDatasets(datasets, family) {
   var min = Infinity;
   var max = -Infinity;
@@ -36,6 +69,12 @@ function yScaleBoundsForDatasets(datasets, family) {
     });
   });
   if (!isFinite(min)) return {};
+  if (family === 'relative') {
+    min = Math.min(min, 0);
+    max = Math.max(max, 100);
+    var padR = (max - min) * 0.08;
+    return { min: roundAxisBound(min - padR, 'down'), max: roundAxisBound(max + padR, 'up') };
+  }
   var pad = Math.max((max - min) * 0.12, 0.35);
   if (family === 'percent-diff' || family === 'bh-diff' || family === 'bh-diff-manual') {
     return { min: 0, max: Math.min(100, roundAxisBound(max + pad, 'up')) };
@@ -174,6 +213,66 @@ function createTendThresholdPlugin() {
   };
 }
 
+/** Relative scale: shaded 0-100 % band (in range) and series name + last % at each line end. */
+function createTendRelativePlugin() {
+  return {
+    id: 'tendRelative',
+    beforeDatasetsDraw: function (chart) {
+      var y = chart.scales && chart.scales.y;
+      var a = chart.chartArea;
+      if (!y || !a) return;
+      var top = Math.max(a.top, Math.min(y.getPixelForValue(100), y.getPixelForValue(0)));
+      var bottom = Math.min(a.bottom, Math.max(y.getPixelForValue(100), y.getPixelForValue(0)));
+      if (!(bottom > top)) return;
+      var ctx = chart.ctx;
+      ctx.save();
+      ctx.fillStyle = 'rgba(35, 128, 122, 0.12)';
+      ctx.fillRect(a.left, top, a.right - a.left, bottom - top);
+      ctx.font = '600 12px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#1d6a65';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText('Dentro del rango', a.left + 8, top + 5);
+      ctx.restore();
+    },
+    afterDatasetsDraw: function (chart) {
+      var a = chart.chartArea;
+      if (!a) return;
+      var ends = [];
+      chart.data.datasets.forEach(function (ds, i) {
+        if (!chart.isDatasetVisible(i)) return;
+        var last = -1;
+        for (var k = ds.data.length - 1; k >= 0; k--) {
+          if (ds.data[k] != null) { last = k; break; }
+        }
+        var pt = last >= 0 ? chart.getDatasetMeta(i).data[last] : null;
+        if (pt) ends.push({ ds: ds, pt: pt, v: ds.data[last] });
+      });
+      if (!ends.length) return;
+      var ys = spreadEndLabels(ends.map(function (e) { return e.pt.y; }), 16, a.top + 8, a.bottom);
+      var ctx = chart.ctx;
+      ctx.save();
+      ctx.font = '600 12px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ends.forEach(function (e, i) {
+        var name = String(e.ds.endName || e.ds.label || '');
+        if (name.length > 15) name = name.slice(0, 14) + '…';
+        var x = a.right + 12;
+        ctx.strokeStyle = hexToRgba(e.ds.borderColor, 0.5);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(e.pt.x + 5, e.pt.y);
+        ctx.lineTo(x - 3, ys[i]);
+        ctx.stroke();
+        ctx.fillStyle = e.ds.borderColor;
+        ctx.fillText(name + ' ' + Math.round(e.v) + ' %', x, ys[i]);
+      });
+      ctx.restore();
+    },
+  };
+}
+
 function colKeyForSet(set) {
   return colKeyForTrendSet(set);
 }
@@ -210,4 +309,7 @@ export {
   toAscendingHistory,
   hexToRgba,
   createTendThresholdPlugin,
+  createTendRelativePlugin,
+  relativeToRange,
+  spreadEndLabels,
 };

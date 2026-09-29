@@ -293,7 +293,7 @@ await r.finish('Guardia handoff: R2 → on-call R1 over Nube, both ways, restart
   // ── Restart the R1 ────────────────────────────────────────────────────
   await B.app.close();
   const B2 = await launchDevice('b', 3792);
-  await B2.page.locator('#app-main-tablist').waitFor({ state: 'visible', timeout: 30000 });
+  await B2.page.locator('.topbar-area-btn').waitFor({ state: 'visible', timeout: 30000 });
   await dismissLearnHub(B2.page);
   check('R1 restarted: both handoffs still there', await until(async () => (await handoffs(B2.page)).length === 2, 15000));
 

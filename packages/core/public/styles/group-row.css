@@ -1,6 +1,6 @@
-/* Grouped expediente navigation (premium UI phase 2).
- * Wide windows only; <1100px keeps the classic tabs + segment bars.
- * Expansion animates grid-template-columns 0fr -> 1fr (motion tokens). */
+/* Flat section row (nav redesign, board 7). One tab per section, groups are
+ * thin dividers. Wide windows only; <1100px keeps the classic tabs + segment
+ * bars. Look and gliding pill live in layout.css (.topbar-l2) and nav-glide. */
 
 #exp-group-row {
   display: none;
@@ -16,10 +16,7 @@
   .exp-expediente-nav > #exp-group-row {
     display: flex;
     align-items: center;
-    gap: calc(8px * var(--density-space, 1));
-    /* Right padding is a flat 28px (not density-scaled) so it always matches
-       the ::after edge cue's width below — whichever pill ends up last
-       (Pendientes, or Salida in consolidated mode) keeps a clean border. */
+    gap: calc(2px * var(--density-space, 1));
     padding: calc(6px * var(--density-space, 1)) 28px calc(6px * var(--density-space, 1))
       calc(16px * var(--density-space, 1));
     overflow-x: auto;
@@ -27,152 +24,29 @@
     scrollbar-width: thin;
     position: relative;
   }
-  /* Edge cue: fades to var(--surface), the .exp-expediente-nav background it sits on.
-   * margin-left cancels only the row's own gap (not its 28px width too) — that
-   * puts the fade flush against the last pill's edge, so its 28px then paints
-   * over the reserved padding-right above instead of biting into the pill. */
-  .exp-expediente-nav > #exp-group-row::after {
-    content: "";
-    position: sticky;
-    right: 0;
-    flex: 0 0 28px;
-    align-self: stretch;
-    margin-left: calc(-8px * var(--density-space, 1));
-    pointer-events: none;
-    background: linear-gradient(to left, var(--surface), transparent);
-  }
 }
 
-/* The pill is a bare layout wrapper only — no border/background/padding of
-   its own, at rest or hovered or active. Every visible chip (the group's own
-   name, a leaf group, a section) is the SAME box: border + padding directly
-   on the button itself. That keeps every pill in the row the same height and
-   means a group's own name is never hidden by a second, larger outer box. */
+/* The group wrapper only groups; it draws nothing. */
 .exp-group-pill {
   display: flex;
   align-items: center;
   flex-shrink: 0;
   position: relative;
+  gap: calc(2px * var(--density-space, 1));
 }
 
-.exp-group-name {
-  cursor: pointer;
-  font: inherit;
-  font-size: calc(12.5px * var(--density-font, 1));
-  font-weight: 600;
-  line-height: 1.25;
-  color: var(--text-muted);
-  padding: calc(5px * var(--density-space, 1)) calc(10px * var(--density-space, 1));
-  border: var(--border-hairline);
-  border-radius: var(--radius-pill);
-  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
-  white-space: nowrap;
-  max-width: 11rem;
-  overflow: hidden;
-  opacity: 1;
-  transition:
-    max-width var(--dur-slow) var(--ease-out),
-    opacity var(--dur-normal) var(--ease-out),
-    padding var(--dur-slow) var(--ease-out),
-    border-color var(--dur-normal) var(--ease-out),
-    color var(--dur-fast) var(--ease-out),
-    background var(--dur-fast) var(--ease-out);
+.exp-group-div {
+  flex: 0 0 1px;
+  align-self: center;
+  height: 20px;
+  margin: 0 calc(6px * var(--density-space, 1));
+  background: var(--border);
 }
 
-.exp-group-pill.is-active > .exp-group-name {
-  color: var(--action);
-  border-color: color-mix(in oklab, var(--action) 35%, transparent);
-  background: color-mix(in oklab, var(--action) 7%, var(--surface));
-  box-shadow: var(--elev-raised);
-}
-
-/* A group with sections showing (hovered, focused, or active) collapses its
-   own name — the sections extend out on their own, so the group's first
-   section (e.g. "Estado actual") reads as the first pill, not a redundant
-   group label ahead of it. Leaf groups never collapse: their name IS the
-   whole pill. :hover is gated to real hover devices below — on a touch
-   device a tap has no hover to preview with, and an ungated :hover rule
-   makes WebKit's tap-triggered phantom hover collapse the name with no
-   navigation to replace it (the pill "just disappears"). */
-.exp-group-pill.is-active:not(.exp-group-pill--leaf) > .exp-group-name,
-.exp-group-pill:focus-within:not(.exp-group-pill--leaf) > .exp-group-name {
-  max-width: 0;
-  padding-left: 0;
-  padding-right: 0;
-  border-width: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-
-@media (hover: hover) {
-  .exp-group-pill:hover:not(.exp-group-pill--leaf) > .exp-group-name {
-    max-width: 0;
-    padding-left: 0;
-    padding-right: 0;
-    border-width: 0;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .exp-group-name:hover {
-    background: var(--state-hover-bg);
-    color: var(--text);
-  }
-}
-
-/* Same weight as .exp-group-pill.is-active > .exp-group-name (declared later,
-   so it wins): the active pill's box-shadow was hiding the focus ring. */
-.exp-group-pill > .exp-group-name:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
-.exp-group-sections {
-  display: grid;
-  grid-template-columns: 0fr;
-  transition: grid-template-columns var(--dur-slow) var(--ease-out);
-}
-
-.exp-group-sections-inner {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  min-width: 0;
-  overflow: hidden;
-  opacity: 0;
-  transform: translateX(-6px);
-  transition:
-    opacity var(--dur-normal) var(--ease-out),
-    transform var(--dur-slow) var(--ease-out);
-}
-
-.exp-group-pill.is-active > .exp-group-sections,
-.exp-group-pill:focus-within > .exp-group-sections {
-  grid-template-columns: 1fr;
-}
-
-.exp-group-pill.is-active > .exp-group-sections .exp-group-sections-inner,
-.exp-group-pill:focus-within > .exp-group-sections .exp-group-sections-inner {
-  opacity: 1;
-  transform: translateX(0);
-  transition-delay: 45ms;
-}
-
-@media (hover: hover) {
-  .exp-group-pill:hover > .exp-group-sections {
-    grid-template-columns: 1fr;
-  }
-
-  .exp-group-pill:hover > .exp-group-sections .exp-group-sections-inner {
-    opacity: 1;
-    transform: translateX(0);
-    transition-delay: 45ms;
-  }
-}
-
+.exp-group-name,
 .exp-group-section {
-  border: var(--border-hairline);
-  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+  position: relative;
+  z-index: 1; /* above the gliding pill */
   cursor: pointer;
   font: inherit;
   font-size: calc(12.5px * var(--density-font, 1));
@@ -180,74 +54,49 @@
   line-height: 1.25;
   color: var(--text-muted);
   padding: calc(5px * var(--density-space, 1)) calc(10px * var(--density-space, 1));
+  border: 0;
   border-radius: var(--radius-pill);
+  background: transparent;
   white-space: nowrap;
-  transition:
-    color var(--dur-fast) var(--ease-out),
-    background var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out);
+  transition: color var(--dur-fast) var(--ease-out);
 }
 
 @media (hover: hover) {
+  .exp-group-name:hover,
   .exp-group-section:hover {
-    background: var(--state-hover-bg);
     color: var(--text);
   }
 }
 
-.exp-group-section.is-active {
-  background: color-mix(in oklab, var(--action) 14%, var(--surface));
-  border-color: color-mix(in oklab, var(--action) 35%, transparent);
+.exp-group-section.is-active,
+.exp-group-pill.is-active > .exp-group-name {
   color: var(--color-accent-soft-text);
 }
 
+.exp-group-name:focus-visible,
 .exp-group-section:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
 
-html.dark .exp-group-name {
-  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
-}
-
-html.high-contrast .exp-group-name {
-  background: var(--surface);
-  border: 1px solid var(--border);
-}
-
+html.high-contrast .exp-group-section.is-active,
 html.high-contrast .exp-group-pill.is-active > .exp-group-name {
-  border-color: var(--color-accent);
+  outline: 2px solid var(--color-accent);
 }
 
-html.motion-sobrio .exp-group-sections,
-html.motion-sobrio .exp-group-sections-inner,
 html.motion-sobrio .exp-group-name,
-html.motion-sobrio .exp-group-pill {
+html.motion-sobrio .exp-group-section {
   transition: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .exp-group-sections,
-  .exp-group-sections-inner,
   .exp-group-name,
-  .exp-group-pill {
+  .exp-group-section {
     transition: none !important;
   }
-  .exp-group-sections-inner {
-    opacity: 1;
-    transform: none;
-  }
 }
 
-/* A leaf pill is a single tab (no sub-sections) — hide the (empty) sections
- * slot. Its name chip needs no separate styling: the base .exp-group-name
- * rule above already gives every group's own name a bordered chip, leaf or
- * not, so a leaf group looks identical to any other pill in the row. */
-.exp-group-pill--leaf > .exp-group-sections {
-  display: none;
-}
-
-/* Mobile web (iPad PWA / LAN): grouped row at all widths; tap-to-expand only */
+/* Mobile web (iPad PWA / LAN): flat row at all widths */
 html.rpc-mobile-web .exp-expediente-nav > .inner-tab-bar {
   display: none;
 }
@@ -259,8 +108,7 @@ html.rpc-mobile-web #patient-expediente-classic .exp-segment-bar {
 html.rpc-mobile-web .exp-expediente-nav > #exp-group-row {
   display: flex;
   align-items: center;
-  gap: calc(8px * var(--density-space, 1));
-  /* Right padding is a flat 28px to match the ::after edge cue below. */
+  gap: calc(2px * var(--density-space, 1));
   padding: calc(8px * var(--density-space, 1)) 28px calc(8px * var(--density-space, 1))
     calc(12px * var(--density-space, 1));
   overflow-x: auto;
@@ -268,17 +116,6 @@ html.rpc-mobile-web .exp-expediente-nav > #exp-group-row {
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
   position: relative;
-}
-/* Edge cue: fades to var(--surface), the .exp-expediente-nav background it sits on. */
-html.rpc-mobile-web .exp-expediente-nav > #exp-group-row::after {
-  content: "";
-  position: sticky;
-  right: 0;
-  flex: 0 0 28px;
-  align-self: stretch;
-  margin-left: -28px;
-  pointer-events: none;
-  background: linear-gradient(to left, var(--surface), transparent);
 }
 
 html.rpc-mobile-web .exp-group-name,
@@ -288,4 +125,3 @@ html.rpc-mobile-web .exp-group-section {
   align-items: center;
   justify-content: center;
 }
-

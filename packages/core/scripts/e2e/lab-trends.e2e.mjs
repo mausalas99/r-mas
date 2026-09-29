@@ -191,14 +191,26 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   async function openTend() {
     await closeToasts(page);
     await page.locator('#lab-inner-tend-btn').click();
-    await page.locator('#tendencias-container .tend-card, #lab-inner-tend-mount .tend-card').first().waitFor({ state: 'visible' });
+    await page.locator('#tendencias-container .tend-row, #lab-inner-tend-mount .tend-row').first().waitFor({ state: 'visible' });
   }
-  const card = (key) => page.locator(`.tend-card[data-series-key="${key}"]`).locator('visible=true');
+  const card = (key) => page.locator(`.tend-row[data-series-key="${key}"]`).locator('visible=true');
+  // The detail/group/pivot panels live in the side pane (#tend-pane), not in a modal. X closes the current mode.
+  const closePane = async () => {
+    await page.locator('#tend-pane .tend-pane-close:visible').first().click();
+    await page.locator('#tend-pane').waitFor({ state: 'hidden' }).catch(() => {});
+  };
   await openTend();
   await r.shot(page, 'tendencias');
-  const keys = await page.locator('.tend-card[data-series-key]').evaluateAll((els) => els.map((e) => e.getAttribute('data-series-key')));
+  const keys = await page.locator('.tend-row[data-series-key]').evaluateAll((els) => els.map((e) => e.getAttribute('data-series-key')));
   check('BUN/CR card present, retired QS|BUNCR not', keys.includes('QS|BUN/CR') && !keys.includes('QS|BUNCR'), keys);
   check('a dynamic non-catalog analyte (SODIO) gets its own card', keys.includes('ESC|Na'), keys);
+  // Toolbar: search filters rows client side; segmented control mirrors the abnormal-only pref.
+  await page.locator('.tend-search-input').fill('plaq');
+  const searchVisible = await page.locator('.tend-row:visible').count();
+  check('search «plaq» narrows the list to the platelet row(s)', searchVisible > 0 && searchVisible < keys.length, searchVisible);
+  await page.locator('.tend-search-input').fill('');
+  check('clearing search restores all rows', (await page.locator('.tend-row:visible').count()) >= searchVisible);
+  check('segmented «Todos» is pressed by default', (await page.locator('.tend-seg-btn[data-tend-filter="all"]').getAttribute('aria-pressed')) === 'true');
 
   const insight = (key) =>
     card(key).first().evaluate((el) => {
@@ -220,7 +232,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
 
   // Hide WBC, collapse the QS section.
   await card('BH|Leu').first().hover();
-  await card('BH|Leu').first().locator('.tend-card-hide-btn').click();
+  await card('BH|Leu').first().locator('.tend-row-hide-btn').click();
   await page.waitForTimeout(300);
   check('hidden WBC card is gone', (await card('BH|Leu').count()) === 0);
   const qsToggle = page.locator('.tend-section[data-section="QS"] .tend-section-toggle');
@@ -266,7 +278,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
     };
   });
   await card('BH|Hb').first().hover();
-  await card('BH|Hb').first().locator('.tend-card-hide-btn').click();
+  await card('BH|Hb').first().locator('.tend-row-hide-btn').click();
   await bhToggle.click();
   await bhToggle.click();
   await page.waitForTimeout(300);
@@ -282,7 +294,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   // ── Detail chart + events ────────────────────────────────────────────────
   await page.waitForTimeout(800);
   await card('BH|Plt').first().scrollIntoViewIfNeeded();
-  await card('BH|Plt').first().click({ position: { x: 20, y: 60 } });
+  await card('BH|Plt').first().click({ position: { x: 20, y: 24 } });
   let detail = page.locator('#tend-detail-backdrop');
   await detail.waitFor({ state: 'visible' });
   await page.waitForTimeout(400);
@@ -418,8 +430,60 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   await save();
   await compose.waitFor({ state: 'detached' }).catch(() => {});
 
-  await page.keyboard.press('Escape');
+  await closePane();
   await detail.waitFor({ state: 'hidden' }).catch(() => {});
+
+  // Pane close rules: selected row tint, compact list, Esc, click the selected row again, X.
+  await card('BH|Plt').first().click({ position: { x: 20, y: 24 } });
+  await detail.waitFor({ state: 'visible' });
+  await page.waitForTimeout(500);
+  check('selected row is tinted while the pane is open', await card('BH|Plt').first().evaluate((e) => e.classList.contains('is-selected')));
+  check('list narrows to ~410px while the pane is open', await page.locator('#tendencias-container').evaluate((e) => e.getBoundingClientRect().width < 430));
+  check('compact rows hide the Estado column', !(await card('BH|Plt').first().locator('.tend-row-status').isVisible()));
+  check('pane shows «Rango de referencia» and readings', /Rango de referencia/.test(await page.locator('#tend-detail-ref').innerText()) && (await page.locator('#tend-detail-readings .tend-rd-row').count()) > 2);
+  await page.keyboard.press('Escape');
+  await detail.waitFor({ state: 'hidden' });
+  check('Esc closes the pane', true);
+  await card('BH|Plt').first().click({ position: { x: 20, y: 24 } });
+  await detail.waitFor({ state: 'visible' });
+  await card('BH|Plt').first().click({ position: { x: 20, y: 24 } });
+  await detail.waitFor({ state: 'hidden' });
+  check('clicking the selected row again closes the pane', true);
+  await card('BH|Plt').first().click({ position: { x: 20, y: 24 } });
+  await detail.waitFor({ state: 'visible' });
+  await closePane();
+  await detail.waitFor({ state: 'hidden' });
+  check('X closes the pane', true);
+
+  // Estudio pane: scale toggle Valores | Relativa al rango.
+  await page.locator('.tend-section-chart-btn:visible').first().click();
+  await page.locator('#tend-group-backdrop').waitFor({ state: 'visible' });
+  await page.waitForTimeout(600);
+  const chartInfo = () => page.evaluate(() => {
+    const cs = [...document.querySelectorAll('#tend-group-panel-charts canvas')].map((cv) => Chart.getChart(cv)).filter(Boolean);
+    const first = cs[0];
+    return {
+      charts: cs.length,
+      datasets: cs.reduce((n, c) => n + c.data.datasets.length, 0),
+      allRel: cs.every((c) => c.data.datasets.every((d) => !!d.relRef)),
+      tick: first ? String(first.options.scales.y.ticks.callback(50)) : '',
+      noRef: [...document.querySelectorAll('.tend-group-rel-note')].map((n) => n.textContent),
+    };
+  });
+  const valuesInfo = await chartInfo();
+  check('estudio defaults to «Valores» scale', (await page.locator('#tend-group-panel-charts [data-scale="values"]').getAttribute('aria-pressed')) === 'true' && !valuesInfo.allRel, valuesInfo);
+  await page.locator('#tend-group-panel-charts [data-scale="relative"]').click();
+  await page.waitForTimeout(600);
+  const relInfo = await chartInfo();
+  check('relative scale: every plotted analyte has a range and the axis is in %', relInfo.charts > 0 && relInfo.allRel && /%/.test(relInfo.tick), relInfo);
+  const skippedCount = relInfo.noRef.reduce((n, t) => n + t.replace(/^[^:]*:\s*/, '').split(',').length, 0);
+  check('relative scale: analytes without a range are named in a note, none silently lost', relInfo.datasets + skippedCount === valuesInfo.datasets, { valuesInfo, relInfo });
+  check('relative scale hides «+ Umbral»', (await page.locator('#tend-group-panel-charts .tend-group-threshold-add-btn').count()) === 0);
+  await page.locator('#tend-group-panel-charts [data-scale="values"]').click();
+  await page.waitForTimeout(400);
+  check('back to «Valores» restores the raw axis', !(await chartInfo()).allRel);
+  await page.keyboard.press('Escape');
+  await page.locator('#tend-group-backdrop').waitFor({ state: 'hidden' });
 
   // New draws added here (after the insight-card checks above, which read the
   // latest Leu/Hb/Plt) so they don't shift what "latest" means for those checks.
@@ -493,7 +557,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
       await qualityTitle.evaluate((el) => el.blur());
     }
     await page.waitForTimeout(300);
-    await page.keyboard.press('Escape');
+    await closePane();
     await groupModal.waitFor({ state: 'hidden' }).catch(() => {});
     await page.locator('.tend-section[data-section="BH"] .tend-section-chart-btn').click();
     await groupModal.waitFor({ state: 'visible' });
@@ -539,7 +603,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
       check('threshold chip appears (Leu: 30)', /Leu.*30|30.*Leu/i.test(await absPanel.locator('.tend-group-threshold-chips').innerText()));
     }
   }
-  await page.keyboard.press('Escape');
+  await closePane();
   await groupModal.waitFor({ state: 'hidden' }).catch(() => {});
   await page.locator('.tend-section[data-section="BH"] .tend-section-chart-btn').click();
   await groupModal.waitFor({ state: 'visible' });
@@ -562,7 +626,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
       await page.waitForTimeout(300);
     }
   }
-  await page.keyboard.press('Escape');
+  await closePane();
   await groupModal.waitFor({ state: 'hidden' }).catch(() => {});
   await page.locator('.tend-section[data-section="BH"] .tend-section-chart-btn').click();
   await groupModal.waitFor({ state: 'visible' });
@@ -579,7 +643,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
     await absPanel3.locator('.tend-group-threshold-chip', { hasText: 'Hb' }).locator('.tend-group-threshold-chip-remove').first().click().catch(() => {});
     const hbChipGone = () => absPanel3.locator('.tend-group-threshold-chips').innerText().then((t) => !/Hb.*5\b|5\b.*Hb/i.test(t));
     check('removing a threshold chip drops it', await hbChipGone());
-    await page.keyboard.press('Escape');
+    await closePane();
     await groupModal.waitFor({ state: 'hidden' }).catch(() => {});
     await page.locator('.tend-section[data-section="BH"] .tend-section-chart-btn').click();
     await groupModal.waitFor({ state: 'visible' });
@@ -621,7 +685,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
     map[groupKey] = ['NoSuchField'];
     localStorage.setItem('rpc-tend-group-visible', JSON.stringify(map));
   }, realGroupKey);
-  await page.keyboard.press('Escape');
+  await closePane();
   await groupModal.waitFor({ state: 'hidden' }).catch(() => {});
   await page.locator('.tend-section[data-section="BH"] .tend-section-chart-btn').click();
   await groupModal.waitFor({ state: 'visible' });
@@ -665,8 +729,8 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   check('grouped 11/01: Plt comes from the later partial draw (90), not the full draw\'s (120)', /\b90\b/.test(pltRowText) && !/\b120\b/.test(pltRowText), pltRowText);
 
   // "Ocultar fila": hiding a row marks it is-hidden and drops it from the copied text.
-  const leuRowToggle = leuRow.locator('.tend-group-row-toggle input[data-field-key]');
-  await leuRowToggle.check();
+  const leuRowToggle = leuRow.locator('.tend-group-row-toggle button[data-field-key]');
+  await leuRowToggle.click();
   await page.waitForTimeout(300);
   check('"Ocultar fila" marks the row is-hidden', /is-hidden/.test((await leuRow.getAttribute('class')) || ''));
   await closeToasts(page);
@@ -693,7 +757,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
 
   // "Tablas Dinámicas" is its own modal (not this one): add an analyte from another
   // section (QS Glu) there; it survives a close/reopen.
-  await groupModal.locator('[data-wb-close]').click();
+  await groupModal.locator('.tend-pane-close').click();
   await groupModal.waitFor({ state: 'hidden' }).catch(() => {});
   await page.locator('.tend-dynamic-table-trigger').click();
   const dynModal = page.locator('#tend-dynamic-table-backdrop');
@@ -729,7 +793,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
       const gluRow = dynModal.locator('tr', { hasText: 'Glu' }).first();
       const gluRowText = flat((await gluRow.count()) ? await gluRow.innerText() : '');
       check('cross-section row shows its own section\'s value (Glu 94)', /\b94\b/.test(gluRowText), gluRowText);
-      await dynModal.locator('[data-wb-close]').click();
+      await dynModal.locator('.tend-pane-close').click();
       await dynModal.waitFor({ state: 'hidden' }).catch(() => {});
       await page.locator('.tend-dynamic-table-trigger').click();
       await dynModal.waitFor({ state: 'visible' });
@@ -738,7 +802,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
 
       // An extra whose field no longer resolves in the current catalog (renamed/removed)
       // is dropped silently: no thrown error, the still-valid extra (Glu) keeps rendering.
-      await dynModal.locator('[data-wb-close]').click();
+      await dynModal.locator('.tend-pane-close').click();
       await dynModal.waitFor({ state: 'hidden' }).catch(() => {});
       const pageErrorsBeforeStaleExtra = [];
       const onPageError = (err) => pageErrorsBeforeStaleExtra.push(String(err));
@@ -768,20 +832,73 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
 
       // __DYNAMIC__ extras are isolated from real sections: the QS Glu column
       // added here must not leak into the BH group modal's own extras.
-      await dynModal.locator('[data-wb-close]').click();
+      await dynModal.locator('.tend-pane-close').click();
       await dynModal.waitFor({ state: 'hidden' }).catch(() => {});
       await page.locator('.tend-section[data-section="BH"] .tend-section-chart-btn').click();
       await groupModal.waitFor({ state: 'visible' });
       await page.waitForTimeout(300);
       check('BH group modal does not inherit the __DYNAMIC__ extra (QS Glu)', !/Glu/.test(flat(await groupModal.innerText())));
-      await groupModal.locator('[data-wb-close]').click();
+      await groupModal.locator('.tend-pane-close').click();
       await groupModal.waitFor({ state: 'hidden' }).catch(() => {});
       await page.locator('.tend-dynamic-table-trigger').click();
       await dynModal.waitFor({ state: 'visible' });
       await page.waitForTimeout(300);
     }
   }
-  await dynModal.locator('[data-wb-close]').click();
+  await dynModal.locator('.tend-pane-close').click();
+  await dynModal.waitFor({ state: 'hidden' }).catch(() => {});
+
+  // Pivot pane: tick-in-list. Ticking a row adds its analyte to the table, unticking removes it.
+  await page.locator('.tend-dynamic-table-trigger').click();
+  await dynModal.waitFor({ state: 'visible' });
+  await page.waitForTimeout(400);
+  const pivotRows = () => dynModal.locator('#tend-group-table tbody tr[data-field]').evaluateAll((trs) => trs.map((t) => t.getAttribute('data-field')));
+  const tick = (key) => page.locator(`.tend-row[data-series-key="${key}"] .tend-row-tick`).locator('visible=true');
+  // Glu lives in the QS section, which may be collapsed: open it so its tick is reachable.
+  const qsTog = page.locator('.tend-section[data-section="QS"] .tend-section-toggle');
+  if ((await qsTog.getAttribute('aria-expanded')) !== 'true') { await qsTog.click(); await page.waitForTimeout(300); }
+  const rowsBeforeTick = await pivotRows();
+  check('pivot pane shows a checkbox on every list row', (await tick('BH|VCM').count()) === 1 && (await tick('BH|Plt').count()) === 1);
+  check('rows already in the table show as ticked when the pane opens', rowsBeforeTick.includes('QS|Glu') ? await tick('QS|Glu').isChecked() : true, rowsBeforeTick);
+  await tick('BH|VCM').check();
+  await tick('BH|Plt').check();
+  await page.waitForTimeout(300);
+  const rowsTicked = await pivotRows();
+  check('ticking two list rows adds two analyte rows to the pivot table', rowsTicked.includes('BH|VCM') && rowsTicked.includes('BH|Plt') && rowsTicked.length === rowsBeforeTick.length + 2, rowsTicked);
+  check('each ticked analyte gets a chip with an accessible «Quitar» button', (await dynModal.locator('.tend-pivot-chip-x[aria-label^="Quitar"]').count()) === rowsTicked.length);
+  await tick('BH|VCM').uncheck();
+  await page.waitForTimeout(300);
+  check('unticking a list row removes its analyte from the table', !(await pivotRows()).includes('BH|VCM'));
+  await dynModal.locator('.tend-pivot-chip-x').last().click();
+  await page.waitForTimeout(300);
+  check('removing a chip unticks the matching list row (both ways in sync)', !(await tick('BH|Plt').isChecked()));
+  await card('BH|Plt').first().click({ position: { x: 240, y: 24 } });
+  await page.waitForTimeout(300);
+  check('row click in pivot mode toggles the row and does not open the analito pane',
+    (await tick('BH|Plt').isChecked()) && (await page.locator('#tend-pane').getAttribute('data-mode')) === 'pivot' && !(await page.locator('#tend-detail-backdrop').isVisible()));
+  const abnormalCells = await dynModal.locator('#tend-group-table td.tend-abnormal').allInnerTexts();
+  check('out-of-range cells carry an arrow (same text goes to «Copiar como texto»)', abnormalCells.length > 0 && abnormalCells.every((t) => /^[▼▲] /.test(flat(t))), abnormalCells.slice(0, 4));
+  // Esc must close the pane even while a list tick has focus (it is a checkbox, not a text field).
+  await tick('BH|VCM').focus();
+  await page.keyboard.press('Escape');
+  await dynModal.waitFor({ state: 'hidden' }).catch(() => {});
+  check('Esc closes the pivot pane while a list tick has focus', !(await dynModal.isVisible()));
+  await page.locator('.tend-dynamic-table-trigger').click();
+  await dynModal.waitFor({ state: 'visible' });
+  await qsTog.click(); // back to collapsed, as the restart checks below expect
+  await page.waitForTimeout(300);
+  await closePane();
+  await dynModal.waitFor({ state: 'hidden' }).catch(() => {});
+  check('closing the pane removes the list checkboxes', (await page.locator('.tend-row-tick:visible').count()) === 0);
+
+  // «Agregar a tabla dinámica» from the analito pane opens the pivot pane with that analyte in.
+  await card('BH|Plt').first().click({ position: { x: 240, y: 24 } });
+  await detail.waitFor({ state: 'visible' });
+  await page.locator('#tend-detail-pivot').click();
+  await dynModal.waitFor({ state: 'visible' });
+  await page.waitForTimeout(400);
+  check('«Agregar a tabla dinámica» adds the open analyte to the pivot table', (await pivotRows()).includes('BH|Plt') && (await tick('BH|Plt').isChecked()));
+  await closePane();
   await dynModal.waitFor({ state: 'hidden' }).catch(() => {});
 
   // Back to "Tendencias por Grupo" for the date-range/copy checks below.
@@ -863,7 +980,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   // clipped 3-tag column (the old bug this covers) would still fail this floor.
   check('PNG table image is wide enough for a 3-tag day column (no silent clip)', !pngDims || pngDims.width >= 700, pngDims);
 
-  await page.keyboard.press('Escape');
+  await closePane();
   await groupModal.waitFor({ state: 'hidden' }).catch(() => {});
 
   // GASES group chart → its own "gases" panel family. QS group chart → the
@@ -873,7 +990,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   await page.waitForTimeout(500);
   const gasesFamList = await page.locator('.tend-group-panel-card[data-panel-family]').evaluateAll((els) => els.map((e) => e.getAttribute('data-panel-family')));
   check('GASES group chart renders the "gases" panel family', gasesFamList.includes('gases'), gasesFamList);
-  await page.keyboard.press('Escape');
+  await closePane();
   await groupModal.waitFor({ state: 'hidden' }).catch(() => {});
 
   await page.locator('.tend-section[data-section="QS"] .tend-section-chart-btn').click();
@@ -881,7 +998,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   await page.waitForTimeout(500);
   const qsFamList = await page.locator('.tend-group-panel-card[data-panel-family]').evaluateAll((els) => els.map((e) => e.getAttribute('data-panel-family')));
   check('QS group chart renders the generic "absolute" panel family', qsFamList.includes('absolute'), qsFamList);
-  await page.keyboard.press('Escape');
+  await closePane();
   await groupModal.waitFor({ state: 'hidden' }).catch(() => {});
 
   // Reordering panels, the legend, or the spark cards persists after a reopen.
@@ -903,7 +1020,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
     legendMap[groupKey + '|bh-absolute'] = legend;
     localStorage.setItem('rpc-tend-group-legend-order', JSON.stringify(legendMap));
   }, { fams: reversedFams, legend: reversedLegend, groupKey: realGroupKey });
-  await page.keyboard.press('Escape');
+  await closePane();
   await groupModal.waitFor({ state: 'hidden' }).catch(() => {});
   await page.locator('.tend-section[data-section="BH"] .tend-section-chart-btn').click();
   await groupModal.waitFor({ state: 'visible' });
@@ -912,7 +1029,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   check('a reordered panel order persists after reopen', bhFamListAfterReorder.join(',') === reversedFams.join(','), { reversedFams, bhFamListAfterReorder });
   const bhAbsoluteFieldsAfterReorder = await panelFamily('bh-absolute').locator('.tend-group-legend-check').evaluateAll((els) => els.map((e) => e.getAttribute('data-field')));
   check('a reordered legend persists after reopen', bhAbsoluteFieldsAfterReorder.join(',') === reversedLegend.join(','), { reversedLegend, bhAbsoluteFieldsAfterReorder });
-  await page.keyboard.press('Escape');
+  await closePane();
   await groupModal.waitFor({ state: 'hidden' }).catch(() => {});
 
   // Same for the spark-card order in one section (BH), and it does not touch other sections.
@@ -923,7 +1040,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   // Hb and Leu are hidden earlier in the script (restored only by "Mostrar
   // todos" near the end), so read the keys actually rendered right now, not
   // the stale full-set snapshot from before any card was hidden.
-  const bhKeysBeforeReorder = (await page.locator('.tend-card[data-series-key]').evaluateAll((els) => els.map((e) => e.getAttribute('data-series-key')))).filter((k) => k && k.startsWith('BH|'));
+  const bhKeysBeforeReorder = (await page.locator('.tend-row[data-series-key]').evaluateAll((els) => els.map((e) => e.getAttribute('data-series-key')))).filter((k) => k && k.startsWith('BH|'));
   const reversedCardOrder = bhKeysBeforeReorder.slice().reverse();
   await page.evaluate(({ order, groupKey }) => {
     const map = JSON.parse(localStorage.getItem('rpc-tend-card-order') || '{}');
@@ -938,7 +1055,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   await app.close();
   ({ app, page, pageErrors } = await r.launch());
   detail = page.locator('#tend-detail-backdrop'); // the old one points at the closed window
-  await page.locator('#app-main-tablist').waitFor({ state: 'visible', timeout: 30000 });
+  await page.locator('.topbar-area-btn').waitFor({ state: 'visible', timeout: 30000 });
   await dismissLearnHub(page);
   await openPatient(page, P);
   await goArea(page, 'lab');
@@ -946,23 +1063,23 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   await r.shot(page, 'after-restart');
   check('after restart: WBC still hidden', (await card('BH|Leu').count()) === 0);
   check('after restart: QS still collapsed', (await page.locator('.tend-section[data-section="QS"] .tend-section-toggle').getAttribute('aria-expanded')) === 'false');
-  const bhKeysAfterReorder = (await page.locator('.tend-card[data-series-key]').evaluateAll((els) => els.map((e) => e.getAttribute('data-series-key')))).filter((k) => k && k.startsWith('BH|'));
+  const bhKeysAfterReorder = (await page.locator('.tend-row[data-series-key]').evaluateAll((els) => els.map((e) => e.getAttribute('data-series-key')))).filter((k) => k && k.startsWith('BH|'));
   // Hb's earlier hide was session-only, so it's back after restart and gets
   // appended after the saved keys — check only the relative order of the
   // keys that were actually in the saved order, not the full, now-longer list.
   const bhKeysAfterReorderSaved = bhKeysAfterReorder.filter((k) => reversedCardOrder.includes(k));
   check('a reordered spark-card order persists after reopen', bhKeysAfterReorderSaved.join(',') === reversedCardOrder.join(','), { reversedCardOrder, bhKeysAfterReorder });
-  const qsKeysAfter = (await page.locator('.tend-card[data-series-key]').evaluateAll((els) => els.map((e) => e.getAttribute('data-series-key')))).filter((k) => k && k.startsWith('QS|'));
+  const qsKeysAfter = (await page.locator('.tend-row[data-series-key]').evaluateAll((els) => els.map((e) => e.getAttribute('data-series-key')))).filter((k) => k && k.startsWith('QS|'));
   check('reordering BH cards does not touch QS card order', qsKeysAfter.join(',') === qsKeysBefore.join(','), { qsKeysBefore, qsKeysAfter });
   // Keyboard: Enter on a focused card opens the detail. The card's focus
-  // target is its open button (.tend-card-open), not the card div.
-  await card('BH|Plt').first().locator('.tend-card-open').focus();
+  // target is its open button (.tend-row-open), not the card div.
+  await card('BH|Plt').first().locator('.tend-row-open').focus();
   await page.keyboard.press('Enter');
   check('Enter on a focused card opens the detail', await page.locator('#tend-detail-backdrop').waitFor({ state: 'visible', timeout: 5000 }).then(() => true, () => false));
   await page.waitForTimeout(400);
   const after = await page.locator('#tend-detail-events-slot').innerText();
   check('after restart: the events are still there', /\bPlaq\b/.test(after) && /\bEv\b/.test(after) && !/Toracoc/i.test(after), flat(after));
-  await page.keyboard.press('Escape');
+  await closePane();
 
   // "Mostrar todos" brings every hidden card back.
   const openHidden = page.locator('.tend-ocultos-trigger').first();
@@ -979,7 +1096,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   // Leu detail chart: 6 draws with a Leu value (30/12, 02/01, 03/01x2, 05/01,
   // 11/01), the two 03/01 draws stay as distinct points, not merged into one.
   await card('BH|Leu').first().scrollIntoViewIfNeeded();
-  await card('BH|Leu').first().click({ position: { x: 20, y: 60 } });
+  await card('BH|Leu').first().click({ position: { x: 20, y: 24 } });
   await detail.waitFor({ state: 'visible' });
   await page.waitForTimeout(400);
   const leuDetailLabels = await page.evaluate(() => {
@@ -990,7 +1107,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   const jan3Labels = Array.isArray(leuDetailLabels) ? leuDetailLabels.filter((l) => /03\/01/.test(String(l))) : [];
   check('the 2 draws of 03/01 are distinct x-axis points (not merged)', jan3Labels.length === 2, leuDetailLabels);
   check('chart labels on a 2-draw day are date only, no time', jan3Labels.every((l) => !/:\d\d/.test(String(l))), jan3Labels);
-  await page.keyboard.press('Escape');
+  await closePane();
   await detail.waitFor({ state: 'hidden' }).catch(() => {});
 
   // ── TTP prints its own ref range right after INR, which prints none ──────
@@ -1002,7 +1119,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   const tpCard = card('BH|TP');
   if (await tpCard.count()) {
     await tpCard.first().scrollIntoViewIfNeeded();
-    await tpCard.first().click({ position: { x: 20, y: 60 } });
+    await tpCard.first().click({ position: { x: 20, y: 24 } });
     await detail.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
     if (await detail.isVisible()) {
       await page.waitForTimeout(400);
@@ -1011,14 +1128,14 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
         return c && c.options.plugins.tendRefBand;
       });
       check('TP keeps its own band 10.25–13.20', !!tpBand && tpBand.lo === 10.25 && tpBand.hi === 13.2, tpBand);
-      await page.keyboard.press('Escape');
+      await closePane();
       await detail.waitFor({ state: 'hidden' }).catch(() => {});
     }
   }
   const ttpCard = card('BH|TTP');
   if (await ttpCard.count()) {
     await ttpCard.first().scrollIntoViewIfNeeded();
-    await ttpCard.first().click({ position: { x: 20, y: 60 } });
+    await ttpCard.first().click({ position: { x: 20, y: 24 } });
     await detail.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
     if (await detail.isVisible()) {
       await page.waitForTimeout(400);
@@ -1027,14 +1144,14 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
         return c && c.options.plugins.tendRefBand;
       });
       check('TTP keeps its own band 28.9–34.1', !!ttpBand && ttpBand.lo === 28.9 && ttpBand.hi === 34.1, ttpBand);
-      await page.keyboard.press('Escape');
+      await closePane();
       await detail.waitFor({ state: 'hidden' }).catch(() => {});
     }
   }
   const inrCard = card('BH|INR');
   if (await inrCard.count()) {
     await inrCard.first().scrollIntoViewIfNeeded();
-    await inrCard.first().click({ position: { x: 20, y: 60 } });
+    await inrCard.first().click({ position: { x: 20, y: 24 } });
     await detail.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
     if (await detail.isVisible()) {
       await page.waitForTimeout(400);
@@ -1043,7 +1160,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
         return c && c.options.plugins.tendRefBand;
       });
       check("INR (no printed range) does not inherit TTP's band", !(inrBand && inrBand.lo === 28.9 && inrBand.hi === 34.1), inrBand);
-      await page.keyboard.press('Escape');
+      await closePane();
       await detail.waitFor({ state: 'hidden' }).catch(() => {});
     }
   }

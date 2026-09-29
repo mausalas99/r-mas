@@ -1,4 +1,5 @@
 import { closeOverlayAnimated } from './ui-motion.mjs';
+import { hideTendPane } from './tend-pane.mjs';
 import { mountRpcDateInput } from './rpc-date-picker.mjs';
 import {
   renderGroupTable,
@@ -25,6 +26,7 @@ import {
   copyTendGroupTableText,
   setTendGroupTab,
   applyTendGroupDateRange,
+  refreshTendGroupSub,
 } from './tend-group-modal-open.mjs';
 
 function createTendGroupTableApi(deps, state) {
@@ -183,7 +185,7 @@ export function createTendGroupModal(deps) {
   function closeModal() {
     destroyPanelSortable();
     state.sectionKey = null;
-    document.body.classList.remove('tend-group-modal-open');
+    hideTendPane('estudio');
     var bd = backdropEl();
     closeOverlayAnimated(bd, function () {
       if (bd) bd.style.display = 'none';
@@ -211,6 +213,7 @@ export function createTendGroupModal(deps) {
     mountRpcDateInput(toInput);
     function reapply() {
       applyTendGroupDateRange(state, fromInput.value, toInput.value);
+      refreshTendGroupSub(state);
       clearBtn.hidden = !(state.rangeFrom || state.rangeTo);
       renderTendGroupPanels(state.sectionKey, renderCharts, renderTable);
     }

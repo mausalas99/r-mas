@@ -23,7 +23,7 @@ export function setEaRegistroEditMode(form, id) {
   if (id) form.setAttribute('data-ea-edit-id', String(id));
   else form.removeAttribute('data-ea-edit-id');
   var title = document.getElementById('ea-registro-title');
-  if (title) title.textContent = id ? 'Editar medición' : 'Registrar medición';
+  if (title) title.textContent = id ? 'Editar medición' : 'Registro completo';
   var submit = document.querySelector('.ea-registro-submit');
   if (submit) submit.textContent = id ? 'Guardar cambios' : 'Registrar';
 }

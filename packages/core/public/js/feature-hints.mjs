@@ -41,7 +41,7 @@ export const FEATURE_HINTS = [
       { sel: '#tend-group-range-row', text: '<strong>Rango</strong>: elige dos fechas para ver solo esos días. <strong>Quitar rango</strong> regresa a todo.' },
       { sel: '#tend-group-panel-charts .tend-group-legend-check', text: 'Quita la marca de un estudio para ocultarlo de la gráfica. El ojo oculta la gráfica completa.' },
       { sel: '#tend-group-modal .tend-group-tab[data-tab="table"]', action: true, text: 'Abre la <strong>Tabla</strong>.' },
-      { sel: '#tend-group-table-wrap input[data-field-key]', text: 'Marca una fila o una columna para quitarla de la copia. Queda en <strong>Ocultos en copia</strong> para regresarla.' },
+      { sel: '#tend-group-table-wrap button[data-field-key]', text: 'Toca el ojo de una fila o una columna para quitarla de la copia. Queda en <strong>Ocultos en copia</strong> para regresarla.' },
       { sel: '#tend-group-panel-table .tend-group-table-actions', text: '<strong>Copiar</strong> la pega como imagen. <strong>Copiar como texto</strong> la pega como tabla editable.' },
     ],
   },
@@ -291,9 +291,11 @@ function findVisible(sel, scroll) {
     if (layer.contains(el)) continue;
     let r = el.getBoundingClientRect();
     // An area tab folded into the top-bar pill: judge the pill, which opens while a tab in it is the target.
-    if (r.width < 4 && el.matches('.topbar-nav .app-tab')) {
-      const pill = el.parentElement.getBoundingClientRect();
-      if (onScreen(pill) && uncovered(el.parentElement, pill)) return el;
+    if (el.matches('.topbar-nav .app-tab')) {
+      const area = el.closest('.topbar-area');
+      const pill = area.getBoundingClientRect();
+      if (onScreen(pill) && uncovered(area, pill)) return el;
+      continue;
     }
     // Hidden by an inner scroll box (or a sticky bar) counts too, not only the window edge.
     if (scroll && r.width && !(onScreen(r) && uncovered(el, r))) {

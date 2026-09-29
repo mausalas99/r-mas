@@ -325,7 +325,7 @@ await r.finish('Pendientes: add, dates, priority, edit, listo/deshacer, delete, 
   const errors = [...pageErrors];
   await app.close();
   const again = await r.launch();
-  await again.page.locator('#app-main-tablist').waitFor({ state: 'visible', timeout: 30000 });
+  await again.page.locator('.topbar-area-btn').waitFor({ state: 'visible', timeout: 30000 });
   await dismissLearnHub(again.page);
   await openPatient(again.page, P1);
   await goPendientes(again.page);

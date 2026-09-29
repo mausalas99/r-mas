@@ -166,26 +166,24 @@ function openDropdown(ctx) {
 
 function buildExtraChipsHtml(ctx) {
   var esc = ctx.deps.esc;
-  if (!ctx.state.tableExtraSpecs.length) return '';
-  var chips = ctx.state.tableExtraSpecs
+  return ctx.state.tableExtraSpecs
     .map(function (sp) {
       var rk = seriesColorKey(sp.sectionKey, sp.fieldKey);
+      var name = sp.cardTitle || sp.fieldKey;
       var secLabel = ctx.deps.getSectionLabel(sp.sectionKey) || sp.sectionKey;
       return (
-        '<button type="button" class="tend-hidden-chip tend-group-extra-chip" data-remove-extra="' +
-        esc(rk) +
+        '<span class="tend-pivot-chip" title="' +
+        esc(secLabel) +
         '">' +
-        esc((sp.cardTitle || sp.fieldKey) + ' · ' + secLabel) +
-        ' <span aria-hidden="true">×</span></button>'
+        esc(name) +
+        '<button type="button" class="tend-pivot-chip-x" data-remove-extra="' +
+        esc(rk) +
+        '" aria-label="Quitar ' +
+        esc(name) +
+        '"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span>'
       );
     })
     .join('');
-  return (
-    '<div class="tend-group-extra-chips">' +
-    '<span class="tend-group-hidden-label">Analitos agregados:</span>' +
-    chips +
-    '</div>'
-  );
 }
 
 export function renderAnalytePickerBar(ctx) {
@@ -193,9 +191,10 @@ export function renderAnalytePickerBar(ctx) {
   if (!slot) return;
   slot.innerHTML =
     '<div class="tend-analyte-picker-bar">' +
-    '<button type="button" class="tend-toolbar-btn tend-analyte-picker-add-btn">+ Agregar analito</button>' +
+    buildExtraChipsHtml(ctx) +
+    '<button type="button" class="tend-pill tend-analyte-picker-add-btn">+ Agregar analito</button>' +
     '</div>' +
-    buildExtraChipsHtml(ctx);
+    '<p class="tend-pivot-hint">Marca un analito en la lista de la izquierda para agregarlo o quitarlo.</p>';
 
   var addBtn = slot.querySelector('.tend-analyte-picker-add-btn');
   ctx.addBtn = addBtn;

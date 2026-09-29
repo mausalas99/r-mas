@@ -1,7 +1,8 @@
 /**
- * Renders the grouped expediente nav row (#exp-group-row) from the pure model.
- * Wide windows only — CSS hides it <1100px and shows the classic two-level
- * bars instead, which stay fully synced by the existing code paths.
+ * Renders the flat section row (#exp-group-row) from the pure model: one tab
+ * per section, groups only as thin dividers. Wide windows only — CSS hides it
+ * <1100px and shows the classic two-level bars instead, which stay fully
+ * synced by the existing code paths.
  * Selection goes through the existing window globals (switchConsolidatedTab /
  * switchInnerTab) so behavior is identical to the classic bars.
  */
@@ -29,65 +30,65 @@ export function renderExpedienteGroupRow(activeGranular, settings) {
   if (!row) return;
   if (!row._pointerWired) {
     row._pointerWired = true;
+    row.setAttribute('role', 'tablist');
     row.addEventListener('keydown', function (ev) {
       if (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft') return;
-      var names = Array.prototype.slice.call(row.querySelectorAll('.exp-group-name'));
-      var idx = names.indexOf(document.activeElement);
+      var tabs = Array.prototype.slice.call(row.querySelectorAll('[role="tab"]'));
+      var idx = tabs.indexOf(document.activeElement);
       if (idx === -1) return;
       ev.preventDefault();
-      var next = names[(idx + (ev.key === 'ArrowRight' ? 1 : names.length - 1)) % names.length];
+      var next = tabs[(idx + (ev.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
       if (next) next.focus();
     });
   }
   var model = buildGroupRowModel(activeGranular || 'todo', settings || {});
   row.textContent = '';
-  model.forEach(function (group) {
+  // Flat row (nav redesign, board 7): every section is a tab; a group is only a thin divider.
+  function tab(cls, label, active, onPick) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = cls + (active ? ' is-active' : '');
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    btn.textContent = label;
+    btn.addEventListener('click', onPick);
+    return btn;
+  }
+  model.forEach(function (group, i) {
+    if (i > 0) {
+      var div = document.createElement('span');
+      div.className = 'exp-group-div';
+      div.setAttribute('role', 'presentation');
+      row.appendChild(div);
+    }
     var pill = document.createElement('div');
     pill.className = 'exp-group-pill' + (group.active ? ' is-active' : '') + (group.leaf ? ' exp-group-pill--leaf' : '');
     pill.dataset.group = group.id;
-    if (group.active && !group.leaf) pill.setAttribute('aria-label', group.label);
-
-    var name = document.createElement('button');
-    name.type = 'button';
-    name.className = 'exp-group-name';
-    name.setAttribute('aria-expanded', group.leaf ? 'false' : (group.active ? 'true' : 'false'));
-    name.setAttribute('aria-current', group.active ? 'true' : 'false');
-    name.textContent = group.label;
-    name.addEventListener('click', function () {
-      // Touch has no hover preview — a tap always selects directly, same as a mouse click.
-      if (group.granularTarget) {
-        if (typeof window.switchInnerTab === 'function') window.switchInnerTab(group.granularTarget);
-      } else if (typeof window.switchConsolidatedTab === 'function') {
-        window.switchConsolidatedTab(group.id);
+    pill.setAttribute('role', 'presentation');
+    if (group.leaf) {
+      var name = tab('exp-group-name', group.label, group.active, function () {
+        if (group.granularTarget) {
+          if (typeof window.switchInnerTab === 'function') window.switchInnerTab(group.granularTarget);
+        } else if (typeof window.switchConsolidatedTab === 'function') {
+          window.switchConsolidatedTab(group.id);
+        }
+      });
+      pill.appendChild(name);
+      if (group.granularTarget === 'todo') {
+        var badge = document.createElement('span');
+        badge.className = 'wb-pendientes-tab-badge exp-group-pendientes-badge';
+        badge.id = 'exp-pendientes-badge';
+        badge.hidden = true;
+        name.appendChild(badge);
       }
-    });
-    pill.appendChild(name);
-    if (group.granularTarget === 'todo') {
-      var badge = document.createElement('span');
-      badge.className = 'wb-pendientes-tab-badge exp-group-pendientes-badge';
-      badge.id = 'exp-pendientes-badge';
-      badge.hidden = true;
-      pill.appendChild(badge);
     }
-
-    var sections = document.createElement('div');
-    sections.className = 'exp-group-sections';
-    var inner = document.createElement('div');
-    inner.className = 'exp-group-sections-inner';
     group.sections.forEach(function (section) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'exp-group-section' + (section.active ? ' is-active' : '');
-      btn.dataset.section = section.id;
-      btn.setAttribute('aria-pressed', section.active ? 'true' : 'false');
-      btn.textContent = section.label;
-      btn.addEventListener('click', function () {
+      var btn = tab('exp-group-section', section.label, section.active, function () {
         if (typeof window.switchInnerTab === 'function') window.switchInnerTab(section.id);
       });
-      inner.appendChild(btn);
+      btn.dataset.section = section.id;
+      pill.appendChild(btn);
     });
-    sections.appendChild(inner);
-    pill.appendChild(sections);
     row.appendChild(pill);
   });
   updateExpPendientesTabBadge();

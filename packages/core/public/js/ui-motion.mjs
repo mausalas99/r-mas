@@ -162,6 +162,24 @@ export function springTo(el, keyframes, options) {
   };
 }
 
+/**
+ * Segmented control whose buttons are re-rendered on change: slide the new
+ * active button from where the old one was (spring). `fromLeft` is the old
+ * active button's viewport x, read before the re-render.
+ */
+export function flipSegThumb(seg, fromLeft) {
+  var btn = seg && seg.querySelector('.tend-seg-btn.is-active');
+  if (!btn || fromLeft == null) return;
+  var dx = fromLeft - btn.getBoundingClientRect().left;
+  if (Math.abs(dx) < 1) return;
+  springTo(btn, { transform: ['translateX(' + dx + 'px)', 'translateX(0px)'] }, { bounce: 0.25, duration: 0.4 });
+}
+
+export function segActiveLeft(seg) {
+  var btn = seg && seg.querySelector('.tend-seg-btn.is-active');
+  return btn ? btn.getBoundingClientRect().left : null;
+}
+
 export function settlePasteSurface(el) {
   if (!el || typeof el.style !== 'object') return { stop: function () {}, finished: Promise.resolve() };
   if (prefersReducedMotion()) {

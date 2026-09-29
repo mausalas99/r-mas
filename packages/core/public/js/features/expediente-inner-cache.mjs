@@ -68,7 +68,7 @@ var GRANULAR_MOUNT_EMPTY_CHECKS = {
   tend: function () {
     var tend = document.getElementById("tendencias-container");
     if (!tend) return true;
-    return !tend.querySelector(".tend-grid, .tend-toolbar, .tend-empty");
+    return !tend.querySelector(".tend-rows, .tend-toolbar, .tend-empty");
   },
   resumen: function () {
     var dash = document.getElementById("patient-dashboard-mount");

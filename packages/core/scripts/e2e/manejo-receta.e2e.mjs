@@ -346,7 +346,7 @@ await r.finish('Manejo + Perfil histórico', async () => {
   // ── Restart: everything above must still be there ────────────────────────
   await app.close();
   ({ app, page, pageErrors } = await r.launch());
-  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
+  await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
   await openPatient(page, A);
   await openManejo();
   check('after restart: A still has 8 meds, losartán still Excl.',

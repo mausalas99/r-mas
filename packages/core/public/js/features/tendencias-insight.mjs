@@ -77,7 +77,7 @@ export function classifyTendDeltaTone(latest, previous, ref) {
  * @param {[number, number]|null|undefined} [ref]
  */
 export function buildTendInsightHtml(esc, latest, previous, isAbnormal, ref) {
-  void isAbnormal; // range signal lives on .tend-param-value.tend-abnormal
+  void isAbnormal; // range signal lives on .tend-param-value.tend-abnormal and the status cell
   var info = formatTendDelta(latest, previous);
   if (!info || info.delta === 0) return '';
   if (info.pct == null || !Number.isFinite(info.pct)) return '';
@@ -103,6 +103,35 @@ export function buildTendInsightHtml(esc, latest, previous, isAbnormal, ref) {
   );
 }
 
+
+/** Status word + arrow vs reference range (never colour alone). */
+export function tendStatusInfo(latest, ref) {
+  if (latest == null || !ref || ref.length < 2) return { kind: 'none', text: '—' };
+  var v = Number(latest);
+  if (!Number.isFinite(v)) return { kind: 'none', text: '—' };
+  if (v < Number(ref[0])) return { kind: 'low', text: '▼ Bajo' };
+  if (v > Number(ref[1])) return { kind: 'high', text: '▲ Alto' };
+  return { kind: 'ok', text: 'En rango' };
+}
+
+export function buildTendStatusHtml(esc, latest, ref) {
+  var st = tendStatusInfo(latest, ref);
+  return '<span class="tend-status tend-status--' + st.kind + '">' + esc(st.text) + '</span>';
+}
+
+export function tendRangeText(ref) {
+  if (!ref || ref.length < 2) return '—';
+  return String(ref[0]) + ' – ' + String(ref[1]);
+}
+
+/** Cambio cell: % delta with tone class, or a dash. */
+export function buildTendChangeHtml(esc, latest, previous, isAbnormal, ref) {
+  return (
+    buildTendInsightHtml(esc, latest, previous, isAbnormal, ref) ||
+    '<span class="tend-none">—</span>'
+  );
+}
+
 /** Align compare values onto primary chart labels (string equality). */
 export function alignSeriesToLabels(primaryLabels, compareLabels, compareValues) {
   var map = Object.create(null);
@@ -122,4 +151,57 @@ export function formatTendTooltipDelta(values, dataIndex) {
   var info = formatTendDelta(cur, prev);
   if (!info) return null;
   return 'Δ ' + info.text;
+}
+
+/**
+ * Readings table rows for the analyte pane, newest first.
+ * Change = absolute delta vs the previous reading; tone as in the list.
+ * @returns {{label: string, value: number|string|null, change: string, tone: string}[]}
+ */
+export function tendReadingsRows(labels, values, ref) {
+  var rows = [];
+  for (var i = (values || []).length - 1; i >= 0; i -= 1) {
+    var prev = i > 0 ? values[i - 1] : null;
+    var info = formatTendDelta(values[i], prev);
+    rows.push({
+      label: String(labels[i] == null ? '' : labels[i]),
+      value: values[i] == null ? null : values[i],
+      change: info ? info.text : '',
+      tone: classifyTendDeltaTone(values[i], prev, ref),
+    });
+  }
+  return rows;
+}
+
+/** Plain-text copy of the readings (tab separated, newest first). */
+export function tendReadingsText(title, unit, rows) {
+  var head = title + (unit ? ' (' + unit + ')' : '');
+  return [head]
+    .concat(
+      rows.map(function (r) {
+        return r.label + '\t' + (r.value == null ? '—' : r.value) + (r.change ? '\t' + r.change : '');
+      })
+    )
+    .join('\n');
+}
+
+/** Big-number change line: «+6%» plus a tone word, vs the previous reading. */
+export function tendHeroChange(latest, previous, ref) {
+  var info = formatTendDelta(latest, previous);
+  if (!info || info.delta === 0) return null;
+  var pct = info.pct != null && Number.isFinite(info.pct) ? Math.round(info.pct) : null;
+  var tone = classifyTendDeltaTone(latest, previous, ref);
+  return {
+    arrow: info.direction === 'up' ? '▲' : '▼',
+    text: pct ? (pct > 0 ? '+' : '−') + Math.abs(pct) + '%' : info.text,
+    tone: tone,
+    note:
+      tone === 'good'
+        ? ref && latest >= ref[0] && latest <= ref[1]
+          ? 'volvió al rango'
+          : 'se acerca al rango'
+        : tone === 'bad'
+          ? 'se aleja del rango'
+          : '',
+  };
 }

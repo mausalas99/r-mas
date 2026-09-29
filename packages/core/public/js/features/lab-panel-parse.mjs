@@ -25,6 +25,7 @@ import {
   prepareLabOutputBox,
 } from './lab-panel-output-helpers.mjs';
 import { settlePasteSurface } from '../ui-motion.mjs';
+import { runWithPasteLoader } from './lab-paste-loader.mjs';
 import { syncLabResultsCardChrome } from './lab-results-card.mjs';
 
 /** First show: section. Day / history replay: output box (same Pegar y estructurar settle). */
@@ -67,53 +68,60 @@ export function procesarReporte() {
   var text = document.getElementById('lab-input').value.trim();
   if (!text) { rt.showToast('Pega el texto del reporte primero', 'error'); return; }
 
-  var blocks = buildBulkLabPreview(text, { findPatientByRegistro: rt.findPatientByRegistro });
-  if (!blocks.length) {
-    rt.showToast('No se detectaron reportes SOME en el texto pegado', 'error');
-    return;
-  }
-
-  var totalOkReports = blocks.reduce(function (acc, b) {
-    return acc + b.okReportCount;
-  }, 0);
-
-  var mixedWarning = mixedExpedienteWarning(blocks);
-  if (mixedWarning) {
-    rt.showToast(mixedWarning, totalOkReports ? 'warn' : 'error');
-    if (!totalOkReports) return;
-  }
-
-  if (!totalOkReports) {
-    rt.showToast(
-      looksLikeSomeLabReport(text)
-        ? 'No se encontraron resultados de laboratorio en el texto pegado'
-        : 'No parece un reporte de SOME. Copia desde «Expediente:» hasta el final del reporte.',
-      'error'
-    );
-    return;
-  }
-
-  try {
-    if (
-      shouldShowBulkLabPreview(blocks, totalOkReports, {
-        quickLabOutput: rt.getLabOutputPrefs().quickLabOutput,
-      })
-    ) {
-      openLabBulkPreviewModal({
-        blocks: blocks,
-        sourceText: text,
-        onConfirm: function () {
-          runFinalizeWithFreshBlocks(text);
-        },
-      });
-      return;
-    }
-    if (tryOfferAddPatientThenProcess(text, blocks)) return;
-    finalizeBulkLabPaste(text, blocks, totalOkReports);
-  } catch (e) {
-    rt.showToast('Error al procesar el reporte', 'error');
-    console.error(e);
-  }
+  var blocks;
+  var totalOkReports = 0;
+  return runWithPasteLoader([
+    function () {
+      blocks = buildBulkLabPreview(text, { findPatientByRegistro: rt.findPatientByRegistro });
+      if (!blocks.length) {
+        rt.showToast('No se detectaron reportes SOME en el texto pegado', 'error');
+        return false;
+      }
+    },
+    function () {
+      totalOkReports = blocks.reduce(function (acc, b) {
+        return acc + b.okReportCount;
+      }, 0);
+      var mixedWarning = mixedExpedienteWarning(blocks);
+      if (mixedWarning) {
+        rt.showToast(mixedWarning, totalOkReports ? 'warn' : 'error');
+        if (!totalOkReports) return false;
+      }
+      if (!totalOkReports) {
+        rt.showToast(
+          looksLikeSomeLabReport(text)
+            ? 'No se encontraron resultados de laboratorio en el texto pegado'
+            : 'No parece un reporte de SOME. Copia desde «Expediente:» hasta el final del reporte.',
+          'error'
+        );
+        return false;
+      }
+    },
+    function () {
+      try {
+        if (
+          shouldShowBulkLabPreview(blocks, totalOkReports, {
+            quickLabOutput: rt.getLabOutputPrefs().quickLabOutput,
+          })
+        ) {
+          openLabBulkPreviewModal({
+            blocks: blocks,
+            sourceText: text,
+            onConfirm: function () {
+              runFinalizeWithFreshBlocks(text);
+            },
+          });
+          return false;
+        }
+        if (tryOfferAddPatientThenProcess(text, blocks)) return;
+        finalizeBulkLabPaste(text, blocks, totalOkReports);
+      } catch (e) {
+        rt.showToast('Error al procesar el reporte', 'error');
+        console.error(e);
+        return false;
+      }
+    },
+  ]);
 }
 
 export function renderOutput(result, opts) {

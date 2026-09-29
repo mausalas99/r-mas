@@ -29,18 +29,19 @@ export function rowKey(row) {
   return seriesColorKey(row.sectionKey, row.fieldKey);
 }
 
-function isAbnormal(deps, set, row, val, historyDesc) {
-  if (val == null || !isFinite(val)) return false;
+/** '▼' below range, '▲' above, '' in range or unknown. Arrows travel with copied text. */
+function abnormalDir(deps, set, row, val, historyDesc) {
+  if (val == null || !isFinite(val)) return '';
   var ref =
     deps.tendRefFromLabSet(set, row.sectionKey, row.fieldKey) ||
     deps.tendRefForSeries(historyDesc, row.sectionKey, row.fieldKey, set);
-  if (!ref) return false;
-  return val < ref[0] || val > ref[1];
+  if (!ref) return '';
+  return val < ref[0] ? '▼' : val > ref[1] ? '▲' : '';
 }
 
-export function formatCellValue(val, abnormal) {
+export function formatCellValue(val, dir) {
   var t = formatTrendDisplayValue(val);
-  return abnormal && t !== '—' ? t + '*' : t;
+  return dir && t !== '—' ? dir + ' ' + t : t;
 }
 
 function columnHeader(set, columns) {
@@ -217,8 +218,8 @@ function buildTableExportModel(deps, state, rawModel, hidden, markersByDay) {
     var cells = rawModel.columns.map(function (set, ci) {
       var val = row.values[ci];
       var refSet = row.refSets ? row.refSets[ci] : set;
-      var ab = isAbnormal(deps, refSet, row, val, state.historyDesc);
-      return { text: formatCellValue(val, ab), abnormal: ab };
+      var dir = abnormalDir(deps, refSet, row, val, state.historyDesc);
+      return { text: formatCellValue(val, dir), abnormal: !!dir };
     });
     return {
       label: row.label,
@@ -252,6 +253,19 @@ function rowDisplayLabel(deps, state, row, specsByRowKey) {
     : rowDisp.name;
 }
 
+var EYE_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="3"/></svg>';
+var EYE_OFF_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 6.1A10 10 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3 3.6M6.5 7.5C3.9 9.3 2.5 12 2.5 12S6 18 12 18c1.4 0 2.7-.3 3.9-.8"/></svg>';
+
+/** Eye toggle: pressed = hidden in the copy. */
+function eyeToggleHtml(esc, attr, key, hidden, what, label) {
+  var verb = hidden ? 'Mostrar ' : 'Ocultar ';
+  return (
+    '<button type="button" class="tend-eye-toggle" ' + attr + '="' + esc(key) + '" aria-pressed="' +
+    (hidden ? 'true' : 'false') + '" aria-label="' + esc(verb + what + ' ' + label) + '" title="' + esc(verb + what) + '">' +
+    (hidden ? EYE_OFF_SVG : EYE_SVG) + '</button>'
+  );
+}
+
 function buildTableHeadHtml(esc, raw, hidden, markersByDay) {
   var html = ['<thead><tr><th>Analito</th>'];
   raw.columns.forEach(function (set) {
@@ -268,13 +282,10 @@ function buildTableHeadHtml(esc, raw, hidden, markersByDay) {
         (colHidden ? 'is-hidden' : '') +
         '"><div class="tend-group-col-head">' +
         tagsHtml +
-        '<label class="tend-group-col-toggle"><input type="checkbox" data-col-key="' +
-        esc(ck) +
-        '"' +
-        (colHidden ? ' checked' : '') +
-        ' aria-label="Ocultar columna"> ' +
+        '<span class="tend-group-col-toggle">' +
+        eyeToggleHtml(esc, 'data-col-key', ck, colHidden, 'columna', colLabel) +
         esc(colLabel) +
-        '</label></div></th>'
+        '</span></div></th>'
     );
   });
   html.push('</tr></thead>');
@@ -297,26 +308,23 @@ function buildTableBodyHtml(deps, esc, state, raw, hidden, specsByRowKey) {
         esc(rk) +
         '" class="' +
         tableHiddenRowClass(rowHidden) +
-        '"><td><label class="tend-group-row-toggle"><input type="checkbox" data-field-key="' +
-        esc(rk) +
-        '"' +
-        (rowHidden ? ' checked' : '') +
-        ' aria-label="Ocultar fila"> ' +
+        '"><td><span class="tend-group-row-toggle">' +
+        eyeToggleHtml(esc, 'data-field-key', rk, rowHidden, 'fila', rowLabel) +
         esc(rowLabel) +
-        '</label></td>'
+        '</span></td>'
     );
     raw.columns.forEach(function (set, ci) {
       var ck = colKeyForSet(set);
       var colHidden = hidden.cols.indexOf(ck) >= 0;
       var val = row.values[ci];
       var refSet = row.refSets ? row.refSets[ci] : set;
-      var ab = isAbnormal(deps, refSet, row, val, state.historyDesc);
+      var dir = abnormalDir(deps, refSet, row, val, state.historyDesc);
       html.push(
         '<td class="' +
           (colHidden ? 'is-hidden' : '') +
-          (ab ? ' tend-abnormal' : '') +
+          (dir ? ' tend-abnormal' : '') +
           '">' +
-          esc(formatCellValue(val, ab)) +
+          esc(formatCellValue(val, dir)) +
           '</td>'
       );
     });
@@ -352,18 +360,18 @@ function toggleHiddenList(list, key, checked) {
 }
 
 function wireTableToggles(wrap, deps, state, sectionKey, renderTable) {
-  wrap.querySelectorAll('input[data-col-key]').forEach(function (inp) {
-    inp.addEventListener('change', function () {
+  wrap.querySelectorAll('button[data-col-key]').forEach(function (inp) {
+    inp.addEventListener('click', function () {
       var h = readGroupTableHidden(state.patientId, sectionKey);
-      toggleHiddenList(h.cols, inp.getAttribute('data-col-key'), inp.checked);
+      toggleHiddenList(h.cols, inp.getAttribute('data-col-key'), inp.getAttribute('aria-pressed') !== 'true');
       writeGroupTableHidden(state.patientId, sectionKey, h);
       renderTable(sectionKey);
     });
   });
-  wrap.querySelectorAll('input[data-field-key]').forEach(function (inp) {
-    inp.addEventListener('change', function () {
+  wrap.querySelectorAll('button[data-field-key]').forEach(function (inp) {
+    inp.addEventListener('click', function () {
       var h = readGroupTableHidden(state.patientId, sectionKey);
-      toggleHiddenList(h.rows, inp.getAttribute('data-field-key'), inp.checked);
+      toggleHiddenList(h.rows, inp.getAttribute('data-field-key'), inp.getAttribute('aria-pressed') !== 'true');
       writeGroupTableHidden(state.patientId, sectionKey, h);
       renderTable(sectionKey);
     });
@@ -372,14 +380,14 @@ function wireTableToggles(wrap, deps, state, sectionKey, renderTable) {
 
 function buildDayModeToggleHtml(byDay) {
   return (
-    '<label class="tend-group-daymode-toggle"><input type="checkbox" id="tend-group-daymode-input"' +
+    '<label class="tend-group-daymode-toggle"><input type="checkbox" class="tend-tick" id="tend-group-daymode-input"' +
     (byDay ? ' checked' : '') +
     '> Agrupar por día</label>'
   );
 }
 
-function wireDayModeToggle(wrap, state, sectionKey, renderTable) {
-  var inp = wrap.querySelector('#tend-group-daymode-input');
+function wireDayModeToggle(host, state, sectionKey, renderTable) {
+  var inp = host.querySelector('#tend-group-daymode-input');
   if (!inp) return;
   inp.addEventListener('change', function () {
     writeGroupTableByDay(state.patientId, sectionKey, inp.checked);
@@ -422,8 +430,12 @@ export function renderGroupTable(deps, state, sectionKey, renderTable, opts) {
   state.tableModel = buildTableExportModel(deps, state, raw, hidden, markersByDay);
 
   var esc = deps.esc;
+  // Pivot pane keeps the toggle in its range row (slot), other tables keep it above the table.
+  var daySlot = opts && opts.daymodeSlotId ? document.getElementById(opts.daymodeSlotId) : null;
+  var dayHtml = buildDayModeToggleHtml(byDay);
+  if (daySlot) daySlot.innerHTML = dayHtml;
   var html = [
-    buildDayModeToggleHtml(byDay),
+    daySlot ? '' : dayHtml,
     state.dynamicMode ? '<div id="tend-group-analyte-picker-slot"></div>' : '',
     '<div class="cultivos-table-wrap"><table id="tend-group-table" class="cultivos-table tend-group-table">',
   ];
@@ -442,7 +454,7 @@ export function renderGroupTable(deps, state, sectionKey, renderTable, opts) {
     specsByRowKey: specsByRowKey,
   });
   wireTableToggles(wrap, deps, state, sectionKey, renderTable);
-  wireDayModeToggle(wrap, state, sectionKey, renderTable);
+  wireDayModeToggle(daySlot || wrap, state, sectionKey, renderTable);
   if (state.dynamicMode) {
     renderAnalytePickerBar({
       slot: wrap.querySelector('#tend-group-analyte-picker-slot'),

@@ -321,7 +321,7 @@ html.dark .todo-text-input:focus {
   border-color: var(--action);
   background-image: none;
 }
-.todo-row input.todo-check[type="checkbox"]:checked::after {
+.todo-row input.todo-check[type="checkbox"]::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -332,6 +332,20 @@ html.dark .todo-text-input:focus {
   border-width: 0 2px 2px 0;
   transform: translate(-50%, -55%) rotate(45deg);
   pointer-events: none;
+  /* The tick draws itself: the clip opens from the bottom-left (the short stroke) outward. */
+  clip-path: inset(100% 100% 0 0);
+  transition: clip-path 0.28s ease-out;
+}
+.todo-row input.todo-check[type="checkbox"]:checked::after {
+  clip-path: inset(-2px);
+}
+html.motion-sobrio .todo-row input.todo-check[type="checkbox"]::after {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .todo-row input.todo-check[type="checkbox"]::after {
+    transition: none;
+  }
 }
 .todo-row input.todo-check[type="checkbox"]:focus-visible {
   outline: 2px solid color-mix(in oklab, var(--action) 45%, transparent);
@@ -3469,7 +3483,7 @@ html.electron-macos-inset-bar #lab-bulk-tour-hint-backdrop.modal-backdrop.open *
 /* Aligned digits for clinical values (design system phase 1) */
 #lab-output-box,
 #lab-history-body,
-.tend-card {
+.tend-row {
   font-variant-numeric: tabular-nums;
 }
 
@@ -3481,3 +3495,58 @@ html.electron-macos-inset-bar #lab-bulk-tour-hint-backdrop.modal-backdrop.open *
   opacity: 0.72;
 }
 
+
+/* Ring loader for «Pegar SOME» (lab-paste-loader.mjs): ring + step text.
+ * Non-blocking scrim so the last step can linger while the user already works. */
+.paste-loader {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-toast, 10000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, var(--text) 7%, transparent);
+  pointer-events: none;
+}
+.paste-loader-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 320px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--elev-overlay);
+}
+.paste-loader-ring {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: 3px solid var(--color-accent-soft);
+  border-top-color: var(--action);
+  border-radius: 50%;
+  animation: paste-loader-spin 0.9s linear infinite;
+}
+.paste-loader-text {
+  font-size: 16px;
+  font-weight: 500;
+}
+.paste-loader-step {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+@keyframes paste-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+html.motion-sobrio .paste-loader-ring {
+  animation-duration: 3s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .paste-loader-ring {
+    animation-duration: 3s;
+  }
+}
