@@ -1182,6 +1182,9 @@ html:not(.ui-density-normal) .topbar-nav {
 .topbar-l2 .wb-pendientes-tab-badge {
   background: var(--todo-prio-media);
   border-color: var(--header-bg, var(--surface));
+  /* Tab row clips overflow (overflow-y hidden, no padding): keep the dot inside the pill. */
+  top: 2px;
+  right: 2px;
 }
 .topbar-nav .tab-bar-indicator,
 .topbar-nav .app-tab svg,

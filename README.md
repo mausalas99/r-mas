@@ -51,9 +51,17 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.4.3](https://github.com/mausalas99/r-mas/releases/tag/v8.4.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.4.4](https://github.com/mausalas99/r-mas/releases/tag/v8.4.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.4.4 (estable — Laboratorio, Tendencias y Nube por paciente)
+
+- **Laboratorio:** diseño nuevo, días anteriores del historial y lectura del PDF de Reumatología.
+- **Tendencias:** panel de estudio a todo el ancho, con chips, pestañas de gráficas y tabla dinámica.
+- **Nube:** más estable con muchos equipos: una fila por expediente, menos descargas repetidas y sin pérdida de eventualidades ni de monitoreo.
+
+Notas: `docs/RELEASE_NOTES_8.4.4.txt`.
 
 ## R+ 8.4.3 (estable — release 8.4.3)
 

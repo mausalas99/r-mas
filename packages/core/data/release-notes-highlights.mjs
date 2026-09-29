@@ -4,31 +4,27 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_843 = [
+var RELEASE_NOTES_844 = [
   {
-    title: 'Barra superior en una pastilla',
-    body: 'Paciente, Laboratorio, Manejo y Agenda comparten una pastilla que se abre al pasar el cursor. Atajos y Aprender R+ viven en Ayuda (?).',
+    title: 'Laboratorio rediseñado',
+    body: 'Diseño nuevo, con días anteriores del historial, tablas de SOME mejor leídas y sin estudios repetidos. Pega el PDF de Reumatología y R+ lo lee.',
   },
   {
-    title: 'Tacha medicamentos en Datos',
-    body: 'Toca un medicamento en Datos › Censo para tacharlo. Sale del censo y regresa con otro toque.',
+    title: 'Tendencias con panel de estudio nuevo',
+    body: 'El panel ocupa todo el ancho. Chips en la tabla, pestañas de gráficas con la lista de analitos y una tabla dinámica en ventana.',
   },
   {
-    title: 'Tarjetas, Resumen y Laboratorio más claros',
-    body: 'Tarjetas de la lista en dos líneas, con acciones al pasar el cursor. Resumen con tendencias de signos y labs. Laboratorio muestra quién es y los alterados primero.',
+    title: 'Barra superior y lista más limpias',
+    body: 'La pastilla de área activa se une con Tendencias. Las tarjetas de una línea ya no dejan huecos y los medicamentos del Resumen no se parten.',
   },
   {
-    title: 'Nube, Admin y Ajustes nuevos',
-    body: 'Nueva pantalla de estado de Nube, Admin rediseñado, Mi perfil en Ajustes y nuevo panel de Equipos.',
-  },
-  {
-    title: 'Sincronización más confiable',
-    body: 'VPO, lista de problemas y perfil farmacológico se sincronizan con Nube. Lo que restauras con «deshacer» ya no se pierde.',
+    title: 'Nube más estable',
+    body: 'Cada expediente queda en su propia fila, así borrar muchos ya no satura el servidor. Las eventualidades y el monitoreo ya no se pierden al sincronizar a la vez.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_843;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_844;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.4.3': RELEASE_NOTES_843,
+  '8.4.4': RELEASE_NOTES_844,
 };

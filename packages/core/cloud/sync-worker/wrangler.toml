@@ -40,4 +40,4 @@ NUBE_VERSION_GATE_ENABLED = true
 # POST /admin/rooms/:id/refatten for each room. Never deploy a Worker older
 # than the one that first read schema 013 while any room is split: it would
 # return empty patient lists.
-# PATIENT_SHARD_WRITE = "1"
+PATIENT_SHARD_WRITE = "1"

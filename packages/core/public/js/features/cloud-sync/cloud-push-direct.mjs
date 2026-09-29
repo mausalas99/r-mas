@@ -149,6 +149,12 @@ const REJECT_REASON_LABEL = {
   quota_exceeded: 'límite de la sala',
 };
 
+/** Path and clock of the first 3 stale ops, so the diagnostics name what keeps bouncing. */
+function noteStalePath(paths, op) {
+  const o = /** @type {any} */ (op);
+  if (paths.length < 3 && o?.path) paths.push(`${o.path}@${o.updatedAt || '?'}`);
+}
+
 /**
  * The Worker reports per-op rejections inside an HTTP 200 body (`result.rejected`),
  * not as an HTTP error — a caller that ignores it loses data silently (e.g. a room
@@ -161,12 +167,15 @@ const REJECT_REASON_LABEL = {
 export function recordRejectedCloudOps(result) {
   const rejected = Array.isArray(result?.rejected) ? result.rejected : [];
   let stale = 0;
+  /** @type {string[]} */
+  const stalePaths = [];
   /** @type {Map<string, number>} */
   const otherByReason = new Map();
   for (const r of rejected) {
     const reason = String(r?.reason || '');
     if (reason === 'stale') {
       stale += 1;
+      noteStalePath(stalePaths, r?.op);
     } else if (reason) {
       otherByReason.set(reason, (otherByReason.get(reason) || 0) + 1);
     }
@@ -180,7 +189,7 @@ export function recordRejectedCloudOps(result) {
     recordCloudSyncError({
       op: 'push',
       code: 'stale_rejected',
-      message: `${stale} operación(es) rechazada(s) por reloj desactualizado`,
+      message: `${stale} operación(es) rechazada(s) por reloj desactualizado: ${stalePaths.join(', ')}`,
     });
   }
   let other = 0;

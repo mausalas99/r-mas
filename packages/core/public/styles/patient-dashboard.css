@@ -18,7 +18,7 @@
   flex-direction: column;
   gap: clamp(6px, 1.2cqh, 12px);
   font-size: clamp(11.5px, 1.45cqi, 15px);
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .patient-dash .idrow {
