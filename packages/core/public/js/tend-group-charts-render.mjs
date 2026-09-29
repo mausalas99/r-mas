@@ -1,3 +1,4 @@
+import { flipSegThumb, segActiveLeft } from './ui-motion.mjs';
 import {
   dedupeTrendSetsForSeries,
   getSetTrendValueForSeries,
@@ -43,6 +44,8 @@ import {
   yScaleBoundsForDatasets,
   visibleDatasetsForChart,
   createTendThresholdPlugin,
+  createTendRelativePlugin,
+  relativeToRange,
 } from './tend-group-chart-helpers.mjs';
 import { buildEventMarkerMapForSets, createTendEventMarkerPlugin } from './features/tendencias-event-context.mjs';
 
@@ -160,6 +163,27 @@ function persistLegendVisible(state, sectionKey) {
     writeGroupVisibleFields(state.patientId, sectionKey, vis);
     state.visibleFields = vis.slice();
   }
+}
+
+function isRelative(ctx) {
+  return ctx.state.scaleMode === 'relative';
+}
+
+/** Family key used for the Y axis: relative mode has its own 0-100 % bounds. */
+function yFamily(ctx, fam) {
+  return isRelative(ctx) ? 'relative' : fam;
+}
+
+function refForField(ctx, fieldKey) {
+  var h = ctx.state.historyDesc;
+  var ref = ctx.deps.tendRefForSeries ? ctx.deps.tendRefForSeries(h, ctx.sectionKey, fieldKey, h[0]) : null;
+  return relativeToRange([0], ref) ? ref : null;
+}
+
+/** Plot values for one series: raw, or % of its reference range in relative mode. */
+function plotValues(ds, raw) {
+  ds.rawData = raw;
+  return ds.relRef ? relativeToRange(raw, ds.relRef) : raw;
 }
 
 function seriesColor(sectionKey, fieldKey, index) {
@@ -367,13 +391,14 @@ function hidePanelFamily(ctx) {
 }
 
 function buildChartYScale(fam, datasets) {
+  var rel = fam === 'relative';
   var yBounds = yScaleBoundsForDatasets(datasets, fam);
   var yScale = {
     ticks: {
       font: { size: 11 },
       callback: function (v) {
         var t = formatAxisTickValue(v);
-        if (isPercentPanelFamily(fam)) return t ? t + ' %' : '';
+        if (rel || isPercentPanelFamily(fam)) return t ? t + ' %' : '';
         return t;
       },
     },
@@ -405,17 +430,20 @@ function wireLegendControls(legend, chart, fam, ctx, items, markerMap) {
       var cols = rebuildPanelColumns(ctx, items);
       chart.data.labels = cols.axisMeta.labels;
       chart.data.datasets.forEach(function (ds) {
-        ds.data = cols.axisMeta.points.map(function (p) {
-          var v = getSetTrendValueForSeries(p.set, ctx.sectionKey, ds.fieldKey);
-          return v != null && isFinite(v) ? v : null;
-        });
+        ds.data = plotValues(
+          ds,
+          cols.axisMeta.points.map(function (p) {
+            var v = getSetTrendValueForSeries(p.set, ctx.sectionKey, ds.fieldKey);
+            return v != null && isFinite(v) ? v : null;
+          })
+        );
       });
       if (markerMap) {
         var fresh = buildEventMarkerMapForSets(cols.colSets, ctx.state.patientId);
         markerMap.indices = fresh.indices;
         markerMap.byIndex = fresh.byIndex;
       }
-      applyChartYScale(chart, fam);
+      applyChartYScale(chart, yFamily(ctx, fam));
       chart.update();
     });
   });
@@ -442,13 +470,17 @@ function buildPanelDatasets(ctx, items, axisMeta) {
     var fk = item.spec.fieldKey;
     var label = ctx.legendLabelForSpec(ctx.sectionKey, item.spec);
     var color = seriesColor(ctx.sectionKey, fk, item.index);
-    var data = axisMeta.points.map(function (p) {
+    var raw = axisMeta.points.map(function (p) {
       var v = getSetTrendValueForSeries(p.set, ctx.sectionKey, fk);
       return v != null && isFinite(v) ? v : null;
     });
-    datasets.push({
+    var relRef = isRelative(ctx) ? item.ref : null;
+    var unitForName = ctx.deps.tendUnitForSeries(ctx.sectionKey, fk);
+    var ds = {
       label: label,
-      data: data,
+      endName: formatTendSeriesLabel(item.spec.cardTitle || fk, fk, unitForName).name,
+      relRef: relRef,
+      data: raw,
       borderColor: color,
       backgroundColor: hexToRgba(color, 0.12),
       borderWidth: 2,
@@ -459,8 +491,10 @@ function buildPanelDatasets(ctx, items, axisMeta) {
       fill: false,
       spanGaps: true,
       fieldKey: fk,
-      thresholds: readFieldThresholds(ctx.sectionKey, fk),
-    });
+      thresholds: relRef ? [] : readFieldThresholds(ctx.sectionKey, fk),
+    };
+    ds.data = plotValues(ds, raw);
+    datasets.push(ds);
     var legItem = document.createElement('label');
     legItem.className = 'tend-group-legend-item';
     legItem.innerHTML =
@@ -602,18 +636,20 @@ function buildThresholdControls(ctx, chart, items) {
 }
 
 function createPanelChart(canvas, chartLabels, datasets, fam, ctx, markerMap) {
-  var yScale = buildChartYScale(fam, datasets);
+  var rel = isRelative(ctx);
+  var yScale = buildChartYScale(yFamily(ctx, fam), datasets);
   var eventPlugin = createTendEventMarkerPlugin(markerMap, { compact: false });
   var thresholdPlugin = createTendThresholdPlugin();
   return new ctx.deps.Chart(canvas, {
     type: 'line',
-    plugins: [eventPlugin, thresholdPlugin],
+    plugins: rel ? [eventPlugin, createTendRelativePlugin()] : [eventPlugin, thresholdPlugin],
     data: { labels: chartLabels, datasets: datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       devicePixelRatio: Math.max(window.devicePixelRatio || 1, 2),
       interaction: { mode: 'index', intersect: false },
+      layout: rel ? { padding: { right: 150 } } : undefined,
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -628,7 +664,9 @@ function createPanelChart(canvas, chartLabels, datasets, fam, ctx, markerMap) {
               var ds = tipCtx.dataset;
               var spec = ctx.state.specsByField[ds.fieldKey];
               if (!spec) return ds.label || '';
-              return formatTooltipLine(ctx.deps, ctx.sectionKey, spec, tipCtx.parsed.y);
+              if (!ds.relRef) return formatTooltipLine(ctx.deps, ctx.sectionKey, spec, tipCtx.parsed.y);
+              var rawV = ds.rawData && ds.rawData[tipCtx.dataIndex];
+              return formatTooltipLine(ctx.deps, ctx.sectionKey, spec, rawV) + ' · ' + Math.round(tipCtx.parsed.y) + ' %';
             },
           },
         },
@@ -659,6 +697,37 @@ function appendPanelEmptyMessage(block, items) {
     ? 'Sin puntos temporales para este panel.'
     : 'Ningún analito de este panel tiene 2 o más laboratorios. Procesa otro BH o activa BH extendida en Resultados.';
   block.appendChild(emptyP);
+}
+
+function refNoteEl(names) {
+  var p = document.createElement('p');
+  p.className = 'tend-group-rel-note';
+  p.textContent = 'Sin rango de referencia: ' + names.join(', ');
+  return p;
+}
+
+function renderScaleRow(panelEl, state, sectionKey, renderCharts) {
+  var row = document.createElement('div');
+  row.className = 'tend-group-scale-row';
+  var rel = state.scaleMode === 'relative';
+  row.innerHTML =
+    '<span class="tend-group-scale-label">Escala</span>' +
+    '<div class="tend-seg tend-group-scale-seg" role="group" aria-label="Escala">' +
+    '<button type="button" class="tend-seg-btn' + (rel ? '' : ' is-active') + '" data-scale="values" aria-pressed="' + (rel ? 'false' : 'true') + '">Valores</button>' +
+    '<button type="button" class="tend-seg-btn' + (rel ? ' is-active' : '') + '" data-scale="relative" aria-pressed="' + (rel ? 'true' : 'false') + '">Relativa al rango</button>' +
+    '</div>' +
+    (rel ? '<span class="tend-group-scale-hint">0 % = límite bajo · 100 % = límite alto · umbrales ocultos</span>' : '');
+  row.querySelectorAll('[data-scale]').forEach(function (btn) {
+    btn.onclick = function () {
+      var next = btn.getAttribute('data-scale');
+      if (next === (state.scaleMode || 'values')) return;
+      var from = segActiveLeft(row.querySelector('.tend-seg'));
+      state.scaleMode = next;
+      renderCharts(sectionKey);
+      flipSegThumb(document.querySelector('.tend-group-scale-seg'), from);
+    };
+  });
+  panelEl.insertBefore(row, panelEl.firstChild);
 }
 
 function renderPanelFamilyCard(fam, ctx) {
@@ -705,10 +774,20 @@ function renderPanelFamilyCard(fam, ctx) {
       return specHasTrendPoints(ctx.state, ctx.sectionKey, item.spec.fieldKey);
     })
   );
+  var noRef = [];
+  if (isRelative(ctx)) {
+    items = items.filter(function (item) {
+      item.ref = refForField(ctx, item.spec.fieldKey);
+      if (!item.ref) noRef.push(fieldLabelForItem(ctx, item));
+      return !!item.ref;
+    });
+  }
+  var refNote = noRef.length ? refNoteEl(noRef) : null;
   var cols = rebuildPanelColumns(ctx, items);
   var colSets = cols.colSets;
   if (!colSets.length || !items.length) {
-    appendPanelEmptyMessage(block, items);
+    if (refNote && !items.length) block.appendChild(refNote);
+    else appendPanelEmptyMessage(block, items);
     ctx.sortZone.appendChild(block);
     return;
   }
@@ -728,11 +807,12 @@ function renderPanelFamilyCard(fam, ctx) {
     chart.data.datasets.forEach(function (ds, dsIdx) {
       chart.setDatasetVisibility(dsIdx, isLegendFieldVisible(ctx.state, ds.fieldKey));
     });
-    applyChartYScale(chart, fam);
+    applyChartYScale(chart, yFamily(ctx, fam));
     chart.update();
     ctx.state.charts.push(chart);
     wireLegendControls(built.legend, chart, fam, ctx, items, markerMap);
-    block.appendChild(buildThresholdControls(ctx, chart, items));
+    if (!isRelative(ctx)) block.appendChild(buildThresholdControls(ctx, chart, items));
+    if (refNote) block.appendChild(refNote);
     var eventsToggleBtn = toolbar.querySelector('.tend-group-panel-events-toggle');
     var syncEventsToggleBtn = function () {
       var hidden = !!chart._tendEventsHidden;
@@ -800,6 +880,7 @@ export function renderGroupCharts(deps, state, sectionKey, legendLabelForSpec, p
   });
 
   renderPanelsHiddenBar(panelEl, deps, state, sectionKey, hiddenFams, renderCharts);
+  renderScaleRow(panelEl, state, sectionKey, renderCharts);
 
   var sortZone = document.createElement('div');
   sortZone.id = 'tend-group-panels-sortable';

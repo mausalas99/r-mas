@@ -92,7 +92,7 @@ async function launch() {
   const page = await app.firstWindow();
   // Sala opens in the card view by default; these scenarios drive the sidebar.
   await page.waitForLoadState('domcontentloaded');
-  const salaCards = await page.evaluate(() => { globalThis.localStorage.setItem('rplus-sala-view', 'bar'); return !!globalThis.document.body.dataset.salaView; });
+  const salaCards = await page.evaluate(() => { globalThis.localStorage.setItem('rplus-sala-view', 'bar'); globalThis.localStorage.setItem('rpc-registro-autoopen', 'off'); return !!globalThis.document.body.dataset.salaView; });
   if (salaCards) await page.reload();
   const pageErrors = [];
   page.on('pageerror', (err) => pageErrors.push(err.message));
@@ -139,7 +139,7 @@ async function run() {
   let { app, page, pageErrors } = await launch();
   await page.locator('[data-sync-mode="local"]').click();
   await page.locator('#clinical-onboard-local-confirm-btn').click();
-  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
+  await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
   await dismissLearnHub(page);
   await shot(page, 'onboarded');
   check('fresh install starts with 0 patients', (await sidebarCount(page)) === 0);
@@ -264,7 +264,7 @@ async function run() {
 
   // ── Boot 2: same userData → data persists ───────────────────────────────
   ({ app, page, pageErrors } = await launch());
-  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
+  await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
   const onboardAgain = page.locator('#clinical-onboard-local-confirm-btn');
   await onboardAgain.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
   const settingsAfter = await page.evaluate(() => globalThis.localStorage.getItem('rpc-settings'));

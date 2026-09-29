@@ -454,9 +454,9 @@ html.dark .med-insulin-pump-alg-pill {
   .btn-livesync-header--syncing .livesync-wifi-bar,
   .btn-livesync-header--syncing .livesync-wifi-dot,
   .btn-livesync-header--degraded .livesync-wifi-bar--3 { animation: none !important; }
-  .app-tab, .inner-tab, .patient-card, .card, .tend-card, .btn-add, .toast, .toast-stack .toast { transition: none !important; animation: none !important; }
+  .app-tab, .inner-tab, .patient-card, .card, .tend-row, .btn-add, .toast, .toast-stack .toast { transition: none !important; animation: none !important; }
   .app-tab:hover, .inner-tab:hover { transform: none; }
-  .patient-card:hover, .app .card:hover, .tend-card:hover { transform: none; }
+  .patient-card:hover, .app .card:hover, .tend-row:hover { transform: none; }
   .tab-content.active { animation: none; }
   .tab-panel-enter { animation: none !important; }
   .tab-bar-indicator { transition: none !important; }

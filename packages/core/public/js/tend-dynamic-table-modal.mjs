@@ -7,10 +7,11 @@ import {
   copyTendGroupTablePng,
   copyTendGroupTableText,
 } from './tend-group-modal-open.mjs';
-import { readGroupExtraFields } from './tend-prefs.mjs';
+import { readGroupExtraFields, writeGroupExtraFields, seriesColorKey, toggleSpecInList } from './tend-prefs.mjs';
 import { renderGroupTable } from './tend-group-table-render.mjs';
 import { mountRpcDateInput } from './rpc-date-picker.mjs';
 import { closeOverlayAnimated, cancelOverlayClose } from './ui-motion.mjs';
+import { showTendPane, hideTendPane } from './tend-pane.mjs';
 
 /** Clave de sección reservada: no coincide con ningún código real (tendEligibleSectionKey), así que
  *  las funciones de tend-prefs.mjs (que ya guardan por patientId+sectionKey) persisten esta tabla
@@ -32,10 +33,57 @@ export function createTendDynamicTableModal(deps) {
     tableExtraSpecs: [],
   };
 
+  var listeners = [];
+
   function renderTable() {
     renderGroupTable(deps, state, DYNAMIC_TABLE_SECTION_KEY, renderTable, {
       wrapId: 'tend-dynamic-table-wrap',
+      daymodeSlotId: 'tend-dynamic-table-daymode-slot',
     });
+    listeners.forEach(function (cb) {
+      cb();
+    });
+  }
+
+  // Selection = state.tableExtraSpecs (chips, picker and list ticks all read/write it).
+  function getSelectedKeys() {
+    return state.tableExtraSpecs.map(function (sp) {
+      return seriesColorKey(sp.sectionKey, sp.fieldKey);
+    });
+  }
+
+  function specForKey(key) {
+    var p = key.indexOf('|');
+    if (p <= 0) return null;
+    var sk = key.slice(0, p);
+    var fk = key.slice(p + 1);
+    var found = (deps.getCatalogSpecs(sk, state.historyDescFull) || []).filter(function (sp) {
+      return sp.fieldKey === fk;
+    })[0];
+    return found ? Object.assign({}, found, { sectionKey: sk }) : null;
+  }
+
+  function applySelection(list) {
+    state.tableExtraSpecs = list;
+    writeGroupExtraFields(
+      state.patientId,
+      DYNAMIC_TABLE_SECTION_KEY,
+      list.map(function (sp) {
+        return { sectionKey: sp.sectionKey, fieldKey: sp.fieldKey };
+      })
+    );
+    renderTable();
+  }
+
+  function toggleSeries(key) {
+    var selected = getSelectedKeys().indexOf(key) >= 0;
+    var spec = specForKey(key);
+    if (spec) applySelection(toggleSpecInList(state.tableExtraSpecs, spec));
+    return !selected && !!spec;
+  }
+
+  function addSeries(key) {
+    if (getSelectedKeys().indexOf(key) < 0) toggleSeries(key);
   }
 
   function backdropEl() {
@@ -48,6 +96,7 @@ export function createTendDynamicTableModal(deps) {
   }
 
   function closeModal() {
+    hideTendPane('pivot');
     var bd = backdropEl();
     closeOverlayAnimated(bd, function () {
       if (bd) bd.style.display = 'none';
@@ -119,6 +168,7 @@ export function createTendDynamicTableModal(deps) {
     cancelOverlayClose(bd);
     bd.style.display = 'flex';
     bd.setAttribute('aria-hidden', 'false');
+    showTendPane('pivot');
     wireRangeRow();
     resetRangeRow();
     renderTable();
@@ -136,6 +186,12 @@ export function createTendDynamicTableModal(deps) {
     },
     copyTableText: function () {
       copyTendGroupTableText(deps, state);
+    },
+    getSelectedKeys: getSelectedKeys,
+    toggleSeries: toggleSeries,
+    addSeries: addSeries,
+    onSelectionChange: function (cb) {
+      listeners.push(cb);
     },
   };
 }

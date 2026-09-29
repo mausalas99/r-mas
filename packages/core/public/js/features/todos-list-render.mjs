@@ -468,7 +468,7 @@ export function renderTodoListSection(container, preserveTodoId) {
     } else {
       none.innerHTML =
         '<span class="empty-state-title">Sin pendientes</span>' +
-        '<span class="empty-state-lead">Escribe uno arriba para agregarlo.</span>';
+        '<span class="empty-state-lead">Los pendientes que agregues aparecen aquí.</span>';
     }
     container.appendChild(none);
     appendExitingRows(container, prevRows, new Set());

@@ -119,38 +119,7 @@ function closeModalViaWindowOrHide(winFn, modalId) {
 /** @param {ReturnType<typeof createModalDismissRegistry>} registry */
 function wireModalDismissLayers(registry) {
   regOverlay(registry, 'update-modal-backdrop', hideUpdateModal);
-  regOverlay(
-    registry,
-    'tend-detail-backdrop',
-    chartsShellCloseProxies.closeTendDetail,
-    '#tend-detail-modal'
-  );
-
-  registry.register({
-    isOpen: function () {
-      var bd = shellEl('tend-group-backdrop');
-      if (bd && bd.getAttribute('aria-hidden') === 'false') return true;
-      return chartsShellCloseProxies.isTendGroupModalOpen();
-    },
-    close: chartsShellCloseProxies.closeTendGroupModal,
-    backdropEl: function () {
-      return shellEl('tend-group-backdrop');
-    },
-    panelSelector: '#tend-group-modal',
-  });
-
-  registry.register({
-    isOpen: function () {
-      var bd = shellEl('tend-dynamic-table-backdrop');
-      if (bd && bd.getAttribute('aria-hidden') === 'false') return true;
-      return chartsShellCloseProxies.isTendDynamicTableModalOpen();
-    },
-    close: chartsShellCloseProxies.closeTendDynamicTableModal,
-    backdropEl: function () {
-      return shellEl('tend-dynamic-table-backdrop');
-    },
-    panelSelector: '#tend-dynamic-table-modal',
-  });
+  // Tendencias pane modes (analito/estudio/pivot) close through tend-pane.mjs, not as modal layers.
 
   regAriaOpen(registry, 'rpc-wipe-modal', closeWipeDataModal);
   regOpenClass(registry, 'soap-modal-backdrop', closeSOAPModal);

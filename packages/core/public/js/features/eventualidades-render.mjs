@@ -250,7 +250,7 @@ function refreshTendenciasAfterEventualidades() {
   if (
     onTend &&
     document.getElementById('tendencias-container') &&
-    document.getElementById('tendencias-container').querySelector('.tend-grid') &&
+    document.getElementById('tendencias-container').querySelector('.tend-rows') &&
     typeof tendenciasBridge.renderTendencias === 'function'
   ) {
     tendenciasBridge.renderTendencias();

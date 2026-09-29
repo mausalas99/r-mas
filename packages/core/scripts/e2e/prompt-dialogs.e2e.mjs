@@ -56,7 +56,7 @@ await r.finish('prompt() callers use the in-app dialog', async () => {
     }, patch);
   await saveSettings({ extraTemplates: [TEMPLATE] });
   await page.reload();
-  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
+  await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
 
   await goArea(page, 'lab');
   await pasteAndSave(page, fullLabs(A, 'Jan 12 2026 8:00AM'));
@@ -210,7 +210,7 @@ await r.finish('prompt() callers use the in-app dialog', async () => {
   // ── 6. Indicaciones template merge ───────────────────────────────────────
   await saveSettings({ appMode: 'interconsulta' });
   await page.reload();
-  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
+  await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
   await goArea(page, 'nota');
   // No active patient after reload: pick A from the team board.
   await page.getByText('DEMO UNO', { exact: true }).locator('visible=true').first().click();

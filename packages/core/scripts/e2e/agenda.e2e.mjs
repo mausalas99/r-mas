@@ -335,7 +335,7 @@ await r.finish('Agenda: week board, new/edit/delete, two devices over Nube, rest
   const errors = [...A.pageErrors, ...B.pageErrors];
   await A.app.close();
   const again = await launchDevice('a', 3791);
-  await again.page.locator('#app-main-tablist').waitFor({ state: 'visible', timeout: 30000 });
+  await again.page.locator('.topbar-area-btn').waitFor({ state: 'visible', timeout: 30000 });
   await dismissLearnHub(again.page);
   await goAgenda(again.page);
   const afterNow = await blocks(again.page);

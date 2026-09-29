@@ -5,7 +5,7 @@ import { cancelOverlayClose, closeOverlayAnimated } from '../ui-motion.mjs';
 import { TREND_DETAIL_DOWNSAMPLE, downsampleTrendChartSeries } from '../lab-history-cache.mjs';
 import { loadChartJs } from '../vendor-loader.mjs';
 import { rt } from './tendencias-runtime-state.mjs';
-import { aid, tendStore } from './tendencias-state.mjs';
+import { aid, esc, tendStore } from './tendencias-state.mjs';
 import {
   tendCardLabelParts,
   tendRefForSeries,
@@ -22,8 +22,20 @@ import {
 import { openTendEventComposeModal } from './tendencias-event-compose.mjs';
 import { findEventualidadEntry } from './eventualidades-store.mjs';
 import { deletePatientEventualidad } from './eventualidades-render.mjs';
-import { alignSeriesToLabels, formatTendTooltipDelta } from './tendencias-insight.mjs';
+import {
+  alignSeriesToLabels,
+  formatTendTooltipDelta,
+  buildTendStatusHtml,
+  tendRangeText,
+  tendReadingsRows,
+  tendReadingsText,
+  tendHeroChange,
+} from './tendencias-insight.mjs';
 import { openConfirm } from './workbench/confirm.mjs';
+import { showTendPane, hideTendPane, registerTendPane, markTendSelectedRow, openTendPivotWith } from '../tend-pane.mjs';
+import { copyTableText } from '../tend-export.mjs';
+import { getTendSectionLabel } from './tendencias-constants.mjs';
+import { tendHideSeriesFromCard } from './tendencias-series.mjs';
 
 /**
  * Chart.js plugin: horizontal normality (reference) band for Tendencias.
@@ -215,6 +227,31 @@ function ensureTendDetailControlsWired() {
   var btn = document.getElementById('tend-detail-add-event');
   if (!btn) return;
   _tendDetailControlsWired = true;
+  registerTendPane('analito', closeTendDetail);
+  document.getElementById('tend-detail-readings').addEventListener('click', function (ev) {
+    var more = ev.target.closest('.tend-rd-more');
+    if (!more) return;
+    var on = this.classList.toggle('is-all');
+    more.setAttribute('aria-expanded', on ? 'true' : 'false');
+    more.textContent = on ? 'Ver menos' : 'Ver todos (' + this.querySelectorAll('.tend-rd-row:not(.tend-rd-head)').length + ')';
+  });
+  document.getElementById('tend-detail-copy').addEventListener('click', function () {
+    var ctx = tendStore.detailContext;
+    if (!ctx || !ctx.readingsText) return;
+    copyTableText(ctx.readingsText, function (ok) {
+      rt.showToast(ok ? 'Valores copiados' : 'No se pudo copiar', ok ? 'success' : 'error');
+    });
+  });
+  document.getElementById('tend-detail-pivot').addEventListener('click', function () {
+    var ctx = tendStore.detailContext;
+    if (ctx) openTendPivotWith(ctx.sectionKey + '|' + ctx.fieldKey);
+  });
+  document.getElementById('tend-detail-hide').addEventListener('click', function (ev) {
+    var ctx = tendStore.detailContext;
+    if (!ctx) return;
+    closeTendDetail();
+    tendHideSeriesFromCard(ev, ctx.sectionKey, ctx.fieldKey);
+  });
   btn.addEventListener('click', function (ev) {
     ev.preventDefault();
     ev.stopPropagation();
@@ -392,10 +429,8 @@ function ensureTendDetailCompareSlot(
     slot = document.createElement('div');
     slot.id = 'tend-detail-compare-slot';
     slot.className = 'tend-detail-compare-slot';
-    var titleEl = document.getElementById('tend-detail-title');
-    if (titleEl && titleEl.parentNode) {
-      titleEl.parentNode.insertBefore(slot, titleEl.nextSibling);
-    }
+    var host = document.getElementById('tend-detail-compare-host');
+    if (host) host.appendChild(slot);
   }
   var siblings = siblingFieldKeys(sectionKey, fieldKey, history);
   if (!siblings.length) {
@@ -500,6 +535,41 @@ function applyTendDetailCompare(
   syncTendDetailVbar(ref, latest);
 }
 
+function fillTendDetailHeader(sectionKey, fieldKey, title, unit, latest, ref, labels, values, readings) {
+  var byId = function (id) {
+    return document.getElementById(id);
+  };
+  byId('tend-detail-title').textContent = title;
+  var sec = getTendSectionLabel(sectionKey);
+  byId('tend-detail-sub').textContent = [sec, unit].filter(Boolean).join(' · ');
+  byId('tend-detail-badge').innerHTML = latest != null && ref ? buildTendStatusHtml(esc, latest, ref) : '';
+  var n = values.length;
+  var change = tendHeroChange(latest, n > 1 ? values[n - 2] : null, ref);
+  var out = latest != null && ref && (Number(latest) < Number(ref[0]) || Number(latest) > Number(ref[1]));
+  byId('tend-detail-hero').innerHTML =
+    '<span class="tend-detail-big' + (out ? ' tend-abnormal' : '') + '">' + esc(latest == null ? '—' : latest) + '</span>' +
+    (unit ? '<span class="tend-detail-unit">' + esc(unit) + '</span>' : '') +
+    (change
+      ? '<span class="tend-detail-change tend-insight-delta--' + change.tone + '">' + change.arrow + ' ' + esc(change.text) +
+        ' desde el ' + esc(labels[n - 2]) + '</span>' +
+        (change.note ? '<span class="tend-detail-note">' + change.note + '</span>' : '')
+      : '');
+  byId('tend-detail-ref').innerHTML = ref
+    ? 'Rango de referencia <b>' + esc(tendRangeText(ref)) + '</b>'
+    : 'Sin rango de referencia';
+  byId('tend-detail-readings').innerHTML =
+    '<div class="tend-rd-row tend-rd-head"><span>Fecha</span><span>Valor</span><span>Cambio</span></div>' +
+    readings.map(function (r, i) {
+      return '<div class="tend-rd-row' + (i >= 4 ? ' tend-rd-extra' : '') + '"><span>' + esc(r.label) + '</span><span class="tend-rd-val">' +
+        esc(r.value == null ? '—' : r.value) + '</span><span class="tend-rd-chg tend-rd-chg--' + r.tone + '">' +
+        esc(r.change || '—') + '</span></div>';
+    }).join('') +
+    (readings.length > 4
+      ? '<button type="button" class="tend-rd-more" data-tend-action="readings-all" aria-expanded="false">Ver todos (' + readings.length + ')</button>'
+      : '');
+  byId('tend-detail-readings').classList.remove('is-all');
+}
+
 function openTendDetail(sectionKey, fieldKey) {
   void openTendDetailAsync(sectionKey, fieldKey);
 }
@@ -543,8 +613,9 @@ function openTendDetailAsync(sectionKey, fieldKey) {
   };
   tendStore.detailSelectedIndex = labels.length ? labels.length - 1 : null;
   ensureTendDetailControlsWired();
-  document.getElementById('tend-detail-title').textContent =
-    title + (labelParts.unit ? ' (' + labelParts.unit + ')' : '');
+  var readings = tendReadingsRows(labels, values, ref);
+  tendStore.detailContext.readingsText = tendReadingsText(title, unit, readings);
+  fillTendDetailHeader(sectionKey, fieldKey, title, unit, latest, ref, labels, values, readings);
   ensureTendDetailCompareSlot(sectionKey, fieldKey, history, labels, values, title, unit, ref, latest, markerMap);
   var vbarSlot = document.getElementById('tend-detail-vbar-slot');
   if (vbarSlot) {
@@ -556,9 +627,12 @@ function openTendDetailAsync(sectionKey, fieldKey) {
   if (!backdrop) return;
   cancelOverlayClose(backdrop);
   backdrop.style.display = 'flex';
+  showTendPane('analito');
+  markTendSelectedRow(sectionKey + '|' + fieldKey);
   var canvas = document.getElementById('tend-detail-canvas');
   if (!canvas) {
     backdrop.style.display = 'none';
+    hideTendPane('analito');
     return Promise.resolve();
   }
   return loadChartJs()
@@ -580,12 +654,14 @@ function openTendDetailAsync(sectionKey, fieldKey) {
         console.error('[R+ Tendencias] detail chart mount', mountErr);
         rt.showToast('Gráfica no disponible (error al dibujar). Recarga la app.', 'error');
         backdrop.style.display = 'none';
+        hideTendPane('analito');
       }
     })
     .catch(function (err) {
       console.error('[R+ Tendencias] detail chart load', err);
       rt.showToast('Gráfica no disponible (Chart.js no cargó). Recarga la app.', 'error');
       backdrop.style.display = 'none';
+      hideTendPane('analito');
     });
 }
 
@@ -617,6 +693,7 @@ function mountTendDetailChart(Chart, canvas, labels, values, title, ref, latest,
 
 export function closeTendDetail() {
   var backdrop = document.getElementById('tend-detail-backdrop');
+  hideTendPane('analito');
   closeOverlayAnimated(backdrop, function () {
     if (backdrop) backdrop.style.display = 'none';
     var vbarSlot = document.getElementById('tend-detail-vbar-slot');

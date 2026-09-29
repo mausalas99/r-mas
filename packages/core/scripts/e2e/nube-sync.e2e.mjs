@@ -373,7 +373,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   // ── Restart A: session remembered, no duplicates ───────────────────────
   await A.app.close();
   const A2 = await launchDevice('a', 3791);
-  const lab2 = A2.page.locator('#app-main-tablist');
+  const lab2 = A2.page.locator('.topbar-area-btn');
   check('A restarted: no login screen (Recuérdame kept the session)', await until(() => lab2.isVisible(), 30000) && !(await A2.page.locator('[data-sync-mode]').first().isVisible().catch(() => false)));
   await dismissLearnHub(A2.page);
   await goArea(A2.page, 'lab');
@@ -756,7 +756,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   const D = await launchDevice('d', 3794);
   await D.page.locator('[data-sync-mode="local"]').click();
   await D.page.locator('#clinical-onboard-local-confirm-btn').click();
-  await D.page.locator('#app-main-tablist').waitFor({ timeout: 15000 });
+  await D.page.locator('.topbar-area-btn').waitFor({ timeout: 15000 });
   await dismissLearnHub(D.page);
   // A device previously configured for a Nube sala, now local-only — the settings row this button drives.
   await D.page.evaluate(() => {

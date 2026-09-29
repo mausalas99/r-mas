@@ -405,15 +405,11 @@ html.motion-expresivo .app-tab-panel-enter {
 /* ── Overlays con display/hidden directo (Tendencias, ⌘K) ──────────
    Entrada: reiniciar display none → flex/visible reproduce la animación en
    cada apertura (sin JS). Salida: closeOverlayAnimated() en ui-motion.mjs. */
-#tend-detail-backdrop,
-.tend-group-backdrop,
 .tend-gaso-ext-backdrop,
 .cmdk-backdrop {
   animation: fade-in var(--dur-fast) var(--ease-out);
 }
 
-#tend-detail-backdrop > [role='dialog'],
-.tend-group-backdrop > [role='dialog'],
 .tend-gaso-ext-backdrop > [role='dialog'] {
   animation: modal-in var(--dur-normal) var(--ease-out);
 }

@@ -407,7 +407,7 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   const errors = [...pageErrors];
   await app.close();
   const again = await r.launch();
-  await again.page.locator('#app-main-tablist').waitFor({ state: 'visible', timeout: 30000 });
+  await again.page.locator('.topbar-area-btn').waitFor({ state: 'visible', timeout: 30000 });
   await dismissLearnHub(again.page);
   await pickPatient(again.page, P1);
   await goClinico(again.page, 'notas');

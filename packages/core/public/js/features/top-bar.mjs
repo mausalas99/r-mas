@@ -1,14 +1,16 @@
 /**
- * One 48 px top bar (Nav-G / E2, owner pick 2026-09-27): brand · level-1 area
- * tabs · divider · the active area's level-2 bar · actions. Desktop only.
+ * One top bar (nav redesign, owner pick 2026-09-28, board 7): brand · area
+ * pill · the active area's flat row of tabs · actions. Desktop only.
  *
- * The level-1 tablist and each area's level-2 bar are moved (not copied) into
- * <header>, so every id, handler and aria role stays the same. A moved bar is
+ * The area tablist becomes the pill's menu (four areas, fixed order, keys 1-4)
+ * and each area's row is moved (not copied) into <header>, so every id,
+ * handler and aria role stays the same. A moved bar is
  * shown only while its old owner (patient view, lab shell, med shell) is
  * visible — one MutationObserver keeps that true for every code path that
  * shows or hides those owners.
  */
 import { isMobileWeb } from '../mobile-web.mjs';
+import { wireGlide } from './nav-glide.mjs';
 
 var L2_BARS = [
   // [selector of the bar, its area panel, the element that used to contain it]
@@ -31,12 +33,9 @@ export function mountTopBar() {
   if (!header || !tablist || header.querySelector('.topbar-nav')) return;
   var nav = document.createElement('div');
   nav.className = 'topbar-nav';
-  var sep = document.createElement('span');
-  sep.className = 'topbar-sep';
-  sep.setAttribute('aria-hidden', 'true');
   var slot = document.createElement('div');
   slot.className = 'topbar-l2';
-  nav.append(tablist, sep, slot);
+  nav.append(buildAreaPill(tablist), slot);
   header.insertBefore(nav, header.querySelector('.header-right'));
   document.documentElement.classList.add('rpc-topbar');
 
@@ -47,6 +46,7 @@ export function mountTopBar() {
     var owner = document.getElementById(pair[2]);
     if (!bar || !panel || !owner) return;
     slot.appendChild(bar);
+    wireGlide(bar.querySelector('#exp-group-row') || bar);
     moved.push({ bar: bar, panel: panel, owner: owner });
   });
 
@@ -72,14 +72,73 @@ export function mountTopBar() {
   }
   sync();
   var row = slot.querySelector('#exp-group-row');
-  if (row) makeRoom(header, row, tablist);
+  if (row) makeRoom(header, row);
 }
 
-// Room for every level-2 pill (owner pick 2026-09-27, «Una pastilla»): the
-// area tabs fold into one pill that grows on hover or keyboard focus (CSS),
-// Atajos + Aprender become one «Ayuda» menu, Censo leaves the header, and
-// pill labels shorten below 1440 px. The mode switcher stays in the header
-// (owner 2026-09-28).
+var AREA_ORDER = ['nota', 'lab', 'med', 'agenda'];
+
+/**
+ * Area pill: shows the current area; hover, focus or click opens the four
+ * areas in fixed order. Keys 1-4 jump while focus is in the pill. The existing
+ * #app-main-tablist is the menu, so its ids and click handlers do not change.
+ */
+function buildAreaPill(tablist) {
+  var wrap = document.createElement('div');
+  wrap.className = 'topbar-area';
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'topbar-area-btn';
+  btn.setAttribute('aria-haspopup', 'true');
+  btn.setAttribute('aria-expanded', 'false');
+  wrap.append(btn, tablist);
+  function sync() {
+    AREA_ORDER.forEach(function (id, i) {
+      var tab = document.getElementById('apptab-' + id);
+      if (tab && tab.dataset.key !== String(i + 1)) tab.dataset.key = String(i + 1);
+    });
+    var active = tablist.querySelector('.app-tab[aria-selected="true"]') || tablist.querySelector('.app-tab.active');
+    var label = active && active.querySelector('.app-tab-label');
+    var name = label ? label.textContent.trim() : '';
+    btn.textContent = name;
+    btn.setAttribute('aria-label', 'Área: ' + name);
+  }
+  function close() {
+    wrap.classList.remove('is-open');
+    btn.setAttribute('aria-expanded', 'false');
+  }
+  btn.addEventListener('click', function () {
+    var open = wrap.classList.toggle('is-open');
+    btn.setAttribute('aria-expanded', String(open));
+  });
+  // A pick (mouse or key) folds the menu again, even if keyboard focus had opened it.
+  tablist.addEventListener('click', function (e) {
+    close();
+    if (e.detail && wrap.contains(document.activeElement)) document.activeElement.blur();
+  });
+  wrap.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      close();
+      btn.focus();
+      return;
+    }
+    var id = AREA_ORDER[Number(e.key) - 1];
+    var tab = id && !e.metaKey && !e.ctrlKey && !e.altKey && document.getElementById('apptab-' + id);
+    if (!tab) return;
+    e.preventDefault();
+    tab.click();
+    btn.focus();
+  });
+  document.addEventListener('pointerdown', function (e) { if (!wrap.contains(e.target)) close(); }, true);
+  if (typeof MutationObserver === 'function') {
+    new MutationObserver(sync).observe(tablist, { subtree: true, attributes: true, attributeFilter: ['class', 'aria-selected'], childList: true, characterData: true });
+  }
+  sync();
+  return wrap;
+}
+
+// Room for every tab: Atajos + Aprender become one «Ayuda» menu and tab
+// labels shorten below 1440 px. Censo and the mode switcher stay in the
+// header (owner 2026-09-28, board 7).
 var SHORT = {
   'Estado actual': 'Estado',
   Eventualidades: 'Eventual.',
@@ -88,47 +147,10 @@ var SHORT = {
   Indicaciones: 'Indic.',
   Interconsulta: 'IC',
 };
-/** On screen and not under another view (the sidebar can sit behind the interconsulta page). */
-function visible(el) {
-  if (!el || el.closest('[hidden]')) return false;
-  var r = el.getBoundingClientRect();
-  if (r.width < 1 || r.height < 1) return false;
-  var hit = document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(r.height / 2, 10));
-  return !!hit && (el.contains(hit) || !!hit.closest('.toast-stack, .fh-layer'));
-}
-
-function makeRoom(header, row, tablist) {
-  var moves = ['btn-export-censo-header'].map(function (id) {
-    var el = document.getElementById(id);
-    return el && { el: el, parent: el.parentNode, next: el.nextSibling };
-  }).filter(Boolean);
+function makeRoom(header, row) {
   buildHelpMenu(header);
   arrangeSidebar();
 
-  /**
-   * Censo goes to the patient list head. Card view, the interconsulta board
-   * and the sidebar each have their own head; no list on screen → back to
-   * the header.
-   */
-  function place() {
-    if (document.querySelector('.modal-backdrop.open')) return; // a dialog covers every head: keep the last spot
-    var sideActions = document.querySelector('#patient-sidebar .sidebar-header-actions');
-    var heads = ['.sv-home-head .sv-home-actions', '.ic-board-header', '#patient-sidebar .sidebar-header-actions'];
-    moves.forEach(function (m) {
-      var target = null;
-      for (var i = 0; i < heads.length && !target; i++) {
-        var el = document.querySelector(heads[i]);
-        if (el && visible(el)) target = el;
-      }
-      if (target) {
-        // Board and card heads: after their own buttons. Sidebar: before «+ Agregar».
-        var first = target === sideActions;
-        if (m.el.parentNode !== target) target.insertBefore(m.el, first ? target.firstChild : null);
-      } else if (m.el.parentNode !== m.parent) {
-        m.parent.insertBefore(m.el, m.next && m.next.parentNode === m.parent ? m.next : null);
-      }
-    });
-  }
   /**
    * Short labels below 1440 px, or when a group has 4+ sections
    * (Interconsulta), full name in the tooltip. The mode switcher, when it
@@ -136,7 +158,7 @@ function makeRoom(header, row, tablist) {
    */
   function labels() {
     var most = 0;
-    row.querySelectorAll('.exp-group-sections-inner').forEach(function (el) { most = Math.max(most, el.children.length); });
+    row.querySelectorAll('.exp-group-pill').forEach(function (el) { most = Math.max(most, el.querySelectorAll('.exp-group-section').length); });
     var short = innerWidth < 1440 || most >= 4;
     var seg = document.getElementById('header-mode-seg');
     var segInHeader = !!seg && header.contains(seg);
@@ -155,14 +177,9 @@ function makeRoom(header, row, tablist) {
       }
     });
   }
-  // A mouse pick folds the area pill again, even if keyboard focus had opened it.
-  tablist.addEventListener('click', function (e) {
-    if (e.detail && tablist.contains(document.activeElement)) document.activeElement.blur();
-  });
   var queued = false;
   function refresh() {
     queued = false;
-    place();
     labels();
   }
   function queue() {

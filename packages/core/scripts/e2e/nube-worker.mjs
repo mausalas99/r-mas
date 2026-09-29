@@ -117,7 +117,7 @@ export async function onboardNube(page, user) {
   await page.getByText('Lo guardé en un lugar seguro').click();
   await cont.click();
   // R4/admin skip the "join a team" gate and land in the app.
-  const landing = user.rank === 'R4' ? page.locator('#app-main-tablist') : page.getByRole('button', { name: 'Abrir Mi rotación' });
+  const landing = user.rank === 'R4' ? page.locator('.topbar-area-btn') : page.getByRole('button', { name: 'Abrir Mi rotación' });
   await landing.waitFor({ timeout: 15000 });
   const done = flat(await page.locator('body').innerText());
   return { recovery, lockedBeforeCheck, done };

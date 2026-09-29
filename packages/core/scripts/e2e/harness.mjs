@@ -1,3 +1,4 @@
+/* global document */
 /**
  * Shared E2E harness: launch the real R+ Electron app on a throwaway userData,
  * stub the outside world (hospital lab repository, native dialogs, Downloads),
@@ -100,6 +101,8 @@ export function createRun(name, { hints: runHints = false } = {}) {
     await page.waitForLoadState('domcontentloaded');
     const salaCards = await page.evaluate((hintIds) => {
       globalThis.localStorage.setItem('rplus-sala-view', 'bar');
+      // The full-record side panel opens by itself for a patient with no vitals; specs keep it closed.
+      globalThis.localStorage.setItem('rpc-registro-autoopen', 'off');
       if (hintIds) globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(hintIds));
       return !!globalThis.document.body.dataset.salaView;
     }, hints ? null : FEATURE_HINTS.map((h) => h.id));
@@ -140,6 +143,8 @@ export async function quietHints(page) {
   const { activeHints } = await import('../../public/js/feature-hints.mjs');
   const ids = activeHints().map((h) => h.id);
   await page.evaluate((a) => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(a)), ids);
+  // The full-record side panel opens by itself for a patient with no vitals; specs that are not about it keep it closed.
+  await page.evaluate(() => globalThis.localStorage.setItem('rpc-registro-autoopen', 'off'));
 }
 
 /**
@@ -149,7 +154,7 @@ export async function quietHints(page) {
 export async function goArea(page, id) {
   const tab = page.locator(`#apptab-${id}`);
   if (await tab.evaluate((el) => el.classList.contains('active'))) return;
-  await page.locator('#app-main-tablist').hover();
+  await page.locator('.topbar-area-btn').hover();
   await tab.click();
 }
 
@@ -157,7 +162,7 @@ export async function goArea(page, id) {
 export async function onboardLocalOnly(page) {
   await page.locator('[data-sync-mode="local"]').click();
   await page.locator('#clinical-onboard-local-confirm-btn').click();
-  await page.locator('#app-main-tablist').waitFor({ state: 'visible' });
+  await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
   await dismissLearnHub(page);
 }
 
@@ -336,6 +341,10 @@ export const a11yEnabled = process.env.E2E_A11Y !== '0';
 export async function scanA11y(page) {
   const violations = await page.evaluate(async (source) => {
     if (!globalThis.axe) (0, eval)(source);
+    // A fade/settle still running blends colors with the page behind and reads as low contrast.
+    // Users see the settled screen, so wait for finite animations (spinners never end: skipped).
+    const finite = document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity);
+    await Promise.race([Promise.all(finite.map((a) => a.finished.catch(() => {}))), new Promise((r) => setTimeout(r, 2000))]);
     // Toasts come and go with timing; scanning them would make counts flaky.
     const res = await globalThis.axe.run({ exclude: [['#toast-stack']] }, {
       runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },

@@ -3,18 +3,23 @@ import { getSetTrendValueForSeries, buildTendChartLabels } from '../tend-core.mj
 import { loadChartJs } from '../vendor-loader.mjs';
 import { rt } from './tendencias-runtime-state.mjs';
 import { tendenciasBridge } from './tendencias-bridge.mjs';
-import { tendStore, trendSparkDomId, trendSparkChartKey } from './tendencias-state.mjs';
+import { tendStore, trendSparkDomId, trendSparkChartKey, esc } from './tendencias-state.mjs';
 import { tendRefForSeries, tendCatalogSeriesKey, tendSectionIsExpanded, toTrendAscendingSets } from './tendencias-series.mjs';
-import { buildTendInsightHtml, previousValueFromSetsDesc } from './tendencias-insight.mjs';
+import {
+  buildTendStatusHtml,
+  buildTendChangeHtml,
+  tendRangeText,
+  previousValueFromSetsDesc,
+} from './tendencias-insight.mjs';
 
 function tendSeriesKeySelector(seriesKey) {
   if (typeof CSS !== 'undefined' && CSS.escape) {
-    return '.tend-card[data-series-key="' + CSS.escape(seriesKey) + '"]';
+    return '.tend-row[data-series-key="' + CSS.escape(seriesKey) + '"]';
   }
-  return '.tend-card[data-series-key="' + String(seriesKey).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"]';
+  return '.tend-row[data-series-key="' + String(seriesKey).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"]';
 }
 
-function patchOneTendCard(card, idx, sp) {
+function patchOneTendRow(card, idx, sp) {
   var valEl = card.querySelector('.tend-param-value');
   if (valEl) {
     valEl.textContent = idx.latest != null ? String(idx.latest) : '—';
@@ -26,28 +31,17 @@ function patchOneTendCard(card, idx, sp) {
     sp.fieldKey,
     getSetTrendValueForSeries
   );
-  var insight = buildTendInsightHtml(
-    function (s) { return String(s == null ? '' : s); },
-    idx.latest,
-    prev,
-    !!idx.isAbnormal,
-    idx.ref
-  );
-  var insightEl = card.querySelector('.tend-insight');
-  var reading = card.querySelector('.tend-card-reading');
-  if (insight) {
-    if (insightEl) insightEl.outerHTML = insight;
-    else if (reading) reading.insertAdjacentHTML('beforeend', insight);
-    else if (valEl && valEl.parentElement) {
-      valEl.insertAdjacentHTML('afterend', insight);
-    }
-  } else if (insightEl) {
-    insightEl.remove();
-  }
+  var setCell = function (sel, html) {
+    var el = card.querySelector(sel);
+    if (el) el.innerHTML = html;
+  };
+  setCell('.tend-row-status', buildTendStatusHtml(esc, idx.latest, idx.ref));
+  setCell('.tend-row-range', esc(tendRangeText(idx.ref)));
+  setCell('.tend-row-change', buildTendChangeHtml(esc, idx.latest, prev, !!idx.isAbnormal, idx.ref));
   card.setAttribute('data-abnormal', idx.isAbnormal ? '1' : '0');
 }
 
-function patchTendCardsFromIndex(seriesIndex, seriesAvail) {
+function patchTendRowsFromIndex(seriesIndex, seriesAvail) {
   var patched = 0;
   for (var i = 0; i < seriesAvail.length; i += 1) {
     var sp = seriesAvail[i];
@@ -56,7 +50,7 @@ function patchTendCardsFromIndex(seriesIndex, seriesAvail) {
     if (!idx) return false;
     var card = document.querySelector(tendSeriesKeySelector(key));
     if (!card) return false;
-    patchOneTendCard(card, idx, sp);
+    patchOneTendRow(card, idx, sp);
     patched += 1;
   }
   return patched > 0;
@@ -99,7 +93,7 @@ function sparkLineColorForJob(job, history) {
     refSpark &&
     latestSpark != null &&
     (latestSpark < refSpark[0] || latestSpark > refSpark[1]);
-  return isAbSpark ? '#f87171' : 'rgba(52,211,153,0.95)';
+  return isAbSpark ? '#d70015' : '#23807a';
 }
 
 function sparkChartAnim(duration) {
@@ -117,12 +111,46 @@ function updateSparkChartsFromJobs(sparkJobs, history) {
       var lineColor = sparkLineColorForJob(job, history);
       chart.data.datasets[0].borderColor = lineColor;
       chart.data.datasets[0].pointBackgroundColor = lineColor;
+      var ybu = sparkYBounds(job.values2, job.ref);
+      chart.options.scales.y.min = ybu.min;
+      chart.options.scales.y.max = ybu.max;
+      chart.options.plugins.tendSparkBand = { ref: job.ref || null };
       chart.update('none');
     } else {
       destroySparkChartEntry(ck);
       mountOneTrendSparkChartAsync(job, history, sparkChartAnim(400));
     }
   }
+}
+
+// Compact normality band behind the line (list sparks only).
+var tendSparkBandPlugin = {
+  id: 'tendSparkBand',
+  beforeDatasetsDraw: function (chart) {
+    var ref = chart.options.plugins.tendSparkBand && chart.options.plugins.tendSparkBand.ref;
+    var y = chart.scales && chart.scales.y;
+    if (!ref || !y) return;
+    var top = y.getPixelForValue(Math.max(ref[0], ref[1]));
+    var bot = y.getPixelForValue(Math.min(ref[0], ref[1]));
+    var a = chart.chartArea;
+    var ctx = chart.ctx;
+    ctx.save();
+    ctx.fillStyle = 'rgba(35,128,122,0.11)';
+    var t = Math.max(a.top, Math.min(top, bot));
+    var h = Math.max(1, Math.min(a.bottom, Math.max(top, bot)) - t);
+    ctx.fillRect(a.left, t, a.right - a.left, h);
+    ctx.restore();
+  },
+};
+
+function sparkYBounds(values, ref) {
+  var all = values.filter(function (v) { return v != null && isFinite(v); });
+  if (ref) all = all.concat([ref[0], ref[1]]);
+  if (!all.length) return {};
+  var mn = Math.min.apply(null, all);
+  var mx = Math.max.apply(null, all);
+  var pad = (mx - mn) * 0.12 || 1;
+  return { min: mn - pad, max: mx + pad };
 }
 
 function mountOneTrendSparkChart(job, history, chartAnim, Chart, mountGen) {
@@ -136,16 +164,18 @@ function mountOneTrendSparkChart(job, history, chartAnim, Chart, mountGen) {
   if (mountGen != null && mountGen !== tendStore.sparkMountGen) return;
   var lineColor = sparkLineColorForJob(job, history);
   // Sparks stay glanceable: normality band + event markers only on the detail chart.
+  var yb = sparkYBounds(job.values2, job.ref);
   tendStore.sparkCharts[ck] = new Chart(canvas2, {
     type: 'line',
+    plugins: [tendSparkBandPlugin],
     data: {
       labels: job.labels2,
       datasets: [
         {
           data: job.values2,
           borderColor: lineColor,
-          borderWidth: 2.25,
-          pointRadius: 2,
+          borderWidth: 2,
+          pointRadius: 2.5,
           pointBackgroundColor: lineColor,
           tension: 0.3,
           fill: false,
@@ -158,10 +188,10 @@ function mountOneTrendSparkChart(job, history, chartAnim, Chart, mountGen) {
       maintainAspectRatio: false,
       animation: chartAnim,
       layout: { padding: { left: 4, right: 4, top: 6, bottom: 4 } },
-      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      plugins: { legend: { display: false }, tooltip: { enabled: false }, tendSparkBand: { ref: job.ref || null } },
       scales: {
         x: { display: false, grid: { display: false }, offset: true },
-        y: { display: false, grid: { display: false }, grace: '12%' },
+        y: { display: false, grid: { display: false }, min: yb.min, max: yb.max },
       },
     },
   });
@@ -245,7 +275,7 @@ function buildSparkJobsFromIndex(seriesAvail, seriesIndex, history, chartAnim) {
 
 export {
   tendSeriesKeySelector,
-  patchTendCardsFromIndex,
+  patchTendRowsFromIndex,
   destroySparkChartEntry,
   releaseSparkCanvas,
   sparkLineColorForJob,

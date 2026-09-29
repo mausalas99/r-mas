@@ -508,60 +508,6 @@ html.motion-sobrio .ui-loading-cell {
 
 /* Patient list: gliding highlight retired — selection is .patient-card.active */
 
-/* Tendencias card: value + % change stacked on the right */
-.tend-card-reading {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  min-width: 0;
-}
-.tend-card-header-end .tend-insight {
-  margin: 0;
-  min-height: 0;
-  justify-content: flex-end;
-}
-.tend-card-header-end .tend-insight-delta {
-  font-size: 12px;
-  line-height: 1.2;
-}
-
-/* Tendencias insight — delta only (range = red value; no grey status prose) */
-.tend-insight {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.35rem 0.55rem;
-  margin: 0.28rem 0 0.08rem;
-  font-variant-numeric: tabular-nums;
-  min-height: 1.15em;
-}
-.tend-insight-delta {
-  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 12.5px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--text);
-  line-height: 1.3;
-}
-/* Direction kept for semantics; color = clinical tone vs ref range. */
-.tend-insight-delta--neutral {
-  color: var(--text);
-}
-.tend-insight-delta--good {
-  color: var(--success, #34d399);
-}
-.tend-insight-delta--bad {
-  color: var(--error, #f87171);
-}
-.tend-insight-delta--jump {
-  font-weight: 700;
-}
-.tend-card:has(.tend-card-open:focus-visible) {
-  outline: none;
-  border-color: color-mix(in oklab, var(--color-ink) 22%, var(--border));
-  box-shadow: var(--shadow-sm);
-}
 .tend-detail-compare-slot {
   display: flex;
   flex-wrap: wrap;
@@ -714,7 +660,7 @@ html.motion-sobrio .ui-loading-cell {
   border-radius: inherit;
 }
 
-/* Clickable card with its own controls inside (.patient-card, .tend-card,
+/* Clickable card with its own controls inside (.patient-card, .tend-row,
    .wb-row): the card is a plain div and one real, empty <button> opens it.
    Its ::after stretches over the nearest positioned ancestor (the card) so the
    whole card stays clickable and looks the same; the card's other buttons sit

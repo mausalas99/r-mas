@@ -64,6 +64,7 @@ import {
   applyEstadoActualParsedToForm,
   readIoExtraPartsFromForm,
   readIoEventsFromForm,
+  applyParsedVitals,
 } from './estado-actual-panel-registro.mjs';
 import { getEaRegistroEditId, editarEstadoActualMedicion } from './estado-actual-panel-registro-edit.mjs';
 import {
@@ -180,6 +181,20 @@ export function registrarEstadoActualMedicion() {
   eaPanelBridge.renderEstadoActualPanel({ syncHeavy: true, dataOnly: true });
   getEaPanelRuntime().showToast(editId ? 'Medición actualizada ✓' : 'Medición registrada ✓', 'success');
   if (typeof getEaPanelRuntime().onMedicionRegistered === 'function') getEaPanelRuntime().onMedicionRegistered();
+}
+
+/**
+ * Resumen quick tile: saves the given vitals through the same form pipeline as
+ * «Registro completo» (validation, series limits, sync), without opening the panel.
+ * @param {Record<string, number>} vals
+ */
+export function quickSaveVitals(vals) {
+  ensureEaRegistroModalForm();
+  resetEaRegistroForm(null);
+  var form = document.getElementById('ea-form');
+  if (!form) return;
+  applyParsedVitals(form, vals, {});
+  registrarEstadoActualMedicion();
 }
 
 export function ensureEaRegistroModalForm() {
@@ -601,6 +616,7 @@ export function applyEaMedReclassification(fromKey) {
 
 export const windowHandlers = {
   registrarEstadoActualMedicion,
+  quickSaveVitals,
   eliminarEstadoActualMedicion,
   editarEstadoActualMedicion,
   estadoActualGuardar,

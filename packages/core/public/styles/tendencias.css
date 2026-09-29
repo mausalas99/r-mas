@@ -1,0 +1,378 @@
+/* Tendencias: closed-state list (toolbar, summary, group strips, rows). */
+.tend-empty[hidden], .tend-section[hidden], .tend-row[hidden] { display: none; }
+.tend-toolbar-btn {
+  font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: var(--radius-pill); cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  transition: border-color var(--dur-normal) ease, box-shadow var(--dur-normal) ease;
+}
+.tend-toolbar-btn:hover { border-color: rgba(37, 99, 235, 0.35); box-shadow: var(--shadow-sm); }
+
+/* Toolbar */
+.tend-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.tend-head-spacer { flex: 1 1 0; }
+.tend-search { position: relative; display: block; width: 260px; max-width: 100%; color: var(--text-muted); }
+.tend-search svg { position: absolute; left: 14px; top: 11px; pointer-events: none; }
+.tend-search-input {
+  box-sizing: border-box; width: 100%; height: 40px; padding: 0 14px 0 40px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 13.5px;
+}
+.tend-search-input:focus-visible, .tend-seg-btn:focus-visible, .tend-pill:focus-visible,
+.tend-section-toggle:focus-visible, .tend-section-chart-btn:focus-visible, .tend-row-hide-btn:focus-visible {
+  outline: 2px solid var(--primary); outline-offset: 2px;
+}
+.tend-seg {
+  display: flex; height: 40px; padding: 3px; box-sizing: border-box; border-radius: 999px;
+  background: color-mix(in oklab, var(--text) 8%, var(--surface));
+}
+.tend-seg-btn {
+  height: 34px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; cursor: pointer;
+  font: inherit; font-size: 13.5px; font-weight: 600; color: var(--text-muted);
+  transition: background var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+.tend-seg-btn.is-active { background: var(--surface); color: var(--text); font-weight: 650; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14); }
+.tend-seg-count { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-size: 12.5px; }
+.tend-pill {
+  display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 600;
+}
+.tend-pill:hover { background: color-mix(in oklab, var(--text) 6%, var(--surface)); }
+.tend-pill--accent { background: color-mix(in oklab, var(--primary) 12%, var(--surface)); border-color: transparent; }
+
+/* Summary + column header */
+.tend-summary { margin: 12px 0 10px 2px; font-size: 13.5px; color: var(--text-muted); }
+.tend-summary-oor { color: var(--error, #d70015); font-weight: 650; }
+.tend-row, .tend-cols {
+  display: grid; grid-template-columns: minmax(170px, 1.6fr) 90px 100px 110px 90px minmax(160px, 220px) 32px;
+  column-gap: 12px; align-items: center; padding: 0 20px;
+}
+.tend-cols {
+  height: 26px; font-size: 12.5px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted);
+}
+
+/* Group strip */
+.tend-section { margin-bottom: 10px; }
+.tend-section-head { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.tend-section-toggle {
+  display: inline-flex; align-items: center; gap: 8px; padding: 0 6px 0 0; height: 32px; border: 0; background: transparent;
+  color: var(--text); font: inherit; font-size: 15.5px; font-weight: 650; cursor: pointer; border-radius: 8px;
+}
+.tend-section-chevron { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; color: var(--text-muted); transition: transform var(--dur-fast) ease; }
+.tend-section-toggle[aria-expanded="false"] .tend-section-chevron { transform: rotate(-90deg); }
+.tend-section-count { font-size: 13px; color: var(--text-muted); }
+.tend-oor-pill {
+  display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px;
+  font-size: 12.5px; font-weight: 600; background: rgba(215, 0, 21, 0.08); color: #b3001a;
+}
+html.dark .tend-oor-pill { color: #ff8a95; background: rgba(255, 90, 105, 0.14); }
+.tend-section-chart-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface); color: var(--primary); font: inherit; font-size: 13px; font-weight: 600;
+}
+.tend-section-chart-btn:hover { background: color-mix(in oklab, var(--primary) 10%, var(--surface)); }
+.tend-section-chart-btn .tend-section-chart-icon { width: 16px; height: 16px; flex-shrink: 0; }
+.tend-section-body--collapsed { display: none; }
+
+/* Rows */
+.tend-rows {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+}
+.tend-row {
+  position: relative; height: 48px; border-top: 1px solid color-mix(in oklab, var(--text) 8%, transparent);
+  background: var(--surface); cursor: pointer; font-variant-numeric: tabular-nums;
+}
+.tend-row:first-child { border-top: 0; }
+.tend-row:hover, .tend-row:focus-within { background: color-mix(in oklab, var(--text) 3%, var(--surface)); }
+.tend-row:active { cursor: grabbing; }
+.tend-row:has(.tend-row-open:focus-visible) { outline: 2px solid var(--primary); outline-offset: -2px; }
+.tend-row-name { display: flex; align-items: baseline; gap: 6px; min-width: 0; overflow: hidden; }
+.tend-param-name { position: relative; font-size: 14.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tend-unit { font-size: 12.5px; color: var(--text-muted); white-space: nowrap; }
+.tend-param-value { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-size: 17px; font-weight: 600; color: var(--text); }
+.tend-param-value.tend-abnormal { color: var(--error, #d70015); }
+.tend-row.is-selected .tend-param-value.tend-abnormal { color: #b3001a; }
+.tend-status { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+.tend-status--low, .tend-status--high { color: #b3001a; background: rgba(215, 0, 21, 0.08); }
+html.dark .tend-status--low, html.dark .tend-status--high { color: #ff8a95; background: rgba(255, 90, 105, 0.14); }
+.tend-status--ok { color: #146c3e; background: rgba(26, 127, 75, 0.09); }
+html.dark .tend-status--ok { color: #5fd39a; background: rgba(95, 211, 154, 0.12); }
+.tend-status--none { padding: 0; }
+.tend-row-range { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-size: 12.5px; color: var(--text-muted); white-space: nowrap; }
+.tend-insight { display: block; margin: 0; }
+.tend-insight-delta { font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--text-muted); }
+.tend-insight-delta--good { color: #146c3e; }
+.tend-insight-delta--bad { color: var(--error, #d70015); }
+.tend-insight-delta--jump { font-weight: 700; }
+html.dark .tend-insight-delta--good { color: #5fd39a; }
+.tend-none { color: var(--text-muted); }
+.tend-spark-wrap { display: block; height: 32px; position: relative; }
+.tend-spark-canvas-cell { display: block; position: relative; width: 100%; height: 100%; }
+.tend-spark-canvas-cell canvas { display: block; width: 100% !important; height: 100% !important; }
+.tend-spark-placeholder { display: block; height: 100%; }
+
+/* Hide button: on hover or focus only (always visible on touch) */
+.tend-row-hide-btn {
+  position: relative; z-index: 2; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: transparent;
+  color: var(--text-muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; opacity: 0;
+  transition: opacity var(--dur-fast) ease, background var(--dur-fast) ease;
+}
+.tend-row:hover .tend-row-hide-btn, .tend-row-hide-btn:focus-visible { opacity: 1; }
+.tend-row-hide-btn:hover { background: color-mix(in oklab, var(--text) 10%, transparent); color: var(--text); }
+@media (hover: none) { .tend-row-hide-btn { opacity: 1; } }
+
+/* Drag ghost (appended to body) and source row */
+.tend-row.tend-row--sort-source { opacity: 0.35; }
+body > .tend-drag-hovercard {
+  border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-md); background: var(--surface); opacity: 0.96;
+}
+
+@media (max-width: 900px) {
+  .tend-row, .tend-cols { grid-template-columns: minmax(120px, 1fr) 70px 90px 80px 28px; padding: 0 12px; }
+  .tend-row-range, .tend-row-change, .tend-spark-wrap, .tend-cols > :nth-child(4), .tend-cols > :nth-child(6) { display: none; }
+  .tend-cols > :nth-child(5) { display: none; }
+  .tend-search { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tend-seg-btn, .tend-section-chevron, .tend-row-hide-btn { transition: none; }
+}
+
+/* ── Split layout: list + side pane ───────────────────────────── */
+.tend-split {
+  --tend-spring: linear(0, 0.18 6%, 0.62 14%, 0.94 22%, 1.04 30%, 1.05 38%, 1.01 52%, 0.997 68%, 1);
+  display: flex; align-items: flex-start; width: 100%; min-height: 0;
+}
+.tend-split > #tendencias-container {
+  flex: 0 0 100%; min-width: 0;
+  transition: flex-basis 0.42s var(--tend-spring);
+}
+.tend-split.is-open > #tendencias-container { flex-basis: 410px; }
+
+.tend-pane {
+  flex: 1 1 0; min-width: 0; margin-left: 0;
+  position: sticky; top: 0; height: calc(100vh - 100px);
+  opacity: 0; visibility: hidden; transform: translateX(28px);
+  transition: opacity 0.16s ease-out, transform 0.3s ease-out, margin-left 0.42s var(--tend-spring), visibility 0s 0.3s;
+}
+.tend-split.is-open > .tend-pane {
+  opacity: 1; visibility: visible; transform: none; margin-left: 16px;
+  transition: opacity 0.22s ease-out 0.05s, transform 0.42s var(--tend-spring), margin-left 0.42s var(--tend-spring), visibility 0s;
+}
+.tend-pane[data-mode]:not([data-mode="analito"]) #tend-detail-backdrop,
+.tend-pane:not([data-mode="estudio"]) #tend-group-backdrop,
+.tend-pane:not([data-mode="pivot"]) #tend-dynamic-table-backdrop { display: none !important; }
+
+/* Panels lose their modal backdrop chrome inside the pane */
+.tend-pane .tend-pane-panel {
+  position: static; inset: auto; z-index: auto; padding: 0; background: none; animation: none;
+  width: 100%; height: 100%; align-items: stretch; justify-content: stretch;
+}
+.tend-pane .tend-pane-panel.overlay-anim-out { animation: none !important; }
+.tend-pane .tend-pane-card {
+  width: 100%; height: 100%; max-width: 100%; max-height: 100%; box-sizing: border-box;
+  display: flex; flex-direction: column; overflow: hidden; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 16px; box-shadow: none; animation: none;
+}
+
+/* Compact list while the pane is open */
+.tend-split.is-open .tend-row, .tend-split.is-open .tend-cols {
+  grid-template-columns: minmax(0, 1fr) 84px 72px 32px; padding: 0 14px;
+}
+.tend-split.is-open .tend-row-status, .tend-split.is-open .tend-row-range, .tend-split.is-open .tend-spark-wrap,
+.tend-split.is-open .tend-cols > :nth-child(3), .tend-split.is-open .tend-cols > :nth-child(4),
+.tend-split.is-open .tend-cols > :nth-child(6) { display: none; }
+.tend-split.is-open .tend-search { width: 100%; }
+.tend-split.is-open .tend-section-count { display: none; }
+.tend-split.is-open .tend-section-title, .tend-split.is-open .tend-oor-pill { white-space: nowrap; }
+.tend-split.is-open .tend-section-head { gap: 8px; }
+.tend-split.is-open .tend-section-toggle { min-width: 0; flex: 0 1 auto; }
+.tend-split.is-open .tend-section-title { overflow: hidden; text-overflow: ellipsis; }
+.tend-split.is-open .tend-section-chart-btn { flex-shrink: 0; }
+.tend-split.is-open .tend-head-spacer { display: none; }
+.tend-split.is-open .tend-section-head { justify-content: space-between; }
+.tend-row.is-selected, .tend-row.is-selected:hover, .tend-row.is-selected:focus-within {
+  background: color-mix(in oklab, var(--primary) 10%, var(--surface));
+}
+
+/* Pane header (analito) */
+.tend-pane-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 22px 24px 0; flex-shrink: 0; }
+.tend-pane-titles { min-width: 0; }
+.tend-pane-title { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.2; color: var(--text); }
+.tend-pane-sub { margin-top: 2px; font-size: 13.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tend-pane-head-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.tend-pane-esc {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-size: 12px; color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px;
+}
+.tend-pane-close {
+  width: 36px; height: 36px; padding: 0; border-radius: 999px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+}
+.tend-pane-close:hover { background: color-mix(in oklab, var(--text) 6%, var(--surface)); }
+.tend-pane-close:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.tend-pane-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 0 24px 20px; }
+.tend-detail-hero { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; margin-top: 12px; }
+.tend-detail-big { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-size: 44px; font-weight: 600; line-height: 1; color: var(--text); }
+.tend-detail-big.tend-abnormal { color: var(--error, #d70015); }
+.tend-detail-unit { font-size: 15px; color: var(--text-muted); }
+.tend-detail-change { font-size: 14px; font-weight: 650; color: var(--text-muted); margin-left: 8px; }
+.tend-detail-change.tend-insight-delta--good { color: #146c3e; }
+.tend-detail-change.tend-insight-delta--bad { color: var(--error, #d70015); }
+.tend-detail-note { font-size: 13.5px; color: var(--text-muted); }
+.tend-detail-refline { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 14px; min-height: 30px; }
+.tend-detail-ref { font-size: 13.5px; color: var(--text-muted); }
+.tend-detail-ref b { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-weight: 600; color: var(--text); }
+.tend-pane .tend-detail-chart-row { min-height: 0; margin-top: 6px; }
+.tend-pane .tend-detail-chart-cell { height: clamp(200px, 30vh, 260px); }
+.tend-pane .tend-detail-compare-slot { margin: 0; }
+.tend-detail-readings { margin-top: 12px; }
+.tend-rd-row { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; height: 36px; font-size: 13.5px; border-top: 1px solid color-mix(in oklab, var(--text) 8%, transparent); }
+.tend-rd-row.tend-rd-head { height: 26px; border-top: 0; font-size: 12.5px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.tend-rd-val { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-weight: 600; }
+.tend-rd-chg { font-weight: 600; color: var(--text-muted); }
+.tend-rd-chg--good { color: #146c3e; }
+.tend-rd-chg--bad { color: var(--error, #d70015); }
+.tend-rd-row.tend-rd-extra { display: none; }
+.tend-detail-readings.is-all .tend-rd-row.tend-rd-extra { display: grid; }
+.tend-rd-more {
+  margin-top: 4px; height: 32px; padding: 0 4px; border: 0; background: transparent; cursor: pointer;
+  font: inherit; font-size: 13px; font-weight: 600; color: oklch(0.42 0.09 195);
+}
+.tend-rd-more:hover { text-decoration: underline; }
+.tend-detail-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.tend-pane .tend-detail-events-slot { margin-top: 8px; }
+
+@media (max-width: 900px) {
+  .tend-split.is-open > #tendencias-container { display: none; }
+  .tend-split.is-open > .tend-pane { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tend-split > #tendencias-container, .tend-pane, .tend-split.is-open > .tend-pane { transition: none; }
+}
+
+/* Toolbar: 2 tidy rows while the pane is open (search, then segmented + pills) */
+.tend-split.is-open .tend-toolbar { gap: 8px; }
+.tend-split.is-open .tend-search { flex: 1 1 100%; }
+.tend-split.is-open .tend-toolbar { gap: 6px; }
+.tend-split.is-open .tend-seg-btn { padding: 0 9px; font-size: 12.5px; }
+.tend-split.is-open .tend-pill { padding: 0 10px; gap: 6px; font-size: 12.5px; }
+.tend-split.is-open .tend-ocultos-label { display: none; }
+
+/* Estudio pane */
+.tend-pane #tend-group-modal { border-radius: 16px; }
+.tend-pane .tend-group-header { padding-bottom: 0; background: none; border: 0; border-radius: 0; box-shadow: none; min-height: 0; }
+.tend-pane #tend-group-title { line-height: 1.25; }
+.tend-pane #tend-group-title { border-radius: 8px; padding: 0; margin: 0; cursor: text; }
+.tend-pane .tend-group-range-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; padding: 0 24px; font-size: 13px; color: var(--text-muted); }
+.tend-pane .tend-group-range-label { font-size: 13px; font-weight: 650; color: var(--text); white-space: nowrap; }
+.tend-pane .tend-group-range-sep { font-size: 13px; }
+.tend-pane .tend-group-range-row .rpc-date-field { flex: 0 0 auto; }
+.tend-pane .tend-group-range-row .rpc-date-field__trigger {
+  min-height: 34px; height: 34px; padding: 0 14px; border-radius: 999px; font-size: 13px; background: var(--surface);
+  border: 1px solid var(--border); max-width: 170px;
+}
+.tend-pane .tend-group-range-row .rpc-date-field__label { font-size: 13px; }
+.tend-pane .tend-group-range-clear { font-size: 13px; }
+.tend-pane .tend-group-tabs-wrap { padding: 12px 24px 0; }
+.tend-pane .tend-group-tabs { border-radius: 999px; border: 0; padding: 3px; background: color-mix(in oklab, var(--text) 8%, var(--surface)); }
+.tend-pane .tend-group-tab-pill { border-radius: 999px; }
+.tend-pane .tend-group-tab { border-radius: 999px; font-size: 13px; padding: 6px 18px; }
+.tend-pane .tend-group-tab.active { color: var(--text); }
+.tend-pane #tend-group-panel-charts, .tend-pane #tend-group-panel-table { padding: 8px 24px 20px; overflow: auto; flex: 1 1 auto; min-height: 0; }
+.tend-group-scale-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 6px 0 12px; font-size: 13px; color: var(--text-muted); }
+.tend-group-scale-label { font-weight: 650; color: var(--text); }
+.tend-group-scale-seg { height: 34px; }
+.tend-group-scale-seg .tend-seg-btn { height: 28px; padding: 0 14px; font-size: 13px; }
+.tend-group-rel-note { margin: 8px 0 0; font-size: 12.5px; color: var(--text-muted); }
+.tend-pane .tend-group-panel-card { border-radius: 14px; }
+
+/* Legend = round checkbox chips */
+.tend-pane .tend-group-legend { gap: 8px; margin-bottom: 10px; }
+.tend-pane .tend-group-legend-item {
+  gap: 8px; height: 34px; padding: 0 12px 0 10px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface); font-size: 13px; font-weight: 600;
+}
+.tend-pane .tend-group-legend-check { width: 16px; height: 16px; margin: 0; accent-color: oklch(0.42 0.09 195); }
+.tend-pane .tend-group-legend-color { width: 14px; height: 14px; min-width: 14px; border: 0; border-radius: 4px; padding: 0; overflow: hidden; background: none; }
+.tend-pane .tend-group-legend-color::-webkit-color-swatch-wrapper { padding: 0; }
+.tend-pane .tend-group-legend-color::-webkit-color-swatch { border: 0; border-radius: 4px; }
+.tend-pane .tend-group-legend-drag-hint { opacity: 0; padding: 2px 0; transition: opacity var(--dur-fast) ease; }
+.tend-pane .tend-group-legend-item:hover .tend-group-legend-drag-hint { opacity: 1; }
+.tend-pane .tend-group-threshold-add-btn { height: 34px; padding: 0 14px; font-size: 13px; box-shadow: none; flex-direction: row; }
+.tend-pane .tend-group-table-actions { display: flex; gap: 8px; padding-top: 12px; }
+
+/* ── Tabla dinámica pane + tick-in-list ───────────────────────── */
+/* Checkbox: box turns teal, the tick draws itself (CSS only). */
+.tend-tick {
+  appearance: none; -webkit-appearance: none; position: relative; flex-shrink: 0; width: 18px; height: 18px; margin: 0;
+  border: 1.5px solid color-mix(in oklab, var(--text) 38%, transparent); border-radius: 5px; background: var(--surface); cursor: pointer;
+  transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+.tend-tick:checked { background: oklch(0.42 0.09 195); border-color: oklch(0.42 0.09 195); }
+.tend-tick::after {
+  content: ''; position: absolute; left: 5px; top: 1px; width: 4px; height: 9px; box-sizing: content-box;
+  border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); opacity: 0;
+}
+.tend-tick:checked::after { opacity: 1; animation: tend-tick-draw 0.3s ease-out; }
+.tend-tick:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+@keyframes tend-tick-draw {
+  0% { clip-path: inset(calc(100% - 2px) 100% 0 0); }
+  40% { clip-path: inset(calc(100% - 2px) 0 0 0); }
+  100% { clip-path: inset(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tend-tick { transition: none; }
+  .tend-tick:checked::after { animation: none; }
+}
+
+/* List rows: checkbox column exists only while the pivot pane is open */
+.tend-row-tick { display: none; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 2; }
+.tend-split.is-pivot .tend-row-tick { display: block; }
+.tend-split.is-pivot .tend-row, .tend-split.is-pivot .tend-cols { padding-left: 44px; }
+.tend-split.is-pivot .tend-row.is-ticked { background: color-mix(in oklab, var(--primary) 7%, var(--surface)); }
+.tend-split.is-pivot .tend-row-hide-btn { display: none; }
+
+/* Pivot pane */
+.tend-pane #tend-dynamic-table-modal { border-radius: 16px; }
+.tend-pane .tend-group-header { padding-bottom: 0; }
+.tend-pane #tend-dynamic-table-title { line-height: 1.25; border-radius: 8px; padding: 0; margin: 0; cursor: text; }
+.tend-pane #tend-dynamic-table-body { padding: 12px 24px 20px; overflow: auto; flex: 1 1 auto; min-height: 0; }
+.tend-pane .tend-group-range-row .tend-head-spacer { flex: 1 1 0; }
+.tend-pane #tend-dynamic-table-range-row { margin-top: 18px; }
+.tend-group-daymode-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--text); cursor: pointer; }
+.tend-pill--solid { background: oklch(0.42 0.09 195); border-color: transparent; color: #fff; }
+.tend-pill--solid:hover { background: oklch(0.38 0.09 195); }
+.tend-pane .tend-group-table-actions .tend-pill { height: 38px; }
+.tend-analyte-picker-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; position: relative; }
+.tend-pane .tend-analyte-picker-add-btn { height: 34px; padding: 0 14px; font-size: 13px; }
+.tend-pivot-chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 6px 0 14px; border-radius: 999px;
+  background: color-mix(in oklab, oklch(0.51 0.09 195) 14%, var(--surface)); font-size: 13px; font-weight: 600; color: var(--text);
+}
+.tend-pivot-chip-x {
+  width: 24px; height: 24px; padding: 0; border: 0; border-radius: 999px; background: transparent; color: var(--text); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.tend-pivot-chip-x:hover { background: color-mix(in oklab, var(--text) 12%, transparent); }
+.tend-pivot-chip-x:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.tend-pivot-hint { margin: 8px 0 0; font-size: 12.5px; color: var(--text-muted); }
+.tend-pane .tend-analyte-picker-dropdown { z-index: 5; }
+.tend-pane #tend-dynamic-table-wrap .cultivos-table-wrap { margin-top: 14px; border: 1px solid var(--border); border-radius: 12px; overflow: auto; }
+.tend-pane .tend-group-table { border-collapse: collapse; width: 100%; }
+.tend-pane .tend-group-table thead th {
+  background: color-mix(in oklab, oklch(0.51 0.09 195) 14%, var(--surface)); font-size: 12.5px; font-weight: 650; color: var(--text);
+  padding: 8px 10px; text-align: left; vertical-align: bottom;
+}
+.tend-pane .tend-group-table td { padding: 8px 10px; font-size: 13.5px; border-top: 1px solid color-mix(in oklab, var(--text) 8%, transparent); }
+.tend-pane .tend-group-table td + td { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-weight: 600; }
+.tend-pane .tend-group-table td.tend-abnormal { color: var(--error, #d70015); background: rgba(215, 0, 21, 0.04); }
+html.dark .tend-pane .tend-group-table td.tend-abnormal { background: rgba(255, 90, 105, 0.14); }
+.tend-pane .tend-group-col-toggle, .tend-pane .tend-group-row-toggle { display: inline-flex; align-items: center; gap: 8px; }
+.tend-eye-toggle {
+  display: inline-grid; place-items: center; width: 24px; height: 24px; padding: 0; flex: none;
+  border: 0; border-radius: 999px; background: transparent; color: var(--text-muted); cursor: pointer;
+}
+.tend-eye-toggle:hover { background: color-mix(in oklab, var(--text) 8%, transparent); color: var(--text); }
+.tend-eye-toggle[aria-pressed="true"] { color: var(--primary); }
+.tend-eye-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+/* The split grows with the list (its scroller is the tab), so the sticky pane keeps its containing block. */
+#tend-split.tend-split { flex: 0 0 auto; }

@@ -9,7 +9,7 @@ import { resolveEaAbxFechaActualizacion } from '../estado-actual-meds-core.mjs';
 import { collectEaGlanceSoap } from './ea-glance-meds.mjs';
 import { toggleInterconsultId } from './interconsult-catalog.mjs';
 import { buildDashboardModel, buildLabsForDashboard } from './dashboard-model.mjs';
-import { renderDashboardHtml, renderLabsHtml } from './dashboard-html.mjs';
+import { renderDashboardHtml, renderLabsHtml, dashboardHasNoVitals } from './dashboard-html.mjs';
 import { watchDashboardFit } from './dashboard-fit.mjs';
 import { openInterconsultModal } from './ic-modal.mjs';
 import { switchLabInner } from './lab-inner.mjs';
@@ -160,9 +160,48 @@ function switchDashInner(tab) {
   if (typeof rt.switchInnerTab === 'function') rt.switchInnerTab(tab);
 }
 
+var QUICK_LIMITS = { fc: [20, 250], fr: [4, 80], temp: [30, 44], sat: [30, 100] };
+
+/** One quick tile → same save path as «Registro completo» (window.quickSaveVitals). Bad value: toast, tile restored. */
+function saveQuickVital(input) {
+  var key = input.getAttribute('data-vital-quick');
+  var raw = String(input.value || '').trim().replace(',', '.');
+  if (!raw) {
+    renderPatientDashboard(null, { settle: false });
+    return;
+  }
+  var vals = null;
+  if (key === 'ta') {
+    var m = /^(\d{2,3})\s*\/\s*(\d{2,3})$/.exec(raw);
+    if (m) vals = { tas: Number(m[1]), tad: Number(m[2]) };
+  } else if (/^\d+(\.\d+)?$/.test(raw)) {
+    var n = Number(raw);
+    var lim = QUICK_LIMITS[key];
+    if (lim && n >= lim[0] && n <= lim[1]) {
+      vals = {};
+      vals[key] = n;
+    }
+  }
+  if (!vals || typeof window.quickSaveVitals !== 'function') {
+    if (typeof rt.showToast === 'function') rt.showToast(vals ? 'Registro no disponible' : 'Valor no válido', 'error');
+    renderPatientDashboard(null, { settle: false });
+    return;
+  }
+  window.quickSaveVitals(vals);
+  renderPatientDashboard(null, { settle: false });
+}
+
 function handleDashboardAction(action, el) {
   if (action === 'datos') {
     openPatientDatosModal();
+    return;
+  }
+  if (action === 'registro-completo') {
+    if (typeof window.openEstadoActualRegistroModal === 'function') window.openEstadoActualRegistroModal();
+    return;
+  }
+  if (action === 'pegar-some') {
+    if (typeof window.openLabPasteModal === 'function') window.openLabPasteModal();
     return;
   }
   if (action === 'actualizar-labs') {
@@ -244,10 +283,28 @@ function wireDashboardHost(mount) {
     if (!btn || !mount.contains(btn)) return;
     handleDashboardAction(btn.getAttribute('data-dash-action'), btn);
   });
+  mount.addEventListener('change', function (ev) {
+    var input = ev.target;
+    if (input && input.matches && input.matches('[data-vital-quick]')) saveQuickVital(input);
+  });
+  mount.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter' && ev.target && ev.target.matches && ev.target.matches('[data-vital-quick]')) ev.target.blur();
+  });
 }
 
 function wireDashboardOnce() {
   wireDashboardLabRefresh();
+  if (!registroAutoOpenWired) {
+    registroAutoOpenWired = true;
+    // The dashboard can render while another area shows; check again when the patient area comes back.
+    document.addEventListener('rpc-app-tab-changed', function (ev) {
+      if (!ev.detail || ev.detail.tab !== 'nota') return;
+      setTimeout(function () {
+        var inner = rt.getActiveInner() || 'resumen';
+        maybeAutoOpenRegistro(collectDashboardModel(inner, { skipLabs: true }), rt.getActiveId(), inner);
+      }, 0);
+    });
+  }
   wireDashboardHost(document.getElementById('patient-dashboard-mount'));
   if (dashBackWired) return;
   dashBackWired = true;
@@ -302,6 +359,27 @@ function fillDashboardLabs(targets, pid) {
   return true;
 }
 
+var registroAutoOpened = new Set();
+var registroAutoOpenWired = false;
+
+/**
+ * No vitals saved yet → the full-record panel opens by itself, once per patient
+ * per session. Off with localStorage rpc-registro-autoopen = 'off' (E2E harness).
+ */
+function maybeAutoOpenRegistro(model, pid, inner) {
+  if (!pid || inner !== 'resumen' || registroAutoOpened.has(pid)) return;
+  if (typeof rt.getActiveAppTab === 'function' && rt.getActiveAppTab() !== 'nota') return;
+  if (!dashboardHasNoVitals(model) || document.querySelector('.modal-backdrop.open')) return;
+  try {
+    if (localStorage.getItem('rpc-registro-autoopen') === 'off') return;
+  } catch (_e) {
+    void _e;
+  }
+  if (typeof window.openEstadoActualRegistroModal !== 'function') return;
+  registroAutoOpened.add(pid);
+  window.openEstadoActualRegistroModal();
+}
+
 export function renderPatientDashboard(hostEl, opts) {
   opts = opts || {};
   wireDashboardOnce();
@@ -316,12 +394,14 @@ export function renderPatientDashboard(hostEl, opts) {
   if (!targets.length) return;
   var deferLabs = !!opts.deferLabs;
   var pid = rt.getActiveId();
-  var html = renderDashboardHtml(collectDashboardModel(inner, { skipLabs: deferLabs }));
+  var model = collectDashboardModel(inner, { skipLabs: deferLabs });
+  var html = renderDashboardHtml(model);
   targets.forEach(function (mount) {
     wireDashboardHost(mount);
     mount.innerHTML = html;
     watchDashboardFit(mount);
   });
+  maybeAutoOpenRegistro(model, pid, inner);
   syncInterconsultaModeChrome();
   if (!deferLabs) {
     if (typeof opts.onLabsReady === 'function') opts.onLabsReady();

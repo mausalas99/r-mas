@@ -236,7 +236,7 @@ await r.finish('Listado de problemas — one screen, busy patient', async () => 
   await page.waitForTimeout(700);
   await app.close();
   ({ app, page, pageErrors } = await r.launch());
-  await page.locator('#app-main-tablist').waitFor({ state: 'visible', timeout: 30000 });
+  await page.locator('.topbar-area-btn').waitFor({ state: 'visible', timeout: 30000 });
   await goArea(page, 'nota');
   await openPatient(page, A);
   await page.evaluate(() => window.switchInnerTab('listado'));
