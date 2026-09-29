@@ -26,6 +26,9 @@ export const QUOTAS = {
   labShardMaxBytes: 1_900_000,
   /** Align with desktop chunkCloudOps (6 lab ops × few patients). */
   maxOpsPerMutation: 16,
+  /** Pushes made only of `tombstones/*` ops are tiny (a few hundred bytes
+   * each) but each push rewrites the room core, so allow more per push. */
+  maxTombstoneOpsPerMutation: 64,
   /** Reject monster HTTP bodies before decrypt/loadRoomState. Raised 8/2026
    * (was 220KB) — real lab batches were hitting up to ~1.3MB and getting
    * rejected as payload_too_large. */

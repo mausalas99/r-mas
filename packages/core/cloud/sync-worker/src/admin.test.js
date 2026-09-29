@@ -175,8 +175,8 @@ describe('buildDeleteUserStatements', () => {
   it('purges sole-occupant owned room before deleting user', async () => {
     const db = fakeDbForDeleteUser({ ownedRoomIds: ['room-solo'] });
     const stmts = await buildDeleteUserStatements(db, 'u1');
-    // 8 room purge stmts + sessions + members + user
-    assert.equal(stmts.length, 11);
+    // 9 room purge stmts + sessions + members + user
+    assert.equal(stmts.length, 12);
     assert.ok(db.sqlLog.some((s) => s.includes('DELETE FROM rooms')));
     assert.ok(db.sqlLog.some((s) => s.includes('DELETE FROM mutations')));
     assert.ok(db.sqlLog.some((s) => s.includes('active_room_id = NULL')));
@@ -187,7 +187,7 @@ describe('buildPurgeRoomStatements', () => {
   it('clears active_room_id before deleting the room row', () => {
     const db = fakeDbForDeleteUser();
     const stmts = buildPurgeRoomStatements(db, 'room-fork');
-    assert.equal(stmts.length, 8);
+    assert.equal(stmts.length, 9);
     assert.match(db.sqlLog[0], /active_room_id = NULL/);
     assert.ok(db.sqlLog.some((s) => s.includes('DELETE FROM rooms')));
   });

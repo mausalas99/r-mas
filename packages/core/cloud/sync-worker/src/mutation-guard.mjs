@@ -51,10 +51,12 @@ export function validateMutationRequest(body, bodyBytes) {
   if (!Array.isArray(ops) || !ops.length) {
     throw new SyncError('invalid_request', 'Se requiere al menos una operación.');
   }
-  if (ops.length > QUOTAS.maxOpsPerMutation) {
+  const tombstonesOnly = ops.every((op) => String(op?.path || '').startsWith('tombstones/'));
+  const maxOps = tombstonesOnly ? QUOTAS.maxTombstoneOpsPerMutation : QUOTAS.maxOpsPerMutation;
+  if (ops.length > maxOps) {
     throw new SyncError(
       'invalid_request',
-      `Demasiadas operaciones en un push (${ops.length}; máx. ${QUOTAS.maxOpsPerMutation}). Actualiza R+.`
+      `Demasiadas operaciones en un push (${ops.length}; máx. ${maxOps}). Actualiza R+.`
     );
   }
 }

@@ -10,7 +10,7 @@ import { readWrappedFields } from './room-dek.js';
 import { ADMIN_ROLES } from './admin-roles.js';
 import { CLOUD_SALAS } from './sala-allowlist.js';
 import { userFromAuthHeader } from './session.js';
-import { loadRoomState } from './sync.js';
+import { loadRoomState, refattenRoomCore } from './sync.js';
 const PROMOTABLE_ROLES = new Set(['admin', 'program_admin', 'member']);
 const OPS_JSON_TRUNC = 500;
 const DEFAULT_MUTATIONS_LIMIT = 50;
@@ -354,6 +354,7 @@ export function buildPurgeRoomStatements(db, roomId) {
     db.prepare('DELETE FROM room_state WHERE room_id = ?').bind(roomId),
     db.prepare('DELETE FROM room_state_labs WHERE room_id = ?').bind(roomId),
     db.prepare('DELETE FROM room_state_lab_sets WHERE room_id = ?').bind(roomId),
+    db.prepare('DELETE FROM room_state_patients WHERE room_id = ?').bind(roomId),
     db.prepare('DELETE FROM tombstones WHERE room_id = ?').bind(roomId),
     db.prepare('DELETE FROM rooms WHERE id = ?').bind(roomId),
   ];
@@ -676,6 +677,12 @@ export async function handleAdmin(request, env, subpath) {
   if (rotateMatch && method === 'POST') {
     await requireAdminUser(db, request, env);
     return handleRotateCode(db, request, rotateMatch[1]);
+  }
+
+  const refattenMatch = /^\/rooms\/([^/]+)\/refatten$/.exec(subpath);
+  if (refattenMatch && method === 'POST') {
+    await requireAdminUser(db, request, env);
+    return Response.json({ ok: true, ...(await refattenRoomCore(env, db, refattenMatch[1])) });
   }
 
   const purgeMatch = /^\/rooms\/([^/]+)\/purge$/.exec(subpath);

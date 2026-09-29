@@ -101,6 +101,14 @@ function createInternoDb(opts = {}) {
               return { meta: { changes: 1 } };
             },
             async all() {
+              // loadRoomState: core row + patient rows in one statement.
+              if (sql.includes('UNION ALL') && sql.includes('FROM room_state_patients')) {
+                return {
+                  results: roomState
+                    ? [{ kind: 'core', patient_id: '', ciphertext: roomState.ciphertext, iv: roomState.iv }]
+                    : [],
+                };
+              }
               if (sql.includes('FROM room_state_labs')) {
                 return {
                   results: [...patientLabs.entries()].map(([patient_id, row]) => ({

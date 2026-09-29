@@ -63,6 +63,7 @@ async function commitInternoVitalsOps(env, db, roomId, ops, actorId, clientMutat
       nextState: appliedResult.state,
       legacyShardBytes: freshState.legacyShardBytes,
       labSetBytes: freshState.labSetBytes,
+      shardBaseline: freshState.shardBaseline,
     });
     if (committed.ok) {
       // Same broadcast handleMutations sends. Without it a vital signs entry

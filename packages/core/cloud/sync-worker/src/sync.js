@@ -19,6 +19,7 @@ import {
   tryNoopMutationAck,
   validateMutationRequest,
 } from './mutation-guard.mjs';
+import { joinCoreState, planShardWrites } from './room-state-shard.js';
 import { notifyRoomRevision } from './room-sync-notify.js';
 import { userFromAuthHeader } from './session.js';
 import {
@@ -95,6 +96,23 @@ export function validateOpsSize(ops) {
 }
 
 /**
+ * Core blob carries `patientsSharded`: rebuild the flat state from the
+ * per-patient rows (schema 013). Without the marker these rows are ignored.
+ */
+async function joinPatientShards(env, db, roomId, core, results) {
+  const shards = new Map();
+  // What is stored right now, so a commit can write only shards whose JSON changed.
+  const baseline = { coreJson: JSON.stringify(core), shardJson: new Map(), shardBytes: new Map() };
+  for (const r of results ?? []) {
+    const shard = await decodeRoomState(env, r.ciphertext, r.iv);
+    shards.set(r.patient_id, shard);
+    baseline.shardJson.set(r.patient_id, JSON.stringify(shard));
+    baseline.shardBytes.set(r.patient_id, toUint8Array(r.ciphertext).length);
+  }
+  return { state: joinCoreState(core, shards), baseline };
+}
+
+/**
  * Assemble the full RoomSyncState from the core row + per-patient legacy lab
  * shards + per-set lab shards. Callers never see the split — same flat shape
  * as before sharding.
@@ -107,14 +125,34 @@ export function validateOpsSize(ops) {
  */
 export async function loadRoomState(env, db, roomId, opts = {}) {
   const skipLabShards = !!opts.skipLabShards;
-  const row = await db
-    .prepare('SELECT ciphertext, iv FROM room_state WHERE room_id = ?')
-    .bind(roomId)
-    .first();
+  // Core row and patient rows in ONE statement = one snapshot. Two separate
+  // reads let a commit land between them (old core listing a patient whose row
+  // is already the new tombstone): "Falta el paciente ..." 500s under a bulk
+  // delete, seen on staging 2026-09-28.
+  const { results: stateRows } = await db
+    .prepare(
+      `SELECT 'core' AS kind, '' AS patient_id, ciphertext, iv FROM room_state WHERE room_id = ?
+       UNION ALL
+       SELECT 'patient', patient_id, ciphertext, iv FROM room_state_patients WHERE room_id = ?`
+    )
+    .bind(roomId, roomId)
+    .all();
+  const row = (stateRows ?? []).find((r) => r.kind === 'core');
+  const patientRows = (stateRows ?? []).filter((r) => r.kind === 'patient');
   if (!row) {
     throw new SyncError('not_found', 'Estado de sala no encontrado.');
   }
-  const state = await decodeRoomState(env, row.ciphertext, row.iv);
+  let state = await decodeRoomState(env, row.ciphertext, row.iv);
+  // Bytes held outside the lab shards at load time (core + patient rows).
+  let coreBytesAtLoad = toUint8Array(row.ciphertext).length;
+  /** @type {{ coreJson: string, shardJson: Map<string, string>, shardBytes: Map<string, number> } | null} */
+  let shardBaseline = null;
+  if (state?.patientsSharded) {
+    const joined = await joinPatientShards(env, db, roomId, state, patientRows);
+    state = joined.state;
+    shardBaseline = joined.baseline;
+    for (const bytes of joined.baseline.shardBytes.values()) coreBytesAtLoad += bytes;
+  }
   // Legacy pre-shard rows still carry labSidecars embedded in the core blob.
   const legacyLabSidecars =
     state?.labSidecars && typeof state.labSidecars === 'object' ? state.labSidecars : {};
@@ -126,7 +164,7 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
   const labSetBytes = new Map();
 
   if (skipLabShards) {
-    return { state, legacyShardBytes, labSetBytes };
+    return { state, legacyShardBytes, labSetBytes, coreBytesAtLoad, labsSkipped: true, shardBaseline };
   }
 
   // Whole-patient legacy shard rows (schema 008). Frozen: read here as a base
@@ -163,7 +201,7 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
     labSetBytes.get(pid).set(sid, toUint8Array(setRow.ciphertext).length);
   }
 
-  return { state, legacyShardBytes, labSetBytes };
+  return { state, legacyShardBytes, labSetBytes, coreBytesAtLoad, labsSkipped: false, shardBaseline };
 }
 
 /** @param {unknown[]} ops @returns {Array<{ patientId: string, setId: string }>} lab-sidecar ops */
@@ -205,10 +243,33 @@ export async function commitMutationBatch(env, db, opts) {
     nextState,
     legacyShardBytes,
     labSetBytes,
+    priorLabBytes,
+    shardBaseline,
   } = opts;
 
   const { labSidecars: nextLabSidecars, ...coreState } = nextState;
-  const { ciphertext, iv, storageBytes: coreBytes } = await encodeRoomState(env, coreState);
+  // Per-patient rows (schema 013) only when the flag is on. Off = the fat core
+  // as before, without the `patientsSharded` marker, so the reader ignores any
+  // shard rows left over from an earlier run (this is also the rollback path).
+  const plan = env?.PATIENT_SHARD_WRITE === '1' ? planShardWrites(coreState, shardBaseline) : null;
+  const { ciphertext, iv, storageBytes: coreBytes } = await encodeRoomState(
+    env,
+    plan ? plan.core : coreState
+  );
+  /** @type {Array<{ patientId: string, ciphertext: Uint8Array, iv: Uint8Array, storageBytes: number }>} */
+  const patientWrites = [];
+  let patientBytesTotal = 0;
+  if (plan) {
+    for (const [patientId, shard] of plan.shards) {
+      if (plan.changed.has(patientId)) {
+        const encoded = await encodeRoomState(env, shard);
+        patientWrites.push({ patientId, ...encoded });
+        patientBytesTotal += encoded.storageBytes;
+      } else {
+        patientBytesTotal += shardBaseline?.shardBytes?.get(patientId) || 0;
+      }
+    }
+  }
 
   // Callers that pass real load-time byte maps (the production handleMutations
   // path, via loadRoomState) get accurate accounting. Callers that don't
@@ -262,6 +323,7 @@ export async function commitMutationBatch(env, db, opts) {
   // whole room) is what actually protects this call.
   let batchRawBytes = coreBytes + opsBytes;
   for (const w of setWrites) batchRawBytes += w.storageBytes;
+  for (const w of patientWrites) batchRawBytes += w.storageBytes;
   if (batchRawBytes > QUOTAS.batchRawBytes) {
     throw new SyncError(
       'payload_too_large',
@@ -274,7 +336,11 @@ export async function commitMutationBatch(env, db, opts) {
   for (const perSet of setBytes.values()) {
     for (const bytes of perSet.values()) labTotalBytesAtLoad += bytes;
   }
-  const storageBytes = coreBytes + labTotalBytesAtLoad + labBytesDelta;
+  // Pushes without lab ops skip the lab shards, so the maps are empty and the
+  // total would drop to core-only. The caller passes the lab bytes it derived
+  // from rooms.storage_bytes instead.
+  if (Number.isFinite(priorLabBytes)) labTotalBytesAtLoad = priorLabBytes;
+  const storageBytes = coreBytes + patientBytesTotal + labTotalBytesAtLoad + labBytesDelta;
   if (storageBytes > QUOTAS.storageHardBytes) {
     throw new SyncError(
       'payload_too_large',
@@ -308,25 +374,66 @@ export async function commitMutationBatch(env, db, opts) {
            WHERE id = ? AND revision = ?`
         )
         .bind(nextRevision, storageBytes, now, roomId, expectedRevision),
-      db
-        .prepare(
-          `UPDATE room_state SET ciphertext = ?, iv = ?, updated_at = ?
-           WHERE room_id = ?
+    ];
+    if (!plan || plan.coreChanged) {
+      statements.push(
+        db
+          .prepare(
+            `UPDATE room_state SET ciphertext = ?, iv = ?, updated_at = ?
+             WHERE room_id = ?
+               AND EXISTS (
+                 SELECT 1 FROM mutations
+                 WHERE room_id = ? AND client_mutation_id = ? AND revision = ?
+               )`
+          )
+          .bind(
+            ciphertext,
+            iv,
+            now,
+            roomId,
+            roomId,
+            clientMutationId,
+            nextRevision
+          )
+      );
+    }
+    if (plan?.firstSplit) {
+      statements.push(
+        db
+          .prepare(
+            `DELETE FROM room_state_patients WHERE room_id = ?
              AND EXISTS (
                SELECT 1 FROM mutations
                WHERE room_id = ? AND client_mutation_id = ? AND revision = ?
              )`
-        )
-        .bind(
-          ciphertext,
-          iv,
-          now,
-          roomId,
-          roomId,
-          clientMutationId,
-          nextRevision
-        ),
-    ];
+          )
+          .bind(roomId, roomId, clientMutationId, nextRevision)
+      );
+    }
+    for (const w of patientWrites) {
+      statements.push(
+        db
+          .prepare(
+            `INSERT OR REPLACE INTO room_state_patients (room_id, patient_id, ciphertext, iv, updated_at)
+             SELECT ?, ?, ?, ?, ?
+             FROM mutations WHERE room_id = ? AND client_mutation_id = ? AND revision = ?`
+          )
+          .bind(roomId, w.patientId, w.ciphertext, w.iv, now, roomId, clientMutationId, nextRevision)
+      );
+    }
+    for (const patientId of plan?.removed ?? []) {
+      statements.push(
+        db
+          .prepare(
+            `DELETE FROM room_state_patients WHERE room_id = ? AND patient_id = ?
+             AND EXISTS (
+               SELECT 1 FROM mutations
+               WHERE room_id = ? AND client_mutation_id = ? AND revision = ?
+             )`
+          )
+          .bind(roomId, patientId, roomId, clientMutationId, nextRevision)
+      );
+    }
     for (const w of setWrites) {
       statements.push(
         db
@@ -507,7 +614,7 @@ async function handleMutations(request, env, db, roomId) {
 
   for (let attempt = 0; attempt < MUTATION_COMMIT_ATTEMPTS; attempt++) {
     const roomRow = await db
-      .prepare('SELECT revision FROM rooms WHERE id = ?')
+      .prepare('SELECT revision, storage_bytes FROM rooms WHERE id = ?')
       .bind(roomId)
       .first();
     if (!roomRow) {
@@ -515,9 +622,18 @@ async function handleMutations(request, env, db, roomId) {
     }
     const expectedRevision = Number(roomRow.revision);
     lastNeedPull = baseRevision < expectedRevision;
-    const { state, legacyShardBytes, labSetBytes } = await loadRoomState(env, db, roomId, {
-      skipLabShards: !hasLabSidecarOps,
-    });
+    const { state, legacyShardBytes, labSetBytes, coreBytesAtLoad, labsSkipped, shardBaseline } =
+      await loadRoomState(
+      env,
+      db,
+      roomId,
+      { skipLabShards: !hasLabSidecarOps }
+    );
+    // Lab shards were not read: their size is whatever the last total held
+    // beyond the old core blob.
+    const priorLabBytes = labsSkipped
+      ? Math.max(0, Number(roomRow.storage_bytes || 0) - coreBytesAtLoad)
+      : undefined;
     const appliedResult = applyOps(state, lwwOps);
     /** @type {unknown[]} */
     const sidecarApplied = [];
@@ -544,6 +660,8 @@ async function handleMutations(request, env, db, roomId) {
       nextState: appliedResult.state,
       legacyShardBytes,
       labSetBytes,
+      priorLabBytes,
+      shardBaseline,
     });
     if (committed.ok) {
       // appliedResult.applied only — not sidecarApplied (internoAccessUpsert rows
@@ -567,6 +685,58 @@ async function handleMutations(request, env, db, roomId) {
   throw new SyncError(
     'revision_stale',
     'Otro dispositivo actualizó la sala al mismo tiempo. Reintenta tras sincronizar.'
+  );
+}
+
+/**
+ * Rollback tool for the per-patient split (schema 013): write the room back as
+ * one fat core blob without the `patientsSharded` marker and drop its patient
+ * rows. Set PATIENT_SHARD_WRITE=0 first, or the next push splits it again.
+ * Gated on the revision it read, so a push that lands in between makes this
+ * retry instead of overwriting it. Rooms that were never split are left alone.
+ * @returns {Promise<{ changed: boolean }>}
+ */
+export async function refattenRoomCore(env, db, roomId) {
+  for (let attempt = 0; attempt < MUTATION_COMMIT_ATTEMPTS; attempt += 1) {
+    const roomRow = await db
+      .prepare('SELECT revision, storage_bytes FROM rooms WHERE id = ?')
+      .bind(roomId)
+      .first();
+    if (!roomRow) throw new SyncError('not_found', 'Sala no encontrada.');
+    const revision = Number(roomRow.revision);
+    const { state, coreBytesAtLoad, shardBaseline } = await loadRoomState(env, db, roomId, {
+      skipLabShards: true,
+    });
+    if (!shardBaseline) return { changed: false };
+    const { labSidecars: _labs, ...coreState } = state;
+    const { ciphertext, iv, storageBytes } = await encodeRoomState(env, coreState);
+    if (storageBytes > QUOTAS.batchRawBytes) {
+      throw new SyncError(
+        'payload_too_large',
+        `La sala es demasiado grande para volver a un solo bloque (${QUOTAS.batchRawBytes} bytes).`
+      );
+    }
+    const labBytes = Math.max(0, Number(roomRow.storage_bytes || 0) - coreBytesAtLoad);
+    const now = new Date().toISOString();
+    const gate = 'EXISTS (SELECT 1 FROM rooms WHERE id = ? AND revision = ?)';
+    const results = await db.batch([
+      db
+        .prepare(
+          `UPDATE room_state SET ciphertext = ?, iv = ?, updated_at = ? WHERE room_id = ? AND ${gate}`
+        )
+        .bind(ciphertext, iv, now, roomId, roomId, revision),
+      db
+        .prepare(`DELETE FROM room_state_patients WHERE room_id = ? AND ${gate}`)
+        .bind(roomId, roomId, revision),
+      db
+        .prepare('UPDATE rooms SET storage_bytes = ? WHERE id = ? AND revision = ?')
+        .bind(storageBytes + labBytes, roomId, revision),
+    ]);
+    if (Number(results?.[0]?.meta?.changes ?? 0) === 1) return { changed: true };
+  }
+  throw new SyncError(
+    'revision_stale',
+    'Otro dispositivo actualizó la sala al mismo tiempo. Reintenta.'
   );
 }
 

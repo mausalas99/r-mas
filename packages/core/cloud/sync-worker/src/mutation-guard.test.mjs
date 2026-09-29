@@ -36,6 +36,14 @@ describe('mutation-guard', () => {
     );
   });
 
+  it('allows 64 tombstone-only ops but still rejects 17 mixed ops', () => {
+    const tomb = (n) => Array.from({ length: n }, (_, i) => ({ path: `tombstones/p${i}`, value: {} }));
+    assert.doesNotThrow(() => validateMutationRequest({ ops: tomb(64) }, 100));
+    assert.throws(() => validateMutationRequest({ ops: tomb(65) }, 100), SyncError);
+    const mixed = [...tomb(16), { path: 'entries/p1/fields', value: 1 }];
+    assert.throws(() => validateMutationRequest({ ops: mixed }, 100), SyncError);
+  });
+
   it('acks legacy cloud-lab-backfill with multiple ops without applying', async () => {
     const res = tryLegacyBulkLabBackfillAck(
       'cloud-lab-backfill',

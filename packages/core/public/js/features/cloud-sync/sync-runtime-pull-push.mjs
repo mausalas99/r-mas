@@ -186,13 +186,25 @@ function keyedRepullDone() {
   }
 }
 
+/**
+ * A locked re-pull stays "not done" (the content may open later), but every
+ * retry is a whole-room pull from 0. Wait between tries instead of doing one
+ * per cycle / per WebSocket signal. In-memory: an app restart tries again.
+ */
+const KEYED_REPULL_RETRY_MS = 10 * 60_000;
+/** @type {Map<string, number>} roomId → time of the last locked re-pull */
+const keyedRepullLockedAt = new Map();
+
 /** Needed once per sala, and only when this device holds its key. @param {string} roomId */
 function needsKeyedRepull(roomId) {
-  return !!getCachedRoomDek(roomId) && !keyedRepullDone().has(String(roomId));
+  if (!getCachedRoomDek(roomId) || keyedRepullDone().has(String(roomId))) return false;
+  const lockedAt = keyedRepullLockedAt.get(String(roomId));
+  return lockedAt == null || Date.now() - lockedAt >= KEYED_REPULL_RETRY_MS;
 }
 
 /** @param {string} roomId */
 function markKeyedRepullDone(roomId) {
+  keyedRepullLockedAt.delete(String(roomId));
   try {
     const done = keyedRepullDone();
     done.add(String(roomId));
@@ -279,6 +291,7 @@ async function runPullLatest(pctx) {
     const labIngress = pollMobile ? await recordLabPullIngress(result) : null;
     await finalizePull(pctx, result, since, opsCount, labIngress);
     if (keyedRepull && !result?.locked) markKeyedRepullDone(roomId);
+    else if (keyedRepull) keyedRepullLockedAt.set(String(roomId), Date.now());
   } finally {
     if (freshJoin) settleFreshPull();
   }
