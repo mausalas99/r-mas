@@ -3512,7 +3512,7 @@ html.dark #lab-output-box .out-indent {
 .lab-bulk-preview-rawtext summary {
   cursor: pointer;
   list-style: none;
-  color: var(--text-muted);
+  color: var(--text);
   font-weight: 500;
 }
 .lab-bulk-preview-rawtext summary::-webkit-details-marker {
