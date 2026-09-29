@@ -9,6 +9,7 @@ import {
   decryptOpsFromPull,
   decryptRoomStateFromPull,
   hasLockedOpValue,
+  describeLockedOps,
   listContentFieldEntries,
 } from './cloud-sync-crypto-wire.mjs';
 import { noteServerDate } from './cloud-sync-clock.mjs';
@@ -108,7 +109,9 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
     pull: async (roomId, since, opts) => {
       const q = new URLSearchParams({ since: String(since ?? 0) });
       if (opts?.mobile) q.set('mobile', '1');
+      const t0 = Date.now();
       const data = await req(`/rooms/${roomId}/pull?${q.toString()}`);
+      if (data && typeof data === 'object') data.pullMs = Date.now() - t0;
       const dek = getRoomDek(roomId);
       // `locked` rides back on the result so the runtime can hold the local
       // revision back. Anything still ciphertext here is dropped by pull-apply;
@@ -116,15 +119,27 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
       let locked = false;
       if (Array.isArray(data?.ops)) {
         data.ops = await decryptOpsFromPull(dek, data.ops);
-        if (hasLockedOpValue(data.ops)) locked = true;
+        if (hasLockedOpValue(data.ops)) {
+          locked = true;
+          data.lockedOps = [{ hasKey: !!dek }, ...describeLockedOps(data.ops)];
+        }
       }
       if (data?.state) {
         data.state = await decryptRoomStateFromPull(dek, data.state);
-        if (listContentFieldEntries(data.state).some((e) => isEncryptedEnvelope(e.value))) {
+        const lockedEntries = listContentFieldEntries(data.state).filter((e) => isEncryptedEnvelope(e.value));
+        if (lockedEntries.length) {
           locked = true;
+          // Paths only, never values: names what pins the cursor in the diagnostics trace.
+          data.lockedOps = [
+            ...(data.lockedOps || []),
+            { count: lockedEntries.length, hasKey: !!dek },
+            ...lockedEntries.slice(0, 5).map((e) => ({ path: String(e.path || '') })),
+          ];
         }
       }
-      if (locked) {
+      // Ciphertext that survives a loaded key is a wrong-key envelope: a retry gives the
+      // same bytes, and holding the cursor back re-pulls the whole state forever.
+      if (locked && !dek) {
         markRoomUnprotected(roomId);
         data.locked = true;
       }

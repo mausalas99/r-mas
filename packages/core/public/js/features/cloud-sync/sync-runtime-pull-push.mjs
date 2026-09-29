@@ -110,9 +110,13 @@ function applyPushRevision(applyServerRevision, pushResult) {
  * @param {number} opsCount
  * @param {boolean} [locked]
  */
-function reconcileServerRevision(pctx, revision, since, opsCount, locked) {
+function reconcileServerRevision(pctx, revision, since, opsCount, locked, lockedOps, pullMs) {
   if (locked) {
-    recordCloudSyncTrace('pull_locked', { since, opsCount });
+    recordCloudSyncTrace('pull_locked', { since, opsCount, pullMs, lockedOps: lockedOps ?? null });
+    // lastErrors outlives the trace, which WebSocket revision signals push out in seconds.
+    if (lockedOps?.length) {
+      recordCloudSyncError({ op: 'pull', code: 'pull_locked', message: JSON.stringify(lockedOps) });
+    }
     return;
   }
   const next = Number(revision);
@@ -286,7 +290,7 @@ async function runPullLatest(pctx) {
     const result = await pullWithKeyRetry(api, roomId, since, pollMobile);
     const opsCount = pullOpsCount(result);
     if (result?.revision != null) {
-      reconcileServerRevision(pctx, Number(result.revision), since, opsCount, !!result.locked);
+      reconcileServerRevision(pctx, Number(result.revision), since, opsCount, !!result.locked, result.lockedOps, result.pullMs);
     }
     const labIngress = pollMobile ? await recordLabPullIngress(result) : null;
     await finalizePull(pctx, result, since, opsCount, labIngress);

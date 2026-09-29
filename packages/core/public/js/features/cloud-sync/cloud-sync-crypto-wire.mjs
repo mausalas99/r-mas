@@ -215,14 +215,27 @@ export async function decryptOpsFromPull(dek, ops) {
  * for an `entries/{id}` or `entries/{id}/fields` path, not as the value itself.
  * @param {unknown[]} ops
  */
+function isLockedOp(op) {
+  const value = /** @type {any} */ (op)?.value;
+  if (isEncryptedEnvelope(value)) return true;
+  if (!value || typeof value !== 'object') return false;
+  return PATIENT_LOCKED_FIELD_KEYS.some((key) => isEncryptedEnvelope(value[key]));
+}
+
 export function hasLockedOpValue(ops) {
-  if (!Array.isArray(ops)) return false;
-  return ops.some((op) => {
-    const value = /** @type {any} */ (op)?.value;
-    if (isEncryptedEnvelope(value)) return true;
-    if (!value || typeof value !== 'object') return false;
-    return PATIENT_LOCKED_FIELD_KEYS.some((key) => isEncryptedEnvelope(value[key]));
-  });
+  return Array.isArray(ops) && ops.some(isLockedOp);
+}
+
+/** Path + clock of up to 5 ops still ciphertext — no values, safe for diagnostics. @param {unknown[]} ops */
+export function describeLockedOps(ops) {
+  if (!Array.isArray(ops)) return [];
+  return ops
+    .filter(isLockedOp)
+    .slice(0, 5)
+    .map((op) => {
+      const o = /** @type {any} */ (op);
+      return { path: String(o.path || ''), updatedAt: String(o.updatedAt || ''), actorId: String(o.actorId || '') };
+    });
 }
 
 /**

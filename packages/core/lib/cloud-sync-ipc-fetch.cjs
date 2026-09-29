@@ -10,6 +10,10 @@ const CLOUD_SYNC_API_PATH = /\/api\/sync\/v1\//;
  * fast instead of hanging silently. */
 const FETCH_TIMEOUT_MS = 20_000;
 
+/** A pull far behind the room returns the whole encrypted state; 20s cut it off
+ * before it ever landed, so the cursor never moved and every retry asked again. */
+const PULL_TIMEOUT_MS = 90_000;
+
 /** @param {string} url */
 function assertAllowedCloudSyncUrl(url) {
   const u = new URL(String(url || ''));
@@ -48,7 +52,7 @@ function buildNetFetchInit(payload) {
     method: payload?.method || 'GET',
     headers: payload?.headers || {},
     body: payload?.body != null && payload.body !== '' ? payload.body : undefined,
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    signal: AbortSignal.timeout(/\/rooms\/[^/]+\/pull(\?|$)/.test(String(payload?.url || '')) ? PULL_TIMEOUT_MS : FETCH_TIMEOUT_MS),
   };
 }
 
