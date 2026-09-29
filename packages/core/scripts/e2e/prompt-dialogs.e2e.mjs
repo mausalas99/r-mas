@@ -236,6 +236,39 @@ await r.finish('prompt() callers use the in-app dialog', async () => {
   check('template Reemplazar → replaced', (await dieta.inputValue()) === 'Dieta de plantilla', await dieta.inputValue());
   await shot(page, 'indica-after');
 
+  // ── 7. Full backup import: standard file, then legacy purge-ghosts wrapper ─
+  await closeToasts(page);
+  await goArea(page, 'nota');
+  await pressSettingsButton('exportDataBackup');
+  const fullFile = await waitFile(/^R-plus-respaldo-.*\.json$/);
+  const fullPayload = fullFile ? JSON.parse(fs.readFileSync(fullFile, 'utf8')) : null;
+  check('full backup export wrote a file with the 3 patients', fullPayload?.format === 'r-plus-backup' && fullPayload.data.patients.length === 3, fullPayload?.data?.patients?.length);
+  const reloaded = async () => {
+    await page.waitForTimeout(1500);
+    await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
+  };
+  await page.locator('#backup-file-input').setInputFiles(fullFile);
+  await dialog.waitFor({ state: 'visible' });
+  check('standard full backup asks a destructive confirm naming the 3 patients', /3 pacientes en el archivo/.test(await dialog.innerText()));
+  await dialog.getByRole('button', { name: 'Continuar' }).click();
+  await reloaded();
+  const afterFull = await visiblePatientCount(page);
+  check('standard full backup restores the same 3 patients', afterFull === 3, afterFull);
+
+  const ghost = { ...fullPayload.data.patients[0], id: 'ghost-e2e-1', registro: '7000013-3', name: 'DEMO DIALOGO FANTASMA' };
+  const legacyFile = path.join(r.downloadsDir, 'legacy-purge-ghosts.json');
+  fs.writeFileSync(
+    legacyFile,
+    JSON.stringify({ format: 'r-plus-purge-ghosts-backup', version: 1, exportedAt: fullPayload.exportedAt, local: fullPayload, host: { bundleEntriesByRoom: { 'room-1': [{ patient: ghost }] } } }),
+  );
+  await page.locator('#backup-file-input').setInputFiles(legacyFile);
+  await dialog.waitFor({ state: 'visible' });
+  check('legacy purge-ghosts backup is accepted and counts the host-only patient (4)', /4 pacientes en el archivo/.test(await dialog.innerText()));
+  await dialog.getByRole('button', { name: 'Continuar' }).click();
+  await reloaded();
+  const afterLegacy = await visiblePatientCount(page);
+  check('legacy purge-ghosts import recovers the host-only patient (3 → 4)', afterLegacy === 4, afterLegacy);
+
   check('no page errors', pageErrors.length === 0, pageErrors);
   await app.close();
 });

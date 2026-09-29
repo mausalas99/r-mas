@@ -58,6 +58,7 @@
     "e2e:manejo-receta": "node scripts/e2e/manejo-receta.e2e.mjs",
     "e2e:nube-sync": "node scripts/e2e/nube-sync.e2e.mjs",
     "e2e:guardia-handoff": "node scripts/e2e/guardia-handoff.e2e.mjs",
+    "e2e:staging-entrega-targets": "node scripts/e2e/nube-staging-entrega-targets.e2e.mjs",
     "e2e:equipos-panel": "node scripts/e2e/equipos-panel.e2e.mjs",
     "e2e:nube-panel": "node scripts/e2e/nube-panel.e2e.mjs",
     "e2e:admin-panel": "node scripts/e2e/admin-panel.e2e.mjs",

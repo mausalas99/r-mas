@@ -68,7 +68,8 @@ export function createRun(name, { hints: runHints = false } = {}) {
         ...process.env,
         R_PLUS_VERIFY_MODE: '1',
         R_PLUS_USER_DATA: userDataDir,
-        R_PLUS_LAN_HTTP_PORT: String(lanPort),
+        // run-all.mjs / E2E_PORT_OFFSET give each parallel run its own port block.
+        R_PLUS_LAN_HTTP_PORT: String(lanPort + (Number(process.env.E2E_PORT_OFFSET) || 0)),
       },
       timeout: 60000,
     });

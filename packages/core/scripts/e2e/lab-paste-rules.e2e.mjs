@@ -57,6 +57,11 @@
  *       confirm, or the confirm accepts but leaves the set in history
  *     - "Tablas del reporte SOME" shows the wrong department's rows, or does
  *       not close
+ *     - urine Na/K after a gas are read as gas Na/K; UAG missing
+ *     - a full disk (quota) on "Vista de laboratorio" crashes instead of a warning
+ *     - "Labs externos" typing is pulled back into the paste box (stacked
+ *       modal focus trap), blank cells save a set, or values are not normalized
+ *     - the citoquímico fluid name (Tipo) is taken from a department header
  *
  * Artifact: e2e-artifacts/lab-paste-rules/<run-id>/ (report.json + screenshots).
  *
@@ -74,6 +79,7 @@ import {
 } from './harness.mjs';
 import { TABLE, header, fullLabs, gas } from './some-fixtures.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../../public/js/lab-bulk-paste.mjs';
+import { OLDER_DEMO_SOME_LAB_REPORT } from '../../public/js/tour-demo-some-lab.mjs';
 
 const UNO = { exp: '7000001-1', name: 'DEMO REGLAS UNO', room: '301' };
 const DOS = { exp: '7000002-2', name: 'DEMO REGLAS DOS', room: '302' };
@@ -732,6 +738,245 @@ await r.finish('SOME paste rules', async () => {
   check('"Eliminar" on the lab card asks a destructive confirm, then removes that set from history',
     /Eliminar este conjunto/.test(delConfirmTitle) && !daysAfterDelete.includes('07/07/2026'),
     { delConfirmTitle, daysAfterDelete });
+
+  // ── Breadth block (gap rows): BH extendida, RetC, diff/frotis, order, NIVEL, clipboard, Labs externos ──
+  const bh = (when, ret = '') =>
+    header(TRES, when) + 'HEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\n' + TABLE +
+    'HGB\tB\t8.84\tg/dL\t12.20 - 18.10\nHCT\tB\t25.5\t%\t37.7 - 53.7\nWBC\tA\t9.0\tK/uL\t4.00 - 11.00\nPLT\t*\t172\tK/uL\t142 - 424\n' + ret;
+  const retOnly = (when, v) =>
+    header(TRES, when) + 'HEMATOLOGIA\nDIFERENCIAL MANUAL\n' + TABLE + 'RETICULOCITOS\n' + TABLE +
+    `RETICULOCITOS\n*\n${v}\n%\t0.5 - 1.5\n`;
+  await pasteAndSave(bh('Jan 3 2026 8:00AM') + '\n\n' + retOnly('Jan 3 2026 8:30AM', 5.0));
+  sets = await daySets(TRES, '03/01/2026');
+  check('BH row keeps token order Hb Hto Ret RetC Leu Plt; Ret 5 → RetC 2.83 regenerativa (not arregenerativa)',
+    sets.length === 1 && /BH Hb 8\.84 Hto 25\.5 Ret 5 RetC 2\.83 \(regenerativa\) Leu 9 Plt 172/.test(sets[0].text),
+    sets.map((s) => s.text));
+  check('BH altered values (Hb, Hto, Ret 5) are flagged, Leu 9 and Plt 172 are not',
+    (await alteredValues()).join('|') === '8.84|25.5|5', await alteredValues());
+  await pasteAndSave(retOnly('Jan 4 2026 8:30AM', 1.0));
+  sets = await daySets(TRES, '04/01/2026');
+  check('Ret-only day (no Hto) shows Ret without RetC and without a Hb', sets.length === 1 && /BH Ret 1$/.test(sets[0].text), sets.map((s) => s.text));
+
+  await pasteAndSave(header(TRES, 'Jan 5 2026 8:00AM') + 'QUIMICA CLINICA\nCREATININA EN SANGRE\n' + TABLE +
+    'CREATININA EN SANGRE\t\nA\n1.6\nmg/dL\t0.6 - 1.4\n');
+  sets = await daySets(TRES, '05/01/2026');
+  check('creatinine without BUN: no BUN/CR is invented, eTFG still computed', sets.length === 1 && /QS Cr 1\.6 eTFG \d+/.test(sets[0].text) && !/BUN/.test(sets[0].text), sets.map((s) => s.text));
+
+  await pasteAndSave(header(TRES, 'Jan 6 2026 8:00AM') + 'QUIMICA CLINICA\nVANCOMICINA\n' + TABLE +
+    'VANCOMICINA\t\n*\n18\nug/mL\t10 - 20\nLIPASA SERICA\t\nA\n1244\nU/L\t8 - 57\n');
+  sets = await daySets(TRES, '06/01/2026');
+  check('real serum VANCOMICINA level → NIVEL Vanco 18; lipase alone in its own single LIPASA row, flagged altered',
+    sets.length === 1 && /NIVEL Vanco 18 LIPASA Lip 1244$/.test(sets[0].text) && (await alteredValues()).join('|') === '1244', sets.map((s) => s.text));
+  check('no LIPASA row on a day without lipase', !(await daySets(TRES, '03/01/2026')).some((s) => /LIPASA/.test(s.text)));
+
+  await pasteAndSave(header(TRES, 'Jan 7 2026 8:00AM') + 'HEMATOLOGIA\nDIMERO D\n' + TABLE + 'DIMERO D\t\nA\n1850\nng/mL\t0 - 500\n');
+  sets = await daySets(TRES, '07/01/2026');
+  check('DIMERO D report → COAG DD 1850, flagged altered', sets.length === 1 && /COAG DD 1850$/.test(sets[0].text) && (await alteredValues()).includes('1850'), sets.map((s) => s.text));
+
+  await pasteAndSave(header(TRES, 'Jan 9 2026 8:00AM') + 'HEMATOLOGIA\nDIFERENCIAL MANUAL\n' + TABLE +
+    'SEGMENTADOS\n*\n60\n%\nLINFOCITOS\n*\n30\n%\nBANDAS\n*\n4\n%\nEOSINOFILOS\n*\n2\n%\nBASOFILOS\n*\n1\n%\n' +
+    'FROTIS DE SANGRE PERIFERICA\n' + TABLE + 'FROTIS DE SANGRE PERIFERICA\n*\nHIPOCROMIA +\n');
+  sets = await daySets(TRES, '09/01/2026');
+  check('differential-only day → "BH: Dif. Seg Lin Eos Baso Band" line + FROTIS Cal row, no Hb',
+    sets.length === 1 && /BH: Dif\. Seg 60% Lin 30% Eos 2% Baso 1% Band 4% FROTIS Cal HIPOCROMIA \+/.test(sets[0].text) && !/\bHb\b/.test(sets[0].text), sets.map((s) => s.text));
+
+  await pasteAndSave(gas(TRES, 'Jan 10 2026 8:00AM', '7.36') + '\n\n' + header(TRES, 'Jan 10 2026 8:20AM') +
+    'HEMATOLOGIA\nTIEMPO DE PROTROMBINA Y TROMBOPLASTINA\nTIEMPO DE PROTROMBINA\tA\n14.20\nSEG.\t10.25 - 13.20\nINR\t*\n1.22\n' +
+    'TIEMPO DE TROMBOPLASTINA\t*\n30.9\nSEG\t29.1 - 38.4\n\n' + fullLabs(TRES, 'Jan 10 2026 8:30AM'));
+  sets = await daySets(TRES, '10/01/2026');
+  const full = sets[0]?.text || '';
+  const at = (k) => full.search(new RegExp(`(^|\\s)${k}\\s`));
+  check('full-day set order is BH → QS → ESC → PFHs → GASES → COAG (COAG after GASES)',
+    sets.length === 1 && ['BH', 'QS', 'ESC', 'PFHs', 'GASES', 'COAG'].map(at).every((v, i, a) => v >= 0 && (i === 0 || v > a[i - 1])), full);
+  check('QS/ESC/PFHs keep every field of the union (CPK-free, Amil, Alb, Ca)', /Amil 68/.test(full) && /Alb 4\.1/.test(full) && /\bCa 8\.8\b/.test(full) && !/\bCPK\b/.test(full), full);
+  check('AG 14.8, cAG 14.5 and Delta-Delta 0.9 are computed with the gas', /AG 14\.8 cAG 14\.5 Delta-Delta 0\.9/.test(full), full);
+  const alt10 = await alteredValues();
+  check('COAG TP 14.2 / TTP 30.9 / INR 1.22 read right; TP and INR flagged altered, TTP not',
+    /COAG TP 14\.2 TTP 30\.9 INR 1\.22/.test(full) && alt10.includes('14.2') && alt10.includes('1.22') && !alt10.includes('30.9'), alt10);
+
+  // Clipboard content of the "Copiar" button: no star, <strong> on altered, <br> line breaks.
+  await pasteAndSave(fullLabs(TRES, 'Jan 8 2026 8:00AM'));
+  await daySets(TRES, '08/01/2026');
+  await page.locator('#lab-copy-fab').click();
+  await page.waitForTimeout(600);
+  const [clipText, clipHtml] = await app.evaluate(({ clipboard }) => [clipboard.readText(), clipboard.readHTML()]);
+  check('"Copiar" text is plain lines "08/01" then BH/QS/ESC/PFHs, with no "*" flags',
+    /^08\/01\nBH Hb 11\.85 Hto 38\.4/.test(clipText) && /\nQS Glu 94 Cr 1\.35/.test(clipText) && !clipText.includes('*'), clipText.slice(0, 200));
+  check('"Copiar" HTML bolds altered values (<strong>11.85</strong>) and breaks lines with <br>',
+    clipHtml.includes('<strong>11.85</strong>') && clipHtml.includes('<br>QS ') && !clipHtml.includes('<strong>38.4'), clipHtml.slice(0, 200));
+  await closeToasts(page);
+  const inOrder = (text, toks) => toks.every((t, i, a) => text.indexOf(t) >= 0 && (i === 0 || text.indexOf(t) > text.indexOf(a[i - 1])));
+  const clipLine = (k) => clipText.split('\n').find((l) => l.startsWith(k + ' ')) || '';
+  check('demo report golden: BH/QS/ESC/PFHs rows hold every value in order (not only the derived ones)',
+    inOrder(clipLine('BH'), ['Hb 11.85', 'Hto 38.4', 'VCM 82', 'HCM 26.1', 'Leu 6.12', 'Neu 3.88', 'Plt 248']) &&
+      inOrder(clipLine('QS'), ['Glu 94', 'Cr 1.35', 'BUN 22', 'AU 7.4', 'COL 142', 'TGL 118']) &&
+      inOrder(clipLine('ESC'), ['Na 138', 'Cl 102', 'K 3.9', 'Ca 8.8']) && inOrder(clipLine('PFHs'), ['Alb 4.1', 'Amil 68']),
+    clipText);
+
+  // "Vista de laboratorio" → BH extendida while every storage write throws (full disk / quota).
+  let prefsBtn = page.locator('[data-onclick="openLabDisplayPrefsModal"]:visible').first();
+  if (!(await prefsBtn.count())) {
+    await page.locator('#lab-output-section .lab-output-more-btn').click();
+    prefsBtn = page.locator('[data-onclick*="openLabDisplayPrefsModal"]:visible, [data-onclick-2*="openLabDisplayPrefsModal"]:visible').first();
+  }
+  await prefsBtn.click();
+  await page.locator('#lab-display-prefs-backdrop.open').waitFor({ state: 'visible', timeout: 8000 });
+  const prefWarns = [];
+  const onWarn = (m) => { if (m.type() === 'warning') prefWarns.push(m.text()); };
+  page.on('console', onWarn);
+  const prefErrs = pageErrors.length;
+  const outBefore = await page.locator('#lab-output-box').innerText();
+  await page.evaluate(() => {
+    globalThis.__realSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function () { const e = new Error('QuotaExceededError'); e.name = 'QuotaExceededError'; throw e; };
+  });
+  const bhExtSwitch = page.locator('label.rpc-switch:has(#lab-pref-bh-extended)');
+  await bhExtSwitch.click();
+  await page.waitForTimeout(400);
+  const outAfter = await page.locator('#lab-output-box').innerText();
+  await page.evaluate(() => { Storage.prototype.setItem = globalThis.__realSetItem; });
+  page.off('console', onWarn);
+  // The pref is not kept in memory: a failed write leaves the view as it was (no half state).
+  check('full storage: "BH extendida" toggle does not crash, warns "failed to write rpc-lab-output-prefs-v1", view unchanged',
+    pageErrors.length === prefErrs && prefWarns.some((w) => /failed to write rpc-lab-output-prefs-v1/.test(w)) && outAfter === outBefore,
+    { newErrors: pageErrors.slice(prefErrs), prefWarns: prefWarns.slice(0, 3) });
+  await bhExtSwitch.click(); // back to the default view (storage works again)
+  await page.keyboard.press('Escape');
+  await page.locator('#lab-display-prefs-backdrop').waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
+
+  // Older demo report + venous-gas-only report, full golden rows.
+  await pasteAndSave(OLDER_DEMO_SOME_LAB_REPORT.replace(/9000095-7/g, TRES.exp).replace('DEMO PÉREZ JUAN', TRES.name)
+    .replace('Mar 05 2026 7:18AM', 'Feb 10 2026 7:18AM'));
+  sets = await daySets(TRES, '10/02/2026');
+  const older = sets.map((s) => s.text).join(' ');
+  check('older demo report golden: BH Hb 10.2 Hto 35.8 VCM 81 Leu 5.4 Plt 198; QS Glu 108 Cr 1.55 BUN 28 BUN/CR 18.1 COL 155 TGL 132; ESC Na 134 K 3.5',
+    inOrder(older, ['Hb 10.2', 'Hto 35.8', 'VCM 81', 'Leu 5.4', 'Plt 198', 'Glu 108', 'Cr 1.55', 'BUN 28', 'BUN/CR 18.1', 'COL 155', 'TGL 132', 'Na 134', 'K 3.5']),
+    older);
+  const olderAlt = await alteredValues();
+  check('older demo report flags Hb/Hto/Glu/Cr/BUN/Na/K altered, not VCM/Leu/Plt',
+    ['10.2', '35.8', '108', '1.55', '28', '134', '3.5'].every((v) => olderAlt.includes(v)) && !['81', '5.4', '198'].some((v) => olderAlt.includes(v)), olderAlt);
+  await pasteAndSave(gas(TRES, 'Feb 12 2026 8:00AM', '7.39'));
+  sets = await daySets(TRES, '12/02/2026');
+  const gasAlt = await alteredValues();
+  check('venous-gas-only report → one GASES row "pH 7.39 pCO2 35 pO2 60 Lactato 0.7 … 21.2", pCO2/pO2/Lactato/HCO3 flagged',
+    sets.length === 1 && /^GASES pH 7\.39 pCO2 35 pO2 60 Lactato 0\.7 \S+ 21\.2/.test(sets[0].text) && ['35', '60', '0.7', '21.2'].every((v) => gasAlt.includes(v)) && !gasAlt.includes('7.39'),
+    { sets, gasAlt });
+
+  // Corrected reticulocytes: Hto 30 with Ret 4 (2.67) and the Ret 3 boundary (exactly 2 → regenerativa).
+  const bhHto = (when, hct, ret) =>
+    header(TRES, when) + 'HEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\n' + TABLE +
+    `HGB\tB\t9.9\tg/dL\t12.20 - 18.10\nHCT\tB\t${hct}\t%\t37.7 - 53.7\n` + '\n' + retOnly(when.replace('8:00', '8:10'), ret);
+  await pasteAndSave(bhHto('Feb 6 2026 8:00AM', 30, 4.0));
+  const ret4 = (await daySets(TRES, '06/02/2026')).map((s) => s.text).join(' ');
+  await pasteAndSave(bhHto('Feb 7 2026 8:00AM', 30, 3.0));
+  const ret3 = (await daySets(TRES, '07/02/2026')).map((s) => s.text).join(' ');
+  check('Hto 30 + Ret 4 → RetC 2.67 regenerativa', /RetC 2\.67 \(regenerativa\)/.test(ret4), ret4);
+  check('boundary Hto 30 + Ret 3 → RetC 2 read as regenerativa, not arregenerativa', /RetC 2(\.0+)? \(regenerativa\)/.test(ret3), ret3);
+
+  // Anion gap without albumin (no cAG) and urinary anion gap next to a gas.
+  await pasteAndSave(header(TRES, 'Feb 8 2026 8:00AM') + 'QUIMICA CLINICA\nCLORO\n' + TABLE + 'CLORO\t\t*\t104\tmmol/L\t101.0 - 110.0\n' +
+    'SODIO\n' + TABLE + 'SODIO\t\t*\t140\tmmol/L\t135.0 - 145.0\n\n' + gas(TRES, 'Feb 8 2026 8:10AM', '7.36'));
+  const agDay = (await daySets(TRES, '08/02/2026')).map((s) => s.text).join(' ');
+  check('Na 140, Cl 104, HCO3 21.2, no albumin → AG 14.8 and no cAG', /\bAG 14\.8\b/.test(agDay) && !/\bcAG\b/.test(agDay), agDay);
+  // Same report as the gas: UAG is read from urine electrolytes in the report's chemistry.
+  const urine = (na, k, cl) => '\nQUIMICA CLINICA\nELECTROLITOS URINARIOS\n' + TABLE +
+    `SODIO EN ORINA\n*\n${na}\n135 - 145\nPOTASIO EN ORINA\n*\n${k}\nCLORO EN ORINA: ${cl}\n`;
+  await pasteAndSave(gas(TRES, 'Feb 9 2026 8:00AM', '7.30') + urine(40, 22, 34));
+  const uag1 = (await daySets(TRES, '09/02/2026')).map((s) => s.text).join(' ');
+  await pasteAndSave(gas(TRES, 'Feb 11 2026 8:00AM', '7.30') + urine(20, 10, 50));
+  const uag2 = (await daySets(TRES, '11/02/2026')).map((s) => s.text).join(' ');
+  check('urinary anion gap next to a gas: Na 40 K 22 Cl 34 → UAG 28; Na 20 K 10 Cl 50 → UAG -20',
+    /\bUAG 28\b/.test(uag1) && /\bUAG -20\b/.test(uag2), { uag1, uag2 });
+  check('urine Na/K are not read as blood-gas Na/K in the GASES row', !/GASES[^A-Z]*\bNa 40\b/.test(uag1) && !/GASES[^A-Z]*\bNa 20\b/.test(uag2), { uag1, uag2 });
+
+  // EGO renders last in a full day (BH → … → GASES → EGO).
+  await pasteAndSave(fullLabs(TRES, 'Feb 14 2026 8:00AM') + '\n\n' + gas(TRES, 'Feb 14 2026 8:10AM', '7.36') + '\n\n' +
+    header(TRES, 'Feb 14 2026 8:20AM') + EGO);
+  const egoDay = (await daySets(TRES, '14/02/2026')).map((s) => s.text).join(' ');
+  const pos = (k) => egoDay.search(new RegExp(`(^|\\s)${k}:?\\s`));
+  check('full day with urinalysis: BH → QS → ESC → PFHs → GASES → EGO, EGO last',
+    ['BH', 'QS', 'ESC', 'PFHs', 'GASES', 'EGO'].map(pos).every((v, i, a) => v >= 0 && (i === 0 || v > a[i - 1])), egoDay);
+
+  // D-dimer with the FEU unit line + letterhead.
+  const dd = (when, v, extra = '') => header(TRES, when) + 'HEMATOLOGIA\nDIMERO D\n' + TABLE + `DIMERO D\t\nA\n${v}\nng/mL\t0 - 500\n` + extra;
+  await pasteAndSave(dd('Feb 16 2026 8:00AM', 881, 'UEF (UNIDADES EQUIVALENTES DE FIBRINOGENO)\nCampo 90001234 Labo -647* LABX 90001\n'));
+  const dd881 = (await daySets(TRES, '16/02/2026')).map((s) => s.text).join(' ');
+  check('D-dimer 881 with the "UEF (… FIBRINOGENO)" unit line and a letterhead → COAG DD 881, no Fib', /COAG DD 881\b/.test(dd881) && !/\bFib\b/.test(dd881), dd881);
+
+  // Citoquímico fluid name (Tipo): read from "CITOQUIMICO DE" / * / name, never a department header.
+  const peri = (await daySets(TRES, '02/05/2026')).map((s) => s.text).join(' ');
+  check('peritoneal citoquímico shows the fluid name LIQUIDO PERITONEAL', /LIQUIDO PERITONEAL/.test(peri), peri.slice(0, 300));
+  const cito = (when, tail) => header(TRES, when) + 'QUIMICA CLINICA\nCITOQUIMICO DE LIQUIDOS CORPORALES\n' + TABLE +
+    'DENSIDAD\t\n*\n1.015\nGLUCOSA\t\n*\n90.0\nmg/dL\t\nPROTEINAS\t\n*\n2000\nmg/dL\t\n' + tail;
+  const bact = 'BACTERIOLOGIA\nCITOQUIMICO DE LIQUIDOS CORPORALES\n' + TABLE + 'ASPECTO\t\n*\nCLARO\nGRAM\t\n*\nNEGATIVO\n';
+  await pasteAndSave(cito('Feb 2 2026 8:00AM', 'CITOQUIMICO DE\t\n*\n\n' + bact));
+  const c2 = (await daySets(TRES, '02/02/2026')).map((s) => s.text).join(' ');
+  await pasteAndSave(cito('Feb 3 2026 8:00AM', 'CITOQUIMICO DE BACTERIOLOGIA\n' + bact));
+  const c3 = (await daySets(TRES, '03/02/2026')).map((s) => s.text).join(' ');
+  await pasteAndSave(cito('Feb 4 2026 8:00AM', 'CITOQUIMICO DE LIQUIDO PLEURAL\n' + bact));
+  const c4 = (await daySets(TRES, '04/02/2026')).map((s) => s.text).join(' ');
+  check('"CITOQUIMICO DE" with an empty cell before the BACTERIOLOGIA header → no Tipo BACTERIOLOGIA', /1\.015/.test(c2) && !/BACTERIOLOGIA/.test(c2), c2);
+  check('one-line "CITOQUIMICO DE BACTERIOLOGIA" → no Tipo BACTERIOLOGIA', /1\.015/.test(c3) && !/BACTERIOLOGIA/.test(c3), c3);
+  check('one-line "CITOQUIMICO DE LIQUIDO PLEURAL" → fluid name LIQUIDO PLEURAL shown', /LIQUIDO PLEURAL/.test(c4), c4);
+
+  // "Pegar SOME" modal aria state + "Labs externos" manual entry (synthetic BH).
+  await openPatient(TRES);
+  await page.locator('#btn-lab-paste').click();
+  const pasteBackdrop = page.locator('#lab-paste-modal-backdrop');
+  check('"Pegar SOME" opens the paste modal (open class, aria-hidden=false)',
+    (await pasteBackdrop.getAttribute('aria-hidden')) === 'false' && (await pasteBackdrop.evaluate((e) => e.classList.contains('open'))));
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  check('Escape closes the paste modal (aria-hidden=true)', (await pasteBackdrop.getAttribute('aria-hidden')) === 'true');
+
+  // "Labs externos" (inside "Pegar SOME") → manual BH/VIRAL entry saved to today's history.
+  const manualModal = page.locator('#lab-manual-entry-modal');
+  const cell = (k) => page.locator(`#lab-manual-fields input[data-field-key="${k}"]`);
+  async function openManual(type, hora) {
+    await page.locator('#btn-lab-paste').click();
+    await page.locator('#btn-lab-manual-entry').click();
+    await manualModal.waitFor({ state: 'visible' });
+    await page.locator('#lab-manual-type').selectOption(type);
+    await page.locator('#lab-manual-hora').fill(hora);
+  }
+  async function saveManual() {
+    await page.locator('#lab-manual-entry-confirm').click();
+    await manualModal.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    await closeToasts(page);
+  }
+  const now = new Date();
+  const today = [now.getDate(), now.getMonth() + 1].map((n) => String(n).padStart(2, '0')).join('/') + '/' + now.getFullYear();
+  await openManual('BH', '06:00');
+  const manualTypes = await page.locator('#lab-manual-type option').evaluateAll((os) => os.map((o) => o.value));
+  check('"Labs externos" offers BH, QS, ESC, PFHs, GASES, TIR, ENDO; BH shows an Hb cell; the paste modal hands off (closes)',
+    ['BH', 'QS', 'ESC', 'PFHs', 'GASES', 'TIR', 'ENDO'].every((t) => manualTypes.includes(t)) && (await cell('Hb').isVisible()) &&
+      (await pasteBackdrop.getAttribute('aria-hidden')) === 'true', manualTypes);
+  await cell('Hb').fill('   ');
+  await cell('Leu').fill(' ');
+  await page.locator('#lab-manual-entry-confirm').click();
+  const emptyToast = page.locator('.toast', { hasText: 'Llena al menos un valor' });
+  await emptyToast.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+  check('"Labs externos" with only blank cells saves nothing ("Llena al menos un valor", modal stays open)',
+    (await emptyToast.isVisible()) && (await manualModal.isVisible()) && !(await days()).includes(today));
+  await closeToasts(page);
+  await cell('Hb').fill('12,4');
+  await cell('Leu').fill('8.1');
+  await saveManual();
+  await openManual('BH', '12:00');
+  await cell('Hb').fill('9.7*');
+  await saveManual();
+  await openManual('VIRAL', '18:00');
+  await cell('VDRL').fill('No reactivo');
+  await saveManual();
+  sets = await daySets(TRES, today);
+  const manualAltered = await alteredValues();
+  check('manual BH "12,4" / empty Hto / "8.1" saves "BH Hb 12.4 Leu 8.1" (comma → dot, blank cell omitted)',
+    sets.some((s) => s.hora === '06:00' && /\bBH Hb 12\.4 Leu 8\.1$/.test(s.text)), sets);
+  check('manual BH "9.7*" keeps the star as the altered flag (9.7 shown altered, 12.4 not)',
+    sets.some((s) => s.hora === '12:00' && /\bBH Hb 9\.7$/.test(s.text)) && manualAltered.includes('9.7') && !manualAltered.includes('12.4'),
+    { sets, manualAltered });
+  check('manual VIRAL VDRL "No reactivo" saves one token "VDRL No_reactivo"',
+    sets.some((s) => s.hora === '18:00' && /VIRAL VDRL No_reactivo/.test(s.text)), sets);
 
   check('no page errors', pageErrors.length === 0, pageErrors);
   await app.close();

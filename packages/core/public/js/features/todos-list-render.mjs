@@ -429,6 +429,8 @@ function collectTodoRowsById(container) {
 
 function markNewTodoRows(root, prevRows) {
   root.querySelectorAll('.wb-row[data-todo-id]').forEach(function (row) {
+    // Closed rows were never tracked in prevRows: fading them in on every repaint flashed an open «Cerrados».
+    if (row.closest('.todo-group--listo')) return;
     if (!prevRows[row.dataset.todoId]) row.classList.add('row-enter');
   });
 }

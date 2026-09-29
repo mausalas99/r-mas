@@ -883,6 +883,13 @@ export function findOpenHemodialisisReminder(activeId) {
   );
 }
 
+/** The registro form is built once and reused: re-read the HD reminder on every open. */
+export function refreshRegistroLead(form, activeId) {
+  var old = form.querySelector('.ea-registro-lead');
+  if (old) old.remove();
+  form.insertAdjacentHTML('afterbegin', buildRegistroLeadHtml(activeId));
+}
+
 function buildRegistroLeadHtml(activeId) {
   var reminder = findOpenHemodialisisReminder(activeId);
   var reminderHtml = reminder

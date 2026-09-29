@@ -8,6 +8,7 @@ import { esc } from '../dom-escape.mjs';
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { registerLabPanelRuntime, rt } from './lab-panel-runtime-state.mjs';
 import { pushExternalLabHistory, finalizeLabHistoryImport } from './lab-panel-workbench-store.mjs';
+import { closeLabPasteModal } from './lab-paste-modal.mjs';
 import {
   renderLabHistoryPanel,
   loadLabHistorySetIntoOutput,
@@ -132,6 +133,10 @@ export function openLabManualEntryModal() {
     return;
   }
 
+  // Opened from inside "Pegar SOME": the modal registry ranks the paste modal
+  // above this one, so its focus trap would pull every keystroke back into
+  // #lab-input. Hand off like Procesar does.
+  closeLabPasteModal();
   fillTypeSelect();
   renderFieldGrid();
   syncModalChrome();

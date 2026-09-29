@@ -2,7 +2,7 @@ const API_PREFIX = '/api/sync/v1';
 
 import { cloudSyncHttpFetch } from './api-transport.mjs';
 import { getCachedAppVersion } from './app-version.mjs';
-import { getCachedRoomDek, markRoomUnprotected } from './room-dek.mjs';
+import { getCachedRoomDek, markRoomUnprotected, notePulledPlaintext } from './room-dek.mjs';
 import { isEncryptedEnvelope } from './crypto.mjs';
 import {
   encryptOpsForPush,
@@ -109,7 +109,10 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
       const q = new URLSearchParams({ since: String(since ?? 0) });
       if (opts?.mobile) q.set('mobile', '1');
       const data = await req(`/rooms/${roomId}/pull?${q.toString()}`);
+      // The backfill sweep must judge what is stored, not what this device can read.
+      if (opts?.raw) return data;
       const dek = getRoomDek(roomId);
+      notePulledPlaintext(roomId, dek, data);
       // `locked` rides back on the result so the runtime can hold the local
       // revision back. Anything still ciphertext here is dropped by pull-apply;
       // advancing past it would make the next `since` pull skip it forever.

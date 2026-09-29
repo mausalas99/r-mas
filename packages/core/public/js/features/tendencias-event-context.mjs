@@ -213,12 +213,14 @@ function drawEventMarkerTag(ctx, x, top, color, text, chartArea) {
  * @param {{ indices: number[], byIndex: Map<number, object> }|null|undefined} markerMap
  * @param {{ compact?: boolean }} [opts]
  */
-export function createTendEventMarkerPlugin(markerMap, opts) {
+export function createTendEventMarkerPlugin(initialMarkerMap, opts) {
   const compact = !!(opts && opts.compact);
   return {
     id: 'tendEventMarkers' + (compact ? 'Compact' : 'Detail'),
     afterDatasetsDraw: function (chart) {
       if (chart._tendEventsHidden) return;
+      // An in-place chart update (event added while the pane is open) hands over a fresh map.
+      var markerMap = chart._tendMarkerMap || initialMarkerMap;
       if (!markerMap || !markerMap.indices || !markerMap.indices.length) return;
       const ctx = chart.ctx;
       const yScale = chart.scales.y;

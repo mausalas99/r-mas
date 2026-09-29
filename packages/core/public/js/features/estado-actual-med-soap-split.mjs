@@ -2,7 +2,6 @@
  * Partición de campos de medicamentos para plantilla SOAP de Estado Actual.
  */
 import {
-  INSULIN_NM_LINE_RE,
   RESCATE_NM_LINE_RE,
   partitionNmMedLines,
 } from '../nm-antidiabetic-detect.mjs';
@@ -72,7 +71,6 @@ export function partitionNmMedsForSoap(fieldVal) {
   var insulin = [];
   part.antidiabeticos.forEach(function (line) {
     if (
-      INSULIN_NM_LINE_RE.test(line) &&
       !RESCATE_NM_LINE_RE.test(line) &&
       !/^INSULINA\s+PREPRANDIAL:/i.test(line) &&
       !/BOMBA\s+DE\s+INSULINA/i.test(line)

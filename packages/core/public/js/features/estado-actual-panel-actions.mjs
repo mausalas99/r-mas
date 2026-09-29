@@ -65,6 +65,7 @@ import {
   readIoExtraPartsFromForm,
   readIoEventsFromForm,
   applyParsedVitals,
+  refreshRegistroLead,
 } from './estado-actual-panel-registro.mjs';
 import { getEaRegistroEditId, editarEstadoActualMedicion } from './estado-actual-panel-registro-edit.mjs';
 import {
@@ -120,7 +121,7 @@ function parseFormMedicion() {
       ing: ingRaw.some(function (v) { return String(v).trim() !== ''; }) ? ioTurnoAggregate(ingTotals) : null,
       egr: diuresisValueFromParts(egrParts),
       egrParts: egrParts,
-      egrExtra: egrExtra.map(function (p) { return { kind: p.kind, value: p.value }; }),
+      egrExtra: egrExtra.map(function (p) { return { kind: p.kind, label: p.label, value: p.value }; }),
       evac: parseIoEvacField(evacEl && 'value' in evacEl ? evacEl.value : ''),
       ingTurnos: ingRaw,
       egrTurnos: egrRaw,
@@ -211,6 +212,8 @@ export function ensureEaRegistroModalForm() {
   }
   var patient = findActivePatient();
   setEaFormOpenPatientId(patient ? patient.id : null);
+  var form = body.querySelector('#ea-form');
+  if (form) refreshRegistroLead(form, patient ? patient.id : null);
   wireEaRegistroForm(patient && patient.monitoreo ? patient.monitoreo : null);
 }
 

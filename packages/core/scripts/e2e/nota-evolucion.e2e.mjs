@@ -54,7 +54,7 @@
 import JSZip from 'jszip';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub, until, goArea, quietHints, waitForBoot } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub, until, goArea, quietHints, waitForBoot, acceptAbxDias } from './harness.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 
 const P1 = { exp: '7000621-1', name: 'DEMO NOTA UNO', room: '521' };
@@ -68,6 +68,10 @@ const INTERROGATORIO = 'DEMO refiere disnea & tos; niega fiebre <38';
 const EVOLUCION = 'N: DEMO alerta\nV: DEMO puntas nasales 2 L\nHD: DEMO estable';
 const ESTUDIOS = '22/09/26\nDEMO QS normal';
 const TX = ['DEMO CEFTRIAXONA 1 G IV CADA 24 H', 'DEMO BORRAR ESTA FILA', 'DEMO PARACETAMOL 1 G VO CADA 8 H'];
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+const SOAP_D = new Date(Date.now() - 2 * 86400000);
+const SOAP_SOME = `${pad2(SOAP_D.getDate())}/${pad2(SOAP_D.getMonth() + 1)}/${SOAP_D.getFullYear()} 08:10:01 a.m.\tMEDICAMENTOS\tPARACETAMOL 1 G SOL INY 100 ML (*)\tVIA INTRAVENOSA\t1 G //\tCADA 8 HORAS\tNW`;
 
 const pad = (n) => String(n).padStart(2, '0');
 const now = new Date();
@@ -194,6 +198,26 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   await page.keyboard.press('Escape');
   check('Escape closes «Datos del paciente»', await until(async () => !(await page.locator('#exp-datos-modal-backdrop.open').count()), 3000));
 
+  // ── Sala › Resumen: no consult band; Interconsultantes catalog ────────
+  check('Sala mode shows no Interconsulta consult band', (await page.locator('.ic-consult-band').count()) === 0);
+  await page.locator('[data-dash-action="ic-add"]').first().click();
+  const icPanel = page.locator('#patient-ic-panel');
+  await icPanel.waitFor({ state: 'visible' });
+  const icChips = await icPanel.locator('[data-ic-toggle]').evaluateAll((els) => els.map((e) => e.textContent.trim()));
+  check('Sala › Interconsultantes offers no «Sala» service', icChips.length > 20 && !icChips.includes('Sala'), icChips.length);
+  const icHues = await icPanel.locator('.ic-cat').evaluateAll((cats) =>
+    cats.map((c) => [...new Set([...c.querySelectorAll('.svc')].map((b) => b.style.getPropertyValue('--h').trim()))].join(',')));
+  check('service chips take one hue per category (médicas 245, quirúrgicas 168, soporte 52)', icHues.join('|') === '245|168|52', icHues);
+  const cardCount = () => page.locator('[data-dash-action="ic-toggle"][data-ic-id="card"]').count();
+  const counts = [];
+  for (let i = 0; i < 3; i += 1) {
+    await icPanel.locator('[data-ic-toggle="card"]').click();
+    counts.push(await cardCount());
+  }
+  check('toggling a service on, off, on adds it once, removes it, adds it once again (no duplicate)', counts.join(',') === '1,0,1', counts);
+  await icPanel.locator('[data-ic-done]').click();
+  await icPanel.waitFor({ state: 'hidden' });
+
   // ── Interconsulta › Nota de evolución ─────────────────────────────────
   await setMode(page, 'interconsulta');
 
@@ -253,6 +277,100 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   await page.waitForTimeout(300);
   check('Escape from the patient view returns to the board',
     !(await page.locator('#ic-board-mount').isHidden()) && (await page.locator('.ic-consult-band').count()) === 0);
+
+  // Board controls: refresh + «+ Agregar» present, no «← Tablero» on the board itself.
+  check('board has «Actualizar pacientes» and «+ Agregar», and no «← Tablero» button',
+    (await page.locator('#ic-board-mount [data-ic-board-refresh]').count()) === 1 &&
+    /\+ Agregar/.test(await page.locator('#ic-board-mount [data-ic-board-add]').innerText()) &&
+    (await page.locator('[data-ic-back-to-board]').count()) === 0);
+
+  // Leaving Interconsulta with a patient open: band gone, chrome and patient view back.
+  await pickPatient(page, P1);
+  check('viewing a patient in Interconsulta: «← Tablero» and the consult band show',
+    (await page.locator('[data-ic-back-to-board]').count()) === 1 && (await page.locator('.ic-consult-band').count()) === 1);
+  await setMode(page, 'sala');
+  const salaChrome = await page.evaluate(() => ({
+    band: document.querySelectorAll('.ic-consult-band').length,
+    back: document.querySelectorAll('[data-ic-back-to-board]').length,
+    icMode: document.documentElement.classList.contains('ic-board-mode'),
+    boardOpen: document.documentElement.classList.contains('ic-board-view-open'),
+    boardHidden: document.getElementById('ic-board-mount').hidden,
+    patientView: document.defaultView.getComputedStyle(document.getElementById('patient-view')).display !== 'none',
+    emptyState: document.defaultView.getComputedStyle(document.getElementById('empty-state')).display !== 'none',
+    sidebar: (() => { const a = document.querySelector('aside.patient-sidebar'); return !!a && a.getClientRects().length > 0; })(),
+  }));
+  check('IC → Sala with a patient open: band and «← Tablero» go, body classes clear, sidebar and patient view return',
+    salaChrome.band === 0 && salaChrome.back === 0 && !salaChrome.icMode && !salaChrome.boardOpen && salaChrome.boardHidden &&
+    salaChrome.patientView && !salaChrome.emptyState && salaChrome.sidebar, salaChrome);
+  await setMode(page, 'interconsulta');
+
+  // ── Team board, on the demo set (⌥⌘⇧I): roles, buckets, lanes, drag ────
+  await page.locator('#ic-board-mount').waitFor({ state: 'visible' });
+  await page.locator('body').click({ position: { x: 5, y: 5 } }).catch(() => {});
+  await page.keyboard.press('Alt+Control+Shift+KeyI');
+  await page.locator('#ic-board-mount .ic-board-lane--guardia').waitFor({ state: 'visible' });
+  await page.locator('#ic-board-mount [data-role="guardia"] .patient-card').first().waitFor({ state: 'visible' });
+  await closeToasts(page);
+  const lanes = () => page.locator('#ic-board-mount').evaluate((mount) =>
+    [...mount.querySelectorAll('.ic-board-lane')].map((l) => ({
+      role: l.dataset.role,
+      title: l.querySelector('.ic-board-lane__title')?.textContent.trim(),
+      headFirst: l.firstElementChild?.classList.contains('ic-board-lane__head') && l.lastElementChild?.classList.contains('ic-board-lane__body'),
+      note: l.querySelector('.ic-board-lane__head .ic-board-empty')?.textContent.trim() || '',
+      drop: l.querySelector('.ic-board-lane__body')?.getAttribute('data-drop-team-id'),
+      buckets: [...l.querySelectorAll('.r4-section-divider')].map((d) => d.textContent.trim()),
+      ids: [...l.querySelectorAll('.patient-card[data-patient-id]')].map((c) => c.getAttribute('data-patient-id')),
+    })));
+  let L = await lanes();
+  const byRole = (role) => L.filter((l) => l.role === role);
+  check('demo board: real patients are hidden while the demo shows',
+    !(await page.locator('#ic-board-mount').innerText()).includes(P1.name) && L.reduce((n, l) => n + l.ids.length, 0) === 12,
+    L.map((l) => l.ids.length));
+  check('lane layout: guardia, 2 activo, postguardia, then «Sin equipo»; every lane has its head before its body',
+    L.map((l) => l.role).join(',') === 'guardia,activo,activo,postguardia,sin-equipo' && L.every((l) => l.headFirst), L.map((l) => l.role));
+  const letter = (l) => 'ABCD'.indexOf(/Equipo Demo ([A-D])/.exec(l.title || '')?.[1] ?? '?');
+  const gL = letter(byRole('guardia')[0]);
+  const pL = letter(byRole('postguardia')[0]);
+  const aL = byRole('activo').map(letter);
+  check('team roles: the guardia letter is on guardia, the letter before it is postguardia, the other two are activo',
+    gL >= 0 && pL === (gL + 3) % 4 && aL.every((x) => x >= 0 && x !== gL && x !== pL) && new Set([gL, pL, ...aL]).size === 4,
+    { gL, pL, aL });
+  check('guardia lane has Preop / Pendientes / Under; VPO and today\'s new consults are in Preop, older follow-ups in Pendientes',
+    byRole('guardia')[0].buckets.join('|') === 'Preop / Nuevas hoy (4)|Pendientes (2)|Under (0)', byRole('guardia')[0].buckets);
+  check('activo lanes have Pendientes and Under only (no Preop)',
+    byRole('activo').every((l) => l.buckets.join('|') === 'Pendientes (2)|Under (0)'), byRole('activo').map((l) => l.buckets));
+  check('postguardia lane says «No presencial hoy», keeps its buckets and stays a drop target',
+    /No presencial hoy/.test(byRole('postguardia')[0].note) && byRole('postguardia')[0].buckets.length === 2 && !!byRole('postguardia')[0].drop,
+    byRole('postguardia')[0]);
+  check('every lane body is a drop target; «Sin equipo» uses an empty team id',
+    L.every((l) => l.drop !== null && l.drop !== undefined) && byRole('sin-equipo')[0].drop === '' && byRole('sin-equipo')[0].ids.length === 2, L.map((l) => l.drop));
+
+  // Drag a today's-new consult from guardia to the first activo lane → it becomes «Pendientes» there.
+  const card = page.locator('#ic-board-mount .patient-card[data-patient-id="ic-demo-new-1"]');
+  const activo1Id = byRole('activo')[0].drop;
+  await card.dragTo(page.locator(`#ic-board-mount .ic-board-lane__body[data-drop-team-id="${activo1Id}"]`));
+  await until(async () => (await lanes()).find((l) => l.drop === activo1Id)?.ids.includes('ic-demo-new-1'), 4000);
+  L = await lanes();
+  const g2 = byRole('guardia')[0];
+  const a2 = L.find((l) => l.drop === activo1Id);
+  check('drag reassign: the card moves lane; on an activo team it counts under Pendientes, not Preop',
+    a2.ids.includes('ic-demo-new-1') && !g2.ids.includes('ic-demo-new-1') &&
+    g2.buckets[0] === 'Preop / Nuevas hoy (3)' && a2.buckets.join('|') === 'Pendientes (3)|Under (0)', { g: g2.buckets, a: a2.buckets });
+  // The change survives leaving and re-entering the board.
+  await page.locator('#ic-board-mount .patient-card[data-patient-id="ic-demo-fu-1"]').click();
+  await page.locator('.ic-consult-band').waitFor({ state: 'visible' });
+  await page.keyboard.press('Escape');
+  await page.locator('#ic-board-mount').waitFor({ state: 'visible' });
+  L = await lanes();
+  check('the drag reassignment is kept after opening a patient and coming back',
+    L.find((l) => l.drop === activo1Id).ids.includes('ic-demo-new-1'));
+  await page.locator('body').click({ position: { x: 5, y: 5 } }).catch(() => {});
+  await page.keyboard.press('Alt+Control+Shift+KeyI');
+  await until(async () => (await page.locator('#ic-board-mount .patient-card[data-patient-id^="ic-demo"]').count()) === 0, 5000);
+  await page.locator('#ic-board-mount .patient-card .p-name').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+  await closeToasts(page);
+  const offTxt = await page.locator('#ic-board-mount').innerText();
+  check('demo off: the demo patients go and the real patients are back on the board', /DEMO (NOTA )?DOS/.test(offTxt) && !/Equipo Demo/.test(offTxt), offTxt.slice(0, 300));
 
   await pickPatient(page, P1);
   await goClinico(page, 'notas');
@@ -403,6 +521,32 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   check('the indicaciones .docx drops the removed section', !ind.text.toUpperCase().includes('DEMO SECCION QUITAR'));
   await r.shot(page, 'indicaciones');
 
+  // ── Interconsulta › Manejo › «Abrir plantilla SOAP» → «Insertar en evolución» ──
+  await closeToasts(page);
+  await goArea(page, 'med');
+  await page.locator('#med-itab-receta').click();
+  await page.locator('#med-import-open-btn').click();
+  await page.locator('#med-input').fill(SOAP_SOME);
+  await page.getByRole('button', { name: 'Procesar receta' }).click();
+  await page.waitForTimeout(400);
+  await acceptAbxDias(page);
+  await closeToasts(page);
+  await page.getByRole('button', { name: 'Abrir plantilla SOAP' }).click();
+  await page.locator('#soap-modal-backdrop.open').waitFor({ state: 'visible' });
+  await page.locator('#soap-dieta').fill('SUPLEMENTO');
+  await page.locator('#soap-kcalkg').fill('25');
+  await page.locator('#soap-kcal').fill('1750');
+  await page.locator('#soap-ing').fill('500');
+  await page.locator('#soap-egr').fill('300');
+  await page.locator('#soap-modal-backdrop .btn-soap-insert').click();
+  await page.locator('#soap-modal-backdrop.open').waitFor({ state: 'hidden' });
+  const soapToast = (await page.locator('.toast').allInnerTexts()).join(' | ');
+  await goClinico(page, 'notas');
+  const soapEv = (await noteState(page)).evolucion || '';
+  const nmLine = soapEv.split('\n').find((l) => l.startsWith('NM:')) || '';
+  check('plantilla SOAP → «Insertar en evolución»: the NM line starts with the diet, then INGRESOS; no «CALCULADA A», no «KCAL/KG»',
+    nmLine.startsWith('NM: DIETA SUPLEMENTO || INGRESOS 500 CC, DIURESIS 300 CC, BALANCE') && !/CALCULADA A|KCAL\/KG/.test(nmLine), { nmLine, soapToast, soapEv: soapEv.slice(0, 200) });
+
   // ── Restart ───────────────────────────────────────────────────────────
   const errors = [...pageErrors];
   await app.close();
@@ -410,6 +554,8 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   await again.page.locator('.topbar-area-btn').waitFor({ state: 'visible', timeout: 30000 });
   await dismissLearnHub(again.page);
   await pickPatient(again.page, P1);
+  const svcAfter = (await again.page.locator('.ic-consult-band [data-ic-req-trigger]').innerText()).trim();
+  check('restart: the picked «Servicio solicitante» is kept', svcAfter === 'Cirugía general', svcAfter);
   await goClinico(again.page, 'notas');
   s = await noteState(again.page);
   await r.shot(again.page, 'after-restart');

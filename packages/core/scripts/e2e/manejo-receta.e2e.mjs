@@ -53,6 +53,8 @@ const A = { exp: '7000007-7', name: 'DEMO MANEJO UNO', room: '307' };
 const B = { exp: '7000008-8', name: 'DEMO MANEJO DOS', room: '308' };
 const C = { exp: '7000010-0', name: 'DEMO MANEJO TRES', room: '310' };
 
+const E = { exp: '7000011-1', name: 'DEMO MANEJO CUATRO', room: '311' };
+
 const pad = (n) => String(n).padStart(2, '0');
 const dmy = (d) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
 const today = new Date();
@@ -89,6 +91,47 @@ const IV_ORAL_LIST = [
   row('09:03', 'MEDICAMENTOS', 'KETOROLACO 30 MG SOL INY', 'VIA INTRAVENOSA', '30 MG //', 'CADA 8 HORAS'),
   row('09:04', 'MEDICAMENTOS', 'RIFAMPICINA/ISONIAZIDA/PIRAZINAMIDA/ETAMBUTOL 150/75/400/300 MG TABLETA',
     'VIA ORAL', '4 TABLETA // DAR LOS LUNES - MIE - VIE *DIA# 7*', 'CADA 24 HORAS'),
+].join('\n');
+
+/** Rich list for patient E: Stanford, insulin pump / rescate / prandial, IV→oral, SOAP families, TB, potassium. */
+let rowN = 0;
+const rowE = (...cols) => row(pad(10 + rowN++), ...cols);
+const med = (nom, via, dosis, fr) => rowE('MEDICAMENTOS', nom, via, dosis, fr);
+const RICH_LIST = [
+  rowE('DIETAS', 'HIPOSODICA PARA DIABETICO', '1800 KCAL'),
+  med('NISTATINA 100000 UI/ML SUSPENSION 60 ML', 'VIA ORAL', '5 ML // PARA SOLUCIÓN STANFORD', 'CADA 6 HORAS'),
+  med('LIDOCAINA 2 % GEL 30 G', 'VIA ORAL', '10 ML // PARA SOLUCIÓN STANFORD', 'CADA 6 HORAS'),
+  med('LORATADINA 10 MG TABLETA', 'VIA ORAL', '10 MG // PARA SOLUCIÓN STANFORD *DIA# 2*', 'CADA 6 HORAS'),
+  med('CLORURO DE SODIO 0.9 % SOL INY 100 ML', 'VIA INTRAVENOSA', '100 ML / VEL.INF: BOMBA EN ALGORITMO 3', 'CADA 24 HORAS'),
+  med('INSULINA HUMANA RAPIDA', 'VIA INTRAVENOSA', '100 UI', '-'),
+  med('INSULINA HUMANA RAPIDA', 'VIA SUBCUTANEA', '3 UI // CRITERIO PRN: EN CASO DE DESTROXTIS ENTRE 181 - 220', 'PRN'),
+  med('INSULINA HUMANA RAPIDA', 'VIA SUBCUTANEA', '5 UI // CRITERIO PRN: EN CASO DE DESTROXTIS ENTRE 221 - 300', 'PRN'),
+  med('INSULINA HUMANA RAPIDA', 'VIA SUBCUTANEA', '6 UI // ANTES DEL DESAYUNO', 'UNICA VEZ'),
+  med('INSULINA HUMANA RAPIDA', 'VIA SUBCUTANEA', '6 UI // ANTES DE LA CENA', 'UNICA VEZ'),
+  med('INSULINA GLARGINA 100 UI/ML SOL INY 3 ML', 'VIA SUBCUTANEA', '20 UI //', 'CADA 24 HORAS'),
+  med('OMEPRAZOL 40 MG SOL INY', 'VIA INTRAVENOSA', '40 MG //', 'CADA 12 HORAS'),
+  med('METRONIDAZOL 500 MG SOL INY 100 ML', 'VIA INTRAVENOSA', '500 MG //', 'CADA 8 HORAS'),
+  med('ONDANSETRON 8 MG SOL INY 4 ML', 'VIA INTRAVENOSA', '8 MG //', 'CADA 8 HORAS'),
+  med('PARACETAMOL 1 G SOL INY 100 ML (*)', 'VIA INTRAVENOSA', '1 G //', 'CADA 8 HORAS'),
+  med('FUROSEMIDA 20 MG SOL INY 2 ML', 'VIA INTRAVENOSA', '40 MG //', 'CADA 12 HORAS'),
+  med('MEROPENEM 1 G SOL INY (*)', 'VIA INTRAVENOSA', '1 G // *DIA# 4*', 'CADA 8 HORAS'),
+  med('VANCOMICINA 500 MG SOL INY (*)', 'VIA INTRAVENOSA', '1 G // *DIA# 4*', 'CADA 12 HORAS'),
+  med('AZITROMICINA 500 MG TABLETA', 'VIA ORAL', '500 MG //', 'CADA 24 HORAS'),
+  med('RIFAMPICINA 300 MG CAPSULA', 'VIA ORAL', '600 MG // *DIA# 5*', 'CADA 24 HORAS'),
+  med('RIFAMPICINA/ISONIAZIDA/PIRAZINAMIDA/ETAMBUTOL 150/75/400/300 MG TABLETA', 'VIA ORAL', '3 TABLETA // *DIA# 5*', 'CADA 24 HORAS'),
+  med('ENALAPRIL 10 MG TABLETA', 'VIA ORAL', '10 MG //', 'CADA 12 HORAS'),
+  med('AMLODIPINO 5 MG TABLETA', 'VIA ORAL', '5 MG //', 'CADA 24 HORAS'),
+  med('CLORURO DE POTASIO 20 MEQ SOL INY 5 ML (+)', 'VIA INTRAVENOSA', '40 MEQ', '-'),
+  med('HARTMANN SOL INY 1000 ML', 'VIA INTRAVENOSA', '1000 ML / VEL.INF: 100 ML/HORA', 'UNICA VEZ'),
+].join('\n');
+/** Two potassium replacements with a saline carrier: the hours come from volume / rate or from "PARA X HORAS". */
+const K_RATE = [
+  med('CLORURO DE POTASIO 20 MEQ SOL INY 5 ML (+)', 'VIA INTRAVENOSA', '80 MEQ', '-'),
+  med('CLORURO DE SODIO 0.9 % SOL INY 1000 ML', 'VIA INTRAVENOSA', '1000 ML / VEL.INF: 50 ML/HORA', 'UNICA VEZ'),
+].join('\n');
+const K_HOURS = [
+  med('CLORURO DE POTASIO 20 MEQ SOL INY 5 ML (+)', 'VIA INTRAVENOSA', '40 MEQ', '-'),
+  med('CLORURO DE SODIO 0.9 % SOL INY 500 ML', 'VIA INTRAVENOSA', '500 ML / VEL.INF: PARA 4 HORAS', 'UNICA VEZ'),
 ].join('\n');
 
 const r = createRun('manejo-receta');
@@ -402,6 +445,183 @@ await r.finish('Manejo + Perfil histórico', async () => {
   });
   check('22 meds: dense rows (≤44 px) and the list fits with no scrolling', dense.dense && dense.rows === 22 && dense.tallest <= 44 && dense.fits, dense);
   await r.shot(page, 'manejo-dense');
+
+  // ── Rich list (patient E): Stanford, insulin, IV→oral, SOAP families, TB, EA, Medicamentos panel ──
+  await goArea(page, 'lab');
+  await pasteAndSave(page, fullLabs(E, 'Jan 14 2026 8:00AM'));
+  await openPatient(page, E);
+  await openManejo();
+  await importSome(RICH_LIST);
+  check('toast counts 24 meds · 1 diet for patient E', await toast(/Manejo actualizado \(24 medicamento\(s\) · 1 dieta\(s\)\)/), await toastTexts());
+  await r.shot(page, 'manejo-rich');
+  const rowsWith = (re) => page.locator('#med-items-list .med-receta-row', { hasText: re });
+  await groups();
+  check('Solución Stanford (3 marked meds) is ONE row, and the 3 parts do not show alone',
+    (await rowsWith(/stanford/i).count()) === 1 && /nistatina.*lidocaina.*loratadina/i.test(flat(await rowsWith(/stanford/i).innerText())) &&
+    (await page.locator('.med-receta-row', { hasText: /^Loratadina/ }).count()) === 0, flat(await rowsWith(/stanford/i).innerText()));
+  check('insulin pump: one «BOMBA DE INSULINA ALGORITMO 3» row, the saline + IV insulin carriers are hidden',
+    (await rowsWith(/BOMBA DE INSULINA ALGORITMO 3/i).count()) === 1 && (await rowsWith(/cloruro de sodio/i).count()) === 0 &&
+    (await rowsWith(/Insulina humana/i).count()) === 0);
+  check('rescate scale is one «Rescates de insulina» row; the 2 prandial doses are one «Insulina preprandial» row; glargina stays its own row',
+    (await rowsWith(/Rescates de insulina/i).count()) === 1 && (await rowsWith(/Insulina preprandial/i).count()) === 1 &&
+    /6 UI SC previo a comidas/i.test(flat(await rowsWith(/Insulina preprandial/i).innerText())) && (await medRow('glargina').count()) === 1);
+  check('IV omeprazol, metronidazol, ondansetrón and furosemida show the oral dose in the turn list',
+    (await Promise.all([['OMEPRAZOL', '40 mg VO c/12 h'], ['METRONIDAZOL', '500 mg VO c/8 h'], ['ONDANSETR', '8 mg VO c/8 h'], ['FUROSEMIDA', '40 mg VO c/12 h']]
+      .map(async ([n, d]) => flat(await medRow(n).locator('.med-row-dose').innerText()) === d))).every(Boolean));
+  check('IV meropenem and vancomicina stay IV, Día advanced 4 → 6',
+    (await Promise.all(['MEROPENEM', 'VANCOMICINA'].map(async (n) => /IV c\/(8|12) h/.test(flat(await medRow(n).locator('.med-row-dose').innerText())) &&
+      flat(await medRow(n).locator('.med-receta-dia').innerText()) === 'Día 6'))).every(Boolean));
+  check('daily RHZE combo: DOTBAL «3 tabletas c/24 h», Día 7; RIFAMPICINA alone is a separate row «600 mg VO c/24 h», Día 7',
+    /Dotbal/.test(flat(await medRow('DOTBAL').innerText())) && /3 tabletas c\/24 h/.test(flat(await medRow('DOTBAL').innerText())) &&
+    flat(await medRow('DOTBAL').locator('.med-receta-dia').innerText()) === 'Día 7' &&
+    flat(await medRow('RIFAMPICINA').first().locator('.med-row-dose').innerText()) === '600 mg VO c/24 h' &&
+    (await page.locator('.med-receta-row', { hasText: /^Rifampicina/ }).count()) === 1);
+  check('SOAP families: abx (metronidazol, meropenem, vancomicina, azitromicina, rifampicina, Dotbal, Stanford) in Antibióticos; enalapril + amlodipino antiHTA; furosemida diuréticos; omeprazol NM',
+    (await Promise.all([['METRONIDAZOL', 'abx'], ['MEROPENEM', 'abx'], ['VANCOMICINA', 'abx'], ['AZITROMICINA', 'abx'], ['DOTBAL', 'abx'],
+      ['ENALAPRIL', 'antihta'], ['AMLODIPINO', 'antihta'], ['FUROSEMIDA', 'diuretico'], ['OMEPRAZOL', 'nm'], ['PARACETAMOL', 'analgesia'], ['ONDANSETR', 'antiemeticos']]
+      .map(async ([n, grp]) => (await groupOf(n)) === grp))).every(Boolean) &&
+    (await page.locator('[data-med-group="abx"] .med-receta-row', { hasText: /stanford/i }).count()) === 1, await groups());
+  check('every class above is pre-ticked for the Nota (SOAP chip on)',
+    (await Promise.all(['METRONIDAZOL', 'MEROPENEM', 'ENALAPRIL', 'FUROSEMIDA', 'OMEPRAZOL'].map((n) => soapOn(n)))).every(Boolean));
+  check('potassium replacement with no saline carrier rate: one «Reposición de potasio 40 mEq» row',
+    /Reposición de potasio\s*40 mEq/.test(flat(await page.locator('.med-receta-row--potassium-repos').innerText())));
+
+  // Discharge text for the rich list
+  await closeToasts(page);
+  await page.locator('#med-egreso-open-btn').click();
+  const egE = page.locator('#med-egreso-modal-backdrop');
+  await egE.waitFor({ state: 'visible' });
+  const fullE = await egE.locator('#med-egreso-modal-list li').allInnerTexts();
+  const has = (re) => fullE.some((l) => re.test(l));
+  check('discharge: OMEPRAZOL → 2 cápsulas de 20 mg; METRONIDAZOL and ONDANSETRÓN → 1 TABLETA (singular)',
+    has(/OMEPRAZOL 20 MG C[AÁ]PSULA: TOMAR 2 C[AÁ]PSULAS \(40 MG\) V[IÍ]A ORAL CADA 12 HORAS/) &&
+    has(/METRONIDAZOL 500 MG TABLETA: TOMAR 1 TABLETA \(500 MG\) V[IÍ]A ORAL CADA 8 HORAS/) &&
+    has(/ONDANSETR[OÓ]N 8 MG TABLETA: TOMAR 1 TABLETA \(8 MG\)/), fullE);
+  check('discharge: paracetamol keeps the full suffix «, SIN SUSPENDER HASTA NUEVO AVISO.»',
+    has(/PARACETAMOL 500 MG TABLETA: TOMAR 2 TABLETAS \(1 G\) V[IÍ]A ORAL CADA 8 HORAS, SIN SUSPENDER HASTA NUEVO AVISO\.$/), fullE.filter((l) => /PARACETAMOL/.test(l)));
+  check('discharge: meropenem and vancomicina stay IV with «DÍA 6 DE TRATAMIENTO»; rifampicina and the TB combo DÍA 7; loratadina DÍA 4',
+    has(/MEROPENEM.*V[IÍ]A INTRAVENOSA.*D[IÍ]A 6 DE TRATAMIENTO/) && has(/VANCOMICINA.*V[IÍ]A INTRAVENOSA.*D[IÍ]A 6 DE TRATAMIENTO/) &&
+    has(/^RIFAMPICINA 300.*D[IÍ]A 7 DE TRATAMIENTO/) && has(/^RIFAMPICINA\/ISONIAZIDA.*3 TABLETA.*D[IÍ]A 7/) && has(/LORATADINA.*D[IÍ]A 4 DE TRATAMIENTO/), fullE);
+  check('discharge: insulin pump line, both rescate tiers, prandial insulin and glargina appear (no raw «||»)',
+    has(/^BOMBA DE INSULINA EN ALGORITMO 3$/) && has(/APLICAR 3 UI EN CASO DE DESTROXTIS ENTRE 181 - 220/) && has(/APLICAR 5 UI EN CASO DE DESTROXTIS ENTRE 221 - 300/) &&
+    fullE.filter((l) => /^INSULINA HUMANA RAPIDA: APLICAR 6 UI/.test(l)).length === 2 && has(/INSULINA GLARGINA.*APLICAR 20 UI/) && !fullE.some((l) => l.includes('||')), fullE.filter((l) => /INSULINA|BOMBA/.test(l)));
+  check('discharge: Stanford parts are listed one by one (component names kept)',
+    has(/^NISTATINA/) && has(/^LIDOCAINA/) && has(/^LORATADINA/), fullE.slice(0, 4));
+  check('diet line: «HIPOSODICA PARA DIABETICO 1800 kcal» (no protein part)', /HIPOSODICA PARA DIABETICO 1800 kcal$/.test((await egE.locator('#med-egreso-modal-summary').innerText()).trim()));
+  await egE.locator('#med-egreso-modal-tab-simple').click();
+  const simpleE = await egE.locator('#med-egreso-modal-list li').allInnerTexts();
+  check('«Nombre + Día»: only name, and «(día N)» for dated meds (loratadina día 4, meropenem día 6); no dose text',
+    simpleE.some((l) => /^LORATADINA 10 MG TABLETA \(d[ií]a 4\)$/.test(l)) && simpleE.some((l) => /^MEROPENEM.*\(d[ií]a 6\)$/.test(l)) &&
+    simpleE.some((l) => /^BOMBA DE INSULINA EN ALGORITMO 3$/.test(l)) && !simpleE.some((l) => /TOMAR|CADA/.test(l)), simpleE);
+  await egE.getByRole('button', { name: 'Cerrar' }).click();
+
+  // Clínico › Medicamentos: dose grid from the SOME frequency, marks, hide
+  const openMedAdmin = async () => {
+    await closeToasts(page);
+    await goArea(page, 'nota');
+    await page.locator('.exp-group-pill[data-group="clinico"]').hover();
+    await page.locator('.exp-group-section[data-section="medAdmin"]').click();
+    await page.locator('#exp-pane-medAdmin .med-admin-panel').waitFor({ state: 'visible' });
+    await page.waitForTimeout(300);
+  };
+  await openMedAdmin();
+  await r.shot(page, 'med-admin');
+  const adminRow = (name) => page.locator('#exp-pane-medAdmin tbody tr', { has: page.locator('.med-cell-name', { hasText: name }) }).first();
+  const doseTimes = async (name) => adminRow(name).locator('td.indicated').evaluateAll((els) => els.map((e) => e.dataset.medAdminKey.split('|')[1]));
+  const hdrs = await page.locator('#exp-pane-medAdmin th.day-hdr').allInnerTexts();
+  check('Medicamentos grid: columns are the union of the schedules (00, 06, 08, 12, 14, 18, 22)', hdrs.join(',') === '00:00,06:00,08:00,12:00,14:00,18:00,22:00', hdrs);
+  const times = { amlo: await doseTimes('AMLODIPINO'), enal: await doseTimes('ENALAPRIL'), mero: await doseTimes('MEROPENEM'), nist: await doseTimes('NISTATINA') };
+  check('dose times follow the frequency: c/24 h = 06; c/12 h = 06,18; c/8 h = 06,14,22; c/6 h = 00,06,12,18',
+    times.amlo.join() === '06:00' && times.enal.join() === '06:00,18:00' && times.mero.join() === '06:00,14:00,22:00' && times.nist.join() === '00:00,06:00,12:00,18:00', times);
+  check('single-dose insulin rows (UNICA VEZ) sit at 08:00; the Día pill shows on dated meds',
+    (await adminRow('INSULINA HUMANA').locator('td.indicated').evaluateAll((els) => els.map((e) => e.dataset.medAdminKey.split('|')[1]))).join() === '08:00' &&
+    /Día 6/.test(await adminRow('MEROPENEM').innerText()));
+  await adminRow('AMLODIPINO').locator('td.indicated').first().click();
+  await adminRow('ENALAPRIL').locator('td.indicated').first().click();
+  await page.waitForTimeout(300);
+  check('clicking a dose marks it «no administrado» (aria-pressed false)',
+    (await adminRow('AMLODIPINO').locator('td[aria-pressed="false"]').count()) === 1 && (await adminRow('ENALAPRIL').locator('td[aria-pressed="false"]').count()) === 1);
+  await adminRow('ONDANSETRON').locator('.med-admin-hide-btn').click();
+  await page.waitForTimeout(300);
+  check('× hides a med from the grid', (await adminRow('ONDANSETRON').count()) === 0);
+  await openPatient(page, A);
+  await openPatient(page, E);
+  await openMedAdmin();
+  check('marks survive a patient switch', (await adminRow('AMLODIPINO').locator('td[aria-pressed="false"]').count()) === 1);
+
+  // Estado Actual proposals, from the Manejo import
+  await openManejo();
+  await closeToasts(page);
+  await page.getByRole('button', { name: 'Enviar a Estado Actual' }).click();
+  check('list of patient E is sent to Estado Actual', await toast(/Propuesta en Estado Actual/), await toastTexts());
+  await closeToasts(page);
+  await goArea(page, 'nota');
+  await page.locator('.exp-group-pill[data-group="clinico"]').hover();
+  await page.locator('.exp-group-section[data-section="estadoActual"]').click();
+  await page.locator('#ea-snapshot').waitFor({ state: 'visible' });
+  const eaPend = (re) => page.locator('.ea-med-pending', { hasText: re });
+  const eaTxt = async (re) => flat(await eaPend(re).first().innerText().catch(() => ''));
+  await r.shot(page, 'ea-proposals');
+  const nmTxt = await eaTxt(/BOMBA DE INSULINA/);
+  check('EA NM proposal: Stanford in ONE fragment, pump, rescates, prandial, glargina, omeprazol, potassium replacement',
+    /SOLUCIÓN STANFORD: NISTATINA 5ML VO C\/6H \+ LIDOCAINA 10ML VO C\/6H \+ LORATADINA 10MG VO C\/6H/.test(nmTxt) &&
+    /BOMBA DE INSULINA EN ALGORITMO 3/.test(nmTxt) && /RESCATES DE INSULINA/.test(nmTxt) && /INSULINA PREPRANDIAL: 6 UI SC PREVIO A COMIDAS/.test(nmTxt) &&
+    /INSULINA GLARGINA 20UI SC C\/24H/.test(nmTxt) && /OMEPRAZOL 40MG VO C\/12H/.test(nmTxt) && /REPOSICIÓN DE POTASIO 40 MEQ/.test(nmTxt), nmTxt);
+  const abxTxt = await eaTxt(/MEROPENEM/);
+  check('EA Antibióticos proposal: Día advanced (meropenem DIA 6, rifampicina DIA 7), Stanford parts not inside it',
+    /MEROPENEM 1 G IV C\/8H DIA 6/.test(abxTxt) && /RIFAMPICINA 600MG VO C\/24H DIA 7/.test(abxTxt) && /DOTBAL 3 TABLETAS C\/24H DIA 7/.test(abxTxt) &&
+    /METRONIDAZOL 500MG VO C\/8H/.test(abxTxt) && !/^.{0,80}NISTATINA/.test(abxTxt.replace(/^.*?Propuesta/, '')), abxTxt);
+  const htaTxt = await eaTxt(/ENALAPRIL/);
+  check('doses marked «no administrado» carry into EA: amlodipino «(NO ADMINISTRADA)», enalapril «(NO ADMINISTRADO, 06:00)»',
+    /AMLODIPINO 5MG VO C\/24H \(NO ADMINISTRADA\)/.test(htaTxt) && /ENALAPRIL 10MG VO C\/12H \(NO ADMINISTRADO, 06:00\)/.test(htaTxt), htaTxt);
+  check('the med hidden in the Medicamentos grid is still a proposal (ondansetrón)', (await eaPend(/ONDANSETR/).count()) >= 1);
+  // Diet proposal lifecycle
+  check('EA shows the SOME diet as a proposal with Confirmar / Descartar', (await page.getByRole('button', { name: 'Confirmar dieta' }).count()) === 1 &&
+    /Dieta importada desde SOME/.test(await page.locator('.estado-actual-panel').innerText()));
+  await page.getByRole('button', { name: 'Confirmar dieta' }).click();
+  await page.waitForTimeout(400);
+  check('Confirmar dieta closes the proposal', (await page.getByRole('button', { name: 'Confirmar dieta' }).count()) === 0);
+  // Med proposal lifecycle: confirm, discard, reclassify
+  await eaPend(/ENALAPRIL/).getByRole('button', { name: 'Confirmar', exact: true }).click();
+  await page.waitForTimeout(400);
+  check('Confirmar moves the antiHTA proposal into the confirmed list', (await eaPend(/ENALAPRIL/).count()) === 0 &&
+    (await page.locator('.ea-estado-clinico .ea-med-item-list', { hasText: /ENALAPRIL/ }).count()) >= 1);
+  await eaPend(/FUROSEMIDA/).getByRole('button', { name: 'Descartar' }).click();
+  await page.waitForTimeout(400);
+  check('Descartar drops the diuréticos proposal', (await eaPend(/FUROSEMIDA/).count()) === 0 &&
+    (await page.locator('.ea-estado-clinico .ea-med-item-list', { hasText: /FUROSEMIDA/ }).count()) === 0);
+  await eaPend(/ONDANSETR/).locator('[data-onclick="toggleEaMedReclassifyPanel"]').click();
+  await eaPend(/ONDANSETR/).locator('[data-ea-med-reclassify-select]').selectOption({ label: 'Analgésicos / antipiréticos' });
+  await eaPend(/ONDANSETR/).getByRole('button', { name: 'Aplicar reclasificación' }).click();
+  await page.waitForTimeout(400);
+  const analg = await eaTxt(/PARACETAMOL/);
+  check('Reclasificar moves ondansetrón into the analgésicos proposal', /ONDANSETR/.test(analg) && /PARACETAMOL/.test(analg), analg);
+  await r.shot(page, 'ea-after-actions');
+  // Descartar dieta (patient B has a diet-only import)
+  await openPatient(page, B);
+  await openManejo();
+  await closeToasts(page);
+  await page.getByRole('button', { name: 'Enviar a Estado Actual' }).click().catch(() => {});
+  await goArea(page, 'nota');
+  await page.locator('.exp-group-pill[data-group="clinico"]').hover();
+  await page.locator('.exp-group-section[data-section="estadoActual"]').click();
+  await page.locator('#ea-snapshot').waitFor({ state: 'visible' });
+  const discardBtn = page.locator('button[data-onclick="discardEaDietProposal"]');
+  const hadDiet = (await discardBtn.count()) === 1;
+  if (hadDiet) { await discardBtn.click(); await page.waitForTimeout(300); }
+  check('Descartar dieta (patient B, AYUNO) removes the diet proposal', hadDiet && (await discardBtn.count()) === 0, { hadDiet });
+
+  // Potassium: volume ÷ rate, and «PARA X HORAS»
+  await openPatient(page, E);
+  await openManejo();
+  await importSome(K_RATE);
+  check('potassium + saline 1000 mL at 50 mL/h → «Reposición de potasio 80 mEq a 20 horas»',
+    /Reposición de potasio\s*80 mEq a 20 horas/.test(flat(await page.locator('.med-receta-row--potassium-repos').innerText().catch(() => ''))),
+    flat(await page.locator('#med-items-list').innerText()).slice(0, 200));
+  await importSome(K_HOURS);
+  check('potassium + saline «PARA 4 HORAS» → «Reposición de potasio 40 mEq a 4 horas»',
+    /Reposición de potasio\s*40 mEq a 4 horas/.test(flat(await page.locator('.med-receta-row--potassium-repos').innerText().catch(() => ''))),
+    flat(await page.locator('#med-items-list').innerText()).slice(0, 200));
 
   check('no page errors', pageErrors.length === 0, pageErrors.slice(0, 5));
   await app.close();

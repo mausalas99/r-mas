@@ -6,7 +6,7 @@ import { cloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 import { isCloudTransientServerError, isCloudUnreachableError } from './cloud-sync-timing.mjs';
 import { createPullPush, dropPullValuesOlderThanPending, isCloudRevisionStaleError } from './sync-runtime-pull-push.mjs';
 import { decryptOpsFromPull, hasLockedOpValue } from './cloud-sync-crypto-wire.mjs';
-import { getCachedRoomDek, markRoomUnprotected } from './room-dek.mjs';
+import { getCachedRoomDek, markRoomUnprotected, notePulledPlaintext } from './room-dek.mjs';
 import {
   cloudSyncErrorCode,
   getLastCloudPushAt,
@@ -263,6 +263,7 @@ async function applyRoomWsOpsMessage(deps, ctx, ops, revision) {
   try {
     const roomId = ctx.getRoomId();
     const dek = roomId ? getCachedRoomDek(roomId) : null;
+    notePulledPlaintext(roomId, dek, { ops });
     const decrypted = await decryptOpsFromPull(dek, ops);
     const wsResult = { ops: decrypted, revision };
     dropPullValuesOlderThanPending(wsResult, deps.outbox?.list?.());

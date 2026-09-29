@@ -64,6 +64,8 @@ const P2 = { exp: '7000412-2', name: 'DEMO SINCRONIA DOS', room: '302' };
 const P3 = { exp: '7000413-3', name: 'DEMO SINCRONIA TRES', room: '303' };
 const P4 = { exp: '7000414-4', name: 'DEMO SINCRONIA CUATRO', room: '304' };
 const P5 = { exp: '7000415-5', name: 'DEMO SINCRONIA CINCO', room: '305' };
+const P8 = { exp: '7000418-8', name: 'DEMO SINCRONIA OCHO', room: '308' };
+const P9 = { exp: '7000419-0', name: 'DEMO SINCRONIA NUEVE', room: '309' };
 /** lib/clinical-salas.mjs CLINICAL_SALA_VALUES === cloud-sync/sala-allowlist.mjs CLOUD_SALAS. */
 const CLOUD_SALAS = ['Sala 1', 'Sala 2', 'Sala E', 'Torre HU', 'Interconsultas', 'UX', 'Eme', 'Área A/Pensionistas'];
 
@@ -80,7 +82,7 @@ const openConexion = async (page, view) => {
   await openNubePanel(page);
   const navOptions = page.locator('[data-cloud-action="nav-options"]');
   // The panel can still be rebuilding its home view (e.g. right after a room switch).
-  if (await until(() => navOptions.isVisible().catch(() => false), 5000)) await navOptions.click();
+  if (await until(() => navOptions.isVisible().catch(() => false), 15000)) await navOptions.click();
   // The status home has its own «Detalles técnicos» row to the same view; use the Opciones one.
   if (view) await page.locator(`.cloud-sync-view[data-cloud-view="options"] [data-cloud-action="nav-view"][data-cloud-view="${view}"]`).click();
 };
@@ -105,17 +107,18 @@ const tapNet = (d) => d.app.evaluate(({ ipcMain }) => {
   if (g.netTapped) return;
   const orig = ipcMain._invokeHandlers.get('cloud-sync-fetch');
   if (!orig) throw new Error('cloud-sync-fetch handler not found');
-  Object.assign(g, { netTapped: true, net: [], block: null });
+  Object.assign(g, { netTapped: true, net: [], block: null, blockStatus: 0 });
   ipcMain.removeHandler('cloud-sync-fetch');
   ipcMain.handle('cloud-sync-fetch', async (e, payload) => {
     const key = `${payload?.method || 'GET'} ${new URL(String(payload?.url || ''), 'http://x').pathname}`;
     const body = typeof payload?.body === 'string' ? payload.body : '';
-    g.net.push({ at: Date.now(), key, paths: [...body.matchAll(/"path":"([^"]+)"/g)].map((m) => m[1]) });
-    if (g.block && new RegExp(g.block).test(key)) return { ok: false, status: 0, statusText: 'e2e offline', data: { error: 'e2e offline' }, retryAfterMs: null };
+    g.net.push({ at: Date.now(), key, bytes: body.length, paths: [...body.matchAll(/"path":"([^"]+)"/g)].map((m) => m[1]) });
+    if (g.block && new RegExp(g.block).test(key)) return { ok: false, status: g.blockStatus, statusText: 'e2e blocked', data: { error: 'e2e blocked' }, retryAfterMs: null };
     return orig(e, payload);
   });
 });
-const netBlock = (d, block) => d.app.evaluate((_, b) => { globalThis.__e2e.block = b; }, block);
+/** Fail matching requests: status 0 = network down, or an HTTP status (503, 404…). null lifts it. */
+const netBlock = (d, block, status = 0) => d.app.evaluate((_, [b, st]) => { Object.assign(globalThis.__e2e, { block: b, blockStatus: st }); }, [block, status]);
 /** Paths of every POST …/mutations a device sent (or tried) since `since`. */
 const pushedPaths = (d, since = 0) => d.app.evaluate((_, s) =>
   globalThis.__e2e.net.filter((x) => x.at >= s && /^POST .*\/mutations$/.test(x.key)).flatMap((x) => x.paths), since);
@@ -238,6 +241,20 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await openNubePanel(B.page);
   const backOnHome = B.page.locator('[data-cloud-action="nav-options"]');
   check('B: reopening the dropdown after close resets to the Conexión home view', await until(() => backOnHome.isVisible(), 5000));
+  await closeConexion(B.page);
+  await until(async () => !(await B.page.locator('#connection-dropdown.open').count()), 3000, 100);
+
+  // ── Ajustes «Nube y equipo ↗» → Conexión home (settings-dropdown buildNubeNavLink) ──
+  await B.page.locator('#btn-open-settings').click();
+  const nubeLink = B.page.locator('.settings-nav-link', { hasText: 'Nube y equipo' });
+  check('B: Ajustes lists «Nube y equipo ↗»', await until(() => nubeLink.isVisible(), 8000));
+  const settingsText = flat(await B.page.locator('#settings-dropdown, .settings-dropdown').first().innerText().catch(() => ''));
+  // openConnectionDropdown(view) has no caller passing a view: Ajustes only has the one link to the home view.
+  check('UNREACHABLE: Ajustes “Abrir…” view buttons (equipo/admin/nube → openConnectionDropdown(view)) — Ajustes has only «Nube y equipo ↗», and no caller in public/js passes a view',
+    !!settingsText && !/Abrir (equipo|administraci[oó]n|diagn[oó]stico|Nube)/i.test(settingsText), settingsText.slice(0, 200));
+  await nubeLink.click();
+  check('B: «Nube y equipo ↗» opens the Conexión home panel (no view arg)', await until(() => backOnHome.isVisible(), 8000)
+    && !(await B.page.locator('.cloud-sync-view[data-cloud-view="options"]').isVisible().catch(() => false)));
   await closeConexion(B.page);
 
   // ── B → A: a new gas for P1, added on B ────────────────────────────────
@@ -372,7 +389,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
 
   // ── Restart A: session remembered, no duplicates ───────────────────────
   await A.app.close();
-  const A2 = await launchDevice('a', 3791);
+  let A2 = await launchDevice('a', 3791);
   const lab2 = A2.page.locator('.topbar-area-btn');
   check('A restarted: no login screen (Recuérdame kept the session)', await until(() => lab2.isVisible(), 30000) && !(await A2.page.locator('[data-sync-mode]').first().isVisible().catch(() => false)));
   await dismissLearnHub(A2.page);
@@ -389,6 +406,10 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await A2.page.locator('[data-cloud-action="logout"]').locator('visible=true').first().click();
   const recoverTab = A2.page.locator('[data-cloud-tab="recover"]');
   await recoverTab.waitFor({ state: 'visible', timeout: 10000 });
+  // Read only: toggling the switch here broke the later createTeam(A2) in 3/3 runs.
+  const rememberLbl = A2.page.locator('#cloud-sync-login-remember-lbl');
+  check('A: login form shows «Recuérdame en este dispositivo» after logout', await until(() => rememberLbl.isVisible(), 8000));
+  check('A: «Recuérdame» is ON by default on the login form', await A2.page.locator('[data-cloud-login-remember]').isChecked().catch(() => false));
   await recoverTab.click();
   const fillRecover = async (code, pass) => {
     await A2.page.locator('[data-cloud-recover-user]').fill(USER_A.username);
@@ -459,8 +480,33 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   const diagHostA2 = A2.page.locator('[data-cloud-nube-diagnostics-host]');
   check('A: Diagnóstico Nube shows the queued offline eventualidad «en espera de envío»',
     await until(() => diagHostA2.locator('.cloud-nube-dash-waiting .cloud-nube-dash-count', { hasText: /^\d+ cambios?$/ }).isVisible(), 10000));
+  check('A: offline Diagnóstico lists the outbox breakdown rows (kind + count)',
+    await until(() => diagHostA2.locator('.cloud-nube-dash-outbox-row').first().isVisible(), 5000));
+  const diagTool = (action) => diagHostA2.locator(`[data-cloud-diag-action="${action}"]`);
+  check('A: offline Diagnóstico shows the «Forzar sync» tool', await diagTool('sync').isVisible());
+  check('A: offline Diagnóstico shows the «Reenviar censo a salas de equipo» tool', await diagTool('repair-team-salas').isVisible());
   await r.shot(A2.page, 'a-diagnostico-nube-offline');
   await closeConexion(A2.page);
+  // A lab paste while offline queues lab sidecars: the prune tool appears only then.
+  await goArea(A2.page, 'lab');
+  await pasteAndSave(A2.page, fullLabs(P8, 'Sep 21 2026 9:00AM'));
+  await openConexion(A2.page, 'nube');
+  const pruneBtn = diagTool('prune-labs');
+  check('A: after an offline lab paste (P8), Diagnóstico shows «Descartar labs en espera»', await until(() => pruneBtn.isVisible(), 10000));
+  const pruneConfirm = A2.page.locator('#cloud-sync-admin-confirm');
+  await pruneBtn.click();
+  const askedFirst = await until(() => pruneConfirm.isVisible(), 5000) && /No se puede deshacer/.test(await pruneConfirm.innerText());
+  await pruneConfirm.locator('[data-approval-cancel]').click();
+  await pruneConfirm.waitFor({ state: 'detached', timeout: 5000 });
+  const keptOnCancel = await pruneBtn.isVisible();
+  await pruneBtn.click();
+  await pruneConfirm.locator('[data-approval-confirm]').click();
+  check('A: «Descartar…» asks first (cannot be undone); cancel keeps the labs queued; confirm drops them and the tool row goes away',
+    askedFirst && keptOnCancel && await until(async () => !(await pruneBtn.isVisible()), 10000), { askedFirst, keptOnCancel });
+  await closeToasts(A2.page);
+  await closeConexion(A2.page);
+  // The P8 paste made P8 active: the receta below must land on P1 again.
+  await openPatient(A2.page, P1);
   check('Worker back up for the final phase', await startWorker());
   await openPatient(B.page, P1);
   await openEventualidades(B.page);
@@ -635,6 +681,61 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await F.app.close();
   await backToLabs(A2.page);
 
+  // ── E2EE: keyless device G, owner backfill sweep, G self-heal (before Admin) ──
+  const G = await launchDevice('g', 3797);
+  await tapNet(G);
+  // No key for G: every GET …/dek fails, like a flaky network on first join (room-dek fetch retries, then flags the room).
+  await netBlock(G, '^GET .*/dek$');
+  await onboardNube(G.page, { username: `demo_g_${tag}`, name: 'Dr. Demo Golf' });
+  await G.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
+  // G cannot open the encrypted team list without the key, so it makes its own team.
+  await G.page.locator('#btn-clinical-team-create-open').click();
+  await G.page.locator('#clinical-team-create-name').fill('EQUIPO DEMO GOLF');
+  await G.page.locator('#clinical-team-create-form [type="submit"]').click();
+  await until(async () => !(await G.page.locator('#clinical-teams-backdrop.open').count()) && !(await G.page.locator('#connection-dropdown.open').count()), 8000, 100);
+  await backToLabs(G.page);
+  await openNubePanel(G.page);
+  const gPanel = G.page.locator('#connection-dropdown');
+  const dekBadge = /a[uú]n no puede leer/i;
+  check('gaps: G (key fetch failing) shows the «datos cifrados que este equipo aún no puede leer» badge (room-dek unprotected)',
+    await until(async () => dekBadge.test(await gPanel.innerText().catch(() => '')), 20000), (await gPanel.innerText().catch(() => '')).slice(0, 300));
+  await closeConexion(G.page);
+  await backToLabs(G.page);
+  await pasteAndSave(G.page, fullLabs(P9, 'Sep 24 2026 8:00AM'));
+  check('gaps: G pushes the P9 expediente in plaintext while it has no key (fail-open, never blocks the doctor)',
+    await until(async () => JSON.stringify(await roomState(roomA.id)).includes(P9.exp), 30000));
+  // Owner reconnect: A restarts and opens ⇄ (bootstrapConexionState runs the backfill sweep).
+  await A2.app.close();
+  A2 = await launchDevice('a', 3791);
+  await A2.page.evaluate(() => {
+    window.__sawUnprotectedToast = false;
+    new MutationObserver(() => {
+      if ([...document.querySelectorAll('.toast')].some((t) => /no est[aá]n protegidos/.test(t.textContent))) window.__sawUnprotectedToast = true;
+    }).observe(document.body, { childList: true, subtree: true });
+  });
+  await A2.page.locator('.topbar-area-btn').waitFor({ timeout: 30000 });
+  await dismissLearnHub(A2.page);
+  await openNubePanel(A2.page);
+  check('gaps: the owner reconnecting re-encrypts what G left in plaintext (room-dek-migrate backfill)',
+    await until(async () => !JSON.stringify(await roomState(roomA.id)).includes(P9.exp), 60000));
+  await A2.page.waitForTimeout(3000);
+  check('gaps: the sweep\'s own re-check finds nothing left: no «algunos datos aún no están protegidos» toast (judges stored ciphertext, not decrypted values)',
+    !(await A2.page.evaluate(() => window.__sawUnprotectedToast)));
+  await closeConexion(A2.page);
+  await netBlock(G, null);
+  await openNubePanel(G.page);
+  check('gaps: G self-heals once the key fetch works again: badge clears without a restart (retryRoomDekIfUnprotected)',
+    await until(async () => !dekBadge.test(await gPanel.innerText().catch(() => '')), 30000));
+  await closeConexion(G.page);
+  await G.page.waitForTimeout(500);
+  await openConexion(G.page, 'equipo');
+  const gJoin = G.page.getByRole('button', { name: 'Unirme' });
+  check('gaps: with the key, G can now open the team list and join EQUIPO DEMO ALFA', await until(() => gJoin.first().isVisible(), 20000));
+  await gJoin.first().click();
+  await until(async () => !(await G.page.locator('#clinical-teams-backdrop.open').count()) && !(await G.page.locator('#connection-dropdown.open').count()), 8000, 100);
+  await G.app.close();
+  await backToLabs(A2.page);
+
   // ── Admin panel: self-promote with the local SYNC_ADMIN_KEY, then every admin tab ──
   await openConexion(A2.page, 'admin');
   await A2.page.locator('[data-admin-key-input]').fill('e2e-admin-key');
@@ -707,6 +808,14 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   const roleToast = A2.page.locator('.toast', { hasText: /Rol actualizado/i });
   check('A: promote-user changes a Nube account\'s role (panel-admin-equipos-summary)', await until(() => roleToast.isVisible(), 10000));
   await closeToasts(A2.page);
+  const shownRows = () => equiposList.locator('.cloud-sync-admin-equipos-row').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().height > 0).length);
+  await A2.page.locator('[data-admin-equipos-search]').fill('zz-no-such-user-' + tag);
+  check('A: Equipos search with no match hides every row', await until(async () => (await shownRows()) === 0, 5000), await shownRows());
+  await A2.page.locator('[data-admin-equipos-search]').fill('');
+  await A2.page.locator('[data-admin-equipos-chip="unassigned"]').click();
+  const activeChips = () => A2.page.locator('[data-admin-equipos-chip].is-active').evaluateAll((els) => els.map((e) => e.getAttribute('data-admin-equipos-chip')));
+  check('A: Equipos chip «Sin equipo» becomes the only active chip', await until(async () => JSON.stringify(await activeChips()) === '["unassigned"]', 5000), await activeChips());
+  await A2.page.locator('[data-admin-equipos-chip="all"]').click();
 
   await A2.page.locator('[role="tab"][data-admin-tab="mutaciones"]').click();
   const mutRoomSel = A2.page.locator('[data-admin-mutations-room]');

@@ -63,6 +63,16 @@ test('procesarLabs incluye iCa en la línea GASES cuando hay Ca++ ionizado', () 
   assert.match(lineaGases, /\biCa 0\.92\*/);
 });
 
+test('procesarLabs: urine Na/K after the gas are not read as gas Na/K', () => {
+  const res = procesarLabs(
+    'GASOMETRIA VENOSA PARCIAL\nPH\t*\t7.30\t\t7.32 - 7.43\nHCO3\tB\t21.2\tmmol/L\t24.0 - 30.0\n' +
+      'URIANALISIS\nEXAMEN GENERAL DE ORINA\nSODIO EN ORINA\n*\n40\n135 - 145\nPOTASIO EN ORINA\n*\n22\n'
+  );
+  const lineaGases = (res.resLabs || []).find((l) => /^GASES\b/.test(l)) || '';
+  assert.match(lineaGases, /pH 7\.3/);
+  assert.doesNotMatch(lineaGases, /\bNa 40\b|\bK 22\b/);
+});
+
 const QS_TEXT = `QUIMICA SANGUINEA
 SODIO	N	140	mmol/L	136 - 146
 CLORO	N	104	mmol/L	98 - 107

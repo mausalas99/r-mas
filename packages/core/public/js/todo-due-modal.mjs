@@ -251,7 +251,10 @@ function readVisiblePresetRowIds() {
 
 function readPresetRowLabel(row) {
   var labelInput = row.querySelector('.todo-due-preset-label-input');
-  return labelInput instanceof HTMLInputElement ? String(labelInput.value || '').trim() : '';
+  if (!(labelInput instanceof HTMLInputElement)) return '';
+  var label = String(labelInput.value || '').trim();
+  // Untouched label = the auto label of the values as first shown; drop it so the chip follows the new values.
+  return label === labelInput.placeholder ? '' : label;
 }
 
 function readPresetRowMode(row, def) {

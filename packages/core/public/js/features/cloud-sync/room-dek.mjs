@@ -27,6 +27,7 @@ import {
   wrapDekForAdmin,
 } from './crypto.mjs';
 import { auditDekEvent, DEK_EVENTS } from './cloud-sync-audit.mjs';
+import { listContentFieldEntries, needsReencryption } from './cloud-sync-crypto-wire.mjs';
 
 /**
  * Off until the Worker's NUBE_VERSION_GATE_ENABLED is on and fleet adoption
@@ -52,10 +53,40 @@ const dekByRoomId = new Map();
  */
 const unprotectedRooms = new Set();
 
+/**
+ * Rooms where a pull on a keyed device showed content still in plaintext —
+ * a teammate without the key pushed it (fail-open). The owner re-sweeps them
+ * (room-dek-migrate.mjs ensureOwnerRoomKey) instead of waiting for a re-login.
+ * @type {Set<string>}
+ */
+const plaintextSeenRooms = new Set();
+
 /** Drops all cached DEKs — call on logout. */
 export function clearRoomDekCache() {
   dekByRoomId.clear();
   unprotectedRooms.clear();
+  plaintextSeenRooms.clear();
+}
+
+/**
+ * A keyed device got ops or a snapshot (before decrypt) that still carry
+ * plaintext content. Called from every pull path: HTTP pull and live WS ops.
+ * @param {string} roomId @param {CryptoKey|null} dek @param {{ ops?: unknown[], state?: object }} data
+ */
+export function notePulledPlaintext(roomId, dek, data) {
+  if (!roomId || !dek) return;
+  const entries = Array.isArray(data?.ops) ? data.ops : listContentFieldEntries(data?.state);
+  if (entries.some((e) => needsReencryption(e?.path, e?.value))) plaintextSeenRooms.add(String(roomId));
+}
+
+/** @param {string} roomId @returns {boolean} */
+export function isRoomPlaintextSeen(roomId) {
+  return plaintextSeenRooms.has(String(roomId || ''));
+}
+
+/** @param {string} roomId */
+export function clearRoomPlaintextSeen(roomId) {
+  plaintextSeenRooms.delete(String(roomId || ''));
 }
 
 /** @param {string} roomId @returns {CryptoKey | null} */

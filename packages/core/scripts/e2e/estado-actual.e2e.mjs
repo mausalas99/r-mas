@@ -174,6 +174,8 @@ async function checkSalaActionBar(page) {
     return { registro: texts.includes('Registro manual'), enviar: texts.includes('Enviar a nota') };
   });
   check('sala mode action bar: solo Registro manual, sin Enviar a nota', bar.registro && !bar.enviar, bar);
+  const barTexts = await page.evaluate(() => Array.from(document.querySelectorAll('.estado-actual-panel button')).map((b) => b.textContent.trim()));
+  check('sala mode action bar: no Guardar, no Copiar indicaciones', !barTexts.some((t) => /^Guardar\b|Copiar indicaciones/.test(t)), barTexts);
 }
 
 async function addMeds(page) {
@@ -286,6 +288,11 @@ async function busyRegistro(page) {
     extraGluOptions.includes('04:00') && !extraGluOptions.includes('08:00') && !extraGluOptions.includes('16:00'),
     extraGluOptions
   );
+  check(
+    'extra glucometría time picker also offers 12:00 and 20:00 and never 00:00',
+    extraGluOptions.includes('12:00') && extraGluOptions.includes('20:00') && !extraGluOptions.includes('00:00'),
+    extraGluOptions
+  );
   await form.locator('[data-ea-glu-remove]').last().click();
   for (const [id, v] of [['ing-t1', '800'], ['ing-t2', '600'], ['ing-t3', '700'], ['egr-t1', '400'], ['egr-t3', '150']]) {
     await form.locator(`#ea-io-${id}`).fill(v);
@@ -387,6 +394,456 @@ async function bombaRegistro(page) {
   await closeToasts(page);
   const hist = await page.locator('#ea-historial').innerText();
   check('bomba readings are saved with their hours', /180/.test(hist) && /165/.test(hist) && /150/.test(hist) && /16:00/.test(hist), hist.slice(0, 300));
+}
+
+
+async function section(name, fn) {
+  try {
+    await fn();
+  } catch (err) {
+    check(`${name}: ran to the end`, false, String((err && err.message) || err).split('\n').slice(0, 3).join(' | '));
+  }
+}
+const dmOf = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+async function submitRegistro(page, form) {
+  await page.locator('.ea-registro-submit').click();
+  await form.waitFor({ state: 'hidden' });
+  await closeToasts(page);
+}
+async function openVitalModal(page, key) {
+  const modal = page.locator('#ea-vital-history-backdrop.open');
+  await page.locator(`#ea-snapshot [data-ea-vital-history="${key}"]`).click();
+  await modal.waitFor({ state: 'visible' });
+  await page.waitForTimeout(300);
+  return modal;
+}
+async function closeVitalModal(page) {
+  await page.keyboard.press('Escape');
+  await page.locator('#ea-vital-history-backdrop.open').waitFor({ state: 'hidden' });
+}
+
+/** Historial: registro after an edit, a row from an earlier day, T/A pairing, first FC entry, Eliminar. */
+async function historialExtras(page) {
+  const rowsN = () => page.locator('.ea-historial-row').count();
+  const n0 = await rowsN();
+  let form = await openRegistro(page);
+  const tasEmpty = (await form.locator('[data-ea-vital="tas"][data-ea-layer-idx="0"]').inputValue()) === '';
+  await setRecordedAt(page, 0);
+  await fillVital(form, 'tas', [111]);
+  await submitRegistro(page, form);
+  const txt = await page.locator('#ea-historial').innerText();
+  check(
+    'a new registro after an edit starts empty and adds its own row; the edited row stays',
+    tasEmpty && (await rowsN()) === n0 + 1 && /TAS 155/.test(txt) && /TAS 111/.test(txt),
+    { tasEmpty, n0, n1: await rowsN() }
+  );
+  const old = new Date(Date.now() - 48 * 3600e3);
+  form = await openRegistro(page);
+  await setRecordedAt(page, 48);
+  await fillVital(form, 'tas', [118]);
+  await fillVital(form, 'tad', [72]);
+  await fillVital(form, 'fc', [70]);
+  await submitRegistro(page, form);
+  const oldRow = page.locator('.ea-historial-row', { hasText: 'TAS 118' }).first();
+  const oldText = await oldRow.innerText();
+  check(
+    'a historial row from an earlier day is labelled with that day, not today',
+    oldText.includes(dmOf(old)) && !oldText.includes(dmOf(new Date())),
+    oldText.slice(0, 60)
+  );
+  let modal = await openVitalModal(page, 'fc');
+  const fcValues = await modal.locator('.ea-vital-history-value').allInnerTexts();
+  const fcStamps = await modal.locator('.ea-vital-history-stamp').allInnerTexts();
+  check(
+    'FC history: the first (oldest) entry is the earlier-day reading with its date',
+    fcValues.at(-1)?.trim() === '70' && fcStamps.at(-1)?.trim() === dmOf(old),
+    { fcValues, fcStamps }
+  );
+  await closeVitalModal(page);
+  modal = await openVitalModal(page, 'bp');
+  const bp = (await modal.locator('.ea-vital-history-value').allInnerTexts()).map((t) => t.replace(/\s+/g, ''));
+  check(
+    'T/A history pairs TAS with the TAD of the same reading (each layer and each registro)',
+    ['155/95', '132/84', '128/78', '118/72'].every((p) => bp.includes(p)) && bp.every((v) => v.includes('/')),
+    bp
+  );
+  await closeVitalModal(page);
+  const n1 = await rowsN();
+  await oldRow.locator('[data-onclick="eliminarEstadoActualMedicion"]').click();
+  await page.waitForTimeout(300);
+  check(
+    'Eliminar removes that historial row only',
+    (await rowsN()) === n1 - 1 && !/TAS 118/.test(await page.locator('#ea-historial').innerText()),
+    { n1, after: await rowsN() }
+  );
+}
+
+/** Registros with 3 NC turns, altered Temp, then 3 quantified turns and a custom source round trip. */
+async function turnsRegistros(page) {
+  let form = await openRegistro(page);
+  await setRecordedAt(page, 0.15);
+  await fillVital(form, 'tas', [130]);
+  await fillVital(form, 'tad', [80]);
+  await fillVital(form, 'temp', [39.2]);
+  const box = form.locator('.ea-vital-box:has([data-ea-vital="temp"][data-ea-layer-idx="0"])');
+  const recHm = (await form.locator('#ea-recorded-at').inputValue()).slice(11, 16);
+  const altTime = await box.locator('[data-ea-altered]').inputValue();
+  check(
+    'altered Temp: the chip is flagged and its clock defaults to the registro time',
+    (await box.evaluate((el) => el.classList.contains('ea-vital-box--altered'))) && (recHm === '00:00' || altTime === recHm),
+    { recHm, altTime }
+  );
+  for (const t of ['t1', 't2', 't3']) {
+    await form.locator(`#ea-io-ing-${t}`).fill('500');
+    await form.locator(`#ea-io-egr-${t}`).fill('NC');
+  }
+  await submitRegistro(page, form);
+  const snap = () => page.locator('#ea-snapshot').innerText();
+  const s1 = await snap();
+  check('3 NC output turns read DIURESIS NC', /DIURESIS NC/.test(s1), s1.slice(s1.indexOf('Egresos'), s1.indexOf('Egresos') + 60));
+  const labels = (await page.locator('#ea-snapshot .ea-snapshot-row-label').allInnerTexts()).map((t) => t.trim());
+  check('snapshot labels: T/A, FC, Temp and SatO₂', ['T/A', 'FC', 'Temp', 'SatO₂'].every((l) => labels.includes(l)), labels);
+  const altRow = await page.locator('#ea-snapshot .ea-snapshot-row--altered').allInnerTexts();
+  check('altered Temp is flagged in the snapshot', altRow.some((t) => /Temp/.test(t) && /39\.2/.test(t)), altRow);
+  const taStamp = await page
+    .locator('#ea-snapshot .ea-snapshot-row', { has: page.locator('.ea-snapshot-row-label', { hasText: /^T\/A$/ }) })
+    .locator('.ea-snapshot-row-stamp')
+    .innerText();
+  check('T/A row carries no stamp when its reading is from today', taStamp.trim() === '', taStamp);
+
+  form = await openRegistro(page);
+  await setRecordedAt(page, 0.07);
+  for (const [t, v] of [['t1', '300'], ['t2', '400'], ['t3', '500']]) {
+    await form.locator(`#ea-io-ing-${t}`).fill('100');
+    await form.locator(`#ea-io-egr-${t}`).fill(v);
+  }
+  await form.locator('#ea-add-io-extra').selectOption('__custom__');
+  const custom = form.locator('[data-ea-io-extra-row]').last();
+  await custom.locator('[data-ea-io-extra-custom]').fill('Sonda nasogástrica');
+  await custom.locator('[data-ea-io-extra-value]').fill('250');
+  await submitRegistro(page, form);
+  const s2 = await snap();
+  check('3 quantified output turns add up in one DIURESIS line', /DIURESIS[^\n]*1200/.test(s2), s2.slice(s2.indexOf('Egresos'), s2.indexOf('Egresos') + 90));
+  const row = page.locator('.ea-historial-row', { hasText: /sonda nasog/i }).first();
+  check('custom source is saved in the historial', (await row.count()) === 1, (await page.locator('#ea-historial').innerText()).slice(0, 200));
+  const n = await page.locator('.ea-historial-row').count();
+  await row.locator('[data-onclick="editarEstadoActualMedicion"]').click();
+  form = page.locator('#ea-form');
+  await form.waitFor({ state: 'visible' });
+  const c2 = form.locator('[data-ea-io-extra-row]').last();
+  const rt = { name: await c2.locator('[data-ea-io-extra-custom]').inputValue(), value: await c2.locator('[data-ea-io-extra-value]').inputValue(), kindHidden: await c2.locator('[data-ea-io-extra-kind]').isHidden() };
+  check('editing restores the custom source name and value', rt.name === 'Sonda nasogástrica' && rt.value === '250' && rt.kindHidden, rt);
+  await submitRegistro(page, form);
+  check('re-saving keeps the custom source and adds no row', (await page.locator('.ea-historial-row').count()) === n && /sonda nasog/i.test(await page.locator('#ea-historial').innerText()));
+}
+
+/** Registro Tab spine, Enter on glucometría, HD reminder banner and "No se realizó hoy". */
+async function keyboardAndHd(page) {
+  const form = await openRegistro(page);
+  const desc = () =>
+    page.evaluate(() => {
+      const el = document.activeElement;
+      if (!el) return '';
+      const da = Array.from(el.attributes).map((a) => a.name).find((n) => n.startsWith('data-ea-') && n !== 'data-ea-layer-idx');
+      return el.id || da || el.tagName;
+    });
+  await form.locator('#ea-recorded-at').focus();
+  const seen = [await desc()];
+  for (let i = 0; i < 22; i++) {
+    await page.keyboard.press('Tab');
+    seen.push(await desc());
+  }
+  const skip = ['data-ea-vital-add', 'data-ea-altered', 'data-ea-glu-altered', 'data-ea-glu-remove', 'ea-add-glu', 'ea-bomba-enabled', 'data-ea-io-turno-nc'];
+  const ids = ['ea-recorded-at', 'data-ea-vital', 'ea-io-ing-t1', 'ea-io-ing-t2', 'ea-io-ing-t3', 'ea-io-egr-t1', 'ea-io-egr-t2', 'ea-io-egr-t3', 'ea-io-evac'];
+  const idx = ids.map((i) => seen.indexOf(i));
+  check(
+    'Tab walks vitals, then glucometrías, then the six turn inputs and evacuaciones, skipping +1, Alterada, NC and remove',
+    idx.every((v) => v >= 0) && idx.slice(2).every((v, i, a) => i === 0 || v > a[i - 1]) && !seen.some((d) => skip.includes(d)) && seen.filter((d) => d === 'data-ea-vital').length === 6 && seen.filter((d) => d === 'data-ea-glu-value').length === 3,
+    seen
+  );
+  const glus = form.locator('[data-ea-glu-value]');
+  await glus.nth(0).focus();
+  await page.keyboard.press('Enter');
+  const enterIdx = await page.evaluate(() => Array.from(document.querySelectorAll('[data-ea-glu-value]')).indexOf(document.activeElement));
+  check('Enter on a glucometría value moves to the next glucometría', enterIdx === 1, enterIdx);
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).locator('visible=true').first().click();
+  await form.waitFor({ state: 'hidden' });
+
+  // HD reminder needs the open pendiente «Procedimiento: HEMODIALISIS».
+  await closeToasts(page);
+  await page.locator('button:visible', { hasText: /^\s*Pendientes\s*$/ }).first().click();
+  await page.locator('.todo-toolbar-add-btn:visible').click();
+  const m = page.locator('.wb-todo-add-modal');
+  await m.locator('.wb-todo-add-text').fill('Procedimiento: HEMODIALISIS');
+  await m.locator('[data-wb-todo-add-ok]').click();
+  await m.waitFor({ state: 'detached' });
+  const pendTexts = await page.locator('.todo-text-input:visible').evaluateAll((els) => els.map((e) => e.value));
+  await page.locator('.exp-group-pill[data-group="clinico"]').hover();
+  await page.locator('.exp-group-section[data-section="estadoActual"]').click();
+  await page.locator('#ea-snapshot').waitFor({ state: 'visible' });
+  await page.waitForTimeout(1500);
+  await openRegistro(page);
+  const banner = page.locator('.ea-registro-hint--hemodialisis');
+  const shown = (await banner.count()) === 1;
+  check('HD reminder banner shows while a HEMODIALISIS pendiente is open', shown, { shown, pendTexts });
+  if (shown) {
+    await banner.locator('[data-ea-hemodialisis-no-fue]').click();
+    await page.waitForTimeout(300);
+    check('«No se realizó hoy» hides the banner', (await page.locator('.ea-registro-hint--hemodialisis').count()) === 0);
+  }
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).locator('visible=true').first().click();
+}
+
+async function addMed(page, cat, text) {
+  const block = page.locator(`[data-ea-med-cat="${cat}"]`);
+  if (!(await block.count())) {
+    await page.locator('[data-ea-med-pick-category]').selectOption(cat);
+    await block.waitFor({ state: 'visible' });
+  }
+  await block.locator(`[data-ea-med-manual-toggle="${cat}"]`).click();
+  await block.locator(`[data-ea-med-manual-input="${cat}"]`).fill(text);
+  await block.locator(`[data-ea-med-manual-save="${cat}"]`).click();
+  await page.waitForTimeout(200);
+}
+async function setEc(page, key, val) {
+  const el = page.locator(`[data-ea-ec="${key}"]`);
+  if (el.evaluate((e) => e.tagName) && (await el.evaluate((e) => e.tagName)) === 'SELECT') await el.selectOption(val);
+  else {
+    await el.fill(String(val), { timeout: 4000 }).catch((e) => { throw new Error('setEc ' + key + ': ' + e.message.slice(0, 80)); });
+    await el.press('Tab');
+  }
+  await page.waitForTimeout(150);
+}
+async function copyEa(page, app) {
+  await app.evaluate(({ clipboard }) => clipboard.clear());
+  await page.locator('#ea-copy-fab').click();
+  await page.waitForTimeout(300);
+  return app.evaluate(({ clipboard }) => ({ text: clipboard.readText(), html: clipboard.readHTML() }));
+}
+
+/** Med splits, duplicate add, remove, escaping, diet and ventilatory variants: all read from the copied text. */
+async function copyVariants(page, app) {
+  for (const [cat, t] of [
+    ['analgesia', 'BUPRENORFINA 10 MG IM C/12 H'],
+    ['analgesia', 'METAMIZOL 1 G IV C/8 H'],
+    ['analgesia', 'ONDANSETRON 8 MG IV C/8 H'],
+    ['analgesia', 'KETOROLACO 30 MG IV C/8 H <5 DIAS'],
+    ['nm', 'METFORMINA 850 MG VO C/12 H'],
+    ['abx', 'CEFTRIAXONA 1 G IV C/24 H'],
+  ]) await addMed(page, cat, t);
+  const cef = await page.locator('[data-ea-med-cat="abx"] .ea-med-item-text', { hasText: 'CEFTRIAXONA' }).count();
+  check('adding the same medication twice keeps one row', cef === 1, cef);
+  const titles = await page.locator('[data-ea-med-cat="analgesia"] [title]').evaluateAll((els) => els.map((e) => e.getAttribute('title')));
+  check('a "<" in a medication is shown as text, tooltips are not double-escaped', (await page.locator('[data-ea-med-cat="analgesia"]').innerText()).includes('<5 DIAS') && !titles.some((t) => /&lt;|&amp;/.test(t || '')), titles);
+  const c = await copyEa(page, app);
+  const T = c.text;
+  check('note copy: BUPRENORFINA stays under ANALGESIA', /ANALGESIA: [^|\n]*BUPRENORFINA/.test(T) && !/ANTIPIRETICOS: [^|\n]*BUPRENORFINA/.test(T), T.match(/ANALGESIA:[^|\n]*/)?.[0]);
+  check('note copy: METAMIZOL joins PARACETAMOL under ANALGESIA / ANTIPIRETICOS', /ANALGESIA \/ ANTIPIRETICOS: [^|\n]*PARACETAMOL[^|\n]*METAMIZOL/.test(T), T.match(/ANTIPIRETICOS:[^|\n]*/)?.[0]);
+  check('note copy: ONDANSETRON has its own ANTIEMETICOS clause', /ANTIEMETICOS: ONDANSETRON/.test(T) && !/ANALGESIA: [^|\n]*ONDANSETRON/.test(T), T.match(/ANTIEMETICOS:[^|\n]*/)?.[0]);
+  check('note copy: the NM antidiabético METFORMINA is grouped with INSULINA, not with the other NM meds', /METFORMINA/.test(T) && !/ACIDO FOLICO[^|\n]*METFORMINA|METFORMINA[^|\n]*ACIDO FOLICO/.test(T), (await page.locator('[data-ea-med-cat="nm"]').innerText()).slice(0, 400));
+  check('copy escapes "<" in the HTML but keeps it in the plain text', /&lt;5 DIAS/.test(c.html || '') && T.includes('<5 DIAS'), (c.html || '').match(/.{20}&lt;5.{5}/)?.[0]);
+  const lines = T.split('\n');
+  check('copy HTML bolds zone labels and meds, but not every line', /<strong>/.test(c.html) && lines.some((l) => l.trim() && !/\*\*/.test(l)) && lines.length > 3, (c.html || '').slice(0, 200));
+  // × remove
+  const nAna = await page.locator('[data-ea-med-cat="analgesia"] [data-ea-med-remove]').count();
+  await page.locator('[data-ea-med-cat="analgesia"] .ea-med-item', { hasText: 'KETOROLACO' }).locator('[data-ea-med-remove]').click();
+  await page.waitForTimeout(200);
+  check('× removes that medication only', (await page.locator('[data-ea-med-cat="analgesia"] [data-ea-med-remove]').count()) === nAna - 1 && !(await page.locator('[data-ea-med-cat="analgesia"]').innerText()).includes('KETOROLACO'), nAna);
+
+  // Diet variants.
+  const diet = async (dieta, extra) => {
+    await setEc(page, 'dieta', dieta);
+    for (const [k, v] of Object.entries(extra || {})) await setEc(page, k, v);
+    return (await copyEa(page, app)).text;
+  };
+  check('diet AYUNO reads DIETA AYUNO', /DIETA AYUNO/.test(await diet('AYUNO')));
+  check('diet SUPLEMENTO reads DIETA SUPLEMENTO', /DIETA SUPLEMENTO/.test(await diet('SUPLEMENTO')));
+  const par = await diet('PARENTERAL', { kcal: '1200' });
+  check('diet PARENTERAL carries its kcal', /DIETA PARENTERAL \(1200 KCAL\)/.test(par), par.match(/DIETA PARENTERAL[^|\n]*/)?.[0]);
+  const noProt = await diet('BLANDA PICADA', { kcalKg: '25', kcal: '1750', proteinG: '' });
+  check('calórica diet without protein has no protein clause', /DIETA BLANDA PICADA CALCULADA A 25 KCAL\/KG \(1750 KCAL\)/.test(noProt) && !/PROTEINA/.test(noProt), noProt.match(/DIETA[^|\n]*/)?.[0]);
+
+  // Ventilatory supports.
+  const vent = async (soporte, fields) => {
+    await setEc(page, 'soporte', soporte);
+    for (const [k, v] of Object.entries(fields)) await setEc(page, k, v);
+    return (await copyEa(page, app)).text;
+  };
+  let v = await vent('Mascarilla reservorio', { soporteLitros: '10' });
+  check('soporte: mascarilla con reservorio a 10 L/min', /CON RESERVORIO A 10 L\/MIN/.test(v), v.match(/POR MASCARILLA[^|\n]*/)?.[0]);
+  v = await vent('Alto flujo', { soporteFlujoLmin: '40', soporteFio2: '60' });
+  check('soporte: alto flujo with flow and FiO2', /POR ALTO FLUJO 40 L\/MIN FI O2 60%/.test(v), v.slice(0, 1500));
+  check('soporte: alto flujo shows the SpO₂/FiO₂ hint in the copy', /SpO₂\/FiO₂/.test(v), v.match(/\[[^\]]*\]/g));
+  v = await vent('VMNI', { vmPsoporte: '10', vmPeep: '5', soporteFio2: '50' });
+  check('soporte: VMNI with PS and EPAP', /CON VMNI PS 10 EPAP 5 FI O2 50%/.test(v), v.match(/CON VMNI[^|\n]*/)?.[0]);
+  v = await vent('Ventilación mecánica', { vmModo: 'VCV', vmVt: '450', vmPeep: '8', soporteFio2: '40', vmFlujo: '60' });
+  check('soporte: ventilación mecánica VCV with VT, PEEP, FiO2 and flow', /CON VENTILACIÓN MECÁNICA VCV VT 450 ML PEEP 8 FI O2 40% FLUJO 60 L\/MIN/.test(v), v.match(/CON VENTILACI[^|\n]*/)?.[0]);
+  v = await vent('Traqueostomía', { soporteFio2: '35' });
+  check('soporte: traqueostomía with FiO2', /CON TRAQUEOSTOMÍA FI O2 35%/.test(v), v.match(/CON TRAQUEOS[^|\n]*/)?.[0]);
+  v = await vent('Aire ambiente', {});
+  check('soporte: aire ambiente reads AL AIRE AMBIENTE', /AL AIRE AMBIENTE/.test(v));
+}
+
+/** Registro → Pegar monitoreo: vitals with unit variants. */
+async function pasteMonitoreo(page) {
+  const form = await openRegistro(page);
+  const paste = async (text) => {
+    if (!(await page.locator('#ea-paste-input').isVisible())) await page.locator('.ea-registro-paste-btn').click();
+    await page.locator('#ea-paste-input').fill(text);
+    return (await page.locator('#ea-paste-preview').innerText()).trim();
+  };
+  let prev = await paste('T 36.5\nFC 88 LPM\nFR 18 RPM\nSAT 96%\nTA 120/70 MMHG\nDXT 145 MG/DL');
+  check('Pegar monitoreo: preview lists FC, FR, SatO₂ and T/A with their units', /FC 88 LPM/.test(prev) && /FR 18 RPM/.test(prev) && /SATURACION 96%/.test(prev) && /TA 120\/70 MMHG/.test(prev) && /DXT 145/.test(prev), prev);
+  prev = await paste('FC: 92 lpm\nFR: 20 rpm\nTA: 110/60 mmHg');
+  check('Pegar monitoreo: lower-case unit suffixes (lpm, rpm, mmHg) are dropped from the values', /FC 92 LPM/.test(prev) && /FR 20 RPM/.test(prev) && /TA 110\/60 MMHG/.test(prev), prev);
+  prev = await paste('hola esto no es monitoreo');
+  check('Pegar monitoreo: text with no vitals gets an error preview', /NO SE RECONOCI|SIN CAMPOS/i.test(prev), prev);
+  await page.locator('#ea-paste-input').fill('FC 92 LPM\nTA 110/60 MMHG');
+  await page.locator('#ea-paste-backdrop [data-onclick="confirmEstadoActualPaste"]').click();
+  await page.waitForTimeout(300);
+  const applied = {
+    fc: await form.locator('[data-ea-vital="fc"][data-ea-layer-idx="0"]').inputValue(),
+    tas: await form.locator('[data-ea-vital="tas"][data-ea-layer-idx="0"]').inputValue(),
+    tad: await form.locator('[data-ea-vital="tad"][data-ea-layer-idx="0"]').inputValue(),
+  };
+  check('Pegar monitoreo: confirming fills the registro form', applied.fc === '92' && applied.tas === '110' && applied.tad === '60', applied);
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).locator('visible=true').first().click();
+  await form.waitFor({ state: 'hidden' });
+}
+
+async function pasteInto(page, text) {
+  if (!(await page.locator('#ea-paste-input').isVisible())) await page.locator('.ea-registro-paste-btn').click();
+  await page.locator('#ea-paste-input').fill(text);
+  return (await page.locator('#ea-paste-preview').innerText()).trim();
+}
+async function pasteApply(page, text) {
+  await pasteInto(page, text);
+  await page.locator('#ea-paste-backdrop [data-onclick="confirmEstadoActualPaste"]').click();
+  await page.waitForTimeout(300);
+}
+const cancelRegistro = async (page) => {
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).locator('visible=true').first().click();
+  await page.locator('#ea-form').waitFor({ state: 'hidden' });
+};
+
+/** Altered marks flip exactly at the RANGES thresholds; glucometría altered reaches Gráficas. */
+async function rangesThresholds(page) {
+  let form = await openRegistro(page);
+  await setRecordedAt(page, 0.3);
+  const altered = async (key) => {
+    const v = await form.locator(`.ea-vital-box:has([data-ea-vital="${key}"][data-ea-layer-idx="0"])`).evaluate((el) => el.classList.contains('ea-vital-box--altered'));
+    return v;
+  };
+  const put = (key, v) => form.locator(`[data-ea-vital="${key}"][data-ea-layer-idx="0"]`).fill(String(v));
+  const probe = async (key, values) => {
+    const out = [];
+    for (const v of values) { await put(key, v); out.push(await altered(key)); }
+    return out;
+  };
+  check('empty vital is never altered', !(await altered('fc')));
+  const fr = await probe('fr', [12, 20, 21, 28, 11]);
+  check('FR alters above 20 and below 12, not at the limits', fr.join() === 'false,false,true,true,true', fr);
+  const temp = await probe('temp', [37.5, 37.6, 36, 35.9]);
+  check('Temp alters above 37.5 and below 36.0, not at the limits', temp.join() === 'false,true,false,true', temp);
+  const sat = await probe('sat', [94, 93]);
+  check('SatO₂ alters below 94, not at 94', sat.join() === 'false,true', sat);
+  await put('tas', 88); await put('tad', 70);
+  const a1 = [await altered('tas'), await altered('tad')];
+  await put('tas', 120); await put('tad', 52);
+  const a2 = [await altered('tas'), await altered('tad')];
+  await put('tas', 140); await put('tad', 90);
+  const a3 = [await altered('tas'), await altered('tad')];
+  check('TAS and TAD alter separately (88/70, 120/52) and not at 140/90', a1.join() === 'true,false' && a2.join() === 'false,true' && a3.join() === 'false,false', { a1, a2, a3 });
+  await put('tas', 130); await put('tad', 80);
+  const rows = form.locator('.ea-glu-row');
+  const g0 = rows.nth(0); const g1 = rows.nth(1);
+  await g0.locator('[data-ea-glu-value]').fill('110');
+  await g1.locator('[data-ea-glu-value]').fill('110');
+  await g0.locator('[data-ea-glu-altered]').evaluate((el) => el.click());
+  const cls = async (r) => r.evaluate((el) => el.classList.contains('ea-glu-row--altered'));
+  check('glucometría is altered only when its Alterada box is ticked', (await cls(g0)) && !(await cls(g1)), { g0: await cls(g0), g1: await cls(g1) });
+  await g0.locator('[data-ea-glu-altered]').evaluate((el) => el.click());
+  await g0.locator('[data-ea-glu-value]').fill('65');
+  await g1.locator('[data-ea-glu-value]').fill('200');
+  await rows.nth(2).locator('[data-ea-glu-value]').fill('110');
+  await submitRegistro(page, form);
+  await page.locator('#ea-charts-summary').click();
+  await page.locator('#ea-charts-backdrop.open').waitFor({ state: 'visible' });
+  await page.waitForTimeout(300);
+  await page.locator('#ea-charts-controls [data-ea-tab="glu"]').click();
+  await page.waitForTimeout(300);
+  const mount = page.locator('#ea-charts-modal-mount');
+  const out = await mount.locator('.ea-charts-dot--out').count();
+  const inr = await mount.locator('.ea-charts-dot:not(.ea-charts-dot--out)').count();
+  check('Gráficas glucometrías: 65 and 200 are out of range, 110 is not', out >= 2 && inr >= 1, { out, inr });
+  await page.keyboard.press('Escape');
+  await page.locator('#ea-charts-backdrop.open').waitFor({ state: 'hidden' });
+  check('UNREACHABLE isBpHypotensive / isHemodynamicallyUnstable: no caller outside estado-actual-ranges.mjs and its tests, so no UI path shows them', true, 'dead code; delete or wire up');
+}
+
+/** Ventilatory calculator hints and values from the soporte fields. */
+async function ventHints(page) {
+  const hints = async (soporte, fields) => {
+    await setEc(page, 'soporte', soporte);
+    for (const [k, v] of Object.entries(fields)) await setEc(page, k, v);
+    // The hint list only re-renders when the soporte changes (not per field edit): bounce the selector like a user.
+    await setEc(page, 'soporte', 'Aire ambiente');
+    await setEc(page, 'soporte', soporte);
+    return (await page.locator('[data-ea-soporte-calc]').innerText().catch(() => '')).replace(/\s+/g, ' ');
+  };
+  let h = await hints('Ventilación mecánica', { soporteFio2: '60', vmPeep: '10', vmPmeseta: '32', vmVt: '560' });
+  check('VM hints: driving pressure 22 with strain alert', /Driving pressure 22 cmH₂O/.test(h) && /Driving pressure ≥15/.test(h), h);
+  check('VM hints: P meseta ≥30 is flagged as non-protective', /P meseta ≥30: ventilación no protectora/.test(h), h);
+  check('VM hints: SpO₂/FiO₂ from the latest SatO₂ and the FiO₂', /SpO₂\/FiO₂ 158(?!\d)/.test(h) && /SpO₂\/FiO₂ <315: sospecha SIRA/.test(h), h);
+  check('VM hints: Tobin RRS shows in VM', /Tobin RRS \d/.test(h), h);
+  check('VM hints: VT ml/kg is shown when the patient has a weight, and gets a range note', !/VT [\d.]+ ml\/kg/.test(h) || /VT (>8|6–8|≤6)/.test(h), h);
+  h = await hints('Alto flujo', { soporteFlujoLmin: '50', soporteFio2: '70' });
+  check('HFNC hints: ROX value and FiO₂ >60% intubation alert', /ROX \d/.test(h) && /FiO₂ >60% en alto flujo: valorar intubación/.test(h), h);
+  check('HFNC hints: no Tobin RRS', !/Tobin/.test(h), h);
+  h = await hints('Puntillas nasales', { soporteLitros: '2' });
+  check('nasal cannula shows no ROX or driving-pressure hint', !/ROX|Driving/.test(h), h);
+  await setEc(page, 'soporte', 'Aire ambiente');
+}
+
+/** Pegar monitoreo: I/O lines, UF, SAT tails, balance edge cases, a full block and the saved I/O clause. */
+async function pasteIo(page, app) {
+  let form = await openRegistro(page);
+  let prev = await pasteInto(page, 'I: 645 CC\nE: DIURESIS NO CUANTIFICADA, DRENAJE 50 CC, NEFRO IZQ 20 CC\nEVAC: NC');
+  check('Pegar: egresos line splits into diuresis NC, drenaje and nefrostomía izquierda', /DIURESIS NC/.test(prev) && /DRENAJE 50 CC/.test(prev) && /NEFROSTOM[ÍI]A IZQUIERDA 20 CC/.test(prev) && !/NO CUANTIFICADA/.test(prev), prev);
+  check('Pegar: EVAC NC and ingresos read in the preview', /EVAC NC/.test(prev) && /645 CC/.test(prev), prev);
+  prev = await pasteInto(page, 'E: DIURESIS 300 CC, ULTRAFILTRADO 3500 ML');
+  check('Pegar: ULTRAFILTRADO is its own egress part', /DIURESIS 300 CC/.test(prev) && /ULTRAFILTRADO 3500/.test(prev), prev);
+  prev = await pasteInto(page, 'E: UF 2800');
+  check('Pegar: short «UF 2800» reads as ULTRAFILTRADO', /ULTRAFILTRADO 2800/.test(prev), prev);
+  prev = await pasteInto(page, 'SAT: 97% AL AIRE AMBIENTE');
+  check('Pegar: SAT with «AL AIRE AMBIENTE» shows the support', /SATURACION 97%.*AIRE AMBIENTE/i.test(prev), prev);
+  prev = await pasteInto(page, 'SAT: 93% TQT');
+  check('Pegar: SAT with «TQT» shows traqueostomía', /SATURACION 93%.*TRAQUEOSTOM/i.test(prev), prev);
+  const bal = async (text) => {
+    await pasteApply(page, text);
+    return (await form.locator('#ea-io-bal-t1').innerText()).trim();
+  };
+  const b1 = await bal('I: 645 CC\nE: DIURESIS NO CUANTIFICADA, DRENAJE 50 CC');
+  const b2 = await bal('I: 645 CC\nE: NC');
+  const b3 = await bal('I: 645 CC\nE: DIURESIS 300 CC, DRENAJE 50 CC');
+  const b4 = await bal('I: NC\nE: DIURESIS 300 CC');
+  const b5 = await bal('I: 500\nE: DIURESIS 300 CC, ULTRAFILTRADO 3500 ML');
+  check('balance edge cases: NC diuresis + drenaje counts the drenaje, all-NC and NC ingresos give NC, UF adds to egress', [b1, b2, b3, b4, b5].join('|') === '+595|NC|+295|NC|-3300', { b1, b2, b3, b4, b5 });
+  await cancelRegistro(page);
+
+  form = await openRegistro(page);
+  await pasteApply(page, 'T°: 38.7 °C\nFC: 113 LPM\nFR: 19 RPM\nTA: 140/60 MMHG\nDXT: 198, 174, 101, 252 MG/DL\nSAT: 97% AL AIRE AMBIENTE\nI: 2,815 CC\nE: NO CUANTIFICADA\nB: NC\nEVAC: NO REPORTADAS');
+  const v = (k) => form.locator(`[data-ea-vital="${k}"][data-ea-layer-idx="0"]`).inputValue();
+  const got = { temp: await v('temp'), fc: await v('fc'), fr: await v('fr'), tas: await v('tas'), tad: await v('tad'), sat: await v('sat') };
+  const glus = await form.locator('[data-ea-glu-value]').evaluateAll((els) => els.map((e) => e.value).filter(Boolean));
+  const io = { ing: await form.locator('#ea-io-ing-t1').inputValue(), egr: await form.locator('#ea-io-egr-t1').inputValue(), evac: await form.locator('#ea-io-evac').inputValue(), bal: (await form.locator('#ea-io-bal-t1').innerText()).trim() };
+  check('Pegar: a full vitals block fills every vital, four glucometrías, I/E/EVAC and keeps balance NC', got.temp === '38.7' && got.fc === '113' && got.fr === '19' && got.tas === '140' && got.tad === '60' && got.sat === '97' && glus.join() === '198,174,101,252' && io.ing === '2815' && /NC|NO CUANT/i.test(io.egr) && io.evac === 'NC' && io.bal === 'NC', { got, glus, io });
+  const soporte = await page.locator('[data-ea-ec="soporte"]').inputValue();
+  check('Pegar: the SAT tail «AL AIRE AMBIENTE» sets the soporte in the panel', soporte === 'Aire ambiente', soporte);
+  await cancelRegistro(page);
+
+  const T = (await copyEa(page, app)).text;
+  check('copied I/O reads as one clause: INGRESOS, DIURESIS (sum, 3T), custom source, EVACUACIONES, BALANCE', /INGRESOS 300 CC, DIURESIS \(1200, 3T\), SONDA NASOGÁSTRICA 250 CC, EVACUACIONES 3, BALANCE -1150 CC/.test(T), T.match(/INGRESOS[^|\n]*/)?.[0]);
 }
 
 async function run() {
@@ -518,6 +975,9 @@ async function run() {
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
   await page.locator('.exp-group-section[data-section="estadoActual"]').click();
   await page.locator('#ea-snapshot').waitFor({ state: 'visible' });
+  check('copy FAB is visible again after returning to Estado actual', await fab.isVisible());
+  check('html carries ea-copy-fab-active on Estado actual', await page.evaluate(() => document.documentElement.classList.contains('ea-copy-fab-active')));
+  check('copied Estado actual HTML uses <br> line breaks and the text uses newlines', /<br\s*\/?>/.test(clip.html || '') && /\n/.test(clip.text), { br: /<br/.test(clip.html || ''), nl: /\n/.test(clip.text) });
 
   await page.getByRole('button', { name: 'Enviar a nota' }).click();
   // The note already holds the template, so the app asks before replacing it.
@@ -529,6 +989,13 @@ async function run() {
   const noteText = await page.evaluate(() =>
     Array.from(document.querySelectorAll('textarea')).map((t) => t.value).join('\n')
   );
+  const noteInputs = await page.evaluate(() => Array.from(document.querySelectorAll('input')).map((i) => i.value));
+  check(
+    'Enviar a nota fills the note vitals (TA and FC of the newest registro)',
+    noteInputs.some((v) => /128\s*\/\s*78/.test(v)) && noteInputs.some((v) => v.trim() === '88'),
+    noteInputs.filter(Boolean).slice(0, 12)
+  );
+  check('the note evolución was replaced: it holds the Estado actual clauses', /VASOPRESORES: NINGUNO/.test(noteText));
   check('note text carries the turn events', /EVENTOS: T2 HEMODIÁLISIS;/.test(noteText) && !/UF 2000 ML/.test(noteText) && /EVACUACIONES 3\b/.test(noteText), noteText.match(/INGRESOS[^\n]*/)?.[0]);
   check(
     'note text groups meds by clause: unions with commas, empty required clauses read NINGUNO',
@@ -623,6 +1090,28 @@ async function run() {
     histRowsAfter === histRowsBefore && /TAS 155/.test(histTextAfter),
     { histRowsBefore, histRowsAfter }
   );
+
+  // Team copy shortcut (Cmd/Ctrl+Shift+C on Estado actual).
+  await app.evaluate(({ clipboard }) => clipboard.clear());
+  await page.locator('#ea-snapshot').click({ position: { x: 4, y: 4 } });
+  await page.keyboard.press(`${process.platform === 'darwin' ? 'Meta' : 'Control'}+Shift+C`);
+  await page.waitForTimeout(500);
+  const teamToast = await page.locator('.toast').allInnerTexts();
+  const teamClip = await app.evaluate(({ clipboard }) => clipboard.readText());
+  check(
+    'Cmd/Ctrl+Shift+C on Estado actual answers with a toast and copies without ** markers',
+    teamToast.some((t) => /Estado actual copiado|No hay estado actual/.test(t)) && !/\*\*/.test(teamClip),
+    { teamToast, teamClip: teamClip.slice(0, 80) }
+  );
+
+  await section('historial extras', () => historialExtras(page));
+  await section('turns registros', () => turnsRegistros(page));
+  await section('keyboard and HD', () => keyboardAndHd(page));
+  await section('copy variants', () => copyVariants(page, app));
+  await section('paste monitoreo', () => pasteMonitoreo(page));
+  await section('ranges thresholds', () => rangesThresholds(page));
+  await section('ventilatory hints', () => ventHints(page));
+  await section('paste I/O', () => pasteIo(page, app));
 
   check('no page errors', pageErrors.length === 0, pageErrors);
   await app.close();

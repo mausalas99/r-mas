@@ -51,7 +51,7 @@ function parseLabUbicacion_(textoBruto) {
 
 function segmentLabReportBlocks_(deps, textoBruto, tNorm) {
   var mGaso = tNorm.match(
-    /GASOMETRIA.*?(?=BIOMETRIA|CITOLOGIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CITOQUIMICO|$)/i
+    /GASOMETRIA.*?(?=BIOMETRIA|CITOLOGIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CITOQUIMICO|URIANALISIS|EXAMEN GENERAL DE ORINA|ANALISIS DE ORINA|$)/i
   );
   var bloqueGaso = mGaso ? mGaso[0] : '';
   // Cualquier bloque "CITOQUIMICO ..." (LCR, líquidos corporales, o un fluido

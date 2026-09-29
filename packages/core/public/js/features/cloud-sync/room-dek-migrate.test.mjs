@@ -8,7 +8,7 @@ import {
   ensureOwnerRoomKey,
   resetOwnerRoomKeyAttempts,
 } from './room-dek-migrate.mjs';
-import { clearRoomDekCache, getCachedRoomDek } from './room-dek.mjs';
+import { clearRoomDekCache, getCachedRoomDek, notePulledPlaintext, isRoomPlaintextSeen } from './room-dek.mjs';
 import { __resetEchoGuardForTests } from './cloud-sync-echo-guard.mjs';
 // Real (unmodified) Worker merge logic — proves the bumped-clock echo the sweep
 // builds is actually accepted server-side, not just "different from the input".
@@ -64,10 +64,13 @@ describe('foldOpsToLatestByPath', () => {
  */
 function makeFakeApi({ pullResponse, pullSequence, pushImpl } = {}) {
   const pushedBatches = [];
+  const pullOpts = [];
   const pulls = pullSequence ? [...pullSequence] : null;
   return {
     pushedBatches,
-    async pull() {
+    pullOpts,
+    async pull(roomId, since, opts) {
+      pullOpts.push(opts);
       if (!pulls) return pullResponse;
       return pulls.length > 1 ? pulls.shift() : pulls[0];
     },
@@ -491,5 +494,24 @@ describe('ensureOwnerRoomKey — any online moment of the owner keys the sala', 
     assert.equal(calls, 0);
     await ensureOwnerRoomKey(api, room, 'dev', 11 * 60 * 1000);
     assert.equal(calls, 1);
+  });
+
+  it('with the key held, a pull that showed a teammate\'s plaintext triggers one sweep of the stored (raw) state', async () => {
+    const api = keyApi();
+    await ensureOwnerRoomKey(api, room, 'dev', 1000);
+    api.pullOpts.length = 0;
+    const plain = { revision: 2, ops: [{ path: 'entries/p9', value: { id: 'p9', registro: '7000419-0' }, updatedAt: '2026-09-24T10:00:00.000Z', actorId: 'peer' }] };
+    const done = { revision: 3, ops: [] };
+    api.pull = async (id, since, opts) => {
+      api.pullOpts.push(opts);
+      return api.pullOpts.length === 1 ? plain : done;
+    };
+    notePulledPlaintext('room-k', getCachedRoomDek('room-k'), plain);
+    assert.equal(isRoomPlaintextSeen('room-k'), true, 'a keyed pull with plaintext flags the room');
+    const res = await ensureOwnerRoomKey(api, room, 'dev', 2000);
+    assert.deepEqual(res, { swept: 1, failed: 0, remaining: 0 });
+    assert.ok(api.pullOpts.every((o) => o?.raw === true), 'judges stored values, not decrypted ones');
+    assert.equal(isRoomPlaintextSeen('room-k'), false, 'cleared once nothing is left');
+    assert.equal(await ensureOwnerRoomKey(api, room, 'dev', 3000), null, 'no flag: no second sweep');
   });
 });

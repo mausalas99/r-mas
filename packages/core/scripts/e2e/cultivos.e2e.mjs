@@ -573,6 +573,100 @@ await r.finish('Cultivos table + Actualizar', async () => {
 
   check('Service line "SERVICIO DEMO" (header placeholder) never leaks into a cultivo row', !/SERVICIO DEMO/i.test(wholeText));
 
+  // ── Copy format, flags, order, letterhead (labs-cultivo-from-tests / -atb gaps) ──
+  const PERI_COPY =
+    header(P, 'Aug 3 2026 8:00AM') +
+    'BACTERIOLOGIA\nLIQUIDO PERITONEAL\nPRODUCTO\n*\nTINCION DE GRAM\n*\nESCASOS BACILOS GRAM NEGATIVO\nMICROORGANISMO\n*\nPseudomonas aeruginosa\nCOMENTARIO:\n*\nCUENTA\n*\n120,000 UFC/mL\nANTIBIOGRAMA\n*\n' +
+    'CEFTAZIDIMA\n>16\tR\n*\nCIPROFLOXACINA\n<=1\tS\n*\nCEFEPIMA\n16\tI\n*\nIMIPENEM\n2\tS\n*\nLEVOFLOXACINA\n<=2\tS\n*\nMEROPENEM\n<=1\tS\n*\nPIP/TAZO\n64\tS\n*\nTOBRAMICINA\n<=4\tS\n*\n';
+  const POLY_URO =
+    header(P, 'Aug 4 2026 8:00AM') +
+    'BACTERIOLOGIA\nUROCULTIVO POR SONDA\nPRODUCTO\n*\nMICROORGANISMO\n*\nKlebsiella pneumoniae\nCOMENTARIO:\nAISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE)\nCUENTA DE KASS\n*\n+100,000 UFC/mL\nANTIBIOGRAMA\n*\nCEFTRIAXONA\n>32\tESBL\n*\n' +
+    'MICROORGANISMO\n*\nEnterococcus faecium\nCOMENTARIO:\n*\nCUENTA DE KASS\n*\n+100,000 UFC/mL\nANTIBIOGRAMA\n*\nAMPICILINA\n>8\tR\n*\nVANCOMICINA\n<=0.5\tS\n*\n';
+  const KLEB_LETTERHEAD =
+    header(P, 'Aug 5 2026 8:00AM') +
+    'BACTERIOLOGIA\nUROCULTIVO POR SONDA\nPRODUCTO\n*\nMICROORGANISMO\n*\nKlebsiella pneumoniae\nCOMENTARIO:\n*\nCUENTA DE KASS\n*\n80,000 UFC/mL\nANTIBIOGRAMA\n*\n' +
+    'AMP/SULBACTAM\n<=8/4\tS\n*\nAMPICILINA\n>16\tR\n*\nCEFTRIAXONA\n<=1\tS\n*\nCIPROFLOXACINA\n<=1\tS\n*\nGENTAMICINA\n<=4\tS\n*\n' +
+    'USER CP1 -647* Labo -647* LABX 90001\nUSER CP1 -647 Labo -647 LABX 90001 Feme 74\n';
+  await page.locator('#lab-inner-labs-btn').click();
+  await pasteAndSave(page, [PERI_COPY, POLY_URO, KLEB_LETTERHEAD].join('\n\n'));
+  await openCultivos();
+  rows = await tableRows();
+  const copyOf = (d, germ) => copyFullFor(container.locator(`tr[data-fecha^="${d}"]`).filter({ hasText: germ }).first());
+
+  const peri03 = byDate('03/08');
+  check('peritoneal row: one row, count shown, Ubicación never in the row',
+    peri03.length === 1 && /120,000/.test(peri03[0].cells.join(' ')) && !/SERVICIO DEMO/i.test(peri03[0].cells.join(' ')), peri03);
+  const periCopy = await copyOf('03/08', 'PSEUDOMONAS');
+  const periLines = periCopy.split('\n').map((l) => l.trim()).filter(Boolean);
+  check('peritoneal "Copiar informe completo": exact header, ATB R/I/S line, Cuenta; no Ubicación',
+    periLines[0] === 'LIQUIDO PERITONEAL 03/08: PSEUDOMONAS AERUGINOSA' && /^ATB R: CAZ \| I: FEP \| S: CIPRO, IMI, LVX, MERO, PIP\/TAZO, TOBRA$/.test(periLines[1] || '') &&
+    /^Cuenta: 120,000 UFC\/ML$/.test(periLines[2] || '') && periLines.length === 3 && !/SERVICIO DEMO|Ubicaci/i.test(periCopy), periCopy);
+
+  const poly04 = byDate('04/08');
+  check('polymicrobial urocultivo: both organisms listed (the table sorts them, source order is not shown), BLEE only on Klebsiella',
+    poly04.length === 2 && poly04.some((x) => /Klebsiella/i.test(x.cells[2]) && /ESBL|BLEE/i.test(x.cells.join(' '))) &&
+    poly04.some((x) => /Enterococcus faecium/i.test(x.cells[2]) && !/ESBL|BLEE/i.test(x.cells.join(' '))), poly04);
+  check('Klebsiella BLEE row shows its count (+100,000)', poly04.some((x) => /Klebsiella/i.test(x.cells[2]) && /100,000/.test(x.cells[2])), poly04);
+  const polyCopy = await copyOf('04/08', 'KLEBSIELLA');
+  check('Klebsiella BLEE copy: ESBL and count in the clipboard', /ESBL/.test(polyCopy) && /Cuenta:.*100,000.*UFC/i.test(polyCopy), polyCopy);
+
+  const kl05 = byDate('05/08');
+  check('letterhead lines after the antibiogram never reach the row', kl05.length === 1 && !/USER|Labo|LABX|Feme/i.test(kl05[0].cells.join(' ')) && !/LABX|Feme/i.test(await container.innerText()), kl05);
+  const klCopy = await copyOf('05/08', 'KLEBSIELLA');
+  check('letterhead-strip copy keeps "ATB R: AMP", AMP-SULB and "Cuenta: 80,000 UFC/ML", no USER/Labo/LABX/Feme',
+    /^UROCULTIVO POR SONDA 05\/08: KLEBSIELLA PNEUMONIAE$/m.test(klCopy) && /\bATB R: AMP\b/.test(klCopy) && /AMP-SULB/.test(klCopy) &&
+    /^Cuenta: 80,000 UFC\/ML$/m.test(klCopy) && !/USER|Labo|LABX|Feme/i.test(klCopy) && !/\d\d:\d\d|\/2026/.test(klCopy), klCopy);
+
+  check('micobacterias NEGATIVO texts show as negative rows ("NEGATIVO" and "NEGATIVO A LA FECHA")',
+    /NEGATIVO A LA FECHA/i.test(mico14Text) && /BACILOSCOPIA[^]*NEGATIVO/i.test(mico14Text), mico14);
+  const uroRis = container.locator('tr[data-fecha^="05/05"] .cultivos-atb-chips').first();
+  const uroRisHtml = (await uroRis.count()) ? await uroRis.innerHTML() : '';
+  check('carbapenemase urocultivo chips: IMIPENEM listed, PIP/TAZO listed', />IMIPENEM</.test(uroRisHtml) && />PIP\/TAZO</.test(uroRisHtml), uroRisHtml.slice(0, 400));
+
+  // ── Antibiogram copies (labs-cultivo-atb gaps) ──
+  const ecoli = (when, atb, extra = '') => header(P, when) +
+    'BACTERIOLOGIA\nUROCULTIVO POR SONDA\nPRODUCTO\n*\nMICROORGANISMO\n*\nEscherichia coli\nCUENTA\n*\n25,000 UFC/mL\n' + (atb ? 'ANTIBIOGRAMA\n*\n' + atb : '') + extra;
+  const DUP_1 = ecoli('Aug 6 2026 8:00AM', 'AMIKACINA\n<=16\tS\n');
+  const DUP_3 = ecoli('Aug 6 2026 8:00AM', 'AMIKACINA\n<=16\tS\nAMPICILINA\n>16\tR\nCEFTRIAXONA\n<=1\tS\n');
+  const FIELD_LINES = ecoli('Aug 7 2026 8:00AM', 'AMIKACINA\n*\nS\n*\nAMPICILINA\n*\nR\n*\nCEFTRIAXONA\n*\n1\n*\nS\n*\n');
+  const NO_ATB_URO = ecoli('Aug 8 2026 8:00AM', '');
+  const HEMO_SAME_GERM = header(P, 'Aug 8 2026 9:00AM') +
+    'BACTERIOLOGIA\nHEMOCULTIVO\nPRODUCTO\n*\nPERIFERICO IZQUIERDO\nMICROORGANISMO\n*\nEscherichia coli\nCUENTA\n*\n50,000 UFC/mL\nANTIBIOGRAMA\n*\nCEFTAZIDIMA\n>16\tESBL\nIMIPENEM\n<=1\tS\nMEROPENEM\n<=1\tS\n';
+  const drugs = (names, res) => names.map((n) => n + '\n' + res + '\n').join('');
+  const LONG_ATB = ecoli('Aug 9 2026 8:00AM',
+    drugs(['AMIKACINA', 'AMPICILINA', 'AMP/SULBACTAM', 'CEFTAZIDIMA', 'CIPROFLOXACINA', 'CEFTRIAXONA', 'CEFOTAXIMA', 'CEFEPIMA', 'GENTAMICINA', 'IMIPENEM', 'LEVOFLOXACINA', 'MEROPENEM', 'PIP/TAZO'], '>16\tR') +
+    drugs(['AZTREONAM', 'TIGECICLINA'], '8\tI') +
+    drugs(['CEFAZOLINA', 'CEFUROXIMA'], '>8\tESBL') +
+    drugs(['COLISTINA', 'ERTAPENEM', 'FOSFOMICINA', 'MINOCICLINA', 'NITROFURANTOINA', 'TRIMET/SULFA', 'VANCOMICINA', 'TOBRAMICINA', 'CLINDAMICINA', 'DOXICICLINA'], '<=1\tS'));
+  await page.locator('#lab-inner-labs-btn').click();
+  await pasteAndSave(page, DUP_1);
+  await pasteAndSave(page, DUP_3);
+  await pasteAndSave(page, [FIELD_LINES, NO_ATB_URO, HEMO_SAME_GERM, LONG_ATB].join('\n\n'));
+  await openCultivos();
+  rows = await tableRows();
+  const chipsHtml = async (d, sel = '') => {
+    const c = container.locator(`tr[data-fecha^="${d}"]${sel}`).locator('.cultivos-atb-chips').first();
+    return (await c.count()) ? c.innerHTML() : '';
+  };
+  const dup = byDate('06/08');
+  const dupHtml = await chipsHtml('06/08');
+  check('1-drug copy then 3-drug copy: one row carrying all 3 drugs', dup.length === 1 && /AMIKACINA/.test(dupHtml) && /AMPICILINA/.test(dupHtml) && /CEFTRIAXONA/.test(dupHtml), { dup, dupHtml: dupHtml.slice(0, 200) });
+  const fplHtml = await chipsHtml('07/08');
+  check('field-per-line antibiogram: 3 drugs, CEFTRIAXONA with CMI 1 and S; AMPICILINA R',
+    byDate('07/08').length === 1 && /AMIKACINA/.test(fplHtml) && /AMPICILINA/.test(fplHtml) && /CEFTRIAXONA/.test(fplHtml) && /CMI<\/span>\s*1\b/.test(fplHtml) && />R</.test(fplHtml), fplHtml.slice(0, 500));
+  const noAtbUro = container.locator('tr[data-fecha^="08/08"]').filter({ hasText: /UROCULTIVO|Escherichia/i });
+  const noAtbHtml = (await noAtbUro.count()) ? await noAtbUro.first().innerHTML() : '';
+  check('ATB-less urocultivo of the same germ as a hemocultivo with antibiogram: row exists, count kept',
+    byDate('08/08').length >= 2 && /25,000/.test(noAtbHtml), byDate('08/08'));
+  const noAtbCopy = await copyFullFor(container.locator('.cult-site', { hasText: 'UROCULTIVO POR SONDA' }).locator('tr[data-fecha^="08/08"]').first());
+  const noAtbChips = await chipsHtml('08/08', ':has(.cultivos-copy-full-btn)');
+  check('ATB-less urocultivo falls back to the same germ\'s antibiogram from the other culture (CEFTAZIDIMA/MEROPENEM chips + copy has the ATB line)',
+    /MEROPENEM/.test(noAtbChips) && /^ATB /m.test(noAtbCopy) && /Cuenta: \d/.test(noAtbCopy), { noAtbChips: noAtbChips.slice(0, 200), noAtbCopy });
+  const longCopy = await copyOf('09/08', 'ESCHERICHIA');
+  const longAtbLen = (longCopy.split('\n').filter((l) => /^(ATB |I: |ESBL: |S: |R: )/.test(l.trim())).join('').length);
+  check('ATB block over 220 chars keeps every wrapped line (R/I/ESBL/S) in the copy',
+    longAtbLen > 220 && /^ATB R: /m.test(longCopy) && /^I: /m.test(longCopy) && /^ESBL: /m.test(longCopy) && /^S: /m.test(longCopy) && /^Cuenta: 25,000 UFC\/ML$/m.test(longCopy), longCopy);
+
   check('no page errors', pageErrors.length === 0, pageErrors.slice(0, 5));
   await app.close();
 });

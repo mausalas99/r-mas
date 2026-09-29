@@ -250,6 +250,7 @@ function syncSoporteTierBlockVisibility(block, flags) {
     else el.style.display = flags.vmni ? '' : 'none';
   });
   block.querySelectorAll('.ea-soporte-tier-vm').forEach(function (el) {
+    if (el.querySelector('[data-ea-ec="vmPeep"]')) return; // shared with VMNI, set above
     el.style.display = flags.vm ? '' : 'none';
   });
   block.querySelectorAll('.ea-soporte-tier-fio2').forEach(function (el) {

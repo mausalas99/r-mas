@@ -92,6 +92,8 @@ const blocks = (page) =>
           left: Math.round(rc.left),
           top: Math.round(rc.top),
           width: Math.round(rc.width),
+          height: Math.round(rc.height),
+          row: Math.round(col.querySelector('.rpc-proc-agenda-hour-line')?.getBoundingClientRect().height || 0),
         };
       }),
     ),
@@ -240,6 +242,11 @@ await r.finish('Agenda: week board, new/edit/delete, two devices over Nube, rest
     endo?.day === 2 && endo.sub === '10:30 · ENDOSCOPIA' && endo.patient === P2.name && endo.flag, endo);
   check('same-hour blocks sit side by side, not on top of each other',
     lapa && endo && (lapa.left + lapa.width <= endo.left || endo.left + endo.width <= lapa.left), { lapa, endo });
+
+  check('a block spans its 2 h visual duration (two hour rows tall)',
+    lapa && lapa.row > 0 && Math.abs(lapa.height - 2 * lapa.row) <= 4, { height: lapa?.height, row: lapa?.row });
+  check('the earlier block (10:00) takes the left lane, the later one (10:30) the right',
+    lapa && endo && lapa.left < endo.left, { lapa: lapa?.left, endo: endo?.left });
 
   // ── Edit: move the endoscopy to 15:00, material + anesthesia ok ───────
   await openBlock(page, ENDO);

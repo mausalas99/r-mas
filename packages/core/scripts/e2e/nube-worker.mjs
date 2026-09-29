@@ -15,7 +15,8 @@ export { until };
 
 const WORKER_DIR = path.join(repoRoot, 'packages/core/cloud/sync-worker');
 const WRANGLER = path.join(WORKER_DIR, 'node_modules/.bin/wrangler');
-const PORT = 8790 + Math.floor(Math.random() * 60);
+// run-all.mjs gives each parallel slot its own 100-port block (E2E_PORT_OFFSET = slot * 10).
+const PORT = 8790 + (Number(process.env.E2E_PORT_OFFSET) || 0) * 10 + Math.floor(Math.random() * 60);
 export const BASE = `http://127.0.0.1:${PORT}`;
 const API = `${BASE}/api/sync/v1`;
 export const PASSWORD = 'Demo-e2e-Pass-2026!';

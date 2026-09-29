@@ -11,6 +11,7 @@ import { canDeletePatientChart } from '../patient-delete-auth.mjs';
 import {
   clinicalSessionContext,
   getClinicalScopeContextForEvaluate,
+  refreshGuardiaCensusFromDb,
 } from '../clinical-access-runtime.mjs';
 import { evaluateClinicalScope } from '../clinico-access.mjs';
 import { getUiDensity } from './chrome.mjs';
@@ -295,6 +296,8 @@ function showEmptyPatientShell() {
 function afterPatientDeletesCommitted(summary, auditLabel) {
   persistClinicalState({ immediate: true });
   rt.addAuditEntry('patient-delete', 'ok', summary.ok || 0, auditLabel || '');
+  // Deleting a chart can orphan its guardia handoffs; refresh so the orphan strip shows them.
+  void refreshGuardiaCensusFromDb(null);
   patientsBridge.renderPatientList();
   syncPatientBulkBar();
   var msg = formatPatientDeleteSummary(summary);

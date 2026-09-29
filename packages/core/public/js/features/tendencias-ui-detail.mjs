@@ -381,6 +381,7 @@ function updateTendDetailChartInPlace(labels, values, title, ref, latest, unit, 
   tendStore.detailChart.data.labels = labels;
   tendStore.detailChart.data.datasets[0].label = title;
   tendStore.detailChart.data.datasets[0].data = values;
+  tendStore.detailChart._tendMarkerMap = markerMap;
   tendStore.detailChart.options = tendDetailChartOptions(title, unit, markerMap, values, ref);
   tendStore.detailChart.update('none');
   syncTendDetailVbar(ref, latest);
