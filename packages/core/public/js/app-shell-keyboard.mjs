@@ -23,6 +23,8 @@ import { copyTeamLabsForToday } from './features/patients-list/copy-team-labs.mj
 import { copyTeamEstadoActualForToday } from './features/patients-list/copy-team-estado-actual.mjs';
 import { getActiveInnerTab } from './features/expediente-navigation.mjs';
 import { rt } from './features/app-tabs-runtime.mjs';
+import { eaHasCopyableContent, copiarEstadoActualTexto } from './features/estado-actual-panel.mjs';
+import { ensureLabsLoaded } from './lazy-feature-routes.mjs';
 import { isAnyModalOpen } from './app-shell-modals.mjs';
 
 var shellKeyboardWired = false;
@@ -289,12 +291,10 @@ function onShellCopyEvent(e) {
   var tab = rt.getActiveAppTab();
   if (tab === 'nota' && getActiveInnerTab() === 'estadoActual') {
     e.preventDefault();
-    void import('./features/estado-actual-panel-actions.mjs').then(function (mod) {
-      if (mod.eaHasCopyableContent()) return mod.copiarEstadoActualTexto();
-    });
+    if (eaHasCopyableContent()) void copiarEstadoActualTexto();
   } else if (tab === 'lab') {
     e.preventDefault();
-    void import('./features/lab-panel.mjs').then(function (mod) {
+    void ensureLabsLoaded().then(function (mod) {
       if (mod.labOutputHasCopyableContent()) mod.windowHandlers.copiarLabsAlPortapapeles();
     });
   }
