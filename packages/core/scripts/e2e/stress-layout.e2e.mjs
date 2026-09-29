@@ -106,6 +106,8 @@ function probe({ rootSel, dark }) {
   const desc = (el) =>
     (el.id ? '#' + el.id : el.tagName.toLowerCase() + '.' + String(typeof el.className === 'string' ? el.className : '').split(/\s+/).filter(Boolean).slice(0, 2).join('.')) +
     ' «' + (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 28) + '»';
+  // Board A: «Filtros» sits inside the search box, over its reserved right padding. By design.
+  const filtersInSearch = (x, y) => (x.id === 'patient-search' && y.closest('#patient-filters-anchor')) || (y.id === 'patient-search' && x.closest('#patient-filters-anchor'));
   const shown = (el) => {
     const b = el.getBoundingClientRect();
     const cs = getComputedStyle(el);
@@ -216,7 +218,7 @@ function probe({ rootSel, dark }) {
       for (let i = 0; i < kids.length; i++) {
         for (let j = i + 1; j < kids.length; j++) {
           const a = rects[i], b = rects[j];
-          if (a.empty || b.empty) continue;
+          if (a.empty || b.empty || filtersInSearch(kids[i], kids[j])) continue;
           const ox2 = Math.min(a.right, b.right) - Math.max(a.left, b.left);
           const oy2 = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
           if (ox2 > 2 && oy2 > 2) out.overlap.push(desc(kids[i]) + ' × ' + desc(kids[j]));
@@ -231,6 +233,7 @@ function probe({ rootSel, dark }) {
     for (let j = i + 1; j < ctrls.length; j++) {
       const a = crs[i], b = crs[j];
       if (a.empty || b.empty || ctrls[i].contains(ctrls[j]) || ctrls[j].contains(ctrls[i])) continue;
+      if (filtersInSearch(ctrls[i], ctrls[j])) continue;
       const ox3 = Math.min(a.right, b.right) - Math.max(a.left, b.left);
       const oy3 = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
       if (ox3 > 4 && oy3 > 4) out.overlap.push('control over control ' + desc(ctrls[i]) + ' × ' + desc(ctrls[j]));
