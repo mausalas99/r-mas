@@ -47,6 +47,13 @@ function fakeDb({ revision = 0 } = {}) {
               return null;
             },
             async all() {
+              if (sql.includes('UNION ALL') && sql.includes('FROM room_state_patients')) {
+                const rows = core ? [{ kind: 'core', patient_id: '', ciphertext: core.ciphertext, iv: core.iv }] : [];
+                for (const [patient_id, row] of patients.entries()) {
+                  rows.push({ kind: 'patient', patient_id, ciphertext: row.ciphertext, iv: row.iv });
+                }
+                return { results: rows };
+              }
               if (sql.includes('FROM room_state_patients')) {
                 return {
                   results: [...patients.entries()].map(([patient_id, row]) => ({
@@ -641,6 +648,16 @@ describe('loadRoomState reads per-patient rows only when the core is marked', ()
     },
     tombstones: { p3: { deletedAt: '2026-01-03' } },
     todos: { t1: { text: 'x' } },
+  });
+
+  it('reads the core row and the patient rows in one statement (no read skew under a concurrent commit)', async () => {
+    const db = fakeDb({ revision: 3 });
+    await db.setShardedState(full);
+    db.clearBoundSql();
+    await loadRoomState(TEST_KEY, db, ROOM_ID, { skipLabShards: true });
+    const stateReads = db.boundSql.filter((sql) => /FROM room_state(_patients)?\b/.test(sql) && !sql.includes('_labs') && !sql.includes('_lab_sets'));
+    assert.equal(stateReads.length, 1);
+    assert.match(stateReads[0], /UNION ALL/);
   });
 
   it('rebuilds the flat state, same entries order', async () => {

@@ -107,7 +107,7 @@ export async function onboardNube(page, user) {
   await page.locator('#onboard-clinical-name').fill(user.name);
   await page.getByRole('button', { name: 'Siguiente' }).click();
   await page.locator('#onboard-rank').selectOption(user.rank || 'R2');
-  await page.locator('#onboard-sala').selectOption('Sala 1');
+  await page.locator('#onboard-sala').selectOption(user.sala || 'Sala 1');
   await page.locator('#onboard-nube-password').fill(PASSWORD);
   await page.getByRole('button', { name: 'Guardar perfil' }).click();
   const cont = page.locator('button:visible', { hasText: /^Continuar/ });

@@ -99,11 +99,7 @@ export function validateOpsSize(ops) {
  * Core blob carries `patientsSharded`: rebuild the flat state from the
  * per-patient rows (schema 013). Without the marker these rows are ignored.
  */
-async function joinPatientShards(env, db, roomId, core) {
-  const { results } = await db
-    .prepare('SELECT patient_id, ciphertext, iv FROM room_state_patients WHERE room_id = ?')
-    .bind(roomId)
-    .all();
+async function joinPatientShards(env, db, roomId, core, results) {
   const shards = new Map();
   // What is stored right now, so a commit can write only shards whose JSON changed.
   const baseline = { coreJson: JSON.stringify(core), shardJson: new Map(), shardBytes: new Map() };
@@ -129,10 +125,20 @@ async function joinPatientShards(env, db, roomId, core) {
  */
 export async function loadRoomState(env, db, roomId, opts = {}) {
   const skipLabShards = !!opts.skipLabShards;
-  const row = await db
-    .prepare('SELECT ciphertext, iv FROM room_state WHERE room_id = ?')
-    .bind(roomId)
-    .first();
+  // Core row and patient rows in ONE statement = one snapshot. Two separate
+  // reads let a commit land between them (old core listing a patient whose row
+  // is already the new tombstone): "Falta el paciente ..." 500s under a bulk
+  // delete, seen on staging 2026-09-28.
+  const { results: stateRows } = await db
+    .prepare(
+      `SELECT 'core' AS kind, '' AS patient_id, ciphertext, iv FROM room_state WHERE room_id = ?
+       UNION ALL
+       SELECT 'patient', patient_id, ciphertext, iv FROM room_state_patients WHERE room_id = ?`
+    )
+    .bind(roomId, roomId)
+    .all();
+  const row = (stateRows ?? []).find((r) => r.kind === 'core');
+  const patientRows = (stateRows ?? []).filter((r) => r.kind === 'patient');
   if (!row) {
     throw new SyncError('not_found', 'Estado de sala no encontrado.');
   }
@@ -142,7 +148,7 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
   /** @type {{ coreJson: string, shardJson: Map<string, string>, shardBytes: Map<string, number> } | null} */
   let shardBaseline = null;
   if (state?.patientsSharded) {
-    const joined = await joinPatientShards(env, db, roomId, state);
+    const joined = await joinPatientShards(env, db, roomId, state, patientRows);
     state = joined.state;
     shardBaseline = joined.baseline;
     for (const bytes of joined.baseline.shardBytes.values()) coreBytesAtLoad += bytes;
