@@ -69,3 +69,25 @@ export function latestSetIdInLabHistoryDay(day, idFn) {
   if (!day || !day.rows.length) return '';
   return idFn(day.rows[0].set, day.rows[0].idx);
 }
+
+/**
+ * Indexes (newest first) of the day buckets whose results mention `query` at the start of a
+ * word — "pct" finds "PCT 2.4" but not "ACPCT". Backs the Laboratorio → Resultados search box.
+ * @param {Array} days output of groupLabHistoryByDay
+ * @param {string} query
+ */
+export function findLabDaysWithStudy(days, query) {
+  var q = String(query || '').trim();
+  if (!q) return [];
+  var re = new RegExp('(^|[^A-Za-z0-9])' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+  var hits = [];
+  (days || []).forEach(function (day, i) {
+    var found = day.rows.some(function (row) {
+      return (row.set.resLabs || []).some(function (chunk) {
+        return re.test(String(chunk));
+      });
+    });
+    if (found) hits.push(i);
+  });
+  return hits;
+}

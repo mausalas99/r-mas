@@ -207,6 +207,11 @@ function isMetadataLine(line) {
     return true;
   }
   if (/^[A-Za-z]{3}\s+\d{1,2}\s+\d{4}/.test(t) && t.indexOf('\t') !== -1) return true;
+  // Page header/footer the SOME report repeats between departments.
+  if (/^(UNIVERSIDAD\b|Ced\.?\s*Profesional\b|REPORTE DE RESULTADOS\b|FEMENINO$|MASCULINO$|MEDICINA INTERNA\b)/i.test(t)) {
+    return true;
+  }
+  if (/\b[A-Z][a-z]{2}\s+\d{1,2}\s+\d{4}\s+\d{1,2}:\d{2}\s*[AP]M\s*$/.test(t)) return true;
   return false;
 }
 
@@ -320,8 +325,8 @@ function looksLikeReferenceValue(line) {
   var t = String(line || '').trim();
   if (!t) return false;
   if (/^(NEGATIVO|POSITIVO|AUSENTE|AUSENTES|N\/A|NA)$/.test(t)) return true;
-  if (/^\d/.test(t) && /\s-\s/.test(t)) return true;
-  if (/^\d+([.,]\d+)?\s*-\s*\d+([.,]\d+)?(\/[A-Za-z]+)?$/i.test(t)) return true;
+  if (/^-?\d/.test(t) && /\s-\s/.test(t)) return true;
+  if (/^-?\d+([.,]\d+)?\s*-\s*-?\d+([.,]\d+)?(\/[A-Za-z]+)?$/i.test(t)) return true;
   return false;
 }
 
@@ -343,7 +348,7 @@ function looksLikeUnitsRefLine(line) {
     if (/\d/.test(t)) return true;
   }
   if (looksLikeReferenceValue(t)) return true;
-  if (/^\d/.test(t) && /\s-\s/.test(t)) return true;
+  if (/^-?\d/.test(t) && /\s-\s/.test(t)) return true;
   if (
     /^(g\/dL|mg\/dL|mmol\/L|K\/uL|M\/uL|mm\/hr|mm3|\/CAMPO|UI\/L|IU\/L|E\.U\.|Hem\/uL|Leucocitos\/uL|%|SEG\.?|fL|pg)$/i.test(
       t

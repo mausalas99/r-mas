@@ -246,6 +246,7 @@ await r.finish('Actualizar labs', async () => {
   const review = page.locator('#lab-bulk-preview-confirm');
   const reviewOpened = await review.waitFor({ state: 'visible', timeout: 15000 }).then(() => true, () => false);
   check('foreign report → review window, "para revisar"', reviewOpened && (await toast(/para revisar/)), await toastTexts());
+  await page.waitForTimeout(600); // let the modal fade end: axe reads mid-fade colours as low contrast
   await r.shot(page, 'review');
   await page.keyboard.press('Escape');
   await review.waitFor({ state: 'hidden' }).catch(() => {});
@@ -356,6 +357,7 @@ await r.finish('Actualizar labs', async () => {
   check('bulk paste: batch confirm 2 of 2', /2 de 2/.test(confirm2Title), confirm2Title);
   await confirm1.click();
   check('bulk paste: "2 pacientes agregados"', await toast(/2 pacientes agregados/), await toastTexts());
+  await page.waitForTimeout(600); // let the modal fade end: axe reads mid-fade colours as low contrast
   await r.shot(page, 'bulk-paste');
   // Long names render shortened in .p-name, but the full name lands in its
   // title attribute (same pattern as the B-row check above).

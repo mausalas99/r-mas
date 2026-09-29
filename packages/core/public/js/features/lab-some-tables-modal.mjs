@@ -1,6 +1,7 @@
 import {
   renderSomeReportTablesHtml,
   wireSomeTableExportButtons,
+  wireSomeTablesTabs,
 } from '../labs-some-table.mjs';
 
 let rt = {
@@ -43,6 +44,7 @@ export function openLabSomeTablesModal() {
     hideGroupTitles: true,
     modalLayout: true,
   });
+  wireSomeTablesTabs(body);
   wireSomeTableExportButtons(body, function (msg, kind) {
     rt.showToast(msg, kind);
   }, {

@@ -12,7 +12,8 @@ import { isMobileWeb, syncMobileLabReferenceChrome } from '../mobile-web.mjs';
 import { sanitizeResLabsChunks } from '../labs-reslabs-sanitize.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 import { labPanelBridge } from './lab-panel-bridge.mjs';
-import { groupLabHistoryByDay, findLabHistoryDayIndexForSet, stepLabHistoryDayIndex, latestSetIdInLabHistoryDay, labHistoryDayArrowDelta, canHandleLabHistoryDayArrow } from '../lab-history-day-nav.mjs';
+import { groupLabHistoryByDay, findLabHistoryDayIndexForSet, stepLabHistoryDayIndex, latestSetIdInLabHistoryDay, labHistoryDayArrowDelta, canHandleLabHistoryDayArrow, findLabDaysWithStudy } from '../lab-history-day-nav.mjs';
+import { setLabSearchQuery } from './lab-results-card.mjs';
 import { buildDayOutputPayload, buildLabHistoryDayOptionsHtml, daySelectValue, findDayForHistoryRef, resolveSelectedDayKey, filterOutDaySets } from '../lab-history-day-view.mjs';
 import { openConfirm } from './workbench/confirm.mjs';
 
@@ -172,7 +173,14 @@ function syncLabHistoryDayNavButtons(hist, selectedId) {
   if (nextBtn) nextBtn.disabled = idx <= 0;
 }
 
-function handleLabHistoryNoPatientSelect_(selectEl, hintEl, moreMenu) {
+/** Bar ⋯ menu: entries that need saved studies (copy days, delete) show only when there are some. */
+function syncLabMenuHistoryItems_(hasHistory) {
+  document.querySelectorAll('[data-lab-needs-history]').forEach(function (el) {
+    el.hidden = !hasHistory;
+  });
+}
+
+function handleLabHistoryNoPatientSelect_(selectEl, hintEl) {
   _labHistoryDateSelectCacheKey = '';
   selectEl.hidden = true;
   selectEl.innerHTML = '';
@@ -183,13 +191,13 @@ function handleLabHistoryNoPatientSelect_(selectEl, hintEl, moreMenu) {
       { mobileReference: mobileLabReferenceMode() }
     );
   }
-  if (moreMenu) moreMenu.hidden = true;
+  syncLabMenuHistoryItems_(false);
   syncLabHistoryDayNavButtons([], '');
   if (mobileLabReferenceMode()) syncMobileLabReferenceChrome();
   return '';
 }
 
-function handleLabHistoryEmptySelect_(selectEl, hintEl, moreMenu, cacheKey) {
+function handleLabHistoryEmptySelect_(selectEl, hintEl, cacheKey) {
   _labHistoryDateSelectCacheKey = cacheKey;
   selectEl.hidden = true;
   selectEl.innerHTML = '';
@@ -202,7 +210,7 @@ function handleLabHistoryEmptySelect_(selectEl, hintEl, moreMenu, cacheKey) {
       { mobileReference: mobileLabReferenceMode() && shouldApplyMobileLabHistoryWindow() }
     );
   }
-  if (moreMenu) moreMenu.hidden = true;
+  syncLabMenuHistoryItems_(false);
   syncLabHistoryDayNavButtons([], '');
   ensureMobileLabOutputShellVisible();
   if (mobileLabReferenceMode()) syncMobileLabReferenceChrome();
@@ -238,15 +246,14 @@ function syncLabHistoryDateSelect(opts) {
   ensureMobileLabOutputShellVisible();
   var selectEl = document.getElementById('lab-history-date-select');
   var hintEl = document.getElementById('lab-output-history-hint');
-  var moreMenu = document.querySelector('.lab-output-more');
   if (!selectEl) return '';
   var pid = rt.getActiveId();
-  if (!pid) return handleLabHistoryNoPatientSelect_(selectEl, hintEl, moreMenu);
+  if (!pid) return handleLabHistoryNoPatientSelect_(selectEl, hintEl);
   var hist = getActivePatientLabHistory();
   var cacheKey = String(pid) + '|L' + getLabHistoryRevision(pid) + '|N' + hist.length;
-  if (!hist.length) return handleLabHistoryEmptySelect_(selectEl, hintEl, moreMenu, cacheKey);
+  if (!hist.length) return handleLabHistoryEmptySelect_(selectEl, hintEl, cacheKey);
   if (hintEl) hintEl.style.display = 'none';
-  if (moreMenu) moreMenu.hidden = mobileLabReferenceMode() ? true : false;
+  syncLabMenuHistoryItems_(true);
   return populateLabHistoryDateSelect_(selectEl, hist, pid, cacheKey, opts);
 }
 
@@ -265,6 +272,109 @@ function stepLabHistoryDay(delta) {
   var nextValue = daySelectValue(days[nextDayIdx].dayKey);
   onLabHistoryDateChange(nextValue);
   syncLabHistoryDateSelect({ preferSetId: nextValue });
+}
+
+/** Resultados search box: jump to the newest day that mentions the study, arrows step between days. */
+var labSearch = { pid: '', hits: [], pos: 0 };
+
+function labSearchInput_() {
+  return document.getElementById('lab-search-input');
+}
+
+function syncLabSearchUi_() {
+  var root = document.getElementById('lab-search');
+  var input = labSearchInput_();
+  if (!root || !input) return;
+  var has = !!input.value.trim();
+  root.classList.toggle('has-query', has);
+  var n = labSearch.hits.length;
+  document.getElementById('lab-search-count').textContent = !has ? '' : n ? labSearch.pos + 1 + ' de ' + n : 'Sin resultados';
+  document.getElementById('lab-search-prev').disabled = labSearch.pos >= n - 1;
+  document.getElementById('lab-search-next').disabled = labSearch.pos <= 0;
+}
+
+function jumpToLabSearchHit_() {
+  var day = groupLabHistoryByDay(getActivePatientLabHistory())[labSearch.hits[labSearch.pos]];
+  if (!day) return;
+  var value = daySelectValue(day.dayKey);
+  onLabHistoryDateChange(value);
+  syncLabHistoryDateSelect({ preferSetId: value });
+}
+
+function runLabSearch_() {
+  var pid = rt.getActiveId();
+  var q = labSearchInput_().value;
+  var days = pid ? groupLabHistoryByDay(getActivePatientLabHistory()) : [];
+  labSearch = { pid: pid, hits: findLabDaysWithStudy(days, q), pos: 0 };
+  setLabSearchQuery(labSearch.hits.length ? q : '');
+  if (labSearch.hits.length) jumpToLabSearchHit_();
+  syncLabSearchUi_();
+}
+
+/** delta +1 = older match, −1 = newer match (same direction as the day arrows). */
+function stepLabSearch_(delta) {
+  var next = labSearch.pos + delta;
+  if (next < 0 || next >= labSearch.hits.length) return;
+  labSearch.pos = next;
+  jumpToLabSearchHit_();
+  syncLabSearchUi_();
+}
+
+function clearLabSearch_() {
+  var input = labSearchInput_();
+  if (!input) return;
+  input.value = '';
+  labSearch = { pid: rt.getActiveId(), hits: [], pos: 0 };
+  setLabSearchQuery('');
+  syncLabSearchUi_();
+}
+
+function wireLabSearch_() {
+  var input = labSearchInput_();
+  if (!input) return;
+  if (labSearch.pid !== rt.getActiveId() && input.value) clearLabSearch_();
+  if (input.dataset.wired) return;
+  input.dataset.wired = '1';
+  input.addEventListener('input', runLabSearch_);
+  input.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter') stepLabSearch_(ev.shiftKey ? -1 : 1);
+    else if (ev.key === 'Escape') clearLabSearch_();
+    else return;
+    ev.preventDefault();
+  });
+  document.getElementById('lab-search-prev').addEventListener('click', function () { stepLabSearch_(1); });
+  document.getElementById('lab-search-next').addEventListener('click', function () { stepLabSearch_(-1); });
+  document.getElementById('lab-search-clear').addEventListener('click', function () { clearLabSearch_(); input.focus(); });
+}
+
+/** Bar ⋯ menu: Vista switches follow the saved prefs; outside click / Esc close it. */
+function wireLabBarMenu_() {
+  var menu = document.getElementById('lab-bar-more');
+  if (!menu || menu.dataset.wired) return;
+  menu.dataset.wired = '1';
+  menu.addEventListener('toggle', function () {
+    if (!menu.open) return;
+    var prefs = rt.getLabOutputPrefs();
+    var state = {
+      'lab-menu-pref-bh': prefs.showBhExtendedLine,
+      'lab-menu-pref-gaso': !prefs.hideGasoAdvInterp,
+      'lab-menu-pref-quick': prefs.quickLabOutput,
+    };
+    Object.keys(state).forEach(function (id) {
+      var cb = document.getElementById(id);
+      if (!cb) return;
+      cb.checked = !!state[id];
+      cb.setAttribute('aria-checked', cb.checked ? 'true' : 'false');
+    });
+  });
+  document.addEventListener('click', function (ev) {
+    if (menu.open && !menu.contains(ev.target)) menu.open = false;
+  });
+  menu.addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Escape' || !menu.open) return;
+    menu.open = false;
+    menu.querySelector('summary').focus();
+  });
 }
 
 function labHistoryDayArrowContext(ev) {
@@ -381,6 +491,8 @@ function dropOtherPatientsLabOutput() {
 export function renderLabHistoryPanel() {
   dropOtherPatientsLabOutput();
   wireLabHistoryDayKeys();
+  wireLabSearch_();
+  wireLabBarMenu_();
   ensureMobileLabOutputShellVisible();
   var selectedId = syncLabHistoryDateSelect();
   if (selectedId && !labPanelBridge.getActiveLab()) {
@@ -629,6 +741,52 @@ async function deleteLabHistorySet(setId) {
   rt.showToast('Eliminado del historial', 'success');
 }
 
+/** Removes one result line (a resLabs chunk) from every saved set of the selected day. */
+function removeLabHistoryLine(text, fullRender) {
+  var pid = rt.getActiveId();
+  var ids = selectedDaySetIds();
+  if (!pid || !ids.length) return false;
+  var sets = normalizeLabHistoryPatientSets(getLabHistory()[pid]);
+  var touched = 0;
+  ids.forEach(function (id) {
+    var set = findLabHistorySetByRef(sets, id);
+    if (!set || !set.resLabs) return;
+    var next = set.resLabs.filter(function (t) { return t !== text; });
+    if (next.length === set.resLabs.length) return;
+    touched++;
+    set.resLabs = next;
+    set.parsed = rt.extractParsedValues(next);
+    set.parsedBySection = rt.buildParsedBySectionFromResLabs(next, set.bhExtras);
+    delete set._parseFingerprint;
+  });
+  if (!touched) {
+    rt.showToast('No se encontró esa línea', 'error');
+    return false;
+  }
+  sets = sets.filter(function (s) { return s.resLabs && s.resLabs.length; });
+  if (sets.length) getLabHistory()[pid] = sets;
+  else delete getLabHistory()[pid];
+  bumpLabHistoryRevision(pid);
+  persistClinicalState({ immediate: true });
+  rt.addAuditEntry('lab-history-delete-line', 'ok', touched, String(text).split(/[\t\s]/)[0]);
+  rt.rebuildEstudiosFromLabHistory(pid);
+  if (fullRender) {
+    labPanelBridge.setActiveLab(null);
+    clearLabHistoryDateSelectCache();
+    renderLabHistoryPanel();
+  } else {
+    var lab = labPanelBridge.getActiveLab();
+    var drop = function (o) {
+      if (o && o.resLabs) o.resLabs = o.resLabs.filter(function (t) { return t !== text; });
+    };
+    drop(lab);
+    if (lab && lab.dayGroups) lab.dayGroups.forEach(drop);
+  }
+  rt.refreshTendenciasOrCultivosPanel();
+  rt.showToast('Línea quitada', 'success');
+  return true;
+}
+
 async function deleteLabHistoryDay_(day) {
   var pid = rt.getActiveId();
   if (!pid || !day || !day.rows.length) return;
@@ -681,6 +839,7 @@ export {
   replayLabHistorySet,
   reprocessLabHistorySet,
   deleteLabHistorySet,
+  removeLabHistoryLine,
   labHistoryPanelIsCollapsed,
   toggleLabHistoryPanel,
 };

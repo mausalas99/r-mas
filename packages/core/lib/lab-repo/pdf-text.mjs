@@ -20,3 +20,43 @@ export async function extractSomeTextFromPdfBuffer(buffer) {
   const data = await pdf(new Uint8Array(buffer));
   return normalizePdfExtract(data.text || '');
 }
+
+/**
+ * Renderiza una página como líneas visuales: ítems de texto agrupados por Y y
+ * ordenados por X. El orden del content stream (pdf-parse por defecto) desordena
+ * tablas: valores quedan lejos de su etiqueta.
+ */
+async function renderPageByLayout(pageData) {
+  const tc = await pageData.getTextContent({ normalizeWhitespace: true, disableCombineTextItems: false });
+  const items = tc.items.filter((i) => i.str.trim());
+  items.sort((a, b) => b.transform[5] - a.transform[5]);
+  const lines = [];
+  for (const it of items) {
+    const last = lines[lines.length - 1];
+    if (last && Math.abs(last.y - it.transform[5]) <= 3) last.items.push(it);
+    else lines.push({ y: it.transform[5], items: [it] });
+  }
+  return lines
+    .map((l) => {
+      l.items.sort((a, b) => a.transform[4] - b.transform[4]);
+      let out = '';
+      let endX = null;
+      for (const it of l.items) {
+        if (endX !== null) {
+          const gap = it.transform[4] - endX;
+          // Celdas contiguas llegan pegadas (gap≈0): siempre separar.
+          if (!/\s$/.test(out) && !/^\s/.test(it.str)) out += gap > 12 ? '   ' : ' ';
+        }
+        out += it.str;
+        endX = it.transform[4] + it.width;
+      }
+      return out;
+    })
+    .join('\n');
+}
+
+/** Texto en orden visual (tablas del Laboratorio Clínico de Reumatología). */
+export async function extractLayoutTextFromPdfBuffer(buffer) {
+  const data = await pdf(new Uint8Array(buffer), { pagerender: renderPageByLayout });
+  return normalizePdfExtract(data.text || '');
+}

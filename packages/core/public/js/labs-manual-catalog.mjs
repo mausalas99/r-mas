@@ -157,6 +157,10 @@ var EXTENDED_LABELS = {
   VIRAL: 'Serología viral',
   FEB: 'Febriles',
   MICRO: 'Micro / Ag rápidos',
+  ANA: 'ANA / dsDNA',
+  ENA: 'ENA',
+  APL: 'Antifosfolípidos',
+  TB: 'Quantiferón',
 };
 
 /**

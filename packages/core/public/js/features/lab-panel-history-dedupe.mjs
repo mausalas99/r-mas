@@ -10,6 +10,7 @@ import { bumpLabHistoryRevision } from '../lab-history-cache.mjs';
 import {
   findExactDuplicateLabGroups,
   findComplementaryLabHistoryMergeGroups,
+  findSubsumedLabSets,
   compareLabSetIdForDedupe,
 } from '../lab-history-auto-store-core.mjs';
 import { resLabsHasGasometria } from '../lab-history-format.mjs';
@@ -528,6 +529,24 @@ function setsByIdForPatient(patientId) {
 }
 
 /** Auto (import): misma hora primero, luego ventana ≤2 h. Manual UI: grupos del usuario. */
+/** Quita sets que ya están completos dentro de otro del mismo día; el grande hereda su hora si no tiene. */
+function removeSubsumedLabSets_(patientId) {
+  var list = getLabHistory()[patientId] || [];
+  var found = findSubsumedLabSets(list);
+  if (!found.length) return [];
+  var gone = new Set(found.map(function (f) { return f.id; }));
+  found.forEach(function (f) {
+    if (f.into && !String(f.into.hora || '').trim()) {
+      var small = list.find(function (s) { return String(s.id) === f.id; });
+      if (small && small.hora) f.into.hora = small.hora;
+    }
+  });
+  getLabHistory()[patientId] = list.filter(function (s) { return !gone.has(String(s.id)); });
+  bumpLabHistoryRevision(patientId);
+  clearLabHistoryDateSelectCache();
+  return Array.from(gone);
+}
+
 function runLabConsolidationForPatient(patientId, outlierGroupKeys) {
   if (!patientId || !getLabHistory()[patientId] || getLabHistory()[patientId].length < 2) {
     return { merged: 0, removedIds: [], keeperIds: [] };
@@ -566,6 +585,11 @@ function runLabConsolidationForPatient(patientId, outlierGroupKeys) {
     combineConsolidationResults_(sameDtResult, windowResult),
     complementaryResult
   );
+  var subsumed = removeSubsumedLabSets_(patientId);
+  if (subsumed.length) {
+    result.merged += subsumed.length;
+    result.removedIds = result.removedIds.concat(subsumed);
+  }
   if (result.merged) rt.rebuildEstudiosFromLabHistory(patientId);
   return result;
 }

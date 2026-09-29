@@ -14,6 +14,9 @@
 import { escTxt } from '../labs-display.mjs';
 import { fitOneRow } from './fit-one-row.mjs';
 import { isCriticalLabValue, clinicalPriorityRank } from '../labs-critical-values.mjs';
+import { sortLabHistoryChronological, normalizeFechaLabHistory, normalizeHoraLabHistory } from '../tend-core.mjs';
+import { dayKeyFromLabSet } from '../lab-history-format.mjs';
+import { rt } from './lab-panel-runtime-state.mjs';
 
 function pluralAlterados(n) {
   return n === 1 ? '1 alterado' : n + ' alterados';
@@ -139,4 +142,82 @@ export function syncLabResultsCardChrome() {
   restyleLabHourGroupHeaders(box);
   updateLabResultsCardTitle(box);
   renderLabAlteredChips(box);
+}
+
+/** Newest-first lab sets of a patient. */
+function patientLabHistory(pid) {
+  return sortLabHistoryChronological(
+    rt.ensureParsedLabHistoryCached ? rt.ensureParsedLabHistoryCached(pid) : rt.ensureParsedLabHistory(pid, { readOnly: true })
+  );
+}
+
+/**
+ * 8.4.4 «J1» late state: next to the name, an amber line when the patient has labs
+ * but none from today («Aún no hay labs de hoy · último 27/09 · 06:05»). Nothing on a
+ * normal day: the time is already in the day's header.
+ */
+export function renderLabLateStatus() {
+  var el = document.getElementById('lab-late-status');
+  if (!el) return;
+  el.hidden = true;
+  var pid = rt.getActiveId();
+  if (!pid) return;
+  var last = patientLabHistory(pid).find(function (set) {
+    return set && set.resLabs && set.resLabs.length;
+  });
+  if (!last) return;
+  var now = new Date();
+  if (dayKeyFromLabSet(last) === now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate()) return;
+  var fecha = normalizeFechaLabHistory(last.fecha) || '';
+  if (!/^\d{2}\/\d{2}/.test(fecha)) return;
+  var hora = String(normalizeHoraLabHistory(last.hora) || '').trim().slice(0, 5);
+  el.textContent = 'Aún no hay labs de hoy · último ' + fecha.slice(0, 5) + (hora ? ' · ' + hora : '');
+  el.hidden = false;
+}
+
+/**
+ * Search box (Resultados): mark the searched study name in the selected day. Text only — copy reads stored data, never this DOM.
+ */
+var searchQuery = '';
+
+export function setLabSearchQuery(q) {
+  searchQuery = String(q || '').trim();
+  highlightLabSearch();
+}
+
+export function highlightLabSearch() {
+  var root = document.getElementById('lab-output-box');
+  if (!root) return;
+  root.querySelectorAll('mark.lab-hit').forEach(function (m) {
+    m.replaceWith(document.createTextNode(m.textContent));
+  });
+  root.normalize();
+  if (!searchQuery) return;
+  var re = new RegExp('(^|[^A-Za-z0-9])(' + searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[A-Za-z0-9]*)', 'gi');
+  var first = null;
+  var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  var nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(function (node) {
+    var text = node.nodeValue;
+    var frag = null;
+    var last = 0;
+    var m;
+    re.lastIndex = 0;
+    while ((m = re.exec(text))) {
+      frag = frag || document.createDocumentFragment();
+      var start = m.index + m[1].length;
+      frag.appendChild(document.createTextNode(text.slice(last, start)));
+      var mark = document.createElement('mark');
+      mark.className = 'lab-hit';
+      mark.textContent = m[2];
+      frag.appendChild(mark);
+      first = first || mark;
+      last = start + m[2].length;
+    }
+    if (!frag) return;
+    frag.appendChild(document.createTextNode(text.slice(last)));
+    node.parentNode.replaceChild(frag, node);
+  });
+  if (first) first.scrollIntoView({ block: 'nearest' });
 }

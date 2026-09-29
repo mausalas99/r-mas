@@ -31,12 +31,40 @@ import {
   flattenDeptGroups,
 } from './labs-some-table-normalize.mjs';
 
+var FOOTER_START_RE = /Responsable\s+Sanitario/i;
+
+/**
+ * The report's signature footer («… Responsable Sanitario», «Sistema SOME …», lab address,
+ * accession, patient name) is not a study. Drop it up to the next department, table header
+ * or «Expediente:» line, so its lines never become rows.
+ */
+function stripReportFooters_(lines) {
+  var out = [];
+  for (var i = 0; i < lines.length; i++) {
+    if (!FOOTER_START_RE.test(lines[i])) {
+      out.push(lines[i]);
+      continue;
+    }
+    // «&» opens the footer one or two lines above the signature line.
+    while (out.length && !cleanEstudio(out[out.length - 1])) out.pop();
+    if (out.length && cleanEstudio(out[out.length - 1]) === '&') out.pop();
+    var j = i + 1;
+    while (j < lines.length) {
+      var t = cleanEstudio(lines[j]);
+      if (isDepartmentLine(t) || isTableHeaderLine(t) || /^Expediente\s*:/i.test(t)) break;
+      j++;
+    }
+    i = j - 1;
+  }
+  return out;
+}
+
 export function parseSomeReportTables(textoBruto) {
   if (!textoBruto || typeof textoBruto !== 'string') {
     return { departments: [] };
   }
 
-  var lines = textoBruto.replace(/\r/g, '').split('\n');
+  var lines = stripReportFooters_(textoBruto.replace(/\r/g, '').split('\n'));
   var state = {
     departments: [],
     currentDept: null,

@@ -922,6 +922,23 @@ ipcMain.handle('open-external', async (_e, url) => {
 
 ipcMain.handle('get-app-version', () => app.getVersion());
 
+// PDF de laboratorio (arrastrado al modal Pegar SOME) → texto plano. Solo %PDF, máx. 15 MB.
+ipcMain.handle('pdf-to-text', async (_e, buf) => {
+  try {
+    const bytes = Buffer.from(buf);
+    if (bytes.length > 15 * 1024 * 1024 || bytes.subarray(0, 5).toString('latin1') !== '%PDF-') {
+      return { ok: false };
+    }
+    const pdfText = await import('../core/lib/lab-repo/pdf-text.mjs');
+    // SOME conserva su extracción; Reumatología necesita el orden visual de las tablas.
+    const some = await pdfText.extractSomeTextFromPdfBuffer(bytes);
+    const text = pdfText.looksLikeExtractedSome(some) ? some : await pdfText.extractLayoutTextFromPdfBuffer(bytes);
+    return { ok: true, text };
+  } catch (_err) {
+    return { ok: false };
+  }
+});
+
 ipcMain.handle('get-native-runtime-status', () => {
   const probe = probeNativeRuntime();
   const detail = (probe.failures || [])

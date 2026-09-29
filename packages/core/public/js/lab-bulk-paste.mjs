@@ -2,6 +2,8 @@
  * Entrada masiva de laboratorios SOME: separadores de paciente, split por Expediente:,
  * vista previa y consolidación por día + tipo dentro de ventana de 2 h.
  */
+import { reumToSomeShape } from './labs-reum-parse.mjs';
+import { matchPatientsByNombre, getNameAlias } from './patient-name-match.mjs';
 import {
   procesarLabs,
   looksLikeSomeLabReport,
@@ -13,7 +15,7 @@ import {
   extractLabReportFechaDMY,
 } from './labs.js';
 import { matchValorLab_ } from './labs-extract.mjs';
-import { getLabHistory } from './app-state.mjs';
+import { getLabHistory, getPatients } from './app-state.mjs';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory, parseFechaLabToMs, sortLabHistoryChronological } from './tend-core.mjs';
 import { normalizeLabLine } from './lab-history-auto-store-core.mjs';
 import { resLabsHasGasometria, primaryTipoForLabSet } from './lab-history-format.mjs';
@@ -474,13 +476,24 @@ function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
   };
 }
 
+/** Registro de la única persona del censo que coincide por nombre (reportes sin expediente). */
+function registroCensoPorNombre_(nombre) {
+  var alias = getNameAlias(nombre);
+  if (alias) return alias;
+  var ranked = matchPatientsByNombre(nombre, getPatients());
+  if (!ranked.length || (ranked.length > 1 && ranked[0].score - ranked[1].score < 8)) return '';
+  return String(ranked[0].patient.registro || '').trim();
+}
+
 /**
  * @param {string} text
  * @param {{ findPatientByRegistro: (reg: string) => { id: string, nombre?: string, registro?: string } | null }} opts
  */
 export function buildBulkLabPreview(text, opts) {
   var findPatient = opts && opts.findPatientByRegistro;
-  var blocks = splitBulkLabTextByPatient(text);
+  var blocks = splitBulkLabTextByPatient(text).map(function (b) {
+    return reumToSomeShape(b, registroCensoPorNombre_);
+  });
   if (!blocks.length && String(text || '').trim()) {
     blocks = [String(text).trim()];
   }

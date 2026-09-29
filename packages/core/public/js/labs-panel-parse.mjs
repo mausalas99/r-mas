@@ -3,6 +3,7 @@
  */
 import { extraerConRangoPanel, fmtLabRanged_ } from './labs-extract.mjs';
 import { getEffectivePanelDefs } from './labs-panel-overlay-store.mjs';
+import { parseReumatologiaPanels_ } from './labs-reum-parse.mjs';
 
 export { LAB_EXTENDED_SECTION_KEYS, labExtendedSectionAlt_ } from './labs-panel-defs.mjs';
 
@@ -188,5 +189,5 @@ export function parseExtendedLabPanels_(textoBruto, priorRefsBySection) {
     var line = parsePanelDef_(def, texto, prior);
     if (line) out.push(line);
   }
-  return mergeSectionLines_(out);
+  return mergeSectionLines_(out.concat(parseReumatologiaPanels_(texto)));
 }

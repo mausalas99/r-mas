@@ -464,6 +464,49 @@ function sectionsAreComplementary_(a, b) {
   return shared === 0 || shared >= SAME_STUDY_MIN_SHARED;
 }
 
+var SUBSUMED_MIN_FIELDS = 8;
+
+function countSectionFields_(pb) {
+  return Object.keys(pb || {}).reduce(function (n, k) {
+    return n + Object.keys(pb[k] || {}).length;
+  }, 0);
+}
+
+function sectionsAreSubset_(small, big) {
+  return Object.keys(small).every(function (k) {
+    var rowB = big[k];
+    return Object.keys(small[k] || {}).every(function (fk) {
+      return rowB && fk in rowB && Number(small[k][fk]) === Number(rowB[fk]);
+    });
+  });
+}
+
+/**
+ * Sets del mismo día cuyos analitos (todos, con el mismo valor) ya están dentro de otro set
+ * más grande: copias que una fusión dejó sueltas. Exige ≥8 analitos para no borrar tomas chicas.
+ * @param {object[]} sets — con id, fecha y parsedBySection
+ * @returns {{ id: string, into: object }[]}
+ */
+export function findSubsumedLabSets(sets) {
+  var list = (sets || []).filter(function (s) {
+    return s && s.id != null && String(s.id) !== '' && s.parsedBySection && countSectionFields_(s.parsedBySection) >= SUBSUMED_MIN_FIELDS;
+  });
+  var out = [];
+  list.forEach(function (small) {
+    var day = normalizeDateValue(small.fecha);
+    var big = list.find(function (b) {
+      return (
+        b !== small &&
+        normalizeDateValue(b.fecha) === day &&
+        countSectionFields_(b.parsedBySection) > countSectionFields_(small.parsedBySection) &&
+        sectionsAreSubset_(small.parsedBySection, b.parsedBySection)
+      );
+    });
+    if (big) out.push({ id: String(small.id), into: big });
+  });
+  return out;
+}
+
 /**
  * Mismo día, sin match exacto de hora, pero secciones complementarias (p. ej. Biometría
  * llegó primero y Química Sanguínea se agrega después del mismo estudio). Devuelve el set
