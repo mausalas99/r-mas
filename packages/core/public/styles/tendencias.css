@@ -451,7 +451,7 @@ body > .tend-drag-hovercard {
 }
 .tend-val { display: inline-block; padding: 3px 10px; border-radius: 999px; }
 .tend-val--hi { color: var(--error, #d70015); background: color-mix(in oklab, var(--error, #d70015) 13%, transparent); }
-.tend-val--lo { color: oklch(0.55 0.14 60); background: color-mix(in oklab, oklch(0.7 0.15 60) 16%, transparent); }
+.tend-val--lo { color: oklch(0.44 0.11 60); background: color-mix(in oklab, oklch(0.7 0.15 60) 16%, transparent); }
 html.dark .tend-val--lo { color: oklch(0.8 0.12 60); }
 .tend-tbl-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin-top: 12px; font-size: 12px; color: var(--text-muted); }
 .tend-tbl-lg-hi { color: var(--error, #d70015); }

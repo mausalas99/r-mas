@@ -1008,6 +1008,7 @@ function renderGroupChartsInner(deps, state, sectionKey, legendLabelForSpec, pan
     b.type = 'button';
     b.className = 'tend-chart-tab' + (fam === activeFam ? ' is-active' : '');
     b.setAttribute('role', 'tab');
+    b.dataset.panelFamily = fam;
     b.setAttribute('aria-selected', fam === activeFam ? 'true' : 'false');
     b.textContent = resolvePanelTitle(state.patientId, sectionKey, fam);
     b.onclick = function () {
