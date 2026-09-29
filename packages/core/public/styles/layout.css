@@ -501,6 +501,7 @@ html.censo-preview-open {
 .censo-preview-modal .modal-title {
   margin: 0;
   font-size: 15px;
+  color: var(--text);
 }
 .censo-preview-hint {
   margin: 0;
@@ -513,6 +514,7 @@ html.censo-preview-open {
 }
 .censo-export-dialog .modal-title {
   margin: 0 0 2px;
+  color: var(--text);
 }
 .censo-export-date {
   margin: 0 0 18px;

@@ -4199,6 +4199,27 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 #ea-registro-backdrop .ea-registro-cols {
   grid-template-columns: minmax(0, 1fr);
 }
+#ea-registro-backdrop .ea-registro-top .ea-field--datetime,
+#ea-registro-backdrop .ea-registro-col {
+  min-width: 0;
+}
+#ea-registro-backdrop .ea-registro-top {
+  gap: 8px;
+}
+#ea-registro-backdrop .ea-io-extra-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 120px) auto;
+  width: 100%;
+}
+#ea-registro-backdrop .ea-io-extra-row.ea-io-event-row {
+  grid-template-columns: 4rem minmax(0, 1.2fr) minmax(0, 1fr) 5rem auto;
+}
+#ea-registro-backdrop select.ea-io-link {
+  min-width: 0;
+}
+#ea-registro-backdrop .ea-balance-live {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 #ea-registro-backdrop .ea-io-table {
   --ea-io-cols: 4.4rem repeat(3, minmax(0, 1fr)) 3.4rem;
 }
