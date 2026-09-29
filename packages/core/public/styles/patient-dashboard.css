@@ -634,8 +634,8 @@ html.dark .patient-dash .draw-value.abn {
 }
 
 
-/* Zones flow through balanced columns so a long zone spills into the next
-   column instead of leaving a gap; no inner rules. */
+/* Zones flow through balanced columns; a zone never splits, so every
+   column starts with its heading. No inner rules. */
 .patient-dash .bento.meds-band .soap-pack {
   display: block;
   columns: 3 12em;
@@ -646,6 +646,7 @@ html.dark .patient-dash .draw-value.abn {
   overflow: visible;
   padding: 2px 4px 4px;
 }
+.patient-dash .bento.meds-band .soap-pack .soap-zone { break-inside: avoid; }
 .patient-dash .bento.meds-band .soap-pack .soap-zone + .soap-zone { margin-top: 8px; }
 .patient-dash .bento.meds-band .soap-pack .z {
   display: flex;

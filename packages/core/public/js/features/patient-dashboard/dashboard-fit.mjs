@@ -88,10 +88,17 @@ export function watchDashboardFit(mount) {
   var bottom = mount.querySelector('.dash-bottom');
   if (!bottom) return;
   fitDashboard(mount);
+  // Fonts load after first paint on reload; refit once they settle.
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () {
+      if (mount.isConnected) fitDashboard(mount);
+    });
+  }
   if (typeof ResizeObserver !== 'function') return;
   var ro = new ResizeObserver(function () {
     fitDashboard(mount);
   });
   ro.observe(bottom);
+  ro.observe(mount);
   observers.set(mount, ro);
 }

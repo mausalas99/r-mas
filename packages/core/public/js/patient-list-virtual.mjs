@@ -12,11 +12,11 @@ import {
 } from './patient-list-incremental.mjs';
 
 export const PATIENT_ACTIVE_VIRTUAL_THRESHOLD = 30;
-// Real rendered card height (89-90px at default density) + the flex-column
-// gap between cards (~7-8px) — measured from a live sidebar. Absolutely
+// Real rendered card height (~61px at default density, one-line name) + the flex-column
+// gap between cards (7px) — measured from a live sidebar. Absolutely
 // positioned virtual items get no automatic gap, so a stride shorter than
 // the real card height makes consecutive cards overlap and cut off text.
-export const PATIENT_ACTIVE_ITEM_STRIDE = 98;
+export const PATIENT_ACTIVE_ITEM_STRIDE = 68;
 
 /** @param {number} activeCount */
 export function shouldVirtualizeActiveZone(activeCount) {
