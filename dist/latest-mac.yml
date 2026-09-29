@@ -1,57 +1,43 @@
-version: 8.4.3
+version: 8.4.4
 files:
-  - url: R+-8.4.3-autoupdate-mac-arm64.zip
-    sha512: Tm8pyIQMq6q+ysEA3TkxcqGtWrjb5zG77Xofzj0IeGGs6OpNZwQ3VdK1V9LCR8Jxk1s++BBygiOYuwB3JIqzRg==
-    size: 141322038
-  - url: R+-8.4.3-arm64.dmg
-    sha512: es53kU0vwVup4pc6qGkug01/bKA2C/SYNAR2Nvvz+Q74jIGXmwu5PL2pxujiYCI0aEzzIgpvH+QDgqnsekAR1Q==
-    size: 141974213
-  - url: R+-8.4.3-autoupdate-mac-x64.zip
-    sha512: vyALhIacA+mMvq76vdaPzXjQEmhc1z/nswgDrLgmNaZmGAywqWorgnSvKOfyJfaN73H682S7sEUdlqn9PjxKPQ==
-    size: 149991427
-  - url: R+-8.4.3-x64.dmg
-    sha512: UQps1G07EidoHLrfY2N3rsL/1VVPdvp2r3U+QilAxuEFV6j9T/89IkkQz6ZhoDKbbKL1Lvd/iERmgx12ofeNoQ==
-    size: 150593022
-path: R+-8.4.3-autoupdate-mac-arm64.zip
-sha512: Tm8pyIQMq6q+ysEA3TkxcqGtWrjb5zG77Xofzj0IeGGs6OpNZwQ3VdK1V9LCR8Jxk1s++BBygiOYuwB3JIqzRg==
-releaseDate: '2026-09-28T20:47:26.000Z'
+  - url: R+-8.4.4-autoupdate-mac-arm64.zip
+    sha512: qb027vGFQhm/HmcOi9wh9a7fLEsbCIQnCBBrA2L8rawPjuOxzJGZMLauj9VsVJZWZR9Z+/x23UMKQa8aEACZ6Q==
+    size: 141431445
+  - url: R+-8.4.4-arm64.dmg
+    sha512: GINbjSgZeLdUnUrlZ5F14REy4wkhiw6R/we4NEOyZtTCH3BpB6MVxYB1WCCwOqtPvzFl96nrN1UbbsjLiHAZpA==
+    size: 142134433
+  - url: R+-8.4.4-autoupdate-mac-x64.zip
+    sha512: BAvnzmWQkHJfWwA+AFhqaM5Zd4/H15DJQaUWf4b01k0aQFWPjtb7rSedHHh/e9sb2BeQr3q2N4rV5vt+BUrTDw==
+    size: 153443421
+  - url: R+-8.4.4-x64.dmg
+    sha512: 6ZevnhVruwOdVRTQ7eMNowHQRClVtpQ8lx+zHb6BlqJJPBS03qusCDUoe9hGlCeiDNjWnt2ZL5dGxNRW74V4ag==
+    size: 154064060
+path: R+-8.4.4-autoupdate-mac-arm64.zip
+sha512: qb027vGFQhm/HmcOi9wh9a7fLEsbCIQnCBBrA2L8rawPjuOxzJGZMLauj9VsVJZWZR9Z+/x23UMKQa8aEACZ6Q==
+releaseDate: '2026-09-29T21:39:16.000Z'
 releaseNotes: |
-  Barra superior más limpia: Paciente, Laboratorio, Manejo y Agenda en una sola pastilla. Tacha medicamentos suspendidos en Datos. Tarjetas de la lista más compactas, Resumen a todo lo ancho y Laboratorio con alterados primero. Nuevas pantallas de Nube, Admin y Ajustes, y una sincronización con Nube mucho más confiable.
+  Laboratorio rediseñado, con lectura de PDF de Reumatología. Tendencias con panel de estudio nuevo. Nube más estable cuando muchos equipos editan a la vez.
   
-  Nuevo (barra superior): Paciente, Laboratorio, Manejo y Agenda comparten una pastilla que muestra solo el área activa y se abre al pasar el cursor. Censo y el cambio Sala / IC / Guardia van junto a la lista de pacientes. Atajos y Aprender R+ se unen en un solo menú Ayuda (?).
+  Nuevo (Laboratorio): diseño nuevo. Puedes moverte entre días anteriores del historial. Las tablas de SOME se leen mejor y el historial ya no repite estudios.
   
-  Nuevo (Manejo y Gráficas): nuevo diseño.
+  Nuevo (Laboratorio): pega el PDF de Reumatología y R+ lo lee.
   
-  Nuevo (lista lateral): tarjetas de dos líneas: nombre y cuarto·cama. Fijar, archivar y eliminar salen solo al pasar el cursor sobre la tarjeta. Fijar ahora es un ícono.
+  Nuevo (Tendencias): el panel de estudio ocupa todo el ancho. Chips en la tabla, pestañas de gráficas con la lista de analitos y una tabla dinámica en ventana.
   
-  Nuevo (Resumen): signos con su mínimo y máximo de 24 h. Cada lab alterado muestra el valor anterior y la flecha. Medicamentos y Pendientes a todo lo ancho; Pendientes en dos columnas. Los cultivos salen como tarjetas en tres columnas dentro de Labs. Eventualidades ya no sale en Resumen; sigue en su pestaña.
+  Nuevo (barra superior): el rediseño con la pastilla de área activa se une con Tendencias. Los atajos, los avisos de funciones y el Resumen se ajustaron.
   
-  Nuevo (Laboratorio): nombre, cuarto y cama arriba del panel. Los valores alterados salen en una línea de chips arriba de la tabla: uno por estudio, los críticos primero y marcados. Pegar SOME y Actualizar labs pasan al final del encabezado de Resultados. Los diagramas se abren en una ventana con el botón Diagramas.
+  Arreglado (lista lateral): las tarjetas de una línea ya no dejan huecos grandes entre ellas.
   
-  Nuevo (Datos): toca un medicamento en Datos › Censo para tacharlo. Sale del texto del censo pero queda a un toque; tócalo otra vez para regresarlo. Tomar de lista borra los tachados. Se sincroniza con Nube.
+  Arreglado (Resumen): los medicamentos ya no se parten entre columnas.
   
-  Nuevo (Nube): nueva pantalla de estado de Nube con vista rápida bajo el ícono del encabezado, y nuevo Diagnóstico Nube. Cambia el código y la llave de una sala cerrada en un solo paso.
+  Arreglado (Eventualidades): si un equipo agrega una eventualidad justo cuando otro sincroniza, ya no se pierde.
   
-  Nuevo (Admin y Ajustes): Admin rediseñado (Resumen, Salas, Usuarios, Pacientes, Registro, Zona de peligro). Ajustes con nuevo Mi perfil, nuevo panel de Equipos y nueva pantalla de Nube sin sesión.
+  Arreglado (Nube): borrar muchos pacientes de la red ya no satura el servidor. Cada expediente queda en su propia fila y solo se escribe lo que cambió.
   
-  Arreglado (Nube): VPO, lista de problemas y perfil farmacológico ahora se envían al editarlos, también al borrar. Si restauras un registro con «deshacer», ya no se pierde al recargar. Un miembro nuevo recibe todo el historial de la sala. R+ se pone al día en segundos cuando Nube regresa.
+  Arreglado (Nube): una sala bloqueada ya no repite una descarga completa una y otra vez. Con una llave equivocada, el equipo ya no pide todo el estado cifrado, que tardaba unos 15 s.
   
-  Arreglado (Admin): eliminar muchos pacientes de la red ya no falla con «DB is overloaded». Se borra en grupos pequeños y se reintenta solo. Si un grupo falla, los demás siguen.
+  Arreglado (Nube, Monitoreo): un equipo con reloj atrasado ya no pierde sus filas de monitoreo y ya no reenvía lo mismo cada 12 s.
   
-  Arreglado (Admin): verificar labs de la red usa la dirección del portal de Ajustes › Laboratorio.
+  Problema conocido: si dos equipos editan a la vez una categoría de Manejo (Estado actual), una puede perderse. Se arregla en 8.4.5.
   
-  Arreglado (labs): al cambiar de expediente, Laboratorio ya no muestra los labs del anterior. Un coproparasitoscópico pegado ya no ensucia BH ni Observaciones.
-  
-  Arreglado: los servicios en el selector de interconsulta ya no se salen del panel.
-  
-  Nuevo (Manejo): con 16 medicamentos o más, las filas se compactan a una línea y la lista usa tres columnas, así cabe sin desplazarte.
-  
-  Arreglado (Manejo): la bomba de insulina se detecta también cuando SOME la manda como «MEDICAMENTOS P3». Se quitó el cuadro repetido de medicamentos al final de Manejo actual; Nota queda alineado en todas las filas.
-  
-  Arreglado (Estado actual): con gaso venosa, la copia ya no incluye el aviso «PaFi no válida» ni el SpO₂/FiO₂.
-  
-  Accesibilidad: con un panel abierto, el resto de la app queda inactivo; más botones tienen nombre para lectores de pantalla.
-  
-  Problema conocido: si dos equipos agregan a la vez una eventualidad al mismo expediente, una puede perderse. Se arregla en 8.4.4.
-  
-  Problema conocido: notas e indicaciones todavía no se sincronizan con Nube. Llega en 8.4.4.
+  Problema conocido: notas e indicaciones todavía no se sincronizan con Nube. Llega en 8.4.5.
