@@ -27,7 +27,7 @@ export const FEATURE_HINTS = [
     title: 'Pegar laboratorios',
     steps: [
       { sel: '#apptab-lab', action: true, text: 'Empieza aquí: los laboratorios del SOME entran por <strong>Laboratorio</strong>.' },
-      { sel: '#btn-lab-paste', action: true, text: 'Abre el cuadro para pegar el reporte. Atajo: copia el reporte del SOME y pulsa <strong>⌘V</strong> (Ctrl+V) en cualquier parte de R+, fuera de un campo de texto. R+ lo lleva al paciente correcto.' },
+      { sel: '#lab-bar-more > summary', action: true, text: 'Abre el menú ⋯ y elige <strong>Pegar SOME</strong> para pegar el reporte. Atajo: copia el reporte del SOME y pulsa <strong>⌘V</strong> (Ctrl+V) en cualquier parte de R+, fuera de un campo de texto. R+ lo lleva al paciente correcto.' },
       { sel: '#btn-procesar', action: true, text: 'Pega el reporte tal cual y pulsa <strong>Procesar</strong>. Verás los alterados arriba y la tabla con los valores. Los diagramas se abren con <strong>Diagramas</strong>.' },
     ],
   },
@@ -163,7 +163,7 @@ export const FEATURE_HINTS = [
     title: 'Laboratorio: alterados primero',
     steps: [
       { sel: '#lab-altered-chips:not([hidden])', text: 'Los valores alterados salen aquí, uno por estudio. Los críticos van primero y marcados.' },
-      { sel: '#lab-diagrams-btn:not([hidden])', text: 'Los diagramas ahora se abren en una ventana con <strong>Diagramas</strong>. <strong>Pegar SOME</strong> y <strong>Actualizar labs</strong> están al final de este encabezado.' },
+      { sel: '#lab-bar-more > summary', text: 'Los diagramas se abren desde el menú ⋯, en <strong>Diagramas</strong>. <strong>Pegar SOME</strong> también está ahí. <strong>Actualizar labs</strong> queda a su lado.' },
     ],
   },
   {

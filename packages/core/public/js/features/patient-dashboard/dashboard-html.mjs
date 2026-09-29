@@ -279,8 +279,7 @@ function renderIdentityHtml(model) {
     renderIcAssignedHtml(idn.interconsultServiceIds) +
     '</div></div>' +
     '<div class="id-actions">' +
-    '<button type="button" class="wb-btn wb-btn-primary" data-dash-action="pegar-some" title="Pegar reporte SOME y procesar">Pegar SOME</button>' +
-    '<button type="button" class="wb-btn wb-btn-secondary" data-dash-action="actualizar-labs">Actualizar labs</button>' +
+    '<button type="button" class="wb-btn wb-btn-primary" data-dash-action="actualizar-labs">Actualizar labs</button>' +
     '</div></div>'
   );
 }

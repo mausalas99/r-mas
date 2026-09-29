@@ -200,10 +200,6 @@ function handleDashboardAction(action, el) {
     if (typeof window.openEstadoActualRegistroModal === 'function') window.openEstadoActualRegistroModal();
     return;
   }
-  if (action === 'pegar-some') {
-    if (typeof window.openLabPasteModal === 'function') window.openLabPasteModal();
-    return;
-  }
   if (action === 'actualizar-labs') {
     openLabsRepoModal();
     return;

@@ -185,18 +185,12 @@ await r.finish('Navigation redesign (board 7)', async () => {
   check('the four right icons stay separate buttons (profile, help, settings, theme)',
     ['perfil', 'ayuda', 'ajustes|configuraci', 'tema|claro|oscuro'].every((p) => head.names.some((n) => new RegExp(p, 'i').test(n))), head.names);
 
-  // ── Resumen: paste beside refresh, loader ─────────────────────────────
-  const btns = await page.evaluate(() => {
-    const p = document.querySelector('[data-dash-action="pegar-some"]');
-    const u = document.querySelector('[data-dash-action="actualizar-labs"]');
-    const a = p && p.getBoundingClientRect();
-    const b = u && u.getBoundingClientRect();
-    return {
-      same: !!(a && b) && Math.abs(a.top - b.top) < 3 && a.right <= b.left + 12,
-      inSidebar: !!document.querySelector('#patient-sidebar [data-dash-action="pegar-some"], #patient-sidebar #btn-lab-paste'),
-    };
-  });
-  check('«Pegar SOME» sits beside «Actualizar labs», not in the sidebar', btns.same && !btns.inSidebar, btns);
+  // ── Resumen: only «Actualizar labs», loader ───────────────────────────
+  const btns = await page.evaluate(() => ({
+    paste: !!document.querySelector('[data-dash-action="pegar-some"]'),
+    refreshPrimary: !!document.querySelector('.id-actions [data-dash-action="actualizar-labs"].wb-btn-primary'),
+  }));
+  check('Resumen shows «Actualizar labs» as the main button, no «Pegar SOME»', !btns.paste && btns.refreshPrimary, btns);
   await page.evaluate(() => {
     globalThis.__steps = [];
     new MutationObserver(() => {
@@ -205,7 +199,7 @@ await r.finish('Navigation redesign (board 7)', async () => {
     }).observe(document.body, { childList: true, subtree: true, characterData: true });
   });
   await closeToasts(page);
-  await page.locator('[data-dash-action="pegar-some"]').click();
+  await page.evaluate(() => globalThis.openLabPasteModal());
   await page.locator('#lab-input').waitFor({ state: 'visible' });
   await page.locator('#lab-input').fill(fullLabs(A, 'Sep 27 2026 9:10AM'));
   await page.locator('#btn-procesar').click();

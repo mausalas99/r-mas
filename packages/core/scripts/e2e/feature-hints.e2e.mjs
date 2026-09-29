@@ -128,7 +128,9 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   check('step 2 teaches the paste-anywhere shortcut', /⌘V.*cualquier parte/.test(await bubbleText(page)), await bubbleText(page));
   check('no overlay: only the bubble in the layer', (await page.locator('.fh-layer > :not(.fh-bubble)').count()) === 0);
   await shot(page, 'labs-step2');
-  if (!(await page.locator('#lab-input').isVisible())) await page.locator('#btn-lab-paste').click();
+  if (!(await page.locator('#lab-input').isVisible())) {
+    await page.locator('#lab-bar-more > summary').click(); await page.locator('#btn-lab-paste').click();
+  }
   check('action step advances on the user click', /3\/3/.test(await bubbleMatch(page, /3\/3/)), await bubbleText(page));
   check('step 3 points at Procesar', (await page.locator('#btn-procesar.fh-target').count()) === 1);
   // The bubble must never sit over the control the user has to press next.

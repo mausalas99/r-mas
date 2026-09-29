@@ -436,6 +436,7 @@ export const labPanelWindowHandlersLazy = buildLazyWindowHandlers(
     setLabHistoryPanelCollapsed: 'setLabHistoryPanelCollapsed',
     labHistoryPanelIsCollapsed: 'labHistoryPanelIsCollapsed',
     copiarLabsAlPortapapeles: 'copiarLabsAlPortapapeles',
+    openLabDiagramsModal: 'openLabDiagramsModal',
     openLabSomeTablesModal: 'openLabSomeTablesModal',
     closeLabSomeTablesModal: 'closeLabSomeTablesModal',
     closeLabHistoryMoreMenu: 'closeLabHistoryMoreMenu',

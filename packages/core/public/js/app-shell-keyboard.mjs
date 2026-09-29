@@ -278,6 +278,28 @@ function payloadToKeyEvent(payload) {
   };
 }
 
+/**
+ * ⌘C with no selection and no focused field → copy the active patient's page.
+ * Uses the `copy` event: the Electron Editar menu swallows the ⌘C keydown.
+ */
+function onShellCopyEvent(e) {
+  if (isAnyModalOpen() || shellShortcutFromTypingField(e)) return;
+  var sel = window.getSelection && window.getSelection();
+  if (sel && !sel.isCollapsed) return;
+  var tab = rt.getActiveAppTab();
+  if (tab === 'nota' && getActiveInnerTab() === 'estadoActual') {
+    e.preventDefault();
+    void import('./features/estado-actual-panel-actions.mjs').then(function (mod) {
+      if (mod.eaHasCopyableContent()) return mod.copiarEstadoActualTexto();
+    });
+  } else if (tab === 'lab') {
+    e.preventDefault();
+    void import('./features/lab-panel.mjs').then(function (mod) {
+      if (mod.labOutputHasCopyableContent()) mod.windowHandlers.copiarLabsAlPortapapeles();
+    });
+  }
+}
+
 /** @param {(msg: string, type?: string) => void} showToast */
 export function initShellKeyboardShortcuts(showToast) {
   if (shellKeyboardWired) return;
@@ -289,6 +311,7 @@ export function initShellKeyboardShortcuts(showToast) {
     },
     true
   );
+  document.addEventListener('copy', onShellCopyEvent);
   var api = typeof window !== 'undefined' ? window.electronAPI : null;
   if (api && typeof api.onShellShortcut === 'function') {
     api.onShellShortcut(function (payload) {

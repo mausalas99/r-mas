@@ -107,13 +107,38 @@
 
         <div id="lab-input-section" class="card" style="flex-shrink:0;">
           <div class="card-header card-header-row lab-report-header-row--actions-only">
-            <div id="lab-who" class="lab-who" hidden><span id="lab-who-name" class="lab-who-name"></span> <span id="lab-who-bed" class="lab-who-bed"></span></div>
+            <div id="lab-who" class="lab-who" hidden><span id="lab-who-name" class="lab-who-name"></span> <span id="lab-who-bed" class="lab-who-bed"></span> <span id="lab-late-status" class="lab-late-status" hidden></span></div>
             <div class="card-header-actions lab-report-header-actions">
-              <button type="button" id="btn-lab-paste" class="wb-btn wb-btn-secondary" data-onclick="openLabPasteModal" title="Pegar reporte SOME y procesar">Pegar SOME</button>
-              <button type="button" id="btn-lab-repo-batch" class="wb-btn wb-btn-secondary" data-onclick="openLabRepoBatchModal" title="Actualiza labs desde el repositorio (paciente activo o mi equipo)">Actualizar labs</button>
-              <button type="button" class="card-header-soft-btn btn-lab-display-prefs" data-onclick="openLabDisplayPrefsModal" title="Vista de laboratorio (BH extendida, gasometría extendida, salida rápida)" aria-label="Opciones de vista de laboratorio">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-              </button>
+              <button type="button" id="btn-lab-repo-batch" class="wb-btn wb-btn-primary lab-refresh-btn" data-onclick="openLabRepoBatchModal" title="Actualiza labs desde el repositorio"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 3 21 9 15 9"/></svg>Actualizar labs</button>
+              <details class="lab-output-more lab-bar-more" id="lab-bar-more">
+                <summary class="lab-output-more-btn" aria-label="Más acciones de laboratorio" title="Más acciones">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                </summary>
+                <div class="lab-output-more-menu lab-bar-menu">
+                  <div class="lab-bar-menu-h">Datos</div>
+                  <button type="button" id="btn-lab-paste" class="lab-output-more-item" data-onclick="closeLabHistoryMoreMenu" data-onclick-2="openLabPasteModal" title="Pegar reporte SOME y procesar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>Pegar SOME</button>
+                  <button type="button" id="lab-diagrams-btn" class="lab-output-more-item" data-onclick="closeLabHistoryMoreMenu" data-onclick-2="openLabDiagramsModal" hidden title="Diagramas de los labs del día"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Diagramas</button>
+                  <button type="button" id="lab-some-tables-btn" class="lab-output-more-item" data-onclick="closeLabHistoryMoreMenu" data-onclick-2="openLabSomeTablesModal" hidden title="Tablas del reporte SOME"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Tablas del reporte</button>
+                  <button type="button" class="lab-output-more-item" data-onclick="closeLabHistoryMoreMenu" data-onclick-2="openLabHistoryBatchCopyModal" data-lab-needs-history hidden title="Copia el texto de estudios de los días que marques"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar varios días…</button>
+                  <div class="lab-bar-menu-sep"></div>
+                  <div class="lab-bar-menu-h">Vista</div>
+                  <div class="lab-bar-menu-switch">
+                    <span id="lab-menu-pref-bh-lbl">BH extendida</span>
+                    <label class="rpc-switch"><input type="checkbox" id="lab-menu-pref-bh" class="rpc-switch-input" role="switch" aria-labelledby="lab-menu-pref-bh-lbl" data-onchange="onLabDisplayPrefsChanged" data-onchange-pass="event" /><span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></label>
+                  </div>
+                  <div class="lab-bar-menu-switch" style="display:none">
+                    <span id="lab-menu-pref-gaso-lbl">Gasometría extendida</span>
+                    <label class="rpc-switch"><input type="checkbox" id="lab-menu-pref-gaso" class="rpc-switch-input" role="switch" aria-labelledby="lab-menu-pref-gaso-lbl" data-onchange="onLabDisplayPrefsChanged" data-onchange-pass="event" /><span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></label>
+                  </div>
+                  <div class="lab-bar-menu-switch">
+                    <span id="lab-menu-pref-quick-lbl">Salida rápida</span>
+                    <label class="rpc-switch"><input type="checkbox" id="lab-menu-pref-quick" class="rpc-switch-input" role="switch" aria-labelledby="lab-menu-pref-quick-lbl" data-onchange="onLabDisplayPrefsChanged" data-onchange-pass="event" /><span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></label>
+                  </div>
+                  <div class="lab-bar-menu-sep" data-lab-needs-history hidden></div>
+                  <button type="button" class="lab-output-more-item lab-output-more-item--danger" data-onclick="closeLabHistoryMoreMenu" data-onclick-2="deleteSelectedLabHistorySet" data-lab-needs-history hidden title="Quita este día del historial"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Eliminar este día</button>
+                  <button type="button" class="lab-output-more-item lab-output-more-item--danger" data-onclick="closeLabHistoryMoreMenu" data-onclick-2="deleteAllLabHistorySets" data-lab-needs-history hidden title="Borra todos los estudios del historial"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Eliminar todos los estudios</button>
+                </div>
+              </details>
             </div>
           </div>
         </div>
@@ -142,6 +167,14 @@
               <span id="lab-output-title-text">Resultados</span>
             </span>
             <div class="lab-output-header-tools">
+              <div id="lab-search" class="lab-search">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                <input id="lab-search-input" class="lab-search-input" type="text" autocomplete="off" spellcheck="false" placeholder="Buscar estudio" aria-label="Buscar un estudio en el historial" title="Escribe un estudio (PCT, Cr…). Enter: día anterior con ese estudio">
+                <span id="lab-search-count" class="lab-search-count" aria-live="polite"></span>
+                <button type="button" id="lab-search-prev" class="lab-search-btn" aria-label="Día anterior con este estudio" title="Día anterior con este estudio"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg></button>
+                <button type="button" id="lab-search-next" class="lab-search-btn" aria-label="Día siguiente con este estudio" title="Día siguiente con este estudio"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></button>
+                <button type="button" id="lab-search-clear" class="lab-search-btn" aria-label="Borrar búsqueda" title="Borrar búsqueda (Esc)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+              </div>
               <div class="lab-history-date-picker">
                 <label class="lab-history-date-picker-label" for="lab-history-date-select">Día</label>
                 <div class="lab-history-day-nav">
@@ -154,23 +187,6 @@
                   </button>
                 </div>
               </div>
-              <button type="button" class="lab-output-copy-btn" data-onclick="copiarLabsAlPortapapeles" title="Copiar resultados al portapapeles">Copiar</button>
-              <details class="lab-output-more">
-                <summary class="lab-output-more-btn" aria-label="Más acciones del historial">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
-                </summary>
-                <div class="lab-output-more-menu" role="menu">
-                  <button type="button" class="lab-output-more-item" role="menuitem" data-onclick="closeLabHistoryMoreMenu" data-onclick-2="openLabHistoryBatchCopyModal" title="Marca los días del historial que quieras y copia el texto de estudios al portapapeles">Copiar varios días…</button>
-                  <button type="button" class="lab-output-more-item" role="menuitem" data-onclick="closeLabHistoryMoreMenu" data-onclick-2="consolidateLabHistoryByDayAndTipo" title="Fusiona envíos del mismo día (≤2 h); opción para unir outliers como BH + gases">Consolidar</button>
-                  <button type="button" class="lab-output-more-item" role="menuitem" data-onclick="closeLabHistoryMoreMenu" data-onclick-2="reprocessSelectedLabHistorySet" title="Regenera resultados desde el texto SOME guardado">Reprocesar</button>
-                  <button type="button" class="lab-output-more-item lab-output-more-item--danger" role="menuitem" data-onclick="closeLabHistoryMoreMenu" data-onclick-2="deleteSelectedLabHistorySet" title="Quita este conjunto del historial del paciente">Eliminar</button>
-                  <button type="button" class="lab-output-more-item lab-output-more-item--danger" role="menuitem" data-onclick="closeLabHistoryMoreMenu" data-onclick-2="deleteAllLabHistorySets" title="Borra todos los conjuntos de laboratorio del paciente activo">Eliminar todos los estudios</button>
-                </div>
-              </details>
-              <button type="button" id="lab-diagrams-btn" class="wb-btn wb-btn-secondary" hidden data-onclick="openLabDiagramsModal" title="Diagramas de los labs del día">Diagramas</button>
-              <button type="button" id="lab-some-tables-btn" class="lab-icon-square-btn" hidden data-onclick="openLabSomeTablesModal" title="Tablas del reporte SOME" aria-label="Abrir tablas del reporte">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-              </button>
             </div>
           </div>
           <div class="card-body">
@@ -425,7 +441,6 @@
                     </div>
                     <div class="tend-pane-head-actions">
                       <span id="tend-detail-badge"></span>
-                      <kbd class="tend-pane-esc" aria-hidden="true">Esc</kbd>
                       <button type="button" class="tend-pane-close" aria-label="Cerrar" title="Cerrar (Esc)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
                     </div>
                   </div>
@@ -449,18 +464,19 @@
                       <button type="button" class="tend-pill" id="tend-detail-pivot" data-tend-action="add-to-pivot">Agregar a tabla dinámica</button>
                     </div>
                   </div>
+                  <div class="tend-esc-hint" id="tend-detail-esc-hint">Esc para cerrar</div>
                 </section>
               </div>
 
               <div id="tend-group-backdrop" class="tend-group-backdrop tend-pane-panel" style="display:none" aria-hidden="true">
                 <div id="tend-group-modal" class="wb-modal tend-pane-card" role="region" aria-labelledby="tend-group-title">
                   <header class="tend-group-header tend-pane-head">
+                    <button type="button" class="tend-pane-back" id="tend-group-back" aria-label="Volver a la lista de analitos">‹ Analitos</button>
                     <div class="tend-pane-titles">
                       <h2 id="tend-group-title" class="tend-pane-title" contenteditable="true" spellcheck="false" title="Editar título"></h2>
                       <div id="tend-group-sub" class="tend-pane-sub"></div>
                     </div>
                     <div class="tend-pane-head-actions">
-                      <kbd class="tend-pane-esc" aria-hidden="true">Esc</kbd>
                       <button type="button" class="tend-pane-close" aria-label="Cerrar" title="Cerrar (Esc)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
                     </div>
                   </header>
@@ -486,6 +502,7 @@
                       <button type="button" class="tend-pill" data-onclick="copyTendGroupTableText">Copiar como texto</button>
                     </div>
                   </div>
+                  <div class="tend-esc-hint" id="tend-group-esc-hint">Esc para cerrar</div>
                 </div>
               </div>
 
@@ -497,7 +514,11 @@
                       <div class="tend-pane-sub">Junta analitos de varios estudios en una sola tabla</div>
                     </div>
                     <div class="tend-pane-head-actions">
-                      <kbd class="tend-pane-esc" aria-hidden="true">Esc</kbd>
+                      <nav class="tend-group-tabs" id="tend-dynamic-tabs" role="tablist" aria-label="Vista de la tabla dinámica" data-active="tabla">
+                        <span class="tend-group-tab-pill" aria-hidden="true"></span>
+                        <button type="button" role="tab" class="tend-group-tab active" data-dyn-tab="tabla" aria-selected="true">Tabla</button>
+                        <button type="button" role="tab" class="tend-group-tab" data-dyn-tab="charts" aria-selected="false">Gráficas</button>
+                      </nav>
                       <button type="button" class="tend-pane-close" aria-label="Cerrar tabla dinámica" title="Cerrar (Esc)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
                     </div>
                   </header>
@@ -512,11 +533,13 @@
                   </div>
                   <div class="tend-group-panel wb-modal-body" id="tend-dynamic-table-body">
                     <div id="tend-dynamic-table-wrap"></div>
-                    <div class="tend-group-table-actions">
+                    <div id="tend-dynamic-charts-wrap" hidden></div>
+                    <div class="tend-group-table-actions" id="tend-dynamic-table-actions">
                       <button type="button" class="tend-pill tend-pill--solid" data-onclick="copyTendDynamicTablePng">Copiar</button>
                       <button type="button" class="tend-pill" data-onclick="copyTendDynamicTableText">Copiar como texto</button>
                     </div>
                   </div>
+                  <div class="tend-esc-hint" id="tend-dynamic-esc-hint">Esc para cerrar</div>
                 </div>
               </div>
             </div>

@@ -120,7 +120,9 @@ async function admitDemoPatient(page) {
   await hub.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
   if (await hub.count()) await page.keyboard.press('Escape');
   await goArea(page, 'lab');
-  if (!(await page.locator('#lab-input').isVisible())) await page.locator('#btn-lab-paste').click();
+  if (!(await page.locator('#lab-input').isVisible())) {
+    await page.locator('#lab-bar-more > summary').click(); await page.locator('#btn-lab-paste').click();
+  }
   await page
     .locator('#lab-input')
     .fill(DEMO_TOUR_LAB_PASTE + '\n\n' + LAB_BULK_PATIENT_SEPARATOR + '\n\n' + DEMO_GARCIA_LAB_REPORT);

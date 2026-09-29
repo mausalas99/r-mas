@@ -1550,37 +1550,43 @@ html.dark .tend-group-drag-hovercard.tend-group-panel-card {
 .tend-group-table .is-hidden { display: none !important; }
 .tend-group-table .tend-abnormal { color: var(--error); font-weight: 600; }
 .tend-group-table th { white-space: normal; overflow: hidden; vertical-align: bottom; }
-.tend-group-table-hidden-bar {
-  margin-bottom: 10px; padding: 0; border-radius: 10px;
-  border: 1px solid var(--border); background: var(--lab-chip-bg);
-  font-size: 12px; line-height: 1.4; color: var(--text-muted);
-  overflow: hidden;
+.tend-group-table-hidden-bar { margin-bottom: 12px; font-size: 12px; color: var(--text-muted); }
+.tend-hidden-trigger {
+  display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px;
+  border-radius: 999px; border: 1px solid var(--border); background: transparent;
+  font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer;
 }
-.tend-group-hidden-bar-head {
-  display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 8px;
+.tend-hidden-trigger:hover { border-color: var(--color-accent); }
+.tend-group-table-hidden-bar.is-open .tend-hidden-trigger {
+  border-color: var(--color-accent); background: var(--color-accent-soft); color: var(--color-accent);
 }
-.tend-group-hidden-bar-toggle {
-  display: inline-flex; align-items: center; gap: 8px; flex: 1; min-width: 0;
-  padding: 4px 8px; border: none; border-radius: var(--radius-field); background: transparent;
-  font-family: inherit; font-size: 12px; font-weight: 600; color: var(--text);
-  cursor: pointer; text-align: left;
+.tend-hidden-panel {
+  margin-top: 8px; max-width: 360px; padding: 8px; border-radius: 14px;
+  border: 1px solid var(--border); background: var(--surface-elevated, var(--surface));
 }
-.tend-group-hidden-bar-toggle:hover { background: var(--surface); }
-.tend-group-hidden-bar-body {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
-  padding: 0 12px 10px 12px;
+.tend-hidden-panel-head {
+  display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 8px;
+  font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
 }
-.tend-group-table-hidden-bar.is-collapsed .tend-group-hidden-bar-head {
-  padding-bottom: 8px;
+.tend-hidden-filter {
+  width: 100%; box-sizing: border-box; margin: 0 0 6px; padding: 7px 12px; font-family: inherit; font-size: 13px;
+  border: 1px solid var(--border); border-radius: 999px; background: var(--bg); color: var(--text);
 }
-.tend-group-hidden-label { font-weight: 600; color: var(--text); margin-right: 4px; }
-.tend-group-restore-chip {
-  display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px 3px 10px;
-  border-radius: var(--radius-chip); border: 1px solid var(--border); background: var(--surface);
-  font-size: 11px; color: var(--text); cursor: pointer; font-family: inherit;
+.tend-hidden-list { max-height: 232px; overflow-y: auto; overscroll-behavior: contain; }
+.tend-hidden-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 38px; padding: 0 8px; border-top: 1px solid var(--border); font-size: 14px; color: var(--text);
 }
-.tend-group-restore-chip:hover { border-color: rgba(37, 99, 235, 0.35); }
-.tend-group-show-all-btn { margin-left: auto; font-size: 12px; padding: 6px 12px; }
+.tend-hidden-row-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tend-hidden-row-btn {
+  flex: none; height: 26px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border);
+  background: transparent; color: var(--text-muted); font-family: inherit; font-size: 12px; cursor: pointer;
+}
+.tend-hidden-row-btn:hover { color: var(--color-accent); border-color: var(--color-accent); }
+.tend-group-show-all-btn {
+  border: 0; background: transparent; color: var(--color-accent); font-family: inherit; font-size: 12px;
+  font-weight: 600; letter-spacing: 0; text-transform: none; padding: 0; cursor: pointer;
+}
 .tend-group-daymode-toggle {
   display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px;
   font-size: 12px; font-weight: 600; color: var(--text); cursor: pointer;
@@ -2457,3 +2463,10 @@ html.dark .tend-gaso-tip {
 .fh-bubble-foot { display: flex; justify-content: flex-end; margin-top: 8px; }
 .fh-target { outline: 2px solid var(--action) !important; outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .fh-dot { animation: none; } }
+.tend-group-hidden-label { font-weight: 600; color: var(--text); }
+.tend-group-restore-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 12px;
+  border-radius: 999px; border: 1px solid var(--border); background: transparent;
+  font-size: 12px; color: var(--text); cursor: pointer; font-family: inherit; line-height: 1.4;
+}
+.tend-group-restore-chip:hover { border-color: var(--color-accent); color: var(--color-accent); }

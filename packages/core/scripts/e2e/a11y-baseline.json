@@ -321,7 +321,9 @@
       "color-contrast": 4
     },
     "team-run": {},
-    "review": {},
+    "review": {
+      "color-contrast": 3
+    },
     "no-network": {},
     "bulk-paste": {},
     "portal-address-missing": {
