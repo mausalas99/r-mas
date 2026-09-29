@@ -170,20 +170,26 @@ async function pushEntityOps(api, roomId, entityKey, entityOps, revisionRef) {
 }
 
 /**
- * Re-pulls the room after a sweep and counts content fields still not encrypted
+ * Re-pulls the room after a sweep and lists content fields still not encrypted
  * — catches both a swallowed push failure and S1-5's small-room ops-purge gap.
  * @param {ReturnType<import('./api-client.mjs').createCloudSyncApi>} api
  * @param {string} roomId
  * @returns {Promise<number>}
  */
-async function countRemainingPlaintext(api, roomId) {
+async function listRemainingPlaintext(api, roomId) {
   const data = await api.pull(roomId, 0);
   const byPath = data?.state ? foldStateToLatestByPath(data.state) : foldOpsToLatestByPath(data?.ops);
-  let count = 0;
+  const left = [];
   for (const [path, entry] of Object.entries(byPath)) {
-    if (needsReencryption(path, entry.value)) count += 1;
+    if (!needsReencryption(path, entry.value)) continue;
+    const v = entry.value;
+    left.push({
+      path,
+      updatedAt: entry.updatedAt,
+      shape: v && typeof v === 'object' ? Object.keys(v).slice(0, 12).join(',') : typeof v,
+    });
   }
-  return count;
+  return left;
 }
 
 /**
@@ -218,7 +224,10 @@ export async function backfillRoomEncryption(api, room, actorId) {
 async function sweepAndVerify(api, roomId, actorId) {
   try {
     const result = await sweepRoomForPlaintextContent(api, roomId, actorId);
-    const remaining = await countRemainingPlaintext(api, roomId).catch(() => -1);
+    const leftover = await listRemainingPlaintext(api, roomId).catch(() => null);
+    const remaining = leftover ? leftover.length : -1;
+    // Paths and value shapes only, never values: shows which fields a sweep cannot encrypt.
+    if (leftover && leftover.length) console.warn('[room-dek] still plaintext after sweep', leftover.slice(0, 20));
     await auditDekEvent(DEK_EVENTS.BACKFILL_SWEPT, { roomId, swept: result.swept, failed: result.failed, remaining });
     return { ...result, remaining };
   } catch (err) {

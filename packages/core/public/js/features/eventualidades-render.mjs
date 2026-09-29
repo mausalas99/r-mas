@@ -10,6 +10,7 @@ import { canExecuteClinicalCommand, executeClinicalCommand } from '../clinical-r
 import { drainClinicalSyncProjector } from '../clinical-repo-sync-drain.mjs';
 import { _applyPatientPatch } from '../clinical-read-model.mjs';
 import { tendenciasBridge } from './tendencias-bridge.mjs';
+import { withLiveEventualidadEntries } from '../patient-merge-eventualidades.mjs';
 import { toClinicalHistoryText } from '../../../lib/clinical-text.mjs';
 import {
   rt,
@@ -284,9 +285,11 @@ function mergeCommandPatientsIntoAppState(patientsArr, patientId, fallbackStore)
     });
     if (idx >= 0) {
       // Keep the live object identity (UI closures) but take DB eventualidades.
-      live[idx].eventualidades = row.eventualidades;
+      // A pull may have merged a peer's entry into RAM during the IPC; the DB copy lacks it.
+      const kept = withLiveEventualidadEntries(row.eventualidades, live[idx].eventualidades);
+      live[idx].eventualidades = kept;
       if (row.lanUpdatedAt) live[idx].lanUpdatedAt = row.lanUpdatedAt;
-      mergedStore = row.eventualidades || fallbackStore;
+      mergedStore = kept || fallbackStore;
     }
     break;
   }

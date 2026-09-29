@@ -613,10 +613,15 @@ async function handleMutations(request, env, db, roomId) {
   const hasLabSidecarOps = lwwOps.some((op) => String(op?.path || '').startsWith('labSidecars/'));
 
   for (let attempt = 0; attempt < MUTATION_COMMIT_ATTEMPTS; attempt++) {
-    const roomRow = await db
-      .prepare('SELECT revision, storage_bytes FROM rooms WHERE id = ?')
-      .bind(roomId)
-      .first();
+    // First attempt reuses the row requireMember just read. If it is stale the
+    // gated commit fails and the next attempt re-reads.
+    const roomRow =
+      attempt === 0
+        ? room
+        : await db
+            .prepare('SELECT revision, storage_bytes FROM rooms WHERE id = ?')
+            .bind(roomId)
+            .first();
     if (!roomRow) {
       throw new SyncError('not_found', 'Sala no encontrada.');
     }

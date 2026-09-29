@@ -29,7 +29,8 @@
  * Artifact: e2e-artifacts/stress-layout/<run-id>/ (report.json, results.json,
  * one JPEG per screen × condition).
  *
- *   node scripts/e2e/stress-layout.e2e.mjs
+ *   node scripts/e2e/stress-layout.e2e.mjs        # light shard (default)
+ *   node scripts/e2e/stress-layout-dark.e2e.mjs   # dark shard of the main loop
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -81,7 +82,12 @@ const CONDS = [
   { id: '720-dark-125', w: 720, h: 900, dark: true, zoom: 125 },
 ];
 
-const r = createRun('stress-layout');
+// Two shards so run-all.mjs can run them side by side: 'light' (default: light
+// sizes plus the known-fix, sala-cards, keyboard and phone phases) and 'dark'
+// (dark sizes of the main screens loop only). stress-layout-dark.e2e.mjs sets it.
+const SHARD = process.env.LAYOUT_SHARD || 'light';
+const DARK = SHARD === 'dark';
+const r = createRun(DARK ? 'stress-layout-dark' : 'stress-layout');
 const { check } = r;
 const results = []; // { screen, cond, file, issues: {cat: [..]}, error }
 let shotN = 0;
@@ -331,7 +337,7 @@ const MODALS = [
   ['modal-atajos', '#shortcuts-backdrop', async (p) => { await p.locator('.topbar-help-btn').click(); await p.locator('.topbar-help-menu [role="menuitem"]', { hasText: 'Atajos' }).click(); }],
   ['modal-busqueda', '#unified-search-backdrop', (p) => call(p, 'openUnifiedSearch')],
   ['modal-learn-hub', '#learn-hub-backdrop', (p) => call(p, 'openLearnHub')],
-  ['modal-pegar-some', '#lab-paste-modal-backdrop, #lab-input', async (p) => { await call(p, 'switchAppTab', 'lab'); await p.locator('#btn-lab-paste').click(); }],
+  ['modal-pegar-some', '#lab-paste-modal-backdrop, #lab-input', async (p) => { await call(p, 'switchAppTab', 'lab'); await p.locator('#lab-bar-more > summary').click(); await p.locator('#btn-lab-paste').click(); }],
 ];
 
 async function runScreen(page, pageErrors, key, cond, rootSel, go) {
@@ -520,7 +526,7 @@ await r.finish('Screen layout: every screen x size x theme x text size, busy pat
 
   // ── Known fix: sidebar virtual list with a 1 kB name ────────────────────
   await call(page, 'switchAppTab', 'lab');
-  for (const c of [CONDS[0], CONDS[2], CONDS[6]]) {
+  for (const c of DARK ? [] : [CONDS[0], CONDS[2], CONDS[6]]) {
     await applyCond(page, c);
     await page.evaluate((css) => { const s = document.createElement('style'); s.id = 'e2e-unfix'; s.textContent = css; document.head.appendChild(s); }, UNFIX);
     await scrollToLongCard(page);
@@ -555,7 +561,7 @@ await r.finish('Screen layout: every screen x size x theme x text size, busy pat
   check('found the expediente sections in both modes', sections.length >= 4, sections);
   const screens = desktopScreens(sections);
 
-  for (const c of CONDS) {
+  for (const c of CONDS.filter((x) => x.dark === DARK)) {
     await applyCond(page, c);
     let mode = null;
     for (const [key, rootSel, go, m = 'sala'] of screens) {
@@ -587,79 +593,81 @@ await r.finish('Screen layout: every screen x size x theme x text size, busy pat
     });
   }
 
-  await setMode(page, 'sala');
+  if (!DARK) {
+    await setMode(page, 'sala');
 
-  // ── Sala card view ──────────────────────────────────────────────────────
-  await page.evaluate(() => globalThis.localStorage.setItem('rplus-sala-view', 'cards'));
-  await page.reload();
-  await dismissLearnHub(page);
-  await page.waitForTimeout(1500);
-  for (const c of [CONDS[0], CONDS[1], CONDS[3], CONDS[6]]) {
-    await applyCond(page, c);
-    await runScreen(page, pageErrors, 'sala-cards', c, MAIN, async () => {});
-  }
-  await page.evaluate(() => globalThis.localStorage.setItem('rplus-sala-view', 'bar'));
-  await page.reload();
-  await dismissLearnHub(page);
-  await page.waitForTimeout(1500);
-
-  // ── Keyboard only ───────────────────────────────────────────────────────
-  for (const c of [CONDS[0], CONDS[1]]) {
-    await applyCond(page, c);
-    for (const [key, go] of [['lab-labs', (p) => call(p, 'switchAppTab', 'lab')], ['manejo-receta', (p) => call(p, 'switchAppTab', 'med')], ['expediente', (p) => call(p, 'switchAppTab', 'nota')]]) {
-      await go(page);
-      await page.waitForTimeout(400);
-      await page.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0); });
-      await page.mouse.click(2, 2).catch(() => {});
-      const stops = await tabWalk(page, 70);
-      const real = stops.filter((s) => !s.body);
-      const noRing = [...new Set(real.filter((s) => !s.ring).map((s) => s.name))];
-      const offScreen = [...new Set(real.filter((s) => !s.onScreen).map((s) => s.name))];
-      check(`keyboard ${key} @ ${c.id}: Tab moves focus`, real.length > 20, real.length);
-      check(`keyboard ${key} @ ${c.id}: every focus stop shows a ring`, noRing.length === 0, noRing.slice(0, 20));
-      check(`keyboard ${key} @ ${c.id}: focus never lands off screen`, offScreen.length === 0, offScreen.slice(0, 20));
-      const unr = await unreachable(page, MAIN);
-      check(`keyboard ${key} @ ${c.id}: every visible button is reachable by Tab`, unr.length === 0, unr);
-      results.push({ screen: `keyboard-${key}`, cond: c.id, noRing, offScreen, unreachable: unr, file: await jpeg(page, `keyboard-${key}--${c.id}`) });
+    // ── Sala card view ──────────────────────────────────────────────────────
+    await page.evaluate(() => globalThis.localStorage.setItem('rplus-sala-view', 'cards'));
+    await page.reload();
+    await dismissLearnHub(page);
+    await page.waitForTimeout(1500);
+    for (const c of [CONDS[0], CONDS[1], CONDS[3], CONDS[6]]) {
+      await applyCond(page, c);
+      await runScreen(page, pageErrors, 'sala-cards', c, MAIN, async () => {});
     }
-    // Focus must stay inside an open dialog.
-    for (const [key, sel, open] of MODALS.slice(0, 3)) {
-      try {
-        await open(page);
+    await page.evaluate(() => globalThis.localStorage.setItem('rplus-sala-view', 'bar'));
+    await page.reload();
+    await dismissLearnHub(page);
+    await page.waitForTimeout(1500);
+
+    // ── Keyboard only ───────────────────────────────────────────────────────
+    for (const c of [CONDS[0], CONDS[1]]) {
+      await applyCond(page, c);
+      for (const [key, go] of [['lab-labs', (p) => call(p, 'switchAppTab', 'lab')], ['manejo-receta', (p) => call(p, 'switchAppTab', 'med')], ['expediente', (p) => call(p, 'switchAppTab', 'nota')]]) {
+        await go(page);
         await page.waitForTimeout(400);
-        const stops = await tabWalk(page, 30, sel);
-        const out = [...new Set(stops.filter((s) => !s.body && !s.inScope).map((s) => s.name))];
-        check(`keyboard ${key} @ ${c.id}: Tab stays inside the dialog`, out.length === 0, out.slice(0, 10));
-        results.push({ screen: `trap-${key}`, cond: c.id, escaped: out });
-      } catch (e) {
-        check(`keyboard ${key} @ ${c.id}: Tab stays inside the dialog`, false, String(e.message).split('\n')[0]);
+        await page.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0); });
+        await page.mouse.click(2, 2).catch(() => {});
+        const stops = await tabWalk(page, 70);
+        const real = stops.filter((s) => !s.body);
+        const noRing = [...new Set(real.filter((s) => !s.ring).map((s) => s.name))];
+        const offScreen = [...new Set(real.filter((s) => !s.onScreen).map((s) => s.name))];
+        check(`keyboard ${key} @ ${c.id}: Tab moves focus`, real.length > 20, real.length);
+        check(`keyboard ${key} @ ${c.id}: every focus stop shows a ring`, noRing.length === 0, noRing.slice(0, 20));
+        check(`keyboard ${key} @ ${c.id}: focus never lands off screen`, offScreen.length === 0, offScreen.slice(0, 20));
+        const unr = await unreachable(page, MAIN);
+        check(`keyboard ${key} @ ${c.id}: every visible button is reachable by Tab`, unr.length === 0, unr);
+        results.push({ screen: `keyboard-${key}`, cond: c.id, noRing, offScreen, unreachable: unr, file: await jpeg(page, `keyboard-${key}--${c.id}`) });
       }
-      await page.keyboard.press('Escape');
-      await page.waitForTimeout(250);
+      // Focus must stay inside an open dialog.
+      for (const [key, sel, open] of MODALS.slice(0, 3)) {
+        try {
+          await open(page);
+          await page.waitForTimeout(400);
+          const stops = await tabWalk(page, 30, sel);
+          const out = [...new Set(stops.filter((s) => !s.body && !s.inScope).map((s) => s.name))];
+          check(`keyboard ${key} @ ${c.id}: Tab stays inside the dialog`, out.length === 0, out.slice(0, 10));
+          results.push({ screen: `trap-${key}`, cond: c.id, escaped: out });
+        } catch (e) {
+          check(`keyboard ${key} @ ${c.id}: Tab stays inside the dialog`, false, String(e.message).split('\n')[0]);
+        }
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(250);
+      }
     }
-  }
 
-  // ── Phone width 390 (LAN / mobile surface) ──────────────────────────────
-  await page.evaluate(() => globalThis.localStorage.setItem('rpc-mobile-mode', '1'));
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.reload();
-  await dismissLearnHub(page);
-  await page.waitForTimeout(1500);
-  const isMobile = await page.evaluate(() => document.documentElement.classList.contains('rpc-mobile-web'));
-  check('phone: mobile surface is on', isMobile);
-  for (const c of [{ id: '390-light-100', w: 390, h: 844, dark: false, zoom: 100 }, { id: '390-dark-100', w: 390, h: 844, dark: true, zoom: 100 }]) {
-    await applyCond(page, c);
-    for (const [key, go] of [
-      ['phone-lab-labs', async (p) => { await call(p, 'switchAppTab', 'lab'); await call(p, 'switchLabInner', 'labs'); }],
-      ['phone-lab-tendencias', async (p) => { await call(p, 'switchAppTab', 'lab'); await call(p, 'switchLabInner', 'tend'); }],
-      ['phone-lab-cultivos', async (p) => { await call(p, 'switchAppTab', 'lab'); await call(p, 'switchLabInner', 'cult'); }],
-      // No Ajustes here: R+ Móvil hides it on purpose (mobile.css «barebones»).
-      ['phone-expediente', async (p) => { await call(p, 'switchAppTab', 'nota'); }],
-    ]) {
-      await runScreen(page, pageErrors, key, c, 'body', go);
+    // ── Phone width 390 (LAN / mobile surface) ──────────────────────────────
+    await page.evaluate(() => globalThis.localStorage.setItem('rpc-mobile-mode', '1'));
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.reload();
+    await dismissLearnHub(page);
+    await page.waitForTimeout(1500);
+    const isMobile = await page.evaluate(() => document.documentElement.classList.contains('rpc-mobile-web'));
+    check('phone: mobile surface is on', isMobile);
+    for (const c of [{ id: '390-light-100', w: 390, h: 844, dark: false, zoom: 100 }, { id: '390-dark-100', w: 390, h: 844, dark: true, zoom: 100 }]) {
+      await applyCond(page, c);
+      for (const [key, go] of [
+        ['phone-lab-labs', async (p) => { await call(p, 'switchAppTab', 'lab'); await call(p, 'switchLabInner', 'labs'); }],
+        ['phone-lab-tendencias', async (p) => { await call(p, 'switchAppTab', 'lab'); await call(p, 'switchLabInner', 'tend'); }],
+        ['phone-lab-cultivos', async (p) => { await call(p, 'switchAppTab', 'lab'); await call(p, 'switchLabInner', 'cult'); }],
+        // No Ajustes here: R+ Móvil hides it on purpose (mobile.css «barebones»).
+        ['phone-expediente', async (p) => { await call(p, 'switchAppTab', 'nota'); }],
+      ]) {
+        await runScreen(page, pageErrors, key, c, 'body', go);
+      }
     }
+    await page.evaluate(() => globalThis.localStorage.removeItem('rpc-mobile-mode'));
   }
-  await page.evaluate(() => globalThis.localStorage.removeItem('rpc-mobile-mode'));
 
   fs.writeFileSync(path.join(r.artifactDir, 'results.json'), JSON.stringify(results, null, 1));
   check('no page errors in the whole run', pageErrors.length === 0, pageErrors.slice(0, 10));

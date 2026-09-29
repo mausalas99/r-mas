@@ -68,7 +68,8 @@ export function createRun(name, { hints: runHints = false } = {}) {
         ...process.env,
         R_PLUS_VERIFY_MODE: '1',
         R_PLUS_USER_DATA: userDataDir,
-        R_PLUS_LAN_HTTP_PORT: String(lanPort),
+        // run-all.mjs gives each parallel slot its own port block.
+        R_PLUS_LAN_HTTP_PORT: String(lanPort + (Number(process.env.E2E_PORT_OFFSET) || 0)),
       },
       timeout: 60000,
     });
@@ -209,10 +210,11 @@ export async function pasteAndProcess(page, text) {
   // #btn-lab-paste lives on the Laboratorio tab, not the Paciente tab (left
   // active by a prior labsCard()-style read) — switch tabs first.
   const labTab = page.locator('#apptab-lab');
-  if ((await labTab.count()) && !(await page.locator('#btn-lab-paste').isVisible().catch(() => false))) {
+  if ((await labTab.count()) && !(await page.locator('#btn-lab-repo-batch').isVisible().catch(() => false))) {
     await goArea(page, 'lab');
   }
   if (!(await page.locator('#lab-input').isVisible())) {
+    await page.locator('#lab-bar-more > summary').click();
     await page.locator('#btn-lab-paste').click();
     await page.locator('#lab-input').waitFor({ state: 'visible' });
   }
