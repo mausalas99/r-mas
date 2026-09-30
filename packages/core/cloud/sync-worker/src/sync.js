@@ -10,6 +10,7 @@ import {
 import { applyOps } from './lww.js';
 import {
   mutationPruneCeiling,
+  PULL_REVISION_GAP,
   shouldReturnSnapshotPull,
 } from './pull-strategy.js';
 import { QUOTAS } from './quotas.js';
@@ -39,11 +40,18 @@ const MUTATION_COMMIT_ATTEMPTS = 5;
  * @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request
  */
 export async function requireMember(db, request, roomId, t = null) {
-  // Session, user, room and membership in one D1 round trip. Same session
-  // rule as userFromAuthHeader; same member/admin rule as before.
+  const stmt = await memberStatement(db, request, roomId);
+  const row = stmt ? await stmt.first() : null;
+  t?.lap('auth');
+  return memberFromRow(row);
+}
+
+/** Session, user, room and membership in one statement; null without a Bearer token. */
+async function memberStatement(db, request, roomId) {
+  // Same session rule as userFromAuthHeader.
   const m = /^Bearer\s+(.+)$/i.exec(request.headers.get('Authorization') || '');
-  const row = m
-    ? await db
+  return m
+    ? db
         .prepare(
           `SELECT u.id, u.username, u.display_name, u.role, u.disabled, u.active_room_id,
                   r.id AS room_id, r.revision AS room_revision, r.storage_bytes AS room_storage_bytes,
@@ -54,9 +62,11 @@ export async function requireMember(db, request, roomId, t = null) {
            WHERE s.token_hash = ? AND s.expires_at > ?`
         )
         .bind(roomId, await sha256Hex(m[1].trim()), new Date().toISOString())
-        .first()
     : null;
-  t?.lap('auth');
+}
+
+/** Same member/admin rule as before. */
+function memberFromRow(row) {
   if (!row) {
     throw new SyncError('auth_required', 'Sesión inválida o expirada.');
   }
@@ -820,11 +830,29 @@ function filterPullOpsForMobileLabWindow(ops, now) {
 
 /** @param {Request} request @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */
 async function handlePull(request, env, db, roomId, t = null) {
-  // requireMember read the room revision in the same statement as auth.
-  const { room } = await requireMember(db, request, roomId, t);
   const url = new URL(request.url);
   const since = Number(url.searchParams.get('since') ?? 0);
   const mobileLabWindow = isMobileLabPullRequest(url);
+  const authStmt = await memberStatement(db, request, roomId);
+  if (!authStmt) memberFromRow(null);
+  // The mutations select rides in the auth batch: one trip, one snapshot.
+  // Nothing from it is used unless auth passes. It stops at the revision the
+  // batch sees and returns nothing past the snapshot gap, so a big gap never
+  // loads a big history into the D1 isolate.
+  const [authRes, mutationsRes] = await db.batch([
+    authStmt,
+    db
+      .prepare(
+        `SELECT revision, ops_json, ciphertext, iv FROM mutations
+         WHERE room_id = ? AND revision > ?
+           AND revision <= (SELECT revision FROM rooms WHERE id = ?)
+           AND (SELECT revision FROM rooms WHERE id = ?) - ? <= ?
+         ORDER BY revision ASC`
+      )
+      .bind(roomId, since, roomId, roomId, since, PULL_REVISION_GAP),
+  ]);
+  t?.lap('auth');
+  const { room } = memberFromRow(authRes?.results?.[0] ?? null);
 
   const revision = Number(room.revision);
   if (since >= revision) {
@@ -844,17 +872,7 @@ async function handlePull(request, env, db, roomId, t = null) {
     });
   }
 
-  const { results } = await db
-    .prepare(
-      `SELECT revision, ops_json, ciphertext, iv FROM mutations
-       WHERE room_id = ? AND revision > ?
-       ORDER BY revision ASC`
-    )
-    .bind(roomId, since)
-    .all();
-  t?.lap('select');
-
-  const rows = results ?? [];
+  const rows = mutationsRes?.results ?? [];
   let cumulativeBytes = 0;
   /** @type {unknown[]} */
   const ops = [];

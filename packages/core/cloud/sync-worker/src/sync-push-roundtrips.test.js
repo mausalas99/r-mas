@@ -39,14 +39,14 @@ describe('D1 round trips per request', () => {
     assert.equal(ctx.d1.calls, 3);
   });
 
-  it('pull incremental = 2, idle pull = 1', async () => {
+  it('pull incremental = 1 (auth + mutations batch), idle pull = 1', async () => {
     const ctx = await setup();
     await push(ctx, { clientMutationId: 'm1', baseRevision: 0, ops: [noteOp('a', '2026-09-30T10:00:00.000Z')] });
     ctx.d1.calls = 0;
     const inc = await pull(ctx, 0);
     assert.equal(inc.revision, 1);
     assert.equal(inc.ops.length, 1);
-    assert.equal(ctx.d1.calls, 2);
+    assert.equal(ctx.d1.calls, 1);
     ctx.d1.calls = 0;
     assert.deepEqual(await pull(ctx, 1), { revision: 1, ops: [] });
     assert.equal(ctx.d1.calls, 1);
@@ -215,5 +215,28 @@ describe('push: auth and room load overlap, auth still decides', () => {
     assert.equal(waited.length, 1, 'notify handed to waitUntil');
     release(new Response('ok'));
     await Promise.all(waited);
+  });
+});
+
+describe('pull: auth and mutations in one trip', () => {
+  it('incremental pull = 1 trip, only ops up to the reported revision', async () => {
+    const ctx = await setup();
+    await push(ctx, { clientMutationId: 'm1', baseRevision: 0, ops: [noteOp('a', '2026-09-30T10:00:00.000Z')] });
+    await push(ctx, { clientMutationId: 'm2', baseRevision: 1, ops: [noteOp('b', '2026-09-30T11:00:00.000Z')] });
+    ctx.d1.calls = 0;
+    const inc = await pull(ctx, 1);
+    assert.equal(inc.revision, 2);
+    assert.deepEqual(inc.ops.map((o) => o.value), ['b']);
+    assert.equal(ctx.d1.calls, 1);
+  });
+
+  it('bad token: auth_required; gap past the window: snapshot', async () => {
+    const ctx = await setup();
+    const req = new Request(`https://x/api/sync/v1/rooms/${ctx.roomId}/pull?since=0`, { headers: { Authorization: 'Bearer nope' } });
+    await assert.rejects(handleSync(req, ctx.env, ctx.roomId, 'pull'), { code: 'auth_required' });
+    ctx.d1.sqlite.prepare('UPDATE rooms SET revision = 150 WHERE id = ?').run(ctx.roomId);
+    const snap = await pull(ctx, 10);
+    assert.equal(snap.needSnapshot, true);
+    assert.equal(snap.revision, 150);
   });
 });
