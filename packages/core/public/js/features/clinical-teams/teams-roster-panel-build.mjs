@@ -67,32 +67,6 @@ export async function resolveClinicalTeamsPanelContext(user, joined) {
   };
 }
 
-/**
- * One «Mi perfil» row inside ⇄ Conexión: who you are, and a link to Cuenta,
- * where the profile form lives. Same markup as the Opciones rows.
- */
-export function buildProfileLinkRowHtml(ctx, user) {
-  const meta = [
-    String(user?.clinical_name || '').trim(),
-    ctx.displayHandle ? `@${ctx.displayHandle}` : '',
-    ctx.rank,
-    ctx.sala,
-  ]
-    .filter(Boolean)
-    .map((p) => escapeHtml(p))
-    .join(' · ');
-  return `
-    <div class="cloud-sync-options-card clinical-teams-profile-link">
-      <button type="button" class="cloud-sync-options-row" data-cloud-action="nav-view" data-cloud-view="cuenta">
-        <span class="cloud-sync-options-row-text">
-          <span class="cloud-sync-options-row-title">Mi perfil</span>
-          <span class="cloud-sync-options-row-meta">${meta || 'Nombre, @usuario, rango y sala'}</span>
-        </span>
-        <span class="cloud-sync-options-row-chevron" aria-hidden="true">›</span>
-      </button>
-    </div>`;
-}
-
 export function buildClinicalProfileSectionHtml(ctx, user) {
   const clinicalName = ctx.profileGatePending ? '' : escapeHtml(user.clinical_name || '');
   const legacyBanner = ctx.legacyUsername

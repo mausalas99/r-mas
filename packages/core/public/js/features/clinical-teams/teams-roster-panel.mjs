@@ -34,7 +34,6 @@ import {
   resolveDisplayLanHandle,
   resolveClinicalTeamsPanelContext,
   buildClinicalProfileSectionHtml,
-  buildProfileLinkRowHtml,
   buildClinicalTeamsConfigSectionHtml,
   buildRotationAdminSectionHtml,
   buildPickTeamsBannerHtml,
@@ -151,12 +150,11 @@ async function resolveClinicalTeamsPanelSections(userId, user, joined, ctx, elev
     directorySection,
     rotationSection: buildRotationAdminSectionHtml(user),
     configSection: embedded ? '' : buildClinicalTeamsConfigSectionHtml(profileSection),
-    profileRow: embedded ? buildProfileLinkRowHtml(ctx, user) : '',
   };
 }
 
 function renderClinicalTeamsPanelBody(host, sections, hasJoinedTeam) {
-  const { pickTeamLayout, pickBanner, mineSection, directorySection, rotationSection, configSection, profileRow } = sections;
+  const { pickTeamLayout, pickBanner, mineSection, directorySection, rotationSection, configSection } = sections;
   host.classList.toggle('clinical-teams-panel-body--pick-team', pickTeamLayout);
   host.classList.toggle('clinical-teams-panel-body--has-joined', hasJoinedTeam);
 
@@ -174,13 +172,12 @@ function renderClinicalTeamsPanelBody(host, sections, hasJoinedTeam) {
     : '';
   // Fixed order so the screen never reshuffles between visits: your team
   // (status card), the sala's teams ending in «¿No ves tu equipo?», rare
-  // options, then the link to your profile in Cuenta.
+  // options.
   host.innerHTML = `
     ${pickTeamLayout ? pickBanner : ''}
     ${mineSection}
     ${directorySection}
-    ${otherOptions}
-    ${profileRow}`;
+    ${otherOptions}`;
 }
 
 export async function renderClinicalTeamsPanelInto(host, opts = {}) {

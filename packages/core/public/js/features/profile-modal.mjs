@@ -158,6 +158,16 @@ function onPerfilInput(root, ev) {
   if (t.matches("input[type=text], select") && !t.matches('[name="app-mode"]')) scheduleAutosave(root);
 }
 
+/** Sala, rango, @usuario and admin: the same form Cuenta used to host. */
+async function mountPerfilClinicalForm(root) {
+  var host = root.querySelector("[data-perfil-clinical-host]");
+  if (!host) return;
+  var deleg = await import("./clinical-teams/teams-roster-form-delegation.mjs");
+  deleg.wireClinicalTeamsFormDelegation(root);
+  var mod = await import("./clinical-teams/teams-roster-interactions.mjs");
+  await mod.mountClinicalProfileInHost(host);
+}
+
 /** Wire Mi perfil once, then refresh it every time it opens. */
 export function initPerfilPanel() {
   var root = document.getElementById("profile-body");
@@ -179,6 +189,7 @@ export function initPerfilPanel() {
       }
     });
   }
+  void mountPerfilClinicalForm(root);
   syncDoctorPicker(root);
   renderPerfilIdentity(root);
   var chip = root.querySelector("[data-perfil-saved]");

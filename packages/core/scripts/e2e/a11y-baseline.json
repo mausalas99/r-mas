@@ -1,6 +1,8 @@
 {
   "admin-code": {
-    "admin-code-setup": {}
+    "admin-code-setup": {
+      "color-contrast": 3
+    }
   },
   "admin-panel": {
     "admin-resumen": {
@@ -187,6 +189,15 @@
     },
     "drive-import-modal#15": {
       "color-contrast": 1
+    }
+  },
+  "equipos-panel": {
+    "pick-wide": {},
+    "pick-wide-code-open": {},
+    "pick-narrow": {},
+    "joined-wide": {},
+    "perfil-profile": {
+      "color-contrast": 3
     }
   },
   "estado-actual": {

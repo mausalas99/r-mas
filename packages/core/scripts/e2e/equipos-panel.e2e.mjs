@@ -21,7 +21,7 @@
  *     - «Unirme» is not at the bottom of its card
  *     - cards stack in one column on a wide window
  *     - «¿No ves tu equipo?» is not the last card, or lacks Crear / código
- *     - the profile form still sits in Equipo instead of a «Mi perfil» link
+ *     - the profile form still sits in Equipo
  *     - the code dialog does not open, or forgets the «not the sala link» warning
  *     - the code dialog opens top-left, or its fields hug the right edge
  *     - the panel scrolls sideways
@@ -29,7 +29,7 @@
  *     - the grid spills sideways
  *   After joining
  *     - your team is not first, or it is not the «Estás en» status card
- *     - «Mi perfil» does not open Cuenta with the profile form filled in
+ *     - the Mi perfil window lacks the profile form filled in
  *   Throughout
  *     - an uncaught page error
  */
@@ -75,7 +75,6 @@ const readPanel = (page) => page.evaluate((sel) => {
     sideBySide: grid.length > 1 && Math.abs(rect(grid[0]).top - rect(grid[1]).top) < 2,
     lastIsNew: grid.at(-1)?.classList.contains('clinical-teams-card--new') || false,
     newText: grid.at(-1)?.innerText || '',
-    profileLink: !!q('.clinical-teams-profile-link [data-cloud-view="cuenta"]'),
     profileFormHere: !!q('#clinical-profile-form'),
     hero: q('.clinical-teams-mine .clinical-teams-mine-hero')?.innerText || '',
     sideScroll: host.scrollWidth - host.clientWidth,
@@ -120,7 +119,7 @@ await r.finish('Equipo panel: pick a published team, then the joined view', asyn
   check('cards sit side by side on a wide window', p.sideBySide);
   check('«¿No ves tu equipo?» is the last card, with Crear and código',
     p.lastIsNew && /No ves tu equipo/.test(p.newText) && /Crear equipo/.test(p.newText) && /Tengo un código/.test(p.newText), p.newText);
-  check('profile is a «Mi perfil» link, not a form in Equipo', p.profileLink && !p.profileFormHere);
+  check('no profile form in Equipo', !p.profileFormHere);
   check('panel does not scroll sideways (wide)', p.sideScroll <= 0, p.sideScroll);
 
   await B.page.locator('#btn-clinical-team-join-code-open').click();
@@ -163,7 +162,7 @@ await r.finish('Equipo panel: pick a published team, then the joined view', asyn
   await closeToasts(B.page);
   if (!(await B.page.locator(PANEL).isVisible())) {
     await B.page.locator('#btn-connection-dropdown-close').click().catch(() => {});
-    await B.page.keyboard.press('Escape');
+    await B.page.locator('#btn-connection-dropdown-close').evaluate((b) => b.click());
     // Joining closes the panel; reopen it the way a user would.
     await openNubeView(B.page, 'equipo').catch(() => {});
   }
@@ -177,12 +176,14 @@ await r.finish('Equipo panel: pick a published team, then the joined view', asyn
     check('after joining: status card says «Estás en» with Invitar', /Estás en/.test(p.hero) && /Invitar/.test(p.hero), p.hero);
     check('after joining: panel does not scroll sideways', p.sideScroll <= 0, p.sideScroll);
 
-    await B.page.locator(`${PANEL} .clinical-teams-profile-link button`).click();
-    const form = B.page.locator('[data-cloud-view="cuenta"] #clinical-profile-form');
-    check('«Mi perfil» opens Cuenta with the profile form', await until(() => form.isVisible(), 6000));
+    await B.page.locator('#btn-connection-dropdown-close').evaluate((b) => b.click());
+    await B.page.locator('#profile-toggle-btn').evaluate((b) => b.click());
+    const form = B.page.locator('#profile-modal #clinical-profile-form');
+    check('Mi perfil window shows the profile form', await until(() => form.isVisible(), 6000));
     check('profile form shows the saved @usuario',
       (await B.page.locator('#clinical-profile-username').inputValue().catch(() => '')) === R1.username);
-    await r.shot(B.page, 'cuenta-profile');
+    await B.page.waitForTimeout(800); // let the modal finish fading in
+    await r.shot(B.page, 'perfil-profile');
   } else {
     check('after joining: Equipo panel reopens', false, 'could not reopen the panel');
   }
