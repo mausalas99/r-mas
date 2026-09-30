@@ -179,10 +179,10 @@ await r.finish('Nube notes: nota + indicaciones sync, last write wins, restart, 
   await indField(A.page, 'medicamentos').fill(MED_A);
   await settle(A.page);
   await B.page.evaluate(() => {
-    window.__tapInd = setInterval(() => document.querySelector('.exp-group-section[data-section="indica"]')?.click(), 100);
+    globalThis.__tapInd = setInterval(() => globalThis.document.querySelector('.exp-group-section[data-section="indica"]')?.click(), 100);
   });
   const medOnScreen = await until(async () => (await indField(B.page, 'medicamentos').inputValue().catch(() => '')) === MED_A, STAGING ? 100000 : 30000, 1000);
-  await B.page.evaluate(() => clearInterval(window.__tapInd));
+  await B.page.evaluate(() => clearInterval(globalThis.__tapInd));
   check('B: indicaciones repaint while B keeps tapping the same tab', medOnScreen);
 
   // B has a field open (focused) when A's edit lands: no repaint under the cursor, but once B
