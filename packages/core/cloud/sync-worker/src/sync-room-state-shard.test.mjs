@@ -38,9 +38,9 @@ function fakeDb({ revision = 0 } = {}) {
           boundCalls.push({ sql, args });
           return {
             async first() {
-              if (sql.includes('FROM sessions')) return { id: 'u1', role: 'member' };
-              if (sql.includes('FROM room_members')) {
-                return { id: args[0], revision: roomRevision, storage_bytes: 10_000 };
+              // requireMember: session + user + room + membership in one row.
+              if (sql.includes('FROM sessions')) {
+                return { id: 'u1', role: 'member', room_id: args[0], room_revision: roomRevision, room_storage_bytes: 10_000, is_member: 1 };
               }
               if (sql.includes('SELECT revision, storage_bytes FROM rooms')) {
                 return { revision: roomRevision, storage_bytes: 10_000 };
