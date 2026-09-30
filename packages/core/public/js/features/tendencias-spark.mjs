@@ -100,23 +100,27 @@ function sparkChartAnim(duration) {
   return rt.rpcPrefersReducedMotion() ? false : { duration: duration, easing: 'easeOutQuart' };
 }
 
+function applySparkJobToChart(chart, job, history) {
+  if (!chart || !chart.data || !chart.data.datasets || !chart.data.datasets[0]) return false;
+  chart.data.labels = job.labels2;
+  chart.data.datasets[0].data = job.values2;
+  var lineColor = sparkLineColorForJob(job, history);
+  chart.data.datasets[0].borderColor = lineColor;
+  chart.data.datasets[0].pointBackgroundColor = lineColor;
+  var ybu = sparkYBounds(job.values2, job.ref);
+  chart.options.scales.y.min = ybu.min;
+  chart.options.scales.y.max = ybu.max;
+  chart.options.plugins.tendSparkBand = { ref: job.ref || null };
+  chart.update('none');
+  return true;
+}
+
 function updateSparkChartsFromJobs(sparkJobs, history) {
   for (var i = 0; i < sparkJobs.length; i += 1) {
     var job = sparkJobs[i];
     var ck = trendSparkChartKey(job.sk2, job.fk2);
     var chart = tendStore.sparkCharts[ck];
-    if (chart && chart.data && chart.data.datasets && chart.data.datasets[0]) {
-      chart.data.labels = job.labels2;
-      chart.data.datasets[0].data = job.values2;
-      var lineColor = sparkLineColorForJob(job, history);
-      chart.data.datasets[0].borderColor = lineColor;
-      chart.data.datasets[0].pointBackgroundColor = lineColor;
-      var ybu = sparkYBounds(job.values2, job.ref);
-      chart.options.scales.y.min = ybu.min;
-      chart.options.scales.y.max = ybu.max;
-      chart.options.plugins.tendSparkBand = { ref: job.ref || null };
-      chart.update('none');
-    } else {
+    if (!applySparkJobToChart(chart, job, history)) {
       destroySparkChartEntry(ck);
       mountOneTrendSparkChartAsync(job, history, sparkChartAnim(400));
     }
@@ -160,6 +164,8 @@ function mountOneTrendSparkChart(job, history, chartAnim, Chart, mountGen) {
   var canvas2 = document.getElementById(trendSparkDomId(sk2, fk2));
   if (!canvas2 || !Chart) return;
   var ck = trendSparkChartKey(sk2, fk2);
+  var live = tendStore.sparkCharts[ck];
+  if (live && live.canvas === canvas2 && applySparkJobToChart(live, job, history)) return;
   releaseSparkCanvas(ck, canvas2, Chart);
   if (mountGen != null && mountGen !== tendStore.sparkMountGen) return;
   var lineColor = sparkLineColorForJob(job, history);

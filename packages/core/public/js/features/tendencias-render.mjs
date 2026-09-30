@@ -285,7 +285,9 @@ function paintTendenciasGrid(container, toolbarHtml, sectionsOrdered, bySection,
     htmlParts.push(buildTendenciaSectionHtml(sectionKey, list, seriesIndex));
   }
   htmlParts.push('<p class="tend-empty tend-search-empty" hidden>Ningún analito coincide con la búsqueda.</p>');
+  var prevScroll = container.scrollTop;
   container.innerHTML = htmlParts.join('');
+  if (prevScroll) container.scrollTop = prevScroll;
   tc.buildSparkJobsFromIndex(seriesAvail, seriesIndex, historyDesc, tc.sparkChartAnim(600));
 }
 
