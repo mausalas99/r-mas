@@ -38,8 +38,9 @@ const MUTATION_COMMIT_ATTEMPTS = 5;
  * cross-sala admin action) work without first joining each sala.
  * @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request
  */
-export async function requireMember(db, request, roomId) {
+export async function requireMember(db, request, roomId, t = null) {
   const user = await userFromAuthHeader(db, request);
+  t?.lap('session');
   if (!user) {
     throw new SyncError('auth_required', 'Sesión inválida o expirada.');
   }
@@ -52,6 +53,7 @@ export async function requireMember(db, request, roomId) {
     )
     .bind(roomId, user.id)
     .first();
+  t?.lap('member');
   if (row) {
     return { user, room: row };
   }
@@ -480,6 +482,7 @@ export async function commitMutationBatch(env, db, opts) {
       );
     }
     const results = await db.batch(statements);
+    opts.t?.lap('commit');
     const inserted = Number(results?.[0]?.meta?.changes ?? 0);
     const bumped = Number(results?.[1]?.meta?.changes ?? 0);
     if (inserted !== 1 || bumped !== 1) return { ok: false, reason: 'stale' };
@@ -490,6 +493,7 @@ export async function commitMutationBatch(env, db, opts) {
         .prepare('DELETE FROM mutations WHERE room_id = ? AND revision <= ?')
         .bind(roomId, pruneAt)
         .run();
+      opts.t?.lap('prune');
     }
     return { ok: true, revision: nextRevision };
   } catch (err) {
@@ -539,6 +543,30 @@ async function priorMutationResponse(env, prior, roomRevision, baseRevision) {
  * @param {'mutations' | 'pull'} sub
  */
 export async function handleSync(request, env, roomId, sub) {
+  const t = stepTimer(env);
+  const res = await handleSyncRoute(request, env, roomId, sub, t);
+  if (t) res.headers.set('Server-Timing', t.header());
+  return res;
+}
+
+// perf (temporary, scripts/perf/sync-timing.mjs): SYNC_TIMING=1 in .dev.vars
+// adds a Server-Timing header with per-step ms. Remove after the speed work.
+function stepTimer(env) {
+  if (String(env?.SYNC_TIMING || '') !== '1') return null;
+  const t0 = performance.now();
+  let last = t0;
+  const parts = [];
+  return {
+    lap(name) {
+      const now = performance.now();
+      parts.push(`${name};dur=${(now - last).toFixed(2)}`);
+      last = now;
+    },
+    header: () => [...parts, `total;dur=${(performance.now() - t0).toFixed(2)}`].join(', '),
+  };
+}
+
+async function handleSyncRoute(request, env, roomId, sub, t) {
   const db = env.DB;
   if (!db) {
     throw new SyncError('error', 'Base de datos no configurada.');
@@ -548,23 +576,23 @@ export async function handleSync(request, env, roomId, sub) {
     if (request.method !== 'POST') {
       throw new SyncError('not_found', 'Método no permitido.');
     }
-    return handleMutations(request, env, db, roomId);
+    return handleMutations(request, env, db, roomId, t);
   }
 
   if (sub === 'pull') {
     if (request.method !== 'GET') {
       throw new SyncError('not_found', 'Método no permitido.');
     }
-    return handlePull(request, env, db, roomId);
+    return handlePull(request, env, db, roomId, t);
   }
 
   throw new SyncError('not_found', 'Ruta de sync no encontrada.');
 }
 
 /** @param {Request} request @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */
-async function handleMutations(request, env, db, roomId) {
+async function handleMutations(request, env, db, roomId, t = null) {
   checkMutationPushRateLimit(roomId);
-  const { user, room } = await requireMember(db, request, roomId);
+  const { user, room } = await requireMember(db, request, roomId, t);
   const bodyText = await request.text();
   const bodyBytes = new TextEncoder().encode(bodyText).length;
   /** @type {Record<string, unknown>} */
@@ -594,6 +622,7 @@ async function handleMutations(request, env, db, roomId) {
   validateOpsSize(ops);
 
   const prior = await loadPriorMutation(db, roomId, clientMutationId);
+  t?.lap('dedup');
   if (prior) {
     return priorMutationResponse(env, prior, Number(room.revision), baseRevision);
   }
@@ -634,6 +663,7 @@ async function handleMutations(request, env, db, roomId) {
       roomId,
       { skipLabShards: !hasLabSidecarOps }
     );
+    t?.lap('load');
     // Lab shards were not read: their size is whatever the last total held
     // beyond the old core blob.
     const priorLabBytes = labsSkipped
@@ -647,6 +677,7 @@ async function handleMutations(request, env, db, roomId) {
     }
     lastApplied = [...appliedResult.applied, ...sidecarApplied];
     lastRejected = appliedResult.rejected;
+    t?.lap('apply');
     const noopAck = tryNoopMutationAck(
       lastApplied,
       lastRejected,
@@ -667,11 +698,13 @@ async function handleMutations(request, env, db, roomId) {
       labSetBytes,
       priorLabBytes,
       shardBaseline,
+      t,
     });
     if (committed.ok) {
       // appliedResult.applied only — not sidecarApplied (internoAccessUpsert rows
       // aren't {path,value} LWW ops the client's ops-apply path understands).
       await notifyRoomRevision(env, roomId, committed.revision, appliedResult.applied);
+      t?.lap('notify');
       return Response.json({
         revision: committed.revision,
         applied: lastApplied,
@@ -761,8 +794,8 @@ function filterPullOpsForMobileLabWindow(ops, now) {
 }
 
 /** @param {Request} request @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */
-async function handlePull(request, env, db, roomId) {
-  await requireMember(db, request, roomId);
+async function handlePull(request, env, db, roomId, t = null) {
+  await requireMember(db, request, roomId, t);
   const url = new URL(request.url);
   const since = Number(url.searchParams.get('since') ?? 0);
   const mobileLabWindow = isMobileLabPullRequest(url);
@@ -771,6 +804,7 @@ async function handlePull(request, env, db, roomId) {
     .prepare('SELECT revision FROM rooms WHERE id = ?')
     .bind(roomId)
     .first();
+  t?.lap('revision');
   if (!room) {
     throw new SyncError('not_found', 'Sala no encontrada.');
   }
@@ -801,6 +835,7 @@ async function handlePull(request, env, db, roomId) {
     )
     .bind(roomId, since)
     .all();
+  t?.lap('select');
 
   const rows = results ?? [];
   let cumulativeBytes = 0;
