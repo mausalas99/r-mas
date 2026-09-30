@@ -161,6 +161,7 @@ async function joinTurnRoom(client, chosenUser, toast, setStatus) {
     api: client,
     getSala: () => chosenUser.sala,
     getToken: getCloudSyncToken,
+    explicit: true, // the user just picked this sala in onboarding
     setCloudSyncRoomId,
     setCloudSyncRoomSnapshot,
     setCloudSyncRevision,

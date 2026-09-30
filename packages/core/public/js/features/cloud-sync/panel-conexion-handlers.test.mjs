@@ -24,3 +24,52 @@ describe('join errors and sign-out', () => {
     }
   });
 });
+
+describe('handleLeaveRoom', () => {
+  const makeDeps = (leaveRoom) => {
+    const calls = { stop: 0, toasts: [], cleared: 0, disconnected: 0 };
+    return {
+      calls,
+      deps: {
+        getCloudSyncRoomId: () => 'room-1',
+        getApi: () => ({ leaveRoom }),
+        stopRuntime: () => { calls.stop += 1; },
+        toast: (msg, kind) => calls.toasts.push([msg, kind]),
+        setCloudSyncRoomSnapshot: () => { calls.cleared += 1; },
+        renderDisconnected: () => { calls.disconnected += 1; },
+      },
+    };
+  };
+
+  it('keeps the room and shows an error when the server refuses the leave', async () => {
+    const { handleLeaveRoom } = await import('./panel-conexion-handlers.mjs');
+    const { deps, calls } = makeDeps(async () => { throw Object.assign(new Error('x'), { data: {} }); });
+    await handleLeaveRoom(deps);
+    assert.equal(calls.cleared, 0);
+    assert.equal(calls.stop, 0);
+    assert.equal(calls.toasts[0][1], 'error');
+  });
+
+  it('leaves locally when the server already says not_member', async () => {
+    const { handleLeaveRoom } = await import('./panel-conexion-handlers.mjs');
+    const { deps, calls } = makeDeps(async () => { throw Object.assign(new Error('x'), { data: { error: 'not_member' } }); });
+    await handleLeaveRoom(deps);
+    assert.equal(calls.cleared, 1);
+    assert.equal(calls.disconnected, 1);
+  });
+});
+
+describe('drainOutboxWithRetry', () => {
+  it('succeeds when a later flush empties the queue, and gives up after the last attempt', async () => {
+    const { drainOutboxWithRetry } = await import('./panel-conexion-handlers.mjs');
+    let queue = [1];
+    let calls = 0;
+    const flaky = async () => { calls += 1; if (calls === 2) queue = []; else throw new Error('overloaded'); };
+    assert.equal(await drainOutboxWithRetry({ list: () => queue }, flaky, { waitMs: 1 }), true);
+    assert.equal(calls, 2);
+    calls = 0;
+    queue = [1];
+    assert.equal(await drainOutboxWithRetry({ list: () => queue }, async () => { calls += 1; }, { attempts: 3, waitMs: 1 }), false);
+    assert.equal(calls, 3);
+  });
+});

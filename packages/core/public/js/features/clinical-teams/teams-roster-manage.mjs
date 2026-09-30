@@ -4,7 +4,7 @@ import { canManageTeamRoster } from '../../clinical-privileges.mjs';
 import { getClinicalTeamsPanelHost } from '../clinical-panel-host.mjs';
 import { openConfirm } from '../workbench/confirm.mjs';
 import { dbApi, toast, currentUserId } from './shared.mjs';
-import { publishClinicalTeamsAfterChange } from './teams-guardia-bridge.mjs';
+import { publishClinicalTeamsAfterChange, toastTeamPublishResult } from './teams-guardia-bridge.mjs';
 import { refreshTeamsUiAfterChange } from './teams-roster-shell.mjs';
 
 function closeTeamEditPanels(exceptPanel) {
@@ -134,9 +134,9 @@ export async function handleLeaveTeamClick(btn, confirmFn = openConfirm) {
     return;
   }
 
-  toast('Saliste del equipo.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-  await publishClinicalTeamsAfterChange();
+  // The leave is already saved here; say plainly whether the room got it too.
+  toastTeamPublishResult(await publishClinicalTeamsAfterChange(), 'Saliste del equipo.');
   await refreshTeamsUiAfterChange();
 }
 

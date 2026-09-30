@@ -14,7 +14,8 @@ import {
 } from './room-dek.mjs';
 import { backfillRoomEncryption } from './room-dek-migrate.mjs';
 import { getCloudSyncClientId } from './client-id.mjs';
-import { setStoredRoomDeks } from './settings.mjs';
+import { setStoredRoomDeks, setLeftTurnRoom } from './settings.mjs';
+import { currentTurnKey } from './ensure-turn-room.mjs';
 import { noteNubeSignedOut } from './session-expired-prompt.mjs';
 import { showConfirmDialog } from '../../ui-approval-card.mjs';
 import { getSharedNubeRuntime, getSharedNubeOutbox } from './panel-conexion-runtime.mjs';
@@ -202,21 +203,37 @@ export function persistCloudRoom(deps, room) {
  * the wrong room later.
  * @param {object} _deps
  */
-async function flushOutboxBeforeRoomSwitch(_deps) {
+export async function flushOutboxBeforeRoomSwitch(_deps) {
   const outbox = getSharedNubeOutbox();
   if (!outbox || outbox.list().length === 0) return;
-  try {
-    await getSharedNubeRuntime()?.flushOutbox?.();
-  } catch {
-    /* fall through to the pending check below */
-  }
-  if (outbox.list().length > 0) {
+  const drained = await drainOutboxWithRetry(outbox, () => getSharedNubeRuntime()?.flushOutbox?.());
+  if (!drained) {
     const err = new Error(
-      'Hay cambios sin enviar en la sala actual. Espera a que se sincronicen antes de cambiar de sala.'
+      'Hay cambios sin enviar en la sala actual. Toca «Reintentar cola» en Conexión y cambia de sala de nuevo.'
     );
     err.data = { error: 'outbox_pending', message: err.message };
     throw err;
   }
+}
+
+/**
+ * D1 overloads in bursts, so one failed flush is often transient — a few
+ * spaced retries let a room switch succeed without the user retrying by hand.
+ * @param {{ list: () => unknown[] }} outbox
+ * @param {() => Promise<unknown> | undefined} flush
+ * @returns {Promise<boolean>} true when the queue is empty
+ */
+export async function drainOutboxWithRetry(outbox, flush, { attempts = 3, waitMs = 2000 } = {}) {
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      await flush();
+    } catch {
+      /* fall through to the emptiness check */
+    }
+    if (outbox.list().length === 0) return true;
+    if (i < attempts - 1) await new Promise((r) => setTimeout(r, waitMs));
+  }
+  return false;
 }
 
 /**
@@ -231,6 +248,7 @@ export async function joinRoomByCode(deps, code, opts = {}) {
   await flushOutboxBeforeRoomSwitch(deps);
   const data = await deps.getApi().joinRoom({ code });
   const room = data.room;
+  setLeftTurnRoom(null); // joined on purpose: automatic ensure-turn may run again
   // `fullPull`: start from revision 0 so the first pull brings the room's history.
   // Storing room.revision would make it pull "since now" and miss everything before.
   persistCloudRoom(deps, opts.fullPull ? { ...room, revision: 0 } : room);
@@ -356,6 +374,7 @@ export async function handleCreateRoom(deps) {
   try {
     const data = await deps.getApi().createRoom({ name, sala: deps.normalizedSala });
     const room = data.room;
+    setLeftTurnRoom(null);
     persistCloudRoom(deps, room);
     const dekOk = NUBE_E2EE_ENABLED
       ? await ensureRoomDek(deps.getApi(), room.id, room.code)
@@ -401,14 +420,41 @@ export function joinRoomErrorText(err) {
   return err?.data?.message || err?.message || 'No se pudo unir a la sala.';
 }
 
+/**
+ * The Worker's ensure-turn re-adds any caller, so autostart and the Conexión
+ * bootstrap would undo «Salir». Record the left (sala, month); ensure-turn-room.mjs
+ * skips it until the user joins again on purpose. Never blocks the leave.
+ * @param {object} deps
+ */
+function rememberLeftTurnRoom(deps) {
+  try {
+    const snap = deps.getCloudSyncRoomSnapshot?.();
+    const sala = normalizeCloudSala(snap?.sala || deps.normalizedSala || '');
+    if (sala) setLeftTurnRoom({ sala, turnKey: snap?.turnKey || currentTurnKey() });
+  } catch {
+    /* no storage: the leave itself still stands */
+  }
+}
+
 /** @param {object} deps */
 export async function handleLeaveRoom(deps) {
   const roomId = deps.getCloudSyncRoomId();
-  deps.stopRuntime();
+  // Server first: if it still lists this user as a member, saying "Saliste"
+  // would be a lie. "not_member" means the server already agrees.
   try {
     if (roomId) await deps.getApi().leaveRoom(roomId);
-  } catch { /* best-effort */ }
+  } catch (err) {
+    if (err?.data?.error !== 'not_member') {
+      deps.toast(
+        err?.data?.message || 'No se pudo salir de la sala. Revisa tu conexión e inténtalo de nuevo.',
+        'error'
+      );
+      return;
+    }
+  }
+  deps.stopRuntime();
   // Keep Nube auth (Recuérdame); only clear room membership.
+  rememberLeftTurnRoom(deps);
   if (typeof deps.setCloudSyncRoomSnapshot === 'function') {
     deps.setCloudSyncRoomSnapshot(null);
   } else {

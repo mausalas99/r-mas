@@ -1,7 +1,29 @@
 import { isCloudSala, normalizeCloudSala } from './sala-allowlist.mjs';
 import { setCloudRoomConnected } from './nube-sync-policy.mjs';
 import { loadRoomDek, exportCachedDeksForPersistence, getCachedRoomDek } from './room-dek.mjs';
-import { getCloudSyncRoomId, getCloudSyncRevision } from './settings.mjs';
+import { getCloudSyncRoomId, getCloudSyncRevision, getLeftTurnRoom, setLeftTurnRoom } from './settings.mjs';
+
+/** Same month key as the Worker's defaultTurnKey (cloud/sync-worker/src/turn-key.js). */
+export function currentTurnKey(now = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit' })
+    .format(now)
+    .slice(0, 7);
+}
+
+/**
+ * True when the user left this sala's room this month («Salir de la sala»), so an
+ * automatic ensure-turn must not re-add them. A marker for another sala or month
+ * is stale (profile sala changed, or a new month began) and is dropped here.
+ * An explicit call (the user chose this sala now) clears it instead.
+ * @param {{ explicit?: boolean }} deps @param {string} sala normalized
+ */
+function skipLeftTurnRoom(deps, sala) {
+  const left = getLeftTurnRoom();
+  if (!left) return false;
+  if (!deps.explicit && normalizeCloudSala(left.sala) === sala && left.turnKey === currentTurnKey()) return true;
+  setLeftTurnRoom(null);
+  return false;
+}
 
 /**
  * Every connect to a turn room must have its DEK loaded — otherwise this device
@@ -61,6 +83,13 @@ function applyEnsureTurnSuccess(deps, turnRoom) {
 }
 
 
+/** @param {object} deps @returns {string} the sala to ensure, or '' to skip */
+function turnSalaToEnsure(deps) {
+  const sala = normalizeCloudSala(deps.getSala());
+  if (!isCloudSala(sala) || !deps.getToken()) return '';
+  return skipLeftTurnRoom(deps, sala) ? '' : sala;
+}
+
 /**
  * @param {{
  *   api: { ensureTurn: (body: { sala: string }) => Promise<{ room: object }> },
@@ -71,18 +100,25 @@ function applyEnsureTurnSuccess(deps, turnRoom) {
  *   onConnected?: (room: object) => void,
  *   startSyncRuntime?: () => void,
  *   toast?: (msg: string, kind?: string) => void,
- * }} deps
+ *   explicit?: boolean,
+ * }} deps `explicit`: the user chose this sala now — clears a «Salir» marker.
+ *   Without it (autostart, Conexión bootstrap, after team join) a left room is skipped.
  * @returns {Promise<object | null>}
  */
 export async function ensureTurnRoom(deps) {
-  const sala = normalizeCloudSala(deps.getSala());
-  if (!isCloudSala(sala)) return null;
-  if (!deps.getToken()) return null;
+  const sala = turnSalaToEnsure(deps);
+  if (!sala) return null;
 
   try {
     const data = await deps.api.ensureTurn({ sala });
     const room = data?.room;
     if (!room?.id) throw new Error('Respuesta inválida del servidor.');
+    // Moving to another room (new sala or new month): edits still queued for
+    // the old room must reach it first, or they would drain into the new one.
+    if (String(room.id) !== String(getCloudSyncRoomId() || '')) {
+      const { flushOutboxBeforeRoomSwitch } = await import('./panel-conexion-handlers.mjs');
+      await flushOutboxBeforeRoomSwitch(deps);
+    }
     applyEnsureTurnSuccess(deps, room);
     return room;
   } catch (err) {
@@ -113,5 +149,6 @@ export async function ensureTurnRoomAfterTeamJoin(toast) {
     setCloudSyncRoomSnapshot: settings.setCloudSyncRoomSnapshot,
     setCloudSyncRevision: settings.setCloudSyncRevision,
     toast,
+    explicit: true,
   });
 }
