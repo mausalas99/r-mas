@@ -43,18 +43,31 @@ function shouldExportClinicalUserForLan(row, deletedIds) {
   return isRegisteredClinicalUser(row);
 }
 
+function selectUsersByIdChunked(db, ids) {
+  const byId = new Map();
+  for (let i = 0; i < ids.length; i += 500) {
+    const chunk = ids.slice(i, i + 500);
+    const rows = db
+      .prepare(
+        `SELECT user_id, username, rank, clinical_name, sala, is_program_admin, created_at
+         FROM users WHERE user_id IN (${chunk.map(() => '?').join(',')})`
+      )
+      .all(...chunk);
+    for (const r of rows) byId.set(r.user_id, r);
+  }
+  return byId;
+}
+
 function appendMembershipReferencedUsers(db, clinicalUsers, deletedIds, refs) {
   const exportedIds = new Set(
     (clinicalUsers || []).map((row) => String(row?.user_id || '').trim()).filter(Boolean)
   );
-  const select = db.prepare(
-    `SELECT user_id, username, rank, clinical_name, sala, is_program_admin, created_at
-     FROM users WHERE user_id = ?`
-  );
+  const pending = [...refs].filter((uid) => !exportedIds.has(uid) && !deletedIds.has(uid));
+  const rowsById = selectUsersByIdChunked(db, pending);
   let added = 0;
   for (const uid of refs) {
     if (exportedIds.has(uid) || deletedIds.has(uid)) continue;
-    const row = select.get(uid);
+    const row = rowsById.get(uid);
     if (!row) continue;
     const handle = normalizeUsername(row?.username || '');
     const clinicalName = String(row?.clinical_name || '').trim();
