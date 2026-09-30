@@ -94,6 +94,7 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
     regenerateRecovery: () =>
       req('/auth/regenerate-recovery', { method: 'POST', body: {} }),
     me: () => req('/auth/me'),
+    changeUsername: (username) => req('/auth/username', { method: 'POST', body: { username } }),
     createRoom: (body) => req('/rooms', { method: 'POST', body }),
     joinRoom: (body) => req('/rooms/join', { method: 'POST', body }),
     ensureTurn: (body) => req('/rooms/ensure-turn', { method: 'POST', body }),

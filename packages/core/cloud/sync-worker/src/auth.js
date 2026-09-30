@@ -165,6 +165,29 @@ async function handleMe(db, request) {
   return Response.json({ user: userPayload(user) });
 }
 
+/** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request */
+async function handleChangeUsername(db, request) {
+  const user = await userFromAuthHeader(db, request);
+  if (!user) {
+    throw new SyncError('auth_required', 'Sesión inválida o expirada.');
+  }
+  const body = await parseJsonBody(request);
+  const username = normalizeUsername(body?.username);
+  validateUsername(username);
+  try {
+    await db
+      .prepare('UPDATE users SET username = ?, updated_at = ? WHERE id = ?')
+      .bind(username, new Date().toISOString(), user.id)
+      .run();
+  } catch (err) {
+    if (String(err?.message || '').includes('UNIQUE')) {
+      throw new SyncError('conflict', 'Ese usuario ya existe.');
+    }
+    throw err;
+  }
+  return Response.json({ user: userPayload({ ...user, username }) });
+}
+
 /**
  * @param {Request} request
  * @param {{ DB?: import('@cloudflare/workers-types').D1Database }} env
@@ -191,6 +214,9 @@ export async function handleAuth(request, env, subpath) {
   }
   if (subpath === '/me' && method === 'GET') {
     return handleMe(db, request);
+  }
+  if (subpath === '/username' && method === 'POST') {
+    return handleChangeUsername(db, request);
   }
   if (subpath === '/recover' && method === 'POST') {
     return handleRecover(db, request, ip);
