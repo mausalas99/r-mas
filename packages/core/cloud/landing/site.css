@@ -11,7 +11,14 @@ h1,h2,h3,p{margin:0}
 .eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal-d)}
 .mono{font-family:var(--mono)}
 .dl{display:inline-flex;align-items:center;gap:12px;padding:18px 32px;border-radius:999px;background:var(--teal);color:#fff;text-decoration:none;font-size:18px;font-weight:600}
-.dl:hover{background:var(--teal-d);color:#fff}
+.dl{position:relative;overflow:hidden;transition:transform .25s cubic-bezier(.2,.7,.2,1),box-shadow .25s,background .25s}
+.dl:hover{background:var(--teal-d);color:#fff;transform:translateY(-2px);box-shadow:0 14px 28px -12px oklch(.4 .09 195 / .7)}
+.dl:active{transform:translateY(0) scale(.98)}
+.dl::after{content:"";position:absolute;inset:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);transform:translateX(-120%) skewX(-20deg);pointer-events:none}
+.dl:hover::after{animation:shine .9s ease}
+.dl svg{transition:transform .25s}
+.dl:hover svg{transform:translateY(2px)}
+@keyframes shine{to{transform:translateX(320%) skewX(-20deg)}}
 .meta{font-size:14px;color:var(--ink3);display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:center}
 
 /* Header */
@@ -47,8 +54,19 @@ main{view-transition-name:page}
 .heroshot{padding-bottom:112px}
 .more{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;padding-bottom:112px}
 a.card{text-decoration:none;color:var(--ink)}
-a.card:hover{border-color:var(--teal)}
-.go{font-weight:600;color:var(--teal-d);margin-top:auto}
+a.card{transition:transform .3s cubic-bezier(.2,.7,.2,1),box-shadow .3s,border-color .3s}
+a.card:hover{color:var(--ink);border-color:oklch(.51 .09 195 / .5);transform:translateY(-6px);box-shadow:0 24px 40px -24px rgba(20,40,40,.35)}
+.go{font-weight:600;color:var(--teal-d);margin-top:auto;transition:transform .3s}
+a.card:hover .go{transform:translateX(6px)}
+
+/* Home entrance: hero text rises in, then the screenshot settles from a
+   tilt. Fill is backwards only, so hover transforms still work after. */
+.hero>*{animation:rise .8s cubic-bezier(.2,.7,.2,1) backwards}
+.hero>:nth-child(1){animation-delay:.1s}.hero>:nth-child(2){animation-delay:.25s}.hero>:nth-child(3){animation-delay:.4s}.hero>:nth-child(4){animation-delay:.55s}.hero>:nth-child(5){animation-delay:.7s}
+.heroshot .shot{transform-origin:50% 0;animation:settle 1.4s cubic-bezier(.16,.8,.24,1) .6s backwards}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}}
+@keyframes settle{from{opacity:0;transform:perspective(1600px) rotateX(14deg) translateY(60px) scale(.96)}}
+@media (prefers-reduced-motion:reduce){.hero>*,.heroshot .shot,.dl:hover::after{animation:none}.dl,.dl svg,a.card,.go{transition:none}.dl:hover,.dl:hover svg,a.card:hover,a.card:hover .go{transform:none}}
 
 /* Sub pages */
 .pagehead{display:flex;flex-direction:column;gap:16px;padding-top:72px;padding-bottom:56px;max-width:880px}
