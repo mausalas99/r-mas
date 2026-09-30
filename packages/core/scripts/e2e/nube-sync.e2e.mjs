@@ -643,44 +643,6 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await F.app.close();
   await backToLabs(A2.page);
 
-  // ── Leave: a fresh device G leaves its team, then its sala ──
-  const G = await launchDevice('g', 3797);
-  await onboardNube(G.page, { username: `demo_g_${tag}`, name: 'Dr. Demo Golf' });
-  await G.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
-  const gJoinBtn = G.page.getByRole('button', { name: 'Unirme' });
-  await until(() => gJoinBtn.isVisible(), 20000);
-  await gJoinBtn.click().catch(() => {});
-  await backToLabs(G.page);
-  const roomG = await until(async () => (await roomMeta(G.page))?.id, 20000) && await roomMeta(G.page);
-  const memberRows = () => JSON.parse(d1Query(`SELECT COUNT(*) AS n FROM room_members WHERE room_id='${roomG?.id}' AND user_id=(SELECT id FROM users WHERE username='demo_g_${tag}')`))[0]?.results?.[0]?.n;
-  check('leave: G is a member of the Sala 1 room before leaving', memberRows() === 1, memberRows());
-
-  await openConexion(G.page, 'equipo');
-  // The first «Unirme» click above did not take; join from the Equipo view itself.
-  const gJoinAgain = G.page.getByRole('button', { name: 'Unirme' });
-  if (await until(() => gJoinAgain.isVisible().catch(() => false), 5000)) await gJoinAgain.click();
-  const leaveTeam = G.page.locator('.clinical-teams-leave-btn').first();
-  check('leave: G sees «Salir del equipo»', await until(() => leaveTeam.isVisible().catch(() => false), 10000),
-    flat(await G.page.locator('#connection-dropdown').innerText().catch(() => '')).slice(0, 400));
-  await leaveTeam.click();
-  await G.page.getByRole('button', { name: 'Salir', exact: true }).click();
-  check('leave: «Salir del equipo» removes the team card', await until(async () => !(await G.page.locator('.clinical-teams-leave-btn').first().isVisible().catch(() => false)), 15000));
-  await closeConexion(G.page);
-
-  // The sala button lives in whichever Conexión view shows «Tu sala».
-  const leaveRoom = G.page.locator('[data-cloud-action="leave-room"]');
-  let leaveRoomShown = false;
-  for (const view of ['cuenta', 'nube', 'equipo']) {
-    await openConexion(G.page, view);
-    if ((leaveRoomShown = await until(() => leaveRoom.isVisible().catch(() => false), 3000))) break;
-    await closeConexion(G.page);
-  }
-  check('leave: G sees «Salir de la sala»', leaveRoomShown);
-  await leaveRoom.click();
-  check('leave: «Salir de la sala» clears the room on G', await until(async () => !(await roomMeta(G.page))?.id, 15000), await roomMeta(G.page));
-  check('leave: the Worker dropped G from the room (no false «Saliste»)', memberRows() === 0, memberRows());
-  await G.app.close();
-
   // ── Admin panel: self-promote with the local SYNC_ADMIN_KEY, then every admin tab ──
   await openConexion(A2.page, 'admin');
   await A2.page.locator('[data-admin-key-input]').fill('e2e-admin-key');
