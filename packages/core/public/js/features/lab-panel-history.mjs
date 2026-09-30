@@ -481,7 +481,7 @@ export function clearLabOutputDom() {
 /** Output left over from another patient: a patient switch whose deferred
  * clear got replaced (a Nube pull repaint) or cancelled (a quick tab click)
  * would otherwise keep the previous patient's labs on screen. */
-function dropOtherPatientsLabOutput() {
+export function dropOtherPatientsLabOutput() {
   if (!labPanelBridge.getActiveLab()) return;
   if (String(labPanelBridge.getActiveLabPatientId() ?? '') === String(rt.getActiveId() ?? '')) return;
   labPanelBridge.setActiveLab(null);

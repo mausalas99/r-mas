@@ -22,6 +22,14 @@ export const HINTS_RELEASE = '8.4.3';
 
 export const FEATURE_HINTS = [
   {
+    id: 'g-areas',
+    kind: 'guia',
+    title: 'Cambiar de área',
+    steps: [
+      { sel: '.topbar-area-btn', text: 'Este botón muestra el área donde estás. Pasa el cursor o púlsalo para cambiar entre <strong>Paciente</strong>, <strong>Laboratorio</strong>, <strong>Manejo</strong> y <strong>Agenda</strong>. Atajo: teclas <strong>1</strong> a <strong>4</strong>.' },
+    ],
+  },
+  {
     id: 'g-labs',
     kind: 'guia',
     title: 'Pegar laboratorios',

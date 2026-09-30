@@ -676,10 +676,17 @@ await r.finish('SOME paste rules', async () => {
     sets.map((s) => s.text.slice(0, 200)));
 
   // "Tablas del reporte SOME" button → per-department table view of the same paste.
+  await page.locator('summary[aria-label="Más acciones de laboratorio"]').click();
   await page.locator('#lab-some-tables-btn').click();
   const someTablesBody = page.locator('#lab-some-tables-modal-body');
   await someTablesBody.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
-  const someTablesText = await someTablesBody.innerText().catch(() => '');
+  // One department shows at a time (tabs): read every tab.
+  let someTablesText = await someTablesBody.innerText().catch(() => '');
+  const someTabs = page.locator('#lab-some-tables-modal-body .lab-some-tab');
+  for (let i = 1, n = await someTabs.count(); i < n; i++) {
+    await someTabs.nth(i).click();
+    someTablesText += '\n' + await someTablesBody.innerText().catch(() => '');
+  }
   check('"Tablas del reporte SOME" shows the BACTERIOLOGIA and QUIMICA CLINICA departments as tables',
     /Enterococcus faecalis/.test(someTablesText) && /VANCOMICINA/.test(someTablesText) && /DIGOXINA/.test(someTablesText),
     someTablesText.slice(0, 400));
@@ -721,8 +728,8 @@ await r.finish('SOME paste rules', async () => {
   // "Eliminar" in the lab card's "…" more-menu → destructive confirm → the set is
   // actually gone from the day list (TROPONINA, 07/07/2026, is the only set that day).
   await daySets(TRES, '07/07/2026');
-  await page.locator('#lab-output-section .lab-output-more-btn').click();
-  await page.locator('#lab-output-section [data-onclick-2="deleteSelectedLabHistorySet"]').click();
+  await page.locator('#lab-bar-more summary').click();
+  await page.locator('#lab-bar-more [data-onclick-2="deleteSelectedLabHistorySet"]').click();
   const delConfirmOk = page.locator('[data-wb-confirm-ok]');
   await delConfirmOk.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
   const delConfirmTitle = (await page.locator('.wb-confirm-title').innerText().catch(() => '')) || '';

@@ -2599,6 +2599,13 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-registro-modal .ea-field--datetime .rpc-datetime-field {
   max-width: 100%;
+  grid-template-columns: max-content auto;
+}
+
+.ea-registro-modal .ea-field--datetime .rpc-date-field__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ea-registro-modal .ea-field--datetime .rpc-date-field__trigger.profile-input {

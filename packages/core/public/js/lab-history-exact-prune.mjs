@@ -3,7 +3,7 @@
  */
 import { getLabHistory } from './app-state.mjs';
 import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
-import { stripDuplicateLabSets } from './lab-history-auto-store-core.mjs';
+import { stripDuplicateLabSets, findSubsumedLabSets } from './lab-history-auto-store-core.mjs';
 
 /**
  * @param {string} patientId
@@ -15,9 +15,22 @@ export function applyExactLabHistoryDedupe(patientId) {
   var sets = hist[patientId];
   if (!sets || sets.length < 2) return [];
   var result = stripDuplicateLabSets(sets);
-  if (!result.removedIds.length) return [];
-  if (result.sets.length) hist[patientId] = result.sets;
+  var removed = result.removedIds.slice();
+  var kept = result.sets;
+  // Pulled from another device: a set whose values all live in a bigger set of the same day.
+  var subsumed = findSubsumedLabSets(kept);
+  if (subsumed.length) {
+    var gone = new Set(subsumed.map(function (f) { return f.id; }));
+    subsumed.forEach(function (f) {
+      var small = kept.find(function (x) { return String(x.id) === f.id; });
+      if (small && small.hora && !String(f.into.hora || '').trim()) f.into.hora = small.hora;
+    });
+    kept = kept.filter(function (x) { return !gone.has(String(x.id)); });
+    removed = removed.concat(Array.from(gone));
+  }
+  if (!removed.length) return [];
+  if (kept.length) hist[patientId] = kept;
   else delete hist[patientId];
   bumpLabHistoryRevision(patientId);
-  return result.removedIds;
+  return removed;
 }

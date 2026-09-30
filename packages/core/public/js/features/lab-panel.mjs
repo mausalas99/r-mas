@@ -13,6 +13,7 @@ import { rt, registerLabPanelRuntime as _registerRt } from './lab-panel-runtime-
 import { labPanelBridge } from './lab-panel-bridge.mjs';
 import {
   renderLabHistoryPanel,
+  dropOtherPatientsLabOutput,
   setLabHistoryPanelCollapsed,
   syncLabHistoryCollapseUI,
   expandLabHistoryList,
@@ -236,6 +237,7 @@ export function clearLabWorkbenchMinimalDom() {
 
 export {
   renderLabHistoryPanel,
+  dropOtherPatientsLabOutput,
   setLabHistoryPanelCollapsed,
   syncLabHistoryCollapseUI,
   expandLabHistoryList,

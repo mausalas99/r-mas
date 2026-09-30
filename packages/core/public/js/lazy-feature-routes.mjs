@@ -319,6 +319,7 @@ function wireLabsRuntimeExports(mod) {
   if (!labsRuntimeCtx) return;
   Object.assign(labsRuntimeCtx, {
     renderLabHistoryPanel: mod.renderLabHistoryPanel,
+    dropOtherPatientsLabOutput: mod.dropOtherPatientsLabOutput,
     syncLabOutputChrome: mod.syncLabOutputChrome,
     setLabHistoryPanelCollapsed: mod.setLabHistoryPanelCollapsed,
     syncLabHistoryCollapseUI: mod.syncLabHistoryCollapseUI,
@@ -401,6 +402,10 @@ function labsAsyncFn(exportName) {
 /** Proxies until ensureLabsLoaded wires real exports onto runtime ctx. */
 export const labsRuntimeProxies = {
   renderLabHistoryPanel: labsAsyncFn('renderLabHistoryPanel'),
+  // Nothing to drop until the labs module loads, so no queueing.
+  dropOtherPatientsLabOutput: function () {
+    if (labsModule) labsModule.dropOtherPatientsLabOutput();
+  },
   syncLabOutputChrome: labsAsyncFn('syncLabOutputChrome'),
   setLabHistoryPanelCollapsed: labsAsyncFn('setLabHistoryPanelCollapsed'),
   syncLabHistoryCollapseUI: labsAsyncFn('syncLabHistoryCollapseUI'),

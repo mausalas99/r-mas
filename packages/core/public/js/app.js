@@ -1,5 +1,8 @@
 import { storage } from './storage.js';
 import { initInlineActionDispatch } from './inline-action-dispatch.mjs';
+import { sweepDeadLocalStorageKeys } from './legacy-ls-sweep.mjs';
+
+sweepDeadLocalStorageKeys();
 
 initInlineActionDispatch();
 

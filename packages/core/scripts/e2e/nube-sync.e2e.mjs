@@ -55,6 +55,7 @@ import { createRun, dismissLearnHub, closeToasts, pasteAndSave, openPatient, goA
 import { startWorker, stopWorker, d1Query, nubeDevices, onboardNube, roomMeta, patientVisible, flat, until, BASE, PASSWORD, openNubePanel } from './nube-worker.mjs';
 import { fullLabs, gas } from './some-fixtures.mjs';
 import { decodeRoomState } from '../../cloud/sync-worker/src/crypto-at-rest.js';
+import { joinCoreState } from '../../cloud/sync-worker/src/room-state-shard.js';
 
 const tag = Date.now().toString(36).slice(-6);
 const USER_A = { username: `demo_a_${tag}`, name: 'Dr. Demo Alfa' };
@@ -94,7 +95,14 @@ const roomState = async (roomId) => {
   const out = JSON.parse(d1Query(`SELECT hex(ciphertext) AS c, hex(iv) AS i FROM room_state WHERE room_id='${roomId}'`));
   const row = out[0]?.results?.[0];
   const u8 = (h) => Uint8Array.from(Buffer.from(h || '', 'hex'));
-  return decodeRoomState({ WORKER_DATA_KEY: 'ab'.repeat(32) }, u8(row.c), u8(row.i));
+  const env = { WORKER_DATA_KEY: 'ab'.repeat(32) };
+  const core = await decodeRoomState(env, u8(row.c), u8(row.i));
+  if (!core?.patientsSharded) return core;
+  // PATIENT_SHARD_WRITE=1: entries and tombstones live in per-patient rows, not the core blob.
+  const rows = JSON.parse(d1Query(`SELECT patient_id AS p, hex(ciphertext) AS c, hex(iv) AS i FROM room_state_patients WHERE room_id='${roomId}'`))[0]?.results ?? [];
+  const shards = new Map();
+  for (const r of rows) shards.set(r.p, await decodeRoomState(env, u8(r.c), u8(r.i)));
+  return joinCoreState(core, shards);
 };
 /**
  * All Nube HTTP runs in the main process ('cloud-sync-fetch' IPC → net), so renderer
@@ -634,6 +642,44 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
     (fOps.teams || []).map((t) => t?.name || t?.team_name || t?.team_id));
   await F.app.close();
   await backToLabs(A2.page);
+
+  // ── Leave: a fresh device G leaves its team, then its sala ──
+  const G = await launchDevice('g', 3797);
+  await onboardNube(G.page, { username: `demo_g_${tag}`, name: 'Dr. Demo Golf' });
+  await G.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
+  const gJoinBtn = G.page.getByRole('button', { name: 'Unirme' });
+  await until(() => gJoinBtn.isVisible(), 20000);
+  await gJoinBtn.click().catch(() => {});
+  await backToLabs(G.page);
+  const roomG = await until(async () => (await roomMeta(G.page))?.id, 20000) && await roomMeta(G.page);
+  const memberRows = () => JSON.parse(d1Query(`SELECT COUNT(*) AS n FROM room_members WHERE room_id='${roomG?.id}' AND user_id=(SELECT id FROM users WHERE username='demo_g_${tag}')`))[0]?.results?.[0]?.n;
+  check('leave: G is a member of the Sala 1 room before leaving', memberRows() === 1, memberRows());
+
+  await openConexion(G.page, 'equipo');
+  // The first «Unirme» click above did not take; join from the Equipo view itself.
+  const gJoinAgain = G.page.getByRole('button', { name: 'Unirme' });
+  if (await until(() => gJoinAgain.isVisible().catch(() => false), 5000)) await gJoinAgain.click();
+  const leaveTeam = G.page.locator('.clinical-teams-leave-btn').first();
+  check('leave: G sees «Salir del equipo»', await until(() => leaveTeam.isVisible().catch(() => false), 10000),
+    flat(await G.page.locator('#connection-dropdown').innerText().catch(() => '')).slice(0, 400));
+  await leaveTeam.click();
+  await G.page.getByRole('button', { name: 'Salir', exact: true }).click();
+  check('leave: «Salir del equipo» removes the team card', await until(async () => !(await G.page.locator('.clinical-teams-leave-btn').first().isVisible().catch(() => false)), 15000));
+  await closeConexion(G.page);
+
+  // The sala button lives in whichever Conexión view shows «Tu sala».
+  const leaveRoom = G.page.locator('[data-cloud-action="leave-room"]');
+  let leaveRoomShown = false;
+  for (const view of ['cuenta', 'nube', 'equipo']) {
+    await openConexion(G.page, view);
+    if ((leaveRoomShown = await until(() => leaveRoom.isVisible().catch(() => false), 3000))) break;
+    await closeConexion(G.page);
+  }
+  check('leave: G sees «Salir de la sala»', leaveRoomShown);
+  await leaveRoom.click();
+  check('leave: «Salir de la sala» clears the room on G', await until(async () => !(await roomMeta(G.page))?.id, 15000), await roomMeta(G.page));
+  check('leave: the Worker dropped G from the room (no false «Saliste»)', memberRows() === 0, memberRows());
+  await G.app.close();
 
   // ── Admin panel: self-promote with the local SYNC_ADMIN_KEY, then every admin tab ──
   await openConexion(A2.page, 'admin');
