@@ -475,6 +475,13 @@ export function renderGroupTable(deps, state, sectionKey, renderTable, opts) {
   if (restore) restore();
 }
 
+function commitWrapHtml(wrap, joined) {
+  if (wrap._tendLastHtml === joined && wrap.firstChild) return true;
+  wrap.innerHTML = joined;
+  wrap._tendLastHtml = joined;
+  return false;
+}
+
 function renderGroupTableInner(deps, state, sectionKey, renderTable, opts) {
   var wrap = document.getElementById((opts && opts.wrapId) || 'tend-group-table-wrap');
   if (!wrap) return;
@@ -514,7 +521,8 @@ function renderGroupTableInner(deps, state, sectionKey, renderTable, opts) {
     html.push('</table></div>');
     html.push(buildLegendHtml(state.tableModel));
   }
-  wrap.innerHTML = html.join('');
+  // Same HTML as last render: keep the live DOM (scroll, listeners) and skip re-wiring it.
+  var unchanged = commitWrapHtml(wrap, html.join(''));
   renderTableHiddenBar({
     wrap: wrap,
     sectionKey: sectionKey,
@@ -525,8 +533,8 @@ function renderGroupTableInner(deps, state, sectionKey, renderTable, opts) {
     renderTable: renderTable,
     specsByRowKey: specsByRowKey,
   });
-  wireTableToggles(wrap, deps, state, sectionKey, renderTable);
-  wireDayModeToggle(daySlot || wrap, state, sectionKey, renderTable);
+  if (!unchanged) wireTableToggles(wrap, deps, state, sectionKey, renderTable);
+  if (daySlot || !unchanged) wireDayModeToggle(daySlot || wrap, state, sectionKey, renderTable);
   if (state.dynamicMode) {
     renderAnalytePickerBar({
       slot: wrap.querySelector('#tend-group-analyte-picker-slot'),
