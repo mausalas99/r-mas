@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 28;
+export const SCHEMA_VERSION = 29;
 
 export const DDL_V1 = [
   `CREATE TABLE app_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,

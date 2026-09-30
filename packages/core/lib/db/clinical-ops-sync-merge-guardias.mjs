@@ -8,7 +8,8 @@ export function mergePatientTeamAssignments(db, incomingRows) {
   );
   let inserted = 0;
   for (const row of incomingRows) {
-    if (!row?.patient_id || !row?.team_id || !row?.effective_at) continue;
+    // team_id '' is valid: a patient moved to no team.
+    if (!row?.patient_id || row?.team_id == null || !row?.effective_at) continue;
     try {
       ensureClinicalPatientRow(db, String(row.patient_id));
       const info = stmt.run(
