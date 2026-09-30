@@ -127,16 +127,21 @@ function wireRoomLiveSocket(ctx, url) {
   }
 
   const ws = ctx.wsRef.current;
+  // A replaced socket (resume, pause, heartbeat timeout) can still fire late
+  // events. Only the current socket may touch shared state.
   ws.onopen = function () {
+    if (ctx.wsRef.current !== ws) return;
     ctx.onOpen();
-    roomWsStartHeartbeat(ctx.state);
+    roomWsStartHeartbeat(ctx.state, ctx.scheduleReconnect);
     noteCloudSyncWsLifecycle({ url: redactedUrl, open: true });
   };
   ws.onmessage = function (ev) {
+    if (ctx.wsRef.current !== ws) return;
     ctx.state.lastActivity.current = Date.now();
     ctx.signal.handleMessage(ev.data);
   };
   ws.onclose = function (ev) {
+    if (ctx.wsRef.current !== ws) return;
     ctx.wsRef.current = null;
     roomWsStopHeartbeat(ctx.state);
     noteCloudSyncWsLifecycle({
@@ -182,12 +187,14 @@ function roomWsStopHeartbeat(state) {
   }
 }
 
-function roomWsStartHeartbeat(state) {
+/** @param {() => void} onDead reconnect; the dead socket's onclose is ignored once it is dropped. */
+function roomWsStartHeartbeat(state, onDead) {
   roomWsStopHeartbeat(state);
   state.lastActivity.current = Date.now();
   state.heartbeatTimer.current = setInterval(function () {
     if (Date.now() - state.lastActivity.current > HEARTBEAT_TIMEOUT_MS) {
       roomWsCloseSocket(state);
+      onDead();
       return;
     }
     try {

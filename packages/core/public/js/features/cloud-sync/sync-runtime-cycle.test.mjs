@@ -152,3 +152,40 @@ describe('flush that joins an in-flight cycle', () => {
     } finally { runtime.stop(); }
   });
 });
+
+describe('WS ops messages apply one at a time', () => {
+  it('rev 2 then rev 3 back to back: both apply in order and the local revision ends at 3', async () => {
+    Object.defineProperty(globalThis.navigator, 'onLine', { configurable: true, get: () => true });
+    const original = globalThis.WebSocket;
+    const sockets = [];
+    globalThis.WebSocket = class { constructor() { sockets.push(this); } send() {} close() {} };
+    let revision = 1;
+    const applied = [];
+    let slow = true;
+    const runtime = createSyncRuntimeCycle({
+      api: { pull: async () => ({ revision, ops: [] }), push: async () => ({ revision }) },
+      outbox: memOutbox(),
+      getRoomId: () => 'room-1',
+      getRevision: () => revision,
+      setRevision: (r) => { revision = r; },
+      applyPullResult: async (res) => {
+        if (slow) { slow = false; await new Promise((r) => setTimeout(r, 20)); }
+        applied.push(res.revision);
+      },
+      liveRoomWs: { getBaseUrl: () => 'https://sync.example.com', getToken: () => 't' },
+      deferBootCycle: true,
+      onStatus() {},
+    });
+    try {
+      const msg = (rev) => ({ data: JSON.stringify({ type: 'revision', revision: rev, ops: [{ path: 'entries/p1/note', value: String(rev), updatedAt: '2026-09-30T10:00:00.000Z' }] }) });
+      sockets[0].onmessage(msg(2));
+      sockets[0].onmessage(msg(3));
+      await new Promise((r) => setTimeout(r, 60));
+      assert.deepEqual(applied, [2, 3]);
+      assert.equal(revision, 3);
+    } finally {
+      runtime.stop();
+      globalThis.WebSocket = original;
+    }
+  });
+});

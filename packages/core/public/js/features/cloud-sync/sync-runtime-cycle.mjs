@@ -315,6 +315,8 @@ async function applyRoomWsOpsMessage(deps, ctx, ops, revision) {
  */
 function startLiveRoomSyncWs(deps, ctx) {
   if (!deps.liveRoomWs) return null;
+  // One message at a time: each apply reads the local revision the previous one set.
+  let applyChain = Promise.resolve();
   const roomWs = createRoomSyncWs({
     getBaseUrl: deps.liveRoomWs.getBaseUrl,
     getToken: deps.liveRoomWs.getToken,
@@ -327,7 +329,7 @@ function startLiveRoomSyncWs(deps, ctx) {
       ctx.scheduler.armNextTimer(false);
     },
     onOpsMessage: function (ops, revision) {
-      void applyRoomWsOpsMessage(deps, ctx, ops, revision);
+      applyChain = applyChain.then(() => applyRoomWsOpsMessage(deps, ctx, ops, revision)).catch(() => {});
     },
     onTransportChange: function (transport) {
       noteCloudSyncTransport(transport);
