@@ -2091,15 +2091,6 @@ html.dark .tend-gaso-tip {
   color: var(--text);
 }
 
-.guardia-mode-toggle-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px 14px;
-  margin-top: 8px;
-  padding: 0 4px;
-}
 .guardia-census-filter-hint {
   margin: 6px 0 0;
   padding: 0;
@@ -2108,36 +2099,6 @@ html.dark .tend-gaso-tip {
   color: var(--text-muted);
   text-align: left;
   max-width: 42rem;
-}
-.btn-guardia-mode {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-}
-.btn-guardia-mode.is-active {
-  background: var(--color-success-emphasis);
-  color: var(--color-on-success);
-  border-color: var(--color-success-emphasis);
-}
-.guardia-mode-switch {
-  width: 32px;
-  height: 18px;
-  border-radius: 9px;
-  background: var(--border);
-  position: relative;
-  transition: background var(--dur-normal);
-}
-.btn-guardia-mode.is-active .guardia-mode-switch {
-  background: color-mix(in oklab, var(--color-on-success) 75%, transparent);
 }
 
 /* lab.css .modal { width: 500px } — entrega wide debe ganar en cascada */

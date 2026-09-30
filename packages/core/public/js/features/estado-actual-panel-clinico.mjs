@@ -28,6 +28,7 @@ import { eaPanelBridge } from './estado-actual-panel-bridge.mjs';
 import {
   renderEstadoClinicoBodyHtml,
   syncSoporteParamsVisibility,
+  refreshSoporteCalcHints,
 } from './estado-actual-panel-clinico-html.mjs';
 import { normalizeSoporteValue } from './estado-actual-ventilatorio.mjs';
 import { resolveVentilatorioLabContext } from './estado-actual-ventilatorio-labs.mjs';
@@ -285,6 +286,8 @@ function restoreEaPanelUiState(mount, state) {
   }
 }
 
+var SOPORTE_CALC_KEYS = ['soporteFio2', 'vmPeep', 'vmPmeseta', 'vmVt'];
+
 function wireEstadoClinicoInteractions(mount, patient) {
   if (!mount || !patient) return;
   mount.querySelectorAll('[data-ea-ec]').forEach(function (el) {
@@ -298,6 +301,12 @@ function wireEstadoClinicoInteractions(mount, patient) {
           refreshClinico: true,
           skipChartsSummary: true,
         });
+      } else if (SOPORTE_CALC_KEYS.indexOf(el.getAttribute('data-ea-ec')) >= 0) {
+        refreshSoporteCalcHints(
+          mount,
+          patient.monitoreo.estadoClinico,
+          buildVitalsCtx(patient.monitoreo, getEaPanelRuntime().getActiveId(), patient)
+        );
       }
     };
     if (tag === 'SELECT') el.addEventListener('change', handler);

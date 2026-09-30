@@ -244,6 +244,15 @@ function resolveTobinRrsHints(fr, vt, soporte) {
 
 export function buildVentilatorioCalcHints(ec, ctx) {
   ctx = ctx || {};
+  // Fields hidden by the tier keep stale values: they must not feed hints.
+  var tier = soporteTier(ec.soporte);
+  var masked = Object.assign({}, ec);
+  if (tier !== 'vm') {
+    masked.vmPmeseta = '';
+    masked.vmVt = '';
+  }
+  if (tier !== 'vm' && tier !== 'vmni') masked.vmPeep = '';
+  ec = masked;
   var lab = ctx.lab && typeof ctx.lab === 'object' ? ctx.lab : null;
   var fio2 = parseVentNum(ec.soporteFio2);
   var peep = parseVentNum(ec.vmPeep);

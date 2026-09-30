@@ -269,6 +269,20 @@ test('bucketsFromRecetaItems fusiona KCl + KPO4 en un solo REPOSICIÓN DE POTASI
   assert.equal(buckets.nm, 'REPOSICIÓN DE POTASIO 120 MEQ A 12 HORAS');
 });
 
+test('bucketsFromRecetaItems avanza DIA de Solución Stanford por fecha de Manejo', () => {
+  const items = [
+    { id: 'st1', nombreRaw: 'SODIO CLORURO', viaRaw: 'IV', dosisRaw: '100 ML PARA SOLUCIÓN STANFORD', frecuenciaRaw: 'C/24H', diaTratamiento: 2 },
+  ];
+  const sel = { st1: true };
+  const d = new Date();
+  const fecha = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 2);
+  const dmy = String(fecha.getDate()).padStart(2, '0') + '/' + String(fecha.getMonth() + 1).padStart(2, '0') + '/' + fecha.getFullYear();
+  const raw = bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory);
+  const fixed = bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory, undefined, dmy);
+  assert.match(raw.nm, /DIA 2\b/);
+  assert.match(fixed.nm, /DIA 4\b/);
+});
+
 test('estadoClinicoForText merges unconfirmed pendienteReceta into empty fields', () => {
   const m = emptyMonitoreo();
   m.pendienteReceta.analgesia = 'PARACETAMOL 1G VO';

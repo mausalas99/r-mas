@@ -147,3 +147,11 @@ test('formatVentilatorioCalcClause — gaso venosa: no advice, no SpO₂/FiO₂ 
   assert.ok(clause.indexOf('Gaso venosa') < 0, clause);
   assert.ok(clause.indexOf('SpO₂/FiO₂') < 0, clause);
 });
+
+test('buildVentilatorioCalcHints — campos ocultos en Alto flujo no dan hints', () => {
+  var hints = buildVentilatorioCalcHints(
+    { soporte: 'Alto flujo', vmPeep: 10, vmPmeseta: 32, vmVt: 560 },
+    { pesoKg: 70 }
+  );
+  assert.equal(hints.some(function (h) { return /Driving|meseta|VT /.test(h); }), false);
+});

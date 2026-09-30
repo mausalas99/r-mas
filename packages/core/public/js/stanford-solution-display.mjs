@@ -20,11 +20,12 @@ export {
 
 /**
  * @param {unknown[]} items
+ * @param {{ fechaActualizacion?: string, refDate?: Date }} [opts] avanza DIA por días calendario (igual que Egreso)
  * @returns {string}
  */
-function stanfordSolutionClause(items) {
+function stanfordSolutionClause(items, opts) {
   var parts = stanfordSolutionItemsFromList(items).map(function (it) {
-    return formatMedicationSoapShort(it);
+    return formatMedicationSoapShort(it, opts);
   });
   return STANFORD_SOLUTION_NM_PREFIX + ' ' + parts.join(' + ');
 }
@@ -32,14 +33,15 @@ function stanfordSolutionClause(items) {
 /**
  * @param {unknown[]} allItems
  * @param {unknown[]} soapSelected
+ * @param {{ fechaActualizacion?: string, refDate?: Date }} [opts]
  * @returns {string | null}
  */
-export function stanfordSolutionNmSoapFragment(allItems, soapSelected) {
+export function stanfordSolutionNmSoapFragment(allItems, soapSelected, opts) {
   if (!patientHasStanfordSolutionMeds(allItems)) return null;
   var selected = Array.isArray(soapSelected) ? soapSelected : [];
   var stSelected = selected.filter(isStanfordSolutionMedicationItem);
   if (!stSelected.length) return null;
-  return stanfordSolutionClause(stSelected);
+  return stanfordSolutionClause(stSelected, opts);
 }
 
 /**
