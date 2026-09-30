@@ -128,9 +128,21 @@ function createSyncCycleController(ctx) {
       scheduler.noteSuccess();
       noteCloudSyncCycle(true);
       if (onCycleOk) void Promise.resolve().then(onCycleOk).catch(() => {});
+      return true;
     } catch (err) {
       failCycle(err);
+      return false;
     }
+  }
+
+  let rerun = false;
+  /** A flush that joined mid-cycle may have queued ops after our push step: run again for them. */
+  async function runSyncCycleLoop() {
+    let ok;
+    do {
+      rerun = false;
+      ok = await runSyncCycleBody();
+    } while (ok && rerun && !stopped() && outboxSync.pendingCount() > 0);
   }
 
   async function syncCycle() {
@@ -151,8 +163,11 @@ function createSyncCycleController(ctx) {
       scheduler.armNextTimer(false);
       return;
     }
-    if (cycleInflightRef.current) return cycleInflightRef.current;
-    cycleInflightRef.current = runSyncCycleBody().finally(function () {
+    if (cycleInflightRef.current) {
+      rerun = true;
+      return cycleInflightRef.current;
+    }
+    cycleInflightRef.current = runSyncCycleLoop().finally(function () {
       cycleInflightRef.current = null;
     });
     return cycleInflightRef.current;
