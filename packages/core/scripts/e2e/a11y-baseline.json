@@ -1,7 +1,7 @@
 {
   "admin-code": {
     "admin-code-setup": {
-      "color-contrast": 6
+      "color-contrast": 9
     }
   },
   "admin-panel": {
@@ -443,7 +443,7 @@
   },
   "nube-sala-switch": {
     "sala-2-selected": {
-      "color-contrast": 6
+      "color-contrast": 9
     }
   },
   "nube-sync": {

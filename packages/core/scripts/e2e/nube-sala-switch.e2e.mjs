@@ -6,6 +6,7 @@
  *   - the chip only changes the screen and the profile keeps the old sala
  *   - the profile moves but the device stays in the old Nube room
  *   - the Worker does not list the user as a member of the new sala's room
+ *   - the window needs scrolling at the default size
  *   - the Sala section cannot be collapsed, or forgets it after a reopen
  */
 import { createRun } from './harness.mjs';
@@ -38,6 +39,8 @@ await r.finish('Nube sala switch from Mi perfil', async () => {
   const rows = () => JSON.parse(d1Query(`SELECT COUNT(*) AS n FROM room_members WHERE room_id='${after?.id}' AND user_id=(SELECT id FROM users WHERE username='${username}')`))[0]?.results?.[0]?.n;
   check('the Worker lists the user in the Sala 2 room', rows() === 1, rows());
   check('the identity card shows Sala 2', await until(() => D.page.locator('#profile-modal [data-perfil-meta]').innerText().then((t) => /Sala 2/.test(t)), 5000));
+  const fit = await D.page.evaluate(() => { const b = document.querySelector('#profile-modal .wb-modal-body'); return { scroll: b.scrollHeight, client: b.clientHeight, vh: innerHeight, vw: innerWidth }; });
+  check('Mi perfil fits one screen, no scroll', fit.scroll <= fit.client + 1, fit);
   await r.shot(D.page, 'sala-2-selected');
 
   const section = D.page.locator('#profile-modal details.settings-perfil-sala');

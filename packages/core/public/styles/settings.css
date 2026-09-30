@@ -3125,12 +3125,12 @@ select.profile-input.profile-select {
 }
 /* Mi perfil: its own window. Two columns of form + live preview, sized to fit without scrolling. */
 .profile-modal--perfil {
-  width: min(820px, calc(100vw - 28px));
-  max-height: min(92vh, 900px);
+  width: min(1180px, calc(100vw - 28px));
+  max-height: min(94vh, 900px);
 }
 .settings-perfil-form {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px 20px;
   align-content: start;
   min-width: 0;
@@ -3152,11 +3152,29 @@ select.profile-input.profile-select {
 }
 /* Interconsulta has no team column: the form takes the full width. */
 .settings-perfil-form:has(> .settings-perfil-col[hidden]) {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 1000px) {
+  .settings-perfil-form,
+  .settings-perfil-form:has(> .settings-perfil-col[hidden]) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .settings-perfil-form,
+  .settings-perfil-form:has(> .settings-perfil-col[hidden]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 /* Narrow column: title + hint on top, control under it. */
 .settings-perfil-form .settings-card {
   grid-template-columns: minmax(0, 1fr);
+}
+/* Three columns: title and hint left, control right, so the window fits one screen. */
+@media (min-width: 1001px) {
+  .settings-perfil-form .settings-card:not(:has(.settings-seg)) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  }
 }
 .settings-perfil-form .settings-card__action {
   justify-content: flex-start;
