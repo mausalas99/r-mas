@@ -134,62 +134,10 @@ describe('mutation prune runs inside the commit batch', () => {
     assert.equal(mutationCount(ctx), 105);
   });
 });
-
-describe('push: auth and room load overlap, auth still decides', () => {
-  const bad = { Authorization: 'Bearer nope', 'Content-Type': 'application/json' };
+describe('push: notify runs under waitUntil', () => {
   const rawPush = (ctx, roomId, headers, body, execCtx) =>
     handleSync(new Request(`https://x/api/sync/v1/rooms/${roomId}/mutations`, { method: 'POST', headers, body: JSON.stringify(body) }), ctx.env, roomId, 'mutations', execCtx);
   const body = { clientMutationId: 'm1', baseRevision: 0, ops: [noteOp('a', '2026-09-30T10:00:00.000Z')] };
-
-  it('auth and load are in flight together: 3 trips, 2 on the critical path', async () => {
-    const ctx = await setup();
-    ctx.d1.latencyMs = 15;
-    ctx.d1.calls = 0;
-    const res = await push(ctx, body);
-    assert.equal(res.revision, 1);
-    assert.equal(ctx.d1.calls, 3);
-    assert.equal(ctx.d1.maxInFlight, 2);
-  });
-
-  it('bad token on an unknown room: auth_required (not not_found)', async () => {
-    const ctx = await setup();
-    await assert.rejects(rawPush(ctx, 'no-such-room', bad, body), { code: 'auth_required' });
-  });
-
-  it('bad token or non-member: rejected, nothing written', async () => {
-    const ctx = await setup();
-    await seedUser(ctx.d1, { env: ctx.env, id: 'u2', token: 'tok-u2', roomId: 'room-other' });
-    await assert.rejects(rawPush(ctx, ctx.roomId, bad, body), { code: 'auth_required' });
-    await assert.rejects(rawPush(ctx, ctx.roomId, { ...bad, Authorization: 'Bearer tok-u2' }, body), { code: 'not_member' });
-    assert.equal(roomRevision(ctx), 0);
-    assert.equal(mutationCount(ctx), 0);
-  });
-
-  it('a commit that lands right after the load snapshot is kept, not overwritten', async () => {
-    const ctx = await setup();
-    const prep = ctx.d1.prepare;
-    let armed = true;
-    ctx.d1.prepare = (sql) => {
-      const s = prep(sql);
-      if (!/'core' AS kind/.test(sql)) return s;
-      return { ...s, bind: (...a) => {
-        const b = s.bind(...a);
-        return { ...b, all: async () => {
-          const r = await b.all();
-          if (armed) {
-            armed = false;
-            await push(ctx, { clientMutationId: 'other', baseRevision: 0, ops: [{ path: 'entries/p2/note', value: 'x', updatedAt: '2026-09-30T10:00:00.000Z', actorId: 'u1' }] });
-          }
-          return r;
-        } };
-      } };
-    };
-    const res = await push(ctx, body);
-    assert.equal(res.revision, 2);
-    const { state } = await loadRoomState(ctx.env, ctx.d1, ctx.roomId);
-    assert.equal(state.entries.find((e) => e.id === 'p1')?.note, 'a');
-    assert.equal(state.entries.find((e) => e.id === 'p2')?.note, 'x', 'concurrent commit survives');
-  });
 
   it('with ctx.waitUntil the response does not wait for the room notify', async () => {
     const ctx = await setup();

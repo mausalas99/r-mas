@@ -52,7 +52,7 @@ function fakeDb({ revision = 0 } = {}) {
             },
             async all() {
               if (sql.includes('UNION ALL') && sql.includes('FROM room_state_patients')) {
-                const rows = core ? [{ kind: 'core', patient_id: '', ciphertext: core.ciphertext, iv: core.iv, revision: roomRevision, storage_bytes: 10_000 }] : [];
+                const rows = core ? [{ kind: 'core', patient_id: '', ciphertext: core.ciphertext, iv: core.iv }] : [];
                 for (const [patient_id, row] of patients.entries()) {
                   rows.push({ kind: 'patient', patient_id, ciphertext: row.ciphertext, iv: row.iv });
                 }
