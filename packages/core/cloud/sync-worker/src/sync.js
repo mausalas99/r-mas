@@ -143,24 +143,15 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
   // delete, seen on staging 2026-09-28.
   // The rooms row rides along so a push gates its commit on the revision
   // this exact snapshot was taken at, not on one read in another trip.
-  // With lab shards, all three reads go in one batch: one trip, one snapshot.
-  const coreStmt = db
+  const { results: stateRows } = await db
     .prepare(
       `SELECT 'core' AS kind, '' AS patient_id, s.ciphertext, s.iv, r.revision, r.storage_bytes
        FROM room_state s JOIN rooms r ON r.id = s.room_id WHERE s.room_id = ?
        UNION ALL
        SELECT 'patient', patient_id, ciphertext, iv, NULL, NULL FROM room_state_patients WHERE room_id = ?`
     )
-    .bind(roomId, roomId);
-  const [{ results: stateRows }, labRows, setRowsRes] = skipLabShards
-    ? [await coreStmt.all()]
-    : await db.batch([
-        coreStmt,
-        db.prepare('SELECT patient_id, ciphertext, iv FROM room_state_labs WHERE room_id = ?').bind(roomId),
-        db
-          .prepare('SELECT patient_id, set_id, ciphertext, iv FROM room_state_lab_sets WHERE room_id = ?')
-          .bind(roomId),
-      ]);
+    .bind(roomId, roomId)
+    .all();
   const row = (stateRows ?? []).find((r) => r.kind === 'core');
   const patientRows = (stateRows ?? []).filter((r) => r.kind === 'patient');
   if (!row) {
@@ -195,7 +186,11 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
   // Whole-patient legacy shard rows (schema 008). Frozen: read here as a base
   // layer, never rewritten — a patient migrates one set at a time into
   // room_state_lab_sets below, only when that set is next touched.
-  for (const shardRow of labRows.results ?? []) {
+  const { results: legacyRows } = await db
+    .prepare('SELECT patient_id, ciphertext, iv FROM room_state_labs WHERE room_id = ?')
+    .bind(roomId)
+    .all();
+  for (const shardRow of legacyRows ?? []) {
     state.labSidecars[shardRow.patient_id] = await decodeRoomState(
       env,
       shardRow.ciphertext,
@@ -207,7 +202,11 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
   // Per-set shard rows (schema 010). One row per lab set — always bounded by
   // labMutationMaxBytes, never approaches the D1 row cap regardless of how
   // long a patient's history grows. Overrides legacy values for the same set.
-  for (const setRow of setRowsRes.results ?? []) {
+  const { results: setRows } = await db
+    .prepare('SELECT patient_id, set_id, ciphertext, iv FROM room_state_lab_sets WHERE room_id = ?')
+    .bind(roomId)
+    .all();
+  for (const setRow of setRows ?? []) {
     const pid = setRow.patient_id;
     const sid = setRow.set_id;
     if (!state.labSidecars[pid] || typeof state.labSidecars[pid] !== 'object') {

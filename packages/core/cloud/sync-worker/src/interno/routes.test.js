@@ -54,7 +54,6 @@ function createInternoDb(opts = {}) {
       return {
         bind(...args) {
           return {
-            isRead: /^\s*SELECT/i.test(sql),
             async first() {
               if (sql.includes('FROM sala_interno_access')) {
                 return accessRow.sala === args[0] ? accessRow : null;
@@ -128,7 +127,7 @@ function createInternoDb(opts = {}) {
     async batch(stmts) {
       const results = [];
       for (const stmt of stmts) {
-        results.push(await (stmt.isRead ? stmt.all() : stmt.run()));
+        results.push(await stmt.run());
       }
       return results;
     },

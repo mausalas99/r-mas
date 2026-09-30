@@ -37,7 +37,6 @@ function fakeDb({ revision = 0 } = {}) {
           boundSql.push(sql);
           boundCalls.push({ sql, args });
           return {
-            isRead: /^\s*SELECT/i.test(sql),
             async first() {
               // requireMember: session + user + room + membership in one row.
               if (sql.includes('FROM sessions')) {
@@ -178,7 +177,7 @@ function fakeDb({ revision = 0 } = {}) {
     },
     async batch(stmts) {
       const results = [];
-      for (const stmt of stmts) results.push(await (stmt.isRead ? stmt.all() : stmt.run()));
+      for (const stmt of stmts) results.push(await stmt.run());
       return results;
     },
     async setLegacyState(state) {

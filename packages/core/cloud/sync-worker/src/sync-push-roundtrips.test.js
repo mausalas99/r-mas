@@ -191,14 +191,6 @@ describe('push: auth and room load overlap, auth still decides', () => {
     assert.equal(state.entries.find((e) => e.id === 'p2')?.note, 'x', 'concurrent commit survives');
   });
 
-  it('lab push reads core + lab shards in one trip: 3 total', async () => {
-    const ctx = await setup();
-    ctx.d1.calls = 0;
-    const res = await push(ctx, { clientMutationId: 'm1', baseRevision: 0, ops: [{ path: 'labSidecars/p1/s1', value: { value: 'lab' }, updatedAt: '2026-09-30T10:00:00.000Z', actorId: 'u1' }] });
-    assert.equal(res.revision, 1);
-    assert.equal(ctx.d1.calls, 3);
-  });
-
   it('with ctx.waitUntil the response does not wait for the room notify', async () => {
     const ctx = await setup();
     let release;
