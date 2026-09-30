@@ -12,6 +12,7 @@ Notas e indicaciones ya se sincronizan con Nube. Salir de una sala o equipo func
 - **Nuevo (Nube):** la nota de evolución, el interrogatorio y las indicaciones se sincronizan entre equipos. Gana la edición más reciente. Un texto de más de 96 KB se queda en este equipo y Conexión muestra «Pendiente».
 - **Nuevo (Perfil):** Mi perfil ahora incluye tu sala, rango y usuario en una sola pantalla. Cambiar de sala con un toque te pasa a su sala en Nube.
 - **Nuevo (Interconsultas):** la barra de interconsulta usa pastillas para Servicio, Motivo, Seguimiento y Equipo. Un clic en cualquier parte de la pastilla actúa sobre su control.
+- **Cambio (Interconsultas):** «Torre HU» ya no aparece como servicio solicitante.
 - **Arreglado (Interconsultas):** los avisos guiados del tablero quedan junto a botones pequeños y hay un paso para el cambio Asignar / Mi equipo. Se arregló el contraste en claro y oscuro, y la bandeja ya no se colapsa con un equipo grande.
 - **Arreglado (Perfil):** al cambiar tu @usuario en Mi perfil, ahora también se actualiza en Nube.
 - **Nuevo (Perfil):** si no tienes sala, o es el día 1 del mes, R+ abre la sección Sala en Mi perfil y te avisa. El primero en unirse a una sala empieza a sincronizar de inmediato.
