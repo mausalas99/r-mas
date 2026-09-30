@@ -111,7 +111,7 @@ body[data-sala-home] #sala-view-home {
 }
 
 .sv-card:focus-visible,
-#sala-view-rail button:focus-visible {
+:is(#sala-view-rail, #ic-team-rail) button:focus-visible {
   outline: 2px solid var(--action);
   outline-offset: 1px;
 }
@@ -182,11 +182,11 @@ body[data-sala-home] #sala-view-home {
 }
 
 /* Paciente abierto: barra delgada de camas */
-#sala-view-rail {
+:is(#sala-view-rail, #ic-team-rail) {
   display: none;
 }
 
-body[data-sala-view]:not([data-sala-home]) #sala-view-rail {
+body[data-sala-view]:not([data-sala-home]) :is(#sala-view-rail, #ic-team-rail) {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -198,7 +198,7 @@ body[data-sala-view]:not([data-sala-home]) #sala-view-rail {
   background: var(--surface);
 }
 
-#sala-view-rail button {
+:is(#sala-view-rail, #ic-team-rail) button {
   font: inherit;
   font-family: var(--font-mono);
   font-size: 0.72rem;
@@ -214,16 +214,16 @@ body[data-sala-view]:not([data-sala-home]) #sala-view-rail {
   text-overflow: ellipsis;
 }
 
-#sala-view-rail button:hover {
+:is(#sala-view-rail, #ic-team-rail) button:hover {
   background: color-mix(in oklab, var(--action) 8%, transparent);
 }
 
-#sala-view-rail button.is-active {
+:is(#sala-view-rail, #ic-team-rail) button.is-active {
   color: var(--action);
   background: color-mix(in oklab, var(--action) 14%, transparent);
 }
 
-#sala-view-rail .sv-rail-home {
+:is(#sala-view-rail, #ic-team-rail) .sv-rail-home {
   position: sticky;
   top: -8px;
   z-index: 1;
@@ -242,7 +242,7 @@ body[data-sala-view]:not([data-sala-home]) #sala-view-rail {
   border-radius: 8px 8px 0 0;
 }
 
-#sala-view-rail .sv-rail-home:hover {
+:is(#sala-view-rail, #ic-team-rail) .sv-rail-home:hover {
   color: var(--action);
   background: var(--surface);
 }

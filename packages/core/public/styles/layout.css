@@ -230,6 +230,8 @@ html.ic-board-mode #sidebar-hover-strip {
    syncIcViewVisibility in interconsulta-mode-chrome.mjs), so it just takes
    the remaining flex space like the other two already do. */
 .ic-board-view {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow: auto;

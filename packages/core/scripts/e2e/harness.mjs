@@ -310,7 +310,7 @@ export async function openPatient(page, p) {
     await page.keyboard.press('Escape');
     await page.locator('#lab-input').waitFor({ state: 'hidden', timeout: 5000 });
   }
-  await page.locator(`.p-name[title*="${p.exp}"]`).locator('visible=true').first().click();
+  await page.locator(`.p-name[title*="${p.exp}"], .ic-card .sv-name[title*="${p.exp}"]`).locator('visible=true').first().click();
   const servicio = page.locator('#m-servicio');
   await servicio.waitFor({ state: 'visible', timeout: 1500 }).catch(() => {});
   if (await servicio.isVisible()) {

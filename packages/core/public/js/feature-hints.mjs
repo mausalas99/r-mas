@@ -103,8 +103,10 @@ export const FEATURE_HINTS = [
     kind: 'guia',
     title: 'Tablero de interconsultas',
     steps: [
-      { sel: '.ic-team-board', text: 'Tu punto de partida en Interconsultas: un carril por equipo. <strong>Sin equipo</strong> junta a los que falta asignar.' },
-      { sel: '.ic-team-board .patient-chips-grid > *', text: 'Arrastra una tarjeta a otro carril para cambiarla de equipo. Tócala para abrir su Resumen.' },
+      { sel: '.ic-mode-seg', text: '<strong>Asignar</strong> muestra una fila por equipo. <strong>Mi equipo</strong> muestra solo las tarjetas de un equipo, completas.' },
+      { sel: '.ic-team-board .ic-row__head', text: 'Cada fila es un equipo. Las tarjetas de ese equipo van dentro.' },
+      { sel: '.ic-team-board .ic-row .ic-card', text: 'Arrastra una tarjeta a otra fila para cambiarla de equipo. Tócala para abrir su Resumen.' },
+      { sel: '.ic-team-board .ic-tray .ic-row__head', text: '<strong>Por asignar</strong> junta a los que aún no tienen equipo. Arrástralos a una fila.' },
       { sel: '[data-ic-board-refresh]', text: '<strong>Actualizar pacientes</strong> refresca el tablero. <strong>+ Agregar</strong> da de alta a alguien sin esperar un laboratorio.' },
     ],
   },
