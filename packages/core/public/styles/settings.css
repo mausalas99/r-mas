@@ -3137,6 +3137,7 @@ select.profile-input.profile-select {
 }
 .settings-perfil-form > .settings-perfil-id,
 .settings-perfil-form > .profile-row,
+.settings-perfil-form > .settings-perfil-sala-host,
 .settings-perfil-form > .settings-perfil-foot {
   grid-column: 1 / -1;
 }
@@ -3244,4 +3245,75 @@ select.profile-input.profile-select {
 .settings-perfil-form .settings-section-head .wb-btn,
 .settings-perfil-foot .wb-btn {
   padding-inline: 0;
+}
+
+/* Mi perfil: Sala chips (collapsible) and the account form. */
+.settings-perfil-sala {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 0 var(--settings-copy-inset, 16px);
+}
+.settings-perfil-sala > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+.settings-perfil-sala > summary::-webkit-details-marker {
+  display: none;
+}
+.settings-perfil-sala-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.settings-perfil-sala-current {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+.settings-perfil-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 2px 0 12px;
+}
+.settings-perfil-chip {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.settings-perfil-chip[aria-pressed="true"] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+.settings-perfil-sala .settings-acc-hint {
+  margin: 0 0 12px;
+}
+.settings-perfil-account {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.settings-perfil-account .settings-card__action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.settings-perfil-account-save {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
 }

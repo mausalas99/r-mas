@@ -1,7 +1,7 @@
 {
   "admin-code": {
     "admin-code-setup": {
-      "color-contrast": 3
+      "color-contrast": 6
     }
   },
   "admin-panel": {
@@ -197,7 +197,7 @@
     "pick-narrow": {},
     "joined-wide": {},
     "perfil-profile": {
-      "color-contrast": 3
+      "color-contrast": 6
     }
   },
   "estado-actual": {
@@ -439,6 +439,11 @@
     },
     "signed-out-dark": {
       "color-contrast": 1
+    }
+  },
+  "nube-sala-switch": {
+    "sala-2-selected": {
+      "color-contrast": 6
     }
   },
   "nube-sync": {

@@ -5642,11 +5642,6 @@ html.ic-rail-open #ic-team-rail {
   color: var(--color-ink-muted);
 }
 
-/* Mi perfil already shows @usuario in its identity card. */
-[data-perfil-clinical-host] .clinical-teams-profile-handle {
-  display: none;
-}
-
 /* Global resets zero dialog margins; center it and keep fields full width. */
 dialog.clinical-teams-dialog[open] {
   position: fixed;

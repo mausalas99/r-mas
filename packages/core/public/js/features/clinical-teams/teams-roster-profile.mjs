@@ -67,6 +67,35 @@ async function toastProfileSaveResult({ msg, usernameWillChange, sala }) {
   }
 }
 
+const sessionSala = () => String(clinicalSessionContext.user?.sala || '');
+
+/** A new sala means a new Nube room: join it now, so the server matches the profile. */
+async function moveNubeRoomIfSalaChanged(prevSala, sala) {
+  if (!sala || sala === prevSala) return;
+  const [{ isCloudSala }, { getCloudSyncToken }] = await Promise.all([
+    import('../cloud-sync/sala-allowlist.mjs'),
+    import('../cloud-sync/settings.mjs'),
+  ]);
+  if (!isCloudSala(sala) || !getCloudSyncToken()) return;
+  const { ensureTurnRoomAfterTeamJoin } = await import('../cloud-sync/ensure-turn-room.mjs');
+  await ensureTurnRoomAfterTeamJoin(toast);
+}
+
+/** Mirror a changed @usuario to the Nube account; local save already succeeded. */
+async function renameNubeUsername(changed, username) {
+  if (!changed) return;
+  const [{ createCloudSyncApi }, { getCloudSyncUrl, getCloudSyncToken }] = await Promise.all([
+    import('../cloud-sync/api-client.mjs'),
+    import('../cloud-sync/settings.mjs'),
+  ]);
+  if (!getCloudSyncToken()) return;
+  try {
+    await createCloudSyncApi({ getBaseUrl: getCloudSyncUrl, getToken: getCloudSyncToken }).changeUsername(username);
+  } catch (err) {
+    toast(`Usuario cambiado aquí, pero no en Nube: ${err?.message || 'error'}`, 'error');
+  }
+}
+
 export async function handleProfileFormSubmit(ev) {
   ev.preventDefault();
   const fields = readProfileFormFields();
@@ -87,6 +116,7 @@ export async function handleProfileFormSubmit(ev) {
     return;
   }
 
+  const prevSala = sessionSala();
   const claimResult = await claimClinicalUsernameIfNeeded(fields.username, fields.sala);
   if (claimResult === false) return;
   const usernameWillChange = claimResult === true;
@@ -101,14 +131,17 @@ export async function handleProfileFormSubmit(ev) {
   });
   if (!ok) return;
 
+  await renameNubeUsername(usernameWillChange, fields.username);
   await refreshClinicalUserProfile();
+  await moveNubeRoomIfSalaChanged(prevSala, fields.sala);
   // Mi perfil hosts this form outside the teams panel, so nothing else redraws
   // it: without this, «Cambiar código de administración» only showed up after
   // reopening Mi perfil.
   const perfilHost = document.querySelector('[data-perfil-clinical-host]');
-  if (perfilHost?.isConnected) {
-    const { mountClinicalProfileInHost } = await import('./teams-roster-interactions.mjs');
-    await mountClinicalProfileInHost(perfilHost);
+  const perfilSalaHost = document.querySelector('[data-perfil-sala-host]');
+  if (perfilHost?.isConnected && perfilSalaHost?.isConnected) {
+    const { mountPerfilClinical } = await import('./teams-roster-interactions.mjs');
+    await mountPerfilClinical(perfilSalaHost, perfilHost);
   }
   const msg =
     adminChange.wantsProgramAdmin &&

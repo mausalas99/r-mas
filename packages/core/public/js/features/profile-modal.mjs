@@ -160,12 +160,13 @@ function onPerfilInput(root, ev) {
 
 /** Sala, rango, @usuario and admin: the same form Cuenta used to host. */
 async function mountPerfilClinicalForm(root) {
+  var salaHost = root.querySelector("[data-perfil-sala-host]");
   var host = root.querySelector("[data-perfil-clinical-host]");
-  if (!host) return;
+  if (!host || !salaHost) return;
   var deleg = await import("./clinical-teams/teams-roster-form-delegation.mjs");
   deleg.wireClinicalTeamsFormDelegation(root);
   var mod = await import("./clinical-teams/teams-roster-interactions.mjs");
-  await mod.mountClinicalProfileInHost(host);
+  await mod.mountPerfilClinical(salaHost, host);
 }
 
 /** Wire Mi perfil once, then refresh it every time it opens. */
@@ -177,6 +178,26 @@ export function initPerfilPanel() {
     root.dataset.perfilWired = "1";
     root.addEventListener("input", function (ev) { onPerfilInput(root, ev); });
     root.addEventListener("change", function (ev) { onPerfilInput(root, ev); });
+    // Sala chip: set the hidden value, then save through the profile form.
+    root.addEventListener("click", function (ev) {
+      var chip = ev.target instanceof Element ? ev.target.closest("[data-perfil-sala]") : null;
+      var hidden = document.getElementById("clinical-profile-sala");
+      var form = document.getElementById("clinical-profile-form");
+      if (!chip || !(hidden instanceof HTMLInputElement) || !(form instanceof HTMLFormElement)) return;
+      if (hidden.value === chip.dataset.perfilSala) return;
+      hidden.value = chip.dataset.perfilSala;
+      form.requestSubmit();
+    });
+    // A saved sala (or name) redraws the identity card.
+    document.addEventListener("rpc-clinical-teams-changed", function () { renderPerfilIdentity(root); });
+    // «toggle» does not bubble: listen in the capture phase.
+    root.addEventListener("toggle", function (ev) {
+      var el = ev.target;
+      if (!(el instanceof HTMLDetailsElement) || !el.dataset.collapseKey) return;
+      import("./clinical-teams/shared.mjs").then(function (m) {
+        m.writeClinicalTeamsCollapseOpen(el.dataset.collapseKey, el.open);
+      });
+    }, true);
     root.querySelector("[data-perfil-fill-team]")?.addEventListener("click", function () {
       if (fillCensoTeamFromNube()) scheduleAutosave(root);
       renderPerfilIdentity(root);
