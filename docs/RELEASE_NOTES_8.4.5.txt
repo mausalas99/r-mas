@@ -25,6 +25,7 @@ Notas e indicaciones ya se sincronizan con Nube. Salir de una sala o equipo func
 - **Arreglado (Tendencias):** los gasométricos con coma decimal o con «<» muestran su tarjeta. Un valor «<0.01» se grafica en 0.01.
 - **Arreglado (Manejo):** el potasio oral ya no cuenta como reposición.
 - **Arreglado (Nube):** al borrar un paciente, el borrado llega también a la sala del paciente.
+- **Arreglado (Equipos):** un paciente sin equipo («Sin asignar») ahora se quita del equipo en todos los dispositivos.
 - **Arreglado (Inicio):** R+ borra al iniciar claves viejas de almacenamiento local que podían llenar el espacio.
 - **Limpieza:** se quitó código muerto del botón de Modo Guardia.
 - **Problema conocido:** el DIA de Stanford en el Resumen y en la etiqueta de Manejo aún muestra el valor guardado.

@@ -11,7 +11,7 @@ var RELEASE_NOTES_845 = [
   },
   {
     title: 'Salir de una sala o equipo ya funciona',
-    body: 'Al salir de una sala, R+ ya no te vuelve a meter solo al abrir la app. Al salir de un equipo, una copia vieja de la sala ya no deshace el cambio ni te saca de tu equipo nuevo.',
+    body: 'Al salir de una sala, R+ ya no te vuelve a meter solo al abrir la app. Al salir de un equipo, una copia vieja de la sala ya no deshace el cambio ni te saca de tu equipo nuevo. Un paciente sin equipo («Sin asignar») ahora se quita del equipo en todos los dispositivos.',
   },
   {
     title: 'Estado actual más fiel',

@@ -65,6 +65,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 - **Arreglado (Perfil):** cambiar tu @usuario en Mi perfil también lo actualiza en Nube.
 - **Nuevo (Perfil):** R+ te guía a elegir sala al reiniciar la rotación.
 - **Arreglado (Salas y equipos):** salir de una sala ya no se deshace solo, y salir de un equipo ya no te saca del nuevo.
+- **Arreglado (Equipos):** un paciente sin equipo («Sin asignar») ahora se quita del equipo en todos los dispositivos.
 - **Arreglado (Estado actual):** el DIA de la Solución Stanford avanza por fecha, y las sugerencias ventilatorias se actualizan al editar.
 - **Arreglado (Tendencias):** gasométricos con coma decimal o «<» muestran su tarjeta.
 
