@@ -18,8 +18,10 @@ export const MAX_BROADCAST_OPS_BYTES = 32 * 1024;
  * @param {string} roomId
  * @param {number} revision
  * @param {unknown[]} [ops]
+ * @param {{ waitUntil(p: Promise<unknown>): void }} [ctx] when given, the
+ *   notify runs under waitUntil and the caller does not wait for it
  */
-export async function notifyRoomRevision(env, roomId, revision, ops) {
+export async function notifyRoomRevision(env, roomId, revision, ops, ctx) {
   const hub = env?.ROOM_SYNC_HUB;
   const id = String(roomId || '').trim();
   const rev = Number(revision);
@@ -31,19 +33,21 @@ export async function notifyRoomRevision(env, roomId, revision, ops) {
     if (opsBytes <= MAX_BROADCAST_OPS_BYTES) payload.ops = ops;
   }
 
-  try {
-    // Awaited, not fire-and-forget: the Worker may tear the request context
-    // down as soon as handleMutations returns its Response, cancelling an
-    // un-awaited subrequest. The push would be committed with every connected
-    // client left waiting for its next poll. `ctx.waitUntil` is not reachable
-    // here — worker-app.mjs's `fetch(request, env)` never takes an
-    // ExecutionContext — and the DO call is same-colo, so awaiting is cheap.
-    const stub = hub.get(hub.idFromName(id));
-    await stub.fetch('https://room-sync-hub/notify', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-  } catch (err) {
-    console.warn('[rplus-sync] room revision notify failed:', err?.message || err);
-  }
+  // Never fire-and-forget without ctx: the runtime may tear the request down
+  // as soon as the Response returns, cancelling the subrequest. waitUntil
+  // keeps it alive past the response. A notify lost anyway (DO error) is
+  // covered by the clients' fallback poll (cloud-sync-timing.mjs).
+  const send = (async () => {
+    try {
+      const stub = hub.get(hub.idFromName(id));
+      await stub.fetch('https://room-sync-hub/notify', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.warn('[rplus-sync] room revision notify failed:', err?.message || err);
+    }
+  })();
+  if (ctx?.waitUntil) ctx.waitUntil(send);
+  else await send;
 }

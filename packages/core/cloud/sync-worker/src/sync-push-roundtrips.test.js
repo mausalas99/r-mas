@@ -137,8 +137,8 @@ describe('mutation prune runs inside the commit batch', () => {
 
 describe('push: auth and room load overlap, auth still decides', () => {
   const bad = { Authorization: 'Bearer nope', 'Content-Type': 'application/json' };
-  const rawPush = (ctx, roomId, headers, body) =>
-    handleSync(new Request(`https://x/api/sync/v1/rooms/${roomId}/mutations`, { method: 'POST', headers, body: JSON.stringify(body) }), ctx.env, roomId, 'mutations');
+  const rawPush = (ctx, roomId, headers, body, execCtx) =>
+    handleSync(new Request(`https://x/api/sync/v1/rooms/${roomId}/mutations`, { method: 'POST', headers, body: JSON.stringify(body) }), ctx.env, roomId, 'mutations', execCtx);
   const body = { clientMutationId: 'm1', baseRevision: 0, ops: [noteOp('a', '2026-09-30T10:00:00.000Z')] };
 
   it('auth and load are in flight together: 3 trips, 2 on the critical path', async () => {
@@ -190,5 +190,22 @@ describe('push: auth and room load overlap, auth still decides', () => {
     assert.equal(state.entries.find((e) => e.id === 'p1')?.note, 'a');
     assert.equal(state.entries.find((e) => e.id === 'p2')?.note, 'x', 'concurrent commit survives');
   });
-});
 
+  it('with ctx.waitUntil the response does not wait for the room notify', async () => {
+    const ctx = await setup();
+    let release;
+    const hubFetch = new Promise((r) => { release = r; });
+    let notified = 0;
+    ctx.env.ROOM_SYNC_HUB = { idFromName: (n) => n, get: () => ({ fetch: () => { notified += 1; return hubFetch; } }) };
+    const waited = [];
+    const res = await Promise.race([
+      rawPush(ctx, ctx.roomId, auth, body, { waitUntil: (p) => waited.push(p) }).then((r) => r.json()),
+      new Promise((r) => setTimeout(() => r('blocked'), 200)),
+    ]);
+    assert.equal(res.revision, 1);
+    assert.equal(notified, 1, 'notify still sent');
+    assert.equal(waited.length, 1, 'notify handed to waitUntil');
+    release(new Response('ok'));
+    await Promise.all(waited);
+  });
+});

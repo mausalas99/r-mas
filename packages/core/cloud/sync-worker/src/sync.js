@@ -554,9 +554,9 @@ async function priorMutationResponse(env, prior, roomRevision, baseRevision) {
  * @param {string} roomId
  * @param {'mutations' | 'pull'} sub
  */
-export async function handleSync(request, env, roomId, sub) {
+export async function handleSync(request, env, roomId, sub, ctx) {
   const t = stepTimer(env);
-  const res = await handleSyncRoute(request, env, roomId, sub, t);
+  const res = await handleSyncRoute(request, env, roomId, sub, t, ctx);
   if (t) res.headers.set('Server-Timing', t.header());
   return res;
 }
@@ -578,7 +578,7 @@ function stepTimer(env) {
   };
 }
 
-async function handleSyncRoute(request, env, roomId, sub, t) {
+async function handleSyncRoute(request, env, roomId, sub, t, ctx) {
   const db = env.DB;
   if (!db) {
     throw new SyncError('error', 'Base de datos no configurada.');
@@ -588,7 +588,7 @@ async function handleSyncRoute(request, env, roomId, sub, t) {
     if (request.method !== 'POST') {
       throw new SyncError('not_found', 'Método no permitido.');
     }
-    return handleMutations(request, env, db, roomId, t);
+    return handleMutations(request, env, db, roomId, t, ctx);
   }
 
   if (sub === 'pull') {
@@ -602,7 +602,7 @@ async function handleSyncRoute(request, env, roomId, sub, t) {
 }
 
 /** @param {Request} request @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */
-async function handleMutations(request, env, db, roomId, t = null) {
+async function handleMutations(request, env, db, roomId, t = null, ctx = undefined) {
   checkMutationPushRateLimit(roomId);
   const bodyText = await request.text();
   const bodyBytes = new TextEncoder().encode(bodyText).length;
@@ -722,7 +722,9 @@ async function handleMutations(request, env, db, roomId, t = null) {
     if (committed.ok) {
       // appliedResult.applied only — not sidecarApplied (internoAccessUpsert rows
       // aren't {path,value} LWW ops the client's ops-apply path understands).
-      await notifyRoomRevision(env, roomId, committed.revision, appliedResult.applied);
+      // Off the response path when the runtime gives a ctx: the commit is
+      // already durable and the ack does not depend on the broadcast.
+      await notifyRoomRevision(env, roomId, committed.revision, appliedResult.applied, ctx);
       t?.lap('notify');
       return Response.json({
         revision: committed.revision,
