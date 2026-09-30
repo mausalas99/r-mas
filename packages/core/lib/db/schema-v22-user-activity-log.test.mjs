@@ -7,6 +7,7 @@ import {
   listDirectoryUsers,
   touchClinicalUserActivity,
 } from './clinical-access-db.mjs';
+import { pruneClinicalUserActivityLog } from './clinical-access-users.mjs';
 
 describe('schema v22 user_activity_log', () => {
   it('creates log table, seeds from created/last, and appends on touch', () => {
@@ -60,6 +61,20 @@ describe('schema v22 user_activity_log', () => {
     assert.ok(n >= 2);
     const v = db.prepare(`SELECT value FROM app_meta WHERE key = 'schema_version'`).get();
     assert.equal(Number(v.value), SCHEMA_VERSION);
+    db.close();
+  });
+
+  it('prunes rows older than 90 days but keeps each user 12 newest', () => {
+    const db = new Database(':memory:');
+    applyMigrations(db);
+    db.prepare(
+      `INSERT INTO users (user_id, username, password_hash, rank, public_key, encrypted_private_key, clinical_name, sala, created_at)
+       VALUES ('u9', 'userprune', 'x', 'R1', 'pk', 'epk', 'P', 'Sala E', '2025-01-01 00:00:00')`
+    ).run();
+    const ins = db.prepare(`INSERT INTO user_activity_log (user_id, at_iso, source) VALUES ('u9', ?, 's')`);
+    for (let d = 0; d < 20; d++) ins.run(new Date(Date.UTC(2026, 0, 1 + d)).toISOString());
+    assert.equal(pruneClinicalUserActivityLog(db, Date.UTC(2026, 8, 30)), 8);
+    assert.equal(db.prepare('SELECT COUNT(*) AS c FROM user_activity_log WHERE user_id = ?').get('u9').c, 12);
     db.close();
   });
 });

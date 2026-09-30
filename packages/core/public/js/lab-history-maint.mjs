@@ -396,7 +396,7 @@ export function installLabHistoryAuditHook() {
 }
 
 // ── Lab History Migration ─────────────────────────────────────────
-(function migrateLabHistory() {
+function migrateLabHistory() {
   try {
     if (localStorage.getItem('rpc-labHistory')) return;
   } catch {
@@ -443,4 +443,7 @@ export function installLabHistoryAuditHook() {
   } catch (e) {
     console.error('migrateLabHistory write error:', e && e.message);
   }
-})();
+}
+// Off the boot path; the function re-checks the rpc-labHistory key itself.
+if (typeof requestIdleCallback === 'function') requestIdleCallback(migrateLabHistory);
+else setTimeout(migrateLabHistory, 0);
