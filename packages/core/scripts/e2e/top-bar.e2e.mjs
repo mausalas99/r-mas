@@ -211,8 +211,10 @@ await r.finish('Navigation redesign (board 7)', async () => {
   await page.keyboard.press('Escape');
 
   // ── Resumen: vitals ───────────────────────────────────────────────────
-  await page.evaluate(() => localStorage.removeItem('rpc-registro-autoopen'));
   await openPatient(page, B);
+  await settle();
+  check('no vitals saved: «Registro completo» stays closed until asked', !(await page.evaluate(() => !!document.querySelector('#ea-registro-backdrop.open'))));
+  await page.locator('[data-dash-action="registro-completo"]').click();
   await settle();
   const panel = await page.evaluate(() => {
     const m = document.querySelector('#ea-registro-backdrop.open .ea-registro-modal');
@@ -223,7 +225,7 @@ await r.finish('Navigation redesign (board 7)', async () => {
       text: m.innerText,
     };
   });
-  check('no vitals saved: «Registro completo» opens by itself on the right', !!panel && panel.right && panel.title === 'Registro completo', panel && { right: panel.right, title: panel.title });
+  check('no vitals saved: «Registro completo» button opens it on the right', !!panel && panel.right && panel.title === 'Registro completo', panel && { right: panel.right, title: panel.title });
   check('panel has default slots, «+ Agregar hora» and the three shifts',
     !!panel && ['08:00', '16:00', '00:00', '+ Agregar hora', 'Matutino', 'Vespertino', 'Nocturno'].every((t) => panel.text.includes(t)), panel && panel.text.slice(0, 400));
   await r.shot(page, 'registro-panel');

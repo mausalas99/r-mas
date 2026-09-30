@@ -185,13 +185,6 @@ function renderVitalsHtml(model) {
   );
 }
 
-/** True when the snapshot has no core vital saved (the full-record panel then opens by itself). */
-export function dashboardHasNoVitals(model) {
-  var r = readingsFromModel(model);
-  var glu = lastGlu(r.glucometrias);
-  return !hasCoreVitalsData(r.vitals, taLabel(r.vitals), glu);
-}
-
 function ctxPillHtml(label, value) {
   return (
     '<span class="ctx-pill"><small>' +
