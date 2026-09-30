@@ -1,12 +1,12 @@
 /**
  * Expired Nube session prompt: the sync worker answers 403 `auth_required`
  * when a stored token no longer works. Sync then stops, so the user sees a
- * banner (every screen) and a "Cuenta Nube" card in Mi perfil until a request
- * with a token succeeds again.
+ * "Cuenta Nube" card in Mi perfil until a request with a token succeeds again.
+ * The Nube panel also opens on its login form, once per expired token.
  */
 import { isCloudMobileClient } from '../cloud-mobile/origin.mjs';
 
-const TARGET_IDS = ['nube-session-banner', 'profile-nube-session'];
+const TARGET_IDS = ['profile-nube-session'];
 
 /** @param {boolean} expired */
 function setPromptVisible(expired) {
@@ -19,6 +19,15 @@ function setPromptVisible(expired) {
 
 /** Token of a deliberate «Cerrar sesión»: its answers say nothing about expiry. */
 let signedOutToken = '';
+/** Expired token already handled: late 403s of its in-flight requests do nothing. */
+let expiredToken = '';
+
+/** Drop the dead token and open the Nube panel on its empty login form. */
+async function openLoginForExpiredSession() {
+  const { clearCloudSyncSession } = await import('./settings.mjs');
+  clearCloudSyncSession();
+  await openNubeLogin();
+}
 
 /**
  * Called by the API client on every response sent with a token.
@@ -31,7 +40,13 @@ export function noteNubeAuthResponse(status, data, token) {
   if (isCloudMobileClient()) return;
   if (token && token === signedOutToken) return;
   if (status >= 200 && status < 300) setPromptVisible(false);
-  else if (status === 403 && data?.error === 'auth_required') setPromptVisible(true);
+  else if (status === 403 && data?.error === 'auth_required') {
+    setPromptVisible(true);
+    if (token && token !== expiredToken && typeof document !== 'undefined') {
+      expiredToken = token;
+      openLoginForExpiredSession().catch(() => {});
+    }
+  }
 }
 
 /** «Cerrar sesión»: hide the prompt; requests still out with this token are ignored. */
@@ -47,12 +62,6 @@ export async function openNubeLogin() {
   openConnectionDropdown();
 }
 
-export function dismissNubeSessionBanner() {
-  const el = typeof document !== 'undefined' ? document.getElementById('nube-session-banner') : null;
-  if (el) el.hidden = true;
-}
-
 if (typeof window !== 'undefined') {
   window.openNubeLogin = openNubeLogin;
-  window.dismissNubeSessionBanner = dismissNubeSessionBanner;
 }

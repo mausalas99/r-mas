@@ -598,5 +598,10 @@
     "vpo-busy": {
       "label": 5
     }
+  },
+  "nube-session-expired": {
+    "2-login-panel": {
+      "color-contrast": 2
+    }
   }
 }
