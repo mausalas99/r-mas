@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "build:ui": "node scripts/build-ui.mjs && node scripts/bundle-renderer.mjs",
+    "build:landing": "node scripts/build-landing.mjs",
     "build:equipos-pages": "node scripts/build-equipos-pages.mjs",
     "build:cloud-mobile": "node scripts/build-cloud-mobile.mjs",
     "build:cloud-interno": "node scripts/build-cloud-interno.mjs",

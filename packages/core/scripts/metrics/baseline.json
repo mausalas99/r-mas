@@ -3,7 +3,7 @@
   "updatedAt": "2026-09-26T19:27:49.089Z",
   "totalScore": 665,
   "trackedLoc": 792800,
-  "moduleCount": 1290,
+  "moduleCount": 1291,
   "bootGraphHash": "7c79a4f65815fa2c",
   "bootGraph": {
     "hash": "7c79a4f65815fa2c",
@@ -754,6 +754,10 @@
     {
       "date": "2026-09-27",
       "note": "moduleCount 1268->1269 (e2e branch; 1280->1281 after merging it into 8.4.2): scripts/e2e/run-all.mjs (the `npm run e2e` runner). The unit-test prune deleted sync-runtime-cycle-test-helpers.mjs, but that file held a NUL byte so tracked-size never counted it, leaving no module to offset the runner. Raised in the e2e-first branch; flagged to the owner in chat for veto."
+    },
+    {
+      "date": "2026-09-30",
+      "note": "moduleCount 1290->1291: scripts/build-landing.mjs, the builder for the public download site (cloud/landing → dist/landing → GitHub Pages). Owner-approved in chat over moving the script outside the counted paths."
     }
   ]
 }
