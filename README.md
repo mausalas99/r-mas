@@ -59,6 +59,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 - **Nuevo (Nube):** notas, interrogatorio e indicaciones se sincronizan entre equipos. Gana la edición más reciente.
 - **Nuevo (Perfil):** la configuración de equipos ahora está en Mi perfil.
+- **Nuevo (Interconsultas):** la barra de interconsulta usa pastillas para Servicio, Motivo, Seguimiento y Equipo.
 - **Arreglado (Interconsultas):** avisos guiados mejor colocados, mejor contraste y bandeja estable.
 - **Arreglado (Salas y equipos):** salir de una sala ya no se deshace solo, y salir de un equipo ya no te saca del nuevo.
 - **Arreglado (Estado actual):** el DIA de la Solución Stanford avanza por fecha, y las sugerencias ventilatorias se actualizan al editar.
