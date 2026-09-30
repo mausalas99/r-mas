@@ -13,7 +13,7 @@ const FOLLOW_UPS = [
   { name: 'Rosa Delgado', servicio: 'Traumatología', edad: '72 años', sexo: 'F', cuarto: '301', cama: '01' },
   { name: 'Ignacio Vera', servicio: 'Cirugía general', edad: '65 años', sexo: 'M', cuarto: '302', cama: '02' },
   { name: 'Marta Solis', servicio: 'Ginecología', edad: '58 años', sexo: 'F', cuarto: '304', cama: '01' },
-  { name: 'Emilio Rangel', servicio: 'Torre HU', edad: '61 años', sexo: 'M', cuarto: '305', cama: '02' },
+  { name: 'Emilio Rangel', servicio: 'Neurocirugía', edad: '61 años', sexo: 'M', cuarto: '305', cama: '02' },
   { name: 'Beatriz Nuñez', servicio: 'Neurocirugía', edad: '77 años', sexo: 'F', cuarto: '307', cama: '01' },
   { name: 'Carlos Peña', servicio: 'Traumatología', edad: '54 años', sexo: 'M', cuarto: '308', cama: '02' },
   { name: 'Diana Rios', servicio: 'Cirugía general', edad: '81 años', sexo: 'F', cuarto: '310', cama: '01' },
@@ -26,7 +26,7 @@ const VPOS = [
 ];
 
 const NEW_ICS = [
-  { name: 'Lucia Mendoza', servicio: 'Torre HU', edad: '29 años', sexo: 'F', cuarto: 'URG', cama: '05' },
+  { name: 'Lucia Mendoza', servicio: 'Ginecología', edad: '29 años', sexo: 'F', cuarto: 'URG', cama: '05' },
   { name: 'Hector Salinas', servicio: 'Ginecología', edad: '33 años', sexo: 'M', cuarto: '206', cama: '01' },
 ];
 
