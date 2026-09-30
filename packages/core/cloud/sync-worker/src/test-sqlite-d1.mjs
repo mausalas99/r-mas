@@ -1,6 +1,8 @@
 // Test-only: a D1-shaped adapter over node:sqlite with the real schema/*.sql,
 // so tests prove behaviour against real constraints, not SQL-string fakes.
 // `calls` counts D1 round trips (each first/all/run and each batch = 1).
+// Set `latencyMs` to make each trip take that long; `maxInFlight` then shows
+// how many trips overlapped (1 = strictly sequential).
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync, readdirSync } from 'node:fs';
 import { sha256Hex } from './session.js';
@@ -16,7 +18,16 @@ export function sqliteD1() {
   for (const f of readdirSync(SCHEMA_DIR).filter((n) => n.endsWith('.sql')).sort()) {
     sqlite.exec(readFileSync(new URL(f, SCHEMA_DIR), 'utf8'));
   }
-  const d1 = { calls: 0, sqlite };
+  const d1 = { calls: 0, sqlite, latencyMs: 0, inFlight: 0, maxInFlight: 0 };
+  const trip = async (fn) => {
+    d1.calls += 1;
+    if (d1.latencyMs) {
+      d1.maxInFlight = Math.max(d1.maxInFlight, ++d1.inFlight);
+      await new Promise((r) => setTimeout(r, d1.latencyMs));
+      d1.inFlight -= 1;
+    }
+    return fn();
+  };
   const exec = (sql, args) => {
     const p = sqlite.prepare(sql);
     if (READ_RE.test(sql)) return { results: p.all(...args), meta: { changes: 0 } };
@@ -25,13 +36,12 @@ export function sqliteD1() {
   const stmt = (sql, args = []) => ({
     bind: (...a) => stmt(sql, a.map(toArg)),
     exec: () => exec(sql, args),
-    async first() { d1.calls += 1; return sqlite.prepare(sql).get(...args) ?? null; },
-    async all() { d1.calls += 1; return { results: sqlite.prepare(sql).all(...args) }; },
-    async run() { d1.calls += 1; return exec(sql, args); },
+    first: () => trip(() => sqlite.prepare(sql).get(...args) ?? null),
+    all: () => trip(() => ({ results: sqlite.prepare(sql).all(...args) })),
+    run: () => trip(() => exec(sql, args)),
   });
   d1.prepare = (sql) => stmt(sql);
-  d1.batch = async (stmts) => {
-    d1.calls += 1;
+  d1.batch = (stmts) => trip(() => {
     sqlite.exec('BEGIN');
     try {
       const out = stmts.map((s) => s.exec());
@@ -41,7 +51,7 @@ export function sqliteD1() {
       sqlite.exec('ROLLBACK');
       throw err;
     }
-  };
+  });
   return d1;
 }
 

@@ -131,11 +131,14 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
   // reads let a commit land between them (old core listing a patient whose row
   // is already the new tombstone): "Falta el paciente ..." 500s under a bulk
   // delete, seen on staging 2026-09-28.
+  // The rooms row rides along so a push gates its commit on the revision
+  // this exact snapshot was taken at, not on one read in another trip.
   const { results: stateRows } = await db
     .prepare(
-      `SELECT 'core' AS kind, '' AS patient_id, ciphertext, iv FROM room_state WHERE room_id = ?
+      `SELECT 'core' AS kind, '' AS patient_id, s.ciphertext, s.iv, r.revision, r.storage_bytes
+       FROM room_state s JOIN rooms r ON r.id = s.room_id WHERE s.room_id = ?
        UNION ALL
-       SELECT 'patient', patient_id, ciphertext, iv FROM room_state_patients WHERE room_id = ?`
+       SELECT 'patient', patient_id, ciphertext, iv, NULL, NULL FROM room_state_patients WHERE room_id = ?`
     )
     .bind(roomId, roomId)
     .all();
@@ -144,6 +147,7 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
   if (!row) {
     throw new SyncError('not_found', 'Estado de sala no encontrado.');
   }
+  const room = { revision: row.revision, storage_bytes: row.storage_bytes };
   let state = await decodeRoomState(env, row.ciphertext, row.iv);
   // Bytes held outside the lab shards at load time (core + patient rows).
   let coreBytesAtLoad = toUint8Array(row.ciphertext).length;
@@ -166,7 +170,7 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
   const labSetBytes = new Map();
 
   if (skipLabShards) {
-    return { state, legacyShardBytes, labSetBytes, coreBytesAtLoad, labsSkipped: true, shardBaseline };
+    return { state, legacyShardBytes, labSetBytes, coreBytesAtLoad, labsSkipped: true, shardBaseline, room };
   }
 
   // Whole-patient legacy shard rows (schema 008). Frozen: read here as a base
@@ -203,7 +207,7 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
     labSetBytes.get(pid).set(sid, toUint8Array(setRow.ciphertext).length);
   }
 
-  return { state, legacyShardBytes, labSetBytes, coreBytesAtLoad, labsSkipped: false, shardBaseline };
+  return { state, legacyShardBytes, labSetBytes, coreBytesAtLoad, labsSkipped: false, shardBaseline, room };
 }
 
 /** @param {unknown[]} ops @returns {Array<{ patientId: string, setId: string }>} lab-sidecar ops */
@@ -600,19 +604,39 @@ async function handleSyncRoute(request, env, roomId, sub, t) {
 /** @param {Request} request @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */
 async function handleMutations(request, env, db, roomId, t = null) {
   checkMutationPushRateLimit(roomId);
-  const { user, room } = await requireMember(db, request, roomId, t);
   const bodyText = await request.text();
   const bodyBytes = new TextEncoder().encode(bodyText).length;
   /** @type {Record<string, unknown>} */
   let body;
+  let bodyOk = true;
   try {
     body = JSON.parse(bodyText);
   } catch {
+    bodyOk = false; // reported after auth, as before
+  }
+  const ops = body?.ops;
+  // Most pushes (signos/eventualidades/notes) touch no lab data at all, so
+  // skip the room's full lab-ciphertext fetch for them: reading every
+  // patient's lab history on every push does not scale past a handful of
+  // patients, and once the room's total ciphertext gets big enough D1's own
+  // RPC (BLOBs go over the wire as JSON digit-lists) fails outright with a
+  // "Failed to parse body as JSON" error whose message IS that huge dump.
+  const { lwwOps, sidecarOps } = partitionSyncOps(Array.isArray(ops) ? ops : []);
+  const hasLabSidecarOps = lwwOps.some((op) => String(op?.path || '').startsWith('labSidecars/'));
+  // The room load goes out with the auth read, not after it: nothing is
+  // written and nothing is returned from it until auth passes, and auth is
+  // awaited first so its error wins. The commit gates on the load's own
+  // revision (see loadRoomState), so the two reads need no common snapshot.
+  const firstLoad = bodyOk
+    ? loadRoomState(env, db, roomId, { skipLabShards: !hasLabSidecarOps })
+    : null;
+  firstLoad?.catch(() => {});
+  const { user, room } = await requireMember(db, request, roomId, t);
+  if (!bodyOk) {
     throw new SyncError('invalid_request', 'JSON inválido.');
   }
   const clientMutationId = String(body?.clientMutationId || '').trim();
   const baseRevision = Number(body?.baseRevision ?? 0);
-  const ops = body?.ops;
 
   if (!clientMutationId) {
     throw new SyncError('invalid_request', 'clientMutationId requerido.');
@@ -633,16 +657,6 @@ async function handleMutations(request, env, db, roomId, t = null) {
   let lastRejected = [];
   let lastNeedPull = baseRevision < Number(room.revision);
 
-  // Pure over the client-sent ops, same on every retry attempt — hoisted out
-  // of the loop. Most pushes (signos/eventualidades/notes) touch no lab data
-  // at all, so skip the room's full lab-ciphertext fetch for them: reading
-  // every patient's lab history on every push does not scale past a handful
-  // of patients, and once the room's total ciphertext gets big enough D1's
-  // own RPC (BLOBs go over the wire as JSON digit-lists) fails outright with
-  // a "Failed to parse body as JSON" error whose message IS that huge dump.
-  const { lwwOps, sidecarOps } = partitionSyncOps(ops);
-  const hasLabSidecarOps = lwwOps.some((op) => String(op?.path || '').startsWith('labSidecars/'));
-
   // Replay of a committed clientMutationId (lost ack): no upfront read. The
   // UNIQUE (room_id, client_mutation_id) index fails the commit batch as
   // 'duplicate_client', answered below from the prior row. Two paths never
@@ -658,28 +672,17 @@ async function handleMutations(request, env, db, roomId, t = null) {
   }
 
   for (let attempt = 0; attempt < MUTATION_COMMIT_ATTEMPTS; attempt++) {
-    // First attempt reuses the row requireMember just read. If it is stale the
-    // gated commit fails and the next attempt re-reads.
-    const roomRow =
-      attempt === 0
-        ? room
-        : await db
-            .prepare('SELECT revision, storage_bytes FROM rooms WHERE id = ?')
-            .bind(roomId)
-            .first();
-    if (!roomRow) {
-      throw new SyncError('not_found', 'Sala no encontrada.');
-    }
+    // First attempt uses the load started beside auth. A retry re-loads; the
+    // revision always comes from the same statement as the state.
+    const {
+      state, legacyShardBytes, labSetBytes, coreBytesAtLoad, labsSkipped, shardBaseline,
+      room: roomRow,
+    } = await (attempt === 0
+      ? firstLoad
+      : loadRoomState(env, db, roomId, { skipLabShards: !hasLabSidecarOps }));
+    t?.lap('load');
     const expectedRevision = Number(roomRow.revision);
     lastNeedPull = baseRevision < expectedRevision;
-    const { state, legacyShardBytes, labSetBytes, coreBytesAtLoad, labsSkipped, shardBaseline } =
-      await loadRoomState(
-      env,
-      db,
-      roomId,
-      { skipLabShards: !hasLabSidecarOps }
-    );
-    t?.lap('load');
     // Lab shards were not read: their size is whatever the last total held
     // beyond the old core blob.
     const priorLabBytes = labsSkipped
