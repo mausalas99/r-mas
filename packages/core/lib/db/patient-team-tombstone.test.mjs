@@ -11,7 +11,8 @@ import {
   mergeClinicalOpsSnapshot,
 } from './clinical-ops-sync.mjs';
 import { mergeClinicalOpsSnapshotsData } from './clinical-ops-bundle-merge.cjs';
-import { resolvePatientTeamIdFromAssignments } from '../clinical-scope/team-membership.mjs';
+import { resolvePatientTeamIdFromAssignments, patientHasExplicitTeamAssignment } from '../clinical-scope/team-membership.mjs';
+import { resolvePatientCensusTeamId, tagPatientsForTeamFilter, applyElevatedPatientFilters } from '../../public/js/features/patients-clinical-filter.mjs';
 import { mergeClinicalOpsLww } from '../../cloud/sync-worker/src/clinical-ops-lww.js';
 
 function openDb() {
@@ -101,5 +102,29 @@ describe('patient_team_assignment tombstone (team_id empty)', () => {
     const out = mergeClinicalOpsLww(rows(A), rows(none, again)).patient_team_assignment;
     assert.equal(out.length, 3);
     assert.equal(mergeClinicalOpsLww(rows(A, none), rows(A)).patient_team_assignment.length, 2);
+  });
+
+  it('a «no team» row leaves the patient unassigned, with no structural guess', () => {
+    const teams = [{ team_id: 't1', name: 'EQUIPO A', service: 'Sala', sala: 'Sala 1' }];
+    const rows = [
+      { patient_id: 'p1', team_id: 't1', effective_at: T1 },
+      { patient_id: 'p1', team_id: '', effective_at: T2 },
+    ];
+    assert.equal(patientHasExplicitTeamAssignment('p1', rows.slice(0, 1)), true);
+    assert.equal(patientHasExplicitTeamAssignment('p1', rows), false);
+    assert.equal(resolvePatientCensusTeamId({ id: 'p1', sala: 'Sala 1', servicio: 'Sala' }, teams, rows, now), '');
+    assert.equal(resolvePatientCensusTeamId({ id: 'p1' }, teams, rows.slice(0, 1), now), 't1');
+  });
+
+  it('the «Sin equipo asignado» filter lists a patient taken off its team', () => {
+    const teams = [{ team_id: 't1', name: 'EQUIPO A', service: 'Sala', sala: 'Sala 1' }];
+    const rows = [
+      { patient_id: 'p1', team_id: 't1', effective_at: T1 },
+      { patient_id: 'p1', team_id: '', effective_at: T2 },
+      { patient_id: 'p2', team_id: 't1', effective_at: T1 },
+    ];
+    const list = tagPatientsForTeamFilter([{ id: 'p1' }, { id: 'p2' }], { teams, assignments: rows, now });
+    const out = applyElevatedPatientFilters(list, { teamId: '__unassigned__' }, { teams, assignments: rows, now });
+    assert.deepEqual(out.map((p) => p.id), ['p1']);
   });
 });
