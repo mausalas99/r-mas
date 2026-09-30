@@ -5513,10 +5513,6 @@ html.dark .ic-board-bucket .patient-card--svc-tint:hover {
   border-top: 1px solid var(--divider);
 }
 
-.clinical-teams-profile-link {
-  margin-top: 8px;
-}
-
 /* Inside cards: members and the rare blocks sit on hairlines, not on fills. */
 .clinical-teams-panel-body .clinical-teams-card .clinical-teams-card-members--compact {
   margin: 0;
@@ -5547,8 +5543,8 @@ html.dark .ic-board-bucket .patient-card--svc-tint:hover {
   color: var(--color-ink-muted);
 }
 
-/* Cuenta already shows @usuario at the top. */
-.cloud-sync-profile-host .clinical-teams-profile-handle {
+/* Mi perfil already shows @usuario in its identity card. */
+[data-perfil-clinical-host] .clinical-teams-profile-handle {
   display: none;
 }
 
