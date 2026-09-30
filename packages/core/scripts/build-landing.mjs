@@ -10,6 +10,7 @@
  *
  *   node scripts/build-landing.mjs
  */
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -76,9 +77,13 @@ function build() {
   const notes = latestNotes();
   fs.rmSync(OUT, { recursive: true, force: true });
   fs.cpSync(SRC, OUT, { recursive: true, filter: (p) => !path.basename(p).startsWith('_') });
+  // Versioned asset URLs: a new deploy never pairs new HTML with a cached old CSS/JS.
+  const ver = (n) => `${n}?v=${crypto.createHash('sha256').update(fs.readFileSync(path.join(SRC, n))).digest('hex').slice(0, 8)}`;
+  const assets = { 'href="site.css"': `href="${ver('site.css')}"`, 'src="site.js"': `src="${ver('site.js')}"` };
   for (const f of fs.readdirSync(OUT).filter((n) => n.endsWith('.html'))) {
     const nav = header.replace(`href="${f}"`, `href="${f}" aria-current="page"`);
     let html = fs.readFileSync(path.join(OUT, f), 'utf8').replace('<!--header-->', nav).replace('<!--footer-->', footer).replace('<!--cta-->', cta);
+    for (const [a, b] of Object.entries(assets)) html = html.replaceAll(a, b);
     if (f === 'novedades.html') html = html.replace('<!--notes-->', renderNotes(notes));
     fs.writeFileSync(path.join(OUT, f), html);
   }
