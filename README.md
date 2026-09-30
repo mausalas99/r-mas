@@ -61,6 +61,8 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 - **Nuevo (Perfil):** Mi perfil incluye tu sala, rango y usuario en una sola pantalla. Cambiar de sala te pasa a su sala en Nube.
 - **Nuevo (Interconsultas):** la barra de interconsulta usa pastillas para Servicio, Motivo, Seguimiento y Equipo.
 - **Arreglado (Interconsultas):** avisos guiados mejor colocados, mejor contraste y bandeja estable.
+- **Arreglado (Perfil):** cambiar tu @usuario en Mi perfil también lo actualiza en Nube.
+- **Nuevo (Perfil):** R+ te guía a elegir sala al reiniciar la rotación.
 - **Arreglado (Salas y equipos):** salir de una sala ya no se deshace solo, y salir de un equipo ya no te saca del nuevo.
 - **Arreglado (Estado actual):** el DIA de la Solución Stanford avanza por fecha, y las sugerencias ventilatorias se actualizan al editar.
 - **Arreglado (Tendencias):** gasométricos con coma decimal o «<» muestran su tarjeta.
