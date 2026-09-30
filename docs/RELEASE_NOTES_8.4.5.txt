@@ -10,6 +10,8 @@ Notas e indicaciones ya se sincronizan con Nube. Salir de una sala o equipo func
 ## Nuevo / mejorado
 
 - **Nuevo (Nube):** la nota de evolución, el interrogatorio y las indicaciones se sincronizan entre equipos. Gana la edición más reciente. Un texto de más de 96 KB se queda en este equipo y Conexión muestra «Pendiente».
+- **Nuevo (Perfil):** la configuración de equipos ahora está en Mi perfil.
+- **Arreglado (Interconsultas):** los avisos guiados del tablero quedan junto a botones pequeños y hay un paso para el cambio Asignar / Mi equipo. Se arregló el contraste en claro y oscuro, y la bandeja ya no se colapsa con un equipo grande.
 - **Arreglado (Salas):** «Salir de la sala» ya no se deshace al abrir la app o Conexión. Para volver entras con código, creas una sala o te unes a un equipo.
 - **Arreglado (Equipos):** una copia vieja de la sala ya no deshace tu salida de un equipo ni te saca del equipo nuevo. Los envíos a la sala ahora primero descargan y combinan.
 - **Arreglado (Estado actual):** el DIA de la Solución Stanford avanza por fecha, igual que en Egreso.

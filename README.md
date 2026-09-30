@@ -58,6 +58,8 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 ## R+ 8.4.5 (estable — release 8.4.5)
 
 - **Nuevo (Nube):** notas, interrogatorio e indicaciones se sincronizan entre equipos. Gana la edición más reciente.
+- **Nuevo (Perfil):** la configuración de equipos ahora está en Mi perfil.
+- **Arreglado (Interconsultas):** avisos guiados mejor colocados, mejor contraste y bandeja estable.
 - **Arreglado (Salas y equipos):** salir de una sala ya no se deshace solo, y salir de un equipo ya no te saca del nuevo.
 - **Arreglado (Estado actual):** el DIA de la Solución Stanford avanza por fecha, y las sugerencias ventilatorias se actualizan al editar.
 - **Arreglado (Tendencias):** gasométricos con coma decimal o «<» muestran su tarjeta.

@@ -18,6 +18,10 @@ var RELEASE_NOTES_845 = [
     body: 'El DIA de la Solución Stanford avanza por fecha, igual que en Egreso. Las sugerencias ventilatorias se actualizan al cambiar FiO₂, PEEP, P meseta o VT, y ya no aparecen campos ocultos en Alto flujo.',
   },
   {
+    title: 'Equipos en Mi perfil y tablero IC',
+    body: 'La configuración de equipos ahora vive en Mi perfil. El tablero de interconsultas tiene avisos guiados mejor colocados, mejor contraste y una bandeja que no se colapsa.',
+  },
+  {
     title: 'Tendencias y limpieza',
     body: 'Los gasométricos con coma decimal o con «<» ya muestran su tarjeta. El potasio oral ya no cuenta como reposición. R+ borra al iniciar claves viejas que llenaban el almacenamiento.',
   },
