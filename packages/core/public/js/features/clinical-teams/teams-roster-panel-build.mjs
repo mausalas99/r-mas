@@ -152,7 +152,7 @@ export function buildPerfilSalaHtml(ctx) {
   const newMonth = !pick && new Date().getDate() === 1;
   const open = pick || newMonth || readClinicalTeamsCollapseOpen(PERFIL_SALA_COLLAPSE_KEY, true);
   const hint = pick
-    ? '<p class="settings-acc-hint settings-acc-hint--tight" data-perfil-sala-hint role="status"><b>Elige la sala de tu nueva rotación.</b> Quien entra primero es dueño de la sala.</p>'
+    ? '<p class="settings-acc-hint settings-acc-hint--tight" data-perfil-sala-hint role="status"><b>Elige la sala de tu nueva rotación.</b></p>'
     : newMonth
       ? '<p class="settings-acc-hint settings-acc-hint--tight" data-perfil-sala-hint role="status">Hoy empieza el mes. Confirma tu sala de rotación.</p>'
       : '';
@@ -162,9 +162,9 @@ export function buildPerfilSalaHtml(ctx) {
         <span class="settings-perfil-sala-title">Sala de guardia</span>
         <span class="settings-perfil-sala-current">${escapeHtml(ctx.sala || 'Sin sala')}</span>
       </summary>
+      ${hint}
       <div class="settings-perfil-chips" role="group" aria-label="Sala de guardia">${chips}</div>
       <input type="hidden" id="clinical-profile-sala" form="clinical-profile-form" value="${escapeAttr(ctx.sala)}">
-      ${hint}
       <p class="settings-acc-hint settings-acc-hint--tight">Al cambiar de sala se guarda tu perfil y pasas a la sala en Nube.</p>
     </details>`;
 }

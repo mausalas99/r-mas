@@ -41,6 +41,14 @@ export function isRotationRejoinPending() {
 /**
  * @param {{ joinedCount?: number, pending?: boolean }} opts
  */
+export function hasEverJoinedClinicalTeam() {
+  try {
+    return localStorage.getItem(EVER_JOINED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export function shouldOfferRotationRejoin(opts = {}) {
   const joined = Number(opts.joinedCount || 0);
   if (joined > 0) return false;
@@ -145,13 +153,9 @@ export async function maybeShowRotationRejoinModal() {
 
   if (!shouldOfferRotationRejoin({ joinedCount, pending: true })) return false;
 
-  openRotationRejoinModal();
-  try {
-    const main = await import('./clinical-onboarding-main.mjs');
-    await main.refreshMainClinicalOnboardingIfNeeded?.();
-  } catch {
-    /* onboarding optional */
-  }
+  // New rotation: the sala is changed in Mi perfil, no dialog of its own. Asked once.
+  setRotationRejoinPending(false);
+  (await import('./profile-modal.mjs')).openProfileModal();
   return true;
 }
 

@@ -3320,6 +3320,15 @@ select.profile-input.profile-select {
 .settings-perfil-sala .settings-acc-hint {
   margin: 0 0 12px;
 }
+.settings-perfil-sala [data-perfil-sala-hint] {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent-soft-text);
+  font-size: calc(13px * var(--density-font));
+  font-weight: 600;
+}
 .settings-perfil-account {
   display: flex;
   flex-direction: column;
@@ -3334,4 +3343,17 @@ select.profile-input.profile-select {
   display: flex;
   justify-content: flex-end;
   margin-top: 6px;
+}
+
+/* Mi Perfil button asks for a sala pick (profile-sala-nudge.mjs). */
+#profile-toggle-btn.profile-sala-nudge {
+  color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent);
+  animation: profile-sala-nudge-pulse 1.8s ease-in-out infinite;
+}
+@keyframes profile-sala-nudge-pulse {
+  50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-accent) 25%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #profile-toggle-btn.profile-sala-nudge { animation: none; }
 }

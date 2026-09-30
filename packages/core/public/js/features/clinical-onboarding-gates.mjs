@@ -14,6 +14,7 @@ import {
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 import { filterJoinedTeams } from './clinical-teams.mjs';
+import { hasEverJoinedClinicalTeam } from './clinical-rotation-rejoin-modal.mjs';
 import {
   isLegacyMachineUsername,
   isValidUsernameFormat,
@@ -125,9 +126,8 @@ export function hasPersistedClinicalProfile(settings = readRpcSettings(), user =
   if (isClinicalLocalOnlyMode(settings)) return true;
   if (needsClinicalLanProfileGate(settings)) return false;
   if (!hasValidPersistedUsername(settings)) return false;
-  const hasName = String(settings.clinicalDisplayName || user?.clinical_name || '').trim();
-  const hasSala = String(settings.clinicalSala || user?.sala || '').trim();
-  return !!hasName && !!hasSala;
+  // A registered user whose sala was unset (new rotation) still logs in: Mi perfil asks for it.
+  return !!String(settings.clinicalDisplayName || user?.clinical_name || '').trim();
 }
 
 function needsLocalOnlyProfile(settings) {
@@ -140,9 +140,7 @@ function needsLanProfile(settings, user) {
   if (needsClinicalLanProfileGate(settings)) return true;
   if (isLocalOnlyPlaceholderUsername(user?.username)) return true;
   if (needsUsernameClaim()) return true;
-  if (!String(user?.clinical_name || settings.clinicalDisplayName || '').trim()) return true;
-  if (!String(user?.sala || settings.clinicalSala || '').trim()) return true;
-  return false;
+  return !String(user?.clinical_name || settings.clinicalDisplayName || '').trim();
 }
 
 /** Falta perfil clínico mínimo antes de usar guardia / Mi rotación con datos. */
@@ -252,6 +250,8 @@ export function needsClinicalOnboarding() {
 export function needsTeamOnboardingStep() {
   if (!isDbMode()) return false;
   if (hasJoinedClinicalTeam()) return false;
+  // Returning residents pick their new team in the Equipos window, opened after the sala pick.
+  if (hasEverJoinedClinicalTeam()) return false;
   if (needsProfileOnboarding()) return false;
   if (isClinicalLocalOnlyMode(readRpcSettings())) return false;
   return needsTeamOnboarding();

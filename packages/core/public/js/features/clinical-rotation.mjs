@@ -1,6 +1,7 @@
 /**
  * Rotation cycle preview window, Incoming strip, and Nueva rotación controls.
  */
+import { syncProfileSalaNudge } from './profile-sala-nudge.mjs';
 import {
   clinicalSessionContext,
   fetchActiveRotationCycleFromDb,
@@ -277,6 +278,8 @@ export function wireGuardiaRotationControls() {
   syncRotationConfigButton();
   wireRotationConfigOpenControl();
   wireRotationRejoinModal();
+  document.addEventListener('rpc-clinical-teams-changed', syncProfileSalaNudge);
+  syncProfileSalaNudge();
   void import('./clinical-teams/teams-roster-inherit-patients-modal.mjs').then((m) =>
     m.wireInheritPatientsModal()
   );

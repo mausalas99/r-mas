@@ -7,6 +7,7 @@ import {
   readRpcSettings,
 } from '../../clinical-settings.mjs';
 import { dbApi, toast, currentUserId } from './shared.mjs';
+import { syncProfileSalaNudge } from '../profile-sala-nudge.mjs';
 import { maybeMarkCloudSalaUpgrade } from '../cloud-sync/cloud-sala-upgrade.mjs';
 
 function syncProgramAdminFlag(isProgramAdmin, res) {
@@ -89,5 +90,6 @@ async function submitProfileUpsert(api, userId, fields) {
   }
   persistClinicalUserBinding(buildProfileBinding({ userId, ...fields }));
   applyProfileUpsertToSession(res, fields);
+  syncProfileSalaNudge();
   return true;
 }

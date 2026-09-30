@@ -78,7 +78,16 @@ async function moveNubeRoomIfSalaChanged(prevSala, sala) {
   ]);
   if (!isCloudSala(sala) || !getCloudSyncToken()) return;
   const { ensureTurnRoomAfterTeamJoin } = await import('../cloud-sync/ensure-turn-room.mjs');
-  await ensureTurnRoomAfterTeamJoin(toast);
+  const room = await ensureTurnRoomAfterTeamJoin(toast);
+  if (room && !prevSala) await openTeamsAfterSalaPick();
+}
+
+/** First sala pick after a rotation: a resident with no team goes on to pick one. */
+async function openTeamsAfterSalaPick() {
+  const { needsTeamOnboarding } = await import('../clinical-onboarding-gates.mjs');
+  if (!needsTeamOnboarding()) return;
+  (await import('../profile-modal.mjs')).closeProfileModal();
+  await (await import('./teams-roster-shell.mjs')).openClinicalTeamsPanel();
 }
 
 /** Mirror a changed @usuario to the Nube account; local save already succeeded. */
