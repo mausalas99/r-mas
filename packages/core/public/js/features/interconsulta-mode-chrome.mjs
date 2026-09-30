@@ -381,6 +381,15 @@ function assignInterconsultaTeamViaBoardDrop(patientId, teamId) {
 /** Servicio solicitante opens the categorized catalog picker (same chip UX
  * as the sala interconsultantes picker) instead of free text. */
 function handleConsultBandClick(ev) {
+  // A click on the pill's label or padding acts like a click on its control.
+  var pill = ev.target.closest && ev.target.closest('.ic-cf');
+  var ctl = pill && pill.querySelector('select, input, [data-ic-req-trigger]');
+  if (ctl && !ctl.contains(ev.target)) {
+    if (ctl.tagName === 'SELECT' && ctl.showPicker) ctl.showPicker();
+    else if (ctl.tagName === 'INPUT') ctl.focus();
+    else ctl.click();
+    return;
+  }
   var trigger = ev.target.closest && ev.target.closest('[data-ic-req-trigger]');
   if (!trigger) return;
   var patient = activeInterconsultaPatient();
