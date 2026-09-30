@@ -34,7 +34,7 @@ export async function snapshotClinicalOpsForCloud() {
 /** Dedicated clinicalOps LWW push when teams/profile change under Nube. */
 export async function pushCloudClinicalOpsNow() {
   if (!isCloudSyncActive()) return { ok: false, reason: 'bridge_inactive' };
-  const { pushClinicalOpsForSalas, listLocalTeamSalas, pushClinicalOpsForSala } = await import(
+  const { pushClinicalOpsForSalas, listLocalTeamSalas, syncClinicalOpsForSala } = await import(
     './cloud-clinical-ops-sala.mjs'
   );
   const salas = await listLocalTeamSalas();
@@ -42,7 +42,7 @@ export async function pushCloudClinicalOpsNow() {
     return pushClinicalOpsForSalas(salas);
   }
   const sala = String(getCloudSyncRoomSnapshot()?.sala || '').trim();
-  if (sala) return pushClinicalOpsForSala(sala);
+  if (sala) return syncClinicalOpsForSala(sala);
 
   const clinicalOps = await snapshotClinicalOpsForCloud();
   if (clinicalOps == null) return { ok: false, reason: 'no_snapshot' };

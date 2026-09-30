@@ -259,9 +259,9 @@ async function repairOnePatientCensusSala(patient, rctx, clinicalOpsSalas) {
 
 /** @param {Iterable<string>} clinicalOpsSalas */
 async function pushClinicalOpsForRepairedSalas(clinicalOpsSalas) {
-  const { pushClinicalOpsForSala } = await import('./cloud-clinical-ops-sala.mjs');
+  const { syncClinicalOpsForSala } = await import('./cloud-clinical-ops-sala.mjs');
   for (const sala of clinicalOpsSalas) {
-    await pushClinicalOpsForSala(sala).catch(() => null);
+    await syncClinicalOpsForSala(sala).catch(() => null);
   }
 }
 

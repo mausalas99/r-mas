@@ -144,8 +144,14 @@ async function collectClinicalOpsForSala(sala) {
   return res.snapshot && typeof res.snapshot === 'object' ? res.snapshot : null;
 }
 
-/** @param {string} sala */
-export async function pushClinicalOpsForSala(sala) {
+/**
+ * Raw push, no merge. Not exported: an encrypted clinicalOps push replaces the
+ * room copy whole, so a push from a Mac that has not pulled first drops peers'
+ * leave tombstones and brings the member back for everyone. Callers use
+ * syncClinicalOpsForSala (pull + merge, then push).
+ * @param {string} sala
+ */
+async function pushLocalClinicalOpsToSala(sala) {
   if (!isCloudSyncActive() || !getCloudSyncToken()) {
     return { ok: false, reason: 'bridge_inactive' };
   }
@@ -242,7 +248,7 @@ export async function repushClinicalOpsIfRoomLacksLocal(sala, roomClinicalOps) {
   const local = await collectClinicalOpsForSala(normalized);
   if (!local || !clinicalOpsHasRowsRoomLacks(local, roomClinicalOps)) return false;
   lastClinicalOpsRepushAt.set(normalized, now);
-  const res = await pushClinicalOpsForSala(normalized).catch(() => null);
+  const res = await pushLocalClinicalOpsToSala(normalized).catch(() => null);
   return !!res?.ok;
 }
 
@@ -319,10 +325,11 @@ export async function pullClinicalOpsForSala(sala, opts = {}) {
  * @param {string} sala
  */
 export async function syncClinicalOpsForSala(sala) {
+  if (!isCloudSyncActive() || !getCloudSyncToken()) return { ok: false, reason: 'bridge_inactive' };
   const normalized = normalizeCloudSala(sala);
   if (!isCloudSala(normalized)) return { ok: false, reason: 'invalid_sala' };
   await pullClinicalOpsForSala(normalized, { since: 0 }).catch(() => null);
-  return pushClinicalOpsForSala(normalized);
+  return pushLocalClinicalOpsToSala(normalized);
 }
 
 /** @param {string[]} salas */

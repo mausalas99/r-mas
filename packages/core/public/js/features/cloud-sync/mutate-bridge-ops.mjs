@@ -294,7 +294,7 @@ export function mapBundleEnvelopeToOps(bundle, meta) {
   }
   ops.push(...mapBundleTodosToOps(bundle, meta));
   ops.push(...mapBundleAgendaToOps(bundle, meta));
-  // clinicalOps lives in sala-scoped rooms via pushClinicalOpsForSala — never stamp it
+  // clinicalOps lives in sala-scoped rooms via syncClinicalOpsForSala — never stamp it
   // with census bundle "now" (LWW whole-doc replace could wipe team assignments).
   return ops;
 }
