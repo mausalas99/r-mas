@@ -5089,7 +5089,7 @@ html.ui-density-guardia #btn-clinical-lan-connect {
 }
 
 .ic-board-count {
-  color: color-mix(in oklab, var(--text-muted) 55%, var(--text));
+  color: color-mix(in oklab, var(--text-muted) 30%, var(--text));
   font-size: 0.9rem;
 }
 
@@ -5156,6 +5156,9 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   gap: 0.6rem;
   min-height: 0;
   overflow-y: auto;
+  /* Room inside the scroll box so hover lift and focus rings are not clipped. */
+  padding: 4px;
+  margin: -4px;
 }
 
 .ic-board-lane {
@@ -5207,19 +5210,19 @@ html.ui-density-guardia #btn-clinical-lan-connect {
 
 .ic-row__pill,
 .ic-row__count {
-  color: color-mix(in oklab, var(--text-muted) 55%, var(--text));
+  color: color-mix(in oklab, var(--text-muted) 30%, var(--text));
   background: color-mix(in oklab, var(--text) 8%, transparent);
 }
 
 .ic-row--guardia .ic-row__pill {
-  color: color-mix(in oklab, var(--action) 65%, var(--text));
+  color: color-mix(in oklab, var(--action) 35%, var(--text));
   background: color-mix(in oklab, var(--action) 14%, transparent);
 }
 
 .ic-row__note {
   flex-basis: 100%;
   font-size: 0.72rem;
-  color: var(--text-muted);
+  color: color-mix(in oklab, var(--text-muted) 30%, var(--text));
 }
 
 .ic-row__body {
@@ -5302,6 +5305,8 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   min-height: 0;
   overflow-y: auto;
   border-radius: 10px;
+  padding: 4px;
+  margin: -4px;
 }
 
 .ic-tray .sv-card-archive {
@@ -5321,7 +5326,7 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: color-mix(in oklab, var(--text-muted) 55%, var(--text));
+  color: color-mix(in oklab, var(--text-muted) 30%, var(--text));
 }
 
 .ic-card[draggable="true"] {
@@ -5344,7 +5349,7 @@ html.ui-density-guardia #btn-clinical-lan-connect {
 
 .ic-board-empty {
   margin: auto 0;
-  color: var(--text-muted);
+  color: color-mix(in oklab, var(--text-muted) 40%, var(--text));
   font-size: 0.85rem;
   font-style: italic;
 }
@@ -5612,6 +5617,10 @@ html.ic-rail-open #ic-team-rail {
   border-top: 1px solid var(--divider);
 }
 
+.clinical-teams-profile-link {
+  margin-top: 8px;
+}
+
 /* Inside cards: members and the rare blocks sit on hairlines, not on fills. */
 .clinical-teams-panel-body .clinical-teams-card .clinical-teams-card-members--compact {
   margin: 0;
@@ -5667,6 +5676,10 @@ html #ic-team-rail button.is-active {
 
 .ic-tray .ic-board-lane__title {
   flex-basis: auto;
+}
+
+.ic-team-board .sv-tag--dnr {
+  color: color-mix(in oklab, var(--error) 70%, var(--text));
 }
 
 .ic-tray .ic-row__note {
