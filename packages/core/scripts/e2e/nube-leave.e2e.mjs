@@ -71,5 +71,5 @@ await r.finish('Nube leave: team and sala', async () => {
   await leaveRoom.click();
   check('«Salir de la sala» clears the room on G', await until(async () => !(await roomMeta(G.page))?.id, 15000), await roomMeta(G.page));
   check('the Worker dropped G from the room', memberRows() === 0, memberRows());
-  // No screenshot here on purpose: the signed-in avatar in this state fails axe color-contrast (.cloud-sync-avatar), a separate bug.
+  await r.shot(G.page, 'g-left-sala');
 });

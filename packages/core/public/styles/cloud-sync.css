@@ -2655,7 +2655,8 @@
   height: 40px;
   flex-shrink: 0;
   border-radius: var(--radius-pill);
-  background: color-mix(in oklab, var(--color-accent) 16%, var(--color-elevated));
+  /* 10% tint: 16% gave 4.36:1 in the light theme (AA needs 4.5:1 for 13px text). */
+  background: color-mix(in oklab, var(--color-accent) 10%, var(--color-elevated));
   color: var(--color-accent);
   font-size: calc(13px * var(--density-font));
   font-weight: 700;
