@@ -850,75 +850,92 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z[data-soap] em {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 16px;
+  gap: 6px 8px;
 }
-.ic-consult-field {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  max-width: 180px;
-}
-.ic-consult-field--reason {
-  flex: 1;
-}
-.ic-consult-label {
-  font: var(--type-wb-metadata, 500 10px/1.2 var(--font-ui));
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-ink-tertiary);
-}
-.ic-consult-input {
-  font: var(--type-wb-mono, 500 12.5px/1.4 var(--font-mono));
+.ic-cf {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font: 600 13px/1 var(--font-ui);
   color: var(--color-ink);
+  min-width: 0;
+}
+.ic-cf::before {
+  content: attr(data-label);
+  font-weight: 500;
+  color: var(--color-ink-muted);
+}
+.ic-cf:hover {
+  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+}
+.ic-cf:focus-within {
+  border-color: var(--action);
+}
+.ic-cf .ic-consult-input,
+.ic-cf .ic-cf-svc {
+  font: inherit;
+  color: inherit;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid transparent;
-  border-radius: 0;
-  padding: 1px 0;
+  padding: 0;
   min-width: 0;
-  width: 100%;
-}
-.ic-consult-input::placeholder {
-  color: var(--color-ink-tertiary);
-  font-style: italic;
-}
-.ic-consult-input:hover {
-  border-bottom-color: var(--border);
-}
-.ic-consult-input:focus {
+  cursor: pointer;
   outline: none;
-  border-bottom-color: var(--color-focus-ring, var(--action));
 }
-select.ic-consult-input {
-  cursor: pointer;
+.ic-cf .ic-consult-input::placeholder,
+.ic-cf .ic-cf-svc:empty {
+  color: var(--color-ink-muted);
+  font-weight: 500;
 }
-.ic-consult-status--en_curso { color: var(--warn, #8a4208); }
-.ic-consult-status--resuelta { color: var(--color-ink-muted); }
-.ic-consult-status--pendiente { color: var(--color-ink); }
-#interconsulta-mode-frame[hidden] {
-  display: none;
+.ic-cf select.ic-consult-input,
+.ic-cf .ic-cf-svc {
+  appearance: none;
+  padding-right: 18px;
+  background: no-repeat right center / 12px
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23717176' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5l3 3 3-3'/%3E%3C/svg%3E");
 }
-
-/* Servicio solicitante / Equipo pickers reuse the sala interconsultantes
- * chip look (.svc/.svc-add/.ic-cat), scoped here since the band sits
- * outside .patient-dash. */
-.ic-consult-band .svc {
-  border: 0;
-  border-radius: var(--radius-pill);
-  padding: 3px 8px;
-  font-size: 11.5px;
-  font-weight: 600;
+.ic-cf--reason .ic-consult-input {
+  field-sizing: content;
+  min-width: 7ch;
+  max-width: 34ch;
+  cursor: text;
+}
+/* Servicio: the pill takes the picked service's hue. */
+.ic-cf--svc.is-picked {
   background: oklch(0.93 0.045 var(--h, 220));
+  border-color: oklch(0.85 0.06 var(--h, 220));
   color: oklch(0.36 0.09 var(--h, 220));
-  cursor: pointer;
 }
-html.dark .ic-consult-band .svc {
+.ic-cf--svc.is-picked::before {
+  color: oklch(0.42 0.08 var(--h, 220));
+}
+html.dark .ic-cf--svc.is-picked {
   background: oklch(0.32 0.06 var(--h, 220));
+  border-color: oklch(0.42 0.07 var(--h, 220));
   color: oklch(0.86 0.08 var(--h, 220));
 }
-.ic-consult-band select.ic-consult-input {
-  font: var(--type-wb-mono, 500 12.5px/1.4 var(--font-mono));
+html.dark .ic-cf--svc.is-picked::before {
+  color: oklch(0.78 0.07 var(--h, 220));
+}
+/* Seguimiento: a small dot shows the state. */
+.ic-cf--status::after {
+  content: '';
+  order: 1;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-ink-tertiary);
+}
+.ic-cf--status select { order: 2; }
+.ic-cf--status-en_curso::after { background: var(--warn, #b45309); }
+.ic-cf--status-resuelta::after { background: var(--action); }
+#interconsulta-mode-frame[hidden] {
+  display: none;
 }
 
 /* Care plan + lines/tubes row between the name and vitals. */
