@@ -261,7 +261,8 @@ html.dark .patient-dash .svc.is-on {
 .patient-dash .dash-bottom {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
+  /* Medicamentos takes what it needs but always leaves Pendientes its minimum row. */
+  grid-template-rows: minmax(0, auto) minmax(5em, 1fr);
   gap: clamp(6px, 1cqi, 12px);
   align-items: stretch;
   flex: 1 1 0;

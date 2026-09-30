@@ -1,17 +1,17 @@
 /**
- * Free-tier request budget helpers.
+ * Poll timing (Workers paid plan: request budget is not a constraint).
  * With Room DO + WS: high safety poll when connected; moderate fallback when WS down.
  */
 
 /** Safety poll while WS connected (primary updates via DO signal). */
 export const CLOUD_POLL_IDLE_WS_MS = 90_000;
-export const CLOUD_POLL_MOBILE_IDLE_WS_MS = 60_000;
-export const CLOUD_POLL_ACTIVE_WS_MS = 30_000;
+export const CLOUD_POLL_MOBILE_IDLE_WS_MS = 15_000;
+export const CLOUD_POLL_ACTIVE_WS_MS = 15_000;
 
 /** Fallback when WS unavailable. */
-export const CLOUD_POLL_IDLE_FALLBACK_MS = 20_000;
-export const CLOUD_POLL_MOBILE_IDLE_FALLBACK_MS = 25_000;
-export const CLOUD_POLL_ACTIVE_FALLBACK_MS = 8_000;
+export const CLOUD_POLL_IDLE_FALLBACK_MS = 8_000;
+export const CLOUD_POLL_MOBILE_IDLE_FALLBACK_MS = 5_000;
+export const CLOUD_POLL_ACTIVE_FALLBACK_MS = 3_000;
 
 /** @deprecated alias — use FALLBACK or WS constants */
 export const CLOUD_POLL_IDLE_MS = CLOUD_POLL_IDLE_FALLBACK_MS;

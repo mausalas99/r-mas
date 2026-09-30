@@ -268,6 +268,12 @@ function settleFreshPull() {
   void import('../patients-list.mjs').then((m) => m.settlePatientListAfterDownload()).catch(() => {});
 }
 
+function traceFreshPull(freshJoin, result, applyStart, opsCount) {
+  if (!freshJoin) return;
+  const applyMs = Date.now() - applyStart;
+  recordCloudSyncTrace('pull_fresh', { pullMs: result?.pullMs ?? null, applyMs, opsCount, snapshot: !!result?.needSnapshot });
+}
+
 /** @param {object} pctx */
 async function runPullLatest(pctx) {
   const { api, getRoomId, getRevision, pollMobile } = pctx;
@@ -293,7 +299,10 @@ async function runPullLatest(pctx) {
       reconcileServerRevision(pctx, Number(result.revision), since, opsCount, !!result.locked, result.lockedOps, result.pullMs);
     }
     const labIngress = pollMobile ? await recordLabPullIngress(result) : null;
+    const applyStart = Date.now();
     await finalizePull(pctx, result, since, opsCount, labIngress);
+    // Fresh download: log fetch vs apply time so a slow first load shows where it went.
+    traceFreshPull(freshJoin, result, applyStart, opsCount);
     if (keyedRepull && !result?.locked) markKeyedRepullDone(roomId);
     else if (keyedRepull) keyedRepullLockedAt.set(String(roomId), Date.now());
   } finally {

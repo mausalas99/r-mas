@@ -4244,3 +4244,17 @@ html.motion-sobrio #ea-registro-backdrop.modal-backdrop.open > .ea-registro-moda
     animation: none;
   }
 }
+
+/* iPad (R+ Móvil): «Registro completo» fills the screen, same two-column layout as the desktop dialog. */
+html.rpc-cloud-mobile #ea-registro-backdrop.modal-backdrop {
+  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+}
+html.rpc-cloud-mobile #ea-registro-backdrop.modal-backdrop.open > .ea-registro-modal {
+  width: 100%;
+  border-radius: 16px;
+}
+@media (min-width: 900px) {
+  html.rpc-cloud-mobile #ea-registro-backdrop .ea-registro-cols {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
