@@ -14,8 +14,21 @@ import { createOpFold, foldCloudOp } from './pull-apply-state.mjs';
 import { createIdbBackedSlot } from './idb-index-store.mjs';
 
 /** Entry paths with no real edit clock — all ride this same skip-if-unchanged guard. */
-export const FP_FIELDS = ['medReceta', 'vpo', 'listadoProblemas', 'medPharmProfile'];
-const FP_PATH_RE = /^entries\/[^/]+\/(medReceta|vpo|listadoProblemas|medPharmProfile)$/;
+export const FP_FIELDS = ['medReceta', 'vpo', 'listadoProblemas', 'medPharmProfile', 'note', 'indicaciones'];
+const FP_PATH_RE = /^entries\/[^/]+\/(medReceta|vpo|listadoProblemas|medPharmProfile|note|indicaciones)$/;
+
+/** Note / indicaciones paths over CLOUD_DOC_MAX_BYTES: kept on this device, shown as «Pendiente». */
+const oversizeDocPaths = new Set();
+
+/** @param {string} path @param {boolean} tooBig */
+export function markCloudDocOversize(path, tooBig) {
+  if (tooBig) oversizeDocPaths.add(path);
+  else oversizeDocPaths.delete(path);
+}
+
+export function cloudOversizeDocCount() {
+  return oversizeDocPaths.size;
+}
 
 export const CLOUD_MED_RECETA_FP_INDEX_KEY = 'rpc-cloud-sync-med-receta-fp-index';
 
@@ -46,8 +59,16 @@ function trimFingerprintIndex(index) {
   return index;
 }
 
-/** @param {unknown} medReceta */
-export function cloudMedRecetaFingerprint(medReceta) {
+/**
+ * Note / indicaciones: every real edit restamps `updatedAt`, so the clock IS the identity.
+ * Content-fingerprinting them re-sent a doc whenever the form filled a default (no edit,
+ * same clock) — an echo that could flip the room copy back and forth.
+ * @param {unknown} medReceta @param {string} [field]
+ */
+export function cloudMedRecetaFingerprint(medReceta, field) {
+  if ((field === 'note' || field === 'indicaciones') && medReceta && typeof medReceta === 'object') {
+    return `u:${String(/** @type {{ updatedAt?: unknown }} */ (medReceta).updatedAt || '')}`;
+  }
   return canonicalStringify(medReceta || null);
 }
 
@@ -73,7 +94,7 @@ export function shouldSkipCloudMedRecetaPush(patientId, medReceta, index, field 
   if (!pid) return true;
   const path = `entries/${pid}/${field}`;
   const idx = index || readMedRecetaFingerprintIndex();
-  return idx[path] === cloudMedRecetaFingerprint(medReceta);
+  return idx[path] === cloudMedRecetaFingerprint(medReceta, field);
 }
 
 /** Index value meaning "deleted on this device, clear not sent yet". */
@@ -107,7 +128,7 @@ export function noteCloudMedRecetaOpsSent(ops) {
     if (!op || typeof op !== 'object') continue;
     const path = String(/** @type {{ path?: unknown }} */ (op).path || '');
     if (!FP_PATH_RE.test(path)) continue;
-    idx[path] = cloudMedRecetaFingerprint(/** @type {{ value?: unknown }} */ (op).value);
+    idx[path] = cloudMedRecetaFingerprint(/** @type {{ value?: unknown }} */ (op).value, path.slice(path.lastIndexOf('/') + 1));
     n += 1;
   }
   if (n) writeMedRecetaFingerprintIndex(idx);
@@ -124,7 +145,7 @@ function seedMedRecetaFingerprintsFromEntries(entries) {
     if (!pid) continue;
     for (const field of FP_FIELDS) {
       if (!Object.prototype.hasOwnProperty.call(entry, field)) continue;
-      idx[`entries/${pid}/${field}`] = cloudMedRecetaFingerprint(/** @type {Record<string, unknown>} */ (entry)[field]);
+      idx[`entries/${pid}/${field}`] = cloudMedRecetaFingerprint(/** @type {Record<string, unknown>} */ (entry)[field], field);
       n += 1;
     }
   }

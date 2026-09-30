@@ -2,6 +2,8 @@
 import { toEaSalidaText } from "./estado-actual-io.mjs";
 import { getPatients, getNotes, persistClinicalState } from "../app-state.mjs";
 import { isModeSala } from "../mode-features.mjs";
+import { stampDocUpdatedAt } from "../patient-merge.mjs";
+import { scheduleCloudSyncPush } from "./cloud-sync/mutate-bridge.mjs";
 import { closeModalAnimated } from "../ui-motion.mjs";
 import { ensureMonitoreo, migratePatientMonitoreo } from "./estado-actual-data.mjs";
 import { formatNmDietClause } from "./estado-actual-diet-text.mjs";
@@ -508,7 +510,9 @@ export function insertSOAPText() {
   var text = buildSOAPText();
   if (!getNotes()[activeId]) getNotes()[activeId] = {};
   getNotes()[activeId].evolucion = text;
+  stampDocUpdatedAt(getNotes()[activeId]);
   persistClinicalState();
+  scheduleCloudSyncPush();
   var el = document.querySelector('#note-form textarea[oninput*="evolucion"]');
   if (el) el.value = text;
   closeSOAPModal();

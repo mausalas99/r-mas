@@ -2,6 +2,7 @@
  * Cloud sync mutation bridge — maps local clinical state to worker LWW ops.
  */
 import { isCloudSyncActive } from './nube-sync-policy.mjs';
+import { cloudOversizeDocCount } from './cloud-med-receta-index.mjs';
 import { getCloudSyncRoomId } from './settings.mjs';
 import { cloudSyncNowIso } from './cloud-sync-clock.mjs';
 import {
@@ -21,7 +22,6 @@ import {
   mapPatientEntryToCloudBundleOps,
   labSetId,
   pickCensusFields,
-  mapPatientEntryToOps,
   mapPatientEntryToCensusSeedOps,
   buildInternoAccessUpsertOp,
   CLOCKLESS_FLOOR_CLOCK,
@@ -43,7 +43,6 @@ export { pushCloudCensusNow, pushCloudLabSidecarsNow } from './mutate-bridge-dir
 export {
   labSetId,
   pickCensusFields,
-  mapPatientEntryToOps,
   mapPatientEntryToCensusSeedOps,
   mapPatientEntryToCloudBundleOps,
   mapBundleEnvelopeToOps,
@@ -292,6 +291,8 @@ async function enqueueCloudBundleOps() {
     };
     ensureLiveCensusClocks(meta.updatedAt);
     const ops = await collectCloudBundleOps(meta);
+    // A note too big for one op is not in `ops`: still tell the status line why it stays here.
+    if (cloudOversizeDocCount() > 0) bridgeRuntime.noteEditing?.();
     if (shouldRetryEmptyCensusPush(ops)) return false;
     if (!ops.length) return false;
     enqueueOps(ops);
@@ -517,6 +518,34 @@ export function enqueueCloudPatientDelete(patient) {
   if (!prepared) return;
   bridgeRuntime.outbox.enqueue(prepared);
   scheduleTombstoneFlush();
+  void tombstoneInOperationalSala(patient, pid);
+}
+
+/**
+ * Admit mirrors a chart into its own sala room when that is not the active one
+ * (enqueueCloudPatientAdmit). The delete must reach that room too, or the next
+ * pull brings the patient back.
+ * @param {object} patient @param {string} pid
+ */
+async function tombstoneInOperationalSala(patient, pid) {
+  try {
+    const mod = await import('./cloud-census-sala-push.mjs');
+    const { getClinicalScopeContextForEvaluate } = await import('../../clinical-access-runtime.mjs');
+    const ctx = getClinicalScopeContextForEvaluate();
+    if (mod.patientBelongsToActiveCloudRoom(patient, ctx)) return;
+    const sala = mod.resolveOperationalPatientSala(patient, ctx);
+    if (!sala) return;
+    const now = cloudSyncNowIso();
+    await mod.pushOpsToSalaRoom(sala, [
+      buildCloudTombstoneOp(pid, {
+        registro: patient.registro || '',
+        actorId: resolveCloudActorId(bridgeRuntime),
+        updatedAt: now,
+      }),
+    ]);
+  } catch (err) {
+    console.warn('[R+] sala tombstone:', err?.message || err);
+  }
 }
 
 /**

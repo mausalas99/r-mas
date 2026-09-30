@@ -10,6 +10,8 @@ import {
   monitoreoUpdatedAt,
   mergeEventualidades,
   cloneEntry,
+  stampDocUpdatedAt,
+  incomingDocWinsLww,
 } from './patient-merge.mjs';
 import { emptyMonitoreo } from './features/estado-actual-data.mjs';
 
@@ -516,4 +518,25 @@ test('mergePatientEntry no borra diagnósticos locales si el peer reciente viene
     (m.patient.diagnosticosList || []).filter(Boolean),
     ['NEUMONÍA']
   );
+});
+
+test('stampDocUpdatedAt: two saves in a row give strictly increasing clocks', () => {
+  const doc = {};
+  stampDocUpdatedAt(doc);
+  const first = doc.updatedAt;
+  stampDocUpdatedAt(doc);
+  assert.ok(doc.updatedAt > first);
+  doc.updatedAt = new Date(Date.now() + 60_000).toISOString(); // clock skew: stamp still moves forward
+  const skewed = doc.updatedAt;
+  stampDocUpdatedAt(doc);
+  assert.ok(doc.updatedAt > skewed);
+});
+
+test('incomingDocWinsLww: newer or equal wins, older loses, a missing clock keeps the old replace', () => {
+  const a = { updatedAt: '2026-09-29T10:00:00.000Z' };
+  assert.equal(incomingDocWinsLww(a, { updatedAt: '2026-09-29T11:00:00.000Z' }), true);
+  assert.equal(incomingDocWinsLww(a, { updatedAt: '2026-09-29T10:00:00.000Z' }), true);
+  assert.equal(incomingDocWinsLww(a, { updatedAt: '2026-09-29T09:00:00.000Z' }), false);
+  assert.equal(incomingDocWinsLww({}, { updatedAt: '2026-09-29T09:00:00.000Z' }), true);
+  assert.equal(incomingDocWinsLww(a, {}), true);
 });

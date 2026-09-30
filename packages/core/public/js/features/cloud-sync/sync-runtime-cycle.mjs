@@ -6,6 +6,7 @@ import { cloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 import { isCloudTransientServerError, isCloudUnreachableError } from './cloud-sync-timing.mjs';
 import { createPullPush, dropPullValuesOlderThanPending, isCloudRevisionStaleError } from './sync-runtime-pull-push.mjs';
 import { decryptOpsFromPull, hasLockedOpValue } from './cloud-sync-crypto-wire.mjs';
+import { cloudOversizeDocCount } from './cloud-med-receta-index.mjs';
 import { getCachedRoomDek, markRoomUnprotected } from './room-dek.mjs';
 import {
   cloudSyncErrorCode,
@@ -55,6 +56,16 @@ function createOutboxSync(outbox, setStatus) {
   }
 
   function refreshIdleStatus() {
+    const tooBig = cloudOversizeDocCount();
+    if (tooBig > 0) {
+      setStatus(
+        'pending',
+        tooBig === 1
+          ? 'Una nota pasa el límite de 96 KB. Se queda en este equipo.'
+          : `${tooBig} notas pasan el límite de 96 KB. Se quedan en este equipo.`
+      );
+      return;
+    }
     const detail = pendingDetailText(pendingOpsCount());
     if (!navigator.onLine) {
       setStatus(pendingCount() > 0 ? 'pending' : 'offline', detail);
@@ -171,7 +182,7 @@ function attachSyncRuntimeListeners(ctx, opts = {}) {
 
   function noteLocalMutation() {
     pace.markLocalWrite();
-    if (outboxSync.pendingCount() > 0 && getCurrentStatus() === 'idle') {
+    if ((outboxSync.pendingCount() > 0 || cloudOversizeDocCount() > 0) && getCurrentStatus() === 'idle') {
       outboxSync.refreshIdleStatus();
     }
     scheduler.armNextTimer(false);

@@ -17,6 +17,11 @@ import { filterCloudOpsNotAttempted } from './cloud-sync-echo-guard.mjs';
  */
 export const CLOUD_LAB_MUTATION_MAX_BYTES = 150 * 1024;
 export const CLOUD_NOTE_MAX_BYTES = 256 * 1024;
+/**
+ * Per note / indicaciones doc we send. A real nota is ~10-20 KB; 300 patients at the Worker's
+ * 256 KB cap could fill the 25 MB room soft limit alone, so cap far below the op limit.
+ */
+export const CLOUD_DOC_MAX_BYTES = 96 * 1024;
 /** Same chunk-safety margin as labs — monitoreo pushes the whole vitals historial each time. */
 export const CLOUD_MONITOREO_MAX_BYTES = 150 * 1024;
 /** Align with cloud/sync-worker/src/quotas.js maxMutationBodyBytes (raised 8/2026 to 2MB). */

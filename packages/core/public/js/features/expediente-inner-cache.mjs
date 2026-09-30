@@ -4,7 +4,7 @@
 import { isModeSala } from '../mode-features.mjs';
 import { buildEaMonitoreoRevision } from './estado-actual-data.mjs';
 import { buildMedAdminCacheRevision } from './estado-actual-data-revision.mjs';
-import { getPatients, getMedRecetaByPatient } from '../app-state.mjs';
+import { getPatients, getMedRecetaByPatient, getNotes, getIndicaciones } from '../app-state.mjs';
 import { getLabHistoryRevision } from '../lab-history-cache.mjs';
 import { storage } from '../storage.js';
 import { scheduleIdle } from '../deferred-work.mjs';
@@ -127,6 +127,11 @@ function innerTabRenderCacheKey(tab) {
   if (tab === "estadoActual" || tab === "resumen") {
     key += "|E" + estadoActualCacheSuffix(pid);
   }
+  // Nube can change the doc under an open tab: its edit clock is part of what is on screen.
+  if (tab === "notas" || tab === "indica") {
+    var doc = (tab === "notas" ? getNotes() : getIndicaciones())[pid];
+    key += "|N" + ((doc && doc.updatedAt) || "0");
+  }
   if (tab === "medAdmin") {
     key += "|A" + buildMedAdminCacheRevision(pid, getMedRecetaByPatient());
   }
@@ -174,6 +179,17 @@ export function isInnerTabContentFresh(tab, settings) {
   tab = migrateGranularInner(tab, settings);
   if (UNCACHED_TABS[tab]) return false;
   return innerTabRenderCache[tab] === innerTabRenderCacheKey(tab);
+}
+
+/**
+ * Painted once, and the data under it moved since (a pull whose repaint a tab tap
+ * cancelled). A never-stamped tab is not stale: its first paint may still be running.
+ */
+export function isInnerTabPaintStale(tab, settings) {
+  tab = migrateGranularInner(tab, settings);
+  if (UNCACHED_TABS[tab]) return false;
+  var cached = innerTabRenderCache[tab];
+  return cached !== undefined && cached !== innerTabRenderCacheKey(tab);
 }
 
 function markInnerTabRendered(tab) {
