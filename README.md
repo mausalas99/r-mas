@@ -58,7 +58,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 ## R+ 8.4.5 (estable — release 8.4.5)
 
 - **Nuevo (Nube):** notas, interrogatorio e indicaciones se sincronizan entre equipos. Gana la edición más reciente.
-- **Nuevo (Perfil):** la configuración de equipos ahora está en Mi perfil.
+- **Nuevo (Perfil):** Mi perfil incluye tu sala, rango y usuario en una sola pantalla. Cambiar de sala te pasa a su sala en Nube.
 - **Nuevo (Interconsultas):** la barra de interconsulta usa pastillas para Servicio, Motivo, Seguimiento y Equipo.
 - **Arreglado (Interconsultas):** avisos guiados mejor colocados, mejor contraste y bandeja estable.
 - **Arreglado (Salas y equipos):** salir de una sala ya no se deshace solo, y salir de un equipo ya no te saca del nuevo.
