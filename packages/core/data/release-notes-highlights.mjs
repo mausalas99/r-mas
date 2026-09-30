@@ -4,27 +4,27 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_844 = [
+var RELEASE_NOTES_845 = [
   {
-    title: 'Laboratorio rediseñado',
-    body: 'Diseño nuevo, con días anteriores del historial, tablas de SOME mejor leídas y sin estudios repetidos. Pega el PDF de Reumatología y R+ lo lee.',
+    title: 'Notas e indicaciones con Nube',
+    body: 'La nota de evolución, el interrogatorio y las indicaciones ahora se sincronizan entre tus equipos. Gana la edición más reciente. Un texto muy largo se queda en este equipo y Conexión muestra «Pendiente».',
   },
   {
-    title: 'Tendencias con panel de estudio nuevo',
-    body: 'El panel ocupa todo el ancho. Chips en la tabla, pestañas de gráficas con la lista de analitos y una tabla dinámica en ventana.',
+    title: 'Salir de una sala o equipo ya funciona',
+    body: 'Al salir de una sala, R+ ya no te vuelve a meter solo al abrir la app. Al salir de un equipo, una copia vieja de la sala ya no deshace el cambio ni te saca de tu equipo nuevo.',
   },
   {
-    title: 'Barra superior y lista más limpias',
-    body: 'La pastilla de área activa se une con Tendencias. Las tarjetas de una línea ya no dejan huecos y los medicamentos del Resumen no se parten.',
+    title: 'Estado actual más fiel',
+    body: 'El DIA de la Solución Stanford avanza por fecha, igual que en Egreso. Las sugerencias ventilatorias se actualizan al cambiar FiO₂, PEEP, P meseta o VT, y ya no aparecen campos ocultos en Alto flujo.',
   },
   {
-    title: 'Nube más estable',
-    body: 'Cada expediente queda en su propia fila, así borrar muchos ya no satura el servidor. Las eventualidades y el monitoreo ya no se pierden al sincronizar a la vez.',
+    title: 'Tendencias y limpieza',
+    body: 'Los gasométricos con coma decimal o con «<» ya muestran su tarjeta. El potasio oral ya no cuenta como reposición. R+ borra al iniciar claves viejas que llenaban el almacenamiento.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_844;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_845;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.4.4': RELEASE_NOTES_844,
+  '8.4.5': RELEASE_NOTES_845,
 };

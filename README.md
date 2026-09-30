@@ -51,9 +51,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.4.4](https://github.com/mausalas99/r-mas/releases/tag/v8.4.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.4.5](https://github.com/mausalas99/r-mas/releases/tag/v8.4.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.4.5 (estable — release 8.4.5)
+
+- **Nuevo (Nube):** notas, interrogatorio e indicaciones se sincronizan entre equipos. Gana la edición más reciente.
+- **Arreglado (Salas y equipos):** salir de una sala ya no se deshace solo, y salir de un equipo ya no te saca del nuevo.
+- **Arreglado (Estado actual):** el DIA de la Solución Stanford avanza por fecha, y las sugerencias ventilatorias se actualizan al editar.
+- **Arreglado (Tendencias):** gasométricos con coma decimal o «<» muestran su tarjeta.
+
+Notas: `docs/RELEASE_NOTES_8.4.5.txt`.
 
 ## R+ 8.4.4 (estable — Laboratorio, Tendencias y Nube por paciente)
 
