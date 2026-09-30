@@ -1,4 +1,3 @@
-/* global process, console, fetch, performance, setTimeout */
 /**
  * Nube push/pull timing harness (synthetic data only). Temporary: sync-speed step 1.
  *
