@@ -61,6 +61,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 - **Nuevo (Perfil):** Mi perfil incluye tu sala, rango y usuario en una sola pantalla. Cambiar de sala te pasa a su sala en Nube.
 - **Nuevo (Interconsultas):** la barra de interconsulta usa pastillas para Servicio, Motivo, Seguimiento y Equipo.
 - **Arreglado (Interconsultas):** avisos guiados mejor colocados, mejor contraste y bandeja estable.
+- **Nuevo (iPad):** iPad usa el mismo diseño que la computadora y Resumen cabe sin desplazar.
 - **Arreglado (Perfil):** cambiar tu @usuario en Mi perfil también lo actualiza en Nube.
 - **Nuevo (Perfil):** R+ te guía a elegir sala al reiniciar la rotación.
 - **Arreglado (Salas y equipos):** salir de una sala ya no se deshace solo, y salir de un equipo ya no te saca del nuevo.

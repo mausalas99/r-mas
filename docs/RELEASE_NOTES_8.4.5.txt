@@ -14,6 +14,7 @@ Notas e indicaciones ya se sincronizan con Nube. Salir de una sala o equipo func
 - **Nuevo (Interconsultas):** la barra de interconsulta usa pastillas para Servicio, Motivo, Seguimiento y Equipo. Un clic en cualquier parte de la pastilla actúa sobre su control.
 - **Cambio (Interconsultas):** «Torre HU» ya no aparece como servicio solicitante.
 - **Arreglado (Interconsultas):** los avisos guiados del tablero quedan junto a botones pequeños y hay un paso para el cambio Asignar / Mi equipo. Se arregló el contraste en claro y oscuro, y la bandeja ya no se colapsa con un equipo grande.
+- **Nuevo (iPad):** iPad usa el mismo diseño que la computadora. Resumen cabe sin desplazar. La lista lateral es una barra angosta con solo el número de cama.
 - **Arreglado (Perfil):** al cambiar tu @usuario en Mi perfil, ahora también se actualiza en Nube.
 - **Nuevo (Perfil):** si no tienes sala, o es el día 1 del mes, R+ abre la sección Sala en Mi perfil y te avisa. El primero en unirse a una sala empieza a sincronizar de inmediato.
 - **Arreglado (Nube):** «Salir de la sala» y «Salir del equipo» confirman con el servidor. El avatar del panel Nube tiene mejor contraste.
