@@ -24,8 +24,9 @@ export const QUOTAS = {
    * never fire in practice; it's a defense-in-depth platform ceiling, not
    * a business quota. See schema/010-shard-room-state-lab-sets.sql. */
   labShardMaxBytes: 1_900_000,
-  /** Align with desktop chunkCloudOps (6 lab ops × few patients). */
-  maxOpsPerMutation: 16,
+  /** Align with desktop CLOUD_CWND_MAX_OPS (lab ops stay 6 per chunk). Was
+   * 16; a client that meets an older Worker falls back to its limit. */
+  maxOpsPerMutation: 64,
   /** Pushes made only of `tombstones/*` ops are tiny (a few hundred bytes
    * each) but each push rewrites the room core, so allow more per push. */
   maxTombstoneOpsPerMutation: 64,

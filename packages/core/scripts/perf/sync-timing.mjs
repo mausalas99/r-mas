@@ -5,15 +5,19 @@
  *   npm run db:migrate:local && npx wrangler dev
  *   node scripts/perf/sync-timing.mjs [runs=20] [base=http://127.0.0.1:8787]
  *
- * Per run: push 1 op, push 16 ops, drain 64 ops, drain 319 ops (16-op chunks,
- * 125-250 ms gap like createDrainPacer), with a device-B pull after each.
+ * Per run: push 1 op, push 16 ops, drain 64 ops, drain 319 ops (chunked and
+ * paced like createDrainPacer; SYNC_PACE=old for the 16-op/250 ms client), with a device-B pull after each.
  * Server steps come from the flag-gated Server-Timing header in sync.js.
  * Room is padded past 100 revisions first so the prune DELETE runs.
  */
 const RUNS = Number(process.argv[2] || 20);
 const BASE = `${process.argv[3] || 'http://127.0.0.1:8787'}/api/sync/v1`;
-const CHUNK = 16; // quotas.js maxOpsPerMutation / CLOUD_CWND_MAX_OPS
+// SYNC_PACE=old: the pre-step-4 client (16-op chunks, 125-250 ms gap).
+// Default: CLOUD_CWND_MAX_OPS 64, no gap, pushes >= 500 ms apart (rate floor).
+const OLD_PACE = process.env.SYNC_PACE === 'old';
+const CHUNK = OLD_PACE ? 16 : 64;
 const GAP_MS = 250; // CLOUD_CHUNK_GAP_MIN_MS, jittered to 125-250
+const MIN_PUSH_INTERVAL_MS = 500; // CLOUD_MIN_PUSH_INTERVAL_MS
 const PATIENTS = 40;
 const RATE_MAX = 115; // under mutation-guard.mjs 120 pushes / 60 s / room
 
@@ -85,14 +89,18 @@ async function push(ops) {
   return r;
 }
 
-/** Client-style drain: 16-op chunks, jittered gap between chunks. */
+/** Client-style drain: CHUNK-op chunks, paced like createDrainPacer. */
 async function drain(n) {
   const ops = makeOps(n);
   const pushes = [];
   const t0 = performance.now();
   for (let i = 0; i < ops.length; i += CHUNK) {
+    const started = performance.now();
     pushes.push(await push(ops.slice(i, i + CHUNK)));
-    if (i + CHUNK < ops.length) await sleep(GAP_MS / 2 + Math.random() * (GAP_MS / 2));
+    if (i + CHUNK >= ops.length) continue;
+    await sleep(OLD_PACE
+      ? GAP_MS / 2 + Math.random() * (GAP_MS / 2)
+      : Math.max(0, MIN_PUSH_INTERVAL_MS - (performance.now() - started)));
   }
   return { wall: performance.now() - t0, pushes };
 }
