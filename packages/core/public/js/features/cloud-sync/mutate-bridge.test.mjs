@@ -127,3 +127,52 @@ describe('mutate-bridge op mapping', () => {
     assert.equal(clocks('2026-08-04T10:00:00.000Z').length, 2);
   });
 });
+
+// Ways the push timers can slow a save down:
+// 1. a second schedule in the same tick cancels the leading 0 ms push and
+//    re-arms it at the 1.5 s debounce;
+// 2. the outbox coalesce waits the old 500 ms before the first POST;
+// 3. a shorter coalesce stops merging a same-tick burst into one flush.
+describe('mutate-bridge push timers', () => {
+  async function withBridge(fn) {
+    const { mock } = await import('node:test');
+    const { setCloudRoomConnected } = await import('./nube-sync-policy.mjs');
+    const { configureCloudMutateBridge } = await import('./mutate-bridge.mjs');
+    const flushes = [];
+    const enqueued = [];
+    mock.timers.enable({ apis: ['setTimeout'] });
+    setCloudRoomConnected(true);
+    configureCloudMutateBridge({
+      outbox: { enqueue: (row) => enqueued.push(row), list: () => enqueued },
+      getRevision: () => 1,
+      flush: async () => flushes.push(Date.now()),
+    });
+    try {
+      await fn({ flushes, enqueued, tick: (ms) => mock.timers.tick(ms) });
+    } finally {
+      mock.timers.reset();
+      setCloudRoomConnected(false);
+      configureCloudMutateBridge(null);
+    }
+  }
+
+  it('two patient deletes in one tick flush at once, not after 1.5 s', async () => {
+    const { enqueueCloudPatientDelete } = await import('./mutate-bridge.mjs');
+    await withBridge(({ flushes, tick }) => {
+      enqueueCloudPatientDelete({ id: 'p-a', registro: '' });
+      enqueueCloudPatientDelete({ id: 'p-b', registro: '' });
+      tick(0);
+      assert.equal(flushes.length, 1);
+    });
+  });
+
+  it('an enqueued edit flushes within 150 ms, and a same-tick burst shares one flush', async () => {
+    const { enqueueCloudClinicalOpsValue } = await import('./mutate-bridge.mjs');
+    await withBridge(({ flushes, tick }) => {
+      enqueueCloudClinicalOpsValue({ a: 1 });
+      enqueueCloudClinicalOpsValue({ a: 2 });
+      tick(150);
+      assert.equal(flushes.length, 1);
+    });
+  });
+});

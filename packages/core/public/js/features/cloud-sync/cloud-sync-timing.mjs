@@ -28,12 +28,12 @@ export const CLOUD_POLL_ERROR_OVERLOAD_MAX_MS = 120_000;
  * full sync keeps its 30 s→5 min backoff, but work done offline goes out within
  * ~10 s of the Worker answering again instead of waiting out that backoff. */
 export const CLOUD_REACHABILITY_PROBE_MS = 10_000;
-export const CLOUD_PUSH_DEBOUNCE_MS = 1_500;
-/** First edit in a burst pushes right away — only repeat edits debounce. */
+/** A save pushes right away; saves before that timer fires ride along. */
 export const CLOUD_PUSH_FIRST_MS = 0;
-/** One save enqueues census, monitoreo, labs and clinicalOps within ~400 ms —
- * wait this long before flushing so they share one POST, not four. */
-export const CLOUD_OUTBOX_COALESCE_MS = 500;
+/** Wait this long before flushing so a save's census, monitoreo, labs and
+ * clinicalOps rows share one POST. Rows that land after the POST starts go
+ * in the next drain turn (the drain re-lists the outbox every turn). */
+export const CLOUD_OUTBOX_COALESCE_MS = 120;
 
 /** Backfill patients outside the active Filtros after this delay, once the priority set is pushed. */
 export const CLOUD_LAB_BACKFILL_DEFERRED_MS = 5_000;
