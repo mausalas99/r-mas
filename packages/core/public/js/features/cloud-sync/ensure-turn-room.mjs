@@ -141,7 +141,7 @@ export async function ensureTurnRoomAfterTeamJoin(toast) {
     getToken: settings.getCloudSyncToken,
   });
   const { getUserSala } = await import('./panel-clinical-context.mjs');
-  return ensureTurnRoom({
+  const room = await ensureTurnRoom({
     api,
     getSala: getUserSala,
     getToken: settings.getCloudSyncToken,
@@ -151,4 +151,12 @@ export async function ensureTurnRoomAfterTeamJoin(toast) {
     toast,
     explicit: true,
   });
+  // A device whose sala was unset at boot (new rotation) never autostarted sync:
+  // start it now, so the first join (the room owner, who holds the DEK) syncs at once.
+  const { getSharedNubeRuntime } = await import('./panel-conexion-runtime.mjs');
+  if (room && !getSharedNubeRuntime()) {
+    const { autostartCloudSyncIfConfigured } = await import('./autostart.mjs');
+    await autostartCloudSyncIfConfigured({ toast });
+  }
+  return room;
 }

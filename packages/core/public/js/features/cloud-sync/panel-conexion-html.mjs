@@ -407,7 +407,7 @@ export function nubePopoverHtml(v) {
   const mod = v.modifier(v.status, 'ws');
   const room = v.room || {};
   const month = formatTurnMonth(room.turnKey);
-  const meta = [month ? month.charAt(0).toUpperCase() + month.slice(1) : '']
+  const meta = [room.sala ? (month ? month.charAt(0).toUpperCase() + month.slice(1) : '') : 'Elige tu sala en Mi perfil']
     .concat(Number.isFinite(Number(room.memberCount)) ? [room.memberCount + ' miembros'] : [])
     .filter(Boolean)
     .join(' · ');

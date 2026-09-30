@@ -208,7 +208,7 @@ function pushConnectivityIssues(issues, d, syncFailing, recentErrors) {
       fixId: 'no_room',
       severity: 'warn',
       title: 'Sin sala configurada',
-      detail: 'Selecciona sala y equipo en Conexión.',
+      detail: 'Elige tu sala en Mi perfil.',
     });
   }
 

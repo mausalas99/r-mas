@@ -145,7 +145,17 @@ export function buildPerfilSalaHtml(ctx) {
     (s) =>
       `<button type="button" class="settings-perfil-chip" data-perfil-sala="${escapeAttr(s)}" aria-pressed="${ctx.sala === s}">${escapeHtml(s)}</button>`
   ).join('');
-  const open = readClinicalTeamsCollapseOpen(PERFIL_SALA_COLLAPSE_KEY, true);
+  // After «Iniciar nueva rotación» every sala is unset. The first user to join the
+  // new sala's Nube room becomes its owner and holds the room key (room-dek.mjs),
+  // so the pick is asked for loudly: open, whatever the saved collapse state says.
+  const pick = !ctx.sala;
+  const newMonth = !pick && new Date().getDate() === 1;
+  const open = pick || newMonth || readClinicalTeamsCollapseOpen(PERFIL_SALA_COLLAPSE_KEY, true);
+  const hint = pick
+    ? '<p class="settings-acc-hint settings-acc-hint--tight" data-perfil-sala-hint role="status"><b>Elige la sala de tu nueva rotación.</b> Quien entra primero es dueño de la sala.</p>'
+    : newMonth
+      ? '<p class="settings-acc-hint settings-acc-hint--tight" data-perfil-sala-hint role="status">Hoy empieza el mes. Confirma tu sala de rotación.</p>'
+      : '';
   return `
     <details class="settings-perfil-sala" data-collapse-key="${PERFIL_SALA_COLLAPSE_KEY}"${open ? ' open' : ''}>
       <summary>
@@ -154,6 +164,7 @@ export function buildPerfilSalaHtml(ctx) {
       </summary>
       <div class="settings-perfil-chips" role="group" aria-label="Sala de guardia">${chips}</div>
       <input type="hidden" id="clinical-profile-sala" form="clinical-profile-form" value="${escapeAttr(ctx.sala)}">
+      ${hint}
       <p class="settings-acc-hint settings-acc-hint--tight">Al cambiar de sala se guarda tu perfil y pasas a la sala en Nube.</p>
     </details>`;
 }

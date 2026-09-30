@@ -8,9 +8,11 @@
  *   - the Worker does not list the user as a member of the new sala's room
  *   - the window needs scrolling at the default size
  *   - the Sala section cannot be collapsed, or forgets it after a reopen
+ *   - new rotation (sala unset): no hint, the section stays collapsed, or the tap
+ *     does not set the room code and start sync for the new room owner
  */
 import { createRun } from './harness.mjs';
-import { startWorker, stopWorker, d1Query, nubeDevices, onboardNube, roomMeta, until, BASE } from './nube-worker.mjs';
+import { startWorker, stopWorker, d1Query, nubeDevices, onboardNube, roomMeta, until, workerLog, BASE } from './nube-worker.mjs';
 
 const tag = Date.now().toString(36).slice(-6);
 const r = createRun('nube-sala-switch');
@@ -49,6 +51,27 @@ await r.finish('Nube sala switch from Mi perfil', async () => {
   await D.page.locator('#profile-modal [data-wb-close]').first().evaluate((b) => b.click());
   await openPerfil(D.page);
   check('the collapsed state is remembered', await until(() => section.evaluate((d) => !d.open).catch(() => false), 5000));
-  await D.app.close();
+
+  // New rotation: the profile saves with no sala (the form the rotation restart leaves behind).
+  await D.page.evaluate(() => {
+    document.getElementById('clinical-profile-sala').value = '';
+    document.getElementById('clinical-profile-form').requestSubmit();
+  });
+  const N = D;
+  const hint = N.page.locator('#profile-modal [data-perfil-sala-hint]');
+  check('sala unset: Mi perfil shows the pick hint', await until(() => hint.isVisible().catch(() => false), 10000), await N.page.locator('#profile-modal').innerText().catch(() => ''));
+  check('sala unset: the Sala section is open despite the saved collapse', await N.page.locator('#profile-modal details.settings-perfil-sala').evaluate((d) => d.open));
+  check('sala unset: the summary says Sin sala', /Sin sala/.test(await N.page.locator('#profile-modal .settings-perfil-sala-current').innerText()));
+  const mark = workerLog.length;
+  await N.page.locator('#profile-modal [data-perfil-sala="Sala E"]').evaluate((b) => b.click());
+  const joined = await until(async () => (await roomMeta(N.page))?.sala === 'Sala E', 20000);
+  const fresh = await roomMeta(N.page);
+  check('the tap joins the Sala E room with its code set', joined && !!fresh?.code, fresh);
+  const n = JSON.parse(d1Query(`SELECT COUNT(*) AS n FROM room_members WHERE room_id='${fresh?.id}' AND user_id=(SELECT id FROM users WHERE username='${username}')`))[0]?.results?.[0]?.n;
+  check('the Worker lists the user in the Sala E room', n === 1, n);
+  check('sync starts at once for the new room', await until(async () => workerLog.slice(mark).some((l) => l.includes(fresh?.id)), 20000), workerLog.slice(mark, mark + 8));
+  check('the hint is gone after the pick', await until(() => hint.isVisible().then((v) => !v).catch(() => true), 10000));
+  await r.shot(N.page, 'new-rotation-picked');
+  await N.app.close();
   await stopWorker();
 });

@@ -444,6 +444,9 @@
   "nube-sala-switch": {
     "sala-2-selected": {
       "color-contrast": 9
+    },
+    "new-rotation-picked": {
+      "color-contrast": 9
     }
   },
   "nube-sync": {
