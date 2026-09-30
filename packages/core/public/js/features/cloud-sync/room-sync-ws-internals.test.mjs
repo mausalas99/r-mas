@@ -2,6 +2,7 @@ import { describe, it, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createRoomWsController,
+  HEARTBEAT_INTERVAL_MS,
   HEARTBEAT_TIMEOUT_MS,
   RECONNECT_MIN_MS,
 } from './room-sync-ws-internals.mjs';
@@ -51,7 +52,7 @@ describe('room WS: a replaced socket cannot touch the current one', () => {
     const { ctl, seen } = controller();
     ctl.start();
     sockets[0].onopen();
-    ctl.resume();
+    ctl.resume({ force: true });
     assert.equal(sockets.length, 2);
     sockets[1].onopen();
     sockets[0].onclose({ code: 1000 });
@@ -68,7 +69,7 @@ describe('room WS: a replaced socket cannot touch the current one', () => {
     const { ctl, seen } = controller();
     ctl.start();
     sockets[0].onopen();
-    ctl.resume();
+    ctl.resume({ force: true });
     sockets[1].onopen();
     sockets[0].onmessage({ data: opsMsg(2) });
     sockets[1].onmessage({ data: opsMsg(2) });
@@ -119,6 +120,58 @@ describe('room WS: a replaced socket cannot touch the current one', () => {
     assert.equal(sockets.length, 1);
     ctl.resume();
     assert.equal(sockets.length, 2);
+    ctl.stop();
+  });
+
+  // Ways the faster reconnect can go wrong:
+  // 1. a dead socket still takes up to 60 s to notice (20 s / 45 s);
+  // 2. focus (fires often on desktop) churns a healthy socket;
+  // 3. focus or online waits out a long reconnect backoff (up to 30 s);
+  // 4. online keeps a socket that looks open but died with the network.
+  it('heartbeat is 10 s / 25 s: a silent dead socket is dropped within 35 s', () => {
+    assert.equal(HEARTBEAT_INTERVAL_MS, 10_000);
+    assert.equal(HEARTBEAT_TIMEOUT_MS, 25_000);
+    const { ctl } = controller();
+    ctl.start();
+    sockets[0].onopen();
+    mock.timers.tick(35_000);
+    assert.ok(sockets[0].closed);
+    ctl.stop();
+  });
+
+  it('resume on a live socket keeps it', () => {
+    const { ctl } = controller();
+    ctl.start();
+    sockets[0].onopen();
+    mock.timers.tick(5_000);
+    sockets[0].onmessage({ data: JSON.stringify({ type: 'pong' }) });
+    ctl.resume();
+    assert.equal(sockets.length, 1);
+    assert.ok(!sockets[0].closed);
+    ctl.stop();
+  });
+
+  it('resume during a reconnect backoff connects at once', () => {
+    const { ctl } = controller();
+    ctl.start();
+    for (let i = 0; i < 6; i += 1) {
+      sockets[sockets.length - 1].onclose({ code: 1006 });
+      mock.timers.tick(30_000);
+    }
+    sockets[sockets.length - 1].onclose({ code: 1006 });
+    const before = sockets.length;
+    ctl.resume();
+    assert.equal(sockets.length, before + 1);
+    ctl.stop();
+  });
+
+  it('resume({ force: true }) replaces a socket that still looks live', () => {
+    const { ctl } = controller();
+    ctl.start();
+    sockets[0].onopen();
+    ctl.resume({ force: true });
+    assert.equal(sockets.length, 2);
+    assert.ok(sockets[0].closed);
     ctl.stop();
   });
 });

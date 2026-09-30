@@ -183,7 +183,10 @@ function createSyncCycleController(ctx) {
 function attachSyncRuntimeListeners(ctx, opts = {}) {
   const { syncCycle, scheduler, pace, outboxSync, roomWs, getCurrentStatus } = ctx;
 
-  function onOnline() { void syncCycle(); }
+  function onOnline() {
+    roomWs?.resume?.({ force: true });
+    void syncCycle();
+  }
   function onVisibility() {
     if (document.visibilityState === 'visible') {
       roomWs?.resume?.();
@@ -193,7 +196,10 @@ function attachSyncRuntimeListeners(ctx, opts = {}) {
     }
   }
   /** Electron often keeps visibility=visible while unfocused — still pull on focus. */
-  function onWindowFocus() { void syncCycle(); }
+  function onWindowFocus() {
+    roomWs?.resume?.();
+    void syncCycle();
+  }
 
   function noteLocalMutation() {
     pace.markLocalWrite();
