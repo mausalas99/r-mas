@@ -14,15 +14,17 @@
   function apply(ver) {
     var dl = ver && BASE + '/download/v' + ver + '/R%2B-' + ver + '-';
     var T = {
-      mac: { title: 'Descargar para macOS', sub: 'Apple Silicon · .dmg · ' + ver, href: dl + 'Mac-Apple-Silicon.dmg', alt: '¿Mac con Intel?', altHref: dl + 'Mac-Intel.dmg' },
-      win: { title: 'Descargar para Windows', sub: '64 bits · .exe · ' + ver, href: dl + 'Windows.exe', alt: '¿Usas Mac?', altHref: dl + 'Mac-Apple-Silicon.dmg' },
+      mac: { title: 'Descargar para macOS', sub: 'Apple Silicon · .dmg · ' + ver, href: dl + 'Mac-Apple-Silicon.dmg', alt: '¿Mac con Intel?', altHref: dl + 'Mac-Intel.dmg', two: 'Descargar para Windows', twoHref: dl + 'Windows.exe' },
+      win: { title: 'Descargar para Windows', sub: '64 bits · .exe · ' + ver, href: dl + 'Windows.exe', two: 'Descargar para macOS', twoHref: dl + 'Mac-Apple-Silicon.dmg' },
       other: { title: 'Ver descargas', sub: 'Disponible para macOS y Windows', href: BASE + '/latest' },
       mobile: { title: 'Ver descargas', sub: 'App de escritorio. Descárgala en tu Mac o PC.', href: BASE + '/latest' }
     };
+    T.other = ver ? T.mac : T.other; // desktop Linux etc.: offer both installers
     var d = ver ? T[os] : (os === 'mobile' ? T.mobile : T.other);
     each('[data-dl]', function (a) { a.href = d.href; });
     each('[data-dl-title] span', function (s) { s.textContent = d.title; });
     each('[data-dl-sub]', function (s) { s.textContent = d.sub; });
+    each('[data-dl2]', function (a) { a.hidden = !d.two; if (d.two) { a.href = d.twoHref; a.lastElementChild.textContent = d.two; } });
     each('[data-dl-alt]', function (a) { a.hidden = !d.alt; if (d.alt) { a.textContent = d.alt; a.href = d.altHref; } });
     if (ver) {
       each('[data-notes]', function (a) { a.href = BASE + '/tag/v' + ver; });
