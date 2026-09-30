@@ -5,7 +5,9 @@ import { noteCloudLabSidecarOpsSent } from './cloud-lab-sidecar-index.mjs';
 import { noteCloudMedRecetaOpsSent } from './cloud-med-receta-index.mjs';
 import {
   cloudDrainPacer,
+  CLOUD_CWND_MAX_OPS,
   CLOUD_DRAIN_MAX_CONGESTION_EVENTS,
+  cloudOpLimitFromError,
   isCloudBackoffError,
 } from './cloud-sync-timing.mjs';
 import { recordCloudSyncError } from './cloud-sync-diagnostics.mjs';
@@ -28,9 +30,10 @@ export const MAX_LAB_OPS_PER_CHUNK = 6;
 
 /**
  * Worker `QUOTAS.maxOpsPerMutation` — must stay ≤ that or push returns
- * «Demasiadas operaciones en un push».
+ * «Demasiadas operaciones en un push» (the drain then falls back to the
+ * Worker's limit, see cloudOpLimitFromError).
  */
-export const MAX_OPS_PER_CHUNK = 16;
+export const MAX_OPS_PER_CHUNK = CLOUD_CWND_MAX_OPS;
 
 /** @param {unknown} op */
 function isLabSidecarOp(op) {
@@ -122,10 +125,16 @@ export async function drainCloudOps({
     const chunk = chunkCloudOps(remaining, pacer.chunkOps())[0] || [];
     if (!chunk.length) break;
     attempt += 1;
+    const startedAt = Date.now();
     let result;
     try {
       result = await sendChunk(chunk, attempt);
     } catch (err) {
+      const opLimit = cloudOpLimitFromError(err);
+      if (opLimit && chunk.length > opLimit) {
+        pacer.capOps(opLimit);
+        continue;
+      }
       if (isCloudBackoffError(err) && congestionEvents < CLOUD_DRAIN_MAX_CONGESTION_EVENTS) {
         congestionEvents += 1;
         pacer.onCongested(err);
@@ -140,7 +149,10 @@ export async function drainCloudOps({
     if (onChunkAcked) await onChunkAcked(chunk, result);
     onProgress?.(sent, total);
     lastResult = result;
-    if (remaining.length) await delay(pacer.gapMs());
+    if (remaining.length) {
+      const gap = pacer.gapMs(Date.now() - startedAt);
+      if (gap > 0) await delay(gap);
+    }
   }
   return lastResult;
 }

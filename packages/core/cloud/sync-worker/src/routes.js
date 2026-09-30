@@ -20,7 +20,7 @@ export function normalizePath(pathname) {
  * @param {{ DB?: import('@cloudflare/workers-types').D1Database }} env
  * @returns {Promise<Response | null>}
  */
-export async function handleApiRoute(request, env) {
+export async function handleApiRoute(request, env, ctx) {
   const url = new URL(request.url);
   const path = normalizePath(url.pathname);
 
@@ -61,7 +61,7 @@ export async function handleApiRoute(request, env) {
         assertNubeAppVersion(request.headers.get('X-App-Version'));
       }
       const roomsSub = subpath === '/rooms' ? '/' : subpath.slice('/rooms'.length) || '/';
-      return await handleRooms(request, env, roomsSub);
+      return await handleRooms(request, env, roomsSub, ctx);
     }
 
     if (subpath === '/pase-labs') {

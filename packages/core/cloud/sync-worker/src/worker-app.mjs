@@ -8,7 +8,7 @@ import { salaFromSlug } from './interno/sala-slug.js';
 import { API_PREFIX, handleApiRoute, normalizePath } from './routes.js';
 
 /** @param {Request} request @param {import('@cloudflare/workers-types').ExecutionContext} env */
-export async function handleSyncWorkerRequest(request, env) {
+export async function handleSyncWorkerRequest(request, env, ctx) {
   const preflight = corsPreflight(request);
   if (preflight) return applyCors(request, preflight);
 
@@ -29,7 +29,7 @@ export async function handleSyncWorkerRequest(request, env) {
     return applyCors(request, meta);
   }
 
-  const apiResponse = await handleApiRoute(request, env);
+  const apiResponse = await handleApiRoute(request, env, ctx);
   if (apiResponse) return applyCors(request, apiResponse);
 
   if (env.ASSETS) {
@@ -72,9 +72,9 @@ export async function handleSyncWorkerRequest(request, env) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     try {
-      return await handleSyncWorkerRequest(request, env);
+      return await handleSyncWorkerRequest(request, env, ctx);
     } catch (err) {
       const message = err && err.message ? String(err.message) : 'error';
       console.error('rplus-sync unhandled', message);
