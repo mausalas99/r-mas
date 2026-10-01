@@ -2422,6 +2422,13 @@ html.dark .tend-gaso-tip {
 .fh-close { border: 0; background: none; color: var(--text-muted); font-size: 18px; line-height: 1; cursor: pointer; padding: 0 2px; }
 .fh-bubble-text { margin: 6px 0 0; }
 .fh-bubble-foot { display: flex; justify-content: flex-end; margin-top: 8px; }
+.fh-choice-backdrop { position: fixed; inset: 0; z-index: var(--z-modal, 1000); display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, 0.45); }
+.fh-choice { width: min(420px, 100%); padding: 20px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-md); font-size: 14px; line-height: 1.5; }
+.fh-choice h2 { margin: 0 0 8px; font-size: 17px; }
+.fh-choice p { margin: 0 0 8px; }
+.fh-choice-path { padding: 8px 10px; background: var(--surface-2, var(--bg)); border-radius: 8px; }
+.fh-choice-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.fh-where { background: color-mix(in srgb, var(--action) 16%, transparent); border-radius: 10px; box-shadow: 0 0 0 6px color-mix(in srgb, var(--action) 16%, transparent); }
 .fh-target { outline: 2px solid var(--action) !important; outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .fh-dot { animation: none; } }
 .tend-group-hidden-label { font-weight: 600; color: var(--text); }

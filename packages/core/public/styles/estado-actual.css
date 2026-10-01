@@ -1958,7 +1958,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   height: 64px;
 }
 
-.ea-charts-row-plot svg {
+.ea-charts-row-plot svg,
+.ea-charts-bal-cum svg {
   position: absolute;
   inset: 0;
   width: 100%;

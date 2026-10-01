@@ -105,6 +105,8 @@ export function createRun(name, { hints: runHints = false } = {}) {
       // The full-record side panel opens by itself for a patient with no vitals; specs keep it closed.
       globalThis.localStorage.setItem('rpc-registro-autoopen', 'off');
       if (hintIds) globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(hintIds));
+      // The 8.4.5 choice modal asks once; specs answer it up front (hints on only when a spec wants them).
+      globalThis.localStorage.setItem('rpc-feature-hints-enabled', hintIds ? '0' : '1');
       return !!globalThis.document.body.dataset.salaView;
     }, hints ? null : FEATURE_HINTS.map((h) => h.id));
     if (salaCards) await page.reload();

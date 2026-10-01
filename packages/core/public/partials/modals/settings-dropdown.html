@@ -73,6 +73,17 @@
               </div>
             </div>
           </div>
+          <div class="settings-card-stack">
+            <div class="settings-card settings-card--toggle" id="settings-feature-hints-card">
+              <div class="settings-card__copy">
+                <p class="settings-card__title" id="settings-feature-hints-title">Pistas en pantalla</p>
+                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Globos junto a los botones que enseñan R+ y cuentan las novedades.</p>
+              </div>
+              <label class="settings-card__action settings-card__toggle-label" for="settings-feature-hints">
+                <input type="checkbox" class="settings-card__toggle" id="settings-feature-hints" aria-labelledby="settings-feature-hints-title" data-onchange="setFeatureHintsEnabledFromSettings" data-onchange-pass="checked">
+              </label>
+            </div>
+          </div>
           <p class="settings-form-foot overview-hint settings-acc-hint" data-i18n="settings.appearanceFoot">⌘G/I/S cambian modo Guardia/Inter/Sala. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.</p>
         </div>
       </details>

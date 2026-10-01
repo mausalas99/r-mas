@@ -42,6 +42,8 @@ function ensureScopeContext() {
 // copy of what it seeded and re-injects it — see ensureInterconsultaDemoInScope().
 let demoTeamsSeeded = null;
 let demoAssignmentsSeeded = null;
+/** Every demo patient id, so an unassigned one (no row left in demoAssignmentsSeeded) still loses its old scope row. */
+let demoPatientIdsAll = null;
 
 /** Merges 12 demo patients + 4 demo teams into the real app. Returns the seeded count. */
 export function seedInterconsultaDemoOnMainApp(now) {
@@ -53,6 +55,7 @@ export function seedInterconsultaDemoOnMainApp(now) {
 
   demoTeamsSeeded = teams;
   demoAssignmentsSeeded = assignments;
+  demoPatientIdsAll = new Set(demoPatients.map((p) => p.id));
   setPatients(getPatients().concat(demoPatients));
   setInterconsultaDemoActive(true);
   ensureInterconsultaDemoInScope();
@@ -91,7 +94,7 @@ export function ensureInterconsultaDemoInScope() {
   if (!clinicalSessionContext.teams.some((t) => isInterconsultaDemoTeamId(t && t.team_id))) {
     clinicalSessionContext.teams = clinicalSessionContext.teams.concat(demoTeamsSeeded);
   }
-  const demoPatientIds = new Set(demoAssignmentsSeeded.map((a) => a.patient_id));
+  const demoPatientIds = demoPatientIdsAll || new Set(demoAssignmentsSeeded.map((a) => a.patient_id));
   scope.assignments = scope.assignments
     .filter((a) => !demoPatientIds.has(a && a.patient_id))
     .concat(demoAssignmentsSeeded);
@@ -111,6 +114,7 @@ export function clearInterconsultaDemoFromMainApp() {
   setInterconsultaDemoActive(false);
   demoTeamsSeeded = null;
   demoAssignmentsSeeded = null;
+  demoPatientIdsAll = null;
 }
 
 export function toggleInterconsultaDemo() {

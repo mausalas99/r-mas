@@ -465,6 +465,28 @@ describe('clinical-access-db', () => {
     assert.ok(member);
   });
 
+  it('R2 covers 2 teams of one sala with own letter; third is refused; R1 leads a team', () => {
+    const r2 = ensureClinicalUser(db, { clientId: 'r2-two', rank: 'R2', sala: 'Sala 1' });
+    const r1 = ensureClinicalUser(db, { clientId: 'r1-lead', rank: 'R1', sala: 'Sala 1' });
+    const mk = (name, createdBy) => {
+      const t = createTeam(db, { name, service: 'Sala', onCallDayIndex: 0, sala: 'Sala 1', createdBy });
+      db.prepare(`UPDATE teams SET rotation_active = 1 WHERE team_id = ?`).run(t.team_id);
+      return t;
+    };
+    const t1 = mk('T1', r1.userId);
+    const t2 = mk('T2', r1.userId);
+    const t3 = mk('T3', r1.userId);
+    assert.equal(t1.leader_user_id, r1.userId);
+    addTeamMember(db, t1.team_id, r2.userId, { subAreaFraction: 'A' });
+    const second = addTeamMember(db, t2.team_id, r2.userId);
+    assert.equal(second.movedFrom, 0);
+    const letter = db
+      .prepare(`SELECT sub_area_fraction AS f FROM team_membership WHERE team_id = ? AND user_id = ?`)
+      .get(t2.team_id, r2.userId).f;
+    assert.equal(letter, 'A');
+    assert.throws(() => addTeamMember(db, t3.team_id, r2.userId), /máximo 2 equipos/);
+  });
+
   it('addTeamMember exclusive moves R2/R1 off the previous team', () => {
     const r2 = ensureClinicalUser(db, { clientId: 'r2-move', rank: 'R2', sala: 'Sala 2' });
     const r1 = ensureClinicalUser(db, { clientId: 'r1-move', rank: 'R1', sala: 'Sala 2' });

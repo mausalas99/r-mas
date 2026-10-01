@@ -62,6 +62,7 @@ export function buildSettingsHelpWindowHandlersLazy(ensureSettingsHelpLoaded) {
       openQuickHelp: 'openQuickHelp',
       closeQuickHelp: 'closeQuickHelp',
       resetFeatureHintsFromHelp: 'resetFeatureHintsFromHelp',
+      setFeatureHintsEnabledFromSettings: 'setFeatureHintsEnabledFromSettings',
       openShortcutsModal: 'openShortcutsModal',
       closeShortcutsModal: 'closeShortcutsModal',
       openShortcutsHelpCenter: 'openShortcutsHelpCenter',

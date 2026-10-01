@@ -135,7 +135,7 @@ export function isIncomingPreviewWindow(cycle, now) {
 }
 
 /**
- * R1 Sala: each member carries sub_area_fraction (A1–D2); R2/other ranks use team letter.
+ * Sala R1/R2: each member carries sub_area_fraction; other ranks use team letter.
  *
  * @param {object} member
  * @param {object} team
@@ -148,7 +148,7 @@ export function isMemberOnCallToday(member, team, rank, now) {
   if (!r) return false;
   const uid = String(member.user_id || '');
   const scoped =
-    isSalaWardService(team.service) && r === 'R1' && uid
+    isSalaWardService(team.service) && (r === 'R1' || r === 'R2') && uid
       ? teamForMemberCycle(team, uid)
       : team;
   return isOnCallToday(scoped, r, now);
@@ -162,6 +162,11 @@ export function isTeamRankOnCallToday(team, rank, now) {
     return (team.members || []).some(
       (m) => String(m.rank) === 'R1' && isMemberOnCallToday(m, team, 'R1', now)
     );
+  }
+  // Sala R2 carries own letter (one R2 can cover 2 teams); team letter is the legacy fallback.
+  if (isSalaWardService(team.service) && r === 'R2') {
+    const r2s = (team.members || []).filter((m) => String(m.rank) === 'R2');
+    if (r2s.length) return r2s.some((m) => isMemberOnCallToday(m, team, 'R2', now));
   }
   return isOnCallToday(team, r, now);
 }

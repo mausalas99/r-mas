@@ -115,6 +115,28 @@ const visible = (loc, timeout = 5000) => loc.waitFor({ state: 'visible', timeout
 await r.finish('Feature hints: open by themselves, flows in place, remembered', async () => {
   let { app, page, pageErrors } = await r.launch();
   await onboardLocalOnly(page);
+  // 8.4.5 choice modal: asks once, closes only on a pick, «Desactivar» shows where the switch lives.
+  await page.evaluate(() => globalThis.localStorage.removeItem('rpc-feature-hints-enabled'));
+  const choiceBtn = (w) => page.locator(`.fh-choice [data-fh-choice="${w}"]`);
+  check('no choice yet → the modal opens by itself', await visible(choiceBtn('on'), 8000));
+  await shot(page, 'choice-modal');
+  await page.keyboard.press('Escape');
+  await page.mouse.click(5, 5);
+  check('Escape and a backdrop click do not close it', await visible(choiceBtn('off'), 1000));
+  check('no bubble while the modal is open', (await page.locator('.fh-bubble:not([hidden])').count()) === 0);
+  await choiceBtn('off').click();
+  check('«Desactivar» → step 2 names the path', /Ajustes → Apariencia → Pistas en pantalla/.test(await page.locator('.fh-choice').innerText()));
+  await shot(page, 'choice-step2');
+  await choiceBtn('where').click();
+  await page.waitForTimeout(500);
+  await shot(page, 'choice-where');
+  const sw = page.locator('#settings-feature-hints');
+  check('«Mostrarme dónde» opens the switch, off', (await visible(sw)) && !(await sw.isChecked()));
+  check('modal is gone and no hint shows while off', (await page.locator('.fh-choice').count()) === 0 && (await page.locator('.fh-bubble:not([hidden])').count()) === 0);
+  await sw.check();
+  await until(async () => (await page.evaluate(() => globalThis.localStorage.getItem('rpc-feature-hints-enabled'))) === '1', 3000, 100);
+  check('switch on → stored', (await page.evaluate(() => globalThis.localStorage.getItem('rpc-feature-hints-enabled'))) === '1');
+  await page.keyboard.press('Escape');
   // Fresh install: the first «Guía» hint opens by itself on the Laboratorio tab, no click needed.
   check('g-labs opens by itself on the Laboratorio tab', await visible(bubbleOf(page, 'g-labs'), 8000) &&
     (await page.locator('#apptab-lab.fh-target').count()) === 1);

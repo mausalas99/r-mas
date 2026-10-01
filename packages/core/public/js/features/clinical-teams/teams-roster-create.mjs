@@ -231,7 +231,7 @@ export function renderNewTeamCardHtml({ primary = true } = {}) {
   const createLabel = canManageTeamRoster(user) ? 'Crear equipo vacío' : 'Crear equipo';
   const lead = primary
     ? ['Equipo nuevo', 'Tú quedas como líder y se publica en tu sala.']
-    : ['¿No ves tu equipo?', 'Crea uno o usa el código que te envió tu R2.'];
+    : ['¿No ves tu equipo?', 'Crea uno o usa el código que te envió el líder de tu equipo.'];
   return `
     <article class="clinical-teams-card clinical-teams-card--new">
       <div class="clinical-teams-card-top-text">
@@ -249,7 +249,7 @@ export function renderNewTeamCardHtml({ primary = true } = {}) {
       </dialog>
       <dialog id="clinical-team-join-code-dialog" class="clinical-teams-dialog" aria-labelledby="clinical-team-join-code-title">
         <h4 id="clinical-team-join-code-title" class="clinical-teams-dialog-title">Unirte con código</h4>
-        <p class="clinical-teams-section-desc">Escribe el código de 8 caracteres que te envió tu R2.</p>
+        <p class="clinical-teams-section-desc">Escribe el código de 8 caracteres que te envió el líder de tu equipo.</p>
         ${renderJoinWithCodeFormHtml()}
       </dialog>
     </article>`;

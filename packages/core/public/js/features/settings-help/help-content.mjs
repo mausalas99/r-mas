@@ -295,6 +295,13 @@ export function closeQuickHelp() {
   el.setAttribute('aria-hidden', 'true');
 }
 
+export function setFeatureHintsEnabledFromSettings(on) {
+  void import('../../feature-hints.mjs').then(function (mod) {
+    mod.setFeatureHintsEnabled(on);
+    getSettingsHelpRuntime().showToast(on ? 'Pistas activadas.' : 'Pistas desactivadas.', 'success');
+  });
+}
+
 export function resetFeatureHintsFromHelp() {
   void import('../../feature-hints.mjs').then(function (mod) {
     mod.resetFeatureHints();

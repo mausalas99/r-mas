@@ -2,12 +2,13 @@
  * «Guía» / «Nuevo» hints: a short flow of bubbles next to the real controls.
  * The first unfinished hint whose first target is on screen opens by itself.
  * Action steps wait for the user's own click; a click on any step target
- * moves on. No overlay, no modal. × or the last step ends a flow for good.
+ * moves on. No overlay on the hints themselves. × or the last step ends a flow for good.
+ * Hints are opt-out: Ajustes → Apariencia, and a one-time choice modal (8.4.5).
  * This replaces the Learn Hub popping open on a fresh install.
  */
 import { isGuidedTourRunning } from './tour-guards.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
-import { FEATURE_HINTS_DONE_LS_KEY } from './clinical-settings.mjs';
+import { FEATURE_HINTS_DONE_LS_KEY, readFeatureHintsEnabled, writeFeatureHintsEnabled } from './clinical-settings.mjs';
 
 /**
  * Step: sel = CSS target, text = bubble HTML, action = wait for a click on the target.
@@ -358,6 +359,9 @@ function placeBubble() {
  */
 function openNext() {
   if (flow || tourBusy()) return;
+  const enabled = readFeatureHintsEnabled();
+  if (enabled === null) { openChoice(); return; }
+  if (!enabled) return;
   const done = readDone();
   for (const hint of activeHints()) {
     if (done.indexOf(hint.id) >= 0) continue;
@@ -425,7 +429,7 @@ function startFlow(hint, startAt) {
   showStep();
 }
 
-/** done=false: the user moved away mid-flow, so the hint comes back later at this step. */
+/** done=false: the app stepped aside (tour, boot screen), so the hint comes back at this step. */
 function endFlow(done) {
   if (!flow) return;
   if (done) markDone(flow.hint.id);
@@ -436,6 +440,7 @@ function endFlow(done) {
 }
 
 function tick() {
+  if (flow && readFeatureHintsEnabled() !== true) endFlow(false); // switched off in Ajustes
   // Busy (tour, boot screen): step aside now; the flow comes back at this step.
   if (flow && tourBusy()) {
     endFlow(false);
@@ -450,7 +455,7 @@ function tick() {
     } else if (!flow.lostAt) {
       flow.lostAt = Date.now();
     } else if (Date.now() - flow.lostAt > LOST_GRACE_MS) {
-      endFlow(false);
+      endFlow(true); // the user walked away: do not chase them
       return;
     }
     placeBubble();
@@ -458,9 +463,90 @@ function tick() {
   openNext();
 }
 
+let choice = null;
+
+function closeChoice() {
+  if (choice) choice.remove();
+  choice = null;
+}
+
+/** Opens Ajustes on the hints switch and rings it, so a user who said no can find it again. */
+function showWhereInSettings() {
+  void import('./features/settings-help/settings-dropdown.mjs').then(function (mod) {
+    mod.ensureSettingsDropdownOpen();
+    mod.showSettingsPanel('settings-accordion-appearance');
+    // The panel resets its scroll while it opens: scroll and ring after that.
+    setTimeout(function () {
+      const card = document.getElementById('settings-feature-hints-card');
+      if (!card) return;
+      card.scrollIntoView({ block: 'center' });
+      card.classList.add('fh-where');
+      setTimeout(function () { card.classList.remove('fh-where'); }, 8000);
+    }, 400);
+  });
+}
+
+function choiceStep2() {
+  choice.querySelector('.fh-choice').innerHTML =
+    '<h2 id="fh-choice-title">Pistas desactivadas</h2>' +
+    '<p>Puedes activarlas otra vez cuando quieras en:</p>' +
+    '<p class="fh-choice-path"><strong>Ajustes → Apariencia → Pistas en pantalla</strong></p>' +
+    '<div class="fh-choice-actions">' +
+    '<button type="button" class="wb-btn wb-btn-secondary" data-fh-choice="where">Mostrarme dónde</button>' +
+    '<button type="button" class="wb-btn wb-btn-primary" data-fh-choice="ok">Entendido</button></div>';
+  choice.querySelector('[data-fh-choice="ok"]').focus();
+}
+
+/** One-time modal: no × , no Escape, no backdrop click. Closes only when the user picks. */
+function openChoice() {
+  if (choice) return;
+  choice = document.createElement('div');
+  choice.className = 'fh-choice-backdrop';
+  choice.innerHTML =
+    '<div class="fh-choice" role="dialog" aria-modal="true" aria-labelledby="fh-choice-title">' +
+    '<h2 id="fh-choice-title">Nuevo: pistas en pantalla</h2>' +
+    '<p>R+ puede mostrar pistas junto a los botones, para enseñarte a usar cada área y contarte las novedades.</p>' +
+    '<p>Cada pista se cierra con la <strong>×</strong>. Elige si quieres verlas.</p>' +
+    '<div class="fh-choice-actions">' +
+    '<button type="button" class="wb-btn wb-btn-secondary" data-fh-choice="off">Desactivar pistas</button>' +
+    '<button type="button" class="wb-btn wb-btn-primary" data-fh-choice="on">Activar pistas</button></div></div>';
+  choice.addEventListener('click', function (e) {
+    const b = e.target.closest('[data-fh-choice]');
+    if (!b) return;
+    const what = b.dataset.fhChoice;
+    if (what === 'on') { writeFeatureHintsEnabled(true); closeChoice(); syncHintsSwitch(); }
+    else if (what === 'off') { writeFeatureHintsEnabled(false); syncHintsSwitch(); choiceStep2(); }
+    else { closeChoice(); if (what === 'where') showWhereInSettings(); }
+  });
+  choice.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); return; }
+    if (e.key !== 'Tab') return;
+    const btns = choice.querySelectorAll('button');
+    const first = btns[0]; const last = btns[btns.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+  document.body.appendChild(choice);
+  choice.querySelector('[data-fh-choice="on"]').focus();
+}
+
+function syncHintsSwitch() {
+  const cb = document.getElementById('settings-feature-hints');
+  if (cb) cb.checked = readFeatureHintsEnabled() === true;
+}
+
+/** Ajustes switch. */
+export function setFeatureHintsEnabled(on) {
+  writeFeatureHintsEnabled(!!on);
+  if (!on) endFlow(false);
+  syncHintsSwitch();
+}
+
 /** Help center «Ver pistas de nuevo»: clear the done list, every hint shows again. */
 export function resetFeatureHints() {
   try { localStorage.removeItem(FEATURE_HINTS_DONE_LS_KEY); } catch { /* private storage */ }
+  writeFeatureHintsEnabled(true);
+  syncHintsSwitch();
   endFlow(false);
   paused.clear();
 }

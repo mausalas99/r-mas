@@ -11,6 +11,23 @@ import { readMigratedClientId } from './live-sync-room.mjs';
 /** Done list of the in-app hint dots. Lives here, not in lazy feature-hints.mjs, to keep that module off the boot bundle. */
 export const FEATURE_HINTS_DONE_LS_KEY = 'rpc-feature-hints-done';
 
+/** Hints on/off: '1' on, '0' off, absent = the user has not chosen yet (8.4.5 asks once). */
+export const FEATURE_HINTS_ENABLED_LS_KEY = 'rpc-feature-hints-enabled';
+
+/** @returns {boolean|null} null = not chosen yet */
+export function readFeatureHintsEnabled() {
+  try {
+    const v = localStorage.getItem(FEATURE_HINTS_ENABLED_LS_KEY);
+    return v === '1' ? true : v === '0' ? false : null;
+  } catch {
+    return false; // private storage: never nag
+  }
+}
+
+export function writeFeatureHintsEnabled(on) {
+  try { localStorage.setItem(FEATURE_HINTS_ENABLED_LS_KEY, on ? '1' : '0'); } catch { /* private storage */ }
+}
+
 /** Bump when every device must re-confirm LAN profile (admin directory / team assign). */
 export const CLINICAL_LAN_PROFILE_GATE_VERSION = '7.9.0';
 

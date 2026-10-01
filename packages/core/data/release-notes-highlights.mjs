@@ -4,31 +4,27 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_845 = [
+var RELEASE_NOTES_846 = [
   {
-    title: 'Notas e indicaciones con Nube',
-    body: 'La nota de evolución, el interrogatorio y las indicaciones ahora se sincronizan entre tus equipos. Gana la edición más reciente. Un texto muy largo se queda en este equipo y Conexión muestra «Pendiente».',
+    title: 'Un R2 puede cubrir 2 equipos',
+    body: 'En Sala, un R2 ahora puede estar en hasta 2 equipos a la vez. Cada R2 lleva su propia letra de guardia. Un tercer equipo se rechaza con un aviso claro.',
   },
   {
-    title: 'Salir de una sala o equipo ya funciona',
-    body: 'Al salir de una sala, R+ ya no te vuelve a meter solo al abrir la app. Al salir de un equipo, una copia vieja de la sala ya no deshace el cambio ni te saca de tu equipo nuevo. Un paciente sin equipo («Sin asignar») ahora se quita del equipo en todos los dispositivos.',
+    title: 'Pistas en pantalla, a tu gusto',
+    body: 'En Ajustes hay un interruptor nuevo, «Pistas en pantalla». Enciende o apaga los globos que enseñan R+ y cuentan las novedades.',
   },
   {
-    title: 'Estado actual más fiel',
-    body: 'El DIA de la Solución Stanford avanza por fecha, igual que en Egreso. Las sugerencias ventilatorias se actualizan al cambiar FiO₂, PEEP, P meseta o VT, y ya no aparecen campos ocultos en Alto flujo.',
+    title: 'Textos de equipo más claros',
+    body: 'Al unirte a un equipo, R+ te dice que pidas el código al «líder de tu equipo», no solo al R2.',
   },
   {
-    title: 'Equipos en Mi perfil y tablero IC',
-    body: 'La configuración de equipos ahora vive en Mi perfil. El tablero de interconsultas tiene avisos guiados mejor colocados, mejor contraste y una bandeja que no se colapsa.',
-  },
-  {
-    title: 'Tendencias y limpieza',
-    body: 'Los gasométricos con coma decimal o con «<» ya muestran su tarjeta. El potasio oral ya no cuenta como reposición. R+ borra al iniciar claves viejas que llenaban el almacenamiento.',
+    title: 'Arreglos pequeños',
+    body: 'Los avisos vuelven arriba a la derecha. La gráfica de balance acumulado cabe en su espacio. Apagar el demo de interconsultas limpia sus asignaciones.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_845;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_846;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.4.5': RELEASE_NOTES_845,
+  '8.4.6': RELEASE_NOTES_846,
 };

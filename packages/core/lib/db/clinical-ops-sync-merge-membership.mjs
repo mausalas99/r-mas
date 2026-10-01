@@ -109,6 +109,8 @@ export function reconcileExclusiveMembershipFromIncoming(db, incomingMembershipR
   let removed = 0;
   for (const [uid, teamIds] of incomingByUser) {
     if (!teamIds.size) continue;
+    // An R2 covers 2 teams: a partial incoming set is not a move.
+    if (db.prepare(`SELECT 1 FROM users WHERE user_id = ? AND rank = 'R2'`).get(uid)) continue;
     removed += removeNonCanonicalMemberships(db, uid, teamIds);
   }
   return removed;

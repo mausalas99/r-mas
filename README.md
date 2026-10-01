@@ -51,9 +51,17 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.4.5](https://github.com/mausalas99/r-mas/releases/tag/v8.4.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.4.6](https://github.com/mausalas99/r-mas/releases/tag/v8.4.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.4.6 (estable — release 8.4.6)
+
+- **Nuevo (Equipos):** un R2 cubre hasta 2 equipos de Sala, cada uno con su letra de guardia.
+- **Nuevo (Ajustes):** interruptor «Pistas en pantalla» para activar o apagar los globos de ayuda.
+- **Arreglado:** demo de interconsultas, gráfica de balance y lugar de los avisos.
+
+Notas: `docs/RELEASE_NOTES_8.4.6.txt`.
 
 ## R+ 8.4.5 (estable — release 8.4.5)
 

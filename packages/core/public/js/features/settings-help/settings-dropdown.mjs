@@ -1,5 +1,5 @@
 /** Settings gear panel: centered modal (como ⇄ / Mi rotación). */
-import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
+import { isClinicalLocalOnlyMode, readRpcSettings, readFeatureHintsEnabled } from '../../clinical-settings.mjs';
 import { isMobileWeb } from '../../mobile-web.mjs';
 import { closeModalAnimated } from '../../ui-motion.mjs';
 import { closeConnectionDropdown, openConnectionDropdown } from '../cloud-sync/panel-chrome.mjs';
@@ -106,6 +106,8 @@ export function showSettingsPanel(panelId) {
     document.dispatchEvent(new CustomEvent('rpc-settings-updates-panel-shown'));
   }
   syncSettingsStatusCards();
+  var hintsCb = document.getElementById('settings-feature-hints');
+  if (hintsCb) hintsCb.checked = readFeatureHintsEnabled() === true;
 }
 
 function demoteDetailsToPanel(det) {

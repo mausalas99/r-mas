@@ -68,7 +68,7 @@ function buildDirectoryEmptyMessage(elevated, browseSala, homeSala) {
   if (elevated) {
     return `No hay otros equipos en ${label}. Los tuyos aparecen arriba.`;
   }
-  return `No hay otros equipos disponibles en ${label}. Pide código a tu R2 o espera asignación en Nube.`;
+  return `No hay otros equipos disponibles en ${label}. Pide código al líder de tu equipo o espera asignación en Nube.`;
 }
 
 /** @param {boolean} elevated @param {string} browseSala @param {number} count */
@@ -91,7 +91,7 @@ function buildDirectorySectionDesc(elevated, count, mine = 0) {
     return 'Equipos publicados en Nube — asigna residentes o únete si corresponde.';
   }
   if (mine > 0) return 'Por si cambias de equipo.';
-  return 'Tu R2 o R4 ya publicó estos equipos. Elige el tuyo y pulsa <strong>Unirme</strong>.';
+  return 'Tu líder de equipo o R4 ya publicó estos equipos. Elige el tuyo y pulsa <strong>Unirme</strong>.';
 }
 
 /** @param {boolean} elevated @param {string} browseSala */

@@ -71,6 +71,22 @@ export function migrateTeamMemberships(db, { fromUserId, toUserId }) {
   return { moved };
 }
 
+const MAX_R2_TEAMS = 2;
+
+function userRank(db, userId) {
+  return String(db.prepare(`SELECT rank FROM users WHERE user_id = ?`).get(userId)?.rank || '');
+}
+
+/** Active-rotation teams the user already belongs to, excluding `exceptTeamId`. */
+function r2ActiveTeamCount(db, userId, exceptTeamId) {
+  return db
+    .prepare(
+      `SELECT COUNT(*) AS n FROM team_membership tm JOIN teams t ON t.team_id = tm.team_id
+       WHERE tm.user_id = ? AND tm.team_id != ? AND t.rotation_active = 1 AND t.archived_at IS NULL`
+    )
+    .get(userId, exceptTeamId).n;
+}
+
 export function validateSalaTeamMembership(db, { userId, teamId, teamSala: _teamSala }) {
   const errors = [];
 
@@ -79,8 +95,10 @@ export function validateSalaTeamMembership(db, { userId, teamId, teamSala: _team
     return errors;
   }
 
-  // No per-user / per-rank team caps — multiple R1/R2 (and any rank) may share a team.
-  void db;
+  // No per-rank caps on a team. One R2 covers up to 2 teams (see MAX_R2_TEAMS).
+  if (userRank(db, userId) === 'R2' && r2ActiveTeamCount(db, userId, teamId) >= MAX_R2_TEAMS) {
+    errors.push(`Un R2 cubre máximo ${MAX_R2_TEAMS} equipos.`);
+  }
   return errors;
 }
 
@@ -112,7 +130,14 @@ function resolveMemberSubAreaFraction(db, team, userId, opts) {
   const rank = String(member?.rank || '');
   let fraction = opts.subAreaFraction ? String(opts.subAreaFraction).trim() : '';
   if (!fraction && rank === 'R2') {
-    fraction = String(team.sub_area_fraction || '').trim();
+    const own = db
+      .prepare(
+        `SELECT sub_area_fraction AS f FROM team_membership
+         WHERE user_id = ? AND sub_area_fraction IS NOT NULL AND sub_area_fraction != ''
+         ORDER BY cycle_set_at DESC LIMIT 1`
+      )
+      .get(userId);
+    fraction = String(own?.f || team.sub_area_fraction || '').trim();
   }
   return { rank, fraction };
 }
@@ -136,6 +161,26 @@ function insertTeamMemberRow(db, teamId, userId, fraction) {
  *   doesn't also remove the user from this month's still-active team.
  * @returns {number} removed count
  */
+function moveOffOtherTeams(db, uid, team) {
+  const scoped = Number(team.rotation_active) === 0 ? { onlyRotationActive: 0 } : {};
+  return userRank(db, uid) === 'R2'
+    ? removeOtherSalaMemberships(db, uid, team.team_id, team.sala, scoped)
+    : removeOtherTeamMemberships(db, uid, team.team_id, scoped);
+}
+
+/** R2 covers 2 teams in one sala: a move only leaves teams of OTHER salas. */
+function removeOtherSalaMemberships(db, userId, keepTeamId, sala, opts) {
+  const rows = db
+    .prepare(
+      `SELECT tm.team_id FROM team_membership tm JOIN teams t ON t.team_id = tm.team_id
+       WHERE tm.user_id = ? AND tm.team_id != ? AND COALESCE(t.sala, '') != COALESCE(?, '')
+       ${opts.onlyRotationActive == null ? '' : 'AND t.rotation_active = ' + Number(opts.onlyRotationActive)}`
+    )
+    .all(userId, keepTeamId, sala ?? null);
+  for (const row of rows) removeTeamMember(db, String(row.team_id), userId);
+  return rows.length;
+}
+
 export function removeOtherTeamMemberships(db, userId, keepTeamId, opts = {}) {
   const uid = String(userId || '');
   const keep = String(keepTeamId || '');
@@ -174,14 +219,11 @@ export function addTeamMember(db, teamId, userId, opts = {}) {
     .get(tid);
   if (!team) throw new Error('Equipo no encontrado.');
 
-  // Default: one team per user — leave others so R2/R1 can be moved/reassigned.
+  // Default: one team per user — leave others so R1 can be moved/reassigned. R2 covers 2 teams, never auto-moved.
   // Staged (rotation_active=0) target: only bump other STAGED memberships —
   // never remove the user from this month's still-active team ahead of time.
   let movedFrom = 0;
-  if (opts.exclusive !== false) {
-    const scoped = Number(team.rotation_active) === 0 ? { onlyRotationActive: 0 } : {};
-    movedFrom = removeOtherTeamMemberships(db, uid, tid, scoped);
-  }
+  if (opts.exclusive !== false) movedFrom = moveOffOtherTeams(db, uid, team);
 
   const existing = db
     .prepare(`SELECT 1 AS ok FROM team_membership WHERE team_id = ? AND user_id = ?`)
@@ -202,7 +244,7 @@ export function addTeamMember(db, teamId, userId, opts = {}) {
 
   const { rank, fraction } = resolveMemberSubAreaFraction(db, team, uid, opts);
   insertTeamMemberRow(db, tid, uid, fraction);
-  if (rank === 'R2' && fraction) {
+  if (rank === 'R2' && fraction && !String(team.sub_area_fraction || '').trim()) {
     db.prepare(`UPDATE teams SET sub_area_fraction = ? WHERE team_id = ?`).run(fraction, tid);
   }
 

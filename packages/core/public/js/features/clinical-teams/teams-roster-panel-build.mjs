@@ -275,7 +275,7 @@ export function buildPickTeamsBannerHtml(opts) {
 
   // Plain case: the list's own description already says «pulsa Unirme».
   if (!rejoinPending) return '';
-  const lead = `Nueva rotación: tu R2 o R4 ya publicó <strong>${countLabel}</strong> en <strong>${salaLabel}</strong>. Elige el tuyo abajo — no hace falta crear uno nuevo.`;
+  const lead = `Nueva rotación: tu líder de equipo o R4 ya publicó <strong>${countLabel}</strong> en <strong>${salaLabel}</strong>. Elige el tuyo abajo — no hace falta crear uno nuevo.`;
   return `<div class="clinical-teams-pick-banner" role="status">${lead}</div>`;
 }
 

@@ -3,7 +3,7 @@ import { extractSalaLetter, salaLetterForTeamOrArea } from './patient-sala.mjs';
 import { getJoinedTeams } from './team-membership.mjs';
 import {
   getCycleConfig,
-  isOnCallToday,
+  isTeamRankOnCallToday,
   isMemberOnCallToday,
 } from './cycle-letters.mjs';
 import { userOnCallForInterconsultasTeam } from './interconsultas.mjs';
@@ -111,7 +111,7 @@ export function computeSalaAbcdefDeficitWrite(salaGuardiaToday, teams, userId, n
   if (!hasDeficitLetter) return false;
   return (teams || []).some((team) => {
     if (!normalizeServiceKey(team.service).includes('sala')) return false;
-    if (!isOnCallToday(team, 'R2', d)) return false;
+    if (!isTeamRankOnCallToday(team, 'R2', d)) return false;
     if (!(team.members || []).some((m) => String(m.user_id) === uid)) return false;
     return (salaGuardiaToday || []).some(
       (g) => String(g.team_id) === String(team.team_id) && String(g.user_id) === uid
@@ -169,9 +169,11 @@ export function userIsOnGuardiaCallToday(userId, rank, teams, now, salaGuardiaTo
   const r = String(rank || '');
   if (r === 'R2') {
     return (teams || []).some((team) => {
-      if (!isOnCallToday(team, 'R2', d)) return false;
       return (team.members || []).some(
-        (m) => m.rank === 'R2' && String(m.user_id || '') === uid
+        (m) =>
+          m.rank === 'R2' &&
+          String(m.user_id || '') === uid &&
+          isMemberOnCallToday(m, team, 'R2', d)
       );
     });
   }
@@ -222,10 +224,9 @@ export function userIsOnCallForLanHost(userId, rank, teams, now = new Date(), sa
  */
 export function salaOnCallR2(teams, now) {
   const d = now instanceof Date ? now : new Date(String(now));
-  const r2Teams = (teams || []).filter((t) => isOnCallToday(t, 'R2', d));
-  return r2Teams.flatMap((t) =>
+  return (teams || []).flatMap((t) =>
     (t.members || [])
-      .filter((m) => m.rank === 'R2')
+      .filter((m) => m.rank === 'R2' && isMemberOnCallToday(m, t, 'R2', d))
       .map((m) => ({ team_id: t.team_id, user_id: m.user_id }))
   );
 }
@@ -250,7 +251,7 @@ export function canR2SalaAbcdefDeficitWrite(userId, patient, joinedTeams, salaGu
   const uid = String(userId || '');
   return joinedTeams.some((team) => {
     if (!normalizeServiceKey(team.service).includes('sala')) return false;
-    if (!isOnCallToday(team, 'R2', now)) return false;
+    if (!isTeamRankOnCallToday(team, 'R2', now)) return false;
     const declared = (salaGuardiaToday || []).find(
       (g) => String(g.team_id) === String(team.team_id) && String(g.user_id) === uid
     );

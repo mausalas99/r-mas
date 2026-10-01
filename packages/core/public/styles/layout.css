@@ -1339,16 +1339,7 @@ html.rpc-topbar .topbar-l2 .exp-group-section:focus-visible {
   box-shadow: var(--focus-ring);
 }
 
-/* Toasts bottom-center (owner 2026-09-27): top-right sat over the page
- * toolbar buttons under the 48 px bar. */
-html.rpc-topbar .toast-stack {
-  top: auto;
-  bottom: 24px;
-  right: auto;
-  left: 50%;
-  transform: translateX(-50%);
-  align-items: center;
-}
+/* Toasts top-right (owner 2026-09-30): bottom-center covered the Manejo → Estado actual flow. */
 html.rpc-topbar .toast {
   transform: translateY(10px) scale(0.97);
 }

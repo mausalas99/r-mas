@@ -1,0 +1,27 @@
+R+ 8.4.6 (estable — release 8.4.6)
+======================================
+
+Fecha: 2026-10-01
+
+## Resumen
+
+Un R2 puede cubrir 2 equipos. Nuevo interruptor de pistas en Ajustes. Varios arreglos menores.
+
+## Nuevo / mejorado
+
+- **Nuevo (Equipos):** un R2 puede cubrir hasta 2 equipos de Sala. Cada R2 lleva su propia letra de guardia. Un tercer equipo se rechaza con aviso.
+- **Nuevo (Ajustes):** el interruptor «Pistas en pantalla» activa o apaga los globos que enseñan R+ y cuentan las novedades. Al activarlo, R+ te muestra dónde está cada pista.
+- **Cambio (Equipos):** los textos de unirse a un equipo dicen «líder de tu equipo» en vez de «R2».
+- **Arreglado (Interconsultas):** al apagar el demo, un paciente demo sin asignar pierde su asignación vieja.
+- **Arreglado (Estado actual):** la gráfica acumulada de balance ahora se ajusta a su espacio.
+- **Cambio (Avisos):** los avisos vuelven a salir arriba a la derecha. Abajo tapaban el paso de Manejo a Estado actual.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.4.6-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.4.6-Mac-Intel.dmg`
+- Windows: `R+-8.4.6-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

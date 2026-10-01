@@ -68,7 +68,7 @@ export function buildRotationRejoinLeadHtml(user) {
   return (
     '<p>Hay <strong>nueva rotación</strong>: los equipos anteriores ya no están activos' +
     (sala ? ` (sala actual: <strong>${escapeHtml(sala)}</strong>)` : '') +
-    '. Tu R2 o R4 ya publicó equipos nuevos en Nube — confirma tu sala y <strong>elige el tuyo</strong> en Mi rotación.</p>'
+    '. Tu líder de equipo o R4 ya publicó equipos nuevos en Nube — confirma tu sala y <strong>elige el tuyo</strong> en Mi rotación.</p>'
   );
 }
 
