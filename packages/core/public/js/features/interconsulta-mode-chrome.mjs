@@ -343,7 +343,7 @@ function assignInterconsultaPatientTeam(patient, teamId) {
     assignDemoPatientTeamLocally(patient, teamId);
     return Promise.resolve({ ok: true });
   }
-  return assignPatientToTeamClinical(patient.id, teamId);
+  return assignPatientToTeamClinical(patient.id, teamId, { allowClear: true });
 }
 
 function handleConsultTeamChange(ev) {

@@ -470,7 +470,7 @@ async function handleEnsureTurn(env, db, request) {
  * @param {{ DB?: import('@cloudflare/workers-types').D1Database, WORKER_DATA_KEY?: string }} env
  * @param {string} subpath e.g. "/" or "/join" or "/:id/leave"
  */
-export async function handleRooms(request, env, subpath) {
+export async function handleRooms(request, env, subpath, ctx) {
   const db = env.DB;
   if (!db) {
     throw new SyncError('error', 'Base de datos no configurada.');
@@ -511,7 +511,7 @@ export async function handleRooms(request, env, subpath) {
 
   const syncMatch = /^\/([^/]+)\/(mutations|pull)$/.exec(subpath);
   if (syncMatch) {
-    return handleSync(request, env, syncMatch[1], syncMatch[2]);
+    return handleSync(request, env, syncMatch[1], syncMatch[2], ctx);
   }
 
   const leaveMatch = /^\/([^/]+)\/leave$/.exec(subpath);

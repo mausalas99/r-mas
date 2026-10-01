@@ -6,7 +6,6 @@ import { cloudOversizeDocCount } from './cloud-med-receta-index.mjs';
 import { getCloudSyncRoomId } from './settings.mjs';
 import { cloudSyncNowIso } from './cloud-sync-clock.mjs';
 import {
-  CLOUD_PUSH_DEBOUNCE_MS,
   CLOUD_PUSH_FIRST_MS,
   CLOUD_LAB_BACKFILL_DEFERRED_MS,
   CLOUD_OUTBOX_COALESCE_MS,
@@ -47,10 +46,6 @@ export {
   mapPatientEntryToCloudBundleOps,
   mapBundleEnvelopeToOps,
 };
-
-function cloudPushDebounceMs() {
-  return CLOUD_PUSH_DEBOUNCE_MS;
-}
 
 /** @type {{ outbox?: import('./outbox.mjs').createOutbox extends (...args: any) => infer R ? R : never, getRevision?: () => number, flush?: () => void | Promise<void>, noteEditing?: () => void, getActorId?: () => string } | null} */
 let bridgeRuntime = null;
@@ -183,24 +178,25 @@ export function maybeScheduleCloudSyncPush() {
 export function scheduleCloudSyncPush() {
   if (!isCloudSyncActive() || !bridgeRuntime?.outbox) return;
   bridgeRuntime.noteEditing?.();
-  const delay = cloudPushTimer ? cloudPushDebounceMs() : CLOUD_PUSH_FIRST_MS;
-  if (cloudPushTimer) clearTimeout(cloudPushTimer);
+  // A push not yet fired reads memory when it runs, so it already carries
+  // this edit. Re-arming it (at the old 1.5 s debounce) only delayed it.
+  if (cloudPushTimer) return;
   cloudPushTimer = setTimeout(function () {
     cloudPushTimer = null;
     void pushCloudBundleOps();
-  }, delay);
+  }, CLOUD_PUSH_FIRST_MS);
 }
 
 /** Debounce delete flushes so bulk × / multi-select become one HTTP push. */
 function scheduleTombstoneFlush() {
   if (!bridgeRuntime?.outbox) return;
   bridgeRuntime.noteEditing?.();
-  const delay = tombstoneFlushTimer ? cloudPushDebounceMs() : CLOUD_PUSH_FIRST_MS;
-  if (tombstoneFlushTimer) clearTimeout(tombstoneFlushTimer);
+  // Already-armed flush reads the outbox when it runs: this delete rides it.
+  if (tombstoneFlushTimer) return;
   tombstoneFlushTimer = setTimeout(function () {
     tombstoneFlushTimer = null;
     void bridgeRuntime?.flush?.();
-  }, delay);
+  }, CLOUD_PUSH_FIRST_MS);
 }
 
 /**

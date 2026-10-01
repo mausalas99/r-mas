@@ -15,6 +15,7 @@ import {
 } from './cloud-med-receta-index.mjs';
 import { drainSyncedLabSidecarsFromOutbox, splitLabBackfillInOutbox } from './outbox-lab.mjs';
 import { noteCloudOpsAttempted } from './cloud-sync-echo-guard.mjs';
+import { jitterMs } from './cloud-sync-timing.mjs';
 import {
   cloudSyncErrorCode,
   noteCloudSyncPull,
@@ -322,8 +323,10 @@ function createPullPushOps(ctx) {
 }
 
 /**
- * Push one already-sized chunk. Stale/conflict (409) retries here, right after
- * a fresh pull — a backoff-class error (503/D1-overload/429) is NOT retried
+ * Push one already-sized chunk. Stale/conflict (409) retries here after a
+ * 100-200 ms jitter, with no pull: the Worker re-reads the room revision on
+ * every commit attempt and uses baseRevision only to set needPull, so a pull
+ * cannot make the retry land — a backoff-class error (503/D1-overload/429) is NOT retried
  * here; it throws back to drainCloudOps, which re-cuts the whole drain smaller
  * via the AIMD pacer instead of hammering the same oversized chunk.
  *
@@ -334,7 +337,7 @@ function createPullPushOps(ctx) {
  * @param {number} attempt running attempt count across the whole drain
  */
 async function pushSingleWithStaleRetry(ctx, roomId, item, chunk, attempt) {
-  const { api, getRevision, pullLatest } = ctx;
+  const { api, getRevision } = ctx;
   if (!api || typeof api.push !== 'function') {
     throw new Error('Cliente Nube no configurado');
   }
@@ -354,7 +357,7 @@ async function pushSingleWithStaleRetry(ctx, roomId, item, chunk, attempt) {
     } catch (err) {
       lastErr = err;
       if (!isCloudRevisionStaleError(err) || staleAttempt >= PUSH_STALE_RETRIES) throw err;
-      await pullLatest();
+      await new Promise((resolve) => setTimeout(resolve, jitterMs(200)));
     }
   }
   throw lastErr;
@@ -374,7 +377,7 @@ async function pushSingleWithStaleRetry(ctx, roomId, item, chunk, attempt) {
  * @param {(chunk: unknown[]) => void} removeAcked drops a chunk's ops from their own rows
  */
 async function pushWithStaleRetry(ctx, roomId, item, ops, onProgress, removeAcked) {
-  const { applyServerRevision, pullLatest } = ctx;
+  const { applyServerRevision } = ctx;
   if (!Array.isArray(ops) || !ops.length) return null;
   let lastResult = null;
   let totalDropped = 0;
@@ -394,7 +397,10 @@ async function pushWithStaleRetry(ctx, roomId, item, ops, onProgress, removeAcke
       noteCloudLabSidecarOpsSent(chunk, sanitized.ops);
       noteCloudMedRecetaOpsSent(sanitized.ops);
       lastResult = pushResult;
-      if (pushResult.needPull) await pullLatest();
+      // One pull after the whole flush (runFlushOutbox), not one per chunk:
+      // the cursor stays put on needPull, so that pull still gets every
+      // peer op, and the Worker applies LWW without it.
+      if (pushResult.needPull) ctx.pullAfterFlush = true;
     },
   });
   if (totalDropped > 0) {
@@ -537,6 +543,14 @@ async function runFlushOutbox(ctx) {
     }
     for (const row of rows) tried.add(outboxRowKey(row));
     if (err && !firstErr) firstErr = err;
+  }
+  if (ctx.pullAfterFlush) {
+    ctx.pullAfterFlush = false;
+    try {
+      await ctx.pullLatest();
+    } catch (err) {
+      if (!firstErr) throw err;
+    }
   }
   if (firstErr) {
     setStatus('error', cloudSyncErrorMessage(firstErr, 'No se pudo enviar un cambio a la nube.'));

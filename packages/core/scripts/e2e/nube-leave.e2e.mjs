@@ -6,6 +6,7 @@
  *   - the team card keeps showing «Salir del equipo» after the user confirmed
  *   - «Salir de la sala» says done while the Worker still lists the user as a member
  *   - the device keeps its room after a successful leave
+ *   - the leave is undone at the next app start (stored-token resume re-joins the room)
  */
 import { createRun, dismissLearnHub, closeToasts, goArea } from './harness.mjs';
 import { startWorker, d1Query, nubeDevices, onboardNube, roomMeta, until, BASE } from './nube-worker.mjs';
@@ -72,4 +73,16 @@ await r.finish('Nube leave: team and sala', async () => {
   check('«Salir de la sala» clears the room on G', await until(async () => !(await roomMeta(G.page))?.id, 15000), await roomMeta(G.page));
   check('the Worker dropped G from the room', memberRows() === 0, memberRows());
   await r.shot(G.page, 'g-left-sala');
+
+  // Restart: the stored Nube token resumes onboarding silently; it must not re-join.
+  await G.app.close();
+  const G2 = await launchDevice('g', 3797);
+  await dismissLearnHub(G2.page).catch(() => {});
+  await G2.page.waitForTimeout(20000);
+  check('after restart the device still has no room', !(await roomMeta(G2.page))?.id, await roomMeta(G2.page));
+  check('after restart the Worker still has no membership for G', memberRows() === 0, memberRows());
+  await openConexion(G2.page);
+  check('«Salir de la sala» stays gone after opening Conexión', await until(async () => !(await leaveRoom.isVisible().catch(() => false)), 10000));
+  check('opening Conexión did not re-join the room', !(await roomMeta(G2.page))?.id && memberRows() === 0, memberRows());
+  await r.shot(G2.page, 'g-after-restart');
 });

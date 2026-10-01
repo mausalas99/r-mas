@@ -195,7 +195,7 @@ async function pushLocalClinicalOpsToSala(sala) {
  */
 const CLINICAL_OPS_ROW_KEYS = [
   ['teams', ['team_id']],
-  ['patient_team_assignment', ['patient_id', 'team_id']],
+  ['patient_team_assignment', ['patient_id', 'team_id', 'effective_at']],
 ];
 
 // ponytail: one re-push per sala per minute caps a push storm if two exports never agree.
@@ -214,7 +214,10 @@ export function clinicalOpsHasRowsRoomLacks(local, room) {
   return CLINICAL_OPS_ROW_KEYS.some(([table, fields]) => {
     const roomKeys = clinicalOpsRowKeys(room, table, fields);
     for (const key of clinicalOpsRowKeys(local, table, fields)) {
-      if (!key.split('\0').includes('') && !roomKeys.has(key)) return true;
+      // team_id '' (no team) is a real row; any other empty part is junk.
+      const parts = key.split('\0');
+      if (parts.some((part, i) => !part && !(table === 'patient_team_assignment' && i === 1))) continue;
+      if (!roomKeys.has(key)) return true;
     }
     return false;
   });

@@ -84,3 +84,108 @@ describe('createSyncFailCycle — server unreachable with pending ops', () => {
     assert.equal(statuses.at(-1).status, 'error', 'a setup error is still an error');
   });
 });
+
+describe('flush that joins an in-flight cycle', () => {
+  let seq = 0;
+  const row = (tag) => ({ clientMutationId: `${tag}-${++seq}`, ops: [{ path: `entries/p${seq}/note`, value: 'x', updatedAt: '2026-09-30T10:00:00.000Z' }] });
+
+  /** Runtime whose first pull waits on `gate`; returns the counters. */
+  function gatedRuntime(outbox, { failPush = false } = {}) {
+    Object.defineProperty(globalThis.navigator, 'onLine', { configurable: true, get: () => true });
+    let open;
+    const gate = new Promise((resolve) => { open = resolve; });
+    const seen = { pushes: 0, pulls: 0, pullStarted: null };
+    let started;
+    seen.pullStarted = new Promise((resolve) => { started = resolve; });
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => { seen.pulls += 1; if (seen.pulls === 1) { started(); await gate; } return { revision: 1, ops: [] }; },
+        push: async () => { seen.pushes += 1; if (failPush) throw Object.assign(new Error('boom'), { status: 500 }); return { revision: 1 }; },
+      },
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => 1,
+      setRevision: () => {},
+      deferBootCycle: true,
+      onStatus() {},
+    });
+    return { runtime, seen, open };
+  }
+
+  it('an edit queued during the pull step is pushed by the same flush, not the next timer', async () => {
+    const outbox = memOutbox([row('m1')]);
+    const { runtime, seen, open } = gatedRuntime(outbox);
+    try {
+      const first = runtime.syncCycle();
+      await seen.pullStarted;
+      assert.equal(seen.pushes, 1);
+      outbox.enqueue(row('m2'));
+      const joined = runtime.syncCycle();
+      open();
+      await Promise.all([first, joined]);
+      assert.equal(seen.pushes, 2, 'm2 pushed before the joined flush resolves');
+      assert.equal(outbox.pendingCount?.() ?? 0, 0);
+    } finally { runtime.stop(); }
+  });
+
+  it('no join: runs once (no extra push or pull)', async () => {
+    const outbox = memOutbox([row('m1')]);
+    const { runtime, seen, open } = gatedRuntime(outbox);
+    try {
+      const first = runtime.syncCycle();
+      open();
+      await first;
+      assert.equal(seen.pushes, 1);
+      assert.equal(seen.pulls, 1);
+    } finally { runtime.stop(); }
+  });
+
+  it('a failed cycle does not rerun (no retry loop past the backoff)', async () => {
+    const outbox = memOutbox([row('m1')]);
+    const { runtime, seen, open } = gatedRuntime(outbox, { failPush: true });
+    try {
+      const first = runtime.syncCycle();
+      const joined = runtime.syncCycle();
+      open();
+      await Promise.all([first, joined]);
+      assert.equal(seen.pushes, 1);
+    } finally { runtime.stop(); }
+  });
+});
+
+describe('WS ops messages apply one at a time', () => {
+  it('rev 2 then rev 3 back to back: both apply in order and the local revision ends at 3', async () => {
+    Object.defineProperty(globalThis.navigator, 'onLine', { configurable: true, get: () => true });
+    const original = globalThis.WebSocket;
+    const sockets = [];
+    globalThis.WebSocket = class { constructor() { sockets.push(this); } send() {} close() {} };
+    let revision = 1;
+    const applied = [];
+    let slow = true;
+    const runtime = createSyncRuntimeCycle({
+      api: { pull: async () => ({ revision, ops: [] }), push: async () => ({ revision }) },
+      outbox: memOutbox(),
+      getRoomId: () => 'room-1',
+      getRevision: () => revision,
+      setRevision: (r) => { revision = r; },
+      applyPullResult: async (res) => {
+        if (slow) { slow = false; await new Promise((r) => setTimeout(r, 20)); }
+        applied.push(res.revision);
+      },
+      liveRoomWs: { getBaseUrl: () => 'https://sync.example.com', getToken: () => 't' },
+      deferBootCycle: true,
+      onStatus() {},
+    });
+    try {
+      const msg = (rev) => ({ data: JSON.stringify({ type: 'revision', revision: rev, ops: [{ path: 'entries/p1/note', value: String(rev), updatedAt: '2026-09-30T10:00:00.000Z' }] }) });
+      sockets[0].onmessage(msg(2));
+      sockets[0].onmessage(msg(3));
+      await new Promise((r) => setTimeout(r, 60));
+      assert.deepEqual(applied, [2, 3]);
+      assert.equal(revision, 3);
+    } finally {
+      runtime.stop();
+      globalThis.WebSocket = original;
+    }
+  });
+});

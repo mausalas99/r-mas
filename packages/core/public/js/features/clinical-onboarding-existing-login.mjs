@@ -138,6 +138,7 @@ async function tryResumeLocalIdentity(username, settings) {
  *   rank?: string,
  *   toast?: (msg: string, kind?: string) => void,
  *   setStatus?: (msg: string) => void,
+ *   resume?: boolean,
  * }} ctx
  */
 export async function finishExistingAccountProfile(ctx) {
@@ -168,6 +169,7 @@ export async function finishExistingAccountProfile(ctx) {
     sala: ctx.sala,
     toast: ctx.toast,
     setStatus: ctx.setStatus,
+    resume: ctx.resume,
   });
   if (!syncOut.ok) return syncOut;
 
@@ -321,6 +323,7 @@ export async function tryResumeOnboardingFromStoredCloudToken() {
     rank: identity.rank,
     toast: () => {},
     setStatus: () => {},
+    resume: true,
   });
   if (!out.ok) return false;
 

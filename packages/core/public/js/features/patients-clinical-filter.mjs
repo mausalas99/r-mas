@@ -92,6 +92,9 @@ export function resolvePatientCensusTeamId(patient, teams, assignments, now) {
   const patientId = String(patient?.id || '');
   const assigned = resolvePatientTeamIdFromAssignments(patientId, assignments, now);
   if (assigned) return assigned;
+  // The newest effective row is a «no team» row: taken off its team on purpose, so no structural guess.
+  const nowMs = new Date(now != null ? now : Date.now()).getTime();
+  if ((assignments || []).some((r) => String(r?.patient_id || '') === patientId && !r.team_id && new Date(r.effective_at).getTime() <= nowMs)) return '';
   const mapped = patientForScopeEvaluate(patient);
   for (const team of teams || []) {
     if (patientMatchesTeam(mapped, team)) {

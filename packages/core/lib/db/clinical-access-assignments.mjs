@@ -55,7 +55,7 @@ export function assignPatientToTeam(db, { patientId, teamId, effectiveAt }) {
   db.prepare(
     `INSERT INTO patient_team_assignment (patient_id, team_id, effective_at)
      VALUES (?, ?, ?)`
-  ).run(patientId, teamId, effectiveAt);
+  ).run(patientId, teamId, effectiveAt); // teamId '' = no team (synced tombstone)
 }
 
 /**

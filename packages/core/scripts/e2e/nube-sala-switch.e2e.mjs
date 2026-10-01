@@ -32,7 +32,7 @@ await r.finish('Nube sala switch from Mi perfil', async () => {
   const chip2 = D.page.locator('#profile-modal [data-perfil-sala="Sala 2"]');
   check('Mi perfil shows the sala chips', await until(() => chip2.isVisible().catch(() => false), 10000));
   await chip2.evaluate((b) => b.click());
-  check('the profile moves to Sala 2', await until(() => D.page.evaluate(() => document.getElementById('clinical-profile-sala')?.value === 'Sala 2'), 10000));
+  check('the profile moves to Sala 2', await until(() => D.page.evaluate(() => globalThis.document.getElementById('clinical-profile-sala')?.value === 'Sala 2'), 10000));
   check('the device moves to a Sala 2 room', await until(async () => {
     const m = await roomMeta(D.page);
     return m?.sala === 'Sala 2' && m.id !== before?.id;
@@ -41,7 +41,7 @@ await r.finish('Nube sala switch from Mi perfil', async () => {
   const rows = () => JSON.parse(d1Query(`SELECT COUNT(*) AS n FROM room_members WHERE room_id='${after?.id}' AND user_id=(SELECT id FROM users WHERE username='${username}')`))[0]?.results?.[0]?.n;
   check('the Worker lists the user in the Sala 2 room', rows() === 1, rows());
   check('the identity card shows Sala 2', await until(() => D.page.locator('#profile-modal [data-perfil-meta]').innerText().then((t) => /Sala 2/.test(t)), 5000));
-  const fit = await D.page.evaluate(() => { const b = document.querySelector('#profile-modal .wb-modal-body'); return { scroll: b.scrollHeight, client: b.clientHeight, vh: innerHeight, vw: innerWidth }; });
+  const fit = await D.page.evaluate(() => { const b = globalThis.document.querySelector('#profile-modal .wb-modal-body'); return { scroll: b.scrollHeight, client: b.clientHeight, vh: globalThis.innerHeight, vw: globalThis.innerWidth }; });
   check('Mi perfil fits one screen, no scroll', fit.scroll <= fit.client + 1, fit);
   await r.shot(D.page, 'sala-2-selected');
 
@@ -54,8 +54,8 @@ await r.finish('Nube sala switch from Mi perfil', async () => {
 
   // New rotation: the profile saves with no sala (the form the rotation restart leaves behind).
   await D.page.evaluate(() => {
-    document.getElementById('clinical-profile-sala').value = '';
-    document.getElementById('clinical-profile-form').requestSubmit();
+    globalThis.document.getElementById('clinical-profile-sala').value = '';
+    globalThis.document.getElementById('clinical-profile-form').requestSubmit();
   });
   const N = D;
   const hint = N.page.locator('#profile-modal [data-perfil-sala-hint]');

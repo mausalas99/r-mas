@@ -128,9 +128,21 @@ function createSyncCycleController(ctx) {
       scheduler.noteSuccess();
       noteCloudSyncCycle(true);
       if (onCycleOk) void Promise.resolve().then(onCycleOk).catch(() => {});
+      return true;
     } catch (err) {
       failCycle(err);
+      return false;
     }
+  }
+
+  let rerun = false;
+  /** A flush that joined mid-cycle may have queued ops after our push step: run again for them. */
+  async function runSyncCycleLoop() {
+    let ok;
+    do {
+      rerun = false;
+      ok = await runSyncCycleBody();
+    } while (ok && rerun && !stopped() && outboxSync.pendingCount() > 0);
   }
 
   async function syncCycle() {
@@ -151,8 +163,11 @@ function createSyncCycleController(ctx) {
       scheduler.armNextTimer(false);
       return;
     }
-    if (cycleInflightRef.current) return cycleInflightRef.current;
-    cycleInflightRef.current = runSyncCycleBody().finally(function () {
+    if (cycleInflightRef.current) {
+      rerun = true;
+      return cycleInflightRef.current;
+    }
+    cycleInflightRef.current = runSyncCycleLoop().finally(function () {
       cycleInflightRef.current = null;
     });
     return cycleInflightRef.current;
@@ -168,7 +183,10 @@ function createSyncCycleController(ctx) {
 function attachSyncRuntimeListeners(ctx, opts = {}) {
   const { syncCycle, scheduler, pace, outboxSync, roomWs, getCurrentStatus } = ctx;
 
-  function onOnline() { void syncCycle(); }
+  function onOnline() {
+    roomWs?.resume?.({ force: true });
+    void syncCycle();
+  }
   function onVisibility() {
     if (document.visibilityState === 'visible') {
       roomWs?.resume?.();
@@ -178,7 +196,10 @@ function attachSyncRuntimeListeners(ctx, opts = {}) {
     }
   }
   /** Electron often keeps visibility=visible while unfocused — still pull on focus. */
-  function onWindowFocus() { void syncCycle(); }
+  function onWindowFocus() {
+    roomWs?.resume?.();
+    void syncCycle();
+  }
 
   function noteLocalMutation() {
     pace.markLocalWrite();
@@ -300,6 +321,8 @@ async function applyRoomWsOpsMessage(deps, ctx, ops, revision) {
  */
 function startLiveRoomSyncWs(deps, ctx) {
   if (!deps.liveRoomWs) return null;
+  // One message at a time: each apply reads the local revision the previous one set.
+  let applyChain = Promise.resolve();
   const roomWs = createRoomSyncWs({
     getBaseUrl: deps.liveRoomWs.getBaseUrl,
     getToken: deps.liveRoomWs.getToken,
@@ -312,7 +335,7 @@ function startLiveRoomSyncWs(deps, ctx) {
       ctx.scheduler.armNextTimer(false);
     },
     onOpsMessage: function (ops, revision) {
-      void applyRoomWsOpsMessage(deps, ctx, ops, revision);
+      applyChain = applyChain.then(() => applyRoomWsOpsMessage(deps, ctx, ops, revision)).catch(() => {});
     },
     onTransportChange: function (transport) {
       noteCloudSyncTransport(transport);

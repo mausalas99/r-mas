@@ -113,6 +113,7 @@ export async function loginCloudDuringOnboarding(opts) {
  *   sala: string,
  *   toast?: (msg: string, kind?: string) => void,
  *   setStatus?: (msg: string) => void,
+ *   resume?: boolean, // silent resume from a stored token, not a user choice
  * }} opts
  */
 export async function completeCloudOnboardingSync(opts) {
@@ -126,7 +127,7 @@ export async function completeCloudOnboardingSync(opts) {
   const client = createApi();
   try {
     setStatus('Uniéndote a la sala de turno…');
-    const roomId = await joinTurnRoom(client, chosenUser, toast, setStatus);
+    const roomId = await joinTurnRoom(client, chosenUser, toast, setStatus, opts.resume);
     if (!roomId) return { ok: false, error: 'No se pudo asegurar la sala nube.' };
     await pullOrSeed(client, roomId, setStatus);
     startCloudPushAndRuntime(chosenUser);
@@ -156,12 +157,12 @@ async function authAndBridge(client, mode, chosenUser, password, remember = fals
   });
 }
 
-async function joinTurnRoom(client, chosenUser, toast, setStatus) {
+async function joinTurnRoom(client, chosenUser, toast, setStatus, resume = false) {
   const room = await ensureTurnRoom({
     api: client,
     getSala: () => chosenUser.sala,
     getToken: getCloudSyncToken,
-    explicit: true, // the user just picked this sala in onboarding
+    explicit: !resume, // the user just picked this sala in onboarding; a silent resume at startup must keep a «Salir de la sala»
     setCloudSyncRoomId,
     setCloudSyncRoomSnapshot,
     setCloudSyncRevision,

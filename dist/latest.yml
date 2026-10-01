@@ -1,34 +1,50 @@
-version: 8.4.4
+version: 8.4.5
 files:
-  - url: R+-8.4.4-x64.exe
-    sha512: 9s8jU7jxa0FXsdPxXlToQekHR4dbk8FLZRWDN492SgvtGKW5HLanT5NgubKHlEfE+sahHW2rH3L3RZaL0fWQew==
-    size: 119774676
-path: R+-8.4.4-x64.exe
-sha512: 9s8jU7jxa0FXsdPxXlToQekHR4dbk8FLZRWDN492SgvtGKW5HLanT5NgubKHlEfE+sahHW2rH3L3RZaL0fWQew==
-releaseDate: '2026-09-29T21:39:16.000Z'
+  - url: R+-8.4.5-x64.exe
+    sha512: gR7oqL4JmCgNALrAsjU7jYl3D+51U59UX12MEJ9vhrnyMhYHmqtsTHI6iFPTwTHd+vVWbd+huTwDhbIxUGy+/w==
+    size: 119820354
+path: R+-8.4.5-x64.exe
+sha512: gR7oqL4JmCgNALrAsjU7jYl3D+51U59UX12MEJ9vhrnyMhYHmqtsTHI6iFPTwTHd+vVWbd+huTwDhbIxUGy+/w==
+releaseDate: '2026-09-30T21:44:44.000Z'
 releaseNotes: |
-  Laboratorio rediseñado, con lectura de PDF de Reumatología. Tendencias con panel de estudio nuevo. Nube más estable cuando muchos equipos editan a la vez.
+  Notas e indicaciones ya se sincronizan con Nube. Salir de una sala o equipo funciona. Varios arreglos en Estado actual y Tendencias.
   
-  Nuevo (Laboratorio): diseño nuevo. Puedes moverte entre días anteriores del historial. Las tablas de SOME se leen mejor y el historial ya no repite estudios.
+  Nuevo (Nube): la nota de evolución, el interrogatorio y las indicaciones se sincronizan entre equipos. Gana la edición más reciente. Un texto de más de 96 KB se queda en este equipo y Conexión muestra «Pendiente».
   
-  Nuevo (Laboratorio): pega el PDF de Reumatología y R+ lo lee.
+  Nuevo (Perfil): Mi perfil ahora incluye tu sala, rango y usuario en una sola pantalla. Cambiar de sala con un toque te pasa a su sala en Nube.
   
-  Nuevo (Tendencias): el panel de estudio ocupa todo el ancho. Chips en la tabla, pestañas de gráficas con la lista de analitos y una tabla dinámica en ventana.
+  Nuevo (Interconsultas): la barra de interconsulta usa pastillas para Servicio, Motivo, Seguimiento y Equipo. Un clic en cualquier parte de la pastilla actúa sobre su control.
   
-  Nuevo (barra superior): el rediseño con la pastilla de área activa se une con Tendencias. Los atajos, los avisos de funciones y el Resumen se ajustaron.
+  Cambio (Interconsultas): «Torre HU» ya no aparece como servicio solicitante.
   
-  Arreglado (lista lateral): las tarjetas de una línea ya no dejan huecos grandes entre ellas.
+  Arreglado (Interconsultas): los avisos guiados del tablero quedan junto a botones pequeños y hay un paso para el cambio Asignar / Mi equipo. Se arregló el contraste en claro y oscuro, y la bandeja ya no se colapsa con un equipo grande.
   
-  Arreglado (Resumen): los medicamentos ya no se parten entre columnas.
+  Nuevo (iPad): iPad usa el mismo diseño que la computadora. Resumen cabe sin desplazar. La lista lateral es una barra angosta con solo el número de cama.
   
-  Arreglado (Eventualidades): si un equipo agrega una eventualidad justo cuando otro sincroniza, ya no se pierde.
+  Arreglado (Perfil): al cambiar tu @usuario en Mi perfil, ahora también se actualiza en Nube.
   
-  Arreglado (Nube): borrar muchos pacientes de la red ya no satura el servidor. Cada expediente queda en su propia fila y solo se escribe lo que cambió.
+  Nuevo (Perfil): si no tienes sala, o es el día 1 del mes, el botón Mi perfil late. Al abrirlo, la sección Sala está abierta y te avisa. El primero en unirse a una sala empieza a sincronizar de inmediato.
   
-  Arreglado (Nube): una sala bloqueada ya no repite una descarga completa una y otra vez. Con una llave equivocada, el equipo ya no pide todo el estado cifrado, que tardaba unos 15 s.
+  Arreglado (Nube): «Salir de la sala» y «Salir del equipo» confirman con el servidor. El avatar del panel Nube tiene mejor contraste.
   
-  Arreglado (Nube, Monitoreo): un equipo con reloj atrasado ya no pierde sus filas de monitoreo y ya no reenvía lo mismo cada 12 s.
+  Arreglado (Salas): «Salir de la sala» ya no se deshace al abrir la app o Conexión. Para volver entras con código, creas una sala o te unes a un equipo.
   
-  Problema conocido: si dos equipos editan a la vez una categoría de Manejo (Estado actual), una puede perderse. Se arregla en 8.4.5.
+  Arreglado (Equipos): una copia vieja de la sala ya no deshace tu salida de un equipo ni te saca del equipo nuevo. Los envíos a la sala ahora primero descargan y combinan.
   
-  Problema conocido: notas e indicaciones todavía no se sincronizan con Nube. Llega en 8.4.5.
+  Arreglado (Estado actual): el DIA de la Solución Stanford avanza por fecha, igual que en Egreso.
+  
+  Arreglado (Estado actual): las sugerencias ventilatorias se actualizan al cambiar FiO₂, PEEP, P meseta o VT. En Alto flujo ya no salen sugerencias de campos ocultos.
+  
+  Arreglado (Tendencias): los gasométricos con coma decimal o con «<» muestran su tarjeta. Un valor «<0.01» se grafica en 0.01.
+  
+  Arreglado (Manejo): el potasio oral ya no cuenta como reposición.
+  
+  Arreglado (Nube): al borrar un paciente, el borrado llega también a la sala del paciente.
+  
+  Arreglado (Equipos): un paciente sin equipo («Sin asignar») ahora se quita del equipo en todos los dispositivos.
+  
+  Arreglado (Inicio): R+ borra al iniciar claves viejas de almacenamiento local que podían llenar el espacio.
+  
+  Limpieza: se quitó código muerto del botón de Modo Guardia.
+  
+  Problema conocido: el DIA de Stanford en el Resumen y en la etiqueta de Manejo aún muestra el valor guardado.

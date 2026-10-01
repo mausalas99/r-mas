@@ -134,10 +134,11 @@ function dispatchPatientTeamAssignedEvents(pid, tid, teamSala) {
   );
 }
 
-async function notifyPatientTeamAssigned(pid, tid) {
+async function notifyPatientTeamAssigned(pid, tid, prevTid = '') {
   syncLocalPatientSalaFromTeamAssignment(pid, tid);
   await fetchClinicalScopeContextFromDb();
-  const teamSala = resolveTeamSalaById(tid);
+  // No team (''): push to the sala of the team the patient just left.
+  const teamSala = resolveTeamSalaById(tid || prevTid);
   // Local scope is ready here — callers can render now. Nube push/mirror can
   // take seconds (or stall offline); awaiting it kept a new patient out of the
   // sidebar until the user switched patients.
@@ -160,13 +161,26 @@ function syncLocalPatientSalaFromTeamAssignment(patientId, teamId) {
   if (String(patient.sala || '').trim() !== prev) persistClinicalState();
 }
 
-export async function assignPatientToTeamClinical(patientId, teamId) {
+function canAssignTeam(api, pid, tid, allowClear) {
+  return !!(api && pid && (tid || allowClear) && api.dbClinicalAssignPatientToTeam);
+}
+
+/**
+ * @param {string} patientId
+ * @param {string} teamId
+ * @param {{ allowClear?: boolean }} [opts] allowClear: '' takes the patient off its team.
+ *   Off by default — registration forms send '' for "not chosen", which must not unassign.
+ */
+export async function assignPatientToTeamClinical(patientId, teamId, opts = {}) {
   const api = dbApi();
   const pid = String(patientId || '').trim();
   const tid = String(teamId || '').trim();
-  if (!api || !pid || !tid || typeof api.dbClinicalAssignPatientToTeam !== 'function') {
+  if (!canAssignTeam(api, pid, tid, opts.allowClear)) {
     return { ok: false, error: 'not_available' };
   }
+  // tid '' = take the patient off its team; the row syncs like any assignment.
+  const prevTid = tid ? '' : activePatientTeamId(pid);
+  if (!tid && !prevTid) return { ok: true };
   try {
     const res = await api.dbClinicalAssignPatientToTeam({
       patientId: pid,
@@ -174,7 +188,7 @@ export async function assignPatientToTeamClinical(patientId, teamId) {
       effectiveAt: new Date().toISOString(),
     });
     if (!res || res.ok === false) return { ok: false, error: res?.error || 'assign_failed' };
-    await notifyPatientTeamAssigned(pid, tid);
+    await notifyPatientTeamAssigned(pid, tid, prevTid);
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err && err.message ? err.message : 'assign_failed' };

@@ -88,6 +88,20 @@ function filterRowsByTeamId(rows, teamIds, field = 'team_id') {
 }
 
 /**
+ * Assignments of this sala's teams, plus "no team" rows ('') of patients this sala once held:
+ * without them a peer never learns the patient left the team.
+ */
+function filterAssignmentsForSala(rows, teamIds) {
+  const pids = new Set(
+    (rows || []).filter((r) => teamIds.has(String(r?.team_id || '').trim())).map((r) => r.patient_id)
+  );
+  return (rows || []).filter((r) => {
+    const tid = String(r?.team_id || '').trim();
+    return tid ? teamIds.has(tid) : pids.has(r?.patient_id);
+  });
+}
+
+/**
  * A team's creator/leader is often not a member of it. Without their row the peer
  * stubs them with sala = NULL, and effectiveTeamSala() then resolves the team to ''
  * — invisible in every sala-scoped list. Same reasoning for removals/rejoins: they
@@ -146,7 +160,7 @@ export function filterClinicalOpsSnapshotForSala(db, snapshot, sala) {
     teams,
     team_membership: filterRowsByTeamId(snapshot.team_membership, teamIds),
     team_guardia_today: filterRowsByTeamId(snapshot.team_guardia_today, teamIds),
-    patient_team_assignment: filterRowsByTeamId(snapshot.patient_team_assignment, teamIds),
+    patient_team_assignment: filterAssignmentsForSala(snapshot.patient_team_assignment, teamIds),
     entrega_template_team: filterRowsByTeamId(snapshot.entrega_template_team, teamIds),
     teams_archived: filterRowsByTeamId(snapshot.teams_archived, teamIds),
     team_membership_removals: filterRowsByTeamId(snapshot.team_membership_removals, teamIds),

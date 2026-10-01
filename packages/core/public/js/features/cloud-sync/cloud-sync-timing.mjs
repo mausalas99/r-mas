@@ -28,12 +28,12 @@ export const CLOUD_POLL_ERROR_OVERLOAD_MAX_MS = 120_000;
  * full sync keeps its 30 s→5 min backoff, but work done offline goes out within
  * ~10 s of the Worker answering again instead of waiting out that backoff. */
 export const CLOUD_REACHABILITY_PROBE_MS = 10_000;
-export const CLOUD_PUSH_DEBOUNCE_MS = 1_500;
-/** First edit in a burst pushes right away — only repeat edits debounce. */
+/** A save pushes right away; saves before that timer fires ride along. */
 export const CLOUD_PUSH_FIRST_MS = 0;
-/** One save enqueues census, monitoreo, labs and clinicalOps within ~400 ms —
- * wait this long before flushing so they share one POST, not four. */
-export const CLOUD_OUTBOX_COALESCE_MS = 500;
+/** Wait this long before flushing so a save's census, monitoreo, labs and
+ * clinicalOps rows share one POST. Rows that land after the POST starts go
+ * in the next drain turn (the drain re-lists the outbox every turn). */
+export const CLOUD_OUTBOX_COALESCE_MS = 120;
 
 /** Backfill patients outside the active Filtros after this delay, once the priority set is pushed. */
 export const CLOUD_LAB_BACKFILL_DEFERRED_MS = 5_000;
@@ -186,13 +186,17 @@ export function retryAfterMsFromError(err, fallbackMs = CLOUD_POLL_ERROR_MIN_MS)
  * AIMD (TCP-style) pacing for draining the outbox against a free-tier D1
  * that overloads on bursts. Chunk size backs off fast (halve) and recovers
  * slow (+1) on congestion; the inter-chunk gap mirrors it (double / -250ms).
- * Floor of 4 ops keeps a full 319-op backlog under the 120-pushes/min room
- * limit (319/4 = 80 pushes); 319/2 = 160 would trip it.
+ * A clean drain has no gap, only the 500 ms push-start floor that keeps one
+ * device under the Worker's 120 pushes/min room limit (mutation-guard.mjs).
+ * Floor of 4 ops keeps a full 319-op backlog under that limit too
+ * (319/4 = 80 pushes); 319/2 = 160 would trip it.
  */
-export const CLOUD_CWND_MAX_OPS = 16;
+export const CLOUD_CWND_MAX_OPS = 64;
 export const CLOUD_CWND_MIN_OPS = 4;
 export const CLOUD_CHUNK_GAP_MIN_MS = 250;
 export const CLOUD_CHUNK_GAP_MAX_MS = 8_000;
+/** 60 s / 120 pushes: the Worker's per-room rate limit, as a push-start spacing. */
+export const CLOUD_MIN_PUSH_INTERVAL_MS = 500;
 /** Congestion events tolerated within one drain before bailing to cycle-level backoff. */
 export const CLOUD_DRAIN_MAX_CONGESTION_EVENTS = 6;
 
@@ -201,30 +205,55 @@ export const CLOUD_DRAIN_MAX_CONGESTION_EVENTS = 6;
  */
 export function createDrainPacer(opts = {}) {
   const random = opts.random;
-  let cwnd = CLOUD_CWND_MAX_OPS;
-  let gap = CLOUD_CHUNK_GAP_MIN_MS;
+  let maxOps = CLOUD_CWND_MAX_OPS;
+  let cwnd = maxOps;
+  let gap = 0;
   return {
     chunkOps() {
       return cwnd;
     },
-    gapMs() {
-      return jitterMs(gap, random);
+    /** @param {number} [sinceLastPushStartMs] time since the last push began */
+    gapMs(sinceLastPushStartMs = Infinity) {
+      const floor = Math.max(0, CLOUD_MIN_PUSH_INTERVAL_MS - sinceLastPushStartMs);
+      return Math.max(floor, gap ? jitterMs(gap, random) : 0);
     },
     onClean() {
-      cwnd = Math.min(CLOUD_CWND_MAX_OPS, cwnd + 1);
-      gap = Math.max(CLOUD_CHUNK_GAP_MIN_MS, gap - CLOUD_CHUNK_GAP_MIN_MS);
+      cwnd = Math.min(maxOps, cwnd + 1);
+      gap = Math.max(0, gap - CLOUD_CHUNK_GAP_MIN_MS);
     },
     /** @param {unknown} err */
     onCongested(err) {
       cwnd = Math.max(CLOUD_CWND_MIN_OPS, Math.floor(cwnd / 2));
-      gap = Math.min(CLOUD_CHUNK_GAP_MAX_MS, Math.max(gap * 2, retryAfterMsFromError(err, 0)));
+      gap = Math.min(
+        CLOUD_CHUNK_GAP_MAX_MS,
+        Math.max(CLOUD_CHUNK_GAP_MIN_MS, gap * 2, retryAfterMsFromError(err, 0))
+      );
+    },
+    /** Lower the op ceiling, e.g. to an older Worker's smaller limit. @param {number} n */
+    capOps(n) {
+      maxOps = Math.max(1, Math.min(maxOps, n));
+      cwnd = Math.min(cwnd, maxOps);
     },
   };
 }
 
 /**
+ * An older Worker (max 16 ops) answers a bigger push with 400
+ * «Demasiadas operaciones en un push (N; máx. M)». Returns M, else 0.
+ * @param {unknown} err
+ */
+export function cloudOpLimitFromError(err) {
+  const e = /** @type {any} */ (err);
+  if (Number(e?.status) !== 400) return 0;
+  const m = /Demasiadas operaciones en un push \(\d+; máx\. (\d+)\)/.exec(
+    String(e?.data?.message || e?.message || '')
+  );
+  return m ? Number(m[1]) : 0;
+}
+
+/**
  * Shared by the outbox drain and the direct push — both hit the same D1, so
  * one backs off for both. State persists for the session (never resets to
- * 16 on a new cycle), same as a TCP congestion window across segments.
+ * 64 on a new cycle), same as a TCP congestion window across segments.
  */
 export const cloudDrainPacer = createDrainPacer();

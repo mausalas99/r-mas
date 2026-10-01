@@ -75,7 +75,14 @@ export function userHasJoinedClinicalTeams(teams, userId) {
  */
 export function patientHasExplicitTeamAssignment(patientId, assignments) {
   const pid = String(patientId || '');
-  return (assignments || []).some((a) => String(a.patient_id) === pid);
+  // The newest row wins. A «no team» row (team_id '') is an unassignment: unassigned again.
+  let newest = null;
+  for (const a of assignments || []) {
+    if (String(a.patient_id) !== pid) continue;
+    const t = toMillis(a.effective_at);
+    if (!newest || t >= newest.t) newest = { t, teamId: a.team_id };
+  }
+  return !!(newest && newest.teamId);
 }
 
 /**

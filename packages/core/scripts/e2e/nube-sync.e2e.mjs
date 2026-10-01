@@ -48,6 +48,10 @@
  *       the patient because its own push moved its cursor past the delete
  *     - a peer's whole clinicalOps push drops a team A made, and A never pushes
  *       it back (a need seen inside the re-push cooldown was lost)
+ *   Team unassign (own block before Admin)
+ *     - taking a patient off its team (team_id '') on A never reaches B, or B
+ *       re-adds the old assignment
+ *     - assigning the same team again after the tombstone is dropped on A or B
  *   Throughout
  *     - an uncaught page error on either device
  */
@@ -641,6 +645,48 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   check(`fixes: fresh device F sees ${TEAM_X}`, await until(async () => hasTeam((fOps = await clinicalOpsOf(F.page)), TEAM_X), 30000),
     (fOps.teams || []).map((t) => t?.name || t?.team_name || t?.team_id));
   await F.app.close();
+  await backToLabs(A2.page);
+
+  // ── Team unassign: a patient leaves its team (team_id '') on A, B follows, re-assign still lands ──
+  // Assign goes through the Datos «Equipo» select. Unassign has no Sala UI (only the Interconsulta band).
+  await backToLabs(A2.page);
+  await backToLabs(B.page);
+  const teamIdOf = async (page, name) =>
+    ((await clinicalOpsOf(page)).teams || []).find((t) => JSON.stringify(t).includes(name))?.team_id || '';
+  /** Newest assignment row for the patient wins; '' = no team. */
+  const teamOf = async (page, pid) => ((await clinicalOpsOf(page)).patient_team_assignment || [])
+    .filter((x) => x.patient_id === pid).sort((a, b) => String(b.effective_at).localeCompare(String(a.effective_at)))[0]?.team_id ?? '';
+  const teamAlfa = await teamIdOf(A2.page, 'EQUIPO DEMO ALFA');
+  const p4 = await patientIdOf(A2.page, P4);
+  check('unassign: A knows EQUIPO DEMO ALFA and P4 id', !!teamAlfa && !!p4, { teamAlfa, p4 });
+  const assignViaDatos = async (page) => {
+    await openPatient(page, P4);
+    await openDatos(page);
+    await page.locator('#patient-team-assign-select').selectOption(teamAlfa);
+    await closeDatos(page);
+  };
+  await assignViaDatos(A2.page);
+  check('unassign: A resolves P4 to EQUIPO DEMO ALFA', await until(async () => (await teamOf(A2.page, p4)) === teamAlfa, 15000));
+  check('unassign: B gets P4 → EQUIPO DEMO ALFA', await until(async () => (await teamOf(B.page, p4)) === teamAlfa, 45000), await teamOf(B.page, p4));
+  // The only UI to clear a team is the Interconsulta band (needs an Interconsultas team), so call the DB API.
+  const unassign = await A2.page.evaluate((pid) =>
+    window.electronAPI.dbClinicalAssignPatientToTeam({ patientId: pid, teamId: '', effectiveAt: new Date().toISOString() }), p4);
+  // The DB call alone does not push. Creating a team pushes the sala's whole clinicalOps, tombstone included.
+  await createTeam(A2.page, 'EQUIPO DEMO CHARLIE');
+  await backToLabs(A2.page);
+  check('unassign: A takes P4 off its team (ok)', unassign?.ok !== false, unassign);
+  check('unassign: A resolves P4 to no team', await until(async () => (await teamOf(A2.page, p4)) === '', 15000), await teamOf(A2.page, p4));
+  check('unassign: B resolves P4 to no team', await until(async () => (await teamOf(B.page, p4)) === '', 45000), await teamOf(B.page, p4));
+  await B.page.waitForTimeout(10000);
+  check('unassign: B does not re-add the old assignment', (await teamOf(B.page, p4)) === '' && (await teamOf(A2.page, p4)) === '');
+  // clinicalOps is client-encrypted in the room, so the Worker copy is unreadable here: B pulling the tombstone is the proof.
+  // An unassigned patient is hidden by the team filter, so re-assign by DB call and push by creating a team.
+  await A2.page.evaluate(([pid, tid]) =>
+    window.electronAPI.dbClinicalAssignPatientToTeam({ patientId: pid, teamId: tid, effectiveAt: new Date().toISOString() }), [p4, teamAlfa]);
+  await createTeam(A2.page, 'EQUIPO DEMO BRAVO');
+  await backToLabs(A2.page);
+  check('unassign: A re-assigns P4 to EQUIPO DEMO ALFA', await until(async () => (await teamOf(A2.page, p4)) === teamAlfa, 15000), await teamOf(A2.page, p4));
+  check('unassign: B resolves the re-assign (not dropped by the tombstone)', await until(async () => (await teamOf(B.page, p4)) === teamAlfa, 45000), await teamOf(B.page, p4));
   await backToLabs(A2.page);
 
   // ── Admin panel: self-promote with the local SYNC_ADMIN_KEY, then every admin tab ──

@@ -7,8 +7,9 @@ const SIGNAL_DEBOUNCE_MS = 300;
 // onclose, so the client believes transport is still "ws" while nothing
 // arrives — the mobile idle poll fallback (60s) is the only thing left to
 // notice. A periodic ping plus a liveness watchdog force a real reconnect.
-const HEARTBEAT_INTERVAL_MS = 20_000;
-const HEARTBEAT_TIMEOUT_MS = 45_000;
+// 10 s / 25 s: a silent dead socket is noticed within 35 s (was 60 s).
+const HEARTBEAT_INTERVAL_MS = 10_000;
+const HEARTBEAT_TIMEOUT_MS = 25_000;
 
 /** @typedef {'ws' | 'poll' | 'offline'} CloudSyncTransport */
 
@@ -127,16 +128,21 @@ function wireRoomLiveSocket(ctx, url) {
   }
 
   const ws = ctx.wsRef.current;
+  // A replaced socket (resume, pause, heartbeat timeout) can still fire late
+  // events. Only the current socket may touch shared state.
   ws.onopen = function () {
+    if (ctx.wsRef.current !== ws) return;
     ctx.onOpen();
-    roomWsStartHeartbeat(ctx.state);
+    roomWsStartHeartbeat(ctx.state, ctx.scheduleReconnect);
     noteCloudSyncWsLifecycle({ url: redactedUrl, open: true });
   };
   ws.onmessage = function (ev) {
+    if (ctx.wsRef.current !== ws) return;
     ctx.state.lastActivity.current = Date.now();
     ctx.signal.handleMessage(ev.data);
   };
   ws.onclose = function (ev) {
+    if (ctx.wsRef.current !== ws) return;
     ctx.wsRef.current = null;
     roomWsStopHeartbeat(ctx.state);
     noteCloudSyncWsLifecycle({
@@ -182,12 +188,14 @@ function roomWsStopHeartbeat(state) {
   }
 }
 
-function roomWsStartHeartbeat(state) {
+/** @param {() => void} onDead reconnect; the dead socket's onclose is ignored once it is dropped. */
+function roomWsStartHeartbeat(state, onDead) {
   roomWsStopHeartbeat(state);
   state.lastActivity.current = Date.now();
   state.heartbeatTimer.current = setInterval(function () {
     if (Date.now() - state.lastActivity.current > HEARTBEAT_TIMEOUT_MS) {
       roomWsCloseSocket(state);
+      onDead();
       return;
     }
     try {
@@ -312,8 +320,21 @@ export function createRoomWsController(deps) {
     pause() {
       haltSocket(false);
     },
-    resume() {
-      if (!stopped.current) armConnect();
+    /**
+     * Reconnect now, skipping any backoff wait. A live socket (open with
+     * recent traffic, or still connecting) is kept unless `force` — focus
+     * fires often and must not churn it; `online` forces, since a socket
+     * from before the network change can look open and be dead.
+     * @param {{ force?: boolean }} [opts]
+     */
+    resume(opts = {}) {
+      if (stopped.current) return;
+      const ws = wsRef.current;
+      const live = ws && (transport.current === 'ws'
+        ? Date.now() - lastActivity.current < HEARTBEAT_TIMEOUT_MS
+        : ws.readyState === 0);
+      if (live && !opts.force) return;
+      armConnect();
     },
     getTransportState,
   };
