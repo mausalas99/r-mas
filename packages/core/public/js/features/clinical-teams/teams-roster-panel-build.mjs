@@ -189,7 +189,8 @@ export function buildPerfilAccountHtml(ctx, user) {
           </div>
           <div class="settings-card__action">${action}</div>
         </div>`;
-  const ranks = ['R1', 'R2', 'R3', 'R4']
+  // R1–R3 cannot promote themselves: only an R4 or an Admin grants R4.
+  const ranks = (ctx.rank === 'R4' || ctx.programAdmin ? ['R1', 'R2', 'R3', 'R4'] : ['R1', 'R2', 'R3'])
     .map((r) => `<option value="${r}" ${r === ctx.rank ? 'selected' : ''}>${r}</option>`)
     .join('');
   return `

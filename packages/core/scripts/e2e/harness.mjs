@@ -201,7 +201,7 @@ export async function closeToasts(page) {
 }
 
 export async function visiblePatientCount(page) {
-  return page.locator('.p-name').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).length);
+  return page.locator('.p-name, .ic-card .sv-name').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).length);
 }
 
 /** Open the "Pegar SOME" box if needed, paste, press Procesar. */

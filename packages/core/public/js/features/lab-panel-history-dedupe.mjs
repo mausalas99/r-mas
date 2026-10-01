@@ -159,7 +159,7 @@ function wireLabDedupeModal(backdrop, onConfirm) {
     persistClinicalState({ immediate: true });
     labPanelBridge.renderLabHistoryPanel();
     rt.refreshTendenciasOrCultivosPanel();
-    const el = document.querySelector('#note-form textarea[oninput*="estudios"]');
+    const el = document.querySelector('#note-form textarea[data-oninput-args*=\'"estudios"\']');
     if (el && rt.getActiveId() && getNotes()[rt.getActiveId()]) {
       el.value = getNotes()[rt.getActiveId()].estudios || '';
     }

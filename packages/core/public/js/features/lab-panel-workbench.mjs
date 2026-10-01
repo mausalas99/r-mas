@@ -267,7 +267,7 @@ function insertLabsAsRecent(_lines) {
   persistClinicalState({ immediate: true });
   rt.refreshTendenciasOrCultivosPanel();
   renderLabHistoryPanel();
-  var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
+  var el = document.querySelector('#note-form textarea[data-oninput-args*=\'"estudios"\']');
   if (el) el.value = getNotes()[rt.getActiveId()].estudios;
   rt.onboardingAdvanceAfterSend();
   rt.showToast('Labs enviados a la nota ✓', 'success');
@@ -291,7 +291,7 @@ function insertLabsAsAnteriorThenRecent(_newLines) {
   persistClinicalState({ immediate: true });
   rt.refreshTendenciasOrCultivosPanel();
   renderLabHistoryPanel();
-  var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
+  var el = document.querySelector('#note-form textarea[data-oninput-args*=\'"estudios"\']');
   if (el) el.value = getNotes()[rt.getActiveId()].estudios;
   rt.onboardingAdvanceAfterSend();
   rt.showToast('Fecha anterior guardada + nuevos labs agregados ✓', 'success');
@@ -335,7 +335,7 @@ function showLabConflictModal(newLines, existingDate) {
     persistClinicalState({ immediate: true });
     rt.refreshTendenciasOrCultivosPanel();
     renderLabHistoryPanel();
-    var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
+    var el = document.querySelector('#note-form textarea[data-oninput-args*=\'"estudios"\']');
     if (el) el.value = getNotes()[rt.getActiveId()].estudios;
     rt.onboardingAdvanceAfterSend();
     rt.showToast('Fecha reciente reemplazada ✓', 'success');
@@ -396,7 +396,7 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports, opts) {
   rt.refreshTendenciasOrCultivosPanel();
   // Same reason: the note's "estudios" textarea is plain DOM state, not
   // re-rendered by anything above — only a patient switch used to repaint it.
-  var estudiosEl = document.querySelector('#note-form textarea[oninput*="estudios"]');
+  var estudiosEl = document.querySelector('#note-form textarea[data-oninput-args*=\'"estudios"\']');
   var activeNotes = getNotes()[rt.getActiveId()];
   if (estudiosEl && activeNotes) estudiosEl.value = activeNotes.estudios || '';
 

@@ -1541,7 +1541,15 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   await page.locator('.tend-section[data-section="BH"] .tend-section-chart-btn').click();
   await groupModalP3.waitFor({ state: 'visible' });
   await page.waitForTimeout(500);
-  const fams4 = await page.locator('.tend-group-panel-card[data-panel-family]').evaluateAll((els) => Object.fromEntries(els.map((e) => [e.getAttribute('data-panel-family'), [...e.querySelectorAll('.tend-group-legend-check')].map((c) => c.getAttribute('data-field'))])));
+  // Gráficas B: one tab per family; open each tab and read its legend.
+  await page.locator('.tend-group-tab[data-tab="charts"]').click();
+  const tabs4 = await page.locator('.tend-chart-tab[data-panel-family]').evaluateAll((els) => els.map((e) => e.getAttribute('data-panel-family')));
+  const fams4 = {};
+  for (const fam of tabs4) {
+    const tab = page.locator(`.tend-chart-tab[data-panel-family="${fam}"]`);
+    if ((await tab.getAttribute('aria-selected')) !== 'true') { await tab.click(); await page.waitForTimeout(400); }
+    fams4[fam] = await page.locator(`.tend-group-panel-card[data-panel-family="${fam}"] .tend-group-legend-check`).evaluateAll((cs) => cs.map((c) => c.getAttribute('data-field')));
+  }
   const has = (fam, re) => (fams4[fam] || []).some((f) => re.test(f));
   check('BH panel order with all 4 families', Object.keys(fams4).join(',') === 'bh-absolute,bh-quality,bh-diff-manual,bh-coag', Object.keys(fams4));
   check('manual differential (Segmentados, Linfocitos %, Metamielo) lands in "bh-diff-manual"', has('bh-diff-manual', /NeuPct/) && has('bh-diff-manual', /LinPct/) && has('bh-diff-manual', /Metamielo/), fams4);

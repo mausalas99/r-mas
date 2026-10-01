@@ -155,7 +155,7 @@ async function openEstadoActual(page) {
   await closeToasts(page);
   await goArea(page, 'nota');
   await page.waitForTimeout(500);
-  const boardCard = page.getByText('DEMO JUAN', { exact: true }).locator('visible=true').first();
+  const boardCard = page.locator('.ic-card .sv-name', { hasText: 'DEMO PÉREZ JUAN' }).locator('visible=true').first();
   if (await boardCard.isVisible().catch(() => false)) await boardCard.click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
   await page.locator('.exp-group-section[data-section="estadoActual"]').click();
@@ -167,7 +167,7 @@ async function checkSalaActionBar(page) {
   await closeToasts(page);
   await goArea(page, 'nota');
   await page.waitForTimeout(400);
-  const boardCard = page.getByText('DEMO JUAN', { exact: true }).locator('visible=true').first();
+  const boardCard = page.locator('.ic-card .sv-name', { hasText: 'DEMO PÉREZ JUAN' }).locator('visible=true').first();
   if (await boardCard.isVisible().catch(() => false)) await boardCard.click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
   await page.locator('.exp-group-section[data-section="estadoActual"]').click();

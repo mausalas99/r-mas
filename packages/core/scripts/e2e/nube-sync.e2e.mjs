@@ -881,7 +881,11 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   check('gaps: after a 503 streak the next sync comes within the 2 min overload cap (sync-runtime-schedule)', (await ff(125000)) > 0);
   await streak(404, 310000);
   await netBlock(J, null);
-  const early = await ff(125000);
+  // The jumps killed J's room socket (heartbeat): its reconnect runs one pull of its own, not the poll timer. Let it happen first.
+  for (let i = 0; i < 3; i += 1) await ff(3000);
+  // Small steps (< the 25 s socket heartbeat timeout) so the socket stays up: a jump over 25 s drops it, and its reconnect pulls too.
+  let early = 0;
+  for (let i = 0; i < 6; i += 1) early += await ff(20000);
   const late = await ff(190000);
   check('gaps: after a 404 streak the cap is 5 min: nothing at 2 min, a sync by 5 min (permanent-error backoff)', early === 0 && late > 0, { early, late });
   check('no uncaught page errors on J', !J.pageErrors.length, J.pageErrors.slice(0, 5));
@@ -1006,6 +1010,11 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   // Assign goes through the Datos «Equipo» select. Unassign has no Sala UI (only the Interconsulta band).
   await backToLabs(A2.page);
   await backToLabs(B.page);
+  // The offline section deleted P4: put it back so the team steps below have a patient.
+  if (!(await patientVisible(A2.page, P4))) {
+    await pasteAndSave(A2.page, fullLabs(P4, 'Sep 25 2026 8:00AM'));
+    await until(async () => (await patientVisible(A2.page, P4)) && (await patientVisible(B.page, P4)), 60000);
+  }
   const teamIdOf = async (page, name) =>
     ((await clinicalOpsOf(page)).teams || []).find((t) => JSON.stringify(t).includes(name))?.team_id || '';
   /** Newest assignment row for the patient wins; '' = no team. */

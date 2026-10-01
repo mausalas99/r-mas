@@ -5,6 +5,8 @@ import {
   PROFILE_PUSH_FAILED_MSG,
 } from '../../clinical-profile-cloud-stubs.mjs';
 import { hasProgramAdminPrivileges } from '../../clinical-privileges.mjs';
+import { isCloudSyncActive } from '../cloud-sync/nube-sync-policy.mjs';
+import { isCloudSala, normalizeCloudSala } from '../cloud-sync/sala-allowlist.mjs';
 import { isValidUsernameFormat, normalizeUsername } from '../../clinical-username.mjs';
 import { syncRotationConfigButton } from '../clinical-rotation.mjs';
 import {
@@ -65,6 +67,15 @@ async function toastProfileSaveResult({ msg, usernameWillChange, sala }) {
   } else {
     toast(msg, 'success');
   }
+}
+
+/** Nube sala-room pull/push for `sala`, or null when Nube is off for it. */
+async function nubeSalaSync(sala) {
+  if (!isCloudSyncActive()) return null;
+  const s = normalizeCloudSala(sala || '');
+  if (!isCloudSala(s)) return null;
+  const mod = await import('../cloud-sync/cloud-clinical-ops-sala.mjs');
+  return { sala: s, pull: mod.pullClinicalOpsForSala, push: mod.pushLocalClinicalOpsToSala };
 }
 
 const sessionSala = () => String(clinicalSessionContext.user?.sala || '');
@@ -130,6 +141,8 @@ export async function handleProfileFormSubmit(ev) {
   if (claimResult === false) return;
   const usernameWillChange = claimResult === true;
 
+  const nube = await nubeSalaSync(fields.sala);
+  await nube?.pull(nube.sala, { since: 0 }).catch(() => null);
   const ok = await persistProfileFromPanel({
     rank: fields.rank,
     sala: fields.sala,
@@ -139,6 +152,9 @@ export async function handleProfileFormSubmit(ev) {
     adminAccessCode: adminChange.adminAccessCode,
   });
   if (!ok) return;
+  // Push before anything pulls: a Nube pull lets the room's copy of this user win,
+  // so a pull ahead of this push put the old rank back.
+  await nube?.push(nube.sala).catch(() => null);
 
   await renameNubeUsername(usernameWillChange, fields.username);
   await refreshClinicalUserProfile();

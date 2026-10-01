@@ -213,7 +213,7 @@ await r.finish('prompt() callers use the in-app dialog', async () => {
   await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
   await goArea(page, 'nota');
   // No active patient after reload: pick A from the team board.
-  await page.getByText('DEMO UNO', { exact: true }).locator('visible=true').first().click();
+  await page.getByText(A.name,{ exact: true }).locator('visible=true').first().click();
   await page.evaluate(() => window.switchInnerTab('indica'));
   await page.locator('#indica-form').waitFor({ state: 'visible' });
   await dieta.fill('Dieta blanda');
@@ -246,6 +246,8 @@ await r.finish('prompt() callers use the in-app dialog', async () => {
   const reloaded = async () => {
     await page.waitForTimeout(1500);
     await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
+    await goArea(page, 'nota');
+    await page.waitForTimeout(500);
   };
   await page.locator('#backup-file-input').setInputFiles(fullFile);
   await dialog.waitFor({ state: 'visible' });

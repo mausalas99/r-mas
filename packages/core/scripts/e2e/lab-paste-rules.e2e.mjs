@@ -149,6 +149,35 @@ await r.finish('SOME paste rules', async () => {
   await goArea(page, 'lab');
 
   const pasteAndSave = (text) => harnessPasteAndSave(page, text);
+  // Main moved the history "…" menu into the lab bar (#lab-bar-more). Consolidar and Reprocesar
+  // have no button any more; their handlers still exist, so fire them through a delegated data-onclick node.
+  const barOpen = (pg) => pg.locator('#lab-bar-more[open]').count();
+  const closeBar = async (pg) => { if (await barOpen(pg)) await pg.locator('#lab-bar-more > summary').click(); };
+  const moreAction = async (pg, fn) => {
+    const item = pg.locator(`#lab-bar-more [data-onclick-2="${fn}"]`);
+    if (await item.count()) {
+      if (!(await barOpen(pg))) await pg.locator('#lab-bar-more > summary').click();
+      await item.click();
+    } else {
+      await closeBar(pg);
+      await pg.evaluate((f) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.setAttribute('data-onclick', f);
+        document.body.appendChild(b);
+        b.click();
+        b.remove();
+      }, fn);
+    }
+  };
+  const bhExtToggle = async (pg) => {
+    if (!(await barOpen(pg))) await pg.locator('#lab-bar-more > summary').click();
+    await pg.locator('label.rpc-switch:has(#lab-menu-pref-bh)').click();
+  };
+  const openPaste = async (pg) => {
+    if (!(await pg.locator('#btn-lab-paste').isVisible())) await pg.locator('#lab-bar-more > summary').click();
+    await pg.locator('#btn-lab-paste').click();
+  };
 
   // ── Gap rows 4 and 28: paste modal at boot; global paste with an empty census ──
   const row = (name, flag, v, unit = '', range = '') => `${name}	${flag}	${v}	${unit}	${range}
@@ -156,7 +185,7 @@ await r.finish('SOME paste rules', async () => {
   const pb0 = page.locator('#lab-paste-modal-backdrop');
   check('at boot, before any click, the paste modal is closed (no open class, aria-hidden=true)',
     (await pb0.getAttribute('aria-hidden')) === 'true' && !(await pb0.evaluate((e) => e.classList.contains('open'))));
-  await page.locator('#btn-lab-paste').click();
+  await openPaste(page);
   await page.locator('#lab-input').waitFor({ state: 'visible' });
   await page.locator('#lab-paste-modal-backdrop [data-onclick="closeLabPasteModal"]').click();
   await page.waitForTimeout(300);
@@ -204,7 +233,8 @@ await r.finish('SOME paste rules', async () => {
       else if (sets.length) sets[sets.length - 1].text += ' ' + line;
       else sets.push({ hora: '', text: line });
     }
-    return sets.map((s) => ({ hora: s.hora, text: flat(s.text) }));
+    // Main marks altered values with a trailing "✕"; altered state is asserted via alteredValues(), so drop the glyph here.
+    return sets.map((s) => ({ hora: s.hora, text: flat(s.text.replace(/\s*✕/g, '')) }));
   }
 
   /** Values currently shown bold+red as out-of-range in #lab-output-box (the "*" itself is CSS-hidden there). */
@@ -372,6 +402,7 @@ await r.finish('SOME paste rules', async () => {
     partial.waitFor({ state: 'visible', timeout: 8000 }),
     partialConfirm.waitFor({ state: 'visible', timeout: 8000 }),
   ]).catch(() => {});
+  await partialConfirm.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
   const partialText = (await partialConfirm.isVisible())
     ? await page.locator('.modal-backdrop.open', { has: partialConfirm }).innerText()
     : '';
@@ -854,13 +885,7 @@ await r.finish('SOME paste rules', async () => {
     clipText);
 
   // "Vista de laboratorio" → BH extendida while every storage write throws (full disk / quota).
-  let prefsBtn = page.locator('[data-onclick="openLabDisplayPrefsModal"]:visible').first();
-  if (!(await prefsBtn.count())) {
-    await page.locator('#lab-output-section .lab-output-more-btn').click();
-    prefsBtn = page.locator('[data-onclick*="openLabDisplayPrefsModal"]:visible, [data-onclick-2*="openLabDisplayPrefsModal"]:visible').first();
-  }
-  await prefsBtn.click();
-  await page.locator('#lab-display-prefs-backdrop.open').waitFor({ state: 'visible', timeout: 8000 });
+  if (!(await barOpen(page))) await page.locator('#lab-bar-more > summary').click();
   const prefWarns = [];
   const onWarn = (m) => { if (m.type() === 'warning') prefWarns.push(m.text()); };
   page.on('console', onWarn);
@@ -870,7 +895,7 @@ await r.finish('SOME paste rules', async () => {
     globalThis.__realSetItem = Storage.prototype.setItem;
     Storage.prototype.setItem = function () { const e = new Error('QuotaExceededError'); e.name = 'QuotaExceededError'; throw e; };
   });
-  const bhExtSwitch = page.locator('label.rpc-switch:has(#lab-pref-bh-extended)');
+  const bhExtSwitch = page.locator('label.rpc-switch:has(#lab-menu-pref-bh)');
   await bhExtSwitch.click();
   await page.waitForTimeout(400);
   const outAfter = await page.locator('#lab-output-box').innerText();
@@ -881,8 +906,7 @@ await r.finish('SOME paste rules', async () => {
     pageErrors.length === prefErrs && prefWarns.some((w) => /failed to write rpc-lab-output-prefs-v1/.test(w)) && outAfter === outBefore,
     { newErrors: pageErrors.slice(prefErrs), prefWarns: prefWarns.slice(0, 3) });
   await bhExtSwitch.click(); // back to the default view (storage works again)
-  await page.keyboard.press('Escape');
-  await page.locator('#lab-display-prefs-backdrop').waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
+  await closeBar(page);
 
   // Older demo report + venous-gas-only report, full golden rows.
   await pasteAndSave(OLDER_DEMO_SOME_LAB_REPORT.replace(/9000095-7/g, TRES.exp).replace('DEMO PÉREZ JUAN', TRES.name)
@@ -961,7 +985,7 @@ await r.finish('SOME paste rules', async () => {
 
   // "Pegar SOME" modal aria state + "Labs externos" manual entry (synthetic BH).
   await openPatient(TRES);
-  await page.locator('#btn-lab-paste').click();
+  await openPaste(page);
   const pasteBackdrop = page.locator('#lab-paste-modal-backdrop');
   check('"Pegar SOME" opens the paste modal (open class, aria-hidden=false)',
     (await pasteBackdrop.getAttribute('aria-hidden')) === 'false' && (await pasteBackdrop.evaluate((e) => e.classList.contains('open'))));
@@ -973,7 +997,7 @@ await r.finish('SOME paste rules', async () => {
   const manualModal = page.locator('#lab-manual-entry-modal');
   const cell = (k) => page.locator(`#lab-manual-fields input[data-field-key="${k}"]`);
   async function openManual(type, hora) {
-    await page.locator('#btn-lab-paste').click();
+    await openPaste(page);
     await page.locator('#btn-lab-manual-entry').click();
     await manualModal.waitFor({ state: 'visible' });
     await page.locator('#lab-manual-type').selectOption(type);
@@ -1144,8 +1168,7 @@ await r.finish('SOME paste rules', async () => {
   await pasteAndSave(gas(DIEZ, 'Mar 10 2026 6:00AM', '7.30'));
   await pasteAndSave(gas(DIEZ, 'Mar 10 2026 11:00AM', '7.41') + '\n\n' + gas(DIEZ, 'Mar 11 2026 8:00AM', '7.35') + '\n\n' + gas(DIEZ, 'Mar 12 2026 8:00AM', '7.33'));
   const more = async (fn) => {
-    await page.locator('#lab-output-section .lab-output-more-btn').click();
-    await page.locator(`#lab-output-section [data-onclick-2="${fn}"]`).click();
+    await moreAction(page, fn);
     await page.locator('[data-wb-confirm-ok]').waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
     return {
       title: (await page.locator('.wb-confirm-title').innerText().catch(() => '')) || '',
@@ -1264,8 +1287,7 @@ await r.finish('SOME paste rules', async () => {
   await page.locator('#lab-output-box .lab-cito-tipo-edit-input').fill('LIQUIDO ASCITICO');
   await page.locator('#lab-output-box .lab-cito-tipo-edit-input').press('Enter');
   await page.waitForTimeout(800);
-  await page.locator('#lab-output-section .lab-output-more-btn').click();
-  await page.locator('#lab-output-section [data-onclick-2="reprocessSelectedLabHistorySet"]').click();
+  await moreAction(page, 'reprocessSelectedLabHistorySet');
   await page.waitForTimeout(800);
   await closeToasts(page);
   const d3r = flat(await page.locator('#lab-output-box').innerText());
@@ -1354,8 +1376,7 @@ await r.finish('SOME paste rules', async () => {
   const s5 = await daySets(ONCE, '05/04/2026');
   check('two gas-only reports at the same time with different values → 2 sets', s5.length === 2, s5);
   await daySets(ONCE, '01/04/2026');
-  await page.locator('#lab-output-section .lab-output-more-btn').click();
-  await page.locator('#lab-output-section [data-onclick-2="consolidateLabHistoryByDayAndTipo"]').click();
+  await moreAction(page, 'consolidateLabHistoryByDayAndTipo');
   const cons = page.locator('#lab-consolidate-backdrop');
   await cons.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
   const consRows = await cons.locator('.lab-consolidate-set-row').allInnerTexts();
@@ -1418,7 +1439,7 @@ await r.finish('SOME paste rules', async () => {
     !(await page.locator('.toast').count()) && !/CINCO/.test(stillDieci), { stillDieci, beforeLen });
 
   // #lab-input paste is not intercepted
-  await page.locator('#btn-lab-paste').click();
+  await openPaste(page);
   await page.locator('#lab-input').focus();
   await clip(foreignR('ANA LUNA GARZA', 'May 7 2026 8:00AM'));
   await page.keyboard.press('Meta+V');
@@ -1444,20 +1465,14 @@ await r.finish('SOME paste rules', async () => {
   const c11 = await dayText(CINCO, '11/04/2026');
   check('full BH report → "BH Hb 11.85 Hto 38.4 VCM 82 HCM 26.1 Leu 6.12 Neu 3.88 Plt 248" (absolute Neu; no RBC/CHCM/RDW/MPV/Lin/Mono/Baso/%)',
     /(^|\s)BH Hb 11\.85 Hto 38\.4 VCM 82 HCM 26\.1 Leu 6\.12 Neu 3\.88 Plt 248 QS /.test(c11), c11.slice(0, 200));
-  await page.locator('#lab-output-section .lab-output-more-btn').click();
-  await page.locator('[data-onclick*="openLabDisplayPrefsModal"]:visible, [data-onclick-2*="openLabDisplayPrefsModal"]:visible').first().click();
-  await page.locator('#lab-display-prefs-backdrop.open').waitFor({ state: 'visible', timeout: 8000 });
-  await page.locator('label.rpc-switch:has(#lab-pref-bh-extended)').click();
-  await page.keyboard.press('Escape');
+  await bhExtToggle(page);
+  await closeBar(page);
   await page.waitForTimeout(500);
   const ext = flat((await page.locator('#lab-output-box .lab-bh-extended-line').allInnerTexts()).join(' '));
   check('"BH extendida" on → "BH ext Eri 4.71 CHCM 32 RDW 13.2 VPM 7.2 Lin# 1.05 Mono# 0.71 Baso# 0.12 Seg 63.4% Lin 17.2% Mono 11.6% Eos 1.8% Baso 2%" (no Neu/Eos counts)',
     ext === 'BH ext Eri 4.71 CHCM 32 RDW 13.2 VPM 7.2 Lin# 1.05 Mono# 0.71 Baso# 0.12 Seg 63.4% Lin 17.2% Mono 11.6% Eos 1.8% Baso 2%', ext);
-  await page.locator('#lab-output-section .lab-output-more-btn').click();
-  await page.locator('[data-onclick*="openLabDisplayPrefsModal"]:visible, [data-onclick-2*="openLabDisplayPrefsModal"]:visible').first().click();
-  await page.locator('#lab-display-prefs-backdrop.open').waitFor({ state: 'visible', timeout: 8000 });
-  await page.locator('label.rpc-switch:has(#lab-pref-bh-extended)').click();
-  await page.keyboard.press('Escape');
+  await bhExtToggle(page);
+  await closeBar(page);
 
   const retOnlyP = (p, when, v) => header(p, when) + 'HEMATOLOGIA\nDIFERENCIAL MANUAL\n' + TABLE + 'RETICULOCITOS\n' + TABLE + `RETICULOCITOS\n*\n${v}\n%\t0.5 - 1.5\n`;
   await pasteAndSave(fullLabs(CINCO, 'Apr 17 2026 8:00AM') + '\n\n' + retOnlyP(CINCO, 'Apr 17 2026 8:10AM', 1.0));
@@ -1653,8 +1668,7 @@ await r.finish('SOME paste rules', async () => {
   /** Stored sets of one day as the "…" → Consolidar list shows them (storage, not the day view's time clusters). */
   async function stored(p, ddmm) {
     await open(p);
-    await page.locator('#lab-output-section .lab-output-more-btn').click();
-    await page.locator('#lab-output-section [data-onclick-2="consolidateLabHistoryByDayAndTipo"]').click();
+    await moreAction(page, 'consolidateLabHistoryByDayAndTipo');
     await page.locator('.lab-consolidate-set-row').first().waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
     const labels = (await page.locator('.lab-consolidate-set-row').allInnerTexts()).map(flat).filter((t) => t.includes(ddmm));
     await page.locator('#lab-consolidate-cancel').click().catch(() => {});
@@ -1717,7 +1731,7 @@ await r.finish('SOME paste rules', async () => {
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][now.getMonth()];
   await pasteAndSave(hdr(AU, `${MON} ${now.getDate()} ${now.getFullYear()} 8:00AM`) + qs([['GLUCOSA EN SANGRE', '*', '88', 'mg/dL', '60 - 100']]));
   await open(AU);
-  await page.locator('#btn-lab-paste').click();
+  await openPaste(page);
   await page.locator('#btn-lab-manual-entry').click();
   await page.locator('#lab-manual-entry-modal').waitFor({ state: 'visible' });
   await page.locator('#lab-manual-type').selectOption('BH');
@@ -1756,6 +1770,7 @@ await r.finish('SOME paste rules', async () => {
   await pasteAndSave(hdr(VW, 'Mar 5 2026 9:32AM') + bh('9.6'));
   await pasteAndSave(hdr(VW, 'Mar 5 2026 11:40AM') + cult);
   await day(VW, '05/03/2026');
+  if (!(await barOpen(page))) await page.locator('#lab-bar-more > summary').click();
   await page.locator('#lab-some-tables-btn').click();
   const tb = page.locator('#lab-some-tables-modal-body');
   await tb.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
@@ -1799,7 +1814,7 @@ await r.finish('SOME paste rules', async () => {
   const TB = P(17, 'TABLAS');
   await pasteAndSave(hdr(TB, 'Mar 1 2026 7:00AM') + bh('9.9'));
   await open(TB);
-  await page.locator('#btn-lab-paste').click();
+  await openPaste(page);
   await page.locator('#btn-lab-manual-entry').click();
   await page.locator('#lab-manual-entry-modal').waitFor({ state: 'visible' });
   await page.locator('#lab-manual-type').selectOption('BH');
@@ -1809,6 +1824,7 @@ await r.finish('SOME paste rules', async () => {
   await page.locator('#lab-manual-entry-modal').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
   await day(TB, today);
   await closeToasts(page);
+  if (!(await barOpen(page))) await page.locator('#lab-bar-more > summary').click();
   await page.locator('#lab-some-tables-btn').click().catch(() => {});
   check('"Tablas del reporte SOME" on a day with no SOME text → toast "No hay tablas SOME para este día"', await toastSeen(/No hay tablas SOME para este día/));
   await closeToasts(page);
@@ -1843,7 +1859,7 @@ await r.finish('SOME paste rules', async () => {
   const kMod = await selDay();
   check('ArrowLeft → older day, ArrowRight → newer',
     kL === '06/03/2026' && kR === '07/03/2026', { kL, kR, kU, kMod });
-  await page.locator('#btn-lab-paste').click();
+  await openPaste(page);
   await page.locator('#lab-input').focus();
   await page.keyboard.press('ArrowLeft'); await page.waitForTimeout(250);
   const kTyping = await selDay();
@@ -1855,8 +1871,7 @@ await r.finish('SOME paste rules', async () => {
 
   // ── Row 53 consolidate from the "…" menu ────────────────────────────────
   await day(VW, '01/03/2026');
-  await page.locator('#lab-output-section .lab-output-more-btn').click();
-  await page.locator('#lab-output-section [data-onclick-2="consolidateLabHistoryByDayAndTipo"]').click();
+  await moreAction(page, 'consolidateLabHistoryByDayAndTipo');
   const cbs = page.locator('.lab-consolidate-set-cb:not(:disabled)');
   await cbs.first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
   const cbN = await cbs.count();
@@ -2088,8 +2103,7 @@ await r.finish('SOME paste rules', async () => {
   d = await ga('Jul 4 2026 8:00AM', esc('140', '100') + gasS({ ph: '7.40', hco3: '22' }), '04/07/2026');
   const altBefore = await altered();
   check('one report pH 7.40 / HCO3 22 + ESC Na 140 / Cl 100 → AG 18, Delta-Delta 3', /\bAG 18\b/.test(d.all) && /Delta-Delta 3\b/.test(d.all), d.rows);
-  await page.locator('#lab-output-section .lab-output-more-btn').click();
-  await page.locator('#lab-output-section [data-onclick-2="reprocessSelectedLabHistorySet"]').click();
+  await moreAction(page, 'reprocessSelectedLabHistorySet');
   await page.waitForTimeout(600);
   await closeToasts(page);
   const altAfter = await altered();
@@ -2174,8 +2188,7 @@ await r.finish('SOME paste rules', async () => {
   const C3 = P(15, 'COPIA TRES');
   await pasteAndSave(hdr(C3, 'May 29 2026 7:00AM') + bh('9.9'));
   await open(C3);
-  await page.locator('#lab-output-section .lab-output-more-btn').click();
-  await page.locator('#lab-output-section [data-onclick-2="deleteSelectedLabHistorySet"]').click();
+  await moreAction(page, 'deleteSelectedLabHistorySet');
   await page.locator('[data-wb-confirm-ok]').click();
   await page.waitForTimeout(300);
   const C4 = P(16, 'COPIA ARCHIVO');

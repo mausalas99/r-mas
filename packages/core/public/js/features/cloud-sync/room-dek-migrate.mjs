@@ -8,7 +8,14 @@
  * Owner-only because the Worker only lets the room owner set a DEK
  * (cloud/sync-worker/src/room-dek.js: handlePutRoomDek, 403 otherwise).
  */
-import { ensureRoomDek, loadRoomDek, getCachedRoomDek, NUBE_E2EE_ENABLED } from './room-dek.mjs';
+import {
+  ensureRoomDek,
+  loadRoomDek,
+  getCachedRoomDek,
+  isRoomPlaintextSeen,
+  clearRoomPlaintextSeen,
+  NUBE_E2EE_ENABLED,
+} from './room-dek.mjs';
 import { needsReencryption, listContentFieldEntries } from './cloud-sync-crypto-wire.mjs';
 import { pushCloudOpsDirect } from './cloud-push-direct.mjs';
 import { auditDekEvent, DEK_EVENTS } from './cloud-sync-audit.mjs';
@@ -116,7 +123,7 @@ function groupOpsByEntity(ops) {
  * @returns {Promise<{ swept: number, failed: number }>}
  */
 export async function sweepRoomForPlaintextContent(api, roomId, actorId) {
-  const data = await api.pull(roomId, 0);
+  const data = await api.pull(roomId, 0, { raw: true });
   const byPath = data?.state ? foldStateToLatestByPath(data.state) : foldOpsToLatestByPath(data?.ops);
   const ops = buildReencryptOps(byPath, actorId);
   if (!ops.length) return { swept: 0, failed: 0 };
@@ -177,7 +184,7 @@ async function pushEntityOps(api, roomId, entityKey, entityOps, revisionRef) {
  * @returns {Promise<number>}
  */
 async function listRemainingPlaintext(api, roomId) {
-  const data = await api.pull(roomId, 0);
+  const data = await api.pull(roomId, 0, { raw: true });
   const byPath = data?.state ? foldStateToLatestByPath(data.state) : foldOpsToLatestByPath(data?.ops);
   const left = [];
   for (const [path, entry] of Object.entries(byPath)) {
@@ -228,6 +235,7 @@ async function sweepAndVerify(api, roomId, actorId) {
     const remaining = leftover ? leftover.length : -1;
     // Paths and value shapes only, never values: shows which fields a sweep cannot encrypt.
     if (leftover && leftover.length) console.warn('[room-dek] still plaintext after sweep', leftover.slice(0, 20));
+    if (remaining === 0) clearRoomPlaintextSeen(roomId);
     await auditDekEvent(DEK_EVENTS.BACKFILL_SWEPT, { roomId, swept: result.swept, failed: result.failed, remaining });
     return { ...result, remaining };
   } catch (err) {
@@ -242,6 +250,7 @@ async function sweepAndVerify(api, roomId, actorId) {
 
 /** roomId → when this run last tried to key the sala (ms). */
 const ownerKeyAttempts = new Map();
+const ownerSweepAttempts = new Map();
 const OWNER_KEY_RETRY_MS = 10 * 60 * 1000;
 
 /**
@@ -258,14 +267,18 @@ const OWNER_KEY_RETRY_MS = 10 * 60 * 1000;
 export async function ensureOwnerRoomKey(api, room, actorId, now = Date.now()) {
   const roomId = String(room?.id || '');
   if (!NUBE_E2EE_ENABLED || !roomId || room?.role !== 'owner' || !room?.code) return null;
-  if (getCachedRoomDek(roomId)) return null;
-  const last = ownerKeyAttempts.get(roomId);
+  // Keyed already: only a pull that showed a teammate's plaintext needs a sweep.
+  const hasKey = !!getCachedRoomDek(roomId);
+  if (hasKey && !isRoomPlaintextSeen(roomId)) return null;
+  const attempts = hasKey ? ownerSweepAttempts : ownerKeyAttempts;
+  const last = attempts.get(roomId);
   if (last != null && now - last < OWNER_KEY_RETRY_MS) return null;
-  ownerKeyAttempts.set(roomId, now);
+  attempts.set(roomId, now);
   return backfillRoomEncryption(api, room, actorId).catch(() => null);
 }
 
 /** Tests only. */
 export function resetOwnerRoomKeyAttempts() {
   ownerKeyAttempts.clear();
+  ownerSweepAttempts.clear();
 }

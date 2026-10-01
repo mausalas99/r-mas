@@ -151,7 +151,7 @@ async function collectClinicalOpsForSala(sala) {
  * syncClinicalOpsForSala (pull + merge, then push).
  * @param {string} sala
  */
-async function pushLocalClinicalOpsToSala(sala) {
+export async function pushLocalClinicalOpsToSala(sala) {
   if (!isCloudSyncActive() || !getCloudSyncToken()) {
     return { ok: false, reason: 'bridge_inactive' };
   }

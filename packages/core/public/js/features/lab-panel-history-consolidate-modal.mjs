@@ -273,7 +273,7 @@ export function finishLabConsolidateUi(patientId, mergedCount, opts) {
         rt.refreshTendenciasOrCultivosPanel();
       },
       syncEstudiosTextarea: function (pid) {
-        var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
+        var el = document.querySelector('#note-form textarea[data-oninput-args*=\'"estudios"\']');
         if (el && pid && getNotes()[pid]) {
           el.value = getNotes()[pid].estudios || '';
         }

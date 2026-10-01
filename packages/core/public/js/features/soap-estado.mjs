@@ -513,7 +513,7 @@ export function insertSOAPText() {
   stampDocUpdatedAt(getNotes()[activeId]);
   persistClinicalState();
   scheduleCloudSyncPush();
-  var el = document.querySelector('#note-form textarea[oninput*="evolucion"]');
+  var el = document.querySelector('#note-form textarea[data-oninput-args*=\'"evolucion"\']');
   if (el) el.value = text;
   closeSOAPModal();
   rt.showToast("Plantilla insertada ✓", "success");
