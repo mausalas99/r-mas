@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global document */
 /**
  * E2E: the SOME paste rules, driven through the real Electron app.
  * Synthetic DEMO patients and made-up expedientes only.

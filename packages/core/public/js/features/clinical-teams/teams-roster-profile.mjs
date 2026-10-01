@@ -116,6 +116,14 @@ async function renameNubeUsername(changed, username) {
   }
 }
 
+/** First reason the profile form cannot be saved, or null. */
+function profileFormError(fields) {
+  if (!isValidUsernameFormat(fields.username)) return 'Usuario inválido. Usa 3–32 caracteres en minúsculas: letras, números y _.';
+  if (!fields.clinicalName) return 'Escribe tu nombre en guardia.';
+  if (!currentUserId() || !dbApi()) return 'Sesión clínica no disponible. Desbloquea la base de datos.';
+  return null;
+}
+
 export async function handleProfileFormSubmit(ev) {
   ev.preventDefault();
   const fields = readProfileFormFields();
@@ -123,16 +131,9 @@ export async function handleProfileFormSubmit(ev) {
   const adminChange = await resolveProgramAdminChange(fields.adminCb, wasProgramAdmin);
   if (!adminChange) return;
 
-  if (!isValidUsernameFormat(fields.username)) {
-    toast('Usuario inválido. Usa 3–32 caracteres en minúsculas: letras, números y _.', 'error');
-    return;
-  }
-  if (!fields.clinicalName) {
-    toast('Escribe tu nombre en guardia.', 'error');
-    return;
-  }
-  if (!currentUserId() || !dbApi()) {
-    toast('Sesión clínica no disponible. Desbloquea la base de datos.', 'error');
+  const invalid = profileFormError(fields);
+  if (invalid) {
+    toast(invalid, 'error');
     return;
   }
 

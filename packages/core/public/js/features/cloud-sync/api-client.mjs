@@ -54,6 +54,12 @@ function assertCloudBaseUrl(baseUrl) {
  *   getRoomDek?: (roomId: string) => CryptoKey | null,
  * }} deps
  */
+function pullQuery(since, opts) {
+  const q = new URLSearchParams({ since: String(since ?? 0) });
+  if (opts?.mobile) q.set('mobile', '1');
+  return q;
+}
+
 export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomDek = getCachedRoomDek }) {
   /**
    * @param {string} path
@@ -108,8 +114,7 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
     getAdminRoomDek: (roomId) => req(`/rooms/${roomId}/dek/admin`),
     setAdminRoomDek: (roomId, body) => req(`/rooms/${roomId}/dek/admin`, { method: 'PUT', body }),
     pull: async (roomId, since, opts) => {
-      const q = new URLSearchParams({ since: String(since ?? 0) });
-      if (opts?.mobile) q.set('mobile', '1');
+      const q = pullQuery(since, opts);
       const t0 = Date.now();
       const data = await req(`/rooms/${roomId}/pull?${q.toString()}`);
       if (data && typeof data === 'object') data.pullMs = Date.now() - t0;

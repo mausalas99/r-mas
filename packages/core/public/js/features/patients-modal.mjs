@@ -350,8 +350,7 @@ function fillLabPatientModalFields(p) {
     var ageNum = parseInt(p.edad, 10);
     edadNum.value = isNaN(ageNum) ? '' : String(ageNum);
   }
-  var unidadLab = String(p.edadUnidad || (String(p.edad || '').match(/\b(meses|d[ií]as)\b/i) || [''])[0]).toLowerCase().replace('dias', 'días');
-  if (edadUnit) edadUnit.value = /^(meses|días)$/.test(unidadLab) ? unidadLab : 'años';
+  if (edadUnit) edadUnit.value = 'años';
   document.getElementById('m-sexo-ro').value = p.sexo === 'M' ? 'M' : 'F';
   ['area', 'servicio', 'cuarto', 'cama'].forEach(function (f) {
     document.getElementById('m-' + f).value = '';

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global document, DataTransfer, ClipboardEvent, localStorage, window */
+/* global document, DataTransfer, ClipboardEvent, window, getComputedStyle */
 /**
  * E2E: Nota de evolución and Indicaciones (Interconsulta › Clínico), driven
  * through the real Electron app. A busy day: the census diagnoses are set in
