@@ -1,59 +1,31 @@
-version: 8.4.5
+version: 8.4.6
 files:
-  - url: R+-8.4.5-autoupdate-mac-arm64.zip
-    sha512: aNUfKhhvhgZ37Pi3nt8ZQZiLyhqdXhg0vCfDSk036g+aYDF2BI2vpULS2kzubwDIyy2NfomEM3CBfIn69owhKw==
-    size: 141471306
-  - url: R+-8.4.5-arm64.dmg
-    sha512: oi5uzDroaPIkvhAGZ12oOpZH/o0cOU0l+Bo3udWomzBBwPkBNwQKF6GZAp30zX2c+nHsDUgFbtbtLYNTCQrYjw==
-    size: 142143792
-  - url: R+-8.4.5-autoupdate-mac-x64.zip
-    sha512: cwvJ3oDgw65ezPhXsXnEnt0eNhvL3+EgD27wHiwjNNHz71utHJQk58o8ZNVVqHWjQPJS2Z3H3dPBgyN2KtgttA==
-    size: 150140480
-  - url: R+-8.4.5-x64.dmg
-    sha512: qkcmuA886QOYprr3lNdHT6qg5Ff24o0vGHlW4QJRPWaalirsAh4YjlFxGzBNEDG1vo8Tq3O7sTXGPOv+3jw1Iw==
-    size: 150775663
-path: R+-8.4.5-autoupdate-mac-arm64.zip
-sha512: aNUfKhhvhgZ37Pi3nt8ZQZiLyhqdXhg0vCfDSk036g+aYDF2BI2vpULS2kzubwDIyy2NfomEM3CBfIn69owhKw==
-releaseDate: '2026-09-30T21:44:44.000Z'
+  - url: R+-8.4.6-autoupdate-mac-arm64.zip
+    sha512: 8GN9UyVzO3yLS3pGAQL4n91bC4xJN5TKWhr7JgZjpp8GhlmotGSAEgldwRtKNBaycLV9s4c/Wo9RyMlcMHRC0g==
+    size: 141483653
+  - url: R+-8.4.6-arm64.dmg
+    sha512: au4T9Lk5C9JkUJ5U3wDYAvcdPrL7lM4cHJbOTbtb7K+AWG0lutbiv74jOJIrtqbyqiBGNt96JUW4PMuP4eBWMg==
+    size: 142169607
+  - url: R+-8.4.6-autoupdate-mac-x64.zip
+    sha512: 6RMKQ/ZeCKiMloEtxxPREXQVFr2sqC2nPe0GpgJcmKJwWlTy6XBmq+mC40oPXlnmOc856g3ZarL1UmXXOaG4gA==
+    size: 150152883
+  - url: R+-8.4.6-x64.dmg
+    sha512: KFLHkjvOZxW68EMhx2ZNASiRYeFCTh2SEe++xIQTW/hkXHQONHEIy1UZ+zysIPugSTtvuloMxElhWgtFqIt0FA==
+    size: 150782724
+path: R+-8.4.6-autoupdate-mac-arm64.zip
+sha512: 8GN9UyVzO3yLS3pGAQL4n91bC4xJN5TKWhr7JgZjpp8GhlmotGSAEgldwRtKNBaycLV9s4c/Wo9RyMlcMHRC0g==
+releaseDate: '2026-10-01T11:35:20.000Z'
 releaseNotes: |
-  Notas e indicaciones ya se sincronizan con Nube. Salir de una sala o equipo funciona. Varios arreglos en Estado actual y Tendencias.
+  Un R2 puede cubrir 2 equipos. Nuevo interruptor de pistas en Ajustes. Varios arreglos menores.
   
-  Nuevo (Nube): la nota de evolución, el interrogatorio y las indicaciones se sincronizan entre equipos. Gana la edición más reciente. Un texto de más de 96 KB se queda en este equipo y Conexión muestra «Pendiente».
+  Nuevo (Equipos): un R2 puede cubrir hasta 2 equipos de Sala. Cada R2 lleva su propia letra de guardia. Un tercer equipo se rechaza con aviso.
   
-  Nuevo (Perfil): Mi perfil ahora incluye tu sala, rango y usuario en una sola pantalla. Cambiar de sala con un toque te pasa a su sala en Nube.
+  Nuevo (Ajustes): el interruptor «Pistas en pantalla» activa o apaga los globos que enseñan R+ y cuentan las novedades. Al activarlo, R+ te muestra dónde está cada pista.
   
-  Nuevo (Interconsultas): la barra de interconsulta usa pastillas para Servicio, Motivo, Seguimiento y Equipo. Un clic en cualquier parte de la pastilla actúa sobre su control.
+  Cambio (Equipos): los textos de unirse a un equipo dicen «líder de tu equipo» en vez de «R2».
   
-  Cambio (Interconsultas): «Torre HU» ya no aparece como servicio solicitante.
+  Arreglado (Interconsultas): al apagar el demo, un paciente demo sin asignar pierde su asignación vieja.
   
-  Arreglado (Interconsultas): los avisos guiados del tablero quedan junto a botones pequeños y hay un paso para el cambio Asignar / Mi equipo. Se arregló el contraste en claro y oscuro, y la bandeja ya no se colapsa con un equipo grande.
+  Arreglado (Estado actual): la gráfica acumulada de balance ahora se ajusta a su espacio.
   
-  Nuevo (iPad): iPad usa el mismo diseño que la computadora. Resumen cabe sin desplazar. La lista lateral es una barra angosta con solo el número de cama.
-  
-  Arreglado (Perfil): al cambiar tu @usuario en Mi perfil, ahora también se actualiza en Nube.
-  
-  Nuevo (Perfil): si no tienes sala, o es el día 1 del mes, el botón Mi perfil late. Al abrirlo, la sección Sala está abierta y te avisa. El primero en unirse a una sala empieza a sincronizar de inmediato.
-  
-  Arreglado (Nube): «Salir de la sala» y «Salir del equipo» confirman con el servidor. El avatar del panel Nube tiene mejor contraste.
-  
-  Arreglado (Salas): «Salir de la sala» ya no se deshace al abrir la app o Conexión. Para volver entras con código, creas una sala o te unes a un equipo.
-  
-  Arreglado (Equipos): una copia vieja de la sala ya no deshace tu salida de un equipo ni te saca del equipo nuevo. Los envíos a la sala ahora primero descargan y combinan.
-  
-  Arreglado (Estado actual): el DIA de la Solución Stanford avanza por fecha, igual que en Egreso.
-  
-  Arreglado (Estado actual): las sugerencias ventilatorias se actualizan al cambiar FiO₂, PEEP, P meseta o VT. En Alto flujo ya no salen sugerencias de campos ocultos.
-  
-  Arreglado (Tendencias): los gasométricos con coma decimal o con «<» muestran su tarjeta. Un valor «<0.01» se grafica en 0.01.
-  
-  Arreglado (Manejo): el potasio oral ya no cuenta como reposición.
-  
-  Arreglado (Nube): al borrar un paciente, el borrado llega también a la sala del paciente.
-  
-  Arreglado (Equipos): un paciente sin equipo («Sin asignar») ahora se quita del equipo en todos los dispositivos.
-  
-  Arreglado (Inicio): R+ borra al iniciar claves viejas de almacenamiento local que podían llenar el espacio.
-  
-  Limpieza: se quitó código muerto del botón de Modo Guardia.
-  
-  Problema conocido: el DIA de Stanford en el Resumen y en la etiqueta de Manejo aún muestra el valor guardado.
+  Cambio (Avisos): los avisos vuelven a salir arriba a la derecha. Abajo tapaban el paso de Manejo a Estado actual.
