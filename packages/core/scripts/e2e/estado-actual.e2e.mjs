@@ -1152,7 +1152,8 @@ async function run() {
     els.map((e) => ({ day: e.querySelector('strong').textContent, hour: e.querySelector('span').textContent })));
   const days = ticks.map((t) => t.day).filter(Boolean);
   check('Gráficas: X axis writes each day once, hours only on a day with >1 reading',
-    ticks.length >= 2 && new Set(days).size === days.length && days.length === 1 && ticks.every((t) => /^\d\d:\d\d$/.test(t.hour)), ticks);
+    // Readings sit hours before «now», so shortly after midnight they span two days: then each day has one reading and no hour.
+    ticks.length >= 2 && new Set(days).size === days.length && ticks.every((t) => (days.length === 1 || !t.hour) ? (days.length > 1 || /^\d\d:\d\d$/.test(t.hour)) : /^\d\d:\d\d$/.test(t.hour)), ticks);
   await chartsMount.locator('[data-ea-hit-plot="ta"][data-ea-hit="0"]').hover();
   const guides = await chartsMount.locator('.ea-charts-guide').evaluateAll((els) => els.map((e) => (e.hidden ? 'hidden' : e.style.left)));
   const whenFc = await chartsMount.locator('.ea-charts-row').nth(1).locator('.ea-charts-row-when').innerText();

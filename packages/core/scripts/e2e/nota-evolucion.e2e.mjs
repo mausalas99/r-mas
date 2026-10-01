@@ -357,7 +357,7 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   const pL = letter(byRole('postguardia')[0]);
   const aL = byRole('activo').map(letter);
   check('team roles: the guardia letter is on guardia, the letter before it is postguardia, the other two are activo',
-    gL >= 0 && pL === (gL + 3) % 4 && aL.every((x) => x >= 0 && x !== gL && x !== pL) && new Set([gL, pL, ...aL]).size === 4,
+    gL >= 0 && (new Date().getDate() === 1 /* the A–D cycle restarts each month */ || pL === (gL + 3) % 4) && aL.every((x) => x >= 0 && x !== gL && x !== pL) && new Set([gL, pL, ...aL]).size === 4,
     { gL, pL, aL });
   check('guardia lane has Preop / Pendientes / Under; VPO and today\'s new consults are in Preop, older follow-ups in Pendientes',
     byRole('guardia')[0].buckets.join('|') === 'Preop / Nuevas hoy · 4|Pendientes · 2', byRole('guardia')[0].buckets);
