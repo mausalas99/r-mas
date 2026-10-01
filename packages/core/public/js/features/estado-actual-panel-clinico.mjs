@@ -31,12 +31,13 @@ import {
 } from './estado-actual-panel-clinico-html.mjs';
 import { normalizeSoporteValue } from './estado-actual-ventilatorio.mjs';
 import { resolveVentilatorioLabContext } from './estado-actual-ventilatorio-labs.mjs';
+import { cloudSyncNowIso } from './cloud-sync/cloud-sync-clock.mjs';
 
 function touchPatientLanUpdatedAt(patientId) {
   const p = getPatients().find(function (row) {
     return String(row.id) === String(patientId);
   });
-  if (p) p.lanUpdatedAt = new Date().toISOString();
+  if (p) p.lanUpdatedAt = cloudSyncNowIso();
 }
 
 /**

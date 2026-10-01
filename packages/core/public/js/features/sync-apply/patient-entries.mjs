@@ -27,6 +27,7 @@ import {
   filterLabHistorySetsForMobileReference,
   shouldApplyMobileLabHistoryWindow,
 } from '../cloud-mobile/lab-history-window.mjs';
+import { cloudSyncNowIso } from '../cloud-sync/cloud-sync-clock.mjs';
 
 /** @type {{
  *   runtime?: object,
@@ -183,7 +184,7 @@ export function touchPatientLanUpdatedAt(patientId) {
   var p = getPatients().find(function (x) {
     return x && x.id === patientId;
   });
-  if (p) p.lanUpdatedAt = new Date().toISOString();
+  if (p) p.lanUpdatedAt = cloudSyncNowIso();
 }
 
 function saveEntryTodosOnLocalPatient(localPatientId, entry) {
@@ -248,7 +249,7 @@ function applyLanPatientScalars(existing, p) {
   if (clocks.localNewer) {
     // Our key beat the peer's blob (or our push lost the blob LWW) — re-push the
     // merged blob with a fresh blob clock so the room converges on it.
-    existing.lanUpdatedAt = new Date().toISOString();
+    existing.lanUpdatedAt = cloudSyncNowIso();
     censusRepushNeeded = true;
   }
   if (JSON.stringify(existing) !== censoBefore) changed = true;
@@ -518,7 +519,7 @@ function createNewPatientShell(entry) {
     sexo: p.sexo || 'F',
     registro: p.registro || '',
     fromLab: !!p.fromLab,
-    lanUpdatedAt: p.lanUpdatedAt || new Date().toISOString(),
+    lanUpdatedAt: p.lanUpdatedAt || cloudSyncNowIso(),
     interconsultServiceIds: Array.isArray(p.interconsultServiceIds) ? p.interconsultServiceIds.slice() : [],
   };
   mergePatientMonitoreoFromImported(newPat, p);

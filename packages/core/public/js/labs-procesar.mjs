@@ -77,7 +77,7 @@ function segmentLabReportBlocks_(deps, textoBruto, tNorm) {
   if (bloqueHeces) textoParaBh = textoParaBh.replace(bloqueHeces, ' ');
   var esSoloGaso =
     /GASOMETRIA/i.test(tNorm) &&
-    !/BIOMETRIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CULTIVO/i.test(tNorm);
+    !/BIOMETRIA|HEMATOLOGIA|RETICULOCITOS|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CULTIVO/i.test(tNorm);
   return { bloqueGaso: bloqueGaso, textoQS: textoQS, textoParaBh: textoParaBh, esSoloGaso: esSoloGaso };
 }
 

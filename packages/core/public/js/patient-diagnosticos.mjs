@@ -1,4 +1,5 @@
 import { mergeAccesosPatientFields } from './patient-accesos.mjs';
+import { cloudSyncNowIso } from './features/cloud-sync/cloud-sync-clock.mjs';
 
 function normalizePlusSeparators(text) {
   return String(text || '')
@@ -161,7 +162,7 @@ function diagnosticosListHasContent(list) {
  */
 export function stampCensoFieldsClock(patient, now, key) {
   if (!patient) return;
-  var at = String(now || new Date().toISOString());
+  var at = String(now || cloudSyncNowIso());
   patient.lanUpdatedAt = at;
   if (key) patient.fieldClocks = Object.assign({}, patient.fieldClocks, { [key]: at });
 }

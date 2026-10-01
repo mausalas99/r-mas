@@ -30,6 +30,7 @@ export async function cloudSyncHttpFetch(url, init = {}) {
           if (key === 'retry-after' && result?.retryAfterMs != null) {
             return String(Math.ceil(Number(result.retryAfterMs) / 1000));
           }
+          if (key === 'date' && result?.serverDate) return String(result.serverDate);
           return null;
         },
       },

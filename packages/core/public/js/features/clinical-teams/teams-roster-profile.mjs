@@ -4,8 +4,11 @@ import {
   isBenignPushSkipCode,
   PROFILE_PUSH_FAILED_MSG,
 } from '../../clinical-profile-cloud-stubs.mjs';
-import { hasProgramAdminPrivileges } from '../../clinical-privileges.mjs';
+import { effectiveClinicalRank, hasProgramAdminPrivileges } from '../../clinical-privileges.mjs';
+import { isCloudSyncActive } from '../cloud-sync/nube-sync-policy.mjs';
+import { isCloudSala, normalizeCloudSala } from '../cloud-sync/sala-allowlist.mjs';
 import { isValidUsernameFormat, normalizeUsername } from '../../clinical-username.mjs';
+import { persistClinicalUserBinding } from '../../clinical-settings.mjs';
 import { syncRotationConfigButton } from '../clinical-rotation.mjs';
 import {
   toast,
@@ -67,6 +70,61 @@ async function toastProfileSaveResult({ msg, usernameWillChange, sala }) {
   }
 }
 
+/** Nube sala-room pull/push for `sala`, or null when Nube is off for it. */
+async function nubeSalaSync(sala) {
+  if (!isCloudSyncActive()) return null;
+  const s = normalizeCloudSala(sala || '');
+  if (!isCloudSala(s)) return null;
+  const mod = await import('../cloud-sync/cloud-clinical-ops-sala.mjs');
+  return { sala: s, pullClinicalOpsForSala: mod.pullClinicalOpsForSala, pushClinicalOpsForSala: mod.pushClinicalOpsForSala };
+}
+
+/**
+ * ⇄ Cuenta hosts this form outside the teams panel, so nothing else redraws
+ * it: without this, «Cambiar código de administración» only showed up after
+ * reopening Cuenta.
+ */
+async function remountCuentaProfile() {
+  const cuentaHost = document.querySelector('[data-cloud-profile-host]');
+  if (!cuentaHost?.isConnected) return;
+  const { mountClinicalProfileInHost } = await import('./teams-roster-interactions.mjs');
+  await mountClinicalProfileInHost(cuentaHost);
+}
+
+/**
+ * Save, push to Nube, then read the rank back: the session (and the R4-only
+ * «Editar» buttons) follow what was really saved, never the picked value.
+ * @returns {Promise<boolean|null>} true when it stuck, false when the rank
+ *   did not, null when nothing was saved
+ */
+async function saveProfileAndReadBack(fields, adminChange) {
+  const nube = await nubeSalaSync(fields.sala);
+  await nube?.pullClinicalOpsForSala(nube.sala, { since: 0 }).catch(() => null);
+  const ok = await persistProfileFromPanel({
+    rank: fields.rank,
+    sala: fields.sala,
+    clinicalName: fields.clinicalName,
+    isProgramAdmin: adminChange.isProgramAdmin,
+    username: fields.username,
+    adminAccessCode: adminChange.adminAccessCode,
+  });
+  if (!ok) return null;
+  // Push before anything pulls: every Nube pull lets the room's copy of this
+  // user win, so a pull ahead of this push put the old rank back.
+  // ponytail: a background sync cycle landing between the save and this push
+  // can still undo it; the read-back below then says so instead of «guardado».
+  await nube?.pushClinicalOpsForSala(nube.sala).catch(() => null);
+
+  await refreshClinicalUserProfile();
+  const savedRank = effectiveClinicalRank(clinicalSessionContext.user);
+  if (savedRank !== fields.rank) {
+    persistClinicalUserBinding({ rank: savedRank });
+    toast(`No se guardó el rango: sigues como ${savedRank}.`, 'error');
+    return false;
+  }
+  return true;
+}
+
 export async function handleProfileFormSubmit(ev) {
   ev.preventDefault();
   const fields = readProfileFormFields();
@@ -91,25 +149,10 @@ export async function handleProfileFormSubmit(ev) {
   if (claimResult === false) return;
   const usernameWillChange = claimResult === true;
 
-  const ok = await persistProfileFromPanel({
-    rank: fields.rank,
-    sala: fields.sala,
-    clinicalName: fields.clinicalName,
-    isProgramAdmin: adminChange.isProgramAdmin,
-    username: fields.username,
-    adminAccessCode: adminChange.adminAccessCode,
-  });
-  if (!ok) return;
-
-  await refreshClinicalUserProfile();
-  // ⇄ Cuenta hosts this form outside the teams panel, so nothing else redraws
-  // it: without this, «Cambiar código de administración» only showed up after
-  // reopening Cuenta.
-  const cuentaHost = document.querySelector('[data-cloud-profile-host]');
-  if (cuentaHost?.isConnected) {
-    const { mountClinicalProfileInHost } = await import('./teams-roster-interactions.mjs');
-    await mountClinicalProfileInHost(cuentaHost);
-  }
+  const saved = await saveProfileAndReadBack(fields, adminChange);
+  if (saved === null) return;
+  await remountCuentaProfile();
+  if (!saved) return;
   const msg =
     adminChange.wantsProgramAdmin &&
     (adminChange.isProgramAdmin === true || adminChange.wasProgramAdmin)

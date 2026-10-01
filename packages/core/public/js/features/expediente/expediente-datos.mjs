@@ -163,7 +163,7 @@ function bedLabel(patient) {
 
 function summaryMeta(patient) {
   var bits = [];
-  if (patient.edad) bits.push(patient.edad + ' a');
+  if (patient.edad) bits.push(/^\d+$/.test(String(patient.edad)) ? patient.edad + ' a' : patient.edad);
   if (patient.sexo) bits.push(patient.sexo);
   if (patient.peso) bits.push(patient.peso + ' kg');
   if (patient.talla) bits.push(patient.talla + ' m');

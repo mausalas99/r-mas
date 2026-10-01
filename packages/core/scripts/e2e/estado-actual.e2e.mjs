@@ -49,7 +49,8 @@ import { fileURLToPath } from 'node:url';
 import { createA11yRecorder } from './harness.mjs';
 import { DEMO_TOUR_LAB_PASTE, DEMO_GARCIA_LAB_REPORT } from '../../public/js/tour-demo-some-lab.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../../public/js/lab-bulk-paste.mjs';
-import { quietHints, goArea } from './harness.mjs';
+import { quietHints, goArea, pasteAndSave } from './harness.mjs';
+import { header, TABLE } from './some-fixtures.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const runId = new Date().toISOString().replace(/[:.]/g, '-');
@@ -846,6 +847,109 @@ async function pasteIo(page, app) {
   check('copied I/O reads as one clause: INGRESOS, DIURESIS (sum, 3T), custom source, EVACUACIONES, BALANCE', /INGRESOS 300 CC, DIURESIS \(1200, 3T\), SONDA NASOGÁSTRICA 250 CC, EVACUACIONES 3, BALANCE -1150 CC/.test(T), T.match(/INGRESOS[^|\n]*/)?.[0]);
 }
 
+/** Pegar monitoreo: reordered lines, @HH:MM times, SATURACION with a space before %, and the ORIENTADO EN ___ guard. */
+async function pasteParser(page) {
+  let form = await openRegistro(page);
+  const v = (k) => form.locator(`[data-ea-vital="${k}"][data-ea-layer-idx="0"]`).inputValue();
+  const prevReorder = (await pasteInto(page, 'E: NC\nI: 500\nTA: 120/80\nT°: 37.2 °C 08:15\nDXT: 110@07:00, 95')).replace(/\s+/g, ' ');
+  await page.locator('#ea-paste-backdrop [data-onclick="confirmEstadoActualPaste"]').click();
+  await page.waitForTimeout(300);
+  const glus = await form.locator('.ea-glu-row').evaluateAll((rows) =>
+    rows.map((r) => ({ v: r.querySelector('[data-ea-glu-value]')?.value || '', t: r.querySelector('[data-ea-glu-time]')?.value || '' })).filter((g) => g.v)
+  );
+  const ing = await form.locator('#ea-io-ing-t1').inputValue();
+  check(
+    'Pegar: lines in a different order still fill I, TA, Temp and DXT',
+    ing === '500' && (await v('tas')) === '120' && (await v('tad')) === '80' && (await v('temp')) === '37.2' && glus.map((g) => g.v).join() === '110,95',
+    { ing, glus }
+  );
+  check('Pegar: «110@07:00» shows its time in the preview, a bare value gets none', /110 MG\/DL @ ?07:00|110@07:00|07:00/.test(prevReorder) && !/95 MG\/DL @/.test(prevReorder), prevReorder);
+  check('Pegar: «T°: 37.2 °C 08:15» keeps its 08:15 time in the preview', /08:15/.test(prevReorder), prevReorder);
+  await cancelRegistro(page);
+
+  form = await openRegistro(page);
+  const prev = await pasteInto(page, 'SATURACION: 95 %');
+  check('Pegar: «SATURACION: 95 %» (space before %) is read as SatO₂ 95', /SATURACION 95%/.test(prev), prev);
+  await pasteApply(page, 'SATURACION: 95 %');
+  check('Pegar: «SATURACION: 95 %» fills SatO₂', (await v('sat')) === '95', await v('sat'));
+  await cancelRegistro(page);
+
+  form = await openRegistro(page);
+  const guard = await pasteInto(page, 'T°: 36 °C\nN: FOUR .../16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN ___ ESFERAS, ALERTA\nI: 500 CC');
+  check('Pegar: «ORIENTADO EN ___ ESFERAS» is not read as an egresos line', /500 CC/.test(guard) && !/DIURESIS|EGRES/i.test(guard) && /LÍNEA NO RECONOCIDA/.test(guard), guard);
+  await pasteApply(page, 'T°: 36 °C\nN: FOUR .../16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN ___ ESFERAS, ALERTA\nI: 500 CC');
+  const egr = await form.locator('#ea-io-egr-t1').inputValue();
+  check('Pegar: the ORIENTADO line leaves the egresos cell empty', egr === '', egr);
+  await cancelRegistro(page);
+}
+
+/** I/O turn totals (sumIoTurnos) and the evacuaciones text, read from the registro and the copy. */
+async function ioTotals(page, app) {
+  const form = await openRegistro(page);
+  await setRecordedAt(page, 0.2);
+  const set = (id, val) => form.locator(id).fill(val);
+  const total = async (id) => (await form.locator(id).innerText()).replace(/\s+/g, ' ').trim();
+  await set('#ea-io-ing-t1', '200'); await set('#ea-io-ing-t2', 'NC'); await set('#ea-io-ing-t3', '500');
+  const t1 = await total('#ea-io-ing-total');
+  await set('#ea-io-ing-t2', '');
+  const t2 = await total('#ea-io-ing-total');
+  await set('#ea-io-ing-t1', 'NC'); await set('#ea-io-ing-t3', '');
+  const t3 = await total('#ea-io-ing-total');
+  check('turn totals: NC turns are skipped and counted out (700), an empty turn counts like NC, all NC gives NC', t1 === '700' && t2 === '700' && t3 === 'NC', { t1, t2, t3 });
+  await set('#ea-io-egr-t1', 'DIURESIS 300 CC, DRENAJE 50 CC'); await set('#ea-io-egr-t2', 'DIURESIS NC');
+  const e1 = await total('#ea-io-egr-total');
+  check('turn totals: a turn with two egress parts adds them (350), an NC turn is skipped', e1 === '350', e1);
+  await set('#ea-io-ing-t1', '300');
+  await set('#ea-io-evac', 'MELENA');
+  await fillVital(form, 'fc', [80]);
+  await submitRegistro(page, form);
+  const T = (await copyEa(page, app)).text;
+  check('copied text: a word evacuación is upper-cased with no CC', /EVACUACIONES MELENA(?! CC)/i.test(T), T.match(/EVACUACIONES[^\n,]*/i)?.[0]);
+}
+
+/** PICO of the temperature: the earlier of two Temp layers, only from 38 °C. */
+async function tempPeak(page, app) {
+  const reg = async (vals) => {
+    const form = await openRegistro(page);
+    await setRecordedAt(page, 0.1);
+    await fillVital(form, 'temp', vals);
+    await submitRegistro(page, form);
+    return (await copyEa(page, app)).text;
+  };
+  let T = await reg([38.6, 37.1]);
+  check('copied Temp documents a PICO from 38 °C', /TEMPERATURA 37\.1 °C \(PICO 38\.6 °C/.test(T), T.match(/TEMPERATURA[^\n]*/)?.[0]);
+  T = await reg([37.9, 37.2]);
+  check('copied Temp has no PICO below 38 °C', /TEMPERATURA 37\.2 °C/.test(T) && !/PICO/.test(T), T.match(/TEMPERATURA[^\n]*/)?.[0]);
+  check('UNREACHABLE buildAlteredAtDefaults: only the Interno app (lib/interno/interno-vitals.mjs) calls it, no Estado actual UI path', true, 'keep old test');
+}
+
+/** With an arterial gasometría the ventilatory hints use PaFi and its SIRA / prono alerts. */
+async function ventPafi(page) {
+  const d = new Date(Date.now() - 30 * 60e3);
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const when = `${MON[d.getMonth()]} ${d.getDate()} ${d.getFullYear()} ${d.getHours() % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')}${d.getHours() < 12 ? 'AM' : 'PM'}`;
+  const report =
+    header({ exp: '9000095-7', name: 'DEMO PÉREZ JUAN' }, when) +
+    'GASOMETRIAS\nGASOMETRIA ARTERIAL COMPLETA\n' + TABLE +
+    'PH\t*\t7.36\t\t7.35 - 7.45\n' +
+    'pCO2\t*\t40\tmmHg\t35 - 45\n' +
+    'pO2\tB\t55\tmmHg\t80 - 100\n' +
+    'HCO3\t*\t23\tmmol/L\t22.0 - 26.0\n';
+  await goArea(page, 'lab');
+  await pasteAndSave(page, report);
+  await goArea(page, 'nota');
+  await page.locator('.exp-group-pill[data-group="clinico"]').hover();
+  await page.locator('.exp-group-section[data-section="estadoActual"]').click();
+  await page.locator('#ea-snapshot').waitFor({ state: 'visible' });
+  await setEc(page, 'soporte', 'Ventilación mecánica');
+  await setEc(page, 'soporteFio2', '60');
+  await setEc(page, 'soporte', 'Aire ambiente');
+  await setEc(page, 'soporte', 'Ventilación mecánica');
+  const h = (await page.locator('[data-ea-soporte-calc]').innerText().catch(() => '')).replace(/\s+/g, ' ');
+  check('VM hints with an arterial gas: PaFi 92 with SIRA severo, prono and <100 alerts', /PaFi 92 \(SIRA severo\)/.test(h) && /PaFi <150: valorar prono/.test(h) && /PaFi <100: SIRA severo/.test(h), h);
+  await setEc(page, 'soporte', 'Aire ambiente');
+}
+
 async function run() {
   const { app, page, pageErrors } = await launch();
   await admitDemoPatient(page);
@@ -1112,6 +1216,10 @@ async function run() {
   await section('ranges thresholds', () => rangesThresholds(page));
   await section('ventilatory hints', () => ventHints(page));
   await section('paste I/O', () => pasteIo(page, app));
+  await section('paste parser', () => pasteParser(page));
+  await section('I/O totals', () => ioTotals(page, app));
+  await section('temp peak', () => tempPeak(page, app));
+  await section('ventilatory PaFi', () => ventPafi(page));
 
   check('no page errors', pageErrors.length === 0, pageErrors);
   await app.close();

@@ -50,6 +50,7 @@ import {
   activePatientTeamId,
   assignPatientToTeamClinical,
 } from '../patient-team-assign-ui.mjs';
+import { cloudSyncNowIso } from './cloud-sync/cloud-sync-clock.mjs';
 
 var rt = {
   getActiveId() {
@@ -315,7 +316,7 @@ function handleConsultBandChange(ev) {
   var patch = {};
   patch[field] = ev.target.value;
   setConsultInfo(patient, patch);
-  patient.lanUpdatedAt = new Date().toISOString();
+  patient.lanUpdatedAt = cloudSyncNowIso();
   persistClinicalState();
   scheduleCloudSyncPush();
   if (field === 'followUpStatus') renderConsultBandForActivePatient();
@@ -392,7 +393,7 @@ function handleConsultBandClick(ev) {
       // Keep the card meta chip (patients-card-html.mjs's p.servicio) in
       // sync with the requesting specialty picked here.
       patient.servicio = name;
-      patient.lanUpdatedAt = new Date().toISOString();
+      patient.lanUpdatedAt = cloudSyncNowIso();
       persistClinicalState();
       scheduleCloudSyncPush();
       renderConsultBandForActivePatient();

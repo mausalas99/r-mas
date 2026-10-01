@@ -41,6 +41,7 @@ import {
   collectRegistroModalRegistros,
   focusRegistroModalFirst,
 } from '../patient-registro-modal-ui.mjs';
+import { cloudSyncNowIso } from './cloud-sync/cloud-sync-clock.mjs';
 
 function _prefillServicioForSala() {
   var srv = document.getElementById('m-servicio');
@@ -349,7 +350,8 @@ function fillLabPatientModalFields(p) {
     var ageNum = parseInt(p.edad, 10);
     edadNum.value = isNaN(ageNum) ? '' : String(ageNum);
   }
-  if (edadUnit) edadUnit.value = 'años';
+  var unidadLab = String(p.edadUnidad || (String(p.edad || '').match(/\b(meses|d[ií]as)\b/i) || [''])[0]).toLowerCase().replace('dias', 'días');
+  if (edadUnit) edadUnit.value = /^(meses|días)$/.test(unidadLab) ? unidadLab : 'años';
   document.getElementById('m-sexo-ro').value = p.sexo === 'M' ? 'M' : 'F';
   ['area', 'servicio', 'cuarto', 'cama'].forEach(function (f) {
     document.getElementById('m-' + f).value = '';
@@ -462,7 +464,7 @@ function saveCompleteAdmissionModal() {
   patient.servicio = loc.servicio;
   patient.cuarto = loc.cuarto;
   patient.cama = loc.cama;
-  patient.lanUpdatedAt = new Date().toISOString();
+  patient.lanUpdatedAt = cloudSyncNowIso();
   persistClinicalState();
   void assignPatientToTeamClinical(patient.id, readPatientRegistrationTeamId()).then(function () {
     patientsBridge.renderPatientList();

@@ -3,6 +3,7 @@ import {
   extraerConRango,
   extraerConRangoBH,
   extraerConRangoCoag,
+  extraerConRangoSuero,
   esValorDelRango_,
   fmtLabRanged_,
 } from './labs-extract.mjs';
@@ -386,7 +387,7 @@ function extractBhScalarFields_(tNorm, priorRefs, priorBhValues) {
   var retData = extraerBhReticulocitos_(tNorm);
   var retC = retCFuenteMixta_(retData.valor, htoData.valor, priorBhValues);
   return {
-    Hb: fmtBhRanged_(extraerConRango(['HGB', 'HEMOGLOBINA TOTAL', 'HEMOGLOBINA'], tNorm), 'Hb', priorRefs),
+    Hb: fmtBhRanged_(extraerConRangoSuero(['HGB', 'HEMOGLOBINA TOTAL', 'HEMOGLOBINA'], tNorm), 'Hb', priorRefs),
     Hto: fmtBhRanged_(htoData, 'Hto', priorRefs),
     VCM: fmtBhRanged_(extraerConRango(['MCV ', 'VCM '], tNorm), 'VCM', priorRefs),
     HCM: fmtBhRanged_(extraerConRango(['MCH ', 'HCM '], tNorm), 'HCM', priorRefs),

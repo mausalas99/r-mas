@@ -104,6 +104,9 @@ export function buildClinicalProfileSectionHtml(ctx, user) {
   const profileHandleBanner = ctx.displayHandle
     ? `<p class="clinical-teams-profile-handle">Visible en R+ Cloud como <strong>@${escapeHtml(ctx.displayHandle)}</strong></p>`
     : '';
+  // R1–R3 cannot promote themselves: only an R4 or an Admin grants R4.
+  const rankOptions =
+    ctx.rank === 'R4' || ctx.programAdmin ? ['R1', 'R2', 'R3', 'R4'] : ['R1', 'R2', 'R3'];
 
   return `
     <div class="clinical-teams-profile-panel clinical-teams-rank-section">
@@ -127,7 +130,7 @@ export function buildClinicalProfileSectionHtml(ctx, user) {
         <div class="field-group">
           <label for="clinical-profile-rank">Rango clínico</label>
           <select id="clinical-profile-rank" class="profile-input">
-            ${['R1', 'R2', 'R3', 'R4']
+            ${rankOptions
               .map(
                 (r) =>
                   `<option value="${r}" ${r === ctx.rank ? 'selected' : ''}>${r}</option>`

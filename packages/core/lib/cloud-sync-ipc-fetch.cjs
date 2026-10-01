@@ -80,6 +80,8 @@ async function cloudSyncNetFetch(net, payload) {
     statusText: res.statusText,
     data,
     retryAfterMs,
+    // Cloud-sync-clock learns the local/server skew from this (net.fetch headers never reach the renderer).
+    serverDate: res.headers.get('date') || null,
   };
 }
 

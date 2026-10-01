@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global document, DataTransfer, ClipboardEvent */
+/* global document, DataTransfer, ClipboardEvent, localStorage, window */
 /**
  * E2E: Nota de evolución and Indicaciones (Interconsulta › Clínico), driven
  * through the real Electron app. A busy day: the census diagnoses are set in
@@ -42,8 +42,14 @@
  *     - the fecha is not today
  *     - «+ Agregar sección» / «×» lose or keep the wrong extra section
  *     - «Generar Indicaciones (.docx)» misses a field or the extra section
+ *     - leaving Interconsulta with no patient open does not bring back the
+ *       empty state; an empty activo slot is still a drop target
  *   Restart
  *     - the note, its past copies or the indicaciones are lost
+ *   Interconsultas teams through Nube (local Worker, second device)
+ *     - the team on today's letter is not the guardia lane, or a missing
+ *       postguardia team leaves a drop target
+ *     - 2/5 teams and unknown team id: UNREACHABLE (second team is staged)
  *   Throughout
  *     - an uncaught page error
  *
@@ -59,6 +65,7 @@ import { fullLabs } from './some-fixtures.mjs';
 
 const P1 = { exp: '7000621-1', name: 'DEMO NOTA UNO', room: '521' };
 const P2 = { exp: '7000622-2', name: 'DEMO NOTA DOS', room: '522' };
+const P3 = { exp: '7000623-3', name: 'DEMO NOTA TRES', room: '523' };
 const DOCTOR = 'Dr. Demo Nota';
 const PROFESOR = 'Dra. Demo Profesora';
 const DX_A = 'DEMO NEUMONIA ADQUIRIDA';
@@ -161,6 +168,25 @@ const noteState = (page) =>
       pastLabel: [...document.querySelectorAll('#note-form button')].find((b) => /^Anteriores/.test(b.textContent))?.textContent.trim() || null,
     };
   });
+/** Sala/IC chrome: body classes, board, consult band, patient view vs empty state, sidebar. */
+const chromeState = (page) => page.evaluate(() => ({
+  band: document.querySelectorAll('.ic-consult-band').length,
+  back: document.querySelectorAll('[data-ic-back-to-board]').length,
+  icMode: document.documentElement.classList.contains('ic-board-mode'),
+  boardOpen: document.documentElement.classList.contains('ic-board-view-open'),
+  boardHidden: document.getElementById('ic-board-mount').hidden,
+  patientView: getComputedStyle(document.getElementById('patient-view')).display !== 'none',
+  emptyState: getComputedStyle(document.getElementById('empty-state')).display !== 'none',
+  sidebar: (() => { const a = document.querySelector('aside.patient-sidebar'); return !!a && a.getClientRects().length > 0; })(),
+}));
+/** IC team board lanes as data. */
+const boardLanes = (page) => page.locator('#ic-board-mount').evaluate((mount) =>
+  [...mount.querySelectorAll('.ic-board-lane')].map((l) => ({
+    role: l.dataset.role,
+    title: l.querySelector('.ic-board-lane__title')?.textContent.trim(),
+    empty: [...l.querySelectorAll('.ic-board-lane__body > .ic-board-empty')].map((e) => e.textContent.trim()).join('|'),
+    drop: l.querySelector('.ic-board-lane__body')?.getAttribute('data-drop-team-id') ?? null,
+  })));
 const field = (page, arg) => page.locator(`#note-form [data-oninput-args='["${arg}"]']`);
 const indField = (page, arg) => page.locator(`#indica-form [data-oninput-args='["${arg}"]']`);
 
@@ -174,6 +200,14 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   await page.locator('#profile-doctor').fill(DOCTOR);
   await page.waitForTimeout(900); // Mi perfil saves on its own
   await page.keyboard.press('Escape');
+
+  // ── Leave Interconsulta with no patient open → Sala's empty state ──────
+  await goArea(page, 'nota');
+  await setMode(page, 'interconsulta');
+  await setMode(page, 'sala');
+  const noPatient = await chromeState(page);
+  check('IC → Sala with no patient open: body classes clear, sidebar back, the empty state shows (no patient view)',
+    !noPatient.icMode && !noPatient.boardOpen && noPatient.boardHidden && noPatient.emptyState && !noPatient.patientView && noPatient.sidebar, noPatient);
 
   await goArea(page, 'lab');
   await pasteAndSave(page, fullLabs(P1, 'Sep 22 2026 8:00AM'));
@@ -237,6 +271,10 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   // no teams configured) plus a 5th "Sin equipo" lane for P1/P2, who have
   // no team assignment.
   check('board renders its lanes (4 fixed + «Sin equipo» for unassigned patients)', laneCount === 5, laneCount);
+  const noTeamLanes = await boardLanes(page);
+  check('no IC teams: both activo slots say «Sin equipo asignado.» and are not drop targets',
+    noTeamLanes.filter((l) => l.role === 'activo').every((l) => l.empty === 'Sin equipo asignado.' && l.drop === null) &&
+    noTeamLanes.filter((l) => l.role === 'activo').length === 2, noTeamLanes);
   check('no rollover button on the board (feature was removed)', !boardHtml.includes('Terminar guardia y repartir pacientes'));
   check('patients with no team land under «Sin equipo» instead of disappearing',
     boardHtml.includes('Sin equipo') && boardHtml.includes(P1.name) && boardHtml.includes(P2.name));
@@ -289,16 +327,7 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   check('viewing a patient in Interconsulta: «← Tablero» and the consult band show',
     (await page.locator('[data-ic-back-to-board]').count()) === 1 && (await page.locator('.ic-consult-band').count()) === 1);
   await setMode(page, 'sala');
-  const salaChrome = await page.evaluate(() => ({
-    band: document.querySelectorAll('.ic-consult-band').length,
-    back: document.querySelectorAll('[data-ic-back-to-board]').length,
-    icMode: document.documentElement.classList.contains('ic-board-mode'),
-    boardOpen: document.documentElement.classList.contains('ic-board-view-open'),
-    boardHidden: document.getElementById('ic-board-mount').hidden,
-    patientView: document.defaultView.getComputedStyle(document.getElementById('patient-view')).display !== 'none',
-    emptyState: document.defaultView.getComputedStyle(document.getElementById('empty-state')).display !== 'none',
-    sidebar: (() => { const a = document.querySelector('aside.patient-sidebar'); return !!a && a.getClientRects().length > 0; })(),
-  }));
+  const salaChrome = await chromeState(page);
   check('IC → Sala with a patient open: band and «← Tablero» go, body classes clear, sidebar and patient view return',
     salaChrome.band === 0 && salaChrome.back === 0 && !salaChrome.icMode && !salaChrome.boardOpen && salaChrome.boardHidden &&
     salaChrome.patientView && !salaChrome.emptyState && salaChrome.sidebar, salaChrome);
@@ -566,4 +595,86 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   check('restart: indicaciones and the extra section are kept', keptI.dieta === 'DEMO DIETA BLANDA' && keptI.otros.join('|') === 'DEMO OXIGENO', keptI);
   check('no uncaught page errors', !errors.length && !again.pageErrors.length, [...errors, ...again.pageErrors].slice(0, 5));
   await again.app.close();
+
+  // ── IC teams made through Nube (local Worker, same pattern as nube-sync) ─
+  // One R2 in Interconsultas makes the guardia team, then a second IC team.
+  // The second one is staged for next month (resolveRotationActiveForNewTeam:
+  // the sala already has an active team) and only R4/Admin can move it into
+  // this rotation; self-changing the rank to R4 in ⇄ Cuenta does not stick.
+  // So the 2-team, 5-team and unknown-team boards cannot be built from one
+  // device: UNREACHABLE, checked below as the staged team missing from the board.
+  const { startWorker, nubeDevices, onboardNube, openNubeView, flat } = await import('./nube-worker.mjs');
+  check('local Worker answers /ping', await startWorker());
+  const { page: ic } = await nubeDevices(r)('ic', 3793);
+  await onboardNube(ic, { username: `demo_ic_${Date.now().toString(36)}`, name: 'Dr. Demo Interconsulta', rank: 'R2', sala: 'Interconsultas' });
+  const letterOf = (d) => 'ABCD'[(d.getDate() - 1) % 4];
+  const gLetter = letterOf(new Date());
+  const pLetter = letterOf(new Date(Date.now() - 86400000));
+  const otherLetter = [...'ABCD'].find((x) => x !== gLetter && x !== pLetter);
+  const createIcTeam = async (name, letter, first) => {
+    await closeToasts(ic);
+    if (first) await ic.getByRole('button', { name: 'Abrir Mi rotación' }).click();
+    else await openNubeView(ic, 'equipo');
+    await ic.locator('#btn-clinical-team-create-open').click();
+    await ic.locator('#clinical-team-create-sala').selectOption('Interconsultas');
+    await ic.locator('#clinical-team-create-name').fill(name);
+    await ic.locator('#clinical-team-create-day').selectOption(letter);
+    await ic.locator('#clinical-team-create-form [type="submit"]').click();
+    await until(async () => !(await ic.locator('#clinical-teams-backdrop.open').count()) && !(await ic.locator('#connection-dropdown.open').count()), 8000, 100);
+    await ic.locator('#btn-connection-dropdown-close').click().catch(() => {});
+    await ic.keyboard.press('Escape');
+    await dismissLearnHub(ic);
+  };
+  const T_G = `EQUIPO DEMO IC ${gLetter}`;
+  const T_2 = `EQUIPO DEMO IC ${otherLetter}`;
+  await createIcTeam(T_G, gLetter, true);
+  await createIcTeam(T_2, otherLetter, false);
+  await goArea(ic, 'lab');
+  await pasteAndSave(ic, fullLabs(P3, 'Sep 22 2026 9:00AM'));
+  await openPatient(ic, P3);
+  await setMode(ic, 'interconsulta');
+  // Entering with a patient open lands on that patient; Escape goes back to the board.
+  await goArea(ic, 'nota');
+  if (await ic.locator('.ic-consult-band').isVisible().catch(() => false)) await ic.keyboard.press('Escape');
+  await ic.locator('#ic-board-mount .ic-board-lane').first().waitFor({ state: 'attached' });
+  const icChrome = await chromeState(ic);
+  check('Nube Interconsultas user: the IC board shows (IC classes on, board not hidden)', icChrome.icMode && icChrome.boardOpen && !icChrome.boardHidden, icChrome);
+  const icL = await boardLanes(ic);
+  await r.shot(ic, 'ic-nube-board');
+  const role = (x) => icL.filter((l) => l.role === x);
+  check('Nube IC team on today\'s letter heads the guardia lane and is a drop target',
+    role('guardia')[0]?.title === `${T_G} — Guardia` && !!role('guardia')[0]?.drop, role('guardia'));
+  check('no postguardia team: the lane says «Sin equipo.» and is not a drop target',
+    role('postguardia')[0]?.empty === 'Sin equipo.' && role('postguardia')[0]?.drop === null, role('postguardia'));
+  check('UNREACHABLE — 2/5 IC teams and an unknown team id: a 2nd IC team made while one is active is staged for next month and stays off the board (both activo slots empty)',
+    !icL.some((l) => (l.title || '').includes(T_2)) && role('activo').every((l) => l.empty === 'Sin equipo asignado.'), icL);
+
+  // ── ⇄ Cuenta rank: an R2 moves freely among R1–R3, never to R4 ──────────
+  // Only an R4 or Admin grants R4. A Nube pull used to put the room's old rank
+  // back after «Perfil guardado.», and the session kept the picked one.
+  const dbRank = () => ic.evaluate(async () => {
+    const st = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    return (await window.electronAPI.dbClinicalProfileGet({ userId: st.clinicalUserId }))?.profile?.rank;
+  });
+  await closeToasts(ic);
+  await openNubeView(ic, 'cuenta');
+  const rankSel = ic.locator('#clinical-profile-rank');
+  await rankSel.waitFor({ timeout: 10000 });
+  const rankOpts = await rankSel.locator('option').allTextContents();
+  check('⇄ Cuenta: an R2 is offered R1–R3 only (no R4)', rankOpts.join('|') === 'R1|R2|R3', rankOpts);
+  await rankSel.selectOption('R3');
+  await ic.locator('#clinical-profile-form [type="submit"]').click();
+  const toastSel = ic.locator('.toast', { hasText: /Perfil guardado|No se guardó/ });
+  await toastSel.first().waitFor({ timeout: 15000 }).catch(() => {});
+  const rankToast = flat(await toastSel.first().textContent().catch(() => ''));
+  // A sync round after the save must not put R2 back.
+  await ic.waitForTimeout(4000);
+  const rankAfter = await dbRank();
+  check('choosing R3 says «Perfil guardado.» and R3 is still saved after a Nube sync', /Perfil guardado\./.test(rankToast) && rankAfter === 'R3', { rankToast, rankAfter });
+  await closeToasts(ic);
+  await ic.keyboard.press('Escape');
+  await openNubeView(ic, 'equipo');
+  await ic.locator('.clinical-teams-leave-btn, .clinical-teams-section').first().waitFor({ timeout: 8000 }).catch(() => {});
+  const editBtns = await ic.locator('.clinical-teams-edit-btn:visible').count();
+  check('Mi rotación as an R3: no R4-only «Editar» team buttons', editBtns === 0, editBtns);
 });

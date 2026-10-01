@@ -27,6 +27,9 @@
  *     - re-drawing the small charts leaks chart objects
  *   Detail chart and events
  *     - the detail chart lacks the normal-range band (Leucocitos 4–11)
+ *     - two draws of one day collapse into one point, or its labels show the time
+ *     - the same report pasted twice shows as two points
+ *     - LCR Glu and QS Glu (same field key) merge into one pivot row
  *     - a ref range printed for one row (TTP) leaks onto a sibling row with no
  *       range of its own (INR), because both sit under the same lab section
  *     - an event saves with a required field empty (biopsia site, procedimiento)
@@ -349,6 +352,9 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
     return c && c.options.plugins.tendRefBand;
   });
   check('detail chart has the normal band 142–424', !!band && band.display === true && band.lo === 142 && band.hi === 424, band);
+  // 03/01 has two draws (08:00, 15:00), same PLT 100: both stay as points, labels carry the date only.
+  const pltLabels = await page.evaluate(() => Chart.getChart(document.getElementById('tend-detail-canvas')).data.labels);
+  check('detail chart keeps both same-day draws (two 03/01 points), date-only labels', pltLabels.filter((l) => l === '03/01').length === 2 && pltLabels.every((l) => !/\d:\d\d/.test(l)), pltLabels);
 
   // Pasting labs never auto-creates an eventualidad: the events legend is empty
   // even though this patient already has 10+ pasted lab reports.
@@ -1419,12 +1425,30 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
 
   // ── Homonym rows: LCR Glu and QS Glu share the field key "Glu" (Tablas Dinámicas) ──
   await page.locator('#lab-inner-labs-btn').click();
+  // Tendencias lists a series only from its 2nd draw, so QS needs two chemistry draws.
+  await pasteAndSave(page, [chemistryOnly(P3, 'Jan 2 2026 8:10AM'), chemistryOnly(P3, 'Jan 3 2026 8:10AM')].join('\n\n'));
+  // The same 03/01 report pasted again: the duplicate draw must not add a point.
   await pasteAndSave(page, chemistryOnly(P3, 'Jan 3 2026 8:10AM'));
   await openPatient(page, P3);
   await goArea(page, 'lab');
   await openTend();
-  const p3Secs = await page.locator('.tend-section').evaluateAll((els) => els.map((e) => e.getAttribute('data-section')));
-  // OPEN: a chemistry-only paste on P3 (LCR patient, same day) does not surface a QS section in Tendencias, so the LCR|Glu vs QS|Glu homonym rows below are skipped. Cause not found (paste merge vs parser).
+  // The LCR-only rows from before the paste stay on screen until the re-render lands: wait for it.
+  await page.locator('.tend-section[data-section="QS"]').waitFor({ state: 'attached', timeout: 8000 }).catch(() => {});
+  const p3Secs =await page.locator('.tend-section').evaluateAll((els) => els.map((e) => e.getAttribute('data-section')));
+  check('LCR patient with two chemistry draws shows both LCR and QS sections', p3Secs.includes('LCR') && p3Secs.includes('QS'), p3Secs);
+  if (p3Secs.includes('QS')) {
+    // QS was left collapsed above (a global pref): open it to reach the Glu row, then fold it back.
+    const qsTog3 = page.locator('.tend-section[data-section="QS"] .tend-section-toggle');
+    const qsWasClosed = (await qsTog3.getAttribute('aria-expanded')) === 'false';
+    if (qsWasClosed) await qsTog3.click();
+    await card('QS|Glu').first().click({ position: { x: 20, y: 24 } });
+    await page.locator('#tend-detail-backdrop').waitFor({ state: 'visible' });
+    await page.waitForTimeout(400);
+    const gluLabels = await page.evaluate(() => Chart.getChart(document.getElementById('tend-detail-canvas')).data.labels);
+    check('a re-pasted identical draw is not a second point (QS Glu: 02/01, 03/01)', gluLabels.join(',') === '02/01,03/01', gluLabels);
+    await closePane();
+    if (qsWasClosed) await qsTog3.click();
+  }
   await page.locator('.tend-dynamic-table-trigger').click();
   const homDyn = page.locator('#tend-dynamic-table-backdrop');
   await homDyn.waitFor({ state: 'visible' });
@@ -1434,9 +1458,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
     await homDyn.locator(`[data-field-key="${field}"]`).first().click();
     await page.waitForTimeout(300);
   };
-  const homSecs = p3Secs.includes('QS') ? [1] : [];
-  if (!homSecs.length) homSecs.push(0);
-  if (homSecs.every((n) => n > 0)) {
+  if (p3Secs.includes('QS')) {
     await addPicked('LCR', 'Glu');
     await addPicked('QS', 'Glu');
     const homRows = await homDyn.locator('tbody tr[data-field]').evaluateAll((trs) => trs.map((t) => ({ key: t.getAttribute('data-field'), text: t.innerText.replace(/\s+/g, ' ').trim() })));

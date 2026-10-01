@@ -21,6 +21,7 @@ import {
 
 import { escapeHtml, escHtml, escAttr } from '../dom-escape.mjs';
 import { resolveGlobalFn } from './resolve-global-fn.mjs';
+import { cloudSyncNowIso } from './cloud-sync/cloud-sync-clock.mjs';
 let dismissWired = false;
 let _sheetCtx = null;
 
@@ -175,7 +176,7 @@ export async function saveGuardiaMarks(patient, patch) {
   if (!patient || !patient.id) return { ok: false, reason: 'no-patient' };
   const next = normalizeGuardiaMarksPatch(patch);
   if (!Object.keys(next).length) return { ok: false, reason: 'empty' };
-  next.lanUpdatedAt = new Date().toISOString(); // Nube LWW clock for entries/{id}/fields
+  next.lanUpdatedAt = cloudSyncNowIso(); // Nube LWW clock for entries/{id}/fields
   const merged = { ...patient, ...next, id: String(patient.id) };
   if (!canExecuteClinicalCommand()) {
     Object.assign(patient, next);

@@ -411,7 +411,11 @@ function computePatientName(match, okReports) {
 function collectBatchBhValues_(chunks, findPatient) {
   var parsed = chunks.map(function (chunk, ri) {
     var r = parseReportChunk(chunk, ri, findPatient);
-    var bh = r.ok && r.result ? buildParsedBySectionFromResLabs(r.result.resLabs, r.result.bhExtras).BH : null;
+    var bySec = r.ok && r.result ? buildParsedBySectionFromResLabs(r.result.resLabs, r.result.bhExtras) : null;
+    var bh = bySec ? bySec.BH : null;
+    // A gas of the same draw carries Hto too: RetC may use it when no BH brings one.
+    var gasHto = bySec && bySec.GASES ? bySec.GASES.Hto : null;
+    if (typeof gasHto === 'number' && isFinite(gasHto) && !(bh && bh.Hto != null)) bh = Object.assign({}, bh, { Hto: gasHto });
     return { ri: ri, bh: bh, fecha: r.ok ? r.fecha : null, ms: r.ok ? labTimestampMsFromFechaHora(r.fecha, r.hora) : null };
   });
   return parsed.map(function (p) {
@@ -597,10 +601,11 @@ function stripDuplicateNonGasoChunksAcrossPayloads(payloads) {
 }
 
 export function mergeBulkParseResults(parsedItems) {
+  var withLabs = (parsedItems || []).filter(function (item) {
+    return item && item.result && item.result.resLabs && item.result.resLabs.length;
+  });
   var clusters = clusterByDayTipoAndTimeWindow(
-    (parsedItems || []).filter(function (item) {
-      return item && item.result && item.result.resLabs && item.result.resLabs.length;
-    }),
+    withLabs,
     function (item) {
       return dayKeyFromResult(item.result);
     },
@@ -613,6 +618,17 @@ export function mergeBulkParseResults(parsedItems) {
       return resLabsHasGasometria(item.result.resLabs || []);
     }
   );
+  // A report with no readable Fecha Registro has no day to cluster on: keep it as
+  // its own set (the store dates it today) instead of dropping it in silence.
+  var clustered = new Set();
+  clusters.forEach(function (cluster) {
+    cluster.forEach(function (item) {
+      clustered.add(item);
+    });
+  });
+  withLabs.forEach(function (item) {
+    if (!clustered.has(item)) clusters.push([item]);
+  });
   var payloads = clusters.map(function (cluster) {
     var tipo = primaryTipoForResLabs(cluster[0].result.resLabs || []);
     return buildMergedPayloadFromGroup(cluster, tipo);

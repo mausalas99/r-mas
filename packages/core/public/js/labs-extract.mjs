@@ -153,7 +153,7 @@ export function extraerConRangoBH(nombres, texto) {
 
 /** True si esta ocurrencia de `nombre` en `idx` debe ignorarse para
  * extracción sérica: contexto urinario, fracción de colesterol (HDL/LDL),
- * o depuración de creatinina de 24h. */
+ * depuración de creatinina de 24h o HbA1c. */
 function esOcurrenciaExcluidaSuero_(texto, idx, nombre) {
   if (esContextoUrinario_(texto, idx, nombre.length)) return true;
   // «COLESTEROL» solo = total; no tomar COLESTEROL HDL / LDL.
@@ -161,6 +161,8 @@ function esOcurrenciaExcluidaSuero_(texto, idx, nombre) {
   // «CREATININA» dentro de «DEPURACION DE CREATININA» es de una recolección
   // de 24h, no sérica — no tomar el primer número que siga (es de otra fila).
   if (nombre === 'CREATININA' && esDepuracionCreatinina_(texto, idx)) return true;
+  // «HEMOGLOBINA GLICOSILADA» es HbA1c (%), no la Hb de la BH.
+  if (nombre === 'HEMOGLOBINA' && /^\s*GLICOSILADA/i.test(texto.substring(idx + nombre.length, idx + nombre.length + 16))) return true;
   return false;
 }
 

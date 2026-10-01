@@ -138,7 +138,7 @@ function someReportBlocks_(textoBruto) {
 }
 
 function putBhTrendRefs_(refs, tNorm) {
-  putTrendRef_(refs, 'BH', 'Hb', extraerConRango(['HGB', 'HEMOGLOBINA TOTAL', 'HEMOGLOBINA'], tNorm));
+  putTrendRef_(refs, 'BH', 'Hb', extraerConRangoSuero(['HGB', 'HEMOGLOBINA TOTAL', 'HEMOGLOBINA'], tNorm));
   putTrendRef_(refs, 'BH', 'Hto', extraerConRango(['HCT ', 'HEMATOCRITO'], tNorm));
   putTrendRef_(refs, 'BH', 'VCM', extraerConRango(['MCV ', 'VCM '], tNorm));
   putTrendRef_(refs, 'BH', 'HCM', extraerConRango(['MCH ', 'HCM '], tNorm));

@@ -25,6 +25,7 @@ import { ensureMonitoreo } from './estado-actual-data.mjs';
 import { closeModalAnimated } from '../ui-motion.mjs';
 import { rt } from './patients-runtime-state.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
+import { cloudSyncNowIso } from './cloud-sync/cloud-sync-clock.mjs';
 
 
 var pendingAddPatientSavedCallback = null;
@@ -97,7 +98,7 @@ function buildPatientDraft(nombre, registro, edad, sexo, area, servicio, cuarto,
     cuarto: cuarto,
     cama: cama,
     fromLab: !!isFromLab,
-    lanUpdatedAt: new Date().toISOString(),
+    lanUpdatedAt: cloudSyncNowIso(),
   };
 }
 
@@ -313,9 +314,12 @@ function buildStubPatientDraft(labPatient, registro) {
   var nombreRaw = String(labPatient.name || '').trim().toUpperCase();
   var nombre = nombreRaw || ensureUniquePatientName('PACIENTE SIN NOMBRE');
   var edadNum = parseInt(String(labPatient.edad || '').trim(), 10);
+  var unidad = String(labPatient.edadUnidad || (String(labPatient.edad || '').match(/\b(meses|d[ií]as)\b/i) || [''])[0])
+    .trim().toLowerCase().replace('dias', 'días');
+  // Same format as the patient modal: "70" for años, "8 meses" / "3 días" otherwise.
   var edad =
     Number.isFinite(edadNum) && edadNum >= 0
-      ? String(edadNum)
+      ? String(edadNum) + (unidad && unidad !== 'años' ? ' ' + unidad : '')
       : String(labPatient.edad || '').trim();
   var sexo = labPatient.sexo === 'M' ? 'M' : 'F';
   return buildPatientDraft(nombre, registro, edad, sexo, '', '', '', '', true);

@@ -564,6 +564,16 @@ export function planLabHistoryDateTimeUpsert(existingSets, incoming) {
   }
   var keeper = matches[0];
   var siblings = matches.slice(1);
+  // Two gas-only reports at the same fecha+hora with different values are two
+  // samples (serial gases), not a correction of one: keep them as two sets.
+  if (
+    !siblings.length &&
+    isGasesOnlySection_(nonEmptySectionKeys_(incoming && incoming.parsedBySection)) &&
+    isGasesOnlySection_(nonEmptySectionKeys_(keeper.parsedBySection)) &&
+    gasometriaFingerprintFromResLabs((incoming && incoming.resLabs) || []) !== gasometriaFingerprintFromResLabs(keeper.resLabs || [])
+  ) {
+    return { action: 'add', keeper: null, siblings: [], matchKind: null };
+  }
   if (
     !siblings.length &&
     areDuplicateLabSets(keeper, {
