@@ -43,18 +43,31 @@ function shouldExportClinicalUserForLan(row, deletedIds) {
   return isRegisteredClinicalUser(row);
 }
 
+function selectUsersByIdChunked(db, ids) {
+  const byId = new Map();
+  for (let i = 0; i < ids.length; i += 500) {
+    const chunk = ids.slice(i, i + 500);
+    const rows = db
+      .prepare(
+        `SELECT user_id, username, rank, clinical_name, sala, is_program_admin, created_at
+         FROM users WHERE user_id IN (${chunk.map(() => '?').join(',')})`
+      )
+      .all(...chunk);
+    for (const r of rows) byId.set(r.user_id, r);
+  }
+  return byId;
+}
+
 function appendMembershipReferencedUsers(db, clinicalUsers, deletedIds, refs) {
   const exportedIds = new Set(
     (clinicalUsers || []).map((row) => String(row?.user_id || '').trim()).filter(Boolean)
   );
-  const select = db.prepare(
-    `SELECT user_id, username, rank, clinical_name, sala, is_program_admin, created_at
-     FROM users WHERE user_id = ?`
-  );
+  const pending = [...refs].filter((uid) => !exportedIds.has(uid) && !deletedIds.has(uid));
+  const rowsById = selectUsersByIdChunked(db, pending);
   let added = 0;
   for (const uid of refs) {
     if (exportedIds.has(uid) || deletedIds.has(uid)) continue;
-    const row = select.get(uid);
+    const row = rowsById.get(uid);
     if (!row) continue;
     const handle = normalizeUsername(row?.username || '');
     const clinicalName = String(row?.clinical_name || '').trim();
@@ -72,6 +85,20 @@ function appendMembershipReferencedUsers(db, clinicalUsers, deletedIds, refs) {
 /** @param {unknown[]} rows @param {Set<string>} teamIds @param {string} [field] */
 function filterRowsByTeamId(rows, teamIds, field = 'team_id') {
   return (rows || []).filter((row) => teamIds.has(String(row?.[field] || '').trim()));
+}
+
+/**
+ * Assignments of this sala's teams, plus "no team" rows ('') of patients this sala once held:
+ * without them a peer never learns the patient left the team.
+ */
+function filterAssignmentsForSala(rows, teamIds) {
+  const pids = new Set(
+    (rows || []).filter((r) => teamIds.has(String(r?.team_id || '').trim())).map((r) => r.patient_id)
+  );
+  return (rows || []).filter((r) => {
+    const tid = String(r?.team_id || '').trim();
+    return tid ? teamIds.has(tid) : pids.has(r?.patient_id);
+  });
 }
 
 /**
@@ -133,7 +160,7 @@ export function filterClinicalOpsSnapshotForSala(db, snapshot, sala) {
     teams,
     team_membership: filterRowsByTeamId(snapshot.team_membership, teamIds),
     team_guardia_today: filterRowsByTeamId(snapshot.team_guardia_today, teamIds),
-    patient_team_assignment: filterRowsByTeamId(snapshot.patient_team_assignment, teamIds),
+    patient_team_assignment: filterAssignmentsForSala(snapshot.patient_team_assignment, teamIds),
     entrega_template_team: filterRowsByTeamId(snapshot.entrega_template_team, teamIds),
     teams_archived: filterRowsByTeamId(snapshot.teams_archived, teamIds),
     team_membership_removals: filterRowsByTeamId(snapshot.team_membership_removals, teamIds),

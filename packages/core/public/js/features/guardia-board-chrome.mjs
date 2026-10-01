@@ -6,7 +6,7 @@ import { isGuardiaMode } from './chrome.mjs';
 import { clinicalSessionContext, mapPatientForGuardiaGrid } from '../clinical-access-runtime.mjs';
 import { userIsOnGuardiaCallToday } from '../clinico-access.mjs';
 import { effectiveClinicalRank, hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
-import { setGuardiaMode, syncGuardiaModeUI, toggleGuardiaMode } from '../guardia-mode-sync.mjs';
+import { setGuardiaMode } from '../guardia-mode-sync.mjs';
 import { diagnosticosTextForCenso } from '../patient-diagnosticos.mjs';
 import { resolvePatientCensusTeamId } from './patients-clinical-filter.mjs';
 import {
@@ -315,21 +315,6 @@ export function renderGuardiaCensusHead(state) {
   void state;
   const host = document.getElementById('guardia-census-head');
   if (host) host.innerHTML = '';
-}
-
-export function wireGuardiaModeToggle(settings) {
-  const btn = document.getElementById('btn-guardia-mode-toggle');
-  if (!btn || btn._rpcGuardiaModeWired) return;
-  btn._rpcGuardiaModeWired = true;
-
-  syncGuardiaModeUI();
-
-  btn.addEventListener('click', () => {
-    toggleGuardiaMode({
-      settings,
-      renderGuardiaBoard,
-    });
-  });
 }
 
 /**

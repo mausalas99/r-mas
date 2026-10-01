@@ -1,0 +1,51 @@
+name: Landing page
+
+# Publishes the public landing site (packages/core/cloud/landing) to GitHub
+# Pages. Runs when the site, its build script or the release notes change on
+# main. Download buttons read the newest release in the browser, so a release
+# needs no deploy (a release run uses the tag, which Pages refuses).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/core/cloud/landing/**'
+      - 'packages/core/scripts/build-landing.mjs'
+      - 'docs/RELEASE_NOTES_*.txt'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build site
+        run: node packages/core/scripts/build-landing.mjs
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/landing
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

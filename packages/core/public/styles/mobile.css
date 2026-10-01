@@ -404,12 +404,16 @@ html.rpc-mobile-web .btn-header-icon,
 html.rpc-mobile-web .patient-card {
   min-height: 44px;
 }
-html.rpc-mobile-web header {
-  position: sticky;
-  top: 0;
-  z-index: 200;
-  background: var(--surface);
+/* Sticky header: phone layout only — iPad (≥900px) uses the desktop shell. */
+@media (max-width: 899px) {
+  html.rpc-mobile-web header {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    background: var(--surface);
+  }
 }
+
 #rpc-mobile-boot-banner {
   display: none;
   position: fixed;
@@ -441,81 +445,85 @@ html.rpc-mobile-web body {
   background: var(--bg);
   min-height: 100vh;
   min-height: -webkit-fill-available;
+  min-height: 100dvh; /* 100vh is taller than Safari's visible area and clipped the bottom of every screen */
   height: 100%;
   height: 100dvh;
 }
-html.rpc-mobile-web header {
-  margin-left: 0;
-  margin-right: 0;
-  border-radius: 0;
-  flex-shrink: 0;
+/* Flat shell: phone layout only — iPad (≥900px) uses the desktop shell. */
+@media (max-width: 899px) {
+  html.rpc-mobile-web header {
+    margin-left: 0;
+    margin-right: 0;
+    border-radius: 0;
+    flex-shrink: 0;
+  }
+  html.rpc-mobile-web .app {
+    margin: 0;
+    gap: 0;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    background: transparent;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+  html.rpc-mobile-web .main-col {
+    padding: 0;
+    gap: 0;
+    border: none;
+    box-shadow: none;
+    background: var(--bg);
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+  }
+  /* Never auto-hide patient list on iPad PWA (empty rail / squished main). */
+  html.rpc-mobile-web .sidebar-hover-strip {
+    display: none !important;
+  }
+  html.rpc-mobile-web aside.patient-sidebar,
+  html.rpc-mobile-web.sidebar-auto-hide aside.patient-sidebar,
+  html.rpc-mobile-web.sidebar-auto-hide:not(.sidebar-reveal) aside.patient-sidebar {
+    width: min(150px, 22vw) !important;
+    min-width: 120px !important;
+    max-width: 30vw;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+    flex-shrink: 0;
+  }
+  html.rpc-mobile-web .app-tabs-row {
+    display: flex !important;
+    flex-shrink: 0;
+  }
+  html.rpc-mobile-web #main-area {
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+  html.rpc-mobile-web #appcontent-lab > .main-work-scroll,
+  html.rpc-mobile-web #appcontent-med > .med-active-shell,
+  html.rpc-mobile-web #appcontent-med > .med-active-shell > #med-work-area.main-work-scroll,
+  html.rpc-mobile-web #appcontent-agenda > .rpc-proc-agenda-root,
+  html.rpc-mobile-web .patient-expediente-classic,
+  html.rpc-mobile-web .patient-expediente-classic .tab-content {
+    margin-top: 0;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+  html.rpc-mobile-web .inner-tab-bar {
+    margin-bottom: 0;
+  }
+  html.rpc-mobile-web .app-tabs-row {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  html.rpc-mobile-web .main-col,
+  html.rpc-mobile-web aside.patient-sidebar { border-radius: 0; }
 }
-html.rpc-mobile-web .app {
-  margin: 0;
-  gap: 0;
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
-  background: transparent;
-  flex: 1 1 auto;
-  min-height: 0;
-  width: 100%;
-  overflow: hidden;
-}
-html.rpc-mobile-web .main-col {
-  padding: 0;
-  gap: 0;
-  border: none;
-  box-shadow: none;
-  background: var(--bg);
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: 0;
-}
-/* Never auto-hide patient list on iPad PWA (empty rail / squished main). */
-html.rpc-mobile-web .sidebar-hover-strip {
-  display: none !important;
-}
-html.rpc-mobile-web aside.patient-sidebar,
-html.rpc-mobile-web.sidebar-auto-hide aside.patient-sidebar,
-html.rpc-mobile-web.sidebar-auto-hide:not(.sidebar-reveal) aside.patient-sidebar {
-  width: min(150px, 22vw) !important;
-  min-width: 120px !important;
-  max-width: 30vw;
-  opacity: 1 !important;
-  transform: none !important;
-  pointer-events: auto !important;
-  flex-shrink: 0;
-}
-html.rpc-mobile-web .app-tabs-row {
-  display: flex !important;
-  flex-shrink: 0;
-}
-html.rpc-mobile-web #main-area {
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
-}
-html.rpc-mobile-web #appcontent-lab > .main-work-scroll,
-html.rpc-mobile-web #appcontent-med > .med-active-shell,
-html.rpc-mobile-web #appcontent-med > .med-active-shell > #med-work-area.main-work-scroll,
-html.rpc-mobile-web #appcontent-agenda > .rpc-proc-agenda-root,
-html.rpc-mobile-web .patient-expediente-classic,
-html.rpc-mobile-web .patient-expediente-classic .tab-content {
-  margin-top: 0;
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
-}
-html.rpc-mobile-web .inner-tab-bar {
-  margin-bottom: 0;
-}
-html.rpc-mobile-web .app-tabs-row {
-  margin-left: 0;
-  margin-right: 0;
-}
-html.rpc-mobile-web .main-col,
-html.rpc-mobile-web aside.patient-sidebar { border-radius: 0; }
 
 /* Filtros censo — sidebar above patient list (must not flex-grow like desktop toolbar mount) */
 html.rpc-mobile-web .clinical-census-filters-mount--sidebar {
@@ -595,4 +603,51 @@ html.rpc-mobile-web .clinical-census-filters--mobile-sidebar .clinical-census-fi
     width: min(280px, 42vw) !important;
     min-width: 200px;
   }
+}
+
+/* iPad (≥900px): desktop shell with a slim rail. Patient list shows bed numbers only,
+   and the header keeps just the theme switch. */
+@media (min-width: 900px) {
+  html.rpc-mobile-web aside.patient-sidebar,
+  html.rpc-mobile-web.sidebar-auto-hide aside.patient-sidebar,
+  html.rpc-mobile-web.sidebar-auto-hide:not(.sidebar-reveal) aside.patient-sidebar {
+    width: 110px !important;
+    min-width: 0 !important;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+  html.rpc-mobile-web .sidebar-hover-strip { display: none !important; }
+  html.rpc-mobile-web aside.patient-sidebar .patient-card {
+    padding: 8px 6px;
+    text-align: center;
+  }
+  html.rpc-mobile-web aside.patient-sidebar .patient-card .p-name {
+    font-size: 0;
+    line-height: 0;
+    height: 0;
+    margin: 0;
+    overflow: visible;
+  }
+  html.rpc-mobile-web aside.patient-sidebar .patient-card .p-meta {
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  html.rpc-mobile-web aside.patient-sidebar .patient-card-toolbar:not(.patient-card-toolbar--bulk),
+  html.rpc-mobile-web #btn-header-team-sync,
+  html.rpc-mobile-web .topbar-help,
+  html.rpc-mobile-web .header-session-divider,
+  html.rpc-mobile-web #btn-exp-datos-open {
+    display: none !important;
+  }
+  html.rpc-mobile-web .header-session-cluster .btn-header-icon {
+    min-width: 28px;
+    min-height: 28px;
+    width: 28px;
+    height: 28px;
+  }
+  html.rpc-mobile-web .patient-dash { padding-top: 2px; }
+  html.rpc-mobile-web .patient-dash .idrow { margin-bottom: 6px; }
 }

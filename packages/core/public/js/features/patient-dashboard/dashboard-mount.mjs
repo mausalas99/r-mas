@@ -9,7 +9,7 @@ import { resolveEaAbxFechaActualizacion } from '../estado-actual-meds-core.mjs';
 import { collectEaGlanceSoap } from './ea-glance-meds.mjs';
 import { toggleInterconsultId } from './interconsult-catalog.mjs';
 import { buildDashboardModel, buildLabsForDashboard } from './dashboard-model.mjs';
-import { renderDashboardHtml, renderLabsHtml, dashboardHasNoVitals } from './dashboard-html.mjs';
+import { renderDashboardHtml, renderLabsHtml } from './dashboard-html.mjs';
 import { watchDashboardFit } from './dashboard-fit.mjs';
 import { openInterconsultModal } from './ic-modal.mjs';
 import { switchLabInner } from './lab-inner.mjs';
@@ -200,10 +200,6 @@ function handleDashboardAction(action, el) {
     if (typeof window.openEstadoActualRegistroModal === 'function') window.openEstadoActualRegistroModal();
     return;
   }
-  if (action === 'pegar-some') {
-    if (typeof window.openLabPasteModal === 'function') window.openLabPasteModal();
-    return;
-  }
   if (action === 'actualizar-labs') {
     openLabsRepoModal();
     return;
@@ -294,17 +290,6 @@ function wireDashboardHost(mount) {
 
 function wireDashboardOnce() {
   wireDashboardLabRefresh();
-  if (!registroAutoOpenWired) {
-    registroAutoOpenWired = true;
-    // The dashboard can render while another area shows; check again when the patient area comes back.
-    document.addEventListener('rpc-app-tab-changed', function (ev) {
-      if (!ev.detail || ev.detail.tab !== 'nota') return;
-      setTimeout(function () {
-        var inner = rt.getActiveInner() || 'resumen';
-        maybeAutoOpenRegistro(collectDashboardModel(inner, { skipLabs: true }), rt.getActiveId(), inner);
-      }, 0);
-    });
-  }
   wireDashboardHost(document.getElementById('patient-dashboard-mount'));
   if (dashBackWired) return;
   dashBackWired = true;
@@ -359,27 +344,6 @@ function fillDashboardLabs(targets, pid) {
   return true;
 }
 
-var registroAutoOpened = new Set();
-var registroAutoOpenWired = false;
-
-/**
- * No vitals saved yet → the full-record panel opens by itself, once per patient
- * per session. Off with localStorage rpc-registro-autoopen = 'off' (E2E harness).
- */
-function maybeAutoOpenRegistro(model, pid, inner) {
-  if (!pid || inner !== 'resumen' || registroAutoOpened.has(pid)) return;
-  if (typeof rt.getActiveAppTab === 'function' && rt.getActiveAppTab() !== 'nota') return;
-  if (!dashboardHasNoVitals(model) || document.querySelector('.modal-backdrop.open')) return;
-  try {
-    if (localStorage.getItem('rpc-registro-autoopen') === 'off') return;
-  } catch (_e) {
-    void _e;
-  }
-  if (typeof window.openEstadoActualRegistroModal !== 'function') return;
-  registroAutoOpened.add(pid);
-  window.openEstadoActualRegistroModal();
-}
-
 export function renderPatientDashboard(hostEl, opts) {
   opts = opts || {};
   wireDashboardOnce();
@@ -401,7 +365,6 @@ export function renderPatientDashboard(hostEl, opts) {
     mount.innerHTML = html;
     watchDashboardFit(mount);
   });
-  maybeAutoOpenRegistro(model, pid, inner);
   syncInterconsultaModeChrome();
   if (!deferLabs) {
     if (typeof opts.onLabsReady === 'function') opts.onLabsReady();

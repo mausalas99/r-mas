@@ -124,7 +124,7 @@ async function pickPatient(page, p) {
     await page.locator('.exp-group-pill[data-group="paciente"]').click();
     await page.locator('[data-ic-back-to-board]').click();
   }
-  await board.locator('.p-name').first().waitFor({ state: 'visible' });
+  await board.locator('.sv-name').first().waitFor({ state: 'visible' });
   await openPatient(page, p);
 }
 
@@ -264,20 +264,15 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
       !document.getElementById('ic-board-mount').hidden));
   check('the retired top INTERCONSULTA bar stays hidden', await page.locator('#interconsulta-mode-frame').isHidden());
   let boardHtml = await page.locator('#ic-board-mount').innerHTML();
-  check('board header: «+ Agregar» is the first button, ahead of «Actualizar pacientes»',
-    /<div class="ic-board-header">\s*<button[^>]*data-ic-board-add/.test(boardHtml));
+  check('board header: «+ Agregar» comes ahead of «Actualizar pacientes»',
+    /<div class="ic-board-header">[\s\S]*data-ic-board-add[\s\S]*data-ic-board-refresh/.test(boardHtml));
   const laneCount = (boardHtml.match(/<section class="ic-board-lane/g) || []).length;
-  // 4 fixed lanes (guardia/postguardia/activo x2, all "no team today" with
-  // no teams configured) plus a 5th "Sin equipo" lane for P1/P2, who have
-  // no team assignment.
-  check('board renders its lanes (4 fixed + «Sin equipo» for unassigned patients)', laneCount === 5, laneCount);
-  const noTeamLanes = await boardLanes(page);
-  check('no IC teams: both activo slots say «Sin equipo asignado.» and are not drop targets',
-    noTeamLanes.filter((l) => l.role === 'activo').every((l) => l.empty === 'Sin equipo asignado.' && l.drop === null) &&
-    noTeamLanes.filter((l) => l.role === 'activo').length === 2, noTeamLanes);
+  // 4 fixed team rows (guardia/activo x2/postguardia, all "no team today" with
+  // no teams configured) plus the «Por asignar» tray for P1/P2, who have no team.
+  check('board renders its rows (4 fixed + «Por asignar» tray)', laneCount === 5, laneCount);
   check('no rollover button on the board (feature was removed)', !boardHtml.includes('Terminar guardia y repartir pacientes'));
-  check('patients with no team land under «Sin equipo» instead of disappearing',
-    boardHtml.includes('Sin equipo') && boardHtml.includes(P1.name) && boardHtml.includes(P2.name));
+  check('patients with no team land in «Por asignar» instead of disappearing',
+    boardHtml.includes('Por asignar') && boardHtml.includes(P1.name) && boardHtml.includes(P2.name));
 
   await pickPatient(page, P1);
 

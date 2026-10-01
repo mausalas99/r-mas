@@ -42,7 +42,7 @@ const FIX_GUIDES = {
     title: 'Sin sala configurada',
     summary: 'R+ necesita saber en qué sala de guardia sincronizar.',
     steps: [
-      'Abre Conexión y selecciona o crea la sala del turno.',
+      'Abre Mi perfil y toca la sala de tu rotación.',
       'En Mi rotación, confirma equipo y sala asignados.',
       'Vuelve a Diagnóstico Nube y revisa que la cadena muestre tu sala en verde.',
     ],

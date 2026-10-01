@@ -1,9 +1,14 @@
 /**
  * Cloud sync LWW op builders — maps patient/bundle shapes to worker ops.
  */
-import { slimLabSetForCloud } from './cloud-op-slim.mjs';
+import { slimLabSetForCloud, CLOUD_DOC_MAX_BYTES, utf8JsonBytes } from './cloud-op-slim.mjs';
 import { labSetTimestamp, monitoreoUpdatedAt } from '../../patient-merge.mjs';
-import { shouldSkipCloudMedRecetaPush, isCloudEntryClearPending, FP_FIELDS } from './cloud-med-receta-index.mjs';
+import {
+  shouldSkipCloudMedRecetaPush,
+  isCloudEntryClearPending,
+  markCloudDocOversize,
+  FP_FIELDS,
+} from './cloud-med-receta-index.mjs';
 
 /** @typedef {{ path: string, value: unknown, updatedAt: string, actorId: string }} CloudSyncOp */
 
@@ -122,41 +127,6 @@ export function pushCloudLiveClinicalOps(ops, patientId, patient, actorId) {
   }
 }
 
-/** @param {CloudSyncOp[]} ops @param {string} patientId @param {object} patient @param {string} actorId */
-function pushClinicalBlockOps(ops, patientId, patient, actorId) {
-  pushCloudLiveClinicalOps(ops, patientId, patient, actorId);
-}
-
-/** @param {CloudSyncOp[]} ops @param {string} patientId @param {object} entry @param {string} actorId @param {string} batchAt */
-function pushDocOps(ops, patientId, entry, actorId, batchAt) {
-  ops.push(
-    cloudOp({
-      path: `entries/${patientId}/note`,
-      value: entry.note || {},
-      actorId,
-      updatedAt: noteOpUpdatedAt(entry.note, batchAt),
-    })
-  );
-  ops.push(
-    cloudOp({
-      path: `entries/${patientId}/indicaciones`,
-      value: entry.indicaciones || {},
-      actorId,
-      updatedAt: noteOpUpdatedAt(entry.indicaciones, batchAt),
-    })
-  );
-  if (!shouldSkipCloudMedRecetaPush(patientId, entry.medReceta)) {
-    ops.push(
-      cloudOp({
-        path: `entries/${patientId}/medReceta`,
-        value: entry.medReceta || null,
-        actorId,
-        updatedAt: noteOpUpdatedAt(entry.medReceta, batchAt),
-      })
-    );
-  }
-}
-
 /** @param {string} patientId @param {unknown[]} labs @param {{ actorId: string, updatedAt: string }} meta */
 export function buildLabSidecarOpsForPatient(patientId, labs, meta) {
   const ops = [];
@@ -183,27 +153,6 @@ function pushLabSidecarOps(ops, patientId, labs, actorId, batchAt) {
 }
 
 /**
- * @param {object} entry — buildPatientEntry shape
- * @param {{ actorId: string, updatedAt: string }} meta
- * @returns {CloudSyncOp[]}
- */
-export function mapPatientEntryToOps(entry, meta) {
-  if (!entry?.patient?.id) return [];
-  const patientId = String(entry.patient.id).trim();
-  if (!patientId || patientId.indexOf('demo-') === 0) return [];
-
-  const actorId = meta.actorId;
-  const batchAt = meta.updatedAt;
-  const ops = [];
-  pushCensusFieldsOp(ops, patientId, entry.patient, actorId);
-  pushClinicalBlockOps(ops, patientId, entry.patient, actorId);
-  pushDocOps(ops, patientId, entry, actorId, batchAt);
-  const labs = Array.isArray(entry.labHistory) ? entry.labHistory : [];
-  pushLabSidecarOps(ops, patientId, labs, actorId, batchAt);
-  return ops;
-}
-
-/**
  * Slim census seed — fields (+ clinicalOps separately). Skips labs/notes to fit quotas.
  * @param {object} entry
  * @param {{ actorId: string, updatedAt: string }} meta
@@ -222,6 +171,7 @@ export function mapPatientEntryToCensusSeedOps(entry, meta) {
  * medReceta, VPO, listado de problemas, perfil farmacológico: no real edit clock, so
  * they go out only when their content changed since the last send/pull (see
  * cloud-med-receta-index) — a stale copy stamped "now" would beat a teammate's edit.
+ * note / indicaciones ride the same guard but carry their own `updatedAt`, stamped on save.
  * @param {CloudSyncOp[]} ops @param {string} patientId @param {object} entry @param {string} actorId @param {string} batchAt
  */
 function pushClocklessEntryOps(ops, patientId, entry, actorId, batchAt) {
@@ -239,6 +189,14 @@ function pushClocklessEntryOps(ops, patientId, entry, actorId, batchAt) {
       value = { ...value };
       delete value.draftPaste;
     }
+    if (field === 'note' || field === 'indicaciones') {
+      // Real edit clock only: an unstamped doc (never edited since 8.4.4) stays local, so a
+      // "now" stamp can never beat a teammate's edit. Over the doc cap (room storage): keep it here,
+      // never truncate; the status line says why.
+      const tooBig = utf8JsonBytes(value) > CLOUD_DOC_MAX_BYTES;
+      markCloudDocOversize(`entries/${patientId}/${field}`, tooBig);
+      if (!value.updatedAt || tooBig) continue;
+    }
     if (shouldSkipCloudMedRecetaPush(patientId, value, undefined, field)) continue;
     ops.push(
       cloudOp({
@@ -253,7 +211,7 @@ function pushClocklessEntryOps(ops, patientId, entry, actorId, batchAt) {
 
 /**
  * Debounced Nube bundle: census fields + estado actual / eventualidades / medReceta,
- * VPO, listado, perfil farmacológico (not notes/labs/HC — those stay on the heavier full-doc push).
+ * VPO, listado, perfil farmacológico, nota, indicaciones (not labs/HC).
  * @param {object} entry
  * @param {{ actorId: string, updatedAt: string }} meta
  * @returns {CloudSyncOp[]}
@@ -336,7 +294,7 @@ export function mapBundleEnvelopeToOps(bundle, meta) {
   }
   ops.push(...mapBundleTodosToOps(bundle, meta));
   ops.push(...mapBundleAgendaToOps(bundle, meta));
-  // clinicalOps lives in sala-scoped rooms via pushClinicalOpsForSala — never stamp it
+  // clinicalOps lives in sala-scoped rooms via syncClinicalOpsForSala — never stamp it
   // with census bundle "now" (LWW whole-doc replace could wipe team assignments).
   return ops;
 }

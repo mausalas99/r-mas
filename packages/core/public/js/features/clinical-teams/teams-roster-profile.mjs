@@ -4,11 +4,8 @@ import {
   isBenignPushSkipCode,
   PROFILE_PUSH_FAILED_MSG,
 } from '../../clinical-profile-cloud-stubs.mjs';
-import { effectiveClinicalRank, hasProgramAdminPrivileges } from '../../clinical-privileges.mjs';
-import { isCloudSyncActive } from '../cloud-sync/nube-sync-policy.mjs';
-import { isCloudSala, normalizeCloudSala } from '../cloud-sync/sala-allowlist.mjs';
+import { hasProgramAdminPrivileges } from '../../clinical-privileges.mjs';
 import { isValidUsernameFormat, normalizeUsername } from '../../clinical-username.mjs';
-import { persistClinicalUserBinding } from '../../clinical-settings.mjs';
 import { syncRotationConfigButton } from '../clinical-rotation.mjs';
 import {
   toast,
@@ -70,59 +67,42 @@ async function toastProfileSaveResult({ msg, usernameWillChange, sala }) {
   }
 }
 
-/** Nube sala-room pull/push for `sala`, or null when Nube is off for it. */
-async function nubeSalaSync(sala) {
-  if (!isCloudSyncActive()) return null;
-  const s = normalizeCloudSala(sala || '');
-  if (!isCloudSala(s)) return null;
-  const mod = await import('../cloud-sync/cloud-clinical-ops-sala.mjs');
-  return { sala: s, pullClinicalOpsForSala: mod.pullClinicalOpsForSala, pushClinicalOpsForSala: mod.pushClinicalOpsForSala };
+const sessionSala = () => String(clinicalSessionContext.user?.sala || '');
+
+/** A new sala means a new Nube room: join it now, so the server matches the profile. */
+async function moveNubeRoomIfSalaChanged(prevSala, sala) {
+  if (!sala || sala === prevSala) return;
+  const [{ isCloudSala }, { getCloudSyncToken }] = await Promise.all([
+    import('../cloud-sync/sala-allowlist.mjs'),
+    import('../cloud-sync/settings.mjs'),
+  ]);
+  if (!isCloudSala(sala) || !getCloudSyncToken()) return;
+  const { ensureTurnRoomAfterTeamJoin } = await import('../cloud-sync/ensure-turn-room.mjs');
+  const room = await ensureTurnRoomAfterTeamJoin(toast);
+  if (room && !prevSala) await openTeamsAfterSalaPick();
 }
 
-/**
- * ⇄ Cuenta hosts this form outside the teams panel, so nothing else redraws
- * it: without this, «Cambiar código de administración» only showed up after
- * reopening Cuenta.
- */
-async function remountCuentaProfile() {
-  const cuentaHost = document.querySelector('[data-cloud-profile-host]');
-  if (!cuentaHost?.isConnected) return;
-  const { mountClinicalProfileInHost } = await import('./teams-roster-interactions.mjs');
-  await mountClinicalProfileInHost(cuentaHost);
+/** First sala pick after a rotation: a resident with no team goes on to pick one. */
+async function openTeamsAfterSalaPick() {
+  const { needsTeamOnboarding } = await import('../clinical-onboarding-gates.mjs');
+  if (!needsTeamOnboarding()) return;
+  (await import('../profile-modal.mjs')).closeProfileModal();
+  await (await import('./teams-roster-shell.mjs')).openClinicalTeamsPanel();
 }
 
-/**
- * Save, push to Nube, then read the rank back: the session (and the R4-only
- * «Editar» buttons) follow what was really saved, never the picked value.
- * @returns {Promise<boolean|null>} true when it stuck, false when the rank
- *   did not, null when nothing was saved
- */
-async function saveProfileAndReadBack(fields, adminChange) {
-  const nube = await nubeSalaSync(fields.sala);
-  await nube?.pullClinicalOpsForSala(nube.sala, { since: 0 }).catch(() => null);
-  const ok = await persistProfileFromPanel({
-    rank: fields.rank,
-    sala: fields.sala,
-    clinicalName: fields.clinicalName,
-    isProgramAdmin: adminChange.isProgramAdmin,
-    username: fields.username,
-    adminAccessCode: adminChange.adminAccessCode,
-  });
-  if (!ok) return null;
-  // Push before anything pulls: every Nube pull lets the room's copy of this
-  // user win, so a pull ahead of this push put the old rank back.
-  // ponytail: a background sync cycle landing between the save and this push
-  // can still undo it; the read-back below then says so instead of «guardado».
-  await nube?.pushClinicalOpsForSala(nube.sala).catch(() => null);
-
-  await refreshClinicalUserProfile();
-  const savedRank = effectiveClinicalRank(clinicalSessionContext.user);
-  if (savedRank !== fields.rank) {
-    persistClinicalUserBinding({ rank: savedRank });
-    toast(`No se guardó el rango: sigues como ${savedRank}.`, 'error');
-    return false;
+/** Mirror a changed @usuario to the Nube account; local save already succeeded. */
+async function renameNubeUsername(changed, username) {
+  if (!changed) return;
+  const [{ createCloudSyncApi }, { getCloudSyncUrl, getCloudSyncToken }] = await Promise.all([
+    import('../cloud-sync/api-client.mjs'),
+    import('../cloud-sync/settings.mjs'),
+  ]);
+  if (!getCloudSyncToken()) return;
+  try {
+    await createCloudSyncApi({ getBaseUrl: getCloudSyncUrl, getToken: getCloudSyncToken }).changeUsername(username);
+  } catch (err) {
+    toast(`Usuario cambiado aquí, pero no en Nube: ${err?.message || 'error'}`, 'error');
   }
-  return true;
 }
 
 export async function handleProfileFormSubmit(ev) {
@@ -145,14 +125,33 @@ export async function handleProfileFormSubmit(ev) {
     return;
   }
 
+  const prevSala = sessionSala();
   const claimResult = await claimClinicalUsernameIfNeeded(fields.username, fields.sala);
   if (claimResult === false) return;
   const usernameWillChange = claimResult === true;
 
-  const saved = await saveProfileAndReadBack(fields, adminChange);
-  if (saved === null) return;
-  await remountCuentaProfile();
-  if (!saved) return;
+  const ok = await persistProfileFromPanel({
+    rank: fields.rank,
+    sala: fields.sala,
+    clinicalName: fields.clinicalName,
+    isProgramAdmin: adminChange.isProgramAdmin,
+    username: fields.username,
+    adminAccessCode: adminChange.adminAccessCode,
+  });
+  if (!ok) return;
+
+  await renameNubeUsername(usernameWillChange, fields.username);
+  await refreshClinicalUserProfile();
+  await moveNubeRoomIfSalaChanged(prevSala, fields.sala);
+  // Mi perfil hosts this form outside the teams panel, so nothing else redraws
+  // it: without this, «Cambiar código de administración» only showed up after
+  // reopening Mi perfil.
+  const perfilHost = document.querySelector('[data-perfil-clinical-host]');
+  const perfilSalaHost = document.querySelector('[data-perfil-sala-host]');
+  if (perfilHost?.isConnected && perfilSalaHost?.isConnected) {
+    const { mountPerfilClinical } = await import('./teams-roster-interactions.mjs');
+    await mountPerfilClinical(perfilSalaHost, perfilHost);
+  }
   const msg =
     adminChange.wantsProgramAdmin &&
     (adminChange.isProgramAdmin === true || adminChange.wasProgramAdmin)

@@ -19,7 +19,7 @@ import { INTERCONSULT_SERVICES, hueForRequestingService } from './patient-dashbo
 /** Requesting-service hue for the board's card tint (public/styles/pase-board.css's
  * .patient-card--svc-tint) — same catalog/hue convention as the Servicio
  * solicitante picker chips. Null when the patient has no requesting service set. */
-function requestingServiceHue(p) {
+export function requestingServiceHue(p) {
   var name = String(getConsultInfo(p).requestingService || '').trim();
   if (!name) return null;
   var svc = INTERCONSULT_SERVICES.find(function (s) {

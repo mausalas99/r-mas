@@ -30,7 +30,8 @@ import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import { getClinicalScopeContextForEvaluate } from '../clinical-access-runtime.mjs';
 import { resolvePatientCensusTeamId } from './patients-clinical-filter.mjs';
 import { patientsVisibleInSidebar } from './patients-scope.mjs';
-import { mountInterconsultaTeamBoard } from './interconsulta-team-board.mjs';
+import { mountInterconsultaTeamBoard, interconsultaTeamOptions } from './interconsulta-team-board.mjs';
+import { sortPatientsForCensus, formatCamaCellForCenso } from '../censo-build.mjs';
 import { openServicePickerModal } from './patient-dashboard/ic-modal.mjs';
 import { openAddModal } from './patients-modal.mjs';
 import { renderPatientCardHtml } from './patients-card-html.mjs';
@@ -343,7 +344,7 @@ function assignInterconsultaPatientTeam(patient, teamId) {
     assignDemoPatientTeamLocally(patient, teamId);
     return Promise.resolve({ ok: true });
   }
-  return assignPatientToTeamClinical(patient.id, teamId);
+  return assignPatientToTeamClinical(patient.id, teamId, { allowClear: true });
 }
 
 function handleConsultTeamChange(ev) {
@@ -381,6 +382,15 @@ function assignInterconsultaTeamViaBoardDrop(patientId, teamId) {
 /** Servicio solicitante opens the categorized catalog picker (same chip UX
  * as the sala interconsultantes picker) instead of free text. */
 function handleConsultBandClick(ev) {
+  // A click on the pill's label or padding acts like a click on its control.
+  var pill = ev.target.closest && ev.target.closest('.ic-cf');
+  var ctl = pill && pill.querySelector('select, input, [data-ic-req-trigger]');
+  if (ctl && !ctl.contains(ev.target)) {
+    if (ctl.tagName === 'SELECT' && ctl.showPicker) ctl.showPicker();
+    else if (ctl.tagName === 'INPUT') ctl.focus();
+    else ctl.click();
+    return;
+  }
   var trigger = ev.target.closest && ev.target.closest('[data-ic-req-trigger]');
   if (!trigger) return;
   var patient = activeInterconsultaPatient();
@@ -447,6 +457,35 @@ function selectPatientFromIcBoardEvent(ev) {
   showInterconsultaPatientView();
 }
 
+/** Per-device view prefs (not synced): 'asignar' = all teams + unassigned, 'equipo' = one team's cards. */
+var IC_MODE_LS = 'rplus-ic-mode';
+var IC_TEAM_LS = 'rplus-ic-my-team';
+
+function readLs(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeLs(key, val) {
+  try {
+    localStorage.setItem(key, val);
+  } catch (e) {
+    console.warn('[ic-board] failed to write ' + key, e);
+  }
+}
+
+function icMode() {
+  return readLs(IC_MODE_LS) === 'equipo' ? 'equipo' : 'asignar';
+}
+
+function openIcPatient(pid) {
+  patientsBridge.selectPatient(pid);
+  showInterconsultaPatientView();
+}
+
 function ensureIcBoardClickDelegation(mount) {
   if (!mount || mount.dataset.icBoardWired) return;
   mount.dataset.icBoardWired = '1';
@@ -456,7 +495,26 @@ function ensureIcBoardClickDelegation(mount) {
       renderInterconsultaBoardView();
       return;
     }
+    var modeBtn = ev.target.closest('[data-ic-mode]');
+    if (modeBtn) {
+      writeLs(IC_MODE_LS, modeBtn.getAttribute('data-ic-mode'));
+      renderInterconsultaBoardView();
+      return;
+    }
+    // The archive corner is a sibling of the card and has its own global handler.
+    if (ev.target.closest('.sv-card-archive')) return;
+    var card = ev.target.closest('[data-ic-open]');
+    if (card) {
+      openIcPatient(card.getAttribute('data-ic-open'));
+      return;
+    }
     selectPatientFromIcBoardEvent(ev);
+  });
+  mount.addEventListener('change', function (ev) {
+    var sel = ev.target.closest && ev.target.closest('[data-ic-my-team]');
+    if (!sel) return;
+    writeLs(IC_TEAM_LS, sel.value);
+    renderInterconsultaBoardView();
   });
   mount.addEventListener('pointerup', function (ev) {
     if (!shouldHandleTouchPointerUp(ev)) return;
@@ -464,11 +522,8 @@ function ensureIcBoardClickDelegation(mount) {
   });
 }
 
-/** Paints the 4-lane team board + Archivados into the main-window mount. No-op outside IC mode. */
-export function renderInterconsultaBoardView() {
-  var mount = icBoardMount();
-  if (!mount || !isInterconsultaModeActive()) return;
-  ensureIcBoardClickDelegation(mount);
+/** Teams, archived and active patients (each with `censusTeamId`) for the board and the rail. */
+function icBoardData() {
   // A background scope refresh (Nube pull, LAN reconcile) since the last render may
   // have wholesale-replaced scopeContext and dropped the demo teams/assignments — heal it.
   ensureInterconsultaDemoInScope();
@@ -496,16 +551,57 @@ export function renderInterconsultaBoardView() {
       });
     });
 
-  mount.innerHTML =
+  return { teams: teams, now: now, active: active, archived: archived };
+}
+
+function icHeaderHtml(mode, options, teamId, count) {
+  function seg(key, label) {
+    return (
+      '<button type="button" class="ic-mode-btn' + (mode === key ? ' is-on' : '') + '" data-ic-mode="' + key +
+      '" aria-pressed="' + (mode === key ? 'true' : 'false') + '">' + label + '</button>'
+    );
+  }
+  return (
     '<div class="ic-board-header">' +
+    '<strong class="ic-board-title">Interconsultas</strong>' +
+    '<span class="ic-board-count">' + count + ' pacientes</span>' +
+    '<div class="ic-mode-seg" role="group" aria-label="Modo del tablero">' + seg('asignar', 'Asignar') + seg('equipo', 'Mi equipo') + '</div>' +
+    (mode === 'equipo' && options.length
+      ? '<select class="ic-team-select" data-ic-my-team aria-label="Mi equipo">' +
+        options
+          .map(function (o) {
+            return '<option value="' + escHtml(o.id) + '"' + (o.id === teamId ? ' selected' : '') + '>' + escHtml(o.label) + '</option>';
+          })
+          .join('') +
+        '</select>'
+      : '') +
+    '<span class="ic-board-header__sp"></span>' +
     '<button type="button" class="wb-btn wb-btn-secondary" data-ic-board-add>+ Agregar</button>' +
     '<button type="button" class="wb-btn wb-btn-primary" data-ic-board-refresh>Actualizar pacientes</button>' +
-    '</div>' +
+    '</div>'
+  );
+}
+
+/** Paints header + board (Asignar or Mi equipo) + Archivados into the main-window mount. No-op outside IC mode. */
+export function renderInterconsultaBoardView() {
+  var mount = icBoardMount();
+  if (!mount || !isInterconsultaModeActive()) return;
+  ensureIcBoardClickDelegation(mount);
+  var data = icBoardData();
+  var mode = icMode();
+  var options = interconsultaTeamOptions(data.teams, data.now);
+  var stored = readLs(IC_TEAM_LS);
+  var teamId = options.some(function (o) { return o.id === stored; }) ? stored : options.length ? options[0].id : '';
+
+  mount.innerHTML =
+    icHeaderHtml(mode, options, teamId, data.active.length) +
     '<div id="ic-team-board-mount"></div><div id="ic-archived-mount"></div>';
   mount.querySelector('[data-ic-board-refresh]').addEventListener('click', refreshPatients);
   mount.querySelector('[data-ic-board-add]').addEventListener('click', openAddModal);
-  mountInterconsultaTeamBoard(mount.querySelector('#ic-team-board-mount'), active, teams, {
-    now: now,
+  mountInterconsultaTeamBoard(mount.querySelector('#ic-team-board-mount'), data.active, data.teams, {
+    now: data.now,
+    mode: mode,
+    teamId: teamId,
     filterGuardiaOnly: isInterconsultaGuardiaOnlyFilterActive(),
     hidePostguardia: isInterconsultaPostguardiaHidden(),
     assignTeam: assignInterconsultaTeamViaBoardDrop,
@@ -513,7 +609,52 @@ export function renderInterconsultaBoardView() {
       renderInterconsultaBoardView();
     },
   });
-  mount.querySelector('#ic-archived-mount').innerHTML = renderIcArchivedSectionHtml(archived);
+  mount.querySelector('#ic-archived-mount').innerHTML = renderIcArchivedSectionHtml(data.archived);
+}
+
+/** Slim bed rail (same look as Sala's) while a patient is open: the active
+ * patient's team, or everyone when they have no team. "Tablero" goes back. */
+function syncIcRail(show) {
+  var app = document.querySelector('.app');
+  var main = document.querySelector('.main-col');
+  var rail = document.getElementById('ic-team-rail');
+  var open = !!(show && app && main);
+  document.documentElement.classList.toggle('ic-rail-open', open);
+  if (!open) {
+    if (rail) rail.remove();
+    return;
+  }
+  if (!rail) {
+    rail = document.createElement('nav');
+    rail.id = 'ic-team-rail';
+    rail.setAttribute('aria-label', 'Camas');
+    rail.addEventListener('click', function (ev) {
+      var btn = ev.target.closest('button');
+      if (!btn) return;
+      if (btn.hasAttribute('data-ic-rail-home')) showInterconsultaBoardView();
+      else if (btn.hasAttribute('data-ic-rail-open')) openIcPatient(btn.getAttribute('data-ic-rail-open'));
+    });
+    app.insertBefore(rail, main);
+  }
+  var data = icBoardData();
+  var activeId = String(rt.getActiveId() == null ? '' : rt.getActiveId());
+  var current = data.active.find(function (p) { return String(p.id) === activeId; });
+  var teamId = current && current.censusTeamId;
+  var list = sortPatientsForCensus(
+    teamId ? data.active.filter(function (p) { return p.censusTeamId === teamId; }) : data.active
+  );
+  rail.innerHTML =
+    '<button type="button" class="sv-rail-home" data-ic-rail-home aria-label="Volver al tablero" title="Volver al tablero (Esc)">' +
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Tablero</span></button>' +
+    list
+      .map(function (p) {
+        return (
+          '<button type="button" data-ic-rail-open="' + escHtml(String(p.id)) + '" title="' + escHtml(p.nombre || '') + '"' +
+          (String(p.id) === activeId ? ' class="is-active" aria-current="true"' : '') + '>' +
+          escHtml(formatCamaCellForCenso(p)) + '</button>'
+        );
+      })
+      .join('');
 }
 
 /** Resumen (#empty-state/#patient-view) already manage their own inline
@@ -540,6 +681,7 @@ function syncIcViewVisibility() {
     'ic-board-view-open',
     onBoard && isInterconsultaModeActive()
   );
+  syncIcRail(!onBoard && isInterconsultaModeActive());
   var barMount = document.getElementById('interconsulta-mode-frame');
   syncBackButtonVisibility(barMount);
   // The per-patient consult-info band (SERVICIO SOLICITANTE / MOTIVO DE
@@ -598,6 +740,7 @@ function restorePatientViewAfterInterconsulta() {
 /** @param {HTMLElement | null} boardMount */
 function deactivateInterconsultaModeChrome(boardMount) {
   document.documentElement.classList.remove('ic-board-view-open');
+  syncIcRail(false);
   if (boardMount) boardMount.hidden = true;
   removeConsultBandRow();
   removeBackToBoardRow();

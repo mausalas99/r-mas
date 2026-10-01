@@ -866,6 +866,45 @@ describe('clinical-ops-sync', () => {
     assert.equal(member, undefined);
   });
 
+  it('mergeClinicalOpsSnapshot keeps a leave when a stale room copy names the user by a peer user_id', () => {
+    const db = openDb();
+    const leader = ensureClinicalUser(db, { clientId: 'host', rank: 'R4' });
+    claimUsername(db, { userId: leader.userId, username: 'host_user' });
+    const mk = (name) =>
+      createTeam(db, { name, service: 'Sala', onCallDayIndex: 1, createdBy: leader.userId, sala: 'Sala 2' });
+    const teamX = mk('Equipo X');
+    const teamY = mk('Equipo Y');
+    const me = ensureClinicalUser(db, { clientId: 'me-mac', rank: 'R1' });
+    claimUsername(db, { userId: me.userId, username: 'leaver_doc' });
+    joinTeam(db, teamX.team_id, me.userId);
+    removeTeamMember(db, teamX.team_id, me.userId);
+    joinTeam(db, teamY.team_id, me.userId);
+    const local = exportClinicalOpsSnapshot(db);
+
+    // Room copy pushed by a peer that never pulled the leave: same @usuario, peer's user_id.
+    const peerId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+    mergeClinicalOpsSnapshot(
+      db,
+      {
+        ...local,
+        exportedAt: new Date().toISOString(),
+        clinical_users: [
+          { user_id: peerId, username: 'leaver_doc', rank: 'R1', clinical_name: 'Leaver', sala: 'Sala 2', is_program_admin: 0 },
+        ],
+        team_membership: [{ team_id: teamX.team_id, user_id: peerId, sub_area_fraction: null }],
+        team_membership_removals: [],
+        team_membership_rejoins: [],
+      },
+      local
+    );
+    const has = (teamId) =>
+      !!db
+        .prepare(`SELECT 1 AS ok FROM team_membership WHERE team_id = ? AND user_id = ?`)
+        .get(teamId, me.userId);
+    assert.equal(has(teamX.team_id), false, 'left team must stay left');
+    assert.equal(has(teamY.team_id), true, 'new team must survive the stale copy');
+  });
+
   it('mergeClinicalOpsSnapshot lets a fresh LAN re-join override an older leave tombstone', () => {
     const db = openDb();
     const leader = ensureClinicalUser(db, { clientId: 'host', rank: 'R4' });

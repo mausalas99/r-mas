@@ -27,10 +27,13 @@ function getLabOutputPrefs() {
 }
 
 function syncAbgLabPrefRowVisibility() {
-  var row =
-    document.getElementById('lab-pref-gaso-extended')?.closest('label') ||
-    document.getElementById('lab-pref-gaso-extended-lbl')?.closest('.lab-pref-row');
-  if (row) row.style.display = isAbgAnalysisHidden() ? 'none' : '';
+  var rows = [
+    document.getElementById('lab-pref-gaso-extended-lbl')?.closest('.lab-pref-row'),
+    document.getElementById('lab-menu-pref-gaso-lbl')?.closest('.lab-bar-menu-switch'),
+  ];
+  rows.forEach(function (row) {
+    if (row) row.style.display = isAbgAnalysisHidden() ? 'none' : '';
+  });
 }
 
 function setLabOutputPrefs(partial) {
@@ -119,7 +122,16 @@ function closeLabDisplayPrefsModal() {
   backdrop.setAttribute('aria-hidden', 'true');
 }
 
-function onLabDisplayPrefsChanged() {
+function onLabDisplayPrefsChanged(ev) {
+  // Switches in the Labs bar menu mirror into the modal's checkboxes, which stay the one source read below.
+  var src = ev && ev.target && ev.target.id;
+  if (src && src.indexOf('lab-menu-pref-') === 0) {
+    [['lab-menu-pref-bh', 'lab-pref-bh-extended'], ['lab-menu-pref-gaso', 'lab-pref-gaso-extended'], ['lab-menu-pref-quick', 'lab-pref-quick-output']].forEach(function (pair) {
+      var from = document.getElementById(pair[0]);
+      var to = document.getElementById(pair[1]);
+      if (from && to) to.checked = from.checked;
+    });
+  }
   var cbBh = document.getElementById('lab-pref-bh-extended');
   var cbGaso = document.getElementById('lab-pref-gaso-extended');
   var cbQuick = document.getElementById('lab-pref-quick-output');

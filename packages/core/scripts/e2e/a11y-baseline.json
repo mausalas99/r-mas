@@ -1,6 +1,8 @@
 {
   "admin-code": {
-    "admin-code-setup": {}
+    "admin-code-setup": {
+      "color-contrast": 9
+    }
   },
   "admin-panel": {
     "admin-resumen": {
@@ -189,6 +191,15 @@
       "color-contrast": 1
     }
   },
+  "equipos-panel": {
+    "pick-wide": {},
+    "pick-wide-code-open": {},
+    "pick-narrow": {},
+    "joined-wide": {},
+    "perfil-profile": {
+      "color-contrast": 6
+    }
+  },
   "estado-actual": {
     "estado-actual-empty": {},
     "registro-empty": {},
@@ -321,7 +332,9 @@
       "color-contrast": 4
     },
     "team-run": {},
-    "review": {},
+    "review": {
+      "color-contrast": 3
+    },
     "no-network": {},
     "bulk-paste": {},
     "portal-address-missing": {
@@ -426,6 +439,14 @@
     },
     "signed-out-dark": {
       "color-contrast": 1
+    }
+  },
+  "nube-sala-switch": {
+    "sala-2-selected": {
+      "color-contrast": 9
+    },
+    "new-rotation-picked": {
+      "color-contrast": 9
     }
   },
   "nube-sync": {
@@ -576,6 +597,11 @@
     "vpo-empty": {},
     "vpo-busy": {
       "label": 5
+    }
+  },
+  "nube-session-expired": {
+    "2-login-panel": {
+      "color-contrast": 2
     }
   }
 }

@@ -202,10 +202,30 @@ function hasFocusedEditableInPatientView() {
  * inner-tab render cache no-ops unless the pulled data actually touched
  * what's on screen.
  */
+var repaintAfterBlurArmed = false;
+
+/** The repaint skipped for a focused field is owed, not dropped: run it once focus leaves.
+ * The delay lets a click that caused the blur finish before the DOM is replaced. */
+function repaintAfterBlur() {
+  if (repaintAfterBlurArmed || typeof document === 'undefined') return;
+  repaintAfterBlurArmed = true;
+  document.addEventListener(
+    'focusout',
+    function () {
+      repaintAfterBlurArmed = false;
+      setTimeout(refreshActivePatientViewIfOpen, 400);
+    },
+    { once: true, capture: true }
+  );
+}
+
 export function refreshActivePatientViewIfOpen() {
   var id = rt.getActiveId();
   if (id == null || id === '') return;
-  if (hasFocusedEditableInPatientView()) return;
+  if (hasFocusedEditableInPatientView()) {
+    repaintAfterBlur();
+    return;
+  }
   scheduleSelectedPatientChart(id, {
     patientChanged: false,
     prevId: id,
@@ -258,6 +278,8 @@ function selectPatientCore(id) {
     rt.invalidateInnerTabRenderCache();
   }
   rt.setActiveId(id);
+  // The chart repaint below waits 120 ms; old patient's labs must not show meanwhile.
+  if (patientChanged) rt.dropOtherPatientsLabOutput();
   writeLastSelectedPatientId(id);
   queueMicrotask(syncSalaView);
   if (!patientChanged || !patchPatientListActiveHighlight(id)) {

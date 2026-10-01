@@ -121,6 +121,7 @@ async function sidebarCount(page) {
 
 async function pasteAndProcess(page, text) {
   if (!(await page.locator('#lab-input').isVisible())) {
+    await page.locator('#lab-bar-more > summary').click();
     await page.locator('#btn-lab-paste').click();
     await page.locator('#lab-input').waitFor({ state: 'visible' });
   }

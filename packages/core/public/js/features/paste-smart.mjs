@@ -4,6 +4,7 @@
  * Lab workbench loads on demand (no static boot import).
  */
 import { getPatients } from '../app-state.mjs';
+import { setNameAlias } from '../patient-name-match.mjs';
 import { findPatientByRegistro } from './patients-modal-commit.mjs';
 import { selectPatient } from './patients.mjs';
 import {
@@ -120,6 +121,94 @@ export function initPasteSmart() {
   if (wired || typeof document === 'undefined') return;
   wired = true;
   document.addEventListener('paste', onDocumentPaste, true);
+  document.addEventListener('dragover', onDocumentDragOver);
+  document.addEventListener('dragleave', clearDropTarget);
+  document.addEventListener('drop', onDocumentDrop);
+}
+
+var PDF_MAX_BYTES = 15 * 1024 * 1024;
+
+function pdfFromDrag(ev) {
+  var dt = ev.dataTransfer;
+  if (!dt) return null;
+  return Array.prototype.find.call(dt.files || [], function (f) {
+    return /\.pdf$/i.test(f.name);
+  }) || null;
+}
+
+function patientCardAt(ev) {
+  return ev.target && ev.target.closest ? ev.target.closest('.patient-card[data-patient-id]') : null;
+}
+
+function clearDropTarget() {
+  var prev = document.querySelector('.patient-card.pdf-drop-target');
+  if (prev) prev.classList.remove('pdf-drop-target');
+}
+
+function onDocumentDragOver(ev) {
+  var items = (ev.dataTransfer && ev.dataTransfer.items) || [];
+  if (!Array.prototype.some.call(items, function (it) { return it.kind === 'file' && it.type === 'application/pdf'; })) return;
+  ev.preventDefault();
+  var card = patientCardAt(ev);
+  if (card && card.classList.contains('pdf-drop-target')) return;
+  clearDropTarget();
+  if (card) card.classList.add('pdf-drop-target');
+}
+
+var REUM_HEADER_RE = /^[ \t]*Paciente\s*:\s*(.*?)\s+Id\s*:/im;
+
+/**
+ * PDF soltado sobre una tarjeta del censo: si el reporte es de esa persona se procesa solo.
+ * Si no, se pide confirmar la asignación manual y se recuerda el nombre para la próxima.
+ */
+function processDroppedPdfText(text, target) {
+  var plan = planSmartPaste(text, {
+    patients: getPatients(),
+    findPatientByRegistro: findPatientByRegistro,
+    quickLabOutput: getQuickLabOutput(),
+  });
+  var main = plan.primaryPatient;
+  var readable = plan.kind !== 'empty' && plan.kind !== 'not-some' && plan.kind !== 'indicas';
+  if (!target || !readable || (main && String(main.id) === String(target.id))) {
+    return processSmartPaste(text, { force: true });
+  }
+  var m = text.match(REUM_HEADER_RE);
+  var name = m ? m[1].trim() : '';
+  openSmartPasteConfirm(
+    {
+      candidates: [target],
+      confirmTitle: '¿Guardar en ' + (target.nombre || 'este paciente') + '?',
+      message:
+        'El reporte dice «' + (name || 'sin nombre') + '»' +
+        (main ? ' y coincide con ' + (main.nombre || 'otro paciente') : ' y no coincide con nadie del censo') + '.',
+      onChoose: function (p) {
+        if (m && p.registro) {
+          setNameAlias(name, p.registro);
+          processSmartPaste(text, { force: true });
+        } else {
+          void executeSmartPastePlan(plan, p);
+        }
+      },
+    },
+    'confirm-single'
+  );
+}
+
+/** PDF soltado en cualquier parte: main extrae el texto y sigue el mismo flujo que pegar. */
+async function onDocumentDrop(ev) {
+  var file = pdfFromDrag(ev);
+  clearDropTarget();
+  if (!file) return;
+  ev.preventDefault();
+  var card = patientCardAt(ev);
+  var id = card ? card.getAttribute('data-patient-id') : '';
+  var target = id ? getPatients().find(function (p) { return p && String(p.id) === id; }) || null : null;
+  var api = window.electronAPI;
+  if (!api || !api.pdfToText) return showToast('PDF no disponible en esta versión', 'error');
+  if (file.size > PDF_MAX_BYTES) return showToast('PDF muy grande (máx. 15 MB)', 'error');
+  var res = await api.pdfToText(await file.arrayBuffer());
+  if (!res || !res.ok || !res.text) return showToast('No se pudo leer el PDF', 'error');
+  processDroppedPdfText(res.text, target);
 }
 
 function onDocumentPaste(ev) {
@@ -208,7 +297,8 @@ function openSmartPasteConfirm(plan, mode) {
   cancelOverlayClose(d.backdrop, { panelEl: d.panel });
   d.backdrop.hidden = false;
   d.panel.hidden = false;
-  d.title.textContent = mode === 'ambiguous' ? '¿A qué paciente pertenece?' : 'Confirmar paciente';
+  d.title.textContent =
+    plan.confirmTitle || (mode === 'ambiguous' ? '¿A qué paciente pertenece?' : 'Confirmar paciente');
   d.lead.textContent =
     mode === 'ambiguous'
       ? 'El reporte coincide con más de un paciente del censo. Elige uno para procesar.'
@@ -229,7 +319,8 @@ function openSmartPasteConfirm(plan, mode) {
     btn.appendChild(hintEl);
     btn.addEventListener('click', function () {
       closeSmartPasteConfirm();
-      void executeSmartPastePlan(plan, p);
+      if (plan.onChoose) plan.onChoose(p);
+      else void executeSmartPastePlan(plan, p);
     });
     d.list.appendChild(btn);
   });

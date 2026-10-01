@@ -16,3 +16,4 @@ export { migrateToV25InterconsultUnder } from './schema-migrate-v25-interconsult
 export { migrateToV26TeamsSucceedsTeamId } from './schema-migrate-v26-teams-succeeds.mjs';
 export { migrateToV27CloudOutbox } from './schema-migrate-v27-cloud-outbox.mjs';
 export { migrateToV28SyncWriteClocks } from './schema-migrate-v28-sync-write-clocks.mjs';
+export { migrateToV29AssignmentTombstone } from './schema-migrate-v29-assignment-tombstone.mjs';

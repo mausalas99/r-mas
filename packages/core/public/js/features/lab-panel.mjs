@@ -13,6 +13,7 @@ import { rt, registerLabPanelRuntime as _registerRt } from './lab-panel-runtime-
 import { labPanelBridge } from './lab-panel-bridge.mjs';
 import {
   renderLabHistoryPanel,
+  dropOtherPatientsLabOutput,
   setLabHistoryPanelCollapsed,
   syncLabHistoryCollapseUI,
   expandLabHistoryList,
@@ -64,6 +65,8 @@ import {
   registerLabManualEntryRuntime,
 } from './lab-manual-entry.mjs';
 import { openLabPasteModal, closeLabPasteModal } from './lab-paste-modal.mjs';
+import { openLabDiagramsModal } from './diagrams-render.mjs';
+import { renderLabLateStatus } from './lab-results-card.mjs';
 var activeLab = null;
 /** Patient on screen when activeLab was set — lab output must never outlive a patient switch. */
 var activeLabPatientId = null;
@@ -191,38 +194,25 @@ export function syncLabOutputChrome() {
   var show = outputVisible && isLabAppTabActive();
   syncLabCopyFab(show);
   syncLabSomeTablesBtn(show);
-  syncLabWhoAndFetchButtons(outputVisible);
+  syncLabWho();
+  renderLabLateStatus();
 }
 
-// 8.4.3 board Labs 1 + 4: patient name and bed over the panel; Pegar SOME and
-// Actualizar labs sit at the end of the Resultados header while it shows, and
-// go back to the top row when there are no results (so paste stays reachable).
-function syncLabWhoAndFetchButtons(outputVisible) {
+// 8.4.4 board J1: patient name and bed on the top row, next to Pegar SOME and
+// Actualizar labs (they stay there; the Resultados row only holds the day tools).
+function syncLabWho() {
   var p = typeof rt.getActivePatient === 'function' ? rt.getActivePatient() : null;
   var who = document.getElementById('lab-who');
-  if (who) {
-    var name = p ? String(p.nombre || p.name || '').trim() : '';
-    var bed = p
-      ? [p.cuarto && 'Cto. ' + String(p.cuarto).trim(), p.cama && 'Cama ' + String(p.cama).trim()]
-          .filter(Boolean)
-          .join(' · ')
-      : '';
-    document.getElementById('lab-who-name').textContent = name;
-    document.getElementById('lab-who-bed').textContent = bed;
-    who.hidden = !name;
-  }
-  if (document.documentElement.classList.contains('rpc-mobile-web')) return;
-  var host = outputVisible
-    ? document.querySelector('#lab-output-section .lab-output-header-tools')
-    : document.querySelector('#lab-input-section .lab-report-header-actions');
-  if (!host) return;
-  var anchor = outputVisible ? null : host.firstChild;
-  ['btn-lab-repo-batch', 'btn-lab-paste'].forEach(function (id) {
-    var btn = document.getElementById(id);
-    if (!btn) return;
-    if (outputVisible) host.appendChild(btn);
-    else anchor = host.insertBefore(btn, anchor);
-  });
+  if (!who) return;
+  var name = p ? String(p.nombre || p.name || '').trim() : '';
+  var bed = p
+    ? [p.cuarto && 'Cto. ' + String(p.cuarto).trim(), p.cama && 'Cama ' + String(p.cama).trim()]
+        .filter(Boolean)
+        .join(' · ')
+    : '';
+  document.getElementById('lab-who-name').textContent = name;
+  document.getElementById('lab-who-bed').textContent = bed;
+  who.hidden = !name;
 }
 
 export { openLabSomeTablesModal, closeLabSomeTablesModal };
@@ -247,6 +237,7 @@ export function clearLabWorkbenchMinimalDom() {
 
 export {
   renderLabHistoryPanel,
+  dropOtherPatientsLabOutput,
   setLabHistoryPanelCollapsed,
   syncLabHistoryCollapseUI,
   expandLabHistoryList,
@@ -273,6 +264,7 @@ export const windowHandlers = {
   setLabHistoryPanelCollapsed,
   labHistoryPanelIsCollapsed,
   copiarLabsAlPortapapeles,
+  openLabDiagramsModal,
   openLabSomeTablesModal,
   closeLabSomeTablesModal,
   closeLabHistoryMoreMenu,

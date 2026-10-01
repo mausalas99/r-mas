@@ -133,3 +133,24 @@ export function mergeEventualidades(a, b) {
   if (!left && !right) return undefined;
   return buildMergedEventualidadesStore(left, right);
 }
+
+/**
+ * `base` (the SQLCipher copy a command just returned) plus any `live` (in-memory)
+ * entries it lacks. A Nube pull can merge a peer's entry into RAM while the
+ * command is in flight; the DB copy has not seen it yet, so taking the DB copy
+ * whole drops that entry for good. Same id → base wins (it holds our edit);
+ * an id deleted on either side stays deleted.
+ * @param {unknown} base @param {unknown} live
+ */
+export function withLiveEventualidadEntries(base, live) {
+  const b = asEventualidadesSide(base);
+  const l = asEventualidadesSide(live);
+  if (!b || !l || !Array.isArray(l.entries)) return base;
+  const known = new Set((Array.isArray(b.entries) ? b.entries : []).map((e) => String(e && e.id)));
+  const gone = { ...(l.deletedIds || {}), ...(b.deletedIds || {}) };
+  const extra = l.entries.filter((e) => {
+    const id = String((e && e.id) || '').trim();
+    return id && !known.has(id) && !gone[id];
+  });
+  return extra.length ? { ...b, entries: [...(b.entries || []), ...extra] } : base;
+}

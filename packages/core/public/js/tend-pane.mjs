@@ -36,6 +36,7 @@ function applyState(mode) {
   if (layout) {
     layout.classList.toggle('is-open', !!mode);
     layout.classList.toggle('is-pivot', mode === 'pivot');
+    layout.classList.toggle('is-wide', mode === 'estudio');
   }
   if (!pane) return;
   // data-mode stays after close so the panel fades out with its content still visible.
@@ -153,7 +154,7 @@ export function initTendPane() {
     closeTendPane();
   });
   document.addEventListener('click', function (ev) {
-    var btn = ev.target && ev.target.closest ? ev.target.closest('.tend-pane-close') : null;
+    var btn = ev.target && ev.target.closest ? ev.target.closest('.tend-pane-close, .tend-pane-back') : null;
     if (!btn) return;
     ev.preventDefault();
     closeTendPane();

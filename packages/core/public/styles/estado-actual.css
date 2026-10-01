@@ -2599,6 +2599,13 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-registro-modal .ea-field--datetime .rpc-datetime-field {
   max-width: 100%;
+  grid-template-columns: max-content auto;
+}
+
+.ea-registro-modal .ea-field--datetime .rpc-date-field__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ea-registro-modal .ea-field--datetime .rpc-date-field__trigger.profile-input {
@@ -4199,6 +4206,27 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 #ea-registro-backdrop .ea-registro-cols {
   grid-template-columns: minmax(0, 1fr);
 }
+#ea-registro-backdrop .ea-registro-top .ea-field--datetime,
+#ea-registro-backdrop .ea-registro-col {
+  min-width: 0;
+}
+#ea-registro-backdrop .ea-registro-top {
+  gap: 8px;
+}
+#ea-registro-backdrop .ea-io-extra-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 120px) auto;
+  width: 100%;
+}
+#ea-registro-backdrop .ea-io-extra-row.ea-io-event-row {
+  grid-template-columns: 4rem minmax(0, 1.2fr) minmax(0, 1fr) 5rem auto;
+}
+#ea-registro-backdrop select.ea-io-link {
+  min-width: 0;
+}
+#ea-registro-backdrop .ea-balance-live {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 #ea-registro-backdrop .ea-io-table {
   --ea-io-cols: 4.4rem repeat(3, minmax(0, 1fr)) 3.4rem;
 }
@@ -4214,5 +4242,19 @@ html.motion-sobrio #ea-registro-backdrop.modal-backdrop.open > .ea-registro-moda
 @media (prefers-reduced-motion: reduce) {
   #ea-registro-backdrop.modal-backdrop.open > .ea-registro-modal {
     animation: none;
+  }
+}
+
+/* iPad (R+ Móvil): «Registro completo» fills the screen, same two-column layout as the desktop dialog. */
+html.rpc-cloud-mobile #ea-registro-backdrop.modal-backdrop {
+  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+}
+html.rpc-cloud-mobile #ea-registro-backdrop.modal-backdrop.open > .ea-registro-modal {
+  width: 100%;
+  border-radius: 16px;
+}
+@media (min-width: 900px) {
+  html.rpc-cloud-mobile #ea-registro-backdrop .ea-registro-cols {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }

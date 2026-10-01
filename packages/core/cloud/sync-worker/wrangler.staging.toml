@@ -32,3 +32,4 @@ enabled = true
 
 [vars]
 NUBE_VERSION_GATE_ENABLED = false
+PATIENT_SHARD_WRITE = "1"

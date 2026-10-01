@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { encodeRoomState, decodeRoomState } from './crypto-at-rest.js';
 import { SyncError } from './errors.js';
 import { QUOTAS } from './quotas.js';
-import { loadRoomState, commitMutationBatch, refattenRoomCore } from './sync.js';
+import { loadRoomState, commitMutationBatch, refattenRoomCore, handleSync } from './sync.js';
 import { splitCoreState } from './room-state-shard.js';
 
 const TEST_KEY = { WORKER_DATA_KEY: 'cd'.repeat(32) };
@@ -38,6 +38,10 @@ function fakeDb({ revision = 0 } = {}) {
           boundCalls.push({ sql, args });
           return {
             async first() {
+              // requireMember: session + user + room + membership in one row.
+              if (sql.includes('FROM sessions')) {
+                return { id: 'u1', role: 'member', room_id: args[0], room_revision: roomRevision, room_storage_bytes: 10_000, is_member: 1 };
+              }
               if (sql.includes('SELECT revision, storage_bytes FROM rooms')) {
                 return { revision: roomRevision, storage_bytes: 10_000 };
               }
@@ -848,5 +852,26 @@ describe('pull parity and rollback', () => {
     const db = fakeDb({ revision: 3 });
     await db.setLegacyState(full);
     assert.deepEqual(await refattenRoomCore(TEST_KEY, db, ROOM_ID), { changed: false });
+  });
+});
+
+describe('handleSync push room read', () => {
+  it('first attempt reuses the room row from requireMember', async () => {
+    const db = fakeDb({ revision: 3 });
+    await db.setShardedState?.(baseState({ entries: [{ id: 'p1', fields: { nombre: 'A' } }] }));
+    db.boundCalls.length = 0;
+    const request = new Request(`https://x/rooms/${ROOM_ID}/mutations`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer t' },
+      body: JSON.stringify({
+        clientMutationId: 'm-reuse',
+        baseRevision: 3,
+        ops: [{ path: 'entries/p1/fields', value: { nombre: 'B' }, updatedAt: '2026-02-01', actorId: 'u1' }],
+      }),
+    });
+    const res = await handleSync(request, { ...TEST_KEY, DB: db }, ROOM_ID, 'mutations');
+    assert.equal(res.status, 200);
+    const reads = db.boundCalls.filter((c) => c.sql.includes('SELECT revision, storage_bytes FROM rooms'));
+    assert.equal(reads.length, 0);
   });
 });

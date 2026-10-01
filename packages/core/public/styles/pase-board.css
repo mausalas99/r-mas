@@ -5075,193 +5075,297 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   padding: 4px 8px;
 }
 
-/* Interconsulta team board — 4 lanes (guardia, activo x2, postguardia),
-   each with bucket sections built from .r4-section-divider + .patient-chips-grid
-   (see interconsulta-team-board.mjs). Mounted in place of the old
-   Fijados/Nuevas/En seguimiento sidebar zones. */
-.ic-team-board {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 0.75rem;
-  padding: 0.5rem 0;
+/* Interconsulta board (interconsulta-team-board.mjs) — Sala-style cards in two
+   modes. "Asignar": team rows on top, "Por asignar" tray below, everything
+   visible at once. "Mi equipo": one team's full cards. Card look comes from
+   sala-views.css (.sv-card); only the board layout lives here. */
+.ic-board-header {
+  align-items: center;
 }
 
-.ic-team-board--filtered {
-  grid-template-columns: 1fr;
+.ic-board-title {
+  font-size: 1.2rem;
+  color: var(--text);
+}
+
+.ic-board-count {
+  color: color-mix(in oklab, var(--text-muted) 30%, var(--text));
+  font-size: 0.9rem;
+}
+
+.ic-board-header__sp {
+  flex: 1;
+}
+
+.ic-mode-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  margin-left: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.ic-mode-btn {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 5px 14px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.ic-mode-btn.is-on {
+  color: var(--color-on-accent);
+  background: var(--action);
+}
+
+.ic-team-select {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  background: var(--surface);
+}
+
+.ic-team-board {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  flex: 1;
+  min-height: 0;
+}
+
+#ic-team-board-mount {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ic-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-height: 0;
+  overflow-y: auto;
+  /* Room inside the scroll box so hover lift and focus rings are not clipped. */
+  padding: 4px;
+  margin: -4px;
 }
 
 .ic-board-lane {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  /* A lane can hold dozens of patients (e.g. a "Sin equipo" catch-all) — cap
-     its height and scroll internally instead of blowing out the page. */
-  max-height: calc(100vh - 260px);
   border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  padding: 0;
-  background: color-mix(in oklab, var(--surface) 96%, transparent);
-  overflow: hidden;
+  border-radius: 14px;
+  background: var(--surface);
 }
 
-.ic-board-lane__head {
-  flex: 0 0 auto;
-  padding: 0.9rem 1rem 0.4rem;
+.ic-row {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+  padding: 0.5rem 0.9rem;
 }
 
-.ic-board-lane__body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 0 1rem 0.85rem;
+/* A row with no cards collapses to one line so the board fits without scrolling. */
+.ic-row:not(:has(.ic-card)) {
+  padding-block: 0.3rem;
+}
+
+.ic-row--empty {
+  opacity: 0.75;
+}
+
+.ic-row--guardia {
+  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+}
+
+.ic-row__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  align-items: center;
+  gap: 6px;
+}
+
+.ic-tray .ic-row__head {
+  margin-bottom: 0.6rem;
 }
 
 .ic-board-lane__title {
-  margin: 0 0 0.25rem;
-  font-size: 0.78rem;
+  margin: 0;
+  font-size: 1rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--text-muted);
+  color: var(--text);
+  flex-basis: 100%;
 }
 
-/* Guardia lane: highlighted so the on-call team stands out on the board. */
-.ic-board-lane--guardia {
-  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--action) 20%, transparent);
+.ic-row__pill,
+.ic-row__count {
+  color: color-mix(in oklab, var(--text-muted) 30%, var(--text));
+  background: color-mix(in oklab, var(--text) 8%, transparent);
 }
 
-.ic-board-lane--guardia .ic-board-lane__title {
+.ic-row--guardia .ic-row__pill {
+  color: color-mix(in oklab, var(--action) 35%, var(--text));
+  background: color-mix(in oklab, var(--action) 14%, transparent);
+}
+
+.ic-row__note {
+  flex-basis: 100%;
+  font-size: 0.72rem;
+  color: color-mix(in oklab, var(--text-muted) 30%, var(--text));
+}
+
+.ic-row__body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: center;
+  gap: 0.4rem 1rem;
+  min-width: 0;
+  border-radius: 10px;
+}
+
+.ic-row__bucket {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ic-row__bucket .sv-label {
+  margin-top: 0;
+}
+
+.ic-row__bucket--accent .sv-label {
   color: var(--action);
 }
 
-/* Postguardia lane stays full-opacity and open — patients can still be
-   dragged onto it (see .ic-board-lane__body[data-drop-team-id]). */
+.ic-row__cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
 
-.ic-board-bucket .patient-card[draggable="true"] {
+.ic-row .sv-card-wrap {
+  flex: 0 0 205px;
+}
+
+/* Doubled class: beats .sv-card's 210px min-height whatever the stylesheet order. */
+.ic-card.ic-card--compact {
+  min-height: 0;
+  padding: 7px 10px;
+  gap: 1px;
+}
+
+.ic-card--compact .sv-bed {
+  font-size: 0.75rem;
+}
+
+.ic-card--compact .sv-name {
+  font-size: 0.9rem;
+  padding-right: 24px;
+}
+
+.ic-card--compact .sv-ic .svc {
+  padding: 1px 7px;
+  font-size: 0.68rem;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ic-tray {
+  flex: 1 1 9.5rem;
+  min-height: 9.5rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0.7rem 1rem;
+  border-color: color-mix(in oklab, var(--action) 40%, var(--border));
+  background: color-mix(in oklab, var(--action) 5%, var(--surface));
+}
+
+.ic-tray .sv-grid {
+  grid-template-columns: repeat(auto-fill, minmax(205px, 1fr));
+  gap: 0.5rem;
+}
+
+/* The tray takes the space left under the rows and scrolls on its own if it overflows. */
+.ic-tray__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border-radius: 10px;
+  padding: 4px;
+  margin: -4px;
+}
+
+.ic-tray .sv-card-archive {
+  bottom: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+}
+
+.ic-team-view__bucket {
+  margin-bottom: 1.25rem;
+}
+
+.ic-team-view__label {
+  margin: 0 0 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--text-muted) 30%, var(--text));
+}
+
+.ic-card[draggable="true"] {
   cursor: grab;
 }
 
-.ic-board-bucket .patient-card.ic-board-card--dragging {
+.ic-card.ic-board-card--dragging {
   opacity: 0.4;
 }
 
-.ic-board-lane__body.ic-board-lane__body--drop-over {
-  outline: 2px dashed var(--action);
-  outline-offset: -2px;
-  border-radius: var(--radius-control);
+/* Whole row (or the Mi equipo grid) lights up while a card is over it: a solid
+   ring, no dashed outline cutting across the cards. */
+.ic-drop-over {
+  border-color: var(--action);
+  background: color-mix(in oklab, var(--action) 10%, var(--surface));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--action) 25%, transparent);
+  border-radius: 14px;
 }
 
-.ic-board-bucket .patient-chips-grid {
-  grid-template-columns: 1fr;
-  padding: 0;
-  gap: 0.35rem;
-  margin-bottom: 0.85rem;
-}
-
-.ic-board-bucket .r4-section-divider {
-  padding: 0.5rem 0 0.5rem;
-  font-size: 0.7rem;
-  margin-bottom: 0.5rem;
-}
-
-.ic-board-bucket--accent .r4-section-divider {
-  color: var(--action);
-  border-bottom-color: color-mix(in oklab, var(--action) 45%, var(--border));
-}
-
-/* Interconsulta board cards (rendered via renderPatientCardHtml -> .patient-card,
-   the same sidebar card component, NOT .patient-chip-card) match the teal
-   dashboard's .card language instead of the sidebar's bordered/draggable look
-   — elevated surface, no border, soft hover — and shrink down: a lane here
-   can hold dozens of patients (see .ic-board-lane's scroll), so the roomy
-   sidebar padding/toolbar doesn't scale. */
-.ic-board-bucket .patient-card {
-  background: var(--color-elevated, var(--surface));
-  border: 0;
-  border-radius: var(--radius-container, var(--radius-md));
-  box-shadow: none;
-  padding: 0.4rem 0.6rem;
-  cursor: pointer;
-}
-
-.ic-board-bucket .patient-card:hover {
-  box-shadow: none;
-  background: color-mix(in oklab, var(--color-ink, var(--text)) 4%, var(--color-elevated, var(--surface)));
-}
-
-/* No distinct "currently open" highlight on the board — selection only
-   matters inside the drilled-in Resumen, and the previously active patient
-   would otherwise stay visibly marked after returning to the board. This
-   overrides sidebar.css's generic .patient-card.active (border-left +
-   tinted background), which still applies here by class alone — the
-   html.dark variant is needed too, it outranks the plain rule below on
-   specificity (html adds a type selector) regardless of source order. */
-.ic-board-bucket .patient-card.active,
-html.dark .ic-board-bucket .patient-card.active {
-  background: var(--color-elevated, var(--surface));
-  border: 0;
-  box-shadow: none;
-}
-
-/* Subtle tint from the requesting service's hue (see patients-card-html.mjs,
-   interconsult-catalog.mjs's hueForRequestingService) — same --h convention
-   as the Servicio solicitante picker chips, present at rest and on hover.
-   Repeated for .active (light and dark) so the tint still wins over the
-   reset above when a card is both open and tinted. */
-.ic-board-bucket .patient-card--svc-tint,
-.ic-board-bucket .patient-card.active.patient-card--svc-tint,
-html.dark .ic-board-bucket .patient-card.active.patient-card--svc-tint {
-  background: color-mix(in oklab, oklch(0.6 0.14 var(--svc-hue)) 10%, var(--color-elevated, var(--surface)));
-}
-.ic-board-bucket .patient-card--svc-tint:hover,
-html.dark .ic-board-bucket .patient-card--svc-tint:hover {
-  background: color-mix(in oklab, oklch(0.6 0.14 var(--svc-hue)) 16%, var(--color-elevated, var(--surface)));
-}
-
-.ic-board-bucket .patient-card-toolbar {
-  min-height: 16px;
-  margin-bottom: 2px;
-}
-
-.ic-board-bucket .patient-toolbar-chip {
-  min-height: 18px;
-  padding: 1px 5px;
-}
-
-.ic-board-bucket .patient-card .p-name {
-  font-size: 0.78rem;
-  -webkit-line-clamp: 1;
-  margin-bottom: 0;
-}
-
-.ic-board-bucket .patient-card .p-meta {
-  font-size: 0.68rem;
-}
 
 .ic-board-empty {
-  margin: 0.4rem 0 0;
-  color: var(--text-muted);
-  font-size: 0.78rem;
+  margin: auto 0;
+  color: color-mix(in oklab, var(--text-muted) 40%, var(--text));
+  font-size: 0.85rem;
   font-style: italic;
 }
 
-.ic-team-board .btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  margin: 0.15rem 0 0.4rem;
-  padding: 0.3rem 0.6rem;
-  border-radius: var(--radius-control);
-  border: 1px solid var(--color-border-strong, var(--border));
-  background: transparent;
-  color: var(--color-ink, var(--text));
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.ic-team-board .btn-secondary:hover {
-  background: color-mix(in oklab, var(--action) 8%, transparent);
+/* Slim bed rail while a patient is open in interconsulta mode (look shared
+   with Sala's rail in sala-views.css). */
+html.ic-rail-open #ic-team-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 60px;
+  flex-shrink: 0;
+  padding: 8px 6px;
+  overflow-y: auto;
+  border-radius: var(--radius-shell, 12px);
+  background: var(--surface);
 }
 
 /* "← Tablero" back button (interconsulta-mode-chrome.mjs top bar) — .wb-btn's
@@ -5547,11 +5651,6 @@ html.dark .ic-board-bucket .patient-card--svc-tint:hover {
   color: var(--color-ink-muted);
 }
 
-/* Cuenta already shows @usuario at the top. */
-.cloud-sync-profile-host .clinical-teams-profile-handle {
-  display: none;
-}
-
 /* Global resets zero dialog margins; center it and keep fields full width. */
 dialog.clinical-teams-dialog[open] {
   position: fixed;
@@ -5568,4 +5667,22 @@ dialog.clinical-teams-dialog[open] {
 
 .clinical-teams-dialog .field-group > .profile-input {
   width: 100%;
+}
+
+/* Active bed keeps the tint but uses body text: the action colour fails contrast on it. */
+html #ic-team-rail button.is-active {
+  color: var(--text);
+}
+
+.ic-tray .ic-board-lane__title {
+  flex-basis: auto;
+}
+
+.ic-team-board .sv-tag--dnr {
+  color: color-mix(in oklab, var(--error) 70%, var(--text));
+}
+
+.ic-tray .ic-row__note {
+  flex-basis: auto;
+  margin-left: auto;
 }

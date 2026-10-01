@@ -1,0 +1,33 @@
+R+ 8.4.4 (estable — Laboratorio, Tendencias y Nube por paciente)
+============================================================
+
+Fecha: 2026-09-29
+
+## Resumen
+
+Laboratorio rediseñado, con lectura de PDF de Reumatología. Tendencias con panel de estudio nuevo. Nube más estable cuando muchos equipos editan a la vez.
+
+## Nuevo / mejorado
+
+- **Nuevo (Laboratorio):** diseño nuevo. Puedes moverte entre días anteriores del historial. Las tablas de SOME se leen mejor y el historial ya no repite estudios.
+- **Nuevo (Laboratorio):** pega el PDF de Reumatología y R+ lo lee.
+- **Nuevo (Tendencias):** el panel de estudio ocupa todo el ancho. Chips en la tabla, pestañas de gráficas con la lista de analitos y una tabla dinámica en ventana.
+- **Nuevo (barra superior):** el rediseño con la pastilla de área activa se une con Tendencias. Los atajos, los avisos de funciones y el Resumen se ajustaron.
+- **Arreglado (lista lateral):** las tarjetas de una línea ya no dejan huecos grandes entre ellas.
+- **Arreglado (Resumen):** los medicamentos ya no se parten entre columnas.
+- **Arreglado (Eventualidades):** si un equipo agrega una eventualidad justo cuando otro sincroniza, ya no se pierde.
+- **Arreglado (Nube):** borrar muchos pacientes de la red ya no satura el servidor. Cada expediente queda en su propia fila y solo se escribe lo que cambió.
+- **Arreglado (Nube):** una sala bloqueada ya no repite una descarga completa una y otra vez. Con una llave equivocada, el equipo ya no pide todo el estado cifrado, que tardaba unos 15 s.
+- **Arreglado (Nube, Monitoreo):** un equipo con reloj atrasado ya no pierde sus filas de monitoreo y ya no reenvía lo mismo cada 12 s.
+- **Problema conocido:** si dos equipos editan a la vez una categoría de Manejo (Estado actual), una puede perderse. Se arregla en 8.4.5.
+- **Problema conocido:** notas e indicaciones todavía no se sincronizan con Nube. Llega en 8.4.5.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.4.4-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.4.4-Mac-Intel.dmg`
+- Windows: `R+-8.4.4-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

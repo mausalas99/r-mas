@@ -73,6 +73,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openDowngradeInstaller: function(version) {
     return ipcRenderer.invoke('open-downgrade-installer', version);
   },
+  pdfToText: function(buf) {
+    return ipcRenderer.invoke('pdf-to-text', buf);
+  },
   getAppVersion: function() {
     return ipcRenderer.invoke('get-app-version');
   },

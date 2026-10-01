@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { getPatients } from '../../app-state.mjs';
+import { getPatients, getNotes, getIndicaciones } from '../../app-state.mjs';
 import { resetLabHistoryCacheForTests } from '../../lab-history-cache.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { applyLanPatientEntries, configurePatientEntries } from './patient-entries.mjs';
@@ -65,6 +65,47 @@ describe('applyLanPatientEntries on Nube path', () => {
     for (const t0 = Date.now(); Date.now() - t0 < 5; ); // a re-stamp must show as a different ms
     applyLanPatientEntries([{ patient: { id: 'loop1', monitoreo: incoming() } }], { skipTeamScopeFilter: true });
     assert.equal(getPatients()[0].monitoreo.estadoClinicoUpdatedAt, first);
+  });
+
+  it('nota / indicaciones: last write wins by updatedAt (older room copy dropped, newer replaces)', () => {
+    const id = 'lww1';
+    getPatients().push({ id });
+    getNotes()[id] = { evolucion: 'LOCAL', updatedAt: '2026-09-29T10:00:00.000Z' };
+    getIndicaciones()[id] = { dieta: 'LOCAL', updatedAt: '2026-09-29T10:00:00.000Z' };
+    const apply = (note, indicaciones) =>
+      applyLanPatientEntries([{ patient: { id }, note, indicaciones }], { skipTeamScopeFilter: true });
+    apply({ evolucion: 'VIEJA', updatedAt: '2026-09-29T09:00:00.000Z' }, { dieta: 'VIEJA', updatedAt: '2026-09-29T09:00:00.000Z' });
+    assert.equal(getNotes()[id].evolucion, 'LOCAL');
+    assert.equal(getIndicaciones()[id].dieta, 'LOCAL');
+    apply({ evolucion: 'NUEVA', updatedAt: '2026-09-29T11:00:00.000Z' }, { dieta: 'NUEVA', updatedAt: '2026-09-29T11:00:00.000Z' });
+    assert.equal(getNotes()[id].evolucion, 'NUEVA');
+    assert.equal(getIndicaciones()[id].dieta, 'NUEVA');
+    delete getNotes()[id];
+    delete getIndicaciones()[id];
+  });
+
+  it('nota without a local clock is replaced by the room copy (older builds / first pull)', () => {
+    const id = 'lww2';
+    getPatients().push({ id });
+    getNotes()[id] = { evolucion: 'SIN RELOJ' };
+    applyLanPatientEntries(
+      [{ patient: { id }, note: { evolucion: 'SALA', updatedAt: '2026-09-29T09:00:00.000Z' } }],
+      { skipTeamScopeFilter: true }
+    );
+    assert.equal(getNotes()[id].evolucion, 'SALA');
+    delete getNotes()[id];
+  });
+
+  it('wipe regression: a partial payload (no note / indicaciones key) leaves both untouched', () => {
+    const id = 'wipe1';
+    getPatients().push({ id, nombre: 'PAC' });
+    getNotes()[id] = { evolucion: 'MIA', updatedAt: '2026-09-29T10:00:00.000Z' };
+    getIndicaciones()[id] = { dieta: 'MIA', updatedAt: '2026-09-29T10:00:00.000Z' };
+    applyLanPatientEntries([{ patient: { id, nombre: 'PAC', cama: '9' } }], { skipTeamScopeFilter: true });
+    assert.equal(getNotes()[id].evolucion, 'MIA');
+    assert.equal(getIndicaciones()[id].dieta, 'MIA');
+    delete getNotes()[id];
+    delete getIndicaciones()[id];
   });
 
   it('a peer Datos edit wins by its own key clock even when the local patient clock is newer', () => {

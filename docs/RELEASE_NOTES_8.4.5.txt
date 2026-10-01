@@ -1,0 +1,41 @@
+R+ 8.4.5 (estable — release 8.4.5)
+======================================
+
+Fecha: 2026-09-30
+
+## Resumen
+
+Notas e indicaciones ya se sincronizan con Nube. Salir de una sala o equipo funciona. Varios arreglos en Estado actual y Tendencias.
+
+## Nuevo / mejorado
+
+- **Nuevo (Nube):** la nota de evolución, el interrogatorio y las indicaciones se sincronizan entre equipos. Gana la edición más reciente. Un texto de más de 96 KB se queda en este equipo y Conexión muestra «Pendiente».
+- **Nuevo (Perfil):** Mi perfil ahora incluye tu sala, rango y usuario en una sola pantalla. Cambiar de sala con un toque te pasa a su sala en Nube.
+- **Nuevo (Interconsultas):** la barra de interconsulta usa pastillas para Servicio, Motivo, Seguimiento y Equipo. Un clic en cualquier parte de la pastilla actúa sobre su control.
+- **Cambio (Interconsultas):** «Torre HU» ya no aparece como servicio solicitante.
+- **Arreglado (Interconsultas):** los avisos guiados del tablero quedan junto a botones pequeños y hay un paso para el cambio Asignar / Mi equipo. Se arregló el contraste en claro y oscuro, y la bandeja ya no se colapsa con un equipo grande.
+- **Nuevo (iPad):** iPad usa el mismo diseño que la computadora. Resumen cabe sin desplazar. La lista lateral es una barra angosta con solo el número de cama.
+- **Arreglado (Perfil):** al cambiar tu @usuario en Mi perfil, ahora también se actualiza en Nube.
+- **Nuevo (Perfil):** si no tienes sala, o es el día 1 del mes, el botón Mi perfil late. Al abrirlo, la sección Sala está abierta y te avisa. El primero en unirse a una sala empieza a sincronizar de inmediato.
+- **Arreglado (Nube):** «Salir de la sala» y «Salir del equipo» confirman con el servidor. El avatar del panel Nube tiene mejor contraste.
+- **Arreglado (Salas):** «Salir de la sala» ya no se deshace al abrir la app o Conexión. Para volver entras con código, creas una sala o te unes a un equipo.
+- **Arreglado (Equipos):** una copia vieja de la sala ya no deshace tu salida de un equipo ni te saca del equipo nuevo. Los envíos a la sala ahora primero descargan y combinan.
+- **Arreglado (Estado actual):** el DIA de la Solución Stanford avanza por fecha, igual que en Egreso.
+- **Arreglado (Estado actual):** las sugerencias ventilatorias se actualizan al cambiar FiO₂, PEEP, P meseta o VT. En Alto flujo ya no salen sugerencias de campos ocultos.
+- **Arreglado (Tendencias):** los gasométricos con coma decimal o con «<» muestran su tarjeta. Un valor «<0.01» se grafica en 0.01.
+- **Arreglado (Manejo):** el potasio oral ya no cuenta como reposición.
+- **Arreglado (Nube):** al borrar un paciente, el borrado llega también a la sala del paciente.
+- **Arreglado (Equipos):** un paciente sin equipo («Sin asignar») ahora se quita del equipo en todos los dispositivos.
+- **Arreglado (Inicio):** R+ borra al iniciar claves viejas de almacenamiento local que podían llenar el espacio.
+- **Limpieza:** se quitó código muerto del botón de Modo Guardia.
+- **Problema conocido:** el DIA de Stanford en el Resumen y en la etiqueta de Manejo aún muestra el valor guardado.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.4.5-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.4.5-Mac-Intel.dmg`
+- Windows: `R+-8.4.5-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

@@ -189,7 +189,10 @@ export function isPotassiumReposMedicationItem(item) {
  */
 export function potassiumReposSaltKind(item) {
   if (!item || item.suspendido) return null;
+  // Reposición = IV. Tabletas / vía oral (p. ej. bicarbonato/cloruro de potasio/lisina) no cuentan.
+  if (/\bORAL\b/i.test(String(item.viaRaw || ''))) return null;
   var n = normalizeNombreForSoapClassify(item.nombreRaw);
+  if (/\b(TABLETAS?|CAPSULAS?|C[ÁA]PSULAS?|COMPRIMIDOS?)\b/i.test(n)) return null;
   if (KCL_RE.test(n)) return 'kcl';
   if (K_PHOS_RE.test(n)) return 'kphos';
   if (K_ACETATE_RE.test(n)) return 'kacetate';

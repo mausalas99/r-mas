@@ -127,7 +127,8 @@ function pushRecetaItemToSoapBucket(it, ctx) {
   else ctx.arrays.otros.push(frag);
 }
 
-export function bucketsFromRecetaItems(items, selMap, classifyFn, patientId) {
+/** @param {string} [fechaActualizacion] fecha (dd/mm/yyyy) de Manejo: avanza DIA de Stanford (abx se avanza aparte al mostrar) */
+export function bucketsFromRecetaItems(items, selMap, classifyFn, patientId, fechaActualizacion) {
   /** @type {Record<string, string[]>} */
   var arrays = {
     analgesia: [],
@@ -157,7 +158,11 @@ export function bucketsFromRecetaItems(items, selMap, classifyFn, patientId) {
   var rescateNmFrag = insulinRescateNmSoapFragment(list, soapSelected);
   var prandialNmFrag = insulinPrandialNmSoapFragment(list, soapSelected);
   var kReposNmFrag = potassiumReposNmSoapFragment(list, soapSelected);
-  var stanfordNmFrag = stanfordSolutionNmSoapFragment(list, soapSelected);
+  var stanfordNmFrag = stanfordSolutionNmSoapFragment(
+    list,
+    soapSelected,
+    fechaActualizacion ? { fechaActualizacion: fechaActualizacion } : undefined
+  );
   var bucketCtx = {
     list: list,
     selMap: selMap,

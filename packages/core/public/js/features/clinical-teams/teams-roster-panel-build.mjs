@@ -16,6 +16,7 @@ import {
   hintHtml,
   CLINICAL_SALAS,
   renderClinicalTeamsCollapsible,
+  readClinicalTeamsCollapseOpen,
 } from './shared.mjs';
 
 export function resolveDisplayLanHandle(user, usernameForInput) {
@@ -65,32 +66,6 @@ export async function resolveClinicalTeamsPanelContext(user, joined) {
     sala,
     joined,
   };
-}
-
-/**
- * One «Mi perfil» row inside ⇄ Conexión: who you are, and a link to Cuenta,
- * where the profile form lives. Same markup as the Opciones rows.
- */
-export function buildProfileLinkRowHtml(ctx, user) {
-  const meta = [
-    String(user?.clinical_name || '').trim(),
-    ctx.displayHandle ? `@${ctx.displayHandle}` : '',
-    ctx.rank,
-    ctx.sala,
-  ]
-    .filter(Boolean)
-    .map((p) => escapeHtml(p))
-    .join(' · ');
-  return `
-    <div class="cloud-sync-options-card clinical-teams-profile-link">
-      <button type="button" class="cloud-sync-options-row" data-cloud-action="nav-view" data-cloud-view="cuenta">
-        <span class="cloud-sync-options-row-text">
-          <span class="cloud-sync-options-row-title">Mi perfil</span>
-          <span class="cloud-sync-options-row-meta">${meta || 'Nombre, @usuario, rango y sala'}</span>
-        </span>
-        <span class="cloud-sync-options-row-chevron" aria-hidden="true">›</span>
-      </button>
-    </div>`;
 }
 
 export function buildClinicalProfileSectionHtml(ctx, user) {
@@ -163,6 +138,80 @@ export function buildClinicalProfileSectionHtml(ctx, user) {
         </div>
       </form>
     </div>`;
+}
+
+export const PERFIL_SALA_COLLAPSE_KEY = 'perfil.sala';
+
+/** Mi perfil: Sala chips. A tap saves the profile and moves the Nube room (see profile submit). */
+export function buildPerfilSalaHtml(ctx) {
+  const chips = CLINICAL_SALAS.map(
+    (s) =>
+      `<button type="button" class="settings-perfil-chip" data-perfil-sala="${escapeAttr(s)}" aria-pressed="${ctx.sala === s}">${escapeHtml(s)}</button>`
+  ).join('');
+  // After «Iniciar nueva rotación» every sala is unset. The first user to join the
+  // new sala's Nube room becomes its owner and holds the room key (room-dek.mjs),
+  // so the pick is asked for loudly: open, whatever the saved collapse state says.
+  const pick = !ctx.sala;
+  const newMonth = !pick && new Date().getDate() === 1;
+  const open = pick || newMonth || readClinicalTeamsCollapseOpen(PERFIL_SALA_COLLAPSE_KEY, true);
+  const hint = pick
+    ? '<p class="settings-acc-hint settings-acc-hint--tight" data-perfil-sala-hint role="status"><b>Elige la sala de tu nueva rotación.</b></p>'
+    : newMonth
+      ? '<p class="settings-acc-hint settings-acc-hint--tight" data-perfil-sala-hint role="status">Hoy empieza el mes. Confirma tu sala de rotación.</p>'
+      : '';
+  return `
+    <details class="settings-perfil-sala" data-collapse-key="${PERFIL_SALA_COLLAPSE_KEY}"${open ? ' open' : ''}>
+      <summary>
+        <span class="settings-perfil-sala-title">Sala de guardia</span>
+        <span class="settings-perfil-sala-current">${escapeHtml(ctx.sala || 'Sin sala')}</span>
+      </summary>
+      ${hint}
+      <div class="settings-perfil-chips" role="group" aria-label="Sala de guardia">${chips}</div>
+      <input type="hidden" id="clinical-profile-sala" form="clinical-profile-form" value="${escapeAttr(ctx.sala)}">
+      <p class="settings-acc-hint settings-acc-hint--tight">Al cambiar de sala se guarda tu perfil y pasas a la sala en Nube.</p>
+    </details>`;
+}
+
+/** Mi perfil: the account form as the same cards the rest of the window uses. */
+export function buildPerfilAccountHtml(ctx, user) {
+  const clinicalName = ctx.profileGatePending ? '' : escapeHtml(user.clinical_name || '');
+  const legacyBanner = ctx.legacyUsername
+    ? '<p class="clinical-teams-legacy-banner">Registra tu @usuario (obligatorio). Sin esto no apareces en equipos ni entregas.</p>'
+    : '';
+  const directoryNote = ctx.canViewDirectoryUsers
+    ? ''
+    : '<p class="settings-acc-hint settings-acc-hint--tight">El directorio completo lo abren R4, Admin o quien tenga privilegios de administración.</p>';
+  const card = (title, desc, action, labelFor) => `
+        <div class="settings-card">
+          <div class="settings-card__copy">
+            <label class="settings-card__title"${labelFor ? ` for="${labelFor}"` : ''}>${title}</label>
+            ${desc ? `<p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">${desc}</p>` : ''}
+          </div>
+          <div class="settings-card__action">${action}</div>
+        </div>`;
+  const ranks = ['R1', 'R2', 'R3', 'R4']
+    .map((r) => `<option value="${r}" ${r === ctx.rank ? 'selected' : ''}>${r}</option>`)
+    .join('');
+  return `
+    <form id="clinical-profile-form" class="settings-perfil-account" novalidate>
+      ${legacyBanner}
+      <p class="settings-section-label">Mi cuenta</p>
+      <div class="settings-card-stack">
+        ${card('Usuario', '@usuario en minúsculas, sin espacios.', `<input id="clinical-profile-username" type="text" class="profile-input" value="${escapeAttr(ctx.usernameForInput)}" placeholder="drmendoza" autocomplete="off" spellcheck="false" pattern="[a-z][a-z0-9_]{2,31}" required>`, 'clinical-profile-username')}
+        ${card('Nombre en guardia', '', `<input id="clinical-profile-name" type="text" class="profile-input" value="${clinicalName}" required>`, 'clinical-profile-name')}
+        ${card('Rango clínico', 'Equipos, entregas y alcance.', `<select id="clinical-profile-rank" class="profile-input">${ranks}</select>`, 'clinical-profile-rank')}
+        ${card(
+          'Privilegios de administración',
+          'Requiere tu código. Rotación, censo global y directorio.',
+          `<input type="checkbox" id="clinical-profile-admin" ${ctx.programAdmin ? 'checked' : ''}>${ctx.programAdmin ? '<button type="button" class="wb-btn wb-btn-ghost wb-btn-sm" id="btn-clinical-admin-code-change">Cambiar código</button>' : ''}`,
+          'clinical-profile-admin'
+        )}
+      </div>
+      ${directoryNote}
+      <div class="settings-perfil-account-save">
+        <button type="submit" class="wb-btn wb-btn-primary">Guardar perfil</button>
+      </div>
+    </form>`;
 }
 
 /**

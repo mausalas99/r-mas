@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global document, window */
 /**
  * E2E: the Laboratorio tab must always show the labs of the patient on
  * screen, never the ones of the patient before. Synthetic DEMO patients only.
@@ -66,5 +67,14 @@ await r.finish('Lab tab follows the patient on screen', async () => {
   await nameLink(A).click();
   await expectShows('double click back to A → A labs', A, [B, C]);
 
-  r.check('no page errors', pageErrors.length === 0, pageErrors.slice(0, 3));
+  // No flash: the old labs are gone the moment the click lands, not 120 ms later.
+  await closeToasts(page);
+  await nameLink(B).evaluate((el) => {
+    el.click();
+    window.__labAfterClick = document.getElementById('lab-output-box').innerText;
+  });
+  const flash = await page.evaluate(() => window.__labAfterClick);
+  r.check('no flash of old labs right after click', !flash.includes(A.ph), { flash: flash.slice(0, 80) });
+
+  r.check('no page errors',pageErrors.length === 0, pageErrors.slice(0, 3));
 });

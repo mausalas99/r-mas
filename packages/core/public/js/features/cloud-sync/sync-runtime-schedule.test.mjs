@@ -87,9 +87,9 @@ test('without a recent outage, an idle device keeps the idle poll', async (t) =>
   t.after(() => { mock.timers.reset(); mock.restoreAll(); });
   const { scheduler, calls } = setup(() => Promise.resolve({ ok: true }), { pending: 0 });
   scheduler.noteSuccess();
-  await advance(8_000);
+  await advance(4_000);
   assert.equal(calls.sync, 0);
-  await advance(12_000);
+  await advance(6_000);
   assert.equal(calls.sync, 1);
   scheduler.stop();
 });

@@ -6,7 +6,8 @@ import { cloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 import { isCloudTransientServerError, isCloudUnreachableError } from './cloud-sync-timing.mjs';
 import { createPullPush, dropPullValuesOlderThanPending, isCloudRevisionStaleError } from './sync-runtime-pull-push.mjs';
 import { decryptOpsFromPull, hasLockedOpValue } from './cloud-sync-crypto-wire.mjs';
-import { getCachedRoomDek, markRoomUnprotected, notePulledPlaintext } from './room-dek.mjs';
+import { cloudOversizeDocCount } from './cloud-med-receta-index.mjs';
+import { getCachedRoomDek, markRoomUnprotected } from './room-dek.mjs';
 import {
   cloudSyncErrorCode,
   getLastCloudPushAt,
@@ -55,6 +56,16 @@ function createOutboxSync(outbox, setStatus) {
   }
 
   function refreshIdleStatus() {
+    const tooBig = cloudOversizeDocCount();
+    if (tooBig > 0) {
+      setStatus(
+        'pending',
+        tooBig === 1
+          ? 'Una nota pasa el límite de 96 KB. Se queda en este equipo.'
+          : `${tooBig} notas pasan el límite de 96 KB. Se quedan en este equipo.`
+      );
+      return;
+    }
     const detail = pendingDetailText(pendingOpsCount());
     if (!navigator.onLine) {
       setStatus(pendingCount() > 0 ? 'pending' : 'offline', detail);
@@ -117,9 +128,21 @@ function createSyncCycleController(ctx) {
       scheduler.noteSuccess();
       noteCloudSyncCycle(true);
       if (onCycleOk) void Promise.resolve().then(onCycleOk).catch(() => {});
+      return true;
     } catch (err) {
       failCycle(err);
+      return false;
     }
+  }
+
+  let rerun = false;
+  /** A flush that joined mid-cycle may have queued ops after our push step: run again for them. */
+  async function runSyncCycleLoop() {
+    let ok;
+    do {
+      rerun = false;
+      ok = await runSyncCycleBody();
+    } while (ok && rerun && !stopped() && outboxSync.pendingCount() > 0);
   }
 
   async function syncCycle() {
@@ -140,8 +163,11 @@ function createSyncCycleController(ctx) {
       scheduler.armNextTimer(false);
       return;
     }
-    if (cycleInflightRef.current) return cycleInflightRef.current;
-    cycleInflightRef.current = runSyncCycleBody().finally(function () {
+    if (cycleInflightRef.current) {
+      rerun = true;
+      return cycleInflightRef.current;
+    }
+    cycleInflightRef.current = runSyncCycleLoop().finally(function () {
       cycleInflightRef.current = null;
     });
     return cycleInflightRef.current;
@@ -157,7 +183,10 @@ function createSyncCycleController(ctx) {
 function attachSyncRuntimeListeners(ctx, opts = {}) {
   const { syncCycle, scheduler, pace, outboxSync, roomWs, getCurrentStatus } = ctx;
 
-  function onOnline() { void syncCycle(); }
+  function onOnline() {
+    roomWs?.resume?.({ force: true });
+    void syncCycle();
+  }
   function onVisibility() {
     if (document.visibilityState === 'visible') {
       roomWs?.resume?.();
@@ -167,11 +196,14 @@ function attachSyncRuntimeListeners(ctx, opts = {}) {
     }
   }
   /** Electron often keeps visibility=visible while unfocused — still pull on focus. */
-  function onWindowFocus() { void syncCycle(); }
+  function onWindowFocus() {
+    roomWs?.resume?.();
+    void syncCycle();
+  }
 
   function noteLocalMutation() {
     pace.markLocalWrite();
-    if (outboxSync.pendingCount() > 0 && getCurrentStatus() === 'idle') {
+    if ((outboxSync.pendingCount() > 0 || cloudOversizeDocCount() > 0) && getCurrentStatus() === 'idle') {
       outboxSync.refreshIdleStatus();
     }
     scheduler.armNextTimer(false);
@@ -263,7 +295,6 @@ async function applyRoomWsOpsMessage(deps, ctx, ops, revision) {
   try {
     const roomId = ctx.getRoomId();
     const dek = roomId ? getCachedRoomDek(roomId) : null;
-    notePulledPlaintext(roomId, dek, { ops });
     const decrypted = await decryptOpsFromPull(dek, ops);
     const wsResult = { ops: decrypted, revision };
     dropPullValuesOlderThanPending(wsResult, deps.outbox?.list?.());
@@ -290,6 +321,8 @@ async function applyRoomWsOpsMessage(deps, ctx, ops, revision) {
  */
 function startLiveRoomSyncWs(deps, ctx) {
   if (!deps.liveRoomWs) return null;
+  // One message at a time: each apply reads the local revision the previous one set.
+  let applyChain = Promise.resolve();
   const roomWs = createRoomSyncWs({
     getBaseUrl: deps.liveRoomWs.getBaseUrl,
     getToken: deps.liveRoomWs.getToken,
@@ -302,7 +335,7 @@ function startLiveRoomSyncWs(deps, ctx) {
       ctx.scheduler.armNextTimer(false);
     },
     onOpsMessage: function (ops, revision) {
-      void applyRoomWsOpsMessage(deps, ctx, ops, revision);
+      applyChain = applyChain.then(() => applyRoomWsOpsMessage(deps, ctx, ops, revision)).catch(() => {});
     },
     onTransportChange: function (transport) {
       noteCloudSyncTransport(transport);

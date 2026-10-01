@@ -23,6 +23,8 @@ import { copyTeamLabsForToday } from './features/patients-list/copy-team-labs.mj
 import { copyTeamEstadoActualForToday } from './features/patients-list/copy-team-estado-actual.mjs';
 import { getActiveInnerTab } from './features/expediente-navigation.mjs';
 import { rt } from './features/app-tabs-runtime.mjs';
+import { eaHasCopyableContent, copiarEstadoActualTexto } from './features/estado-actual-panel.mjs';
+import { ensureLabsLoaded } from './lazy-feature-routes.mjs';
 import { isAnyModalOpen } from './app-shell-modals.mjs';
 
 var shellKeyboardWired = false;
@@ -278,6 +280,26 @@ function payloadToKeyEvent(payload) {
   };
 }
 
+/**
+ * ⌘C with no selection and no focused field → copy the active patient's page.
+ * Uses the `copy` event: the Electron Editar menu swallows the ⌘C keydown.
+ */
+function onShellCopyEvent(e) {
+  if (isAnyModalOpen() || shellShortcutFromTypingField(e)) return;
+  var sel = window.getSelection && window.getSelection();
+  if (sel && !sel.isCollapsed) return;
+  var tab = rt.getActiveAppTab();
+  if (tab === 'nota' && getActiveInnerTab() === 'estadoActual') {
+    e.preventDefault();
+    if (eaHasCopyableContent()) void copiarEstadoActualTexto();
+  } else if (tab === 'lab') {
+    e.preventDefault();
+    void ensureLabsLoaded().then(function (mod) {
+      if (mod.labOutputHasCopyableContent()) mod.windowHandlers.copiarLabsAlPortapapeles();
+    });
+  }
+}
+
 /** @param {(msg: string, type?: string) => void} showToast */
 export function initShellKeyboardShortcuts(showToast) {
   if (shellKeyboardWired) return;
@@ -289,6 +311,7 @@ export function initShellKeyboardShortcuts(showToast) {
     },
     true
   );
+  document.addEventListener('copy', onShellCopyEvent);
   var api = typeof window !== 'undefined' ? window.electronAPI : null;
   if (api && typeof api.onShellShortcut === 'function') {
     api.onShellShortcut(function (payload) {

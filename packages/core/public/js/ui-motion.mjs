@@ -501,6 +501,7 @@ export function setAsyncButtonLoading(btn, loading, opts) {
     if (opts.showElapsed) {
       var started = Date.now();
       var paint = function () {
+        if (!btn.isConnected) return clearAsyncElapsed(btn);
         swapLabelText(label, loadingText + ' · ' + formatButtonElapsed(Date.now() - started));
       };
       paint();

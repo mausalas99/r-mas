@@ -1,4 +1,4 @@
-import { sortLabHistoryChronological, tendEligibleSectionKey } from '../tend-core.mjs';
+import { sortLabHistoryChronological, tendEligibleSectionKey, parseTrendNumeric } from '../tend-core.mjs';
 import { trendCatalogSeriesKey } from '../lab-history-cache.mjs';
 import {
   bhTrendDisplayTitle,
@@ -202,7 +202,7 @@ function buildMergedTrendSeriesCatalog(history) {
         var k = tendCatalogSeriesKey(sk, fk);
         if (mapped[k]) return;
         var v = row[fk];
-        if (!isFinite(Number(v))) return;
+        if (parseTrendNumeric(v) == null) return;
         mapped[k] = true;
         out.push({
           sectionKey: sk,

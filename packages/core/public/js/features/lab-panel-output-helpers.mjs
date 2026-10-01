@@ -2,6 +2,7 @@
 import {
   renderEntry,
   isLabSectionHeaderHtml,
+  escTxt,
 } from '../labs.js';
 import { parseSomeTablesFromSources } from '../labs-some-table.mjs';
 import { normalizeFechaLabHistory, parseFechaLabToMs } from '../tend-core.mjs';
@@ -13,8 +14,9 @@ import {
   setLabHistorySelectedSetId,
 } from './lab-panel-history.mjs';
 import { findDisplayLabHistorySetId } from './lab-panel-history-dedupe.mjs';
+import { syncLabResultsCardChrome } from './lab-results-card.mjs';
 import { buildLabTrendLookup } from './lab-trend-arrows.mjs';
-import { reprocessSelectedLabHistorySet } from './lab-panel-history.mjs';
+import { reprocessSelectedLabHistorySet, removeLabHistoryLine } from './lab-panel-history.mjs';
 import {
   citoquimicoTipoFingerprintFromLine_,
   citoquimicoTipoValueFromLine_,
@@ -137,6 +139,51 @@ function appendCitoquimicoTipoEditControl_(div, text) {
   host.appendChild(btn);
 }
 
+/** ✕ at the row's right edge. Shows only while the pointer is in that zone (CSS). Confirms in the row. */
+function appendLabLineRemoveControl_(div, text) {
+  var label = String(text || '').split(/[\t\s]/)[0].replace(/:$/, '') || 'línea';
+  var zone = document.createElement('span');
+  zone.className = 'lab-line-remove-zone';
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'lab-line-remove-btn';
+  btn.setAttribute('aria-label', 'Quitar ' + label + ' de este día');
+  btn.textContent = '✕';
+  zone.appendChild(btn);
+  div.classList.add('has-line-remove');
+  btn.addEventListener('click', function () {
+    var bar = document.createElement('span');
+    bar.className = 'lab-line-remove-confirm';
+    bar.innerHTML = '<span>¿Quitar ' + escTxt(label) + ' de este día?</span>';
+    var ok = document.createElement('button');
+    ok.type = 'button';
+    ok.className = 'lab-line-remove-ok';
+    ok.textContent = 'Quitar';
+    ok.addEventListener('click', function () {
+      var box = div.parentNode;
+      var last = box.querySelectorAll('.out-line:not(.lab-bh-extended-line)').length <= 1;
+      if (!removeLabHistoryLine(text, last) || last) return;
+      var next = div.nextElementSibling;
+      while (next && next.matches('.out-indent, .lab-bh-extended-line')) {
+        var gone = next;
+        next = next.nextElementSibling;
+        gone.remove();
+      }
+      div.remove();
+      syncLabResultsCardChrome();
+    });
+    var no = document.createElement('button');
+    no.type = 'button';
+    no.textContent = 'Cancelar';
+    no.addEventListener('click', function () { bar.remove(); });
+    bar.appendChild(ok);
+    bar.appendChild(no);
+    div.appendChild(bar);
+    ok.focus();
+  });
+  div.appendChild(zone);
+}
+
 function appendStandardResLabChunk(box, text, trendLookup) {
   renderEntry(text, trendLookup).forEach(function (html, idx) {
     var div = document.createElement('div');
@@ -144,6 +191,7 @@ function appendStandardResLabChunk(box, text, trendLookup) {
     div.innerHTML = html;
     box.appendChild(div);
     if (idx === 0 && isCitoquimicoTipoLine_(text)) appendCitoquimicoTipoEditControl_(div, text);
+    if (idx === 0) appendLabLineRemoveControl_(div, text);
   });
 }
 

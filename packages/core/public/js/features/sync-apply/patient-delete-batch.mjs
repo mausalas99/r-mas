@@ -49,7 +49,8 @@ export async function commitOnePatientDelete(patientId, opts) {
 
   var snap = snapForId(pid, deps.patientsList);
   var registro = String(snap.registro || '').trim();
-  var cloudSnap = { id: pid, registro: registro };
+  // Keep the sala/team fields: the delete must also reach the patient's own sala room.
+  var cloudSnap = { ...snap, id: pid, registro: registro };
 
   deps.removeLocal(pid);
   deps.rememberTombstone(cloudSnap);

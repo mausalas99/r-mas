@@ -739,3 +739,61 @@ OBSERVACIONES\t
     'no debe quedar una fila literal "RESULTADO" ni una con el valor 0.09 como nombre'
   );
 });
+
+test('parseSomeReportTables — línea en blanco entre unidades y referencia, y referencia negativa, no desplazan filas', () => {
+  const raw = `
+GASOMETRIAS
+Estudio
+Resultado Unidades
+Valor de Referencia
+Lactato
+*
+0.5
+mmol/L
+
+0.4 - 2.0
+HCO3
+*
+26.3
+mmol/L
+22.0 - 30.0
+EX. BASE
+*
+3.6
+mmol/L
+-2.0 - 4.5
+UNIVERSIDAD AUTONOMA DE NUEVO LEON
+REPORTE DE RESULTADOS DE LABORATORIO
+`;
+  const rows = parseSomeReportTables(raw).departments[0].groups[0].rows;
+  assert.deepEqual(
+    rows.map((r) => [r.estudio, r.resultado, r.ref]),
+    [
+      ['Lactato', '0.5', '0.4 - 2.0'],
+      ['HCO3', '26.3', '22.0 - 30.0'],
+      ['EX. BASE', '3.6', '-2.0 - 4.5'],
+    ]
+  );
+});
+
+test('parseSomeReportTables — el pie de firma del reporte no genera filas', () => {
+  const text = [
+    'QUIMICA CLINICA',
+    'Estudio\t\tResultado\tUnidades\tValor de Referencia',
+    'GLUCOSA\t',
+    '*',
+    '94',
+    'mg/dL\t70 - 100',
+    '&',
+    'Dr. Ejemplo Sintetico Responsable Sanitario',
+    'el Laboratorio.',
+    'Sistema SOME MOP-XX-000',
+    '"LABORATORIO DEMO"',
+    'AV. EJEMPLO 100, CENTRO',
+    '2600000000',
+    'PERSONA DEMO SINTETICA',
+  ].join('\n');
+  const rows = parseSomeReportTables(text).departments[0].groups.flatMap((g) => g.rows);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].estudio, 'GLUCOSA');
+});

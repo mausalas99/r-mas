@@ -27,7 +27,8 @@ function ownerVisible(m) {
 }
 
 export function mountTopBar() {
-  if (isMobileWeb()) return;
+  // iPad (≥900px) gets the desktop top bar; only phones keep the flat two-tier tabs.
+  if (isMobileWeb() && window.matchMedia('(max-width: 899px)').matches) return;
   var header = document.querySelector('body > header');
   var tablist = document.getElementById('app-main-tablist');
   if (!header || !tablist || header.querySelector('.topbar-nav')) return;

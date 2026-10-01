@@ -111,7 +111,6 @@ html:not(.ui-density-normal) .sidebar-ronda-hint { display: flex; }
 .ea-estado-clinico > summary::after,
 .settings-accordion > summary::after,
 details.todo-group summary.todo-group-header::before,
-.lab-some-dept-summary::before,
 .lab-bulk-preview-issues summary::before,
 .lab-bulk-preview-rawtext summary::before {
   content: '';
@@ -139,7 +138,6 @@ details[open] > summary .rp-dot,
 .ea-estado-clinico[open] > summary::after,
 .settings-accordion[open] > summary::after,
 details.todo-group[open] summary.todo-group-header::before,
-.lab-some-dept-details[open] > .lab-some-dept-summary::before,
 .lab-bulk-preview-issues[open] summary::before,
 .lab-bulk-preview-rawtext[open] summary::before {
   background: var(--text-muted);

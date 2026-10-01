@@ -355,3 +355,72 @@ describe('runPullLatest revision gate on a locked pull', () => {
     assert.deepEqual(seen, [], 'a locked pull must leave `since` where it was');
   });
 });
+
+// Ways dropping the in-drain pulls can go wrong:
+// 1. a pull still runs after every needPull chunk (the slow path stays);
+// 2. no pull runs at all, so a peer's ops never arrive and the cursor
+//    never moves past our own commits;
+// 3. the cursor jumps to a needPull push revision and skips peer ops;
+// 4. a revision_stale retry still pulls first (it cannot help: the
+//    Worker re-reads the room itself and baseRevision only sets needPull);
+// 5. a revision_stale retry stops retrying.
+function drainSetup(pushImpl, opCount) {
+  seq += 1;
+  const mem = [];
+  const outbox = createOutbox({ load: () => mem.slice(), save: (rows) => mem.splice(0, mem.length, ...rows) });
+  outbox.enqueue({
+    clientMutationId: 'm1',
+    ops: Array.from({ length: opCount }, (_, i) => ({
+      path: `entries/d${seq}x${i}/note`, value: { texto: 'b' }, updatedAt: '2026-09-27T08:00:00.000Z', actorId: 'b',
+    })),
+  });
+  let revision = 5;
+  const events = [];
+  const api = {
+    push: async (_roomId, body) => {
+      events.push(`push:${body.ops.length}`);
+      return pushImpl(events);
+    },
+    pull: async (_roomId, since) => {
+      events.push(`pull:${since}`);
+      return { revision: 12, ops: [] };
+    },
+  };
+  const { flushOutbox } = createPullPush(
+    {
+      api,
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => revision,
+      setRevision: (r) => { revision = r; },
+      applyPullResult: async () => {},
+    },
+    () => {},
+    { pendingCount: () => outbox.list().length, refreshIdleStatus() {} },
+    { markLocalWrite() {} },
+  );
+  return { flushOutbox, events, outbox, getRevision: () => revision };
+}
+
+test('a drain whose chunks all need a pull pulls once, after the last chunk', async () => {
+  let rev = 8;
+  const s = drainSetup(() => ({ revision: (rev += 1), applied: [], rejected: [], needPull: true }), 100);
+  await s.flushOutbox();
+  assert.deepEqual(s.events, ['push:64', 'push:36', 'pull:5']);
+  assert.equal(s.getRevision(), 12);
+  assert.equal(s.outbox.list().length, 0);
+});
+
+test('a revision_stale push retries without a pull in between', async () => {
+  let calls = 0;
+  const s = drainSetup(() => {
+    calls += 1;
+    if (calls === 1) {
+      throw Object.assign(new Error('stale'), { status: 409, data: { error: 'revision_stale' } });
+    }
+    return { revision: 6, applied: [], rejected: [], needPull: false };
+  }, 2);
+  await s.flushOutbox();
+  assert.deepEqual(s.events, ['push:2', 'push:2']);
+  assert.equal(s.getRevision(), 6);
+});

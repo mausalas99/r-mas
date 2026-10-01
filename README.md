@@ -51,9 +51,33 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.4.3](https://github.com/mausalas99/r-mas/releases/tag/v8.4.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.4.5](https://github.com/mausalas99/r-mas/releases/tag/v8.4.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.4.5 (estable — release 8.4.5)
+
+- **Nuevo (Nube):** notas, interrogatorio e indicaciones se sincronizan entre equipos. Gana la edición más reciente.
+- **Nuevo (Perfil):** Mi perfil incluye tu sala, rango y usuario en una sola pantalla. Cambiar de sala te pasa a su sala en Nube.
+- **Nuevo (Interconsultas):** la barra de interconsulta usa pastillas para Servicio, Motivo, Seguimiento y Equipo.
+- **Arreglado (Interconsultas):** avisos guiados mejor colocados, mejor contraste y bandeja estable.
+- **Nuevo (iPad):** iPad usa el mismo diseño que la computadora y Resumen cabe sin desplazar.
+- **Arreglado (Perfil):** cambiar tu @usuario en Mi perfil también lo actualiza en Nube.
+- **Nuevo (Perfil):** R+ te guía a elegir sala al reiniciar la rotación.
+- **Arreglado (Salas y equipos):** salir de una sala ya no se deshace solo, y salir de un equipo ya no te saca del nuevo.
+- **Arreglado (Equipos):** un paciente sin equipo («Sin asignar») ahora se quita del equipo en todos los dispositivos.
+- **Arreglado (Estado actual):** el DIA de la Solución Stanford avanza por fecha, y las sugerencias ventilatorias se actualizan al editar.
+- **Arreglado (Tendencias):** gasométricos con coma decimal o «<» muestran su tarjeta.
+
+Notas: `docs/RELEASE_NOTES_8.4.5.txt`.
+
+## R+ 8.4.4 (estable — Laboratorio, Tendencias y Nube por paciente)
+
+- **Laboratorio:** diseño nuevo, días anteriores del historial y lectura del PDF de Reumatología.
+- **Tendencias:** panel de estudio a todo el ancho, con chips, pestañas de gráficas y tabla dinámica.
+- **Nube:** más estable con muchos equipos: una fila por expediente, menos descargas repetidas y sin pérdida de eventualidades ni de monitoreo.
+
+Notas: `docs/RELEASE_NOTES_8.4.4.txt`.
 
 ## R+ 8.4.3 (estable — release 8.4.3)
 

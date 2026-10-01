@@ -200,6 +200,28 @@ export function appendClinicalUserActivityLog(db, userId, atIso, source) {
   return true;
 }
 
+/**
+ * Drop activity rows older than 90 days, but keep each user's 12 newest so the
+ * Equipos history (limit 12) never empties for inactive users.
+ * @param {import('better-sqlite3').Database} db
+ * @param {number} [nowMs]
+ * @returns {number} rows deleted
+ */
+export function pruneClinicalUserActivityLog(db, nowMs = Date.now()) {
+  if (!tableHasUserActivityLog(db)) return 0;
+  const cutoff = new Date(nowMs - 90 * 86400000).toISOString();
+  return db
+    .prepare(
+      `DELETE FROM user_activity_log WHERE at_iso < ? AND id NOT IN (
+         SELECT id FROM (
+           SELECT id, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY at_iso DESC) AS rn
+           FROM user_activity_log
+         ) WHERE rn <= 12
+       )`
+    )
+    .run(cutoff).changes;
+}
+
 /** @param {import('better-sqlite3').Database} db */
 function tableHasUserActivityLog(db) {
   return !!db

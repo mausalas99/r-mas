@@ -17,7 +17,6 @@ import {
   readGroupVisibleFields,
   writeGroupVisibleFields,
   readGroupPanelOrder,
-  writeGroupPanelOrder,
   readGroupPanelHidden,
   readGroupPanelHiddenMigrated,
   writeGroupPanelHidden,
@@ -46,6 +45,7 @@ import {
   createTendThresholdPlugin,
   createTendRelativePlugin,
   relativeToRange,
+  captureScroll,
 } from './tend-group-chart-helpers.mjs';
 import { buildEventMarkerMapForSets, createTendEventMarkerPlugin } from './features/tendencias-event-context.mjs';
 
@@ -54,57 +54,6 @@ function destroyCharts(state) {
     if (ch) ch.destroy();
   });
   state.charts = [];
-}
-
-function syncPanelOrderFromDom(state, sectionKey) {
-  var zone = document.getElementById('tend-group-panels-sortable');
-  if (!zone) return;
-  var order = [];
-  zone.querySelectorAll('.tend-group-panel-card[data-panel-family]').forEach(function (el) {
-    var fam = el.getAttribute('data-panel-family');
-    if (fam) order.push(fam);
-  });
-  if (order.length) writeGroupPanelOrder(state.patientId, sectionKey, order);
-}
-
-function mountPanelSortable(state, sectionKey, panelSortableRef) {
-  if (panelSortableRef.current) {
-    try {
-      if (typeof panelSortableRef.current.destroy === 'function') panelSortableRef.current.destroy();
-    } catch (_e) { void _e; }
-    panelSortableRef.current = null;
-  }
-  var SortableCtor = typeof globalThis !== 'undefined' ? globalThis.Sortable : null;
-  if (!SortableCtor || typeof SortableCtor.create !== 'function') return;
-  var zone = document.getElementById('tend-group-panels-sortable');
-  var panelRoot = document.getElementById('tend-group-panel-charts');
-  if (!zone || !panelRoot) return;
-  panelSortableRef.current = SortableCtor.create(zone, {
-    animation: 200,
-    easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
-    draggable: '.tend-group-panel-card',
-    handle: '.tend-group-panel-drag-hint',
-    filter:
-      'button, a[href], input, textarea, select, label, canvas, .tend-group-chart-wrap, .tend-group-legend, [contenteditable]',
-    preventOnFilter: true,
-    delay: 280,
-    delayOnTouchOnly: false,
-    direction: 'vertical',
-    forceFallback: true,
-    fallbackClass: 'tend-group-drag-hovercard',
-    fallbackOnBody: true,
-    fallbackTolerance: 4,
-    swapThreshold: 0.65,
-    invertedSwapThreshold: 0.58,
-    scroll: panelRoot,
-    bubbleScroll: true,
-    scrollSensitivity: 54,
-    scrollSpeed: 9,
-    onEnd: function (evt) {
-      if (evt.oldIndex === evt.newIndex && evt.from === evt.to) return;
-      syncPanelOrderFromDom(state, sectionKey);
-    },
-  });
 }
 
 function renderPanelsHiddenBar(panelEl, deps, state, sectionKey, hiddenFams, renderCharts) {
@@ -343,8 +292,7 @@ function buildPanelToolbar() {
     '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-events-toggle" title="Ocultar eventos" aria-label="Ocultar eventos" aria-pressed="false">' +
     tendPanelEventsSvg() +
     '</button>' +
-    '</div>' +
-    '<span class="tend-group-panel-drag-hint" aria-hidden="true" title="Arrastrar para reordenar">⋮⋮</span>';
+    '</div>';
   return toolbar;
 }
 
@@ -394,6 +342,12 @@ function buildChartYScale(fam, datasets) {
   var rel = fam === 'relative';
   var yBounds = yScaleBoundsForDatasets(datasets, fam);
   var yScale = {
+    grid: {
+      color: function (c) {
+        return c.tick && c.tick.value === 0 ? 'rgba(148,163,184,0.55)' : 'rgba(148,163,184,0.16)';
+      },
+      lineWidth: 1,
+    },
     ticks: {
       font: { size: 11 },
       callback: function (v) {
@@ -445,6 +399,7 @@ function wireLegendControls(legend, chart, fam, ctx, items, markerMap) {
       }
       applyChartYScale(chart, yFamily(ctx, fam));
       chart.update();
+      if (chart._tendSyncReadout) chart._tendSyncReadout();
     });
   });
   legend.querySelectorAll('.tend-group-legend-color').forEach(function (inp) {
@@ -459,6 +414,83 @@ function wireLegendControls(legend, chart, fam, ctx, items, markerMap) {
       chart.data.datasets[dsIdx].pointBackgroundColor = inp.value;
       chart.update('none');
     });
+  });
+}
+
+function lastIndex(arr) {
+  for (var k = arr.length - 1; k >= 0; k--) if (arr[k] != null) return k;
+  return -1;
+}
+
+/** Mini sparkline (56x20) of a series, drawn in its own color. */
+function legendSpark(data, color) {
+  var pts = data
+    .map(function (v, i) {
+      return v == null ? null : [i, v];
+    })
+    .filter(Boolean);
+  if (pts.length < 2) return '<svg class="tend-legend-spark" width="56" height="20" aria-hidden="true"></svg>';
+  var vs = pts.map(function (p) {
+    return p[1];
+  });
+  var mn = Math.min.apply(null, vs);
+  var span = Math.max.apply(null, vs) - mn || 1;
+  var n = Math.max(data.length - 1, 1);
+  var poly = pts
+    .map(function (p) {
+      return (2 + (p[0] * 52) / n).toFixed(1) + ',' + (17 - ((p[1] - mn) / span) * 14).toFixed(1);
+    })
+    .join(' ');
+  return (
+    '<svg class="tend-legend-spark" width="56" height="20" viewBox="0 0 56 20" aria-hidden="true">' +
+    '<polyline points="' + poly + '" fill="none" stroke="' + color + '" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>'
+  );
+}
+
+/** Last change vs first value, e.g. "+12%". Empty when it cannot be computed. */
+function legendChange(raw) {
+  var vals = raw.filter(function (v) {
+    return v != null;
+  });
+  if (vals.length < 2 || !vals[0]) return '<span class="tend-legend-pc"></span>';
+  var pc = Math.round((vals[vals.length - 1] / vals[0] - 1) * 100);
+  return '<span class="tend-legend-pc">' + (pc > 0 ? '+' : '') + pc + '%</span>';
+}
+
+/** Value text for a readout chip (no series name). */
+function chipValue(ctx, ds, idx) {
+  var spec = ctx.state.specsByField[ds.fieldKey];
+  if (!spec) return '';
+  var unit = ctx.deps.tendUnitForSeries(ctx.sectionKey, spec.fieldKey);
+  var parts = formatTendSeriesLabel(spec.cardTitle || spec.fieldKey, spec.fieldKey, unit);
+  var v = ds.relRef ? ds.rawData && ds.rawData[idx] : ds.data[idx];
+  var valStr = formatTrendDisplayValue(v);
+  var out = valStr + (valStr !== '—' && parts.unit ? ' ' + parts.unit : '');
+  if (ds.relRef && ds.data[idx] != null) out += ' · ' + Math.round(ds.data[idx]) + ' %';
+  return out;
+}
+
+/** Fill the strip under the chart with the visible series' values at column idx. */
+function paintReadout(ctx, chart, strip, idx) {
+  strip.textContent = '';
+  if (idx == null || idx < 0) return;
+  var date = document.createElement('span');
+  date.className = 'tend-readout-date';
+  date.textContent = chart.data.labels[idx] != null ? chart.data.labels[idx] : '';
+  strip.appendChild(date);
+  chart.data.datasets.forEach(function (ds, i) {
+    if (!chart.isDatasetVisible(i) || ds.data[idx] == null) return;
+    var chip = document.createElement('span');
+    chip.className = 'tend-readout-chip';
+    var dot = document.createElement('span');
+    dot.className = 'tend-readout-dot';
+    dot.style.background = ds.borderColor;
+    var val = document.createElement('b');
+    val.textContent = chipValue(ctx, ds, idx);
+    chip.appendChild(dot);
+    chip.appendChild(document.createTextNode((ds.endName || ds.label) + ' '));
+    chip.appendChild(val);
+    strip.appendChild(chip);
   });
 }
 
@@ -484,16 +516,20 @@ function buildPanelDatasets(ctx, items, axisMeta) {
       borderColor: color,
       backgroundColor: hexToRgba(color, 0.12),
       borderWidth: 2,
-      pointRadius: 4,
+      pointRadius: function (c) {
+        return c.dataIndex === c.dataset._last ? 5 : 2;
+      },
       pointHoverRadius: 5,
       pointBackgroundColor: color,
-      tension: 0.3,
+      cubicInterpolationMode: 'monotone',
+      tension: 0,
       fill: false,
       spanGaps: true,
       fieldKey: fk,
       thresholds: relRef ? [] : readFieldThresholds(ctx.sectionKey, fk),
     };
     ds.data = plotValues(ds, raw);
+    ds._last = lastIndex(ds.data);
     datasets.push(ds);
     var legItem = document.createElement('label');
     legItem.className = 'tend-group-legend-item';
@@ -508,9 +544,11 @@ function buildPanelDatasets(ctx, items, axisMeta) {
       '" value="' +
       color +
       '"> ' +
-      '<span>' +
+      '<span class="tend-legend-name">' +
       label +
       '</span>' +
+      legendSpark(ds.data, color) +
+      legendChange(raw) +
       '<span class="tend-group-legend-drag-hint" aria-hidden="true" title="Arrastrar para reordenar">⋮⋮</span>';
     legend.appendChild(legItem);
   });
@@ -635,26 +673,63 @@ function buildThresholdControls(ctx, chart, items) {
   return row;
 }
 
-function createPanelChart(canvas, chartLabels, datasets, fam, ctx, markerMap) {
+function createPanelChart(canvas, chartLabels, datasets, fam, ctx, markerMap, readout) {
   var rel = isRelative(ctx);
   var yScale = buildChartYScale(yFamily(ctx, fam), datasets);
   var eventPlugin = createTendEventMarkerPlugin(markerMap, { compact: false });
   var thresholdPlugin = createTendThresholdPlugin();
-  return new ctx.deps.Chart(canvas, {
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var crosshair = {
+    id: 'tendCrosshair',
+    beforeDatasetsDraw: function (c) {
+      var idx = c._tendHoverIdx;
+      var meta = idx != null && c.getDatasetMeta(0);
+      var pt = meta && meta.data[idx];
+      if (!pt) return;
+      var a = c.chartArea;
+      c.ctx.save();
+      c.ctx.strokeStyle = 'rgba(148,163,184,0.7)';
+      c.ctx.setLineDash([3, 4]);
+      c.ctx.lineWidth = 1;
+      c.ctx.beginPath();
+      c.ctx.moveTo(pt.x, a.top);
+      c.ctx.lineTo(pt.x, a.bottom);
+      c.ctx.stroke();
+      c.ctx.restore();
+    },
+  };
+  var lastCol = function (c) {
+    var m = -1;
+    c.data.datasets.forEach(function (ds, i) {
+      if (c.isDatasetVisible(i)) m = Math.max(m, ds._last);
+    });
+    return m;
+  };
+  var chart = new ctx.deps.Chart(canvas, {
     type: 'line',
-    plugins: rel ? [eventPlugin, createTendRelativePlugin()] : [eventPlugin, thresholdPlugin],
+    plugins: (rel ? [eventPlugin, createTendRelativePlugin()] : [eventPlugin, thresholdPlugin]).concat([crosshair]),
     data: { labels: chartLabels, datasets: datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       devicePixelRatio: Math.max(window.devicePixelRatio || 1, 2),
       interaction: { mode: 'index', intersect: false },
-      layout: rel ? { padding: { right: 150 } } : undefined,
+      animation: reduce ? false : undefined,
       plugins: {
         legend: { display: false },
         tooltip: {
           mode: 'index',
           intersect: false,
+          // Off-canvas readout: the strip under the chart shows the values, nothing covers the lines.
+          enabled: false,
+          external: function (t) {
+            var c = t.chart;
+            var idx = t.tooltip.opacity && t.tooltip.dataPoints && t.tooltip.dataPoints.length ? t.tooltip.dataPoints[0].dataIndex : null;
+            if (idx === c._tendHoverIdx) return;
+            c._tendHoverIdx = idx;
+            if (readout) paintReadout(ctx, c, readout, idx != null ? idx : lastCol(c));
+            c.draw();
+          },
           callbacks: {
             title: function (tipItems) {
               var i = tipItems[0] && tipItems[0].dataIndex;
@@ -673,6 +748,7 @@ function createPanelChart(canvas, chartLabels, datasets, fam, ctx, markerMap) {
       },
       scales: {
         x: {
+          grid: { color: 'transparent' },
           ticks: {
             maxRotation: 45,
             minRotation: 0,
@@ -685,6 +761,11 @@ function createPanelChart(canvas, chartLabels, datasets, fam, ctx, markerMap) {
       },
     },
   });
+  chart._tendSyncReadout = function () {
+    if (readout) paintReadout(ctx, chart, readout, chart._tendHoverIdx != null ? chart._tendHoverIdx : lastCol(chart));
+  };
+  chart._tendSyncReadout();
+  return chart;
 }
 
 function appendPanelEmptyMessage(block, items) {
@@ -760,11 +841,21 @@ function renderPanelFamilyCard(fam, ctx) {
     hidePanelFamily(panelCtx);
   };
 
+  var body = document.createElement('div');
+  body.className = 'tend-chart-body';
+  var main = document.createElement('div');
+  main.className = 'tend-chart-main';
+  body.appendChild(main);
+  block.appendChild(body);
   var chartWrap = document.createElement('div');
   chartWrap.className = 'tend-group-chart-wrap';
   var canvas = document.createElement('canvas');
   chartWrap.appendChild(canvas);
-  block.appendChild(chartWrap);
+  main.appendChild(chartWrap);
+  var readout = document.createElement('div');
+  readout.className = 'tend-chart-readout';
+  readout.setAttribute('aria-live', 'off');
+  main.appendChild(readout);
 
   var items = orderLegendItems(
     ctx.state,
@@ -788,6 +879,7 @@ function renderPanelFamilyCard(fam, ctx) {
   if (!colSets.length || !items.length) {
     if (refNote && !items.length) block.appendChild(refNote);
     else appendPanelEmptyMessage(block, items);
+    body.remove();
     ctx.sortZone.appendChild(block);
     return;
   }
@@ -796,12 +888,12 @@ function renderPanelFamilyCard(fam, ctx) {
   var chartLabels = axisMeta.labels;
   var markerMap = buildEventMarkerMapForSets(colSets, ctx.state.patientId);
   var built = buildPanelDatasets(ctx, items, axisMeta);
-  block.appendChild(built.legend);
+  body.appendChild(built.legend);
   ctx.sortZone.appendChild(block);
   mountLegendSortable(built.legend, ctx.state, ctx.sectionKey, fam);
 
   try {
-    var chart = createPanelChart(canvas, chartLabels, built.datasets, fam, ctx, markerMap);
+    var chart = createPanelChart(canvas, chartLabels, built.datasets, fam, ctx, markerMap, readout);
     chart._tendFamily = fam;
     chart._tendEventsHidden = isPanelEventsHidden(ctx.state.patientId, ctx.sectionKey, fam);
     chart.data.datasets.forEach(function (ds, dsIdx) {
@@ -811,8 +903,8 @@ function renderPanelFamilyCard(fam, ctx) {
     chart.update();
     ctx.state.charts.push(chart);
     wireLegendControls(built.legend, chart, fam, ctx, items, markerMap);
-    if (!isRelative(ctx)) block.appendChild(buildThresholdControls(ctx, chart, items));
-    if (refNote) block.appendChild(refNote);
+    if (!isRelative(ctx)) main.appendChild(buildThresholdControls(ctx, chart, items));
+    if (refNote) main.appendChild(refNote);
     var eventsToggleBtn = toolbar.querySelector('.tend-group-panel-events-toggle');
     var syncEventsToggleBtn = function () {
       var hidden = !!chart._tendEventsHidden;
@@ -843,14 +935,21 @@ function renderPanelFamilyCard(fam, ctx) {
     };
   } catch (chartErr) {
     console.error('tend-group chart', fam, chartErr);
+    readout.remove();
     chartWrap.innerHTML =
       '<p class="tend-empty" style="margin:12px 0;font-size:13px;color:var(--error);">No se pudo dibujar este panel.</p>';
   }
 }
 
-export function renderGroupCharts(deps, state, sectionKey, legendLabelForSpec, panelSortableRef, renderCharts) {
-  var panelEl = document.getElementById('tend-group-panel-charts');
+export function renderGroupCharts(deps, state, sectionKey, legendLabelForSpec, panelSortableRef, renderCharts, targetPanelEl) {
+  var panelEl = targetPanelEl || document.getElementById('tend-group-panel-charts');
   if (!panelEl) return;
+  var restore = captureScroll(panelEl);
+  renderGroupChartsInner(deps, state, sectionKey, legendLabelForSpec, panelSortableRef, renderCharts, panelEl);
+  restore();
+}
+
+function renderGroupChartsInner(deps, state, sectionKey, legendLabelForSpec, panelSortableRef, renderCharts, panelEl) {
   destroyCharts(state);
   if (panelSortableRef.current) {
     try {
@@ -898,11 +997,29 @@ export function renderGroupCharts(deps, state, sectionKey, legendLabelForSpec, p
     sortZone: sortZone,
     renderCharts: renderCharts,
   };
+  if (!visibleFams.length) return;
+  var activeFam = visibleFams.indexOf(state.chartFam) >= 0 ? state.chartFam : visibleFams[0];
+  state.chartFam = activeFam;
+  var tabs = document.createElement('div');
+  tabs.className = 'tend-chart-tabs';
+  tabs.setAttribute('role', 'tablist');
   visibleFams.forEach(function (fam) {
-    renderPanelFamilyCard(fam, cardCtx);
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'tend-chart-tab' + (fam === activeFam ? ' is-active' : '');
+    b.setAttribute('role', 'tab');
+    b.dataset.panelFamily = fam;
+    b.setAttribute('aria-selected', fam === activeFam ? 'true' : 'false');
+    b.textContent = resolvePanelTitle(state.patientId, sectionKey, fam);
+    b.onclick = function () {
+      if (fam === state.chartFam) return;
+      state.chartFam = fam;
+      renderCharts(sectionKey);
+    };
+    tabs.appendChild(b);
   });
-
-  mountPanelSortable(state, sectionKey, panelSortableRef);
+  panelEl.insertBefore(tabs, sortZone);
+  renderPanelFamilyCard(activeFam, cardCtx);
 }
 
 export function destroyGroupCharts(state, panelSortableRef) {

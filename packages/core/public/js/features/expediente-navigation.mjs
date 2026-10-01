@@ -45,6 +45,7 @@ import {
   renderGranularInnerTab,
   syncConsolidatedInnerTabButtons,
   isInnerTabContentFresh,
+  isInnerTabPaintStale,
   isInnerTabRenderedForOtherPatient,
   granularMountIsEmpty,
   expedienteCompositeTab,
@@ -142,7 +143,9 @@ function scheduleInnerTabPaint(tab, settings, opts, prevInner, prevComposite, ne
   var needsContentRender =
     mountNeedsRender ||
     ((prevInner !== tab || opts.forceRender) &&
-      (opts.forceRender || !isInnerTabContentFresh(tab, settings)));
+      (opts.forceRender || !isInnerTabContentFresh(tab, settings))) ||
+    // Same tab tapped again: a pull may have changed its data while its repaint was cancelled.
+    (prevInner === tab && isInnerTabPaintStale(tab, settings));
   if (needsContentRender) {
     var targetTab = tab;
     var forceRender = !!opts.forceRender || mountNeedsRender;

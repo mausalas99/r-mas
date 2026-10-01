@@ -97,11 +97,15 @@ var TEND_SECTION_LABELS = {
   HEPB: 'Hepatitis B',
   VIRAL: 'Serología viral',
   FEB: 'Febriles',
-  MICRO: 'Antígenos / micro'
+  MICRO: 'Antígenos / micro',
+  ANA: 'ANA / dsDNA',
+  ENA: 'ENA',
+  APL: 'Antifosfolípidos',
+  TB: 'Quantiferón'
 };
 var TEND_SECTION_ORDER = [
   'BH', 'PltCit', 'QS', 'ESC', 'PFHs', 'LIPASA', 'TROP', 'CARD', 'TIR', 'ENDO', 'FE',
-  'INFL', 'INM', 'META', 'NEF', 'NIVEL', 'TM', 'NUT', 'GI', 'TOX', 'HEPB', 'VIRAL', 'FEB', 'MICRO',
+  'INFL', 'INM', 'META', 'NEF', 'NIVEL', 'TM', 'NUT', 'GI', 'TOX', 'HEPB', 'VIRAL', 'FEB', 'MICRO', 'ANA', 'ENA', 'APL', 'TB',
   'GASES', 'LCR', 'Liq', 'Prot12h', 'Prot24h', 'PIE', 'EGO', 'EU', 'CUANTORINA', 'FROTIS'
 ];
 

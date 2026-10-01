@@ -23,6 +23,14 @@ import {
   syncApprovedOutputDir,
 } from "../document-export-client.mjs";
 import { openConfirm } from "./workbench/confirm.mjs";
+import { stampDocUpdatedAt } from "../patient-merge.mjs";
+import { scheduleCloudSyncPush } from "./cloud-sync/mutate-bridge.mjs";
+
+/** A saved edit: new edit clock (last write wins), then a debounced Nube push. */
+function touchDoc(doc) {
+  stampDocUpdatedAt(doc);
+  scheduleCloudSyncPush();
+}
 
 let rt = {
   getActiveId() { return null; },
@@ -146,10 +154,10 @@ function renderNoteForm() {
 }
 
 // ── Campos Dx/Tx ──────────────────────────────────────────────────────
-function updateNote(field, value) { if (!getNotes()[aid()]) getNotes()[aid()]={}; getNotes()[aid()][field]=value; persistClinicalState(); }
-function updateDx(i, val) { if (!getNotes()[aid()]) return; getNotes()[aid()].diagnosticos[i]=val.toUpperCase(); persistClinicalState(); }
-function addDx() { if (!getNotes()[aid()]) return; getNotes()[aid()].diagnosticos.push(''); persistClinicalState(); renderNoteForm(); }
-function removeDx(i) { if (!getNotes()[aid()]||getNotes()[aid()].diagnosticos.length<=1) return; getNotes()[aid()].diagnosticos.splice(i,1); persistClinicalState(); renderNoteForm(); }
+function updateNote(field, value) { if (!getNotes()[aid()]) getNotes()[aid()]={}; getNotes()[aid()][field]=value; touchDoc(getNotes()[aid()]); persistClinicalState(); }
+function updateDx(i, val) { if (!getNotes()[aid()]) return; getNotes()[aid()].diagnosticos[i]=val.toUpperCase(); touchDoc(getNotes()[aid()]); persistClinicalState(); }
+function addDx() { if (!getNotes()[aid()]) return; getNotes()[aid()].diagnosticos.push(''); touchDoc(getNotes()[aid()]); persistClinicalState(); renderNoteForm(); }
+function removeDx(i) { if (!getNotes()[aid()]||getNotes()[aid()].diagnosticos.length<=1) return; getNotes()[aid()].diagnosticos.splice(i,1); touchDoc(getNotes()[aid()]); persistClinicalState(); renderNoteForm(); }
 
 /** Pull patient censo diagnoses into the open note (asks before overwrite). */
 async function syncNoteDxFromCenso() {
@@ -175,14 +183,15 @@ async function syncNoteDxFromCenso() {
     rt.showToast('No hay diagnósticos en el censo de este paciente.', 'info');
     return;
   }
+  touchDoc(note);
   persistClinicalState();
   renderNoteForm();
   rt.showToast('Diagnósticos del censo en la nota ✓', 'success');
 }
 
-function updateTx(i, val) { if (!getNotes()[aid()]) return; getNotes()[aid()].tratamiento[i]=val; persistClinicalState(); }
-function addTx() { if (!getNotes()[aid()]) return; getNotes()[aid()].tratamiento.push(''); persistClinicalState(); renderNoteForm(); }
-function removeTx(i) { if (!getNotes()[aid()]||getNotes()[aid()].tratamiento.length<=1) return; getNotes()[aid()].tratamiento.splice(i,1); persistClinicalState(); renderNoteForm(); }
+function updateTx(i, val) { if (!getNotes()[aid()]) return; getNotes()[aid()].tratamiento[i]=val; touchDoc(getNotes()[aid()]); persistClinicalState(); }
+function addTx() { if (!getNotes()[aid()]) return; getNotes()[aid()].tratamiento.push(''); touchDoc(getNotes()[aid()]); persistClinicalState(); renderNoteForm(); }
+function removeTx(i) { if (!getNotes()[aid()]||getNotes()[aid()].tratamiento.length<=1) return; getNotes()[aid()].tratamiento.splice(i,1); touchDoc(getNotes()[aid()]); persistClinicalState(); renderNoteForm(); }
 
 // ── Word nota ───────────────────────────────────────────────────────────
 function generateWord() {
@@ -286,14 +295,15 @@ function renderIndicaForm() {
   rt.syncOfflineButtonStates();
 }
 
-function updateIndica(field, value) { if (!getIndicaciones()[aid()]) return; getIndicaciones()[aid()][field]=value; persistClinicalState(); }
+function updateIndica(field, value) { if (!getIndicaciones()[aid()]) return; getIndicaciones()[aid()][field]=value; touchDoc(getIndicaciones()[aid()]); persistClinicalState(); }
 
-function updateOtro(i, field, value) { if (!getIndicaciones()[aid()]) return; getIndicaciones()[aid()].otros[i][field]=value; persistClinicalState(); }
+function updateOtro(i, field, value) { if (!getIndicaciones()[aid()]) return; getIndicaciones()[aid()].otros[i][field]=value; touchDoc(getIndicaciones()[aid()]); persistClinicalState(); }
 
 function addOtro() {
   if (!getIndicaciones()[aid()]) return;
   getIndicaciones()[aid()].otros = getIndicaciones()[aid()].otros || [];
   getIndicaciones()[aid()].otros.push({ titulo:'', contenido:'' });
+  touchDoc(getIndicaciones()[aid()]);
   persistClinicalState();
   renderIndicaForm();
 }
@@ -301,6 +311,7 @@ function addOtro() {
 function removeOtro(i) {
   if (!getIndicaciones()[aid()]) return;
   getIndicaciones()[aid()].otros.splice(i, 1);
+  touchDoc(getIndicaciones()[aid()]);
   persistClinicalState();
   renderIndicaForm();
 }
@@ -365,6 +376,7 @@ async function applyExtraTemplateFromIndica() {
   var mode = await resolveExtraTemplateMergeMode(indicaHasExistingContent(target));
   if (!mode) return;
   applyIndicaTemplateFields(target, tmpl, mode);
+  touchDoc(target);
   persistClinicalState();
   renderIndicaForm();
   rt.addAuditEntry('extra-template-apply', 'ok', 1, tmpl.label || '');

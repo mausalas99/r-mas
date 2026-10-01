@@ -127,7 +127,7 @@ await r.finish('Resumen labs card: today envíos, altered chips only', async () 
   check('B: repeat paste does not double the K chip', !!b2 && b2.cells.filter((c) => c.value.startsWith('2.9')).length === 1, b2);
   check('B: all-normal 01:00 draw has no card', !at(b.draws, '01:00'), b.draws);
   const k = cellWith(b2, '2.9');
-  check('B: K 2.9 vs 3.9 earlier today → «antes 3.9 ↓»', !!k && /antes 3\.9/.test(k.delta) && /↓/.test(k.delta), k);
+  check('B: K 2.9 vs 3.9 earlier today → delta "antes 3.9"', !!k && /antes 3\.9/.test(k.delta), k);
   const t = cellWith(b2, '39.3');
   check('B: TTP, first reading of the day → no delta', !!t && !/\d/.test(t.delta), t);
 

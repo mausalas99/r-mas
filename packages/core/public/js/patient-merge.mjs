@@ -55,6 +55,32 @@ function noteTimestamp(note) {
   return docTimestamp(note.fecha, note.hora);
 }
 
+/**
+ * Nota / indicaciones edit clock. Always moves forward (two saves in one ms still differ),
+ * so last-write-wins by `updatedAt` can order them. Returns the doc for chaining.
+ * @param {Record<string, unknown>} doc
+ */
+export function stampDocUpdatedAt(doc) {
+  if (!doc || typeof doc !== 'object') return doc;
+  const prev = Date.parse(String(doc.updatedAt || ''));
+  const now = Date.now();
+  doc.updatedAt = new Date(Number.isFinite(prev) && prev >= now ? prev + 1 : now).toISOString();
+  return doc;
+}
+
+/**
+ * Last write wins for a pulled nota / indicaciones. Only when BOTH sides carry a real
+ * `updatedAt`; a side without one (older build, LAN peer) keeps the old "incoming replaces".
+ * A tie takes the incoming (server) copy.
+ * @param {unknown} local @param {unknown} incoming
+ */
+export function incomingDocWinsLww(local, incoming) {
+  const l = local && typeof local === 'object' ? String(local.updatedAt || '') : '';
+  const r = incoming && typeof incoming === 'object' ? String(incoming.updatedAt || '') : '';
+  if (!l || !r) return true;
+  return compareIso(r, l) >= 0;
+}
+
 function listadoTimestamp(lst) {
   if (!lst || typeof lst !== 'object') return '';
   if (lst.updatedAt) return String(lst.updatedAt);

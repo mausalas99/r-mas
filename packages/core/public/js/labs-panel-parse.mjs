@@ -3,6 +3,7 @@
  */
 import { extraerConRangoPanel, fmtLabRanged_ } from './labs-extract.mjs';
 import { getEffectivePanelDefs } from './labs-panel-overlay-store.mjs';
+import { parseReumatologiaPanels_ } from './labs-reum-parse.mjs';
 
 export { LAB_EXTENDED_SECTION_KEYS, labExtendedSectionAlt_ } from './labs-panel-defs.mjs';
 
@@ -11,7 +12,7 @@ export { LAB_EXTENDED_SECTION_KEYS, labExtendedSectionAlt_ } from './labs-panel-
  * que CITOQUIMICO_BLOCK_STOP_RE / CITOQUIMICO_BLOCK_RE en labs-fluidos.mjs).
  */
 var BACT_BLOCK_STOP_RE_ =
-  /\n+\s*(?:QUIMICA\s+CLINICA|BIOMETRIA|HEMATOLOGIA|INMUNOLOGIA|GASOMETRIA|BANDEJA|CITOQUIMICO|ELECTROLITOS|PFH|COAGULACION|URIANALISIS|EXAMEN\s+GENERAL\s+DE\s+ORINA|CUADERNILLO|MYCOBACTERIAS)\b/i;
+  /(?<!\n)\n\s*(?:QUIMICA\s+CLINICA|BIOMETRIA|HEMATOLOGIA|INMUNOLOGIA|GASOMETRIA|BANDEJA|CITOQUIMICO|ELECTROLITOS|PFH|COAGULACION|URIANALISIS|EXAMEN\s+GENERAL\s+DE\s+ORINA|CUADERNILLO|MYCOBACTERIAS)\b/i;
 var BACT_BLOCK_RE_ = new RegExp('BACTERIOLOGIA\\b[\\s\\S]*?(?=' + BACT_BLOCK_STOP_RE_.source + '|$)', 'gi');
 
 /**
@@ -188,5 +189,5 @@ export function parseExtendedLabPanels_(textoBruto, priorRefsBySection) {
     var line = parsePanelDef_(def, texto, prior);
     if (line) out.push(line);
   }
-  return mergeSectionLines_(out);
+  return mergeSectionLines_(out.concat(parseReumatologiaPanels_(texto)));
 }

@@ -33,7 +33,8 @@ import {
 import { getClinicalTeamsPanelHost } from '../clinical-panel-host.mjs';
 import {
   resolveClinicalTeamsPanelContext,
-  buildClinicalProfileSectionHtml,
+  buildPerfilSalaHtml,
+  buildPerfilAccountHtml,
 } from './teams-roster-panel-build.mjs';
 import { wireTeamManageModalDelegation } from './teams-roster-manage.mjs';
 import {
@@ -150,19 +151,21 @@ function wireProfileFormControls() {
 }
 
 /**
- * ⇄ Conexión → Cuenta: the clinical profile form (name, @usuario, rango,
- * sala, admin). Submit goes through the section's form delegation.
- * @param {HTMLElement | null} host
+ * Mi perfil window: Sala chips and the account cards. Submit goes through the
+ * root's form delegation.
+ * @param {HTMLElement | null} salaHost @param {HTMLElement | null} accountHost
  */
-export async function mountClinicalProfileInHost(host) {
-  if (!(host instanceof HTMLElement)) return;
+export async function mountPerfilClinical(salaHost, accountHost) {
+  if (!(salaHost instanceof HTMLElement) || !(accountHost instanceof HTMLElement)) return;
   const user = clinicalSessionContext.user;
   if (!user || !currentUserId()) {
-    host.innerHTML = '';
+    salaHost.innerHTML = '';
+    accountHost.innerHTML = '';
     return;
   }
   const ctx = await resolveClinicalTeamsPanelContext(user, filterJoinedTeams(clinicalSessionContext.teams, user));
-  host.innerHTML = buildClinicalProfileSectionHtml(ctx, user);
+  salaHost.innerHTML = buildPerfilSalaHtml(ctx);
+  accountHost.innerHTML = buildPerfilAccountHtml(ctx, user);
   wireProfileFormControls();
 }
 

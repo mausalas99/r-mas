@@ -22,12 +22,20 @@ export const HINTS_RELEASE = '8.4.3';
 
 export const FEATURE_HINTS = [
   {
+    id: 'g-areas',
+    kind: 'guia',
+    title: 'Cambiar de área',
+    steps: [
+      { sel: '.topbar-area-btn', text: 'Este botón muestra el área donde estás. Pasa el cursor o púlsalo para cambiar entre <strong>Paciente</strong>, <strong>Laboratorio</strong>, <strong>Manejo</strong> y <strong>Agenda</strong>. Atajo: teclas <strong>1</strong> a <strong>4</strong>.' },
+    ],
+  },
+  {
     id: 'g-labs',
     kind: 'guia',
     title: 'Pegar laboratorios',
     steps: [
       { sel: '#apptab-lab', action: true, text: 'Empieza aquí: los laboratorios del SOME entran por <strong>Laboratorio</strong>.' },
-      { sel: '#btn-lab-paste', action: true, text: 'Abre el cuadro para pegar el reporte. Atajo: copia el reporte del SOME y pulsa <strong>⌘V</strong> (Ctrl+V) en cualquier parte de R+, fuera de un campo de texto. R+ lo lleva al paciente correcto.' },
+      { sel: '#lab-bar-more > summary', action: true, text: 'Abre el menú ⋯ y elige <strong>Pegar SOME</strong> para pegar el reporte. Atajo: copia el reporte del SOME y pulsa <strong>⌘V</strong> (Ctrl+V) en cualquier parte de R+, fuera de un campo de texto. R+ lo lleva al paciente correcto.' },
       { sel: '#btn-procesar', action: true, text: 'Pega el reporte tal cual y pulsa <strong>Procesar</strong>. Verás los alterados arriba y la tabla con los valores. Los diagramas se abren con <strong>Diagramas</strong>.' },
     ],
   },
@@ -95,8 +103,10 @@ export const FEATURE_HINTS = [
     kind: 'guia',
     title: 'Tablero de interconsultas',
     steps: [
-      { sel: '.ic-team-board', text: 'Tu punto de partida en Interconsultas: un carril por equipo. <strong>Sin equipo</strong> junta a los que falta asignar.' },
-      { sel: '.ic-team-board .patient-chips-grid > *', text: 'Arrastra una tarjeta a otro carril para cambiarla de equipo. Tócala para abrir su Resumen.' },
+      { sel: '.ic-mode-seg', text: '<strong>Asignar</strong> muestra una fila por equipo. <strong>Mi equipo</strong> muestra solo las tarjetas de un equipo, completas.' },
+      { sel: '.ic-team-board .ic-row__head', text: 'Cada fila es un equipo. Las tarjetas de ese equipo van dentro.' },
+      { sel: '.ic-team-board .ic-row .ic-card', text: 'Arrastra una tarjeta a otra fila para cambiarla de equipo. Tócala para abrir su Resumen.' },
+      { sel: '.ic-team-board .ic-tray .ic-row__head', text: '<strong>Por asignar</strong> junta a los que aún no tienen equipo. Arrástralos a una fila.' },
       { sel: '[data-ic-board-refresh]', text: '<strong>Actualizar pacientes</strong> refresca el tablero. <strong>+ Agregar</strong> da de alta a alguien sin esperar un laboratorio.' },
     ],
   },
@@ -163,7 +173,7 @@ export const FEATURE_HINTS = [
     title: 'Laboratorio: alterados primero',
     steps: [
       { sel: '#lab-altered-chips:not([hidden])', text: 'Los valores alterados salen aquí, uno por estudio. Los críticos van primero y marcados.' },
-      { sel: '#lab-diagrams-btn:not([hidden])', text: 'Los diagramas ahora se abren en una ventana con <strong>Diagramas</strong>. <strong>Pegar SOME</strong> y <strong>Actualizar labs</strong> están al final de este encabezado.' },
+      { sel: '#lab-bar-more > summary', text: 'Los diagramas se abren desde el menú ⋯, en <strong>Diagramas</strong>. <strong>Pegar SOME</strong> también está ahí. <strong>Actualizar labs</strong> queda a su lado.' },
     ],
   },
   {

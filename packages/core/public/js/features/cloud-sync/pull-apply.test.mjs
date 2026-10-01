@@ -44,6 +44,23 @@ describe('pull-apply cloud snapshot merge', () => {
     assert.ok(!('medReceta' in entry.patient));
   });
 
+  it('wipe regression: an op fold that only touched `fields` yields no note / indicaciones key', () => {
+    const fold = createOpFold();
+    foldCloudOp(fold, { path: 'entries/p9/fields', value: { nombre: 'PAC', cama: '3' }, updatedAt: '2026-09-29T10:00:00.000Z', actorId: 'a' });
+    const [entry] = opFoldToLanEntries(fold);
+    assert.ok(!('note' in entry));
+    assert.ok(!('indicaciones' in entry));
+  });
+
+  it('a note op folds into the entry with its updatedAt intact', () => {
+    const fold = createOpFold();
+    const note = { evolucion: 'X', updatedAt: '2026-09-29T10:00:00.000Z' };
+    foldCloudOp(fold, { path: 'entries/p9/fields', value: { nombre: 'PAC' }, updatedAt: '2026-09-29T09:00:00.000Z', actorId: 'a' });
+    foldCloudOp(fold, { path: 'entries/p9/note', value: note, updatedAt: note.updatedAt, actorId: 'a' });
+    const [entry] = opFoldToLanEntries(fold);
+    assert.deepEqual(entry.note, note);
+  });
+
   it('cloudEntryToLanEntry carries medReceta only when the cloud entry has it', () => {
     const withMeds = cloudEntryToLanEntry(
       { id: 'p1', fields: { nombre: 'PACIENTE' }, medReceta: { items: [{ id: 'm1' }] } },

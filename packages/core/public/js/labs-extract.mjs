@@ -24,10 +24,16 @@ export function labValueNumber_(v) {
   return isFinite(n) ? n : null;
 }
 
+var EXTRAER_RE_ = new Map();
+
 export function extraer(nombres, bloque) {
   if (!bloque) return '---';
   for (var i = 0; i < nombres.length; i++) {
-    var regex = new RegExp(nombres[i] + '[^0-9-]{0,60}(-?\\d+\\.?\\d*)', 'i');
+    var regex = EXTRAER_RE_.get(nombres[i]);
+    if (!regex) {
+      regex = new RegExp(nombres[i] + '[^0-9-]{0,60}(-?\\d+\\.?\\d*)', 'i');
+      EXTRAER_RE_.set(nombres[i], regex);
+    }
     var m = bloque.match(regex);
     if (m) return m[1];
   }
@@ -94,21 +100,34 @@ function esDepuracionCreatinina_(texto, idxNombre) {
   return /DEPURACION\s+DE\s*$/.test(before);
 }
 
-/** True si la etiqueta pertenece a EGO/sedimento urinario (no biometría hemática). */
-function esContextoSedimentoOrina_(texto, idxNombre, nombreLen) {
+var MARCAS_ORINA_ = ['URIANALISIS', 'EXAMEN GENERAL DE ORINA', 'ANALISIS DE ORINA'];
+
+/** Posiciones [inicio, fin) de los encabezados de orina en `t` (texto en mayúsculas), una vez por llamada. */
+function marcasOrina_(t) {
+  var out = [];
+  for (var k = 0; k < MARCAS_ORINA_.length; k++) {
+    var m = MARCAS_ORINA_[k], p = t.indexOf(m);
+    while (p !== -1) { out.push([p, p + m.length]); p = t.indexOf(m, p + 1); }
+  }
+  return out;
+}
+
+/** True si la etiqueta pertenece a EGO/sedimento urinario (no biometría hemática).
+ * `t`/`marcas`: texto en mayúsculas y marcasOrina_(t), precalculados por el llamador. */
+function esContextoSedimentoOrina_(texto, idxNombre, nombreLen, t, marcas) {
   var w = texto.substring(idxNombre, Math.min(texto.length, idxNombre + nombreLen + 120));
   if (/\/CAMPO\b/i.test(w)) return true;
   if (/Leucocitos\/uL|Hem\/uL|E\.U\.\/dL/i.test(w)) return true;
-  var head = texto.substring(Math.max(0, idxNombre - 4500), idxNombre).toUpperCase();
-  if (!/URIANALISIS|EXAMEN GENERAL DE ORINA|ANALISIS DE ORINA/.test(head)) return false;
-  var lastOrina = Math.max(
-    head.lastIndexOf('URIANALISIS'),
-    head.lastIndexOf('EXAMEN GENERAL DE ORINA'),
-    head.lastIndexOf('ANALISIS DE ORINA')
-  );
-  if (lastOrina === -1) return true;
-  var after = head.substring(lastOrina);
-  return !/BIOMETRIA\s+HEMATICA|\bHGB\b|\bWBC\b|\bRBC\s+\d|\bPLT\s+\d/i.test(after);
+  var ini = Math.max(0, idxNombre - 4500);
+  var lastOrina = -1, hay = false;
+  for (var k = 0; k < marcas.length; k++) {
+    if (marcas[k][0] >= ini && marcas[k][1] <= idxNombre) {
+      hay = true;
+      if (marcas[k][0] > lastOrina) lastOrina = marcas[k][0];
+    }
+  }
+  if (!hay) return false;
+  return !/BIOMETRIA\s+HEMATICA|\bHGB\b|\bWBC\b|\bRBC\s+\d|\bPLT\s+\d/i.test(t.substring(lastOrina, idxNombre));
 }
 
 /**
@@ -117,13 +136,14 @@ function esContextoSedimentoOrina_(texto, idxNombre, nombreLen) {
 export function extraerConRangoBH(nombres, texto) {
   if (!texto) return { valor: '---', min: null, max: null };
   var t = texto.toUpperCase();
+  var marcas = marcasOrina_(t);
   for (var i = 0; i < nombres.length; i++) {
     var nombre = nombres[i].toUpperCase();
     var start = 0;
     while (true) {
       var idx = t.indexOf(nombre, start);
       if (idx === -1) break;
-      if (esContextoSedimentoOrina_(texto, idx, nombre.length)) {
+      if (esContextoSedimentoOrina_(texto, idx, nombre.length, t, marcas)) {
         start = idx + nombre.length;
         continue;
       }

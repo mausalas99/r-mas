@@ -160,19 +160,54 @@ export function renderSomeTableGroupHtml(group, opts) {
 function renderSomeDeptExportActions(deptLabel, deptIndex) {
   var label = escHtml(deptLabel);
   return (
-    '<span class="lab-some-dept-summary-actions" data-stop-propagation>' +
+    '<span class="lab-some-dept-summary-actions">' +
     '<button type="button" class="lab-some-export-btn lab-some-dept-export-btn" data-export="tsv" data-dept-index="' +
     deptIndex +
     '" data-label="' +
     label +
-    '" title="Copiar sección como texto">TSV</button>' +
+    '" title="Copiar sección como texto">Copiar TSV</button>' +
     '<button type="button" class="lab-some-export-btn lab-some-dept-export-btn" data-export="png" data-dept-index="' +
     deptIndex +
     '" data-label="' +
     label +
-    '" title="Copiar sección como imagen">PNG</button>' +
+    '" title="Copiar sección como imagen">Copiar PNG</button>' +
     '</span>'
   );
+}
+
+function someDeptRowCounts_(dept) {
+  var total = 0;
+  var abnormal = 0;
+  (dept.groups || []).forEach(function (group) {
+    (normalizeSomeGroup(group).rows || []).forEach(function (r) {
+      total++;
+      if (r.abnormal) abnormal++;
+    });
+  });
+  return { total: total, abnormal: abnormal };
+}
+
+function renderSomeTabsBarHtml_(departments) {
+  var html = '<div class="lab-some-tabs"><div class="lab-some-tablist" role="tablist" aria-label="Secciones del reporte">';
+  departments.forEach(function (dept, di) {
+    var n = someDeptRowCounts_(dept).abnormal;
+    html +=
+      '<button type="button" role="tab" class="lab-some-tab' +
+      (di === 0 ? ' is-active' : '') +
+      '" aria-selected="' +
+      (di === 0 ? 'true' : 'false') +
+      '" data-some-tab="' +
+      di +
+      '">' +
+      escHtml(dept.label) +
+      (n ? '<span class="lab-some-tab-count" aria-label="' + n + ' alterados">' + n + '</span>' : '') +
+      '</button>';
+  });
+  html +=
+    '</div><label class="lab-some-only-abn"><span>Solo alterados</span>' +
+    '<span class="rpc-switch"><input type="checkbox" class="rpc-switch-input lab-some-only-abn-input" role="switch" aria-checked="false" />' +
+    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></span></label>';
+  return html + '</div>';
 }
 
 export function renderSomeReportTablesHtml(parsed, opts) {
@@ -181,21 +216,29 @@ export function renderSomeReportTablesHtml(parsed, opts) {
 
   var modalLayout = !!options.modalLayout;
   var html = '<div class="lab-some-tables' + (modalLayout ? ' lab-some-tables--modal' : '') + '">';
+  if (modalLayout) html += renderSomeTabsBarHtml_(parsed.departments);
   parsed.departments.forEach(function (dept, di) {
     html +=
       '<section class="lab-some-dept" data-dept="' +
       escHtml(dept.key) +
       '" data-dept-index="' +
       di +
-      '">';
+      '"' +
+      (modalLayout && di > 0 ? ' hidden' : '') +
+      '>';
     if (modalLayout) {
+      var total = someDeptRowCounts_(dept).total;
       html +=
-        '<details class="lab-some-dept-details" open><summary class="lab-some-dept-summary">' +
+        '<div class="lab-some-dept-summary">' +
         '<span class="lab-some-dept-summary-label">' +
         escHtml(dept.label) +
+        ' · ' +
+        total +
+        ' estudio' +
+        (total === 1 ? '' : 's') +
         '</span>' +
         renderSomeDeptExportActions(dept.label, di) +
-        '</summary><div class="lab-some-dept-body">';
+        '</div><div class="lab-some-dept-body">';
     } else {
       html += '<header class="lab-some-dept-header">' + escHtml(dept.label) + '</header>';
     }
@@ -216,7 +259,7 @@ export function renderSomeReportTablesHtml(parsed, opts) {
         groupIndex: gi,
       });
     });
-    html += modalLayout ? '</div></details>' : '';
+    html += modalLayout ? '</div>' : '';
     html += '</section>';
   });
   html += '</div>';

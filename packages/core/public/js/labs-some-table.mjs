@@ -22,6 +22,7 @@ export {
   exportSomeGroupCopy,
   exportSomeDeptCopy,
   wireSomeTableExportButtons,
+  wireSomeTablesTabs,
 } from './labs-some-table-wire.mjs';
 
 function uniqueSourceTexts(sources) {

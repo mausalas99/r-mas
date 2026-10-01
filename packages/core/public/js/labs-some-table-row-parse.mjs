@@ -171,7 +171,8 @@ function isInvalidStandardRowHeader(estudio, nextLine) {
     isCommentNoiseEstudio(estudio) ||
     isSectionDividerEstudio(estudio) ||
     estudio === ':' ||
-    estudio === '—'
+    estudio === '—' ||
+    looksLikeReferenceValue(estudio)
   );
 }
 
@@ -184,12 +185,20 @@ function shouldStopAtGroupTitle(t, lines, j, parts, currentGroupTitle) {
   );
 }
 
+/** Index of the next non-blank line at or after j (SOME pastes put blank lines between cells). */
+function skipBlankLines_(lines, j) {
+  while (j < lines.length && !cleanEstudio(lines[j])) j++;
+  return j;
+}
+
 function appendUnitsRefIfNext(parts, lines, j) {
   if (parts.length <= 1 || !looksLikeUnitsRefLine(parts[parts.length - 1])) return j;
-  var nxtRef = cleanEstudio(lines[j] || '');
-  if (nxtRef && looksLikeReferenceValue(nxtRef) && !isFlagToken(cleanEstudio(lines[j + 1] || ''))) {
+  var r = skipBlankLines_(lines, j);
+  var nxtRef = cleanEstudio(lines[r] || '');
+  var after = skipBlankLines_(lines, r + 1);
+  if (nxtRef && looksLikeReferenceValue(nxtRef) && !isFlagToken(cleanEstudio(lines[after] || ''))) {
     parts.push(nxtRef);
-    return j + 1;
+    return r + 1;
   }
   return j;
 }
@@ -220,8 +229,9 @@ function consumeStandardRowPart_(estudio, t, lines, j, parts, currentGroupTitle)
 function shouldBreakAfterParts_(parts, lines, j, t) {
   if (parts.length > 1 && looksLikeUnitsRefLine(t)) return true;
   if (parts.length >= 1) {
-    var nxtFlag = cleanEstudio(lines[j + 1] || '');
-    if (cleanEstudio(lines[j] || '') && isFlagToken(nxtFlag)) return true;
+    var nxt = skipBlankLines_(lines, j);
+    var nxtFlag = cleanEstudio(lines[skipBlankLines_(lines, nxt + 1)] || '');
+    if (cleanEstudio(lines[nxt] || '') && isFlagToken(nxtFlag)) return true;
   }
   return parts.length >= 4;
 }

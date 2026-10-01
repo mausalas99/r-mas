@@ -25,6 +25,18 @@ export function emptyCitoquimicoFields_() {
   };
 }
 
+var CLEAN_CACHE_ = new WeakMap();
+
+/** lineas[j] sin «*» y sin espacios en los extremos; se calcula una vez por arreglo de líneas. */
+export function cleanLine_(lineas, j) {
+  var c = CLEAN_CACHE_.get(lineas);
+  if (!c || c.length !== lineas.length) {
+    c = lineas.map(function (l) { return l.replace(/\*/g, '').trim(); });
+    CLEAN_CACHE_.set(lineas, c);
+  }
+  return c[j];
+}
+
 /**
  * @param {string[]} lineas
  * @param {number} i0
@@ -32,7 +44,7 @@ export function emptyCitoquimicoFields_() {
  */
 export function nextMeaningfulLine_(lineas, i0, maxJ) {
   for (var j = i0 + 1; j < Math.min(i0 + maxJ, lineas.length); j++) {
-    var txt = lineas[j].replace(/\*/g, '').trim();
+    var txt = cleanLine_(lineas, j);
     if (!txt) continue;
     if (/^ESTUDIO|RESULTADO|UNIDADES|VALOR DE REFERENCIA$/i.test(txt)) continue;
     return txt;
@@ -58,7 +70,7 @@ var UNIDAD_RE_ = /^(%\s*PMN|%|MG\s*\/\s*DL|G\s*\/\s*DL|G\s*\/\s*L|U\s*\/\s*L|I?U
  */
 function scanUnitAfter_(lineas, i, maxLook) {
   for (var j = i + 1; j < Math.min(i + maxLook, lineas.length); j++) {
-    var txt = lineas[j].replace(/\*/g, '').trim();
+    var txt = cleanLine_(lineas, j);
     if (!txt) continue;
     // La columna «Valor de Referencia» viene pegada a la unidad: «mg/dL\t15 - 45».
     var head = txt.split(/\t/)[0].trim();
@@ -77,7 +89,7 @@ function scanNumericAfter_(lineas, i, maxLook) {
 
 function scanNumericSkipLetterFlag_(lineas, i, maxLook) {
   for (var j = i + 1; j < Math.min(i + maxLook, lineas.length); j++) {
-    var c = lineas[j].replace(/\*/g, '').trim();
+    var c = cleanLine_(lineas, j);
     if (/^[A-Z]$/i.test(c)) continue;
     var m = c.match(/(\d+(\.\d+)?)/);
     if (m) return m[1];
@@ -131,7 +143,7 @@ function scanRecuentoField_(fields, lineas, i, linUp) {
   var numero = '';
   var letra = '';
   for (var j = i + 1; j < Math.min(i + 5, lineas.length); j++) {
-    var c = lineas[j].replace(/\*/g, '').trim();
+    var c = cleanLine_(lineas, j);
     if (!c) continue;
     if (/^LEUCOCITOS/i.test(c)) break;
     if (!numero && /^\d+[.,]?\d*$/.test(c)) numero = c;
@@ -148,14 +160,14 @@ function scanRecuentoField_(fields, lineas, i, linUp) {
 function scanLeucocitosField_(fields, lineas, i, linUp, normalizarRecuentoCelular) {
   if (!/^LEUCOCITOS/i.test(linUp)) return;
   for (var k = i - 1; k >= Math.max(0, i - 6); k--) {
-    var prev = lineas[k].replace(/\*/g, '').trim();
+    var prev = cleanLine_(lineas, k);
     if (/^\d+[.,]?\d*$/.test(prev)) {
       fields.leu = normalizarRecuentoCelular(prev);
       return;
     }
   }
   for (var m = i + 1; m < Math.min(i + 8, lineas.length); m++) {
-    var next = lineas[m].replace(/\*/g, '').trim();
+    var next = cleanLine_(lineas, m);
     if (/^\d+[.,]?\d*$/.test(next)) {
       fields.leu = normalizarRecuentoCelular(next);
       return;

@@ -1,13 +1,19 @@
 /**
- * Interconsulta team board — 4 lanes (guardia, activo x2, postguardia),
- * each split into status-bucket sections. Modeled on
- * unified-patient-grid-board.mjs's team-grouped pattern, but as plain
- * HTML-string rendering (matching patients-card-html.mjs) since this board
- * has no per-chip vitals ticker or click wiring of its own.
+ * Interconsulta team board — Sala-style cards in two modes.
+ *
+ * "Asignar": one row per team on top (guardia, activo x2, postguardia, any
+ * overflow teams) and every unassigned patient below ("Por asignar"), all
+ * visible at once. Rows and the tray are drop targets (`data-drop-team-id`).
+ * "Mi equipo": one team's patients as full Sala cards, grouped by bucket.
+ *
+ * Plain HTML-string rendering, like patients-card-html.mjs.
  */
 import { getInterconsultaTeamRoles } from '../../../lib/clinical-scope/interconsulta-team-roles.mjs';
 import { classifyInterconsultaBoardBucket } from '../../../lib/clinical-scope/interconsulta-board-buckets.mjs';
-import { renderPatientCardHtml } from './patients-card-html.mjs';
+import { requestingServiceHue } from './patients-card-html.mjs';
+import { getConsultInfo } from './patient-dashboard/consult-band.mjs';
+import { bedLine, cardTagsHtml, cornerBtnHtml } from './sala-view-variants.mjs';
+import { ensurePatientDiagnosticos } from '../patient-diagnosticos.mjs';
 import { escHtml } from '../dom-escape.mjs';
 
 const BUCKET_LABELS = {
@@ -16,8 +22,8 @@ const BUCKET_LABELS = {
   under: 'Under',
 };
 
-function teamLabel(team) {
-  return String(team?.name || team?.service || 'Equipo').trim() || 'Equipo';
+function teamLabel(team, fallback) {
+  return String(team?.name || team?.service || fallback || 'Equipo').trim() || 'Equipo';
 }
 
 function groupByBucket(patients, isGuardiaTeam, now) {
@@ -30,116 +36,47 @@ function groupByBucket(patients, isGuardiaTeam, now) {
   return groups;
 }
 
-function renderCardGroupHtml(label, patients, accent) {
+/** Sala card (`.sv-card`) plus what only interconsultas has: the requesting
+ * service chip. `compact` (team rows, tray) is three short lines: bed, name,
+ * service. Full cards (Mi equipo) add diagnósticos. `archivable` adds the Sala
+ * archive corner. */
+export function icCardHtml(p, compact, archivable) {
+  const id = escHtml(String(p.id));
+  const svcName = String(getConsultInfo(p).requestingService || '').trim();
+  const hue = requestingServiceHue(p);
+  const svc = svcName
+    ? '<span class="svc" style="--h:' + (hue == null ? 220 : hue) + '">' + escHtml(svcName) + '</span>'
+    : '<span class="sv-none">Sin servicio</span>';
+  let dx = '';
+  if (!compact) {
+    ensurePatientDiagnosticos(p);
+    const list = p.diagnosticosList.filter(Boolean);
+    dx =
+      '<span class="sv-label">Diagnósticos</span>' +
+      (list.length
+        ? '<ul class="sv-dx">' + list.map((d) => '<li>' + escHtml(d) + '</li>').join('') + '</ul>'
+        : '<span class="sv-none">Sin diagnóstico</span>');
+  }
   return (
-    '<div class="ic-board-bucket' + (accent ? ' ic-board-bucket--accent' : '') + '">' +
-    '<div class="r4-section-divider">' + escHtml(label) + ' (' + patients.length + ')</div>' +
-    '<div class="patient-chips-grid">' +
-    patients.map(renderPatientCardHtml).join('') +
-    '</div></div>'
+    '<div class="sv-card-wrap">' +
+    '<button type="button" class="sv-card ic-card' + (compact ? ' ic-card--compact' : '') +
+    '" draggable="true" data-ic-open="' + id + '" data-patient-id="' + id + '">' +
+    '<span class="sv-card-top"><span class="sv-bed">' + escHtml(bedLine(p)) + '</span>' + cardTagsHtml(p) + '</span>' +
+    '<span class="sv-name" title="' + escHtml([p.registro].filter(Boolean).join(' · ')) + '">' + escHtml(p.nombre || 'Sin nombre') + '</span>' +
+    (compact ? '<span class="sv-ic">' + svc + '</span>' : '<span class="sv-label">Servicio solicitante</span><span class="sv-ic">' + svc + '</span>') +
+    dx +
+    '</button>' +
+    (archivable ? cornerBtnHtml(p) : '') +
+    '</div>'
   );
 }
 
-function renderBucketSectionHtml(bucketKey, patients, highlight) {
-  return renderCardGroupHtml(BUCKET_LABELS[bucketKey], patients, highlight);
-}
-
-function renderActiveLaneBodyHtml(patients, bucketKeys, isGuardiaTeam, now) {
-  const groups = groupByBucket(patients, isGuardiaTeam, now);
-  return bucketKeys
-    .map((key) => renderBucketSectionHtml(key, groups[key], key === 'preop'))
-    .join('');
-}
-
-/** Lanes double as drop targets: `data-drop-team-id` (possibly empty, for
- * "Sin equipo") is how the drag/drop wiring in mountInterconsultaTeamBoard
- * finds which team a dropped patient card should be reassigned to. */
-function laneBodyAttr(dropTeamId) {
-  return dropTeamId == null ? '' : ' data-drop-team-id="' + escHtml(String(dropTeamId)) + '"';
-}
-
-function renderGuardiaLaneHtml(team, patients, now) {
-  const body = team
-    ? renderActiveLaneBodyHtml(patients, ['preop', 'pendientes', 'under'], true, now)
-    : '<p class="ic-board-empty">Sin equipo de guardia hoy.</p>';
-  return (
-    '<section class="ic-board-lane ic-board-lane--guardia" data-role="guardia">' +
-    '<div class="ic-board-lane__head">' +
-    '<h3 class="ic-board-lane__title">' + escHtml(teamLabel(team)) + ' — Guardia</h3>' +
-    '</div>' +
-    '<div class="ic-board-lane__body"' + laneBodyAttr(team && team.team_id) + '>' + body + '</div>' +
-    '</section>'
-  );
-}
-
-/** Two fixed activo slots + whatever real teams don't fit are folded into
- * an "Otros equipos" lane — lane count is now always fixed at 4 (+1 for
- * Otros equipos / Sin equipo when there's overflow or truly unassigned
- * patients), never varying with how many real teams exist. */
+/** Two fixed activo slots; any further real teams become extra rows. */
 function laneSlots(roles) {
   const activo = roles.activo || [];
   return { activo: [activo[0] || null, activo[1] || null], overflow: activo.slice(2) };
 }
 
-function renderActivoLaneHtml(team, patients, now, slotIndex) {
-  const title = team ? teamLabel(team) : 'Activo ' + (slotIndex + 1);
-  const body = team
-    ? renderActiveLaneBodyHtml(patients, ['pendientes', 'under'], false, now)
-    : '<p class="ic-board-empty">Sin equipo asignado.</p>';
-  return (
-    '<section class="ic-board-lane ic-board-lane--activo" data-role="activo">' +
-    '<div class="ic-board-lane__head">' +
-    '<h3 class="ic-board-lane__title">' + escHtml(title) + '</h3>' +
-    '</div>' +
-    '<div class="ic-board-lane__body"' + laneBodyAttr(team && team.team_id) + '>' + body + '</div>' +
-    '</section>'
-  );
-}
-
-/** `groups`: [{ label, patients }] — one per overflow team plus, if any
- * exist, one for truly unassigned patients. No Preop/Pendientes/Under
- * split here — a non-guardia lane's Preop bucket is always empty
- * (classifyInterconsultaBoardBucket), so it's not worth rendering. */
-function renderOtrosLaneHtml(groups) {
-  const hasOverflowTeam = groups.some((g) => g.label !== 'Sin equipo');
-  const title = hasOverflowTeam ? 'Otros equipos' : 'Sin equipo';
-  const body = groups.map((g) => renderCardGroupHtml(g.label, g.patients, false)).join('');
-  return (
-    '<section class="ic-board-lane ic-board-lane--unassigned" data-role="sin-equipo">' +
-    '<div class="ic-board-lane__head"><h3 class="ic-board-lane__title">' + escHtml(title) + '</h3></div>' +
-    '<div class="ic-board-lane__body" data-drop-team-id="">' + body + '</div>' +
-    '</section>'
-  );
-}
-
-/** Post-guardia stays a normal, fully-open drop target (not dimmed) so
- * patients can still be assigned to it — the "no presencial" note is just
- * informational, it no longer means the lane is closed. */
-function renderPostguardiaLaneHtml(team, patients, now) {
-  const body = team
-    ? renderActiveLaneBodyHtml(patients, ['pendientes', 'under'], false, now)
-    : '<p class="ic-board-empty">Sin equipo.</p>';
-  return (
-    '<section class="ic-board-lane ic-board-lane--postguardia" data-role="postguardia">' +
-    '<div class="ic-board-lane__head">' +
-    '<h3 class="ic-board-lane__title">' + escHtml(teamLabel(team)) + ' — Post-guardia</h3>' +
-    '<p class="ic-board-empty">No presencial hoy — pacientes repartidos al resto del equipo.</p>' +
-    '</div>' +
-    '<div class="ic-board-lane__body"' + laneBodyAttr(team && team.team_id) + '>' + body + '</div>' +
-    '</section>'
-  );
-}
-
-/**
- * Renders the fixed 4-lane interconsulta team board as an HTML string
- * (guardia, activo x2, postguardia — postguardia hideable, extra real
- * teams beyond 2 activo slots fold into a 5th "Otros equipos" lane).
- * @param {object[]} patients — patients already scoped to interconsulta, each with `censusTeamId`
- * @param {object[]} teams — all clinical teams (filtered internally to Interconsultas)
- * @param {Date|string} [now]
- * @param {{ filterGuardiaOnly?: boolean, hidePostguardia?: boolean }} [opts]
- * @returns {string}
- */
 function groupPatientsByTeamId(patients) {
   const byTeam = new Map();
   for (const p of patients || []) {
@@ -152,8 +89,8 @@ function groupPatientsByTeamId(patients) {
 }
 
 // Computed BEFORE hidePostguardia filtering — postguardia's patients must
-// stay "known" even when its lane is hidden, or they'd wrongly leak into
-// the Otros equipos / Sin equipo lane below.
+// stay "known" even when its row is hidden, or they'd wrongly leak into the
+// "Por asignar" tray.
 function computeKnownTeamIds(roles, slots) {
   return new Set(
     [roles.guardia, roles.postguardia, ...slots.activo, ...slots.overflow]
@@ -162,59 +99,127 @@ function computeKnownTeamIds(roles, slots) {
   );
 }
 
-function renderGuardiaOnlyBoardHtml(roles, patientsFor, now) {
-  const body = roles.guardia
-    ? renderActiveLaneBodyHtml(patientsFor(roles.guardia), ['preop'], true, now)
-    : '<p class="ic-board-empty">Sin equipo de guardia hoy.</p>';
+/** A team row. `team` null = empty slot: a slim, non-droppable placeholder. */
+function renderTeamRowHtml({ role, team, title, pill, note, emptyText, patients, buckets, isGuardiaTeam, now }) {
+  const count = team ? '<span class="sv-tag ic-row__count">' + patients.length + '</span>' : '';
+  let body;
+  if (!team) {
+    body = '<p class="ic-board-empty">' + escHtml(emptyText) + '</p>';
+  } else {
+    const groups = groupByBucket(patients, isGuardiaTeam, now);
+    body =
+      buckets
+        .filter((key) => groups[key].length)
+        .map(
+          (key) =>
+            '<div class="ic-row__bucket' + (key === 'preop' ? ' ic-row__bucket--accent' : '') + '">' +
+            '<span class="sv-label">' + BUCKET_LABELS[key] + ' · ' + groups[key].length + '</span>' +
+            '<div class="ic-row__cards">' + groups[key].map((p) => icCardHtml(p, true)).join('') + '</div>' +
+            '</div>'
+        )
+        .join('') || '<p class="ic-board-empty">Suelta un paciente aquí</p>';
+  }
+  const drop = team ? ' data-drop-team-id="' + escHtml(String(team.team_id || '')) + '"' : '';
   return (
-    '<div class="ic-team-board ic-team-board--filtered">' +
-    '<section class="ic-board-lane ic-board-lane--guardia" data-role="guardia">' +
-    '<h3 class="ic-board-lane__title">' + escHtml(teamLabel(roles.guardia)) + ' — Guardia</h3>' +
-    body +
-    '</section></div>'
+    '<section class="ic-board-lane ic-row ic-row--' + role + (team ? '' : ' ic-row--empty') + '" data-role="' + role + '"' + drop + '>' +
+    '<div class="ic-row__head">' +
+    '<h3 class="ic-board-lane__title">' + escHtml(title) + '</h3>' +
+    (pill ? '<span class="sv-tag ic-row__pill">' + escHtml(pill) + '</span>' : '') +
+    count +
+    (note ? '<span class="ic-row__note">' + escHtml(note) + '</span>' : '') +
+    '</div>' +
+    '<div class="ic-board-lane__body ic-row__body">' + body + '</div>' +
+    '</section>'
   );
 }
 
-function computeOtrosGroups(patients, slots, patientsFor, knownTeamIds) {
-  const otrosGroups = slots.overflow
-    .map((team) => ({ label: teamLabel(team), patients: patientsFor(team) }))
-    .filter((g) => g.patients.length);
-  const unassignedPatients = (patients || []).filter((p) => {
-    const teamId = String(p?.censusTeamId || '');
-    return !teamId || !knownTeamIds.has(teamId);
-  });
-  if (unassignedPatients.length) {
-    otrosGroups.push({ label: 'Sin equipo', patients: unassignedPatients });
-  }
-  return otrosGroups;
+function renderTrayHtml(patients) {
+  const body = patients.length
+    ? '<div class="sv-grid">' + patients.map((p) => icCardHtml(p, true, true)).join('') + '</div>'
+    : '<p class="ic-board-empty">Todos tienen equipo.</p>';
+  return (
+    '<section class="ic-board-lane ic-tray" data-role="sin-equipo" data-drop-team-id="">' +
+    '<div class="ic-row__head"><h3 class="ic-board-lane__title">Por asignar</h3>' +
+    '<span class="sv-tag ic-row__count">' + patients.length + '</span>' +
+    '<span class="ic-row__note">Arrastra cada tarjeta a un equipo</span></div>' +
+    '<div class="ic-board-lane__body ic-tray__body">' + body + '</div>' +
+    '</section>'
+  );
 }
 
+/**
+ * "Asignar" mode as an HTML string.
+ * @param {object[]} patients — patients already scoped to interconsulta, each with `censusTeamId`
+ * @param {object[]} teams — all clinical teams (filtered internally to Interconsultas)
+ * @param {Date|string} [now]
+ * @param {{ filterGuardiaOnly?: boolean, hidePostguardia?: boolean }} [opts]
+ * @returns {string}
+ */
 export function renderInterconsultaTeamBoardHtml(patients, teams, now = new Date(), opts = {}) {
   const { filterGuardiaOnly = false, hidePostguardia = false } = opts || {};
   const roles = getInterconsultaTeamRoles(teams, now);
   const byTeam = groupPatientsByTeamId(patients);
   const patientsFor = (team) => (team ? byTeam.get(String(team.team_id || '')) || [] : []);
-
   const slots = laneSlots(roles);
-  const knownTeamIds = computeKnownTeamIds(roles, slots);
+  const row = (spec) => renderTeamRowHtml({ now, patients: patientsFor(spec.team), ...spec });
 
-  if (filterGuardiaOnly) return renderGuardiaOnlyBoardHtml(roles, patientsFor, now);
+  const guardia = {
+    role: 'guardia', team: roles.guardia, title: teamLabel(roles.guardia, 'Guardia'), pill: 'Guardia',
+    emptyText: 'Sin equipo de guardia hoy.', isGuardiaTeam: true, buckets: ['preop', 'pendientes', 'under'],
+  };
+  if (filterGuardiaOnly) {
+    return '<div class="ic-team-board ic-team-board--filtered">' + row({ ...guardia, buckets: ['preop'] }) + '</div>';
+  }
 
-  const lanes = [
-    renderGuardiaLaneHtml(roles.guardia, patientsFor(roles.guardia), now),
-    renderActivoLaneHtml(slots.activo[0], patientsFor(slots.activo[0]), now, 0),
-    renderActivoLaneHtml(slots.activo[1], patientsFor(slots.activo[1]), now, 1),
+  const active = { isGuardiaTeam: false, buckets: ['pendientes', 'under'] };
+  const rows = [
+    row(guardia),
+    ...slots.activo.map((team, i) =>
+      row({ ...active, role: 'activo', team, title: teamLabel(team, 'Activo ' + (i + 1)), emptyText: 'Sin equipo asignado.' })
+    ),
   ];
   if (!hidePostguardia) {
-    lanes.push(renderPostguardiaLaneHtml(roles.postguardia, patientsFor(roles.postguardia), now));
+    rows.push(
+      row({
+        ...active, role: 'postguardia', team: roles.postguardia,
+        title: teamLabel(roles.postguardia, 'Post-guardia'), pill: 'Post-guardia',
+        note: 'No presencial hoy — pacientes repartidos al resto del equipo.', emptyText: 'Sin equipo.',
+      })
+    );
+  }
+  for (const team of slots.overflow) {
+    rows.push(row({ ...active, role: 'activo', team, title: teamLabel(team), emptyText: '' }));
   }
 
-  const otrosGroups = computeOtrosGroups(patients, slots, patientsFor, knownTeamIds);
-  if (otrosGroups.length) {
-    lanes.push(renderOtrosLaneHtml(otrosGroups));
-  }
+  const known = computeKnownTeamIds(roles, slots);
+  const unassigned = (patients || []).filter((p) => !known.has(String(p?.censusTeamId || '')));
+  return '<div class="ic-team-board"><div class="ic-rows">' + rows.join('') + '</div>' + renderTrayHtml(unassigned) + '</div>';
+}
 
-  return '<div class="ic-team-board">' + lanes.join('') + '</div>';
+/** Teams that can be "mine", in board order: [{ id, label }]. Empty when no real team exists. */
+export function interconsultaTeamOptions(teams, now = new Date()) {
+  const roles = getInterconsultaTeamRoles(teams, now);
+  const slots = laneSlots(roles);
+  return [roles.guardia, ...slots.activo, roles.postguardia, ...slots.overflow]
+    .filter(Boolean)
+    .map((t) => ({ id: String(t.team_id || ''), label: teamLabel(t) }));
+}
+
+/** "Mi equipo" mode: one team's patients as full Sala cards, grouped by bucket. */
+export function renderInterconsultaTeamViewHtml(patients, teams, now = new Date(), teamId = '') {
+  const roles = getInterconsultaTeamRoles(teams, now);
+  const isGuardiaTeam = !!roles.guardia && String(roles.guardia.team_id || '') === String(teamId);
+  const mine = (patients || []).filter((p) => String(p?.censusTeamId || '') === String(teamId));
+  const groups = groupByBucket(mine, isGuardiaTeam, now);
+  const body = ['preop', 'pendientes', 'under']
+    .filter((key) => groups[key].length)
+    .map(
+      (key) =>
+        '<section class="ic-team-view__bucket"><h3 class="ic-team-view__label">' + BUCKET_LABELS[key] + ' · ' + groups[key].length + '</h3>' +
+        '<div class="sv-grid" data-drop-team-id="' + escHtml(String(teamId)) + '">' + groups[key].map((p) => icCardHtml(p, false, true)).join('') + '</div></section>'
+    )
+    .join('');
+  return '<div class="ic-team-view">' + (body || '<p class="sv-none">Sin pacientes en este equipo.</p>') + '</div>';
 }
 
 /**
@@ -225,6 +230,8 @@ export function renderInterconsultaTeamBoardHtml(patients, teams, now = new Date
  * @param {object[]} teams
  * @param {{
  *   now?: Date|string,
+ *   mode?: 'asignar'|'equipo',
+ *   teamId?: string,
  *   filterGuardiaOnly?: boolean,
  *   hidePostguardia?: boolean,
  *   assignTeam?: (patientId: string, teamId: string) => Promise<any>,
@@ -234,57 +241,70 @@ export function renderInterconsultaTeamBoardHtml(patients, teams, now = new Date
 export function mountInterconsultaTeamBoard(container, patients, teams, opts = {}) {
   if (!container) return;
   const now = opts.now || new Date();
-  container.innerHTML = renderInterconsultaTeamBoardHtml(patients, teams, now, {
-    filterGuardiaOnly: opts.filterGuardiaOnly,
-    hidePostguardia: opts.hidePostguardia,
-  });
+  container.innerHTML =
+    opts.mode === 'equipo'
+      ? renderInterconsultaTeamViewHtml(patients, teams, now, opts.teamId)
+      : renderInterconsultaTeamBoardHtml(patients, teams, now, {
+          filterGuardiaOnly: opts.filterGuardiaOnly,
+          hidePostguardia: opts.hidePostguardia,
+        });
   wireTeamBoardDragAndDrop(container, opts);
 }
 
-/** Drag a `.patient-card` from any lane, drop it on any `.ic-board-lane__body`
- * (each carries `data-drop-team-id`, including "" for Sin equipo) to
- * reassign that patient's team via `opts.assignTeam`. Native HTML5 DnD —
- * no library needed for a same-page card move. */
+/** Drag a `.ic-card` from any row or the tray, drop it on any element with
+ * `data-drop-team-id` ("" = Por asignar) to reassign that patient's team via
+ * `opts.assignTeam`. Native HTML5 DnD — no library needed for a same-page move.
+ * The listeners go on the container, which the header re-render keeps, so they
+ * are attached once. */
 function wireTeamBoardDragAndDrop(container, opts) {
-  for (const card of container.querySelectorAll('.patient-card[data-patient-id]')) {
-    card.draggable = true;
-  }
+  container._icDndOpts = opts;
+  if (container.dataset.icDndWired) return;
+  container.dataset.icDndWired = '1';
+  const CARD = '.ic-card[data-patient-id]';
+  const ZONE = '[data-drop-team-id]';
 
   container.addEventListener('dragstart', (ev) => {
-    const card = ev.target.closest && ev.target.closest('.patient-card[data-patient-id]');
+    const card = ev.target.closest && ev.target.closest(CARD);
     if (!card) return;
     ev.dataTransfer.effectAllowed = 'move';
     ev.dataTransfer.setData('text/plain', card.getAttribute('data-patient-id') || '');
     card.classList.add('ic-board-card--dragging');
   });
 
+  const clearOver = () => container.querySelectorAll('.ic-drop-over').forEach((el) => el.classList.remove('ic-drop-over'));
+
   container.addEventListener('dragend', (ev) => {
-    const card = ev.target.closest && ev.target.closest('.patient-card[data-patient-id]');
+    const card = ev.target.closest && ev.target.closest(CARD);
     if (card) card.classList.remove('ic-board-card--dragging');
+    clearOver();
   });
 
   container.addEventListener('dragover', (ev) => {
-    const body = ev.target.closest && ev.target.closest('.ic-board-lane__body[data-drop-team-id]');
-    if (!body) return;
+    const zone = ev.target.closest && ev.target.closest(ZONE);
+    if (!zone) return;
     ev.preventDefault();
     ev.dataTransfer.dropEffect = 'move';
-    body.classList.add('ic-board-lane__body--drop-over');
+    if (!zone.classList.contains('ic-drop-over')) {
+      clearOver();
+      zone.classList.add('ic-drop-over');
+    }
   });
 
   container.addEventListener('dragleave', (ev) => {
-    const body = ev.target.closest && ev.target.closest('.ic-board-lane__body[data-drop-team-id]');
-    if (body && !body.contains(ev.relatedTarget)) body.classList.remove('ic-board-lane__body--drop-over');
+    const zone = ev.target.closest && ev.target.closest(ZONE);
+    if (zone && !zone.contains(ev.relatedTarget)) zone.classList.remove('ic-drop-over');
   });
 
   container.addEventListener('drop', async (ev) => {
-    const body = ev.target.closest && ev.target.closest('.ic-board-lane__body[data-drop-team-id]');
-    if (!body) return;
+    const zone = ev.target.closest && ev.target.closest(ZONE);
+    if (!zone) return;
     ev.preventDefault();
-    body.classList.remove('ic-board-lane__body--drop-over');
+    clearOver();
     const patientId = ev.dataTransfer.getData('text/plain');
-    const teamId = body.getAttribute('data-drop-team-id') || '';
-    if (!patientId || typeof opts.assignTeam !== 'function') return;
-    const result = await opts.assignTeam(patientId, teamId);
-    if (typeof opts.onAssignTeam === 'function') opts.onAssignTeam(result);
+    const teamId = zone.getAttribute('data-drop-team-id') || '';
+    const cur = container._icDndOpts;
+    if (!patientId || typeof cur.assignTeam !== 'function') return;
+    const result = await cur.assignTeam(patientId, teamId);
+    if (typeof cur.onAssignTeam === 'function') cur.onAssignTeam(result);
   });
 }

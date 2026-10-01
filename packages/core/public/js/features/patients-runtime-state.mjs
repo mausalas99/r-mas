@@ -30,6 +30,7 @@ let rt = {
   renderListadoForm() {},
   refreshTendenciasOrCultivosPanel() {},
   renderLabHistoryPanel() {},
+  dropOtherPatientsLabOutput() {},
   renderMedRecetaPanel() {},
   switchInnerTab() {},
   syncInnerTabVisualOnly() {},

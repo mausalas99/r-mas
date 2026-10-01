@@ -758,3 +758,9 @@ html.dark .patient-drag-hovercard.patient-card {
 aside.patient-sidebar .btn-pinned-text {
   min-width: 24px;
 }
+
+/* PDF arrastrado sobre una tarjeta del censo */
+.patient-card.pdf-drop-target {
+  outline: 2px dashed var(--accent, currentColor);
+  outline-offset: -2px;
+}

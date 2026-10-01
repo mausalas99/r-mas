@@ -47,13 +47,23 @@ function findChartChunkImportUrl(metafile, outDir = OUT_DIR) {
   return null;
 }
 
-/** Delete chunks/ files this build did not write (and their .map files). */
-function removeStaleChunks(metafile) {
-  const chunksDir = path.join(OUT_DIR, 'chunks');
+/** A dev build keeps old chunks this long: other sessions share this checkout. */
+export const STALE_CHUNK_KEEP_MS = 2 * 60 * 60 * 1000;
+
+/**
+ * Delete chunks/ files this build did not write (and their .map files) once they are
+ * older than keepMs. An app already running (npm start, an e2e) still holds the old
+ * bundle and lazy-imports old chunk names; delete them and that import 404s for the
+ * whole session (e.g. every cloud census push throws). Prod passes keepMs 0.
+ * ponytail: age cutoff, not a refcount of running apps; a run longer than keepMs can still break.
+ */
+export function removeStaleChunks(metafile, { chunksDir = path.join(OUT_DIR, 'chunks'), keepMs = 0, now = Date.now() } = {}) {
   if (!fs.existsSync(chunksDir)) return;
   const fresh = new Set(Object.keys(metafile.outputs).map((p) => path.basename(p)));
   for (const f of fs.readdirSync(chunksDir)) {
-    if (!fresh.has(f)) fs.rmSync(path.join(chunksDir, f), { force: true });
+    if (fresh.has(f)) continue;
+    const file = path.join(chunksDir, f);
+    if (now - fs.statSync(file).mtimeMs >= keepMs) fs.rmSync(file, { force: true });
   }
 }
 
@@ -124,7 +134,7 @@ export async function bundleRenderer(opts = {}) {
   const bundleJsMap = path.join(OUT_DIR, 'app.bundle.js.map');
   const bundleMjsMap = path.join(OUT_DIR, 'app.bundle.mjs.map');
   if (fs.existsSync(bundleJsMap)) fs.renameSync(bundleJsMap, bundleMjsMap);
-  removeStaleChunks(result.metafile);
+  removeStaleChunks(result.metafile, { keepMs: prod ? 0 : STALE_CHUNK_KEEP_MS });
   fs.writeFileSync(META_FILE, JSON.stringify(result.metafile, null, 2) + '\n');
   const chartChunkManifest = path.join(OUT_DIR, 'chart-chunk.json');
   const chartImportUrl = findChartChunkImportUrl(result.metafile);

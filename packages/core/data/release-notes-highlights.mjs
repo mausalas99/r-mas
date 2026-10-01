@@ -4,31 +4,31 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_843 = [
+var RELEASE_NOTES_845 = [
   {
-    title: 'Barra superior en una pastilla',
-    body: 'Paciente, Laboratorio, Manejo y Agenda comparten una pastilla que se abre al pasar el cursor. Atajos y Aprender R+ viven en Ayuda (?).',
+    title: 'Notas e indicaciones con Nube',
+    body: 'La nota de evolución, el interrogatorio y las indicaciones ahora se sincronizan entre tus equipos. Gana la edición más reciente. Un texto muy largo se queda en este equipo y Conexión muestra «Pendiente».',
   },
   {
-    title: 'Tacha medicamentos en Datos',
-    body: 'Toca un medicamento en Datos › Censo para tacharlo. Sale del censo y regresa con otro toque.',
+    title: 'Salir de una sala o equipo ya funciona',
+    body: 'Al salir de una sala, R+ ya no te vuelve a meter solo al abrir la app. Al salir de un equipo, una copia vieja de la sala ya no deshace el cambio ni te saca de tu equipo nuevo. Un paciente sin equipo («Sin asignar») ahora se quita del equipo en todos los dispositivos.',
   },
   {
-    title: 'Tarjetas, Resumen y Laboratorio más claros',
-    body: 'Tarjetas de la lista en dos líneas, con acciones al pasar el cursor. Resumen con tendencias de signos y labs. Laboratorio muestra quién es y los alterados primero.',
+    title: 'Estado actual más fiel',
+    body: 'El DIA de la Solución Stanford avanza por fecha, igual que en Egreso. Las sugerencias ventilatorias se actualizan al cambiar FiO₂, PEEP, P meseta o VT, y ya no aparecen campos ocultos en Alto flujo.',
   },
   {
-    title: 'Nube, Admin y Ajustes nuevos',
-    body: 'Nueva pantalla de estado de Nube, Admin rediseñado, Mi perfil en Ajustes y nuevo panel de Equipos.',
+    title: 'Equipos en Mi perfil y tablero IC',
+    body: 'La configuración de equipos ahora vive en Mi perfil. El tablero de interconsultas tiene avisos guiados mejor colocados, mejor contraste y una bandeja que no se colapsa.',
   },
   {
-    title: 'Sincronización más confiable',
-    body: 'VPO, lista de problemas y perfil farmacológico se sincronizan con Nube. Lo que restauras con «deshacer» ya no se pierde.',
+    title: 'Tendencias y limpieza',
+    body: 'Los gasométricos con coma decimal o con «<» ya muestran su tarjeta. El potasio oral ya no cuenta como reposición. R+ borra al iniciar claves viejas que llenaban el almacenamiento.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_843;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_845;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.4.3': RELEASE_NOTES_843,
+  '8.4.5': RELEASE_NOTES_845,
 };

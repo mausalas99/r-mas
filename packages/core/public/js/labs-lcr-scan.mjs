@@ -1,4 +1,5 @@
 // LCR citoquímico line scanner (complexity split from labs.js).
+import { cleanLine_ } from './labs-citoquimico-scan.mjs';
 
 function isLcrFieldLabel_(txt) {
   return /^(RECUENTO(?:\s+CELULAR)?|LEUCOCITOS(?:\s+POLIMORFONUCLEARES|\s*\/\s*MM3?)?|POLIMORFONUCLEARES|LINFOCITOS|%PMN|%LINFOCITOS|GLUCOSA|PROTEINAS|CLORURO|GRAM|TINTA(?:\s+CHINA)?|ERITROCITOS|COAGLUTIN(?:ACION)?|PH\b|ASPECTO|OTROS|LCR|ESTUDIO|RESULTADO|UNIDADES|VALOR DE REFERENCIA|COMENTARIOS?)$/i.test(
@@ -8,7 +9,7 @@ function isLcrFieldLabel_(txt) {
 
 function scanNumericAfter_(lineas, i, maxLook) {
   for (var j = i + 1; j < Math.min(i + maxLook, lineas.length); j++) {
-    var raw = lineas[j].replace(/\*/g, '').trim();
+    var raw = cleanLine_(lineas, j);
     if (!raw) continue;
     if (isLcrFieldLabel_(raw)) break;
     var m = raw.match(/^(\d+(?:[.,]\d+)?)/);
@@ -19,7 +20,7 @@ function scanNumericAfter_(lineas, i, maxLook) {
 
 function scanTextAfter_(lineas, i, maxLook) {
   for (var j = i + 1; j < Math.min(i + maxLook, lineas.length); j++) {
-    var txt = lineas[j].replace(/\*/g, '').trim();
+    var txt = cleanLine_(lineas, j);
     if (!txt) continue;
     if (/ESTUDIO|RESULTADO|UNIDADES|VALOR DE REFERENCIA/i.test(txt)) continue;
     if (isLcrFieldLabel_(txt)) break;
@@ -32,7 +33,7 @@ function scanTextAfter_(lineas, i, maxLook) {
 
 function scanLeucocitos_(lineas, i) {
   for (var j = i + 1; j < Math.min(i + 6, lineas.length); j++) {
-    var raw = lineas[j].replace(/\*/g, '').trim();
+    var raw = cleanLine_(lineas, j);
     if (!raw) continue;
     if (isLcrFieldLabel_(raw)) break;
     if (/^---+$/.test(raw)) return '0';

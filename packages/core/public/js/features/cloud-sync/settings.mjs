@@ -34,6 +34,25 @@ export function getCloudSyncUrl() {
   return String(devOverride || DEFAULT_CLOUD_SYNC_URL).replace(/\/$/, '');
 }
 
+/**
+ * «Salir de la sala» marker: automatic ensure-turn must not re-add the user
+ * to this (sala, month) room. Survives restarts; cleared on an explicit join.
+ * @returns {{ sala: string, turnKey: string } | null}
+ */
+export function getLeftTurnRoom() {
+  const v = readSettings().cloudLeftTurnRoom;
+  return v && v.sala ? { sala: String(v.sala), turnKey: String(v.turnKey || '') } : null;
+}
+
+/** @param {{ sala: string, turnKey: string } | null} left */
+export function setLeftTurnRoom(left) {
+  const s = readSettings();
+  if (!s.cloudLeftTurnRoom && !left) return;
+  if (left) s.cloudLeftTurnRoom = { sala: left.sala, turnKey: left.turnKey };
+  else delete s.cloudLeftTurnRoom;
+  writeSettings(s);
+}
+
 /** @param {string} url */
 export function setCloudSyncUrl(url) {
   const s = readSettings();

@@ -154,15 +154,18 @@ function mergeAssignmentsAndGuardiasPhase(
 ) {
   mergeEntregaTemplateUser(db, local.entrega_template_user || [], incoming.entrega_template_user || []);
   mergeEntregaTemplateTeam(db, local.entrega_template_team || [], incoming.entrega_template_team || []);
-  const incomingMembership = remapIncomingTeamMembershipUserIds(
-    db,
-    filterIncomingTeamMembership(
+  // Remap before filtering: removalKeys hold local user_ids, so a peer's row for
+  // the same @usuario under its own user_id would slip past the leave tombstone
+  // and the exclusive reconcile below would then drop the user's new team.
+  const incomingMembership = filterIncomingTeamMembership(
+    remapIncomingTeamMembershipUserIds(
+      db,
       incoming.team_membership || [],
-      deletedSet,
-      removalKeys,
-      archivedTeamIds
+      incoming.clinical_users || []
     ),
-    incoming.clinical_users || []
+    deletedSet,
+    removalKeys,
+    archivedTeamIds
   );
   stats.membershipInserted = mergeTeamMembership(db, incomingMembership);
   stats.membershipExclusivePruned = reconcileExclusiveMembershipFromIncoming(

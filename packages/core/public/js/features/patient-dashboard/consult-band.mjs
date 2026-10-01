@@ -67,8 +67,8 @@ function requestingServiceTriggerHtml(name) {
   });
   var hue = svc ? hueForRequestingService(svc) : 220;
   return (
-    '<button type="button" class="svc" style="--h:' + hue + '" data-ic-req-trigger>' +
-    (trimmed ? escHtml(trimmed) : 'Elegir servicio') +
+    '<button type="button" class="ic-cf-svc" aria-label="Servicio solicitante" data-ic-req-trigger>' +
+    (trimmed ? escHtml(trimmed) : 'Elegir') +
     '</button>'
   );
 }
@@ -81,10 +81,9 @@ function teamFieldHtml(teamCtx) {
   if (!teams.length) return '';
   var currentTeamId = (teamCtx && teamCtx.currentTeamId) || '';
   return (
-    '<div class="ic-consult-field">' +
-    '<label class="ic-consult-label">Equipo</label>' +
-    '<select class="ic-consult-input" data-consult-team-select>' +
-    '<option value="">— Sin asignar —</option>' +
+    '<div class="ic-cf" data-label="Equipo">' +
+    '<select class="ic-consult-input" aria-label="Equipo" data-consult-team-select>' +
+    '<option value="">Sin asignar</option>' +
     buildTeamSelectOptions(teams, currentTeamId, { groupBySala: !!(teamCtx && teamCtx.groupBySala) }) +
     '</select>' +
     '</div>'
@@ -103,21 +102,20 @@ function teamFieldHtml(teamCtx) {
 export function renderConsultBandHtml(info, teamCtx) {
   var c = info || {};
   var statusKey = String(c.followUpStatus || '');
+  var svcName = String(c.requestingService || '').trim();
+  var svc = INTERCONSULT_SERVICES.find(function (x) { return x.name === svcName; });
+  var svcStyle = svc ? ' style="--h:' + hueForRequestingService(svc) + '"' : '';
   return (
     '<div class="ic-consult-band">' +
-    '<div class="ic-consult-field">' +
-    '<label class="ic-consult-label">Servicio solicitante</label>' +
+    '<div class="ic-cf ic-cf--svc' + (svcName ? ' is-picked' : '') + '" data-label="Servicio"' + svcStyle + '>' +
     requestingServiceTriggerHtml(c.requestingService) +
     '</div>' +
-    '<div class="ic-consult-field ic-consult-field--reason">' +
-    '<label class="ic-consult-label">Motivo de consulta</label>' +
-    '<input type="text" class="ic-consult-input" data-consult-field="reason" ' +
-    'value="' + escAttr(c.reason) + '" placeholder="Sin dato">' +
+    '<div class="ic-cf ic-cf--reason" data-label="Motivo">' +
+    '<input type="text" class="ic-consult-input" data-consult-field="reason" aria-label="Motivo de consulta" ' +
+    'value="' + escAttr(c.reason) + '" placeholder="Agregar">' +
     '</div>' +
-    '<div class="ic-consult-field">' +
-    '<label class="ic-consult-label">Seguimiento</label>' +
-    '<select class="ic-consult-input ic-consult-status ic-consult-status--' + escHtml(statusKey || 'sin_definir') + '" ' +
-    'data-consult-field="followUpStatus" aria-label="Seguimiento">' +
+    '<div class="ic-cf ic-cf--status ic-cf--status-' + escHtml(statusKey || 'sin_definir') + '" data-label="Seguimiento">' +
+    '<select class="ic-consult-input" data-consult-field="followUpStatus" aria-label="Seguimiento">' +
     renderStatusOptionsHtml(statusKey) +
     '</select>' +
     '</div>' +

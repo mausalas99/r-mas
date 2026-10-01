@@ -570,7 +570,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   // (#btn-lab-paste lives on the Labs inner tab; openTend() above switched to
   // the Tendencias inner tab, where it's hidden — switch back first.)
   await page.locator('#lab-inner-labs-btn').click();
-  await page.locator('#btn-lab-paste').waitFor({ state: 'visible' });
+  await page.locator('#btn-lab-repo-batch').waitFor({ state: 'visible' });
   // A 2nd GASES draw makes GASES eligible for its own Tendencias por Grupo chart.
   await pasteAndSave(page, gas(P, 'Jan 10 2026 8:00AM', '7.30'));
   // Same-day full draw + later partial draw: groupByDay must take each field from
@@ -586,7 +586,15 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   await groupModal.waitFor({ state: 'visible' });
   await page.waitForTimeout(500);
   const panelFamily = (fam) => page.locator(`.tend-group-panel-card[data-panel-family="${fam}"]`);
-  let famList = await page.locator('.tend-group-panel-card[data-panel-family]').evaluateAll((els) => els.map((e) => e.getAttribute('data-panel-family')));
+  // Gráficas B: one chart tab per panel family, only the active family's card renders.
+  const famTabs = () => page.locator('.tend-chart-tab[data-panel-family]').evaluateAll((els) => els.map((e) => e.getAttribute('data-panel-family')));
+  const openFam = async (fam) => {
+    const tab = page.locator(`.tend-chart-tab[data-panel-family="${fam}"]`);
+    if (!(await tab.count()) || (await tab.getAttribute('aria-selected')) === 'true') return;
+    await tab.click();
+    await page.waitForTimeout(400);
+  };
+  let famList = await famTabs();
   await r.shot(page, 'group-modal-bh');
   check('BH group chart splits into absolute + quality panels', famList.includes('bh-absolute') && famList.includes('bh-quality'), famList);
   check('BH default panel order: absolute, quality, diff-manual, coag', famList.join(',') === 'bh-absolute,bh-quality,bh-diff-manual,bh-coag', famList);
@@ -597,19 +605,22 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   check('default series colours: the first 8 series of a panel are all different', defaultColors.length > 1 && new Set(defaultColors.slice(0, 8)).size === Math.min(8, defaultColors.length), defaultColors);
 
   // Hide a panel; "Mostrar todo" brings it back.
+  await openFam('bh-quality');
   await panelFamily('bh-quality').hover();
   await panelFamily('bh-quality').locator('.tend-group-panel-eye').click();
   await page.waitForTimeout(300);
-  check('hidden panel disappears from the chart grid', (await panelFamily('bh-quality').count()) === 0);
+  check('hidden panel disappears from the chart grid', (await panelFamily('bh-quality').count()) === 0 && !(await famTabs()).includes('bh-quality'));
   const showAllPanels = page.locator('.tend-group-panels-show-all');
   check('hidden-panels bar offers "Mostrar todo"', await showAllPanels.isVisible().catch(() => false));
   await showAllPanels.click().catch(() => {});
+  await openFam('bh-quality');
   await panelFamily('bh-quality').first().waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
   await r.shot(page, 'group-modal-show-all');
   check('"Mostrar todo" brings the quality panel back', (await panelFamily('bh-quality').count()) === 1);
 
   // Per-panel "Ocultar eventos": toggles that one panel's event markers, tracked
   // on the Chart.js instance itself (chart._tendEventsHidden).
+  await openFam('bh-quality');
   const qualityCanvas = panelFamily('bh-quality').locator('canvas').first();
   const eventsToggleBtn = panelFamily('bh-quality').locator('.tend-group-panel-events-toggle');
   if (await eventsToggleBtn.count()) {
@@ -632,9 +643,11 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
     // a changed series color, and a renamed panel title.
     await eventsToggleBtn.click();
     await page.waitForTimeout(200);
+    await openFam('bh-absolute');
     const absLegendColorInput = panelFamily('bh-absolute').locator('.tend-group-legend-color[data-field="Leu"]');
     await absLegendColorInput.evaluate((el) => { el.value = '#123456'; el.dispatchEvent(new Event('input', { bubbles: true })); });
     await page.waitForTimeout(200);
+    await openFam('bh-quality');
     const qualityTitle = panelFamily('bh-quality').locator('[contenteditable]').first();
     if (await qualityTitle.count()) {
       await qualityTitle.click();
@@ -647,17 +660,21 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
     await page.locator('.tend-section[data-section="BH"] .tend-section-chart-btn').click();
     await groupModal.waitFor({ state: 'visible' });
     await page.waitForTimeout(500);
+    await openFam('bh-quality');
     const eventsHiddenAfterReopen = await panelFamily('bh-quality').locator('canvas').first().evaluate((cv) => {
       const c = Chart.getChart(cv);
       return c ? !!c._tendEventsHidden : null;
     });
     check('"Ocultar eventos" persists after reopen', eventsHiddenAfterReopen === true, eventsHiddenAfterReopen);
+    await openFam('bh-absolute');
     const colorAfterReopen = await panelFamily('bh-absolute').locator('.tend-group-legend-color[data-field="Leu"]').inputValue();
     check('a changed series color persists after reopen', colorAfterReopen.toLowerCase() === '#123456', colorAfterReopen);
+    await openFam('bh-quality');
     const titleAfterReopen = flat(await panelFamily('bh-quality').locator('[contenteditable]').first().innerText().catch(() => ''));
     check('a renamed panel title persists after reopen', titleAfterReopen === 'Calidad TEST', titleAfterReopen);
     // Undo the rename so DEFAULT_PANEL_LABELS.gases ("Gasometría") stays the reference
     // default for any later check that assumes stock panel titles.
+    await openFam('bh-quality');
     const qualityTitle2 = panelFamily('bh-quality').locator('[contenteditable]').first();
     if (await qualityTitle2.count()) {
       await qualityTitle2.click();
@@ -677,6 +694,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
 
   // A threshold line takes effect on the panel's next render (y-scale is fixed at chart creation).
   // (Guard on the modal/panel still being there: a prior render hiccup must not abort the rest of the run.)
+  await openFam('bh-absolute');
   const absPanel = panelFamily('bh-absolute');
   if ((await groupModal.isVisible().catch(() => false)) && (await absPanel.count())) {
     const thresholdBtn = absPanel.locator('.tend-group-threshold-add-btn');
@@ -693,6 +711,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   await page.locator('.tend-section[data-section="BH"] .tend-section-chart-btn').click();
   await groupModal.waitFor({ state: 'visible' });
   await page.waitForTimeout(500);
+  await openFam('bh-absolute');
   const yMaxAfterThreshold = await panelFamily('bh-absolute').locator('canvas').first().evaluate((cv) => {
     const c = Chart.getChart(cv);
     return c && c.options.scales.y.max;
@@ -700,6 +719,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   check('threshold at 30 pushes the Y axis past the data (WBC tops at 22)', typeof yMaxAfterThreshold === 'number' && yMaxAfterThreshold > 30, yMaxAfterThreshold);
 
   // A threshold BELOW the data max must not shrink the axis under the data.
+  await openFam('bh-absolute');
   const absPanel2 = panelFamily('bh-absolute');
   if ((await groupModal.isVisible().catch(() => false)) && (await absPanel2.count())) {
     const thresholdBtn2 = absPanel2.locator('.tend-group-threshold-add-btn');
@@ -716,6 +736,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   await page.locator('.tend-section[data-section="BH"] .tend-section-chart-btn').click();
   await groupModal.waitFor({ state: 'visible' });
   await page.waitForTimeout(500);
+  await openFam('bh-absolute');
   const yMaxWithLowThreshold = await panelFamily('bh-absolute').locator('canvas').first().evaluate((cv) => {
     const c = Chart.getChart(cv);
     return c && c.options.scales.y.max;
@@ -723,6 +744,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   check('a threshold below the data max keeps the Y axis at/above the data max', typeof yMaxWithLowThreshold === 'number' && yMaxWithLowThreshold >= 22, yMaxWithLowThreshold);
 
   // Removing a threshold chip drops it, and it stays removed after a reopen.
+  await openFam('bh-absolute');
   const absPanel3 = panelFamily('bh-absolute');
   if ((await groupModal.isVisible().catch(() => false)) && (await absPanel3.count())) {
     await absPanel3.locator('.tend-group-threshold-chip', { hasText: 'Hb' }).locator('.tend-group-threshold-chip-remove').first().click().catch(() => {});
@@ -738,6 +760,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
 
   // bh-coag legend: unchecking a field drops the day-columns whose only value was that field.
   // Jan 8/9 2026 have Fib only (no TP/TTP/INR); Jan 6/7 have TP/TTP/INR (no Fib).
+  await openFam('bh-coag');
   const coagPanel = panelFamily('bh-coag');
   let beforeLabels = null;
   if ((await groupModal.isVisible().catch(() => false)) && (await coagPanel.count())) {
@@ -779,6 +802,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   // unchecked, since "Fib" isn't in the stale set) — the real fallback is in
   // rebuildPanelColumns: when NO field matches, it shows every field's columns
   // instead of an empty chart. Same column count as the untouched baseline above.
+  await openFam('bh-coag');
   const coagPanel2 = panelFamily('bh-coag');
   const staleFallbackLabels = await coagPanel2.locator('canvas').first().evaluate((cv) => {
     const c = Chart.getChart(cv);
@@ -841,6 +865,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   // The hidden row itself is now display:none (its own checkbox is unclickable);
   // "Mostrar todo" in the hidden-items bar is the real way back.
   await closeToasts(page);
+  await page.locator('.tend-hidden-trigger').click(); // hidden items now sit behind a chip popover
   await page.locator('.tend-group-show-all-btn').click();
   await page.waitForTimeout(300);
 
@@ -971,7 +996,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   await page.waitForTimeout(300);
   check('row click in pivot mode toggles the row and does not open the analito pane',
     (await tick('BH|Plt').isChecked()) && (await page.locator('#tend-pane').getAttribute('data-mode')) === 'pivot' && !(await page.locator('#tend-detail-backdrop').isVisible()));
-  const abnormalCells = await dynModal.locator('#tend-group-table td.tend-abnormal').allInnerTexts();
+  const abnormalCells = await dynModal.locator('#tend-group-table td .tend-val--hi, #tend-group-table td .tend-val--lo').allInnerTexts();
   check('out-of-range cells carry an arrow (same text goes to «Copiar como texto»)', abnormalCells.length > 0 && abnormalCells.every((t) => /^[▼▲] /.test(flat(t))), abnormalCells.slice(0, 4));
   // Esc must close the pane even while a list tick has focus (it is a checkbox, not a text field).
   await tick('BH|VCM').focus();
@@ -1083,7 +1108,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   await page.locator('.tend-section[data-section="GASES"] .tend-section-chart-btn').click();
   await groupModal.waitFor({ state: 'visible' });
   await page.waitForTimeout(500);
-  const gasesFamList = await page.locator('.tend-group-panel-card[data-panel-family]').evaluateAll((els) => els.map((e) => e.getAttribute('data-panel-family')));
+  const gasesFamList = await famTabs();
   check('GASES group chart renders the "gases" panel family', gasesFamList.includes('gases'), gasesFamList);
   await closePane();
   await groupModal.waitFor({ state: 'hidden' }).catch(() => {});
@@ -1091,7 +1116,7 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   await page.locator('.tend-section[data-section="QS"] .tend-section-chart-btn').click();
   await groupModal.waitFor({ state: 'visible' });
   await page.waitForTimeout(500);
-  const qsFamList = await page.locator('.tend-group-panel-card[data-panel-family]').evaluateAll((els) => els.map((e) => e.getAttribute('data-panel-family')));
+  const qsFamList = await famTabs();
   check('QS group chart renders the generic "absolute" panel family', qsFamList.includes('absolute'), qsFamList);
   await closePane();
   await groupModal.waitFor({ state: 'hidden' }).catch(() => {});
@@ -1103,7 +1128,8 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   await page.locator('.tend-section[data-section="BH"] .tend-section-chart-btn').click();
   await groupModal.waitFor({ state: 'visible' });
   await page.waitForTimeout(500);
-  const bhFamListBeforeReorder = await page.locator('.tend-group-panel-card[data-panel-family]').evaluateAll((els) => els.map((e) => e.getAttribute('data-panel-family')));
+  const bhFamListBeforeReorder = await famTabs();
+  await openFam('bh-absolute');
   const bhAbsoluteFieldsBeforeReorder = await panelFamily('bh-absolute').locator('.tend-group-legend-check').evaluateAll((els) => els.map((e) => e.getAttribute('data-field')));
   const reversedFams = bhFamListBeforeReorder.slice().reverse();
   const reversedLegend = bhAbsoluteFieldsBeforeReorder.slice().reverse();
@@ -1120,8 +1146,9 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   await page.locator('.tend-section[data-section="BH"] .tend-section-chart-btn').click();
   await groupModal.waitFor({ state: 'visible' });
   await page.waitForTimeout(500);
-  const bhFamListAfterReorder = await page.locator('.tend-group-panel-card[data-panel-family]').evaluateAll((els) => els.map((e) => e.getAttribute('data-panel-family')));
+  const bhFamListAfterReorder = await famTabs();
   check('a reordered panel order persists after reopen', bhFamListAfterReorder.join(',') === reversedFams.join(','), { reversedFams, bhFamListAfterReorder });
+  await openFam('bh-absolute');
   const bhAbsoluteFieldsAfterReorder = await panelFamily('bh-absolute').locator('.tend-group-legend-check').evaluateAll((els) => els.map((e) => e.getAttribute('data-field')));
   check('a reordered legend persists after reopen', bhAbsoluteFieldsAfterReorder.join(',') === reversedLegend.join(','), { reversedLegend, bhAbsoluteFieldsAfterReorder });
   await closePane();

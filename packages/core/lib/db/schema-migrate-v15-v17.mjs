@@ -23,6 +23,7 @@ import { migrateToV25InterconsultUnder } from './schema-migrate-v25-interconsult
 import { migrateToV26TeamsSucceedsTeamId } from './schema-migrate-v26-teams-succeeds.mjs';
 import { migrateToV27CloudOutbox } from './schema-migrate-v27-cloud-outbox.mjs';
 import { migrateToV28SyncWriteClocks } from './schema-migrate-v28-sync-write-clocks.mjs';
+import { migrateToV29AssignmentTombstone } from './schema-migrate-v29-assignment-tombstone.mjs';
 
 /** @param {import('better-sqlite3').Database} db */
 function runMigrationsV11ThroughV19(db) {
@@ -83,6 +84,14 @@ function runMigrationsV11ThroughV19(db) {
   }
   if (readSchemaVersion(db) < 28) {
     db.transaction(() => migrateToV28SyncWriteClocks(db))();
+  }
+  if (readSchemaVersion(db) < 29) {
+    db.pragma('foreign_keys = OFF');
+    try {
+      db.transaction(() => migrateToV29AssignmentTombstone(db))();
+    } finally {
+      db.pragma('foreign_keys = ON');
+    }
   }
 }
 

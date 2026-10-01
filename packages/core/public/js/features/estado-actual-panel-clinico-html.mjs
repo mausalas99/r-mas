@@ -189,6 +189,20 @@ export function renderSoporteCalcHintsHtml(ec, vitalsCtx) {
 }
 
 /**
+ * Re-render the hints in place (keeps input focus). Same builder as first render.
+ * @param {HTMLElement | null} mount
+ * @param {Record<string, unknown>} ec
+ * @param {{ fr?: unknown, sat?: unknown, pesoKg?: unknown, lab?: unknown }} [vitalsCtx]
+ */
+export function refreshSoporteCalcHints(mount, ec, vitalsCtx) {
+  var insights = mount && mount.querySelector('.ea-soporte-insights');
+  if (!insights) return;
+  var old = insights.querySelector('[data-ea-soporte-calc]');
+  if (old) old.remove();
+  insights.insertAdjacentHTML('beforeend', renderSoporteCalcHintsHtml(ec, vitalsCtx));
+}
+
+/**
  * @param {Record<string, unknown>} ec
  * @param {{ fr?: unknown, sat?: unknown, pesoKg?: unknown, lab?: unknown }} [vitalsCtx]
  */

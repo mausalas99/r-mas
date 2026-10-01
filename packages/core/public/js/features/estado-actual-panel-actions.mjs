@@ -1,5 +1,6 @@
 /** EA panel actions — registro submit, guardar/copiar, propuestas. */
 import { persistClinicalState, getMedRecetaByPatient, getMedNotaSelectionByPatient, getNotes } from '../app-state.mjs';
+import { stampDocUpdatedAt } from '../patient-merge.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import {
   ensureMonitoreo,
@@ -360,6 +361,7 @@ function commitEstadoActualToNote(patient, replaceEvolucion) {
     });
     return;
   }
+  stampDocUpdatedAt(note);
   persistClinicalState();
   scheduleCloudSyncPush();
   navigateToNotasAfterEaSend();

@@ -190,16 +190,21 @@ function mergeRotationCyclesData(localRows, incomingRows) {
   return [...byId.values()];
 }
 
+// team_id '' is valid: a patient moved to no team.
+function assignmentKey(row) {
+  if (!row?.patient_id || row.team_id == null || !row.effective_at) return '';
+  return `${row.patient_id}\0${row.team_id}\0${row.effective_at}`;
+}
+
 function mergePatientTeamAssignmentsData(localRows, incomingRows) {
   const map = new Map();
   for (const row of localRows || []) {
-    if (!row?.patient_id || !row?.team_id) continue;
-    map.set(`${row.patient_id}\0${row.team_id}`, { ...row });
+    const key = assignmentKey(row);
+    if (key) map.set(key, { ...row });
   }
   for (const row of incomingRows || []) {
-    if (!row?.patient_id || !row?.team_id) continue;
-    const key = `${row.patient_id}\0${row.team_id}`;
-    if (!map.has(key)) map.set(key, { ...row });
+    const key = assignmentKey(row);
+    if (key && !map.has(key)) map.set(key, { ...row });
   }
   return [...map.values()];
 }

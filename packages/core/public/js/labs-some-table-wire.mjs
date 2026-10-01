@@ -93,3 +93,31 @@ export function wireSomeTableExportButtons(container, onToast, lookup) {
     });
   });
 }
+
+/** Tabs por sección + interruptor "Solo alterados" del modal de tablas. */
+export function wireSomeTablesTabs(container) {
+  if (!container) return;
+  var tabs = container.querySelectorAll('.lab-some-tab');
+  var sections = container.querySelectorAll('.lab-some-dept');
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      var di = tab.getAttribute('data-some-tab');
+      tabs.forEach(function (t) {
+        var on = t === tab;
+        t.classList.toggle('is-active', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      sections.forEach(function (sec) {
+        sec.hidden = sec.getAttribute('data-dept-index') !== di;
+      });
+    });
+  });
+  var sw = container.querySelector('.lab-some-only-abn-input');
+  var root = container.querySelector('.lab-some-tables');
+  if (sw && root) {
+    sw.addEventListener('change', function () {
+      root.classList.toggle('is-only-abnormal', sw.checked);
+      sw.setAttribute('aria-checked', sw.checked ? 'true' : 'false');
+    });
+  }
+}

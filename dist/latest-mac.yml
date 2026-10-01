@@ -1,57 +1,59 @@
-version: 8.4.3
+version: 8.4.5
 files:
-  - url: R+-8.4.3-autoupdate-mac-arm64.zip
-    sha512: Tm8pyIQMq6q+ysEA3TkxcqGtWrjb5zG77Xofzj0IeGGs6OpNZwQ3VdK1V9LCR8Jxk1s++BBygiOYuwB3JIqzRg==
-    size: 141322038
-  - url: R+-8.4.3-arm64.dmg
-    sha512: es53kU0vwVup4pc6qGkug01/bKA2C/SYNAR2Nvvz+Q74jIGXmwu5PL2pxujiYCI0aEzzIgpvH+QDgqnsekAR1Q==
-    size: 141974213
-  - url: R+-8.4.3-autoupdate-mac-x64.zip
-    sha512: vyALhIacA+mMvq76vdaPzXjQEmhc1z/nswgDrLgmNaZmGAywqWorgnSvKOfyJfaN73H682S7sEUdlqn9PjxKPQ==
-    size: 149991427
-  - url: R+-8.4.3-x64.dmg
-    sha512: UQps1G07EidoHLrfY2N3rsL/1VVPdvp2r3U+QilAxuEFV6j9T/89IkkQz6ZhoDKbbKL1Lvd/iERmgx12ofeNoQ==
-    size: 150593022
-path: R+-8.4.3-autoupdate-mac-arm64.zip
-sha512: Tm8pyIQMq6q+ysEA3TkxcqGtWrjb5zG77Xofzj0IeGGs6OpNZwQ3VdK1V9LCR8Jxk1s++BBygiOYuwB3JIqzRg==
-releaseDate: '2026-09-28T20:47:26.000Z'
+  - url: R+-8.4.5-autoupdate-mac-arm64.zip
+    sha512: aNUfKhhvhgZ37Pi3nt8ZQZiLyhqdXhg0vCfDSk036g+aYDF2BI2vpULS2kzubwDIyy2NfomEM3CBfIn69owhKw==
+    size: 141471306
+  - url: R+-8.4.5-arm64.dmg
+    sha512: oi5uzDroaPIkvhAGZ12oOpZH/o0cOU0l+Bo3udWomzBBwPkBNwQKF6GZAp30zX2c+nHsDUgFbtbtLYNTCQrYjw==
+    size: 142143792
+  - url: R+-8.4.5-autoupdate-mac-x64.zip
+    sha512: cwvJ3oDgw65ezPhXsXnEnt0eNhvL3+EgD27wHiwjNNHz71utHJQk58o8ZNVVqHWjQPJS2Z3H3dPBgyN2KtgttA==
+    size: 150140480
+  - url: R+-8.4.5-x64.dmg
+    sha512: qkcmuA886QOYprr3lNdHT6qg5Ff24o0vGHlW4QJRPWaalirsAh4YjlFxGzBNEDG1vo8Tq3O7sTXGPOv+3jw1Iw==
+    size: 150775663
+path: R+-8.4.5-autoupdate-mac-arm64.zip
+sha512: aNUfKhhvhgZ37Pi3nt8ZQZiLyhqdXhg0vCfDSk036g+aYDF2BI2vpULS2kzubwDIyy2NfomEM3CBfIn69owhKw==
+releaseDate: '2026-09-30T21:44:44.000Z'
 releaseNotes: |
-  Barra superior más limpia: Paciente, Laboratorio, Manejo y Agenda en una sola pastilla. Tacha medicamentos suspendidos en Datos. Tarjetas de la lista más compactas, Resumen a todo lo ancho y Laboratorio con alterados primero. Nuevas pantallas de Nube, Admin y Ajustes, y una sincronización con Nube mucho más confiable.
+  Notas e indicaciones ya se sincronizan con Nube. Salir de una sala o equipo funciona. Varios arreglos en Estado actual y Tendencias.
   
-  Nuevo (barra superior): Paciente, Laboratorio, Manejo y Agenda comparten una pastilla que muestra solo el área activa y se abre al pasar el cursor. Censo y el cambio Sala / IC / Guardia van junto a la lista de pacientes. Atajos y Aprender R+ se unen en un solo menú Ayuda (?).
+  Nuevo (Nube): la nota de evolución, el interrogatorio y las indicaciones se sincronizan entre equipos. Gana la edición más reciente. Un texto de más de 96 KB se queda en este equipo y Conexión muestra «Pendiente».
   
-  Nuevo (Manejo y Gráficas): nuevo diseño.
+  Nuevo (Perfil): Mi perfil ahora incluye tu sala, rango y usuario en una sola pantalla. Cambiar de sala con un toque te pasa a su sala en Nube.
   
-  Nuevo (lista lateral): tarjetas de dos líneas: nombre y cuarto·cama. Fijar, archivar y eliminar salen solo al pasar el cursor sobre la tarjeta. Fijar ahora es un ícono.
+  Nuevo (Interconsultas): la barra de interconsulta usa pastillas para Servicio, Motivo, Seguimiento y Equipo. Un clic en cualquier parte de la pastilla actúa sobre su control.
   
-  Nuevo (Resumen): signos con su mínimo y máximo de 24 h. Cada lab alterado muestra el valor anterior y la flecha. Medicamentos y Pendientes a todo lo ancho; Pendientes en dos columnas. Los cultivos salen como tarjetas en tres columnas dentro de Labs. Eventualidades ya no sale en Resumen; sigue en su pestaña.
+  Cambio (Interconsultas): «Torre HU» ya no aparece como servicio solicitante.
   
-  Nuevo (Laboratorio): nombre, cuarto y cama arriba del panel. Los valores alterados salen en una línea de chips arriba de la tabla: uno por estudio, los críticos primero y marcados. Pegar SOME y Actualizar labs pasan al final del encabezado de Resultados. Los diagramas se abren en una ventana con el botón Diagramas.
+  Arreglado (Interconsultas): los avisos guiados del tablero quedan junto a botones pequeños y hay un paso para el cambio Asignar / Mi equipo. Se arregló el contraste en claro y oscuro, y la bandeja ya no se colapsa con un equipo grande.
   
-  Nuevo (Datos): toca un medicamento en Datos › Censo para tacharlo. Sale del texto del censo pero queda a un toque; tócalo otra vez para regresarlo. Tomar de lista borra los tachados. Se sincroniza con Nube.
+  Nuevo (iPad): iPad usa el mismo diseño que la computadora. Resumen cabe sin desplazar. La lista lateral es una barra angosta con solo el número de cama.
   
-  Nuevo (Nube): nueva pantalla de estado de Nube con vista rápida bajo el ícono del encabezado, y nuevo Diagnóstico Nube. Cambia el código y la llave de una sala cerrada en un solo paso.
+  Arreglado (Perfil): al cambiar tu @usuario en Mi perfil, ahora también se actualiza en Nube.
   
-  Nuevo (Admin y Ajustes): Admin rediseñado (Resumen, Salas, Usuarios, Pacientes, Registro, Zona de peligro). Ajustes con nuevo Mi perfil, nuevo panel de Equipos y nueva pantalla de Nube sin sesión.
+  Nuevo (Perfil): si no tienes sala, o es el día 1 del mes, el botón Mi perfil late. Al abrirlo, la sección Sala está abierta y te avisa. El primero en unirse a una sala empieza a sincronizar de inmediato.
   
-  Arreglado (Nube): VPO, lista de problemas y perfil farmacológico ahora se envían al editarlos, también al borrar. Si restauras un registro con «deshacer», ya no se pierde al recargar. Un miembro nuevo recibe todo el historial de la sala. R+ se pone al día en segundos cuando Nube regresa.
+  Arreglado (Nube): «Salir de la sala» y «Salir del equipo» confirman con el servidor. El avatar del panel Nube tiene mejor contraste.
   
-  Arreglado (Admin): eliminar muchos pacientes de la red ya no falla con «DB is overloaded». Se borra en grupos pequeños y se reintenta solo. Si un grupo falla, los demás siguen.
+  Arreglado (Salas): «Salir de la sala» ya no se deshace al abrir la app o Conexión. Para volver entras con código, creas una sala o te unes a un equipo.
   
-  Arreglado (Admin): verificar labs de la red usa la dirección del portal de Ajustes › Laboratorio.
+  Arreglado (Equipos): una copia vieja de la sala ya no deshace tu salida de un equipo ni te saca del equipo nuevo. Los envíos a la sala ahora primero descargan y combinan.
   
-  Arreglado (labs): al cambiar de expediente, Laboratorio ya no muestra los labs del anterior. Un coproparasitoscópico pegado ya no ensucia BH ni Observaciones.
+  Arreglado (Estado actual): el DIA de la Solución Stanford avanza por fecha, igual que en Egreso.
   
-  Arreglado: los servicios en el selector de interconsulta ya no se salen del panel.
+  Arreglado (Estado actual): las sugerencias ventilatorias se actualizan al cambiar FiO₂, PEEP, P meseta o VT. En Alto flujo ya no salen sugerencias de campos ocultos.
   
-  Nuevo (Manejo): con 16 medicamentos o más, las filas se compactan a una línea y la lista usa tres columnas, así cabe sin desplazarte.
+  Arreglado (Tendencias): los gasométricos con coma decimal o con «<» muestran su tarjeta. Un valor «<0.01» se grafica en 0.01.
   
-  Arreglado (Manejo): la bomba de insulina se detecta también cuando SOME la manda como «MEDICAMENTOS P3». Se quitó el cuadro repetido de medicamentos al final de Manejo actual; Nota queda alineado en todas las filas.
+  Arreglado (Manejo): el potasio oral ya no cuenta como reposición.
   
-  Arreglado (Estado actual): con gaso venosa, la copia ya no incluye el aviso «PaFi no válida» ni el SpO₂/FiO₂.
+  Arreglado (Nube): al borrar un paciente, el borrado llega también a la sala del paciente.
   
-  Accesibilidad: con un panel abierto, el resto de la app queda inactivo; más botones tienen nombre para lectores de pantalla.
+  Arreglado (Equipos): un paciente sin equipo («Sin asignar») ahora se quita del equipo en todos los dispositivos.
   
-  Problema conocido: si dos equipos agregan a la vez una eventualidad al mismo expediente, una puede perderse. Se arregla en 8.4.4.
+  Arreglado (Inicio): R+ borra al iniciar claves viejas de almacenamiento local que podían llenar el espacio.
   
-  Problema conocido: notas e indicaciones todavía no se sincronizan con Nube. Llega en 8.4.4.
+  Limpieza: se quitó código muerto del botón de Modo Guardia.
+  
+  Problema conocido: el DIA de Stanford en el Resumen y en la etiqueta de Manejo aún muestra el valor guardado.

@@ -72,7 +72,7 @@ await r.finish('Admin mass delete on staging (Red tab)', async () => {
     ipcMain.handle('cloud-sync-fetch', async (e, payload) => {
       const res = await orig(e, payload);
       if (/\/mutations$/.test(new URL(String(payload?.url || ''), 'http://x').pathname) && payload?.method === 'POST') {
-        let cm = ''; try { const b = typeof payload.body === 'string' ? JSON.parse(payload.body) : payload.body; cm = String(b?.clientMutationId || '').replace(/[0-9a-f-]{8,}|\d{6,}/g, '#').slice(0, 40) + ' ops=' + (b?.ops?.length ?? '?') + ' base=' + b?.baseRevision; } catch {}
+        let cm = ''; try { const b = typeof payload.body === 'string' ? JSON.parse(payload.body) : payload.body; cm = String(b?.clientMutationId || '').replace(/[0-9a-f-]{8,}|\d{6,}/g, '#').slice(0, 40) + ' ops=' + (b?.ops?.length ?? '?') + ' base=' + b?.baseRevision; } catch { /* best-effort detail */ }
       g.pushes.push({ cm, at: Date.now(), status: res?.status, msg: String(res?.data?.message || res?.data?.error || res?.statusText || '').slice(0, 200) });
       }
       return res;

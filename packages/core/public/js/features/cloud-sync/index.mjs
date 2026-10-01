@@ -37,7 +37,6 @@ export { bridgeCloudIdentityToLocal, normalizeCloudIdentityUsername } from './id
 
 export {
   configureCloudMutateBridge,
-  mapPatientEntryToOps,
   mapBundleEnvelopeToOps,
   maybeScheduleCloudSyncPush,
   scheduleCloudSyncPush,

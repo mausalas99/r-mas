@@ -226,48 +226,13 @@ function createTendRelativePlugin() {
       if (!(bottom > top)) return;
       var ctx = chart.ctx;
       ctx.save();
-      ctx.fillStyle = 'rgba(35, 128, 122, 0.12)';
+      ctx.fillStyle = 'rgba(35, 128, 122, 0.08)';
       ctx.fillRect(a.left, top, a.right - a.left, bottom - top);
       ctx.font = '600 12px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#1d6a65';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       ctx.fillText('Dentro del rango', a.left + 8, top + 5);
-      ctx.restore();
-    },
-    afterDatasetsDraw: function (chart) {
-      var a = chart.chartArea;
-      if (!a) return;
-      var ends = [];
-      chart.data.datasets.forEach(function (ds, i) {
-        if (!chart.isDatasetVisible(i)) return;
-        var last = -1;
-        for (var k = ds.data.length - 1; k >= 0; k--) {
-          if (ds.data[k] != null) { last = k; break; }
-        }
-        var pt = last >= 0 ? chart.getDatasetMeta(i).data[last] : null;
-        if (pt) ends.push({ ds: ds, pt: pt, v: ds.data[last] });
-      });
-      if (!ends.length) return;
-      var ys = spreadEndLabels(ends.map(function (e) { return e.pt.y; }), 16, a.top + 8, a.bottom);
-      var ctx = chart.ctx;
-      ctx.save();
-      ctx.font = '600 12px system-ui, -apple-system, sans-serif';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ends.forEach(function (e, i) {
-        var name = String(e.ds.endName || e.ds.label || '');
-        if (name.length > 15) name = name.slice(0, 14) + '…';
-        var x = a.right + 12;
-        ctx.strokeStyle = hexToRgba(e.ds.borderColor, 0.5);
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(e.pt.x + 5, e.pt.y);
-        ctx.lineTo(x - 3, ys[i]);
-        ctx.stroke();
-        ctx.fillStyle = e.ds.borderColor;
-        ctx.fillText(name + ' ' + Math.round(e.v) + ' %', x, ys[i]);
-      });
       ctx.restore();
     },
   };
@@ -293,6 +258,28 @@ function hexToRgba(hex, alpha) {
   return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
 }
 
+
+/** Re-rendering swaps the DOM, which resets scroll to the top. Save scroll of `el`, its scrolled ancestors
+ *  and its inner scroll boxes; the returned fn puts them back. */
+export function captureScroll(el) {
+  var sel = '.cultivos-table-wrap, .tend-chart-main, .tend-hidden-list';
+  var up = [];
+  for (var n = el; n; n = n.parentElement) if (n.scrollTop || n.scrollLeft) up.push([n, n.scrollTop, n.scrollLeft]);
+  var inner = Array.prototype.map.call(el.querySelectorAll(sel), function (e) {
+    return [e.scrollTop, e.scrollLeft];
+  });
+  return function () {
+    up.forEach(function (u) {
+      u[0].scrollTop = u[1];
+      u[0].scrollLeft = u[2];
+    });
+    Array.prototype.forEach.call(el.querySelectorAll(sel), function (e, i) {
+      if (!inner[i]) return;
+      e.scrollTop = inner[i][0];
+      e.scrollLeft = inner[i][1];
+    });
+  };
+}
 
 export {
   GENERIC_FAMILY_ORDER,

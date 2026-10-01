@@ -186,12 +186,12 @@ function cycleIsNewer(stored, incoming) {
   return String(incoming.cycle_set_at || '') > String(stored.cycle_set_at || '');
 }
 
-/** @param {unknown[]} a @param {unknown[]} b @param {string[]} keys @param {boolean|((stored: any, incoming: any) => boolean)} incomingWins */
-function mergeRows(a, b, keys, incomingWins) {
+/** @param {unknown[]} a @param {unknown[]} b @param {string[]} keys @param {boolean|((stored: any, incoming: any) => boolean)} incomingWins @param {string[]} [emptyOk] key fields that may be '' */
+function mergeRows(a, b, keys, incomingWins, emptyOk = []) {
   const map = new Map();
   const add = (row, overwrite) => {
     const key = keys.map((k) => String(row?.[k] || '').trim());
-    if (key.some((part) => !part)) return;
+    if (key.some((part, i) => !part && !emptyOk.includes(keys[i]))) return;
     const id = key.join('\0');
     const wins = typeof overwrite === 'function' ? map.has(id) && overwrite(map.get(id), row) : overwrite;
     if (wins || !map.has(id)) map.set(id, row);
@@ -218,7 +218,7 @@ function mergeClinicalOpsFold(prev, incoming) {
     ...b,
     teams: mergeRows(a.teams, b.teams, ['team_id'], true),
     clinical_users: mergeRows(a.clinical_users, b.clinical_users, ['user_id'], true),
-    patient_team_assignment: mergeRows(a.patient_team_assignment, b.patient_team_assignment, ['patient_id', 'team_id'], false),
+    patient_team_assignment: mergeRows(a.patient_team_assignment, b.patient_team_assignment, ['patient_id', 'team_id', 'effective_at'], false, ['team_id']),
     team_membership: mergeRows(a.team_membership, b.team_membership, ['team_id', 'user_id'], cycleIsNewer),
     team_membership_removals: mergeRows(a.team_membership_removals, b.team_membership_removals, ['team_id', 'user_id'], false),
     team_membership_rejoins: mergeRows(a.team_membership_rejoins, b.team_membership_rejoins, ['team_id', 'user_id'], false),

@@ -2,13 +2,14 @@ const API_PREFIX = '/api/sync/v1';
 
 import { cloudSyncHttpFetch } from './api-transport.mjs';
 import { getCachedAppVersion } from './app-version.mjs';
-import { getCachedRoomDek, markRoomUnprotected, notePulledPlaintext } from './room-dek.mjs';
+import { getCachedRoomDek, markRoomUnprotected } from './room-dek.mjs';
 import { isEncryptedEnvelope } from './crypto.mjs';
 import {
   encryptOpsForPush,
   decryptOpsFromPull,
   decryptRoomStateFromPull,
   hasLockedOpValue,
+  describeLockedOps,
   listContentFieldEntries,
 } from './cloud-sync-crypto-wire.mjs';
 import { noteServerDate } from './cloud-sync-clock.mjs';
@@ -93,6 +94,7 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
     regenerateRecovery: () =>
       req('/auth/regenerate-recovery', { method: 'POST', body: {} }),
     me: () => req('/auth/me'),
+    changeUsername: (username) => req('/auth/username', { method: 'POST', body: { username } }),
     createRoom: (body) => req('/rooms', { method: 'POST', body }),
     joinRoom: (body) => req('/rooms/join', { method: 'POST', body }),
     ensureTurn: (body) => req('/rooms/ensure-turn', { method: 'POST', body }),
@@ -108,26 +110,37 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
     pull: async (roomId, since, opts) => {
       const q = new URLSearchParams({ since: String(since ?? 0) });
       if (opts?.mobile) q.set('mobile', '1');
+      const t0 = Date.now();
       const data = await req(`/rooms/${roomId}/pull?${q.toString()}`);
-      // The backfill sweep must judge what is stored, not what this device can read.
-      if (opts?.raw) return data;
+      if (data && typeof data === 'object') data.pullMs = Date.now() - t0;
       const dek = getRoomDek(roomId);
-      notePulledPlaintext(roomId, dek, data);
       // `locked` rides back on the result so the runtime can hold the local
       // revision back. Anything still ciphertext here is dropped by pull-apply;
       // advancing past it would make the next `since` pull skip it forever.
       let locked = false;
       if (Array.isArray(data?.ops)) {
         data.ops = await decryptOpsFromPull(dek, data.ops);
-        if (hasLockedOpValue(data.ops)) locked = true;
+        if (hasLockedOpValue(data.ops)) {
+          locked = true;
+          data.lockedOps = [{ hasKey: !!dek }, ...describeLockedOps(data.ops)];
+        }
       }
       if (data?.state) {
         data.state = await decryptRoomStateFromPull(dek, data.state);
-        if (listContentFieldEntries(data.state).some((e) => isEncryptedEnvelope(e.value))) {
+        const lockedEntries = listContentFieldEntries(data.state).filter((e) => isEncryptedEnvelope(e.value));
+        if (lockedEntries.length) {
           locked = true;
+          // Paths only, never values: names what pins the cursor in the diagnostics trace.
+          data.lockedOps = [
+            ...(data.lockedOps || []),
+            { count: lockedEntries.length, hasKey: !!dek },
+            ...lockedEntries.slice(0, 5).map((e) => ({ path: String(e.path || '') })),
+          ];
         }
       }
-      if (locked) {
+      // Ciphertext that survives a loaded key is a wrong-key envelope: a retry gives the
+      // same bytes, and holding the cursor back re-pulls the whole state forever.
+      if (locked && !dek) {
         markRoomUnprotected(roomId);
         data.locked = true;
       }

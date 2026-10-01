@@ -40,7 +40,6 @@ export function buildCultivoAntibiogramCellHtmlForPatient(r, patientId) {
   );
 }
 
-var _atbRisScrollResizeWired = false;
 var _atbRisScrollRootsWired = new WeakSet();
 var _atbRisDelegatedHoverRoots = new WeakSet();
 var ATB_RIS_HIDE_DELAY_MS = 140;
@@ -49,6 +48,13 @@ function ensureAtbRisScrollRepositionOn(el) {
   if (!el || _atbRisScrollRootsWired.has(el)) return;
   _atbRisScrollRootsWired.add(el);
   el.addEventListener('scroll', repositionOpenAtbRisPanel, { passive: true });
+}
+
+// Global listeners live only while a panel is open (addEventListener is idempotent).
+function setAtbRisGlobalListeners(on) {
+  var f = on ? 'addEventListener' : 'removeEventListener';
+  window[f]('scroll', repositionOpenAtbRisPanel, true);
+  window[f]('resize', repositionOpenAtbRisPanel);
 }
 
 function cancelHideAtbPanel(panel) {
@@ -74,6 +80,7 @@ function hideAtbRisHoverPanel(panel) {
   if (!panel) return;
   cancelHideAtbPanel(panel);
   panel.classList.remove('is-open');
+  if (!document.querySelector('.atb-ris-hover-panel.is-open')) setAtbRisGlobalListeners(false);
   panel.style.left = '';
   panel.style.top = '';
   panel.style.visibility = '';
@@ -115,6 +122,7 @@ function positionAtbRisHoverPanel(wrap) {
     document.body.appendChild(panel);
   }
   panel.classList.add('is-open');
+  setAtbRisGlobalListeners(true);
   panel.style.visibility = 'hidden';
   panel.style.left = '-9999px';
   panel.style.top = '0';
@@ -158,11 +166,6 @@ function wireAtbRisPanelHoverListeners(panel) {
 
 function wireAtbRisHoverPanels(rootEl) {
   if (!rootEl) return;
-  if (!_atbRisScrollResizeWired) {
-    _atbRisScrollResizeWired = true;
-    window.addEventListener('scroll', repositionOpenAtbRisPanel, true);
-    window.addEventListener('resize', repositionOpenAtbRisPanel);
-  }
   ensureAtbRisScrollRepositionOn(rootEl);
   var tableWrap = rootEl.querySelector && rootEl.querySelector('.cultivos-table-wrap');
   if (tableWrap) ensureAtbRisScrollRepositionOn(tableWrap);

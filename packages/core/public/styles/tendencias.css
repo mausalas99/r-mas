@@ -138,7 +138,7 @@ body > .tend-drag-hovercard {
 /* ── Split layout: list + side pane ───────────────────────────── */
 .tend-split {
   --tend-spring: linear(0, 0.18 6%, 0.62 14%, 0.94 22%, 1.04 30%, 1.05 38%, 1.01 52%, 0.997 68%, 1);
-  display: flex; align-items: flex-start; width: 100%; min-height: 0;
+  display: flex; align-items: flex-start; width: 100%; min-height: 0; overflow-x: clip;
 }
 .tend-split > #tendencias-container {
   flex: 0 0 100%; min-width: 0;
@@ -300,6 +300,50 @@ body > .tend-drag-hovercard {
 .tend-pane .tend-group-threshold-add-btn { height: 34px; padding: 0 14px; font-size: 13px; box-shadow: none; flex-direction: row; }
 .tend-pane .tend-group-table-actions { display: flex; gap: 8px; padding-top: 12px; }
 
+/* Gráficas B: tabs on top, chart left, analyte list right, readout strip under the chart */
+.tend-chart-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.tend-chart-tab {
+  height: 32px; padding: 0 16px; border-radius: 999px; border: 0; background: transparent; color: var(--text-muted);
+  font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.tend-chart-tab:hover { color: var(--text); }
+.tend-chart-tab.is-active { background: color-mix(in oklab, var(--text) 10%, var(--surface)); color: var(--text); }
+.tend-pane .tend-group-panel-card { padding: 14px 16px; }
+.tend-pane .tend-group-panel-toolbar { position: absolute; top: 10px; right: 12px; margin: 0; opacity: 1; z-index: 1; }
+.tend-pane .tend-group-family-title { font-size: 15px; margin-bottom: 10px; }
+.tend-chart-body { display: flex; gap: 16px; align-items: flex-start; }
+.tend-chart-main { flex: 1 1 0; min-width: 0; }
+.tend-pane .tend-chart-main .tend-group-chart-wrap { height: clamp(300px, 48vh, 560px); }
+.tend-chart-readout {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-height: 34px; margin-top: 8px; padding-top: 10px;
+  border-top: 1px solid var(--border); font-size: 12px; color: var(--text);
+}
+.tend-readout-date { font-weight: 700; font-variant-numeric: tabular-nums; color: oklch(0.42 0.09 195); margin-right: 4px; }
+.tend-readout-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+  background: color-mix(in oklab, var(--text) 6%, var(--surface));
+}
+.tend-readout-chip b { font-variant-numeric: tabular-nums; font-weight: 700; }
+.tend-readout-dot { width: 8px; height: 8px; border-radius: 999px; flex: none; }
+.tend-pane .tend-chart-body > .tend-group-legend {
+  flex: 0 0 300px; width: 300px; flex-direction: column; flex-wrap: nowrap; gap: 0; margin: 0;
+  border: 1px solid var(--border); border-radius: 14px; padding: 4px 6px;
+}
+.tend-pane .tend-chart-body .tend-group-legend-item {
+  display: grid; grid-template-columns: 16px 14px minmax(0, 1fr) 56px 46px 12px; align-items: center; gap: 8px;
+  height: 40px; padding: 0 6px; border: 0; border-radius: 0; background: none; font-size: 13px; font-weight: 600;
+}
+.tend-pane .tend-chart-body .tend-group-legend-item + .tend-group-legend-item { border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); }
+.tend-legend-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tend-legend-pc { text-align: right; font-size: 12px; font-variant-numeric: tabular-nums; }
+.tend-pane .tend-group-legend-item:has(.tend-group-legend-check:not(:checked)) { color: var(--text-muted); }
+.tend-pane .tend-group-legend-item:has(.tend-group-legend-check:not(:checked)) .tend-legend-spark,
+.tend-pane .tend-group-legend-item:has(.tend-group-legend-check:not(:checked)) .tend-group-legend-color { opacity: 0.35; filter: grayscale(1); }
+@media (max-width: 900px) {
+  .tend-chart-body { flex-direction: column; }
+  .tend-pane .tend-chart-body > .tend-group-legend { flex: none; width: 100%; }
+}
+
 /* ── Tabla dinámica pane + tick-in-list ───────────────────────── */
 /* Checkbox: box turns teal, the tick draws itself (CSS only). */
 .tend-tick {
@@ -364,8 +408,6 @@ body > .tend-drag-hovercard {
 }
 .tend-pane .tend-group-table td { padding: 8px 10px; font-size: 13.5px; border-top: 1px solid color-mix(in oklab, var(--text) 8%, transparent); }
 .tend-pane .tend-group-table td + td { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-weight: 600; }
-.tend-pane .tend-group-table td.tend-abnormal { color: var(--error, #d70015); background: rgba(215, 0, 21, 0.04); }
-html.dark .tend-pane .tend-group-table td.tend-abnormal { background: rgba(255, 90, 105, 0.14); }
 .tend-pane .tend-group-col-toggle, .tend-pane .tend-group-row-toggle { display: inline-flex; align-items: center; gap: 8px; }
 .tend-eye-toggle {
   display: inline-grid; place-items: center; width: 24px; height: 24px; padding: 0; flex: none;
@@ -376,3 +418,52 @@ html.dark .tend-pane .tend-group-table td.tend-abnormal { background: rgba(255, 
 .tend-eye-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 /* The split grows with the list (its scroller is the tab), so the sticky pane keeps its containing block. */
 #tend-split.tend-split { flex: 0 0 auto; }
+
+/* ── Tabla A: estudio a ancho completo, tabla sobria ───────────── */
+.tend-split.is-wide > #tendencias-container { display: none; }
+.tend-split.is-wide > .tend-pane { margin-left: 0; }
+.tend-pane .tend-pane-back {
+  height: 36px; padding: 0 14px; border-radius: 999px; flex-shrink: 0; cursor: pointer; font-size: 13px;
+  border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+}
+.tend-pane .tend-pane-back:hover { color: var(--text); background: color-mix(in oklab, var(--text) 6%, transparent); }
+.tend-pane .tend-pane-back:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.tend-pane .tend-group-header .tend-pane-titles { flex: 1 1 auto; }
+.tend-esc-hint { flex: none; padding: 8px 24px 12px; text-align: right; font-size: 12px; color: var(--text-muted); }
+.tend-pane #tend-group-table-wrap .cultivos-table-wrap,
+.tend-pane #tend-dynamic-table-wrap .cultivos-table-wrap {
+  margin-top: 12px; border: 1px solid var(--border); border-radius: 14px; overflow: auto; max-height: 100%;
+}
+.tend-pane .tend-group-table thead th { position: sticky; top: 0; z-index: 2; height: 44px; font-size: 12px; letter-spacing: .04em; color: var(--text-muted); }
+.tend-pane .tend-group-table th:not(:first-child), .tend-pane .tend-group-table td:not(:first-child) { text-align: center; }
+.tend-pane .tend-group-table td { padding: 0 10px; height: 34px; border-top: 1px solid color-mix(in oklab, var(--text) 8%, transparent); }
+.tend-pane .tend-group-table td:first-child { font-weight: 600; }
+.tend-pane .tend-group-table td.tend-tbl-ref { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-size: 12px; font-weight: 400; color: var(--text-muted); white-space: nowrap; }
+.tend-pane .tend-group-table td + td { font-weight: 500; font-variant-numeric: tabular-nums; }
+.tend-pane .tend-group-table td.tend-tbl-ref { font-weight: 400; }
+.tend-pane .tend-group-table .is-last { background: color-mix(in oklab, var(--primary) 6%, transparent); }
+.tend-pane .tend-group-table td.is-last { font-weight: 600; }
+.tend-pane .tend-group-table thead th.is-last { color: var(--primary); }
+.tend-tbl-last-tag { font-weight: 500; }
+.tend-pane .tend-group-table tr.tend-tbl-sec td {
+  height: 28px; padding-left: 18px; text-align: left; font-size: 11px; letter-spacing: .1em; font-weight: 600; text-transform: uppercase;
+  color: var(--primary); background: color-mix(in oklab, var(--primary) 7%, var(--surface));
+}
+.tend-val { display: inline-block; padding: 3px 10px; border-radius: 999px; }
+.tend-val--hi { color: var(--error, #d70015); background: color-mix(in oklab, var(--error, #d70015) 13%, transparent); }
+.tend-val--lo { color: oklch(0.44 0.11 60); background: color-mix(in oklab, oklch(0.7 0.15 60) 16%, transparent); }
+html.dark .tend-val--lo { color: oklch(0.8 0.12 60); }
+.tend-tbl-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin-top: 12px; font-size: 12px; color: var(--text-muted); }
+.tend-tbl-lg-hi { color: var(--error, #d70015); }
+.tend-tbl-lg-lo { color: oklch(0.65 0.15 60); }
+
+/* Tabla dinámica: segmentado Tabla | Gráficas (Tabla primero, así el pill se mueve al activar Gráficas). */
+#tend-dynamic-tabs { width: auto; }
+#tend-dynamic-tabs[data-active="charts"] .tend-group-tab-pill { transform: translateX(100%); }
+#tend-dynamic-charts-wrap .tend-dynamic-charts-section + .tend-dynamic-charts-section { margin-top: 16px; }
+.tend-pane .tend-table-empty {
+  margin-top: 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+  padding: 40px 24px; border: 1px dashed var(--color-border-dashed, var(--border)); border-radius: 14px;
+  color: var(--text-muted); font-size: 13px;
+}
+.tend-pane .tend-table-empty strong { color: var(--text); font-size: 14px; }

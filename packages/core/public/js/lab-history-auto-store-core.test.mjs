@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  findSubsumedLabSets,
   normalizeLabLine,
   areLabSetsEquivalent,
   isDuplicateAgainstLatest,
@@ -451,4 +452,15 @@ test('planLabHistoryDateTimeUpsert merge colapsa hermanos misma hora', () => {
   assert.equal(plan.action, 'merge');
   assert.equal(plan.keeper.id, '1');
   assert.equal(plan.siblings.length, 1);
+});
+
+test('findSubsumedLabSets: copia completa dentro de un set mayor del mismo día', () => {
+  const base = { BH: { Hb: '11.9', Hto: '35.7', VCM: '88', HCM: '29.5' }, QS: { Glu: '85', Cr: '0.6', BUN: '30', AU: '7.1' } };
+  const small = { id: '1', fecha: '22/09/2026', hora: '14:41', parsedBySection: base };
+  const big = { id: '2', fecha: '22/09/2026', hora: '', parsedBySection: { ...base, INM: { C3: '4' } } };
+  const other = { id: '3', fecha: '23/09/2026', hora: '', parsedBySection: { ...base, INM: { C3: '4' } } };
+  assert.deepEqual(findSubsumedLabSets([small, big]).map((f) => f.id), ['1']);
+  assert.deepEqual(findSubsumedLabSets([small, other]), []);
+  const changed = { ...big, parsedBySection: { ...big.parsedBySection, BH: { ...base.BH, Hb: '9' } } };
+  assert.deepEqual(findSubsumedLabSets([small, changed]), []);
 });

@@ -84,12 +84,14 @@ await r.finish('Admin code set + change in app', async () => {
   const D = await launchDevice('nube-admin', 3795);
   await onboardNube(D.page, { username: `demo_admin_${tag}`, name: 'Dra. Demo Admin', rank: 'R2' });
   await D.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
-  // Equipo (board B) links to the profile form: «Mi perfil» opens ⇄ Cuenta.
-  await D.page.locator('.clinical-teams-profile-link button').first().click();
-  const cb = D.page.locator('[data-cloud-view="cuenta"] #clinical-profile-admin');
+  // The profile form lives in the Mi perfil window (person icon, top bar).
+  await D.page.locator('#btn-connection-dropdown-close').evaluate((b) => b.click());
+  await D.page.locator('#profile-toggle-btn').evaluate((b) => b.click());
+  await D.page.waitForTimeout(800); // modal fade-in + form mount
+  const cb = D.page.locator('#profile-modal #clinical-profile-admin');
   await cb.waitFor({ state: 'visible' });
   check('checkbox starts unchecked', (await cb.isChecked()) === false);
-  await cb.click();
+  await cb.evaluate((el) => el.click());
   const modal = D.page.locator('#clinical-admin-code-backdrop.open');
   await modal.waitFor({ state: 'visible' });
   await r.shot(D.page, 'admin-code-setup');
@@ -101,11 +103,11 @@ await r.finish('Admin code set + change in app', async () => {
   await D.page.locator('#btn-clinical-admin-code-submit').click();
   await modal.waitFor({ state: 'hidden' });
   check('checkbox is checked once the code is set', await cb.isChecked());
-  await D.page.getByRole('button', { name: 'Guardar perfil' }).click();
+  await D.page.getByRole('button', { name: 'Guardar perfil' }).evaluate((b) => b.click());
   await D.page.locator('.toast', { hasText: 'Privilegios de administración activos' }).waitFor({ timeout: 5000 });
   const changeBtn = D.page.locator('#btn-clinical-admin-code-change');
   check('«Cambiar código de administración» button appears once admin', await changeBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true, () => false));
-  await changeBtn.click();
+  await changeBtn.evaluate((b) => b.click());
   await modal.waitFor({ state: 'visible' });
   const changeLead = await D.page.locator('#clinical-admin-code-lead').textContent();
   check('«Cambiar código» opens in change mode', /Cambia el código de administración/.test(changeLead), changeLead);

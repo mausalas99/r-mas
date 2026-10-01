@@ -3125,18 +3125,19 @@ select.profile-input.profile-select {
 }
 /* Mi perfil: its own window. Two columns of form + live preview, sized to fit without scrolling. */
 .profile-modal--perfil {
-  width: min(820px, calc(100vw - 28px));
-  max-height: min(92vh, 900px);
+  width: min(1180px, calc(100vw - 28px));
+  max-height: min(94vh, 900px);
 }
 .settings-perfil-form {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px 20px;
   align-content: start;
   min-width: 0;
 }
 .settings-perfil-form > .settings-perfil-id,
 .settings-perfil-form > .profile-row,
+.settings-perfil-form > .settings-perfil-sala-host,
 .settings-perfil-form > .settings-perfil-foot {
   grid-column: 1 / -1;
 }
@@ -3151,11 +3152,29 @@ select.profile-input.profile-select {
 }
 /* Interconsulta has no team column: the form takes the full width. */
 .settings-perfil-form:has(> .settings-perfil-col[hidden]) {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 1000px) {
+  .settings-perfil-form,
+  .settings-perfil-form:has(> .settings-perfil-col[hidden]) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .settings-perfil-form,
+  .settings-perfil-form:has(> .settings-perfil-col[hidden]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 /* Narrow column: title + hint on top, control under it. */
 .settings-perfil-form .settings-card {
   grid-template-columns: minmax(0, 1fr);
+}
+/* Three columns: title and hint left, control right, so the window fits one screen. */
+@media (min-width: 1001px) {
+  .settings-perfil-form .settings-card:not(:has(.settings-seg)) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  }
 }
 .settings-perfil-form .settings-card__action {
   justify-content: flex-start;
@@ -3244,4 +3263,97 @@ select.profile-input.profile-select {
 .settings-perfil-form .settings-section-head .wb-btn,
 .settings-perfil-foot .wb-btn {
   padding-inline: 0;
+}
+
+/* Mi perfil: Sala chips (collapsible) and the account form. */
+.settings-perfil-sala {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 0 var(--settings-copy-inset, 16px);
+}
+.settings-perfil-sala > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+.settings-perfil-sala > summary::-webkit-details-marker {
+  display: none;
+}
+.settings-perfil-sala-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.settings-perfil-sala-current {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+.settings-perfil-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 2px 0 12px;
+}
+.settings-perfil-chip {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.settings-perfil-chip[aria-pressed="true"] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+.settings-perfil-sala .settings-acc-hint {
+  margin: 0 0 12px;
+}
+.settings-perfil-sala [data-perfil-sala-hint] {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent-soft-text);
+  font-size: calc(13px * var(--density-font));
+  font-weight: 600;
+}
+.settings-perfil-account {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.settings-perfil-account .settings-card__action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.settings-perfil-account-save {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+/* Mi Perfil button asks for a sala pick (profile-sala-nudge.mjs). */
+#profile-toggle-btn.profile-sala-nudge {
+  color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent);
+  animation: profile-sala-nudge-pulse 1.8s ease-in-out infinite;
+}
+@keyframes profile-sala-nudge-pulse {
+  50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-accent) 25%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #profile-toggle-btn.profile-sala-nudge { animation: none; }
 }

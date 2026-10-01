@@ -25,22 +25,24 @@ describe('mutation-guard', () => {
     assert.equal(syncErrorStatus(new SyncError('rate_limited', 'x')), 429);
   });
 
-  it('rejects too many ops in one mutation', () => {
+  it('allows 64 ops in one mutation and rejects 65', () => {
+    const ops = (n) => Array.from({ length: n }, (_, i) => ({ path: `p/${i}`, value: 1 }));
+    assert.doesNotThrow(() => validateMutationRequest({ ops: ops(64) }, 100));
     assert.throws(
       () =>
         validateMutationRequest(
-          { ops: Array.from({ length: 20 }, (_, i) => ({ path: `p/${i}`, value: 1 })) },
+          { ops: ops(65) },
           100
         ),
       (err) => err instanceof SyncError && err.code === 'invalid_request'
     );
   });
 
-  it('allows 64 tombstone-only ops but still rejects 17 mixed ops', () => {
+  it('allows 64 tombstone-only ops but still rejects 65 mixed ops', () => {
     const tomb = (n) => Array.from({ length: n }, (_, i) => ({ path: `tombstones/p${i}`, value: {} }));
     assert.doesNotThrow(() => validateMutationRequest({ ops: tomb(64) }, 100));
     assert.throws(() => validateMutationRequest({ ops: tomb(65) }, 100), SyncError);
-    const mixed = [...tomb(16), { path: 'entries/p1/fields', value: 1 }];
+    const mixed = [...tomb(64), { path: 'entries/p1/fields', value: 1 }];
     assert.throws(() => validateMutationRequest({ ops: mixed }, 100), SyncError);
   });
 

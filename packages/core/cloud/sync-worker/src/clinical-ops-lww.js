@@ -14,14 +14,24 @@ function rowKey(row, fields) {
   return parts.join('\0');
 }
 
-function unionRows(localRows, incomingRows, keyFields) {
+// A patient moved to no team is a row with team_id '' — keep it (emptyOk), and key it by
+// effective_at like the desktop table so a later re-assign to the same team is not dropped.
+function assignmentKey(row) {
+  if (!row || typeof row !== 'object') return '';
+  const pid = String(row.patient_id || '').trim();
+  const at = String(row.effective_at || '').trim();
+  if (!pid || !at || row.team_id == null) return '';
+  return [pid, String(row.team_id).trim(), at].join('\0');
+}
+
+function unionRows(localRows, incomingRows, keyFields, keyOf = (row) => rowKey(row, keyFields)) {
   const map = new Map();
   for (const row of localRows || []) {
-    const key = rowKey(row, keyFields);
+    const key = keyOf(row);
     if (key) map.set(key, { ...row });
   }
   for (const row of incomingRows || []) {
-    const key = rowKey(row, keyFields);
+    const key = keyOf(row);
     if (key && !map.has(key)) map.set(key, { ...row });
   }
   return [...map.values()];
@@ -84,7 +94,8 @@ export function mergeClinicalOpsLww(prev, incoming) {
     patient_team_assignment: unionRows(
       local.patient_team_assignment,
       next.patient_team_assignment,
-      ['patient_id', 'team_id']
+      [],
+      assignmentKey
     ),
     team_membership: mergeMembershipRows(local.team_membership, next.team_membership),
     team_membership_removals: unionRows(

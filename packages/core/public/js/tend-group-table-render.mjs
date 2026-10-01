@@ -1,3 +1,4 @@
+import { captureScroll } from './tend-group-chart-helpers.mjs';
 import {
   getSetTrendValueForSeries,
   buildSectionTableModel,
@@ -39,6 +40,25 @@ function abnormalDir(deps, set, row, val, historyDesc) {
   return val < ref[0] ? '▼' : val > ref[1] ? '▲' : '';
 }
 
+/** Reference text for a row: latest draw that has a range. '' when none. */
+function rowRefText(deps, row, raw, historyDesc) {
+  for (var i = raw.columns.length - 1; i >= 0; i--) {
+    var set = row.refSets ? row.refSets[i] : raw.columns[i];
+    var ref =
+      deps.tendRefFromLabSet(set, row.sectionKey, row.fieldKey) ||
+      deps.tendRefForSeries(historyDesc, row.sectionKey, row.fieldKey, set);
+    if (ref) return formatTrendDisplayValue(ref[0]) + ' – ' + formatTrendDisplayValue(ref[1]);
+  }
+  return '';
+}
+
+function lastVisibleCol(raw, hidden) {
+  for (var i = raw.columns.length - 1; i >= 0; i--) {
+    if (hidden.cols.indexOf(colKeyForSet(raw.columns[i])) < 0) return i;
+  }
+  return -1;
+}
+
 export function formatCellValue(val, dir) {
   var t = formatTrendDisplayValue(val);
   return dir && t !== '—' ? dir + ' ' + t : t;
@@ -71,42 +91,50 @@ function hiddenColLabel(raw, ck) {
   return ck;
 }
 
+function hiddenRowHtml(esc, attr, key, label) {
+  return (
+    '<div class="tend-hidden-row"><span class="tend-hidden-row-name">' + esc(label) + '</span>' +
+    '<button type="button" class="tend-hidden-row-btn" ' + attr + '="' + esc(key) + '" aria-label="Mostrar ' + esc(label) + '">Mostrar</button></div>'
+  );
+}
+
 function buildHiddenChips(deps, state, hidden, raw, specsByRowKey) {
   var esc = deps.esc;
   var chips = [];
   hidden.cols.forEach(function (ck) {
     chips.push(
-      '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-col="' +
-        esc(ck) +
-        '">' +
-        esc(hiddenColLabel(raw, ck)) +
-        ' <span aria-hidden="true">×</span></button>'
+      hiddenRowHtml(esc, 'data-restore-col', ck, hiddenColLabel(raw, ck))
     );
   });
   hidden.rows.forEach(function (rk) {
     var sp = specsByRowKey[rk];
     var lab = sp ? legendLabelForSpec(deps, sp.sectionKey, sp) : rk;
     chips.push(
-      '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-row="' +
-        esc(rk) +
-        '">' +
-        esc(lab) +
-        ' <span aria-hidden="true">×</span></button>'
+      hiddenRowHtml(esc, 'data-restore-row', rk, lab)
     );
   });
   return chips;
 }
 
 function wireHiddenBarActions(bar, ctx) {
-  bar.querySelector('.tend-group-hidden-bar-toggle').onclick = function (ev) {
+  bar.querySelector('.tend-hidden-trigger').onclick = function (ev) {
     ev.stopPropagation();
-    ctx.state.tableHiddenBarCollapsed = !ctx.state.tableHiddenBarCollapsed;
+    ctx.state.tableHiddenMenuOpen = !ctx.state.tableHiddenMenuOpen;
     renderTableHiddenBar(ctx);
   };
+  var filter = bar.querySelector('.tend-hidden-filter');
+  if (filter) {
+    filter.oninput = function () {
+      var q = filter.value.trim().toLowerCase();
+      bar.querySelectorAll('.tend-hidden-row').forEach(function (row) {
+        row.style.display = row.textContent.toLowerCase().indexOf(q) >= 0 ? '' : 'none';
+      });
+    };
+  }
   bar.querySelector('.tend-group-show-all-btn').onclick = function (ev) {
     ev.stopPropagation();
     writeGroupTableHidden(ctx.state.patientId, ctx.sectionKey, { rows: [], cols: [] });
-    ctx.state.tableHiddenBarCollapsed = false;
+    ctx.state.tableHiddenMenuOpen = false;
     ctx.renderTable(ctx.sectionKey);
   };
   bar.querySelectorAll('[data-restore-col]').forEach(function (btn) {
@@ -152,26 +180,19 @@ export function renderTableHiddenBar(ctx) {
     bar.innerHTML = '';
     return;
   }
-  var count = hidden.cols.length + hidden.rows.length;
-  var collapsed = !!ctx.state.tableHiddenBarCollapsed;
+  var count = chips.length;
+  var open = !!ctx.state.tableHiddenMenuOpen;
   bar.style.display = '';
-  bar.className = 'tend-group-table-hidden-bar' + (collapsed ? ' is-collapsed' : '');
+  bar.className = 'tend-group-table-hidden-bar' + (open ? ' is-open' : '');
   bar.innerHTML =
-    '<div class="tend-group-hidden-bar-head">' +
-    '<button type="button" class="tend-group-hidden-bar-toggle" aria-expanded="' +
-    (collapsed ? 'false' : 'true') +
-    '">' +
-    '<span class="tend-section-chevron rp-dot" aria-hidden="true"></span>' +
-    '<span class="tend-group-hidden-label">Ocultos en copia (' +
-    count +
-    ')</span></button>' +
-    '<button type="button" class="tend-toolbar-btn tend-group-show-all-btn">Mostrar todo</button>' +
-    '</div>' +
-    '<div class="tend-group-hidden-bar-body' +
-    (collapsed ? ' tend-section-body--collapsed' : '') +
-    '">' +
-    chips.join('') +
-    '</div>';
+    '<button type="button" class="tend-hidden-trigger" aria-expanded="' + (open ? 'true' : 'false') + '">' +
+    '<span class="rp-dot" aria-hidden="true"></span>' + count + (count === 1 ? ' oculto' : ' ocultos') + ' en la copia</button>' +
+    (open
+      ? '<div class="tend-hidden-panel"><div class="tend-hidden-panel-head"><span>Ocultos en la copia</span>' +
+        '<button type="button" class="tend-group-show-all-btn">Mostrar todo</button></div>' +
+        (count > 8 ? '<input type="search" class="tend-hidden-filter" placeholder="Buscar" aria-label="Buscar entre los ocultos">' : '') +
+        '<div class="tend-hidden-list">' + chips.join('') + '</div></div>'
+      : '');
   wireHiddenBarActions(bar, ctx);
 }
 
@@ -267,8 +288,9 @@ function eyeToggleHtml(esc, attr, key, hidden, what, label) {
 }
 
 function buildTableHeadHtml(esc, raw, hidden, markersByDay) {
-  var html = ['<thead><tr><th>Analito</th>'];
-  raw.columns.forEach(function (set) {
+  var lastCi = lastVisibleCol(raw, hidden);
+  var html = ['<thead><tr><th>Analito</th><th class="tend-tbl-ref-h">Referencia</th>'];
+  raw.columns.forEach(function (set, ci) {
     var ck = colKeyForSet(set);
     var colHidden = hidden.cols.indexOf(ck) >= 0;
     var colLabel = columnHeader(set, raw.columns);
@@ -280,11 +302,13 @@ function buildTableHeadHtml(esc, raw, hidden, markersByDay) {
     html.push(
       '<th class="' +
         (colHidden ? 'is-hidden' : '') +
+        (ci === lastCi ? ' is-last' : '') +
         '"><div class="tend-group-col-head">' +
         tagsHtml +
         '<span class="tend-group-col-toggle">' +
         eyeToggleHtml(esc, 'data-col-key', ck, colHidden, 'columna', colLabel) +
         esc(colLabel) +
+        (ci === lastCi ? '<span class="tend-tbl-last-tag"> · último</span>' : '') +
         '</span></div></th>'
     );
   });
@@ -299,8 +323,21 @@ export function tableHiddenRowClass(rowHidden) {
 
 function buildTableBodyHtml(deps, esc, state, raw, hidden, specsByRowKey) {
   var html = ['<tbody>'];
+  var lastCi = lastVisibleCol(raw, hidden);
+  var nCols = raw.columns.length + 2;
+  var multiSection = raw.rows.some(function (r) {
+    return r.sectionKey !== raw.rows[0].sectionKey;
+  });
+  var curSection = null;
   raw.rows.forEach(function (row) {
     var rk = rowKey(row);
+    if (multiSection && row.sectionKey !== curSection) {
+      curSection = row.sectionKey;
+      html.push(
+        '<tr class="tend-tbl-sec"><td colspan="' + nCols + '">' +
+          esc((deps.getSectionLabel && deps.getSectionLabel(curSection)) || curSection) + '</td></tr>'
+      );
+    }
     var rowHidden = hidden.rows.indexOf(rk) >= 0;
     var rowLabel = rowDisplayLabel(deps, state, row, specsByRowKey);
     html.push(
@@ -311,7 +348,9 @@ function buildTableBodyHtml(deps, esc, state, raw, hidden, specsByRowKey) {
         '"><td><span class="tend-group-row-toggle">' +
         eyeToggleHtml(esc, 'data-field-key', rk, rowHidden, 'fila', rowLabel) +
         esc(rowLabel) +
-        '</span></td>'
+        '</span></td><td class="tend-tbl-ref">' +
+        esc(rowRefText(deps, row, raw, state.historyDesc)) +
+        '</td>'
     );
     raw.columns.forEach(function (set, ci) {
       var ck = colKeyForSet(set);
@@ -322,17 +361,19 @@ function buildTableBodyHtml(deps, esc, state, raw, hidden, specsByRowKey) {
       html.push(
         '<td class="' +
           (colHidden ? 'is-hidden' : '') +
-          (dir ? ' tend-abnormal' : '') +
+          (ci === lastCi ? ' is-last' : '') +
+          '"><span class="tend-val' +
+          (dir ? (dir === '▲' ? ' tend-val--hi' : ' tend-val--lo') : '') +
           '">' +
           esc(formatCellValue(val, dir)) +
-          '</td>'
+          '</span></td>'
       );
     });
     html.push('</tr>');
   });
   var interpTexts = interpretationRowTexts(state.sectionKey, raw.columns);
   if (interpTexts) {
-    html.push('<tr class="tend-group-table-interp-row"><td><em>Interpretación</em></td>');
+    html.push('<tr class="tend-group-table-interp-row"><td><em>Interpretación</em></td><td></td>');
     raw.columns.forEach(function (set, ci) {
       var ck = colKeyForSet(set);
       var colHidden = hidden.cols.indexOf(ck) >= 0;
@@ -348,6 +389,22 @@ function buildTableBodyHtml(deps, esc, state, raw, hidden, specsByRowKey) {
   }
   html.push('</tbody>');
   return html;
+}
+
+/** Legend + out-of-range count in the last visible draw. */
+function buildLegendHtml(model) {
+  var ci = -1;
+  model.columns.forEach(function (c, i) {
+    if (!c.hidden) ci = i;
+  });
+  var n = ci < 0 ? 0 : model.rows.filter(function (r) {
+    return !r.hidden && r.cells[ci] && r.cells[ci].abnormal;
+  }).length;
+  return (
+    '<div class="tend-tbl-legend"><span><span class="tend-tbl-lg-hi">▲</span> por encima</span>' +
+    '<span><span class="tend-tbl-lg-lo">▼</span> por debajo</span>' +
+    '<span>' + n + (n === 1 ? ' valor fuera de rango' : ' valores fuera de rango') + ' en la última toma</span></div>'
+  );
 }
 
 function toggleHiddenList(list, key, checked) {
@@ -412,6 +469,20 @@ function buildSpecsByRowKey(specs) {
 }
 
 export function renderGroupTable(deps, state, sectionKey, renderTable, opts) {
+  var wrapEl = document.getElementById((opts && opts.wrapId) || 'tend-group-table-wrap');
+  var restore = wrapEl ? captureScroll(wrapEl) : null;
+  renderGroupTableInner(deps, state, sectionKey, renderTable, opts);
+  if (restore) restore();
+}
+
+function commitWrapHtml(wrap, joined) {
+  if (wrap._tendLastHtml === joined && wrap.firstChild) return true;
+  wrap.innerHTML = joined;
+  wrap._tendLastHtml = joined;
+  return false;
+}
+
+function renderGroupTableInner(deps, state, sectionKey, renderTable, opts) {
   var wrap = document.getElementById((opts && opts.wrapId) || 'tend-group-table-wrap');
   if (!wrap) return;
   var hidden = readGroupTableHidden(state.patientId, sectionKey);
@@ -437,12 +508,21 @@ export function renderGroupTable(deps, state, sectionKey, renderTable, opts) {
   var html = [
     daySlot ? '' : dayHtml,
     state.dynamicMode ? '<div id="tend-group-analyte-picker-slot"></div>' : '',
-    '<div class="cultivos-table-wrap"><table id="tend-group-table" class="cultivos-table tend-group-table">',
   ];
-  html = html.concat(buildTableHeadHtml(esc, raw, hidden, markersByDay));
-  html = html.concat(buildTableBodyHtml(deps, esc, state, raw, hidden, specsByRowKey));
-  html.push('</table></div>');
-  wrap.innerHTML = html.join('');
+  if (!allSpecs.length) {
+    html.push(
+      '<div class="tend-table-empty"><strong>Aún no hay analitos</strong>' +
+        '<span>Marca analitos en la lista o usa «+ Agregar analito» para armar la tabla.</span></div>'
+    );
+  } else {
+    html.push('<div class="cultivos-table-wrap"><table id="tend-group-table" class="cultivos-table tend-group-table">');
+    html = html.concat(buildTableHeadHtml(esc, raw, hidden, markersByDay));
+    html = html.concat(buildTableBodyHtml(deps, esc, state, raw, hidden, specsByRowKey));
+    html.push('</table></div>');
+    html.push(buildLegendHtml(state.tableModel));
+  }
+  // Same HTML as last render: keep the live DOM (scroll, listeners) and skip re-wiring it.
+  var unchanged = commitWrapHtml(wrap, html.join(''));
   renderTableHiddenBar({
     wrap: wrap,
     sectionKey: sectionKey,
@@ -453,8 +533,8 @@ export function renderGroupTable(deps, state, sectionKey, renderTable, opts) {
     renderTable: renderTable,
     specsByRowKey: specsByRowKey,
   });
-  wireTableToggles(wrap, deps, state, sectionKey, renderTable);
-  wireDayModeToggle(daySlot || wrap, state, sectionKey, renderTable);
+  if (!unchanged) wireTableToggles(wrap, deps, state, sectionKey, renderTable);
+  if (daySlot || !unchanged) wireDayModeToggle(daySlot || wrap, state, sectionKey, renderTable);
   if (state.dynamicMode) {
     renderAnalytePickerBar({
       slot: wrap.querySelector('#tend-group-analyte-picker-slot'),

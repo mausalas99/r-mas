@@ -6,6 +6,7 @@ import { getPatients, getNotes, getIndicaciones, getLabHistory, getMedRecetaByPa
 import {
   mergeEventualidades,
   mergeLabHistorySets,
+  incomingDocWinsLww,
 } from '../../patient-merge.mjs';
 import { reparseLabSetsFromSome } from '../../lab-history-some-reparse.mjs';
 import { bumpLabHistoryRevision } from '../../lab-history-cache.mjs';
@@ -270,14 +271,14 @@ function applyLanPatientCharts(existing, entry) {
   // for a patient whose real note just wasn't part of this batch.
   if (Object.prototype.hasOwnProperty.call(entry, 'note')) {
     var nextNote = entry.note || {};
-    if (!lanJsonEqual(getNotes()[existing.id], nextNote)) {
+    if (incomingDocWinsLww(getNotes()[existing.id], nextNote) && !lanJsonEqual(getNotes()[existing.id], nextNote)) {
       getNotes()[existing.id] = nextNote;
       changed = true;
     }
   }
   if (Object.prototype.hasOwnProperty.call(entry, 'indicaciones')) {
     var nextInd = entry.indicaciones || {};
-    if (!lanJsonEqual(getIndicaciones()[existing.id], nextInd)) {
+    if (incomingDocWinsLww(getIndicaciones()[existing.id], nextInd) && !lanJsonEqual(getIndicaciones()[existing.id], nextInd)) {
       getIndicaciones()[existing.id] = nextInd;
       changed = true;
     }

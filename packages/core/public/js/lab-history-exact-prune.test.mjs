@@ -45,4 +45,17 @@ describe('applyExactLabHistoryDedupe', () => {
     assert.equal(getLabHistory()[pid], sets);
     delete getLabHistory()[pid];
   });
+
+  it('drops a pulled set whose values sit inside a bigger set of the day', () => {
+    var pid = 'prune-test-subsumed';
+    var small = ['BH\tHb 11.9 Hto 35.7 VCM 88 HCM 29.5 Leu 3.81 Neu 2.59 Plt 182', 'QS\tGlu 85 Cr 0.6 BUN 30 AU 7.1'];
+    var pb = { BH: { Hb: 11.9, Hto: 35.7, VCM: 88, HCM: 29.5, Leu: 3.81, Neu: 2.59, Plt: 182 }, QS: { Glu: 85, Cr: 0.6, BUN: 30, AU: 7.1 } };
+    getLabHistory()[pid] = [
+      { id: 's', fecha: '22/09/2026', hora: '14:41', resLabs: small, parsedBySection: pb },
+      { id: 'b', fecha: '22/09/2026', hora: '', resLabs: small.concat(['INM\tC3 4']), parsedBySection: { ...pb, INM: { C3: 4 } } },
+    ];
+    assert.deepEqual(applyExactLabHistoryDedupe(pid), ['s']);
+    assert.equal(getLabHistory()[pid][0].hora, '14:41');
+    delete getLabHistory()[pid];
+  });
 });

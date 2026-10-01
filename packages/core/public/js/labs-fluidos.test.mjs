@@ -217,3 +217,16 @@ test('parseCitoquimicoLiquidosParsed — "Actualizar labs" con QS de otra solici
   assert.ok(!/LDH\s+252\b/.test(out.line), 'no debe traer el LDH sérico (252) de la QS ajena');
   assert.ok(!/Glu\s+597\.0/.test(out.line), 'sin pareja segura, tampoco se arriesga a mostrar la glucosa real (mitades no fusionadas)');
 });
+
+test('bloques BACTERIOLOGIA y CITOQUIMICO — miles de líneas en blanco no congelan y el corte sigue funcionando', async () => {
+  const { citoquimicoBlocksNormText_ } = await import('./labs-fluidos.mjs');
+  const { parseExtendedLabPanels_ } = await import('./labs-panel-parse.mjs');
+  const blanks = '\n'.repeat(5000);
+  const t0 = Date.now();
+  citoquimicoBlocksNormText_('CITOQUIMICO\n' + blanks + 'x');
+  parseExtendedLabPanels_('BACTERIOLOGIA\n' + blanks + 'x');
+  assert.ok(Date.now() - t0 < 1000, 'sin backtracking cúbico en el patrón de corte');
+  const blocks = citoquimicoBlocksNormText_('CITOQUIMICO\nGLU 5\n\n\nBIOMETRIA\nHB 12');
+  assert.equal(blocks.length, 1);
+  assert.ok(/GLU 5/.test(blocks[0]) && !/HB 12/.test(blocks[0]), 'corta en el siguiente encabezado');
+});

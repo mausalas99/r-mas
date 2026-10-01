@@ -216,7 +216,7 @@ export function mediLlevarASOAP() {
     );
     return;
   }
-  var buckets = bucketsFromRecetaItems(block ? block.items : [], sel, classifyMedicationSoapCategory, activeId);
+  var buckets = bucketsFromRecetaItems(block ? block.items : [], sel, classifyMedicationSoapCategory, activeId, block && block.fechaActualizacion ? String(block.fechaActualizacion).trim() : '');
   var hasBuckets = MED_FIELD_KEYS.some(function (k) {
     return buckets[k] && String(buckets[k]).trim();
   });
@@ -402,7 +402,7 @@ function syncEaMedsFromProcessedReceta(activeId) {
   var monitoreo = patient.monitoreo;
   pruneEstadoClinicoMedsFromReceta(monitoreo, items, classifyMedicationSoapCategory, fecha);
   var sel = getMedNotaSelectionByPatient()[activeId] || {};
-  var buckets = bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory, activeId);
+  var buckets = bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory, activeId, fecha);
   applyRecetaProposal(monitoreo, buckets);
   syncConfirmedAbxFromReceta(monitoreo, buckets);
   syncMonitoreoInsulinPumpFromReceta(monitoreo, block);

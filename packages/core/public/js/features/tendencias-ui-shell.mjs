@@ -456,8 +456,10 @@ function tendDragHandleMove(state, zone, scrollRoot, zoneCards, e) {
   state.ghost.style.top = e.clientY - state.offsetY + 'px';
   var cards = zoneCards().filter(function (c) { return c !== state.card; });
   var before = cards.length ? findTendInsertBeforeCard(cards, e.clientX, e.clientY) : null;
-  if (before) zone.insertBefore(state.card, before);
-  else zone.appendChild(state.card);
+  if (before ? state.card.nextElementSibling !== before : zone.lastElementChild !== state.card) {
+    if (before) zone.insertBefore(state.card, before);
+    else zone.appendChild(state.card);
+  }
   if (!scrollRoot) return;
   var sr = scrollRoot.getBoundingClientRect();
   if (e.clientY < sr.top + 54) scrollRoot.scrollTop -= 9;

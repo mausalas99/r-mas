@@ -1,4 +1,3 @@
-import { scheduleAfterPaint } from '../deferred-work.mjs';
 import { buildTextSkeletonPanel } from '../ui-skeleton.mjs';
 import {
   buildTrendSeriesIndexCached,
@@ -241,7 +240,9 @@ function buildTendenciaSectionHtml(sectionKey, list, seriesIndex) {
       : '') +
     '</div><div class="tend-section-body' +
     (expanded ? '' : ' tend-section-body--collapsed') +
-    '"><div class="tend-rows tend-sort-zone" data-section-key="' +
+    '">' +
+    TEND_COLS_HTML +
+    '<div class="tend-rows tend-sort-zone" data-section-key="' +
     tc.esc(sectionKey) +
     '">' +
     rowParts.join('') +
@@ -277,14 +278,16 @@ var TEND_COLS_HTML =
   '<div class="tend-cols" aria-hidden="true"><span>Analito</span><span>Último</span><span>Estado</span><span>Rango</span><span>Cambio</span><span>Últimos 5 días</span><span></span></div>';
 
 function paintTendenciasGrid(container, toolbarHtml, sectionsOrdered, bySection, seriesIndex, seriesAvail, historyDesc, summaryHtml) {
-  var htmlParts = [toolbarHtml, summaryHtml, TEND_COLS_HTML];
+  var htmlParts = [toolbarHtml, summaryHtml];
   for (var si = 0; si < sectionsOrdered.length; si++) {
     var sectionKey = sectionsOrdered[si];
     var list = tc.orderTrendSeriesBySaved(bySection[sectionKey], readTendCardOrder(tc.aid(), sectionKey));
     htmlParts.push(buildTendenciaSectionHtml(sectionKey, list, seriesIndex));
   }
   htmlParts.push('<p class="tend-empty tend-search-empty" hidden>Ningún analito coincide con la búsqueda.</p>');
+  var prevScroll = container.scrollTop;
   container.innerHTML = htmlParts.join('');
+  if (prevScroll) container.scrollTop = prevScroll;
   tc.buildSparkJobsFromIndex(seriesAvail, seriesIndex, historyDesc, tc.sparkChartAnim(600));
 }
 
@@ -408,7 +411,12 @@ function renderTendencias(opts) {
   if (!container.querySelector('.tend-rows, .tend-toolbar, .tend-empty')) {
     container.innerHTML = buildTextSkeletonPanel('tend-skeleton skel-panel', 4);
   }
-  scheduleAfterPaint(paint);
+  // Not scheduleAfterPaint: tab/patient switches cancel it, which left the skeleton stuck and onReady unfired.
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(function () {
+      requestAnimationFrame(paint);
+    });
+  } else setTimeout(paint, 0);
 }
 
 export { renderTendencias };

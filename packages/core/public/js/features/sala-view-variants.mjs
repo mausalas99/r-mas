@@ -85,14 +85,14 @@ function el(id, tag, parent, before) {
   return node;
 }
 
-function bedLine(p) {
+export function bedLine(p) {
   var cuarto = String(p.cuarto || '').trim();
   var cama = String(p.cama || '').trim();
   return [cuarto && 'Cto. ' + cuarto, cama && 'Cama ' + cama].filter(Boolean).join(' · ') || 'Sin cama';
 }
 
 /** Esquina de la tarjeta: archivar en Sala, «Restaurar» en Archivados. */
-function cornerBtnHtml(p) {
+export function cornerBtnHtml(p) {
   var arch = !!p.archived;
   return (
     '<button type="button" class="' + (arch ? 'sv-card-restore' : 'sv-card-archive') + '" title="' + (arch ? 'Restaurar a sala' : 'Archivar paciente') +
@@ -102,12 +102,8 @@ function cornerBtnHtml(p) {
   );
 }
 
-function cardHtml(p) {
-  ensurePatientDiagnosticos(p);
-  var dx = p.diagnosticosList.filter(Boolean);
-  var ic = (Array.isArray(p.interconsultServiceIds) ? p.interconsultServiceIds : [])
-    .map(serviceById)
-    .filter(Boolean);
+/** Etiquetas de alerta de la tarjeta (No RCP, ingreso incompleto, soporte, lab crítico). */
+export function cardTagsHtml(p) {
   var tags = '';
   if (Number(p.negativa_maniobras_firmada || 0)) tags += '<span class="sv-tag sv-tag--dnr">No RCP</span>';
   if (isPatientAdmissionIncomplete(p, rt.getSettings())) tags += '<span class="sv-tag sv-tag--warn">Ingreso incompleto</span>';
@@ -116,6 +112,16 @@ function cardHtml(p) {
   if (rt.ensureParsedLabHistoryCached && hasCriticalLabValue(rt.ensureParsedLabHistoryCached(p.id))) {
     tags += '<span class="sv-tag sv-tag--dnr">Lab crítico</span>';
   }
+  return tags;
+}
+
+function cardHtml(p) {
+  ensurePatientDiagnosticos(p);
+  var dx = p.diagnosticosList.filter(Boolean);
+  var ic = (Array.isArray(p.interconsultServiceIds) ? p.interconsultServiceIds : [])
+    .map(serviceById)
+    .filter(Boolean);
+  var tags = cardTagsHtml(p);
   return (
     '<div class="sv-card-wrap">' +
     '<button type="button" class="sv-card' + (isActive(p) ? ' is-active' : '') + (p.archived ? ' is-archived' : '') + '" data-sv-open="' + esc(p.id) + '">' +
