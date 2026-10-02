@@ -1,4 +1,5 @@
 import { esc } from '../../dom-escape.mjs';
+import { wireFocusTrap } from '../../modal-dismiss.mjs';
 import { STACKED_BACKDROP_CLASS } from './stacked-overlay.mjs';
 
 /**
@@ -82,7 +83,11 @@ function wireAdminPromptModal(overlay, resolve) {
   const okBtn = overlay.querySelector('[data-admin-prompt-ok]');
   const cancelBtn = overlay.querySelector('[data-admin-prompt-cancel]');
 
+  // Registered trap: stops the Administración panel's focus trap from stealing focus back.
+  const trap = wireFocusTrap(/** @type {HTMLElement} */ (overlay.firstElementChild || overlay));
+
   function finish(value) {
+    trap.unwire();
     overlay.remove();
     resolve(value);
   }

@@ -5,7 +5,7 @@ import {
   ioDiuresisForBalance,
   ioNumericEgressTotal,
 } from './estado-actual-io.mjs';
-import { sortGlucometriasChronologically } from './estado-actual-registro-defaults.mjs';
+import { gluPointMs, sortGlucometriasChronologically } from './estado-actual-registro-defaults.mjs';
 import { getVitalExtraStorageKey, VITAL_BASE_KEYS } from './estado-actual-vital-extras.mjs';
 import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
 import { VITAL_KEYS } from './estado-actual-data-constants.mjs';
@@ -343,5 +343,15 @@ export function deriveBpPairsFromHistorial_(sortedAsc) {
     if (!collected) continue;
     appendBpPairsFromLayers(pairs, collected.recordedAt, collected.tasList, collected.tadList);
   }
-  return pairs;
+  // Orden cronológico real: la lectura sin hora (cierre de turno) va al final.
+  return pairs
+    .map(function (p, i) {
+      return { p: p, i: i, ms: gluPointMs(p.recordedAt, p.time, true) };
+    })
+    .sort(function (a, b) {
+      return a.ms - b.ms || a.i - b.i;
+    })
+    .map(function (x) {
+      return x.p;
+    });
 }

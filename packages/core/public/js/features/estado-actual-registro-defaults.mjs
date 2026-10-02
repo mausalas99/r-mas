@@ -128,7 +128,7 @@ function isStartOfLocalDay(d) {
  * @param {string | undefined} timeHm
  * @returns {number}
  */
-export function gluPointMs(recordedAt, timeHm) {
+export function gluPointMs(recordedAt, timeHm, anyHourPrevDay) {
   var base = parseRecordedAt(recordedAt);
   if (!base) return 0;
   if (!timeHm || !String(timeHm).trim()) return base.getTime();
@@ -140,7 +140,8 @@ export function gluPointMs(recordedAt, timeHm) {
   d.setHours(h, Number.isFinite(m) ? m : 0, 0, 0);
   if (isStartOfLocalDay(base)) {
     var hm = String(timeHm).trim();
-    if (hm === '08:00' || hm === '16:00') {
+    // Signos vitales: el turno cierra 00:00, así que toda hora distinta es del día previo.
+    if (hm === '08:00' || hm === '16:00' || (anyHourPrevDay && (h > 0 || m > 0))) {
       d.setDate(d.getDate() - 1);
     }
   }
@@ -156,7 +157,7 @@ export function gluPointMs(recordedAt, timeHm) {
 export function formatEaVitalPointShorthand(recordedAt, timeHm) {
   var rec = recordedAt != null ? String(recordedAt) : '';
   if (!rec) return '';
-  var ms = gluPointMs(rec, timeHm != null ? String(timeHm) : '');
+  var ms = gluPointMs(rec, timeHm != null ? String(timeHm) : '', true);
   if (!ms) return '';
   var d = new Date(ms);
   if (isNaN(d.getTime())) return '';
