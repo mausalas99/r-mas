@@ -18,6 +18,7 @@ Nuevo panel de Equipo en Mi perfil. Tu sala ya no se pisa con copias viejas. Ing
 - **Nuevo (Interconsultas):** el botón del tablero ahora dice «Actualizar labs». En Mi equipo lista solo los pacientes del equipo. En Asignar lista todos.
 - **Nuevo (Atajos):** en modo Interconsultas, Cmd+1 recorre todas las pastillas y Cmd+E recorre Estado, Nota, Indic. y VPO.
 - **Arreglado (Nube):** las copias en Anteriores ya no se pierden al sincronizar. Se unen entre equipos, hasta 30.
+- **Nuevo (Anteriores):** cada copia tiene Editar y Eliminar. Si eliminas una, se elimina también en tus otros dispositivos.
 - **Arreglado (T/A):** el historial se ordena por hora real. La toma más nueva se marca Actual.
 - **Arreglado (Registro completo):** vuelve a la ventana centrada.
 - **Arreglado (Administración):** el cuadro de contraseña de admin vuelve a tomar el foco.

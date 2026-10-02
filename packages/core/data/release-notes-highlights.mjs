@@ -23,7 +23,7 @@ var RELEASE_NOTES_847 = [
   },
   {
     title: 'Anteriores se queda contigo',
-    body: 'Las copias de Anteriores ya no se pierden al sincronizar con la Nube.',
+    body: 'Las copias de Anteriores ya no se pierden al sincronizar con la Nube. Ahora también las puedes editar o eliminar.',
   },
   {
     title: 'Tu sala ya no se pisa',
