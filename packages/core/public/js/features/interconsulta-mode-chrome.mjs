@@ -555,7 +555,8 @@ function icBoardData() {
   ensureInterconsultaDemoInScope();
 
   var ctx = getClinicalScopeContextForEvaluate() || {};
-  var teams = ctx.teams || [];
+  // Staged teams (rotation_active = 0) start next month: keep them off this month's board.
+  var teams = (ctx.teams || []).filter((t) => Number(t && t.rotation_active) !== 0);
   var assignments = ctx.assignments || [];
   var now = ctx.now || new Date().toISOString();
   var demoOnly = isInterconsultaDemoActive();
