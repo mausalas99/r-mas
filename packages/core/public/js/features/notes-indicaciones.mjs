@@ -26,7 +26,7 @@ import {
 import { buildNotaPreviewHtml, buildIndicacionesPreviewHtml } from "../doc-preview-html.mjs";
 import { openDocPreview, closeDocPreview } from "../doc-preview-modal.mjs";
 import { openConfirm } from "./workbench/confirm.mjs";
-import { stampDocUpdatedAt, mergeAnteriores } from "../patient-merge.mjs";
+import { stampDocUpdatedAt, mergeAnteriores, liveAnteriores, editAnterior, deleteAnterior, anteriorKey } from "../patient-merge.mjs";
 import { scheduleCloudSyncPush } from "./cloud-sync/mutate-bridge.mjs";
 
 /** A saved edit: new edit clock (last write wins), then a debounced Nube push. */
@@ -532,7 +532,7 @@ function archiveCopy(doc) {
 }
 
 function pastDocsButtonHtml(kind, doc) {
-  var n = (doc && doc.anteriores || []).length;
+  var n = liveAnteriores(doc).length;
   return '<button type="button" class="wb-btn wb-btn-ghost" data-onclick="openPastDocs" data-onclick-args=\'' + escAttr(JSON.stringify([kind])) + '\'' +
     (n ? '' : ' disabled title="Se guarda una copia cada vez que imprimes o generas el documento"') + '>Anteriores (' + n + ')</button>';
 }
@@ -557,10 +557,53 @@ function pastDocHtml(kind, snap) {
   return rows || '<p class="fit-empty">Copia vacía.</p>';
 }
 
+var PAST_ARRAY_KEYS = ['diagnosticos', 'tratamiento'];
+
+function pastEditHtml(kind, snap) {
+  var fields = PAST_FIELDS[kind].map(function (f) {
+    var key = f[0];
+    var head = '<h4>' + f[1] + '</h4>';
+    if (kind === 'nota' && key === 'vitales') {
+      return '<div class="past-doc-field">' + head + '<div class="past-doc-vitals">' +
+        [['ta', 'T.A.'], ['fr', 'F.R.'], ['fc', 'F.C.'], ['temp', 'Temp'], ['peso', 'Peso']].map(function (v) {
+          return '<label>' + v[1] + '<input type="text" data-past-f="' + v[0] + '" value="' + escAttr(snap[v[0]] || '') + '"></label>';
+        }).join('') + '</div></div>';
+    }
+    if (key === 'otros') {
+      return '<div class="past-doc-field">' + head + (snap.otros || []).map(function (o, i) {
+        return '<input type="text" data-past-otro-t="' + i + '" aria-label="Título" value="' + escAttr(o.titulo || '') + '" placeholder="Título">' +
+          '<textarea data-past-otro-c="' + i + '" aria-label="' + escAttr(f[1] + ' ' + (i + 1)) + '">' + esc(o.contenido || '') + '</textarea>';
+      }).join('') + '</div>';
+    }
+    var val = snap[key];
+    return '<div class="past-doc-field">' + head + '<textarea data-past-f="' + key + '" aria-label="' + escAttr(f[1]) + '">' + esc(Array.isArray(val) ? val.join('\n') : val || '') + '</textarea></div>';
+  }).join('');
+  return '<div class="past-doc-actions"><button type="button" class="wb-btn wb-btn-primary" data-past-save>Guardar cambios</button>' +
+    '<button type="button" class="wb-btn wb-btn-ghost" data-past-cancel>Cancelar</button></div>' + fields;
+}
+
+/** The edited fields of one past copy, read back from the edit form. */
+function pastEditPatch(view, snap) {
+  var patch = {};
+  view.querySelectorAll('[data-past-f]').forEach(function (el) {
+    var key = el.getAttribute('data-past-f');
+    if (PAST_ARRAY_KEYS.indexOf(key) < 0 && !Array.isArray(snap[key])) { patch[key] = el.value; return; }
+    var lines = el.value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+    patch[key] = lines.length ? lines : [''];
+  });
+  if (Array.isArray(snap.otros)) {
+    patch.otros = snap.otros.map(function (o, i) {
+      var t = view.querySelector('[data-past-otro-t="' + i + '"]');
+      var c = view.querySelector('[data-past-otro-c="' + i + '"]');
+      return Object.assign({}, o, { titulo: t ? t.value : o.titulo, contenido: c ? c.value : o.contenido });
+    });
+  }
+  return patch;
+}
+
 function openPastDocs(kind) {
   var doc = (kind === 'nota' ? getNotes() : getIndicaciones())[aid()];
-  var list = (doc && doc.anteriores) || [];
-  if (!list.length) return;
+  if (!liveAnteriores(doc).length) return;
   var old = document.getElementById('past-docs-backdrop');
   if (old) old.remove();
   var bd = document.createElement('div');
@@ -570,29 +613,60 @@ function openPastDocs(kind) {
     '<div class="soap-modal wb-modal past-docs-modal" role="dialog" aria-modal="true" aria-labelledby="past-docs-title">' +
     '<header class="wb-modal-head"><h3 class="wb-modal-title" id="past-docs-title">' + (kind === 'nota' ? 'Notas de evolución anteriores' : 'Indicaciones anteriores') + '</h3>' +
     '<button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-past-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button></header>' +
-    '<div class="past-docs-layout"><nav class="past-docs-list">' +
-    list.map(function (a, i) {
-      var when = a.fecha || new Date(a.guardada).toLocaleDateString('es-MX');
-      return '<button type="button" class="past-docs-item" data-past-idx="' + i + '">' + esc(when) + (a.hora ? ' <span>' + esc(a.hora) + '</span>' : '') + '</button>';
-    }).join('') +
-    '</nav><div class="past-docs-view wb-modal-body"></div></div>' +
+    '<div class="past-docs-layout"><nav class="past-docs-list"></nav><div class="past-docs-view wb-modal-body"></div></div>' +
     '</div>';
   document.body.appendChild(bd);
+  var nav = bd.querySelector('.past-docs-list');
   var view = bd.querySelector('.past-docs-view');
-  function show(i) {
-    view.innerHTML = pastDocHtml(kind, list[i]);
-    bd.querySelectorAll('[data-past-idx]').forEach(function (b) { b.classList.toggle('active', Number(b.getAttribute('data-past-idx')) === i); });
+  var list = [];
+  var cur = 0;
+  function paint(i, editing) {
+    list = liveAnteriores(doc);
+    if (!list.length) return close();
+    cur = Math.min(i, list.length - 1);
+    nav.innerHTML = list.map(function (a, n) {
+      var when = a.fecha || new Date(a.guardada).toLocaleDateString('es-MX');
+      return '<button type="button" class="past-docs-item" data-past-idx="' + n + '">' + esc(when) + (a.hora ? ' <span>' + esc(a.hora) + '</span>' : '') + '</button>';
+    }).join('');
+    nav.querySelectorAll('[data-past-idx]').forEach(function (b) { b.classList.toggle('active', Number(b.getAttribute('data-past-idx')) === cur); });
+    view.innerHTML = editing
+      ? pastEditHtml(kind, list[cur])
+      : '<div class="past-doc-actions"><button type="button" class="wb-btn wb-btn-secondary" data-past-edit>Editar</button>' +
+        '<button type="button" class="wb-btn wb-btn-ghost" data-past-del>Eliminar</button></div>' + pastDocHtml(kind, list[cur]);
+  }
+  function changed() {
+    touchDoc(doc);
+    persistClinicalState();
+    (kind === 'nota' ? renderNoteForm : renderIndicaForm)();
+  }
+  async function remove() {
+    var result = await openConfirm({
+      weight: 'destructive',
+      title: '¿Eliminar esta copia anterior?',
+      message: 'Se elimina también en tus otros dispositivos. No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+    });
+    if (result !== 'confirm' || !deleteAnterior(doc, anteriorKey(list[cur]))) return;
+    changed();
+    paint(cur);
   }
   function close() { document.removeEventListener('keydown', onKey); bd.remove(); }
-  function onKey(e) { if (e.key === 'Escape') close(); }
+  function onKey(e) { if (e.key === 'Escape' && !document.querySelector('[data-wb-confirm-backdrop]')) close(); }
   document.addEventListener('keydown', onKey);
   bd.addEventListener('click', function (e) {
     var t = /** @type {HTMLElement} */ (e.target);
     if (t === bd || t.closest('[data-past-close]')) return close();
     var item = t.closest('[data-past-idx]');
-    if (item) show(Number(item.getAttribute('data-past-idx')));
+    if (item) return paint(Number(item.getAttribute('data-past-idx')));
+    if (t.closest('[data-past-edit]')) return paint(cur, true);
+    if (t.closest('[data-past-cancel]')) return paint(cur);
+    if (t.closest('[data-past-del]')) return void remove();
+    if (t.closest('[data-past-save]')) {
+      if (editAnterior(doc, anteriorKey(list[cur]), pastEditPatch(view, list[cur]))) changed();
+      paint(cur);
+    }
   });
-  show(0);
+  paint(0);
 }
 
 export {

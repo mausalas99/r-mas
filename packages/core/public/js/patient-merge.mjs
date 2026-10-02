@@ -70,6 +70,46 @@ export function stampDocUpdatedAt(doc) {
 
 export const DOC_ANTERIORES_MAX = 30;
 
+/** One copy per fecha (a copy without fecha is keyed by the day it was saved). */
+export function anteriorKey(s) {
+  return String(s.fecha || String(s.guardada || '').slice(0, 10));
+}
+
+/** Copies the user can see: a deleted copy stays as a tombstone (`eliminada`) so sync cannot bring it back. */
+export function liveAnteriores(doc) {
+  return (Array.isArray(doc?.anteriores) ? doc.anteriores : []).filter((s) => s && !s.eliminada);
+}
+
+/** A `guardada` that always moves forward, so an edit or delete beats the older copy on another device. */
+function nextGuardada(prev) {
+  const p = Date.parse(String(prev || ''));
+  const now = Date.now();
+  return new Date(Number.isFinite(p) && p >= now ? p + 1 : now).toISOString();
+}
+
+/**
+ * Edit one past copy in place. `fecha`/`hora` stay; `guardada` moves forward. False when no live copy has that key.
+ * @param {Record<string, any>} doc @param {string} key @param {Record<string, unknown>} patch
+ */
+export function editAnterior(doc, key, patch) {
+  const i = (doc?.anteriores || []).findIndex((s) => s && !s.eliminada && anteriorKey(s) === key);
+  if (i < 0) return false;
+  const cur = doc.anteriores[i];
+  doc.anteriores[i] = { ...cur, ...patch, fecha: cur.fecha, hora: cur.hora, guardada: nextGuardada(cur.guardada) };
+  return true;
+}
+
+/**
+ * Delete one past copy: it becomes a tombstone that wins the union on every device. False when no live copy has that key.
+ * @param {Record<string, any>} doc @param {string} key
+ */
+export function deleteAnterior(doc, key) {
+  const i = (doc?.anteriores || []).findIndex((s) => s && !s.eliminada && anteriorKey(s) === key);
+  if (i < 0) return false;
+  doc.anteriores[i] = { fecha: key, guardada: nextGuardada(doc.anteriores[i].guardada), eliminada: true };
+  return true;
+}
+
 /**
  * Union two `anteriores` lists (read-only copies of past exports) on fecha. The newest
  * `guardada` wins per fecha; newest first; capped. Never drops a copy only one side has.
@@ -81,7 +121,7 @@ export function mergeAnteriores(a, b) {
   const byDay = new Map();
   for (const s of [...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])]) {
     if (!s || typeof s !== 'object') continue;
-    const day = String(s.fecha || String(s.guardada || '').slice(0, 10));
+    const day = anteriorKey(s);
     const cur = byDay.get(day);
     if (!cur || compareIso(String(s.guardada || ''), String(cur.guardada || '')) > 0) byDay.set(day, s);
   }

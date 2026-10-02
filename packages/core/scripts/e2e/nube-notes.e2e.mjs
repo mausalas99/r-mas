@@ -17,6 +17,9 @@
  *   Anteriores (copies of past exports)
  *     - a copy made on A never reaches B, or the pull of A's same-clock note wipes it
  *     - the copy is gone on B after a restart and the first pull
+ *   Edit and delete a past copy
+ *     - an edit made on A never reaches B, or B keeps the old text
+ *     - a copy deleted on A comes back on B (the other device's union brings it back)
  *   Restart
  *     - B restarts and the note is gone or empty (a partial pull wipes it)
  *   Too big
@@ -47,6 +50,7 @@ const P1 = { exp: `8${String(Date.now()).slice(-6)}-1`, name: 'DEMO NOTAS UNO', 
 const TEAM = `EQUIPO DEMO NOTAS ${tag.toUpperCase()}`; // the app upper-cases team names
 const NOTE_A = 'DEMO EVOLUCION ESCRITA EN A';
 const NOTE_B = 'DEMO EVOLUCION CORREGIDA EN B';
+const COPY_EDIT = 'DEMO COPIA ANTERIOR EDITADA EN A';
 const INTERROG = 'DEMO INTERROGATORIO SOLO DE A';
 const DIETA_A = 'DEMO DIETA BLANDA DE A';
 const MED_A = 'DEMO PARACETAMOL DE A';
@@ -110,6 +114,14 @@ const indValue = async (page, arg) => {
 const pastLabel = async (page) => {
   await goClinico(page, 'notas');
   return page.locator('#note-form button').evaluateAll((bs) => bs.find((b) => /^Anteriores/.test(b.textContent))?.textContent.trim() || null);
+};
+/** Text of the open «Anteriores» window for the first copy, then closes it. */
+const pastText = async (page, name = 'Anteriores (1)') => {
+  await goClinico(page, 'notas');
+  await page.getByRole('button', { name }).click();
+  const text = (await page.locator('.past-docs-view').innerText()).replace(/\s+/g, ' ');
+  await page.keyboard.press('Escape');
+  return text;
 };
 const settle = (page) => page.evaluate(() => document.activeElement?.blur?.()).then(() => page.waitForTimeout(400));
 
@@ -239,6 +251,16 @@ await r.finish('Nube notes: nota + indicaciones sync, last write wins, restart, 
   await B.page.waitForTimeout(14000); // two more pulls: the same-clock note from the room must not wipe it
   check('B: the past copy is still there after more pulls', (await pastLabel(B.page)) === 'Anteriores (1)', await pastLabel(B.page));
 
+  // ── A edits the past copy → B sees the edit ───────────────────────────
+  await goClinico(A.page, 'notas');
+  await A.page.getByRole('button', { name: 'Anteriores (1)' }).click();
+  await A.page.locator('[data-past-edit]').click();
+  await A.page.locator('textarea[data-past-f="evolucion"]').fill(COPY_EDIT);
+  await A.page.locator('[data-past-save]').click();
+  await A.page.keyboard.press('Escape');
+  let bCopy = '';
+  check('B: the edit made on A to the past copy arrives', await until(async () => (bCopy = await pastText(B.page)).includes(COPY_EDIT), 60000, 1500), bCopy.slice(0, 200));
+
   // ── Restart B: the note stays after the first pull ─────────────────────
   await B.app.close();
   const B2 = await launchDevice('b', 3792);
@@ -250,6 +272,16 @@ await r.finish('Nube notes: nota + indicaciones sync, last write wins, restart, 
   const afterRestart = { evolucion: await noteValue(B2.page, 'evolucion'), interrogatorio: await noteValue(B2.page, 'interrogatorio'), dieta: await indValue(B2.page, 'dieta'), past: await pastLabel(B2.page) };
   check('B restarted: note, interrogatorio, indicaciones and the past copy are all still there',
     afterRestart.evolucion === NOTE_B && afterRestart.interrogatorio === INTERROG && afterRestart.dieta === DIETA_A && afterRestart.past === 'Anteriores (1)', afterRestart);
+
+  // ── A deletes the past copy → B loses it too, and it stays gone after B's next pulls ──
+  await goClinico(A.page, 'notas');
+  await A.page.getByRole('button', { name: 'Anteriores (1)' }).click();
+  await A.page.locator('[data-past-del]').click();
+  await A.page.locator('[data-wb-confirm-ok]').click();
+  check('A: the deleted copy is gone from the button', await until(async () => (await pastLabel(A.page)) === 'Anteriores (0)', 10000, 500), await pastLabel(A.page));
+  check('B: the copy deleted on A disappears', await until(async () => (await pastLabel(B2.page)) === 'Anteriores (0)', 60000, 1500), await pastLabel(B2.page));
+  await B2.page.waitForTimeout(14000);
+  check('B: the deleted copy does not come back after more pulls', (await pastLabel(B2.page)) === 'Anteriores (0)', await pastLabel(B2.page));
 
   // ── Over 96 KB: stays on A, says why, small notes keep syncing ────────
   await goClinico(A.page, 'notas');
