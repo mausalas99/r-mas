@@ -3,6 +3,8 @@ import {
   adminErrorHtml,
   applyAdminSalasFilters,
   applyCachedLabVerifications,
+  applyNetworkCensusFilters,
+  updateNetworkBulkBarVisibility,
   mutationsListHtml,
   networkCensusRows,
   redCensusHtml,
@@ -145,10 +147,72 @@ export async function loadAdminNetworkCensus(root, deps) {
     setAdminCount(root, 'red', rows.filter((r) => !r.archived).length);
     renderAdminResumenExtras(root);
     applyCachedLabVerifications(root);
-    void autoVerifyStaleNetworkLabs(root);
+    void autoVerifyStaleNetworkLabs(root).then(() => syncNetworkStaleFromDom(root));
   } catch (err) {
     el.innerHTML = adminErrorHtml(err?.data?.message || err?.message || 'No se pudo recorrer la red.');
   }
+}
+
+/**
+ * The lab check rewrites the "old labs" mark on rows. Copy it back into the cached
+ * rows so the Resumen count matches what the Pacientes tab shows.
+ * @param {HTMLElement} root
+ */
+export function syncNetworkStaleFromDom(root) {
+  const d = adminData(root);
+  const panel = root.querySelector('[data-admin-red]');
+  if (!panel || !d.patients) return;
+  const stale = new Set();
+  panel.querySelectorAll('tbody tr.cloud-sync-admin-row--stale-labs input[data-network-select]').forEach((cb) => {
+    stale.add(cb.getAttribute('data-room-id') + '\u0000' + cb.getAttribute('data-patient-id'));
+  });
+  d.patients = d.patients.map((r) => ({ ...r, staleLabs: stale.has(r.roomId + '\u0000' + r.patientId) }));
+  renderAdminResumenExtras(root);
+}
+
+/**
+ * After a successful archive/restore/delete, patch the Red list in place instead of
+ * refetching and decrypting every sala. Rows, cached data, counts and filters stay in sync.
+ * @param {HTMLElement} root
+ * @param {Array<{ roomId: string, patientId: string }>} done
+ * @param {{ remove: true } | { archived: boolean }} change
+ */
+export function applyNetworkPatientChange(root, done, change) {
+  const panel = root.querySelector('[data-admin-red]');
+  if (!panel || !done.length) return;
+  const keyOf = (roomId, patientId) => roomId + '\u0000' + patientId;
+  const keys = new Set(done.map((d) => keyOf(d.roomId, d.patientId)));
+  const estadoCol = [...panel.querySelectorAll('thead th')].findIndex((th) => th.textContent?.trim() === 'Estado');
+  panel.querySelectorAll('tbody tr').forEach((tr) => {
+    const cb = tr.querySelector('input[data-network-select]');
+    if (!cb || !keys.has(keyOf(cb.getAttribute('data-room-id') || '', cb.getAttribute('data-patient-id') || ''))) return;
+    if ('remove' in change) {
+      tr.remove();
+      return;
+    }
+    const flag = change.archived ? '1' : '0';
+    tr.setAttribute('data-archived', flag);
+    cb.setAttribute('data-archived', flag);
+    cb.checked = false;
+    const btn = tr.querySelector('[data-admin-action="archive-network-patient"]');
+    if (btn) {
+      btn.setAttribute('data-archived', flag);
+      btn.textContent = change.archived ? 'Restaurar' : 'Archivar';
+    }
+    const cell = estadoCol >= 0 ? tr.children[estadoCol] : null;
+    if (cell) cell.textContent = change.archived ? 'Archivado' : 'Activo';
+  });
+  const d = adminData(root);
+  if (d.patients) {
+    d.patients =
+      'remove' in change
+        ? d.patients.filter((r) => !keys.has(keyOf(r.roomId, r.patientId)))
+        : d.patients.map((r) => (keys.has(keyOf(r.roomId, r.patientId)) ? { ...r, archived: change.archived } : r));
+    setAdminCount(root, 'red', d.patients.filter((r) => !r.archived).length);
+  }
+  renderAdminResumenExtras(root);
+  applyNetworkCensusFilters(root);
+  updateNetworkBulkBarVisibility(root);
 }
 
 /**

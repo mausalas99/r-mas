@@ -501,6 +501,16 @@ function timeAgoLong(iso) {
   return diffD + ' d' + (diffD === 1 ? 'ía' : 'ías');
 }
 
+/** Estado cell: colored dot + exact age of last activity (<6 h ok, <24 h stale, older/none red). */
+function estadoCellHtml(row) {
+  if (row.archived) return '<span class="cloud-sync-admin-dot is-off"></span>Archivado';
+  if (!row.lastUpdatedAt) return '<span class="cloud-sync-admin-dot is-bad"></span>Sin actividad';
+  const min = (Date.now() - new Date(row.lastUpdatedAt).getTime()) / 60000;
+  const tone = min < 360 ? 'ok' : min < 1440 ? 'warn' : 'bad';
+  const label = tone === 'ok' ? 'Activo' : tone === 'warn' ? 'Sin cambios' : 'Abandonado?';
+  return '<span class="cloud-sync-admin-dot is-' + tone + '"></span>' + label + ' · ' + timeAgoLong(row.lastUpdatedAt);
+}
+
 function activityCellHtml(row) {
   if (!row.lastUpdatedAt) return '<span class="cloud-sync-hint">Sin datos</span>';
   const who = row.lastActor ? esc(row.lastActor) : 'desconocido';
@@ -539,7 +549,7 @@ function networkCensusCols() {
     { label: 'Cama', key: 'cama' },
     { label: 'Cuarto', key: 'cuarto' },
     { label: 'Servicio', key: 'servicio' },
-    { label: 'Estado', cell: (row) => (row.archived ? 'Archivado' : 'Activo') },
+    { label: 'Estado', cell: estadoCellHtml },
     { label: 'Últ. actividad', cell: activityCellHtml },
     { label: 'Últ. labs', cell: labActivityCellHtml },
     {
@@ -730,6 +740,14 @@ export function applyNetworkCensusFilters(root) {
     if (labs === 'fresh' && stale) show = false;
     tr.hidden = !show;
   });
+  const table = panel.querySelector('table');
+  panel.querySelector('[data-network-empty]')?.remove();
+  if (table && !panel.querySelector('tbody tr:not([hidden])')) {
+    table.insertAdjacentHTML(
+      'afterend',
+      '<p class="cloud-sync-hint" data-network-empty>Ningún paciente coincide con estos filtros.</p>'
+    );
+  }
 }
 
 /**

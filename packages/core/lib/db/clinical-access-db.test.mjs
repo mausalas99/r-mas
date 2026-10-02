@@ -1144,7 +1144,7 @@ describe('clinical-access-db', () => {
     assert.doesNotThrow(() => getClinicalScopeContext(db));
   });
 
-  it('listDirectoryUsers includes registered handles and teammates pending @usuario', () => {
+  it('listDirectoryUsers lists registered handles and hides teammates without @usuario', () => {
     const admin = ensureClinicalUser(db, {
       clientId: 'admin-dir',
       rank: 'R4',
@@ -1172,8 +1172,7 @@ describe('clinical-access-db', () => {
     const legacyRow = listed.find((u) => u.user_id === legacy.userId);
     assert.ok(adminRow);
     assert.equal(adminRow.lanDirectoryPending, false);
-    assert.ok(legacyRow);
-    assert.equal(legacyRow.lanDirectoryPending, true);
+    assert.equal(legacyRow, undefined);
   });
 
   it('deleteDirectoryUser removes user and blocks listDirectoryUsers', () => {

@@ -31,18 +31,11 @@ function resolveMergeUserHandle(db, row) {
   let handle = normalizeUsername(row?.username || '');
   const clinicalName = String(row?.clinical_name || '').trim();
   if (handle && isValidUsernameFormat(handle)) return { uid, handle };
+  // A real @usuario is required: no peer_* stub for rows that lack one.
   if (!clinicalName) return null;
-
-  const existingRow = db.prepare(`SELECT user_id, username FROM users WHERE user_id = ?`).get(uid);
-  if (existingRow) {
-    const existingHandle = normalizeUsername(existingRow.username || '');
-    handle =
-      isValidUsernameFormat(existingHandle) || isLanStubUsername(existingHandle)
-        ? existingHandle
-        : stubUsernameForLanUserId(db, uid);
-  } else {
-    handle = stubUsernameForLanUserId(db, uid);
-  }
+  const existingRow = db.prepare(`SELECT username FROM users WHERE user_id = ?`).get(uid);
+  handle = normalizeUsername(existingRow?.username || '');
+  if (!isValidUsernameFormat(handle) || isLanStubUsername(handle)) return null;
   return { uid, handle };
 }
 

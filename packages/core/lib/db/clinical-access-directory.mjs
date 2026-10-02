@@ -1,7 +1,6 @@
 import { canManageTeamRoster } from './clinical-privileges.mjs';
 import {
   isDirectoryPendingUsername,
-  isRegisteredClinicalUser,
   isValidUsernameFormat,
   normalizeUsername,
 } from './clinical-username.mjs';
@@ -18,15 +17,6 @@ import {
  */
 export function listDirectoryUsers(db) {
   const deletedIds = new Set(getDeletedUserIds(db));
-  const onActiveTeam = db
-    .prepare(
-      `SELECT 1 AS ok FROM team_membership tm
-       JOIN teams t ON t.team_id = tm.team_id
-       WHERE tm.user_id = ? AND t.archived_at IS NULL
-       LIMIT 1`
-    )
-    .pluck(true);
-
   /** @type {Map<string, object>} */
   const byId = new Map();
 
@@ -35,25 +25,9 @@ export function listDirectoryUsers(db) {
     const uid = String(row.user_id || '');
     if (!uid || deletedIds.has(uid)) continue;
 
-    if (isRegisteredClinicalUser(row)) {
-      const claimed =
-        isValidUsernameFormat(handle) && !isDirectoryPendingUsername(handle);
-      byId.set(uid, {
-        ...row,
-        username: handle,
-        lanDirectoryPending: !claimed,
-      });
-      continue;
-    }
-
-    const onTeam = !!onActiveTeam.get(uid);
-    if (!onTeam) continue;
-
-    byId.set(uid, {
-      ...row,
-      username: handle,
-      lanDirectoryPending: true,
-    });
+    // Real @usuario required: hide peer_* / lc_* stubs.
+    if (!isValidUsernameFormat(handle) || isDirectoryPendingUsername(handle)) continue;
+    byId.set(uid, { ...row, username: handle, lanDirectoryPending: false });
   }
 
   const listed = [...byId.values()].sort((a, b) => {

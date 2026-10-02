@@ -12,6 +12,8 @@ import { showAdminPromptModal } from './admin-prompt-modal.mjs';
 import {
   loadAdminMutations,
   loadAdminNetworkCensus,
+  applyNetworkPatientChange,
+  syncNetworkStaleFromDom,
   loadAdminResumen,
   loadAdminRoomDetail,
   loadAdminSalas,
@@ -294,7 +296,7 @@ async function handleArchiveNetworkPatient(deps, roomId, patientId, nextArchived
   try {
     await archiveOneNetworkPatient(deps.getApi(), roomId, patientId, nextArchived);
     deps.toast(nextArchived ? 'Paciente archivado.' : 'Paciente restaurado.', 'success');
-    void loadAdminNetworkCensus(deps.root, deps.outerDeps);
+    applyNetworkPatientChange(deps.root, [{ roomId, patientId }], { archived: nextArchived });
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo archivar el paciente.', 'error');
   }
@@ -312,7 +314,7 @@ async function handleDeleteNetworkPatient(deps, roomId, patientId, registro) {
   try {
     await deleteOneNetworkPatient(deps.getApi(), roomId, patientId, registro);
     deps.toast('Paciente eliminado de esa sala.', 'success');
-    void loadAdminNetworkCensus(deps.root, deps.outerDeps);
+    applyNetworkPatientChange(deps.root, [{ roomId, patientId }], { remove: true });
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo eliminar el paciente.', 'error');
   }
@@ -334,17 +336,17 @@ async function handleBulkArchiveNetwork(deps) {
   }
   if (!(await confirmAction('¿Archivar ' + targets.length + ' paciente(s) seleccionado(s)?'))) return;
   const api = deps.getApi();
-  let ok = 0;
+  const done = [];
   for (const p of targets) {
     try {
       await archiveOneNetworkPatient(api, p.roomId, p.patientId, true);
-      ok += 1;
+      done.push(p);
     } catch {
       /* keep going — one bad room shouldn't stop the rest */
     }
   }
-  deps.toast(ok + ' de ' + targets.length + ' archivado(s).', ok === targets.length ? 'success' : 'warn');
-  void loadAdminNetworkCensus(deps.root, deps.outerDeps);
+  deps.toast(done.length + ' de ' + targets.length + ' archivado(s).', done.length === targets.length ? 'success' : 'warn');
+  applyNetworkPatientChange(deps.root, done, { archived: true });
 }
 
 const OVERLOAD_RE = /overloaded|queued for too long|SQLITE_BUSY/i;
@@ -378,7 +380,7 @@ async function deleteNetworkPatientsBatched(api, targets) {
     if (!byRoom.has(p.roomId)) byRoom.set(p.roomId, []);
     byRoom.get(p.roomId).push(p);
   }
-  let ok = 0;
+  const done = [];
   let lastErr = null;
   for (const [roomId, list] of byRoom) {
     for (let i = 0; i < list.length; i += MAX_OPS) {
@@ -395,14 +397,14 @@ async function deleteNetworkPatientsBatched(api, targets) {
           ),
           baseRevision: 0,
         });
-        ok += chunk.length;
+        done.push(...chunk);
       } catch (err) {
         lastErr = err;
         console.error('[admin] bulk delete chunk failed', roomId, err);
       }
     }
   }
-  return { ok, lastErr };
+  return { done, lastErr };
 }
 
 /**
@@ -425,7 +427,8 @@ async function handleBulkDeleteNetwork(deps) {
   }
   const api = deps.getApi();
   deps.toast('Eliminando ' + targets.length + ' paciente(s)…', 'info');
-  const { ok, lastErr } = await deleteNetworkPatientsBatched(api, targets);
+  const { done, lastErr } = await deleteNetworkPatientsBatched(api, targets);
+  const ok = done.length;
   const why = lastErr?.data?.message || lastErr?.message || 'No se pudo eliminar.';
   if (lastErr && !ok) {
     deps.toast(why, 'error');
@@ -435,7 +438,7 @@ async function handleBulkDeleteNetwork(deps) {
     ok + ' de ' + targets.length + ' eliminado(s).' + (ok < targets.length ? ' ' + why : ''),
     ok === targets.length ? 'success' : 'warn'
   );
-  void loadAdminNetworkCensus(deps.root, deps.outerDeps);
+  applyNetworkPatientChange(deps.root, done, { remove: true });
 }
 
 /**
@@ -463,6 +466,7 @@ async function handleVerifyRedLabs(deps, btn) {
   btn.textContent = original;
   btn.removeAttribute('disabled');
   applyNetworkCensusFilters(deps.root);
+  syncNetworkStaleFromDom(deps.root);
   deps.toast(
     ok + ' de ' + rows.length + ' verificado(s)' + (failed ? ', ' + failed + ' con error' : '') + '.',
     failed ? 'warn' : 'success'

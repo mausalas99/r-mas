@@ -11,17 +11,6 @@ function isValidUsernameFormat(raw) {
   return /^[a-z][a-z0-9_]{2,31}$/.test(normalizeUsername(raw));
 }
 
-function peerStubUsernameForUserId(userId) {
-  const compact = String(userId || '')
-    .replace(/-/g, '')
-    .toLowerCase();
-  let base = ('peer_' + compact.slice(0, 20)).replace(/[^a-z0-9_]/g, 'x');
-  if (!/^[a-z][a-z0-9_]{2,31}$/.test(base)) {
-    base = 'peer_' + (compact.slice(0, 8).replace(/[^a-z0-9]/g, 'x') || 'user');
-  }
-  return base;
-}
-
 function resolveIncomingClinicalUserHandle(row, byUserId) {
   const uid = String(row.user_id);
   let handle = normalizeUsername(row.username);
@@ -31,8 +20,7 @@ function resolveIncomingClinicalUserHandle(row, byUserId) {
   const prev = byUserId.get(uid);
   const prevHandle = prev ? normalizeUsername(prev.username) : '';
   if (prevHandle && isValidUsernameFormat(prevHandle)) return prevHandle;
-  if (prevHandle && /^peer_[a-z0-9_]+$/.test(prevHandle)) return prevHandle;
-  return peerStubUsernameForUserId(uid);
+  return '';
 }
 
 function mergeClinicalUsersDeletedData(localIds, incomingIds) {

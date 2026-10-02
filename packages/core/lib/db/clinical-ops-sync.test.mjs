@@ -450,6 +450,7 @@ describe('clinical-ops-sync', () => {
       rank: 'R2',
       clinicalName: 'Dr. Interconsultas',
     });
+    claimUsername(db, { userId: user.userId, username: 'interconsultas' });
     const listed = listDirectoryUsers(db);
     assert.ok(listed.some((u) => u.user_id === user.userId));
   });
@@ -558,7 +559,7 @@ describe('clinical-ops-sync', () => {
     assert.equal(row.username, 'keep_me');
   });
 
-  it('listDirectoryUsers includes active-team peer stubs', () => {
+  it('listDirectoryUsers hides peer stubs without a real @usuario', () => {
     const db = openDb();
     const leader = ensureClinicalUser(db, { clientId: 'dev-a', rank: 'R2' });
     claimUsername(db, { userId: leader.userId, username: 'leader_dir' });
@@ -582,9 +583,7 @@ describe('clinical-ops-sync', () => {
       clinical_users: [],
     });
     const listed = listDirectoryUsers(db);
-    assert.ok(listed.some((u) => u.user_id === remoteUserId));
-    const peer = listed.find((u) => u.user_id === remoteUserId);
-    assert.equal(peer.lanDirectoryPending, true);
+    assert.ok(!listed.some((u) => u.user_id === remoteUserId));
   });
 
   it('mergeClinicalUsersData keeps both users when @usuario handle collides across user_id', () => {

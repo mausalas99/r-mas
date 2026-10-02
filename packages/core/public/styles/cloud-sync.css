@@ -1698,16 +1698,28 @@
 .cloud-sync-admin-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: calc(11px * var(--density-font));
+  font-size: calc(13px * var(--density-font));
 }
 
 .cloud-sync-admin-table th,
 .cloud-sync-admin-table td {
-  padding: calc(5px * var(--density-space)) calc(8px * var(--density-space));
+  padding: calc(9px * var(--density-space)) calc(10px * var(--density-space));
   text-align: left;
   border-bottom: 1px solid var(--divider);
-  vertical-align: top;
+  vertical-align: middle;
 }
+
+.cloud-sync-admin-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+.cloud-sync-admin-dot.is-ok { background: var(--color-ok, #1e8e5a); }
+.cloud-sync-admin-dot.is-warn { background: var(--color-warn, #d97706); }
+.cloud-sync-admin-dot.is-bad { background: var(--color-danger, #d9483b); }
 
 .cloud-sync-admin-table th {
   font-weight: 600;
@@ -2062,7 +2074,7 @@
   align-items: center;
   gap: calc(4px * var(--density-space)) calc(8px * var(--density-space));
   min-width: 0;
-  font-size: 0.85em;
+  font-size: 0.95em;
   color: var(--text-muted);
 }
 
@@ -2086,6 +2098,7 @@
 }
 
 .cloud-sync-admin-equipos-name {
+  font-size: 1.05em;
   font-weight: 650;
   color: var(--text);
 }

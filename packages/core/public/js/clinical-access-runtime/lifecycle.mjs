@@ -4,6 +4,7 @@ import { userIsOnGuardiaCallToday } from '../clinico-access.mjs';
 import { isGuardiaMode } from '../features/chrome.mjs';
 import { BackgroundVitalsMonitorLoop } from '../features/session-manager.mjs';
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
+import { promptRealUsernameIfPending } from '../features/peer-username-prompt.mjs';
 import { markClinicalAccessBootReady } from './boot-ready.mjs';
 import { bootstrapClinicalAccess } from './bootstrap.mjs';
 import { wireClinicalOpsSyncRefresh } from './census-nube-pull.mjs';
@@ -16,6 +17,7 @@ export async function initClinicalAccessRuntime(settings, clientId) {
   markClinicalAccessBootReady();
   if (!ok) return;
   wireClinicalOpsSyncRefresh();
+  void promptRealUsernameIfPending();
 
   if (vitalsLoop) vitalsLoop.stop();
   const nextVitalsLoop = new BackgroundVitalsMonitorLoop(
