@@ -23,8 +23,7 @@ import {
   guardDocExportBlocked,
   syncApprovedOutputDir,
 } from "../document-export-client.mjs";
-import { buildNotaPreviewHtml, buildIndicacionesPreviewHtml } from "../doc-preview-html.mjs";
-import { openDocPreview, closeDocPreview } from "../doc-preview-modal.mjs";
+import { buildNotaPreviewHtml, buildIndicacionesPreviewHtml, openDocPreview, closeDocPreview } from "../doc-preview-html.mjs";
 import { openConfirm } from "./workbench/confirm.mjs";
 import { stampDocUpdatedAt, mergeAnteriores, liveAnteriores, editAnterior, deleteAnterior, anteriorKey } from "../patient-merge.mjs";
 import { scheduleCloudSyncPush } from "./cloud-sync/mutate-bridge.mjs";

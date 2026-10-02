@@ -167,8 +167,7 @@ async function mountPerfilClinicalForm(root) {
   deleg.wireClinicalTeamsFormDelegation(root);
   var mod = await import("./clinical-teams/teams-roster-interactions.mjs");
   await mod.mountPerfilClinical(salaHost, host);
-  var eq = await import("./clinical-teams/perfil-equipo.mjs");
-  await eq.mountPerfilEquipo(root.querySelector("[data-perfil-equipo-host]"));
+  await mod.mountPerfilEquipo(root.querySelector("[data-perfil-equipo-host]"));
 }
 
 /** Wire Mi perfil once, then refresh it every time it opens. */
