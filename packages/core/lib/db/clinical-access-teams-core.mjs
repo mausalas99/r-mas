@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { canManageTeamRoster } from './clinical-privileges.mjs';
 import { getClinicalProfile } from './clinical-access-users.mjs';
 import { recordTeamArchive } from './clinical-access-directory.mjs';
+import { releaseArchivedTeamPatients } from './clinical-access-rotation-migrate-patients.mjs';
 
 /**
  * True when the current rotation still has live teams (pre–nueva rotación).
@@ -364,6 +365,7 @@ export function archiveTeam(db, teamId, callerUserId) {
   ).run(now, now, tid);
   db.prepare(`DELETE FROM team_membership WHERE team_id = ?`).run(tid);
   clearTeamGuardiaToday(db, tid);
+  releaseArchivedTeamPatients(db, now);
   recordTeamArchive(db, tid, now);
   return { team_id: tid, archived_at: now };
 }

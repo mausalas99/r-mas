@@ -46,7 +46,7 @@ export {
   archiveRotationAndTeams,
 } from './clinical-access-rotation.mjs';
 
-export { migrateLinkedTeamPatients } from './clinical-access-rotation-migrate-patients.mjs';
+export { migrateLinkedTeamPatients, releaseArchivedTeamPatients } from './clinical-access-rotation-migrate-patients.mjs';
 
 export {
   ensureClinicalPatientRow,

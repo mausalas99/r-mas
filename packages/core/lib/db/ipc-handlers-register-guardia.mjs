@@ -8,6 +8,7 @@ import {
   getActiveRotationCycle,
   archiveRotationAndTeams,
   migrateLinkedTeamPatients,
+  releaseArchivedTeamPatients,
   fetchIncomingAssignments,
   getClinicalScopeContext,
 } from './clinical-access-db.mjs';
@@ -127,6 +128,7 @@ function registerDbGuardiaRotationHandlers(ctx) {
       const now = new Date().toISOString();
       archiveRotationAndTeams(db);
       const migration = migrateLinkedTeamPatients(db, now);
+      releaseArchivedTeamPatients(db, now);
       stampRotationNuevaAt(db, now);
       if (payload.userId) {
         audit(getClientId(), 'rotation.nueva', { userId: String(payload.userId) });

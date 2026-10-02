@@ -35,3 +35,27 @@ export function migrateLinkedTeamPatients(db, nowIso) {
   }
   return { migrated };
 }
+
+/**
+ * Unassigns every patient whose active team is archived. An archived team has no
+ * members, so a patient left on it matches no one's scope and drops off every list.
+ * An empty team_id row is the «no team» tombstone: the patient is structural again.
+ * @param {import('better-sqlite3').Database} db
+ * @param {string} nowIso
+ */
+export function releaseArchivedTeamPatients(db, nowIso) {
+  const archived = new Set(
+    db.prepare(`SELECT team_id FROM teams WHERE archived_at IS NOT NULL`).all().map((r) => String(r.team_id))
+  );
+  if (!archived.size) return { released: 0 };
+  const assignments = fetchPatientTeamAssignments(db);
+  const patientIds = new Set(assignments.map((row) => String(row.patient_id || '')).filter(Boolean));
+  let released = 0;
+  for (const patientId of patientIds) {
+    const teamId = resolvePatientTeamIdFromAssignments(patientId, assignments, nowIso);
+    if (!archived.has(teamId)) continue;
+    assignPatientToTeam(db, { patientId, teamId: '', effectiveAt: nowIso });
+    released += 1;
+  }
+  return { released };
+}

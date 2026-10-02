@@ -44,6 +44,7 @@ import {
   getClinicalScopeContext,
   fetchIncomingAssignments,
   assignPatientToTeam,
+  fetchActivePatientTeamId,
   upsertClinicalProfile,
   touchClinicalUserActivity,
   completeActiveGuardiaPendiente,
@@ -1087,6 +1088,32 @@ describe('clinical-access-db', () => {
     assert.ok(Array.isArray(ctx.teams_archived));
     assert.ok(ctx.teams_archived.some((t) => t.team_id === team.team_id && t.name === 'Dr. Fer'));
     assert.equal(ctx.teams.some((t) => t.team_id === team.team_id), false);
+  });
+
+  it('archiveTeam unassigns the patients that were on the team', () => {
+    const admin = ensureClinicalUser(db, { clientId: 'admin', rank: 'Admin' });
+    const team = createTeam(db, {
+      name: 'Dr. Fer',
+      service: 'Sala',
+      onCallDayIndex: 1,
+      sala: 'Sala 2',
+      subAreaFraction: 'B',
+      createdBy: admin.userId,
+    });
+    const other = createTeam(db, {
+      name: 'Dra. Leslie',
+      service: 'Sala',
+      onCallDayIndex: 2,
+      sala: 'Sala 2',
+      subAreaFraction: 'C',
+      createdBy: admin.userId,
+    });
+    const past = '2026-06-01T00:00:00.000Z';
+    assignPatientToTeam(db, { patientId: 'p-arch', teamId: team.team_id, effectiveAt: past });
+    assignPatientToTeam(db, { patientId: 'p-live', teamId: other.team_id, effectiveAt: past });
+    archiveTeam(db, team.team_id, admin.userId);
+    assert.equal(fetchActivePatientTeamId(db, 'p-arch'), null);
+    assert.equal(fetchActivePatientTeamId(db, 'p-live'), other.team_id);
   });
 
   it('fetchIncomingAssignments uses only patients columns present in schema', () => {

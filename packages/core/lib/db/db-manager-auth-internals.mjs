@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { applyMigrations } from './schema.mjs';
 import { pruneClinicalUserActivityLog } from './clinical-access-users.mjs';
+import { releaseArchivedTeamPatients } from './clinical-access-rotation-migrate-patients.mjs';
 import { appendAuditInTransaction } from './forensic-audit.mjs';
 import { clinicalDbPath } from './db-path.mjs';
 import { loadNativeDatabase } from './native-load.mjs';
@@ -116,6 +117,9 @@ export async function openDatabaseConnection(ctx, { keyHex } = {}) {
   assertCipherReadable(conn);
   try {
     pruneClinicalUserActivityLog(conn);
+  } catch (_e) { void _e; }
+  try {
+    releaseArchivedTeamPatients(conn, new Date().toISOString());
   } catch (_e) { void _e; }
   deps.setDb(conn);
   deps.setState('unlocked');
