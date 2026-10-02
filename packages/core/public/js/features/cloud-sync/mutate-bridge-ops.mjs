@@ -168,6 +168,18 @@ export function mapPatientEntryToCensusSeedOps(entry, meta) {
 }
 
 /**
+ * ponytail: oldest Anteriores copies leave the Nube payload first; this device keeps all 30.
+ * The pull side unions them, so a trimmed copy never erases a teammate device's list.
+ * @param {Record<string, any>} doc
+ */
+function trimAnterioresForCloud(doc) {
+  if (!Array.isArray(doc.anteriores) || utf8JsonBytes(doc) <= CLOUD_DOC_MAX_BYTES) return doc;
+  const list = doc.anteriores.slice();
+  while (list.length && utf8JsonBytes({ ...doc, anteriores: list }) > CLOUD_DOC_MAX_BYTES) list.pop();
+  return { ...doc, anteriores: list };
+}
+
+/**
  * medReceta, VPO, listado de problemas, perfil farmacológico: no real edit clock, so
  * they go out only when their content changed since the last send/pull (see
  * cloud-med-receta-index) — a stale copy stamped "now" would beat a teammate's edit.
@@ -193,6 +205,7 @@ function pushClocklessEntryOps(ops, patientId, entry, actorId, batchAt) {
       // Real edit clock only: an unstamped doc (never edited since 8.4.4) stays local, so a
       // "now" stamp can never beat a teammate's edit. Over the doc cap (room storage): keep it here,
       // never truncate; the status line says why.
+      value = trimAnterioresForCloud(value);
       const tooBig = utf8JsonBytes(value) > CLOUD_DOC_MAX_BYTES;
       markCloudDocOversize(`entries/${patientId}/${field}`, tooBig);
       if (!value.updatedAt || tooBig) continue;

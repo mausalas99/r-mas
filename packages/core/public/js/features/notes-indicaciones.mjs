@@ -23,7 +23,7 @@ import {
   syncApprovedOutputDir,
 } from "../document-export-client.mjs";
 import { openConfirm } from "./workbench/confirm.mjs";
-import { stampDocUpdatedAt } from "../patient-merge.mjs";
+import { stampDocUpdatedAt, mergeAnteriores } from "../patient-merge.mjs";
 import { scheduleCloudSyncPush } from "./cloud-sync/mutate-bridge.mjs";
 
 /** A saved edit: new edit clock (last write wins), then a debounced Nube push. */
@@ -439,7 +439,6 @@ function generateIndicaciones() {
 // ── Anteriores ────────────────────────────────────────────────────────
 // Each .docx generation keeps a read-only copy in `doc.anteriores`, one per
 // fecha (a second export the same day replaces that day's copy).
-var PAST_MAX = 30;
 var PAST_FIELDS = {
   nota: [['interrogatorio', 'Interrogatorio, exploración y estado mental'], ['evolucion', 'Evolución'], ['vitales', 'Signos vitales'], ['estudios', 'Estudios auxiliares'], ['diagnosticos', 'Diagnósticos'], ['tratamiento', 'Tratamiento e indicaciones'], ['medico', 'Médico tratante'], ['profesor', 'Profesor responsable']],
   indica: [['medicos', 'Médicos'], ['dieta', 'Dieta'], ['cuidados', 'Cuidados'], ['estudios', 'Estudios'], ['medicamentos', 'Medicamentos'], ['interconsultas', 'Interconsultas'], ['otros', 'Otros']],
@@ -450,9 +449,8 @@ function archiveCopy(doc) {
   var snap = JSON.parse(JSON.stringify(doc));
   delete snap.anteriores;
   snap.guardada = new Date().toISOString();
-  var day = snap.fecha || snap.guardada.slice(0, 10);
-  var rest = (doc.anteriores || []).filter(function (a) { return (a.fecha || String(a.guardada).slice(0, 10)) !== day; });
-  doc.anteriores = [snap].concat(rest).slice(0, PAST_MAX);
+  doc.anteriores = mergeAnteriores([snap], doc.anteriores);
+  touchDoc(doc); // edit clock + Nube push: without it a pull of the same updatedAt wipes the copy
 }
 
 function pastDocsButtonHtml(kind, doc) {

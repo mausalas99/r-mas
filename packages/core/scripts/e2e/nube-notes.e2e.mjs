@@ -14,6 +14,9 @@
  *     - a field B did not touch is lost when A's newer edit arrives
  *   Server
  *     - the Worker stores the note text readable
+ *   Anteriores (copies of past exports)
+ *     - a copy made on A never reaches B, or the pull of A's same-clock note wipes it
+ *     - the copy is gone on B after a restart and the first pull
  *   Restart
  *     - B restarts and the note is gone or empty (a partial pull wipes it)
  *   Too big
@@ -104,6 +107,10 @@ const indValue = async (page, arg) => {
   return indField(page, arg).inputValue().catch(() => '');
 };
 /** Blur like a real click away, so the value commits and the pull may repaint. */
+const pastLabel = async (page) => {
+  await goClinico(page, 'notas');
+  return page.locator('#note-form button').evaluateAll((bs) => bs.find((b) => /^Anteriores/.test(b.textContent))?.textContent.trim() || null);
+};
 const settle = (page) => page.evaluate(() => document.activeElement?.blur?.()).then(() => page.waitForTimeout(400));
 
 await r.finish('Nube notes: nota + indicaciones sync, last write wins, restart, over 96 KB', async () => {
@@ -221,6 +228,17 @@ await r.finish('Nube notes: nota + indicaciones sync, last write wins, restart, 
     check('Worker: no note or indicaciones text stored readable', leaks.length === 0, leaks);
   }
 
+  // ── A exports the nota: the past copy reaches B and survives B's restart ──
+  await goClinico(A.page, 'notas');
+  await closeToasts(A.page);
+  await A.page.locator('#btn-gen').click();
+  const docxBtn = A.page.locator('#doc-preview-docx');
+  if (await docxBtn.waitFor({ state: 'visible', timeout: 3000 }).then(() => true, () => false)) await docxBtn.click();
+  check('A: the export keeps one past copy', await until(async () => (await pastLabel(A.page)) === 'Anteriores (1)', 20000, 500), await pastLabel(A.page));
+  check('B: the past copy made on A arrives', await until(async () => (await pastLabel(B.page)) === 'Anteriores (1)', 60000, 1000), await pastLabel(B.page));
+  await B.page.waitForTimeout(14000); // two more pulls: the same-clock note from the room must not wipe it
+  check('B: the past copy is still there after more pulls', (await pastLabel(B.page)) === 'Anteriores (1)', await pastLabel(B.page));
+
   // ── Restart B: the note stays after the first pull ─────────────────────
   await B.app.close();
   const B2 = await launchDevice('b', 3792);
@@ -229,9 +247,9 @@ await r.finish('Nube notes: nota + indicaciones sync, last write wins, restart, 
   await B2.page.waitForTimeout(6000); // first pull after boot: a partial payload must not wipe the note
   if (!(await B2.page.locator('#ic-board-mount').isVisible().catch(() => false))) await setMode(B2.page, 'interconsulta');
   await pickPatient(B2.page, P1);
-  const afterRestart = { evolucion: await noteValue(B2.page, 'evolucion'), interrogatorio: await noteValue(B2.page, 'interrogatorio'), dieta: await indValue(B2.page, 'dieta') };
-  check('B restarted: note, interrogatorio and indicaciones are all still there',
-    afterRestart.evolucion === NOTE_B && afterRestart.interrogatorio === INTERROG && afterRestart.dieta === DIETA_A, afterRestart);
+  const afterRestart = { evolucion: await noteValue(B2.page, 'evolucion'), interrogatorio: await noteValue(B2.page, 'interrogatorio'), dieta: await indValue(B2.page, 'dieta'), past: await pastLabel(B2.page) };
+  check('B restarted: note, interrogatorio, indicaciones and the past copy are all still there',
+    afterRestart.evolucion === NOTE_B && afterRestart.interrogatorio === INTERROG && afterRestart.dieta === DIETA_A && afterRestart.past === 'Anteriores (1)', afterRestart);
 
   // ── Over 96 KB: stays on A, says why, small notes keep syncing ────────
   await goClinico(A.page, 'notas');

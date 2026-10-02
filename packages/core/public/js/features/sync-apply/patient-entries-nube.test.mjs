@@ -173,5 +173,22 @@ describe('applyLanPatientEntries team-scope filter on iPad mirror', () => {
     else delete globalThis.__RPC_MOBILE_WEB__;
   });
 
+  it('a pulled note with the same updatedAt but no anteriores never erases the local copies', () => {
+    const at = '2026-09-29T10:00:00.000Z';
+    const copy = { fecha: '29/09/2026', guardada: at, evolucion: 'DEMO' };
+    getPatients().push({ id: 'an1' });
+    getNotes().an1 = { evolucion: 'A', updatedAt: at, anteriores: [copy] };
+    applyLanPatientEntries([{ patient: { id: 'an1' }, note: { evolucion: 'A', updatedAt: at } }], { skipTeamScopeFilter: true });
+    assert.deepEqual(getNotes().an1.anteriores, [copy]);
+    const other = { fecha: '30/09/2026', guardada: '2026-09-30T08:00:00.000Z', evolucion: 'DEMO 2' };
+    applyLanPatientEntries(
+      [{ patient: { id: 'an1' }, note: { evolucion: 'B', updatedAt: '2026-09-30T08:00:00.000Z', anteriores: [other] } }],
+      { skipTeamScopeFilter: true }
+    );
+    assert.equal(getNotes().an1.evolucion, 'B');
+    assert.deepEqual(getNotes().an1.anteriores.map((a) => a.fecha), ['30/09/2026', '29/09/2026']);
+    delete getNotes().an1;
+  });
+
 });
 

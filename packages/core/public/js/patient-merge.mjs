@@ -68,6 +68,39 @@ export function stampDocUpdatedAt(doc) {
   return doc;
 }
 
+export const DOC_ANTERIORES_MAX = 30;
+
+/**
+ * Union two `anteriores` lists (read-only copies of past exports) on fecha. The newest
+ * `guardada` wins per fecha; newest first; capped. Never drops a copy only one side has.
+ * @param {unknown} a @param {unknown} b
+ * @returns {Record<string, unknown>[]}
+ */
+export function mergeAnteriores(a, b) {
+  /** @type {Map<string, Record<string, unknown>>} */
+  const byDay = new Map();
+  for (const s of [...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])]) {
+    if (!s || typeof s !== 'object') continue;
+    const day = String(s.fecha || String(s.guardada || '').slice(0, 10));
+    const cur = byDay.get(day);
+    if (!cur || compareIso(String(s.guardada || ''), String(cur.guardada || '')) > 0) byDay.set(day, s);
+  }
+  return [...byDay.values()]
+    .sort((x, y) => compareIso(String(y.guardada || ''), String(x.guardada || '')))
+    .slice(0, DOC_ANTERIORES_MAX);
+}
+
+/**
+ * The winning nota / indicaciones keeps `anteriores` from the losing copy too, so a partial
+ * or older payload never erases them. Returns `winner` itself when neither side has any.
+ * @param {Record<string, unknown>} winner @param {unknown} other
+ */
+export function withMergedAnteriores(winner, other) {
+  const o = other && typeof other === 'object' ? /** @type {Record<string, unknown>} */ (other) : null;
+  const merged = mergeAnteriores(winner?.anteriores, o?.anteriores);
+  return merged.length ? { ...winner, anteriores: merged } : winner;
+}
+
 /**
  * Last write wins for a pulled nota / indicaciones. Only when BOTH sides carry a real
  * `updatedAt`; a side without one (older build, LAN peer) keeps the old "incoming replaces".
@@ -375,21 +408,21 @@ function mergePatientMonitoreo(patient, first, second) {
   delete patient.monitoreo;
 }
 
-function mergePatientDocuments(a, b) {
+export function mergePatientDocuments(a, b) {
   return {
-    note: pickNewerByTimestamp(
-      noteTimestamp(a.note),
-      noteTimestamp(b.note),
-      a.note,
-      b.note,
-      (v) => ({ ...(v || {}) })
+    note: withMergedAnteriores(
+      pickNewerByTimestamp(noteTimestamp(a.note), noteTimestamp(b.note), a.note, b.note, (v) => ({ ...(v || {}) })),
+      compareIso(noteTimestamp(a.note), noteTimestamp(b.note)) >= 0 ? b.note : a.note
     ),
-    indicaciones: pickNewerByTimestamp(
-      noteTimestamp(a.indicaciones),
-      noteTimestamp(b.indicaciones),
-      a.indicaciones,
-      b.indicaciones,
-      (v) => ({ ...(v || {}) })
+    indicaciones: withMergedAnteriores(
+      pickNewerByTimestamp(
+        noteTimestamp(a.indicaciones),
+        noteTimestamp(b.indicaciones),
+        a.indicaciones,
+        b.indicaciones,
+        (v) => ({ ...(v || {}) })
+      ),
+      compareIso(noteTimestamp(a.indicaciones), noteTimestamp(b.indicaciones)) >= 0 ? b.indicaciones : a.indicaciones
     ),
     medReceta: pickNewerByTimestamp(
       medRecetaTimestamp(a.medReceta),

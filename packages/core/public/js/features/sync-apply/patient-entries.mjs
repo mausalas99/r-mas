@@ -7,6 +7,7 @@ import {
   mergeEventualidades,
   mergeLabHistorySets,
   incomingDocWinsLww,
+  withMergedAnteriores,
 } from '../../patient-merge.mjs';
 import { reparseLabSetsFromSome } from '../../lab-history-some-reparse.mjs';
 import { bumpLabHistoryRevision } from '../../lab-history-cache.mjs';
@@ -264,21 +265,27 @@ function applyLanPatientScalars(existing, p) {
   return changed;
 }
 
+/** LWW picks the doc; `anteriores` are unioned so a partial or older payload never erases them. */
+function mergeIncomingDoc(local, incoming) {
+  var incomingWins = incomingDocWinsLww(local, incoming);
+  return withMergedAnteriores(incomingWins ? incoming : local, incomingWins ? local : incoming);
+}
+
 function applyLanPatientCharts(existing, entry) {
   var changed = false;
   // A partial ops-fold entry (e.g. only `fields` touched this poll) omits
   // `note`/`indicaciones` entirely — must not read back as "chart cleared"
   // for a patient whose real note just wasn't part of this batch.
   if (Object.prototype.hasOwnProperty.call(entry, 'note')) {
-    var nextNote = entry.note || {};
-    if (incomingDocWinsLww(getNotes()[existing.id], nextNote) && !lanJsonEqual(getNotes()[existing.id], nextNote)) {
+    var nextNote = mergeIncomingDoc(getNotes()[existing.id], entry.note || {});
+    if (!lanJsonEqual(getNotes()[existing.id], nextNote)) {
       getNotes()[existing.id] = nextNote;
       changed = true;
     }
   }
   if (Object.prototype.hasOwnProperty.call(entry, 'indicaciones')) {
-    var nextInd = entry.indicaciones || {};
-    if (incomingDocWinsLww(getIndicaciones()[existing.id], nextInd) && !lanJsonEqual(getIndicaciones()[existing.id], nextInd)) {
+    var nextInd = mergeIncomingDoc(getIndicaciones()[existing.id], entry.indicaciones || {});
+    if (!lanJsonEqual(getIndicaciones()[existing.id], nextInd)) {
       getIndicaciones()[existing.id] = nextInd;
       changed = true;
     }

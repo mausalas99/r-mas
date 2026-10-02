@@ -70,6 +70,26 @@ describe('mutate-bridge note / indicaciones ops', () => {
   });
 });
 
+describe('mutate-bridge note Anteriores', () => {
+  const at = '2026-09-29T10:00:00.000Z';
+  const copy = (i) => ({ fecha: `d${i}`, guardada: new Date(Date.UTC(2026, 0, 1 + i)).toISOString(), evolucion: 'x'.repeat(8000) });
+  const noteOps = (note) =>
+    mapBundleEnvelopeToOps({ entries: [{ patient: { id: 'n1', nombre: 'PAC' }, labHistory: [], note, indicaciones: {} }] }, meta)
+      .filter((op) => op.path === 'entries/n1/note');
+
+  it('a note whose 30 copies pass the cap still goes out, oldest copies trimmed first', () => {
+    __resetMedRecetaIndexForTests();
+    const note = { evolucion: 'A', updatedAt: at, anteriores: Array.from({ length: 30 }, (_, i) => copy(29 - i)) };
+    const ops = noteOps(note);
+    assert.equal(ops.length, 1);
+    const sent = ops[0].value.anteriores;
+    assert.ok(sent.length > 0 && sent.length < 30);
+    assert.equal(sent[0].fecha, 'd29');
+    assert.equal(note.anteriores.length, 30);
+    assert.equal(cloudOversizeDocCount(), 0);
+  });
+});
+
 describe('mutate-bridge op mapping', () => {
   /** mapBundleEnvelopeToOps for a single p1 entry carrying the given `monitoreo`. */
   function mapOpsForP1Monitoreo(monitoreo) {
