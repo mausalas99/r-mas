@@ -62,11 +62,36 @@ function buildVitalChipHtml(baseKey, labelOverride, opts) {
 }
 
 /**
+ * TAS y TAD son dos series guardadas, pero en el formulario forman una sola
+ * lectura (TAS / TAD) con un único "+1". La capa N de cada una es el par N.
+ */
+const TA_PAIR = ['tas', 'tad'];
+const TA_ADD_KEY = 'ta';
+
+/** @param {string} vitalKey */
+function pairKeysOf(vitalKey) {
+  return TA_PAIR.indexOf(vitalKey) >= 0 ? TA_PAIR : [vitalKey];
+}
+
+/** Clave del botón "+1" que maneja este signo. */
+function addKeyOf(vitalKey) {
+  return TA_PAIR.indexOf(vitalKey) >= 0 ? TA_ADD_KEY : vitalKey;
+}
+
+/** Signos que comparten el "+1" de addKey; el último aloja el botón. */
+function stackKeysOfAdd(addKey) {
+  return addKey === TA_ADD_KEY ? TA_PAIR : [addKey];
+}
+
+/**
  * @param {string} vitalKey
+ * @param {string | null} [addKey] botón "+1" que lleva esta pila (null: ninguno)
  * @returns {string}
  */
-export function buildVitalStackHtml(vitalKey) {
+export function buildVitalStackHtml(vitalKey, addKey) {
   var label = VITAL_LABELS[vitalKey] || vitalKey;
+  if (addKey === undefined) addKey = vitalKey;
+  var addLabel = addKey === TA_ADD_KEY ? 'TA' : label;
   var slots = '';
   for (var li = 0; li < MAX_VITAL_LAYERS_IN_FORM; li++) {
     slots +=
@@ -78,20 +103,39 @@ export function buildVitalStackHtml(vitalKey) {
       buildVitalChipHtml(vitalKey, label, { layerIdx: li }) +
       '</div>';
   }
+  var addBtn = addKey
+    ? '<button type="button" class="ea-vital-add-btn ea-temp-add-btn" data-ea-vital-add="' +
+      addKey +
+      '" hidden title="Otra lectura de ' +
+      addLabel +
+      ' (máx. ' +
+      MAX_VITAL_READINGS_PER_DAY +
+      '/día)">+1</button>'
+    : '';
   return (
     '<div class="ea-vital-stack" data-ea-vital-stack="' +
     vitalKey +
     '" data-ea-layer-count="1">' +
     slots +
-    '<button type="button" class="ea-vital-add-btn ea-temp-add-btn" data-ea-vital-add="' +
-    vitalKey +
-    '" hidden title="Otra lectura de ' +
-    label +
-    ' (máx. ' +
-    MAX_VITAL_READINGS_PER_DAY +
-    '/día)">+1</button>' +
+    addBtn +
     '</div>'
   );
+}
+
+/** Todas las pilas del formulario; TAS y TAD van juntas, con un solo "+1". */
+export function buildVitalFieldsHtml() {
+  return VITAL_KEYS.map(function (key) {
+    if (key === 'tas') return '';
+    if (key === 'tad') {
+      return (
+        '<div class="ea-ta-pair">' +
+        buildVitalStackHtml('tas', null) +
+        buildVitalStackHtml('tad', TA_ADD_KEY) +
+        '</div>'
+      );
+    }
+    return buildVitalStackHtml(key);
+  }).join('');
 }
 
 /**
@@ -111,6 +155,36 @@ function getVitalStackLayerCount(stack) {
  */
 function setVitalStackLayerCount(stack, count) {
   stack.setAttribute('data-ea-layer-count', String(count));
+}
+
+/** Valor recortado de la capa layerIdx del signo; '' si vacío. */
+function layerValue(form, vitalKey, layerIdx) {
+  var input = form.querySelector(
+    '[data-ea-vital="' + vitalKey + '"][data-ea-layer-idx="' + layerIdx + '"]'
+  );
+  return input && 'value' in input ? String(input.value).trim() : '';
+}
+
+/**
+ * Deja TAS y TAD con el mismo número de capas: el mayor entre lo pedido y la
+ * última capa con valor de cualquiera de las dos. Nunca oculta un valor guardado.
+ */
+function syncVitalPairCount(form, vitalKey, ownCount) {
+  var keys = pairKeysOf(vitalKey);
+  var count = ownCount;
+  keys.forEach(function (k) {
+    for (var li = MAX_VITAL_LAYERS_IN_FORM - 1; li >= count; li--) {
+      if (layerValue(form, k, li) !== '') {
+        count = li + 1;
+        break;
+      }
+    }
+  });
+  keys.forEach(function (k) {
+    var st = form.querySelector('[data-ea-vital-stack="' + k + '"]');
+    if (st) setVitalStackLayerCount(st, count);
+    updateVitalStackLayerVisibility(form, k);
+  });
 }
 
 /**
@@ -134,7 +208,7 @@ function updateVitalStackLayerVisibility(form, vitalKey) {
   // flotando sobre todo el stack, para no taparse con las lecturas previas.
   // Se ancla al chip (position: relative), no al slot — el slot es
   // "display: contents" y no sirve de referencia para position: absolute.
-  var addBtn = stack.querySelector('[data-ea-vital-add="' + vitalKey + '"]');
+  var addBtn = stack.querySelector('[data-ea-vital-add]');
   var activeChip = activeSlot && activeSlot.querySelector('.ea-vital-chip');
   if (addBtn && activeChip && addBtn.parentElement !== activeChip) {
     activeChip.appendChild(addBtn);
@@ -147,17 +221,16 @@ function updateVitalStackLayerVisibility(form, vitalKey) {
  */
 export function syncVitalAddButtonVisibility(form, vitalKey) {
   if (!form) return;
-  var stack = form.querySelector('[data-ea-vital-stack="' + vitalKey + '"]');
-  if (!stack) return;
-  var addBtn = stack.querySelector('[data-ea-vital-add="' + vitalKey + '"]');
+  var addKey = addKeyOf(vitalKey);
+  var addBtn = form.querySelector('[data-ea-vital-add="' + addKey + '"]');
   if (!addBtn) return;
+  var keys = stackKeysOfAdd(addKey);
+  var stack = form.querySelector('[data-ea-vital-stack="' + keys[keys.length - 1] + '"]');
+  if (!stack) return;
   var count = getVitalStackLayerCount(stack);
-  var active = count - 1;
-  var activeInput = stack.querySelector(
-    '[data-ea-vital="' + vitalKey + '"][data-ea-layer-idx="' + active + '"]'
-  );
-  var hasVal =
-    activeInput && 'value' in activeInput && String(activeInput.value).trim() !== '';
+  var hasVal = keys.some(function (k) {
+    return layerValue(form, k, count - 1) !== '';
+  });
   var atFormMax = count >= MAX_VITAL_LAYERS_IN_FORM;
   addBtn.hidden = !hasVal || atFormMax;
   if (atFormMax) {
@@ -203,28 +276,30 @@ export function validateVitalSeriesTurnLimits(historial, vitalSeries, now) {
  * @param {HTMLElement | null} form
  * @param {string} vitalKey
  */
-export function expandVitalNextLayer(form, vitalKey) {
+export function expandVitalNextLayer(form, addKey) {
   if (!form) return;
-  var stack = form.querySelector('[data-ea-vital-stack="' + vitalKey + '"]');
+  var keys = stackKeysOfAdd(addKey);
+  var stack = form.querySelector('[data-ea-vital-stack="' + keys[0] + '"]');
   if (!stack) return;
   var count = getVitalStackLayerCount(stack);
+  var label = addKey === TA_ADD_KEY ? 'TA' : VITAL_LABELS[addKey] || addKey;
   if (count >= MAX_VITAL_LAYERS_IN_FORM) {
-    getEaPanelRuntime().showToast('Máximo ' + MAX_VITAL_LAYERS_IN_FORM + ' lecturas por signo en este registro', 'error');
+    getEaPanelRuntime().showToast('Máximo ' + MAX_VITAL_LAYERS_IN_FORM + ' lecturas de ' + label + ' en este registro', 'error');
     return;
   }
-  var active = count - 1;
-  var activeInput = stack.querySelector(
-    '[data-ea-vital="' + vitalKey + '"][data-ea-layer-idx="' + active + '"]'
-  );
-  if (!activeInput || !('value' in activeInput) || !String(activeInput.value).trim()) {
+  var hasVal = keys.some(function (k) {
+    return layerValue(form, k, count - 1) !== '';
+  });
+  if (!hasVal) {
     getEaPanelRuntime().showToast('Captura el valor actual antes de agregar otra lectura', 'error');
     return;
   }
-  setVitalStackLayerCount(stack, count + 1);
-  updateVitalStackLayerVisibility(form, vitalKey);
-  syncVitalAddButtonVisibility(form, vitalKey);
-  var nextInput = stack.querySelector(
-    '[data-ea-vital="' + vitalKey + '"][data-ea-layer-idx="' + count + '"]'
+  syncVitalPairCount(form, keys[0], count + 1);
+  keys.forEach(function (k) {
+    syncVitalAddButtonVisibility(form, k);
+  });
+  var nextInput = form.querySelector(
+    '[data-ea-vital="' + keys[0] + '"][data-ea-layer-idx="' + count + '"]'
   );
   if (nextInput && 'focus' in nextInput) nextInput.focus();
   applyRegistroTabSkipAttributes(form);
@@ -243,7 +318,6 @@ export function setVitalStackFromSeries(form, vitalKey, readings, layerCount) {
   var list = Array.isArray(readings) ? readings.slice(0, MAX_VITAL_LAYERS_IN_FORM) : [];
   var count = layerCount != null ? layerCount : Math.max(1, list.length);
   count = Math.min(MAX_VITAL_LAYERS_IN_FORM, count);
-  setVitalStackLayerCount(stack, count);
   for (var li = 0; li < MAX_VITAL_LAYERS_IN_FORM; li++) {
     var input = stack.querySelector(
       '[data-ea-vital="' + vitalKey + '"][data-ea-layer-idx="' + li + '"]'
@@ -254,7 +328,7 @@ export function setVitalStackFromSeries(form, vitalKey, readings, layerCount) {
     if (input && 'value' in input) input.value = rd && rd.value != null ? String(rd.value) : '';
     if (timeEl && 'value' in timeEl) timeEl.value = rd && rd.time ? String(rd.time) : '';
   }
-  updateVitalStackLayerVisibility(form, vitalKey);
+  syncVitalPairCount(form, vitalKey, count);
   syncVitalAddButtonVisibility(form, vitalKey);
 }
 

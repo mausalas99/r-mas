@@ -40,7 +40,7 @@ import {
 } from './estado-actual-panel-registro-tab.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
 import {
-  buildVitalStackHtml,
+  buildVitalFieldsHtml,
   syncAllVitalAddButtonVisibility,
   collapseAllVitalStacks,
   expandVitalNextLayer,
@@ -914,9 +914,7 @@ function buildRegistroFooterHtml() {
 }
 
 export function buildRegistroFormMarkup() {
-  var vitalFields = VITAL_KEYS.map(function (key) {
-    return buildVitalStackHtml(key);
-  }).join('');
+  var vitalFields = buildVitalFieldsHtml();
   var activeId = getEaFormOpenPatientId();
   if (activeId == null) activeId = getEaPanelRuntime().getActiveId();
 

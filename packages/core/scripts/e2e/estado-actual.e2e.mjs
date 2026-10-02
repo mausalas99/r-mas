@@ -237,7 +237,10 @@ async function setRecordedAt(page, hoursAgo) {
 
 async function fillVital(form, key, values) {
   for (let i = 0; i < values.length; i++) {
-    if (i > 0) await form.locator(`[data-ea-vital-add="${key}"]`).click();
+    // TAS/TAD share one "+1" (key "ta"); click it only if the pair row is not open yet.
+    const addKey = key === 'tas' || key === 'tad' ? 'ta' : key;
+    const slot = form.locator(`[data-ea-vital-stack="${key}"] [data-ea-layer="${i}"]`);
+    if (i > 0 && (await slot.getAttribute('hidden')) !== null) await form.locator(`[data-ea-vital-add="${addKey}"]`).click();
     await form.locator(`[data-ea-vital="${key}"][data-ea-layer-idx="${i}"]`).fill(String(values[i]));
   }
 }

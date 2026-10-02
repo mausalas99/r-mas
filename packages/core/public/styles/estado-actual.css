@@ -2311,6 +2311,15 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   min-width: 0;
 }
 
+/* TA: TAS y TAD lado a lado, una fila por lectura, un solo "+1" */
+.ea-registro-modal .ea-ta-pair {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 4px;
+  min-width: 0;
+}
+
 .ea-registro-modal .ea-vital-stack .ea-vital-slot[hidden] {
   display: none !important;
 }

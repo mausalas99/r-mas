@@ -146,6 +146,8 @@ export async function quietHints(page) {
   const { activeHints } = await import('../../public/js/feature-hints.mjs');
   const ids = activeHints().map((h) => h.id);
   await page.evaluate((a) => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(a)), ids);
+  // Hints answered "off" up front, so the first-run «Nuevo: pistas en pantalla» choice never covers the page.
+  await page.evaluate(() => globalThis.localStorage.setItem('rpc-feature-hints-enabled', '0'));
   // The full-record side panel opens by itself for a patient with no vitals; specs that are not about it keep it closed.
   await page.evaluate(() => globalThis.localStorage.setItem('rpc-registro-autoopen', 'off'));
 }
