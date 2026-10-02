@@ -130,25 +130,3 @@ export function applyIndicacionesFormatScaffoldIfEmpty(ind, settings) {
   });
   return changed;
 }
-
-/** "R3 ANA R2 LUIS R1 PEDRO" (Mi perfil → Grado) → un médico por línea. */
-export function gradoToMedicosLines(grado) {
-  return String(grado || '')
-    .trim()
-    .replace(/\s+(?=R\d+\s)/gi, '\n')
-    .split('\n')
-    .map(function (l) {
-      return l.trim();
-    })
-    .filter(Boolean)
-    .join('\n');
-}
-
-/** Médicos de las indicaciones: si están vacíos, salen del Grado del perfil. */
-export function applyMedicosFromGradoIfEmpty(ind, settings) {
-  if (!ind || String(ind.medicos || '').trim()) return false;
-  var lines = gradoToMedicosLines(settings && settings.grado);
-  if (!lines) return false;
-  ind.medicos = lines;
-  return true;
-}

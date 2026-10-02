@@ -82,7 +82,7 @@ async function pickPatient(page, p) {
     await page.locator('.exp-group-pill[data-group="paciente"]').click();
     await page.locator('[data-ic-back-to-board]').click();
   }
-  await board.locator('.p-name').first().waitFor({ state: 'visible' });
+  await board.locator('.ic-card .sv-name').first().waitFor({ state: 'visible' });
   await openPatient(page, p);
 }
 

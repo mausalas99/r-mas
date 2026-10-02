@@ -771,8 +771,8 @@ function mountInterconsultaBarIfNeeded(barMount) {
   mountInterconsultaBar(barMount, {
     onPrimary: refreshPatients,
     onGenerarNota: function () {
-      if (typeof window !== 'undefined' && typeof window.previewNota === 'function') {
-        window.previewNota();
+      if (typeof window !== 'undefined' && typeof window.generateWord === 'function') {
+        window.generateWord();
       }
     },
   });

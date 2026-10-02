@@ -5,7 +5,6 @@ import { setAsyncButtonLoading } from "../ui-motion.mjs";
 import {
   applyNotaFormatScaffoldIfEmpty,
   applyIndicacionesFormatScaffoldIfEmpty,
-  applyMedicosFromGradoIfEmpty,
 } from "../profile-templates.mjs";
 import {
   getFormatsEditMode,
@@ -23,8 +22,6 @@ import {
   guardDocExportBlocked,
   syncApprovedOutputDir,
 } from "../document-export-client.mjs";
-import { buildNotaPreviewHtml, buildIndicacionesPreviewHtml } from "../doc-preview-html.mjs";
-import { openDocPreview, closeDocPreview } from "../doc-preview-modal.mjs";
 import { openConfirm } from "./workbench/confirm.mjs";
 import { stampDocUpdatedAt, mergeAnteriores } from "../patient-merge.mjs";
 import { scheduleCloudSyncPush } from "./cloud-sync/mutate-bridge.mjs";
@@ -115,7 +112,7 @@ function renderNoteForm() {
     pastDocsButtonHtml('nota', note) +
     '<button type="button" class="wb-btn wb-btn-secondary" data-onclick="estadoActualEnviarANota" title="Llena Evolución y Signos vitales con el Estado actual">Traer de Estado actual</button>' +
     '<button type="button" class="wb-btn wb-btn-secondary rpc-doc-export" data-onclick="quickExportCurrentPatient" id="btn-quick-export-note">Salida rápida</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary rpc-doc-export" data-onclick="previewNota" id="btn-gen">Generar Nota</button>' +
+    '<button type="button" class="wb-btn wb-btn-primary rpc-doc-export" data-onclick="generateWord" id="btn-gen">Generar Nota (.docx)</button>' +
     '</div>' +
     '<div class="fit-grid nota-fit-grid">' +
 
@@ -158,16 +155,9 @@ function renderNoteForm() {
 
 // ── Campos Dx/Tx ──────────────────────────────────────────────────────
 function updateNote(field, value) { if (!getNotes()[aid()]) getNotes()[aid()]={}; getNotes()[aid()][field]=value; touchDoc(getNotes()[aid()]); persistClinicalState(); }
-/** A note made without the list (new patient, IC) has no array yet: typed lines were lost. */
-function noteList(field) {
-  var note = getNotes()[aid()];
-  if (!note) return null;
-  if (!Array.isArray(note[field])) note[field] = [''];
-  return note[field];
-}
-function updateDx(i, val) { var l = noteList('diagnosticos'); if (!l) return; l[i]=val.toUpperCase(); touchDoc(getNotes()[aid()]); persistClinicalState(); }
-function addDx() { var l = noteList('diagnosticos'); if (!l) return; l.push(''); touchDoc(getNotes()[aid()]); persistClinicalState(); renderNoteForm(); }
-function removeDx(i) { var l = noteList('diagnosticos'); if (!l||l.length<=1) return; l.splice(i,1); touchDoc(getNotes()[aid()]); persistClinicalState(); renderNoteForm(); }
+function updateDx(i, val) { if (!getNotes()[aid()]) return; getNotes()[aid()].diagnosticos[i]=val.toUpperCase(); touchDoc(getNotes()[aid()]); persistClinicalState(); }
+function addDx() { if (!getNotes()[aid()]) return; getNotes()[aid()].diagnosticos.push(''); touchDoc(getNotes()[aid()]); persistClinicalState(); renderNoteForm(); }
+function removeDx(i) { if (!getNotes()[aid()]||getNotes()[aid()].diagnosticos.length<=1) return; getNotes()[aid()].diagnosticos.splice(i,1); touchDoc(getNotes()[aid()]); persistClinicalState(); renderNoteForm(); }
 
 /** Pull patient censo diagnoses into the open note (asks before overwrite). */
 async function syncNoteDxFromCenso() {
@@ -199,9 +189,9 @@ async function syncNoteDxFromCenso() {
   rt.showToast('Diagnósticos del censo en la nota ✓', 'success');
 }
 
-function updateTx(i, val) { var l = noteList('tratamiento'); if (!l) return; l[i]=val; touchDoc(getNotes()[aid()]); persistClinicalState(); }
-function addTx() { var l = noteList('tratamiento'); if (!l) return; l.push(''); touchDoc(getNotes()[aid()]); persistClinicalState(); renderNoteForm(); }
-function removeTx(i) { var l = noteList('tratamiento'); if (!l||l.length<=1) return; l.splice(i,1); touchDoc(getNotes()[aid()]); persistClinicalState(); renderNoteForm(); }
+function updateTx(i, val) { if (!getNotes()[aid()]) return; getNotes()[aid()].tratamiento[i]=val; touchDoc(getNotes()[aid()]); persistClinicalState(); }
+function addTx() { if (!getNotes()[aid()]) return; getNotes()[aid()].tratamiento.push(''); touchDoc(getNotes()[aid()]); persistClinicalState(); renderNoteForm(); }
+function removeTx(i) { if (!getNotes()[aid()]||getNotes()[aid()].tratamiento.length<=1) return; getNotes()[aid()].tratamiento.splice(i,1); touchDoc(getNotes()[aid()]); persistClinicalState(); renderNoteForm(); }
 
 // ── Word nota ───────────────────────────────────────────────────────────
 function generateWord() {
@@ -272,7 +262,6 @@ function renderIndicaForm() {
     persistClinicalState();
   }
   var ind = getIndicaciones()[aid()];
-  if (applyMedicosFromGradoIfEmpty(ind, rt.getSettings() || {})) persistClinicalState();
   var SECTIONS = [
     {key:'dieta',label:'Dieta',placeholder:'Escriba la dieta (una indicación por línea si aplica)…'},
     {key:'cuidados',label:'Cuidados',placeholder:'Signos vitales, balance, dispositivos, etc.…'},
@@ -288,11 +277,11 @@ function renderIndicaForm() {
     '<span class="fit-title">Indicaciones</span>' +
     '<label class="fit-inline">Fecha<input type="text" value="' + esc(ind.fecha) + '" placeholder="DD/MM/AAAA" data-oninput="updateIndica" data-oninput-args=\'["fecha"]\' data-oninput-pass="value"></label>' +
     '<label class="fit-inline fit-inline--short">Hora<input type="text" value="' + esc(ind.hora) + '" placeholder="HH:MM" data-oninput="updateIndica" data-oninput-args=\'["hora"]\' data-oninput-pass="value"></label>' +
-    '<label class="fit-inline fit-inline--grow">Médicos<textarea rows="3" placeholder="Grado y nombre" data-oninput="updateIndica" data-oninput-args=\'["medicos"]\' data-oninput-pass="value">' + esc(ind.medicos) + '</textarea></label>' +
+    '<label class="fit-inline fit-inline--grow">Médicos<textarea rows="1" placeholder="Grado y nombre" data-oninput="updateIndica" data-oninput-args=\'["medicos"]\' data-oninput-pass="value">' + esc(ind.medicos) + '</textarea></label>' +
     buildExtraTemplatesSelectorHtml() +
     pastDocsButtonHtml('indica', ind) +
     '<button type="button" class="wb-btn wb-btn-secondary rpc-doc-export" data-onclick="quickExportCurrentPatient" id="btn-quick-export-indica">Salida rápida</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary rpc-doc-export" data-onclick="previewIndicaciones" id="btn-gen-ind">Generar Indicaciones</button>' +
+    '<button type="button" class="wb-btn wb-btn-primary rpc-doc-export" data-onclick="generateIndicaciones" id="btn-gen-ind">Generar Indicaciones (.docx)</button>' +
     '</div>' +
     '<div class="fit-grid indica-fit-grid">' +
     SECTIONS.map(function(s){ return '<section class="fit-block" style="grid-area:' + AREAS[s.key] + '"><h4>' + s.label + '</h4><textarea placeholder="' + s.placeholder + '" data-oninput="updateIndica" data-oninput-args=\'' + escAttr(JSON.stringify([s.key])) + '\' data-oninput-pass="value">' + esc(ind[s.key]) + '</textarea></section>'; }).join('') +
@@ -447,75 +436,8 @@ function generateIndicaciones() {
 }
 
 
-// ── Vista previa (Imprimir / PDF / .docx) ────────────────────────────
-function pdfExport(fileName, html, btn, onDone) {
-  if (guardDocExportBlocked({ isRpcOffline: rt.isRpcOffline, showToast: rt.showToast })) return;
-  setAsyncButtonLoading(btn, true, { showElapsed: true, loadingText: 'Generando…' });
-  rt.incrementPendingJobs();
-  exportWithOutputDirFallback({
-    url: '/generate-html-pdf',
-    buildPayload: function () { return { html: html, fileName: fileName }; },
-    defaultFileName: fileName,
-    selectOutputDir: function () {
-      return window.electronAPI && window.electronAPI.selectOutputDir ? window.electronAPI.selectOutputDir() : Promise.resolve(undefined);
-    },
-    saveOutputDir: function (dir) {
-      if (!dir) return;
-      var st = rt.getSettings() || {};
-      st.outputDir = dir;
-      localStorage.setItem('rpc-settings', JSON.stringify(st));
-      syncApprovedOutputDir(dir);
-    },
-    onSuccess: function (data) {
-      rt.showToast('PDF guardado: ' + ((data && (data.fileName || data.path)) ? (data.fileName || String(data.path).split(/[/\\]/).pop()) : fileName), 'success');
-      onDone();
-    },
-    onPrompt: function () { rt.showToast('Selecciona una carpeta para guardar el documento.', 'error'); },
-    onCancel: function () { rt.showToast('No se guardó el documento: no se eligió carpeta.', 'error'); },
-    onError: function (msg) { rt.showToast('Error: ' + msg, 'error'); },
-  })
-    .catch(function (e) { if (!(e && e.reported)) rt.showToast('Error de conexión', 'error'); })
-    .finally(function () {
-      setAsyncButtonLoading(btn, false);
-      rt.decrementPendingJobs();
-      rt.syncOfflineButtonStates();
-    });
-}
-
-function slug(s) { return String(s || '').normalize('NFC').replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]/g, '_').slice(0, 80); }
-
-function previewDoc(kind) {
-  if (rt.guardMobileDocExport()) return;
-  var patient = getPatients().find(function (p) { return p.id === aid(); }); if (!patient) return;
-  var isNota = kind === 'nota';
-  var doc = (isNota ? getNotes() : getIndicaciones())[aid()]; if (!doc) return;
-  if (isNota && ensureNoteDxFromPatientForExport(doc, patient)) persistClinicalState();
-  var html = isNota ? buildNotaPreviewHtml(patient, doc) : buildIndicacionesPreviewHtml(patient, doc);
-  var fileName = (isNota ? 'Nota_Evolucion_' : 'Indicaciones_') + slug(patient.nombre) + '_' + slug(doc.fecha) + '.pdf';
-  openDocPreview({
-    title: isNota ? 'Vista previa de la nota' : 'Vista previa de las indicaciones',
-    html: html,
-    onPrint: function () {
-      archiveCopy(doc);
-      persistClinicalState();
-      (isNota ? renderNoteForm : renderIndicaForm)();
-    },
-    onDocx: function () { closeDocPreview(); (isNota ? generateWord : generateIndicaciones)(); },
-    onPdf: function (btn) {
-      pdfExport(fileName, html, btn, function () {
-        closeDocPreview();
-        archiveCopy(doc);
-        persistClinicalState();
-        (isNota ? renderNoteForm : renderIndicaForm)();
-      });
-    },
-  });
-}
-function previewNota() { previewDoc('nota'); }
-function previewIndicaciones() { previewDoc('indica'); }
-
 // ── Anteriores ────────────────────────────────────────────────────────
-// Each print or generation (PDF, .docx) keeps a read-only copy in `doc.anteriores`, one per
+// Each .docx generation keeps a read-only copy in `doc.anteriores`, one per
 // fecha (a second export the same day replaces that day's copy).
 var PAST_FIELDS = {
   nota: [['interrogatorio', 'Interrogatorio, exploración y estado mental'], ['evolucion', 'Evolución'], ['vitales', 'Signos vitales'], ['estudios', 'Estudios auxiliares'], ['diagnosticos', 'Diagnósticos'], ['tratamiento', 'Tratamiento e indicaciones'], ['medico', 'Médico tratante'], ['profesor', 'Profesor responsable']],
@@ -534,7 +456,7 @@ function archiveCopy(doc) {
 function pastDocsButtonHtml(kind, doc) {
   var n = (doc && doc.anteriores || []).length;
   return '<button type="button" class="wb-btn wb-btn-ghost" data-onclick="openPastDocs" data-onclick-args=\'' + escAttr(JSON.stringify([kind])) + '\'' +
-    (n ? '' : ' disabled title="Se guarda una copia cada vez que imprimes o generas el documento"') + '>Anteriores (' + n + ')</button>';
+    (n ? '' : ' disabled title="Se guarda una copia cada vez que generas el .docx"') + '>Anteriores (' + n + ')</button>';
 }
 
 function pastFieldText(kind, key, snap) {
@@ -612,8 +534,6 @@ export {
   addOtro,
   removeOtro,
   generateIndicaciones,
-  previewNota,
-  previewIndicaciones,
   archiveCopy,
 };
 
@@ -633,8 +553,6 @@ export const windowHandlers = {
   addOtro,
   removeOtro,
   generateIndicaciones,
-  previewNota,
-  previewIndicaciones,
   applyExtraTemplateFromIndica,
   openPastDocs,
 };
