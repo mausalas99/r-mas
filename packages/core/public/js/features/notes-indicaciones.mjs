@@ -6,6 +6,7 @@ import {
   applyNotaFormatScaffoldIfEmpty,
   applyIndicacionesFormatScaffoldIfEmpty,
   applyMedicosFromGradoIfEmpty,
+  gradoToMedicosLines,
 } from "../profile-templates.mjs";
 import {
   getFormatsEditMode,
@@ -490,7 +491,7 @@ async function previewDoc(kind) {
   var doc = (isNota ? getNotes() : getIndicaciones())[aid()]; if (!doc) return;
   if (isNota && ensureNoteDxFromPatientForExport(doc, patient)) persistClinicalState();
   var dp = await import("../doc-preview-html.mjs");
-  var html = isNota ? dp.buildNotaPreviewHtml(patient, doc) : dp.buildIndicacionesPreviewHtml(patient, doc);
+  var html = isNota ? dp.buildNotaPreviewHtml(patient, doc) : dp.buildIndicacionesPreviewHtml(patient, Object.assign({}, doc, { medicos: gradoToMedicosLines(doc.medicos) }));
   var fileName = (isNota ? 'Nota_Evolucion_' : 'Indicaciones_') + slug(patient.nombre) + '_' + slug(doc.fecha) + '.pdf';
   dp.openDocPreview({
     title: isNota ? 'Vista previa de la nota' : 'Vista previa de las indicaciones',
