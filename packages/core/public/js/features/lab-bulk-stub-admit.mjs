@@ -14,7 +14,7 @@ export function autoAdmitStubPatientsFromBulkBlocks(blocks) {
   (blocks || []).forEach(function (block) {
     if (!shouldOfferBulkPreviewAddPatient(block)) return;
     var labPatient = extractLabPatientFromBulkBlock(block);
-    if (!labPatient) return;
+    if (!labPatient || !String(labPatient.name || '').trim()) return; // nameless report: no placeholder chart
     var patient = commitStubPatientFromLab(labPatient);
     if (patient) admitted.push(patient);
   });

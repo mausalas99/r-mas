@@ -66,12 +66,18 @@ function patientCardOpenButtonHtml(opts, nombreRaw, nombreDisplay) {
  * @param {object} p
  * @param {{ roundRow?: boolean, showServicio?: boolean, openButton?: boolean }|undefined} [opts]
  */
+// Auto-admitted stubs ("PACIENTE SIN NOMBRE (6)") would shorten to "PACIENTE (6)": show the registro instead.
+function sidebarNameDisplay(nombreRaw, registro) {
+  if (nombreRaw && !/^SIN NOMBRE$|^PACIENTE( SIN NOMBRE)?( \(\d+\))?$/i.test(nombreRaw)) return shortenPatientDisplayName(nombreRaw);
+  return 'Sin nombre' + (registro ? ' · ' + registro : '');
+}
+
 export function renderPatientSidebarBodyHtml(p, opts) {
   opts = opts || {};
   const showServicio = opts.showServicio !== false;
   const nombreRaw = String(p?.nombre || '').trim();
-  const nombreDisplay = shortenPatientDisplayName(nombreRaw) || 'Sin nombre';
   const registro = String(p?.registro || '').trim();
+  const nombreDisplay = sidebarNameDisplay(nombreRaw, registro);
   const servicio = showServicio ? String(p?.servicio || '').trim() : '';
   const nameTitleParts = [nombreRaw !== nombreDisplay ? nombreRaw : '', registro, servicio].filter(Boolean);
   const nameTitleAttr = nameTitleParts.length ? ` title="${escSidebarHtml(nameTitleParts.join(' · '))}"` : '';
