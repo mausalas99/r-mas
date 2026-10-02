@@ -23,7 +23,6 @@ import {
   guardDocExportBlocked,
   syncApprovedOutputDir,
 } from "../document-export-client.mjs";
-import { buildNotaPreviewHtml, buildIndicacionesPreviewHtml, openDocPreview, closeDocPreview } from "../doc-preview-html.mjs";
 import { openConfirm } from "./workbench/confirm.mjs";
 import { stampDocUpdatedAt, mergeAnteriores, liveAnteriores, editAnterior, deleteAnterior, anteriorKey } from "../patient-merge.mjs";
 import { scheduleCloudSyncPush } from "./cloud-sync/mutate-bridge.mjs";
@@ -483,15 +482,17 @@ function pdfExport(fileName, html, btn, onDone) {
 
 function slug(s) { return String(s || '').normalize('NFC').replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]/g, '_').slice(0, 80); }
 
-function previewDoc(kind) {
+// The preview module carries the hospital logos (48 KB): load it on the first click, not at boot.
+async function previewDoc(kind) {
   if (rt.guardMobileDocExport()) return;
   var patient = getPatients().find(function (p) { return p.id === aid(); }); if (!patient) return;
   var isNota = kind === 'nota';
   var doc = (isNota ? getNotes() : getIndicaciones())[aid()]; if (!doc) return;
   if (isNota && ensureNoteDxFromPatientForExport(doc, patient)) persistClinicalState();
-  var html = isNota ? buildNotaPreviewHtml(patient, doc) : buildIndicacionesPreviewHtml(patient, doc);
+  var dp = await import("../doc-preview-html.mjs");
+  var html = isNota ? dp.buildNotaPreviewHtml(patient, doc) : dp.buildIndicacionesPreviewHtml(patient, doc);
   var fileName = (isNota ? 'Nota_Evolucion_' : 'Indicaciones_') + slug(patient.nombre) + '_' + slug(doc.fecha) + '.pdf';
-  openDocPreview({
+  dp.openDocPreview({
     title: isNota ? 'Vista previa de la nota' : 'Vista previa de las indicaciones',
     html: html,
     onPrint: function () {
@@ -499,10 +500,10 @@ function previewDoc(kind) {
       persistClinicalState();
       (isNota ? renderNoteForm : renderIndicaForm)();
     },
-    onDocx: function () { closeDocPreview(); (isNota ? generateWord : generateIndicaciones)(); },
+    onDocx: function () { dp.closeDocPreview(); (isNota ? generateWord : generateIndicaciones)(); },
     onPdf: function (btn) {
       pdfExport(fileName, html, btn, function () {
-        closeDocPreview();
+        dp.closeDocPreview();
         archiveCopy(doc);
         persistClinicalState();
         (isNota ? renderNoteForm : renderIndicaForm)();
