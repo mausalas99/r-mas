@@ -139,7 +139,7 @@ export function buildInterconsultaBarHtml() {
     '</button>' +
     '</div></details>' +
     '<button type="button" class="wb-btn wb-btn-secondary wb-btn-shortcut" data-wb-shortcut>⌘/</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary" data-wb-ic-primary>Actualizar pacientes</button>' +
+    '<button type="button" class="wb-btn wb-btn-primary" data-wb-ic-primary>Actualizar labs</button>' +
     '</div>' +
     '</div>'
   );
@@ -420,7 +420,23 @@ function ensureConsultBandDelegation(bandMount) {
 }
 
 function refreshPatients() {
+/** Selected "Mi equipo" team id (stored pick if still valid, else first). */
+function icSelectedTeamId(options) {
+  var stored = readLs(IC_TEAM_LS);
+  return options.some(function (o) { return o.id === stored; }) ? stored : options.length ? options[0].id : '';
+}
+
   if (typeof rt.renderPatientList === 'function') rt.renderPatientList();
+  var data = icBoardData();
+  var icPatients = data.active;
+  if (icMode() === 'equipo') {
+    var teamId = icSelectedTeamId(interconsultaTeamOptions(data.teams, data.now));
+    icPatients = icPatients.filter(function (p) { return String(p.censusTeamId || '') === String(teamId); });
+  }
+  if (icPatients.length && typeof window.openLabRepoBatchModal === 'function') {
+    window.openLabRepoBatchModal(icPatients);
+    return;
+  }
   renderInterconsultaBoardView();
   if (typeof rt.showToast === 'function') rt.showToast('Pacientes actualizados', 'success');
 }
@@ -577,7 +593,7 @@ function icHeaderHtml(mode, options, teamId, count) {
       : '') +
     '<span class="ic-board-header__sp"></span>' +
     '<button type="button" class="wb-btn wb-btn-secondary" data-ic-board-add>+ Agregar</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary" data-ic-board-refresh>Actualizar pacientes</button>' +
+    '<button type="button" class="wb-btn wb-btn-primary" data-ic-board-refresh>Actualizar labs</button>' +
     '</div>'
   );
 }
@@ -590,8 +606,7 @@ export function renderInterconsultaBoardView() {
   var data = icBoardData();
   var mode = icMode();
   var options = interconsultaTeamOptions(data.teams, data.now);
-  var stored = readLs(IC_TEAM_LS);
-  var teamId = options.some(function (o) { return o.id === stored; }) ? stored : options.length ? options[0].id : '';
+  var teamId = icSelectedTeamId(options);
 
   mount.innerHTML =
     icHeaderHtml(mode, options, teamId, data.active.length) +

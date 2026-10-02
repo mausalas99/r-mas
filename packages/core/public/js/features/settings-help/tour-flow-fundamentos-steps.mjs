@@ -93,7 +93,7 @@ function renderIcBoardDrilldown(bodyEl, nextBtn) {
 
 function renderIcBoardActions(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;"><strong>+ Agregar</strong> da de alta un paciente nuevo sin esperar un laboratorio. <strong>Actualizar pacientes</strong> refresca el tablero. También puedes <strong>arrastrar una tarjeta</strong> de un carril a otro para reasignar el equipo de ese paciente.</p>';
+    '<p style="margin:0;line-height:1.5;"><strong>+ Agregar</strong> da de alta un paciente nuevo sin esperar un laboratorio. <strong>Actualizar labs</strong> trae los labs del tablero. En Mi equipo, solo los de ese equipo. También puedes <strong>arrastrar una tarjeta</strong> de un carril a otro para reasignar el equipo de ese paciente.</p>';
   showNext(nextBtn);
 }
 

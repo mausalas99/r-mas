@@ -64,7 +64,8 @@ function scheduleQueueAutoDismiss() {
   }, QUEUE_AUTO_DISMISS_MS);
 }
 
-function teamPatients() {
+function teamPatients(override) {
+  if (Array.isArray(override)) return override;
   if (typeof rt.getLabRepoBatchTeamPatients === 'function') {
     return rt.getLabRepoBatchTeamPatients() || [];
   }
@@ -284,7 +285,8 @@ export function dismissLabRepoBatchQueue() {
   renderSidebarQueue();
 }
 
-export function openLabRepoBatchModal() {
+/** @param {object[]} [patients] explicit list (Interconsulta board); default = team/sidebar. */
+export function openLabRepoBatchModal(patients) {
   var modal = document.getElementById('lab-repo-batch-modal');
   if (!modal) return;
   if (!window.electronAPI || typeof window.electronAPI.labRepoFetch !== 'function') {
@@ -300,7 +302,7 @@ export function openLabRepoBatchModal() {
   wireBatchModalOnce();
   batchAbort = false;
 
-  var teamRows = buildLabRepoBatchRows(teamPatients(), { defaultSelectWithRegistro: true });
+  var teamRows = buildLabRepoBatchRows(teamPatients(patients), { defaultSelectWithRegistro: true });
   var teamWithReg = teamRows.filter(function (r) {
     return r && r.hasRegistro;
   }).length;

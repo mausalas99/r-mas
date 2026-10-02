@@ -108,7 +108,7 @@ export const FEATURE_HINTS = [
       { sel: '.ic-team-board .ic-row__head', text: 'Cada fila es un equipo. Las tarjetas de ese equipo van dentro.' },
       { sel: '.ic-team-board .ic-row .ic-card', text: 'Arrastra una tarjeta a otra fila para cambiarla de equipo. Tócala para abrir su Resumen.' },
       { sel: '.ic-team-board .ic-tray .ic-row__head', text: '<strong>Por asignar</strong> junta a los que aún no tienen equipo. Arrástralos a una fila.' },
-      { sel: '[data-ic-board-refresh]', text: '<strong>Actualizar pacientes</strong> refresca el tablero. <strong>+ Agregar</strong> da de alta a alguien sin esperar un laboratorio.' },
+      { sel: '[data-ic-board-refresh]', text: '<strong>Actualizar labs</strong> trae los labs de los pacientes del tablero. En Mi equipo, solo los de ese equipo. <strong>+ Agregar</strong> da de alta a alguien sin esperar un laboratorio.' },
     ],
   },
   {
