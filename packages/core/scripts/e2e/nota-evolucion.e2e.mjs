@@ -63,6 +63,12 @@ import path from 'node:path';
 import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub, until, goArea, quietHints, waitForBoot, acceptAbxDias } from './harness.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 
+// «Generar …» opens the print preview; the .docx comes from its «Generar .docx» button.
+async function exportViaPreview(page, sel) {
+  await page.locator(sel).click();
+  await page.locator('#doc-preview-docx').click();
+}
+
 const P1 = { exp: '7000621-1', name: 'DEMO NOTA UNO', room: '521' };
 const P2 = { exp: '7000622-2', name: 'DEMO NOTA DOS', room: '522' };
 const P3 = { exp: '7000623-3', name: 'DEMO NOTA TRES', room: '523' };
@@ -474,7 +480,7 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   // ── Word, first export ────────────────────────────────────────────────
   let t0 = Date.now();
   await closeToasts(page);
-  await page.locator('#btn-gen').click();
+  await exportViaPreview(page, '#btn-gen');
   const doc1 = await newDocx(t0, 'nota-1');
   const toast1 = (await page.locator('.toast').allInnerTexts()).join(' | ');
   check('«Generar Nota (.docx)» writes a file and says so', !!doc1.name && /Nota guardada/.test(toast1), { name: doc1.name, toast1 });
@@ -495,13 +501,13 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   await field(page, 'interrogatorio').fill(INTERROGATORIO + ' DEMO SEGUNDA');
   t0 = Date.now();
   await closeToasts(page);
-  await page.locator('#btn-gen').click();
+  await exportViaPreview(page, '#btn-gen');
   await newDocx(t0, 'nota-2-same-day');
   const sameDay = (await noteState(page)).pastLabel;
   await field(page, 'fecha').fill(todayDmy);
   t0 = Date.now();
   await closeToasts(page);
-  await page.locator('#btn-gen').click();
+  await exportViaPreview(page, '#btn-gen');
   await newDocx(t0, 'nota-3-today');
   const newDay = (await noteState(page)).pastLabel;
   check('same-day export replaces its copy; a new fecha adds one', sameDay === 'Anteriores (1)' && newDay === 'Anteriores (2)', { sameDay, newDay });
@@ -536,7 +542,7 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   check('«×» removes the right extra section', otros.join('|') === 'DEMO OXIGENO', otros);
   t0 = Date.now();
   await closeToasts(page);
-  await page.locator('#btn-gen-ind').click();
+  await exportViaPreview(page, '#btn-gen-ind');
   const ind = await newDocx(t0, 'indicaciones');
   const toastI = (await page.locator('.toast').allInnerTexts()).join(' | ');
   const wantI = ['DEMO DIETA BLANDA', 'DEMO SV CADA 4 H', 'DEMO BH QS MAÑANA', 'DEMO OMEPRAZOL 40 MG IV CADA 24 H', 'DEMO CARDIOLOGIA', 'DEMO OXIGENO', 'DEMO PUNTAS 2 L', 'R2 DEMO / R1 DEMO'];
