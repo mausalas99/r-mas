@@ -1042,6 +1042,21 @@ ipcMain.handle('generate-document', async (_e, { kind, payload }) => {
         logDocExport({ type: 'listado', patient: payload && payload.patient, status: 200, bytes: buffer.length });
         return { ok: true, fileName, buffer };
       }
+      case 'html-pdf': {
+        const html = String((payload && payload.html) || '');
+        if (!html) return { ok: false, error: 'Documento vacío.' };
+        // Hidden window, no JS: the HTML is only printed, never run.
+        const win = new BrowserWindow({ show: false, webPreferences: { javascript: false, sandbox: true } });
+        try {
+          await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+          const buffer = await win.webContents.printToPDF({ pageSize: 'Letter', printBackground: true });
+          const fileName = path.basename(String((payload && payload.fileName) || 'Documento.pdf'));
+          logDocExport({ type: 'html-pdf', status: 200, bytes: buffer.length });
+          return { ok: true, fileName, buffer };
+        } finally {
+          win.destroy();
+        }
+      }
       case 'censo': {
         const { buffer, fileName } = await docExport.exportCensoPdf(payload || {}, paths);
         logDocExport({ type: 'censo', status: 200, bytes: buffer.length });

@@ -69,6 +69,7 @@ html.electron-macos-inset-bar .tend-group-backdrop:not([style*="display: none"])
 html.electron-macos-inset-bar #lab-some-tables-backdrop.modal-backdrop.open,
 html.electron-macos-inset-bar #med-pharm-modal-full.med-pharm-modal-backdrop.open,
 html.electron-macos-inset-bar #censo-preview-backdrop.censo-preview-backdrop.open,
+html.electron-macos-inset-bar #doc-preview-backdrop.censo-preview-backdrop.open,
 html.electron-macos-inset-bar #entrega-modal-backdrop.entrega-modal-backdrop.open {
   padding-top: max(
     var(--electron-macos-chrome-top),

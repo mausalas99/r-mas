@@ -3,7 +3,6 @@
  */
 import { migrateGranularInner, getClinicoSections } from './expediente-tabs.mjs';
 import { isGuardiaMode, toggleGuardiaMode } from './features/chrome.mjs';
-import { isModeSala } from './mode-features.mjs';
 import { switchAppTab } from './features/app-tabs.mjs';
 import { getActiveInnerTab, switchInnerTab } from './features/expediente-navigation.mjs';
 import { switchLabInner } from './features/patient-dashboard/lab-inner.mjs';
@@ -35,9 +34,8 @@ export function resolveExpedienteShortcutTarget(key, currentInner, settings, onN
   var st = settings || {};
   var inner = migrateGranularInner(currentInner || 'todo', st);
   if (k === 'e') {
-    // Interconsulta has no Eventualidades/Medicamentos pills — ⌘E only opens Estado actual.
-    if (!isModeSala(st)) return 'estadoActual';
-    // Sala cycles all 3 Clínico pills: Estado actual → Eventualidades → Medicamentos → ...
+    // Cycles the Clínico pills of the mode: Sala Estado actual → Eventualidades → Medicamentos,
+    // Interconsulta Estado actual → Nota → Indicaciones → VPO.
     var salaCycle = getClinicoSections(st);
     if (!onNota) return salaCycle[0];
     var idx = salaCycle.indexOf(inner);
