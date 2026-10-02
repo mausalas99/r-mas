@@ -255,7 +255,7 @@ function registerDbCoreClinicalHandlers(ctx) {
     }
     let mergeStats = null;
     await dbManager.withTransaction((db, { audit }) => {
-      const out = mergeClinicalOpsSnapshot(db, snapshot);
+      const out = mergeClinicalOpsSnapshot(db, snapshot, null, String(payload.selfUserId || ''));
       mergeStats = out && out.stats ? out.stats : null;
       audit(getClientId(), 'clinical.ops.merge', {
         exportedAt: snapshot.exportedAt || null,

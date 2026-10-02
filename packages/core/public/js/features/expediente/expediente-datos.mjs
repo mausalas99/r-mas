@@ -1,6 +1,5 @@
 // Patient demographics pane (Datos tab)
 import { getPatients } from '../../app-state.mjs';
-import { isModeSala } from '../../mode-features.mjs';
 import { buildPatientAccesosSectionHtml } from '../../patient-data-accesos-ui.mjs';
 import { buildPatientTeamAssignSectionHtml, wirePatientTeamAssignRefresh } from '../../patient-team-assign-ui.mjs';
 import { buildPatientSalaFieldHtml } from '../../patient-sala-ui.mjs';
@@ -88,12 +87,6 @@ var DATOS_TABS = [
 ];
 var datosTab = 'censo';
 
-function datosTabsFor(sala) {
-  return DATOS_TABS.filter(function (t) {
-    return sala || t.id !== 'censo';
-  });
-}
-
 function datosTabsHtml(tabs, active) {
   return (
     '<div class="exp-datos-tabs" role="tablist" aria-label="Secciones">' +
@@ -118,13 +111,12 @@ function datosPaneHtml(id, active, body) {
 }
 
 function buildPatientDemographicsFieldsHtml(patient) {
-  var sala = isModeSala(rt.getSettings());
-  var tabs = datosTabsFor(sala);
+  var tabs = DATOS_TABS;
   var active = tabs.some(function (t) { return t.id === datosTab; }) ? datosTab : tabs[0].id;
   return (
     datosSummaryHtml() +
     datosTabsHtml(tabs, active) +
-    (sala ? datosPaneHtml('censo', active, buildPatientCensoDatosSectionsHtml(patient, sectionHtml)) : '') +
+    datosPaneHtml('censo', active, buildPatientCensoDatosSectionsHtml(patient, sectionHtml)) +
     datosPaneHtml('cama', active, camaIngresoHtml(patient)) +
     datosPaneHtml('identidad', active, identidadHtml(patient))
   );

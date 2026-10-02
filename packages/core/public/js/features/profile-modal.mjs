@@ -167,6 +167,8 @@ async function mountPerfilClinicalForm(root) {
   deleg.wireClinicalTeamsFormDelegation(root);
   var mod = await import("./clinical-teams/teams-roster-interactions.mjs");
   await mod.mountPerfilClinical(salaHost, host);
+  var eq = await import("./clinical-teams/perfil-equipo.mjs");
+  await eq.mountPerfilEquipo(root.querySelector("[data-perfil-equipo-host]"));
 }
 
 /** Wire Mi perfil once, then refresh it every time it opens. */
@@ -181,11 +183,19 @@ export function initPerfilPanel() {
     // Sala chip: set the hidden value, then save through the profile form.
     root.addEventListener("click", function (ev) {
       var chip = ev.target instanceof Element ? ev.target.closest("[data-perfil-sala]") : null;
-      var hidden = document.getElementById("clinical-profile-sala");
-      var form = document.getElementById("clinical-profile-form");
+      // Scoped: the Equipo panel can sit in the DOM with the same ids.
+      var hidden = root.querySelector("#clinical-profile-sala");
+      var form = root.querySelector("#clinical-profile-form");
       if (!chip || !(hidden instanceof HTMLInputElement) || !(form instanceof HTMLFormElement)) return;
-      if (hidden.value === chip.dataset.perfilSala) return;
+      // Same chip is a real tap while «Confirma tu sala» is showing.
+      if (hidden.value === chip.dataset.perfilSala && !root.querySelector("[data-perfil-sala-hint]")) return;
       hidden.value = chip.dataset.perfilSala;
+      // Show the pick now: the save below waits on Nube and can take seconds.
+      chip.parentElement.querySelectorAll("[data-perfil-sala]").forEach(function (c) {
+        c.setAttribute("aria-pressed", String(c === chip));
+      });
+      var cur = chip.closest("details")?.querySelector(".settings-perfil-sala-current");
+      if (cur) cur.textContent = chip.dataset.perfilSala;
       form.requestSubmit();
     });
     // A saved sala (or name) redraws the identity card.

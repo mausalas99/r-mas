@@ -23,6 +23,7 @@ import {
   wirePatientRegistrationSalaControls,
 } from '../patient-sala-ui.mjs';
 import { rt } from './patients-runtime-state.mjs';
+import { isGuardiaMode } from './chrome.mjs';
 import { openConfirm } from './workbench/confirm.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
 import { commitPatientFromModal, clearPendingAddPatientCallbacks, setPendingAddPatientFromBulkPreview, setPendingAddPatientSavedCallback, getPendingAddPatientFromBulkPreview } from './patients-modal-commit.mjs';
@@ -42,6 +43,9 @@ import {
   focusRegistroModalFirst,
 } from '../patient-registro-modal-ui.mjs';
 import { cloudSyncNowIso } from './cloud-sync/cloud-sync-clock.mjs';
+import { getConsultInfo, setConsultInfo } from './patient-dashboard/consult-band.mjs';
+import { INTERCONSULT_SERVICES, REQUESTING_SERVICE_IDS } from './patient-dashboard/interconsult-catalog.mjs';
+import { accesoFechaToDateInputValue, dateInputValueToAccesoFecha } from '../patient-date-fields.mjs';
 
 function _prefillServicioForSala() {
   var srv = document.getElementById('m-servicio');
@@ -118,6 +122,13 @@ function _focusPatientAdmissionField(isFromLab) {
   }
 }
 
+/** Interconsultas: new patients land in «Por asignar», not the user's team. */
+function syncRegistrationTeam() {
+  syncPatientRegistrationTeamSelect();
+  var select = document.getElementById('m-team');
+  if (select && !isModeSala(rt.getSettings()) && !isGuardiaMode()) select.value = '';
+}
+
 function _syncPatientModalModeFields() {
   var sala = isModeSala(rt.getSettings());
   var areaGroup = document.getElementById('m-area-group');
@@ -181,6 +192,7 @@ function applyRegistroTunnelLabels(on) {
 function setModalRegistroTunnelMode(on) {
   modalRegistroTunnelMode = !!on;
   if (on) modalCompleteAdmissionPatientId = null;
+  syncIcAdmitBlock();
   applyRegistroTunnelFieldVisibility(on);
   applyRegistroTunnelSaveButtonText(on);
   applyRegistroTunnelLabels(on);
@@ -188,6 +200,52 @@ function setModalRegistroTunnelMode(on) {
 }
 
 var modalCompleteAdmissionPatientId = null;
+var modalCompleteAdmissionOnSaved = null;
+
+function isInterconsultaAdmit() {
+  return !isModeSala(rt.getSettings()) && !isGuardiaMode();
+}
+
+/** Interconsultas «Completar ingreso»: servicio solicitante, motivo, FI y FIMI instead of área/servicio. */
+function syncIcAdmitBlock() {
+  var on = !!modalCompleteAdmissionPatientId && isInterconsultaAdmit();
+  setElementDisplay(document.getElementById('m-ic-admit'), on);
+  if (!on) return;
+  ['m-area-group', 'm-servicio-group', 'm-sala-group'].forEach(function (id) {
+    setElementDisplay(document.getElementById(id), false);
+  });
+  var beds = bedLocationGridEl();
+  if (beds) beds.style.display = 'grid';
+}
+
+function pickIcService(name) {
+  document.getElementById('m-servicio').value = name;
+  document.getElementById('m-area').value = name;
+  document.querySelectorAll('#m-ic-svc button').forEach(function (b) {
+    var on = b.textContent === name;
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.className = 'wb-btn ' + (on ? 'wb-btn-primary' : 'wb-btn-secondary');
+  });
+}
+
+function fillIcAdmitFields(patient) {
+  var info = getConsultInfo(patient);
+  var list = document.getElementById('m-ic-svc');
+  list.innerHTML = '';
+  REQUESTING_SERVICE_IDS.forEach(function (id) {
+    var svc = INTERCONSULT_SERVICES.find(function (s) { return s.id === id; });
+    if (!svc) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = svc.name;
+    btn.addEventListener('click', function () { pickIcService(svc.name); });
+    list.appendChild(btn);
+  });
+  pickIcService(info.requestingService || '');
+  document.getElementById('m-ic-motivo').value = info.reason;
+  document.getElementById('m-ic-fi').value = accesoFechaToDateInputValue(patient.fiuxFecha);
+  document.getElementById('m-ic-fimi').value = accesoFechaToDateInputValue(patient.fimiFecha);
+}
 
 function hideCompleteAdmissionManualFields() {
   var prefilled = document.getElementById('modal-prefilled');
@@ -235,6 +293,7 @@ function prefillCompleteAdmissionPatientFields(patient) {
 function setModalCompleteAdmissionMode(on, patient) {
   if (!on) {
     modalCompleteAdmissionPatientId = null;
+    syncIcAdmitBlock();
     return;
   }
   modalCompleteAdmissionPatientId = patient && patient.id ? String(patient.id) : null;
@@ -243,16 +302,20 @@ function setModalCompleteAdmissionMode(on, patient) {
   applyCompleteAdmissionFieldVisibility(on);
   if (on) _syncPatientModalModeFields();
   if (on && patient) prefillCompleteAdmissionPatientFields(patient);
+  if (on && patient && isInterconsultaAdmit()) fillIcAdmitFields(patient);
+  syncIcAdmitBlock();
 }
 
-export function openCompleteAdmissionModal(patientId) {
+/** @param {() => void} [onSaved] runs after «Guardar» (e.g. repaint the consult band). */
+export function openCompleteAdmissionModal(patientId, onSaved) {
+  modalCompleteAdmissionOnSaved = onSaved || null;
   var patient = getPatients().find(function (p) {
     return p && String(p.id) === String(patientId);
   });
   if (!patient) return;
   document.getElementById('modal-title').textContent = 'Completar ingreso';
   setModalCompleteAdmissionMode(true, patient);
-  syncPatientRegistrationTeamSelect();
+  syncRegistrationTeam();
   syncPatientRegistrationSalaSelect();
   wirePatientRegistrationSalaControls();
   setElementDisplay(document.getElementById('m-sala-group'), false);
@@ -274,7 +337,7 @@ export function openAddModal() {
   if (edadNumManual) edadNumManual.value = '';
   if (edadUnitManual) edadUnitManual.value = 'años';
   document.getElementById('m-sexo').value = 'F';
-  syncPatientRegistrationTeamSelect();
+  syncRegistrationTeam();
   syncPatientRegistrationSalaSelect();
   wirePatientRegistrationSalaControls();
   setModalRegistroTunnelMode(true);
@@ -304,7 +367,7 @@ export function openAddModalFullManual() {
   _syncPatientModalModeFields();
   _prefillServicioForSala();
   _prefillCuartoCamaForSala();
-  syncPatientRegistrationTeamSelect();
+  syncRegistrationTeam();
   syncPatientRegistrationSalaSelect();
   wirePatientRegistrationSalaControls();
   prepareModalBackdropOpen(document.getElementById('modal'));
@@ -364,7 +427,7 @@ function fillLabPatientModalFields(p) {
     _prefillServicioForSala();
   }
   _prefillCuartoCamaForSala(p.expediente || p.registro || '');
-  syncPatientRegistrationTeamSelect();
+  syncRegistrationTeam();
   syncPatientRegistrationSalaSelect();
   wirePatientRegistrationSalaControls();
   prepareModalBackdropOpen(document.getElementById('modal'));
@@ -425,6 +488,7 @@ export function closeModal() {
   pendingAddPatientFromBulkPreview = false;
   modalRegistroTunnelMode = false;
   modalCompleteAdmissionPatientId = null;
+  syncIcAdmitBlock();
   clearPendingAddPatientCallbacks();
   closeModalAnimated(document.getElementById('modal'), function () {
     if (wasBulkPreview) resumeLabBulkPreviewModalIfSuspended();
@@ -463,13 +527,26 @@ function saveCompleteAdmissionModal() {
   patient.servicio = loc.servicio;
   patient.cuarto = loc.cuarto;
   patient.cama = loc.cama;
+  if (isInterconsultaAdmit()) {
+    var picked = document.querySelector('#m-ic-svc [aria-pressed="true"]');
+    var svcName = picked ? picked.textContent : loc.servicio;
+    patient.servicio = svcName;
+    setConsultInfo(patient, {
+      requestingService: svcName,
+      reason: (document.getElementById('m-ic-motivo').value || '').trim(),
+    });
+    patient.fiuxFecha = dateInputValueToAccesoFecha(document.getElementById('m-ic-fi').value);
+    patient.fimiFecha = dateInputValueToAccesoFecha(document.getElementById('m-ic-fimi').value);
+  }
   patient.lanUpdatedAt = cloudSyncNowIso();
   persistClinicalState();
   void assignPatientToTeamClinical(patient.id, readPatientRegistrationTeamId()).then(function () {
     patientsBridge.renderPatientList();
+    if (modalCompleteAdmissionOnSaved) modalCompleteAdmissionOnSaved();
     rt.showToast('Ubicación guardada', 'success');
   });
   modalCompleteAdmissionPatientId = null;
+  syncIcAdmitBlock();
   closeModalAnimated(document.getElementById('modal'));
   return true;
 }

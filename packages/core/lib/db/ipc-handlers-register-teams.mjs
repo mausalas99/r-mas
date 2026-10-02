@@ -99,6 +99,7 @@ function registerDbTeamsCrudHandlers(ctx) {
         sala: payload.sala != null ? String(payload.sala) : undefined,
         succeedsTeamId: payload.succeedsTeamId !== undefined ? String(payload.succeedsTeamId || '') : undefined,
         rotationActive: payload.rotationActive !== undefined ? Number(payload.rotationActive) : undefined,
+        subAreaFraction: payload.subAreaFraction !== undefined ? String(payload.subAreaFraction || '') : undefined,
         callerUserId: String(payload.callerUserId || ''),
       })
     );

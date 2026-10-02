@@ -7,6 +7,7 @@ import {
   mergeClinicalOpsFromSourcesData,
   mergeClinicalOpsSnapshotsData,
 } from './clinical-ops-bundle-merge.mjs';
+import { readRpcSettings } from './clinical-settings.mjs';
 
 const MAX_OPS_TRACE = 12;
 
@@ -153,7 +154,7 @@ function buildClinicalOpsMergeResult(res, ok, changed) {
 }
 
 async function mergeClinicalOpsSnapshot(api, snapshot) {
-  const res = await api.dbClinicalOpsMerge({ snapshot });
+  const res = await api.dbClinicalOpsMerge({ snapshot, selfUserId: readRpcSettings().clinicalUserId || '' });
   if (res?.code === 'DB_LOCKED') return deferClinicalOpsSnapshot(snapshot);
   const ok = res?.ok !== false;
   const changed = ok && clinicalOpsMergeHadChanges(res?.mergeStats);

@@ -306,7 +306,20 @@ function resolveNextRotationActive(rotationActive, team) {
   return next;
 }
 
-export function updateTeam(db, teamId, { name, sala, succeedsTeamId, rotationActive, callerUserId }) {
+/** Team cycle letter: A–D = on call on day-of-month 1/2/3/4, repeating. Empty clears it. */
+function resolveNextSubAreaFraction(subAreaFraction, team) {
+  if (subAreaFraction === undefined) return team.sub_area_fraction ?? null;
+  const letter = String(subAreaFraction || '').trim().toUpperCase();
+  if (!letter) return null;
+  if (!['A', 'B', 'C', 'D'].includes(letter)) throw new Error('Letra de ciclo inválida.');
+  return letter;
+}
+
+export function updateTeam(
+  db,
+  teamId,
+  { name, sala, succeedsTeamId, rotationActive, subAreaFraction, callerUserId }
+) {
   assertCanManageTeamRoster(db, callerUserId);
   const tid = String(teamId || '').trim();
   const team = getTeamById(db, tid);
@@ -319,11 +332,12 @@ export function updateTeam(db, teamId, { name, sala, succeedsTeamId, rotationAct
 
   const nextSucceeds = resolveNextSucceedsTeamId(db, tid, team, succeedsTeamId);
   const nextRotationActive = resolveNextRotationActive(rotationActive, team);
+  const nextFraction = resolveNextSubAreaFraction(subAreaFraction, team);
 
   const now = new Date().toISOString();
   db.prepare(
-    `UPDATE teams SET name = ?, sala = ?, team_leader_name = ?, succeeds_team_id = ?, rotation_active = ?, updated_at = ? WHERE team_id = ?`
-  ).run(nextName, nextSala, nextName, nextSucceeds, nextRotationActive, now, tid);
+    `UPDATE teams SET name = ?, sala = ?, team_leader_name = ?, succeeds_team_id = ?, rotation_active = ?, sub_area_fraction = ?, updated_at = ? WHERE team_id = ?`
+  ).run(nextName, nextSala, nextName, nextSucceeds, nextRotationActive, nextFraction, now, tid);
 
   const warning = getSalaTeamCountWarning(db, nextSala);
   return {

@@ -10,6 +10,7 @@ import {
 } from './expediente-tabs.mjs';
 import { LAB_INNER_SECTIONS } from './expediente-group-row.mjs';
 import { currentLabInner, switchLabInner } from './features/patient-dashboard/lab-inner.mjs';
+import { isModeSala } from './mode-features.mjs';
 import { switchAppTab } from './features/app-tabs.mjs';
 import { switchConsolidatedTab, switchInnerTab, getActiveInnerTab } from './features/expediente-navigation.mjs';
 import { rt } from './features/app-tabs-runtime.mjs';
@@ -98,8 +99,20 @@ function openDigitTabFirst(key) {
   if (tab) switchAppTab(tab);
 }
 
+/** Interconsulta shows every pill in the top bar, so ⌘1 walks them all. */
+export const IC_PILL_CYCLE = ['resumen', 'estadoActual', 'notas', 'indica', 'vpo', 'todo'];
+
+export function nextIcPill(currentInner) {
+  var idx = IC_PILL_CYCLE.indexOf(currentInner);
+  return IC_PILL_CYCLE[(idx + 1) % IC_PILL_CYCLE.length];
+}
+
 function cycleExpedienteComposite() {
   var settings = typeof rt.getSettings === 'function' ? rt.getSettings() : {};
+  if (!isModeSala(settings)) {
+    switchInnerTab(nextIcPill(migrateGranularInner(getActiveInnerTab() || 'todo', settings)));
+    return;
+  }
   var tabs = getConsolidatedTabs(settings);
   var current = currentExpedienteComposite(settings);
   var next = nextConsolidatedCompositeTab(current, tabs);

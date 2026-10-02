@@ -651,3 +651,14 @@ html.rpc-mobile-web .clinical-census-filters--mobile-sidebar .clinical-census-fi
   html.rpc-mobile-web .patient-dash { padding-top: 2px; }
   html.rpc-mobile-web .patient-dash .idrow { margin-bottom: 6px; }
 }
+
+/* Interconsulta (iPad): the bed rail replaces the patient list. Specificity
+   beats the iPad sidebar rules above, which would otherwise show both. */
+html.rpc-mobile-web.ic-board-mode.ic-board-mode.ic-board-mode aside.patient-sidebar.patient-sidebar {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  overflow: hidden;
+  border: none;
+  pointer-events: none !important;
+}

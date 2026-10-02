@@ -33,7 +33,8 @@ import { patientsVisibleInSidebar } from './patients-scope.mjs';
 import { mountInterconsultaTeamBoard, interconsultaTeamOptions } from './interconsulta-team-board.mjs';
 import { sortPatientsForCensus, formatCamaCellForCenso } from '../censo-build.mjs';
 import { openServicePickerModal } from './patient-dashboard/ic-modal.mjs';
-import { openAddModal } from './patients-modal.mjs';
+import { openAddModal, openCompleteAdmissionModal } from './patients-modal.mjs';
+import { isPatientAdmissionIncomplete } from '../patient-admission-incomplete.mjs';
 import { renderPatientCardHtml } from './patients-card-html.mjs';
 import { patientCardIdFromEvent, shouldHandleTouchPointerUp } from './patients-list-click.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
@@ -419,14 +420,13 @@ function ensureConsultBandDelegation(bandMount) {
   bandMount.addEventListener('click', handleConsultBandClick);
 }
 
-function refreshPatients() {
 /** Selected "Mi equipo" team id (stored pick if still valid, else first). */
 function icSelectedTeamId(options) {
   var stored = readLs(IC_TEAM_LS);
   return options.some(function (o) { return o.id === stored; }) ? stored : options.length ? options[0].id : '';
 }
 
-  if (typeof rt.renderPatientList === 'function') rt.renderPatientList();
+function refreshPatients() {
   var data = icBoardData();
   var icPatients = data.active;
   if (icMode() === 'equipo') {
@@ -437,6 +437,7 @@ function icSelectedTeamId(options) {
     window.openLabRepoBatchModal(icPatients);
     return;
   }
+  if (typeof rt.renderPatientList === 'function') rt.renderPatientList();
   renderInterconsultaBoardView();
   if (typeof rt.showToast === 'function') rt.showToast('Pacientes actualizados', 'success');
 }
@@ -500,11 +501,20 @@ function icMode() {
 function openIcPatient(pid) {
   patientsBridge.selectPatient(pid);
   showInterconsultaPatientView();
+  var patient = getPatients().find(function (p) { return p && String(p.id) === String(pid); });
+  if (patient && isPatientAdmissionIncomplete(patient, settingsRef())) openCompleteAdmissionModal(pid, renderConsultBandForActivePatient);
 }
 
 function ensureIcBoardClickDelegation(mount) {
   if (!mount || mount.dataset.icBoardWired) return;
   mount.dataset.icBoardWired = '1';
+  // The archive corner's global handler (document capture) stops the click before it reaches the
+  // mount and only redraws the sidebar list: redraw the board once that handler is done.
+  document.addEventListener('click', function (ev) {
+    if (mount.contains(ev.target) && ev.target.closest('.sv-card-archive, .sv-card-restore, .btn-archive-clean')) {
+      setTimeout(renderInterconsultaBoardView, 0);
+    }
+  }, true);
   mount.addEventListener('click', function (ev) {
     if (ev.target.closest('[data-ic-archived-toggle]')) {
       _icArchivedCollapsed = !_icArchivedCollapsed;
@@ -553,7 +563,7 @@ function icBoardData() {
   // Demo mode bypasses patientsVisibleInSidebar()'s Equipo/Sala Filtros —
   // a real pinned team/sala preference would otherwise zero out every demo
   // patient (none of them match a real team or sala id).
-  var visible = demoOnly ? getPatients().filter((p) => !!p.isDemo) : patientsVisibleInSidebar();
+  var visible = demoOnly ? getPatients().filter((p) => !!p.isDemo) : patientsVisibleInSidebar({ allTeams: true });
   var archived = visible.filter(function (p) {
     return !!p.archived || p.interconsult_status === 'Resolved';
   });
@@ -563,7 +573,7 @@ function icBoardData() {
     })
     .map(function (p) {
       return Object.assign({}, p, {
-        censusTeamId: resolvePatientCensusTeamId(p, teams, assignments, now),
+        censusTeamId: resolvePatientCensusTeamId(p, teams, assignments, now, { structural: false }),
       });
     });
 
@@ -771,8 +781,8 @@ function mountInterconsultaBarIfNeeded(barMount) {
   mountInterconsultaBar(barMount, {
     onPrimary: refreshPatients,
     onGenerarNota: function () {
-      if (typeof window !== 'undefined' && typeof window.generateWord === 'function') {
-        window.generateWord();
+      if (typeof window !== 'undefined' && typeof window.previewNota === 'function') {
+        window.previewNota();
       }
     },
   });

@@ -317,6 +317,7 @@ export function renderTeamEditPanelHtml(team, siblingTeams = []) {
   const sala = String(team.sala || '').trim();
   const staged = Number(team.rotation_active) === 0;
   const succeedsId = String(team.succeeds_team_id || '').trim();
+  const cycleLetter = String(team.sub_area_fraction || '').trim().toUpperCase();
   const succeedsOptions = staged ? succeedsOptionsFor(team, siblingTeams) : [];
   const succeedsField = staged
     ? `<div class="field-group">
@@ -356,6 +357,19 @@ export function renderTeamEditPanelHtml(team, siblingTeams = []) {
             <option value="0" ${staged ? 'selected' : ''}>Próxima rotación (aún no activo)</option>
           </select>
           <p class="clinical-teams-hint">Se asigna solo al crear el equipo; cámbialo aquí si no corresponde.</p>
+        </div>
+        <div class="field-group">
+          <label for="clinical-edit-cycle-${teamId}">Ciclo de guardia</label>
+          <select id="clinical-edit-cycle-${teamId}" class="profile-input clinical-teams-edit-cycle">
+            <option value="">— Sin letra —</option>
+            ${['A', 'B', 'C', 'D']
+              .map(
+                (l) =>
+                  `<option value="${l}" ${cycleLetter === l ? 'selected' : ''}>${l} · días ${['1, 5, 9…', '2, 6, 10…', '3, 7, 11…', '4, 8, 12…'][['A', 'B', 'C', 'D'].indexOf(l)]} del mes</option>`
+              )
+              .join('')}
+          </select>
+          <p class="clinical-teams-hint">A es el día 1 del mes, B el 2, C el 3, D el 4. Luego se repite.</p>
         </div>
         ${succeedsField}
         <div class="clinical-teams-edit-form-actions">

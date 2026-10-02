@@ -181,18 +181,15 @@ export async function handleDeleteTeamClick(btn, confirmFn = openConfirm) {
 export async function handleEditTeamSubmit(ev, form) {
   ev.preventDefault();
   const teamId = String(form.dataset.teamId || '').trim();
-  const nameInput = form.querySelector('.clinical-teams-edit-name');
-  const salaSelect = form.querySelector('.clinical-teams-edit-sala');
-  const succeedsSelect = form.querySelector('.clinical-teams-edit-succeeds');
-  const rotationSelect = form.querySelector('.clinical-teams-edit-rotation-active');
-  const name =
-    nameInput instanceof HTMLInputElement ? String(nameInput.value || '').trim() : '';
-  const sala =
-    salaSelect instanceof HTMLSelectElement ? String(salaSelect.value || '').trim() : '';
-  const succeedsTeamId =
-    succeedsSelect instanceof HTMLSelectElement ? String(succeedsSelect.value || '').trim() : undefined;
+  const field = (cls) => form.querySelector(`.clinical-teams-edit-${cls}`);
+  const text = (cls, Kind) => (field(cls) instanceof Kind ? String(field(cls).value || '').trim() : undefined);
+  const name = text('name', HTMLInputElement) ?? '';
+  const sala = text('sala', HTMLSelectElement) ?? '';
+  const succeedsTeamId = text('succeeds', HTMLSelectElement);
+  const rotationSelect = field('rotation-active');
   const rotationActive =
     rotationSelect instanceof HTMLSelectElement ? Number(rotationSelect.value) : undefined;
+  const subAreaFraction = text('cycle', HTMLSelectElement);
 
   if (!teamId || !name || !sala) {
     toast('Indica nombre y sala.', 'error');
@@ -206,10 +203,22 @@ export async function handleEditTeamSubmit(ev, form) {
     return;
   }
 
-  await submitTeamEdit(api, { teamId, name, sala, succeedsTeamId, rotationActive, userId, form });
+  await submitTeamEdit(api, {
+    teamId,
+    name,
+    sala,
+    succeedsTeamId,
+    rotationActive,
+    subAreaFraction,
+    userId,
+    form,
+  });
 }
 
-async function submitTeamEdit(api, { teamId, name, sala, succeedsTeamId, rotationActive, userId, form }) {
+async function submitTeamEdit(
+  api,
+  { teamId, name, sala, succeedsTeamId, rotationActive, subAreaFraction, userId, form }
+) {
   const submitBtn = form.querySelector('button[type="submit"]');
   if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = true;
   const res = await api.dbClinicalTeamsUpdate({
@@ -218,6 +227,7 @@ async function submitTeamEdit(api, { teamId, name, sala, succeedsTeamId, rotatio
     sala,
     succeedsTeamId,
     rotationActive,
+    subAreaFraction,
     callerUserId: userId,
   });
   if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;

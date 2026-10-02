@@ -22,8 +22,18 @@ export function onPatientSearchInput(val) {
 /** ↑/↓ — walk the rendered census in any work mode. */
 export function advanceRondaPatient(delta) {
   if (isPatientBulkSelectMode()) return;
-  var next = nextCensusPatientId(_lastRondaNavIds, rt.getActiveId(), delta);
+  // Interconsultas: the bed rail on screen is the order, not the sidebar list.
+  var rail = document.querySelectorAll('#ic-team-rail [data-ic-rail-open]');
+  var ids = rail.length
+    ? Array.prototype.map.call(rail, function (b) { return b.getAttribute('data-ic-rail-open'); })
+    : _lastRondaNavIds;
+  var next = nextCensusPatientId(ids, rt.getActiveId(), delta);
   if (next == null) return;
+  // Clicking the rail button also moves the rail highlight and the consult view.
+  if (rail.length) {
+    Array.prototype.find.call(rail, function (b) { return b.getAttribute('data-ic-rail-open') === String(next); }).click();
+    return;
+  }
   patientsBridge.selectPatient(next);
 }
 

@@ -87,14 +87,18 @@ export function patientMatchesCensusTeamFilter(patient, teamId, teams, assignmen
   return patientMatchesTeam(patientForScopeEvaluate(patient), team);
 }
 
-/** @param {object} patient @param {object[]} teams @param {object[]} assignments @param {Date|string|number} [now] */
-export function resolvePatientCensusTeamId(patient, teams, assignments, now) {
+/**
+ * @param {object} patient @param {object[]} teams @param {object[]} assignments @param {Date|string|number} [now]
+ * @param {{ structural?: boolean }} [opts] `structural: false` = only explicit assignment rows (Interconsultas: new patients land in «Por asignar»).
+ */
+export function resolvePatientCensusTeamId(patient, teams, assignments, now, opts) {
   const patientId = String(patient?.id || '');
   const assigned = resolvePatientTeamIdFromAssignments(patientId, assignments, now);
   if (assigned) return assigned;
   // The newest effective row is a «no team» row: taken off its team on purpose, so no structural guess.
   const nowMs = new Date(now != null ? now : Date.now()).getTime();
   if ((assignments || []).some((r) => String(r?.patient_id || '') === patientId && !r.team_id && new Date(r.effective_at).getTime() <= nowMs)) return '';
+  if (opts?.structural === false) return '';
   const mapped = patientForScopeEvaluate(patient);
   for (const team of teams || []) {
     if (patientMatchesTeam(mapped, team)) {

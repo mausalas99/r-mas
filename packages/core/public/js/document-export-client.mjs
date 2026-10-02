@@ -7,6 +7,7 @@ const DOC_EXPORT_URL_KIND = {
   '/generate-indicaciones': 'indicaciones',
   '/generate-listado': 'listado',
   '/generate-censo': 'censo',
+  '/generate-html-pdf': 'html-pdf',
 };
 
 function canUseDesktopDocumentIpc() {

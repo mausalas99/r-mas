@@ -406,6 +406,16 @@ describe('clinical-ops-sync', () => {
     );
   });
 
+  it('mergeClinicalOpsSnapshot keeps this device user sala against a stale room copy', () => {
+    const db = openDb();
+    const me = ensureClinicalUser(db, { clientId: 'local-dev', rank: 'R2', clinicalName: 'Yo', sala: 'Interconsultas' });
+    claimUsername(db, { userId: me.userId, username: 'yo_mismo' });
+    const local = exportClinicalOpsSnapshot(db);
+    const stale = local.clinical_users.map((u) => ({ ...u, sala: 'Sala 2' }));
+    mergeClinicalOpsSnapshot(db, { ...local, exportedAt: new Date().toISOString(), clinical_users: stale }, local, me.userId);
+    assert.equal(db.prepare('SELECT sala FROM users WHERE user_id = ?').get(me.userId).sala, 'Interconsultas');
+  });
+
   it('exportClinicalOpsSnapshot includes registered profile without @usuario when clinical_name is set', () => {
     const db = openDb();
     const user = ensureClinicalUser(db, {

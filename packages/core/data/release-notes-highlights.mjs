@@ -4,27 +4,35 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_846 = [
+var RELEASE_NOTES_847 = [
   {
-    title: 'Un R2 puede cubrir 2 equipos',
-    body: 'En Sala, un R2 ahora puede estar en hasta 2 equipos a la vez. Cada R2 lleva su propia letra de guardia. Un tercer equipo se rechaza con un aviso claro.',
+    title: 'Equipo dentro de Mi perfil',
+    body: 'Bajo la tarjeta de Sala hay botones de Equipo. Filtras por sala y tocas un equipo para unirte.',
   },
   {
-    title: 'Pistas en pantalla, a tu gusto',
-    body: 'En Ajustes hay un interruptor nuevo, «Pistas en pantalla». Enciende o apaga los globos que enseñan R+ y cuentan las novedades.',
+    title: 'Letra de ciclo por equipo',
+    body: 'Al editar un equipo puedes poner una letra de A a D. Marca el día de guardia del mes.',
   },
   {
-    title: 'Textos de equipo más claros',
-    body: 'Al unirte a un equipo, R+ te dice que pidas el código al «líder de tu equipo», no solo al R2.',
+    title: 'Ingreso de Interconsultas más claro',
+    body: 'Completar el ingreso tiene su propia ventana. Pide servicio, motivo y las fechas de ingreso y de interconsulta.',
   },
   {
-    title: 'Arreglos pequeños',
-    body: 'Los avisos vuelven arriba a la derecha. La gráfica de balance acumulado cabe en su espacio. Apagar el demo de interconsultas limpia sus asignaciones.',
+    title: 'Vista previa para imprimir',
+    body: 'Generar Nota e Indicaciones abre una vista previa. Desde ahí imprimes o sacas PDF y .docx.',
+  },
+  {
+    title: 'Anteriores se queda contigo',
+    body: 'Las copias de Anteriores ya no se pierden al sincronizar con la Nube.',
+  },
+  {
+    title: 'Tu sala ya no se pisa',
+    body: 'Una copia vieja en la nube ya no cambia tu sala. Al cambiar de sala, los filtros fijados del censo se limpian.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_846;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_847;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.4.6': RELEASE_NOTES_846,
+  '8.4.7': RELEASE_NOTES_847,
 };

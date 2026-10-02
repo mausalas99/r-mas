@@ -51,9 +51,20 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.4.6](https://github.com/mausalas99/r-mas/releases/tag/v8.4.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.4.7](https://github.com/mausalas99/r-mas/releases/tag/v8.4.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.4.7 (estable — release 8.4.7)
+
+- **Nuevo (Mi perfil):** botones de Equipo bajo la Sala. Filtras por sala y te unes con un toque.
+- **Nuevo (Equipos):** letra de ciclo A–D al editar un equipo.
+- **Nuevo (Interconsultas):** ventana propia para completar el ingreso.
+- **Nuevo (Nota e Indicaciones):** vista previa para imprimir, PDF y .docx.
+- **Arreglado (Nube):** las copias de Anteriores ya no se pierden.
+- **Arreglado (Sala):** una copia vieja en la nube ya no cambia tu sala.
+
+Notas: `docs/RELEASE_NOTES_8.4.7.txt`.
 
 ## R+ 8.4.6 (estable — release 8.4.6)
 

@@ -71,13 +71,22 @@ function applyRotationNuevaIfNeeded(db, incoming, local, stats) {
   return localTeamGuardia;
 }
 
-function mergeClinicalUsersPhase(db, incoming, local, stats) {
+function mergeClinicalUsersPhase(db, incoming, local, stats, selfUserId) {
   const tombstoneStats = applyDeletedUsersFromSnapshot(db, incoming, local);
   stats.usersPurgedByTombstone = tombstoneStats.purged;
   stats.usersResurrectedFromTombstone = tombstoneStats.resurrected;
 
   const deletedSet = new Set(getDeletedUserIds(db));
-  const mergedUsers = mergeClinicalUsersData(local.clinical_users || [], incoming.clinical_users || []);
+  // A room's copy of this user can be stale (an old sala's room): this device's own sala wins.
+  const selfHandle = selfUserId
+    ? String(db.prepare('SELECT username FROM users WHERE user_id = ?').get(selfUserId)?.username || '').toLowerCase()
+    : '';
+  const isSelf = (row) =>
+    String(row?.user_id) === selfUserId || (selfHandle && String(row?.username || '').toLowerCase() === selfHandle);
+  const incomingUsers = (incoming.clinical_users || []).map((row) =>
+    selfUserId && isSelf(row) ? { ...row, sala: undefined } : row
+  );
+  const mergedUsers = mergeClinicalUsersData(local.clinical_users || [], incomingUsers);
   const userMergeStats = mergeClinicalUsers(
     db,
     mergedUsers.filter((row) => !deletedSet.has(String(row?.user_id || '')))
@@ -196,8 +205,9 @@ function mergeAssignmentsAndGuardiasPhase(
  * @param {import('better-sqlite3').Database} db
  * @param {object} incoming
  * @param {object} [localSnapshot]
+ * @param {string} [selfUserId] this device's user: incoming rows never change its sala
  */
-export function mergeClinicalOpsSnapshot(db, incoming, localSnapshot = null) {
+export function mergeClinicalOpsSnapshot(db, incoming, localSnapshot = null, selfUserId = '') {
   if (!incoming || typeof incoming !== 'object') return { merged: false };
 
   const stats = createMergeStats(incoming);
@@ -213,7 +223,7 @@ export function mergeClinicalOpsSnapshot(db, incoming, localSnapshot = null) {
   const localTeams = stats.rotationNuevaApplied
     ? db.prepare(`SELECT * FROM teams ORDER BY name`).all()
     : local.teams || [];
-  const deletedSet = mergeClinicalUsersPhase(db, incoming, local, stats);
+  const deletedSet = mergeClinicalUsersPhase(db, incoming, local, stats, selfUserId);
   const { mergedRemovals } = mergeMembershipTombstonesPhase(db, local, incoming, deletedSet);
   const archivedTeamIds = mergeTeamsPhase(db, local, incoming, localTeams, stats);
   const removalKeys = new Set(

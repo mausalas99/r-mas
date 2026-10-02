@@ -5284,6 +5284,22 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   text-overflow: ellipsis;
 }
 
+/* While patients wait in "Por asignar", assigned cards shrink to room + bed so the tray gets the space. */
+.ic-team-board--sorting .ic-row .sv-card-wrap {
+  flex: 0 0 auto;
+}
+
+.ic-team-board--sorting .ic-row .ic-card .sv-tag,
+.ic-team-board--sorting .ic-row .ic-card .sv-name,
+.ic-team-board--sorting .ic-row .ic-card .sv-ic,
+.ic-team-board--sorting .ic-row .ic-card .sv-label {
+  display: none;
+}
+
+.ic-team-board--sorting .ic-row .ic-card {
+  padding: 5px 10px;
+}
+
 .ic-tray {
   flex: 1 1 9.5rem;
   min-height: 9.5rem;
@@ -5292,6 +5308,24 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   padding: 0.7rem 1rem;
   border-color: color-mix(in oklab, var(--action) 40%, var(--border));
   background: color-mix(in oklab, var(--action) 5%, var(--surface));
+}
+
+/* Nobody waiting: shrink the tray to one slim line (still a drop target to unassign). */
+.ic-tray.ic-tray--empty {
+  flex: 0 0 auto;
+  min-height: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.4rem 1rem;
+}
+
+.ic-tray--empty .ic-row__head {
+  margin-bottom: 0;
+}
+
+.ic-tray--empty .ic-board-empty {
+  margin: 0;
 }
 
 .ic-tray .sv-grid {

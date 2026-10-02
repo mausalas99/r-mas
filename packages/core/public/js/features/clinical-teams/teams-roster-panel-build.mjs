@@ -141,6 +141,23 @@ export function buildClinicalProfileSectionHtml(ctx, user) {
 }
 
 export const PERFIL_SALA_COLLAPSE_KEY = 'perfil.sala';
+const SALA_CONFIRMED_LS = 'rpc.perfilSalaConfirmedMonth';
+const monthKey = () => new Date().toISOString().slice(0, 7);
+
+/** The 1st-of-month «Confirma tu sala» prompt is answered once a sala is saved that month. */
+export function isSalaConfirmedThisMonth() {
+  try {
+    return localStorage.getItem(SALA_CONFIRMED_LS) === monthKey();
+  } catch {
+    return false;
+  }
+}
+
+export function markSalaConfirmedThisMonth() {
+  try {
+    localStorage.setItem(SALA_CONFIRMED_LS, monthKey());
+  } catch (_e) { void _e; }
+}
 
 /** Mi perfil: Sala chips. A tap saves the profile and moves the Nube room (see profile submit). */
 export function buildPerfilSalaHtml(ctx) {
@@ -152,7 +169,7 @@ export function buildPerfilSalaHtml(ctx) {
   // new sala's Nube room becomes its owner and holds the room key (room-dek.mjs),
   // so the pick is asked for loudly: open, whatever the saved collapse state says.
   const pick = !ctx.sala;
-  const newMonth = !pick && new Date().getDate() === 1;
+  const newMonth = !pick && new Date().getDate() === 1 && !isSalaConfirmedThisMonth();
   const open = pick || newMonth || readClinicalTeamsCollapseOpen(PERFIL_SALA_COLLAPSE_KEY, true);
   const hint = pick
     ? '<p class="settings-acc-hint settings-acc-hint--tight" data-perfil-sala-hint role="status"><b>Elige la sala de tu nueva rotación.</b></p>'

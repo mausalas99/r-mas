@@ -3317,6 +3317,58 @@ select.profile-input.profile-select {
   border-color: var(--color-accent);
   color: #fff;
 }
+.settings-perfil-equipo {
+  padding-bottom: 12px;
+}
+.settings-perfil-equipo-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+}
+.settings-perfil-equipo-filter {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 6px;
+}
+.settings-perfil-chip--sm {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 11.5px;
+  white-space: nowrap;
+  color: var(--text-muted, var(--text));
+}
+.settings-perfil-chip--sm[aria-pressed="true"] {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent-soft-text);
+}
+.settings-perfil-equipo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.settings-perfil-chip--team {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-perfil-chip--team:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.settings-perfil-chip--add {
+  border-style: dashed;
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+.settings-perfil-equipo .settings-perfil-chips {
+  padding-bottom: 0;
+}
 .settings-perfil-sala .settings-acc-hint {
   margin: 0 0 12px;
 }

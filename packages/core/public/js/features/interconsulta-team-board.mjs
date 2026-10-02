@@ -60,7 +60,7 @@ export function icCardHtml(p, compact, archivable) {
   return (
     '<div class="sv-card-wrap">' +
     '<button type="button" class="sv-card ic-card' + (compact ? ' ic-card--compact' : '') +
-    '" draggable="true" data-ic-open="' + id + '" data-patient-id="' + id + '">' +
+    '" title="' + escHtml(p.nombre || '') + '" draggable="true" data-ic-open="' + id + '" data-patient-id="' + id + '">' +
     '<span class="sv-card-top"><span class="sv-bed">' + escHtml(bedLine(p)) + '</span>' + cardTagsHtml(p) + '</span>' +
     '<span class="sv-name" title="' + escHtml([p.registro].filter(Boolean).join(' · ')) + '">' + escHtml(p.nombre || 'Sin nombre') + '</span>' +
     (compact ? '<span class="sv-ic">' + svc + '</span>' : '<span class="sv-label">Servicio solicitante</span><span class="sv-ic">' + svc + '</span>') +
@@ -138,7 +138,7 @@ function renderTrayHtml(patients) {
     ? '<div class="sv-grid">' + patients.map((p) => icCardHtml(p, true, true)).join('') + '</div>'
     : '<p class="ic-board-empty">Todos tienen equipo.</p>';
   return (
-    '<section class="ic-board-lane ic-tray" data-role="sin-equipo" data-drop-team-id="">' +
+    '<section class="ic-board-lane ic-tray' + (patients.length ? '' : ' ic-tray--empty') + '" data-role="sin-equipo" data-drop-team-id="">' +
     '<div class="ic-row__head"><h3 class="ic-board-lane__title">Por asignar</h3>' +
     '<span class="sv-tag ic-row__count">' + patients.length + '</span>' +
     '<span class="ic-row__note">Arrastra cada tarjeta a un equipo</span></div>' +
@@ -193,7 +193,7 @@ export function renderInterconsultaTeamBoardHtml(patients, teams, now = new Date
 
   const known = computeKnownTeamIds(roles, slots);
   const unassigned = (patients || []).filter((p) => !known.has(String(p?.censusTeamId || '')));
-  return '<div class="ic-team-board"><div class="ic-rows">' + rows.join('') + '</div>' + renderTrayHtml(unassigned) + '</div>';
+  return '<div class="ic-team-board' + (unassigned.length ? ' ic-team-board--sorting' : '') + '"><div class="ic-rows">' + rows.join('') + '</div>' + renderTrayHtml(unassigned) + '</div>';
 }
 
 /** Teams that can be "mine", in board order: [{ id, label }]. Empty when no real team exists. */

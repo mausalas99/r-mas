@@ -10,6 +10,10 @@ import { isCloudSala, normalizeCloudSala } from '../cloud-sync/sala-allowlist.mj
 import { isValidUsernameFormat, normalizeUsername } from '../../clinical-username.mjs';
 import { syncRotationConfigButton } from '../clinical-rotation.mjs';
 import {
+  CLINICAL_CENSUS_FILTER_SALA_LS,
+  CLINICAL_CENSUS_FILTER_TEAM_LS,
+} from '../clinical-census-filters-ui.mjs';
+import {
   toast,
   currentUserId,
   dbApi,
@@ -18,18 +22,22 @@ import {
   getVerifiedAdminAccessCode,
   rememberAdminAccessCode,
 } from './shared.mjs';
+import { markSalaConfirmedThisMonth } from './teams-roster-panel-build.mjs';
 import { claimClinicalUsernameIfNeeded } from './teams-roster-profile-claim.mjs';
 import { persistProfileFromPanel } from './teams-roster-profile-persist.mjs';
 
-function readProfileFormFields() {
+/** Reads the submitted form, not the first same-id field: the Equipo panel reuses these ids. */
+function readProfileFormFields(form) {
+  const el = (id) => form.querySelector(`#${id}`);
+  // Mi perfil keeps its Sala input outside the form (form="" attribute), which also
+  // breaks when another form shares the id: look in the Mi perfil body instead.
+  const salaScope = form.closest('#profile-body') || form;
   return {
-    username: normalizeUsername(
-      String(document.getElementById('clinical-profile-username')?.value || '')
-    ),
-    rank: String(document.getElementById('clinical-profile-rank')?.value || 'R1'),
-    sala: String(document.getElementById('clinical-profile-sala')?.value || ''),
-    clinicalName: String(document.getElementById('clinical-profile-name')?.value || '').trim(),
-    adminCb: document.getElementById('clinical-profile-admin'),
+    username: normalizeUsername(String(el('clinical-profile-username')?.value || '')),
+    rank: String(el('clinical-profile-rank')?.value || 'R1'),
+    sala: String(salaScope.querySelector('#clinical-profile-sala')?.value || ''),
+    clinicalName: String(el('clinical-profile-name')?.value || '').trim(),
+    adminCb: el('clinical-profile-admin'),
   };
 }
 
@@ -81,8 +89,8 @@ async function nubeSalaSync(sala) {
 const sessionSala = () => String(clinicalSessionContext.user?.sala || '');
 
 /** A new sala means a new Nube room: join it now, so the server matches the profile. */
-async function moveNubeRoomIfSalaChanged(prevSala, sala) {
-  if (!sala || sala === prevSala) return;
+async function moveNubeRoomIfSalaChanged(prevSala, sala, confirming) {
+  if (!sala || (sala === prevSala && !confirming)) return;
   const [{ isCloudSala }, { getCloudSyncToken }] = await Promise.all([
     import('../cloud-sync/sala-allowlist.mjs'),
     import('../cloud-sync/settings.mjs'),
@@ -124,9 +132,34 @@ function profileFormError(fields) {
   return null;
 }
 
+/** Old pinned Sala/Equipo census filters would keep the list on the previous rotation. */
+function clearCensusPinsIfSalaChanged(prevSala, sala) {
+  if (!sala || sala === prevSala) return;
+  try {
+    localStorage.removeItem(CLINICAL_CENSUS_FILTER_SALA_LS);
+    localStorage.removeItem(CLINICAL_CENSUS_FILTER_TEAM_LS);
+  } catch (_e) { void _e; }
+}
+
+/** A save that stops early leaves the chips on the unsaved pick: put them back on the saved sala. */
 export async function handleProfileFormSubmit(ev) {
+  try {
+    await saveProfileForm(ev);
+  } finally {
+    const sala = sessionSala();
+    const hidden = document.querySelector('#profile-body #clinical-profile-sala');
+    if (hidden instanceof HTMLInputElement) hidden.value = sala;
+    document.querySelectorAll('#profile-body [data-perfil-sala]').forEach((c) => {
+      c.setAttribute('aria-pressed', String(c.getAttribute('data-perfil-sala') === sala));
+    });
+    const cur = document.querySelector('#profile-body .settings-perfil-sala-current');
+    if (cur) cur.textContent = sala || 'Sin sala';
+  }
+}
+
+async function saveProfileForm(ev) {
   ev.preventDefault();
-  const fields = readProfileFormFields();
+  const fields = readProfileFormFields(ev.target);
   const wasProgramAdmin = hasProgramAdminPrivileges(clinicalSessionContext.user);
   const adminChange = await resolveProgramAdminChange(fields.adminCb, wasProgramAdmin);
   if (!adminChange) return;
@@ -159,7 +192,11 @@ export async function handleProfileFormSubmit(ev) {
 
   await renameNubeUsername(usernameWillChange, fields.username);
   await refreshClinicalUserProfile();
-  await moveNubeRoomIfSalaChanged(prevSala, fields.sala);
+  // Confirming the same sala on the 1st still joins the new month's room.
+  const confirming = !!document.querySelector('[data-perfil-sala-hint]');
+  await moveNubeRoomIfSalaChanged(prevSala, fields.sala, confirming);
+  if (fields.sala) markSalaConfirmedThisMonth();
+  clearCensusPinsIfSalaChanged(prevSala, fields.sala);
   // Mi perfil hosts this form outside the teams panel, so nothing else redraws
   // it: without this, «Cambiar código de administración» only showed up after
   // reopening Mi perfil.

@@ -398,6 +398,7 @@ async function deleteNetworkPatientsBatched(api, targets) {
         ok += chunk.length;
       } catch (err) {
         lastErr = err;
+        console.error('[admin] bulk delete chunk failed', roomId, err);
       }
     }
   }
@@ -423,12 +424,17 @@ async function handleBulkDeleteNetwork(deps) {
     return;
   }
   const api = deps.getApi();
+  deps.toast('Eliminando ' + targets.length + ' paciente(s)…', 'info');
   const { ok, lastErr } = await deleteNetworkPatientsBatched(api, targets);
+  const why = lastErr?.data?.message || lastErr?.message || 'No se pudo eliminar.';
   if (lastErr && !ok) {
-    deps.toast(lastErr?.data?.message || lastErr?.message || 'No se pudo eliminar.', 'error');
+    deps.toast(why, 'error');
     return;
   }
-  deps.toast(ok + ' de ' + targets.length + ' eliminado(s).', ok === targets.length ? 'success' : 'warn');
+  deps.toast(
+    ok + ' de ' + targets.length + ' eliminado(s).' + (ok < targets.length ? ' ' + why : ''),
+    ok === targets.length ? 'success' : 'warn'
+  );
   void loadAdminNetworkCensus(deps.root, deps.outerDeps);
 }
 

@@ -50,7 +50,7 @@ function toastJoinSlotWarnings(team, rank) {
 }
 
 /** @param {string} teamId */
-async function joinClinicalTeamByButton(teamId) {
+export async function joinClinicalTeamByButton(teamId) {
   const userId = currentUserId();
   const api = dbApi();
   if (!api || typeof api.dbClinicalTeamsJoin !== 'function') {

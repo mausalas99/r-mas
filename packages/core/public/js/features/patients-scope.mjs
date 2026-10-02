@@ -51,12 +51,13 @@ export function patientMatchesSearch(p) {
   });
 }
 
-export function patientsVisibleInSidebar() {
+/** @param {{ allTeams?: boolean }} [opts] `allTeams`: ignore the pinned Equipo filter (Interconsultas board shows every team + «Por asignar»). */
+export function patientsVisibleInSidebar(opts) {
   const base = getPatientsForDisplay(() => getPatients());
   if (shouldEnforceTeamPatientMirror() && !isClinicalScopeReadyForPatientApply()) {
     return [];
   }
-  return filterPatientsForGuardiaCensus(base);
+  return filterPatientsForGuardiaCensus(base, opts?.allTeams ? { ...elevatedPatientFilters, teamId: '' } : undefined);
 }
 
 export function pickDefaultVisiblePatientId() {
@@ -113,13 +114,13 @@ export function reselectIfActivePatientHidden(visiblePatients) {
   return true;
 }
 
-export function filterPatientsForGuardiaCensus(basePatients) {
+export function filterPatientsForGuardiaCensus(basePatients, filters = elevatedPatientFilters) {
   return filterPatientsForGuardiaCensusCore(
     basePatients,
     clinicalSessionContext.user,
     getClinicalScopeContextForEvaluate(),
     clinicalSessionContext.guardiasMap,
-    elevatedPatientFilters
+    filters
   );
 }
 
