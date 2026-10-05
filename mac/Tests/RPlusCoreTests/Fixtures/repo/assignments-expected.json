@@ -1,0 +1,108 @@
+{
+ "patientIds": [
+  "p1",
+  "p9"
+ ],
+ "active": [
+  {
+   "patientId": "p1",
+   "now": "2026-09-30T00:00:00.000Z",
+   "team": null
+  },
+  {
+   "patientId": "p1",
+   "now": "2026-10-01T00:00:00.000Z",
+   "team": "t1"
+  },
+  {
+   "patientId": "p1",
+   "now": "2026-10-04T00:00:00.000Z",
+   "team": "t2"
+  },
+  {
+   "patientId": "p1",
+   "now": "2026-10-06T00:00:00.000Z",
+   "team": null
+  },
+  {
+   "patientId": "p9",
+   "now": "2026-09-30T00:00:00.000Z",
+   "team": null
+  },
+  {
+   "patientId": "p9",
+   "now": "2026-10-01T00:00:00.000Z",
+   "team": null
+  },
+  {
+   "patientId": "p9",
+   "now": "2026-10-04T00:00:00.000Z",
+   "team": "t1"
+  },
+  {
+   "patientId": "p9",
+   "now": "2026-10-06T00:00:00.000Z",
+   "team": "t1"
+  },
+  {
+   "patientId": "nobody",
+   "now": "2026-09-30T00:00:00.000Z",
+   "team": null
+  },
+  {
+   "patientId": "nobody",
+   "now": "2026-10-01T00:00:00.000Z",
+   "team": null
+  },
+  {
+   "patientId": "nobody",
+   "now": "2026-10-04T00:00:00.000Z",
+   "team": null
+  },
+  {
+   "patientId": "nobody",
+   "now": "2026-10-06T00:00:00.000Z",
+   "team": null
+  },
+  {
+   "patientId": " ",
+   "now": "2026-09-30T00:00:00.000Z",
+   "team": null
+  },
+  {
+   "patientId": " ",
+   "now": "2026-10-01T00:00:00.000Z",
+   "team": null
+  },
+  {
+   "patientId": " ",
+   "now": "2026-10-04T00:00:00.000Z",
+   "team": null
+  },
+  {
+   "patientId": " ",
+   "now": "2026-10-06T00:00:00.000Z",
+   "team": null
+  },
+  {
+   "patientId": " p1 ",
+   "now": "2026-09-30T00:00:00.000Z",
+   "team": null
+  },
+  {
+   "patientId": " p1 ",
+   "now": "2026-10-01T00:00:00.000Z",
+   "team": "t1"
+  },
+  {
+   "patientId": " p1 ",
+   "now": "2026-10-04T00:00:00.000Z",
+   "team": "t2"
+  },
+  {
+   "patientId": " p1 ",
+   "now": "2026-10-06T00:00:00.000Z",
+   "team": null
+  }
+ ]
+}

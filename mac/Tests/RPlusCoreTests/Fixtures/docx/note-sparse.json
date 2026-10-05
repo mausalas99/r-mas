@@ -1,0 +1,18 @@
+{
+ "kind": "note",
+ "input": {
+  "patient": {
+   "nombre": "x",
+   "edad": 0
+  },
+  "note": {
+   "fecha": "06/10/2026",
+   "hora": "",
+   "diagnosticos": "uno",
+   "tratamiento": "a\nb",
+   "evolucion": "solo una"
+  }
+ },
+ "fileName": "Nota_Evolucion_x_06_10_2026.docx",
+ "numberingInject": null
+}

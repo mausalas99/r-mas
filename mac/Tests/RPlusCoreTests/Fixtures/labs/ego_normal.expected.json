@@ -1,0 +1,142 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO UNO28",
+   "expediente": "8000028-1",
+   "sexo": "M",
+   "edad": "54 años",
+   "fecha": "03/10/2026",
+   "hora": "07:15",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "EGO:\n  AMAR  CLARO  pH 6.0  D 1.015\n  Prot NEG  Glu NEG  Nitr NEG\n  Leu 1-2  Eri 0-1"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "EXAMEN GENERAL DE ORINA",
+    "label": "EXAMEN GENERAL DE ORINA",
+    "groups": [
+     {
+      "title": "",
+      "rows": [
+       {
+        "estudio": "COLOR",
+        "flag": "*",
+        "resultado": "AMARILLO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ASPECTO",
+        "flag": "*",
+        "resultado": "CLARO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "DENSIDAD",
+        "flag": "*",
+        "resultado": "1.015",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "PH",
+        "flag": "*",
+        "resultado": "6.0",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "PROTEINAS",
+        "flag": "*",
+        "resultado": "NEGATIVO",
+        "unidades": "mg/dL",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "GLUCOSA",
+        "flag": "*",
+        "resultado": "NEGATIVO",
+        "unidades": "mg/dL",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "NITRITOS",
+        "flag": "*",
+        "resultado": "NEGATIVO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "LEUCOCITOS",
+        "flag": "*",
+        "resultado": "1-2",
+        "unidades": "/CAMPO",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ERITROCITOS",
+        "flag": "*",
+        "resultado": "0-1",
+        "unidades": "/CAMPO",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "BACTERIAS",
+        "flag": "*",
+        "resultado": "AUSENTES",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard"
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t8000028-1\tSolicitud:\t2680000281\nNombre:\tPACIENTE INVENTADO UNO28\tFecha Registro:\tOct 3 2026 7:15AM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t54\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nURIANALISIS\nEXAMEN GENERAL DE ORINA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCOLOR\t\n*\nAMARILLO\nASPECTO\t\n*\nCLARO\nDENSIDAD\t\n*\n1.015\nPH\t\n*\n6.0\nPROTEINAS\t\n*\nNEGATIVO\nmg/dL\t\nGLUCOSA\t\n*\nNEGATIVO\nmg/dL\t\nNITRITOS\t\n*\nNEGATIVO\nLEUCOCITOS\t\n*\n1-2\n/CAMPO\t\nERITROCITOS\t\n*\n0-1\n/CAMPO\t\nBACTERIAS\t\n*\nAUSENTES"
+ ],
+ "cultivo": "",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 8000028-1 Solicitud: 2680000281 Nombre: PACIENTE INVENTADO UNO28 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B  ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "  Expediente: 8000028-1 Solicitud: 2680000281 Nombre: PACIENTE INVENTADO UNO28 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B  ",
+  "gaso": "",
+  "pie": ""
+ }
+}

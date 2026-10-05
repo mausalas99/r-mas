@@ -1,0 +1,126 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO UNO30",
+   "expediente": "8000030-1",
+   "sexo": "M",
+   "edad": "54 años",
+   "fecha": "03/10/2026",
+   "hora": "07:15",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "BH\tHb 10.9*  Leu 8.1  Plt 301",
+   "QS\tGlu 101* Cr 1.1"
+  ],
+  "bhExtras": {
+   "RBC": "4.4"
+  },
+  "refsBySection": {
+   "BH": {
+    "Hb": [
+     12.2,
+     18.1
+    ],
+    "Leu": [
+     4,
+     11
+    ],
+    "Plt": [
+     142,
+     424
+    ],
+    "RBC": [
+     4.04,
+     6.13
+    ]
+   },
+   "QS": {
+    "Glu": [
+     60,
+     100
+    ],
+    "Cr": [
+     0.6,
+     1.4
+    ]
+   }
+  }
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "HEMATOLOGIA",
+    "label": "HEMATOLOGIA",
+    "groups": [
+     {
+      "title": "BIOMETRIA HEMATICA COMPLETA",
+      "rows": [
+       {
+        "estudio": "RBC\t\t\t4.40\tM/uL\t4.04 - 6.13",
+        "flag": "*",
+        "resultado": "HGB\t\tB\t10.9\tg/dL\t12.20 - 18.10",
+        "unidades": "WBC",
+        "ref": "*\t8.10\tK/uL\t4.00 - 11.00",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   },
+   {
+    "key": "QUIMICA CLINICA",
+    "label": "QUIMICA CLINICA",
+    "groups": [
+     {
+      "title": "",
+      "rows": [
+       {
+        "estudio": "GLUCOSA EN SANGRE\t\t*\t101\tmg/dL\t60 - 100",
+        "flag": "*",
+        "resultado": "CREATININA EN SANGRE",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard"
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t8000030-1\tSolicitud:\t2680000301\nNombre:\tPACIENTE INVENTADO UNO30\tFecha Registro:\tOct 3 2026 7:15AM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t54\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nRBC\t\t\t4.40\tM/uL\t4.04 - 6.13\nHGB\t\tB\t10.9\tg/dL\t12.20 - 18.10\nWBC\t\t*\t8.10\tK/uL\t4.00 - 11.00\nPLT\t\t*\t301\tK/uL\t142.00 - 424.00\nQUIMICA CLINICA\nGLUCOSA EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nGLUCOSA EN SANGRE\t\t*\t101\tmg/dL\t60 - 100\nCREATININA EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCREATININA EN SANGRE\t\t*\t1.1\tmg/dL\t0.6 - 1.4"
+ ],
+ "cultivo": "",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 8000030-1 Solicitud: 2680000301 Nombre: PACIENTE INVENTADO UNO30 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B HEMATOLOGIA BIOMETRIA HEMATICA COMPLETA Estudio Resultado Unidades Valor de Referencia RBC 4.40 M/uL 4.04 - 6.13 HGB B 10.9 g/dL 12.20 - 18.10 WBC * 8.10 K/uL 4.00 - 11.00 PLT * 301 K/uL 142.00 - 424.00 QUIMICA CLINICA GLUCOSA EN SANGRE Estudio Resultado Unidades Valor de Referencia GLUCOSA EN SANGRE * 101 mg/dL 60 - 100 CREATININA EN SANGRE Estudio Resultado Unidades Valor de Referencia CREATININA EN SANGRE * 1.1 mg/dL 0.6 - 1.4 ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "BH\tHb 10.9*  Leu 8.1  Plt 301",
+   "coagVisible": "",
+   "extras": {
+    "RBC": "4.4"
+   }
+  },
+  "qs": "QS\tGlu 101* Cr 1.1",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 8000030-1 Solicitud: 2680000301 Nombre: PACIENTE INVENTADO UNO30 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B HEMATOLOGIA BIOMETRIA HEMATICA COMPLETA Estudio Resultado Unidades Valor de Referencia RBC 4.40 M/uL 4.04 - 6.13 HGB B 10.9 g/dL 12.20 - 18.10 WBC * 8.10 K/uL 4.00 - 11.00 PLT * 301 K/uL 142.00 - 424.00 QUIMICA CLINICA GLUCOSA EN SANGRE Estudio Resultado Unidades Valor de Referencia GLUCOSA EN SANGRE * 101 mg/dL 60 - 100 CREATININA EN SANGRE Estudio Resultado Unidades Valor de Referencia CREATININA EN SANGRE * 1.1 mg/dL 0.6 - 1.4 ",
+  "gaso": "",
+  "pie": ""
+ }
+}

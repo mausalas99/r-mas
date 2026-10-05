@@ -1,0 +1,49 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO UNO18",
+   "expediente": "8000018-1",
+   "sexo": "M",
+   "edad": "54 años",
+   "fecha": "03/10/2026",
+   "hora": "07:15",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "HEMOCULTIVO (CATETER NIAGARA) 03/10: NEGATIVO"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": []
+ },
+ "bulkSplit": [
+  "Expediente:\t8000018-1\tSolicitud:\t2680000181\nNombre:\tPACIENTE INVENTADO UNO18\tFecha Registro:\tOct 3 2026 7:15AM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t54\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nBACTERIOLOGIA\nHEMOCULTIVO\nPRODUCTO\t\n*\nCATETER NIAGARA\nMICROORGANISMO\t\n*"
+ ],
+ "cultivo": "HEMOCULTIVO (CATETER NIAGARA) 03/10: NEGATIVO",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 8000018-1 Solicitud: 2680000181 Nombre: PACIENTE INVENTADO UNO18 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B BACTERIOLOGIA HEMOCULTIVO PRODUCTO * CATETER NIAGARA MICROORGANISMO * ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 8000018-1 Solicitud: 2680000181 Nombre: PACIENTE INVENTADO UNO18 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B BACTERIOLOGIA HEMOCULTIVO PRODUCTO * CATETER NIAGARA MICROORGANISMO * ",
+  "gaso": "",
+  "pie": ""
+ }
+}

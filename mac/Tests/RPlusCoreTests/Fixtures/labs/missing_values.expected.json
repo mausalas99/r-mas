@@ -1,0 +1,124 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO UNO5",
+   "expediente": "800005-1",
+   "sexo": "M",
+   "edad": "54 años",
+   "fecha": "03/10/2026",
+   "hora": "07:15",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "BH\tLeu 6.1",
+   "ESC\tNa 139"
+  ],
+  "bhExtras": {},
+  "refsBySection": {
+   "BH": {
+    "Leu": [
+     4,
+     11
+    ]
+   }
+  }
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "HEMATOLOGIA",
+    "label": "HEMATOLOGIA",
+    "groups": [
+     {
+      "title": "BIOMETRIA HEMATICA COMPLETA",
+      "rows": [
+       {
+        "estudio": "HGB",
+        "flag": "*",
+        "resultado": "g/dL\t12.20 - 18.10",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "WBC",
+        "flag": "*",
+        "resultado": "6.1",
+        "unidades": "K/uL",
+        "ref": "4.00 - 11.00",
+        "abnormal": false
+       },
+       {
+        "estudio": "PLT",
+        "flag": "*",
+        "resultado": "N/A",
+        "unidades": "K/uL",
+        "ref": "142.00 - 424.00",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   },
+   {
+    "key": "QUIMICA CLINICA",
+    "label": "QUIMICA CLINICA",
+    "groups": [
+     {
+      "title": "",
+      "rows": [
+       {
+        "estudio": "GLUCOSA EN SANGRE",
+        "flag": "*",
+        "resultado": "mg/dL\t60 - 100",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "SODIO",
+        "flag": "*",
+        "resultado": "139",
+        "unidades": "mmol/L",
+        "ref": "",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard"
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t800005-1\tSolicitud:\t268000051\nNombre:\tPACIENTE INVENTADO UNO5\tFecha Registro:\tOct 3 2026 7:15AM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t54\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nHGB\t\n*\ng/dL\t12.20 - 18.10\nWBC\t\n*\n6.1\nK/uL\t4.00 - 11.00\nPLT\t\n*\nN/A\nK/uL\t142.00 - 424.00\nQUIMICA CLINICA\nGLUCOSA EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nGLUCOSA EN SANGRE\t\n*\nmg/dL\t60 - 100\nSODIO\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nSODIO\t\n*\n139\nmmol/L"
+ ],
+ "cultivo": "",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 800005-1 Solicitud: 268000051 Nombre: PACIENTE INVENTADO UNO5 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B HEMATOLOGIA BIOMETRIA HEMATICA COMPLETA Estudio Resultado Unidades Valor de Referencia HGB * g/dL 12.20 - 18.10 WBC * 6.1 K/uL 4.00 - 11.00 PLT * N/A K/uL 142.00 - 424.00 QUIMICA CLINICA GLUCOSA EN SANGRE Estudio Resultado Unidades Valor de Referencia GLUCOSA EN SANGRE * mg/dL 60 - 100 SODIO Estudio Resultado Unidades Valor de Referencia SODIO * 139 mmol/L ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "BH\tLeu 6.1",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "ESC\tNa 139",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 800005-1 Solicitud: 268000051 Nombre: PACIENTE INVENTADO UNO5 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B HEMATOLOGIA BIOMETRIA HEMATICA COMPLETA Estudio Resultado Unidades Valor de Referencia HGB * g/dL 12.20 - 18.10 WBC * 6.1 K/uL 4.00 - 11.00 PLT * N/A K/uL 142.00 - 424.00 QUIMICA CLINICA GLUCOSA EN SANGRE Estudio Resultado Unidades Valor de Referencia GLUCOSA EN SANGRE * mg/dL 60 - 100 SODIO Estudio Resultado Unidades Valor de Referencia SODIO * 139 mmol/L ",
+  "gaso": "",
+  "pie": ""
+ }
+}

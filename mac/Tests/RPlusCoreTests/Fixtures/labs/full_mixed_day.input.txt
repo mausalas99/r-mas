@@ -1,0 +1,383 @@
+Expediente:	8000026-1	Solicitud:	2680000261
+Nombre:	PACIENTE INVENTADO UNO26	Fecha Registro:	Oct 3 2026 7:15AM
+Sexo:	MASCULINO	Ubicación:	SALA INVENTADA
+Edad:	54	Medico:	FICTICIO SINTETICO EJEMPLO B
+
+HEMATOLOGIA
+BIOMETRIA HEMATICA COMPLETA
+Estudio		Resultado	Unidades	Valor de Referencia
+RBC	
+*
+4.62
+M/uL	4.04 - 6.13
+HGB	
+*
+13.9
+g/dL	12.20 - 18.10
+HCT	
+*
+41.2
+%	37.7 - 53.7
+MCV	
+*
+89
+fL	80 - 97
+MCH	
+*
+30.1
+pg	27.0 - 31.2
+MCHC	
+*
+33.7
+g/dL	29.9 - 34.2
+RDW	
+*
+13.5
+%	11.6 - 14.8
+WBC	
+*
+7.30
+K/uL	4.00 - 11.00
+NEU	
+*
+4.40
+K/uL	2.00 - 6.90
+NEU%	
+*
+60.3
+%	37.0 - 80.0
+LYM	
+*
+2.10
+K/uL	0.60 - 3.40
+LYM%	
+*
+28.8
+%	10.0 - 50.0
+MONO	
+*
+0.50
+K/uL	0.000 - 0.900
+EOS	
+*
+0.20
+K/uL	0.000 - 0.700
+BASO	
+*
+0.05
+K/uL	0.000 - 0.200
+PLT	
+*
+262
+K/uL	142.00 - 424.00
+MPV	
+*
+9.1
+fL	7.4 - 10.4
+
+HEMATOLOGIA
+COAGULACION
+Estudio		Resultado	Unidades	Valor de Referencia
+TP	
+*
+12.4
+seg	10.0 - 14.0
+INR	
+*
+1.05
+	0.8 - 1.2
+TTPA	
+A
+41.2
+seg	25.0 - 35.0
+FIBRINOGENO	
+*
+310
+mg/dL	200 - 400
+
+QUIMICA CLINICA
+GLUCOSA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+GLUCOSA EN SANGRE	
+*
+88
+mg/dL	60 - 100
+NITROGENO DE LA UREA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+NITROGENO DE LA UREA EN SANGRE	
+*
+14
+mg/dL	7 - 20
+CREATININA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+CREATININA EN SANGRE	
+*
+0.9
+mg/dL	0.6 - 1.4
+ACIDO URICO EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+ACIDO URICO EN SANGRE	
+*
+5.2
+mg/dL	4.8 - 8.7
+COLESTEROL
+Estudio		Resultado	Unidades	Valor de Referencia
+COLESTEROL	
+*
+175
+mg/dL	130 - 200
+TRIGLICERIDOS
+Estudio		Resultado	Unidades	Valor de Referencia
+TRIGLICERIDOS	
+*
+110
+mg/dL	35 - 150
+CLORO
+Estudio		Resultado	Unidades	Valor de Referencia
+CLORO	
+*
+103
+mmol/L	101.0 - 110.0
+SODIO
+Estudio		Resultado	Unidades	Valor de Referencia
+SODIO	
+*
+140
+mmol/L	135.0 - 145.0
+POTASIO
+Estudio		Resultado	Unidades	Valor de Referencia
+POTASIO	
+*
+4.1
+mmol/L	3.6 - 5.0
+CALCIO
+Estudio		Resultado	Unidades	Valor de Referencia
+CALCIO EN SUERO	
+*
+9.2
+mg/dL	8.4 - 10.2
+FOSFORO EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+FOSFORO	
+*
+3.4
+mg/dL	2.5 - 4.6
+PROTEINAS TOTALES
+Estudio		Resultado	Unidades	Valor de Referencia
+PROTEINAS TOTALES	
+*
+7.1
+g/dL	6.1 - 7.9
+ALBUMINA
+Estudio		Resultado	Unidades	Valor de Referencia
+ALBUMINA	
+*
+4.0
+g/dL	3.2 - 5.5
+AST(ASPARTATO AMINOTRANSFERASA)
+Estudio		Resultado	Unidades	Valor de Referencia
+AST(ASPARTATO AMINOTRANSFERASA)	
+*
+24
+UI/L	10 - 42
+ALT ALANIN AMINO TRANSFERASA
+Estudio		Resultado	Unidades	Valor de Referencia
+ALT ALANIN AMINO TRANSFERASA	
+*
+21
+UI/L	10 - 42
+ALP FOSFATASA ALCALINA
+Estudio		Resultado	Unidades	Valor de Referencia
+ALP FOSFATASA ALCALINA	
+*
+96
+UI/L	38 - 126
+BILIRRUBINA
+Estudio		Resultado	Unidades	Valor de Referencia
+BILIRRUBINA TOTAL	
+*
+0.8
+mg/dL	0.2 - 1.0
+BILIRRUBINA DIRECTA	
+*
+0.2
+mg/dL	0.0 - 0.2
+BILIRRUBINA INDIRECTA	
+*
+0.6
+mg/dL	0.2 - 0.8
+LDH DESHIDROGENASA LACTICA
+Estudio		Resultado	Unidades	Valor de Referencia
+LDH DESHIDROGENASA LACTICA	
+*
+150
+UI/L	91 - 180
+AMILASA SERICA
+Estudio		Resultado	Unidades	Valor de Referencia
+AMILASA	
+*
+60
+U/L	28 - 100
+GASOMETRIAS
+GASOMETRIA ARTERIAL
+Estudio		Resultado	Unidades	Valor de Referencia
+PH	
+B
+7.31
+	7.35 - 7.45
+pCO2	
+B
+30
+mmHg	35 - 45
+pO2	
+*
+88
+mmHg	80 - 100
+Lactato	
+A
+3.1
+mmol/L	0.9 - 1.9
+HCO3	
+B
+16.2
+mmol/L	22.0 - 26.0
+EX. BASE	
+B
+-8.1
+mmol/L	-2.0 - 2.0
+SAT 02	
+*
+96
+%	95 - 100
+
+URIANALISIS
+EXAMEN GENERAL DE ORINA
+Estudio		Resultado	Unidades	Valor de Referencia
+COLOR	
+*
+AMARILLO
+ASPECTO	
+*
+TURBIO
+DENSIDAD	
+*
+1.024
+PH	
+*
+6.0
+PROTEINAS	
+*
+30
+mg/dL	
+GLUCOSA	
+*
+NEGATIVO
+mg/dL	
+CETONAS	
+*
+NEGATIVO
+SANGRE	
+*
+25
+Hem/uL	
+NITRITOS	
+*
+POSITIVO
+ESTERASA LEUCOCITARIA	
+*
+75
+LEUCOCITOS	
+*
+20-25
+/CAMPO	
+ERITROCITOS	
+*
+3-5
+/CAMPO	
+BACTERIAS	
+*
+ABUNDANTES
+MOCO	
+*
+ESCASO
+
+QUIMICA CLINICA
+TSH
+Estudio		Resultado	Unidades	Valor de Referencia
+TSH	
+*
+2.5
+uUI/mL	0.4 - 4.0
+T4 LIBRE
+Estudio		Resultado	Unidades	Valor de Referencia
+T4 LIBRE	
+*
+1.1
+ng/dL	0.8 - 1.8
+HEMOGLOBINA GLICOSILADA
+Estudio		Resultado	Unidades	Valor de Referencia
+HEMOGLOBINA GLICOSILADA	
+A
+7.2
+%	4.0 - 5.6
+FERRITINA
+Estudio		Resultado	Unidades	Valor de Referencia
+FERRITINA	
+B
+12
+ng/mL	30 - 400
+GGT
+Estudio		Resultado	Unidades	Valor de Referencia
+GGT	
+A
+88
+U/L	0 - 55
+NT-PROBNP
+Estudio		Resultado	Unidades	Valor de Referencia
+NT-PROBNP	
+A
+850
+pg/mL	0 - 125
+CK-MB
+Estudio		Resultado	Unidades	Valor de Referencia
+CK-MB	
+*
+4.2
+ng/mL	0 - 5.0
+COMPLEMENTO C3
+Estudio		Resultado	Unidades	Valor de Referencia
+COMPLEMENTO C3	
+*
+95
+mg/dL	90 - 180
+OSMOLARIDAD SERICA
+Estudio		Resultado	Unidades	Valor de Referencia
+OSMOLARIDAD SERICA	
+*
+291
+mOsm/kg	275 - 295
+BACTERIOLOGIA
+Estudio		Resultado	Unidades	Valor de Referencia
+UROCULTIVO POR SONDA
+PRODUCTO	
+*
+MICROORGANISMO	
+*
+Klebsiella pneumoniae
+COMENTARIO:	
+*
+AISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE)
+CUENTA DE KASS	
+*
++100,000 UFC/mL
+ANTIBIOGRAMA	
+*
+CEFTRIAXONA
+>32	ESBL
+*
+CEFOXITINA
+<=8	S
+*
+MEROPENEM
+<=1	S
+*

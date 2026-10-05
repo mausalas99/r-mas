@@ -1,0 +1,37 @@
+Expediente:	8000021-1	Solicitud:	2680000211
+Nombre:	PACIENTE INVENTADO VEINTIUNO	Fecha Registro:	Oct 3 2026 5:11PM
+Sexo:	FEMENINO	Ubicación:	SALA INVENTADA
+Edad:	66	Medico:	FICTICIO SINTETICO EJEMPLO B
+
+QUIMICA CLINICA
+CITOQUIMICO DE LIQUIDOS CORPORALES
+Estudio		Resultado	Unidades	Valor de Referencia
+EXAMEN QUIMICO	
+*
+:
+DENSIDAD	
+*
+1.020
+PH	
+*
+7.4
+GLUCOSA	
+*
+92.0
+mg/dL	
+PROTEINAS	
+*
+4200
+mg/dL	
+LDH	
+*
+410
+IU/L	
+CITOQUIMICO DE	
+*
+LÍQUIDO PLEURAL
+ALBUMINA
+Estudio		Resultado	Unidades	Valor de Referencia
+ALBUMINA	
+*
+3.1

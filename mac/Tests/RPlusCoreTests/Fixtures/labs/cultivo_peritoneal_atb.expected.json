@@ -1,0 +1,88 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE DE PRUEBA CUATRO",
+   "expediente": "0000002-2",
+   "sexo": "F",
+   "edad": "74 años",
+   "fecha": "07/05/2026",
+   "hora": "16:32",
+   "ubicacion": "SALA DE PRUEBA"
+  },
+  "resLabs": [
+   "LIQUIDO PERITONEAL 07/05: PSEUDOMONAS AERUGINOSA\nATB R: CAZ | I: FEP | S: CIPRO, IMI, LVX, MERO, PIP/TAZO, TOBRA\nCuenta: X"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "BACTERIOLOGIA",
+    "label": "BACTERIOLOGIA",
+    "groups": [
+     {
+      "title": "ESCASOS BACILOS GRAM NEGATIVO",
+      "rows": [
+       {
+        "estudio": "MICROORGANISMO",
+        "flag": "*",
+        "resultado": "Pseudomonas aeruginosa",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "CUENTA",
+        "flag": "*",
+        "resultado": "X",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ANTIBIOGRAMA",
+        "flag": "*",
+        "resultado": "CEFTAZIDIMA",
+        "unidades": ">16",
+        "ref": "R",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t0000002-2\tSolicitud:\t9000000032\nNombre:\tPACIENTE DE PRUEBA CUATRO\tFecha Registro:\t07/05/2026 04:32:46 p. m.\nSexo:\tFEMENINO\tUbicación:\tSALA DE PRUEBA\nEdad:\t74\tMedico:\tFICTICIO SINTETICO EJEMPLO A\nBACTERIOLOGIA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nLIQUIDO PERITONEAL\nPRODUCTO\t\n*\nTINCION DE GRAM\t\n*\nESCASOS BACILOS GRAM NEGATIVO\nCALIDAD DE LA MUESTRA\t\n*\nESTADO DE CULTIVO\t\n*\n*\nMICROORGANISMO\t\n*\nPseudomonas aeruginosa\nCOMENTARIO:\t\n*\nCUENTA\t\n*\nX\nANTIBIOGRAMA\t\n*\nCEFTAZIDIMA\n>16\tR\n*\nCIPROFLOXACINA\n<=1\tS\n*\nCEFEPIMA\n16\tI\n*\nIMIPENEM\n2\tS\n*\nLEVOFLOXACINA\n<=2\tS\n*\nMEROPENEM\n<=1\tS\n*\nPIP/TAZO\n64\tS\n*\nTOBRAMICINA\n<=4\tS\n*\nMICROORGANISMO\t\n*\nCOMENTARIO:\t\n*\nCUENTA\t\n*\n*\nIDENTIFICACION POR ESPECTROMETRIA DE MASAS (MALDI TOF)\nMICROORGANISMO\t\n*"
+ ],
+ "cultivo": "LIQUIDO PERITONEAL 07/05: PSEUDOMONAS AERUGINOSA\nATB R: CAZ | I: FEP | S: CIPRO, IMI, LVX, MERO, PIP/TAZO, TOBRA\nCuenta: X",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 0000002-2 Solicitud: 9000000032 Nombre: PACIENTE DE PRUEBA CUATRO Fecha Registro: 07/05/2026 04:32:46 p. m. Sexo: FEMENINO Ubicación: SALA DE PRUEBA Edad: 74 Medico: FICTICIO SINTETICO EJEMPLO A BACTERIOLOGIA Estudio Resultado Unidades Valor de Referencia LIQUIDO PERITONEAL PRODUCTO * TINCION DE GRAM * ESCASOS BACILOS GRAM NEGATIVO CALIDAD DE LA MUESTRA * ESTADO DE CULTIVO * * MICROORGANISMO * Pseudomonas aeruginosa COMENTARIO: * CUENTA * X ANTIBIOGRAMA * CEFTAZIDIMA >16 R * CIPROFLOXACINA <=1 S * CEFEPIMA 16 I * IMIPENEM 2 S * LEVOFLOXACINA <=2 S * MEROPENEM <=1 S * PIP/TAZO 64 S * TOBRAMICINA <=4 S * MICROORGANISMO * COMENTARIO: * CUENTA * * IDENTIFICACION POR ESPECTROMETRIA DE MASAS (MALDI TOF) MICROORGANISMO * ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 0000002-2 Solicitud: 9000000032 Nombre: PACIENTE DE PRUEBA CUATRO Fecha Registro: 07/05/2026 04:32:46 p. m. Sexo: FEMENINO Ubicación: SALA DE PRUEBA Edad: 74 Medico: FICTICIO SINTETICO EJEMPLO A BACTERIOLOGIA Estudio Resultado Unidades Valor de Referencia LIQUIDO PERITONEAL PRODUCTO * TINCION DE GRAM * ESCASOS BACILOS GRAM NEGATIVO CALIDAD DE LA MUESTRA * ESTADO DE CULTIVO * * MICROORGANISMO * Pseudomonas aeruginosa COMENTARIO: * CUENTA * X ANTIBIOGRAMA * CEFTAZIDIMA >16 R * CIPROFLOXACINA <=1 S * CEFEPIMA 16 I * IMIPENEM 2 S * LEVOFLOXACINA <=2 S * MEROPENEM <=1 S * PIP/TAZO 64 S * TOBRAMICINA <=4 S * MICROORGANISMO * COMENTARIO: * CUENTA * * IDENTIFICACION POR ESPECTROMETRIA DE MASAS (MALDI TOF) MICROORGANISMO * ",
+  "gaso": "",
+  "pie": ""
+ }
+}

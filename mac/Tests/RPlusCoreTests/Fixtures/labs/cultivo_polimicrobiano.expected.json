@@ -1,0 +1,112 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO UNO19",
+   "expediente": "8000019-1",
+   "sexo": "M",
+   "edad": "54 años",
+   "fecha": "03/10/2026",
+   "hora": "07:15",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "UROCULTIVO POR SONDA 03/10: ESCHERICHIA COLI\nATB R: AMP | S: NITRO\nCuenta: +100,000 UFC/ML\n\nUROCULTIVO POR SONDA 03/10: ENTEROCOCCUS FAECALIS\nATB S: AMP, VANCO\nCuenta: +100,000 UFC/ML"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "BACTERIOLOGIA",
+    "label": "BACTERIOLOGIA",
+    "groups": [
+     {
+      "title": "UROCULTIVO POR SONDA",
+      "rows": [
+       {
+        "estudio": "MICROORGANISMO",
+        "flag": "*",
+        "resultado": "Escherichia coli",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "CUENTA DE KASS",
+        "flag": "*",
+        "resultado": "+100,000 UFC/mL",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ANTIBIOGRAMA",
+        "flag": "*",
+        "resultado": "AMPICILINA",
+        "unidades": ">8",
+        "ref": "R",
+        "abnormal": false
+       },
+       {
+        "estudio": "MICROORGANISMO",
+        "flag": "*",
+        "resultado": "Enterococcus faecalis",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "CUENTA DE KASS",
+        "flag": "*",
+        "resultado": "+100,000 UFC/mL",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ANTIBIOGRAMA",
+        "flag": "*",
+        "resultado": "AMPICILINA",
+        "unidades": "<=2",
+        "ref": "S",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t8000019-1\tSolicitud:\t2680000191\nNombre:\tPACIENTE INVENTADO UNO19\tFecha Registro:\tOct 3 2026 7:15AM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t54\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nBACTERIOLOGIA\nUROCULTIVO POR SONDA\nPRODUCTO\n*\nMICROORGANISMO\n*\nEscherichia coli\nCOMENTARIO:\n*\nCUENTA DE KASS\n*\n+100,000 UFC/mL\nANTIBIOGRAMA\n*\nAMPICILINA\n>8\tR\n*\nNITROFURANTOINA\n<=16\tS\n*\nMICROORGANISMO\n*\nEnterococcus faecalis\nCOMENTARIO:\n*\nCUENTA DE KASS\n*\n+100,000 UFC/mL\nANTIBIOGRAMA\n*\nAMPICILINA\n<=2\tS\n*\nVANCOMICINA\n<=0.5\tS\n*"
+ ],
+ "cultivo": "UROCULTIVO POR SONDA 03/10: ESCHERICHIA COLI\nATB R: AMP | S: NITRO\nCuenta: +100,000 UFC/ML\n\nUROCULTIVO POR SONDA 03/10: ENTEROCOCCUS FAECALIS\nATB S: AMP, VANCO\nCuenta: +100,000 UFC/ML",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 8000019-1 Solicitud: 2680000191 Nombre: PACIENTE INVENTADO UNO19 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B BACTERIOLOGIA UROCULTIVO POR SONDA PRODUCTO * MICROORGANISMO * Escherichia coli COMENTARIO: * CUENTA DE KASS * +100,000 UFC/mL ANTIBIOGRAMA * AMPICILINA >8 R * NITROFURANTOINA <=16 S * MICROORGANISMO * Enterococcus faecalis COMENTARIO: * CUENTA DE KASS * +100,000 UFC/mL ANTIBIOGRAMA * AMPICILINA <=2 S * VANCOMICINA <=0.5 S * ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 8000019-1 Solicitud: 2680000191 Nombre: PACIENTE INVENTADO UNO19 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B BACTERIOLOGIA UROCULTIVO POR SONDA PRODUCTO * MICROORGANISMO * Escherichia coli COMENTARIO: * CUENTA DE KASS * +100,000 UFC/mL ANTIBIOGRAMA * AMPICILINA >8 R * NITROFURANTOINA <=16 S * MICROORGANISMO * Enterococcus faecalis COMENTARIO: * CUENTA DE KASS * +100,000 UFC/mL ANTIBIOGRAMA * AMPICILINA <=2 S * VANCOMICINA <=0.5 S * ",
+  "gaso": "",
+  "pie": ""
+ }
+}

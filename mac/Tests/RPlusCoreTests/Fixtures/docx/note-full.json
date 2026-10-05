@@ -1,0 +1,51 @@
+{
+ "kind": "note",
+ "input": {
+  "patient": {
+   "nombre": "paciente sintético ñandú álvarez",
+   "registro": "9900001-1",
+   "edad": 71,
+   "sexo": "M",
+   "area": "cirugía general",
+   "servicio": "medicina interna",
+   "cuarto": "512",
+   "cama": "3"
+  },
+  "note": {
+   "fecha": "05/10/2026",
+   "hora": "08:30",
+   "interrogatorio": "Paciente masculino de 71 años & con DM2 <controlada> y HTA. Costo $100, $& y $' \"comillas\" 😀. Sin otros datos.",
+   "evolucion": "n: alerta, orientado\n\nv: fr 18 rpm, sato2 96%\nhd: estable, ta 120/80\nhi: afebril\nnm: dieta blanda\nextra uno\nextra dos",
+   "estudios": "05.10.26\nGlu 110 Cr 0.8\nNa 140 K 4.1\n04.10.26\nHb 13 Hto 40\nGlu 120\nNa 138\nAlb 3.5\n  AST 20 ALT 18  \nlinea diez",
+   "diagnosticos": [
+    "neumonía adquirida en la comunidad",
+    "control metabólico",
+    "hta",
+    "dm2"
+   ],
+   "ta": "120/80",
+   "fr": 18,
+   "fc": 80,
+   "temp": "36.5",
+   "peso": "70.5",
+   "tratamiento": [
+    "ertapenem 1 g iv",
+    "omeprazol 40 mg",
+    "paracetamol 1 g",
+    "insulina",
+    "enoxaparina",
+    "dieta",
+    "siete",
+    "ocho",
+    "nueve",
+    "diez",
+    "once",
+    "doce"
+   ],
+   "medico": "MI SINTÉTICO UNO, R1MI SINTÉTICO DOS",
+   "profesor": "DR. SINTÉTICO TRES"
+  }
+ },
+ "fileName": "Nota_Evolucion_paciente_sintético_ñandú_álvarez_05_10_2026.docx",
+ "numberingInject": null
+}

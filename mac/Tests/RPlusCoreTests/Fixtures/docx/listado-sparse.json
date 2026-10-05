@@ -1,0 +1,13 @@
+{
+ "kind": "listado",
+ "input": {
+  "patient": {},
+  "listado": {
+   "activos": [],
+   "inactivos": []
+  },
+  "medicos": {}
+ },
+ "fileName": "Listado_Problemas___STAMP.docx",
+ "numberingInject": null
+}

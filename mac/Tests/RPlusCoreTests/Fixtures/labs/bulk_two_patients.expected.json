@@ -1,0 +1,434 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO UNO27",
+   "expediente": "8000027-1",
+   "sexo": "M",
+   "edad": "54 años",
+   "fecha": "03/10/2026",
+   "hora": "07:15",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "BH\tHb 13.9  Hto 41.2  VCM 89  HCM 30.1  Leu 7.3  Neu 4.4  Eos 0.2  Plt 262",
+   "QS\tGlu 88 Cr 0.9 BUN 14 BUN/CR 15.6 AU 5.2 COL 175 TGL 110",
+   "ESC\tNa 140 Cl 103 K 4.1 Ca 9.2 F 3.4"
+  ],
+  "bhExtras": {
+   "Lin": "2.10",
+   "Mono": "0.50",
+   "Baso": "0.05",
+   "NeuPct": "60.3",
+   "LinPct": "28.8",
+   "RBC": "4.62",
+   "CHCM": "33.7",
+   "RDW": "13.5",
+   "MPV": "9.1"
+  },
+  "refsBySection": {
+   "BH": {
+    "Hb": [
+     12.2,
+     18.1
+    ],
+    "Hto": [
+     37.7,
+     53.7
+    ],
+    "VCM": [
+     80,
+     97
+    ],
+    "HCM": [
+     27,
+     31.2
+    ],
+    "CHCM": [
+     29.9,
+     34.2
+    ],
+    "RDW": [
+     11.6,
+     14.8
+    ],
+    "Leu": [
+     4,
+     11
+    ],
+    "Neu": [
+     2,
+     6.9
+    ],
+    "Eos": [
+     0,
+     0.7
+    ],
+    "Lin": [
+     0.6,
+     3.4
+    ],
+    "Mono": [
+     0,
+     0.9
+    ],
+    "Baso": [
+     0,
+     0.2
+    ],
+    "Plt": [
+     142,
+     424
+    ],
+    "MPV": [
+     7.4,
+     10.4
+    ],
+    "RBC": [
+     4.04,
+     6.13
+    ]
+   },
+   "QS": {
+    "Glu": [
+     60,
+     100
+    ],
+    "Cr": [
+     0.6,
+     1.4
+    ],
+    "BUN": [
+     7,
+     20
+    ],
+    "AU": [
+     4.8,
+     8.7
+    ],
+    "COL": [
+     130,
+     200
+    ],
+    "TGL": [
+     35,
+     150
+    ]
+   },
+   "ESC": {
+    "Na": [
+     135,
+     145
+    ],
+    "Cl": [
+     101,
+     110
+    ],
+    "K": [
+     3.6,
+     5
+    ],
+    "Ca": [
+     8.4,
+     10.2
+    ],
+    "F": [
+     2.5,
+     4.6
+    ]
+   }
+  }
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "HEMATOLOGIA",
+    "label": "HEMATOLOGIA",
+    "groups": [
+     {
+      "title": "BIOMETRIA HEMATICA COMPLETA",
+      "rows": [
+       {
+        "estudio": "RBC",
+        "flag": "*",
+        "resultado": "4.62",
+        "unidades": "M/uL",
+        "ref": "4.04 - 6.13",
+        "abnormal": false
+       },
+       {
+        "estudio": "HGB",
+        "flag": "*",
+        "resultado": "13.9",
+        "unidades": "g/dL",
+        "ref": "12.20 - 18.10",
+        "abnormal": false
+       },
+       {
+        "estudio": "HCT",
+        "flag": "*",
+        "resultado": "41.2",
+        "unidades": "%",
+        "ref": "37.7 - 53.7",
+        "abnormal": false
+       },
+       {
+        "estudio": "MCV",
+        "flag": "*",
+        "resultado": "89",
+        "unidades": "fL",
+        "ref": "80 - 97",
+        "abnormal": false
+       },
+       {
+        "estudio": "MCH",
+        "flag": "*",
+        "resultado": "30.1",
+        "unidades": "pg",
+        "ref": "27.0 - 31.2",
+        "abnormal": false
+       },
+       {
+        "estudio": "MCHC",
+        "flag": "*",
+        "resultado": "33.7",
+        "unidades": "g/dL",
+        "ref": "29.9 - 34.2",
+        "abnormal": false
+       },
+       {
+        "estudio": "RDW",
+        "flag": "*",
+        "resultado": "13.5",
+        "unidades": "%",
+        "ref": "11.6 - 14.8",
+        "abnormal": false
+       },
+       {
+        "estudio": "WBC",
+        "flag": "*",
+        "resultado": "7.30",
+        "unidades": "K/uL",
+        "ref": "4.00 - 11.00",
+        "abnormal": false
+       },
+       {
+        "estudio": "NEU",
+        "flag": "*",
+        "resultado": "4.40",
+        "unidades": "K/uL",
+        "ref": "2.00 - 6.90",
+        "abnormal": false
+       },
+       {
+        "estudio": "NEU%",
+        "flag": "*",
+        "resultado": "60.3",
+        "unidades": "%",
+        "ref": "37.0 - 80.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "LYM",
+        "flag": "*",
+        "resultado": "2.10",
+        "unidades": "K/uL",
+        "ref": "0.60 - 3.40",
+        "abnormal": false
+       },
+       {
+        "estudio": "LYM%",
+        "flag": "*",
+        "resultado": "28.8",
+        "unidades": "%",
+        "ref": "10.0 - 50.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "MONO",
+        "flag": "*",
+        "resultado": "0.50",
+        "unidades": "K/uL",
+        "ref": "0.000 - 0.900",
+        "abnormal": false
+       },
+       {
+        "estudio": "EOS",
+        "flag": "*",
+        "resultado": "0.20",
+        "unidades": "K/uL",
+        "ref": "0.000 - 0.700",
+        "abnormal": false
+       },
+       {
+        "estudio": "BASO",
+        "flag": "*",
+        "resultado": "0.05",
+        "unidades": "K/uL",
+        "ref": "0.000 - 0.200",
+        "abnormal": false
+       },
+       {
+        "estudio": "PLT",
+        "flag": "*",
+        "resultado": "262",
+        "unidades": "K/uL",
+        "ref": "142.00 - 424.00",
+        "abnormal": false
+       },
+       {
+        "estudio": "MPV",
+        "flag": "*",
+        "resultado": "9.1",
+        "unidades": "fL",
+        "ref": "7.4 - 10.4",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   },
+   {
+    "key": "QUIMICA CLINICA",
+    "label": "QUIMICA CLINICA",
+    "groups": [
+     {
+      "title": "",
+      "rows": [
+       {
+        "estudio": "GLUCOSA EN SANGRE",
+        "flag": "*",
+        "resultado": "88",
+        "unidades": "mg/dL",
+        "ref": "60 - 100",
+        "abnormal": false
+       },
+       {
+        "estudio": "NITROGENO DE LA UREA EN SANGRE",
+        "flag": "*",
+        "resultado": "14",
+        "unidades": "mg/dL",
+        "ref": "7 - 20",
+        "abnormal": false
+       },
+       {
+        "estudio": "CREATININA EN SANGRE",
+        "flag": "*",
+        "resultado": "0.9",
+        "unidades": "mg/dL",
+        "ref": "0.6 - 1.4",
+        "abnormal": false
+       },
+       {
+        "estudio": "ACIDO URICO EN SANGRE",
+        "flag": "*",
+        "resultado": "5.2",
+        "unidades": "mg/dL",
+        "ref": "4.8 - 8.7",
+        "abnormal": false
+       },
+       {
+        "estudio": "COLESTEROL",
+        "flag": "*",
+        "resultado": "175",
+        "unidades": "mg/dL",
+        "ref": "130 - 200",
+        "abnormal": false
+       },
+       {
+        "estudio": "TRIGLICERIDOS",
+        "flag": "*",
+        "resultado": "110",
+        "unidades": "mg/dL",
+        "ref": "35 - 150",
+        "abnormal": false
+       },
+       {
+        "estudio": "CLORO",
+        "flag": "*",
+        "resultado": "103",
+        "unidades": "mmol/L",
+        "ref": "101.0 - 110.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "SODIO",
+        "flag": "*",
+        "resultado": "140",
+        "unidades": "mmol/L",
+        "ref": "135.0 - 145.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "POTASIO",
+        "flag": "*",
+        "resultado": "4.1",
+        "unidades": "mmol/L",
+        "ref": "3.6 - 5.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "CALCIO EN SUERO",
+        "flag": "*",
+        "resultado": "9.2",
+        "unidades": "mg/dL",
+        "ref": "8.4 - 10.2",
+        "abnormal": false
+       },
+       {
+        "estudio": "FOSFORO",
+        "flag": "*",
+        "resultado": "3.4",
+        "unidades": "mg/dL",
+        "ref": "2.5 - 4.6",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard"
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t8000027-1\tSolicitud:\t2680000271\nNombre:\tPACIENTE INVENTADO UNO27\tFecha Registro:\tOct 3 2026 7:15AM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t54\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nRBC\t\n*\n4.62\nM/uL\t4.04 - 6.13\nHGB\t\n*\n13.9\ng/dL\t12.20 - 18.10\nHCT\t\n*\n41.2\n%\t37.7 - 53.7\nMCV\t\n*\n89\nfL\t80 - 97\nMCH\t\n*\n30.1\npg\t27.0 - 31.2\nMCHC\t\n*\n33.7\ng/dL\t29.9 - 34.2\nRDW\t\n*\n13.5\n%\t11.6 - 14.8\nWBC\t\n*\n7.30\nK/uL\t4.00 - 11.00\nNEU\t\n*\n4.40\nK/uL\t2.00 - 6.90\nNEU%\t\n*\n60.3\n%\t37.0 - 80.0\nLYM\t\n*\n2.10\nK/uL\t0.60 - 3.40\nLYM%\t\n*\n28.8\n%\t10.0 - 50.0\nMONO\t\n*\n0.50\nK/uL\t0.000 - 0.900\nEOS\t\n*\n0.20\nK/uL\t0.000 - 0.700\nBASO\t\n*\n0.05\nK/uL\t0.000 - 0.200\nPLT\t\n*\n262\nK/uL\t142.00 - 424.00\nMPV\t\n*\n9.1\nfL\t7.4 - 10.4",
+  "Expediente:\t8000028-1\tSolicitud:\t2680000281\nNombre:\tPACIENTE INVENTADO VEINTIOCHO\tFecha Registro:\tOct 3 2026 8:00AM\nSexo:\tFEMENINO\tUbicación:\tSALA INVENTADA\nEdad:\t33\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nQUIMICA CLINICA\nGLUCOSA EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nGLUCOSA EN SANGRE\t\n*\n88\nmg/dL\t60 - 100\nNITROGENO DE LA UREA EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nNITROGENO DE LA UREA EN SANGRE\t\n*\n14\nmg/dL\t7 - 20\nCREATININA EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCREATININA EN SANGRE\t\n*\n0.9\nmg/dL\t0.6 - 1.4\nACIDO URICO EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nACIDO URICO EN SANGRE\t\n*\n5.2\nmg/dL\t4.8 - 8.7\nCOLESTEROL\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCOLESTEROL\t\n*\n175\nmg/dL\t130 - 200\nTRIGLICERIDOS\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nTRIGLICERIDOS\t\n*\n110\nmg/dL\t35 - 150\nCLORO\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCLORO\t\n*\n103\nmmol/L\t101.0 - 110.0\nSODIO\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nSODIO\t\n*\n140\nmmol/L\t135.0 - 145.0\nPOTASIO\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nPOTASIO\t\n*\n4.1\nmmol/L\t3.6 - 5.0\nCALCIO\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCALCIO EN SUERO\t\n*\n9.2\nmg/dL\t8.4 - 10.2\nFOSFORO EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nFOSFORO\t\n*\n3.4\nmg/dL\t2.5 - 4.6"
+ ],
+ "cultivo": "",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 8000027-1 Solicitud: 2680000271 Nombre: PACIENTE INVENTADO UNO27 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B HEMATOLOGIA BIOMETRIA HEMATICA COMPLETA Estudio Resultado Unidades Valor de Referencia RBC * 4.62 M/uL 4.04 - 6.13 HGB * 13.9 g/dL 12.20 - 18.10 HCT * 41.2 % 37.7 - 53.7 MCV * 89 fL 80 - 97 MCH * 30.1 pg 27.0 - 31.2 MCHC * 33.7 g/dL 29.9 - 34.2 RDW * 13.5 % 11.6 - 14.8 WBC * 7.30 K/uL 4.00 - 11.00 NEU * 4.40 K/uL 2.00 - 6.90 NEU% * 60.3 % 37.0 - 80.0 LYM * 2.10 K/uL 0.60 - 3.40 LYM% * 28.8 % 10.0 - 50.0 MONO * 0.50 K/uL 0.000 - 0.900 EOS * 0.20 K/uL 0.000 - 0.700 BASO * 0.05 K/uL 0.000 - 0.200 PLT * 262 K/uL 142.00 - 424.00 MPV * 9.1 fL 7.4 - 10.4 --- PACIENTE --- Expediente: 8000028-1 Solicitud: 2680000281 Nombre: PACIENTE INVENTADO VEINTIOCHO Fecha Registro: Oct 3 2026 8:00AM Sexo: FEMENINO Ubicación: SALA INVENTADA Edad: 33 Medico: FICTICIO SINTETICO EJEMPLO B QUIMICA CLINICA GLUCOSA EN SANGRE Estudio Resultado Unidades Valor de Referencia GLUCOSA EN SANGRE * 88 mg/dL 60 - 100 NITROGENO DE LA UREA EN SANGRE Estudio Resultado Unidades Valor de Referencia NITROGENO DE LA UREA EN SANGRE * 14 mg/dL 7 - 20 CREATININA EN SANGRE Estudio Resultado Unidades Valor de Referencia CREATININA EN SANGRE * 0.9 mg/dL 0.6 - 1.4 ACIDO URICO EN SANGRE Estudio Resultado Unidades Valor de Referencia ACIDO URICO EN SANGRE * 5.2 mg/dL 4.8 - 8.7 COLESTEROL Estudio Resultado Unidades Valor de Referencia COLESTEROL * 175 mg/dL 130 - 200 TRIGLICERIDOS Estudio Resultado Unidades Valor de Referencia TRIGLICERIDOS * 110 mg/dL 35 - 150 CLORO Estudio Resultado Unidades Valor de Referencia CLORO * 103 mmol/L 101.0 - 110.0 SODIO Estudio Resultado Unidades Valor de Referencia SODIO * 140 mmol/L 135.0 - 145.0 POTASIO Estudio Resultado Unidades Valor de Referencia POTASIO * 4.1 mmol/L 3.6 - 5.0 CALCIO Estudio Resultado Unidades Valor de Referencia CALCIO EN SUERO * 9.2 mg/dL 8.4 - 10.2 FOSFORO EN SANGRE Estudio Resultado Unidades Valor de Referencia FOSFORO * 3.4 mg/dL 2.5 - 4.6 ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "BH\tHb 13.9  Hto 41.2  VCM 89  HCM 30.1  Leu 7.3  Neu 4.4  Eos 0.2  Plt 262",
+   "coagVisible": "",
+   "extras": {
+    "Lin": "2.10",
+    "Mono": "0.50",
+    "Baso": "0.05",
+    "NeuPct": "60.3",
+    "LinPct": "28.8",
+    "RBC": "4.62",
+    "CHCM": "33.7",
+    "RDW": "13.5",
+    "MPV": "9.1"
+   }
+  },
+  "qs": "QS\tGlu 88 Cr 0.9 BUN 14 BUN/CR 15.6 AU 5.2 COL 175 TGL 110",
+  "esc": "ESC\tNa 140 Cl 103 K 4.1 Ca 9.2 F 3.4",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 8000027-1 Solicitud: 2680000271 Nombre: PACIENTE INVENTADO UNO27 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B HEMATOLOGIA BIOMETRIA HEMATICA COMPLETA Estudio Resultado Unidades Valor de Referencia RBC * 4.62 M/uL 4.04 - 6.13 HGB * 13.9 g/dL 12.20 - 18.10 HCT * 41.2 % 37.7 - 53.7 MCV * 89 fL 80 - 97 MCH * 30.1 pg 27.0 - 31.2 MCHC * 33.7 g/dL 29.9 - 34.2 RDW * 13.5 % 11.6 - 14.8 WBC * 7.30 K/uL 4.00 - 11.00 NEU * 4.40 K/uL 2.00 - 6.90 NEU% * 60.3 % 37.0 - 80.0 LYM * 2.10 K/uL 0.60 - 3.40 LYM% * 28.8 % 10.0 - 50.0 MONO * 0.50 K/uL 0.000 - 0.900 EOS * 0.20 K/uL 0.000 - 0.700 BASO * 0.05 K/uL 0.000 - 0.200 PLT * 262 K/uL 142.00 - 424.00 MPV * 9.1 fL 7.4 - 10.4 --- PACIENTE --- Expediente: 8000028-1 Solicitud: 2680000281 Nombre: PACIENTE INVENTADO VEINTIOCHO Fecha Registro: Oct 3 2026 8:00AM Sexo: FEMENINO Ubicación: SALA INVENTADA Edad: 33 Medico: FICTICIO SINTETICO EJEMPLO B QUIMICA CLINICA GLUCOSA EN SANGRE Estudio Resultado Unidades Valor de Referencia GLUCOSA EN SANGRE * 88 mg/dL 60 - 100 NITROGENO DE LA UREA EN SANGRE Estudio Resultado Unidades Valor de Referencia NITROGENO DE LA UREA EN SANGRE * 14 mg/dL 7 - 20 CREATININA EN SANGRE Estudio Resultado Unidades Valor de Referencia CREATININA EN SANGRE * 0.9 mg/dL 0.6 - 1.4 ACIDO URICO EN SANGRE Estudio Resultado Unidades Valor de Referencia ACIDO URICO EN SANGRE * 5.2 mg/dL 4.8 - 8.7 COLESTEROL Estudio Resultado Unidades Valor de Referencia COLESTEROL * 175 mg/dL 130 - 200 TRIGLICERIDOS Estudio Resultado Unidades Valor de Referencia TRIGLICERIDOS * 110 mg/dL 35 - 150 CLORO Estudio Resultado Unidades Valor de Referencia CLORO * 103 mmol/L 101.0 - 110.0 SODIO Estudio Resultado Unidades Valor de Referencia SODIO * 140 mmol/L 135.0 - 145.0 POTASIO Estudio Resultado Unidades Valor de Referencia POTASIO * 4.1 mmol/L 3.6 - 5.0 CALCIO Estudio Resultado Unidades Valor de Referencia CALCIO EN SUERO * 9.2 mg/dL 8.4 - 10.2 FOSFORO EN SANGRE Estudio Resultado Unidades Valor de Referencia FOSFORO * 3.4 mg/dL 2.5 - 4.6 ",
+  "gaso": "",
+  "pie": ""
+ }
+}

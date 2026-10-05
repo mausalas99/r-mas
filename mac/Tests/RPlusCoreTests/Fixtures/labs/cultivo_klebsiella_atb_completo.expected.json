@@ -1,0 +1,88 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE DE PRUEBA CUATRO",
+   "expediente": "0000002-2",
+   "sexo": "F",
+   "edad": "74 años",
+   "fecha": "20/07/2026",
+   "hora": "19:43",
+   "ubicacion": "SALA DE PRUEBA"
+  },
+  "resLabs": [
+   "UROCULTIVO POR SONDA 20/07: KLEBSIELLA PNEUMONIAE\nATB R: AMP | S: AMP-SULB, CFTX, CFZ, CIPRO, GENT, LVX, NITRO, PIP/TAZO, TMP/SMX\nCuenta: 80,000 UFC/ML"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "BACTERIOLOGIA",
+    "label": "BACTERIOLOGIA",
+    "groups": [
+     {
+      "title": "UROCULTIVO POR SONDA",
+      "rows": [
+       {
+        "estudio": "MICROORGANISMO",
+        "flag": "*",
+        "resultado": "Klebsiella pneumoniae",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "CUENTA DE KASS",
+        "flag": "*",
+        "resultado": "80,000 UFC/mL",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ANTIBIOGRAMA",
+        "flag": "*",
+        "resultado": "AMP/SULBACTAM",
+        "unidades": "<=8/4",
+        "ref": "S",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t0000002-2\tSolicitud:\t9000000032\nNombre:\tPACIENTE DE PRUEBA CUATRO\tFecha Registro:\t20/07/2026 07:43:15 p. m.\nSexo:\tFEMENINO\tUbicación:\tSALA DE PRUEBA\nEdad:\t74\tMedico:\tFICTICIO SINTETICO EJEMPLO A\nBACTERIOLOGIA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nUROCULTIVO POR SONDA\nPRODUCTO\t\n*\nMICROORGANISMO\t\n*\nKlebsiella pneumoniae\nCOMENTARIO:\t\n*\nCUENTA DE KASS\t\n*\n80,000 UFC/mL\nANTIBIOGRAMA\t\n*\nAMP/SULBACTAM\n<=8/4\tS\n*\nAMPICILINA\n>16\tR\n*\nCEFTRIAXONA\n<=1\tS\n*\nCEFAZOLINA\n<=2\tS\n*\nCIPROFLOXACINA\n<=1\tS\n*\nNITROFURANTOINA\n<=32\tS\n*\nGENTAMICINA\n<=4\tS\n*\nLEVOFLOXACINA\n<=2\tS\n*\nPIP/TAZO\n<=16\tS\n*\nTRIMET/SULFA\n<=2/38\tS\n*\nLAS CUENTAS MENORES A 100,000 UFC/ML PUEDEN REPRESENTAR , CONTAMINACION DE LA MUESTRA O RESPUESTA PARCIAL AL TRATAMIENTO\nMICROORGANISMO\t\n*\nCOMENTARIO:\t\n*\nIDENTIFICACION POR ESPECTROMETRIA DE MASAS (MALDI TOF)"
+ ],
+ "cultivo": "UROCULTIVO POR SONDA 20/07: KLEBSIELLA PNEUMONIAE\nATB R: AMP | S: AMP-SULB, CFTX, CFZ, CIPRO, GENT, LVX, NITRO, PIP/TAZO, TMP/SMX\nCuenta: 80,000 UFC/ML",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 0000002-2 Solicitud: 9000000032 Nombre: PACIENTE DE PRUEBA CUATRO Fecha Registro: 20/07/2026 07:43:15 p. m. Sexo: FEMENINO Ubicación: SALA DE PRUEBA Edad: 74 Medico: FICTICIO SINTETICO EJEMPLO A BACTERIOLOGIA Estudio Resultado Unidades Valor de Referencia UROCULTIVO POR SONDA PRODUCTO * MICROORGANISMO * Klebsiella pneumoniae COMENTARIO: * CUENTA DE KASS * 80,000 UFC/mL ANTIBIOGRAMA * AMP/SULBACTAM <=8/4 S * AMPICILINA >16 R * CEFTRIAXONA <=1 S * CEFAZOLINA <=2 S * CIPROFLOXACINA <=1 S * NITROFURANTOINA <=32 S * GENTAMICINA <=4 S * LEVOFLOXACINA <=2 S * PIP/TAZO <=16 S * TRIMET/SULFA <=2/38 S * LAS CUENTAS MENORES A 100,000 UFC/ML PUEDEN REPRESENTAR , CONTAMINACION DE LA MUESTRA O RESPUESTA PARCIAL AL TRATAMIENTO MICROORGANISMO * COMENTARIO: * IDENTIFICACION POR ESPECTROMETRIA DE MASAS (MALDI TOF) ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 0000002-2 Solicitud: 9000000032 Nombre: PACIENTE DE PRUEBA CUATRO Fecha Registro: 20/07/2026 07:43:15 p. m. Sexo: FEMENINO Ubicación: SALA DE PRUEBA Edad: 74 Medico: FICTICIO SINTETICO EJEMPLO A BACTERIOLOGIA Estudio Resultado Unidades Valor de Referencia UROCULTIVO POR SONDA PRODUCTO * MICROORGANISMO * Klebsiella pneumoniae COMENTARIO: * CUENTA DE KASS * 80,000 UFC/mL ANTIBIOGRAMA * AMP/SULBACTAM <=8/4 S * AMPICILINA >16 R * CEFTRIAXONA <=1 S * CEFAZOLINA <=2 S * CIPROFLOXACINA <=1 S * NITROFURANTOINA <=32 S * GENTAMICINA <=4 S * LEVOFLOXACINA <=2 S * PIP/TAZO <=16 S * TRIMET/SULFA <=2/38 S * LAS CUENTAS MENORES A 100,000 UFC/ML PUEDEN REPRESENTAR , CONTAMINACION DE LA MUESTRA O RESPUESTA PARCIAL AL TRATAMIENTO MICROORGANISMO * COMENTARIO: * IDENTIFICACION POR ESPECTROMETRIA DE MASAS (MALDI TOF) ",
+  "gaso": "",
+  "pie": ""
+ }
+}

@@ -1,0 +1,104 @@
+Expediente:	8000011-1	Solicitud:	2680000111
+Nombre:	PACIENTE INVENTADO UNO11	Fecha Registro:	Oct 3 2026 7:15AM
+Sexo:	MASCULINO	Ubicación:	SALA INVENTADA
+Edad:	54	Medico:	FICTICIO SINTETICO EJEMPLO B
+
+QUIMICA CLINICA
+GLUCOSA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+GLUCOSA EN SANGRE	
+*
+88
+mg/dL	60 - 100
+NITROGENO DE LA UREA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+NITROGENO DE LA UREA EN SANGRE	
+*
+14
+mg/dL	7 - 20
+CREATININA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+CREATININA EN SANGRE	
+*
+0.9
+mg/dL	0.6 - 1.4
+ACIDO URICO EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+ACIDO URICO EN SANGRE	
+*
+5.2
+mg/dL	4.8 - 8.7
+COLESTEROL
+Estudio		Resultado	Unidades	Valor de Referencia
+COLESTEROL	
+*
+175
+mg/dL	130 - 200
+TRIGLICERIDOS
+Estudio		Resultado	Unidades	Valor de Referencia
+TRIGLICERIDOS	
+*
+110
+mg/dL	35 - 150
+CLORO
+Estudio		Resultado	Unidades	Valor de Referencia
+CLORO	
+*
+103
+mmol/L	101.0 - 110.0
+SODIO
+Estudio		Resultado	Unidades	Valor de Referencia
+SODIO	
+*
+140
+mmol/L	135.0 - 145.0
+POTASIO
+Estudio		Resultado	Unidades	Valor de Referencia
+POTASIO	
+*
+4.1
+mmol/L	3.6 - 5.0
+CALCIO
+Estudio		Resultado	Unidades	Valor de Referencia
+CALCIO EN SUERO	
+*
+9.2
+mg/dL	8.4 - 10.2
+FOSFORO EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+FOSFORO	
+*
+3.4
+mg/dL	2.5 - 4.6
+GASOMETRIAS
+GASOMETRIA ARTERIAL
+Estudio		Resultado	Unidades	Valor de Referencia
+PH	
+B
+7.31
+	7.35 - 7.45
+pCO2	
+B
+30
+mmHg	35 - 45
+pO2	
+*
+88
+mmHg	80 - 100
+Lactato	
+A
+3.1
+mmol/L	0.9 - 1.9
+HCO3	
+B
+16.2
+mmol/L	22.0 - 26.0
+EX. BASE	
+B
+-8.1
+mmol/L	-2.0 - 2.0
+SAT 02	
+*
+96
+%	95 - 100
+

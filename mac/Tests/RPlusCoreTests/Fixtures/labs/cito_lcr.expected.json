@@ -1,0 +1,222 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO VEINTIDOS",
+   "expediente": "8000022-1",
+   "sexo": "M",
+   "edad": "47 años",
+   "fecha": "03/10/2026",
+   "hora": "15:06",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "LCR:\tpH 7.4 Asp CLARO Leu 120 PMN 70% Linf 30% Glu 62 Prot 88 Cl 130.5 Gram NEGATIVO Tinta NEGATIVO",
+   "INTERPRETACIÓN CITOQUÍMICO:\tMeningitis bacteriana parcialmente tratada vs viral? (Leu 120 — correlacionar clínica)"
+  ],
+  "bhExtras": {},
+  "refsBySection": {
+   "BH": {
+    "Lin": [
+     45,
+     80
+    ],
+    "RBC": [
+     45,
+     80
+    ]
+   },
+   "QS": {
+    "Glu": [
+     45,
+     80
+    ]
+   }
+  }
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "QUIMICA CLINICA",
+    "label": "QUIMICA CLINICA",
+    "groups": [
+     {
+      "title": "",
+      "rows": [
+       {
+        "estudio": "pH",
+        "flag": "*",
+        "resultado": "7.4",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ASPECTO",
+        "flag": "*",
+        "resultado": "RECUENTO CELULAR",
+        "unidades": "LEUCOCITOS/mm3",
+        "ref": "0 - 5",
+        "abnormal": false
+       },
+       {
+        "estudio": "POLIMORFONUCLEARES",
+        "flag": "*",
+        "resultado": "%PMN",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "LINFOCITOS",
+        "flag": "*",
+        "resultado": "%LINFOCITOS",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "TINTA CHINA",
+        "flag": "*",
+        "resultado": "ERITROCITOS",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "COAGLUTINACION",
+        "flag": "*",
+        "resultado": "GRAM",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "GLUCOSA",
+        "flag": "*",
+        "resultado": "62",
+        "unidades": "mg/dL",
+        "ref": "45 - 80",
+        "abnormal": false
+       },
+       {
+        "estudio": "PROTEINAS",
+        "flag": "A",
+        "resultado": "88",
+        "unidades": "mg/dL",
+        "ref": "15 - 45",
+        "abnormal": true
+       },
+       {
+        "estudio": "CLORURO",
+        "flag": "A",
+        "resultado": "130.5",
+        "unidades": "mmol/L",
+        "ref": "118.1 - 132.0",
+        "abnormal": true
+       }
+      ],
+      "tableVariant": "standard"
+     }
+    ]
+   },
+   {
+    "key": "BACTERIOLOGIA",
+    "label": "BACTERIOLOGIA",
+    "groups": [
+     {
+      "title": "CITOQUIMICO LIQ. LCR",
+      "rows": [
+       {
+        "estudio": "LCR",
+        "flag": "*",
+        "resultado": "ASPECTO",
+        "unidades": "CLARO",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "RECUENTO CELULAR",
+        "flag": "*",
+        "resultado": "120",
+        "unidades": "LEUCOCITOS/MM",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "LEUCOCITOS POLIMORFONUCLEARES",
+        "flag": "*",
+        "resultado": "70",
+        "unidades": "%PMN",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "LINFOCITOS",
+        "flag": "*",
+        "resultado": "30",
+        "unidades": "%LINFOCITOS",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "TINTA CHINA",
+        "flag": "*",
+        "resultado": "NEGATIVO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ERITROCITOS",
+        "flag": "*",
+        "resultado": "ESCASOS CRENOZADOS",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "COAGLUTINACION",
+        "flag": "*",
+        "resultado": "GRAM",
+        "unidades": "",
+        "ref": "NEGATIVO",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t8000022-1\tSolicitud:\t2680000221\nNombre:\tPACIENTE INVENTADO VEINTIDOS\tFecha Registro:\tOct 3 2026 3:06PM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t47\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nQUIMICA CLINICA\nCITOQUIMICO DE LCR\nEstudio\t\tResultado\tUnidades\tValor de Referencia\npH\t\n*\n7.4\nASPECTO\t\n*\nRECUENTO CELULAR\t\n*\nLEUCOCITOS/mm3\t0 - 5\nPOLIMORFONUCLEARES\t\n*\n%PMN\t\nLINFOCITOS\t\n*\n%LINFOCITOS\t\nTINTA CHINA\t\n*\nERITROCITOS\t\n*\nCOAGLUTINACION\t\n*\nGRAM\t\n*\nGLUCOSA\t\n*\n62\nmg/dL\t45 - 80\nPROTEINAS\t\nA\n88\nmg/dL\t15 - 45\nCLORURO\t\nA\n130.5\nmmol/L\t118.1 - 132.0\nOTROS\t\n*\n\nBACTERIOLOGIA\nCITOQUIMICO LIQ. LCR\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nLCR\t\n*\nASPECTO\t\n*\nCLARO\nRECUENTO CELULAR\t\n*\n120\nLEUCOCITOS/MM\t\nLEUCOCITOS POLIMORFONUCLEARES\t\n*\n70\n%PMN\t\nLINFOCITOS\t\n*\n30\n%LINFOCITOS\t\nTINTA CHINA\t\n*\nNEGATIVO\nERITROCITOS\t\n*\nESCASOS CRENOZADOS\nCOAGLUTINACION\t\n*\nGRAM\t\n*\nNEGATIVO\nCOMENTARIOS\t\n*"
+ ],
+ "cultivo": "",
+ "citoLiquidos": "",
+ "lcr": "LCR:\tpH 7.4 Asp CLARO Leu 120 PMN 70% Linf 30% Glu 62 Prot 88 Cl 130.5 Gram NEGATIVO Tinta NEGATIVO",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 8000022-1 Solicitud: 2680000221 Nombre: PACIENTE INVENTADO VEINTIDOS Fecha Registro: Oct 3 2026 3:06PM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 47 Medico: FICTICIO SINTETICO EJEMPLO B QUIMICA CLINICA   BACTERIOLOGIA  ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 8000022-1 Solicitud: 2680000221 Nombre: PACIENTE INVENTADO VEINTIDOS Fecha Registro: Oct 3 2026 3:06PM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 47 Medico: FICTICIO SINTETICO EJEMPLO B QUIMICA CLINICA   BACTERIOLOGIA  ",
+  "gaso": "",
+  "pie": ""
+ }
+}

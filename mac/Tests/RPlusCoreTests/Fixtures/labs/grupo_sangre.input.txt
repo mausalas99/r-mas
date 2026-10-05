@@ -1,0 +1,20 @@
+Expediente:	8000015-1	Solicitud:	2680000151
+Nombre:	PACIENTE INVENTADO UNO15	Fecha Registro:	Oct 3 2026 7:15AM
+Sexo:	MASCULINO	Ubicación:	SALA INVENTADA
+Edad:	54	Medico:	FICTICIO SINTETICO EJEMPLO B
+
+BANCO DE SANGRE
+
+
+REPORTE DE GRUPO SANGUINEO RH, COOMBS DIRECTO E INDIRECTO
+
+Estudio	Resultado
+
+Grupo Sanguineo / RH	
+O NEGATIVO
+
+Coombs Directo	
+NEGATIVO
+
+Coombs Indirecto
+POSITIVO 2+

@@ -1,0 +1,126 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO VEINTIUNO",
+   "expediente": "8000021-1",
+   "sexo": "F",
+   "edad": "66 años",
+   "fecha": "03/10/2026",
+   "hora": "17:11",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "Liq:\tTipo LÍQUIDO PLEURAL Dens 1.020 pH 7.4 Glu 92.0 Prot 4.2 Alb 3.1 LDH 410"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "QUIMICA CLINICA",
+    "label": "QUIMICA CLINICA",
+    "groups": [
+     {
+      "title": "",
+      "rows": [
+       {
+        "estudio": "ALBUMINA",
+        "flag": "*",
+        "resultado": "3.1",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard"
+     },
+     {
+      "title": "CITOQUIMICO DE LIQUIDOS CORPORALES",
+      "rows": [
+       {
+        "estudio": "DENSIDAD",
+        "flag": "*",
+        "resultado": "1.020",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "PH",
+        "flag": "*",
+        "resultado": "7.4",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "GLUCOSA",
+        "flag": "*",
+        "resultado": "92.0",
+        "unidades": "mg/dL",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "PROTEINAS",
+        "flag": "*",
+        "resultado": "4200",
+        "unidades": "mg/dL",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "LDH",
+        "flag": "*",
+        "resultado": "410",
+        "unidades": "IU/L",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "LÍQUIDO PLEURAL",
+        "flag": "*",
+        "resultado": "ALBUMINA",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "cito",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t8000021-1\tSolicitud:\t2680000211\nNombre:\tPACIENTE INVENTADO VEINTIUNO\tFecha Registro:\tOct 3 2026 5:11PM\nSexo:\tFEMENINO\tUbicación:\tSALA INVENTADA\nEdad:\t66\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nQUIMICA CLINICA\nCITOQUIMICO DE LIQUIDOS CORPORALES\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nEXAMEN QUIMICO\t\n*\n:\nDENSIDAD\t\n*\n1.020\nPH\t\n*\n7.4\nGLUCOSA\t\n*\n92.0\nmg/dL\t\nPROTEINAS\t\n*\n4200\nmg/dL\t\nLDH\t\n*\n410\nIU/L\t\nCITOQUIMICO DE\t\n*\nLÍQUIDO PLEURAL\nALBUMINA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nALBUMINA\t\n*\n3.1"
+ ],
+ "cultivo": "",
+ "citoLiquidos": "Liq:\tTipo LÍQUIDO PLEURAL Dens 1.020 pH 7.4 Glu 92.0 Prot 4.2 Alb 3.1 LDH 410",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 8000021-1 Solicitud: 2680000211 Nombre: PACIENTE INVENTADO VEINTIUNO Fecha Registro: Oct 3 2026 5:11PM Sexo: FEMENINO Ubicación: SALA INVENTADA Edad: 66 Medico: FICTICIO SINTETICO EJEMPLO B QUIMICA CLINICA  ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 8000021-1 Solicitud: 2680000211 Nombre: PACIENTE INVENTADO VEINTIUNO Fecha Registro: Oct 3 2026 5:11PM Sexo: FEMENINO Ubicación: SALA INVENTADA Edad: 66 Medico: FICTICIO SINTETICO EJEMPLO B QUIMICA CLINICA  ",
+  "gaso": "",
+  "pie": ""
+ }
+}

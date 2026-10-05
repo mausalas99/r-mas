@@ -1,0 +1,22 @@
+{
+  "passphrase": "correct horse",
+  "kdfSaltB64": "AAECAwQFBgcICQoLDA0ODw==",
+  "keyHex": "577f1ff37e9a3e52c97d39f8e83891c1b73b0e87ffe0429cee8ede2fb005fe44",
+  "recoverySaltB64": "ZGVmZ2hpamtsbW5vcHFycw==",
+  "recoveryCode": "R+ABCD2345",
+  "recoveryCodeMessyInput": "  r+abcd 2345\n",
+  "wrappingKeyHex": "e0ce42751f75d0efacd8c9542dc525b32aa9a1c6155f3fc1831428295e1ef347",
+  "wrapped": {
+    "iv": "qXVRdDPC4uGNOegrm29VIg==",
+    "tag": "h8oTojqCP2OBN6aBAYSY8g==",
+    "data": "2t+E4jz8JwryLPJiC6ThisjkFYyh3Z5Qh6VPmZM7MQFi6rwg97/RWPVDleLouQ5cdAjId7++QDaeDrILut5FcQ=="
+  },
+  "legacyCode": "r+123",
+  "legacyWrappingKeyHex": "72ad13ae1ceb8594137aac46b3e8d9a0c3380e8421fe9ebfb9b4a2326187437a",
+  "legacyWrapped": {
+    "iv": "Uma9Nx0J9eongepnkzkhSQ==",
+    "tag": "7yv+fqiRdp3/y1X/xIv6dw==",
+    "data": "CcJEqUk5SH8dPeDOteckrBlaka3ndWSZrMm1tc6D0cNpqbbcXtNj72v7bU4T89uzshArccIIPUNkFbLt/67hzg=="
+  },
+  "sampleGeneratedCode": "R+EKQAHKRZ"
+}

@@ -1,0 +1,123 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO DIEZ",
+   "expediente": "8000010-1",
+   "sexo": "F",
+   "edad": "58 años",
+   "fecha": "03/10/2026",
+   "hora": "06:43",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "GASES\tpH 7.38 pCO2 36* Lactato 1 Bica 21.8*"
+  ],
+  "bhExtras": {},
+  "refsBySection": {
+   "GASES": {
+    "pH": [
+     7.32,
+     7.43
+    ],
+    "pCO2": [
+     40,
+     45
+    ],
+    "Lactato": [
+     0.9,
+     1.9
+    ],
+    "Bica": [
+     24,
+     30
+    ]
+   }
+  }
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "GASOMETRIAS",
+    "label": "GASOMETRIAS",
+    "groups": [
+     {
+      "title": "GASOMETRIA VENOSA PARCIAL",
+      "rows": [
+       {
+        "estudio": "PH",
+        "flag": "*",
+        "resultado": "7.38",
+        "unidades": "",
+        "ref": "7.32 - 7.43",
+        "abnormal": false
+       },
+       {
+        "estudio": "pCO2",
+        "flag": "B",
+        "resultado": "36",
+        "unidades": "mmHg",
+        "ref": "40 - 45",
+        "abnormal": true
+       },
+       {
+        "estudio": "Lactato",
+        "flag": "*",
+        "resultado": "1.0",
+        "unidades": "mmol/L",
+        "ref": "0.9 - 1.9",
+        "abnormal": false
+       },
+       {
+        "estudio": "HCO3",
+        "flag": "B",
+        "resultado": "21.8",
+        "unidades": "mmol/L",
+        "ref": "24.0 - 30.0",
+        "abnormal": true
+       },
+       {
+        "estudio": "EX. BASE",
+        "flag": "B",
+        "resultado": "-3.1",
+        "unidades": "mmol/L",
+        "ref": "-2.0 - 2.0",
+        "abnormal": true
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t8000010-1\tSolicitud:\t2680000101\nNombre:\tPACIENTE INVENTADO DIEZ\tFecha Registro:\tOct 3 2026 6:43AM\nSexo:\tFEMENINO\tUbicación:\tSALA INVENTADA\nEdad:\t58\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nGASOMETRIAS\nGASOMETRIA VENOSA PARCIAL\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nPH\t\n*\n7.38\n\t7.32 - 7.43\npCO2\t\nB\n36\nmmHg\t40 - 45\nLactato\t\n*\n1.0\nmmol/L\t0.9 - 1.9\nHCO3\t\nB\n21.8\nmmol/L\t24.0 - 30.0\nEX. BASE\t\nB\n-3.1\nmmol/L\t-2.0 - 2.0"
+ ],
+ "cultivo": "",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 8000010-1 Solicitud: 2680000101 Nombre: PACIENTE INVENTADO DIEZ Fecha Registro: Oct 3 2026 6:43AM Sexo: FEMENINO Ubicación: SALA INVENTADA Edad: 58 Medico: FICTICIO SINTETICO EJEMPLO B GASOMETRIAS GASOMETRIA VENOSA PARCIAL Estudio Resultado Unidades Valor de Referencia PH * 7.38 7.32 - 7.43 pCO2 B 36 mmHg 40 - 45 Lactato * 1.0 mmol/L 0.9 - 1.9 HCO3 B 21.8 mmol/L 24.0 - 30.0 EX. BASE B -3.1 mmol/L -2.0 - 2.0 ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "GASOMETRIAS GASOMETRIA VENOSA PARCIAL Estudio Resultado Unidades Valor de Referencia PH * 7.38 7.32 - 7.43 pCO2 B 36 mmHg 40 - 45 Lactato * 1.0 mmol/L 0.9 - 1.9 HCO3 B 21.8 mmol/L 24.0 - 30.0 EX. BASE B -3.1 mmol/L -2.0 - 2.0 ",
+  "textoQS": "  Expediente: 8000010-1 Solicitud: 2680000101 Nombre: PACIENTE INVENTADO DIEZ Fecha Registro: Oct 3 2026 6:43AM Sexo: FEMENINO Ubicación: SALA INVENTADA Edad: 58 Medico: FICTICIO SINTETICO EJEMPLO B  ",
+  "gaso": "GASES\tpH 7.38 pCO2 36* Lactato 1 Bica 21.8*",
+  "pie": ""
+ }
+}

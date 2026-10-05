@@ -1,0 +1,412 @@
+{
+ "results": [
+  {
+   "cmdText": "{\"type\":\"clinical.persistSnapshot\",\"patients\":[{\"id\":\"p1\",\"nombre\":\"Paciente Sintético Uno\",\"cama\":\"10\"},{\"id\":\"p2\",\"cama\":\"11\",\"nombre\":\"Dos\"}],\"notes\":{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}},\"indicaciones\":{\"p1\":{\"texto\":\"dieta\"}}}",
+   "meta": {
+    "actorId": "u1",
+    "source": "ui"
+   },
+   "ok": true,
+   "error": null,
+   "changedKeys": [
+    "patients",
+    "notes",
+    "indicaciones"
+   ],
+   "hasChangeId": true,
+   "patients": "[{\"id\":\"p1\",\"nombre\":\"Paciente Sintético Uno\",\"cama\":\"10\"},{\"id\":\"p2\",\"cama\":\"11\",\"nombre\":\"Dos\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 1
+  },
+  {
+   "cmdText": "{\"type\":\"clinical.persistSnapshot\",\"patients\":[{\"id\":\"p1\",\"nombre\":\"Paciente Sintético Uno\",\"cama\":\"10\"},{\"id\":\"p2\",\"cama\":\"11\",\"nombre\":\"Dos\"}]}",
+   "meta": {
+    "actorId": "u1"
+   },
+   "ok": true,
+   "error": null,
+   "changedKeys": [
+    "patients"
+   ],
+   "hasChangeId": true,
+   "patients": "[{\"id\":\"p1\",\"nombre\":\"Paciente Sintético Uno\",\"cama\":\"10\"},{\"id\":\"p2\",\"cama\":\"11\",\"nombre\":\"Dos\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 2
+  },
+  {
+   "cmdText": "{\"type\":\"patient.upsert\",\"patient\":{\"id\":\" p3 \",\"nombre\":\"Tres\",\"cama\":\"12\"}}",
+   "meta": {
+    "actorId": "u9",
+    "source": "lan"
+   },
+   "ok": true,
+   "error": null,
+   "changedKeys": [
+    "patients"
+   ],
+   "hasChangeId": true,
+   "patients": "[{\"id\":\"p1\",\"nombre\":\"Paciente Sintético Uno\",\"cama\":\"10\"},{\"id\":\"p2\",\"cama\":\"11\",\"nombre\":\"Dos\"},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 3
+  },
+  {
+   "cmdText": "{\"type\":\"patient.upsert\",\"patient\":{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}}}",
+   "meta": {},
+   "ok": true,
+   "error": null,
+   "changedKeys": [
+    "patients"
+   ],
+   "hasChangeId": true,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p2\",\"cama\":\"11\",\"nombre\":\"Dos\"},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 4
+  },
+  {
+   "cmdText": "{\"type\":\"patient.upsert\",\"patient\":{\"id\":5,\"nombre\":\"Numérico\"}}",
+   "meta": {
+    "actorId": "",
+    "source": "  "
+   },
+   "ok": true,
+   "error": null,
+   "changedKeys": [
+    "patients"
+   ],
+   "hasChangeId": true,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p2\",\"cama\":\"11\",\"nombre\":\"Dos\"},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"},{\"id\":\"5\",\"nombre\":\"Numérico\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 5
+  },
+  {
+   "cmdText": "{\"type\":\"patient.upsert\",\"patient\":{\"nombre\":\"sin id\"}}",
+   "meta": null,
+   "ok": false,
+   "error": "invalid_patient",
+   "changedKeys": null,
+   "hasChangeId": false,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p2\",\"cama\":\"11\",\"nombre\":\"Dos\"},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"},{\"id\":\"5\",\"nombre\":\"Numérico\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 5
+  },
+  {
+   "cmdText": "{\"type\":\"patient.upsert\",\"patient\":{\"id\":null}}",
+   "meta": null,
+   "ok": false,
+   "error": "invalid_patient",
+   "changedKeys": null,
+   "hasChangeId": false,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p2\",\"cama\":\"11\",\"nombre\":\"Dos\"},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"},{\"id\":\"5\",\"nombre\":\"Numérico\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 5
+  },
+  {
+   "cmdText": "{\"type\":\"patient.upsert\",\"patient\":{\"id\":\"   \"}}",
+   "meta": null,
+   "ok": false,
+   "error": "invalid_patient",
+   "changedKeys": null,
+   "hasChangeId": false,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p2\",\"cama\":\"11\",\"nombre\":\"Dos\"},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"},{\"id\":\"5\",\"nombre\":\"Numérico\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 5
+  },
+  {
+   "cmdText": "{\"type\":\"patient.upsert\",\"patient\":null}",
+   "meta": null,
+   "ok": false,
+   "error": "invalid_patient",
+   "changedKeys": null,
+   "hasChangeId": false,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p2\",\"cama\":\"11\",\"nombre\":\"Dos\"},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"},{\"id\":\"5\",\"nombre\":\"Numérico\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 5
+  },
+  {
+   "cmdText": "{\"type\":\"patient.upsert\",\"patient\":[]}",
+   "meta": null,
+   "ok": false,
+   "error": "invalid_patient",
+   "changedKeys": null,
+   "hasChangeId": false,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p2\",\"cama\":\"11\",\"nombre\":\"Dos\"},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"},{\"id\":\"5\",\"nombre\":\"Numérico\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 5
+  },
+  {
+   "cmdText": "{\"type\":\"patient.upsert\"}",
+   "meta": null,
+   "ok": false,
+   "error": "invalid_patient",
+   "changedKeys": null,
+   "hasChangeId": false,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p2\",\"cama\":\"11\",\"nombre\":\"Dos\"},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"},{\"id\":\"5\",\"nombre\":\"Numérico\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 5
+  },
+  {
+   "cmdText": "{\"type\":\"patient.delete\",\"patientId\":\"p2\",\"registro\":\"777\"}",
+   "meta": null,
+   "ok": true,
+   "error": null,
+   "changedKeys": [
+    "patients"
+   ],
+   "hasChangeId": true,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"},{\"id\":\"5\",\"nombre\":\"Numérico\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 6
+  },
+  {
+   "cmdText": "{\"type\":\"patient.delete\",\"patientId\":\"\"}",
+   "meta": null,
+   "ok": false,
+   "error": "invalid_patient_id",
+   "changedKeys": null,
+   "hasChangeId": false,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"},{\"id\":\"5\",\"nombre\":\"Numérico\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 6
+  },
+  {
+   "cmdText": "{\"type\":\"patient.delete\",\"patientId\":\"   \",\"registro\":\"5\"}",
+   "meta": null,
+   "ok": false,
+   "error": "invalid_patient_id",
+   "changedKeys": null,
+   "hasChangeId": false,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"},{\"id\":\"5\",\"nombre\":\"Numérico\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 6
+  },
+  {
+   "cmdText": "{\"type\":\"patient.delete\",\"patientId\":5}",
+   "meta": null,
+   "ok": true,
+   "error": null,
+   "changedKeys": [
+    "patients"
+   ],
+   "hasChangeId": true,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 7
+  },
+  {
+   "cmdText": "{\"type\":\"patient.delete\",\"patientId\":\"nobody\"}",
+   "meta": {
+    "actorId": "u2"
+   },
+   "ok": true,
+   "error": null,
+   "changedKeys": [
+    "patients"
+   ],
+   "hasChangeId": true,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 8
+  },
+  {
+   "cmdText": "{\"type\":\"clinical.persistSnapshot\",\"patients\":null}",
+   "meta": null,
+   "ok": false,
+   "error": "invalid_patients",
+   "changedKeys": null,
+   "hasChangeId": false,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 8
+  },
+  {
+   "cmdText": "{\"type\":\"clinical.persistSnapshot\",\"notes\":[]}",
+   "meta": null,
+   "ok": false,
+   "error": "invalid_notes",
+   "changedKeys": null,
+   "hasChangeId": false,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"}]",
+   "notes": "{\"p1\":{\"estado\":\"estable\"},\"p2\":{\"estado\":\"delicado\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 8
+  },
+  {
+   "cmdText": "{\"type\":\"clinical.persistSnapshot\",\"notes\":{\"p1\":{\"estado\":\"otro\"}}}",
+   "meta": {
+    "source": "nube"
+   },
+   "ok": true,
+   "error": null,
+   "changedKeys": [
+    "notes"
+   ],
+   "hasChangeId": true,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"}]",
+   "notes": "{\"p1\":{\"estado\":\"otro\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 9
+  },
+  {
+   "cmdText": "{\"type\":\"clinical.persistSnapshot\"}",
+   "meta": null,
+   "ok": false,
+   "error": "empty_snapshot",
+   "changedKeys": null,
+   "hasChangeId": false,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"}]",
+   "notes": "{\"p1\":{\"estado\":\"otro\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 9
+  },
+  {
+   "cmdText": "{\"type\":\"clinical.persistSnapshot\",\"medCatalog\":{}}",
+   "meta": null,
+   "ok": false,
+   "error": "empty_snapshot",
+   "changedKeys": null,
+   "hasChangeId": false,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"}]",
+   "notes": "{\"p1\":{\"estado\":\"otro\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 9
+  },
+  {
+   "cmdText": "{\"type\":\"nope\"}",
+   "meta": null,
+   "ok": false,
+   "error": "unknown_command",
+   "changedKeys": null,
+   "hasChangeId": false,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"}]",
+   "notes": "{\"p1\":{\"estado\":\"otro\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 9
+  },
+  {
+   "cmdText": "{}",
+   "meta": null,
+   "ok": false,
+   "error": "unknown_command",
+   "changedKeys": null,
+   "hasChangeId": false,
+   "patients": "[{\"cama\":\"99\",\"id\":\"p1\",\"nombre\":\"Uno editado\",\"extra\":{\"z\":1,\"a\":2}},{\"id\":\"p3\",\"nombre\":\"Tres\",\"cama\":\"12\"}]",
+   "notes": "{\"p1\":{\"estado\":\"otro\"}}",
+   "indicaciones": "{\"p1\":{\"texto\":\"dieta\"}}",
+   "logCount": 9
+  }
+ ],
+ "log": [
+  {
+   "change_id": "<id>",
+   "command_type": "clinical.persistSnapshot",
+   "blob_keys": "[\"patients\",\"notes\",\"indicaciones\"]",
+   "patient_id": null,
+   "actor_id": "u1",
+   "origin": "ui",
+   "created_at": "<ts>",
+   "synced_at": null
+  },
+  {
+   "change_id": "<id>",
+   "command_type": "clinical.persistSnapshot",
+   "blob_keys": "[\"patients\"]",
+   "patient_id": null,
+   "actor_id": "u1",
+   "origin": "ui",
+   "created_at": "<ts>",
+   "synced_at": null
+  },
+  {
+   "change_id": "<id>",
+   "command_type": "patient.upsert",
+   "blob_keys": "[\"patients\"]",
+   "patient_id": "p3",
+   "actor_id": "u9",
+   "origin": "lan",
+   "created_at": "<ts>",
+   "synced_at": null
+  },
+  {
+   "change_id": "<id>",
+   "command_type": "patient.upsert",
+   "blob_keys": "[\"patients\"]",
+   "patient_id": "p1",
+   "actor_id": null,
+   "origin": "ui",
+   "created_at": "<ts>",
+   "synced_at": null
+  },
+  {
+   "change_id": "<id>",
+   "command_type": "patient.upsert",
+   "blob_keys": "[\"patients\"]",
+   "patient_id": "5",
+   "actor_id": null,
+   "origin": "ui",
+   "created_at": "<ts>",
+   "synced_at": null
+  },
+  {
+   "change_id": "<id>",
+   "command_type": "patient.delete",
+   "blob_keys": "[\"patients\",\"__reg:777\"]",
+   "patient_id": "p2",
+   "actor_id": null,
+   "origin": "ui",
+   "created_at": "<ts>",
+   "synced_at": null
+  },
+  {
+   "change_id": "<id>",
+   "command_type": "patient.delete",
+   "blob_keys": "[\"patients\"]",
+   "patient_id": "5",
+   "actor_id": null,
+   "origin": "ui",
+   "created_at": "<ts>",
+   "synced_at": null
+  },
+  {
+   "change_id": "<id>",
+   "command_type": "patient.delete",
+   "blob_keys": "[\"patients\"]",
+   "patient_id": "nobody",
+   "actor_id": "u2",
+   "origin": "ui",
+   "created_at": "<ts>",
+   "synced_at": null
+  },
+  {
+   "change_id": "<id>",
+   "command_type": "clinical.persistSnapshot",
+   "blob_keys": "[\"notes\"]",
+   "patient_id": null,
+   "actor_id": null,
+   "origin": "nube",
+   "created_at": "<ts>",
+   "synced_at": null
+  }
+ ],
+ "patientsLoaded": "[{\"cama\":\"99\",\"extra\":{\"a\":2,\"z\":1},\"id\":\"p1\",\"nombre\":\"Uno editado\"},{\"cama\":\"12\",\"id\":\"p3\",\"nombre\":\"Tres\"}]",
+ "censusIds": [
+  "p1",
+  "p3"
+ ]
+}

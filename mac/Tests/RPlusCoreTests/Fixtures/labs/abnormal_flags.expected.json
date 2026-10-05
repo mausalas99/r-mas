@@ -1,0 +1,169 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO UNO3",
+   "expediente": "800003-1",
+   "sexo": "M",
+   "edad": "54 años",
+   "fecha": "03/10/2026",
+   "hora": "07:15",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "BH\tHb 7.9*  Hto 24.1*  Leu 18.4*  Plt 61*",
+   "QS\tCr 3.4*",
+   "ESC\tNa 128* K 6.2*"
+  ],
+  "bhExtras": {},
+  "refsBySection": {
+   "BH": {
+    "Hb": [
+     12.2,
+     18.1
+    ],
+    "Hto": [
+     37.7,
+     53.7
+    ],
+    "Leu": [
+     4,
+     11
+    ],
+    "Plt": [
+     142,
+     424
+    ]
+   },
+   "QS": {
+    "Cr": [
+     0.6,
+     1.4
+    ]
+   },
+   "ESC": {
+    "Na": [
+     135,
+     145
+    ],
+    "K": [
+     3.6,
+     5
+    ]
+   }
+  }
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "HEMATOLOGIA",
+    "label": "HEMATOLOGIA",
+    "groups": [
+     {
+      "title": "BIOMETRIA HEMATICA COMPLETA",
+      "rows": [
+       {
+        "estudio": "HGB",
+        "flag": "B",
+        "resultado": "7.9",
+        "unidades": "g/dL",
+        "ref": "12.20 - 18.10",
+        "abnormal": true
+       },
+       {
+        "estudio": "HCT",
+        "flag": "B",
+        "resultado": "24.1",
+        "unidades": "%",
+        "ref": "37.7 - 53.7",
+        "abnormal": true
+       },
+       {
+        "estudio": "WBC",
+        "flag": "A",
+        "resultado": "18.40",
+        "unidades": "K/uL",
+        "ref": "4.00 - 11.00",
+        "abnormal": true
+       },
+       {
+        "estudio": "PLT",
+        "flag": "B",
+        "resultado": "61",
+        "unidades": "K/uL",
+        "ref": "142.00 - 424.00",
+        "abnormal": true
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   },
+   {
+    "key": "QUIMICA CLINICA",
+    "label": "QUIMICA CLINICA",
+    "groups": [
+     {
+      "title": "",
+      "rows": [
+       {
+        "estudio": "CREATININA EN SANGRE",
+        "flag": "A",
+        "resultado": "3.4",
+        "unidades": "mg/dL",
+        "ref": "0.6 - 1.4",
+        "abnormal": true
+       },
+       {
+        "estudio": "POTASIO",
+        "flag": "A",
+        "resultado": "6.2",
+        "unidades": "mmol/L",
+        "ref": "3.6 - 5.0",
+        "abnormal": true
+       },
+       {
+        "estudio": "SODIO",
+        "flag": "B",
+        "resultado": "128",
+        "unidades": "mmol/L",
+        "ref": "135.0 - 145.0",
+        "abnormal": true
+       }
+      ],
+      "tableVariant": "standard"
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t800003-1\tSolicitud:\t268000031\nNombre:\tPACIENTE INVENTADO UNO3\tFecha Registro:\tOct 3 2026 7:15AM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t54\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nHGB\t\nB\n7.9\ng/dL\t12.20 - 18.10\nHCT\t\nB\n24.1\n%\t37.7 - 53.7\nWBC\t\nA\n18.40\nK/uL\t4.00 - 11.00\nPLT\t\nB\n61\nK/uL\t142.00 - 424.00\nQUIMICA CLINICA\nCREATININA EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCREATININA EN SANGRE\t\nA\n3.4\nmg/dL\t0.6 - 1.4\nPOTASIO\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nPOTASIO\t\nA\n6.2\nmmol/L\t3.6 - 5.0\nSODIO\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nSODIO\t\nB\n128\nmmol/L\t135.0 - 145.0"
+ ],
+ "cultivo": "",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 800003-1 Solicitud: 268000031 Nombre: PACIENTE INVENTADO UNO3 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B HEMATOLOGIA BIOMETRIA HEMATICA COMPLETA Estudio Resultado Unidades Valor de Referencia HGB B 7.9 g/dL 12.20 - 18.10 HCT B 24.1 % 37.7 - 53.7 WBC A 18.40 K/uL 4.00 - 11.00 PLT B 61 K/uL 142.00 - 424.00 QUIMICA CLINICA CREATININA EN SANGRE Estudio Resultado Unidades Valor de Referencia CREATININA EN SANGRE A 3.4 mg/dL 0.6 - 1.4 POTASIO Estudio Resultado Unidades Valor de Referencia POTASIO A 6.2 mmol/L 3.6 - 5.0 SODIO Estudio Resultado Unidades Valor de Referencia SODIO B 128 mmol/L 135.0 - 145.0 ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "BH\tHb 7.9*  Hto 24.1*  Leu 18.4*  Plt 61*",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "QS\tCr 3.4*",
+  "esc": "ESC\tNa 128* K 6.2*",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 800003-1 Solicitud: 268000031 Nombre: PACIENTE INVENTADO UNO3 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B HEMATOLOGIA BIOMETRIA HEMATICA COMPLETA Estudio Resultado Unidades Valor de Referencia HGB B 7.9 g/dL 12.20 - 18.10 HCT B 24.1 % 37.7 - 53.7 WBC A 18.40 K/uL 4.00 - 11.00 PLT B 61 K/uL 142.00 - 424.00 QUIMICA CLINICA CREATININA EN SANGRE Estudio Resultado Unidades Valor de Referencia CREATININA EN SANGRE A 3.4 mg/dL 0.6 - 1.4 POTASIO Estudio Resultado Unidades Valor de Referencia POTASIO A 6.2 mmol/L 3.6 - 5.0 SODIO Estudio Resultado Unidades Valor de Referencia SODIO B 128 mmol/L 135.0 - 145.0 ",
+  "gaso": "",
+  "pie": ""
+ }
+}

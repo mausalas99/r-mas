@@ -1,0 +1,174 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO UNO13",
+   "expediente": "8000013-1",
+   "sexo": "M",
+   "edad": "54 años",
+   "fecha": "03/10/2026",
+   "hora": "07:15",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "EGO:\n  AMAR  TURB  pH 6.0  D 1.024\n  Prot 30*  Glu NEG  Cet NEG  Sang 25*  Nitr POS*  EstLeu 75*\n  Leu 20-25*  Eri 3-5*  Bact ABD*  Moco ESC*"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "EXAMEN GENERAL DE ORINA",
+    "label": "EXAMEN GENERAL DE ORINA",
+    "groups": [
+     {
+      "title": "",
+      "rows": [
+       {
+        "estudio": "COLOR",
+        "flag": "*",
+        "resultado": "AMARILLO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ASPECTO",
+        "flag": "*",
+        "resultado": "TURBIO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "DENSIDAD",
+        "flag": "*",
+        "resultado": "1.024",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "PH",
+        "flag": "*",
+        "resultado": "6.0",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "PROTEINAS",
+        "flag": "*",
+        "resultado": "30",
+        "unidades": "mg/dL",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "GLUCOSA",
+        "flag": "*",
+        "resultado": "NEGATIVO",
+        "unidades": "mg/dL",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "CETONAS",
+        "flag": "*",
+        "resultado": "NEGATIVO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "SANGRE",
+        "flag": "*",
+        "resultado": "25",
+        "unidades": "Hem/uL",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "NITRITOS",
+        "flag": "*",
+        "resultado": "POSITIVO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ESTERASA LEUCOCITARIA",
+        "flag": "*",
+        "resultado": "75",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "LEUCOCITOS",
+        "flag": "*",
+        "resultado": "20-25",
+        "unidades": "/CAMPO",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ERITROCITOS",
+        "flag": "*",
+        "resultado": "3-5",
+        "unidades": "/CAMPO",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "BACTERIAS",
+        "flag": "*",
+        "resultado": "ABUNDANTES",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "MOCO",
+        "flag": "*",
+        "resultado": "ESCASO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard"
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t8000013-1\tSolicitud:\t2680000131\nNombre:\tPACIENTE INVENTADO UNO13\tFecha Registro:\tOct 3 2026 7:15AM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t54\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nURIANALISIS\nEXAMEN GENERAL DE ORINA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCOLOR\t\n*\nAMARILLO\nASPECTO\t\n*\nTURBIO\nDENSIDAD\t\n*\n1.024\nPH\t\n*\n6.0\nPROTEINAS\t\n*\n30\nmg/dL\t\nGLUCOSA\t\n*\nNEGATIVO\nmg/dL\t\nCETONAS\t\n*\nNEGATIVO\nSANGRE\t\n*\n25\nHem/uL\t\nNITRITOS\t\n*\nPOSITIVO\nESTERASA LEUCOCITARIA\t\n*\n75\nLEUCOCITOS\t\n*\n20-25\n/CAMPO\t\nERITROCITOS\t\n*\n3-5\n/CAMPO\t\nBACTERIAS\t\n*\nABUNDANTES\nMOCO\t\n*\nESCASO"
+ ],
+ "cultivo": "",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 8000013-1 Solicitud: 2680000131 Nombre: PACIENTE INVENTADO UNO13 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B  ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "  Expediente: 8000013-1 Solicitud: 2680000131 Nombre: PACIENTE INVENTADO UNO13 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B  ",
+  "gaso": "",
+  "pie": ""
+ }
+}

@@ -1,0 +1,19 @@
+Expediente:	8000012-1	Solicitud:	2680000121
+Nombre:	PACIENTE INVENTADO DOCE	Fecha Registro:	Oct 3 2026 1:24PM
+Sexo:	MASCULINO	Ubicación:	SALA INVENTADA
+Edad:	61	Medico:	FICTICIO SINTETICO EJEMPLO B
+
+BANCO DE SANGRE
+
+HsTnl o Troponina I (Alta
+
+Estudio	Resultado	Unidades	Valor de Referencia
+
+HsTnl o Troponina I (Alta Sensibilidad)	
+
+1840.500
+INDETERMINADO
+
+ng/L	
+Positivo >= 0.00S/CO
+Negativo <= 0.00S/CO

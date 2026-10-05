@@ -1,0 +1,49 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE DE PRUEBA CINCO",
+   "expediente": "0000003-3",
+   "sexo": "M",
+   "edad": "53 años",
+   "fecha": "25/05/2026",
+   "hora": "09:37",
+   "ubicacion": "SERVICIO CLÍNICO 2"
+  },
+  "resLabs": [
+   "BACILOSCOPIA DE PRODUCTOS DIVERSOS (1 MUESTRA) (TEJIDO DE LENGUA) 25/05: NEGATIVO\n\nCULTIVO DE MICOBACTERIAS (POR MUESTRA) (TEJIDO DE LENGUA) 25/05: NEGATIVO A LA FECHA."
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": []
+ },
+ "bulkSplit": [
+  "Expediente:\t0000003-3\tSolicitud:\t2605250577\nNombre:\tPACIENTE DE PRUEBA CINCO\tFecha Registro:\t25/05/2026 09:37:01 a. m.\nSexo:\tMASCULINO\tUbicación:\tSERVICIO CLÍNICO 2\nEdad:\t53\tMedico:\tFICTICIO SINTETICO EJEMPLO A\n\nMYCOBACTERIAS\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nBACILOSCOPIA DE PRODUCTOS DIVERSOS (1 MUESTRA)\n1 MUESTRA\t\n*\nNEGATIVO\nOBSERVACIONES\t\n*\nTEJIDO DE LENGUA\nCULTIVO DE MICOBACTERIAS (POR MUESTRA)\nSECCION DE MICOBACTERIAS\t\n*\nREPORTE PRELIMINAR MOP-647-07-RC-052\nCULTIVO\t\n*\nNEGATIVO A LA FECHA."
+ ],
+ "cultivo": "BACILOSCOPIA DE PRODUCTOS DIVERSOS (1 MUESTRA) (TEJIDO DE LENGUA) 25/05: NEGATIVO\n\nCULTIVO DE MICOBACTERIAS (POR MUESTRA) (TEJIDO DE LENGUA) 25/05: NEGATIVO A LA FECHA.",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 0000003-3 Solicitud: 2605250577 Nombre: PACIENTE DE PRUEBA CINCO Fecha Registro: 25/05/2026 09:37:01 a. m. Sexo: MASCULINO Ubicación: SERVICIO CLÍNICO 2 Edad: 53 Medico: FICTICIO SINTETICO EJEMPLO A MYCOBACTERIAS Estudio Resultado Unidades Valor de Referencia BACILOSCOPIA DE PRODUCTOS DIVERSOS (1 MUESTRA) 1 MUESTRA * NEGATIVO OBSERVACIONES * TEJIDO DE LENGUA CULTIVO DE MICOBACTERIAS (POR MUESTRA) SECCION DE MICOBACTERIAS * REPORTE PRELIMINAR MOP-647-07-RC-052 CULTIVO * NEGATIVO A LA FECHA.",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 0000003-3 Solicitud: 2605250577 Nombre: PACIENTE DE PRUEBA CINCO Fecha Registro: 25/05/2026 09:37:01 a. m. Sexo: MASCULINO Ubicación: SERVICIO CLÍNICO 2 Edad: 53 Medico: FICTICIO SINTETICO EJEMPLO A MYCOBACTERIAS Estudio Resultado Unidades Valor de Referencia BACILOSCOPIA DE PRODUCTOS DIVERSOS (1 MUESTRA) 1 MUESTRA * NEGATIVO OBSERVACIONES * TEJIDO DE LENGUA CULTIVO DE MICOBACTERIAS (POR MUESTRA) SECCION DE MICOBACTERIAS * REPORTE PRELIMINAR MOP-647-07-RC-052 CULTIVO * NEGATIVO A LA FECHA.",
+  "gaso": "",
+  "pie": ""
+ }
+}

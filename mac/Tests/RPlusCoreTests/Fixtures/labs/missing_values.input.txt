@@ -1,0 +1,31 @@
+Expediente:	800005-1	Solicitud:	268000051
+Nombre:	PACIENTE INVENTADO UNO5	Fecha Registro:	Oct 3 2026 7:15AM
+Sexo:	MASCULINO	Ubicación:	SALA INVENTADA
+Edad:	54	Medico:	FICTICIO SINTETICO EJEMPLO B
+
+HEMATOLOGIA
+BIOMETRIA HEMATICA COMPLETA
+Estudio		Resultado	Unidades	Valor de Referencia
+HGB	
+*
+g/dL	12.20 - 18.10
+WBC	
+*
+6.1
+K/uL	4.00 - 11.00
+PLT	
+*
+N/A
+K/uL	142.00 - 424.00
+QUIMICA CLINICA
+GLUCOSA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+GLUCOSA EN SANGRE	
+*
+mg/dL	60 - 100
+SODIO
+Estudio		Resultado	Unidades	Valor de Referencia
+SODIO	
+*
+139
+mmol/L	

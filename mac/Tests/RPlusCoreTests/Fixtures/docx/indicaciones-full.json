@@ -1,0 +1,42 @@
+{
+ "kind": "indicaciones",
+ "input": {
+  "patient": {
+   "nombre": "paciente sintético dos",
+   "registro": "9900002-2",
+   "edad": "45",
+   "sexo": "f",
+   "area": "medicina interna",
+   "servicio": "cirugía general",
+   "cuarto": "208",
+   "cama": "A"
+  },
+  "indicaciones": {
+   "fecha": "05/10/2026",
+   "hora": "09:15",
+   "medicos": "DR. UNO\n  DRA. DOS \n\nR1 TRES",
+   "descripcion": "Indicaciones & cambios",
+   "dieta": "Blanda\nSin sal",
+   "cuidados": "Vigilar\n\n  Aseo",
+   "estudios": "BH, QS",
+   "medicamentos": "Paracetamol 1 g c/8 h\nOmeprazol 40 mg",
+   "interconsultas": "",
+   "otros": [
+    {
+     "titulo": "oxígeno",
+     "contenido": "puntas nasales 2 L"
+    },
+    {
+     "titulo": "",
+     "contenido": "ignorado"
+    },
+    {
+     "titulo": "curaciones",
+     "contenido": ""
+    }
+   ]
+  }
+ },
+ "fileName": "Indicaciones_paciente_sintético_dos_05_10_2026.docx",
+ "numberingInject": null
+}

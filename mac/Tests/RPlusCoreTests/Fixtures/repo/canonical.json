@@ -1,0 +1,152 @@
+[
+ {
+  "input": "{}",
+  "stringify": "{}",
+  "canonical": "{}"
+ },
+ {
+  "input": "[]",
+  "stringify": "[]",
+  "canonical": "[]"
+ },
+ {
+  "input": "null",
+  "stringify": "null",
+  "canonical": "null"
+ },
+ {
+  "input": "true",
+  "stringify": "true",
+  "canonical": "true"
+ },
+ {
+  "input": "\"x\"",
+  "stringify": "\"x\"",
+  "canonical": "\"x\""
+ },
+ {
+  "input": "0",
+  "stringify": "0",
+  "canonical": "0"
+ },
+ {
+  "input": "-0",
+  "stringify": "0",
+  "canonical": "0"
+ },
+ {
+  "input": "1",
+  "stringify": "1",
+  "canonical": "1"
+ },
+ {
+  "input": "-1.5",
+  "stringify": "-1.5",
+  "canonical": "-1.5"
+ },
+ {
+  "input": "0.1",
+  "stringify": "0.1",
+  "canonical": "0.1"
+ },
+ {
+  "input": "100",
+  "stringify": "100",
+  "canonical": "100"
+ },
+ {
+  "input": "1e21",
+  "stringify": "1e+21",
+  "canonical": "1e+21"
+ },
+ {
+  "input": "1e-7",
+  "stringify": "1e-7",
+  "canonical": "1e-7"
+ },
+ {
+  "input": "1.5e300",
+  "stringify": "1.5e+300",
+  "canonical": "1.5e+300"
+ },
+ {
+  "input": "5e-324",
+  "stringify": "5e-324",
+  "canonical": "5e-324"
+ },
+ {
+  "input": "123456789012345680000",
+  "stringify": "123456789012345680000",
+  "canonical": "123456789012345680000"
+ },
+ {
+  "input": "0.000001",
+  "stringify": "0.000001",
+  "canonical": "0.000001"
+ },
+ {
+  "input": "1.2345e-7",
+  "stringify": "1.2345e-7",
+  "canonical": "1.2345e-7"
+ },
+ {
+  "input": "4503599627370496",
+  "stringify": "4503599627370496",
+  "canonical": "4503599627370496"
+ },
+ {
+  "input": "1e+21",
+  "stringify": "1e+21",
+  "canonical": "1e+21"
+ },
+ {
+  "input": "12e2",
+  "stringify": "1200",
+  "canonical": "1200"
+ },
+ {
+  "input": "{\"b\":1,\"a\":2,\"c\":{\"z\":1,\"y\":[3,{\"q\":1,\"p\":2}]}}",
+  "stringify": "{\"b\":1,\"a\":2,\"c\":{\"z\":1,\"y\":[3,{\"q\":1,\"p\":2}]}}",
+  "canonical": "{\"a\":2,\"b\":1,\"c\":{\"y\":[3,{\"p\":2,\"q\":1}],\"z\":1}}"
+ },
+ {
+  "input": "{\"b\":1,\"10\":2,\"2\":3,\"a\":4,\"01\":5}",
+  "stringify": "{\"2\":3,\"10\":2,\"b\":1,\"a\":4,\"01\":5}",
+  "canonical": "{\"2\":3,\"10\":2,\"01\":5,\"a\":4,\"b\":1}"
+ },
+ {
+  "input": "{\"é\":1,\"e\":2,\"z\":3,\"Z\":4,\"~\":5,\"😀\":6,\"｡\":7}",
+  "stringify": "{\"é\":1,\"e\":2,\"z\":3,\"Z\":4,\"~\":5,\"😀\":6,\"｡\":7}",
+  "canonical": "{\"Z\":4,\"e\":2,\"z\":3,\"~\":5,\"é\":1,\"😀\":6,\"｡\":7}"
+ },
+ {
+  "input": "{\"a\":1,\"a\":2,\"b\":3}",
+  "stringify": "{\"a\":2,\"b\":3}",
+  "canonical": "{\"a\":2,\"b\":3}"
+ },
+ {
+  "input": "{\"s\":\"quote\\\" slash\\\\ tab\\t nl\\n cr\\r bs\\b ff\\f ctl\\u0001\\u001f del\\u007f\"}",
+  "stringify": "{\"s\":\"quote\\\" slash\\\\ tab\\t nl\\n cr\\r bs\\b ff\\f ctl\\u0001\\u001f del\"}",
+  "canonical": "{\"s\":\"quote\\\" slash\\\\ tab\\t nl\\n cr\\r bs\\b ff\\f ctl\\u0001\\u001f del\"}"
+ },
+ {
+  "input": "{\"s\":\"\\u2028\\u2029 \\u00e9 \\ud83d\\ude00 / \\/\"}",
+  "stringify": "{\"s\":\"   é 😀 / /\"}",
+  "canonical": "{\"s\":\"   é 😀 / /\"}"
+ },
+ {
+  "input": "{\"nested\":[[],{},[[]],[{\"k\":null}]],\"n\":null,\"t\":true,\"f\":false}",
+  "stringify": "{\"nested\":[[],{},[[]],[{\"k\":null}]],\"n\":null,\"t\":true,\"f\":false}",
+  "canonical": "{\"f\":false,\"n\":null,\"nested\":[[],{},[[]],[{\"k\":null}]],\"t\":true}"
+ },
+ {
+  "input": " \n{ \"sp\" : [ 1 , 2 ] }\t",
+  "stringify": "{\"sp\":[1,2]}",
+  "canonical": "{\"sp\":[1,2]}"
+ },
+ {
+  "input": "{\"patients\":[{\"id\":\"p2\",\"cama\":\"12\",\"nombre\":\"Paciente Sintético\"},{\"id\":\"p1\",\"cama\":\"3\"}]}",
+  "stringify": "{\"patients\":[{\"id\":\"p2\",\"cama\":\"12\",\"nombre\":\"Paciente Sintético\"},{\"id\":\"p1\",\"cama\":\"3\"}]}",
+  "canonical": "{\"patients\":[{\"cama\":\"12\",\"id\":\"p2\",\"nombre\":\"Paciente Sintético\"},{\"cama\":\"3\",\"id\":\"p1\"}]}"
+ }
+]

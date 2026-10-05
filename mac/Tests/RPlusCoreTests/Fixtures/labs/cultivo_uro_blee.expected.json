@@ -1,0 +1,96 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO DIECISEIS",
+   "expediente": "8000016-1",
+   "sexo": "M",
+   "edad": "54 años",
+   "fecha": "02/10/2026",
+   "hora": "15:00",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "UROCULTIVO POR SONDA 02/10: KLEBSIELLA PNEUMONIAE · BLEE\nATB ESBL: CFTX | S: CFXN, MERO\nCuenta: +100,000 UFC/ML"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "BACTERIOLOGIA",
+    "label": "BACTERIOLOGIA",
+    "groups": [
+     {
+      "title": "UROCULTIVO POR SONDA",
+      "rows": [
+       {
+        "estudio": "MICROORGANISMO",
+        "flag": "*",
+        "resultado": "Klebsiella pneumoniae",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "COMENTARIO:",
+        "flag": "*",
+        "resultado": "AISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE)",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "CUENTA DE KASS",
+        "flag": "*",
+        "resultado": "+100,000 UFC/mL",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ANTIBIOGRAMA",
+        "flag": "*",
+        "resultado": "CEFTRIAXONA",
+        "unidades": ">32",
+        "ref": "ESBL",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t8000016-1\tSolicitud:\t2680000161\nNombre:\tPACIENTE INVENTADO DIECISEIS\tFecha Registro:\tOct 2 2026 3:00PM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t54\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nBACTERIOLOGIA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nUROCULTIVO POR SONDA\nPRODUCTO\t\n*\nMICROORGANISMO\t\n*\nKlebsiella pneumoniae\nCOMENTARIO:\t\n*\nAISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE)\nCUENTA DE KASS\t\n*\n+100,000 UFC/mL\nANTIBIOGRAMA\t\n*\nCEFTRIAXONA\n>32\tESBL\n*\nCEFOXITINA\n<=8\tS\n*\nMEROPENEM\n<=1\tS\n*"
+ ],
+ "cultivo": "UROCULTIVO POR SONDA 02/10: KLEBSIELLA PNEUMONIAE · BLEE\nATB ESBL: CFTX | S: CFXN, MERO\nCuenta: +100,000 UFC/ML",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 8000016-1 Solicitud: 2680000161 Nombre: PACIENTE INVENTADO DIECISEIS Fecha Registro: Oct 2 2026 3:00PM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B BACTERIOLOGIA Estudio Resultado Unidades Valor de Referencia UROCULTIVO POR SONDA PRODUCTO * MICROORGANISMO * Klebsiella pneumoniae COMENTARIO: * AISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE) CUENTA DE KASS * +100,000 UFC/mL ANTIBIOGRAMA * CEFTRIAXONA >32 ESBL * CEFOXITINA <=8 S * MEROPENEM <=1 S * ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 8000016-1 Solicitud: 2680000161 Nombre: PACIENTE INVENTADO DIECISEIS Fecha Registro: Oct 2 2026 3:00PM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B BACTERIOLOGIA Estudio Resultado Unidades Valor de Referencia UROCULTIVO POR SONDA PRODUCTO * MICROORGANISMO * Klebsiella pneumoniae COMENTARIO: * AISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE) CUENTA DE KASS * +100,000 UFC/mL ANTIBIOGRAMA * CEFTRIAXONA >32 ESBL * CEFOXITINA <=8 S * MEROPENEM <=1 S * ",
+  "gaso": "",
+  "pie": ""
+ }
+}

@@ -1,0 +1,185 @@
+{
+ "method": "PBKDF2-HMAC-SHA256, 210000 iterations, 32-byte key, password = Nube password (UTF-8), salt = base64 room salt",
+ "password": "sala-demo-2026",
+ "saltB64": "AwoRGB8mLTQ7QklQV15lbA==",
+ "wrapKeyHex": "cb9bc94624578566820246028412d769d4da50c7d99683e93813de71477afe8a",
+ "dekB64": "//79/Pv6+fj39vX08/Lx8O/u7ezr6uno5+bl5OPi4eA=",
+ "wrapped": {
+  "iv": "c3qBiI+WnaSrsrnA",
+  "ct": "TufCebDGy1fIMkb3NLJanjIByDDKUVG0RxsWy2ut+aGcUFe94OwbEoZFIVLWJwYu"
+ },
+ "values": {
+  "number": {
+   "plain": 42,
+   "envelope": {
+    "enc": 1,
+    "iv": "x87V3OPq8fj/Bg0U",
+    "ct": "bVIYvkPOzaXxfI6tbDy+ytew"
+   }
+  },
+  "text": {
+   "plain": "Paciente estable, sin ñ ni acentos perdidos: José Núñez ✓",
+   "envelope": {
+    "enc": 1,
+    "iv": "GyIpMDc+RUxTWmFo",
+    "ct": "AFwFwEJa4K1dOeSMuhT7Tevfe0cZRR+vYx/TxO8+Td20qWlIhtfla1ktPm5RQ1DjzsGZmidjcLS36aCPRmF3WBxMs60lviZFYgDtSF+paWs4"
+   }
+  },
+  "nullValue": {
+   "plain": null,
+   "envelope": {
+    "enc": 1,
+    "iv": "b3Z9hIuSmaCnrrW8",
+    "ct": "3nPjbFB8mn8Wa9Kk54Z1PCEszHg="
+   }
+  },
+  "list": {
+   "plain": [
+    "I10",
+    "E11.9"
+   ],
+   "envelope": {
+    "enc": 1,
+    "iv": "w8rR2N/m7fT7AgkQ",
+    "ct": "X0MlRzvYM60Ib/uRwcZ5XdPBFw2Paq8lKcD1jr6tkw=="
+   }
+  },
+  "monitoreo": {
+   "plain": {
+    "vitals": {
+     "tas": 130,
+     "tad": 80,
+     "fc": 94,
+     "fr": 22,
+     "temp": 37,
+     "sat": 96
+    },
+    "alteredAt": {
+     "tas": "2026-10-05T08:00:00.000Z"
+    },
+    "glucometrias": [
+     {
+      "value": 144,
+      "time": "08:00"
+     },
+     {
+      "value": 98,
+      "time": "14:00"
+     }
+    ],
+    "io": {
+     "ing": 200,
+     "egr": 100,
+     "evac": "NO"
+    },
+    "historial": [
+     {
+      "at": "2026-10-05T06:00:00.000Z",
+      "vitals": {
+       "tas": 118,
+       "tad": 76
+      },
+      "io": {
+       "ing": 500,
+       "egr": 450,
+       "evac": "SÍ"
+      }
+     }
+    ]
+   },
+   "envelope": {
+    "enc": 1,
+    "iv": "Fx4lLDM6QUhPVl1k",
+    "ct": "jZcGnGR845Z+BOj+SsEfyQxNWXK61uBXs/o6dSZNUgxmbEmJVdNqFEMoMehNSUp+5H38Uk+P7Wf3OxvBiYvhUcTOTaaxie+LgrZ0QD0mnFcg35/LUyuE9aQU8F9OUMlSiTQtIppMGLwTuVpoMMJzGvbVqhhSQQ+DeYASEiX7ipFCdtsrR/YuIXz+gQU45p+YfohAVpSuSPJejObAz1JXSIDJ+AiEQvEZuDEbWsmDKFWurSXc99XxIi0RmEtQ+Xl+s6IO01V65f2u7M32wlIgQ6F/FTPnDiffnTjy9QhJv4iWgYi1kcxY+Y3qdQDnOKdymvHPWY79N1eUAattgkR8rw6xQj/iEGyfZVoLc9zV1pSi+EbKVh1XfYDD4VnfvZ1o6CQIAFkAXSMEVTYrseQjH7gHufgOp52yxs/FjrQ3h1Aw/hRUSQx33f2Ysvvu7FUtwq9ADxrW4pRoyjBL1FO+ongX9dexcZm8"
+   }
+  }
+ },
+ "ops": {
+  "plain": {
+   "monitoreo": {
+    "vitals": {
+     "tas": 130,
+     "tad": 80,
+     "fc": 94,
+     "fr": 22,
+     "temp": 37,
+     "sat": 96
+    },
+    "alteredAt": {
+     "tas": "2026-10-05T08:00:00.000Z"
+    },
+    "glucometrias": [
+     {
+      "value": 144,
+      "time": "08:00"
+     },
+     {
+      "value": 98,
+      "time": "14:00"
+     }
+    ],
+    "io": {
+     "ing": 200,
+     "egr": 100,
+     "evac": "NO"
+    },
+    "historial": [
+     {
+      "at": "2026-10-05T06:00:00.000Z",
+      "vitals": {
+       "tas": 118,
+       "tad": 76
+      },
+      "io": {
+       "ing": 500,
+       "egr": 450,
+       "evac": "SÍ"
+      }
+     }
+    ]
+   },
+   "fields": {
+    "nombre": "Generico Casobl",
+    "cama": "12",
+    "registro": "1234567",
+    "diagnosticosList": [
+     "HAS"
+    ],
+    "diagnosticosText": "HAS, DM2"
+   }
+  },
+  "encrypted": [
+   {
+    "path": "entries/p1/monitoreo",
+    "value": {
+     "enc": 1,
+     "iv": "a3J5gIeOlZyjqrG4",
+     "ct": "4GO8RbI+LZrnE37DFZgffx/putQM+bvRgoN9nFiKtjWDn0BQx9YT57pfU/y0jjWhHHy9g1ZEBHHBlfT5gRYmSR+3+EkutDvkF88KMR4D1UCNnevLMwP3umhSSdAQTj3VGJl+HJjtYQD7Lkwrzcuco+pl5UICArc2Mz4dG5WEZ2EJL3TXZEHBhDuT9LjB70dk0DrhdFRAFqcKSc2JrrKKxkrifDJ/LSTAGBlP9tBhkBaBwVxv1mycvpKt7slnPO+AgIgYfH88pWnlWPJUPlIPrYh3iQBpj5lfUMtW4b0kKVQW9Oqez46o9sPHTBcO7xs8hLIKQBUY4TsGOiD5wykIU+XZ8qzukVZm1klDvtffULyEY9i4WuOqbXNcI1VKyxGP6v76Utl8Hs4xVGECIYqHr8L3f79mqijehPpzW5gv8CGAt+nI242NNxJ+QaYmDlgRhKh16xMwZbRvX0Ol1JTBI5mP7+QWjHAq"
+    }
+   },
+   {
+    "path": "entries/p1/fields",
+    "value": {
+     "nombre": "Generico Casobl",
+     "cama": "12",
+     "registro": {
+      "enc": 1,
+      "iv": "v8bN1Nvi6fD3/gUM",
+      "ct": "CN22pOtO9IQrNMB6fPmF0tsuIssfRtAHqg=="
+     },
+     "diagnosticosList": {
+      "enc": 1,
+      "iv": "ExohKC82PURLUllg",
+      "ct": "wKA15o///+IyVRQZwC5P9LriJ3H1Y3U="
+     },
+     "diagnosticosText": {
+      "enc": 1,
+      "iv": "Z251fIOKkZifpq20",
+      "ct": "6aSb5W8E+TJAq6pbkoqNY71CSFU2CtOTbnE="
+     },
+     "registroFp": "gv/a0hbBhk2O7v03HT43aUDY3RgabTWXeAIzJTWsxf4="
+    }
+   }
+  ]
+ }
+}

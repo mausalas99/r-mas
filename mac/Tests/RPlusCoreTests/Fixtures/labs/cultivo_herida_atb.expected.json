@@ -1,0 +1,88 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE DE PRUEBA CUATRO",
+   "expediente": "0000002-2",
+   "sexo": "F",
+   "edad": "74 años",
+   "fecha": "24/05/2026",
+   "hora": "12:47",
+   "ubicacion": "SALA DE PRUEBA"
+  },
+  "resLabs": [
+   "SECRECION DE HERIDA (HERIDA DE TRAQUEOSTOMIA) 24/05: PSEUDOMONAS AERUGINOSA\nATB S: CAZ, CIPRO"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "BACTERIOLOGIA",
+    "label": "BACTERIOLOGIA",
+    "groups": [
+     {
+      "title": "SECRECION DE HERIDA",
+      "rows": [
+       {
+        "estudio": "PRODUCTO",
+        "flag": "*",
+        "resultado": "HERIDA DE TRAQUEOSTOMIA",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "MICROORGANISMO",
+        "flag": "*",
+        "resultado": "Pseudomonas aeruginosa",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ANTIBIOGRAMA",
+        "flag": "*",
+        "resultado": "CEFTAZIDIMA",
+        "unidades": "4",
+        "ref": "S",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t0000002-2\tSolicitud:\t9000000032\nNombre:\tPACIENTE DE PRUEBA CUATRO\tFecha Registro:\t24/05/2026 12:47:53 p. m.\nSexo:\tFEMENINO\tUbicación:\tSALA DE PRUEBA\nEdad:\t74\tMedico:\tFICTICIO SINTETICO EJEMPLO A\nBACTERIOLOGIA\nEstudio\t\tResultado\nSECRECION DE HERIDA\nPRODUCTO\t\n*\nHERIDA DE TRAQUEOSTOMIA\nMICROORGANISMO\t\n*\nPseudomonas aeruginosa\nANTIBIOGRAMA\t\n*\nCEFTAZIDIMA\n4\tS\nCIPROFLOXACINA\n<=1\tS"
+ ],
+ "cultivo": "SECRECION DE HERIDA (HERIDA DE TRAQUEOSTOMIA) 24/05: PSEUDOMONAS AERUGINOSA\nATB S: CAZ, CIPRO",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 0000002-2 Solicitud: 9000000032 Nombre: PACIENTE DE PRUEBA CUATRO Fecha Registro: 24/05/2026 12:47:53 p. m. Sexo: FEMENINO Ubicación: SALA DE PRUEBA Edad: 74 Medico: FICTICIO SINTETICO EJEMPLO A BACTERIOLOGIA Estudio Resultado SECRECION DE HERIDA PRODUCTO * HERIDA DE TRAQUEOSTOMIA MICROORGANISMO * Pseudomonas aeruginosa ANTIBIOGRAMA * CEFTAZIDIMA 4 S CIPROFLOXACINA <=1 S ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 0000002-2 Solicitud: 9000000032 Nombre: PACIENTE DE PRUEBA CUATRO Fecha Registro: 24/05/2026 12:47:53 p. m. Sexo: FEMENINO Ubicación: SALA DE PRUEBA Edad: 74 Medico: FICTICIO SINTETICO EJEMPLO A BACTERIOLOGIA Estudio Resultado SECRECION DE HERIDA PRODUCTO * HERIDA DE TRAQUEOSTOMIA MICROORGANISMO * Pseudomonas aeruginosa ANTIBIOGRAMA * CEFTAZIDIMA 4 S CIPROFLOXACINA <=1 S ",
+  "gaso": "",
+  "pie": ""
+ }
+}

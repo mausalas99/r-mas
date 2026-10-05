@@ -1,0 +1,969 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO UNO26",
+   "expediente": "8000026-1",
+   "sexo": "M",
+   "edad": "54 años",
+   "fecha": "03/10/2026",
+   "hora": "07:15",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "BH\tHb 13.9  Hto 41.2  VCM 89  HCM 30.1  Leu 7.3  Neu 4.4  Eos 0.2  Plt 262",
+   "QS\tGlu 88 Cr 0.9 BUN 14 BUN/CR 15.6 AU 5.2 COL 175 TGL 110",
+   "ESC\tNa 140 Cl 103 K 4.1 Ca 9.2 cCa 9.2 F 3.4",
+   "PFHs\tAlb 4 AST 24 ALT 21 FA 96 Prot 7.1 BT 0.8 BD 0.2 BI 0.6 LDH 150 Amil 60",
+   "GASES\tpH 7.31* pCO2 30* pO2 88 Lactato 3.1* Bica 16.2* AG 20.8* cAG 20.8* Delta-Delta 1.1",
+   "COAG\tINR 1.05  Fib 310",
+   "UROCULTIVO POR SONDA 03/10: KLEBSIELLA PNEUMONIAE · BLEE\nATB ESBL: CFTX | S: CFXN, MERO\nCuenta: +100,000 UFC/ML",
+   "TIR\tTSH 2.5 T4L 1.1",
+   "ENDO\tHbA1c 7.2*",
+   "CARD\tNTproBNP 850* CKMB 4.2",
+   "FE\tFerr 12*",
+   "INM\tC3 95",
+   "META\tOsm 291",
+   "EGO:\n  AMAR  TURB  pH 6.0  D 1.024\n  Prot 30*  Glu NEG  Cet NEG  Sang 25*  Nitr POS*  EstLeu 75*\n  Leu 20-25*  Eri 3-5*  Bact ABD*  Moco ESC*"
+  ],
+  "bhExtras": {
+   "Lin": "2.10",
+   "Mono": "0.50",
+   "Baso": "0.05",
+   "NeuPct": "60.3",
+   "LinPct": "28.8",
+   "RBC": "4.62",
+   "CHCM": "33.7",
+   "RDW": "13.5",
+   "MPV": "9.1"
+  },
+  "refsBySection": {
+   "BH": {
+    "Hb": [
+     12.2,
+     18.1
+    ],
+    "Hto": [
+     37.7,
+     53.7
+    ],
+    "VCM": [
+     80,
+     97
+    ],
+    "HCM": [
+     27,
+     31.2
+    ],
+    "CHCM": [
+     29.9,
+     34.2
+    ],
+    "RDW": [
+     11.6,
+     14.8
+    ],
+    "Leu": [
+     4,
+     11
+    ],
+    "Neu": [
+     2,
+     6.9
+    ],
+    "Eos": [
+     0,
+     0.7
+    ],
+    "Lin": [
+     0.6,
+     3.4
+    ],
+    "Mono": [
+     0,
+     0.9
+    ],
+    "Baso": [
+     0,
+     0.2
+    ],
+    "Plt": [
+     142,
+     424
+    ],
+    "MPV": [
+     7.4,
+     10.4
+    ],
+    "RBC": [
+     4.04,
+     6.13
+    ],
+    "INR": [
+     0.8,
+     1.2
+    ]
+   },
+   "QS": {
+    "Glu": [
+     60,
+     100
+    ],
+    "Cr": [
+     0.6,
+     1.4
+    ],
+    "BUN": [
+     7,
+     20
+    ],
+    "AU": [
+     4.8,
+     8.7
+    ],
+    "COL": [
+     130,
+     200
+    ],
+    "TGL": [
+     35,
+     150
+    ]
+   },
+   "ESC": {
+    "Na": [
+     135,
+     145
+    ],
+    "Cl": [
+     101,
+     110
+    ],
+    "K": [
+     3.6,
+     5
+    ],
+    "Ca": [
+     8.4,
+     10.2
+    ],
+    "F": [
+     2.5,
+     4.6
+    ]
+   },
+   "PFHs": {
+    "Alb": [
+     3.2,
+     5.5
+    ],
+    "AST": [
+     10,
+     42
+    ],
+    "ALT": [
+     10,
+     42
+    ],
+    "FA": [
+     38,
+     126
+    ],
+    "BT": [
+     0.2,
+     1
+    ],
+    "BD": [
+     0,
+     0.2
+    ],
+    "BI": [
+     0.2,
+     0.8
+    ],
+    "LDH": [
+     91,
+     180
+    ],
+    "Amil": [
+     28,
+     100
+    ]
+   },
+   "GASES": {
+    "pH": [
+     7.35,
+     7.45
+    ],
+    "pCO2": [
+     35,
+     45
+    ],
+    "pO2": [
+     80,
+     100
+    ],
+    "GLU": [
+     20,
+     25
+    ],
+    "Lactato": [
+     0.9,
+     1.9
+    ],
+    "Bica": [
+     22,
+     26
+    ]
+   }
+  }
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "HEMATOLOGIA",
+    "label": "HEMATOLOGIA",
+    "groups": [
+     {
+      "title": "BIOMETRIA HEMATICA COMPLETA",
+      "rows": [
+       {
+        "estudio": "RBC",
+        "flag": "*",
+        "resultado": "4.62",
+        "unidades": "M/uL",
+        "ref": "4.04 - 6.13",
+        "abnormal": false
+       },
+       {
+        "estudio": "HGB",
+        "flag": "*",
+        "resultado": "13.9",
+        "unidades": "g/dL",
+        "ref": "12.20 - 18.10",
+        "abnormal": false
+       },
+       {
+        "estudio": "HCT",
+        "flag": "*",
+        "resultado": "41.2",
+        "unidades": "%",
+        "ref": "37.7 - 53.7",
+        "abnormal": false
+       },
+       {
+        "estudio": "MCV",
+        "flag": "*",
+        "resultado": "89",
+        "unidades": "fL",
+        "ref": "80 - 97",
+        "abnormal": false
+       },
+       {
+        "estudio": "MCH",
+        "flag": "*",
+        "resultado": "30.1",
+        "unidades": "pg",
+        "ref": "27.0 - 31.2",
+        "abnormal": false
+       },
+       {
+        "estudio": "MCHC",
+        "flag": "*",
+        "resultado": "33.7",
+        "unidades": "g/dL",
+        "ref": "29.9 - 34.2",
+        "abnormal": false
+       },
+       {
+        "estudio": "RDW",
+        "flag": "*",
+        "resultado": "13.5",
+        "unidades": "%",
+        "ref": "11.6 - 14.8",
+        "abnormal": false
+       },
+       {
+        "estudio": "WBC",
+        "flag": "*",
+        "resultado": "7.30",
+        "unidades": "K/uL",
+        "ref": "4.00 - 11.00",
+        "abnormal": false
+       },
+       {
+        "estudio": "NEU",
+        "flag": "*",
+        "resultado": "4.40",
+        "unidades": "K/uL",
+        "ref": "2.00 - 6.90",
+        "abnormal": false
+       },
+       {
+        "estudio": "NEU%",
+        "flag": "*",
+        "resultado": "60.3",
+        "unidades": "%",
+        "ref": "37.0 - 80.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "LYM",
+        "flag": "*",
+        "resultado": "2.10",
+        "unidades": "K/uL",
+        "ref": "0.60 - 3.40",
+        "abnormal": false
+       },
+       {
+        "estudio": "LYM%",
+        "flag": "*",
+        "resultado": "28.8",
+        "unidades": "%",
+        "ref": "10.0 - 50.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "MONO",
+        "flag": "*",
+        "resultado": "0.50",
+        "unidades": "K/uL",
+        "ref": "0.000 - 0.900",
+        "abnormal": false
+       },
+       {
+        "estudio": "EOS",
+        "flag": "*",
+        "resultado": "0.20",
+        "unidades": "K/uL",
+        "ref": "0.000 - 0.700",
+        "abnormal": false
+       },
+       {
+        "estudio": "BASO",
+        "flag": "*",
+        "resultado": "0.05",
+        "unidades": "K/uL",
+        "ref": "0.000 - 0.200",
+        "abnormal": false
+       },
+       {
+        "estudio": "PLT",
+        "flag": "*",
+        "resultado": "262",
+        "unidades": "K/uL",
+        "ref": "142.00 - 424.00",
+        "abnormal": false
+       },
+       {
+        "estudio": "MPV",
+        "flag": "*",
+        "resultado": "9.1",
+        "unidades": "fL",
+        "ref": "7.4 - 10.4",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   },
+   {
+    "key": "COAGULACION",
+    "label": "COAGULACION",
+    "groups": [
+     {
+      "title": "",
+      "rows": [
+       {
+        "estudio": "TP",
+        "flag": "*",
+        "resultado": "12.4",
+        "unidades": "seg",
+        "ref": "10.0 - 14.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "INR",
+        "flag": "*",
+        "resultado": "1.05",
+        "unidades": "",
+        "ref": "0.8 - 1.2",
+        "abnormal": false
+       },
+       {
+        "estudio": "TTPA",
+        "flag": "A",
+        "resultado": "41.2",
+        "unidades": "seg",
+        "ref": "25.0 - 35.0",
+        "abnormal": true
+       },
+       {
+        "estudio": "FIBRINOGENO",
+        "flag": "*",
+        "resultado": "310",
+        "unidades": "mg/dL",
+        "ref": "200 - 400",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   },
+   {
+    "key": "QUIMICA CLINICA",
+    "label": "QUIMICA CLINICA",
+    "groups": [
+     {
+      "title": "",
+      "rows": [
+       {
+        "estudio": "GLUCOSA EN SANGRE",
+        "flag": "*",
+        "resultado": "88",
+        "unidades": "mg/dL",
+        "ref": "60 - 100",
+        "abnormal": false
+       },
+       {
+        "estudio": "NITROGENO DE LA UREA EN SANGRE",
+        "flag": "*",
+        "resultado": "14",
+        "unidades": "mg/dL",
+        "ref": "7 - 20",
+        "abnormal": false
+       },
+       {
+        "estudio": "CREATININA EN SANGRE",
+        "flag": "*",
+        "resultado": "0.9",
+        "unidades": "mg/dL",
+        "ref": "0.6 - 1.4",
+        "abnormal": false
+       },
+       {
+        "estudio": "ACIDO URICO EN SANGRE",
+        "flag": "*",
+        "resultado": "5.2",
+        "unidades": "mg/dL",
+        "ref": "4.8 - 8.7",
+        "abnormal": false
+       },
+       {
+        "estudio": "COLESTEROL",
+        "flag": "*",
+        "resultado": "175",
+        "unidades": "mg/dL",
+        "ref": "130 - 200",
+        "abnormal": false
+       },
+       {
+        "estudio": "TRIGLICERIDOS",
+        "flag": "*",
+        "resultado": "110",
+        "unidades": "mg/dL",
+        "ref": "35 - 150",
+        "abnormal": false
+       },
+       {
+        "estudio": "CLORO",
+        "flag": "*",
+        "resultado": "103",
+        "unidades": "mmol/L",
+        "ref": "101.0 - 110.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "SODIO",
+        "flag": "*",
+        "resultado": "140",
+        "unidades": "mmol/L",
+        "ref": "135.0 - 145.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "POTASIO",
+        "flag": "*",
+        "resultado": "4.1",
+        "unidades": "mmol/L",
+        "ref": "3.6 - 5.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "CALCIO EN SUERO",
+        "flag": "*",
+        "resultado": "9.2",
+        "unidades": "mg/dL",
+        "ref": "8.4 - 10.2",
+        "abnormal": false
+       },
+       {
+        "estudio": "FOSFORO",
+        "flag": "*",
+        "resultado": "3.4",
+        "unidades": "mg/dL",
+        "ref": "2.5 - 4.6",
+        "abnormal": false
+       },
+       {
+        "estudio": "PROTEINAS TOTALES",
+        "flag": "*",
+        "resultado": "7.1",
+        "unidades": "g/dL",
+        "ref": "6.1 - 7.9",
+        "abnormal": false
+       },
+       {
+        "estudio": "ALBUMINA",
+        "flag": "*",
+        "resultado": "4.0",
+        "unidades": "g/dL",
+        "ref": "3.2 - 5.5",
+        "abnormal": false
+       },
+       {
+        "estudio": "AST(ASPARTATO AMINOTRANSFERASA)",
+        "flag": "*",
+        "resultado": "24",
+        "unidades": "UI/L",
+        "ref": "10 - 42",
+        "abnormal": false
+       },
+       {
+        "estudio": "ALT ALANIN AMINO TRANSFERASA",
+        "flag": "*",
+        "resultado": "21",
+        "unidades": "UI/L",
+        "ref": "10 - 42",
+        "abnormal": false
+       },
+       {
+        "estudio": "ALP FOSFATASA ALCALINA",
+        "flag": "*",
+        "resultado": "96",
+        "unidades": "UI/L",
+        "ref": "38 - 126",
+        "abnormal": false
+       },
+       {
+        "estudio": "BILIRRUBINA TOTAL",
+        "flag": "*",
+        "resultado": "0.8",
+        "unidades": "mg/dL",
+        "ref": "0.2 - 1.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "BILIRRUBINA DIRECTA",
+        "flag": "*",
+        "resultado": "0.2",
+        "unidades": "mg/dL",
+        "ref": "0.0 - 0.2",
+        "abnormal": false
+       },
+       {
+        "estudio": "BILIRRUBINA INDIRECTA",
+        "flag": "*",
+        "resultado": "0.6",
+        "unidades": "mg/dL",
+        "ref": "0.2 - 0.8",
+        "abnormal": false
+       },
+       {
+        "estudio": "LDH DESHIDROGENASA LACTICA",
+        "flag": "*",
+        "resultado": "150",
+        "unidades": "UI/L",
+        "ref": "91 - 180",
+        "abnormal": false
+       },
+       {
+        "estudio": "AMILASA",
+        "flag": "*",
+        "resultado": "60",
+        "unidades": "U/L",
+        "ref": "28 - 100",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard"
+     }
+    ]
+   },
+   {
+    "key": "GASOMETRIAS",
+    "label": "GASOMETRIAS",
+    "groups": [
+     {
+      "title": "GASOMETRIA ARTERIAL",
+      "rows": [
+       {
+        "estudio": "PH",
+        "flag": "B",
+        "resultado": "7.31",
+        "unidades": "",
+        "ref": "7.35 - 7.45",
+        "abnormal": true
+       },
+       {
+        "estudio": "pCO2",
+        "flag": "B",
+        "resultado": "30",
+        "unidades": "mmHg",
+        "ref": "35 - 45",
+        "abnormal": true
+       },
+       {
+        "estudio": "pO2",
+        "flag": "*",
+        "resultado": "88",
+        "unidades": "mmHg",
+        "ref": "80 - 100",
+        "abnormal": false
+       },
+       {
+        "estudio": "Lactato",
+        "flag": "A",
+        "resultado": "3.1",
+        "unidades": "mmol/L",
+        "ref": "0.9 - 1.9",
+        "abnormal": true
+       },
+       {
+        "estudio": "HCO3",
+        "flag": "B",
+        "resultado": "16.2",
+        "unidades": "mmol/L",
+        "ref": "22.0 - 26.0",
+        "abnormal": true
+       },
+       {
+        "estudio": "EX. BASE",
+        "flag": "B",
+        "resultado": "-8.1",
+        "unidades": "mmol/L",
+        "ref": "-2.0 - 2.0",
+        "abnormal": true
+       },
+       {
+        "estudio": "SAT 02",
+        "flag": "*",
+        "resultado": "96",
+        "unidades": "%",
+        "ref": "95 - 100",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   },
+   {
+    "key": "EXAMEN GENERAL DE ORINA",
+    "label": "EXAMEN GENERAL DE ORINA",
+    "groups": [
+     {
+      "title": "",
+      "rows": [
+       {
+        "estudio": "COLOR",
+        "flag": "*",
+        "resultado": "AMARILLO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ASPECTO",
+        "flag": "*",
+        "resultado": "TURBIO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "DENSIDAD",
+        "flag": "*",
+        "resultado": "1.024",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "PH",
+        "flag": "*",
+        "resultado": "6.0",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "PROTEINAS",
+        "flag": "*",
+        "resultado": "30",
+        "unidades": "mg/dL",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "GLUCOSA",
+        "flag": "*",
+        "resultado": "NEGATIVO",
+        "unidades": "mg/dL",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "CETONAS",
+        "flag": "*",
+        "resultado": "NEGATIVO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "SANGRE",
+        "flag": "*",
+        "resultado": "25",
+        "unidades": "Hem/uL",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "NITRITOS",
+        "flag": "*",
+        "resultado": "POSITIVO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ESTERASA LEUCOCITARIA",
+        "flag": "*",
+        "resultado": "75",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "LEUCOCITOS",
+        "flag": "*",
+        "resultado": "20-25",
+        "unidades": "/CAMPO",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ERITROCITOS",
+        "flag": "*",
+        "resultado": "3-5",
+        "unidades": "/CAMPO",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "BACTERIAS",
+        "flag": "*",
+        "resultado": "ABUNDANTES",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "MOCO",
+        "flag": "*",
+        "resultado": "ESCASO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard"
+     }
+    ]
+   },
+   {
+    "key": "QUIMICA CLINICA",
+    "label": "QUIMICA CLINICA",
+    "groups": [
+     {
+      "title": "",
+      "rows": [
+       {
+        "estudio": "TSH",
+        "flag": "*",
+        "resultado": "2.5",
+        "unidades": "uUI/mL",
+        "ref": "0.4 - 4.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "T4 LIBRE",
+        "flag": "*",
+        "resultado": "1.1",
+        "unidades": "ng/dL",
+        "ref": "0.8 - 1.8",
+        "abnormal": false
+       },
+       {
+        "estudio": "HEMOGLOBINA GLICOSILADA",
+        "flag": "A",
+        "resultado": "7.2",
+        "unidades": "%",
+        "ref": "4.0 - 5.6",
+        "abnormal": true
+       },
+       {
+        "estudio": "FERRITINA",
+        "flag": "B",
+        "resultado": "12",
+        "unidades": "ng/mL",
+        "ref": "30 - 400",
+        "abnormal": true
+       },
+       {
+        "estudio": "GGT",
+        "flag": "A",
+        "resultado": "88",
+        "unidades": "U/L",
+        "ref": "0 - 55",
+        "abnormal": true
+       },
+       {
+        "estudio": "NT-PROBNP",
+        "flag": "A",
+        "resultado": "850",
+        "unidades": "pg/mL",
+        "ref": "0 - 125",
+        "abnormal": true
+       },
+       {
+        "estudio": "CK-MB",
+        "flag": "*",
+        "resultado": "4.2",
+        "unidades": "ng/mL",
+        "ref": "0 - 5.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "COMPLEMENTO C3",
+        "flag": "*",
+        "resultado": "95",
+        "unidades": "mg/dL",
+        "ref": "90 - 180",
+        "abnormal": false
+       },
+       {
+        "estudio": "OSMOLARIDAD SERICA",
+        "flag": "*",
+        "resultado": "291",
+        "unidades": "mOsm/kg",
+        "ref": "275 - 295",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard"
+     }
+    ]
+   },
+   {
+    "key": "BACTERIOLOGIA",
+    "label": "BACTERIOLOGIA",
+    "groups": [
+     {
+      "title": "UROCULTIVO POR SONDA",
+      "rows": [
+       {
+        "estudio": "MICROORGANISMO",
+        "flag": "*",
+        "resultado": "Klebsiella pneumoniae",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "COMENTARIO:",
+        "flag": "*",
+        "resultado": "AISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE)",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "CUENTA DE KASS",
+        "flag": "*",
+        "resultado": "+100,000 UFC/mL",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ANTIBIOGRAMA",
+        "flag": "*",
+        "resultado": "CEFTRIAXONA",
+        "unidades": ">32",
+        "ref": "ESBL",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t8000026-1\tSolicitud:\t2680000261\nNombre:\tPACIENTE INVENTADO UNO26\tFecha Registro:\tOct 3 2026 7:15AM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t54\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nRBC\t\n*\n4.62\nM/uL\t4.04 - 6.13\nHGB\t\n*\n13.9\ng/dL\t12.20 - 18.10\nHCT\t\n*\n41.2\n%\t37.7 - 53.7\nMCV\t\n*\n89\nfL\t80 - 97\nMCH\t\n*\n30.1\npg\t27.0 - 31.2\nMCHC\t\n*\n33.7\ng/dL\t29.9 - 34.2\nRDW\t\n*\n13.5\n%\t11.6 - 14.8\nWBC\t\n*\n7.30\nK/uL\t4.00 - 11.00\nNEU\t\n*\n4.40\nK/uL\t2.00 - 6.90\nNEU%\t\n*\n60.3\n%\t37.0 - 80.0\nLYM\t\n*\n2.10\nK/uL\t0.60 - 3.40\nLYM%\t\n*\n28.8\n%\t10.0 - 50.0\nMONO\t\n*\n0.50\nK/uL\t0.000 - 0.900\nEOS\t\n*\n0.20\nK/uL\t0.000 - 0.700\nBASO\t\n*\n0.05\nK/uL\t0.000 - 0.200\nPLT\t\n*\n262\nK/uL\t142.00 - 424.00\nMPV\t\n*\n9.1\nfL\t7.4 - 10.4\n\nHEMATOLOGIA\nCOAGULACION\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nTP\t\n*\n12.4\nseg\t10.0 - 14.0\nINR\t\n*\n1.05\n\t0.8 - 1.2\nTTPA\t\nA\n41.2\nseg\t25.0 - 35.0\nFIBRINOGENO\t\n*\n310\nmg/dL\t200 - 400\n\nQUIMICA CLINICA\nGLUCOSA EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nGLUCOSA EN SANGRE\t\n*\n88\nmg/dL\t60 - 100\nNITROGENO DE LA UREA EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nNITROGENO DE LA UREA EN SANGRE\t\n*\n14\nmg/dL\t7 - 20\nCREATININA EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCREATININA EN SANGRE\t\n*\n0.9\nmg/dL\t0.6 - 1.4\nACIDO URICO EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nACIDO URICO EN SANGRE\t\n*\n5.2\nmg/dL\t4.8 - 8.7\nCOLESTEROL\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCOLESTEROL\t\n*\n175\nmg/dL\t130 - 200\nTRIGLICERIDOS\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nTRIGLICERIDOS\t\n*\n110\nmg/dL\t35 - 150\nCLORO\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCLORO\t\n*\n103\nmmol/L\t101.0 - 110.0\nSODIO\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nSODIO\t\n*\n140\nmmol/L\t135.0 - 145.0\nPOTASIO\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nPOTASIO\t\n*\n4.1\nmmol/L\t3.6 - 5.0\nCALCIO\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCALCIO EN SUERO\t\n*\n9.2\nmg/dL\t8.4 - 10.2\nFOSFORO EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nFOSFORO\t\n*\n3.4\nmg/dL\t2.5 - 4.6\nPROTEINAS TOTALES\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nPROTEINAS TOTALES\t\n*\n7.1\ng/dL\t6.1 - 7.9\nALBUMINA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nALBUMINA\t\n*\n4.0\ng/dL\t3.2 - 5.5\nAST(ASPARTATO AMINOTRANSFERASA)\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nAST(ASPARTATO AMINOTRANSFERASA)\t\n*\n24\nUI/L\t10 - 42\nALT ALANIN AMINO TRANSFERASA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nALT ALANIN AMINO TRANSFERASA\t\n*\n21\nUI/L\t10 - 42\nALP FOSFATASA ALCALINA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nALP FOSFATASA ALCALINA\t\n*\n96\nUI/L\t38 - 126\nBILIRRUBINA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nBILIRRUBINA TOTAL\t\n*\n0.8\nmg/dL\t0.2 - 1.0\nBILIRRUBINA DIRECTA\t\n*\n0.2\nmg/dL\t0.0 - 0.2\nBILIRRUBINA INDIRECTA\t\n*\n0.6\nmg/dL\t0.2 - 0.8\nLDH DESHIDROGENASA LACTICA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nLDH DESHIDROGENASA LACTICA\t\n*\n150\nUI/L\t91 - 180\nAMILASA SERICA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nAMILASA\t\n*\n60\nU/L\t28 - 100\nGASOMETRIAS\nGASOMETRIA ARTERIAL\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nPH\t\nB\n7.31\n\t7.35 - 7.45\npCO2\t\nB\n30\nmmHg\t35 - 45\npO2\t\n*\n88\nmmHg\t80 - 100\nLactato\t\nA\n3.1\nmmol/L\t0.9 - 1.9\nHCO3\t\nB\n16.2\nmmol/L\t22.0 - 26.0\nEX. BASE\t\nB\n-8.1\nmmol/L\t-2.0 - 2.0\nSAT 02\t\n*\n96\n%\t95 - 100\n\nURIANALISIS\nEXAMEN GENERAL DE ORINA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCOLOR\t\n*\nAMARILLO\nASPECTO\t\n*\nTURBIO\nDENSIDAD\t\n*\n1.024\nPH\t\n*\n6.0\nPROTEINAS\t\n*\n30\nmg/dL\t\nGLUCOSA\t\n*\nNEGATIVO\nmg/dL\t\nCETONAS\t\n*\nNEGATIVO\nSANGRE\t\n*\n25\nHem/uL\t\nNITRITOS\t\n*\nPOSITIVO\nESTERASA LEUCOCITARIA\t\n*\n75\nLEUCOCITOS\t\n*\n20-25\n/CAMPO\t\nERITROCITOS\t\n*\n3-5\n/CAMPO\t\nBACTERIAS\t\n*\nABUNDANTES\nMOCO\t\n*\nESCASO\n\nQUIMICA CLINICA\nTSH\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nTSH\t\n*\n2.5\nuUI/mL\t0.4 - 4.0\nT4 LIBRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nT4 LIBRE\t\n*\n1.1\nng/dL\t0.8 - 1.8\nHEMOGLOBINA GLICOSILADA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nHEMOGLOBINA GLICOSILADA\t\nA\n7.2\n%\t4.0 - 5.6\nFERRITINA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nFERRITINA\t\nB\n12\nng/mL\t30 - 400\nGGT\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nGGT\t\nA\n88\nU/L\t0 - 55\nNT-PROBNP\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nNT-PROBNP\t\nA\n850\npg/mL\t0 - 125\nCK-MB\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCK-MB\t\n*\n4.2\nng/mL\t0 - 5.0\nCOMPLEMENTO C3\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCOMPLEMENTO C3\t\n*\n95\nmg/dL\t90 - 180\nOSMOLARIDAD SERICA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nOSMOLARIDAD SERICA\t\n*\n291\nmOsm/kg\t275 - 295\nBACTERIOLOGIA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nUROCULTIVO POR SONDA\nPRODUCTO\t\n*\nMICROORGANISMO\t\n*\nKlebsiella pneumoniae\nCOMENTARIO:\t\n*\nAISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE)\nCUENTA DE KASS\t\n*\n+100,000 UFC/mL\nANTIBIOGRAMA\t\n*\nCEFTRIAXONA\n>32\tESBL\n*\nCEFOXITINA\n<=8\tS\n*\nMEROPENEM\n<=1\tS\n*"
+ ],
+ "cultivo": "UROCULTIVO POR SONDA 03/10: KLEBSIELLA PNEUMONIAE · BLEE\nATB ESBL: CFTX | S: CFXN, MERO\nCuenta: +100,000 UFC/ML",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [
+  "TIR\tTSH 2.5 T4L 1.1",
+  "ENDO\tHbA1c 7.2*",
+  "CARD\tNTproBNP 850* CKMB 4.2",
+  "FE\tFerr 12*",
+  "INM\tC3 95",
+  "META\tOsm 291"
+ ],
+ "core": {
+  "textoParaBh": "Expediente: 8000026-1 Solicitud: 2680000261 Nombre: PACIENTE INVENTADO UNO26 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B HEMATOLOGIA BIOMETRIA HEMATICA COMPLETA Estudio Resultado Unidades Valor de Referencia RBC * 4.62 M/uL 4.04 - 6.13 HGB * 13.9 g/dL 12.20 - 18.10 HCT * 41.2 % 37.7 - 53.7 MCV * 89 fL 80 - 97 MCH * 30.1 pg 27.0 - 31.2 MCHC * 33.7 g/dL 29.9 - 34.2 RDW * 13.5 % 11.6 - 14.8 WBC * 7.30 K/uL 4.00 - 11.00 NEU * 4.40 K/uL 2.00 - 6.90 NEU% * 60.3 % 37.0 - 80.0 LYM * 2.10 K/uL 0.60 - 3.40 LYM% * 28.8 % 10.0 - 50.0 MONO * 0.50 K/uL 0.000 - 0.900 EOS * 0.20 K/uL 0.000 - 0.700 BASO * 0.05 K/uL 0.000 - 0.200 PLT * 262 K/uL 142.00 - 424.00 MPV * 9.1 fL 7.4 - 10.4 HEMATOLOGIA COAGULACION Estudio Resultado Unidades Valor de Referencia TP * 12.4 seg 10.0 - 14.0 INR * 1.05 0.8 - 1.2 TTPA A 41.2 seg 25.0 - 35.0 FIBRINOGENO * 310 mg/dL 200 - 400 QUIMICA CLINICA GLUCOSA EN SANGRE Estudio Resultado Unidades Valor de Referencia GLUCOSA EN SANGRE * 88 mg/dL 60 - 100 NITROGENO DE LA UREA EN SANGRE Estudio Resultado Unidades Valor de Referencia NITROGENO DE LA UREA EN SANGRE * 14 mg/dL 7 - 20 CREATININA EN SANGRE Estudio Resultado Unidades Valor de Referencia CREATININA EN SANGRE * 0.9 mg/dL 0.6 - 1.4 ACIDO URICO EN SANGRE Estudio Resultado Unidades Valor de Referencia ACIDO URICO EN SANGRE * 5.2 mg/dL 4.8 - 8.7 COLESTEROL Estudio Resultado Unidades Valor de Referencia COLESTEROL * 175 mg/dL 130 - 200 TRIGLICERIDOS Estudio Resultado Unidades Valor de Referencia TRIGLICERIDOS * 110 mg/dL 35 - 150 CLORO Estudio Resultado Unidades Valor de Referencia CLORO * 103 mmol/L 101.0 - 110.0 SODIO Estudio Resultado Unidades Valor de Referencia SODIO * 140 mmol/L 135.0 - 145.0 POTASIO Estudio Resultado Unidades Valor de Referencia POTASIO * 4.1 mmol/L 3.6 - 5.0 CALCIO Estudio Resultado Unidades Valor de Referencia CALCIO EN SUERO * 9.2 mg/dL 8.4 - 10.2 FOSFORO EN SANGRE Estudio Resultado Unidades Valor de Referencia FOSFORO * 3.4 mg/dL 2.5 - 4.6 PROTEINAS TOTALES Estudio Resultado Unidades Valor de Referencia PROTEINAS TOTALES * 7.1 g/dL 6.1 - 7.9 ALBUMINA Estudio Resultado Unidades Valor de Referencia ALBUMINA * 4.0 g/dL 3.2 - 5.5 AST(ASPARTATO AMINOTRANSFERASA) Estudio Resultado Unidades Valor de Referencia AST(ASPARTATO AMINOTRANSFERASA) * 24 UI/L 10 - 42 ALT ALANIN AMINO TRANSFERASA Estudio Resultado Unidades Valor de Referencia ALT ALANIN AMINO TRANSFERASA * 21 UI/L 10 - 42 ALP FOSFATASA ALCALINA Estudio Resultado Unidades Valor de Referencia ALP FOSFATASA ALCALINA * 96 UI/L 38 - 126 BILIRRUBINA Estudio Resultado Unidades Valor de Referencia BILIRRUBINA TOTAL * 0.8 mg/dL 0.2 - 1.0 BILIRRUBINA DIRECTA * 0.2 mg/dL 0.0 - 0.2 BILIRRUBINA INDIRECTA * 0.6 mg/dL 0.2 - 0.8 LDH DESHIDROGENASA LACTICA Estudio Resultado Unidades Valor de Referencia LDH DESHIDROGENASA LACTICA * 150 UI/L 91 - 180 AMILASA SERICA Estudio Resultado Unidades Valor de Referencia AMILASA * 60 U/L 28 - 100 GASOMETRIAS GASOMETRIA ARTERIAL Estudio Resultado Unidades Valor de Referencia PH B 7.31 7.35 - 7.45 pCO2 B 30 mmHg 35 - 45 pO2 * 88 mmHg 80 - 100 Lactato A 3.1 mmol/L 0.9 - 1.9 HCO3 B 16.2 mmol/L 22.0 - 26.0 EX. BASE B -8.1 mmol/L -2.0 - 2.0 SAT 02 * 96 % 95 - 100  BACTERIOLOGIA Estudio Resultado Unidades Valor de Referencia UROCULTIVO POR SONDA PRODUCTO * MICROORGANISMO * Klebsiella pneumoniae COMENTARIO: * AISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE) CUENTA DE KASS * +100,000 UFC/mL ANTIBIOGRAMA * CEFTRIAXONA >32 ESBL * CEFOXITINA <=8 S * MEROPENEM <=1 S * ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "BH\tHb 13.9  Hto 41.2  VCM 89  HCM 30.1  Leu 7.3  Neu 4.4  Eos 0.2  Plt 262",
+   "coagVisible": "COAG\tINR 1.05  Fib 310",
+   "extras": {
+    "Lin": "2.10",
+    "Mono": "0.50",
+    "Baso": "0.05",
+    "NeuPct": "60.3",
+    "LinPct": "28.8",
+    "RBC": "4.62",
+    "CHCM": "33.7",
+    "RDW": "13.5",
+    "MPV": "9.1"
+   }
+  },
+  "qs": "QS\tGlu 88 Cr 0.9 BUN 14 BUN/CR 15.6 AU 5.2 COL 175 TGL 110",
+  "esc": "ESC\tNa 140 Cl 103 K 4.1 Ca 9.2 cCa 9.2 F 3.4",
+  "pfh": "PFHs\tAlb 4 AST 24 ALT 21 FA 96 Prot 7.1 BT 0.8 BD 0.2 BI 0.6 LDH 150 Amil 60",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "GASOMETRIAS GASOMETRIA ARTERIAL Estudio Resultado Unidades Valor de Referencia PH B 7.31 7.35 - 7.45 pCO2 B 30 mmHg 35 - 45 pO2 * 88 mmHg 80 - 100 Lactato A 3.1 mmol/L 0.9 - 1.9 HCO3 B 16.2 mmol/L 22.0 - 26.0 EX. BASE B -8.1 mmol/L -2.0 - 2.0 SAT 02 * 96 % 95 - 100 ",
+  "textoQS": " Expediente: 8000026-1 Solicitud: 2680000261 Nombre: PACIENTE INVENTADO UNO26 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B HEMATOLOGIA BIOMETRIA HEMATICA COMPLETA Estudio Resultado Unidades Valor de Referencia RBC * 4.62 M/uL 4.04 - 6.13 HGB * 13.9 g/dL 12.20 - 18.10 HCT * 41.2 % 37.7 - 53.7 MCV * 89 fL 80 - 97 MCH * 30.1 pg 27.0 - 31.2 MCHC * 33.7 g/dL 29.9 - 34.2 RDW * 13.5 % 11.6 - 14.8 WBC * 7.30 K/uL 4.00 - 11.00 NEU * 4.40 K/uL 2.00 - 6.90 NEU% * 60.3 % 37.0 - 80.0 LYM * 2.10 K/uL 0.60 - 3.40 LYM% * 28.8 % 10.0 - 50.0 MONO * 0.50 K/uL 0.000 - 0.900 EOS * 0.20 K/uL 0.000 - 0.700 BASO * 0.05 K/uL 0.000 - 0.200 PLT * 262 K/uL 142.00 - 424.00 MPV * 9.1 fL 7.4 - 10.4 HEMATOLOGIA COAGULACION Estudio Resultado Unidades Valor de Referencia TP * 12.4 seg 10.0 - 14.0 INR * 1.05 0.8 - 1.2 TTPA A 41.2 seg 25.0 - 35.0 FIBRINOGENO * 310 mg/dL 200 - 400 QUIMICA CLINICA GLUCOSA EN SANGRE Estudio Resultado Unidades Valor de Referencia GLUCOSA EN SANGRE * 88 mg/dL 60 - 100 NITROGENO DE LA UREA EN SANGRE Estudio Resultado Unidades Valor de Referencia NITROGENO DE LA UREA EN SANGRE * 14 mg/dL 7 - 20 CREATININA EN SANGRE Estudio Resultado Unidades Valor de Referencia CREATININA EN SANGRE * 0.9 mg/dL 0.6 - 1.4 ACIDO URICO EN SANGRE Estudio Resultado Unidades Valor de Referencia ACIDO URICO EN SANGRE * 5.2 mg/dL 4.8 - 8.7 COLESTEROL Estudio Resultado Unidades Valor de Referencia COLESTEROL * 175 mg/dL 130 - 200 TRIGLICERIDOS Estudio Resultado Unidades Valor de Referencia TRIGLICERIDOS * 110 mg/dL 35 - 150 CLORO Estudio Resultado Unidades Valor de Referencia CLORO * 103 mmol/L 101.0 - 110.0 SODIO Estudio Resultado Unidades Valor de Referencia SODIO * 140 mmol/L 135.0 - 145.0 POTASIO Estudio Resultado Unidades Valor de Referencia POTASIO * 4.1 mmol/L 3.6 - 5.0 CALCIO Estudio Resultado Unidades Valor de Referencia CALCIO EN SUERO * 9.2 mg/dL 8.4 - 10.2 FOSFORO EN SANGRE Estudio Resultado Unidades Valor de Referencia FOSFORO * 3.4 mg/dL 2.5 - 4.6 PROTEINAS TOTALES Estudio Resultado Unidades Valor de Referencia PROTEINAS TOTALES * 7.1 g/dL 6.1 - 7.9 ALBUMINA Estudio Resultado Unidades Valor de Referencia ALBUMINA * 4.0 g/dL 3.2 - 5.5 AST(ASPARTATO AMINOTRANSFERASA) Estudio Resultado Unidades Valor de Referencia AST(ASPARTATO AMINOTRANSFERASA) * 24 UI/L 10 - 42 ALT ALANIN AMINO TRANSFERASA Estudio Resultado Unidades Valor de Referencia ALT ALANIN AMINO TRANSFERASA * 21 UI/L 10 - 42 ALP FOSFATASA ALCALINA Estudio Resultado Unidades Valor de Referencia ALP FOSFATASA ALCALINA * 96 UI/L 38 - 126 BILIRRUBINA Estudio Resultado Unidades Valor de Referencia BILIRRUBINA TOTAL * 0.8 mg/dL 0.2 - 1.0 BILIRRUBINA DIRECTA * 0.2 mg/dL 0.0 - 0.2 BILIRRUBINA INDIRECTA * 0.6 mg/dL 0.2 - 0.8 LDH DESHIDROGENASA LACTICA Estudio Resultado Unidades Valor de Referencia LDH DESHIDROGENASA LACTICA * 150 UI/L 91 - 180 AMILASA SERICA Estudio Resultado Unidades Valor de Referencia AMILASA * 60 U/L 28 - 100   BACTERIOLOGIA Estudio Resultado Unidades Valor de Referencia UROCULTIVO POR SONDA PRODUCTO * MICROORGANISMO * Klebsiella pneumoniae COMENTARIO: * AISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE) CUENTA DE KASS * +100,000 UFC/mL ANTIBIOGRAMA * CEFTRIAXONA >32 ESBL * CEFOXITINA <=8 S * MEROPENEM <=1 S * ",
+  "gaso": "GASES\tpH 7.31* pCO2 30* pO2 88 Lactato 3.1* Bica 16.2* AG 20.8* cAG 20.8* Delta-Delta 1.1",
+  "pie": ""
+ }
+}

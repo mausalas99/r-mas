@@ -1,0 +1,167 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO VEINTE",
+   "expediente": "8000020-1",
+   "sexo": "M",
+   "edad": "59 años",
+   "fecha": "03/10/2026",
+   "hora": "17:11",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "Liq:\tTipo LIQUIDO PERITONEAL Dens 1.012 pH 7.5 Glu 420.0 Prot 2.8 LDH 88 Asp TURBIO Rec 320A Leu 320 PMN PREDOMINIO Eri ESCASOS Gram NEGATIVO Obs PERITONEAL",
+   "INTERPRETACIÓN CITOQUÍMICO:\tPMN 320 ≥250/mm³ — peritonitis bacteriana espontánea? (cultivo + ATB empírico)"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "QUIMICA CLINICA",
+    "label": "QUIMICA CLINICA",
+    "groups": [
+     {
+      "title": "CITOQUIMICO DE LIQUIDOS CORPORALES",
+      "rows": [
+       {
+        "estudio": "DENSIDAD",
+        "flag": "*",
+        "resultado": "1.012",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "PH",
+        "flag": "*",
+        "resultado": "7.5",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "GLUCOSA",
+        "flag": "*",
+        "resultado": "420.0",
+        "unidades": "mg/dL",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "PROTEINAS",
+        "flag": "*",
+        "resultado": "2800",
+        "unidades": "mg/dL",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "LDH",
+        "flag": "*",
+        "resultado": "88",
+        "unidades": "IU/L",
+        "ref": "",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "cito",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   },
+   {
+    "key": "BACTERIOLOGIA",
+    "label": "BACTERIOLOGIA",
+    "groups": [
+     {
+      "title": "CITOQUIMICO DE LIQUIDOS CORPORALES",
+      "rows": [
+       {
+        "estudio": "ASPECTO",
+        "flag": "*",
+        "resultado": "TURBIO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "RECUENTO",
+        "flag": "A",
+        "resultado": "320",
+        "unidades": "LEUCOCITOS/MM3",
+        "ref": "0.00 - 5.00",
+        "abnormal": true
+       },
+       {
+        "estudio": "POLIMORFONUCLEARES",
+        "flag": "*",
+        "resultado": "PREDOMINIO",
+        "unidades": "%",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "LINFOCITOS",
+        "flag": "*",
+        "resultado": "%",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ERITROCITOS",
+        "flag": "*",
+        "resultado": "ESCASOS",
+        "unidades": "/mm3",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "GRAM",
+        "flag": "*",
+        "resultado": "NEGATIVO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "cito",
+      "fluidSource": "PERITONEAL",
+      "_someNormalized": true
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t8000020-1\tSolicitud:\t2680000201\nNombre:\tPACIENTE INVENTADO VEINTE\tFecha Registro:\tOct 3 2026 5:11PM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t59\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nQUIMICA CLINICA\nCITOQUIMICO DE LIQUIDOS CORPORALES\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nEXAMEN QUIMICO\t\n*\n:\nDENSIDAD\t\n*\n1.012\nPH\t\n*\n7.5\nGLUCOSA\t\n*\n420.0\nmg/dL\t\nPROTEINAS\t\n*\n2800\nmg/dL\t\nLDH\t\n*\n88\nIU/L\t\nCITOQUIMICO DE\t\n*\nLIQUIDO PERITONEAL\n\nBACTERIOLOGIA\nCITOQUIMICO DE LIQUIDOS CORPORALES\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nASPECTO\t\n*\nTURBIO\nRECUENTO\t\nA\n320\nLEUCOCITOS/MM3\t0.00 - 5.00\nPOLIMORFONUCLEARES\t\n*\nPREDOMINIO\n%\t\nLINFOCITOS\t\n*\n%\t\nERITROCITOS\t\n*\nESCASOS\n/mm3\t\nGRAM\t\n*\nNEGATIVO\nCOMENTARIO\t\n*\nPERITONEAL"
+ ],
+ "cultivo": "",
+ "citoLiquidos": "Liq:\tTipo LIQUIDO PERITONEAL Dens 1.012 pH 7.5 Glu 420.0 Prot 2.8 LDH 88 Asp TURBIO Rec 320A Leu 320 PMN PREDOMINIO Eri ESCASOS Gram NEGATIVO Obs PERITONEAL",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 8000020-1 Solicitud: 2680000201 Nombre: PACIENTE INVENTADO VEINTE Fecha Registro: Oct 3 2026 5:11PM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 59 Medico: FICTICIO SINTETICO EJEMPLO B QUIMICA CLINICA   BACTERIOLOGIA  ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 8000020-1 Solicitud: 2680000201 Nombre: PACIENTE INVENTADO VEINTE Fecha Registro: Oct 3 2026 5:11PM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 59 Medico: FICTICIO SINTETICO EJEMPLO B QUIMICA CLINICA   BACTERIOLOGIA  ",
+  "gaso": "",
+  "pie": ""
+ }
+}

@@ -1,0 +1,80 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "",
+   "expediente": "",
+   "sexo": "",
+   "edad": "",
+   "fecha": "",
+   "hora": "",
+   "ubicacion": ""
+  },
+  "resLabs": [
+   "UROCULTIVO POR SONDA N/D: KLEBSIELLA PNEUMONIAE · NDM\nCuenta: +10,000 UFC/ML"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "BACTERIOLOGIA",
+    "label": "BACTERIOLOGIA",
+    "groups": [
+     {
+      "title": "UROCULTIVO POR SONDA",
+      "rows": [
+       {
+        "estudio": "MICROORGANISMO",
+        "flag": "*",
+        "resultado": "Klebsiella pneumoniae",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "CUENTA DE KASS",
+        "flag": "*",
+        "resultado": "+10,000 UFC/mL",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "BACTERIOLOGIA\nUROCULTIVO POR SONDA\nMICROORGANISMO\nKlebsiella pneumoniae\nCOMENTARIO:\nPRODUCTOR DE NDM-1\nCUENTA DE KASS\n+10,000 UFC/mL"
+ ],
+ "cultivo": "UROCULTIVO POR SONDA N/D: KLEBSIELLA PNEUMONIAE · NDM\nCuenta: +10,000 UFC/ML",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "BACTERIOLOGIA UROCULTIVO POR SONDA MICROORGANISMO Klebsiella pneumoniae COMENTARIO: PRODUCTOR DE NDM-1 CUENTA DE KASS +10,000 UFC/mL ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   BACTERIOLOGIA UROCULTIVO POR SONDA MICROORGANISMO Klebsiella pneumoniae COMENTARIO: PRODUCTOR DE NDM-1 CUENTA DE KASS +10,000 UFC/mL ",
+  "gaso": "",
+  "pie": ""
+ }
+}

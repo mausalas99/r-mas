@@ -1,0 +1,490 @@
+{
+ "schema": [
+  [
+   "index",
+   "idx_active_guardias_patient_status",
+   "active_guardias",
+   "CREATE INDEX idx_active_guardias_patient_status ON active_guardias(patient_id,status)"
+  ],
+  [
+   "index",
+   "idx_active_guardias_status_assigned",
+   "active_guardias",
+   "CREATE INDEX idx_active_guardias_status_assigned ON active_guardias(status,assigned_at)"
+  ],
+  [
+   "index",
+   "idx_active_guardias_status_covering",
+   "active_guardias",
+   "CREATE INDEX idx_active_guardias_status_covering ON active_guardias(status,covering_user_id)"
+  ],
+  [
+   "index",
+   "idx_audit_ts",
+   "forensic_audit_chain",
+   "CREATE INDEX idx_audit_ts ON forensic_audit_chain(timestamp)"
+  ],
+  [
+   "index",
+   "idx_audit_type",
+   "forensic_audit_chain",
+   "CREATE INDEX idx_audit_type ON forensic_audit_chain(event_type)"
+  ],
+  [
+   "index",
+   "idx_clinical_change_log_unsynced",
+   "clinical_change_log",
+   "CREATE INDEX idx_clinical_change_log_unsynced ON clinical_change_log(synced_at,id)"
+  ],
+  [
+   "index",
+   "idx_equipos_events_created",
+   "equipos_events",
+   "CREATE INDEX idx_equipos_events_created ON equipos_events(created_at)"
+  ],
+  [
+   "index",
+   "idx_equipos_push_waitlist",
+   "equipos_push_subscriptions",
+   "CREATE INDEX idx_equipos_push_waitlist ON equipos_push_subscriptions(device_type,reporter_name,rotation)"
+  ],
+  [
+   "index",
+   "idx_equipos_sessions_device",
+   "equipos_sessions",
+   "CREATE INDEX idx_equipos_sessions_device ON equipos_sessions(device_type,checked_out_at)"
+  ],
+  [
+   "index",
+   "idx_equipos_waitlist_device",
+   "equipos_waitlist",
+   "CREATE INDEX idx_equipos_waitlist_device ON equipos_waitlist(device_type,position)"
+  ],
+  [
+   "index",
+   "idx_lan_outbox_room",
+   "lan_sync_outbox",
+   "CREATE INDEX idx_lan_outbox_room ON lan_sync_outbox(room_id,enqueued_at)"
+  ],
+  [
+   "index",
+   "idx_team_guardia_today_user",
+   "team_guardia_today",
+   "CREATE INDEX idx_team_guardia_today_user ON team_guardia_today(user_id)"
+  ],
+  [
+   "index",
+   "idx_team_membership_user",
+   "team_membership",
+   "CREATE INDEX idx_team_membership_user ON team_membership(user_id)"
+  ],
+  [
+   "index",
+   "idx_user_activity_log_user_at",
+   "user_activity_log",
+   "CREATE INDEX idx_user_activity_log_user_at ON user_activity_log(user_id,at_iso DESC)"
+  ],
+  [
+   "table",
+   "active_guardias",
+   "active_guardias",
+   "CREATE TABLE active_guardias(guardia_id TEXT PRIMARY KEY,patient_id TEXT NOT NULL,covering_user_id TEXT NOT NULL,source_team_id TEXT NOT NULL,is_critical INTEGER DEFAULT 0 CHECK(is_critical IN(0,1)),pendientes_json TEXT,vitals_frequency TEXT DEFAULT 'None' CHECK(vitals_frequency IN('1h','2h','4h','Shift_Once','None')),last_vitals_check DATETIME DEFAULT CURRENT_TIMESTAMP,assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,status TEXT DEFAULT 'Active' CHECK(status IN('Active','Resolved')),updated_at TEXT,FOREIGN KEY(covering_user_id)REFERENCES users(user_id))"
+  ],
+  [
+   "table",
+   "app_meta",
+   "app_meta",
+   "CREATE TABLE app_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL)"
+  ],
+  [
+   "table",
+   "clinical_blob",
+   "clinical_blob",
+   "CREATE TABLE clinical_blob(namespace TEXT NOT NULL DEFAULT 'desktop',blob_key TEXT NOT NULL,json TEXT NOT NULL,updated_at TEXT NOT NULL,PRIMARY KEY(namespace,blob_key))"
+  ],
+  [
+   "table",
+   "clinical_change_log",
+   "clinical_change_log",
+   "CREATE TABLE clinical_change_log(id INTEGER PRIMARY KEY AUTOINCREMENT,change_id TEXT NOT NULL UNIQUE,command_type TEXT NOT NULL,blob_keys TEXT NOT NULL,patient_id TEXT,actor_id TEXT,origin TEXT NOT NULL DEFAULT 'ui',created_at TEXT NOT NULL,synced_at TEXT)"
+  ],
+  [
+   "table",
+   "cloud_outbox",
+   "cloud_outbox",
+   "CREATE TABLE cloud_outbox(client_mutation_id TEXT PRIMARY KEY,ops TEXT NOT NULL,base_revision INTEGER,enqueued_at INTEGER NOT NULL)"
+  ],
+  [
+   "table",
+   "entrega_template_team",
+   "entrega_template_team",
+   "CREATE TABLE entrega_template_team(template_id TEXT PRIMARY KEY,team_id TEXT NOT NULL,name TEXT NOT NULL,payload_json TEXT NOT NULL,created_by TEXT,created_at TEXT NOT NULL DEFAULT(datetime('now')),FOREIGN KEY(team_id)REFERENCES teams(team_id),FOREIGN KEY(created_by)REFERENCES users(user_id))"
+  ],
+  [
+   "table",
+   "entrega_template_user",
+   "entrega_template_user",
+   "CREATE TABLE entrega_template_user(template_id TEXT PRIMARY KEY,user_id TEXT NOT NULL,name TEXT NOT NULL,payload_json TEXT NOT NULL,created_at TEXT NOT NULL DEFAULT(datetime('now')),FOREIGN KEY(user_id)REFERENCES users(user_id))"
+  ],
+  [
+   "table",
+   "equipos_device",
+   "equipos_device",
+   "CREATE TABLE equipos_device(device_type TEXT PRIMARY KEY CHECK(device_type IN('lumify','ekg','ultrasound')),status TEXT NOT NULL DEFAULT 'available' CHECK(status IN('available','in_use','alert')),holder_name TEXT,holder_rotation TEXT,previous_holder_name TEXT,previous_holder_rotation TEXT,checked_out_at TEXT,charge_pct INTEGER,gel_empty INTEGER,updated_at TEXT NOT NULL)"
+  ],
+  [
+   "table",
+   "equipos_events",
+   "equipos_events",
+   "CREATE TABLE equipos_events(id TEXT PRIMARY KEY,device_type TEXT,event_type TEXT NOT NULL,reporter_name TEXT,rotation TEXT,meta_json TEXT,created_at TEXT NOT NULL)"
+  ],
+  [
+   "table",
+   "equipos_host_lease",
+   "equipos_host_lease",
+   "CREATE TABLE equipos_host_lease(id INTEGER PRIMARY KEY CHECK(id = 1),mode TEXT NOT NULL DEFAULT 'primary' CHECK(mode IN('primary','temporary')),host_url TEXT,holder_user_id TEXT,holder_rank TEXT,holder_name TEXT,promoted_at TEXT,remembered_primary_url TEXT,superseded_at TEXT)"
+  ],
+  [
+   "table",
+   "equipos_photos",
+   "equipos_photos",
+   "CREATE TABLE equipos_photos(id TEXT PRIMARY KEY,session_id TEXT,report_id TEXT,device_type TEXT NOT NULL,photo_kind TEXT NOT NULL CHECK(photo_kind IN('pickup','return','alert')),file_path TEXT NOT NULL,captured_at TEXT NOT NULL)"
+  ],
+  [
+   "table",
+   "equipos_program_access",
+   "equipos_program_access",
+   "CREATE TABLE equipos_program_access(id INTEGER PRIMARY KEY CHECK(id = 1),access_token TEXT NOT NULL,is_active INTEGER NOT NULL DEFAULT 1,rotated_at TEXT,rotated_by TEXT)"
+  ],
+  [
+   "table",
+   "equipos_push_subscriptions",
+   "equipos_push_subscriptions",
+   "CREATE TABLE equipos_push_subscriptions(id TEXT PRIMARY KEY,endpoint TEXT NOT NULL,p256dh TEXT NOT NULL,auth TEXT NOT NULL,reporter_name TEXT NOT NULL,rotation TEXT NOT NULL,device_type TEXT NOT NULL CHECK(device_type IN('lumify','ekg','ultrasound')),created_at TEXT NOT NULL,updated_at TEXT NOT NULL,UNIQUE(endpoint,device_type))"
+  ],
+  [
+   "table",
+   "equipos_sessions",
+   "equipos_sessions",
+   "CREATE TABLE equipos_sessions(id TEXT PRIMARY KEY,device_type TEXT NOT NULL,holder_name TEXT NOT NULL,holder_rotation TEXT NOT NULL,checked_out_at TEXT NOT NULL,returned_at TEXT,duration_seconds INTEGER,closed_reason TEXT CHECK(closed_reason IN('return','admin_purge','admin_force_return')),lumify_pickup_charge_pct INTEGER,lumify_charge_pct INTEGER,lumify_gel_empty INTEGER,pickup_photo_id TEXT,return_photo_id TEXT)"
+  ],
+  [
+   "table",
+   "equipos_team_reports",
+   "equipos_team_reports",
+   "CREATE TABLE equipos_team_reports(id TEXT PRIMARY KEY,device_type TEXT NOT NULL,kind TEXT NOT NULL CHECK(kind IN('missing_material','malfunction')),message TEXT,reporter_name TEXT NOT NULL,rotation TEXT NOT NULL,created_at TEXT NOT NULL,acknowledged_at TEXT,acknowledged_by_name TEXT,acknowledged_by_rotation TEXT,active INTEGER NOT NULL DEFAULT 1,photo_id TEXT)"
+  ],
+  [
+   "table",
+   "equipos_waitlist",
+   "equipos_waitlist",
+   "CREATE TABLE equipos_waitlist(id TEXT PRIMARY KEY,device_type TEXT NOT NULL CHECK(device_type IN('lumify','ekg','ultrasound')),reporter_name TEXT NOT NULL,rotation TEXT NOT NULL,joined_at TEXT NOT NULL,position INTEGER NOT NULL)"
+  ],
+  [
+   "table",
+   "forensic_audit_chain",
+   "forensic_audit_chain",
+   "CREATE TABLE forensic_audit_chain(id INTEGER PRIMARY KEY AUTOINCREMENT,timestamp TEXT NOT NULL,client_id TEXT NOT NULL,event_type TEXT NOT NULL,payload_hash TEXT NOT NULL,previous_hash TEXT NOT NULL,current_hash TEXT NOT NULL)"
+  ],
+  [
+   "table",
+   "lan_bundle_entries",
+   "lan_bundle_entries",
+   "CREATE TABLE lan_bundle_entries(room_id TEXT NOT NULL,patient_id TEXT NOT NULL,entry_json TEXT NOT NULL,nota_version INTEGER,indicaciones_version INTEGER,lab_meta_json TEXT,PRIMARY KEY(room_id,patient_id))"
+  ],
+  [
+   "table",
+   "lan_host_meta",
+   "lan_host_meta",
+   "CREATE TABLE lan_host_meta(id INTEGER PRIMARY KEY CHECK(id = 1),version INTEGER NOT NULL,team_code_hash TEXT NOT NULL,patients_json TEXT NOT NULL DEFAULT '[]',rooms_json TEXT NOT NULL DEFAULT '[]',room_revisions_json TEXT,migration_generation INTEGER,updated_at TEXT NOT NULL)"
+  ],
+  [
+   "table",
+   "lan_host_state",
+   "lan_host_state",
+   "CREATE TABLE lan_host_state(id INTEGER PRIMARY KEY CHECK(id = 1),version INTEGER NOT NULL,team_code_hash TEXT NOT NULL,json TEXT NOT NULL,updated_at TEXT NOT NULL)"
+  ],
+  [
+   "table",
+   "lan_lab_set_order",
+   "lan_lab_set_order",
+   "CREATE TABLE lan_lab_set_order(room_id TEXT NOT NULL,patient_id TEXT NOT NULL,pos INTEGER NOT NULL,set_id TEXT NOT NULL,PRIMARY KEY(room_id,patient_id,pos))"
+  ],
+  [
+   "table",
+   "lan_lab_sets",
+   "lan_lab_sets",
+   "CREATE TABLE lan_lab_sets(room_id TEXT NOT NULL,patient_id TEXT NOT NULL,set_id TEXT NOT NULL,set_json TEXT NOT NULL,sort_date TEXT NOT NULL,client_timestamp INTEGER NOT NULL,PRIMARY KEY(room_id,patient_id,set_id))"
+  ],
+  [
+   "table",
+   "lan_room_bundles",
+   "lan_room_bundles",
+   "CREATE TABLE lan_room_bundles(room_id TEXT PRIMARY KEY,revision INTEGER NOT NULL,entity_versions_json TEXT,agenda_json TEXT,todos_json TEXT,manejo_json TEXT,clinical_ops_json TEXT,delta_log_json TEXT,committed_at TEXT,audit_log_json TEXT,uploaded_by_client_id TEXT,entities_json TEXT)"
+  ],
+  [
+   "table",
+   "lan_sync_outbox",
+   "lan_sync_outbox",
+   "CREATE TABLE \"lan_sync_outbox\"(id INTEGER PRIMARY KEY AUTOINCREMENT,room_id TEXT NOT NULL,kind TEXT NOT NULL CHECK(kind IN('bundle','patch','clinical_ops','delta','command','lab_history_upsert','nota_replace','indicaciones_replace','patient_fields')),payload_json TEXT NOT NULL,enqueued_at TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,last_error TEXT)"
+  ],
+  [
+   "table",
+   "patient_team_assignment",
+   "patient_team_assignment",
+   "CREATE TABLE \"patient_team_assignment\"(patient_id TEXT NOT NULL,team_id TEXT NOT NULL,effective_at TEXT NOT NULL,created_at TEXT NOT NULL DEFAULT(datetime('now')),PRIMARY KEY(patient_id,team_id,effective_at),FOREIGN KEY(patient_id)REFERENCES patients(id))"
+  ],
+  [
+   "table",
+   "patients",
+   "patients",
+   "CREATE TABLE \"patients\"(id TEXT PRIMARY KEY,interconsult_type TEXT DEFAULT 'None' CHECK(interconsult_type IN('Ephemeral_VPO','Follow-up','None','Under')),interconsult_status TEXT DEFAULT 'Pending' CHECK(interconsult_status IN('Pending','Resolved','Active')),prognosis_classification TEXT DEFAULT 'Buen Pronóstico',negativa_maniobras_firmada INTEGER DEFAULT 0 CHECK(negativa_maniobras_firmada IN(0,1)))"
+  ],
+  [
+   "table",
+   "rotation_cycles",
+   "rotation_cycles",
+   "CREATE TABLE rotation_cycles(cycle_id TEXT PRIMARY KEY,month_end_at TEXT NOT NULL,preview_days INTEGER NOT NULL DEFAULT 2,preview_start_at TEXT NOT NULL,effective_at TEXT NOT NULL,archived_at TEXT,created_by TEXT,created_at TEXT NOT NULL DEFAULT(datetime('now')),FOREIGN KEY(created_by)REFERENCES users(user_id))"
+  ],
+  [
+   "table",
+   "sala_interno_access",
+   "sala_interno_access",
+   "CREATE TABLE \"sala_interno_access\"(sala TEXT PRIMARY KEY CHECK(sala IN('Sala 1','Sala 2','Sala E','Torre HU','Área A/Pensionistas','Interconsultas','UX','Eme')),access_token TEXT NOT NULL,is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN(0,1)),rotated_at TEXT,rotated_by TEXT,FOREIGN KEY(rotated_by)REFERENCES users(user_id))"
+  ],
+  [
+   "table",
+   "team_guardia_today",
+   "team_guardia_today",
+   "CREATE TABLE team_guardia_today(team_id TEXT PRIMARY KEY,user_id TEXT NOT NULL,declared_at TEXT NOT NULL,FOREIGN KEY(team_id)REFERENCES teams(team_id),FOREIGN KEY(user_id)REFERENCES users(user_id))"
+  ],
+  [
+   "table",
+   "team_membership",
+   "team_membership",
+   "CREATE TABLE team_membership(team_id TEXT,user_id TEXT,sub_area_fraction TEXT,cycle_set_at TEXT,PRIMARY KEY(team_id,user_id),FOREIGN KEY(team_id)REFERENCES teams(team_id)ON DELETE CASCADE,FOREIGN KEY(user_id)REFERENCES users(user_id)ON DELETE CASCADE)"
+  ],
+  [
+   "table",
+   "teams",
+   "teams",
+   "CREATE TABLE \"teams\"(team_id TEXT PRIMARY KEY,name TEXT NOT NULL,service TEXT NOT NULL CHECK(service IN('Sala','Torre HU','Eme','UX','Interconsultas','Área A/Pensionistas')),sub_area_fraction TEXT,on_call_day_index INTEGER NOT NULL CHECK(on_call_day_index BETWEEN 0 AND 6),created_by TEXT,sala TEXT CHECK(sala IN('Sala 1','Sala 2','Sala E','Torre HU','Área A/Pensionistas','Interconsultas','UX','Eme')OR sala IS NULL),team_leader_name TEXT,leader_user_id TEXT REFERENCES users(user_id),rotation_active INTEGER NOT NULL DEFAULT 1 CHECK(rotation_active IN(0,1)),archived_at TEXT,updated_at TEXT,succeeds_team_id TEXT REFERENCES teams(team_id),FOREIGN KEY(created_by)REFERENCES users(user_id))"
+  ],
+  [
+   "table",
+   "user_activity_log",
+   "user_activity_log",
+   "CREATE TABLE user_activity_log(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id TEXT NOT NULL,at_iso TEXT NOT NULL,source TEXT NOT NULL,FOREIGN KEY(user_id)REFERENCES users(user_id)ON DELETE CASCADE)"
+  ],
+  [
+   "table",
+   "users",
+   "users",
+   "CREATE TABLE \"users\"(user_id TEXT PRIMARY KEY,username TEXT UNIQUE NOT NULL,password_hash TEXT NOT NULL,rank TEXT NOT NULL CHECK(rank IN('R1','R2','R3','R4','Admin')),public_key TEXT NOT NULL,encrypted_private_key TEXT NOT NULL,created_at DATETIME DEFAULT CURRENT_TIMESTAMP,clinical_name TEXT,sala TEXT CHECK(sala IN('Sala 1','Sala 2','Sala E','Torre HU','Área A/Pensionistas','Interconsultas','UX','Eme')OR sala IS NULL),is_program_admin INTEGER NOT NULL DEFAULT 0,last_activity_at TEXT)"
+  ]
+ ],
+ "data": {
+  "users": [
+   [
+    "u1",
+    "u1",
+    "x",
+    "R1",
+    "pk",
+    "sk",
+    "2026-01-02 03:04:05",
+    "Uno",
+    "Sala 1",
+    "0",
+    "2026-02-03T04:05:06.789Z"
+   ],
+   [
+    "u2",
+    "u2",
+    "x",
+    "R2",
+    "pk",
+    "sk",
+    "2026-01-02 03:04:05",
+    "NULL",
+    "Sala E",
+    "0",
+    "2026-03-04 05:06:07"
+   ],
+   [
+    "u3",
+    "u3",
+    "x",
+    "Admin",
+    "pk",
+    "sk",
+    "2026-01-02 03:04:05",
+    "NULL",
+    "NULL",
+    "0",
+    "NULL"
+   ]
+  ],
+  "teams": [
+   [
+    "t1",
+    "Equipo",
+    "Sala",
+    "1/2",
+    "2",
+    "u1",
+    "Sala 2",
+    "NULL",
+    "NULL",
+    "1",
+    "NULL",
+    "2026-04-05T00:00:00Z",
+    "NULL"
+   ]
+  ],
+  "team_membership": [
+   [
+    "t1",
+    "u1",
+    "NULL",
+    "NULL"
+   ],
+   [
+    "t1",
+    "u2",
+    "NULL",
+    "NULL"
+   ]
+  ],
+  "active_guardias": [
+   [
+    "g1",
+    "p1",
+    "u1",
+    "t1",
+    "0",
+    "NULL",
+    "None",
+    "2026-10-05 17:37:08",
+    "2026-10-05 17:37:08",
+    "Active",
+    "NULL"
+   ]
+  ],
+  "patients": [
+   [
+    "p1",
+    "Follow-up",
+    "Pending",
+    "Buen Pronóstico",
+    "0"
+   ]
+  ],
+  "patient_team_assignment": [
+   [
+    "p1",
+    "t1",
+    "2026-01-01",
+    "2026-10-05 17:37:08"
+   ]
+  ],
+  "lan_sync_outbox": [
+   [
+    "1",
+    "r",
+    "bundle",
+    "{}",
+    "2026-01-01",
+    "0",
+    "NULL"
+   ]
+  ],
+  "user_activity_log": [
+   [
+    "1",
+    "u1",
+    "2026-01-02T03:04:05.000Z",
+    "seed_created"
+   ],
+   [
+    "2",
+    "u1",
+    "2026-02-03T04:05:06.789Z",
+    "seed_last"
+   ],
+   [
+    "3",
+    "u2",
+    "2026-01-02T03:04:05.000Z",
+    "seed_created"
+   ],
+   [
+    "4",
+    "u2",
+    "2026-03-04T05:06:07.000Z",
+    "seed_last"
+   ],
+   [
+    "5",
+    "u3",
+    "2026-01-02T03:04:05.000Z",
+    "seed_created"
+   ]
+  ],
+  "equipos_device": [
+   [
+    "lumify",
+    "available"
+   ],
+   [
+    "ekg",
+    "available"
+   ],
+   [
+    "ultrasound",
+    "available"
+   ]
+  ],
+  "sala_interno_access": [
+   [
+    "Sala 1",
+    "1"
+   ],
+   [
+    "Sala 2",
+    "1"
+   ],
+   [
+    "Sala E",
+    "1"
+   ],
+   [
+    "Torre HU",
+    "1"
+   ],
+   [
+    "Área A/Pensionistas",
+    "1"
+   ],
+   [
+    "Interconsultas",
+    "1"
+   ],
+   [
+    "UX",
+    "1"
+   ],
+   [
+    "Eme",
+    "1"
+   ]
+  ],
+  "app_meta": [
+   [
+    "schema_version",
+    "29"
+   ]
+  ]
+ },
+ "fkViolations": 0
+}

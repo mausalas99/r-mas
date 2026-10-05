@@ -1,0 +1,50 @@
+{
+ "kind": "listado",
+ "input": {
+  "patient": {
+   "nombre": "paciente sintético ñandú álvarez",
+   "registro": "9900001-1",
+   "edad": 71,
+   "sexo": "M",
+   "area": "cirugía general",
+   "servicio": "medicina interna",
+   "cuarto": "512",
+   "cama": "3"
+  },
+  "listado": {
+   "activos": [
+    {
+     "fecha": "2026-10-01",
+     "descripcion": "Neumonía\na) Ertapenem 1 g IV c/24 h, día 3 de 7, con buena respuesta clínica y afebril desde hace 48 horas, sin datos de falla\nb) Control de glucosa\n\nc) Aparte tras blanco\nTítulo en negritas de una línea muy larga que debe partirse en varios renglones porque excede el máximo de ciento diez caracteres permitido"
+    },
+    {
+     "fecha": "01/10/2026",
+     "descripcion": "a) uno\r\nb) dos\r\n"
+    },
+    {
+     "fecha": "",
+     "descripcion": "Texto con emoji 😀 y $& símbolos < > \" que sigue por bastante tiempo hasta pasar el límite de ciento diez caracteres"
+    }
+   ],
+   "inactivos": [
+    {
+     "fecha": "2026-09-20",
+     "descripcion": "a) Resuelto uno\nb) Resuelto dos\nA) tres"
+    },
+    {
+     "fecha": "",
+     "descripcion": ""
+    }
+   ]
+  },
+  "medicos": {
+   "profesor": "DR. SINTÉTICO UNO",
+   "r4": "R4 DOS",
+   "r2": "R2 TRES",
+   "r1a": "R1 CUATRO",
+   "r1b": "R1 CINCO & SEIS"
+  }
+ },
+ "fileName": "Listado_Problemas_paciente_sintético_ñandú_álvarez__STAMP.docx",
+ "numberingInject": "<w:num w:numId=\"9000\"><w:abstractNumId w:val=\"57\"/><w:lvlOverride w:ilvl=\"0\"><w:startOverride w:val=\"1\"/></w:lvlOverride></w:num><w:num w:numId=\"9001\"><w:abstractNumId w:val=\"57\"/><w:lvlOverride w:ilvl=\"0\"><w:startOverride w:val=\"1\"/></w:lvlOverride></w:num><w:num w:numId=\"9002\"><w:abstractNumId w:val=\"57\"/><w:lvlOverride w:ilvl=\"0\"><w:startOverride w:val=\"1\"/></w:lvlOverride></w:num></w:numbering>"
+}

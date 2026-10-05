@@ -1,0 +1,70 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "",
+   "expediente": "",
+   "sexo": "",
+   "edad": "",
+   "fecha": "",
+   "hora": "",
+   "ubicacion": ""
+  },
+  "resLabs": [],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "BACTERIOLOGIA",
+    "label": "BACTERIOLOGIA",
+    "groups": [
+     {
+      "title": "",
+      "rows": [
+       {
+        "estudio": "MICROORGANISMO",
+        "flag": "*",
+        "resultado": "Acinetobacter baumannii",
+        "unidades": "COMENTARIO:",
+        "ref": "",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "BACTERIOLOGIA\nMICROORGANISMO\nAcinetobacter baumannii\nCOMENTARIO:\nRESISTENTE A CARBAPENEMICOS"
+ ],
+ "cultivo": "ACINETOBACTER BAUMANNII N/D: ACINETOBACTER BAUMANNII · Carb-R",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "BACTERIOLOGIA MICROORGANISMO Acinetobacter baumannii COMENTARIO: RESISTENTE A CARBAPENEMICOS ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   BACTERIOLOGIA MICROORGANISMO Acinetobacter baumannii COMENTARIO: RESISTENTE A CARBAPENEMICOS ",
+  "gaso": "",
+  "pie": ""
+ }
+}

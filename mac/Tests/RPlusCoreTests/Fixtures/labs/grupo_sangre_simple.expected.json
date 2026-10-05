@@ -1,0 +1,49 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO UNO29",
+   "expediente": "8000029-1",
+   "sexo": "M",
+   "edad": "54 años",
+   "fecha": "03/10/2026",
+   "hora": "07:15",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "GS\tAB+ CD neg CI neg"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": []
+ },
+ "bulkSplit": [
+  "Expediente:\t8000029-1\tSolicitud:\t2680000291\nNombre:\tPACIENTE INVENTADO UNO29\tFecha Registro:\tOct 3 2026 7:15AM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t54\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nBANCO DE SANGRE\n\n\nREPORTE DE GRUPO SANGUINEO RH, COOMBS DIRECTO E INDIRECTO\n\nEstudio\tResultado\n\nGrupo Sanguineo / RH\t\nAB POSITIVO\n\nCoombs Directo\t\nNEGATIVO\n\nCoombs Indirecto\nNEGATIVO"
+ ],
+ "cultivo": "",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 8000029-1 Solicitud: 2680000291 Nombre: PACIENTE INVENTADO UNO29 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B BANCO DE SANGRE REPORTE DE GRUPO SANGUINEO RH, COOMBS DIRECTO E INDIRECTO Estudio Resultado Grupo Sanguineo / RH AB POSITIVO Coombs Directo NEGATIVO Coombs Indirecto NEGATIVO ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 8000029-1 Solicitud: 2680000291 Nombre: PACIENTE INVENTADO UNO29 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B BANCO DE SANGRE REPORTE DE GRUPO SANGUINEO RH, COOMBS DIRECTO E INDIRECTO Estudio Resultado Grupo Sanguineo / RH AB POSITIVO Coombs Directo NEGATIVO Coombs Indirecto NEGATIVO ",
+  "gaso": "",
+  "pie": ""
+ }
+}

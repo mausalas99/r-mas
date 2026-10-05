@@ -1,0 +1,28 @@
+Expediente:	8000010-1	Solicitud:	2680000101
+Nombre:	PACIENTE INVENTADO DIEZ	Fecha Registro:	Oct 3 2026 6:43AM
+Sexo:	FEMENINO	Ubicación:	SALA INVENTADA
+Edad:	58	Medico:	FICTICIO SINTETICO EJEMPLO B
+
+GASOMETRIAS
+GASOMETRIA VENOSA PARCIAL
+Estudio		Resultado	Unidades	Valor de Referencia
+PH	
+*
+7.38
+	7.32 - 7.43
+pCO2	
+B
+36
+mmHg	40 - 45
+Lactato	
+*
+1.0
+mmol/L	0.9 - 1.9
+HCO3	
+B
+21.8
+mmol/L	24.0 - 30.0
+EX. BASE	
+B
+-3.1
+mmol/L	-2.0 - 2.0

@@ -1,0 +1,33 @@
+{
+ "loadAll": {
+  "indicaciones": "{\"p1\":{\"texto\":\"dieta blanda\"}}",
+  "labHistory": "not json",
+  "listadoProblemas": "{\"p1\":[\"a\"]}",
+  "medCatalog": "[{\"n\":\"x\"}]",
+  "notes": "{\"2\":\"n2\",\"10\":\"n10\",\"p2\":{\"estado\":\"estable\"},\"p1\":{\"estado\":\"delicado\"}}",
+  "patients": "[{\"id\":\"p1\",\"nombre\":\"Paciente Sintético Uno\",\"cama\":\"10\"},{\"id\":\"p2\",\"nombre\":\"Paciente Sintético Dos\",\"cama\":\"11\"}]",
+  "todos": "",
+  "vpoByPatient": "[1,2]"
+ },
+ "updatedAt": {
+  "patients": "2026-10-01T10:00:00.000Z",
+  "notes": "2026-10-02T11:00:00.000Z",
+  "indicaciones": "2026-10-01T10:00:00.000Z",
+  "labHistory": "2026-10-01T10:00:00.000Z",
+  "vpoByPatient": "2026-10-01T10:00:00.000Z",
+  "medCatalog": "2026-10-01T10:00:00.000Z",
+  "todos": "2026-10-01T10:00:00.000Z",
+  "listadoProblemas": "2026-10-01T10:00:00.000Z"
+ },
+ "loaded": {
+  "patients": "[{\"cama\":\"10\",\"id\":\"p1\",\"nombre\":\"Paciente Sintético Uno\"},{\"cama\":\"11\",\"id\":\"p2\",\"nombre\":\"Paciente Sintético Dos\"}]",
+  "notes": "{\"2\":\"n2\",\"10\":\"n10\",\"p1\":{\"estado\":\"delicado\"},\"p2\":{\"estado\":\"estable\"}}",
+  "indicaciones": "{\"p1\":{\"texto\":\"dieta blanda\"}}",
+  "labHistory": "{}",
+  "vpoByPatient": "{}",
+  "medCatalog": "{}",
+  "todos": "{}",
+  "listadoProblemas": "{\"p1\":[\"a\"]}",
+  "absent": "{}"
+ }
+}

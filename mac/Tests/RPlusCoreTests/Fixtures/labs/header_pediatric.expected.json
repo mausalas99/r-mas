@@ -1,0 +1,47 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO VEINTITRES",
+   "expediente": "8000023-1",
+   "sexo": "F",
+   "edad": "8 meses",
+   "fecha": "03/10/2026",
+   "hora": "09:15",
+   "ubicacion": "URGENCIAS PEDIATRIA"
+  },
+  "resLabs": [],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": []
+ },
+ "bulkSplit": [
+  "Expediente:\t8000023-1\tSolicitud:\t2680000231\nNombre:\tPACIENTE INVENTADO VEINTITRES\tFecha Registro:\tOct 3 2026 9:15AM\nSexo:\tFEMENINO\tUbicación:\tURGENCIAS PEDIATRIA\nEdad:\t8 meses\tMedico:\tFICTICIO SINTETICO EJEMPLO B"
+ ],
+ "cultivo": "",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 8000023-1 Solicitud: 2680000231 Nombre: PACIENTE INVENTADO VEINTITRES Fecha Registro: Oct 3 2026 9:15AM Sexo: FEMENINO Ubicación: URGENCIAS PEDIATRIA Edad: 8 meses Medico: FICTICIO SINTETICO EJEMPLO B ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 8000023-1 Solicitud: 2680000231 Nombre: PACIENTE INVENTADO VEINTITRES Fecha Registro: Oct 3 2026 9:15AM Sexo: FEMENINO Ubicación: URGENCIAS PEDIATRIA Edad: 8 meses Medico: FICTICIO SINTETICO EJEMPLO B ",
+  "gaso": "",
+  "pie": ""
+ }
+}

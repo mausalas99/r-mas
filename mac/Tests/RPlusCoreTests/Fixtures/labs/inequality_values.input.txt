@@ -1,0 +1,19 @@
+Expediente:	800006-1	Solicitud:	268000061
+Nombre:	PACIENTE INVENTADO UNO6	Fecha Registro:	Oct 3 2026 7:15AM
+Sexo:	MASCULINO	Ubicación:	SALA INVENTADA
+Edad:	54	Medico:	FICTICIO SINTETICO EJEMPLO B
+
+HEMATOLOGIA
+BIOMETRIA HEMATICA COMPLETA
+Estudio		Resultado	Unidades	Valor de Referencia
+HGB	
+A
+<0.01
+g/dL	12.20 - 18.10
+QUIMICA CLINICA
+CREATININA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+CREATININA EN SANGRE	
+*
+> 1000
+mg/dL	0.7 - 1.2

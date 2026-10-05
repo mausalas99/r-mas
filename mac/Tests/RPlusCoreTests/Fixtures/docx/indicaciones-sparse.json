@@ -1,0 +1,9 @@
+{
+ "kind": "indicaciones",
+ "input": {
+  "patient": {},
+  "indicaciones": {}
+ },
+ "fileName": "Indicaciones__.docx",
+ "numberingInject": null
+}

@@ -1,0 +1,80 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "",
+   "expediente": "",
+   "sexo": "",
+   "edad": "",
+   "fecha": "",
+   "hora": "",
+   "ubicacion": ""
+  },
+  "resLabs": [
+   "CATETER (PUNTA CVC) N/D: PSEUDOMONAS AERUGINOSA"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "BACTERIOLOGIA",
+    "label": "BACTERIOLOGIA",
+    "groups": [
+     {
+      "title": "CATETER",
+      "rows": [
+       {
+        "estudio": "PRODUCTO",
+        "flag": "*",
+        "resultado": "PUNTA CVC",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "MICROORGANISMO",
+        "flag": "*",
+        "resultado": "Pseudomonas aeruginosa",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "BACTERIOLOGIA\nCATETER\nPRODUCTO\t\n*\nPUNTA CVC\nMICROORGANISMO\t\n*\nPseudomonas aeruginosa"
+ ],
+ "cultivo": "CATETER (PUNTA CVC) N/D: PSEUDOMONAS AERUGINOSA",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "BACTERIOLOGIA CATETER PRODUCTO * PUNTA CVC MICROORGANISMO * Pseudomonas aeruginosa ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   BACTERIOLOGIA CATETER PRODUCTO * PUNTA CVC MICROORGANISMO * Pseudomonas aeruginosa ",
+  "gaso": "",
+  "pie": ""
+ }
+}

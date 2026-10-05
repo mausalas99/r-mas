@@ -1,0 +1,157 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO UNO4",
+   "expediente": "800004-1",
+   "sexo": "M",
+   "edad": "54 años",
+   "fecha": "03/10/2026",
+   "hora": "07:15",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "BH\tHb 139  Leu 7300  Plt 262000",
+   "QS\tGlu 4.9 Cr 80",
+   "ESC\tCa 2.3"
+  ],
+  "bhExtras": {},
+  "refsBySection": {
+   "BH": {
+    "Hb": [
+     122,
+     181
+    ],
+    "Leu": [
+     4000,
+     11000
+    ],
+    "Plt": [
+     142000,
+     424000
+    ]
+   },
+   "QS": {
+    "Glu": [
+     3.3,
+     5.6
+    ],
+    "Cr": [
+     53,
+     124
+    ]
+   },
+   "ESC": {
+    "Ca": [
+     2.1,
+     2.55
+    ]
+   }
+  }
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "HEMATOLOGIA",
+    "label": "HEMATOLOGIA",
+    "groups": [
+     {
+      "title": "BIOMETRIA HEMATICA COMPLETA",
+      "rows": [
+       {
+        "estudio": "HGB",
+        "flag": "*",
+        "resultado": "139",
+        "unidades": "g/L",
+        "ref": "122 - 181",
+        "abnormal": false
+       },
+       {
+        "estudio": "WBC",
+        "flag": "*",
+        "resultado": "7300",
+        "unidades": "/uL",
+        "ref": "4000 - 11000",
+        "abnormal": false
+       },
+       {
+        "estudio": "PLT",
+        "flag": "*",
+        "resultado": "262000",
+        "unidades": "x10^3/uL",
+        "ref": "142000 - 424000",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   },
+   {
+    "key": "QUIMICA CLINICA",
+    "label": "QUIMICA CLINICA",
+    "groups": [
+     {
+      "title": "",
+      "rows": [
+       {
+        "estudio": "GLUCOSA EN SANGRE",
+        "flag": "*",
+        "resultado": "4.9",
+        "unidades": "mmol/L",
+        "ref": "3.3 - 5.6",
+        "abnormal": false
+       },
+       {
+        "estudio": "CREATININA EN SANGRE",
+        "flag": "*",
+        "resultado": "80",
+        "unidades": "umol/L",
+        "ref": "53 - 124",
+        "abnormal": false
+       },
+       {
+        "estudio": "CALCIO EN SUERO",
+        "flag": "*",
+        "resultado": "2.3",
+        "unidades": "mmol/L",
+        "ref": "2.1 - 2.55",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard"
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t800004-1\tSolicitud:\t268000041\nNombre:\tPACIENTE INVENTADO UNO4\tFecha Registro:\tOct 3 2026 7:15AM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t54\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nHGB\t\n*\n139\ng/L\t122 - 181\nWBC\t\n*\n7300\n/uL\t4000 - 11000\nPLT\t\n*\n262000\nx10^3/uL\t142000 - 424000\nQUIMICA CLINICA\nGLUCOSA EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nGLUCOSA EN SANGRE\t\n*\n4.9\nmmol/L\t3.3 - 5.6\nCREATININA EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCREATININA EN SANGRE\t\n*\n80\numol/L\t53 - 124\nCALCIO\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCALCIO EN SUERO\t\n*\n2.3\nmmol/L\t2.1 - 2.55"
+ ],
+ "cultivo": "",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 800004-1 Solicitud: 268000041 Nombre: PACIENTE INVENTADO UNO4 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B HEMATOLOGIA BIOMETRIA HEMATICA COMPLETA Estudio Resultado Unidades Valor de Referencia HGB * 139 g/L 122 - 181 WBC * 7300 /uL 4000 - 11000 PLT * 262000 x10^3/uL 142000 - 424000 QUIMICA CLINICA GLUCOSA EN SANGRE Estudio Resultado Unidades Valor de Referencia GLUCOSA EN SANGRE * 4.9 mmol/L 3.3 - 5.6 CREATININA EN SANGRE Estudio Resultado Unidades Valor de Referencia CREATININA EN SANGRE * 80 umol/L 53 - 124 CALCIO Estudio Resultado Unidades Valor de Referencia CALCIO EN SUERO * 2.3 mmol/L 2.1 - 2.55 ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "BH\tHb 139  Leu 7300  Plt 262000",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "QS\tGlu 4.9 Cr 80",
+  "esc": "ESC\tCa 2.3",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 800004-1 Solicitud: 268000041 Nombre: PACIENTE INVENTADO UNO4 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B HEMATOLOGIA BIOMETRIA HEMATICA COMPLETA Estudio Resultado Unidades Valor de Referencia HGB * 139 g/L 122 - 181 WBC * 7300 /uL 4000 - 11000 PLT * 262000 x10^3/uL 142000 - 424000 QUIMICA CLINICA GLUCOSA EN SANGRE Estudio Resultado Unidades Valor de Referencia GLUCOSA EN SANGRE * 4.9 mmol/L 3.3 - 5.6 CREATININA EN SANGRE Estudio Resultado Unidades Valor de Referencia CREATININA EN SANGRE * 80 umol/L 53 - 124 CALCIO Estudio Resultado Unidades Valor de Referencia CALCIO EN SUERO * 2.3 mmol/L 2.1 - 2.55 ",
+  "gaso": "",
+  "pie": ""
+ }
+}

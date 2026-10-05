@@ -1,0 +1,56 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO DOCE",
+   "expediente": "8000012-1",
+   "sexo": "M",
+   "edad": "61 años",
+   "fecha": "03/10/2026",
+   "hora": "13:24",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "TROP\tTnI 1840.5*"
+  ],
+  "bhExtras": {},
+  "refsBySection": {
+   "TROP": {
+    "TnI1": [
+     0,
+     34
+    ]
+   }
+  }
+ },
+ "someTables": {
+  "departments": []
+ },
+ "bulkSplit": [
+  "Expediente:\t8000012-1\tSolicitud:\t2680000121\nNombre:\tPACIENTE INVENTADO DOCE\tFecha Registro:\tOct 3 2026 1:24PM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t61\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nBANCO DE SANGRE\n\nHsTnl o Troponina I (Alta\n\nEstudio\tResultado\tUnidades\tValor de Referencia\n\nHsTnl o Troponina I (Alta Sensibilidad)\t\n\n1840.500\nINDETERMINADO\n\nng/L\t\nPositivo >= 0.00S/CO\nNegativo <= 0.00S/CO"
+ ],
+ "cultivo": "",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 8000012-1 Solicitud: 2680000121 Nombre: PACIENTE INVENTADO DOCE Fecha Registro: Oct 3 2026 1:24PM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 61 Medico: FICTICIO SINTETICO EJEMPLO B BANCO DE SANGRE HsTnl o Troponina I (Alta Estudio Resultado Unidades Valor de Referencia HsTnl o Troponina I (Alta Sensibilidad) 1840.500 INDETERMINADO ng/L Positivo >= 0.00S/CO Negativo <= 0.00S/CO ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": "TROP\tTnI 1840.5*"
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 8000012-1 Solicitud: 2680000121 Nombre: PACIENTE INVENTADO DOCE Fecha Registro: Oct 3 2026 1:24PM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 61 Medico: FICTICIO SINTETICO EJEMPLO B BANCO DE SANGRE HsTnl o Troponina I (Alta Estudio Resultado Unidades Valor de Referencia HsTnl o Troponina I (Alta Sensibilidad) 1840.500 INDETERMINADO ng/L Positivo >= 0.00S/CO Negativo <= 0.00S/CO ",
+  "gaso": "",
+  "pie": ""
+ }
+}

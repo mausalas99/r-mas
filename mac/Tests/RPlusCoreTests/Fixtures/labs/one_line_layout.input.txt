@@ -1,0 +1,19 @@
+Expediente:	8000030-1	Solicitud:	2680000301
+Nombre:	PACIENTE INVENTADO UNO30	Fecha Registro:	Oct 3 2026 7:15AM
+Sexo:	MASCULINO	Ubicación:	SALA INVENTADA
+Edad:	54	Medico:	FICTICIO SINTETICO EJEMPLO B
+
+HEMATOLOGIA
+BIOMETRIA HEMATICA COMPLETA
+Estudio		Resultado	Unidades	Valor de Referencia
+RBC			4.40	M/uL	4.04 - 6.13
+HGB		B	10.9	g/dL	12.20 - 18.10
+WBC		*	8.10	K/uL	4.00 - 11.00
+PLT		*	301	K/uL	142.00 - 424.00
+QUIMICA CLINICA
+GLUCOSA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+GLUCOSA EN SANGRE		*	101	mg/dL	60 - 100
+CREATININA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+CREATININA EN SANGRE		*	1.1	mg/dL	0.6 - 1.4

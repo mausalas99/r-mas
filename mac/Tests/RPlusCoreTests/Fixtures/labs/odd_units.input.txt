@@ -1,0 +1,39 @@
+Expediente:	800004-1	Solicitud:	268000041
+Nombre:	PACIENTE INVENTADO UNO4	Fecha Registro:	Oct 3 2026 7:15AM
+Sexo:	MASCULINO	Ubicación:	SALA INVENTADA
+Edad:	54	Medico:	FICTICIO SINTETICO EJEMPLO B
+
+HEMATOLOGIA
+BIOMETRIA HEMATICA COMPLETA
+Estudio		Resultado	Unidades	Valor de Referencia
+HGB	
+*
+139
+g/L	122 - 181
+WBC	
+*
+7300
+/uL	4000 - 11000
+PLT	
+*
+262000
+x10^3/uL	142000 - 424000
+QUIMICA CLINICA
+GLUCOSA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+GLUCOSA EN SANGRE	
+*
+4.9
+mmol/L	3.3 - 5.6
+CREATININA EN SANGRE
+Estudio		Resultado	Unidades	Valor de Referencia
+CREATININA EN SANGRE	
+*
+80
+umol/L	53 - 124
+CALCIO
+Estudio		Resultado	Unidades	Valor de Referencia
+CALCIO EN SUERO	
+*
+2.3
+mmol/L	2.1 - 2.55

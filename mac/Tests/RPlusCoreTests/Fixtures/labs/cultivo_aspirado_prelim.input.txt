@@ -1,0 +1,46 @@
+Expediente:	0000004-4	Solicitud:	2605261033
+Nombre:	PACIENTE DE PRUEBA SEIS	Fecha Registro:	26/5/2026 15:59:36
+Sexo:	MASCULINO	Ubicación:	CIRUGIA A.C.
+Edad:	63	Medico:	FICTICIO SINTETICO EJEMPLO A
+BACTERIOLOGIA
+Estudio		Resultado	Unidades	Valor de Referencia
+ASPIRADO TRAQUEAL
+PRODUCTO	
+*
+ESTADO DE CULTIVO	
+*
+REPORTE PRELIMINAR
+*
+MICROORGANISMO	
+*
+Acinetobacter baumannii
+COMENTARIO:	
+*
+CUENTA	
+*
++100,000 UFC/mL
+*
+MICROORGANISMO	
+*
+Proteus mirabilis
+COMENTARIO:	
+*
+CUENTA	
+*
++100,000 UFC/mL
+*
+MICROORGANISMO	
+*
+COMENTARIO:	
+*
+CUENTA	
+*
+*
+MICROORGANISMO	
+*
+Stenotrophomonas maltophilia
+COMENTARIO:	
+*
+CUENTA	
+*
+50,000 UFC/mL

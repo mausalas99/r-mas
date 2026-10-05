@@ -1,0 +1,217 @@
+{
+ "options": {
+  "patient": {
+   "sexo": "F",
+   "edad": 71
+  },
+  "priorRefsBySection": {
+   "QS": {
+    "Glu": [
+     70,
+     99
+    ]
+   }
+  }
+ },
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO UNO25",
+   "expediente": "8000025-1",
+   "sexo": "M",
+   "edad": "54 años",
+   "fecha": "03/10/2026",
+   "hora": "07:15",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "QS\tGlu 88 Cr 0.9 eTFG 68 BUN 14 BUN/CR 15.6 AU 5.2 COL 175 TGL 110",
+   "ESC\tNa 140 Cl 103 K 4.1 Ca 9.2 F 3.4"
+  ],
+  "bhExtras": {},
+  "refsBySection": {
+   "QS": {
+    "Glu": [
+     60,
+     100
+    ],
+    "Cr": [
+     0.6,
+     1.4
+    ],
+    "BUN": [
+     7,
+     20
+    ],
+    "AU": [
+     4.8,
+     8.7
+    ],
+    "COL": [
+     130,
+     200
+    ],
+    "TGL": [
+     35,
+     150
+    ]
+   },
+   "ESC": {
+    "Na": [
+     135,
+     145
+    ],
+    "Cl": [
+     101,
+     110
+    ],
+    "K": [
+     3.6,
+     5
+    ],
+    "Ca": [
+     8.4,
+     10.2
+    ],
+    "F": [
+     2.5,
+     4.6
+    ]
+   }
+  }
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "QUIMICA CLINICA",
+    "label": "QUIMICA CLINICA",
+    "groups": [
+     {
+      "title": "",
+      "rows": [
+       {
+        "estudio": "GLUCOSA EN SANGRE",
+        "flag": "*",
+        "resultado": "88",
+        "unidades": "mg/dL",
+        "ref": "60 - 100",
+        "abnormal": false
+       },
+       {
+        "estudio": "NITROGENO DE LA UREA EN SANGRE",
+        "flag": "*",
+        "resultado": "14",
+        "unidades": "mg/dL",
+        "ref": "7 - 20",
+        "abnormal": false
+       },
+       {
+        "estudio": "CREATININA EN SANGRE",
+        "flag": "*",
+        "resultado": "0.9",
+        "unidades": "mg/dL",
+        "ref": "0.6 - 1.4",
+        "abnormal": false
+       },
+       {
+        "estudio": "ACIDO URICO EN SANGRE",
+        "flag": "*",
+        "resultado": "5.2",
+        "unidades": "mg/dL",
+        "ref": "4.8 - 8.7",
+        "abnormal": false
+       },
+       {
+        "estudio": "COLESTEROL",
+        "flag": "*",
+        "resultado": "175",
+        "unidades": "mg/dL",
+        "ref": "130 - 200",
+        "abnormal": false
+       },
+       {
+        "estudio": "TRIGLICERIDOS",
+        "flag": "*",
+        "resultado": "110",
+        "unidades": "mg/dL",
+        "ref": "35 - 150",
+        "abnormal": false
+       },
+       {
+        "estudio": "CLORO",
+        "flag": "*",
+        "resultado": "103",
+        "unidades": "mmol/L",
+        "ref": "101.0 - 110.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "SODIO",
+        "flag": "*",
+        "resultado": "140",
+        "unidades": "mmol/L",
+        "ref": "135.0 - 145.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "POTASIO",
+        "flag": "*",
+        "resultado": "4.1",
+        "unidades": "mmol/L",
+        "ref": "3.6 - 5.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "CALCIO EN SUERO",
+        "flag": "*",
+        "resultado": "9.2",
+        "unidades": "mg/dL",
+        "ref": "8.4 - 10.2",
+        "abnormal": false
+       },
+       {
+        "estudio": "FOSFORO",
+        "flag": "*",
+        "resultado": "3.4",
+        "unidades": "mg/dL",
+        "ref": "2.5 - 4.6",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard"
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t8000025-1\tSolicitud:\t2680000251\nNombre:\tPACIENTE INVENTADO UNO25\tFecha Registro:\tOct 3 2026 7:15AM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t54\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nQUIMICA CLINICA\nGLUCOSA EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nGLUCOSA EN SANGRE\t\n*\n88\nmg/dL\t60 - 100\nNITROGENO DE LA UREA EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nNITROGENO DE LA UREA EN SANGRE\t\n*\n14\nmg/dL\t7 - 20\nCREATININA EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCREATININA EN SANGRE\t\n*\n0.9\nmg/dL\t0.6 - 1.4\nACIDO URICO EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nACIDO URICO EN SANGRE\t\n*\n5.2\nmg/dL\t4.8 - 8.7\nCOLESTEROL\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCOLESTEROL\t\n*\n175\nmg/dL\t130 - 200\nTRIGLICERIDOS\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nTRIGLICERIDOS\t\n*\n110\nmg/dL\t35 - 150\nCLORO\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCLORO\t\n*\n103\nmmol/L\t101.0 - 110.0\nSODIO\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nSODIO\t\n*\n140\nmmol/L\t135.0 - 145.0\nPOTASIO\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nPOTASIO\t\n*\n4.1\nmmol/L\t3.6 - 5.0\nCALCIO\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCALCIO EN SUERO\t\n*\n9.2\nmg/dL\t8.4 - 10.2\nFOSFORO EN SANGRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nFOSFORO\t\n*\n3.4\nmg/dL\t2.5 - 4.6"
+ ],
+ "cultivo": "",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 8000025-1 Solicitud: 2680000251 Nombre: PACIENTE INVENTADO UNO25 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B QUIMICA CLINICA GLUCOSA EN SANGRE Estudio Resultado Unidades Valor de Referencia GLUCOSA EN SANGRE * 88 mg/dL 60 - 100 NITROGENO DE LA UREA EN SANGRE Estudio Resultado Unidades Valor de Referencia NITROGENO DE LA UREA EN SANGRE * 14 mg/dL 7 - 20 CREATININA EN SANGRE Estudio Resultado Unidades Valor de Referencia CREATININA EN SANGRE * 0.9 mg/dL 0.6 - 1.4 ACIDO URICO EN SANGRE Estudio Resultado Unidades Valor de Referencia ACIDO URICO EN SANGRE * 5.2 mg/dL 4.8 - 8.7 COLESTEROL Estudio Resultado Unidades Valor de Referencia COLESTEROL * 175 mg/dL 130 - 200 TRIGLICERIDOS Estudio Resultado Unidades Valor de Referencia TRIGLICERIDOS * 110 mg/dL 35 - 150 CLORO Estudio Resultado Unidades Valor de Referencia CLORO * 103 mmol/L 101.0 - 110.0 SODIO Estudio Resultado Unidades Valor de Referencia SODIO * 140 mmol/L 135.0 - 145.0 POTASIO Estudio Resultado Unidades Valor de Referencia POTASIO * 4.1 mmol/L 3.6 - 5.0 CALCIO Estudio Resultado Unidades Valor de Referencia CALCIO EN SUERO * 9.2 mg/dL 8.4 - 10.2 FOSFORO EN SANGRE Estudio Resultado Unidades Valor de Referencia FOSFORO * 3.4 mg/dL 2.5 - 4.6 ",
+  "egfrCtx": {
+   "edad": "71",
+   "edadUnidad": "años",
+   "sexo": "F"
+  },
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "QS\tGlu 88 Cr 0.9 eTFG 68 BUN 14 BUN/CR 15.6 AU 5.2 COL 175 TGL 110",
+  "esc": "ESC\tNa 140 Cl 103 K 4.1 Ca 9.2 F 3.4",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 8000025-1 Solicitud: 2680000251 Nombre: PACIENTE INVENTADO UNO25 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B QUIMICA CLINICA GLUCOSA EN SANGRE Estudio Resultado Unidades Valor de Referencia GLUCOSA EN SANGRE * 88 mg/dL 60 - 100 NITROGENO DE LA UREA EN SANGRE Estudio Resultado Unidades Valor de Referencia NITROGENO DE LA UREA EN SANGRE * 14 mg/dL 7 - 20 CREATININA EN SANGRE Estudio Resultado Unidades Valor de Referencia CREATININA EN SANGRE * 0.9 mg/dL 0.6 - 1.4 ACIDO URICO EN SANGRE Estudio Resultado Unidades Valor de Referencia ACIDO URICO EN SANGRE * 5.2 mg/dL 4.8 - 8.7 COLESTEROL Estudio Resultado Unidades Valor de Referencia COLESTEROL * 175 mg/dL 130 - 200 TRIGLICERIDOS Estudio Resultado Unidades Valor de Referencia TRIGLICERIDOS * 110 mg/dL 35 - 150 CLORO Estudio Resultado Unidades Valor de Referencia CLORO * 103 mmol/L 101.0 - 110.0 SODIO Estudio Resultado Unidades Valor de Referencia SODIO * 140 mmol/L 135.0 - 145.0 POTASIO Estudio Resultado Unidades Valor de Referencia POTASIO * 4.1 mmol/L 3.6 - 5.0 CALCIO Estudio Resultado Unidades Valor de Referencia CALCIO EN SUERO * 9.2 mg/dL 8.4 - 10.2 FOSFORO EN SANGRE Estudio Resultado Unidades Valor de Referencia FOSFORO * 3.4 mg/dL 2.5 - 4.6 ",
+  "gaso": "",
+  "pie": ""
+ }
+}

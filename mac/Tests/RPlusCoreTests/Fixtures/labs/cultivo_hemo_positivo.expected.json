@@ -1,0 +1,88 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO UNO17",
+   "expediente": "8000017-1",
+   "sexo": "M",
+   "edad": "54 años",
+   "fecha": "03/10/2026",
+   "hora": "07:15",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "HEMOCULTIVO (PERIFERICO IZQUIERDO) 03/10: STAPHYLOCOCCUS AUREUS\nATB R: CLINDA | S: OXACILINA, VANCO"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "BACTERIOLOGIA",
+    "label": "BACTERIOLOGIA",
+    "groups": [
+     {
+      "title": "HEMOCULTIVO",
+      "rows": [
+       {
+        "estudio": "PRODUCTO",
+        "flag": "*",
+        "resultado": "PERIFERICO IZQUIERDO",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "MICROORGANISMO",
+        "flag": "*",
+        "resultado": "Staphylococcus aureus",
+        "unidades": "",
+        "ref": "",
+        "abnormal": false
+       },
+       {
+        "estudio": "ANTIBIOGRAMA",
+        "flag": "*",
+        "resultado": "OXACILINA",
+        "unidades": "<=0.25",
+        "ref": "S",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard",
+      "fluidSource": "",
+      "_someNormalized": true
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t8000017-1\tSolicitud:\t2680000171\nNombre:\tPACIENTE INVENTADO UNO17\tFecha Registro:\tOct 3 2026 7:15AM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t54\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nBACTERIOLOGIA\nHEMOCULTIVO\nPRODUCTO\t\n*\nPERIFERICO IZQUIERDO\nMICROORGANISMO\t\n*\nStaphylococcus aureus\nANTIBIOGRAMA\t\n*\nOXACILINA\n<=0.25\tS\n*\nVANCOMICINA\n1\tS\n*\nCLINDAMICINA\n>=8\tR\n*"
+ ],
+ "cultivo": "HEMOCULTIVO (PERIFERICO IZQUIERDO) 03/10: STAPHYLOCOCCUS AUREUS\nATB R: CLINDA | S: OXACILINA, VANCO",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [],
+ "core": {
+  "textoParaBh": "Expediente: 8000017-1 Solicitud: 2680000171 Nombre: PACIENTE INVENTADO UNO17 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B BACTERIOLOGIA HEMOCULTIVO PRODUCTO * PERIFERICO IZQUIERDO MICROORGANISMO * Staphylococcus aureus ANTIBIOGRAMA * OXACILINA <=0.25 S * VANCOMICINA 1 S * CLINDAMICINA >=8 R * ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 8000017-1 Solicitud: 2680000171 Nombre: PACIENTE INVENTADO UNO17 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B BACTERIOLOGIA HEMOCULTIVO PRODUCTO * PERIFERICO IZQUIERDO MICROORGANISMO * Staphylococcus aureus ANTIBIOGRAMA * OXACILINA <=0.25 S * VANCOMICINA 1 S * CLINDAMICINA >=8 R * ",
+  "gaso": "",
+  "pie": ""
+ }
+}

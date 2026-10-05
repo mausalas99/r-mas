@@ -1,0 +1,147 @@
+{
+ "options": null,
+ "procesarLabs": {
+  "patient": {
+   "name": "PACIENTE INVENTADO UNO14",
+   "expediente": "8000014-1",
+   "sexo": "M",
+   "edad": "54 años",
+   "fecha": "03/10/2026",
+   "hora": "07:15",
+   "ubicacion": "SALA INVENTADA"
+  },
+  "resLabs": [
+   "PFHs\tGGT 88*",
+   "TIR\tTSH 2.5 T4L 1.1",
+   "ENDO\tHbA1c 7.2*",
+   "CARD\tNTproBNP 850* CKMB 4.2",
+   "FE\tFerr 12*",
+   "INM\tC3 95",
+   "META\tOsm 291"
+  ],
+  "bhExtras": {},
+  "refsBySection": {}
+ },
+ "someTables": {
+  "departments": [
+   {
+    "key": "QUIMICA CLINICA",
+    "label": "QUIMICA CLINICA",
+    "groups": [
+     {
+      "title": "",
+      "rows": [
+       {
+        "estudio": "TSH",
+        "flag": "*",
+        "resultado": "2.5",
+        "unidades": "uUI/mL",
+        "ref": "0.4 - 4.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "T4 LIBRE",
+        "flag": "*",
+        "resultado": "1.1",
+        "unidades": "ng/dL",
+        "ref": "0.8 - 1.8",
+        "abnormal": false
+       },
+       {
+        "estudio": "HEMOGLOBINA GLICOSILADA",
+        "flag": "A",
+        "resultado": "7.2",
+        "unidades": "%",
+        "ref": "4.0 - 5.6",
+        "abnormal": true
+       },
+       {
+        "estudio": "FERRITINA",
+        "flag": "B",
+        "resultado": "12",
+        "unidades": "ng/mL",
+        "ref": "30 - 400",
+        "abnormal": true
+       },
+       {
+        "estudio": "GGT",
+        "flag": "A",
+        "resultado": "88",
+        "unidades": "U/L",
+        "ref": "0 - 55",
+        "abnormal": true
+       },
+       {
+        "estudio": "NT-PROBNP",
+        "flag": "A",
+        "resultado": "850",
+        "unidades": "pg/mL",
+        "ref": "0 - 125",
+        "abnormal": true
+       },
+       {
+        "estudio": "CK-MB",
+        "flag": "*",
+        "resultado": "4.2",
+        "unidades": "ng/mL",
+        "ref": "0 - 5.0",
+        "abnormal": false
+       },
+       {
+        "estudio": "COMPLEMENTO C3",
+        "flag": "*",
+        "resultado": "95",
+        "unidades": "mg/dL",
+        "ref": "90 - 180",
+        "abnormal": false
+       },
+       {
+        "estudio": "OSMOLARIDAD SERICA",
+        "flag": "*",
+        "resultado": "291",
+        "unidades": "mOsm/kg",
+        "ref": "275 - 295",
+        "abnormal": false
+       }
+      ],
+      "tableVariant": "standard"
+     }
+    ]
+   }
+  ]
+ },
+ "bulkSplit": [
+  "Expediente:\t8000014-1\tSolicitud:\t2680000141\nNombre:\tPACIENTE INVENTADO UNO14\tFecha Registro:\tOct 3 2026 7:15AM\nSexo:\tMASCULINO\tUbicación:\tSALA INVENTADA\nEdad:\t54\tMedico:\tFICTICIO SINTETICO EJEMPLO B\n\nQUIMICA CLINICA\nTSH\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nTSH\t\n*\n2.5\nuUI/mL\t0.4 - 4.0\nT4 LIBRE\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nT4 LIBRE\t\n*\n1.1\nng/dL\t0.8 - 1.8\nHEMOGLOBINA GLICOSILADA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nHEMOGLOBINA GLICOSILADA\t\nA\n7.2\n%\t4.0 - 5.6\nFERRITINA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nFERRITINA\t\nB\n12\nng/mL\t30 - 400\nGGT\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nGGT\t\nA\n88\nU/L\t0 - 55\nNT-PROBNP\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nNT-PROBNP\t\nA\n850\npg/mL\t0 - 125\nCK-MB\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCK-MB\t\n*\n4.2\nng/mL\t0 - 5.0\nCOMPLEMENTO C3\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nCOMPLEMENTO C3\t\n*\n95\nmg/dL\t90 - 180\nOSMOLARIDAD SERICA\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nOSMOLARIDAD SERICA\t\n*\n291\nmOsm/kg\t275 - 295"
+ ],
+ "cultivo": "",
+ "citoLiquidos": "",
+ "lcr": "",
+ "panels": [
+  "TIR\tTSH 2.5 T4L 1.1",
+  "ENDO\tHbA1c 7.2*",
+  "CARD\tNTproBNP 850* CKMB 4.2",
+  "FE\tFerr 12*",
+  "INM\tC3 95",
+  "META\tOsm 291"
+ ],
+ "core": {
+  "textoParaBh": "Expediente: 8000014-1 Solicitud: 2680000141 Nombre: PACIENTE INVENTADO UNO14 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B QUIMICA CLINICA TSH Estudio Resultado Unidades Valor de Referencia TSH * 2.5 uUI/mL 0.4 - 4.0 T4 LIBRE Estudio Resultado Unidades Valor de Referencia T4 LIBRE * 1.1 ng/dL 0.8 - 1.8 HEMOGLOBINA GLICOSILADA Estudio Resultado Unidades Valor de Referencia HEMOGLOBINA GLICOSILADA A 7.2 % 4.0 - 5.6 FERRITINA Estudio Resultado Unidades Valor de Referencia FERRITINA B 12 ng/mL 30 - 400 GGT Estudio Resultado Unidades Valor de Referencia GGT A 88 U/L 0 - 55 NT-PROBNP Estudio Resultado Unidades Valor de Referencia NT-PROBNP A 850 pg/mL 0 - 125 CK-MB Estudio Resultado Unidades Valor de Referencia CK-MB * 4.2 ng/mL 0 - 5.0 COMPLEMENTO C3 Estudio Resultado Unidades Valor de Referencia COMPLEMENTO C3 * 95 mg/dL 90 - 180 OSMOLARIDAD SERICA Estudio Resultado Unidades Valor de Referencia OSMOLARIDAD SERICA * 291 mOsm/kg 275 - 295 ",
+  "egfrCtx": null,
+  "bh": {
+   "visible": "",
+   "coagVisible": "",
+   "extras": {}
+  },
+  "qs": "",
+  "esc": "",
+  "pfh": "PFHs\tGGT 88*",
+  "lipasa": "",
+  "trop": ""
+ },
+ "base": {
+  "bloqueGaso": "",
+  "textoQS": "   Expediente: 8000014-1 Solicitud: 2680000141 Nombre: PACIENTE INVENTADO UNO14 Fecha Registro: Oct 3 2026 7:15AM Sexo: MASCULINO Ubicación: SALA INVENTADA Edad: 54 Medico: FICTICIO SINTETICO EJEMPLO B QUIMICA CLINICA TSH Estudio Resultado Unidades Valor de Referencia TSH * 2.5 uUI/mL 0.4 - 4.0 T4 LIBRE Estudio Resultado Unidades Valor de Referencia T4 LIBRE * 1.1 ng/dL 0.8 - 1.8 HEMOGLOBINA GLICOSILADA Estudio Resultado Unidades Valor de Referencia HEMOGLOBINA GLICOSILADA A 7.2 % 4.0 - 5.6 FERRITINA Estudio Resultado Unidades Valor de Referencia FERRITINA B 12 ng/mL 30 - 400 GGT Estudio Resultado Unidades Valor de Referencia GGT A 88 U/L 0 - 55 NT-PROBNP Estudio Resultado Unidades Valor de Referencia NT-PROBNP A 850 pg/mL 0 - 125 CK-MB Estudio Resultado Unidades Valor de Referencia CK-MB * 4.2 ng/mL 0 - 5.0 COMPLEMENTO C3 Estudio Resultado Unidades Valor de Referencia COMPLEMENTO C3 * 95 mg/dL 90 - 180 OSMOLARIDAD SERICA Estudio Resultado Unidades Valor de Referencia OSMOLARIDAD SERICA * 291 mOsm/kg 275 - 295 ",
+  "gaso": "",
+  "pie": ""
+ }
+}
