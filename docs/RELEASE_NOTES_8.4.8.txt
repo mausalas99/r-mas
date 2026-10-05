@@ -19,6 +19,9 @@ Ajustas la velocidad de norepinefrina en Estado actual. Las indicaciones con sue
 - **Arreglado (Gráficas):** las tomas con la misma hora conservan el orden del registro.
 - **Arreglado (Nota):** la vista previa quita los espacios y líneas vacías sobrantes.
 - **Arreglado (Inicio):** el aviso de @usuario ya no tapa la pantalla de primer uso. Sale en el siguiente inicio.
+- **Arreglado (Monitoreo):** una toma borrada ya no regresa al sincronizar. El borrado llega a todos los equipos.
+- **Arreglado (Nube):** al ponerse al día, la Nube manda solo los labs nuevos y los de pacientes que no tienes. La sincronización es más rápida y ya no satura el servidor.
+- **Arreglado (Nube):** el dueño de la sala ya no repite la revisión de cifrado en cada reconexión. Ya no sale el aviso «aún no están protegidos» por error.
 
 ## Instalación
 
