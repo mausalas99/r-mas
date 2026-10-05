@@ -1,5 +1,6 @@
 import { isVitalAltered, isGlucometriaMarkedAltered } from './estado-actual-ranges.mjs';
 import { gluPointMs, isGluPointInRegistroWindow } from './estado-actual-registro-defaults.mjs';
+import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
 
 /** @type {readonly { id: string, title: string, keys: readonly string[] }[]} */
 const VITAL_FAMILIES = [
@@ -152,33 +153,6 @@ export function buildIoChartData(histAsc) {
 }
 
 /**
- * @param {unknown[]} histAsc
- * @param {readonly string[]} keys
- */
-function rowHasVitalKeys(row, keys) {
-  var vit =
-    /** @type {any} */ (row).vitals && typeof /** @type {any} */ (row).vitals === 'object'
-      ? /** @type {any} */ (/** @type {any} */ (row).vitals)
-      : {};
-  for (var ki = 0; ki < keys.length; ki++) {
-    var raw = vit[keys[ki]];
-    if (raw != null && raw !== '') return true;
-  }
-  return false;
-}
-
-function filterHistorialWithVitals(histAsc, keys) {
-  /** @type {unknown[]} */
-  var rows = [];
-  for (var ri = 0; ri < histAsc.length; ri++) {
-    var row = histAsc[ri];
-    if (!row || typeof row !== 'object') continue;
-    if (rowHasVitalKeys(row, keys)) rows.push(row);
-  }
-  return rows;
-}
-
-/**
  * @param {Array<{ ms: number, label: string, value: number, altered: boolean }>} points
  * @param {string} recordedAt
  * @param {unknown[]} readings
@@ -283,6 +257,7 @@ function eaHistorialRowFingerprint(row) {
     String(r.recordedAt || '') +
     ':' +
     vitalsFingerprint(vit) +
+    JSON.stringify(r.vitalSeries || '') +
     ':' +
     String(io.ing || '') +
     '/' +
@@ -308,31 +283,19 @@ export function historialChartRevision(hist) {
   return parts.join('|');
 }
 
-/**
- * @param {unknown[]} histAsc
- * @param {readonly string[]} keys
- * @returns {boolean}
- */
-function countFiniteVitalValues(rows, key) {
+function countVitalPointValues(points, key) {
   var count = 0;
-  for (var j = 0; j < rows.length; j++) {
-    var vit2 =
-      /** @type {any} */ (rows[j]).vitals && typeof /** @type {any} */ (rows[j]).vitals === 'object'
-        ? /** @type {any} */ (/** @type {any} */ (rows[j]).vitals)
-        : {};
-    var raw2 = vit2[key];
-    if (raw2 == null || raw2 === '') continue;
-    if (!Number.isFinite(Number(raw2))) continue;
-    count += 1;
+  for (var j = 0; j < points.length; j++) {
+    if (points[j].vitalPoint[key]) count += 1;
   }
   return count;
 }
 
 function scanFamilyChartReady(histAsc, keys) {
-  var rows = filterHistorialWithVitals(histAsc, keys);
-  if (rows.length < 2) return false;
+  var points = buildSharedVitalRows(histAsc, keys);
+  if (points.length < 2) return false;
   for (var k = 0; k < keys.length; k++) {
-    if (countFiniteVitalValues(rows, keys[k]) >= 2) return true;
+    if (countVitalPointValues(points, keys[k]) >= 2) return true;
   }
   return false;
 }
@@ -341,20 +304,55 @@ function scanFamilyChartReady(histAsc, keys) {
 const EA_ALL_VITAL_KEYS = ['tas', 'tad', 'fc', 'fr', 'temp', 'sat'];
 
 /**
- * Rows (ascending) that carry any of the given vital keys — the shared time
- * axis for a group of rows that must line up under one crosshair.
+ * One chart point per registered reading, ascending by time: the shared time
+ * axis for a group of rows that must line up under one crosshair. Reading N of
+ * each sign in a registro lands on the same point; a reading with an «Alterado»
+ * time sits at that time, the rest at the registro time.
  * @param {unknown[]} histAsc
  * @param {readonly string[]} [keys]
- * @returns {unknown[]}
+ * @returns {{ recordedAt: string, ms: number, vitalPoint: Record<string, { value: number, altered: boolean }> }[]}
  */
 export function buildSharedVitalRows(histAsc, keys) {
-  return filterHistorialWithVitals(histAsc, keys || EA_ALL_VITAL_KEYS);
+  var use = keys || EA_ALL_VITAL_KEYS;
+  var points = [];
+  for (var ri = 0; ri < histAsc.length; ri++) {
+    var row = /** @type {any} */ (histAsc[ri]);
+    if (!row || typeof row !== 'object') continue;
+    var series = vitalSeriesFromMedicion(row);
+    var n = 0;
+    use.forEach(function (k) {
+      n = Math.max(n, (series[k] || []).length);
+    });
+    for (var i = 0; i < n; i++) {
+      var vitalPoint = {};
+      var found = false;
+      var time = '';
+      use.forEach(function (k) {
+        var rd = (series[k] || [])[i];
+        if (!rd || !Number.isFinite(rd.value)) return;
+        vitalPoint[k] = { value: rd.value, altered: isVitalAltered(k, rd.value) || !!rd.time };
+        found = true;
+        if (!time && rd.time) time = rd.time;
+      });
+      if (!found) continue;
+      var ms = gluPointMs(row.recordedAt != null ? String(row.recordedAt) : '', time, true);
+      points.push({
+        recordedAt: ms ? new Date(ms).toISOString() : String(row.recordedAt || ''),
+        ms: ms,
+        vitalPoint: vitalPoint,
+      });
+    }
+  }
+  // Array.sort is stable: readings with the same time keep their registro order.
+  return points.sort(function (a, b) {
+    return a.ms - b.ms;
+  });
 }
 
 /**
- * One vital's values aligned to `rows` (null where that row has no value for
+ * One vital's values aligned to `rows` (null where that point has no value for
  * this key, so every row in a shared-axis group stays index-aligned).
- * @param {unknown[]} rows
+ * @param {ReturnType<typeof buildSharedVitalRows>} rows
  * @param {string} key
  * @returns {{ values: (number | null)[], altered: boolean[] }}
  */
@@ -364,18 +362,9 @@ export function buildAlignedVitalSeries(rows, key) {
   /** @type {boolean[]} */
   var altered = [];
   for (var i = 0; i < rows.length; i++) {
-    var row = /** @type {any} */ (rows[i]);
-    var vit = row.vitals && typeof row.vitals === 'object' ? row.vitals : {};
-    var raw = vit[key];
-    if (raw == null || raw === '' || !Number.isFinite(Number(raw))) {
-      values.push(null);
-      altered.push(false);
-      continue;
-    }
-    var n = Number(raw);
-    values.push(n);
-    var rowAlt = row.alteredAt && typeof row.alteredAt === 'object' ? row.alteredAt : {};
-    altered.push(isVitalAltered(key, raw) || !!(rowAlt && rowAlt[key]));
+    var pt = rows[i].vitalPoint[key];
+    values.push(pt ? pt.value : null);
+    altered.push(pt ? pt.altered : false);
   }
   return { values: values, altered: altered };
 }
