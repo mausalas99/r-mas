@@ -429,5 +429,14 @@ export async function changePassphraseImpl(
   })();
   writeUnlockMeta(deps.userDataPath, nextBootstrap);
   deps.setActiveKeyHex(newKeyHex);
-  return true;
+
+  // The recovery wrap holds the key. After a rekey the old code would unwrap the old key and
+  // fail to open the file, so rotate it and hand the new code back to show once.
+  let recoveryCodeToShow = null;
+  try {
+    recoveryCodeToShow = (await setupRecoveryKey(ctx, newKeyHex, { forceRotate: true })).recoveryCode;
+  } catch {
+    // best effort, like unlock: the passphrase change itself succeeded
+  }
+  return { ok: true, recoveryCodeToShow };
 }

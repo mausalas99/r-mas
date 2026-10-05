@@ -83,6 +83,31 @@ describe('db-manager', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
+  it('changePassphrase rotates the recovery code so the old one no longer points at the old key', async () => {
+    const tmpDir = makeUserDataDir();
+    const mgr = createManager(tmpDir);
+    const first = await mgr.unlockWithPassphrase('original-pass-phrase', { remember: false });
+    const oldCode = first.recoveryCodeToShow;
+    assert.ok(oldCode);
+    const changed = await mgr.changePassphrase({
+      currentPassphrase: 'original-pass-phrase',
+      newPassphrase: 'updated-pass-phrase',
+      remember: false,
+    });
+    const newCode = changed.recoveryCodeToShow;
+    assert.ok(newCode);
+    assert.notEqual(newCode, oldCode);
+    mgr.lock();
+    await assert.rejects(
+      () => mgr.unlockWithRecoveryCode(oldCode),
+      (err) => err.code === 'DB_UNLOCK_FAILED'
+    );
+    await mgr.unlockWithRecoveryCode(newCode);
+    assert.equal(mgr.isUnlocked(), true);
+    mgr.lock();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
   it('changePassphrase rejects wrong current passphrase', async () => {
     const tmpDir = makeUserDataDir();
     const mgr = createManager(tmpDir);

@@ -380,12 +380,12 @@ function registerDbCoreBackupHandlers(ctx) {
     if (dbManager.getState() !== 'unlocked') {
       return ipcError(Object.assign(new Error('Database locked'), { code: 'DB_LOCKED' }));
     }
-    await dbManager.changePassphrase({
+    const res = await dbManager.changePassphrase({
       currentPassphrase: String(payload.currentPassphrase || ''),
       newPassphrase: String(payload.newPassphrase || ''),
       remember: !!payload.remember,
     });
-    return { ok: true, state: dbManager.getState() };
+    return { ok: true, state: dbManager.getState(), recoveryCodeToShow: res.recoveryCodeToShow };
   });
 }
 
