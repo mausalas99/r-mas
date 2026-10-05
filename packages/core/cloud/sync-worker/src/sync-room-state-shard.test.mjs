@@ -875,3 +875,24 @@ describe('handleSync push room read', () => {
     assert.equal(reads.length, 0);
   });
 });
+
+describe('loadRoomState labPatientIds (push path reads only touched patients)', () => {
+  it('filters both lab-shard reads by patient and reports labsSkipped', async () => {
+    const db = fakeDb({ revision: 0 });
+    await db.setLegacyState(baseState());
+    const seen = [];
+    const origPrepare = db.prepare.bind(db);
+    db.prepare = (sql) => {
+      const stmt = origPrepare(sql);
+      if (!sql.includes('room_state_lab')) return stmt;
+      return { bind: (...args) => (seen.push({ sql, args }), stmt.bind(...args)) };
+    };
+    const { labsSkipped } = await loadRoomState(TEST_KEY, db, ROOM_ID, { labPatientIds: ['p1', 'p2'] });
+    assert.equal(labsSkipped, true);
+    assert.equal(seen.length, 2);
+    for (const { sql, args } of seen) {
+      assert.match(sql, /AND patient_id IN \(\?,\?\)/);
+      assert.deepEqual(args, [ROOM_ID, 'p1', 'p2']);
+    }
+  });
+});

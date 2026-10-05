@@ -129,7 +129,10 @@ async function joinPatientShards(env, db, roomId, core, results) {
  * shards + per-set lab shards. Callers never see the split — same flat shape
  * as before sharding.
  * @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId
- * @param {{ skipLabShards?: boolean }} [opts] `skipLabShards`: skip the two shard
+ * @param {{ skipLabShards?: boolean, labPatientIds?: string[] }} [opts]
+ *   `labPatientIds`: read lab shards for these patients only (reported as
+ *   `labsSkipped`, so callers take the lab total from rooms.storage_bytes).
+ *   `skipLabShards`: skip the two shard
  *   tables entirely (no D1 read, no per-row AES-GCM decrypt) — for callers that
  *   only need `entries`/`entityVersions`/`clinicalOps` and never read
  *   `state.labSidecars`. `state.labSidecars` is left as whatever legacy data
@@ -179,12 +182,18 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
     return { state, legacyShardBytes, labSetBytes, coreBytesAtLoad, labsSkipped: true, shardBaseline };
   }
 
+  // Push path: only the patients its ops touch. Reading every lab set of a big
+  // room (~950 rows, 1.5 s) on every lab push overloaded D1 on 2026-10-05.
+  const labIds = Array.isArray(opts.labPatientIds) ? opts.labPatientIds : null;
+  const patientFilter = labIds ? ` AND patient_id IN (${labIds.map(() => '?').join(',')})` : '';
+  const labBinds = labIds ? [roomId, ...labIds] : [roomId];
+
   // Whole-patient legacy shard rows (schema 008). Frozen: read here as a base
   // layer, never rewritten — a patient migrates one set at a time into
   // room_state_lab_sets below, only when that set is next touched.
   const { results: legacyRows } = await db
-    .prepare('SELECT patient_id, ciphertext, iv FROM room_state_labs WHERE room_id = ?')
-    .bind(roomId)
+    .prepare(`SELECT patient_id, ciphertext, iv FROM room_state_labs WHERE room_id = ?${patientFilter}`)
+    .bind(...labBinds)
     .all();
   for (const shardRow of legacyRows ?? []) {
     state.labSidecars[shardRow.patient_id] = await decodeRoomState(
@@ -199,8 +208,10 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
   // labMutationMaxBytes, never approaches the D1 row cap regardless of how
   // long a patient's history grows. Overrides legacy values for the same set.
   const { results: setRows } = await db
-    .prepare('SELECT patient_id, set_id, ciphertext, iv FROM room_state_lab_sets WHERE room_id = ?')
-    .bind(roomId)
+    .prepare(
+      `SELECT patient_id, set_id, ciphertext, iv FROM room_state_lab_sets WHERE room_id = ?${patientFilter}`
+    )
+    .bind(...labBinds)
     .all();
   for (const setRow of setRows ?? []) {
     const pid = setRow.patient_id;
@@ -213,7 +224,7 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
     labSetBytes.get(pid).set(sid, toUint8Array(setRow.ciphertext).length);
   }
 
-  return { state, legacyShardBytes, labSetBytes, coreBytesAtLoad, labsSkipped: false, shardBaseline };
+  return { state, legacyShardBytes, labSetBytes, coreBytesAtLoad, labsSkipped: !!labIds, shardBaseline };
 }
 
 /** @param {unknown[]} ops @returns {Array<{ patientId: string, setId: string }>} lab-sidecar ops */
@@ -652,6 +663,18 @@ async function handleMutations(request, env, db, roomId, t = null, ctx = undefin
   // a "Failed to parse body as JSON" error whose message IS that huge dump.
   const { lwwOps, sidecarOps } = partitionSyncOps(ops);
   const hasLabSidecarOps = lwwOps.some((op) => String(op?.path || '').startsWith('labSidecars/'));
+  // Lab bytes per patient the commit diffs: touched sets + tombstoned patients.
+  const labPatientIds = [
+    ...new Set([
+      ...labSetOpsTouched(lwwOps).map((s) => s.patientId),
+      ...tombstonedPatientIds(lwwOps),
+    ]),
+  ];
+  // chisle: D1 caps bound params at 100; a bigger bulk push falls back to the full read.
+  const labLoadOpts = {
+    skipLabShards: !hasLabSidecarOps,
+    labPatientIds: labPatientIds.length <= 90 ? labPatientIds : undefined,
+  };
 
   // Replay of a committed clientMutationId (lost ack): no upfront read. The
   // UNIQUE (room_id, client_mutation_id) index fails the commit batch as
@@ -683,15 +706,10 @@ async function handleMutations(request, env, db, roomId, t = null, ctx = undefin
     const expectedRevision = Number(roomRow.revision);
     lastNeedPull = baseRevision < expectedRevision;
     const { state, legacyShardBytes, labSetBytes, coreBytesAtLoad, labsSkipped, shardBaseline } =
-      await loadRoomState(
-      env,
-      db,
-      roomId,
-      { skipLabShards: !hasLabSidecarOps }
-    );
+      await loadRoomState(env, db, roomId, labLoadOpts);
     t?.lap('load');
-    // Lab shards were not read: their size is whatever the last total held
-    // beyond the old core blob.
+    // Lab shards were not read (or only some patients): their size is whatever
+    // the last total held beyond the old core blob.
     const priorLabBytes = labsSkipped
       ? Math.max(0, Number(roomRow.storage_bytes || 0) - coreBytesAtLoad)
       : undefined;
