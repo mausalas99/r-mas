@@ -7,6 +7,7 @@
  * Pure functions only — no DOM here.
  */
 import { formatTodoDueLabel } from '../../todos-due.mjs';
+import { liveHistorial } from '../estado-actual-data-model.mjs';
 import { formatAccesoFechaDisplay } from '../../patient-date-fields.mjs';
 import { patientPendientes, isPatientAdmittedToday, admissionDateForPatient } from '../guardia-census-table.mjs';
 import { isPatientAdmissionIncomplete } from '../../patient-admission-incomplete.mjs';
@@ -25,7 +26,7 @@ function isTodayIso(iso) {
 
 /** @param {object} p */
 function lastVitalsEntry(p) {
-  const hist = Array.isArray(p?.monitoreo?.historial) ? p.monitoreo.historial : [];
+  const hist = liveHistorial(p?.monitoreo?.historial);
   return hist.length ? hist[hist.length - 1] : null;
 }
 

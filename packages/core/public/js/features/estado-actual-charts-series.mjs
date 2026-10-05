@@ -1,6 +1,7 @@
 import { isVitalAltered, isGlucometriaMarkedAltered } from './estado-actual-ranges.mjs';
 import { gluPointMs, isGluPointInRegistroWindow } from './estado-actual-registro-defaults.mjs';
 import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
+import { liveHistorial } from './estado-actual-data-model.mjs';
 
 /** @type {readonly { id: string, title: string, keys: readonly string[] }[]} */
 const VITAL_FAMILIES = [
@@ -105,7 +106,7 @@ function hasIoPair(io) {
  * @returns {unknown[]}
  */
 export function historialSortedAsc(historial) {
-  return historial.slice().sort(function (a, b) {
+  return liveHistorial(historial).sort(function (a, b) {
     var ra =
       typeof a === 'object' && a && 'recordedAt' in a ? String(/** @type {any} */ (a).recordedAt) : '';
     var rb =
@@ -273,7 +274,8 @@ function eaHistorialRowFingerprint(row) {
  * @param {unknown[]} hist
  * @returns {string}
  */
-export function historialChartRevision(hist) {
+export function historialChartRevision(allRows) {
+  var hist = liveHistorial(allRows);
   var n = hist.length;
   if (!n) return '0';
   var parts = ['n' + n];

@@ -2,6 +2,7 @@
  * Pure model: patient dashboard glance assembled from identity, labs, EA, lists.
  */
 import { deriveSnapshot } from '../estado-actual-data.mjs';
+import { liveHistorial } from '../estado-actual-data-model.mjs';
 import { buildLabsGlanceForDay } from './labs-glance-model.mjs';
 import { extractCultivoFollowUpCandidates, cultivoNeedsAtbFollowUp } from '../cultivo-queue-model.mjs';
 import { viaAccesoLabel } from '../../patient-accesos.mjs';
@@ -124,7 +125,7 @@ function resolveVitalsSnapshot(monitoreo) {
 }
 
 function lastVitalsAt(monitoreo) {
-  var hist = monitoreo && Array.isArray(monitoreo.historial) ? monitoreo.historial : [];
+  var hist = liveHistorial(monitoreo && monitoreo.historial);
   var latest = '';
   for (var i = 0; i < hist.length; i++) {
     var at = hist[i] && typeof hist[i] === 'object' ? hist[i].recordedAt : null;

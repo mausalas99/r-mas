@@ -1,5 +1,6 @@
 /** Cache revision fingerprint for EA monitoreo (historial + estado clínico + receta). */
 import { MED_FIELD_KEYS } from './estado-actual-data-constants.mjs';
+import { liveHistorial } from './estado-actual-data-model.mjs';
 
 /**
  * @param {string[]} parts
@@ -101,7 +102,7 @@ export function buildMedAdminCacheRevision(activeId, medRecetaByPatient) {
 export function buildEaMonitoreoRevision(monitoreoLike, activeId, medRecetaByPatient) {
   /** @type {any} */
   var m = monitoreoLike || {};
-  var hist = Array.isArray(m.historial) ? m.historial : [];
+  var hist = liveHistorial(m.historial);
   var parts = [];
   appendHistorialRevision(parts, hist);
   var tg = m.textoGuardado && m.textoGuardado.savedAt != null ? String(m.textoGuardado.savedAt) : '';

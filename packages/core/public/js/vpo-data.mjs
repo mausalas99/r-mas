@@ -7,6 +7,7 @@ import {
   formatDiagnosticosCopy,
 } from './patient-diagnosticos.mjs';
 import { sortLabHistoryChronological } from './tend-core.mjs';
+import { liveHistorial } from './features/estado-actual-data-model.mjs';
 
 export const DURACION_OPCIONES = [
   { key: 'le2', label: '≤ 2 horas', hours: 2 },
@@ -164,7 +165,7 @@ export function applyDuracionKey(state, key) {
 export function getVitalsFromMonitoreo(monitoreoLike) {
   /** @type {any} */
   var m = monitoreoLike || {};
-  var hist = Array.isArray(m.historial) ? m.historial.slice() : [];
+  var hist = liveHistorial(m.historial);
   hist.sort(function (a, b) {
     var ra = a && typeof a === 'object' && 'recordedAt' in a ? String(/** @type {any} */ (a).recordedAt) : '';
     var rb = b && typeof b === 'object' && 'recordedAt' in b ? String(/** @type {any} */ (b).recordedAt) : '';

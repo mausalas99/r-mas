@@ -504,3 +504,22 @@ test('mergeMonitoreo — fila editada (mismo id y recordedAt): gana el savedAt m
   assert.equal(mergeMonitoreo(local, remote).historial[0].vitals.tas, 135);
   assert.equal(mergeMonitoreo(remote, local).historial[0].vitals.tas, 135);
 });
+
+test('delete marker: newer marker beats the live row both ways, readers drop it, removeMedicion writes one', async () => {
+  const { liveHistorial } = await import('./estado-actual-data-model.mjs');
+  const { removeMedicion } = await import('./estado-actual-data.mjs');
+  const live = { id: 'ios-1', recordedAt: '2026-10-05T09:00', savedAt: '2026-10-05T09:05:00.000Z', vitals: { fc: 80 } };
+  const marker = { id: 'ios-1', recordedAt: '2026-10-05T09:00', deleted: true, savedAt: '2026-10-05T10:00:00.000Z' };
+  const a = { ...emptyMonitoreo(), historial: [live] };
+  const b = { ...emptyMonitoreo(), historial: [marker] };
+  assert.deepEqual(mergeMonitoreo(a, b).historial, [marker]);
+  assert.deepEqual(mergeMonitoreo(b, a).historial, [marker]); // stale live row never wins
+  assert.deepEqual(liveHistorial(mergeMonitoreo(a, b).historial), []);
+  assert.equal(deriveSnapshot(mergeMonitoreo(a, b)).vitals.fc ?? null, null);
+  const mon = { ...emptyMonitoreo(), historial: [structuredClone(live)] };
+  removeMedicion(mon, 'ios-1');
+  assert.equal(mon.historial.length, 1);
+  assert.equal(mon.historial[0].deleted, true);
+  assert.equal(mon.historial[0].recordedAt, live.recordedAt);
+  assert.ok(mon.historial[0].savedAt > live.savedAt);
+});

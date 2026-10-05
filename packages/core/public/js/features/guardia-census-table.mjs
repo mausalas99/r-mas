@@ -3,6 +3,7 @@
  * shared workbench table grammar (teal-workbench redesign, screen 6a/6b).
  */
 import { escHtml, escAttr } from '../dom-escape.mjs';
+import { liveHistorial } from './estado-actual-data-model.mjs';
 import { isTodoOverdue } from '../todos-due.mjs';
 import { storage } from '../storage.js';
 import { accesoFechaToDateInputValue } from '../patient-date-fields.mjs';
@@ -92,7 +93,7 @@ function vitalLabel(key) {
 }
 
 function lastVitalsEntry(p) {
-  const hist = Array.isArray(p?.monitoreo?.historial) ? p.monitoreo.historial : [];
+  const hist = liveHistorial(p?.monitoreo?.historial);
   return hist.length ? hist[hist.length - 1] : null;
 }
 

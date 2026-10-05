@@ -9,6 +9,7 @@ import {
   buildHistorialRowParts,
 } from './estado-actual-panel-snapshot-html.mjs';
 import { escAttr, escHtml } from '../dom-escape.mjs';
+import { liveHistorial } from './estado-actual-data-model.mjs';
 
 export { formatSnapshotEgresos } from './estado-actual-panel-snapshot-html.mjs';
 
@@ -46,7 +47,7 @@ export function renderSnapshotSection(snapshot, balTurno, balGlobal) {
  * @param {Array<{ id?: string, recordedAt?: string }>} historial
  */
 export function renderHistorialSection(historial) {
-  var sorted = historial.slice().sort(function (a, b) {
+  var sorted = liveHistorial(historial).sort(function (a, b) {
     return String(b.recordedAt || '').localeCompare(String(a.recordedAt || ''));
   });
   var recent = sorted.slice(0, 8);

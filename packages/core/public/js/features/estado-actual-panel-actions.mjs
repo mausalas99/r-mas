@@ -29,6 +29,7 @@ import {
   parseBombaFromForm,
 } from './estado-actual-panel-parse-form.mjs';
 import { validateVitalSeriesTurnLimits } from './estado-actual-panel-vitals.mjs';
+import { liveHistorial } from './estado-actual-data-model.mjs';
 import { estadoActualTextToClipboardPayload } from './estado-actual-clipboard.mjs';
 import { MAX_VITAL_READINGS_PER_DAY } from './estado-actual-vital-series.mjs';
 import {
@@ -148,11 +149,9 @@ export function registrarEstadoActualMedicion() {
     return;
   }
   var editId = getEaRegistroEditId(document.getElementById('ea-form'));
-  var limitHist = editId
-    ? patient.monitoreo.historial.filter(function (r) {
-        return !r || r.id !== editId;
-      })
-    : patient.monitoreo.historial;
+  var limitHist = liveHistorial(patient.monitoreo.historial).filter(function (r) {
+    return !editId || !r || r.id !== editId;
+  });
   var vitalLimit = validateVitalSeriesTurnLimits(limitHist, medicion.vitalSeries || {});
   if (!vitalLimit.ok) {
     getEaPanelRuntime().showToast(

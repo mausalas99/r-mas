@@ -100,7 +100,7 @@ export function editarEstadoActualMedicion(id) {
   if (!patient || !id) return;
   ensureMonitoreo(patient);
   var row = patient.monitoreo.historial.find(function (r) {
-    return r && typeof r === 'object' && r.id === id;
+    return r && typeof r === 'object' && r.id === id && r.deleted !== true;
   });
   if (!row) {
     getEaPanelRuntime().showToast('Medición no encontrada', 'error');

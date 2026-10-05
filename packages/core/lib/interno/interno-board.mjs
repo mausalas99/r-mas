@@ -134,7 +134,8 @@ function internoBoardRowVisible(doc, vitalsPlan) {
  * @param {object} p @param {object} g
  */
 function resolveLastVitalsCheck(p, g) {
-  const historial = Array.isArray(p?.monitoreo?.historial) ? p.monitoreo.historial : [];
+  // Skip delete markers ({ deleted: true }) left by the union merge.
+  const historial = (Array.isArray(p?.monitoreo?.historial) ? p.monitoreo.historial : []).filter((r) => r?.deleted !== true);
   const last = historial.length ? historial[historial.length - 1]?.recordedAt : null;
   return last || g.last_vitals_check;
 }

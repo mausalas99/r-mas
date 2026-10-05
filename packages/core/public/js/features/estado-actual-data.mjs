@@ -21,7 +21,7 @@ import { buildEaMonitoreoRevision } from './estado-actual-data-revision.mjs';
 import { medicionHasCoreData } from './estado-actual-data-core-check.mjs';
 import { mergeMonitoreo } from './estado-actual-data-merge.mjs';
 import { monitoreoHasLanPayload } from '../patient-merge.mjs';
-import { emptyEstadoClinico, emptyMonitoreo, emptyPendienteReceta } from './estado-actual-data-model.mjs';
+import { emptyEstadoClinico, emptyMonitoreo, emptyPendienteReceta, liveHistorial } from './estado-actual-data-model.mjs';
 
 export { MED_FIELD_KEYS, DIET_CALORIC_KEYS, buildEaMonitoreoRevision, medicionHasCoreData, mergeMonitoreo };
 export { emptyEstadoClinico, emptyMonitoreo };
@@ -183,7 +183,7 @@ export function mergePatientMonitoreoFromImported(target, source) {
  * @param {unknown[]} historial
  */
 function historialSortedAsc(historial) {
-  return historial.slice().sort(function (a, b) {
+  return liveHistorial(historial).sort(function (a, b) {
     var ra = typeof a === 'object' && a && 'recordedAt' in a ? String(/** @type {any} */ (a).recordedAt) : '';
     var rb = typeof b === 'object' && b && 'recordedAt' in b ? String(/** @type {any} */ (b).recordedAt) : '';
     return ra.localeCompare(rb);
@@ -327,8 +327,13 @@ export function removeMedicion(patientOrMonitoreo, id) {
   /** @type {any} */
   var mon = resolveMonitoreoContainer(patientOrMonitoreo);
   if (!mon || !Array.isArray(mon.historial)) return;
-  mon.historial = mon.historial.filter(function (row) {
-    return row && typeof row === 'object' && /** @type {any} */ (row).id !== id;
+  // A marker, not a hard delete: the union merge would bring the row back from
+  // another device. Newer savedAt makes the marker win everywhere (iOS does the same).
+  mon.historial = mon.historial.map(function (row) {
+    /** @type {any} */
+    var r = row;
+    if (!r || typeof r !== 'object' || r.id !== id) return row;
+    return { id: r.id, recordedAt: r.recordedAt, deleted: true, savedAt: new Date().toISOString() };
   });
 }
 

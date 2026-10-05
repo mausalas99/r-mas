@@ -2,6 +2,7 @@
  * Modo Guardia — chrome, bootstrap, and census summary helpers.
  */
 import { storage } from '../storage.js';
+import { liveHistorial } from './estado-actual-data-model.mjs';
 import { isGuardiaMode } from './chrome.mjs';
 import { clinicalSessionContext, mapPatientForGuardiaGrid } from '../clinical-access-runtime.mjs';
 import { userIsOnGuardiaCallToday } from '../clinico-access.mjs';
@@ -187,7 +188,7 @@ function isToday(iso) {
 }
 
 function lastVitalsRecordedAt(p) {
-  const hist = Array.isArray(p?.monitoreo?.historial) ? p.monitoreo.historial : [];
+  const hist = liveHistorial(p?.monitoreo?.historial);
   if (!hist.length) return null;
   const last = hist[hist.length - 1];
   return String(last?.recordedAt || last?.registeredAt || last?.createdAt || '') || null;
