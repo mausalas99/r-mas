@@ -47,6 +47,7 @@ flowchart LR
 | 19 | [agent-graph-memory](./19-agent-graph-memory.md) | stable | Cached extraction vs subgraph reasoning (agent memory, not product) |
 | 20 | [claude-code-handoff](./20-claude-code-handoff.md) | in-progress | Resume point for Claude Code (2026-08-15 update-feed) |
 | 21 | [code-map](./21-code-map.md) | stable | Tracked agent code map (paths, domains, changelog) |
+| 23 | [ui-map](./ui-map/00-index.md) | draft | App-wide screen and flow map (4 files) |
 
 *Slots 05, 07, 09–14: placeholders created (see directory).*
 
