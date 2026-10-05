@@ -1,0 +1,31 @@
+R+ 8.4.8 (estable — release 8.4.8)
+======================================
+
+Fecha: 2026-10-05
+
+## Resumen
+
+Ajustas la velocidad de norepinefrina en Estado actual. Las indicaciones con suero se unen en una sola línea. Los PDF de formas caben en una hoja.
+
+## Nuevo / mejorado
+
+- **Nuevo (Estado actual):** cada línea de norepinefrina tiene una caja para la velocidad en mcg/min. La caja cambia la dosis de la línea.
+- **Nuevo (Receta):** al pegar indicaciones, un suero con «VEL INF» y su fármaco se unen en una línea con «DILUIR EN:». También se leen «HRA», «HRS» y «HR» como hora.
+- **Cambio (Receta):** el botón de la receta siempre dice «Enviar a Estado Actual». «Añadir a Tratamiento» solo sale en modo Sala.
+- **Nuevo (PDF):** las formas de Nota e Indicaciones se reducen hasta caber en una hoja.
+- **Cambio (PDF):** el nombre del archivo lleva la hora. Si el paciente no tiene nombre, usa el registro.
+- **Arreglado (Interconsultas):** el conteo del tablero de equipo cuenta solo los pacientes del equipo elegido. El tablero se repinta al actualizar la lista.
+- **Arreglado (Registro):** T/A muestra las dos cifras juntas con una diagonal. El botón «+1» sale solo cuando la toma actual tiene valor.
+- **Arreglado (Gráficas):** las tomas con la misma hora conservan el orden del registro.
+- **Arreglado (Nota):** la vista previa quita los espacios y líneas vacías sobrantes.
+- **Arreglado (Inicio):** el aviso de @usuario ya no tapa la pantalla de primer uso. Sale en el siguiente inicio.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.4.8-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.4.8-Mac-Intel.dmg`
+- Windows: `R+-8.4.8-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

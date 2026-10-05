@@ -4,35 +4,27 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_847 = [
+var RELEASE_NOTES_848 = [
   {
-    title: 'Equipo dentro de Mi perfil',
-    body: 'Bajo la tarjeta de Sala hay botones de Equipo. Filtras por sala y tocas un equipo para unirte.',
+    title: 'Velocidad de norepinefrina',
+    body: 'En Estado actual, cada línea de norepinefrina tiene una caja para la velocidad en mcg/min. La dosis de la línea cambia al escribirla.',
   },
   {
-    title: 'Letra de ciclo por equipo',
-    body: 'Al editar un equipo puedes poner una letra de A a D. Marca el día de guardia del mes.',
+    title: 'Suero y fármaco en una línea',
+    body: 'Al pegar indicaciones, un suero con «VEL INF» y su fármaco se unen con «DILUIR EN:». El botón de la receta dice «Enviar a Estado Actual».',
   },
   {
-    title: 'Ingreso de Interconsultas más claro',
-    body: 'Completar el ingreso tiene su propia ventana. Pide servicio, motivo y las fechas de ingreso y de interconsulta.',
+    title: 'PDF en una hoja',
+    body: 'Las formas de Nota e Indicaciones se reducen hasta caber en una hoja. El nombre del archivo lleva la hora.',
   },
   {
-    title: 'Vista previa para imprimir',
-    body: 'Generar Nota e Indicaciones abre una vista previa. Desde ahí imprimes o sacas PDF y .docx.',
-  },
-  {
-    title: 'Anteriores se queda contigo',
-    body: 'Las copias de Anteriores ya no se pierden al sincronizar con la Nube. Ahora también las puedes editar o eliminar.',
-  },
-  {
-    title: 'Tu sala ya no se pisa',
-    body: 'Una copia vieja en la nube ya no cambia tu sala. Al cambiar de sala, los filtros fijados del censo se limpian.',
+    title: 'Registro y tablero más claros',
+    body: 'T/A muestra las dos cifras juntas con una diagonal. El conteo del tablero de Interconsultas cuenta solo tu equipo.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_847;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_848;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.4.7': RELEASE_NOTES_847,
+  '8.4.8': RELEASE_NOTES_848,
 };

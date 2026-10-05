@@ -51,9 +51,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.4.7](https://github.com/mausalas99/r-mas/releases/tag/v8.4.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.4.8](https://github.com/mausalas99/r-mas/releases/tag/v8.4.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.4.8 (estable — release 8.4.8)
+
+- **Estado actual:** caja de velocidad (mcg/min) para norepinefrina.
+- **Receta:** suero y fármaco se unen en una línea al pegar. El botón dice «Enviar a Estado Actual».
+- **PDF:** las formas caben en una hoja.
+- **Interconsultas:** el conteo del tablero de equipo es correcto.
+- **Registro y gráficas:** T/A juntas con diagonal. Tomas de la misma hora en orden.
+
+Notas: `docs/RELEASE_NOTES_8.4.8.txt`.
 
 ## R+ 8.4.7 (estable — release 8.4.7)
 
