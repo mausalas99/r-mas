@@ -404,10 +404,19 @@ function renderPatientListFullHtml(list, bundle, opts) {
   }
 }
 
+/** The IC board reads the same patients/scope: repaint it when the list refreshes (boot scope load, sync). */
+function repaintIcBoard() {
+  if (!document.getElementById('ic-team-board-mount')) return;
+  import('./interconsulta-mode-chrome.mjs').then(function (mod) {
+    mod.renderInterconsultaBoardView();
+  }).catch(function () {});
+}
+
 /** @param {{ silent?: boolean }|undefined} [opts] */
 function renderPatientListNow(opts) {
   opts = normalizePatientListRenderOpts(opts);
   queueMicrotask(syncSalaView);
+  queueMicrotask(repaintIcBoard);
   if (shouldEnforceTeamPatientMirror() && !isClinicalScopeReadyForPatientApply()) {
     var listBoot = document.getElementById('patient-list');
     if (listBoot) {

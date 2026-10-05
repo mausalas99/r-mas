@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { norepiRateOfLine, setNorepiRateOnLine } from './estado-actual-med-ui.mjs';
 import {
   applyRecetaProposal,
   applyRecetaProposalForce,
@@ -578,4 +579,13 @@ test('reclassifyEaMedProposal — sin sel SOAP: override + re-select + sync sobr
   );
   assert.equal(m.pendienteReceta.antiepilepticos, '');
   assert.match(m.pendienteReceta.analgesia, /PREGABALINA/i);
+});
+
+test('setNorepiRateOnLine sets mcg/min over dose, keeps via and frequency', () => {
+  assert.equal(setNorepiRateOnLine('NOREPINEFRINA 16MG IV C/24H', '5'), 'NOREPINEFRINA 5 MCG/MIN IV C/24H');
+  assert.equal(setNorepiRateOnLine('NOREPINEFRINA 5 MCG/MIN IV C/24H', '0,2'), 'NOREPINEFRINA 0.2 MCG/MIN IV C/24H');
+  assert.equal(norepiRateOfLine('NOREPINEFRINA 5 MCG/MIN IV C/24H'), '5');
+  assert.equal(norepiRateOfLine('NOREPINEFRINA 16MG IV C/24H'), '');
+  assert.equal(setNorepiRateOnLine('NOREPINEFRINA 16MG IV', 'abc'), null);
+  assert.equal(setNorepiRateOnLine('VASOPRESINA 20 UI IV', '5'), null);
 });

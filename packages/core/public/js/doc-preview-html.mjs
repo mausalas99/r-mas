@@ -143,7 +143,8 @@ export function buildNotaPreviewHtml(patient, note) {
     return '<u style="min-width:' + (w || 0.5) + 'in">' + escHtml(v == null ? '' : v) + '</u>';
   };
   var raw = function (v) {
-    return escHtml(lines(v).join('\n'));
+    var arr = Array.isArray(v) ? v : String(v || '').split('\n');
+    return escHtml(arr.map(function (l) { return String(l).trim(); }).join('\n').trim());
   };
   var tx = lines(up(note.tratamiento || []));
   var slots = '';

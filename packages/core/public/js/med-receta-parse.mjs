@@ -12,11 +12,13 @@ import {
   normalizeParenteralDietaItem,
 } from './med-receta-diet.mjs';
 import { normalizeNombreForSoapClassify } from './med-receta-nombre.mjs';
+import { isSuerosMedicationNombre } from './med-receta-soap-some-map.mjs';
+import { isInsulinIvMedicationItem } from './insulin-pump-some-detect.mjs';
 import { classifyMedicationSoapCategory, shouldIncludeMedicationInSoap } from './med-receta-soap.mjs';
 import { trimStr } from './med-receta-util.mjs';
 
 var SOME_TS_CLASS_RE =
-  /^(\d{2}\/\d{2}\/\d{4}\s+\d{1,2}:\d{2}:\d{2}\s+(?:a\.m\.|p\.m\.))\s+(MEDICAMENTOS(?:\s+P\d)?|MEDICAMENTO(?:\s+P\d)?|DIETAS|CUIDADOS|ESTUDIOS|PROCEDIMIENTO)\s+(.*)$/i;
+  /^(\d{2}\/\d{2}\/\d{4}\s+\d{1,2}:\d{2}:\d{2}\s+(?:a\.m\.|p\.m\.))\s+(MEDICAMENTOS(?:\s+P\d+)?|MEDICAMENTO(?:\s+P\d+)?|DIETAS|CUIDADOS|ESTUDIOS|PROCEDIMIENTO)\s+(.*)$/i;
 
 var SOME_MED_VIA_RE =
   /\s+(VIA\s+(?:ORAL|INTRAVENOSA|SUBCUT[AÁ]NEA|RECTAL|T[OÓ]PICA|INHALATORIA|NEBULIZACI[OÓ]N|GASTROENTERICA|INTRAMUSCULAR))\s+/i;
@@ -26,7 +28,7 @@ var SOME_MED_FREC_TAIL_RE =
 
 /** @param {string} tipo */
 function isIndicacionesMedClass(tipo) {
-  return /^MEDICAMENTOS?(?:\s+P\d)?$/i.test(trimStr(tipo));
+  return /^MEDICAMENTOS?(?:\s+P\d+)?$/i.test(trimStr(tipo));
 }
 
 /**
@@ -303,6 +305,39 @@ function processIndicacionesLine_(cols, lineIndex, lineText, items, dietas, fech
   return 1;
 }
 
+/**
+ * SOME splits an infusion into two rows of one MEDICAMENTOS Pn group: the drug (frecuencia "-")
+ * and its carrier suero (VEL.INF). Fuse them into one "DILUIR EN" row, the shape the formatters know.
+ * Skips insulin IV (own pump detector) and groups that are not exactly one drug + one carrier.
+ */
+function fuseInfusionCarriers_(items) {
+  var groups = Object.create(null);
+  items.forEach(function (it) {
+    var g = trimStr(it.tipoRaw).toUpperCase();
+    if (/\sP\d+$/.test(g)) (groups[g] = groups[g] || []).push(it);
+  });
+  var drop = Object.create(null);
+  Object.keys(groups).forEach(function (g) {
+    var list = groups[g];
+    var carriers = list.filter(function (it) {
+      return isSuerosMedicationNombre(it.nombreRaw) && /VEL\.?\s*INF/i.test(it.dosisRaw);
+    });
+    var drugs = list.filter(function (it) {
+      return carriers.indexOf(it) < 0;
+    });
+    var d = drugs[0];
+    if (carriers.length !== 1 || drugs.length !== 1 || isInsulinIvMedicationItem(d)) return;
+    if (!/^[-–—\s]*$/.test(d.frecuenciaRaw) || /VEL\.?\s*INF/i.test(d.dosisRaw)) return;
+    var c = carriers[0];
+    d.dosisRaw = trimStr(d.dosisRaw) + ' DILUIR EN: ' + trimStr(c.dosisRaw).replace(/\s*\/\s*(?=VEL\.?\s*INF)/i, ' ');
+    d.frecuenciaRaw = c.frecuenciaRaw;
+    drop[c.id] = true;
+  });
+  return items.filter(function (it) {
+    return !drop[it.id];
+  });
+}
+
 export function parseIndicacionesPaste(text) {
   var normalized = normalizeIndicacionesPasteText(text);
   var lines = String(normalized || '')
@@ -326,6 +361,7 @@ export function parseIndicacionesPaste(text) {
     if (cols.length < 7) cols = padIndicacionesCols_(cols);
     skipped += processIndicacionesLine_(cols, i, lines[i], items, dietas, fechas, skippedSummary, pendientes);
   }
+  items = fuseInfusionCarriers_(items);
   return {
     items: items,
     dietas: dietas,

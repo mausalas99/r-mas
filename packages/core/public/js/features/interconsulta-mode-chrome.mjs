@@ -619,8 +619,11 @@ export function renderInterconsultaBoardView() {
   var options = interconsultaTeamOptions(data.teams, data.now);
   var teamId = icSelectedTeamId(options);
 
+  var count = mode === 'equipo'
+    ? data.active.filter(function (p) { return String(p.censusTeamId || '') === String(teamId); }).length
+    : data.active.length;
   mount.innerHTML =
-    icHeaderHtml(mode, options, teamId, data.active.length) +
+    icHeaderHtml(mode, options, teamId, count) +
     '<div id="ic-team-board-mount"></div><div id="ic-archived-mount"></div>';
   mount.querySelector('[data-ic-board-refresh]').addEventListener('click', refreshPatients);
   mount.querySelector('[data-ic-board-add]').addEventListener('click', openAddModal);

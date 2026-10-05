@@ -2316,8 +2316,38 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   grid-column: span 2;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 4px;
+  column-gap: 0;
   min-width: 0;
+  position: relative;
+}
+
+/* One reading: the two chips join and a slash sits between the values */
+.ea-registro-modal .ea-ta-pair .ea-vital-stack:first-child .ea-vital-chip {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.ea-registro-modal .ea-ta-pair .ea-vital-stack:last-child .ea-vital-chip {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.ea-registro-modal .ea-ta-pair::after {
+  content: '/';
+  position: absolute;
+  left: 50%;
+  top: 2.7rem;
+  transform: translateX(-50%);
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* "+1" shows only once the current reading has a value */
+.ea-registro-modal .ea-vital-add-btn[hidden],
+.ea-registro-modal .ea-temp-add-btn[hidden] {
+  display: none !important;
 }
 
 .ea-registro-modal .ea-vital-stack .ea-vital-slot[hidden] {
@@ -4192,4 +4222,17 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .estado-actual-panel .ea-action-bar {
   margin-bottom: 0;
+}
+
+.estado-actual-panel .ea-vasop-rate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: 11px;
+}
+.estado-actual-panel .ea-vasop-rate-input {
+  width: 52px;
+  padding: 2px 6px;
+  text-align: right;
 }

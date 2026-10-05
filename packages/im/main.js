@@ -1049,7 +1049,12 @@ ipcMain.handle('generate-document', async (_e, { kind, payload }) => {
         const win = new BrowserWindow({ show: false, webPreferences: { javascript: false, sandbox: true } });
         try {
           await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
-          const buffer = await win.webContents.printToPDF({ pageSize: 'Letter', printBackground: true });
+          // Forms must fit one page: shrink 5% per try until the PDF has one page.
+          let buffer;
+          for (let scale = 1; scale > 0.45; scale -= 0.05) {
+            buffer = await win.webContents.printToPDF({ pageSize: 'Letter', printBackground: true, scale });
+            if ((buffer.toString('latin1').match(/\/Type\s*\/Page(?![s\w])/g) || []).length <= 1) break;
+          }
           const fileName = path.basename(String((payload && payload.fileName) || 'Documento.pdf'));
           logDocExport({ type: 'html-pdf', status: 200, bytes: buffer.length });
           return { ok: true, fileName, buffer };

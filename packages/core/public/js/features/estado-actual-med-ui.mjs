@@ -181,6 +181,38 @@ function medItemTextHtml(item) {
   );
 }
 
+var NOREPI_LINE_RE = /^(\S*(?:NOREPINEFRINA|NORADRENALINA)\S*)(\s+\d+(?:[.,]\d+)?\s*(?:MCG|MG|G)(?:\/[A-Z]+)*)?/i;
+
+/** @returns {string} mcg/min of a norepinephrine line, '' when it has none */
+export function norepiRateOfLine(line) {
+  var m = String(line || '').match(/^\S*(?:NOREPINEFRINA|NORADRENALINA)\S*\s+(\d+(?:[.,]\d+)?)\s*MCG\/MIN\b/i);
+  return m ? m[1].replace(',', '.') : '';
+}
+
+/** Puts «N MCG/MIN» where the norepinephrine dose was; null if the line is not norepinephrine. */
+export function setNorepiRateOnLine(line, rate) {
+  var r = String(rate).trim().replace(',', '.');
+  if (!/^\d+(?:\.\d+)?$/.test(r) || !NOREPI_LINE_RE.test(line)) return null;
+  return String(line).replace(NOREPI_LINE_RE, function (_m, name) {
+    return name + ' ' + r + ' MCG/MIN';
+  });
+}
+
+function vasopRateBoxHtml(item, idx, src) {
+  if (!NOREPI_LINE_RE.test(item)) return '';
+  return (
+    '<label class="ea-vasop-rate">' +
+    '<input type="text" inputmode="decimal" class="ea-input ea-vasop-rate-input" data-ea-vasop-src="' +
+    src +
+    '" data-ea-vasop-rate="' +
+    idx +
+    '" value="' +
+    escAttr(norepiRateOfLine(item)) +
+    '" placeholder="0" aria-label="Velocidad de norepinefrina en mcg/min">' +
+    '<span class="ea-muted">mcg/min</span></label>'
+  );
+}
+
 function medItemRowHtml(item, key, idx) {
   return (
     '<div class="ea-med-item">' +
@@ -190,6 +222,7 @@ function medItemRowHtml(item, key, idx) {
     '">' +
     medItemTextHtml(item) +
     '</span>' +
+    (key === 'vasop' ? vasopRateBoxHtml(item, idx, 'items') : '') +
     '<button type="button" class="ea-btn ea-btn--icon ea-med-item-remove" data-ea-med-remove="' +
     escAttr(key) +
     '" data-ea-med-idx="' +
@@ -257,11 +290,20 @@ function medMoveTargetOptionsHtml(fromKey) {
 
 function medPendingBlockHtml(key, pendingVal) {
   if (!pendingVal) return '';
+  var rateBoxes =
+    key === 'vasop'
+      ? parseMedFieldItems(pendingVal)
+          .map(function (line, i) {
+            return vasopRateBoxHtml(line, i, 'pending');
+          })
+          .join('')
+      : '';
   return (
     '<div class="ea-med-pending">' +
     '<div class="ea-pendiente-preview" title="Propuesta pendiente">' +
     escHtml(pendingVal) +
     '</div>' +
+    rateBoxes +
     '<div class="ea-clinico-med-actions">' +
     '<button type="button" class="ea-btn ea-btn--success" data-onclick="confirmEaMedField" data-onclick-args=\'' +
     escAttr(JSON.stringify([key])) +
@@ -537,6 +579,20 @@ export function wireMedCategoryGrid(mount, ctx) {
       var category = String(/** @type {HTMLSelectElement} */ (target).value);
       /** @type {HTMLSelectElement} */ (target).value = '';
       if (category) revealMedCategoryKey(mount, grid, category, ctx);
+      return;
+    }
+    var rateIdx = target.getAttribute('data-ea-vasop-rate');
+    if (rateIdx != null) {
+      var mon = liveMonitoreoFromCtx(ctx);
+      var store = target.getAttribute('data-ea-vasop-src') === 'pending' ? mon.pendienteReceta : mon.estadoClinico;
+      var vItems = parseMedFieldItems(store && store.vasop);
+      var edited = setNorepiRateOnLine(vItems[Number(rateIdx)], /** @type {HTMLInputElement} */ (target).value);
+      if (edited == null) return;
+      vItems[Number(rateIdx)] = edited;
+      store.vasop = serializeMedFieldItems(vItems);
+      ctx.persistClinicalState();
+      ctx.syncTextarea();
+      refreshMedCategoryBlock(mount, 'vasop', mon, ctx.getActiveId(), ctx.medRecetaByPatient);
       return;
     }
     var addKey = target.getAttribute('data-ea-med-add-select');

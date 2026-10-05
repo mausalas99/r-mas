@@ -165,7 +165,7 @@ function extractBolusBeforeDilution(dosisLeft) {
 function compactRecetaDoseToken(dosePhrase) {
   var t = trimStr(dosePhrase).toUpperCase().replace(/\s+/g, ' ');
   var rate = t.match(
-    /^(\d+(?:[.,]\d+)?)\s*(MCG\/(?:MIN|HORA|H)|MG\/(?:MIN|HORA|H)|CC\/(?:HORA|H))$/i
+    /^(\d+(?:[.,]\d+)?)\s*(MCG\/(?:MIN|HORA|H)|MG\/(?:MIN|HORA|H)|CC\/(?:HORA|HRA|HRS|HR|H))$/i
   );
   if (rate) {
     return String(rate[1]).replace(',', '.') + ' ' + rate[2].replace(/\s+/g, '');
@@ -187,14 +187,14 @@ function compactRecetaDoseToken(dosePhrase) {
 function extractVelRateDose_(vel, dosisRaw) {
   var matchers = [
     [/(\d+(?:[.,]\d+)?)\s*MCG\s*\/\s*MIN\b/i, ' MCG/MIN'],
-    [/(\d+(?:[.,]\d+)?)\s*MCG\s*\/\s*(?:HORA|H)\b/i, ' MCG/HORA'],
-    [/(\d+(?:[.,]\d+)?)\s*MG\s*\/\s*(?:HORA|H)\b/i, ' MG/HORA'],
+    [/(\d+(?:[.,]\d+)?)\s*MCG\s*\/\s*(?:HORA|HRA|HRS|HR|H)\b/i, ' MCG/HORA'],
+    [/(\d+(?:[.,]\d+)?)\s*MG\s*\/\s*(?:HORA|HRA|HRS|HR|H)\b/i, ' MG/HORA'],
   ];
   for (var i = 0; i < matchers.length; i++) {
     var m = vel.match(matchers[i][0]);
     if (m) return compactRecetaDoseToken(m[1] + matchers[i][1]);
   }
-  var ccHr = vel.match(/(\d+(?:[.,]\d+)?)\s*CC\s*\/\s*(?:HORA|H)\b/i);
+  var ccHr = vel.match(/(\d+(?:[.,]\d+)?)\s*CC\s*\/\s*(?:HORA|HRA|HRS|HR|H)\b/i);
   if (ccHr) {
     var bolusMcg = extractBolusBeforeDilution(dosisBeforeSlash(dosisRaw));
     var suffix = /\bMCG\b/i.test(bolusMcg) && !/\bMG\b/i.test(bolusMcg.replace(/\bMCG\b/gi, ''))
@@ -222,7 +222,7 @@ export function extractRecetaNameOnlyDose(dosisRaw) {
   var anywhereMcgMin = parsed.match(/(\d+(?:[.,]\d+)?)\s*MCG\s*\/\s*MIN\b/i);
   if (anywhereMcgMin) return compactRecetaDoseToken(anywhereMcgMin[1] + ' MCG/MIN');
 
-  var anywhereMcgHr = parsed.match(/(\d+(?:[.,]\d+)?)\s*MCG\s*\/\s*(?:HORA|H)\b/i);
+  var anywhereMcgHr = parsed.match(/(\d+(?:[.,]\d+)?)\s*MCG\s*\/\s*(?:HORA|HRA|HRS|HR|H)\b/i);
   if (anywhereMcgHr) return compactRecetaDoseToken(anywhereMcgHr[1] + ' MCG/HORA');
 
   var bolus = extractBolusBeforeDilution(dosisBeforeSlash(dosisRaw));

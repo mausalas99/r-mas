@@ -13,9 +13,6 @@ import { getPatients, getMedRecetaByPatient, getMedNotaSelectionByPatient, getNo
 import { scheduleCloudSyncPush } from "./cloud-sync/mutate-bridge.mjs";
 import { storage } from "../storage.js";
 import { addTodoWithFields } from "./todos-mutations.mjs";
-import { isModeSala } from "../mode-features.mjs";
-import { mergeSoapMedField, openSOAPModalDirect } from "./soap-estado.mjs";
-import { soapLegacyFieldIdForCategory } from "./soap-legacy-field-map.mjs";
 import { ensureMonitoreo, MED_FIELD_KEYS } from "./estado-actual-data.mjs";
 import {
   applyDietProposalFromRecetaBlock,
@@ -170,24 +167,6 @@ function mediLlevarASOAPToEstadoActual(activeId, buckets) {
   renderMedRecetaPanel();
 }
 
-function mediLlevarASOAPToTemplate(buckets) {
-  MED_FIELD_KEYS.forEach(function (cat) {
-    var parts = String(buckets[cat] || "")
-      .split(" | ")
-      .filter(Boolean);
-    var fieldId = soapLegacyFieldIdForCategory(cat === "diureticos" ? "diuretico" : cat);
-    if (!fieldId) return;
-    parts.forEach(function (t) {
-      mergeSoapMedField(fieldId, t);
-    });
-  });
-  switchInnerTab("notas");
-  showNotaEvolucionClassicView();
-  openSOAPModalDirect();
-  medToast("Campos SOAP actualizados · completa e Insertar en evolución", "success");
-  renderMedRecetaPanel();
-}
-
 export function mediLlevarASOAP() {
   var activeId = rt.getActiveId();
   if (!activeId) {
@@ -224,11 +203,7 @@ export function mediLlevarASOAP() {
     medToast("No quedó nada que volcar", "error");
     return;
   }
-  if (isModeSala(rt.getSettings())) {
-    mediLlevarASOAPToEstadoActual(activeId, buckets);
-    return;
-  }
-  mediLlevarASOAPToTemplate(buckets);
+  mediLlevarASOAPToEstadoActual(activeId, buckets);
 }
 
 function toastParseRecetaFailure(raw, parsed) {

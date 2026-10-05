@@ -60,7 +60,7 @@
 import JSZip from 'jszip';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub, until, goArea, quietHints, waitForBoot, acceptAbxDias } from './harness.mjs';
+import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, dismissLearnHub, until, goArea, quietHints, waitForBoot } from './harness.mjs';
 import { fullLabs } from './some-fixtures.mjs';
 
 // «Generar …» opens the print preview; the .docx comes from its «Generar .docx» button.
@@ -81,10 +81,6 @@ const INTERROGATORIO = 'DEMO refiere disnea & tos; niega fiebre <38';
 const EVOLUCION = 'N: DEMO alerta\nV: DEMO puntas nasales 2 L\nHD: DEMO estable';
 const ESTUDIOS = '22/09/26\nDEMO QS normal';
 const TX = ['DEMO CEFTRIAXONA 1 G IV CADA 24 H', 'DEMO BORRAR ESTA FILA', 'DEMO PARACETAMOL 1 G VO CADA 8 H'];
-
-function pad2(n) { return String(n).padStart(2, '0'); }
-const SOAP_D = new Date(Date.now() - 2 * 86400000);
-const SOAP_SOME = `${pad2(SOAP_D.getDate())}/${pad2(SOAP_D.getMonth() + 1)}/${SOAP_D.getFullYear()} 08:10:01 a.m.\tMEDICAMENTOS\tPARACETAMOL 1 G SOL INY 100 ML (*)\tVIA INTRAVENOSA\t1 G //\tCADA 8 HORAS\tNW`;
 
 const pad = (n) => String(n).padStart(2, '0');
 const now = new Date();
@@ -550,32 +546,6 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   check('«Generar Indicaciones (.docx)» writes a file with every field', !!ind.name && /Indicaciones guardadas/.test(toastI) && missingI.length === 0, { name: ind.name, toastI, missingI });
   check('the indicaciones .docx drops the removed section', !ind.text.toUpperCase().includes('DEMO SECCION QUITAR'));
   await r.shot(page, 'indicaciones');
-
-  // ── Interconsulta › Manejo › «Abrir plantilla SOAP» → «Insertar en evolución» ──
-  await closeToasts(page);
-  await goArea(page, 'med');
-  await page.locator('#med-itab-receta').click();
-  await page.locator('#med-import-open-btn').click();
-  await page.locator('#med-input').fill(SOAP_SOME);
-  await page.getByRole('button', { name: 'Procesar receta' }).click();
-  await page.waitForTimeout(400);
-  await acceptAbxDias(page);
-  await closeToasts(page);
-  await page.getByRole('button', { name: 'Abrir plantilla SOAP' }).click();
-  await page.locator('#soap-modal-backdrop.open').waitFor({ state: 'visible' });
-  await page.locator('#soap-dieta').fill('SUPLEMENTO');
-  await page.locator('#soap-kcalkg').fill('25');
-  await page.locator('#soap-kcal').fill('1750');
-  await page.locator('#soap-ing').fill('500');
-  await page.locator('#soap-egr').fill('300');
-  await page.locator('#soap-modal-backdrop .btn-soap-insert').click();
-  await page.locator('#soap-modal-backdrop.open').waitFor({ state: 'hidden' });
-  const soapToast = (await page.locator('.toast').allInnerTexts()).join(' | ');
-  await goClinico(page, 'notas');
-  const soapEv = (await noteState(page)).evolucion || '';
-  const nmLine = soapEv.split('\n').find((l) => l.startsWith('NM:')) || '';
-  check('plantilla SOAP → «Insertar en evolución»: the NM line starts with the diet, then INGRESOS; no «CALCULADA A», no «KCAL/KG»',
-    nmLine.startsWith('NM: DIETA SUPLEMENTO || INGRESOS 500 CC, DIURESIS 300 CC, BALANCE') && !/CALCULADA A|KCAL\/KG/.test(nmLine), { nmLine, soapToast, soapEv: soapEv.slice(0, 200) });
 
   // ── Restart ───────────────────────────────────────────────────────────
   const errors = [...pageErrors];

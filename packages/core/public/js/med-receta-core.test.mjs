@@ -1057,3 +1057,16 @@ test('buildMedRecetaListHtml — 16+ rows go dense, short lists stay roomy', asy
   assert.match(buildMedRecetaListHtml('p1', { items: mk(MED_DENSE_MIN_ROWS) }), /med-groups--dense/);
   assert.doesNotMatch(buildMedRecetaListHtml('p1', { items: mk(MED_DENSE_MIN_ROWS - 1) }), /med-groups--dense/);
 });
+
+test('parseMedicationPaste — infusión SOME en dos filas Pn se fusiona (buprenorfina, norepinefrina)', () => {
+  var t = [
+    '03/10/2026 07:08:20 a.m.\tMEDICAMENTOS P18\tGLUCOSA 5 % SOL INY 250 ML\tVIA INTRAVENOSA\t125 ML / VEL.INF: PERMITIR TITULAR\tCADA 24 HORAS\tNW\t',
+    '03/10/2026 07:08:17 a.m.\tMEDICAMENTOS P18\tNOREPINEFRINA 4 MG SOL INY 4 ML\tVIA INTRAVENOSA\t16 MG\t-\tNW\t',
+    '03/10/2026 07:08:11 a.m.\tMEDICAMENTOS P19\tBUPRENORFINA 0.3 MG SOL INY 1 ML\tVIA INTRAVENOSA\t600 MCG\t-\tNW\t',
+    '03/10/2026 07:08:13 a.m.\tMEDICAMENTOS P19\tCLORURO DE SODIO 0.9 % SOL INY 100 ML\tVIA INTRAVENOSA\t100 ML / VEL.INF: 4.1 CC/HRA\tCADA 24 HORAS\tNW\t',
+  ].join('\n');
+  var items = parseMedicationPaste(t).items;
+  assert.equal(items.length, 2);
+  assert.equal(formatMedicationSoapShort(items[1]), 'BOMBA DE BUPRENORFINA 4.1 MCG/HORA IV C/24H');
+  assert.match(formatMedicationSoapShort(items[0]), /^NOREPINEFRINA /);
+});

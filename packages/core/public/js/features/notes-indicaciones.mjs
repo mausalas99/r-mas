@@ -492,7 +492,7 @@ async function previewDoc(kind) {
   if (isNota && ensureNoteDxFromPatientForExport(doc, patient)) persistClinicalState();
   var dp = await import("../doc-preview-html.mjs");
   var html = isNota ? dp.buildNotaPreviewHtml(patient, doc) : dp.buildIndicacionesPreviewHtml(patient, Object.assign({}, doc, { medicos: gradoToMedicosLines(doc.medicos) }));
-  var fileName = (isNota ? 'Nota_Evolucion_' : 'Indicaciones_') + slug(patient.nombre) + '_' + slug(doc.fecha) + '.pdf';
+  var fileName = (isNota ? 'Nota_Evolucion_' : 'Indicaciones_') + slug(patient.nombre || patient.registro) + '_' + slug(doc.fecha) + '_' + new Date().toTimeString().slice(0, 8).replace(/:/g, '-') + '.pdf';
   dp.openDocPreview({
     title: isNota ? 'Vista previa de la nota' : 'Vista previa de las indicaciones',
     html: html,

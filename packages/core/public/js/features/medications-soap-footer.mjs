@@ -6,15 +6,14 @@ export function renderMedNotaFooter() {
   if (!foot) return;
   foot.hidden = false;
 
-  var soapBtnLabel = isModeSala(rt.getSettings()) ? "Enviar a Estado Actual" : "Abrir plantilla SOAP";
+  var sala = isModeSala(rt.getSettings());
+  var eaBtn = '<button type="button" class="wb-btn ' + (sala ? "wb-btn-secondary" : "wb-btn-primary wb-btn-lg") + '" data-onclick="mediLlevarASOAP">Enviar a Estado Actual</button>';
 
   foot.innerHTML =
     '<div class="med-nota-toolbar">' +
     '<div class="med-nota-actions">' +
-    '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-onclick="mediAnadirATratamiento">Añadir a Tratamiento</button>' +
-    '<button type="button" class="wb-btn wb-btn-secondary" data-onclick="mediLlevarASOAP">' +
-    soapBtnLabel +
-    '</button>' +
+    (sala ? '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-onclick="mediAnadirATratamiento">Añadir a Tratamiento</button>' : "") +
+    eaBtn +
     '<button type="button" class="wb-btn wb-btn-secondary" data-onclick="limpiarManejoActual">Limpiar</button>' +
     "</div>" +
     "</div>";
