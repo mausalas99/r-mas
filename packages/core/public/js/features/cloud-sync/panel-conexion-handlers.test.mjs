@@ -73,3 +73,29 @@ describe('drainOutboxWithRetry', () => {
     assert.equal(calls, 3);
   });
 });
+
+describe('ensureRoomEncryptionBackfill', () => {
+  it('a reconnect with the room key already held makes no pull (no whole-room sweep)', async () => {
+    const { ensureRoomDek, clearRoomDekCache } = await import('./room-dek.mjs');
+    const { ensureRoomEncryptionBackfill } = await import('./panel-conexion-handlers.mjs');
+    const { resetOwnerRoomKeyAttempts } = await import('./room-dek-migrate.mjs');
+    clearRoomDekCache();
+    resetOwnerRoomKeyAttempts();
+    const stored = new Map();
+    let pulls = 0;
+    const api = {
+      getRoomDek: async (id) => ({ dek: stored.get(id) || null }),
+      setRoomDek: async (id, w) => (stored.set(id, w), { ok: true }),
+      pull: async () => {
+        pulls += 1;
+        return { revision: 1, ops: [] };
+      },
+    };
+    const room = { id: 'room-r', code: 'RECON1', role: 'owner' };
+    await ensureRoomDek(api, room.id, room.code);
+    const toasts = [];
+    await ensureRoomEncryptionBackfill({ getApi: () => api, toast: (m) => toasts.push(m) }, room);
+    assert.equal(pulls, 0);
+    assert.deepEqual(toasts, []);
+  });
+});

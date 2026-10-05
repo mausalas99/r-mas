@@ -12,7 +12,7 @@ import {
   exportCachedDeksForPersistence,
   NUBE_E2EE_ENABLED,
 } from './room-dek.mjs';
-import { backfillRoomEncryption } from './room-dek-migrate.mjs';
+import { ensureOwnerRoomKey } from './room-dek-migrate.mjs';
 import { getCloudSyncClientId } from './client-id.mjs';
 import { setStoredRoomDeks, setLeftTurnRoom } from './settings.mjs';
 import { currentTurnKey } from './ensure-turn-room.mjs';
@@ -27,15 +27,18 @@ async function persistRoomDeks() {
 
 /**
  * Locks a room's content if this device is its owner and it isn't locked yet.
- * No-op instantly once the room already has a DEK, so it's safe to call on
- * every reconnect (bootstrapConexionState) and not just a fresh login —
+ * Goes through ensureOwnerRoomKey's gate: once this device holds the room's
+ * key and no pull has shown plaintext, it returns without a request, and it
+ * tries at most once per 10 minutes. Without the gate every reconnect pulled
+ * the whole room twice (sweep + verify), adding D1 load (2026-10-05). Safe to
+ * call on every reconnect (bootstrapConexionState) and not just a fresh login —
  * a remembered session used to skip this path entirely, leaving daily-used
  * rooms unlocked forever. Fire-and-forget: never throws.
  * @param {object} deps @param {{ id?: string, role?: string, code?: string }} room
  */
 export async function ensureRoomEncryptionBackfill(deps, room) {
   if (!room?.id || !NUBE_E2EE_ENABLED) return;
-  const result = await backfillRoomEncryption(deps.getApi(), room, getCloudSyncClientId()).catch(() => null);
+  const result = await ensureOwnerRoomKey(deps.getApi(), room, getCloudSyncClientId()).catch(() => null);
   if (result && (result.failed > 0 || result.remaining !== 0)) {
     deps.toast('Sala ' + (room.code || room.id) + ': algunos datos aún no están protegidos. Reintenta más tarde.', 'error');
   }

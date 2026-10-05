@@ -266,7 +266,7 @@ export function bootstrapConexionState(section, deps, ui) {
       ui.renderConnected(optimistic);
       // Runs on every plain reconnect, not just a fresh login — a remembered
       // session used to skip this path entirely, leaving daily-used rooms
-      // unlocked. No-ops instantly once the room already has a DEK.
+      // unlocked. No request once this device holds the key and saw no plaintext.
       void ensureRoomEncryptionBackfill({ getApi: deps.getApi, toast: ui.toast }, optimistic);
       return;
     }
