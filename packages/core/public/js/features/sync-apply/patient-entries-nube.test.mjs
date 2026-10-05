@@ -54,17 +54,36 @@ describe('applyLanPatientEntries on Nube path', () => {
     assert.ok(mon.estadoClinicoUpdatedAt > incoming.estadoClinicoUpdatedAt);
   });
 
-  it('room copy that never absorbs our extras: the second pull does not re-stamp the clock (no 12 s re-push loop)', () => {
+  it('room copy that never absorbs our extras: 3 re-pushes, then the clock stays (no 12 s re-push loop)', () => {
     getPatients().push({
       id: 'loop1',
       monitoreo: { estadoClinico: { abx: 'DEMO ABX A' }, manualMeds: { abx: ['DEMO ABX A'] }, estadoClinicoUpdatedAt: '2026-09-25T10:00:00.000Z' },
     });
     const incoming = () => ({ estadoClinico: { analgesia: 'DEMO B' }, manualMeds: { analgesia: ['DEMO B'] }, estadoClinicoUpdatedAt: '2026-09-25T10:00:01.000Z' });
-    applyLanPatientEntries([{ patient: { id: 'loop1', monitoreo: incoming() } }], { skipTeamScopeFilter: true });
-    const first = getPatients()[0].monitoreo.estadoClinicoUpdatedAt;
-    for (const t0 = Date.now(); Date.now() - t0 < 5; ); // a re-stamp must show as a different ms
-    applyLanPatientEntries([{ patient: { id: 'loop1', monitoreo: incoming() } }], { skipTeamScopeFilter: true });
-    assert.equal(getPatients()[0].monitoreo.estadoClinicoUpdatedAt, first);
+    const stamps = [];
+    for (let i = 0; i < 5; i += 1) {
+      for (const t0 = Date.now(); Date.now() - t0 < 3; ); // a re-stamp must show as a different ms
+      applyLanPatientEntries([{ patient: { id: 'loop1', monitoreo: incoming() } }], { skipTeamScopeFilter: true });
+      stamps.push(getPatients()[0].monitoreo.estadoClinicoUpdatedAt);
+    }
+    assert.equal(new Set(stamps.slice(0, 3)).size, 3);
+    assert.deepEqual(stamps.slice(2), [stamps[2], stamps[2], stamps[2]]);
+  });
+
+  it('phone row overwritten inside one pull window comes back and re-pushes', async () => {
+    const { opsToLanEntries } = await import('../cloud-sync/pull-apply-state.mjs');
+    const desk = { id: 'm-desk', recordedAt: '2026-10-05T09:00', savedAt: '2026-10-05T09:05:00.000Z' };
+    const ios = { id: 'ios-1', recordedAt: '2026-10-05T09:01', savedAt: '2026-10-05T09:06:00.000Z' };
+    getPatients().push({ id: 'race1', monitoreo: { historial: [desk], estadoClinicoUpdatedAt: '2026-10-05T09:05:00.000Z' } });
+    // Phone pushed between our pull and our push; our blob (no ios-1) landed last.
+    const entries = opsToLanEntries([
+      { path: 'entries/race1/monitoreo', value: { historial: [ios] }, updatedAt: '2026-10-05T09:06:00.000Z', actorId: 'ios' },
+      { path: 'entries/race1/monitoreo', value: { historial: [desk], estadoClinicoUpdatedAt: '2026-10-05T09:05:00.000Z' }, updatedAt: '2026-10-05T09:05:00.000Z', actorId: 'desk' },
+    ]);
+    applyLanPatientEntries(entries, { skipTeamScopeFilter: true });
+    const mon = getPatients()[0].monitoreo;
+    assert.deepEqual(mon.historial.map((r) => r.id).sort(), ['ios-1', 'm-desk']);
+    assert.ok(mon.estadoClinicoUpdatedAt > '2026-10-05T09:06:00.000Z');
   });
 
   it('nota / indicaciones: last write wins by updatedAt (older room copy dropped, newer replaces)', () => {

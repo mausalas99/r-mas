@@ -28,6 +28,28 @@ function isCiphertext(value) {
   return !!value && typeof value === 'object' && /** @type {any} */ (value).enc === 1;
 }
 
+/**
+ * Debug trace for monitoreo ops (iOS → desktop sync). Off unless
+ * `localStorage['rplus:debugMonitoreo'] === '1'`. Logs ids only, never values.
+ * @param {string} stage @param {{ path?: string, actorId?: string, value?: unknown }} op
+ */
+export function logMonitoreoOp(stage, op) {
+  try {
+    if (globalThis.localStorage?.getItem('rplus:debugMonitoreo') !== '1') return;
+    const v = /** @type {any} */ (op?.value);
+    const hist = Array.isArray(v?.historial) ? v.historial : [];
+    console.debug('[monitoreo]', stage, {
+      path: op?.path,
+      actorId: op?.actorId,
+      state: isCiphertext(v) ? 'still {enc:1}' : 'decrypted',
+      historial: isCiphertext(v) ? null : hist.length,
+      iosRows: hist.map((r) => String(r?.id || '')).filter((id) => id.startsWith('ios-')),
+    });
+  } catch {
+    /* debug only */
+  }
+}
+
 /** @param {Record<string, unknown>} sidecarMap */
 export function assembleLabHistoryFromSidecars(sidecarMap) {
   if (!sidecarMap || typeof sidecarMap !== 'object') return [];
@@ -62,7 +84,9 @@ function buildPatientFromCloudEntry(entry) {
     patient[key] = value;
   }
   if (entry.eventualidades && !isCiphertext(entry.eventualidades)) patient.eventualidades = entry.eventualidades;
-  if (entry.monitoreo && !isCiphertext(entry.monitoreo)) patient.monitoreo = entry.monitoreo;
+  if (isCiphertext(entry.monitoreo)) {
+    logMonitoreoOp('apply-DROPPED', { path: `entries/${patientId}/monitoreo`, value: entry.monitoreo });
+  } else if (entry.monitoreo) patient.monitoreo = entry.monitoreo;
   return patient;
 }
 
@@ -139,6 +163,11 @@ function foldEntryRoot(fold, pid, value) {
 /** @param {OpFold} fold @param {string} pid @param {string} field @param {unknown} value */
 function foldEntryField(fold, pid, field, value) {
   const prev = fold.entries.get(pid) || { id: pid };
+  // Two monitoreo blobs in one pull (the phone's, then ours over it): the Worker
+  // kept only the last. Carry the earlier rows so pull-apply can union them back.
+  if (field === 'monitoreo' && Array.isArray(prev.monitoreo?.historial)) {
+    prev.monitoreoSupersededRows = [...(prev.monitoreoSupersededRows || []), ...prev.monitoreo.historial];
+  }
   prev[field] = value;
   fold.entries.set(pid, prev);
 }
@@ -242,6 +271,7 @@ export function foldCloudOp(fold, op) {
       path
     );
   if (entryField) {
+    if (entryField[2] === 'monitoreo') logMonitoreoOp('fold', op);
     foldEntryField(fold, entryField[1], entryField[2], value);
     if (entryField[2] === 'fields') clearFoldTombstoneOnReAdmit(fold, entryField[1], op);
     return;

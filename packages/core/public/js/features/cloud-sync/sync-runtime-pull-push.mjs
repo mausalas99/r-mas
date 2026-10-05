@@ -1,5 +1,5 @@
 import { cloudPullProgress } from '../../clinical-session-context.mjs';
-import { getCachedRoomDek } from './room-dek.mjs';
+import { getCachedRoomDek, isRoomUnprotected } from './room-dek.mjs';
 import { sanitizeOpsForCloudPush } from './cloud-op-slim.mjs';
 import { drainCloudOps, recordRejectedCloudOps, MAX_OPS_PER_CHUNK } from './cloud-push-direct.mjs';
 import { nextWireIdStamp, resolveCloudPushMutationId } from './push-mutation-id.mjs';
@@ -16,6 +16,7 @@ import {
 import { drainSyncedLabSidecarsFromOutbox, splitLabBackfillInOutbox } from './outbox-lab.mjs';
 import { noteCloudOpsAttempted } from './cloud-sync-echo-guard.mjs';
 import { jitterMs } from './cloud-sync-timing.mjs';
+import { monitoreoUpdatedAt } from '../../patient-merge.mjs';
 import {
   cloudSyncErrorCode,
   noteCloudSyncPull,
@@ -506,6 +507,82 @@ function pickNextOutboxRows(pending, tried, solo) {
   return group;
 }
 
+const MONITOREO_OP_PATH = /^entries\/([^/]+)\/monitoreo$/;
+
+/** @param {{ ops?: unknown[] }} row */
+function rowHasMonitoreoOp(row) {
+  return rowOps(row).some((op) => MONITOREO_OP_PATH.test(String(op?.path || '')));
+}
+
+/**
+ * Point each queued monitoreo op at this device's current blob, which a pull has
+ * just merged with the room's (historial union by row id, see mergeMonitoreo).
+ * Clock = newest clock in that blob, never below the queued one.
+ * @param {{ ops?: unknown[] }[]} rows outbox rows
+ * @param {(patientId: string) => unknown} getLocalMonitoreo
+ * @returns {{ ops?: unknown[] }[] | null} new rows, or null when no op changed
+ */
+export function rebuildMonitoreoOps(rows, getLocalMonitoreo) {
+  let changed = false;
+  const next = rows.map((row) => {
+    if (!rowHasMonitoreoOp(row)) return row;
+    const ops = rowOps(row).map((op) => {
+      const m = MONITOREO_OP_PATH.exec(String(op?.path || ''));
+      const mon = m ? getLocalMonitoreo(m[1]) : null;
+      if (!mon || typeof mon !== 'object') return op;
+      const queuedAt = String(op.updatedAt || '');
+      const rowsAt = monitoreoUpdatedAt(mon);
+      changed = true;
+      return { ...op, value: structuredClone(mon), updatedAt: rowsAt > queuedAt ? rowsAt : queuedAt };
+    });
+    return { ...row, ops };
+  });
+  return changed ? next : null;
+}
+
+/**
+ * The Worker keeps one monitoreo blob per patient, last writer wins by clock, and
+ * cannot merge. A queued copy built before the iOS app added rows would erase
+ * them. So: pull (pull-apply unions historial into local state), resend the
+ * union, and pull once more after the flush — if the room still lacks our rows,
+ * pull-apply re-pushes the merged blob (monitoreoAddsToIncoming).
+ * @param {object} ctx
+ */
+async function pullThenRebuildMonitoreoOps(ctx) {
+  ctx.holdMonitoreo = false;
+  if (!ctx.outbox.list().some(rowHasMonitoreoOp)) return;
+  try {
+    await ctx.pullLatest();
+  } catch (err) {
+    ctx.setStatus('error', cloudSyncErrorMessage(err, 'No se pudo enviar un cambio a la nube.'));
+    throw err;
+  }
+  // No room key and the pull came back locked: the phone's blob never reached the
+  // merge, and without a key we push plaintext over it. Hold monitoreo until the key loads.
+  const roomId = ctx.getRoomId();
+  ctx.holdMonitoreo = isRoomUnprotected(roomId) && !getCachedRoomDek(roomId);
+  if (ctx.holdMonitoreo) return;
+  const { getPatients } = await import('../../app-state.mjs');
+  const byId = new Map(getPatients().map((p) => [String(p?.id ?? ''), p?.monitoreo]));
+  // list → replaceAll with no await between: an enqueue cannot slip in and be lost.
+  const next = rebuildMonitoreoOps(ctx.outbox.list(), (pid) => byId.get(pid));
+  if (next) ctx.outbox.replaceAll(next);
+  ctx.pullAfterFlush = true;
+}
+
+/**
+ * Outbox rows this flush may send. While monitoreo is held, its ops are left out;
+ * flushOutboxRows only removes the ops it sent, so they stay queued.
+ * @param {object} ctx
+ */
+export function sendableOutboxRows(ctx) {
+  const rows = ctx.outbox.list();
+  if (!ctx.holdMonitoreo) return rows;
+  return rows
+    .map((row) => ({ ...row, ops: rowOps(row).filter((op) => !MONITOREO_OP_PATH.test(String(op?.path || ''))) }))
+    .filter((row) => row.ops.length);
+}
+
 /** @param {object} ctx */
 async function runFlushOutbox(ctx) {
   const { getRoomId, setStatus, outboxSync, outbox } = ctx;
@@ -518,6 +595,7 @@ async function runFlushOutbox(ctx) {
   splitLabBackfillInOutbox(outbox);
   if (outbox.list().length === 0) return;
   setStatus('syncing');
+  await pullThenRebuildMonitoreoOps(ctx);
   /** One stuck row (e.g. one patient's oversized batch) must not block every other row. */
   let firstErr = null;
   let doneOps = 0;
@@ -527,7 +605,7 @@ async function runFlushOutbox(ctx) {
   const tried = new Set();
   let solo = false;
   for (;;) {
-    const pending = outbox.list();
+    const pending = sendableOutboxRows(ctx);
     const rows = pickNextOutboxRows(pending, tried, solo);
     if (!rows.length) break;
     const total = doneOps + pending.reduce((sum, row) => sum + rowOps(row).length, 0);

@@ -26,6 +26,7 @@
  * into ciphertext the same way older note/indicaciones plaintext already was.
  */
 import { encryptValue, decryptValue, isEncryptedEnvelope, fingerprintValue } from './crypto.mjs';
+import { logMonitoreoOp } from './pull-apply-state.mjs';
 
 const ENTRY_CONTENT_FIELDS = [
   'note',
@@ -195,7 +196,9 @@ export async function decryptOpsFromPull(dek, ops) {
       const path = /** @type {any} */ (op).path;
       const value = /** @type {any} */ (op).value;
       if (isEncryptedEnvelope(value)) {
-        return { ...op, value: await maybeDecrypt(dek, value) };
+        const out = { ...op, value: await maybeDecrypt(dek, value) };
+        if (/^entries\/[^/]+\/monitoreo$/.test(String(path))) logMonitoreoOp('pull-decrypt', out);
+        return out;
       }
       if (isPatientIdentityOpPath(path)) {
         return { ...op, value: await decryptPatientLockedFieldsValue(dek, value) };

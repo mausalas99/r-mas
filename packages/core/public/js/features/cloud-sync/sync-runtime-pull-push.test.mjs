@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createOutbox } from './outbox.mjs';
 import { createPullPush } from './sync-runtime-pull-push.mjs';
 import { cloudPullProgress } from '../../clinical-session-context.mjs';
-import { ensureRoomDek, clearRoomDekCache } from './room-dek.mjs';
+import { ensureRoomDek, clearRoomDekCache, markRoomUnprotected } from './room-dek.mjs';
 
 // Node's navigator has no onLine; the flush skips while offline.
 Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
@@ -423,4 +423,49 @@ test('a revision_stale push retries without a pull in between', async () => {
   await s.flushOutbox();
   assert.deepEqual(s.events, ['push:2', 'push:2']);
   assert.equal(s.getRevision(), 6);
+});
+
+test('monitoreo: queued desktop copy keeps the ios- row after pull merge', async () => {
+  const { mergeMonitoreo } = await import('../estado-actual-data.mjs');
+  const { rebuildMonitoreoOps } = await import('./sync-runtime-pull-push.mjs');
+  const local = { historial: [{ id: 'm-desk', recordedAt: '2026-10-05T09:00', savedAt: '2026-10-05T09:05:00.000Z', vitals: { fc: 80 } }] };
+  const remote = { historial: [{ id: 'ios-1', recordedAt: '2026-10-05T08:00', savedAt: '2026-10-05T08:30:00.000Z', vitals: { fc: 90 } }] };
+  const rows = [{ clientMutationId: 'm1', enqueuedAt: 1, ops: [{ path: 'entries/p1/monitoreo', value: local, updatedAt: '2026-10-05T09:05:00.000Z', actorId: 'desk' }] }];
+  const merged = mergeMonitoreo(local, remote); // what pull-apply leaves in local state
+  const op = rebuildMonitoreoOps(rows, (pid) => (pid === 'p1' ? merged : null))[0].ops[0];
+  assert.deepEqual(op.value.historial.map((r) => r.id).sort(), ['ios-1', 'm-desk']);
+  const maxRow = op.value.historial.map((r) => r.savedAt).sort().at(-1);
+  assert.ok(op.updatedAt >= maxRow);
+});
+
+test('monitoreo: no room key and a locked pull → monitoreo stays queued, the rest is pushed', async () => {
+  clearRoomDekCache();
+  markRoomUnprotected('room-g3');
+  const mem = [];
+  const outbox = createOutbox({ load: () => mem.slice(), save: (rows) => mem.splice(0, mem.length, ...rows) });
+  outbox.enqueue({
+    clientMutationId: 'g3',
+    ops: [
+      { path: 'entries/g3/note', value: { texto: 'DEMO' }, updatedAt: '2026-10-05T09:00:00.000Z', actorId: 'desk' },
+      { path: 'entries/g3/monitoreo', value: { historial: [] }, updatedAt: '2026-10-05T09:00:00.000Z', actorId: 'desk' },
+    ],
+  });
+  const pushed = [];
+  const api = {
+    push: async (_roomId, body) => {
+      pushed.push(...body.ops.map((op) => op.path));
+      return { revision: 6, applied: [], rejected: [], needPull: false };
+    },
+    pull: async () => ({ revision: 5, ops: [] }),
+  };
+  const { flushOutbox } = createPullPush(
+    { api, outbox, getRoomId: () => 'room-g3', getRevision: () => 5, setRevision() {}, applyPullResult: async () => {} },
+    () => {},
+    { pendingCount: () => outbox.list().length, refreshIdleStatus() {} },
+    { markLocalWrite() {} },
+  );
+  await flushOutbox();
+  clearRoomDekCache();
+  assert.deepEqual(pushed, ['entries/g3/note']);
+  assert.deepEqual(outbox.list().flatMap((r) => r.ops.map((op) => op.path)), ['entries/g3/monitoreo']);
 });

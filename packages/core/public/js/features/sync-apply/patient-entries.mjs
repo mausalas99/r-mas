@@ -355,7 +355,7 @@ function applyLanPatientNested(existing, entry, p) {
   }
   if (applyLanPatientCharts(existing, entry)) changed = true;
   var monBefore = JSON.stringify(existing);
-  mergePatientMonitoreoFromImported(existing, p);
+  mergePatientMonitoreoFromImported(existing, withSupersededMonitoreoRows(p));
   if (monitoreoAddsToIncoming(existing.monitoreo, p.monitoreo) && shouldRepushMonitoreo(existing.id, existing.monitoreo, p.monitoreo)) {
     // Same as eventualidades: the room's monitoreo is a whole-blob LWW, so a same-time
     // edit on this device lost there — re-push the merged blob with a fresh clock.
@@ -381,23 +381,45 @@ function manualMedsHaveExtra(mine, theirs) {
   });
 }
 
-/** patientId → content key (ours + room's, clocks left out) of the last monitoreo re-push. */
+/**
+ * Rows from monitoreo blobs the same pull saw and the Worker then overwrote (see
+ * foldEntryField): merged in, but `p.monitoreo` stays the room's copy, so the
+ * re-push check below still sees what the room lacks.
+ */
+function withSupersededMonitoreoRows(p) {
+  var lost = p.monitoreoSupersededRows;
+  if (!Array.isArray(lost) || !p.monitoreo || typeof p.monitoreo !== 'object') return p;
+  var room = p.monitoreo;
+  var historial = (Array.isArray(room.historial) ? room.historial : []).concat(lost);
+  return Object.assign({}, p, { monitoreo: Object.assign({}, room, { historial: historial }) });
+}
+
+/** patientId → { key: content (ours + room's, clocks left out), tries } of the last monitoreo re-push. */
 var monitoreoRepushKeys = new Map();
+var MONITOREO_REPUSH_MAX = 3;
 
 function monitoreoContentKey(mon) {
   return JSON.stringify(Object.assign({}, mon, { estadoClinicoUpdatedAt: undefined }));
 }
 
 /**
- * One re-push per (our content, room content). When the room never absorbs our extras
- * (its copy stays the same after our push), a fresh clock on every pull only loops:
- * new "now" each cycle, same rejection. A new local edit or a changed room copy re-arms it.
+ * Up to MONITOREO_REPUSH_MAX re-pushes per (our content, room content): a re-push can
+ * lose a tie or another race too. When the room never absorbs our extras (its copy
+ * stays the same after our push), a fresh clock on every pull only loops: new "now"
+ * each cycle, same rejection. A new local edit or a changed room copy re-arms it.
  */
 function shouldRepushMonitoreo(patientId, mine, theirs) {
   var key = monitoreoContentKey(mine) + '|' + monitoreoContentKey(theirs);
-  if (monitoreoRepushKeys.get(patientId) === key) return false;
-  monitoreoRepushKeys.set(patientId, key);
+  var last = monitoreoRepushKeys.get(patientId);
+  var tries = last && last.key === key ? last.tries + 1 : 1;
+  if (tries > MONITOREO_REPUSH_MAX) return false;
+  monitoreoRepushKeys.set(patientId, { key: key, tries: tries });
   return true;
+}
+
+/** Row id + its clock: a row the room has at an older edit still counts as missing. */
+function monitoreoRowKey(r) {
+  return String(r.id) + '|' + String(r.savedAt || r.recordedAt || '');
 }
 
 /** True when the merged local monitoreo holds content the incoming room copy lacks. */
@@ -405,7 +427,10 @@ function monitoreoAddsToIncoming(merged, incoming) {
   if (!merged || !incoming || typeof incoming !== 'object') return false;
   if (ecHasExtra(merged.estadoClinico || {}, incoming.estadoClinico || {})) return true;
   if (manualMedsHaveExtra(merged.manualMeds || {}, incoming.manualMeds || {})) return true;
-  return (merged.historial || []).length > (incoming.historial || []).length;
+  var roomRows = new Set((incoming.historial || []).filter(Boolean).map(monitoreoRowKey));
+  return (merged.historial || []).some(function (r) {
+    return r && r.id && !roomRows.has(monitoreoRowKey(r));
+  });
 }
 
 function applyLanPatientMedArtifacts(existing, entry) {
