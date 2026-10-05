@@ -144,12 +144,12 @@ function fakeDb({ revision = 0 } = {}) {
                 return { meta: { changes: 1 } };
               }
               if (sql.includes('INSERT OR REPLACE INTO room_state_lab_sets')) {
-                const [, patientId, setId, ciphertext, iv, , , clientMutationId, nextRevision] = args;
+                const [, patientId, setId, ciphertext, iv, , revision, , clientMutationId, nextRevision] = args;
                 if (!mutationRows.has(`${clientMutationId}:${nextRevision}`)) {
                   return { meta: { changes: 0 } };
                 }
                 if (!labSets.has(patientId)) labSets.set(patientId, new Map());
-                labSets.get(patientId).set(setId, { ciphertext, iv });
+                labSets.get(patientId).set(setId, { ciphertext, iv, revision });
                 return { meta: { changes: 1 } };
               }
               if (sql.includes('DELETE FROM room_state_lab_sets')) {
@@ -894,5 +894,57 @@ describe('loadRoomState labPatientIds (push path reads only touched patients)', 
       assert.match(sql, /AND patient_id IN \(\?,\?\)/);
       assert.deepEqual(args, [ROOM_ID, 'p1', 'p2']);
     }
+  });
+});
+
+describe('loadRoomState labsSince + labsHave (catch-up snapshot)', () => {
+  it('reads sets newer than since (or unstamped) plus all labs of patients the client lacks', async () => {
+    const db = fakeDb({ revision: 0 });
+    await db.setLegacyState(baseState({ entries: [{ id: 'p1', fields: {} }, { id: 'p2', fields: {} }] }));
+    const seen = [];
+    const origPrepare = db.prepare.bind(db);
+    db.prepare = (sql) => {
+      const stmt = origPrepare(sql);
+      if (!sql.includes('room_state_lab')) return stmt;
+      return { bind: (...args) => (seen.push({ sql, args }), stmt.bind(...args)) };
+    };
+    await loadRoomState(TEST_KEY, db, ROOM_ID, { labsSince: 40, labsHave: new Set(['p1']) });
+    const legacy = seen.find((q) => q.sql.includes('FROM room_state_labs '));
+    const sets = seen.find((q) => q.sql.includes('FROM room_state_lab_sets'));
+    assert.match(legacy.sql, /AND patient_id IN \(\?\)/);
+    assert.deepEqual(legacy.args, [ROOM_ID, 'p2']);
+    assert.match(sets.sql, /AND \(revision > \? OR revision = 0 OR patient_id IN \(\?\)\)/);
+    assert.deepEqual(sets.args, [ROOM_ID, 40, 'p2']);
+  });
+
+  it('client holding every patient: no legacy read, only newer sets', async () => {
+    const db = fakeDb({ revision: 0 });
+    await db.setLegacyState(baseState({ entries: [{ id: 'p1', fields: {} }] }));
+    const seen = [];
+    const origPrepare = db.prepare.bind(db);
+    db.prepare = (sql) => {
+      const stmt = origPrepare(sql);
+      if (!sql.includes('room_state_lab')) return stmt;
+      return { bind: (...args) => (seen.push({ sql, args }), stmt.bind(...args)) };
+    };
+    await loadRoomState(TEST_KEY, db, ROOM_ID, { labsSince: 40, labsHave: new Set(['p1']) });
+    assert.equal(seen.length, 1);
+    assert.match(seen[0].sql, /AND \(revision > \? OR revision = 0\)$/);
+    assert.deepEqual(seen[0].args, [ROOM_ID, 40]);
+  });
+
+  it('since=0 or no labsHave keeps the full read (old clients, fresh devices)', async () => {
+    const db = fakeDb({ revision: 0 });
+    await db.setLegacyState(baseState({ entries: [{ id: 'p1', fields: {} }] }));
+    const seen = [];
+    const origPrepare = db.prepare.bind(db);
+    db.prepare = (sql) => {
+      const stmt = origPrepare(sql);
+      if (!sql.includes('room_state_lab')) return stmt;
+      return { bind: (...args) => (seen.push({ sql, args }), stmt.bind(...args)) };
+    };
+    await loadRoomState(TEST_KEY, db, ROOM_ID, { labsSince: 0, labsHave: new Set(['p1']) });
+    await loadRoomState(TEST_KEY, db, ROOM_ID);
+    for (const q of seen) assert.deepEqual(q.args, [ROOM_ID]);
   });
 });

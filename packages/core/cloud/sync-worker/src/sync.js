@@ -124,12 +124,16 @@ async function joinPatientShards(env, db, roomId, core, results) {
   return { state: joinCoreState(core, shards), baseline };
 }
 
+/** D1 caps bound params at 100 per statement; patient-id IN lists stay under it. */
+const LAB_FILTER_MAX_IDS = 90;
+
 /**
  * Assemble the full RoomSyncState from the core row + per-patient legacy lab
  * shards + per-set lab shards. Callers never see the split — same flat shape
  * as before sharding.
  * @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId
- * @param {{ skipLabShards?: boolean, labPatientIds?: string[] }} [opts]
+ * @param {{ skipLabShards?: boolean, labPatientIds?: string[], labsSince?: number, labsHave?: Set<string> }} [opts]
+ *   `labsSince` + `labsHave`: catch-up snapshot read (see below).
  *   `labPatientIds`: read lab shards for these patients only (reported as
  *   `labsSkipped`, so callers take the lab total from rooms.storage_bytes).
  *   `skipLabShards`: skip the two shard
@@ -184,17 +188,39 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
 
   // Push path: only the patients its ops touch. Reading every lab set of a big
   // room (~950 rows, 1.5 s) on every lab push overloaded D1 on 2026-10-05.
-  const labIds = Array.isArray(opts.labPatientIds) ? opts.labPatientIds : null;
-  const patientFilter = labIds ? ` AND patient_id IN (${labIds.map(() => '?').join(',')})` : '';
-  const labBinds = labIds ? [roomId, ...labIds] : [roomId];
+  let labIds = Array.isArray(opts.labPatientIds) ? opts.labPatientIds : null;
+  let patientFilter = labIds ? ` AND patient_id IN (${labIds.map(() => '?').join(',')})` : '';
+  let setFilter = patientFilter;
+  let labBinds = labIds ? [roomId, ...labIds] : [roomId];
+  let setBinds = labBinds;
+
+  // Catch-up snapshot for a client at `labsSince` that already holds the
+  // patients in `labsHave`: their sets written after `labsSince` (0 = written
+  // before schema 014 went live, always sent), plus every set of the patients
+  // it lacks. The client merges lab sets and never drops one it holds.
+  const missing =
+    opts.labsHave instanceof Set && Number(opts.labsSince) > 0
+      ? (state.entries || []).map((e) => String(e?.id || '')).filter((id) => id && !opts.labsHave.has(id))
+      : null;
+  if (!labIds && missing && missing.length <= LAB_FILTER_MAX_IDS) {
+    labIds = missing;
+    const inList = `patient_id IN (${missing.map(() => '?').join(',')})`;
+    patientFilter = ` AND ${inList}`;
+    setFilter = ` AND (revision > ? OR revision = 0${missing.length ? ` OR ${inList}` : ''})`;
+    labBinds = [roomId, ...missing];
+    setBinds = [roomId, Number(opts.labsSince), ...missing];
+  }
 
   // Whole-patient legacy shard rows (schema 008). Frozen: read here as a base
   // layer, never rewritten — a patient migrates one set at a time into
   // room_state_lab_sets below, only when that set is next touched.
-  const { results: legacyRows } = await db
-    .prepare(`SELECT patient_id, ciphertext, iv FROM room_state_labs WHERE room_id = ?${patientFilter}`)
-    .bind(...labBinds)
-    .all();
+  const { results: legacyRows } =
+    labIds && !labIds.length
+      ? { results: [] }
+      : await db
+          .prepare(`SELECT patient_id, ciphertext, iv FROM room_state_labs WHERE room_id = ?${patientFilter}`)
+          .bind(...labBinds)
+          .all();
   for (const shardRow of legacyRows ?? []) {
     state.labSidecars[shardRow.patient_id] = await decodeRoomState(
       env,
@@ -209,9 +235,9 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
   // long a patient's history grows. Overrides legacy values for the same set.
   const { results: setRows } = await db
     .prepare(
-      `SELECT patient_id, set_id, ciphertext, iv FROM room_state_lab_sets WHERE room_id = ?${patientFilter}`
+      `SELECT patient_id, set_id, ciphertext, iv FROM room_state_lab_sets WHERE room_id = ?${setFilter}`
     )
-    .bind(...labBinds)
+    .bind(...setBinds)
     .all();
   for (const setRow of setRows ?? []) {
     const pid = setRow.patient_id;
@@ -461,8 +487,8 @@ export async function commitMutationBatch(env, db, opts) {
       statements.push(
         db
           .prepare(
-            `INSERT OR REPLACE INTO room_state_lab_sets (room_id, patient_id, set_id, ciphertext, iv, updated_at)
-             SELECT ?, ?, ?, ?, ?, ?
+            `INSERT OR REPLACE INTO room_state_lab_sets (room_id, patient_id, set_id, ciphertext, iv, updated_at, revision)
+             SELECT ?, ?, ?, ?, ?, ?, ?
              FROM mutations WHERE room_id = ? AND client_mutation_id = ? AND revision = ?`
           )
           .bind(
@@ -472,6 +498,7 @@ export async function commitMutationBatch(env, db, opts) {
             w.ciphertext,
             w.iv,
             now,
+            nextRevision,
             roomId,
             clientMutationId,
             nextRevision
@@ -670,10 +697,10 @@ async function handleMutations(request, env, db, roomId, t = null, ctx = undefin
       ...tombstonedPatientIds(lwwOps),
     ]),
   ];
-  // chisle: D1 caps bound params at 100; a bigger bulk push falls back to the full read.
+  // A bigger bulk push falls back to the full read (D1 bound-param cap).
   const labLoadOpts = {
     skipLabShards: !hasLabSidecarOps,
-    labPatientIds: labPatientIds.length <= 90 ? labPatientIds : undefined,
+    labPatientIds: labPatientIds.length <= LAB_FILTER_MAX_IDS ? labPatientIds : undefined,
   };
 
   // Replay of a committed clientMutationId (lost ack): no upfront read. The
@@ -847,6 +874,14 @@ async function handlePull(request, env, db, roomId, t = null) {
   const url = new URL(request.url);
   const since = Number(url.searchParams.get('since') ?? 0);
   const mobileLabWindow = isMobileLabPullRequest(url);
+  // Newer clients list the patient ids they hold; a catch-up snapshot then
+  // sends only lab sets written after `since` plus all labs of the patients
+  // they lack. Old clients (no param) keep the full snapshot.
+  const labsHaveParam = url.searchParams.get('labsHave');
+  const snapshotOpts =
+    labsHaveParam !== null && since > 0
+      ? { labsSince: since, labsHave: new Set(labsHaveParam.split(',').filter(Boolean)) }
+      : {};
   const authStmt = await memberStatement(db, request, roomId);
   if (!authStmt) memberFromRow(null);
   // The mutations select rides in the auth batch: one trip, one snapshot.
@@ -877,7 +912,7 @@ async function handlePull(request, env, db, roomId, t = null) {
   // CRITICAL: check gap BEFORE selecting mutations. Loading 1000+ ops_json rows
   // (tens of MB) into the D1 isolate exceeds memory and resets the DB.
   if (shouldReturnSnapshotPull(gap)) {
-    const { state } = await loadRoomState(env, db, roomId);
+    const { state } = await loadRoomState(env, db, roomId, snapshotOpts);
     const payload = mobileLabWindow ? filterRoomStateLabSidecarsForMobile(state) : state;
     return Response.json({
       revision,
@@ -895,7 +930,7 @@ async function handlePull(request, env, db, roomId, t = null) {
       ? toUint8Array(row.ciphertext).length
       : new TextEncoder().encode(String(row.ops_json || '[]')).length;
     if (shouldReturnSnapshotPull(gap, cumulativeBytes)) {
-      const { state } = await loadRoomState(env, db, roomId);
+      const { state } = await loadRoomState(env, db, roomId, snapshotOpts);
       const payload = mobileLabWindow ? filterRoomStateLabSidecarsForMobile(state) : state;
       return Response.json({
         revision,
@@ -908,7 +943,7 @@ async function handlePull(request, env, db, roomId, t = null) {
   }
 
   if (!ops.length && since < revision) {
-    const { state } = await loadRoomState(env, db, roomId);
+    const { state } = await loadRoomState(env, db, roomId, snapshotOpts);
     const payload = mobileLabWindow ? filterRoomStateLabSidecarsForMobile(state) : state;
     return Response.json({
       revision,
