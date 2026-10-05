@@ -128,3 +128,44 @@ describe('register + login with per-row password_iterations (schema/007)', () =>
     );
   });
 });
+
+describe('Nube client gate: desktop vs ios (NUBE_VERSION_GATE_ENABLED on)', () => {
+  const pw = 'correct-horse-battery';
+  const reg = (extra) => {
+    const db = makeDb();
+    const env = { DB: db, NUBE_VERSION_GATE_ENABLED: '1' };
+    return { db, run: () => handleAuth(req('/register', { username: 'sint.tico', password: pw, ...extra }), env, '/register') };
+  };
+
+  it('desktop with an old version is still blocked', async () => {
+    await assert.rejects(reg({ appVersion: '8.2.0' }).run(), { code: 'update_required' });
+  });
+
+  it('desktop with no version is still blocked', async () => {
+    await assert.rejects(reg({}).run(), { code: 'update_required' });
+  });
+
+  it('unknown clientKind is treated as desktop', async () => {
+    await assert.rejects(reg({ clientKind: 'android', iosBuild: 5 }).run(), { code: 'update_required' });
+  });
+
+  it('ios with no appVersion is accepted, stamped ios-<build>, and can log in', async () => {
+    const { db, run } = reg({ clientKind: 'ios', iosBuild: 1 });
+    assert.equal((await run()).status, 200);
+    const env = { DB: db, NUBE_VERSION_GATE_ENABLED: '1' };
+    const res = await handleAuth(
+      req('/login', { username: 'sint.tico', password: pw, clientKind: 'ios', iosBuild: 1 }),
+      env,
+      '/login'
+    );
+    assert.ok((await res.json()).token);
+  });
+
+  for (const bad of [undefined, '', 'abc', 0, -1, 1.5]) {
+    it(`ios with bad iosBuild (${JSON.stringify(bad)}) is rejected`, async () => {
+      await assert.rejects(reg({ clientKind: 'ios', iosBuild: bad }).run(), (e) =>
+        ['invalid_request', 'update_required'].includes(e.code)
+      );
+    });
+  }
+});

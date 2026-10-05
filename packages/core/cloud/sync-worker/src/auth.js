@@ -16,7 +16,7 @@ import {
   validateUsername,
   validatePassword,
   sanitizeAppVersion,
-  assertNubeAppVersion,
+  assertNubeClient,
 } from './auth-util.js';
 import {
   mintRecoveryForUser,
@@ -34,7 +34,7 @@ async function handleRegister(db, request, ip, gateEnabled) {
   const password = body?.password ?? '';
   const displayName = String(body?.displayName ?? '').trim();
 
-  if (gateEnabled) assertNubeAppVersion(body?.appVersion);
+  const stamp = gateEnabled ? assertNubeClient(body) : sanitizeAppVersion(body?.appVersion);
   validateUsername(username);
   validatePassword(password);
 
@@ -57,7 +57,7 @@ async function handleRegister(db, request, ip, gateEnabled) {
   const { salt, hash, iterations } = await hashPassword(password);
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
-  const appVersion = sanitizeAppVersion(body?.appVersion);
+  const appVersion = stamp;
 
   try {
     await db
@@ -95,7 +95,7 @@ async function handleLogin(db, request, ip, gateEnabled) {
   if (!username || !password) {
     throw new SyncError('invalid_request', 'Usuario y contraseña requeridos.');
   }
-  if (gateEnabled) assertNubeAppVersion(body?.appVersion);
+  const stamp = gateEnabled ? assertNubeClient(body) : sanitizeAppVersion(body?.appVersion);
 
   const rlKey = rateLimitKey(ip, username);
   checkRateLimit(rateLimitKey(ip));
@@ -127,7 +127,7 @@ async function handleLogin(db, request, ip, gateEnabled) {
   }
 
   clearFailures(rlKey);
-  const appVersion = sanitizeAppVersion(body?.appVersion);
+  const appVersion = stamp;
   if (appVersion) {
     await db
       .prepare('UPDATE users SET app_version = ?, app_version_at = ? WHERE id = ?')

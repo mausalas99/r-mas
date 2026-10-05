@@ -73,6 +73,33 @@ export function assertNubeAppVersion(appVersion) {
   );
 }
 
+/** Separate floor for the iOS companion app (own build numbers, not semver). */
+export const MIN_NUBE_IOS_BUILD = 1;
+
+/**
+ * Gate by client kind. Anything but 'ios' is desktop (old builds send no kind).
+ * iOS skips the desktop semver floor and needs an integer iosBuild >= MIN_NUBE_IOS_BUILD.
+ * Returns the string to stamp in users.app_version ('ios-<build>' for iOS,
+ * so no schema migration is needed).
+ * @param {{ clientKind?: unknown, appVersion?: unknown, iosBuild?: unknown }} c
+ * @returns {string}
+ */
+export function assertNubeClient(c) {
+  if (c?.clientKind !== 'ios') {
+    assertNubeAppVersion(c?.appVersion);
+    return sanitizeAppVersion(c?.appVersion);
+  }
+  const raw = String(c.iosBuild ?? '').trim();
+  if (!/^\d{1,9}$/.test(raw)) {
+    throw new SyncError('invalid_request', 'Falta iosBuild: número entero de la versión de R+ iOS.');
+  }
+  const build = Number(raw);
+  if (build < MIN_NUBE_IOS_BUILD) {
+    throw new SyncError('update_required', 'Actualiza R+ iOS para usar Nube.');
+  }
+  return `ios-${build}`;
+}
+
 /** @param {unknown} val */
 export function dbBlobToHex(val) {
   if (!val) return '';

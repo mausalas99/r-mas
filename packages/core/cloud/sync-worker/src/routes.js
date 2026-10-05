@@ -1,6 +1,6 @@
 import { handleAdmin } from './admin.js';
 import { handleAuth } from './auth.js';
-import { assertNubeAppVersion } from './auth-util.js';
+import { assertNubeClient } from './auth-util.js';
 import { SyncError, jsonSyncError, syncErrorStatus } from './errors.js';
 import { handleInternoApiRoute } from './interno/routes.js';
 import { handlePaseLabs } from './pase-labs.js';
@@ -58,7 +58,11 @@ export async function handleApiRoute(request, env, ctx) {
       // handleRoomLive already gates that route.
       const isLiveSocketRoute = /^\/[^/]+\/live$/.test(subpath.slice('/rooms'.length) || '/');
       if (env.NUBE_VERSION_GATE_ENABLED && !isLiveSocketRoute) {
-        assertNubeAppVersion(request.headers.get('X-App-Version'));
+        assertNubeClient({
+          clientKind: request.headers.get('X-Client-Kind'),
+          appVersion: request.headers.get('X-App-Version'),
+          iosBuild: request.headers.get('X-iOS-Build'),
+        });
       }
       const roomsSub = subpath === '/rooms' ? '/' : subpath.slice('/rooms'.length) || '/';
       return await handleRooms(request, env, roomsSub, ctx);
