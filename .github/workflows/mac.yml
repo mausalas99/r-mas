@@ -1,0 +1,39 @@
+name: Mac (Swift)
+
+on:
+  push:
+    branches: [main]
+    paths: ['mac/**', 'packages/core/lib/db/**', 'packages/core/lib/**/*crypto*', 'packages/core/public/js/features/cloud-sync/**', '.github/workflows/mac.yml']
+  pull_request:
+    paths: ['mac/**', 'packages/core/lib/db/**', 'packages/core/lib/**/*crypto*', 'packages/core/public/js/features/cloud-sync/**', '.github/workflows/mac.yml']
+
+jobs:
+  swift:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # `npm ci` downloads Electron and its postinstall rebuilds the SQLite addon for it.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Swift tests
+        run: swift test
+        working-directory: mac
+
+      # Fixtures must be the ones Node makes today. Remake them with Electron's Node,
+      # then compare with the committed copy (wall-clock times are masked in the test).
+      - name: Fixtures are current
+        run: |
+          F=mac/Tests/RPlusCoreTests/Fixtures
+          cp -R "$F" "$RUNNER_TEMP/committed"
+          ELECTRON_RUN_AS_NODE=1 "$(node -p "require('electron')")" "$F/make-schema-fixtures.mjs" node_modules/better-sqlite3-multiple-ciphers
+          ELECTRON_RUN_AS_NODE=1 "$(node -p "require('electron')")" "$F/make-nube-fixtures.mjs"
+          MAC_FIXTURES_COMMITTED="$RUNNER_TEMP/committed" npm run test:one -- packages/core/lib/db/mac-parity-fixtures.test.mjs

@@ -13,6 +13,7 @@
  * `phi-scan: synthetic` on the same line. The .docx templates' golden text
  * (scripts/golden/corpus/docs) is exempt from the hospital rules only: it is
  * the hospital's own format. Patient-data rules still apply there.
+ * Mac parity fixtures (mac/Tests/RPlusCoreTests/Fixtures/) are synthetic and exempt from all rules.
  *
  * Usage: node scripts/check-no-phi.mjs            (reads the staged diff)
  *        node scripts/check-no-phi.mjs --diff F   (reads a diff file, for tests)
@@ -38,6 +39,9 @@ const SELF = /scripts\/check-no-phi(\.test)?\.mjs$/; // these two list the terms
 // Text of the .docx templates (golden output): they carry the hospital's own
 // letterhead on purpose, since notes and indicaciones use the hospital's format.
 const TEMPLATE_TEXT = /scripts\/golden\/corpus\/docs\/[^/]+\.golden\.txt$/;
+// Mac (Swift) parity fixtures: made by Node from synthetic data. They carry the template
+// letterhead and fake expediente numbers on purpose, and Swift must match them byte for byte.
+const MAC_FIXTURES = /^mac\/Tests\/RPlusCoreTests\/Fixtures\//;
 const ALLOW = 'phi-scan: synthetic';
 
 /** @param {string} diff unified diff with -U0 @returns {string[]} */
@@ -57,7 +61,7 @@ export function findHits(diff) {
     }
     if (!raw.startsWith('+')) continue;
     const text = raw.slice(1);
-    if (!SELF.test(file) && !text.includes(ALLOW)) {
+    if (!SELF.test(file) && !MAC_FIXTURES.test(file) && !text.includes(ALLOW)) {
       const templateText = TEMPLATE_TEXT.test(file);
       for (const [label, re] of RULES) {
         if (templateText && label.startsWith('hospital:')) continue;

@@ -36,3 +36,11 @@ test('template golden text keeps the hospital letterhead, but not patient data',
   assert.equal(findHits(at(tpl, EXP)).length, 1);
   assert.equal(findHits(at('packages/core/scripts/golden/corpus/labs/x.golden.json', 'HOSPITAL UNIVERSITARIO')).length, 1);
 });
+
+test('Mac parity fixtures are exempt from every rule', () => {
+  const at = (file, ...added) =>
+    ['+++ b/' + file, '@@ -1,0 +1,' + added.length + ' @@', ...added.map((l) => '+' + l)].join('\n');
+  const fx = 'mac/Tests/RPlusCoreTests/Fixtures/docx/note-full.document.xml';
+  assert.deepEqual(findHits(at(fx, 'HOSPITAL UNIVERSITARIO', 'Av. Gonzalitos s/n', EXP)), []);
+  assert.equal(findHits(at('mac/Sources/RPlusCore/x.swift', 'HOSPITAL UNIVERSITARIO')).length, 1);
+});
