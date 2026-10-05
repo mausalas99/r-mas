@@ -255,9 +255,26 @@ async function loadMissingRoomDek(api, roomId) {
   }
 }
 
+/** Above this the id list would bloat every pull URL; the server then sends the full snapshot. */
+const LABS_HAVE_MAX_IDS = 300;
+
+/**
+ * Patient ids this device already holds. A catch-up snapshot then carries only
+ * lab sets newer than `since`, plus all labs of patients not listed here.
+ * Lab merge never drops a local set, so the omitted ones stay as they are.
+ */
+async function localPatientIdsForPull() {
+  const { getSyncablePatients } = await import('../../app-state.mjs');
+  const ids = getSyncablePatients()
+    .map((p) => String(p?.id || ''))
+    .filter(Boolean);
+  return ids.length <= LABS_HAVE_MAX_IDS ? ids : undefined;
+}
+
 /** One pull; if it came back locked and the room's key was missing, fetch the key and pull again. */
 async function pullWithKeyRetry(api, roomId, since, pollMobile) {
-  const opts = pollMobile ? { mobile: true } : undefined;
+  const labsHave = since > 0 ? await localPatientIdsForPull() : undefined;
+  const opts = pollMobile || labsHave ? { mobile: !!pollMobile, labsHave } : undefined;
   const result = await api.pull(roomId, since, opts);
   if (!result?.locked || !(await loadMissingRoomDek(api, roomId))) return result;
   return api.pull(roomId, since, opts);

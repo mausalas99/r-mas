@@ -57,6 +57,7 @@ function assertCloudBaseUrl(baseUrl) {
 function pullQuery(since, opts) {
   const q = new URLSearchParams({ since: String(since ?? 0) });
   if (opts?.mobile) q.set('mobile', '1');
+  if (Array.isArray(opts?.labsHave)) q.set('labsHave', opts.labsHave.join(','));
   return q;
 }
 
