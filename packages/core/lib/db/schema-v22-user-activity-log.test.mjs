@@ -13,7 +13,7 @@ describe('schema v22 user_activity_log', () => {
   it('creates log table, seeds from created/last, and appends on touch', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    assert.equal(SCHEMA_VERSION, 29);
+    assert.equal(SCHEMA_VERSION, 31);
     const v = db.prepare(`SELECT value FROM app_meta WHERE key = 'schema_version'`).get();
     assert.equal(Number(v.value), SCHEMA_VERSION);
 

@@ -17,3 +17,4 @@ export { migrateToV26TeamsSucceedsTeamId } from './schema-migrate-v26-teams-succ
 export { migrateToV27CloudOutbox } from './schema-migrate-v27-cloud-outbox.mjs';
 export { migrateToV28SyncWriteClocks } from './schema-migrate-v28-sync-write-clocks.mjs';
 export { migrateToV29AssignmentTombstone } from './schema-migrate-v29-assignment-tombstone.mjs';
+export { migrateToV30RotacionSala } from './schema-migrate-v30-rotacion-sala.mjs';

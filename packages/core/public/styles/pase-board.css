@@ -4544,6 +4544,22 @@ html.clinical-onboarding-active #main-area {
   color: var(--color-ink);
 }
 
+/* Sala picker: «Otra rotación» service pills (features/sala-picker.mjs). */
+.sala-rotacion-pick {
+  margin: 10px 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.sala-rotacion-pick[hidden] {
+  display: none;
+}
+.sala-rotacion-pick legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
 .clinical-onboarding-main .clinical-onboard-form .profile-input {
   min-height: 48px;
   font-size: 1rem;

@@ -7,9 +7,9 @@ describe('schema v27 cloud_outbox', () => {
   it('creates the table and bumps SCHEMA_VERSION to 27', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    assert.equal(SCHEMA_VERSION, 29);
+    assert.equal(SCHEMA_VERSION, 31);
     const v = db.prepare("SELECT value FROM app_meta WHERE key = 'schema_version'").get();
-    assert.equal(Number(v.value), 29);
+    assert.equal(Number(v.value), 31);
 
     const tables = db
       .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'cloud_outbox'")

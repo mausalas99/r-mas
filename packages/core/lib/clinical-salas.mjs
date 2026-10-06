@@ -8,7 +8,17 @@ export const CLINICAL_SALA_VALUES = [
   'Interconsultas',
   'UX',
   'Eme',
+  'UCI',
+  'PostQx',
+  'Subespecialidad',
 ];
+
+/** Non-IM rotation salas: one Nube room each, all on team service 'Rotación'. */
+export const ROTACION_SALA_SLUGS = Object.freeze({
+  'UCI': 'rotacion-uci',
+  'PostQx': 'rotacion-postqx',
+  'Subespecialidad': 'rotacion-sub',
+});
 
 /**
  * @param {{ values?: string[], allowNull?: boolean }} [opts]
@@ -38,11 +48,12 @@ export function clinicalServiceForSala(sala) {
   if (key === 'interconsultas') return 'Interconsultas';
   if (key === 'ux') return 'UX';
   if (key === 'eme' || key === 'emergencias' || key === 'urgent care') return 'Eme';
+  if (key === 'rotacion' || key.startsWith('rotacion ') || ['uci', 'postqx', 'subespecialidad'].includes(key)) return 'Rotación';
   if (key === 'sala 1' || key === 'sala 2' || key === 'sala e') return 'Sala';
   return '';
 }
 
-/** Torre HU / Área A use shared ABCD — no Sala R1 primera/segunda línea. */
+/** Torre HU / Área A / Rotación use shared ABCD — no Sala R1 primera/segunda línea. */
 export function clinicalSalaUsesAbcOnlyRotation(sala) {
   const mapped = clinicalServiceForSala(sala);
   return mapped !== '' && mapped !== 'Sala';
@@ -59,5 +70,6 @@ export function clinicalSalaRoomSlug(sala) {
   if (s === 'Interconsultas') return 'interconsultas';
   if (s === 'UX') return 'ux';
   if (s === 'Eme') return 'eme';
+  if (ROTACION_SALA_SLUGS[s]) return ROTACION_SALA_SLUGS[s];
   return '';
 }

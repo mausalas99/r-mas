@@ -22,7 +22,7 @@ import {
   isLegacyMachineUsername,
   normalizeUsername,
 } from '../clinical-username.mjs';
-import { CLINICAL_SALAS } from './clinical-teams/shared.mjs';
+import { salaPickerOptionsHtml, salaPickerRotacionHtml } from './sala-picker.mjs';
 import { renderSyncModeChoicePanel } from './clinical-onboarding-sync-mode.mjs';
 import { buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
 import {
@@ -47,7 +47,7 @@ import {
 } from './clinical-onboarding-nube.mjs';
 import { isCloudSalaUpgradePending } from './cloud-sync/cloud-sala-upgrade.mjs';
 
-import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
+import { escapeAttr } from '../dom-escape.mjs';
 async function tryAutoResumeCachedUsername(settings) {
   const profileGatePending = needsClinicalLanProfileGate(settings);
   const cachedUsername = profileGatePending
@@ -95,13 +95,6 @@ function buildRankOptionsHtml(rank) {
   return ['R1', 'R2', 'R3', 'R4']
     .map((r) => `<option value="${r}" ${rank === r ? 'selected' : ''}>${r}</option>`)
     .join('');
-}
-
-function buildSalaOptionsHtml(prefilledSala) {
-  return CLINICAL_SALAS.map(
-    (s) =>
-      `<option value="${escapeAttr(s)}" ${prefilledSala === s ? 'selected' : ''}>${escapeHtml(s)}</option>`
-  ).join('');
 }
 
 function resolveOnboardUsernamePrefill(settings) {
@@ -163,8 +156,9 @@ function buildLanProfileFormBody(settings) {
               <label for="onboard-sala">Rotación *</label>
               <select id="onboard-sala" class="profile-input" required>
                 <option value="">— Seleccionar —</option>
-                ${buildSalaOptionsHtml(prefilledSala)}
+                ${salaPickerOptionsHtml(prefilledSala)}
               </select>
+              ${salaPickerRotacionHtml(prefilledSala)}
             </div>
             ${buildNubePasswordFieldHtml(prefilledSala)}
             ${shiftPinFieldHtml}

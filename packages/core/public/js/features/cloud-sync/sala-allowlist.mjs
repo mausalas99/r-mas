@@ -8,7 +8,17 @@ export const CLOUD_SALAS = Object.freeze([
   'UX',
   'Eme',
   'Área A/Pensionistas',
+  'UCI',
+  'PostQx',
+  'Subespecialidad',
 ]);
+
+const ROTACION_BY_KEY = {
+  uci: 'UCI',
+  postqx: 'PostQx',
+  sub: 'Subespecialidad',
+  subespecialidad: 'Subespecialidad',
+};
 
 /** @param {unknown} raw */
 export function normalizeCloudSala(raw) {
@@ -26,6 +36,8 @@ export function normalizeCloudSala(raw) {
   if (key === 'ux') return 'UX';
   if (key === 'eme') return 'Eme';
   if (key.includes('area a') || key.includes('pension')) return 'Área A/Pensionistas';
+  const rot = key.match(/^(?:rotacion\s+)?(uci|postqx|sub|subespecialidad)$/);
+  if (rot) return ROTACION_BY_KEY[rot[1]];
   return s;
 }
 

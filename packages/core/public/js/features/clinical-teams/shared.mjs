@@ -16,6 +16,7 @@ export const CLINICAL_TEAM_SERVICES = [
   'Torre HU',
   'UX',
   'Área A/Pensionistas',
+  'Rotación',
 ];
 
 export const CLINICAL_SALAS = CLINICAL_SALA_VALUES;

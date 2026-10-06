@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 29;
+export const SCHEMA_VERSION = 31;
 
 export const DDL_V1 = [
   `CREATE TABLE app_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
@@ -51,7 +51,7 @@ export function ensureClinicalAccessTables(db) {
     CREATE TABLE IF NOT EXISTS teams (
       team_id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      service TEXT NOT NULL CHECK(service IN ('Sala', 'Torre HU', 'Eme', 'UX', 'Interconsultas', 'Área A/Pensionistas')),
+      service TEXT NOT NULL CHECK(service IN ('Sala', 'Torre HU', 'Eme', 'UX', 'Interconsultas', 'Área A/Pensionistas', 'Rotación')),
       sub_area_fraction TEXT,
       on_call_day_index INTEGER NOT NULL CHECK(on_call_day_index BETWEEN 0 AND 6),
       created_by TEXT,

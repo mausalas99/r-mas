@@ -24,6 +24,7 @@ import { migrateToV26TeamsSucceedsTeamId } from './schema-migrate-v26-teams-succ
 import { migrateToV27CloudOutbox } from './schema-migrate-v27-cloud-outbox.mjs';
 import { migrateToV28SyncWriteClocks } from './schema-migrate-v28-sync-write-clocks.mjs';
 import { migrateToV29AssignmentTombstone } from './schema-migrate-v29-assignment-tombstone.mjs';
+import { migrateToV30RotacionSala } from './schema-migrate-v30-rotacion-sala.mjs';
 
 /** @param {import('better-sqlite3').Database} db */
 function runMigrationsV11ThroughV19(db) {
@@ -89,6 +90,15 @@ function runMigrationsV11ThroughV19(db) {
     db.pragma('foreign_keys = OFF');
     try {
       db.transaction(() => migrateToV29AssignmentTombstone(db))();
+    } finally {
+      db.pragma('foreign_keys = ON');
+    }
+  }
+  // v31 reruns the v30 widen: an unshipped v30 dev build used «Rotación UCI…» labels.
+  if (readSchemaVersion(db) < 31) {
+    db.pragma('foreign_keys = OFF');
+    try {
+      db.transaction(() => migrateToV30RotacionSala(db))();
     } finally {
       db.pragma('foreign_keys = ON');
     }

@@ -51,7 +51,7 @@ export function migrateTeamsTableV11(db, salaCheck) {
     CREATE TABLE teams_v11 (
       team_id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      service TEXT NOT NULL CHECK(service IN ('Sala', 'Torre HU', 'Eme', 'UX', 'Interconsultas', 'Área A/Pensionistas')),
+      service TEXT NOT NULL CHECK(service IN ('Sala', 'Torre HU', 'Eme', 'UX', 'Interconsultas', 'Área A/Pensionistas', 'Rotación')),
       sub_area_fraction TEXT,
       on_call_day_index INTEGER NOT NULL CHECK(on_call_day_index BETWEEN 0 AND 6),
       created_by TEXT,

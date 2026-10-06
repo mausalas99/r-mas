@@ -23,7 +23,7 @@ import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
 import { getClientId, hasPersistedClinicalProfile } from './clinical-onboarding-gates.mjs';
 import { buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
 import { wireOnboardingModeBackButtons } from './clinical-onboarding-sync-mode.mjs';
-import { CLINICAL_SALAS } from './clinical-teams/shared.mjs';
+import { ROTACION_PENDING, ROTACION_PENDING_MSG, salaPickerOptionsHtml, salaPickerRotacionHtml, wireSalaPicker } from './sala-picker.mjs';
 import { bridgeCloudIdentityToLocal } from './cloud-sync/identity-bridge.mjs';
 import { createCloudSyncApi } from './cloud-sync/api-client.mjs';
 import {
@@ -32,13 +32,6 @@ import {
 } from './cloud-sync/register-during-onboarding.mjs';
 import { isCloudSala } from './cloud-sync/sala-allowlist.mjs';
 import { getCloudSyncRemember, getCloudSyncToken, getCloudSyncUrl } from './cloud-sync/settings.mjs';
-
-function buildSalaOptionsHtml(prefilledSala) {
-  return CLINICAL_SALAS.map(
-    (s) =>
-      `<option value="${escapeAttr(s)}" ${prefilledSala === s ? 'selected' : ''}>${escapeHtml(s)}</option>`
-  ).join('');
-}
 
 export function needsExistingAccountLogin(
   settings = readRpcSettings(),
@@ -78,8 +71,9 @@ export function buildExistingAccountLoginBodyHtml(settings = readRpcSettings()) 
             <label for="onboard-existing-sala">Rotación *</label>
             <select id="onboard-existing-sala" class="profile-input" required>
               <option value="">— Seleccionar —</option>
-              ${buildSalaOptionsHtml(prefilledSala)}
+              ${salaPickerOptionsHtml(prefilledSala)}
             </select>
+            ${salaPickerRotacionHtml(prefilledSala)}
             <p class="clinical-teams-hint">Necesaria para unirte a la sala de turno en Nube (${escapeHtml(getCloudSyncUrl())}).</p>
           </div>
           <p id="onboard-existing-status" class="clinical-teams-hint" aria-live="polite"></p>
@@ -189,6 +183,10 @@ function validateExistingLoginFields(fields, errEl) {
   }
   if (!fields.sala) {
     showExistingLoginError(errEl, 'Selecciona tu rotación.');
+    return false;
+  }
+  if (fields.sala === ROTACION_PENDING) {
+    showExistingLoginError(errEl, ROTACION_PENDING_MSG);
     return false;
   }
   if (!isCloudSala(fields.sala)) {
@@ -345,6 +343,7 @@ export function wireExistingAccountLoginInteractions() {
     form._rpcExistingLoginWired = true;
     form.addEventListener('submit', (ev) => void handleExistingAccountLoginSubmit(ev));
   }
+  wireSalaPicker(/** @type {HTMLSelectElement | null} */ (document.getElementById('onboard-existing-sala')));
 
   wireOnboardingModeBackButtons();
 

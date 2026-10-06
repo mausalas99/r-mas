@@ -62,12 +62,9 @@
       var hostUrl = String(location.origin || '').replace(/\/+$/, '');
       var room = String(p.get('room') || '').trim();
       var sala = String(p.get('sala') || '').trim();
-      if (/^sala-[12e]|torre-hu|area-a-pensionistas$/i.test(sala)) room = room || sala.toLowerCase();
-      else if (sala === 'Sala 1') room = room || 'sala-1';
-      else if (sala === 'Sala 2') room = room || 'sala-2';
-      else if (sala === 'Sala E') room = room || 'sala-e';
-      else if (sala === 'Torre HU') room = room || 'torre-hu';
-      else if (sala === 'Área A/Pensionistas') room = room || 'area-a-pensionistas';
+      var salaRooms = { 'Sala 1': 'sala-1', 'Sala 2': 'sala-2', 'Sala E': 'sala-e', 'Torre HU': 'torre-hu', 'Área A/Pensionistas': 'area-a-pensionistas', 'UCI': 'rotacion-uci', 'PostQx': 'rotacion-postqx', 'Subespecialidad': 'rotacion-sub' };
+      if (/^sala-[12e]|torre-hu|area-a-pensionistas|rotacion-(?:uci|postqx|sub)$/i.test(sala)) room = room || sala.toLowerCase();
+      else if (Object.prototype.hasOwnProperty.call(salaRooms, sala)) room = room || salaRooms[sala];
       var prev = {};
       try { prev = JSON.parse(ls.getItem('rpc-lan-config') || '{}') || {}; } catch { /* ignore */ }
       var cfg = { hostUrl: hostUrl || prev.hostUrl || '', teamCode: token };

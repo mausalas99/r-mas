@@ -5,6 +5,7 @@ import { closeModalAnimated } from '../ui-motion.mjs';
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { ensureLanProfileGateDeviceReset, isClinicalLocalOnlyMode, needsClinicalLanProfileGate, readRpcSettings } from '../clinical-settings.mjs';
 import { handleClinicalRegistrationSubmit } from './clinical-registration-submit.mjs';
+import { setSalaPickerValue } from './sala-picker.mjs';
 
 /** @type {((ok: boolean) => void)|null} */
 let pendingResolve = null;
@@ -45,6 +46,7 @@ export function prefillRegistrationFromUrlParams() {
   applyPrefillPair('clinical-reg-name', 'onboard-clinical-name', name);
   applyPrefillPair('clinical-reg-rank', 'onboard-rank', rank);
   applyPrefillPair('clinical-reg-sala', 'onboard-sala', sala);
+  if (sala) setSalaPickerValue(/** @type {HTMLSelectElement | null} */ (document.getElementById('onboard-sala')), sala);
   applyPrefillPair('clinical-reg-shift-pin', 'onboard-shift-pin', shiftPin);
 }
 

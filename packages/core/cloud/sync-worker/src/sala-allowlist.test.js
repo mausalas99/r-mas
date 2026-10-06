@@ -26,6 +26,12 @@ describe('normalizeCloudSala', () => {
     assert.equal(normalizeCloudSala('eme'), 'Eme');
     assert.equal(normalizeCloudSala('Área A/Pensionistas'), 'Área A/Pensionistas');
     assert.equal(normalizeCloudSala('area a'), 'Área A/Pensionistas');
+    assert.equal(normalizeCloudSala('rotacion uci'), 'UCI');
+    assert.equal(normalizeCloudSala('ROTACIÓN UCI'), 'UCI');
+    assert.equal(normalizeCloudSala('rotación postqx'), 'PostQx');
+    assert.equal(normalizeCloudSala('rotacion sub'), 'Subespecialidad');
+    assert.equal(normalizeCloudSala('rotacion subespecialidad'), 'Subespecialidad');
+    assert.equal(normalizeCloudSala('Subespecialidad'), 'Subespecialidad');
   });
 });
 

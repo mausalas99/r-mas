@@ -25,6 +25,7 @@ import {
 import { wireExistingAccountLoginInteractions } from './clinical-onboarding-existing-login.mjs';
 import { isCloudSala } from './cloud-sync/sala-allowlist.mjs';
 import { syncOnboardingNubeVisibility } from './clinical-onboarding-nube.mjs';
+import { ROTACION_PENDING, ROTACION_PENDING_MSG, wireSalaPicker } from './sala-picker.mjs';
 import { wireOnboardingSubsteps } from './clinical-onboarding-shell.mjs';
 import { finishOnboardingCloud } from './clinical-onboarding-cloud-finish.mjs';
 import {
@@ -73,6 +74,10 @@ function validateUsernameForm(fields, errEl) {
   }
   if (!fields.sala) {
     showOnboardError(errEl, 'Selecciona tu rotación.');
+    return false;
+  }
+  if (fields.sala === ROTACION_PENDING) {
+    showOnboardError(errEl, ROTACION_PENDING_MSG);
     return false;
   }
   return true;
@@ -283,6 +288,10 @@ function readResumedFormFields() {
 async function saveResumedProfileIfComplete(api, sessionUserId, username, errEl) {
   const fields = readResumedFormFields();
   if (!sessionUserId || !fields.name || !fields.sala) return true;
+  if (fields.sala === ROTACION_PENDING) {
+    showOnboardError(errEl, ROTACION_PENDING_MSG);
+    return false;
+  }
   if (!api?.dbClinicalProfileUpsert) return true;
 
   const profileRes = await api.dbClinicalProfileUpsert({
@@ -417,5 +426,6 @@ function wireOnboardingNubeExtras() {
     sala._rpcNubeSalaWired = true;
     sala.addEventListener('change', () => syncOnboardingNubeVisibility());
   }
+  wireSalaPicker(/** @type {HTMLSelectElement | null} */ (sala));
   syncOnboardingNubeVisibility();
 }
