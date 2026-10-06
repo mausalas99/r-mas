@@ -512,6 +512,41 @@ async function refreshActivePatientChartAfterCloudPull(result) {
   }
 }
 
+/**
+ * Each room entry this pull carried (decrypted fields only): pid → its
+ * fields.sala and registro (registro finds a local chart saved under another id).
+ * @param {{ state?: { entries?: unknown[] }, ops?: unknown[] }} row
+ * @returns {Map<string, { sala: string, registro: string }>}
+ */
+export function roomCopySalasFromPull(row) {
+  const out = new Map();
+  const add = (pid, fields) => {
+    // Still-encrypted fields ({ enc: 1 }) carry no readable sala: skip.
+    if (!pid || !fields || typeof fields !== 'object' || Array.isArray(fields) || fields.enc === 1) return;
+    out.set(pid, { sala: String(fields.sala || '').trim(), registro: String(fields.registro || '').trim() });
+  };
+  if (row?.state && Array.isArray(row.state.entries)) {
+    for (const entry of row.state.entries) add(String(entry?.id || '').trim(), entry?.fields);
+  }
+  for (const op of Array.isArray(row?.ops) ? row.ops : []) {
+    const m = /^entries\/([^/]+)\/fields$/.exec(String(op?.path || ''));
+    if (m) add(m[1], op.value);
+  }
+  return out;
+}
+
+/** Copies a move left behind in this room: mark them moved (cloud-census-sala-push). */
+function healStaleRoomCopies(row) {
+  const copies = roomCopySalasFromPull(row);
+  void import('./cloud-census-sala-push.mjs')
+    .then(async (mod) => {
+      // First pull this session: check the whole room (no-op after that).
+      await mod.healActiveRoomStaleCopies();
+      if (copies.size) await mod.markStaleRoomCopiesMoved(copies);
+    })
+    .catch((err) => console.warn('[R+] stale room copies:', err?.message || err));
+}
+
 /** @param {unknown} result */
 export async function applyCloudPullResult(result) {
   if (!result || typeof result !== 'object') return { added: 0, updated: 0, removed: false };
@@ -524,5 +559,6 @@ export async function applyCloudPullResult(result) {
   }
   await refreshSidebarAfterCloudPull(applied);
   await refreshActivePatientChartAfterCloudPull(applied);
+  healStaleRoomCopies(row);
   return applied;
 }

@@ -88,17 +88,15 @@ function filterRowsByTeamId(rows, teamIds, field = 'team_id') {
 }
 
 /**
- * Assignments of this sala's teams, plus "no team" rows ('') of patients this sala once held:
- * without them a peer never learns the patient left the team.
+ * Every assignment of patients this sala ever held: its own teams, "no team" rows ('')
+ * and moves to another sala's team. Without the move rows, peers and the iPad in this
+ * room still see the patient on the old team after it moved to another sala.
  */
 function filterAssignmentsForSala(rows, teamIds) {
   const pids = new Set(
     (rows || []).filter((r) => teamIds.has(String(r?.team_id || '').trim())).map((r) => r.patient_id)
   );
-  return (rows || []).filter((r) => {
-    const tid = String(r?.team_id || '').trim();
-    return tid ? teamIds.has(tid) : pids.has(r?.patient_id);
-  });
+  return (rows || []).filter((r) => pids.has(r?.patient_id));
 }
 
 /**

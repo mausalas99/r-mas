@@ -77,6 +77,20 @@ describe('patient_team_assignment tombstone (team_id empty)', () => {
     db.close();
   });
 
+  it('export keeps a move to another sala for the sala that held the patient', () => {
+    const db = openDb();
+    const team = seed(db);
+    const u = ensureClinicalUser(db, { clientId: 'c2', rank: 'R4' });
+    const other = createTeam(db, { name: 'Equipo B', service: 'Sala', onCallDayIndex: 0, sala: 'Sala 2', createdBy: u.userId });
+    assignPatientToTeam(db, { patientId: 'p1', teamId: team.team_id, effectiveAt: T1 });
+    assignPatientToTeam(db, { patientId: 'p1', teamId: other.team_id, effectiveAt: T2 });
+    assignPatientToTeam(db, { patientId: 'p2', teamId: other.team_id, effectiveAt: T2 });
+    const rows = exportClinicalOpsSnapshotForSala(db, 'Sala 1').patient_team_assignment;
+    assert.deepEqual(rows.map((r) => r.patient_id).sort(), ['p1', 'p1']);
+    assert.equal(resolvePatientTeamIdFromAssignments('p1', rows, now), other.team_id);
+    db.close();
+  });
+
   it('peer DB merge and bundle merge both apply the tombstone', () => {
     const a = openDb();
     const b = openDb();

@@ -531,3 +531,20 @@ describe('pull-apply clinicalOps ops-mode fold', () => {
     assert.deepEqual(fold.clinicalOps.teams, [{ team_id: 't-a', name: 'NEW' }]);
   });
 });
+
+describe('pull-apply stale room copies', () => {
+  it('roomCopySalasFromPull reads fields.sala from state and ops, skips encrypted fields', async () => {
+    const { roomCopySalasFromPull } = await import('./pull-apply.mjs');
+    const fromState = roomCopySalasFromPull({
+      state: { entries: [{ id: 'p1', fields: { sala: 'Interconsultas', registro: 'R-1' } }, { id: 'p2', fields: { enc: 1 } }] },
+    });
+    assert.deepEqual([...fromState], [['p1', { sala: 'Interconsultas', registro: 'R-1' }]]);
+    const fromOps = roomCopySalasFromPull({
+      ops: [
+        { path: 'entries/p3/fields', value: { cama: '0' } },
+        { path: 'entries/p3/note', value: {} },
+      ],
+    });
+    assert.deepEqual([...fromOps], [['p3', { sala: '', registro: '' }]]);
+  });
+});

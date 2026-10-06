@@ -518,27 +518,31 @@ export function enqueueCloudPatientDelete(patient) {
 }
 
 /**
- * Admit mirrors a chart into its own sala room when that is not the active one
- * (enqueueCloudPatientAdmit). The delete must reach that room too, or the next
- * pull brings the patient back.
+ * The outbox tombstones the active room only. A copy can sit in other sala
+ * rooms too: admit mirrors into the patient's own sala room, and a move leaves
+ * the chart in the room it left. Tombstone the operational sala room and every
+ * room already cached for this turn, or the next pull brings the patient back.
  * @param {object} patient @param {string} pid
  */
 async function tombstoneInOperationalSala(patient, pid) {
   try {
     const mod = await import('./cloud-census-sala-push.mjs');
+    const { cachedTurnRoomSalas } = await import('./cloud-clinical-ops-sala.mjs');
     const { getClinicalScopeContextForEvaluate } = await import('../../clinical-access-runtime.mjs');
     const ctx = getClinicalScopeContextForEvaluate();
-    if (mod.patientBelongsToActiveCloudRoom(patient, ctx)) return;
-    const sala = mod.resolveOperationalPatientSala(patient, ctx);
-    if (!sala) return;
-    const now = cloudSyncNowIso();
-    await mod.pushOpsToSalaRoom(sala, [
-      buildCloudTombstoneOp(pid, {
-        registro: patient.registro || '',
-        actorId: resolveCloudActorId(bridgeRuntime),
-        updatedAt: now,
-      }),
-    ]);
+    const salas = new Set(cachedTurnRoomSalas());
+    if (!mod.patientBelongsToActiveCloudRoom(patient, ctx)) {
+      const own = mod.resolveOperationalPatientSala(patient, ctx);
+      if (own) salas.add(own);
+    }
+    salas.delete(mod.getActiveCloudSala());
+    if (!salas.size) return;
+    const op = buildCloudTombstoneOp(pid, {
+      registro: patient.registro || '',
+      actorId: resolveCloudActorId(bridgeRuntime),
+      updatedAt: cloudSyncNowIso(),
+    });
+    await Promise.all([...salas].map((sala) => mod.pushOpsToSalaRoom(sala, [op])));
   } catch (err) {
     console.warn('[R+] sala tombstone:', err?.message || err);
   }

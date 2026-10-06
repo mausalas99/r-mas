@@ -61,6 +61,11 @@ export function getSalaRoomCache(sala) {
   };
 }
 
+/** Salas with a cached room for the current turn — rooms that already exist, none created. */
+export function cachedTurnRoomSalas() {
+  return Object.keys(readSalaRooms()).filter((sala) => getSalaRoomCache(sala).roomId);
+}
+
 /** @param {string} sala @param {{ id: string, revision?: number, turnKey?: string }} room */
 export function rememberSalaRoom(sala, room) {
   const key = salaCacheKey(sala);

@@ -96,7 +96,7 @@ async function pushClinicalOpsAfterTeamAssign(teamSala) {
   }
 }
 
-async function mirrorAssignedPatientToCloud(pid) {
+async function mirrorAssignedPatientToCloud(pid, prevSala = '') {
   const patient = (getPatients() || []).find((p) => String(p?.id || '') === String(pid || '').trim());
   const { getClinicalScopeContextForEvaluate } = await import('./clinical-access-runtime.mjs');
   const scopeCtx = getClinicalScopeContextForEvaluate();
@@ -106,13 +106,11 @@ async function mirrorAssignedPatientToCloud(pid) {
       if (typeof cloud.scheduleCloudSyncPush === 'function') cloud.scheduleCloudSyncPush();
       return;
     }
-    const { mirrorPatientCensusToOperationalSala, patientBelongsToActiveCloudRoom } = await import(
-      './features/cloud-sync/cloud-census-sala-push.mjs'
-    );
-    await mirrorPatientCensusToOperationalSala(patient, {
-      actorId: cloud.resolveCloudActorId?.(),
-      context: scopeCtx,
-    });
+    const { markPatientMovedInSalaRoom, mirrorPatientCensusToOperationalSala, patientBelongsToActiveCloudRoom } =
+      await import('./features/cloud-sync/cloud-census-sala-push.mjs');
+    const actorId = cloud.resolveCloudActorId?.();
+    await mirrorPatientCensusToOperationalSala(patient, { actorId, context: scopeCtx });
+    await markPatientMovedInSalaRoom(patient, prevSala, actorId);
     if (
       patientBelongsToActiveCloudRoom(patient, scopeCtx) &&
       typeof cloud.scheduleCloudSyncPush === 'function'
@@ -135,7 +133,7 @@ function dispatchPatientTeamAssignedEvents(pid, tid, teamSala) {
 }
 
 async function notifyPatientTeamAssigned(pid, tid, prevTid = '') {
-  syncLocalPatientSalaFromTeamAssignment(pid, tid);
+  const prevSala = syncLocalPatientSalaFromTeamAssignment(pid, tid);
   await fetchClinicalScopeContextFromDb();
   // No team (''): push to the sala of the team the patient just left.
   const teamSala = resolveTeamSalaById(tid || prevTid);
@@ -143,22 +141,24 @@ async function notifyPatientTeamAssigned(pid, tid, prevTid = '') {
   // take seconds (or stall offline); awaiting it kept a new patient out of the
   // sidebar until the user switched patients.
   void pushClinicalOpsAfterTeamAssign(teamSala)
-    .then(() => mirrorAssignedPatientToCloud(pid))
+    .then(() => mirrorAssignedPatientToCloud(pid, prevSala))
     .catch((err) => console.error(err))
     .then(() => dispatchPatientTeamAssignedEvents(pid, tid, teamSala));
 }
 
+/** @returns {string} the sala the patient had before the stamp ('' when not stamped) */
 function syncLocalPatientSalaFromTeamAssignment(patientId, teamId) {
   const pid = String(patientId || '').trim();
   const tid = String(teamId || '').trim();
-  if (!pid || !tid) return;
+  if (!pid || !tid) return '';
   const patient = (getPatients() || []).find((p) => String(p?.id) === pid);
-  if (!patient) return;
+  if (!patient) return '';
   const team = (clinicalSessionContext.teams || []).find((t) => String(t?.team_id) === tid);
-  if (!team) return;
+  if (!team) return '';
   const prev = String(patient.sala || '').trim();
   stampPatientClinicalSala(patient, clinicalSessionContext.user, { team });
   if (String(patient.sala || '').trim() !== prev) persistClinicalState();
+  return prev;
 }
 
 function canAssignTeam(api, pid, tid, allowClear) {
