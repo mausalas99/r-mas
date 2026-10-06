@@ -116,6 +116,14 @@ export function resolveLabSetMs(set) {
   return null;
 }
 
+const CULTIVO_LINE = /^\s*(CULTIVO|BACTERIOLOGIA|UROCULTIVO|HEMOCULTIVO|FUNGICULTIVO|COPROCULTIVO|TINCION\s+DE\s+GRAM)\b|^\s*[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ .()/-]*\s\d{1,2}\/\d{1,2}(\/\d{2,4})?\s*:/i;
+
+/** True when any resLabs row starts a culture block (same starts as cultivo-block-core). @param {unknown} set */
+export function labSetHasCultivo(set) {
+  const rows = /** @type {{ resLabs?: unknown }} */ (set).resLabs;
+  return Array.isArray(rows) && rows.some((r) => CULTIVO_LINE.test(String(r ?? '')));
+}
+
 /**
  * @param {unknown} set
  * @param {Date} [now]
@@ -125,6 +133,8 @@ export function isLabSetWithinMobileHistoryWindow(set, now, days) {
   if (!set || typeof set !== 'object') return false;
   const row = /** @type {{ fecha?: unknown, id?: unknown }} */ (set);
   if (row.fecha === 'Anterior' || row.id === 'migrated-anterior') return false;
+  // Cultures stay on the phone past the window: results and ATB arrive days after the sample.
+  if (labSetHasCultivo(set)) return true;
 
   const ms = resolveLabSetMs(set);
   if (ms == null) return true;
