@@ -129,6 +129,7 @@ export function createDbManager({ userDataPath, safeStorage, getClientId }) {
     unlockPlain: auth.unlockPlain,
     unlockWithKeyHex: auth.unlockWithKeyHex,
     lock: auth.lock,
+    takeReleasedOnUnlock: auth.takeReleasedOnUnlock,
     withTransaction,
     auditOnly,
     schedulePendingAudit: auth.schedulePendingAudit,

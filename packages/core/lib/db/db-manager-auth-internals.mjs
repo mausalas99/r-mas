@@ -119,7 +119,7 @@ export async function openDatabaseConnection(ctx, { keyHex } = {}) {
     pruneClinicalUserActivityLog(conn);
   } catch (_e) { void _e; }
   try {
-    releaseArchivedTeamPatients(conn, new Date().toISOString());
+    ctx.state.releasedOnUnlock = releaseArchivedTeamPatients(conn, new Date().toISOString()).released;
   } catch (_e) { void _e; }
   deps.setDb(conn);
   deps.setState('unlocked');
@@ -224,6 +224,7 @@ export function createAuthDeps(deps) {
       unlockFailTimestamps: [],
       pendingUnlockFailCount: 0,
       pendingAudits: [],
+      releasedOnUnlock: 0,
     },
   };
 }

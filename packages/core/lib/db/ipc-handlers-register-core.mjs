@@ -65,6 +65,10 @@ async function finishDbUnlockResponse(ctx, lsSnapshot, unlockResult) {
 function registerDbCoreStatusHandlers(ctx) {
   const { ipcMain, dbManager } = ctx;
 
+  bindIpcHandler(ipcMain, 'db:take-unlock-notice', async () => ({
+    releasedPatients: dbManager.takeReleasedOnUnlock(),
+  }));
+
   bindIpcHandler(ipcMain, 'db:status', async () => {
     const state = dbManager.getState();
     const db = dbManager.getDb();

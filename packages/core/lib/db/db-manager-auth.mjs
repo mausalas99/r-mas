@@ -39,6 +39,12 @@ export function createDbAuthMethods(deps) {
     unlockPlain: () => openDatabaseConnection(ctx),
     unlockWithKeyHex: (keyHex) => unlockWithKeyHex(ctx, keyHex),
     lock: () => lockDb(ctx),
+    /** One-shot: patients released by the unlock sweep. */
+    takeReleasedOnUnlock: () => {
+      const n = ctx.state.releasedOnUnlock;
+      ctx.state.releasedOnUnlock = 0;
+      return n;
+    },
     isRateLimited: () => isRateLimited(ctx.state),
     recordUnlockFail: () => recordUnlockFail(ctx.state),
     schedulePendingAudit: (eventType, meta) =>

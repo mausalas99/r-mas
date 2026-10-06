@@ -5,7 +5,7 @@ import {
   collectClinicalLsSnapshot,
   sweepLegacyClinicalLocalStorage,
 } from './db-unlock-migration.mjs';
-import { dbUnlockState } from './db-unlock-state.mjs';
+import { dbUnlockState, electronApi } from './db-unlock-state.mjs';
 
 async function hydrateAppStateFromDb() {
   try {
@@ -73,6 +73,23 @@ export async function applyClinicalDbUnlockCompletion(opts) {
   await flushPendingClinicalOpsAfterUnlock();
   if (refreshOnboarding) await refreshOnboardingAfterUnlock();
   sweepLegacyClinicalLocalStorage(getBlobCache());
+  await showReleasedPatientsNotice();
+}
+
+async function showReleasedPatientsNotice() {
+  try {
+    var api = electronApi();
+    if (!api || typeof api.dbTakeUnlockNotice !== 'function') return;
+    var n = (await api.dbTakeUnlockNotice()).releasedPatients | 0;
+    if (n > 0 && typeof window.showToast === 'function') {
+      window.showToast(
+        n === 1
+          ? '1 paciente quedó sin equipo porque su equipo se archivó.'
+          : n + ' pacientes quedaron sin equipo porque su equipo se archivó.',
+        'info'
+      );
+    }
+  } catch (_e) { void _e; }
 }
 
 export function handleUnlockSuccess(res) {

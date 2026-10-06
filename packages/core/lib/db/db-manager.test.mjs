@@ -5,6 +5,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { createDbManager } from './db-manager.mjs';
 import { SCHEMA_VERSION } from './schema.mjs';
+import { ensureClinicalUser, claimUsername } from './clinical-access-users.mjs';
+import { createTeam } from './clinical-access-teams-core.mjs';
+import { assignPatientToTeam } from './clinical-access-assignments.mjs';
+import { archiveRotationAndTeams } from './clinical-access-rotation.mjs';
 
 const mockSafe = {
   isEncryptionAvailable: () => true,
@@ -35,6 +39,26 @@ describe('db-manager', () => {
     const again = await mgr.ensureUnlocked();
     assert.equal(again.ok, true);
     assert.equal(mgr.isUnlocked(), true);
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('unlock surfaces patients released from archived teams once', async () => {
+    const tmpDir = makeUserDataDir();
+    const mgr = createManager(tmpDir);
+    await mgr.ensureUnlocked();
+    const db = mgr.getDb();
+    const user = ensureClinicalUser(db, { clientId: 'adm', rank: 'R4' });
+    claimUsername(db, { userId: user.userId, username: 'adm' });
+    const team = createTeam(db, {
+      name: 'Equipo X', service: 'Sala', onCallDayIndex: 0, sala: 'Sala 2', createdBy: user.userId,
+    });
+    assignPatientToTeam(db, { patientId: 'p1', teamId: team.team_id, effectiveAt: '2026-08-01' });
+    archiveRotationAndTeams(db);
+    mgr.lock();
+    await mgr.ensureUnlocked();
+    assert.equal(mgr.takeReleasedOnUnlock(), 1);
+    assert.equal(mgr.takeReleasedOnUnlock(), 0);
+    mgr.lock();
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 

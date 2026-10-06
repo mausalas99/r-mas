@@ -159,6 +159,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbStatus: function() {
     return ipcRenderer.invoke('db:status');
   },
+  dbTakeUnlockNotice: function() {
+    return ipcRenderer.invoke('db:take-unlock-notice');
+  },
   adminRescueKeyGetPublicInfo: function() {
     return ipcRenderer.invoke('admin-rescue-key:get-public-info');
   },
