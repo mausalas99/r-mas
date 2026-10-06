@@ -1,0 +1,26 @@
+R+ 8.4.9 (estable — release 8.4.9)
+======================================
+
+Fecha: 2026-10-06
+
+## Resumen
+
+Los residentes que rotan fuera de Medicina Interna eligen UCI, PostQx o Subespecialidad, cada una con su sala Nube. En Windows el instalador crea siempre el acceso directo.
+
+## Nuevo / mejorado
+
+- **Nuevo (Perfil):** tres salas para rotaciones fuera de MI: UCI, PostQx y Subespecialidad. Al registrarte eliges «Otra rotación (fuera de MI)» y luego tu servicio. Cada una tiene su propia sala Nube.
+- **Nuevo (Equipos):** si un equipo se archivó y sus pacientes quedaron sin equipo, R+ te avisa al abrir.
+- **Cambio (Windows):** el instalador se llama «Instalar-R+-…-Windows.exe» y crea siempre el acceso directo en el escritorio, también al reinstalar.
+- **Cambio (Signos vitales):** Guardia, Inicio de turno y la gráfica marcan solo los signos fuera de rango.
+- **Cambio (Móvil):** los cultivos se quedan en el teléfono después de la ventana de labs, porque el resultado y el antibiograma llegan días después.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.4.9-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.4.9-Mac-Intel.dmg`
+- Windows: `Instalar-R+-8.4.9-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

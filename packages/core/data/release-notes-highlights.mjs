@@ -4,27 +4,31 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_848 = [
+var RELEASE_NOTES_849 = [
   {
-    title: 'Velocidad de norepinefrina',
-    body: 'En Estado actual, cada línea de norepinefrina tiene una caja para la velocidad en mcg/min. La dosis de la línea cambia al escribirla.',
+    title: 'Rotaciones fuera de Medicina Interna',
+    body: 'Si rotas en <strong>UCI</strong>, <strong>PostQx</strong> o una <strong>Subespecialidad</strong>, elige «Otra rotación (fuera de MI)» y luego tu servicio. Cada servicio tiene su propia sala Nube.',
   },
   {
-    title: 'Suero y fármaco en una línea',
-    body: 'Al pegar indicaciones, un suero con «VEL INF» y su fármaco se unen con «DILUIR EN:». El botón de la receta dice «Enviar a Estado Actual».',
+    title: 'Aviso de pacientes sin equipo',
+    body: 'Si un equipo se archivó, sus pacientes quedan sin equipo. Ahora R+ te avisa al abrir cuántos fueron.',
   },
   {
-    title: 'PDF en una hoja',
-    body: 'Las formas de Nota e Indicaciones se reducen hasta caber en una hoja. El nombre del archivo lleva la hora.',
+    title: 'Instalador de Windows más claro',
+    body: 'El archivo se llama <strong>Instalar-R+</strong> y crea siempre el acceso directo en el escritorio, también al reinstalar.',
   },
   {
-    title: 'Registro y tablero más claros',
-    body: 'T/A muestra las dos cifras juntas con una diagonal. El conteo del tablero de Interconsultas cuenta solo tu equipo.',
+    title: 'Signos fuera de rango',
+    body: 'Guardia, Inicio de turno y la gráfica marcan solo los signos vitales fuera de rango.',
+  },
+  {
+    title: 'Cultivos en el teléfono',
+    body: 'Los cultivos se quedan en la app móvil después de la ventana de labs, porque el antibiograma llega días después.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_848;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_849;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.4.8': RELEASE_NOTES_848,
+  '8.4.9': RELEASE_NOTES_849,
 };

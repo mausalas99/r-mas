@@ -1,6 +1,6 @@
 {
   "name": "r-plus",
-  "version": "8.4.8",
+  "version": "8.4.9",
   "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "packages/im/main.js",
   "workspaces": [

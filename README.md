@@ -51,9 +51,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.4.8](https://github.com/mausalas99/r-mas/releases/tag/v8.4.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.4.9](https://github.com/mausalas99/r-mas/releases/tag/v8.4.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.4.9 (estable — release 8.4.9)
+
+- **Perfil:** salas UCI, PostQx y Subespecialidad para rotaciones fuera de MI.
+- **Equipos:** aviso cuando pacientes quedan sin equipo por un equipo archivado.
+- **Windows:** instalador «Instalar-R+-…» y acceso directo siempre.
+- **Signos vitales:** solo se marcan los fuera de rango.
+- **Móvil:** los cultivos se quedan en el teléfono.
+
+Notas: `docs/RELEASE_NOTES_8.4.9.txt`.
 
 ## R+ 8.4.8 (estable — release 8.4.8)
 
