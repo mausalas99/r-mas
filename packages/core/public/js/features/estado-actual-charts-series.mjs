@@ -307,9 +307,10 @@ const EA_ALL_VITAL_KEYS = ['tas', 'tad', 'fc', 'fr', 'temp', 'sat'];
 
 /**
  * One chart point per registered reading, ascending by time: the shared time
- * axis for a group of rows that must line up under one crosshair. Reading N of
- * each sign in a registro lands on the same point; a reading with an «Alterado»
- * time sits at that time, the rest at the registro time.
+ * axis for a group of rows that must line up under one crosshair. Readings with
+ * the same time share a point at that time (hourly sends give each sign its own
+ * hours); untimed readings pair up by their order within each sign and sit at
+ * the registro time.
  * @param {unknown[]} histAsc
  * @param {readonly string[]} [keys]
  * @returns {{ recordedAt: string, ms: number, vitalPoint: Record<string, { value: number, altered: boolean }> }[]}
@@ -321,23 +322,25 @@ export function buildSharedVitalRows(histAsc, keys) {
     var row = /** @type {any} */ (histAsc[ri]);
     if (!row || typeof row !== 'object') continue;
     var series = vitalSeriesFromMedicion(row);
-    var n = 0;
+    /** @type {Record<string, { time: string, vitalPoint: Record<string, { value: number, altered: boolean }> }>} */
+    var groups = {};
+    var order = [];
     use.forEach(function (k) {
-      n = Math.max(n, (series[k] || []).length);
-    });
-    for (var i = 0; i < n; i++) {
-      var vitalPoint = {};
-      var found = false;
-      var time = '';
-      use.forEach(function (k) {
-        var rd = (series[k] || [])[i];
+      var untimed = 0;
+      (series[k] || []).forEach(function (rd) {
         if (!rd || !Number.isFinite(rd.value)) return;
-        vitalPoint[k] = { value: rd.value, altered: isVitalAltered(k, rd.value) || !!rd.time };
-        found = true;
-        if (!time && rd.time) time = rd.time;
+        var key = rd.time ? 't' + rd.time : '#' + untimed++;
+        if (!groups[key]) {
+          groups[key] = { time: rd.time || '', vitalPoint: {} };
+          order.push(key);
+        }
+        groups[key].vitalPoint[k] = { value: rd.value, altered: isVitalAltered(k, rd.value) };
       });
-      if (!found) continue;
-      var ms = gluPointMs(row.recordedAt != null ? String(row.recordedAt) : '', time, true);
+    });
+    for (var gi = 0; gi < order.length; gi++) {
+      var g = groups[order[gi]];
+      var ms = gluPointMs(row.recordedAt != null ? String(row.recordedAt) : '', g.time, true);
+      var vitalPoint = g.vitalPoint;
       points.push({
         recordedAt: ms ? new Date(ms).toISOString() : String(row.recordedAt || ''),
         ms: ms,

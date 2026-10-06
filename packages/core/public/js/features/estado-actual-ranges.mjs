@@ -46,6 +46,16 @@ export function isVitalAltered(key, raw) {
   return n < r.min || n > r.max;
 }
 
+/**
+ * Range check for any alteredAt key: base signs, their Extra/Peak twins, and glu.
+ * @param {string} key
+ * @param {unknown} raw
+ */
+export function isVitalKeyAltered(key, raw) {
+  if (key === 'glu') return isGluAltered(raw);
+  return isVitalAltered(key.replace(/(Extra|Peak)$/, ''), raw);
+}
+
 /** @param {unknown} raw */
 export function isTempFebrile(raw) {
   if (raw == null || String(raw).trim() === '') return false;

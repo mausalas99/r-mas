@@ -34,6 +34,24 @@ test('charts: every reading of a registro is a point, not only the last one', ()
   assert.equal(new Date(rows[i150].recordedAt).getHours(), 12);
 });
 
+test('charts: readings group by their own time, not by position', () => {
+  var hist = [
+    {
+      recordedAt: new Date(2026, 9, 2, 0, 0).toISOString(),
+      vitalSeries: {
+        tas: [{ value: 110, time: '04:00' }],
+        fc: [{ value: 80, time: '12:00' }, { value: 95, time: '16:00' }],
+        sat: [{ value: 90, time: '16:00' }],
+      },
+    },
+  ];
+  var rows = buildSharedVitalRows(hist, ['tas', 'fc', 'sat']);
+  assert.deepEqual(
+    rows.map((r) => [new Date(r.recordedAt).getHours(), Object.keys(r.vitalPoint).sort().join(',')]),
+    [[4, 'tas'], [12, 'fc'], [16, 'fc,sat']]
+  );
+});
+
 test('charts: points sort by time across registros and old rows still show', () => {
   var hist = [
     { recordedAt: at(14, 0), vitals: { tas: 130 } },

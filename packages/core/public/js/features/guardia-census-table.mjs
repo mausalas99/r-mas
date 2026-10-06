@@ -4,6 +4,7 @@
  */
 import { escHtml, escAttr } from '../dom-escape.mjs';
 import { liveHistorial } from './estado-actual-data-model.mjs';
+import { isVitalKeyAltered } from './estado-actual-ranges.mjs';
 import { isTodoOverdue } from '../todos-due.mjs';
 import { storage } from '../storage.js';
 import { accesoFechaToDateInputValue } from '../patient-date-fields.mjs';
@@ -115,7 +116,7 @@ export function alteradosForPatient(p) {
   const vitals = entryVitals(entry);
   const alt = entry.alteredAt && typeof entry.alteredAt === 'object' ? entry.alteredAt : {};
   const chips = Object.keys(alt)
-    .filter((k) => vitals[k] != null)
+    .filter((k) => vitals[k] != null && isVitalKeyAltered(k, vitals[k]))
     .map((k) => `${vitalLabel(k)} ${vitals[k]}`);
   return { taken: true, chips };
 }

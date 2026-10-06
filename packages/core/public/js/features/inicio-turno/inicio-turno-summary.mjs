@@ -8,6 +8,7 @@
  */
 import { formatTodoDueLabel } from '../../todos-due.mjs';
 import { liveHistorial } from '../estado-actual-data-model.mjs';
+import { isVitalKeyAltered } from '../estado-actual-ranges.mjs';
 import { formatAccesoFechaDisplay } from '../../patient-date-fields.mjs';
 import { patientPendientes, isPatientAdmittedToday, admissionDateForPatient } from '../guardia-census-table.mjs';
 import { isPatientAdmissionIncomplete } from '../../patient-admission-incomplete.mjs';
@@ -51,7 +52,7 @@ function lastVitalsAlteredChips(p) {
   const vitals = vitalsObjectFromEntry(last);
   const alt = last?.alteredAt && typeof last.alteredAt === 'object' ? last.alteredAt : {};
   return Object.keys(alt)
-    .filter((k) => vitals[k] != null)
+    .filter((k) => vitals[k] != null && isVitalKeyAltered(k, vitals[k]))
     .map((k) => `${k.toUpperCase()} ${vitals[k]}`);
 }
 
