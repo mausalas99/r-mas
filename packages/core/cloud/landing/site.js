@@ -11,11 +11,13 @@
 
   function each(sel, fn) { Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
 
-  function apply(ver) {
+  function apply(ver, winUrl) {
     var dl = ver && BASE + '/download/v' + ver + '/R%2B-' + ver + '-';
+    // Windows asset name changed in 8.4.9 («Instalar-R+-…»); use whatever the release has.
+    var winDl = winUrl || (ver && dl + 'Windows.exe');
     var T = {
-      mac: { title: 'Descargar para macOS', sub: 'Apple Silicon · .dmg · ' + ver, href: dl + 'Mac-Apple-Silicon.dmg', alt: '¿Mac con Intel?', altHref: dl + 'Mac-Intel.dmg', two: 'Descargar para Windows', twoHref: dl + 'Windows.exe' },
-      win: { title: 'Descargar para Windows', sub: '64 bits · .exe · ' + ver, href: dl + 'Windows.exe', two: 'Descargar para macOS', twoHref: dl + 'Mac-Apple-Silicon.dmg' },
+      mac: { title: 'Descargar para macOS', sub: 'Apple Silicon · .dmg · ' + ver, href: dl + 'Mac-Apple-Silicon.dmg', alt: '¿Mac con Intel?', altHref: dl + 'Mac-Intel.dmg', two: 'Descargar para Windows', twoHref: winDl },
+      win: { title: 'Descargar para Windows', sub: '64 bits · .exe · ' + ver, href: winDl, two: 'Descargar para macOS', twoHref: dl + 'Mac-Apple-Silicon.dmg' },
       other: { title: 'Ver descargas', sub: 'Disponible para macOS y Windows', href: BASE + '/latest' },
       mobile: { title: 'Ver descargas', sub: 'App de escritorio. Descárgala en tu Mac o PC.', href: BASE + '/latest' }
     };
@@ -38,7 +40,8 @@
     .then(function (j) {
       var m = j && /^v?(\d+\.\d+\.\d+)$/.exec(j.tag_name || '');
       var ok = m && (j.assets || []).some(function (a) { return a.name === 'R+-' + m[1] + '-Mac-Apple-Silicon.dmg'; });
-      if (ok) apply(m[1]);
+      var win = ok && j.assets.filter(function (a) { return /-Windows\.exe$/.test(a.name); })[0];
+      if (ok) apply(m[1], win && win.browser_download_url);
     })
     .catch(function () {});
 })();

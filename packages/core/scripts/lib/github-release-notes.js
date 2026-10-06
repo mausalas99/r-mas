@@ -18,7 +18,7 @@ function githubDownloadBanner(version, opts) {
     '',
     `## [⬇ Mac Intel](${base}/R+-${v}-Mac-Intel.dmg)`,
     '',
-    `## [⬇ Windows](${base}/R+-${v}-Windows.exe)`,
+    `## [⬇ Windows](${base}/Instalar-R+-${v}-Windows.exe)`,
     '',
     '---',
     '',

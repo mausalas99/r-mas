@@ -55,7 +55,7 @@ function humanInstallAliases(version, pkg) {
   return [
     { from: `${pn}-${v}-arm64.dmg`, to: `${pn}-${v}-Mac-Apple-Silicon.dmg` },
     { from: `${pn}-${v}-x64.dmg`, to: `${pn}-${v}-Mac-Intel.dmg` },
-    { from: `${pn}-${v}-x64.exe`, to: `${pn}-${v}-Windows.exe` },
+    { from: `${pn}-${v}-x64.exe`, to: `Instalar-${pn}-${v}-Windows.exe` },
   ];
 }
 

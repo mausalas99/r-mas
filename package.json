@@ -177,7 +177,8 @@
     },
     "nsis": {
       "oneClick": true,
-      "perMachine": false
+      "perMachine": false,
+      "createDesktopShortcut": "always"
     },
     "publish": {
       "provider": "github",

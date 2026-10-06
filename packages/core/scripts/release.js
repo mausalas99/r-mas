@@ -184,7 +184,7 @@ El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instalad
 
 - Mac Apple Silicon (M1–M4): \`R+-${version}-Mac-Apple-Silicon.dmg\`
 - Mac Intel: \`R+-${version}-Mac-Intel.dmg\`
-- Windows: \`R+-${version}-Windows.exe\`
+- Windows: \`Instalar-R+-${version}-Windows.exe\`
 
 Tras el build local: \`npm run build:mac\` / \`npm run build:win\` (incluye write-release-yml.js).
 `;
