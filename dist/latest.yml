@@ -1,36 +1,20 @@
-version: 8.4.8
+version: 8.4.9
 files:
-  - url: R+-8.4.8-x64.exe
-    sha512: hoiJiLCy9QDavIR+Kub/3H96mu09+5eQG8rJYVkGRoZF/GRc2eDq6sSjPonR4jSs6gWg6HZz5phUue9e8dpSSQ==
-    size: 119958134
-path: R+-8.4.8-x64.exe
-sha512: hoiJiLCy9QDavIR+Kub/3H96mu09+5eQG8rJYVkGRoZF/GRc2eDq6sSjPonR4jSs6gWg6HZz5phUue9e8dpSSQ==
-releaseDate: '2026-10-05T23:59:14.000Z'
+  - url: R+-8.4.9-x64.exe
+    sha512: GFE1+Gybigei2iFZ02Z3JcsGmc1ozxu7cZkcwaiKs2eQblTFEs8RubZlsAbcjERMQUnjO+DmHh783t2SSh7y1w==
+    size: 119981417
+path: R+-8.4.9-x64.exe
+sha512: GFE1+Gybigei2iFZ02Z3JcsGmc1ozxu7cZkcwaiKs2eQblTFEs8RubZlsAbcjERMQUnjO+DmHh783t2SSh7y1w==
+releaseDate: '2026-10-06T18:26:48.000Z'
 releaseNotes: |
-  Ajustas la velocidad de norepinefrina en Estado actual. Las indicaciones con suero se unen en una sola línea. Los PDF de formas caben en una hoja.
+  Los residentes que rotan fuera de Medicina Interna eligen UCI, PostQx o Subespecialidad, cada una con su sala Nube. En Windows el instalador crea siempre el acceso directo.
   
-  Nuevo (Estado actual): cada línea de norepinefrina tiene una caja para la velocidad en mcg/min. La caja cambia la dosis de la línea.
+  Nuevo (Perfil): tres salas para rotaciones fuera de MI: UCI, PostQx y Subespecialidad. Al registrarte eliges «Otra rotación (fuera de MI)» y luego tu servicio. Cada una tiene su propia sala Nube.
   
-  Nuevo (Receta): al pegar indicaciones, un suero con «VEL INF» y su fármaco se unen en una línea con «DILUIR EN:». También se leen «HRA», «HRS» y «HR» como hora.
+  Nuevo (Equipos): si un equipo se archivó y sus pacientes quedaron sin equipo, R+ te avisa al abrir.
   
-  Cambio (Receta): el botón de la receta siempre dice «Enviar a Estado Actual». «Añadir a Tratamiento» solo sale en modo Sala.
+  Cambio (Windows): el instalador se llama «Instalar-R+-…-Windows.exe» y crea siempre el acceso directo en el escritorio, también al reinstalar.
   
-  Nuevo (PDF): las formas de Nota e Indicaciones se reducen hasta caber en una hoja.
+  Cambio (Signos vitales): Guardia, Inicio de turno y la gráfica marcan solo los signos fuera de rango.
   
-  Cambio (PDF): el nombre del archivo lleva la hora. Si el paciente no tiene nombre, usa el registro.
-  
-  Arreglado (Interconsultas): el conteo del tablero de equipo cuenta solo los pacientes del equipo elegido. El tablero se repinta al actualizar la lista.
-  
-  Arreglado (Registro): T/A muestra las dos cifras juntas con una diagonal. El botón «+1» sale solo cuando la toma actual tiene valor.
-  
-  Arreglado (Gráficas): las tomas con la misma hora conservan el orden del registro.
-  
-  Arreglado (Nota): la vista previa quita los espacios y líneas vacías sobrantes.
-  
-  Arreglado (Inicio): el aviso de @usuario ya no tapa la pantalla de primer uso. Sale en el siguiente inicio.
-  
-  Arreglado (Monitoreo): una toma borrada ya no regresa al sincronizar. El borrado llega a todos los equipos.
-  
-  Arreglado (Nube): al ponerse al día, la Nube manda solo los labs nuevos y los de pacientes que no tienes. La sincronización es más rápida y ya no satura el servidor.
-  
-  Arreglado (Nube): el dueño de la sala ya no repite la revisión de cifrado en cada reconexión. Ya no sale el aviso «aún no están protegidos» por error.
+  Cambio (Móvil): los cultivos se quedan en el teléfono después de la ventana de labs, porque el resultado y el antibiograma llegan días después.
