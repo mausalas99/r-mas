@@ -1,40 +1,36 @@
-version: 8.4.7
+version: 8.4.8
 files:
-  - url: R+-8.4.7-x64.exe
-    sha512: D1qnC7Ijp0U4m6fpAkLhc0N38GkXP5rL1SIe6nSpNwSZfB13CNtbLvmtZD46TTzVGgMye6KYPZNoeVHbTe5DMA==
-    size: 119941479
-path: R+-8.4.7-x64.exe
-sha512: D1qnC7Ijp0U4m6fpAkLhc0N38GkXP5rL1SIe6nSpNwSZfB13CNtbLvmtZD46TTzVGgMye6KYPZNoeVHbTe5DMA==
-releaseDate: '2026-10-02T21:06:40.000Z'
+  - url: R+-8.4.8-x64.exe
+    sha512: hoiJiLCy9QDavIR+Kub/3H96mu09+5eQG8rJYVkGRoZF/GRc2eDq6sSjPonR4jSs6gWg6HZz5phUue9e8dpSSQ==
+    size: 119958134
+path: R+-8.4.8-x64.exe
+sha512: hoiJiLCy9QDavIR+Kub/3H96mu09+5eQG8rJYVkGRoZF/GRc2eDq6sSjPonR4jSs6gWg6HZz5phUue9e8dpSSQ==
+releaseDate: '2026-10-05T23:59:14.000Z'
 releaseNotes: |
-  Nuevo panel de Equipo en Mi perfil. Tu sala ya no se pisa con copias viejas. Ingreso a Interconsultas más claro. Vista previa para imprimir Nota e Indicaciones.
+  Ajustas la velocidad de norepinefrina en Estado actual. Las indicaciones con suero se unen en una sola línea. Los PDF de formas caben en una hoja.
   
-  Nuevo (Mi perfil): bajo la tarjeta de Sala hay botones de Equipo. Filtras por sala y tocas un equipo para unirte.
+  Nuevo (Estado actual): cada línea de norepinefrina tiene una caja para la velocidad en mcg/min. La caja cambia la dosis de la línea.
   
-  Nuevo (Equipos): al editar un equipo puedes poner su letra de ciclo, de A a D. La letra marca el día de guardia.
+  Nuevo (Receta): al pegar indicaciones, un suero con «VEL INF» y su fármaco se unen en una línea con «DILUIR EN:». También se leen «HRA», «HRS» y «HR» como hora.
   
-  Nuevo (Interconsultas): completar el ingreso de un paciente tiene su propia ventana, con servicio, motivo y fechas.
+  Cambio (Receta): el botón de la receta siempre dice «Enviar a Estado Actual». «Añadir a Tratamiento» solo sale en modo Sala.
   
-  Arreglado (Sala): una copia vieja en la nube ya no cambia la sala de este equipo.
+  Nuevo (PDF): las formas de Nota e Indicaciones se reducen hasta caber en una hoja.
   
-  Arreglado (Mi perfil): al cambiar de sala, los filtros fijados del censo se limpian. Si el guardado se detiene, los botones vuelven a tu sala guardada.
+  Cambio (PDF): el nombre del archivo lleva la hora. Si el paciente no tiene nombre, usa el registro.
   
-  Nuevo (Nota e Indicaciones): Generar abre una vista previa con Imprimir, Generar PDF y Generar .docx. Los médicos de Indicaciones salen de Grado en Mi perfil.
+  Arreglado (Interconsultas): el conteo del tablero de equipo cuenta solo los pacientes del equipo elegido. El tablero se repinta al actualizar la lista.
   
-  Nuevo (Interconsultas): el botón del tablero ahora dice «Actualizar labs». En Mi equipo lista solo los pacientes del equipo. En Asignar lista todos.
+  Arreglado (Registro): T/A muestra las dos cifras juntas con una diagonal. El botón «+1» sale solo cuando la toma actual tiene valor.
   
-  Nuevo (Atajos): en modo Interconsultas, Cmd+1 recorre todas las pastillas y Cmd+E recorre Estado, Nota, Indic. y VPO.
+  Arreglado (Gráficas): las tomas con la misma hora conservan el orden del registro.
   
-  Arreglado (Nube): las copias en Anteriores ya no se pierden al sincronizar. Se unen entre equipos, hasta 30.
+  Arreglado (Nota): la vista previa quita los espacios y líneas vacías sobrantes.
   
-  Nuevo (Anteriores): cada copia tiene Editar y Eliminar. Si eliminas una, se elimina también en tus otros dispositivos.
+  Arreglado (Inicio): el aviso de @usuario ya no tapa la pantalla de primer uso. Sale en el siguiente inicio.
   
-  Arreglado (T/A): el historial se ordena por hora real. La toma más nueva se marca Actual.
+  Arreglado (Monitoreo): una toma borrada ya no regresa al sincronizar. El borrado llega a todos los equipos.
   
-  Arreglado (Registro completo): vuelve a la ventana centrada.
+  Arreglado (Nube): al ponerse al día, la Nube manda solo los labs nuevos y los de pacientes que no tienes. La sincronización es más rápida y ya no satura el servidor.
   
-  Arreglado (Administración): el cuadro de contraseña de admin vuelve a tomar el foco.
-  
-  Arreglado (Nota): los diagnósticos y el tratamiento escritos ya no se pierden si la nota no tenía lista.
-  
-  Cambio (Ingreso): en Interconsultas las fechas se llaman «Fecha de ingreso» y «Fecha de interconsulta MI».
+  Arreglado (Nube): el dueño de la sala ya no repite la revisión de cifrado en cada reconexión. Ya no sale el aviso «aún no están protegidos» por error.
