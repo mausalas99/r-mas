@@ -41,6 +41,8 @@ export function createRun(name, { hints: runHints = false } = {}) {
   const downloadsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-e2e-dl-'));
   fs.mkdirSync(artifactDir, { recursive: true });
   const checks = [];
+  // Speed numbers a scenario records (name → ms); printed and saved in report.json.
+  const timings = {};
   let shotN = 0;
   let lastPage = null;
 
@@ -127,15 +129,19 @@ export function createRun(name, { hints: runHints = false } = {}) {
     const a11yCheck = a11y.verdict();
     if (a11yCheck) check(a11yCheck.name, a11yCheck.ok, a11yCheck.detail);
     const passed = checks.filter((c) => c.ok).length;
-    const report = { scenario, runId, passed, failed: checks.length - passed, checks, a11y: a11y.screens };
+    const report = { scenario, runId, passed, failed: checks.length - passed, checks, timings, a11y: a11y.screens };
     fs.writeFileSync(path.join(artifactDir, 'report.json'), JSON.stringify(report, null, 2) + '\n');
     for (const dir of Object.values(userDataDirs)) fs.rmSync(dir, { recursive: true, force: true });
     fs.rmSync(downloadsDir, { recursive: true, force: true });
+    if (Object.keys(timings).length) {
+      console.log('\nTimings (ms):');
+      console.table(timings);
+    }
     console.log(`\n${passed}/${checks.length} checks passed. Artifact: ${path.relative(repoRoot, artifactDir)}`);
     process.exit(report.failed === 0 ? 0 : 1);
   }
 
-  return { artifactDir, downloadsDir, check, shot, launch, finish };
+  return { artifactDir, downloadsDir, check, shot, launch, finish, timings };
 }
 
 /**

@@ -54,6 +54,7 @@
     "e2e:lab-paste-rules": "node scripts/e2e/lab-paste-rules.e2e.mjs",
     "e2e:lab-trends": "node scripts/e2e/lab-trends.e2e.mjs",
     "e2e:lab-patient-switch": "node scripts/e2e/lab-patient-switch.e2e.mjs",
+    "e2e:speed": "node scripts/e2e/speed.e2e.mjs",
     "e2e:cultivos": "node scripts/e2e/cultivos.e2e.mjs",
     "e2e:lab-repo-update": "node scripts/e2e/lab-repo-update.e2e.mjs",
     "e2e:manejo-receta": "node scripts/e2e/manejo-receta.e2e.mjs",
@@ -89,7 +90,8 @@
     "e2e:patients": "node scripts/e2e/patients.e2e.mjs",
     "e2e:paste-smart": "node scripts/e2e/paste-smart.e2e.mjs",
     "dev:nube-test-fresh": "node scripts/dev-nube-test-app.mjs --fresh",
-    "ci:forbid-lan": "node scripts/ci/forbid-lan-imports.mjs"
+    "ci:forbid-lan": "node scripts/ci/forbid-lan-imports.mjs",
+    "bench:flow": "node scripts/run-with-electron-node.mjs scripts/metrics/flow-timer.mjs"
   },
   "author": "Mauricio Salas",
   "license": "ISC",

@@ -3,7 +3,7 @@
   "updatedAt": "2026-09-26T19:27:49.089Z",
   "totalScore": 665,
   "trackedLoc": 792800,
-  "moduleCount": 1297,
+  "moduleCount": 1299,
   "bootGraphHash": "7c79a4f65815fa2c",
   "bootGraph": {
     "hash": "7c79a4f65815fa2c",
@@ -770,6 +770,10 @@
     {
       "date": "2026-10-02",
       "note": "moduleCount 1296->1297 for 8.4.7, owner-approved in chat: print preview for Nota and Indicaciones (doc-preview-html.mjs) and its tests, plus app-shell-ic-shortcuts.test.mjs. Three small modules were merged into siblings first (doc-preview-logo, doc-preview-modal, perfil-equipo)."
+    },
+    {
+      "date": "2026-10-07",
+      "note": "moduleCount 1297->1299: new scripts/e2e/speed.e2e.mjs (e2e:speed) and scripts/metrics/flow-timer.mjs (bench:flow), the speed measure-then-fix loop. Raised when the owner asked to commit everything before the move to Claude Projects; flagged to the owner in chat for veto."
     }
   ]
 }
