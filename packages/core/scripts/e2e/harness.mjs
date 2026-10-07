@@ -15,7 +15,10 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { FEATURE_HINTS } from '../../public/js/feature-hints.mjs';
 
-export const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+/** App under test. E2E_APP_ROOT=packages/hf (or packages/neumo) runs a spec against a companion app. */
+export const repoRoot = process.env.E2E_APP_ROOT
+  ? path.resolve(process.env.E2E_APP_ROOT)
+  : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
 /** Poll fn until it returns truthy or the timeout passes; returns the last value. */
 export const until = async (fn, timeout = 30000, step = 500) => {
@@ -169,10 +172,17 @@ export async function goArea(page, id) {
   await tab.click();
 }
 
-/** Fresh install → "Solo este equipo" → app ready, help sheet closed. */
+/**
+ * Fresh install → "Solo este equipo" → app ready, help sheet closed. An app
+ * that opens without onboarding (R+ Neumo) goes straight to the ready check.
+ */
 export async function onboardLocalOnly(page) {
-  await page.locator('[data-sync-mode="local"]').click();
-  await page.locator('#clinical-onboard-local-confirm-btn').click();
+  const local = page.locator('[data-sync-mode="local"]');
+  await local.or(page.locator('.topbar-area-btn')).first().waitFor({ state: 'visible' });
+  if (await local.isVisible()) {
+    await local.click();
+    await page.locator('#clinical-onboard-local-confirm-btn').click();
+  }
   await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
   await dismissLearnHub(page);
 }
