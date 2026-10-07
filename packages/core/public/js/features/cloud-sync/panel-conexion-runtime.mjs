@@ -61,7 +61,7 @@ async function keyOwnerRoomIfNeeded(api, roomId, toast) {
   const result = await ensureOwnerRoomKey(api, { ...snap, id: String(roomId) }, getCloudSyncClientId());
   if (!result) return;
   setStoredRoomDeks(await exportCachedDeksForPersistence());
-  if (result.failed > 0 || result.remaining !== 0) {
+  if (result.remaining > 0) {
     toast('Sala ' + (snap.sala || snap.code) + ': algunos datos aún no están protegidos. Se reintenta solo.', 'error');
   }
 }
