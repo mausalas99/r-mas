@@ -923,18 +923,6 @@ html.dark .ic-cf--svc.is-picked {
 html.dark .ic-cf--svc.is-picked::before {
   color: oklch(0.78 0.07 var(--h, 220));
 }
-/* Seguimiento: a small dot shows the state. */
-.ic-cf--status::after {
-  content: '';
-  order: 1;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--color-ink-tertiary);
-}
-.ic-cf--status select { order: 2; }
-.ic-cf--status-en_curso::after { background: var(--warn, #b45309); }
-.ic-cf--status-resuelta::after { background: var(--action); }
 #interconsulta-mode-frame[hidden] {
   display: none;
 }

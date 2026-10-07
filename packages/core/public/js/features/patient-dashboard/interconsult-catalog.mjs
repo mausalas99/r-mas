@@ -33,6 +33,9 @@ export const INTERCONSULT_SERVICES = [
 
 /** Servicio solicitante (Interconsulta band) picks from this fixed subset,
  * in this order — not the full Sala interconsultantes catalog above. */
+/** Our own service. In Interconsultas the requesting service is the área. */
+export const IC_OWN_SERVICE = 'Medicina Interna';
+
 export const REQUESTING_SERVICE_IDS = ['tyo', 'cxgen', 'gine', 'ncx', 'cxplas'];
 
 /** Per-service hues for the requesting-service picker — deliberately not

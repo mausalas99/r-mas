@@ -153,6 +153,11 @@ body[data-sala-home] #sala-view-home {
   line-height: 1.4;
 }
 
+.sv-motivo {
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
 .sv-ic {
   display: flex;
   flex-wrap: wrap;
@@ -177,8 +182,8 @@ body[data-sala-home] #sala-view-home {
 }
 
 .sv-tag--warn {
-  color: var(--warning, var(--error));
-  background: color-mix(in oklab, var(--warning, var(--error)) 14%, transparent);
+  color: var(--warn);
+  background: color-mix(in oklab, var(--warn) 14%, transparent);
 }
 
 /* Paciente abierto: barra delgada de camas */

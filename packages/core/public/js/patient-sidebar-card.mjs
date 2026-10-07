@@ -64,7 +64,7 @@ function patientCardOpenButtonHtml(opts, nombreRaw, nombreDisplay) {
 
 /**
  * @param {object} p
- * @param {{ roundRow?: boolean, showServicio?: boolean, openButton?: boolean }|undefined} [opts]
+ * @param {{ roundRow?: boolean, showServicio?: boolean, servicioLabel?: string, openButton?: boolean }|undefined} [opts]
  */
 // Auto-admitted stubs ("PACIENTE SIN NOMBRE (6)") would shorten to "PACIENTE (6)": show the registro instead.
 function sidebarNameDisplay(nombreRaw, registro) {
@@ -78,7 +78,7 @@ export function renderPatientSidebarBodyHtml(p, opts) {
   const nombreRaw = String(p?.nombre || '').trim();
   const registro = String(p?.registro || '').trim();
   const nombreDisplay = sidebarNameDisplay(nombreRaw, registro);
-  const servicio = showServicio ? String(p?.servicio || '').trim() : '';
+  const servicio = showServicio ? String(opts.servicioLabel || p?.servicio || '').trim() : '';
   const nameTitleParts = [nombreRaw !== nombreDisplay ? nombreRaw : '', registro, servicio].filter(Boolean);
   const nameTitleAttr = nameTitleParts.length ? ` title="${escSidebarHtml(nameTitleParts.join(' · '))}"` : '';
 

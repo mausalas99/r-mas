@@ -148,7 +148,10 @@ export function renderPatientCardHtml(p) {
       (svcHue != null ? ' style="--svc-hue:' + svcHue + '"' : '') +
       '>' +
       renderPatientCardToolbarHtml(p, pinOn, archOn) +
-      renderPatientSidebarBodyHtml(p, patientSidebarCardOpts({ openButton: true })) +
+      renderPatientSidebarBodyHtml(
+        p,
+        patientSidebarCardOpts({ openButton: true, servicioLabel: getConsultInfo(p).requestingService })
+      ) +
       '</div>'
   );
 }
