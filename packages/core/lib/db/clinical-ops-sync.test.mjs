@@ -1219,3 +1219,18 @@ describe("filterClinicalOpsSnapshotForSala — a team's creator survives the sal
     }
   });
 });
+
+describe("mergeClinicalUsersData — a peer's peer_* stub never renames a known user", () => {
+  it('keeps the real @usuario and rank, still adds a stub for an unknown user', async () => {
+    const { mergeClinicalUsersData } = await import('./clinical-ops-bundle-merge-users.cjs');
+    const local = [{ user_id: 'u1', username: 'jperez', clinical_name: 'Dr X', rank: 'R2' }];
+    const incoming = [
+      { user_id: 'u1', username: 'peer_u1abc', clinical_name: null, rank: 'R1' },
+      { user_id: 'u2', username: 'peer_u2abc', clinical_name: null, rank: 'R1' },
+    ];
+    const byId = new Map(mergeClinicalUsersData(local, incoming).map((row) => [row.user_id, row]));
+    assert.equal(byId.get('u1').username, 'jperez');
+    assert.equal(byId.get('u1').rank, 'R2');
+    assert.equal(byId.get('u2').username, 'peer_u2abc');
+  });
+});

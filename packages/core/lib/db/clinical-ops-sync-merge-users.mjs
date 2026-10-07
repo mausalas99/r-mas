@@ -98,7 +98,7 @@ export function mergeClinicalUsers(db, incomingRows) {
       const wasStub = isLanStubUsername(existing.username);
       applyClinicalUserRowUpdate(db, uid, row, handle);
       stats.updated += 1;
-      if (wasStub) stats.upgradedFromStub += 1;
+      if (wasStub && !isLanStubUsername(handle)) stats.upgradedFromStub += 1;
       continue;
     }
 

@@ -11,6 +11,10 @@ function isValidUsernameFormat(raw) {
   return /^[a-z][a-z0-9_]{2,31}$/.test(normalizeUsername(raw));
 }
 
+function isLanStubHandle(handle) {
+  return /^peer_[a-z0-9_]+$/.test(handle);
+}
+
 function resolveIncomingClinicalUserHandle(row, byUserId) {
   const uid = String(row.user_id);
   let handle = normalizeUsername(row.username);
@@ -73,6 +77,8 @@ function applyIncomingClinicalUserRow(byUsername, byUserId, row) {
   const uid = String(row.user_id);
   const handle = resolveIncomingClinicalUserHandle(row, byUserId);
   if (!handle) return;
+  // A peer's peer_* stub carries no real data: never let it rename or re-rank a known user.
+  if (isLanStubHandle(handle) && byUserId.has(uid)) return;
 
   const existingByHandle = byUsername.get(handle);
   if (existingByHandle && existingByHandle.user_id !== uid) {

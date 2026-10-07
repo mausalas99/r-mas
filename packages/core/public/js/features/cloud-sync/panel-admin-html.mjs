@@ -352,19 +352,58 @@ export function applyAdminSalasFilters(root) {
   });
 }
 
-/** Newest `{ updatedAt, actorId }` among a patient's own entity-version keys (`entries/{id}`, `entries/{id}/fields`, …). */
-function lastPatientActivity(entityVersions, patientId) {
+/**
+ * Clinical work that counts as patient activity, by entry sub-path. `fields`
+ * (archive, cama, cuarto) is left out on purpose: housekeeping is not care.
+ */
+const CLINICAL_ENTRY_KINDS = {
+  monitoreo: 'Estado actual',
+  eventualidades: 'Estado actual',
+  note: 'Manejo',
+  indicaciones: 'Manejo',
+  medReceta: 'Manejo',
+  listadoProblemas: 'Manejo',
+  vpo: 'Manejo',
+  medPharmProfile: 'Manejo',
+};
+
+/** @param {string} key @param {string} patientId @returns {string} '' when the path is not clinical work */
+function clinicalActivityKind(key, patientId) {
+  if (key.startsWith('labSidecars/' + patientId + '/')) return 'Labs';
+  const prefix = 'entries/' + patientId + '/';
+  return key.startsWith(prefix) ? CLINICAL_ENTRY_KINDS[key.slice(prefix.length)] || '' : '';
+}
+
+/**
+ * Newest clinical write (labs, Estado actual, Manejo) by someone on the
+ * patient's team. `memberIds` null = patient has no team → any actor counts.
+ * Admin-side reads (Verificar labs) never write, so they never show here.
+ * @param {Record<string, { updatedAt: string, actorId: string }>|null} entityVersions
+ * @param {string} patientId @param {Set<string>|null} memberIds
+ * @returns {{ updatedAt: string, actorId: string, kind: string }|null}
+ */
+export function lastTeamActivity(entityVersions, patientId, memberIds) {
   if (!entityVersions) return null;
-  const prefix = 'entries/' + patientId;
   let best = null;
-  for (const key of Object.keys(entityVersions)) {
-    if (key !== prefix && !key.startsWith(prefix + '/')) continue;
-    const v = entityVersions[key];
-    if (!v || !v.updatedAt) continue;
-    if (!best || String(v.updatedAt) > String(best.updatedAt)) best = v;
+  for (const [key, v] of Object.entries(entityVersions)) {
+    if (!v?.updatedAt) continue;
+    const kind = clinicalActivityKind(key, patientId);
+    if (!kind) continue;
+    if (memberIds && !memberIds.has(String(v.actorId || ''))) continue;
+    if (!best || String(v.updatedAt) > best.updatedAt) best = { updatedAt: String(v.updatedAt), actorId: v.actorId, kind };
   }
   return best;
 }
+
+/** @param {object[]|undefined} membership `clinicalOps.team_membership` rows @param {string} teamId */
+function teamMemberIds(membership, teamId) {
+  if (!teamId) return null;
+  return new Set(
+    (membership || []).filter((m) => String(m?.team_id || '') === teamId).map((m) => String(m?.user_id || ''))
+  );
+}
+
+const INACTIVE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * Newest `{ updatedAt, actorId }` among a patient's own lab-set writes
@@ -427,7 +466,8 @@ function networkCensusRowFromEntry(area, entry, teams, assignments, now, teamOpt
   const fields = entry?.fields || {};
   const patientId = String(entry?.id || '');
   const teamId = resolveNetworkCensusTeamId(patientId, fields, teams, assignments, now, teamOptions);
-  const activity = lastPatientActivity(area.entityVersions, patientId);
+  const members = teamMemberIds(area.clinicalOps?.team_membership, teamId);
+  const activity = lastTeamActivity(area.entityVersions, patientId, members);
   const labActivity = lastPatientLabActivity(area.entityVersions, patientId);
   const row = {
     sala: area.sala,
@@ -438,9 +478,12 @@ function networkCensusRowFromEntry(area, entry, teams, assignments, now, teamOpt
     teamId,
     lastUpdatedAt: activity?.updatedAt || '',
     lastActor: activity ? labelForActor(usersById, activity.actorId) : '',
+    lastKind: activity?.kind || '',
     lastLabAt: labActivity?.updatedAt || '',
   };
   row.staleLabs = isStaleLabsRow(row, now);
+  row.inactive =
+    !row.archived && (!activity || now.getTime() - new Date(activity.updatedAt).getTime() >= INACTIVE_MS);
   return row;
 }
 
@@ -501,20 +544,20 @@ function timeAgoLong(iso) {
   return diffD + ' d' + (diffD === 1 ? 'ía' : 'ías');
 }
 
-/** Estado cell: colored dot + exact age of last activity (<6 h ok, <24 h stale, older/none red). */
+/** Estado cell: colored dot + age of last team activity (<24 h ok, <7 d quiet, 7 d+/none inactive). */
 function estadoCellHtml(row) {
   if (row.archived) return '<span class="cloud-sync-admin-dot is-off"></span>Archivado';
-  if (!row.lastUpdatedAt) return '<span class="cloud-sync-admin-dot is-bad"></span>Sin actividad';
-  const min = (Date.now() - new Date(row.lastUpdatedAt).getTime()) / 60000;
-  const tone = min < 360 ? 'ok' : min < 1440 ? 'warn' : 'bad';
-  const label = tone === 'ok' ? 'Activo' : tone === 'warn' ? 'Sin cambios' : 'Abandonado?';
+  if (!row.lastUpdatedAt) return '<span class="cloud-sync-admin-dot is-bad"></span>Inactivo · nunca';
+  const tone = row.inactive ? 'bad' : Date.now() - new Date(row.lastUpdatedAt).getTime() < 86400000 ? 'ok' : 'warn';
+  const label = tone === 'ok' ? 'Activo' : tone === 'warn' ? 'Sin cambios' : 'Inactivo';
   return '<span class="cloud-sync-admin-dot is-' + tone + '"></span>' + label + ' · ' + timeAgoLong(row.lastUpdatedAt);
 }
 
+/** «Labs · hace 3 días» over who did it — team clinical work only (see lastTeamActivity). */
 function activityCellHtml(row) {
-  if (!row.lastUpdatedAt) return '<span class="cloud-sync-hint">Sin datos</span>';
+  if (!row.lastUpdatedAt) return '<span class="cloud-sync-hint">Nadie del equipo</span>';
   const who = row.lastActor ? esc(row.lastActor) : 'desconocido';
-  return 'hace ' + timeAgoLong(row.lastUpdatedAt) + ' · ' + who;
+  return esc(row.lastKind) + ' · hace ' + timeAgoLong(row.lastUpdatedAt) + '<br><span class="cloud-sync-hint">' + who + '</span>';
 }
 
 /** "Últ. labs" cell — highlighted when isStaleLabsRow flagged the patient as a probable discharge. */
@@ -550,7 +593,7 @@ function networkCensusCols() {
     { label: 'Cuarto', key: 'cuarto' },
     { label: 'Servicio', key: 'servicio' },
     { label: 'Estado', cell: estadoCellHtml },
-    { label: 'Últ. actividad', cell: activityCellHtml },
+    { label: 'Últ. actividad del equipo', cell: activityCellHtml },
     { label: 'Últ. labs', cell: labActivityCellHtml },
     {
       label: 'Acciones',
@@ -628,6 +671,7 @@ function networkCensusFiltersHtml(census, teamOptions) {
     '<select class="profile-input" data-network-filter="activity" aria-label="Filtrar por estado">' +
     '<option value="">Todos</option>' +
     '<option value="active">Activos</option>' +
+    '<option value="inactive">Inactivos (7+ días)</option>' +
     '<option value="archived">Archivados</option>' +
     '</select>' +
     '<select class="profile-input" data-network-filter="labs" aria-label="Filtrar por labs">' +
@@ -672,6 +716,8 @@ export function redCensusHtml(census, users) {
         esc(row.teamId || NO_TEAM_FILTER_VALUE) +
         '" data-archived="' +
         (row.archived ? '1' : '0') +
+        '" data-inactive="' +
+        (row.inactive ? '1' : '0') +
         '" data-no-labs="' +
         (row.lastLabAt ? '0' : '1') +
         '" data-search="' +
@@ -706,6 +752,14 @@ function unnamedBannerHtml(rows) {
   );
 }
 
+/** Estado filter: active / archived / inactive (no team activity 7+ days) — read off row attrs. */
+function matchesActivityFilter(tr, activity) {
+  if (activity === 'active') return tr.getAttribute('data-archived') !== '1';
+  if (activity === 'archived') return tr.getAttribute('data-archived') === '1';
+  if (activity === 'inactive') return tr.getAttribute('data-inactive') === '1';
+  return true;
+}
+
 /**
  * Applies the Red tab's sala/team/activity/labs filters by toggling row visibility —
  * no re-fetch, the census HTML already carries every row's `data-sala`,
@@ -733,8 +787,7 @@ export function applyNetworkCensusFilters(root) {
     let show = !q || String(tr.getAttribute('data-search') || '').includes(q);
     if (sala && tr.getAttribute('data-sala') !== sala) show = false;
     if (team && tr.getAttribute('data-team-id') !== team) show = false;
-    if (activity === 'active' && tr.getAttribute('data-archived') === '1') show = false;
-    if (activity === 'archived' && tr.getAttribute('data-archived') !== '1') show = false;
+    if (activity && !matchesActivityFilter(tr, activity)) show = false;
     const stale = tr.classList.contains('cloud-sync-admin-row--stale-labs');
     if (labs === 'stale' && !stale) show = false;
     if (labs === 'fresh' && stale) show = false;
