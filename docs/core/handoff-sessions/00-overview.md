@@ -8,8 +8,8 @@ were idle when this was written.
 ## Repo state (`/Users/mauriciosalas/R+`, branch `main`)
 
 - Last release: **8.4.9**, published 2026-10-06.
-- `main` is **1 commit ahead of origin**: `7324dd15 Stop stale patient copies in Nube sala rooms`. Not pushed.
-- 20 modified files + 6 untracked paths. Nothing below is committed. Owner commits.
+- `main` is **7 commits ahead of origin**. Not pushed. All work below was committed on 2026-10-07 (`7f49d63c`..HEAD).
+- `moduleCount` baseline raised 1297 → 1299 for the speed scripts. Owner may veto.
 
 | Work | Files | State |
 |------|-------|-------|
@@ -27,7 +27,7 @@ were idle when this was written.
 2. **iOS: new patients under «Sin equipo» with team filter** (session «New patients missing with team filter», repo `R+-ios`). Diagnostic log added (room revision, local vs server team-data date, team row count; no PHI). Not a fix. Wait for the bug to happen again, then read the `teams` lines in Console.app. Test in `RPlusTests/TeamScopeTests.swift`. Log marked for removal after the cause is found.
 3. **iOS repo `/Users/mauriciosalas/R+-ios`**: RPlusKit package committed (`dab6951`), not pushed. Watch app work sits in `git stash@{0}` and needs path fixes on pop. Next: RPlusHF target (step 3). See `hf-ios-lab-ocr.md`.
 4. **HF + Neumo design** (`packages/hf`, `packages/neumo`, gitignored in R+, local-only git, never pushed). HF keeps its red accent. **Half-finished edits** in HF `dashboard-html.mjs` and `lab-panel.mjs` — review the diff first. 15 Resumen tests fail until the A1 port is done. Board: https://claude.ai/artifact/XzANXRpn3HybhxRY7YSNy4. See `hf-neumo-design.md`.
-5. **Push** `7324dd15` to origin when ready.
+5. **Push** the 7 local commits to origin when ready.
 
 Non-code sessions from today (no repo changes): corporate email / SAT zero-tax filing questions; Windows SmartScreen («Control inteligente de aplicaciones») off steps, translated to Spanish.
 
