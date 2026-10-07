@@ -10,10 +10,12 @@ import { spawn, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { repoRoot, until } from './harness.mjs';
+import { until } from './harness.mjs';
 export { until };
 
-const WORKER_DIR = path.join(repoRoot, 'packages/core/cloud/sync-worker');
+// Always core's Worker, also when E2E_APP_ROOT points the app at HF or Neumo
+// (they vendor this same Worker code).
+const WORKER_DIR = path.resolve(import.meta.dirname, '../../cloud/sync-worker');
 const WRANGLER = path.join(WORKER_DIR, 'node_modules/.bin/wrangler');
 // run-all.mjs gives each parallel slot its own 100-port block (E2E_PORT_OFFSET = slot * 10).
 const PORT = 8790 + (Number(process.env.E2E_PORT_OFFSET) || 0) * 10 + Math.floor(Math.random() * 60);
