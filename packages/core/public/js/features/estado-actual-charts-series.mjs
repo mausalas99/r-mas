@@ -1,5 +1,5 @@
 import { isVitalAltered, isGlucometriaMarkedAltered } from './estado-actual-ranges.mjs';
-import { gluPointMs, isGluPointInRegistroWindow } from './estado-actual-registro-defaults.mjs';
+import { gluPointMs, isGluPointInRegistroWindow, isOpenShiftRow } from './estado-actual-registro-defaults.mjs';
 import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
 import { liveHistorial } from './estado-actual-data-model.mjs';
 
@@ -59,13 +59,20 @@ function pad2(n) {
 }
 
 /**
+ * Turno en curso (cierre esta noche) se lee `dd/mm en curso` con la fecha de hoy.
  * @param {string | null | undefined} iso
+ * @param {Date} [now]
  * @returns {string}
  */
-export function formatChartLabel(iso) {
+export function formatChartLabel(iso, now) {
   if (!iso) return '';
   var d = new Date(iso);
   if (isNaN(d.getTime())) return '';
+  if (isOpenShiftRow({ recordedAt: iso }, now)) {
+    var today = new Date(d);
+    today.setDate(today.getDate() - 1);
+    return pad2(today.getDate()) + '/' + pad2(today.getMonth() + 1) + ' en curso';
+  }
   return formatChartLocalDateTime(d);
 }
 
@@ -339,7 +346,7 @@ export function buildSharedVitalRows(histAsc, keys) {
     });
     for (var gi = 0; gi < order.length; gi++) {
       var g = groups[order[gi]];
-      var ms = gluPointMs(row.recordedAt != null ? String(row.recordedAt) : '', g.time, true);
+      var ms = gluPointMs(row.recordedAt != null ? String(row.recordedAt) : '', g.time);
       var vitalPoint = g.vitalPoint;
       points.push({
         recordedAt: ms ? new Date(ms).toISOString() : String(row.recordedAt || ''),

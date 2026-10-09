@@ -3157,6 +3157,41 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   max-width: none;
 }
 
+.ea-registro-when {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ea-turno-pill {
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--color-accent-soft-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ea-turno-pill[aria-pressed='true'] {
+  border-color: var(--action);
+  background: var(--action);
+  color: var(--color-on-accent);
+}
+
+.ea-turno-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.ea-turno-hint[hidden] {
+  display: none;
+}
+
 .ea-registro-cols {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

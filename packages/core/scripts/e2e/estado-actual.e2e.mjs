@@ -428,6 +428,38 @@ async function closeVitalModal(page) {
   await page.locator('#ea-vital-history-backdrop.open').waitFor({ state: 'hidden' });
 }
 
+/** «Turno en curso» pill: sets tonight's close, readings get the last past sheet hour, the row reads today. */
+async function turnoEnCurso(page) {
+  let form = await openRegistro(page);
+  const pill = () => form.locator('[data-ea-turno]');
+  check('turno pill: a new registro opens with the pill off', (await pill().getAttribute('aria-pressed')) === 'false');
+  await pill().click();
+  const recorded = await form.locator('#ea-recorded-at').inputValue();
+  const t = new Date();
+  const tonight = new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1);
+  const ymd = `${tonight.getFullYear()}-${String(tonight.getMonth() + 1).padStart(2, '0')}-${String(tonight.getDate()).padStart(2, '0')}T00:00`;
+  check('turno en curso: pill on, close is tonight 00:00, date field still shown, hint shown',
+    (await pill().getAttribute('aria-pressed')) === 'true' && recorded === ymd &&
+      (await form.locator('.ea-field--datetime').isVisible()) && (await form.locator('.ea-turno-hint').isVisible()),
+    { recorded, ymd });
+  await shot(page, 'registro-turno-en-curso');
+  await fillVital(form, 'fc', [97]);
+  await submitRegistro(page, form);
+  const hm = `${String(Math.max(4, t.getHours() - (t.getHours() % 4))).padStart(2, '0')}:00`;
+  const row = page.locator('.ea-historial-row', { hasText: 'FC 97' }).first();
+  const rowText = await row.innerText();
+  check('turno en curso: historial row reads «Turno en curso (hoy)» and FC has the sheet hour',
+    rowText.includes('Turno en curso (hoy)') && rowText.includes(`FC 97 @ ${hm}`), rowText.slice(0, 120));
+  form = await openRegistro(page);
+  await pill().click();
+  await pill().click();
+  check('turno pill: the next registro starts off, and a second click goes back to today 00:00',
+    (await pill().getAttribute('aria-pressed')) === 'false' && (await form.locator('#ea-recorded-at').inputValue()).endsWith('T00:00') &&
+      (await form.locator('#ea-recorded-at').inputValue()) !== ymd);
+  await page.locator('#ea-registro-backdrop [data-onclick="closeEstadoActualRegistroModal"]').first().click();
+  await form.waitFor({ state: 'hidden' });
+}
+
 /** Historial: registro after an edit, a row from an earlier day, T/A pairing, first FC entry, Eliminar. */
 async function historialExtras(page) {
   const rowsN = () => page.locator('.ea-historial-row').count();
@@ -1215,6 +1247,7 @@ async function run() {
   );
 
   await section('historial extras', () => historialExtras(page));
+  await section('turno en curso', () => turnoEnCurso(page));
   await section('turns registros', () => turnsRegistros(page));
   await section('keyboard and HD', () => keyboardAndHd(page));
   await section('copy variants', () => copyVariants(page, app));

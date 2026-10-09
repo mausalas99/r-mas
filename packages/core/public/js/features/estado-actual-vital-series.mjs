@@ -94,7 +94,7 @@ export function vitalSeriesToLegacyFields(series) {
 }
 
 /**
- * Lecturas del signo en la ventana del turno (ayer 08:00 → hoy 00:00), sin duplicar value@time.
+ * Lecturas del signo en la ventana del turno (cierre previo → cierre), sin duplicar value@time.
  * @param {Array<{ recordedAt?: string, vitals?: Record<string, unknown>, vitalSeries?: Record<string, VitalReading[]>, alteredAt?: Record<string, string> }>} historial
  * @param {string} vitalKey
  * @param {Date} [now]

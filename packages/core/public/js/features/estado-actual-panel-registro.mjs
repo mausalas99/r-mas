@@ -50,7 +50,10 @@ import {
 import { isVitalAltered } from './estado-actual-ranges.mjs';
 import {
   getDefaultRegistroRecordedAt,
+  getOpenShiftCloseAt,
+  isOpenShiftRow,
   isTurnCloseHm,
+  openShiftDefaultHm,
   STANDARD_GLUCOMETRIA_TIMES,
 } from './estado-actual-registro-defaults.mjs';
 import { setEaRegistroEditMode } from './estado-actual-panel-registro-edit.mjs';
@@ -305,6 +308,7 @@ export function clearIoFields(form) {
 function defaultAlteredTimeFromForm(form) {
   var recEl = form.querySelector('#ea-recorded-at');
   if (!recEl || !('value' in recEl) || !recEl.value) return '';
+  if (isOpenShiftRow({ recordedAt: new Date(recEl.value).toISOString() })) return openShiftDefaultHm();
   var match = String(recEl.value).match(/T(\d{2}):(\d{2})/);
   if (!match) return '';
   return match[1] + ':' + match[2];
@@ -332,6 +336,34 @@ function syncAlteredFields(form) {
     syncLayer(input.getAttribute('data-ea-vital') || '', input.getAttribute('data-ea-layer-idx') || '0');
   });
   syncAllVitalAddButtonVisibility(form);
+}
+
+/**
+ * Pastilla «Turno en curso»: marcada solo si #ea-recorded-at es esta noche 00:00 (fuente única).
+ * @param {Element} form
+ */
+export function syncEaTurnoSwitch(form) {
+  var recEl = form.querySelector('#ea-recorded-at');
+  if (!recEl || !('value' in recEl)) return;
+  var open = String(recEl.value) === toDatetimeLocalValue(getOpenShiftCloseAt());
+  var pill = form.querySelector('[data-ea-turno]');
+  if (pill) pill.setAttribute('aria-pressed', String(open));
+  var hint = form.querySelector('.ea-turno-hint');
+  if (hint) /** @type {HTMLElement} */ (hint).hidden = !open;
+}
+
+/** Pastilla: marcar pone esta noche 00:00; desmarcar vuelve al cierre de siempre (hoy 00:00). */
+function tryHandleTurnoClick(form, target) {
+  var btn = target.closest('[data-ea-turno]');
+  if (!btn) return false;
+  var recEl = form.querySelector('#ea-recorded-at');
+  if (!recEl || !('value' in recEl)) return true;
+  var open = btn.getAttribute('aria-pressed') !== 'true';
+  recEl.value = toDatetimeLocalValue(open ? getOpenShiftCloseAt() : getDefaultRegistroRecordedAt());
+  recEl.dispatchEvent(new Event('rpc-datetime-sync'));
+  syncEaTurnoSwitch(form);
+  syncAlteredFields(form);
+  return true;
 }
 
 /** @returns {boolean} true si el click era el botón "No se realizó hoy" de hemodiálisis (ya manejado) */
@@ -398,6 +430,7 @@ function tryHandleIoAddPick(form, target) {
 }
 
 var FORM_CLICK_HANDLERS = [
+  tryHandleTurnoClick,
   tryHandleHemodialisisNoFueClick,
   tryHandleIoTurnoNcClick,
   tryHandleVitalAddClick,
@@ -433,7 +466,10 @@ function handleFormInput(form, ev) {
   var target = /** @type {HTMLElement | null} */ (ev.target);
   if (!target) return;
   if (target.matches('[data-ea-vital][data-ea-layer-idx]')) syncAlteredFields(form);
-  else if (target.id === 'ea-recorded-at') syncAlteredFields(form);
+  else if (target.id === 'ea-recorded-at') {
+    syncEaTurnoSwitch(form);
+    syncAlteredFields(form);
+  }
   else if (target.matches('[data-ea-glu-value], [data-ea-glu-rescue-units], [data-ea-glu-post-rescue-value]')) {
     var gluRow = target.closest('.ea-glu-row');
     if (gluRow) syncGluRowAltered(/** @type {HTMLElement} */ (gluRow));
@@ -924,12 +960,16 @@ export function buildRegistroFormMarkup() {
     '<form id="ea-form" class="ea-form ea-form--registro" data-prevent-submit>' +
     buildRegistroLeadHtml(activeId) +
     '<div class="ea-registro-top">' +
+    '<div class="ea-registro-when">' +
     '<label class="ea-field ea-field--datetime">' +
     '<span class="ea-label">Fecha y hora</span>' +
     '<input type="datetime-local" class="ea-input rpc-datetime-input" id="ea-recorded-at" value="' +
     toDatetimeLocalValue(getDefaultRegistroRecordedAt()) +
     '">' +
     '</label>' +
+    '<button type="button" class="ea-turno-pill" data-ea-turno aria-pressed="false">Turno en curso</button>' +
+    '<span class="ea-turno-hint" hidden>Cierra esta noche 00:00 · se ve como hoy</span>' +
+    '</div>' +
     '<p class="ea-registro-hint">Basta un dato para registrar · <span class="ea-registro-kbd-hint">⌘↵</span></p>' +
     '</div>' +
     '<div class="ea-registro-cols">' +
@@ -1008,6 +1048,7 @@ export function resetEaRegistroForm(_patient) {
     recorded.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
     recorded.dispatchEvent(new Event('rpc-datetime-sync'));
   }
+  syncEaTurnoSwitch(form);
   clearIoFields(form);
   resetGluAndBombaFields();
   syncEaRegistroInsulinPumpFlag(form, _patient && _patient.monitoreo ? _patient.monitoreo : null);

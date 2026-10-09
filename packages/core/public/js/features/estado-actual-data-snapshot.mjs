@@ -5,7 +5,7 @@ import {
   ioDiuresisForBalance,
   ioNumericEgressTotal,
 } from './estado-actual-io.mjs';
-import { gluPointMs, sortGlucometriasChronologically } from './estado-actual-registro-defaults.mjs';
+import { gluPointMs, isOpenShiftRow, sortGlucometriasChronologically } from './estado-actual-registro-defaults.mjs';
 import { getVitalExtraStorageKey, VITAL_BASE_KEYS } from './estado-actual-vital-extras.mjs';
 import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
 import { VITAL_KEYS } from './estado-actual-data-constants.mjs';
@@ -168,8 +168,13 @@ export function deriveGluFromHistorial_(sortedAsc) {
   return { glucometrias: [], bombaInsulina: [] };
 }
 
-/** @param {unknown[]} sortedAsc */
-export function deriveIoFromHistorial_(sortedAsc) {
+/**
+ * Balance: el turno en curso (iPhone, cierre esta noche) no cuenta hasta medianoche,
+ * así un medio día con turnos NC no se lee como un mal día.
+ * @param {unknown[]} sortedAsc
+ * @param {Date} [now]
+ */
+export function deriveIoFromHistorial_(sortedAsc, now) {
   var state = {
     ingSeen: /** @type {null | unknown} */ (null),
     egrSeen: /** @type {null | unknown} */ (null),
@@ -179,7 +184,7 @@ export function deriveIoFromHistorial_(sortedAsc) {
   };
   for (var k2 = sortedAsc.length - 1; k2 >= 0; k2--) {
     var rIo = sortedAsc[k2];
-    if (!rIo || typeof rIo !== 'object') continue;
+    if (!rIo || typeof rIo !== 'object' || isOpenShiftRow(rIo, now)) continue;
     var rowIo = rIo.io && typeof rIo.io === 'object' ? rIo.io : {};
     absorbIoRow(rowIo, state);
     if (state.ingSeen !== null && (state.egrSeen !== null || state.egrPartsSeen) && state.evacSeen !== null) break;
@@ -346,7 +351,7 @@ export function deriveBpPairsFromHistorial_(sortedAsc) {
   // Orden cronológico real: la lectura sin hora (cierre de turno) va al final.
   return pairs
     .map(function (p, i) {
-      return { p: p, i: i, ms: gluPointMs(p.recordedAt, p.time, true) };
+      return { p: p, i: i, ms: gluPointMs(p.recordedAt, p.time) };
     })
     .sort(function (a, b) {
       return a.ms - b.ms || a.i - b.i;

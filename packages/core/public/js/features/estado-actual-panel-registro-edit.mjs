@@ -9,6 +9,7 @@ import {
   syncIoBalanceFromForm,
   applyParsedVitals,
   applyParsedGlus,
+  syncEaTurnoSwitch,
 } from './estado-actual-panel-registro.mjs';
 import { findActivePatient } from './estado-actual-panel-core.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
@@ -84,6 +85,7 @@ export function applyMedicionToForm(row) {
     recorded.value = toDatetimeLocalValue(row.recordedAt);
     recorded.dispatchEvent(new Event('rpc-datetime-sync'));
   }
+  syncEaTurnoSwitch(form);
   applyMedicionVitals(form, row);
   applyMedicionBomba(form, Array.isArray(row.bombaInsulina) ? row.bombaInsulina : []);
   applyParsedGlus(form, Array.isArray(row.glucometrias) ? row.glucometrias : []);

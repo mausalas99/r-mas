@@ -233,7 +233,8 @@ test('deriveSnapshot sorts glucometrias chronologically within latest row', () =
     snap.glucometrias.map(function (g) {
       return g.value + '@' + g.time;
     }),
-    ['171@08:00', '125@16:00', '243@00:00', '110@04:00']
+    // 04:00 is the shift day (before 08:00), same as iOS ChartSeries.pointDate.
+    ['110@04:00', '171@08:00', '125@16:00', '243@00:00']
   );
 });
 
