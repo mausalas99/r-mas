@@ -16,7 +16,7 @@ Every arrow below was **verified in the code**: someone found the import or the 
 | **sync** | to or from the Nube room | Estado actual → Nube: `entries/{pid}/monitoreo` |
 | **navigation / UI** | one domain opens, re-renders or routes to another; no data changes hands | Censo → Expediente: selecting a patient re-renders the chart |
 
-In the interactive artifact, **click a domain** to see only its arrows and its card. In this Markdown version, the full lists are below.
+In the interactive artifact, **click a domain** to see only its arrows, its card, the screens where it appears, and the e2e scenarios to run. In this Markdown version, the same information is in the **impact checklist** and the connection lists below.
 
 <!-- MAP:features -->
 
@@ -71,6 +71,157 @@ Data enters on the **left** (labs, cultures, meds, Estado actual, eventualidades
 | **Ajustes & ayuda** | Settings, profile formats, Learn Hub, tours with demo patients, release notes. | features/settings-help/ · features/profile*.mjs · onboarding-*.mjs · tour-*.mjs | settings, tour progress; tours inject demo patients (never synced) | none |
 | **Nube sync** | Pushes local changes as ops and applies pulled changes to every domain. | features/cloud-sync/ (~130) · features/sync-apply/ · features/cloud-mobile/ | reads all domains to push; writes all domains on pull | owns every path |
 | **Plataforma** | Shell, ⌘K, tabs, undo, updater, backup, DB unlock, persistence. | app.js · app-shell*.mjs · app-state.mjs · storage/ · features/platform/ · features/command-palette.mjs | owns the in-memory maps and persistence | none of its own |
+
+---
+
+## Impact checklist: before you change a domain
+
+Use this before changing a domain. **Where you see it** links to the [UI map](./ui-map/00-index.md) sections for its screens. **Run** lists the e2e scenarios that cover it (`npm run e2e -- <name>`; CI does not run e2e). **Also moves** lists the domains it feeds data into, and **also run** lists their scenarios, because a change here can show up there.
+
+### Laboratorio
+
+- **Where you see it:** [2.1 Labs](./ui-map/02-patient-workspace.md#21-labs) · [2.2 Pegar SOME / Procesar (modal)](./ui-map/02-patient-workspace.md#22-pegar-some--procesar-modal) · [2.3 Actualizar labs (repo batch modal)](./ui-map/02-patient-workspace.md#23-actualizar-labs-repo-batch-modal)
+- **Run:** `labs-to-docx`, `lab-paste-rules`, `lab-patient-switch`, `lab-repo-update`, `paste-smart`
+- **Also moves:** Nota & documentos, Tendencias, Cultivos, Censo & pacientes, Resumen, Estado actual, Guardia & entrega
+- **Also run:** `nota-evolucion`, `stress-exports`, `lab-trends`, `cultivos`, `patients`, `sala-cards-archive`, `censo-columnas`, `sala-view`, `resumen-glance`, `estado-actual`, `estado-actual-stress`, `guardia-handoff`
+- **Synced:** yes, also run `nube-sync` when you change what's stored
+
+### Cultivos
+
+- **Where you see it:** [2.5 Cultivos](./ui-map/02-patient-workspace.md#25-cultivos)
+- **Run:** `cultivos`
+- **Also moves:** Censo & pacientes, Resumen, Laboratorio
+- **Also run:** `patients`, `sala-cards-archive`, `censo-columnas`, `sala-view`, `resumen-glance`, `labs-to-docx`, `lab-paste-rules`, `lab-patient-switch`, `lab-repo-update`, `paste-smart`
+
+### Tendencias
+
+- **Where you see it:** [2.4 Tendencias](./ui-map/02-patient-workspace.md#24-tendencias)
+- **Run:** `lab-trends`
+- **Also moves:** Eventualidades
+- **Also run:** `drive-import`, `resumen-glance`
+
+### Eventualidades
+
+- **Where you see it:** [1.5 Clínico > Eventualidades (Sala only)](./ui-map/02-patient-workspace.md#15-clínico--eventualidades-sala-only) · [5. Eventualidades](./ui-map/04-sala-guardia-and-companion-apps.md#5-eventualidades)
+- **Run:** `drive-import`, `lab-trends`, `resumen-glance`
+- **Also moves:** Tendencias
+- **Also run:** —
+- **Synced:** yes, also run `nube-sync` when you change what's stored
+
+### Medicamentos
+
+- **Where you see it:** [3. Manejo tab (`appcontent-med`) — receta and meds](./ui-map/02-patient-workspace.md#3-manejo-tab-appcontent-med--receta-and-meds) · [1.4 Clínico > Medicamentos (Sala only)](./ui-map/02-patient-workspace.md#14-clínico--medicamentos-sala-only) · [6. VPO (valoración preoperatoria)](./ui-map/04-sala-guardia-and-companion-apps.md#6-vpo-valoración-preoperatoria)
+- **Run:** `manejo-receta`, `datos-meds-strike`, `vpo`
+- **Also moves:** Estado actual, Nota & documentos, Pendientes, Censo & pacientes, Expediente, Resumen
+- **Also run:** `estado-actual`, `estado-actual-stress`, `nota-evolucion`, `labs-to-docx`, `stress-exports`, `pendientes`, `patients`, `sala-cards-archive`, `censo-columnas`, `sala-view`, `drive-import`, `listado`, `datos-panel`, `resumen-glance`
+- **Synced:** yes, also run `nube-sync` when you change what's stored
+
+### Estado actual
+
+- **Where you see it:** [1.3 Clínico > Estado actual](./ui-map/02-patient-workspace.md#13-clínico--estado-actual)
+- **Run:** `estado-actual`, `estado-actual-stress`
+- **Also moves:** Nota & documentos, Censo & pacientes, Guardia & entrega, Resumen, Pendientes
+- **Also run:** `nota-evolucion`, `labs-to-docx`, `stress-exports`, `patients`, `sala-cards-archive`, `censo-columnas`, `sala-view`, `guardia-handoff`, `resumen-glance`, `pendientes`
+- **Synced:** yes, also run `nube-sync` when you change what's stored
+
+### Expediente
+
+- **Where you see it:** [3.2 Paciente sub-tabs (expediente)](./ui-map/01-shell-navigation.md#32-paciente-sub-tabs-expediente) · [1.10 Datos del paciente (modal) — "Expediente" data](./ui-map/02-patient-workspace.md#110-datos-del-paciente-modal--expediente-data) · [1.9 Salida > Listado (Sala)](./ui-map/02-patient-workspace.md#19-salida--listado-sala)
+- **Run:** `drive-import`, `listado`, `datos-panel`
+- **Also moves:** Nota & documentos, Censo & pacientes, Guardia & entrega, Laboratorio, Eventualidades
+- **Also run:** `nota-evolucion`, `labs-to-docx`, `stress-exports`, `patients`, `sala-cards-archive`, `censo-columnas`, `sala-view`, `guardia-handoff`, `lab-paste-rules`, `lab-patient-switch`, `lab-repo-update`, `paste-smart`, `lab-trends`, `resumen-glance`
+- **Synced:** yes, also run `nube-sync` when you change what's stored
+
+### Censo & pacientes
+
+- **Where you see it:** [2. Patient sidebar](./ui-map/01-shell-navigation.md#2-patient-sidebar) · [1. Sala views (cards vs sidebar)](./ui-map/04-sala-guardia-and-companion-apps.md#1-sala-views-cards-vs-sidebar) · [5. Add patient](./ui-map/02-patient-workspace.md#5-add-patient) · [7. Censo export (PDF)](./ui-map/04-sala-guardia-and-companion-apps.md#7-censo-export-pdf)
+- **Run:** `patients`, `sala-cards-archive`, `censo-columnas`, `sala-view`
+- **Also moves:** Nota & documentos, Laboratorio
+- **Also run:** `nota-evolucion`, `labs-to-docx`, `stress-exports`, `lab-paste-rules`, `lab-patient-switch`, `lab-repo-update`, `paste-smart`
+- **Synced:** yes, also run `nube-sync` when you change what's stored
+
+### Resumen
+
+- **Where you see it:** [1.1 Resumen (dashboard)](./ui-map/02-patient-workspace.md#11-resumen-dashboard)
+- **Run:** `resumen-glance`, `sala-view`
+- **Also moves:** Interconsultas
+- **Also run:** `nota-evolucion`
+
+### Nota & documentos
+
+- **Where you see it:** [1.6 Clínico > Nota de evolución (Interconsulta)](./ui-map/02-patient-workspace.md#16-clínico--nota-de-evolución-interconsulta) · [1.7 Clínico > Indicaciones (Interconsulta)](./ui-map/02-patient-workspace.md#17-clínico--indicaciones-interconsulta) · [6. .docx export (all places)](./ui-map/02-patient-workspace.md#6-docx-export-all-places)
+- **Run:** `nota-evolucion`, `labs-to-docx`, `stress-exports`
+
+### Pendientes
+
+- **Where you see it:** [1.2 Pendientes (todo)](./ui-map/02-patient-workspace.md#12-pendientes-todo)
+- **Run:** `pendientes`
+- **Also moves:** Censo & pacientes, Guardia & entrega, Resumen, Estado actual
+- **Also run:** `patients`, `sala-cards-archive`, `censo-columnas`, `sala-view`, `guardia-handoff`, `resumen-glance`, `estado-actual`, `estado-actual-stress`
+- **Synced:** yes, also run `nube-sync` when you change what's stored
+
+### Agenda
+
+- **Where you see it:** [4. Agenda tab (`appcontent-agenda`)](./ui-map/02-patient-workspace.md#4-agenda-tab-appcontent-agenda)
+- **Run:** `agenda`
+- **Synced:** yes, also run `nube-sync` when you change what's stored
+
+### Interconsultas
+
+- **Where you see it:** [3. Interconsulta board](./ui-map/04-sala-guardia-and-companion-apps.md#3-interconsulta-board)
+- **Run:** `nota-evolucion` (no dedicated scenario; nota-evolucion runs in Interconsulta mode)
+- **Also moves:** Censo & pacientes, Equipos & acceso
+- **Also run:** `patients`, `sala-cards-archive`, `censo-columnas`, `sala-view`, `equipos-panel`, `r2-two-teams`, `nube-leave`, `admin-code`
+- **Synced:** yes, also run `nube-sync` when you change what's stored
+
+### Equipos & acceso
+
+- **Where you see it:** [6. First run, onboarding, unlock screens](./ui-map/03-modals-settings.md#6-first-run-onboarding-unlock-screens) · [3. Mi perfil](./ui-map/03-modals-settings.md#3-mi-perfil)
+- **Run:** `equipos-panel`, `r2-two-teams`, `nube-leave`, `admin-code`
+- **Also moves:** Censo & pacientes, Guardia & entrega
+- **Also run:** `patients`, `sala-cards-archive`, `censo-columnas`, `sala-view`, `guardia-handoff`
+- **Synced:** yes, also run `nube-sync` when you change what's stored
+
+### Guardia & entrega
+
+- **Where you see it:** [2. Guardia (census board)](./ui-map/04-sala-guardia-and-companion-apps.md#2-guardia-census-board) · [4. Modo Entrega and the pase board](./ui-map/04-sala-guardia-and-companion-apps.md#4-modo-entrega-and-the-pase-board)
+- **Run:** `guardia-handoff` (also nube-staging-entrega-targets (manual, staging Worker))
+- **Also moves:** Eventualidades, Censo & pacientes, Equipos & acceso, Interno & equipos
+- **Also run:** `drive-import`, `lab-trends`, `resumen-glance`, `patients`, `sala-cards-archive`, `censo-columnas`, `sala-view`, `equipos-panel`, `r2-two-teams`, `nube-leave`, `admin-code`
+- **Synced:** yes, also run `nube-sync` when you change what's stored
+
+### Interno & equipos
+
+- **Where you see it:** [9. Interno app (MIP / pregrado vitals)](./ui-map/04-sala-guardia-and-companion-apps.md#9-interno-app-mip--pregrado-vitals) · [10. Equipos app (`R+ Lista de espera`)](./ui-map/04-sala-guardia-and-companion-apps.md#10-equipos-app-r-lista-de-espera)
+- **Run:** — (no scenario covers the Interno phone; check by hand)
+- **Also moves:** Guardia & entrega
+- **Also run:** `guardia-handoff`
+- **Synced:** yes, also run `nube-sync` when you change what's stored
+
+### Admin
+
+- **Where you see it:** [5. Nube and LAN](./ui-map/03-modals-settings.md#5-nube-and-lan)
+- **Run:** `admin-panel`, `admin-code`
+- **Also moves:** Equipos & acceso, Laboratorio
+- **Also run:** `equipos-panel`, `r2-two-teams`, `nube-leave`, `labs-to-docx`, `lab-paste-rules`, `lab-patient-switch`, `lab-repo-update`, `paste-smart`
+- **Synced:** yes, also run `nube-sync` when you change what's stored
+
+### Ajustes & ayuda
+
+- **Where you see it:** [2. Ajustes settings tree](./ui-map/03-modals-settings.md#2-ajustes-settings-tree) · [3. Mi perfil](./ui-map/03-modals-settings.md#3-mi-perfil)
+- **Run:** `ajustes-panel`, `learn-hub-tour`, `feature-hints`
+- **Also moves:** Nota & documentos, Censo & pacientes
+- **Also run:** `nota-evolucion`, `labs-to-docx`, `stress-exports`, `patients`, `sala-cards-archive`, `censo-columnas`, `sala-view`
+
+### Nube sync
+
+- **Where you see it:** [5. Nube and LAN](./ui-map/03-modals-settings.md#5-nube-and-lan) · [8. R+ Móvil (mobile) and join](./ui-map/04-sala-guardia-and-companion-apps.md#8-r-móvil-mobile-and-join)
+- **Run:** `nube-sync`, `nube-notes`, `nube-join-code`, `nube-owner-key`, `nube-rotate-code`, `nube-sala-switch`, `nube-panel`, `stress-sync`
+
+### Plataforma
+
+- **Where you see it:** [1. Top bar](./ui-map/01-shell-navigation.md#1-top-bar) · [4. Command palette](./ui-map/01-shell-navigation.md#4-command-palette) · [5. Keyboard shortcuts](./ui-map/01-shell-navigation.md#5-keyboard-shortcuts) · [4. Datos (backup, export, import, DB unlock, SQLCipher)](./ui-map/03-modals-settings.md#4-datos-backup-export-import-db-unlock-sqlcipher)
+- **Run:** `top-bar`, `db-unlock`, `prompt-dialogs`, `stress-layout`
 
 ---
 
@@ -257,14 +408,14 @@ Data enters on the **left** (labs, cultures, meds, Estado actual, eventualidades
 
 ## Check yourself
 
-1. You change how lab sets are stored. List the domains that read them.
+1. You change how lab sets are stored. List the domains that read them, and say where you'd find that list fastest.
 2. Which domain would you touch to add a column to the census PDF for "dieta"?
 3. A resident says a procedure to-do appeared "by itself". Where did it come from?
 4. Which domain has no say over clinical content but decides who sees it?
 
 <details><summary>Answers</summary>
 
-1. Nota (estudios), Tendencias, Cultivos, Censo, Resumen, Estado actual (gasometría), Guardia (discharge hint), Nube (sidecars).
+1. Nota (estudios), Tendencias, Cultivos, Censo, Resumen, Estado actual (gasometría), Guardia (discharge hint), Nube (sidecars). Fastest: the Laboratorio entry in the impact checklist.
 2. Censo (`censo-build-sections.mjs`), reading from Estado actual (`monitoreo.estadoClinico.dieta`).
 3. From a pasted receta: its ESTUDIOS / PROCEDIMIENTO rows became pendientes.
 4. Equipos & acceso (team scope).

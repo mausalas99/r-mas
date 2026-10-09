@@ -145,13 +145,20 @@ These are the files with the most importers. If you understand these 15, you can
 
 ## Hidden connections: mirrored and repeated code
 
-Some connections don't show up as imports, because the same rule is **written twice**:
+Some connections don't show up as imports, because the same rule is **written twice** (or three times). Since this wiki was written, **`scripts/ci/mirror-drift.mjs` checks every pair below in `npm run metrics:check`**, so CI fails when one copy changes without the other.
 
-| Rule | Copies | Risk |
+| Rule | Copies | What the guard checks |
 |---|---|---|
-| Who can see which patients | `lib/db/clinical-privileges.mjs` and `public/js/clinical-privileges.mjs` ("Renderer mirror") | UI and DB disagree about access |
-| Username format | `lib/db/clinical-username.mjs` and `public/js/clinical-username.mjs` ("keep the two in step") | registration accepted in one place, rejected in the other |
-| The list of salas | `lib/clinical-salas.mjs` (app + DB CHECK), `cloud/sync-worker/src/sala-allowlist.js` (Nube gate), plus a DB migration | a sala exists locally but Nube refuses it |
+| Ward list for Nube | `public/js/features/cloud-sync/sala-allowlist.mjs` ("Keep in sync with…") and `cloud/sync-worker/src/sala-allowlist.js` | same salas on both sides |
+| Nube salas ⊆ clinical salas | Worker allowlist vs `lib/clinical-salas.mjs` (which also drives the DB CHECK) | every Nube sala exists locally |
+| Estado actual merge fields | `features/estado-actual-data-constants.mjs` / `-data-merge.mjs` and `cloud/sync-worker/src/monitoreo-lww.js` | `MED_FIELD_KEYS`, `EC_SCALAR_KEYS`, `DIET_KEYS` match |
+| Clinical blob keys | `public/js/db-storage-bridge.mjs` and `lib/db/clinical-blob-keys.mjs` | same blob keys |
+| Username format | `lib/db/clinical-username.mjs` and `public/js/clinical-username.mjs` | files identical (comments ignored) |
+| Who may do what | `lib/db/clinical-privileges.mjs` and `public/js/clinical-privileges.mjs` ("Renderer mirror") | the 8 shared functions have identical bodies |
+
+**Known drift** that exists today is listed in `KNOWN_DRIFT` inside the guard, so CI stays green while it's being fixed. Right now that's the 5 med fields the Worker lacks ([13](./13-open-questions-and-doc-drift.md), A11). New drift fails the build. Fixed drift that is still listed also fails, so the list can only shrink. When you fix A11, delete its entry.
+
+> 💡 If you add a new hand-kept copy, add a check for it to the guard in the same PR.
 
 ### Worked example: adding a sala touches every layer
 Commit `d529b9e` (*Add UCI, PostQx and Subespecialidad salas*) is a good map of the codebase in one diff:

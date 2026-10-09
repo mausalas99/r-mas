@@ -28,6 +28,7 @@
 | A14 | **Wiring loose ends.** `rpc-app-tab-changed` is dispatched but has no listener. `rpc-interno-vitals-synced` has listeners but no dispatcher. `subscribeClinicalReadModel()` has no subscribers. Boot reads the whole DB twice. | verified | This is dead code, or a feature that was meant to be finished (intern vitals aren't singled out on desktop). | see [03](./03-shared-state-and-wiring.md#loose-ends-found-while-mapping) |
 | A15 | **Built but not wired.** Entrega templates (tables, IPC and sync exist; no UI caller). Interconsulta rollover IPC (no caller found). Pase-labs Worker route returns 503 since E2EE. | verified / reported (rollover) | Code that syncs and must be maintained but doesn't serve users. | `lib/db/clinical-access-entrega.mjs`, `cloud/sync-worker/src/pase-labs.js` |
 | A16 | **Smaller gaps.** The Resumen PaFi KPI is never fed. VPO risk scores (RCRI/Gupta…) are typed in by hand, and `GUPTA_INTERCEPT` is unused. | reported | Features that look automatic but aren't. | `patient-dashboard/ea-glance-*.mjs`, `vpo-*.mjs` |
+| A17 | **CI on `main` has been red since 8.4.9.** `metrics:check` reports `MODULE-COUNT REGRESSION: 1299 > baseline 1297`. Releases 8.4.8 and 8.4.9 added modules without raising the baseline. The `claude/codebase-wiki` branch raises it to 1300 (those two, plus the new drift guard). | verified (CI log of run 37512037761) | While `metrics:check` fails, CI stops there and the unit tests never run on `main`. | `packages/core/scripts/metrics/baseline.json` |
 
 ---
 
@@ -53,7 +54,11 @@
 
 ---
 
-## C. How to keep this wiki honest
+## C. Guarded by CI now
+
+`scripts/ci/mirror-drift.mjs` (part of `npm run metrics:check`) fails when the hand-kept copies listed in [05](./05-codebase-map.md#hidden-connections-mirrored-and-repeated-code) drift apart. A11 is listed there as known drift until it's fixed.
+
+## D. How to keep this wiki honest
 
 - These pages name **files and functions**, not line numbers, so they survive refactors. If a name stops matching, grep for it.
 - When you change something these pages describe, update the page in the same PR. The `codebase-wiki` skill (`.claude/skills/codebase-wiki/`) can re-run the whole research-and-verify pass.
