@@ -133,9 +133,6 @@ export function buildClinicalProfileSectionHtml(ctx, user) {
           </select>
           ${ctx.programAdmin ? hintHtml('Tu equipo y entregas usan esta sala; abajo puedes explorar otras.') : ''}
         </div>
-        <div class="modal-actions clinical-teams-profile-save">
-          <button type="submit" class="wb-btn wb-btn-primary wb-btn-lg">Guardar perfil</button>
-        </div>
       </form>
     </div>`;
 }
@@ -226,9 +223,6 @@ export function buildPerfilAccountHtml(ctx, user) {
         )}
       </div>
       ${directoryNote}
-      <div class="settings-perfil-account-save">
-        <button type="submit" class="wb-btn wb-btn-primary">Guardar perfil</button>
-      </div>
     </form>`;
 }
 

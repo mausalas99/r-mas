@@ -15,6 +15,13 @@
   background-color: color-mix(in oklab, var(--text) 7%, transparent);
 }
 
+/* Card skeleton sits on the card surface, no border (board rule 1). */
+.skel-card {
+  background-color: var(--card-bg);
+  box-shadow: var(--shadow-1);
+  border-radius: var(--card-radius);
+}
+
 .skel-line::after,
 .skel-card::after {
   content: '';

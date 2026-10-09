@@ -128,6 +128,13 @@ export function renderProcedureAgendaPanel() {
   for (var iDay = 0; iDay < 7; iDay += 1) {
     bodyRow.appendChild(buildAgendaDayColumn(iDay, monday, clipsByDay[iDay], openProcedureAgendaModal));
   }
+  if (clipsByDay.every(function (c) { return c.length === 0; })) {
+    var empty = document.createElement("div");
+    empty.className = "rpc-proc-agenda-empty";
+    empty.innerHTML = '<span class="rpc-proc-agenda-empty-title">Semana libre</span>' +
+      '<span>Usa + Procedimiento para agendar uno.</span>';
+    bodyRow.appendChild(empty);
+  }
 
   board.appendChild(bodyRow);
   mount.innerHTML = "";

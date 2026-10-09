@@ -153,7 +153,6 @@ function buildBatchCopyModalHtml(listHtml) {
     '<textarea id="lab-batch-copy-preview" class="lab-copydays-preview" readonly rows="4" aria-label="Vista previa"></textarea>' +
     '<div class="lab-copydays-foot">' +
     '<span id="lab-batch-copy-count" class="lab-copydays-count" aria-live="polite"></span>' +
-    '<button type="button" id="lab-batch-copy-cancel" class="wb-btn wb-btn-secondary">Cancelar</button>' +
     '<button type="button" id="lab-batch-copy-ok" class="wb-btn wb-btn-primary" disabled aria-disabled="true">Copiar al portapapeles</button>' +
     '</div></div>'
   );
@@ -179,9 +178,6 @@ function wireBatchCopyModal(backdrop, loaded) {
     };
   });
   backdrop.querySelector('#lab-batch-copy-close').onclick = function () {
-    closeBatchCopyModal(backdrop);
-  };
-  backdrop.querySelector('#lab-batch-copy-cancel').onclick = function () {
     closeBatchCopyModal(backdrop);
   };
   backdrop.addEventListener('click', function (e) {

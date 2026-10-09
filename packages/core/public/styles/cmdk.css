@@ -15,11 +15,13 @@
   right: 0;
   width: min(520px, calc(100vw - 32px));
   margin-inline: auto;
-  border-radius: var(--radius-container);
+  border-radius: var(--card-radius);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--elev-overlay);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-3);
+  padding-bottom: var(--space-2);
 }
 
 .cmdk[hidden],
@@ -29,13 +31,13 @@
 
 .cmdk-input {
   border: none;
-  border-bottom: 1px solid var(--divider);
   background: transparent;
   font: inherit;
-  font-size: 15px;
-  font-weight: 500;
+  font-size: var(--fs-16);
+  font-weight: var(--fw-regular);
   color: var(--text);
-  padding: 14px 16px;
+  height: 56px;
+  padding: 0 16px;
   outline: none;
 }
 
@@ -54,54 +56,68 @@
 .cmdk-list {
   list-style: none;
   margin: 0;
-  padding: 6px;
+  padding: 0 8px 4px;
   max-height: 46vh;
   overflow-y: auto;
-  background: var(--color-elevated);
-  border-top: 1px solid color-mix(in oklab, var(--color-ink) 6%, transparent);
+  background: transparent;
+}
+
+.cmdk-group-title {
+  list-style: none;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-strong);
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: normal;
+  user-select: none;
 }
 
 .cmdk-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  min-height: 36px;
-  padding: 8px 10px;
-  border-radius: calc(var(--radius-md) - 2px);
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
   cursor: pointer;
   color: var(--text);
-  /* Hover alone must not look like selection (avoids dual highlights). */
   background: transparent;
 }
 
-.cmdk-item:hover {
-  background: var(--state-hover-bg);
-}
-
+.cmdk-item:hover,
 .cmdk-item.is-selected {
-  background: color-mix(in oklab, var(--action) 10%, var(--color-elevated));
+  background: var(--selected-bg);
+  color: var(--selected-fg);
 }
 
-.cmdk-item.is-selected:hover {
-  background: color-mix(in oklab, var(--action) 14%, var(--color-elevated));
+.cmdk-item-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+}
+
+.cmdk-item.is-selected .cmdk-item-icon {
+  color: inherit;
 }
 
 .cmdk-item-label {
+  flex: 1 1 auto;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 13.5px;
-  font-weight: 550;
-  letter-spacing: -0.01em;
+  font-size: var(--fs-14);
+  font-weight: var(--fw-regular);
 }
 
 .cmdk-item-hint {
   color: var(--text-muted);
-  font-size: 11.5px;
-  font-weight: 500;
+  font-size: var(--fs-12);
+  font-weight: var(--fw-regular);
   flex-shrink: 0;
-  letter-spacing: 0.01em;
 }
 
 .cmdk-item-hint:empty {
@@ -118,13 +134,13 @@
 }
 
 .cmdk-empty .empty-state-title {
-  font-size: calc(14px * var(--density-font));
-  font-weight: 600;
+  font-size: var(--fs-14);
+  font-weight: var(--fw-strong);
   color: var(--text);
 }
 
 .cmdk-empty .empty-state-lead {
-  font-size: calc(13px * var(--density-font));
+  font-size: var(--fs-14);
   line-height: 1.45;
   max-width: 36ch;
 }

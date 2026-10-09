@@ -873,6 +873,106 @@ html.motion-sobrio #appcontent-agenda .rpc-proc-agenda-block {
   transition: none;
 }
 
+/* Agenda R1 (2026-10-09 board): no grid lines, 2h bands, sentence case, text title */
+#appcontent-agenda .rpc-proc-agenda-title { color: var(--text); }
+
+#appcontent-agenda .rpc-proc-agenda-actions button.secondary {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 999px;
+  color: var(--text-muted);
+}
+
+#appcontent-agenda .rpc-proc-agenda-board-head,
+#appcontent-agenda .rpc-proc-agenda-board-body {
+  background: var(--card-bg);
+  box-shadow: var(--shadow-1);
+  border-radius: var(--card-radius);
+}
+
+#appcontent-agenda .rpc-proc-agenda-head-spacer,
+#appcontent-agenda .rpc-proc-agenda-head-cell,
+#appcontent-agenda .rpc-proc-agenda-times-col,
+#appcontent-agenda .rpc-proc-agenda-day-col-wrap {
+  border: 0;
+}
+
+#appcontent-agenda .rpc-proc-agenda-head-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2) 0;
+  font-size: var(--fs-14);
+  font-weight: var(--fw-regular);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text-muted);
+}
+
+#appcontent-agenda .rpc-proc-agenda-head-cell strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  min-width: 32px;
+  height: 32px;
+  font-size: var(--fs-16);
+  font-weight: var(--fw-strong);
+  color: var(--text);
+}
+
+#appcontent-agenda .rpc-proc-agenda-head-cell.is-weekend strong { color: var(--text-muted); }
+
+#appcontent-agenda .rpc-proc-agenda-head-cell.is-today strong {
+  background: var(--action);
+  color: var(--color-on-accent);
+  border-radius: 999px;
+}
+
+#appcontent-agenda .rpc-proc-agenda-today-tag {
+  color: var(--action);
+  font-weight: var(--fw-strong);
+}
+
+#appcontent-agenda .rpc-proc-agenda-time-slot {
+  border: 0;
+  font-size: var(--fs-12);
+  color: var(--color-ink-tertiary);
+}
+
+#appcontent-agenda .rpc-proc-agenda-hour-line {
+  border: 0;
+}
+
+#appcontent-agenda .rpc-proc-agenda-hour-line.is-band {
+  background: color-mix(in oklab, var(--text) 4%, transparent);
+}
+
+#appcontent-agenda .rpc-proc-agenda-empty {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-2);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+#appcontent-agenda .rpc-proc-agenda-empty-title {
+  font-size: var(--fs-16);
+  font-weight: var(--fw-strong);
+  color: var(--text);
+}
+
 /* ═══════════════════════════════════════════════════════════
    6 · FLOATING CHROME (tour dock, learn hub)
    ═══════════════════════════════════════════════════════════ */

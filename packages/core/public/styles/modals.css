@@ -33,6 +33,7 @@
   /* A long list (e.g. 45 meds) must scroll inside, or its buttons land off screen. */
   max-height: calc(100dvh - 32px); overflow-y: auto; box-sizing: border-box;
 }
+.lab-conflict-modal.med-egreso-modal { border: 0; box-shadow: var(--shadow-3); }
 .lab-conflict-modal h3 { font-size: 14px; font-weight: 700; color: var(--text); }
 .lab-conflict-modal p  { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
 .lab-conflict-actions  { display: flex; flex-direction: column; gap: 8px; }

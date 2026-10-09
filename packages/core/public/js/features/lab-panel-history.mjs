@@ -174,7 +174,13 @@ function syncLabHistoryDayNavButtons(hist, selectedId) {
 }
 
 /** Bar ⋯ menu: entries that need saved studies (copy days, delete) show only when there are some. */
+function setLabEmptyLabsVisible_(show) {
+  var el = document.getElementById('lab-empty-labs');
+  if (el) el.hidden = !show;
+}
+
 function syncLabMenuHistoryItems_(hasHistory) {
+  if (hasHistory) setLabEmptyLabsVisible_(false);
   document.querySelectorAll('[data-lab-needs-history]').forEach(function (el) {
     el.hidden = !hasHistory;
   });
@@ -182,6 +188,7 @@ function syncLabMenuHistoryItems_(hasHistory) {
 
 function handleLabHistoryNoPatientSelect_(selectEl, hintEl) {
   _labHistoryDateSelectCacheKey = '';
+  setLabEmptyLabsVisible_(false);
   selectEl.hidden = true;
   selectEl.innerHTML = '';
   if (hintEl) {
@@ -201,13 +208,15 @@ function handleLabHistoryEmptySelect_(selectEl, hintEl, cacheKey) {
   _labHistoryDateSelectCacheKey = cacheKey;
   selectEl.hidden = true;
   selectEl.innerHTML = '';
-  if (hintEl) {
+  if (!shouldApplyMobileLabHistoryWindow()) {
+    // Labs vacío R1 (2026-10-09): what happened + one next step.
+    if (hintEl) hintEl.style.display = 'none';
+    setLabEmptyLabsVisible_(true);
+  } else if (hintEl) {
     setLabOutputHistoryHint(
       hintEl,
-      shouldApplyMobileLabHistoryWindow()
-        ? 'Sin estudios en los últimos 3 días. En escritorio se procesan labs y sincronizan aquí para referencia rápida.'
-        : 'Al procesar un reporte con paciente activo, cada conjunto queda guardado aquí (sirve para Tendencias y diagramas).',
-      { mobileReference: mobileLabReferenceMode() && shouldApplyMobileLabHistoryWindow() }
+      'Sin estudios en los últimos 3 días. En escritorio se procesan labs y sincronizan aquí para referencia rápida.',
+      { mobileReference: mobileLabReferenceMode() }
     );
   }
   syncLabMenuHistoryItems_(false);

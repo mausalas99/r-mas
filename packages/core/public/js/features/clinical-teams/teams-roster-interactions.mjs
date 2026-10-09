@@ -14,6 +14,7 @@ import {
 import { inferMembershipCycleForJoin } from '../../clinico-access.mjs';
 import { validateTeamRankSlot } from '../../../../lib/clinical-team-composition.mjs';
 import { publishClinicalTeamsAfterChange } from './teams-guardia-bridge.mjs';
+import { wireProfileAutosave } from './teams-roster-profile.mjs';
 import { markClinicalEverJoinedTeam } from '../clinical-rotation-rejoin-modal.mjs';
 import {
   toast,
@@ -170,12 +171,21 @@ export async function mountPerfilClinical(salaHost, accountHost) {
   salaHost.innerHTML = buildPerfilSalaHtml(ctx);
   accountHost.innerHTML = buildPerfilAccountHtml(ctx, user);
   wireProfileFormControls();
+  const form = accountHost.querySelector('#clinical-profile-form');
+  if (form instanceof HTMLFormElement) wireProfileAutosave(form);
 }
 
 export function wireClinicalTeamsPanelInteractions() {
   syncSalaFieldVisibility();
   wireTeamDialogs();
   wireProfileFormControls();
+
+  // Equipo panel profile form autosaves on change, like Mi perfil. Fresh node per render.
+  const profileForm = document.querySelector('.clinical-teams-profile-panel #clinical-profile-form');
+  if (profileForm instanceof HTMLFormElement && !profileForm._rpcAutosaveWired) {
+    profileForm._rpcAutosaveWired = true;
+    wireProfileAutosave(profileForm);
+  }
 
   const salaSelect = document.getElementById('clinical-team-create-sala');
   if (salaSelect && !salaSelect._rpcSalaWired) {

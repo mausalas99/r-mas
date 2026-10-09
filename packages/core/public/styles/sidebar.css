@@ -412,12 +412,11 @@ html.dark .btn-add:hover {
   cursor: grab;
   position: relative;
   border-radius: var(--radius-container);
-  border: var(--border-hairline);
+  border: 0;
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
   transition:
     background var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
   overflow: hidden;
   isolation: isolate;
@@ -425,25 +424,14 @@ html.dark .btn-add:hover {
 .patient-card:active { cursor: grabbing; }
 .patient-card:hover {
   background: var(--state-hover-bg);
-  border-color: var(--border);
   box-shadow: var(--shadow-sm);
 }
-/* Tarjetas suaves (3b): fijados se distinguen por un borde teal tenue, no por relleno. */
-.patient-card--pinned {
-  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
-}
-html.dark .patient-card--pinned {
-  border-color: color-mix(in oklab, var(--action) 55%, var(--border));
-}
 .patient-card.active {
-  background: color-mix(in oklab, var(--color-ink) 6%, var(--surface));
-  border: var(--border-hairline);
-  border-left: 2.5px solid var(--color-ink);
+  background: var(--selected-bg);
   box-shadow: none;
 }
 .patient-card--incomplete {
-  border-color: color-mix(in srgb, var(--color-warn, #d97706) 55%, var(--border));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-warn, #d97706) 25%, transparent);
+  box-shadow: none;
 }
 .patient-card--incomplete .p-name::after {
   content: ' \00B7 incompleto';
@@ -458,14 +446,7 @@ html.dark .patient-card {
 }
 html.dark .patient-card:hover {
   background: var(--state-hover-bg);
-  border-color: var(--border);
   box-shadow: var(--shadow);
-}
-html.dark .patient-card.active {
-  background: color-mix(in oklab, #fff 7%, var(--surface));
-  border: var(--border-hairline);
-  border-left: 2.5px solid var(--color-ink);
-  box-shadow: none;
 }
 .patient-card-toolbar {
   position: relative;
@@ -659,15 +640,12 @@ html.dark .patient-drag-hovercard.patient-card {
   margin: calc(6px * var(--density-space)) 0 calc(4px * var(--density-space));
   padding: calc(3px * var(--density-space)) 0 calc(6px * var(--density-space));
   min-height: 22px;
-  font-size: calc(10px * var(--density-font));
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: calc(12px * var(--density-font));
+  font-weight: var(--fw-strong);
   color: var(--text-muted);
   border-radius: 0;
   background: transparent;
   border: 0;
-  border-bottom: var(--border-hairline);
 }
 .patient-list-section-label__lead {
   display: inline-flex;
@@ -685,10 +663,8 @@ html.dark .patient-drag-hovercard.patient-card {
 }
 .patient-list-section-count {
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--action);
-  text-transform: none;
+  font-weight: var(--fw-regular);
+  color: var(--color-ink-tertiary);
 }
 .patient-list-section-toggle {
   width: 100%;
@@ -702,10 +678,8 @@ html.dark .patient-drag-hovercard.patient-card {
   border-radius: 0;
   background: transparent;
   color: var(--text-muted);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-weight: 700;
-  font-size: 10px;
+  font-weight: var(--fw-strong);
+  font-size: 12px;
   padding: calc(3px * var(--density-space)) 0 calc(6px * var(--density-space));
   min-height: 24px;
   cursor: pointer;

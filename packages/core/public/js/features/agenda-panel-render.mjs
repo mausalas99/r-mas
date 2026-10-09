@@ -16,15 +16,17 @@ export function buildAgendaBoardHead(monday) {
   const headSpacer = document.createElement('div');
   headSpacer.className = 'rpc-proc-agenda-head-spacer';
   head.appendChild(headSpacer);
+  const todayKey = new Date().toDateString();
   for (let iDay = 0; iDay < 7; iDay += 1) {
     const colDate = addDaysLocal(monday, iDay);
     const hc = document.createElement('div');
-    hc.className = 'rpc-proc-agenda-head-cell';
-    let wd = String(colDate.toLocaleDateString('es', { weekday: 'short' })).replace(/\.$/, '');
-    let dm = String(colDate.toLocaleDateString('es', { day: 'numeric', month: 'short' })).replace('.', '');
-    wd = wd.charAt(0).toUpperCase() + wd.slice(1);
-    dm = dm.charAt(0).toUpperCase() + dm.slice(1);
-    hc.innerHTML = '<span>' + esc(wd) + '</span><strong>' + esc(dm) + '</strong>';
+    const isToday = colDate.toDateString() === todayKey;
+    const isWeekend = iDay >= 5;
+    hc.className = 'rpc-proc-agenda-head-cell' + (isToday ? ' is-today' : '') + (isWeekend ? ' is-weekend' : '');
+    const wd = String(colDate.toLocaleDateString('es', { weekday: 'short' })).replace(/\.$/, '').toLowerCase();
+    hc.innerHTML =
+      '<span>' + esc(wd) + '</span><strong>' + colDate.getDate() + '</strong>' +
+      (isToday ? '<span class="rpc-proc-agenda-today-tag">hoy</span>' : '');
     head.appendChild(hc);
   }
   return head;
@@ -71,7 +73,7 @@ export function buildAgendaDayColumn(iDay, monday, dayClips, onEdit) {
 
   for (let h = AGENDA_DISPLAY_FIRST_HOUR; h < AGENDA_DISPLAY_LAST_HOUR_EXCLUSIVE; h += 1) {
     const hl = document.createElement('div');
-    hl.className = 'rpc-proc-agenda-hour-line';
+    hl.className = 'rpc-proc-agenda-hour-line' + ((h - AGENDA_DISPLAY_FIRST_HOUR) % 2 === 1 ? ' is-band' : '');
     hl.style.height = agendaRowPx + 'px';
     dayCol.appendChild(hl);
   }

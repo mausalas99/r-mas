@@ -137,15 +137,13 @@ export function renderMemberRow(m, opts = {}) {
   const rank = escapeHtml(effectiveClinicalRank({ rank: m.rank }));
   const displayName = name ? escapeHtml(name) : handle;
   const cycle = formatMemberCycleLabel(m);
-  const meta = name ? `@${handle} · ${rank}` : rank;
   const cycleHtml = cycle
     ? `<span class="clinical-teams-member-cycle">${escapeHtml(cycle)}</span>`
     : '';
   const memberUserId = String(m.user_id || '').trim();
   const removeBtn = renderMemberRemoveButton(m, handle, memberUserId, opts);
   return `<li class="clinical-teams-member-row">
-    <span class="clinical-teams-member-row-name">${displayName}</span>
-    <span class="clinical-teams-member-row-meta">${meta}${cycleHtml ? ` · ${cycleHtml}` : ''}</span>
+    <span class="clinical-teams-member-row-line"><span class="clinical-teams-member-row-meta">${rank}</span> <span class="clinical-teams-member-row-name">${displayName}</span>${cycleHtml ? ` · ${cycleHtml}` : ''}</span>
     ${removeBtn}
   </li>`;
 }

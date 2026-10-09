@@ -13,4 +13,59 @@
   --wb-card-radius: var(--radius-lg);
   --wb-chart-radius: var(--equipment-radius);
   --wb-chart-surface: var(--equipment-surface);
+
+  /* Refactoring UI system (2026-10-09 board "R+ · Refactoring UI", Main).
+   * New CSS picks from these scales only. 13px is allowed in dense tables. */
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-20: 20px;
+  --fs-24: 24px;
+  --fs-30: 30px;
+  --fw-regular: 400;
+  --fw-strong: 600;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  /* Three elevation levels: 1 card, 2 menu/popover, 3 window/modal.
+   * Cards separate by shade + space, never by a border. */
+  --shadow-1: 0 1px 3px rgba(26, 26, 28, 0.08), 0 1px 2px rgba(26, 26, 28, 0.06);
+  --shadow-2: 0 4px 12px rgba(26, 26, 28, 0.1), 0 1px 3px rgba(26, 26, 28, 0.08);
+  --shadow-3: 0 16px 40px rgba(26, 26, 28, 0.18);
+  --card-radius: 16px;
+  /* Card fill: white on grey paper (light), one step up from paper (dark). */
+  --card-bg: var(--color-elevated);
+  --sunken-bg: color-mix(in oklab, var(--color-ink) 4%, var(--color-paper));
+  --chip-bg: color-mix(in oklab, var(--color-ink) 6%, var(--color-surface));
+  --selected-bg: var(--color-accent-soft);
+  --selected-fg: var(--color-accent-soft-text);
+
+  /* Snap the shared type tokens to the scale (12 14 16 20 24) and 400/600. */
+  --type-display: 600 calc(24px * var(--density-font)) / 1.25 var(--font-ui);
+  --type-title: 600 calc(20px * var(--density-font)) / 1.3 var(--font-ui);
+  --type-section: 600 calc(14px * var(--density-font)) / 1.35 var(--font-ui);
+  --type-body: 400 calc(14px * var(--density-font)) / 1.5 var(--font-ui);
+  --type-caption: 400 calc(12px * var(--density-font)) / 1.4 var(--font-ui);
+}
+
+html.dark {
+  /* In dark, lighter = closer. Card level 1 needs no shadow. */
+  --shadow-1: none;
+  --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-3: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --card-bg: #1a1e26;
+  --sunken-bg: #0e1015;
+  --chip-bg: #232833;
+}
+
+html.high-contrast {
+  --shadow-1: none;
+  --shadow-2: none;
+  --shadow-3: none;
 }

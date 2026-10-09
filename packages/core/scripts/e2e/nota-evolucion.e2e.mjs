@@ -637,7 +637,7 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   await ic.waitForTimeout(800); // let the modal finish fading in / rebuilding
   await rankSel.selectOption('R3');
   const pickedRank = await rankSel.inputValue();
-  await ic.locator('#profile-modal #clinical-profile-form [type="submit"]').click();
+  await ic.locator('#profile-modal #clinical-profile-form').evaluate((n) => n.dispatchEvent(new globalThis.Event('change', { bubbles: true })));
   const toastSel = ic.locator('.toast', { hasText: /Perfil guardado|No se guardó/ });
   await toastSel.first().waitFor({ timeout: 15000 }).catch(() => {});
   const rankToast = flat(await toastSel.first().textContent().catch(() => ''));

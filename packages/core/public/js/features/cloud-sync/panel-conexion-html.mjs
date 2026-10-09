@@ -236,19 +236,14 @@ export function statusHeroHtml({ status, detail, displaySala, room, tokenPresent
           .concat(lastPush ? ['último envío ' + formatCloudDiagWhen(lastPush, Date.now())] : [])
           .join(' · ');
   return (
-    '<div class="cloud-sync-hero" data-cloud-hero>' +
-    '<div class="cloud-sync-hero-icon" data-state="' +
+    '<div class="cloud-sync-hero" data-cloud-hero data-state="' +
     esc(iconState) +
     '">' +
-    heroIconSvg(iconState) +
-    '</div>' +
-    '<div class="cloud-sync-hero-text">' +
     '<p class="cloud-sync-hero-title">' +
     esc(title) +
     '</p>' +
     (subline ? '<p class="cloud-sync-hero-sub">' + esc(subline) + '</p>' : '') +
-    '</div>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary cloud-sync-hero-sync" data-cloud-action="sync-now">' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-hero-sync" data-cloud-action="sync-now">' +
     SYNC_ICON_SVG +
     'Sincronizar ahora</button>' +
     '</div>'

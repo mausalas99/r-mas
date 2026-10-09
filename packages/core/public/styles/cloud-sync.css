@@ -1795,9 +1795,10 @@
 
 .cloud-sync-admin-danger {
   padding: calc(12px * var(--density-space));
-  border: 1px solid color-mix(in oklab, var(--danger, #c0392b) 28%, var(--divider));
-  border-radius: var(--wb-card-radius, var(--radius-lg));
-  background: color-mix(in oklab, var(--danger, #c0392b) 6%, var(--surface));
+  border: 0;
+  border-radius: var(--card-radius, 16px);
+  background: var(--card-bg, var(--surface));
+  box-shadow: var(--shadow-1);
 }
 
 .cloud-sync-admin-room-detail {
@@ -2468,8 +2469,26 @@
 .cloud-sync-hero {
   --hero-tone: var(--color-accent);
   display: flex;
-  align-items: center;
-  gap: calc(16px * var(--density-space));
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.cloud-sync-hero .cloud-sync-hero-title,
+.cloud-sync-hero .cloud-sync-hero-sub {
+  font-size: var(--fs-14);
+}
+
+.cloud-sync-hero[data-state="ok"] .cloud-sync-hero-title {
+  color: var(--success);
+}
+
+.cloud-sync-hero[data-state="warn"] .cloud-sync-hero-title {
+  color: var(--warn);
+}
+
+.cloud-sync-hero[data-state="error"] .cloud-sync-hero-title {
+  color: var(--error);
 }
 
 .cloud-sync-hero-icon {
@@ -2613,14 +2632,24 @@
 }
 
 .cloud-sync-room-code {
-  padding: 4px 10px;
-  border-radius: var(--radius-control);
-  background: color-mix(in oklab, var(--text) 6%, transparent);
+  padding: 0;
   font-family: var(--font-mono, 'IBM Plex Mono', monospace);
-  font-size: calc(15px * var(--density-font));
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  font-size: var(--fs-30);
+  font-weight: var(--fw-strong);
+  letter-spacing: 4px;
   color: var(--text);
+}
+
+/* Connected room: a card, no borders or row dividers. */
+.cloud-sync-room--connected .cloud-sync-inset-group {
+  border: none;
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-1);
+}
+
+.cloud-sync-room--connected .cloud-sync-inset-row::after {
+  display: none;
 }
 
 .cloud-sync-room-copy.cloud-sync-btn--ghost {

@@ -549,7 +549,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   gap: 8px 14px;
   align-items: center;
   padding: 13px var(--settings-copy-inset, 16px);
-  border-bottom: 1px solid var(--border);
+  border-bottom: none;
 }
 .settings-card:last-child,
 .settings-card:nth-last-child(1 of .settings-card) {
@@ -624,10 +624,11 @@ input[type="checkbox"].settings-card__toggle:focus-visible {
 .settings-section-label {
   margin: 12px 0 6px;
   padding: 0;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-14);
+  font-weight: var(--fw-strong);
   color: var(--text-muted);
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
+  text-transform: none;
 }
 .settings-section-label:first-child {
   margin-top: 0;
@@ -1445,10 +1446,10 @@ body.connection-dropdown-open {
 .lan-panel-group__title {
   margin: 0;
   padding: 0 2px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--fs-14);
+  font-weight: var(--fw-strong);
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--text-muted);
 }
 .lan-panel-group--stack .lan-panel-group__body {
@@ -2956,10 +2957,10 @@ select.profile-input.profile-select {
 }
 .settings-nav-group {
   margin: 12px 12px 4px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--fs-14);
+  font-weight: var(--fw-strong);
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--text-muted);
 }
 .settings-nav-group:first-child {
@@ -3081,9 +3082,6 @@ select.profile-input.profile-select {
 }
 .settings-tools > .settings-card-stack {
   margin: 0 10px 10px;
-}
-.settings-card--danger {
-  border-color: color-mix(in oklab, var(--color-danger) 30%, var(--divider));
 }
 .settings-danger-backup {
   margin-top: 12px;
@@ -3321,9 +3319,9 @@ select.profile-input.profile-select {
   cursor: pointer;
 }
 .settings-perfil-chip[aria-pressed="true"] {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: #fff;
+  background: var(--selected-bg);
+  border-color: transparent;
+  color: var(--selected-fg);
 }
 .settings-perfil-equipo {
   padding-bottom: 12px;
@@ -3350,9 +3348,9 @@ select.profile-input.profile-select {
   color: var(--text-muted, var(--text));
 }
 .settings-perfil-chip--sm[aria-pressed="true"] {
-  background: var(--color-accent-soft);
-  border-color: var(--color-accent);
-  color: var(--color-accent-soft-text);
+  background: var(--selected-bg);
+  border-color: transparent;
+  color: var(--selected-fg);
 }
 .settings-perfil-equipo-grid {
   display: grid;
@@ -3370,8 +3368,8 @@ select.profile-input.profile-select {
   cursor: not-allowed;
 }
 .settings-perfil-chip--add {
-  border-style: dashed;
-  border-color: var(--color-accent);
+  border-color: transparent;
+  background: transparent;
   color: var(--color-accent);
 }
 .settings-perfil-equipo .settings-perfil-chips {
@@ -3398,11 +3396,6 @@ select.profile-input.profile-select {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.settings-perfil-account-save {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 6px;
 }
 
 /* Mi Perfil button asks for a sala pick (profile-sala-nudge.mjs). */

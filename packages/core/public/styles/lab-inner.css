@@ -108,3 +108,41 @@ html.tab-bar-indicators-ready html.dark .lab-inner-nav .inner-tab.active {
   min-height: 0;
   width: 100%;
 }
+
+/* Labs vacío R1 (2026-10-09): designed empty state, one next step. */
+.lab-empty-labs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  min-height: 360px;
+  padding: var(--space-7) var(--space-5);
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-1);
+  text-align: center;
+}
+.lab-empty-labs[hidden] { display: none; }
+.lab-empty-labs-lead { margin: 0; max-width: 440px; }
+h2.lab-empty-labs-title { margin: 0; }
+.lab-empty-labs-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  background: var(--selected-bg);
+  color: var(--selected-fg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lab-empty-labs-title { font-size: var(--fs-20); font-weight: var(--fw-strong); color: var(--text); }
+.lab-empty-labs-lead { font-size: var(--fs-16); line-height: 1.5; color: var(--text-muted); }
+.lab-empty-labs-link {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: var(--fw-strong) var(--fs-14) var(--font-ui);
+  cursor: pointer;
+}
+.lab-empty-labs-link:hover { color: var(--text); }

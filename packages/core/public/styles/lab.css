@@ -1633,7 +1633,7 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
   color: var(--action);
 }
 .lab-output-more-item--danger {
-  color: var(--error);
+  color: var(--text-muted);
 }
 /* Labs bar (board «Main»): Actualizar labs is the one loud pill, ⋯ holds the rest. */
 .lab-refresh-btn {
@@ -1702,13 +1702,6 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
   padding: 0 12px;
   font-size: 14px;
   color: var(--text);
-}
-.lab-output-more-item--danger:hover {
-  background: rgba(220, 38, 38, 0.08);
-  color: var(--error);
-}
-html.dark .lab-output-more-item--danger:hover {
-  background: rgba(248, 113, 113, 0.12);
 }
 #lab-some-tables-backdrop.modal-backdrop {
   padding: calc(12px * var(--density-space));
@@ -1867,10 +1860,13 @@ html.lab-some-tables-modal-open .lab-copy-fab {
   flex-shrink: 0;
 }
 .lab-some-dept-summary-actions .lab-some-export-btn {
-  padding: 4px 14px;
-  font-size: 12px;
-  font-weight: 700;
+  padding: 4px 12px;
+  font-size: var(--fs-13);
+  font-weight: var(--fw-strong);
   min-height: 30px;
+  border: 0;
+  background: transparent;
+  color: var(--action);
   border-radius: var(--radius-pill, 999px);
 }
 .lab-some-tables--modal .lab-some-dept-body {
@@ -1892,12 +1888,12 @@ html.lab-some-tables-modal-open .lab-copy-fab {
 .lab-some-tables--modal .lab-some-table-wrap {
   margin: 0;
   padding: 0;
-  border: var(--border-hairline);
-  border-radius: var(--radius-control);
+  border: 0;
+  border-radius: var(--card-radius, var(--radius-control));
   overflow: visible;
   overflow-x: auto;
-  background: var(--color-elevated);
-  box-shadow: none;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-1);
   /* Block-layout wrap around a <table>: needs display:flex (not just a
      copy of .inner-tab-bar's ::after) so the sticky fade pseudo can sit
      beside the table instead of dropping to a new line below it. */
@@ -1941,11 +1937,12 @@ html.lab-some-tables-modal-open .lab-copy-fab {
   padding: 8px 12px;
   font-size: 12.5px;
   line-height: 1.4;
-  border-left: 0;
-  border-right: 0;
-  border-top: 0;
-  border-bottom: 1px solid var(--border, var(--divider));
+  border: 0;
   vertical-align: middle;
+}
+.lab-some-tables--modal .lab-some-table th:nth-child(n + 2),
+.lab-some-tables--modal .lab-some-table td:nth-child(n + 2) {
+  text-align: right;
 }
 .lab-some-tables--modal .lab-some-table thead th {
   position: sticky;
@@ -1957,8 +1954,8 @@ html.lab-some-tables-modal-open .lab-copy-fab {
   font-weight: 600;
   letter-spacing: 0.01em;
   text-transform: none;
-  border-bottom: 1px solid var(--border, var(--divider));
-  box-shadow: 0 1px 0 color-mix(in oklab, var(--border) 50%, transparent);
+  border: 0;
+  box-shadow: none;
 }
 .lab-some-tables--modal .lab-some-table tbody tr:nth-child(even) td {
   background: color-mix(in oklab, var(--bg) 22%, var(--surface));
@@ -2760,12 +2757,11 @@ html.dark .rpc-switch-input:checked + .rpc-switch-track .rpc-switch-thumb {
 .rpc-proc-agenda-root { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: calc(20px * var(--density-space)) calc(24px * var(--density-space)) calc(24px * var(--density-space)); gap: calc(14px * var(--density-space)); }
 .rpc-proc-agenda-header { display: flex; flex-wrap: wrap; align-items: center; gap: calc(10px * var(--density-space)) calc(16px * var(--density-space)); justify-content: space-between; }
 .rpc-proc-agenda-titlewrap { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.rpc-proc-agenda-title { font-size: calc(17px * var(--density-font)); font-weight: 800; letter-spacing: -0.02em; color: var(--primary); margin: 0; }
+.rpc-proc-agenda-title { margin: 0; }
 .rpc-proc-agenda-range { font-size: 13px; color: var(--text-muted); font-weight: 600; }
 .rpc-proc-agenda-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .rpc-proc-agenda-actions button.secondary {
-  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-pill);
-  padding: 8px 14px; font-size: 13px; font-weight: 700; font-family: inherit; color: var(--text); cursor: pointer; min-height: 40px;
+  padding: 8px 14px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; min-height: 40px;
   transition: background 0.12s, border-color 0.12s;
 }
 .rpc-proc-agenda-actions button.secondary:hover:not(:disabled) { background: var(--surface); border-color: var(--action); }
@@ -2793,44 +2789,33 @@ html.dark .rpc-switch-input:checked + .rpc-switch-track .rpc-switch-thumb {
   position: sticky;
   top: 0;
   z-index: 5;
-  background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
-.rpc-proc-agenda-head-spacer { width: 46px; flex-shrink: 0; border-right: 1px solid var(--border); border-top-left-radius: var(--radius-container); }
-.rpc-proc-agenda-head-cell { flex: 1; min-width: 0; padding: 8px 4px; text-align: center; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: capitalize; letter-spacing: 0.02em; border-right: 1px solid var(--border); box-sizing: border-box; }
-.rpc-proc-agenda-head-cell:last-child { border-right: none; border-top-right-radius: var(--radius-container); }
+.rpc-proc-agenda-head-spacer { width: 46px; flex-shrink: 0; border-top-left-radius: var(--radius-container); }
+.rpc-proc-agenda-head-cell { flex: 1; min-width: 0; text-align: center; box-sizing: border-box; }
+.rpc-proc-agenda-head-cell:last-child { border-top-right-radius: var(--radius-container); }
 .rpc-proc-agenda-head-cell strong { display: block; font-size: 14px; font-weight: 800; color: var(--text); margin-top: 2px; }
 .rpc-proc-agenda-board-body { display: flex; min-width: 640px; align-items: stretch; position: relative; }
-.rpc-proc-agenda-times-col { width: 46px; flex-shrink: 0; border-right: 1px solid var(--border); box-sizing: border-box; background: var(--surface); }
-.rpc-proc-agenda-time-slot { border-bottom: 1px dashed var(--border); padding: 2px 6px 0 0; text-align: right; font-size: 11px; font-weight: 600; color: var(--text-muted); box-sizing: border-box; }
-.rpc-proc-agenda-day-col-wrap { flex: 1; min-width: 0; border-right: 1px solid var(--border); box-sizing: border-box; background: var(--bg); position: relative; }
-.rpc-proc-agenda-day-col-wrap:last-child { border-right: none; }
-.rpc-proc-agenda-hour-line { border-bottom: 1px dashed var(--border); box-sizing: border-box; pointer-events: none; }
+.rpc-proc-agenda-times-col { width: 46px; flex-shrink: 0; box-sizing: border-box; background: var(--surface); }
+.rpc-proc-agenda-time-slot { padding: 2px 6px 0 0; text-align: right; font-weight: 600; box-sizing: border-box; }
+.rpc-proc-agenda-day-col-wrap { flex: 1; min-width: 0; box-sizing: border-box; background: var(--bg); position: relative; }
+.rpc-proc-agenda-hour-line { box-sizing: border-box; pointer-events: none; }
 .rpc-proc-agenda-block {
   position: absolute; left: 2px; border-radius: 10px;
   padding: 5px 7px 6px; font-size: 11px; line-height: 1.28; overflow: hidden; cursor: pointer;
-  background: var(--color-agenda-block-bg);
   color: var(--text);
-  border: 1px solid var(--color-agenda-block-border);
-  box-shadow: var(--shadow-sm);
-  z-index: 1; transition: transform 0.1s ease, border-color 0.12s, box-shadow 0.12s; box-sizing: border-box;
+  z-index: 1; box-sizing: border-box;
 }
-.rpc-proc-agenda-block:hover { transform: scale(1.02); border-color: var(--action); z-index: 5; box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
-.rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(217, 119, 6, 0.65); box-shadow: 0 0 0 1px rgba(217,119,6,0.25) inset; }
+.rpc-proc-agenda-block:hover { transform: scale(1.02); z-index: 5; }
+#appcontent-agenda .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(217, 119, 6, 0.65); box-shadow: 0 0 0 1px rgba(217,119,6,0.25) inset; }
 html.dark .rpc-proc-agenda-slot { background: rgba(255,255,255,0.02); }
-html.dark .rpc-proc-agenda-block {
-  background: var(--color-agenda-block-bg);
-  border-color: var(--color-agenda-block-border);
-}
-html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36, 0.55); }
+html.dark #appcontent-agenda .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36, 0.55); }
 .rpc-proc-agenda-block .rpc-proc-name { font-weight: 800; letter-spacing: -0.01em; }
 .rpc-proc-agenda-block .rpc-proc-sub { margin-top: 2px; font-size: 10px; color: var(--text-muted); font-weight: 600; }
 .rpc-proc-agenda-block .rpc-proc-pat { margin-top: 3px; font-size: 10px; color: var(--primary); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .toast-stack {
   position: fixed;
-  top: calc(62px + 12px * (var(--density-space) - 1));
-  right: 24px;
   left: auto;
   z-index: var(--z-toast);
   display: flex;
@@ -2845,13 +2830,8 @@ html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--text);
-  color: var(--color-on-accent);
   padding: 10px 16px;
-  border-radius: var(--radius-pill);
   font-size: calc(13px * var(--density-font));
-  font-weight: 600;
-  box-shadow: var(--elev-overlay);
   transform: translateY(-10px) scale(0.97);
   opacity: 0;
   transition:
@@ -2879,19 +2859,9 @@ html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36
 .toast-action {
   flex-shrink: 0;
   margin-left: 4px;
-  padding: 4px 10px;
-  border: var(--border-hairline);
-  border-radius: var(--radius-pill);
-  background: color-mix(in oklab, var(--color-on-accent) 14%, transparent);
-  color: inherit;
   font: inherit;
   font-size: calc(12px * var(--density-font));
-  font-weight: 700;
   cursor: pointer;
-}
-
-.toast-action:hover {
-  background: color-mix(in oklab, var(--color-on-accent) 22%, transparent);
 }
 
 .toast-close {
@@ -2933,10 +2903,6 @@ html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36
   min-width: 0;
 }
 
-.toast.success { background: var(--color-success-emphasis); color: var(--color-on-success); }
-.toast.error { background: var(--error); color: var(--color-on-accent); }
-.toast.warn { background: var(--color-livesync-syncing); color: var(--color-on-accent); }
-.toast.info { background: var(--action); color: var(--color-on-accent); }
 .toast.toast--clickable {
   cursor: pointer;
 }
@@ -3714,6 +3680,8 @@ mark.lab-hit {
   max-width: none;
   max-height: 92vh;
   padding: 24px;
+  border: 0;
+  box-shadow: var(--shadow-3);
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -3777,16 +3745,16 @@ mark.lab-hit {
   box-sizing: border-box;
   padding: 0 14px;
   border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--surface);
+  border: 0;
+  background: transparent;
   display: flex;
   align-items: center;
   gap: 14px;
   cursor: pointer;
 }
 .lab-copydays-row.is-on {
-  border-color: var(--action);
-  background: color-mix(in oklab, var(--action) 10%, var(--surface));
+  background: var(--selected-bg);
+  color: var(--selected-fg);
 }
 .lab-copydays-row input {
   position: absolute;
@@ -3831,10 +3799,8 @@ mark.lab-hit {
 }
 .lab-copydays-h {
   padding: 16px 0 8px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: var(--fs-14);
+  font-weight: var(--fw-strong);
   color: var(--text-muted);
 }
 .lab-copydays-preview {
@@ -3843,8 +3809,8 @@ mark.lab-hit {
   height: 96px;
   padding: 12px 14px;
   border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--bg);
+  border: 0;
+  background: var(--sunken-bg);
   color: var(--text-muted);
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 12px;

@@ -278,35 +278,30 @@ body.rpc-med-receta-paste-open {
   padding-left: 4px;
 }
 .med-group-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--fs-14);
+  font-weight: var(--fw-strong);
   color: var(--text-muted);
 }
+.med-group-count { font-weight: var(--fw-regular); color: var(--color-ink-tertiary); }
 .med-group-hint { font-size: 12px; color: var(--text-muted); }
 .med-group-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
+  border: 0;
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-1);
   overflow: hidden;
 }
 .med-group--warn .med-group-label { color: var(--warn); }
-.med-group--warn .med-group-card {
-  border-color: var(--color-warn-border-strong);
-  background: var(--color-warn-surface);
-}
-.med-group--muted .med-group-card { background: color-mix(in oklab, var(--surface) 70%, var(--bg)); }
+.med-group--warn .med-group-card { background: var(--color-warn-surface); }
+.med-group--muted .med-group-card { background: color-mix(in oklab, var(--card-bg) 70%, var(--sunken-bg)); }
 .med-receta-row {
   display: flex;
   align-items: center;
   gap: 8px;
   min-height: 52px;
   padding: 8px 8px 8px 16px;
-  border-top: 1px solid var(--divider);
   box-sizing: border-box;
 }
-.med-receta-row:first-child { border-top: 0; }
 .med-receta-row.is-excluded .med-receta-name { opacity: 0.6; }
 .med-receta-name {
   flex: 1;
@@ -742,10 +737,8 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
 
 .exp-datos-sec__title {
   margin: 0;
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
+  font-size: var(--fs-14);
+  font-weight: var(--fw-strong);
   color: var(--text-muted);
 }
 
@@ -763,7 +756,7 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   color: var(--action);
   font: inherit;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: var(--fw-strong);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -1859,9 +1852,10 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
   align-items: center;
   gap: 16px;
   padding: 16px 18px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: color-mix(in oklab, var(--text) 3%, var(--surface));
+  border: 0;
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-1);
 }
 
 .exp-datos-summary__bed {
@@ -1936,10 +1930,10 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 .exp-datos-tab {
   height: 32px;
   padding: 0 14px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 999px;
   background: transparent;
-  color: color-mix(in oklab, var(--text-muted) 55%, var(--text));
+  color: var(--text-muted);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -1951,9 +1945,10 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 }
 
 .exp-datos-tab.is-on {
-  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
-  background: color-mix(in oklab, var(--action) 14%, transparent);
-  color: color-mix(in oklab, var(--action) 60%, var(--text));
+  border: 0;
+  border-radius: 999px;
+  background: var(--selected-bg);
+  color: var(--selected-fg);
 }
 
 .exp-datos-tab:focus-visible {
@@ -1988,9 +1983,10 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 .exp-datos-pane .exp-datos-sec {
   min-width: 0;
   padding: 10px 16px 12px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
+  border: 0;
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-1);
 }
 
 .exp-datos-sec__actions {

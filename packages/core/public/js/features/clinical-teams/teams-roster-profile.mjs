@@ -143,8 +143,24 @@ function clearCensusPinsIfSalaChanged(prevSala, sala) {
 
 /** A save that stops early leaves the chips on the unsaved pick: put them back on the saved sala. */
 export async function handleProfileFormSubmit(ev) {
+  ev.preventDefault();
+  await runProfileSave(ev.target);
+}
+
+/** Mi perfil autosave: save when a field is committed (pick, blur, Enter). Text
+ * saves on `change`, never per keystroke: a half-typed @usuario must not be
+ * claimed on Nube. */
+let autosaveChain = Promise.resolve();
+export function wireProfileAutosave(form) {
+  form.addEventListener('change', () => {
+    autosaveChain = autosaveChain.then(() => (form.isConnected ? runProfileSave(form) : null));
+  });
+}
+
+/** The one save path: submit (Enter, sala chips) and autosave both come through here. */
+async function runProfileSave(form) {
   try {
-    await saveProfileForm(ev);
+    await saveProfileForm(form);
   } finally {
     const sala = sessionSala();
     const hidden = document.querySelector('#profile-body #clinical-profile-sala');
@@ -157,9 +173,21 @@ export async function handleProfileFormSubmit(ev) {
   }
 }
 
-async function saveProfileForm(ev) {
-  ev.preventDefault();
-  const fields = readProfileFormFields(ev.target);
+/** Mi perfil hosts the form outside the teams panel: redraw it after a save. */
+async function remountPerfilClinical() {
+  const perfilHost = document.querySelector('[data-perfil-clinical-host]');
+  const perfilSalaHost = document.querySelector('[data-perfil-sala-host]');
+  if (perfilHost?.isConnected && perfilSalaHost?.isConnected) {
+    // Autosave runs on blur: keep focus on the field the user moved to.
+    const focusId = document.activeElement?.id;
+    const { mountPerfilClinical } = await import('./teams-roster-interactions.mjs');
+    await mountPerfilClinical(perfilSalaHost, perfilHost);
+    if (focusId) document.getElementById(focusId)?.focus();
+  }
+}
+
+async function saveProfileForm(form) {
+  const fields = readProfileFormFields(form);
   const wasProgramAdmin = hasProgramAdminPrivileges(clinicalSessionContext.user);
   const adminChange = await resolveProgramAdminChange(fields.adminCb, wasProgramAdmin);
   if (!adminChange) return;
@@ -200,12 +228,7 @@ async function saveProfileForm(ev) {
   // Mi perfil hosts this form outside the teams panel, so nothing else redraws
   // it: without this, «Cambiar código de administración» only showed up after
   // reopening Mi perfil.
-  const perfilHost = document.querySelector('[data-perfil-clinical-host]');
-  const perfilSalaHost = document.querySelector('[data-perfil-sala-host]');
-  if (perfilHost?.isConnected && perfilSalaHost?.isConnected) {
-    const { mountPerfilClinical } = await import('./teams-roster-interactions.mjs');
-    await mountPerfilClinical(perfilSalaHost, perfilHost);
-  }
+  await remountPerfilClinical();
   const msg =
     adminChange.wantsProgramAdmin &&
     (adminChange.isProgramAdmin === true || adminChange.wasProgramAdmin)

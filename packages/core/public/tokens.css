@@ -10,7 +10,7 @@
   --color-elevated: #ffffff;
   --color-ink: #1a1a1c;
   --color-ink-muted: #636367; /* ≥4.5:1 on paper + panel greys (was #6c6c70 = 4.35:1) */
-  --color-ink-tertiary: #717176;
+  --color-ink-tertiary: #6e747e; /* Claro R1 2026-10-09: 4.5:1 on paper */
   --color-warm: oklch(0.55 0.02 52);
   --color-accent: oklch(0.51 0.09 195);
   --color-accent-hover: oklch(0.42 0.09 195);
@@ -22,11 +22,11 @@
   --color-channel-pill-bg: color-mix(in oklab, var(--color-ink) 12%, var(--color-surface));
   --color-channel-pill-fg: var(--color-ink);
   --color-focus-ring: color-mix(in oklab, var(--color-accent) 82%, transparent);
-  --color-danger: #d70015;
+  --color-danger: #b3261e; /* Claro R1 2026-10-09: 4.5:1 on paper (was #d70015) */
   --color-danger-deep: #a8000f;
-  --color-danger-tint: rgba(215, 0, 21, 0.045);
-  --color-danger-tint-strong: rgba(215, 0, 21, 0.06);
-  --color-danger-ring: rgba(215, 0, 21, 0.16);
+  --color-danger-tint: rgba(179, 38, 30, 0.045);
+  --color-danger-tint-strong: rgba(179, 38, 30, 0.06);
+  --color-danger-ring: rgba(179, 38, 30, 0.16);
   --color-warn: #8a4208;
   --color-success: #1c6b31;
   --color-success-emphasis: var(--color-success);

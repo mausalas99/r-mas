@@ -138,6 +138,14 @@
           </div>
         </div>
 
+        <div id="lab-empty-labs" class="lab-empty-labs" hidden>
+          <span class="lab-empty-labs-icon" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 14h9"/></svg></span>
+          <h2 class="lab-empty-labs-title">Todavía no hay labs de este paciente</h2>
+          <p class="lab-empty-labs-lead">Trae los resultados del sistema del hospital.</p>
+          <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-onclick="openLabRepoBatchModal">Actualizar labs</button>
+          <button type="button" class="lab-empty-labs-link" data-onclick="openLabPasteModal">o pega el texto del SOME</button>
+        </div>
+
         <div id="lab-banner" class="card lab-banner--detected" style="display:none;flex-shrink:0;">
           <div class="card-body lab-banner-body">
             <div class="lab-banner-main">
@@ -319,9 +327,9 @@
             <div class="rpc-proc-agenda-range" id="procedure-agenda-range" aria-live="polite"></div>
           </div>
           <div class="rpc-proc-agenda-actions">
-            <button type="button" class="secondary" id="procedure-agenda-prev" data-onclick="navigateProcedureAgendaWeek" data-onclick-args='[-1]' aria-label="Semana anterior">← Semana ant.</button>
-            <button type="button" class="secondary" id="procedure-agenda-next" data-onclick="navigateProcedureAgendaWeek" data-onclick-args='[1]' aria-label="Semana siguiente">Semana sig. →</button>
-            <button type="button" class="rpc-proc-agenda-btn-new" id="procedure-agenda-new" data-onclick="openProcedureAgendaModal" data-onclick-args='[null]'>+ Nuevo procedimiento</button>
+            <button type="button" class="secondary" id="procedure-agenda-prev" data-onclick="navigateProcedureAgendaWeek" data-onclick-args='[-1]' aria-label="Semana anterior" title="Semana anterior">←</button>
+            <button type="button" class="secondary" id="procedure-agenda-next" data-onclick="navigateProcedureAgendaWeek" data-onclick-args='[1]' aria-label="Semana siguiente" title="Semana siguiente">→</button>
+            <button type="button" class="rpc-proc-agenda-btn-new" id="procedure-agenda-new" data-onclick="openProcedureAgendaModal" data-onclick-args='[null]'>+ Procedimiento</button>
           </div>
         </div>
         <div class="rpc-proc-agenda-scroll" id="procedure-agenda-scroll-host">

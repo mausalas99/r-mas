@@ -341,7 +341,7 @@ export function buildMedRecetaListHtml(activeId, block) {
       var meta = GROUP_META[key] || { label: SOAP_DESTINATION_LABELS[key] || key };
       return (
         '<section class="med-group' + (meta.cls ? " " + meta.cls : "") + '" data-med-group="' + esc(key) + '">' +
-        '<div class="med-group-head"><span class="med-group-label">' + esc(meta.label) + " · " + inGroup.length + "</span>" +
+        '<div class="med-group-head"><span class="med-group-label">' + esc(meta.label) + ' <span class="med-group-count">· ' + inGroup.length + "</span></span>" +
         (meta.hint ? '<span class="med-group-hint">' + esc(meta.hint) + "</span>" : "") +
         '</div><div class="med-group-card">' +
         inGroup.map(function (r) { return r.html; }).join("") +

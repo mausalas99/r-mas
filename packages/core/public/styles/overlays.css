@@ -56,41 +56,40 @@ html.no-blur #tour-dock .tour-dock-inner {
 
 
 /* ── Hybrid H polish pass: readable toasts + Conexión glass + softer dark CTAs ── */
+/* Toasts: bottom right (keeps the top bar clear), elevated card, no border.
+ * Kind = glyph colour + tint, so an error never reads like a success. */
+#toast-stack.toast-stack {
+  top: auto;
+  bottom: var(--space-4);
+  right: var(--space-4);
+}
 .toast,
 .toast.material-glass {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
-  background: #1c1c1e !important;
-  color: #f5f5f7 !important;
-  border: 1px solid color-mix(in oklab, #ffffff 18%, transparent) !important;
-  border-radius: 14px !important;
-  box-shadow: var(--elev-overlay, 0 8px 28px rgba(0,0,0,0.35)) !important;
+  background: var(--color-elevated) !important;
+  color: var(--text) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: var(--shadow-2) !important;
+  font-weight: var(--fw-regular);
 }
-html.dark .toast,
-html.dark .toast.material-glass {
-  background: #2c2c2e !important;
-  color: #f5f5f7 !important;
+.toast .toast-glyph { color: var(--action); }
+.toast.success .toast-glyph { color: var(--success); }
+.toast.warn .toast-glyph { color: var(--warn); }
+.toast.error {
+  background: color-mix(in oklab, var(--error) 14%, var(--color-elevated)) !important;
 }
-.toast.success,
-html.dark .toast.success {
-  background: #047857 !important;
-  color: #ffffff !important;
+.toast.error .toast-glyph { color: var(--error); }
+.toast .toast-action {
+  border: none;
+  background: none;
+  border-radius: 999px;
+  color: var(--action);
+  font-weight: var(--fw-strong);
+  padding: 0 var(--space-2);
 }
-.toast.error,
-html.dark .toast.error {
-  background: #c62828 !important;
-  color: #ffffff !important;
-}
-.toast.warn,
-html.dark .toast.warn {
-  background: #b45309 !important;
-  color: #ffffff !important;
-}
-.toast.info,
-html.dark .toast.info {
-  background: #3a3a3c !important;
-  color: #f5f5f7 !important;
-}
+.toast.error .toast-action { color: var(--error); }
 
 /* Connection modal: solid elevated — no glass head/body banding */
 #connection-dropdown-backdrop .connection-dropdown.connection-dropdown-modal {

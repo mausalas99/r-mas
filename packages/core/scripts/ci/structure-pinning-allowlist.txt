@@ -12,3 +12,5 @@ public/js/med-receta-core.test.mjs
 scripts/lib/electron-pack-files.test.js
 # Golden corpus: reads input/expected data files under scripts/golden/corpus/, never source.
 scripts/golden/golden-corpus.test.mjs
+# Toast click fix (886fbb19): reads ui-toast.mjs and app-shell.mjs source. Owner-approved 2026-10-09.
+public/js/ui-toast.test.mjs

@@ -25,7 +25,7 @@ function buildEgresoListHtml(lines) {
     return '<p class="med-empty-hint" style="margin:0;">No hay medicamentos activos para mostrar.</p>';
   }
   return (
-    '<ol id="med-egreso-modal-list" style="margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;">' +
+    '<ol id="med-egreso-modal-list" style="margin:0;padding-left:22px;max-width:68ch;display:flex;flex-direction:column;gap:6px;">' +
     lines
       .map(function (line) {
         return '<li>' + esc(line) + '</li>';
@@ -42,8 +42,8 @@ function buildSummaryHtml(dietLine) {
 
 function buildEgresoModalHtml(lines, dietLine, mode) {
   return (
-    '<div class="lab-conflict-modal" style="max-width:620px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;padding:0;gap:0;">' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;">' +
+    '<div class="lab-conflict-modal med-egreso-modal" style="max-width:620px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;padding:0;gap:0;">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;flex-shrink:0;">' +
     '<span style="font-size:16px;font-weight:700;color:var(--text);">Texto de egreso</span>' +
     '<div style="display:flex;align-items:center;gap:8px;">' +
     '<span class="med-output-tabs" id="med-egreso-modal-tabs-track" role="tablist" aria-label="Vista de texto de medicamentos" data-active="' +
@@ -67,7 +67,7 @@ function buildEgresoModalHtml(lines, dietLine, mode) {
     buildEgresoListHtml(lines) +
     buildSummaryHtml(dietLine) +
     '</div>' +
-    '<div style="display:flex;align-items:center;gap:10px;padding:12px 16px 12px 20px;border-top:1px solid var(--border);flex-shrink:0;">' +
+    '<div style="display:flex;align-items:center;gap:10px;padding:12px 16px 12px 20px;flex-shrink:0;">' +
     '<span style="flex:1;font-size:12px;color:var(--text-muted);">' +
     esc(lines.length + (lines.length === 1 ? ' va' : ' van') + ' a la receta de egreso. Los excluidos no.') +
     '</span>' +

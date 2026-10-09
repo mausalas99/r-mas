@@ -1150,7 +1150,7 @@ export function peligroHtml() {
     '<label class="cloud-sync-admin-toolbar-label" for="cloud-admin-peligro-room">Sala</label>' +
     '<select id="cloud-admin-peligro-room" class="profile-input" data-admin-peligro-room>' +
     '<option value="">— Elige una sala —</option></select>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger" data-admin-action="purge-room-selected">Purgar…</button>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-admin-action="purge-room-selected">Purgar…</button>' +
     '</div></section>' +
     '<section class="cloud-sync-admin-danger-card">' +
     '<h5 class="cloud-sync-admin-danger-title">Cuentas</h5>' +

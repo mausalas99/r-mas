@@ -1,7 +1,7 @@
 /* Rams + Tufte workbench layer — equipment chrome + chart data surfaces
  * Loads after workbench-surfaces.css. Global Rams tokens: public/tokens.css */
 
-/* ── Rams · workbench cards: border not shadow ─────────────────── */
+/* ── Workbench cards: shade + space, no border (Refactoring UI R1, 2026-10-09) ── */
 #appcontent-lab .main-work-scroll > .card:not(#lab-input-section),
 #appcontent-lab #lab-output-section,
 #appcontent-lab #lab-history-card,
@@ -14,9 +14,10 @@
 .ea-card,
 #patient-expediente .ea-card,
 .patient-expediente-classic .ea-card {
-  border: var(--border-hairline) !important;
-  box-shadow: none !important;
-  background: var(--equipment-surface);
+  border: 0 !important;
+  box-shadow: var(--shadow-1) !important;
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
 }
 
 /* Pendientes — sin ventana contenedora (filas flotantes; workbench-surfaces.css) */
@@ -36,24 +37,26 @@ html.ui-density-normal #appcontent-agenda > .rpc-proc-agenda-root,
 html.ui-density-normal #appcontent-med > .med-active-shell,
 html.ui-density-normal .patient-expediente-classic {
   box-shadow: none !important;
-  border: var(--border-hairline) !important;
+  border: 0 !important;
 }
 
 /* Sidebar census · Rams flat tiles (radius from sidebar.css) */
 aside.patient-sidebar .patient-card {
   box-shadow: none;
-  background: var(--color-surface);
+  border: 0;
+  background: transparent;
 }
 
 aside.patient-sidebar .patient-card:hover {
   box-shadow: none;
-  border-color: color-mix(in oklab, var(--action) 22%, var(--border));
+  background: var(--state-hover-bg);
 }
 
+/* Barra R1: the selected card is marked by fill, never a line. */
 aside.patient-sidebar .patient-card.active {
-  border: 1px solid color-mix(in oklab, var(--color-accent) 50%, var(--border));
+  border: 0;
   box-shadow: none;
-  background: color-mix(in oklab, var(--action) 5%, var(--surface));
+  background: var(--selected-bg);
 }
 
 /* Primary actions · Rams: no glow */

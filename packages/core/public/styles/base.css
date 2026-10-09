@@ -541,19 +541,14 @@ html.dark #update-banner { background: var(--color-update-banner-bg); border-bot
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  background: color-mix(in oklab, var(--error) 58%, black);
-  color: color-mix(in oklab, var(--error) 22%, white);
-  border-bottom: 1px solid color-mix(in oklab, var(--error) 72%, black);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--fs-13);
+  font-weight: var(--fw-strong);
+  /* Estados R1: offline is amber, not red. */
+  background: color-mix(in oklab, var(--warn) 14%, var(--surface));
+  color: var(--warn);
   text-align: center;
-}
-html.dark .rpc-offline-banner {
-  background: color-mix(in oklab, var(--error) 42%, black);
-  color: color-mix(in oklab, var(--error) 38%, white);
-  border-bottom-color: color-mix(in oklab, var(--error) 58%, black);
 }
 .rpc-offline-banner.visible { display: flex; animation: fade-in var(--dur-fast) var(--ease-out); }
 .lan-connection-banner {

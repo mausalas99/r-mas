@@ -113,9 +113,9 @@ function renderNoteForm() {
     '<label class="fit-inline fit-inline--short">Hora<input type="text" value="' + esc(note.hora) + '" data-oninput="updateNote" data-oninput-args=\'["hora"]\' data-oninput-pass="value" placeholder="HH:MM"></label>' +
     '<span class="fit-spacer"></span>' +
     pastDocsButtonHtml('nota', note) +
-    '<button type="button" class="wb-btn wb-btn-secondary" data-onclick="estadoActualEnviarANota" title="Llena Evolución y Signos vitales con el Estado actual">Traer de Estado actual</button>' +
-    '<button type="button" class="wb-btn wb-btn-secondary rpc-doc-export" data-onclick="quickExportCurrentPatient" id="btn-quick-export-note">Salida rápida</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary rpc-doc-export" data-onclick="previewNota" id="btn-gen">Generar Nota</button>' +
+    '<button type="button" class="wb-btn wb-btn-ghost" data-onclick="estadoActualEnviarANota" title="Llena Evolución y Signos vitales con el Estado actual">Traer de estado actual</button>' +
+    '<button type="button" class="wb-btn wb-btn-ghost rpc-doc-export" data-onclick="quickExportCurrentPatient" id="btn-quick-export-note">Salida rápida</button>' +
+    '<button type="button" class="wb-btn wb-btn-primary rpc-doc-export" data-onclick="previewNota" id="btn-gen">Generar nota</button>' +
     '</div>' +
     '<div class="fit-grid nota-fit-grid">' +
 

@@ -1447,6 +1447,44 @@
   }
 }
 
+/* Nota de evolución (refactor board R1, 2026-10-09). Scoped to the note form only. */
+.fit-screen:has(> .nota-fit-grid) > .fit-head {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.fit-screen:has(> .nota-fit-grid) .fit-title {
+  font-size: var(--fs-20);
+  font-weight: var(--fw-strong);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
+}
+.fit-screen:has(> .nota-fit-grid) .fit-inline {
+  font-size: var(--fs-12);
+  font-weight: var(--fw-regular);
+}
+.fit-screen:has(> .nota-fit-grid) .fit-inline input {
+  border: 0;
+  background: var(--sunken-bg);
+  font-size: var(--fs-12);
+}
+.nota-fit-grid .fit-block h4 {
+  font-size: var(--fs-14);
+  font-weight: var(--fw-strong);
+  color: var(--text-muted);
+}
+.nota-fit-grid .fit-block input,
+.nota-fit-grid .fit-block textarea,
+.nota-fit-grid .fit-list {
+  border: 0;
+  background: var(--sunken-bg);
+}
+.nota-fit-grid .fit-vitals label,
+.nota-fit-grid .fit-pair label {
+  font-size: var(--fs-12);
+  font-weight: var(--fw-regular);
+}
+
 /* Anteriores — read-only copies saved at each .docx export. */
 .past-docs-modal.wb-modal {
   width: min(960px, calc(100vw - 48px));

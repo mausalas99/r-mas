@@ -103,7 +103,8 @@ await r.finish('Admin code set + change in app', async () => {
   await D.page.locator('#btn-clinical-admin-code-submit').click();
   await modal.waitFor({ state: 'hidden' });
   check('checkbox is checked once the code is set', await cb.isChecked());
-  await D.page.getByRole('button', { name: 'Guardar perfil' }).evaluate((b) => b.click());
+  // Mi perfil autosaves: a change event on the checkbox saves the profile.
+  await cb.evaluate((el) => el.dispatchEvent(new globalThis.Event('change', { bubbles: true })));
   await D.page.locator('.toast', { hasText: 'Privilegios de administración activos' }).waitFor({ timeout: 5000 });
   const changeBtn = D.page.locator('#btn-clinical-admin-code-change');
   check('«Cambiar código de administración» button appears once admin', await changeBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true, () => false));
