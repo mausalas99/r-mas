@@ -1,6 +1,7 @@
 /**
  * Pure cloud pull state folding (no renderer/LAN imports — safe for unit tests).
  */
+import { mergeNeumoStudies } from './neumo-studies-sync.mjs';
 
 const ENTRY_SKIP_KEYS = new Set([
   'id',
@@ -20,7 +21,7 @@ const ENTRY_SKIP_KEYS = new Set([
  * True for a still-wrapped `{ enc: 1, iv, ct }` envelope this device could not
  * open (no room DEK yet, or a stale/wrong one). That must never be merged into
  * local state as if it were the real value — it would read back as "cleared"
- * (see MISTAKES.md 2026-09-17). This module stays import-free by design, so the
+ * (see MISTAKES.md 2026-09-17). This module imports only pure leaves, so the
  * check is duplicated from crypto.mjs's isEncryptedEnvelope rather than imported.
  * @param {unknown} value
  */
@@ -79,6 +80,7 @@ function buildPatientFromCloudEntry(entry) {
       patient[key] = value;
     }
   }
+  // neumoStudies (R+ Neumo) rides through here as plain; sync-apply merges it by id.
   for (const [key, value] of Object.entries(entry)) {
     if (ENTRY_SKIP_KEYS.has(key) || FIELDS_WIRE_ONLY_KEYS.has(key) || isCiphertext(value)) continue;
     patient[key] = value;
@@ -168,7 +170,11 @@ function foldEntryField(fold, pid, field, value) {
   if (field === 'monitoreo' && Array.isArray(prev.monitoreo?.historial)) {
     prev.monitoreoSupersededRows = [...(prev.monitoreoSupersededRows || []), ...prev.monitoreo.historial];
   }
-  prev[field] = value;
+  // Two neumoStudies ops in one pull: union by id, never keep only the last.
+  prev[field] =
+    field === 'neumoStudies' && !isCiphertext(prev[field]) && !isCiphertext(value)
+      ? mergeNeumoStudies(prev[field], value)
+      : value;
   fold.entries.set(pid, prev);
 }
 
@@ -267,7 +273,7 @@ export function foldCloudOp(fold, op) {
   }
 
   const entryField =
-    /^entries\/([^/]+)\/(note|indicaciones|historiaClinica|eventualidades|monitoreo|medReceta|vpo|listadoProblemas|medPharmProfile|fields)$/.exec(
+    /^entries\/([^/]+)\/(note|indicaciones|historiaClinica|eventualidades|monitoreo|medReceta|vpo|listadoProblemas|medPharmProfile|neumoStudies|fields)$/.exec(
       path
     );
   if (entryField) {

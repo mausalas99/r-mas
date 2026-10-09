@@ -1,56 +1,7 @@
 import { MED_FIELD_KEYS } from './estado-actual-data-constants.mjs';
+import { emptyEstadoClinico, emptyPendienteReceta } from '../../../lib/monitoreo-merge.mjs';
 
-/** @returns {typeof emptyEstadoClinico extends (...a: infer R) => infer V ? V : never} */
-export function emptyEstadoClinico() {
-  return {
-    four: '',
-    esferas: '',
-    analgesia: '',
-    antiemeticos: '',
-    sedacion: '',
-    antiepilepticos: '',
-    antiparkinsonianos: '',
-    antidotos: '',
-    viaAerea: '',
-    abx: '',
-    transfusiones: '',
-    antihta: '',
-    diureticos: '',
-    antitromboticos: '',
-    anticoagulacion: '',
-    antiarritmicos: '',
-    estatinas: '',
-    vasop: '',
-    nm: '',
-    soporte: '',
-    soporteLitros: '',
-    soporteFlujoLmin: '',
-    soporteFio2: '',
-    vmModo: '',
-    vmPeep: '',
-    vmVt: '',
-    vmFlujo: '',
-    vmPmeseta: '',
-    vmPsoporte: '',
-    pao2: '',
-    tempContext: '',
-    dieta: '',
-    kcalKg: '',
-    kcal: '',
-    proteinG: '',
-    pesoRef: '',
-  };
-}
-
-/** @returns {Record<string, string>} */
-export function emptyPendienteReceta() {
-  /** @type {Record<string, string>} */
-  const o = {};
-  for (var k of Object.keys(emptyEstadoClinico())) {
-    o[k] = '';
-  }
-  return o;
-}
+export { emptyEstadoClinico, emptyPendienteReceta };
 
 /**
  * Historial rows minus delete markers ({ id, recordedAt, deleted: true, savedAt }).

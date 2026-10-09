@@ -1,5 +1,81 @@
-import { MED_FIELD_KEYS } from './estado-actual-data-constants.mjs';
-import { emptyEstadoClinico, emptyPendienteReceta } from './estado-actual-data-model.mjs';
+/**
+ * monitoreo (vitals + estado actual) merge, shared by the renderer
+ * (public/js/features/estado-actual-data.mjs) and the Sync Worker LWW (cloud/sync-worker/src/lww.js).
+ * A whole-blob LWW replace would wipe whichever side loses the updatedAt race, so rows,
+ * confirmed meds, diet and manualMeds merge field by field. Pure: no DOM, no Worker APIs.
+ */
+
+export const MED_FIELD_KEYS = /** @type {const} */ ([
+  'analgesia',
+  'antiemeticos',
+  'sedacion',
+  'antiepilepticos',
+  'antiparkinsonianos',
+  'antidotos',
+  'viaAerea',
+  'vasop',
+  'antihta',
+  'antitromboticos',
+  'anticoagulacion',
+  'antiarritmicos',
+  'diureticos',
+  'estatinas',
+  'abx',
+  'transfusiones',
+  'nm',
+]);
+
+/** @returns {Record<string, string>} */
+export function emptyEstadoClinico() {
+  return {
+    four: '',
+    esferas: '',
+    analgesia: '',
+    antiemeticos: '',
+    sedacion: '',
+    antiepilepticos: '',
+    antiparkinsonianos: '',
+    antidotos: '',
+    viaAerea: '',
+    abx: '',
+    transfusiones: '',
+    antihta: '',
+    diureticos: '',
+    antitromboticos: '',
+    anticoagulacion: '',
+    antiarritmicos: '',
+    estatinas: '',
+    vasop: '',
+    nm: '',
+    soporte: '',
+    soporteLitros: '',
+    soporteFlujoLmin: '',
+    soporteFio2: '',
+    vmModo: '',
+    vmPeep: '',
+    vmVt: '',
+    vmFlujo: '',
+    vmPmeseta: '',
+    vmPsoporte: '',
+    pao2: '',
+    tempContext: '',
+    dieta: '',
+    kcalKg: '',
+    kcal: '',
+    proteinG: '',
+    pesoRef: '',
+  };
+}
+
+/** @returns {Record<string, string>} */
+export function emptyPendienteReceta() {
+  /** @type {Record<string, string>} */
+  const o = {};
+  for (var k of Object.keys(emptyEstadoClinico())) {
+    o[k] = '';
+  }
+  return o;
+}
 
 const DIET_KEYS = ['dieta', 'kcal', 'proteinG'];
 const EC_SCALAR_KEYS = ['four', 'esferas', 'soporte', 'kcalKg', 'tempContext', 'pesoRef'];
@@ -195,10 +271,6 @@ function applyEstadoClinicoUpdatedAt(result, localEcAt, remoteEcAt) {
   }
 }
 
-/**
- * @param {unknown} localIn
- * @param {unknown} remoteIn
- */
 /** Hand-typed med lines from both sides, so neither device's Receta prune drops them. */
 function unionManualMeds(a, b) {
   /** @type {Record<string, string[]>} */
@@ -213,7 +285,13 @@ function unionManualMeds(a, b) {
   return out;
 }
 
+/**
+ * @param {unknown} localIn currently stored monitoreo
+ * @param {unknown} remoteIn incoming monitoreo
+ */
 export function mergeMonitoreo(localIn, remoteIn) {
+  if (!localIn || typeof localIn !== 'object') return remoteIn;
+  if (!remoteIn || typeof remoteIn !== 'object') return localIn;
   var local = /** @type {any} */ (structuredClone(localIn));
   var remote = /** @type {any} */ (structuredClone(remoteIn));
 

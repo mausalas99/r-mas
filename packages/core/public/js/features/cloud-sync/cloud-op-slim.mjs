@@ -9,6 +9,7 @@
 import { markCloudLabOpPoison } from './cloud-lab-sidecar-index.mjs';
 import { looksLikeSomeLabReport } from '../../labs-report-refs.mjs';
 import { filterCloudOpsNotAttempted } from './cloud-sync-echo-guard.mjs';
+import { CLOUD_NEUMO_STUDIES_MAX_BYTES, fitNeumoStudiesToQuota } from './neumo-studies-sync.mjs';
 
 /**
  * Must stay under cloud-push-direct.mjs CHUNK_BUDGET_BYTES (180KB) so any single
@@ -117,10 +118,16 @@ function isMonitoreoPath(path) {
 }
 
 /** @param {string} path */
+function isNeumoStudiesPath(path) {
+  return /^entries\/[^/]+\/neumoStudies$/.test(String(path || ''));
+}
+
+/** @param {string} path */
 function maxBytesForPath(path) {
   const p = String(path || '');
   if (p.startsWith('labSidecars/')) return CLOUD_LAB_MUTATION_MAX_BYTES;
   if (isMonitoreoPath(p)) return CLOUD_MONITOREO_MAX_BYTES;
+  if (isNeumoStudiesPath(p)) return CLOUD_NEUMO_STUDIES_MAX_BYTES;
   return CLOUD_NOTE_MAX_BYTES;
 }
 
@@ -171,6 +178,7 @@ export function slimCloudOp(op) {
     if (fitted == null) return null;
     return { ...op, value: fitted };
   }
+  if (isNeumoStudiesPath(path)) return { ...op, value: fitNeumoStudiesToQuota(op.value) };
   return op;
 }
 

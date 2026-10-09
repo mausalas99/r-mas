@@ -93,7 +93,7 @@ Room DEK stays on enrolled devices (wrapped by the user’s Nube password or a w
 `path`, `updatedAt`, `actorId`, and a revision number — never the field **value** (confirmed by
 reading `cloud/sync-worker/src/lww.js`). So content fields can be encrypted while merge metadata
 stays plaintext, and `applyOps` keeps working server-side unchanged. The one exception was
-`monitoreo`, whose merge (`mergeMonitoreoLww`) needs to read vitals historial to merge two devices'
+`monitoreo`, whose merge (`mergeMonitoreo`, shared with the client in `lib/monitoreo-merge.mjs`) needs to read vitals historial to merge two devices'
 readings — when a `monitoreo` value is an encrypted envelope, the Worker now skips that merge and
 does a plain LWW replace instead (same pattern already used for `clinicalOps`). Interno was left
 out of scope entirely by *not* encrypting the board-display fields it depends on (name/bed/service

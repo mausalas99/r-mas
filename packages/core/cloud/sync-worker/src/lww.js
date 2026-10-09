@@ -1,6 +1,8 @@
 import { QUOTAS } from './quotas.js';
 import { mergeClinicalOpsLww } from './clinical-ops-lww.js';
-import { mergeMonitoreoLww } from './monitoreo-lww.js';
+import { mergeMonitoreo } from '../../../lib/monitoreo-merge.mjs';
+import { mergeCardioDailyLww } from './cardioDaily-lww.js';
+import { mergeNeumoStudiesLww } from './neumoStudies-lww.js';
 
 /** @returns {import('./lww.js').RoomSyncState} */
 export function emptyState() {
@@ -169,32 +171,41 @@ function isEncryptedEnvelope(value) {
 }
 
 /**
- * monitoreo carries vitals historial + estado actual — a blind LWW replace wipes
- * whichever side loses the updatedAt race. Merge instead of overwrite.
+ * Entry fields that merge instead of a blind LWW replace (which wipes whichever
+ * side loses the updatedAt race). monitoreo: vitals historial + estado actual.
+ * cardioDaily: R+ HF pocusByDay/rondasByDay, union by date (core never sends it).
+ * neumoStudies: R+ Neumo spirometry/pleural studies, union by id (core never sends it).
  *
- * Encrypted envelope: the Worker cannot read either side to merge historial —
- * same bypass as clinicalOps in applyOpToState below. Newest op replaces whole.
- * @param {RoomSyncState} state @param {string} patientId @param {unknown} value
+ * Encrypted envelope: the Worker cannot read either side to merge — same bypass
+ * as clinicalOps in applyOpToState below. Newest op replaces whole; the client
+ * merged before push (pull, decrypt, merge, push the full union).
  */
-function setMonitoreoField(state, patientId, value) {
+const ENTRY_FIELD_MERGERS = {
+  monitoreo: mergeMonitoreo,
+  cardioDaily: mergeCardioDailyLww,
+  neumoStudies: mergeNeumoStudiesLww,
+};
+
+/** @param {RoomSyncState} state @param {string} patientId @param {'monitoreo'|'cardioDaily'|'neumoStudies'} field @param {unknown} value */
+function setMergedEntryField(state, patientId, field, value) {
   if (isTombstoned(state, patientId)) return;
   const idx = findEntryIndex(state, patientId);
   if (idx < 0) {
     if (countLivePatients(state) >= QUOTAS.maxLivePatients) {
       throw new QuotaExceededError('quota_exceeded', `Límite de pacientes en sala (${QUOTAS.maxLivePatients}).`);
     }
-    state.entries.push({ id: patientId, monitoreo: value });
+    state.entries.push({ id: patientId, [field]: value });
     return;
   }
-  const current = state.entries[idx].monitoreo;
+  const current = state.entries[idx][field];
   const merged =
     current && !isEncryptedEnvelope(value) && !isEncryptedEnvelope(current)
-      ? mergeMonitoreoLww(current, value)
+      ? ENTRY_FIELD_MERGERS[field](current, value)
       : value;
-  state.entries[idx] = { ...state.entries[idx], monitoreo: merged };
+  state.entries[idx] = { ...state.entries[idx], [field]: merged };
 }
 
-const MONITOREO_PATH = /^entries\/([^/]+)\/monitoreo$/;
+const MERGED_ENTRY_PATH = /^entries\/([^/]+)\/(monitoreo|cardioDaily|neumoStudies)$/;
 
 /** Key-order-proof compare: merge output order may differ from stored order. */
 function canonical(v) {
@@ -206,23 +217,25 @@ function canonical(v) {
 }
 
 /**
- * An op older than the stored monitoreo clock still may carry rows the server
- * lacks. Merge it in; keep the stored (newer) entityVersion. Returns the merged
- * op when the stored value changed, else null (caller reports it stale).
+ * An op older than the stored monitoreo/cardioDaily clock still may carry rows
+ * the server lacks. Merge it in; keep the stored (newer) entityVersion. Returns
+ * the merged op when the stored value changed, else null (caller reports it stale).
  * @param {RoomSyncState} state @param {SyncOp} op
  */
-function mergeStaleMonitoreo(state, op) {
-  const m = MONITOREO_PATH.exec(op.path);
+function mergeStaleEntryField(state, op) {
+  const m = MERGED_ENTRY_PATH.exec(op.path);
   if (!m || isTombstoned(state, m[1])) return null;
   const idx = findEntryIndex(state, m[1]);
   if (idx < 0) return null;
-  const current = state.entries[idx].monitoreo;
+  const field = /** @type {'monitoreo'|'cardioDaily'|'neumoStudies'} */ (m[2]);
+  const merge = ENTRY_FIELD_MERGERS[field];
+  const current = state.entries[idx][field];
   if (!current || isEncryptedEnvelope(current) || isEncryptedEnvelope(op.value)) return null;
-  const merged = mergeMonitoreoLww(current, op.value);
+  const merged = merge(current, op.value);
   // merge fills defaults, so compare against current merged with itself, not raw current
-  const baseline = mergeMonitoreoLww(current, current);
+  const baseline = merge(current, current);
   if (JSON.stringify(canonical(merged)) === JSON.stringify(canonical(baseline))) return null;
-  state.entries[idx] = { ...state.entries[idx], monitoreo: merged };
+  state.entries[idx] = { ...state.entries[idx], [field]: merged };
   return { ...op, value: merged };
 }
 
@@ -311,13 +324,13 @@ function applyOpToState(state, op) {
   }
 
   const entryField =
-    /^entries\/([^/]+)\/(note|indicaciones|historiaClinica|eventualidades|monitoreo|medReceta|vpo|listadoProblemas|medPharmProfile|fields)$/.exec(
+    /^entries\/([^/]+)\/(note|indicaciones|historiaClinica|eventualidades|monitoreo|cardioDaily|neumoStudies|cardioSummary|medReceta|vpo|listadoProblemas|medPharmProfile|fields)$/.exec(
       path
     );
   if (entryField) {
     const [, entryPatientId, field] = entryField;
-    if (field === 'monitoreo') {
-      setMonitoreoField(state, entryPatientId, value);
+    if (field in ENTRY_FIELD_MERGERS) {
+      setMergedEntryField(state, entryPatientId, field, value);
     } else {
       setEntryField(state, entryPatientId, field, value);
     }
@@ -379,8 +392,8 @@ export function applyOps(state, ops) {
   const staleRejected = [];
   let hasFresh = false;
   for (const op of list) {
-    if (MONITOREO_PATH.test(op.path)) {
-      hasFresh = true; // stale monitoreo may still merge; decided in the main loop
+    if (MERGED_ENTRY_PATH.test(op.path)) {
+      hasFresh = true; // stale merged entry fields may still merge; decided in the main loop
     } else if (!isNewerVersion(op, state.entityVersions[op.path])) {
       staleRejected.push({ op, reason: 'stale' });
     } else {
@@ -417,7 +430,7 @@ export function applyOps(state, ops) {
     try {
       const current = next.entityVersions[op.path];
       if (!isNewerVersion(op, current)) {
-        const mergedOp = mergeStaleMonitoreo(next, op);
+        const mergedOp = mergeStaleEntryField(next, op);
         if (mergedOp) applied.push(mergedOp);
         else rejected.push({ op, reason: 'stale' });
         continue;

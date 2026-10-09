@@ -589,6 +589,22 @@ describe('applyOps LWW', () => {
     assert.equal(hist[0].tas, 130);
   });
 
+  it('monitoreo resend with same id and recordedAt keeps the newer savedAt', () => {
+    const row = (savedAt, fc) => ({ id: 'ios-1', recordedAt: '2026-08-02T06:00:00.000Z', savedAt, fc });
+    const pushes = [row('2026-08-01T10:00:00.000Z', 80), row('2026-08-01T15:00:00.000Z', 92)];
+    for (const order of [pushes, [...pushes].reverse()]) {
+      let s = emptyState();
+      order.forEach((r, i) => {
+        ({ state: s } = applyOps(s, [
+          { path: 'entries/p1/monitoreo', value: { historial: [r] }, updatedAt: `2026-08-01T16:0${i}:00.000Z`, actorId: `d${i}` },
+        ]));
+      });
+      const hist = s.entries.find((e) => e.id === 'p1').monitoreo.historial;
+      assert.equal(hist.length, 1);
+      assert.equal(hist[0].fc, 92);
+    }
+  });
+
   it('a brand-new patient monitoreo push still lands with no prior entry to merge against', () => {
     let s = emptyState();
     ({ state: s } = applyOps(s, [
@@ -669,6 +685,151 @@ describe('applyOps LWW', () => {
       assert.equal(r.applied.length, 0);
       assert.equal(r.rejected[0].reason, 'stale');
       assert.equal(r.state.entries.find((e) => e.id === 'p1').note, 'new');
+    });
+  });
+
+  describe('cardioSummary (R+ HF desktop-written summary)', () => {
+    const T1 = '2026-10-07T08:00:00.000Z';
+    const T2 = '2026-10-07T09:00:00.000Z';
+    const path = 'entries/p1/cardioSummary';
+    const stored = (s) => s.entries.find((e) => e.id === 'p1').cardioSummary;
+
+    it('newer op replaces the whole value; older op is rejected stale', () => {
+      let s = applyOps(emptyState(), [
+        { path, value: { fenotipo: 'FEVIr', updatedAt: T1 }, updatedAt: T1, actorId: 'desktop' },
+      ]).state;
+      s = applyOps(s, [{ path, value: { etiologia: 'isquemica', updatedAt: T2 }, updatedAt: T2, actorId: 'desktop' }]).state;
+      assert.deepEqual(stored(s), { etiologia: 'isquemica', updatedAt: T2 });
+      const r = applyOps(s, [{ path, value: { fenotipo: 'old', updatedAt: T1 }, updatedAt: T1, actorId: 'desktop' }]);
+      assert.equal(r.rejected[0].reason, 'stale');
+      assert.equal(stored(r.state).updatedAt, T2);
+    });
+  });
+
+  describe('cardioDaily (R+ HF daily bedside rows)', () => {
+    const T1 = '2026-10-07T08:00:00.000Z';
+    const T2 = '2026-10-07T09:00:00.000Z';
+    const path = 'entries/p1/cardioDaily';
+    const pocus = (date, updatedAt, vexus) => ({ date, updatedAt, vexus });
+    const stored = (s) => s.entries.find((e) => e.id === 'p1').cardioDaily;
+
+    it('two devices push different dates and both survive', () => {
+      let s = applyOps(emptyState(), [
+        { path, value: { pocusByDay: [pocus('2026-10-05', T1, 1)], rondasByDay: [] }, updatedAt: T1, actorId: 'desktop' },
+      ]).state;
+      s = applyOps(s, [
+        { path, value: { pocusByDay: [pocus('2026-10-06', T2, 2)], rondasByDay: [{ date: '2026-10-06', updatedAt: T2, plan: 'x' }] }, updatedAt: T2, actorId: 'iphone' },
+      ]).state;
+      assert.deepEqual(stored(s).pocusByDay.map((r) => r.date), ['2026-10-05', '2026-10-06']);
+      assert.deepEqual(stored(s).rondasByDay.map((r) => r.date), ['2026-10-06']);
+    });
+
+    it('same date: newer row updatedAt wins as a whole row; no updatedAt loses', () => {
+      let s = applyOps(emptyState(), [
+        { path, value: { pocusByDay: [pocus('2026-10-06', T2, 2), { date: '2026-10-07', vexus: 9 }] }, updatedAt: T2, actorId: 'desktop' },
+      ]).state;
+      s = applyOps(s, [
+        {
+          path,
+          value: { pocusByDay: [pocus('2026-10-06', T1, 1), pocus('2026-10-07', T1, 3)] },
+          updatedAt: '2026-10-07T10:00:00.000Z',
+          actorId: 'iphone',
+        },
+      ]).state;
+      assert.deepEqual(stored(s).pocusByDay, [pocus('2026-10-06', T2, 2), pocus('2026-10-07', T1, 3)]);
+    });
+
+    it('stale op still adds a missing date and keeps the newer version', () => {
+      const s = applyOps(emptyState(), [
+        { path, value: { pocusByDay: [pocus('2026-10-06', T2, 2)] }, updatedAt: T2, actorId: 'desktop' },
+      ]).state;
+      const r = applyOps(s, [
+        { path, value: { pocusByDay: [pocus('2026-10-05', T1, 1)] }, updatedAt: T1, actorId: 'iphone' },
+      ]);
+      assert.equal(r.applied.length, 1);
+      assert.deepEqual(stored(r.state).pocusByDay.map((x) => x.date), ['2026-10-05', '2026-10-06']);
+      assert.deepEqual(r.state.entityVersions[path], { updatedAt: T2, actorId: 'desktop' });
+      const again = applyOps(r.state, [
+        { path, value: { pocusByDay: [pocus('2026-10-05', T1, 1)] }, updatedAt: T1, actorId: 'iphone' },
+      ]);
+      assert.equal(again.rejected[0].reason, 'stale');
+    });
+
+    it('encrypted envelope replaces the whole value with no merge attempt', () => {
+      let s = applyOps(emptyState(), [
+        { path, value: { pocusByDay: [pocus('2026-10-05', T1, 1)] }, updatedAt: T1, actorId: 'desktop' },
+      ]).state;
+      const env = { enc: 1, iv: 'AAAA', ct: 'BBBB' };
+      s = applyOps(s, [{ path, value: env, updatedAt: T2, actorId: 'iphone' }]).state;
+      assert.deepEqual(stored(s), env);
+      const r = applyOps(s, [{ path, value: { enc: 1, iv: 'CCCC', ct: 'DDDD' }, updatedAt: T1, actorId: 'desktop' }]);
+      assert.equal(r.rejected[0].reason, 'stale');
+      assert.deepEqual(stored(r.state), env);
+    });
+  });
+
+  describe('neumoStudies (R+ Neumo saved studies)', () => {
+    const T1 = '2026-10-07T08:00:00.000Z';
+    const T2 = '2026-10-07T09:00:00.000Z';
+    const T3 = '2026-10-07T10:00:00.000Z';
+    const path = 'entries/p1/neumoStudies';
+    const study = (id, date, updatedAt, extra = {}) => ({ id, date, inputs: { fev1: 2 }, result: { pattern: 'normal' }, engine: 'abc', updatedAt, ...extra });
+    const stored = (s) => s.entries.find((e) => e.id === 'p1').neumoStudies;
+
+    it('two devices add different studies and both survive', () => {
+      let s = applyOps(emptyState(), [
+        { path, value: { spirometry: [study('a', '2026-10-05', T1)], pleural: [] }, updatedAt: T1, actorId: 'desktop' },
+      ]).state;
+      s = applyOps(s, [
+        { path, value: { spirometry: [study('b', '2026-10-04', T2)], pleural: [study('c', '2026-10-06', T2)] }, updatedAt: T2, actorId: 'iphone' },
+      ]).state;
+      assert.deepEqual(stored(s).spirometry.map((x) => x.id), ['b', 'a']);
+      assert.deepEqual(stored(s).pleural.map((x) => x.id), ['c']);
+    });
+
+    it('same id: newer updatedAt wins as a whole study; no updatedAt loses', () => {
+      let s = applyOps(emptyState(), [
+        { path, value: { spirometry: [study('a', '2026-10-05', T2, { result: { pattern: 'obstructive' } }), study('n', '2026-10-06', undefined)] }, updatedAt: T2, actorId: 'desktop' },
+      ]).state;
+      s = applyOps(s, [
+        { path, value: { spirometry: [study('a', '2026-10-05', T1), study('n', '2026-10-06', T1)] }, updatedAt: T3, actorId: 'iphone' },
+      ]).state;
+      assert.deepEqual(stored(s).spirometry, [study('a', '2026-10-05', T2, { result: { pattern: 'obstructive' } }), study('n', '2026-10-06', T1)]);
+    });
+
+    it('tombstone wins over an older edit', () => {
+      let s = applyOps(emptyState(), [
+        { path, value: { pleural: [study('p', '2026-10-05', T3, { deleted: true })] }, updatedAt: T3, actorId: 'desktop' },
+      ]).state;
+      s = applyOps(s, [
+        { path, value: { pleural: [study('p', '2026-10-05', T2, { result: { light: 'exudado' } })] }, updatedAt: T2, actorId: 'iphone' },
+      ]).state;
+      assert.equal(stored(s).pleural.length, 1);
+      assert.equal(stored(s).pleural[0].deleted, true);
+    });
+
+    it('stale op still adds a missing study and keeps the newer version', () => {
+      const s = applyOps(emptyState(), [
+        { path, value: { spirometry: [study('a', '2026-10-06', T2)] }, updatedAt: T2, actorId: 'desktop' },
+      ]).state;
+      const r = applyOps(s, [{ path, value: { spirometry: [study('old', '2026-10-01', T1)] }, updatedAt: T1, actorId: 'iphone' }]);
+      assert.equal(r.applied.length, 1);
+      assert.deepEqual(stored(r.state).spirometry.map((x) => x.id), ['old', 'a']);
+      assert.deepEqual(r.state.entityVersions[path], { updatedAt: T2, actorId: 'desktop' });
+      const again = applyOps(r.state, [{ path, value: { spirometry: [study('old', '2026-10-01', T1)] }, updatedAt: T1, actorId: 'iphone' }]);
+      assert.equal(again.rejected[0].reason, 'stale');
+    });
+
+    it('encrypted envelope replaces the whole value with no merge attempt', () => {
+      let s = applyOps(emptyState(), [
+        { path, value: { spirometry: [study('a', '2026-10-05', T1)] }, updatedAt: T1, actorId: 'desktop' },
+      ]).state;
+      const env = { enc: 1, iv: 'AAAA', ct: 'BBBB' };
+      s = applyOps(s, [{ path, value: env, updatedAt: T2, actorId: 'iphone' }]).state;
+      assert.deepEqual(stored(s), env);
+      const r = applyOps(s, [{ path, value: { enc: 1, iv: 'CCCC', ct: 'DDDD' }, updatedAt: T1, actorId: 'desktop' }]);
+      assert.equal(r.rejected[0].reason, 'stale');
+      assert.deepEqual(stored(r.state), env);
     });
   });
 });
