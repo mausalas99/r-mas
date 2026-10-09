@@ -27,6 +27,7 @@ import {
 import { openConfirm } from "./workbench/confirm.mjs";
 import { stampDocUpdatedAt, mergeAnteriores, liveAnteriores, editAnterior, deleteAnterior, anteriorKey } from "../patient-merge.mjs";
 import { scheduleCloudSyncPush } from "./cloud-sync/mutate-bridge.mjs";
+import { parseIcSugerencias, applyIcSugerenciasToIndica, indicaDocHasContent } from "../ic-sugerencias-parse.mjs";
 
 /** A saved edit: new edit clock (last write wins), then a debounced Nube push. */
 function touchDoc(doc) {
@@ -256,6 +257,16 @@ function generateWord() {
 }
 
 // ── Indicaciones ─────────────────────────────────────────────────────
+function ensureIndicaDoc() {
+  if (!getIndicaciones()[aid()]) {
+    var today = new Date();
+    getIndicaciones()[aid()] = { fecha:String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear(), hora:String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0'), medicos:'',dieta:'',cuidados:'',estudios:'',medicamentos:'',interconsultas:'',otros:[] };
+    applyIndicacionesFormatScaffoldIfEmpty(getIndicaciones()[aid()], rt.getSettings() || {});
+    persistClinicalState();
+  }
+  return getIndicaciones()[aid()];
+}
+
 function renderIndicaForm() {
   if (getFormatsEditMode() === "indica") {
     var st = rt.getSettings() || {};
@@ -264,13 +275,7 @@ function renderIndicaForm() {
     return;
   }
   if (!getPatients().some(function (p) { return p.id === aid(); })) return;
-  if (!getIndicaciones()[aid()]) {
-    var today = new Date();
-    getIndicaciones()[aid()] = { fecha:String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear(), hora:String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0'), medicos:'',dieta:'',cuidados:'',estudios:'',medicamentos:'',interconsultas:'',otros:[] };
-    applyIndicacionesFormatScaffoldIfEmpty(getIndicaciones()[aid()], rt.getSettings() || {});
-    persistClinicalState();
-  }
-  var ind = getIndicaciones()[aid()];
+  var ind = ensureIndicaDoc();
   if (applyMedicosFromGradoIfEmpty(ind, rt.getSettings() || {})) persistClinicalState();
   var SECTIONS = [
     {key:'dieta',label:'Dieta',placeholder:'Escriba la dieta (una indicación por línea si aplica)…'},
@@ -391,6 +396,23 @@ async function applyExtraTemplateFromIndica() {
   renderIndicaForm();
   rt.addAuditEntry('extra-template-apply', 'ok', 1, tmpl.label || '');
   rt.showToast('Plantilla aplicada: ' + (tmpl.label || ''), 'success');
+}
+
+/** Paste anywhere: «SUGERENCIAS POR …» (interconsulta) → active patient's indicaciones. */
+async function applyIcSugerenciasPaste(text) {
+  var patient = getPatients().find(function (p) { return p.id === aid(); });
+  if (!patient) { rt.showToast('Abre un paciente para pegar las sugerencias', 'error'); return false; }
+  var parsed = parseIcSugerencias(text);
+  var target = ensureIndicaDoc();
+  var mode = await resolveExtraTemplateMergeMode(indicaDocHasContent(target));
+  if (!mode) return false;
+  applyIcSugerenciasToIndica(target, parsed, mode);
+  touchDoc(target);
+  persistClinicalState();
+  if (typeof window.switchInnerTab === 'function') window.switchInnerTab('indica');
+  if (document.getElementById('indica-form')) renderIndicaForm();
+  rt.showToast('Sugerencias en Indicaciones de ' + (patient.nombre || 'paciente'), 'success');
+  return true;
 }
 
 // ── Word indicaciones ────────────────────────────────────────────────
@@ -690,6 +712,7 @@ export {
   previewNota,
   previewIndicaciones,
   archiveCopy,
+  applyIcSugerenciasPaste,
 };
 
 export const windowHandlers = {
