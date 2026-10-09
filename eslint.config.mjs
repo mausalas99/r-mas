@@ -85,6 +85,16 @@ const generatedIgnores = {
     'packages/core/public/js/app.bundle.js',
     'packages/core/public/js/**/*.map',
     'packages/core/lib/**/fixtures/**',
+    '**/scripts/jev/.cache/**',
+    // Local-only scratch, gitignored (see .gitignore "One-off chores")
+    '**/scripts/tmp/**',
+    '**/scripts/split-*.mjs',
+    '**/scripts/migrate-dom-escape.mjs',
+    '**/scripts/patch-tour-state-refs.mjs',
+    '**/scripts/fix-dom-escape-imports.mjs',
+    '**/scripts/capture-procesar-labs-goldens.mjs',
+    '**/scripts/recover-ipad-vitals-console.js',
+    '**/scripts/debug-clinical-unlock*',
   ],
 };
 

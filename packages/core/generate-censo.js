@@ -8,7 +8,6 @@ import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib';
 import { parseCamaCellForCenso, formatCamaCellLabel } from './public/js/censo-build.mjs';
 import { classifyCensoTableLine } from './public/js/censo-table-style.mjs';
 import {
-  CENSO_COL_WEIGHTS,
   CENSO_OPTIONAL_COL_KEYS,
   resolveCensoColWeights,
 } from './public/js/censo-table-columns.mjs';
@@ -705,7 +704,7 @@ function drawTableHeader(page, yTop, font, fontBold, layout) {
  * @param {number} lineIndex
  * @returns {{ font: import('pdf-lib').PDFFont, color: import('pdf-lib').RGB, size: number }}
  */
-function cellLineStyle(font, fontBold, colKey, role, lineIndex) {
+function cellLineStyle(font, fontBold, colKey, role, _lineIndex) {
   var size = colFontSize(colKey);
   if (role === 'muted') {
     return { font: font, color: COLORS.muted, size: Math.max(7, size - 0.5) };

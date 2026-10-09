@@ -52,7 +52,6 @@ const {
   githubAssetName,
 } = require('./lib/artifact-names');
 const { composeGithubReleaseNotes } = require('./lib/github-release-notes');
-const APP_JS = path.join(ROOT, 'public/js/app.js');
 const RELEASE_NOTES_HIGHLIGHTS = path.join(ROOT, 'data/release-notes-highlights.mjs');
 const README = path.join(ROOT, 'README.md');
 
@@ -143,11 +142,6 @@ function getArg(argv, name, fallback = '') {
 
 function hasFlag(argv, name) {
   return argv.includes(name);
-}
-
-function hasScript(name) {
-  const scripts = readJson('package.json').scripts || {};
-  return typeof scripts[name] === 'string' && scripts[name].trim().length > 0;
 }
 
 function buildMacPublishCmd() {
