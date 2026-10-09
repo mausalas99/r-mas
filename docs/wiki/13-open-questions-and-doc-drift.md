@@ -1,4 +1,4 @@
-# 8 · Open questions & doc drift
+# 13 · Open questions & doc drift
 
 > Writing this wiki meant reading the code against the existing docs. This page records **what didn't line up**. Each item says how sure it is: **verified** means someone read the code at v8.4.9 (`291a02b`). **Reported** means a research pass found it and nobody has double-checked it yet.
 >
@@ -27,15 +27,15 @@
 | Doc | What's stale | Correct (per code) |
 |---|---|---|
 | `docs/core/04-directory-structure.md` | Lists `lan-squad/`. Doesn't mention `packages/` or the symlinks. Links `19-agent-graph-memory.md`, which is gitignored and missing. | `lan-squad/` was removed in 8.0.5. The code lives in `packages/{core,im,shared-signing}`. |
-| `docs/core/08-core-architecture.md` | "Main = `main.js`". No mention of `packages/im` or signed module updates. | [02](./02-how-the-app-is-built.md), [06](./06-releases-and-updates.md) |
+| `docs/core/08-core-architecture.md` | "Main = `main.js`". No mention of `packages/im` or signed module updates. | [02](./02-how-the-app-is-built.md), [11](./11-releases-and-updates.md) |
 | `docs/core/21-code-map.md` | Says `cloud/` holds "equipos-worker, equipos-pages", and that document export goes through `lib/doc-export-http.js`. | `cloud/` holds `sync-worker`, `equipos-worker`, `update-worker` and `landing`. Desktop export goes through `doc-export-service.js` over IPC. |
-| `docs/core/03-user-journey.md` | The turn-sync section describes the LiveSync host and *PIN del turno*. | Nube monthly rooms with a join code ([05](./05-nube-sync.md)). |
+| `docs/core/03-user-journey.md` | The turn-sync section describes the LiveSync host and *PIN del turno*. | Nube monthly rooms with a join code ([10](./10-nube-sync.md)). |
 | `docs/core/15-security.md` | "Strong at-rest" and "device unlock is required". Cites `lib/db/audit-hooks.mjs` and `lib/clinical-safety-rules/`, which don't exist. | See A1. |
 | `docs/db-encryption.md` | The `.db` backup "permanece cifrada" (stays encrypted). | See A3. |
-| `docs/database/database-index.md` | Schema "v22". Cites `audit-hooks.mjs` and `host-store.js`, which don't exist. Omits `cloud_outbox`, `clinical_change_log` and `equipos_*`. | `SCHEMA_VERSION = 31` in `schema-primitives.mjs` ([04](./04-storage-and-security.md)) |
-| `cloud/sync-worker/README.md` | "HTTP push/pull only (no WebSockets)", "plaintext JSON… not E2EE", "new writes are plaintext". | The Durable Object WebSocket hub exists, the server encrypts at rest with `WORKER_DATA_KEY`, and clients encrypt content end to end ([05](./05-nube-sync.md)). |
+| `docs/database/database-index.md` | Schema "v22". Cites `audit-hooks.mjs` and `host-store.js`, which don't exist. Omits `cloud_outbox`, `clinical_change_log` and `equipos_*`. | `SCHEMA_VERSION = 31` in `schema-primitives.mjs` ([09](./09-storage-and-security.md)) |
+| `cloud/sync-worker/README.md` | "HTTP push/pull only (no WebSockets)", "plaintext JSON… not E2EE", "new writes are plaintext". | The Durable Object WebSocket hub exists, the server encrypts at rest with `WORKER_DATA_KEY`, and clients encrypt content end to end ([10](./10-nube-sync.md)). |
 | `docs/core/18-knowledge-capture.md`, row 2026-08-14 | "Nube V1 crypto is accepted: D1 holds plaintext JSON… Not E2EE." | Superseded by client E2EE for content in 8.2.8 and for registro/diagnoses in 8.4.0. The row should be struck through like the older superseded ones. |
-| `docs/core/16-glossary-of-terms.md` | Only 9 terms, marked in-progress. | [07 · Glossary](./07-glossary.md) |
+| `docs/core/16-glossary-of-terms.md` | Only 9 terms, marked in-progress. | [12 · Glossary](./12-glossary.md) |
 | `.dependency-cruiser.cjs` | `lan` rules point at folders that no longer exist. | Delete them or replace them with `forbid-lan-imports.mjs`. |
 | `features/cloud-sync/crypto.mjs` comment | Says the wrapping key comes from the "Nube password". | It comes from the room join code. |
 

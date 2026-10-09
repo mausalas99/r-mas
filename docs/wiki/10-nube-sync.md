@@ -1,8 +1,8 @@
-# 5 · Nube: how cloud sync works
+# 10 · Nube: how cloud sync works
 
 > **You'll learn:** what runs on Cloudflare, what a "room" is, how an edit on one laptop shows up on another laptop and a phone, how conflicts are resolved, how room encryption works, and what the recent "D1 overload" commits were about.
 >
-> **Prereqs:** [03](./03-labs-to-word.md) (lab sets), [04](./04-storage-and-security.md) (DEK, wrapping, KDF)
+> **Prereqs:** [06](./06-labs-to-word.md) (lab sets), [09](./09-storage-and-security.md) (DEK, wrapping, KDF)
 
 ---
 
@@ -25,7 +25,7 @@ All under `packages/core/cloud/` (root symlink: `cloud/`).
 |---|---|---|---|
 | **`rplus-sync`** | `sync-worker/` | Nube clinical sync + serves the R+ Móvil and Interno web apps | **D1** (`rplus-sync`, SQL migrations `schema/001…014`) + one **Durable Object** class `RoomSyncHub` |
 | **`rmas-lista-de-espera`** | `equipos-worker/` | **Equipment** loan queue (Lumify / EKG / ultrasound): checkout, waitlist, Web Push, photos | D1 `rplus-equipos` + R2 photos |
-| update feed | `update-worker/` | App update manifests ([06](./06-releases-and-updates.md)) | — |
+| update feed | `update-worker/` | App update manifests ([11](./11-releases-and-updates.md)) | — |
 | landing | `landing/` | Marketing site source | — |
 
 > ⚠️ **"Equipos" means two different things.** The `equipos-worker` is about *devices*. Clinical *teams* (who's on which team) travel inside the `clinicalOps` blob in a sala room.
@@ -163,10 +163,10 @@ If you're ≤ 100 revisions and ≤ 256 KB behind → you get the **ops**. Other
 |---|---|
 | **Owner key** (`ensureOwnerRoomKey`) | owner's device creates the DEK if missing, then **backfills** — re-pushes old plaintext as ciphertext |
 | **Rotate code** (`/admin/rooms/:id/rotate-code`) | new join code + DEK re-wrapped under it, saved atomically |
-| **Admin rescue wrap** | a second DEK copy wrapped to the admin's ECDH public key ([04](./04-storage-and-security.md)) |
+| **Admin rescue wrap** | a second DEK copy wrapped to the admin's ECDH public key ([09](./09-storage-and-security.md)) |
 | **Recuérdame** | unwrapped DEK cached on the device only; never sent to the server |
 
-> 📝 **Docs drift:** `sync-worker/README.md` still says "HTTP push/pull only (no WebSockets)" and "plaintext JSON, not E2EE", and decision-log row 2026-08-14 says "Nube V1 crypto: D1 plaintext, not E2EE". The code since ~2026-09-18 has WebSockets, at-rest encryption, and client E2EE for content. See [08 · Open questions](./08-open-questions-and-doc-drift.md).
+> 📝 **Docs drift:** `sync-worker/README.md` still says "HTTP push/pull only (no WebSockets)" and "plaintext JSON, not E2EE", and decision-log row 2026-08-14 says "Nube V1 crypto: D1 plaintext, not E2EE". The code since ~2026-09-18 has WebSockets, at-rest encryption, and client E2EE for content. See [13 · Open questions](./13-open-questions-and-doc-drift.md).
 
 ---
 
@@ -216,4 +216,4 @@ Teams, rotations, `active_guardias`, `team_guardia_today` and `entrega_template_
 4. Almost certainly a snapshot (> 100 revisions behind), with labs trimmed by `labsHave`/the mobile 3-day window.
 </details>
 
-**Next:** [06 · Releases & updates →](./06-releases-and-updates.md)
+**Next:** [11 · Releases & updates →](./11-releases-and-updates.md)

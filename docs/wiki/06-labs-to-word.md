@@ -1,4 +1,4 @@
-# 3 · From pasted labs to a Word note
+# 6 · From pasted labs to a Word note
 
 > **You'll learn:** how a blob of SOME lab text becomes structured lab sets, how `*` marks get added, how the note's *Estudios* section is rebuilt, and the surprisingly low-tech way the `.docx` is filled.
 >
@@ -105,8 +105,8 @@ The min/max come **from the SOME report itself**; if a report omits a range, the
 - `finalizeLabHistoryImport` then:
   1. auto-consolidates,
   2. **rebuilds the note's `estudios` text** from lab history (`rebuildEstudiosFromLabHistory` → `buildEstudiosCopyLinesFromLabSets` in `lab-history-format.mjs`). *Sala* mode includes the full history; *Interconsulta* mode only the latest lab day.
-  3. queues the new sets for Nube (see [05](./05-nube-sync.md)).
-- `persistClinicalState` (`clinical-repo-persist.mjs`) saves with a 400 ms debounce → IPC → the local DB (see [04](./04-storage-and-security.md)).
+  3. queues the new sets for Nube (see [10](./10-nube-sync.md)).
+- `persistClinicalState` (`clinical-repo-persist.mjs`) saves with a 400 ms debounce → IPC → the local DB (see [09](./09-storage-and-security.md)).
 
 ---
 
@@ -187,4 +187,4 @@ The other templates work the same way: `template_indicaciones.docx` fills the fi
 4. The name replacement no longer matches, so notes keep the fake name; the `labs-to-docx` e2e scenario catches it.
 </details>
 
-**Next:** [04 · Storage & security →](./04-storage-and-security.md)
+**Next:** [09 · Storage & security →](./09-storage-and-security.md)

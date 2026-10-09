@@ -1,4 +1,4 @@
-# 7 · Glossary
+# 12 · Glossary
 
 One place for every term in the wiki. Grouped so you can skim: **clinical (Spanish)**, **R+ concepts**, **tech**.
 
@@ -51,29 +51,29 @@ One place for every term in the wiki. Grouped so you can skim: **clinical (Spani
 
 | Term | Meaning | Page |
 |---|---|---|
-| **Procesar** | The parse button for pasted labs | [03](./03-labs-to-word.md) |
+| **Procesar** | The parse button for pasted labs | [06](./06-labs-to-word.md) |
 | **Laboratoriazo** | The app's name for its lab feature | — |
-| **Lab set / conjunto** | One stored group of results at a date/time; reports ≤ 2 h apart merge | [03](./03-labs-to-word.md) |
-| **resLabs** | Formatted text lines, one per lab section | [03](./03-labs-to-word.md) |
-| **`*`** | Value outside the lab's reference range | [03](./03-labs-to-word.md) |
-| **Tendencias** | Lab trend charts | [03](./03-labs-to-word.md) |
+| **Lab set / conjunto** | One stored group of results at a date/time; reports ≤ 2 h apart merge | [06](./06-labs-to-word.md) |
+| **resLabs** | Formatted text lines, one per lab section | [06](./06-labs-to-word.md) |
+| **`*`** | Value outside the lab's reference range | [06](./06-labs-to-word.md) |
+| **Tendencias** | Lab trend charts | [06](./06-labs-to-word.md) |
 | **TTD** | Time-to-document: lab arrival → printable note | [01](./01-the-big-picture.md) |
-| **clinical_blob** | DB table storing patient data as JSON per key | [04](./04-storage-and-security.md) |
-| **Nube** | Cloud sync (Cloudflare Worker + D1) | [05](./05-nube-sync.md) |
-| **Room** | One shared Nube workspace per sala per month (`YYYY-MM`) | [05](./05-nube-sync.md) |
-| **Join code** | 6-char room code; also unlocks the room key | [05](./05-nube-sync.md) |
-| **Owner / member** | Room creator / joiner | [05](./05-nube-sync.md) |
-| **Op / mutation** | One "set path → value" change | [05](./05-nube-sync.md) |
-| **Outbox** | Local queue of unsent ops (survives crashes) | [05](./05-nube-sync.md) |
-| **Revision** | A room's change counter | [05](./05-nube-sync.md) |
-| **clinicalOps** | Synced blob of teams, users, assignments, guardias, entrega templates | [05](./05-nube-sync.md) |
-| **labsHave** | "Patients I already hold" hint on catch-up pulls | [05](./05-nube-sync.md) |
-| **R+ Móvil** | Resident phone/iPad web client | [05](./05-nube-sync.md) |
-| **Equipos** | (1) device-loan queue Worker; (2) clinical teams in clinicalOps | [05](./05-nube-sync.md) |
-| **Recuérdame** | "Remember me" — keeps tokens/keys on the device | [02](./02-how-the-app-is-built.md), [05](./05-nube-sync.md) |
+| **clinical_blob** | DB table storing patient data as JSON per key | [09](./09-storage-and-security.md) |
+| **Nube** | Cloud sync (Cloudflare Worker + D1) | [10](./10-nube-sync.md) |
+| **Room** | One shared Nube workspace per sala per month (`YYYY-MM`) | [10](./10-nube-sync.md) |
+| **Join code** | 6-char room code; also unlocks the room key | [10](./10-nube-sync.md) |
+| **Owner / member** | Room creator / joiner | [10](./10-nube-sync.md) |
+| **Op / mutation** | One "set path → value" change | [10](./10-nube-sync.md) |
+| **Outbox** | Local queue of unsent ops (survives crashes) | [10](./10-nube-sync.md) |
+| **Revision** | A room's change counter | [10](./10-nube-sync.md) |
+| **clinicalOps** | Synced blob of teams, users, assignments, guardias, entrega templates | [10](./10-nube-sync.md) |
+| **labsHave** | "Patients I already hold" hint on catch-up pulls | [10](./10-nube-sync.md) |
+| **R+ Móvil** | Resident phone/iPad web client | [10](./10-nube-sync.md) |
+| **Equipos** | (1) device-loan queue Worker; (2) clinical teams in clinicalOps | [10](./10-nube-sync.md) |
+| **Recuérdame** | "Remember me" — keeps tokens/keys on the device | [02](./02-how-the-app-is-built.md), [10](./10-nube-sync.md) |
 | **LiveSync / lan-squad** | Retired LAN sync (removed 8.0.5); only name fossils remain | [02](./02-how-the-app-is-built.md) |
-| **Module update** | Signed renderer bundle verified at boot | [06](./06-releases-and-updates.md) |
-| **min-version / stable-versions** | Forced-update floor / downgrade catalog | [06](./06-releases-and-updates.md) |
+| **Module update** | Signed renderer bundle verified at boot | [11](./11-releases-and-updates.md) |
+| **min-version / stable-versions** | Forced-update floor / downgrade catalog | [11](./11-releases-and-updates.md) |
 
 ## Tech terms
 

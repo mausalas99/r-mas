@@ -1,4 +1,4 @@
-# 4 · Storage & security on the device
+# 9 · Storage & security on the device
 
 > **You'll learn:** where a patient record physically lives, how the database opens at boot, the schema/migration system, the crypto building blocks in the code — and, importantly, **which of them are actually switched on today**.
 >
@@ -89,9 +89,9 @@ From `main.js` → `dbManager.ensureUnlocked()` → `ensureUnlockedImpl` (`lib/d
 | **Legacy recovery `r+123`** | `crypto.mjs` `LEGACY_RECOVERY_CODE` | still accepted for `recovery_version < 2` |
 | **Rate limit** | 5 failures / 15 min | slows passphrase guessing |
 | **Admin code** | `lib/admin-access-code.mjs` | ≥ 6 chars, stored as `scrypt$salt$hash`, constant-time compare; gates promoting someone to program admin |
-| **Admin rescue key** (ECDH P-256) | `lib/admin-rescue-key.mjs` | lets an admin recover Nube room keys ([05](./05-nube-sync.md)) |
+| **Admin rescue key** (ECDH P-256) | `lib/admin-rescue-key.mjs` | lets an admin recover Nube room keys ([10](./10-nube-sync.md)) |
 | **Forensic hash chain** | `lib/db/forensic-audit.mjs` | each event includes the previous hash; editing history breaks the chain |
-| **Signed renderer bundle** (ECDSA P-256) | `packages/shared-signing`, `module-update-pubkey.pem` | the UI code that reads patient data must be the code you shipped ([06](./06-releases-and-updates.md)) |
+| **Signed renderer bundle** (ECDSA P-256) | `packages/shared-signing`, `module-update-pubkey.pem` | the UI code that reads patient data must be the code you shipped ([11](./11-releases-and-updates.md)) |
 
 Renderer isolation (`contextIsolation: true`, `nodeIntegration: false`) means the UI can only reach the DB through the whitelisted `db:*` IPC channels.
 
@@ -161,4 +161,4 @@ This runs at startup, before any passphrase prompt could appear. It may be inten
 3. `SCHEMA_VERSION` in `lib/db/schema-primitives.mjs`, plus a new migration step.
 </details>
 
-**Next:** [05 · Nube cloud sync →](./05-nube-sync.md)
+**Next:** [10 · Nube cloud sync →](./10-nube-sync.md)

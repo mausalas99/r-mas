@@ -40,10 +40,10 @@ R+ is a **desktop app (Mac/Windows) for internal-medicine residents** at a Mexic
 | Part | One-line job | Read |
 |---|---|---|
 | **The Electron shell** | Window, IPC, startup, build | [02](./02-how-the-app-is-built.md) |
-| **The clinical pipeline** | Paste → parse → lab sets → note → `.docx` | [03](./03-labs-to-word.md) |
-| **Local storage** | SQLite file of JSON blobs, migrations, crypto toolbox | [04](./04-storage-and-security.md) |
-| **Nube** | Monthly ward rooms, ops, LWW, E2E room keys | [05](./05-nube-sync.md) |
-| **Release machinery** | Bump → build → sign → GitHub → auto-update | [06](./06-releases-and-updates.md) |
+| **The clinical pipeline** | Paste → parse → lab sets → note → `.docx` | [06](./06-labs-to-word.md) |
+| **Local storage** | SQLite file of JSON blobs, migrations, crypto toolbox | [09](./09-storage-and-security.md) |
+| **Nube** | Monthly ward rooms, ops, LWW, E2E room keys | [10](./10-nube-sync.md) |
+| **Release machinery** | Bump → build → sign → GitHub → auto-update | [11](./11-releases-and-updates.md) |
 
 ---
 

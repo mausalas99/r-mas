@@ -1,8 +1,8 @@
-# 6 · Releases & updates
+# 11 · Releases & updates
 
 > **You'll learn:** what `npm run release:bump` and `release:publish` actually do, how a commit becomes an installer on a resident's laptop, how the app finds and verifies updates, and the two safety valves (`min-version.json`, `stable-versions.json`).
 >
-> **Prereqs:** [02](./02-how-the-app-is-built.md) (build step), [04](./04-storage-and-security.md) (native modules)
+> **Prereqs:** [02](./02-how-the-app-is-built.md) (build step), [09](./09-storage-and-security.md) (native modules)
 
 ---
 
@@ -156,4 +156,4 @@ At release, `scripts/sign-release-bundle.mjs` hashes `app.bundle.mjs` + `chunks/
 3. The SHA-256 no longer matches the signed manifest → boot fails closed → automatic rollback.
 </details>
 
-**Next:** [07 · Glossary →](./07-glossary.md)
+**Next:** [12 · Glossary →](./12-glossary.md)
