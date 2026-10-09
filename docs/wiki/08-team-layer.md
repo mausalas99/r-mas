@@ -91,7 +91,7 @@ One transaction:
 3. release patients whose team is archived (`team_id = ''`);
 4. stamp `rotationNuevaAt`. When a peer sees a newer stamp, it runs the same archive locally.
 
-> ⚠️ The IPC handler has **no privilege check**; only the UI hides the button (`canConfigureRotation`). See [13](./13-open-questions-and-doc-drift.md).
+> ⚠️ Since 8.5.1 the IPC handler checks the caller too. It loads the `users` row for `payload.userId` and requires `canConfigureRotation` (R4 or program admin). Otherwise it returns `{ ok: false, code: 'FORBIDDEN' }` and writes a `rotation.nueva.denied` audit row. The rank comes from the DB, not from the payload. Main has no signed-in session, so the `userId` itself still comes from the renderer.
 
 **"Unlock frees team patients"** (commit `a899362`): every DB unlock already ran `releaseArchivedTeamPatients`. The commit counts the released patients and shows a toast: *«N pacientes quedaron sin equipo porque su equipo se archivó.»* (IPC `db:take-unlock-notice`).
 
@@ -213,7 +213,7 @@ With room encryption on, the clinicalOps value is an **opaque envelope**, so the
 2. They get a `team_id = ''` assignment ("no team"), or move to the successor team if one is linked; the next unlock reports the count.
 3. On encrypted rooms the Worker replaces the whole value; pushing without merging first would erase other devices' changes.
 4. Sala 2: the assigned team's sala wins.
-5. UI: R4/program admin. IPC: anyone (no check).
+5. R4 or program admin, in both. The UI hides the button and the IPC refuses with `FORBIDDEN` (since 8.5.1).
 </details>
 
 **Next:** [09 · Storage & security →](./09-storage-and-security.md)

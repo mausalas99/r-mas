@@ -84,18 +84,17 @@ describe('handleRoomDek — room wrap (GET/PUT /dek)', () => {
     assert.deepEqual(await res.json(), { dek: null });
   });
 
-  it('any member can set the wrap once (not owner-only)', async () => {
+  it('refuses the first wrap from a non-owner member', async () => {
     const user = { id: 'u2' };
     const db = makeDb({ user, room: { id: ROOM_ID, role: 'member' } });
     const req = new Request('https://x/dek', { ...AUTH, method: 'PUT', body: JSON.stringify({ ct: 'CT', iv: 'IV', salt: 'SALT' }) });
-    const res = await handleRoomDek(req, { DB: db }, ROOM_ID, '');
-    assert.equal(res.status, 200);
-    assert.equal(db.state.room.wrapped_dek_ct, 'CT');
+    await assert.rejects(() => handleRoomDek(req, { DB: db }, ROOM_ID, ''), /forbidden|dueño/);
+    assert.equal(db.state.room.wrapped_dek_ct, undefined);
   });
 
   it('rejects a second plain PUT once a dek is already set', async () => {
     const user = { id: 'u1' };
-    const db = makeDb({ user, room: { id: ROOM_ID, wrapped_dek_ct: 'EXISTING' } });
+    const db = makeDb({ user, room: { id: ROOM_ID, role: 'owner', wrapped_dek_ct: 'EXISTING' } });
     const req = new Request('https://x/dek', { ...AUTH, method: 'PUT', body: JSON.stringify({ ct: 'CT', iv: 'IV', salt: 'SALT' }) });
     await assert.rejects(() => handleRoomDek(req, { DB: db }, ROOM_ID, ''), /conflict|ya tiene/);
   });

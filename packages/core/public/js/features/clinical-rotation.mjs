@@ -222,6 +222,10 @@ async function broadcastRotationTeamsChanged(sala) {
 }
 
 export async function confirmNuevaRotacion() {
+  if (!canConfigureRotation()) {
+    toast('Solo R4 o un administrador del programa puede iniciar una nueva rotación.', 'error');
+    return { ok: false };
+  }
   const result = await openConfirm({
     weight: 'destructive',
     title: '¿Iniciar nueva rotación?',
