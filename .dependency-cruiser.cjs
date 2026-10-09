@@ -15,20 +15,6 @@ module.exports = {
       to: { path: '^public/js/features/patients' },
     },
     {
-      name: 'labs-not-to-lan-sync',
-      severity: 'error',
-      comment: 'labs domain must not import LAN orchestrator',
-      from: { path: '^public/js/features/(lab-|tendencias)' },
-      to: { path: '^public/js/features/(lan-sync|lan/)' },
-    },
-    {
-      name: 'lan-not-to-patients',
-      severity: 'error',
-      comment: 'lan domain must not import patients list',
-      from: { path: '^public/js/features/lan/' },
-      to: { path: '^public/js/features/patients' },
-    },
-    {
       name: 'lib-not-to-public-js',
       severity: 'warn',
       comment: 'lib/ is Node-only. Shared logic goes in lib/shared/, not a public/js import.',

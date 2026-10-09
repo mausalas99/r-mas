@@ -13,7 +13,7 @@ description: "Electron, Nube sync, SQLCipher, and document pipeline architecture
 ```mermaid
 flowchart TB
   subgraph electron [Electron Main]
-    M[main.js]
+    M[packages/im/main.js]
     M --> W[BrowserWindow]
     M --> IPC[IPC + updater]
   end
@@ -35,13 +35,15 @@ flowchart TB
 
 | Layer | Entry | Responsibility |
 |-------|-------|----------------|
-| Main | `main.js` | Window (`app://rplus`), updater, IPC |
-| Preload | `preload.js` | `window.electronAPI` surface |
+| Main | `packages/im/main.js` | Window (`app://rplus`), updater, IPC |
+| Preload | `packages/im/preload.js` | `window.electronAPI` surface |
 | Renderer | `public/js/app.js` | Feature registration via `app-runtimes.mjs` |
 | Cloud sync | `cloud/sync-worker/` | Room LWW, Interno MIP, R+ Móvil `/mobile/` |
 | Clinical DB | `lib/db/` | SQLCipher, Argon2, outbox |
 
 LAN LiveSync and `server.js` (:3738) are removed. Phones do not talk to the Mac.
+
+Module updates are signed (`module-manifest.json` + `module-signature.txt`). Background: [wiki 02 · How the app is built](../wiki/02-how-the-app-is-built.md) and [wiki 11 · Releases and updates](../wiki/11-releases-and-updates.md).
 
 ## Nube sync
 
