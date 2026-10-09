@@ -9,7 +9,7 @@
  * /rooms/:id/pull, /rooms/:id/mutations, /rooms/:id/live (WebSocket) — the
  * endpoints public/js/features/cloud-sync/api-client.mjs and
  * room-sync-ws-internals.mjs actually call for the account/room/sync screens.
- * Admin (/admin) and /pase-labs are out of scope for click-through UI
+ * Admin (/admin) is out of scope for click-through UI
  * coverage and return 501 not_implemented.
  *
  * The /live WebSocket handshake and frames are hand-rolled (crypto.createHash
@@ -482,7 +482,7 @@ export function createRequestHandler(scenarios, state) {
         return sendJson(res, 200, { revision: room.revision, applied: ops, rejected: [], needPull: baseRevision < room.revision - 1 });
       }
 
-      if (sub.startsWith('/admin') || sub === '/pase-labs') {
+      if (sub.startsWith('/admin')) {
         return sendError(res, 'not_implemented', 'Fuera del alcance del modo de pruebas de UI.');
       }
 
