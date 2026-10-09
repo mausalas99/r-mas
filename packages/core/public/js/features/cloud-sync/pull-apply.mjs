@@ -524,5 +524,24 @@ export async function applyCloudPullResult(result) {
   }
   await refreshSidebarAfterCloudPull(applied);
   await refreshActivePatientChartAfterCloudPull(applied);
+  if (Array.isArray(row.ops)) dispatchInternoVitalsSynced(row.ops);
   return applied;
+}
+
+/**
+ * Tell the guardia board and Estado actual that an Interno phone's reading
+ * arrived: a pulled monitoreo whose newest historial row was recorded by an
+ * intern (lib/interno/interno-vitals.mjs sets recordedBy.kind = 'interno').
+ * @param {unknown[]} ops
+ */
+function dispatchInternoVitalsSynced(ops) {
+  if (typeof document === 'undefined') return;
+  for (const op of ops) {
+    const m = /^entries\/([^/]+)\/monitoreo$/.exec(String(op?.path || ''));
+    const historial = op?.value?.historial;
+    if (!m || !Array.isArray(historial) || !historial.length) continue;
+    const newest = historial.reduce((a, b) => (String(b?.recordedAt || '') > String(a?.recordedAt || '') ? b : a));
+    if (newest?.recordedBy?.kind !== 'interno') continue;
+    document.dispatchEvent(new CustomEvent('rpc-interno-vitals-synced', { detail: { patientId: m[1] } }));
+  }
 }
