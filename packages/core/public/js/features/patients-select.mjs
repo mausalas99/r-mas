@@ -243,7 +243,7 @@ function scheduleSelectedPatientChart(id, ctx) {
       return;
     }
     paintSelectedPatientChart(id, ctx);
-  }, 120);
+  }, 0); // no wait: clicks show labs at once; inputPending() still yields to arrow bursts
 }
 
 /**

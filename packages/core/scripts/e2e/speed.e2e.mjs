@@ -14,7 +14,7 @@
  *   <phase> worst input       slowest click/key until the next paint (Event Timing API)
  *   <phase> worst frame gap   longest gap between two frames (stutter you can see)
  *   <phase> long tasks        main-thread tasks over 50 ms (count / total ms)
- *   typing: keys over 16 ms   keystrokes that missed the next frame (of all typed)
+ *   typing: keys over 50 ms   keystrokes slower than 50 ms to paint (of all typed)
  *
  * Checks are correctness only (right patient on screen, no page errors);
  * the numbers are for speed work to beat.
@@ -96,7 +96,7 @@ await r.finish('Patient switch and fast use stay smooth', async () => {
     new PerformanceObserver((l) =>
       l.getEntries().forEach((e) => {
         rec.events.push(e.duration);
-        if (e.name === 'keydown') rec.slowKeys += 1;
+        if (e.name === 'keydown' && e.duration > 50) rec.slowKeys += 1; // every paint is ≥16 ms, so 16 counts all
       })
     ).observe({ type: 'event', durationThreshold: 16 });
     (function frame(t) {
@@ -151,8 +151,19 @@ await r.finish('Patient switch and fast use stay smooth', async () => {
   await r.shot(page, 'after-area-changes');
 
   // ── Typing at the end of a long Evolución, like a fast typist ────────────
+  // The note form lives in Interconsulta › Clínico › Notas (Sala has none).
   await closeToasts(page);
-  await goArea(page, 'nota');
+  await page.locator('#header-mode-seg').hover();
+  await page.waitForTimeout(400); // expand animation
+  await page.locator('#header-mode-seg button[data-mode="interconsulta"]').click();
+  await page.waitForTimeout(600);
+  await closeToasts(page);
+  await goArea(page, 'nota'); // Interconsulta › Paciente opens on the team board
+  await page.locator('.ic-card .sv-name').locator('visible=true').first().waitFor();
+  await openPatient(page, last);
+  await closeToasts(page);
+  await page.locator('.exp-group-pill[data-group="clinico"]').hover({ timeout: 5000 }).catch(() => {});
+  await page.locator('.exp-group-section[data-section="notas"]').click();
   const evolucion = page.locator(`#note-form [data-oninput-args='["evolucion"]']`);
   await evolucion.waitFor({ state: 'visible' });
   const LONG = Array.from({ length: 30 }, (_, i) => `DEMO día ${i + 1}: paciente estable, sin cambios relevantes, continúa manejo establecido y vigilancia.`).join('\n');
@@ -168,7 +179,7 @@ await r.finish('Patient switch and fast use stay smooth', async () => {
   const typing = await page.evaluate(() => window.__speed);
   const typedValue = await evolucion.inputValue();
   r.check('every typed letter lands in the note', typedValue.endsWith(TYPED.repeat(2).trimEnd()), { tail: typedValue.slice(-40) });
-  r.timings['typing: keys over 16 ms'] = `${typing.slowKeys} of ${typing.keys}`;
+  r.timings['typing: keys over 50 ms'] = `${typing.slowKeys} of ${typing.keys}`;
   r.timings['typing: worst key'] = Math.round(Math.max(0, ...typing.events));
   r.timings['typing: worst frame gap'] = Math.round(typing.maxGap);
   r.timings['typing: long tasks'] = `${typing.longTasks.length} / ${Math.round(typing.longTasks.reduce((a, b) => a + b, 0))} ms`;
