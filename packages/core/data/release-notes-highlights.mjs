@@ -4,31 +4,31 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_849 = [
+var RELEASE_NOTES_850 = [
   {
-    title: 'Rotaciones fuera de Medicina Interna',
-    body: 'Si rotas en <strong>UCI</strong>, <strong>PostQx</strong> o una <strong>Subespecialidad</strong>, elige «Otra rotación (fuera de MI)» y luego tu servicio. Cada servicio tiene su propia sala Nube.',
+    title: 'Sugerencias de interconsulta',
+    body: 'Pega un texto <strong>«SUGERENCIAS POR …»</strong> y R+ lo pasa a las Indicaciones del paciente abierto, cada apartado en su casilla.',
   },
   {
-    title: 'Aviso de pacientes sin equipo',
-    body: 'Si un equipo se archivó, sus pacientes quedan sin equipo. Ahora R+ te avisa al abrir cuántos fueron.',
+    title: 'Turno en curso',
+    body: 'En Estado actual, la pastilla <strong>Turno en curso</strong> guarda el registro que cierra esta noche. Se ve como de hoy y el balance lo cuenta a medianoche.',
   },
   {
-    title: 'Instalador de Windows más claro',
-    body: 'El archivo se llama <strong>Instalar-R+</strong> y crea siempre el acceso directo en el escritorio, también al reinstalar.',
+    title: 'Motivo de IC en las tarjetas',
+    body: 'Las tarjetas grandes muestran el <strong>Motivo de IC</strong>. «Grupo» y «Seguimiento» ahora son un solo control.',
   },
   {
-    title: 'Signos fuera de rango',
-    body: 'Guardia, Inicio de turno y la gráfica marcan solo los signos vitales fuera de rango.',
+    title: 'La nota llega al equipo',
+    body: 'Pegar labs, <strong>Enviar labs</strong> y <strong>Añadir a Tratamiento</strong> ahora sincronizan la nota por Nube con tu equipo.',
   },
   {
-    title: 'Cultivos en el teléfono',
-    body: 'Los cultivos se quedan en la app móvil después de la ventana de labs, porque el antibiograma llega días después.',
+    title: 'Cambio de paciente más rápido',
+    body: 'Se quitó una espera al hacer clic. Pasar de un paciente a otro se siente inmediato.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_849;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_850;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.4.9': RELEASE_NOTES_849,
+  '8.5.0': RELEASE_NOTES_850,
 };

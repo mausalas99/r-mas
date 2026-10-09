@@ -3,7 +3,7 @@
   "updatedAt": "2026-09-26T19:27:49.089Z",
   "totalScore": 665,
   "trackedLoc": 792800,
-  "moduleCount": 1299,
+  "moduleCount": 1301,
   "bootGraphHash": "7c79a4f65815fa2c",
   "bootGraph": {
     "hash": "7c79a4f65815fa2c",
@@ -774,6 +774,10 @@
     {
       "date": "2026-10-07",
       "note": "moduleCount 1297->1299: new scripts/e2e/speed.e2e.mjs (e2e:speed) and scripts/metrics/flow-timer.mjs (bench:flow), the speed measure-then-fix loop. Raised when the owner asked to commit everything before the move to Claude Projects; flagged to the owner in chat for veto."
+    },
+    {
+      "date": "2026-10-09",
+      "note": "moduleCount 1299->1301 for 8.5.0: new files from the 2026-10-07 work (IC sugerencias paste, Neumo studies and cardio daily over Nube, their tests and E2Es), net +2 after the tools/e2e-agent delete. Raised to fold all pending work into the 8.5.0 release; flagged to the owner in chat for veto."
     }
   ]
 }
