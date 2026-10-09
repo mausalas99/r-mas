@@ -1,7 +1,5 @@
 /** Catálogos VPO — transcritos de CALCULADORA VPO.xlsx (hoja Lookups). */
 
-export const GUPTA_INTERCEPT = -3.45;
-
 export const ASA_OPTIONS = [
   { key: 'asa-i', labelEn: 'Healthy / no systemic disease', asaClass: 'I', guptaCoef: -5.17 },
   { key: 'asa-ii', labelEn: 'Mild controlled systemic disease', asaClass: 'II', guptaCoef: -3.29 },
