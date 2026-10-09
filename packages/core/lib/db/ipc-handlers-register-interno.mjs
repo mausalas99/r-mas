@@ -3,10 +3,6 @@ import {
   listSalaInternoAccess,
   rotateSalaInternoToken,
   setSalaInternoActive,
-  listEntregaTemplates,
-  saveEntregaTemplateUser,
-  saveEntregaTemplateTeam,
-  deleteEntregaTemplate,
 } from './clinical-access-db.mjs';
 import { canManageInternoQr } from './clinical-privileges.mjs';
 import { bindIpcHandler } from './ipc-handlers-bind.mjs';
@@ -59,57 +55,6 @@ function registerDbInternoAccessHandlers(ctx) {
 }
 
 /** @param {import('./ipc-handlers-context.mjs').IpcHandlerContext} ctx */
-function registerDbEntregaTemplateHandlers(ctx) {
-  const { ipcMain, dbManager } = ctx;
-
-  bindIpcHandler(ipcMain, 'db:entrega-template-list', async (payload) => {
-    const templates = await dbManager.withTransaction((db) =>
-      listEntregaTemplates(db, {
-        userId: String(payload.userId || ''),
-        teamIds: Array.isArray(payload.teamIds) ? payload.teamIds.map(String) : [],
-      })
-    );
-    return { ok: true, ...templates };
-  });
-
-  bindIpcHandler(ipcMain, 'db:entrega-template-save-user', async (payload) => {
-    const template = await dbManager.withTransaction((db) =>
-      saveEntregaTemplateUser(db, {
-        userId: String(payload.userId || ''),
-        templateId: payload.templateId ? String(payload.templateId) : undefined,
-        name: String(payload.name || ''),
-        payload: payload.payload,
-      })
-    );
-    return { ok: true, template };
-  });
-
-  bindIpcHandler(ipcMain, 'db:entrega-template-save-team', async (payload) => {
-    const template = await dbManager.withTransaction((db) =>
-      saveEntregaTemplateTeam(db, {
-        teamId: String(payload.teamId || ''),
-        createdBy: payload.createdBy ? String(payload.createdBy) : undefined,
-        templateId: payload.templateId ? String(payload.templateId) : undefined,
-        name: String(payload.name || ''),
-        payload: payload.payload,
-      })
-    );
-    return { ok: true, template };
-  });
-
-  bindIpcHandler(ipcMain, 'db:entrega-template-delete', async (payload) => {
-    const deleted = await dbManager.withTransaction((db) =>
-      deleteEntregaTemplate(db, {
-        scope: payload.scope === 'team' ? 'team' : 'user',
-        templateId: String(payload.templateId || ''),
-      })
-    );
-    return { ok: true, deleted };
-  });
-}
-
-/** @param {import('./ipc-handlers-context.mjs').IpcHandlerContext} ctx */
 export function registerDbInternoHandlers(ctx) {
   registerDbInternoAccessHandlers(ctx);
-  registerDbEntregaTemplateHandlers(ctx);
 }

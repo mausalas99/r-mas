@@ -31,8 +31,6 @@ function collectMembershipReferencedUserIds(_db, rows) {
   }
   addUserIdsFromRows(needed, rows?.team_guardia_today, 'user_id');
   addUserIdsFromRows(needed, rows?.active_guardias, 'covering_user_id');
-  addUserIdsFromRows(needed, rows?.entrega_template_user, 'user_id');
-  addUserIdsFromRows(needed, rows?.entrega_template_team, 'created_by');
   return needed;
 }
 
@@ -161,7 +159,6 @@ export function filterClinicalOpsSnapshotForSala(db, snapshot, sala) {
     team_membership: filterRowsByTeamId(snapshot.team_membership, teamIds),
     team_guardia_today: filterRowsByTeamId(snapshot.team_guardia_today, teamIds),
     patient_team_assignment: filterAssignmentsForSala(snapshot.patient_team_assignment, teamIds),
-    entrega_template_team: filterRowsByTeamId(snapshot.entrega_template_team, teamIds),
     teams_archived: filterRowsByTeamId(snapshot.teams_archived, teamIds),
     team_membership_removals: filterRowsByTeamId(snapshot.team_membership_removals, teamIds),
     team_membership_rejoins: filterRowsByTeamId(snapshot.team_membership_rejoins, teamIds),
@@ -196,12 +193,6 @@ export function exportClinicalOpsSnapshot(db) {
   const active_guardias = db
     .prepare(`SELECT * FROM active_guardias WHERE status = 'Active' ORDER BY assigned_at`)
     .all();
-  const entrega_template_user = db
-    .prepare(`SELECT * FROM entrega_template_user ORDER BY created_at`)
-    .all();
-  const entrega_template_team = db
-    .prepare(`SELECT * FROM entrega_template_team ORDER BY created_at`)
-    .all();
 
   const clinical_users = db
     .prepare(
@@ -216,8 +207,6 @@ export function exportClinicalOpsSnapshot(db) {
     teams,
     team_guardia_today,
     active_guardias,
-    entrega_template_user,
-    entrega_template_team,
   });
   appendMembershipReferencedUsers(db, clinical_users, deletedIds, refs);
 
@@ -239,8 +228,6 @@ export function exportClinicalOpsSnapshot(db) {
     clinical_users,
     team_membership_removals: getMembershipRemovals(db),
     team_membership_rejoins: getMembershipRejoins(db),
-    entrega_template_user,
-    entrega_template_team,
   };
 }
 

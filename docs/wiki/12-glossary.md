@@ -91,7 +91,7 @@ One place for every term in the wiki. Grouped so you can skim: **clinical (Spani
 | **Op / mutation** | One "set path → value" change | [10](./10-nube-sync.md) |
 | **Outbox** | Local queue of unsent ops (survives crashes) | [10](./10-nube-sync.md) |
 | **Revision** | A room's change counter | [10](./10-nube-sync.md) |
-| **clinicalOps** | Synced blob of teams, users, assignments, guardias, entrega templates | [10](./10-nube-sync.md) |
+| **clinicalOps** | Synced blob of teams, users, assignments, guardias | [10](./10-nube-sync.md) |
 | **labsHave** | "Patients I already hold" hint on catch-up pulls | [10](./10-nube-sync.md) |
 | **R+ Móvil** | Resident phone/iPad web client | [10](./10-nube-sync.md) |
 | **Equipos** | (1) device-loan queue Worker; (2) clinical teams in clinicalOps | [10](./10-nube-sync.md) |

@@ -48,12 +48,8 @@ import {
   upsertClinicalProfile,
   touchClinicalUserActivity,
   completeActiveGuardiaPendiente,
-  listEntregaTemplates,
   listDirectoryUsers,
   deleteDirectoryUser,
-  saveEntregaTemplateUser,
-  saveEntregaTemplateTeam,
-  deleteEntregaTemplate,
 } from './clinical-access-db.mjs';
 
 describe('clinical-access-db', () => {
@@ -969,86 +965,6 @@ describe('clinical-access-db', () => {
       }),
       null
     );
-  });
-
-  it('listEntregaTemplates returns user and team templates', () => {
-    const u = ensureClinicalUser(db, { clientId: 'tpl-user', rank: 'R1' });
-    const team = createTeam(db, {
-      name: 'TplTeam',
-      service: 'Sala',
-      onCallDayIndex: 0,
-      createdBy: u.userId,
-    });
-    const payload = {
-      kind: 'imagen',
-      label: 'TAC',
-      requires: { consentimiento: true },
-      comentado: false,
-      autorizado: false,
-      agendado: false,
-    };
-    saveEntregaTemplateUser(db, { userId: u.userId, name: 'Mi TAC', payload });
-    saveEntregaTemplateTeam(db, {
-      teamId: team.team_id,
-      createdBy: u.userId,
-      name: 'Equipo TAC',
-      payload,
-    });
-
-    const listed = listEntregaTemplates(db, { userId: u.userId, teamIds: [team.team_id] });
-    assert.equal(listed.user.length, 1);
-    assert.equal(listed.user[0].name, 'Mi TAC');
-    assert.equal(listed.user[0].payload.kind, 'imagen');
-    assert.equal(listed.team.length, 1);
-    assert.equal(listed.team[0].teamId, team.team_id);
-    assert.equal(listed.team[0].payload.requires.consentimiento, true);
-  });
-
-  it('saveEntregaTemplateUser updates existing template by id', () => {
-    const u = ensureClinicalUser(db, { clientId: 'tpl-update', rank: 'R1' });
-    const saved = saveEntregaTemplateUser(db, {
-      userId: u.userId,
-      name: 'Original',
-      payload: { kind: 'otro', label: 'X' },
-    });
-    const updated = saveEntregaTemplateUser(db, {
-      userId: u.userId,
-      templateId: saved.templateId,
-      name: 'Renombrada',
-      payload: { kind: 'imagen', label: 'MRI' },
-    });
-    assert.equal(updated.templateId, saved.templateId);
-    assert.equal(updated.name, 'Renombrada');
-    assert.equal(updated.payload.kind, 'imagen');
-  });
-
-  it('deleteEntregaTemplate removes user or team row by scope', () => {
-    const u = ensureClinicalUser(db, { clientId: 'tpl-del', rank: 'R1' });
-    const team = createTeam(db, {
-      name: 'DelTeam',
-      service: 'Sala',
-      onCallDayIndex: 0,
-      createdBy: u.userId,
-    });
-    const userTpl = saveEntregaTemplateUser(db, {
-      userId: u.userId,
-      name: 'Borrar',
-      payload: { label: 'A' },
-    });
-    const teamTpl = saveEntregaTemplateTeam(db, {
-      teamId: team.team_id,
-      name: 'Borrar equipo',
-      payload: { label: 'B' },
-    });
-
-    assert.equal(deleteEntregaTemplate(db, { scope: 'user', templateId: userTpl.templateId }), true);
-    assert.equal(
-      deleteEntregaTemplate(db, { scope: 'team', templateId: teamTpl.templateId }),
-      true
-    );
-    const listed = listEntregaTemplates(db, { userId: u.userId, teamIds: [team.team_id] });
-    assert.equal(listed.user.length, 0);
-    assert.equal(listed.team.length, 0);
   });
 
   it('getClinicalScopeContext includes active patient team assignments', () => {

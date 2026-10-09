@@ -243,18 +243,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbGuardiaUpsert: function(opts) {
     return ipcRenderer.invoke('db:guardia-upsert', opts);
   },
-  dbEntregaTemplateList: function(opts) {
-    return ipcRenderer.invoke('db:entrega-template-list', opts);
-  },
-  dbEntregaTemplateSaveUser: function(opts) {
-    return ipcRenderer.invoke('db:entrega-template-save-user', opts);
-  },
-  dbEntregaTemplateSaveTeam: function(opts) {
-    return ipcRenderer.invoke('db:entrega-template-save-team', opts);
-  },
-  dbEntregaTemplateDelete: function(opts) {
-    return ipcRenderer.invoke('db:entrega-template-delete', opts);
-  },
   dbRotationCycleGet: function() {
     return ipcRenderer.invoke('db:rotation-cycle-get');
   },

@@ -105,7 +105,7 @@ Every op carries `updatedAt` and `actorId`. The server keeps `entityVersions[pat
 
 Plain LWW would lose data in a few places, so there are special merges:
 
-- **`clinicalOps`** (teams, users, assignments, guardias, templates): the **client merges** it into SQLite tables in phases (`lib/db/clinical-ops-sync-merge.mjs`) and always **pulls before it pushes**. On an encrypted room the Worker can't read it, so it just replaces the whole value. Only legacy plaintext rooms get a server merge (`clinical-ops-lww.js`), and that unions teams, users, assignments and memberships by id but overwrites guardias and templates. Decision log 2026-08-14: a join push must not wipe assignments the sender hasn't pulled yet. Details are in [08](./08-team-layer.md#7-how-clinicalops-is-stored-and-synced).
+- **`clinicalOps`** (teams, users, assignments, guardias): the **client merges** it into SQLite tables in phases (`lib/db/clinical-ops-sync-merge.mjs`) and always **pulls before it pushes**. On an encrypted room the Worker can't read it, so it just replaces the whole value. Only legacy plaintext rooms get a server merge (`clinical-ops-lww.js`), and that unions teams, users, assignments and memberships by id but overwrites guardias. Decision log 2026-08-14: a join push must not wipe assignments the sender hasn't pulled yet. Details are in [08](./08-team-layer.md#7-how-clinicalops-is-stored-and-synced).
 - **`monitoreo`**: merged field by field; history rows by id; deletes are markers.
 - **Deletes** in general are **tombstones** — markers, not removals — so a stale device can't resurrect a deleted record.
 
@@ -183,7 +183,7 @@ Interno phones get a **narrow subkey** `HKDF(DEK, "rplus-interno-v1")`, delivere
 
 ## 8. Guardia / entrega (handoff)
 
-Teams, rotations, `active_guardias`, `team_guardia_today` and `entrega_template_*` ride inside **`clinicalOps`** (`lib/db/clinical-ops-sync-export.mjs`), merged locally by `lib/db/clinical-ops-sync-merge-*.mjs`. That's how an entrega (an `active_guardias` row) made on one laptop reaches the next shift. The template tables also travel, but no UI uses them yet. Full walkthrough in [08](./08-team-layer.md).
+Teams, rotations, `active_guardias`, `team_guardia_today` ride inside **`clinicalOps`** (`lib/db/clinical-ops-sync-export.mjs`), merged locally by `lib/db/clinical-ops-sync-merge-*.mjs`. That's how an entrega (an `active_guardias` row) made on one laptop reaches the next shift. Full walkthrough in [08](./08-team-layer.md).
 
 ---
 

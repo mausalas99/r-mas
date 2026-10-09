@@ -151,8 +151,6 @@ A full-screen summary (`features/inicio-turno/`) opened from ⌘K: inherited pen
    - `pushCloudClinicalOpsNow()` + `scheduleCloudSyncPush()`.
 4. **On the receiving device**, the `active_guardias` row arrives inside clinicalOps and is merged by `mergeActiveGuardias()` (`lib/db/clinical-ops-sync-merge-guardias.mjs`): last write per patient on `updated_at`.
 
-> 📝 **Entrega templates** (`entrega_template_user` / `_team` tables, IPC `db:entrega-template-*`) exist and sync, but **no UI code calls them** today. **Pase-labs** (`GET /api/sync/v1/pase-labs`) returns **503 `temporarily_disabled`** since E2EE, because the server can no longer read labs.
-
 ---
 
 ## 6. Interconsultas and Interno
@@ -174,7 +172,7 @@ A full-screen summary (`features/inicio-turno/`) opened from ⌘K: inherited pen
 ## 7. How clinicalOps is stored and synced
 
 ### Export → push
-`lib/db/clinical-ops-sync-export.mjs` → `exportClinicalOpsSnapshot()` collects: users, teams, memberships (+ removals and rejoins), assignments, `team_guardia_today`, active and resolved guardias, rotation cycles, archived teams, entrega templates, `rotationNuevaAt`. `filterClinicalOpsSnapshotForSala()` narrows it to one sala. It's pushed as **one op, `path: 'clinicalOps'`** (`features/cloud-sync/cloud-clinical-ops-sala.mjs`), always **pull-then-push** (`syncClinicalOpsForSala`).
+`lib/db/clinical-ops-sync-export.mjs` → `exportClinicalOpsSnapshot()` collects: users, teams, memberships (+ removals and rejoins), assignments, `team_guardia_today`, active and resolved guardias, rotation cycles, archived teams, `rotationNuevaAt`. `filterClinicalOpsSnapshotForSala()` narrows it to one sala. It's pushed as **one op, `path: 'clinicalOps'`** (`features/cloud-sync/cloud-clinical-ops-sala.mjs`), always **pull-then-push** (`syncClinicalOpsForSala`).
 
 ### Merge on the receiving device (`lib/db/clinical-ops-sync-merge.mjs`)
 Phases, in order:
@@ -182,14 +180,13 @@ Phases, in order:
 2. users (your own sala is never overwritten)
 3. membership tombstones
 4. teams (pick a winner, promote orphan staged teams, apply archives)
-5. entrega templates (last write)
-6. membership **union**, then enforce exclusivity
-7. assignments **`INSERT OR IGNORE`** (append-only union)
-8. `team_guardia_today` (last write by `declared_at`)
-9. resolved, then active guardias
+5. membership **union**, then enforce exclusivity
+6. assignments **`INSERT OR IGNORE`** (append-only union)
+7. `team_guardia_today` (last write by `declared_at`)
+8. resolved, then active guardias
 
 ### And on the Worker?
-With room encryption on, the clinicalOps value is an **opaque envelope**, so the Worker just **replaces** it whole. The client is responsible for merging before pushing (hence pull-then-push). For legacy plaintext rooms, `clinical-ops-lww.js` merges teams/users by id and unions assignments/memberships, but **overwrites** guardias and templates. Chapter [10](./10-nube-sync.md)'s "union by id" applies only to those few fields.
+With room encryption on, the clinicalOps value is an **opaque envelope**, so the Worker just **replaces** it whole. The client is responsible for merging before pushing (hence pull-then-push). For legacy plaintext rooms, `clinical-ops-lww.js` merges teams/users by id and unions assignments/memberships, but **overwrites** guardias. Chapter [10](./10-nube-sync.md)'s "union by id" applies only to those few fields.
 
 ### IPC map
 | File (`lib/db/`) | Channels |
@@ -197,7 +194,7 @@ With room encryption on, the clinicalOps value is an **opaque envelope**, so the
 | `ipc-handlers-register-profile.mjs` | profile get/upsert, username claim, admin code, identity resume, sign/verify change |
 | `ipc-handlers-register-teams.mjs` | teams list/create/update/archive/join, members add/remove, user directory, team guardia set/clear |
 | `ipc-handlers-register-guardia.mjs` | access bootstrap, scope context, guardia census, guardia upsert/resolve, rotation cycle, **rotation-nueva** |
-| `ipc-handlers-register-interno.mjs` | interno QR tokens, entrega templates |
+| `ipc-handlers-register-interno.mjs` | interno QR tokens |
 | `ipc-handlers-register-core.mjs` | clinicalOps export/merge, unlock notice |
 
 ---
