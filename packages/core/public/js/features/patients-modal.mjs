@@ -520,6 +520,11 @@ function saveCompleteAdmissionModal() {
     return p && String(p.id) === String(patientId);
   });
   if (!patient) return false;
+  var picked = isInterconsultaAdmit() ? document.querySelector('#m-ic-svc [aria-pressed="true"]') : null;
+  if (isInterconsultaAdmit() && !picked) {
+    rt.showToast('Elige el servicio solicitante', 'error');
+    return false;
+  }
   var loc = readPatientLocationFields(rt.getSettings());
   if (!validatePatientLocationFields(loc, true)) return false;
   _rememberAdmissionLocation(loc.cuarto, loc.cama);
@@ -527,9 +532,8 @@ function saveCompleteAdmissionModal() {
   patient.servicio = loc.servicio;
   patient.cuarto = loc.cuarto;
   patient.cama = loc.cama;
-  if (isInterconsultaAdmit()) {
-    var picked = document.querySelector('#m-ic-svc [aria-pressed="true"]');
-    var svcName = picked ? picked.textContent : loc.servicio;
+  if (picked) {
+    var svcName = picked.textContent;
     patient.area = svcName;
     patient.servicio = IC_OWN_SERVICE;
     setConsultInfo(patient, {
