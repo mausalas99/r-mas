@@ -2,6 +2,7 @@ import { isVitalAltered, isGlucometriaMarkedAltered } from './estado-actual-rang
 import { gluPointMs, isGluPointInRegistroWindow } from './estado-actual-registro-defaults.mjs';
 import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
 import { liveHistorial } from './estado-actual-data-model.mjs';
+import { ioNumericEgressTotal, isIoNumericValue } from './estado-actual-io.mjs';
 
 /** @type {readonly { id: string, title: string, keys: readonly string[] }[]} */
 const VITAL_FAMILIES = [
@@ -91,14 +92,17 @@ export function formatChartLabelFromMs(ms) {
 /**
  * @param {unknown} v
  */
-function hasIoPair(io) {
-  if (!io || typeof io !== 'object') return false;
-  var ing = /** @type {{ ing?: unknown, egr?: unknown }} */ (io).ing;
-  var egr = /** @type {{ ing?: unknown, egr?: unknown }} */ (io).egr;
-  if (ing == null || ing === '' || egr == null || egr === '') return false;
-  var ingN = Number(ing);
-  var egrN = Number(egr);
-  return Number.isFinite(ingN) && Number.isFinite(egrN);
+/**
+ * Ingreso y egreso total del turno (todos los egrParts numéricos), igual que el balance del turno.
+ * @param {unknown} io
+ * @returns {{ ing: number, egr: number } | null}
+ */
+function ioPair(io) {
+  if (!io || typeof io !== 'object') return null;
+  var ing = /** @type {{ ing?: unknown }} */ (io).ing;
+  var egr = ioNumericEgressTotal(io);
+  if (!isIoNumericValue(ing) || egr == null) return null;
+  return { ing: Number(ing), egr: egr };
 }
 
 /**
@@ -138,9 +142,10 @@ export function buildIoChartData(histAsc) {
       /** @type {any} */ (row).io && typeof /** @type {any} */ (row).io === 'object'
         ? /** @type {any} */ (/** @type {any} */ (row).io)
         : {};
-    if (!hasIoPair(io)) continue;
-    var ingN = Number(io.ing);
-    var egrN = Number(io.egr);
+    var pair = ioPair(io);
+    if (!pair) continue;
+    var ingN = pair.ing;
+    var egrN = pair.egr;
     var turn = ingN - egrN;
     running += turn;
     labels.push(formatChartLabel(/** @type {any} */ (row).recordedAt));
@@ -418,14 +423,15 @@ export function buildDailyBalanceSeries(histAsc) {
       /** @type {any} */ (row).io && typeof /** @type {any} */ (row).io === 'object'
         ? /** @type {any} */ (row).io
         : {};
-    if (!hasIoPair(io)) continue;
+    var pair = ioPair(io);
+    if (!pair) continue;
     var day = formatChartLabel(/** @type {any} */ (row).recordedAt).slice(0, 5);
     if (!map[day]) {
       map[day] = { ing: 0, egr: 0 };
       days.push(day);
     }
-    map[day].ing += Number(io.ing);
-    map[day].egr += Number(io.egr);
+    map[day].ing += pair.ing;
+    map[day].egr += pair.egr;
   }
   var ing = days.map(function (d) {
     return map[d].ing;

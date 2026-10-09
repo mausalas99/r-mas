@@ -6,7 +6,7 @@ import { formatNmDietClause } from './estado-actual-diet-text.mjs';
 import { formatInsulinRescatesClause } from './estado-actual-glu-rescue.mjs';
 import { formatIoClauseForSoap, toEaSalidaText } from './estado-actual-io.mjs';
 import { partitionAnalgesiaForSoap, partitionNmMedsForSoap } from './estado-actual-med-soap-split.mjs';
-import { isTempFebrile, isTempFeverPeak } from './estado-actual-ranges.mjs';
+import { isTempFebrile, isTempFeverPeak, isHemodynamicallyUnstable } from './estado-actual-ranges.mjs';
 import {
   gluPointMs,
   vitalAlteredTimeForDisplay,
@@ -170,11 +170,12 @@ export function resolveFebrilLabel(v) {
 }
 
 /**
- * @param {Record<string, unknown>} v
- * @param {Record<string, unknown>} ec
+ * R+ flags, never decides: hypotension, abnormal FC or any vasopressor → '¿INESTABLE?' for the doctor to confirm.
+ * @param {Record<string, unknown>} v snapshot vitals (tas, tad, fc)
+ * @param {unknown} vasop confirmed vasopressor clause
  */
-export function resolveHemodynamicLabel(_v, _ec) {
-  return 'ESTABLE';
+export function resolveHemodynamicLabel(v, vasop) {
+  return isHemodynamicallyUnstable(v, vasop) ? '¿INESTABLE?' : 'ESTABLE';
 }
 
 /**
@@ -364,7 +365,7 @@ export function assembleSoapLines(ec, v, soporte, hiTemp, nmClause, opts) {
       viaAereaSegment,
     b('HD:') +
       ' ' +
-      resolveHemodynamicLabel(v, ec) +
+      resolveHemodynamicLabel(v, vasopClause) +
       ', TA ' +
       b(num(v.tas) + '/' + num(v.tad) + ' MMHG') +
       ', FC ' +

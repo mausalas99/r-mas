@@ -78,7 +78,7 @@ Built by `parseFormMedicion()` (`feat/estado-actual-panel-actions.mjs`):
 ### I/O balance
 `feat/estado-actual-io.mjs`: balance = intake − **all numeric egress parts** (diuresis, drains, gastrostomy, nephrostomy, UF). `balanceTurno()` uses the latest row with a balance; `balanceGlobalHistorico()` sums all rows. Turn events include HD, transfusion, volume load and the **furosemide challenge** (≥ 200 mL in 2 h = *respondedor*).
 
-> ⚠️ The daily balance **chart** (`buildDailyBalanceSeries`) subtracts `io.egr` only, not all egress parts. With drains, the chart and the turn balance can disagree. Listed in [13](./13-open-questions-and-doc-drift.md).
+The I/O charts (`buildDailyBalanceSeries`, the per-turn series) use the same egress total (`ioNumericEgressTotal`), so the chart and the turn balance agree for patients with drains.
 
 ### From EA to the note's N / V / HD / HI / NM lines
 `buildEstadoActualText()` → `assembleSoapLines()` (`feat/estado-actual-text-build.mjs`):
@@ -91,7 +91,7 @@ Built by `parseFormMedicion()` (`feat/estado-actual-panel-actions.mjs`):
 | **HI** (infectious) | FEBRIL/AFEBRIL, temperature peak (if ≥ 38, ≤ 5 days old), antibiotics, transfusions |
 | **NM** (nutrition/metabolic) | diet + kcal/protein, I/O clause, glucometrías, insulin pump or rescue clause |
 
-> ⚠️ `resolveHemodynamicLabel()` **always returns `'ESTABLE'`**; it ignores its inputs. A hypotensive patient on vasopressors is still labelled "ESTABLE" on the HD line of the generated text. `isHemodynamicallyUnstable()` exists in `estado-actual-ranges.mjs` but isn't used here. This is the most clinically significant item in [13](./13-open-questions-and-doc-drift.md).
+HD label: `resolveHemodynamicLabel(v, vasop)` returns **`¿INESTABLE?`** when `isHemodynamicallyUnstable()` (`estado-actual-ranges.mjs`) flags low TA, abnormal FC or any confirmed vasopressor, and **`ESTABLE`** otherwise. R+ flags; the doctor confirms or edits the word in the note. The legacy SOAP modal (`soap-estado.mjs`) uses the same function.
 
 ### Worked example: «Traer de Estado actual»
 1. The note's button (`data-onclick="estadoActualEnviarANota"`) → `commitEstadoActualToNote()`.
@@ -249,7 +249,7 @@ R+ **calculates and flags; it never interprets** (vision anti-goal). The calcula
 2. Ignored. R+ computes balance from intake and egress.
 3. So switching patients while the form is open can't write vitals into the wrong chart.
 4. The per-user medication catalog (`medCatalog` soapTokens), which is checked before name heuristics.
-5. The hemodynamic label is "ESTABLE", because `resolveHemodynamicLabel` is hard-coded (see the open question).
+5. `HD: ¿INESTABLE?`: the vasopressor (and TAS 80) trip `isHemodynamicallyUnstable()`, and the doctor confirms the word.
 </details>
 
 **Next:** [08 · The team layer →](./08-team-layer.md)

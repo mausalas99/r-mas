@@ -39,7 +39,6 @@ They link to each other: every feature domain points to its UI-map screens, and 
 
 Researching this wiki turned up things worth deciding on soon:
 
-- **The generated Estado actual text always labels hemodynamics "ESTABLE"**, even for a hypotensive patient on vasopressors ([07](./07-patient-desk.md#from-ea-to-the-notes-n--v--hd--hi--nm-lines)).
 - **The local clinical database has no encryption key**, even though several docs say it's encrypted ([09 § 5](./09-storage-and-security.md#5-what-is-actually-on-today)).
 - **The Nube Worker's monitoreo merge has drifted from the client's**, and `db:rotation-nueva` has no privilege check ([13](./13-open-questions-and-doc-drift.md)).
 

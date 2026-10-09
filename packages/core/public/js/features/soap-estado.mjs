@@ -7,6 +7,7 @@ import { scheduleCloudSyncPush } from "./cloud-sync/mutate-bridge.mjs";
 import { closeModalAnimated } from "../ui-motion.mjs";
 import { ensureMonitoreo, migratePatientMonitoreo } from "./estado-actual-data.mjs";
 import { formatNmDietClause } from "./estado-actual-diet-text.mjs";
+import { resolveHemodynamicLabel } from "./estado-actual-text-build.mjs";
 import {
   joinSoapMedSegments,
   soapMedCategorySegment,
@@ -470,7 +471,12 @@ function buildSoapObjectiveLines(g, val, num, soporte, ing, egr, balance) {
       soporte +
       " | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS" +
       (meds.viaAerea ? " || VIA AEREA: " + meds.viaAerea : ""),
-    "HD: ESTABLE, TA " +
+    "HD: " +
+      resolveHemodynamicLabel(
+        { tas: g("soap-tas"), tad: g("soap-tad"), fc: g("soap-fc") },
+        meds.vasop
+      ) +
+      ", TA " +
       num(g("soap-tas")) +
       "/" +
       num(g("soap-tad")) +
