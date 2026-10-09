@@ -39,14 +39,15 @@ function loadShowToast() {
 /**
  * @param {string} msg
  * @param {'success'|'error'|'warn'|'info'|'ok'|''} [type]
+ * @param {Parameters<typeof import('./ui-toast.mjs').showToast>[2]} [opts]
  */
-export function showToast(msg, type) {
+export function showToast(msg, type, opts) {
   if (showToastImpl) {
-    showToastImpl(msg, type);
+    showToastImpl(msg, type, opts);
     return;
   }
   void loadShowToast().then(function (fn) {
-    fn(msg, type);
+    fn(msg, type, opts);
   });
 }
 
