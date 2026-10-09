@@ -40,7 +40,11 @@ R+ is a **desktop app (Mac/Windows) for internal-medicine residents** at a Mexic
 | Part | One-line job | Read |
 |---|---|---|
 | **The Electron shell** | Window, IPC, startup, build | [02](./02-how-the-app-is-built.md) |
+| **Shared state & wiring** | The in-memory record, save + push, how features reach each other | [03](./03-shared-state-and-wiring.md) |
+| **Maps** | Which features feed which; which code imports which | [04](./04-feature-map.md), [05](./05-codebase-map.md) |
 | **The clinical pipeline** | Paste → parse → lab sets → note → `.docx` | [06](./06-labs-to-word.md) |
+| **The patient desk** | Estado actual, meds, pendientes, agenda, census, calculations | [07](./07-patient-desk.md) |
+| **The team layer** | Users, teams, rotations, scope, guardia, entrega, interno | [08](./08-team-layer.md) |
 | **Local storage** | SQLite file of JSON blobs, migrations, crypto toolbox | [09](./09-storage-and-security.md) |
 | **Nube** | Monthly ward rooms, ops, LWW, E2E room keys | [10](./10-nube-sync.md) |
 | **Release machinery** | Bump → build → sign → GitHub → auto-update | [11](./11-releases-and-updates.md) |

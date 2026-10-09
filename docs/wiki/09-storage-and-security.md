@@ -25,19 +25,23 @@ The library is **`better-sqlite3-multiple-ciphers`** — SQLite with optional wh
 
 ```
 Renderer (patient JSON in memory)
-   │ persistClinicalState()  — 400 ms debounce
+   │ persistClinicalState()  — 400 ms debounce        clinical-repo-persist.mjs
    ▼
-window.electronAPI.dbClinicalSaveAll(...)      preload.js
-   │ IPC  'db:clinical-save-all'
+executeClinicalCommand({ type: 'clinical.persistSnapshot', … })
+window.electronAPI.dbClinicalCommand(...)              preload.js
+   │ IPC  'db:clinical-command'
    ▼
-Main: dbManager.withTransaction(fn)            lib/db/db-manager.mjs
+Main: dbManager.withTransaction(fn)                    lib/db/ipc-handlers-register-clinical-repo.mjs
    │  • throws DB_LOCKED unless unlocked
    │  • serialized write queue (one writer at a time)
-   │  • same transaction appends an audit hash-chain row
+   │  • lib/clinical-repo executes the command, records a change-log entry
+   │  • same transaction appends an audit hash-chain row ('clinical.command')
    ▼
 clinical_blob row  (namespace, blob_key='patients', json=…)
    inside rplus-clinical.db
 ```
+
+> 💡 There are two save channels. Whole-record saves go through **`db:clinical-command`** (`clinical.persistSnapshot`), which also writes a change log that the Nube projector can read. The older **`db:clinical-save-all`** channel is still used for a few blobs written directly by `storage.saveTodos`, `saveMedCatalog` and `saveScheduledProcedures`. Chapter [03](./03-shared-state-and-wiring.md) covers the renderer side.
 
 So the "database" is mostly a **key → JSON blob store** (`clinical_blob`). Blob keys are listed in `lib/db/clinical-blob-keys.mjs`: `patients`, `notes`, `indicaciones`, `labHistory`, `medRecetaByPatient`, `listadoProblemas`, `vpoByPatient`, `todos`, `scheduledProcedures`, …
 

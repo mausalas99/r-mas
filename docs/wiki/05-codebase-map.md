@@ -44,7 +44,7 @@ There are three ways code reaches across a boundary:
 
 | Boundary | Mechanism | Example |
 |---|---|---|
-| Renderer → Node | **IPC only.** The renderer never imports Node files that touch disk; it calls `window.electronAPI.*`. | `db:clinical-save-all`, `generate-document` |
+| Renderer → Node | **IPC only.** The renderer never imports Node files that touch disk; it calls `window.electronAPI.*`. | `db:clinical-command`, `generate-document` |
 | Renderer ↔ Cloud | **HTTPS + WebSocket** to the Worker | `POST /rooms/:id/mutations` |
 | Everyone → `lib/` | **Plain `import`** of pure modules with no Node or DOM dependencies | `lib/clinical-salas.mjs` is imported by the renderer (10×), by Node, and by the sync Worker (`interno/sala-slug.js`) |
 
@@ -89,6 +89,12 @@ There are three ways code reaches across a boundary:
 - **Workers and Electron main have *In* = 0.** Nothing imports them; they are entry points.
 
 ---
+
+## Who imports whom: the full matrix
+
+In the artifact, this is an interactive heatmap: rows are the importing area, columns are the imported area, and darker means more imports. Hover a cell for the count. In Markdown, the next table lists the strongest cells.
+
+<!-- MAP:imports -->
 
 ## The strongest connections
 
@@ -169,7 +175,7 @@ If you ever add a sala, a team service or a synced field, expect to touch **shar
 |---|---|
 | Who imports this file? | `grep -rn "clinical-privileges.mjs" packages/core --include=*.mjs \| grep import` |
 | What does this file import? | `grep -n "^import" packages/core/public/js/app-state.mjs` |
-| Where is this IPC channel handled? | `grep -rn "'db:clinical-save-all'" packages/` |
+| Where is this IPC channel handled? | `grep -rn "'db:clinical-command'" packages/` |
 | Which Worker route serves this? | `grep -n "mutations" packages/core/cloud/sync-worker/src/rooms.js` |
 | Is there a guard rule? | `.dependency-cruiser-boundaries.cjs`, `scripts/ci/*.mjs` |
 

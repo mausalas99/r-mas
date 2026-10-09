@@ -4,6 +4,8 @@
 >
 > Treat this as a to-do list. When you fix something, delete its row.
 
+> ⚠️ **Most clinically significant:** the generated Estado actual text always labels hemodynamics **"ESTABLE"**. `resolveHemodynamicLabel()` in `features/estado-actual-text-build.mjs` returns the string `'ESTABLE'` and ignores the vitals and vasopressors passed to it, even though `isHemodynamicallyUnstable()` exists. That text can be copied into the note's Evolución (see A10).
+
 ---
 
 ## A. Questions that need a decision
@@ -19,6 +21,13 @@
 | A7 | **`db:admin-code-verify` has no rate limit**, unlike passphrase unlock (5 tries per 15 min). | reported | Someone with local access can brute-force the admin code. | `lib/db/ipc-handlers-register-profile.mjs` |
 | A8 | **It's unclear how Interno phones decrypt content.** Phones get `HKDF(DEK, "rplus-interno-v1")`, but `encryptOpsForPush` uses the full DEK, and no code was found that encrypts anything with the subkey. | reported — unclear | The board may only show plaintext fields (name, bed, service), or a code path was missed. | `features/cloud-sync/crypto.mjs`, `interno-crypto-board.mjs` |
 | A9 | **`checkForModuleUpdate` is exposed in preload but no UI source calls it.** | verified (non-bundled sources) | Live module updates may be dormant code. | `packages/im/preload.js`, `lib/module-update-fetch.mjs` |
+| A10 | **The HD line is always "ESTABLE".** `resolveHemodynamicLabel(_v, _ec)` returns a constant. | verified | A hypotensive patient on vasopressors is described as hemodynamically stable in generated text that can go into the note. | `public/js/features/estado-actual-text-build.mjs` |
+| A11 | **The Worker's monitoreo merge has drifted from the client's.** The Worker knows 12 med fields (the client knows 17: it is missing vasop, anticoagulacion, antiarritmicos, estatinas and nm). It picks historial winners by `recordedAt` instead of `savedAt`, and it has no `manualMeds` union. | verified | On plaintext rooms, confirmations of those 5 med groups don't merge on the server, and a back-dated edit can lose to an older one. | `cloud/sync-worker/src/monitoreo-lww.js` vs `features/estado-actual-data-merge.mjs`, `estado-actual-data-constants.mjs` |
+| A12 | **`db:rotation-nueva` has no privilege check.** Only the UI hides the button. | verified | Any local caller can archive every team hospital-wide, and the change spreads to peers through `rotationNuevaAt`. | `lib/db/ipc-handlers-register-guardia.mjs` |
+| A13 | **The daily balance chart subtracts only `io.egr`.** The turn balance subtracts every egress part (drains, UF…). | verified (code); reported (that `egr` = diuresis only) | The chart and the census can show different balances for patients with drains. | `features/estado-actual-charts-series.mjs` `buildDailyBalanceSeries` |
+| A14 | **Wiring loose ends.** `rpc-app-tab-changed` is dispatched but has no listener. `rpc-interno-vitals-synced` has listeners but no dispatcher. `subscribeClinicalReadModel()` has no subscribers. Boot reads the whole DB twice. | verified | This is dead code, or a feature that was meant to be finished (intern vitals aren't singled out on desktop). | see [03](./03-shared-state-and-wiring.md#loose-ends-found-while-mapping) |
+| A15 | **Built but not wired.** Entrega templates (tables, IPC and sync exist; no UI caller). Interconsulta rollover IPC (no caller found). Pase-labs Worker route returns 503 since E2EE. | verified / reported (rollover) | Code that syncs and must be maintained but doesn't serve users. | `lib/db/clinical-access-entrega.mjs`, `cloud/sync-worker/src/pase-labs.js` |
+| A16 | **Smaller gaps.** The Resumen PaFi KPI is never fed. VPO risk scores (RCRI/Gupta…) are typed in by hand, and `GUPTA_INTERCEPT` is unused. | reported | Features that look automatic but aren't. | `patient-dashboard/ea-glance-*.mjs`, `vpo-*.mjs` |
 
 ---
 
@@ -37,6 +46,9 @@
 | `docs/core/18-knowledge-capture.md`, row 2026-08-14 | "Nube V1 crypto is accepted: D1 holds plaintext JSON… Not E2EE." | Superseded by client E2EE for content in 8.2.8 and for registro/diagnoses in 8.4.0. The row should be struck through like the older superseded ones. |
 | `docs/core/16-glossary-of-terms.md` | Only 9 terms, marked in-progress. | [12 · Glossary](./12-glossary.md) |
 | `.dependency-cruiser.cjs` | `lan` rules point at folders that no longer exist. | Delete them or replace them with `forbid-lan-imports.mjs`. |
+| `docs/wiki/10-nube-sync.md` (first version) | Said clinicalOps merges "union by id" on the Worker, and that templates reach the next shift. | **Fixed.** On encrypted rooms the client merges and the Worker replaces the value; templates have no UI. |
+| `features/inicio-turno/inicio-turno-panel.mjs` header comment | "R+ has no 'interno' role". | Interno MIP phones exist ([08](./08-team-layer.md#6-interconsultas-and-interno)). |
+| `docs/wiki/09-storage-and-security.md` (first version) | Said saves go over `db:clinical-save-all`. | **Fixed.** Whole-record saves use `db:clinical-command` (`clinical.persistSnapshot`). |
 | `features/cloud-sync/crypto.mjs` comment | Says the wrapping key comes from the "Nube password". | It comes from the room join code. |
 
 ---

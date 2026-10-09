@@ -151,6 +151,30 @@ The other templates work the same way: `template_indicaciones.docx` fills the fi
 
 ---
 
+## Other ways labs arrive (beyond paste)
+
+Pasting is the original path, but the same parser and lab-set store serve several entry points:
+
+| Entry point | How it works | Where |
+|---|---|---|
+| **Hospital lab portal ("Actualizar labs")** | Main-process IPC `lab-repo-fetch` logs into the hospital's ASP.NET results portal (form fields, cookies), lists studies by **registro** and date range, downloads each report, and returns text for `procesarLabs`. **The portal address is never in the repo:** it comes from Ajustes → Laboratorio or the `RPLUS_LAB_PORTAL_URL` env var, and if neither is set the UI asks. | `lib/lab-repo/` (`portal-client.mjs`, `portal-html.mjs`, `lab-repo-fetch.mjs`), `public/js/lab-repo-portal-prompt.mjs` |
+| **New patient → portal** | Typing a registro for a new patient can pull their portal labs straight away (the "registro tunnel") | `public/js/patient-registro-tunnel.mjs` |
+| **Culture follow-up refresh** | The cultures queue re-fetches pending cultures from the portal | `features/cultivo-queue-refresh.mjs` |
+| **PDF** | Smart paste sends a PDF to main (`pdf-to-text`) and parses the text | `features/paste-smart.mjs`, `lib/lab-repo/pdf-text.mjs` |
+| **Manual external labs** | A form for results from outside labs | `features/lab-manual-entry.mjs` |
+| **Google Drive document** | Imports a Drive clinical document (labs, eventualidades, demographics) after a review step | `features/drive-import-*.mjs`, `lib/drive-import/` |
+| **Nube pull** | Lab sets arrive as `labSidecars` from other devices ([10](./10-nube-sync.md)) | `features/cloud-sync/pull-apply.mjs` |
+
+Admins can test the portal connection from the admin panel (IPC `lab-repo-check`).
+
+### Two more things the lab code computes
+- **Critical (panic) values:** `public/js/labs-critical-values.mjs` holds *panic* thresholds, which are separate from the normal ranges that produce `*`. `hasCriticalLabValue()` checks the latest set and drives a badge on the census card.
+- **Diagrams:** `features/diagrams*.mjs` draw lab diagrams (including a Gamble-style electrolyte diagram) from parsed values.
+
+All the derived calculations (eTFG, corrected calcium, anion gap, delta-delta, A-a gradient…) are listed in [07 § 6](./07-patient-desk.md#6-every-clinical-calculation).
+
+---
+
 ## Related features you'll meet in the same code
 
 | Feature | One-liner | Where |
@@ -187,4 +211,4 @@ The other templates work the same way: `template_indicaciones.docx` fills the fi
 4. The name replacement no longer matches, so notes keep the fake name; the `labs-to-docx` e2e scenario catches it.
 </details>
 
-**Next:** [09 · Storage & security →](./09-storage-and-security.md)
+**Next:** [07 · The patient desk →](./07-patient-desk.md)

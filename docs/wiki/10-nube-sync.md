@@ -105,7 +105,7 @@ Every op carries `updatedAt` and `actorId`. The server keeps `entityVersions[pat
 
 Plain LWW would lose data in a few places, so there are special merges:
 
-- **`clinicalOps`** (teams, users, `patient_team_assignment`, guardias, entrega templates): **union by id** (`clinical-ops-lww.js`). Decision log 2026-08-14: a join push must not wipe assignments the sender hasn't pulled yet.
+- **`clinicalOps`** (teams, users, assignments, guardias, templates): the **client merges** it into SQLite tables in phases (`lib/db/clinical-ops-sync-merge.mjs`) and always **pulls before it pushes**. On an encrypted room the Worker can't read it, so it just replaces the whole value. Only legacy plaintext rooms get a server merge (`clinical-ops-lww.js`), and that unions teams, users, assignments and memberships by id but overwrites guardias and templates. Decision log 2026-08-14: a join push must not wipe assignments the sender hasn't pulled yet. Details are in [08](./08-team-layer.md#7-how-clinicalops-is-stored-and-synced).
 - **`monitoreo`**: merged field by field; history rows by id; deletes are markers.
 - **Deletes** in general are **tombstones** — markers, not removals — so a stale device can't resurrect a deleted record.
 
@@ -183,7 +183,7 @@ Interno phones get a **narrow subkey** `HKDF(DEK, "rplus-interno-v1")`, delivere
 
 ## 8. Guardia / entrega (handoff)
 
-Teams, rotations, `active_guardias`, `team_guardia_today` and `entrega_template_*` ride inside **`clinicalOps`** (`lib/db/clinical-ops-sync-export.mjs`), merged locally by `lib/db/clinical-ops-sync-merge-*.mjs`. That's how a handoff template written on one laptop reaches the next shift.
+Teams, rotations, `active_guardias`, `team_guardia_today` and `entrega_template_*` ride inside **`clinicalOps`** (`lib/db/clinical-ops-sync-export.mjs`), merged locally by `lib/db/clinical-ops-sync-merge-*.mjs`. That's how an entrega (an `active_guardias` row) made on one laptop reaches the next shift. The template tables also travel, but no UI uses them yet. Full walkthrough in [08](./08-team-layer.md).
 
 ---
 
@@ -211,7 +211,7 @@ Teams, rotations, `active_guardias`, `team_guardia_today` and `entrega_template_
 <details><summary>Answers</summary>
 
 1. The later `updatedAt` (ties → `actorId`). The whole note value is one op, so it's whole-value LWW.
-2. A device that hasn't pulled recent assignments would overwrite them with its stale list; union-by-id keeps both.
+2. A device that hasn't pulled recent assignments would overwrite them with its stale list. The fix is to merge before pushing: the client pulls, merges into its tables (assignments are an append-only union), then pushes.
 3. Note: no, if the room has a DEK (it's E2E ciphertext). Name: yes — `nombre`/`cama`/`servicio` are plaintext under only the server-side layer.
 4. Almost certainly a snapshot (> 100 revisions behind), with labs trimmed by `labsHave`/the mobile 3-day window.
 </details>

@@ -45,6 +45,16 @@ One place for every term in the wiki. Grouped so you can skim: **clinical (Spani
 | **Hto / Ret** | Hematocrit / reticulocytes |
 | **Cultivo (hemo-, uro-)** | Culture (blood, urine) |
 | **Antibiograma / germen** | Antibiotic susceptibility (S/I/R) / organism |
+| **Alta** | In R+ copy, **admitting** a patient to the census («+ Agregar da de alta»), not discharge |
+| **Archivar / Fijados / Incompletos** | Remove from active census / pinned patients / cards missing cuarto, cama or servicio |
+| **FOUR / esferas** | Coma scale (x/16) / orientation spheres, in the N line |
+| **Rescate de insulina** | Sliding-scale insulin dose given for a high glucose |
+| **Reto de furosemida** | Furosemide challenge; ≥ 200 mL in 2 h = *respondedor* |
+| **VPO** | Valoración preoperatoria (pre-op assessment) |
+| **Perfil farmacoterapéutico** | Monthly drug × day administration grid |
+| **Receta (SOME)** | The hospital prescription block pasted into Medicamentos |
+| **Rotación / Nueva rotación** | A rotation period / archiving all teams to start a new one |
+| **Modo Guardia / «solo entregados»** | The night board view / census filter showing only patients handed to you |
 | **Interconsulta** | Consult; in *Interconsulta mode* the note only includes the latest lab day |
 
 ## R+ concepts
@@ -59,6 +69,21 @@ One place for every term in the wiki. Grouped so you can skim: **clinical (Spani
 | **Tendencias** | Lab trend charts | [06](./06-labs-to-word.md) |
 | **TTD** | Time-to-document: lab arrival → printable note | [01](./01-the-big-picture.md) |
 | **clinical_blob** | DB table storing patient data as JSON per key | [09](./09-storage-and-security.md) |
+| **app-state** | The live in-memory patient record; getters return mutable objects | [03](./03-shared-state-and-wiring.md) |
+| **persistClinicalState / scheduleCloudSyncPush** | The two calls every edit needs: local save (`db:clinical-command`) and cloud push | [03](./03-shared-state-and-wiring.md) |
+| **Runtime context (`rt`)** | Object of shared callbacks each feature receives at registration | [03](./03-shared-state-and-wiring.md) |
+| **Change log / projector** | Main-process record of clinical commands; the projector turns unsynced changes into Nube ops | [03](./03-shared-state-and-wiring.md) |
+| **Domain** | A user-facing feature group on the feature map (e.g. Estado actual) | [04](./04-feature-map.md) |
+| **Area / hub file** | A group of source files on the codebase map / a file imported by dozens of others (`app-state.mjs`) | [05](./05-codebase-map.md) |
+| **Mirror file** | The same rule written twice, in `lib/` and the renderer (privileges, username) | [05](./05-codebase-map.md) |
+| **monitoreo / medición** | The Estado actual object on a patient / one recorded row in its historial | [07](./07-patient-desk.md) |
+| **deriveSnapshot** | Computes current vitals, I/O, glucose from historial; never stored | [07](./07-patient-desk.md) |
+| **pendienteReceta / confirmado** | Med text proposed from the receta / fields the clinician confirmed | [07](./07-patient-desk.md) |
+| **SOAP destination** | Which N/V/HD/HI/NM slot a drug goes to | [07](./07-patient-desk.md) |
+| **Cycle letter** | A–D (or A–F, A1–D2) letter that decides which team is on call today | [08](./08-team-layer.md) |
+| **Scope** | Rules deciding which patients a user may see | [08](./08-team-layer.md) |
+| **active_guardias / pendientes_json** | One row per handed-off patient / its handoff payload (vitals plan, context, items) | [08](./08-team-layer.md) |
+| **Staged team** | A team created mid-rotation; becomes active at the next «Nueva rotación» | [08](./08-team-layer.md) |
 | **Nube** | Cloud sync (Cloudflare Worker + D1) | [10](./10-nube-sync.md) |
 | **Room** | One shared Nube workspace per sala per month (`YYYY-MM`) | [10](./10-nube-sync.md) |
 | **Join code** | 6-char room code; also unlocks the room key | [10](./10-nube-sync.md) |
