@@ -177,7 +177,7 @@ If you're ≤ 100 revisions and ≤ 256 KB behind → you get the **ops**. Other
 | **R+ Móvil** | residents | `npm run build:cloud-mobile` → `cloud/sync-pages/public/mobile` | same rooms, `pollMobile`, live WebSocket |
 | **Interno MIP** | medical interns | `npm run build:cloud-interno` → `/interno/` | R4/admin enables the sala in ⇄ Conexión and shares a QR `/interno/{sala}?t=token`; intern records vitals (`recordedBy: interno`) via `/api/interno/v1/board` + `/vitals` |
 
-Interno phones get a **narrow subkey** `HKDF(DEK, "rplus-interno-v1")`, delivered only in the URL fragment `#k=…` (fragments are never sent to servers). See `docs/features/feat-interno-mip-nube.md`.
+Interno phones get a **narrow subkey** `HKDF(DEK, "rplus-interno-v1")`, delivered only in the URL fragment `#k=…` (fragments are never sent to servers). Desktop locks `clinicalOps` and `entries/{id}/monitoreo` with that subkey (`cloud-sync-crypto-wire.mjs`), so the phone can open them; everything else stays under the DEK. See `docs/features/feat-interno-mip-nube.md`.
 
 ---
 

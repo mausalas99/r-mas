@@ -165,7 +165,7 @@ A full-screen summary (`features/inicio-turno/`) opened from ⌘K: inherited pen
 4. The Worker (`cloud/sync-worker/src/interno/vitals.js`) writes it into `entries/<id>/monitoreo` as actor `interno:<sala>` and notifies the room.
 5. The intern's board shows **only patients with an Active guardia in that sala** (`lib/interno/interno-scope.mjs`).
 
-> ⚠️ Nothing on desktop reads `recordedBy`, and the `rpc-interno-vitals-synced` event has listeners but no sender. Intern vitals still appear (they're ordinary mediciones), but they aren't singled out.
+> When a pull brings a monitoreo whose newest row has `recordedBy.kind === 'interno'`, `pull-apply.mjs` fires `rpc-interno-vitals-synced`, and the guardia board and Estado actual refresh. The rows are not styled differently.
 
 ---
 

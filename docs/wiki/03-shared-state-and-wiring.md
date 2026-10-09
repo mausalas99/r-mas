@@ -32,7 +32,7 @@
 | Layer | File | Returns | Who uses it |
 |---|---|---|---|
 | **Working copy** | `public/js/app-state.mjs` | **live references**: `getNotes()` gives you the actual object | almost every feature (112 importers) |
-| **Read model** | `public/js/clinical-read-model.mjs` | **copies** (`structuredClone`) plus a subscribe API | fed by persist echoes and eventualidades; its `subscribeClinicalReadModel()` has **no subscribers** today |
+| **Read model** | `public/js/clinical-read-model.mjs` | **copies** (`structuredClone`) | fed by persist echoes and eventualidades |
 | **Storage cache** | `storage.js`, `storage/storage-core.mjs`, `db-storage-bridge.mjs` | raw blobs from SQLite (desktop) or localStorage (legacy/web) | boot hydrate, save |
 
 **Blob keys**, the same name on every layer:
@@ -168,12 +168,7 @@ The 120 ms delay plus `navigator.scheduling.isInputPending()` let you hold J/K t
 They were added at different times for different reasons. `rt` replaced importing app.js internals. Window handlers exist because of the CSP. Lazy proxies keep the boot bundle small (there's an **eager-boot file budget** enforced by `metrics:check`). DOM events are used where many unrelated listeners care, mostly around teams. Knowing which one a feature uses tells you where to look when it breaks.
 
 ### Loose ends found while mapping
-- `rpc-app-tab-changed` is dispatched (`features/app-tabs.mjs`) but nothing listens.
-- `rpc-interno-vitals-synced` is listened for (EA panel, guardia board) but nothing in the repo dispatches it.
-- `subscribeClinicalReadModel()` has no subscribers.
-- Boot reads the whole DB twice (`ensureStorageHydrated` and `hydrateClinicalRepoIntoReadModel`).
-
-These are listed in [13](./13-open-questions-and-doc-drift.md).
+Fixed in 8.5.1: the unused `rpc-app-tab-changed` event and `subscribeClinicalReadModel()` are gone; `rpc-interno-vitals-synced` is now sent from `features/cloud-sync/pull-apply.mjs`; boot reads the DB once (the read model reuses the storage blob cache).
 
 ---
 

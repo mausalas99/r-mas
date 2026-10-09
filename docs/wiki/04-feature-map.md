@@ -37,7 +37,7 @@ Data enters on the **left** (labs, cultures, meds, Estado actual, eventualidades
 - **Labs → Guardia:** the newest lab date drives the "probable discharge" hint on the guardia board.
 - **Guardia → Interno:** entrega pendientes appear on the intern's phone board (via `lib/entrega/`).
 - **Labs → Meds:** smart paste notices that a SOME *indicaciones* block isn't labs and routes it to receta parsing.
-- **Labs → Eventualidades:** an autosend call exists but is **disabled** (returns `skipped: 'disabled'`), so nothing flows today.
+- **Labs → Eventualidades:** nothing flows. The old autosend was removed in 8.5.1.
 - **Settings → Censo:** pitch tours inject demo patients. `getSyncablePatients()` keeps them out of Nube, and `patientsForPersistence()` keeps them off disk.
 
 ### Naming traps

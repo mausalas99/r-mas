@@ -111,7 +111,7 @@ At release, `scripts/sign-release-bundle.mjs` hashes `app.bundle.mjs` + `chunks/
 
 - **Every packaged boot:** `verifyModuleBootOrRollback` checks signature + every file hash. Fail → refuse to load (fail closed), try automatic rollback to the last good version, else error and quit.
 - **Two failed boots in a row** on a version → rollback (`rollback-tracker.mjs`). Menu: *"Mantener versión pese a fallos…"* turns that off.
-- **Live module updates:** `lib/module-update-fetch.mjs` can fetch a newer signed bundle, verify it, extract it safely (zip-slip guard) to `userData/modules/<version>`, and the app serves it via `app://`. (The research found no current UI caller for `checkForModuleUpdate` — it may be dormant.)
+- **Live module updates:** `lib/module-update-fetch.mjs` can fetch a newer signed bundle, verify it, extract it safely (zip-slip guard) to `userData/modules/<version>`, and the app serves it via `app://`. No UI calls `checkForModuleUpdate` yet. The owner keeps it as planned work (decision log 2026-10-09).
 
 ### Safety valves
 | File | Purpose | How it reaches users |
