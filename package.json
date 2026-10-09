@@ -33,6 +33,7 @@
     "release:sync-pack": "node scripts/lib/electron-pack-files.js --write",
     "release:bump": "node scripts/release.js bump",
     "release:publish": "node scripts/release.js publish",
+    "release:module": "node scripts/publish-module.mjs",
     "release:republish": "node scripts/release.js publish -- --yes --allow-existing-gh",
     "build": "electron-builder",
     "test:one": "node scripts/run-with-electron-node.mjs --test",

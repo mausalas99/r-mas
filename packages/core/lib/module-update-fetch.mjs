@@ -63,19 +63,18 @@ async function extractZipSafely(zipBuffer, destDir) {
  * from a module feed, verifies the signature and file hashes, and — only on
  * success — stages the verified files at `<modulesRootDir>/<version>/`.
  * Never loads or keeps a bundle that fails verification.
- * @param {{fetchFn: typeof fetch, feedBaseUrl: string, modulesRootDir: string, publicKeyPem: string}} params
+ * @param {{fetchFn: typeof fetch, feedBaseUrl: string, modulesRootDir: string, publicKeyPem: string, currentVersion?: string}} params
  * @returns {Promise<
  *   | {ok: true, version: string, stagingDir: string, manifest: Record<string, unknown>}
- *   | {ok: false, reason: 'feed-unavailable' | 'invalid-manifest' | 'bad-signature' | 'unsafe-bundle' | 'file-hash-mismatch'}
+ *   | {ok: false, reason: 'feed-unavailable' | 'up-to-date' | 'invalid-manifest' | 'bad-signature' | 'unsafe-bundle' | 'file-hash-mismatch'}
  * >}
  */
-export async function fetchModuleUpdate({ fetchFn, feedBaseUrl, modulesRootDir, publicKeyPem }) {
-  const [manifestRes, signatureRes, zipRes] = await Promise.all([
+export async function fetchModuleUpdate({ fetchFn, feedBaseUrl, modulesRootDir, publicKeyPem, currentVersion }) {
+  const [manifestRes, signatureRes] = await Promise.all([
     fetchAsset(fetchFn, feedBaseUrl, MODULE_MANIFEST_FILE),
     fetchAsset(fetchFn, feedBaseUrl, MODULE_SIGNATURE_FILE),
-    fetchAsset(fetchFn, feedBaseUrl, MODULE_BUNDLE_ZIP_FILE),
   ]);
-  if (!manifestRes || !signatureRes || !zipRes) {
+  if (!manifestRes || !signatureRes) {
     return { ok: false, reason: 'feed-unavailable' };
   }
 
@@ -96,6 +95,13 @@ export async function fetchModuleUpdate({ fetchFn, feedBaseUrl, modulesRootDir, 
   if (!verifyManifestSignature(manifest, signature, publicKeyPem)) {
     return { ok: false, reason: 'bad-signature' };
   }
+
+  // Already running this version: skip the zip download and leave the live
+  // staging dir alone (it may be the one being served right now).
+  if (version === currentVersion) return { ok: false, reason: 'up-to-date' };
+
+  const zipRes = await fetchAsset(fetchFn, feedBaseUrl, MODULE_BUNDLE_ZIP_FILE);
+  if (!zipRes) return { ok: false, reason: 'feed-unavailable' };
 
   const stagingDir = path.join(modulesRootDir, version);
   fs.rmSync(stagingDir, { recursive: true, force: true });

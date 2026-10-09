@@ -352,6 +352,7 @@ function createWindow() {
     }
     // Small delay to ensure renderer IPC listeners are registered
     scheduleUpdateCheck(1500);
+    pollModuleUpdateOnce();
   });
 
   // Persistent (not .once — reused on every reload) module-rollback boot tracking.
@@ -648,7 +649,7 @@ function markModuleBootSuccess() {
  * the pointer, points the renderer protocol at the staged files, and reloads
  * the window. Never loads an unverified or incompatible bundle.
  */
-ipcMain.handle('check-for-module-update', async () => {
+async function runModuleUpdateCheck() {
   const { fetchModuleUpdate } = await import('../core/lib/module-update-fetch.mjs');
   const { isCoreVersionCompatible } = await import('../core/lib/module-update-activate.mjs');
   const result = await fetchModuleUpdate({
@@ -656,6 +657,7 @@ ipcMain.handle('check-for-module-update', async () => {
     feedBaseUrl: UPDATE_WORKER_URL,
     modulesRootDir: modulesRootDir(),
     publicKeyPem: moduleUpdatePublicKeyPem(),
+    currentVersion: activeModuleDir ? path.basename(activeModuleDir) : app.getVersion(),
   });
   if (!result.ok) return { ok: false, reason: result.reason };
   if (!isCoreVersionCompatible(app.getVersion(), result.manifest)) {
@@ -674,7 +676,18 @@ ipcMain.handle('check-for-module-update', async () => {
     mainWindow.webContents.reloadIgnoringCache();
   }
   return { ok: true, version: result.version };
-});
+}
+ipcMain.handle('check-for-module-update', runModuleUpdateCheck);
+
+// Silent poll, once per launch (not per load: activation reloads the window).
+let moduleUpdatePolled = false;
+function pollModuleUpdateOnce() {
+  if (moduleUpdatePolled || !app.isPackaged) return; // dev runs must never swap in a released bundle
+  moduleUpdatePolled = true;
+  setTimeout(() => {
+    runModuleUpdateCheck().catch((e) => console.error('[module-update] poll failed:', e && e.message));
+  }, 1500);
+}
 
 /** Attempts a real, end-to-end fallback to the last known-good version via the existing downgrade/updater flow. */
 function attemptAutoRollback(targetVersion) {

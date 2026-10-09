@@ -39,11 +39,13 @@ export function collectBundleFiles(bundleDir) {
 }
 
 /**
- * @param {{packageName: string, version: string, bundleDir: string, privateKeyPem: string}} params
+ * @param {{packageName: string, version: string, bundleDir: string, privateKeyPem: string, minCoreVersion?: string, maxCoreVersion?: string}} params
  */
-export function signReleaseBundle({ packageName, version, bundleDir, privateKeyPem }) {
+export function signReleaseBundle({ packageName, version, bundleDir, privateKeyPem, minCoreVersion, maxCoreVersion }) {
   const relativeFilePaths = collectBundleFiles(bundleDir);
-  const manifest = buildModuleManifest({ packageName, version, bundleDir, relativeFilePaths });
+  const manifest = buildModuleManifest({
+    packageName, version, bundleDir, relativeFilePaths, minCoreVersion, maxCoreVersion,
+  });
   const signature = signModuleManifest(manifest, privateKeyPem);
   fs.writeFileSync(path.join(bundleDir, MODULE_MANIFEST_FILE), JSON.stringify(manifest));
   fs.writeFileSync(path.join(bundleDir, MODULE_SIGNATURE_FILE), signature);

@@ -89,6 +89,24 @@ describe('fetchModuleUpdate', () => {
     assert.deepEqual(stagedManifest, manifest);
   });
 
+  it('skips the zip download and staging when the feed version is already current', async () => {
+    const { publicKeyPem, privateKeyPem } = generateKeyPair();
+    const { manifest, signature, zipBuffer } = await buildSignedFixture({ privateKeyPem });
+    const modulesRootDir = tmpDir('module-fetch-root-');
+    const requested = [];
+    const inner = fakeFetch({ manifest: JSON.stringify(manifest), signature, zip: zipBuffer });
+    const result = await fetchModuleUpdate({
+      fetchFn: (url) => (requested.push(String(url).split('/').pop()), inner(url)),
+      feedBaseUrl: 'https://feed.example/',
+      modulesRootDir,
+      publicKeyPem,
+      currentVersion: '9.0.0',
+    });
+    assert.deepEqual(result, { ok: false, reason: 'up-to-date' });
+    assert.equal(requested.includes('module-bundle.zip'), false);
+    assert.equal(fs.existsSync(path.join(modulesRootDir, '9.0.0')), false);
+  });
+
   it('rejects a bundle whose zip content was changed after signing, and removes the staged dir', async () => {
     const { publicKeyPem, privateKeyPem } = generateKeyPair();
     const { manifest, signature } = await buildSignedFixture({ privateKeyPem });
