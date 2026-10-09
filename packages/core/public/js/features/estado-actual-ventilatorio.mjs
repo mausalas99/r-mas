@@ -185,6 +185,16 @@ function resolvePafiForHints(labHintsOn, lab, fio2) {
   return { hints: hints, pafi: pafi };
 }
 
+/**
+ * PaFi from the latest arterial gaso and FiO₂, under the same rules as the hints.
+ * @param {Record<string, unknown>} ec
+ * @param {{ kind?: string | null, pO2?: number | null } | null} lab
+ * @returns {number | null}
+ */
+export function resolvePafi(ec, lab) {
+  return resolvePafiForHints(ventilatorioLabHintsEligible(ec), lab, parseVentNum(ec.soporteFio2)).pafi;
+}
+
 function resolveSpo2Fio2Hints(labHintsOn, sat, fio2, pafi, soporte) {
   if (!labHintsOn) return [];
   var hints = [];

@@ -6,6 +6,8 @@ import { scheduleAfterPaintThenIdle } from '../../deferred-work.mjs';
 import { storage } from '../../storage.js';
 import { openPatientDatosModal } from '../../patient-datos-modal.mjs';
 import { resolveEaAbxFechaActualizacion } from '../estado-actual-meds-core.mjs';
+import { resolvePafi } from '../estado-actual-ventilatorio.mjs';
+import { resolveVentilatorioLabContext } from '../estado-actual-ventilatorio-labs.mjs';
 import { collectEaGlanceSoap } from './ea-glance-meds.mjs';
 import { toggleInterconsultId } from './interconsult-catalog.mjs';
 import { buildDashboardModel, buildLabsForDashboard } from './dashboard-model.mjs';
@@ -86,6 +88,7 @@ export function buildEaInputFromPatient(patient, opts) {
     soporteLitros: ec.soporteLitros,
     dieta: ec.dieta,
     bombaOn: bombaOn,
+    pafi: patient && patient.id ? resolvePafi(ec, resolveVentilatorioLabContext(patient.id, getLabHistory())) : null,
     soap: soap,
   };
 }
