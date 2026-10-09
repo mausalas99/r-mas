@@ -1,4 +1,4 @@
-/* global document, URL, location */
+/* global document, location */
 /**
  * E2E: interconsulta teammates over Nube. A (sala Interconsultas) types an
  * Estado actual registro, a nota evolución and an indicación dieta on a
@@ -81,6 +81,35 @@ const maxRev = (roomId) => Number(JSON.parse(d1Query(`SELECT MAX(revision) AS r 
 const noteField = (page, arg) => page.locator(`#note-form [data-oninput-args='["${arg}"]']`);
 const indField = (page, arg) => page.locator(`#indica-form [data-oninput-args='["${arg}"]']`);
 const settle = (page) => page.evaluate(() => document.activeElement?.blur?.()).then(() => page.waitForTimeout(400));
+// Every typed nota/indicaciones field (no Generar). Keys are stable labels for the report.
+const DEMO = (k) => `DEMO ${k} ${tag}`.toUpperCase();
+const NOTA_FIELDS = ['interrogatorio', 'evolucion', 'estudios', 'fecha', 'hora', 'ta', 'fr', 'fc', 'temp', 'peso', 'medico', 'profesor'];
+const IND_FIELDS = ['fecha', 'hora', 'medicos', 'dieta', 'cuidados', 'estudios', 'medicamentos', 'interconsultas'];
+async function readAllTyped(page) {
+  const out = {};
+  await goClinico(page, 'notas');
+  for (const f of NOTA_FIELDS) out[`nota.${f}`] = await noteField(page, f).inputValue().catch(() => '');
+  out['nota.dx[0]'] = await page.locator('#note-form [data-oninput="updateDx"]').first().inputValue().catch(() => '');
+  out['nota.tx[0]'] = await page.locator('#note-form [data-oninput="updateTx"]').first().inputValue().catch(() => '');
+  await goClinico(page, 'indica');
+  for (const f of IND_FIELDS) out[`ind.${f}`] = await indField(page, f).inputValue().catch(() => '');
+  out['ind.otros[0].titulo'] = await page.locator('#otros-list input[type=text]').first().inputValue().catch(() => '');
+  out['ind.otros[0].contenido'] = await page.locator('#otros-list textarea').first().inputValue().catch(() => '');
+  return out;
+}
+async function waitTypedSynced(page, expected, label) {
+  let missing = [];
+  let got = {};
+  const ok = await until(async () => {
+    got = await readAllTyped(page);
+    missing = Object.keys(expected).filter((k) => got[k] !== expected[k]);
+    return missing.length === 0;
+  }, 90000, 2000);
+  const detail = missing.length ? `missing: ${missing.map((k) => `${k} (got ${JSON.stringify(String(got[k]).slice(0, 60))})`).join('; ')}` : 'all match';
+  check(`${label}: ${Object.keys(expected).length} typed fields arrive`, ok, detail);
+  return missing;
+}
+
 
 await r.finish('Nube notes IC: estado actual + nota + indicaciones A→B (sala Interconsultas)', async () => {
   check('local Worker answers /ping', await startWorker(), BASE);
@@ -151,6 +180,34 @@ await r.finish('Nube notes IC: estado actual + nota + indicaciones A→B (sala I
   const dietaArrived = await until(async () => (await indField(B.page, 'dieta').inputValue().catch(() => '')) === DIETA_A, 60000, 1000);
   check('B: indicaciones dieta from A arrives', dietaArrived);
   await r.shot(B.page, 'b-received');
+
+  // ── Every nota + indicaciones field typed on A (no Generar) reaches B ──
+  await goClinico(A.page, 'notas');
+  const expected = {};
+  for (const f of NOTA_FIELDS) { expected[`nota.${f}`] = DEMO(`nota-${f}`); await noteField(A.page, f).fill(expected[`nota.${f}`]); }
+  expected['nota.dx[0]'] = DEMO('dx');
+  await A.page.locator('#note-form [data-oninput="updateDx"]').first().fill(expected['nota.dx[0]']);
+  expected['nota.tx[0]'] = DEMO('tx');
+  await A.page.locator('#note-form [data-oninput="updateTx"]').first().fill(expected['nota.tx[0]']);
+  await settle(A.page);
+  await goClinico(A.page, 'indica');
+  for (const f of IND_FIELDS) { expected[`ind.${f}`] = DEMO(`ind-${f}`); await indField(A.page, f).fill(expected[`ind.${f}`]); }
+  await A.page.locator('#indica-form [data-onclick="addOtro"]').click();
+  expected['ind.otros[0].titulo'] = DEMO('otro-titulo');
+  await A.page.locator('#otros-list input[type=text]').first().fill(expected['ind.otros[0].titulo']);
+  expected['ind.otros[0].contenido'] = DEMO('otro-contenido');
+  await A.page.locator('#otros-list textarea').first().fill(expected['ind.otros[0].contenido']);
+  await settle(A.page);
+  await r.shot(A.page, 'a-all-typed');
+  await waitTypedSynced(B.page, expected, 'B first typing');
+
+  // ── Second typing instance on A: edit one field again ──────────────────
+  const EDIT2 = DEMO('evolucion-2');
+  await goClinico(A.page, 'notas');
+  await noteField(A.page, 'evolucion').fill(EDIT2);
+  await settle(A.page);
+  await waitTypedSynced(B.page, { ...expected, 'nota.evolucion': EDIT2 }, 'B second typing (evolucion)');
+  await r.shot(B.page, 'b-all-typed');
 
   // ── Second, different lab set for P1 (no typing in the note form) ──────
   const before = await noteOfP1(A.page, P1.exp);
