@@ -115,6 +115,23 @@ h2{font-size:48px;letter-spacing:-1.4px;line-height:1.1}
 .release strong{color:var(--ink)}
 .release code{font-family:var(--mono);font-size:.9em}
 
+/* Empresa */
+.appicon{width:72px;height:72px;border-radius:16px}
+.card .spec{color:var(--ink3);font-size:15px}
+.ver{font-family:var(--mono);font-size:13px;color:var(--ink3);margin-top:auto}
+.pill{align-self:flex-start;font-size:13px;font-weight:600;padding:4px 12px;border-radius:999px;background:var(--bg);color:var(--ink3)}
+.pill.ok{background:oklch(.93 .04 195);color:var(--teal-d)}
+.iosapps{display:flex;flex-wrap:wrap;gap:24px}
+.iosapps div{display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;font-size:14px;color:#c9c8c3}
+.iosapps strong{color:#f2f1ed;font-size:16px;margin-top:8px}
+.tl{list-style:none;margin:0 0 0 8px;padding:0 0 0 24px;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:28px;max-width:720px}
+.tl li{position:relative;padding-left:24px}
+.tl li::before{content:"";position:absolute;left:-33px;top:5px;width:14px;height:14px;border-radius:50%;background:var(--teal)}
+.tl li.soon::before{background:#b8b8bb}
+.tl time{font-family:var(--mono);font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--ink3)}
+.tl h3{font-size:20px;margin:2px 0 4px}
+.tl p{font-size:16px;line-height:1.55;color:var(--ink2)}
+
 /* CTA + footer */
 .cta{display:flex;flex-direction:column;align-items:center;gap:24px;text-align:center;padding-top:112px;padding-bottom:96px}
 footer{border-top:1px solid var(--line)}
