@@ -31,7 +31,10 @@ export function subkeyB64FromLocationHash(hash) {
  * Decrypts only what this subkey covers: clinicalOps and each entry's
  * monitoreo. Everything else in an entry (identity fields) is already
  * plaintext from the Worker. A legacy pre-E2EE room's fields simply aren't
- * envelopes, so decryptValue passes them through unchanged.
+ * envelopes, so decryptValue passes them through unchanged. A monitoreo
+ * still locked with the room DEK (pushed before 8.5.1) can't be opened here:
+ * it stays an envelope, so that patient shows no vitals and a new reading
+ * for it fails instead of overwriting the history.
  * @param {CryptoKey} subkey
  * @param {{ entries?: object[], clinicalOps?: unknown }} relayBoard
  */
@@ -40,7 +43,11 @@ export async function decryptInternoRelayBoard(subkey, relayBoard) {
   const entries = await Promise.all(
     (relayBoard?.entries || []).map(async (entry) => {
       if (!isEncryptedEnvelope(entry?.monitoreo)) return entry;
-      return { ...entry, monitoreo: await decryptValue(subkey, entry.monitoreo) };
+      try {
+        return { ...entry, monitoreo: await decryptValue(subkey, entry.monitoreo) };
+      } catch {
+        return entry;
+      }
     })
   );
   return { clinicalOps, entries };

@@ -36,7 +36,7 @@ export function generateWrapSalt() {
 }
 
 /**
- * Derive an AES-GCM wrap key from the user's Nube password + a per-room salt.
+ * Derive an AES-GCM wrap key from the room join code + a per-room salt.
  * @param {string} password
  * @param {string} saltB64
  * @returns {Promise<CryptoKey>}

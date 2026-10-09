@@ -25,7 +25,7 @@
  * existed before registro/diagnosis locking shipped gets its stored plaintext swept
  * into ciphertext the same way older note/indicaciones plaintext already was.
  */
-import { encryptValue, decryptValue, isEncryptedEnvelope, fingerprintValue } from './crypto.mjs';
+import { encryptValue, decryptValue, isEncryptedEnvelope, fingerprintValue, deriveInternoSubkey } from './crypto.mjs';
 import { logMonitoreoOp } from './pull-apply-state.mjs';
 
 const ENTRY_CONTENT_FIELDS = [
@@ -89,6 +89,45 @@ export function needsReencryption(path, value) {
   if (isEncryptedContentPath(path)) return !isEncryptedEnvelope(value);
   if (isPatientIdentityOpPath(path)) return hasPlaintextLockedField(value);
   return false;
+}
+
+/**
+ * clinicalOps and entries/{id}/monitoreo are what the Interno phone reads and
+ * writes, and the phone holds only the Interno subkey (crypto.mjs
+ * deriveInternoSubkey), never the room DEK. So these two paths are locked with
+ * the subkey, not the DEK.
+ * @param {string} path
+ */
+function isInternoSubkeyPath(path) {
+  const p = String(path || '');
+  return p === 'clinicalOps' || /^entries\/[^/]+\/monitoreo$/.test(p);
+}
+
+/** @type {WeakMap<CryptoKey, Promise<CryptoKey>>} */
+const internoSubkeyByDek = new WeakMap();
+
+/** @param {CryptoKey} dek */
+function internoSubkeyFor(dek) {
+  let subkey = internoSubkeyByDek.get(dek);
+  if (!subkey) {
+    subkey = deriveInternoSubkey(dek);
+    internoSubkeyByDek.set(dek, subkey);
+  }
+  return subkey;
+}
+
+/**
+ * Subkey first; then the DEK, for values pushed before 8.5.1 locked these
+ * paths with the DEK. Such a value moves to the subkey on its next push.
+ * @param {CryptoKey|null} dek @param {unknown} value
+ */
+async function maybeDecryptInterno(dek, value) {
+  if (!dek || !isEncryptedEnvelope(value)) return value;
+  try {
+    return await decryptValue(await internoSubkeyFor(dek), value);
+  } catch {
+    return maybeDecrypt(dek, value);
+  }
 }
 
 /** @param {CryptoKey|null} dek @param {unknown} value */
@@ -170,7 +209,8 @@ export async function encryptOpsForPush(dek, ops) {
       const path = /** @type {any} */ (op).path;
       const value = /** @type {any} */ (op).value;
       if (isEncryptedContentPath(path)) {
-        return { ...op, value: await encryptValue(dek, value) };
+        const key = isInternoSubkeyPath(path) ? await internoSubkeyFor(dek) : dek;
+        return { ...op, value: await encryptValue(key, value) };
       }
       if (isPatientIdentityOpPath(path)) {
         return { ...op, value: await encryptPatientLockedFieldsValue(dek, value) };
@@ -196,7 +236,8 @@ export async function decryptOpsFromPull(dek, ops) {
       const path = /** @type {any} */ (op).path;
       const value = /** @type {any} */ (op).value;
       if (isEncryptedEnvelope(value)) {
-        const out = { ...op, value: await maybeDecrypt(dek, value) };
+        const decrypt = isInternoSubkeyPath(path) ? maybeDecryptInterno : maybeDecrypt;
+        const out = { ...op, value: await decrypt(dek, value) };
         if (/^entries\/[^/]+\/monitoreo$/.test(String(path))) logMonitoreoOp('pull-decrypt', out);
         return out;
       }
@@ -314,7 +355,8 @@ async function decryptEntryContentFields(dek, entry) {
   if (!entry || typeof entry !== 'object') return;
   await Promise.all(
     ENTRY_CONTENT_FIELDS.map(async (field) => {
-      if (entry[field] !== undefined) entry[field] = await maybeDecrypt(dek, entry[field]);
+      if (entry[field] === undefined) return;
+      entry[field] = await (field === 'monitoreo' ? maybeDecryptInterno : maybeDecrypt)(dek, entry[field]);
     })
   );
   // registro can land at the entry root (an `entries/{id}` admit-stub merge) or
@@ -370,7 +412,7 @@ export async function decryptRoomStateFromPull(dek, state) {
   if (!state || typeof state !== 'object') return state;
 
   const clinicalOpsDone = state.clinicalOps
-    ? maybeDecrypt(dek, state.clinicalOps).then((v) => {
+    ? maybeDecryptInterno(dek, state.clinicalOps).then((v) => {
         state.clinicalOps = v;
       })
     : Promise.resolve();
