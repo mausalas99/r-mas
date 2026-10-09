@@ -109,6 +109,8 @@ export function createRun(name, { hints: runHints = false } = {}) {
       globalThis.localStorage.setItem('rplus-sala-view', 'bar');
       // The full-record side panel opens by itself for a patient with no vitals; specs keep it closed.
       globalThis.localStorage.setItem('rpc-registro-autoopen', 'off');
+      // Specs click tabs a lot; the «¿Muchos clics entre pestañas?» tip would cover the lab bar.
+      globalThis.localStorage.setItem('rpc-keyboard-tab-shortcuts-adopted', '1');
       if (hintIds) globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(hintIds));
       // The 8.4.5 choice modal asks once; specs answer it up front (hints on only when a spec wants them).
       globalThis.localStorage.setItem('rpc-feature-hints-enabled', hintIds ? '0' : '1');
