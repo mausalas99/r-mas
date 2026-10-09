@@ -158,4 +158,6 @@ export default [
   scriptsBlock,
   scriptsEsm,
   scriptsCommonjs,
+  // ESLint 10 added these to `recommended`. Off until the flagged code is cleaned up on purpose.
+  { rules: { 'no-useless-assignment': 'off', 'preserve-caught-error': 'off' } },
 ];

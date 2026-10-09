@@ -7,6 +7,7 @@
  * @param {import('electron-builder').BeforePackContext} context
  */
 const { spawnSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 
 /** @param {unknown} raw */
@@ -31,6 +32,16 @@ exports.default = async function beforePack(context) {
   const platform = String(context.electronPlatformName || process.platform).trim();
   const arch = normalizePackArch(context.arch);
   const label = `${platform}-${arch}`;
+  // npm hoists workspace deps, so ask Node where the package really lives.
+  const bundled = path.join(
+    path.dirname(require.resolve('better-sqlite3-multiple-ciphers/package.json')),
+    'prebuilds',
+    `${label}.node`
+  );
+  if (fs.existsSync(bundled)) {
+    console.log(`[beforePack] SQLCipher N-API prebuild bundled for ${label} — no fetch needed`);
+    return;
+  }
   console.log(`[beforePack] Ensuring SQLCipher Electron binary for ${label}`);
 
   const r = spawnSync(process.execPath, ['scripts/fetch-sqlite-electron.mjs'], {

@@ -7,7 +7,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ARGON2_VERSION = '2.0.2';
+import { createRequire } from 'node:module';
+
+// Platform binary must match the installed @node-rs/argon2 JS wrapper exactly.
+const ARGON2_VERSION = createRequire(import.meta.url)('@node-rs/argon2/package.json').version;
 const PACKAGE_NAME = '@node-rs/argon2-darwin-x64';
 const TARBALL_URL = `https://registry.npmjs.org/${PACKAGE_NAME}/-/${PACKAGE_NAME.split('/').pop()}-${ARGON2_VERSION}.tgz`;
 const NODE_FILE = 'argon2.darwin-x64.node';

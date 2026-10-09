@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeNativeBinary } from './lib/native-binary-format.mjs';
 import {
+  bundledSqlcipherPrebuild,
   electronSqlcipherLoads,
   ensureElectronRuntime,
   rememberElectronBinary,
@@ -42,6 +43,11 @@ function failOrWarn(msg) {
     process.exit(1);
   }
   console.warn(msg);
+  process.exit(0);
+}
+
+if (bundledSqlcipherPrebuild(root) && electronSqlcipherLoads(root)) {
+  console.log('[rebuild-native-db] Bundled N-API prebuild loads under Electron — nothing to build');
   process.exit(0);
 }
 

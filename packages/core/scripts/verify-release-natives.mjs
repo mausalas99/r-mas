@@ -20,8 +20,15 @@ const ARGON2_NODES = [
   'node_modules/@node-rs/argon2/argon2.win32-x64-msvc.node',
 ];
 
-const SQLCIPHER_REL =
+// bsmc >= 13 bundles N-API prebuilds for every target; older versions use one build/Release binary.
+const SQLCIPHER_PREBUILDS = ['darwin-arm64', 'darwin-x64', 'win32-x64'].map(
+  (t) => `node_modules/better-sqlite3-multiple-ciphers/prebuilds/${t}.node`
+);
+const SQLCIPHER_HOST_PREBUILD = `node_modules/better-sqlite3-multiple-ciphers/prebuilds/${process.platform}-${process.arch}.node`;
+const SQLCIPHER_LEGACY_REL =
   'node_modules/better-sqlite3-multiple-ciphers/build/Release/better_sqlite3.node';
+const bundled = fs.existsSync(path.join(root, SQLCIPHER_HOST_PREBUILD));
+const SQLCIPHER_REL = bundled ? SQLCIPHER_HOST_PREBUILD : SQLCIPHER_LEGACY_REL;
 
 function checkFile(rel) {
   const abs = path.join(root, rel);
@@ -65,8 +72,10 @@ function main() {
     const r = checkFile(rel);
     if (!r.ok) missing.push(r);
   }
-  const sql = checkFile(SQLCIPHER_REL);
-  if (!sql.ok) missing.push(sql);
+  for (const rel of bundled ? SQLCIPHER_PREBUILDS : [SQLCIPHER_REL]) {
+    const r = checkFile(rel);
+    if (!r.ok) missing.push(r);
+  }
 
   const sqlAbs = path.join(root, SQLCIPHER_REL);
   if (process.platform === 'darwin') {

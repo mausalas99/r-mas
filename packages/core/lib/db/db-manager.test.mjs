@@ -9,6 +9,10 @@ import { ensureClinicalUser, claimUsername } from './clinical-access-users.mjs';
 import { createTeam } from './clinical-access-teams-core.mjs';
 import { assignPatientToTeam } from './clinical-access-assignments.mjs';
 import { archiveRotationAndTeams } from './clinical-access-rotation.mjs';
+import { loadNativeDatabase } from './native-load.mjs';
+
+const KEY_A = 'ab'.repeat(32);
+const KEY_B = 'cd'.repeat(32);
 
 const mockSafe = {
   isEncryptionAvailable: () => true,
@@ -206,4 +210,35 @@ describe('db-manager', () => {
     mgr.lock();
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
+});
+
+// Guards the on-disk format: a bsmc/Electron bump must not change the default cipher,
+// or every existing encrypted patient DB stops unlocking. Synthetic data only.
+it('default cipher, key, rekey and reopen round-trip', () => {
+  const Database = loadNativeDatabase();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-cipher-'));
+  const file = path.join(dir, 'x.db');
+  const open = (key) => {
+    const db = new Database(file);
+    db.pragma(`key = "x'${key}'"`);
+    return db;
+  };
+  try {
+    let db = open(KEY_A);
+    assert.equal(db.pragma('cipher', { simple: true }), 'chacha20');
+    assert.equal(db.pragma('kdf_iter', { simple: true }), '64007');
+    db.exec("create table p(n text); insert into p values ('paciente sintético')");
+    db.pragma(`rekey = "x'${KEY_B}'"`);
+    db.close();
+
+    db = open(KEY_B);
+    assert.equal(db.prepare('select n from p').get().n, 'paciente sintético');
+    db.close();
+
+    db = open(KEY_A);
+    assert.throws(() => db.prepare('select n from p').get(), /not a database/i);
+    db.close();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

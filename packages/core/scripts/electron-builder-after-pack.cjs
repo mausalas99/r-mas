@@ -36,6 +36,24 @@ function pruneForeignArchArgon2(appOutDir, targetArch) {
   }
 }
 
+// bsmc >= 13 bundles N-API prebuilds for every OS/arch. Keep only this Mac target's
+// binary: foreign Mach-O/ELF/PE files bloat the app and can trip notarization.
+function pruneForeignSqlcipherPrebuilds(appOutDir, targetArch) {
+  const appDir = fs.readdirSync(appOutDir).find((f) => f.endsWith('.app'));
+  if (!appDir) return;
+  const dir = path.join(
+    appOutDir,
+    appDir,
+    'Contents/Resources/app.asar.unpacked/node_modules/better-sqlite3-multiple-ciphers/prebuilds'
+  );
+  if (!fs.existsSync(dir)) return;
+  for (const file of fs.readdirSync(dir)) {
+    if (file === `darwin-${targetArch}.node`) continue;
+    fs.unlinkSync(path.join(dir, file));
+    console.log(`[afterPack] Removed foreign SQLCipher prebuild: ${file}`);
+  }
+}
+
 /** @param {import('electron-builder').AfterPackContext} context */
 exports.default = async function afterPack(context) {
   const root = path.join(__dirname, '..');
@@ -43,6 +61,7 @@ exports.default = async function afterPack(context) {
   if (context.electronPlatformName === 'darwin') {
     const targetArch = PACK_ARCH_NAMES[context.arch] ?? process.arch;
     pruneForeignArchArgon2(context.appOutDir, targetArch);
+    pruneForeignSqlcipherPrebuilds(context.appOutDir, targetArch);
   }
 
   console.log('[afterPack] Restoring host-arch SQLCipher binary for dev/tests');

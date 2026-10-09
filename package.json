@@ -101,30 +101,30 @@
   "author": "Mauricio Salas",
   "license": "ISC",
   "dependencies": {
-    "@node-rs/argon2": "2.0.2",
-    "better-sqlite3-multiple-ciphers": "12.10.0",
+    "@node-rs/argon2": "2.2.1",
+    "better-sqlite3-multiple-ciphers": "13.0.3",
     "electron-updater": "^6.8.3",
     "jszip": "^3.10.1",
-    "motion": "^12.43.0",
+    "motion": "^13.4.6",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
     "qrcode-generator": "^2.0.4"
   },
   "devDependencies": {
     "@electron/rebuild": "4.2.0",
-    "@eslint/js": "^9.39.1",
+    "@eslint/js": "^10.0.1",
     "@typesafe-ai/sdk": "^0.6.0",
     "axe-core": "^4.13.0",
     "chart.js": "^4.5.1",
-    "dependency-cruiser": "^16.10.4",
-    "electron": "^41.2.0",
+    "dependency-cruiser": "^18.4.0",
+    "electron": "^44.4.5",
     "electron-builder": "^26.8.1",
-    "esbuild": "^0.25.12",
-    "eslint": "^9.39.1",
-    "eslint-plugin-sonarjs": "4.2.1",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.11.0",
+    "eslint-plugin-sonarjs": "4.2.2",
     "fast-check": "^4.10.2",
-    "globals": "^16.2.0",
-    "jscpd": "^4.0.5",
+    "globals": "^17.12.0",
+    "jscpd": "^5.3.3",
     "playwright": "^1.62.1",
     "ts-api-utils": "^2.5.0"
   },
@@ -223,8 +223,8 @@
     ]
   },
   "allowScripts": {
-    "better-sqlite3-multiple-ciphers@12.10.0": true,
-    "electron@41.10.7": true
+    "better-sqlite3-multiple-ciphers@13.0.3": true,
+    "electron@44.4.5": true
   },
   "overrides": {
     "typescript": "6.0.3"

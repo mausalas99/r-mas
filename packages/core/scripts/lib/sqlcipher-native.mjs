@@ -88,6 +88,19 @@ export function ensureElectronRuntime(root = repoRoot) {
   return electronRuntimeReady(root);
 }
 
+/**
+ * bsmc >= 13 ships N-API binaries inside the package (prebuilds/<platform>-<arch>.node).
+ * They load under any Node/Electron ABI, so no per-Electron fetch or rebuild is needed.
+ * @param {string} [root]
+ * @returns {string | null}
+ */
+export function bundledSqlcipherPrebuild(root = repoRoot, platform = process.platform, arch = process.arch) {
+  const abs = path.join(
+    modulesRoot(root), 'node_modules', 'better-sqlite3-multiple-ciphers', 'prebuilds', `${platform}-${arch}.node`
+  );
+  return fs.existsSync(abs) ? abs : null;
+}
+
 /** @param {string} [root] */
 export function sqlcipherDestAbs(root = repoRoot) {
   return path.join(root, SQLCIPHER_NODE_REL);
