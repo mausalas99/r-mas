@@ -235,7 +235,7 @@ body > .tend-drag-hovercard {
 .tend-detail-readings.is-all .tend-rd-row.tend-rd-extra { display: grid; }
 .tend-rd-more {
   margin-top: 4px; height: 32px; padding: 0 4px; border: 0; background: transparent; cursor: pointer;
-  font: inherit; font-size: 13px; font-weight: 600; color: oklch(0.42 0.09 195);
+  font: inherit; font-size: 13px; font-weight: 600; color: var(--color-accent-hover);
 }
 .tend-rd-more:hover { text-decoration: underline; }
 .tend-detail-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
@@ -291,7 +291,7 @@ body > .tend-drag-hovercard {
   gap: 8px; height: 34px; padding: 0 12px 0 10px; border-radius: 999px; border: 1px solid var(--border);
   background: var(--surface); font-size: 13px; font-weight: 600;
 }
-.tend-pane .tend-group-legend-check { width: 16px; height: 16px; margin: 0; accent-color: oklch(0.42 0.09 195); }
+.tend-pane .tend-group-legend-check { width: 16px; height: 16px; margin: 0; accent-color: var(--color-accent-hover); }
 .tend-pane .tend-group-legend-color { width: 14px; height: 14px; min-width: 14px; border: 0; border-radius: 4px; padding: 0; overflow: hidden; background: none; }
 .tend-pane .tend-group-legend-color::-webkit-color-swatch-wrapper { padding: 0; }
 .tend-pane .tend-group-legend-color::-webkit-color-swatch { border: 0; border-radius: 4px; }
@@ -318,7 +318,7 @@ body > .tend-drag-hovercard {
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-height: 34px; margin-top: 8px; padding-top: 10px;
   border-top: 1px solid var(--border); font-size: 12px; color: var(--text);
 }
-.tend-readout-date { font-weight: 700; font-variant-numeric: tabular-nums; color: oklch(0.42 0.09 195); margin-right: 4px; }
+.tend-readout-date { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--color-accent-hover); margin-right: 4px; }
 .tend-readout-chip {
   display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
   background: color-mix(in oklab, var(--text) 6%, var(--surface));
@@ -351,10 +351,10 @@ body > .tend-drag-hovercard {
   border: 1.5px solid color-mix(in oklab, var(--text) 38%, transparent); border-radius: 5px; background: var(--surface); cursor: pointer;
   transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
 }
-.tend-tick:checked { background: oklch(0.42 0.09 195); border-color: oklch(0.42 0.09 195); }
+.tend-tick:checked { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
 .tend-tick::after {
   content: ''; position: absolute; left: 5px; top: 1px; width: 4px; height: 9px; box-sizing: content-box;
-  border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); opacity: 0;
+  border: solid var(--color-on-accent); border-width: 0 2px 2px 0; transform: rotate(45deg); opacity: 0;
 }
 .tend-tick:checked::after { opacity: 1; animation: tend-tick-draw 0.3s ease-out; }
 .tend-tick:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
@@ -383,14 +383,14 @@ body > .tend-drag-hovercard {
 .tend-pane .tend-group-range-row .tend-head-spacer { flex: 1 1 0; }
 .tend-pane #tend-dynamic-table-range-row { margin-top: 18px; }
 .tend-group-daymode-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--text); cursor: pointer; }
-.tend-pill--solid { background: oklch(0.42 0.09 195); border-color: transparent; color: #fff; }
-.tend-pill--solid:hover { background: oklch(0.38 0.09 195); }
+.tend-pill--solid { background: var(--color-accent-hover); border-color: transparent; color: var(--color-on-accent); }
+.tend-pill--solid:hover { background: color-mix(in oklab, var(--color-accent-hover) 88%, #000); }
 .tend-pane .tend-group-table-actions .tend-pill { height: 38px; }
 .tend-analyte-picker-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; position: relative; }
 .tend-pane .tend-analyte-picker-add-btn { height: 34px; padding: 0 14px; font-size: 13px; }
 .tend-pivot-chip {
   display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 6px 0 14px; border-radius: 999px;
-  background: color-mix(in oklab, oklch(0.51 0.09 195) 14%, var(--surface)); font-size: 13px; font-weight: 600; color: var(--text);
+  background: color-mix(in oklab, var(--color-accent) 14%, var(--surface)); font-size: 13px; font-weight: 600; color: var(--text);
 }
 .tend-pivot-chip-x {
   width: 24px; height: 24px; padding: 0; border: 0; border-radius: 999px; background: transparent; color: var(--text); cursor: pointer;
@@ -403,7 +403,7 @@ body > .tend-drag-hovercard {
 .tend-pane #tend-dynamic-table-wrap .cultivos-table-wrap { margin-top: 14px; border: 1px solid var(--border); border-radius: 12px; overflow: auto; }
 .tend-pane .tend-group-table { border-collapse: collapse; width: 100%; }
 .tend-pane .tend-group-table thead th {
-  background: color-mix(in oklab, oklch(0.51 0.09 195) 14%, var(--surface)); font-size: 12.5px; font-weight: 650; color: var(--text);
+  background: color-mix(in oklab, var(--color-accent) 14%, var(--surface)); font-size: 12.5px; font-weight: 650; color: var(--text);
   padding: 8px 10px; text-align: left; vertical-align: bottom;
 }
 .tend-pane .tend-group-table td { padding: 8px 10px; font-size: 13.5px; border-top: 1px solid color-mix(in oklab, var(--text) 8%, transparent); }
