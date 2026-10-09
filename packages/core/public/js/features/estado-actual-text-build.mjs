@@ -170,6 +170,8 @@ export function resolveFebrilLabel(v) {
 }
 
 /**
+ * Always ESTABLE by design (8.1.6): the clinician edits the HD verdict by hand.
+ * See docs/core/18-knowledge-capture.md before deriving it from vitals.
  * @param {Record<string, unknown>} v
  * @param {Record<string, unknown>} ec
  */
