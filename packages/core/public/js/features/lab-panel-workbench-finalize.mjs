@@ -6,6 +6,9 @@ import {
 } from './lab-panel-history.mjs';
 import { findDisplayLabHistorySetId } from './lab-panel-history-dedupe.mjs';
 import { storeBulkLabBlocks, pickDisplayLabResult } from './lab-panel-workbench-store.mjs';
+import { getNotes, persistClinicalState } from '../app-state.mjs';
+import { stampDocUpdatedAt } from '../patient-merge.mjs';
+import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 
 export function storeProcessableBulkBlocks(blocks, processable, opts) {
   if (!processable.length) {
@@ -18,6 +21,15 @@ export function storeProcessableBulkBlocks(blocks, processable, opts) {
     };
   }
   var storeSummary = storeBulkLabBlocks(blocks, processable, opts);
+  // User paste only: stamp each touched note so Nube pushes the regenerated estudios.
+  var pids = Object.keys(storeSummary.storedByPatient || {});
+  pids.forEach(function (pid) {
+    if (getNotes()[pid]) stampDocUpdatedAt(getNotes()[pid]);
+  });
+  if (pids.length) {
+    persistClinicalState();
+    scheduleCloudSyncPush();
+  }
   if (typeof rt.addAuditEntry === 'function') {
     rt.addAuditEntry(
       'lab-bulk-paste',
