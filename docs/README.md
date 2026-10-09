@@ -4,6 +4,7 @@
 
 | Audience | Entry |
 |----------|-------|
+| **Learning the codebase** | [wiki/README.md](./wiki/README.md) — guided, learner-style tour |
 | **Developers** | [../README.md](../README.md) (install & releases) → [core/04-directory-structure.md](./core/04-directory-structure.md) |
 | **Contributors** | [../CONTRIBUTING.md](../CONTRIBUTING.md) |
 | **Product / strategy** | [core/01-vision-north-star.md](./core/01-vision-north-star.md) |
@@ -20,6 +21,7 @@ docs/
 ├── logic/          # Parsers & engines
 ├── database/       # SQLCipher map
 ├── api/            # HTTP + IPC API reference
+├── wiki/           # Learner-oriented guided tour (start at wiki/README.md)
 └── logs/           # profiling / session notes
 ```
 

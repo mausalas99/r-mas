@@ -7,7 +7,17 @@ description: "Master documentation hub for R+ — start here for strategy, archi
 
 # R+ Documentation Hub
 
-**Agent entry point:** Read this file, then [01-vision-north-star.md](./01-vision-north-star.md) for product trade-offs. For code locations, see [21-code-map.md](./21-code-map.md) (tracked copy of the Cursor project map).
+**Agent entry point:** Read this file, then [01-vision-north-star.md](./01-vision-north-star.md) for product trade-offs.
+
+**Knowledge base:** [`docs/wiki/`](../wiki/README.md) is the code-verified knowledge base: how R+ works, plus three maps.
+
+| Map | Answers | Open it when |
+|---|---|---|
+| [UI map](../wiki/ui-map/00-index.md) | what is on each screen and which function each control calls | you start from something you see in the app |
+| [Feature map](../wiki/04-feature-map.md) | which feature domains feed which, the screens they live on, the e2e scenarios that cover them | **before changing a domain**: its impact checklist lists what else moves and what to re-run |
+| [Codebase map](../wiki/05-codebase-map.md) | which code areas import which, hub files, rules written twice | you change a shared file or `lib/` |
+
+Known problems and docs that disagree with the code: [wiki/13](../wiki/13-open-questions-and-doc-drift.md). Where this hub's older docs disagree with the wiki, the wiki was checked against code more recently.
 
 ## Product principles (summary)
 
@@ -47,7 +57,7 @@ flowchart LR
 | 19 | [agent-graph-memory](./19-agent-graph-memory.md) | stable | Cached extraction vs subgraph reasoning (agent memory, not product) |
 | 20 | [claude-code-handoff](./20-claude-code-handoff.md) | in-progress | Resume point for Claude Code (2026-08-15 update-feed) |
 | 21 | [code-map](./21-code-map.md) | stable | Tracked agent code map (paths, domains, changelog) |
-| 23 | [ui-map](./ui-map/00-index.md) | draft | App-wide screen and flow map (4 files) |
+| 23 | [ui-map](../wiki/ui-map/00-index.md) | draft | App-wide screen and flow map (4 files), now part of the wiki knowledge base |
 
 *Slots 05, 07, 09–14: placeholders created (see directory).*
 
@@ -62,11 +72,12 @@ flowchart LR
 
 ## Read order
 
-1. [20-claude-code-handoff.md](./20-claude-code-handoff.md) — *resume in Claude Code (update-feed Worker)*
-2. [01-vision-north-star.md](./01-vision-north-star.md) — *should we build this?*
-3. [04-directory-structure.md](./04-directory-structure.md) — *where is the code / where do I put new files?*
-4. [19-agent-graph-memory.md](./19-agent-graph-memory.md) — *agent memory economics (not a product feature)*
-5. Relevant category index if touching a large feature
+1. [../wiki/README.md](../wiki/README.md) — *how the app works; the feature map's impact checklist before any change*
+2. [20-claude-code-handoff.md](./20-claude-code-handoff.md) — *resume in Claude Code (update-feed Worker)*
+3. [01-vision-north-star.md](./01-vision-north-star.md) — *should we build this?*
+4. [04-directory-structure.md](./04-directory-structure.md) — *where is the code / where do I put new files?*
+5. [19-agent-graph-memory.md](./19-agent-graph-memory.md) — *agent memory economics (not a product feature)*
+6. Relevant category index if touching a large feature
 
 ## User-facing docs
 
