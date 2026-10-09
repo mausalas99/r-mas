@@ -9,6 +9,72 @@ Live marks (checked 2026-10-05 on the running app, light theme, Sala): `✔ live
 
 ## 0. Full navigation tree
 
+### The short version
+
+R+ is one window with three parts: the **top bar** across the top, a **left side** (patient cards, a bed rail, or a patient list), and the **main area**. You move around on three levels, from broad to narrow:
+
+| Level | Choices | What it changes | How you switch |
+|---|---|---|---|
+| **1. Mode** | Sala · Interconsulta (IC) · Guardia | the whole layout: what's on the left, what the main area shows, which tabs exist | mode switch near the right of the top bar |
+| **2. Area** | Paciente · Laboratorio · Manejo · Agenda | which big section of the patient you're in | the area pill (top left), or ⌘1 – ⌘4 |
+| **3. Sub-tab** | e.g. Resumen, Estado actual, Labs, Tendencias… | the screen inside the area | the tab row next to the area pill; pressing the area's ⌘-number again cycles through them |
+
+Guardia skips levels 2 and 3. It replaces everything below the top bar with one census board.
+
+<!-- MAP:navbar -->
+
+### The top bar, left to right
+
+| # | Control | What it does |
+|---|---|---|
+| 1 | **R+** | opens Mi Perfil |
+| 2 | **Area pill** (shows the current area, e.g. "Paciente") | menu: Paciente 1 · Laboratorio 2 · Manejo 3 · Agenda 4. Clicking "Paciente" in Sala goes back to the patient cards |
+| 3 | **Sub-tab row** | the screens of the current area (table below) |
+| 4 | **Shortcut icons** | Importar desde Drive (Estado actual only) · Datos del paciente · Ir a… search (⌘K) |
+| 5 | **Censo** | census preview and PDF (Sala only) |
+| 6 | **Mode switch** | shows only the current mode plus "⋯"; click to pick Sala · IC · Guardia |
+| 7 | **Account & app** | Conexión (⇄, Nube) · Mi Perfil · Ayuda (?) · Ajustes (⚙) · Tema (☀) |
+
+### What each mode changes
+
+<!-- MAP:navmodes -->
+
+| | **Sala** | **Interconsulta (IC)** | **Guardia** |
+|---|---|---|---|
+| **Home screen** (no patient open) | card grid «Pacientes · N en sala» with Archivados, Barra lateral, Actualizar labs | «Interconsultas» board: Guardia · Equipo Interconsultas · Activo · Post-guardia · Por asignar | census board «CENSO · n PACIENTES» |
+| **Left side** | nothing on the cards; a bed rail «Camas» once a patient is open («‹ Camas» or Esc goes back) | nothing on the board; a rail «Tablero» once a patient is open | nothing |
+| **Area pill + sub-tabs** | yes | yes | no |
+| **Censo button** | yes | no | no |
+
+### Sub-tabs in each area
+
+| Area (⌘) | In Sala | In IC |
+|---|---|---|
+| **Paciente** (⌘1) | Resumen · Estado actual · Eventualidades · Medicamentos · Listado · VPO · Pendientes | Resumen · Estado · Nota · Indic. · VPO · Pendientes (+ a Datos del paciente icon) |
+| **Laboratorio** (⌘2) | Labs · Tendencias · Cultivos | same |
+| **Manejo** (⌘3) | Manejo actual · Perfil histórico | same |
+| **Agenda** (⌘4) | none (one weekly board) | same |
+
+**Nota** and **Indicaciones** exist **only in IC**; in Sala they can't be reached at all. In Sala, Word documents come from **Listado** or «Salida rápida». **Medicamentos** is a Paciente sub-tab in Sala, but in IC it moves to Manejo. Details are in [02 § 0.3](02-patient-workspace.md#03-two-app-modes-change-the-paciente-tab) and the IC live check at the end of [02](02-patient-workspace.md).
+
+### The full patient list (when it's shown)
+
+The full list replaces the rail when you choose «Barra lateral».
+
+
+- **Header:** auto-hide, «+ Agregar»
+- **Tools:** search «Buscar», filters, a cards-view button, multi-select
+- **Groups:** Fijados (pinned) → Pacientes → Archivados
+- **Multi-select bar:** Eliminar · Cancelar
+
+### In the code but hidden in this layout
+
+Date chip, context text, Estado meta, Atajos button, Aprender button, Tareas pill. They exist in the DOM, but the current top bar doesn't show them.
+
+### Detailed tree (reference)
+
+The same information as one tree, as first mapped and corrected against the live app:
+
 ```
 R+ window                                                  ✘ fixed (live layout)
 ├─ Top bar = body > header (top-bar.mjs; html.rpc-topbar)
