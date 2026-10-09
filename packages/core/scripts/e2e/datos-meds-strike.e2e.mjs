@@ -80,7 +80,7 @@ await r.finish('Datos modal: cross out and restore medications', async () => {
   const again = await r.launch({ lanPort: 3799 });
   page = again.page;
   list = page.locator('#patient-censo-meds');
-  await page.locator('#apptab-lab').waitFor({ state: 'visible', timeout: 30000 });
+  await page.locator('.topbar-area-btn').waitFor({ state: 'visible', timeout: 30000 });
   await dismissLearnHub(page);
   await openPatient(page, P);
   await openModal();

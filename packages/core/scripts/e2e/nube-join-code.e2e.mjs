@@ -122,10 +122,13 @@ await r.finish('Nube: join by code pulls what happened while away', async () => 
   await until(async () => /--(idle|live)\b/.test((await B.page.locator('#btn-header-team-sync').getAttribute('class')) || ''), 20000);
   await B.page.waitForTimeout(2000);
   const A2 = await launchDevice('a', 3791);
-  await A2.page.locator('#apptab-lab').waitFor({ state: 'visible', timeout: 30000 });
+  // Ready = the top bar's area pill. #apptab-lab sits in the tab list the top bar
+  // hides; it shows only for a moment during boot, so waiting on it races.
+  await A2.page.locator('.topbar-area-btn').waitFor({ state: 'visible', timeout: 30000 });
   await dismissLearnHub(A2.page);
   await goArea(A2.page, 'lab');
-  check('A restarted: P3, added on B while A was closed, arrives', await until(() => patientVisible(A2.page, P3), 30000));
+  check('A restarted: P3, added on B while A was closed, arrives', await until(() => patientVisible(A2.page, P3), 30000),
+    await A2.page.locator('.p-name').evaluateAll((els) => els.map((e) => [e.getAttribute('title'), e.getBoundingClientRect().width > 0])));
   await r.shot(A2.page, 'a-after-restart');
 
   check('no uncaught page errors', !aErrors.length && !A2.pageErrors.length && !B.pageErrors.length, [...aErrors, ...A2.pageErrors, ...B.pageErrors].slice(0, 5));
