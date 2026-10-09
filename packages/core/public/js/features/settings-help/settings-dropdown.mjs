@@ -330,7 +330,7 @@ export function syncSettingsStatusCards() {
     el.hidden = !db;
   });
   var secTitle = document.querySelector('[data-settings-security-title]');
-  if (secTitle) secTitle.textContent = db ? 'Datos cifrados en este equipo' : 'Bloqueo de este equipo';
+  if (secTitle) secTitle.textContent = db ? 'Datos guardados en este equipo' : 'Bloqueo de este equipo';
   syncBackupStatusCard();
   syncSecurityStatusCard();
   syncAppStatusCard();

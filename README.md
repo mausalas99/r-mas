@@ -237,7 +237,7 @@ Firmar y notarizar **no acelera** el build: suele tardar más que un build sin n
 
 ## Architecture
 
-R+ is an Electron desktop app with SQLCipher clinical store, **Nube** turn sync (all clinical wards via `cloud/sync-worker`), and an esbuild-bundled renderer. LAN LiveSync and the ward HTTP host (`server.js` :3738) are gone. Offline = local SQLCipher only. Interno MIP, Equipos, and R+ Móvil run on Cloudflare. New UI work belongs in `public/js/features/*.mjs` — run `npm run build:ui` after edits; never hand-edit `public/js/chunks/` or `app.bundle.mjs`.
+R+ is an Electron desktop app with a local SQLite clinical store (SQLCipher driver, but no key since 8.4.2 — rely on disk encryption), **Nube** turn sync (all clinical wards via `cloud/sync-worker`), and an esbuild-bundled renderer. LAN LiveSync and the ward HTTP host (`server.js` :3738) are gone. Offline = local DB only. Interno MIP, Equipos, and R+ Móvil run on Cloudflare. New UI work belongs in `public/js/features/*.mjs` — run `npm run build:ui` after edits; never hand-edit `public/js/chunks/` or `app.bundle.mjs`.
 
 ### Entry points
 

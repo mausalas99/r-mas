@@ -40,7 +40,7 @@ Pilot spec: [2026-08-02-cloud-sync-free-pilot-design.md](../superpowers/specs/20
 
 | Store | Location | Encryption |
 |-------|----------|------------|
-| Device cache | SQLCipher `rplus-clinical.db` on the Mac (`lib/db/`) | Argon2id + SQLCipher. Strong at-rest if the machine is locked. See [db-encryption.md](../db-encryption.md). |
+| Device cache | `rplus-clinical.db` on the Mac (`lib/db/`, SQLCipher-capable driver) | **No key since 8.4.2** — a plain SQLite file. Protected only by the OS account and disk encryption (FileVault/BitLocker). Nube session token + room keys are sealed with Electron `safeStorage` (OS keychain). See [db-encryption.md](../db-encryption.md). |
 | **Nube turn rooms** | Cloudflare Worker `rplus-sync` + D1 `rplus-sync` | HTTPS in transit. Content fields (notes/labs/indicaciones/monitoreo/clinicalOps) and `registro`/diagnoses: client sub-key or whole-value encrypted, Cloudflare stores opaque ciphertext only. Board-display identity fields (name/bed/service): still plaintext, whole-row AES-256-GCM at rest via shared `WORKER_DATA_KEY` (Cloudflare can decrypt). |
 | Equipos queue | Separate Worker `rmas-lista-de-espera` + D1 `rplus-equipos` + R2 `rplus-equipos-photos` | Equipment photos / queue — not the patient room. |
 | Recuérdame session | `cloud-sync-remember.json` in Electron `userData` (mode `0600`) | Raw Bearer token on disk — not OS keychain / `safeStorage`. |
@@ -182,7 +182,11 @@ not the plaintext registro. See "Encryption layers" below.
 
 ## Local device (SQLCipher)
 
-Unchanged by Nube. Device unlock is required. Forced-cloud is an anti-goal — offline must keep working without a Nube account.
+Unchanged by Nube. No device unlock: the DB opens without a key (owner decision 2026-10-09, kept off for 8.5.1 — see `18-knowledge-capture.md`). Turn on FileVault/BitLocker. Forced-cloud is an anti-goal — offline must keep working without a Nube account.
+
+- `cloud-sync-remember.json` (Recuérdame): token + room DEKs sealed with `safeStorage` since 8.5.1. No keychain → not written; the old plain file is rewritten sealed on first read.
+- Export `.db` (Ajustes → Copias de la base) is **not encrypted**; the dialog says so.
+- An old encrypted DB (pre-8.4.2, `kdf_salt` in meta, no remembered key) is moved to `userData/rplus-clinical-encrypted-backup-<timestamp>/` at boot, never deleted, and the user gets a toast.
 
 ## Implemented (clinical)
 

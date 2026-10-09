@@ -51,6 +51,8 @@ export function ensureClinicalUser(db, { clientId, rank = 'R1', clinicalName, sa
     privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
   });
   const userId = crypto.randomUUID();
+  // Despite its name, `encrypted_private_key` holds the plain PKCS#8 PEM. It never syncs
+  // (merged rows get ''), but it is only as safe as the local DB file, which has no key.
   db.prepare(
     `INSERT INTO users (user_id, username, password_hash, rank, public_key, encrypted_private_key, clinical_name, sala)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`

@@ -44,6 +44,9 @@ async function finishDbUnlockResponse(ctx, lsSnapshot, unlockResult) {
   if (unlockResult && unlockResult.recoveryCodeToShow) {
     result.recoveryCodeToShow = unlockResult.recoveryCodeToShow;
   }
+  if (unlockResult && unlockResult.archivedEncryptedDb) {
+    result.archivedEncryptedDb = unlockResult.archivedEncryptedDb;
+  }
   try {
     const migration = await runLegacyMigrationIfNeeded({
       dbManager,
@@ -358,12 +361,12 @@ function registerDbCoreBackupHandlers(ctx) {
       return { ok: false, code: 'DB_NOT_FOUND', error: 'Clinical database file not found' };
     }
     const { canceled, filePath } = await dialog.showSaveDialog({
-      title: 'Exportar copia cifrada de la base de datos',
+      title: 'Exportar copia de la base de datos (sin cifrar)',
       defaultPath: path.join(
         app.getPath('downloads'),
         `rplus-clinical-${new Date().toISOString().slice(0, 10)}.db`
       ),
-      filters: [{ name: 'SQLCipher database', extensions: ['db'] }],
+      filters: [{ name: 'SQLite database', extensions: ['db'] }],
     });
     if (canceled || !filePath) {
       return { ok: false, canceled: true };

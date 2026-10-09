@@ -39,7 +39,7 @@ They link to each other: every feature domain points to its UI-map screens, and 
 
 Researching this wiki turned up things worth deciding on soon:
 
-- **The local clinical database has no encryption key**, even though several docs say it's encrypted ([09 § 5](./09-storage-and-security.md#5-what-is-actually-on-today)).
+- **The local clinical database has no encryption key** — kept off on purpose for 8.5.1; docs now say so ([09 § 5](./09-storage-and-security.md#5-what-is-actually-on-today)).
 - **The Nube Worker's monitoreo merge has drifted from the client's**, and `db:rotation-nueva` has no privilege check ([13](./13-open-questions-and-doc-drift.md)).
 
 ## Using it while you develop

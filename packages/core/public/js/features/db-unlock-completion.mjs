@@ -103,6 +103,14 @@ export function handleUnlockSuccess(res) {
       window.showToast(warnMsg, 'error');
     }
   }
+  if (res && res.archivedEncryptedDb && typeof window !== 'undefined' && typeof window.showToast === 'function') {
+    window.showToast(
+      'Se encontró una base de datos cifrada antigua que ya no se puede abrir. R+ empezó con una base vacía. ' +
+        'La copia anterior se guardó en: ' + res.archivedEncryptedDb +
+        '. Si usas Nube, tus pacientes vuelven al sincronizar.',
+      'error'
+    );
+  }
   dbUnlockState.lastMigrationProbe = { needed: false, hasHostJson: false };
 }
 

@@ -2,7 +2,7 @@
 type: "core"
 name: "Database Index"
 status: "stable"
-description: "SQLCipher clinical store — schema, migrations, outbox."
+description: "Local clinical store (SQLCipher driver, no key since 8.4.2) — schema, migrations, outbox."
 ---
 
 # Database Index
@@ -15,7 +15,7 @@ description: "SQLCipher clinical store — schema, migrations, outbox."
 |------|------|
 | Schema bump / migration | `lib/db/schema.mjs`, `lib/db/schema.test.mjs` |
 | Open / unlock DB | `lib/db/db-manager.mjs`, `lib/db/crypto.mjs` |
-| Clinical session / roles | `lib/db/clinical-access-db.mjs`, `clinical-privileges.mjs` |
+| Clinical session / roles | `lib/db/clinical-access-db.mjs`, `clinical-privileges.mjs` (`users.encrypted_private_key` holds a plain PEM despite its name) |
 | Clinical ops sync | `lib/db/clinical-ops-sync.mjs` |
 | Forensic audit | `lib/db/forensic-audit.mjs`, `audit-hooks.mjs` |
 | IPC from renderer | `lib/db/ipc-handlers.mjs` — integration tests: `lib/db/ipc-handlers.test.mjs` (fake `ipcMain`, `createUnlockedDbManager`) |
@@ -24,7 +24,7 @@ description: "SQLCipher clinical store — schema, migrations, outbox."
 
 | Area | Tables / concepts |
 |------|-------------------|
-| Patients & clinical | Encrypted patient store, HC, estado |
+| Patients & clinical | Patient store, HC, estado (plain SQLite file — no key) |
 | LAN outbox | `lan_sync_outbox` — delta, command, bundle kinds |
 | LAN host (v15) | `lan_host_meta`, `lan_room_bundles`, `lan_bundle_entries`, `lan_lab_sets` — normalized ward state when DB unlocked |
 | Clinical ops | Users (`last_activity_at` v16, backfill v17; `user_activity_log` v22), teams, guardia metadata |

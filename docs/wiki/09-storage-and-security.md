@@ -103,7 +103,7 @@ Renderer isolation (`contextIsolation: true`, `nodeIntegration: false`) means th
 
 ## 5. What is actually on today
 
-> ⚠️ **This section is the most important thing on the page.** It was verified in the code at v8.4.9, and it disagrees with `docs/core/15-security.md` and `docs/db-encryption.md`.
+> ⚠️ **This section is the most important thing on the page.** Verified in code at v8.4.9. Owner decision 2026-10-09: encryption at rest stays off for 8.5.1; the core docs were corrected to match.
 
 **The local database is currently opened without an encryption key.**
 
@@ -120,22 +120,14 @@ Renderer isolation (`contextIsolation: true`, `nodeIntegration: false`) means th
 | Forensic hash chain | ✅ | ✅ |
 | Signed renderer bundle | ✅ | ✅ |
 
-### Knock-on effects
-- **"Exportar copia cifrada"** (`db:backup-export-db`) uses `VACUUM INTO`, which copies the DB *as it is* — so today the "encrypted copy" is **unencrypted**, despite the dialog title.
-- `users.encrypted_private_key` stores a **plaintext** RSA PEM (`lib/db/clinical-access-users.mjs`) — the column name is aspirational.
-- `cloud-sync-remember.json` in `userData` holds the Nube bearer token and room keys (file mode 0600).
+### Knock-on effects (as of 8.5.1)
+- **Ajustes → Copias de la base → Copia de la base (.db)** (`db:backup-export-db`) uses `VACUUM INTO`, which copies the DB as it is — **unencrypted**. The dialog title and confirm text now say "sin cifrar".
+- `users.encrypted_private_key` stores a **plaintext** RSA PEM (`lib/db/clinical-access-users.mjs`). It never syncs (merged rows get `''`); a code comment documents the misleading name.
+- `cloud-sync-remember.json` in `userData` holds the Nube bearer token and room keys **sealed with Electron `safeStorage`** (`{ v: 2, sealed }`). The pre-8.5.1 plain file is rewritten sealed on first read. No keychain → nothing is written.
+- `LEGACY_RECOVERY_CODE` (`r+123`) is harmless today: it can only open an old pre-v2 encrypted DB, which is exactly what a user may need to recover an archived backup (below).
 
-### ⚠️ An edge case to look at
-In `ensureUnlockedImpl`, if (a) the DB file exists, (b) the meta file has a `kdf_salt` (i.e. it was **encrypted by an older version**), (c) there's no remembered key, and (d) opening without a key fails with *"file is not a database"* — the code **deletes the DB and meta file and creates a fresh empty one**:
-
-```js
-lockDb(ctx);
-removeClinicalDbFiles(deps.userDataPath);
-removeUnlockMetaFile(deps.userDataPath);
-await openDatabaseConnection(ctx);
-```
-
-This runs at startup, before any passphrase prompt could appear. It may be intentional (Nube repopulates ward patients; the old key is unrecoverable anyway), but for an **offline-only** user on an old encrypted install, local-only data would be gone. The shallow git history in this checkout doesn't show why it was added — worth a deliberate decision in `docs/core/18-knowledge-capture.md` either way.
+### An old encrypted DB at boot
+In `ensureUnlockedImpl`, if (a) the DB file exists, (b) the meta file has a `kdf_salt` (encrypted by a version before 8.4.2), (c) there's no remembered key, and (d) opening without a key fails with *"file is not a database"*, the code **moves** the DB, its `-wal`/`-shm` and the meta file to `userData/rplus-clinical-encrypted-backup-<timestamp>/`, opens a fresh empty DB, and returns `archivedEncryptedDb`. The renderer shows a sticky error toast with the folder path. Before 8.5.1 the files were deleted silently.
 
 ---
 
@@ -161,7 +153,7 @@ This runs at startup, before any passphrase prompt could appear. It may be inten
 <details><summary>Answers</summary>
 
 1. `lib/db/clinical-blob-keys.mjs`.
-2. No — `VACUUM INTO` copies the live DB, which has no key. Rely on disk encryption.
+2. No — `VACUUM INTO` copies the live DB, which has no key, and the dialog says so. Rely on disk encryption.
 3. `SCHEMA_VERSION` in `lib/db/schema-primitives.mjs`, plus a new migration step.
 </details>
 
